@@ -143,8 +143,7 @@ void __fastcall THierarchicalStorage::ReadValues(Classes::TStrings* Strings,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall THierarchicalStorage::WriteValues(Classes::TStrings * Strings,
-  bool MaintainKeys)
+void __fastcall THierarchicalStorage::ClearValues()
 {
   TStrings * Names = new TStringList();
   try
@@ -159,6 +158,12 @@ void __fastcall THierarchicalStorage::WriteValues(Classes::TStrings * Strings,
   {
     delete Names;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteValues(Classes::TStrings * Strings,
+  bool MaintainKeys)
+{
+  ClearValues();
 
   if (Strings)
   {
@@ -422,7 +427,7 @@ bool __fastcall TIniFileStorage::OpenSubKey(const AnsiString SubKey, bool CanCre
       delete Sections;
     }
   }
-  
+
   if (Result)
   {
     Result = THierarchicalStorage::OpenSubKey(SubKey, CanCreate);
@@ -555,12 +560,3 @@ void __fastcall TIniFileStorage::WriteStringRaw(const AnsiString Name, const Ans
 {
   FIniFile->WriteString(CurrentSection, Name, Value);
 }
-
-
-
-
-
-
-
-
-

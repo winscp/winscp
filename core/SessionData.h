@@ -7,7 +7,7 @@
 #include "HierarchicalStorage.h"
 //---------------------------------------------------------------------------
 #define SET_SESSION_PROPERTY(Property) \
-  if (F##Property != value) { F##Property = value; FModified = True; }
+  if (F##Property != value) { F##Property = value; FModified = true; }
 //---------------------------------------------------------------------------
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES };
 #define CIPHER_COUNT (cipDES+1)
@@ -78,6 +78,9 @@ private:
   AnsiString FCustomParam2;
   bool FResolveSymlinks;
   TDateTime FTimeDifference;
+  int FSFTPDownloadQueue;
+  int FSFTPUploadQueue;
+  int FSFTPListingQueue;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -147,6 +150,9 @@ private:
   void __fastcall SetCustomParam1(AnsiString value);
   void __fastcall SetCustomParam2(AnsiString value);
   void __fastcall SetResolveSymlinks(bool value);
+  void __fastcall SetSFTPDownloadQueue(int value);
+  void __fastcall SetSFTPUploadQueue(int value);
+  void __fastcall SetSFTPListingQueue(int value);
 
 public:
   __fastcall TSessionData(AnsiString aName);
@@ -217,6 +223,9 @@ public:
   __property AnsiString CustomParam2 = { read = FCustomParam2, write = SetCustomParam2 };
   __property AnsiString SessionKey = { read = GetSessionKey };
   __property bool ResolveSymlinks = { read = FResolveSymlinks, write = SetResolveSymlinks };
+  __property int SFTPDownloadQueue = { read = FSFTPDownloadQueue, write = SetSFTPDownloadQueue };
+  __property int SFTPUploadQueue = { read = FSFTPUploadQueue, write = SetSFTPUploadQueue };
+  __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
 };
 //---------------------------------------------------------------------------
 class TStoredSessionList : public TNamedObjectList
@@ -249,5 +258,3 @@ private:
 };
 //---------------------------------------------------------------------------
 #endif
-
-

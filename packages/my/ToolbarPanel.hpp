@@ -110,7 +110,7 @@ private:
 	void __fastcall SetImages(int Index, Imglist::TCustomImageList* Value);
 	
 protected:
-	void __fastcall BeginUpdate(void);
+	bool __fastcall BeginUpdate(void);
 	void __fastcall EndUpdate(void);
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
 	virtual void __fastcall Paint(void);

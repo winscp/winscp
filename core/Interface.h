@@ -10,28 +10,32 @@ TConfiguration * __fastcall CreateConfiguration();
 void __fastcall ShowExtendedException(Exception * E, TObject * Sender = NULL);
 void __fastcall HandleExtendedException(Exception * E, TObject * Sender = NULL);
 
-int __fastcall GetSessionPassword(AnsiString Prompt, AnsiString & Password);
+enum TPasswordKind { pkPassword, pkPassphrase, pkServerPrompt };
+int __fastcall GetSessionPassword(AnsiString Prompt, TPasswordKind Kind,
+    AnsiString & Password);
 AnsiString __fastcall GetRegistryKey();
 void __fastcall Busy(bool Start);
 AnsiString __fastcall SshVersionString();
 
-const int qaYes =      0x0001;
-const int qaNo =       0x0002;
-const int qaOK =       0x0004;
-const int qaCancel =   0x0008;
-const int qaAbort =    0x0010;
-const int qaRetry =    0x0020;
-const int qaIgnore =   0x0040;
-const int qaAll =      0x0080;
-const int qaNoToAll =  0x0100;
-const int qaYesToAll = 0x0200;
-const int qaHelp =     0x0400;
-const int qaSkip =     0x0800;
-const int qaPrev =     0x1000;
-const int qaNext =     0x2000;
-const int qaCustom =   0x4000; // reserved for "More" button in VCL interface
+const unsigned int qaYes =      0x00000001;
+const unsigned int qaNo =       0x00000002;
+const unsigned int qaOK =       0x00000004;
+const unsigned int qaCancel =   0x00000008;
+const unsigned int qaAbort =    0x00000010;
+const unsigned int qaRetry =    0x00000020;
+const unsigned int qaIgnore =   0x00000040;
+const unsigned int qaAll =      0x00000080;
+const unsigned int qaNoToAll =  0x00000100;
+const unsigned int qaYesToAll = 0x00000200;
+const unsigned int qaHelp =     0x00000400;
+const unsigned int qaSkip =     0x00000800;
+const unsigned int qaPrev =     0x00001000;
+const unsigned int qaNext =     0x00002000;
+// reserved for "More" button in VCL interface
+const unsigned int qaAppend =   0x00004000;
+const unsigned int qaCustom =   0x00008000;
 
-const int qaNeverAskAgain = 0x8000;
+const unsigned int qaNeverAskAgain = 0x00010000;
 
 const int qpFatalAbort =           0x01;
 const int qpNeverAskAgainCheck =   0x02;

@@ -93,7 +93,7 @@ object CopyDialog: TCopyDialog
     object SaveSettingsCheck: TCheckBox
       Left = 8
       Top = 152
-      Width = 217
+      Width = 377
       Height = 17
       Caption = 'Use &same settings next time'
       TabOrder = 1

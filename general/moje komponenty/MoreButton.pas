@@ -10,10 +10,8 @@ type
   TMBChangingEvent = procedure (Sender: TObject; var AllowChange: Boolean) of object;
 
 type
-  TMoreButton = class(TButton{Control})
+  TMoreButton = class(TButton)
   private
-    //FDefault: Boolean;
-    //FActive: Boolean;
     FExpanded: Boolean;
     FCaptions: array[Boolean] of string;
     FExpandedHeight: Integer;
@@ -21,13 +19,7 @@ type
     FOnChanging: TMBChangingEvent;
     FPanel: TWinControl;
     FRepositionForm: Boolean;
-    //FOwnerExpandedTop: Integer;
 
-    //procedure SetDefault(Value: Boolean);
-    //procedure CMDialogKey(var Message: TCMDialogKey); message CM_DIALOGKEY;
-    //procedure CMDialogChar(var Message: TCMDialogChar); message CM_DIALOGCHAR;
-    //procedure CMFocusChanged(var Message: TCMFocusChanged); message CM_FOCUSCHANGED;
-    //procedure CNCommand(var Message: TWMCommand); message CN_COMMAND;
     function DefaultCaptions(Expanded: Boolean): string;
     procedure SetCaptions(Index: Integer; Value: string);
     procedure SetExpanded(Value: Boolean);
@@ -37,13 +29,9 @@ type
     function StoreCaptions(Index: Integer): Boolean;
     function StoreExpanded: Boolean;
     function StoreExpandedHeight: Boolean;
-    //procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
   protected
     function CanExpand: Boolean; virtual;
-    //procedure CreateParams(var Params: TCreateParams); override;
-    //procedure CreateWnd; override;
     procedure DoChange; virtual;
-    //procedure SetButtonStyle(ADefault: Boolean); virtual;
 
     property Caption;
     property ModalResult;
@@ -51,7 +39,6 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     procedure Click; override;
-    //function UseRightToLeftAlignment: Boolean; override;
   published
     property CollapsedCaption: string index 0 read FCaptions[False] write SetCaptions stored StoreCaptions;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
@@ -63,39 +50,6 @@ type
     property RepositionForm: Boolean read FRepositionForm write FRepositionForm;
     property Anchors stored StoreAnchors;
 
-    //property Action;
-    {property BiDiMode;
-    property Constraints;
-    property Default: Boolean read FDefault write SetDefault default False;
-    property DragCursor;
-    property DragKind;
-    property DragMode;
-    property Enabled;
-    property Font;
-    property ParentBiDiMode;
-    property ParentFont;
-    property ParentShowHint;
-    property PopupMenu;
-    property ShowHint;
-    property TabOrder;
-    property TabStop default True;
-    property Visible;
-    property OnClick;
-    property OnContextPopup;
-    property OnDragDrop;
-    property OnDragOver;
-    property OnEndDock;
-    property OnEndDrag;
-    property OnEnter;
-    property OnExit;}
-    {property OnKeyDown;
-    property OnKeyPress;
-    property OnKeyUp;
-    property OnMouseDown;
-    property OnMouseMove;
-    property OnMouseUp;
-    property OnStartDock;
-    property OnStartDrag;}
   end;
 
 procedure Register;
@@ -130,10 +84,6 @@ begin
   FOnChanging := nil;
   FRepositionForm := False;
 
-  {ControlStyle := [csSetCaption, csOpaque, csDoubleClicks];
-  Width := 75;
-  Height := 25;
-  TabStop := True;}
   Caption := FCaptions[Expanded];
   Anchors := [akLeft, akBottom];
 end;
@@ -229,7 +179,6 @@ begin
       Caption := FCaptions[FExpanded];
       if FExpanded then
         FExpandedHeight := FPanel.Height;
-      //FPanel.Anchors := FPanel.Anchors + [akBottom];
     end;
   end;
 end;
@@ -257,97 +206,4 @@ begin
     (ExpandedHeight <> DefaultExpandedHeight);
 end;
 
-  { Following is tanken from TButton }
-
-{function TMoreButton.UseRightToLeftAlignment: Boolean;
-begin
-  Result := False;
-end;
-
-procedure TMoreButton.SetButtonStyle(ADefault: Boolean);
-const
-  BS_MASK = $000F;
-var
-  Style: Word;
-begin
-  if HandleAllocated then
-  begin
-    if ADefault then Style := BS_DEFPUSHBUTTON else Style := BS_PUSHBUTTON;
-    if GetWindowLong(Handle, GWL_STYLE) and BS_MASK <> Style then
-      SendMessage(Handle, BM_SETSTYLE, Style, 1);
-  end;
-end;
-
-procedure TMoreButton.SetDefault(Value: Boolean);
-var
-  Form: TCustomForm;
-begin
-  FDefault := Value;
-  if HandleAllocated then
-  begin
-    Form := GetParentForm(Self);
-    if Form <> nil then
-      Form.Perform(CM_FOCUSCHANGED, 0, Longint(Form.ActiveControl));
-  end;
-end;
-
-procedure TMoreButton.CreateParams(var Params: TCreateParams);
-const
-  ButtonStyles: array[Boolean] of DWORD = (BS_PUSHBUTTON, BS_DEFPUSHBUTTON);
-begin
-  inherited CreateParams(Params);
-  CreateSubClass(Params, 'BUTTON');
-  Params.Style := Params.Style or ButtonStyles[FDefault];
-end;
-
-procedure TMoreButton.CreateWnd;
-begin
-  inherited CreateWnd;
-  FActive := FDefault;
-end;
-
-procedure TMoreButton.CNCommand(var Message: TWMCommand);
-begin
-  if Message.NotifyCode = BN_CLICKED then Click;
-end;
-
-procedure TMoreButton.CMDialogKey(var Message: TCMDialogKey);
-begin
-  with Message do
-    if  ((CharCode = VK_RETURN) and FActive) and
-      (KeyDataToShiftState(Message.KeyData) = []) and CanFocus then
-    begin
-      Click;
-      Result := 1;
-    end else
-      inherited;
-end;
-
-procedure TMoreButton.CMDialogChar(var Message: TCMDialogChar);
-begin
-  with Message do
-    if IsAccel(CharCode, Caption) and CanFocus then
-    begin
-      Click;
-      Result := 1;
-    end else
-      inherited;
-end;
-
-procedure TMoreButton.CMFocusChanged(var Message: TCMFocusChanged);
-begin
-  with Message do
-    if Sender is TButton then
-      FActive := Sender = Self
-    else
-      FActive := FDefault;
-  SetButtonStyle(FActive);
-  inherited;
-end;
-
-procedure TMoreButton.WMEraseBkgnd(var Message: TWMEraseBkgnd);
-begin
-  DefaultHandler(Message);
-end;
-}
 end.

@@ -59,7 +59,7 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
   FFolders->Sorted = true;
   FFolders->Duplicates = dupIgnore;
 
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------
 __fastcall TLocationProfilesDialog::~TLocationProfilesDialog()

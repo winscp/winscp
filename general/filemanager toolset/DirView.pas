@@ -3516,6 +3516,8 @@ begin
       UpdateItems(Item.Index, Item.Index);
       if Assigned(OnEdited) then OnEdited(Self, Item, NewCaption);
       if Item <> nil then Item.Caption := NewCaption;
+      SortItems;
+      if Assigned(ItemFocused) then ItemFocused.MakeVisible(False);
     end
       else
     begin

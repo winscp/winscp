@@ -11,6 +11,5 @@ void __fastcall DoProductLicence();
 //---------------------------------------------------------------------------
 extern const AnsiString AppName;
 extern const AnsiString AppNameVersion;
-extern const AnsiString HomepageUrl;
 //---------------------------------------------------------------------------
 #endif // UserInterfaceH

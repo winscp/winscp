@@ -26,6 +26,18 @@ object CopyParamsFrame: TCopyParamsFrame
       TabOrder = 0
       OnClick = ControlChange
     end
+    object CommonCalculateSizeCheck: TCheckBox
+      Left = 12
+      Top = 45
+      Width = 156
+      Height = 17
+      Anchors = [akLeft, akTop, akRight]
+      Caption = '&Calculate total size'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 1
+      OnClick = ControlChange
+    end
   end
   object LocalPropertiesGroup: TXPGroupBox
     Left = 331
@@ -74,8 +86,53 @@ object CopyParamsFrame: TCopyParamsFrame
       Height = 85
       PopupMenu = NonVisualDataModule.RightsPopup
       TabOrder = 1
+      inherited OthersButton: TSpeedButton
+        Width = 56
+      end
+      inherited GroupButton: TSpeedButton
+        Width = 56
+      end
+      inherited OwnerButton: TSpeedButton
+        Width = 56
+      end
       inherited OctalLabel: TLabel
         Visible = False
+      end
+      inherited OwnerReadCheck: TCheckBox
+        Left = 58
+        Width = 31
+      end
+      inherited OwnerWriteCheck: TCheckBox
+        Left = 95
+        Width = 31
+      end
+      inherited OwnerExecuteCheck: TCheckBox
+        Left = 132
+        Width = 31
+      end
+      inherited GroupReadCheck: TCheckBox
+        Left = 58
+        Width = 31
+      end
+      inherited GroupWriteCheck: TCheckBox
+        Left = 95
+        Width = 30
+      end
+      inherited GroupExecuteCheck: TCheckBox
+        Left = 132
+        Width = 31
+      end
+      inherited OthersReadCheck: TCheckBox
+        Left = 58
+        Width = 31
+      end
+      inherited OthersWriteCheck: TCheckBox
+        Left = 95
+        Width = 30
+      end
+      inherited OthersExecuteCheck: TCheckBox
+        Left = 132
+        Width = 31
       end
       inherited OctalEdit: TEdit
         Visible = False
@@ -158,7 +215,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 120
       Width = 105
       Height = 17
-      Caption = 'Replace '#39':*"?'#39' ...'
+      Caption = 'Replace '#39'\:*?'#39' ...'
       TabOrder = 4
       OnClick = ControlChange
     end
@@ -185,7 +242,7 @@ object CopyParamsFrame: TCopyParamsFrame
     object TMTextButton: TRadioButton
       Left = 7
       Top = 22
-      Width = 186
+      Width = 189
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Text (plain text, html, scripts, ...)'
@@ -195,7 +252,7 @@ object CopyParamsFrame: TCopyParamsFrame
     object TMBinaryButton: TRadioButton
       Left = 7
       Top = 48
-      Width = 185
+      Width = 189
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Binary (archives, doc, ...)'
@@ -205,7 +262,7 @@ object CopyParamsFrame: TCopyParamsFrame
     object TMAutomaticButton: TRadioButton
       Left = 7
       Top = 74
-      Width = 185
+      Width = 189
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Automatic'

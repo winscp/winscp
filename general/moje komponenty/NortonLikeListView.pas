@@ -8,7 +8,7 @@ uses
 
 type
   TCustomNortonLikeListView = class;
-  TSelectMode = (smAll, smNone, smInvert); 
+  TSelectMode = (smAll, smNone, smInvert);
   TSelectByMaskEvent = procedure(Control: TCustomNortonLikeListView; Select: Boolean) of object;
 
   TCustomNortonLikeListView = class(TCustomListView)
@@ -45,7 +45,7 @@ type
       NewState, OldState: Word): Boolean; dynamic;
     procedure InsertItem(Item: TListItem); override;
     function NewColProperties: TCustomListViewColProperties; virtual;
-    procedure FocusSomething;
+    procedure FocusSomething; virtual;
     function GetItemFromHItem(const Item: TLVItem): TListItem;
     function GetValid: Boolean; virtual;
     function GetSelCount: Integer; override;
@@ -511,7 +511,7 @@ end; { EndUpdatingSelection }
 procedure TCustomNortonLikeListView.CreateWnd;
 begin
   inherited;
-  
+
   Assert(ColProperties <> nil);
   ColProperties.ListViewWndCreated;
 end;

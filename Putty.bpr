@@ -27,7 +27,7 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="PUTTY_LIB;WINSOCK_TWO;AUTO_WINSOCK;_WINDOWS;_DEBUG"/>
+    <USERDEFINES value="PUTTY_LIB;WINSOCK_TWO;AUTO_WINSOCK;_WINDOWS"/>
     <SYSDEFINES value="_RTLDLL;NO_STRICT"/>
     <MAINSOURCE value="Putty.bpf"/>
     <INCLUDEPATH value="putty\CHARSET;putty;$(BCB)\include;$(BCB)\include\vcl"/>
@@ -37,10 +37,9 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
-      -tW -tWM"/>
-    <PFLAGS value="  -$YD -$W -$O- -$A8 -v -JPHNE -M"/>
-    <AFLAGS value="/mx /w2 /zd"/>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
+    <AFLAGS value="/mx /w2 /zn"/>
     <LFLAGS value="/P64 /C"/>
     <OTHERFILES value=""/>
   </OPTIONS>
@@ -93,9 +92,11 @@
   <FILES>
     <FILE type="override" value="putty\SSH.C" translator="Auto">
       <USERDEFINES value="PUTTY_LIB;WINSOCK_TWO;AUTO_WINSOCK;_WINDOWS;_DEBUG;SSH_FILE"/>
+      <CFLAG1 value="-O2"/>
     </FILE>
     <FILE type="override" value="putty\WINSTORE.C" translator="Auto">
       <USERDEFINES value="PUTTY_LIB;WINSOCK_TWO;AUTO_WINSOCK;_WINDOWS;_DEBUG;WINSTORE_FILE"/>
+      <CFLAG1 value="-O2"/>
     </FILE>
   </FILES>
 

@@ -3,7 +3,7 @@ object SynchronizeDialog: TSynchronizeDialog
   Top = 210
   BorderStyle = bsDialog
   Caption = 'Keep remote directory up to date'
-  ClientHeight = 267
+  ClientHeight = 284
   ClientWidth = 511
   Color = clBtnFace
   ParentFont = True
@@ -13,7 +13,7 @@ object SynchronizeDialog: TSynchronizeDialog
   OnShow = FormShow
   DesignSize = (
     511
-    267)
+    284)
   PixelsPerInch = 96
   TextHeight = 13
   object StatusLabel: TLabel
@@ -30,7 +30,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object StartButton: TButton
     Left = 37
-    Top = 232
+    Top = 249
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -40,7 +40,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object StopButton: TButton
     Left = 127
-    Top = 232
+    Top = 249
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -50,7 +50,7 @@ object SynchronizeDialog: TSynchronizeDialog
   end
   object CloseButton: TButton
     Left = 305
-    Top = 232
+    Top = 249
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -63,19 +63,15 @@ object SynchronizeDialog: TSynchronizeDialog
     Left = 0
     Top = 52
     Width = 510
-    Height = 173
+    Height = 190
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 3
-    DesignSize = (
-      510
-      173)
     inline CopyParamsFrame: TCopyParamsFrame
       Left = 2
       Top = 0
       Width = 508
       Height = 148
-      Anchors = [akLeft, akTop, akRight, akBottom]
       TabOrder = 0
       inherited RemotePropertiesGroup: TXPGroupBox
         inherited PreserveRightsCheck: TCheckBox
@@ -90,26 +86,34 @@ object SynchronizeDialog: TSynchronizeDialog
     end
     object SaveSettingsCheck: TCheckBox
       Left = 8
-      Top = 148
-      Width = 183
-      Height = 24
-      Anchors = [akLeft, akTop, akBottom]
+      Top = 172
+      Width = 409
+      Height = 17
       Caption = 'Use &same settings next time'
       TabOrder = 1
+    end
+    object ExistingOnlyCheck: TCheckBox
+      Left = 8
+      Top = 152
+      Width = 393
+      Height = 17
+      Caption = 'Update only &existing files'
+      TabOrder = 2
     end
   end
   object MoreButton: TMoreButton
     Left = 395
-    Top = 232
+    Top = 249
     Width = 75
     Height = 25
+    Caption = '<< &Less'
+    TabOrder = 4
     Panel = MorePanel
     RepositionForm = True
-    TabOrder = 4
   end
   object MinimizeButton: TButton
     Left = 215
-    Top = 232
+    Top = 249
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]

@@ -14,6 +14,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
+#pragma link "XPGroupBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
@@ -49,7 +50,7 @@ __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
 {
   DefaultFileFilter(FFileFilter);
   SetFileFilter(FFileFilter);
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -107,3 +108,4 @@ TFileFilter __fastcall TSelectMaskDialog::GetFileFilter()
   Result.Masks = MaskEdit->Text;
   return Result;
 } /* TSelectMaskDialog::GetFileFilter */
+

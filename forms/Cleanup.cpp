@@ -41,7 +41,7 @@ Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
 __fastcall TCleanupDialog::TCleanupDialog(TComponent* AOwner)
 	: TForm(AOwner)
 {
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------
 void __fastcall TCleanupDialog::UpdateControls()

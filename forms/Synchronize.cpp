@@ -51,13 +51,14 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent* AOwner)
   FParams.AllowTransferMode = True;
   FSynchronizing = False;
   FMinimizedByMe = False;
-  UseSystemFont(this);
+  UseSystemSettings(this);
   CopyParamsFrame->Direction = pdToRemote;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSynchronizeDialog::Execute()
 {
-  SaveSettingsCheck->Checked = False;
+  SaveSettingsCheck->Checked = false;
+  ExistingOnlyCheck->Checked = false;
   MoreButton->Expanded = WinConfiguration->CopyParamDialogExpanded;
   CopyParamsFrame->BeforeExecute();
   bool Result = (ShowModal() == mrOk);
@@ -188,3 +189,14 @@ void __fastcall TSynchronizeDialog::MinimizeButtonClick(TObject * /*Sender*/)
   MinimizeApp();
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSynchronizeDialog::GetExistingOnly()
+{
+  return ExistingOnlyCheck->Checked;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::SetExistingOnly(bool value)
+{
+  ExistingOnlyCheck->Checked = value;
+}
+
+

@@ -8,7 +8,8 @@
       HistoryComboBox.obj ListViewColProperties.obj 
       MoreButton.obj NortonLikeListView.obj 
       PathLabel.obj ToolbarPanel.obj UpDownEdit.obj 
-      ComboEdit.obj XPGroupBox.obj PasswordEdit.obj"/>
+      ComboEdit.obj XPGroupBox.obj PasswordEdit.obj 
+      ResourceModule.obj"/>
     <RESFILES value="Moje_B5.res &quot;Moje komponenty\HistoryComboBox.dcr&quot; 
       &quot;Moje komponenty\NortonLikeListView.dcr&quot; &quot;Moje komponenty\PathLabel.dcr&quot;"/>
     <DEFFILE value=""/>
@@ -33,7 +34,7 @@
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="_DEBUG"/>
+    <USERDEFINES value=""/>
     <SYSDEFINES value="_RTLDLL;NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="Moje_B5.cpp"/>
     <INCLUDEPATH value="&quot;Moje komponenty&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
@@ -42,12 +43,12 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-Od -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Q -w -Vx -Ve -X- 
-      -r- -a8 -b- -k -y -v -vi- -c -tWM"/>
-    <PFLAGS value="  -$YD -$W -$O- -$A8 -v -JPHNE -M"/>
+    <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Q -w -Vx -Ve -X- 
+      -a8 -b- -k- -vi -c -tWM"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
-    <AFLAGS value="/mx /w2 /zd"/>
-    <LFLAGS value="-I -D&quot;Martin's components&quot; -aa -Tpp -x -Gn -Gl -Gi -v"/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-I -D&quot;Martin's components&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -78,6 +79,7 @@
       <FILE FILENAME="Moje komponenty\ComboEdit.pas" FORMNAME="" UNITNAME="ComboEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Moje komponenty\XPGroupBox.pas" FORMNAME="" UNITNAME="XPGroupBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Moje komponenty\PasswordEdit.pas" FORMNAME="" UNITNAME="PasswordEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Moje komponenty\ResourceModule.pas" FORMNAME="" UNITNAME="ResourceModule" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

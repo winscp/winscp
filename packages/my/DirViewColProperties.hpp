@@ -58,8 +58,6 @@ public:
 };
 
 
-typedef AnsiString DirViewColProperties__2[6];
-
 #pragma option push -b-
 enum TDirViewCol { dvName, dvSize, dvType, dvChanged, dvAttr, dvExt };
 #pragma option pop
@@ -126,8 +124,20 @@ public:
 
 
 //-- var, const, procedure ---------------------------------------------------
+extern PACKAGE System::ResourceString _SDirViewNameCol;
+#define Dirviewcolproperties_SDirViewNameCol System::LoadResourceString(&Dirviewcolproperties::_SDirViewNameCol)
+extern PACKAGE System::ResourceString _SDirViewSizeCol;
+#define Dirviewcolproperties_SDirViewSizeCol System::LoadResourceString(&Dirviewcolproperties::_SDirViewSizeCol)
+extern PACKAGE System::ResourceString _SDirViewTypeCol;
+#define Dirviewcolproperties_SDirViewTypeCol System::LoadResourceString(&Dirviewcolproperties::_SDirViewTypeCol)
+extern PACKAGE System::ResourceString _SDirViewChangedCol;
+#define Dirviewcolproperties_SDirViewChangedCol System::LoadResourceString(&Dirviewcolproperties::_SDirViewChangedCol)
+extern PACKAGE System::ResourceString _SDirViewAttrCol;
+#define Dirviewcolproperties_SDirViewAttrCol System::LoadResourceString(&Dirviewcolproperties::_SDirViewAttrCol)
+extern PACKAGE System::ResourceString _SDirViewExtCol;
+#define Dirviewcolproperties_SDirViewExtCol System::LoadResourceString(&Dirviewcolproperties::_SDirViewExtCol)
 static const Shortint DirViewColumns = 0x6;
-extern PACKAGE AnsiString DefaultDirViewCaptions[6];
+extern PACKAGE void *DefaultDirViewCaptions[6];
 extern PACKAGE int DefaultDirViewWidths[6];
 extern PACKAGE Classes::TAlignment DefaultDirViewAlignments[6];
 extern PACKAGE bool DefaultDirViewVisible[6];

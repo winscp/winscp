@@ -27,10 +27,10 @@ void __fastcall TCopyParamType::Default()
   TransferMode = tmAutomatic;
   AddXToDirectories = true;
   ResumeSupport = rsSmart;
-  ResumeThreshold = 10 * 1024; // !!! DEBUG only
-  //ResumeThreshold = 100 * 1024; // (100 kB)
+  ResumeThreshold = 100 * 1024; // (100 kB)
   ReplaceInvalidChars = true;
   LocalInvalidChars = "/\\:*?\"<>|";
+  CalculateSize = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Assign(const TCopyParamType & Source)
@@ -48,6 +48,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType & Source)
   COPY(ResumeThreshold);
   COPY(ReplaceInvalidChars);
   COPY(LocalInvalidChars);
+  COPY(CalculateSize);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -112,7 +113,8 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
   char ModeC[] = "BAM";
   char ResumeC[] = "YSN";
   return FORMAT(
-    "  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s; FnCs: %s; RIC: %s; Resume: %s (%d)\n"
+    "  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s; FnCs: %s; RIC: %s; "
+      "Resume: %s (%d); CalcS: %s\n"
     "  TM: %s; AscM: %s ",
     (BooleanToEngStr(PreserveTime),
      BooleanToEngStr(PreserveReadOnly),
@@ -122,6 +124,7 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
      BooleanToEngStr(ReplaceInvalidChars),
      ResumeC[ResumeSupport],
      (int)ResumeThreshold,
+     BooleanToEngStr(CalculateSize),
      ModeC[TransferMode],
      AsciiFileMask.Masks));
 }

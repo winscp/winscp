@@ -76,7 +76,7 @@ type
     function GetConstraints: TSizeConstraints;
     procedure SetImages(Index: integer; Value: TCustomImageList);
   protected
-    procedure BeginUpdate;
+    function BeginUpdate: Boolean;
     procedure EndUpdate;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure Paint; override;
@@ -411,8 +411,9 @@ begin
       Controls[0].Free;
     if Assigned(ActionList) then
     begin
-      BeginUpdate;
+      if BeginUpdate then
       try
+        FAlreadyCreated := True;
         for Index := ActionList.ActionCount-1 downto 0 do
         begin
           CurAction := ActionList.Actions[Index];
@@ -433,17 +434,19 @@ begin
         UpdateConstraints;
         ResizeButtons;
       finally
-        FAlreadyCreated := True;
         EndUpdate;
       end;
     end;
   end;
 end; { CreateButtons }
 
-procedure TCustomToolbarPanel.BeginUpdate;
+function TCustomToolbarPanel.BeginUpdate: Boolean;
 begin
-  Inc(FUpdating);
-  Assert(FUpdating < 20);
+  Result := FUpdating < 20;
+  if Result then
+  begin
+    Inc(FUpdating);
+  end;
 end; { BeginUpdate }
 
 procedure TCustomToolbarPanel.ConstraintsChange(Sender: TObject);
@@ -580,7 +583,8 @@ begin
   begin
     Count := ButtonCount;
     if Count = 0 then Exit;
-    BeginUpdate;
+
+    if BeginUpdate then
     try
       SetLength(Widths, Count);
       SetLength(Displays, Count);

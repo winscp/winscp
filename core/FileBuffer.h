@@ -5,6 +5,7 @@
 #include <classes.hpp>
 //---------------------------------------------------------------------------
 enum TEOLType { eolLF /* \n */, eolCRLF /* \r\n */, eolCR /* \r */ };
+const int cpRemoveCtrlZ = 0x01; 
 //---------------------------------------------------------------------------
 class TFileBuffer
 {
@@ -12,10 +13,10 @@ public:
   __fastcall TFileBuffer();
   virtual __fastcall ~TFileBuffer();
   DWORD __fastcall LoadFile(const HANDLE File, const DWORD Len, bool ForceLen);
-  void __fastcall ConvertEOL(char * Source, char * Dest);
-  void __fastcall ConvertEOL(TEOLType Source, TEOLType Dest);
-  void __fastcall ConvertEOL(char * Source, TEOLType Dest);
-  void __fastcall ConvertEOL(TEOLType Source, char * Dest);
+  void __fastcall Convert(char * Source, char * Dest, int Params);
+  void __fastcall Convert(TEOLType Source, TEOLType Dest, int Params);
+  void __fastcall Convert(char * Source, TEOLType Dest, int Params);
+  void __fastcall Convert(TEOLType Source, char * Dest, int Params);
   void __fastcall Insert(int Index, const char * Buf, int Len);
   void __fastcall Delete(int Index, int Len);
   DWORD __fastcall ReadFile(const HANDLE File, const DWORD Len, bool ForceLen);

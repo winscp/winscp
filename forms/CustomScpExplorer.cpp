@@ -8,6 +8,7 @@
 #include <Interface.h>
 #include <Net.h>
 #include <ScpMain.h>
+#include <FileSystems.h>
 #include <TextsWin.h>
 #include <DiscMon.hpp>
 
@@ -68,7 +69,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FIgnoreNextSysCommand = false;
   FErrorList = NULL;
 
-  UseSystemFont(this);
+  UseSystemSettings(this);
 
   TComboBox * SessionCombo = dynamic_cast<TComboBox*>(GetComponent(fcSessionCombo));
   assert(SessionCombo);
@@ -101,17 +102,17 @@ void __fastcall TCustomScpExplorerForm::SetTerminal(TTerminal * value)
   {
     if (FTerminal)
     {
-      assert(Terminal->OnProgress == OperationProgress);
+      /*assert(Terminal->OnProgress == OperationProgress);
       Terminal->OnProgress = NULL;
       assert(Terminal->OnFinished == OperationFinished);
-      Terminal->OnFinished = NULL;
+      Terminal->OnFinished = NULL;*/
       UpdateSessionData(Terminal->SessionData);
     }
     FTerminal = value;
     if (Terminal)
     {
-      Terminal->OnProgress = OperationProgress;
-      Terminal->OnFinished = OperationFinished;
+      /*Terminal->OnProgress = OperationProgress;
+      Terminal->OnFinished = OperationFinished;*/
     }
     TerminalChanged();
   }
@@ -240,7 +241,8 @@ void __fastcall TCustomScpExplorerForm::OperationProgress(
   FileOperationProgress(ProgressData, Cancel);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoOperationFinished(TOperationSide Side,
+void __fastcall TCustomScpExplorerForm::DoOperationFinished(
+  TFileOperation Operation, TOperationSide Side,
   bool DragDrop, const AnsiString FileName, bool Success,
   bool & DisconnectWhenComplete)
 {
@@ -248,7 +250,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(TOperationSide Side,
   {
     // no selection on "/upload", form servers only as event handler
     // (it is not displayed)
-    if (!DragDrop && Visible)
+    if (!DragDrop && Visible && (Operation != foCalculateSize))
     {
       TListItem *Item = DirView(Side)->FindFileItem(FileName);
       assert(Item);
@@ -262,11 +264,13 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(TOperationSide Side,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::OperationFinished(TOperationSide Side,
+void __fastcall TCustomScpExplorerForm::OperationFinished(
+  TFileOperation Operation, TOperationSide Side,
   bool DragDrop, const AnsiString FileName, Boolean Success,
   bool & DisconnectWhenComplete)
 {
-  DoOperationFinished(Side, DragDrop, FileName, Success, DisconnectWhenComplete);
+  DoOperationFinished(Operation, Side, DragDrop, FileName, Success,
+    DisconnectWhenComplete);
 }
 //---------------------------------------------------------------------------
 TCustomDirView * __fastcall TCustomScpExplorerForm::DirView(TOperationSide Side)
@@ -343,45 +347,57 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
           CopyParam, !NoConfirmation))
       {
         assert(Terminal);
-        if (Side == osLocal)
-        {
-          TCustomDirView * DView = DirView(osLocal);
-          SAVE_SELECTION(DView);
-          int Params = 0;
-          if (Operation == foMove) Params |= cpDelete;
-          Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
-          if (Operation == foMove)
-          {
-            DView->Reload(True);
-            RESTORE_SELECTION(DView);
-          }
-        }
-        else
-        {
-          SAVE_SELECTION(DirView(osRemote));
+        TCustomDirView * DView = DirView(Side);
+        bool SelectionRestored = false;
+        DView->SaveSelection();
 
+        try
+        {
           if (HasDirView[osLocal])
           {
             DirView(osLocal)->WatchForChanges = false;
           }
 
-          try
+          if (Side == osLocal)
           {
-            Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam,
-              (Operation == foMove ? cpDelete : 0));
-          }
-          __finally
-          {
+            int Params = 0;
+            if (Operation == foMove) Params |= cpDelete;
+            Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
             if (Operation == foMove)
             {
-              RESTORE_SELECTION(DirView(osRemote));
+              DView->Reload(True);
+              DView->RestoreSelection();
+              SelectionRestored = true;
             }
-            if (HasDirView[osLocal] &&
-                (IncludeTrailingBackslash(TargetDirectory) ==
-                  IncludeTrailingBackslash(DirView(osLocal)->Path)))
+          }
+          else
+          {
+            try
             {
-              DirView(osLocal)->ReloadDirectory();
+              Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam,
+                (Operation == foMove ? cpDelete : 0));
             }
+            __finally
+            {
+              if (Operation == foMove)
+              {
+                DView->RestoreSelection();
+                SelectionRestored = true;
+              }
+              if (HasDirView[osLocal] &&
+                  (IncludeTrailingBackslash(TargetDirectory) ==
+                    IncludeTrailingBackslash(DirView(osLocal)->Path)))
+              {
+                DirView(osLocal)->ReloadDirectory();
+              }
+            }
+          }
+        }
+        __finally
+        {
+          if (!SelectionRestored)
+          {
+            DView->DiscardSavedSelection();
           }
         }
       }
@@ -438,7 +454,21 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
     {
       assert(Param);
       assert(Side == osRemote);
-      Terminal->CustomCommandOnFiles(*((AnsiString *)Param), FileList);
+
+      FCustomCommandName = *((AnsiString *)Param);
+      try
+      {
+        AnsiString Command = TCustomFileSystem::CompleteCustomCommand(
+          WinConfiguration->CustomCommands->Values[FCustomCommandName],
+          "", CustomCommandGetParamValue);
+        Terminal->CustomCommandOnFiles(Command,
+          WinConfiguration->CustomCommands->Params[FCustomCommandName],
+          FileList);
+      }
+      __finally
+      {
+        FCustomCommandName = "";
+      }
     }
     else
     {
@@ -456,6 +486,22 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
       DirView(osLocal)->WatchForChanges = PrevWatchForChanges;
     }
     delete FileList;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CustomCommandGetParamValue(
+  const AnsiString AName, AnsiString & Value)
+{
+  assert(!FCustomCommandName.IsEmpty());
+  AnsiString Name = AName;
+  if (Name.IsEmpty())
+  {
+    Name = FMTLOAD(CUSTOM_COMMANDS_PARAM_PROMPT, (StripHotkey(FCustomCommandName)));
+  }
+  if (!InputDialog(FMTLOAD(CUSTOM_COMMANDS_PARAM_TITLE,
+        (StripHotkey(FCustomCommandName))), Name, Value))
+  {
+    Abort();
   }
 }
 //---------------------------------------------------------------------------
@@ -649,11 +695,26 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
       FExecutedFile = "";
       if (Side == osRemote)
       {
-        if (!DeleteFile(FileName) || !RemoveDir(ExtractFilePath(FileName)))
+        bool Deleted;
+        AnsiString DirName = ExtractFilePath(FileName);
+        
+        if (WinConfiguration->ForceDeleteTempFolder)
         {
-          throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR,
-            (ExtractFilePath(FileName))));
+          Deleted = FileOperatorDelete(ExcludeTrailingBackslash(DirName), false);
         }
+        else
+        {
+          Deleted = DeleteFile(FileName) && RemoveDir(DirName);
+        }
+        
+        if (!Deleted)
+        {
+          throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (DirName)));
+        }
+      }
+      else
+      {
+        DirView(osLocal)->ReloadDirectory();
       }
     }
   }
@@ -754,76 +815,84 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
   TStrings * FileList)
 {
   assert(Terminal);
-  TCustomDirView *DView = DirView(Side);
-  SAVE_SELECTION(DView);
+  TCustomDirView * DView = DirView(Side);
+  DView->SaveSelection();
 
-  if (Side == osRemote)
+  try
   {
-    Terminal->DeleteFiles(FileList);
-  }
-  else
-  {
-    TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
-    bool DisconnectWhenComplete = false;
-
-    try
+    if (Side == osRemote)
     {
-      Progress.Start(foDelete, Side, FileList->Count);
+      Terminal->DeleteFiles(FileList);
+    }
+    else
+    {
+      TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
+      bool DisconnectWhenComplete = false;
+
       try
       {
-        int Index = 0;
-        while ((Index < FileList->Count) && (Progress.Cancel == csContinue))
+        Progress.Start(foDelete, Side, FileList->Count);
+        try
         {
-          Progress.SetFile(FileList->Strings[Index]);
-          AnsiString OnlyFileName = (Side == osLocal ?
-            ExtractFileName(Progress.FileName) : UnixExtractFileName(Progress.FileName));
-          try
+          int Index = 0;
+          while ((Index < FileList->Count) && (Progress.Cancel == csContinue))
           {
-            if (!FileOperatorDelete(Progress.FileName, WinConfiguration->DeleteToRecycleBin))
+            Progress.SetFile(FileList->Strings[Index]);
+            AnsiString OnlyFileName = (Side == osLocal ?
+              ExtractFileName(Progress.FileName) : UnixExtractFileName(Progress.FileName));
+            try
             {
-              throw Exception(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (Progress.FileName)));
-            }
-            Progress.Finish(OnlyFileName, true, DisconnectWhenComplete);
-          }
-          catch (EAbort & E)
-          {
-            break;
-          }
-          catch (Exception & E)
-          {
-            int Result = ExceptionMessageDialog(&E, qtError, qaRetry | qaSkip | qaAbort);
-            if (Result == qaRetry)
-            {
-              Index--;
-            }
-            else
-            {
-              Progress.Finish(OnlyFileName, false, DisconnectWhenComplete);
-              if (Result == qaAbort)
+              if (!FileOperatorDelete(Progress.FileName, WinConfiguration->DeleteToRecycleBin))
               {
-                break;
+                throw Exception(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (Progress.FileName)));
+              }
+              Progress.Finish(OnlyFileName, true, DisconnectWhenComplete);
+            }
+            catch (EAbort & E)
+            {
+              break;
+            }
+            catch (Exception & E)
+            {
+              int Result = ExceptionMessageDialog(&E, qtError, qaRetry | qaSkip | qaAbort);
+              if (Result == qaRetry)
+              {
+                Index--;
+              }
+              else
+              {
+                Progress.Finish(OnlyFileName, false, DisconnectWhenComplete);
+                if (Result == qaAbort)
+                {
+                  break;
+                }
               }
             }
+            Index++;
           }
-          Index++;
+        }
+        __finally
+        {
+          Progress.Stop();
         }
       }
       __finally
       {
-        Progress.Stop();
+        DView->Reload(True);
+      }
+
+      if (DisconnectWhenComplete && (Progress.Cancel == csContinue))
+      {
+        Terminal->CloseOnCompletion();
       }
     }
-    __finally
-    {
-      DView->Reload(True);
-    }
-
-    if (DisconnectWhenComplete && (Progress.Cancel == csContinue))
-    {
-      Terminal->CloseOnCompletion();
-    }
   }
-  RESTORE_SELECTION(DView);
+  catch(...)
+  {
+    DView->DiscardSavedSelection();
+    throw;
+  }
+  DView->RestoreSelection();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
@@ -862,7 +931,7 @@ void __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
 
     TRemoteProperties NewProperties = CurrentProperties;
     if (DoPropertiesDialog(FileList, RemoteDirView->PathName,
-        Terminal->UserGroups, &NewProperties, Flags))
+        Terminal->UserGroups, &NewProperties, Flags, Terminal))
     {
       NewProperties = TRemoteProperties::ChangedProperties(CurrentProperties, NewProperties);
       Terminal->ChangeFilesProperties(FileList, &NewProperties);
@@ -899,6 +968,10 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
         FIgnoreNextSysCommand = true;
         return;
       }
+    }
+    if (Key == VK_TAB && Shift.Contains(ssCtrl))
+    {
+      TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
     }
   }
 
@@ -1081,7 +1154,7 @@ void __fastcall TCustomScpExplorerForm::NewSession()
   try
   {
     Data->Assign(StoredSessions->DefaultSettings);
-    if (DoLoginDialog(StoredSessions, Data))
+    if (DoLoginDialog(StoredSessions, Data, false))
     {
       assert(Data->CanLogin);
       TTerminalManager * Manager = TTerminalManager::Instance();
@@ -1672,3 +1745,5 @@ int __fastcall TCustomScpExplorerForm::MoreMessageDialog(const AnsiString Messag
     return ::MoreMessageDialog(Message, MoreMessages, Type, Answers, HelpCtx, Params);
   }
 }
+//---------------------------------------------------------------------------
+

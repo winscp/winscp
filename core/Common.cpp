@@ -218,3 +218,52 @@ AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params)
   if (Program.Pos(" ")) Program = "\"" + Program + "\"";
   return Program + Params;
 }
+//---------------------------------------------------------------------------
+bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec)
+{
+  int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+  bool Result = (FindFirst(FileName, FindAttrs, Rec) == 0);
+  if (Result)
+  {
+    FindClose(Rec);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall ProcessLocalDirectory(AnsiString DirName,
+  TProcessLocalFileEvent CallBackFunc, void * Param,
+  int FindAttrs)
+{
+  assert(CallBackFunc);
+  if (FindAttrs < 0)
+  {
+    FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+  }
+  TSearchRec SearchRec;
+
+  DirName = IncludeTrailingBackslash(DirName);
+  if (FindFirst(DirName + "*.*", FindAttrs, SearchRec) == 0)
+  {
+    try
+    {
+      do
+      {
+        if ((SearchRec.Name != ".") && (SearchRec.Name != ".."))
+        {
+          if (SearchRec.Attr & faDirectory)
+          {
+            ProcessLocalDirectory(DirName + SearchRec.Name, CallBackFunc,
+              Param, FindAttrs);
+          }
+          CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
+        }
+
+      } while (FindNext(SearchRec) == 0);
+    }
+    __finally
+    {
+      FindClose(SearchRec);
+    }
+  }
+}
+

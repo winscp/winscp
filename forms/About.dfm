@@ -3,7 +3,7 @@ object AboutDialog: TAboutDialog
   Top = 184
   BorderStyle = bsDialog
   Caption = 'About application'
-  ClientHeight = 315
+  ClientHeight = 334
   ClientWidth = 388
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -15,7 +15,7 @@ object AboutDialog: TAboutDialog
   Position = poOwnerFormCenter
   DesignSize = (
     388
-    315)
+    334)
   PixelsPerInch = 96
   TextHeight = 13
   object ApplicationLabel: TLabel
@@ -39,7 +39,7 @@ object AboutDialog: TAboutDialog
     Caption = 'Version 2.0.0 (Build 12) &&&'
     ShowAccelChar = False
   end
-  object Label2: TLabel
+  object WinSCPCopyrightLabel: TLabel
     Left = 72
     Top = 56
     Width = 173
@@ -49,10 +49,10 @@ object AboutDialog: TAboutDialog
   object HomepageLabel: TLabel
     Left = 72
     Top = 72
-    Width = 146
+    Width = 188
     Height = 13
     Cursor = crHandPoint
-    Caption = 'http://winscp.sourceforge.net/'
+    Caption = 'http://XXXXXXwinscp.sourceforge.net/'
     Color = clBtnFace
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
@@ -70,13 +70,13 @@ object AboutDialog: TAboutDialog
     Height = 13
     Caption = 'To send comments and report bugs use support forum at:'
   end
-  object ProductUrlLabel: TLabel
+  object ForumUrlLabel: TLabel
     Left = 72
     Top = 112
-    Width = 177
+    Width = 205
     Height = 13
     Cursor = crHandPoint
-    Caption = 'http://winscp.sourceforge.net/forum/'
+    Caption = 'http://XXXXwinscp.sourceforge.net/forum/'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
     Font.Height = -11
@@ -85,23 +85,30 @@ object AboutDialog: TAboutDialog
     ParentFont = False
     OnClick = HomepageLabelClick
   end
+  object TranslatorLabel: TLabel
+    Left = 72
+    Top = 137
+    Width = 73
+    Height = 13
+    Caption = 'TranslatorLabel'
+  end
   object ImagePanel: TPanel
     Left = 8
     Top = 8
     Width = 49
-    Height = 299
+    Height = 318
     Anchors = [akLeft, akTop, akBottom]
     BevelOuter = bvNone
     Color = clTeal
     TabOrder = 2
     DesignSize = (
       49
-      299)
+      318)
     object ImageShape: TShape
       Left = 0
       Top = 0
       Width = 49
-      Height = 299
+      Height = 318
       Align = alClient
       Brush.Style = bsClear
       Pen.Width = 0
@@ -213,12 +220,12 @@ object AboutDialog: TAboutDialog
   end
   object ThirdPartyBox: TScrollBox
     Left = 72
-    Top = 136
+    Top = 155
     Width = 306
     Height = 141
     HorzScrollBar.Visible = False
     VertScrollBar.Smooth = True
-    Anchors = [akLeft, akTop, akRight, akBottom]
+    Anchors = [akLeft, akRight, akBottom]
     TabOrder = 3
     DesignSize = (
       285
@@ -242,27 +249,27 @@ object AboutDialog: TAboutDialog
         't of application license agreement.'
       WordWrap = True
     end
-    object Label5: TLabel
+    object PuttyVersionLabel: TLabel
       Left = 8
       Top = 72
-      Width = 241
+      Width = 196
       Height = 13
-      Caption = 'SSH and SCP code based on PuTTY (2003-09-12)'
+      Caption = 'SSH and SCP code based on PuTTY xxx'
     end
-    object Label6: TLabel
+    object PuttyCopyrightLabel: TLabel
       Left = 8
       Top = 88
-      Width = 181
+      Width = 145
       Height = 13
-      Caption = 'Copyright '#169' 1997-2003 Simon Tatham'
+      Caption = 'Copyright '#169' xxx Simon Tatham'
     end
     object PuttyHomepageLabel: TLabel
       Left = 8
       Top = 120
-      Width = 256
+      Width = 277
       Height = 13
       Cursor = crHandPoint
-      Caption = 'http://www.chiark.greenend.org.uk/~sgtatham/putty/'
+      Caption = 'http://XXXwww.chiark.greenend.org.uk/~sgtatham/putty/'
       Color = clBtnFace
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlue
@@ -333,7 +340,7 @@ object AboutDialog: TAboutDialog
   end
   object OKButton: TButton
     Left = 303
-    Top = 284
+    Top = 303
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -345,7 +352,7 @@ object AboutDialog: TAboutDialog
   end
   object LicenceButton: TButton
     Left = 215
-    Top = 284
+    Top = 303
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

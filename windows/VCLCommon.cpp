@@ -5,6 +5,7 @@
 #include "VCLCommon.h"
 
 #include <Common.h>
+#include <TextsWin.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -15,7 +16,7 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView)
   OriginalWidth = 0;
   for (i = 0; i < ListView->Columns->Count; i++)
   {
-  	OriginalWidth += ListView->Columns->Items[i]->Width;
+    OriginalWidth += ListView->Columns->Items[i]->Width;
   }
 
   NewWidth = 0;
@@ -23,18 +24,18 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView)
   if ((ListView->VisibleRowCount < ListView->Items->Count) &&
       (ListView->Width - ListView->ClientWidth < GetSystemMetrics(SM_CXVSCROLL)))
   {
-  	CWidth -= GetSystemMetrics(SM_CXVSCROLL);
+    CWidth -= GetSystemMetrics(SM_CXVSCROLL);
   }
   for (i = 0; i < ListView->Columns->Count-1;i++)
   {
     if (ListView->Columns->Items[i]->Tag == 0)
     {
       ListView->Columns->Items[i]->Width =
-      	(CWidth * ListView->Columns->Items[i]->Width) / OriginalWidth;
+        (CWidth * ListView->Columns->Items[i]->Width) / OriginalWidth;
     }
     NewWidth += ListView->Columns->Items[i]->Width;
   }
-  ListView->Columns->Items[ListView->Columns->Count-1]->Width =	CWidth-NewWidth;
+  ListView->Columns->Items[ListView->Columns->Count-1]->Width = CWidth-NewWidth;
 }
 //---------------------------------------------------------------------------
 void __fastcall EnableControl(TControl * Control, bool Enable)
@@ -50,17 +51,49 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
     Control->Enabled = Enable;
   }
   if (Control->InheritsFrom(__classid(TCustomEdit)) ||
-			Control->InheritsFrom(__classid(TCustomComboBox)))
+            Control->InheritsFrom(__classid(TCustomComboBox)))
   {
     if (Enable) ((TEdit*)Control)->Color = clWindow;
       else ((TEdit*)Control)->Color = clBtnFace;
   }
 };
 //---------------------------------------------------------------------------
-void __fastcall UseSystemFont(TCustomForm * Control)
+struct TSavedSystemSettings
 {
+  AnsiString FontName;
+  bool Flipped;
+};
+//---------------------------------------------------------------------------
+void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings)
+{
+  bool Flip;
+  AnsiString FlipStr = LoadStr(FLIP_CHILDREN);
+  Flip = !FlipStr.IsEmpty() && static_cast<bool>(StrToInt(FlipStr));
+  
+  if (Settings)
+  {
+    TSavedSystemSettings * SSettings = new TSavedSystemSettings();
+    *Settings = static_cast<void*>(SSettings);
+    SSettings->FontName = Control->Font->Name;
+    SSettings->Flipped = Flip;
+  }
   assert(Control && Control->Font);
   Control->Font->Name = "MS Shell Dlg";
+  if (Flip)
+  {
+    Control->FlipChildren(true);
+  }
+};
+//---------------------------------------------------------------------------
+void __fastcall RevokeSystemSettings(TCustomForm * Control,
+  void * Settings)
+{
+  assert(Settings);
+  if (static_cast<TSavedSystemSettings*>(Settings)->Flipped)
+  {
+    Control->FlipChildren(true);
+  }
+  delete Settings;
 };
 //---------------------------------------------------------------------------
 void __fastcall LinkLabel(TLabel * Label)
@@ -70,35 +103,4 @@ void __fastcall LinkLabel(TLabel * Label)
   Label->Font->Color = clBlue;
 }
 //---------------------------------------------------------------------------
-/*void __fastcall ShowAsModal(TCustomForm * Form)
-{
-  CancelDrag();
-  if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
-  ReleaseCapture();
-  FFormState << fsModal;
-  FFocusActiveWindow = GetActiveWindow();
-
-  FFocusWindowList = DisableTaskWindows(0);
-  Show();
-  SendMessage(Handle, CM_ACTIVATE, 0, 0);
-}
-//---------------------------------------------------------------------------
-void __fastcall TProgressForm::HideAsModal()
-{
-  SendMessage(Handle, CM_DEACTIVATE, 0, 0);
-  if (GetActiveWindow() != Handle)
-  {
-    FFocusActiveWindow = 0;
-  }
-  Hide();
-
-  EnableTaskWindows(FFocusWindowList);
-
-  if (FFocusActiveWindow != 0)
-  {
-    SetActiveWindow(FFocusActiveWindow);
-  }
-
-  FFormState >> fsModal;
-} */
 

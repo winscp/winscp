@@ -26,10 +26,19 @@ type
     procedure SetParamsStr(Value: string); override;
   end;
 
+resourcestring
+  SDirViewNameCol = 'Name';
+  SDirViewSizeCol = 'Size';
+  SDirViewTypeCol = 'Type';
+  SDirViewChangedCol = 'Changed';
+  SDirViewAttrCol = 'Attr';
+  SDirViewExtCol = 'Ext';
+
 const
   DirViewColumns = 6;
-  DefaultDirViewCaptions: array[0..DirViewColumns-1] of string =
-    ('Name', 'Size', 'Type', 'Changed', 'Attr', 'Ext');
+  DefaultDirViewCaptions: array[0..DirViewColumns-1] of Pointer =
+    (@SDirViewNameCol, @SDirViewSizeCol, @SDirViewTypeCol, @SDirViewChangedCol,
+     @SDirViewAttrCol, @SDirViewExtCol);
   DefaultDirViewWidths: array[0..DirViewColumns-1] of Integer =
     (150, 80, 125, 130, 45, 20);
   DefaultDirViewAlignments: array[0..DirViewColumns-1] of TAlignment =
@@ -173,7 +182,7 @@ begin
 
   for Index := 0 to Count-1 do
   begin
-    Captions[Index] := DefaultDirViewCaptions[Index];
+    Captions[Index] := LoadResString(DefaultDirViewCaptions[Index]);
     Visible[Index] := DefaultDirViewVisible[Index];
     Widths[Index] := DefaultDirViewWidths[Index];
     Alignments[Index] := DefaultDirViewAlignments[Index];
@@ -208,7 +217,7 @@ end;
 
 function TDirViewColProperties.StoreCaption(Index: Integer): Boolean;
 begin
-  Result := (Captions[Index] <> DefaultDirViewCaptions[Index]);
+  Result := (Captions[Index] <> LoadResString(DefaultDirViewCaptions[Index]));
 end;
 
 function TDirViewColProperties.StoreWidth(Index: Integer): Boolean;

@@ -79,6 +79,8 @@ protected:
   void __fastcall ShowAsModal();
 
 public:
+  static AnsiString __fastcall OperationName(TFileOperation Operation);
+
   virtual __fastcall ~TProgressForm();
   void __fastcall SetProgressData(const TFileOperationProgressType & AData);
   virtual __fastcall TProgressForm(TComponent * AOwner);

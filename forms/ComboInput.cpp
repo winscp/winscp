@@ -86,7 +86,7 @@ __fastcall TComboInputDialog::TComboInputDialog(TComponent* AOwner)
 	: TForm(AOwner)
 {
   FAllowEmpty = false;
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------
 void __fastcall TComboInputDialog::SetItems(TStrings * value)

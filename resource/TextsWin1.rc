@@ -1,10 +1,7 @@
 #define WIN_ERROR_STRINGS       1100
 #define MASK_ERROR              1101
 #define WARN_FATAL_ERROR        1102
-#define NEWSESSION_ERROR        1103
-#define LOADSESSION_ERROR       1104
 #define SESSION_NOT_EXISTS_ERROR 1105
-#define RECONNECT_ERROR         1106
 #define CREATE_SHORTCUT_ERROR   1107
 #define CANNOT_OVERWRITE_SPECIAL_SESSION 1108
 #define EXPLORE_LOCAL_DIR_ERROR 1109
@@ -51,6 +48,7 @@
 #define DELETE_BOOKMARK_FOLDER  1320
 #define PREV_BUTTON             1321
 #define NEXT_BUTTON             1322
+#define APPEND_BUTTON           1323
 
 #define WIN_INFORMATION_STRINGS 1400
 #define APP_CAPTION             1401
@@ -62,10 +60,14 @@
 #define BOOKMARK_INFO_TIP       1407
 #define CUSTOM_COMMAND_TOUCH    1408
 #define CUSTOM_COMMAND_EXECUTE  1409
-#define ERROR_LIST_COUNT        1410
-#define ERROR_LIST_NUMBER       1411
-#define NO_NEW_VERSION          1412
-#define NEW_VERSION             1413
+#define CUSTOM_COMMAND_MOVE     1410
+#define CUSTOM_COMMAND_MOVE_PARAM 1411
+#define ERROR_LIST_COUNT        1412
+#define ERROR_LIST_NUMBER       1413
+#define NO_NEW_VERSION          1414
+#define NEW_VERSION             1415
+#define CUSTOM_COMMANDS_PARAM_PROMPT 1416
+#define CUSTOM_COMMANDS_PARAM_TITLE 1417
 
 #define WIN_STATUS_STRINGS      1450
 #define STATUS_CLOSED           1451
@@ -166,18 +168,50 @@
 #define RENAME_BOOKMARK_PROMPT  1585
 #define PROGRESS_CUSTOM_COMAND  1586
 #define CUSTOM_COMMAND_HINT     1587
+#define LOGIN_BUG_ON            1588
+#define LOGIN_BUG_OFF           1589
+#define LOGIN_BUG_AUTO          1590
+#define CUSTOM_COMMAND_PARAMFMT 1591
+#define CUSTOM_COMMAND_DIRECTORIES 1592
+#define CUSTOM_COMMAND_RECURSE  1593
+#define EDITOR_FONT_FMT         1594
+#define PROPERTIES_UNKNOWN_SIZE 1595
+#define PROGRESS_CALCULATE_SIZE 1596
+#define PASSWORD_TITLE          1597
+#define PASSPHRASE_TITLE        1598
+#define SERVER_PASSWORD_TITLE   1599
+
+#define WIN_VARIABLE_STRINGS    1600
+#define WINSCP_COPYRIGHT        1601
+#define HOMEPAGE_URL            1602
+#define HISTORY_URL             1603
+#define REQUIREMENTS_URL        1604
+#define FORUM_URL               1605
+#define UPDATES_URL             1606
+#define DOWNLOAD_URL            1607
+#define DONATE_URL              1608
+
+#define TRANSLATOR_INFO         1701
+#define MIDDLE_EAST             1702
+#define BIDI_MODE               1703
+#define FLIP_CHILDREN           1704
 
 STRINGTABLE
 BEGIN
+        TRANSLATOR_INFO, ""
+        MIDDLE_EAST, ""
+        BIDI_MODE, ""
+        FLIP_CHILDREN, ""
+
         WIN_ERROR_STRINGS, "WIN_ERROR"
         CREATE_LOCAL_DIR_ERROR, "Can't create folder '%s'."
         DELETE_LOCAL_FILE_ERROR, "Error deleting file '%s'."
         MASK_ERROR, "'%s' is invalid mask"
         WARN_FATAL_ERROR, "%s\n \nWarning: Aborting this operation will close connection!"
-        NEWSESSION_ERROR, "Can't open new session."
-        LOADSESSION_ERROR, "Can't open stored session '%s'."
+//        NEWSESSION_ERROR, "Can't open new session."
+//        LOADSESSION_ERROR, "Can't open stored session '%s'."
         SESSION_NOT_EXISTS_ERROR, "Session named '%s' doesn't exist."
-        RECONNECT_ERROR, "Cannot launch another instance of %s to reconnect session."
+//        RECONNECT_ERROR, "Cannot launch another instance of %s to reconnect session."
         CREATE_SHORTCUT_ERROR, "Cannot create shortcut."
         CANNOT_OVERWRITE_SPECIAL_SESSION, "Cannot overwrite special session '%s'."
         EXPLORE_LOCAL_DIR_ERROR, "Cannot explore directory '%s'."
@@ -219,6 +253,7 @@ BEGIN
         DELETE_BOOKMARK_FOLDER, "Delete selected Location Profile folder?"
         PREV_BUTTON, "&Previous"
         NEXT_BUTTON, "&Next"
+        APPEND_BUTTON, "A&ppend"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"
@@ -232,10 +267,14 @@ BEGIN
         BOOKMARK_INFO_TIP, "Local: %s\nRemote: %s"
         CUSTOM_COMMAND_TOUCH, "&Touch"
         CUSTOM_COMMAND_EXECUTE, "&Execute"
+        CUSTOM_COMMAND_MOVE, "&Move"
+        CUSTOM_COMMAND_MOVE_PARAM, "&Move to:"
         ERROR_LIST_COUNT, "%d error(s) occured during last operation. Do you want to see it/them?"
         ERROR_LIST_NUMBER, "Error %d of %d:\n%s"
         NO_NEW_VERSION, "You have the latest version."
         NEW_VERSION, "New version %s was released. Do you want to open application download page?\n\nHint: Use Help menu to open application history page to see list of new features. "
+        CUSTOM_COMMANDS_PARAM_TITLE, "'%s' command parameter"
+        CUSTOM_COMMANDS_PARAM_PROMPT, "'%s' command &parameter value:"
 
         WIN_STATUS_STRINGS, "WIN_STATUS_STRINGS"
         STATUS_CLOSED, "Connection terminated."
@@ -320,7 +359,7 @@ BEGIN
         EDITOR_FIND_END, "Could not find the string '%s'."
         EDITOR_REPLACE_END, "Total replacements performed: %d"
         EDITOR_GO_TO_LINE, "Go to line"
-        EDITOR_LINE_NUMBER, "Line number"
+        EDITOR_LINE_NUMBER, "Line number:"
         EDITOR_INVALID_LINE, "Invalid line number."
         LINK_EDIT_CAPTION, "Edit link/shortcut"
         LINK_ADD_CAPTION, "Add link/shortcut"
@@ -328,13 +367,36 @@ BEGIN
         STATUS_CONNECTING, "Connecting..."
         OPENEDSESSION_HINT, "Select session '%s'"
         ADD_BOOKMARK_CAPTION, "Add Location Profile"
-        ADD_BOOKMARK_PROMPT, "Location Profile name"
+        ADD_BOOKMARK_PROMPT, "Location Profile name:"
         MOVE_BOOKMARK_CAPTION, "Move Location Profile"
-        MOVE_BOOKMARK_PROMPT, "New folder name"
+        MOVE_BOOKMARK_PROMPT, "New folder name:"
         SAVE_SESSION_CAPTION, "Save session as"
         SAVE_SESSION_PROMPT, "&Save session as:"
         RENAME_BOOKMARK_CAPTION, "Rename Location Profile"
         RENAME_BOOKMARK_PROMPT, "New profile name"
         PROGRESS_CUSTOM_COMAND, "Executing custom command"
         CUSTOM_COMMAND_HINT, "Execute custom command '%s'"
+        LOGIN_BUG_ON, "On"
+        LOGIN_BUG_OFF, "Off"
+        LOGIN_BUG_AUTO, "Auto"
+        CUSTOM_COMMAND_PARAMFMT, "%s/%s"
+        CUSTOM_COMMAND_DIRECTORIES, "D"
+        CUSTOM_COMMAND_RECURSE, "R"
+        EDITOR_FONT_FMT, "%s, %d pt"
+        PROPERTIES_UNKNOWN_SIZE, "Unknown"
+        PROGRESS_CALCULATE_SIZE, "Calculating directory size"
+        PASSWORD_TITLE, "Enter password"
+        PASSPHRASE_TITLE, "Enter key passphrase"
+        SERVER_PASSWORD_TITLE, "Server prompt"
+
+        WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2003 Martin Prikryl"
+        HOMEPAGE_URL, "http://winscp.sourceforge.net/"
+        HISTORY_URL, "http://winscp.sourceforge.net/eng/history.php"
+        REQUIREMENTS_URL, "http://winscp.sourceforge.net/eng/requirements.php"
+        FORUM_URL, "http://winscp.sourceforge.net/eng/forum.php"
+        UPDATES_URL, "http://winscp.sourceforge.net/updates.php"
+        DOWNLOAD_URL, "http://winscp.sourceforge.net/eng/download.php"
+        DONATE_URL, "http://winscp.sourceforge.net/eng/donate.php"
+
 END

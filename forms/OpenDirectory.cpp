@@ -49,7 +49,7 @@ __fastcall TOpenDirectoryDialog::TOpenDirectoryDialog(TComponent * AOwner):
   FBookmarkDragDest = -1;
   FTerminal = NULL;
   FBookmarkList = new TBookmarkList();
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------
 __fastcall TOpenDirectoryDialog::~TOpenDirectoryDialog()

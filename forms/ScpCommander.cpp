@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
-#pragma hdrstop   
+#pragma hdrstop
 
 #include "ScpCommander.h"
 
@@ -9,6 +9,7 @@
 #include <ScpMain.h>
 #include <Interface.h>
 #include <TextsWin.h>
+#include <DragDrop.hpp>
 
 #include "NonVisual.h"
 #include "Tools.h"
@@ -165,7 +166,7 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, bool DragDrop, TStrings * FileList, AnsiString & TargetDirectory,
   TCopyParamType & CopyParam, bool Confirm)
 {
-  if (DragDrop && Direction == tdToLocal && FDDTargetDirView == LocalDirView)
+  if (DragDrop && (Direction == tdToLocal) && (FDDTargetDirView == LocalDirView))
   {
     if (LocalDirView->DropTarget)
     {
@@ -402,7 +403,9 @@ void __fastcall TScpCommanderForm::SetComponentVisible(Word Component, Boolean v
 {
   TCustomScpExplorerForm::SetComponentVisible(Component, value);
   if (StatusBar->Top < ToolbarPanel->Top)
+  {
     StatusBar->Top = ToolbarPanel->Top + ToolbarPanel->Height;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::KeyDown(Word & Key, Classes::TShiftState Shift)
@@ -414,19 +417,23 @@ void __fastcall TScpCommanderForm::KeyDown(Word & Key, Classes::TShiftState Shif
     NonVisualDataModule->CurrentDeleteAction->Execute();
     Key = 0;
   }
-    else
-  TCustomScpExplorerForm::KeyDown(Key, Shift);
-} /* TScpCommanderForm::KeyDown */
+  else
+  {
+    TCustomScpExplorerForm::KeyDown(Key, Shift);
+  }
+}
 //---------------------------------------------------------------------------
-Boolean __fastcall TScpCommanderForm::GetHasDirView(TOperationSide Side)
+bool __fastcall TScpCommanderForm::GetHasDirView(TOperationSide Side)
 {
   return TCustomScpExplorerForm::GetHasDirView(Side) || (Side == osLocal);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::CompareDirectories()
 {
-  LocalDirView->CompareFiles(RemoteDirView);
-  RemoteDirView->CompareFiles(LocalDirView);
+  LocalDirView->CompareFiles(RemoteDirView, false,
+    WinConfiguration->ScpCommander.CompareCriterias());
+  RemoteDirView->CompareFiles(LocalDirView, false,
+    WinConfiguration->ScpCommander.CompareCriterias());
   if (LocalDirView->SelCount + RemoteDirView->SelCount == 0)
   {
     MessageDialog(LoadStr(COMPARE_NO_DIFFERENCES), qtInformation, qaOK, 0);
@@ -438,7 +445,10 @@ void __fastcall TScpCommanderForm::SynchronizeDirectories()
   TSynchronizeParamType Params;
   Params.CopyParams.Assign(Configuration->CopyParam);
   Params.AllowTransferMode = Terminal->IsCapable[fcTextMode];
-  if (!Params.AllowTransferMode) Params.CopyParams.TransferMode = tmBinary;
+  if (!Params.AllowTransferMode)
+  {
+    Params.CopyParams.TransferMode = tmBinary;
+  }
   Params.LocalDirectory = LocalDirView->PathName;
   Params.RemoteDirectory = RemoteDirView->PathName;
   DoSynchronizeDialog(Params, SynchronizeStartStop);
@@ -481,7 +491,11 @@ void __fastcall TScpCommanderForm::SynchronizeNow()
       while (FSynchronization == ssSynchronize)
       {
         FSynchronization = ssSynchronizing;
-        ChangedFiles = LocalDirView->CreateChangedFileList(RemoteDirView, true);
+        assert(FSynchronizeDialog);
+        ChangedFiles = LocalDirView->CreateChangedFileList(
+          RemoteDirView, true, FSynchronizeDialog->ExistingOnly,
+          WinConfiguration->ScpCommander.CompareCriterias());
+          
         Terminal->ExceptionOnFail = true;
         try
         {
@@ -515,14 +529,15 @@ void __fastcall TScpCommanderForm::SynchronizeNow()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DoOperationFinished(TOperationSide Side,
+void __fastcall TScpCommanderForm::DoOperationFinished(
+  ::TFileOperation Operation, TOperationSide Side,
   bool DragDrop, const AnsiString FileName, bool Success,
   bool & DisconnectWhenFinished)
 {
   if (FSynchronization == ssStopped)
   {
-    TCustomScpExplorerForm::DoOperationFinished(Side, DragDrop, FileName,
-      Success, DisconnectWhenFinished);
+    TCustomScpExplorerForm::DoOperationFinished(Operation, Side, DragDrop,
+      FileName, Success, DisconnectWhenFinished);
   }
 }
 //---------------------------------------------------------------------------
@@ -567,7 +582,7 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   // we suppose that drag&drop download finished, so local dir view should be
   // reloaded
   if (!ProgressData.InProgress && FProgressForm &&
-      FDDTargetDirView == LocalDirView)
+      (FDDTargetDirView == LocalDirView))
   {
     LocalDirView->ReloadDirectory();
   }
@@ -753,4 +768,5 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
     TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
   }
 }
+
 

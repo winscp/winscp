@@ -10,16 +10,18 @@
 #include <CustomDirView.hpp>
 
 #include <WinInterface.h>
+#include "XPGroupBox.hpp"
 //---------------------------------------------------------------------------
 class TSelectMaskDialog : public TForm
 {
 __published:
   TButton *OKBtn;
   TButton *CancelBtn;
-  THistoryComboBox *MaskEdit;
+  TXPGroupBox *MaskGroup;
   TLabel *Label1;
-  TLabel *Label2;
+  THistoryComboBox *MaskEdit;
   TCheckBox *IncludingDirectoriesCheck;
+  TLabel *Label2;
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
 private:
   TFileFilter FFileFilter;

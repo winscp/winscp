@@ -23,7 +23,7 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="NO_WIN32_LEAN_AND_MEAN;WINSOCK_TWO;AUTO_WINSOCK;USE_COMPATIBLE_THREAD;_DEBUG;_WINDOWS"/>
+    <USERDEFINES value="NO_WIN32_LEAN_AND_MEAN;WINSOCK_TWO;AUTO_WINSOCK;USE_COMPATIBLE_THREAD;_WINDOWS"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpCore.bpf"/>
     <INCLUDEPATH value="core;putty;resource;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
@@ -34,10 +34,9 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
-      -tW -tWM"/>
-    <PFLAGS value="  -$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
-    <AFLAGS value="/mx /w2 /zi"/>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
+    <AFLAGS value="/mx /w2 /zn"/>
     <LFLAGS value="/P128"/>
     <OTHERFILES value=""/>
   </OPTIONS>

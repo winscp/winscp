@@ -39,6 +39,8 @@ void __fastcall TFileOperationProgressType::Clear()
   InProgress = false;
   TotalTransfered = 0;
   TotalResumed = 0;
+  TotalSize = 0;
+  FTotalSizeSet = false;
   Operation = foNone;
   DragDrop = false;
   YesToAll = false;
@@ -108,6 +110,25 @@ int __fastcall TFileOperationProgressType::TransferProgress()
     else return 0;
 }
 //---------------------------------------------------------------------------
+int __fastcall TFileOperationProgressType::TotalTransferProgress()
+{
+  assert(FTotalSizeSet);
+  return TotalSize > 0 ? (int)((TotalTransfered * 100)/TotalSize) : 0;
+}
+//---------------------------------------------------------------------------
+int __fastcall TFileOperationProgressType::OverallProgress()
+{
+  if (FTotalSizeSet)
+  {
+    assert((Operation == foCopy) || (Operation == foMove));
+    return TotalTransferProgress();
+  }
+  else
+  {
+    return OperationProgress();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::DoProgress()
 {
   if (FOnProgress) FOnProgress(*this, Cancel);
@@ -120,7 +141,7 @@ void __fastcall TFileOperationProgressType::Finish(AnsiString FileName,
 
   if (FOnFinished)
   {
-    FOnFinished(Side, DragDrop, FileName,
+    FOnFinished(Operation, Side, DragDrop, FileName,
       /* TODO : There wasn't 'Success' condition, was it by mistake or by purpose? */
       Success && (Cancel == csContinue), DisconnectWhenComplete);
   }
@@ -165,6 +186,13 @@ unsigned long __fastcall TFileOperationProgressType::LocalBlockSize()
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::SetTotalSize(__int64 ASize)
+{
+  TotalSize = ASize;
+  FTotalSizeSet = true;
+  DoProgress();
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::SetTransferSize(__int64 ASize)
 {
   TransferSize = ASize;
@@ -178,6 +206,10 @@ void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize)
   {
     // this can happen with SFTP when downloading file that
     // grows while being downloaded
+    if (FTotalSizeSet)
+    {
+      TotalSize += (TransferedSize - TransferSize); 
+    }
     TransferSize = TransferedSize;
   }
   TotalTransfered += ASize;

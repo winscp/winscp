@@ -13,8 +13,8 @@
 #include <Menus.hpp>	// Pascal unit
 #include <Graphics.hpp>	// Pascal unit
 #include <Forms.hpp>	// Pascal unit
-#include <Classes.hpp>	// Pascal unit
 #include <Controls.hpp>	// Pascal unit
+#include <Classes.hpp>	// Pascal unit
 #include <StdCtrls.hpp>	// Pascal unit
 #include <SysInit.hpp>	// Pascal unit
 #include <System.hpp>	// Pascal unit
@@ -30,9 +30,15 @@ class PASCALIMPLEMENTATION TPasswordEdit : public Stdctrls::TCustomEdit
 	typedef Stdctrls::TCustomEdit inherited;
 	
 protected:
+	bool FPassword;
 	virtual void __fastcall CreateParams(Controls::TCreateParams &Params);
+	void __fastcall SetPassword(bool Value);
+	
+public:
+	__fastcall virtual TPasswordEdit(Classes::TComponent* AOwner);
 	
 __published:
+	__property bool Password = {read=FPassword, write=SetPassword, default=1};
 	__property Anchors  = {default=3};
 	__property AutoSelect  = {default=1};
 	__property AutoSize  = {default=1};
@@ -86,11 +92,6 @@ __published:
 	__property OnMouseUp ;
 	__property OnStartDock ;
 	__property OnStartDrag ;
-public:
-	#pragma option push -w-inl
-	/* TCustomEdit.Create */ inline __fastcall virtual TPasswordEdit(Classes::TComponent* AOwner) : Stdctrls::TCustomEdit(AOwner) { }
-	#pragma option pop
-	
 public:
 	#pragma option push -w-inl
 	/* TWinControl.CreateParented */ inline __fastcall TPasswordEdit(HWND ParentWindow) : Stdctrls::TCustomEdit(ParentWindow) { }

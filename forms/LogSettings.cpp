@@ -101,3 +101,4 @@ AnsiString __fastcall TLoggingFrame::GetDefaultLogFileName()
   FOnGetDefaultLogFileName(this, Result);
   return Result;
 }
+

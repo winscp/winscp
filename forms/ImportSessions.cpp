@@ -37,7 +37,7 @@ Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList)
 __fastcall TImportSessionsDialog::TImportSessionsDialog(TComponent* AOwner)
 	: TForm(AOwner)
 {
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::UpdateControls()

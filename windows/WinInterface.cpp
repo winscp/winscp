@@ -35,6 +35,12 @@ void __fastcall FlashOnBackground()
 //---------------------------------------------------------------------------
 void __fastcall ShowExtendedException(Exception * E, TObject * Sender)
 {
+  ShowExtendedExceptionEx(E, Sender, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
+  bool NoReconnect)
+{
   if (!E->Message.IsEmpty())
   {
     if (E->InheritsFrom(__classid(Exception)))
@@ -44,7 +50,7 @@ void __fastcall ShowExtendedException(Exception * E, TObject * Sender)
         TQueryType Type;
         Type = (E->InheritsFrom(__classid(ESshTerminate)) ?
           qtInformation : qtError);
-        if (E->InheritsFrom(__classid(EFatal)))
+        if (E->InheritsFrom(__classid(EFatal)) && !NoReconnect)
         {
           if (FatalExceptionMessageDialog(E, Type) == qaRetry)
           {
@@ -72,18 +78,14 @@ void __fastcall ShowExtendedException(Exception * E, TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall HandleExtendedException(Exception * E, TObject* /*Sender*/)
 {
-  if (TTerminalManager::Instance()->ActiveTerminal)
+  if (TTerminalManager::Instance(false) &&
+      TTerminalManager::Instance()->ActiveTerminal)
   {
     TTerminalManager::Instance()->ActiveTerminal->Log->AddException(E);
   }
-
-  /*if (E->InheritsFrom(__classid(EFatal)))
-  {
-    Application->Terminate();
-  }*/
 }
 //---------------------------------------------------------------------------
-TForm * CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
+TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
   int Answers, int HelpCtx, int Params)
 {
   TMsgDlgButtons Buttons;
@@ -135,6 +137,12 @@ TForm * CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
     Buttons << mbHelp;
   }
 
+  if (Answers & qaAppend)
+  {
+    assert((Answers & qaRetry) == 0);
+    Buttons << mbRetry;
+  }
+
   assert(!Buttons.Empty());
 
   TForm * Dialog = CreateMessageDialog(Msg, DlgType, Buttons);
@@ -160,6 +168,13 @@ TForm * CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
       TButton * NoButton = dynamic_cast<TButton *>(Dialog->FindComponent("No"));
       assert(NoButton);
       NoButton->Caption = LoadStr(NEXT_BUTTON);
+    }
+
+    if (Answers & qaAppend)
+    {
+      TButton * RetryButton = dynamic_cast<TButton *>(Dialog->FindComponent("Retry"));
+      assert(RetryButton);
+      RetryButton->Caption = LoadStr(APPEND_BUTTON);
     }
 
     if (Answers & qaCustom)
@@ -207,7 +222,7 @@ TForm * CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
   return Dialog;
 }
 //---------------------------------------------------------------------------
-int ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
+int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
 {
   int Result, Answer;
   FlashOnBackground();
@@ -217,7 +232,6 @@ int ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
     #define MAP_RESULT(RESULT) case mr ## RESULT: Answer = qa ## RESULT; break;
     MAP_RESULT(Cancel);
     MAP_RESULT(Abort);
-    MAP_RESULT(Retry);
     MAP_RESULT(All);
     MAP_RESULT(NoToAll);
     MAP_RESULT(YesToAll);
@@ -240,6 +254,10 @@ int ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
     case mrNo:
       Answer = (Answers & qaNext) ? qaNext : qaNo;
       break;
+
+    case mrRetry:
+      Answer = (Answers & qaAppend) ? qaAppend : qaRetry;
+      break;
   }
 
   if (Params & mpNeverAskAgainCheck)
@@ -256,7 +274,9 @@ int ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
   }
 
   TMoreButton * MoreButton = dynamic_cast<TMoreButton *>(Dialog->FindComponent("MoreButton"));
-  if (MoreButton)
+  // WinConfiguration may be destroyed already, if called from
+  // try ... catch statement of main()
+  if (MoreButton && WinConfiguration)
   {
     // store state even when user selects 'Cancel'?
     WinConfiguration->ErrorDialogExpanded = MoreButton->Expanded;
@@ -338,7 +358,9 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString Message,
       MoreButton->BoundsRect = CustomButton->BoundsRect;
       MoreButton->Anchors = CustomButton->Anchors;
       MoreButton->Panel = MessageMemo;
-      MoreButton->Expanded = WinConfiguration->ErrorDialogExpanded;
+      // WinConfiguration may be destroyed already, if called from
+      // try ... catch statement of main()
+      MoreButton->Expanded = WinConfiguration && WinConfiguration->ErrorDialogExpanded;
       MoreButton->Name = "MoreButton";
 
       MessageMemo->TabOrder = 20;
@@ -435,9 +457,10 @@ int __fastcall FatalExceptionMessageDialog(Exception * E,
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall GetSessionPassword(AnsiString Prompt, AnsiString & Password)
+int __fastcall GetSessionPassword(AnsiString Prompt,
+  TPasswordKind Kind, AnsiString & Password)
 {
-  return DoPasswordDialog(Prompt, Password);
+  return DoPasswordDialog(Prompt, Kind, Password);
 }
 //---------------------------------------------------------------------------
 void __fastcall Busy(bool Start)

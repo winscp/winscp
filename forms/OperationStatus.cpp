@@ -22,7 +22,7 @@ __fastcall TOperationStatusForm::TOperationStatusForm(TComponent* Owner)
         : TForm(Owner)
 {
   FSecureShell = NULL;
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TOperationStatusForm::~TOperationStatusForm()

@@ -68,6 +68,8 @@ type
   THistoryChangeEvent = procedure(Sender: TCustomDirView) of object;
   TDVGetFilterEvent = procedure(Sender: TCustomDirView; Select: Boolean;
     var Filter: TFileFilter) of object;
+  TCompareCriteria = (ccTime, ccSize);
+  TCompareCriterias = set of TCompareCriteria;
 
   TCustomDirView = class(TIEListView)
   private
@@ -138,6 +140,10 @@ type
     FOnEndRename: TRenameEvent;
     FOnHistoryChange: THistoryChangeEvent;
     FShowHiddenFiles: Boolean;
+    FSavedSelection: Boolean;
+    FSavedSelectionFile: string;
+    FSavedSelectionLastFile: string;
+    FPendingFocusSomething: Boolean;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
@@ -222,6 +228,7 @@ type
     procedure EndSelectionUpdate; override;
     procedure Execute(Item: TListItem); virtual;
     procedure ExecuteFile(Item: TListItem); virtual; abstract;
+    procedure FocusSomething; override;
     function GetIsRoot: Boolean; virtual; abstract;
     procedure IconsSetImageList; virtual;
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
@@ -238,7 +245,8 @@ type
     procedure LoadFiles; virtual; abstract;
     procedure PerformItemDragDropOperation(Item: TListItem; Effect: Integer); virtual; abstract;
     procedure ProcessChangedFiles(DirView: TCustomDirView;
-      FileList: TStrings = nil; FullPath: Boolean = True);
+      FileList: TStrings; FullPath: Boolean; ExistingOnly: Boolean;
+      Criterias: TCompareCriterias);
     procedure ReloadForce(CacheIcons : Boolean);
     procedure RetryRename(NewName: string);
     procedure SelectFiles(Filter: TFileFilter; Select: Boolean);
@@ -296,8 +304,13 @@ type
     function ItemFileName(Item: TListItem): string; virtual; abstract;
     procedure ReloadDirectory; virtual; abstract;
     procedure DisplayPropertiesMenu; virtual; abstract;
-    function CreateChangedFileList(DirView: TCustomDirView; FullPath: Boolean): TStrings;
-    procedure CompareFiles(DirView: TCustomDirView); virtual;
+    function CreateChangedFileList(DirView: TCustomDirView; FullPath: Boolean;
+      ExistingOnly: Boolean; Criterias: TCompareCriterias): TStrings;
+    procedure CompareFiles(DirView: TCustomDirView; ExistingOnly: Boolean;
+      Criterias: TCompareCriterias); virtual;
+    procedure SaveSelection;
+    procedure RestoreSelection;
+    procedure DiscardSavedSelection;
 
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
@@ -747,6 +760,8 @@ begin
   FNotifyEnabled := True;
   FForceRename := False;
   FLastRenameName := '';
+  FSavedSelection := False;
+  FPendingFocusSomething := False;
 
   FContextMenu := False;
   FUseSystemContextMenu := True;
@@ -1137,6 +1152,8 @@ end;
 
 destructor TCustomDirView.Destroy;
 begin
+  Assert(not FSavedSelection);
+
   FreeAndNil(FHistoryPaths);
   FreeAndNil(FBackMenu);
   FreeAndNil(FForwardMenu);
@@ -2589,13 +2606,15 @@ begin
 end; { PathChanged }
 
 procedure TCustomDirView.ProcessChangedFiles(DirView: TCustomDirView;
-  FileList: TStrings; FullPath: Boolean);
+  FileList: TStrings; FullPath: Boolean; ExistingOnly: Boolean;
+  Criterias: TCompareCriterias);
 var
   Item, MirrorItem: TListItem;
   FileTime, MirrorFileTime: TDateTime;
   OldCursor: TCursor;
   Index: Integer;
   Changed: Boolean;
+  SameTime: Boolean;
 begin
   Assert(Valid);
   OldCursor := Screen.Cursor;
@@ -2615,16 +2634,32 @@ begin
       if not ItemIsDirectory(Item) then
       begin
         MirrorItem := DirView.FindFileItem(ItemFileName(Item));
-        if MirrorItem = nil then Changed := True
+        if MirrorItem = nil then
+        begin
+          Changed := not ExistingOnly;
+        end
           else
         begin
-          FileTime := ItemFileTime(Item);
-          MirrorFileTime := DirView.ItemFileTime(MirrorItem);
-          UnifyDateTimePrecision(FileTime, MirrorFileTime);
-          Changed :=
-            (FileTime > MirrorFileTime) { or
-            ((FileTime = MirrorFileTime) and
-             (ItemFileSize(Item) <> DirView.ItemFileSize(MirrorItem))) };
+          if ccTime in Criterias then
+          begin
+            FileTime := ItemFileTime(Item);
+            MirrorFileTime := DirView.ItemFileTime(MirrorItem);
+            UnifyDateTimePrecision(FileTime, MirrorFileTime);
+            Changed :=
+              (FileTime > MirrorFileTime) { or
+              ((FileTime = MirrorFileTime) and
+               (ItemFileSize(Item) <> DirView.ItemFileSize(MirrorItem))) };
+            SameTime := (FileTime = MirrorFileTime);
+          end
+            else
+          begin
+            SameTime := True;
+          end;
+
+          if (not Changed) and SameTime and (ccSize in Criterias) then
+          begin
+            Changed := ItemFileSize(Item) <> DirView.ItemFileSize(MirrorItem);
+          end
         end;
       end;
 
@@ -2632,11 +2667,20 @@ begin
       begin
         if Changed then
         begin
-          if FullPath then FileList.AddObject(ItemFullFileName(Item), Item.Data)
-            else FileList.AddObject(ItemFileName(Item), Item.Data);
+          if FullPath then
+          begin
+            FileList.AddObject(ItemFullFileName(Item), Item.Data)
+          end
+            else
+          begin
+            FileList.AddObject(ItemFileName(Item), Item.Data);
+          end;
         end;
       end
-        else Item.Selected := Changed;
+        else
+      begin
+        Item.Selected := Changed;
+      end;
     end;
   finally
     Screen.Cursor := OldCursor;
@@ -2648,20 +2692,84 @@ begin
   end;
 end;
 
-function TCustomDirView.CreateChangedFileList(DirView: TCustomDirView; FullPath: Boolean): TStrings;
+function TCustomDirView.CreateChangedFileList(DirView: TCustomDirView;
+  FullPath: Boolean; ExistingOnly: Boolean; Criterias: TCompareCriterias): TStrings;
 begin
   Result := TStringList.Create;
   try
-    ProcessChangedFiles(DirView, Result, FullPath);
+    ProcessChangedFiles(DirView, Result, FullPath, ExistingOnly, Criterias);
   except
     FreeAndNil(Result);
     raise;
   end;
 end;
 
-procedure TCustomDirView.CompareFiles(DirView: TCustomDirView);
+procedure TCustomDirView.CompareFiles(DirView: TCustomDirView;
+  ExistingOnly: Boolean; Criterias: TCompareCriterias);
 begin
-  ProcessChangedFiles(DirView);
+  ProcessChangedFiles(DirView, nil, True, ExistingOnly, Criterias);
+end;
+
+procedure TCustomDirView.FocusSomething;
+begin
+  if FSavedSelection then FPendingFocusSomething := True
+    else inherited;
+end;
+
+procedure TCustomDirView.SaveSelection;
+var
+  Closest: TListItem;
+begin
+  Assert(not FSavedSelection);
+
+  FSavedSelectionFile := '';
+  FSavedSelectionLastFile := '';
+  if Assigned(ItemFocused) then
+  begin
+    FSavedSelectionLastFile := ItemFocused.Caption;
+  end;
+
+  Closest := ClosestUnselected(ItemFocused);
+  if Assigned(Closest) then
+  begin
+    FSavedSelectionFile := Closest.Caption;
+  end;
+
+  FSavedSelection := True;
+end;
+
+procedure TCustomDirView.RestoreSelection;
+var
+  ItemToSelect: TListItem;
+begin
+  Assert(FSavedSelection);
+  FSavedSelection := False;
+
+  if (FSavedSelectionLastFile <> '') and
+     ((not Assigned(ItemFocused)) or
+      (ItemFocused.Caption <> FSavedSelectionLastFile)) then
+  begin
+    ItemToSelect := FindFileItem(FSavedSelectionFile);
+    if Assigned(ItemToSelect) then
+    begin
+      ItemFocused := ItemToSelect;
+    end;
+  end;
+
+  if not Assigned(ItemFocused) then FocusSomething
+    else ItemFocused.MakeVisible(False);
+end;
+
+procedure TCustomDirView.DiscardSavedSelection;
+begin
+  Assert(FSavedSelection);
+  FSavedSelection := False;
+
+  if FPendingFocusSomething then
+  begin
+    FPendingFocusSomething := False;
+    FocusSomething;
+  end;
 end;
 
 var

@@ -151,14 +151,16 @@ int __fastcall TSecureShell::GetPassword(AnsiString &Password)
 
   if (SessionData->Password.Length() && !FPasswordTried)
   {
+    LogEvent("Using stored password.");
     Result = 1;
     Password = SessionData->Password;
   }
   else
   {
+    LogEvent("Asking user for password.");
     Result = GetSessionPassword(
-      FmtLoadStr(PROMPT_SESSION_PASSWORD,
-        ARRAYOFCONST((SessionData->SessionName))), Password);
+      FMTLOAD(PROMPT_SESSION_PASSWORD, (SessionData->SessionName)),
+      pkPassword, Password);
   }
   FPasswordTried = true;
   return Result;
@@ -184,12 +186,13 @@ void __fastcall TSecureShell::FromBackend(Boolean IsStdErr, char * Data, Integer
     unsigned char *p = (unsigned char *)Data;
     unsigned Len = (unsigned)Length;
 
-    assert(Len > 0);
-
     // If this is before the real session begins, raise exception.
-    if (!OutPtr) FatalError("Internal error: Session not yet begun.");
+    if (!OutPtr)
+    {
+      FatalError("Internal error: Session not yet begun.");
+    }
 
-    if (OutLen > 0)
+    if ((OutLen > 0) && (Len > 0))
     {
       unsigned Used = OutLen;
       if (Used > Len) Used = Len;

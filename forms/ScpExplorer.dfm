@@ -67,7 +67,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       AutoSize = True
       ButtonHeight = 21
       ButtonWidth = 65
-      Caption = 'ButtonsToolBar'
+      Caption = 'MenuToolBar'
       EdgeBorders = []
       Flat = True
       ShowCaptions = True
@@ -348,7 +348,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
       object SessionCombo: TComboBox
         Left = 31
-        Top = 0
+        Top = 1
         Width = 114
         Height = 19
         Style = csOwnerDrawFixed
@@ -460,7 +460,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Top = 0
         Width = 8
         Hint = 'E'
-        Caption = 'ToolButton38'
+        Caption = 'ToolButton1'
         ImageIndex = 6
         Style = tbsSeparator
       end
@@ -519,7 +519,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       Height = 21
       Hint = '|E'
       Align = alClient
-      Caption = 'ButtonsToolBar'
+      Caption = 'ToolBar5'
       DisabledImages = NonVisualDataModule.ExplorerDisabledImages
       EdgeBorders = []
       Flat = True
@@ -544,10 +544,10 @@ inherited ScpExplorerForm: TScpExplorerForm
   inherited RemotePanel: TPanel
     Top = 170
     Width = 640
-    Height = 259
+    Height = 266
     inherited RemoteStatusBar: TAssociatedStatusBar
       Tag = 1
-      Top = 240
+      Top = 247
       Width = 640
       Hint = ''
       Panels = <
@@ -594,7 +594,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     inherited RemoteDirView: TUnixDirView
       Width = 640
-      Height = 240
+      Height = 247
       PathComboBox = UnixPathComboBox
     end
   end

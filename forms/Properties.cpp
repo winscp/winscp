@@ -8,9 +8,11 @@
 
 #include <VCLCommon.h>
 #include <Common.h>
+#include <Terminal.h>
 #include <TextsWin.h>
 
 #include "WinInterface.h"
+#include "TerminalManager.h"
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
@@ -18,7 +20,8 @@
 //---------------------------------------------------------------------
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
 	const AnsiString Directory, TStrings * GroupList,
-	TRemoteProperties * Properties, int AllowedChanges)
+	TRemoteProperties * Properties, int AllowedChanges,
+  TTerminal * Terminal)
 {
 	bool Result;
   TPropertiesDialog * PropertiesDialog = new TPropertiesDialog(Application);
@@ -29,6 +32,8 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     PropertiesDialog->FileList = FileList;
     PropertiesDialog->GroupList = GroupList;
     PropertiesDialog->FileProperties = *Properties;
+    PropertiesDialog->Terminal = Terminal;
+    
     Result = PropertiesDialog->Execute();
     if (Result)
     {
@@ -56,8 +61,10 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner)
   FShellImageList->ShareImages = True;
 
   FFileList = new TStringList();
+  FAllowCalculateSize = false;
+  FSizeNotCalculated = false;
 
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TPropertiesDialog::~TPropertiesDialog()
@@ -68,16 +75,35 @@ __fastcall TPropertiesDialog::~TPropertiesDialog()
   FShellImageList = NULL;
 }
 //---------------------------------------------------------------------
-Boolean __fastcall TPropertiesDialog::Execute()
+bool __fastcall TPropertiesDialog::Execute()
 {
-  if (AllowedChanges & cpGroup) ActiveControl = GroupComboBox;
-    else
-  if (AllowedChanges & cpOwner) ActiveControl = OwnerComboBox;
-    else
-  if (AllowedChanges & cpMode) ActiveControl = RightsFrame;
-    else ActiveControl = OkButton; 
-  UpdateControls();
-  return (ShowModal() == mrOk);
+  bool Result;
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  TNotifyEvent POnChangeTerminal = Manager->OnChangeTerminal;
+  Manager->OnChangeTerminal = TerminalManagerChangeTerminal;
+  try
+  {
+    if (AllowedChanges & cpGroup) ActiveControl = GroupComboBox;
+      else
+    if (AllowedChanges & cpOwner) ActiveControl = OwnerComboBox;
+      else
+    if (AllowedChanges & cpMode) ActiveControl = RightsFrame;
+      else ActiveControl = OkButton;
+    UpdateControls();
+    
+    Result = (ShowModal() == mrOk);
+  }
+  __finally
+  {
+    assert(Manager->OnChangeTerminal == TerminalManagerChangeTerminal);
+    Manager->OnChangeTerminal = POnChangeTerminal;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::TerminalManagerChangeTerminal(TObject * /*Sender*/)
+{
+  Close();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::SetFileList(TStrings * value)
@@ -95,7 +121,9 @@ void __fastcall TPropertiesDialog::LoadInfo()
   if (FFileList)
   {
     assert(FFileList > 0);
-    Boolean Multiple = (FFileList->Count != 1);
+    bool Multiple = (FFileList->Count != 1);
+    FAllowCalculateSize = false;
+    FSizeNotCalculated = false;
     FileIconImage->Picture->Bitmap = NULL;
     __int64 FilesSize;
 
@@ -108,22 +136,33 @@ void __fastcall TPropertiesDialog::LoadInfo()
       FShellImageList->GetIcon(File->IconIndex, FileIconImage->Picture->Icon);
       FileLabel->Caption = File->FileName;
       OwnerComboBox->Items->Text = File->Owner;
-      if (!FGroupsSet) GroupComboBox->Items->Text = File->Owner;
+      if (!FGroupsSet)
+      {
+        GroupComboBox->Items->Text = File->Owner;
+      }
       FilesSize = File->Size;
 
       LinksToLabelLabel->Visible = File->IsSymLink;
       LinksToLabel->Visible = File->IsSymLink;
-      if (File->IsSymLink) LinksToLabel->Caption = File->LinkTo;
+      if (File->IsSymLink)
+      {
+        LinksToLabel->Caption = File->LinkTo;
+      }
+      if (File->IsDirectory)
+      {
+        FAllowCalculateSize = true;
+        FSizeNotCalculated = true;
+      }
 
       RightsFrame->AllowAddXToDirectories = File->IsDirectory;
       Caption = FMTLOAD(PROPERTIES_FILE_CAPTION, (File->FileName));
       RecursiveCheck->Visible = File->IsDirectory;
       RecursiveBevel->Visible = File->IsDirectory;
     }
-      else
+    else
     {
-      if (FFileList->Count) Caption = FMTLOAD(PROPERTIES_FILES_CAPTION, (FFileList->Strings[0]));
-        else Caption = "";
+      Caption = FFileList->Count ?
+        FMTLOAD(PROPERTIES_FILES_CAPTION, (FFileList->Strings[0])) : AnsiString();
       LinksToLabelLabel->Hide();
       LinksToLabel->Hide();
 
@@ -134,77 +173,111 @@ void __fastcall TPropertiesDialog::LoadInfo()
       ((TStringList*)OwnerList)->Duplicates = dupIgnore;
       ((TStringList*)OwnerList)->Sorted = True;
 
-      try {
-
-        Integer Directories = 0;
-        Integer Files = 0;
-        Integer SymLinks = 0;
+      try
+      {
+        int Directories = 0;
+        int Files = 0;
+        int SymLinks = 0;
         FilesSize = 0;
 
-        for (Integer Index = 0; Index < FFileList->Count; Index++)
+        for (int Index = 0; Index < FFileList->Count; Index++)
         {
           TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[Index]);
           assert(File);
           GroupList->Add(File->Group);
           OwnerList->Add(File->Owner);
-          if (File->IsDirectory) Directories++;
-            else Files++;
-          if (File->IsSymLink) SymLinks++;
+          if (File->IsDirectory)
+          {
+            Directories++;
+            FAllowCalculateSize = true;
+            FSizeNotCalculated = true;
+          }
+          else
+          {
+            Files++;
+          }
+
+          if (File->IsSymLink)
+          {
+            SymLinks++;
+          }
           FilesSize += File->Size;
         }
 
-        AnsiString FilesStr = "";
+        AnsiString FilesStr;
         if (Files)
         {
-          if (Files == 1) FilesStr = FMTLOAD(PROPERTIES_FILE, (Files));
-            else FilesStr = FMTLOAD(PROPERTIES_FILES, (Files));
+          FilesStr = (Files == 1) ? FMTLOAD(PROPERTIES_FILE, (Files)) :
+            FMTLOAD(PROPERTIES_FILES, (Files));
           if (Directories)
+          {
             FilesStr = FORMAT("%s, ", (FilesStr));
+          }
         }
         if (Directories)
         {
-          if (Directories == 1) FilesStr += FMTLOAD(PROPERTIES_DIRECTORY, (Directories));
-            else FilesStr += FMTLOAD(PROPERTIES_DIRECTORIES, (Directories));
+          FilesStr += (Directories == 1) ? FMTLOAD(PROPERTIES_DIRECTORY, (Directories)) :
+            FMTLOAD(PROPERTIES_DIRECTORIES, (Directories));
         }
         if (SymLinks)
         {
           AnsiString SymLinksStr;
-          if (SymLinks == 1) SymLinksStr = FMTLOAD(PROPERTIES_SYMLINK, (SymLinks));
-            else SymLinksStr = FMTLOAD(PROPERTIES_SYMLINKS, (SymLinks));
+          SymLinksStr = SymLinks == 1 ? FMTLOAD(PROPERTIES_SYMLINK, (SymLinks)) :
+            FMTLOAD(PROPERTIES_SYMLINKS, (SymLinks));
           FilesStr = FORMAT("%s (%s)", (FilesStr, SymLinksStr));
         }
         FileLabel->Caption = FilesStr;
 
         OwnerComboBox->Items = OwnerList;
-        if (!FGroupsSet) GroupComboBox->Items = GroupList;
+        if (!FGroupsSet)
+        {
+          GroupComboBox->Items = GroupList;
+        }
         RightsFrame->AllowAddXToDirectories = (Directories > 0);
         RecursiveCheck->Visible = (Directories > 0);
         RecursiveBevel->Visible = (Directories > 0);
 
-      } __finally {
+      }
+      __finally
+      {
         delete GroupList;
         delete OwnerList;
       }
     }
 
-    AnsiString SizeStr = FormatBytes(FilesSize);
-    if (FilesSize >= FormatBytesAbove)
-    {
-      __int64 PrevFormatBytesAbove = FormatBytesAbove;
-      FormatBytesAbove = FilesSize + 1;
-      try {
-        SizeStr = FORMAT("%s (%s)", (SizeStr, FormatBytes(FilesSize)));
-      } __finally {
-        FormatBytesAbove = PrevFormatBytesAbove;
-      }
-    }
-    SizeLabel->Caption = SizeStr;
+    LoadSize(FilesSize);
 
     FilesIconImage->Visible = Multiple;
     FileIconImage->Visible = !Multiple;
   }
 }
-
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::LoadSize(__int64 FilesSize)
+{
+  AnsiString SizeStr;
+  if (FSizeNotCalculated)
+  {
+    SizeStr = LoadStr(PROPERTIES_UNKNOWN_SIZE);
+  }
+  else
+  {
+    SizeStr = FormatBytes(FilesSize);
+    if (FilesSize >= FormatBytesAbove)
+    {
+      __int64 PrevFormatBytesAbove = FormatBytesAbove;
+      FormatBytesAbove = FilesSize + 1;
+      try
+      {
+        SizeStr = FORMAT("%s (%s)", (SizeStr, FormatBytes(FilesSize)));
+      }
+      __finally
+      {
+        FormatBytesAbove = PrevFormatBytesAbove;
+      }
+    }
+  }
+  SizeLabel->Caption = SizeStr;
+}
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::SetDirectory(AnsiString value)
 {
@@ -231,15 +304,13 @@ void __fastcall TPropertiesDialog::SetFileProperties(TRemoteProperties value)
     RightsFrame->Rights = value.Rights;
     RightsFrame->AddXToDirectories = value.AddXToDirectories;
   }
-    else
+  else
   {
     RightsFrame->Rights = TRights();
     RightsFrame->AddXToDirectories = false;
   }
-  if (value.Valid.Contains(vpGroup)) GroupComboBox->Text = value.Group;
-    else GroupComboBox->Text = "";
-  if (value.Valid.Contains(vpOwner)) OwnerComboBox->Text = value.Owner;
-    else OwnerComboBox->Text = "";
+  GroupComboBox->Text = value.Valid.Contains(vpGroup) ? value.Group : AnsiString();
+  OwnerComboBox->Text = value.Valid.Contains(vpOwner) ? value.Owner : AnsiString();
   RecursiveCheck->Checked = value.Recursive;
 }
 //---------------------------------------------------------------------------
@@ -292,9 +363,10 @@ void __fastcall TPropertiesDialog::UpdateControls()
   EnableControl(GroupComboBox, FAllowedChanges & cpGroup);
   EnableControl(OwnerComboBox, FAllowedChanges & cpOwner);
   EnableControl(RightsFrame, FAllowedChanges & cpMode);
+  CalculateSizeButton->Visible = Terminal && FAllowCalculateSize;
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TPropertiesDialog::GetMultiple()
+bool __fastcall TPropertiesDialog::GetMultiple()
 {
   return (FFileList->Count != 1);
 }
@@ -332,4 +404,15 @@ void __fastcall TPropertiesDialog::SetAllowedChanges(int value)
     UpdateControls();
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::CalculateSizeButtonClick(
+      TObject * /*Sender*/)
+{
+  assert(Terminal);
+  __int64 Size;
+  Terminal->CalculateFilesSize(FileList, Size, 0);
+  FSizeNotCalculated = false;
+  LoadSize(Size);
+}
+//---------------------------------------------------------------------------
 

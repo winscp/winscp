@@ -23,6 +23,7 @@ __published:
   TButton *CancelButton;
   TListView *SessionListView;
   TLabel *Label1;
+  TLabel *Label2;
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
   void __fastcall SessionListViewInfoTip(TObject *Sender,
     TListItem *Item, AnsiString &InfoTip);

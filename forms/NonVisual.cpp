@@ -2,7 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "NonVisual.h"
+#include "NonVisual.h"       
 
 #include <Common.h>
 #include <ScpMain.h>
@@ -151,7 +151,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentDeleteFocusedAction, EnableFocusedOperation)
   UPD(CurrentPropertiesFocusedAction, EnableFocusedOperation)
   // file operation
-  UPD(CurrentRenameAction, EnableFocusedOperation)
+  UPD(CurrentRenameAction, EnableFocusedOperation &&
+    ((ScpExplorer->HasDirView[osLocal] && DirView(osLocal) == DirView(osCurrent)) ||
+      ScpExplorer->Terminal->IsCapable[fcRename]))
   UPD(CurrentEditAction, EnableFocusedOperation &&
     !WinConfiguration->DisableOpenEdit &&
     !DirView(osCurrent)->ItemIsDirectory(DirView(osCurrent)->ItemFocused))
@@ -213,7 +215,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   PANEL_ACTIONS(Local)
   PANEL_ACTIONS(Remote)
   #undef PANEL_ACTIONS
-  UPD(LocalExploreDirectory, true)
+  UPD(LocalExploreDirectoryAction, true)
 
   // HELP
   UPD(AboutAction, true)
@@ -222,6 +224,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RequirementsPageAction, true)
   UPD(ForumPageAction, true)
   UPD(CheckForUpdatesAction, true)
+  UPD(DonatePageAction, true)
 
   // VIEW
   UPDCOMP(StatusBar)
@@ -323,7 +326,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ScpExplorer->Terminal && ScpExplorer->Terminal->IsCapable[fcAnyCommand])
   UPD(CustomCommandsCustomizeAction, true)
 
-  ;            
+  ;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
@@ -385,15 +388,16 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   PANEL_ACTIONS(Local)
   PANEL_ACTIONS(Remote)
   #undef PANEL_ACTIONS
-  EXE(LocalExploreDirectory, ScpExplorer->ExploreLocalDirectory())
+  EXE(LocalExploreDirectoryAction, ScpExplorer->ExploreLocalDirectory())
 
   //HELP
   EXE(AboutAction, DoAboutDialog(Configuration))
-  EXE(HomepageAction, OpenBrowser(HomepageUrl))
-  EXE(HistoryPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/history.php"))
-  EXE(RequirementsPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/requirements.php"))
-  EXE(ForumPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/forum.php"))
+  EXE(HomepageAction, OpenBrowser(LoadStr(HOMEPAGE_URL)))
+  EXE(HistoryPageAction, OpenBrowser(LoadStr(HISTORY_URL)))
+  EXE(RequirementsPageAction, OpenBrowser(LoadStr(REQUIREMENTS_URL)))
+  EXE(ForumPageAction, OpenBrowser(LoadStr(FORUM_URL)))
   EXE(CheckForUpdatesAction, CheckForUpdates())
+  EXE(DonatePageAction, OpenBrowser(LoadStr(DONATE_URL)))
 
   // VIEW
   EXECOMP(StatusBar)
@@ -613,7 +617,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
       Item->Tag = Index;
       if (Menu == RemoteDirViewCustomCommandsMenu)
       {
-        Item->Tag = Item->Tag | 0x0100; 
+        Item->Tag = Item->Tag | 0x0100;
       }
       Item->Hint = FMTLOAD(CUSTOM_COMMAND_HINT,
         (StringReplace(Description, "&", "", TReplaceFlags() << rfReplaceAll)));
@@ -645,10 +649,10 @@ void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
 {
   TMenuItem * Item = dynamic_cast<TMenuItem *>(Sender);
   assert(Item);
-  AnsiString Command = WinConfiguration->CustomCommands->Values[
-    WinConfiguration->CustomCommands->Names[Item->Tag & 0x00FF]];
+  AnsiString CommandName;
+  CommandName = WinConfiguration->CustomCommands->Names[Item->Tag & 0x00FF];
   ScpExplorer->ExecuteFileOperation(foCustomCommand, osRemote,
-    (Item->Tag & 0xFF00) != 0, false, &Command);
+    (Item->Tag & 0xFF00) != 0, false, &CommandName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionListMenu()
@@ -724,5 +728,4 @@ void __fastcall TNonVisualDataModule::OpenBrowser(AnsiString URL)
   ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 //---------------------------------------------------------------------------
-
 

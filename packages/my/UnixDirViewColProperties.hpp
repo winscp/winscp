@@ -22,8 +22,6 @@
 namespace Unixdirviewcolproperties
 {
 //-- type declarations -------------------------------------------------------
-typedef AnsiString UnixDirViewColProperties__1[7];
-
 #pragma option push -b-
 enum TUnixDirViewCol { uvName, uvSize, uvChanged, uvRights, uvOwner, uvGroup, uvExt };
 #pragma option pop
@@ -95,8 +93,14 @@ public:
 
 
 //-- var, const, procedure ---------------------------------------------------
+extern PACKAGE System::ResourceString _SUnixDirViewRightsCol;
+#define Unixdirviewcolproperties_SUnixDirViewRightsCol System::LoadResourceString(&Unixdirviewcolproperties::_SUnixDirViewRightsCol)
+extern PACKAGE System::ResourceString _SUnixDirViewOwnerCol;
+#define Unixdirviewcolproperties_SUnixDirViewOwnerCol System::LoadResourceString(&Unixdirviewcolproperties::_SUnixDirViewOwnerCol)
+extern PACKAGE System::ResourceString _SUnixDirViewGroupCol;
+#define Unixdirviewcolproperties_SUnixDirViewGroupCol System::LoadResourceString(&Unixdirviewcolproperties::_SUnixDirViewGroupCol)
 static const Shortint UnixDirViewColumns = 0x7;
-extern PACKAGE AnsiString DefaultUnixDirViewCaptions[7];
+extern PACKAGE void *DefaultUnixDirViewCaptions[7];
 extern PACKAGE int DefaultUnixDirViewWidths[7];
 extern PACKAGE Classes::TAlignment DefaultUnixDirViewAlignments[7];
 extern PACKAGE bool DefaultUnixDirViewVisible[7];

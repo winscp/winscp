@@ -1057,7 +1057,7 @@ object NonVisualDataModule: TNonVisualDataModule
     Left = 232
     Top = 24
     Bitmap = {
-      494C010141004500040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C010141004500040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002001000001002000000000000020
       0100000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -3437,7 +3437,8 @@ object NonVisualDataModule: TNonVisualDataModule
       FC01FC018FFFEBFFFC01FC0187F7FFFF00015401C7EFEA7F0001A801E3CFFE3F
       00015401F19FEA1F0001A801F83FFE0F00035403FC7FFE070007A807F83FFF03
       000F500FF19FFF0300F7AAF7C3CFFF8701E355E387E7FF8F03C1ABC18FFBFFFF
-      FEF7FEF7FFFFFFFFFF0FFF0FFFFFFFFF}
+      FEF7FEF7FFFFFFFFFF0FFF0FFFFFFFFF00000000000000000000000000000000
+      000000000000}
   end
   object RemoteDirViewPopup: TPopupMenu
     Images = ExplorerImages
@@ -3523,14 +3524,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Toolbar Operation (selected + rename + mkdir + close)'
       Caption = '&Copy ...'
-      Hint = 'Copy|Copy selected file(s) to local directory'
+      Hint = 'Copy|Copy selected file(s)'
       ImageIndex = 0
     end
     object CurrentMoveAction: TAction
       Tag = 15
       Category = 'Toolbar Operation (selected + rename + mkdir + close)'
       Caption = '&Move ...'
-      Hint = 'Move|Move selected file(s) to local directory'
+      Hint = 'Move|Move selected file(s)'
       ImageIndex = 1
     end
     object CurrentCycleStyleAction: TAction
@@ -3769,7 +3770,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Session'
       Caption = '&New Session...'
-      Hint = 'New session|Opens to new session'
+      Hint = 'New session|Opens new session'
       ImageIndex = 25
       ShortCut = 16462
     end
@@ -3794,6 +3795,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Preferences...'
       Hint = 'Preferences|Show/change user preferences'
       ImageIndex = 28
+      ShortCut = 49232
     end
     object RemoteChangePathAction: TAction
       Tag = 11
@@ -4315,7 +4317,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Open &Terminal'
       Hint = 
         'Open teminal|Open terminal window that allow executing arbitrary' +
-        ' command (with execption of commands that require user input)'
+        ' command (with exception of commands that require user input)'
       ImageIndex = 55
       ShortCut = 16468
     end
@@ -4329,7 +4331,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 64
       ShortCut = 16464
     end
-    object LocalExploreDirectory: TAction
+    object LocalExploreDirectoryAction: TAction
       Tag = 15
       Category = 'Local Directory'
       Caption = '&Explore Directory'
@@ -4408,12 +4410,18 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Queries application homepage for updates'
       ImageIndex = 63
     end
+    object DonatePageAction: TAction
+      Tag = 12
+      Category = 'Help'
+      Caption = '&Donate'
+      Hint = 'Opens web browser and points it to program donation page'
+    end
   end
   object ExplorerDisabledImages: TImageList
     Left = 336
     Top = 24
     Bitmap = {
-      494C010141004500040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C010141004500040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000002001000001002000000000000020
       0100000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -6793,7 +6801,8 @@ object NonVisualDataModule: TNonVisualDataModule
       FC80FC8083FBEBFF8004A80483F7F53F00805480C1E7EA1F2004A804E0CFF40F
       00905490F01FEA472021A821F83FFE2300E354E3FC1FFE112407A807F80FFF09
       080B500BE187FF0338F1AAF1C3C3FF8701E055E087E5FF8F0341AB418FFBFFFF
-      FE87FE87FFFFFFFFFF0FFF0FFFFFFFFF}
+      FE87FE87FFFFFFFFFF0FFF0FFFFFFFFF00000000000000000000000000000000
+      000000000000}
   end
   object ExplorerMenu: TMainMenu
     Images = ExplorerImages
@@ -6853,6 +6862,7 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object ExporerCommandsMenu: TMenuItem
       Caption = '&Commands'
+      Hint = 'Other commands'
       object Createdirectory2: TMenuItem
         Action = CurrentCreateDirAction
       end
@@ -7581,13 +7591,21 @@ object NonVisualDataModule: TNonVisualDataModule
       object Programrequirements1: TMenuItem
         Action = RequirementsPageAction
       end
-      object N44: TMenuItem
+      object N48: TMenuItem
         Caption = '-'
+        Hint = 'E'
       end
       object CheckForUpdates1: TMenuItem
         Action = CheckForUpdatesAction
       end
       object N11: TMenuItem
+        Caption = '-'
+        Hint = 'E'
+      end
+      object Donate1: TMenuItem
+        Action = DonatePageAction
+      end
+      object N44: TMenuItem
         Caption = '-'
         Hint = 'E'
       end
@@ -7617,7 +7635,7 @@ object NonVisualDataModule: TNonVisualDataModule
           Action = LocalOpenDirAction
         end
         object Exploredirectory1: TMenuItem
-          Action = LocalExploreDirectory
+          Action = LocalExploreDirectoryAction
         end
         object N15: TMenuItem
           Caption = '-'

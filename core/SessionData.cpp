@@ -91,6 +91,11 @@ void __fastcall TSessionData::Default()
   Scp1Compatibility = false;
   TimeDifference = 0;
 
+  // SFTP
+  SFTPDownloadQueue = 4;
+  SFTPUploadQueue = 4;
+  SFTPListingQueue = 2;
+
   CustomParam1 = "";
   CustomParam2 = "";
 
@@ -284,9 +289,11 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 {
   if (Storage->OpenSubKey(MungeStr(Name), False))
   {
-    HostName = Storage->ReadString("HostName", HostName);
     PortNumber = Storage->ReadInteger("PortNumber", PortNumber);
     UserName = Storage->ReadString("UserName", UserName);
+    // must be loaded after UserName, because HostName may be in format user@host
+    HostName = Storage->ReadString("HostName", HostName);
+
     if (!Configuration->DisablePasswordStoring)
     {
       FPassword = Storage->ReadString("Password", FPassword);
@@ -408,12 +415,16 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
     Storage->WriteInteger("SshProt", SshProt);
     Storage->WriteBool("Ssh2DES", Ssh2DES);
     Storage->WriteString("Cipher", CipherList);
-    Storage->WriteString("PublicKeyFile", PublicKeyFile);
 
     Storage->WriteBool("TcpNoDelay", TcpNoDelay);
 
-    if (!PuttyExport)
+    if (PuttyExport)
     {
+      Storage->WriteStringRaw("PublicKeyFile", PublicKeyFile);
+    }
+    else
+    {
+      Storage->WriteString("PublicKeyFile", PublicKeyFile);
       Storage->WriteInteger("FSProtocol", FSProtocol);
       Storage->WriteString("LocalDirectory", LocalDirectory);
       Storage->WriteString("RemoteDirectory", RemoteDirectory);
@@ -439,6 +450,34 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
     }
 
     Storage->WriteInteger("ProxyMethod", ProxyMethod);
+    if (PuttyExport)
+    {
+      // support for Putty 0.53b and older
+      int ProxyType;
+      int ProxySOCKSVersion = 5;
+      switch (ProxyMethod) {
+        case pmHTTP:
+          ProxyType = pxHTTP;
+          break;
+        case pmTelnet:
+          ProxyType = pxTelnet;
+          break;
+        case pmSocks5:
+          ProxyType = pxSocks;
+          ProxySOCKSVersion = 5;
+          break;
+        case pmSocks4:
+          ProxyType = pxSocks;
+          ProxySOCKSVersion = 4;
+          break;
+        default:
+        case pmNone:
+          ProxyType = pxNone;
+          break;
+      }
+      Storage->WriteInteger("ProxyType", ProxyType);
+      Storage->WriteInteger("ProxySOCKSVersion", ProxySOCKSVersion);
+    }
     Storage->WriteString("ProxyHost", ProxyHost);
     Storage->WriteInteger("ProxyPort", ProxyPort);
     Storage->WriteString("ProxyUsername", ProxyUsername);
@@ -462,7 +501,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
     {
       Storage->WriteString("Protocol", ProtocolStr);
     }
-  
+
     if (!PuttyExport)
     {
       Storage->WriteString("CustomParam1", CustomParam1);
@@ -502,10 +541,26 @@ AnsiString __fastcall TSessionData::GetSessionKey()
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetHostName(AnsiString value)
 {
-  // HostName is key for password encryption
-  AnsiString XPassword = Password;
-  SET_SESSION_PROPERTY(HostName);
-  Password = XPassword;
+  if (FHostName != value)
+  {
+    // HostName is key for password encryption
+    AnsiString XPassword = Password;
+
+    int P = value.LastDelimiter("@");
+    if (P > 0)
+    {
+      UserName = value.SubString(1, P - 1);
+      value = value.SubString(P + 1, value.Length() - P);
+    }
+    FHostName = value;
+    FModified = true;
+
+    Password = XPassword;
+    if (!XPassword.IsEmpty())
+    {
+      memset(XPassword.c_str(), 0, XPassword.Length());
+    }
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPortNumber(int value)
@@ -544,6 +599,10 @@ void __fastcall TSessionData::SetUserName(AnsiString value)
   AnsiString XPassword = Password;
   SET_SESSION_PROPERTY(UserName);
   Password = XPassword;
+  if (!XPassword.IsEmpty())
+  {
+    memset(XPassword.c_str(), 0, XPassword.Length());
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPassword(AnsiString value)
@@ -893,6 +952,21 @@ void __fastcall TSessionData::SetCustomParam2(AnsiString value)
   SET_SESSION_PROPERTY(CustomParam2);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetSFTPDownloadQueue(int value)
+{
+  SET_SESSION_PROPERTY(SFTPDownloadQueue);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetSFTPUploadQueue(int value)
+{
+  SET_SESSION_PROPERTY(SFTPUploadQueue);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetSFTPListingQueue(int value)
+{
+  SET_SESSION_PROPERTY(SFTPListingQueue);
+}
+//---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetInfoTip()
 {
   return FmtLoadStr(SESSION_INFO_TIP,
@@ -1095,7 +1169,7 @@ TSessionData * __fastcall TStoredSessionList::NewSession(
     DuplicateSession->Modified = true;
   }
   // list was saved here before to default storage, but it would not allow
-  // to work with special lists (export/import) not using default storage 
+  // to work with special lists (export/import) not using default storage
   return DuplicateSession;
 }
 //---------------------------------------------------------------------------

@@ -43,7 +43,7 @@ bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
 __fastcall TSymlinkDialog::TSymlinkDialog(TComponent* Owner)
   : TForm(Owner)
 {
-  UseSystemFont(this);
+  UseSystemSettings(this);
   FSide = osLocal;
 }
 //---------------------------------------------------------------------------

@@ -10,19 +10,19 @@
 // Return pointer to file version info block
 void * __fastcall CreateFileInfo(AnsiString FileName)
 {
-	DWORD Handle, Size;
- 	void * Result = NULL;
+        DWORD Handle, Size;
+        void * Result = NULL;
 
   // Get file version info block size
   Size = GetFileVersionInfoSize(FileName.c_str(), &Handle);
   // If size is valid
   if (Size)
   {
-	 	Result = new char[Size];
+                Result = new char[Size];
     // Get file version info block
     if (!GetFileVersionInfo(FileName.c_str(), Handle, Size, Result))
     {
-    	delete Result;
+        delete Result;
       Result = NULL;
     }
   }
@@ -41,8 +41,8 @@ typedef TTranslation *PTranslations;
 // Return pointer to fixed file version info
 PVSFixedFileInfo __fastcall GetFixedFileInfo(void * FileInfo)
 {
-	UINT Len;
-	PVSFixedFileInfo Result;
+        UINT Len;
+        PVSFixedFileInfo Result;
   if (!VerQueryValue(FileInfo, "\\", (void**)&Result, &Len))
     throw Exception("Fixed file info not available");
   return Result;
@@ -61,7 +61,7 @@ unsigned __fastcall GetTranslationCount(void * FileInfo)
 // Return i-th translation in the file version info translation list
 TTranslation __fastcall GetTranslation(void * FileInfo, unsigned i)
 {
-	PTranslations P;
+        PTranslations P;
   UINT Len;
 
   if (!VerQueryValue(FileInfo, "\\VarFileInfo\\Translation", (void**)&P, &Len))
@@ -86,7 +86,7 @@ AnsiString __fastcall GetLanguage(Word Language)
 // Return the value of the specified file version info string using the
 // specified translation
 AnsiString __fastcall GetFileInfoString(void * FileInfo,
-	TTranslation Translation, AnsiString StringName)
+  TTranslation Translation, AnsiString StringName)
 {
   PChar P;
   UINT Len;
@@ -95,7 +95,9 @@ AnsiString __fastcall GetFileInfoString(void * FileInfo,
     IntToHex(Translation.Language, 4) +
     IntToHex(Translation.CharSet, 4) +
     "\\" + StringName).c_str(), (void**)&P, &Len))
-	    throw Exception("Specified file info string not available");
-	return AnsiString(P, Len);
+  {
+    throw Exception("Specified file info string not available");
+  }
+  // c_str() makes sure that returned string has only necessary bytes allocated
+  return AnsiString(P, Len).c_str();
 };
-

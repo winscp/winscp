@@ -9,12 +9,12 @@
 
 #include <ScpMain.h>
 #include "WinConfiguration.h"
+#include "TextsWin.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const AnsiString AppName = "WinSCP";
 const AnsiString AppNameVersion = "WinSCP3";
-const AnsiString HomepageUrl = "http://winscp.sourceforge.net/";
 //---------------------------------------------------------------------------
 TCustomScpExplorerForm * __fastcall CreateScpExplorer()
 {
@@ -34,6 +34,25 @@ AnsiString __fastcall GetRegistryKey()
 //---------------------------------------------------------------------------
 void __fastcall ConfigureInterface()
 {
+  AnsiString S;
+  S = LoadStr(MIDDLE_EAST);
+  if (!S.IsEmpty())
+  {
+    SysLocale.MiddleEast = static_cast<bool>(StrToInt(S));
+  }
+  else
+  {
+    SysLocale.MiddleEast = false;
+  }
+  S = LoadStr(BIDI_MODE);
+  if (!S.IsEmpty())
+  {
+    Application->BiDiMode = static_cast<TBiDiMode>(StrToInt(bdRightToLeft));
+  }
+  else
+  {
+    Application->BiDiMode = bdLeftToRight;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration *Configuration)
@@ -56,4 +75,3 @@ void __fastcall DoProductLicence()
   DoLicenceDialog(lcWinScp);
 }
 //---------------------------------------------------------------------
-

@@ -17,8 +17,17 @@ object LoginDialog: TLoginDialog
     358)
   PixelsPerInch = 96
   TextHeight = 13
+  object SaveButton: TButton
+    Left = 260
+    Top = 327
+    Width = 75
+    Height = 25
+    Action = SaveSessionAction
+    Anchors = [akRight, akBottom]
+    TabOrder = 2
+  end
   object LoginButton: TButton
-    Left = 353
+    Left = 348
     Top = 327
     Width = 75
     Height = 25
@@ -26,10 +35,10 @@ object LoginDialog: TLoginDialog
     Anchors = [akRight, akBottom]
     Default = True
     ModalResult = 1
-    TabOrder = 1
+    TabOrder = 3
   end
   object CloseButton: TButton
-    Left = 441
+    Left = 436
     Top = 327
     Width = 75
     Height = 25
@@ -37,17 +46,27 @@ object LoginDialog: TLoginDialog
     Cancel = True
     Caption = 'Close'
     ModalResult = 2
-    TabOrder = 2
+    TabOrder = 4
   end
   object AboutButton: TButton
-    Left = 7
+    Left = 11
     Top = 327
-    Width = 75
+    Width = 82
     Height = 25
     Action = AboutAction
     Anchors = [akLeft, akBottom]
     TabOrder = 0
     TabStop = False
+  end
+  object LanguagesButton: TButton
+    Left = 105
+    Top = 327
+    Width = 75
+    Height = 25
+    Anchors = [akLeft, akBottom]
+    Caption = 'Lan&guages'
+    TabOrder = 1
+    OnClick = LanguagesButtonClick
   end
   object MainPanel: TPanel
     Left = 0
@@ -57,22 +76,23 @@ object LoginDialog: TLoginDialog
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
-    TabOrder = 3
+    TabOrder = 5
     object PageControl: TPageControl
       Tag = 6
       Left = 161
       Top = 0
       Width = 361
       Height = 318
-      ActivePage = EnvironmentSheet
+      ActivePage = GeneralSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
-      TabIndex = 3
+      TabIndex = 6
       TabOrder = 1
       OnChange = PageControlChange
       object SessionListSheet: TTabSheet
         Tag = 1
+        Hint = 'Stored sessions'
         Caption = 'StSe'
         DesignSize = (
           353
@@ -86,23 +106,14 @@ object LoginDialog: TLoginDialog
           Anchors = [akTop, akRight]
           TabOrder = 2
         end
-        object SaveButton: TButton
+        object DeleteButton: TButton
           Left = 258
           Top = 67
           Width = 88
           Height = 25
-          Action = SaveSessionAction
-          Anchors = [akTop, akRight]
-          TabOrder = 3
-        end
-        object DeleteButton: TButton
-          Left = 258
-          Top = 99
-          Width = 88
-          Height = 25
           Action = DeleteSessionAction
           Anchors = [akTop, akRight]
-          TabOrder = 4
+          TabOrder = 3
         end
         object SessionListView: TListView
           Left = 2
@@ -138,12 +149,12 @@ object LoginDialog: TLoginDialog
         end
         object SetDefaultSessionButton: TButton
           Left = 258
-          Top = 131
+          Top = 99
           Width = 88
           Height = 25
           Action = SetDefaultSessionAction
           Anchors = [akTop, akRight]
-          TabOrder = 5
+          TabOrder = 4
         end
         object ToolsMenuButton: TButton
           Left = 258
@@ -157,17 +168,18 @@ object LoginDialog: TLoginDialog
         end
         object ShellIconsButton: TButton
           Left = 258
-          Top = 164
+          Top = 131
           Width = 88
           Height = 25
           Anchors = [akTop, akRight]
           Caption = 'Shell &icon'
-          TabOrder = 7
+          TabOrder = 5
           OnClick = ShellIconsButtonClick
         end
       end
       object BasicSheet: TTabSheet
         Tag = 2
+        Hint = 'Session'
         Caption = 'Basic'
         ImageIndex = 1
         DesignSize = (
@@ -199,7 +211,7 @@ object LoginDialog: TLoginDialog
             Height = 13
             Anchors = [akTop, akRight]
             Caption = 'Po&rt number'
-            FocusControl = HostNameEdit
+            FocusControl = PortNumberEdit
           end
           object Label3: TLabel
             Left = 11
@@ -317,7 +329,7 @@ object LoginDialog: TLoginDialog
             Top = 19
             Width = 65
             Height = 17
-            Caption = '&SFTP'
+            Caption = 'SF&TP'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -325,6 +337,7 @@ object LoginDialog: TLoginDialog
       end
       object AdvancedSheet: TTabSheet
         Tag = 3
+        Hint = 'SSH'
         Caption = 'SSH'
         ImageIndex = 2
         DesignSize = (
@@ -414,7 +427,7 @@ object LoginDialog: TLoginDialog
             Top = 19
             Width = 160
             Height = 13
-            Caption = '&Encryption cipher selection policy:'
+            Caption = 'Encryption cipher selection &policy:'
             FocusControl = CipherListBox
           end
           object CipherListBox: TListBox
@@ -430,13 +443,13 @@ object LoginDialog: TLoginDialog
             OnDragOver = CipherListBoxDragOver
             OnStartDrag = CipherListBoxStartDrag
           end
-          object Ssh2DESCheck: TCheckBox
+          object Ssh2LegacyDESCheck: TCheckBox
             Left = 16
             Top = 120
             Width = 317
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Enable non-standard use of &single-DES in SSH 2'
+            Caption = 'Enable legacy use of single-&DES in SSH 2'
             TabOrder = 3
           end
           object CipherUpButton: TButton
@@ -461,6 +474,7 @@ object LoginDialog: TLoginDialog
       end
       object EnvironmentSheet: TTabSheet
         Tag = 4
+        Hint = 'Environment'
         Caption = 'Env'
         ImageIndex = 6
         DesignSize = (
@@ -548,7 +562,7 @@ object LoginDialog: TLoginDialog
             Width = 321
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Resolve &symbolic links'
+            Caption = 'Resolve symbolic li&nks'
             TabOrder = 2
           end
         end
@@ -582,6 +596,7 @@ object LoginDialog: TLoginDialog
       end
       object ScpSheet: TTabSheet
         Tag = 5
+        Hint = 'SCP'
         Caption = 'Scp'
         ImageIndex = 3
         DesignSize = (
@@ -646,7 +661,7 @@ object LoginDialog: TLoginDialog
             Top = 38
             Width = 185
             Height = 17
-            Caption = 'Alias LS to display &group name'
+            Caption = 'Alias LS to display g&roup name'
             TabOrder = 3
             OnClick = DataChange
           end
@@ -697,7 +712,7 @@ object LoginDialog: TLoginDialog
           object ReturnVarAutodetectButton: TRadioButton
             Left = 12
             Top = 18
-            Width = 85
+            Width = 101
             Height = 17
             Caption = 'Aut&odetect'
             TabOrder = 0
@@ -741,7 +756,7 @@ object LoginDialog: TLoginDialog
           object DefaultShellButton: TRadioButton
             Left = 12
             Top = 18
-            Width = 85
+            Width = 101
             Height = 17
             Caption = '&Default'
             TabOrder = 0
@@ -774,6 +789,7 @@ object LoginDialog: TLoginDialog
       end
       object LogSheet: TTabSheet
         Tag = 6
+        Hint = 'Logging'
         Caption = 'Log'
         ImageIndex = 4
         inline LoggingFrame: TLoggingFrame
@@ -790,13 +806,25 @@ object LoginDialog: TLoginDialog
           end
           inherited LoggingGroup: TXPGroupBox
             Width = 345
+            inherited LogToFileCheck: TCheckBox
+              Width = 313
+            end
             inherited LogFileNameEdit: TFilenameEdit
               Width = 291
+            end
+            inherited LogShowWindowCheck: TCheckBox
+              Width = 321
+            end
+            inherited LogWindowCompleteButton: TRadioButton
+              Width = 289
             end
             inherited LogFilePanel: TPanel
               Width = 291
               inherited LogFileAppendButton: TRadioButton
                 Caption = 'A&ppend'
+              end
+              inherited LogFileOverwriteButton: TRadioButton
+                Width = 153
               end
             end
           end
@@ -804,6 +832,7 @@ object LoginDialog: TLoginDialog
       end
       object GeneralSheet: TTabSheet
         Tag = 7
+        Hint = 'Preferences'
         Caption = 'Int'
         ImageIndex = 5
         object Label13: TLabel
@@ -814,7 +843,7 @@ object LoginDialog: TLoginDialog
           Caption = 'Other general options:'
         end
         object PreferencesButton: TButton
-          Left = 168
+          Left = 184
           Top = 220
           Width = 90
           Height = 25
@@ -841,6 +870,7 @@ object LoginDialog: TLoginDialog
       end
       object ConnSheet: TTabSheet
         Tag = 8
+        Hint = 'Connection'
         Caption = 'Conn'
         ImageIndex = 7
         DesignSize = (
@@ -862,7 +892,7 @@ object LoginDialog: TLoginDialog
             Top = 68
             Width = 140
             Height = 13
-            Caption = '&Seconds between keepalives'
+            Caption = 'Seconds &between keepalives'
           end
           object Label11: TLabel
             Left = 12
@@ -919,6 +949,7 @@ object LoginDialog: TLoginDialog
       end
       object ProxySheet: TTabSheet
         Tag = 9
+        Hint = 'Proxy'
         Caption = 'Proxy'
         ImageIndex = 8
         DesignSize = (
@@ -996,7 +1027,7 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
             TabOrder = 4
-            Text = 'HostNameEdit'
+            Text = 'ProxyHostEdit'
             OnChange = DataChange
           end
           object ProxyUsernameEdit: TEdit
@@ -1006,7 +1037,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             MaxLength = 50
             TabOrder = 6
-            Text = 'UserNameEdit'
+            Text = 'ProxyUsernameEdit'
             OnChange = DataChange
           end
           object ProxyPasswordEdit: TPasswordEdit
@@ -1025,7 +1056,7 @@ object LoginDialog: TLoginDialog
             Top = 19
             Width = 77
             Height = 17
-            Caption = '&SOCKS4'
+            Caption = 'SOCKS&4'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -1034,7 +1065,7 @@ object LoginDialog: TLoginDialog
             Top = 19
             Width = 67
             Height = 17
-            Caption = 'SO&CKS5'
+            Caption = 'SOCKS&5'
             TabOrder = 8
             OnClick = DataChange
           end
@@ -1100,7 +1131,7 @@ object LoginDialog: TLoginDialog
             Top = 42
             Width = 313
             Height = 17
-            Caption = 'Consider pro&xying local host connections'
+            Caption = 'Co&nsider proxying local host connections'
             TabOrder = 1
           end
           object ProxyDNSOffButton: TRadioButton
@@ -1131,6 +1162,7 @@ object LoginDialog: TLoginDialog
       end
       object BugsSheet: TTabSheet
         Tag = 10
+        Hint = 'Bugs'
         Caption = 'Bugs'
         ImageIndex = 9
         DesignSize = (
@@ -1160,7 +1192,7 @@ object LoginDialog: TLoginDialog
             Top = 44
             Width = 189
             Height = 13
-            Caption = 'Refuses all SSH1 pa&ssword camouflage'
+            Caption = 'Refuses all SSH1 pass&word camouflage'
             FocusControl = BugPlainPW1Combo
           end
           object Label24: TLabel
@@ -1220,10 +1252,6 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 0
-            Items.Strings = (
-              'Auto'
-              'Off'
-              'On')
           end
           object BugPlainPW1Combo: TComboBox
             Left = 272
@@ -1234,10 +1262,6 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 1
-            Items.Strings = (
-              'Auto'
-              'Off'
-              'On')
           end
           object BugRSA1Combo: TComboBox
             Left = 272
@@ -1248,10 +1272,6 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 2
-            Items.Strings = (
-              'Auto'
-              'Off'
-              'On')
           end
           object BugHMAC2Combo: TComboBox
             Left = 272
@@ -1262,10 +1282,6 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 3
-            Items.Strings = (
-              'Auto'
-              'Off'
-              'On')
           end
           object BugDeriveKey2Combo: TComboBox
             Left = 272
@@ -1276,10 +1292,6 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 4
-            Items.Strings = (
-              'Auto'
-              'Off'
-              'On')
           end
           object BugRSAPad2Combo: TComboBox
             Left = 272
@@ -1290,10 +1302,6 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 5
-            Items.Strings = (
-              'Auto'
-              'Off'
-              'On')
           end
           object BugDHGEx2Combo: TComboBox
             Left = 272
@@ -1304,10 +1312,6 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 6
-            Items.Strings = (
-              'Auto'
-              'Off'
-              'On')
           end
           object BugPKSessID2Combo: TComboBox
             Left = 272
@@ -1318,15 +1322,12 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 7
-            Items.Strings = (
-              'Auto'
-              'Off'
-              'On')
           end
         end
       end
       object AuthSheet: TTabSheet
         Tag = 11
+        Hint = 'Authentication'
         Caption = 'Auth'
         ImageIndex = 10
         DesignSize = (
@@ -1369,7 +1370,7 @@ object LoginDialog: TLoginDialog
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Attempt "keyboard-&interactive" authentication (SSH2)'
+            Caption = 'Attempt '#39'keyboard-&interactive'#39' authentication (SSH2)'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -1401,13 +1402,13 @@ object LoginDialog: TLoginDialog
         TabOrder = 0
         OnChange = NavigationTreeChange
         Items.Data = {
-          04000000200000000000000002000000FFFFFFFFFFFFFFFF0000000001000000
-          0753657373696F6E280000000000000001000000FFFFFFFFFFFFFFFF00000000
-          000000000F53746F7265642073657373696F6E73240000000000000004000000
-          FFFFFFFFFFFFFFFF00000000000000000B456E7669726F6E6D656E741C000000
-          0000000003000000FFFFFFFFFFFFFFFF00000000000000000353534824000000
-          0000000087000000FFFFFFFFFFFFFFFF00000000000000000B50726566657265
-          6E636573}
+          04000000210000000000000002000000FFFFFFFFFFFFFFFF0000000001000000
+          0853657373696F6E58290000000000000001000000FFFFFFFFFFFFFFFF000000
+          00000000001053746F7265642073657373696F6E735825000000000000000400
+          0000FFFFFFFFFFFFFFFF00000000000000000C456E7669726F6E6D656E74581D
+          0000000000000003000000FFFFFFFFFFFFFFFF00000000000000000453534858
+          250000000000000087010000FFFFFFFFFFFFFFFF00000000000000000C507265
+          666572656E63657358}
       end
       object AdvancedNavigationTree: TTreeView
         Left = 8
@@ -1422,26 +1423,27 @@ object LoginDialog: TLoginDialog
         TabOrder = 1
         OnChange = NavigationTreeChange
         Items.Data = {
-          05000000200000000000000002000000FFFFFFFFFFFFFFFF0000000002000000
-          0753657373696F6E280000000000000001000000FFFFFFFFFFFFFFFF00000000
-          000000000F53746F7265642073657373696F6E73200000000000000006000000
-          FFFFFFFFFFFFFFFF0000000000000000074C6F6767696E672400000000000000
-          04000000FFFFFFFFFFFFFFFF00000000010000000B456E7669726F6E6D656E74
-          1C0000000000000005000000FFFFFFFFFFFFFFFF000000000000000003534350
-          230000000000000008000000FFFFFFFFFFFFFFFF00000000010000000A436F6E
-          6E656374696F6E1E0000000000000009000000FFFFFFFFFFFFFFFF0000000000
-          0000000550726F78791C0000000000000003000000FFFFFFFFFFFFFFFF000000
-          00020000000353534827000000000000000B000000FFFFFFFFFFFFFFFF000000
-          00000000000E41757468656E7469636174696F6E1D000000000000000A000000
-          FFFFFFFFFFFFFFFF000000000000000004427567732400000000000000870000
-          00FFFFFFFFFFFFFFFF00000000000000000B507265666572656E636573}
+          05000000210000000000000002000000FFFFFFFFFFFFFFFF0000000002000000
+          0853657373696F6E58290000000000000001000000FFFFFFFFFFFFFFFF000000
+          00000000001053746F7265642073657373696F6E735821000000000000000600
+          0000FFFFFFFFFFFFFFFF0000000000000000084C6F6767696E67582500000000
+          00000004000000FFFFFFFFFFFFFFFF00000000010000000C456E7669726F6E6D
+          656E74581D0000000000000005000000FFFFFFFFFFFFFFFF0000000000000000
+          0453435058240000000000000008000000FFFFFFFFFFFFFFFF00000000010000
+          000B436F6E6E656374696F6E581F0000000000000009000000FFFFFFFFFFFFFF
+          FF00000000000000000650726F7879581D0000000000000003000000FFFFFFFF
+          FFFFFFFF0000000002000000045353485828000000000000000B000000FFFFFF
+          FFFFFFFFFF00000000000000000F41757468656E7469636174696F6E581E0000
+          00000000000A000000FFFFFFFFFFFFFFFF000000000000000005427567735825
+          0000000000000087010000FFFFFFFFFFFFFFFF00000000000000000C50726566
+          6572656E63657358}
       end
       object ShowAdvancedLoginOptionsCheck: TCheckBox
         Left = 16
         Top = 298
         Width = 129
         Height = 17
-        Anchors = [akLeft, akRight]
+        Anchors = [akLeft, akRight, akBottom]
         Caption = '&Advanced options'
         TabOrder = 2
         OnClick = DataChange
@@ -1450,8 +1452,8 @@ object LoginDialog: TLoginDialog
   end
   object ActionList: TActionList
     OnUpdate = ActionListUpdate
-    Left = 116
-    Top = 321
+    Left = 20
+    Top = 257
     object LoadSessionAction: TAction
       Category = 'Sessions'
       Caption = '&Load'
@@ -1478,7 +1480,7 @@ object LoginDialog: TLoginDialog
     end
     object AboutAction: TAction
       Category = 'Other'
-      Caption = '&About...'
+      Caption = 'A&bout...'
       OnExecute = AboutActionExecute
     end
     object CleanUpAction: TAction
@@ -1506,20 +1508,30 @@ object LoginDialog: TLoginDialog
       Caption = 'Explorer'#39's '#39'Send to'#39' shortcut'
       OnExecute = SendToHookActionExecute
     end
+    object CheckForUpdatesAction: TAction
+      Tag = 15
+      Category = 'Other'
+      Caption = 'Check For &Updates'
+      ImageIndex = 63
+      OnExecute = CheckForUpdatesActionExecute
+    end
   end
   object ToolsPopupMenu: TPopupMenu
-    Left = 160
-    Top = 320
+    Left = 64
+    Top = 256
     object Import1: TMenuItem
       Action = ImportSessionsAction
     end
     object Cleanup1: TMenuItem
       Action = CleanUpAction
     end
+    object CheckForUpdates1: TMenuItem
+      Action = CheckForUpdatesAction
+    end
   end
   object IconsPopupMenu: TPopupMenu
-    Left = 200
-    Top = 320
+    Left = 104
+    Top = 256
     object Desktopicon1: TMenuItem
       Action = DesktopIconAction
     end

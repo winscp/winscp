@@ -6,14 +6,14 @@
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;
 enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,
-  foRename, foCustomCommand };
+  foRename, foCustomCommand, foCalculateSize };
 enum TCancelStatus { csContinue = 0, csCancel, csCancelTransfer, csRemoteAbort };
 enum TResumeStatus { rsNotAvailable, rsEnabled, rsDisabled };
 typedef void __fastcall (__closure *TFileOperationProgressEvent)
   (TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
 typedef void __fastcall (__closure *TFileOperationFinished)
-  (TOperationSide Side, bool DragDrop, const AnsiString FileName,
-    bool Success, bool & DisconnectWhenComplete);
+  (TFileOperation Operation, TOperationSide Side, bool DragDrop,
+    const AnsiString FileName, bool Success, bool & DisconnectWhenComplete);
 //---------------------------------------------------------------------------
 class TFileOperationProgressType
 {
@@ -27,6 +27,7 @@ private:
   // how long current file transfer was stopped (e.g. while displaying error message)
   TDateTime FFileStopped;
   int FFilesFinished;
+  bool FTotalSizeSet;
   TFileOperationProgressEvent FOnProgress;
   TFileOperationFinished FOnFinished;
 
@@ -59,6 +60,7 @@ public:
   // bytes transfered
   __int64 TotalTransfered;
   __int64 TotalResumed;
+  __int64 TotalSize;
   bool YesToAll;
   bool NoToAll;
 
@@ -67,7 +69,6 @@ public:
   __fastcall TFileOperationProgressType(
     TFileOperationProgressEvent AOnProgress, TFileOperationFinished AOnFinished);
   __fastcall ~TFileOperationProgressType();
-  //void __fastcall operator =(const TFileOperationProgressType & rht);
   void __fastcall AddLocalyUsed(__int64 ASize);
   void __fastcall AddTransfered(__int64 ASize);
   void __fastcall AddResumed(__int64 ASize);
@@ -87,6 +88,7 @@ public:
   void __fastcall SetAsciiTransfer(bool AAsciiTransfer);
   void __fastcall SetResumeStatus(TResumeStatus AResumeStatus);
   void __fastcall SetTransferSize(__int64 ASize);
+  void __fastcall SetTotalSize(__int64 ASize);
   void __fastcall Start(TFileOperation AOperation,
     TOperationSide ASide, int ACount, bool ADragDrop = false,
     const AnsiString ADirectory = "");
@@ -98,6 +100,8 @@ public:
   // only current file
   TDateTime __fastcall TimeExpected();
   int __fastcall TransferProgress();
+  int __fastcall OverallProgress();
+  int __fastcall TotalTransferProgress();
 };
 //---------------------------------------------------------------------------
 #endif

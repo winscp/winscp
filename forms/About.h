@@ -23,14 +23,14 @@ __published:
   TImage *Image;
   TLabel *ApplicationLabel;
   TLabel *VersionLabel;
-  TLabel *Label2;
+  TLabel *WinSCPCopyrightLabel;
   TLabel *HomepageLabel;
   TLabel *ProductSpecificMessageLabel;
-  TLabel *ProductUrlLabel;
+  TLabel *ForumUrlLabel;
   TScrollBox *ThirdPartyBox;
   TLabel *Label3;
-  TLabel *Label5;
-  TLabel *Label6;
+  TLabel *PuttyVersionLabel;
+  TLabel *PuttyCopyrightLabel;
   TLabel *PuttyHomepageLabel;
   TLabel *Label7;
   TLabel *Label8;
@@ -40,6 +40,7 @@ __published:
   TButton *OKButton;
   TButton *LicenceButton;
   TLabel *PuttyLicenceLabel;
+  TLabel *TranslatorLabel;
   void __fastcall HomepageLabelClick(TObject *Sender);
   void __fastcall EmailLabelClick(TObject *Sender);
   void __fastcall DisplayLicence(TObject *Sender);

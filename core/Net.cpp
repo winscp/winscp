@@ -21,6 +21,7 @@ static int get_line(const char * prompt, char * str, int maxlen, int is_pw);
 void __fastcall NetInitialize()
 {
   ssh_get_line = get_line;
+  ssh_getline_pw_only = TRUE;
 
   InitWinsock();
   sk_init();
@@ -77,29 +78,43 @@ int from_backend(void * frontend, int is_stderr, char * data, int datalen)
 static int get_line(const char * prompt, char * str, int maxlen, int is_pw)
 {
   assert(is_pw);
+  assert(CurrentSSH);
 
   AnsiString Password, Prompt(prompt);
+
   int Result;
-  if (Prompt.Pos("Passphrase") == 1)
+  if (Prompt.Pos("Passphrase for key ") == 1)
   {
     AnsiString Key(Prompt);
-    int P;
-    if ((P = Prompt.Pos("\"")) > 0) Key.Delete(1, P);
-    if ((P = Prompt.Pos("\"")) > 0) Key.Delete(P, Prompt.Length() - P);
+    int P = Prompt.Pos("\"");
+    if (P > 0)
+    {
+      Key.Delete(1, P);
+      P = Key.LastDelimiter("\"");
+      if (P > 0)
+      {
+        Key.SetLength(P - 1);
+      }
+    }
 
-    Result = GetSessionPassword(
-      FmtLoadStr(PROMPT_KEY_PASSPHRASE, ARRAYOFCONST((Key))),
-      Password);
+    CurrentSSH->LogEvent(FORMAT("Passphrase prompt (%s)", (Prompt)));
+
+    Result = GetSessionPassword(FMTLOAD(PROMPT_KEY_PASSPHRASE, (Key)),
+      pkPassphrase, Password);
   }
-  else if (Prompt.Pos("'s password"))
+  else if (Prompt.Pos("'s password: "))
   {
+    CurrentSSH->LogEvent(FORMAT("Session password prompt (%s)", (Prompt)));
+
     assert(CurrentSSH);
     Result = CurrentSSH->GetPassword(Password);
   }
   else
   {
-    // in other cases we assume TIS/Cryptocard authentification prompt
-    Result = GetSessionPassword(AnsiString(prompt), Password);
+    CurrentSSH->LogEvent(FORMAT("Server prompt (%s)", (Prompt)));
+
+    // in other cases we assume TIS/Cryptocard/keyboard-interactive authentification prompt
+    Result = GetSessionPassword(AnsiString(prompt), pkServerPrompt, Password);
   };
 
   if (Result)

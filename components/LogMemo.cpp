@@ -148,7 +148,18 @@ void __fastcall TLogMemo::UpdateFromLog()
             {
               // this usually fails when log window is closed while
               // new line is being added (control has no parent)
-              if (Parent) Lines->Add(SessionLog->Line[LastIndex]);
+              if (Parent)
+              {
+                if (SessionLog->Line[LastIndex].Pos("\r"))
+                {
+                  Lines->Add(StringReplace(SessionLog->Line[LastIndex], "\r", "",
+                    TReplaceFlags() << rfReplaceAll));
+                }
+                else
+                {
+                  Lines->Add(SessionLog->Line[LastIndex]);
+                }
+              }
             }
             catch(...)
             {

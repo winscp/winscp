@@ -79,7 +79,7 @@ TSessionData * GetLoginData(const AnsiString SessionName)
 
   if (!Data->CanLogin || DefaultsOnly)
   {
-    if (!DoLoginDialog(StoredSessions, Data) || !Data->CanLogin)
+    if (!DoLoginDialog(StoredSessions, Data, true) || !Data->CanLogin)
     {
       delete Data;
       Data = NULL;
@@ -128,61 +128,80 @@ int __fastcall CalculateCompoundVersion(int MajorVer,
 void __fastcall CheckForUpdates()
 {
   bool Found = false;
+  TCustomForm * ActiveForm = Screen->ActiveCustomForm;
+  Busy(true);
   try
   {
-    AnsiString Response;
+    if (ActiveForm)
+    {
+      assert(ActiveForm->Enabled);
+      ActiveForm->Enabled = false;
+    }
 
-    TNMHTTP * CheckForUpdatesHTTP = new TNMHTTP(Application);
     try
     {
-      CheckForUpdatesHTTP->Get("http://winscp.sourceforge.net/updates.php");
-      Response = CheckForUpdatesHTTP->Body;
-    }
-    __finally
-    {
-      delete CheckForUpdatesHTTP;
-    }
+      AnsiString Response;
 
-    while (!Response.IsEmpty() && !Found)
-    {
-      AnsiString Line = ::CutToChar(Response, '\n', false);
-      AnsiString Name = ::CutToChar(Line, '=', false);
-      if (AnsiSameText(Name, "Version"))
+      TNMHTTP * CheckForUpdatesHTTP = new TNMHTTP(Application);
+      try
       {
-        Found = true;
-        int MajorVer = StrToInt(::CutToChar(Line, '.', false));
-        int MinorVer = StrToInt(::CutToChar(Line, '.', false));
-        int Release = StrToInt(::CutToChar(Line, '.', false));
-        int Build = StrToInt(::CutToChar(Line, '.', false));
-        int CompoundVer = CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
+        CheckForUpdatesHTTP->Get(LoadStr(UPDATES_URL));
+        Response = CheckForUpdatesHTTP->Body;
+      }
+      __finally
+      {
+        delete CheckForUpdatesHTTP;
+      }
 
-        AnsiString VersionStr =
-          FORMAT("%d.%d", (MajorVer, MinorVer)) + (Release ? "."+IntToStr(Release) : AnsiString()); 
-
-        TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
-        int CurrentCompoundVer = CalculateCompoundVersion(
-          HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
-          HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
-
-        if (CurrentCompoundVer < CompoundVer)
+      while (!Response.IsEmpty() && !Found)
+      {
+        AnsiString Line = ::CutToChar(Response, '\n', false);
+        AnsiString Name = ::CutToChar(Line, '=', false);
+        if (AnsiSameText(Name, "Version"))
         {
-          if (MessageDialog(FMTLOAD(NEW_VERSION, (VersionStr)), qtInformation,
-                qaOK | qaCancel, 0) == qaOK)
+          Found = true;
+          int MajorVer = StrToInt(::CutToChar(Line, '.', false));
+          int MinorVer = StrToInt(::CutToChar(Line, '.', false));
+          int Release = StrToInt(::CutToChar(Line, '.', false));
+          int Build = StrToInt(::CutToChar(Line, '.', false));
+          int CompoundVer = CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
+
+          AnsiString VersionStr =
+            FORMAT("%d.%d", (MajorVer, MinorVer)) + (Release ? "."+IntToStr(Release) : AnsiString());
+
+          TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
+          int CurrentCompoundVer = CalculateCompoundVersion(
+            HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
+            HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
+
+          if (CurrentCompoundVer < CompoundVer)
           {
-            NonVisualDataModule->OpenBrowser("http://winscp.sourceforge.net/eng/download.php");
+            if (MessageDialog(FMTLOAD(NEW_VERSION, (VersionStr)), qtInformation,
+                  qaOK | qaCancel, 0) == qaOK)
+            {
+              NonVisualDataModule->OpenBrowser(LoadStr(DOWNLOAD_URL));
+            }
+          }
+          else
+          {
+            MessageDialog(LoadStr(NO_NEW_VERSION), qtInformation, qaOK, 0);
           }
         }
-        else
-        {
-          MessageDialog(LoadStr(NO_NEW_VERSION), qtInformation, qaOK, 0);
-        }
       }
-    }
 
+    }
+    catch(Exception & E)
+    {
+      throw ExtException(&E, LoadStr(CHECK_FOR_UPDATES_ERROR));
+    }
   }
-  catch(Exception & E)
+  __finally
   {
-    throw ExtException(&E, LoadStr(CHECK_FOR_UPDATES_ERROR));
+    if (ActiveForm)
+    {
+      ActiveForm->Enabled = true;
+    }
+    Busy(false);
   }
 
   if (!Found)
@@ -288,7 +307,7 @@ void __fastcall Execute(TProgramParams * Params)
         }
         catch (Exception &E)
         {
-          ShowExtendedException(&E, Application);
+          ShowExtendedExceptionEx(&E, Application, true);
         }
       }
     }
@@ -300,4 +319,3 @@ void __fastcall Execute(TProgramParams * Params)
     TTerminalManager::DestroyInstance();
   }
 }
-

@@ -109,8 +109,9 @@ public:
 
 
 //-- var, const, procedure ---------------------------------------------------
-#define DefaultFileInfoFormat "%s of %s in %s of %s"
 extern PACKAGE __int64 FormatBytesAbove;
+extern PACKAGE System::ResourceString _SDefaultFileInfoFormat;
+#define Associatedstatusbar_SDefaultFileInfoFormat System::LoadResourceString(&Associatedstatusbar::_SDefaultFileInfoFormat)
 extern PACKAGE AnsiString __fastcall FormatBytes(__int64 Bytes);
 extern PACKAGE void __fastcall Register(void);
 

@@ -94,6 +94,11 @@
 #define SFTP_STATUS_NO_MEDIA    195
 #define DECODE_UTF_ERROR        196
 #define CUSTOM_COMMAND_ERROR    197
+#define LOCALE_LOAD_ERROR       198
+#define SFTP_INCOMPLETE_BEFORE_EOF 199
+#define CALCULATE_SIZE_ERROR    200
+#define SFTP_PACKET_TOO_BIG     201
+#define SCP_INIT_ERROR          202
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT 301
@@ -107,6 +112,7 @@
 #define CIPHER_TYPE_SC          309
 #define RESUME_TRANSFER         310
 #define PARTIAL_BIGGER_THAN_SOURCE 311
+#define APPEND_OR_RESUME        312
 
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401
@@ -116,6 +122,12 @@
 #define CLOSED_ON_COMPLETION    405
 #define SFTP_PROTOCOL_NAME      406
 
+#define CORE_VARIABLE_STRINGS   600
+#define PUTTY_BASED_ON          601
+#define PUTTY_VERSION           602
+#define PUTTY_COPYRIGHT         603
+#define PUTTY_URL               604
+
 STRINGTABLE
 BEGIN
         CORE_ERROR_STRINGS, "CORE_ERROR"
@@ -124,22 +136,22 @@ BEGIN
         USER_TERMINATED, "Terminated by user."
         LOST_CONNECTION, "Lost connection."
         CANT_DETECT_RETURN_CODE, "Can't detect command return code."
-        COMMAND_FAILED, "Command \"%s\"\nfailed with return code %d and error message\n%s."
+        COMMAND_FAILED, "Command '%s'\nfailed with return code %d and error message\n%s."
         COMMAND_FAILED_CODEONLY, "Command failed with return code %d."
-        INVALID_OUTPUT_ERROR, "Command \"%s\" failed with invalid output \"%s\"."
+        INVALID_OUTPUT_ERROR, "Command '%s' failed with invalid output '%s'."
         READ_CURRENT_DIR_ERROR, "Error getting name of current remote directory."
         SKIP_STARTUP_MESSAGE_ERROR, "Error skipping startup message. Your shell is probably incompatible with the application (BASH is recommended)."
-        CHANGE_DIR_ERROR, "Error changing directory to \"%s\"."
-        LIST_DIR_ERROR, "Error listing directory \042%s\042."
-        LIST_LINE_ERROR, "Unexpected directory listing line \042%s\042."
-        RIGHTS_ERROR, "Invalid rights description ""%s"""
+        CHANGE_DIR_ERROR, "Error changing directory to '%s'."
+        LIST_DIR_ERROR, "Error listing directory '%s'."
+        LIST_LINE_ERROR, "Unexpected directory listing line '%s'."
+        RIGHTS_ERROR, "Invalid rights description '%s'"
         CLEANUP_CONFIG_ERROR, "Error cleaning up general configuration."
         CLEANUP_HOSTKEYS_ERROR, "Error cleaning up stored sessions."
         CLEANUP_SEEDFILE_ERROR, "Error cleaning up random seed file."
         CLEANUP_SESSIONS_ERROR, "Error cleaning up cached host keys."
         DETECT_RETURNVAR_ERROR, "Error detecting variable containing return code of last command."
         LOOKUP_GROUPS_ERROR, "Error looking up user groups."
-        FILE_NOT_EXISTS, "File or folder \042%s\042 does not exist."
+        FILE_NOT_EXISTS, "File or folder '%s' does not exist."
         CANT_GET_ATTRS, "Can't get attributes of file '%s'."
         OPENFILE_ERROR, "Can't open file '%s'."
         READ_ERROR, "Error reading file '%s'."
@@ -149,7 +161,7 @@ BEGIN
         SCP_EMPTY_LINE, "SCP protocol error: Unexpected newline"
         SCP_ILLEGAL_TIME_FORMAT, "SCP protocol error: Illegal time format"
         SCP_INVALID_CONTROL_RECORD, "SCP protocol error: Invalid control record (%s; %s)"
-        COPY_ERROR, "Copying file \042%s\042 failed."
+        COPY_ERROR, "Copying file '%s' failed."
         SCP_ILLEGAL_FILE_DESCRIPTOR, "SCP protocol error: Illegal file descriptor format"
         NOT_DIRECTORY_ERROR, "'%s' is not folder!"
         CREATE_DIR_ERROR, "Can't create folder '%s'."
@@ -214,11 +226,16 @@ BEGIN
         SFTP_STATUS_NO_MEDIA, "No media."
         DECODE_UTF_ERROR, "Error decoding UTF-8 string."
         CUSTOM_COMMAND_ERROR, "Error executing custom command '%s' on file '%s'."
+        LOCALE_LOAD_ERROR, "Cannot load locale %d."
+        SFTP_INCOMPLETE_BEFORE_EOF, "Received incomplete data packet before end of file."
+        CALCULATE_SIZE_ERROR, "Error calculating size of directory '%s'."
+        SFTP_PACKET_TOO_BIG, "Received too large (%d B) SFTP packet. Max supported packet size is %d B."
+        SCP_INIT_ERROR, "Cannot execute SCP to start transfer. Please make sure that SCP is installed on the server and path to it is included in PATH. You may also try SFTP instead of SCP."
 
         CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
         CONFIRM_PROLONG_TIMEOUT, "Host hasn't answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."
-        PROMPT_SESSION_PASSWORD, "\"%s\" session password:"
-        PROMPT_KEY_PASSPHRASE, "Passphrase for key \"%s\""
+        PROMPT_SESSION_PASSWORD, "'%s' session password:"
+        PROMPT_KEY_PASSPHRASE, "Passphrase for key '%s':"
         FILE_OVERWRITE, "File '%s' already exists. Overwrite?"
         DIRECTORY_OVERWRITE, "Directory '%s' already exists. Overwrite?"
         CIPHER_BELOW_TRESHOLD, "The first %scipher supported by the server is %s, which is below the configured warning threshold.\n\nDo you want to continue with this connection?"
@@ -227,12 +244,19 @@ BEGIN
         CIPHER_TYPE_SC, "server-to-client "
         RESUME_TRANSFER, "Target directory contains partially transfered file '%s'. Do you want to resume file transfer? Note: Answering 'No' would delete partially transfered file and restart transfer."
         PARTIAL_BIGGER_THAN_SOURCE, "Target directory contains partially transfered file '%s', which is bigger than a source file. The file will be deleted."
+        APPEND_OR_RESUME, "Do you want to append file '%s' at the end of existing file? Press 'No' to resume file transfer instead."
 
         CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
         YES_STR, "Yes"
         NO_STR, "No"
         SESSION_INFO_TIP, "Host: %s\nUser name: %s\nPrivate key file: %s\nSSH Protocol version: %s\nTransfer protocol: %s"
         VERSION, "Version %d.%d.%d (Build %d)"
-        CLOSED_ON_COMPLETION, "Operation was successfully completed. Connection was closed. Click OK to close application."
+        CLOSED_ON_COMPLETION, "Operation was successfully completed. Connection was closed."
         SFTP_PROTOCOL_NAME, "SFTP (v%d)"
+
+        CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
+        PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"
+        PUTTY_VERSION, "(2003-09-12)"
+        PUTTY_COPYRIGHT, "Copyright © 1997-2003 Simon Tatham"
+        PUTTY_URL, "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
 END

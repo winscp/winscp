@@ -16,6 +16,14 @@
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
+AnsiString __fastcall TProgressForm::OperationName(TFileOperation Operation)
+{
+  static const int Captions[] = { PROGRESS_COPY, PROGRESS_MOVE, PROGRESS_DELETE,
+    PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE };
+  assert((int)Operation >= 1 && ((int)Operation - 1) < LENOF(Captions));
+  return LoadStr(Captions[(int)Operation - 1]);
+}
+//---------------------------------------------------------------------
 __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
 	: FData(), TForm(AOwner)
 {
@@ -27,7 +35,7 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FMinimizedByMe = false;
   FUpdateCounter = 0;
   FLastUpdate = 0;
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TProgressForm::~TProgressForm()
@@ -45,8 +53,8 @@ __fastcall TProgressForm::~TProgressForm()
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
 {
-  assert(FData.Operation == foCustomCommand ||
-    ((FData.Operation >= foCopy) && (FData.Operation <= foSetProperties)));
+  assert((FData.Operation >= foCopy) && (FData.Operation <= foCalculateSize) &&
+    FData.Operation != foRename );
 
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
@@ -90,7 +98,7 @@ void __fastcall TProgressForm::UpdateControls()
           break;
 
         default:
-          assert(FData.Operation == foSetProperties || FData.Operation == foCustomCommand);
+          assert(FData.Operation == foCustomCommand || FData.Operation == foCalculateSize);
           Animate->CommonAVI = aviNone;
           AVisible = false;
       }
@@ -120,9 +128,7 @@ void __fastcall TProgressForm::UpdateControls()
     ClientHeight = ClientHeight + Delta;
     DisconnectWhenCompleteCheck->Top = DisconnectWhenCompleteCheck->Top + Delta;
 
-    const int Captions[] = { PROGRESS_COPY, PROGRESS_MOVE, PROGRESS_DELETE,
-      PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND };
-    Caption = LoadStr(Captions[(int)FData.Operation - 1]);
+    Caption = OperationName(FData.Operation);
 
     TargetLabel->Visible = TransferOperation;
     TargetPathLabel->Visible = TransferOperation;
@@ -134,7 +140,7 @@ void __fastcall TProgressForm::UpdateControls()
   };
 
   FileLabel->Caption = FData.FileName;
-  OperationProgress->Position = FData.OperationProgress();
+  OperationProgress->Position = FData.OverallProgress();
   OperationProgress->Hint = FORMAT("%d%%", (OperationProgress->Position));
 
   if (TransferOperation)

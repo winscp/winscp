@@ -155,7 +155,6 @@ protected:
   virtual void __fastcall Clear();
 public:
   __fastcall TRemoteFileList();
-  //virtual TRemoteFile * __fastcall NewFile(TRemoteFile * ALinkedByFile = NULL);
   TRemoteFile * __fastcall FindFile(const AnsiString &FileName);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   virtual void __fastcall AddFile(TRemoteFile * File);

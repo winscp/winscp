@@ -48,7 +48,7 @@ __fastcall TLicenceDialog::TLicenceDialog(TComponent* Owner)
         : TForm(Owner)
 {
   FLicence = lcNoLicence;
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLicenceDialog::SetLicence(TLicence value)

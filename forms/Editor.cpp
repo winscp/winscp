@@ -54,7 +54,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   ReplaceDialog->FindText = FindDialog->FindText;
   ReplaceDialog->Options = FindDialog->Options;
   ReplaceDialog->ReplaceText = WinConfiguration->Editor.ReplaceText;
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TEditorForm::~TEditorForm()
@@ -209,6 +209,7 @@ void __fastcall TEditorForm::ApplyConfiguration()
       TStrings * Content = new TStringList();
       try
       {
+        EditorMemo->WordWrap = False;
         Content->Assign(EditorMemo->Lines);
         EditorMemo->WordWrap = WinConfiguration->Editor.WordWrap;
         EditorMemo->Lines = Content;

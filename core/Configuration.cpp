@@ -14,8 +14,6 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-const char CustomCommandFileNamePattern[] = "!";
-//---------------------------------------------------------------------------
 bool SpecialFolderLocation(int PathID, AnsiString & Path)
 {
   LPITEMIDLIST Pidl;
@@ -108,6 +106,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
         KEY(Int64,   CopyParam.ResumeThreshold); \
         KEY(Bool,    CopyParam.ReplaceInvalidChars); \
         KEY(String,  CopyParam.LocalInvalidChars); \
+        KEY(Bool,    CopyParam.CalculateSize); \
       ); \
       BLOCK("Logging", CANCREATE, \
         KEY(Bool,    Logging); \
@@ -357,7 +356,6 @@ AnsiString __fastcall TConfiguration::GetFileInfoString(const AnsiString Key)
     Translation = GetTranslation(ApplicationInfo, 0);
     Result = ::GetFileInfoString(ApplicationInfo,
       Translation, Key);
-    PackStr(Result);
   }
   else
   {
@@ -560,3 +558,11 @@ AnsiString __fastcall TConfiguration::GetDefaultKeyFile()
 {
   return "";
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetLocalInvalidChars()
+{
+  return "/\\:*?\"<>|";
+}
+
+
+

@@ -8,6 +8,7 @@
 #include <VCLCommon.h>
 #include <ScpMain.h>
 #include "WinConfiguration.h"
+#include "TextsWin.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "Rights"
@@ -62,6 +63,8 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   assert(PreserveTimeCheck);
   PreserveTimeCheck->Checked = value.PreserveTime;
 
+  CommonCalculateSizeCheck->Checked = value.CalculateSize;
+
   *FParams = value;
 
   UpdateControls();
@@ -101,6 +104,8 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
 
   assert(PreserveTimeCheck);
   Result.PreserveTime = PreserveTimeCheck->Checked;
+
+  Result.CalculateSize = CommonCalculateSizeCheck->Checked;
 
   return Result;
 }

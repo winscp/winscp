@@ -102,6 +102,12 @@ typedef void __fastcall (__closure *THistoryChangeEvent)(TCustomDirView* Sender)
 
 typedef void __fastcall (__closure *TDVGetFilterEvent)(TCustomDirView* Sender, bool Select, TFileFilter &Filter);
 
+#pragma option push -b-
+enum TCompareCriteria { ccTime, ccSize };
+#pragma option pop
+
+typedef Set<TCompareCriteria, ccTime, ccSize>  TCompareCriterias;
+
 class PASCALIMPLEMENTATION TCustomDirView : public Ielistview::TIEListView 
 {
 	typedef Ielistview::TIEListView inherited;
@@ -180,6 +186,10 @@ private:
 	TRenameEvent FOnEndRename;
 	THistoryChangeEvent FOnHistoryChange;
 	bool FShowHiddenFiles;
+	bool FSavedSelection;
+	AnsiString FSavedSelectionFile;
+	AnsiString FSavedSelectionLastFile;
+	bool FPendingFocusSomething;
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDblClk(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Message);
@@ -252,6 +262,7 @@ protected:
 	virtual void __fastcall EndSelectionUpdate(void);
 	virtual void __fastcall Execute(Comctrls::TListItem* Item);
 	virtual void __fastcall ExecuteFile(Comctrls::TListItem* Item) = 0 ;
+	virtual void __fastcall FocusSomething(void);
 	virtual bool __fastcall GetIsRoot(void) = 0 ;
 	virtual void __fastcall IconsSetImageList(void);
 	virtual bool __fastcall ItemCanDrag(Comctrls::TListItem* Item);
@@ -266,7 +277,7 @@ protected:
 	DYNAMIC void __fastcall KeyUp(Word &Key, Classes::TShiftState Shift);
 	virtual void __fastcall LoadFiles(void) = 0 ;
 	virtual void __fastcall PerformItemDragDropOperation(Comctrls::TListItem* Item, int Effect) = 0 ;
-	void __fastcall ProcessChangedFiles(TCustomDirView* DirView, Classes::TStrings* FileList = (Classes::TStrings*)(0x0), bool FullPath = true);
+	void __fastcall ProcessChangedFiles(TCustomDirView* DirView, Classes::TStrings* FileList, bool FullPath, bool ExistingOnly, TCompareCriterias Criterias);
 	void __fastcall ReloadForce(bool CacheIcons);
 	void __fastcall RetryRename(AnsiString NewName);
 	void __fastcall SelectFiles(const TFileFilter &Filter, bool Select);
@@ -325,8 +336,11 @@ public:
 	virtual AnsiString __fastcall ItemFileName(Comctrls::TListItem* Item) = 0 ;
 	virtual void __fastcall ReloadDirectory(void) = 0 ;
 	virtual void __fastcall DisplayPropertiesMenu(void) = 0 ;
-	Classes::TStrings* __fastcall CreateChangedFileList(TCustomDirView* DirView, bool FullPath);
-	virtual void __fastcall CompareFiles(TCustomDirView* DirView);
+	Classes::TStrings* __fastcall CreateChangedFileList(TCustomDirView* DirView, bool FullPath, bool ExistingOnly, TCompareCriterias Criterias);
+	virtual void __fastcall CompareFiles(TCustomDirView* DirView, bool ExistingOnly, TCompareCriterias Criterias);
+	void __fastcall SaveSelection(void);
+	void __fastcall RestoreSelection(void);
+	void __fastcall DiscardSavedSelection(void);
 	__property bool AddParentDir = {read=FAddParentDir, write=SetAddParentDir, default=0};
 	__property bool DimmHiddenFiles = {read=FDimmHiddenFiles, write=SetDimmHiddenFiles, default=1};
 	__property bool ShowDirectories = {read=FShowDirectories, write=SetShowDirectories, default=1};

@@ -73,7 +73,7 @@ protected:
 	DYNAMIC bool __fastcall ExCanChange(Comctrls::TListItem* Item, int Change, Word NewState, Word OldState);
 	DYNAMIC void __fastcall InsertItem(Comctrls::TListItem* Item);
 	virtual Listviewcolproperties::TCustomListViewColProperties* __fastcall NewColProperties(void);
-	void __fastcall FocusSomething(void);
+	virtual void __fastcall FocusSomething(void);
 	Comctrls::TListItem* __fastcall GetItemFromHItem(const tagLVITEMA &Item);
 	virtual bool __fastcall GetValid(void);
 	virtual int __fastcall GetSelCount(void);

@@ -31,7 +31,7 @@ bool __fastcall InputDialog(const AnsiString ACaption,
   Form = new TForm(Application);
   try
   {
-    UseSystemFont(Form);
+    UseSystemSettings(Form);
     Form->Canvas->Font = Form->Font;
     DialogUnits = GetAveCharSize(Form->Canvas);
     Form->BorderStyle = bsDialog;

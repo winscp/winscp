@@ -58,6 +58,7 @@ __published:
     _di_IDataObject DataObj, int grfKeyState, const TPoint &Point,
     int &dwEffect, bool &Accept);
   void __fastcall DirViewDDDragLeave(TObject *Sender);
+  
 private:
   TTerminal * FTerminal;
   bool FFormRestored;
@@ -78,11 +79,14 @@ private:
   void __fastcall SessionComboDrawItem(TWinControl * Control, int Index,
     const TRect & Rect, TOwnerDrawState State);
   void __fastcall SessionComboChange(TObject * Sender);
+  void __fastcall CustomCommandGetParamValue(const AnsiString Name,
+    AnsiString & Value);
 
 protected:
   TCustomDirView * FLastDirView;
   TCustomDirView * FDDTargetDirView;
   TProgressForm * FProgressForm;
+  AnsiString FCustomCommandName;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,
@@ -94,17 +98,15 @@ protected:
   bool __fastcall GetComponentVisible(Word Component);
   virtual Boolean __fastcall GetHasDirView(TOperationSide Side);
   DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
-  void __fastcall OperationFinished(TOperationSide Side, bool DragDrop,
-    const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
-  void __fastcall OperationProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall SetComponentVisible(Word Component, bool value);
   void __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
   virtual void __fastcall TerminalChanged();
   void __fastcall UpdateStatusBar();
-  virtual void __fastcall DoOperationFinished(TOperationSide Side, bool DragDrop,
-    const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
+  virtual void __fastcall DoOperationFinished(TFileOperation Operation,
+    TOperationSide Side, bool DragDrop, const AnsiString FileName, bool Success,
+    bool & DisconnectWhenFinished);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
@@ -152,6 +154,9 @@ public:
   int __fastcall MoreMessageDialog(const AnsiString Message,
     TStrings * MoreMessages, TQueryType Type, int Answers,
     int HelpCtx, int Params = 0);
+  void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
+    bool DragDrop, const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
+  void __fastcall OperationProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation };

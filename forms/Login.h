@@ -46,7 +46,6 @@ __published:
   TPageControl *PageControl;
   TTabSheet *SessionListSheet;
   TButton *LoadButton;
-  TButton *SaveButton;
   TButton *DeleteButton;
   TListView *SessionListView;
   TButton *NewButton;
@@ -153,7 +152,7 @@ __published:
   TXPGroupBox *EncryptionGroup;
   TListBox *CipherListBox;
   TLabel *Label8;
-  TCheckBox *Ssh2DESCheck;
+  TCheckBox *Ssh2LegacyDESCheck;
   TButton *CipherUpButton;
   TButton *CipherDownButton;
   TButton *SetDefaultSessionButton;
@@ -188,6 +187,10 @@ __published:
   TUpDownEdit *TimeDifferenceEdit;
   TLabel *Label29;
   TLabel *Label30;
+  TAction *CheckForUpdatesAction;
+  TMenuItem *CheckForUpdates1;
+  TButton *SaveButton;
+  TButton *LanguagesButton;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -223,12 +226,22 @@ __published:
           TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
   void __fastcall ShellIconsButtonClick(TObject *Sender);
   void __fastcall SendToHookActionExecute(TObject *Sender);
+  void __fastcall CheckForUpdatesActionExecute(TObject *Sender);
+  void __fastcall LanguagesButtonClick(TObject *Sender);
 
 private:
-  Integer NoUpdate;
+  int NoUpdate;
   TSessionData * FSessionData;
   TStoredSessionList * FStoredSessions;
   int FCipherDragSource, FCipherDragDest;
+  bool FInitial;
+  TPopupMenu * FLanguagesPopupMenu;
+  AnsiString FOrigCaption;
+  bool FInitialized;
+  TTabSheet * FSavedTab;
+  int FSavedSession;
+  bool FLocaleChanging;
+  void * FSystemSettings; 
 
   void __fastcall LoadSession(TSessionData * aSessionData);
   void __fastcall UpdateControls();
@@ -243,6 +256,7 @@ private:
   TSessionData * __fastcall GetSelectedSession();
   TTreeView * __fastcall GetNavigationTree();
   void __fastcall CMDialogKey(TWMKeyDown & Message);
+  void __fastcall InitializeBugsCombo(TComboBox * BugsCombo);
 
 protected:
   void __fastcall Default();
@@ -252,20 +266,26 @@ protected:
   void __fastcall SaveConfiguration();
   void __fastcall ShowPreferencesDialog();
   void __fastcall ChangePage(TTabSheet * Tab);
-  virtual void __fastcall Dispatch(void *Message);
+  virtual void __fastcall Dispatch(void * Message);
   bool __fastcall AllowCipherDrag(int X, int Y);
   void __fastcall CipherMove(int Source, int Dest);
   void __fastcall PrepareNavigationTree(TTreeView * Tree);
+  void __fastcall SetInitial(bool value);
+  void __fastcall LocaleClick(TObject * Sender);
+  void __fastcall Init();
+  void __fastcall ShowTabs(bool Show);
 
   __property TTreeView * NavigationTree = { read=GetNavigationTree };
+
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
-  Boolean __fastcall Execute();
+  bool __fastcall Execute();
 
   __property TSessionData * SessionData  = { read=GetSessionData, write=SetSessionData };
   __property TStoredSessionList * StoredSessions  = { read=FStoredSessions, write=SetStoredSessions };
   __property TSessionData * SelectedSession  = { read=GetSelectedSession, write=SetSelectedSession };
+  __property bool Initial = { read=FInitial, write=SetInitial };
 };
 //----------------------------------------------------------------------------
 #endif

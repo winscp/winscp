@@ -4,8 +4,11 @@
 #include "WinConfiguration.h"
 #include "Common.h"
 #include "Bookmarks.h"
+#include "Terminal.h"
 #include "TextsWin.h"
+#include "UserInterface.h"
 #include <stdio.h>
+#include <ResourceModule.hpp>
 //---------------------------------------------------------------------------
 #define CSIDL_PERSONAL                  0x0005        // My Documents
 #define CSIDL_PROGRAM_FILES             0x0026      // C:\Program Files
@@ -18,7 +21,7 @@ __fastcall TWinConfiguration::TWinConfiguration(): TGUIConfiguration()
 {
   FBookmarks = new TBookmarks();
   FCommandsHistory = new TStringList();
-  FCustomCommands = new TStringList();
+  FCustomCommands = new TCustomCommands();
   Default();
 }
 //---------------------------------------------------------------------------
@@ -52,6 +55,7 @@ void __fastcall TWinConfiguration::Default()
   FShowAdvancedLoginOptions = false;
   FConfirmDeleting = true;
   FConfirmClosingSession = true;
+  FForceDeleteTempFolder = true;
   FCopyOnDoubleClick = false;
   FCopyOnDoubleClickConfirmation = false;
   FDimmHiddenFiles = true;
@@ -98,6 +102,8 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.PreserveLocalDirectory = false;
   FScpCommander.CoolBarLayout = "5,0,0,219,6;1,1,0,319,5;4,0,0,227,4;3,1,0,136,3;6,1,0,121,2;2,1,1,67,1;0,1,1,649,0";
   FScpCommander.CurrentPanel = osLocal;
+  FScpCommander.CompareByTime = true;
+  FScpCommander.CompareBySize = false;
   FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0|0;1;2;3;4;5";
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
@@ -109,10 +115,13 @@ void __fastcall TWinConfiguration::Default()
   FCommandsHistory->Clear();
   FCommandsHistoryModified = false;
   FCustomCommands->Clear();
-  FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_EXECUTE)] =
-    FORMAT("\"%s\"", (CustomCommandFileNamePattern));
-  FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TOUCH)] =
-    FORMAT("touch \"%s\"", (CustomCommandFileNamePattern));
+  FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_EXECUTE)] = "\"!\"";
+  FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_EXECUTE)] = 0;
+  FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TOUCH)] = "touch \"!\"";
+  FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TOUCH)] = ccApplyToDirectories | ccRecursive;
+  FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_MOVE)] =
+    FORMAT("mv \"!\" \"!?%s?!\"", (LoadStr(CUSTOM_COMMAND_MOVE_PARAM)));
+  FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_MOVE)] = ccApplyToDirectories;
   FCustomCommandsModified = false;
 }
 //---------------------------------------------------------------------------
@@ -186,6 +195,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     ContinueOnError); \
     KEY(String,   PuttyPath); \
     KEY(String,   PuttySession); \
+    KEY(Bool,     ForceDeleteTempFolder); \
+    KEY(Integer,  LocaleSafe); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
     KEY(Integer,  Editor.Editor); \
@@ -218,6 +229,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,  ScpCommander.WindowParams); \
     KEY(Bool,    ScpCommander.ExplorerStyleSelection); \
     KEY(Bool,    ScpCommander.PreserveLocalDirectory); \
+    KEY(Bool,    ScpCommander.CompareByTime); \
+    KEY(Bool,    ScpCommander.CompareBySize); \
   ); \
   BLOCK("Interface\\Commander\\LocalPanel", CANCREATE, \
     KEY(String, ScpCommander.LocalPanel.CoolBarLayout); \
@@ -256,10 +269,23 @@ void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
     FCommandsHistoryModified = false;
   }
-  if (FCustomCommandsModified && Storage->OpenSubKey("CustomCommands", true))
+  if (FCustomCommandsModified)
   {
-    Storage->WriteValues(FCustomCommands, true);
-    Storage->CloseSubKey();
+    if (Storage->OpenSubKey("CustomCommands", true))
+    {
+      Storage->WriteValues(FCustomCommands, true);
+      Storage->CloseSubKey();
+    }
+    if (Storage->OpenSubKey("CustomCommandsParams", true))
+    {
+      Storage->ClearValues();
+      for (int Index = 0; Index < FCustomCommands->Count; Index++)
+      {
+        Storage->WriteInteger(FCustomCommands->Names[Index],
+          FCustomCommands->Params[FCustomCommands->Names[Index]]);
+      }
+      Storage->CloseSubKey();
+    }
     FCustomCommandsModified = false;
   }
 }
@@ -298,6 +324,17 @@ void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
     FCustomCommands->Clear();
     Storage->ReadValues(FCustomCommands, true);
     Storage->CloseSubKey();
+
+    if (Storage->OpenSubKey("CustomCommandsParams", false))
+    {
+      for (int Index = 0; Index < FCustomCommands->Count; Index++)
+      {
+        AnsiString Name = FCustomCommands->Names[Index];
+        FCustomCommands->Params[Name] =
+          Storage->ReadInteger(Name, FCustomCommands->Params[Name]);
+      }
+      Storage->CloseSubKey();
+    }
   }
   else if (FCustomCommandsModified)
   {
@@ -368,11 +405,11 @@ void __fastcall TWinConfiguration::RestoreForm(AnsiString Data, TCustomForm * Fo
   if (!Data.IsEmpty())
   {
     TRect Bounds = Form->BoundsRect;
-    Bounds.Left = StrToIntDef(CutToChar(Data, ';', true), Bounds.Left);
-    Bounds.Top = StrToIntDef(CutToChar(Data, ';', true), Bounds.Top);
-    Bounds.Right = StrToIntDef(CutToChar(Data, ';', true), Bounds.Right);
-    Bounds.Bottom = StrToIntDef(CutToChar(Data, ';', true), Bounds.Bottom);
-    TWindowState State = (TWindowState)StrToIntDef(CutToChar(Data, ';', true), (int)wsNormal);
+    Bounds.Left = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Left);
+    Bounds.Top = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Top);
+    Bounds.Right = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Right);
+    Bounds.Bottom = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Bottom);
+    TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, ';', true), (int)wsNormal);
     ((TForm*)Form)->WindowState = State;
     if (State == wsNormal)
     {
@@ -515,6 +552,11 @@ void __fastcall TWinConfiguration::SetConfirmClosingSession(bool value)
   SET_CONFIG_PROPERTY(ConfirmClosingSession);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetForceDeleteTempFolder(bool value)
+{
+  SET_CONFIG_PROPERTY(ForceDeleteTempFolder);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCopyOnDoubleClick(bool value)
 {
   SET_CONFIG_PROPERTY(CopyOnDoubleClick);
@@ -560,7 +602,7 @@ void __fastcall TWinConfiguration::SetCommandsHistory(TStrings * value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetCustomCommands(TStrings * value)
+void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
 {
   assert(FCustomCommands);
   if (!FCustomCommands->Equals(value))
@@ -596,5 +638,246 @@ void TWinConfiguration::ReformatFileNameCommand(AnsiString & Command)
 AnsiString __fastcall TWinConfiguration::GetDefaultKeyFile()
 {
   return FTemporaryKeyFile;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TAsInheritedReader : public TReader
+{
+public:
+  __fastcall TAsInheritedReader(TStream * Stream, int BufSize) :
+    TReader(Stream, BufSize)
+  {
+    OnAncestorNotFound = AncestorNotFound;
+  }
+
+  virtual void __fastcall ReadPrefix(TFilerFlags & Flags, int & AChildPos)
+  {
+    TReader::ReadPrefix(Flags, AChildPos);
+    Flags << ffInherited;
+  }
+
+  void __fastcall AncestorNotFound(TReader * Reader,
+    const AnsiString ComponentName, TMetaClass * ComponentClass,
+    TComponent *& Component)
+  {
+    assert(!Component);
+    if (ComponentName.IsEmpty())
+    {
+      for (int Index = 0; Index < LookupRoot->ComponentCount; Index++)
+      {
+        Component = LookupRoot->Components[Index];
+        if (Component->Name.IsEmpty())
+        {
+          return;
+        }
+      }
+      Component = NULL;
+    }
+  }
+};
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::InternalReloadComponentRes(const AnsiString ResName,
+  HANDLE HInst, TComponent * Instance)
+{
+  HANDLE HRsrc;
+  bool Result;
+
+  if (!HInst)
+  {
+    HInst = HInstance;
+  }
+  HRsrc = FindResource(HInst, ResName.c_str(), RT_RCDATA);
+  Result = (HRsrc != 0);
+  if (Result)
+  {
+    TResourceStream * ResStream = new TResourceStream(
+      reinterpret_cast<int>(HInst), ResName, RT_RCDATA);
+    try
+    {
+      TReader * Reader;
+      Reader = new TAsInheritedReader(ResStream, 4096);
+
+      try
+      {
+        Instance = Reader->ReadRootComponent(Instance);
+      }
+      __finally
+      {
+        delete Reader;
+      }
+    }
+    __finally
+    {
+      delete ResStream;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::InitComponent(TComponent * Instance,
+  TClass RootAncestor, TClass ClassType)
+{
+  bool Result = false;
+  if ((ClassType != __classid(TComponent)) && (ClassType != RootAncestor))
+  {
+    if (InitComponent(Instance, RootAncestor, ClassType->ClassParent()))
+    {
+      Result = true;
+    }
+    if (InternalReloadComponentRes(ClassType->ClassName(),
+          reinterpret_cast<HANDLE>(FindResourceHInstance(FindClassHInstance(ClassType))),
+          Instance))
+    {
+      Result = true;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+LCID __fastcall TWinConfiguration::GetLocale()
+{
+  if (!FLocale)
+  {
+    AnsiString ResourceModule = GetResourceModule(ModuleFileName().c_str());
+    if (!ResourceModule.IsEmpty())
+    {
+      AnsiString ResourceExt = ExtractFileExt(ResourceModule).UpperCase();
+      ResourceExt.Delete(1, 1);
+
+      TLanguages * Langs = Languages();
+      int Index, Count;
+
+      Count = Langs->Count;
+      Index = 0;
+      while ((Index < Count) && !FLocale)
+      {
+        if (Langs->Ext[Index] == ResourceExt)
+        {
+          FLocale = Langs->LocaleID[Index];
+        }
+        else if (Langs->Ext[Index].SubString(1, 2) == ResourceExt)
+        {
+          FLocale = MAKELANGID(PRIMARYLANGID(Langs->LocaleID[Index]),
+            SUBLANG_DEFAULT);
+        }
+        Index++;
+      }
+    }
+  }
+
+  return TGUIConfiguration::GetLocale();
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::ReinitLocale()
+{
+  TGUIConfiguration::ReinitLocale();
+
+  Busy(true);
+  try
+  {
+    int Count;
+    AnsiString OrigName;
+    int OrigLeft;
+    int OrigTop;
+
+    TForm * Form;
+    Count = Screen->FormCount;
+
+    for (int Index = 0; Index < Count; Index++)
+    {
+      Form = Screen->Forms[Index];
+      SendMessage(Form->Handle, WM_LOCALE_CHANGE, 0, 1);
+    }
+
+    ConfigureInterface();
+
+    for (int Index = 0; Index < Count; Index++)
+    {
+      TComponent * Component;
+      for (int Index = 0; Index < Form->ComponentCount; Index++)
+      {
+        Component = Form->Components[Index];
+        if (dynamic_cast<TFrame*>(Component))
+        {
+          OrigName = Component->Name;
+          InitComponent(Component, __classid(TFrame), Component->ClassType());
+          Component->Name = OrigName;
+        }
+      }
+
+      OrigLeft = Form->Left;
+      OrigTop = Form->Top;
+      OrigName = Form->Name;
+      InitComponent(Form, __classid(TForm), Form->ClassType());
+      Form->Name = OrigName;
+
+      Form->Position = poDesigned;
+      Form->Left = OrigLeft;
+      Form->Top = OrigTop;
+      SendMessage(Form->Handle, WM_LOCALE_CHANGE, 1, 1);
+    }
+
+    TDataModule * DataModule;
+    Count = Screen->DataModuleCount;
+    for (int Index = 0; Index < Count; Index++)
+    {
+      DataModule = Screen->DataModules[Index];
+      OrigName = DataModule->Name;
+      InitComponent(DataModule, __classid(TDataModule), DataModule->ClassType());
+      DataModule->Name = OrigName;
+    }
+  }
+  __finally
+  {
+    Busy(false);
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+int __fastcall TCustomCommands::GetParam(const AnsiString & Name)
+{
+  int Index = IndexOfName(Name);
+  if (Index >= 0)
+  {
+    return int(Objects[Index]);
+  }
+  else
+  {
+    return 0;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommands::SetParam(const AnsiString & Name, int value)
+{
+  int Index = IndexOfName(Name);
+  if (Index >= 0)
+  {
+    Objects[Index] = (TObject *)value;
+  }
+  else
+  {
+    Values[Name] = "";
+    Index = IndexOfName(Name);
+    assert(Index >= 0);
+    Objects[Index] = (TObject *)value;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommands::Equals(TCustomCommands * Commands)
+{
+  bool Result = TStringList::Equals(Commands);
+  if (Result)
+  {
+    int Index = 0;
+    while ((Index < Count) && Result)
+    {
+      if (Objects[Index] != Commands->Objects[Index])
+      {
+        Result = false;
+      }
+      Index++;
+    }
+  }
+  return Result;
 }
 

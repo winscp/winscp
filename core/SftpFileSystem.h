@@ -6,9 +6,13 @@
 //---------------------------------------------------------------------------
 class TSFTPPacket;
 //---------------------------------------------------------------------------
+enum TSFTPOverwriteMode { omOverwrite, omAppend, omResume };
+//---------------------------------------------------------------------------
 class TSFTPFileSystem : public TCustomFileSystem
 {
 friend class TSFTPPacket;
+friend class TSFTPQueue;
+friend class TSFTPUploadQueue;
 public:
   __fastcall TSFTPFileSystem(TTerminal * ATerminal);
   virtual __fastcall ~TSFTPFileSystem();
@@ -31,7 +35,7 @@ public:
   virtual void __fastcall DeleteFile(const AnsiString FileName,
     const TRemoteFile * File = NULL, bool Recursive = false);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command);
+    const TRemoteFile * File, AnsiString Command, int Params);
   virtual void __fastcall DoStartup();
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
@@ -94,7 +98,8 @@ protected:
     const AnsiString TargetDir, int /*Attrs*/, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress);
   void __fastcall SFTPConfirmOverwrite(const AnsiString FileName,
-    TFileOperationProgressType * OperationProgress);
+    bool TargetBiggerThanSource, TFileOperationProgressType * OperationProgress,
+    TSFTPOverwriteMode & Mode);
   bool SFTPConfirmResume(const AnsiString DestFileName, bool PartialBiggerThanSource,
     TFileOperationProgressType * OperationProgress);
   void __fastcall SFTPSink(const AnsiString FileName,

@@ -76,7 +76,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       AutoSize = True
       ButtonHeight = 21
       ButtonWidth = 65
-      Caption = 'ButtonsToolBar'
+      Caption = 'MenuToolBar'
       EdgeBorders = []
       Flat = True
       ShowCaptions = True
@@ -188,7 +188,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Top = 0
         Width = 8
         Hint = 'E'
-        Caption = 'ToolButton21'
+        Caption = 'ToolButton25'
         ImageIndex = 24
         Style = tbsSeparator
       end
@@ -304,7 +304,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Top = 0
         Width = 8
         Hint = 'E'
-        Caption = 'ToolButton30'
+        Caption = 'ToolButton32'
         ImageIndex = 27
         Style = tbsSeparator
       end
@@ -329,7 +329,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Hint = '|E'
       Align = alLeft
       AutoSize = True
-      Caption = 'SelectionToolbar'
+      Caption = 'CommandToolBar'
       DisabledImages = NonVisualDataModule.ExplorerDisabledImages
       EdgeBorders = []
       Flat = True
@@ -432,7 +432,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Top = 0
         Width = 8
         Hint = 'E'
-        Caption = 'ToolButton38'
+        Caption = 'ToolButton10'
         ImageIndex = 6
         Style = tbsSeparator
       end
@@ -499,7 +499,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Hint = '|E'
       Align = alLeft
       AutoSize = True
-      Caption = 'PreferencesToolbar'
+      Caption = 'CommandsToolbar'
       DisabledImages = NonVisualDataModule.ExplorerDisabledImages
       EdgeBorders = []
       Flat = True
@@ -620,7 +620,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Hint = '|E'
         Align = alLeft
         AutoSize = True
-        Caption = 'ButtonsToolBar'
+        Caption = 'ToolBar3'
         DisabledImages = NonVisualDataModule.ExplorerDisabledImages
         EdgeBorders = []
         Flat = True
@@ -651,7 +651,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Hint = '|E'
         Align = alLeft
         AutoSize = True
-        Caption = 'ButtonsToolBar'
+        Caption = 'ToolBar4'
         DisabledImages = NonVisualDataModule.ExplorerDisabledImages
         EdgeBorders = []
         Flat = True
@@ -686,7 +686,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Top = 0
           Width = 8
           Hint = 'E'
-          Caption = 'ToolButton18'
+          Caption = 'ToolButton91'
           ImageIndex = 9
           Style = tbsSeparator
         end
@@ -704,7 +704,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Height = 22
         Hint = '|E'
         Align = alClient
-        Caption = 'ButtonsToolBar'
+        Caption = 'ToolBar6'
         DisabledImages = NonVisualDataModule.ExplorerDisabledImages
         EdgeBorders = []
         Flat = True
@@ -831,7 +831,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Hint = '|E'
         Align = alLeft
         AutoSize = True
-        Caption = 'ButtonsToolBar'
+        Caption = 'ToolBar1'
         DisabledImages = NonVisualDataModule.ExplorerDisabledImages
         EdgeBorders = []
         Flat = True
@@ -862,7 +862,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Hint = '|E'
         Align = alLeft
         AutoSize = True
-        Caption = 'ButtonsToolBar'
+        Caption = 'ToolBar2'
         DisabledImages = NonVisualDataModule.ExplorerDisabledImages
         EdgeBorders = []
         Flat = True
@@ -897,7 +897,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Top = 0
           Width = 8
           Hint = 'E'
-          Caption = 'ToolButton18'
+          Caption = 'ToolButton61'
           ImageIndex = 9
           Style = tbsSeparator
         end
@@ -915,7 +915,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Height = 22
         Hint = '|E'
         Align = alClient
-        Caption = 'ButtonsToolBar'
+        Caption = 'ToolBar5'
         DisabledImages = NonVisualDataModule.ExplorerDisabledImages
         EdgeBorders = []
         Flat = True

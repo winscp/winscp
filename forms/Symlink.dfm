@@ -29,7 +29,7 @@ object SymlinkDialog: TSymlinkDialog
     DesignSize = (
       380
       135)
-    object PasswordLabel: TLabel
+    object FileNameLabel: TLabel
       Left = 11
       Top = 16
       Width = 82

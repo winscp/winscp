@@ -1,13 +1,16 @@
 //---------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
-
+  
 #include <SysUtils.hpp>
 //---------------------------------------------------------------------
 #include <VCLCommon.h>
+#include <Common.h>
 #include "About.h"
 #include "WinInterface.h"
 #include "UserInterface.h"
+#include "TextsCore.h"
+#include "TextsWin.h"
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -15,14 +18,20 @@ __fastcall TAboutDialog::TAboutDialog(TComponent* AOwner)
 	: TForm(AOwner)
 {
   ThirdPartyBox->VertScrollBar->Position = 0;
-  UseSystemFont(this);
+  UseSystemSettings(this);
   LinkLabel(HomepageLabel);
-  LinkLabel(ProductUrlLabel);
+  LinkLabel(ForumUrlLabel);
   LinkLabel(PuttyLicenceLabel);
   LinkLabel(PuttyHomepageLabel);
   LinkLabel(FilemanagerHomepageLabel);
   ApplicationLabel->Caption = AppName;
-  HomepageLabel->Caption = HomepageUrl;
+  HomepageLabel->Caption = LoadStr(HOMEPAGE_URL);
+  ForumUrlLabel->Caption = LoadStr(FORUM_URL);
+  PuttyHomepageLabel->Caption = LoadStr(PUTTY_URL);
+  PuttyVersionLabel->Caption = FMTLOAD(PUTTY_BASED_ON, (LoadStr(PUTTY_VERSION)));
+  PuttyCopyrightLabel->Caption = LoadStr(PUTTY_COPYRIGHT);
+  WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
+  TranslatorLabel->Caption = LoadStr(TRANSLATOR_INFO);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::SetConfiguration(TConfiguration * value)

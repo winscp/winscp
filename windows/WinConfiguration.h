@@ -3,11 +3,13 @@
 #define WinConfigurationH
 //---------------------------------------------------------------------------
 #include "GUIConfiguration.h"
+#include "CustomDirView.hpp"
 //---------------------------------------------------------------------------
 enum TInterface { ifCommander, ifExplorer };
 enum TEditor { edInternal, edExternal };
 extern const char ShellCommandFileNamePattern[];
 enum TLogView { lvNone, lvWindow, pvPanel };
+#define WM_LOCALE_CHANGE (WM_USER + 1)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TScpExplorerConfiguration {
@@ -42,10 +44,27 @@ struct TScpCommanderConfiguration {
   bool PreserveLocalDirectory;
   TScpCommanderPanelConfiguration LocalPanel;
   TScpCommanderPanelConfiguration RemotePanel;
+  bool CompareByTime;
+  bool CompareBySize;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(CoolBarLayout) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(ToolBar)
-      C(ExplorerStyleSelection) C(PreserveLocalDirectory) 0; };
+      C(ExplorerStyleSelection) C(PreserveLocalDirectory)
+      C(CompareBySize) C(CompareByTime) 0; };
+
+  TCompareCriterias __fastcall CompareCriterias()
+  {
+    TCompareCriterias Criterias;
+    if (CompareByTime)
+    {
+      Criterias << ccTime;
+    }
+    if (CompareBySize)
+    {
+      Criterias << ccSize;
+    }
+    return Criterias;
+  }
 };
 //---------------------------------------------------------------------------
 struct TEditorConfiguration {
@@ -69,6 +88,7 @@ struct TEditorConfiguration {
 //---------------------------------------------------------------------------
 class TBookmarks;
 class TBookmarkList;
+class TCustomCommands;
 //---------------------------------------------------------------------------
 class TWinConfiguration : public TGUIConfiguration
 {
@@ -104,7 +124,7 @@ private:
   TBookmarks * FBookmarks;
   TStrings * FCommandsHistory;
   bool FCommandsHistoryModified;
-  TStrings * FCustomCommands;
+  TCustomCommands * FCustomCommands;
   bool FCustomCommandsModified;
   TEditorConfiguration FEditor;
   bool FEmbeddedSessions;
@@ -112,6 +132,7 @@ private:
   bool FDisableOpenEdit;
   AnsiString FPuttyPath;
   AnsiString FPuttySession;
+  bool FForceDeleteTempFolder;
 
   void __fastcall SetCopyOnDoubleClick(bool value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -136,6 +157,7 @@ private:
   void __fastcall SetDDTemporaryDirectory(AnsiString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetConfirmClosingSession(bool value);
+  void __fastcall SetForceDeleteTempFolder(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
   void __fastcall SetBookmarks(AnsiString Key, TBookmarkList * value);
   TBookmarkList * __fastcall GetBookmarks(AnsiString Key);
@@ -143,7 +165,7 @@ private:
   void __fastcall SetCommandsHistory(TStrings * value);
   void __fastcall SetExpertMode(bool value);
   void __fastcall SetEditor(TEditorConfiguration value);
-  void __fastcall SetCustomCommands(TStrings * value);
+  void __fastcall SetCustomCommands(TCustomCommands * value);
   void __fastcall SetPuttyPath(const AnsiString value);
   void __fastcall SetPuttySession(const AnsiString value);
 
@@ -157,6 +179,12 @@ protected:
   virtual AnsiString __fastcall GetDefaultKeyFile();
   virtual void __fastcall ModifyAll();
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2); 
+  bool __fastcall InternalReloadComponentRes(const AnsiString ResName,
+    HANDLE HInst, TComponent * Instance);
+  bool __fastcall InitComponent(TComponent * Instance,
+    TClass RootAncestor, TClass ClassType);
+  virtual void __fastcall ReinitLocale();
+  virtual LCID __fastcall GetLocale();
 
 public:
   __fastcall TWinConfiguration();
@@ -194,15 +222,28 @@ public:
   __property AnsiString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
+  __property bool ForceDeleteTempFolder  = { read=FForceDeleteTempFolder, write=SetForceDeleteTempFolder };
   __property double DDWarnLackOfTempSpaceRatio  = { read=FDDWarnLackOfTempSpaceRatio, write=SetDDWarnLackOfTempSpaceRatio };
   __property TBookmarkList * Bookmarks[AnsiString Key] = { read = GetBookmarks, write = SetBookmarks };
   __property TStrings * CommandsHistory = { read = FCommandsHistory, write = SetCommandsHistory };
   __property bool EmbeddedSessions = { read = FEmbeddedSessions };
   __property bool ExpertMode = { read = FExpertMode, write = SetExpertMode };
   __property bool DisableOpenEdit = { read = FDisableOpenEdit };
-  __property TStrings * CustomCommands = { read = FCustomCommands, write = SetCustomCommands };
+  __property TCustomCommands * CustomCommands = { read = FCustomCommands, write = SetCustomCommands };
   __property AnsiString PuttyPath = { read = FPuttyPath, write = SetPuttyPath };
   __property AnsiString PuttySession = { read = FPuttySession, write = SetPuttySession };
+};
+//---------------------------------------------------------------------------
+class TCustomCommands : public TStringList
+{
+public:
+  __property int Params[AnsiString Name] = {read=GetParam, write=SetParam};
+
+  bool __fastcall Equals(TCustomCommands * Commands);
+
+private:
+  int __fastcall GetParam(const AnsiString & Name);
+  void __fastcall SetParam(const AnsiString & Name, int value);
 };
 //---------------------------------------------------------------------------
 #define WinConfiguration ((TWinConfiguration *) Configuration)

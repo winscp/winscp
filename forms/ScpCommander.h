@@ -156,33 +156,35 @@ private:
   float __fastcall GetLocalPanelWidth();
 
 protected:
-  virtual Boolean __fastcall CopyParamDialog(TTransferDirection Direction,
-    TTransferType Type, Boolean DragDrop, TStrings * FileList,
-    AnsiString & TargetDirectory, TCopyParamType & CopyParam, Boolean Confirm);
+  virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
+    TTransferType Type, bool DragDrop, TStrings * FileList,
+    AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   virtual void __fastcall ExecuteFileOperation(::TFileOperation Operation, TOperationSide Side, Boolean OnFocused);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
-  virtual void __fastcall SetComponentVisible(Word Component, Boolean value);
+  virtual void __fastcall SetComponentVisible(Word Component, bool value);
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall ConfigurationChanged();
-  //virtual void __fastcall DoDirViewExecFile(TObject * Sender, TListItem * Item, bool & AllowExec);
-  virtual Boolean __fastcall GetHasDirView(TOperationSide Side);
+  virtual bool __fastcall GetHasDirView(TOperationSide Side);
   DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
   void __fastcall UpdateControls();
-  void __fastcall SynchronizeStartStop(System::TObject* Sender, Boolean Start, TSynchronizeParamType Params);
+  void __fastcall SynchronizeStartStop(TObject* Sender, bool Start,
+    TSynchronizeParamType Params);
   void __fastcall SynchronizeNow();
-  virtual void __fastcall DoOperationFinished(TOperationSide Side, Boolean DragDrop,
-    const AnsiString FileName, Boolean Success, Boolean & DisconnectWhenFinished);
+  virtual void __fastcall DoOperationFinished(::TFileOperation Operation,
+    TOperationSide Side, bool DragDrop, const AnsiString FileName,
+    bool Success, bool & DisconnectWhenFinished);
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
-  virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
+  virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
+    TOperationSide Side);
 
 public:
   virtual void __fastcall AddEditLink();
   __fastcall TScpCommanderForm(TComponent* Owner);
-  virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
+  virtual bool __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall CompareDirectories();
   virtual void __fastcall UpdateSessionData(TSessionData * Data = NULL);

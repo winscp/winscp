@@ -153,6 +153,7 @@ int __fastcall TTerminal::FileOperationLoop(TFileOperationEvent CallBackFunc,
     "", AllowSkip, Message,
     Result = CallBackFunc(Param1, Param2);
   );
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -219,12 +220,26 @@ AnsiString __fastcall TTerminal::GetUserName() const
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoChangeDirectory()
 {
-  if (FOnChangeDirectory) FOnChangeDirectory(this);
+  if (FOnChangeDirectory)
+  {
+    FOnChangeDirectory(this);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoReadDirectory(bool ReloadOnly)
 {
-  if (FOnReadDirectory) FOnReadDirectory(this, ReloadOnly);
+  if (FOnReadDirectory)
+  {
+    FOnReadDirectory(this, ReloadOnly);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoStartReadDirectory()
+{
+  if (FOnStartReadDirectory)
+  {
+    FOnStartReadDirectory(this);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::BeginTransaction()
@@ -456,10 +471,17 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly)
     CachedFileList = FDirectoryCache->GetFileList(CurrentDirectory);
   }
 
+  DoStartReadDirectory();
   if (CachedFileList)
   {
-    CachedFileList->DuplicateTo(FFiles);
-    DoReadDirectory(ReloadOnly);
+    try
+    {
+      CachedFileList->DuplicateTo(FFiles);
+    }
+    __finally
+    {
+      DoReadDirectory(ReloadOnly);
+    }
     LogEvent("Directory content loaded from cache.");
   }
   else
@@ -474,12 +496,12 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly)
       }
       __finally
       {
+        // this must be called before error is displayed, otherwise
+        // TUnixDirView would be drawn with invalid data (it keeps reference
+        // to already destoroyed old listing)
+        DoReadDirectory(ReloadOnly);
         if (Active)
         {
-          // this must be called before error is displayed, otherwise
-          // TUnixDirView would be drawn with invalid data (it keeps reference
-          // to already destoroyed old listing)
-          DoReadDirectory(ReloadOnly);
           if (SessionData->CacheDirectories)
           {
             FDirectoryCache->AddFileList(FFiles);
@@ -525,6 +547,7 @@ TRemoteFileList * TTerminal::ReadDirectoryListing(AnsiString Directory)
     catch(...)
     {
       delete FileList;
+      FileList = NULL;
       throw;
     }
   }
@@ -544,23 +567,27 @@ void __fastcall TTerminal::ProcessDirectory(const AnsiString DirName,
 {
   TRemoteFileList * FileList = ReadDirectoryListing(DirName);
 
-  try
+  // skip if directory listing fails and user selects "skip"
+  if (FileList)
   {
-    AnsiString Directory = UnixIncludeTrailingBackslash(DirName);
-
-    TRemoteFile * File;
-    for (int Index = 0; Index < FileList->Count; Index++)
+    try
     {
-      File = FileList->Files[Index];
-      if (!File->IsParentDirectory && !File->IsThisDirectory)
+      AnsiString Directory = UnixIncludeTrailingBackslash(DirName);
+
+      TRemoteFile * File;
+      for (int Index = 0; Index < FileList->Count; Index++)
       {
-        CallBackFunc(Directory + File->FileName, File, Param);
+        File = FileList->Files[Index];
+        if (!File->IsParentDirectory && !File->IsThisDirectory)
+        {
+          CallBackFunc(Directory + File->FileName, File, Param);
+        }
       }
     }
-  }
-  __finally
-  {
-    delete FileList;
+    __finally
+    {
+      delete FileList;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -719,9 +746,9 @@ void __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, bool * Recursiv
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CustomCommandOnFile(AnsiString FileName,
-  const TRemoteFile * File, void * ACommand)
+  const TRemoteFile * File, void * AParams)
 {
-  AnsiString Command = *((AnsiString *)ACommand);
+  TCustomCommandParams * Params = ((TCustomCommandParams *)AParams);
   if (FileName.IsEmpty() && File)
   {
     FileName = File->FileName;
@@ -731,34 +758,38 @@ void __fastcall TTerminal::CustomCommandOnFile(AnsiString FileName,
     if (OperationProgress->Cancel != csContinue) Abort();
     OperationProgress->SetFile(FileName);
   }
-  LogEvent(FORMAT("Executing custom command \"%s\" on file \"%s\".",
-    (Command, FileName)));
+  LogEvent(FORMAT("Executing custom command \"%s\" (%d) on file \"%s\".",
+    (Params->Command, Params->Params, FileName)));
   if (File) FileModified(File);
-  DoCustomCommandOnFile(FileName, File, Command);
+  DoCustomCommandOnFile(FileName, File, Params->Command, Params->Params);
   ReactOnCommand(fsAnyCommand);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
-  const TRemoteFile * File, AnsiString Command)
+  const TRemoteFile * File, AnsiString Command, int Params)
 {
   try
   {
     assert(FFileSystem);
-    FFileSystem->CustomCommandOnFile(FileName, File, Command);
+    FFileSystem->CustomCommandOnFile(FileName, File, Command, Params);
   }
   catch(Exception & E)
   {
     COMMAND_ERROR_ARI
     (
       FMTLOAD(CUSTOM_COMMAND_ERROR, (Command, FileName)),
-      DoCustomCommandOnFile(FileName, File, Command)
+      DoCustomCommandOnFile(FileName, File, Command, Params)
     );
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CustomCommandOnFiles(AnsiString Command, TStrings * Files)
+void __fastcall TTerminal::CustomCommandOnFiles(AnsiString Command,
+  int Params, TStrings * Files)
 {
-  ProcessFiles(Files, foCustomCommand, CustomCommandOnFile, &Command);
+  TCustomCommandParams AParams;
+  AParams.Command = Command;
+  AParams.Params = Params;
+  ProcessFiles(Files, foCustomCommand, CustomCommandOnFile, &AParams);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ChangeFileProperties(AnsiString FileName,
@@ -820,6 +851,64 @@ void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
   const TRemoteProperties * Properties)
 {
   ProcessFiles(FileList, foSetProperties, ChangeFileProperties, (void *)Properties);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CalculateFileSize(AnsiString FileName,
+  const TRemoteFile * File, /*TCalculateSizeParams*/ void * Param)
+{
+  assert(Param);
+  assert(File);
+
+  if (FileName.IsEmpty() && File)
+  {
+    FileName = File->FileName;
+  }
+  if (File->IsDirectory)
+  {
+    LogEvent(FORMAT("Getting size of directory \"%s\"", (FileName)));
+    DoCalculateDirectorySize(FileName, File,
+      static_cast<TCalculateSizeParams*>(Param));
+  }
+  else
+  {
+    static_cast<TCalculateSizeParams*>(Param)->Size += File->Size;
+  }
+
+  if (OperationProgress && OperationProgress->Operation == foCalculateSize)
+  {
+    if (OperationProgress->Cancel != csContinue) Abort();
+    OperationProgress->SetFile(FileName);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoCalculateDirectorySize(const AnsiString FileName,
+  const TRemoteFile * File, TCalculateSizeParams * Params)
+{
+  try
+  {
+    ProcessDirectory(FileName, CalculateFileSize, Params);
+  }
+  catch(Exception & E)
+  {
+    if (!Active || ((Params->Params & csIgnoreErrors) == 0))
+    {
+      COMMAND_ERROR_ARI
+      (
+        FMTLOAD(CALCULATE_SIZE_ERROR, (FileName)),
+        DoCalculateDirectorySize(FileName, File, Params)
+      );
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
+  __int64 & Size, int Params)
+{
+  TCalculateSizeParams Param;
+  Param.Size = 0;
+  Param.Params = Params;
+  ProcessFiles(FileList, foCalculateSize, CalculateFileSize, &Param);
+  Size = Param.Size;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::RenameFile(const AnsiString FileName,
@@ -1092,6 +1181,53 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
   if (AHandle) *AHandle = Handle;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::CalculateLocalFileSize(const AnsiString FileName,
+  const TSearchRec Rec, /*__int64*/ void * Size)
+{
+  if ((Rec.Attr & faDirectory) == 0)
+  {
+    (*static_cast<__int64*>(Size)) +=
+      (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
+      Rec.FindData.nFileSizeLow;
+  }
+  
+  if (OperationProgress && OperationProgress->Operation == foCalculateSize)
+  {
+    if (OperationProgress->Cancel != csContinue) Abort();
+    OperationProgress->SetFile(FileName);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList, __int64 & Size)
+{
+  Size = 0;
+  TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
+  OperationProgress.Start(foCalculateSize, osLocal, FileList->Count);
+  try
+  {
+    assert(!FOperationProgress);
+    FOperationProgress = &OperationProgress;
+    TSearchRec Rec;
+    for (int Index = 0; Index < FileList->Count; Index++)
+    {
+      if (FileSearchRec(FileList->Strings[Index], Rec))
+      {
+        if (Rec.Attr & faDirectory)
+        {
+          ProcessLocalDirectory(FileList->Strings[Index],
+            CalculateLocalFileSize, &Size);
+        }
+        CalculateLocalFileSize(FileList->Strings[Index], Rec, &Size);
+      }
+    }
+  }
+  __finally
+  {
+    FOperationProgress = NULL;
+    OperationProgress.Stop();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
   const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params)
 {
@@ -1102,9 +1238,20 @@ void __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
 
   try
   {
+    __int64 Size;
+    if (CopyParam->CalculateSize)
+    {
+      CalculateLocalFilesSize(FilesToCopy, Size);
+    }
+
     TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
       FilesToCopy->Count, Params & cpDragDrop, TargetDir);
+      
+    if (CopyParam->CalculateSize)
+    {
+      OperationProgress.SetTotalSize(Size);
+    }
 
     FOperationProgress = &OperationProgress;
     try
@@ -1168,9 +1315,31 @@ void __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
     BeginTransaction();
     try
     {
+      __int64 TotalSize;
+      bool TotalSizeKnown = false;
       TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
+
+      if (CopyParam->CalculateSize)
+      {
+        ExceptionOnFail = true;
+        try
+        {
+          CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors);
+          TotalSizeKnown = true;
+        }
+        __finally
+        {
+          ExceptionOnFail = false;
+        }
+      }
+
       OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
         FilesToCopy->Count, Params & cpDragDrop, TargetDir);
+
+      if (TotalSizeKnown)
+      {
+        OperationProgress.SetTotalSize(TotalSize);
+      }
 
       FOperationProgress = &OperationProgress;
       try

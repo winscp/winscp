@@ -3,14 +3,22 @@ unit PasswordEdit;
 interface
 
 uses
-  {Messages, }StdCtrls, Controls{, Classes, Forms, Windows, Graphics};
+  StdCtrls, Classes, Controls;
 
 type
   TPasswordEdit = class(TCustomEdit)
   protected
+    FPassword: Boolean;
+
     procedure CreateParams(var Params: TCreateParams); override;
+    procedure SetPassword(Value: Boolean);
+
+  public
+    constructor Create(AOwner: TComponent); override;
 
   published
+    property Password: Boolean read FPassword write SetPassword default True;
+
     property Anchors;
     property AutoSelect;
     property AutoSize;
@@ -71,17 +79,35 @@ procedure Register;
 
 implementation
 
-uses Windows, Classes;
+uses Windows;
 
 procedure Register;
 begin
   RegisterComponents('Martin', [TPasswordEdit]);
 end;
 
+constructor TPasswordEdit.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FPassword := True;
+end;
+
+procedure TPasswordEdit.SetPassword(Value: Boolean);
+begin
+  if Password <> Value then
+  begin
+    FPassword := Value;
+    RecreateWnd;
+  end;
+end;
+
 procedure TPasswordEdit.CreateParams(var Params: TCreateParams);
 begin
   inherited;
-  Params.Style := Params.Style or ES_PASSWORD;
+  if FPassword then
+  begin
+    Params.Style := Params.Style or ES_PASSWORD;
+  end;
 end;
 
 end.

@@ -102,6 +102,7 @@ protected:
   virtual TDateTime __fastcall ItemFileTime(TListItem * Item);
   void __fastcall DoWarnLackOfTempSpace(const AnsiString Path, __int64 RequiredSpace,
     bool & Continue);
+  DYNAMIC bool __fastcall CanEdit(TListItem* Item);
 public:
   __fastcall TUnixDirView(TComponent* Owner);
   virtual __fastcall ~TUnixDirView();

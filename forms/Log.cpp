@@ -65,7 +65,7 @@ __fastcall TLogForm::TLogForm(TComponent* Owner)
   FLogMemo = NULL;
   FSessionLog = NULL;
   ShowWindow(Handle, SW_SHOWNA);
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TLogForm::~TLogForm()

@@ -26,6 +26,7 @@ private:
   AnsiString __fastcall GetLogStr() const;
   bool FReplaceInvalidChars;
   AnsiString FLocalInvalidChars;
+  bool FCalculateSize;
 
 public:
   __fastcall TCopyParamType();
@@ -53,6 +54,7 @@ public:
   __property __int64 ResumeThreshold = { read = FResumeThreshold, write = FResumeThreshold };
   __property bool ReplaceInvalidChars = { read = FReplaceInvalidChars, write = FReplaceInvalidChars };
   __property AnsiString LocalInvalidChars = { read = FLocalInvalidChars, write = FLocalInvalidChars };
+  __property bool CalculateSize = { read = FCalculateSize, write = FCalculateSize };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -101,6 +101,11 @@
 #define SFTP_STATUS_NO_MEDIA    195
 #define DECODE_UTF_ERROR        196
 #define CUSTOM_COMMAND_ERROR    197
+#define LOCALE_LOAD_ERROR       198
+#define SFTP_INCOMPLETE_BEFORE_EOF 199
+#define CALCULATE_SIZE_ERROR    200
+#define SFTP_PACKET_TOO_BIG     201
+#define SCP_INIT_ERROR          202
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT 301
 #define PROMPT_SESSION_PASSWORD 302
@@ -113,6 +118,7 @@
 #define CIPHER_TYPE_SC          309
 #define RESUME_TRANSFER         310
 #define PARTIAL_BIGGER_THAN_SOURCE 311
+#define APPEND_OR_RESUME        312
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401
 #define NO_STR                  402
@@ -120,5 +126,10 @@
 #define VERSION                 404
 #define CLOSED_ON_COMPLETION    405
 #define SFTP_PROTOCOL_NAME      406
+#define CORE_VARIABLE_STRINGS   600
+#define PUTTY_BASED_ON          601
+#define PUTTY_VERSION           602
+#define PUTTY_COPYRIGHT         603
+#define PUTTY_URL               604
  
 #endif // TextsCore 

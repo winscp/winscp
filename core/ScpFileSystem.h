@@ -30,7 +30,7 @@ public:
   virtual void __fastcall DeleteFile(const AnsiString FileName,
     const TRemoteFile * File, bool Recursive);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command);
+    const TRemoteFile * File, AnsiString Command, int Params);
   virtual void __fastcall DoStartup();
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
@@ -73,7 +73,7 @@ private:
   void __fastcall ExecCommand(TFSCommand Cmd, const TVarRec * args = NULL,
     int size = 0, int Params = -1);
   void __fastcall ReadCommandOutput(int Params);
-  void __fastcall SCPResponse();
+  void __fastcall SCPResponse(bool * GotLastLine = NULL);
   void __fastcall SCPDirectorySource(const AnsiString DirectoryName,
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress);
@@ -81,7 +81,7 @@ private:
   void __fastcall SCPSendError(const AnsiString Message, bool Fatal);
   void __fastcall SCPSink(const AnsiString TargetDir,
     const AnsiString FileName, const TCopyParamType * CopyParam, bool & Success,
-    TFileOperationProgressType * OperationProgress, int Params);
+    TFileOperationProgressType * OperationProgress, int Params, bool Initialized);
   void __fastcall SCPSource(const AnsiString FileName,
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress);

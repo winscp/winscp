@@ -9,8 +9,6 @@
 #define SET_CONFIG_PROPERTY(PROPERTY) \
   if (PROPERTY != value) { F ## PROPERTY = value; Changed(); }
 //---------------------------------------------------------------------------
-extern const char CustomCommandFileNamePattern[];
-//---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
 private:
@@ -68,6 +66,7 @@ private:
   void __fastcall SetIniFileStorageName(AnsiString value);
   AnsiString __fastcall GetPartialExt() const;
   AnsiString __fastcall GetFileInfoString(const AnsiString Key);
+  AnsiString __fastcall GetLocalInvalidChars();
   
 protected:
   TStorage FStorage;
@@ -134,8 +133,9 @@ public:
   __property AnsiString RegistryStorageKey  = { read=GetRegistryStorageKey };
   __property AnsiString IniFileStorageName  = { read=GetIniFileStorageName, write=SetIniFileStorageName };
   __property AnsiString DefaultKeyFile = { read = GetDefaultKeyFile };
+  __property AnsiString LocalInvalidChars = { read = GetLocalInvalidChars };
 
-  __property bool DisablePasswordStoring = { read = FDisablePasswordStoring }; 
+  __property bool DisablePasswordStoring = { read = FDisablePasswordStoring };
 };
 //---------------------------------------------------------------------------
 bool SpecialFolderLocation(int PathID, AnsiString & Path);

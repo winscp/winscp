@@ -101,10 +101,11 @@ DWORD __fastcall TFileBuffer::LoadFile(const HANDLE File, const DWORD Len, bool 
   return ReadFile(File, Len, ForceLen);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::ConvertEOL(char * Source, char * Dest)
+void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
 {
   assert(strlen(Source) <= 2);
   assert(strlen(Dest) <= 2);
+  bool RemoveCtrlZ = ((Params & cpRemoveCtrlZ) != 0);
 
   if (strcmp(Source, Dest) == 0)
   {
@@ -158,21 +159,26 @@ void __fastcall TFileBuffer::ConvertEOL(char * Source, char * Dest)
       Delete(Index, 1);
     }
   }
+
+  if (RemoveCtrlZ && ((*(Data + Size - 1)) == '\x1A'))
+  {
+    Delete(Size-1, 1);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::ConvertEOL(TEOLType Source, TEOLType Dest)
+void __fastcall TFileBuffer::Convert(TEOLType Source, TEOLType Dest, int Params)
 {
-  ConvertEOL(EOLToStr(Source), EOLToStr(Dest));
+  Convert(EOLToStr(Source), EOLToStr(Dest), Params);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::ConvertEOL(char * Source, TEOLType Dest)
+void __fastcall TFileBuffer::Convert(char * Source, TEOLType Dest, int Params)
 {
-  ConvertEOL(Source, EOLToStr(Dest));
+  Convert(Source, EOLToStr(Dest), Params);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::ConvertEOL(TEOLType Source, char * Dest)
+void __fastcall TFileBuffer::Convert(TEOLType Source, char * Dest, int Params)
 {
-  ConvertEOL(EOLToStr(Source), Dest);
+  Convert(EOLToStr(Source), Dest, Params);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::Insert(int Index, const char * Buf, int Len)

@@ -38,6 +38,7 @@ __published:
   TXPGroupBox *CommonPropertiesGroup;
   TCheckBox *CommonPreserveTimestampCheck;
   TCheckBox *ReplaceInvalidCharsCheck;
+  TCheckBox *CommonCalculateSizeCheck;
   void __fastcall ControlChange(TObject *Sender);
 private:
   TParamsForDirection FDirection;

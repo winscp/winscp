@@ -14,7 +14,7 @@ __published:
   TXPGroupBox *SymlinkGroup;
   TButton *OkButton;
   TButton *CancelButton;
-  TLabel *PasswordLabel;
+  TLabel *FileNameLabel;
   TEdit *FileNameEdit;
   TLabel *Label1;
   TEdit *PointToEdit;

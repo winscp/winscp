@@ -22,7 +22,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
-  TSessionData * Data)
+  TSessionData * Data, bool Initial)
 {
   assert(Data);
   TLoginDialog *LoginDialog = new TLoginDialog(Application);
@@ -31,6 +31,7 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
   {
     LoginDialog->StoredSessions = SessionList;
     LoginDialog->SessionData = Data;
+    LoginDialog->Initial = Initial;
     Result = LoginDialog->Execute();
     if (Result)
     {
@@ -48,11 +49,13 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
         : TForm(AOwner)
 {
   FSessionData = new TSessionData("");
-  Default();
   NoUpdate = 0;
-  LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
-  UseSystemFont(this);
-  Caption = FORMAT("%s %s", (AppName, Caption));
+  FLanguagesPopupMenu = NULL;
+  FInitialized = false;
+  FSavedTab = NULL;
+  FSavedSession = -1;
+  FInitial = true;
+  FLocaleChanging = false;
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -61,6 +64,70 @@ __fastcall TLoginDialog::~TLoginDialog()
   // SelectItem event is called after destructor! Why?
   SessionListView->Selected = NULL;
   delete FSessionData;
+  delete FLanguagesPopupMenu;
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::ShowTabs(bool Show)
+{
+  for (int Index = 0; Index < PageControl->PageCount; Index++)
+  {
+    PageControl->Pages[Index]->TabVisible = Show;
+  }
+  // change form height by height of hidden tabs
+  ClientHeight += (Show ? 1 : -1) * 50;
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::Init()
+{
+  LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
+  UseSystemSettings(this, &FSystemSettings);
+  Caption = FORMAT("%s %s", (AppName, Caption));
+
+  InitializeBugsCombo(BugIgnore1Combo);
+  InitializeBugsCombo(BugPlainPW1Combo);
+  InitializeBugsCombo(BugRSA1Combo);
+  InitializeBugsCombo(BugHMAC2Combo);
+  InitializeBugsCombo(BugDeriveKey2Combo);
+  InitializeBugsCombo(BugRSAPad2Combo);
+  InitializeBugsCombo(BugDHGEx2Combo);
+  InitializeBugsCombo(BugPKSessID2Combo);
+
+  PrepareNavigationTree(SimpleNavigationTree);
+  PrepareNavigationTree(AdvancedNavigationTree);
+
+  if (!WinConfiguration->ExpertMode)
+  {
+    Label9->Visible = false;
+    LocalDirectoryEdit->Visible = false;
+    Label16->Visible = false;
+    int PrevHeight = DirectoriesGroup->Height;
+    DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + 12;
+    EOLTypeGroup->Top = EOLTypeGroup->Top - PrevHeight + RemoteDirectoryEdit->Height;
+  }
+
+  ShowTabs(false);
+
+  if (StoredSessions->Count && StoredSessions &&
+      (FSessionData->Name == StoredSessions->DefaultSettings->Name))
+  {
+    ChangePage(SessionListSheet);
+    SessionListView->SetFocus();
+  }
+  else
+  {
+    ChangePage(BasicSheet);
+    HostNameEdit->SetFocus();
+  }
+
+  UpdateControls();
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::InitializeBugsCombo(TComboBox * BugsCombo)
+{
+  BugsCombo->Clear();
+  BugsCombo->Items->Add(LoadStr(LOGIN_BUG_AUTO));
+  BugsCombo->Items->Add(LoadStr(LOGIN_BUG_OFF));
+  BugsCombo->Items->Add(LoadStr(LOGIN_BUG_ON));
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessions()
@@ -106,9 +173,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
   try
   {
     // Basic tab
-    HostNameEdit->Text = aSessionData->HostName;
-    PortNumberEdit->AsInteger = aSessionData->PortNumber;
     UserNameEdit->Text = aSessionData->UserName;
+    PortNumberEdit->AsInteger = aSessionData->PortNumber;
+    HostNameEdit->Text = aSessionData->HostName;
     PasswordEdit->Text = aSessionData->Password;
     PrivateKeyEdit->Text = aSessionData->PublicKeyFile;
 
@@ -131,14 +198,14 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
       EOLTypeLFButton->Checked = true;
     }
     else
-    {
+    {                
       EOLTypeCRLFButton->Checked = true;
     }
 
     AuthTISCheck->Checked = aSessionData->AuthTIS;
     AuthKICheck->Checked = aSessionData->AuthKI;
     AgentFwdCheck->Checked = aSessionData->AgentFwd;
-    Ssh2DESCheck->Checked = aSessionData->Ssh2DES;
+    Ssh2LegacyDESCheck->Checked = aSessionData->Ssh2DES;
 
     // SSH tab
     CompressionCheck->Checked = aSessionData->Compression;
@@ -229,9 +296,10 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
 {
   aSessionData->Name = "";
   // Basic tab
-  aSessionData->HostName = HostNameEdit->Text;
-  aSessionData->PortNumber = PortNumberEdit->AsInteger;
   aSessionData->UserName = UserNameEdit->Text;
+  aSessionData->PortNumber = PortNumberEdit->AsInteger;
+  // must be loaded after UserName, because HostName may be in format user@host
+  aSessionData->HostName = HostNameEdit->Text;
   aSessionData->Password = PasswordEdit->Text;
   aSessionData->PublicKeyFile = PrivateKeyEdit->Text;
 
@@ -242,7 +310,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
 
   // SSH tab
   aSessionData->Compression = CompressionCheck->Checked;
-  aSessionData->Ssh2DES = Ssh2DESCheck->Checked;
+  aSessionData->Ssh2DES = Ssh2LegacyDESCheck->Checked;
 
   if (SshProt1onlyButton->Checked) aSessionData->SshProt = ssh1only;
     else
@@ -328,61 +396,64 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateControls()
 {
-  NoUpdate++;
-  try
+  if (Visible)
   {
-    #define SHOW_NAVIGATION(TREE, SHOW) if ((TREE)->Visible != (SHOW)) { \
-      (TREE)->Visible = (SHOW); PageControlChange(PageControl); }
-    SHOW_NAVIGATION(SimpleNavigationTree, !ShowAdvancedLoginOptionsCheck->Checked);
-    SHOW_NAVIGATION(AdvancedNavigationTree, ShowAdvancedLoginOptionsCheck->Checked);
-    #undef SHOW_NAVIGATION
-
-    EnableControl(ShellIconsButton, SessionListView->Selected);
-
-    if (!PrivateKeyEdit->Text.IsEmpty())
+    NoUpdate++;
+    try
     {
-      PasswordEdit->Clear();
+      #define SHOW_NAVIGATION(TREE, SHOW) if ((TREE)->Visible != (SHOW)) { \
+        (TREE)->Visible = (SHOW); PageControlChange(PageControl); }
+      SHOW_NAVIGATION(SimpleNavigationTree, !ShowAdvancedLoginOptionsCheck->Checked);
+      SHOW_NAVIGATION(AdvancedNavigationTree, ShowAdvancedLoginOptionsCheck->Checked);
+      #undef SHOW_NAVIGATION
+
+      EnableControl(ShellIconsButton, SessionListView->Selected);
+
+      if (!PrivateKeyEdit->Text.IsEmpty())
+      {
+        PasswordEdit->Clear();
+      }
+      EnableControl(PasswordEdit, PrivateKeyEdit->Text.IsEmpty());
+
+      if (!PasswordEdit->Text.IsEmpty()) PrivateKeyEdit->Clear();
+      EnableControl(PrivateKeyEdit, PasswordEdit->Text.IsEmpty());
+
+      EnableControl(PingIntervalSecEdit, PingIntervalCheck->Checked);
+
+      EnableControl(SessionListView, SessionListView->Items->Count);
+      AdjustListColumnsWidth(SessionListView);
+      SessionListView->Columns->Items[0]->Width -= 2;
+
+      EnableControl(AuthTISCheck, !SshProt2onlyButton->Checked);
+      EnableControl(AuthKICheck, !SshProt1onlyButton->Checked);
+
+      EnableControl(CipherUpButton, CipherListBox->ItemIndex > 0);
+      EnableControl(CipherDownButton, CipherListBox->ItemIndex >= 0 &&
+        CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
+      EnableControl(Ssh2LegacyDESCheck, !SshProt1onlyButton->Checked);
+
+      EnableControl(BugIgnore1Combo, !SshProt2onlyButton->Checked);
+      EnableControl(BugPlainPW1Combo, !SshProt2onlyButton->Checked);
+      EnableControl(BugRSA1Combo, !SshProt2onlyButton->Checked);
+      EnableControl(BugHMAC2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugDeriveKey2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugRSAPad2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugDHGEx2Combo, !SshProt1onlyButton->Checked);
+
+      EnableControl(ShellEdit, ShellEnterButton->Checked);
+      EnableControl(ReturnVarEdit, ReturnVarEnterButton->Checked);
+
+      EnableControl(ProxyHostEdit, !ProxyNoneButton->Checked);
+      EnableControl(ProxyPortEdit, !ProxyNoneButton->Checked);
+      EnableControl(ProxyUsernameEdit, !ProxyNoneButton->Checked);
+      EnableControl(ProxyPasswordEdit, !ProxyNoneButton->Checked);
+      EnableControl(ProxySettingsGroup, !ProxyNoneButton->Checked);
+      EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
     }
-    EnableControl(PasswordEdit, PrivateKeyEdit->Text.IsEmpty());
-
-    if (!PasswordEdit->Text.IsEmpty()) PrivateKeyEdit->Clear();
-    EnableControl(PrivateKeyEdit, PasswordEdit->Text.IsEmpty());
-
-    EnableControl(PingIntervalSecEdit, PingIntervalCheck->Checked);
-
-    EnableControl(SessionListView, SessionListView->Items->Count);
-    AdjustListColumnsWidth(SessionListView);
-    SessionListView->Columns->Items[0]->Width -= 2;
-
-    EnableControl(AuthTISCheck, !SshProt2onlyButton->Checked);
-    EnableControl(AuthKICheck, !SshProt1onlyButton->Checked);
-
-    EnableControl(CipherUpButton, CipherListBox->ItemIndex > 0);
-    EnableControl(CipherDownButton, CipherListBox->ItemIndex >= 0 &&
-      CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
-    EnableControl(Ssh2DESCheck, !SshProt1onlyButton->Checked);
-
-    EnableControl(BugIgnore1Combo, !SshProt2onlyButton->Checked);
-    EnableControl(BugPlainPW1Combo, !SshProt2onlyButton->Checked);
-    EnableControl(BugRSA1Combo, !SshProt2onlyButton->Checked);
-    EnableControl(BugHMAC2Combo, !SshProt1onlyButton->Checked);
-    EnableControl(BugDeriveKey2Combo, !SshProt1onlyButton->Checked);
-    EnableControl(BugRSAPad2Combo, !SshProt1onlyButton->Checked);
-    EnableControl(BugDHGEx2Combo, !SshProt1onlyButton->Checked);
-
-    EnableControl(ShellEdit, ShellEnterButton->Checked);
-    EnableControl(ReturnVarEdit, ReturnVarEnterButton->Checked);
-
-    EnableControl(ProxyHostEdit, !ProxyNoneButton->Checked);
-    EnableControl(ProxyPortEdit, !ProxyNoneButton->Checked);
-    EnableControl(ProxyUsernameEdit, !ProxyNoneButton->Checked);
-    EnableControl(ProxyPasswordEdit, !ProxyNoneButton->Checked);
-    EnableControl(ProxySettingsGroup, !ProxyNoneButton->Checked);
-    EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
-  }
-  __finally
-  {
-    NoUpdate--;
+    __finally
+    {
+      NoUpdate--;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -394,51 +465,47 @@ void __fastcall TLoginDialog::DataChange(TObject * /*Sender*/)
 void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree)
 {
   Tree->FullExpand();
-  if (!WinConfiguration->ExpertMode)
+  int i = 0;
+  while (i < Tree->Items->Count)
   {
-    int i = 0;
-    while (i < Tree->Items->Count)
+    if ((!WinConfiguration->ExpertMode &&
+         Tree->Items->Item[i]->SelectedIndex & 128) ||
+        (!Initial &&
+         Tree->Items->Item[i]->SelectedIndex & 256))
     {
-      if (Tree->Items->Item[i]->SelectedIndex & 128)
-        Tree->Items->Delete(Tree->Items->Item[i]);
-      else
-        i++;
+      Tree->Items->Delete(Tree->Items->Item[i]);
     }
-    ToolsMenuButton->Visible = false;
+    else
+    {
+      for (int pi = 0; pi < PageControl->PageCount; pi++)
+      {
+        if (PageControl->Pages[pi]->Tag == (Tree->Items->Item[i]->SelectedIndex & 127))
+        {
+          Tree->Items->Item[i]->Text = PageControl->Pages[pi]->Hint;
+          break;
+        }
+      }
+      i++;
+    }
   }
+  ToolsMenuButton->Visible = WinConfiguration->ExpertMode;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
 {
-  PrepareNavigationTree(SimpleNavigationTree);
-  PrepareNavigationTree(AdvancedNavigationTree);
-
-  if (!WinConfiguration->ExpertMode)
+  if (!FInitialized)
   {
-    Label9->Visible = false;
-    LocalDirectoryEdit->Visible = false;
-    Label16->Visible = false;
-    int PrevHeight = DirectoriesGroup->Height;
-    DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + 12;
-    EOLTypeGroup->Top = EOLTypeGroup->Top - PrevHeight + RemoteDirectoryEdit->Height;
+    FInitialized = true;
+    Init();
+    Default();
   }
-
-  for (int Index = 0; Index < PageControl->PageCount; Index++)
+  if (FLocaleChanging)
   {
-    PageControl->Pages[Index]->TabVisible = false;
-  }
-  ClientHeight -= 50; // decrease form height by height of hidden tabs
-
-  if (StoredSessions->Count && StoredSessions &&
-      (FSessionData->Name == StoredSessions->DefaultSettings->Name))
-  {
-    ChangePage(SessionListSheet);
-    SessionListView->SetFocus();
-  }
-  else
-  {
-    ChangePage(BasicSheet);
-    HostNameEdit->SetFocus();
+    Init();
+    LoadSession(FSessionData);
+    ChangePage(FSavedTab);
+    SessionListView->ItemIndex = FSavedSession;
+    LoadConfiguration();
   }
 }
 //---------------------------------------------------------------------------
@@ -555,9 +622,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
 {
   AnsiString SessionName;
   SaveSession(FSessionData);
-  if (SelectedSession) SessionName = SelectedSession->Name;
-    else SessionName = FSessionData->SessionName;
-  SessionName = DoSaveSessionDialog(StoredSessions, SessionName);
+  SessionName = DoSaveSessionDialog(StoredSessions, FSessionData->SessionName);
   if (!SessionName.IsEmpty())
   {
     TListItem * Item;
@@ -575,6 +640,8 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
     LoadSessionItem(Item);
     SelectedSession = NewSession;
     SessionData = NewSession;
+
+    PageControl->ActivePage = SessionListSheet;
   }
 }
 //---------------------------------------------------------------------------
@@ -626,8 +693,9 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   }
   else if (Action == DeleteSessionAction)
   {
+    TSessionData * Data = SessionData;
     DeleteSessionAction->Enabled =
-      SessionListView->Selected && SessionData && !SessionData->Special;
+      SessionListView->Selected && Data && !Data->Special;
   }
   else if (Action == DesktopIconAction)
   {
@@ -639,28 +707,38 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   }
   else if (Action == LoginAction)
   {
-    LoginAction->Enabled = SessionData && SessionData->CanLogin;
+    TSessionData * Data = SessionData;
+    LoginAction->Enabled = Data && Data->CanLogin;
+  }
+  else if (Action == SaveSessionAction)
+  {
+    SaveSessionAction->Enabled = (PageControl->ActivePage != SessionListSheet);
   }
   Handled = true;
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TLoginDialog::Execute()
+bool __fastcall TLoginDialog::Execute()
 {
   LoadConfiguration();
-  Boolean Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == mrOk);
   if (Result)
+  {
     SaveConfiguration();
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveConfiguration()
 {
   WinConfiguration->BeginUpdate();
-  try {
+  try
+  {
     LoggingFrame->SaveConfiguration();
     GeneralSettingsFrame->SaveConfiguration();
     WinConfiguration->ShowAdvancedLoginOptions = ShowAdvancedLoginOptionsCheck->Checked;
-  } __finally {
+  }
+  __finally
+  {
     WinConfiguration->EndUpdate();
   }
 }
@@ -700,12 +778,16 @@ void __fastcall TLoginDialog::NavigationTreeChange(TObject * /*Sender*/,
       TTreeNode *Node)
 {
   if (Node->SelectedIndex)
+  {
     for (Integer Index = 0; Index < PageControl->PageCount; Index++)
+    {
       if (PageControl->Pages[Index]->Tag == (Node->SelectedIndex & 127))
       {
         PageControl->ActivePage = PageControl->Pages[Index];
         return;
       }
+    }
+  }
   assert(false);
 }
 //---------------------------------------------------------------------------
@@ -719,16 +801,26 @@ void __fastcall TLoginDialog::PageControlChange(TObject *Sender)
 {
   bool Found = false;
   if (PageControl->ActivePage->Tag)
-    for (Integer Index = 0; Index < NavigationTree->Items->Count; Index++)
+  {
+    for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
+    {
       if ((NavigationTree->Items->Item[Index]->SelectedIndex & 127) ==
             PageControl->ActivePage->Tag)
       {
         NavigationTree->Items->Item[Index]->Selected = true;
         Found = true;
       }
+    }
+  }
 
-  if (!Found) ChangePage(BasicSheet);
-    else DataChange(Sender);
+  if (!Found)
+  {
+    ChangePage(BasicSheet);
+  }
+  else
+  {
+    DataChange(Sender);
+  }
 }
 //---------------------------------------------------------------------------
 TTreeView * __fastcall TLoginDialog::GetNavigationTree()
@@ -766,11 +858,43 @@ void __fastcall TLoginDialog::CMDialogKey(TWMKeyDown & Message)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Dispatch(void *Message)
 {
-  if ((((PMessage)Message)->Msg) == CM_DIALOGKEY)
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  assert(M);
+  if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
   }
-  else TForm::Dispatch(Message);
+  else if (M->Msg == WM_LOCALE_CHANGE)
+  {
+    if (M->WParam == 0)
+    {
+      SaveConfiguration();
+      SaveSession(FSessionData);
+      FSavedTab = PageControl->ActivePage;
+      FSavedSession = SessionListView->ItemIndex;
+
+      RevokeSystemSettings(this, FSystemSettings);
+      ShowTabs(true);
+
+      Hide();
+    }
+    else
+    {
+      FLocaleChanging = true;
+      try
+      {
+        Show();
+      }
+      __finally
+      {
+        FLocaleChanging = false;
+      }
+    }
+  }
+  else
+  {
+    TForm::Dispatch(Message);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CipherListBoxStartDrag(TObject * /*Sender*/,
@@ -879,3 +1003,47 @@ void __fastcall TLoginDialog::SessionListViewCustomDrawItem(
   DefaultDraw = true;
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::CheckForUpdatesActionExecute(TObject * /*Sender*/)
+{
+  CheckForUpdates();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SetInitial(bool value)
+{
+  if (Initial != value)
+  {
+    FInitial = value;
+    LanguagesButton->Visible = Initial;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::LanguagesButtonClick(TObject * /*Sender*/)
+{
+  TPoint PopupPoint = LanguagesButton->ClientToScreen(TPoint(0, LanguagesButton->Height));
+  delete FLanguagesPopupMenu;
+  FLanguagesPopupMenu = new TPopupMenu(this);
+
+  TStrings * Locales = WinConfiguration->Locales;
+  for (int Index = 0; Index < Locales->Count; Index++)
+  {
+    TMenuItem * Item = new TMenuItem(FLanguagesPopupMenu);
+    FLanguagesPopupMenu->Items->Add(Item);
+    Item->Caption = Locales->Strings[Index];
+    Item->Tag = reinterpret_cast<int>(Locales->Objects[Index]);
+    Item->OnClick = LocaleClick;
+    Item->Checked = (reinterpret_cast<LCID>(Locales->Objects[Index]) ==
+      WinConfiguration->Locale);
+  }
+
+  FLanguagesPopupMenu->Popup(PopupPoint.x, PopupPoint.y);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::LocaleClick(TObject * Sender)
+{
+  assert(Sender);
+  WinConfiguration->Locale =
+    static_cast<LCID>(dynamic_cast<TMenuItem*>(Sender)->Tag);
+  LanguagesButton->SetFocus();
+}
+//---------------------------------------------------------------------------
+

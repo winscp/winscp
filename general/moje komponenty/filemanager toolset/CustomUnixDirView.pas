@@ -6,7 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ComCtrls, NortonLikeListView, IEListView, CustomDirView, 
+  ComCtrls, NortonLikeListView, IEListView, CustomDirView,
   ListViewColProperties, UnixDirViewColProperties;
 
 type
@@ -27,10 +27,10 @@ type
     property UnixColProperties: TUnixDirViewColProperties read GetUnixColProperties write SetUnixColProperties;
   end;
 
-implementation
-
 resourcestring
-  SDragDropDirException = 'Can''t create temporary drag&drop directory "%s".';
+  SDragDropDirException = 'Can''t create temporary drag&drop directory ''%s''.';
+
+implementation
 
 { TCustomUnixDirView }
 

@@ -3,6 +3,7 @@
 #define TerminalManagerH
 //---------------------------------------------------------------------------
 #include <Terminal.h>
+#include <FileOperationProgress.h>
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
 class TLogMemo;
@@ -23,7 +24,7 @@ private:
 class TTerminalManager : public TTerminalList
 {
 public:
-  static TTerminalManager * __fastcall Instance();
+  static TTerminalManager * __fastcall Instance(bool ForceCreation = true);
   static void __fastcall DestroyInstance();
 
   __fastcall TTerminalManager();
@@ -33,12 +34,12 @@ public:
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   bool __fastcall ConnectActiveTerminal();
   void __fastcall ReconnectActiveTerminal();
-  //void __fastcall SaveActiveTerminal();
   void __fastcall FreeActiveTerminal();
+  void __fastcall CycleTerminals(bool Forward);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
-  __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex };
+  __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
   __property AnsiString ActiveTerminalTitle = { read = GetActiveTerminalTitle };
   __property TStrings * TerminalList = { read = GetTerminalList };
   __property TLogMemo * LogMemo = { read = FLogMemo };
@@ -57,6 +58,8 @@ private:
   TNotifyEvent FOnTerminalListChanged;
   TNotifyEvent FOnChangeTerminal;
   TStrings * FTerminalList;
+  int FProgress;
+  ::TFileOperation FOperation;
 
   void __fastcall CreateLogMemo();
   void __fastcall FreeLogMemo();
@@ -76,6 +79,13 @@ private:
   int __fastcall GetActiveTerminalIndex();
   AnsiString __fastcall GetActiveTerminalTitle();
   void __fastcall SaveTerminal(TTerminal * Terminal);
+  void __fastcall SetActiveTerminalIndex(int value);
+  void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,
+    bool DragDrop, const AnsiString FileName, bool Success,
+    bool & DisconnectWhenFinished);
+  void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
+    TCancelStatus & Cancel);
+  void __fastcall UpdateAppTitle();
 };
 //---------------------------------------------------------------------------
 #endif

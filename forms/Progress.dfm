@@ -117,13 +117,15 @@ object ProgressForm: TProgressForm
     DesignSize = (
       299
       79)
-    object Label3: TLabel
-      Left = 162
-      Top = 18
-      Width = 66
+    object CPSLabel: TLabel
+      Left = 234
+      Top = 34
+      Width = 65
       Height = 13
+      Alignment = taRightJustify
       Anchors = [akTop, akRight]
-      Caption = 'Time elapsed:'
+      AutoSize = False
+      Caption = '0 KB/s'
     end
     object TimeElapsedLabel: TLabel
       Left = 234
@@ -135,62 +137,15 @@ object ProgressForm: TProgressForm
       AutoSize = False
       Caption = '00:00:00'
     end
-    object Label5: TLabel
-      Left = 0
-      Top = 18
-      Width = 47
-      Height = 13
-      Caption = 'Start time:'
-    end
-    object StartTimeLabel: TLabel
-      Left = 88
-      Top = 18
-      Width = 65
-      Height = 13
-      Alignment = taRightJustify
-      AutoSize = False
-      Caption = '00:00:00'
-    end
-    object Label4: TLabel
-      Left = 0
-      Top = 34
-      Width = 79
-      Height = 13
-      Caption = 'Bytes transfered:'
-    end
-    object BytesTransferedLabel: TLabel
-      Left = 88
-      Top = 34
-      Width = 65
-      Height = 13
-      Alignment = taRightJustify
-      AutoSize = False
-      Caption = '0 KB'
-    end
-    object Label7: TLabel
-      Left = 162
-      Top = 34
-      Width = 24
-      Height = 13
-      Anchors = [akTop, akRight]
-      Caption = 'CPS:'
-    end
-    object CPSLabel: TLabel
+    object ResumeLabel: TLabel
       Left = 234
-      Top = 34
+      Top = 2
       Width = 65
       Height = 13
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
       AutoSize = False
-      Caption = '0 KB/s'
-    end
-    object Label10: TLabel
-      Left = 0
-      Top = 2
-      Width = 71
-      Height = 13
-      Caption = 'Transfer mode:'
+      Caption = 'Enabled'
     end
     object TransferModeLabel: TLabel
       Left = 88
@@ -201,6 +156,61 @@ object ProgressForm: TProgressForm
       AutoSize = False
       Caption = 'Binary'
     end
+    object BytesTransferedLabel: TLabel
+      Left = 88
+      Top = 34
+      Width = 65
+      Height = 13
+      Alignment = taRightJustify
+      AutoSize = False
+      Caption = '0 KB'
+    end
+    object StartTimeLabel: TLabel
+      Left = 88
+      Top = 18
+      Width = 65
+      Height = 13
+      Alignment = taRightJustify
+      AutoSize = False
+      Caption = '00:00:00'
+    end
+    object Label3: TLabel
+      Left = 162
+      Top = 18
+      Width = 66
+      Height = 13
+      Anchors = [akTop, akRight]
+      Caption = 'Time elapsed:'
+    end
+    object Label5: TLabel
+      Left = 0
+      Top = 18
+      Width = 47
+      Height = 13
+      Caption = 'Start time:'
+    end
+    object Label4: TLabel
+      Left = 0
+      Top = 34
+      Width = 79
+      Height = 13
+      Caption = 'Bytes transfered:'
+    end
+    object Label7: TLabel
+      Left = 162
+      Top = 34
+      Width = 24
+      Height = 13
+      Anchors = [akTop, akRight]
+      Caption = 'CPS:'
+    end
+    object Label10: TLabel
+      Left = 0
+      Top = 2
+      Width = 71
+      Height = 13
+      Caption = 'Transfer mode:'
+    end
     object Label11: TLabel
       Left = 162
       Top = 2
@@ -208,16 +218,6 @@ object ProgressForm: TProgressForm
       Height = 13
       Anchors = [akTop, akRight]
       Caption = 'Resume:'
-    end
-    object ResumeLabel: TLabel
-      Left = 234
-      Top = 2
-      Width = 65
-      Height = 13
-      Alignment = taRightJustify
-      Anchors = [akTop, akRight]
-      AutoSize = False
-      Caption = 'Enabled'
     end
     object FileProgress: TProgressBar
       Left = 0

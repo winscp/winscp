@@ -30,6 +30,7 @@ __published:
   TCheckBox *SaveSettingsCheck;
   TMoreButton *MoreButton;
   TButton *MinimizeButton;
+  TCheckBox *ExistingOnlyCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall StartButtonClick(TObject *Sender);
@@ -37,12 +38,14 @@ __published:
   void __fastcall MinimizeButtonClick(TObject *Sender);
 private:
   TSynchronizeStartStopEvent FOnStartStop;
-  Boolean FSynchronizing;
+  bool FSynchronizing;
   TSynchronizeParamType FParams;
-  Boolean FWasExpanded;
-  Boolean FMinimizedByMe;
+  bool FWasExpanded;
+  bool FMinimizedByMe;
   void __fastcall SetParams(TSynchronizeParamType value);
   TSynchronizeParamType __fastcall GetParams();
+  bool __fastcall GetExistingOnly();
+  void __fastcall SetExistingOnly(bool value);
 protected:
   void __fastcall UpdateControls();
   void __fastcall Validate();
@@ -54,6 +57,7 @@ public:
   void __fastcall Stop();
   __property TSynchronizeParamType Params = { read = GetParams, write = SetParams };
   __property TSynchronizeStartStopEvent OnStartStop  = { read=FOnStartStop, write=FOnStartStop };
+  __property bool ExistingOnly = { read=GetExistingOnly, write=SetExistingOnly };
 };
 //----------------------------------------------------------------------------
 #endif

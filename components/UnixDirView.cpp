@@ -635,14 +635,17 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
 void __fastcall TUnixDirView::DoReadDirectory(TObject * /*Sender*/, bool ReloadOnly)
 {
 #ifndef DESIGN_ONLY
-  if (ReloadOnly)
+  if (Terminal->Active)
   {
-    Reload(false);
-  }
-  else
-  {
-    Load();
-    PathChanged();
+    if (ReloadOnly)
+    {
+      Reload(false);
+    }
+    else
+    {
+      Load();
+      PathChanged();
+    }
   }
 #endif
 }
@@ -966,6 +969,16 @@ void __fastcall TUnixDirView::ChangeDirectory(AnsiString Path)
       Reload(false);
     };
   }
+#endif
+}
+//---------------------------------------------------------------------------
+bool __fastcall TUnixDirView::CanEdit(TListItem* Item)
+{
+  assert(Terminal);
+#ifndef DESIGN_ONLY
+  return TCustomUnixDirView::CanEdit(Item) && Terminal->IsCapable[fcRename];
+#else
+  return false;
 #endif
 }
 //---------------------------------------------------------------------------

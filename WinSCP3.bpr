@@ -14,10 +14,18 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) forms\CustomScpExplorer.dfm forms\NonVisual.dfm"/>
     <LIBFILES value="lib\Putty.lib lib\RScpComp.lib lib\ScpCore.lib lib\ScpForms.lib"/>
-    <LIBRARIES value="nmfast.lib DragDrop_B5.lib DriveDir_B5.lib Moje_B5.lib vclx.lib rtl.lib 
-      vcl.lib"/>
+    <LIBRARIES value="bcbie.lib visualdbclx.lib bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib 
+      soaprtl.lib dbexpress.lib inetdbxpress.lib inetdb.lib inetdbbde.lib 
+      inet.lib xmlrtl.lib ibxpress.lib teeqr.lib tee.lib teedb.lib teeui.lib 
+      bdecds.lib cds.lib dsnap.lib vcldbx.lib bdertl.lib qrpt.lib adortl.lib 
+      dbrtl.lib vcldb.lib bcbsmp.lib nmfast.lib DragDrop_B5.lib DriveDir_B5.lib 
+      Moje_B5.lib vclx.lib rtl.lib vcl.lib"/>
     <SPARELIBS value="vcl.lib rtl.lib vclx.lib Moje_B5.lib DriveDir_B5.lib DragDrop_B5.lib 
-      nmfast.lib"/>
+      nmfast.lib bcbsmp.lib vcldb.lib dbrtl.lib adortl.lib qrpt.lib bdertl.lib 
+      vcldbx.lib dsnap.lib cds.lib bdecds.lib teeui.lib teedb.lib tee.lib 
+      teeqr.lib ibxpress.lib xmlrtl.lib inet.lib inetdbbde.lib inetdb.lib 
+      inetdbxpress.lib dbexpress.lib soaprtl.lib dclocx.lib dbxcds.lib indy.lib 
+      bcb2kaxserver.lib visualdbclx.lib bcbie.lib"/>
     <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi adortl.bpi vcldb.bpi 
       qrpt.bpi bdertl.bpi vcldbx.bpi dsnap.bpi cds.bpi bdecds.bpi teeui.bpi 
       teedb.bpi tee.bpi teeqr.bpi ibxpress.bpi vclie.bpi xmlrtl.bpi inet.bpi 
@@ -31,7 +39,7 @@
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="OLD_DND;_DEBUG"/>
+    <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="WinSCP3.cpp"/>
     <INCLUDEPATH value="core;forms;windows;resource;components;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
@@ -41,12 +49,11 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
-      -tW -tWM"/>
-    <PFLAGS value="  -$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
-    <AFLAGS value="/mx /w2 /zi"/>
-    <LFLAGS value="-I -D&quot;&quot; -aa -Tpe -GD -x -Gn -v"/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-I -D&quot;&quot; -aa -Tpe -GD -x -Gn"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -89,11 +96,11 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
-MinorVer=3
+MinorVer=4
 Release=0
-Build=178
+Build=191
 Debug=0
-PreRelease=0
+PreRelease=1
 Special=0
 Private=0
 DLL=0
@@ -103,7 +110,7 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.3.0.178
+FileVersion=3.4.0.191
 InternalName=winscp3
 LegalCopyright=(c) 2000-2003 Martin Prikryl
 LegalTrademarks=

@@ -443,7 +443,7 @@ __published:	// IDE-managed Components
   TMenuItem *N3;
   TMenuItem *N40;
   TMenuItem *Openterminal2;
-  TAction *LocalExploreDirectory;
+  TAction *LocalExploreDirectoryAction;
   TMenuItem *Exploredirectory1;
   TAction *LeaveRightsAsIsAction;
   TMenuItem *Leaveasis1;
@@ -487,6 +487,9 @@ __published:	// IDE-managed Components
   TAction *PuttyAction;
   TMenuItem *OpeninPuTTY1;
   TMenuItem *OpeninPuTTY2;
+  TMenuItem *N48;
+  TAction *DonatePageAction;
+  TMenuItem *Donate1;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall RightsActionsExecute(TBasicAction *Action, bool &Handled);

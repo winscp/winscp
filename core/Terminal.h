@@ -13,6 +13,7 @@ class TFileOperationProgressType;
 class TRemoteDirectory;
 class TRemoteFile;
 class TCustomFileSystem;
+struct TCalculateSizeParams;
 typedef TStringList TUserGroupsList;
 typedef void __fastcall (__closure *TReadDirectoryEvent)(System::TObject* Sender, Boolean ReloadOnly);
 typedef void __fastcall (__closure *TProcessFileEvent)
@@ -56,7 +57,7 @@ typedef int __fastcall (__closure *TFileOperationEvent)
     }                                                                       \
     catch (Exception & E)                                                   \
     { \
-      HandleExtendedException(&E, this); \
+      HandleExtendedException(&E); \
       int Answers = qaRetry | qaAbort | ((ALLOW_SKIP) ? qaSkip : 0); \
       int Answer; \
       int Params = qpAllowContinueOnError | (!(ALLOW_SKIP) ? qpFatalAbort : 0); \
@@ -76,12 +77,17 @@ typedef int __fastcall (__closure *TFileOperationEvent)
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink,
-  fcTextMode };
+  fcTextMode, fcRename };
 //---------------------------------------------------------------------------
-const cpDelete = 1;
-const cpDragDrop = 4;
-const cpTemporary = 4; // alias to cpDragDrop
-const cpNoConfirmation = 8;
+const cpDelete = 0x01;
+const cpDragDrop = 0x04;
+const cpTemporary = 0x04; // alias to cpDragDrop
+const cpNoConfirmation = 0x08;
+//---------------------------------------------------------------------------
+const ccApplyToDirectories = 0x01;
+const ccRecursive = 0x02;
+//---------------------------------------------------------------------------
+const csIgnoreErrors = 0x01;
 //---------------------------------------------------------------------------
 class TTerminal : public TSecureShell
 {
@@ -98,6 +104,7 @@ private:
   int FInTransaction;
   TNotifyEvent FOnChangeDirectory;
   TReadDirectoryEvent FOnReadDirectory;
+  TNotifyEvent FOnStartReadDirectory;
   bool FReadCurrentDirectoryPending;
   bool FReadDirectoryPending;
   TUserGroupsList * FUserGroups;
@@ -118,14 +125,16 @@ private:
   void __fastcall SetExceptionOnFail(bool value);
   void __fastcall ReactOnCommand(int /*TFSCommand*/ Cmd);
   AnsiString __fastcall GetUserName() const;
+
 protected:
+  void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectory(bool ReloadOnly);
   void __fastcall DoCreateDirectory(const AnsiString DirName,
     const TRemoteProperties * Properties);
   void __fastcall DoDeleteFile(const AnsiString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall DoCustomCommandOnFile(AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command);
+    const TRemoteFile * File, AnsiString Command, int Params);
   void __fastcall DoRenameFile(const AnsiString FileName, const AnsiString NewName);
   void __fastcall DoChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
@@ -151,6 +160,13 @@ protected:
     unsigned long * ATime, __int64 * Size);
   TRemoteFileList * ReadDirectoryListing(AnsiString Directory);
   bool __fastcall HandleException(Exception * E);
+  void __fastcall CalculateFileSize(AnsiString FileName,
+    const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);
+  void __fastcall DoCalculateDirectorySize(const AnsiString FileName,
+    const TRemoteFile * File, TCalculateSizeParams * Params);
+  void __fastcall CalculateLocalFileSize(const AnsiString FileName,
+    const TSearchRec Rec, /*__int64*/ void * Size);
+  void __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -177,8 +193,8 @@ public:
     const TRemoteFile * File = NULL, void * Recursive = NULL);
   void __fastcall DeleteFiles(TStrings * FilesToDelete, bool * Recursive = NULL);
   void __fastcall CustomCommandOnFile(AnsiString FileName,
-    const TRemoteFile * File, void * ACommand);
-  void __fastcall CustomCommandOnFiles(AnsiString Command, TStrings * Files);
+    const TRemoteFile * File, void * AParams);
+  void __fastcall CustomCommandOnFiles(AnsiString Command, int Params, TStrings * Files);
   void __fastcall ChangeDirectory(const AnsiString Directory);
   void __fastcall DoStartup();
   void __fastcall EndTransaction();
@@ -192,11 +208,14 @@ public:
   void __fastcall ReloadDirectory();
   void __fastcall RenameFile(const AnsiString FileName, const AnsiString NewName);
   void __fastcall RenameFile(const TRemoteFile * File, const AnsiString NewName, bool CheckExistence);
+  void __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size, int Params);
+
   __property AnsiString CurrentDirectory = { read = GetCurrentDirectory, write = SetCurrentDirectory };
   __property bool ExceptionOnFail = { read = GetExceptionOnFail, write = SetExceptionOnFail };
   __property TRemoteDirectory * Files = { read = FFiles };
   __property TNotifyEvent OnChangeDirectory = { read = FOnChangeDirectory, write = FOnChangeDirectory };
   __property TReadDirectoryEvent OnReadDirectory = { read = FOnReadDirectory, write = FOnReadDirectory };
+  __property TNotifyEvent OnStartReadDirectory = { read = FOnStartReadDirectory, write = FOnStartReadDirectory };
   __property TUserGroupsList * UserGroups = { read = GetUserGroups };
   __property TFileOperationProgressEvent OnProgress  = { read=FOnProgress, write=FOnProgress };
   __property TFileOperationFinished OnFinished  = { read=FOnFinished, write=FOnFinished };
@@ -223,6 +242,18 @@ private:
   TConfiguration * FConfiguration;
 
   TTerminal * __fastcall GetTerminal(int Index);
+};
+//---------------------------------------------------------------------------
+struct TCustomCommandParams
+{
+  AnsiString Command;
+  int Params;
+};
+//---------------------------------------------------------------------------
+struct TCalculateSizeParams
+{
+  __int64 Size;
+  int Params;
 };
 //---------------------------------------------------------------------------
 #endif

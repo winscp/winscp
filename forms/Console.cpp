@@ -40,7 +40,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FAddOutput = false;
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
-  UseSystemFont(this);
+  UseSystemSettings(this);
   try
   {
     OutputMemo->Font->Name = "Courier New";

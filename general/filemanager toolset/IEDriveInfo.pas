@@ -94,11 +94,12 @@ type
     Function ReadDriveStatus(Drive : TDrive; Flags : Integer) : Boolean;
     Constructor Create;
     Destructor Destroy;  Override;
+    procedure Load;
   End;
 {---------------------------------------------------------------}
 
 Function GetShellFileName (Const Name : String ) : String;  Overload;
-Function GetShellFileName (PIDL : PItemIDList)   : String;  OverLoad;            
+Function GetShellFileName (PIDL : PItemIDList)   : String;  OverLoad;
 Function GetNetWorkName   (Drive : Char) : String;
 
 
@@ -121,15 +122,38 @@ uses
 // ===========================================================
 
 Constructor TDriveInfo.Create;
-Var Drive    : TDrive;
-    Reg      : TRegistry;
-
 Begin
   Inherited Create;
+
+  Load;
+End; {TDriveInfo.Create}
+
+destructor TDriveInfo.Destroy;
+var
+  Drive: TDrive;
+begin
+  for Drive := FirstDrive to LastDrive do
+    with FData[Drive] do
+    begin
+      SetLength(DisplayName, 0);
+      SetLength(PrettyName, 0);
+      SetLength(LongPrettyName, 0);
+      SetLength(FileSystemName, 0);
+      // This causes access violation
+      // FreePIDL(PIDL);
+    end;
+  inherited;
+end; {TDriveInfo.Destroy}
+
+procedure TDriveInfo.Load;
+var
+  Drive: TDrive;
+  Reg: TRegistry;
+begin
   FNoDrives := 0;
   Reg := TRegistry.Create;
-  Try
-    IF Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') Then
+  try
+    if Reg.OpenKeyReadOnly('Software\Microsoft\Windows\CurrentVersion\Policies\Explorer') Then
        Reg.ReadBinaryData('NoDrives', FNoDrives, SizeOf(FNoDrives));
   Except
     Try
@@ -161,25 +185,7 @@ Begin
    FileSystemFlags := 0;
    MaxFileNameLength := 0;
   End;
-End; {TDriveInfo.Create}
-
-
-destructor TDriveInfo.Destroy;
-var
-  Drive: TDrive;
-begin
-  for Drive := FirstDrive to LastDrive do
-    with FData[Drive] do
-    begin
-      SetLength(DisplayName, 0);
-      SetLength(PrettyName, 0);
-      SetLength(LongPrettyName, 0);
-      SetLength(FileSystemName, 0);
-      // This causes access violation
-      // FreePIDL(PIDL);
-    end;
-  inherited;
-end; {TDriveInfo.Destroy}
+end;
 
 Function TDriveInfo.GetImageIndex(Drive : TDrive) : Integer;
 Begin

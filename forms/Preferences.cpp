@@ -45,10 +45,10 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   CopyParamsFrame->Direction = pdAll;
   FEditorFont = new TFont();
   FAfterExternalEditorDialog = false;
-  FCustomCommands = new TStringList();
+  FCustomCommands = new TCustomCommands();
   FCustomCommandChanging = false;
   FCustomCommandDragDest = -1;
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
@@ -62,8 +62,45 @@ bool __fastcall TPreferencesDialog::Execute()
 {
   LoadConfiguration();
   bool Result = (ShowModal() == mrOk);
-  if (Result) SaveConfiguration();
+  if (Result)
+  {
+    SaveConfiguration();
+  }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
+{
+  Tree->FullExpand();
+  int i = 0;
+  while (i < Tree->Items->Count)
+  {
+    if ((!WinConfiguration->ExpertMode &&
+         Tree->Items->Item[i]->SelectedIndex & 128))
+    {
+      Tree->Items->Delete(Tree->Items->Item[i]);
+    }
+    else
+    {
+      for (int pi = 0; pi < PageControl->PageCount; pi++)
+      {
+        if (PageControl->Pages[pi]->Tag == (Tree->Items->Item[i]->SelectedIndex & 127))
+        {
+          if (PageControl->Pages[pi]->Enabled)
+          {
+            Tree->Items->Item[i]->Text = PageControl->Pages[pi]->Hint;
+          }
+          else
+          {
+            Tree->Items->Delete(Tree->Items->Item[i]);
+            i--;
+          }
+          break;
+        }
+      }
+      i++;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::LoggingGetDefaultLogFileName(
@@ -95,6 +132,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(UseLocationProfiles);
   BOOLPROP(ContinueOnError);
   #undef BOOLPROP
+
+  CompareByTimeCheck->Checked = WinConfiguration->ScpCommander.CompareByTime;
+  CompareBySizeCheck->Checked = WinConfiguration->ScpCommander.CompareBySize;
 
   if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
   {
@@ -140,12 +180,12 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   ResumeOffButton->Checked = Configuration->CopyParam.ResumeSupport == rsOff;
   ResumeThresholdEdit->Value = Configuration->CopyParam.ResumeThreshold / 1024;
 
-  TransferSheet->TabVisible = WinConfiguration->ExpertMode;
-  GeneralSheet->TabVisible = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
-  ExplorerSheet->TabVisible = WinConfiguration->ExpertMode;
-  CommanderSheet->TabVisible = WinConfiguration->ExpertMode;
-  GeneralSheet->TabVisible = (PreferencesMode != pmLogin);
-  EditorSheet->TabVisible = WinConfiguration->ExpertMode && !WinConfiguration->DisableOpenEdit;
+  TransferSheet->Enabled = WinConfiguration->ExpertMode;
+  GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
+  ExplorerSheet->Enabled = WinConfiguration->ExpertMode;
+  CommanderSheet->Enabled = WinConfiguration->ExpertMode;
+  GeneralSheet->Enabled = (PreferencesMode != pmLogin);
+  EditorSheet->Enabled = WinConfiguration->ExpertMode && !WinConfiguration->DisableOpenEdit;
 
   StorageGroup->Visible = WinConfiguration->ExpertMode;
   RandomSeedFileLabel->Visible = WinConfiguration->ExpertMode;
@@ -187,6 +227,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(UseLocationProfiles);
     BOOLPROP(ContinueOnError);
     #undef BOOLPROP
+
+    WinConfiguration->ScpCommander.CompareByTime = CompareByTimeCheck->Checked;
+    WinConfiguration->ScpCommander.CompareBySize = CompareBySizeCheck->Checked;
 
     if (DDSystemTemporaryDirectoryButton->Checked)
     {
@@ -244,18 +287,28 @@ void __fastcall TPreferencesDialog::SetPreferencesMode(TPreferencesMode value)
   {
     FPreferencesMode = value;
     
-    GeneralSheet->TabVisible = (value != pmLogin);
-    LogSheet->TabVisible = (value != pmLogin);
+    GeneralSheet->Enabled = (value != pmLogin);
+    LogSheet->Enabled = (value != pmLogin);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
 {
+  PrepareNavigationTree(NavigationTree);
+
+  for (int Index = 0; Index < PageControl->PageCount; Index++)
+  {
+    PageControl->Pages[Index]->TabVisible = false;
+  }
+  // change form height by height of hidden tabs
+  ClientHeight -= 50;
+
   switch (PreferencesMode) {
     case pmEditor: PageControl->ActivePage = EditorSheet; break;
     case pmCustomCommands: PageControl->ActivePage = CustomCommandsSheet; break;
     default: PageControl->ActivePage = PreferencesSheet; break;
   }
+  PageControlChange(NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ControlChange(TObject * /*Sender*/)
@@ -269,7 +322,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
   EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Checked);
   EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
 
-  EditorFontLabel->Caption = FORMAT("%s, %d pt",
+  EditorFontLabel->Caption = FMTLOAD(EDITOR_FONT_FMT,
     (FEditorFont->Name, FEditorFont->Size));
 
   bool CommandComplete = !CustomCommandDescEdit->Text.IsEmpty() &&
@@ -279,6 +332,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     CustomCommandsView->Selected &&
     (CustomCommandDescEdit->Text != FCustomCommands->Names[CustomCommandsView->ItemIndex] ||
      CustomCommandEdit->Text != FCustomCommands->Values[
+      FCustomCommands->Names[CustomCommandsView->ItemIndex]] ||
+     CustomCommandParams() != FCustomCommands->Params[
       FCustomCommands->Names[CustomCommandsView->ItemIndex]]));
   EnableControl(RemoveCommandButton, CustomCommandsView->Selected);
   EnableControl(UpCommandButton, CustomCommandsView->ItemIndex > 0);
@@ -392,7 +447,24 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
   Item->Caption = StringReplace(FCustomCommands->Names[Index], "&", "",
     TReplaceFlags() << rfReplaceAll);
   assert(!Item->SubItems->Count);
-  Item->SubItems->Add(FCustomCommands->Values[FCustomCommands->Names[Index]]);
+  AnsiString Name = FCustomCommands->Names[Index];
+  Item->SubItems->Add(FCustomCommands->Values[Name]);
+  int Params = FCustomCommands->Params[Name];
+  AnsiString ParamsStr;
+  if ((Params & ccApplyToDirectories) && (Params & ccRecursive))
+  {
+    ParamsStr = FMTLOAD(CUSTOM_COMMAND_PARAMFMT,
+      (LoadStr(CUSTOM_COMMAND_DIRECTORIES), LoadStr(CUSTOM_COMMAND_RECURSE)));
+  }
+  else if (Params & ccApplyToDirectories)
+  {
+    ParamsStr = LoadStr(CUSTOM_COMMAND_DIRECTORIES);
+  }
+  else if (Params & ccRecursive)
+  {
+    ParamsStr = LoadStr(CUSTOM_COMMAND_RECURSE);
+  }
+  Item->SubItems->Add(ParamsStr);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewSelectItem(
@@ -405,7 +477,11 @@ void __fastcall TPreferencesDialog::CustomCommandsViewSelectItem(
     assert(Index >= 0 && Index <= FCustomCommands->Count);
 
     CustomCommandDescEdit->Text = FCustomCommands->Names[Index];
-    CustomCommandEdit->Text = FCustomCommands->Values[FCustomCommands->Names[Index]];
+    AnsiString Name = FCustomCommands->Names[Index];
+    CustomCommandEdit->Text = FCustomCommands->Values[Name];
+    int Params = FCustomCommands->Params[Name];
+    CustomCommandApplyToDirectoriesCheck->Checked = Params & ccApplyToDirectories;
+    CustomCommandRecursiveCheck->Checked = Params & ccRecursive;
   }
   UpdateControls();
 }
@@ -440,6 +516,13 @@ AnsiString __fastcall TPreferencesDialog::CustomCommandString(int Index)
   return FORMAT("%s=%s", (CustomCommandDescEdit->Text, CustomCommandEdit->Text));
 }
 //---------------------------------------------------------------------------
+int __fastcall TPreferencesDialog::CustomCommandParams()
+{
+  return
+    (CustomCommandApplyToDirectoriesCheck->Checked ? ccApplyToDirectories : 0) |
+    (CustomCommandRecursiveCheck->Checked ? ccRecursive : 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::AddCommandButtonClick(TObject * /*Sender*/)
 {
   int Index;
@@ -452,6 +535,7 @@ void __fastcall TPreferencesDialog::AddCommandButtonClick(TObject * /*Sender*/)
   {
     Index = FCustomCommands->Add(CustomCommandString());
   }
+  FCustomCommands->Params[CustomCommandDescEdit->Text] = CustomCommandParams();
   CustomCommandsView->ItemIndex = Index;
   UpdateCustomCommandsView();
   UpdateControls();
@@ -463,6 +547,7 @@ void __fastcall TPreferencesDialog::SaveCommandButtonClick(TObject * /*Sender*/)
     CustomCommandsView->ItemIndex < FCustomCommands->Count);
   FCustomCommands->Strings[CustomCommandsView->ItemIndex] =
     CustomCommandString(CustomCommandsView->ItemIndex);
+  FCustomCommands->Params[CustomCommandDescEdit->Text] = CustomCommandParams();
   UpdateCustomCommandsView();
   UpdateControls();
 }
@@ -534,6 +619,107 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDragOver(
     // (when dropped on item itself, when it was dragged over another item before,
     // that another item remains highlighted forever)
     Accept = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CompareByTimeCheckClick(
+      TObject * /*Sender*/)
+{
+  if (!CompareByTimeCheck->Checked)
+  {
+    CompareBySizeCheck->Checked = true;
+  }
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CompareBySizeCheckClick(
+      TObject * /*Sender*/)
+{
+  if (!CompareBySizeCheck->Checked)
+  {
+    CompareByTimeCheck->Checked = true;
+  }
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::NavigationTreeChange(TObject * /*Sender*/,
+      TTreeNode *Node)
+{
+  if (Node->SelectedIndex)
+  {
+    for (Integer Index = 0; Index < PageControl->PageCount; Index++)
+    {
+      if (PageControl->Pages[Index]->Tag == (Node->SelectedIndex & 127))
+      {
+        PageControl->ActivePage = PageControl->Pages[Index];
+        return;
+      }
+    }
+  }
+  assert(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PageControlChange(TObject * /*Sender*/)
+{
+  bool Found = false;
+  if (PageControl->ActivePage->Tag)
+  {
+    for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
+    {
+      if ((NavigationTree->Items->Item[Index]->SelectedIndex & 127) ==
+            PageControl->ActivePage->Tag)
+      {
+        NavigationTree->Items->Item[Index]->Selected = true;
+        Found = true;
+      }
+    }
+  }
+
+  assert(Found);
+  if (Found)
+  {
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::CMDialogKey(TWMKeyDown & Message)
+{
+  if (Message.CharCode == VK_TAB)
+  {
+    TShiftState Shift = KeyDataToShiftState(Message.KeyData);
+    if (Shift.Contains(ssCtrl))
+    {
+      TTreeNode * Node = NavigationTree->Selected;
+      if (!Shift.Contains(ssShift))
+      {
+        Node = Node->GetNext();
+        if (!Node) Node = NavigationTree->Items->GetFirstNode();
+      }
+      else
+      {
+        if (Node->GetPrev()) Node = Node->GetPrev();
+          else
+        while (Node->GetNext()) Node = Node->GetNext();
+      }
+      Node->Selected = True;
+      Message.Result = 1;
+      return;
+    }
+  }
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::Dispatch(void *Message)
+{
+  TMessage * M = reinterpret_cast<TMessage*>(Message);
+  assert(M);
+  if (M->Msg == CM_DIALOGKEY)
+  {
+    CMDialogKey(*((TWMKeyDown *)Message));
+  }
+  else
+  {
+    TForm::Dispatch(Message);
   }
 }
 //---------------------------------------------------------------------------

@@ -73,6 +73,7 @@ public:
 	bool __fastcall ReadDriveStatus(char Drive, int Flags);
 	__fastcall TDriveInfo(void);
 	__fastcall virtual ~TDriveInfo(void);
+	void __fastcall Load(void);
 };
 
 

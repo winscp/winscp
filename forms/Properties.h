@@ -17,6 +17,8 @@
 
 #include "Rights.h"
 //----------------------------------------------------------------------------
+class TTerminal;
+//----------------------------------------------------------------------------
 class TPropertiesDialog : public TForm
 {
 __published:
@@ -44,36 +46,50 @@ __published:
   TImage *FileIconImage;
   TBevel *RecursiveBevel;
   TCheckBox *RecursiveCheck;
+  TButton *CalculateSizeButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+  void __fastcall CalculateSizeButtonClick(TObject *Sender);
+  
 private:
   int FAllowedChanges;
   TStrings * FFileList;
   TRemoteProperties FOrigProperties;
-  Boolean FGroupsSet;
+  bool FGroupsSet;
   TImageList * FShellImageList;
-  void __fastcall SetDirectory(AnsiString value);
+  bool FAllowCalculateSize;
+  bool FSizeNotCalculated;
+  TTerminal * FTerminal;
+
+  void __fastcall SetDirectory(const AnsiString value);
   AnsiString __fastcall GetDirectory();
   TRemoteProperties __fastcall GetFileProperties();
   TStrings * __fastcall GetGroupList();
-  Boolean __fastcall GetMultiple();
+  bool __fastcall GetMultiple();
   void __fastcall SetAllowedChanges(int value);
   void __fastcall SetFileList(TStrings * value);
   void __fastcall SetFileProperties(TRemoteProperties value);
   void __fastcall SetGroupList(TStrings * value);
+  void __fastcall TerminalManagerChangeTerminal(TObject * /*Sender*/);
+
+protected:
+  void __fastcall LoadInfo();
+  void __fastcall UpdateControls();
+  void __fastcall LoadSize(__int64 FilesSize);
+
+  __property bool Multiple = { read = GetMultiple };
+
 public:
   virtual __fastcall ~TPropertiesDialog();
-  Boolean __fastcall Execute();
-  virtual __fastcall TPropertiesDialog(TComponent* AOwner);
+  bool __fastcall Execute();
+  virtual __fastcall TPropertiesDialog(TComponent * AOwner);
+  
   __property int AllowedChanges = { read = FAllowedChanges, write = SetAllowedChanges };
   __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
   __property TStrings * FileList = { read = FFileList, write = SetFileList };
   __property TRemoteProperties FileProperties = { read = GetFileProperties, write = SetFileProperties };
   __property TStrings * GroupList = { read = GetGroupList, write = SetGroupList };
-protected:
-  void __fastcall LoadInfo();
-  void __fastcall UpdateControls();
-  __property Boolean Multiple = { read = GetMultiple };
+  __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
 };
 //----------------------------------------------------------------------------
 #endif

@@ -154,13 +154,6 @@ private:
 
 protected:
   AnsiString StdError;
-  int __fastcall DoQueryUser(const AnsiString Query, const AnsiString OtherMessage,
-    int Answers, int Params);
-  int __fastcall DoQueryUser(const AnsiString Query, int Answers, int Params);
-  int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
-    int Answers, int Params, TQueryType Type = qtConfirmation);
-  int __fastcall DoQueryUser(const AnsiString Query, Exception * E,
-    int Answers, int Params);
   void __fastcall Error(AnsiString Error);
   virtual void __fastcall UpdateStatus(Integer Value);
   bool __fastcall SshFallbackCmd();
@@ -191,6 +184,14 @@ public:
     const AnsiString KeyType, const AnsiString KeyStr, const AnsiString Fingerprint);
   void __fastcall AskCipher(const AnsiString CipherName, int CipherType);
   void __fastcall OldKeyfileWarning();
+
+  int __fastcall DoQueryUser(const AnsiString Query, const AnsiString OtherMessage,
+    int Answers, int Params);
+  int __fastcall DoQueryUser(const AnsiString Query, int Answers, int Params);
+  int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
+    int Answers, int Params, TQueryType Type = qtConfirmation);
+  int __fastcall DoQueryUser(const AnsiString Query, Exception * E,
+    int Answers, int Params);
 
   bool __fastcall inline IsLogging()
   {

@@ -24,59 +24,70 @@
 #include "UpDownEdit.hpp"
 #include "IEComboBox.hpp"
 //----------------------------------------------------------------------------
+class TCustomCommands;
+//----------------------------------------------------------------------------
 class TPreferencesDialog : public TForm
 {
 __published:
+  TButton *OKButton;
+  TButton *CloseButton;
+  TPanel *MainPanel;
   TPageControl *PageControl;
+  TTabSheet *PreferencesSheet;
+  TLabel *RandomSeedFileLabel;
+  TXPGroupBox *CommonPreferencesGroup;
+  TCheckBox *CopyOnDoubleClickCheck;
+  TCheckBox *CopyOnDoubleClickConfirmationCheck;
+  TCheckBox *ConfirmOverwritingCheck;
+  TCheckBox *ConfirmDeletingCheck;
+  TCheckBox *ConfirmClosingSessionCheck;
+  TCheckBox *DDTransferConfirmationCheck;
+  TCheckBox *ContinueOnErrorCheck;
+  TFilenameEdit *RandomSeedFileEdit;
+  TXPGroupBox *StorageGroup;
+  TRadioButton *RegistryStorageButton;
+  TRadioButton *IniFileStorageButton;
   TTabSheet *LogSheet;
   TLoggingFrame *LoggingFrame;
   TTabSheet *GeneralSheet;
-  TGeneralSettingsFrame *GeneralSettingsFrame;
-  TButton *OKButton;
-  TButton *CloseButton;
   TLabel *Label1;
-  TTabSheet *PreferencesSheet;
-  TXPGroupBox *CommonPreferencesGroup;
+  TGeneralSettingsFrame *GeneralSettingsFrame;
   TTabSheet *PanelsSheet;
-  TLabel *RandomSeedFileLabel;
-  TFilenameEdit *RandomSeedFileEdit;
-  TCheckBox *CopyOnDoubleClickCheck;
-  TCheckBox *CopyOnDoubleClickConfirmationCheck;
   TXPGroupBox *PanelsRemoteDirectoryGroup;
   TCheckBox *ShowInaccesibleDirectoriesCheck;
   TXPGroupBox *PanelsCommonGroup;
   TCheckBox *ShowHiddenFilesCheck;
-  TTabSheet *CommanderSheet;
-  TCheckBox *ConfirmOverwritingCheck;
-  TXPGroupBox *DragDropPreferencesGroup;
-  TXPGroupBox *StorageGroup;
-  TRadioButton *RegistryStorageButton;
-  TRadioButton *IniFileStorageButton;
-  TTabSheet *ExplorerSheet;
-  TLabel *Label4;
-  TCheckBox *ConfirmDeletingCheck;
-  TTabSheet *TransferSheet;
-  TCopyParamsFrame *CopyParamsFrame;
   TCheckBox *DefaultDirIsHomeCheck;
-  TCheckBox *ConfirmClosingSessionCheck;
-  TCheckBox *DDTransferConfirmationCheck;
+  TXPGroupBox *DragDropPreferencesGroup;
+  TLabel *Label5;
   TCheckBox *DDAllowMoveCheck;
+  TRadioButton *DDSystemTemporaryDirectoryButton;
+  TRadioButton *DDCustomTemporaryDirectoryButton;
+  TDirectoryEdit *DDTemporaryDirectoryEdit;
+  TCheckBox *DDWarnLackOfTempSpaceCheck;
+  TTabSheet *CommanderSheet;
+  TLabel *Label3;
   TXPGroupBox *PanelsGroup;
   TCheckBox *DeleteToRecycleBinCheck;
   TCheckBox *ExplorerStyleSelectionCheck;
+  TCheckBox *PreserveLocalDirectoryCheck;
+  TXPGroupBox *CommanderMiscGroup;
+  TCheckBox *UseLocationProfilesCheck;
+  TXPGroupBox *CompareCriterionsGroup;
+  TCheckBox *CompareByTimeCheck;
+  TCheckBox *CompareBySizeCheck;
+  TTabSheet *ExplorerSheet;
+  TLabel *Label4;
   TXPGroupBox *GroupBox2;
   TCheckBox *ShowFullAddressCheck;
-  TRadioButton *DDSystemTemporaryDirectoryButton;
-  TRadioButton *DDCustomTemporaryDirectoryButton;
-  TLabel *Label5;
-  TDirectoryEdit *DDTemporaryDirectoryEdit;
-  TCheckBox *DDWarnLackOfTempSpaceCheck;
+  TTabSheet *TransferSheet;
+  TCopyParamsFrame *CopyParamsFrame;
   TXPGroupBox *ResumeBox;
+  TLabel *ResumeThresholdUnitLabel;
   TRadioButton *ResumeOnButton;
   TRadioButton *ResumeSmartButton;
   TRadioButton *ResumeOffButton;
   TUpDownEdit *ResumeThresholdEdit;
-  TLabel *ResumeThresholdUnitLabel;
   TTabSheet *EditorSheet;
   TXPGroupBox *EditorGroup;
   TRadioButton *EditorInternalButton;
@@ -89,18 +100,20 @@ __published:
   TCheckBox *EditorWordWrapCheck;
   TTabSheet *IntegrationSheet;
   TXPGroupBox *ShellIconsGroup;
+  TLabel *ShellIconsLabel;
   TButton *DesktopIconButton;
   TButton *QuickLaunchIconButton;
   TButton *DesktopIconAllUsersButton;
   TButton *SendToHookButton;
-  TLabel *ShellIconsLabel;
-  TXPGroupBox *CommanderMiscGroup;
-  TCheckBox *UseLocationProfilesCheck;
+  TXPGroupBox *XPGroupBox1;
+  TLabel *Label2;
+  TFilenameEdit *PuttyPathEdit;
   TTabSheet *CustomCommandsSheet;
   TXPGroupBox *CustomCommandsGroup;
   TLabel *LocalDirectoryLabel;
-  TEdit *CustomCommandDescEdit;
   TLabel *RemoteDirectoryLabel;
+  TLabel *CustomCommandsPatternsLabel;
+  TEdit *CustomCommandDescEdit;
   TEdit *CustomCommandEdit;
   TListView *CustomCommandsView;
   TButton *AddCommandButton;
@@ -108,11 +121,10 @@ __published:
   TButton *UpCommandButton;
   TButton *DownCommandButton;
   TButton *SaveCommandButton;
-  TCheckBox *ContinueOnErrorCheck;
-  TCheckBox *PreserveLocalDirectoryCheck;
-  TXPGroupBox *XPGroupBox1;
-  TFilenameEdit *PuttyPathEdit;
-  TLabel *Label2;
+  TCheckBox *CustomCommandApplyToDirectoriesCheck;
+  TCheckBox *CustomCommandRecursiveCheck;
+  TPanel *LeftPanel;
+  TTreeView *NavigationTree;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -137,15 +149,20 @@ __published:
           TObject *Source, int X, int Y);
   void __fastcall CustomCommandsViewDragOver(TObject *Sender,
           TObject *Source, int X, int Y, TDragState State, bool &Accept);
+  void __fastcall CompareByTimeCheckClick(TObject *Sender);
+  void __fastcall CompareBySizeCheckClick(TObject *Sender);
+  void __fastcall NavigationTreeChange(TObject *Sender, TTreeNode *Node);
+  void __fastcall PageControlChange(TObject *Sender);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
-  TStrings * FCustomCommands;
+  TCustomCommands * FCustomCommands;
   bool FCustomCommandChanging;
   bool FAfterExternalEditorDialog;
   int FCustomCommandDragSource;
   int FCustomCommandDragDest;
   void __fastcall SetPreferencesMode(TPreferencesMode value);
+  void __fastcall CMDialogKey(TWMKeyDown & Message);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute();
@@ -158,8 +175,11 @@ protected:
   void __fastcall UpdateControls();
   void __fastcall UpdateCustomCommandsView();
   AnsiString __fastcall CustomCommandString(int Index = -1);
+  int __fastcall CustomCommandParams();
   void __fastcall CustomCommandMove(int Source, int Dest);
   bool __fastcall AllowCustomCommandsDrag(int X, int Y);
+  void __fastcall PrepareNavigationTree(TTreeView * Tree);
+  virtual void __fastcall Dispatch(void * Message);
 };
 //----------------------------------------------------------------------------
 #endif

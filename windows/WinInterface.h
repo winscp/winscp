@@ -12,6 +12,9 @@ class TTerminal;
 const int mpNeverAskAgainCheck =   0x01;
 const int mpAllowContinueOnError = 0x02;
 
+void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
+  bool NoReconnect);
+
 // windows\WinInterface.cpp
 int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
   int Answers, int HelpCtx = 0, int Params = 0);
@@ -68,7 +71,8 @@ void __fastcall DoLicenceDialog(TLicence Licence);
 void __fastcall DoLicenceDialog(const AnsiString LicenceText);
 
 // forms\Login.cpp
-bool __fastcall DoLoginDialog(TStoredSessionList * SessionList, TSessionData * Data);
+bool __fastcall DoLoginDialog(TStoredSessionList * SessionList,
+  TSessionData * Data, bool Initial);
 
 // forms\OpenDirectory.cpp
 enum TOpenDirectoryMode { odBrowse, odAddBookmark };
@@ -87,8 +91,8 @@ typedef void __fastcall (__closure *TGetDefaultLogFileName)
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode);
 
 // forms\Password.cpp
-bool __fastcall DoPasswordDialog(
-    const AnsiString Caption, AnsiString &Password);
+bool __fastcall DoPasswordDialog(const AnsiString Caption, TPasswordKind Kind,
+  AnsiString & Password);
 
 // forms\Properties.cpp
 class TRemoteProperties;
@@ -97,7 +101,8 @@ const cpOwner = 0x02;
 const cpGroup = 0x04;
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
     const AnsiString Directory, TStrings * GroupList,
-    TRemoteProperties * Properties, int AllowedChanges);
+    TRemoteProperties * Properties, int AllowedChanges,
+    TTerminal * Terminal);
 
 // forms\ComboInput.cpp
 bool __fastcall DoComboInputDialog(

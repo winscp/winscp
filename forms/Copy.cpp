@@ -67,7 +67,7 @@ __fastcall TCopyDialog::TCopyDialog(TComponent* Owner)
   TransferType = ttCopy;
   AllowTransferMode = True;
 
-  UseSystemFont(this);
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetDirection(TTransferDirection value)

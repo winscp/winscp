@@ -25,6 +25,7 @@ type
     FDisplayStyle: TVolumeDisplayStyle;
     FDriveTypes: TDriveTypes;
     FDontNotifyPathChange: Boolean;
+    FInternalWindowHandle: HWND;
 
     procedure SetDisplayStyle(Value: TVolumeDisplayStyle);
     procedure SetDrive(Value: TDrive);
@@ -41,10 +42,12 @@ type
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     procedure PathChanged; override;
     procedure SetPath(Value: string); override;
+    procedure InternalWndProc(var Msg: TMessage);
 
   public
     constructor Create(AOwner: TComponent); override;
-    function GetDriveIndex(Drive: TDrive): Integer;
+    destructor Destroy; override;
+    function GetDriveIndex(Drive: TDrive; Closest: Boolean): Integer;
     procedure ResetItems;
     property FocusedDrive: Char read GetFocusedDrive;
     property ItemDrive[Index: Integer]: TDrive read GetItemDrive;
@@ -122,7 +125,34 @@ begin
   FDriveTypes := DefaultDriveTypes;
   FDontNotifyPathChange := False;
   ResetItemHeight;
+  FInternalWindowHandle := Classes.AllocateHWnd(InternalWndProc);
 end; {TIEPathComboBox.Create}
+
+destructor TIEPathComboBox.Destroy;
+begin
+  Classes.DeallocateHWnd(FInternalWindowHandle);
+  inherited;
+end;
+
+procedure TIEPathComboBox.InternalWndProc(var Msg: TMessage);
+begin
+  with Msg do
+  begin
+    if (Msg = WM_DEVICECHANGE) and
+       ((wParam = {DBT_CONFIGCHANGED} $0018) or (wParam = {DBT_DEVICEARRIVAL} $8000) or
+          (wParam = {DBT_DEVICEREMOVECOMPLETE} $8004)) then
+    begin
+      try
+        DriveInfo.Load;
+        ResetItems;
+      except
+        Application.HandleException(Self);
+      end
+    end;
+
+    Result := DefWindowProc(FInternalWindowHandle, Msg, wParam, lParam);
+  end;
+end;
 
 procedure TIEPathComboBox.CreateWnd;
 begin
@@ -140,18 +170,25 @@ begin
   inherited;
 end;
 
-function TIEPathComboBox.GetDriveIndex(Drive: TDrive): Integer;
+function TIEPathComboBox.GetDriveIndex(Drive: TDrive; Closest: Boolean): Integer;
 var
   Index: Integer;
 begin
   Result := -1;
   Drive := UpCase(Drive);
-  for Index := 0 to Items.Count - 1 do
+  for Index := Items.Count - 1 downto 0 do
+  begin
     if Items[Index][1] = Drive then
     begin
       Result := Index;
       Break;
+    end
+      else
+    if Closest and (Items[Index][1] > Drive) then
+    begin
+      Result := Index;
     end;
+  end;
 end; {TIEPathComboBox.GetDriveIndex}
 
 function TIEPathComboBox.GetItemImage(Index: Integer): Integer;
@@ -178,7 +215,7 @@ begin
   if DroppedDown and
      (Key in [Word('A')..Word('Z'), Word('a')..Word('z')]) then
   begin
-    Index := GetDriveIndex(Char(Key));
+    Index := GetDriveIndex(Char(Key), False);
     if Index >= 0 then
     begin
       DroppedDown := False;
@@ -204,9 +241,22 @@ begin
         Items.Add(Drive {+ GetDisplayName(Drive)});
   end;
 
-  Index := GetDriveIndex(FDrive);
-  if (Index < 0) and (Items.Count > 0) then Index := 0;
-  ItemIndex := Index;
+  Index := GetDriveIndex(FDrive, False);
+  if Index >= 0 then
+  begin
+    ItemIndex := Index;
+  end
+    else
+  if Items.Count > 0 then
+  begin
+    Index := GetDriveIndex(FDrive, True);
+    if Index < 0 then
+    begin
+      Index := Items.Count - 1;
+    end;
+    ItemIndex := Index;
+    PathChanged;
+  end;
 end; {TIEPathComboBox.ResetItems }
 
 procedure TIEPathComboBox.SetDrive(Value: TDrive);
@@ -221,7 +271,7 @@ begin
        (TDriveType(DriveInfo[Drive].DriveType) in FDriveTypes) then
     begin
       FDrive := Value;
-      NewIndex := GetDriveIndex(Drive);
+      NewIndex := GetDriveIndex(Drive, False);
       if NewIndex >= 0 then
       begin
         ItemIndex := NewIndex;

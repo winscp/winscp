@@ -6,9 +6,6 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ComCtrls;
 
-const
-  DefaultFileInfoFormat = '%s of %s in %s of %s';
-
 type
   TCustomAssociatedStatusBar = class;
   TStatusFileInfo = record
@@ -63,6 +60,9 @@ function FormatBytes(Bytes: Int64): string;
 const
   FormatBytesAbove: Int64 = Int64(100*1024);
 
+resourcestring
+  SDefaultFileInfoFormat = '%s of %s in %s of %s';
+
 implementation
 
 function FormatBytes(Bytes: Int64): string;
@@ -89,7 +89,7 @@ begin
   SimplePanel := False;
   Panels.Add;
   FFileInfoPanel := 0;
-  FFileInfoFormat := DefaultFileInfoFormat;
+  FFileInfoFormat := SDefaultFileInfoFormat;
   UpdateData;
 end; { Create }
 
@@ -104,7 +104,7 @@ end; { SetFileInfo }
 
 procedure TCustomAssociatedStatusBar.SetFileInfoFormat(Value: string);
 begin
-  if FFileInfoFormat <> Value then 
+  if FFileInfoFormat <> Value then
   begin
     FFileInfoFormat := Value;
     UpdateData;
@@ -114,7 +114,7 @@ end; { SetFileInfoFormat }
 procedure TCustomAssociatedStatusBar.SetFileInfoPanel(Value: Integer);
 begin
   if Value < 0 then Value := -1;
-  if Value >= Panels.Count then Value := Panels.Count - 1;  
+  if Value >= Panels.Count then Value := Panels.Count - 1;
   if FFileInfoPanel <> Value then
   begin
     if FFileInfoPanel in [0..Panels.Count-1] then
@@ -164,7 +164,7 @@ end; { UpdateData }
 
 function TCustomAssociatedStatusBar.StoreFileInfoFormat: Boolean;
 begin
-  Result := (FileInfoFormat <> DefaultFileInfoFormat);
+  Result := (FileInfoFormat <> SDefaultFileInfoFormat);
 end; { StoreFileInfoFormat }
 
 end.

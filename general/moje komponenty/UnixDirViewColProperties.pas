@@ -5,10 +5,17 @@ interface
 uses
   Classes, ComCtrls, DirViewColProperties;
 
+resourcestring
+  SUnixDirViewRightsCol = 'Rights';
+  SUnixDirViewOwnerCol = 'Owner';
+  SUnixDirViewGroupCol = 'Group';
+
 const
   UnixDirViewColumns = 7;
-  DefaultUnixDirViewCaptions: array[0..UnixDirViewColumns-1] of string =
-    ('Name', 'Size', 'Changed', 'Rights', 'Owner', 'Group', 'Ext');
+  DefaultUnixDirViewCaptions: array[0..UnixDirViewColumns-1] of Pointer =
+    (@SDirViewNameCol, @SDirViewSizeCol, @SDirViewChangedCol,
+     @SUnixDirViewRightsCol, @SUnixDirViewOwnerCol, @SUnixDirViewGroupCol,
+     @SDirViewExtCol);
   DefaultUnixDirViewWidths: array[0..UnixDirViewColumns-1] of Integer =
     (150, 80, 130, 100, 130, 130, 0);
   DefaultUnixDirViewAlignments: array[0..UnixDirViewColumns-1] of TAlignment =
@@ -100,7 +107,7 @@ begin
 
   for Index := 0 to Count-1 do
   begin
-    Captions[Index] := DefaultUnixDirViewCaptions[Index];
+    Captions[Index] := LoadResString(DefaultUnixDirViewCaptions[Index]);
     Visible[Index] := DefaultUnixDirViewVisible[Index];
     Widths[Index] := DefaultUnixDirViewWidths[Index];
     Alignments[Index] := DefaultUnixDirViewAlignments[Index];
@@ -135,7 +142,7 @@ end;
 
 function TUnixDirViewColProperties.StoreCaption(Index: Integer): Boolean;
 begin
-  Result := (Captions[Index] <> DefaultUnixDirViewCaptions[Index]);
+  Result := (Captions[Index] <> LoadResString(DefaultUnixDirViewCaptions[Index]));
 end;
 
 function TUnixDirViewColProperties.StoreWidth(Index: Integer): Boolean;

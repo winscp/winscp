@@ -13,14 +13,15 @@
 #include <Common.h>
 #include <ScpMain.h>
 #include <TextsWin.h>
+#include <Progress.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 TTerminalManager * TTerminalManager::FInstance = NULL;
 //---------------------------------------------------------------------------
-TTerminalManager * __fastcall TTerminalManager::Instance()
+TTerminalManager * __fastcall TTerminalManager::Instance(bool ForceCreation)
 {
-  if (!FInstance)
+  if (!FInstance && ForceCreation)
   {
     FInstance = new TTerminalManager();
   }
@@ -41,6 +42,7 @@ __fastcall TTerminalManager::TTerminalManager() :
   FScpExplorer = NULL;
   FDestroying = false;
   FTerminalPendingAction = tpNull;
+  FProgress = -1;
 
   assert(Application && !Application->OnException);
   Application->OnException = ApplicationException;
@@ -75,6 +77,8 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
   try
   {
     Terminal->OnQueryUser = TerminalQueryUser;
+    Terminal->OnProgress = OperationProgress;
+    Terminal->OnFinished = OperationFinished;
     if (!ActiveTerminal)
     {
       ActiveTerminal = Terminal;
@@ -344,16 +348,9 @@ void __fastcall TTerminalManager::SetActiveTerminal(TTerminal * value)
       OnChangeTerminal(this);
     }
     FActiveTerminal = value;
-    if (ActiveTerminal)
-    {
-      Application->Title = FMTLOAD(APP_CAPTION, (ActiveTerminalTitle, AppName));
-    }
-    else
-    {
-      // moved from else block of next if (ActiveTerminal) statement
-      // so ScpExplorer can update its caption
-      Application->Title = AppName;
-    }
+    // moved from else block of next if (ActiveTerminal) statement
+    // so ScpExplorer can update its caption
+    UpdateAppTitle();
     if (ScpExplorer)
     {
       if (ActiveTerminal && (ActiveTerminal->Status == sshReady))
@@ -393,6 +390,27 @@ void __fastcall TTerminalManager::SetActiveTerminal(TTerminal * value)
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::UpdateAppTitle()
+{
+  AnsiString NewTitle;
+  if (ActiveTerminal)
+  {
+    NewTitle = FMTLOAD(APP_CAPTION, (ActiveTerminalTitle, AppName));
+  }
+  else
+  {
+    NewTitle = AppName;
+  }
+
+  if (FProgress >= 0)
+  {
+    NewTitle = FORMAT("%d%% %s - %s",
+      (FProgress, TProgressForm::OperationName(FOperation), NewTitle));
+  }
+  
+  Application->Title = NewTitle;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
@@ -468,6 +486,25 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
+  TOperationSide Side, bool DragDrop, const AnsiString FileName, bool Success,
+  bool & DisconnectWhenFinished)
+{
+  assert(ScpExplorer);
+  ScpExplorer->OperationFinished(Operation, Side, DragDrop, FileName, Success,
+    DisconnectWhenFinished);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::OperationProgress(
+  TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
+{
+  FProgress = ProgressData.InProgress ? ProgressData.OverallProgress() : -1;
+  FOperation = ProgressData.Operation;              
+  UpdateAppTitle();
+  assert(ScpExplorer);
+  ScpExplorer->OperationProgress(ProgressData, Cancel);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
 {
   assert(Configuration);
@@ -537,10 +574,30 @@ int __fastcall TTerminalManager::GetActiveTerminalIndex()
   return ActiveTerminal ? IndexOf(ActiveTerminal) : -1;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::SetActiveTerminalIndex(int value)
+{
+  ActiveTerminal = Terminals[value];
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall TTerminalManager::GetActiveTerminalTitle()
 {
   AnsiString Result = ActiveTerminal ?
     TerminalList->Strings[IndexOf(ActiveTerminal)] : AnsiString("");
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::CycleTerminals(bool Forward)
+{
+  int Index = ActiveTerminalIndex;
+  Index += Forward ? 1 : -1;
+  if (Index < 0)
+  {
+    Index = Count-1;
+  }
+  else if (Index >= Count)
+  {
+    Index = 0;
+  }
+  ActiveTerminalIndex = Index;
 }
 

@@ -1,5 +1,5 @@
 object PropertiesDialog: TPropertiesDialog
-  Left = 523
+  Left = 416
   Top = 133
   BorderStyle = bsDialog
   Caption = 'Properties'
@@ -125,7 +125,7 @@ object PropertiesDialog: TPropertiesDialog
       object SizeLabel: TLabel
         Left = 88
         Top = 80
-        Width = 240
+        Width = 160
         Height = 13
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -210,7 +210,7 @@ object PropertiesDialog: TPropertiesDialog
         Width = 163
         Height = 109
         PopupMenu = NonVisualDataModule.RightsPopup
-        TabOrder = 2
+        TabOrder = 3
       end
       object GroupComboBox: TComboBox
         Left = 88
@@ -219,7 +219,7 @@ object PropertiesDialog: TPropertiesDialog
         Height = 21
         ItemHeight = 13
         MaxLength = 50
-        TabOrder = 0
+        TabOrder = 1
         Text = 'GroupComboBox'
         OnChange = ControlChange
       end
@@ -230,7 +230,7 @@ object PropertiesDialog: TPropertiesDialog
         Height = 21
         ItemHeight = 13
         MaxLength = 50
-        TabOrder = 1
+        TabOrder = 2
         Text = 'OwnerComboBox'
         OnChange = ControlChange
       end
@@ -241,8 +241,18 @@ object PropertiesDialog: TPropertiesDialog
         Height = 17
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Set group, owner and permissions &recursively'
-        TabOrder = 3
+        TabOrder = 4
         OnClick = ControlChange
+      end
+      object CalculateSizeButton: TButton
+        Left = 248
+        Top = 72
+        Width = 80
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'C&alculate'
+        TabOrder = 0
+        OnClick = CalculateSizeButtonClick
       end
     end
   end

@@ -4,8 +4,6 @@
 
 #ifndef C_ONLY
 //---------------------------------------------------------------------------
-//!!!#include <Controls.hpp>
-//---------------------------------------------------------------------------
 #define CATCH(command) \
   try {command;} catch (Exception &E) {ShowExtendedException(&E);}
 #define EXCEPTION throw ExtException(NULL, "")
@@ -37,7 +35,12 @@ AnsiString __fastcall AddPathQuotes(AnsiString Path);
 void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
   AnsiString & Params, AnsiString & Dir);
 AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
-//void SplitText(const AnsiString Value, TStrings *Strings, Char Separator);
+//---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TProcessLocalFileEvent)
+  (const AnsiString FileName, const TSearchRec Rec, void * Param);
+bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec);
+void __fastcall ProcessLocalDirectory(AnsiString DirName,
+  TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
 //---------------------------------------------------------------------------
 #endif
 //---------------------------------------------------------------------------
