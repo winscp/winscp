@@ -166,6 +166,7 @@ void FinalizeChild(HANDLE Child)
   if (Child != NULL)
   {
     TerminateProcess(Child, 0);
+    CloseHandle(Child);
   }
 }
 //---------------------------------------------------------------------------
@@ -384,7 +385,7 @@ BOOL WINAPI HandlerRoutine(DWORD CtrlType)
 #pragma argsused
 int main(int argc, char* argv[])
 {
-  int Result = 0;
+  unsigned long Result = 4;
 
   try
   {
@@ -434,6 +435,8 @@ int main(int argc, char* argv[])
               break;
 
             case WAIT_OBJECT_0 + 1:
+              GetExitCodeProcess(Child, &Result);
+              CloseHandle(Child);
               Child = NULL;
               Continue = false;
               break;

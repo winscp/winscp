@@ -67,9 +67,6 @@ void __fastcall TScpExplorerForm::RestoreParams()
 {
   assert(Configuration);
 
-  // called later once again after menu font is updated (see FormShow)
-  SetCoolBandsMinWidth(TopCoolBar);
-
   TCustomScpExplorerForm::RestoreParams();
 
   RemoteDirView->UnixColProperties->ParamsStr = WinConfiguration->ScpExplorer.DirViewParams;
@@ -125,12 +122,12 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::DoShow()
 {
+  TCustomScpExplorerForm::DoShow();
+
   RemoteDirView->SetFocus();
 
-  // called for second time after menu font was updated (see also RestoreParams)
+  // when this is called before OnShow, some toolbars get right-aligned
   SetCoolBandsMinWidth(TopCoolBar);
-
-  TCustomScpExplorerForm::DoShow();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed Allowed)

@@ -45,7 +45,6 @@ BEGIN
         FILE_WATCH_ERROR, "Error watching for changes of file '%s'."
         EDIT_SESSION_CLOSED, "Cannot upload edited file '%s', the session '%s' has been already closed."
         TOO_MANY_EDITORS, "There are too many opened files already. Please close some first."
-        EDITED_FILE_BEING_UPLOADED, "Saved file '%s' is already being uploaded. Cannot start new upload."
         INVALID_DEFAULT_TRANSLATION, "%s Please remove the file. Otherwise the application will not work correctly."
         CREATE_TEMP_DIR_ERROR, "Cannot create temporary directory '%s'. You may change root directory to store temporary files in Preferences."
         OPEN_FILE_NO_PROCESS, "WinSCP was not able to determine application that was started to open the file. WinSCP cannot watch for changes in the file and thus it will not upload the changed file back.\n \nOne possible reason for the problem is that the file was opened in some already running aplication.\n \nNote that the file will remain in temporary folder."

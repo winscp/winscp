@@ -236,7 +236,7 @@ end;
 
 function TDiscMonitorThread.GetMaxDirectories: Integer;
 begin
-  Result := MAXIMUM_WAIT_OBJECTS - 2;
+  Result := 500;
 end;
 
 // Change the current directory
@@ -315,14 +315,11 @@ end;
 // to be signalled, and the returned value used to determine which event occurred.
 
 procedure TDiscMonitorThread.Execute;
-type
-  THandles = array[0..MAXIMUM_WAIT_OBJECTS - 1] of THandle;
-  PHandles = ^THandles;
 var
   // used to give the handles to WaitFor...
-  Handles: PHandles;
+  Handles: PWOHandleArray;
 
-  function StartMonitor(const Directory: string): THandle;
+  function StartMonitor(const Directory: string; ForceSubTree: Boolean): THandle;
   // There appears to be a bug in win 95 where the bWatchSubTree parameter
   // of FindFirstChangeNotification which is a BOOL only accepts values of
   // 0 and 1 as valid, rather than 0 and any non-0 value as it should.  In D2
@@ -336,12 +333,14 @@ var
   {$ENDIF}
   var
     Again: Boolean;
+    SubTree: Boolean;
   begin
     repeat
+      SubTree := FSubTree or ForceSubTree;
       {$IFDEF BUGFIX}
-      Result := FixFindFirstChangeNotification(PChar(Directory), R[FSubTree], FFilters);
+      Result := FixFindFirstChangeNotification(PChar(Directory), R[SubTree], FFilters);
       {$ELSE}
-      Result := FindFirstChangeNotification(PChar(Directory), R[FSubTree], FFilters);
+      Result := FindFirstChangeNotification(PChar(Directory), R[SubTree], FFilters);
       {$ENDIF}
 
       Again := (Result = INVALID_HANDLE_VALUE);
@@ -352,7 +351,7 @@ var
         DoSynchronize(InformInvalid);
 
         // wait until either DestroyEvent or the ChangeEvents are signalled
-        Result := WaitForMultipleObjects(2, PWOHandleArray(Handles), False, INFINITE);
+        Result := WaitForMultipleObjects(2, Handles, False, INFINITE);
         if Result = WAIT_FAILED then
         begin
           FNotifiedDirectory := '';
@@ -365,30 +364,89 @@ var
     until (not Again);
   end; {StartMonitor}
 
+  procedure Notify(Directory: Integer; Handle: THandle);
+  begin
+    // Notification signalled, so fire the OnChange event and then FindNext..
+    // loop back to re-WaitFor... the thread
+    Sleep(FChangeDelay);
+    FNotifiedDirectory := FDirectories[Directory];
+    DoSynchronize(InformChange);
+    FindNextChangeNotification(Handle);
+  end;  
+
+  function CheckAllObjects(Count: Integer; DirHandles: PWOHandleArray): Integer;
+  const
+    Offset = MAXIMUM_WAIT_OBJECTS;
+  var
+    C, Start: Integer;
+  begin
+    Result := WAIT_TIMEOUT;
+    Start := 0;
+    while Start < Count do
+    begin 
+      if Count - Start > Offset then C := Offset
+        else C := Count - Start;
+      Result := WaitForMultipleObjects(C, @DirHandles[Start], false, 0);      
+      if (Result - WAIT_OBJECT_0 >= 0) and
+         (Result - WAIT_OBJECT_0 < C) then
+      begin
+        Notify(Start + Result - WAIT_OBJECT_0, DirHandles^[Result - WAIT_OBJECT_0]);
+      end
+        else 
+      if Result <> WAIT_TIMEOUT then Break;
+      Inc(Start, C);
+
+      Result := WaitForMultipleObjects(2, Handles, False, 0);
+      if Result <> WAIT_TIMEOUT then break;
+    end;
+  end;
+  
+const
+  DestroySlot = 0;
+  ChangeSlot = 1;
+  HierNotifySlot = 2;
 var
+  SysHandles: Word; 
+  HierMode: Boolean;
+  WaitCount: Word;
   Count: Word;
   I: Integer;
-  Result: DWORD;
+  Result: Cardinal;
 begin {Execute}
-  Count := 2 + FDirectories.Count;
-  GetMem(Handles, sizeof(THandle) * Count);
+  SysHandles := 2;
+  Count := SysHandles + FDirectories.Count;
+  HierMode := (Count > MAXIMUM_WAIT_OBJECTS);
+  if HierMode then
+  begin
+    Inc(SysHandles);
+    Inc(Count);
+    WaitCount := SysHandles;
+  end
+    else WaitCount := Count;
+  GetMem(Handles, SizeOf(THandle) * Count);
   try
-    Handles^[0] := FDestroyEvent;      // put DestroyEvent handle in slot 0
-    Handles^[1] := FChangeEvent;       // put ChangeEvent handle in slot 1
+    Handles^[DestroySlot] := FDestroyEvent;      // put DestroyEvent handle in slot 0
+    Handles^[ChangeSlot] := FChangeEvent;       // put ChangeEvent handle in slot 1
 
     repeat
 
-      for I := 2 to Count - 1 do
+      if HierMode then
       begin
-        Handles^[I] := StartMonitor(FDirectories[I - 2]);
+        // expect that the first directory is the top level one
+        Handles^[HierNotifySlot] := StartMonitor(FDirectories[0], True);
+        if Handles^[HierNotifySlot] = INVALID_HANDLE_VALUE then Exit;
+      end;
+        
+      for I := SysHandles to Count - 1 do
+      begin
+        Handles^[I] := StartMonitor(FDirectories[I - SysHandles], False);
         if Handles^[I] = INVALID_HANDLE_VALUE then Exit;
       end;
 
       repeat
         // handle is valid so wait for any of the change notification, destroy or
         // change events to be signalled
-        Result := WaitForMultipleObjects(Count, PWOHandleArray(Handles),
-          False, INFINITE);
+        Result := WaitForMultipleObjects(WaitCount, Handles, False, INFINITE);
 
         if Result = WAIT_FAILED then
         begin
@@ -396,26 +454,39 @@ begin {Execute}
           DoSynchronize(InformInvalid);
         end
           else
-        if (Result - WAIT_OBJECT_0 >= 2) and
-           (Result - WAIT_OBJECT_0 < Count) then
+        if HierMode and (Result - WAIT_OBJECT_0 = HierNotifySlot) then
         begin
-          // Notification signalled, so fire the OnChange event and then FindNext..
-          // loop back to re-WaitFor... the thread
-          Sleep(FChangeDelay);
-          FNotifiedDirectory := FDirectories[Result - WAIT_OBJECT_0 - 2];
-          DoSynchronize(InformChange);
-          FindNextChangeNotification(Handles^[Result - WAIT_OBJECT_0])
+          FindNextChangeNotification(Handles[HierNotifySlot]);
+          Result := CheckAllObjects(Count - SysHandles, @Handles[SysHandles]);
+          // (Result >= WAIT_OBJECT_0) = always true
+          if Result < Cardinal(WAIT_OBJECT_0 + (Count - SysHandles)) then
+          begin
+            Result := WAIT_OBJECT_0 + HierNotifySlot; 
+          end;
+        end
+          else
+        if (Result >= WAIT_OBJECT_0 + SysHandles) and
+           (Result < WAIT_OBJECT_0 + WaitCount) then
+        begin
+          Notify(Result - WAIT_OBJECT_0 - SysHandles,
+            Handles^[Result - WAIT_OBJECT_0]);
         end;
-      until (Result = WAIT_FAILED) or (Result - WAIT_OBJECT_0 < 2) or
-        (Result - WAIT_OBJECT_0 >= Count);
+      until (Result = WAIT_FAILED) or (Result = WAIT_OBJECT_0 + DestroySlot) or 
+        (Result = WAIT_OBJECT_0 + ChangeSlot) or 
+        ((Result >= WAIT_ABANDONED_0) and (Result < WAIT_ABANDONED_0 + WaitCount));
 
-      for I := 2 to Count - 1 do
+      if HierMode then
+      begin
+        FindCloseChangeNotification(Handles^[HierNotifySlot]);
+      end;
+
+      for I := SysHandles to Count - 1 do
       begin
         FindCloseChangeNotification(Handles^[I]);
       end;
 
       // loop back to restart if ChangeEvent was signalled
-    until (Result - WAIT_OBJECT_0 <> 1) or Self.Terminated;
+    until (Result - WAIT_OBJECT_0 <> ChangeSlot) or Self.Terminated;
 
     // closing down so chuck the two events
     CloseHandle(FChangeEvent);

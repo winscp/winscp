@@ -56,10 +56,21 @@ void __fastcall TSynchronizeDialog::UpdateControls()
 {
   EnableControl(StartButton, !LocalDirectoryEdit->Text.IsEmpty() &&
     !RemoteDirectoryEdit->Text.IsEmpty());
-  StartButton->Visible = !FSynchronizing;
-  StartButton->Default = StartButton->Visible;
-  StopButton->Visible = FSynchronizing;
-  StopButton->Default = StopButton->Visible;
+  TButton * OldButton = FSynchronizing ? StartButton : StopButton;
+  TButton * NewButton = FSynchronizing ? StopButton : StartButton;
+  if (!NewButton->Visible || OldButton->Visible)
+  {
+    NewButton->Visible = true;
+    if (OldButton->Focused())
+    {
+      NewButton->SetFocus();
+    }
+    OldButton->Default = false;
+    NewButton->Default = true;
+    OldButton->Visible = false;
+    // some of the above steps hides accelerators when start button is pressed with mouse
+    ResetSystemSettings(this);
+  }
   Caption = LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE);
   EnableControl(TransferPreferencesButton, !FSynchronizing);
   EnableControl(CancelButton, !FSynchronizing);
@@ -227,6 +238,15 @@ bool __fastcall TSynchronizeDialog::GetSaveSettings()
 void __fastcall TSynchronizeDialog::FormShow(TObject * /*Sender*/)
 {
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::FormCloseQuery(TObject * /*Sender*/,
+  bool & /*CanClose*/)
+{
+  if (FSynchronizing)
+  {
+    Stop();
+  }
 }
 //---------------------------------------------------------------------------
 

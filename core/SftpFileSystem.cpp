@@ -557,7 +557,8 @@ public:
 
     if (Flags & SSH_FILEXFER_ATTR_BITS)
     {
-      assert(Version >= 5);
+      // while SSH_FILEXFER_ATTR_BITS is defined for SFTP5 only, vandyke 2.3.3 sets it
+      // for SFTP4 as well
       unsigned long Bits = GetCardinal();
       if (FLAGSET(Bits, SSH_FILEXFER_ATTR_FLAGS_HIDDEN))
       {
@@ -1330,6 +1331,11 @@ bool __fastcall TSFTPFileSystem::SupportsExtension(const AnsiString & Extension)
   return (FSupport->Extensions->IndexOf(Extension) >= 0);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSFTPFileSystem::PushSendBuffer()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::KeepAlive()
 {
   TSFTPPacket Packet(SSH_FXP_REALPATH);
@@ -1564,7 +1570,7 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
       if ((FPreviousLoggedPacket != SSH_FXP_READ &&
            FPreviousLoggedPacket != SSH_FXP_WRITE) ||
           (Packet->Type != FPreviousLoggedPacket) ||
-          FTerminal->Configuration->LogProtocol)
+          (FTerminal->Configuration->LogProtocol >= 1))
       {
         if (FNotLoggedPackets)
         {
@@ -1574,7 +1580,7 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
         }
         FTerminal->Log->Add(llInput, FORMAT("Type: %s, Size: %d, Number: %d",
           (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
-        if (FTerminal->Configuration->LogProtocol)
+        if (FTerminal->Configuration->LogProtocol >= 2)
         {
           FTerminal->Log->Add(llInput, Packet->Dump());
         }
@@ -1737,7 +1743,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
         if ((FPreviousLoggedPacket != SSH_FXP_READ &&
              FPreviousLoggedPacket != SSH_FXP_WRITE) ||
             (Packet->Type != SSH_FXP_STATUS && Packet->Type != SSH_FXP_DATA) ||
-            FTerminal->Configuration->LogProtocol)
+            (FTerminal->Configuration->LogProtocol >= 1))
         {
           if (FNotLoggedPackets)
           {
@@ -1747,7 +1753,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
           }
           FTerminal->Log->Add(llOutput, FORMAT("Type: %s, Size: %d, Number: %d",
             (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
-          if (FTerminal->Configuration->LogProtocol)
+          if (FTerminal->Configuration->LogProtocol >= 2)
           {
             FTerminal->Log->Add(llOutput, Packet->Dump());
           }
@@ -3158,18 +3164,19 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
                 Abort();
               }
             }
-            // send close request before waiting for pending read responses
-            SFTPCloseRemote(OpenParams.RemoteFileHandle, DestFileName,
-              OperationProgress, false, true, &CloseRequest);
-            OpenParams.RemoteFileHandle = "";
+          }
+          
+          // send close request before waiting for pending read responses
+          SFTPCloseRemote(OpenParams.RemoteFileHandle, DestFileName,
+            OperationProgress, false, true, &CloseRequest);
+          OpenParams.RemoteFileHandle = "";
 
-            // when resuming is disabled, we can send "set properties"
-            // request before waiting for pending read/close responses
-            if (SetProperties && !DoResume)
-            {
-              SendPacket(&PropertiesRequest);
-              ReserveResponse(&PropertiesRequest, &PropertiesResponse);
-            }
+          // when resuming is disabled, we can send "set properties"
+          // request before waiting for pending read/close responses
+          if (SetProperties && !DoResume)
+          {
+            SendPacket(&PropertiesRequest);
+            ReserveResponse(&PropertiesRequest, &PropertiesResponse);
           }
         }
 

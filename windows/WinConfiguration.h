@@ -230,7 +230,7 @@ public:
   __fastcall TWinConfiguration();
   virtual __fastcall ~TWinConfiguration();
   virtual void __fastcall Default();
-  void __fastcall RestoreForm(AnsiString Data, TCustomForm * Form);
+  void __fastcall RestoreForm(AnsiString Data, TForm * Form);
   AnsiString __fastcall StoreForm(TCustomForm * Form);
   void __fastcall ClearTemporaryLoginData();
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);

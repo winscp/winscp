@@ -40,6 +40,7 @@ __published:
   void __fastcall StopButtonClick(TObject *Sender);
   void __fastcall MinimizeButtonClick(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
+  void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
 
 private:
   TSynchronizeParamType FParams;

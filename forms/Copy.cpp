@@ -295,12 +295,7 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
     {
       AnsiString Dir = Directory;
       AnsiString Drive = ExtractFileDrive(Dir);
-      if (Drive.IsEmpty() || (Drive.Length() != 2) || (Drive[2] != ':'))
-      {
-        SimpleErrorDialog(LoadStr(ABSOLUTE_PATH_REQUIRED));
-        CanClose = false;
-      }
-      else if (!DirectoryExists(Dir))
+      if (!DirectoryExists(Dir))
       {
         if (MessageDialog(FMTLOAD(CREATE_LOCAL_DIRECTORY, (Dir)),
               qtConfirmation, qaOK | qaCancel, 0) != qaCancel)

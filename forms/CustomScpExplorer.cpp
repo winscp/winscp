@@ -527,10 +527,6 @@ void __fastcall TCustomScpExplorerForm::RestoreParams()
   // IDE often looses this link
   RemoteDirView->HeaderImages = NonVisualDataModule->ArrowImages;
 
-  if (Position == poDesigned)
-  {
-    RestoreFormParams();
-  }
   ConfigurationChanged();
 
   QueuePanel->Height = WinConfiguration->QueueView.Height;
@@ -2163,7 +2159,50 @@ void __fastcall TCustomScpExplorerForm::SetComponentVisible(Word Component, Bool
     Changed = (Control->Visible != value);
     if (Changed)
     {
+      TWinControl * WinControl = dynamic_cast<TWinControl*>(Control);
+      bool WasFocused = (WinControl != NULL) && (ActiveControl != NULL) &&
+        ((ActiveControl == WinControl) || (ActiveControl->Parent == WinControl));
+      if (value)
+      {
+        int RemainingHeight = Control->Parent->ClientHeight;
+        int RemainingWidth = Control->Parent->ClientWidth;
+        for (int i = 0; i < Control->Parent->ControlCount; i++)
+        {
+          TControl * ChildControl = Control->Parent->Controls[i];
+          if (ChildControl->Visible)
+          {
+            switch (ChildControl->Align)
+            {
+              case alTop:
+              case alBottom:
+                RemainingHeight -= ChildControl->Height;
+                break;
+
+              case alLeft:
+              case alRight:
+                RemainingWidth -= ChildControl->Width;
+                break;
+            }
+          }
+        }
+        
+        static int Reserve = 32;
+        // queue in explorer, trees in commander
+        if (Control->Height > RemainingHeight - Reserve)
+        {
+          Control->Height = RemainingHeight / 2;
+        }
+
+        if (Control->Width > RemainingWidth - Reserve)
+        {
+          Control->Width = RemainingWidth / 2;
+        }
+      }
       Control->Visible = value;
+      if (WasFocused)
+      {
+        DirView(osCurrent)->SetFocus();
+      }
     }
   }
 
@@ -2888,6 +2927,10 @@ void __fastcall TCustomScpExplorerForm::SysResizing(unsigned int /*Cmd*/)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoShow()
 {
+  // only now are the controls resized finally, so the size constraints
+  // will not conflict with possibly very small window size
+  RestoreFormParams();
+
   FixControlsPlacement();
 
   TForm::DoShow();
@@ -3322,6 +3365,7 @@ void __fastcall TCustomScpExplorerForm::PanelExport(TOperationSide Side,
             }
           }
         }
+        break;
 
       case peUrl:
         {
@@ -3681,6 +3725,26 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewGetOverlay(
   if (SameText(Ext, Configuration->PartialExt))
   {
     Indexes |= oiPartial;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SessionComboResizerCanResize(
+  TObject * Sender, int & NewSize, bool & /*Accept*/)
+{
+  TComboBox * SessionCombo = dynamic_cast<TComboBox*>(GetComponent(fcSessionCombo));
+  TControl * Control = dynamic_cast<TControl *>(Sender);
+  assert(Control != NULL);
+  TToolBar * ToolBar = dynamic_cast<TToolBar *>(Control->Parent);
+  assert(ToolBar != NULL);
+  TCoolBar * CoolBar = dynamic_cast<TCoolBar *>(ToolBar->Parent);
+  assert(CoolBar != NULL);
+
+  static int SizingGripWidth = 16;
+  if (ToolBar->Width - SessionCombo->Width + NewSize + SizingGripWidth > 
+        CoolBar->ClientWidth)
+  {
+    NewSize = CoolBar->ClientWidth - (ToolBar->Width - SessionCombo->Width) - 
+      SizingGripWidth;
   }
 }
 //---------------------------------------------------------------------------

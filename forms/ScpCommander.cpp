@@ -100,11 +100,6 @@ void __fastcall TScpCommanderForm::RestoreParams()
 {
   assert(Configuration);
 
-  // called later once again after menu font is updated (see FormShow)
-  SetCoolBandsMinWidth(TopCoolBar);
-  SetCoolBandsMinWidth(LocalCoolBar);
-  SetCoolBandsMinWidth(RemoteCoolBar);
-
   // IDE often looses this link
   LocalDirView->HeaderImages = NonVisualDataModule->ArrowImages;
 
@@ -273,7 +268,7 @@ void __fastcall TScpCommanderForm::DoShow()
   assert(FDirViewToSelect);
   FDirViewToSelect->SetFocus();
 
-  // called for second time after menu font was updated (see also RestoreParams)
+  // when this is called before OnShow, some toolbars get right-aligned
   SetCoolBandsMinWidth(TopCoolBar);
   SetCoolBandsMinWidth(LocalCoolBar);
   SetCoolBandsMinWidth(RemoteCoolBar);

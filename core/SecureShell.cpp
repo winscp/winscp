@@ -51,17 +51,6 @@ __fastcall TSecureShell::TSecureShell()
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
-  if (FReachedStatus)
-  {
-    TCoreGuard Guard;
-
-    SessionsCount--;
-    if (SessionsCount == 0)
-    {
-      NetFinalize();
-    }
-  }
-
   ClearStdError();
   Active = false;
   SAFE_DESTROY(FSessionData);
@@ -90,6 +79,10 @@ void __fastcall TSecureShell::Open()
     {
       UpdateStatus(sshInitWinSock);
       NetInitialize();
+    }
+    else
+    {
+      Log->Id = reinterpret_cast<unsigned int>(this);
     }
   }
 
@@ -593,9 +586,23 @@ void __fastcall TSecureShell::Discard()
   bool WasActive = FActive;
   FActive = false;
 
-  if (WasActive && OnClose)
+  if (WasActive)
   {
-    OnClose(this);
+    if (FReachedStatus)
+    {
+      TCoreGuard Guard;
+
+      SessionsCount--;
+      if (SessionsCount == 0)
+      {
+        NetFinalize();
+      }
+    }
+
+    if (OnClose)
+    {
+      OnClose(this);
+    }
   }
   
   FStatus = sshClosed;
@@ -655,19 +662,27 @@ void __fastcall TSecureShell::PoolForData(unsigned int & Result)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSecureShell::PushSendBuffer()
+{
+  return false;
+}
+//---------------------------------------------------------------------------
 extern int select_result(WPARAM, LPARAM);
 void __fastcall TSecureShell::WaitForData()
 {
   bool R;
 
   SOCKET & Socket = *static_cast<SOCKET*>(FSocket);
-  if (socket_writable(Socket))
+  if (PushSendBuffer())
   {
-    select_result((WPARAM)(Socket), (LPARAM)FD_WRITE);
-  }
-  if (FBufSize > 0)
-  {
-    FBufSize = FBackend->send(FBackendHandle, "", 0);
+    if (socket_writable(Socket))
+    {
+      select_result((WPARAM)(Socket), (LPARAM)FD_WRITE);
+    }
+    if (FBufSize > 0)
+    {
+      FBufSize = FBackend->send(FBackendHandle, "", 0);
+    }
   }
 
   do
@@ -1059,6 +1074,7 @@ __fastcall TSessionLog::TSessionLog(TSecureShell * AOwner): TStringList()
   FLoggedLines = 0;
   FTopIndex = -1;
   FFileName = "";
+  FId = 0;
 }
 //---------------------------------------------------------------------------
 __fastcall TSessionLog::~TSessionLog()
@@ -1120,20 +1136,23 @@ void __fastcall TSessionLog::DoAdd(bool Formatted, TLogLineType aType, AnsiStrin
         {
           AnsiString NewStr;
           AnsiString FileStr;
-          
+
+          static int TimestampLen = 25;
           if (Formatted)
           {
             assert(aLine.Length() >= 2);
             FileStr = aLine;
             NewStr = aLine;
-            NewStr.Delete(2, 1);
+            NewStr.Delete(2, TimestampLen);
             aLine = "";
           }
           else
           {
             NewStr = AnsiString(LogLineMarks[aType]) + CutToChar(aLine, '\n', False);
             FileStr = NewStr;
-            FileStr.Insert(' ', 2);
+            AnsiString Timestamp = FormatDateTime(" yyyy-mm-dd hh:nn:ss.zzz ", Now());
+            assert(Timestamp.Length() == TimestampLen);
+            FileStr.Insert(Timestamp, 2);
           }
 
           if (Configuration->Logging)
@@ -1211,8 +1230,8 @@ void __fastcall TSessionLog::ReflectSettings()
 {
   // if logging to file was turned off or log file was change -> close current log file
   if (FFile && (!LogToFile || (FFileName != LogFileName))) CloseLogFile();
-  // if loggin to file is enabled and we don't log -> open log file
-  if (!FFile && LogToFile) OpenLogFile();
+  // we used to open log file here, now it is posponed until first call to DoAdd()
+  // this allows TSecureShell to change the Id sooner.
   DeleteUnnecessary();
 }
 //---------------------------------------------------------------------------
@@ -1249,15 +1268,21 @@ void TSessionLog::OpenLogFile()
     {
       assert(!FFile);
       assert(Configuration);
-      FFile = fopen(LogFileName.c_str(), (Configuration->LogFileAppend ? "a" : "w"));
+      AnsiString NewFileName = LogFileName;
+      if (Id != 0)
+      {
+        NewFileName = FORMAT("%s%s.%.8x%s", (ExtractFilePath(NewFileName), 
+          ExtractFileName(NewFileName), static_cast<int>(FId), ExtractFileExt(NewFileName)));
+      }
+      FFile = fopen(NewFileName.c_str(), (Configuration->LogFileAppend ? "a" : "w"));
       if (FFile)
       {
         setvbuf((FILE *)FFile, NULL, _IONBF, BUFSIZ);
-        FFileName = LogFileName;
+        FFileName = NewFileName;
       }
       else
       {
-        throw Exception(FMTLOAD(LOG_OPENERROR, (LogFileName)));
+        throw Exception(FMTLOAD(LOG_OPENERROR, (NewFileName)));
       }
     }
     catch (Exception &E)

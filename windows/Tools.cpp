@@ -114,6 +114,10 @@ void __fastcall SetCoolBandsMinWidth(TCoolBar * CoolBar)
     if (!Band->Control->Tag)
     {
       Band->MinWidth = Band->Control->Width;
+      if (Band->Width < Band->MinWidth)
+      {
+        Band->Width = Band->MinWidth;
+      }
     }
   }
 }

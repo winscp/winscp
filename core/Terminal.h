@@ -169,6 +169,7 @@ protected:
   bool FReadDirectoryPending;
 
   virtual void __fastcall KeepAlive();
+  virtual bool __fastcall PushSendBuffer();
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress);
   void __fastcall DoReadDirectory(bool ReloadOnly);

@@ -16,6 +16,7 @@ object SynchronizeDialog: TSynchronizeDialog
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
+  OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     396

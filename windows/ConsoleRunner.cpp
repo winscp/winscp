@@ -29,6 +29,7 @@ public:
   virtual int __fastcall Choice(AnsiString Options, int Cancel, int Break) = 0;
   virtual bool __fastcall PendingAbort() = 0;
   virtual void __fastcall SetTitle(AnsiString Title) = 0;
+  virtual void __fastcall WaitBeforeExit() = 0;
 };
 //---------------------------------------------------------------------------
 class TOwnConsole : public TConsole
@@ -41,6 +42,7 @@ public:
   virtual int __fastcall Choice(AnsiString Options, int Cancel, int Break);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
+  virtual void __fastcall WaitBeforeExit();
 
 protected:
   static TOwnConsole * FInstance;
@@ -249,6 +251,20 @@ void __fastcall TOwnConsole::SetTitle(AnsiString Title)
   SetConsoleTitle(Title.c_str());
 }
 //---------------------------------------------------------------------------
+void __fastcall TOwnConsole::WaitBeforeExit()
+{
+  unsigned long Read;
+  INPUT_RECORD Record;
+  while (ReadConsoleInput(FInput, &Record, 1, &Read))
+  {
+    if ((Read == 1) && (Record.EventType == KEY_EVENT) &&
+        Record.Event.KeyEvent.bKeyDown)
+    {
+      break;
+    } 
+  } 
+}
+//---------------------------------------------------------------------------
 class TExternalConsole : public TConsole
 {
 public:
@@ -260,6 +276,7 @@ public:
   virtual int __fastcall Choice(AnsiString Options, int Cancel, int Break);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
+  virtual void __fastcall WaitBeforeExit();
 
 private:
   bool FPendingAbort;
@@ -455,6 +472,11 @@ void __fastcall TExternalConsole::SetTitle(AnsiString Title)
   }
 
   SendEvent(PrintTimeout);
+}
+//---------------------------------------------------------------------------
+void __fastcall TExternalConsole::WaitBeforeExit()
+{
+  // noop
 }
 //---------------------------------------------------------------------------
 class TConsoleRunner
@@ -993,6 +1015,7 @@ int __fastcall Console(TProgramParams * Params, bool Help)
         TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
       Usage = FORMAT(Usage, (Configuration->VersionStr, Copyright));
       Console->Print(Usage);
+      Console->WaitBeforeExit();
     }
     else
     {

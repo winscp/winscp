@@ -452,6 +452,9 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 SockAddr sk_nonamelookup(const char *host)
 {
     SockAddr ret = snew(struct SockAddr_tag);
+#ifdef MPEXT
+    memset(ret, 0, sizeof(struct SockAddr_tag));
+#endif
     ret->error = NULL;
     ret->family = AF_UNSPEC;
     strncpy(ret->hostname, host, lenof(ret->hostname));

@@ -347,6 +347,11 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSCPFileSystem::PushSendBuffer()
+{
+  return false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::KeepAlive()
 {
   if (!FProcessingCommand)

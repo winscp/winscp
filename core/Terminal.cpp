@@ -104,6 +104,20 @@ void __fastcall TTerminal::Idle()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::PushSendBuffer()
+{
+  bool Result;
+  if (FFileSystem != NULL)
+  {
+    Result = FFileSystem->PushSendBuffer();
+  }
+  else
+  {
+    Result = TSecureShell::PushSendBuffer();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::KeepAlive()
 {
   if (SessionData->PingType == ptDummyCommand)

@@ -118,7 +118,8 @@ void __fastcall TWinConfiguration::Default()
   FScpExplorer.DriveViewWidth = 180;
   FScpExplorer.SessionComboWidth = 114;
 
-  FScpCommander.WindowParams = "-1;-1;600;400;0";
+  FScpCommander.WindowParams = ((Screen->Width > 800) && (Screen->Height > 650)) ? 
+    "-1;-1;750;600;0" : "-1;-1;600;400;0";
   FScpCommander.LocalPanelWidth = 0.5;
   FScpCommander.SwappedPanels = false;
   FScpCommander.StatusBar = true;
@@ -460,7 +461,7 @@ bool __fastcall TWinConfiguration::DumpResourceToFile(
   return (Resource != NULL);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::RestoreForm(AnsiString Data, TCustomForm * Form)
+void __fastcall TWinConfiguration::RestoreForm(AnsiString Data, TForm * Form)
 {
   assert(Form);
   if (!Data.IsEmpty())
@@ -471,27 +472,29 @@ void __fastcall TWinConfiguration::RestoreForm(AnsiString Data, TCustomForm * Fo
     Bounds.Right = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Right);
     Bounds.Bottom = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Bottom);
     TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, ';', true), (int)wsNormal);
-    ((TForm*)Form)->WindowState = State;
+    Form->WindowState = State;
     if (State == wsNormal)
     {
       if (Bounds.Width() > Screen->Width) Bounds.Right -= (Bounds.Width() - Screen->Width);
       if (Bounds.Height() > Screen->Height) Bounds.Bottom -= (Bounds.Height() - Screen->Height);
-      Form->BoundsRect = Bounds;
       #define POS_RANGE(x, prop) (x < 0) || (x > Screen->prop)
       if (POS_RANGE(Bounds.Left, Width - 20) || POS_RANGE(Bounds.Top, Height - 40))
       {
-        ((TForm*)Form)->Position = poDefaultPosOnly;
-      }
+        Form->Position = poDefaultPosOnly;
+        Form->Width = Bounds.Width();
+        Form->Height = Bounds.Height();
+     }
       else
       {
-        ((TForm*)Form)->Position = poDesigned;
+        Form->Position = poDesigned;
+        Form->BoundsRect = Bounds;
       }
       #undef POS_RANGE
     }
   }
-  else if (((TForm*)Form)->Position == poDesigned)
+  else if (Form->Position == poDesigned)
   {
-    ((TForm*)Form)->Position = poDefaultPosOnly;
+    Form->Position = poDefaultPosOnly;
   }
 }
 //---------------------------------------------------------------------------

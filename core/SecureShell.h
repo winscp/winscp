@@ -50,6 +50,7 @@ private:
   Integer FLoggedLines;
   TLogAddLineEvent FOnAddLine;
   Integer FTopIndex;
+  unsigned int FId;
   void __fastcall SetLine(Integer Index, AnsiString value);
   AnsiString __fastcall GetLine(Integer Index);
   void __fastcall SetType(Integer Index, TLogLineType value);
@@ -97,6 +98,7 @@ public:
   __property TLogAddLineEvent OnAddLine = { read = FOnAddLine, write = FOnAddLine };
   __property Integer TopIndex = { read = FTopIndex };
   __property AnsiString SessionName = { read = GetSessionName };
+  __property unsigned int Id = { read = FId, write = FId };
 protected:
   void __fastcall CloseLogFile();
   __property Boolean LogToFile = { read = GetLogToFile };
@@ -186,6 +188,7 @@ protected:
   int __fastcall RemainingSendBuffer();
   virtual void __fastcall KeepAlive();
   virtual void __fastcall SetSessionData(TSessionData * value);
+  virtual bool __fastcall PushSendBuffer();
 
 public:
   __fastcall TSecureShell();

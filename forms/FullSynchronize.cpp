@@ -166,23 +166,6 @@ void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::FormCloseQuery(TObject * /*Sender*/,
-  bool & CanClose)
-{
-  if (ModalResult != mrCancel)
-  {
-    AnsiString Dir = LocalDirectoryEdit->Text;
-    AnsiString Drive = ExtractFileDrive(Dir);
-    if (Drive.IsEmpty() || (Drive.Length() != 2) || (Drive[2] != ':'))
-    {
-      LocalDirectoryEdit->SetFocus();
-      LocalDirectoryEdit->SelectAll();
-      SimpleErrorDialog(LoadStr(ABSOLUTE_PATH_REQUIRED));
-      CanClose = false;
-    }
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::SetSaveSettings(bool value)
 {
   SaveSettingsCheck->Checked = value;

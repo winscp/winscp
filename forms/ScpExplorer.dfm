@@ -368,7 +368,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Top = 0
         Width = 4
         Height = 22
-        Cursor = crHSplit
+        Cursor = crSizeWE
         Hint = 'Drag to resize session drop down menu'
         AutoSnap = False
         ResizeStyle = rsUpdate

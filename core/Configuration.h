@@ -25,7 +25,7 @@ private:
   AnsiString FLogFileName;
   int FLogWindowLines;
   bool FLogFileAppend;
-  bool FLogProtocol;
+  int FLogProtocol;
   bool FConfirmOverwriting;
   bool FConfirmResume;
   AnsiString FIniFileStorageName;
@@ -59,7 +59,7 @@ private:
   void __fastcall SetLogWindowComplete(bool value);
   bool __fastcall GetLogWindowComplete();
   void __fastcall SetLogFileAppend(bool value);
-  void __fastcall SetLogProtocol(bool value);
+  void __fastcall SetLogProtocol(int value);
   AnsiString __fastcall GetDefaultLogFileName();
   AnsiString __fastcall GetTimeFormat();
   void __fastcall SetStorage(TStorage value);
@@ -140,7 +140,7 @@ public:
   __property AnsiString LogFileName  = { read=FLogFileName, write=SetLogFileName };
   __property bool LogToFile  = { read=GetLogToFile, write=SetLogToFile };
   __property bool LogFileAppend  = { read=FLogFileAppend, write=SetLogFileAppend };
-  __property bool LogProtocol  = { read=FLogProtocol, write=SetLogProtocol };
+  __property int LogProtocol  = { read=FLogProtocol, write=SetLogProtocol };
   __property int LogWindowLines  = { read=FLogWindowLines, write=SetLogWindowLines };
   __property bool LogWindowComplete  = { read=GetLogWindowComplete, write=SetLogWindowComplete };
   __property AnsiString DefaultLogFileName  = { read=GetDefaultLogFileName };

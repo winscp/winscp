@@ -123,6 +123,8 @@ __published:
           AnsiString FileName, AnsiString Masks, bool &Matches);
   void __fastcall RemoteDirViewGetOverlay(TObject *Sender, TListItem *Item,
           WORD &Indexes);
+  void __fastcall SessionComboResizerCanResize(TObject *Sender, int &NewSize, 
+    bool &Accept);
   void __fastcall SessionComboResizerMoved(TObject *Sender);
   void __fastcall SessionComboResizerDblClick(TObject * Sender);
 

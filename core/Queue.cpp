@@ -245,10 +245,12 @@ void __fastcall TTerminalQueue::TerminalFinished(TTerminalItem * TerminalItem)
       {
         FFreeTerminals--;
       }
-      
-      if (Index >= FTransfersLimit)
+
+      // Index may be >= FTransfersLimit also when the transfer limit was
+      // recently decresed, then
+      // FTemporaryTerminals < FTerminals->Count - FTransfersLimit
+      if ((Index >= FTransfersLimit) && (FTemporaryTerminals > 0))
       {
-        assert(FTemporaryTerminals > 0);
         FTemporaryTerminals--;
       }
 

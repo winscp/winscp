@@ -42,7 +42,7 @@ void __fastcall TConfiguration::Default()
   FLogFileName = "";
   FLogFileAppend = true;
   FLogWindowLines = 100;
-  FLogProtocol = false;
+  FLogProtocol = 0;
 
   FDisablePasswordStoring = false;
 
@@ -593,7 +593,7 @@ bool __fastcall TConfiguration::GetLogToFile()
   return !LogFileName.IsEmpty();
 }
 //---------------------------------------------------------------------
-void __fastcall TConfiguration::SetLogProtocol(bool value)
+void __fastcall TConfiguration::SetLogProtocol(int value)
 {
   SET_CONFIG_PROPERTY(LogProtocol);
 }
