@@ -1364,7 +1364,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 0
           end
           object BugPlainPW1Combo: TComboBox
@@ -1374,7 +1374,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 1
           end
           object BugRSA1Combo: TComboBox
@@ -1384,7 +1384,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 2
           end
           object BugHMAC2Combo: TComboBox
@@ -1394,7 +1394,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 3
           end
           object BugDeriveKey2Combo: TComboBox
@@ -1404,7 +1404,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 4
           end
           object BugRSAPad2Combo: TComboBox
@@ -1414,7 +1414,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 5
           end
           object BugDHGEx2Combo: TComboBox
@@ -1424,7 +1424,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 6
           end
           object BugPKSessID2Combo: TComboBox
@@ -1434,7 +1434,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 7
           end
         end
@@ -1451,13 +1451,13 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 6
           Width = 345
-          Height = 123
+          Height = 145
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication options'
           TabOrder = 0
           DesignSize = (
             345
-            123)
+            145)
           object AuthTISCheck: TCheckBox
             Left = 12
             Top = 19
@@ -1470,12 +1470,12 @@ object LoginDialog: TLoginDialog
           end
           object AgentFwdCheck: TCheckBox
             Left = 12
-            Top = 91
+            Top = 115
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Allow agent &forwarding'
-            TabOrder = 3
+            TabOrder = 4
             OnClick = DataChange
           end
           object AuthKICheck: TCheckBox
@@ -1497,6 +1497,15 @@ object LoginDialog: TLoginDialog
             Caption = 'Respond with &password to the first prompt'
             TabOrder = 2
             OnClick = DataChange
+          end
+          object AuthGSSAPICheck: TCheckBox
+            Left = 12
+            Top = 91
+            Width = 325
+            Height = 17
+            Caption = 'Attempt MIT Kerberos 5 &GSSAPI authentication (SSH2)'
+            TabOrder = 3
+            OnClick = AuthGSSAPICheckClick
           end
         end
       end
@@ -1553,7 +1562,7 @@ object LoginDialog: TLoginDialog
           00000000001053746F7265642073657373696F6E735821000000000000000600
           000000000000FFFFFFFF0000000000000000084C6F6767696E67582500000000
           0000000400000000000000FFFFFFFF00000000020000000C456E7669726F6E6D
-          656E745825000000000000000C000000FFFFFFFFFFFFFFFF0000000000000000
+          656E745825000000000000000C00000000000000FFFFFFFF0000000000000000
           0C4469726563746F72696573581D000000000000000500000000000000FFFFFF
           FF0000000000000000045343505824000000000000000800000000000000FFFF
           FFFF00000000010000000B436F6E6E656374696F6E581F000000000000000900

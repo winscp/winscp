@@ -25,7 +25,7 @@ object PreferencesDialog: TPreferencesDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 0
+    TabOrder = 1
   end
   object CloseButton: TButton
     Left = 440
@@ -36,7 +36,7 @@ object PreferencesDialog: TPreferencesDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 1
+    TabOrder = 2
   end
   object MainPanel: TPanel
     Left = 0
@@ -46,7 +46,7 @@ object PreferencesDialog: TPreferencesDialog
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
-    TabOrder = 2
+    TabOrder = 0
     object PageControl: TPageControl
       Left = 141
       Top = 0
@@ -57,7 +57,7 @@ object PreferencesDialog: TPreferencesDialog
       MultiLine = True
       Style = tsButtons
       TabIndex = 0
-      TabOrder = 0
+      TabOrder = 1
       OnChange = PageControlChange
       object PreferencesSheet: TTabSheet
         Tag = 1
@@ -1061,16 +1061,16 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 286
+          Height = 287
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Drag && Drop download mode'
+          Caption = 'Drag && Drop downloads'
           TabOrder = 0
           DesignSize = (
             362
-            286)
+            287)
           object DDExtEnabledLabel: TLabel
             Left = 35
-            Top = 44
+            Top = 68
             Width = 318
             Height = 41
             Anchors = [akLeft, akTop, akRight]
@@ -1084,7 +1084,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDExtDisabledLabel: TLabel
             Left = 35
-            Top = 116
+            Top = 140
             Width = 319
             Height = 41
             Anchors = [akLeft, akTop, akRight]
@@ -1098,7 +1098,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDExtEnabledButton: TRadioButton
             Left = 16
-            Top = 24
+            Top = 48
             Width = 337
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1108,7 +1108,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDExtDisabledButton: TRadioButton
             Left = 16
-            Top = 96
+            Top = 120
             Width = 329
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1118,14 +1118,14 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDExtDisabledPanel: TPanel
             Left = 34
-            Top = 160
+            Top = 184
             Width = 325
-            Height = 121
+            Height = 97
             BevelOuter = bvNone
             TabOrder = 2
             DesignSize = (
               325
-              121)
+              97)
             object DDSystemTemporaryDirectoryButton: TRadioButton
               Left = 0
               Top = 0
@@ -1168,25 +1168,25 @@ object PreferencesDialog: TPreferencesDialog
               OnClick = ControlChange
             end
             object DDWarnOnMoveCheck: TCheckBox
-              Left = 16
-              Top = 99
+              Left = 0
+              Top = 76
               Width = 303
               Height = 17
               Anchors = [akLeft, akTop, akRight]
-              Caption = 'Warn when mo&ving to temporary directory'
-              TabOrder = 5
-              OnClick = ControlChange
-            end
-            object DDAllowMoveInitCheck: TCheckBox
-              Left = 0
-              Top = 76
-              Width = 319
-              Height = 17
-              Anchors = [akLeft, akTop, akRight]
-              Caption = 'Allow &moving via temporary directory'
+              Caption = 'Warn when mo&ving via temporary directory'
               TabOrder = 4
               OnClick = ControlChange
             end
+          end
+          object DDAllowMoveInitCheck: TCheckBox
+            Left = 16
+            Top = 24
+            Width = 319
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Allow &moving from remote directory to other applications'
+            TabOrder = 3
+            OnClick = ControlChange
           end
         end
       end
@@ -1202,7 +1202,7 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 81
+          Height = 126
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Background transfers'
           TabOrder = 0
@@ -1227,16 +1227,32 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueAutoPopupCheck: TCheckBox
             Left = 16
-            Top = 50
+            Top = 74
             Width = 337
             Height = 17
             Caption = '&Automatically popup prompts of background transfers when idle'
+            TabOrder = 2
+          end
+          object QueueCheck: TCheckBox
+            Left = 16
+            Top = 50
+            Width = 337
+            Height = 17
+            Caption = '&Transfer on background by default'
             TabOrder = 1
+          end
+          object RememberPasswordCheck: TCheckBox
+            Left = 16
+            Top = 98
+            Width = 337
+            Height = 17
+            Caption = 'Remember &password of main session for background transfers'
+            TabOrder = 3
           end
         end
         object QueueViewGroup: TXPGroupBox
           Left = 8
-          Top = 96
+          Top = 140
           Width = 362
           Height = 105
           Anchors = [akLeft, akTop, akRight]
@@ -1276,7 +1292,7 @@ object PreferencesDialog: TPreferencesDialog
       Height = 390
       Align = alLeft
       BevelOuter = bvNone
-      TabOrder = 1
+      TabOrder = 0
       DesignSize = (
         141
         390)

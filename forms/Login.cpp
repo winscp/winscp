@@ -102,9 +102,7 @@ void __fastcall TLoginDialog::Init()
     LocalDirectoryLabel->Visible = false;
     LocalDirectoryEdit->Visible = false;
     LocalDirectoryDescLabel->Visible = false;
-    int PrevHeight = DirectoriesGroup->Height;
     DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + 12;
-    EOLTypeGroup->Top = EOLTypeGroup->Top - PrevHeight + DirectoriesGroup->Height;
   }
 
   ShowTabs(false);
@@ -215,6 +213,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     AuthTISCheck->Checked = aSessionData->AuthTIS;
     AuthKICheck->Checked = aSessionData->AuthKI;
     AuthKIPasswordCheck->Checked = aSessionData->AuthKIPassword;
+    AuthGSSAPICheck->Checked = aSessionData->AuthGSSAPI;
     AgentFwdCheck->Checked = aSessionData->AgentFwd;
 
     // SSH tab
@@ -358,6 +357,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->AuthTIS = AuthTISCheck->Checked;
   aSessionData->AuthKI = AuthKICheck->Checked;
   aSessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
+  aSessionData->AuthGSSAPI = AuthGSSAPICheck->Checked;
   aSessionData->AgentFwd = AgentFwdCheck->Checked;
 
   // Connection tab
@@ -476,6 +476,7 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(AuthKICheck, !SshProt1onlyButton->Checked);
       EnableControl(AuthKIPasswordCheck,
         AuthTISCheck->Checked || AuthKICheck->Checked);
+      EnableControl(AuthGSSAPICheck, !SshProt1onlyButton->Checked);
 
       EnableControl(CipherUpButton, CipherListBox->ItemIndex > 0);
       EnableControl(CipherDownButton, CipherListBox->ItemIndex >= 0 &&
@@ -1120,6 +1121,18 @@ void __fastcall TLoginDialog::PathEditsKeyDown(TObject * Sender,
 {
   PathEditKeyDown(dynamic_cast<TCustomEdit*>(Sender), Key, Shift,
     (Sender == RemoteDirectoryEdit));
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::AuthGSSAPICheckClick(TObject * /*Sender*/)
+{
+  if (!NoUpdate)
+  {
+    UpdateControls();
+    if (AuthGSSAPICheck->Checked && !Configuration->GSSAPIInstalled)
+    {
+      throw Exception(LoadStr(GSSAPI_NOT_INSTALLED));
+    }
+  }
 }
 //---------------------------------------------------------------------------
 

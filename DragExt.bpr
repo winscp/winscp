@@ -61,8 +61,8 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=1
 MinorVer=1
-Release=0
-Build=34
+Release=1
+Build=36
 Debug=0
 PreRelease=0
 Special=0
@@ -74,13 +74,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Drag&amp;Drop shell extension for WinSCP
-FileVersion=1.1.0.34
+FileVersion=1.1.1.36
 InternalName=dragext
 LegalCopyright=(c) 2004 Martin Prikryl
 LegalTrademarks=
 OriginalFilename=dragext.dll
 ProductName=WinSCP
-ProductVersion=3.6.0.0
+ProductVersion=3.6.1.0
 Comments=
 WWW=http://winscp.sourceforge.net/
 

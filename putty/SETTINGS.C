@@ -225,6 +225,10 @@ void save_open_settings(void *sesskey, int do_host, Config *cfg)
 	   cfg->ssh_cipherlist);
     write_setting_i(sesskey, "AuthTIS", cfg->try_tis_auth);
     write_setting_i(sesskey, "AuthKI", cfg->try_ki_auth);
+#ifdef GSSAPI
+    write_setting_i(sesskey, "AuthGSSAPI", cfg->try_gssapi_auth);
+    write_setting_i(sesskey, "GSSAPIFwdTGT", cfg->gssapi_fwd_tgt);
+#endif
     write_setting_i(sesskey, "SshProt", cfg->sshprot);
     write_setting_i(sesskey, "SSH2DES", cfg->ssh2_des_cbc);
     write_setting_filename(sesskey, "PublicKeyFile", cfg->keyfile);
@@ -481,6 +485,10 @@ void load_open_settings(void *sesskey, int do_host, Config *cfg)
     gppi(sesskey, "SSH2DES", 0, &cfg->ssh2_des_cbc);
     gppi(sesskey, "AuthTIS", 0, &cfg->try_tis_auth);
     gppi(sesskey, "AuthKI", 1, &cfg->try_ki_auth);
+#ifdef GSSAPI
+    gppi(sesskey, "AuthGSSAPI", 0, &cfg->try_gssapi_auth);
+    gppi(sesskey, "GSSAPIFwdTGT", 0, &cfg->gssapi_fwd_tgt);
+#endif
     gppfile(sesskey, "PublicKeyFile", &cfg->keyfile);
     gpps(sesskey, "RemoteCommand", "", cfg->remote_cmd,
 	 sizeof(cfg->remote_cmd));

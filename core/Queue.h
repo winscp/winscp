@@ -2,6 +2,9 @@
 #ifndef QueueH
 #define QueueH
 //---------------------------------------------------------------------------
+#include "SecureShell.h"
+#include "FileOperationProgress.h"
+//---------------------------------------------------------------------------
 class TSignalThread
 {
 friend int __fastcall ThreadProc(void * Thread);
@@ -145,6 +148,7 @@ protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal) = 0;
   void __fastcall SetProgress(const TFileOperationProgressType & ProgressData);
   void __fastcall GetData(TQueueItemProxy * Proxy);
+  virtual AnsiString __fastcall StartupDirectory() = 0; 
 };
 //---------------------------------------------------------------------------
 class TQueueItemProxy
@@ -220,6 +224,7 @@ protected:
   __fastcall TLocatedQueueItem(TTerminal * Terminal);
 
   virtual void __fastcall DoExecute(TTerminal * Terminal);
+  virtual AnsiString __fastcall StartupDirectory(); 
 
 private:
   AnsiString FCurrentDir;

@@ -5,7 +5,6 @@ inherited ScpExplorerForm: TScpExplorerForm
   ActiveControl = RemoteDirView
   Caption = 'ScpExplorerForm'
   OldCreateOrder = True
-  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   inherited QueueSplitter: TSplitter
@@ -537,6 +536,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object ToolBar5: TToolBar
+      Tag = 1
       Left = 51
       Top = 24
       Width = 581

@@ -46,7 +46,7 @@ TSessionData * GetLoginData(AnsiString SessionName)
   TSessionData *Data = new TSessionData("");
   if (!SessionName.IsEmpty())
   {
-    TSessionData * AData = NULL;
+    TSessionData * AData;
     // lookup stored session session even if protocol was defined
     // (this allows setting for example default username for host
     // by creating stored session named by host)
@@ -107,7 +107,7 @@ void __fastcall Upload(TTerminal * Terminal, TProgramParams * Params,
   int ListFrom, int ListTo)
 {
   AnsiString TargetDirectory;
-  TCopyParamType CopyParam = Configuration->CopyParam;
+  TGUICopyParamType CopyParam = GUIConfiguration->CopyParam;
   TStrings * FileList = NULL;
 
   try
@@ -119,9 +119,9 @@ void __fastcall Upload(TTerminal * Terminal, TProgramParams * Params,
     }
     TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
 
-    int Options = coQueueDisable;
-    if (DoCopyDialog(true, false, false, FileList, Terminal->IsCapable[fcTextMode],
-          TargetDirectory, &CopyParam, Options, true))
+    int Options = coDisableQueue |
+      (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0);
+    if (DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options))
     {
       int Params = 0;
       Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);

@@ -22,6 +22,69 @@ struct TPasLibModule {
 static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
 static const AnsiString AdditionaLanguagePrefix("XX");
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TGUICopyParamType::TGUICopyParamType()
+  : TCopyParamType()
+{
+  GUIDefault();
+}
+//---------------------------------------------------------------------------
+__fastcall TGUICopyParamType::TGUICopyParamType(const TCopyParamType & Source)
+  : TCopyParamType(Source)
+{
+  GUIDefault();
+}
+//---------------------------------------------------------------------------
+__fastcall TGUICopyParamType::TGUICopyParamType(const TGUICopyParamType & Source) 
+  : TCopyParamType(Source)
+{
+  GUIAssign(&Source);
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUICopyParamType::Assign(const TCopyParamType * Source)
+{
+  TCopyParamType::Assign(Source);
+
+  const TGUICopyParamType * GUISource;
+  GUISource = dynamic_cast<const TGUICopyParamType *>(Source);
+  if (GUISource != NULL)
+  {
+    GUIAssign(GUISource);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUICopyParamType::GUIAssign(const TGUICopyParamType * Source)
+{
+  Queue = Source->Queue;
+  QueueNoConfirmation = Source->QueueNoConfirmation;
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUICopyParamType::Default()
+{
+  TCopyParamType::Default();
+
+  GUIDefault();
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUICopyParamType::GUIDefault()
+{
+  Queue = false;
+  QueueNoConfirmation = true;
+}
+//---------------------------------------------------------------------------
+TGUICopyParamType & __fastcall TGUICopyParamType::operator =(const TCopyParamType & rhp)
+{
+  Assign(&rhp);
+  return *this;
+}
+//---------------------------------------------------------------------------
+TGUICopyParamType & __fastcall TGUICopyParamType::operator =(const TGUICopyParamType & rhp)
+{
+  Assign(&rhp);
+  return *this;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
 {
   FLocale = 0;
@@ -40,6 +103,7 @@ void __fastcall TGUIConfiguration::Default()
 {
   TConfiguration::Default();
 
+  FCopyParam.Default();
   FIgnoreCancelBeforeFinish = TDateTime(0, 0, 3, 0);
   FCopyParamDialogExpanded = false;
   FErrorDialogExpanded = false;
@@ -69,7 +133,24 @@ void __fastcall TGUIConfiguration::Default()
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
     KEY(DateTime, IgnoreCancelBeforeFinish); \
-  );
+  ); \
+  BLOCK("Interface\\CopyParam", CANCREATE, \
+    KEY(Bool,    CopyParam.AddXToDirectories); \
+    KEY(String,  CopyParam.AsciiFileMask.Masks); \
+    KEY(Integer, CopyParam.FileNameCase); \
+    KEY(Bool,    CopyParam.PreserveReadOnly); \
+    KEY(Bool,    CopyParam.PreserveTime); \
+    KEY(Bool,    CopyParam.PreserveRights); \
+    KEY(String,  CopyParam.Rights.Text); \
+    KEY(Integer, CopyParam.TransferMode); \
+    KEY(Integer, CopyParam.ResumeSupport); \
+    KEY(Int64,   CopyParam.ResumeThreshold); \
+    KEY(Bool,    CopyParam.ReplaceInvalidChars); \
+    KEY(String,  CopyParam.LocalInvalidChars); \
+    KEY(Bool,    CopyParam.CalculateSize); \
+    KEY(Bool,    CopyParam.Queue); \
+    KEY(Bool,    CopyParam.QueueNoConfirmation); \
+  ); \
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
 {
@@ -378,3 +459,10 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
 
   return FLocales;
 }
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::SetCopyParam(TGUICopyParamType value)
+{
+  FCopyParam.Assign(&value);
+  Changed();
+}
+

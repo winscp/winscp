@@ -1240,11 +1240,10 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           }
         }
 
-        AnsiString OrigFileNameOnly = ExtractFileName(FileName);
         try
         {
           SCPSource(FileName, CopyParam, Params, OperationProgress, 0);
-          OperationProgress->Finish(OrigFileNameOnly, true, DisconnectWhenComplete);
+          OperationProgress->Finish(FileName, true, DisconnectWhenComplete);
         }
         catch (EScpFileSkipped &E)
         {
@@ -1254,13 +1253,13 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
             {
               OperationProgress->Cancel = csCancel;
             }
-            OperationProgress->Finish(OrigFileNameOnly, false, DisconnectWhenComplete);
+            OperationProgress->Finish(FileName, false, DisconnectWhenComplete);
             if (!FTerminal->HandleException(&E)) throw;
           );
         }
         catch (EScpSkipFile &E)
         {
-          OperationProgress->Finish(OrigFileNameOnly, false, DisconnectWhenComplete);
+          OperationProgress->Finish(FileName, false, DisconnectWhenComplete);
           // If ESkipFile occurs, just log it and continue with next file
           SUSPEND_OPERATION (
             if (!FTerminal->HandleException(&E)) throw;
@@ -1268,7 +1267,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         }
         catch (...)
         {
-          OperationProgress->Finish(OrigFileNameOnly, false, DisconnectWhenComplete);
+          OperationProgress->Finish(FileName, false, DisconnectWhenComplete);
           throw;
         }
       }

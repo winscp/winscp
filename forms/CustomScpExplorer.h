@@ -17,21 +17,21 @@
 #include <ToolWin.hpp>
 
 #include <WinInterface.h>
+#include "QueueController.h"
 //---------------------------------------------------------------------------
 class TProgressForm;
 class TSynchronizeProgressForm;
 class TTerminalQueue;
 class TTerminalQueueStatus;
 class TQueueItem;
-class TQueueItemProxy; 
+class TQueueItemProxy;
+class TQueueController;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
 enum TExecuteFileBy { efDefault, efEditor, efAlternativeEditor };
 enum TPanelExport { pePath, peFileList, peFullFileList };
 enum TPanelExportDestination { pedClipboard, pedCommandLine };
-enum TQueueOperation { qoNone, qoGoTo, qoPreferences, qoItemQuery, qoItemError,
-  qoItemPrompt, qoItemDelete, qoItemExecute, qoItemUp, qoItemDown };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
@@ -91,12 +91,8 @@ __published:
     TDataObject *&DataObject);
   void __fastcall RemoteDirViewDDGiveFeedback(TObject *Sender,
     int dwEffect, HRESULT &Result);
-  void __fastcall QueueViewDblClick(TObject *Sender);
-  void __fastcall QueueViewKeyDown(TObject *Sender, WORD &Key,
-    TShiftState Shift);
   void __fastcall QueueSplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
-  void __fastcall FormResize(TObject *Sender);
   void __fastcall StatusBarResize(TObject *Sender);
   void __fastcall QueueViewContextPopup(TObject *Sender, TPoint &MousePos,
     bool &Handled);
@@ -132,11 +128,11 @@ private:
   HANDLE FDDExtMutex;
   AnsiString FDragExtFakeDirectory;
   HINSTANCE FOle32Library;
-  HCURSOR FDragCopyCursor;
   HCURSOR FDragMoveCursor;
   bool FRefreshLocalDirectory;
   bool FRefreshRemoteDirectory;
   TListItem * FQueueActedItem;
+  TQueueController * FQueueController;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
@@ -156,7 +152,6 @@ protected:
   AnsiString FCustomCommandName;
   TSynchronizeProgressForm * FSynchronizeProgressForm;
   HANDLE FDDExtMapFile;
-  bool FDDExtCopySlipped;
   bool FDDMoveSlipped;
   TDateTime FDDDropTime;
   TTimer * FUserActionTimer;
@@ -164,7 +159,7 @@ protected:
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,
-    AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm);
+    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm);
   virtual bool __fastcall RemoteMoveDialog(TStrings * FileList,
     AnsiString & Target, AnsiString & FileMask, bool NoConfirmation);
   virtual void __fastcall CreateParams(TCreateParams & Params);
@@ -212,17 +207,15 @@ protected:
     TStringList * ExportData);
   void __fastcall QueueListUpdate(TTerminalQueue * Queue);
   void __fastcall QueueItemUpdate(TTerminalQueue * Queue, TQueueItem * Item);
-  TQueueItemProxy * __fastcall QueueViewItemToQueueItem(TListItem * Item,
-    bool * Detail = NULL);
   void __fastcall UpdateQueueStatus();
   TQueueItemProxy * __fastcall RefreshQueueItems();
   virtual int __fastcall GetStaticComponentsHeight();
-  virtual void __fastcall DoResize();
   void __fastcall FillQueueViewItem(TListItem * Item,
     TQueueItemProxy * QueueItem, bool Detail);
   void __fastcall QueueViewDeleteItem(int Index);
   void __fastcall UserActionTimer(TObject * Sender);
   void __fastcall UpdateQueueView();
+  bool __fastcall CanCloseQueue();
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP

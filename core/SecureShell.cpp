@@ -11,6 +11,7 @@
 #include "TextsCore.h"
 #include "Common.h"
 #include "ScpMain.h"
+#include "Security.h"
 
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>
@@ -155,6 +156,33 @@ void __fastcall TSecureShell::Init()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSecureShell::PuttyLogEvent(const AnsiString & Str)
+{
+  #define SERVER_VERSION_MSG "Server version: "
+  // Gross hack
+  if (Str.Pos(SERVER_VERSION_MSG) == 1)
+  {
+    FSshVersionString = Str.SubString(strlen(SERVER_VERSION_MSG) + 1,
+      Str.Length() - strlen(SERVER_VERSION_MSG));
+  }
+  LogEvent(Str);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TSecureShell::GetSshImplementation()
+{
+  const char * Ptr = strchr(FSshVersionString.c_str(), '-');
+  if (Ptr != NULL)
+  {
+    Ptr = strchr(Ptr + 1, '-');
+  }
+  return (Ptr != NULL) ? AnsiString(Ptr + 1) : AnsiString(); 
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TSecureShell::GetPassword()
+{
+  return DecryptPassword(FPassword, SessionData->SessionName);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
   AnsiString & Response, bool IsPassword)
 {
@@ -230,6 +258,12 @@ bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
     }
     FPasswordTriedForKI = true;
   };
+
+  if (Configuration->RememberPassword)
+  {
+    FPassword = EncryptPassword(Response, SessionData->SessionName);
+  }
+  
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1182,9 +1216,9 @@ void __fastcall TSessionLog::AddStartupInfo()
       ADF("Transfer Protocol: %s", (Data->FSProtocolStr));
       ADF("SSH protocol version: %s; Compression: %s",
         (Data->SshProtStr, BooleanToEngStr(Data->Compression)));
-      ADF("Agent forwarding: %s; TIS/CryptoCard: %s; KI: %s",
+      ADF("Agent forwarding: %s; TIS/CryptoCard: %s; KI: %s; GSSAPI: %s",
         (BooleanToEngStr(Data->AgentFwd), BooleanToEngStr(Data->AuthTIS),
-         BooleanToEngStr(Data->AuthKI)));
+         BooleanToEngStr(Data->AuthKI), BooleanToEngStr(Data->AuthGSSAPI)));
       ADF("Ciphers: %s; Ssh2DES: %s",
         (Data->CipherList, BooleanToEngStr(Data->Ssh2DES)));
       char * PingTypes = "-NC";

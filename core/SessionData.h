@@ -45,6 +45,7 @@ private:
   bool FAuthTIS;
   bool FAuthKI;
   bool FAuthKIPassword;
+  bool FAuthGSSAPI;
   bool FCompression;
   TSshProt FSshProt;
   bool FSsh2DES;
@@ -89,6 +90,7 @@ private:
   int FSFTPUploadQueue;
   int FSFTPListingQueue;
   bool FConsiderDST;
+  TAutoSwitch FSFTPSymlinkBug;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -100,6 +102,7 @@ private:
   void __fastcall SetAuthTIS(bool value);
   void __fastcall SetAuthKI(bool value);
   void __fastcall SetAuthKIPassword(bool value);
+  void __fastcall SetAuthGSSAPI(bool value);
   void __fastcall SetCompression(bool value);
   void __fastcall SetSshProt(TSshProt value);
   void __fastcall SetSsh2DES(bool value);
@@ -163,6 +166,7 @@ private:
   void __fastcall SetSFTPDownloadQueue(int value);
   void __fastcall SetSFTPUploadQueue(int value);
   void __fastcall SetSFTPListingQueue(int value);
+  void __fastcall SetSFTPSymlinkBug(TAutoSwitch value);
   AnsiString __fastcall GetStorageKey();
   void __fastcall SetConsiderDST(bool value);
 
@@ -190,6 +194,7 @@ public:
   __property bool AuthTIS  = { read=FAuthTIS, write=SetAuthTIS };
   __property bool AuthKI  = { read=FAuthKI, write=SetAuthKI };
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
+  __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
   __property bool Compression  = { read=FCompression, write=SetCompression };
   __property TSshProt SshProt  = { read=FSshProt, write=SetSshProt };
   __property bool Ssh2DES  = { read=FSsh2DES, write=SetSsh2DES };
@@ -246,6 +251,7 @@ public:
   __property int SFTPDownloadQueue = { read = FSFTPDownloadQueue, write = SetSFTPDownloadQueue };
   __property int SFTPUploadQueue = { read = FSFTPUploadQueue, write = SetSFTPUploadQueue };
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
+  __property TAutoSwitch SFTPSymlinkBug = { read = FSFTPSymlinkBug, write = SetSFTPSymlinkBug };
   __property bool ConsiderDST = { read = FConsiderDST, write = SetConsiderDST };
   __property AnsiString StorageKey = { read = GetStorageKey };
 };

@@ -1512,6 +1512,12 @@ void setup_config_box(struct controlbox *b, struct sesslist *sesslist,
 		      'i', HELPCTX(ssh_auth_ki),
 		      dlg_stdcheckbox_handler,
 		      I(offsetof(Config,try_ki_auth)));
+#ifdef GSSAPI
+	ctrl_checkbox(s, "Attempt MIT Kerberos 5 GSSAPI auth (SSH2)", NO_SHORTCUT,
+		      HELPCTX(ssh_auth_gssapi),
+		      dlg_stdcheckbox_handler,
+		      I(offsetof(Config, try_gssapi_auth)));
+#endif
 
 	s = ctrl_getset(b, "Connection/SSH/Auth", "params",
 			"Authentication parameters");
@@ -1522,6 +1528,12 @@ void setup_config_box(struct controlbox *b, struct sesslist *sesslist,
 		      HELPCTX(ssh_auth_changeuser),
 		      dlg_stdcheckbox_handler,
 		      I(offsetof(Config,change_username)));
+#ifdef GSSAPI
+	ctrl_checkbox(s, "Allow Kerberos 5 ticket forwarding in GSSAPI (SSH2)", NO_SHORTCUT,
+		      HELPCTX(ssh_auth_gssapi_fwd_tgt),
+		      dlg_stdcheckbox_handler,
+		      I(offsetof(Config, gssapi_fwd_tgt)));
+#endif
 	ctrl_filesel(s, "Private key file for authentication:", 'k',
 		     FILTER_KEY_FILES, FALSE, "Select private key file",
 		     HELPCTX(ssh_auth_privkey),

@@ -75,14 +75,26 @@
 #      show up as GPFs at the point of failure rather than appearing
 #      later on as second-level damage.
 #
+#  - XFLAGS=/DGSSAPI
+#      Enable support for GSSAPI authentication in SSH 2
+#
 
 # If you rename this file to `Makefile', you should change this line,
 # so that the .rsp files still depend on the correct makefile.
 MAKEFILE = Makefile.vc
 
+# location of MIT's Kerberos for Windows SDK
+# (available here: http://web.mit.edu/kerberos/www/index.html)
+KRB5_DIR = "D:\Devel\Kerberos\kfw-2.6.1\kfw-2.6.1-sdk"
+
+XFLAGS = /I$(KRB5_DIR)\inc\krb5 /DGSSAPI
+#GSSAPILIBS = $(KRB5_DIR)\lib\i386\gssapi32.lib
+
+VER=/DRELEASE="0.54 - Kerberos 5 GSSAPI"
+
 # C compilation flags
 CFLAGS = /nologo /W3 /O1 /D_WINDOWS /D_WIN32_WINDOWS=0x401 /DWINVER=0x401
-LFLAGS = /incremental:no /fixed
+LFLAGS = /incremental:no /fixed /opt:ref
 
 .c.obj:
 	cl $(COMPAT) $(FWHACK) $(XFLAGS) $(CFLAGS) /c $*.c
@@ -98,7 +110,7 @@ pageant.exe: misc.obj pageant.obj pageant.res pageantc.obj sshaes.obj \
 		winmisc.obj winutils.obj pageant.rsp
 	link $(LFLAGS) -out:pageant.exe -map:pageant.map @pageant.rsp
 
-plink.exe: be_all.obj cmdline.obj console.obj ldisc.obj logging.obj misc.obj \
+plink.exe: be_all.obj buffer.obj cmdline.obj console.obj ldisc.obj logging.obj misc.obj \
 		noise.obj pageantc.obj plink.obj plink.res portfwd.obj \
 		pproxy.obj proxy.obj raw.obj rlogin.obj settings.obj ssh.obj \
 		sshaes.obj sshblowf.obj sshbn.obj sshcrc.obj sshcrcda.obj \
@@ -106,9 +118,9 @@ plink.exe: be_all.obj cmdline.obj console.obj ldisc.obj logging.obj misc.obj \
 		sshrand.obj sshrsa.obj sshsh512.obj sshsha.obj sshzlib.obj \
 		telnet.obj tree234.obj version.obj wildcard.obj windefs.obj \
 		winmisc.obj winnet.obj winstore.obj x11fwd.obj plink.rsp
-	link $(LFLAGS) -out:plink.exe -map:plink.map @plink.rsp
+	link $(LFLAGS) -out:plink.exe -map:plink.map $(GSSAPILIBS) @plink.rsp
 
-pscp.exe: be_none.obj cmdline.obj console.obj int64.obj logging.obj misc.obj \
+pscp.exe: be_none.obj buffer.obj cmdline.obj console.obj int64.obj logging.obj misc.obj \
 		noise.obj pageantc.obj portfwd.obj pproxy.obj proxy.obj \
 		scp.obj scp.res settings.obj sftp.obj ssh.obj sshaes.obj \
 		sshblowf.obj sshbn.obj sshcrc.obj sshcrcda.obj sshdes.obj \
@@ -116,9 +128,9 @@ pscp.exe: be_none.obj cmdline.obj console.obj int64.obj logging.obj misc.obj \
 		sshrsa.obj sshsh512.obj sshsha.obj sshzlib.obj tree234.obj \
 		version.obj wildcard.obj windefs.obj winmisc.obj winnet.obj \
 		winsftp.obj winstore.obj x11fwd.obj pscp.rsp
-	link $(LFLAGS) -out:pscp.exe -map:pscp.map @pscp.rsp
+	link $(LFLAGS) -out:pscp.exe -map:pscp.map $(GSSAPILIBS) @pscp.rsp
 
-psftp.exe: be_none.obj cmdline.obj console.obj int64.obj logging.obj \
+psftp.exe: be_none.obj buffer.obj cmdline.obj console.obj int64.obj logging.obj \
 		misc.obj noise.obj pageantc.obj portfwd.obj pproxy.obj \
 		proxy.obj psftp.obj scp.res settings.obj sftp.obj ssh.obj \
 		sshaes.obj sshblowf.obj sshbn.obj sshcrc.obj sshcrcda.obj \
@@ -126,9 +138,9 @@ psftp.exe: be_none.obj cmdline.obj console.obj int64.obj logging.obj \
 		sshrand.obj sshrsa.obj sshsh512.obj sshsha.obj sshzlib.obj \
 		tree234.obj version.obj wildcard.obj windefs.obj winmisc.obj \
 		winnet.obj winsftp.obj winstore.obj x11fwd.obj psftp.rsp
-	link $(LFLAGS) -out:psftp.exe -map:psftp.map @psftp.rsp
+	link $(LFLAGS) -out:psftp.exe -map:psftp.map $(GSSAPILIBS) @psftp.rsp
 
-putty.exe: be_all.obj cmdline.obj config.obj dialog.obj ldisc.obj \
+putty.exe: be_all.obj buffer.obj cmdline.obj config.obj dialog.obj ldisc.obj \
 		ldiscucs.obj logging.obj misc.obj noise.obj pageantc.obj \
 		portfwd.obj pproxy.obj printing.obj proxy.obj raw.obj \
 		rlogin.obj settings.obj sizetip.obj ssh.obj sshaes.obj \
@@ -139,7 +151,7 @@ putty.exe: be_all.obj cmdline.obj config.obj dialog.obj ldisc.obj \
 		wildcard.obj win_res.res wincfg.obj winctrls.obj windefs.obj \
 		windlg.obj window.obj winmisc.obj winnet.obj winstore.obj \
 		winutils.obj x11fwd.obj putty.rsp
-	link $(LFLAGS) -out:putty.exe -map:putty.map @putty.rsp
+	link $(LFLAGS) -out:putty.exe -map:putty.map $(GSSAPILIBS) @putty.rsp
 
 puttygen.exe: import.obj misc.obj noise.obj puttygen.obj puttygen.res \
 		sshaes.obj sshbn.obj sshdes.obj sshdss.obj sshdssg.obj \
@@ -170,7 +182,7 @@ pageant.rsp: $(MAKEFILE)
 
 plink.rsp: $(MAKEFILE)
 	echo /nologo /subsystem:console > plink.rsp
-	echo advapi32.lib be_all.obj cmdline.obj comctl32.lib >> plink.rsp
+	echo advapi32.lib be_all.obj buffer.obj cmdline.obj comctl32.lib >> plink.rsp
 	echo comdlg32.lib console.obj gdi32.lib imm32.lib >> plink.rsp
 	echo ldisc.obj logging.obj misc.obj noise.obj >> plink.rsp
 	echo pageantc.obj plink.obj plink.res portfwd.obj >> plink.rsp
@@ -186,7 +198,7 @@ plink.rsp: $(MAKEFILE)
 
 pscp.rsp: $(MAKEFILE)
 	echo /nologo /subsystem:console > pscp.rsp
-	echo advapi32.lib be_none.obj cmdline.obj comctl32.lib >> pscp.rsp
+	echo advapi32.lib be_none.obj buffer.obj cmdline.obj comctl32.lib >> pscp.rsp
 	echo comdlg32.lib console.obj gdi32.lib imm32.lib >> pscp.rsp
 	echo int64.obj logging.obj misc.obj noise.obj >> pscp.rsp
 	echo pageantc.obj portfwd.obj pproxy.obj proxy.obj >> pscp.rsp
@@ -201,7 +213,7 @@ pscp.rsp: $(MAKEFILE)
 
 psftp.rsp: $(MAKEFILE)
 	echo /nologo /subsystem:console > psftp.rsp
-	echo advapi32.lib be_none.obj cmdline.obj comctl32.lib >> psftp.rsp
+	echo advapi32.lib be_none.obj buffer.obj cmdline.obj comctl32.lib >> psftp.rsp
 	echo comdlg32.lib console.obj gdi32.lib imm32.lib >> psftp.rsp
 	echo int64.obj logging.obj misc.obj noise.obj >> psftp.rsp
 	echo pageantc.obj portfwd.obj pproxy.obj proxy.obj >> psftp.rsp
@@ -217,7 +229,7 @@ psftp.rsp: $(MAKEFILE)
 
 putty.rsp: $(MAKEFILE)
 	echo /nologo /subsystem:windows > putty.rsp
-	echo advapi32.lib be_all.obj cmdline.obj comctl32.lib >> putty.rsp
+	echo advapi32.lib be_all.obj buffer.obj cmdline.obj comctl32.lib >> putty.rsp
 	echo comdlg32.lib config.obj dialog.obj gdi32.lib >> putty.rsp
 	echo imm32.lib ldisc.obj ldiscucs.obj logging.obj >> putty.rsp
 	echo misc.obj noise.obj pageantc.obj portfwd.obj >> putty.rsp
@@ -269,6 +281,7 @@ be_none.obj: be_none.c putty.h puttyps.h network.h misc.h winstuff.h \
 be_nossh.obj: be_nossh.c putty.h puttyps.h network.h misc.h winstuff.h \
 		mac\macstuff.h unix\unix.h puttymem.h tree234.h winhelp.h \
 		charset\charset.h
+buffer.obj: buffer.c puttymem.h
 cmdgen.obj: cmdgen.c putty.h ssh.h puttyps.h network.h misc.h puttymem.h \
 		int64.h winstuff.h mac\macstuff.h unix\unix.h tree234.h \
 		winhelp.h charset\charset.h
@@ -424,7 +437,7 @@ slookup.obj: charset\slookup.c charset\charset.h charset\internal.h \
 		charset\enum.c charset\sbcsdat.c charset\utf8.c
 ssh.obj: ssh.c putty.h tree234.h ssh.h puttyps.h network.h misc.h puttymem.h \
 		int64.h winstuff.h mac\macstuff.h unix\unix.h winhelp.h \
-		charset\charset.h
+		charset\charset.h buffer.h buffer.c
 sshaes.obj: sshaes.c ssh.h puttymem.h network.h int64.h misc.h
 sshblowf.obj: sshblowf.c ssh.h puttymem.h network.h int64.h misc.h
 sshbn.obj: sshbn.c misc.h ssh.h puttymem.h network.h int64.h

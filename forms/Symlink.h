@@ -7,6 +7,7 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include "XPGroupBox.hpp"
+#include "CopyParam.h"
 //---------------------------------------------------------------------------
 class TSymlinkDialog : public TForm
 {

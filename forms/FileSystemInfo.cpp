@@ -45,6 +45,7 @@ void __fastcall TFileSystemInfoDialog::UpdateControls()
   assert(Terminal);
 
   SshVersionEdit->Text = IntToStr(Terminal->SshVersion);
+  SshImplementationEdit->Text = Terminal->SshImplementation;
 
   AnsiString Str = CipherNames[Terminal->CSCipher];
   if (Terminal->CSCipher != Terminal->SCCipher)

@@ -76,10 +76,9 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
 {
   FTerminalList->Clear();
   TTerminal * Terminal = TTerminalList::NewTerminal(Data);
-  TTerminalQueue * Queue = NULL;
   try
   {
-    Queue = new TTerminalQueue(Terminal, Configuration);
+    TTerminalQueue * Queue = new TTerminalQueue(Terminal, Configuration);
     Queue->TransfersLimit = GUIConfiguration->QueueTransfersLimit;
     Queue->OnQueryUser = TerminalQueryUser;
     Queue->OnPromptUser = TerminalPromptUser;

@@ -4,8 +4,8 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\Putty.lib"/>
-    <OBJFILES value="putty\BE_NONE.obj putty\CMDLINE.obj putty\INT64.obj 
-      putty\LOGGING.obj putty\MISC.obj putty\NOISE.obj 
+    <OBJFILES value="putty\BE_NONE.obj putty\BUFFER.obj putty\CMDLINE.obj 
+      putty\INT64.obj putty\LOGGING.obj putty\MISC.obj putty\NOISE.obj 
       putty\PAGEANTC.obj putty\PORTFWD.obj putty\PPROXY.obj 
       putty\PROXY.obj putty\SETTINGS.obj putty\SSH_.obj putty\SSHAES.obj 
       putty\SSHBLOWF.obj putty\SSHBN.obj putty\SSHCRC.obj 
@@ -27,7 +27,7 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="PUTTY_LIB;_WINDOWS;_MSC_VER=1000"/>
+    <USERDEFINES value="PUTTY_LIB;GSSAPI;_WINDOWS;_MSC_VER=1000"/>
     <SYSDEFINES value="_RTLDLL;NO_STRICT"/>
     <MAINSOURCE value="Putty.bpf"/>
     <INCLUDEPATH value="putty;putty\CHARSET;$(BCB)\include;$(BCB)\include\vcl"/>
@@ -51,6 +51,7 @@
   <FILELIST>
       <FILE FILENAME="Putty.bpf" FORMNAME="" UNITNAME="Putty" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\BE_NONE.C" FORMNAME="" UNITNAME="BE_NONE.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\BUFFER.C" FORMNAME="" UNITNAME="BUFFER" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\CMDLINE.C" FORMNAME="" UNITNAME="CMDLINE.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\INT64.C" FORMNAME="" UNITNAME="INT64.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\LOGGING.C" FORMNAME="" UNITNAME="LOGGING.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

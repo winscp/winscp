@@ -124,6 +124,8 @@ private:
   void * FBackendHandle;
   unsigned long FMaxPacketSize;
   Config * FConfig;
+  AnsiString FSshVersionString;
+  AnsiString FPassword;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -164,6 +166,8 @@ private:
   void __fastcall SetConfiguration(TConfiguration * value);
   void __fastcall SetUserObject(TObject * value);
   void __fastcall Discard();
+  AnsiString __fastcall GetSshImplementation();
+  AnsiString __fastcall GetPassword();
 
 protected:
   AnsiString StdError;
@@ -218,6 +222,7 @@ public:
   {
     return Log->IsLogging();
   }
+  void __fastcall PuttyLogEvent(const AnsiString & Str);
   void __fastcall inline LogEvent(const AnsiString & Str)
   {
     if (IsLogging()) Log->Add(llMessage, Str);
@@ -237,6 +242,8 @@ public:
   __property TCipher SCCipher = { read = GetSCCipher };
   __property TCompressionType SCCompression = { read = GetSCCompression };
   __property int SshVersion = { read = GetSshVersion };
+  __property AnsiString SshVersionString = { read = FSshVersionString };
+  __property AnsiString SshImplementation = { read = GetSshImplementation };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
@@ -244,6 +251,7 @@ public:
   __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
   __property int Status = { read = GetStatus };
   __property TObject * UserObject = { read = FUserObject, write = SetUserObject };
+  __property AnsiString Password = { read = GetPassword };
 };
 //---------------------------------------------------------------------------
 #endif

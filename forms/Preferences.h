@@ -142,7 +142,9 @@ __published:
   TRadioButton *QueueViewHideWhenEmptyButton;
   TRadioButton *QueueViewHideButton;
   TCheckBox *QueueAutoPopupCheck;
+  TCheckBox *QueueCheck;
   TCheckBox *DDAllowMoveInitCheck;
+  TCheckBox *RememberPasswordCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

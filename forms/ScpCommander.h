@@ -131,7 +131,6 @@ __published:
   TPathLabel *CommandLineLabel;
   TLabel *CommandLinePromptLabel;
   TToolButton *ToolButton50;
-  void __fastcall FormShow(TObject *Sender);
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -161,6 +160,8 @@ __published:
   void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,
     TListItem *Item, int &Effect, bool &DropHandler);
   void __fastcall StatusBarDblClick(TObject *Sender);
+  void __fastcall LocalDirViewDDMenuPopup(TObject *Sender, HMENU AMenu,
+    IDataObject *DataObj, int AMinCustCmd, int grfKeyState, TPoint &pt);
 
 private:
   TCustomDirView * FDirViewToSelect;
@@ -183,7 +184,7 @@ private:
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,
-    AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm);
+    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
@@ -215,7 +216,8 @@ protected:
     TStringList * ExportData);
   void __fastcall CommandLinePopulate();
   virtual int __fastcall GetStaticComponentsHeight();
-  virtual void __fastcall DoResize();
+  DYNAMIC void __fastcall Resize();
+  DYNAMIC void __fastcall DoShow();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

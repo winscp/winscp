@@ -100,6 +100,16 @@
 #define SSH2_MSG_CHANNEL_SUCCESS                  99	/* 0x63 */
 #define SSH2_MSG_CHANNEL_FAILURE                  100	/* 0x64 */
 
+/* draft-ietf-secsh-gsskeyex-06 */
+#define SSH2_MSG_USERAUTH_GSSAPI_RESPONSE		60
+#define SSH2_MSG_USERAUTH_GSSAPI_TOKEN			61
+#define SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE	63
+#define SSH2_MSG_USERAUTH_GSSAPI_ERROR			64
+#define SSH2_MSG_USERAUTH_GSSAPI_ERRTOK			65
+#define SSH2_MSG_USERAUTH_GSSAPI_MIC			66
+
+#define SSH_GSS_OIDTYPE 0x06
+
 /*
  * Packet type contexts, so that ssh2_pkt_type can correctly decode
  * the ambiguous type numbers back into the correct type strings.
@@ -109,6 +119,9 @@
 #define SSH2_PKTCTX_PUBLICKEY        0x0010
 #define SSH2_PKTCTX_PASSWORD         0x0020
 #define SSH2_PKTCTX_KBDINTER         0x0040
+#ifdef GSSAPI
+#	define SSH2_PKTCTX_GSSAPI    0x0080
+#endif
 #define SSH2_PKTCTX_AUTH_MASK        0x00F0
 
 #define SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT 1	/* 0x1 */
@@ -126,6 +139,26 @@
 #define SSH2_DISCONNECT_AUTH_CANCELLED_BY_USER    13	/* 0xd */
 #define SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE 14	/* 0xe */
 #define SSH2_DISCONNECT_ILLEGAL_USER_NAME         15	/* 0xf */
+
+#ifdef GSSAPI
+#include "gssapiw.h"
+#include "buffer.h"
+
+#define GSSAPIDLL "gssapi32"
+
+typedef struct {
+	OM_uint32	major;   /* both */
+	OM_uint32	minor;   /* both */
+	gss_ctx_id_t	context; /* both */
+	gss_name_t	name;    /* both */
+	gss_OID		oid;     /* client */
+} Gssctxt;
+
+#ifdef _WINDOWS
+#	define snprintf _snprintf
+#endif
+
+#endif
 
 static const char *const ssh2_disconnect_reasons[] = {
     NULL,
@@ -250,6 +283,14 @@ static char *ssh2_pkt_type(int pkt_ctx, int type)
     translate(SSH2_MSG_CHANNEL_REQUEST);
     translate(SSH2_MSG_CHANNEL_SUCCESS);
     translate(SSH2_MSG_CHANNEL_FAILURE);
+#ifdef GSSAPI
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_ERROR, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_MIC, SSH2_PKTCTX_GSSAPI);
+#endif
     return "unknown";
 }
 #undef translate
@@ -4455,6 +4496,357 @@ static void ssh2_set_window(struct ssh_channel *c, unsigned newwin)
     }
 }
 
+#ifdef GSSAPI
+/* Check that the OID in a data stream matches that in the context */
+static int
+ssh_gssapi_check_oid(Gssctxt *ctx, void *data, size_t len)
+{
+	return (ctx != NULL && ctx->oid != GSS_C_NO_OID &&
+	    ctx->oid->length == len &&
+	    memcmp(ctx->oid->elements, data, len) == 0);
+}
+
+/* Set the contexts OID from a data stream */
+static void
+ssh_gssapi_set_oid_data(Gssctxt *ctx, void *data, size_t len)
+{
+	if (ctx->oid != GSS_C_NO_OID) {
+		sfree(ctx->oid->elements);
+		sfree(ctx->oid);
+	}
+	ctx->oid = smalloc(sizeof(gss_OID_desc));
+	ctx->oid->length = len;
+	ctx->oid->elements = smalloc(len);
+	memcpy(ctx->oid->elements, data, len);
+}
+
+/* Set the contexts OID */
+static void
+ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid)
+{
+	ssh_gssapi_set_oid_data(ctx, oid->elements, oid->length);
+}
+
+static void
+ssh_gssapi_last_error(Ssh ssh, Gssctxt *ctxt,
+		      OM_uint32 *major_status, OM_uint32 *minor_status)
+{
+	OM_uint32 lmin;
+	gss_buffer_desc msg = GSS_C_EMPTY_BUFFER;
+	OM_uint32 ctx;
+	char *msgbuf;
+
+
+	if (major_status != NULL)
+		*major_status = ctxt->major;
+	if (minor_status != NULL)
+		*minor_status = ctxt->minor;
+
+	ctx = 0;
+	/* The GSSAPI error */
+	do {
+		gss_display_status(&lmin, ctxt->major,
+		    GSS_C_GSS_CODE, GSS_C_NULL_OID, &ctx, &msg);
+		msgbuf = dupprintf("GSSAPI error: %s\r\n", msg.value);
+		logeventf(ssh, msgbuf);
+		c_write_str(ssh, msgbuf);
+		sfree(msgbuf);
+
+		gss_release_buffer(&lmin, &msg);
+	} while (ctx != 0);
+
+	/* The mechanism specific error */
+	do {
+		gss_display_status(&lmin, ctxt->minor,
+		    GSS_C_MECH_CODE, GSS_C_NULL_OID, &ctx, &msg);
+
+		msgbuf = dupprintf("GSSAPI mech specific error: %s\r\n", msg.value);
+		logeventf(ssh, msgbuf);
+		c_write_str(ssh, msgbuf);
+		sfree(msgbuf);
+
+		gss_release_buffer(&lmin, &msg);
+	} while (ctx != 0);
+
+}
+
+/* All this effort to report an error ... */
+static void
+ssh_gssapi_error(Ssh ssh, Gssctxt *ctxt)
+{
+	ssh_gssapi_last_error(ssh, ctxt, NULL, NULL);
+}
+
+/*
+ * Initialise our GSSAPI context. We use this opaque structure to contain all
+ * of the data which both the client and server need to persist across
+ * {accept,init}_sec_context calls, so that when we do it from the userauth
+ * stuff life is a little easier
+ */
+static void
+ssh_gssapi_build_ctx(Gssctxt **ctx)
+{
+	*ctx = smalloc(sizeof (Gssctxt));
+	(*ctx)->major = 0;
+	(*ctx)->minor = 0;
+	(*ctx)->context = GSS_C_NO_CONTEXT;
+	(*ctx)->name = GSS_C_NO_NAME;
+	(*ctx)->oid = GSS_C_NO_OID;
+}
+
+/* Delete our context, providing it has been built correctly */
+static void
+ssh_gssapi_delete_ctx(Gssctxt **ctx)
+{
+	OM_uint32 ms;
+
+	if ((*ctx) == NULL)
+		return;
+	if ((*ctx)->context != GSS_C_NO_CONTEXT)
+		gss_delete_sec_context(&ms, &(*ctx)->context, GSS_C_NO_BUFFER);
+	if ((*ctx)->name != GSS_C_NO_NAME)
+		gss_release_name(&ms, &(*ctx)->name);
+	if ((*ctx)->oid != GSS_C_NO_OID) {
+		sfree((*ctx)->oid->elements);
+		sfree((*ctx)->oid);
+		(*ctx)->oid = GSS_C_NO_OID;
+	}
+
+	sfree(*ctx);
+	*ctx = NULL;
+}
+
+/*
+ * Wrapper to init_sec_context
+ * Requires that the context contains:
+ *	oid
+ *	server name (from ssh_gssapi_import_name)
+ */
+static OM_uint32
+ssh_gssapi_init_ctx(Ssh ssh, Gssctxt *ctx, int deleg_creds, gss_buffer_desc *recv_tok,
+    gss_buffer_desc* send_tok, OM_uint32 *flags)
+{
+	int deleg_flag = 0;
+
+	if (deleg_creds) {
+		deleg_flag = GSS_C_DELEG_FLAG;
+		logevent("GSSAPI: delegating credentials");
+	}
+
+	ctx->major = gss_init_sec_context(&ctx->minor,
+	    GSS_C_NO_CREDENTIAL, &ctx->context, ctx->name, ctx->oid,
+	    GSS_C_MUTUAL_FLAG | GSS_C_INTEG_FLAG | deleg_flag,
+	    0, NULL, recv_tok, NULL, send_tok, flags, NULL);
+
+	if (GSS_ERROR(ctx->major))
+		ssh_gssapi_error(ssh, ctx);
+
+	return (ctx->major);
+}
+
+/* Create a service name for the given host */
+static OM_uint32
+ssh_gssapi_import_name(Ssh ssh, Gssctxt *ctx)
+{
+	gss_buffer_desc gssbuf;
+	const char *host = ssh->savedhost;
+
+	gssbuf.length = sizeof("host@") + strlen(host);
+	gssbuf.value = smalloc(gssbuf.length);
+	snprintf(gssbuf.value, gssbuf.length, "host@%s", host);
+
+	if ((ctx->major = gss_import_name(&ctx->minor,
+	    &gssbuf, GSS_C_NT_HOSTBASED_SERVICE, &ctx->name)))
+		ssh_gssapi_error(ssh, ctx);
+
+	sfree(gssbuf.value);
+	return (ctx->major);
+}
+
+static void
+ssh_gssapi_buildmic(Buffer *b, const char *session_id, const char *user,
+    const char *service, const char *context)
+{
+	buffer_init(b);
+	buffer_put_cstring(b, session_id);
+	buffer_put_char(b, SSH2_MSG_USERAUTH_REQUEST);
+	buffer_put_cstring(b, user);
+	buffer_put_cstring(b, service);
+	buffer_put_cstring(b, context);
+}
+
+static OM_uint32
+ssh_gssapi_sign(Ssh ssh, Gssctxt *ctx, gss_buffer_t buffer, gss_buffer_t hash)
+{
+	if ((ctx->major = gss_get_mic(&ctx->minor, ctx->context,
+	    GSS_C_QOP_DEFAULT, buffer, hash)))
+		ssh_gssapi_error(ssh, ctx);
+
+	return (ctx->major);
+}
+
+static OM_uint32
+process_gssapi_token(Ssh ssh, Gssctxt *gssctxt, gss_buffer_t recv_tok, const char *username)
+{
+	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
+	gss_buffer_desc gssbuf, mic;
+	OM_uint32 status, ms, gss_flags;
+	Buffer b;
+
+	logevent("GSSAPI: process_gssapi_token");
+
+	status = ssh_gssapi_init_ctx(ssh, gssctxt, ssh->cfg.gssapi_fwd_tgt,
+	    recv_tok, &send_tok, &gss_flags);
+
+	if (send_tok.length > 0) {
+		if (GSS_ERROR(status))
+			ssh2_pkt_init(ssh, SSH2_MSG_USERAUTH_GSSAPI_ERRTOK);
+		else
+			ssh2_pkt_init(ssh, SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
+
+		ssh2_pkt_addstring_start(ssh);
+		ssh2_pkt_addstring_data(ssh, send_tok.value, send_tok.length);
+		ssh2_pkt_send(ssh);
+		gss_release_buffer(&ms, &send_tok);
+	}
+
+	if (status == GSS_S_COMPLETE) {
+		/* send either complete or MIC, depending on mechanism */
+		if (!(gss_flags & GSS_C_INTEG_FLAG)) {
+			ssh2_pkt_init(ssh, SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE);
+			ssh2_pkt_send(ssh);
+		} else {
+			ssh_gssapi_buildmic(&b, ssh->v2_session_id, username,
+				"ssh-connection", "gssapi-with-mic");
+
+			gssbuf.value = buffer_ptr(&b);
+			gssbuf.length = buffer_len(&b);
+
+			status = ssh_gssapi_sign(ssh, gssctxt, &gssbuf, &mic);
+
+			if (!GSS_ERROR(status)) {
+				ssh2_pkt_init(ssh, SSH2_MSG_USERAUTH_GSSAPI_MIC);
+				ssh2_pkt_addstring_start(ssh);
+				ssh2_pkt_addstring_data(ssh, mic.value, mic.length);
+				ssh2_pkt_send(ssh);
+			} else
+				ssh_gssapi_error(ssh, gssctxt);
+
+			buffer_free(&b);
+			gss_release_buffer(&ms, &mic);
+		}
+	}
+
+	return status;
+}
+
+static int
+input_gssapi_response(Ssh ssh, Gssctxt *gssctxt, char *username)
+{
+	int oidlen;
+	char *oidv;
+
+	logevent("GSSAPI: input_gssapi_response");
+	
+	/* Setup our OID */
+	ssh2_pkt_getstring(ssh, &oidv, &oidlen);
+
+	if (oidlen <= 2 ||
+	    oidv[0] != SSH_GSS_OIDTYPE ||
+	    oidv[1] != oidlen - 2) {
+		sfree(oidv);
+		logevent("GSSAPI: Badly encoded mechanism OID received");
+		return TRUE;
+	}
+
+	if (!ssh_gssapi_check_oid(gssctxt, oidv + 2, oidlen - 2))
+		bombout(("GSSAPI: Server returned different OID than expected"));
+
+	sfree(oidv);
+
+	if (GSS_ERROR(process_gssapi_token(ssh, gssctxt, GSS_C_NO_BUFFER, username))) {
+		/* Start again with next method on list */
+		logevent("GSSAPI: Trying to start again");
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static int
+input_gssapi_token(Ssh ssh, Gssctxt *gssctxt, char *username)
+{
+	gss_buffer_desc recv_tok;
+	OM_uint32 status;
+	char *sval;
+	u_int slen;
+
+	logevent("GSSAPI: input_gssapi_token");
+
+	ssh2_pkt_getstring(ssh, &sval, &slen);
+	recv_tok.value = sval;
+	recv_tok.length = slen;
+
+	status = process_gssapi_token(ssh, gssctxt, &recv_tok, username);
+
+	sfree(recv_tok.value);
+
+	if (GSS_ERROR(status)) {
+		/* Start again with the next method in the list */
+		logevent("GSSAPI: Trying to start again");
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+static void
+input_gssapi_errtok(Ssh ssh, Gssctxt *gssctxt)
+{
+	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
+	gss_buffer_desc recv_tok;
+	OM_uint32 status, ms;
+	char *val;
+	u_int len;
+
+
+	logevent("GSSAPI: input_gssapi_errtok");
+
+	ssh2_pkt_getstring(ssh, &val, &len);
+	recv_tok.value = val;
+	recv_tok.length = len;
+
+	/* Stick it into GSSAPI and see what it says */
+	status = ssh_gssapi_init_ctx(ssh, gssctxt, ssh->cfg.gssapi_fwd_tgt,
+				     &recv_tok, &send_tok, NULL);
+
+	sfree(recv_tok.value);
+	gss_release_buffer(&ms, &send_tok);
+
+	/* Server will be returning a failed packet after this one */
+}
+
+static void
+input_gssapi_error(Ssh ssh)
+{
+	OM_uint32 maj, min;
+	char *msg;
+	char *lang;
+
+	logevent("GSSAPI: input_gssapi_error");
+
+	maj = ssh2_pkt_getuint32(ssh);
+	min = ssh2_pkt_getuint32(ssh);
+	ssh2_pkt_getstring(ssh, &msg, NULL);
+	ssh2_pkt_getstring(ssh, &lang, NULL);
+
+	logeventf(ssh, "GSSAPI Server Error: %s", msg);
+
+	sfree(msg);
+	sfree(lang);
+}
+#endif /* GSSAPI */
+
 /*
  * Handle the SSH2 userauth and connection layers.
  */
@@ -4464,7 +4856,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	enum {
 	    AUTH_INVALID, AUTH_PUBLICKEY_AGENT, AUTH_PUBLICKEY_FILE,
 		AUTH_PASSWORD,
-		AUTH_KEYBOARD_INTERACTIVE
+		AUTH_KEYBOARD_INTERACTIVE,
+		AUTH_GSSAPI
 	} method;
 	enum {
 	    AUTH_TYPE_NONE,
@@ -4473,10 +4866,19 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 		AUTH_TYPE_PUBLICKEY_OFFER_QUIET,
 		AUTH_TYPE_PASSWORD,
 		AUTH_TYPE_KEYBOARD_INTERACTIVE,
-		AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET
+		AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET,
+		AUTH_TYPE_GSSAPI
 	} type;
-	int gotit, need_pw, can_pubkey, can_passwd, can_keyb_inter;
-	int tried_pubkey_config, tried_agent, tried_keyb_inter;
+	int gotit, need_pw, can_pubkey, can_passwd, can_keyb_inter
+#ifdef GSSAPI
+		, can_gssapi
+#endif
+		;
+	int tried_pubkey_config, tried_agent, tried_keyb_inter
+#ifdef GSSAPI
+		, tried_gssapi
+#endif
+		;
 	int kbd_inter_running;
 	int we_are_in;
 	int num_prompts, curr_prompt, echo;
@@ -4495,6 +4897,13 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	int siglen, retlen, len;
 	char *q, *agentreq, *ret;
 	int try_send;
+#ifdef GSSAPI
+	Gssctxt *gssctxt;
+	gss_OID_set gss_supported;
+	OM_uint32 minor_status;
+	size_t gss_mech;
+	int gss_repeat_auth;
+#endif
     };
     crState(do_ssh2_authconn_state);
 
@@ -4606,6 +5015,14 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	s->tried_agent = FALSE;
 	s->tried_keyb_inter = FALSE;
 	s->kbd_inter_running = FALSE;
+#ifdef GSSAPI
+	s->gss_supported = NULL;
+	s->tried_gssapi = FALSE;
+	s->gss_mech = 0;
+	gssapiDLLH = NULL;
+	s->gss_repeat_auth = FALSE;
+#endif
+
 	/* Load the pub half of ssh->cfg.keyfile so we notice if it's in Pageant */
 	if (!filename_is_null(ssh->cfg.keyfile)) {
 	    int keytype;
@@ -4721,6 +5138,9 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 			logevent("Server refused public key");
 		    } else if (s->type==AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET) {
 			/* server declined keyboard-interactive; ignore */
+#ifdef GSSAPI
+		    } else if (s->type == AUTH_TYPE_GSSAPI) {
+#endif
 		    } else {
 			c_write_str(ssh, "Access denied\r\n");
 			logevent("Access denied");
@@ -4734,6 +5154,10 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 		    logevent("Further authentication required");
 		}
 
+#ifdef GSSAPI
+		s->can_gssapi =	ssh->cfg.try_gssapi_auth &&
+		    in_commasep_string("gssapi-with-mic", methods, methlen);
+#endif
 		s->can_pubkey =
 		    in_commasep_string("publickey", methods, methlen);
 		s->can_passwd =
@@ -4742,6 +5166,9 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 		    in_commasep_string("keyboard-interactive", methods, methlen);
 	    }
 
+#ifdef GSSAPI
+auth_begin:
+#endif
 	    s->method = 0;
 	    ssh->pkt_ctx &= ~SSH2_PKTCTX_AUTH_MASK;
 	    s->need_pw = FALSE;
@@ -4753,6 +5180,45 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	     * can be echoing, in which case we'll set this to 1.
 	     */
 	    s->echo = 0;
+
+#ifdef GSSAPI
+	    if (!s->method && s->can_gssapi && !s->tried_gssapi) {
+			s->tried_gssapi = TRUE;
+
+
+			if (gssapiDLLH != NULL)
+				FreeLibrary(gssapiDLLH);
+
+			logeventf(ssh, "GSSAPI: loading %s.dll", GSSAPIDLL);
+			gssapiDLLH = LoadLibrary(GSSAPIDLL);
+
+			if (gssapiDLLH == NULL) {
+				LPVOID message;
+				char *msgbuf;
+
+				FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+				      FORMAT_MESSAGE_FROM_SYSTEM |
+				      FORMAT_MESSAGE_IGNORE_INSERTS,
+				      NULL, GetLastError(),
+				      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+				      (LPTSTR)&message, 0, NULL);
+
+				msgbuf = dupprintf("GSSAPI: can't load Kerberos 5 GSSAPI library (%s.dll): %s",
+						GSSAPIDLL, (LPCTSTR)message);
+
+				LocalFree(message);
+				logevent(msgbuf);
+				if (flags & FLAG_VERBOSE)
+					c_write_str(ssh, msgbuf);
+				sfree(message);
+			} else {
+				if (gssapiLoadFuncs())
+					s->method = AUTH_GSSAPI;
+				else
+					FreeLibrary(gssapiDLLH);
+			}
+	    }
+#endif /* GSSAPI */
 
 	    if (!s->method && s->can_pubkey &&
 		agent_exists() && !s->tried_agent) {
@@ -5119,6 +5585,91 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 		    c_write_str(ssh, "\r\n");
 		}
 	    }
+
+#ifdef GSSAPI
+	    if (s->method == AUTH_GSSAPI) {
+			logevent("GSSAPI: trying GSSAPI auth");
+			do {
+				int ok = FALSE;
+
+				if (s->gss_supported == NULL) {
+					gss_indicate_mechs(&s->minor_status, &s->gss_supported);
+					logeventf(ssh, "GSSAPI: number of OIDs: %d", s->gss_supported->count);
+				}
+
+				/* Check to see if the mechanism is usable before we offer it */
+				while (s->gss_mech < s->gss_supported->count && !ok) {
+					if (s->gssctxt)
+						ssh_gssapi_delete_ctx(&s->gssctxt);
+					ssh_gssapi_build_ctx(&s->gssctxt);
+					ssh_gssapi_set_oid(s->gssctxt, &s->gss_supported->elements[s->gss_mech]);
+
+					/* My DER encoding requires length<128 */
+					if (s->gss_supported->elements[s->gss_mech].length < 128 &&
+					    !GSS_ERROR(ssh_gssapi_import_name(ssh, s->gssctxt))) {
+						ok = TRUE; /* Mechanism works */
+					} else {
+						s->gss_mech++;
+					}
+				}
+
+				if (!ok) {
+					logevent("GSSAPI: no mechanisms available");
+					goto auth_begin;
+				}
+
+				logeventf(ssh, "GSSAPI: current OID: %d", s->gss_mech);
+
+				ssh->pkt_ctx &= ~SSH2_PKTCTX_AUTH_MASK;
+				ssh->pkt_ctx |= SSH2_PKTCTX_GSSAPI;
+
+				ssh2_pkt_init(ssh, SSH2_MSG_USERAUTH_REQUEST);
+				ssh2_pkt_addstring(ssh, s->username);
+				ssh2_pkt_addstring(ssh, "ssh-connection");	/* service requested */
+				ssh2_pkt_addstring(ssh, "gssapi-with-mic");	/* method */
+				ssh2_pkt_adduint32(ssh, 1);
+				ssh2_pkt_adduint32(ssh, (s->gss_supported->elements[s->gss_mech].length) + 2);
+				ssh2_pkt_addbool(ssh, (char) SSH_GSS_OIDTYPE);
+				ssh2_pkt_addbool(ssh, (char) s->gss_supported->elements[s->gss_mech].length);
+				ssh2_pkt_adddata(ssh, s->gss_supported->elements[s->gss_mech].elements,
+					s->gss_supported->elements[s->gss_mech].length);
+				ssh2_pkt_send(ssh);
+
+				s->type = AUTH_TYPE_GSSAPI;
+				s->gss_mech++; /* Move along to next candidate */
+
+
+				do {
+					crWaitUntilV(ispkt);
+
+					if (ssh->pktin.type == SSH2_MSG_USERAUTH_GSSAPI_RESPONSE) {
+						if ((s->gss_repeat_auth = input_gssapi_response(ssh, s->gssctxt, s->username)))
+							break;
+					}
+					else if (ssh->pktin.type == SSH2_MSG_USERAUTH_GSSAPI_TOKEN) {
+						if ((s->gss_repeat_auth = input_gssapi_token(ssh, s->gssctxt, s->username)))
+							break;
+					}
+					else if (ssh->pktin.type == SSH2_MSG_USERAUTH_GSSAPI_ERROR) {
+						input_gssapi_error(ssh);
+						break;
+					}
+					else if (ssh->pktin.type == SSH2_MSG_USERAUTH_GSSAPI_ERRTOK) {
+						input_gssapi_errtok(ssh, s->gssctxt);
+						break;
+					}
+					else {
+						break;
+					}
+				} while (1);
+
+			} while (s->gss_repeat_auth);
+
+			FreeLibrary(gssapiDLLH);
+			s->gotit = TRUE;
+	    }
+	    else
+#endif /* GSSAPI */
 
 	    if (s->method == AUTH_PUBLICKEY_FILE) {
 		/*

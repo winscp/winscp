@@ -3,10 +3,35 @@
 #define GUIConfigurationH
 //---------------------------------------------------------------------------
 #include "Configuration.h"
+#include "CopyParam.h"
 //---------------------------------------------------------------------------
 struct TPasLibModule;
 enum TLogView { lvNone, lvWindow, pvPanel };
 enum TInterface { ifCommander, ifExplorer };
+//---------------------------------------------------------------------------
+class TGUICopyParamType : public TCopyParamType
+{
+public:
+  __fastcall TGUICopyParamType();
+  __fastcall TGUICopyParamType(const TCopyParamType & Source);
+  __fastcall TGUICopyParamType(const TGUICopyParamType & Source);
+
+  virtual void __fastcall Default();
+  virtual void __fastcall Assign(const TCopyParamType * Source);
+  TGUICopyParamType & __fastcall operator =(const TGUICopyParamType & rhp);
+  TGUICopyParamType & __fastcall operator =(const TCopyParamType & rhp);
+
+  __property bool Queue = { read = FQueue, write = FQueue };
+  __property bool QueueNoConfirmation = { read = FQueueNoConfirmation, write = FQueueNoConfirmation };
+
+protected:
+  void __fastcall GUIDefault();
+  void __fastcall GUIAssign(const TGUICopyParamType * Source);
+
+private:
+  bool FQueue;
+  bool FQueueNoConfirmation;
+};
 //---------------------------------------------------------------------------
 class TGUIConfiguration : public TConfiguration
 {
@@ -22,6 +47,7 @@ private:
   TDateTime FIgnoreCancelBeforeFinish;
   bool FQueueAutoPopup;
   int FQueueTransfersLimit;
+  TGUICopyParamType FCopyParam;
 
 protected:
   LCID FLocale;
@@ -38,6 +64,7 @@ protected:
   LCID __fastcall InternalLocale();
   TPasLibModule * __fastcall FindModule(void * Instance);
   void __fastcall FreeResourceModule(HANDLE Instance);
+  void __fastcall SetCopyParam(TGUICopyParamType value);
 
 public:
   __fastcall TGUIConfiguration();
@@ -56,6 +83,7 @@ public:
   __property AnsiString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
   __property AnsiString PuttySession = { read = FPuttySession, write = FPuttySession };
   __property TDateTime IgnoreCancelBeforeFinish = { read = FIgnoreCancelBeforeFinish, write = FIgnoreCancelBeforeFinish };
+  __property TGUICopyParamType CopyParam = { read = FCopyParam, write = SetCopyParam };
 };
 //---------------------------------------------------------------------------
 #define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))

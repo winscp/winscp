@@ -366,7 +366,7 @@ AnsiString __fastcall TUnixDirView::ItemDragFileName(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   assert(Item && Item->Data && Terminal && (Terminal->Files->IndexOf(ITEMFILE) >= 0) && !FUniqTempDir.IsEmpty());
-  return FUniqTempDir + Configuration->CopyParam.ValidLocalFileName(ITEMFILE->FileName);
+  return FUniqTempDir + GUIConfiguration->CopyParam.ValidLocalFileName(ITEMFILE->FileName);
 #else
   return 0;
 #endif
@@ -524,7 +524,7 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item, int
   assert(DragDropFilesEx);
 
   TTransferType Type;
-  TCopyParamType CopyParams = Configuration->CopyParam;
+  TCopyParamType CopyParams = GUIConfiguration->CopyParam;
   TStrings *FileList = NULL;
   AnsiString Directory;
 
@@ -901,7 +901,7 @@ void __fastcall TUnixDirView::DDTargetDrop()
           FileList->AddObject(File->FileName, File);
         }
 
-        TCopyParamType CopyParams = Configuration->CopyParam;
+        TCopyParamType CopyParams = GUIConfiguration->CopyParam;
         AnsiString TargetDir = "";
 
         if (OnGetCopyParam)

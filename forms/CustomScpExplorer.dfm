@@ -10,7 +10,6 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   OldCreateOrder = False
   Position = poDefaultPosOnly
   OnCloseQuery = FormCloseQuery
-  OnResize = FormResize
   PixelsPerInch = 96
   TextHeight = 13
   object QueueSplitter: TSplitter
@@ -140,12 +139,10 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       TabOrder = 0
       ViewStyle = vsReport
       OnContextPopup = QueueViewContextPopup
-      OnDblClick = QueueViewDblClick
       OnDeletion = QueueViewDeletion
       OnEnter = QueueViewEnter
       OnDragDrop = QueueViewDragDrop
       OnDragOver = QueueViewDragOver
-      OnKeyDown = QueueViewKeyDown
       OnSelectItem = QueueViewSelectItem
       OnStartDrag = QueueViewStartDrag
     end

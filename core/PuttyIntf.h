@@ -34,6 +34,7 @@ extern "C"
 
   void ssh_close(void * handle);
   int get_ssh_version(void * handle);
+  int is_ssh(void * handle);
   void * get_ssh_frontend(void * handle);
   int get_ssh1_compressing(void * handle);
   const struct ssh_cipher * get_cipher(void * handle);
@@ -89,5 +90,6 @@ extern const struct ssh2_ciphers ssh2_blowfish;
 //---------------------------------------------------------------------------
 #include "Putty.h"
 #include <SSH.h>
+#include <Proxy.h>
 //---------------------------------------------------------------------------
 #endif

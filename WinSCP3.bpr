@@ -7,9 +7,10 @@
     <OBJFILES value="WinSCP3.obj forms\CustomScpExplorer.obj 
       windows\CustomWinConfiguration.obj windows\GUIConfiguration.obj 
       windows\GUITools.obj forms\NonVisual.obj windows\ProgParams.obj 
-      forms\ScpCommander.obj forms\ScpExplorer.obj 
-      windows\TerminalManager.obj windows\Tools.obj windows\UserInterface.obj 
-      windows\WinConfiguration.obj windows\WinInterface.obj windows\WinMain.obj"/>
+      windows\QueueController.obj forms\ScpCommander.obj 
+      forms\ScpExplorer.obj windows\TerminalManager.obj windows\Tools.obj 
+      windows\UserInterface.obj windows\WinConfiguration.obj 
+      windows\WinInterface.obj windows\WinMain.obj"/>
     <RESFILES value="windows\Windows.res WinSCP3.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) forms\CustomScpExplorer.dfm forms\NonVisual.dfm 
@@ -73,6 +74,7 @@
       <FILE FILENAME="windows\GUITools.cpp" FORMNAME="" UNITNAME="GUITools" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\NonVisual.cpp" FORMNAME="NonVisualDataModule" UNITNAME="NonVisual" CONTAINERID="CCompiler" DESIGNCLASS="TDataModule" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\ProgParams.cpp" FORMNAME="" UNITNAME="ProgParams" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\QueueController.cpp" FORMNAME="" UNITNAME="QueueController" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ScpCommander.cpp" FORMNAME="ScpCommanderForm" UNITNAME="ScpCommander" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ScpExplorer.cpp" FORMNAME="ScpExplorerForm" UNITNAME="ScpExplorer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\TerminalManager.cpp" FORMNAME="" UNITNAME="TerminalManager" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -97,8 +99,8 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
 MinorVer=6
-Release=0
-Build=218
+Release=1
+Build=220
 Debug=0
 PreRelease=0
 Special=0
@@ -110,13 +112,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.6.0.218
+FileVersion=3.6.1.220
 InternalName=winscp3
 LegalCopyright=(c) 2000-2004 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp360.exe
+OriginalFilename=winscp361.exe
 ProductName=WinSCP
-ProductVersion=3.6.0.0
+ProductVersion=3.6.1.0
 WWW=http://winscp.sourceforge.net/
 
 [Compiler]

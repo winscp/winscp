@@ -35,12 +35,12 @@ __published:
     TShiftState Shift);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall CheckAllButtonClick(TObject *Sender);
-  bool __fastcall GetImportKeys();
 private:
   TStoredSessionList *FSessionList;
   void __fastcall UpdateControls();
   void __fastcall SetSessionList(TStoredSessionList *value);
-  void LoadSessions();
+  void __fastcall LoadSessions();
+  bool __fastcall GetImportKeys();
 public:
   virtual __fastcall TImportSessionsDialog(TComponent* AOwner);
   __property TStoredSessionList *SessionList  = { read=FSessionList, write=SetSessionList };

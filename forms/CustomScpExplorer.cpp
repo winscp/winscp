@@ -4,7 +4,6 @@
 
 #include <Clipbrd.hpp>
 #include <Common.h>
-#include <AssociatedStatusBar.hpp>
 
 #include "CustomScpExplorer.h"
 
@@ -97,7 +96,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FLastDirView(NULL), FFormRestored(False), TForm(Owner)
 {
   RestoreParams();
-  FixControlsPlacement();
   RemoteDirView->Invalidate();
   assert(NonVisualDataModule && !NonVisualDataModule->ScpExplorer);
   NonVisualDataModule->ScpExplorer = this;
@@ -112,7 +110,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FRefreshLocalDirectory = false;
   FRefreshRemoteDirectory = false;
   FDDMoveSlipped = false;
-  FDDExtCopySlipped = false;
   FDDExtMapFile = NULL;
   FDDExtMutex = CreateMutex(NULL, false, DRAG_EXT_MUTEX);
   assert(FDDExtMutex != NULL);
@@ -122,6 +119,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FQueueStatusInvalidated = false;
   FQueueItemInvalidated = false;
   FQueueActedItem = NULL;
+  FQueueController = new TQueueController(QueueView);
 
   FUserActionTimer = new TTimer(this);
   FUserActionTimer->Enabled = false;
@@ -129,8 +127,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FUserActionTimer->OnTimer = UserActionTimer;
 
   FOle32Library = LoadLibrary("Ole32.dll");
-  FDragCopyCursor = FOle32Library != NULL ?
-    LoadCursor(FOle32Library, MAKEINTRESOURCE(3)) : NULL;
   FDragMoveCursor = FOle32Library != NULL ?
     LoadCursor(FOle32Library, MAKEINTRESOURCE(2)) : NULL;
 
@@ -161,7 +157,6 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 
   FreeLibrary(FOle32Library);
   FOle32Library = NULL;
-  FDragCopyCursor = NULL;
   FDragMoveCursor = NULL;
 
   assert(!FErrorList);
@@ -171,6 +166,8 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
   assert(NonVisualDataModule && (NonVisualDataModule->ScpExplorer == this));
   NonVisualDataModule->ScpExplorer = NULL;
 
+  delete FQueueController;
+  FQueueController = NULL;
   delete FQueueStatusSection;
   FQueueStatusSection = NULL;
   delete FQueueStatus;
@@ -262,80 +259,8 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueStatus()
     }
   }
 
-  if (FQueueStatus != NULL)
-  {
-    TQueueItemProxy * QueueItem;
-    TListItem * Item;
-    int Index = 0;
-    for (int ItemIndex = 0; ItemIndex < FQueueStatus->Count; ItemIndex++)
-    {
-      QueueItem = FQueueStatus->Items[ItemIndex];
-
-      int Index2 = Index;
-      while ((Index2 < QueueView->Items->Count) &&
-             (QueueView->Items->Item[Index2]->Data != QueueItem))
-      {
-        Index2++;
-      }
-
-      if (Index2 < QueueView->Items->Count)
-      {
-        while (Index < Index2)
-        {
-          QueueView->Items->Delete(Index);
-          Index2--;
-        }
-      }
-
-      if (Index == QueueView->Items->Count)
-      {
-        Item = QueueView->Items->Add();
-      }
-      else if (QueueView->Items->Item[Index]->Data != QueueItem)
-      {
-        Item = QueueView->Items->Insert(Index);
-      }
-      else
-      {
-        Item = QueueView->Items->Item[Index];
-        assert(Item->Data == QueueItem);
-      }
-      FillQueueViewItem(Item, QueueItem, false);
-      Index++;
-
-      assert((QueueItem->Status != TQueueItem::qsPending) ==
-        (ItemIndex < FQueueStatus->ActiveCount));
-
-      if (ItemIndex < FQueueStatus->ActiveCount)
-      {
-        if (Index == QueueView->Items->Count)
-        {
-          Item = QueueView->Items->Add();
-        }
-        else if (QueueView->Items->Item[Index]->Data != QueueItem)
-        {
-          Item = QueueView->Items->Insert(Index);
-        }
-        else
-        {
-          Item = QueueView->Items->Item[Index];
-          assert(Item->Data == QueueItem);
-        }
-        FillQueueViewItem(Item, QueueItem, true);
-        Index++;
-      }
-    }
-
-    while (Index < QueueView->Items->Count)
-    {
-      QueueView->Items->Delete(Index);
-    }
-  }
-  else
-  {
-    QueueView->Items->Clear();
-  }
-
+  FQueueController->UpdateQueueStatus(FQueueStatus);
+  
   UpdateQueueView();
 }
 //---------------------------------------------------------------------------
@@ -395,8 +320,6 @@ TQueueItemProxy * __fastcall TCustomScpExplorerForm::RefreshQueueItems()
   TQueueItemProxy * Result = NULL;
   if (FQueueStatus != NULL)
   {
-    TGuard Guard(FQueueStatusSection);
-
     bool Refresh = FQueueItemInvalidated;
     FQueueItemInvalidated = false;
 
@@ -405,14 +328,11 @@ TQueueItemProxy * __fastcall TCustomScpExplorerForm::RefreshQueueItems()
     bool Updated = false;
     bool Update;
     TQueueItemProxy * QueueItem;
-    bool Active;
-    int ItemIndex = 0;
     bool UserAction;
     for (int Index = 0; Index < Limit; Index++)
     {
       Update = false;
       QueueItem = FQueueStatus->Items[Index];
-      Active = (QueueItem->Status != TQueueItem::qsPending);
       UserAction = TQueueItem::IsUserActionStatus(QueueItem->Status);
       if (UserAction && (Result == NULL))
       {
@@ -424,13 +344,6 @@ TQueueItemProxy * __fastcall TCustomScpExplorerForm::RefreshQueueItems()
         QueueItem->Flag = false;
         QueueItem->Update();
         Updated = true;
-        bool IsActive = (QueueItem->Status != TQueueItem::qsPending);
-        assert(!Active || IsActive);
-        if (!Active && IsActive)
-        {
-          QueueView->Items->Insert(ItemIndex + 1);
-          Active = true;
-        }
         Update = true;
       }
       else if (UserAction)
@@ -440,16 +353,8 @@ TQueueItemProxy * __fastcall TCustomScpExplorerForm::RefreshQueueItems()
 
       if (Update)
       {
-        assert(QueueView->Items->Item[ItemIndex]->Data == QueueItem);
-        FillQueueViewItem(QueueView->Items->Item[ItemIndex], QueueItem, false);
-        if (Active)
-        {
-          FillQueueViewItem(QueueView->Items->Item[ItemIndex + 1],
-            QueueItem, true);
-        }
+        FQueueController->RefreshQueueItem(QueueItem);
       }
-
-      ItemIndex += (Active ? 2 : 1);
     }
 
     if (Updated)
@@ -464,8 +369,7 @@ TQueueItemProxy * __fastcall TCustomScpExplorerForm::RefreshQueueItems()
 void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
 {
   assert(Configuration && RemoteDirView);
-  RemoteDirView->DDAllowMove = WinConfiguration->DDExtEnabled ||
-    WinConfiguration->DDAllowMoveInit;
+  RemoteDirView->DDAllowMove = WinConfiguration->DDAllowMoveInit;
   RemoteDirView->DimmHiddenFiles = WinConfiguration->DimmHiddenFiles;
   RemoteDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
   RemoteDirView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
@@ -478,16 +382,23 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewGetCopyParam(
       TTransferType Type, AnsiString &TargetDirectory, TStrings * FileList,
       TCopyParamType &CopyParam)
 {
+  TGUICopyParamType GUICopyParam = GUIConfiguration->CopyParam;
+  // overwrites TCopyParamType fields only
+  GUICopyParam = CopyParam;
   if (!CopyParamDialog(Direction, Type, true, FileList,
-        TargetDirectory, CopyParam, WinConfiguration->DDTransferConfirmation))
+        TargetDirectory, GUICopyParam, WinConfiguration->DDTransferConfirmation))
   {
     Abort();
+  }
+  else
+  {
+    CopyParam = GUICopyParam;
   }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   TTransferDirection Direction, TTransferType Type, bool DragDrop,
-  TStrings * FileList, AnsiString & TargetDirectory, TCopyParamType & CopyParam,
+  TStrings * FileList, AnsiString & TargetDirectory, TGUICopyParamType & CopyParam,
   bool Confirm)
 {
   bool Result = true;
@@ -507,41 +418,44 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
     }
   }
 
+  bool DragDropTemp = (DragDrop && (Direction == tdToLocal));
   if (Result && Confirm)
   {
-    int Options = coQueueNoConfirmation;
+    int Options =
+      (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0) |
+      (DragDropTemp ? coDragDropTemp : 0);
     Result = DoCopyDialog(Direction == tdToRemote, Type == ttMove,
-      DragDrop, FileList, Terminal->IsCapable[fcTextMode], TargetDirectory,
-      &CopyParam, Options, true);
+      FileList, TargetDirectory, &CopyParam, Options);
+  }
 
-    if ((Options & coQueue) != 0)
+  if (Result && CopyParam.Queue && !DragDropTemp)
+  {
+    assert(Queue != NULL);
+
+    int Params =
+      ((Type == ttMove) ? cpDelete : 0) |
+      (CopyParam.QueueNoConfirmation ? cpNoConfirmation : 0);
+    TQueueItem * QueueItem;
+    if (Direction == tdToRemote)
     {
-      assert(Queue != NULL);
+      QueueItem = new TUploadQueueItem(Terminal, FileList, TargetDirectory,
+        &CopyParam, Params);
+    }
+    else
+    {
+      QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
+        &CopyParam, Params);
+    }
+    Queue->AddItem(QueueItem);
+    Result = false;
 
-      int Params =
-        ((Type == ttMove) ? cpDelete : 0) |
-        (((Options & coQueueNoConfirmation) != 0) ? cpNoConfirmation : 0);
-      TQueueItem * QueueItem;
-      if (Direction == tdToRemote)
-      {
-        QueueItem = new TUploadQueueItem(Terminal, FileList, TargetDirectory,
-          &CopyParam, Params);
-      }
-      else
-      {
-        QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
-          &CopyParam, Params);
-      }
-      Queue->AddItem(QueueItem);
-      Result = false;
-
-      TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
-      if (HasDirView[Side])
-      {
-        DirView(Side)->SelectAll(smNone);
-      }
+    TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
+    if (HasDirView[Side])
+    {
+      DirView(Side)->SelectAll(smNone);
     }
   }
+  
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -630,15 +544,17 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
     // (it is not displayed)
     if (!DragDrop && Visible && (Operation != foCalculateSize))
     {
-      TListItem *Item = DirView(Side)->FindFileItem(FileName);
+      AnsiString FileNameOnly = (Side == osRemote) ?
+        UnixExtractFileName(FileName) : ExtractFileName(FileName);
+      TListItem *Item = DirView(Side)->FindFileItem(FileNameOnly);
       assert(Item);
       if (Success) Item->Selected = false;
       Item->MakeVisible(false);
     }
-    if (FProgressForm)
-    {
-      DisconnectWhenComplete = FProgressForm->DisconnectWhenComplete;
-    }
+  }
+  if (FProgressForm)
+  {
+    DisconnectWhenComplete = FProgressForm->DisconnectWhenComplete;
   }
 }
 //---------------------------------------------------------------------------
@@ -740,7 +656,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
       {
         TargetDirectory = *static_cast<AnsiString*>(Param);
       }
-      TCopyParamType CopyParam = Configuration->CopyParam;
+      TGUICopyParamType CopyParam = GUIConfiguration->CopyParam;
       if (CopyParamDialog(Direction, Type, false, FileList, TargetDirectory,
           CopyParam, !NoConfirmation))
       {
@@ -989,7 +905,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
     assert(FileList->Count == 1);
     if (Side == osRemote)
     {
-      TCopyParamType CopyParam = Configuration->CopyParam;
+      TCopyParamType CopyParam = GUIConfiguration->CopyParam;
       if (FExecutedFileForceText)
       {
         CopyParam.TransferMode = tmAscii;
@@ -1170,7 +1086,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(TObject * Sender)
           {
             FileList->Add(FExecutedFile);
 
-            TCopyParamType CopyParam = Configuration->CopyParam;
+            TCopyParamType CopyParam = GUIConfiguration->CopyParam;
             if (FExecutedFileForceText)
             {
               CopyParam.TransferMode = tmAscii;
@@ -1362,6 +1278,11 @@ void __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState Shift)
 {
+  if (QueueView->Focused() && (QueueView->OnKeyDown != NULL))
+  {
+    QueueView->OnKeyDown(QueueView, Key, Shift); 
+  }
+
   if (!DirView(osCurrent)->IsEditing())
   {
     TShortCut KeyShortCut = ShortCut(Key, Shift);
@@ -1643,9 +1564,19 @@ void __fastcall TCustomScpExplorerForm::NewSession()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::CanCloseQueue()
+{
+  assert(FQueue != NULL);
+  return (FQueue->IsEmpty ||
+    (MessageDialog(LoadStr(PENDING_QUEUE_ITEMS), qtWarning, qaOK | qaCancel) == qaOK));
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CloseSession()
 {
-  TTerminalManager::Instance()->FreeActiveTerminal();
+  if (CanCloseQueue())
+  {
+    TTerminalManager::Instance()->FreeActiveTerminal();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OpenStoredSession(TSessionData * Data)
@@ -1679,6 +1610,11 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
       WinConfiguration->ConfirmClosingSession = false;
     }
     CanClose = (Result == qaOK || Result == qaNeverAskAgain);
+  }
+
+  if (CanClose)
+  {
+    CanClose = CanCloseQueue();
   }
 }
 //---------------------------------------------------------------------------
@@ -1753,6 +1689,9 @@ bool __fastcall TCustomScpExplorerForm::GetComponentVisible(Word Component)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
 {
+  TToolBar * MenuToolBar = dynamic_cast<TToolBar*>(GetComponent(fcMenuToolBar));
+  MenuToolBar->Height = MenuToolBar->Controls[0]->Height;
+
   if (RemoteDirView->ItemFocused != NULL)
   {
     RemoteDirView->ItemFocused->MakeVisible(false);
@@ -1871,12 +1810,13 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
 
     try
     {
+      TCopyParamType CopyParam = GUIConfiguration->CopyParam;
       FSynchronizeProgressForm = new TSynchronizeProgressForm(Application);
       FSynchronizeProgressForm->Start();
 
       Terminal->Synchronize(LocalDirectory, RemoteDirectory,
         static_cast<TTerminal::TSynchronizeMode>(Mode),
-        Params, TerminalSynchronizeDirectory);
+        &CopyParam, Params, TerminalSynchronizeDirectory);
     }
     __finally
     {
@@ -2244,8 +2184,7 @@ void __fastcall TCustomScpExplorerForm::CMAppSysCommand(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoShow()
 {
-  TToolBar * MenuToolBar = dynamic_cast<TToolBar*>(GetComponent(fcMenuToolBar));
-  MenuToolBar->Height = MenuToolBar->Controls[0]->Height;
+  FixControlsPlacement();
 
   TForm::DoShow();
 }
@@ -2331,7 +2270,6 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
     UnmapViewOfFile(CommStruct);
   }
 
-  FDDExtCopySlipped = false;
   FDDMoveSlipped = false;
 }
 //---------------------------------------------------------------------------
@@ -2349,18 +2287,6 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewDDEnd(TObject * /*Sender*/)
 
         Operation = (RemoteDirView->LastDDResult == drMove) ? foMove : foCopy;
 
-        // Heuristics: if we slipped copy operation, but interval between
-        // DDTargetDrop() and DDEnd() is greater than some interval,
-        // we suppose that target (explorer) has shown the drop menu.
-        // If such case we use actual operation returned by target application.
-        if (FDDExtCopySlipped)
-        {
-          int SlipInterval = MSecsPerDay * (Now() - FDDDropTime);
-          if (SlipInterval < WinConfiguration->DDExtCopySlipTimeout)
-          {
-            Operation = foCopy;
-          }
-        }
         if (FDDMoveSlipped)
         {
           Operation = foMove;
@@ -2385,31 +2311,16 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewDDEnd(TObject * /*Sender*/)
 void __fastcall TCustomScpExplorerForm::RemoteDirViewDDGiveFeedback(
   TObject * /*Sender*/, int dwEffect, HRESULT & /*Result*/)
 {
-  HCURSOR SlippedMoveCursor;
   HCURSOR SlippedCopyCursor;
 
-  // When dragging outside of winscp using shellext, move operation is usually
-  // selected as default (by explorer). We want copy instead. As the operation is
-  // finally hold by us, we can slip "copy" cursor in place of "move" cursor.
-  // Thus explorer thinks that file is moving, but we display copy cursor
-  // and we do actually copy, when shellext steals processing from explorer.
-  // See TCustomScpExplorerForm::DDGetTarget
-  FDDExtCopySlipped =
-    (FDDExtMapFile != NULL) && (FDDTargetDirView == NULL) &&
-    (dwEffect == DROPEFFECT_Move) && (FDragCopyCursor != NULL) &&
-    (GetKeyState(VK_SHIFT) >= 0) && (GetKeyState(VK_CONTROL) >= 0);
-
   FDDMoveSlipped =
-    (FDDExtMapFile == NULL) && (FDragMoveCursor != NULL) &&
+    (FDragMoveCursor != NULL) &&
     (!RemoteDirView->DDAllowMove) && (dwEffect == DROPEFFECT_Copy) &&
     ((FDDTargetDirView == RemoteDirView) ||
      ((FDDTargetDirView != NULL) && (GetKeyState(VK_SHIFT) < 0)));
 
-  SlippedMoveCursor = FDDExtCopySlipped ? FDragCopyCursor : Dragdrop::DefaultCursor;
   SlippedCopyCursor = FDDMoveSlipped ? FDragMoveCursor : Dragdrop::DefaultCursor;
 
-  RemoteDirView->DragDropFilesEx->CHMove = SlippedMoveCursor;
-  RemoteDirView->DragDropFilesEx->CHScrollMove = SlippedMoveCursor;
   RemoteDirView->DragDropFilesEx->CHCopy = SlippedCopyCursor;
   RemoteDirView->DragDropFilesEx->CHScrollCopy = SlippedCopyCursor;
 }
@@ -2582,68 +2493,14 @@ void __fastcall TCustomScpExplorerForm::PanelExportStore(TOperationSide /*Side*/
   }
 }
 //---------------------------------------------------------------------------
-TQueueItemProxy * __fastcall TCustomScpExplorerForm::QueueViewItemToQueueItem(
-  TListItem * Item, bool * Detail)
-{
-  assert(Item != NULL);
-  bool ADetail = false;
-
-  int Index = Item->Index;
-  if (Index < FQueueStatus->ActiveCount * 2)
-  {
-    ADetail = ((Index % 2) > 0);
-    Index /= 2;
-  }
-  else
-  {
-    Index -= FQueueStatus->ActiveCount;
-  }
-
-  if (Detail != NULL)
-  {
-    *Detail = ADetail;
-  }
-
-  return FQueueStatus->Items[Index];
-}
-//---------------------------------------------------------------------------
 TQueueOperation __fastcall TCustomScpExplorerForm::DefaultQueueOperation()
 {
-  TQueueItemProxy * QueueItem;
-
-  if (QueueView->ItemFocused != NULL)
-  {
-    QueueItem = QueueViewItemToQueueItem(QueueView->ItemFocused);
-
-    switch (QueueItem->Status)
-    {
-      case TQueueItem::qsPending:
-        return qoItemExecute;
-
-      case TQueueItem::qsQuery:
-        return qoItemQuery;
-
-      case TQueueItem::qsError:
-        return qoItemError;
-
-      case TQueueItem::qsPrompt:
-        return qoItemPrompt;
-    }
-  }
-
-  return qoNone;
+  return FQueueController->DefaultOperation();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::AllowQueueOperation(
   TQueueOperation Operation)
 {
-  TQueueItemProxy * QueueItem = NULL;
-
-  if (QueueView->ItemFocused != NULL)
-  {
-    QueueItem = QueueViewItemToQueueItem(QueueView->ItemFocused);
-  }
-
   switch (Operation)
   {
     case qoPreferences:
@@ -2652,35 +2509,8 @@ bool __fastcall TCustomScpExplorerForm::AllowQueueOperation(
     case qoGoTo:
       return ComponentVisible[fcQueueView];
 
-    case qoItemQuery:
-      return (QueueItem != NULL) && (QueueItem->Status == TQueueItem::qsQuery);
-
-    case qoItemError:
-      return (QueueItem != NULL) && (QueueItem->Status == TQueueItem::qsError);
-
-    case qoItemPrompt:
-      return (QueueItem != NULL) && (QueueItem->Status == TQueueItem::qsPrompt);
-
-    case qoItemDelete:
-      return (QueueItem != NULL) && (QueueItem->Status != TQueueItem::qsDone) &&
-        !TQueueItem::IsUserActionStatus(QueueItem->Status);
-
-    case qoItemExecute:
-      return (QueueItem != NULL) && (QueueItem->Status == TQueueItem::qsPending);
-
-    case qoItemUp:
-      return (QueueItem != NULL) &&
-        (QueueItem->Status == TQueueItem::qsPending) &&
-        (QueueView->ItemFocused->Index > (FQueueStatus->ActiveCount * 2));
-
-    case qoItemDown:
-      return (QueueItem != NULL) &&
-        (QueueItem->Status == TQueueItem::qsPending) &&
-        (QueueView->ItemFocused->Index < (QueueView->Items->Count - 1));
-
     default:
-      assert(false);
-      return false;
+      return FQueueController->AllowOperation(Operation);
   }
 }
 //---------------------------------------------------------------------------
@@ -2698,171 +2528,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteQueueOperation(
   }
   else
   {
-    TQueueItemProxy * QueueItem = NULL;
-
-    if (QueueView->ItemFocused != NULL)
-    {
-      QueueItem = QueueViewItemToQueueItem(QueueView->ItemFocused);
-    }
-
-    if (QueueItem != NULL)
-    {
-      switch (Operation)
-      {
-        case qoItemQuery:
-        case qoItemError:
-        case qoItemPrompt:
-          QueueItem->ProcessUserAction();
-          break;
-
-        case qoItemExecute:
-          QueueItem->ExecuteNow();
-          break;
-
-        case qoItemUp:
-        case qoItemDown:
-          QueueItem->Move(Operation == qoItemUp);
-          break;
-
-        case qoItemDelete:
-          QueueItem->Delete();
-          break;
-
-        default:
-          assert(false);
-          break;
-      }
-    }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::FillQueueViewItem(TListItem * Item,
-  TQueueItemProxy * QueueItem, bool Detail)
-{
-  assert(!Detail || (QueueItem->Status != TQueueItem::qsPending));
-
-  assert((Item->Data == NULL) || (Item->Data == QueueItem));
-  Item->Data = QueueItem;
-
-  AnsiString ProgressStr;
-  int State = -1;
-
-  switch (QueueItem->Status)
-  {
-    case TQueueItem::qsPending:
-      ProgressStr = LoadStr(QUEUE_PENDING);
-      break;
-
-    case TQueueItem::qsConnecting:
-      ProgressStr = LoadStr(QUEUE_CONNECTING);
-      break;
-
-    case TQueueItem::qsQuery:
-      ProgressStr = LoadStr(QUEUE_QUERY);
-      State = 4;
-      break;
-
-    case TQueueItem::qsError:
-      ProgressStr = LoadStr(QUEUE_ERROR);
-      State = 5;
-      break;
-
-    case TQueueItem::qsPrompt:
-      ProgressStr = LoadStr(QUEUE_PROMPT);
-      State = 6;
-      break;
-  }
-
-  bool BlinkHide = TQueueItem::IsUserActionStatus(QueueItem->Status) &&
-    !QueueItem->ProcessingUserAction &&
-    ((GetTickCount() % 1000) >= 500);
-
-  int Image = -1;
-  AnsiString Values[4];
-  TFileOperationProgressType * ProgressData = QueueItem->ProgressData;
-  TQueueItem::TInfo * Info = QueueItem->Info;
-
-  if (!Detail)
-  {
-    switch (Info->Operation)
-    {
-      case foCopy:
-        Image = 2;
-        break;
-
-      case foMove:
-        Image = 3;
-        break;
-    }
-    State = ((Info->Side == osLocal) ? 1 : 0);
-
-    Values[0] = Info->Source;
-    Values[1] = Info->Destination;
-
-    if (ProgressData != NULL)
-    {
-      Values[2] = FormatBytes(ProgressData->TotalTransfered);
-      if (ProgressStr.IsEmpty())
-      {
-        ProgressStr = FORMAT("%d%%", (ProgressData->OverallProgress()));
-      }
-    }
-    Values[3] = ProgressStr;
-  }
-  else
-  {
-    if (ProgressData != NULL)
-    {
-      Values[0] = ProgressData->FileName;
-      Values[2] = FormatBytes(ProgressData->TransferedSize);
-      Values[3] = FORMAT("%d%%", (ProgressData->TransferProgress()));
-    }
-    else
-    {
-      Values[0] = ProgressStr;
-    }
-  }
-
-  Item->StateIndex = (!BlinkHide ? State : -1);
-  Item->ImageIndex = (!BlinkHide ? Image : -1);
-  for (int Index = 0; Index < LENOF(Values); Index++)
-  {
-    if (Index < Item->SubItems->Count)
-    {
-      Item->SubItems->Strings[Index] = Values[Index];
-    }
-    else
-    {
-      Item->SubItems->Add(Values[Index]);
-    }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::QueueViewDblClick(TObject * /*Sender*/)
-{
-  TQueueOperation Operation = DefaultQueueOperation();
-
-  if (Operation != qoNone)
-  {
-    ExecuteQueueOperation(Operation);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::QueueViewKeyDown(TObject * /*Sender*/,
-  WORD & Key, TShiftState /*Shift*/)
-{
-  if (Key == VK_RETURN)
-  {
-    TQueueOperation Operation = DefaultQueueOperation();
-
-    if (Operation != qoNone)
-    {
-      ExecuteQueueOperation(Operation);
-    }
-  }
-  else if (Key == VK_DELETE)
-  {
-    ExecuteQueueOperation(qoItemDelete);
+    FQueueController->ExecuteOperation(Operation);
   }
 }
 //---------------------------------------------------------------------------
@@ -2887,15 +2553,6 @@ void __fastcall TCustomScpExplorerForm::QueueSplitterCanResize(
   {
     NewSize = HeightLimit;
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::FormResize(TObject * /*Sender*/)
-{
-  DoResize();
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoResize()
-{
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::StatusBarResize(

@@ -43,6 +43,7 @@ void __fastcall TSessionData::Default()
   AuthTIS = false;
   AuthKI = true;
   AuthKIPassword = true;
+  AuthGSSAPI = false;
   Compression = false;
   SshProt = ssh2;
   Ssh2DES = false;
@@ -100,6 +101,7 @@ void __fastcall TSessionData::Default()
   SFTPDownloadQueue = 4;
   SFTPUploadQueue = 4;
   SFTPListingQueue = 2;
+  SFTPSymlinkBug = asAuto;
 
   CustomParam1 = "";
   CustomParam2 = "";
@@ -164,6 +166,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(TcpNoDelay);
     DUPL(AuthKI);
     DUPL(AuthKIPassword);
+    DUPL(AuthGSSAPI);
 
     DUPL(ProxyMethod);
     DUPL(ProxyHost);
@@ -178,6 +181,12 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     {
       DUPL(Bug[(TSshBug)Index]);
     }
+
+    // SFTP
+    DUPL(SFTPDownloadQueue);
+    DUPL(SFTPUploadQueue);
+    DUPL(SFTPListingQueue);
+    DUPL(SFTPSymlinkBug);
 
     DUPL(CustomParam1);
     DUPL(CustomParam2);
@@ -229,6 +238,7 @@ void __fastcall TSessionData::StoreToConfig(void * config)
   cfg->ssh2_des_cbc = Ssh2DES;
   cfg->try_tis_auth = AuthTIS;
   cfg->try_ki_auth = AuthKI;
+  cfg->try_gssapi_auth = AuthGSSAPI;
 
   cfg->proxy_type = ProxyMethod;
   ASCOPY(cfg->proxy_host, ProxyHost);
@@ -330,6 +340,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     AuthTIS = Storage->ReadBool("AuthTIS", AuthTIS);
     AuthKI = Storage->ReadBool("AuthKI", AuthKI);
     AuthKIPassword = Storage->ReadBool("AuthKIPassword", AuthKIPassword);
+    AuthGSSAPI = Storage->ReadBool("AuthGSSAPI", AuthGSSAPI);
     Compression = Storage->ReadBool("Compression", Compression);
     SshProt = (TSshProt)Storage->ReadInteger("SshProt", SshProt);
     Ssh2DES = Storage->ReadBool("Ssh2DES", Ssh2DES);
@@ -412,6 +423,8 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
         Bug[sbHMAC2] = asOn;
     }
 
+    SFTPSymlinkBug = TAutoSwitch(Storage->ReadInteger("SFTPSymlinkBug", SFTPSymlinkBug));
+
     // read only (used only on Import from Putty dialog)
     ProtocolStr = Storage->ReadString("Protocol", ProtocolStr);
 
@@ -455,6 +468,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
     }
     else
     {
+      Storage->WriteBool("AuthGSSAPI", AuthGSSAPI);
       Storage->WriteString("PublicKeyFile", PublicKeyFile);
       Storage->WriteInteger("FSProtocol", FSProtocol);
       Storage->WriteString("LocalDirectory", LocalDirectory);
@@ -539,6 +553,8 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
 
     if (!PuttyExport)
     {
+      Storage->WriteInteger("SFTPSymlinkBug", SFTPSymlinkBug);
+      
       Storage->WriteString("CustomParam1", CustomParam1);
       Storage->WriteString("CustomParam2", CustomParam2);
     }
@@ -781,6 +797,11 @@ void __fastcall TSessionData::SetAuthKI(bool value)
 void __fastcall TSessionData::SetAuthKIPassword(bool value)
 {
   SET_SESSION_PROPERTY(AuthKIPassword);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetAuthGSSAPI(bool value)
+{
+  SET_SESSION_PROPERTY(AuthGSSAPI);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetCompression(bool value)
@@ -1134,6 +1155,11 @@ void __fastcall TSessionData::SetSFTPUploadQueue(int value)
 void __fastcall TSessionData::SetSFTPListingQueue(int value)
 {
   SET_SESSION_PROPERTY(SFTPListingQueue);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetSFTPSymlinkBug(TAutoSwitch value)
+{
+  SET_SESSION_PROPERTY(SFTPSymlinkBug);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetInfoTip()

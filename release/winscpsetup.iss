@@ -59,9 +59,7 @@ ShowTasksTreeLines=yes
 #dim Languages[100]
 #define LanguageCount 0
 #define LangI
-#define MessageID
 #define MessagesPath
-#define MessageStr
 
 #sub ProcessTranslationFile
 
@@ -85,11 +83,10 @@ ShowTasksTreeLines=yes
     #expr LanguageCount++
   #endif
 
+[Languages]
 Name: {#Lang}; MessagesFile: {#MessagesPath}
 
 #endsub /* sub ProcessTranslationFile */
-
-[Languages]
 
 #define FindHandle 0
 #expr ProcessTranslationFile
@@ -253,7 +250,7 @@ Root: HKCU; Subkey: "Software\Classes\SCP"; Flags: dontcreatekey uninsdeletekey;
 Name: transl\eng; Description: "English"; Types: fulllangs full custom compact; \
   Flags: fixed
 
-#sub EmitLang
+  #sub EmitLang
 
 [Components]
 Name: transl\{#Languages[LangI*3]}; Description: {#Languages[LangI*3+1]}; \
@@ -271,7 +268,7 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
   ValueType: dword; ValueName: "LocaleSafe"; ValueData: {#Languages[LangI*3+2]}; \
   Components: transl\{#Languages[LangI*3]}; Languages: {#Languages[LangI*3]}
 
-#endsub /* sub EmitLang */
+  #endsub /* sub EmitLang */
 
   #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
 

@@ -88,18 +88,18 @@ __published:
   TToolButton *ToolButton48;
   TToolButton *ToolButton49;
   TToolButton *ToolButton50;
-  void __fastcall FormShow(TObject *Sender);
   void __fastcall RemoteStatusBarDblClick(TObject *Sender);
 private:
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,
-    AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm);
+    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall ConfigurationChanged();
   virtual TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall FixControlsPlacement();
+  DYNAMIC void __fastcall DoShow();
 
 public:
   __fastcall TScpExplorerForm(TComponent* Owner);

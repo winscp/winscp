@@ -39,7 +39,7 @@ TSynchronizeParamType __fastcall TSynchronizeParamType::operator =(TSynchronizeP
 //---------------------------------------------------------------------
 void __fastcall TSynchronizeParamType::Assign(TSynchronizeParamType Source)
 {
-  CopyParams.Assign(Source.CopyParams);
+  CopyParams = Source.CopyParams;
   AllowTransferMode = Source.AllowTransferMode;
   LocalDirectory = Source.LocalDirectory;
   RemoteDirectory = Source.RemoteDirectory;
@@ -72,7 +72,7 @@ bool __fastcall TSynchronizeDialog::Execute()
       WinConfiguration->CopyParamDialogExpanded = MoreButton->Expanded;
       if (SaveSettingsCheck->Checked)
       {
-        Configuration->CopyParam = Params.CopyParams;
+        GUIConfiguration->CopyParam = Params.CopyParams;
       }
     }
     __finally

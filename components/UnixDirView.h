@@ -172,6 +172,7 @@ __published:
   __property OnDDFileOperation;
   __property OnDDFileOperationExecuted;
   __property OnDDCreateDataObject;
+  __property OnDDMenuPopup;
 
   __property OnContextPopup;
   __property OnBeginRename;

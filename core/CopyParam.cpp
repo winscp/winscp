@@ -12,7 +12,11 @@ __fastcall TCopyParamType::TCopyParamType()
 //---------------------------------------------------------------------------
 __fastcall TCopyParamType::TCopyParamType(const TCopyParamType & Source)
 {
-  Assign(Source);
+  Assign(&Source);
+}
+//---------------------------------------------------------------------------
+__fastcall TCopyParamType::~TCopyParamType()
+{
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Default()
@@ -34,9 +38,10 @@ void __fastcall TCopyParamType::Default()
   FileMask = "*.*";
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyParamType::Assign(const TCopyParamType & Source)
+void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
 {
-  #define COPY(Prop) Prop = Source.Prop
+  assert(Source != NULL);
+  #define COPY(Prop) Prop = Source->Prop
   COPY(FileNameCase);
   COPY(PreserveReadOnly);
   COPY(PreserveTime);
@@ -56,7 +61,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType & Source)
 //---------------------------------------------------------------------------
 TCopyParamType & __fastcall TCopyParamType::operator =(const TCopyParamType & rhp)
 {
-  Assign(rhp);
+  Assign(&rhp);
   return *this;
 }
 //---------------------------------------------------------------------------

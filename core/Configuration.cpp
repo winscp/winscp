@@ -10,6 +10,7 @@
 #include "PuttyIntf.h"
 #include "TextsCore.h"
 #include "Interface.h"
+#define GSSAPIDLL "gssapi32"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -21,6 +22,7 @@ __fastcall TConfiguration::TConfiguration()
   DontSave = false;
   RandomSeedSave = true;
   FApplicationInfo = NULL;
+  FGSSAPIInstalled = -1;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Default()
@@ -34,7 +36,7 @@ void __fastcall TConfiguration::Default()
     "winscp" + ExtractFileExt(ARandomSeedFile), "\\\\", "\\",
     TReplaceFlags() << rfReplaceAll);
   FConfirmOverwriting = true;
-  FCopyParam.Default();
+  FRememberPassword = false;
 
   FLogging = false;
   FLogFileName = "";
@@ -78,21 +80,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
       BLOCK("Interface", CANCREATE, \
         KEY(String,   RandomSeedFile); \
         KEY(Bool,     ConfirmOverwriting); \
-      ); \
-      BLOCK("Interface\\CopyParam", CANCREATE, \
-        KEY(Bool,    CopyParam.AddXToDirectories); \
-        KEY(String,  CopyParam.AsciiFileMask.Masks); \
-        KEY(Integer, CopyParam.FileNameCase); \
-        KEY(Bool,    CopyParam.PreserveReadOnly); \
-        KEY(Bool,    CopyParam.PreserveTime); \
-        KEY(Bool,    CopyParam.PreserveRights); \
-        KEY(String,  CopyParam.Rights.Text); \
-        KEY(Integer, CopyParam.TransferMode); \
-        KEY(Integer, CopyParam.ResumeSupport); \
-        KEY(Int64,   CopyParam.ResumeThreshold); \
-        KEY(Bool,    CopyParam.ReplaceInvalidChars); \
-        KEY(String,  CopyParam.LocalInvalidChars); \
-        KEY(Bool,    CopyParam.CalculateSize); \
+        KEY(Bool,     RememberPassword); \
       ); \
       BLOCK("Logging", CANCREATE, \
         KEY(Bool,    Logging); \
@@ -524,6 +512,17 @@ AnsiString __fastcall TConfiguration::GetRootKeyStr()
   return RootKeyToStr(HKEY_CURRENT_USER);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TConfiguration::GetGSSAPIInstalled()
+{
+  if (FGSSAPIInstalled < 0)
+  {
+    HINSTANCE Library = LoadLibrary(GSSAPIDLL);
+    FGSSAPIInstalled = (Library != NULL ? 1 : 0);
+    FreeLibrary(Library);
+  }
+  return (FGSSAPIInstalled > 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetStorage(TStorage value)
 {
   if (FStorage != value)
@@ -556,12 +555,6 @@ void __fastcall TConfiguration::SetRandomSeedFile(AnsiString value)
     value.SetLength(seedpath_size());
   }
   strcpy(seedpath, StripPathQuotes(value).c_str());
-}
-//---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetCopyParam(TCopyParamType value)
-{
-  FCopyParam.Assign(value);
-  Changed();
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetRandomSeedFile()

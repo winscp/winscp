@@ -5,7 +5,6 @@ inherited ScpCommanderForm: TScpCommanderForm
   Height = 622
   Caption = 'ScpCommanderForm'
   OldCreateOrder = True
-  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object Splitter: TSplitter [0]
@@ -834,6 +833,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnDDDragOver = LocalDirViewDDDragOver
       OnDDTargetHasDropHandler = LocalDirViewDDTargetHasDropHandler
       OnDDFileOperation = LocalDirViewDDFileOperation
+      OnDDMenuPopup = LocalDirViewDDMenuPopup
       OnExecFile = LocalDirViewExecFile
       ConfirmDelete = False
       ConfirmOverwrite = False

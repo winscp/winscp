@@ -43,6 +43,8 @@ __published:
   TLabel *Label10;
   TEdit *UserGroupListingEdit;
   TMemo *InfoMemo;
+  TEdit *SshImplementationEdit;
+  TLabel *Label11;
 public:
 	virtual __fastcall TFileSystemInfoDialog(TComponent* AOwner);
 

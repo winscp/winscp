@@ -55,7 +55,6 @@ void __fastcall TWinConfiguration::Default()
   FDDWarnLackOfTempSpaceRatio = 1.1;
   FDDExtEnabled = true;
   FDDExtTimeout = 1000;
-  FDDExtCopySlipTimeout = 100;
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
   FSelectMask = "*.*";
@@ -220,7 +219,6 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Integer,  LocaleSafe); \
     KEY(Bool,     DDExtEnabled); \
     KEY(Integer,  DDExtTimeout); \
-    KEY(Integer,  DDExtCopySlipTimeout); \
     KEY(Bool,     DefaultDirIsHome); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
@@ -511,11 +509,6 @@ void __fastcall TWinConfiguration::SetDDExtEnabled(bool value)
 void __fastcall TWinConfiguration::SetDDExtTimeout(int value)
 {
   SET_CONFIG_PROPERTY(DDExtTimeout);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetDDExtCopySlipTimeout(int value)
-{
-  SET_CONFIG_PROPERTY(DDExtCopySlipTimeout);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDWarnLackOfTempSpace(bool value)

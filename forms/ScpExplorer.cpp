@@ -96,7 +96,7 @@ void __fastcall TScpExplorerForm::StoreParams()
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, Boolean DragDrop, TStrings * FileList,
-  AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm)
+  AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm)
 {
   if ((Direction == tdToLocal) && !DragDrop && TargetDirectory.IsEmpty())
   {
@@ -111,13 +111,15 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpExplorerForm::FormShow(TObject * /*Sender*/)
+void __fastcall TScpExplorerForm::DoShow()
 {
   FLastDirView = RemoteDirView; // Only dir view
   RemoteDirView->SetFocus();
 
   // called for second time after menu font was updated (see also RestoreParams)
   SetCoolBandsMinWidth(TopCoolBar);
+
+  TCustomScpExplorerForm::DoShow();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed Allowed)

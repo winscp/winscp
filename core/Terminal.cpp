@@ -592,7 +592,10 @@ void __fastcall TTerminal::RefreshDirectory()
   if (SessionData->CacheDirectories &&
       FDirectoryCache->HasNewerFileList(CurrentDirectory, FFiles->Timestamp))
   {
-    ReadDirectory(true);
+    // Second parameter was added to allow (rather force) using the cache.
+    // Before, the directory was reloaded always, it seems useless,
+    // has it any reason?
+    ReadDirectory(true, true);
     FReadDirectoryPending = false;
   }
 }
@@ -677,13 +680,13 @@ void __fastcall TTerminal::ReadCurrentDirectory()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::ReadDirectory(bool ReloadOnly)
+void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
 {
   bool LoadedFromCache = false;
 
   if (SessionData->CacheDirectories && FDirectoryCache->HasFileList(CurrentDirectory))
   {
-    if (ReloadOnly)
+    if (ReloadOnly && !ForceCache)
     {
       LogEvent("Cached directory not reloaded.");
     }
@@ -900,9 +903,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
           }
           __finally
           {
-            AnsiString FileNameOnly = (Side == osRemote) ?
-              UnixExtractFileName(FileName) : ExtractFileName(FileName);
-            Progress.Finish(FileNameOnly, Success, DisconnectWhenComplete);
+            Progress.Finish(FileName, Success, DisconnectWhenComplete);
           }
           Index++;
         }
@@ -1661,17 +1662,23 @@ struct TSynchronizeData
   TStringList * LocalFileList;
   TStringList * ModifiedRemoteFileList;
   TStringList * NewRemoteFileList;
+  const TCopyParamType * CopyParam;
 };
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Synchronize(const AnsiString LocalDirectory,
-  const AnsiString RemoteDirectory, TSynchronizeMode Mode, int Params,
+  const AnsiString RemoteDirectory, TSynchronizeMode Mode,
+  const TCopyParamType * CopyParam, int Params,
   TSynchronizeDirectory OnSynchronizeDirectory)
 {
+  assert(CopyParam != NULL);
+  TCopyParamType SyncCopyParam = *CopyParam;
+  SyncCopyParam.PreserveTime = true;
+
   BeginTransaction();
   try
   {
-    DoSynchronizeDirectory(LocalDirectory, RemoteDirectory, Mode, Params,
-      OnSynchronizeDirectory);
+    DoSynchronizeDirectory(LocalDirectory, RemoteDirectory, Mode,
+      &SyncCopyParam, Params, OnSynchronizeDirectory);
   }
   __finally
   {
@@ -1680,7 +1687,8 @@ void __fastcall TTerminal::Synchronize(const AnsiString LocalDirectory,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirectory,
-  const AnsiString RemoteDirectory, TSynchronizeMode Mode, int Params,
+  const AnsiString RemoteDirectory, TSynchronizeMode Mode,
+  const TCopyParamType * CopyParam, int Params,
   TSynchronizeDirectory OnSynchronizeDirectory)
 {
   TSearchRec SearchRec;
@@ -1696,6 +1704,7 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
   Data.LocalFileList = NULL;
   Data.NewRemoteFileList = NULL;
   Data.ModifiedRemoteFileList = NULL;
+  Data.CopyParam = CopyParam;
   TStrings * LocalFileList = NULL;
 
   LogEvent(FORMAT("Synchronizing local directory '%s' with remote directory '%s', "
@@ -1770,8 +1779,6 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
         }
       }
 
-      TCopyParamType CopyParam = Configuration->CopyParam;
-      CopyParam.PreserveTime = true;
       int CopyParams = (Params & spNoConfirmation) != 0 ? cpNoConfirmation : 0;
 
       if (LocalFileList->Count > 0)
@@ -1779,7 +1786,7 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
         bool Result;
         if ((Mode == smBoth) || (Mode == smRemote))
         {
-          Result = CopyToRemote(LocalFileList, RemoteDirectory, &CopyParam, CopyParams);
+          Result = CopyToRemote(LocalFileList, RemoteDirectory, CopyParam, CopyParams);
         }
         else if ((Mode == smLocal) && Delete)
         {
@@ -1797,7 +1804,7 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
         if (Data.ModifiedRemoteFileList->Count > 0)
         {
           if (!CopyToLocal(Data.ModifiedRemoteFileList, LocalDirectory,
-            &CopyParam, CopyParams))
+                CopyParam, CopyParams))
           {
             Abort();
           }
@@ -1888,7 +1895,7 @@ void __fastcall TTerminal::SynchronizeFile(const AnsiString FileName,
       DoSynchronizeDirectory(
         Data->LocalDirectory + File->FileName,
         Data->RemoteDirectory + File->FileName,
-        Data->Mode, Data->Params, Data->OnSynchronizeDirectory);
+        Data->Mode, Data->CopyParam, Data->Params, Data->OnSynchronizeDirectory);
     }
   }
 

@@ -202,7 +202,7 @@ bool __fastcall TScpCommanderForm::InternalDDDownload(AnsiString & TargetDirecto
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, bool DragDrop, TStrings * FileList, AnsiString & TargetDirectory,
-  TCopyParamType & CopyParam, bool Confirm)
+  TGUICopyParamType & CopyParam, bool Confirm)
 {
   bool Result = false;
   if (DragDrop && (Direction == tdToLocal) && (FDDTargetDirView == LocalDirView))
@@ -234,8 +234,10 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::FormShow(TObject */*Sender*/)
+void __fastcall TScpCommanderForm::DoShow()
 {
+  TCustomScpExplorerForm::DoShow();
+
   assert(FDirViewToSelect);
   FDirViewToSelect->SetFocus();
 
@@ -500,7 +502,7 @@ void __fastcall TScpCommanderForm::CompareDirectories()
 void __fastcall TScpCommanderForm::SynchronizeDirectories()
 {
   TSynchronizeParamType Params;
-  Params.CopyParams.Assign(Configuration->CopyParam);
+  Params.CopyParams = GUIConfiguration->CopyParam;
   Params.AllowTransferMode = Terminal->IsCapable[fcTextMode];
   if (!Params.AllowTransferMode)
   {
@@ -920,7 +922,7 @@ void __fastcall TScpCommanderForm::LocalDirViewDDFileOperation(
       {
         assert(FInternalDDDownloadList->Count > 0);
         assert(dwEffect == DROPEFFECT_Copy || dwEffect == DROPEFFECT_Move);
-        TCopyParamType CopyParams = Configuration->CopyParam;
+        TGUICopyParamType CopyParams = GUIConfiguration->CopyParam;
         TTransferType TransferType = dwEffect == DROPEFFECT_Copy ? ttCopy : ttMove;
         if (FDDMoveSlipped)
         {
@@ -1119,9 +1121,9 @@ int __fastcall TScpCommanderForm::GetStaticComponentsHeight()
     (StatusBar->Visible ? StatusBar->Height : 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DoResize()
+void __fastcall TScpCommanderForm::Resize()
 {
-  TCustomScpExplorerForm::DoResize();
+  TCustomScpExplorerForm::Resize();
 
   LocalPanelWidth = FLastLocalPanelWidth;
   UpdateControls();
@@ -1130,6 +1132,39 @@ void __fastcall TScpCommanderForm::DoResize()
 void __fastcall TScpCommanderForm::StatusBarDblClick(TObject * /*Sender*/)
 {
   DoFileSystemInfoDialog(Terminal);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalDirViewDDMenuPopup(TObject * /*Sender*/,
+  HMENU AMenu, IDataObject * /*DataObj*/, int /*AMinCustCmd*/, int /*grfKeyState*/,
+  TPoint & /*pt*/)
+{
+  if ((DropSourceControl == RemoteDirView) &&
+      !RemoteDirView->DDAllowMove)
+  {
+    // index of copy item
+    int Index = GetMenuDefaultItem(AMenu, TRUE, 0);
+    assert(Index >= 0);
+
+    AnsiString Caption = Dragdrop_MIMoveStr;
+
+    MENUITEMINFO MI;
+    memset(&MI, 0, sizeof(MI));
+    MI.cbSize = sizeof(MI);
+    MI.fMask = MIIM_TYPE | MIIM_ID | MIIM_STATE;
+    MI.fType = MFT_STRING;
+    MI.wID = 1 /*DragDrop::CmdMove*/;
+    MI.dwTypeData = Caption.c_str();
+    MI.cch = Caption.Length();
+    MI.fState = MFS_ENABLED;
+    InsertMenuItem(AMenu, Index, TRUE, &MI);
+
+    if (FDDMoveSlipped)
+    {
+      SetMenuDefaultItem(AMenu, Index, TRUE);  
+    }
+
+    FDDMoveSlipped = false;
+  }
 }
 //---------------------------------------------------------------------------
 

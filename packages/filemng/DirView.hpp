@@ -14,8 +14,8 @@
 #include <PathLabel.hpp>	// Pascal unit
 #include <CustomPathComboBox.hpp>	// Pascal unit
 #include <Controls.hpp>	// Pascal unit
-#include <IEListView.hpp>	// Pascal unit
 #include <NortonLikeListView.hpp>	// Pascal unit
+#include <IEListView.hpp>	// Pascal unit
 #include <BaseUtils.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
 #include <FileCtrl.hpp>	// Pascal unit
@@ -494,6 +494,7 @@ __published:
 	__property OnDDExecuted ;
 	__property OnDDFileOperation ;
 	__property OnDDFileOperationExecuted ;
+	__property OnDDMenuPopup ;
 	__property OnExecFile ;
 	__property Graphics::TColor CompressedColor = {read=FCompressedColor, write=SetCompressedColor, default=16711680};
 	__property bool ConfirmDelete = {read=FConfirmDelete, write=FConfirmDelete, default=1};

@@ -183,11 +183,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   FEditorFont->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
   FEditorFont->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
 
-  CopyParamsFrame->Params = Configuration->CopyParam;
-  ResumeOnButton->Checked = Configuration->CopyParam.ResumeSupport == rsOn;
-  ResumeSmartButton->Checked = Configuration->CopyParam.ResumeSupport == rsSmart;
-  ResumeOffButton->Checked = Configuration->CopyParam.ResumeSupport == rsOff;
-  ResumeThresholdEdit->Value = Configuration->CopyParam.ResumeThreshold / 1024;
+  CopyParamsFrame->Params = GUIConfiguration->CopyParam;
+  ResumeOnButton->Checked = GUIConfiguration->CopyParam.ResumeSupport == rsOn;
+  ResumeSmartButton->Checked = GUIConfiguration->CopyParam.ResumeSupport == rsSmart;
+  ResumeOffButton->Checked = GUIConfiguration->CopyParam.ResumeSupport == rsOff;
+  ResumeThresholdEdit->Value = GUIConfiguration->CopyParam.ResumeThreshold / 1024;
 
   TransferSheet->Enabled = WinConfiguration->ExpertMode;
   GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
@@ -207,8 +207,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
   PuttyPathEdit->FileName = WinConfiguration->PuttyPath;
 
+  // Queue
   QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
   QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
+  QueueCheck->Checked = GUIConfiguration->CopyParam.Queue;
+  RememberPasswordCheck->Checked = Configuration->RememberPassword;
   if (WinConfiguration->QueueView.Show == qvShow)
   {
     QueueViewShowButton->Checked = true;
@@ -230,6 +233,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
   Configuration->BeginUpdate();
   try
   {
+    TGUICopyParamType CopyParam = GUIConfiguration->CopyParam;
+
     if (FPreferencesMode != pmLogin)
     {
       LoggingFrame->SaveConfiguration();
@@ -292,19 +297,23 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->Editor.FontCharset = FEditorFont->Charset;
     WinConfiguration->Editor.FontStyle = FontStylesToInt(FEditorFont->Style);
 
-    TCopyParamType CopyParam = CopyParamsFrame->Params;
+    // overwrites only TCopyParamType fields
+    CopyParam = CopyParamsFrame->Params;
     if (ResumeOnButton->Checked) CopyParam.ResumeSupport = rsOn;
     if (ResumeSmartButton->Checked) CopyParam.ResumeSupport = rsSmart;
     if (ResumeOffButton->Checked) CopyParam.ResumeSupport = rsOff;
     CopyParam.ResumeThreshold = ResumeThresholdEdit->Value * 1024;
-    Configuration->CopyParam = CopyParam;
 
     WinConfiguration->CustomCommands = FCustomCommands;
 
     WinConfiguration->PuttyPath = PuttyPathEdit->FileName;
 
+    // Queue
     GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
+    CopyParam.Queue = QueueCheck->Checked;
+    Configuration->RememberPassword = RememberPasswordCheck->Checked;
+
     if (QueueViewShowButton->Checked)
     {
       WinConfiguration->QueueView.Show = qvShow;
@@ -317,6 +326,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       WinConfiguration->QueueView.Show = qvHide;
     }
+    
+    GUIConfiguration->CopyParam = CopyParam;
   }
   __finally
   {

@@ -3,6 +3,7 @@
 #define FileOperationProgressH
 //---------------------------------------------------------------------------
 #include "Configuration.h"
+#include "CopyParam.h"
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;
 enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,

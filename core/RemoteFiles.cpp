@@ -220,6 +220,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate()
     COPY_FP(FileName);
     COPY_FP(INodeBlocks);
     COPY_FP(Modification);
+    COPY_FP(LastAccess);
     COPY_FP(Group);
     COPY_FP(IconIndex);
     COPY_FP(IsSymLink);
@@ -669,7 +670,7 @@ void __fastcall TRemoteFile::SetTerminal(TTerminal * value)
 //---------------------------------------------------------------------------
 __fastcall TRemoteParentDirectory::TRemoteParentDirectory() : TRemoteFile()
 {
-  FileName = "..";
+  FileName = PARENTDIRECTORY;
   Modification = Now();
   LastAccess = Modification;
   Type = 'D';
@@ -1048,7 +1049,12 @@ bool __fastcall TRemoteDirectoryChangesCache::GetDirectoryChange(
   Result = (IndexOfName(Key) >= 0);
   if (Result)
   {
-    TargetDir = Key;
+    TargetDir = Values[Key];
+    // TargetDir is not "//" here only when Change is full path to symbolic link
+    if (TargetDir == "//")
+    {
+      TargetDir = Key;
+    }
   }
   else
   {

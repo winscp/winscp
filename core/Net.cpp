@@ -60,7 +60,16 @@ void __fastcall InitWinsock(void)
 extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
 {
   assert(plug != NULL);
-  void * frontend = get_ssh_frontend(plug);
+  void * frontend;
+  if (!is_ssh(plug))
+  {
+    // If it is not SSH plug, them it must be Proxy plug.
+    // Get SSH plug which it wraps.
+    Proxy_Socket ProxySocket = ((Proxy_Plug)plug)->proxy_socket;
+    plug = ProxySocket->plug;
+  }
+
+  frontend = get_ssh_frontend(plug);
   assert(frontend);
 
   if (startup == 0)
@@ -68,7 +77,7 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
     skt = INVALID_SOCKET;
   }
   reinterpret_cast<TSecureShell*>(frontend)->SetSocket(&skt);
-  
+
   return NULL;
 }
 //---------------------------------------------------------------------------
@@ -100,7 +109,7 @@ void SSHLogEvent(void * frontend, char * string)
   // Frontend maybe NULL here
   if (frontend != NULL)
   {
-    ((TSecureShell *)frontend)->LogEvent(string);
+    ((TSecureShell *)frontend)->PuttyLogEvent(string);
   }
 }
 //---------------------------------------------------------------------------

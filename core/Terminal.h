@@ -116,8 +116,6 @@ private:
   TDirectoryModifiedEvent FOnDirectoryModified;
   TNotifyEvent FOnStartReadDirectory;
   TDeleteLocalFileEvent FOnDeleteLocalFile;
-  bool FReadCurrentDirectoryPending;
-  bool FReadDirectoryPending;
   TUsersGroupsList * FGroups;
   TUsersGroupsList * FUsers;
   bool FUsersGroupsLookedup;
@@ -148,6 +146,9 @@ private:
   void __fastcall AddCachedFileList(TRemoteFileList * FileList);
 
 protected:
+  bool FReadCurrentDirectoryPending;
+  bool FReadDirectoryPending;
+
   virtual void __fastcall KeepAlive();
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectory(bool ReloadOnly);
@@ -197,7 +198,8 @@ protected:
     const TOverwriteFileParams * FileParams, int Answers, int Params,
     TOperationSide Side);
   void __fastcall DoSynchronizeDirectory(const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory, TSynchronizeMode Mode, int Params,
+    const AnsiString RemoteDirectory, TSynchronizeMode Mode,
+    const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory);
   void __fastcall SynchronizeFile(const AnsiString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
@@ -219,7 +221,7 @@ public:
   AnsiString __fastcall AbsolutePath(AnsiString Path);
   void __fastcall BeginTransaction();
   void __fastcall ReadCurrentDirectory();
-  void __fastcall ReadDirectory(bool ReloadOnly);
+  void __fastcall ReadDirectory(bool ReloadOnly, bool ForceCache = false);
   void __fastcall ReadFile(const AnsiString FileName, TRemoteFile *& File);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(TStrings * FilesToCopy,
@@ -257,7 +259,8 @@ public:
   void __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size, int Params);
   void __fastcall ClearCaches();
   void __fastcall Synchronize(const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory, TSynchronizeMode Mode, int Params,
+    const AnsiString RemoteDirectory, TSynchronizeMode Mode,
+    const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory);
 
   static bool __fastcall IsAbsolutePath(const AnsiString Path);

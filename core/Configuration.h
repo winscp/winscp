@@ -2,7 +2,7 @@
 #ifndef ConfigurationH
 #define ConfigurationH
 
-#include "CopyParam.h"
+#include "RemoteFiles.h"
 #include "FileBuffer.h"
 #include "HierarchicalStorage.h"
 //---------------------------------------------------------------------------
@@ -20,7 +20,6 @@ private:
   TNotifyEvent FOnChange;
   bool FRandomSeedSave;
   
-  TCopyParamType FCopyParam;
   void * FApplicationInfo;
   bool FLogging;
   AnsiString FLogFileName;
@@ -28,8 +27,10 @@ private:
   bool FLogFileAppend;
   bool FConfirmOverwriting;
   AnsiString FIniFileStorageName;
+  bool FRememberPassword;
 
   bool FDisablePasswordStoring;
+  int FGSSAPIInstalled; 
 
   AnsiString __fastcall GetOSVersionStr();
   TVSFixedFileInfo *__fastcall GetFixedApplicationInfo();
@@ -49,7 +50,6 @@ private:
   AnsiString __fastcall GetRootKeyStr();
   AnsiString __fastcall GetConfigurationSubKey();
   TEOLType __fastcall GetLocalEOLType();
-  void __fastcall SetCopyParam(TCopyParamType value);
   void __fastcall SetLogging(bool value);
   void __fastcall SetLogFileName(AnsiString value);
   void __fastcall SetLogToFile(bool value);
@@ -67,6 +67,7 @@ private:
   AnsiString __fastcall GetPartialExt() const;
   AnsiString __fastcall GetFileInfoString(const AnsiString Key);
   AnsiString __fastcall GetLocalInvalidChars();
+  bool __fastcall GetGSSAPIInstalled();
 
 protected:
   TStorage FStorage;
@@ -113,7 +114,6 @@ public:
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
-  __property TCopyParamType CopyParam = { read = FCopyParam, write = SetCopyParam };
   __property AnsiString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property AnsiString PuttyRegistryStorageKey  = { read=GetPuttyRegistryStorageKey };
   __property AnsiString PuttySessionsKey  = { read=GetPuttySessionsKey };
@@ -140,6 +140,7 @@ public:
   __property AnsiString DefaultLogFileName  = { read=GetDefaultLogFileName };
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool ConfirmOverwriting = { read = GetConfirmOverwriting, write = SetConfirmOverwriting};
+  __property bool RememberPassword = { read = FRememberPassword, write = FRememberPassword };
   __property AnsiString PartialExt = {read=GetPartialExt};
 
   __property AnsiString TimeFormat = { read = GetTimeFormat };
@@ -150,6 +151,7 @@ public:
   __property AnsiString LocalInvalidChars = { read = GetLocalInvalidChars };
 
   __property bool DisablePasswordStoring = { read = FDisablePasswordStoring };
+  __property bool GSSAPIInstalled = { read = GetGSSAPIInstalled };
 };
 //---------------------------------------------------------------------------
 #endif

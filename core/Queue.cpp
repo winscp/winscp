@@ -47,6 +47,7 @@ protected:
     Exception * E;
   };
 
+  bool FMasterPasswordTried;
   TTerminalQueue * FQueue;
   TTerminal * FTerminal;
   TQueueItem * FItem;
@@ -336,6 +337,7 @@ void __fastcall TTerminalQueue::RetryItem(TQueueItem * Item)
 
       int Index = FItems->Remove(Item);
       assert(Index < FItemsInProcess);
+      USEDPARAM(Index);
       FItemsInProcess--;
       FItems->Add(Item);
     }
@@ -355,6 +357,7 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item)
 
       int Index = FItems->Remove(Item);
       assert(Index < FItemsInProcess);
+      USEDPARAM(Index);
       FItemsInProcess--;
       delete Item;
     }
@@ -756,6 +759,8 @@ void __fastcall TTerminalItem::ProcessEvent()
     {
       FItem->SetStatus(TQueueItem::qsConnecting);
 
+      FMasterPasswordTried = false;
+      FTerminal->SessionData->RemoteDirectory = FItem->StartupDirectory();
       FTerminal->Open();
       FTerminal->DoStartup();
     }
@@ -900,17 +905,34 @@ void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
 void __fastcall TTerminalItem::TerminalPromptUser(TSecureShell * SecureShell,
   AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result)
 {
-  TPromptUserRec PromptUserRec;
-  PromptUserRec.SecureShell = SecureShell;
-  PromptUserRec.Prompt = Prompt;
-  PromptUserRec.Kind = Kind;
-  PromptUserRec.Response = Response;
-  PromptUserRec.Result = Result;
-
-  if (WaitForUserAction(TQueueItem::qsPrompt, &PromptUserRec))
+  Result = false;
+  
+  if (!FMasterPasswordTried)
   {
-    Response = PromptUserRec.Response;
-    Result = PromptUserRec.Result;
+    // let's expect that the main session is already authenticated and its password
+    // is not written after, so no locking is necessary
+    Response = FQueue->FTerminal->Password;
+    if (!Response.IsEmpty())
+    {
+      Result = true;
+    }
+    FMasterPasswordTried = true;
+  }
+
+  if (!Result)
+  {
+    TPromptUserRec PromptUserRec;
+    PromptUserRec.SecureShell = SecureShell;
+    PromptUserRec.Prompt = Prompt;
+    PromptUserRec.Kind = Kind;
+    PromptUserRec.Response = Response;
+    PromptUserRec.Result = Result;
+
+    if (WaitForUserAction(TQueueItem::qsPrompt, &PromptUserRec))
+    {
+      Response = PromptUserRec.Response;
+      Result = PromptUserRec.Result;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1236,6 +1258,11 @@ __fastcall TLocatedQueueItem::TLocatedQueueItem(TTerminal * Terminal) :
 {
   assert(Terminal != NULL);
   FCurrentDir = Terminal->CurrentDirectory;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TLocatedQueueItem::StartupDirectory()
+{
+  return FCurrentDir;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocatedQueueItem::DoExecute(TTerminal * Terminal)

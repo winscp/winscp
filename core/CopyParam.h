@@ -32,9 +32,10 @@ private:
 public:
   __fastcall TCopyParamType();
   __fastcall TCopyParamType(const TCopyParamType & Source);
+  virtual __fastcall ~TCopyParamType();
   TCopyParamType & __fastcall operator =(const TCopyParamType & rhp);
-  void __fastcall Assign(const TCopyParamType & Source);
-  void __fastcall Default();
+  virtual void __fastcall Assign(const TCopyParamType * Source);
+  virtual void __fastcall Default();
   AnsiString __fastcall ChangeFileName(AnsiString FileName,
     TOperationSide Side, bool FirstLevel) const;
   int __fastcall LocalFileAttrs(const TRights & Rights) const;

@@ -203,6 +203,7 @@ __published:
   TXPGroupBox *ConsiderDSTGroup;
   TRadioButton *ConsiderDSTOnCheck;
   TRadioButton *ConsiderDSTOffCheck;
+  TCheckBox *AuthGSSAPICheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -242,6 +243,7 @@ __published:
   void __fastcall LanguagesButtonClick(TObject *Sender);
   void __fastcall PathEditsKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
+  void __fastcall AuthGSSAPICheckClick(TObject *Sender);
 
 private:
   int NoUpdate;

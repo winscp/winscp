@@ -5,6 +5,12 @@ void ssh_close(void * handle)
   ssh_do_close((Ssh)handle);
 }
 
+int is_ssh(void * handle)
+{
+  Plug fn = (Plug)handle;
+  return (*fn)->closing == ssh_closing;
+} 
+
 int get_ssh_version(void * handle)
 {
   return ((Ssh)handle)->version;

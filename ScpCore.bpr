@@ -24,7 +24,7 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="USE_COMPATIBLE_THREAD;_WINDOWS"/>
+    <USERDEFINES value="USE_COMPATIBLE_THREAD;GSSAPI;_WINDOWS"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpCore.bpf"/>
     <INCLUDEPATH value="windows;core;putty;resource;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>

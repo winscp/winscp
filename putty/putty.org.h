@@ -357,6 +357,10 @@ struct config_tag {
     int ssh2_des_cbc;		       /* "des-cbc" nonstandard SSH2 cipher */
     int try_tis_auth;
     int try_ki_auth;
+#ifdef GSSAPI
+    int try_gssapi_auth;
+    int gssapi_fwd_tgt;
+#endif
     int ssh_subsys;		       /* run a subsystem rather than a command */
     int ssh_subsys2;		       /* fallback to go with remote_cmd2 */
     /* Telnet options */

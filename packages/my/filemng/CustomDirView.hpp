@@ -173,6 +173,7 @@ private:
 	Classes::TNotifyEvent FOnDDEnd;
 	TDDOnCreateDataObject FOnDDCreateDataObject;
 	TDDOnTargetHasDropHandler FOnDDTargetHasDropHandler;
+	Dragdrop::TOnMenuPopup FOnDDMenuPopup;
 	TDirViewExecFileEvent FOnExecFile;
 	bool FForceRename;
 	Dragdrop::TDragResult FLastDDResult;
@@ -268,6 +269,7 @@ protected:
 	void __fastcall DDDrop(_di_IDataObject DataObj, int grfKeyState, const Types::TPoint &Point, int &dwEffect);
 	virtual void __fastcall DDDropHandlerSucceeded(System::TObject* Sender, int grfKeyState, const Types::TPoint &Point, int dwEffect);
 	virtual void __fastcall DDGiveFeedback(int dwEffect, HRESULT &Result);
+	void __fastcall DDMenuPopup(System::TObject* Sender, HMENU AMenu, _di_IDataObject DataObj, int AMinCustCmd, int grfKeyState, const Types::TPoint &pt);
 	virtual void __fastcall DDMenuDone(System::TObject* Sender, HMENU AMenu);
 	void __fastcall DDProcessDropped(System::TObject* Sender, int grfKeyState, const Types::TPoint &Point, int dwEffect);
 	virtual void __fastcall DDQueryContinueDrag(BOOL FEscapePressed, int grfKeyState, HRESULT &Result);
@@ -440,6 +442,7 @@ public:
 	__property TDDExecutedEvent OnDDExecuted = {read=FOnDDExecuted, write=FOnDDExecuted};
 	__property TDDFileOperationEvent OnDDFileOperation = {read=FOnDDFileOperation, write=FOnDDFileOperation};
 	__property TDDFileOperationExecutedEvent OnDDFileOperationExecuted = {read=FOnDDFileOperationExecuted, write=FOnDDFileOperationExecuted};
+	__property Dragdrop::TOnMenuPopup OnDDMenuPopup = {read=FOnDDMenuPopup, write=FOnDDMenuPopup};
 	__property TDirViewExecFileEvent OnExecFile = {read=FOnExecFile, write=FOnExecFile};
 	__property THistoryChangeEvent OnHistoryChange = {read=FOnHistoryChange, write=FOnHistoryChange};
 	__property Custompathcombobox::TCustomPathComboBox* PathComboBox = {read=FPathComboBox, write=SetPathComboBox};

@@ -126,7 +126,6 @@ private:
   bool FDDExtEnabled;
   int FDDExtInstalled;
   int FDDExtTimeout;
-  int FDDExtCopySlipTimeout;
   bool FConfirmClosingSession;
   bool FConfirmExitOnCompletion;
   double FDDWarnLackOfTempSpaceRatio;
@@ -164,7 +163,6 @@ private:
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetDDExtEnabled(bool value);
   void __fastcall SetDDExtTimeout(int value);
-  void __fastcall SetDDExtCopySlipTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
   void __fastcall SetConfirmExitOnCompletion(bool value);
   void __fastcall SetForceDeleteTempFolder(bool value);
@@ -236,7 +234,6 @@ public:
   __property bool DDExtEnabled = { read=FDDExtEnabled, write=SetDDExtEnabled };
   __property bool DDExtInstalled = { read=GetDDExtInstalled };
   __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
-  __property int DDExtCopySlipTimeout = { read=FDDExtCopySlipTimeout, write=SetDDExtCopySlipTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
   __property bool ForceDeleteTempFolder  = { read=FForceDeleteTempFolder, write=SetForceDeleteTempFolder };

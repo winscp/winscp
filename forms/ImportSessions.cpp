@@ -69,7 +69,7 @@ void __fastcall TImportSessionsDialog::SetSessionList(TStoredSessionList *value)
   }
 }
 //---------------------------------------------------------------------
-void TImportSessionsDialog::LoadSessions()
+void __fastcall TImportSessionsDialog::LoadSessions()
 {
   SessionListView->Items->BeginUpdate();
   try {

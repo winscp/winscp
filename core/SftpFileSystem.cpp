@@ -406,6 +406,10 @@ public:
           GetCardinal(); // skip access time subseconds
         }
       }
+      else
+      {
+        File->LastAccess = Now();
+      }
       if (Flags & SSH_FILEXFER_ATTR_CREATETIME)
       {
         GetInt64(); // skip create time
@@ -421,6 +425,10 @@ public:
         {
           GetCardinal(); // skip modification time subseconds
         }
+      }
+      else
+      {
+        File->Modification = Now();
       }
     }
 
@@ -2038,10 +2046,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
       bool Failure = (File == NULL);
       if (Failure)
       {
-        File = new TRemoteFile();
-        File->FileName = PARENTDIRECTORY;
-        File->Modification = Now();
-        File->Type = FILETYPE_DIRECTORY;
+        File = new TRemoteParentDirectory();
       }
 
       assert(File && File->IsParentDirectory);
@@ -2227,8 +2232,22 @@ void __fastcall TSFTPFileSystem::CreateLink(const AnsiString FileName,
   assert(Symbolic); // only symlinks are supported by SFTP
   assert(FVersion >= 3); // symlinks are supported with SFTP version 3 and later
   TSFTPPacket Packet(SSH_FXP_SYMLINK);
-  Packet.AddString(PointTo);
-  Packet.AddString(Canonify(FileName));
+
+  bool Buggy = (FTerminal->SessionData->SFTPSymlinkBug == asOn) ||
+    ((FTerminal->SessionData->SFTPSymlinkBug == asAuto) &&
+      (FTerminal->SshImplementation.Pos("OpenSSH") == 1));
+
+  if (!Buggy)
+  {
+    Packet.AddString(Canonify(FileName));
+    Packet.AddString(PointTo);
+  }
+  else
+  {
+    FTerminal->LogEvent("We believe the server has SFTP symlink bug");
+    Packet.AddString(PointTo);
+    Packet.AddString(Canonify(FileName));
+  }
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
@@ -2321,7 +2340,7 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
     __finally
     {
       FAvoidBusy = false;
-      OperationProgress->Finish(FileNameOnly, Success, DisconnectWhenComplete);
+      OperationProgress->Finish(FileName, Success, DisconnectWhenComplete);
     }
     Index++;
   }
@@ -2945,7 +2964,6 @@ void __fastcall TSFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
   {
     Success = false;
     FileName = FilesToCopy->Strings[Index];
-    FileNameOnly = UnixExtractFileName(FileName);
     File = (TRemoteFile *)FilesToCopy->Objects[Index];
 
     assert(!FAvoidBusy);
@@ -2973,7 +2991,7 @@ void __fastcall TSFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
     __finally
     {
       FAvoidBusy = false;
-      OperationProgress->Finish(FileNameOnly, Success, DisconnectWhenComplete);
+      OperationProgress->Finish(FileName, Success, DisconnectWhenComplete);
     }
     Index++;
   }

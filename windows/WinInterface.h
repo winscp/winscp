@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include <Classes.hpp>
 #include <Interface.h>
+#include <GUIConfiguration.h>
 
 class TStoredSessionList;
 class TConfiguration;
@@ -66,13 +67,13 @@ void __fastcall DoConsoleDialog(TTerminal * Terminal,
     const AnsiString Command = "");
 
 // forms\Copy.cpp
-const coQueue               = 0x01;
-const coQueueNoConfirmation = 0x02;
-const coQueueDisable        = 0x04;
+const coDragDropTemp        = 0x01;
+const coDisableQueue        = 0x02;
+const coDisableTransferMode = 0x04;
+const coDisableDirectory    = 0x08; // not used anymore
 bool __fastcall DoCopyDialog(bool ToRemote,
-  bool Move, bool DragDrop, TStrings * FileList,
-  bool AllowTransferMode, AnsiString & TargetDirectory,
-  TCopyParamType * Params, int & Options, bool AllowDirectory);
+  bool Move, TStrings * FileList, AnsiString & TargetDirectory,
+  TGUICopyParamType * Params, int Options);
 
 // forms\CopyParams.cpp
 enum TParamsForDirection { pdBoth, pdToRemote, pdToLocal, pdAll };
