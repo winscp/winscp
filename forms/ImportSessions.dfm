@@ -23,10 +23,10 @@ object ImportSessionsDialog: TImportSessionsDialog
     Height = 65
     Anchors = [akLeft, akTop, akRight]
     AutoSize = False
-    Caption = 
+    Caption =
       'Following list contains sessions stored in PuTTY SSH client. Che' +
-      'ck sessions you want to import and press OK button. '#13#10#13#10'Notice: ' +
-      'This application always connects using SSH protocol.'
+      'ck sessions you want to import and press OK button. '#13#10 +
+      #13#10'Notice: This application always connects using SSH protocol.'
     WordWrap = True
   end
   object OKButton: TButton

@@ -1856,12 +1856,15 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
     try
     {
       OpenRequest.ChangeType(SSH_FXP_OPEN);
-      OpenType = 0;
       if (FTerminal->Configuration->ConfirmOverwriting &&
           !OpenType && !OperationProgress->YesToAll && !OpenParams->Resume &&
           !(OpenParams->Params & cpNoConfirmation))
       {
         OpenType |= SSH_FXF_EXCL;
+      }
+      else
+      {
+        OpenType &= ~SSH_FXF_EXCL;
       }
       if (!OpenParams->Resume)
       {
