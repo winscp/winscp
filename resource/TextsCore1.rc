@@ -82,6 +82,9 @@
 #define NOT_FILE_ERROR          183
 #define RENAME_AFTER_RESUME_ERROR 184
 #define CREATE_LINK_ERROR       185
+#define INVALID_SHELL_COMMAND   186
+#define SFTP_SERVER_MESSAGE_UNSUPPORTED 187
+#define INVALID_OCTAL_PERMISSIONS 188
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT 301
@@ -102,6 +105,7 @@
 #define SESSION_INFO_TIP        403
 #define VERSION                 404
 #define CLOSED_ON_COMPLETION    405
+#define SFTP_PROTOCOL_NAME      406
 
 STRINGTABLE
 BEGIN
@@ -189,6 +193,9 @@ BEGIN
         NOT_FILE_ERROR, "'%s' is not file!"
         RENAME_AFTER_RESUME_ERROR, "Transfer was succesfully finished, but temporary transfer file '%s' could not be renamed to target file name '%s'."
         CREATE_LINK_ERROR, "Cannot create link '%s'."
+        INVALID_SHELL_COMMAND, "Invalid command '%s'."
+        SFTP_SERVER_MESSAGE_UNSUPPORTED, "None"
+        INVALID_OCTAL_PERMISSIONS, "'%s' is not valid permission in octal format."
 
         CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
         CONFIRM_PROLONG_TIMEOUT, "Host hasn't answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."
@@ -209,4 +216,5 @@ BEGIN
         SESSION_INFO_TIP, "Host: %s\nUser name: %s\nPrivate key file: %s\nSSH Protocol version: %s\nTransfer protocol: %s"
         VERSION, "Version %d.%d.%d (Build %d)"
         CLOSED_ON_COMPLETION, "Operation was successfully completed. Connection was closed. Click OK to close application."
+        SFTP_PROTOCOL_NAME, "SFTP (v%d)"
 END

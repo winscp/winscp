@@ -2,16 +2,25 @@
 #define TextsWinH 
  
 #define LICENCE         1001
-#define LICENCE_PUTTY   1002
-#define LICENCE_PUTTY_2 1003
-#define LICENCE_RX      1004
-#define LICENCE_RX_2    1005
-#define LICENCE_RX_3    1006
-#define LICENCE_RX_4    1007
-#define LICENCE_RX_5    1008
-#define LICENCE_RX_6    1009
-#define LICENCE_RX_7    1010
-#define LICENCE_RX_8    1011
+#define LICENCE_2       1002
+#define LICENCE_3       1003
+#define LICENCE_4       1004
+#define LICENCE_5       1005
+#define LICENCE_6       1006
+#define LICENCE_7       1007
+#define LICENCE_8       1008
+#define LICENCE_9       1009
+#define LICENCE_10      1010
+#define LICENCE_11      1011
+#define LICENCE_12      1012
+#define LICENCE_13      1013
+#define LICENCE_14      1014
+#define LICENCE_15      1015
+#define LICENCE_16      1016
+#define LICENCE_17      1017
+#define LICENCE_18      1018
+#define LICENCE_PUTTY   1021
+#define LICENCE_PUTTY_2 1022
  
 #define WIN_ERROR_STRINGS       1100
 #define MASK_ERROR              1101
@@ -50,11 +59,15 @@
 #define SKIP_BUTTON             1315
 #define RESUME_BUTTON           1316
 #define SAVE_CHANGES            1317
+#define CONFIRM_CREATE_SENDTO   1318
+#define CONFIRM_CREATE_ICON     1319
 #define WIN_INFORMATION_STRINGS 1400
 #define APP_CAPTION             1401
 #define COMPARE_NO_DIFFERENCES  1402
 #define SHORTCUT_INFO_TIP       1403
 #define DOCUMENT_WAIT           1404
+#define SESSION_SENDTO_HOOK_NAME 1405
+#define SENDTO_HOOK_NAME        1406
 #define WIN_STATUS_STRINGS      1450
 #define STATUS_CLOSED           1451
 #define STATUS_INITWINSOCK      1452

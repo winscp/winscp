@@ -11,8 +11,8 @@
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-int LicenceStr[3] = { LICENCE, LICENCE_PUTTY, LICENCE_RX };
-int LicenceCount[3] = { 1, 2, 8 };
+int LicenceStr[2] = { LICENCE, LICENCE_PUTTY };
+int LicenceCount[2] = { 17, 2 };
 //---------------------------------------------------------------------------
 void __fastcall DoLicenceDialog(TLicence Licence)
 {

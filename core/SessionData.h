@@ -73,6 +73,7 @@ private:
   TSshBugHandling FBugs[BUG_COUNT];
   AnsiString FCustomParam1;
   AnsiString FCustomParam2;
+  bool FResolveSymlinks;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -139,6 +140,7 @@ private:
   AnsiString __fastcall GetSessionKey();
   void __fastcall SetCustomParam1(AnsiString value);
   void __fastcall SetCustomParam2(AnsiString value);
+  void __fastcall SetResolveSymlinks(bool value);
 
 public:
   __fastcall TSessionData(AnsiString aName);
@@ -206,6 +208,7 @@ public:
   __property AnsiString CustomParam1 = { read = FCustomParam1, write = SetCustomParam1 };
   __property AnsiString CustomParam2 = { read = FCustomParam2, write = SetCustomParam2 };
   __property AnsiString SessionKey = { read = GetSessionKey };
+  __property bool ResolveSymlinks = { read = FResolveSymlinks, write = SetResolveSymlinks };
 };
 //---------------------------------------------------------------------------
 class TStoredSessionList : public TNamedObjectList

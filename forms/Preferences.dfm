@@ -1,6 +1,6 @@
 object PreferencesDialog: TPreferencesDialog
-  Left = 417
-  Top = 139
+  Left = 379
+  Top = 133
   BorderStyle = bsDialog
   Caption = 'Preferences'
   ClientHeight = 425
@@ -9,6 +9,7 @@ object PreferencesDialog: TPreferencesDialog
   ParentFont = True
   OldCreateOrder = True
   Position = poMainFormCenter
+  OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     386
@@ -20,11 +21,11 @@ object PreferencesDialog: TPreferencesDialog
     Top = 0
     Width = 386
     Height = 385
-    ActivePage = LogSheet
+    ActivePage = IntegrationSheet
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     MultiLine = True
-    TabIndex = 1
+    TabIndex = 8
     TabOrder = 0
     object PreferencesSheet: TTabSheet
       Caption = 'General'
@@ -197,7 +198,7 @@ object PreferencesDialog: TPreferencesDialog
         Width = 320
         Height = 33
         AutoSize = False
-        Caption =
+        Caption = 
           'Note: a change to this setting will only take effect the next ti' +
           'me you open session in WinSCP.'
         WordWrap = True
@@ -297,7 +298,7 @@ object PreferencesDialog: TPreferencesDialog
           Width = 313
           Height = 39
           AutoSize = False
-          Caption =
+          Caption = 
             'When downloading files using drag && drop, they are stored first' +
             ' to temporary directory.'
           WordWrap = True
@@ -367,7 +368,7 @@ object PreferencesDialog: TPreferencesDialog
         Height = 29
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
-        Caption =
+        Caption = 
           'Preferences on this tab applies to Norton Commander interface on' +
           'ly.'
         WordWrap = True
@@ -492,7 +493,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 126
           Caption = 'Upload options'
           inherited RightsFrame: TRightsFrame
-            PopupMenu = nil
+            Height = 88
           end
           inherited RemotePreserveTimeCheck: TCheckBox
             Top = 161
@@ -626,10 +627,14 @@ object PreferencesDialog: TPreferencesDialog
           Top = 69
           Width = 315
           Height = 21
+          OnAfterDialog = ExternalEditorEditAfterDialog
+          Filter = 'Executable files (*.exe)|*.exe|All files (*.*)|*.*'
           ClickKey = 16397
           Anchors = [akLeft, akTop, akRight]
           TabOrder = 2
           Text = 'ExternalEditorEdit'
+          OnChange = ExternalEditorEditChange
+          OnExit = ExternalEditorEditExit
         end
       end
       object EditorFontGroup: TXPGroupBox
@@ -683,6 +688,69 @@ object PreferencesDialog: TPreferencesDialog
           Caption = '&Wrap long lines'
           TabOrder = 0
           OnClick = ControlChange
+        end
+      end
+    end
+    object IntegrationSheet: TTabSheet
+      Caption = 'Integration'
+      ImageIndex = 8
+      DesignSize = (
+        378
+        339)
+      object ShellIconsGroup: TXPGroupBox
+        Left = 8
+        Top = 8
+        Width = 362
+        Height = 209
+        Anchors = [akLeft, akTop, akRight]
+        Caption = 'Shell icons'
+        TabOrder = 0
+        object ShellIconsLabel: TLabel
+          Left = 16
+          Top = 155
+          Width = 329
+          Height = 46
+          AutoSize = False
+          Caption = 
+            'To add shortcuts, which directly open stored session, use button' +
+            ' '#39'Shell icon'#39' on '#39'Stored sessions'#39' tab of login dialog.'
+          WordWrap = True
+        end
+        object DesktopIconButton: TButton
+          Left = 16
+          Top = 24
+          Width = 305
+          Height = 25
+          Caption = 'Create a &desktop icon'
+          TabOrder = 0
+          OnClick = IconButtonClick
+        end
+        object QuickLaunchIconButton: TButton
+          Left = 16
+          Top = 88
+          Width = 305
+          Height = 25
+          Caption = 'Create a &Quick Launch icon'
+          TabOrder = 1
+          OnClick = IconButtonClick
+        end
+        object DesktopIconAllUsersButton: TButton
+          Left = 16
+          Top = 56
+          Width = 305
+          Height = 25
+          Caption = 'Create a &desktop icon (all users)'
+          TabOrder = 2
+          OnClick = IconButtonClick
+        end
+        object SendToHookButton: TButton
+          Left = 16
+          Top = 120
+          Width = 305
+          Height = 25
+          Caption = 'Add upload shortcut to Explorer'#39's '#39'Send to'#39' context menu'
+          TabOrder = 3
+          OnClick = IconButtonClick
         end
       end
     end

@@ -74,6 +74,7 @@ void __fastcall TSessionData::Default()
   UpdateDirectories = false;
   CacheDirectories = true;
   LockInHome = false;
+  ResolveSymlinks = true;
 
   // SCP
   ReturnVar = "";
@@ -121,6 +122,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(RemoteDirectory);
     DUPL(UpdateDirectories);
     DUPL(CacheDirectories);
+    DUPL(ResolveSymlinks);
     DUPL(LockInHome);
     DUPL(Special);
     DUPL(Selected);
@@ -301,6 +303,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     RemoteDirectory = Storage->ReadString("RemoteDirectory", RemoteDirectory);
     UpdateDirectories = Storage->ReadBool("UpdateDirectories", UpdateDirectories);
     CacheDirectories = Storage->ReadBool("CacheDirectories", CacheDirectories);
+    ResolveSymlinks = Storage->ReadBool("ResolveSymlinks", ResolveSymlinks);
     LockInHome = Storage->ReadBool("LockInHome", LockInHome);
     Special = Storage->ReadBool("Special", Special);
     Shell = Storage->ReadString("Shell", Shell);
@@ -377,6 +380,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage)
     Storage->WriteString("RemoteDirectory", RemoteDirectory);
     Storage->WriteBool("UpdateDirectories", UpdateDirectories);
     Storage->WriteBool("CacheDirectories", CacheDirectories);
+    Storage->WriteBool("ResolveSymlinks", ResolveSymlinks);
     Storage->WriteBool("LockInHome", LockInHome);
     // Special is never stored (if it would, login dialog must be modified not to
     // duplicate Special parameter when Special session is loaded and then stored
@@ -740,6 +744,11 @@ void __fastcall TSessionData::SetUpdateDirectories(bool value)
 void __fastcall TSessionData::SetCacheDirectories(bool value)
 {
   SET_SESSION_PROPERTY(CacheDirectories);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetResolveSymlinks(bool value)
+{
+  SET_SESSION_PROPERTY(ResolveSymlinks);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetLockInHome(bool value)

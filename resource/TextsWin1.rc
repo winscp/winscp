@@ -36,12 +36,16 @@
 #define SKIP_BUTTON             1315
 #define RESUME_BUTTON           1316
 #define SAVE_CHANGES            1317
+#define CONFIRM_CREATE_SENDTO   1318
+#define CONFIRM_CREATE_ICON     1319
 
 #define WIN_INFORMATION_STRINGS 1400
 #define APP_CAPTION             1401
 #define COMPARE_NO_DIFFERENCES  1402
 #define SHORTCUT_INFO_TIP       1403
 #define DOCUMENT_WAIT           1404
+#define SESSION_SENDTO_HOOK_NAME 1405
+#define SENDTO_HOOK_NAME        1406
 
 #define WIN_STATUS_STRINGS      1450
 #define STATUS_CLOSED           1451
@@ -166,6 +170,8 @@ BEGIN
         ADD_BOOKMARK_CONFIRM, "Add directory '%s' to bookmarks?"
         RECONNECT_BUTTON, "&Reconnect"
         CONFIRM_CREATE_SHORTCUT, "Create desktop shortcut for session '%s'?"
+        CONFIRM_CREATE_SENDTO, "Create Explorer's 'send to' shortcut for session '%s'?"
+        CONFIRM_CREATE_ICON, "Create selected icon/shortcut?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"
@@ -175,6 +181,8 @@ BEGIN
         RESUME_BUTTON, "Resu&me"
         SAVE_CHANGES, "File was modified. Save changes?"
         DOCUMENT_WAIT, "Waiting for the document to close..."
+        SESSION_SENDTO_HOOK_NAME, "%s (upload using SFTP or SCP)"
+        SENDTO_HOOK_NAME, "%s (upload using SFTP or SCP)"
 
         WIN_STATUS_STRINGS, "WIN_STATUS_STRINGS"
         STATUS_CLOSED, "Connection terminated."

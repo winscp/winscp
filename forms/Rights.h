@@ -29,41 +29,47 @@ __published:
   TSpeedButton *OwnerButton;
   TSpeedButton *GroupButton;
   TSpeedButton *OthersButton;
+  TLabel *OctalLabel;
+  TEdit *OctalEdit;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FrameContextPopup(TObject *Sender,
     TPoint &MousePos, bool &Handled);
   void __fastcall RightsButtonsClick(TObject *Sender);
   void __fastcall FrameEnter(TObject *Sender);
+  void __fastcall OctalEditExit(TObject *Sender);
 private:
-  Boolean FAllowAddXToDirectories;
+  bool FAllowAddXToDirectories;
   TNotifyEvent FOnChange;
-  void __fastcall CycleRights(Integer Group);
-  Boolean __fastcall GetAddXToDirectories();
-  Boolean __fastcall GetAllowUndef();
-  Integer __fastcall GetCheckCount();
+
+  void __fastcall CycleRights(int Group);
+  bool __fastcall GetAddXToDirectories();
+  bool __fastcall GetAllowUndef();
+  int __fastcall GetCheckCount();
   TCheckBox * __fastcall GetChecks(TRightsFlag Flag);
   TRights __fastcall GetRights();
   TRightState __fastcall GetStates(TRightsFlag Flag);
-  void __fastcall SetAddXToDirectories(Boolean value);
-  void __fastcall SetAllowAddXToDirectories(Boolean value);
-  void __fastcall SetAllowUndef(Boolean value);
+  void __fastcall SetAddXToDirectories(bool value);
+  void __fastcall SetAllowAddXToDirectories(bool value);
+  void __fastcall SetAllowUndef(bool value);
   void __fastcall SetRights(TRights value);
   void __fastcall SetStates(TRightsFlag Flag, TRightState value);
+
 public:
   virtual __fastcall ~TRightsFrame();
   __fastcall TRightsFrame(TComponent* Owner);
-  __property Boolean AddXToDirectories = { read = GetAddXToDirectories, write = SetAddXToDirectories };
-  __property Boolean AllowAddXToDirectories = { read = FAllowAddXToDirectories, write = SetAllowAddXToDirectories };
-  __property Boolean AllowUndef = { read = GetAllowUndef, write = SetAllowUndef };
-  __property Integer CheckCount = { read = GetCheckCount };
+  __property bool AddXToDirectories = { read = GetAddXToDirectories, write = SetAddXToDirectories };
+  __property bool AllowAddXToDirectories = { read = FAllowAddXToDirectories, write = SetAllowAddXToDirectories };
+  __property bool AllowUndef = { read = GetAllowUndef, write = SetAllowUndef };
+  __property int CheckCount = { read = GetCheckCount };
   __property TCheckBox * Checks[TRightsFlag Flag] = { read = GetChecks };
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property TRights Rights = { read = GetRights, write = SetRights };
   __property TRightState States[TRightsFlag Flag] = { read = GetStates, write = SetStates };
+
 protected:
   void __fastcall DoChange();
   void __fastcall UpdateControls();
-  virtual void __fastcall SetEnabled(Boolean Value);
+  virtual void __fastcall SetEnabled(bool Value);
 };
 //---------------------------------------------------------------------------
 #endif

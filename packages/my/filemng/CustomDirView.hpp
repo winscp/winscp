@@ -239,6 +239,7 @@ protected:
 	virtual int __fastcall GetFilesCount(void);
 	DYNAMIC void __fastcall ColClick(Comctrls::TListColumn* Column);
 	virtual void __fastcall CreateWnd(void);
+	Classes::TStrings* __fastcall CustomCreateFileList(bool Focused, bool OnlyFocused, bool FullPath, Classes::TStrings* FileList = (Classes::TStrings*)(0x0));
 	virtual bool __fastcall CustomDrawItem(Comctrls::TListItem* Item, Comctrls::TCustomDrawState State, Comctrls::TCustomDrawStage Stage);
 	virtual bool __fastcall CustomDrawSubItem(Comctrls::TListItem* Item, int SubItem, Comctrls::TCustomDrawState State, Comctrls::TCustomDrawStage Stage);
 	void __fastcall CustomSortItems(void * SortProc);
@@ -309,7 +310,8 @@ public:
 	__fastcall virtual ~TCustomDirView(void);
 	virtual void __fastcall Load(void);
 	virtual void __fastcall Reload(bool CacheIcons);
-	Classes::TStrings* __fastcall CreateFileList(bool OnlyFocused, bool FullPath, Classes::TStrings* FileList = (Classes::TStrings*)(0x0));
+	Classes::TStrings* __fastcall CreateFocusedFileList(bool FullPath, Classes::TStrings* FileList = (Classes::TStrings*)(0x0));
+	Classes::TStrings* __fastcall CreateFileList(bool Focused, bool FullPath, Classes::TStrings* FileList = (Classes::TStrings*)(0x0));
 	virtual bool __fastcall DoSelectByMask(bool Select);
 	virtual void __fastcall ExecuteHomeDirectory(void) = 0 ;
 	virtual void __fastcall ExecuteParentDirectory(void) = 0 ;

@@ -206,6 +206,8 @@ type
     function GetFilesCount: Integer; virtual;
     procedure ColClick(Column: TListColumn); override;
     procedure CreateWnd; override;
+    function CustomCreateFileList(Focused, OnlyFocused: Boolean;
+      FullPath: Boolean; FileList: TStrings = nil): TStrings;
     function CustomDrawItem(Item: TListItem; State: TCustomDrawState;
       Stage: TCustomDrawStage): Boolean; override;
     function CustomDrawSubItem(Item: TListItem; SubItem: Integer;
@@ -279,7 +281,8 @@ type
     destructor Destroy; override;
     procedure Load; virtual;
     procedure Reload(CacheIcons: Boolean); virtual;
-    function CreateFileList(OnlyFocused: Boolean; FullPath: Boolean; FileList: TStrings = nil): TStrings;
+    function CreateFocusedFileList(FullPath: Boolean; FileList: TStrings = nil): TStrings;
+    function CreateFileList(Focused: Boolean; FullPath: Boolean; FileList: TStrings = nil): TStrings;
     function DoSelectByMask(Select: Boolean): Boolean; override;
     procedure ExecuteHomeDirectory; virtual; abstract;
     procedure ExecuteParentDirectory; virtual; abstract;
@@ -1886,8 +1889,8 @@ begin
   end;
 end;
 
-function TCustomDirView.CreateFileList(OnlyFocused: Boolean; FullPath: Boolean;
-  FileList: TStrings): TStrings;
+function TCustomDirView.CustomCreateFileList(Focused, OnlyFocused: Boolean;
+  FullPath: Boolean; FileList: TStrings): TStrings;
 
   procedure AddItem(Item: TListItem);
   begin
@@ -1901,10 +1904,13 @@ var
 begin
   if Assigned(FileList) then Result := FileList
     else Result := TStringList.Create;
+
   try
     if Assigned(ItemFocused) and
-       ((OnlyFocused and (not ItemFocused.Selected)) or (SelCount = 0)) then
-          AddItem(ItemFocused)
+       ((Focused and (not ItemFocused.Selected)) or (SelCount = 0) or OnlyFocused) then
+    begin
+      AddItem(ItemFocused)
+    end
       else
     begin
       Item := GetNextItem(nil, sdAll, [isSelected]);
@@ -1918,6 +1924,17 @@ begin
     if not Assigned(FileList) then FreeAndNil(Result);
     raise;
   end;
+end;
+
+function TCustomDirView.CreateFocusedFileList(FullPath: Boolean; FileList: TStrings): TStrings;
+begin
+  Result := CustomCreateFileList(False, True, FullPath, FileList);
+end;
+
+function TCustomDirView.CreateFileList(Focused: Boolean; FullPath: Boolean;
+  FileList: TStrings): TStrings;
+begin
+  Result := CustomCreateFileList(Focused, False, FullPath, FileList);
 end;
 
 procedure TCustomDirView.DDDrop(DataObj: IDataObject; grfKeyState: Integer;

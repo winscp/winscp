@@ -179,10 +179,11 @@ void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType 
     UpdateControls();
     Application->ProcessMessages();
   }
+  TDateTime N = Now();
   if ((double)FLastUpdate && SpeedPanel->Visible && SpeedBar->Position < 100)
   {
     assert(SpeedBar->Position > 0);
-    __int64 MilliSecondsTr = (double(Now()) - double(FLastUpdate)) * MSecsPerDay;
+    __int64 MilliSecondsTr = (double(N) - double(FLastUpdate)) * MSecsPerDay;
     int MilliSecondsWait = int(double(MilliSecondsTr > 100000 ? 100000 : MilliSecondsTr) *
       (double(100)/double(SpeedBar->Position) - 1));
     MilliSecondsWait = (MilliSecondsWait > 2000) ? 2000 : MilliSecondsWait;
@@ -193,10 +194,16 @@ void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType 
       Application->ProcessMessages();
     }
   }
-  FLastUpdate = Now();
-  if (FUpdateCounter % 5 == 0) Application->ProcessMessages();
+  static double HalfSecond = double(1)/(24*60*60*2); 
+  if (FUpdateCounter % 5 == 0 ||
+      double(N) - double(FLastUpdate) > HalfSecond)
+  {
+    FLastUpdate = N;
+    FUpdateCounter = 0;
+    Application->ProcessMessages();
+  }
   FUpdateCounter++;
-} 
+}
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
 {

@@ -1,0 +1,11 @@
+To create 'winscpxxxsetup.exe' install package, follow these steps:
+1) build 'WinSCP3.exe' (see ..\readme)
+2) install 'My Inno Setup Extensions'
+   http://www.wintax.nl/isx
+   Copyright (c) 2000-2002 Martijn Laan
+   Copyright (c) 1998-2002 Jordan Russell (Inno Setup)
+3) install 'Putty' package to directory 'c:\program files\putty\'
+   http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html
+   (A Windows-style installer (x86 only) for everything except PuTTYtel)
+4) run 'iscc winscpsetup.iss'
+4) file 'winscpxxxsetup.exe' is created in directory 'release/files'

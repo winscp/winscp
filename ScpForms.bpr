@@ -121,7 +121,7 @@ ProductVersion=1.0.0.0
 Comments=
 
 [Compiler]
-ShowInfoMsgs=1
+ShowInfoMsgs=0
 LinkDebugVcl=0
 LinkCGLIB=0
 

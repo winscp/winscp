@@ -3,12 +3,14 @@
 #pragma hdrstop
 
 #include "Preferences.h"
-
-#include <Common.h>
+    
+#include <Common.h>                                    
 #include <ScpMain.h>
 
 #include "VCLCommon.h"
 #include "Tools.h"
+#include "TextsWin.h"
+#include "UserInterface.h"
 //---------------------------------------------------------------------
 #pragma link "GeneralSettings"
 #pragma link "LogSettings"
@@ -40,6 +42,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
   CopyParamsFrame->Direction = pdAll;
   FEditorFont = new TFont();
+  FAfterExternalEditorDialog = false;
   UseSystemFont(this);
 }
 //---------------------------------------------------------------------------
@@ -108,7 +111,13 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   // editor
   EditorInternalButton->Checked = Configuration->Editor.Editor == edInternal;
   EditorExternalButton->Checked = Configuration->Editor.Editor == edExternal;
-  ExternalEditorEdit->Text = Configuration->Editor.ExternalEditor;
+
+  AnsiString ExternalEditor = Configuration->Editor.ExternalEditor;
+  if (!ExternalEditor.IsEmpty())
+  {
+    TConfiguration::ReformatFileNameCommand(ExternalEditor);
+  }
+  ExternalEditorEdit->Text = ExternalEditor;
   EditorWordWrapCheck->Checked = Configuration->Editor.WordWrap;
   FEditorFont->Name = Configuration->Editor.FontName;
   FEditorFont->Height = Configuration->Editor.FontHeight;
@@ -255,6 +264,83 @@ void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
   __finally
   {
     delete Dialog;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ExternalEditorEditExit(TObject * /*Sender*/)
+{
+  try
+  {
+    AnsiString ExternalEditor = ExternalEditorEdit->Text;
+    if (!ExternalEditor.IsEmpty())
+    {
+      TConfiguration::ReformatFileNameCommand(ExternalEditor);
+      ExternalEditorEdit->Text = ExternalEditor;
+    }
+  }
+  catch(...)
+  {
+    ExternalEditorEdit->SelectAll();
+    ExternalEditorEdit->SetFocus();
+    throw;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ExternalEditorEditAfterDialog(
+      TObject * /*Sender*/, AnsiString & /*Name*/, bool & Action)
+{
+  if (Action)
+  {
+    FAfterExternalEditorDialog = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ExternalEditorEditChange(
+      TObject *Sender)
+{
+  if (FAfterExternalEditorDialog)
+  {
+    FAfterExternalEditorDialog = false;
+    ExternalEditorEditExit(Sender);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
+      bool & /*CanClose*/)
+{
+  if (ModalResult != mrCancel && ExternalEditorEdit->Focused())
+  {
+    ExternalEditorEditExit(NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
+{
+  if (MessageDialog(LoadStr(CONFIRM_CREATE_ICON),
+        qtConfirmation, qaYes | qaNo, 0) == qaYes)
+  {
+    AnsiString IconName, Params;
+    int SpecialFolder;
+    if (Sender == SendToHookButton)
+    {
+      IconName = FMTLOAD(SENDTO_HOOK_NAME, (AppNameVersion));
+      SpecialFolder = CSIDL_SENDTO;
+      Params = "/upload";
+    }
+    else if (Sender == QuickLaunchIconButton)
+    {
+      IconName = "Microsoft\\Internet Explorer\\Quick Launch\\" +
+        AppNameVersion;
+      SpecialFolder = CSIDL_APPDATA;
+    }
+    else
+    {
+      IconName = AppNameVersion;
+      SpecialFolder = Sender == DesktopIconButton ?
+        CSIDL_DESKTOPDIRECTORY :CSIDL_COMMON_DESKTOPDIRECTORY;
+    }
+    CreateDesktopShortCut(IconName,
+      Application->ExeName, Params, "", SpecialFolder);
   }
 }
 //---------------------------------------------------------------------------

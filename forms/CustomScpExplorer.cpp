@@ -430,7 +430,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
 
   bool Edit = (ExecuteFileBy == efEditor || ExecuteFileBy == efAlternativeEditor);
 
-  TStrings * FileList = FileList = DirView(Side)->CreateFileList(true, Side == osLocal);
+  TStrings * FileList = DirView(Side)->CreateFocusedFileList(Side == osLocal);
   try
   {
     assert(FileList->Count == 1);
@@ -515,10 +515,16 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
 
             if (Edit)
             {
-              if (ExecuteShellAndWait(Configuration->Editor.ExternalEditor,
-                    FExecutedFile) < 0)
+              AnsiString ExternalEditor, Program, Params, Dir;
+              ExternalEditor = Configuration->Editor.ExternalEditor;
+              TConfiguration::ReformatFileNameCommand(ExternalEditor);
+              SplitCommand(ExternalEditor, Program, Params, Dir);
+              assert(Params.Pos(ShellCommandFileNamePattern) > 0);
+              Params = StringReplace(Params, ShellCommandFileNamePattern,
+                AddPathQuotes(FExecutedFile), TReplaceFlags() << rfReplaceAll);
+              if (ExecuteShellAndWait(Program, Params) < 0)
               {
-                throw Exception(FMTLOAD(EDITOR_ERROR, (Configuration->Editor.ExternalEditor)));
+                throw Exception(FMTLOAD(EDITOR_ERROR, (Program)));
               }
             }
             else
@@ -841,7 +847,7 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
 {
   TStatusBar * SessionStatusBar = (TStatusBar *)GetComponent(fcStatusBar);
   assert(SessionStatusBar && (SessionStatusBar->Panels->Count >= 3) && Terminal);
-  Integer Index = SessionStatusBar->Tag;
+  int Index = SessionStatusBar->Tag;
   SessionStatusBar->Panels->Items[Index]->Text = FormatBytes(Terminal->BytesReceived);
   SessionStatusBar->Panels->Items[Index + 1]->Text = FormatBytes(Terminal->BytesSent);
   SessionStatusBar->Panels->Items[Index + 5]->Text = Terminal->ProtocolName;
@@ -1316,7 +1322,7 @@ void __fastcall TCustomScpExplorerForm::AddEditLink()
     assert(RemoteDirView->ItemFocused->Data);
     File = (TRemoteFile *)RemoteDirView->ItemFocused->Data;
 
-    Edit = File->IsSymLink;
+    Edit = File->IsSymLink && Terminal->SessionData->ResolveSymlinks;
     if (Edit)
     {
       FileName = File->FileName;

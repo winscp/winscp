@@ -248,7 +248,6 @@ object EditorForm: TEditorForm
       Caption = '&Delete'
       Hint = 'Delete|Erases the selection'
       ImageIndex = 5
-      ShortCut = 46
     end
     object PreferencesAction: TAction
       Caption = '&Preferences...'

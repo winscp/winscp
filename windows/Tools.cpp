@@ -152,7 +152,8 @@ bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Para
 }
 //---------------------------------------------------------------------------
 void __fastcall CreateDesktopShortCut(const AnsiString &Name,
-  const AnsiString &File, const AnsiString & Params, const AnsiString & Description)
+  const AnsiString &File, const AnsiString & Params, const AnsiString & Description,
+  int SpecialFolder)
 {
   IShellLink* pLink;
   IPersistFile* pPersistFile;
@@ -160,11 +161,16 @@ void __fastcall CreateDesktopShortCut(const AnsiString &Name,
   LPITEMIDLIST  DesktopPidl;
   char DesktopDir[MAX_PATH];
 
+  if (SpecialFolder < 0)
+  {
+    SpecialFolder = CSIDL_DESKTOPDIRECTORY;
+  }
+
   try
   {
     if (FAILED(SHGetMalloc(&ShellMalloc))) throw Exception("");
 
-    if (FAILED(SHGetSpecialFolderLocation(NULL, CSIDL_DESKTOPDIRECTORY, &DesktopPidl)))
+    if (FAILED(SHGetSpecialFolderLocation(NULL, SpecialFolder, &DesktopPidl)))
     {
       throw Exception("");
     }
@@ -184,19 +190,35 @@ void __fastcall CreateDesktopShortCut(const AnsiString &Name,
       if(SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
           IID_IShellLink, (void **) &pLink)))
       {
-        pLink->SetPath(File.c_str());
-        pLink->SetDescription(Description.c_str());
-        pLink->SetArguments(Params.c_str());
-        pLink->SetShowCmd(SW_SHOW);
-
-        if (SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+        try
         {
-          WideString strShortCutLocation(DesktopDir);
-          strShortCutLocation += AnsiString("\\") + Name + ".lnk";
-          pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE);
-          pPersistFile->Release();
+          pLink->SetPath(File.c_str());
+          pLink->SetDescription(Description.c_str());
+          pLink->SetArguments(Params.c_str());
+          pLink->SetShowCmd(SW_SHOW);
+
+          if (SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
+          {
+            try
+            {
+              WideString strShortCutLocation(DesktopDir);
+              // Name can contain even path (e.g. to create quick launch icon)
+              strShortCutLocation += AnsiString("\\") + Name + ".lnk";
+              if (!SUCCEEDED(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE)))
+              {
+                throw Exception("");
+              }
+            }
+            __finally
+            {
+              pPersistFile->Release();
+            }
+          }
         }
-        pLink->Release();
+        __finally
+        {
+          pLink->Release();
+        }
       }
       CoUninitialize();
     }
@@ -206,3 +228,4 @@ void __fastcall CreateDesktopShortCut(const AnsiString &Name,
     throw Exception(CREATE_SHORTCUT_ERROR);
   }
 }
+

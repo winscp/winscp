@@ -143,21 +143,33 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
 {
   if (DragDrop && Direction == tdToLocal && FDDTargetDirView == LocalDirView)
   {
-    DragDrop = false;
     if (LocalDirView->DropTarget)
     {
-      assert(LocalDirView->ItemIsDirectory(LocalDirView->DropTarget));
-      TargetDirectory = LocalDirView->ItemFullFileName(LocalDirView->DropTarget);
+      // when drop target is not directory, it is probably file type, which have
+      // associated drop handler (sich as ZIP file in WinXP). in this case we
+      // must leave drop handling to destination application.
+      DragDrop = !LocalDirView->ItemIsDirectory(LocalDirView->DropTarget);
+      if (!DragDrop)
+      {
+        TargetDirectory = LocalDirView->ItemFullFileName(LocalDirView->DropTarget);
+      }
     }
     else
     {
+      DragDrop = false;
       TargetDirectory = IncludeTrailingBackslash(LocalDirView->Path);
     }
   }
   else if (!DragDrop)
   {
-    if (Direction == tdToLocal) TargetDirectory = IncludeTrailingBackslash(LocalDirView->Path);
-      else TargetDirectory = UnixIncludeTrailingBackslash(RemoteDirView->Path);
+    if (Direction == tdToLocal)
+    {
+      TargetDirectory = IncludeTrailingBackslash(LocalDirView->Path);
+    }
+    else
+    {
+      TargetDirectory = UnixIncludeTrailingBackslash(RemoteDirView->Path);
+    }
   }
 
   return TCustomScpExplorerForm::CopyParamDialog(Direction, Type, DragDrop,

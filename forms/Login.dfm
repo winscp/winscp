@@ -64,11 +64,11 @@ object LoginDialog: TLoginDialog
       Top = 0
       Width = 361
       Height = 318
-      ActivePage = GeneralSheet
+      ActivePage = SessionListSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
-      TabIndex = 6
+      TabIndex = 0
       TabOrder = 1
       OnChange = PageControlChange
       object SessionListSheet: TTabSheet
@@ -155,14 +155,15 @@ object LoginDialog: TLoginDialog
           TabOrder = 6
           OnClick = ToolsMenuButtonClick
         end
-        object DesktopIconButton: TButton
+        object ShellIconsButton: TButton
           Left = 258
           Top = 164
           Width = 88
           Height = 25
-          Action = DesktopIconAction
           Anchors = [akTop, akRight]
+          Caption = 'Shell &icon'
           TabOrder = 7
+          OnClick = ShellIconsButtonClick
         end
       end
       object BasicSheet: TTabSheet
@@ -470,16 +471,16 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 8
           Width = 345
-          Height = 186
+          Height = 196
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Directories'
           TabOrder = 0
           DesignSize = (
             345
-            186)
+            196)
           object Label9: TLabel
             Left = 11
-            Top = 117
+            Top = 128
             Width = 121
             Height = 13
             Caption = '&Local directory (left panel)'
@@ -487,7 +488,7 @@ object LoginDialog: TLoginDialog
           end
           object Label10: TLabel
             Left = 11
-            Top = 66
+            Top = 84
             Width = 138
             Height = 13
             Caption = '&Remote directory (right panel)'
@@ -495,32 +496,32 @@ object LoginDialog: TLoginDialog
           end
           object Label16: TLabel
             Left = 11
-            Top = 162
+            Top = 172
             Width = 251
             Height = 13
             Caption = 'Local directory is not used with explorer-like interface.'
           end
           object LocalDirectoryEdit: TDirectoryEdit
             Left = 11
-            Top = 134
+            Top = 145
             Width = 323
             Height = 21
             AcceptFiles = True
             DialogText = 'Select startup local directory.'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
-            TabOrder = 3
+            TabOrder = 4
             Text = 'LocalDirectoryEdit'
             OnChange = DataChange
           end
           object RemoteDirectoryEdit: TEdit
             Left = 11
-            Top = 83
+            Top = 101
             Width = 323
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 1000
-            TabOrder = 2
+            TabOrder = 3
             Text = 'RemoteDirectoryEdit'
             OnChange = DataChange
           end
@@ -542,10 +543,19 @@ object LoginDialog: TLoginDialog
             Caption = '&Cache visited remote directories'
             TabOrder = 1
           end
+          object ResolveSymlinksCheck: TCheckBox
+            Left = 11
+            Top = 62
+            Width = 321
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Resolve &symbolic links'
+            TabOrder = 2
+          end
         end
         object EOLTypeGroup: TXPGroupBox
           Left = 0
-          Top = 201
+          Top = 211
           Width = 345
           Height = 45
           Anchors = [akLeft, akTop, akRight]
@@ -1422,6 +1432,11 @@ object LoginDialog: TLoginDialog
       Caption = 'Desktop &icon'
       OnExecute = DesktopIconActionExecute
     end
+    object SendToHookAction: TAction
+      Category = 'Sessions'
+      Caption = 'Explorer'#39's '#39'Send to'#39' shortcut'
+      OnExecute = SendToHookActionExecute
+    end
   end
   object ToolsPopupMenu: TPopupMenu
     Left = 160
@@ -1431,6 +1446,16 @@ object LoginDialog: TLoginDialog
     end
     object Cleanup1: TMenuItem
       Action = CleanUpAction
+    end
+  end
+  object IconsPopupMenu: TPopupMenu
+    Left = 200
+    Top = 320
+    object Desktopicon1: TMenuItem
+      Action = DesktopIconAction
+    end
+    object ExplorersSendtoshortcut1: TMenuItem
+      Action = SendToHookAction
     end
   end
 end

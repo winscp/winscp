@@ -83,11 +83,11 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
-MinorVer=0
+MinorVer=1
 Release=0
-Build=162
+Build=165
 Debug=0
-PreRelease=1
+PreRelease=0
 Special=0
 Private=0
 DLL=0
@@ -97,7 +97,7 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.0.0.162
+FileVersion=3.1.0.165
 InternalName=winscp3
 LegalCopyright=(c) 2000-2003 Martin Prikryl
 LegalTrademarks=

@@ -15,12 +15,6 @@ public:
 
   virtual void __fastcall AnyCommand(const AnsiString Command);
   virtual void __fastcall ChangeDirectory(const AnsiString Directory);
-/*  virtual void __fastcall ChangeGroup(const AnsiString FileName,
-    const AnsiString Group, bool Recursive);
-  virtual void __fastcall ChangeMode(const AnsiString FileName,
-    const TRights * Rights, bool Recursive);
-  virtual void __fastcall ChangeOwner(const AnsiString FileName,
-    const AnsiString Owner, bool Recursive);*/
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
@@ -58,13 +52,12 @@ protected:
   Variant FPacketNumbers;
   char FPreviousLoggedPacket;
   int FNotLoggedPackets;
+  int FBusy;
+  TCursor FPreBusyCursor;
+  bool FAvoidBusy;
 
-/*  void __fastcall DoChangeProperties(const AnsiString FileName,
-    const TRemoteFile * File, void * Properties);*/
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, char Type, TRemoteFile * ALinkedByFile = NULL);
-  /*void __fastcall DoDeleteFile(const AnsiString FileName,
-    const TRemoteFile * File, void * DummyParam);*/
   virtual AnsiString __fastcall GetCurrentDirectory();
   AnsiString __fastcall GetHomeDirectory();
   unsigned long __fastcall GotStatusPacket(TSFTPPacket * Packet, int AllowStatus);
@@ -107,6 +100,8 @@ protected:
     TFileOperationProgressType * OperationProgress);
   void __fastcall SFTPSinkFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
+  inline void __fastcall BusyStart();
+  inline void __fastcall BusyEnd();
 };
 //---------------------------------------------------------------------------
 #endif // SftpFileSystemH

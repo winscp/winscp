@@ -36,17 +36,12 @@ __published:
   TLabel *Label8;
   TLabel *FilemanagerHomepageLabel;
   TLabel *Label10;
-  TLabel *Label11;
-  TLabel *Label12;
-  TLabel *DragNDropHomepageLabel1;
-  TLabel *DragNDropHomepageLabel2;
   TLabel *ProlongBoxLabel;
   TButton *OKButton;
   TButton *LicenceButton;
   TLabel *PuttyLicenceLabel;
   void __fastcall HomepageLabelClick(TObject *Sender);
   void __fastcall EmailLabelClick(TObject *Sender);
-  void __fastcall DragNDropHomepageLabelClick(TObject *Sender);
   void __fastcall DisplayLicence(TObject *Sender);
   void __fastcall LicenceButtonClick(TObject *Sender);
 private:

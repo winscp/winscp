@@ -21,8 +21,6 @@ __fastcall TAboutDialog::TAboutDialog(TComponent* AOwner)
   LinkLabel(PuttyLicenceLabel);
   LinkLabel(PuttyHomepageLabel);
   LinkLabel(FilemanagerHomepageLabel);
-  LinkLabel(DragNDropHomepageLabel1);
-  LinkLabel(DragNDropHomepageLabel2);
   ApplicationLabel->Caption = AppName;
   HomepageLabel->Caption = HomepageUrl;
 }
@@ -50,11 +48,6 @@ void __fastcall TAboutDialog::OpenAddress(const AnsiString Address)
 void __fastcall TAboutDialog::HomepageLabelClick(TObject * Sender)
 {
   OpenAddress(((TLabel*)Sender)->Caption);
-}
-//---------------------------------------------------------------------------
-void __fastcall TAboutDialog::DragNDropHomepageLabelClick(TObject * /*Sender */)
-{
-  OpenAddress(DragNDropHomepageLabel1->Caption + DragNDropHomepageLabel2->Caption);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::EmailLabelClick(TObject * Sender)

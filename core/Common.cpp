@@ -159,3 +159,62 @@ AnsiString __fastcall StripPathQuotes(const AnsiString Path)
     return Path;
   }
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall AddPathQuotes(AnsiString Path)
+{
+  Path = StripPathQuotes(Path);
+  if (Path.Pos(" "))
+  {
+    Path = "\"" + Path + "\"";
+  }
+  return Path;
+}
+//---------------------------------------------------------------------------
+void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
+  AnsiString & Params, AnsiString & Dir)
+{
+  Command = Command.Trim();
+  Params = "";
+  Dir = "";
+  if (!Command.IsEmpty() && (Command[1] == '\"'))
+  {
+    Command.Delete(1, 1);
+    int P = Command.Pos('"');
+    if (P)
+    {
+      Program = Command.SubString(1, P-1).Trim();
+      Params = Command.SubString(P + 1, Command.Length() - P).Trim();
+    }
+    else
+    {
+      throw Exception(FMTLOAD(INVALID_SHELL_COMMAND, ("\"" + Command)));
+    }
+  }
+  else
+  {
+    int P = Command.Pos(" ");
+    if (P)
+    {
+      Program = Command.SubString(1, P).Trim();
+      Params = Command.SubString(P + 1, Command.Length() - P).Trim();
+    }
+    else
+    {
+      Program = Command;
+    }
+  }
+  int B = Program.LastDelimiter("\\/");
+  if (B)
+  {
+    Dir = Program.SubString(1, B).Trim();
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params)
+{
+  Program = Program.Trim();
+  Params = Params.Trim();
+  if (!Params.IsEmpty()) Params = " " + Params;
+  if (Program.Pos(" ")) Program = "\"" + Program + "\"";
+  return Program + Params;
+}

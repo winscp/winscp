@@ -10,6 +10,7 @@ enum TInterface { ifCommander, ifExplorer };
 enum TLogView { lvNone, lvWindow, pvPanel };
 enum TOperationSide { osLocal, osRemote, osCurrent };
 enum TEditor { edInternal, edExternal };
+extern const char ShellCommandFileNamePattern[];
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TScpExplorerConfiguration {
@@ -205,6 +206,7 @@ public:
   void __fastcall ClearTemporaryLoginData();
   void __fastcall EndUpdate();
   THierarchicalStorage * CreateScpStorage(bool SessionList);
+  static void ReformatFileNameCommand(AnsiString & Command);
 
   __property AnsiString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property AnsiString PuttyRegistryStorageKey  = { read=GetPuttyRegistryStorageKey };

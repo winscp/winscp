@@ -37,11 +37,11 @@ echo #ifndef %TEXTSET%H >  %TEXTSET%.new
 echo #define %TEXTSET%H >> %TEXTSET%.new
 echo. >> %TEXTSET%.new
 
-grep "#define" %TEXTSET%2.rc | tail 1 >> %TEXTSET%.new
+grep "#define" %TEXTSET%2.rc >> %TEXTSET%.new
 
 echo. >> %TEXTSET%.new
 
-grep "#define" %TEXTSET%1.rc | tail 1 >> %TEXTSET%.new
+grep "#define" %TEXTSET%1.rc >> %TEXTSET%.new
 
 echo. >> %TEXTSET%.new
 echo #endif // %TEXTSET% >> %TEXTSET%.new

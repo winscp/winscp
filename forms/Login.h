@@ -165,7 +165,7 @@ __published:
   TPopupMenu *ToolsPopupMenu;
   TMenuItem *Import1;
   TMenuItem *Cleanup1;
-  TButton *DesktopIconButton;
+  TButton *ShellIconsButton;
   TAction *DesktopIconAction;
   TCheckBox *CacheDirectoriesCheck;
   TXPGroupBox *EOLTypeGroup;
@@ -175,6 +175,11 @@ __published:
   TRadioButton *SFTPButton;
   TRadioButton *SCPonlyButton;
   TRadioButton *SFTPonlyButton;
+  TCheckBox *ResolveSymlinksCheck;
+  TPopupMenu *IconsPopupMenu;
+  TMenuItem *Desktopicon1;
+  TAction *SendToHookAction;
+  TMenuItem *ExplorersSendtoshortcut1;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -208,6 +213,8 @@ __published:
   void __fastcall DesktopIconActionExecute(TObject *Sender);
   void __fastcall SessionListViewCustomDrawItem(TCustomListView *Sender,
           TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall ShellIconsButtonClick(TObject *Sender);
+  void __fastcall SendToHookActionExecute(TObject *Sender);
 
 private:
   Integer NoUpdate;

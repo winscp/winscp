@@ -16,13 +16,15 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
         : TFrame(Owner)
 {
   FOnChange = NULL;
-  FAllowAddXToDirectories = True;
+  FAllowAddXToDirectories = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()
 {
   if (NonVisualDataModule->RightsFrame == this)
+  {
     NonVisualDataModule->RightsFrame = NULL;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetStates(TRightsFlag Flag, TRightState value)
@@ -49,8 +51,10 @@ TRightState __fastcall TRightsFrame::GetStates(TRightsFlag Flag)
 void __fastcall TRightsFrame::SetRights(TRights value)
 {
   AllowUndef = true; // temporarily
-  for (Integer Flag = 0; Flag < RightsFlagCount; Flag++)
+  for (int Flag = 0; Flag < RightsFlagCount; Flag++)
+  {
     States[(TRightsFlag)Flag] = value.RightUndef[(TRightsFlag)Flag];
+  }
   AllowUndef = value.AllowUndef;
   UpdateControls();
 }
@@ -59,31 +63,36 @@ TRights __fastcall TRightsFrame::GetRights()
 {
   TRights Result;
   Result.AllowUndef = AllowUndef;
-  for (Integer Flag = 0; Flag < RightsFlagCount; Flag++)
+  for (int Flag = 0; Flag < RightsFlagCount; Flag++)
+  {
     Result.RightUndef[(TRightsFlag)Flag] = States[(TRightsFlag)Flag];
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::SetAllowUndef(Boolean value)
+void __fastcall TRightsFrame::SetAllowUndef(bool value)
 {
-  for (Integer Index = 0; Index < CheckCount; Index++)
+  for (int Index = 0; Index < CheckCount; Index++)
+  {
     Checks[(TRightsFlag)Index]->AllowGrayed = value;
+  }
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRightsFrame::GetAllowUndef()
+bool __fastcall TRightsFrame::GetAllowUndef()
 {
-  Boolean Result = False, First = True;
-  for (Integer Index = 0; Index < CheckCount; Index++)
+  bool Result = false, First = true;
+  for (int Index = 0; Index < CheckCount; Index++)
   {
     TCheckBox *Check = Checks[(TRightsFlag)Index];
     if (First)
     {
       Result = Check->AllowGrayed;
-      First = False;
+      First = false;
     }
-      else
-    if (Result != Check->AllowGrayed)
+    else if (Result != Check->AllowGrayed)
+    {
       throw Exception("AllowGrayed property of all checkboxes of TRightsFrame don't have same value");
+    }
   }
   return Result;
 }
@@ -91,24 +100,29 @@ Boolean __fastcall TRightsFrame::GetAllowUndef()
 TCheckBox * __fastcall TRightsFrame::GetChecks(TRightsFlag Flag)
 {
   assert((Flag >= 0) && (Flag < RightsFlagCount));
-  for (Integer Index = 0; Index < ControlCount; Index++)
+  for (int Index = 0; Index < ControlCount; Index++)
+  {
     if (Controls[Index]->InheritsFrom(__classid(TCheckBox)) &&
-        ((Controls[Index]->Tag - 1) == Flag)) return ((TCheckBox *)Controls[Index]);
-  assert(False);
+        ((Controls[Index]->Tag - 1) == Flag))
+    {
+      return ((TCheckBox *)Controls[Index]);
+    }
+  }
+  assert(false);
   return NULL;
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TRightsFrame::GetCheckCount()
+int __fastcall TRightsFrame::GetCheckCount()
 {
   return RightsFlagCount;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::SetAddXToDirectories(Boolean value)
+void __fastcall TRightsFrame::SetAddXToDirectories(bool value)
 {
   DirectoriesXCheck->Checked = value;
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRightsFrame::GetAddXToDirectories()
+bool __fastcall TRightsFrame::GetAddXToDirectories()
 {
   return DirectoriesXCheck->Checked;
 }
@@ -120,9 +134,16 @@ void __fastcall TRightsFrame::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::UpdateControls()
 {
+  TRights R = Rights;
   DirectoriesXCheck->Visible = AllowAddXToDirectories;
   EnableControl(DirectoriesXCheck,
-    Enabled && !((Rights.NumberSet & raExecute) == raExecute));
+    Enabled && !((R.NumberSet & raExecute) == raExecute));
+    
+  if (!OctalEdit->Focused())
+  {
+    OctalEdit->Text = R.IsUndef ? AnsiString() : R.Octal;
+    OctalEdit->Modified = false;
+  }
   DoChange();
 }
 //---------------------------------------------------------------------------
@@ -138,26 +159,35 @@ void __fastcall TRightsFrame::FrameEnter(TObject * /*Sender*/)
   NonVisualDataModule->RightsFrame = this;
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::CycleRights(Integer Group)
+void __fastcall TRightsFrame::CycleRights(int Group)
 {
   TRightState State;
-  Boolean Same = True;
-  for (Integer Flag = 0; Flag < 3; Flag++)
+  bool Same = true;
+  for (int Flag = 0; Flag < 3; Flag++)
   {
     TRightState CState = States[(TRightsFlag)(Flag + ((Group - 1) * 3))];
     if (Flag == 0) State = CState;
       else
     if (State != CState) Same = False;
   }
-  if (!Same) State = rsYes;
-    else
-  switch (State) {
-    case rsYes: State = rsNo; break;
-    case rsNo: if (AllowUndef) State = rsUndef; else State = rsYes; break;
-    case rsUndef: State = rsYes; break;
+
+  if (!Same)
+  {
+    State = rsYes;
   }
-  for (Integer Flag = 0; Flag < 3; Flag++)
+  else
+  {
+    switch (State) {
+      case rsYes: State = rsNo; break;
+      case rsNo: if (AllowUndef) State = rsUndef; else State = rsYes; break;
+      case rsUndef: State = rsYes; break;
+    }
+  }
+
+  for (int Flag = 0; Flag < 3; Flag++)
+  {
     States[(TRightsFlag)(Flag + ((Group - 1) * 3))] = State;
+  }
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -166,7 +196,7 @@ void __fastcall TRightsFrame::RightsButtonsClick(TObject *Sender)
   CycleRights(((TComponent*)Sender)->Tag);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::SetAllowAddXToDirectories(Boolean value)
+void __fastcall TRightsFrame::SetAllowAddXToDirectories(bool value)
 {
   if (FAllowAddXToDirectories != value)
   {
@@ -177,15 +207,40 @@ void __fastcall TRightsFrame::SetAllowAddXToDirectories(Boolean value)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::DoChange()
 {
-  if (FOnChange) FOnChange(this);
+  if (FOnChange)
+  {
+    FOnChange(this);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::SetEnabled(Boolean Value)
-{
+void __fastcall TRightsFrame::SetEnabled(bool Value)
+{                 
   TFrame::SetEnabled(Value);
   UpdateControls();
 }
-
-
-
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::OctalEditExit(TObject * /*Sender*/)
+{
+  if (OctalEdit->Modified)
+  {
+    try
+    {
+      if (!OctalEdit->Text.IsEmpty())
+      {
+        TRights R = Rights;
+        R.Octal = OctalEdit->Text;
+        Rights = R;
+      }
+      UpdateControls();
+      OctalEdit->Modified = false;
+    }
+    catch(...)
+    {
+      OctalEdit->SelectAll();
+      OctalEdit->SetFocus();
+      throw;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 

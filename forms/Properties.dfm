@@ -1,9 +1,9 @@
 object PropertiesDialog: TPropertiesDialog
-  Left = 466
-  Top = 142
+  Left = 362
+  Top = 120
   BorderStyle = bsDialog
   Caption = 'Properties'
-  ClientHeight = 390
+  ClientHeight = 416
   ClientWidth = 357
   Color = clBtnFace
   ParentFont = True
@@ -12,12 +12,12 @@ object PropertiesDialog: TPropertiesDialog
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     357
-    390)
+    416)
   PixelsPerInch = 96
   TextHeight = 13
   object OkButton: TButton
     Left = 187
-    Top = 360
+    Top = 386
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -28,7 +28,7 @@ object PropertiesDialog: TPropertiesDialog
   end
   object CancelButton: TButton
     Left = 275
-    Top = 360
+    Top = 386
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -41,7 +41,7 @@ object PropertiesDialog: TPropertiesDialog
     Left = 5
     Top = 5
     Width = 346
-    Height = 348
+    Height = 374
     ActivePage = CommonSheet
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabIndex = 0
@@ -50,7 +50,7 @@ object PropertiesDialog: TPropertiesDialog
       Caption = 'Common'
       DesignSize = (
         338
-        320)
+        346)
       object FilesIconImage: TImage
         Left = 11
         Top = 8
@@ -160,7 +160,7 @@ object PropertiesDialog: TPropertiesDialog
       end
       object Label3: TLabel
         Left = 8
-        Top = 207
+        Top = 203
         Width = 58
         Height = 13
         Caption = 'Permissions:'
@@ -168,7 +168,7 @@ object PropertiesDialog: TPropertiesDialog
       end
       object Bevel3: TBevel
         Left = 8
-        Top = 197
+        Top = 193
         Width = 320
         Height = 9
         Anchors = [akLeft, akTop, akRight]
@@ -184,7 +184,7 @@ object PropertiesDialog: TPropertiesDialog
       end
       object Label5: TLabel
         Left = 8
-        Top = 170
+        Top = 166
         Width = 34
         Height = 13
         Caption = 'Owner:'
@@ -198,7 +198,7 @@ object PropertiesDialog: TPropertiesDialog
       end
       object RecursiveBevel: TBevel
         Left = 8
-        Top = 289
+        Top = 312
         Width = 320
         Height = 9
         Anchors = [akLeft, akTop, akRight]
@@ -206,9 +206,9 @@ object PropertiesDialog: TPropertiesDialog
       end
       inline RightsFrame: TRightsFrame
         Left = 87
-        Top = 204
-        Width = 164
-        Height = 82
+        Top = 200
+        Width = 163
+        Height = 109
         PopupMenu = NonVisualDataModule.RightsPopup
         TabOrder = 2
       end
@@ -225,7 +225,7 @@ object PropertiesDialog: TPropertiesDialog
       end
       object OwnerComboBox: TComboBox
         Left = 88
-        Top = 167
+        Top = 163
         Width = 161
         Height = 21
         ItemHeight = 13
@@ -236,7 +236,7 @@ object PropertiesDialog: TPropertiesDialog
       end
       object RecursiveCheck: TCheckBox
         Left = 12
-        Top = 296
+        Top = 322
         Width = 317
         Height = 17
         Anchors = [akLeft, akTop, akRight]

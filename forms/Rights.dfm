@@ -2,7 +2,7 @@ object RightsFrame: TRightsFrame
   Left = 0
   Top = 0
   Width = 163
-  Height = 83
+  Height = 109
   PopupMenu = NonVisualDataModule.RightsPopup
   TabOrder = 0
   OnContextPopup = FrameContextPopup
@@ -58,14 +58,13 @@ object RightsFrame: TRightsFrame
     Flat = True
     OnClick = RightsButtonsClick
   end
-  object DirectoriesXCheck: TCheckBox
-    Left = 5
-    Top = 63
-    Width = 156
-    Height = 17
-    Caption = 'Add &X to directories'
-    TabOrder = 9
-    OnClick = ControlChange
+  object OctalLabel: TLabel
+    Left = 4
+    Top = 68
+    Width = 25
+    Height = 13
+    Caption = 'O&ctal'
+    FocusControl = OctalEdit
   end
   object OwnerReadCheck: TCheckBox
     Tag = 1
@@ -155,6 +154,25 @@ object RightsFrame: TRightsFrame
     Height = 17
     Caption = 'X'
     TabOrder = 8
+    OnClick = ControlChange
+  end
+  object OctalEdit: TEdit
+    Left = 55
+    Top = 64
+    Width = 64
+    Height = 21
+    MaxLength = 3
+    TabOrder = 9
+    Text = 'OctalEdit'
+    OnExit = OctalEditExit
+  end
+  object DirectoriesXCheck: TCheckBox
+    Left = 5
+    Top = 89
+    Width = 156
+    Height = 17
+    Caption = 'Add &X to directories'
+    TabOrder = 10
     OnClick = ControlChange
   end
 end

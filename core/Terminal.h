@@ -75,7 +75,7 @@ typedef int __fastcall (__closure *TFileOperationEvent)
   FILE_OPERATION_LOOP_EX(FILENAME, True, MESSAGE, OPERATION)
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
-  fcOwnerChanging, fcAnyCommand, fcHardLink };
+  fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink };
 //---------------------------------------------------------------------------
 const cpDelete = 1;
 //const cpCheckExistence = 2; !!! don't use

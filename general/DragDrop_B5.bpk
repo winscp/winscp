@@ -6,28 +6,26 @@
     <PROJECT value="..\lib\DragDrop_B5.bpl"/>
     <OBJFILES value="DragDrop_B5.obj DragDrop.obj DragDropBitmap.obj 
       DragDropFiles.obj DragDropFilesEx.obj 
-      DragDropText.obj ListSort.obj PIDL.obj 
-      DragDropURL.obj"/>
+      DragDropText.obj DragDropURL.obj ListSort.obj 
+      PIDL.obj"/>
     <RESFILES value="DragDrop_B5.res &quot;Drag and Drop Components\DragDrop.dcr&quot; 
       &quot;Drag and Drop Components\DragDropBitmap.dcr&quot; 
       &quot;Drag and Drop Components\DragDropFiles.dcr&quot; 
       &quot;Drag and Drop Components\DragDropFilesEx.dcr&quot; 
-      &quot;Drag and Drop Components\DragDropText.dcr&quot; 
-      &quot;Drag and Drop Components\ListSort.dcr&quot; &quot;Drag and Drop Components\DragDropURL.dcr&quot;"/>
+      &quot;Drag and Drop Components\DragDropText.dcr&quot; &quot;Drag and Drop Components\ListSort.dcr&quot;"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib 
-      dbxcds.lib dclocx.lib soaprtl.lib bcbie.lib nmfast.lib dbexpress.lib 
-      inetdbxpress.lib inetdb.lib inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib 
-      teeqr.lib tee.lib teedb.lib teeui.lib bdecds.lib cds.lib dsnap.lib 
-      vcldbx.lib bdertl.lib qrpt.lib adortl.lib dbrtl.lib vcldb.lib bcbsmp.lib"/>
+    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib 
+      soaprtl.lib bcbie.lib nmfast.lib dbexpress.lib inetdbxpress.lib inetdb.lib 
+      inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib teeqr.lib tee.lib teedb.lib 
+      teeui.lib bdecds.lib cds.lib dsnap.lib vcldbx.lib bdertl.lib qrpt.lib 
+      adortl.lib dbrtl.lib vcldb.lib bcbsmp.lib"/>
     <SPARELIBS value="rtl.lib vcl.lib bcbsmp.lib vcldb.lib dbrtl.lib adortl.lib qrpt.lib 
       bdertl.lib vcldbx.lib dsnap.lib cds.lib bdecds.lib teeui.lib teedb.lib 
       tee.lib teeqr.lib ibxpress.lib xmlrtl.lib inet.lib inetdbbde.lib 
       inetdb.lib inetdbxpress.lib dbexpress.lib nmfast.lib bcbie.lib soaprtl.lib 
-      dclocx.lib dbxcds.lib indy.lib bcb2kaxserver.lib visualdbclx.lib 
-      "/>
+      dclocx.lib dbxcds.lib indy.lib bcb2kaxserver.lib visualdbclx.lib"/>
     <PACKAGES value="rtl.bpi vcl.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;&quot;Drag and Drop Components&quot;"/>
@@ -72,13 +70,12 @@
       <FILE FILENAME="Drag and Drop Components\DragDropFilesEx.dcr" FORMNAME="" UNITNAME="DragDropFilesEx" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Drag and Drop Components\DragDropText.pas" FORMNAME="" UNITNAME="DragDropText" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Drag and Drop Components\DragDropText.dcr" FORMNAME="" UNITNAME="DragDropText" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Drag and Drop Components\DragDropURL.pas" FORMNAME="" UNITNAME="DragDropURL" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Drag and Drop Components\ListSort.pas" FORMNAME="" UNITNAME="ListSort" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Drag and Drop Components\ListSort.dcr" FORMNAME="" UNITNAME="ListSort" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Drag and Drop Components\PIDL.pas" FORMNAME="" UNITNAME="PIDL" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Drag and Drop Components\DragDropURL.pas" FORMNAME="" UNITNAME="DragDropURL" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Drag and Drop Components\DragDropURL.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

@@ -4,31 +4,31 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\DriveDir_B5.bpl"/>
-    <OBJFILES value="DriveDir_B5.obj DirView.obj DiscMon.obj 
-      DriveView.obj FileOperator.obj IEComboBox.obj 
-      BaseUtils.obj FileChanges.obj MaskSearch.obj 
-      IEListView.obj IEDriveInfo.obj ShellDialogs.obj 
-      DirViewColProperties.obj CustomDirView.obj 
-      CustomUnixDirView.obj UnixDirViewColProperties.obj 
-      CustomPathComboBox.obj IEPathComboBox.obj 
+    <OBJFILES value="DriveDir_B5.obj DirView.obj DiscMon.obj
+      DriveView.obj FileOperator.obj IEComboBox.obj
+      BaseUtils.obj FileChanges.obj MaskSearch.obj
+      IEListView.obj IEDriveInfo.obj ShellDialogs.obj
+      DirViewColProperties.obj CustomDirView.obj
+      CustomUnixDirView.obj UnixDirViewColProperties.obj
+      CustomPathComboBox.obj IEPathComboBox.obj
       ListExt.obj CompThread.obj"/>
-    <RESFILES value="DriveDir_B5.res &quot;Filemanager Toolset\DirView.dcr&quot; 
-      &quot;Filemanager Toolset\DiscMon.dcr&quot; &quot;Filemanager Toolset\DriveView.dcr&quot; 
-      &quot;Filemanager Toolset\FileOperator.dcr&quot; 
+    <RESFILES value="DriveDir_B5.res &quot;Filemanager Toolset\DirView.dcr&quot;
+      &quot;Filemanager Toolset\DiscMon.dcr&quot; &quot;Filemanager Toolset\DriveView.dcr&quot;
+      &quot;Filemanager Toolset\FileOperator.dcr&quot;
       &quot;Filemanager Toolset\IEComboBox.dcr&quot; &quot;Filemanager Toolset\DirImg.res&quot;"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib 
-      soaprtl.lib nmfast.lib dbexpress.lib inetdbxpress.lib inetdb.lib 
-      inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib teeqr.lib tee.lib teedb.lib 
-      teeui.lib bdecds.lib cds.lib dsnap.lib vcldbx.lib bdertl.lib qrpt.lib 
+    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib
+      soaprtl.lib nmfast.lib dbexpress.lib inetdbxpress.lib inetdb.lib
+      inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib teeqr.lib tee.lib teedb.lib
+      teeui.lib bdecds.lib cds.lib dsnap.lib vcldbx.lib bdertl.lib qrpt.lib
       adortl.lib dbrtl.lib vcldb.lib"/>
-    <SPARELIBS value="rtl.lib vcl.lib bcbsmp.lib vcldb.lib dbrtl.lib adortl.lib qrpt.lib 
-      bdertl.lib vcldbx.lib dsnap.lib cds.lib bdecds.lib teeui.lib teedb.lib 
-      tee.lib teeqr.lib ibxpress.lib xmlrtl.lib inet.lib inetdbbde.lib 
-      inetdb.lib inetdbxpress.lib dbexpress.lib nmfast.lib bcbie.lib soaprtl.lib 
-      dclocx.lib dbxcds.lib indy.lib bcb2kaxserver.lib visualdbclx.lib 
+    <SPARELIBS value="rtl.lib vcl.lib bcbsmp.lib vcldb.lib dbrtl.lib adortl.lib qrpt.lib
+      bdertl.lib vcldbx.lib dsnap.lib cds.lib bdecds.lib teeui.lib teedb.lib
+      tee.lib teeqr.lib ibxpress.lib xmlrtl.lib inet.lib inetdbbde.lib
+      inetdb.lib inetdbxpress.lib dbexpress.lib nmfast.lib bcbie.lib soaprtl.lib
+      dclocx.lib dbxcds.lib indy.lib bcb2kaxserver.lib visualdbclx.lib
       DragDrop_B5.lib Moje_B5.lib"/>
     <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi bcbsmp.bpi bcbie.bpi Moje_B5.bpi DragDrop_B5.bpi"/>
     <PATHCPP value=".;"/>
@@ -47,7 +47,7 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-Od -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 
+    <CFLAG1 value="-Od -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8
       -b- -k -y -v -vi- -c -tWM"/>
     <PFLAGS value="  -$YD -$W -$O- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>

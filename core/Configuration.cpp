@@ -17,6 +17,8 @@
 #define SET_CONFIG_PROPERTY(PROPERTY) \
   if (PROPERTY != value) { F ## PROPERTY = value; Changed(); }
 //---------------------------------------------------------------------------
+const char ShellCommandFileNamePattern[] = "!.!";
+//---------------------------------------------------------------------------
 bool SpecialFolderLocation(int PathID, AnsiString & Path)
 {
   LPITEMIDLIST Pidl;
@@ -957,3 +959,15 @@ AnsiString __fastcall TConfiguration::GetPartialExt() const
 {
   return ".filepart";
 }
+//---------------------------------------------------------------------------
+void TConfiguration::ReformatFileNameCommand(AnsiString & Command)
+{
+  AnsiString Program, Params, Dir;
+  SplitCommand(Command, Program, Params, Dir);
+  if (Params.Pos(ShellCommandFileNamePattern) == 0)
+  {
+    Params = Params + (Params.IsEmpty() ? "" : " ") + ShellCommandFileNamePattern;
+  }
+  Command = FormatCommand(Program, Params);
+}
+

@@ -1,6 +1,6 @@
 object AboutDialog: TAboutDialog
-  Left = 381
-  Top = 191
+  Left = 373
+  Top = 184
   BorderStyle = bsDialog
   Caption = 'About application'
   ClientHeight = 315
@@ -49,10 +49,10 @@ object AboutDialog: TAboutDialog
   object HomepageLabel: TLabel
     Left = 72
     Top = 72
-    Width = 103
+    Width = 146
     Height = 13
     Cursor = crHandPoint
-    Caption = 'http://winscp.vse.cz/'
+    Caption = 'http://winscp.sourceforge.net/'
     Color = clBtnFace
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
@@ -73,10 +73,10 @@ object AboutDialog: TAboutDialog
   object ProductUrlLabel: TLabel
     Left = 72
     Top = 112
-    Width = 134
+    Width = 177
     Height = 13
     Cursor = crHandPoint
-    Caption = 'http://winscp.vse.cz/forum/'
+    Caption = 'http://winscp.sourceforge.net/forum/'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
     Font.Height = -11
@@ -217,7 +217,6 @@ object AboutDialog: TAboutDialog
     Width = 306
     Height = 141
     HorzScrollBar.Visible = False
-    VertScrollBar.Position = 154
     VertScrollBar.Smooth = True
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 3
@@ -226,14 +225,14 @@ object AboutDialog: TAboutDialog
       137)
     object Label3: TLabel
       Left = 8
-      Top = -146
+      Top = 8
       Width = 87
       Height = 13
       Caption = 'Portions copyright:'
     end
     object Label7: TLabel
       Left = 8
-      Top = -122
+      Top = 32
       Width = 272
       Height = 41
       Anchors = [akLeft, akTop, akRight]
@@ -245,21 +244,21 @@ object AboutDialog: TAboutDialog
     end
     object Label5: TLabel
       Left = 8
-      Top = -82
+      Top = 72
       Width = 246
       Height = 13
       Caption = 'SSH and SCP code based on PuTTY Version 0.53b'
     end
     object Label6: TLabel
       Left = 8
-      Top = -66
+      Top = 88
       Width = 181
       Height = 13
       Caption = 'Copyright '#169' 1997-2002 Simon Tatham'
     end
     object PuttyHomepageLabel: TLabel
       Left = 8
-      Top = -34
+      Top = 120
       Width = 256
       Height = 13
       Cursor = crHandPoint
@@ -276,14 +275,14 @@ object AboutDialog: TAboutDialog
     end
     object Label8: TLabel
       Left = 8
-      Top = -2
+      Top = 152
       Width = 181
       Height = 13
       Caption = 'Filemanager Toolset library Version 2.6'
     end
     object FilemanagerHomepageLabel: TLabel
       Left = 8
-      Top = 30
+      Top = 184
       Width = 257
       Height = 13
       Cursor = crHandPoint
@@ -300,63 +299,14 @@ object AboutDialog: TAboutDialog
     end
     object Label10: TLabel
       Left = 8
-      Top = 14
+      Top = 168
       Width = 137
       Height = 13
       Caption = 'Copyright '#169' 1999 Ingo Eckel'
     end
-    object Label11: TLabel
-      Left = 8
-      Top = 62
-      Width = 150
-      Height = 13
-      Caption = 'Drag & Drop Components library'
-      ShowAccelChar = False
-    end
-    object Label12: TLabel
-      Left = 8
-      Top = 78
-      Width = 196
-      Height = 13
-      Caption = 'Copyright '#169' 1998-1999 Dieter Steinwedel'
-    end
-    object DragNDropHomepageLabel1: TLabel
-      Left = 8
-      Top = 94
-      Width = 244
-      Height = 13
-      Cursor = crHandPoint
-      Caption = 'http://www.oec.uni-osnabrueck.de/student_home/'
-      Color = clBtnFace
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clBlue
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = [fsUnderline]
-      ParentColor = False
-      ParentFont = False
-      OnClick = DragNDropHomepageLabelClick
-    end
-    object DragNDropHomepageLabel2: TLabel
-      Left = 16
-      Top = 110
-      Width = 181
-      Height = 13
-      Cursor = crHandPoint
-      Caption = 'dsteinwe/delphi/DietersDelphiSite.htm'
-      Color = clBtnFace
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clBlue
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = [fsUnderline]
-      ParentColor = False
-      ParentFont = False
-      OnClick = DragNDropHomepageLabelClick
-    end
     object ProlongBoxLabel: TLabel
       Left = 8
-      Top = 124
+      Top = 198
       Width = 63
       Height = 13
       Caption = '                     '
@@ -365,7 +315,7 @@ object AboutDialog: TAboutDialog
     object PuttyLicenceLabel: TLabel
       Tag = 1
       Left = 8
-      Top = -50
+      Top = 104
       Width = 71
       Height = 13
       Cursor = crHandPoint

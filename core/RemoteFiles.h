@@ -72,11 +72,11 @@ private:
   TRights *FRights;
   TTerminal *FTerminal;
   Char FType;
-  Boolean FSelected;
+  bool FSelected;
   bool FCyclicLink;
-  Integer __fastcall GetAttr();
-  Boolean __fastcall GetBrokenLink();
-  Boolean __fastcall GetIsDirectory() const;
+  int __fastcall GetAttr();
+  bool __fastcall GetBrokenLink();
+  bool __fastcall GetIsDirectory() const;
   TRemoteFile * __fastcall GetLinkedFile();
   void __fastcall SetLinkedFile(TRemoteFile * value);
   AnsiString __fastcall GetModificationStr();
@@ -89,36 +89,38 @@ private:
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall SetRights(TRights * value);
   AnsiString __fastcall GetFullFileName();
-  Integer __fastcall GetIconIndex();
-  Boolean __fastcall GetIsHidden();
-  Boolean __fastcall GetIsParentDirectory();
-  Boolean __fastcall GetIsThisDirectory();
-  Boolean __fastcall GetIsInaccesibleDirectory();
+  int __fastcall GetIconIndex();
+  bool __fastcall GetIsHidden();
+  bool __fastcall GetIsParentDirectory();
+  bool __fastcall GetIsThisDirectory();
+  bool __fastcall GetIsInaccesibleDirectory();
   AnsiString __fastcall GetExtension();
   AnsiString __fastcall GetUserModificationStr();
+
 protected:
   void __fastcall FindLinkedFile();
+
 public:
   __fastcall TRemoteFile(TRemoteFile * ALinkedByFile = NULL);
   virtual __fastcall ~TRemoteFile();
   TRemoteFile * __fastcall Duplicate();
 
   //void __fastcall SetProperties(const TRemoteProperties & Properties);
-  __property Integer Attr = { read = GetAttr };
-  __property Boolean BrokenLink = { read = GetBrokenLink };
+  __property int Attr = { read = GetAttr };
+  __property bool BrokenLink = { read = GetBrokenLink };
   __property TRemoteFileList * Directory = { read = FDirectory, write = FDirectory };
   __property AnsiString RightsStr = { read = GetRightsStr };
   __property __int64 Size = { read = FSize, write = FSize };
   __property AnsiString Owner = { read = FOwner, write = FOwner };
   __property AnsiString Group = { read = FGroup, write = FGroup };
   __property AnsiString FileName = { read = FFileName, write = FFileName };
-  __property Integer INodeBlocks = { read = FINodeBlocks };
+  __property int INodeBlocks = { read = FINodeBlocks };
   __property TDateTime Modification = { read = FModification, write = SetModification };
   __property AnsiString ModificationStr = { read = GetModificationStr };
   __property AnsiString UserModificationStr = { read = GetUserModificationStr };
   __property TDateTime LastAccess = { read = FLastAccess, write = FLastAccess };
-  __property Boolean IsSymLink = { read = FIsSymLink };
-  __property Boolean IsDirectory = { read = GetIsDirectory };
+  __property bool IsSymLink = { read = FIsSymLink };
+  __property bool IsDirectory = { read = GetIsDirectory };
   __property TRemoteFile * LinkedFile = { read = GetLinkedFile, write = SetLinkedFile };
   //__property const TRemoteFile * LinkedByFile = { read = FLinkedByFile, write = FLinkedByFile };
   __property AnsiString LinkTo = { read = FLinkTo, write = FLinkTo };
@@ -127,13 +129,13 @@ public:
   __property TRights * Rights = { read = FRights, write = SetRights };
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property Char Type = { read = GetType, write = SetType };
-  __property Boolean Selected  = { read=FSelected, write=FSelected };
+  __property bool Selected  = { read=FSelected, write=FSelected };
   __property AnsiString FullFileName  = { read=GetFullFileName };
-  __property Integer IconIndex = { read = GetIconIndex };
-  __property Boolean IsHidden = { read = GetIsHidden };
-  __property Boolean IsParentDirectory = { read = GetIsParentDirectory };
-  __property Boolean IsThisDirectory = { read = GetIsThisDirectory };
-  __property Boolean IsInaccesibleDirectory  = { read=GetIsInaccesibleDirectory };
+  __property int IconIndex = { read = GetIconIndex };
+  __property bool IsHidden = { read = GetIsHidden };
+  __property bool IsParentDirectory = { read = GetIsParentDirectory };
+  __property bool IsThisDirectory = { read = GetIsThisDirectory };
+  __property bool IsInaccesibleDirectory  = { read=GetIsInaccesibleDirectory };
   __property AnsiString Extension  = { read=GetExtension };
 };
 //---------------------------------------------------------------------------

@@ -86,12 +86,26 @@ __published:
   TButton *EditorFontButton;
   TXPGroupBox *EditorOptionsGroup;
   TCheckBox *EditorWordWrapCheck;
+  TTabSheet *IntegrationSheet;
+  TXPGroupBox *ShellIconsGroup;
+  TButton *DesktopIconButton;
+  TButton *QuickLaunchIconButton;
+  TButton *DesktopIconAllUsersButton;
+  TButton *SendToHookButton;
+  TLabel *ShellIconsLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
+  void __fastcall ExternalEditorEditExit(TObject *Sender);
+  void __fastcall ExternalEditorEditAfterDialog(TObject *Sender,
+          AnsiString &Name, bool &Action);
+  void __fastcall ExternalEditorEditChange(TObject *Sender);
+  void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+  void __fastcall IconButtonClick(TObject *Sender);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
+  bool FAfterExternalEditorDialog;
   void __fastcall SetPreferencesMode(TPreferencesMode value);
 public:
   virtual __fastcall ~TPreferencesDialog();

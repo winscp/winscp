@@ -154,7 +154,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     (Configuration->Editor.Editor == edExternal || !Configuration->Editor.ExternalEditor.IsEmpty()))
   UPD(CurrentOpenAction, EnableFocusedOperation &&
     !DirView(osCurrent)->ItemIsDirectory(DirView(osCurrent)->ItemFocused))
-  UPD(AddEditLinkAction, true)
+  UPD(AddEditLinkAction, DirView(osCurrent) != DirView(osRemote) ||
+    (ScpExplorer->Terminal->IsCapable[fcResolveSymlink] &&
+     ScpExplorer->Terminal->IsCapable[fcSymbolicLink]))
   // selected operaton
   UPD(CurrentCopyAction, EnableSelectedOperation)
   UPD(CurrentMoveAction, EnableSelectedOperation)
@@ -369,9 +371,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   //HELP
   EXE(AboutAction, DoAboutDialog(Configuration))
   EXE(HomepageAction, OpenBrowser(HomepageUrl))
-  EXE(HistoryPageAction, OpenBrowser("http://winscp.vse.cz/eng/history.php"))
-  EXE(RequirementsPageAction, OpenBrowser("http://winscp.vse.cz/eng/requirements.php"))
-  EXE(ForumPageAction, OpenBrowser("http://winscp.vse.cz/eng/forum.php"))
+  EXE(HistoryPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/history.php"))
+  EXE(RequirementsPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/requirements.php"))
+  EXE(ForumPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/forum.php"))
 
   // VIEW
   EXECOMP(StatusBar)
@@ -506,7 +508,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   CloseSessionAction->ShortCut = ShortCut(VK_F4, ALT);
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::CommanderShortcuts()                        
+void __fastcall TNonVisualDataModule::CommanderShortcuts()
 {
   // Directory
   CurrentCreateDirAction->ShortCut = ShortCut(VK_F7, NONE);
@@ -581,5 +583,3 @@ void __fastcall TNonVisualDataModule::OpenBrowser(AnsiString URL)
 {
   ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
-
-

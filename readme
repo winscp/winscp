@@ -14,7 +14,10 @@ Directory structure:
 /lib         this is where linked libraries are stored during build
 /packages    headers files of pascal components (duplicated from /general)
 /putty53b    source code of Putty SSH client (not all files are used by WinSCP)
+/release     Inno Setup script to create setup package (see /release/readme)
 /resource    resources (icons, strings, etc)
 /windows     other sources
 
-WinSCP homepage is http://winscp.vse.cz/
+WinSCP homepage is http://winscp.sourceforge.net/
+
+See the file 'licence' for the licence conditions.

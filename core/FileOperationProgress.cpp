@@ -234,3 +234,4 @@ TDateTime __fastcall TFileOperationProgressType::TimeExpected()
   if (CurCps) return TDateTime((double)(((double)(TransferSize - TransferedSize)) / CurCps) / (24 * 60 * 60));
     else return 0; 
 }
+

@@ -33,6 +33,10 @@ AnsiString ExceptionLogString(Exception *E);
 bool IsDots(const AnsiString Str);
 AnsiString __fastcall SystemTemporaryDirectory();
 AnsiString __fastcall StripPathQuotes(const AnsiString Path);
+AnsiString __fastcall AddPathQuotes(AnsiString Path);
+void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
+  AnsiString & Params, AnsiString & Dir);
+AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
 //void SplitText(const AnsiString Value, TStrings *Strings, Char Separator);
 //---------------------------------------------------------------------------
 #endif

@@ -960,8 +960,9 @@ void __fastcall TSessionLog::AddStartupInfo()
          (Data->RemoteDirectory.IsEmpty() ? AnsiString("home") : Data->RemoteDirectory),
          BooleanToEngStr(Data->UpdateDirectories),
          BooleanToEngStr(Data->CacheDirectories)));
-      ADF("Clear aliases: %s, Unset nat.vars: %s",
-        (BooleanToEngStr(Data->ClearAliases), BooleanToEngStr(Data->UnsetNationalVars)));
+      ADF("Clear aliases: %s, Unset nat.vars: %s, Resolve symlinks: %s",
+        (BooleanToEngStr(Data->ClearAliases), BooleanToEngStr(Data->UnsetNationalVars),
+         BooleanToEngStr(Data->ResolveSymlinks)));
       ADF("Alias LS: %s, Ign LS warn: %s, Scp1 Comp: %s",
         (BooleanToEngStr(Data->AliasGroupList),
          BooleanToEngStr(Data->IgnoreLsWarnings), 

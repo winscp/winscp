@@ -12,7 +12,8 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const AnsiString AppName = "WinSCP";
-const AnsiString HomepageUrl = "http://winscp.vse.cz/";
+const AnsiString AppNameVersion = "WinSCP3";
+const AnsiString HomepageUrl = "http://winscp.sourceforge.net/";
 //---------------------------------------------------------------------------
 TCustomScpExplorerForm * __fastcall CreateScpExplorer()
 {

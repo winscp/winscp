@@ -71,9 +71,18 @@ object CopyParamsFrame: TCopyParamsFrame
       Left = 7
       Top = 36
       Width = 163
-      Height = 83
+      Height = 85
       PopupMenu = NonVisualDataModule.RightsPopup
       TabOrder = 1
+      inherited OctalLabel: TLabel
+        Visible = False
+      end
+      inherited OctalEdit: TEdit
+        Visible = False
+      end
+      inherited DirectoriesXCheck: TCheckBox
+        Top = 65
+      end
     end
     object PreserveRightsCheck: TCheckBox
       Left = 9

@@ -19,7 +19,7 @@
 #define SSH_FXP_READLINK           19
 #define SSH_FXP_SYMLINK            20
 //---------------------------------------------------------------------------
-const int SFTPMinVersion = 3;
+const int SFTPMinVersion = 2;
 const int SFTPMaxVersion = 3;
 const int SFTPNoMessageNumber = -1;
 
@@ -408,6 +408,8 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal):
   FPacketNumbers = VarArrayCreate(OPENARRAY(int, (0, 10)), varInteger);
   FPreviousLoggedPacket = 0;
   FNotLoggedPackets = 0;
+  FBusy = 0;
+  FAvoidBusy = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TSFTPFileSystem::~TSFTPFileSystem()
@@ -417,7 +419,7 @@ __fastcall TSFTPFileSystem::~TSFTPFileSystem()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TSFTPFileSystem::GetProtocolName() const
 {
-  return "SFTP";
+  return FMTLOAD(SFTP_PROTOCOL_NAME, (FVersion));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
@@ -430,6 +432,10 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcHardLink:
       return false;
 
+    case fcSymbolicLink:
+    case fcResolveSymlink:
+      return (FVersion >= 3);
+
     case fcModeChanging:
       return true;
 
@@ -439,33 +445,62 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
   }
 }
 //---------------------------------------------------------------------------
+inline void __fastcall TSFTPFileSystem::BusyStart()
+{
+  if (FBusy == 0 && FTerminal->UseBusyCursor && !FAvoidBusy)
+  {
+    FPreBusyCursor = Screen->Cursor;
+    Screen->Cursor = crHourGlass;
+  }
+  FBusy++;
+  assert(FBusy < 10);
+}
+//---------------------------------------------------------------------------
+inline void __fastcall TSFTPFileSystem::BusyEnd()
+{
+  assert(FBusy > 0);
+  FBusy--;
+  if (FBusy == 0 && FTerminal->UseBusyCursor && !FAvoidBusy)
+  {
+    Screen->Cursor = FPreBusyCursor;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
 {
-  if (FTerminal->IsLogging())
+  BusyStart();
+  try
   {
-    if ((FPreviousLoggedPacket != SSH_FXP_READ &&
-         FPreviousLoggedPacket != SSH_FXP_WRITE) ||
-        (Packet->Type != FPreviousLoggedPacket))
+    if (FTerminal->IsLogging())
     {
-      if (FNotLoggedPackets)
+      if ((FPreviousLoggedPacket != SSH_FXP_READ &&
+           FPreviousLoggedPacket != SSH_FXP_WRITE) ||
+          (Packet->Type != FPreviousLoggedPacket))
       {
-        FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ and SSH_FXP_STATUS packets.",
-          (FNotLoggedPackets)));
-        FNotLoggedPackets = 0;
+        if (FNotLoggedPackets)
+        {
+          FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ and SSH_FXP_STATUS packets.",
+            (FNotLoggedPackets)));
+          FNotLoggedPackets = 0;
+        }
+        FTerminal->Log->Add(llInput, FORMAT("Type: %s, Size: %d, Number: %d",
+          (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
+        FPreviousLoggedPacket = Packet->Type;
       }
-      FTerminal->Log->Add(llInput, FORMAT("Type: %s, Size: %d, Number: %d",
-        (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
-      FPreviousLoggedPacket = Packet->Type;
+      else
+      {
+        FNotLoggedPackets++;
+      }
     }
-    else
-    {
-      FNotLoggedPackets++;
-    }
+    char LenBuf[4];
+    PUT_32BIT(LenBuf, Packet->Length);
+    FTerminal->Send(LenBuf, sizeof(LenBuf));
+    FTerminal->Send(Packet->Data, Packet->Length);
   }
-  char LenBuf[4];
-  PUT_32BIT(LenBuf, Packet->Length);
-  FTerminal->Send(LenBuf, sizeof(LenBuf));
-  FTerminal->Send(Packet->Data, Packet->Length);
+  __finally
+  {
+    BusyEnd();
+  }
 }
 //---------------------------------------------------------------------------
 unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
@@ -496,8 +531,17 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     {
       Message = Messages[Code];
     }
-    AnsiString ServerMessage = Packet->GetString();
-    AnsiString LanguageTag = Packet->GetString();
+    AnsiString ServerMessage;
+    AnsiString LanguageTag;
+    if (FVersion >= 3)
+    {
+      ServerMessage = Packet->GetString();
+      LanguageTag = Packet->GetString();
+    }
+    else
+    {
+      ServerMessage = LoadStr(SFTP_SERVER_MESSAGE_UNSUPPORTED);
+    }
     if (LanguageTag.IsEmpty())
     {
       LanguageTag = "?";
@@ -535,91 +579,99 @@ void __fastcall TSFTPFileSystem::RemoveReservation(int Reservation)
 void __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
   int ExpectedType)
 {
-  int Reservation = FPacketReservations->IndexOf(Packet);
-  if (Reservation < 0 || Packet->Capacity == 0)
+  BusyStart();
+  try
   {
-    bool IsReserved;
-    do
+    int Reservation = FPacketReservations->IndexOf(Packet);
+    if (Reservation < 0 || Packet->Capacity == 0)
     {
-      IsReserved = false;
-
-      assert(Packet);
-      char LenBuf[4];
-      FTerminal->Receive(LenBuf, sizeof(LenBuf));
-      int Length = GET_32BIT(LenBuf);
-      Packet->Capacity = Length;
-      FTerminal->Receive(Packet->Data, Length);
-      Packet->DataUpdated(Length);
-
-      if (FTerminal->IsLogging())
+      bool IsReserved;
+      do
       {
-        if ((FPreviousLoggedPacket != SSH_FXP_READ &&
-             FPreviousLoggedPacket != SSH_FXP_WRITE) ||
-            (Packet->Type != SSH_FXP_STATUS))
+        IsReserved = false;
+
+        assert(Packet);
+        char LenBuf[4];
+        FTerminal->Receive(LenBuf, sizeof(LenBuf));
+        int Length = GET_32BIT(LenBuf);
+        Packet->Capacity = Length;
+        FTerminal->Receive(Packet->Data, Length);
+        Packet->DataUpdated(Length);
+
+        if (FTerminal->IsLogging())
         {
-          if (FNotLoggedPackets)
+          if ((FPreviousLoggedPacket != SSH_FXP_READ &&
+               FPreviousLoggedPacket != SSH_FXP_WRITE) ||
+              (Packet->Type != SSH_FXP_STATUS))
           {
-            FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ and SSH_FXP_STATUS packets.",
-              (FNotLoggedPackets)));
-            FNotLoggedPackets = 0;
+            if (FNotLoggedPackets)
+            {
+              FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ and SSH_FXP_STATUS packets.",
+                (FNotLoggedPackets)));
+              FNotLoggedPackets = 0;
+            }
+            FTerminal->Log->Add(llOutput, FORMAT("Type: %s, Size: %d, Number: %d",
+              (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
           }
-          FTerminal->Log->Add(llOutput, FORMAT("Type: %s, Size: %d, Number: %d",
-            (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
-        }
-        else
-        {
-          FNotLoggedPackets++;
-        }
-      }
-
-      if (Reservation < 0 ||
-          Packet->MessageNumber != (unsigned long)FPacketNumbers.GetElement(Reservation))
-      {
-        TSFTPPacket * ReservedPacket;
-        unsigned long MessageNumber;
-        for (int Index = 0; Index < FPacketReservations->Count; Index++)
-        {
-          MessageNumber = FPacketNumbers.GetElement(Index);
-          if (MessageNumber == Packet->MessageNumber)
+          else
           {
-            ReservedPacket = (TSFTPPacket *)FPacketReservations->Items[Index];
-            IsReserved = true;
-            if (ReservedPacket)
-            {
-              *ReservedPacket = *Packet;
-            }
-            else
-            {
-              RemoveReservation(Index);
-            }
-            break;
+            FNotLoggedPackets++;
           }
         }
+
+        if (Reservation < 0 ||
+            Packet->MessageNumber != (unsigned long)FPacketNumbers.GetElement(Reservation))
+        {
+          TSFTPPacket * ReservedPacket;
+          unsigned long MessageNumber;
+          for (int Index = 0; Index < FPacketReservations->Count; Index++)
+          {
+            MessageNumber = FPacketNumbers.GetElement(Index);
+            if (MessageNumber == Packet->MessageNumber)
+            {
+              ReservedPacket = (TSFTPPacket *)FPacketReservations->Items[Index];
+              IsReserved = true;
+              if (ReservedPacket)
+              {
+                *ReservedPacket = *Packet;
+              }
+              else
+              {
+                RemoveReservation(Index);
+              }
+              break;
+            }
+          }
+        }
+      }
+      while (IsReserved);
+    }
+
+    if (ExpectedType >= 0)
+    {
+      if (Packet->Type == SSH_FXP_STATUS)
+      {
+        GotStatusPacket(Packet, asOK);
+      }
+      else if (ExpectedType != Packet->Type)
+      {
+        FTerminal->FatalError(FMTLOAD(SFTP_INVALID_TYPE, ((int)Packet->Type)));
       }
     }
-    while (IsReserved);
-  }
 
-  if (ExpectedType >= 0)
-  {
-    if (Packet->Type == SSH_FXP_STATUS)
+    if (Reservation >= 0)
     {
-      GotStatusPacket(Packet, asOK);
-    }
-    else if (ExpectedType != Packet->Type)
-    {
-      FTerminal->FatalError(FMTLOAD(SFTP_INVALID_TYPE, ((int)Packet->Type)));
+      // order might have changed, when reserved, but not longer needed packet
+      // was receive in above loop
+      Reservation = FPacketReservations->IndexOf(Packet);
+      assert(Reservation >= 0);
+      assert(Packet->MessageNumber == (unsigned long)FPacketNumbers.GetElement(Reservation));
+      RemoveReservation(Reservation);
     }
   }
-
-  if (Reservation >= 0)
+  __finally
   {
-    // order might have changed, when reserved, but not longer needed packet
-    // was receive in above loop
-    Reservation = FPacketReservations->IndexOf(Packet);
-    assert(Reservation >= 0);
-    assert(Packet->MessageNumber == (unsigned long)FPacketNumbers.GetElement(Reservation));
-    RemoveReservation(Reservation);
+    BusyEnd();
   }
 }
 //---------------------------------------------------------------------------
@@ -670,8 +722,16 @@ void __fastcall TSFTPFileSystem::ReceiveResponse(
 void __fastcall TSFTPFileSystem::SendPacketAndReceiveResponse(
   const TSFTPPacket * Packet, TSFTPPacket * Response, int ExpectedType)
 {
-  SendPacket(Packet);
-  ReceiveResponse(Packet, Response, ExpectedType);
+  BusyStart();
+  try
+  {
+    SendPacket(Packet);
+    ReceiveResponse(Packet, Response, ExpectedType);
+  }
+  __finally
+  {
+    BusyEnd();
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall inline TSFTPFileSystem::IsAbsolutePath(const AnsiString Path)
@@ -698,7 +758,14 @@ AnsiString __fastcall TSFTPFileSystem::RealPath(const AnsiString Path)
   }
   catch(Exception & E)
   {
-    throw ExtException(&E, FMTLOAD(SFTP_REALPATH_ERROR, (Path)));
+    if (FTerminal->Active)
+    {
+      throw ExtException(&E, FMTLOAD(SFTP_REALPATH_ERROR, (Path)));
+    }
+    else
+    {
+      throw;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1011,6 +1078,7 @@ void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   TRemoteFile *& File)
 {
   assert(SymlinkFile && SymlinkFile->IsSymLink);
+  assert(FVersion >= 3); // symlinks are supported with SFTP version 3 and later
 
   AnsiString FileName = LocalCanonify(SymlinkFile->FileName);
 
@@ -1131,6 +1199,7 @@ void __fastcall TSFTPFileSystem::CreateLink(const AnsiString FileName,
   const AnsiString PointTo, bool Symbolic)
 {
   assert(Symbolic); // only symlinks are supported by SFTP
+  assert(FVersion >= 3); // symlinks are supported with SFTP version 3 and later
   TSFTPPacket Packet(SSH_FXP_SYMLINK);
   Packet.AddString(PointTo);
   Packet.AddString(Canonify(FileName));
@@ -1190,6 +1259,8 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
     bool Success = false;
     FileName = FilesToCopy->Strings[Index];
     FileNameOnly = ExtractFileName(FileName);
+    assert(!FAvoidBusy);
+    FAvoidBusy = true;
 
     try
     {
@@ -1221,6 +1292,7 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
     }
     __finally
     {
+      FAvoidBusy = false;
       OperationProgress->Finish(FileNameOnly, Success, DisconnectWhenComplete);
     }
     Index++;
@@ -1719,6 +1791,9 @@ void __fastcall TSFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
     FileNameOnly = UnixExtractFileName(FileName);
     File = (TRemoteFile *)FilesToCopy->Objects[Index];
 
+    assert(!FAvoidBusy);
+    FAvoidBusy = true;
+
     try
     {
       try
@@ -1740,6 +1815,7 @@ void __fastcall TSFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
     }
     __finally
     {
+      FAvoidBusy = false;
       OperationProgress->Finish(FileNameOnly, Success, DisconnectWhenComplete);
     }
     Index++;

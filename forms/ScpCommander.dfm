@@ -1,6 +1,6 @@
 inherited ScpCommanderForm: TScpCommanderForm
-  Left = 319
-  Top = 113
+  Left = 339
+  Top = 125
   Width = 669
   Height = 553
   Caption = 'ScpCommanderForm'
@@ -947,11 +947,11 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       item
         Alignment = taCenter
-        Width = 50
+        Width = 80
       end
       item
         Alignment = taCenter
-        Width = 120
+        Width = 80
       end
       item
         Alignment = taCenter

@@ -286,6 +286,8 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcOwnerChanging:
     case fcAnyCommand:
     case fcHardLink:
+    case fcSymbolicLink:
+    case fcResolveSymlink:
       return true;
 
     default:
@@ -340,17 +342,25 @@ bool __fastcall TSCPFileSystem::IsTotalListingLine(const AnsiString Line)
 bool __fastcall TSCPFileSystem::RemoveLastLine(AnsiString & Line,
     int & ReturnCode, AnsiString LastLine)
 {
+  bool IsLastLine = false;
   if (LastLine.IsEmpty()) LastLine = LAST_LINE;
   // #55: fixed so, even when last line of command output does not
   // contain CR/LF, we can recognize last line
   int Pos = Line.Pos(LastLine);
   if (Pos)
   {
-    ReturnCode = Line.SubString(Pos + LastLine.Length() + 1,
-      Line.Length() - Pos + LastLine.Length()).ToInt();
-    Line.SetLength(Pos - 1);
+    // 2003-07-14: There must be nothing after return code number to
+    // consider string as last line. This fixes bug with 'set' command
+    // in console window
+    AnsiString ReturnCodeStr = Line.SubString(Pos + LastLine.Length() + 1,
+      Line.Length() - Pos + LastLine.Length());
+    if (TryStrToInt(ReturnCodeStr, ReturnCode))
+    {
+      IsLastLine = true;
+      Line.SetLength(Pos - 1);
+    }
   }
-  return (Pos != 0);
+  return IsLastLine;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSCPFileSystem::IsLastLine(AnsiString & Line)

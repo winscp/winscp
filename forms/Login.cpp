@@ -62,16 +62,21 @@ __fastcall TLoginDialog::~TLoginDialog()
 void __fastcall TLoginDialog::LoadSessions()
 {
   SessionListView->Items->BeginUpdate();
-  try {
+  try
+  {
     SessionListView->Items->Clear();
     if (StoredSessions)
+    {
       for (int Index = 0; Index < StoredSessions->Count; Index++)
       {
         TListItem *Item;
         Item = SessionListView->Items->Add();
         LoadSessionItem(Item);
       }
-  } __finally {
+    }
+  }
+  __finally
+  {
     SessionListView->Items->EndUpdate();
   }
   SelectedSession = NULL;
@@ -80,8 +85,14 @@ void __fastcall TLoginDialog::LoadSessions()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Default()
 {
-  if (StoredSessions) FSessionData->Assign(StoredSessions->DefaultSettings);
-    else FSessionData->Default();
+  if (StoredSessions)
+  {
+    FSessionData->Assign(StoredSessions->DefaultSettings);
+  }
+  else
+  {
+    FSessionData->Default();
+  }
   LoadSession(FSessionData);
 }
 //---------------------------------------------------------------------
@@ -139,6 +150,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     RemoteDirectoryEdit->Text = aSessionData->RemoteDirectory;
     UpdateDirectoriesCheck->Checked = aSessionData->UpdateDirectories;
     CacheDirectoriesCheck->Checked = aSessionData->CacheDirectories;
+    ResolveSymlinksCheck->Checked = aSessionData->ResolveSymlinks;
 
     // Shell tab
     if (aSessionData->DefaultShell)
@@ -239,6 +251,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->RemoteDirectory = RemoteDirectoryEdit->Text;
   aSessionData->UpdateDirectories = UpdateDirectoriesCheck->Checked;
   aSessionData->CacheDirectories = CacheDirectoriesCheck->Checked;
+  aSessionData->ResolveSymlinks = ResolveSymlinksCheck->Checked;
 
   // Shell tab
   aSessionData->DefaultShell = DefaultShellButton->Checked;
@@ -294,8 +307,12 @@ void __fastcall TLoginDialog::UpdateControls()
     SHOW_NAVIGATION(AdvancedNavigationTree, ShowAdvancedLoginOptionsCheck->Checked);
     #undef SHOW_NAVIGATION
 
+    EnableControl(ShellIconsButton, SessionListView->Selected);
+
     if (!PrivateKeyEdit->Text.IsEmpty())
+    {
       PasswordEdit->Clear();
+    }
     EnableControl(PasswordEdit, PrivateKeyEdit->Text.IsEmpty());
 
     if (!PasswordEdit->Text.IsEmpty()) PrivateKeyEdit->Clear();
@@ -573,15 +590,27 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
       bool &Handled)
 {
   if (Action == LoadSessionAction)
-      LoadSessionAction->Enabled = SessionListView->Selected;
-  if (Action == DeleteSessionAction)
-      DeleteSessionAction->Enabled =
-        SessionListView->Selected && SessionData && !SessionData->Special;
-  if (Action == DesktopIconAction)
-      DesktopIconAction->Enabled = SessionListView->Selected;
-  if (Action == LoginAction)
-      LoginAction->Enabled = SessionData && SessionData->CanLogin;
-  Handled = True;
+  {
+    LoadSessionAction->Enabled = SessionListView->Selected;
+  }
+  else if (Action == DeleteSessionAction)
+  {
+    DeleteSessionAction->Enabled =
+      SessionListView->Selected && SessionData && !SessionData->Special;
+  }
+  else if (Action == DesktopIconAction)
+  {
+    DesktopIconAction->Enabled = SessionListView->Selected;
+  }
+  else if (Action == SendToHookAction)
+  {
+    SendToHookAction->Enabled = SessionListView->Selected;
+  }
+  else if (Action == LoginAction)
+  {
+    LoginAction->Enabled = SessionData && SessionData->CanLogin;
+  }
+  Handled = true;
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TLoginDialog::Execute()
@@ -776,6 +805,12 @@ void __fastcall TLoginDialog::ToolsMenuButtonClick(TObject * /*Sender*/)
   ToolsPopupMenu->Popup(PopupPoint.x, PopupPoint.y);
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ShellIconsButtonClick(TObject * /*Sender*/)
+{
+  TPoint PopupPoint = ShellIconsButton->ClientToScreen(TPoint(0, ShellIconsButton->Height));
+  IconsPopupMenu->Popup(PopupPoint.x, PopupPoint.y);
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
 {
   if (MessageDialog(FMTLOAD(CONFIRM_CREATE_SHORTCUT, (SelectedSession->Name)),
@@ -785,6 +820,19 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
     CreateDesktopShortCut(SelectedSession->Name, Application->ExeName,
       FORMAT("\"%s\"", (SelectedSession->Name)),
       FMTLOAD(SHORTCUT_INFO_TIP, (SelectedSession->Name, SelectedSession->InfoTip)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
+{
+  if (MessageDialog(FMTLOAD(CONFIRM_CREATE_SENDTO, (SelectedSession->Name)),
+        qtConfirmation, qaYes | qaNo, 0) == qaYes)
+  {
+    assert(SelectedSession);
+    CreateDesktopShortCut(FMTLOAD(SESSION_SENDTO_HOOK_NAME, (SelectedSession->Name)),
+      Application->ExeName,
+      FORMAT("\"%s\" /upload", (SelectedSession->Name)), "",
+      CSIDL_SENDTO);
   }
 }
 //---------------------------------------------------------------------------
@@ -800,5 +848,7 @@ void __fastcall TLoginDialog::SessionListViewCustomDrawItem(
   DefaultDraw = true;
 }
 //---------------------------------------------------------------------------
+
+
 
 

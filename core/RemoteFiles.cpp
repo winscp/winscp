@@ -195,7 +195,7 @@ Integer __fastcall TRemoteFile::GetIconIndex()
     if (IsHidden) Attrs |= FILE_ATTRIBUTE_HIDDEN;
 
     TSHFileInfo SHFileInfo;
-    AnsiString DumbFileName = (IsSymLink ? LinkTo : FileName);
+    AnsiString DumbFileName = (IsSymLink && !LinkTo.IsEmpty() ? LinkTo : FileName);
     // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
     if (DumbFileName == "..") DumbFileName = "dumb";
 
@@ -275,11 +275,13 @@ void __fastcall TRemoteFile::SetLinkedFile(TRemoteFile * value)
   }
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteFile::GetBrokenLink()
+bool __fastcall TRemoteFile::GetBrokenLink()
 {
+  assert(Terminal);
   // If file is symlink but we couldn't find linked file we assume broken link
-  return (IsSymLink && (FCyclicLink || !FLinkedFile));
-  // "!FLinkTo.IsEmpty()" removed because it does not work with SFTP 
+  return (IsSymLink && (FCyclicLink || !FLinkedFile) &&
+    Terminal->SessionData->ResolveSymlinks && Terminal->IsCapable[fcResolveSymlink]);
+  // "!FLinkTo.IsEmpty()" removed because it does not work with SFTP
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::SetModification(const TDateTime & value)
@@ -336,7 +338,8 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
   // Value stored in 'value' can be used for error message
   AnsiString Line = value;
   FIconIndex = -1;
-  try {
+  try
+  {
     AnsiString Col;
 
     // Do we need to do this (is ever TAB is LS output)?
@@ -440,11 +443,10 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
       FModification = AdjustDateTimeFromUnix(
         EncodeDate(Year, Month, Day) + EncodeTime(Hour, Min, 0, 0));
 
-        
       // separating space is already deleted, other spaces are treated as part of name
 
       {
-        Integer P;
+        int P;
 
         FLinkTo = "";
         if (IsSymLink)
@@ -456,7 +458,10 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
               P + strlen(SYMLINKSTR), Line.Length() - P + strlen(SYMLINKSTR) + 1);
             Line.SetLength(P - 1);
           }
-            else Abort();
+          else
+          {
+            Abort();
+          }
         }
         FFileName = UnixExtractFileName(Line);
       }
@@ -470,7 +475,12 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     throw ETerminal(&E, FmtLoadStr(LIST_LINE_ERROR, ARRAYOFCONST((value))));
   }
 
-  if (IsSymLink) FindLinkedFile();
+  assert(Terminal);
+  if (IsSymLink && Terminal->SessionData->ResolveSymlinks &&
+      Terminal->IsCapable[fcResolveSymlink])
+  {
+    FindLinkedFile();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::FindLinkedFile()
@@ -510,6 +520,7 @@ void __fastcall TRemoteFile::FindLinkedFile()
   }
   else
   {
+    assert(Terminal->SessionData->ResolveSymlinks && Terminal->IsCapable[fcResolveSymlink]);
     Terminal->ExceptionOnFail = true;
     try
     {
@@ -560,18 +571,16 @@ Integer __fastcall TRemoteFile::GetAttr()
 void __fastcall TRemoteFile::SetTerminal(TTerminal * value)
 {
   FTerminal = value;
-  if (FLinkedFile) FLinkedFile->Terminal = value;
+  if (FLinkedFile)
+  {
+    FLinkedFile->Terminal = value;
+  }
 }
 //=== TRemoteFileList ------------------------------------------------------
 __fastcall TRemoteFileList::TRemoteFileList():
   TObjectList()
 {
 }
-//---------------------------------------------------------------------------
-/*TRemoteFile * __fastcall TRemoteFileList::NewFile(TRemoteFile * ALinkedByFile)
-{
-  return new TRemoteFile(this, NULL, ALinkedByFile);
-} */
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFileList::AddFile(TRemoteFile * File)
 {
@@ -693,22 +702,30 @@ void __fastcall TRemoteDirectory::DuplicateTo(TRemoteFileList * Copy)
   }
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteDirectory::GetLoaded()
+bool __fastcall TRemoteDirectory::GetLoaded()
 {
   return ((Terminal != NULL) && Terminal->Active && !Directory.IsEmpty());
 }
 //---------------------------------------------------------------------------
-/*TRemoteFile * __fastcall TRemoteDirectory::NewFile(TRemoteFile * ALinkedByFile)
-{
-  return new TRemoteFile(this, Terminal, ALinkedByFile);
-} */
-//---------------------------------------------------------------------------
 TStrings * __fastcall TRemoteDirectory::GetSelectedFiles()
 {
-  if (!FSelectedFiles) FSelectedFiles = new TStringList();
-    else FSelectedFiles->Clear();
-  for (Integer Index = 0; Index < Count; Index ++)
-    if (Files[Index]->Selected) FSelectedFiles->Add(Files[Index]->FullFileName);
+  if (!FSelectedFiles)
+  {
+    FSelectedFiles = new TStringList();
+  }
+  else
+  {
+    FSelectedFiles->Clear();
+  }
+
+  for (int Index = 0; Index < Count; Index ++)
+  {
+    if (Files[Index]->Selected)
+    {
+      FSelectedFiles->Add(Files[Index]->FullFileName);
+    }
+  }
+
   return FSelectedFiles;
 }
 //---------------------------------------------------------------------------
@@ -722,8 +739,7 @@ void __fastcall TRemoteDirectory::SetIncludeParentDirectory(Boolean value)
       assert(IndexOf(ParentDirectory) < 0);
       Add(ParentDirectory);
     }
-      else
-    if (!value && ParentDirectory)
+    else if (!value && ParentDirectory)
     {
       assert(IndexOf(ParentDirectory) >= 0);
       Extract(ParentDirectory);
@@ -741,8 +757,7 @@ void __fastcall TRemoteDirectory::SetIncludeThisDirectory(Boolean value)
       assert(IndexOf(ThisDirectory) < 0);
       Add(ThisDirectory);
     }
-      else
-    if (!value && ThisDirectory)
+    else if (!value && ThisDirectory)
     {
       assert(IndexOf(ThisDirectory) >= 0);
       Extract(ThisDirectory);
@@ -848,7 +863,18 @@ void __fastcall TRights::SetText(AnsiString value)
 //---------------------------------------------------------------------------
 void __fastcall TRights::SetOctal(AnsiString value)
 {
-  assert(value.Length() == 3);
+  bool Correct = (value.Length() == 3);
+  if (Correct)
+  {
+    for (int i = 1; i <= value.Length() && Correct; i++)
+    {
+      Correct = value[i] >= '0' && value[i] <= '7';
+    }
+  }
+  if (!Correct)
+  {
+    throw Exception(FMTLOAD(INVALID_OCTAL_PERMISSIONS, (value)));
+  }
   #pragma option push -w-sig
   Number =
     ((value[1] - '0') << 6) +
@@ -860,7 +886,9 @@ void __fastcall TRights::SetOctal(AnsiString value)
 void __fastcall TRights::SetNumber(Word value)
 {
   for (int Index = 0; Index < RightsFlagCount; Index++)
+  {
     Right[(TRightsFlag)Index] = (Boolean)((value & (1 << (RightsFlagCount - 1 - Index))) != 0);
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRights::GetOctal() const

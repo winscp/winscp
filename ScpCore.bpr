@@ -76,9 +76,6 @@
 
   <FILES>
     <FILE type="override" value="core\SftpFileSystem.cpp" translator="Auto">
-      <CFLAG1 value=" -O2"/>
-      <WARNINGS value=" -w-8027 -w-8026"/>
-      <WARNOPTSTR value=" -w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig -wpin -wnod -wnak -w-8027 -w-8026 -wdef -wcln -wbbf -wasm -wamp -wamb"/>
     </FILE>
     <FILE type="override" value="core\KeyGen.cpp" translator="Auto">
     </FILE>

@@ -559,14 +559,11 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         item
           Alignment = taCenter
-          Width = 50
+          Width = 80
         end
         item
           Alignment = taCenter
           Width = 80
-        end
-        item
-          Width = 50
         end>
       OnMouseMove = SessionStatusBarMouseMove
       OnDrawPanel = SessionStatusBarDrawPanel
