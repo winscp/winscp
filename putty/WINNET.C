@@ -599,7 +599,11 @@ static void *sk_tcp_get_private_ptr(Socket s);
 static void sk_tcp_set_frozen(Socket s, int is_frozen);
 static const char *sk_tcp_socket_error(Socket s);
 
+#ifdef MPEXT
 extern char *do_select(Plug plug, SOCKET skt, int startup);
+#else
+extern char *do_select(SOCKET skt, int startup);
+#endif
 
 Socket sk_register(void *sock, Plug plug)
 {
@@ -646,7 +650,11 @@ Socket sk_register(void *sock, Plug plug)
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
+#ifdef MPEXT
     errstr = do_select(plug, ret->s, 1);
+#else
+    errstr = do_select(ret->s, 1);
+#endif
     if (errstr) {
 	ret->error = errstr;
 	return (Socket) ret;
@@ -658,7 +666,7 @@ Socket sk_register(void *sock, Plug plug)
 }
 
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
-	      int nodelay, Plug plug)
+	      int nodelay, int keepalive, Plug plug)
 {
     static const struct socket_function_table fn_table = {
 	sk_tcp_plug,
@@ -720,6 +728,11 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
     if (nodelay) {
 	BOOL b = TRUE;
 	p_setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void *) &b, sizeof(b));
+    }
+
+    if (keepalive) {
+	BOOL b = TRUE;
+	p_setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (void *) &b, sizeof(b));
     }
 
     /*
@@ -797,7 +810,11 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
+#ifdef MPEXT
     errstr = do_select(plug, s, 1);
+#else
+    errstr = do_select(s, 1);
+#endif
     if (errstr) {
 	ret->error = errstr;
 	return (Socket) ret;
@@ -966,7 +983,11 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
+#ifdef MPEXT
     errstr = do_select(plug, s, 1);
+#else
+    errstr = do_select(s, 1);
+#endif
     if (errstr) {
 	ret->error = errstr;
 	return (Socket) ret;
@@ -979,11 +1000,19 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
 
 static void sk_tcp_close(Socket sock)
 {
+#ifdef MPEXT
     extern char *do_select(Plug plug, SOCKET skt, int startup);
+#else
+	extern char *do_select(SOCKET skt, int startup);
+#endif
     Actual_Socket s = (Actual_Socket) sock;
 
     del234(sktree, s);
+#ifdef MPEXT
     do_select(s->plug, s->s, 0);
+#else
+    do_select(s->s, 0);
+#endif
     p_closesocket(s->s);
     sfree(s);
 }
@@ -1356,4 +1385,12 @@ int net_service_lookup(char *service)
 	return p_ntohs(se->s_port);
     else
 	return 0;
+}
+
+SockAddr platform_get_x11_unix_address(int displaynum, char **canonicalname)
+{
+    SockAddr ret = snew(struct SockAddr_tag);
+    memset(ret, 0, sizeof(struct SockAddr_tag));
+    ret->error = "unix sockets not supported on this platform";
+    return ret;
 }

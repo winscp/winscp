@@ -509,9 +509,6 @@ void __fastcall TScpCommanderForm::UpdateControls()
   CommandLineLabel->Caption = DirView(osCurrent)->PathName;
   CommandLinePromptLabel->Caption =
     (FCurrentSide == osRemote) ? "$" : ">";
-  EnableControl(CommandLineCombo,
-    (FCurrentSide == osLocal) ||
-    ((Terminal != NULL) && Terminal->IsCapable[fcAnyCommand]));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ChangePath(TOperationSide Side)
@@ -1035,7 +1032,8 @@ void __fastcall TScpCommanderForm::ExecuteCommandLine()
 {
   if (!CommandLineCombo->Text.Trim().IsEmpty() &&
       ((FCurrentSide != osRemote) ||
-       (Terminal->AllowedAnyCommand(CommandLineCombo->Text))))
+       (Terminal->AllowedAnyCommand(CommandLineCombo->Text) &&
+        EnsureAnyCommandCapability())))
   {
     CommandLinePopulate();
     CommandLineCombo->SaveToHistory();

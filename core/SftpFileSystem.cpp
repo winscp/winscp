@@ -26,8 +26,11 @@
 #define SSH_FILEXFER_ATTR_ACCESSTIME        0x00000008
 #define SSH_FILEXFER_ATTR_CREATETIME        0x00000010
 #define SSH_FILEXFER_ATTR_MODIFYTIME        0x00000020
+#define SSH_FILEXFER_ATTR_ACL               0x00000040
 #define SSH_FILEXFER_ATTR_OWNERGROUP        0x00000080
 #define SSH_FILEXFER_ATTR_SUBSECOND_TIMES   0x00000100
+#define SSH_FILEXFER_ATTR_BITS              0x00000200
+#define SSH_FILEXFER_ATTR_EXTENDED          0x80000000
 
 #define SSH_FILEXFER_ATTR_COMMON \
   (SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_OWNERGROUP | \
@@ -41,6 +44,39 @@
 #define SSH_FILEXFER_TYPE_UNKNOWN          5
 
 #define SSH_FXF_TEXT            0x00000040
+
+#define SSH_FXF_ACCESS_DISPOSITION        0x00000007
+#define     SSH_FXF_CREATE_NEW            0x00000000
+#define     SSH_FXF_CREATE_TRUNCATE       0x00000001
+#define     SSH_FXF_OPEN_EXISTING         0x00000002
+#define     SSH_FXF_OPEN_OR_CREATE        0x00000003
+#define     SSH_FXF_TRUNCATE_EXISTING     0x00000004
+#define SSH_FXF_ACCESS_APPEND_DATA        0x00000008
+#define SSH_FXF_ACCESS_APPEND_DATA_ATOMIC 0x00000010
+#define SSH_FXF_ACCESS_TEXT_MODE          0x00000020
+#define SSH_FXF_ACCESS_READ_LOCK          0x00000040
+#define SSH_FXF_ACCESS_WRITE_LOCK         0x00000080
+#define SSH_FXF_ACCESS_DELETE_LOCK        0x00000100
+
+#define ACE4_READ_DATA         0x00000001
+#define ACE4_LIST_DIRECTORY    0x00000001
+#define ACE4_WRITE_DATA        0x00000002
+#define ACE4_ADD_FILE          0x00000002
+#define ACE4_APPEND_DATA       0x00000004
+#define ACE4_ADD_SUBDIRECTORY  0x00000004
+#define ACE4_READ_NAMED_ATTRS  0x00000008
+#define ACE4_WRITE_NAMED_ATTRS 0x00000010
+#define ACE4_EXECUTE           0x00000020
+#define ACE4_DELETE_CHILD      0x00000040
+#define ACE4_READ_ATTRIBUTES   0x00000080
+#define ACE4_WRITE_ATTRIBUTES  0x00000100
+#define ACE4_DELETE            0x00010000
+#define ACE4_READ_ACL          0x00020000
+#define ACE4_WRITE_ACL         0x00040000
+#define ACE4_WRITE_OWNER       0x00080000
+#define ACE4_SYNCHRONIZE       0x00100000
+
+#define SSH_FILEXFER_ATTR_FLAGS_HIDDEN           0x00000004
 
 #define SFTP_MAX_PACKET_LEN   102400
 //---------------------------------------------------------------------------
@@ -56,7 +92,7 @@
 #define OGQ_LIST_GROUPS 0x02
 //---------------------------------------------------------------------------
 const int SFTPMinVersion = 0;
-const int SFTPMaxVersion = 4;
+const int SFTPMaxVersion = 5;
 const int SFTPNoMessageNumber = -1;
 
 const int asNo =            0;
@@ -362,7 +398,9 @@ public:
     if (Version >= 4)
     {
       char FXType = GetByte();
-      static char Types[] = "-DLSU";
+      // -:regular, D:directory, L:symlink, S:special, U:unknown
+      // O:socket, C:char devide, B:block device, F:fifo 
+      static char* Types = "-DLSUOCBF";
       if (FXType < 1 || FXType > (char)strlen(Types))
       {
         throw Exception(FMTLOAD(SFTP_UNKNOWN_FILE_TYPE, (int(FXType))));
@@ -430,6 +468,21 @@ public:
       else
       {
         File->Modification = Now();
+      }
+    }
+
+    if (Flags & SSH_FILEXFER_ATTR_ACL)
+    {
+      GetString();
+    }
+
+    if (Flags & SSH_FILEXFER_ATTR_BITS)
+    {
+      assert(Version >= 5);
+      unsigned long Bits = GetCardinal();
+      if (FLAGSET(Bits, SSH_FILEXFER_ATTR_FLAGS_HIDDEN))
+      {
+        File->IsHidden = true;
       }
     }
 
@@ -1268,6 +1321,9 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     SFTP_STATUS_FILE_ALREADY_EXISTS,
     SFTP_STATUS_WRITE_PROTECT,
     SFTP_STATUS_NO_MEDIA,
+    SFTP_STATUS_NO_SPACE_ON_FILESYSTEM,
+    SFTP_STATUS_QUOTA_EXCEEDED,
+    SFTP_STATUS_UNKNOWN_PRINCIPLE
   };
   int Message;
   if ((AllowStatus & (0x01 << Code)) == 0)
@@ -1282,26 +1338,38 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     }
     AnsiString ServerMessage;
     AnsiString LanguageTag;
+    AnsiString AdditionalInfo;
     if (FVersion >= 3)
     {
       ServerMessage = DecodeUTF(Packet->GetString());
       LanguageTag = Packet->GetString();
+      if ((FVersion >= 5) && (Message == SFTP_STATUS_UNKNOWN_PRINCIPLE))
+      {
+        while (Packet->NextData != NULL)
+        {
+          if (!AdditionalInfo.IsEmpty())
+          {
+            AdditionalInfo += ", ";
+          }
+          AdditionalInfo += Packet->GetString();
+        }
+      }
     }
     else
     {
       ServerMessage = LoadStr(SFTP_SERVER_MESSAGE_UNSUPPORTED);
-    }
-    if (LanguageTag.IsEmpty())
-    {
-      LanguageTag = "*";
     }
     if (FTerminal->IsLogging())
     {
       FTerminal->Log->Add(llOutput, FORMAT("Status/error code: %d, Message: %d, Server: %s, Language: %s ",
         (int(Code), (int)Packet->MessageNumber, ServerMessage, LanguageTag)));
     }
-    AnsiString Error = FMTLOAD(SFTP_ERROR_FORMAT, (LoadStr(Message), int(Code),
-      ServerMessage, LanguageTag, int(Packet->RequestType)));
+    if (!LanguageTag.IsEmpty())
+    {
+      LanguageTag = FORMAT("(%s)", (LanguageTag));
+    }
+    AnsiString Error = FMTLOAD(SFTP_ERROR_FORMAT, (LoadStr(Message) + AdditionalInfo,
+      int(Code), ServerMessage, LanguageTag, int(Packet->RequestType)));
     FTerminal->TerminalError(NULL, Error);
     return 0;
   }
@@ -1683,7 +1751,12 @@ AnsiString __fastcall TSFTPFileSystem::GetCurrentDirectory()
 void __fastcall TSFTPFileSystem::DoStartup()
 {
   TSFTPPacket Packet(SSH_FXP_INIT);
-  Packet.AddCardinal(SFTPMaxVersion);
+  int MaxVersion = FTerminal->SessionData->SFTPMaxVersion;
+  if (MaxVersion > SFTPMaxVersion)
+  {
+    MaxVersion = SFTPMaxVersion;
+  }
+  Packet.AddCardinal(MaxVersion);
 
   try
   {
@@ -2222,6 +2295,10 @@ void __fastcall TSFTPFileSystem::RenameFile(const AnsiString FileName,
     TargetName = NewName;
   }
   Packet.AddString(TargetName);
+  if (FVersion >= 5)
+  {
+    Packet.AddCardinal(0);
+  }
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
@@ -2775,7 +2852,42 @@ AnsiString __fastcall TSFTPFileSystem::SFTPOpenRemoteFile(
   TSFTPPacket Packet(SSH_FXP_OPEN);
 
   Packet.AddString(FileName);
-  Packet.AddCardinal(OpenType);
+  if (FVersion < 5)
+  {
+    Packet.AddCardinal(OpenType);
+  }
+  else
+  {
+    unsigned long Access =
+      FLAGMASK(FLAGSET(OpenType, SSH_FXF_READ), ACE4_READ_DATA) |
+      FLAGMASK(FLAGSET(OpenType, SSH_FXF_WRITE), ACE4_WRITE_DATA | ACE4_APPEND_DATA);
+
+    unsigned long Flags;
+
+    if (FLAGSET(OpenType, SSH_FXF_CREAT | SSH_FXF_EXCL))
+    {
+      Flags = SSH_FXF_CREATE_NEW;
+    }
+    else if (FLAGSET(OpenType, SSH_FXF_CREAT | SSH_FXF_TRUNC))
+    {
+      Flags = SSH_FXF_CREATE_TRUNCATE;
+    }
+    else if (FLAGSET(OpenType, SSH_FXF_CREAT))
+    {
+      Flags = SSH_FXF_OPEN_OR_CREATE;
+    }
+    else
+    {
+      Flags = SSH_FXF_OPEN_EXISTING;
+    }
+
+    Flags |=
+      FLAGMASK(FLAGSET(OpenType, SSH_FXF_APPEND), SSH_FXF_ACCESS_APPEND_DATA) |
+      FLAGMASK(FLAGSET(OpenType, SSH_FXF_TEXT), SSH_FXF_ACCESS_TEXT_MODE);
+
+    Packet.AddCardinal(Access);
+    Packet.AddCardinal(Flags);
+  }
   Packet.AddProperties(NULL, NULL, NULL, NULL, NULL,
     Size >= 0 ? &Size : NULL, false, FVersion);
 

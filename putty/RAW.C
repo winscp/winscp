@@ -69,7 +69,8 @@ static void raw_sent(Plug plug, int bufsize)
  */
 static const char *raw_init(void *frontend_handle, void **backend_handle,
 			    Config *cfg,
-			    char *host, int port, char **realhost, int nodelay)
+			    char *host, int port, char **realhost, int nodelay,
+			    int keepalive)
 {
     static const struct plug_function_table fn_table = {
 	raw_closing,
@@ -115,7 +116,7 @@ static const char *raw_init(void *frontend_handle, void **backend_handle,
 	logevent(raw->frontend, buf);
 	sfree(buf);
     }
-    raw->s = new_connection(addr, *realhost, port, 0, 1, nodelay,
+    raw->s = new_connection(addr, *realhost, port, 0, 1, nodelay, keepalive,
 			    (Plug) raw, cfg);
     if ((err = sk_socket_error(raw->s)) != NULL)
 	return err;

@@ -101,7 +101,8 @@ void __fastcall TSecureShell::Open()
   SessionData->StoreToConfig(FConfig);
 
   InitError = FBackend->init(this, &FBackendHandle, FConfig,
-    SessionData->HostName.c_str(), SessionData->PortNumber, &RealHost, 0);
+    SessionData->HostName.c_str(), SessionData->PortNumber, &RealHost, 0,
+    FConfig->tcp_keepalives);
   if (InitError)
   {
     FatalError(InitError);
@@ -1008,7 +1009,7 @@ TLogLineType __fastcall TSessionLog::GetType(Integer Index)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSessionLog::Add(TLogLineType aType, AnsiString aLine)
+void __fastcall TSessionLog::DoAdd(bool Formatted, TLogLineType aType, AnsiString aLine)
 {
   assert(Configuration);
   if (IsLogging())
@@ -1025,18 +1026,34 @@ void __fastcall TSessionLog::Add(TLogLineType aType, AnsiString aLine)
         while (!aLine.IsEmpty())
         {
           AnsiString NewStr;
-          NewStr = AnsiString(LogLineMarks[aType]) + CutToChar(aLine, '\n', False);
+          AnsiString FileStr;
+          
+          if (Formatted)
+          {
+            assert(aLine.Length() >= 2);
+            FileStr = aLine;
+            NewStr = aLine;
+            NewStr.Delete(2, 1);
+            aLine = "";
+          }
+          else
+          {
+            NewStr = AnsiString(LogLineMarks[aType]) + CutToChar(aLine, '\n', False);
+            FileStr = NewStr;
+            FileStr.Insert(' ', 2);
+          }
+
           if (Configuration->Logging)
           {
             TStringList::Add(NewStr);
             FLoggedLines++;
           }
-          NewStr.Insert(' ', 2);
-          DoAddLine(NewStr);
+
+          DoAddLine(FileStr);
           if (Configuration->Logging && Configuration->LogToFile)
           {
             if (!FFile) OpenLogFile();
-            if (FFile) fprintf((FILE *)FFile, "%s\n", NewStr.c_str());
+            if (FFile) fprintf((FILE *)FFile, "%s\n", FileStr.c_str());
           }
         }
         if (Configuration->Logging)
@@ -1067,6 +1084,17 @@ void __fastcall TSessionLog::Add(TLogLineType aType, AnsiString aLine)
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::Add(TLogLineType aType, AnsiString aLine)
+{
+  DoAdd(false, aType, aLine);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::AddFromOtherLog(TObject * /*Sender*/,
+  const AnsiString AddedLine)
+{
+  DoAdd(true, llMessage, AddedLine);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::AddException(Exception * E)

@@ -22,7 +22,6 @@ extern const char EngShortMonthNames[12][4];
 AnsiString ReplaceChar(AnsiString Str, Char A, Char B);
 AnsiString DeleteChar(AnsiString Str, Char C);
 void PackStr(AnsiString &Str);
-AnsiString GetTemporaryPath();
 AnsiString MakeValidFileName(AnsiString FileName);
 AnsiString RootKeyToStr(HKEY RootKey);
 AnsiString BooleanToStr(bool B);

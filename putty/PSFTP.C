@@ -1,5 +1,5 @@
 /*
- * psftp.c: front end for PSFTP.
+ * psftp.c: (platform-independent) front end for PSFTP.
  */
 
 #include <stdio.h>
@@ -1765,7 +1765,7 @@ static void usage(void)
 {
     printf("PuTTY Secure File Transfer (SFTP) client\n");
     printf("%s\n", ver);
-    printf("Usage: psftp [options] user@host\n");
+    printf("Usage: psftp [options] [user@]host\n");
     printf("Options:\n");
     printf("  -b file   use specified batchfile\n");
     printf("  -bc       output batchfile commands\n");
@@ -1779,7 +1779,14 @@ static void usage(void)
     printf("  -C        enable compression\n");
     printf("  -i key    private key file for authentication\n");
     printf("  -batch    disable all interactive prompts\n");
+    printf("  -V        print version information\n");
     cleanup_exit(1);
+}
+
+static void version(void)
+{
+  printf("psftp: %s\n", ver);
+  cleanup_exit(1);
 }
 
 /*
@@ -1805,11 +1812,27 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
 	    user = userhost;
     }
 
-    /* Try to load settings for this host */
-    do_defaults(host, &cfg);
-    if (cfg.host[0] == '\0') {
-	/* No settings for this host; use defaults */
-	do_defaults(NULL, &cfg);
+    /*
+     * If we haven't loaded session details already (e.g., from -load),
+     * try looking for a session called "host".
+     */
+    if (!loaded_session) {
+	/* Try to load settings for `host' into a temporary config */
+	Config cfg2;
+	cfg2.host[0] = '\0';
+	do_defaults(host, &cfg2);
+	if (cfg2.host[0] != '\0') {
+	    /* Settings present and include hostname */
+	    /* Re-load data into the real config. */
+	    do_defaults(host, &cfg);
+	} else {
+	    /* Session doesn't exist or mention a hostname. */
+	    /* Use `host' as a bare hostname. */
+	    strncpy(cfg.host, host, sizeof(cfg.host) - 1);
+	    cfg.host[sizeof(cfg.host) - 1] = '\0';
+	}
+    } else {
+	/* Patch in hostname `host' to session details. */
 	strncpy(cfg.host, host, sizeof(cfg.host) - 1);
 	cfg.host[sizeof(cfg.host) - 1] = '\0';
     }
@@ -1822,6 +1845,15 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
         cfg.protocol = PROT_SSH;
         cfg.port = 22;
     }
+
+    /*
+     * If saved session / Default Settings says SSH-1 (`1 only' or `1'),
+     * then change it to SSH-2, on the grounds that that's more likely to
+     * work for SFTP. (Can be overridden with `-1' option.)
+     * But if it says `2 only' or `2', respect which.
+     */
+    if (cfg.sshprot != 2 && cfg.sshprot != 3)
+	cfg.sshprot = 2;
 
     /*
      * Enact command-line overrides.
@@ -1890,9 +1922,6 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
     if (portnumber)
 	cfg.port = portnumber;
 
-    /* SFTP uses SSH2 by default always */
-    cfg.sshprot = 2;
-
     /*
      * Disable scary things which shouldn't be enabled for simple
      * things like SCP and SFTP: agent forwarding, port forwarding,
@@ -1932,7 +1961,8 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
 
     back = &ssh_backend;
 
-    err = back->init(NULL, &backhandle, &cfg, cfg.host, cfg.port, &realhost,0);
+    err = back->init(NULL, &backhandle, &cfg, cfg.host, cfg.port, &realhost,
+		     0, cfg.tcp_keepalives);
     if (err != NULL) {
 	fprintf(stderr, "ssh_init: %s\n", err);
 	return 1;
@@ -1988,6 +2018,10 @@ int psftp_main(int argc, char *argv[])
 
     userhost = user = NULL;
 
+    /* Load Default Settings before doing anything else. */
+    do_defaults(NULL, &cfg);
+    loaded_session = FALSE;
+
     errors = 0;
     for (i = 1; i < argc; i++) {
 	int ret;
@@ -2010,6 +2044,8 @@ int psftp_main(int argc, char *argv[])
 	} else if (strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "-?") == 0) {
 	    usage();
+	} else if (strcmp(argv[i], "-V") == 0) {
+	    version();
 	} else if (strcmp(argv[i], "-batch") == 0) {
 	    console_batch_mode = 1;
 	} else if (strcmp(argv[i], "-b") == 0 && i + 1 < argc) {
@@ -2029,6 +2065,15 @@ int psftp_main(int argc, char *argv[])
     argc -= i;
     argv += i;
     back = NULL;
+
+    /*
+     * If the loaded session provides a hostname, and a hostname has not
+     * otherwise been specified, pop it in `userhost' so that
+     * `psftp -load sessname' is sufficient to start a session.
+     */
+    if (!userhost && cfg.host[0] != '\0') {
+	userhost = dupstr(cfg.host);
+    }
 
     /*
      * If a user@host string has already been provided, connect to

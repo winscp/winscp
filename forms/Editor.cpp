@@ -14,22 +14,28 @@
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-void __fastcall DoEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
-  TNotifyEvent OnFileChanged, const AnsiString Caption)
+TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
+  TNotifyEvent OnFileChanged, TNotifyEvent OnClose, const AnsiString Caption,
+  bool ShowWindowButton)
 {
   TEditorForm * Dialog = new TEditorForm(Application);
   try
   {
+    Dialog->ShowWindowButton = ShowWindowButton;
     Dialog->FileName = FileName;
     Dialog->ParentForm = ParentForm;
     Dialog->Caption = Caption.IsEmpty() ? FileName : Caption;
     Dialog->OnFileChanged = OnFileChanged;
-    Dialog->Execute();
+    Dialog->OnWindowClose = OnClose;
+    Dialog->Show();
   }
-  __finally
+  catch(...)
   {
     delete Dialog;
+    throw;
   }
+
+  return Dialog;
 }
 //---------------------------------------------------------------------------
 __fastcall TEditorForm::TEditorForm(TComponent* Owner)
@@ -39,6 +45,7 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FCaretPos.x = -1;
   FCaretPos.y = -1;
   FLastFindDialog = NULL;
+  FShowWindowButton = false;
   ApplyConfiguration();
   FindDialog->FindText = WinConfiguration->Editor.FindText;
   TFindOptions Options = FindDialog->Options;
@@ -66,12 +73,6 @@ __fastcall TEditorForm::~TEditorForm()
     WinConfiguration->Editor.FindMatchCase = FLastFindDialog->Options.Contains(frMatchCase);
     WinConfiguration->Editor.FindWholeWord = FLastFindDialog->Options.Contains(frWholeWord);
   }
-}
-//---------------------------------------------------------------------------
-bool __fastcall TEditorForm::Execute()
-{
-  ShowModal();
-  return true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::SetFileName(const AnsiString value)
@@ -256,6 +257,7 @@ void __fastcall TEditorForm::UpdateControls()
   }
   StatusBar->Panels->Items[3]->Text =
     (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : AnsiString(""));
+  EditorActions->UpdateAction(SaveAction);  
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::EditorMemoMouseUp(TObject * /*Sender*/,
@@ -446,6 +448,40 @@ void __fastcall TEditorForm::GoToLine()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TEditorForm::FormClose(TObject * Sender,
+  TCloseAction & Action)
+{
+  if (FOnWindowClose != NULL)
+  {
+    try
+    {
+      FOnWindowClose(Sender);
+    }
+    catch(Exception & E)
+    {
+      ShowExtendedException(&E);
+    }
+  }
 
-
+  Action = caFree;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::SetShowWindowButton(bool value)
+{
+  if (value != ShowWindowButton)
+  {
+    FShowWindowButton = value;
+    RecreateWnd();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::CreateParams(TCreateParams & Params)
+{
+  TForm::CreateParams(Params);
+  if (ShowWindowButton)
+  {
+    Params.WndParent = GetDesktopWindow();
+  }
+}
+//---------------------------------------------------------------------------
 

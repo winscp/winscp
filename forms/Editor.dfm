@@ -23,7 +23,8 @@ object EditorForm: TEditorForm
     000000070000000700000003000000030000000100000021000000730000}
   KeyPreview = True
   OldCreateOrder = False
-  Position = poDefault
+  Position = poDefaultPosOnly
+  OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   PixelsPerInch = 96

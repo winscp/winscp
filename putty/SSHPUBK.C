@@ -79,8 +79,8 @@ static int loadrsakey_main(FILE * fp, struct RSAKey *key, int pub_only,
     i += 4;
 
     /* Now the serious stuff. An ordinary SSH 1 public key. */
-    i += makekey(buf + i, key, NULL, 1);
-    if (len - i < 0)
+    i += makekey(buf + i, len, key, NULL, 1);
+    if (i < 0)
 	goto end;		       /* overran */
 
     if (pub_only) {
@@ -138,18 +138,18 @@ static int loadrsakey_main(FILE * fp, struct RSAKey *key, int pub_only,
      * decryption exponent, and then the three auxiliary values
      * (iqmp, q, p).
      */
-    i += makeprivate(buf + i, key);
-    if (len - i < 0)
-	goto end;
-    i += ssh1_read_bignum(buf + i, &key->iqmp);
-    if (len - i < 0)
-	goto end;
-    i += ssh1_read_bignum(buf + i, &key->q);
-    if (len - i < 0)
-	goto end;
-    i += ssh1_read_bignum(buf + i, &key->p);
-    if (len - i < 0)
-	goto end;
+    j = makeprivate(buf + i, len - i, key);
+    if (j < 0) goto end;
+    i += j;
+    j = ssh1_read_bignum(buf + i, len - i, &key->iqmp);
+    if (j < 0) goto end;
+    i += j;
+    j = ssh1_read_bignum(buf + i, len - i, &key->q);
+    if (j < 0) goto end;
+    i += j;
+    j = ssh1_read_bignum(buf + i, len - i, &key->p);
+    if (j < 0) goto end;
+    i += j;
 
     if (!rsa_verify(key)) {
 	*error = "rsa_verify failed";

@@ -356,8 +356,8 @@ SockAddr name_lookup(char *host, int port, char **canonicalname,
 
 Socket new_connection(SockAddr addr, char *hostname,
 		      int port, int privport,
-		      int oobinline, int nodelay, Plug plug,
-		      const Config *cfg)
+		      int oobinline, int nodelay, int keepalive,
+		      Plug plug, const Config *cfg)
 {
     static const struct socket_function_table socket_fn_table = {
 	sk_proxy_plug,
@@ -388,7 +388,8 @@ Socket new_connection(SockAddr addr, char *hostname,
 	Socket sret;
 
 	if ((sret = platform_new_connection(addr, hostname, port, privport,
-					    oobinline, nodelay, plug, cfg)) !=
+					    oobinline, nodelay, keepalive,
+					    plug, cfg)) !=
 	    NULL)
 	    return sret;
 
@@ -444,7 +445,7 @@ Socket new_connection(SockAddr addr, char *hostname,
 	 */
 	ret->sub_socket = sk_new(proxy_addr, cfg->proxy_port,
 				 privport, oobinline,
-				 nodelay, (Plug) pplug);
+				 nodelay, keepalive, (Plug) pplug);
 	if (sk_socket_error(ret->sub_socket) != NULL)
 	    return (Socket) ret;
 
@@ -456,7 +457,7 @@ Socket new_connection(SockAddr addr, char *hostname,
     }
 
     /* no proxy, so just return the direct socket */
-    return sk_new(addr, port, privport, oobinline, nodelay, plug);
+    return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug);
 }
 
 Socket new_listener(char *srcaddr, int port, Plug plug, int local_host_only,

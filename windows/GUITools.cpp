@@ -10,6 +10,7 @@
 #include "GUITools.h"
 #include "GUIConfiguration.h"
 #include <TextsWin.h>
+#include <TextsCore.h>
 #include <ScpMain.h>
 #include <SessionData.h>
 //---------------------------------------------------------------------------
@@ -94,6 +95,28 @@ bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params)
 {
   return ((int)ShellExecute(NULL, "open", (char*)Path.data(),
     (char*)Params.data(), NULL, SW_SHOWNORMAL) > 32);
+}
+//---------------------------------------------------------------------------
+bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params,
+  HANDLE & Handle)
+{
+  bool Result;
+
+  TShellExecuteInfo ExecuteInfo;
+  memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
+  ExecuteInfo.cbSize = sizeof(ExecuteInfo);
+  ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+  ExecuteInfo.hwnd = Application->Handle;
+  ExecuteInfo.lpFile = (char*)Path.data();
+  ExecuteInfo.lpParameters = (char*)Params.data();
+  ExecuteInfo.nShow = SW_SHOW;
+
+  Result = (ShellExecuteEx(&ExecuteInfo) != 0);
+  if (Result)
+  {
+    Handle = ExecuteInfo.hProcess;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path)
@@ -232,5 +255,17 @@ bool __fastcall DeleteDirectory(const AnsiString DirName)
   FindClose(sr);
   if (retval) retval = RemoveDir(DirName); // VCL function
   return retval;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TranslateExceptionMessage(const Exception * E)
+{
+  if (dynamic_cast<const EAccessViolation*>(E) != NULL)
+  {
+    return LoadStr(ACCESS_VIOLATION_ERROR);
+  }
+  else
+  {
+    return E->Message;
+  }
 }
 

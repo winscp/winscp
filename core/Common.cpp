@@ -102,19 +102,6 @@ void PackStr(AnsiString &Str)
   Str = Str.c_str();
 }
 //---------------------------------------------------------------------------
-AnsiString GetTemporaryPath()
-{
-  AnsiString Path;
-  Path.SetLength(255);
-  GetTempPath(Path.Length(), Path.c_str());
-  PackStr(Path);
-  if (!Path.IsPathDelimiter(Path.Length()))
-  {
-    Path += '\\';
-  }
-  return Path;
-}
-//---------------------------------------------------------------------------
 AnsiString MakeValidFileName(AnsiString FileName)
 {
   AnsiString IllegalChars = ";,=+<>|\"[] \\/?*";

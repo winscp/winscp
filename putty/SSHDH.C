@@ -123,7 +123,7 @@ Bignum dh_create_e(void *handle, int nbits)
 	    ssh1_write_bignum(buf, ctx->qmask);
 	    for (i = 2; i < nbytes; i++)
 		buf[i] &= random_byte();
-	    ssh1_read_bignum(buf, &ctx->x);
+	    ssh1_read_bignum(buf, nbytes, &ctx->x);   /* can't fail */
 	} else {
 	    int b, nb;
 	    ctx->x = bn_power_2(nbits);

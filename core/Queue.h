@@ -130,6 +130,7 @@ public:
   static bool __fastcall IsUserActionStatus(TStatus Status);
 
   __property TStatus Status = { read = GetStatus };
+  __property HANDLE CompleteEvent = { read = FCompleteEvent, write = FCompleteEvent };
 
 protected:
   TStatus FStatus;
@@ -138,6 +139,7 @@ protected:
   TFileOperationProgressType * FProgressData;
   TQueueItem::TInfo * FInfo;
   TTerminalQueue * FQueue;
+  HANDLE FCompleteEvent;
 
   __fastcall TQueueItem();
   virtual __fastcall ~TQueueItem();

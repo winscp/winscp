@@ -1,5 +1,5 @@
 /*
- * PuTTY key generation front end.
+ * PuTTY key generation front end (Windows).
  */
 
 #include <time.h>
@@ -928,7 +928,7 @@ static int CALLBACK MainDlgProc(HWND hwnd, UINT msg,
 		       IDC_BITSSTATIC, IDC_BITS, 20);
 	    endbox(&cp);
 	}
-	CheckRadioButton(hwnd, IDC_KEYSSH1, IDC_KEYSSH2DSA, IDC_KEYSSH1);
+	CheckRadioButton(hwnd, IDC_KEYSSH1, IDC_KEYSSH2DSA, IDC_KEYSSH2RSA);
 	CheckMenuRadioItem(state->keymenu, IDC_KEYSSH1, IDC_KEYSSH2DSA,
 			   IDC_KEYSSH1, MF_BYCOMMAND);
 	SetDlgItemInt(hwnd, IDC_BITS, DEFAULT_KEYSIZE, FALSE);

@@ -136,6 +136,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(ConfirmClosingSession);
   BOOLPROP(ConfirmExitOnCompletion);
   BOOLPROP(UseLocationProfiles);
+  BOOLPROP(ConfirmCommandSession);
   BOOLPROP(ContinueOnError);
   BOOLPROP(DDAllowMoveInit);
   BOOLPROP(BeepOnFinish);
@@ -174,6 +175,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
 
   // editor
+  EditorSingleEditorOnCheck->Checked = WinConfiguration->Editor.SingleEditor;
+  EditorSingleEditorOffCheck->Checked = !WinConfiguration->Editor.SingleEditor;
+
   EditorInternalButton->Checked = WinConfiguration->Editor.Editor == edInternal;
   EditorExternalButton->Checked = WinConfiguration->Editor.Editor == edExternal;
 
@@ -262,6 +266,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmClosingSession);
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(UseLocationProfiles);
+    BOOLPROP(ConfirmCommandSession);
     BOOLPROP(ContinueOnError);
     BOOLPROP(DDAllowMoveInit);
     BOOLPROP(BeepOnFinish);
@@ -298,6 +303,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->RandomSeedFile = RandomSeedFileEdit->Text;
 
     // editor
+    WinConfiguration->Editor.SingleEditor = EditorSingleEditorOnCheck->Checked;
+
     WinConfiguration->Editor.Editor =
       (EditorInternalButton->Checked || ExternalEditorEdit->Text.IsEmpty()) ?
         edInternal : edExternal;

@@ -643,6 +643,8 @@ __published:	// IDE-managed Components
   TMenuItem *N78;
   TMenuItem *Tree8;
   TAction *GoToTreeAction;
+  TMenuItem *OpenDirectoryBookmark1;
+  TMenuItem *OpenDirectoryBookmark2;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

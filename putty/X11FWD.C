@@ -226,6 +226,18 @@ int x11_get_screen_number(char *display)
     return atoi(display + n + 1);
 }
 
+/* Find the right display, returns an allocated string */
+char *x11_display(const char *display) {
+    if(!display || !*display)
+	if(!(display = getenv("DISPLAY")))
+	    display = ":0";
+    if(display[0] == ':') {
+	/* no transport specified, use whatever we think is best */
+	return dupcat(platform_x11_best_transport, display, (char *)0);
+    } else
+	return dupstr(display);
+}
+
 /*
  * Called to set up the raw connection.
  * 
@@ -250,36 +262,39 @@ const char *x11_init(Socket * s, char *display, void *c, void *auth,
     int n, displaynum;
     struct X11Private *pr;
 
+    /* default display */
+    display = x11_display(display);
     /*
      * Split up display name into host and display-number parts.
      */
     n = strcspn(display, ":");
+    assert(n != 0);		/* x11_display() promises this */
     if (display[n])
 	displaynum = atoi(display + n + 1);
     else
 	displaynum = 0;		       /* sensible default */
     if (n > sizeof(host) - 1)
 	n = sizeof(host) - 1;
-    if (n > 0) {
-	strncpy(host, display, n);
-	host[n] = '\0';
+    strncpy(host, display, n);
+    host[n] = '\0';
+    sfree(display);
+    
+    if(!strcmp(host, "unix")) {
+	/* use AF_UNIX sockets (doesn't make sense on all platforms) */
+	addr = platform_get_x11_unix_address(displaynum,
+					     &dummy_realhost);
+	port = 0;		/* to show we are not confused */
     } else {
+	port = 6000 + displaynum;
+	
 	/*
-	 * Local display numbers, particularly on Unix, often omit
-	 * the display part completely.
+	 * Try to find host.
 	 */
-	strcpy(host, "localhost");
-    }
-
-    port = 6000 + displaynum;
-
-    /*
-     * Try to find host.
-     */
-    addr = name_lookup(host, port, &dummy_realhost, cfg);
-    if ((err = sk_addr_error(addr)) != NULL) {
-	sk_addr_free(addr);
-	return err;
+	addr = name_lookup(host, port, &dummy_realhost, cfg);
+	if ((err = sk_addr_error(addr)) != NULL) {
+	    sk_addr_free(addr);
+	    return err;
+	}
     }
 
     /*
@@ -295,7 +310,7 @@ const char *x11_init(Socket * s, char *display, void *c, void *auth,
     pr->c = c;
 
     pr->s = *s = new_connection(addr, dummy_realhost, port,
-				0, 1, 0, (Plug) pr, cfg);
+				0, 1, 0, 0, (Plug) pr, cfg);
     if ((err = sk_socket_error(*s)) != NULL) {
 	sfree(pr);
 	return err;

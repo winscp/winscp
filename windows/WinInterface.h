@@ -5,6 +5,7 @@
 #include <Classes.hpp>
 #include <Interface.h>
 #include <GUIConfiguration.h>
+#include <SynchronizeController.h>
 
 class TStoredSessionList;
 class TConfiguration;
@@ -163,18 +164,6 @@ const spNoConfirmation = 0x02;
 const spExistingOnly = 0x04;
 
 // forms\Synchronize.cpp
-struct TSynchronizeParamType 
-{
-  AnsiString LocalDirectory;
-  AnsiString RemoteDirectory;
-  int Params;
-  bool Recurse;
-};
-typedef void __fastcall (__closure * TSynchronizeAbortEvent)
-  (System::TObject * Sender, bool Close);
-typedef void __fastcall (__closure * TSynchronizeStartStopEvent)
-  (System::TObject * Sender, bool Start, const TSynchronizeParamType & Params,
-   TSynchronizeAbortEvent OnAbort);
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TSynchronizeStartStopEvent OnStartStop, bool & SaveSettings);
 
@@ -183,8 +172,9 @@ enum TSynchronizeMode { smRemote, smLocal, smBoth };
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   AnsiString & LocalDirectory, AnsiString & RemoteDirectory, bool & SaveSettings);
 
-void __fastcall DoEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
-  TNotifyEvent OnFileChanged, const AnsiString Caption = "");
+TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
+  TNotifyEvent OnFileChanged, TNotifyEvent OnClose, const AnsiString Caption = "",
+  bool ShowWindowButton = false);
 
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic);

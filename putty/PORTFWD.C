@@ -390,7 +390,7 @@ const char *pfd_newconnect(Socket *s, char *hostname, int port,
     pr->dynamic = 0;
 
     pr->s = *s = new_connection(addr, dummy_realhost, port,
-				0, 1, 0, (Plug) pr, cfg);
+				0, 1, 0, 0, (Plug) pr, cfg);
     if ((err = sk_socket_error(*s)) != NULL) {
 	sfree(pr);
 	return err;

@@ -1,6 +1,6 @@
 /*
  * console.c: various interactive-prompt routines shared between
- * the console PuTTY tools
+ * the Windows console PuTTY tools
  */
 
 #include <stdio.h>

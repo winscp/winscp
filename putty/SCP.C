@@ -36,6 +36,10 @@ static int prev_stats_len = 0;
 static int scp_unsafe_mode = 0;
 static int errs = 0;
 static int gui_mode = 0;
+static int try_scp = 1;
+static int try_sftp = 1;
+static int main_cmd_is_sftp = 0;
+static int fallback_cmd_is_sftp = 0;
 static int using_sftp = 0;
 
 static Backend *back;
@@ -262,7 +266,13 @@ static void ssh_scp_init(void)
 	if (ssh_sftp_loop_iteration() < 0)
 	    return;		       /* doom */
     }
-    using_sftp = !ssh_fallback_cmd(backhandle);
+
+    /* Work out which backend we ended up using. */
+    if (!ssh_fallback_cmd(backhandle))
+	using_sftp = main_cmd_is_sftp;
+    else
+	using_sftp = fallback_cmd_is_sftp;
+
     if (verbose) {
 	if (using_sftp)
 	    tell_user(stderr, "Using SFTP");
@@ -311,11 +321,27 @@ static void do_cmd(char *host, char *user, char *cmd)
     if (host == NULL || host[0] == '\0')
 	bump("Empty host name");
 
-    /* Try to load settings for this host */
-    do_defaults(host, &cfg);
-    if (cfg.host[0] == '\0') {
-	/* No settings for this host; use defaults */
-	do_defaults(NULL, &cfg);
+    /*
+     * If we haven't loaded session details already (e.g., from -load),
+     * try looking for a session called "host".
+     */
+    if (!loaded_session) {
+	/* Try to load settings for `host' into a temporary config */
+	Config cfg2;
+	cfg2.host[0] = '\0';
+	do_defaults(host, &cfg2);
+	if (cfg2.host[0] != '\0') {
+	    /* Settings present and include hostname */
+	    /* Re-load data into the real config. */
+	    do_defaults(host, &cfg);
+	} else {
+	    /* Session doesn't exist or mention a hostname. */
+	    /* Use `host' as a bare hostname. */
+	    strncpy(cfg.host, host, sizeof(cfg.host) - 1);
+	    cfg.host[sizeof(cfg.host) - 1] = '\0';
+	}
+    } else {
+	/* Patch in hostname `host' to session details. */
 	strncpy(cfg.host, host, sizeof(cfg.host) - 1);
 	cfg.host[sizeof(cfg.host) - 1] = '\0';
     }
@@ -402,18 +428,46 @@ static void do_cmd(char *host, char *user, char *cmd)
     cfg.portfwd[0] = cfg.portfwd[1] = '\0';
 
     /*
+     * Set up main and possibly fallback command depending on
+     * options specified by user.
      * Attempt to start the SFTP subsystem as a first choice,
      * falling back to the provided scp command if that fails.
      */
-    strcpy(cfg.remote_cmd, "sftp");
-    cfg.ssh_subsys = TRUE;
-    cfg.remote_cmd_ptr2 = cmd;
-    cfg.ssh_subsys2 = FALSE;
+    cfg.remote_cmd_ptr2 = NULL;
+    if (try_sftp) {
+	/* First choice is SFTP subsystem. */
+	main_cmd_is_sftp = 1;
+	strcpy(cfg.remote_cmd, "sftp");
+	cfg.ssh_subsys = TRUE;
+	if (try_scp) {
+	    /* Fallback is to use the provided scp command. */
+	    fallback_cmd_is_sftp = 0;
+	    cfg.remote_cmd_ptr2 = cmd;
+	    cfg.ssh_subsys2 = FALSE;
+	} else {
+	    /* Since we're not going to try SCP, we may as well try
+	     * harder to find an SFTP server, since in the current
+	     * implementation we have a spare slot. */
+	    fallback_cmd_is_sftp = 1;
+	    /* see psftp.c for full explanation of this kludge */
+	    cfg.remote_cmd_ptr2 = 
+		"test -x /usr/lib/sftp-server && exec /usr/lib/sftp-server\n"
+		"test -x /usr/local/lib/sftp-server && exec /usr/local/lib/sftp-server\n"
+		"exec sftp-server";
+	    cfg.ssh_subsys2 = FALSE;
+	}
+    } else {
+	/* Don't try SFTP at all; just try the scp command. */
+	main_cmd_is_sftp = 0;
+	cfg.remote_cmd_ptr = cmd;
+	cfg.ssh_subsys = FALSE;
+    }
     cfg.nopty = TRUE;
 
     back = &ssh_backend;
 
-    err = back->init(NULL, &backhandle, &cfg, cfg.host, cfg.port, &realhost,0);
+    err = back->init(NULL, &backhandle, &cfg, cfg.host, cfg.port, &realhost, 
+		     0, cfg.tcp_keepalives);
     if (err != NULL)
 	bump("ssh_init: %s", err);
     logctx = log_init(NULL, &cfg);
@@ -433,7 +487,7 @@ static void print_stats(char *name, unsigned long size, unsigned long done,
 {
     float ratebs;
     unsigned long eta;
-    char etastr[10];
+    char *etastr;
     int pct;
     int len;
     int elap;
@@ -449,8 +503,8 @@ static void print_stats(char *name, unsigned long size, unsigned long done,
 	eta = size - done;
     else
 	eta = (unsigned long) ((size - done) / ratebs);
-    sprintf(etastr, "%02ld:%02ld:%02ld",
-	    eta / 3600, (eta % 3600) / 60, eta % 60);
+    etastr = dupprintf("%02ld:%02ld:%02ld",
+		       eta / 3600, (eta % 3600) / 60, eta % 60);
 
     pct = (int) (100 * (done * 1.0 / size));
 
@@ -469,6 +523,8 @@ static void print_stats(char *name, unsigned long size, unsigned long done,
 
 	fflush(stdout);
     }
+
+    free(etastr);
 }
 
 /*
@@ -1796,11 +1852,12 @@ static void sink(char *targ, char *src)
 	received = 0;
 	while (received < act.size) {
 	    char transbuf[4096];
-	    int blksize, read;
+	    unsigned long blksize;
+	    int read;
 	    blksize = 4096;
-	    if (blksize > (int)(act.size - received))
+	    if (blksize > (act.size - received))
 		blksize = act.size - received;
-	    read = scp_recv_filedata(transbuf, blksize);
+	    read = scp_recv_filedata(transbuf, (int)blksize);
 	    if (read <= 0)
 		bump("Lost connection");
 	    if (wrerror)
@@ -2049,7 +2106,7 @@ static void usage(void)
     printf("Usage: pscp [options] [user@]host:source target\n");
     printf
 	("       pscp [options] source [source...] [user@]host:target\n");
-    printf("       pscp [options] -ls user@host:filespec\n");
+    printf("       pscp [options] -ls [user@]host:filespec\n");
     printf("Options:\n");
     printf("  -p        preserve file attributes\n");
     printf("  -q        quiet, don't show statistics\n");
@@ -2064,6 +2121,9 @@ static void usage(void)
     printf("  -i key    private key file for authentication\n");
     printf("  -batch    disable all interactive prompts\n");
     printf("  -unsafe   allow server-side wildcards (DANGEROUS)\n");
+    printf("  -V        print version information\n");
+    printf("  -sftp     force use of SFTP protocol\n");
+    printf("  -scp      force use of SCP protocol\n");
 #if 0
     /*
      * -gui is an internal option, used by GUI front ends to get
@@ -2075,6 +2135,12 @@ static void usage(void)
     printf
 	("  -gui hWnd GUI mode with the windows handle for receiving messages\n");
 #endif
+    cleanup_exit(1);
+}
+
+void version(void)
+{
+    printf("pscp: %s\n", ver);
     cleanup_exit(1);
 }
 
@@ -2108,6 +2174,10 @@ int psftp_main(int argc, char *argv[])
     ssh_get_line = &console_get_line;
     sk_init();
 
+    /* Load Default Settings before doing anything else. */
+    do_defaults(NULL, &cfg);
+    loaded_session = FALSE;
+
     for (i = 1; i < argc; i++) {
 	int ret;
 	if (argv[i][0] != '-')
@@ -2129,6 +2199,8 @@ int psftp_main(int argc, char *argv[])
 	    statistics = 0;
 	} else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-?") == 0) {
 	    usage();
+	} else if (strcmp(argv[i], "-V") == 0) {
+            version();
 	} else if (strcmp(argv[i], "-gui") == 0 && i + 1 < argc) {
 	    gui_enable(argv[++i]);
 	    gui_mode = 1;
@@ -2139,6 +2211,10 @@ int psftp_main(int argc, char *argv[])
 	    console_batch_mode = 1;
 	} else if (strcmp(argv[i], "-unsafe") == 0) {
 	    scp_unsafe_mode = 1;
+	} else if (strcmp(argv[i], "-sftp") == 0) {
+	    try_scp = 0; try_sftp = 1;
+	} else if (strcmp(argv[i], "-scp") == 0) {
+	    try_scp = 1; try_sftp = 0;
 	} else if (strcmp(argv[i], "--") == 0) {
 	    i++;
 	    break;

@@ -90,6 +90,7 @@ private:
   int FSFTPDownloadQueue;
   int FSFTPUploadQueue;
   int FSFTPListingQueue;
+  int FSFTPMaxVersion;
   bool FConsiderDST;
   TAutoSwitch FSFTPSymlinkBug;
 
@@ -167,6 +168,7 @@ private:
   void __fastcall SetSFTPDownloadQueue(int value);
   void __fastcall SetSFTPUploadQueue(int value);
   void __fastcall SetSFTPListingQueue(int value);
+  void __fastcall SetSFTPMaxVersion(int value);
   void __fastcall SetSFTPSymlinkBug(TAutoSwitch value);
   AnsiString __fastcall GetStorageKey();
   void __fastcall SetConsiderDST(bool value);
@@ -254,6 +256,7 @@ public:
   __property int SFTPDownloadQueue = { read = FSFTPDownloadQueue, write = SetSFTPDownloadQueue };
   __property int SFTPUploadQueue = { read = FSFTPUploadQueue, write = SetSFTPUploadQueue };
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
+  __property int SFTPMaxVersion = { read = FSFTPMaxVersion, write = SetSFTPMaxVersion };
   __property TAutoSwitch SFTPSymlinkBug = { read = FSFTPSymlinkBug, write = SetSFTPSymlinkBug };
   __property bool ConsiderDST = { read = FConsiderDST, write = SetConsiderDST };
   __property AnsiString StorageKey = { read = GetStorageKey };

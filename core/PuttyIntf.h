@@ -88,6 +88,7 @@ extern const struct ssh2_ciphers ssh2_des;
 extern const struct ssh2_ciphers ssh2_aes;
 extern const struct ssh2_ciphers ssh2_blowfish;
 //---------------------------------------------------------------------------
+#define MPEXT
 #include "Putty.h"
 #include <SSH.h>
 #include <Proxy.h>

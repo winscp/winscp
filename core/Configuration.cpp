@@ -554,9 +554,9 @@ TStorage __fastcall TConfiguration::GetStorage()
 void __fastcall TConfiguration::SetRandomSeedFile(AnsiString value)
 {
   char *seedpath = seedpath_ptr();
-  if (value.Length() > seedpath_size())
+  if (value.Length() >= seedpath_size())
   {
-    value.SetLength(seedpath_size());
+    value.SetLength(seedpath_size() - 1);
   }
   strcpy(seedpath, StripPathQuotes(value).c_str());
 }
@@ -626,7 +626,7 @@ bool __fastcall TConfiguration::GetLogWindowComplete()
 //---------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetDefaultLogFileName()
 {
-  return GetTemporaryPath() + "winscp.log";
+  return IncludeTrailingBackslash(SystemTemporaryDirectory()) + "winscp.log";
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetConfirmOverwriting(bool value)

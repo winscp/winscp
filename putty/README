@@ -2,7 +2,8 @@ This is the README for the source archive of PuTTY, a free Win32
 Telnet and SSH client.
 
 If you want to rebuild PuTTY from source, we provide a variety of
-Makefiles and equivalents.
+Makefiles and equivalents. (If you have fetched the source from CVS,
+you'll have to generate the Makefiles yourself -- see below.)
 
 For building on Windows:
 
@@ -46,10 +47,19 @@ For building on Unix:
    on Linux so far; portability problems such as BSD-style ptys or
    different header file requirements are expected.
 
+   There is an `install' target; note that by default it tries to
+   install `man' pages, which need to be built using Halibut first --
+   see below.
+
 All of the Makefiles are generated automatically from the file
 `Recipe' by the Perl script `mkfiles.pl'. Additions and corrections
 to Recipe and the mkfiles.pl are much more useful than additions and
 corrections to the alternative Makefiles themselves.
+
+Documentation (in various formats including Windows Help and Unix
+`man' pages) is to be built from the Halibut (`.but') files in the
+`doc' subdirectory using `doc/Makefile'. Halibut can be found at
+<http://www.chiark.greenend.org.uk/~sgtatham/halibut/>.
 
 The PuTTY home web site is
 

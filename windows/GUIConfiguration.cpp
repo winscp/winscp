@@ -110,6 +110,7 @@ void __fastcall TGUIConfiguration::Default()
   FCopyParamDialogExpanded = false;
   FErrorDialogExpanded = false;
   FContinueOnError = false;
+  FConfirmCommandSession = true;
   FSynchronizeParams = TTerminal::spDelete | TTerminal::spNoConfirmation;
   FSynchronizeRecurse = true; 
   FQueueTransfersLimit = 2;
@@ -143,6 +144,7 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
     KEY(Bool,     CopyParamDialogExpanded); \
     KEY(Bool,     ErrorDialogExpanded); \
     KEY(Bool,     ContinueOnError); \
+    KEY(Bool,     ConfirmCommandSession); \
     KEY(Integer,  SynchronizeParams); \
     KEY(Bool,     SynchronizeRecurse); \
     KEY(Integer,  QueueTransfersLimit); \

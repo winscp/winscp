@@ -288,7 +288,7 @@
 #define Comboedit_SBrowse 65498
 #define Comboedit_SDefaultFilter 65499
 #define Comboedit_SInvalidFileName 65500
-#define DiscMon_16392 65501
+#define Discmon_STooManyWatchDirectories 65501
 #define HelpIntfs_16398 65502
 #define HelpIntfs_16400 65503
 #define Dirviewcolproperties_SDirViewSizeCol 65504
@@ -606,7 +606,7 @@ BEGIN
 	Comboedit_SBrowse,	"Browse"
 	Comboedit_SDefaultFilter,	"All files (*.*)|*.*"
 	Comboedit_SInvalidFileName,	"Invalid file name - %s"
-	DiscMon_16392,	"Cannot watch for changes in %d directories and subdirectories (limit is %d)."
+	Discmon_STooManyWatchDirectories,	"Cannot watch for changes in more then %d directories and subdirectories."
 	HelpIntfs_16398,	"Unable to find a Table of Contents"
 	HelpIntfs_16400,	"No help found for %s"
 	Dirviewcolproperties_SDirViewSizeCol,	"Size"

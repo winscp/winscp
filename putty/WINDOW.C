@@ -611,7 +611,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	char *realhost;
 
 	error = back->init(NULL, &backhandle, &cfg,
-			   cfg.host, cfg.port, &realhost, cfg.tcp_nodelay);
+			   cfg.host, cfg.port, &realhost, cfg.tcp_nodelay,
+			   cfg.tcp_keepalives);
 	back->provide_logctx(backhandle, logctx);
 	if (error) {
 	    char *str = dupprintf("%s Error", appname);
@@ -1078,6 +1079,36 @@ static void init_palette(void)
 	for (i = 0; i < NCOLOURS; i++)
 	    colours[i] = RGB(defpal[i].rgbtRed,
 			     defpal[i].rgbtGreen, defpal[i].rgbtBlue);
+}
+
+/*
+ * This is a wrapper to ExtTextOut() to force Windows to display
+ * the precise glyphs we give it. Otherwise it would do its own
+ * bidi and Arabic shaping, and we would end up uncertain which
+ * characters it had put where.
+ */
+static void exact_textout(HDC hdc, int x, int y, CONST RECT *lprc,
+			  unsigned short *lpString, UINT cbCount,
+			  CONST INT *lpDx)
+{
+
+    GCP_RESULTSW gcpr;
+    char *buffer = snewn(cbCount*2+2, char);
+    char *classbuffer = snewn(cbCount, char);
+    memset(&gcpr, 0, sizeof(gcpr));
+    memset(buffer, 0, cbCount*2+2);
+    memset(classbuffer, GCPCLASS_NEUTRAL, cbCount);
+
+    gcpr.lStructSize = sizeof(gcpr);
+    gcpr.lpGlyphs = (void *)buffer;
+    gcpr.lpClass = classbuffer;
+    gcpr.nGlyphs = cbCount;
+
+    GetCharacterPlacementW(hdc, lpString, cbCount, 0, &gcpr,
+			   FLI_MASK | GCP_CLASSIN);
+
+    ExtTextOut(hdc, x, y, ETO_GLYPH_INDEX | ETO_CLIPPED | ETO_OPAQUE, lprc,
+	       buffer, cbCount, lpDx);
 }
 
 /*
@@ -1690,6 +1721,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
     static int ignore_clip = FALSE;
     static int need_backend_resize = FALSE;
     static int fullscr_on_max = FALSE;
+    static UINT last_mousemove = 0;
 
     switch (message) {
       case WM_TIMER:
@@ -2129,7 +2161,21 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	}
 	return 0;
       case WM_MOUSEMOVE:
-	show_mouseptr(1);
+	{
+	    /*
+	     * Windows seems to like to occasionally send MOUSEMOVE
+	     * events even if the mouse hasn't moved. Don't unhide
+	     * the mouse pointer in this case.
+	     */
+	    static WPARAM wp = 0;
+	    static LPARAM lp = 0;
+	    if (wParam != wp || lParam != lp ||
+		last_mousemove != WM_MOUSEMOVE) {
+		show_mouseptr(1);
+		wp = wParam; lp = lParam;
+		last_mousemove = WM_MOUSEMOVE;
+	    }
+	}
 	/*
 	 * Add the mouse position and message time to the random
 	 * number noise.
@@ -2152,7 +2198,16 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	}
 	return 0;
       case WM_NCMOUSEMOVE:
-	show_mouseptr(1);
+	{
+	    static WPARAM wp = 0;
+	    static LPARAM lp = 0;
+	    if (wParam != wp || lParam != lp ||
+		last_mousemove != WM_NCMOUSEMOVE) {
+		show_mouseptr(1);
+		wp = wParam; lp = lParam;
+		last_mousemove = WM_NCMOUSEMOVE;
+	    }
+	}
 	noise_ultralight(lParam);
 	break;
       case WM_IGNORE_CLIP:
@@ -2989,9 +3044,13 @@ void do_text(Context ctx, int x, int y, char *text, int len,
 	for (i = 0; i < len; i++)
 	    wbuf[i] = (WCHAR) ((attr & CSET_MASK) + (text[i] & CHAR_MASK));
 
-	ExtTextOutW(hdc, x,
+	/* print Glyphs as they are, without Windows' Shaping*/
+	exact_textout(hdc, x, y - font_height * (lattr == LATTR_BOT) + text_adjust,
+		      &line_box, wbuf, len, IpDx);
+/*	ExtTextOutW(hdc, x,
 		    y - font_height * (lattr == LATTR_BOT) + text_adjust,
 		    ETO_CLIPPED | ETO_OPAQUE, &line_box, wbuf, len, IpDx);
+ */
 
 	/* And the shadow bold hack. */
 	if (bold_mode == BOLD_SHADOW && (attr & ATTR_BOLD)) {
@@ -3170,6 +3229,7 @@ static int TranslateKey(UINT message, WPARAM wParam, LPARAM lParam,
 
     HKL kbd_layout = GetKeyboardLayout(0);
 
+    /* keys is for ToAsciiEx. There's some ick here, see below. */
     static WORD keys[3];
     static int compose_char = 0;
     static WPARAM compose_key = 0;
@@ -3861,7 +3921,27 @@ static int TranslateKey(UINT message, WPARAM wParam, LPARAM lParam,
 	    keystate[VK_CAPITAL] = 0;
 	}
 
-	r = ToAsciiEx(wParam, scan, keystate, keys, 0, kbd_layout);
+	/* XXX how do we know what the max size of the keys array should
+	 * be is? There's indication on MS' website of an Inquire/InquireEx
+	 * functioning returning a KBINFO structure which tells us. */
+	if (osVersion.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+	    /* XXX 'keys' parameter is declared in MSDN documentation as
+	     * 'LPWORD lpChar'.
+	     * The experience of a French user indicates that on
+	     * Win98, WORD[] should be passed in, but on Win2K, it should
+	     * be BYTE[]. German WinXP and my Win2K with "US International"
+	     * driver corroborate this.
+	     * Experimentally I've conditionalised the behaviour on the
+	     * Win9x/NT split, but I suspect it's worse than that.
+	     * See wishlist item `win-dead-keys' for more horrible detail
+	     * and speculations. */
+	    BYTE keybs[3];
+	    int i;
+	    r = ToAsciiEx(wParam, scan, keystate, (LPWORD)keybs, 0, kbd_layout);
+	    for (i=0; i<3; i++) keys[i] = keybs[i];
+	} else {
+	    r = ToAsciiEx(wParam, scan, keystate, keys, 0, kbd_layout);
+	}
 #ifdef SHOW_TOASCII_RESULT
 	if (r == 1 && !key_down) {
 	    if (alt_sum) {

@@ -237,6 +237,15 @@ void term_update(Terminal *term)
 	    term->seen_disp_event = 0;
 	    need_sbar_update = TRUE;
 	}
+
+	/* Allocate temporary buffers for Arabic shaping and bidi. */
+	if (!term->cfg.arabicshaping || !term->cfg.bidi)
+	{
+	    term->wcFrom = sresize(term->wcFrom, term->cols, bidi_char);
+	    term->ltemp = sresize(term->ltemp, term->cols+1, unsigned long);
+	    term->wcTo = sresize(term->wcTo, term->cols, bidi_char);
+	}
+
 	if (need_sbar_update)
 	    update_sbar(term);
 	do_paint(term, ctx, TRUE);
@@ -428,6 +437,12 @@ Terminal *term_init(Config *mycfg, struct unicode_data *ucsdata,
     term->resize_fn = NULL;
     term->resize_ctx = NULL;
     term->in_term_out = FALSE;
+    term->ltemp = NULL;
+    term->wcFrom = NULL;
+    term->wcTo = NULL;
+
+    term->bidi_cache_size = 0;
+    term->pre_bidi_cache = term->post_bidi_cache = NULL;
 
     return term;
 }
@@ -436,6 +451,7 @@ void term_free(Terminal *term)
 {
     unsigned long *line;
     struct beeptime *beep;
+    int i;
 
     while ((line = delpos234(term->scrollback, 0)) != NULL)
 	sfree(line);
@@ -457,6 +473,17 @@ void term_free(Terminal *term)
 	printer_finish_job(term->print_job);
     bufchain_clear(&term->printer_buf);
     sfree(term->paste_buffer);
+    sfree(term->ltemp);
+    sfree(term->wcFrom);
+    sfree(term->wcTo);
+
+    for (i = 0; i < term->bidi_cache_size; i++) {
+	sfree(term->pre_bidi_cache[i]);
+	sfree(term->post_bidi_cache[i]);
+    }
+    sfree(term->pre_bidi_cache);
+    sfree(term->post_bidi_cache);
+
     sfree(term);
 }
 
@@ -3303,12 +3330,65 @@ static int linecmp(Terminal *term, unsigned long *a, unsigned long *b)
 #endif
 
 /*
+ * To prevent having to run the reasonably tricky bidi algorithm
+ * too many times, we maintain a cache of the last lineful of data
+ * fed to the algorithm on each line of the display.
+ */
+static int term_bidi_cache_hit(Terminal *term, int line,
+			       unsigned long *lbefore, int width)
+{
+    if (!term->pre_bidi_cache)
+	return FALSE;		       /* cache doesn't even exist yet! */
+
+    if (line >= term->bidi_cache_size)
+	return FALSE;		       /* cache doesn't have this many lines */
+
+    if (!term->pre_bidi_cache[line])
+	return FALSE;		       /* cache doesn't contain _this_ line */
+
+    if (!memcmp(term->pre_bidi_cache[line], lbefore,
+		width * sizeof(unsigned long)))
+	return TRUE;		       /* aha! the line matches the cache */
+
+    return FALSE;		       /* it didn't match. */
+}
+
+static void term_bidi_cache_store(Terminal *term, int line,
+				  unsigned long *lbefore,
+				  unsigned long *lafter, int width)
+{
+    if (!term->pre_bidi_cache || term->bidi_cache_size <= line) {
+	int j = term->bidi_cache_size;
+	term->bidi_cache_size = line+1;
+	term->pre_bidi_cache = sresize(term->pre_bidi_cache,
+				       term->bidi_cache_size,
+				       unsigned long *);
+	term->post_bidi_cache = sresize(term->post_bidi_cache,
+					term->bidi_cache_size,
+					unsigned long *);
+	while (j < term->bidi_cache_size) {
+	    term->pre_bidi_cache[j] = term->post_bidi_cache[j] = NULL;
+	    j++;
+	}
+    }
+
+    sfree(term->pre_bidi_cache[line]);
+    sfree(term->post_bidi_cache[line]);
+
+    term->pre_bidi_cache[line] = snewn(width, unsigned long);
+    term->post_bidi_cache[line] = snewn(width, unsigned long);
+
+    memcpy(term->pre_bidi_cache[line], lbefore, width * sizeof(unsigned long));
+    memcpy(term->post_bidi_cache[line], lafter, width * sizeof(unsigned long));
+}
+
+/*
  * Given a context, update the window. Out of paranoia, we don't
  * allow WM_PAINT responses to do scrolling optimisations.
  */
 static void do_paint(Terminal *term, Context ctx, int may_optimise)
 {
-    int i, j, our_curs_y, our_curs_x;
+    int i, it, j, our_curs_y, our_curs_x;
     unsigned long rv, cursor;
     pos scrpos;
     char ch[1024];
@@ -3324,8 +3404,8 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
     if (term->in_vbell) {
 	ticks = GETTICKCOUNT();
 	if (ticks - term->vbell_startpoint >= VBELL_TIMEOUT)
-	    term->in_vbell = FALSE; 
-   }
+	    term->in_vbell = FALSE;
+    }
 
     rv = (!term->rvideo ^ !term->in_vbell ? ATTR_REVERSE : 0);
 
@@ -3411,6 +3491,67 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 				  term->disptext[idx + term->cols]);
 	term->disptext[idx + term->cols] = ldata[term->cols];
 
+	/* Do Arabic shaping and bidi. */
+	if(!term->cfg.bidi || !term->cfg.arabicshaping) {
+
+	    if (!term_bidi_cache_hit(term, i, ldata, term->cols)) {
+
+		for(it=0; it<term->cols ; it++)
+		{
+		    int uc = (ldata[it] & 0xFFFF);
+
+		    switch (uc & CSET_MASK) {
+		      case ATTR_LINEDRW:
+			if (!term->cfg.rawcnp) {
+			    uc = term->ucsdata->unitab_xterm[uc & 0xFF];
+			    break;
+			}
+		      case ATTR_ASCII:
+			uc = term->ucsdata->unitab_line[uc & 0xFF];
+			break;
+		      case ATTR_SCOACS:
+			uc = term->ucsdata->unitab_scoacs[uc&0xFF];
+			break;
+		    }
+		    switch (uc & CSET_MASK) {
+		      case ATTR_ACP:
+			uc = term->ucsdata->unitab_font[uc & 0xFF];
+			break;
+		      case ATTR_OEMCP:
+			uc = term->ucsdata->unitab_oemcp[uc & 0xFF];
+			break;
+		    }
+
+		    term->wcFrom[it].origwc = term->wcFrom[it].wc = uc;
+		    term->wcFrom[it].index = it;
+		}
+
+		if(!term->cfg.bidi)
+		    do_bidi(term->wcFrom, term->cols);
+
+		/* this is saved iff done from inside the shaping */
+		if(!term->cfg.bidi && term->cfg.arabicshaping)
+		    for(it=0; it<term->cols; it++)
+			term->wcTo[it] = term->wcFrom[it];
+
+		if(!term->cfg.arabicshaping)
+		    do_shape(term->wcFrom, term->wcTo, term->cols);
+
+		for(it=0; it<term->cols ; it++)
+		{
+		    term->ltemp[it] = ldata[term->wcTo[it].index];
+
+		    if (term->wcTo[it].origwc != term->wcTo[it].wc)
+			term->ltemp[it] = ((term->ltemp[it] & 0xFFFF0000) |
+					   term->wcTo[it].wc);
+		}
+		term_bidi_cache_store(term, i, ldata, term->ltemp, term->cols);
+		ldata = term->ltemp;
+	    } else {
+		ldata = term->post_bidi_cache[i];
+	    }
+	}
+
 	for (j = 0; j < term->cols; j++, idx++) {
 	    unsigned long tattr, tchar;
 	    unsigned long *d = ldata + j;
@@ -3432,8 +3573,9 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 	    }
 	    tattr |= (tchar & CSET_MASK);
 	    tchar &= CHAR_MASK;
-	    if ((d[1] & (CHAR_MASK | CSET_MASK)) == UCSWIDE)
-		    tattr |= ATTR_WIDE;
+	    if (j < term->cols-1 &&
+		(d[1] & (CHAR_MASK | CSET_MASK)) == UCSWIDE)
+		tattr |= ATTR_WIDE;
 
 	    /* Video reversing things */
 	    if (term->selstate == DRAGGING || term->selstate == SELECTED) {
@@ -3799,9 +3941,13 @@ static void clipme(Terminal *term, pos top, pos bottom, int rect, int desel)
 void term_copyall(Terminal *term)
 {
     pos top;
+    pos bottom;
+    tree234 *screen = term->screen;
     top.y = -sblines(term);
     top.x = 0;
-    clipme(term, top, term->curs, 0, TRUE);
+    bottom.y = find_last_nonempty_line(term, screen);
+    bottom.x = term->cols;
+    clipme(term, top, bottom, 0, TRUE);
 }
 
 /*

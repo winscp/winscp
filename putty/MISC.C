@@ -1,3 +1,7 @@
+/*
+ * Platform-independent routines shared between all PuTTY programs.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

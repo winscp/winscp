@@ -1,5 +1,5 @@
 /*
- * winutils.c: miscellaneous Windows utilities
+ * winutils.c: miscellaneous Windows utilities for GUI apps
  */
 
 #include <stdio.h>

@@ -114,7 +114,7 @@ object SynchronizeDialog: TSynchronizeDialog
     Width = 381
     Height = 95
     Anchors = [akLeft, akTop, akRight]
-    Caption = 'Upload options'
+    Caption = 'Synchronize options'
     TabOrder = 1
     DesignSize = (
       381

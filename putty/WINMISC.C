@@ -1,5 +1,5 @@
 /*
- * winmisc.c: miscellaneous Windows-specific things.
+ * winmisc.c: miscellaneous Windows-specific things
  */
 
 #include <stdio.h>
@@ -13,6 +13,8 @@ void platform_get_x11_auth(char *display, int *proto,
 {
     /* We don't support this at all under Windows. */
 }
+
+const char platform_x11_best_transport[] = "localhost";
 
 Filename filename_from_str(const char *str)
 {
@@ -357,4 +359,3 @@ void *minefield_c_realloc(void *p, size_t size)
 }
 
 #endif				/* MINEFIELD */
-

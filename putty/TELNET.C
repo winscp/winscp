@@ -674,7 +674,7 @@ static void telnet_sent(Plug plug, int bufsize)
 static const char *telnet_init(void *frontend_handle, void **backend_handle,
 			       Config *cfg,
 			       char *host, int port, char **realhost,
-			       int nodelay)
+			       int nodelay, int keepalive)
 {
     static const struct plug_function_table fn_table = {
 	telnet_closing,
@@ -729,7 +729,7 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
 	sfree(buf);
     }
     telnet->s = new_connection(addr, *realhost, port, 0, 1,
-			       nodelay, (Plug) telnet, &telnet->cfg);
+			       nodelay, keepalive, (Plug) telnet, &telnet->cfg);
     if ((err = sk_socket_error(telnet->s)) != NULL)
 	return err;
 

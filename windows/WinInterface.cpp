@@ -9,7 +9,6 @@
 #include <SecureShell.h>
 #include <ScpMain.h>
 #include <TextsWin.h>
-#include <TextsCore.h>
 #include <Interface.h>
 
 #include "WinInterface.h"
@@ -238,18 +237,6 @@ int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
 int __fastcall SimpleErrorDialog(const AnsiString Msg)
 {
   return MoreMessageDialog(Msg, NULL, qtError, qaOK, NULL);
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TranslateExceptionMessage(const Exception * E)
-{
-  if (dynamic_cast<const EAccessViolation*>(E) != NULL)
-  {
-    return LoadStr(ACCESS_VIOLATION_ERROR);
-  }
-  else
-  {
-    return E->Message;
-  }
 }
 //---------------------------------------------------------------------------
 int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,

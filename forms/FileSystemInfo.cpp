@@ -4,6 +4,7 @@
 
 #include <Common.h>
 #include <Terminal.h>
+#include <VCLCommon.h>
 #include "FileSystemInfo.h"
 //---------------------------------------------------------------------
 #pragma link "XPGroupBox"
@@ -26,6 +27,7 @@ void __fastcall DoFileSystemInfoDialog(TTerminal * Terminal)
 __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent* AOwner)
 	: TForm(AOwner)
 {
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TFileSystemInfoDialog::CapabilityStr(TFSCapability Capability)

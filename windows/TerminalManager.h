@@ -26,6 +26,8 @@ public:
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
+  bool __fastcall IsValidTerminal(TTerminal * Terminal);
+  static void ConnectTerminal(TTerminal * Terminal);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };

@@ -27,7 +27,7 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="PUTTY_LIB;GSSAPI;_WINDOWS;_MSC_VER=1000"/>
+    <USERDEFINES value="PUTTY_LIB;GSSAPI;MPEXT;_WINDOWS;_MSC_VER=1000"/>
     <SYSDEFINES value="_RTLDLL;NO_STRICT"/>
     <MAINSOURCE value="Putty.bpf"/>
     <INCLUDEPATH value="putty;putty\CHARSET;$(BCB)\include;$(BCB)\include\vcl"/>

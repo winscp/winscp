@@ -30,6 +30,8 @@ class TQueueItem;
 class TQueueItemProxy;
 class TQueueController;
 class TSynchronizeController;
+class TEditorManager;
+struct TEditedFileData;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -127,10 +129,6 @@ private:
   bool FQueueItemInvalidated;
   bool FFormRestored;
   bool FAutoOperation;
-  bool FExecutedFileForceText;
-  AnsiString FExecutedFile;
-  int FExecutedFileTimestamp;
-  TExecuteFileBy FFileExecutedBy;
   bool FForceExecution;
   bool FShowStatusBarHint;
   AnsiString FStatusBarHint;
@@ -152,6 +150,7 @@ private:
   TQueueController * FQueueController;
   int FLastDropEffect;
   bool FPendingTempSpaceWarn;
+  TEditorManager * FEditorManager;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
@@ -163,6 +162,7 @@ private:
   void __fastcall SessionComboChange(TObject * Sender);
   void __fastcall CustomCommandGetParamValue(const AnsiString Name,
     AnsiString & Value);
+  void __fastcall CloseInternalEditor(TObject * Sender);
 
 protected:
   TOperationSide FCurrentSide;
@@ -204,8 +204,8 @@ protected:
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   void __fastcall OperationComplete(const TDateTime & StartTime);
-  void __fastcall ExecutedFileChangedNotification(TObject * Sender, const AnsiString Directory);
-  void __fastcall ExecutedFileChanged(TObject * Sender);
+  void __fastcall ExecutedFileChanged(const AnsiString FileName,
+    const TEditedFileData & Data, HANDLE UploadCompleteEvent);
   void __fastcall CMAppSysCommand(TMessage & Message);
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
@@ -219,6 +219,8 @@ protected:
   void __fastcall DoSynchronize(TSynchronizeController * Sender,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
     const TSynchronizeParamType & Params);
+  void __fastcall DoSynchronizeInvalid(TSynchronizeController * Sender,
+    const AnsiString Directory);
   void __fastcall Synchronize(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType & CopyParam, int Params);
@@ -255,6 +257,7 @@ protected:
   void __fastcall RemoteFileControlDDTargetDrop();
   void __fastcall RemoteFileControlFileOperation(TObject * Sender,
     TFileOperation Operation, bool NoConfirmation, void * Param);
+  bool __fastcall EnsureAnyCommandCapability();
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP

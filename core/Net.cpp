@@ -26,7 +26,7 @@ void __fastcall NetInitialize()
   InitWinsock();
   sk_init();
   AnsiString VersionString = SshVersionString();
-  assert(!VersionString.IsEmpty() && VersionString.Length() < 40);
+  assert(!VersionString.IsEmpty() && VersionString.Length() < 50);
   strcpy(sshver, VersionString.c_str());
 }
 //---------------------------------------------------------------------------
@@ -98,7 +98,7 @@ static int get_line(void * frontend, const char * prompt, char * str,
   bool Result = SecureShell->PromptUser(prompt, Response, is_pw);
   if (Result)
   {
-    strcpy(str, Response.SubString(1, maxlen).c_str());
+    strcpy(str, Response.SubString(1, maxlen - 1).c_str());
   }
 
   return Result ? 1 : 0;

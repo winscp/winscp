@@ -15,6 +15,8 @@ class TSessionData;
 bool __fastcall FindFile(AnsiString & Path);
 bool __fastcall FileExistsEx(AnsiString Path);
 bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params);
+bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params,
+  HANDLE & Handle);
 void __fastcall OpenSessionInPutty(TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path);
 AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
@@ -26,5 +28,6 @@ AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
 void __fastcall CopyToClipboard(AnsiString Text);
 AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Identity);
 bool __fastcall DeleteDirectory(const AnsiString DirName);
+AnsiString __fastcall TranslateExceptionMessage(const Exception * E);
 //---------------------------------------------------------------------------
 #endif

@@ -28,9 +28,11 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   {
     CheckTranslationVersion(GetResourceModule(ModuleFileName().c_str()));
   }
-  catch(...)
+  catch(Exception & E)
   {
     LocaleSafe = InternalLocale();
+    MoreMessageDialog(FMTLOAD(INVALID_DEFAULT_TRANSLATION, (E.Message)),
+      NULL, qtWarning, qaOK, 0);
   }
 }
 //---------------------------------------------------------------------------
@@ -85,6 +87,7 @@ void __fastcall TWinConfiguration::Default()
   FEditor.ReplaceText = "";
   FEditor.FindMatchCase = false;
   FEditor.FindWholeWord = false;
+  FEditor.SingleEditor = false;
 
   FQueueView.Height = 100;
   FQueueView.Layout = "70,170,170,80,80";
@@ -164,10 +167,12 @@ TStorage __fastcall TWinConfiguration::GetStorage()
     if (FindResourceEx(NULL, RT_RCDATA, "WINSCP_SESSION",
       MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)))
     {
-      FTemporarySessionFile = GetTemporaryPath() + "winscp3s.tmp";
+      FTemporarySessionFile =
+        IncludeTrailingBackslash(SystemTemporaryDirectory()) + "winscp3s.tmp";
       DumpResourceToFile("WINSCP_SESSION", FTemporarySessionFile);
       FEmbeddedSessions = true;
-      FTemporaryKeyFile = GetTemporaryPath() + "winscp3k.tmp";
+      FTemporaryKeyFile =
+        IncludeTrailingBackslash(SystemTemporaryDirectory()) + "winscp3k.tmp";
       if (!DumpResourceToFile("WINSCP_KEY", FTemporaryKeyFile))
       {
         FTemporaryKeyFile = "";
@@ -241,6 +246,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,   Editor.ReplaceText); \
     KEY(Bool,     Editor.FindMatchCase); \
     KEY(Bool,     Editor.FindWholeWord); \
+    KEY(Bool,     Editor.SingleEditor); \
   ); \
   BLOCK("Interface\\QueueView", CANCREATE, \
     KEY(Integer,  QueueView.Height); \

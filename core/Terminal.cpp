@@ -55,10 +55,13 @@ __fastcall TTerminal::TTerminal(): TSecureShell()
   FDirectoryCache = new TRemoteDirectoryCache();
   FDirectoryChangesCache = NULL;
   FFSProtocol = cfsUnknown;
+  FCommandSession = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
 {
+  SAFE_DESTROY(FCommandSession);
+
   if (SessionData->CacheDirectoryChanges && SessionData->PreserveDirectoryChanges &&
       (FDirectoryChangesCache != NULL))
   {
@@ -102,6 +105,11 @@ void __fastcall TTerminal::KeepAlive()
   {
     TSecureShell::KeepAlive();
   }
+
+  if (CommandSessionOpened)
+  {
+    FCommandSession->KeepAlive();
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::IsAbsolutePath(const AnsiString Path)
@@ -139,6 +147,11 @@ void __fastcall TTerminal::Close()
 {
   // file system cannot be destoryed here, moved to destructor
   TSecureShell::Close();
+
+  if (CommandSessionOpened)
+  {
+    FCommandSession->Close();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Open()
@@ -467,6 +480,11 @@ void __fastcall TTerminal::BeginTransaction()
     FReadDirectoryPending = false;
   }
   FInTransaction++;
+
+  if (FCommandSession != NULL)
+  {
+    FCommandSession->BeginTransaction();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::EndTransaction()
@@ -493,6 +511,13 @@ void __fastcall TTerminal::EndTransaction()
       }
     }
   }
+
+  if (FCommandSession != NULL)
+  {
+    // so far we do not require directory content to be loaded
+    FCommandSession->FReadDirectoryPending = false;
+    FCommandSession->EndTransaction();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::SetExceptionOnFail(bool value)
@@ -503,6 +528,11 @@ void __fastcall TTerminal::SetExceptionOnFail(bool value)
     if (FExceptionOnFail == 0)
       throw Exception("ExceptionOnFail is already zero.");
     FExceptionOnFail--;
+  }
+
+  if (FCommandSession != NULL)
+  {
+    FCommandSession->FExceptionOnFail = FExceptionOnFail;
   }
 }
 //---------------------------------------------------------------------------
@@ -1140,8 +1170,27 @@ void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
 {
   try
   {
-    assert(FFileSystem);
-    FFileSystem->CustomCommandOnFile(FileName, File, Command, Params);
+    if (IsCapable[fcAnyCommand])
+    {
+      assert(FFileSystem);
+      FFileSystem->CustomCommandOnFile(FileName, File, Command, Params);
+    }
+    else
+    {
+      assert(CommandSessionOpened);
+      assert(FCommandSession->FSProtocol == cfsSCP);
+      LogEvent("Executing custom command on command session.");
+      FCommandSession->Log->OnAddLine = Log->AddFromOtherLog;
+      try
+      {
+        FCommandSession->CurrentDirectory = CurrentDirectory;
+        FCommandSession->FFileSystem->CustomCommandOnFile(FileName, File, Command, Params);
+      }
+      __finally
+      {
+        FCommandSession->Log->OnAddLine = NULL;
+      }
+    }
   }
   catch(Exception & E)
   {
@@ -1541,14 +1590,78 @@ bool __fastcall TTerminal::AllowedAnyCommand(const AnsiString Command)
   return !Command.Trim().IsEmpty();
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::GetCommandSessionOpened()
+{
+  return (FCommandSession != NULL) && FCommandSession->Active;
+}
+//---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminal::GetCommandSession()
+{
+  if ((FCommandSession != NULL) && !FCommandSession->Active)
+  {
+    SAFE_DESTROY(FCommandSession);
+  }
+
+  if (FCommandSession == NULL)
+  {
+    // transaction cannot be started yet to allow proper matching transation
+    // levels between main and command session  
+    assert(!FInTransaction);
+
+    try
+    {
+      FCommandSession = new TSecondaryTerminal(this);
+
+      FCommandSession->Configuration = Configuration;
+      FCommandSession->SessionData = SessionData;
+      FCommandSession->SessionData->RemoteDirectory = CurrentDirectory;
+      FCommandSession->SessionData->FSProtocol = fsSCPonly;
+
+      FCommandSession->FExceptionOnFail = FExceptionOnFail;
+
+      FCommandSession->OnQueryUser = OnQueryUser;
+      FCommandSession->OnPromptUser = OnPromptUser;
+      FCommandSession->OnShowExtendedException = OnShowExtendedException;
+      FCommandSession->OnProgress = OnProgress;
+      FCommandSession->OnFinished = OnFinished;
+    }
+    catch(...)
+    {
+      SAFE_DESTROY(FCommandSession);
+      throw;
+    }
+  }
+
+  return FCommandSession;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::AnyCommand(const AnsiString Command)
 {
   assert(FFileSystem);
   try
   {
     DirectoryModified(CurrentDirectory, false);
-    LogEvent("Executing used defined command.");
-    FFileSystem->AnyCommand(Command);
+    if (IsCapable[fcAnyCommand])
+    {
+      LogEvent("Executing user defined command.");
+      FFileSystem->AnyCommand(Command);
+    }
+    else
+    {
+      assert(CommandSessionOpened);
+      assert(FCommandSession->FSProtocol == cfsSCP);
+      LogEvent("Executing user defined command on command session.");
+      FCommandSession->Log->OnAddLine = Log->AddFromOtherLog;
+      try
+      {
+        FCommandSession->CurrentDirectory = CurrentDirectory;
+        FCommandSession->FFileSystem->AnyCommand(Command);
+      }
+      __finally
+      {
+        FCommandSession->Log->OnAddLine = NULL;
+      }
+    }
     ReactOnCommand(fsAnyCommand);
   }
   catch (Exception &E)
@@ -2270,6 +2383,57 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
   if (DisconnectWhenComplete) CloseOnCompletion();
 
   return Result;
+}
+//---------------------------------------------------------------------------
+__fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal) :
+  TTerminal(), FMainTerminal(MainTerminal), FMasterPasswordTried(false)
+{
+  assert(FMainTerminal != NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecondaryTerminal::DirectoryLoaded(TRemoteFileList * FileList)
+{
+  FMainTerminal->DirectoryLoaded(FileList);
+  assert(FileList != NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecondaryTerminal::DirectoryModified(const AnsiString Path,
+  bool SubDirs)
+{
+  // clear cache of main terminal
+  FMainTerminal->DirectoryModified(Path, SubDirs);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecondaryTerminal::DoPromptUser(AnsiString Prompt,
+  TPromptKind Kind, AnsiString & Response)
+{
+  bool Result = false;
+
+  if (!FMasterPasswordTried)
+  {
+    // let's expect that the main session is already authenticated and its password
+    // is not written after, so no locking is necessary
+    Response = FMainTerminal->Password;
+    if (!Response.IsEmpty())
+    {
+      Result = true;
+    }
+    FMasterPasswordTried = true;
+  }
+
+  if (!Result)
+  {
+    Result = TTerminal::DoPromptUser(Prompt, Kind, Response);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecondaryTerminal::SetSessionData(TSessionData * value)
+{
+  TTerminal::SetSessionData(value);
+
+  SessionData->NonPersistant();
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminalList::TTerminalList(TConfiguration * AConfiguration) :

@@ -111,6 +111,12 @@ static int cmdline_check_unavailable(int flag, char *p)
  * Process a standard command-line parameter. `p' is the parameter
  * in question; `value' is the subsequent element of argv, which
  * may or may not be required as an operand to the parameter.
+ * If `need_save' is 1, arguments which need to be saved as
+ * described at this top of this file are, for later execution;
+ * if 0, they are processed normally. (-1 is a special value used
+ * by pterm to count arguments for a preliminary pass through the
+ * argument list; it causes immediate return with an appropriate
+ * value with no action taken.)
  * Return value is 2 if both arguments were used; 1 if only p was
  * used; 0 if the parameter wasn't one we recognised; -2 if it
  * should have been 2 but value was NULL.
@@ -131,6 +137,7 @@ int cmdline_process_param(char *p, char *value, int need_save, Config *cfg)
 	/* This parameter must be processed immediately rather than being
 	 * saved. */
 	do_defaults(value, cfg);
+	loaded_session = TRUE;
 	return 2;
     }
     if (!strcmp(p, "-ssh")) {

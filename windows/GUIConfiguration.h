@@ -43,6 +43,7 @@ private:
   TStrings * FLocales;
   AnsiString FLastLocalesExts;
   bool FContinueOnError;
+  bool FConfirmCommandSession;
   AnsiString FPuttyPath;
   AnsiString FPuttySession;
   int FSynchronizeParams;
@@ -80,6 +81,7 @@ public:
   __property bool CopyParamDialogExpanded = { read = FCopyParamDialogExpanded, write = FCopyParamDialogExpanded };
   __property bool ErrorDialogExpanded = { read = FErrorDialogExpanded, write = FErrorDialogExpanded };
   __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };
+  __property bool ConfirmCommandSession = { read = FConfirmCommandSession, write = FConfirmCommandSession };
   __property int SynchronizeParams = { read = FSynchronizeParams, write = FSynchronizeParams };
   __property bool SynchronizeRecurse = { read = FSynchronizeRecurse, write = FSynchronizeRecurse };
   __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = FQueueTransfersLimit };

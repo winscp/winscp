@@ -1364,7 +1364,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 0
           end
           object BugPlainPW1Combo: TComboBox
@@ -1374,7 +1374,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 1
           end
           object BugRSA1Combo: TComboBox
@@ -1384,7 +1384,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 2
           end
           object BugHMAC2Combo: TComboBox
@@ -1394,7 +1394,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 3
           end
           object BugDeriveKey2Combo: TComboBox
@@ -1404,7 +1404,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 4
           end
           object BugRSAPad2Combo: TComboBox
@@ -1414,7 +1414,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 5
           end
           object BugDHGEx2Combo: TComboBox
@@ -1424,7 +1424,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 6
           end
           object BugPKSessID2Combo: TComboBox
@@ -1434,7 +1434,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 7
           end
         end

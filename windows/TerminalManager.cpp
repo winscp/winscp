@@ -113,6 +113,11 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
   return Terminal;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::IsValidTerminal(TTerminal * Terminal)
+{
+  return (IndexOf(Terminal) >= 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::FreeActiveTerminal()
 {
   if (FTerminalPendingAction == tpNull)
@@ -124,6 +129,24 @@ void __fastcall TTerminalManager::FreeActiveTerminal()
   {
     assert(FTerminalPendingAction == tpNone);
     FTerminalPendingAction = tpFree;
+  }
+}
+//---------------------------------------------------------------------------
+void TTerminalManager::ConnectTerminal(TTerminal * Terminal)
+{
+  TOperationStatusForm * Form = new TOperationStatusForm(Application);
+  Busy(true);
+  try
+  {
+    Form->SecureShell = Terminal;
+    Form->ShowAsModal();
+    Terminal->Open();
+    Terminal->DoStartup();
+  }
+  __finally
+  {
+    Busy(false);
+    delete Form;
   }
 }
 //---------------------------------------------------------------------------
@@ -152,20 +175,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
         }
       }
 
-      TOperationStatusForm * Form = new TOperationStatusForm(Application);
-      Busy(true);
-      try
-      {
-        Form->SecureShell = ActiveTerminal;
-        Form->ShowAsModal();
-        ActiveTerminal->Open();
-        ActiveTerminal->DoStartup();
-      }
-      __finally
-      {
-        Busy(false);
-        delete Form;
-      }
+      ConnectTerminal(ActiveTerminal);
 
       if (ScpExplorer)
       {

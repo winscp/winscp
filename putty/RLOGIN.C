@@ -100,7 +100,7 @@ static void rlogin_sent(Plug plug, int bufsize)
 static const char *rlogin_init(void *frontend_handle, void **backend_handle,
 			       Config *cfg,
 			       char *host, int port, char **realhost,
-			       int nodelay)
+			       int nodelay, int keepalive)
 {
     static const struct plug_function_table fn_table = {
 	rlogin_closing,
@@ -149,7 +149,7 @@ static const char *rlogin_init(void *frontend_handle, void **backend_handle,
 	sfree(buf);
     }
     rlogin->s = new_connection(addr, *realhost, port, 1, 0,
-			       nodelay, (Plug) rlogin, cfg);
+			       nodelay, keepalive, (Plug) rlogin, cfg);
     if ((err = sk_socket_error(rlogin->s)) != NULL)
 	return err;
 

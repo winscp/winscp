@@ -24,6 +24,7 @@ case "$1" in
 esac
 
 perl mkfiles.pl
+(cd doc && make -s)
 
 relver=`cat LATEST.VER`
 arcname="putty$arcsuffix"

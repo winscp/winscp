@@ -66,6 +66,7 @@ private:
   void __fastcall SetEnabled(bool value);
   void __fastcall SetConfiguration(TConfiguration * value);
   AnsiString __fastcall GetSessionName();
+  inline void __fastcall DoAdd(bool Formatted, TLogLineType aType, AnsiString aLine);
 
 public:
   __fastcall TSessionLog(TSecureShell * AOwner);
@@ -74,6 +75,7 @@ public:
   void __fastcall AddStartupInfo();
   void __fastcall AddException(Exception * E);
   void __fastcall AddSeparator();
+  void __fastcall AddFromOtherLog(TObject * Sender, const AnsiString AddedLine);
   virtual void __fastcall Clear();
   void __fastcall ReflectSettings();
   bool __fastcall inline IsLogging()
@@ -150,7 +152,6 @@ private:
   TCipher __fastcall FuncToSsh2Cipher(const void * Cipher) const;
   TCompressionType __fastcall FuncToCompression(const void * Compress) const;
   void __fastcall Init();
-  void __fastcall SetSessionData(TSessionData * value);
   void __fastcall SetActive(bool value);
   bool __fastcall GetActive() const;
   TCipher __fastcall GetCSCipher();
@@ -177,6 +178,7 @@ protected:
   void __fastcall GotHostKey();
   unsigned long __fastcall MaxPacketSize();
   virtual void __fastcall KeepAlive();
+  virtual void __fastcall SetSessionData(TSessionData * value);
 
 public:
   __fastcall TSecureShell();

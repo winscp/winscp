@@ -204,6 +204,7 @@ __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   FLinkedByFile = ALinkedByFile;
   FTerminal = NULL;
   FDirectory = NULL;
+  FIsHidden = -1;
 }
 //---------------------------------------------------------------------------
 __fastcall TRemoteFile::~TRemoteFile()
@@ -275,7 +276,28 @@ Integer __fastcall TRemoteFile::GetIconIndex()
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsHidden()
 {
-  return IsUnixHiddenFile(FileName);
+  bool Result;
+  switch (FIsHidden)
+  {
+    case 0:
+      Result = false;
+      break;
+
+    case 1:
+      Result = true;
+      break;
+
+    default:
+      Result = IsUnixHiddenFile(FileName);
+      break;
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteFile::SetIsHidden(bool value)
+{
+  FIsHidden = value ? 1 : 0;
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsDirectory() const

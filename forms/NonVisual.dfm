@@ -8966,6 +8966,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object CopyPathtoClipboard1: TMenuItem
       Action = RemotePathToClipboardAction
     end
+    object OpenDirectoryBookmark1: TMenuItem
+      Action = RemoteOpenDirAction
+    end
     object N51: TMenuItem
       Caption = '-'
       Hint = 'E'
@@ -8997,6 +9000,9 @@ object NonVisualDataModule: TNonVisualDataModule
     Top = 336
     object CopyPathtoClipboard2: TMenuItem
       Action = LocalPathToClipboardAction
+    end
+    object OpenDirectoryBookmark2: TMenuItem
+      Action = LocalOpenDirAction
     end
     object N52: TMenuItem
       Caption = '-'

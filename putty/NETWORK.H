@@ -79,8 +79,8 @@ struct plug_function_table {
  * responsibility for freeing it */
 Socket new_connection(SockAddr addr, char *hostname,
 		      int port, int privport,
-		      int oobinline, int nodelay, Plug plug,
-		      const Config *cfg);
+		      int oobinline, int nodelay, int keepalive,
+		      Plug plug, const Config *cfg);
 Socket new_listener(char *srcaddr, int port, Plug plug, int local_host_only,
 		    const Config *cfg);
 SockAddr name_lookup(char *host, int port, char **canonicalname,
@@ -90,8 +90,8 @@ SockAddr name_lookup(char *host, int port, char **canonicalname,
 /* (same caveat about addr as new_connection()) */
 Socket platform_new_connection(SockAddr addr, char *hostname,
 			       int port, int privport,
-			       int oobinline, int nodelay, Plug plug,
-			       const Config *cfg);
+			       int oobinline, int nodelay, int keepalive,
+			       Plug plug, const Config *cfg);
 
 /* socket functions */
 
@@ -111,7 +111,7 @@ void sk_addr_free(SockAddr addr);
 /* NB, control of 'addr' is passed via sk_new, which takes responsibility
  * for freeing it, as for new_connection() */
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
-	      int nodelay, Plug p);
+	      int nodelay, int keepalive, Plug p);
 
 Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only);
 

@@ -5,11 +5,12 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="WinSCP3.exe"/>
     <OBJFILES value="WinSCP3.obj forms\CustomScpExplorer.obj 
-      windows\CustomWinConfiguration.obj windows\GUIConfiguration.obj 
-      windows\GUITools.obj forms\NonVisual.obj windows\ProgParams.obj 
-      windows\QueueController.obj forms\ScpCommander.obj 
-      forms\ScpExplorer.obj windows\TerminalManager.obj windows\Tools.obj 
-      windows\UserInterface.obj windows\WinConfiguration.obj 
+      windows\CustomWinConfiguration.obj windows\EditorManager.obj 
+      windows\GUIConfiguration.obj windows\GUITools.obj forms\NonVisual.obj 
+      windows\ProgParams.obj windows\QueueController.obj 
+      forms\ScpCommander.obj forms\ScpExplorer.obj 
+      windows\SynchronizeController.obj windows\TerminalManager.obj 
+      windows\Tools.obj windows\UserInterface.obj windows\WinConfiguration.obj 
       windows\WinInterface.obj windows\WinMain.obj"/>
     <RESFILES value="windows\Windows.res WinSCP3.res"/>
     <DEFFILE value=""/>
@@ -70,6 +71,7 @@
       <FILE FILENAME="WinSCP3.cpp" FORMNAME="" UNITNAME="WinSCP3" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CustomScpExplorer.cpp" FORMNAME="CustomScpExplorerForm" UNITNAME="CustomScpExplorer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\CustomWinConfiguration.cpp" FORMNAME="" UNITNAME="CustomWinConfiguration" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\EditorManager.cpp" FORMNAME="" UNITNAME="EditorManager" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\GUIConfiguration.cpp" FORMNAME="" UNITNAME="GUIConfiguration" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\GUITools.cpp" FORMNAME="" UNITNAME="GUITools" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\NonVisual.cpp" FORMNAME="NonVisualDataModule" UNITNAME="NonVisual" CONTAINERID="CCompiler" DESIGNCLASS="TDataModule" LOCALCOMMAND=""/>
@@ -77,6 +79,7 @@
       <FILE FILENAME="windows\QueueController.cpp" FORMNAME="" UNITNAME="QueueController" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ScpCommander.cpp" FORMNAME="ScpCommanderForm" UNITNAME="ScpCommander" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ScpExplorer.cpp" FORMNAME="ScpExplorerForm" UNITNAME="ScpExplorer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\SynchronizeController.cpp" FORMNAME="" UNITNAME="SynchronizeController" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\TerminalManager.cpp" FORMNAME="" UNITNAME="TerminalManager" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\Tools.cpp" FORMNAME="" UNITNAME="Tools.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\UserInterface.cpp" FORMNAME="" UNITNAME="UserInterface" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -99,8 +102,8 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
 MinorVer=6
-Release=6
-Build=234
+Release=7
+Build=239
 Debug=0
 PreRelease=0
 Special=0
@@ -112,13 +115,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.6.6.234
+FileVersion=3.6.7.239
 InternalName=winscp3
 LegalCopyright=(c) 2000-2004 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp366.exe
+OriginalFilename=winscp367.exe
 ProductName=WinSCP
-ProductVersion=3.6.6.0
+ProductVersion=3.6.7.0
 WWW=http://winscp.sourceforge.net/
 
 [Compiler]

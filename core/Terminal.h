@@ -136,6 +136,7 @@ private:
   TStrings * FAdditionalInfo;
   AnsiString FLastDirectoryChange;
   TCurrentFSProtocol FFSProtocol;
+  TTerminal * FCommandSession;
   void __fastcall CommandError(Exception * E, const AnsiString Msg);
   int __fastcall CommandError(Exception * E, const AnsiString Msg, int Answers);
   AnsiString __fastcall PeekCurrentDirectory();
@@ -151,6 +152,8 @@ private:
   bool __fastcall GetAreCachesEmpty() const;
   void __fastcall ClearCachedFileList(const AnsiString Path, bool SubDirs);
   void __fastcall AddCachedFileList(TRemoteFileList * FileList);
+  bool __fastcall GetCommandSessionOpened();
+  TTerminal * __fastcall GetCommandSession();
 
 protected:
   bool FReadCurrentDirectoryPending;
@@ -298,6 +301,26 @@ public:
   __property bool IsCapable[TFSCapability Capability] = { read = GetIsCapable };
   __property TStrings * AdditionalInfo = { read = GetAdditionalInfo };
   __property bool AreCachesEmpty = { read = GetAreCachesEmpty };
+  __property bool CommandSessionOpened = { read = GetCommandSessionOpened };
+  __property TTerminal * CommandSession = { read = GetCommandSession };
+};
+//---------------------------------------------------------------------------
+class TSecondaryTerminal : public TTerminal
+{
+public:
+  __fastcall TSecondaryTerminal(TTerminal * MainTerminal);
+
+protected:
+  virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
+  virtual void __fastcall DirectoryModified(const AnsiString Path,
+    bool SubDirs);
+  virtual bool __fastcall DoPromptUser(AnsiString Prompt, TPromptKind Kind,
+    AnsiString & Response);
+  virtual void __fastcall SetSessionData(TSessionData * value);
+
+private:
+  bool FMasterPasswordTried;
+  TTerminal * FMainTerminal;
 };
 //---------------------------------------------------------------------------
 class TTerminalList : public TObjectList

@@ -102,6 +102,7 @@ void __fastcall TSessionData::Default()
   SFTPUploadQueue = 4;
   SFTPListingQueue = 2;
   SFTPSymlinkBug = asAuto;
+  SFTPMaxVersion = 5;
 
   CustomParam1 = "";
   CustomParam2 = "";
@@ -187,6 +188,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(SFTPUploadQueue);
     DUPL(SFTPListingQueue);
     DUPL(SFTPSymlinkBug);
+    DUPL(SFTPMaxVersion);
 
     DUPL(CustomParam1);
     DUPL(CustomParam2);
@@ -311,6 +313,7 @@ void __fastcall TSessionData::StoreToConfig(void * config)
 
   // permanent settings
   cfg->nopty = TRUE;
+  cfg->tcp_keepalives = 0;
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
@@ -430,6 +433,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     }
 
     SFTPSymlinkBug = TAutoSwitch(Storage->ReadInteger("SFTPSymlinkBug", SFTPSymlinkBug));
+    SFTPMaxVersion = Storage->ReadInteger("SFTPMaxVersion", SFTPMaxVersion);
 
     // read only (used only on Import from Putty dialog)
     ProtocolStr = Storage->ReadString("Protocol", ProtocolStr);
@@ -590,6 +594,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
     if (!PuttyExport)
     {
       WRITE_DATA(Integer, SFTPSymlinkBug);
+      WRITE_DATA(Integer, SFTPMaxVersion);
 
       WRITE_DATA(String, CustomParam1);
       WRITE_DATA(String, CustomParam2);
@@ -937,7 +942,8 @@ void __fastcall TSessionData::SetPublicKeyFile(AnsiString value)
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetDefaultLogFileName()
 {
-  return GetTemporaryPath() + MakeValidFileName(SessionName) + ".log";
+  return IncludeTrailingBackslash(SystemTemporaryDirectory()) +
+    MakeValidFileName(SessionName) + ".log";
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetReturnVar(AnsiString value)
@@ -1207,6 +1213,11 @@ void __fastcall TSessionData::SetSFTPUploadQueue(int value)
 void __fastcall TSessionData::SetSFTPListingQueue(int value)
 {
   SET_SESSION_PROPERTY(SFTPListingQueue);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetSFTPMaxVersion(int value)
+{
+  SET_SESSION_PROPERTY(SFTPMaxVersion);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetSFTPSymlinkBug(TAutoSwitch value)

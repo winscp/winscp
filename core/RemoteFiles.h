@@ -38,6 +38,7 @@ private:
   bool FSelected;
   bool FCyclicLink;
   AnsiString FFullFileName;
+  int FIsHidden;
   int __fastcall GetAttr();
   bool __fastcall GetBrokenLink();
   bool __fastcall GetIsDirectory() const;
@@ -55,6 +56,7 @@ private:
   AnsiString __fastcall GetFullFileName();
   int __fastcall GetIconIndex();
   bool __fastcall GetIsHidden();
+  void __fastcall SetIsHidden(bool value);
   bool __fastcall GetIsParentDirectory();
   bool __fastcall GetIsThisDirectory();
   bool __fastcall GetIsInaccesibleDirectory();
@@ -97,7 +99,7 @@ public:
   __property bool Selected  = { read=FSelected, write=FSelected };
   __property AnsiString FullFileName  = { read = GetFullFileName, write = FFullFileName };
   __property int IconIndex = { read = GetIconIndex };
-  __property bool IsHidden = { read = GetIsHidden };
+  __property bool IsHidden = { read = GetIsHidden, write = SetIsHidden };
   __property bool IsParentDirectory = { read = GetIsParentDirectory };
   __property bool IsThisDirectory = { read = GetIsThisDirectory };
   __property bool IsInaccesibleDirectory  = { read=GetIsInaccesibleDirectory };

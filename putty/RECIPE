@@ -6,6 +6,24 @@
 # really be made by editing this file and/or the Perl script, not
 # by editing the actual Makefiles.
 
+# ------------------------------------------------------------
+# Top-level configuration.
+
+# Overall project name.
+!name putty
+# Locations and types of output Makefiles.
+!makefile vc Makefile.vc
+!makefile vcproj MSVC
+!makefile cygwin Makefile.cyg
+!makefile borland Makefile.bor
+!makefile lcc Makefile.lcc
+!makefile gtk unix/Makefile.gtk
+!makefile mpw mac/Makefile.mpw
+# Source directories.
+!srcdir charset/
+!srcdir unix/
+!srcdir mac/
+
 # Help text added to the top of each Makefile, with /D converted
 # into -D as appropriate for the particular Makefile.
 
@@ -85,18 +103,79 @@
 #
 !end
 
+# ------------------------------------------------------------
+# Additional text added verbatim to each individual Makefile.
+
+# Hack to force version.o to be rebuilt always.
+!begin vc
+version.obj: *.c *.h *.rc
+	cl $(FWHACK) $(VER) $(CFLAGS) /c version.c
+!end
+!begin cygwin
+version.o: FORCE;
+FORCE:
+	$(CC) $(COMPAT) $(FWHACK) $(XFLAGS) $(CFLAGS) $(VER) -c version.c
+!end
+!begin borland
+version.obj: FORCE
+FORCE:
+	bcc32 $(FWHACK) $(VER) $(CFLAGS) /c version.c
+!end
+!begin lcc
+version.o: FORCE
+FORCE:
+	lcc $(FWHACK) $(VER) $(CFLAGS) /c version.c
+!end
+# For Unix, we also need the gross MD5 hack that causes automatic
+# version number selection in release source archives.
+!begin gtk
+version.o: FORCE;
+FORCE:
+	if test -z "$(VER)" && (cd ..; md5sum -c manifest); then \
+		$(CC) $(COMPAT) $(FWHACK) $(XFLAGS) $(CFLAGS) `cat ../version.def` -c ../version.c; \
+	else \
+		$(CC) $(COMPAT) $(FWHACK) $(XFLAGS) $(CFLAGS) $(VER) -c ../version.c; \
+	fi
+!end
+
+# `make install' target for Unix.
+!begin gtk
+install:
+	$(INSTALL_PROGRAM) -m 755 plink $(DESTDIR)$(bindir)/plink
+	$(INSTALL_PROGRAM) -m 755 pscp $(DESTDIR)$(bindir)/pscp
+	$(INSTALL_PROGRAM) -m 755 psftp $(DESTDIR)$(bindir)/psftp
+	$(INSTALL_PROGRAM) -m 755 pterm $(DESTDIR)$(bindir)/pterm
+	$(INSTALL_PROGRAM) -m 755 putty $(DESTDIR)$(bindir)/putty
+	$(INSTALL_PROGRAM) -m 755 puttygen $(DESTDIR)$(bindir)/puttygen
+	$(INSTALL_PROGRAM) -m 755 puttytel $(DESTDIR)$(bindir)/puttytel
+	$(INSTALL_DATA) -m 644 ../doc/plink.1 $(DESTDIR)$(man1dir)/plink.1
+	$(INSTALL_DATA) -m 644 ../doc/pscp.1 $(DESTDIR)$(man1dir)/pscp.1
+	$(INSTALL_DATA) -m 644 ../doc/psftp.1 $(DESTDIR)$(man1dir)/psftp.1
+	$(INSTALL_DATA) -m 644 ../doc/pterm.1 $(DESTDIR)$(man1dir)/pterm.1
+	$(INSTALL_DATA) -m 644 ../doc/putty.1 $(DESTDIR)$(man1dir)/putty.1
+	$(INSTALL_DATA) -m 644 ../doc/puttygen.1 $(DESTDIR)$(man1dir)/puttygen.1
+	$(INSTALL_DATA) -m 644 ../doc/puttytel.1 $(DESTDIR)$(man1dir)/puttytel.1
+
+install-strip:
+	$(MAKE) install INSTALL_PROGRAM="$(INSTALL_PROGRAM) -s"
+!end
+
+# ------------------------------------------------------------
 # Definitions of object groups. A group name, followed by an =,
 # followed by any number of objects or other already-defined group
 # names. A line beginning `+' is assumed to continue the previous
 # line.
 
+# Terminal emulator and its (platform-independent) dependencies.
+TERMINAL = terminal wcwidth ldiscucs logging tree234 minibidi
+         + config dialog
+
 # GUI front end and terminal emulator (putty, puttytel).
-GUITERM  = window windlg winctrls terminal sizetip wcwidth unicode ldiscucs
-         + logging printing winutils dialog config wincfg tree234
+GUITERM  = TERMINAL window windlg winctrls sizetip unicode printing
+         + winutils wincfg
 
 # Same thing on Unix.
-UXTERM   = pterm config uxcfg dialog gtkdlg gtkcols gtkpanel tree234
-         + terminal wcwidth uxucs ldiscucs logging uxprint xkeysym
+UXTERM   = TERMINAL pterm uxcfg gtkdlg gtkcols gtkpanel uxucs uxprint xkeysym
 
 # Non-SSH back ends (putty, puttytel, plink).
 NONSSH   = telnet raw rlogin ldisc
@@ -128,6 +207,7 @@ CHARSET  = sbcsdat slookup sbcs utf8 toucs fromucs xenc mimeenc macenc localenc
 LIBS     = advapi32.lib user32.lib gdi32.lib comctl32.lib comdlg32.lib
          + shell32.lib winmm.lib imm32.lib winspool.lib
 
+# ------------------------------------------------------------
 # Definitions of actual programs. The program name, followed by a
 # colon, followed by a list of objects. Also in the list may be the
 # keywords [G] for Windows GUI app, [C] for Console app, [X] for

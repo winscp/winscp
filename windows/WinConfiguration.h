@@ -85,10 +85,11 @@ struct TEditorConfiguration {
   AnsiString ReplaceText;
   bool FindMatchCase;
   bool FindWholeWord;
+  bool SingleEditor;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
     { return C(Editor) C(ExternalEditor) C(ExternalEditorText) C(FontName) C(FontHeight)
       C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
-      C(FindMatchCase) C(FindWholeWord) 0; };
+      C(FindMatchCase) C(FindWholeWord) C(SingleEditor) 0; };
 };
 //---------------------------------------------------------------------------
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };

@@ -156,8 +156,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentDeleteAction, EnableSelectedOperation)
   UPD(CurrentPropertiesAction, EnableSelectedOperation)
   UPD(RemoteMoveToAction, EnableSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
-  UPD(FileListToCommandLineAction, EnableSelectedOperation &&
-    ((DirView(osLocal) == DirView(osCurrent)) || ScpExplorer->Terminal->IsCapable[fcAnyCommand]))
+  UPD(FileListToCommandLineAction, EnableSelectedOperation)
   UPD(FileListToClipboardAction, EnableSelectedOperation)
   UPD(FullFileListToClipboardAction, EnableSelectedOperation)
   // directory
@@ -313,7 +312,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CompareDirectoriesAction, true)
   UPD(SynchronizeAction, true)
   UPD(FullSynchronizeAction, true)
-  UPD(ConsoleAction, ScpExplorer->Terminal && ScpExplorer->Terminal->IsCapable[fcAnyCommand])
+  UPD(ConsoleAction, true)
   UPD(PuttyAction, true)
   UPD(SynchronizeBrowsingAction, true)
   UPD(CloseApplicationAction, true)
@@ -322,8 +321,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
 
   // CUSTOM COMMANDS
   UPD(CustomCommandsAction,
-    (ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) &&
-    ScpExplorer->Terminal && ScpExplorer->Terminal->IsCapable[fcAnyCommand])
+    (ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)))
   UPD(CustomCommandsCustomizeAction, true)
 
   // QUEUE

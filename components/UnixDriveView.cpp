@@ -56,7 +56,9 @@ __fastcall TCustomUnixDriveView::~TCustomUnixDriveView()
   Terminal = NULL;
   if (FDummyDragFile != NULL)
   {
+    #ifndef DESIGN_ONLY
     SAFE_DESTROY(FDummyDragFile);
+    #endif
   }
 }
 //---------------------------------------------------------------------------
@@ -351,11 +353,13 @@ TRemoteFile * __fastcall TCustomUnixDriveView::NodeFileForce(TTreeNode * Node)
 
   if (File == NULL)
   {
+    #ifndef DESIGN_ONLY
     SAFE_DESTROY(FDummyDragFile);
     FDummyDragFile = new TRemoteDirectoryFile();
     FDummyDragFile->FileName = Node->Text;
     FDummyDragFile->FullFileName = NodePathName(Node);
     File = FDummyDragFile;
+    #endif
   }
 
   return File;
@@ -521,10 +525,12 @@ AnsiString __fastcall TCustomUnixDriveView::NodePathName(TTreeNode * Node)
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::ClearDragFileList(TFileList * FileList)
 {
+  #ifndef DESIGN_ONLY
   if (FDummyDragFile != NULL)
   {
     SAFE_DESTROY(FDummyDragFile);
   }
+  #endif
   TCustomDriveView::ClearDragFileList(FileList);
 }
 //---------------------------------------------------------------------------

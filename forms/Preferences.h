@@ -115,9 +115,6 @@ __published:
   TRadioButton *DDExtEnabledButton;
   TRadioButton *DDExtDisabledButton;
   TPanel *DDExtDisabledPanel;
-  TRadioButton *DDSystemTemporaryDirectoryButton;
-  TRadioButton *DDCustomTemporaryDirectoryButton;
-  TDirectoryEdit *DDTemporaryDirectoryEdit;
   TCheckBox *DDWarnLackOfTempSpaceCheck;
   TCheckBox *DDWarnOnMoveCheck;
   TCheckBox *ConfirmExitOnCompletionCheck;
@@ -152,6 +149,15 @@ __published:
   TRadioButton *ResumeSmartButton;
   TRadioButton *ResumeOffButton;
   TUpDownEdit *ResumeThresholdEdit;
+  TCheckBox *ConfirmCommandSessionCheck;
+  TXPGroupBox *SingleEditorGroup;
+  TRadioButton *EditorSingleEditorOnCheck;
+  TRadioButton *EditorSingleEditorOffCheck;
+  TXPGroupBox *TemporaryDirectoryGrouo;
+  TRadioButton *DDSystemTemporaryDirectoryButton;
+  TRadioButton *DDCustomTemporaryDirectoryButton;
+  TDirectoryEdit *DDTemporaryDirectoryEdit;
+  TLabel *Label6;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

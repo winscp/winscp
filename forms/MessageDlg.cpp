@@ -24,6 +24,7 @@ protected:
 
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
   AnsiString __fastcall GetFormText();
+  virtual void __fastcall CreateParams(TCreateParams & Params);
 
 private:
   TLabel * Message;
@@ -82,6 +83,16 @@ AnsiString __fastcall TMessageForm::GetFormText()
     DividerLine, Message->Caption, sLineBreak, DividerLine, MoreMessages,
     ButtonCaptions, sLineBreak, DividerLine));
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::CreateParams(TCreateParams & Params)
+{
+  TForm::CreateParams(Params);
+  if ((Screen != NULL) && (Screen->ActiveForm != NULL) &&
+      Screen->ActiveForm->HandleAllocated())
+  {
+    Params.WndParent = Screen->ActiveForm->Handle;
+  }
 }
 //---------------------------------------------------------------------------
 const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
@@ -256,6 +267,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
     TMoreButton * MoreButton = new TMoreButton(Result);
     MoreButton->Parent = Result;
     MoreButton->Panel = MessageMemo;
+    MoreButton->RepositionForm = true;
     MoreButton->Name = "MoreButton";
 
     MessageMemo->TabOrder = static_cast<short>(MoreButton->TabOrder + 1);
@@ -334,6 +346,8 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
       ButtonWidth, ButtonHeight);
     X += ButtonWidth + ButtonSpacing;
   }
+
+  UseSystemSettings(Result);
 
   return Result;
 }

@@ -6,7 +6,7 @@ ROOT = $(MAKEDIR)\..
 MAKE = $(ROOT)\bin\make.exe -$(MAKEFLAGS) -f$&.mak
 BPR2MAK = $(ROOT)\bin\bpr2mak
 #------------------------------------------------------------------------------
-default: WinSCP3.exe DragExt.dll
+default: WinSCP3.exe DragExt.dll lib\DiscMon_B5.lib
 
 WinSCP3.exe: WinSCP3.bpr
 WinSCP3.exe: lib\Moje_B5.lib lib\DragDrop_B5.lib lib\DriveDir_B5.lib

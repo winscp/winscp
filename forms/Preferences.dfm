@@ -71,13 +71,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 224
+          Height = 245
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             362
-            224)
+            245)
           object CopyOnDoubleClickCheck: TCheckBox
             Left = 16
             Top = 153
@@ -134,18 +134,18 @@ object PreferencesDialog: TPreferencesDialog
             Width = 338
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Drag && drop operations'
+            Caption = 'D&rag && drop operations'
             TabOrder = 5
             OnClick = ControlChange
           end
           object ContinueOnErrorCheck: TCheckBox
             Left = 16
-            Top = 197
+            Top = 219
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Continue on &error (advanced users)'
-            TabOrder = 8
+            TabOrder = 9
             OnClick = ControlChange
           end
           object ConfirmExitOnCompletionCheck: TCheckBox
@@ -154,7 +154,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Exiting application on &operation completion'
+            Caption = 'Exiting application on o&peration completion'
             TabOrder = 4
             OnClick = ControlChange
           end
@@ -168,10 +168,20 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 2
             OnClick = ControlChange
           end
+          object ConfirmCommandSessionCheck: TCheckBox
+            Left = 16
+            Top = 197
+            Width = 330
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Opening separate &shell session'
+            TabOrder = 8
+            OnClick = ControlChange
+          end
         end
         object NotificationsGroup: TXPGroupBox
           Left = 8
-          Top = 238
+          Top = 256
           Width = 362
           Height = 51
           Anchors = [akLeft, akTop, akRight]
@@ -513,16 +523,19 @@ object PreferencesDialog: TPreferencesDialog
           Height = 345
           TabOrder = 0
           inherited CommonPropertiesGroup: TXPGroupBox
-            Left = 198
+            Left = 197
             Top = 209
             Height = 73
             Caption = 'Common options'
+            DesignSize = (
+              173
+              73)
             inherited CommonPreserveTimestampCheck: TCheckBox
               Top = 19
             end
           end
           inherited LocalPropertiesGroup: TXPGroupBox
-            Left = 198
+            Left = 197
             Top = 156
             Height = 48
             Caption = 'Download options'
@@ -550,6 +563,9 @@ object PreferencesDialog: TPreferencesDialog
             Left = 247
             Top = 8
             Width = 123
+            DesignSize = (
+              123
+              146)
             inherited CCNoChangeButton: TRadioButton
               Width = 110
             end
@@ -567,6 +583,9 @@ object PreferencesDialog: TPreferencesDialog
             Left = 8
             Top = 8
             Width = 231
+            DesignSize = (
+              231
+              146)
             inherited TMTextButton: TRadioButton
               Width = 219
             end
@@ -583,9 +602,12 @@ object PreferencesDialog: TPreferencesDialog
           inherited FilterGroup: TXPGroupBox
             Left = 8
             Top = 284
-            Width = 363
+            Width = 362
+            DesignSize = (
+              362
+              41)
             inherited ExcludeFileMaskCombo: THistoryComboBox
-              Width = 255
+              Width = 254
             end
           end
         end
@@ -600,12 +622,12 @@ object PreferencesDialog: TPreferencesDialog
           335)
         object EditorGroup: TXPGroupBox
           Left = 8
-          Top = 8
+          Top = 87
           Width = 362
           Height = 122
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Default editor'
-          TabOrder = 0
+          TabOrder = 1
           DesignSize = (
             362
             122)
@@ -652,12 +674,12 @@ object PreferencesDialog: TPreferencesDialog
         end
         object EditorFontGroup: TXPGroupBox
           Left = 8
-          Top = 136
+          Top = 215
           Width = 362
           Height = 56
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Editor font'
-          TabOrder = 1
+          TabOrder = 2
           DesignSize = (
             362
             56)
@@ -683,12 +705,12 @@ object PreferencesDialog: TPreferencesDialog
         end
         object EditorOptionsGroup: TXPGroupBox
           Left = 8
-          Top = 198
+          Top = 277
           Width = 362
           Height = 51
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Options'
-          TabOrder = 2
+          TabOrder = 3
           DesignSize = (
             362
             51)
@@ -701,6 +723,31 @@ object PreferencesDialog: TPreferencesDialog
             Caption = '&Wrap long lines'
             TabOrder = 0
             OnClick = ControlChange
+          end
+        end
+        object SingleEditorGroup: TXPGroupBox
+          Left = 8
+          Top = 8
+          Width = 362
+          Height = 73
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Allow multiple opened files (editors)'
+          TabOrder = 0
+          object EditorSingleEditorOnCheck: TRadioButton
+            Left = 16
+            Top = 21
+            Width = 329
+            Height = 17
+            Caption = '&One file only, use main session to upload changed files'
+            TabOrder = 0
+          end
+          object EditorSingleEditorOffCheck: TRadioButton
+            Left = 16
+            Top = 45
+            Width = 337
+            Height = 17
+            Caption = '&Multiple files, use background transfer to upload changed files'
+            TabOrder = 1
           end
         end
       end
@@ -838,7 +885,7 @@ object PreferencesDialog: TPreferencesDialog
           Width = 362
           Height = 317
           Anchors = [akLeft, akTop, akRight, akBottom]
-          Caption = 'Custom commands (SCP only)'
+          Caption = 'Custom commands'
           TabOrder = 0
           DesignSize = (
             362
@@ -1008,13 +1055,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 287
+          Height = 241
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Drag && Drop downloads'
           TabOrder = 0
           DesignSize = (
             362
-            287)
+            241)
           object DDExtEnabledLabel: TLabel
             Left = 35
             Top = 68
@@ -1067,61 +1114,29 @@ object PreferencesDialog: TPreferencesDialog
             Left = 34
             Top = 184
             Width = 325
-            Height = 97
+            Height = 51
             BevelOuter = bvNone
             TabOrder = 2
             DesignSize = (
               325
-              97)
-            object DDSystemTemporaryDirectoryButton: TRadioButton
-              Left = 0
-              Top = 0
-              Width = 297
-              Height = 17
-              Caption = '&Use temporary directory of system'
-              TabOrder = 0
-              OnClick = ControlChange
-            end
-            object DDCustomTemporaryDirectoryButton: TRadioButton
-              Left = 0
-              Top = 24
-              Width = 129
-              Height = 17
-              Caption = 'Use this &directory:'
-              TabOrder = 1
-              OnClick = ControlChange
-            end
-            object DDTemporaryDirectoryEdit: TDirectoryEdit
-              Left = 136
-              Top = 20
-              Width = 181
-              Height = 21
-              AcceptFiles = True
-              DialogText = 'Select directory for temporary drag && drop files.'
-              ClickKey = 16397
-              Anchors = [akLeft, akTop, akRight]
-              TabOrder = 2
-              Text = 'DDTemporaryDirectoryEdit'
-              OnClick = ControlChange
-              OnKeyDown = PathEditsKeyDown
-            end
+              51)
             object DDWarnLackOfTempSpaceCheck: TCheckBox
               Left = 0
-              Top = 53
+              Top = 5
               Width = 321
               Height = 17
               Caption = '&Warn when there is not enough free space'
-              TabOrder = 3
+              TabOrder = 0
               OnClick = ControlChange
             end
             object DDWarnOnMoveCheck: TCheckBox
               Left = 0
-              Top = 76
+              Top = 28
               Width = 303
               Height = 17
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Warn when mo&ving via temporary directory'
-              TabOrder = 4
+              TabOrder = 1
               OnClick = ControlChange
             end
           end
@@ -1241,7 +1256,7 @@ object PreferencesDialog: TPreferencesDialog
           335)
         object RandomSeedFileLabel: TLabel
           Left = 16
-          Top = 93
+          Top = 202
           Width = 82
           Height = 13
           Caption = '&Random seed file'
@@ -1276,7 +1291,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object RandomSeedFileEdit: TFilenameEdit
           Left = 136
-          Top = 89
+          Top = 198
           Width = 234
           Height = 21
           AcceptFiles = True
@@ -1286,10 +1301,65 @@ object PreferencesDialog: TPreferencesDialog
           DialogTitle = 'Select file for random seed'
           ClickKey = 16397
           Anchors = [akLeft, akTop, akRight]
-          TabOrder = 1
+          TabOrder = 2
           Text = 'RandomSeedFileEdit'
           OnChange = ControlChange
           OnKeyDown = PathEditsKeyDown
+        end
+        object TemporaryDirectoryGrouo: TXPGroupBox
+          Left = 8
+          Top = 88
+          Width = 362
+          Height = 99
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Temporary directory'
+          TabOrder = 1
+          DesignSize = (
+            362
+            99)
+          object Label6: TLabel
+            Left = 16
+            Top = 22
+            Width = 329
+            Height = 23
+            Anchors = [akLeft, akTop, akRight]
+            AutoSize = False
+            Caption = 'Specify where to temporarily store edited and downloaded files.'
+            WordWrap = True
+            OnClick = DDExtLabelClick
+          end
+          object DDSystemTemporaryDirectoryButton: TRadioButton
+            Left = 16
+            Top = 45
+            Width = 297
+            Height = 17
+            Caption = '&Use temporary directory of system'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+          object DDCustomTemporaryDirectoryButton: TRadioButton
+            Left = 16
+            Top = 69
+            Width = 129
+            Height = 17
+            Caption = 'Use this &directory:'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object DDTemporaryDirectoryEdit: TDirectoryEdit
+            Left = 152
+            Top = 65
+            Width = 197
+            Height = 21
+            AcceptFiles = True
+            DialogText = 'Select directory for temporary drag && drop files.'
+            ClickKey = 16397
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 2
+            Text = 'DDTemporaryDirectoryEdit'
+            OnClick = ControlChange
+            OnKeyDown = PathEditsKeyDown
+          end
         end
       end
       object TransferResumeSheet: TTabSheet

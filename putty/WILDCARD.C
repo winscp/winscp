@@ -30,6 +30,17 @@
  */
 
 /*
+ * Some notes on differences from POSIX globs (IEEE Std 1003.1, 2003 ed.):
+ *  - backslashes act as escapes even within [] bracket expressions
+ *  - does not support [!...] for non-matching list (POSIX are weird);
+ *    NB POSIX allows [^...] as well via "A bracket expression starting
+ *    with an unquoted circumflex character produces unspecified
+ *    results". If we wanted to allow [!...] we might want to define
+ *    [^!] as having its literal meaning (match '^' or '!').
+ *  - none of the scary [[:class:]] stuff, etc
+ */
+
+/*
  * The wildcard matching technique we use is very simple and
  * potentially O(N^2) in running time, but I don't anticipate it
  * being that bad in reality (particularly since N will be the size

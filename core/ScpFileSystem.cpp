@@ -191,7 +191,7 @@ bool __fastcall TCommandSet::GetOneLineCommand(TFSCommand /*Cmd*/)
 void __fastcall TCommandSet::SetCommands(TFSCommand Cmd, AnsiString value)
 {
   CHECK_CMD;
-  strcpy(CommandSet[Cmd].Command, value.SubString(1, MaxCommandLen).c_str());
+  strcpy(CommandSet[Cmd].Command, value.SubString(1, MaxCommandLen - 1).c_str());
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TCommandSet::GetCommands(TFSCommand Cmd)

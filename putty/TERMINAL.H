@@ -208,6 +208,14 @@ struct terminal_tag {
      * through.
      */
     int in_term_out;
+
+    /*
+     * These are buffers used by the bidi and Arabic shaping code.
+     */
+    unsigned long *ltemp;
+    bidi_char *wcFrom, *wcTo;
+    unsigned long **pre_bidi_cache, **post_bidi_cache;
+    int bidi_cache_size;
 };
 
 #define in_utf(term) ((term)->utf || (term)->ucsdata->line_codepage==CP_UTF8)

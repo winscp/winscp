@@ -4,10 +4,10 @@
 #pragma hdrstop
 USEFORM("forms\About.cpp", AboutDialog);
 USEFORM("forms\Cleanup.cpp", CleanupDialog);
+USEFORM("forms\ComboInput.cpp", ComboInputDialog);
 USEFORM("forms\Console.cpp", ConsoleDialog);
 USEFORM("forms\Copy.cpp", CopyDialog);
 USEFORM("forms\CopyParams.cpp", CopyParamsFrame); /* TFrame: File Type */
-USEFORM("forms\ComboInput.cpp", ComboInputDialog);
 USEFORM("forms\Editor.cpp", EditorForm);
 USEFORM("forms\FileSystemInfo.cpp", FileSystemInfoDialog);
 USEFORM("forms\FullSynchronize.cpp", FullSynchronizeDialog);
@@ -16,8 +16,8 @@ USEFORM("forms\ImportSessions.cpp", ImportSessionsDialog);
 USEFORM("forms\Licence.cpp", LicenceDialog);
 USEFORM("forms\LocationProfiles.cpp", LocationProfilesDialog);
 USEFORM("forms\Log.cpp", LogForm);
-USEFORM("forms\LogSettings.cpp", LoggingFrame); /* TFrame: File Type */
 USEFORM("forms\Login.cpp", LoginDialog);
+USEFORM("forms\LogSettings.cpp", LoggingFrame); /* TFrame: File Type */
 USEFORM("forms\OpenDirectory.cpp", OpenDirectoryDialog);
 USEFORM("forms\OperationStatus.cpp", OperationStatusForm);
 USEFORM("forms\Password.cpp", PasswordDialog);

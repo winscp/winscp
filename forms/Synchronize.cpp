@@ -60,7 +60,7 @@ void __fastcall TSynchronizeDialog::UpdateControls()
   StartButton->Default = StartButton->Visible;
   StopButton->Visible = FSynchronizing;
   StopButton->Default = StopButton->Visible;
-  Caption = LoadStr(FSynchronizing ? SYCHRONIZE_SYCHRONIZING : SYCHRONIZE_TITLE);
+  Caption = LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE);
   EnableControl(TransferPreferencesButton, !FSynchronizing);
   EnableControl(CancelButton, !FSynchronizing);
   EnableControl(DirectoriesGroup, !FSynchronizing);
@@ -134,7 +134,7 @@ void __fastcall TSynchronizeDialog::DoStartStop(bool Start)
 {
   if (FOnStartStop)
   {
-    FOnStartStop(this, Start, GetParams(), DoAbort);
+    FOnStartStop(this, Start, GetParams(), DoAbort, NULL);
   }
 }
 //---------------------------------------------------------------------------

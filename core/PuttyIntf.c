@@ -18,7 +18,7 @@
 #include <misc.h>
 #include <storage.h>
 //---------------------------------------------------------------------------
-char sshver[40];
+char sshver[50];
 //---------------------------------------------------------------------------
 void SSHLogEvent(void * frontend, char * string);
 void SSHFatalError(char * string);
@@ -34,7 +34,8 @@ long RegCreateWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
   va_list ap; \
   char stuff[200]; \
   va_start(ap, FMT); \
-  vsprintf(stuff, FMT, ap); \
+  vsnprintf(stuff, sizeof(stuff), FMT, ap); \
+  stuff[sizeof(stuff) - 1] = '\0'; \
   va_end(ap);
 
 #define FATAL_BOX(FMT) \

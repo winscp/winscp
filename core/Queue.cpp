@@ -47,7 +47,6 @@ protected:
     Exception * E;
   };
 
-  bool FMasterPasswordTried;
   TTerminalQueue * FQueue;
   TTerminal * FTerminal;
   TQueueItem * FItem;
@@ -72,29 +71,6 @@ protected:
     bool & DisconnectWhenFinished);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
-};
-//---------------------------------------------------------------------------
-typedef int __fastcall (__closure *TDirectoryAffected)
-  (TTerminal * Terminal, const AnsiString Directory);
-//---------------------------------------------------------------------------
-class TSecondaryTerminal : public TTerminal
-{
-public:
-  __fastcall TSecondaryTerminal(TTerminal * MainTerminal);
-
-  __property TDirectoryAffected OnDirectoryAffected = { read = FOnDirectoryAffected,
-    write = FOnDirectoryAffected };
-
-protected:
-  virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
-  virtual void __fastcall DirectoryModified(const AnsiString Path,
-    bool SubDirs);
-
-private:
-  TTerminal * FMainTerminal;
-  TDirectoryAffected FOnDirectoryAffected;
-
-  void __fastcall DoDirectoryAffected(const AnsiString Path);
 };
 //---------------------------------------------------------------------------
 // TSignalThread
@@ -216,7 +192,6 @@ __fastcall TTerminalQueue::TTerminalQueue(TTerminal * Terminal,
   assert(Terminal != NULL);
   FSessionData = new TSessionData("");
   FSessionData->Assign(Terminal->SessionData);
-  FSessionData->NonPersistant();
 
   FItems = new TList();
   FTerminals = new TList();
@@ -668,29 +643,6 @@ bool __fastcall TTerminalQueue::GetIsEmpty()
   return (FItems->Count == 0);
 }
 //---------------------------------------------------------------------------
-// TSecondaryTerminal
-//---------------------------------------------------------------------------
-__fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal) :
-  TTerminal(), FMainTerminal(MainTerminal)
-{
-  assert(FMainTerminal != NULL);
-  OnDirectoryAffected = NULL;
-  UseBusyCursor = false;
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecondaryTerminal::DirectoryLoaded(TRemoteFileList * FileList)
-{
-  FMainTerminal->DirectoryLoaded(FileList);
-  assert(FileList != NULL);
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecondaryTerminal::DirectoryModified(const AnsiString Path,
-  bool SubDirs)
-{
-  // clear cache of main terminal
-  FMainTerminal->DirectoryModified(Path, SubDirs);
-}
-//---------------------------------------------------------------------------
 // TTerminalItem
 //---------------------------------------------------------------------------
 __fastcall TTerminalItem::TTerminalItem(TTerminalQueue * Queue) :
@@ -702,6 +654,8 @@ __fastcall TTerminalItem::TTerminalItem(TTerminalQueue * Queue) :
   FTerminal = new TSecondaryTerminal(FQueue->FTerminal);
   try
   {
+    FTerminal->UseBusyCursor = false;
+    
     FTerminal->Configuration = Queue->FConfiguration;
     FTerminal->SessionData = Queue->FSessionData;
 
@@ -759,7 +713,6 @@ void __fastcall TTerminalItem::ProcessEvent()
     {
       FItem->SetStatus(TQueueItem::qsConnecting);
 
-      FMasterPasswordTried = false;
       FTerminal->SessionData->RemoteDirectory = FItem->StartupDirectory();
       FTerminal->Open();
       FTerminal->DoStartup();
@@ -905,34 +858,17 @@ void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
 void __fastcall TTerminalItem::TerminalPromptUser(TSecureShell * SecureShell,
   AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result)
 {
-  Result = false;
-  
-  if (!FMasterPasswordTried)
-  {
-    // let's expect that the main session is already authenticated and its password
-    // is not written after, so no locking is necessary
-    Response = FQueue->FTerminal->Password;
-    if (!Response.IsEmpty())
-    {
-      Result = true;
-    }
-    FMasterPasswordTried = true;
-  }
+  TPromptUserRec PromptUserRec;
+  PromptUserRec.SecureShell = SecureShell;
+  PromptUserRec.Prompt = Prompt;
+  PromptUserRec.Kind = Kind;
+  PromptUserRec.Response = Response;
+  PromptUserRec.Result = Result;
 
-  if (!Result)
+  if (WaitForUserAction(TQueueItem::qsPrompt, &PromptUserRec))
   {
-    TPromptUserRec PromptUserRec;
-    PromptUserRec.SecureShell = SecureShell;
-    PromptUserRec.Prompt = Prompt;
-    PromptUserRec.Kind = Kind;
-    PromptUserRec.Response = Response;
-    PromptUserRec.Result = Result;
-
-    if (WaitForUserAction(TQueueItem::qsPrompt, &PromptUserRec))
-    {
-      Response = PromptUserRec.Response;
-      Result = PromptUserRec.Result;
-    }
+    Response = PromptUserRec.Response;
+    Result = PromptUserRec.Result;
   }
 }
 //---------------------------------------------------------------------------
@@ -980,7 +916,7 @@ void __fastcall TTerminalItem::OperationProgress(
 //---------------------------------------------------------------------------
 __fastcall TQueueItem::TQueueItem() :
   FStatus(qsPending), FTerminalItem(NULL), FSection(NULL), FProgressData(NULL),
-  FQueue(NULL), FInfo(NULL)
+  FQueue(NULL), FInfo(NULL), FCompleteEvent(INVALID_HANDLE_VALUE)
 {
   FSection = new TCriticalSection();
   FInfo = new TInfo();
@@ -988,6 +924,11 @@ __fastcall TQueueItem::TQueueItem() :
 //---------------------------------------------------------------------------
 __fastcall TQueueItem::~TQueueItem()
 {
+  if (FCompleteEvent != INVALID_HANDLE_VALUE)
+  {
+    SetEvent(FCompleteEvent);
+  }
+
   delete FSection;
   delete FInfo;
 }

@@ -81,21 +81,26 @@ __published:
   void __fastcall EditorMemoChange(TObject *Sender);
   void __fastcall FindDialogFind(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
+  void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
 private:
   AnsiString FFileName;
   TNotifyEvent FOnFileChanged;
+  TNotifyEvent FOnWindowClose;
   TCustomForm * FParentForm;
   TFindDialog * FLastFindDialog;
   TPoint FCaretPos;
+  bool FShowWindowButton;
   void __fastcall SetFileName(const AnsiString value);
   void __fastcall SetParentForm(TCustomForm * value);
+  void __fastcall SetShowWindowButton(bool value);
 public:
   __fastcall TEditorForm(TComponent* Owner);
   virtual __fastcall ~TEditorForm();
-  bool __fastcall Execute();
   __property AnsiString FileName = { read = FFileName, write = SetFileName };
   __property TNotifyEvent OnFileChanged = { read = FOnFileChanged, write = FOnFileChanged };
+  __property TNotifyEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
   __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
+  __property bool ShowWindowButton = { read = FShowWindowButton, write = SetShowWindowButton };
 protected:
   void __fastcall ApplyConfiguration();
   bool __fastcall CursorInUpperPart();
@@ -105,6 +110,7 @@ protected:
   void __fastcall PositionFindDialog(bool VerticalOnly);
   void __fastcall StartFind(bool Find);
   void __fastcall UpdateControls();
+  virtual void __fastcall CreateParams(TCreateParams & Params);
 };
 //---------------------------------------------------------------------------
 #endif

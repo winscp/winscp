@@ -686,14 +686,26 @@ int main(int argc, char **argv)
 	    if (!load_encrypted) {
 		void *vblob;
 		char *blob;
-		int n, bloblen;
+		int n, l, bloblen;
 
 		ret = rsakey_pubblob(&infilename, &vblob, &bloblen, &error);
 		blob = (char *)vblob;
 
 		n = 4;		       /* skip modulus bits */
-		n += ssh1_read_bignum(blob + n, &ssh1key->exponent);
-		n += ssh1_read_bignum(blob + n, &ssh1key->modulus);
+		
+		l = ssh1_read_bignum(blob + n, bloblen - n,
+				     &ssh1key->exponent);
+		if (l < 0) {
+		    error = "SSH1 public key blob was too short";
+		} else {
+		    n += l;
+		    l = ssh1_read_bignum(blob + n, bloblen - n,
+					 &ssh1key->modulus);
+		    if (l < 0) {
+			error = "SSH1 public key blob was too short";
+		    } else
+			n += l;
+		}
 		ssh1key->comment = NULL;
 		ssh1key->private_exponent = NULL;
 	    } else {

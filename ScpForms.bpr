@@ -5,24 +5,24 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpForms.lib"/>
     <OBJFILES value="forms\InputDlg.obj forms\MessageDlg.obj windows\VCLCommon.obj 
-      forms\About.obj forms\Cleanup.obj forms\Console.obj forms\Copy.obj 
-      forms\CopyParams.obj forms\ComboInput.obj forms\Editor.obj 
-      forms\FileSystemInfo.obj forms\FullSynchronize.obj 
+      forms\About.obj forms\Cleanup.obj forms\ComboInput.obj 
+      forms\Console.obj forms\Copy.obj forms\CopyParams.obj 
+      forms\Editor.obj forms\FileSystemInfo.obj forms\FullSynchronize.obj 
       forms\GeneralSettings.obj forms\ImportSessions.obj forms\Licence.obj 
-      forms\LocationProfiles.obj forms\Log.obj forms\LogSettings.obj 
-      forms\Login.obj forms\OpenDirectory.obj forms\OperationStatus.obj 
-      forms\Password.obj forms\Preferences.obj forms\Progress.obj 
-      forms\Properties.obj forms\Rights.obj forms\RightsExt.obj 
-      forms\SelectMask.obj forms\Symlink.obj forms\Synchronize.obj 
-      forms\SynchronizeProgress.obj"/>
+      forms\LocationProfiles.obj forms\Log.obj forms\Login.obj 
+      forms\LogSettings.obj forms\OpenDirectory.obj 
+      forms\OperationStatus.obj forms\Password.obj forms\Preferences.obj 
+      forms\Progress.obj forms\Properties.obj forms\Rights.obj 
+      forms\RightsExt.obj forms\SelectMask.obj forms\Symlink.obj 
+      forms\Synchronize.obj forms\SynchronizeProgress.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
-    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Cleanup.dfm forms\Console.dfm 
-      forms\Copy.dfm forms\CopyParams.dfm forms\ComboInput.dfm forms\Editor.dfm 
+    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Cleanup.dfm forms\ComboInput.dfm 
+      forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm forms\Editor.dfm 
       forms\FileSystemInfo.dfm forms\FullSynchronize.dfm 
       forms\GeneralSettings.dfm forms\ImportSessions.dfm forms\Licence.dfm 
-      forms\LocationProfiles.dfm forms\Log.dfm forms\LogSettings.dfm 
-      forms\Login.dfm forms\OpenDirectory.dfm forms\OperationStatus.dfm 
+      forms\LocationProfiles.dfm forms\Log.dfm forms\Login.dfm 
+      forms\LogSettings.dfm forms\OpenDirectory.dfm forms\OperationStatus.dfm 
       forms\Password.dfm forms\Preferences.dfm forms\Progress.dfm 
       forms\Properties.dfm forms\Rights.dfm forms\RightsExt.dfm 
       forms\SelectMask.dfm forms\Symlink.dfm forms\Synchronize.dfm 
@@ -72,10 +72,10 @@
       <FILE FILENAME="windows\VCLCommon.cpp" FORMNAME="" UNITNAME="VCLCommon" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\About.cpp" FORMNAME="AboutDialog" UNITNAME="About" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Cleanup.cpp" FORMNAME="CleanupDialog" UNITNAME="Cleanup" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\ComboInput.cpp" FORMNAME="ComboInputDialog" UNITNAME="ComboInput" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Console.cpp" FORMNAME="ConsoleDialog" UNITNAME="Console" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Copy.cpp" FORMNAME="CopyDialog" UNITNAME="Copy" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CopyParams.cpp" FORMNAME="CopyParamsFrame" UNITNAME="CopyParams" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
-      <FILE FILENAME="forms\ComboInput.cpp" FORMNAME="ComboInputDialog" UNITNAME="ComboInput" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Editor.cpp" FORMNAME="EditorForm" UNITNAME="Editor" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FileSystemInfo.cpp" FORMNAME="FileSystemInfoDialog" UNITNAME="FileSystemInfo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FullSynchronize.cpp" FORMNAME="FullSynchronizeDialog" UNITNAME="FullSynchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -84,8 +84,8 @@
       <FILE FILENAME="forms\Licence.cpp" FORMNAME="LicenceDialog" UNITNAME="Licence" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\LocationProfiles.cpp" FORMNAME="LocationProfilesDialog" UNITNAME="LocationProfiles" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Log.cpp" FORMNAME="LogForm" UNITNAME="Log" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="forms\LogSettings.cpp" FORMNAME="LoggingFrame" UNITNAME="LogSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Login.cpp" FORMNAME="LoginDialog" UNITNAME="Login" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\LogSettings.cpp" FORMNAME="LoggingFrame" UNITNAME="LogSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\OpenDirectory.cpp" FORMNAME="OpenDirectoryDialog" UNITNAME="OpenDirectory" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\OperationStatus.cpp" FORMNAME="OperationStatusForm" UNITNAME="OperationStatus" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Password.cpp" FORMNAME="PasswordDialog" UNITNAME="Password" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
