@@ -158,6 +158,10 @@ puttytel : [X] UXTERM uxmisc misc ldisc settings pty uxsel be_nossh uxstore
 
 plink    : [U] uxplink uxcons NONSSH UXSSH be_all logging UXMISC signal ux_x11
 
+puttygen : [U] cmdgen sshrsag sshdssg sshprime sshdes sshbn sshmd5 version
+         + sshrand uxnoise sshsha misc sshrsa sshdss uxcons uxstore uxmisc
+         + sshpubk sshaes sshsh512 import puttygen.res tree234 uxgen
+
 pscp     : [U] scp uxsftp uxcons UXSSH be_none SFTP wildcard UXMISC
 psftp    : [U] psftp uxsftp uxcons UXSSH be_none SFTP UXMISC
 

@@ -45,6 +45,7 @@ private:
   AnsiString FOrigMasks;
   Boolean FAllowTransferMode;
   TCopyParamType * FParams;
+  bool FForcePreserveTime;
   Boolean __fastcall GetAllowTransferMode();
   AnsiString __fastcall GetAsciiFileMask();
   void __fastcall SetParams(TCopyParamType value);
@@ -52,6 +53,7 @@ private:
   void __fastcall SetAllowTransferMode(Boolean value);
   void __fastcall SetDirection(TParamsForDirection value);
   TCheckBox * __fastcall GetPreserveTimeCheck();
+  void __fastcall SetForcePreserveTime(bool value);
 protected:
   void __fastcall UpdateControls();
   virtual void __fastcall SetEnabled(Boolean Value);
@@ -66,6 +68,7 @@ public:
   __property TParamsForDirection Direction = { read = FDirection, write = SetDirection };
   __property TCopyParamType Params = { read = GetParams, write = SetParams };
   __property TCheckBox * PreserveTimeCheck = { read = GetPreserveTimeCheck };
+  __property bool ForcePreserveTime = { read = FForcePreserveTime, write = SetForcePreserveTime };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -54,6 +54,7 @@ type
     constructor Create(AOwner: TComponent); override;
     function ClosestUnselected(Item: TListItem): TListItem;
     procedure SelectAll(Mode: TSelectMode); reintroduce;
+    procedure SelectCurrentItem(FocusNext: Boolean);
 
     property ColProperties: TCustomListViewColProperties read FColProperties write FColProperties stored False;
     //CLEAN property SelCount: Integer read GetSelCount;
@@ -304,20 +305,29 @@ begin
     end;
 end;
 
+procedure TCustomNortonLikeListView.SelectCurrentItem(FocusNext: Boolean);
+var
+  Item: TListItem;
+begin
+  Item := ItemFocused;
+  if Item = nil then Item := Items[0];
+  Item.Selected := not Item.Selected;
+  if FocusNext then
+  begin
+    SendMessage(Handle, WM_KEYDOWN, VK_DOWN, LongInt(0));
+  end;
+end;
+
 procedure TCustomNortonLikeListView.WMKeyDown(var Message: TWMKeyDown);
 var
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
-  Item: TListItem;
 begin
   if NortonLike and (Message.CharCode = VK_INSERT) then
   begin
     if Items.Count > 0 then
     begin
-      Item := ItemFocused;
-      if Item = nil then Item := Items[0];
-      Item.Selected := not Item.Selected;
-      SendMessage(Handle, WM_KEYDOWN, VK_DOWN, LongInt(0));
+      SelectCurrentItem(True);
       Message.Result := 1;
     end;
   end

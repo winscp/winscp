@@ -30,6 +30,12 @@
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
   FILE_OPERATION_LOOP_CUSTOM(this, ALLOW_SKIP, MESSAGE, OPERATION)
 //---------------------------------------------------------------------------
+struct TMoveFileParams
+{
+  AnsiString Target;
+  AnsiString FileMask;
+};
+//---------------------------------------------------------------------------
 __fastcall TTerminal::TTerminal(): TSecureShell()
 {
   FFiles = new TRemoteDirectory(this);
@@ -198,6 +204,7 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
     case fsCopyToRemote:
     case fsDeleteFile:
     case fsRenameFile:
+    case fsMoveFile:
     case fsCreateDirectory:
     case fsChangeMode:
     case fsChangeGroup:
@@ -544,7 +551,7 @@ void __fastcall TTerminal::ReloadDirectory()
 void __fastcall TTerminal::EnsureNonExistence(const AnsiString FileName)
 {
   // if filename doesn't contain path, we check for existence of file
-  if ((UnixExtractFileDir(FileName) == FileName) &&
+  if ((UnixExtractFileDir(FileName).IsEmpty()) &&
       UnixComparePaths(CurrentDirectory, FFiles->Directory))
   {
     TRemoteFile *File = FFiles->FindFile(FileName);
@@ -1112,7 +1119,7 @@ void __fastcall TTerminal::RenameFile(const AnsiString FileName,
   const AnsiString NewName)
 {
   LogEvent(FORMAT("Renaming file \"%s\" to \"%s\".", (FileName, NewName)));
-  DoRenameFile(FileName, NewName);
+  DoRenameFile(FileName, NewName, false);
   ReactOnCommand(fsRenameFile);
 }
 //---------------------------------------------------------------------------
@@ -1155,7 +1162,7 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoRenameFile(const AnsiString FileName,
-  const AnsiString NewName)
+  const AnsiString NewName, bool Move)
 {
   try
   {
@@ -1166,10 +1173,33 @@ void __fastcall TTerminal::DoRenameFile(const AnsiString FileName,
   {
     COMMAND_ERROR_ARI
     (
-      FMTLOAD(RENAME_FILE_ERROR, (FileName, NewName)),
-      DoRenameFile(FileName, NewName)
+      FMTLOAD(Move ? MOVE_FILE_ERROR : RENAME_FILE_ERROR, (FileName, NewName)),
+      DoRenameFile(FileName, NewName, Move)
     );
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::MoveFile(const AnsiString FileName,
+  const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)
+{
+  assert(Param != NULL);
+  const TMoveFileParams & Params = *static_cast<const TMoveFileParams*>(Param);
+  AnsiString NewName = UnixIncludeTrailingBackslash(Params.Target) +
+    MaskFileName(UnixExtractFileName(FileName), Params.FileMask);
+  LogEvent(FORMAT("Moving file \"%s\" to \"%s\".", (FileName, NewName)));
+  FileModified(File, FileName);
+  DoRenameFile(FileName, NewName, true);
+  ReactOnCommand(fsMoveFile);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::MoveFiles(TStrings * FileList, const AnsiString Target,
+  const AnsiString FileMask)
+{
+  TMoveFileParams Params;
+  Params.Target = Target;
+  Params.FileMask = FileMask;
+  DirectoryModified(Target, true);
+  return ProcessFiles(FileList, foRemoteMove, MoveFile, &Params);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CreateDirectory(const AnsiString DirName,

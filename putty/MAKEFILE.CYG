@@ -221,6 +221,9 @@ be_none.o: be_none.c putty.h puttyps.h network.h misc.h winstuff.h \
 be_nossh.o: be_nossh.c putty.h puttyps.h network.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
+cmdgen.o: cmdgen.c putty.h ssh.h puttyps.h network.h misc.h puttymem.h \
+		int64.h winstuff.h mac/macstuff.h unix/unix.h tree234.h \
+		winhelp.h charset/charset.h
 cmdline.o: cmdline.c putty.h puttyps.h network.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
@@ -424,6 +427,9 @@ uxcfg.o: unix/uxcfg.c putty.h dialog.h storage.h puttyps.h network.h misc.h \
 uxcons.o: unix/uxcons.c putty.h storage.h ssh.h puttyps.h network.h misc.h \
 		puttymem.h int64.h winstuff.h mac/macstuff.h unix/unix.h \
 		tree234.h winhelp.h charset/charset.h
+uxgen.o: unix/uxgen.c putty.h puttyps.h network.h misc.h winstuff.h \
+		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
+		charset/charset.h
 uxmisc.o: unix/uxmisc.c putty.h puttyps.h network.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h

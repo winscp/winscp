@@ -290,7 +290,7 @@ static void bump(char *fmt, ...)
     if (back != NULL && back->socket(backhandle) != NULL) {
 	char ch;
 	back->special(backhandle, TS_EOF);
-	ssh_scp_recv(&ch, 1);
+	ssh_scp_recv((unsigned char *) &ch, 1);
     }
 
     if (gui_mode)
@@ -455,7 +455,7 @@ static void print_stats(char *name, unsigned long size, unsigned long done,
     pct = (int) (100 * (done * 1.0 / size));
 
     if (gui_mode) {
-	gui_update_stats(name, size, pct, elap, done, eta, 
+	gui_update_stats(name, size, pct, elap, done, eta,
 			 (unsigned long) ratebs);
     } else {
 	len = printf("\r%-25.25s | %10ld kB | %5.1f kB/s | ETA: %8s | %3d%%",
@@ -531,7 +531,7 @@ static int response(void)
     char ch, resp, rbuf[2048];
     int p;
 
-    if (ssh_scp_recv(&resp, 1) <= 0)
+    if (ssh_scp_recv((unsigned char *) &resp, 1) <= 0)
 	bump("Lost connection");
 
     p = 0;
@@ -544,7 +544,7 @@ static int response(void)
       case 1:			       /* error */
       case 2:			       /* fatal error */
 	do {
-	    if (ssh_scp_recv(&ch, 1) <= 0)
+	    if (ssh_scp_recv((unsigned char *) &ch, 1) <= 0)
 		bump("Protocol error: Lost connection");
 	    rbuf[p++] = ch;
 	} while (p < sizeof(rbuf) && ch != '\n');
@@ -560,11 +560,11 @@ static int response(void)
 
 int sftp_recvdata(char *buf, int len)
 {
-    return ssh_scp_recv(buf, len);
+    return ssh_scp_recv((unsigned char *) buf, len);
 }
 int sftp_senddata(char *buf, int len)
 {
-    back->send(backhandle, (unsigned char *) buf, len);
+    back->send(backhandle, buf, len);
     return 1;
 }
 
@@ -1320,14 +1320,14 @@ int scp_get_sink_action(struct scp_sink_action *act)
 	bufsize = 0;
 
 	while (!done) {
-	    if (ssh_scp_recv(&ch, 1) <= 0)
+	    if (ssh_scp_recv((unsigned char *) &ch, 1) <= 0)
 		return 1;
 	    if (ch == '\n')
 		bump("Protocol error: Unexpected newline");
 	    i = 0;
 	    action = ch;
 	    do {
-		if (ssh_scp_recv(&ch, 1) <= 0)
+		if (ssh_scp_recv((unsigned char *) &ch, 1) <= 0)
 		    bump("Lost connection");
 		if (i >= bufsize) {
 		    bufsize = i + 128;
@@ -1442,7 +1442,7 @@ int scp_recv_filedata(char *data, int len)
 
 	return actuallen;
     } else {
-	return ssh_scp_recv(data, len);
+	return ssh_scp_recv((unsigned char *) data, len);
     }
 }
 
@@ -2034,7 +2034,7 @@ static void get_dir_list(int argc, char *argv[])
     if (using_sftp) {
 	scp_sftp_listdir(src);
     } else {
-	while (ssh_scp_recv(&c, 1) > 0)
+	while (ssh_scp_recv((unsigned char *) &c, 1) > 0)
 	    tell_char(stdout, c);
     }
 }
@@ -2171,7 +2171,7 @@ int psftp_main(int argc, char *argv[])
     if (back != NULL && back->socket(backhandle) != NULL) {
 	char ch;
 	back->special(backhandle, TS_EOF);
-	ssh_scp_recv(&ch, 1);
+	ssh_scp_recv((unsigned char *) &ch, 1);
     }
     random_save_seed();
 

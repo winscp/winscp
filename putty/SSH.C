@@ -2767,6 +2767,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 		    if (s->authed)
 			break;
 		}
+		sfree(s->response);
 	    }
 	    if (s->authed)
 		break;
@@ -4537,7 +4538,6 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
      */
     s->username[0] = '\0';
     s->got_username = FALSE;
-    s->need_pw = FALSE;
     do {
 	/*
 	 * Get a username.
@@ -4744,6 +4744,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 
 	    s->method = 0;
 	    ssh->pkt_ctx &= ~SSH2_PKTCTX_AUTH_MASK;
+	    s->need_pw = FALSE;
 
 	    /*
 	     * Most password/passphrase prompts will be
@@ -4923,6 +4924,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 		    if (s->authed)
 			continue;
 		}
+		sfree(s->response);
 	    }
 
 	    if (!s->method && s->can_pubkey && s->publickey_blob
@@ -5196,6 +5198,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 
 		    ssh2_pkt_send(ssh);
 		    s->type = AUTH_TYPE_PUBLICKEY;
+		    key->alg->freekey(key->data);
 		}
 	    } else if (s->method == AUTH_PASSWORD) {
 		/*
@@ -6265,10 +6268,18 @@ static void ssh_free(void *handle)
 	ssh->csmac->free_context(ssh->cs_mac_ctx);
     if (ssh->sc_mac_ctx)
 	ssh->scmac->free_context(ssh->sc_mac_ctx);
-    if (ssh->cs_comp_ctx)
-	ssh->cscomp->compress_cleanup(ssh->cs_comp_ctx);
-    if (ssh->sc_comp_ctx)
-	ssh->sccomp->compress_cleanup(ssh->sc_comp_ctx);
+    if (ssh->cs_comp_ctx) {
+	if (ssh->cscomp)
+	    ssh->cscomp->compress_cleanup(ssh->cs_comp_ctx);
+	else
+	    zlib_compress_cleanup(ssh->cs_comp_ctx);
+    }
+    if (ssh->sc_comp_ctx) {
+	if (ssh->sccomp)
+	    ssh->sccomp->decompress_cleanup(ssh->sc_comp_ctx);
+	else
+	    zlib_decompress_cleanup(ssh->sc_comp_ctx);
+    }
     if (ssh->kex_ctx)
 	dh_cleanup(ssh->kex_ctx);
     sfree(ssh->savedhost);

@@ -2090,8 +2090,10 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           }
           HandleExtendedException(&E, this);
         );
-        Success = false;
       }
+      // this was inside above condition, but then transfer was considered
+      // succesfull, even when for example user refused to overwrite file
+      Success = false;
     }
     catch (EScpSkipFile &E)
     {

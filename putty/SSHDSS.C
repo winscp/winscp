@@ -473,6 +473,18 @@ static int dss_openssh_fmtkey(void *key, unsigned char *blob, int len)
     return bloblen;
 }
 
+static int dss_pubkey_bits(void *blob, int len)
+{
+    struct dss_key *dss;
+    int ret;
+
+    dss = dss_newkey((char *) blob, len);
+    ret = bignum_bitcount(dss->p);
+    dss_freekey(dss);
+
+    return ret;
+}
+
 static unsigned char *dss_sign(void *key, char *data, int datalen, int *siglen)
 {
     /*
@@ -630,6 +642,7 @@ const struct ssh_signkey ssh_dss = {
     dss_createkey,
     dss_openssh_createkey,
     dss_openssh_fmtkey,
+    dss_pubkey_bits,
     dss_fingerprint,
     dss_verifysig,
     dss_sign,

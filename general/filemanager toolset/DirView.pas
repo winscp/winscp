@@ -262,6 +262,7 @@ type
     procedure DDMenuDone(Sender: TObject; AMenu: HMenu); override;
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint;
       Point: TPoint; dwEffect: Longint); override;
+    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); override;
 
     function GetPathName: string; override;
     procedure SetChangeInterval(Value: Cardinal); virtual;
@@ -440,6 +441,10 @@ type
     property OnDDQueryContinueDrag;
     property OnDDGiveFeedback;
     property OnDDDragDetect;
+    property OnDDCreateDragFileList;
+    property OnDDEnd;
+    property OnDDCreateDataObject;
+    property OnDDTargetHasDropHandler;
     {Drag&Drop:}
     property DDLinkOnExeDrag default True;
     property OnDDProcessDropped;
@@ -527,9 +532,6 @@ uses
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
   MaskSearch, FileChanges, BaseUtils, Math;
-
-{resourcestring
-  SResolveLinkError = 'Can''t resolve link ''%s''';} 
 
 procedure Register;
 begin
@@ -947,6 +949,9 @@ begin
   begin
     SourceEffects := DragSourceEffects;
     TargetEffects := [deCopy, deMove, deLink];
+
+    ShellExtensions.DragDropHandler := True;
+    ShellExtensions.DropHandler := True;
   end;
 end; {Create}
 
@@ -2131,7 +2136,7 @@ begin
   end;
 end; {GetDisplayData}
 
-function TDirView.GetDirOK: Boolean; 
+function TDirView.GetDirOK: Boolean;
 begin
   Result := FDirOK;
 end;
@@ -2141,9 +2146,14 @@ begin
   if Assigned(Item) and Assigned(Item.Data) then
   begin
     if not IsRecycleBin then
-      Result := FPath + '\' + PFileRec(Item.Data)^.FileName
-    else
-      Result := PFileRec(Item.Data)^.FileName;
+    begin
+      if PFileRec(Item.Data)^.IsParentDir then
+        Result := ExcludeTrailingBackslash(ExtractFilePath(FPath))
+      else
+        Result := FPath + '\' + PFileRec(Item.Data)^.FileName;
+    end
+      else
+    Result := PFileRec(Item.Data)^.FileName;
   end
     else
   Result := EmptyStr;
@@ -2745,8 +2755,8 @@ begin
 {$ENDIF}
     try
       {create the phyical directory:}
-      if not Windows.CreateDirectory(PChar(DirName), nil) then
-        LastIOResult := GetLastError;
+      if Windows.CreateDirectory(PChar(DirName), nil) then LastIOResult := 0 // MP
+        else LastIOResult := GetLastError;
 
       if LastIOResult = 0 then
       begin
@@ -3715,6 +3725,22 @@ begin
 {$ENDIF}
   end;
 end; {DDDragDetect}
+
+procedure TDirView.DDChooseEffect(grfKeyState: Integer;
+  var dwEffect: Integer);
+begin
+  if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) then
+  begin
+    if ExeDrag and (Path[1] >= FirstFixedDrive) and
+      (DragDrive >= FirstFixedDrive) then dwEffect := DropEffect_Link
+      else
+    if DragOnDriveIsMove and
+       (not DDOwnerIsSource or Assigned(DropTarget)) and
+       (((DragDrive = Upcase(Path[1])) and (dwEffect = DropEffect_Copy) and
+       (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
+         or IsRecycleBin) then dwEffect := DropEffect_Move;
+  end;
+end;
 
 procedure TDirView.PerformDragDropFileOperation(TargetPath: string;
   dwEffect: Integer; RenameOnCollision: Boolean);

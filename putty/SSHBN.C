@@ -133,7 +133,7 @@ static void internal_add_shifted(BignumInt *number,
     int bshift = shift % BIGNUM_INT_BITS;
     BignumDblInt addend;
 
-    addend = n << bshift;
+    addend = (BignumDblInt)n << bshift;
 
     while (addend) {
 	addend += number[word];
@@ -909,6 +909,7 @@ Bignum modinv(Bignum number, Bignum modulus)
 	x = bigmuladd(q, xp, t);
 	sign = -sign;
 	freebn(t);
+	freebn(q);
     }
 
     freebn(b);

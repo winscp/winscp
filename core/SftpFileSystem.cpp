@@ -43,6 +43,7 @@ const int SFTPMinVersion = 0;
 const int SFTPMaxVersion = 4;
 const int SFTPNoMessageNumber = -1;
 
+const int asNo =            0;
 const int asOK =            1 << SSH_FX_OK;
 const int asEOF =           1 << SSH_FX_EOF;
 const int asOpUnsupported = 1 << SSH_FX_OP_UNSUPPORTED;
@@ -100,10 +101,22 @@ public:
     AddByte(FType);
     if (FType != SSH_FXP_INIT)
     {
-      FMessageNumber = (FMessageCounter << 8) + FType;
-      FMessageCounter++;
+      AssignNumber();
       AddCardinal(FMessageNumber);
     }
+  }
+
+  void Reuse()
+  {
+    AssignNumber();
+    
+    assert(Length >= 5);
+
+    // duplicated in AddCardinal()
+    unsigned char Buf[4];
+    PUT_32BIT(Buf, FMessageNumber);
+
+    memcpy(FData + 1, Buf, sizeof(Buf));
   }
 
   void AddByte(unsigned char Value)
@@ -113,6 +126,7 @@ public:
 
   void AddCardinal(unsigned long Value)
   {
+    // duplicated in Reuse()
     unsigned char Buf[4];
     PUT_32BIT(Buf, Value);
     Add(&Buf, sizeof(Buf));
@@ -341,6 +355,20 @@ public:
     }
   }
 
+  AnsiString __fastcall Dump() const
+  {
+    AnsiString Result;
+    for (unsigned int Index = 0; Index < Length; Index++)
+    {
+      Result += IntToHex(int((unsigned char)Data[Index]), 2) + ",";
+      if (((Index + 1) % 25) == 0)
+      {
+        Result += "\n";
+      }
+    }
+    return Result;
+  }
+
   TSFTPPacket & operator = (const TSFTPPacket & Source)
   {
     Capacity = 0;
@@ -382,6 +410,12 @@ private:
     FMessageNumber = SFTPNoMessageNumber;
     FType = -1;
     FReservedBy = NULL;
+  }
+
+  void AssignNumber()
+  {
+    FMessageNumber = (FMessageCounter << 8) + FType;
+    FMessageCounter++;
   }
 
   unsigned char GetRequestType()
@@ -703,15 +737,27 @@ public:
     return TSFTPTransferQueue::Init(QueueLen);
   }
 
+  void __fastcall InitFillGapRequest(__int64 Offset, unsigned long Missing,
+    TSFTPPacket * Packet)
+  {
+    InitRequest(Packet, Offset, Missing);
+  }
+
 protected:
   virtual bool __fastcall InitRequest(TSFTPPacket * Request)
   {
-    Request->ChangeType(SSH_FXP_READ);
-    Request->AddString(FHandle);
-    Request->AddInt64(FTransfered);
-    Request->AddCardinal(FBlockSize);
+    InitRequest(Request, FTransfered, FBlockSize);
     FTransfered += FBlockSize;
     return true;
+  }
+
+  void __fastcall InitRequest(TSFTPPacket * Request, __int64 Offset,
+    unsigned long Size)
+  {
+    Request->ChangeType(SSH_FXP_READ);
+    Request->AddString(FHandle);
+    Request->AddInt64(Offset);
+    Request->AddCardinal(Size);
   }
 
   virtual bool __fastcall SendNext(TSFTPPacket * Request)
@@ -1118,7 +1164,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     }
     if (LanguageTag.IsEmpty())
     {
-      LanguageTag = "?";
+      LanguageTag = "*";
     }
     if (FTerminal->IsLogging())
     {
@@ -1171,13 +1217,25 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
       IsReserved = false;
 
       assert(Packet);
-      char LenBuf[4];
-      FTerminal->Receive(LenBuf, sizeof(LenBuf));
+      char LenBuf[5];
+      LenBuf[sizeof(LenBuf) - 1] = '\0';
+      FTerminal->Receive(LenBuf, sizeof(LenBuf) - 1);
       int Length = GET_32BIT(LenBuf);
       if (Length > SFTP_MAX_PACKET_LEN)
       {
-        FTerminal->FatalError(FMTLOAD(SFTP_PACKET_TOO_BIG, (
-          Length, SFTP_MAX_PACKET_LEN)));
+        AnsiString Message = FMTLOAD(SFTP_PACKET_TOO_BIG, (
+          int(Length), SFTP_MAX_PACKET_LEN));
+        if (ExpectedType == SSH_FXP_VERSION)
+        {
+          AnsiString LenString = LenBuf;
+          if (!IsDisplayableStr(LenString))
+          {
+            LenString = "0x" + StrToHex(LenString);
+          }
+          Message = FMTLOAD(SFTP_PACKET_TOO_BIG_INIT_EXPLAIN,
+            (Message, LenString));
+        }
+        FTerminal->FatalError(Message);
       }
       Packet->Capacity = Length;
       FTerminal->Receive(Packet->Data, Length);
@@ -1635,7 +1693,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
     SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
 
     Handle = Packet.GetString();
-  }     
+  }
   catch(...)
   {
     if (FTerminal->Active)
@@ -1654,6 +1712,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
     Packet.ChangeType(SSH_FXP_READDIR);
     Packet.AddString(Handle);
+
     SendPacket(&Packet);
 
     do
@@ -1666,15 +1725,24 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
         Packet.ChangeType(SSH_FXP_READDIR);
         Packet.AddString(Handle);
+
         SendPacket(&Packet);
         ReserveResponse(&Packet, &Response);
 
         unsigned int Count = ListingPacket.GetCardinal();
+
         for (unsigned long Index = 0; Index < Count; Index++)
         {
           File = LoadFile(&ListingPacket, NULL);
           FileList->AddFile(File);
+
           Total++;
+        }
+
+        if (Count == 0)
+        {
+          FTerminal->LogEvent("Empty directory listing packet. Aborting directory reading."); 
+          isEOF = true;
         }
       }
       else if (Response.Type == SSH_FXP_STATUS)
@@ -2336,7 +2404,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
       if (CopyParam->PreserveTime)
       {
-        FILE_OPERATION_LOOP(FMTLOAD(CHANGE_PROPERTIES_ERROR, (DestFileName)),
+        FILE_OPERATION_LOOP(FMTLOAD(PRESERVE_TIME_ERROR, (DestFileName)),
           TSFTPPacket Packet(SSH_FXP_SETSTAT);
           Packet.AddString(DestFullName);
           if (FVersion >= 4)
@@ -2511,6 +2579,7 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
 
   OperationProgress->SetFile(DirectoryName);
 
+  bool CreateDir = false;
   try
   {
     TryOpenDirectory(DestFullName);
@@ -2521,18 +2590,23 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
     {
       // opening directory failed, it probably does not exists, try to
       // create it
-      TRemoteProperties Properties;
-      if (CopyParam->PreserveRights)
-      {
-        Properties.Valid = TValidProperties() << vpRights;
-        Properties.Rights = CopyParam->RemoteFileRights(Attrs);
-      }
-      FTerminal->CreateDirectory(DestFullName, &Properties);
+      CreateDir = true;
     }
     else
     {
       throw;
     }
+  }
+
+  if (CreateDir)
+  {
+    TRemoteProperties Properties;
+    if (CopyParam->PreserveRights)
+    {
+      Properties.Valid = TValidProperties() << vpRights;
+      Properties.Rights = CopyParam->RemoteFileRights(Attrs);
+    }
+    FTerminal->CreateDirectory(DestFullName, &Properties);
   }
 
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
@@ -2845,6 +2919,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
       {
         TSFTPDownloadQueue Queue(this);
         TSFTPPacket DataPacket;
+
         int QueueLen = int(File->Size / BlockSize) + 1;
         if (QueueLen > FTerminal->SessionData->SFTPDownloadQueue)
         {
@@ -2855,13 +2930,25 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
 
         bool Eof = false;
         bool PrevIncomplete = false;
+        int GapFillCount = 0;
+        int GapCount = 0;
+        unsigned long Missing = 0;
         unsigned long DataLen = 0;
+
         while (!Eof)
         {
-          // Buffer for one block of data
-          TFileBuffer BlockBuf;
-
-          Queue.ReceivePacket(&DataPacket, SSH_FXP_DATA, asEOF);
+          if (Missing > 0)
+          {
+            Queue.InitFillGapRequest(OperationProgress->TransferedSize, Missing,
+              &DataPacket);
+            GapFillCount++;
+            SendPacketAndReceiveResponse(&DataPacket, &DataPacket,
+              SSH_FXP_DATA, asEOF);
+          }
+          else
+          {
+            Queue.ReceivePacket(&DataPacket, SSH_FXP_DATA, asEOF);
+          }
 
           if (DataPacket.Type == SSH_FXP_STATUS)
           {
@@ -2871,8 +2958,14 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
 
           if (!Eof)
           {
-            if (PrevIncomplete)
+            if ((Missing == 0) && PrevIncomplete)
             {
+              // This can happen only if last request returned less bytes
+              // than expected, but exacly number of bytes missing to last
+              // known file size, but actually EOF was not reached.
+              // Can happen only when filesize has changed since directory
+              // listing and server returns less bytes than requested and
+              // fiel has some special file size.
               FTerminal->LogEvent(FORMAT(
                 "Received incomplete data packet before end of file, "
                 "offset: %s, size: %d, requested: %d",
@@ -2881,9 +2974,37 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
               FTerminal->TerminalError(NULL, LoadStr(SFTP_INCOMPLETE_BEFORE_EOF));
             }
 
+            // Buffer for one block of data
+            TFileBuffer BlockBuf;
+
             DataLen = DataPacket.GetCardinal();
+
+            PrevIncomplete = false;
+            if (Missing > 0)
+            {
+              assert(DataLen <= Missing);
+              Missing -= DataLen;
+            }
+            else if (DataLen < BlockSize)
+            {
+              if (OperationProgress->TransferedSize + DataLen !=
+                    OperationProgress->TransferSize)
+              {
+                // with native text transfer mode (SFTP>=4), do not bother about
+                // getting less than requested, read offset is ignored anyway
+                if ((FVersion < 4) || !OperationProgress->AsciiTransfer)
+                {
+                  GapCount++;
+                  Missing = BlockSize - DataLen;
+                }
+              }
+              else
+              {
+                PrevIncomplete = true;
+              }
+            }
+
             assert(DataLen <= BlockSize);
-            PrevIncomplete = (DataLen < BlockSize);
             BlockBuf.Insert(0, DataPacket.NextData, DataLen);
             OperationProgress->AddTransfered(DataLen);
 
@@ -2909,6 +3030,13 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
             }
           }
         };
+
+        if (GapCount > 0)
+        {
+          FTerminal->LogEvent(FORMAT(
+            "%d requests to fill %d data gaps were issued.",
+            (GapFillCount, GapCount)));
+        }
       }
 
       if (CopyParam->PreserveTime)

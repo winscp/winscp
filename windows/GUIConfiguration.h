@@ -18,6 +18,7 @@ private:
   bool FContinueOnError;
   AnsiString FPuttyPath;
   AnsiString FPuttySession;
+  int FSynchronizeParams;
 
 protected:
   LCID FLocale;
@@ -40,7 +41,8 @@ public:
 
   __property bool CopyParamDialogExpanded = { read = FCopyParamDialogExpanded, write = FCopyParamDialogExpanded };
   __property bool ErrorDialogExpanded = { read = FErrorDialogExpanded, write = FErrorDialogExpanded };
-  __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError};
+  __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };
+  __property int SynchronizeParams = { read = FSynchronizeParams, write = FSynchronizeParams };
   __property LCID Locale = { read = GetLocale, write = SetLocale };
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
   __property TStrings * Locales = { read = GetLocales };

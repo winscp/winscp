@@ -629,6 +629,18 @@ static int rsa2_openssh_fmtkey(void *key, unsigned char *blob, int len)
     return bloblen;
 }
 
+static int rsa2_pubkey_bits(void *blob, int len)
+{
+    struct RSAKey *rsa;
+    int ret;
+
+    rsa = rsa2_newkey((char *) blob, len);
+    ret = bignum_bitcount(rsa->modulus);
+    rsa2_freekey(rsa);
+
+    return ret;
+}
+
 static char *rsa2_fingerprint(void *key)
 {
     struct RSAKey *rsa = (struct RSAKey *) key;
@@ -715,7 +727,7 @@ static int rsa2_verifysig(void *key, char *sig, int siglen,
 
     ret = 1;
 
-    bytes = bignum_bitcount(rsa->modulus) / 8;
+    bytes = (bignum_bitcount(rsa->modulus)+7) / 8;
     /* Top (partial) byte should be zero. */
     if (bignum_byte(out, bytes - 1) != 0)
 	ret = 0;
@@ -794,6 +806,7 @@ const struct ssh_signkey ssh_rsa = {
     rsa2_createkey,
     rsa2_openssh_createkey,
     rsa2_openssh_fmtkey,
+    rsa2_pubkey_bits,
     rsa2_fingerprint,
     rsa2_verifysig,
     rsa2_sign,

@@ -10,6 +10,8 @@
 #include "GUITools.h"
 #include <stdio.h>
 #include <ResourceModule.hpp>
+#include <InitGUID.h>
+#include <DragExt.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -17,6 +19,7 @@ const char ShellCommandFileNamePattern[] = "!.!";
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
+  FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
   FCustomCommands = new TCustomCommands();
   Default();
@@ -40,6 +43,8 @@ void __fastcall TWinConfiguration::Default()
   FDDTemporaryDirectory = "";
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
+  FDDExtEnabled = true;
+  FDDExtTimeout = 1000; 
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
   FSelectMask = "*.*";
@@ -53,7 +58,7 @@ void __fastcall TWinConfiguration::Default()
   FDimmHiddenFiles = true;
   FAutoStartSession = "";
   FExpertMode = true;
-  FUseLocationProfiles = true;
+  FUseLocationProfiles = false;
 
   FEditor.Editor = edInternal;
   FEditor.ExternalEditor = "notepad.exe";
@@ -84,12 +89,14 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanelWidth = 0.5;
   FScpCommander.StatusBar = true;
   FScpCommander.ToolBar = true;
+  FScpCommander.CommandLine = false;
   FScpCommander.ExplorerStyleSelection = false;
   FScpCommander.PreserveLocalDirectory = false;
   FScpCommander.CoolBarLayout = "5,0,0,219,6;1,1,0,319,5;4,0,0,227,4;3,1,0,136,3;6,1,0,121,2;2,1,1,67,1;0,1,1,649,0";
   FScpCommander.CurrentPanel = osLocal;
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
+  FScpCommander.SynchronizeBrowsing = false;
   FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0|0;1;2;3;4;5";
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
@@ -174,6 +181,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     UseLocationProfiles); \
     KEY(Bool,     ForceDeleteTempFolder); \
     KEY(Integer,  LocaleSafe); \
+    KEY(Bool,     DDExtEnabled); \
+    KEY(Integer,  DDExtTimeout); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
     KEY(Integer,  Editor.Editor); \
@@ -202,12 +211,14 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Integer, ScpCommander.CurrentPanel); \
     KEY(Float,   ScpCommander.LocalPanelWidth); \
     KEY(Bool,    ScpCommander.StatusBar); \
+    KEY(Bool,    ScpCommander.CommandLine); \
     KEY(Bool,    ScpCommander.ToolBar); \
     KEY(String,  ScpCommander.WindowParams); \
     KEY(Bool,    ScpCommander.ExplorerStyleSelection); \
     KEY(Bool,    ScpCommander.PreserveLocalDirectory); \
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
+    KEY(Bool,    ScpCommander.SynchronizeBrowsing); \
   ); \
   BLOCK("Interface\\Commander\\LocalPanel", CANCREATE, \
     KEY(String, ScpCommander.LocalPanel.CoolBarLayout); \
@@ -222,7 +233,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
   BLOCK("Logging", CANCREATE, \
     KEY(Bool,    LogWindowOnStartup); \
     KEY(String,  LogWindowParams); \
-  );
+  ); 
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
 {
@@ -400,6 +411,20 @@ AnsiString __fastcall TWinConfiguration::StoreForm(TCustomForm * Form)
     (int)Form->WindowState));
 }
 //---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetDDExtInstalled()
+{
+  if (FDDExtInstalled < 0)
+  {
+    void* DragExtRef;
+    bool Result;
+    Result = (CoCreateInstance(CLSID_ShellExtension, NULL,
+      CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IUnknown,
+      &DragExtRef) == S_OK);
+    FDDExtInstalled = (Result ? 1 : 0);
+  }
+  return (FDDExtInstalled > 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLogWindowOnStartup(bool value)
 {
   SET_CONFIG_PROPERTY(LogWindowOnStartup);
@@ -423,6 +448,16 @@ void __fastcall TWinConfiguration::SetDDTransferConfirmation(bool value)
 void __fastcall TWinConfiguration::SetDDTemporaryDirectory(AnsiString value)
 {
   SET_CONFIG_PROPERTY(DDTemporaryDirectory);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDDExtEnabled(bool value)
+{
+  SET_CONFIG_PROPERTY(DDExtEnabled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDDExtTimeout(int value)
+{
+  SET_CONFIG_PROPERTY(DDExtTimeout);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDWarnLackOfTempSpace(bool value)

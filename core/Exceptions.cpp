@@ -30,7 +30,8 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
     	FMoreMessages->Assign(((ExtException*)E)->MoreMessages);
     }
 
-    if (!E->Message.IsEmpty())
+    if (!E->Message.IsEmpty() &&
+        !E->InheritsFrom(__classid(EAbort)))
     {
       FMoreMessages->Insert(0, E->Message);
     }

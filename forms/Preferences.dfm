@@ -280,7 +280,7 @@ object PreferencesDialog: TPreferencesDialog
           335)
         object PanelsRemoteDirectoryGroup: TXPGroupBox
           Left = 8
-          Top = 88
+          Top = 105
           Width = 362
           Height = 51
           Anchors = [akLeft, akTop, akRight]
@@ -304,26 +304,26 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 72
+          Height = 91
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             362
-            72)
+            91)
           object ShowHiddenFilesCheck: TCheckBox
             Left = 16
             Top = 21
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Show hidden files'
+            Caption = '&Show hidden files (Ctrl+Alt+H)'
             TabOrder = 0
             OnClick = ControlChange
           end
           object DefaultDirIsHomeCheck: TCheckBox
             Left = 16
-            Top = 42
+            Top = 63
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -331,77 +331,14 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 1
             OnClick = ControlChange
           end
-        end
-        object DragDropPreferencesGroup: TXPGroupBox
-          Left = 8
-          Top = 147
-          Width = 362
-          Height = 166
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Drag && Drop'
-          TabOrder = 2
-          DesignSize = (
-            362
-            166)
-          object Label5: TLabel
+          object DeleteToRecycleBinCheck: TCheckBox
             Left = 16
-            Top = 47
-            Width = 337
-            Height = 39
-            AutoSize = False
-            Caption = 
-              'When downloading files using drag && drop, they are stored first' +
-              ' to temporary directory.'
-            WordWrap = True
-          end
-          object DDAllowMoveCheck: TCheckBox
-            Left = 16
-            Top = 23
-            Width = 338
+            Top = 42
+            Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Allow &move from remote directory (not recommended)'
-            TabOrder = 0
-            OnClick = ControlChange
-          end
-          object DDSystemTemporaryDirectoryButton: TRadioButton
-            Left = 32
-            Top = 83
-            Width = 297
-            Height = 17
-            Caption = '&Use temporary directory of system'
-            TabOrder = 1
-            OnClick = ControlChange
-          end
-          object DDCustomTemporaryDirectoryButton: TRadioButton
-            Left = 32
-            Top = 107
-            Width = 129
-            Height = 17
-            Caption = 'Use this &directory:'
+            Caption = '&Delete local files to recycle bin'
             TabOrder = 2
-            OnClick = ControlChange
-          end
-          object DDTemporaryDirectoryEdit: TDirectoryEdit
-            Left = 168
-            Top = 103
-            Width = 181
-            Height = 21
-            AcceptFiles = True
-            DialogText = 'Select directory for temporary drag && drop files.'
-            ClickKey = 16397
-            Anchors = [akLeft, akTop, akRight]
-            TabOrder = 3
-            Text = 'DDTemporaryDirectoryEdit'
-            OnClick = ControlChange
-          end
-          object DDWarnLackOfTempSpaceCheck: TCheckBox
-            Left = 32
-            Top = 136
-            Width = 321
-            Height = 17
-            Caption = '&Warn when there is not enough free space'
-            TabOrder = 4
             OnClick = ControlChange
           end
         end
@@ -430,47 +367,37 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 38
           Width = 362
-          Height = 99
+          Height = 75
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Panels'
           TabOrder = 0
           DesignSize = (
             362
-            99)
-          object DeleteToRecycleBinCheck: TCheckBox
+            75)
+          object ExplorerStyleSelectionCheck: TCheckBox
             Left = 16
             Top = 21
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Delete local files to recycle bin'
+            Caption = '&Explorer style selection'
             TabOrder = 0
             OnClick = ControlChange
           end
-          object ExplorerStyleSelectionCheck: TCheckBox
+          object PreserveLocalDirectoryCheck: TCheckBox
             Left = 16
             Top = 45
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Explorer style selection'
-            TabOrder = 1
-            OnClick = ControlChange
-          end
-          object PreserveLocalDirectoryCheck: TCheckBox
-            Left = 16
-            Top = 69
-            Width = 330
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
             Caption = 'Do not &change local directory when switching sessions'
-            TabOrder = 2
+            TabOrder = 1
             OnClick = ControlChange
           end
         end
         object CommanderMiscGroup: TXPGroupBox
           Left = 8
-          Top = 146
+          Top = 122
           Width = 362
           Height = 53
           Anchors = [akLeft, akTop, akRight]
@@ -492,7 +419,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object CompareCriterionsGroup: TXPGroupBox
           Left = 8
-          Top = 209
+          Top = 185
           Width = 362
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -826,18 +753,18 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 209
+          Height = 233
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Shell icons'
           TabOrder = 0
           DesignSize = (
             362
-            209)
+            233)
           object ShellIconsLabel: TLabel
             Left = 16
-            Top = 155
+            Top = 184
             Width = 329
-            Height = 46
+            Height = 44
             AutoSize = False
             Caption = 
               'To add shortcuts, which directly open stored session, use button' +
@@ -884,10 +811,20 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 3
             OnClick = IconButtonClick
           end
+          object RegisterAsUrlHandlerButton: TButton
+            Left = 16
+            Top = 152
+            Width = 330
+            Height = 25
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Register to handle scp:// and sftp:// addresses'
+            TabOrder = 4
+            OnClick = RegisterAsUrlHandlerButtonClick
+          end
         end
         object XPGroupBox1: TXPGroupBox
           Left = 8
-          Top = 224
+          Top = 248
           Width = 362
           Height = 78
           Anchors = [akLeft, akTop, akRight]
@@ -1094,6 +1031,136 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
+      object DragDropSheet: TTabSheet
+        Tag = 11
+        Hint = 'Drag & Drop'
+        Caption = 'DragDrop'
+        ImageIndex = 10
+        DesignSize = (
+          378
+          335)
+        object DragDropDownloadsGroup: TXPGroupBox
+          Left = 8
+          Top = 8
+          Width = 362
+          Height = 267
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Drag && Drop download mode'
+          TabOrder = 0
+          DesignSize = (
+            362
+            267)
+          object DDExtEnabledLabel: TLabel
+            Left = 35
+            Top = 44
+            Width = 318
+            Height = 41
+            Anchors = [akLeft, akTop, akRight]
+            AutoSize = False
+            Caption = 
+              'Allows direct downloads to regular local folders (e.g. Window Ex' +
+              'plorer). Does not allow downloads to other destinations (ZIP arc' +
+              'hives,  FTP, etc.)'
+            WordWrap = True
+            OnClick = DDExtLabelClick
+          end
+          object DDExtDisabledLabel: TLabel
+            Left = 35
+            Top = 116
+            Width = 319
+            Height = 41
+            Anchors = [akLeft, akTop, akRight]
+            AutoSize = False
+            Caption = 
+              'Allows downloads to any destinations (regular folders, ZIP archi' +
+              'ves,  FTP, etc.). Files are downloaded first to temporary folder' +
+              ', from where they are delivered to the destination.'
+            WordWrap = True
+            OnClick = DDExtLabelClick
+          end
+          object DDExtEnabledButton: TRadioButton
+            Left = 16
+            Top = 24
+            Width = 337
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Use &shell extension'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+          object DDExtDisabledButton: TRadioButton
+            Left = 16
+            Top = 96
+            Width = 329
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Use &temporary folder'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object DDExtDisabledPanel: TPanel
+            Left = 34
+            Top = 160
+            Width = 325
+            Height = 102
+            BevelOuter = bvNone
+            TabOrder = 2
+            DesignSize = (
+              325
+              102)
+            object DDSystemTemporaryDirectoryButton: TRadioButton
+              Left = 0
+              Top = 0
+              Width = 297
+              Height = 17
+              Caption = '&Use temporary directory of system'
+              TabOrder = 0
+              OnClick = ControlChange
+            end
+            object DDCustomTemporaryDirectoryButton: TRadioButton
+              Left = 0
+              Top = 24
+              Width = 129
+              Height = 17
+              Caption = 'Use this &directory:'
+              TabOrder = 1
+              OnClick = ControlChange
+            end
+            object DDTemporaryDirectoryEdit: TDirectoryEdit
+              Left = 136
+              Top = 20
+              Width = 181
+              Height = 21
+              AcceptFiles = True
+              DialogText = 'Select directory for temporary drag && drop files.'
+              ClickKey = 16397
+              Anchors = [akLeft, akTop, akRight]
+              TabOrder = 2
+              Text = 'DDTemporaryDirectoryEdit'
+              OnClick = ControlChange
+            end
+            object DDWarnLackOfTempSpaceCheck: TCheckBox
+              Left = 0
+              Top = 53
+              Width = 321
+              Height = 17
+              Caption = '&Warn when there is not enough free space'
+              TabOrder = 3
+              OnClick = ControlChange
+            end
+            object DDWarnOnMoveCheck: TCheckBox
+              Left = 0
+              Top = 76
+              Width = 319
+              Height = 17
+              Anchors = [akLeft, akTop, akRight]
+              Caption = 'Warn when &moving to temporary directory'
+              TabOrder = 4
+              OnClick = ControlChange
+            end
+          end
+        end
+      end
     end
     object LeftPanel: TPanel
       Left = 0
@@ -1119,19 +1186,20 @@ object PreferencesDialog: TPreferencesDialog
         TabOrder = 0
         OnChange = NavigationTreeChange
         Items.Data = {
-          06000000250000000000000001000000FFFFFFFFFFFFFFFF0000000004000000
+          06000000250000000000000001000000FFFFFFFFFFFFFFFF0000000005000000
           0C456E7669726F6E6D656E7458230000000000000003000000FFFFFFFFFFFFFF
           FF00000000000000000A496E7465726661636558200000000000000004000000
           FFFFFFFFFFFFFFFF00000000000000000750616E656C73582300000000000000
           05000000FFFFFFFFFFFFFFFF00000000000000000A436F6D6D616E6465725822
           0000000000000006000000FFFFFFFFFFFFFFFF0000000000000000094578706C
-          6F72657258200000000000000008000000FFFFFFFFFFFFFFFF00000000000000
-          0007456469746F7258220000000000000007000000FFFFFFFFFFFFFFFF000000
-          0000000000095472616E7366657258210000000000000002000000FFFFFFFFFF
-          FFFFFF0000000000000000084C6F6767696E6758250000000000000009000000
-          FFFFFFFFFFFFFFFF00000000000000000C496E746567726174696F6E58220000
-          00000000000A000000FFFFFFFFFFFFFFFF000000000000000009436F6D6D616E
-          647358}
+          6F7265725822000000000000000B000000FFFFFFFFFFFFFFFF00000000000000
+          00094472616744726F7058200000000000000008000000FFFFFFFFFFFFFFFF00
+          0000000000000007456469746F7258220000000000000007000000FFFFFFFFFF
+          FFFFFF0000000000000000095472616E73666572582100000000000000020000
+          00FFFFFFFFFFFFFFFF0000000000000000084C6F6767696E6758250000000000
+          000009000000FFFFFFFFFFFFFFFF00000000000000000C496E74656772617469
+          6F6E5822000000000000000A000000FFFFFFFFFFFFFFFF000000000000000009
+          436F6D6D616E647358}
       end
     end
   end

@@ -93,7 +93,7 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, Boolean DragDrop, TStrings * FileList,
   AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm)
 {
-  if ((Direction == tdToLocal) && !DragDrop)
+  if ((Direction == tdToLocal) && !DragDrop && TargetDirectory.IsEmpty())
   {
     TargetDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   }
@@ -140,7 +140,8 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
 {
   AnsiString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   AnsiString RemoteDirectory = RemoteDirView->PathName;
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory))
+  TSynchronizeMode Mode = smRemote;
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode))
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory; 
   }

@@ -63,6 +63,12 @@ typedef void __fastcall (__closure *TDDOnGiveFeedback)(System::TObject* Sender, 
 
 typedef void __fastcall (__closure *TDDOnDragDetect)(System::TObject* Sender, int grfKeyState, const Types::TPoint &DetectStart, const Types::TPoint &Point, Dragdrop::TDragDetectStatus DragStatus);
 
+typedef void __fastcall (__closure *TDDOnCreateDragFileList)(System::TObject* Sender, Dragdropfilesex::TFileList* FileList, bool &Created);
+
+typedef void __fastcall (__closure *TDDOnCreateDataObject)(System::TObject* Sender, Dragdrop::TDataObject* &DataObject);
+
+typedef void __fastcall (__closure *TDDOnTargetHasDropHandler)(System::TObject* Sender, Comctrls::TListItem* Item, int &Effect, bool &DropHandler);
+
 typedef void __fastcall (__closure *TOnProcessDropped)(System::TObject* Sender, int grfKeyState, const Types::TPoint &Point, int &dwEffect);
 
 typedef void __fastcall (__closure *TDDErrorEvent)(System::TObject* Sender, TDDError ErrorNo);
@@ -108,6 +114,24 @@ enum TCompareCriteria { ccTime, ccSize };
 
 typedef Set<TCompareCriteria, ccTime, ccSize>  TCompareCriterias;
 
+class DELPHICLASS TCustomizableDragDropFilesEx;
+class PASCALIMPLEMENTATION TCustomizableDragDropFilesEx : public Dragdropfilesex::TDragDropFilesEx 
+{
+	typedef Dragdropfilesex::TDragDropFilesEx inherited;
+	
+public:
+	HIDESBASE Dragdrop::TDragResult __fastcall Execute(Dragdrop::TDataObject* DataObject);
+public:
+	#pragma option push -w-inl
+	/* TDragDropFilesEx.Create */ inline __fastcall virtual TCustomizableDragDropFilesEx(Classes::TComponent* AOwner) : Dragdropfilesex::TDragDropFilesEx(AOwner) { }
+	#pragma option pop
+	#pragma option push -w-inl
+	/* TDragDropFilesEx.Destroy */ inline __fastcall virtual ~TCustomizableDragDropFilesEx(void) { }
+	#pragma option pop
+	
+};
+
+
 class PASCALIMPLEMENTATION TCustomDirView : public Ielistview::TIEListView 
 {
 	typedef Ielistview::TIEListView inherited;
@@ -121,7 +145,7 @@ private:
 	bool FSortByExtension;
 	bool FWantUseDragImages;
 	bool FCanUseDragImages;
-	Dragdropfilesex::TDragDropFilesEx* FDragDropFilesEx;
+	TCustomizableDragDropFilesEx* FDragDropFilesEx;
 	AnsiString FInvalidNameChars;
 	bool FSingleClickToExec;
 	bool FUseSystemContextMenu;
@@ -140,11 +164,15 @@ private:
 	TDDOnQueryContinueDrag FOnDDQueryContinueDrag;
 	TDDOnGiveFeedback FOnDDGiveFeedback;
 	TDDOnDragDetect FOnDDDragDetect;
+	TDDOnCreateDragFileList FOnDDCreateDragFileList;
 	TOnProcessDropped FOnDDProcessDropped;
 	TDDErrorEvent FOnDDError;
 	TDDExecutedEvent FOnDDExecuted;
 	TDDFileOperationEvent FOnDDFileOperation;
 	TDDFileOperationExecutedEvent FOnDDFileOperationExecuted;
+	Classes::TNotifyEvent FOnDDEnd;
+	TDDOnCreateDataObject FOnDDCreateDataObject;
+	TDDOnTargetHasDropHandler FOnDDTargetHasDropHandler;
 	TDirViewExecFileEvent FOnExecFile;
 	bool FForceRename;
 	Dragdrop::TDragResult FLastDDResult;
@@ -236,6 +264,7 @@ protected:
 	void __fastcall DDDragEnter(_di_IDataObject DataObj, int grfKeyState, const Types::TPoint &Point, int &dwEffect, bool &Accept);
 	void __fastcall DDDragLeave(void);
 	void __fastcall DDDragOver(int grfKeyState, const Types::TPoint &Point, int &dwEffect);
+	virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect) = 0 ;
 	void __fastcall DDDrop(_di_IDataObject DataObj, int grfKeyState, const Types::TPoint &Point, int &dwEffect);
 	virtual void __fastcall DDDropHandlerSucceeded(System::TObject* Sender, int grfKeyState, const Types::TPoint &Point, int dwEffect);
 	virtual void __fastcall DDGiveFeedback(int dwEffect, HRESULT &Result);
@@ -345,7 +374,7 @@ public:
 	__property bool DimmHiddenFiles = {read=FDimmHiddenFiles, write=SetDimmHiddenFiles, default=1};
 	__property bool ShowDirectories = {read=FShowDirectories, write=SetShowDirectories, default=1};
 	__property bool DirsOnTop = {read=FDirsOnTop, write=SetDirsOnTop, default=1};
-	__property Dragdropfilesex::TDragDropFilesEx* DragDropFilesEx = {read=FDragDropFilesEx};
+	__property TCustomizableDragDropFilesEx* DragDropFilesEx = {read=FDragDropFilesEx};
 	__property bool ShowSubDirSize = {read=FShowSubDirSize, write=SetShowSubDirSize, default=0};
 	__property bool SortByExtension = {read=FSortByExtension, write=SetSortByExtension, default=0};
 	__property bool WantUseDragImages = {read=FWantUseDragImages, write=FWantUseDragImages, default=1};
@@ -402,6 +431,10 @@ public:
 	__property TDDOnQueryContinueDrag OnDDQueryContinueDrag = {read=FOnDDQueryContinueDrag, write=FOnDDQueryContinueDrag};
 	__property TDDOnGiveFeedback OnDDGiveFeedback = {read=FOnDDGiveFeedback, write=FOnDDGiveFeedback};
 	__property TDDOnDragDetect OnDDDragDetect = {read=FOnDDDragDetect, write=FOnDDDragDetect};
+	__property TDDOnCreateDragFileList OnDDCreateDragFileList = {read=FOnDDCreateDragFileList, write=FOnDDCreateDragFileList};
+	__property Classes::TNotifyEvent OnDDEnd = {read=FOnDDEnd, write=FOnDDEnd};
+	__property TDDOnCreateDataObject OnDDCreateDataObject = {read=FOnDDCreateDataObject, write=FOnDDCreateDataObject};
+	__property TDDOnTargetHasDropHandler OnDDTargetHasDropHandler = {read=FOnDDTargetHasDropHandler, write=FOnDDTargetHasDropHandler};
 	__property TOnProcessDropped OnDDProcessDropped = {read=FOnDDProcessDropped, write=FOnDDProcessDropped};
 	__property TDDErrorEvent OnDDError = {read=FOnDDError, write=FOnDDError};
 	__property TDDExecutedEvent OnDDExecuted = {read=FOnDDExecuted, write=FOnDDExecuted};

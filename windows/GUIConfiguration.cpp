@@ -6,6 +6,7 @@
 #include <Common.h>
 #include <FileInfo.h>
 #include <TextsCore.h>
+#include <Terminal.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -39,6 +40,7 @@ void __fastcall TGUIConfiguration::Default()
   FCopyParamDialogExpanded = false;
   FErrorDialogExpanded = false;
   FContinueOnError = false;
+  FSynchronizeParams = TTerminal::spDelete | TTerminal::spNoConfirmation; 
   AnsiString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
   FPuttyPath = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
@@ -55,6 +57,7 @@ void __fastcall TGUIConfiguration::Default()
     KEY(Bool,     CopyParamDialogExpanded); \
     KEY(Bool,     ErrorDialogExpanded); \
     KEY(Bool,     ContinueOnError); \
+    KEY(Integer,  SynchronizeParams); \
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
   );

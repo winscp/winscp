@@ -184,12 +184,15 @@ foreach $i (keys %depends) {
 sub findfile {
   my ($name) = @_;
   my $dir, $i, $outdir = "";
-  $i = 0;
-  foreach $dir (@incdirs) {
-    $outdir = $dir, $i++ if -f "$dir$name";
+  unless (defined $findfilecache{$name}) {
+    $i = 0;
+    foreach $dir (@incdirs) {
+      $outdir = $dir, $i++ if -f "$dir$name";
+    }
+    die "multiple instances of source file $name\n" if $i > 1;
+    $findfilecache{$name} = $outdir . $name;
   }
-  die "multiple instances of source file $name\n" if $i > 1;
-  return "$outdir$name";
+  return $findfilecache{$name};
 }
 
 sub objects {
@@ -530,6 +533,256 @@ print
 "\t-del debug.log\n";
 select STDOUT; close OUT;
 
+##-- MSVC 6 Workspace and projects
+#
+# Note: All files created in this section are written in binary
+# mode, because although MSVC's command-line make can deal with
+# LF-only line endings, MSVC project files really _need_ to be
+# CRLF. Hence, in order for mkfiles.pl to generate usable project
+# files even when run from Unix, I make sure all files are binary
+# and explicitly write the CRLFs.
+#
+# Create directories if necessary
+mkdir 'MSVC'
+	if(! -d 'MSVC');
+chdir 'MSVC';
+@deps = &deps("X.obj", "X.res", "", "\\");
+%all_object_deps = map {$_->{obj} => $_->{deps}} @deps;
+# Create the project files
+# Get names of all Windows projects (GUI and console)
+my @prognames = &prognames("GC");
+foreach $progname (@prognames) {
+	create_project(\%all_object_deps, $progname);
+}
+# Create the workspace file
+open OUT, ">putty.dsw"; binmode OUT; select OUT;
+print
+"Microsoft Developer Studio Workspace File, Format Version 6.00\r\n".
+"# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!\r\n".
+"\r\n".
+"###############################################################################\r\n".
+"\r\n";
+# List projects
+foreach $progname (@prognames) {
+  ($windows_project, $type) = split ",", $progname;
+	print "Project: \"$windows_project\"=\".\\$windows_project\\$windows_project.dsp\" - Package Owner=<4>\r\n";
+}
+print
+"\r\n".
+"Package=<5>\r\n".
+"{{{\r\n".
+"}}}\r\n".
+"\r\n".
+"Package=<4>\r\n".
+"{{{\r\n".
+"}}}\r\n".
+"\r\n".
+"###############################################################################\r\n".
+"\r\n".
+"Global:\r\n".
+"\r\n".
+"Package=<5>\r\n".
+"{{{\r\n".
+"}}}\r\n".
+"\r\n".
+"Package=<3>\r\n".
+"{{{\r\n".
+"}}}\r\n".
+"\r\n".
+"###############################################################################\r\n".
+"\r\n";
+select STDOUT; close OUT;
+chdir '..';
+
+sub create_project {
+	my ($all_object_deps, $progname) = @_;
+	# Construct program's dependency info
+	%seen_objects = ();
+	%lib_files = ();
+	%source_files = ();
+	%header_files = ();
+	%resource_files = ();
+	@object_files = split " ", &objects($progname, "X.obj", "X.res", "X.lib");
+	foreach $object_file (@object_files) {
+		next if defined $seen_objects{$object_file};
+		$seen_objects{$object_file} = 1;
+		if($object_file =~ /\.lib$/io) {
+			$lib_files{$object_file} = 1;
+			next;
+		}
+		$object_deps = $all_object_deps{$object_file};
+		foreach $object_dep (@$object_deps) {
+			if($object_dep =~ /\.c$/io) {
+				$source_files{$object_dep} = 1;
+				next;
+			}
+			if($object_dep =~ /\.h$/io) {
+				$header_files{$object_dep} = 1;
+				next;
+			}
+			if($object_dep =~ /\.(rc|ico)$/io) {
+				$resource_files{$object_dep} = 1;
+				next;
+			}
+		}
+	}
+	$libs = join " ", sort keys %lib_files;
+	@source_files = sort keys %source_files;
+	@header_files = sort keys %header_files;
+	@resources = sort keys %resource_files;
+  ($windows_project, $type) = split ",", $progname;
+	mkdir $windows_project
+		if(! -d $windows_project);
+	chdir $windows_project;
+  $subsys = ($type eq "G") ? "windows" : "console";
+	open OUT, ">$windows_project.dsp"; binmode OUT; select OUT;
+	print
+	"# Microsoft Developer Studio Project File - Name=\"$windows_project\" - Package Owner=<4>\r\n".
+	"# Microsoft Developer Studio Generated Build File, Format Version 6.00\r\n".
+	"# ** DO NOT EDIT **\r\n".
+	"\r\n".
+	"# TARGTYPE \"Win32 (x86) Application\" 0x0101\r\n".
+	"\r\n".
+	"CFG=$windows_project - Win32 Debug\r\n".
+	"!MESSAGE This is not a valid makefile. To build this project using NMAKE,\r\n".
+	"!MESSAGE use the Export Makefile command and run\r\n".
+	"!MESSAGE \r\n".
+	"!MESSAGE NMAKE /f \"$windows_project.mak\".\r\n".
+	"!MESSAGE \r\n".
+	"!MESSAGE You can specify a configuration when running NMAKE\r\n".
+	"!MESSAGE by defining the macro CFG on the command line. For example:\r\n".
+	"!MESSAGE \r\n".
+	"!MESSAGE NMAKE /f \"$windows_project.mak\" CFG=\"$windows_project - Win32 Debug\"\r\n".
+	"!MESSAGE \r\n".
+	"!MESSAGE Possible choices for configuration are:\r\n".
+	"!MESSAGE \r\n".
+	"!MESSAGE \"$windows_project - Win32 Release\" (based on \"Win32 (x86) Application\")\r\n".
+	"!MESSAGE \"$windows_project - Win32 Debug\" (based on \"Win32 (x86) Application\")\r\n".
+	"!MESSAGE \r\n".
+	"\r\n".
+	"# Begin Project\r\n".
+	"# PROP AllowPerConfigDependencies 0\r\n".
+	"# PROP Scc_ProjName \"\"\r\n".
+	"# PROP Scc_LocalPath \"\"\r\n".
+	"CPP=cl.exe\r\n".
+	"MTL=midl.exe\r\n".
+	"RSC=rc.exe\r\n".
+	"\r\n".
+	"!IF  \"\$(CFG)\" == \"$windows_project - Win32 Release\"\r\n".
+	"\r\n".
+	"# PROP BASE Use_MFC 0\r\n".
+	"# PROP BASE Use_Debug_Libraries 0\r\n".
+	"# PROP BASE Output_Dir \"Release\"\r\n".
+	"# PROP BASE Intermediate_Dir \"Release\"\r\n".
+	"# PROP BASE Target_Dir \"\"\r\n".
+	"# PROP Use_MFC 0\r\n".
+	"# PROP Use_Debug_Libraries 0\r\n".
+	"# PROP Output_Dir \"Release\"\r\n".
+	"# PROP Intermediate_Dir \"Release\"\r\n".
+	"# PROP Ignore_Export_Lib 0\r\n".
+	"# PROP Target_Dir \"\"\r\n".
+	"# ADD BASE CPP /nologo /W3 /GX /O2 /D \"WIN32\" /D \"NDEBUG\" /D \"_WINDOWS\" /D \"_MBCS\" /YX /FD /c\r\n".
+	"# ADD CPP /nologo /W3 /GX /O2 /D \"WIN32\" /D \"NDEBUG\" /D \"_WINDOWS\" /D \"_MBCS\" /YX /FD /c\r\n".
+	"# ADD BASE MTL /nologo /D \"NDEBUG\" /mktyplib203 /win32\r\n".
+	"# ADD MTL /nologo /D \"NDEBUG\" /mktyplib203 /win32\r\n".
+	"# ADD BASE RSC /l 0x809 /d \"NDEBUG\"\r\n".
+	"# ADD RSC /l 0x809 /d \"NDEBUG\"\r\n".
+	"BSC32=bscmake.exe\r\n".
+	"# ADD BASE BSC32 /nologo\r\n".
+	"# ADD BSC32 /nologo\r\n".
+	"LINK32=link.exe\r\n".
+	"# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:$subsys /machine:I386\r\n".
+	"# ADD LINK32 $libs /nologo /subsystem:$subsys /machine:I386\r\n".
+	"# SUBTRACT LINK32 /pdb:none\r\n".
+	"\r\n".
+	"!ELSEIF  \"\$(CFG)\" == \"$windows_project - Win32 Debug\"\r\n".
+	"\r\n".
+	"# PROP BASE Use_MFC 0\r\n".
+	"# PROP BASE Use_Debug_Libraries 1\r\n".
+	"# PROP BASE Output_Dir \"Debug\"\r\n".
+	"# PROP BASE Intermediate_Dir \"Debug\"\r\n".
+	"# PROP BASE Target_Dir \"\"\r\n".
+	"# PROP Use_MFC 0\r\n".
+	"# PROP Use_Debug_Libraries 1\r\n".
+	"# PROP Output_Dir \"Debug\"\r\n".
+	"# PROP Intermediate_Dir \"Debug\"\r\n".
+	"# PROP Ignore_Export_Lib 0\r\n".
+	"# PROP Target_Dir \"\"\r\n".
+	"# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D \"WIN32\" /D \"_DEBUG\" /D \"_WINDOWS\" /D \"_MBCS\" /YX /FD /GZ /c\r\n".
+	"# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /D \"WIN32\" /D \"_DEBUG\" /D \"_WINDOWS\" /D \"_MBCS\" /YX /FD /GZ /c\r\n".
+	"# ADD BASE MTL /nologo /D \"_DEBUG\" /mktyplib203 /win32\r\n".
+	"# ADD MTL /nologo /D \"_DEBUG\" /mktyplib203 /win32\r\n".
+	"# ADD BASE RSC /l 0x809 /d \"_DEBUG\"\r\n".
+	"# ADD RSC /l 0x809 /d \"_DEBUG\"\r\n".
+	"BSC32=bscmake.exe\r\n".
+	"# ADD BASE BSC32 /nologo\r\n".
+	"# ADD BSC32 /nologo\r\n".
+	"LINK32=link.exe\r\n".
+	"# ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:$subsys /debug /machine:I386 /pdbtype:sept\r\n".
+	"# ADD LINK32 $libs /nologo /subsystem:$subsys /debug /machine:I386 /pdbtype:sept\r\n".
+	"# SUBTRACT LINK32 /pdb:none\r\n".
+	"\r\n".
+	"!ENDIF \r\n".
+	"\r\n".
+	"# Begin Target\r\n".
+	"\r\n".
+	"# Name \"$windows_project - Win32 Release\"\r\n".
+	"# Name \"$windows_project - Win32 Debug\"\r\n".
+	"# Begin Group \"Source Files\"\r\n".
+	"\r\n".
+	"# PROP Default_Filter \"cpp;c;cxx;rc;def;r;odl;idl;hpj;bat\"\r\n";
+	foreach $source_file (@source_files) {
+		print
+		"# Begin Source File\r\n".
+		"\r\n".
+		"SOURCE=..\\..\\$source_file\r\n";
+		if($source_file =~ /ssh\.c/io) {
+			# Disable 'Edit and continue' as Visual Studio can't handle the macros
+			print
+			"\r\n".
+			"!IF  \"\$(CFG)\" == \"$windows_project - Win32 Release\"\r\n".
+			"\r\n".
+			"!ELSEIF  \"\$(CFG)\" == \"$windows_project - Win32 Debug\"\r\n".
+			"\r\n".
+			"# ADD CPP /Zi\r\n".
+			"\r\n".
+			"!ENDIF \r\n".
+			"\r\n";
+		}
+		print "# End Source File\r\n";
+	}
+	print
+	"# End Group\r\n".
+	"# Begin Group \"Header Files\"\r\n".
+	"\r\n".
+	"# PROP Default_Filter \"h;hpp;hxx;hm;inl\"\r\n";
+	foreach $header_file (@header_files) {
+		print
+		"# Begin Source File\r\n".
+		"\r\n".
+		"SOURCE=..\\..\\$header_file\r\n".
+		"# End Source File\r\n";
+		}
+	print
+	"# End Group\r\n".
+	"# Begin Group \"Resource Files\"\r\n".
+	"\r\n".
+	"# PROP Default_Filter \"ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe\"\r\n";
+	foreach $resource_file (@resources) {
+		print
+		"# Begin Source File\r\n".
+		"\r\n".
+		"SOURCE=..\\..\\$resource_file\r\n".
+		"# End Source File\r\n";
+		}
+	print
+	"# End Group\r\n".
+	"# End Target\r\n".
+	"# End Project\r\n";
+	select STDOUT; close OUT;
+	chdir '..';
+	}
+
 ##-- X/GTK/Unix makefile
 open OUT, ">unix/Makefile.gtk"; select OUT;
 print
@@ -581,7 +834,11 @@ print
 "version.o: FORCE;\n".
 "# Hack to force version.o to be rebuilt always\n".
 "FORCE:\n".
-"\t\$(CC) \$(COMPAT) \$(FWHACK) \$(XFLAGS) \$(CFLAGS) \$(VER) -c ../version.c\n".
+"\tif test -z \"\$(VER)\" && (cd ..; md5sum -c manifest); then \\\n".
+"\t\t\$(CC) \$(COMPAT) \$(FWHACK) \$(XFLAGS) \$(CFLAGS) `cat ../version.def` -c ../version.c; \\\n".
+"\telse \\\n".
+"\t\t\$(CC) \$(COMPAT) \$(FWHACK) \$(XFLAGS) \$(CFLAGS) \$(VER) -c ../version.c; \\\n".
+"\tfi\n".
 "clean:\n".
 "\trm -f *.o". (join "", map { " $_" } &progrealnames("XU")) . "\n".
 "\n",
@@ -735,3 +992,62 @@ foreach $arch (qw(PPC Carbon)) {
      }
 }
 select STDOUT; close OUT;
+
+##-- lcc makefile
+open OUT, ">Makefile.lcc"; select OUT;
+print
+"# Makefile for PuTTY under lcc.\n".
+"#\n# This file was created by `mkfiles.pl' from the `Recipe' file.\n".
+"# DO NOT EDIT THIS FILE DIRECTLY; edit Recipe or mkfiles.pl instead.\n";
+# lcc command line option is -D not /D
+($_ = $help) =~ s/=\/D/=-D/gs;
+print $_;
+print
+"\n".
+"# If you rename this file to `Makefile', you should change this line,\n".
+"# so that the .rsp files still depend on the correct makefile.\n".
+"MAKEFILE = Makefile.lcc\n".
+"\n".
+"# C compilation flags\n".
+"CFLAGS = -D_WINDOWS\n".
+"\n".
+"# Get include directory for resource compiler\n".
+"\n".
+".c.obj:\n".
+&splitline("\tlcc -O -p6 \$(COMPAT) \$(FWHACK)".
+  " \$(XFLAGS) \$(CFLAGS)  \$*.c",69)."\n".
+".rc.res:\n".
+&splitline("\tlrc \$(FWHACK) \$(RCFL) -r \$*.rc",69)."\n".
+"\n";
+print &splitline("all:" . join "", map { " $_.exe" } &progrealnames("GC"));
+print "\n\n";
+foreach $p (&prognames("GC")) {
+  ($prog, $type) = split ",", $p;
+  $objstr = &objects($p, "X.obj", "X.res", undef);
+  print &splitline("$prog.exe: " . $objstr ), "\n";
+  $subsystemtype = undef;
+  if ($prog eq "pageant" || $prog eq "putty" ||$prog eq "puttygen" || $prog eq "puttytel") { 
+	$subsystemtype = "-subsystem  windows";	}
+  my $libss = "shell32.lib wsock32.lib ws2_32.lib winspool.lib winmm.lib imm32.lib";
+  print &splitline("\tlcclnk $subsystemtype -o $prog.exe $objstr $libss");
+  print "\n\n";
+}
+
+
+foreach $d (&deps("X.obj", "X.res", "", "\\")) {
+  print &splitline(sprintf("%s: %s", $d->{obj}, join " ", @{$d->{deps}})),
+    "\n";
+}
+print
+"\n".
+"version.o: FORCE\n".
+"# Hack to force version.o to be rebuilt always\n".
+"FORCE:\n".
+"\tlcc \$(FWHACK) \$(VER) \$(CFLAGS) /c version.c\n\n".
+"clean:\n".
+"\t-del *.obj\n".
+"\t-del *.exe\n".
+"\t-del *.res\n";
+
+select STDOUT; close OUT;
+

@@ -3,6 +3,7 @@
  */
 
 #include "putty.h"
+#include <winspool.h>
 
 struct printer_enum_tag {
     int nprinters;

@@ -107,4 +107,40 @@ bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path)
   }
   return false;
 }
-
+//---------------------------------------------------------------------------
+AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
+  const AnsiString MultiItemsFormat, int Count, const AnsiString FirstItem)
+{
+  AnsiString Result;
+  if (Count == 1)
+  {
+    Result = FORMAT(SingleItemFormat, (FirstItem));
+  }
+  else
+  {
+    Result = FORMAT(MultiItemsFormat, (Count));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
+  const AnsiString MultiItemsFormat, TStrings * Items)
+{
+  return ItemsFormatString(SingleItemFormat, MultiItemsFormat,
+    Items->Count, (Items->Count > 0 ? Items->Strings[0] : AnsiString()));
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
+  const AnsiString MultiFilesFormat, TStrings * Files, bool Remote)
+{
+  assert(Files != NULL);
+  AnsiString Item;
+  if (Files->Count > 0)
+  {
+    Item = Remote ? UnixExtractFileName(Files->Strings[0]) :
+      ExtractFileName(Files->Strings[0]);
+  }
+  return ItemsFormatString(SingleFileFormat, MultiFilesFormat,
+    Files->Count, Item);
+}
+//---------------------------------------------------------------------------

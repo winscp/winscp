@@ -101,6 +101,7 @@ __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
   FShowInaccesibleDirectories = true;
   FOnWarnLackOfTempSpace = NULL;
   FDDTotalSize = -1;
+  FOnDDTargetDrop = NULL;
   FDelayedDeletionTimer = NULL;
   FFullLoad = false;
   FDDFileList = NULL;
@@ -536,9 +537,15 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item, int
   FileList = new TStringList();
   try
   {
+    AnsiString SourceDirectory;
     for (int Index = 0; Index < DragDropFilesEx->FileList->Count; Index++)
     {
-      FileList->Add(DragDropFilesEx->FileList->Items[Index]->Name);
+      AnsiString FileName = DragDropFilesEx->FileList->Items[Index]->Name;
+      if (SourceDirectory.IsEmpty())
+      {
+        SourceDirectory = ExtractFilePath(FileName);
+      }
+      FileList->Add(FileName);
     }
 
     if (Item)
@@ -551,36 +558,50 @@ void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item, int
       Directory = Path;
     }
 
-    if (OnGetCopyParam)
+    bool DoFileOperation = true;
+    if (OnDDFileOperation != NULL)
     {
-      OnGetCopyParam(this, tdToRemote, Type, Directory, FileList, CopyParams);
+      OnDDFileOperation(this, Effect, SourceDirectory, Directory,
+        DoFileOperation);
     }
 
-    assert(Terminal);
-    int Params = cpDragDrop;
-    if (Type == ttMove) Params |= cpDelete;
-    Terminal->CopyToRemote(FileList, Directory, &CopyParams, Params);
-
-    // If target is current directory, we try to focus first dropped file
-    if (!Item)
+    if (DoFileOperation)
     {
-      int RemoteIndex, DragIndex;
-      for (RemoteIndex = 0; RemoteIndex < Items->Count; RemoteIndex++)
+      if (OnGetCopyParam)
       {
-        for (DragIndex = 0; DragIndex < FileList->Count; DragIndex++)
+        OnGetCopyParam(this, tdToRemote, Type, Directory, FileList, CopyParams);
+      }
+
+      assert(Terminal);
+      int Params = cpDragDrop;
+      if (Type == ttMove) Params |= cpDelete;
+      Terminal->CopyToRemote(FileList, Directory, &CopyParams, Params);
+
+      if (OnDDFileOperationExecuted)
+      {
+        OnDDFileOperationExecuted(this, Effect, SourceDirectory, Directory);
+      }
+
+      // If target is current directory, we try to focus first dropped file
+      if (!Item)
+      {
+        int RemoteIndex, DragIndex;
+        for (RemoteIndex = 0; RemoteIndex < Items->Count; RemoteIndex++)
         {
-          if (ItemFileName(Items->Item[RemoteIndex]) ==
-            ExtractFileName(FileList->Strings[DragIndex]))
+          for (DragIndex = 0; DragIndex < FileList->Count; DragIndex++)
           {
-            ItemFocused = Items->Item[RemoteIndex];
-            // We need to break both FOR cycles
-            RemoteIndex = Items->Count-1;
-            break;
+            if (ItemFileName(Items->Item[RemoteIndex]) ==
+              ExtractFileName(FileList->Strings[DragIndex]))
+            {
+              ItemFocused = Items->Item[RemoteIndex];
+              // We need to break both FOR cycles
+              RemoteIndex = Items->Count-1;
+              break;
+            }
           }
         }
       }
     }
-
   }
   __finally
   {
@@ -689,7 +710,7 @@ void __fastcall TUnixDirView::SetPath(AnsiString Value)
 #ifndef DESIGN_ONLY
   Value = UnixExcludeTrailingBackslash(
     StringReplace(Value, '\\', '/', TReplaceFlags() << rfReplaceAll));
-    
+
   if (Active && (Terminal->CurrentDirectory != Value))
   {
     FLastPath = PathName;
@@ -795,6 +816,18 @@ void __fastcall TUnixDirView::DDGiveFeedback(int dwEffect, HRESULT & Result)
   TCustomUnixDirView::DDGiveFeedback(dwEffect, Result);
 }
 //---------------------------------------------------------------------------
+void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect)
+{
+  if (DDOwnerIsSource)
+  {
+    dwEffect = (DropTarget != NULL) ? DROPEFFECT_Move : DROPEFFECT_None;
+  }
+  else if ((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0)
+  {
+    dwEffect = DROPEFFECT_Copy;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DDQueryContinueDrag(BOOL FEscapePressed,
   int grfKeyState, HRESULT & Result)
 {
@@ -823,96 +856,98 @@ void __fastcall TUnixDirView::DDQueryContinueDrag(BOOL FEscapePressed,
 void __fastcall TUnixDirView::DDTargetDrop()
 {
 #ifndef DESIGN_ONLY
-  assert(!FUniqTempDir.IsEmpty());
-  TTransferType Type;
-  AnsiString TempDir = FUniqTempDir;
-  // We clear FUniqTempDir before calling
-  // just in case it fail (raises exception)
-  FUniqTempDir = "";
-  Type = (FLastDropEffect & DROPEFFECT_MOVE ? ttMove : Type = ttCopy);
-
-  try
+  bool Continue = true;
+  if (OnDDTargetDrop)
   {
-    TStrings * FileList = new TStringList();
+    OnDDTargetDrop(this, FLastDropEffect, Continue);
+  }
+
+  if (Continue)
+  {
+    assert(!FUniqTempDir.IsEmpty());
+    TTransferType Type;
+    AnsiString TempDir = FUniqTempDir;
+    // We clear FUniqTempDir before calling
+    // just in case it fail (raises exception)
+    FUniqTempDir = "";
+    Type = (FLastDropEffect & DROPEFFECT_MOVE ? ttMove : Type = ttCopy);
+
     try
     {
-      assert(DragDropFilesEx);
-      assert(FDDFileList);
-      TRemoteFile * File;
-      int FileIndex;
-      for (int Index = 0; Index < DragDropFilesEx->FileList->Count; Index++)
+      TStrings * FileList = new TStringList();
+      try
       {
-        FileIndex = FDDFileList->IndexOf(DragDropFilesEx->FileList->Items[Index]->Name);
-        assert(FileIndex >= 0);
-        File = dynamic_cast<TRemoteFile *>(FDDFileList->Objects[FileIndex]);
-        assert(File);
-        FileList->AddObject(File->FileName, File);
-      }
-
-      TCopyParamType CopyParams = Configuration->CopyParam;
-      AnsiString TargetDir = "";
-      bool UseTempDir;
-
-      if (OnGetCopyParam)
-      {
-        OnGetCopyParam(this, tdToLocal, Type,
-          TargetDir /* empty directory parameter means temp directory -> don't display it! */,
-          FileList, CopyParams);
-      }
-
-      UseTempDir = TargetDir.IsEmpty();
-      bool Continue = true;
-
-      if (UseTempDir)
-      {
-        DoWarnLackOfTempSpace(TempDir, FDDTotalSize, Continue);
-        TargetDir = TempDir;
-      }
-
-      if (Continue)
-      {
-        if (ForceDirectories(TargetDir))
+        assert(DragDropFilesEx);
+        assert(FDDFileList);
+        TRemoteFile * File;
+        int FileIndex;
+        for (int Index = 0; Index < DragDropFilesEx->FileList->Count; Index++)
         {
-          assert(Terminal && !TargetDir.IsEmpty());
-          try
-          {
-            Terminal->CopyToLocal(FileList, TargetDir, &CopyParams,
-              (UseTempDir ? cpDragDrop : 0) | (Type == ttMove ? cpDelete : 0));
+          FileIndex = FDDFileList->IndexOf(DragDropFilesEx->FileList->Items[Index]->Name);
+          assert(FileIndex >= 0);
+          File = dynamic_cast<TRemoteFile *>(FDDFileList->Objects[FileIndex]);
+          assert(File);
+          FileList->AddObject(File->FileName, File);
+        }
 
-            if (!UseTempDir)
-            {
-              // abort drag&drop, files are already at their place
-              Abort();
-            }
-          }
-          __finally
+        TCopyParamType CopyParams = Configuration->CopyParam;
+        AnsiString TargetDir = "";
+
+        if (OnGetCopyParam)
+        {
+          OnGetCopyParam(this, tdToLocal, Type,
+            TargetDir /* empty directory parameter means temp directory -> don't display it! */,
+            FileList, CopyParams);
+        }
+
+        bool TemporaryDownload = TargetDir.IsEmpty();
+        bool Continue = true;
+
+        if (TemporaryDownload)
+        {
+          DoWarnLackOfTempSpace(TempDir, FDDTotalSize, Continue);
+          TargetDir = TempDir;
+        }
+
+        if (Continue)
+        {
+          if (TemporaryDownload)
           {
-            if (UseTempDir)
+            if (ForceDirectories(TargetDir))
             {
-              AddDelayedDirectoryDeletion(TempDir, DDDeleteDelay);
+              assert(Terminal && !TargetDir.IsEmpty());
+              try
+              {
+                Terminal->CopyToLocal(FileList, TargetDir, &CopyParams,
+                  cpDragDrop | (Type == ttMove ? cpDelete : 0));
+              }
+              __finally
+              {
+                AddDelayedDirectoryDeletion(TargetDir, DDDeleteDelay);
+              }
+            }
+            else
+            {
+              DragDropDirException(TargetDir);
             }
           }
         }
         else
         {
-          DragDropDirException(TempDir);
+          Abort();
         }
       }
-      else
+      __finally
       {
-        Abort();
+        delete FileList;
       }
     }
-    __finally
+    catch(ESshTerminate & E)
     {
-      delete FileList;
+      assert(!E.MoreMessages); // not supported
+      assert(!E.Message.IsEmpty());
+      FDragDropSshTerminate = E.Message;
     }
-  }
-  catch(ESshTerminate & E)
-  {
-    assert(!E.MoreMessages); // not supported
-    assert(!E.Message.IsEmpty());
-    FDragDropSshTerminate = E.Message;
   }
 #endif
 }

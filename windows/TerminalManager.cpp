@@ -421,8 +421,18 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
     Data = (TSessionData *)StoredSessions->FindByName(Terminal->SessionData->Name);
     if (Data)
     {
-      Data->Assign(Terminal->SessionData);
-      StoredSessions->Save();
+      bool Changed = false;
+      if (Terminal->SessionData->UpdateDirectories)
+      {
+        Data->LocalDirectory = Terminal->SessionData->LocalDirectory;
+        Data->RemoteDirectory = Terminal->SessionData->RemoteDirectory;
+        Changed = true;
+      }
+
+      if (Changed)
+      {
+        StoredSessions->Save();
+      }
     }
   }
 }

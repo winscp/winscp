@@ -17,5 +17,11 @@ bool __fastcall FileExistsEx(AnsiString Path);
 bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params);
 void __fastcall OpenSessionInPutty(TSessionData * SessionData);
 bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path);
+AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
+  const AnsiString MultiItemsFormat, int Count, const AnsiString FirstItem);
+AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
+  const AnsiString MultiItemsFormat, TStrings * Items);
+AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
+  const AnsiString MultiFileFormat, TStrings * Files, bool Remote);
 //---------------------------------------------------------------------------
 #endif

@@ -440,7 +440,7 @@ bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin
   SHFILEOPSTRUCT Data;
 
   memset(&Data, 0, sizeof(Data)); 
-  Data.hwnd = Application->Handle;
+  Data.hwnd = NULL;
   Data.wFunc = FO_DELETE;
   AnsiString FileList(FileName);
   FileList.SetLength(FileList.Length() + 2);
@@ -455,9 +455,5 @@ bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin
     Data.fFlags |= FOF_ALLOWUNDO;
   }
   int Result = SHFileOperation(&Data);
-  if (Result != 0)
-  {
-    //Win32Check(false);
-  }
   return (Result == 0);
 }

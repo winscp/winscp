@@ -10,7 +10,7 @@
       windows\ScpCommander.obj windows\ScpExplorer.obj 
       windows\TerminalManager.obj windows\Tools.obj windows\UserInterface.obj 
       windows\WinConfiguration.obj windows\WinInterface.obj windows\WinMain.obj"/>
-    <RESFILES value="windows\Windows.res WinSCP3.res"/>
+    <RESFILES value="Windows.res WinSCP3.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) forms\CustomScpExplorer.dfm forms\NonVisual.dfm 
       forms\ScpCommander.dfm forms\ScpExplorer.dfm"/>
@@ -43,7 +43,7 @@
     <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="WinSCP3.cpp"/>
-    <INCLUDEPATH value="core;forms;windows;resource;components;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="core;forms;windows;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="lib;windows;forms;packages\my\filemng;$(BCB)\lib\obj;$(BCB)\lib;"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -83,7 +83,7 @@
       <FILE FILENAME="lib\RScpComp.lib" FORMNAME="" UNITNAME="RScpComp.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="lib\ScpCore.lib" FORMNAME="" UNITNAME="ScpCore.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="lib\ScpForms.lib" FORMNAME="" UNITNAME="ScpForms.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="windows\Windows.rc" FORMNAME="" UNITNAME="Windows.rc" CONTAINERID="RC" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\Windows.rc" FORMNAME="" UNITNAME="Windows.rc" CONTAINERID="RCCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="WinSCP3.res" FORMNAME="" UNITNAME="WinSCP3.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
@@ -95,8 +95,8 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
 MinorVer=5
-Release=0
-Build=204
+Release=5
+Build=211
 Debug=0
 PreRelease=1
 Special=0
@@ -108,13 +108,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.5.0.204
+FileVersion=3.5.5.211
 InternalName=winscp3
 LegalCopyright=(c) 2000-2004 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp350.exe
+OriginalFilename=winscp355.exe
 ProductName=WinSCP
-ProductVersion=3.5.0.0
+ProductVersion=3.5.5.0
 WWW=http://winscp.sourceforge.net/
 
 [Compiler]

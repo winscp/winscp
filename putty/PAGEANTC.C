@@ -26,6 +26,13 @@ int agent_exists(void)
 	return TRUE;
 }
 
+/*
+ * Unfortunately, this asynchronous agent request mechanism doesn't
+ * appear to work terribly well. I'm going to comment it out for
+ * the moment, and see if I can come up with a better one :-/
+ */
+#ifdef WINDOWS_ASYNC_AGENT
+
 struct agent_query_data {
     COPYDATASTRUCT cds;
     unsigned char *mapping;
@@ -63,6 +70,8 @@ DWORD WINAPI agent_query_thread(LPVOID param)
     return 0;
 }
 
+#endif
+
 int agent_query(void *in, int inlen, void **out, int *outlen,
 		void (*callback)(void *, void *, int), void *callback_ctx)
 {
@@ -89,6 +98,7 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     cds.dwData = AGENT_COPYDATA_ID;
     cds.cbData = 1 + strlen(mapname);
     cds.lpData = mapname;
+#ifdef WINDOWS_ASYNC_AGENT
     if (callback != NULL && !(flags & FLAG_SYNCAGENT)) {
 	/*
 	 * We need an asynchronous Pageant request. Since I know of
@@ -111,6 +121,7 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
 	    return 0;
 	sfree(data);
     }
+#endif
 
     /*
      * The user either passed a null callback (indicating that the

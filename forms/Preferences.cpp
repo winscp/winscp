@@ -121,7 +121,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   #define BOOLPROP(PROP) PROP ## Check->Checked = WinConfiguration->PROP;
   BOOLPROP(DefaultDirIsHome);
   BOOLPROP(DeleteToRecycleBin);
-  BOOLPROP(DDAllowMove);
   BOOLPROP(DDTransferConfirmation);
   BOOLPROP(DDWarnLackOfTempSpace);
   BOOLPROP(ShowHiddenFiles);
@@ -137,6 +136,11 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
   CompareByTimeCheck->Checked = WinConfiguration->ScpCommander.CompareByTime;
   CompareBySizeCheck->Checked = WinConfiguration->ScpCommander.CompareBySize;
+
+  DDExtEnabledButton->Checked = WinConfiguration->DDExtEnabled &&
+    WinConfiguration->DDExtInstalled;
+  DDExtDisabledButton->Checked = !DDExtEnabledButton->Checked;
+  DDWarnOnMoveCheck->Checked = !WinConfiguration->DDAllowMove;
 
   if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
   {
@@ -216,7 +220,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     #define BOOLPROP(PROP) WinConfiguration->PROP = PROP ## Check->Checked
     BOOLPROP(DefaultDirIsHome);
     BOOLPROP(DeleteToRecycleBin);
-    BOOLPROP(DDAllowMove);
     BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
@@ -232,6 +235,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     WinConfiguration->ScpCommander.CompareByTime = CompareByTimeCheck->Checked;
     WinConfiguration->ScpCommander.CompareBySize = CompareBySizeCheck->Checked;
+    WinConfiguration->DDAllowMove = !DDWarnOnMoveCheck->Checked;
+    WinConfiguration->DDExtEnabled = DDExtEnabledButton->Checked;
 
     if (DDSystemTemporaryDirectoryButton->Checked)
     {
@@ -321,7 +326,6 @@ void __fastcall TPreferencesDialog::ControlChange(TObject * /*Sender*/)
 void __fastcall TPreferencesDialog::UpdateControls()
 {
   EnableControl(CopyOnDoubleClickConfirmationCheck, CopyOnDoubleClickCheck->Checked);
-  EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Checked);
   EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
 
   EditorFontLabel->Caption = FMTLOAD(EDITOR_FONT_FMT,
@@ -341,6 +345,12 @@ void __fastcall TPreferencesDialog::UpdateControls()
   EnableControl(UpCommandButton, CustomCommandsView->ItemIndex > 0);
   EnableControl(DownCommandButton, CustomCommandsView->ItemIndex >= 0 &&
     CustomCommandsView->ItemIndex < CustomCommandsView->Items->Count - 1);
+
+  EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
+  EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
+  EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
+  EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled && 
+    DDCustomTemporaryDirectoryButton->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
@@ -723,6 +733,22 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   {
     TForm::Dispatch(Message);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::RegisterAsUrlHandlerButtonClick(
+  TObject * /*Sender*/)
+{
+  if (MessageDialog(LoadStr(CONFIRM_REGISTER_URL),
+        qtConfirmation, qaYes | qaNo, 0) == qaYes)
+  {
+    RegisterAsUrlHandler();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::DDExtLabelClick(TObject * Sender)
+{
+  ((Sender == DDExtEnabledLabel) ? DDExtEnabledButton : DDExtDisabledButton)->
+    Checked = true;
 }
 //---------------------------------------------------------------------------
 

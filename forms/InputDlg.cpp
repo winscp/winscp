@@ -5,26 +5,28 @@
 #include <VCLCommon.h>
 #include <Windows.hpp>
 #include <Consts.hpp>
+#include <HistoryComboBox.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 TPoint __fastcall GetAveCharSize(TCanvas* Canvas)
 {
-	Integer I;
-	Char Buffer[52];
-	TSize Result;
-	for (I = 0; I <= 25; I++) Buffer[I] = (Char)('A' + I);
-	for (I = 0; I <= 25; I++) Buffer[I+26] = (Char)('a' + I);
+  Integer I;
+  Char Buffer[52];
+  TSize Result;
+  for (I = 0; I <= 25; I++) Buffer[I] = (Char)('A' + I);
+  for (I = 0; I <= 25; I++) Buffer[I+26] = (Char)('a' + I);
   GetTextExtentPoint(Canvas->Handle, Buffer, 52, &Result);
   return TPoint(Result.cx / 52, Result.cy);
 }
 //---------------------------------------------------------------------------
 bool __fastcall InputDialog(const AnsiString ACaption,
-	const AnsiString APrompt, AnsiString &Value)
+  const AnsiString APrompt, AnsiString & Value, TStrings * History)
 {
   TForm * Form;
   TLabel * Prompt;
   TEdit * Edit;
+  THistoryComboBox * HistoryCombo;
   TPoint DialogUnits;
   int ButtonTop, ButtonWidth, ButtonHeight;
   bool Result = False;
@@ -47,14 +49,31 @@ bool __fastcall InputDialog(const AnsiString ACaption,
     Prompt->Top = MulDiv(8, DialogUnits.y, 8);
     Prompt->Caption = APrompt;
 
-    Edit = new TEdit(Form);
-    Edit->Parent = Form;
-    Edit->Left = Prompt->Left;
-    Edit->Top = MulDiv(19, DialogUnits.y, 8);
-    Edit->Width = MulDiv(204, DialogUnits.x, 4);
-    Edit->MaxLength = 255;
-    Edit->Text = Value;
-    Edit->SelectAll();
+    TWinControl * EditControl;
+    if (History == NULL)
+    {
+      Edit = new TEdit(Form);
+      Edit->Parent = Form;
+      Edit->Text = Value;
+      Edit->SelectAll();
+      Edit->MaxLength = 255;
+      EditControl = Edit;
+    }
+    else
+    {
+      HistoryCombo = new THistoryComboBox(Form);
+      HistoryCombo->Parent = Form;
+      HistoryCombo->Text = Value;
+      HistoryCombo->SelectAll();
+      HistoryCombo->Items = History;
+      HistoryCombo->MaxLength = 255;
+      EditControl = HistoryCombo;
+    }
+    EditControl->Left = Prompt->Left;
+    EditControl->Top = MulDiv(19, DialogUnits.y, 8);
+    EditControl->Width = MulDiv(204, DialogUnits.x, 4);
+
+    Prompt->FocusControl = EditControl;
 
     ButtonTop = MulDiv(41, DialogUnits.y, 8);
     ButtonWidth = MulDiv(50, DialogUnits.x, 4);
@@ -79,8 +98,17 @@ bool __fastcall InputDialog(const AnsiString ACaption,
 
     if (Form->ShowModal() == mrOk)
     {
-      Value = Edit->Text;
-      Result = True;
+      if (History != NULL)
+      {
+        HistoryCombo->SaveToHistory();
+        History->Assign(HistoryCombo->Items);
+        Value = HistoryCombo->Text;
+      }
+      else
+      {
+        Value = Edit->Text;
+      }
+      Result = true;
     }
   }
   __finally

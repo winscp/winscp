@@ -850,26 +850,29 @@ static void scroll(Terminal *term, int topline, int botline, int lines, int sb)
 	     */
 	    seltop = sb ? -term->savelines : topline;
 
-	    if (term->selstart.y >= seltop &&
-		term->selstart.y <= botline) {
-		term->selstart.y--;
-		if (term->selstart.y < seltop) {
-		    term->selstart.y = seltop;
-		    term->selstart.x = 0;
+	    if (term->selstate != NO_SELECTION) {
+		if (term->selstart.y >= seltop &&
+		    term->selstart.y <= botline) {
+		    term->selstart.y--;
+		    if (term->selstart.y < seltop) {
+			term->selstart.y = seltop;
+			term->selstart.x = 0;
+		    }
 		}
-	    }
-	    if (term->selend.y >= seltop && term->selend.y <= botline) {
-		term->selend.y--;
-		if (term->selend.y < seltop) {
-		    term->selend.y = seltop;
-		    term->selend.x = 0;
+		if (term->selend.y >= seltop && term->selend.y <= botline) {
+		    term->selend.y--;
+		    if (term->selend.y < seltop) {
+			term->selend.y = seltop;
+			term->selend.x = 0;
+		    }
 		}
-	    }
-	    if (term->selanchor.y >= seltop && term->selanchor.y <= botline) {
-		term->selanchor.y--;
-		if (term->selanchor.y < seltop) {
-		    term->selanchor.y = seltop;
-		    term->selanchor.x = 0;
+		if (term->selanchor.y >= seltop &&
+		    term->selanchor.y <= botline) {
+		    term->selanchor.y--;
+		    if (term->selanchor.y < seltop) {
+			term->selanchor.y = seltop;
+			term->selanchor.x = 0;
+		    }
 		}
 	    }
 

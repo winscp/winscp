@@ -51,7 +51,7 @@ void __fastcall Execute(TProgramParams * Params);
 // forms\InputDlg.cpp
 TPoint __fastcall GetAveCharSize(TCanvas* Canvas);
 bool __fastcall InputDialog(const AnsiString ACaption,
-  const AnsiString APrompt, AnsiString &Value);
+  const AnsiString APrompt, AnsiString & Value, TStrings * History = NULL);
 
 // forms\About.cpp
 void __fastcall DoAboutDialog(TConfiguration *Configuration);
@@ -133,6 +133,8 @@ bool __fastcall DoComboInputDialog(
   TStrings * Items, TCloseQueryEvent OnCloseQuery, bool AllowEmpty);
 AnsiString __fastcall DoSaveSessionDialog(
   TStoredSessionList * SessionList, const AnsiString DefaultName);
+bool __fastcall DoRemoteMoveDialog(TStrings * FileList, AnsiString & Target,
+  AnsiString & FileMask);
 
 // forms\SelectMask.cpp
 #ifdef CustomDirViewHPP
@@ -161,7 +163,7 @@ enum TSynchronizeMode { smRemote, smLocal, smBoth };
 const spDelete = 0x01;
 const spNoConfirmation = 0x02;
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
-  AnsiString & LocalDirectory, AnsiString & RemoteDirectory);
+  AnsiString & LocalDirectory, AnsiString & RemoteDirectory, bool & SaveSettings);
 
 void __fastcall DoEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, const AnsiString Caption = "");
@@ -174,5 +176,6 @@ void __fastcall DoFileSystemInfoDialog(TTerminal * Terminal);
 
 // windows\WinMain.cpp
 void __fastcall CheckForUpdates();
+void __fastcall RegisterAsUrlHandler();
 //---------------------------------------------------------------------------
 #endif // WinInterfaceH

@@ -8,7 +8,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poScreenCenter
+  Position = poMainFormCenter
   DesignSize = (
     367
     372)

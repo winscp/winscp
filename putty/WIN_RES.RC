@@ -1,4 +1,8 @@
 /* Some compilers, like Borland, don't have winresrc.h */
+#ifdef __LCC__ 
+#include <win.h>
+#else
+
 #ifndef NO_WINRESRC_H
 #ifndef MSVC4
 #include <winresrc.h>
@@ -6,6 +10,8 @@
 #include <winres.h>
 #endif
 #endif
+
+#endif /* end #ifdef __LCC__ */
 
 /* Some systems don't define this, so I do it myself if necessary */
 #ifndef TCS_MULTILINE
@@ -38,7 +44,7 @@ BEGIN
     PUSHBUTTON "Visit &Web Site", IDA_WEB, 84, 52, 70, 14
     CTEXT "PuTTY", IDA_TEXT1, 10, 6, 194, 8
     CTEXT "", IDA_VERSION, 10, 16, 194, 16
-    CTEXT "\251 1997-2003 Simon Tatham. All rights reserved.",
+    CTEXT "\251 1997-2004 Simon Tatham. All rights reserved.",
           IDA_TEXT2, 10, 34, 194, 16
 END
 
@@ -70,7 +76,7 @@ FONT 8, "MS Shell Dlg"
 BEGIN
     DEFPUSHBUTTON "OK", IDOK, 98, 235, 44, 14
 
-    LTEXT "Copyright \251 1997-2003 Simon Tatham", 1000, 10, 10, 206, 8
+    LTEXT "Copyright \251 1997-2004 Simon Tatham", 1000, 10, 10, 206, 8
 
     LTEXT "Portions copyright Robert de Bath, Joris van Rantwijk, Delian", 1001, 10, 26, 206, 8
     LTEXT "Delchev, Andreas Schultz, Jeroen Massar, Wez Furlong, Nicolas", 1002, 10, 34, 206, 8

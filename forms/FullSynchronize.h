@@ -17,8 +17,8 @@ __published:
   TXPGroupBox *DirectoriesGroup;
   TButton *OkButton;
   TButton *CancelButton;
-  TLabel *FileNameLabel;
-  TLabel *Label1;
+  TLabel *LocalDirectoryLabel;
+  TLabel *RemoteDirectoryLabel;
   THistoryComboBox *RemoteDirectoryEdit;
   THistoryComboBox *LocalDirectoryEdit;
   TXPGroupBox *OptionsGroup;
@@ -28,6 +28,7 @@ __published:
   TCheckBox *SynchronizeDeleteCheck;
   TCheckBox *SynchronizeNoConfirmationCheck;
   TButton *LocalDirectoryBrowseButton;
+  TCheckBox *SaveSettingsCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
@@ -42,6 +43,8 @@ private:
   TSynchronizeMode __fastcall GetMode();
   void __fastcall SetParams(int value);
   int __fastcall GetParams();
+  void __fastcall SetSaveSettings(bool value);
+  bool __fastcall GetSaveSettings();
 
 public:
   __fastcall TFullSynchronizeDialog(TComponent* Owner);
@@ -52,6 +55,7 @@ public:
   __property AnsiString LocalDirectory = { read = GetLocalDirectory, write = SetLocalDirectory };
   __property int Params = { read = GetParams, write = SetParams };
   __property TSynchronizeMode Mode = { read = GetMode, write = SetMode };
+  __property bool SaveSettings = { read = GetSaveSettings, write = SetSaveSettings };
 
 protected:
   void __fastcall UpdateControls();

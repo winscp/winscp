@@ -24,6 +24,7 @@
 #define fcSessionCombo     0x15
 #define fcMenuToolBar      0x16
 #define fcRemotePopup      0x17
+#define fcCommandLinePanel 0x18
 
 #define fcExplorerMenuBand        0x0003
 #define fcExplorerAddressBand     0x0103
@@ -450,7 +451,7 @@ __published:	// IDE-managed Components
   TMenuItem *N41;
   TMenuItem *Open3;
   TMenuItem *N42;
-  TAction *SynchorizeBrowsingAction;
+  TAction *SynchronizeBrowsingAction;
   TMenuItem *Synchronizebrowsing1;
   TAction *AddEditLinkAction;
   TMenuItem *Addeditlink1;
@@ -491,6 +492,37 @@ __published:	// IDE-managed Components
   TMenuItem *N47;
   TMenuItem *N49;
   TMenuItem *N50;
+  TAction *RemoteMoveToAction;
+  TMenuItem *Moveto4;
+  TMenuItem *Moveto5;
+  TAction *RemoteMoveToFocusedAction;
+  TMenuItem *Moveto6;
+  TAction *SelectOneAction;
+  TMenuItem *SelectUnselect1;
+  TAction *ShowHiddenFilesAction;
+  TAction *CommandLinePanelAction;
+  TMenuItem *CommandLine1;
+  TAction *LocalPathToClipboardAction;
+  TAction *RemotePathToClipboardAction;
+  TAction *GoToCommandLineAction;
+  TMenuItem *N51;
+  TMenuItem *CopyPathtoClipboard1;
+  TMenuItem *CopyPathtoClipboard2;
+  TMenuItem *N52;
+  TMenuItem *CopyPathtoClipboard3;
+  TMenuItem *CopyPathtoClipboard4;
+  TAction *FileListToCommandLineAction;
+  TAction *FileListToClipboardAction;
+  TAction *FullFileListToClipboardAction;
+  TMenuItem *FileNames1;
+  TMenuItem *InserttoCommandLine1;
+  TMenuItem *CopytoClipboard1;
+  TMenuItem *CopytoClipboardIncludePaths1;
+  TMenuItem *FileNames2;
+  TMenuItem *CopytoClipboardIncludePaths2;
+  TMenuItem *CopytoClipboard2;
+  TMenuItem *CopyPathtoClipboard5;
+  TMenuItem *CommandLine2;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

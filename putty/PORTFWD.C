@@ -255,7 +255,7 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 		    if (pr->hostname[1] != 1 || pr->hostname[2] != 0) {
 			/* Not CONNECT or reserved field nonzero - error */
 			reply[1] = 1;	/* generic failure */
-			sk_write(pr->s, reply, lenof(reply));
+			sk_write(pr->s, (char *) reply, lenof(reply));
 			pfd_close(pr->s);
 			return 1;
 		    }
@@ -266,7 +266,7 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 		    pr->port = GET_16BIT_MSB_FIRST(pr->hostname+4+alen);
 		    if (atype == 1) {
 			/* REP=0 (success) already */
-			sk_write(pr->s, reply, lenof(reply));
+			sk_write(pr->s, (char *) reply, lenof(reply));
 			sprintf(pr->hostname, "%d.%d.%d.%d",
 				(unsigned char)pr->hostname[4],
 				(unsigned char)pr->hostname[5],
@@ -275,7 +275,7 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 			goto connect;
 		    } else if (atype == 3) {
 			/* REP=0 (success) already */
-			sk_write(pr->s, reply, lenof(reply));
+			sk_write(pr->s, (char *) reply, lenof(reply));
 			memmove(pr->hostname, pr->hostname + 5, alen-1);
 			pr->hostname[alen-1] = '\0';
 			goto connect;
@@ -284,13 +284,13 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 			 * Unknown address type. (FIXME: support IPv6!)
 			 */
 			reply[1] = 8;	/* atype not supported */
-			sk_write(pr->s, reply, lenof(reply));
+			sk_write(pr->s, (char *) reply, lenof(reply));
 			pfd_close(pr->s);
-			return 1;			
+			return 1;
 		    }
 		}
 	    }
-	    
+
 	    /*
 	     * If we get here without either having done `continue'
 	     * or `goto connect', it must be because there is no
@@ -569,4 +569,3 @@ void pfd_confirm(Socket s)
 	pr->buffer = NULL;
     }
 }
-

@@ -42,6 +42,9 @@ type
   TDDOnQueryContinueDrag = procedure(Sender: TObject; FEscapePressed: BOOL; grfKeyState: Longint; var Result: HResult) of object;
   TDDOnGiveFeedback = procedure(Sender: TObject; dwEffect: Longint; var Result: HResult) of object;
   TDDOnDragDetect = procedure(Sender: TObject; grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus) of object;
+  TDDOnCreateDragFileList = procedure(Sender: TObject; FileList: TFileList; var Created: Boolean) of object;
+  TDDOnCreateDataObject = procedure(Sender: TObject; var DataObject: TDataObject) of object;
+  TDDOnTargetHasDropHandler = procedure(Sender: TObject; Item: TListItem; var Effect: Integer; var DropHandler: Boolean) of object;
   TOnProcessDropped = procedure(Sender: TObject; grfKeyState: Longint; Point: TPoint; var dwEffect: Longint) of object;
 
   TDDErrorEvent = procedure(Sender: TObject; ErrorNo: TDDError) of object;
@@ -73,6 +76,11 @@ type
   TCompareCriteria = (ccTime, ccSize);
   TCompareCriterias = set of TCompareCriteria;
 
+  TCustomizableDragDropFilesEx = class(TDragDropFilesEx)
+  public
+    function Execute(DataObject: TDataObject): TDragResult;
+  end;
+
   TCustomDirView = class(TIEListView)
   private
     FAddParentDir: Boolean;
@@ -83,7 +91,7 @@ type
     FSortByExtension: Boolean;
     FWantUseDragImages: Boolean;
     FCanUseDragImages: Boolean;
-    FDragDropFilesEx: TDragDropFilesEx;
+    FDragDropFilesEx: TCustomizableDragDropFilesEx;
     FInvalidNameChars: string;
     FSingleClickToExec: Boolean;
     FUseSystemContextMenu: Boolean;
@@ -102,11 +110,15 @@ type
     FOnDDQueryContinueDrag: TDDOnQueryContinueDrag;
     FOnDDGiveFeedback: TDDOnGiveFeedback;
     FOnDDDragDetect: TDDOnDragDetect;
+    FOnDDCreateDragFileList: TDDOnCreateDragFileList;
     FOnDDProcessDropped: TOnProcessDropped;
     FOnDDError: TDDErrorEvent;
     FOnDDExecuted: TDDExecutedEvent;
     FOnDDFileOperation: TDDFileOperationEvent;
     FOnDDFileOperationExecuted: TDDFileOperationExecutedEvent;
+    FOnDDEnd: TNotifyEvent;
+    FOnDDCreateDataObject: TDDOnCreateDataObject;
+    FOnDDTargetHasDropHandler: TDDOnTargetHasDropHandler;
     FOnExecFile: TDirViewExecFileEvent;
     FForceRename: Boolean;
     FLastDDResult: TDragResult;
@@ -198,6 +210,7 @@ type
     procedure DDDragEnter(DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: longint; var Accept: Boolean);
     procedure DDDragLeave;
     procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint);
+    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); virtual; abstract;
     procedure DDDrop(DataObj: IDataObject; grfKeyState: LongInt; Point: TPoint; var dwEffect: Longint);
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint; Point: TPoint; dwEffect: Longint); virtual;
     procedure DDGiveFeedback(dwEffect: Longint; var Result: HResult); virtual;
@@ -318,7 +331,7 @@ type
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
     property ShowDirectories: Boolean read FShowDirectories write SetShowDirectories default True;
     property DirsOnTop: Boolean read FDirsOnTop write SetDirsOnTop default True;
-    property DragDropFilesEx: TDragDropFilesEx read FDragDropFilesEx;
+    property DragDropFilesEx: TCustomizableDragDropFilesEx read FDragDropFilesEx;
     property ShowSubDirSize: Boolean read FShowSubDirSize write SetShowSubDirSize default False;
     property SortByExtension: Boolean read FSortByExtension write SetSortByExtension default False;
     property WantUseDragImages: Boolean read FWantUseDragImages write FWantUseDragImages default True;
@@ -391,6 +404,14 @@ type
      the components window as the source:}
     property OnDDDragDetect: TDDOnDragDetect
       read FOnDDDragDetect write FOnDDDragDetect;
+    property OnDDCreateDragFileList: TDDOnCreateDragFileList
+      read FOnDDCreateDragFileList write FOnDDCreateDragFileList;
+    property OnDDEnd: TNotifyEvent
+      read FOnDDEnd write FOnDDEnd;
+    property OnDDCreateDataObject: TDDOnCreateDataObject
+      read FOnDDCreateDataObject write FOnDDCreateDataObject;
+    property OnDDTargetHasDropHandler: TDDOnTargetHasDropHandler
+      read FOnDDTargetHasDropHandler write FOnDDTargetHasDropHandler;
     {The component window is the target of a drag&drop operation:}
     property OnDDProcessDropped: TOnProcessDropped
       read FOnDDProcessDropped write FOnDDProcessDropped;
@@ -715,6 +736,17 @@ begin
   FAnimation.Active := True;
 end; }
 
+  { TCustomizableDragDropFilesEx }
+
+function TCustomizableDragDropFilesEx.Execute(DataObject: TDataObject): TDragResult;
+begin
+  if not Assigned(DataObject) then
+  begin
+    DataObject := CreateDataObject;
+  end;
+  Result := ExecuteOperation(DataObject);
+end;
+
   { TCustomDirView }
 
 constructor TCustomDirView.Create(AOwner: TComponent);
@@ -784,7 +816,7 @@ begin
   OnCustomDrawItem := DumbCustomDrawItem;
   OnCustomDrawSubItem := DumbCustomDrawSubItem;
 
-  FDragDropFilesEx := TDragDropFilesEx.Create(Self);
+  FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
   with FDragDropFilesEx do
   begin
     {$IFDEF OLD_DND}
@@ -816,9 +848,6 @@ begin
     OnGiveFeedback := DDGiveFeedback;
     OnProcessDropped := DDProcessDropped;
     OnDragDetect := DDDragDetect;
-
-    ShellExtensions.DragDropHandler := True;
-    ShellExtensions.DropHandler := True;
   end;
 end;
 
@@ -1402,6 +1431,11 @@ begin
   Assert(Assigned(DragDropFilesEx) and Assigned(Item));
   Result :=
     DragDropFilesEx.TargetHasDropHandler(nil, ItemFullFileName(Item), Effect);
+
+  if Assigned(OnDDTargetHasDropHandler) then
+  begin
+    OnDDTargetHasDropHandler(Self, Item, Effect, Result);
+  end;
 end;
 
 procedure TCustomDirView.UpdatePathComboBox;
@@ -1892,17 +1926,7 @@ begin
   {Set dropeffect:}
   if (not HasDropHandler) and (not Loading) then
   begin
-    if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) then
-    begin
-      if ExeDrag and (Path[1] >= FirstFixedDrive) and
-        (DragDrive >= FirstFixedDrive) then dwEffect := DropEffect_Link
-        else
-      if DragOnDriveIsMove and
-         (not FDDOwnerIsSource or Assigned(DropTarget)) and
-         (((DragDrive = Upcase(Path[1])) and (dwEffect = DropEffect_Copy) and
-         (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
-           or IsRecycleBin) then dwEffect := DropEffect_Move;
-    end;
+    DDChooseEffect(grfKeyState, dwEffect);
 
     if Assigned(FOnDDDragOver) then
       FOnDDDragOver(Self, grfKeyState, Point, dwEffect);
@@ -2236,6 +2260,9 @@ var
   DragText: string;
   ClientPoint: TPoint;
   OldCursor: TCursor;
+  FileListCreated: Boolean;
+  AvoidDragImage: Boolean;
+  DataObject: TDataObject;
 begin
   if Assigned(FOnDDDragDetect) then
     FOnDDDragDetect(Self, grfKeyState, DetectStart, Point, DragStatus);
@@ -2247,34 +2274,46 @@ begin
     FirstItem := nil;
     FilesCount := 0;
     DirsCount := 0;
+    FileListCreated := False;
 
-    if Assigned(ItemFocused) and (not ItemFocused.Selected) and
-       ItemCanDrag(ItemFocused) then
+    if Assigned(OnDDCreateDragFileList) then
     begin
-      FirstItem := ItemFocused;
-      AddToDragFileList(DragDropFilesEx.FileList, ItemFocused);
-      if ItemIsDirectory(ItemFocused) then DirsCount := 1
-        else FilesCount := 1;
-    end
-      else
-    if SelCount > 0 then
-    begin
-      Item := GetNextItem(nil, sdAll, [isSelected]);
-      while Assigned(Item) do
+      OnDDCreateDragFileList(Self, DragDropFilesEx.FileList, FileListCreated);
+      if FileListCreated then
       begin
-        if ItemCanDrag(Item) then
-        begin
-          if not Assigned(FirstItem) then
-            FirstItem := Item;
-          AddToDragFileList(DragDropFilesEx.FileList, Item);
-          if ItemIsDirectory(Item) then Inc(DirsCount)
-            else Inc(FilesCount);
-        end;
-        Item := GetNextItem(Item, sdAll, [isSelected]);
+        AvoidDragImage := True;
       end;
     end;
 
-    if Assigned(FirstItem) then
+    if not FileListCreated then
+    begin
+      if Assigned(ItemFocused) and (not ItemFocused.Selected) and
+         ItemCanDrag(ItemFocused) then
+      begin
+        FirstItem := ItemFocused;
+        AddToDragFileList(DragDropFilesEx.FileList, ItemFocused);
+        if ItemIsDirectory(ItemFocused) then Inc(DirsCount)
+          else Inc(FilesCount);
+      end
+        else
+      if SelCount > 0 then
+      begin
+        Item := GetNextItem(nil, sdAll, [isSelected]);
+        while Assigned(Item) do
+        begin
+          if ItemCanDrag(Item) then
+          begin
+            if not Assigned(FirstItem) then FirstItem := Item;
+            AddToDragFileList(DragDropFilesEx.FileList, Item);
+            if ItemIsDirectory(Item) then Inc(DirsCount)
+              else Inc(FilesCount);
+          end;
+          Item := GetNextItem(Item, sdAll, [isSelected]);
+        end;
+      end;
+    end;
+
+    if DragDropFilesEx.FileList.Count > 0 then
     begin
       OldCursor := Screen.Cursor;
       Screen.Cursor := crHourGlass;
@@ -2282,7 +2321,7 @@ begin
         FDragEnabled := False;
         {Create the dragimage:}
         GlobalDragImageList := DragImageList;
-        if UseDragImages then
+        if UseDragImages and (not AvoidDragImage) then
         begin
           ImageListHandle := ListView_CreateDragImage(Handle, FirstItem.Index, Spot);
           ItemPos := ClientToScreen(FirstItem.DisplayRect(drBounds).TopLeft);
@@ -2353,21 +2392,35 @@ begin
         else DragDropFilesEx.SourceEffects := DragSourceEffects;
 
       DropSourceControl := Self;
-      GetSystemTimeAsFileTime(FDragStartTime);
 
-      {Execute the drag&drop-Operation:}
-      FLastDDResult := DragDropFilesEx.Execute;
+      try
+        GetSystemTimeAsFileTime(FDragStartTime);
 
-      {the drag&drop operation is finished, so clean up the used drag image:}
-      GlobalDragImageList.EndDrag;
-      GlobalDragImageList.Clear;
+        DataObject := nil;
+        if Assigned(OnDDCreateDataObject) then
+        begin
+          OnDDCreateDataObject(Self, DataObject);
+        end;
+        {Execute the drag&drop-Operation:}
+        FLastDDResult := DragDropFilesEx.Execute(DataObject);
 
-      Application.ProcessMessages;
+        {the drag&drop operation is finished, so clean up the used drag image:}
+        GlobalDragImageList.EndDrag;
+        GlobalDragImageList.Clear;
 
-      DragDropFilesEx.FileList.Clear;
-      FContextMenu := False;
-      DropTarget := nil;
-      DropSourceControl := nil;
+        Application.ProcessMessages;
+      finally
+        DropSourceControl := nil;
+
+        DragDropFilesEx.FileList.Clear;
+        FContextMenu := False;
+        DropTarget := nil;
+
+        if Assigned(OnDDEnd) then
+        begin
+          OnDDEnd(Self);
+        end;
+      end;
     end;
   end;
 end;

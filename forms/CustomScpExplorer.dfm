@@ -64,12 +64,15 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       UnixColProperties.ExtWidth = 20
       UnixColProperties.ExtVisible = False
       OnGetCopyParam = RemoteDirViewGetCopyParam
+      OnDDTargetDrop = RemoteDirViewDDTargetDrop
       StatusBar = RemoteStatusBar
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
-      TargetPopupMenu = False
       OnExecFile = DirViewExecFile
       OnDDDragEnter = DirViewDDDragEnter
       OnDDDragLeave = DirViewDDDragLeave
+      OnDDCreateDragFileList = RemoteDirViewDDCreateDragFileList
+      OnDDEnd = RemoteDirViewDDEnd
+      OnDDCreateDataObject = RemoteDirViewDDCreateDataObject
       OnContextPopup = RemoteDirViewContextPopup
       OnDisplayProperties = RemoteDirViewDisplayProperties
       OnWarnLackOfTempSpace = RemoteDirViewWarnLackOfTempSpace

@@ -22,6 +22,7 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   FDirection = pdToLocal;
   Direction = pdToRemote;
 
+  FForcePreserveTime = false;
   FAllowTransferMode = True;
   RightsFrame->AllowAddXToDirectories = True;
   FParams = new TCopyParamType();
@@ -130,6 +131,11 @@ void __fastcall TCopyParamsFrame::UpdateControls()
   EnableControl(RightsFrame, PreserveRightsCheck->Checked && Enabled);
   EnableControl(ReplaceInvalidCharsCheck,
     Direction == pdToLocal || Direction == pdBoth || Direction == pdAll);
+  EnableControl(PreserveTimeCheck, !ForcePreserveTime);
+  if (ForcePreserveTime)
+  {
+    PreserveTimeCheck->Checked = true;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)
@@ -177,6 +183,12 @@ void __fastcall TCopyParamsFrame::SelectMask(Integer Start, Integer Length)
 void __fastcall TCopyParamsFrame::SetAllowTransferMode(Boolean value)
 {
   FAllowTransferMode = value;
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::SetForcePreserveTime(bool value)
+{
+  FForcePreserveTime = value;
   UpdateControls();
 }
 //---------------------------------------------------------------------------

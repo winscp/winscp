@@ -23,6 +23,8 @@ typedef void __fastcall (__closure *TGetCopyParamEvent)
 typedef void __fastcall (__closure *TWarnLackOfTempSpaceEvent)
   (TUnixDirView * Sender, const AnsiString Path, __int64 RequiredSpace,
     bool & Continue);
+typedef void __fastcall (__closure *TDDTargetDropEvent)
+  (TUnixDirView * Sender, int DropEffect, bool & Continue);
 #define DefaultDDDeleteDelay 120
 #define HOMEDIRECTORY ""
 #define CURRENTDIRECTORY "."
@@ -49,6 +51,7 @@ private:
   TWarnLackOfTempSpaceEvent FOnWarnLackOfTempSpace;
   AnsiString FDragDropSshTerminate;
   TStrings * FDDFileList;
+  TDDTargetDropEvent FOnDDTargetDrop;
   bool __fastcall GetActive();
   TTimer * FDelayedDeletionTimer;
   TStrings * FDelayedDeletionList;
@@ -67,7 +70,8 @@ protected:
   virtual void __fastcall DDMenuDone(TObject* Sender, HMENU AMenu);
   virtual void __fastcall DDQueryContinueDrag(BOOL FEscapePressed, int grfKeyState, HRESULT & Result);
   void __fastcall DDTargetDrop();
-    virtual void __fastcall AddToDragFileList(TFileList* FileList, TListItem* Item);
+  virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect);
+  virtual void __fastcall AddToDragFileList(TFileList* FileList, TListItem* Item);
   void __fastcall DisplayContextMenu(const TPoint &Where);
   void __fastcall DoChangeDirectory(TObject * Sender);
   void __fastcall DoDelayedDeletion(TObject * Sender);
@@ -86,7 +90,6 @@ protected:
   virtual AnsiString __fastcall ItemDragFileName(TListItem * Item);
   virtual AnsiString __fastcall ItemFileName(TListItem * Item);
   virtual __int64 __fastcall ItemFileSize(TListItem * Item);
-  virtual AnsiString __fastcall ItemFullFileName(TListItem * Item);
   virtual int __fastcall ItemImageIndex(TListItem * Item, bool Cache);
   virtual bool __fastcall ItemIsFile(TListItem * Item);
   virtual bool __fastcall ItemMatchesFilter(TListItem * Item, const TFileFilter &Filter);
@@ -114,6 +117,7 @@ public:
   virtual void __fastcall ReloadDirectory();
   virtual bool __fastcall ItemIsDirectory(TListItem * Item);
   virtual bool __fastcall ItemIsParentDirectory(TListItem * Item);
+  virtual AnsiString __fastcall ItemFullFileName(TListItem * Item);
   __property bool Active = { read = GetActive };
   __property AnsiString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=FDDTemporaryDirectory };
 #ifndef DESIGN_ONLY
@@ -126,6 +130,8 @@ __published:
     write = SetDDDeleteDelay, default = DefaultDDDeleteDelay };
   __property TGetCopyParamEvent OnGetCopyParam = { read = FOnGetCopyParam,
     write = FOnGetCopyParam};
+  __property TDDTargetDropEvent OnDDTargetDrop = { read = FOnDDTargetDrop,
+    write = FOnDDTargetDrop};
   __property bool ShowInaccesibleDirectories  =
     { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories,
       default=true  };
@@ -156,11 +162,15 @@ __published:
   __property OnDDQueryContinueDrag;
   __property OnDDGiveFeedback;
   __property OnDDDragDetect;
+  __property OnDDEnd;
+  __property OnDDCreateDragFileList;
+  __property OnDDTargetHasDropHandler;
   __property OnDDProcessDropped;
   __property OnDDError;
   __property OnDDExecuted;
   __property OnDDFileOperation;
   __property OnDDFileOperationExecuted;
+  __property OnDDCreateDataObject;
 
   __property OnContextPopup;
   __property OnBeginRename;

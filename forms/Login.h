@@ -196,6 +196,8 @@ __published:
   TRadioButton *PingOffButton;
   TRadioButton *PingNullPacketButton;
   TRadioButton *PingDummyCommandButton;
+  TUpDownEdit *TimeDifferenceMinutesEdit;
+  TLabel *Label9;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,

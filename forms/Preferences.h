@@ -58,17 +58,9 @@ __published:
   TXPGroupBox *PanelsCommonGroup;
   TCheckBox *ShowHiddenFilesCheck;
   TCheckBox *DefaultDirIsHomeCheck;
-  TXPGroupBox *DragDropPreferencesGroup;
-  TLabel *Label5;
-  TCheckBox *DDAllowMoveCheck;
-  TRadioButton *DDSystemTemporaryDirectoryButton;
-  TRadioButton *DDCustomTemporaryDirectoryButton;
-  TDirectoryEdit *DDTemporaryDirectoryEdit;
-  TCheckBox *DDWarnLackOfTempSpaceCheck;
   TTabSheet *CommanderSheet;
   TLabel *Label3;
   TXPGroupBox *PanelsGroup;
-  TCheckBox *DeleteToRecycleBinCheck;
   TCheckBox *ExplorerStyleSelectionCheck;
   TCheckBox *PreserveLocalDirectoryCheck;
   TXPGroupBox *CommanderMiscGroup;
@@ -125,6 +117,20 @@ __published:
   TCheckBox *CustomCommandRecursiveCheck;
   TPanel *LeftPanel;
   TTreeView *NavigationTree;
+  TCheckBox *DeleteToRecycleBinCheck;
+  TButton *RegisterAsUrlHandlerButton;
+  TTabSheet *DragDropSheet;
+  TXPGroupBox *DragDropDownloadsGroup;
+  TLabel *DDExtEnabledLabel;
+  TLabel *DDExtDisabledLabel;
+  TRadioButton *DDExtEnabledButton;
+  TRadioButton *DDExtDisabledButton;
+  TPanel *DDExtDisabledPanel;
+  TRadioButton *DDSystemTemporaryDirectoryButton;
+  TRadioButton *DDCustomTemporaryDirectoryButton;
+  TDirectoryEdit *DDTemporaryDirectoryEdit;
+  TCheckBox *DDWarnLackOfTempSpaceCheck;
+  TCheckBox *DDWarnOnMoveCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -153,6 +159,8 @@ __published:
   void __fastcall CompareBySizeCheckClick(TObject *Sender);
   void __fastcall NavigationTreeChange(TObject *Sender, TTreeNode *Node);
   void __fastcall PageControlChange(TObject *Sender);
+  void __fastcall RegisterAsUrlHandlerButtonClick(TObject *Sender);
+  void __fastcall DDExtLabelClick(TObject *Sender);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;

@@ -32,7 +32,7 @@
     <MAINSOURCE value="Putty.bpf"/>
     <INCLUDEPATH value="putty;putty\CHARSET;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="putty\CHARSET;putty;$(BCB)\lib\obj;$(BCB)\lib"/>
-    <WARNINGS value="-w-sus -w-rvl -w-rch -w-pia -w-pck -w-pch -w-par -w-eff -w-aus"/>
+    <WARNINGS value="-w-sus -w-rvl -w-rch -w-pia -w-pck -w-pch -w-par -w-8027 -w-eff -w-aus"/>
     <LISTFILE value=""/>
     <OTHERFILES value=""/>
   </MACROS>

@@ -13,8 +13,8 @@ to transfer files, you should just be able to run them from the
 Start menu.
 
 If you want to use the command-line-only file transfer utility PSCP,
-you will probably want to put the PuTTY installation directory to be
-on your PATH. How you do this depends on your version of Windows. On
+you will probably want to put the PuTTY installation directory on
+your PATH. How you do this depends on your version of Windows. On
 Windows NT and 2000, you can set it using Control Panel > System; on
 Windows 95 you will need to edit AUTOEXEC.BAT. Consult your Windows
 manuals for details.

@@ -53,6 +53,7 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent* AOwner)
   FMinimizedByMe = False;
   UseSystemSettings(this);
   CopyParamsFrame->Direction = pdToRemote;
+  CopyParamsFrame->ForcePreserveTime = true;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSynchronizeDialog::Execute()

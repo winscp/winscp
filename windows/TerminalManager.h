@@ -10,17 +10,6 @@ class TLogMemo;
 //---------------------------------------------------------------------------
 enum TTerminalPendingAction { tpNull, tpNone, tpReconnect, tpFree };
 //---------------------------------------------------------------------------
-class TTerminalUserObject : public TObject
-{
-public:
-  __fastcall TTerminalUserObject() : TObject() {};
-
-  __property AnsiString LocalDirectory = { read = FLocalDirectory, write = FLocalDirectory }; 
-
-private:
-  AnsiString FLocalDirectory;
-};
-//---------------------------------------------------------------------------
 class TTerminalManager : public TTerminalList
 {
 public:
@@ -69,8 +58,8 @@ private:
   void __fastcall UpdateTerminal(TTerminal * Terminal);
   void __fastcall UpdateAll();
   void __fastcall ApplicationException(TObject * Sender, Exception * E);
-  void __fastcall ConfigurationChange(TObject * /*Sender*/);
-  void __fastcall TerminalQueryUser(TObject * /*Sender*/,
+  void __fastcall ConfigurationChange(TObject * Sender);
+  void __fastcall TerminalQueryUser(TObject * Sender,
     const AnsiString Query, TStrings * MoreMessages, int Answers,
     int Params, int & Answer, TQueryType Type);
   void __fastcall FreeAll();

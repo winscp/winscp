@@ -24,6 +24,8 @@ class TSynchronizeProgressForm;
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
 enum TExecuteFileBy { efDefault, efEditor, efAlternativeEditor };
+enum TPanelExport { pePath, peFileList, peFullFileList };
+enum TPanelExportDestination { pedClipboard, pedCommandLine };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
@@ -59,6 +61,13 @@ __published:
     _di_IDataObject DataObj, int grfKeyState, const TPoint &Point,
     int &dwEffect, bool &Accept);
   void __fastcall DirViewDDDragLeave(TObject *Sender);
+  void __fastcall RemoteDirViewDDCreateDragFileList(TObject *Sender,
+    TFileList *FileList, bool &Created);
+  void __fastcall RemoteDirViewDDEnd(TObject *Sender);
+  void __fastcall RemoteDirViewDDTargetDrop(TUnixDirView *Sender,
+    int DropEffect, bool &Continue);
+  void __fastcall RemoteDirViewDDCreateDataObject(TObject *Sender,
+    TDataObject *&DataObject);
   
 private:
   TTerminal * FTerminal;
@@ -72,6 +81,8 @@ private:
   AnsiString FStatusBarHint;
   bool FIgnoreNextSysCommand;
   TStringList * FErrorList;
+  HANDLE FDDExtMutex;
+  AnsiString FDragExtFakeDirectory;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
@@ -89,12 +100,17 @@ protected:
   TProgressForm * FProgressForm;
   AnsiString FCustomCommandName;
   TSynchronizeProgressForm * FSynchronizeProgressForm;
+  HANDLE FDDExtMapFile;
+  int FDDExtDropEffect;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,
     AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm);
+  virtual bool __fastcall RemoteMoveDialog(TStrings * FileList,
+    AnsiString & Target, AnsiString & FileMask, bool NoConfirmation);
   virtual void __fastcall CreateParams(TCreateParams & Params);
   void __fastcall DeleteFiles(TOperationSide Side, TStrings * FileList);
+  void __fastcall RemoteMoveFiles(TStrings * FileList, bool NoConfirmation);
   virtual void __fastcall DoDirViewExecFile(TObject * Sender, TListItem * Item, bool & AllowExec);
   virtual TControl * __fastcall GetComponent(Byte Component);
   virtual TCoolBand * __fastcall GetCoolBand(TCoolBar * Coolbar, int ID);
@@ -121,9 +137,18 @@ protected:
   void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, bool & Continue);
   bool __fastcall DoFullSynchronizeDirectories(AnsiString & LocalDirectory,
-    AnsiString & RemoteDirectory);
+    AnsiString & RemoteDirectory, TSynchronizeMode & Mode);
   void __fastcall BatchStart(void *& Storage);
   void __fastcall BatchEnd(void * Storage);
+  void __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
+    TStrings * FileList, bool NoConfirmation, void * Param);
+  virtual void __fastcall DDGetTarget(AnsiString & Directory);
+  virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
+  virtual void __fastcall DoDirViewEnter(TCustomDirView * DirView);
+  virtual TOperationSide __fastcall GetSide(TOperationSide Side);
+  virtual void __fastcall PanelExportStore(TOperationSide Side,
+    TPanelExport Export, TPanelExportDestination Destination,
+    TStringList * ExportData);
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
@@ -152,12 +177,15 @@ public:
   void __fastcall SaveCurrentSession();
   virtual void __fastcall CompareDirectories();
   void __fastcall ExecuteCurrentFile();
-  void __fastcall OpenConsole();
+  virtual void __fastcall OpenConsole(AnsiString Command = "");
   void __fastcall OpenInPutty();
   virtual void __fastcall UpdateSessionData(TSessionData * Data = NULL);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall ExploreLocalDirectory();
+  virtual void __fastcall GoToCommandLine();
+  virtual void __fastcall PanelExport(TOperationSide Side, TPanelExport Export,
+    TPanelExportDestination Destination, bool OnFocused = false);
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy);
   void __fastcall LastTerminalClosed(TObject * Sender);
   void __fastcall TerminalListChanged(TObject * Sender);

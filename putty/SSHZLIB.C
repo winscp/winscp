@@ -602,6 +602,8 @@ void zlib_compress_cleanup(void *handle)
 {
     struct LZ77Context *ectx = (struct LZ77Context *)handle;
     sfree(ectx->userdata);
+    sfree(ectx->ictx);
+    sfree(ectx);
 }
 
 /*
@@ -963,13 +965,15 @@ void *zlib_decompress_init(void)
 void zlib_decompress_cleanup(void *handle)
 {
     struct zlib_decompress_ctx *dctx = (struct zlib_decompress_ctx *)handle;
-    
+
     if (dctx->currlentable && dctx->currlentable != dctx->staticlentable)
 	zlib_freetable(&dctx->currlentable);
     if (dctx->currdisttable && dctx->currdisttable != dctx->staticdisttable)
 	zlib_freetable(&dctx->currdisttable);
     if (dctx->lenlentable)
 	zlib_freetable(&dctx->lenlentable);
+    zlib_freetable(&dctx->staticlentable);
+    zlib_freetable(&dctx->staticdisttable);
     sfree(dctx);
 }
 

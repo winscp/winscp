@@ -21,6 +21,7 @@
 #define LICENCE_18      1018
 #define LICENCE_PUTTY   1021
 #define LICENCE_PUTTY_2 1022
+#define DND_DOWNLOAD_MOVE_WARNING 1050
 
 #define WIN_ERROR_STRINGS       1100
 #define MASK_ERROR              1101
@@ -48,6 +49,11 @@
 #define EXECUTE_APP_ERROR       1127
 #define FILE_NOT_FOUND          1128
 #define ABSOLUTE_PATH_REQUIRED  1129
+#define UNKNOWN_PROTOCOL        1130
+#define REGISTER_URL_ERROR      1131
+#define MUTEX_RELEASE_TIMEOUT   1132
+#define DRAGEXT_MUTEX_RELEASE_TIMEOUT 1133
+#define DRAGEXT_TARGET_UNKNOWN  1134
 
 #define WIN_CONFIRMATION_STRINGS 1300
 #define CONFIRM_OVERWRITE_SESSION 1301
@@ -73,6 +79,7 @@
 #define PREV_BUTTON             1321
 #define NEXT_BUTTON             1322
 #define APPEND_BUTTON           1323
+#define CONFIRM_REGISTER_URL    1324
 
 #define WIN_INFORMATION_STRINGS 1400
 #define APP_CAPTION             1401
@@ -102,6 +109,7 @@
 #define STATUS_STARTUP          1457
 #define STATUS_OPEN_DIRECTORY   1458
 #define STATUS_READY            1459
+#define PROTOCOL_URL_DESC       1460
 
 #define WIN_FORMS_STRINGS       1500
 #define LOG_NOLOG               1501
@@ -208,6 +216,12 @@
 #define CLEANUP_HOSTKEYS        1602
 #define CLEANUP_INIFILE         1603
 #define CLEANUP_SEEDFILE        1604
+#define SELECT_LOCAL_DIRECTORY  1605
+#define PROGRESS_REMOTE_MOVE    1606
+#define REMOTE_MOVE_FILE        1607
+#define REMOTE_MOVE_FILES       1608
+#define REMOTE_MOVE_TITLE       1609
+
 #define WIN_VARIABLE_STRINGS    1700
 #define WINSCP_COPYRIGHT        1701
 #define HOMEPAGE_URL            1702
@@ -217,7 +231,6 @@
 #define UPDATES_URL             1706
 #define DOWNLOAD_URL            1707
 #define DONATE_URL              1708
-#define SELECT_LOCAL_DIRECTORY  1709
 
 #define TRANSLATOR_INFO         1801
 #define MIDDLE_EAST             1802

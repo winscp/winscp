@@ -28,6 +28,7 @@
 #include <WinInterface.h>
 
 #include <Synchronize.h>
+#include "HistoryComboBox.hpp"
 //---------------------------------------------------------------------------
 class TScpCommanderForm : public TCustomScpExplorerForm
 {
@@ -125,6 +126,10 @@ __published:
   TComboBox *SessionCombo;
   TToolButton *ToolButton49;
   TToolButton *ToolButton51;
+  TPanel *CommandLinePanel;
+  THistoryComboBox *CommandLineCombo;
+  TPathLabel *CommandLineLabel;
+  TLabel *CommandLinePromptLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
@@ -135,12 +140,26 @@ __published:
   void __fastcall FormResize(TObject *Sender);
   void __fastcall LocalDirViewChangeDetected(TObject *Sender);
   void __fastcall LocalDirViewExecFile(TObject *Sender, TListItem *Item,
-          bool &AllowExec);
+    bool &AllowExec);
   void __fastcall LocalDirViewDDDragEnter(TObject *Sender,
-          IDataObject *DataObj, int grfKeyState, TPoint &Point,
-          int &dwEffect, bool &Accept);
+    IDataObject *DataObj, int grfKeyState, TPoint &Point,
+    int &dwEffect, bool &Accept);
   void __fastcall DirViewLoaded(TObject *Sender);
   void __fastcall SessionComboCloseUp(TObject *Sender);
+  void __fastcall LocalDirViewDDDragOver(TObject *Sender, int grfKeyState,
+    TPoint &Point, int &dwEffect);
+  void __fastcall LocalDirViewDDFileOperation(TObject *Sender,
+    int dwEffect, AnsiString SourcePath, AnsiString TargetPath,
+    bool &DoOperation);
+  void __fastcall RemoteDirViewDDFileOperationExecuted(TObject *Sender,
+    int dwEffect, AnsiString SourcePath, AnsiString TargetPath);
+  void __fastcall CommandLineComboKeyDown(TObject *Sender, WORD &Key,
+    TShiftState Shift);
+  void __fastcall CommandLineComboDropDown(TObject *Sender);
+  void __fastcall CommandLineComboEnter(TObject *Sender);
+  void __fastcall CommandLineComboExit(TObject *Sender);
+  void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,
+    TListItem *Item, int &Effect, bool &DropHandler);
 
 private:
   TCustomDirView * FDirViewToSelect;
@@ -148,11 +167,15 @@ private:
   float FLocalPanelWidth;
   int FLastWidth;
   bool FSynchronisingBrowse;
+  TStrings * FInternalDDDownloadList;
   TSynchronizationStatus FSynchronization;
   TSynchronizeParamType FSynchronizeParams;
   TSynchronizeDialog * FSynchronizeDialog;
   AnsiString FPrevPath[2];
   bool FFirstTerminal;
+  AnsiString FDDExtTarget;
+  bool FCommandLineComboPopulated;
+
   void __fastcall SetLocalPanelWidth(float value);
   float __fastcall GetLocalPanelWidth();
 
@@ -161,7 +184,6 @@ protected:
     TTransferType Type, bool DragDrop, TStrings * FileList,
     AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
-  virtual void __fastcall ExecuteFileOperation(::TFileOperation Operation, TOperationSide Side, Boolean OnFocused);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
@@ -169,7 +191,6 @@ protected:
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
-  DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
   void __fastcall UpdateControls();
   void __fastcall SynchronizeStartStop(TObject* Sender, bool Start,
     TSynchronizeParamType Params);
@@ -181,10 +202,23 @@ protected:
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
     TOperationSide Side);
+  bool __fastcall InternalDDDownload(AnsiString & TargetDirectory);
+  virtual void __fastcall DDGetTarget(AnsiString & Directory);
+  virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
+  virtual void __fastcall DoDirViewEnter(TCustomDirView * DirView);
+  void __fastcall SaveCommandLine();
+  void __fastcall ExecuteCommandLine();
+  virtual TOperationSide __fastcall GetSide(TOperationSide Side);
+  virtual void __fastcall PanelExportStore(TOperationSide Side,
+    TPanelExport Export, TPanelExportDestination Destination,
+    TStringList * ExportData);
+  void __fastcall CommandLinePopulate();
 
 public:
-  virtual void __fastcall AddEditLink();
   __fastcall TScpCommanderForm(TComponent* Owner);
+  virtual __fastcall ~TScpCommanderForm();
+  
+  virtual void __fastcall AddEditLink();
   virtual bool __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall CompareDirectories();
@@ -193,6 +227,8 @@ public:
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall StoreParams();
   virtual void __fastcall ExploreLocalDirectory();
+  virtual void __fastcall GoToCommandLine();
+  virtual void __fastcall OpenConsole(AnsiString Command = "");
   __property float LocalPanelWidth = { read = GetLocalPanelWidth, write = SetLocalPanelWidth };
 };
 //---------------------------------------------------------------------------

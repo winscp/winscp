@@ -483,9 +483,9 @@ struct ssh2_userkey *openssh_read(const Filename *filename, char *passphrase)
     struct ssh2_userkey *retval = NULL;
     char *errmsg;
     unsigned char *blob;
-    int blobsize, blobptr, privptr;
-    char *modptr;
-    int modlen;
+    int blobsize = 0, blobptr, privptr;
+    char *modptr = NULL;
+    int modlen = 0;
 
     blob = NULL;
 
@@ -559,6 +559,8 @@ struct ssh2_userkey *openssh_read(const Filename *filename, char *passphrase)
 	num_integers = 9;
     else if (key->type == OSSH_DSA)
 	num_integers = 6;
+    else
+	num_integers = 0;	       /* placate compiler warnings */
 
     /*
      * Space to create key blob in.
@@ -580,6 +582,7 @@ struct ssh2_userkey *openssh_read(const Filename *filename, char *passphrase)
 	if (ret < 0 || id != 2 ||
 	    key->keyblob+key->keyblob_len-p < len) {
 	    errmsg = "ASN.1 decoding failure";
+	    retval = SSH2_WRONG_PASSPHRASE;
 	    goto error;
 	}
 
@@ -666,7 +669,7 @@ int openssh_write(const Filename *filename, struct ssh2_userkey *key,
 		  char *passphrase)
 {
     unsigned char *pubblob, *privblob, *spareblob;
-    int publen, privlen, sparelen;
+    int publen, privlen, sparelen = 0;
     unsigned char *outblob;
     int outlen;
     struct mpint_pos numbers[9];
@@ -1200,7 +1203,7 @@ struct ssh2_userkey *sshcom_read(const Filename *filename, char *passphrase)
     struct ssh2_userkey *ret = NULL, *retkey;
     const struct ssh_signkey *alg;
     unsigned char *blob = NULL;
-    int blobsize, publen, privlen;
+    int blobsize = 0, publen, privlen;
 
     if (!key)
         return NULL;
@@ -1321,7 +1324,7 @@ struct ssh2_userkey *sshcom_read(const Filename *filename, char *passphrase)
      * Strip away the containing string to get to the real meat.
      */
     len = GET_32BIT(ciphertext);
-    if (len > cipherlen-4) {
+    if (len < 0 || len > cipherlen-4) {
         errmsg = "containing string was ill-formed";
         goto error;
     }
@@ -1388,7 +1391,8 @@ struct ssh2_userkey *sshcom_read(const Filename *filename, char *passphrase)
         publen = pos;
         pos += put_mp(blob+pos, x.start, x.bytes);
         privlen = pos - publen;
-    }
+    } else
+	return NULL;
 
     assert(privlen > 0);	       /* should have bombed by now if not */
 

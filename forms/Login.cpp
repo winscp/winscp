@@ -268,7 +268,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     Scp1CompatibilityCheck->Checked = aSessionData->Scp1Compatibility;
     UnsetNationalVarsCheck->Checked = aSessionData->UnsetNationalVars;
     AliasGroupListCheck->Checked = aSessionData->AliasGroupList;
-    TimeDifferenceEdit->AsInteger = double(aSessionData->TimeDifference) * 24;
+    int TimeDifferenceMin = double(aSessionData->TimeDifference) * 24 * 60;
+    TimeDifferenceEdit->AsInteger = TimeDifferenceMin / 60;
+    TimeDifferenceMinutesEdit->AsInteger = TimeDifferenceMin % 60;
 
     // Proxy tab
     switch (aSessionData->ProxyMethod) {
@@ -388,7 +390,9 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
     else aSessionData->EOLType = eolCRLF;
   aSessionData->UnsetNationalVars = UnsetNationalVarsCheck->Checked;
   aSessionData->AliasGroupList = AliasGroupListCheck->Checked;
-  aSessionData->TimeDifference = double(TimeDifferenceEdit->AsInteger) / 24;
+  aSessionData->TimeDifference =
+    (double(TimeDifferenceEdit->AsInteger) / 24) +
+    (double(TimeDifferenceMinutesEdit->AsInteger) / 24 / 60);
 
   // Proxy tab
   if (ProxyHTTPButton->Checked) aSessionData->ProxyMethod = pmHTTP;
@@ -687,6 +691,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
     SessionData = NewSession;
 
     ChangePage(SessionListSheet);
+    SessionListView->SetFocus();
   }
 }
 //---------------------------------------------------------------------------

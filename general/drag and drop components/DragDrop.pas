@@ -162,7 +162,7 @@ type
   end;
 
   TDataObject = class(TDDInterfacedObject, IDataObject)
-  private
+  protected
     FFormatEtcList:TFormatEtcList;
     FCheckLindex:boolean;
     FCheckdwAspect:boolean;
@@ -188,6 +188,8 @@ type
       stdcall;
     function RenderData(FormatEtc:TFormatEtc;
        var StgMedium: TStgMedium): HResult; virtual; abstract;
+  protected
+    function AllowData(FormatEtc: TFormatEtc): Boolean; virtual;
   end;
 
   // forward declaration, because TDropSource and TDropTarget uses this class ...
@@ -772,7 +774,7 @@ const DVError:array[0..3] of HResult=(DV_E_FORMATETC,DV_E_TYMED,DV_E_DVASPECT,DV
 var i,j:integer;
 begin
      j:=0;
-     if FFormatEtcList.Count>0 then
+     if (FFormatEtcList.Count>0) and AllowData(FormatEtc) then
         for i:=0 to FFormatEtcList.Count-1 do
             if FormatEtc.cfFormat=FFormatEtcList.Items[i].cfFormat then
             begin
@@ -792,6 +794,11 @@ begin
                  else if j<1 then j:=1;
             end;
      Result:=DVError[j];
+end;
+
+function TDataObject.AllowData(FormatEtc: TFormatEtc): Boolean;
+begin
+  Result := True;
 end;
 
 function TDataObject.EnumFormatEtc(dwDirection: Longint; out enumFormatEtc:

@@ -794,6 +794,7 @@ int askappend(void *frontend, Filename filename);
 extern int console_batch_mode;
 int console_get_line(const char *prompt, char *str, int maxlen, int is_pw);
 void console_provide_logctx(void *logctx);
+int is_interactive(void);
 
 /*
  * Exports from printing.c.
@@ -848,5 +849,6 @@ const char *filename_to_str(const Filename *fn);
 int filename_equal(Filename f1, Filename f2);
 int filename_is_null(Filename fn);
 char *get_username(void);	       /* return value needs freeing */
+char *get_random_data(int bytes);      /* used in cmdgen.c */
 
 #endif

@@ -13,7 +13,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 313
     Top = 170
     Width = 5
-    Height = 338
+    Height = 317
     Cursor = crHSplit
     ResizeStyle = rsUpdate
     OnCanResize = SplitterCanResize
@@ -550,7 +550,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       object ToolButton46: TToolButton
         Left = 108
         Top = 0
-        Action = NonVisualDataModule.SynchorizeBrowsingAction
+        Action = NonVisualDataModule.SynchronizeBrowsingAction
         Style = tbsCheck
       end
     end
@@ -559,7 +559,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 318
     Top = 170
     Width = 335
-    Height = 338
+    Height = 317
     Constraints.MinWidth = 170
     TabOrder = 1
     object RemotePathLabel: TPathLabel [0]
@@ -567,17 +567,19 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 72
       Width = 335
       Height = 15
+      UnixPath = True
+      AutoSize = False
       PopupMenu = NonVisualDataModule.RemotePanelPopup
     end
     inherited RemoteStatusBar: TAssociatedStatusBar
-      Top = 319
+      Top = 298
       Width = 335
       Hint = ''
     end
     inherited RemoteDirView: TUnixDirView
       Top = 87
       Width = 335
-      Height = 232
+      Height = 211
       Constraints.MinHeight = 100
       RowSelect = True
       NortonLike = True
@@ -585,6 +587,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       PathLabel = RemotePathLabel
       AddParentDir = True
       OnLoaded = DirViewLoaded
+      OnDDFileOperationExecuted = RemoteDirViewDDFileOperationExecuted
       OnWarnLackOfTempSpace = nil
     end
     object RemoteCoolBar: TCoolBar
@@ -737,7 +740,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 0
     Top = 170
     Width = 313
-    Height = 338
+    Height = 317
     Align = alLeft
     BevelOuter = bvNone
     Constraints.MinWidth = 170
@@ -747,11 +750,12 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 72
       Width = 313
       Height = 15
+      AutoSize = False
       PopupMenu = NonVisualDataModule.LocalPanelPopup
     end
     object LocalStatusBar: TAssociatedStatusBar
       Left = 0
-      Top = 319
+      Top = 298
       Width = 313
       Height = 19
       Panels = <
@@ -771,7 +775,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 87
       Width = 313
-      Height = 232
+      Height = 211
       Align = alClient
       Constraints.MinHeight = 100
       FullDrag = True
@@ -787,11 +791,13 @@ inherited ScpCommanderForm: TScpCommanderForm
       StatusBar = LocalStatusBar
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
       HeaderImages = NonVisualDataModule.ArrowImages
-      TargetPopupMenu = False
       AddParentDir = True
       OnLoaded = DirViewLoaded
       OnDDDragEnter = LocalDirViewDDDragEnter
       OnDDDragLeave = DirViewDDDragLeave
+      OnDDDragOver = LocalDirViewDDDragOver
+      OnDDTargetHasDropHandler = LocalDirViewDDTargetHasDropHandler
+      OnDDFileOperation = LocalDirViewDDFileOperation
       OnExecFile = LocalDirViewExecFile
       ConfirmDelete = False
       ConfirmOverwrite = False
@@ -955,7 +961,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Stretch = True
     DisabledImages = NonVisualDataModule.ExplorerDisabledImages
     PopupMenu = NonVisualDataModule.CommanderBarPopup
-    TabOrder = 3
+    TabOrder = 4
   end
   object StatusBar: TStatusBar
     Left = 0
@@ -1005,5 +1011,54 @@ inherited ScpCommanderForm: TScpCommanderForm
     UseSystemFont = False
     OnMouseMove = SessionStatusBarMouseMove
     OnDrawPanel = SessionStatusBarDrawPanel
+  end
+  object CommandLinePanel: TPanel
+    Left = 0
+    Top = 487
+    Width = 653
+    Height = 21
+    Align = alBottom
+    BevelOuter = bvNone
+    PopupMenu = NonVisualDataModule.CommanderBarPopup
+    TabOrder = 2
+    DesignSize = (
+      653
+      21)
+    object CommandLineLabel: TPathLabel
+      Left = 4
+      Top = 4
+      Width = 159
+      Height = 15
+      IndentHorizontal = 0
+      IndentVertical = 0
+      Align = alNone
+      Alignment = taRightJustify
+      AutoSize = False
+    end
+    object CommandLinePromptLabel: TLabel
+      Left = 164
+      Top = 4
+      Width = 6
+      Height = 13
+      Caption = '>'
+    end
+    object CommandLineCombo: THistoryComboBox
+      Left = 173
+      Top = 0
+      Width = 477
+      Height = 21
+      AutoComplete = False
+      Anchors = [akLeft, akTop, akRight, akBottom]
+      ItemHeight = 13
+      MaxLength = 250
+      TabOrder = 0
+      TabStop = False
+      Text = 'CommandLineCombo'
+      OnDropDown = CommandLineComboDropDown
+      OnEnter = CommandLineComboEnter
+      OnExit = CommandLineComboExit
+      OnKeyDown = CommandLineComboKeyDown
+      SaveOn = []
+    end
   end
 end

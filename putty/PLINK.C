@@ -220,11 +220,12 @@ static void usage(void)
     printf("  -batch    disable all interactive prompts\n");
     printf("The following options only apply to SSH connections:\n");
     printf("  -pw passw login with specified password\n");
-    printf("  -D listen-port   Dynamic SOCKS-based port forwarding\n");
-    printf("  -L listen-port:host:port   Forward local port to "
-	   "remote address\n");
-    printf("  -R listen-port:host:port   Forward remote port to"
-	   " local address\n");
+    printf("  -D [listen-IP:]listen-port\n");
+    printf("            Dynamic SOCKS-based port forwarding\n");
+    printf("  -L [listen-IP:]listen-port:host:port\n");
+    printf("            Forward local port to remote address\n");
+    printf("  -R [listen-IP:]listen-port:host:port\n");
+    printf("            Forward remote port to local address\n");
     printf("  -X -x     enable / disable X11 forwarding\n");
     printf("  -A -a     enable / disable agent forwarding\n");
     printf("  -t -T     enable / disable pty allocation\n");

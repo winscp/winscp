@@ -150,7 +150,8 @@ protected:
     const TRemoteFile * File, void * Param);
   void __fastcall DoCustomCommandOnFile(AnsiString FileName,
     const TRemoteFile * File, AnsiString Command, int Params);
-  void __fastcall DoRenameFile(const AnsiString FileName, const AnsiString NewName);
+  void __fastcall DoRenameFile(const AnsiString FileName,
+    const AnsiString NewName, bool Move);
   void __fastcall DoChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
   void __fastcall DoChangeDirectory();
@@ -237,6 +238,10 @@ public:
   void __fastcall ReloadDirectory();
   void __fastcall RenameFile(const AnsiString FileName, const AnsiString NewName);
   void __fastcall RenameFile(const TRemoteFile * File, const AnsiString NewName, bool CheckExistence);
+  void __fastcall MoveFile(const AnsiString FileName, const TRemoteFile * File,
+    /*const TMoveFileParams*/ void * Param);
+  bool __fastcall MoveFiles(TStrings * FileList, const AnsiString Target,
+    const AnsiString FileMask);
   void __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size, int Params);
   void __fastcall ClearCaches();
   void __fastcall Synchronize(const AnsiString LocalDirectory,

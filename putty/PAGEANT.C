@@ -13,6 +13,8 @@
 #include "misc.h"
 #include "tree234.h"
 
+#include <shellapi.h>
+
 #ifndef NO_SECURITY
 #include <aclapi.h>
 #endif
@@ -49,7 +51,7 @@ static HMENU systray_menu, session_menu;
 static int already_running;
 static int requested_help;
 
-static char *help_path;
+char *help_path;
 static char *putty_path;
 
 #define IDM_PUTTY         0x0060

@@ -35,6 +35,7 @@ struct TScpCommanderConfiguration {
   float LocalPanelWidth;
   AnsiString CoolBarLayout;
   bool StatusBar;
+  bool CommandLine;
   bool ToolBar;
   TOperationSide CurrentPanel;
   bool ExplorerStyleSelection;
@@ -43,11 +44,12 @@ struct TScpCommanderConfiguration {
   TScpCommanderPanelConfiguration RemotePanel;
   bool CompareByTime;
   bool CompareBySize;
+  bool SynchronizeBrowsing;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(CoolBarLayout) C(StatusBar)
-      C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(ToolBar)
+      C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(ToolBar) C(CommandLine)
       C(ExplorerStyleSelection) C(PreserveLocalDirectory)
-      C(CompareBySize) C(CompareByTime) 0; };
+      C(CompareBySize) C(CompareByTime) C(SynchronizeBrowsing) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {
@@ -109,6 +111,9 @@ private:
   bool FUseLocationProfiles;
   AnsiString FDDTemporaryDirectory;
   bool FDDWarnLackOfTempSpace;
+  bool FDDExtEnabled;
+  int FDDExtInstalled;
+  int FDDExtTimeout;
   bool FConfirmClosingSession;
   double FDDWarnLackOfTempSpaceRatio;
   AnsiString FTemporarySessionFile;
@@ -139,6 +144,8 @@ private:
   void __fastcall SetUseLocationProfiles(bool value);
   void __fastcall SetDDTemporaryDirectory(AnsiString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
+  void __fastcall SetDDExtEnabled(bool value);
+  void __fastcall SetDDExtTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
   void __fastcall SetForceDeleteTempFolder(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
@@ -148,6 +155,8 @@ private:
   void __fastcall SetExpertMode(bool value);
   void __fastcall SetEditor(TEditorConfiguration value);
   void __fastcall SetCustomCommands(TCustomCommands * value);
+
+  bool __fastcall GetDDExtInstalled();
 
 protected:
   virtual TStorage __fastcall GetStorage();
@@ -196,6 +205,9 @@ public:
   __property bool UseLocationProfiles = { read = FUseLocationProfiles, write = SetUseLocationProfiles};
   __property AnsiString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
+  __property bool DDExtEnabled = { read=FDDExtEnabled, write=SetDDExtEnabled };
+  __property bool DDExtInstalled = { read=GetDDExtInstalled };
+  __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
   __property bool ForceDeleteTempFolder  = { read=FForceDeleteTempFolder, write=SetForceDeleteTempFolder };
   __property double DDWarnLackOfTempSpaceRatio  = { read=FDDWarnLackOfTempSpaceRatio, write=SetDDWarnLackOfTempSpaceRatio };

@@ -161,10 +161,14 @@ static void sk_proxy_set_frozen (Socket s, int is_frozen)
 	 */
         while (!ps->freeze && bufchain_size(&ps->pending_input_data) > 0) {
 	    void *data;
+	    char databuf[512];
 	    int len;
 	    bufchain_prefix(&ps->pending_input_data, &data, &len);
-	    plug_receive(ps->plug, 0, data, len);
+	    if (len > lenof(databuf))
+		len = lenof(databuf);
+	    memcpy(databuf, data, len);
 	    bufchain_consume(&ps->pending_input_data, len);
+	    plug_receive(ps->plug, 0, databuf, len);
 	}
 
 	/* if we're still frozen, we'll have to wait for another
@@ -586,8 +590,14 @@ int proxy_http_negotiate (Proxy_Socket p, int change)
 	    /* get the status line */
 	    len = bufchain_size(&p->pending_input_data);
 	    assert(len > 0);	       /* or we wouldn't be here */
-	    data = snewn(len, char);
+	    data = snewn(len+1, char);
 	    bufchain_fetch(&p->pending_input_data, data, len);
+	    /*
+	     * We must NUL-terminate this data, because Windows
+	     * sscanf appears to require a NUL at the end of the
+	     * string because it strlens it _first_. Sigh.
+	     */
+	    data[len] = '\0';
 
 	    eol = get_line_end(data, len);
 	    if (eol < 0) {

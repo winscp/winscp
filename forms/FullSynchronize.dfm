@@ -3,7 +3,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   Top = 185
   BorderStyle = bsDialog
   Caption = 'Synchronize'
-  ClientHeight = 243
+  ClientHeight = 265
   ClientWidth = 396
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -16,7 +16,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     396
-    243)
+    265)
   PixelsPerInch = 96
   TextHeight = 13
   object DirectoriesGroup: TXPGroupBox
@@ -30,7 +30,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     DesignSize = (
       380
       119)
-    object FileNameLabel: TLabel
+    object LocalDirectoryLabel: TLabel
       Left = 11
       Top = 19
       Width = 72
@@ -39,7 +39,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Caption = 'Lo&cal directory:'
       FocusControl = LocalDirectoryEdit
     end
-    object Label1: TLabel
+    object RemoteDirectoryLabel: TLabel
       Left = 11
       Top = 68
       Width = 83
@@ -86,7 +86,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object OkButton: TButton
     Left = 228
-    Top = 210
+    Top = 232
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -97,7 +97,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object CancelButton: TButton
     Left = 312
-    Top = 210
+    Top = 232
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -110,7 +110,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     Left = 8
     Top = 130
     Width = 380
-    Height = 71
+    Height = 95
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Synchronize options'
     TabOrder = 1
@@ -158,6 +158,14 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Caption = '&No confirmations'
       TabOrder = 4
       OnClick = ControlChange
+    end
+    object SaveSettingsCheck: TCheckBox
+      Left = 11
+      Top = 68
+      Width = 361
+      Height = 17
+      Caption = 'Use &same options next time'
+      TabOrder = 5
     end
   end
 end

@@ -12,7 +12,7 @@ object OperationStatusForm: TOperationStatusForm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poScreenCenter
+  Position = poMainFormCenter
   DesignSize = (
     366
     46)

@@ -21,10 +21,16 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent* Owner)
   FCanceled = false;
   FElapsed = EncodeTime(0, 0, 0, 0);
   FShowAsModalStorage = NULL;
+  FMinimizedByMe = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
 {
+  if (IsIconic(Application->Handle) && FMinimizedByMe)
+  {
+    Application->Restore();
+  }
+
   ReleaseAsModal(this, FShowAsModalStorage);
 }
 //---------------------------------------------------------------------------
@@ -77,6 +83,13 @@ void __fastcall TSynchronizeProgressForm::CancelButtonClick(TObject * /*Sender*/
 void __fastcall TSynchronizeProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
 {
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::MinimizeButtonClick(
+  TObject * /*Sender*/)
+{
+  Application->Minimize();
+  FMinimizedByMe = true;
 }
 //---------------------------------------------------------------------------
 

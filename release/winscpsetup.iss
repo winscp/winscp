@@ -1,4 +1,5 @@
 #define MainFileSource "..\WinSCP3.exe"
+#define ShellExtFileSource "..\DragExt.dll"
 #define ParentRegistryKey "Software\Martin Prikryl"
 #define RegistryKey ParentRegistryKey+"\WinSCP 2"
 #define PuttySourceDir "c:\Program Files\PuTTY"
@@ -37,6 +38,10 @@ AppPublisher=Martin Prikryl
 AppPublisherURL=http://winscp.sourceforge.net/
 AppSupportURL=http://winscp.sourceforge.net/forum/
 AppUpdatesURL=http://winscp.sourceforge.net/eng/download.php
+VersionInfoCompany=Martin Prikryl
+VersionInfoDescription=Setup for WinSCP {#Version} (Freeware SCP/SFTP client for Windows)
+VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
+VersionInfoTextVersion={#Version}
 DefaultDirName={pf}\WinSCP3
 DefaultGroupName=WinSCP3
 AllowNoIcons=yes
@@ -47,7 +52,8 @@ DisableStartupPrompt=yes
 AppVersion={#Version}
 AppVerName=WinSCP {#Version}
 OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup{#SetupExt}
-Compression=bzip/9
+SolidCompression=yes
+Compression=lzma
 ShowTasksTreeLines=yes
 
 #define FindHandle
@@ -146,6 +152,8 @@ Name: custom; Description: {#Transl("CustomInstallation")}; \
 [Components]
 Name: main; Description: {#Transl("ApplicationComponent")}; \
   Types: {#FullLangs} full custom compact; Flags: fixed; Languages: {#Lang}
+Name: shellext; Description: {#Transl("ShellExtComponent")}; \
+  Types: {#FullLangs} compact full; Languages: {#Lang}
 Name: pageant; Description: {#Transl("PuTTYgenComponent")}; \
   Types: {#FullLangs} full; Languages: {#Lang}
 Name: puttygen; Description: {#Transl("PageantComponent")}; \
@@ -165,6 +173,7 @@ Name: desktopicon\common; Description: {#Transl("DesktopIconCommonTask")}; \
 Name: quicklaunchicon; Description: {#Transl("QuickLaunchIconTask")}; \
   Flags: unchecked; Languages: {#Lang}
 Name: sendtohook; Description: {#Transl("SendToHookTask")}; Languages: {#Lang}
+Name: urlhandler; Description: {#Transl("RegisterAsUrlHandler")}; Languages: {#Lang}
 
 [INI]
 Filename: "{app}\{#Transl("SupportForum")}.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://winscp.sourceforge.net/forum/"; Languages: {#Lang}
@@ -245,11 +254,19 @@ Name: transl\eng; Description: "English"; Types: fulllangs full custom compact; 
 
 #endif
 
+[Run]
+; This is called when urlhandler task is selected
+Filename: "{app}\WinSCP3.exe"; Parameters: "/RegisterAsUrlHandler"; \
+  Tasks: urlhandler
+
 [Files]
-Source: "{#MainFileSource}"; DestDir: "{app}"; Components: main; \
-  Flags: ignoreversion
+Source: "{#MainFileSource}"; DestDir: "{app}"; \
+  Components: main; Flags: ignoreversion
 Source: "licence"; DestName: "licence"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
+Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
+  Components: shellext; \
+  Flags: ignoreversion regserver restartreplace restartreplace uninsrestartdelete
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
 Source: "{#PuttySourceDir}\putty.hlp"; DestDir: "{app}\PuTTY"; \
@@ -273,6 +290,16 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType:dword; \
   ValueName: "ShowAdvancedLoginOptions"; ValueData: 0; Check: IsTrue(20)
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType:dword; \
   ValueName: "ShowAdvancedLoginOptions"; ValueData: 1; Check: IsTrue(21)
+; This will remove url handler on uninstall 
+; (when urlhandler task was selected when installing)
+Root: HKCR; Subkey: "SFTP"; Flags: dontcreatekey uninsdeletekey; \
+  Tasks: urlhandler
+Root: HKCR; Subkey: "SCP"; Flags: dontcreatekey uninsdeletekey; \
+  Tasks: urlhandler
+Root: HKCU; Subkey: "Software\Classes\SFTP"; Flags: dontcreatekey uninsdeletekey; \
+  Tasks: urlhandler
+Root: HKCU; Subkey: "Software\Classes\SCP"; Flags: dontcreatekey uninsdeletekey; \
+  Tasks: urlhandler
 
 #ifdef INTL
 
@@ -297,13 +324,6 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
 #endsub
 
 #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
-
-;[Components]
-;Name: transl\ru; Description: "Russian"; Types: fulllangs custom compact
-
-;[Files]
-;Source: "translations.nosetup\WinSCP3.ru"; DestDir: "{app}"; \
-;  Components: transl\ru; Flags: ignoreversion
 
 #endif
 

@@ -13,6 +13,7 @@
 
 #include <commctrl.h>
 #include <commdlg.h>
+#include <shellapi.h>
 
 #ifdef MSVC4
 #define TVINSERTSTRUCT  TV_INSERTSTRUCT
@@ -648,7 +649,6 @@ int do_reconfig(HWND hwnd)
     ctrl_free_box(ctrlbox);
     winctrl_cleanup(&ctrls_base);
     winctrl_cleanup(&ctrls_panel);
-    sfree(dp.errtitle);
     dp_cleanup(&dp);
 
     if (!ret)

@@ -182,18 +182,6 @@ int read_setting_fontspec(void *handle, const char *name, FontSpec *result)
     ret.height = read_setting_i(handle, settingname, INT_MIN);
     sfree(settingname);
     if (ret.height == INT_MIN) return 0;
-    if (ret.height < 0) {
-	int oldh, newh;
-	HDC hdc = GetDC(NULL);
-	int logpix = GetDeviceCaps(hdc, LOGPIXELSY);
-	ReleaseDC(NULL, hdc);
-
-	oldh = -ret.height;
-	newh = MulDiv(oldh, 72, logpix) + 1;
-	if (MulDiv(newh, logpix, 72) > oldh)
-	    newh--;
-	ret.height = newh;
-    }
     *result = ret;
     return 1;
 }

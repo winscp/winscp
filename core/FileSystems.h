@@ -17,7 +17,7 @@ enum TFSCommand { fsNull = 0, fsVarValue, fsLastLine, fsFirstLine,
   fsListFile, fsLookupUserGroups, fsCopyToRemote, fsCopyToLocal, fsDeleteFile,
   fsRenameFile, fsCreateDirectory, fsChangeMode, fsChangeGroup, fsChangeOwner,
   fsHomeDirectory, fsUnset, fsUnalias, fsAliasGroupList, fsCreateLink,
-  fsAnyCommand, fsReadSymlink, fsChangeProperties };
+  fsAnyCommand, fsReadSymlink, fsChangeProperties, fsMoveFile };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TGetParamValueEvent)
   (const AnsiString Name, AnsiString & Value);

@@ -14,8 +14,8 @@
 #include <PathLabel.hpp>	// Pascal unit
 #include <CustomPathComboBox.hpp>	// Pascal unit
 #include <Controls.hpp>	// Pascal unit
-#include <NortonLikeListView.hpp>	// Pascal unit
 #include <IEListView.hpp>	// Pascal unit
+#include <NortonLikeListView.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
 #include <FileCtrl.hpp>	// Pascal unit
 #include <DragDropFilesEx.hpp>	// Pascal unit
@@ -351,6 +351,7 @@ protected:
 	virtual void __fastcall DDDragDetect(int grfKeyState, const Types::TPoint &DetectStart, const Types::TPoint &Point, Dragdrop::TDragDetectStatus DragStatus);
 	virtual void __fastcall DDMenuDone(System::TObject* Sender, HMENU AMenu);
 	virtual void __fastcall DDDropHandlerSucceeded(System::TObject* Sender, int grfKeyState, const Types::TPoint &Point, int dwEffect);
+	virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect);
 	virtual AnsiString __fastcall GetPathName();
 	virtual void __fastcall SetChangeInterval(unsigned Value);
 	virtual void __fastcall LoadFromRecycleBin(AnsiString Dir);
@@ -482,6 +483,10 @@ __published:
 	__property OnDDQueryContinueDrag ;
 	__property OnDDGiveFeedback ;
 	__property OnDDDragDetect ;
+	__property OnDDCreateDragFileList ;
+	__property OnDDEnd ;
+	__property OnDDCreateDataObject ;
+	__property OnDDTargetHasDropHandler ;
 	__property DDLinkOnExeDrag  = {default=1};
 	__property OnDDProcessDropped ;
 	__property OnDDError ;

@@ -1014,6 +1014,8 @@ int sftp_cmd_chmod(struct sftp_command *cmd)
 
 static int sftp_cmd_open(struct sftp_command *cmd)
 {
+    int portnumber;
+
     if (back != NULL) {
 	printf("psftp: already connected\n");
 	return 0;
@@ -1024,7 +1026,16 @@ static int sftp_cmd_open(struct sftp_command *cmd)
 	return 0;
     }
 
-    if (psftp_connect(cmd->words[1], NULL, 0)) {
+    if (cmd->nwords > 2) {
+	portnumber = atoi(cmd->words[2]);
+	if (portnumber == 0) {
+	    printf("open: invalid port number\n");
+	    return 0;
+	}
+    } else
+	portnumber = 0;
+
+    if (psftp_connect(cmd->words[1], NULL, portnumber)) {
 	back = NULL;		       /* connection is already closed */
 	return -1;		       /* this is fatal */
     }
@@ -1216,7 +1227,7 @@ static struct sftp_cmd_lookup {
     },
     {
 	"open", TRUE, "connect to a host",
-	    " [<user>@]<hostname>\n"
+	    " [<user>@]<hostname> [<port>]\n"
 	    "  Establishes an SFTP connection to a given host. Only usable\n"
 	    "  when you did not already specify a host name on the command\n"
 	    "  line.\n",
@@ -1509,10 +1520,12 @@ static int do_sftp_init(void)
 void do_sftp_cleanup()
 {
     char ch;
-    back->special(backhandle, TS_EOF);
-    sftp_recvdata(&ch, 1);
-    back->free(backhandle);
-    sftp_cleanup_request();
+    if (back) {
+	back->special(backhandle, TS_EOF);
+	sftp_recvdata(&ch, 1);
+	back->free(backhandle);
+	sftp_cleanup_request();
+    }
     if (pwd) {
 	sfree(pwd);
 	pwd = NULL;
@@ -1741,7 +1754,7 @@ int sftp_recvdata(char *buf, int len)
 }
 int sftp_senddata(char *buf, int len)
 {
-    back->send(backhandle, (unsigned char *) buf, len);
+    back->send(backhandle, buf, len);
     return 1;
 }
 

@@ -10,7 +10,7 @@ object LoginDialog: TLoginDialog
   ParentFont = True
   KeyPreview = True
   OldCreateOrder = True
-  Position = poScreenCenter
+  Position = poMainFormCenter
   OnShow = FormShow
   DesignSize = (
     522
@@ -641,12 +641,20 @@ object LoginDialog: TLoginDialog
             FocusControl = TimeDifferenceEdit
           end
           object Label30: TLabel
-            Left = 204
+            Left = 196
             Top = 88
             Width = 26
             Height = 13
             Caption = 'hours'
             FocusControl = TimeDifferenceEdit
+          end
+          object Label9: TLabel
+            Left = 298
+            Top = 88
+            Width = 36
+            Height = 13
+            Caption = 'minutes'
+            FocusControl = TimeDifferenceMinutesEdit
           end
           object LookupUserGroupsCheck: TCheckBox
             Left = 12
@@ -705,15 +713,28 @@ object LoginDialog: TLoginDialog
           object TimeDifferenceEdit: TUpDownEdit
             Left = 137
             Top = 83
-            Width = 61
+            Width = 54
             Height = 21
             Alignment = taRightJustify
-            Decimal = 1
-            MaxValue = 12
-            MinValue = -12
-            Value = 1
+            MaxValue = 13
+            MinValue = -13
+            Value = -13
             Anchors = [akTop, akRight]
             TabOrder = 6
+            OnChange = DataChange
+          end
+          object TimeDifferenceMinutesEdit: TUpDownEdit
+            Left = 239
+            Top = 83
+            Width = 54
+            Height = 21
+            Alignment = taRightJustify
+            Increment = 15
+            MaxValue = 45
+            MinValue = -45
+            Value = -13
+            Anchors = [akTop, akRight]
+            TabOrder = 7
             OnChange = DataChange
           end
         end

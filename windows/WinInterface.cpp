@@ -12,7 +12,8 @@
 #include <Interface.h>
 
 #include "WinInterface.h"
-#include "GUIConfiguration.h"
+#include "CustomWinConfiguration.h"
+#include "GUITools.h"
 
 #define mrCustom (mrYesToAll + 1)
 //---------------------------------------------------------------------------
@@ -421,3 +422,21 @@ void __fastcall Busy(bool Start)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall DoRemoteMoveDialog(TStrings * FileList, AnsiString & Target,
+  AnsiString & FileMask)
+{
+  AnsiString Prompt = FileNameFormatString(LoadStr(REMOTE_MOVE_FILE),
+    LoadStr(REMOTE_MOVE_FILES), FileList, true);
+
+  AnsiString Value = UnixIncludeTrailingBackslash(Target) + FileMask;
+  TStrings * History = CustomWinConfiguration->History["RemoteTarget"];
+  bool Result = InputDialog(LoadStr(REMOTE_MOVE_TITLE), Prompt,
+    Value, History);
+  if (Result)
+  {
+    CustomWinConfiguration->History["RemoteTarget"] = History;
+    Target = UnixExtractFilePath(Value);
+    FileMask = UnixExtractFileName(Value);
+  }
+  return Result;
+}

@@ -569,9 +569,14 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
   {
     if (Path != NULL)
     {
-      int Delta = ((Params & puExcludeLeadingSlash) == 0) ? 0 : 1;
-      *Path = Url.SubString(PSlash + Delta,
+      bool ExcludeLeadingSlash = (Params & puExcludeLeadingSlash) != 0;
+      int Delta = ExcludeLeadingSlash ? 1 : 0;
+      AnsiString APath = Url.SubString(PSlash + Delta,
         Url.Length() - PSlash - Delta + 1);
+      if (ExcludeLeadingSlash || (APath != "/"))
+      {
+        *Path = APath;
+      }
     }
 
     if (ConnectInfo != NULL)

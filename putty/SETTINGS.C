@@ -353,6 +353,8 @@ void save_open_settings(void *sesskey, int do_host, Config *cfg)
     write_setting_i(sesskey, "LoginShell", cfg->login_shell);
     write_setting_i(sesskey, "ScrollbarOnLeft", cfg->scrollbar_on_left);
     write_setting_fontspec(sesskey, "BoldFont", cfg->boldfont);
+    write_setting_fontspec(sesskey, "WideFont", cfg->widefont);
+    write_setting_fontspec(sesskey, "WideBoldFont", cfg->wideboldfont);
     write_setting_i(sesskey, "ShadowBold", cfg->shadowbold);
     write_setting_i(sesskey, "ShadowBoldOffset", cfg->shadowboldoffset);
 }

@@ -3,7 +3,7 @@ object NonVisualDataModule: TNonVisualDataModule
   Left = 361
   Top = 156
   Height = 502
-  Width = 543
+  Width = 624
   object LogActions: TActionList
     Images = LogImages
     OnExecute = LogActionsExecute
@@ -3270,6 +3270,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object Moveto1: TMenuItem
       Action = CurrentMoveFocusedAction
     end
+    object Moveto6: TMenuItem
+      Action = RemoteMoveToFocusedAction
+    end
     object Delete1: TMenuItem
       Action = CurrentDeleteFocusedAction
     end
@@ -3299,6 +3302,19 @@ object NonVisualDataModule: TNonVisualDataModule
     OnUpdate = ExplorerActionsUpdate
     Left = 440
     Top = 24
+    object GoToCommandLineAction: TAction
+      Tag = 11
+      Category = 'View'
+      Caption = 'Go To Comma&nd Line'
+      Hint = 'Go to command line'
+      ShortCut = 49230
+    end
+    object SelectOneAction: TAction
+      Tag = 12
+      Category = 'Selection'
+      Caption = '&Select/Unselect'
+      Hint = 'Select|Select/unselect focused file'
+    end
     object CurrentRenameAction: TAction
       Tag = 15
       Category = 'Toolbar Operation (selected + rename + mkdir + close)'
@@ -3390,6 +3406,12 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Copy|Copy selected file(s) to local directory'
       ImageIndex = 0
     end
+    object RemoteMoveToAction: TAction
+      Tag = 14
+      Category = 'Selected Operation'
+      Caption = 'Mo&ve to ...'
+      Hint = 'Move|Move selected file(s) to remote directory'
+    end
     object CurrentMoveFocusedAction: TAction
       Tag = 12
       Category = 'Focused Operation'
@@ -3443,6 +3465,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Remote Directory'
       Caption = '&Forward'
       ImageIndex = 7
+    end
+    object CommandLinePanelAction: TAction
+      Tag = 8
+      Category = 'View'
+      Caption = 'Comma&nd Line'
+      Hint = 'Hide/show command line'
+      ShortCut = 49230
     end
     object RemoteParentDirAction: TAction
       Tag = 12
@@ -3517,7 +3546,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object SelectAction: TAction
       Tag = 15
       Category = 'Selection'
-      Caption = '&Select Files'
+      Caption = 'Sele&ct Files'
       Hint = 'Select|Select files by mask'
       ImageIndex = 19
     end
@@ -4168,7 +4197,7 @@ object NonVisualDataModule: TNonVisualDataModule
         'd with document type'
       ImageIndex = 58
     end
-    object SynchorizeBrowsingAction: TAction
+    object SynchronizeBrowsingAction: TAction
       Tag = 11
       Category = 'Command'
       AutoCheck = True
@@ -4250,6 +4279,52 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Synchronize local directory with remote directory'
       ImageIndex = 66
       ShortCut = 16467
+    end
+    object RemoteMoveToFocusedAction: TAction
+      Tag = 14
+      Category = 'Focused Operation'
+      Caption = 'Mo&ve to ...'
+      Hint = 'Move|Move selected file(s) to remote directory'
+    end
+    object ShowHiddenFilesAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'Show/hide &hidden files'
+      Hint = 'Toggle showing hidden files in panel(s)'
+      ShortCut = 49224
+    end
+    object LocalPathToClipboardAction: TAction
+      Tag = 15
+      Category = 'Local Directory'
+      Caption = 'Copy Path to &Clipboard'
+      Hint = 'Copy current local path to clipboard'
+    end
+    object RemotePathToClipboardAction: TAction
+      Tag = 15
+      Category = 'Remote Directory'
+      Caption = 'Copy Path to &Clipboard'
+      Hint = 'Copy current remote path to clipboard'
+    end
+    object FileListToCommandLineAction: TAction
+      Tag = 11
+      Category = 'Selected Operation'
+      Caption = 'Insert to Command &Line'
+      Hint = 'Insert name(s) of selected file(s) to command line'
+      ShortCut = 16397
+    end
+    object FileListToClipboardAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = 'Copy to &Clipboard'
+      Hint = 'Copy name(s) of selected file(s) to clipboard'
+      ShortCut = 24643
+    end
+    object FullFileListToClipboardAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = 'Copy to Clipboard (Include &Paths)'
+      Hint = 'Copy name(s) including path of selected file(s) to clipboard'
+      ShortCut = 49219
     end
   end
   object ExplorerDisabledImages: TImageList
@@ -6678,6 +6753,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object Moveto2: TMenuItem
         Action = CurrentMoveAction
       end
+      object Moveto5: TMenuItem
+        Action = RemoteMoveToAction
+      end
       object N39: TMenuItem
         Caption = '-'
         Hint = 'E'
@@ -6685,6 +6763,16 @@ object NonVisualDataModule: TNonVisualDataModule
       object CustomCommands1: TMenuItem
         Action = CustomCommandsAction
         object TMenuItem
+        end
+      end
+      object FileNames2: TMenuItem
+        Caption = '&File Names'
+        Hint = 'Operations with name(s) of selected file(s)'
+        object CopytoClipboard2: TMenuItem
+          Action = FileListToClipboardAction
+        end
+        object CopytoClipboardIncludePaths2: TMenuItem
+          Action = FullFileListToClipboardAction
         end
       end
       object N10: TMenuItem
@@ -6713,6 +6801,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object Addtobookmarks3: TMenuItem
         Action = RemoteAddBookmarkAction
+      end
+      object CopyPathtoClipboard5: TMenuItem
+        Action = RemotePathToClipboardAction
       end
       object N3: TMenuItem
         Caption = '-'
@@ -7404,6 +7495,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object CommonMarkMenu: TMenuItem
       Caption = '&Mark'
       Hint = 'Mark commands'
+      object SelectUnselect1: TMenuItem
+        Action = SelectOneAction
+      end
       object SelectFiles1: TMenuItem
         Action = SelectAction
       end
@@ -7511,6 +7605,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object Addtobookmarks1: TMenuItem
         Action = LocalAddBookmarkAction
       end
+      object CopyPathtoClipboard3: TMenuItem
+        Action = LocalPathToClipboardAction
+      end
       object N30: TMenuItem
         Caption = '-'
         Hint = 'E'
@@ -7607,6 +7704,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object Moveto3: TMenuItem
         Action = CurrentMoveAction
       end
+      object Moveto4: TMenuItem
+        Action = RemoteMoveToAction
+      end
       object Delete3: TMenuItem
         Action = CurrentDeleteAction
       end
@@ -7620,6 +7720,19 @@ object NonVisualDataModule: TNonVisualDataModule
       object CustomCommandsMenu: TMenuItem
         Action = CustomCommandsAction
         object TMenuItem
+        end
+      end
+      object FileNames1: TMenuItem
+        Caption = '&File Names'
+        Hint = 'Operations with name(s) of selected file(s)'
+        object InserttoCommandLine1: TMenuItem
+          Action = FileListToCommandLineAction
+        end
+        object CopytoClipboard1: TMenuItem
+          Action = FileListToClipboardAction
+        end
+        object CopytoClipboardIncludePaths1: TMenuItem
+          Action = FullFileListToClipboardAction
         end
       end
       object N43: TMenuItem
@@ -7643,7 +7756,7 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = FullSynchronizeAction
       end
       object Synchronizebrowsing1: TMenuItem
-        Action = SynchorizeBrowsingAction
+        Action = SynchronizeBrowsingAction
         AutoCheck = True
       end
       object N47: TMenuItem
@@ -7737,11 +7850,14 @@ object NonVisualDataModule: TNonVisualDataModule
         Caption = '-'
         Hint = 'E'
       end
-      object StatusBar3: TMenuItem
-        Action = StatusBarAction
+      object CommandLine1: TMenuItem
+        Action = CommandLinePanelAction
       end
       object CommandToolbar1: TMenuItem
         Action = ToolBarAction
+      end
+      object StatusBar3: TMenuItem
+        Action = StatusBarAction
       end
       object LogWindow2: TMenuItem
         Action = ViewLogAction
@@ -7799,6 +7915,9 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object Addtobookmarks2: TMenuItem
         Action = RemoteAddBookmarkAction
+      end
+      object CopyPathtoClipboard4: TMenuItem
+        Action = RemotePathToClipboardAction
       end
       object N33: TMenuItem
         Caption = '-'
@@ -7899,11 +8018,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '-'
       Hint = 'E'
     end
-    object StatusBar8: TMenuItem
-      Action = StatusBarAction
+    object CommandLine2: TMenuItem
+      Action = CommandLinePanelAction
     end
     object CommandsToolbar1: TMenuItem
       Action = ToolBarAction
+    end
+    object StatusBar8: TMenuItem
+      Action = StatusBarAction
     end
     object N27: TMenuItem
       Caption = '-'
@@ -7948,6 +8070,13 @@ object NonVisualDataModule: TNonVisualDataModule
     Images = ExplorerImages
     Left = 312
     Top = 264
+    object CopyPathtoClipboard1: TMenuItem
+      Action = RemotePathToClipboardAction
+    end
+    object N51: TMenuItem
+      Caption = '-'
+      Hint = 'E'
+    end
     object HistoryButtons5: TMenuItem
       Action = CommanderRemoteHistoryBandAction
     end
@@ -7966,6 +8095,13 @@ object NonVisualDataModule: TNonVisualDataModule
     Images = ExplorerImages
     Left = 312
     Top = 336
+    object CopyPathtoClipboard2: TMenuItem
+      Action = LocalPathToClipboardAction
+    end
+    object N52: TMenuItem
+      Caption = '-'
+      Hint = 'E'
+    end
     object HistoryButtons6: TMenuItem
       Action = CommanderLocalHistoryBandAction
     end
@@ -8059,7 +8195,7 @@ object NonVisualDataModule: TNonVisualDataModule
     Left = 168
     Top = 176
     Bitmap = {
-      494C010102000400040010001000FFFFFFFFFF00FFFFFFFFFFFFFFFF424D3600
+      494C010102000400040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -8195,6 +8331,7 @@ object NonVisualDataModule: TNonVisualDataModule
       FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000F00FFE7F00000000
       F7EFFDBF00000000FBDFFDBF00000000FBDFFBDF00000000FDBFFBDF00000000
       FDBFF7EF00000000FE7FF00F00000000FFFFFFFF00000000FFFFFFFF00000000
-      FFFFFFFF00000000FFFFFFFF00000000}
+      FFFFFFFF00000000FFFFFFFF0000000000000000000000000000000000000000
+      000000000000}
   end
 end

@@ -175,7 +175,7 @@ class PASCALIMPLEMENTATION TDataObject : public TDDInterfacedObject
 {
 	typedef TDDInterfacedObject inherited;
 	
-private:
+protected:
 	TFormatEtcList* FFormatEtcList;
 	bool FCheckLindex;
 	bool FCheckdwAspect;
@@ -193,6 +193,9 @@ public:
 	HRESULT __stdcall DUnadvise(int dwConnection);
 	HRESULT __stdcall EnumDAdvise(/* out */ _di_IEnumSTATDATA &enumAdvise);
 	virtual HRESULT __fastcall RenderData(const tagFORMATETC &FormatEtc, tagSTGMEDIUM &StgMedium) = 0 ;
+	
+protected:
+	virtual bool __fastcall AllowData(const tagFORMATETC &FormatEtc);
 private:
 	void *__IDataObject;	/* IDataObject */
 	

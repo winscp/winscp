@@ -35,8 +35,14 @@ AnsiString __fastcall UnixExtractFileDir(const AnsiString Path)
 {
   int Pos = Path.LastDelimiter('/');
   // it used to return Path when no slash was found
-  return (Pos > 1) ? Path.SubString(1, Pos - 1) :
-    ((Pos == 1) ? AnsiString("/") : AnsiString());
+  if (Pos > 1)
+  {
+    return Path.SubString(1, Pos - 1);
+  }
+  else
+  {
+    return (Pos == 1) ? AnsiString("/") : AnsiString();
+  }
 }
 //---------------------------------------------------------------------------
 // must return trailing backslash
@@ -339,18 +345,24 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     {
       FSize = ASize;
 
-      Word Day, Month, Year, Hour, Min, P;
+      Word Day = 0, Month, Year, Hour, Min, P;
 
       GETCOL;
+      Day = (Word)StrToIntDef(Col, 0);
+      if (Day > 0)
+      {
+        GETCOL;
+      }
       Month = 0;
       for (Word IMonth = 0; IMonth < 12; IMonth++)
         if (!Col.AnsiCompareIC(EngShortMonthNames[IMonth])) { Month = IMonth; Month++; break; }
       if (!Month) Abort();
 
-      // don't trim possible leading space of year column
-      // we need to know is space is before (most systems) or after year
-      GETNCOL;
-      Day = (Word)StrToInt(Col);
+      if (Day == 0)
+      {
+        GETNCOL;
+        Day = (Word)StrToInt(Col);
+      }
       if ((Day < 1) || (Day > 31)) Abort();
 
       // Time/Year indicator is always 5 charactes long (???), on most

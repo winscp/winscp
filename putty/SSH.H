@@ -186,6 +186,7 @@ struct ssh_signkey {
 			unsigned char *priv_blob, int priv_len);
     void *(*openssh_createkey) (unsigned char **blob, int *len);
     int (*openssh_fmtkey) (void *key, unsigned char *blob, int len);
+    int (*pubkey_bits) (void *blob, int len);
     char *(*fingerprint) (void *key);
     int (*verifysig) (void *key, char *sig, int siglen,
 		      char *data, int datalen);
@@ -350,6 +351,7 @@ char *ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
 			   int *pub_blob_len, const char **errorstr);
 int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
 		      char *passphrase);
+const struct ssh_signkey *find_pubkey_alg(const char *name);
 
 enum {
     SSH_KEYTYPE_UNOPENABLE,

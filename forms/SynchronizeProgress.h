@@ -22,8 +22,10 @@ __published:
   TLabel *TimeElapsedLabel;
   TButton *CancelButton;
   TTimer *UpdateTimer;
+  TButton *MinimizeButton;
   void __fastcall CancelButtonClick(TObject *Sender);
   void __fastcall UpdateTimerTimer(TObject *Sender);
+  void __fastcall MinimizeButtonClick(TObject *Sender);
 
 public:
   __fastcall TSynchronizeProgressForm(TComponent* Owner);
@@ -40,6 +42,7 @@ private:
   bool FStarted;
   bool FCanceled;
   void * FShowAsModalStorage;
+  bool FMinimizedByMe;
 
   void __fastcall UpdateControls();
 };

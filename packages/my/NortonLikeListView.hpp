@@ -82,6 +82,7 @@ public:
 	__fastcall virtual TCustomNortonLikeListView(Classes::TComponent* AOwner);
 	Comctrls::TListItem* __fastcall ClosestUnselected(Comctrls::TListItem* Item);
 	HIDESBASE void __fastcall SelectAll(TSelectMode Mode);
+	void __fastcall SelectCurrentItem(bool FocusNext);
 	__property Listviewcolproperties::TCustomListViewColProperties* ColProperties = {read=FColProperties, write=FColProperties, stored=false};
 	__property MultiSelect  = {default=1};
 	__property bool NortonLike = {read=FNortonLike, write=FNortonLike, default=1};

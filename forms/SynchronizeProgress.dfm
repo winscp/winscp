@@ -82,7 +82,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Caption = '00:00:00'
   end
   object CancelButton: TButton
-    Left = 149
+    Left = 105
     Top = 93
     Width = 73
     Height = 25
@@ -90,6 +90,16 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
     Caption = 'Cancel'
     TabOrder = 0
     OnClick = CancelButtonClick
+  end
+  object MinimizeButton: TButton
+    Left = 190
+    Top = 93
+    Width = 73
+    Height = 25
+    Anchors = [akTop, akRight]
+    Caption = '&Minimize'
+    TabOrder = 1
+    OnClick = MinimizeButtonClick
   end
   object UpdateTimer: TTimer
     Enabled = False

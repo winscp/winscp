@@ -17,7 +17,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
-  AnsiString & LocalDirectory, AnsiString & RemoteDirectory)
+  AnsiString & LocalDirectory, AnsiString & RemoteDirectory, bool & SaveSettings)
 {
   bool Result;
   TFullSynchronizeDialog * Dialog = new TFullSynchronizeDialog(Application);
@@ -27,6 +27,7 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
     Dialog->Params = Params;
     Dialog->LocalDirectory = LocalDirectory;
     Dialog->RemoteDirectory = RemoteDirectory;
+    Dialog->SaveSettings = SaveSettings;
     Result = Dialog->Execute();
     if (Result)
     {
@@ -34,6 +35,7 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
       Params = Dialog->Params;
       LocalDirectory = Dialog->LocalDirectory;
       RemoteDirectory = Dialog->RemoteDirectory;
+      SaveSettings = Dialog->SaveSettings;
     }
   }
   __finally
@@ -176,4 +178,13 @@ void __fastcall TFullSynchronizeDialog::FormCloseQuery(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::SetSaveSettings(bool value)
+{
+  SaveSettingsCheck->Checked = value;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFullSynchronizeDialog::GetSaveSettings()
+{
+  return SaveSettingsCheck->Checked;
+}
 

@@ -18,7 +18,8 @@
 AnsiString __fastcall TProgressForm::OperationName(TFileOperation Operation)
 {
   static const int Captions[] = { PROGRESS_COPY, PROGRESS_MOVE, PROGRESS_DELETE,
-    PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE };
+    PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
+    PROGRESS_REMOTE_MOVE };
   assert((int)Operation >= 1 && ((int)Operation - 1) < LENOF(Captions));
   return LoadStr(Captions[(int)Operation - 1]);
 }
@@ -45,14 +46,16 @@ __fastcall TProgressForm::~TProgressForm()
   // to prevent raising assertion (e.g. IsProgress == True)
   FData.Clear();
   if (IsIconic(Application->Handle) && FMinimizedByMe)
+  {
     Application->Restore();
+  }
 
   ReleaseAsModal(this, FShowAsModalStorage);
 }
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
 {
-  assert((FData.Operation >= foCopy) && (FData.Operation <= foCalculateSize) &&
+  assert((FData.Operation >= foCopy) && (FData.Operation <= foRemoteMove) &&
     FData.Operation != foRename );
 
   bool TransferOperation =
@@ -69,6 +72,7 @@ void __fastcall TProgressForm::UpdateControls()
       switch (FData.Operation) {
         case foCopy:
         case foMove:
+        case foRemoteMove:
           if (FData.Count == 1) Animate->CommonAVI = aviCopyFile;
             else Animate->CommonAVI = aviCopyFiles;
           break;

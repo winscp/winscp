@@ -36,6 +36,12 @@ BEGIN
         EXECUTE_APP_ERROR, "Cannot execute '%s'."
         FILE_NOT_FOUND, "File '%s' not found."
         ABSOLUTE_PATH_REQUIRED, "Only full (absolute) path may be used."
+        UNKNOWN_PROTOCOL, "Unknown or undefined protocol (%s)"
+        MUTEX_RELEASE_TIMEOUT, "Mutex was not released in required interval."
+        DRAGEXT_MUTEX_RELEASE_TIMEOUT, "Shell drag extension mutex was not released in required interval."
+        DRAGEXT_TARGET_UNKNOWN, "WinSCP was not able to detect folder, where the dragged file(s) was dropped. Either you have not dropped the file(s) to regular folder (e.g. Windows Explorer) or WinSCP shell drag extension is not installed. Install the extension or switch to compatible drag&&drop mode (from Preferences window), which uses temporary folder for downloads. It allows you to drop files to any destination."
+
+        REGISTER_URL_ERROR, "Cannot register application to handle scp:// and sftp:// addresses."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Session with name '%s' already exists. Overwrite?"
@@ -58,6 +64,7 @@ BEGIN
         PREV_BUTTON, "&Previous"
         NEXT_BUTTON, "&Next"
         APPEND_BUTTON, "A&ppend"
+        CONFIRM_REGISTER_URL, "Do you want to register application to handle scp:// and sftp:// addresses?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"
@@ -79,6 +86,7 @@ BEGIN
         NEW_VERSION, "New version %s was released. Do you want to open application download page?\n\nHint: Use Help menu to open application history page to see list of new features. "
         CUSTOM_COMMANDS_PARAM_TITLE, "'%s' command parameter"
         CUSTOM_COMMANDS_PARAM_PROMPT, "'%s' command &parameter value:"
+        PROTOCOL_URL_DESC, "URL: %s Protocol"
 
         WIN_STATUS_STRINGS, "WIN_STATUS_STRINGS"
         STATUS_CLOSED, "Connection terminated."
@@ -198,6 +206,10 @@ BEGIN
         CLEANUP_INIFILE, "Configuration INI file"
         CLEANUP_SEEDFILE, "Random seed file"
         SELECT_LOCAL_DIRECTORY, "Select local directory."
+        PROGRESS_REMOTE_MOVE, "Moving"
+        REMOTE_MOVE_FILE, "Move file '%s' to remote directory:"
+        REMOTE_MOVE_FILES, "Move %d files to remote directory:"
+        REMOTE_MOVE_TITLE, "Move"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2004 Martin Prikryl"

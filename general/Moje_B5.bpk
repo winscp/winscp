@@ -15,11 +15,11 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib dbxcds.lib 
-      dclocx.lib soaprtl.lib nmfast.lib dbexpress.lib inetdbxpress.lib 
-      inetdb.lib inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib teeqr.lib tee.lib 
-      teedb.lib teeui.lib bdecds.lib cds.lib dsnap.lib vcldbx.lib bdertl.lib 
-      qrpt.lib adortl.lib dbrtl.lib vcldb.lib"/>
+    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib 
+      dbxcds.lib dclocx.lib soaprtl.lib nmfast.lib dbexpress.lib 
+      inetdbxpress.lib inetdb.lib inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib 
+      teeqr.lib tee.lib teedb.lib teeui.lib bdecds.lib cds.lib dsnap.lib 
+      vcldbx.lib bdertl.lib qrpt.lib adortl.lib dbrtl.lib vcldb.lib"/>
     <SPARELIBS value="rtl.lib vcl.lib bcbsmp.lib vcldb.lib dbrtl.lib adortl.lib qrpt.lib 
       bdertl.lib vcldbx.lib dsnap.lib cds.lib bdecds.lib teeui.lib teedb.lib 
       tee.lib teeqr.lib ibxpress.lib xmlrtl.lib inet.lib inetdbbde.lib 

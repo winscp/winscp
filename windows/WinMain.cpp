@@ -25,14 +25,33 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TSessionData * GetLoginData(const AnsiString SessionName)
+TSessionData * GetLoginData(AnsiString SessionName)
 {
+  bool ProtocolDefined = false;
+  TFSProtocol Protocol;
+  if (SessionName.SubString(1, 6).LowerCase() == "scp://")
+  {
+    Protocol = fsSCPonly;
+    SessionName.Delete(1, 6);
+    ProtocolDefined = true;
+  }
+  else if (SessionName.SubString(1, 7).LowerCase() == "sftp://")
+  {
+    Protocol = fsSFTPonly;
+    SessionName.Delete(1, 7);
+    ProtocolDefined = true;
+  }
+
   bool DefaultsOnly = true;
   TSessionData *Data = new TSessionData("");
   if (!SessionName.IsEmpty())
   {
-    TSessionData * AData;
-    AData = (TSessionData *)StoredSessions->FindByName(SessionName, False);
+    TSessionData * AData = NULL;
+    if (!ProtocolDefined)
+    {
+      AData = (TSessionData *)StoredSessions->FindByName(SessionName, False);
+    }
+    
     if (!AData)
     {
       Data->Assign(StoredSessions->DefaultSettings);
@@ -61,6 +80,11 @@ TSessionData * GetLoginData(const AnsiString SessionName)
   else
   {
     Data->Assign(StoredSessions->DefaultSettings);
+  }
+
+  if (ProtocolDefined)
+  {
+    Data->FSProtocol = Protocol;
   }
 
   if (!Data->CanLogin || DefaultsOnly)
@@ -109,6 +133,95 @@ int __fastcall CalculateCompoundVersion(int MajorVer,
   int CompoundVer = Build + 1000 * (Release + 100 * (MinorVer +
     100 * MajorVer));
   return CompoundVer;
+}
+//---------------------------------------------------------------------------
+void __fastcall RegisterAsUrlHandler()
+{
+  try
+  {
+    bool Success;
+    bool User = true;
+    TRegistry * Registry = new TRegistry();
+    try
+    {
+      do
+      {
+        Success = true;
+        User = !User;
+
+        try
+        {
+          assert(Configuration != NULL);
+          AnsiString FileName = Application->ExeName;
+          AnsiString BaseKey;
+
+          Registry->Access = KEY_WRITE;
+          if (User)
+          {
+            Registry->RootKey = HKEY_CURRENT_USER;
+            BaseKey = "Software\\Classes\\";
+          }
+          else
+          {
+            Registry->RootKey = HKEY_CLASSES_ROOT;
+            BaseKey = "";
+          }
+
+          AnsiString Protocol;
+          for (int Index = 0; Index <= 1; Index++)
+          {
+            Protocol = (Index == 0) ? "SCP" : "SFTP";
+            if (Registry->OpenKey(BaseKey + Protocol, true))
+            {
+              Registry->WriteString("", FMTLOAD(PROTOCOL_URL_DESC, (Protocol)));
+              Registry->WriteString("URL Protocol", "");
+              Registry->WriteInteger("EditFlags", 0x02);
+              Registry->WriteInteger("BrowserFlags", 0x08);
+              if (Registry->OpenKey("DefaultIcon", true))
+              {
+                Registry->WriteString("", FORMAT("\"%s\",0", (FileName)));
+                Registry->CloseKey();
+              }
+              else
+              {
+                Abort();
+              }
+            }
+            else
+            {
+              Abort();
+            }
+
+            if (Registry->OpenKey(BaseKey + Protocol, false) &&
+                Registry->OpenKey("shell", true) &&
+                Registry->OpenKey("open", true) &&
+                Registry->OpenKey("command", true))
+            {
+              Registry->WriteString("", FORMAT("\"%s\" %%1", (FileName)));
+              Registry->CloseKey();
+            }
+            else
+            {
+              Abort();
+            }
+          }
+        }
+        catch(...)
+        {
+          Success = false;
+        }
+      }
+      while (!Success && !User);
+    }
+    __finally
+    {
+      delete Registry;
+    }
+  }
+  catch(Exception & E)
+  {
+    throw ExtException(&E, LoadStr(REGISTER_URL_ERROR));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall CheckForUpdates()
@@ -215,6 +328,10 @@ void __fastcall Execute(TProgramParams * Params)
     if (Params->FindSwitch("RandomSeedFileCleanup"))
     {
       Configuration->CleanupRandomSeedFile();
+    }
+    else if (Params->FindSwitch("RegisterAsUrlHandler"))
+    {
+      RegisterAsUrlHandler();
     }
     else if (Params->FindSwitch("Update"))
     {
