@@ -1,0 +1,114 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="WinSCP3.exe"/>
+    <OBJFILES value="windows\WinSCP3.obj windows\CustomScpExplorer.obj windows\EventHandler.obj 
+      windows\NonVisual.obj windows\ProgParams.obj windows\ScpCommander.obj 
+      windows\ScpExplorer.obj windows\Tools.obj windows\UserInterface.obj 
+      windows\WinInterface.obj windows\WinMain.obj"/>
+    <RESFILES value="resource\TextsCore.res resource\TextsWin.res resource\DirImg.res 
+      resource\Icons.res resource\Manifest.res WinSCP3.res"/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) forms\CustomScpExplorer.dfm forms\NonVisual.dfm"/>
+    <LIBFILES value="lib\Putty53b.lib lib\RScpComp.lib lib\ScpCore.lib lib\ScpForms.lib"/>
+    <LIBRARIES value="DragDrop_B5.lib DriveDir_B5.lib Moje_B5.lib vclx.lib rtl.lib vcl.lib"/>
+    <SPARELIBS value="vcl.lib rtl.lib vclx.lib Moje_B5.lib DriveDir_B5.lib DragDrop_B5.lib"/>
+    <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi adortl.bpi vcldb.bpi 
+      qrpt.bpi bdertl.bpi vcldbx.bpi dsnap.bpi cds.bpi bdecds.bpi teeui.bpi 
+      teedb.bpi tee.bpi teeqr.bpi ibxpress.bpi vclie.bpi xmlrtl.bpi inet.bpi 
+      inetdbbde.bpi inetdbxpress.bpi inetdb.bpi nmfast.bpi bcbie.bpi soaprtl.bpi 
+      dclocx.bpi dbexpress.bpi dbxcds.bpi indy.bpi bcb2kaxserver.bpi 
+      visualclx.bpi visualdbclx.bpi"/>
+    <PATHCPP value=".;forms;windows"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value="SSH_DEFAULT;OLD_DND;_DEBUG"/>
+    <SYSDEFINES value="NO_STRICT"/>
+    <MAINSOURCE value="WinSCP3.cpp"/>
+    <INCLUDEPATH value="putty53b;core;forms;windows;resource;components;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="lib;windows;forms;$(BCB)\lib\obj;$(BCB)\lib;"/>
+    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
+      -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- -c 
+      -tW -tWM"/>
+    <PFLAGS value="  -$Y+ -$W -$O- -$A8 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zi"/>
+    <LFLAGS value="-I -D&quot;&quot; -aa -Tpe -GD -x -Gn -v"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="windows\c0w32.obj windows\sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="WinSCP3.cpp" FORMNAME="" UNITNAME="WinSCP3" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\CustomScpExplorer.cpp" FORMNAME="CustomScpExplorerForm" UNITNAME="CustomScpExplorer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\EventHandler.cpp" FORMNAME="" UNITNAME="EventHandler.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\NonVisual.cpp" FORMNAME="NonVisualDataModule" UNITNAME="NonVisual" CONTAINERID="CCompiler" DESIGNCLASS="TDataModule" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\ProgParams.cpp" FORMNAME="" UNITNAME="ProgParams" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\ScpCommander.cpp" FORMNAME="" UNITNAME="ScpCommander" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\ScpExplorer.cpp" FORMNAME="" UNITNAME="ScpExplorer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\Tools.cpp" FORMNAME="" UNITNAME="Tools.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\UserInterface.cpp" FORMNAME="" UNITNAME="UserInterface" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\WinInterface.cpp" FORMNAME="" UNITNAME="WinInterface.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\WinMain.cpp" FORMNAME="" UNITNAME="WinMain.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="lib\Putty53b.lib" FORMNAME="" UNITNAME="Putty.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="lib\RScpComp.lib" FORMNAME="" UNITNAME="RScpComp.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="lib\ScpCore.lib" FORMNAME="" UNITNAME="ScpCore.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="lib\ScpForms.lib" FORMNAME="" UNITNAME="ScpForms.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="resource\TextsCore.res" FORMNAME="" UNITNAME="TextsCore.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="resource\TextsWin.res" FORMNAME="" UNITNAME="TextsWin.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="resource\DirImg.res" FORMNAME="" UNITNAME="DirImg.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="resource\Icons.res" FORMNAME="" UNITNAME="Icons.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="resource\Manifest.res" FORMNAME="" UNITNAME="Manifest.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="WinSCP3.res" FORMNAME="" UNITNAME="WinSCP3.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=1
+MajorVer=3
+MinorVer=0
+Release=0
+Build=162
+Debug=0
+PreRelease=1
+Special=0
+Private=0
+DLL=0
+Locale=1033
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=Martin Prikryl
+FileDescription=Windows SCP/SFTP client
+FileVersion=3.0.0.162
+InternalName=winscp3
+LegalCopyright=(c) 2000-2003 Martin Prikryl
+LegalTrademarks=
+OriginalFilename=winscp3.exe
+ProductName=WinSCP
+ProductVersion=3.0.0.0
+
+[Compiler]
+ShowInfoMsgs=1
+LinkDebugVcl=1
+LinkCGLIB=0
+
+  </IDEOPTIONS>
+</PROJECT>

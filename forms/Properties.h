@@ -1,0 +1,79 @@
+//----------------------------------------------------------------------------
+#ifndef PropertiesH
+#define PropertiesH
+//----------------------------------------------------------------------------
+#include <vcl\System.hpp>
+#include <vcl\Windows.hpp>
+#include <vcl\SysUtils.hpp>
+#include <vcl\Classes.hpp>
+#include <vcl\Graphics.hpp>
+#include <vcl\StdCtrls.hpp>
+#include <vcl\Forms.hpp>
+#include <vcl\Controls.hpp>
+#include <vcl\Buttons.hpp>
+#include <vcl\ExtCtrls.hpp>
+#include <ComCtrls.hpp>
+#include <PathLabel.hpp>
+
+#include "Rights.h"
+//----------------------------------------------------------------------------
+class TPropertiesDialog : public TForm
+{
+__published:
+  TButton *OkButton;
+  TButton *CancelButton;
+  TPageControl *PageControl;
+  TTabSheet *CommonSheet;
+  TImage *FilesIconImage;
+  TBevel *Bevel1;
+  TLabel *FileLabel;
+  TLabel *Label1;
+  TPathLabel *LocationLabel;
+  TLabel *Label2;
+  TLabel *SizeLabel;
+  TLabel *LinksToLabelLabel;
+  TPathLabel *LinksToLabel;
+  TBevel *Bevel2;
+  TRightsFrame *RightsFrame;
+  TLabel *Label3;
+  TBevel *Bevel3;
+  TLabel *Label4;
+  TComboBox *GroupComboBox;
+  TLabel *Label5;
+  TComboBox *OwnerComboBox;
+  TImage *FileIconImage;
+  TBevel *RecursiveBevel;
+  TCheckBox *RecursiveCheck;
+  void __fastcall ControlChange(TObject *Sender);
+  void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+private:
+  int FAllowedChanges;
+  TStrings * FFileList;
+  TRemoteProperties FOrigProperties;
+  Boolean FGroupsSet;
+  TImageList * FShellImageList;
+  void __fastcall SetDirectory(AnsiString value);
+  AnsiString __fastcall GetDirectory();
+  TRemoteProperties __fastcall GetFileProperties();
+  TStrings * __fastcall GetGroupList();
+  Boolean __fastcall GetMultiple();
+  void __fastcall SetAllowedChanges(int value);
+  void __fastcall SetFileList(TStrings * value);
+  void __fastcall SetFileProperties(TRemoteProperties value);
+  void __fastcall SetGroupList(TStrings * value);
+public:
+  virtual __fastcall ~TPropertiesDialog();
+  Boolean __fastcall Execute();
+  virtual __fastcall TPropertiesDialog(TComponent* AOwner);
+  __property int AllowedChanges = { read = FAllowedChanges, write = SetAllowedChanges };
+  __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
+  __property TStrings * FileList = { read = FFileList, write = SetFileList };
+  __property TRemoteProperties FileProperties = { read = GetFileProperties, write = SetFileProperties };
+  __property TStrings * GroupList = { read = GetGroupList, write = SetGroupList };
+protected:
+  void __fastcall LoadInfo();
+  void __fastcall UpdateControls();
+  __property Boolean Multiple = { read = GetMultiple };
+};
+//----------------------------------------------------------------------------
+#endif

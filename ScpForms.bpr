@@ -1,0 +1,129 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="lib\ScpForms.lib"/>
+    <OBJFILES value="forms\InputDlg.obj forms\VCLCommon.obj forms\About.obj 
+      forms\Cleanup.obj forms\OperationStatus.obj forms\Console.obj 
+      forms\Copy.obj forms\CopyParams.obj forms\Editor.obj 
+      forms\GeneralSettings.obj forms\ImportSessions.obj forms\Licence.obj 
+      forms\Log.obj forms\LogSettings.obj forms\Login.obj 
+      forms\OpenDirectory.obj forms\Password.obj forms\Preferences.obj 
+      forms\Progress.obj forms\Properties.obj forms\Rights.obj 
+      forms\SaveSession.obj forms\SelectMask.obj forms\Symlink.obj 
+      forms\Synchronize.obj"/>
+    <RESFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Cleanup.dfm forms\OperationStatus.dfm 
+      forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm forms\Editor.dfm 
+      forms\GeneralSettings.dfm forms\ImportSessions.dfm forms\Licence.dfm 
+      forms\Log.dfm forms\LogSettings.dfm forms\Login.dfm 
+      forms\OpenDirectory.dfm forms\Password.dfm forms\Preferences.dfm 
+      forms\Progress.dfm forms\Properties.dfm forms\Rights.dfm 
+      forms\SaveSession.dfm forms\SelectMask.dfm forms\Symlink.dfm 
+      forms\Synchronize.dfm"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value=""/>
+    <SPARELIBS value=""/>
+    <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi adortl.bpi vcldb.bpi 
+      qrpt.bpi bdertl.bpi vcldbx.bpi dsnap.bpi cds.bpi bdecds.bpi teeui.bpi 
+      teedb.bpi tee.bpi teeqr.bpi ibxpress.bpi vclie.bpi xmlrtl.bpi inet.bpi 
+      inetdbbde.bpi inetdbxpress.bpi inetdb.bpi nmfast.bpi soaprtl.bpi 
+      dclocx.bpi dbexpress.bpi dbxcds.bpi indy.bpi bcb2kaxserver.bpi 
+      DragDrop_B5.bpi visualclx.bpi visualdbclx.bpi bcbie.bpi Moje_B5.bpi 
+      DriveDir_B5.bpi"/>
+    <PATHCPP value=".;forms;windows"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <LINKER value="TLib"/>
+    <USERDEFINES value="SSH_DEFAULT;OLD_DND;_DEBUG"/>
+    <SYSDEFINES value="NO_STRICT"/>
+    <MAINSOURCE value="ScpForms.bpf"/>
+    <INCLUDEPATH value="forms;putty53b;core;components;windows;resource;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="windows;forms;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
+      -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
+    <LISTFILE value=""/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-Od -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 
+      -b- -k -y -v -vi- -c -tW -tWM"/>
+    <PFLAGS value="  -$Y+ -$W -$O- -$C- -$A8 -v -JPHNE -M"/>
+    <AFLAGS value="/mx /w2 /zi"/>
+    <LFLAGS value="/P128"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="$(OBJFILES)"/>
+    <ALLLIB value=""/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="ScpForms.bpf" FORMNAME="" UNITNAME="ScpForms" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\InputDlg.cpp" FORMNAME="" UNITNAME="InputDlg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\VCLCommon.cpp" FORMNAME="" UNITNAME="VCLCommon" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\About.cpp" FORMNAME="AboutDialog" UNITNAME="About" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Cleanup.cpp" FORMNAME="CleanupDialog" UNITNAME="Cleanup" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\OperationStatus.cpp" FORMNAME="OperationStatusForm" UNITNAME="OperationStatus" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Console.cpp" FORMNAME="ConsoleDialog" UNITNAME="Console" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Copy.cpp" FORMNAME="CopyDialog" UNITNAME="Copy" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\CopyParams.cpp" FORMNAME="CopyParamsFrame" UNITNAME="CopyParams" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Editor.cpp" FORMNAME="EditorForm" UNITNAME="Editor" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\GeneralSettings.cpp" FORMNAME="GeneralSettingsFrame" UNITNAME="GeneralSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\ImportSessions.cpp" FORMNAME="ImportSessionsDialog" UNITNAME="ImportSessions" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Licence.cpp" FORMNAME="LicenceDialog" UNITNAME="Licence" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Log.cpp" FORMNAME="LogForm" UNITNAME="Log" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\LogSettings.cpp" FORMNAME="LoggingFrame" UNITNAME="LogSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Login.cpp" FORMNAME="LoginDialog" UNITNAME="Login" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\OpenDirectory.cpp" FORMNAME="OpenDirectoryDialog" UNITNAME="OpenDirectory" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Password.cpp" FORMNAME="PasswordDialog" UNITNAME="Password" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Preferences.cpp" FORMNAME="PreferencesDialog" UNITNAME="Preferences" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Progress.cpp" FORMNAME="ProgressForm" UNITNAME="Progress" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Properties.cpp" FORMNAME="PropertiesDialog" UNITNAME="Properties" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Rights.cpp" FORMNAME="RightsFrame" UNITNAME="Rights" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\SaveSession.cpp" FORMNAME="SaveSessionDialog" UNITNAME="SaveSession" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\SelectMask.cpp" FORMNAME="SelectMaskDialog" UNITNAME="SelectMask" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Symlink.cpp" FORMNAME="SymlinkDialog" UNITNAME="Symlink" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Synchronize.cpp" FORMNAME="SynchronizeDialog" UNITNAME="Synchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1029
+CodePage=1250
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Compiler]
+ShowInfoMsgs=1
+LinkDebugVcl=0
+LinkCGLIB=0
+
+  </IDEOPTIONS>
+</PROJECT>

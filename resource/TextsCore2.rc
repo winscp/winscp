@@ -1,0 +1,42 @@
+#define UNKNOWN_KEY     1
+#define DIFFERENT_KEY   2
+#define OLD_KEY         3
+
+STRINGTABLE
+BEGIN
+  UNKNOWN_KEY,
+    "The server's host key is not cached in the registry. You have no guarantee "
+    "that the server is the computer you think it is. The server's key "
+    "fingerprint is: %s\n"
+    "\n"
+    "If you trust this host, press Yes. "
+    "To connect without adding host key to the cache, press No. "
+    "To abandon the connection press Cancel.\n"
+    "\n"
+    "Continue connecting and add host key to the cache?"
+  DIFFERENT_KEY,
+    "WARNING - POTENTIAL SECURITY BREACH!\n"
+    "\n"
+    "The server's host key does not match the one WinSCP has "
+    "cached in the registry. This means that either the "
+    "server administrator has changed the host key, or you "
+    "have actually connected to another computer pretending "
+    "to be the server. "
+    "The new key fingerprint is: %s\n"
+    "\n"
+    "If you were expecting this change and trust the new key, "
+    "press Yes to update cache and continue connecting. "
+    "If you want to carry on connecting but without updating"
+    "the cache, press No. "
+    "If you want to abandon the connection completely, press "
+    "Cancel. Pressing Cancel is the ONLY guaranteed safe "
+    "choice.\n"
+  OLD_KEY,
+    "You are loading an SSH 2 private key which has an "
+    "old version of the file format. This means your key "
+    "file is not fully tamperproof. We recommend you convert "
+    "your key to the new format.\n"
+    "\n"
+    "You can perform this conversion by loading the key "
+    "into PuTTYgen and then saving it again."
+END

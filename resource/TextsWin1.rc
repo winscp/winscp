@@ -1,0 +1,266 @@
+#define WIN_ERROR_STRINGS       1100
+#define MASK_ERROR              1101
+#define WARN_FATAL_ERROR        1102
+#define NEWSESSION_ERROR        1103
+#define LOADSESSION_ERROR       1104
+#define SESSION_NOT_EXISTS_ERROR 1105
+#define RECONNECT_ERROR         1106
+#define CREATE_SHORTCUT_ERROR   1107
+#define CANNOT_OVERWRITE_SPECIAL_SESSION 1108
+#define EXPLORE_LOCAL_DIR_ERROR 1109
+#define NO_UPLOAD_LIST_ERROR    1110
+#define CREATE_LOCAL_DIR_ERROR  1111
+#define DELETE_LOCAL_FILE_ERROR 1112
+#define DELETE_TEMP_EXECUTE_FILE_ERROR 1113
+#define EXECUTE_FILE_ERROR      1114
+#define EDITOR_ERROR            1115
+#define DOCUMENT_WAIT_ERROR     1116
+#define SYNC_DIR_BROWSE_ERROR   1117
+#define RESOLVE_SHORTCUT_ERROR  1118
+
+#define WIN_CONFIRMATION_STRINGS 1300
+#define CONFIRM_OVERWRITE_SESSION 1301
+#define CREATE_LOCAL_DIRECTORY  1302
+#define CANCEL_OPERATION        1303
+#define CANCEL_OPERATION_FATAL  1304
+#define CONFIRM_DELETE_FILE     1305
+#define CONFIRM_DELETE_FILES    1306
+#define CLOSE_SESSION           1307
+#define NEVER_ASK_AGAIN         1308
+#define DD_WARN_LACK_OF_TEMP_SPACE 1309
+#define DD_WARN_UNKNOWN_TEMP_SPACE 1310
+#define ADD_BOOKMARK_CONFIRM    1311
+#define RECONNECT_BUTTON        1312
+#define CONFIRM_CREATE_SHORTCUT 1313
+#define SET_DEFAULT_SESSION_SETTINGS 1314
+#define SKIP_BUTTON             1315
+#define RESUME_BUTTON           1316
+#define SAVE_CHANGES            1317
+
+#define WIN_INFORMATION_STRINGS 1400
+#define APP_CAPTION             1401
+#define COMPARE_NO_DIFFERENCES  1402
+#define SHORTCUT_INFO_TIP       1403
+#define DOCUMENT_WAIT           1404
+
+#define WIN_STATUS_STRINGS      1450
+#define STATUS_CLOSED           1451
+#define STATUS_INITWINSOCK      1452
+#define STATUS_LOOKUPHOST       1453
+#define STATUS_CONNECT          1454
+#define STATUS_AUTHENTICATE     1455
+#define STATUS_AUTHENTICATED    1456
+#define STATUS_STARTUP          1457
+#define STATUS_OPEN_DIRECTORY   1458
+#define STATUS_READY            1459
+
+#define WIN_FORMS_STRINGS       1500
+#define LOG_NOLOG               1501
+#define LOG_NOLOGFILE           1502
+#define LOG_NOLOGCAPTION        1503
+#define LOG_CAPTION             1504
+#define COPY_FILE               1505
+#define COPY_FILES              1506
+#define COPY_COPY               1507
+#define COPY_MOVE               1508
+#define COPY_TOLOCAL            1509
+#define COPY_TOREMOTE           1510
+#define COPY_COPY_CAPTION       1511
+#define COPY_MOVE_CAPTION       1512
+#define COPY_TODROP             1513
+#define COPY_COPY_BUTTON        1514
+#define COPY_MOVE_BUTTON        1515
+#define PROGRESS_COPY           1516
+#define PROGRESS_MOVE           1517
+#define PROGRESS_DELETE         1518
+#define PROGRESS_SETPROPERTIES  1519
+#define PROGRESS_DRAGDROP_TARGET 1520
+#define NEW_FOLDER              1521
+#define CREATE_FOLDER_PROMPT    1522
+#define CREATE_FOLDER_CAPTION   1523
+#define SELECT_MASK_DESELECT_CAPTION 1524
+#define SELECT_MASK_SELECT_CAPTION 1525
+#define PROPERTIES_FILE         1526
+#define PROPERTIES_FILES        1527
+#define PROPERTIES_DIRECTORY    1528
+#define PROPERTIES_DIRECTORIES  1529
+#define PROPERTIES_SYMLINK      1530
+#define PROPERTIES_SYMLINKS     1531
+#define PROPERTIES_FILE_CAPTION 1532
+#define PROPERTIES_FILES_CAPTION 1533
+#define PROPERTIES_INVALID_GROUP 1534
+#define PROPERTIES_INVALID_OWNER 1535
+#define EXPLORER_BACK_HINT      1536
+#define EXPLORER_FORWARD_HINT   1537
+#define STATUS_SENT_HINT        1538
+#define STATUS_RECEIVED_HINT    1539
+#define STATUS_DURATION_HINT    1540
+#define STATUS_COMPRESSION_HINT 1541
+#define STATUS_ENCRYPTION_HINT  1542
+#define STATUS_VERSION_HINT     1543
+#define STATUS_FILEINFO_HINT    1544
+#define STATUS_COMPRESSION2_HINT 1545
+#define STATUS_ENCRYPTION2_HINT 1546
+#define SAVEDSESSION_HINT       1547
+#define STATUS_FS_PROTOCOL      1548
+#define LICENCE_CAPTION         1549
+#define SYCHRONIZE_DESCRIPTION  1550
+#define SYCHRONIZE_WAITING      1551
+#define CIPHER_NAME_WARN        1552
+#define CIPHER_NAME_3DES        1553
+#define CIPHER_NAME_BLOWFISH    1554
+#define CIPHER_NAME_AES         1555
+#define CIPHER_NAME_DES         1556
+#define OPEN_DIRECTORY_BROWSE_CAPTION 1557
+#define OPEN_DIRECTORY_ADD_BOOMARK_ACTION 1558
+#define RESUME_ENABLED          1559
+#define RESUME_DISABLED         1560
+#define RESUME_NOT_AVAILABLE    1561
+#define TRANSFER_ASCII          1562
+#define TRANSFER_BINARY         1563
+#define EDITOR_LINE_STATUS      1564
+#define EDITOR_COLUMN_STATUS    1565
+#define EDITOR_CHARACTER_STATUS 1566
+#define EDITOR_MODIFIED         1567
+#define EDITOR_FIND_END         1568
+#define EDITOR_REPLACE_END      1569
+#define EDITOR_GO_TO_LINE       1570
+#define EDITOR_LINE_NUMBER      1571
+#define EDITOR_INVALID_LINE     1572
+#define LINK_EDIT_CAPTION       1573
+#define LINK_ADD_CAPTION        1574
+
+STRINGTABLE
+BEGIN
+        WIN_ERROR_STRINGS, "WIN_ERROR"
+        CREATE_LOCAL_DIR_ERROR, "Can't create folder '%s'."
+        DELETE_LOCAL_FILE_ERROR, "Error deleting file '%s'."
+        MASK_ERROR, "'%s' is invalid mask"
+        WARN_FATAL_ERROR, "%s\n \nWarning: Aborting this operation will close connection!"
+        NEWSESSION_ERROR, "Can't open new session."
+        LOADSESSION_ERROR, "Can't open stored session '%s'."
+        SESSION_NOT_EXISTS_ERROR, "Session named '%s' does not exists."
+        RECONNECT_ERROR, "Cannot launch another instance of %s to reconnect session."
+        CREATE_SHORTCUT_ERROR, "Cannot create shortcut."
+        CANNOT_OVERWRITE_SPECIAL_SESSION, "Cannot overwrite special session '%s'."
+        EXPLORE_LOCAL_DIR_ERROR, "Cannot explore directory '%s'."
+        NO_UPLOAD_LIST_ERROR, "No upload file list specified."
+        DELETE_TEMP_EXECUTE_FILE_ERROR, "Cannot remove temporary directory '%s'."
+        EXECUTE_FILE_ERROR, "Cannot open or execute file '%s'"
+        EDITOR_ERROR, "Cannot launch editor '%s'."
+        DOCUMENT_WAIT_ERROR, "Error waiting for document to close."
+        SYNC_DIR_BROWSE_ERROR, "Cannot open respective directory in the opposite panel. Directory browsing synchronisation failed. It has been turned off."
+        RESOLVE_SHORTCUT_ERROR, "Cannot resolve shortcut '%s'."
+
+        WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
+        CONFIRM_OVERWRITE_SESSION, "Session with name '%s' already exists. Overwrite?"
+        CREATE_LOCAL_DIRECTORY, "Directory '%s' doesn't exists. Create?"
+        CANCEL_OPERATION, "Cancel current operation?"
+        CANCEL_OPERATION_FATAL, "Cancel file transfer?\n \nOperation can't be canceled in the middle of file transfer.\nPress 'Yes' to cancel file transfer and to close connection.\nPress 'No' to finish current file transfer.\nPress 'Cancel' to continue operation."
+        CONFIRM_DELETE_FILE, "Are you sure you want to delete file '%s'?"
+        CONFIRM_DELETE_FILES, "Are you sure you want to delete %d selected files?"
+        CLOSE_SESSION, "Terminate session '%s' and close application?"
+        NEVER_ASK_AGAIN, "Never ask me a&gain"
+        DD_WARN_LACK_OF_TEMP_SPACE, "Too little space on temporary drive!\n\nWhen dragging files from remote directory, files are downloaded first to temporary directory '%s'. There is %s free on the drive. Total size of dragged files is %s.\n\nNote: Temporary directory can be changed from Preferences window.\n\nDo you still want to download files?"
+        DD_WARN_UNKNOWN_TEMP_SPACE, "When dragging files from remote directory, files are downloaded first to temporary directory '%s'. There is %s free on the drive. Total size of dragged files is unknown (selection contains directories).\n\nNote: Temporary directory can be changed from Preferences window.\n\nDo you still want to download files?"
+        ADD_BOOKMARK_CONFIRM, "Add directory '%s' to bookmarks?"
+        RECONNECT_BUTTON, "&Reconnect"
+        CONFIRM_CREATE_SHORTCUT, "Create desktop shortcut for session '%s'?"
+
+        WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
+        APP_CAPTION, "%s - %s"
+        COMPARE_NO_DIFFERENCES, "No differences found."
+        SHORTCUT_INFO_TIP, "Opens session '%s'\n%s"
+        SKIP_BUTTON, "&Skip"
+        RESUME_BUTTON, "Resu&me"
+        SAVE_CHANGES, "File was modified. Save changes?"
+        DOCUMENT_WAIT, "Waiting for the document to close..."
+
+        WIN_STATUS_STRINGS, "WIN_STATUS_STRINGS"
+        STATUS_CLOSED, "Connection terminated."
+        STATUS_INITWINSOCK, "Initialisation..."
+        STATUS_LOOKUPHOST, "Searching host..."
+        STATUS_CONNECT, "Connecting to host..."
+        STATUS_AUTHENTICATE, "Authenticating..."
+        STATUS_AUTHENTICATED, "Authenticated."
+        STATUS_STARTUP, "Starting the session..."
+        STATUS_READY, "Session started."
+        STATUS_OPEN_DIRECTORY, "Reading remote directory..."
+
+        WIN_FORMS_STRINGS, "WIN_FORMS_STRINGS"
+        LOG_NOLOG, "No session log."
+        LOG_NOLOGFILE, "Logging to file disabled."
+        LOG_NOLOGCAPTION, "No log"
+        LOG_CAPTION, "Session '%s' log"
+        COPY_FILE, "%s file '%s' to %s"
+        COPY_FILES, "%s %d files to %s"
+        COPY_COPY, "Copy"
+        COPY_MOVE, "Move"
+        COPY_TOLOCAL, "local directory"
+        COPY_TOREMOTE, "remote directory"
+        COPY_TODROP, "drop target"
+        COPY_COPY_CAPTION, "Copy"
+        COPY_MOVE_CAPTION, "Move"
+        COPY_COPY_BUTTON, "Copy"
+        COPY_MOVE_BUTTON, "Move"
+        PROGRESS_SETPROPERTIES, "Setting properties"
+        PROGRESS_DELETE, "Deleting"
+        PROGRESS_MOVE, "Moving"
+        PROGRESS_COPY, "Copying"
+        PROGRESS_DRAGDROP_TARGET, "Temporary directory"
+        NEW_FOLDER, "New folder"
+        CREATE_FOLDER_CAPTION, "Create folder"
+        CREATE_FOLDER_PROMPT, "&Enter new folder name"
+        SELECT_MASK_SELECT_CAPTION, "Select"
+        SELECT_MASK_DESELECT_CAPTION, "Deselect"
+        PROPERTIES_FILE, "%d file"
+        PROPERTIES_FILES, "%d files"
+        PROPERTIES_DIRECTORY, "%d folder"
+        PROPERTIES_DIRECTORIES, "%d folders"
+        PROPERTIES_SYMLINK, "%d symbolic link"
+        PROPERTIES_SYMLINKS, "%d symbolic links"
+        PROPERTIES_FILE_CAPTION, "%s Properties"
+        PROPERTIES_FILES_CAPTION, "%s, ... Properties"
+        PROPERTIES_INVALID_GROUP, "Enter valid group name."
+        PROPERTIES_INVALID_OWNER, "Enter valid owner name."
+        EXPLORER_BACK_HINT, "Back to %s"
+        EXPLORER_FORWARD_HINT, "Forward to %s"
+        STATUS_SENT_HINT, "Bytes sent"
+        STATUS_RECEIVED_HINT, "Bytes received"
+        STATUS_DURATION_HINT, "Connection time"
+        STATUS_COMPRESSION_HINT, "Compression (%s)"
+        STATUS_COMPRESSION2_HINT, "Compression (client \273 server: %s, server \273 client: %s)"
+        STATUS_ENCRYPTION_HINT, "Encryption algorithm (%s)"
+        STATUS_ENCRYPTION2_HINT, "Encryption algorithm (client \273 server: %s, server \273 client: %s)"
+        STATUS_VERSION_HINT, "SSH protocol version: %d"
+        STATUS_FILEINFO_HINT, "File selection info"
+        SAVEDSESSION_HINT, "Open saved session '%s'"
+        LICENCE_CAPTION, "%s licence"
+        SYCHRONIZE_DESCRIPTION, "Watch for new or changed files in local directory '%s' and automatically upload them to remote directory '%s'."
+        SYCHRONIZE_WAITING, "Watching for changes in local directory '%s'."
+        CIPHER_NAME_WARN, "-- warn below here --"
+        CIPHER_NAME_3DES, "3DES"
+        CIPHER_NAME_BLOWFISH, "Blowfish"
+        CIPHER_NAME_AES, "AES (SSH2 only)"
+        CIPHER_NAME_DES, "DES"
+        SET_DEFAULT_SESSION_SETTINGS, "Set current session settings as default?"
+        OPEN_DIRECTORY_BROWSE_CAPTION, "Open directory"
+        OPEN_DIRECTORY_ADD_BOOMARK_ACTION, "Manage bookmarks"
+        STATUS_FS_PROTOCOL, "Protocol in use (%s)"
+        RESUME_ENABLED, "Enabled"
+        RESUME_DISABLED, "Disabled"
+        RESUME_NOT_AVAILABLE, "N/A"
+        TRANSFER_ASCII, "Text"
+        TRANSFER_BINARY, "Binary"
+        EDITOR_LINE_STATUS, "Line: %d/%d"
+        EDITOR_COLUMN_STATUS, "Column: %d"
+        EDITOR_CHARACTER_STATUS, "Character: %d (0x%2x)"
+        EDITOR_MODIFIED, "Modified"
+        EDITOR_FIND_END, "Count not find the string '%s'."
+        EDITOR_REPLACE_END, "Total replacements performed: %d"
+        EDITOR_GO_TO_LINE, "Go to line"
+        EDITOR_LINE_NUMBER, "Line number"
+        EDITOR_INVALID_LINE, "Invalid line number."
+        LINK_EDIT_CAPTION, "Edit link/shortcut"
+        LINK_ADD_CAPTION, "Add link/shortcut"
+END

@@ -1,0 +1,2057 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="AUTHOR" content="Dieter Steinwedel">
+<meta name="DESCRIPTION"
+content="Drag&amp;Drop component for Delphi; description for TDragDrop">
+<meta name="KEYWORDS"
+content="delphi, drag, drop, component, ole, com, freeware, windows">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Details about TDragDrop</title>
+</head>
+
+<body bgcolor="#FFFFEF">
+
+<table border="0" cellspacing="0" width="600" bgcolor="#008080">
+    <tr>
+        <td width="10">&nbsp;</td>
+        <td width="580">&nbsp; </td>
+        <td width="10" bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><p align="center"><font color="#FFFFFF" size="7"
+        face="Arial">TDragDrop</font></p>
+        </td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<p align="left">&nbsp;</p>
+
+<p align="left">&nbsp;</p>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Description</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b><i>TDragDrop</i></b> is a
+        component for COM/OLE based drag&amp;drop operations. The
+        component is able to make child-classes of TWinControl
+        (e.g. TEdit, TMemo, TListView, etc.) to be the source AND
+        target of drag&amp;drop operations.</font><p><font
+        face="Arial">Normally, you only use this component
+        directly (for testing), if you develop an own
+        drag&amp;drop component based on this class.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Important
+        for Use</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial">This </font><a href="Index.htm"><font
+        face="Arial">file</font></a><font face="Arial">
+        (index.htm) contains more information about restrictions,
+        the disclaimer, remarks etc.</font></td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">History</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 4.30</b> </font><font
+        color="#808080" face="Arial">published on 17-Dec-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">The method <strong>DropHandler</strong>
+                was added</font></li>
+            <li><font face="Arial">The implementation of the
+                context-menu has changed; now you can insert
+                custom menuitems</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 4.20</b> </font><font
+        color="#808080" face="Arial">published on 13-Nov-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font color="#FF0000" face="Arial"><strong>IMPORTANT:</strong></font><font
+                face="Arial"><strong> </strong>The mouse
+                coordinates <em><strong>pt </strong></em>in <em><strong>OnDragEnter,
+                OnDragOver, OnDrop, OnDragDetect,
+                OnprocessDropped</strong></em> and <em><strong>OnBeforeScrolling</strong></em>
+                are not a longer absolute to the screen but
+                relative to the <em><strong>DragDropControl</strong></em>;
+                maybe, that you must adjust your code</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 4.10</b> </font><font
+        color="#808080" face="Arial">published on 06-Jul-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Bug with <b><i>AcceptOwnDnD</i></b>
+                fixed </font></li>
+            <li><font face="Arial">The handling of the clipboard
+                has totally changed. As result of it, the
+                implemention of the method <b><i>Execute</i></b>
+                has changed, but not the using. You won't notice
+                the modification (and haven't to change code),
+                unless you haven't created your own classes based
+                on <b><i>TDragDrop</i></b>. </font><p><font
+                face="Arial"><i>Following is only important, if
+                you've build your own class based on </i><b><i>TDragDrop</i></b>:</font></p>
+                <p><font face="Arial">Normally you create a data
+                object in the method <b><i>Execute</i></b> before
+                data is dragged. Simply move this code to the new
+                method <b><i>CreateDataObject</i></b>, inherited
+                from <b><i>TDragDrop</i></b> and your class are
+                compatible with this version. As a result of
+                this, the your child-class has automaticly the
+                capability for clipboard operations without any
+                additonal code for this in contrast to earlier
+                times. So, the expenditure for child-class
+                development has shrinked. Fine, or? </font></p>
+            </li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 4.00</b> </font><font
+        color="#808080" face="Arial">published on 30-May-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial"><b><i>OnDragDetect</i></b> was
+                changed in the declaration; now it isn't so long
+                any more </font></li>
+            <li><font face="Arial">The available drag effects in <b><i>SourceEffects</i></b>
+                and <b><i>TargetEffects</i></b> were corrected </font></li>
+            <li><font face="Arial">The scroll cursors during
+                d&amp;d are now displayed </font></li>
+            <li><font face="Arial">New great properties added: <b><i>ScrollDetectOptions</i></b>
+                and <b><i>SourceCompatibility</i></b> </font></li>
+            <li><font face="Arial">New design for the
+                auto-detection for drag&amp;drop</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 3.20</b> </font><font
+        color="#808080" face="Arial">published on 3-May-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Property <b><i>RenderOn</i></b>
+                extended with a new value </font></li>
+            <li><font face="Arial">The bug with source &amp;
+                target effects in version 3.11 wasn't fixed in
+                the Delphi4 component; this is now made up </font></li>
+            <li><font face="Arial">The documentation is completed
+                (for a longer time, there are the properties <b><i>CHCopy</i></b>,
+                <b><i>CHMove</i></b>, <b><i>CHLink</i></b> etc.
+                available) </font></li>
+            <li><font face="Arial">Bug was fixed with <b><i>DragOver</i></b>
+                (modifications of the <b><i>dwEffect</i></b> has
+                no effect, if the target doesn't accept the data)
+                </font></li>
+            <li><font face="Arial">Some bugs with the
+                auto-detection for drag&amp;drop fixed (the
+                component sends now always a
+                &quot;mousebutton-up&quot; message, after a
+                dectection has started; the detection had not
+                worked, if the start position was near to the
+                border of the visual control)</font> </li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 3.11</b> </font><font
+        color="#808080" face="Arial">published on 27-Feb-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Property <b><i>RenderOn</i></b>
+                extended with new values </font></li>
+            <li><font face="Arial">New property: <b><i>AvailableDropEffects</i></b>
+                </font></li>
+            <li><font face="Arial">Bug fixed with source &amp;
+                target effects (mostly invisible) </font></li>
+            <li><font face="Arial">In the Delphi2 version: unused
+                method (<b><i>SetTargetWindowControl</i></b>)
+                deleted (relict from an earlier time) </font></li>
+            <li><font face="Arial"><b><i>SetDragDropControl</i></b>
+                corrected (you can change now the DragDropControl
+                at run-time, if you need)</font> </li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 3.10</b> </font><font
+        color="#808080" face="Arial">published on 19-Jan-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Range-Check Error fixed in <b><i>Execute</i></b>
+                </font></li>
+            <li><a href="#WinNTBug1"><font face="Arial">Bug</font></a><font
+                face="Arial"> in WinNT4 detected </font></li>
+            <li><font face="Arial">Bug in detecting the language
+                fixed </font></li>
+            <li><font face="Arial">The property <b><i>RenderAsync</i></b>
+                was replaced by the new property <b><i>RenderOn</i></b>
+                </font></li>
+            <li><font face="Arial">Bug fixed: You don't need any
+                longer enable even the target effects to make
+                your <b><i>DragDropControl</i></b> able to be the
+                source of d&amp;d operations </font></li>
+            <li><font face="Arial">Bug fixed: Modifications of
+                the drop effect <b><i>dwEffect</i></b> in the
+                event-handlers <b><i>OnXXXXX</i></b> effects even
+                to the drop</font> </li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 3.00</b> </font><font
+        color="#808080" face="Arial">updated on 31-Nov-1998</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Native version for Delphi4
+                available </font></li>
+            <li><font face="Arial">Some bugs fixed </font></li>
+            <li><font face="Arial">Polish version available </font></li>
+            <li><font face="Arial">Paramters to the event <b><i>OnProcessDropped</i></b>
+                and <b><i>OnDragDetect</i></b> added </font></li>
+            <li><font face="Arial"><b><i>ExecuteDragDrop</i></b>
+                renamed to <b><i>Execute</i></b> </font></li>
+            <li><font face="Arial"><b><i>Execute</i></b> has new
+                result values </font></li>
+            <li><font face="Arial">The drop effects were renamed </font></li>
+            <li><font face="Arial">Sorry for so heavy code
+                breaking, but in my opinion, there was the
+                necessity to change these things</font> </li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 2.01</b> </font><font
+        color="#808080" face="Arial">published on 03-Oct-1998</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Language auto-detect feature
+                added </font></li>
+            <li><font face="Arial">Some bugs fixed</font> </li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 2.00</b></font><font
+        color="#808080" face="Arial"> updated on 03-Oct-1998</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">New methods &amp; properties
+                (clipboard actions, drag detect, etc.) </font></li>
+            <li><font face="Arial">The use of the COM was
+                corrected (ref-counter, etc.)</font> </li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.01</b></font><font
+        color="#808080" face="Arial"> published on 12-Aug-1998</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Some small updates</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.00</b> </font><font
+        color="#808080" face="Arial">published on 06-Aug-1998</font><font
+        face="Arial"> </font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">First official release</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Properties</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" cellpadding="3" cellspacing="0" width="600">
+    <tr>
+        <td width="10">&nbsp;</td>
+        <td bgcolor="#008080"><a name="AcceptOwnDnD"><font
+        color="#FFFFFF" size="5" face="Arial"><b>AcceptOwnDnD</b></font></a><font
+        color="#FFFFFF" size="4" face="Arial"><b><i> </i></b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">If<b> </b>your<b>
+        </b></font><a href="#DragDropControl"><font size="3"
+        face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is configured to be source AND
+        target of drag&amp;drop operations you can determine
+        here, if your </font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> should accept its own
+        drag&amp;drop operation. This is important in example, if
+        you want to change the order of Listbox items using this
+        component and not the internal drag&amp;drop operations. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="AutoDetectDnD"><font
+        color="#FFFFFF" size="5" face="Arial"><b>AutoDetectDnD</b></font><font
+        size="3" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></a></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">If<b> </b>your<b>
+        </b></font><a href="#DragDropControl"><font size="3"
+        face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is configured to be source of
+        drag&amp;drop operations you can define here, if this
+        component should detect drag operations or not. The
+        property </font><a href="#DragDetectDelta"><font size="3"
+        face="Arial"><b><i>DragDetectDelta</i></b></font></a><font
+        size="3" face="Arial"> is involved in the detection.</font>
+        <p><font color="#FF0000" size="3" face="Arial"><strong>IMPORTANT:</strong></font><font
+        size="3" face="Arial"> If you use the drag-detection,
+        it's high recommended to check the section &quot;</font><a
+        href="#DragDetectionProblem"><font size="3" face="Arial">Problems
+        With The Drag-Detection</font></a><font size="3"
+        face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>BringToFront</b></font><font size="3"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">If the
+        user has dropped data on the target control, you can
+        determine here if the form should come to front after the
+        drag&amp;drop operation or not. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>CHCopy</b></font><font size="3"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Use
+        this property to set a custom cursor for the copy-effect
+        during drag&amp;drop. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>CHLink</b></font><font size="3"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Use
+        this property to set a custom cursor for the link-effect
+        during drag&amp;drop. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>CHMove</b></font><font size="3"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Use
+        this property to set a custom cursor for the move-effect
+        during drag&amp;drop. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>CHScrollCopy</b></font><font size="3"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Use
+        this property to set a custom cursor for the copy-effect
+        during drag&amp;drop </font><font face="Arial">and
+        scrolling in the target window. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>CHScrollLink</b></font><font size="3"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Use
+        this property to set a custom cursor for the link-effect
+        during drag&amp;drop </font><font face="Arial">and
+        scrolling in the target window. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>CHScrollMove</b></font><font size="3"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Use
+        this property to set a custom cursor for the move-effect
+        during drag&amp;drop </font><font face="Arial">and
+        scrolling in the target window. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="DragDetectDelta"><font
+        color="#FFFFFF" size="5" face="Arial"><b>DragDetectDelta</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is the
+        drag detection enabled by<b> </b></font><a
+        href="#AutoDetectDnD"><font size="3" face="Arial"><b><i>AutoDetectDnD</i></b></font></a><font
+        size="3" face="Arial"> or calling </font><a
+        href="#StartDnDDetection"><font size="3" face="Arial"><b><i>StartDnDDetection</i></b></font></a><font
+        size="3" face="Arial">, the drag detection was
+        successful, if the mouse was moved over more than in this
+        property defined pixels. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="DragDropControl"><font
+        color="#FFFFFF" size="5" face="Arial"><b>DragDropControl</b></font></a><font
+        size="3" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Choose
+        here a component like Listbox etc. that should be handled
+        as source and target for drag&amp;drop operations.</font>
+        <p><font color="#FF0000" size="3" face="Arial"><strong>IMPORTANT:</strong></font><font
+        size="3" face="Arial"> If you use the drag-detection,
+        it's high recommended to check the section &quot;</font><a
+        href="#DragDetectionProblem"><font size="3" face="Arial">Problems
+        With The Drag-Detection</font></a><font size="3"
+        face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>OwnerIsSource</b></font><font size="3"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>public, read-only</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">This
+        property indicates during a drag&amp;drop operation, if
+        the<b> </b></font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is the source of the
+        d&amp;d-operation or not. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>Registered</b></font><font size="5"
+        face="Arial"><b> </b></font><font color="#FFFF80"
+        size="3" face="Arial"><b><i>public, read-only</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">You can
+        determine here, if the<b> </b></font><a
+        href="#DragDropControl"><font size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is registered as target of
+        drag&amp;drop operations or not.</font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="RenderOn"><font
+        color="#FFFFFF" size="5" face="Arial"><b>RenderOn</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">You can
+        determine here, when the dropped data should be rendered
+        (only important for the inherited classes).</font> <p><font
+        size="3" face="Arial">If it is set to<strong> </strong><strong><i>rdoDropSync</i></strong>,
+        the data is rendered before calling the event-handler </font><a
+        href="#OnDrop"><font size="3" face="Arial"><b><i>OnDrop</i></b></font></a><font
+        size="3" face="Arial">.</font></p>
+        <p><font size="3" face="Arial">If it is set to <b><i>rdoDropAsync</i></b>,
+        the data is rendered before calling the event-handler </font><a
+        href="#OnProcessDropped"><font size="3" face="Arial"><b><i>OnProcessDropped</i></b></font></a><font
+        size="3" face="Arial">.</font></p>
+        <p><font size="3" face="Arial">If it is set to <b><i>rdoEnter</i></b>,
+        the data is rendered before calling the event-handler </font><a
+        href="#OnDragEnter"><font size="3" face="Arial"><b><i>OnDragEnter</i></b></font></a><font
+        size="3" face="Arial">.</font></p>
+        <p><font size="3" face="Arial">If it is set to <b><i>rdoEnterAndDropSync</i></b>,
+        the data is rendered before calling the event-handler </font><a
+        href="#OnDragEnter"><font size="3" face="Arial"><b><i>OnDragEnter</i></b></font></a><font
+        size="3" face="Arial"> AND before calling the
+        event-handler </font><a href="#OnDrop"><font size="3"
+        face="Arial"><b><i>OnDrop</i></b></font></a><font
+        size="3" face="Arial"> (yes two times - in some cases
+        it's necessary).</font></p>
+        <p><font size="3" face="Arial">If it is set to <b><i>rdoEnterAndDropAsync</i></b>,
+        the data is rendered before calling the event-handler </font><a
+        href="#OnDragEnter"><font size="3" face="Arial"><b><i>OnDragEnter</i></b></font></a><font
+        size="3" face="Arial"> AND before calling the
+        event-handler </font><a href="#OnProcessDropped"><font
+        size="3" face="Arial"><b><i>OnProcessDropped</i></b></font></a><font
+        size="3" face="Arial"> (yes two times - in some cases
+        it's necessary).</font></p>
+        <p><font size="3" face="Arial">If it is set to <b><i>rdoNever</i></b>,
+        the data is never rendered. Normally, you never need this
+        value - it makes only sense for application-internal
+        drag&amp;drop (the application knows the data; why should
+        we spend our precious time on rendering the known data?)</font></p>
+        <p><font size="3" face="Arial">Be careful, if you set
+        this property to <b><i>rdoDropAsync</i></b>, <b><i>rdoDropEnterAndDropSync</i></b>,
+        <b><i>rdoDropEnterAndDropAsync</i></b> or <b><i>rdoEnter</i></b>,
+        because the OLE2 Drag&amp;Drop isn't correctly
+        implemented in every program. On testing (high
+        recommend!!!), you will be surprised, how many well-known
+        programs make trouble because of wrong implemention. </font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="ScrollDetectOptions"><font
+        color="#FFFFFF" size="5" face="Arial"><b>ScrollDetectOptions</b></font></a><font
+        size="3" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">This
+        property has many sub-properties:</font> <ul>
+            <li><font size="3" face="Arial"><em><b>AreaBottom</b></em>,
+                <em><b>AreaLeft</b></em>, <em><b>AreaRight</b></em>
+                and <em><b>AreaTop</b></em></font></li>
+            <li><font size="3" face="Arial"><em><b>HorzScrolling</b></em>
+                and <em><b>VertScrolling</b></em></font></li>
+            <li><font size="3" face="Arial"><em><b>HorzPageScroll</b></em>
+                and <em><b>VertPageScroll</b></em></font></li>
+            <li><font size="3" face="Arial"><em><b>ScrollDelay</b></em><b>
+                </b>and<b> </b><em><b>StartDelay</b></em></font></li>
+        </ul>
+        <p><font size="3" face="Arial"><em><b>AreaBottom</b></em>,
+        <em><b>AreaLeft</b></em>, <em><b>AreaRight</b></em>, <em><b>AreaTop</b></em>
+        have the sub-properties <em><b>Margin</b></em>, <em><b>Range</b></em>.
+        You can determine with <em><b>Margin</b></em> where the
+        scroll-detect-area begins, measured from the </font><font
+        color="#FF0000" size="3" face="Arial"><strong>client</strong></font><font
+        size="3" face="Arial">area-border. You can determine with
+        <em><b>Range</b></em> the width resp. height of the
+        scroll-detect-area. The properties <b><i>AreaBottom</i></b>
+        and <b><i>AreaTop</i></b> are used for the vertical
+        scroll detection, <b><i>AreaLeft</i></b> and <b><i>AreaRight</i></b>
+        for the horizontal detection.</font></p>
+        <p><font size="3" face="Arial"><em><b>HorzScrolling</b></em>
+        and <em><b>VertScrolling</b></em> are further
+        sub-properties under <b><i>ScrollDetectOptions</i></b>.
+        You can enable/disable the scroll detection with these
+        properties.</font></p>
+        <p><font size="3" face="Arial"><em><b>HorzPageScroll</b></em>
+        and <em><b>VertPageScroll</b></em> are even further
+        sub-properties under <b><i>ScrollDetectOptions</i></b>.
+        You can switch here between line or page scrolling.</font></p>
+        <p><font size="3" face="Arial"><em><b>ScrollDelay</b></em>
+        is even a sub-property under <b><i>ScrollDetectOptions</i></b>.
+        You can determine with property the delay time to the
+        next scroll event in the <b><i>DragDropControl</i></b>.</font></p>
+        <p><font size="3" face="Arial"><em><b>StartDelay</b></em>
+        is even a further sub-property under <b><i>ScrollDetectOptions</i></b>.
+        You can determine with property the delay time till the
+        first scroll event is sent to the <b><i>DragDropControl</i></b>.</font></p>
+        <p><font size="3" face="Arial">The scroll-detection does
+        only work, if at least one </font><a
+        href="#TargetEffects"><font size="3" face="Arial">TargetEffect</font></a><font
+        size="3" face="Arial"> is set.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="SourceCompatibility"><font
+        color="#FFFFFF" size="5" face="Arial"><b>SourceCompatibility</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">This
+        property was added due to incompatible implemention of
+        drag&amp;drop in other applications. They set some value
+        incorrectly in the <em><strong>FormatEtc</strong></em>
+        record, because these values aren't used for the dragged
+        format. With this property you can determine, if you
+        don't to check these values for a successful
+        drag&amp;drop. If you disable a check, you take risk to
+        drop data in a invalid format. Normally, you need not to
+        switch this property.</font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="SourceEffects"><font
+        color="#FFFFFF" size="5" face="Arial"><b>SourceEffects</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Choose
+        the effects that the<b> </b></font><a
+        href="#DragDropControl"><font size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> should support. If you don't want
+        that the </font><a href="#DragDropControl"><font size="3"
+        face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> serve as drag&amp;drop source all
+        items must be false.</font> <p><font color="#FF0000"
+        size="3" face="Arial"><strong>IMPORTANT:</strong></font><font
+        size="3" face="Arial"> If you use the drag-detection,
+        it's high recommended to check the section &quot;</font><a
+        href="#DragDetectionProblem"><font size="3" face="Arial">Problems
+        With The Drag-Detection</font></a><font size="3"
+        face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="TargetEffects"><font
+        color="#FFFFFF" size="5" face="Arial"><b>TargetEffects</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Choose
+        the effects that the<b> </b></font><a
+        href="#DragDropControl"><font size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> should support. If you don't want
+        that the </font><a href="#DragDropControl"><font size="3"
+        face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> serve as drag&amp;drop target, all
+        items must be false. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="TargetPopUpMenu"><font
+        color="#FFFFFF" size="5" face="Arial"><b>TargetPopUpMenu</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Here
+        you determine, if should the popup-menu get visible when
+        a drag&amp;drop operations occurs with pressing the right
+        mouse button or not. (Important, if the <em><strong>DragDropControl</strong></em>
+        is configured as drag&amp;drop target!!!) </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF" height="50">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Events</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" cellpadding="3" cellspacing="0" width="600">
+    <tr>
+        <td width="10">&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnBeforeScrolling"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnBeforeScrolling</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">This
+        event is called before a scroll-event is sent to the<b> </b><b><i>DragDropControl</i></b>.
+        The scroll-detection must be enabled for this event. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnAfterScrolling"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnAfterScrolling</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">This
+        event is called after a scroll-event is sent to the<b> </b><b><i>DragDropControl</i></b>.
+        The scroll-detection must be enabled for this event. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnDragDetect"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnDragDetect</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is
+        called on starting (parameter <b><i>DragStatus</i></b>=<b><i>ddsLeft</i></b>
+        or <b><i>ddsRight</i></b>, depends which mousebutton is
+        pressed), on starting the drag (<b><i>DragStatus</i></b>=<b><i>ddsDrag</i></b>),
+        on finishing the detection (<b><i>DragStatus</i></b>=<b><i>ddsNone</i></b>)
+        and cancelling the detection (<b><i>DragStatus</i></b>=<b><i>ddsCancelled</i></b>).
+        If <b><i>DragStatus</i></b>=<b><i>ddsDrag</i></b>, the
+        drag&amp;drop operation won't be started automatically.
+        If you want to start drag&amp;drop, you must call </font><a
+        href="#Execute"><font size="3" face="Arial"><b><i>Execute</i></b></font></a><font
+        size="3" face="Arial"> on yourself. The parameters <b><i>DetectStartX</i></b>
+        and <b><i>DetectStartY</i></b> specify the cursor
+        position, where the detection has started. The parameters
+        <b><i>x</i></b> and <b><i>y</i></b> specify the current
+        position of the cursor.</font><p><font color="#FF0000"
+        size="3" face="Arial"><strong>IMPORTANT:</strong></font><font
+        size="3" face="Arial"> If you use the drag-detection,
+        it's high recommended to check the section &quot;</font><a
+        href="#DragDetectionProblem"><font size="3" face="Arial">Problems
+        With The Drag-Detection</font></a><font size="3"
+        face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnDragEnter"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnDragEnter</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is
+        called, when the<b> </b></font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is a target of drag&amp;drop
+        operations. The mouse cursor moves ON (one call only) the
+        </font><a href="#DragDropControl"><font size="3"
+        face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial">. Here, you influence if a drop can
+        be accepted and the drop's effect if accepted. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnDragLeave"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnDragLeave</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is
+        called, when the<b> </b></font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is a target of drag&amp;drop
+        operations. The mouse cursor leaves the </font><a
+        href="#DragDropControl"><font size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> (one call only) or the
+        drag&amp;drop operation is cancelled. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnDragOver"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnDragOver</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is
+        called, when the<b> </b></font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is a target of drag&amp;drop
+        operations. The mouse cursor moves OVER (called on every
+        mouse move) the </font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial">. Even here, you can influence if a
+        drop can be accepted and the drop's effect if accepted.
+        Because this function is very often called, YOUR method
+        should be programmed very efficient. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnDrop"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnDrop</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is </font><font
+        face="Arial">triggered</font><font size="3" face="Arial">,
+        when the<b> </b></font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is the target of drag&amp;drop
+        operations. It instructs the </font><a
+        href="#DragDropControl"><font size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> to handle the data which are
+        dropped on it. Save here only the dropped data (, if this
+        isn't done by the child-class), because the source of the
+        drag&amp;drop operation isn't accessable any longer as
+        soon as this event-method was left. For processing the
+        data in a child-class, it's high recommend to use </font><a
+        href="#OnProcessDropped"><font size="3" face="Arial"><b><i>OnProcessDropped</i></b></font></a><font
+        size="3" face="Arial">.</font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnDropHandlerSucceeded"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnDropHandlerSucceeded</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Is triggered, if
+        the </font><a href="#DropHandler"><font face="Arial"><em><strong>DropHandler</strong></em></font></a><font
+        face="Arial"> was successfully called and executed.</font><p><font
+        face="Arial">Also check the section: </font><font
+        size="3" face="Arial">&quot;</font><a
+        href="#Details about the DropHandler"><font size="3"
+        face="Arial">Details about the DropHandler</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnGiveFeedback"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnGiveFeedback</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is
+        called, when the<b> </b></font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is the source of drag&amp;drop
+        operations. It enables the source application to give
+        visual feedback to its end user during a drag&amp;drop
+        operation by providing the OLE <b><i>DoDragDrop</i></b>
+        function with an enumeration value specifying the visual
+        effect. Mostly you don't need this event. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnMenuDestroy"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnMenuDestroy</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Is triggered,
+        when the context-menu and its items are going to be
+        destroyed. This event important for you, if you have add
+        custom items to the menu.</font><p><font face="Arial">Also
+        check the section: </font><font size="3" face="Arial">&quot;</font><a
+        href="#Details about the context-menu"><font size="3"
+        face="Arial">Details about the context-menu</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnMenuExecCmd"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnMenuExecCmd</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Is triggered,
+        when a custom item was selected in the context-menu by
+        the user. Now, you should execute the routines etc, which
+        are linked with the selected menuitem.</font><p><font
+        face="Arial">Also check the section: </font><font
+        size="3" face="Arial">&quot;</font><a
+        href="#Details about the context-menu"><font size="3"
+        face="Arial">Details about the context-menu</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnMenuPopup"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnMenuPopup</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Is triggered,
+        when the context-menu is going to popup.</font><p><font
+        face="Arial">Also check the section: </font><font
+        size="3" face="Arial">&quot;</font><a
+        href="#Details about the context-menu"><font size="3"
+        face="Arial">Details about the context-menu</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnMenuSucceeded"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnMenuSucceeded</b></font></a><font
+        size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Is triggered,
+        when the routines etc, which are linked with the selected
+        menuitem, were successfully executed.</font><p><font
+        face="Arial">Also check the section: </font><font
+        size="3" face="Arial">&quot;</font><a
+        href="#Details about the context-menu"><font size="3"
+        face="Arial">Details about the context-menu</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnProcessDropped"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnProcessDropped</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is
+        called after<b> </b></font><a href="#OnDrop"><font
+        size="3" face="Arial"><b><i>OnDrop</i></b></font></a><font
+        size="3" face="Arial"> by a self sended message with
+        &quot;PostMessage&quot;. This has the effect, that the
+        user can access to the source of the drag&amp;drop
+        operation during you process the dropped data. Of course,
+        you must save the dropped data in </font><a
+        href="#OnDrop"><font size="3" face="Arial"><b><i>OnDrop</i></b></font></a><font
+        size="3" face="Arial">. In my child-classes you haven't
+        care about this. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnQueryContinueDrag"><font
+        color="#FFFFFF" size="5" face="Arial"><b>OnQueryContinueDrag</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Is
+        called, when the<b> </b></font><a href="#DragDropControl"><font
+        size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> is a source of drag&amp;drop
+        operations. You can determine whether the drag&amp;drop
+        operation should be continued, cancelled, or completed.
+        You do not call this method directly. The OLE <b><i>DoDragDrop</i></b>
+        function calls this method during a drag-and-drop
+        operation. Mostly, you don't need this event. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF" height="50">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Methods</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" cellpadding="3" cellspacing="0" width="600">
+    <tr>
+        <td width="10">&nbsp;</td>
+        <td bgcolor="#008080"><a name="CopyToClipboard"><font
+        color="#FFFFFF" size="5" face="Arial"><b>CopyToClipboard</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Call
+        this method, if you want to copy your data to the
+        clipboard.</font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="DoMenuDestroy"><font
+        color="#FFFFFF" size="5" face="Arial"><b>DoMenuDestroy</b></font></a><font
+        size="3" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Never call the
+        method directly - it is called by this component itself.
+        This method has the same purpose as the event </font><a
+        href="#OnMenuDestroy"><font face="Arial"><em><strong>OnMenuDestroy</strong></em></font></a><font
+        face="Arial">. You can use this method for inherited
+        classes.</font><p><font face="Arial">Also check the
+        section: </font><font size="3" face="Arial">&quot;</font><a
+        href="#Details about the context-menu"><font size="3"
+        face="Arial">Details about the context-menu</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="DoMenuExecCmd"><font
+        color="#FFFFFF" size="5" face="Arial"><b>DoMenuExecCmd</b></font></a><font
+        size="3" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Never call the
+        method directly - it is called by this component itself.
+        This method has the same purpose as the event </font><a
+        href="#OnMenuExecCmd"><font face="Arial"><em><strong>OnMenuExecCmd</strong></em></font></a><font
+        face="Arial">. You can use this method for inherited
+        classes.</font><p><font face="Arial">Also check the
+        section: </font><font size="3" face="Arial">&quot;</font><a
+        href="#Details about the context-menu"><font size="3"
+        face="Arial">Details about the context-menu</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="DoMenuPopup"><font
+        color="#FFFFFF" size="5" face="Arial"><b>DoMenuPopup</b></font></a><font
+        size="3" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Never call the
+        method directly - it is called by this component itself.
+        This method has the same purpose as the event </font><a
+        href="#OnMenuPopup"><font face="Arial"><em><strong>OnMenuPopup</strong></em></font></a><font
+        face="Arial">. You can use this method for inherited
+        classes.</font><p><font face="Arial">Also check the
+        section: </font><font size="3" face="Arial">&quot;</font><a
+        href="#Details about the context-menu"><font size="3"
+        face="Arial">Details about the context-menu</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="DropHandler"><font
+        color="#FFFFFF" size="5" face="Arial"><b>DropHandler</b></font></a><font
+        size="3" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="3" face="Arial"><b><i>protected </i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">Never call the
+        method directly - it is called by this component itself.
+        Inherit this method for implementing custom
+        drop-handlers.</font><p><font face="Arial">Also check the
+        section: </font><font size="3" face="Arial">&quot;</font><a
+        href="#Details about the DropHandler"><font size="3"
+        face="Arial">Details about the DropHandler</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="Execute"><font
+        color="#FFFFFF" size="5" face="Arial"><b>Execute</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Call
+        this method, if you detect that the user wants to start a
+        drag&amp;drop operation (e.g. MouseDown). Before calling,
+        you have to create a valid IDataObject (for more
+        informations, look over the source of the components
+        &quot;TDragDropFiles&quot; or
+        &quot;TDragDropFiles&quot;).</font> <p><font
+        color="#FF0000" size="3" face="Arial"><strong>IMPORTANT:</strong></font><font
+        size="3" face="Arial"> If you use the drag-detection,
+        it's high recommended to check the section &quot;</font><a
+        href="#DragDetectionProblem"><font size="3" face="Arial">Problems
+        With The Drag-Detection</font></a><font size="3"
+        face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="ExecuteOperation"><font
+        color="#FFFFFF" size="5" face="Arial"><b>ExecuteOperation</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">This
+        method is called by<b> </b><b><i>Execute</i></b>.
+        Normally, you don't call this method directly.</font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="ExecuteOperation"><font
+        color="#FFFFFF" size="5" face="Arial"><b>GetFromClipboard</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Call
+        this method, if you want to get data from the clipboard.
+        This will only succeed, if the data formats are
+        supported.</font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="StartDnDDetection"><font
+        color="#FFFFFF" size="5" face="Arial"><b>StartDnDDetection</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Call
+        this method, if you want to start the drag detection
+        manually. Normally, you call this method in the
+        OnMouseDown event.</font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF" height="50">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Constants</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" cellpadding="3" cellspacing="0" width="600">
+    <tr>
+        <td width="14">&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>DropEffect_None, DropEffect_Copy,
+        DropEffect_Move, DropEffect_Link, DropEffect_Scroll</b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">These
+        constants describe the kind of drop effect the user want
+        to have. These values are used by the parameter<b> </b><b><i>dwEffect</i></b>
+        of methods. <b><i>DropEffect_Scroll</i></b> indicates a
+        scrolling context of the drop target. </font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF" height="50">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" colspan="2" width="590"><font size="5"
+        face="Arial">How Do I Use It As Drag&amp;Drop Source</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">1.</font></td>
+        <td><font face="Arial">Drop a TWinControl on the form
+        (e.g. a listbox). </font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">2.</font></td>
+        <td><font face="Arial">Choose the TWinControl (listbox)
+        in </font><a href="#DragDropControl"><font face="Arial"><em><strong>DragDropControl</strong></em></font></a><font
+        face="Arial">.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">3. </font></td>
+        <td><font face="Arial">Choose the drag&amp;drop effects
+        under </font><a href="#SourceEffects"><font face="Arial"><em><strong>SourceEffects</strong></em></font></a><font
+        face="Arial"> that the <em><strong>DragDropControl </strong></em>(listbox)
+        should support. If you don't want any longer that the <em><strong>DragDropControl</strong></em>
+        serve as drag&amp;drop source all items must be set to
+        false.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">4.</font></td>
+        <td><font face="Arial">Now, your <em><strong>DragDropControl</strong></em>
+        (listbox) must detect, if the user wants to start a
+        drag&amp;drop operation. You can use the event
+        &quot;OnMouseDown&quot; of your <em><strong>DragDropControl</strong></em>
+        (listbox). </font><font size="3" face="Arial">You must
+        create a DataObject. If you have no idea, how to do that,
+        look over the source of the component <em><strong>TDragDropFiles</strong></em>
+        or <em><strong>TDragDropText</strong></em>.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">5.</font></td>
+        <td valign="top"><font face="Arial">Tell Windows that
+        there is a drag&amp;drop operation to handle: J</font><font
+        size="3" face="Arial">ust call the method </font><a
+        href="#ExecuteOperation"><font size="3" face="Arial"><b><i>ExecuteOperation</i></b></font></a><font
+        size="3" face="Arial"> of this component (for
+        child-classes: call </font><a href="#Execute"><font
+        size="3" face="Arial"><b><i>Execute</i></b></font></a><font
+        size="3" face="Arial">). Now, windows handles the
+        drag&amp;drop operation.</font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top"><font face="Arial">6.</font></td>
+        <td valign="top"><font size="3" face="Arial">You may use
+        the events </font><a href="#OnGiveFeedback"><font
+        size="3" face="Arial"><b><i>OnGiveFeedback</i></b></font></a><font
+        size="3" face="Arial"> and </font><a
+        href="#OnQueryContinueDrag"><font size="3" face="Arial"><b><i>OnQueryContinueDrag</i></b></font></a><font
+        size="3" face="Arial">, but often you need not.</font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top">&nbsp;</td>
+        <td valign="top">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top" colspan="2"><font face="Arial"><strong>Hints:</strong></font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top" colspan="2"><ul>
+            <li><font size="3" face="Arial">Drag&amp;drop
+                operations cannot be done at design-time!</font></li>
+            <li><font size="3" face="Arial">If you use the
+                drag-detection, it's high recommended to check
+                the section &quot;</font><a
+                href="#DragDetectionProblem"><font size="3"
+                face="Arial">Problems With The Drag-Detection</font></a><font
+                size="3" face="Arial">&quot;.</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" colspan="2" width="590"><font size="5"
+        face="Arial">How Do I Use It As Drag&amp;Drop Target</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">1.</font></td>
+        <td><font face="Arial">Drop a TWinControl on the form
+        (e.g. a listbox). </font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">2.</font></td>
+        <td><font face="Arial">Choose the TWinControl (listbox)
+        in </font><a href="#DragDropControl"><font face="Arial"><em><strong>DragDropControl</strong></em></font></a><font
+        face="Arial">.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">3. </font></td>
+        <td><font face="Arial">Choose the drag&amp;drop effects
+        under </font><a href="#TargetEffects"><font face="Arial"><em><strong>TargetEffects</strong></em></font></a><font
+        face="Arial"> that the <em><strong>DragDropControl </strong></em>(listbox)
+        should support. If you don't want any longer that the <em><strong>DragDropControl</strong></em>
+        serve as drag&amp;drop target all items must be set to
+        false.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">4.</font></td>
+        <td><font size="3" face="Arial">Now, you have to program
+        what happen, when the user drops a bitmap on your </font><a
+        href="#DragDropControl"><font size="3" face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> (listbox). For this, the best is
+        to use the event </font><a href="#OnDrop"><font size="3"
+        face="Arial"><b><i>OnDrop</i></b></font></a><font
+        size="3" face="Arial"> (or </font><a
+        href="#OnProcessDropped"><font size="3" face="Arial"><b><i>OnProcessDropped</i></b></font></a><font
+        size="3" face="Arial"> in the child-class; but only
+        there!). At first, you should check what drag&amp;drop
+        effect was chosen by the user. You get the effect from
+        method's parameter <b><i>dwEffect</i></b>. </font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">5.</font></td>
+        <td valign="top"><font size="3" face="Arial">You may use
+        the events </font><a href="#OnDragEnter"><font size="3"
+        face="Arial"><b><i>OnDragEnter</i></b></font></a><font
+        size="3" face="Arial">, </font><a href="#OnDragOver"><font
+        size="3" face="Arial"><b><i>OnDragOver</i></b></font></a><font
+        size="3" face="Arial"> and </font><a href="#OnDragLeave"><font
+        size="3" face="Arial"><b><i>OnDragLeave</i></b></font></a><font
+        size="3" face="Arial">, but often you need not.</font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top">&nbsp;</td>
+        <td valign="top">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top" colspan="2"><font face="Arial"><strong>Hints:</strong></font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top" colspan="2"><ul>
+            <li><font size="3" face="Arial">Drag&amp;drop
+                operations cannot be done at design-time!</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Some
+        Important Hints</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font size="3" face="Arial">Normally, you don't
+                use this component for drag&amp;drop. It's better
+                and mostly simpler to implement a child-class
+                like <em><strong>TDragDropFiles</strong></em> or <em><strong>TDragDropText</strong></em>.
+                You can design your own
+                drag&amp;drop/clipboard-formats, but for such
+                special formats and other formats, I don't
+                support, you must write an own child-class. But I
+                think, it shouldn't be so difficult with these
+                parent-classes, I offer you here.<br>
+                </font></li>
+            <li><font size="3" face="Arial">Don't start threads
+                in </font><a href="#OnDrop"><font size="3"
+                face="Arial"><b><i>OnDrop</i></b></font></a><font
+                size="3" face="Arial">, because this may causes
+                access violations. Mostly, you don't need a
+                thread - you can use </font><a
+                href="#OnProcessDropped"><font size="3"
+                face="Arial"><b><i>OnProcessDropped</i></b></font></a><font
+                size="3" face="Arial">.<br>
+                </font></li>
+            <li><font size="3" face="Arial">Don't try to start
+                OLE drag&amp;drop and Delphi internal's
+                drag&amp;drop at same time - it doesn't work. If
+                you want to drop additional data, you've to build
+                a own clipboard-format (RegisterClipboardFormat)
+                and new child-class. Sorry, I don't know an
+                easier way. <br>
+                </font></li>
+            <li><font size="3" face="Arial">If you do drag data
+                with the right mouse-button, you may get at some
+                TWinControls a context popup-menu (e.g. TMemo).
+                To avoid popping up the menu, define a own empty
+                menu and set its property &quot;AutoPopup&quot;
+                to false. Use the event </font><a
+                href="#OnDragDetect"><font size="3" face="Arial"><b><i>OnDragDetect</i></b></font></a><font
+                size="3" face="Arial"> to determine, when set the
+                TWinControl's property to the empty popup-menu or
+                nil. Here an exsample for TMemo:</font> </li>
+        </ul>
+        <blockquote>
+            <p><font size="3" face="Arial"><code><strong>procedure
+            </strong></code><code>TForm1.DragDropFilesEx1DragDetect(grfKeyState:
+            Longint; x,y: Integer; DragStatus:
+            TDragDetectStatus);</code><code><strong><br>
+            begin</strong></code></font></p>
+            <blockquote>
+                <p><font size="3" face="Arial"><code><strong>if (</strong></code><code>DragStatus=ddsCancelled)
+                </code><code><strong>or</strong></code><code>
+                (DragStatus=ddsDrag) </code><code><strong>then </strong></code><code>Memo1.PopupMenu:=PopupMenu1;</code><code><strong><br>
+                if </strong></code><code>DragStatus</code><code><strong>=</strong></code><code>ddsNone</code><code><strong>
+                then </strong></code><code>Memo1.PopupMenu:=</code><code><strong>nil</strong></code><code>;</code><code><strong><br>
+                if </strong></code><code>DragStatus=ddsDrag</code><code><strong>
+                then<br>
+                begin </strong></code></font></p>
+            </blockquote>
+        </blockquote>
+        <blockquote>
+            <blockquote>
+                <blockquote>
+                    <p><font color="#000080" size="3"
+                    face="Arial"><code><em><strong>// Prepare for
+                    dragging<br>
+                    // ...<br>
+                    // An example for the child-class <br>
+                    // DragDropText:</strong></em></code></font><font
+                    size="3" face="Arial"><code><strong><br>
+                    if </strong></code><code>Memo1.Lines.Count=0</code><code><strong>
+                    then exit</strong></code><code>;</code><code><strong><br>
+                    </strong></code><code>DragDropText1.Lines.Assign(Memo1.Lines);<br>
+                    DragDropText1.Execute; </code></font></p>
+                </blockquote>
+            </blockquote>
+        </blockquote>
+        <blockquote>
+            <blockquote>
+                <p><font size="3" face="Arial"><code><strong>end</strong></code><code>;</code><code><strong>
+                </strong></code></font></p>
+            </blockquote>
+        </blockquote>
+        <blockquote>
+            <p><font size="3" face="Arial"><code><strong>end</strong></code><code>;</code><code><strong>
+            </strong></code></font></p>
+        </blockquote>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" colspan="2" width="590"><font size="5"
+        face="Arial">How To Build An Own Child-Class</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td colspan="2"><font size="3" face="Arial">Before you
+        build your own child-class, it's very useful to
+        understand the mechanism of drag&amp;drop. Graham Wideman
+        has written some very good documents with diagrams! It's
+        high recommended to visit his site: </font><a
+        href="http://www.wideman-one.com/"><font size="3"
+        face="Arial">http://www.wideman-one.com</font></a><font
+        size="3" face="Arial">.</font><p><font size="3"
+        face="Arial">Use my &quot;Drag&amp;Drop-Analyser&quot;
+        for testing &amp; analysing the dropped data. You can use
+        it as target of drag&amp;drop operations. It gives
+        informations about the dropped data.</font></p>
+        <p><font size="3" face="Arial">You have not to do much,
+        if you build a child-class like <em><strong>TDragDropFiles</strong></em>
+        or <em><strong>TDragDropText</strong></em>. You must only
+        build a child-class from <b><i>TEnumFormatEtc</i></b>, <b><i>TDataObject</i></b>
+        and <b><i>TDragDrop</i></b>. and override the following
+        methods, the rest of the work, I've already done:</font> </p>
+        <blockquote>
+            <p><font size="3" face="Arial"><b><i>TDataObject:<br>
+            </i></b><code><b>function</b></code><code>
+            RenderData(var FormatEtc:TFormatEtc; var StgMedium:
+            TStgMedium):HResult; </code></font></p>
+            <p><font size="3" face="Arial"><b><i>TDropTarget:</i></b><code><b><br>
+            procedure</b></code><code> AccepTDataObject(DataObj:
+            IDataObject; grfKeyState: Longint; pt: TPoint; var
+            dwEffect: longint; var Accept:boolean);</code><code><b><br>
+            procedure</b></code><code> RenderDropped(DataObj:
+            IDataObject; grfKeyState: Longint; pt: TPoint; var
+            dwEffect: longint); </code></font></p>
+            <p><font size="3" face="Arial"><b><i>TDragDrop:</i></b><code><b><br>
+            function</b></code><code>
+            CreateDataObject:TDataObject;</code></font></p>
+        </blockquote>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2"><a name="Details about the context-menu"><font
+        size="5" face="Arial">Details about the <strong>context-menu</strong></font></a></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font size="3" face="Arial">With the context-menu are
+        following properties, events and methods involved: </font><a
+        href="#TargetPopUpMenu"><font size="3" face="Arial"><em><strong>TargetPopUpMenu</strong></em></font></a><font
+        size="3" face="Arial">, </font><a href="#OnMenuDestroy"><font
+        size="3" face="Arial"><em><strong>OnMenuDestroy</strong></em></font></a><font
+        size="3" face="Arial">, </font><a href="#OnMenuExecCmd"><font
+        size="3" face="Arial"><em><strong>OnMenuExecCmd</strong></em></font></a><font
+        size="3" face="Arial">, </font><a href="#OnMenuPopup"><font
+        size="3" face="Arial"><em><strong>OnMenuPopup</strong></em></font></a><font
+        size="3" face="Arial">, </font><a href="#OnMenuSucceeded"><font
+        size="3" face="Arial"><em><strong>OnMenuSucceeded</strong></em></font></a><font
+        size="3" face="Arial">, </font><a href="#DoMenuDestroy"><font
+        size="3" face="Arial"><em><strong>DoMenuDestroy</strong></em></font></a><font
+        size="3" face="Arial">, </font><a href="#DoMenuExecCmd"><font
+        size="3" face="Arial"><em><strong>DoMenuExecCmd</strong></em></font></a><font
+        size="3" face="Arial"> and </font><a href="#DoMenuPopup"><font
+        size="3" face="Arial"><em><strong>DoMenuPopup</strong></em></font></a><font
+        size="3" face="Arial">. The context-menu does only
+        appear, if </font><a href="#TargetPopUpMenu"><font
+        size="3" face="Arial"><em><strong>TargetPopUpMenu</strong></em></font></a><font
+        size="3" face="Arial"> is set to true and the data is
+        dragged with the right mousebutton. Override the methods
+        (<em><strong>DoXXXXXXX</strong></em> ), if you write a
+        custom component based on <em><strong>TDragDrop</strong></em>
+        otherwise use the events (<em><strong>OnXXXXXXX</strong></em>).</font><p><font
+        size="3" face="Arial">The order of the called
+        methods/events after a drop is as following: First, <em><strong>xxMenuPopup</strong></em>
+        (the &quot;<em><strong>xx</strong></em>&quot; stand for
+        &quot;<em><strong>Do</strong></em>&quot; and &quot;<em><strong>On</strong></em>&quot;)
+        is called. You implement in <em><strong>xxMenuPopup</strong></em>
+        your custom menuitems. Here is an example:</font></p>
+        <blockquote>
+            <p><font face="Arial"><code><strong>var</strong></code><code>
+            MinCustCmd:integer;</code></font></p>
+            <p><font face="Arial"><code><strong>procedure</strong></code><code>
+            TForm1.DragDropFilesEx1MenuPopup(Sender: TObject;
+            AMenu: HMENU; DataObj: IDataObject; AMinCustCmd,
+            grfKeyState: Integer; pt: TPoint);<br>
+            </code><code><strong>var</strong></code><code>
+            lpmii:TMenuItemInfo;<br>
+            </code><code><strong>begin</strong></code></font></p>
+            <blockquote>
+                <p><font face="Arial"><code>MinCustCmd:=AMinCustCmd;
+                </code></font><font color="#000080" face="Arial"><code><em><strong>//
+                we need this value later, so the variable must be
+                global</strong></em></code></font><font
+                face="Arial"><code><br>
+                fillchar(lpmii,sizeof(lpmii),0);<br>
+                lpmii.cbSize:=sizeof(lpmii);<br>
+                lpmii.fMask:=MIIM_TYPE </code><code><strong>or</strong></code><code>
+                MIIM_ID;<br>
+                lpmii.wID:=AMinCustCmd;<br>
+                lpmii.fType:=MFT_STRING;<br>
+                lpmii.dwTypeData:=</code></font><font
+                color="#0000FF" face="Arial"><code>'</code></font><font
+                color="#0000A0" face="Arial"><code>&amp;test
+                item'</code></font><font face="Arial"><code>;<br>
+                lpmii.cch:=length(</code></font><font
+                color="#0000A0" face="Arial"><code>'&amp;test
+                item'</code></font><font face="Arial"><code>);<br>
+                MinCustCmd:=AMinCustCmd;<br>
+                InsertMenuItem(AMenu,0,true,lpmii);</code></font></p>
+            </blockquote>
+            <p><font face="Arial"><code><strong>end</strong></code><code>;</code></font></p>
+        </blockquote>
+        <p><font size="3" face="Arial">If you override the method
+        <em><strong>DoMenuPopup</strong></em>, you also must
+        call:</font></p>
+        <blockquote>
+            <p><font size="3" face="Arial"><code><strong>inherited</strong></code><code>
+            DoMenuPopup(Sender, AMenu, DataObj, AMinCustCmd,
+            grfKeyState, pt);</code></font></p>
+        </blockquote>
+        <p><font size="3" face="Arial">You find more information
+        on adding items to a popup-menu in the Win32-help. Look
+        for &quot;InsertMenuItem&quot;. If you add more items,
+        you must increase AMinCustCmd for every new item, to
+        identify the items later! Of course, you must remember
+        the ID to all items or you don't know, which item was
+        selected!</font></p>
+        <p><font size="3" face="Arial"><em><strong>xxMenuExecCmd</strong></em>
+        is only called, if it was detected, that one of your
+        custom menuitems was selected. Now, you have to executed
+        the routines etc, which are linked with the selected
+        menuitem. Here the continue of the example:</font></p>
+        <blockquote>
+            <p><font size="3" face="Arial"><code><strong>procedure</strong></code><code>
+            TForm1.DragDropFilesEx1MenuExecCmd(Sender: TObject;
+            AMenu: HMENU;DataObj: IDataObject; Command: Integer;
+            var dwEffect: Integer; </code><code><strong>var</strong></code><code>
+            Succeeded: Boolean);<br>
+            </code><code><strong>begin</strong></code></font></p>
+            <blockquote>
+                <p><font size="3" face="Arial"><code>Succeeded:=Command=MinCustCmd;<br>
+                </code><code><strong>if</strong></code><code>
+                Succeeded </code><code><strong>then</strong></code><code>
+                ShowMessage(</code></font><font color="#0000A0"
+                size="3" face="Arial"><code>'The test item was
+                selected!'</code></font><font size="3"
+                face="Arial"><code>);</code></font></p>
+            </blockquote>
+            <p><font size="3" face="Arial"><code><strong>end</strong></code><code>;</code></font></p>
+        </blockquote>
+        <p><font size="3" face="Arial">Don't forget to set the
+        parameter <strong>Succeeded</strong>. Set only the value
+        to true </font><font color="#FF0000" size="3"
+        face="Arial"><strong>after</strong></font><font size="3"
+        face="Arial"> the routine was successfully executed. If
+        you override the method <em><strong>DoMenuExecCmd</strong></em>,
+        you also must call the inherited method!</font></p>
+        <p><font size="3" face="Arial"><em><strong>xxMenuSucceeded</strong></em>
+        is only called, if the routines in <em><strong>xxMenuExecCmd</strong></em>
+        were successfully executed. This notification is helpful,
+        if you must update the display after successful update.
+        If you override the method <em><strong>DoMenuSucceeded</strong></em>,
+        you also must call the inherited method!</font></p>
+        <p><font size="3" face="Arial"><em><strong>xxMenuDestroy</strong></em>
+        is called after all. Now, it's time to de-intialize
+        everything what you've initialized in <em><strong>xxMenuPopup</strong></em>.
+        Here the continue of the example:</font></p>
+        <blockquote>
+            <p><font size="3" face="Arial"><code><strong>procedure</strong></code><code>
+            TForm1.DragDropFilesEx1MenuDestroy(Sender: TObject;
+            AMenu: HMENU);<br>
+            </code><code><strong>begin</strong></code></font></p>
+            <blockquote>
+                <p><font size="3" face="Arial"><code><strong>if</strong></code><code>
+                DeleteMenu(AMenu,MinCustCmd,MF_BYCOMMAND) </code><code><strong>then</strong></code><code>
+                messagebeep(0);</code></font></p>
+            </blockquote>
+            <p><font size="3" face="Arial"><code><strong>end</strong></code><code>;</code></font></p>
+        </blockquote>
+        <p><font size="3" face="Arial">If you override the method
+        <em><strong>DoMenuDestroy</strong></em>, you also must
+        call the inherited method!</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><a
+        name="Details about the DropHandler"><font size="5"
+        face="Arial">Details about the <strong>DropHandler</strong></font></a></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font size="3" face="Arial">The method <em><strong>DropHandler</strong></em>
+        was implemented to allow alternative handling of the
+        dropped data. This is especially important for
+        implementing shell extentions. Was a drophandler
+        successfully called, the event <em><strong>OnDropHandlerSucceeded</strong></em>
+        is triggered. You can only use the the <em><strong>DropHandler
+        </strong></em>only, if you inherit the class <em><strong>TDragDrop</strong></em>.
+        Mostly, the coding in the method <em><strong>DropHandler</strong></em>
+        is nearly similar with that in the method <em><strong>RenderDropped</strong></em>.
+        First, you will render the dropped data, then you will
+        handle the data. You don't do more in this method, and
+        you cannot do more!</font></td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">FAQ</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font size="3" face="Arial"><b>Q:</b> I want a single
+        component to be the target of more than one type of drag,
+        what can I do? One always overrides the other. If I use
+        the TDragDrop, where is the information about what was
+        dropped?</font> <p><font size="3" face="Arial"><b>A:</b>
+        You've to write your own child-class from TDragDrop. But
+        you can copy the most of my child-classes together, for
+        faster developing your class.</font></p>
+        <p><font size="3" face="Arial">You can't access the
+        dropped data directly. For this you have the class
+        TDataObject (look at params of methods ...). You have
+        format description for every data(-set) in your data
+        object . You can enumerate the available formats with
+        EnumFormatEtc. With &quot;QueryGetData&quot; you can
+        check, if a special format is available. The data itself
+        you can get with &quot;GetData&quot;. Because of my
+        components design you should better use my new introduced
+        method &quot;RenderData&quot;.</font></p>
+        <p><font size="3" face="Arial">I hope, it helps a little
+        bit. Don't be disappointed, if you don't understand
+        drag&amp;drop immediately. I've even needed some months
+        to understand the mechanisms completely. </font></p>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" width="590"><a
+        name="DragDetectionProblem"><font size="5" face="Arial">Problems
+        With The Drag-Detection</font></a></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial">I got reports, that some controls
+        e.g. listboxes or grids make trouble in some situations
+        with the drag-detection. This behaviour results of a to
+        old or just incompatible implementation of events in the
+        controls. In such a case you must write a workaround.
+        Mostly, following helps:</font><blockquote>
+            <p><font color="#000080" face="Arial"><code><em><strong>//
+            The type of &quot;P&quot; is TPoint</strong></em></code></font><font
+            face="Arial"><code><br>
+            GetCursorPos(P);<br>
+            P := ScreenToClient(P);<br>
+            SendMessage(&lt;control&gt;.Handle,WM_LBUTTONUP,0<br>
+            &nbsp;&nbsp;&nbsp;,Longint(PointToSmallPoint(P)));</code></font></p>
+        </blockquote>
+        <p><font face="Arial">In some cases e.g. with grids this
+        doesn't work. In these cases you must do a little bit
+        more, as I show you the demo &quot;</font><font size="3"
+        face="Arial">GridFixDemo.zip</font><font face="Arial">&quot;.
+        Mostly, the workaround isn't really difficult to write.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Known
+        Bugs</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><a name="WinNTBug1"><font size="3" face="Arial">Only
+                with WinNT4: I got the report, that it is
+                impossible to discover which drop effect has
+                effected (important when using <b><i>Execute</i></b>)</font></a>
+            </li>
+            <li><font size="3" face="Arial">If you you have
+                problems with the drag-detection, check the
+                section &quot;</font><a
+                href="#DragDetectionProblem"><font size="3"
+                face="Arial">Problems With The Drag-Detection</font></a><font
+                size="3" face="Arial">&quot;</font>.</li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font size="3" face="Arial"><i>© 1998,99 by </i></font><a
+href="mailto:dsteinwe@uos.de"><font size="3" face="Arial"><i>Dieter
+Steinwedel</i></font></a><font size="3" face="Arial"> </font></p>
+
+<p><a href="Index.htm"><font face="Arial">Back</font></a><font
+face="Arial"> to index</font></p>
+</body>
+</html>

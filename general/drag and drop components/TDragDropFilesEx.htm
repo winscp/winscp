@@ -1,0 +1,910 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="AUTHOR" content="Dieter Steinwedel">
+<meta name="DESCRIPTION"
+content="Drag&amp;Drop component for Delphi; description for TDragDropFilesEx">
+<meta name="KEYWORDS"
+content="delphi, drag, drop, component, file, files, pidl, namespace, com, ole, freeware, windows">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title>Details about TDragDropFilesEx</title>
+</head>
+
+<body bgcolor="#FFFFEF">
+
+<table border="0" cellspacing="0" width="600" bgcolor="#008080">
+    <tr>
+        <td width="10">&nbsp;</td>
+        <td width="580">&nbsp;</td>
+        <td width="10" bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><p align="center"><font color="#FFFFFF" size="7"
+        face="Arial">TDragDropEx</font></p>
+        </td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<p align="left">&nbsp;</p>
+
+<p align="left">&nbsp;</p>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Description</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b><i>TDragDropFilesEx</i></b> is
+        a comfortable and powerful component for COM/OLE
+        drag&amp;drop operations with files and supports
+        completely the namespace of Windows (PIDL). The component
+        is a child-class from </font><a href="TDragDrop.htm"><font
+        face="Arial"><b><i>TDragDrop</i></b></font></a><font
+        face="Arial">.</font></td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Important
+        for Use</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial">This </font><a href="Index.htm"><font
+        face="Arial">file</font></a><font face="Arial">
+        (index.htm) contains more information about restrictions,
+        the disclaimer, remarks etc.</font></td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">History</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.30</b> </font><font
+        color="#808080" face="Arial">published on 17-Dec-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Implementation of shell
+                extensions (drop- and drag&amp;drop-handler)</font></li>
+            <li><font face="Arial">Changes in the <em><strong>FileList</strong></em>;
+                but no code breaking</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.22</b> </font><font
+        color="#808080" face="Arial">published on 13-Nov-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Small bug in RenderDropped
+                fixed; instead of <em><strong>GlobalFree</strong></em>
+                I use <em><strong>ReleaseStgMedium</strong></em>
+                for releasing resources</font></li>
+            <li><font face="Arial">The <em><strong>TFileList</strong></em>
+                has changed, because the items' type was
+                adjusted; now, you don't need any longer to do
+                type-casting on accessing the items in the list;
+                this modification should make the use of the list
+                a little bit easier; in order of this change,<em><strong>
+                TSortedList</strong></em> won't be any longer
+                used</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.21</b> </font><font
+        color="#808080" face="Arial">published on 09-Jul-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Small bug with property <b><i>FileNamesAreMapped</i></b>
+                fixed </font></li>
+            <li><font face="Arial">Bug with mapped filenames
+                under WinNT fixed </font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.20</b> </font><font
+        color="#808080" face="Arial">published on 06-Jul-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Code re-design in result of
+                modifications in <b><i>TDragDrop</i></b>;
+                handling hasn't changed</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.10</b> </font><font
+        color="#808080" face="Arial">published on 30-May-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Is now able to handle mapped
+                filenames </font></li>
+            <li><font face="Arial">Some bugs fixed with filelist</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.02</b> </font><font
+        color="#808080" face="Arial">published on 06-Jul-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">New property added: <b><i>CompleteFileList</i></b></font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.01</b> </font><font
+        color="#808080" face="Arial">published on 03-Oct-1999</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">Small invisible bugs fixed</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font face="Arial"><b>Version 1.00</b> </font><font
+        color="#808080" face="Arial">published on 06-Aug-1998</font><font
+        face="Arial"> </font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font face="Arial">First official release</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Properties</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" cellpadding="3" cellspacing="0" width="600">
+    <tr>
+        <td width="10">&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><strong>inherited properties</strong></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><a href="TDragDrop.htm#Properties"><font
+        face="Arial">Click here ...</font></a></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>CompleteFileList </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Here
+        you can determine, if the<b> </b></font><a
+        href="#FileList"><font size="3" face="Arial"><b><i>FileList</i></b></font></a><font
+        size="3" face="Arial"> should be automaticly completed or
+        not on calling </font><a href="#Execute"><font size="3"
+        face="Arial"><b><i>Execute</i></b></font></a><font
+        size="3" face="Arial"> and </font><a
+        href="TDragDrop.htm#CopyToClipBoard"><font size="3"
+        face="Arial"><b><i>CopyToClipBoard</i></b></font></a><font
+        size="3" face="Arial">. This was added the increase the
+        performance on some actions.</font></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="FileList"><font
+        color="#FFFFFF" size="5" face="Arial"><b>FileList</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial"><b>For
+        Target:</b> Use this list in </font><a
+        href="TDragDrop.htm#OnProcessDropped"><font size="3"
+        face="Arial"><b><i>OnProcessDropped</i></b></font></a><font
+        size="3" face="Arial">, if you want to get the dropped
+        files.</font><p><font size="3" face="Arial"><b>For
+        Source:</b> Add the files to this list, that you want to
+        drag&amp;drop, before calling </font><a href="#Execute"><font
+        size="3" face="Arial"><b><i>Execute</i></b></font></a><font
+        size="3" face="Arial">. Only if the pidl is available,
+        the drag&amp;drop target can create a shortcut.</font></p>
+        <p><font color="#FF0000" size="3" face="Arial"><strong>Attention:</strong></font><font
+        size="3" face="Arial"> <em><strong>FileList</strong></em>
+        is an instance of </font><a href="#TFileList_Info"><font
+        size="3" face="Arial"><em><strong>TFileList</strong></em></font></a><font
+        size="3" face="Arial">!</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><b>NeedValid </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Here,
+        you can determine, if the drag&amp;drop data must have a
+        filename (set includes<b> </b><b><i>nvFilename</i></b>)
+        or </font><a href="#pidl_Info"><font size="3"
+        face="Arial">pidl</font></a><font size="3" face="Arial">
+        (set includes <b><i>nvPIDL</i></b>). This property
+        applies to receiving AND transmitting data.</font><p><font
+        size="3" face="Arial"><b>For Source:</b> Only if the
+        pidls are available, you can make a shortcut e.g. to the
+        desktop! </font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="ShellExtensions"><font
+        color="#FFFFFF" size="5" face="Arial"><b>ShellExtensions</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">This
+        property has two sub-properties:</font><ul>
+            <li><font size="3" face="Arial"><em><strong>DragDropHandler</strong></em></font></li>
+            <li><font size="3" face="Arial"><em><strong>DropHandler</strong></em></font></li>
+        </ul>
+        <p><font size="3" face="Arial">If the user drops data
+        with right mousebutton and the property </font><a
+        href="TDragDrop.htm#TargetPopUpMenu"><font size="3"
+        face="Arial"><em><strong>TargetPopUpMenu</strong></em></font></a><font
+        size="3" face="Arial"> and the sub-property <em><strong>DragDropHandler
+        </strong></em>is set to true, this component checks for a
+        available drag&amp;drop-handler. For this you must
+        specify a drop-target in the event-handler </font><a
+        href="#OnSpecifyDropTarget"><font size="3" face="Arial"><em><strong>OnSpecifyDropTarget</strong></em></font></a><font
+        size="3" face="Arial">. The drop-target must be a
+        directory. If a drag&amp;drop-handler is available for
+        the dropped data, there will be</font> <font face="Arial">corresponding
+        items added to to context-menu. If the user e</font><font
+        size="3" face="Arial">.g. drops ZIP-Files and Winzip is
+        installed, items like &quot;Extract to ...&quot; will
+        added to the context-menu. If the user selected such an
+        item, the dropped files will be extracted and you are
+        notified by the event </font><a
+        href="TDragDrop.htm#OnMenuSucceeded"><font size="3"
+        face="Arial"><em><strong>OnMenuSucceeded</strong></em></font></a><font
+        size="3" face="Arial">, that the extension was
+        successfully executed. Was the extension successfully
+        executed, the events </font><a
+        href="TDragDrop.htm#OnDrop"><font size="3" face="Arial"><em><strong>OnDrop</strong></em></font></a><font
+        size="3" face="Arial"> and </font><a
+        href="TDragDrop.htm#OnProcessDropped"><font size="3"
+        face="Arial"><em><strong>OnProcessDropped</strong></em></font></a><font
+        size="3" face="Arial"> won't be triggered.</font></p>
+        <p><font size="3" face="Arial">If the user drops files on
+        an other file and the sub-property <em><strong>DropHandler</strong></em>
+        is set to true, the drop-handler will be executed, if
+        available. The drop-handler will only executed, if you
+        specify in the event </font><a
+        href="#OnSpecifyDropTarget"><font size="3" face="Arial"><em><strong>OnSpecifyDropTarget</strong></em></font></a><font
+        size="3" face="Arial"> a file, for that is a drop-handler
+        defined in the registry. You can determine during a drop
+        with the method </font><a href="#TargetHasDropHandler"><font
+        size="3" face="Arial"><em><strong>TargetHasDropHandler</strong></em></font></a><font
+        size="3" face="Arial"> in the event </font><a
+        href="TDragDrop.htm#OnDragOver"><font size="3"
+        face="Arial"><em><strong>OnDragOver</strong></em></font></a><font
+        size="3" face="Arial">, if the file has a drop-handler.
+        If the drop-handler was successfully executed, the event </font><a
+        href="TDragDrop.htm#OnDropHandlerSucceeded"><font
+        size="3" face="Arial"><em><strong>OnDropHandlerSucceeded</strong></em></font></a><font
+        size="3" face="Arial"> will triggered. A drop-handler
+        will be executed, if the user drops a file/directory on a
+        ZIP-File and Winzip is installed. The dropped
+        file/directory will be added to ZIP-file.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td height="50">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Events</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" cellpadding="3" cellspacing="0" width="600">
+    <tr>
+        <td width="10">&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><strong>inherited events</strong></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><a href="TDragDrop.htm#Events"><font
+        face="Arial">Click here ...</font></a></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="OnSpecifyDropTarget"><font
+        color="#FFFFFF" size="5" face="Arial"><strong>OnSpecifyDropTarget</strong></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><strong> </strong></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">This
+        event will be triggered by the sub-properties of the
+        property </font><a href="#ShellExtensions"><font size="3"
+        face="Arial"><em><strong>ShellExtensions</strong></em></font></a><font
+        size="3" face="Arial">. You must specify a drop-target
+        (file/directory) by the filename or pidl. You don't need
+        to specify both values, but it doesn't harm. If no
+        drop-target is specified, the shell extensions won't be
+        executed.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td height="50">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Methods</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" cellpadding="3" cellspacing="0" width="600">
+    <tr>
+        <td width="10">&nbsp;</td>
+        <td bgcolor="#008080"><font color="#FFFFFF" size="5"
+        face="Arial"><strong>inherited methods</strong></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><a href="TDragDrop.htm#Methods"><font
+        face="Arial">Click here ...</font></a></td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="Execute"><font
+        color="#FFFFFF" size="5" face="Arial"><b>Execute</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>public</i></b></font></td>
+    </tr>
+    <tr>
+        <td rowspan="2">&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font size="3" face="Arial">Call
+        this method, if you detect that the user wants to start a
+        drag&amp;drop operation (e.g. MouseDown+MouseMove). Also
+        look: </font><a href="#FileList"><font size="3"
+        face="Arial"><em><strong>FileList</strong></em></font></a><font
+        size="3" face="Arial">.</font><p><font size="3"
+        face="Arial">For drag detection you can also use the
+        inherited property </font><a
+        href="TDragDrop.htm#AutoDetectDnD"><font size="3"
+        face="Arial"><em><strong>AutotDetectDnD</strong></em></font></a><font
+        size="3" face="Arial"> or the method </font><a
+        href="TDragDrop.htm#StartDnDDetection"><font size="3"
+        face="Arial"><em><strong>StartDnDDetection</strong></em></font></a><font
+        size="3" face="Arial">.</font></p>
+        <p><font color="#FF0000" size="3" face="Arial"><strong>IMPORTANT:</strong></font><font
+        size="3" face="Arial"> If you use the drag-detection,
+        it's high recommended to check the section &quot;</font><a
+        href="TDragDrop.htm#DragDetectionProblem"><font size="3"
+        face="Arial">Problems With The Drag-Detection</font></a><font
+        size="3" face="Arial">&quot;.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td bgcolor="#FFFFEF">&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#008080"><a name="TargetHasDropHandler"><font
+        color="#FFFFFF" size="5" face="Arial"><b>TargetHasDropHandler</b></font></a><font
+        color="#FFFFFF" size="5" face="Arial"><b> </b></font><font
+        color="#FFFF80" size="2" face="Arial"><b><i>published</i></b></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td bgcolor="#FFFFCC"><font face="Arial">You can use this
+        method to determine, if a drop-target (file) has a
+        drop-handler or not. Normally, you will use this method
+        in the event </font><a href="TDragDrop.htm#OnDragOver"><font
+        size="3" face="Arial"><em><strong>OnDragOver</strong></em></font></a><font
+        size="3" face="Arial"> to determine, if visual updates
+        are necessary (e.g. selecting a file etc.).</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td height="50">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" colspan="2" width="590"><font size="5"
+        face="Arial">How Do I Use It As Drag&amp;Drop Source</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">1.</font></td>
+        <td><font face="Arial">Drop a TWinControl on the form
+        (e.g. a listbox).</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">2.</font></td>
+        <td><font face="Arial">Choose the TWinControl (listbox)
+        in </font><a href="TDragDrop.htm#DragDropControl"><font
+        face="Arial"><em><strong>DragDropControl</strong></em></font></a><font
+        face="Arial">.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">3. </font></td>
+        <td><font face="Arial">Choose the drag&amp;drop effects
+        under </font><a href="TDragDrop.htm#SourceEffects"><font
+        face="Arial"><em><strong>SourceEffects</strong></em></font></a><font
+        face="Arial"> which the <em><strong>DragDropControl </strong></em>(listbox)
+        should support. If you don't want any longer that the <em><strong>DragDropControl</strong></em>
+        serve as drag&amp;drop source all items must be set to
+        false.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">4.</font></td>
+        <td><font face="Arial">Now, your <em><strong>DragDropControl</strong></em>
+        (listbox) must detect, if the user wants to start a
+        drag&amp;drop operation. You can use the event
+        &quot;OnMouseDown&quot; of your <em><strong>DragDropControl</strong></em>
+        (listbox). Add following to the event:</font><blockquote>
+            <p><font face="Arial"><code>DragDropFiles1.FileList.AddItem(&lt;absolute
+            pidl of file, if available, or nil&gt;, &lt;selected
+            item in </code></font><a
+            href="TDragDrop.htm#DragDropControl"><font
+            face="Arial"><code><em><strong>DragDropControl</strong></em></code></font></a><font
+            face="Arial"><code> (listbox)&gt;);</code></font></p>
+        </blockquote>
+        <p><font face="Arial">You must add the filenames
+        including the WHOLE PATH!!!</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">5.</font></td>
+        <td valign="top"><font face="Arial">Tell Windows that
+        there is a drag&amp;drop operation to handle: Just call
+        the method </font><a href="TDragDrop.htm#Execute"><font
+        face="Arial"><em><strong>Execute</strong></em></font></a><font
+        face="Arial"> of this component. </font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top"><font face="Arial">6.</font></td>
+        <td valign="top"><font size="3" face="Arial">You may use
+        the events </font><a href="TDragDrop.htm#OnGiveFeedback"><font
+        size="3" face="Arial"><b><i>OnGiveFeedback</i></b></font></a><font
+        size="3" face="Arial"> and </font><a
+        href="TDragDrop.htm#OnQueryContinueDrag"><font size="3"
+        face="Arial"><b><i>OnQueryContinueDrag</i></b></font></a><font
+        size="3" face="Arial">, but often you need not.</font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top">&nbsp;</td>
+        <td valign="top">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top" colspan="2"><font face="Arial"><strong>Hints:</strong></font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top" colspan="2"><ul>
+            <li><font size="3" face="Arial">Drag&amp;drop
+                operations cannot be done at design-time!</font></li>
+            <li><font size="3" face="Arial">IMPORTANT: If you use
+                the drag-detection, it's high recommended to
+                check the section &quot;</font><a
+                href="TDragDrop.htm#DragDetectionProblem"><font
+                size="3" face="Arial">Problems With The
+                Drag-Detection</font></a><font size="3"
+                face="Arial">&quot;.</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" colspan="2" width="590"><font size="5"
+        face="Arial">How Do I Use It As Drag&amp;Drop Target</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">1.</font></td>
+        <td><font face="Arial">Drop a TWinControl on the form
+        (e.g. a listbox).</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">2.</font></td>
+        <td><font face="Arial">Choose the TWinControl (listbox)
+        in </font><a href="TDragDrop.htm#DragDropControl"><font
+        face="Arial"><em><strong>DragDropControl</strong></em></font></a><font
+        face="Arial">.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">3. </font></td>
+        <td><font face="Arial">Choose the drag&amp;drop effects
+        under </font><a href="TDragDrop.htm#TargetEffects"><font
+        face="Arial"><em><strong>TargetEffects</strong></em></font></a><font
+        face="Arial"> which the <em><strong>DragDropControl </strong></em>(listbox)
+        should support. If you don't want any longer that the <em><strong>DragDropControl</strong></em>
+        serve as drag&amp;drop target all items must be set to
+        false.</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">4.</font></td>
+        <td><font size="3" face="Arial">Now, you have to program
+        what happen, if the user drops files on your </font><a
+        href="TDragDrop.htm#DragDropControl"><font size="3"
+        face="Arial"><b><i>DragDropControl</i></b></font></a><font
+        size="3" face="Arial"> (listbox). For this, the best is
+        to use the event </font><a
+        href="TDragDrop.htm#OnProcessDropped"><font size="3"
+        face="Arial"><b><i>OnProcessDropped</i></b></font></a><font
+        size="3" face="Arial">. At first, you should check what
+        drag&amp;drop effect was chosen by the user. You get the
+        effect from method's parameter <b><i>dwEffect</i></b>.
+        You get the files from this component with following
+        line:</font><blockquote>
+            <p><font size="3" face="Arial"><code>...
+            :=DragDropFiles1.FileList[&lt;Index&gt;]^.Name; <br>
+            </code></font><font color="#000080" size="3"
+            face="Arial"><code><strong><i>// returns the
+            filename; if not available, the result is an empty
+            string</i></strong></code></font><font size="3"
+            face="Arial"><code><strong><br>
+            </strong></code><code>...
+            :=DragDropFiles1.FileList[&lt;Index&gt;]^.pidlFQ; <br>
+            </code></font><font color="#000080" size="3"
+            face="Arial"><code><strong><i>// returns the pidl; if
+            not available, the result is nil</i></strong></code></font></p>
+        </blockquote>
+        <p><a href="#FileList"><font size="3" face="Arial"><b><i>FileList</i></b></font></a><font
+        size="3" face="Arial"> is an instance of </font><a
+        href="#TFileList_Info"><font size="3" face="Arial"><em><strong>TFileList</strong></em></font></a><font
+        size="3" face="Arial">. For more info check </font><a
+        href="#TFileList_Info"><font size="3" face="Arial">below</font></a><font
+        size="3" face="Arial">. Now, do with the files what you
+        have to do, e.g. copy, move, delete, etc.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td valign="top"><font face="Arial">5.</font></td>
+        <td valign="top"><font size="3" face="Arial">You may use
+        the events </font><a href="TDragDrop.htm#OnDragEnter"><font
+        size="3" face="Arial"><b><i>OnDragEnter</i></b></font></a><font
+        size="3" face="Arial">, </font><a
+        href="TDragDrop.htm#OnDragOver"><font size="3"
+        face="Arial"><b><i>OnDragOver</i></b></font></a><font
+        size="3" face="Arial"> and </font><a
+        href="TDragDrop.htm#OnDragLeave"><font size="3"
+        face="Arial"><b><i>OnDragLeave</i></b></font></a><font
+        size="3" face="Arial">, but often you need not.</font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top">&nbsp;</td>
+        <td valign="top">&nbsp;</td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top" colspan="2"><font face="Arial"><strong>Hints:</strong></font></td>
+    </tr>
+    <tr>
+        <td valign="top">&nbsp;</td>
+        <td valign="top" colspan="2"><ul>
+            <li><font size="3" face="Arial">Drag&amp;drop
+                operations cannot be done at design-time!</font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td colspan="2">&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><a name="TFileList_Info"><font
+        size="5" face="Arial">Details about <strong>TFileList</strong></font></a></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font size="3" face="Arial"><b><i>TFileList</i></b>
+        is a child of <b><i>TList</i></b>. Therefore, I don't
+        explain the list, again. You can find a documentation in
+        the online-help. Now, the new features of <b><i>TFileList</i></b>:</font><p><font
+        size="3" face="Arial">You add items to the list with the
+        function <b><i>AddItem</i></b> (or <b><i>AddItemEx</i></b>,
+        if you want to use mapped filenames). The function make
+        itself a copy of the pidl (absolute needed!) to relieve
+        you of this dirty job. If you don't know the pidl, set
+        the parameter to nil. If you don't know or have the
+        filename (including the whole path), set this parameter
+        to a emtpy string.</font></p>
+        <p><font size="3" face="Arial">You can delete items or
+        clear as common to lists. You needn't care about
+        releasing resources - the <b><i>TFileList</i></b> cares
+        about itself!</font></p>
+        <p><font size="3" face="Arial">Besides, there are the
+        functions <b><i>RenderPIDLs</i></b> and <b><i>RenderNames</i></b>.
+        <b><i>RenderPIDLs</i></b> tries to get the according
+        pidls to the filenames in the list. <b><i>RenderNames</i></b>
+        tries to get the according filenames (including full
+        path) to the pidls in the list. If the functions succeed
+        the result is true else false. You need not to call them
+        before a drag&amp;drop operation. This will be
+        automaticly done by the component itself, if you set the
+        property <b><i>CompleteFileList</i></b> to true. But it
+        may be useful to call them after receiving data to
+        complete the list. </font></p>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><a name="pidl_Info"><font
+        size="5" face="Arial">Details about <strong>PIDL</strong>s</font></a></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font size="3" face="Arial">Since Win95 the
+        file-system is more difficult. It is object orientated
+        and is named &quot;namespace&quot;. Every file, folder,
+        etc. is an object in the object-tree of the namespace.
+        Every object is an instance of the class <b><i>IShellFolder</i></b>
+        (more info in the online-help). If you have the instance
+        of the object, you can many do. E.g. you can determine
+        the properties (attributes) of the object (is it a file?,
+        is it a folder?, can I copy it?, ...). Every object can
+        be identified by an ID: the <b><i>pidl</i></b>. By the
+        pidl you can determine the IShellFolder-instance (use the
+        enclosed unit &quot;pidl&quot;; description only in the
+        code available).</font><p><font size="3" face="Arial">Pay
+        attention about relative and absolute pidls. The instance
+        itself has only a relative pidl (sometimes named as
+        &quot;item pidl&quot;). The path of concatenated pidls
+        from the root-object (desktop) to the child-object is the
+        absolute pidl! Pay attentions about this difference. You
+        can quickly fooled!</font></p>
+        <p><font size="3" face="Arial">Very important: Shortscuts
+        are only possible, if the pidl is available.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Details
+        about <strong>mapped filenames</strong></font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font size="3" face="Arial">If a mapped filename is
+        set, the source inform you, that you have to rename the
+        received name into the mapped name after to
+        d&amp;d-operation. The mapped filenames are used, if you
+        drag files from the &quot;RecycleBin&quot;.</font></td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp;</td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">FAQ</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><font size="3" face="Arial"><b>Q:</b> My application
+        supports only some special file-formats. How can I forbid
+        the other formats during the drop?</font><p><font
+        size="3" face="Arial"><b>A:</b> Set the property </font><a
+        href="TDragDrop.htm#RenderOn"><font size="3" face="Arial"><em><strong>RenderOn</strong></em></font></a><font
+        size="3" face="Arial"> to <b><i>rdoDropEnterAndDropSync</i></b>
+        and check out the </font><a href="#FileList"><font
+        size="3" face="Arial"><em><strong>Filelist</strong></em></font></a><font
+        size="3" face="Arial"> in the event </font><a
+        href="TDragDrop.htm#OnDragEnter"><font size="3"
+        face="Arial"><b><i>OnDragEnter</i></b></font></a><font
+        size="3" face="Arial">. Set the parameter <em><strong>Accept</strong></em>
+        in this event to true, if your application support the
+        files in the <em><strong>Filelist</strong></em> otherwise
+        set the parameter to false. If you only use the first
+        file, check only the first item in the <em><strong>Filelist</strong></em>.</font></p>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<table border="0" width="600">
+    <tr>
+        <td width="10" bgcolor="#008080" height="10">&nbsp; </td>
+        <td rowspan="2" width="590"><font size="5" face="Arial">Known
+        Bugs</font></td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+    </tr>
+    <tr>
+        <td>&nbsp;</td>
+        <td><ul>
+            <li><font size="3" face="Arial">Shortcuts are only
+                possible, if the pidl is available (not really a
+                bug) </font></li>
+        </ul>
+        </td>
+    </tr>
+    <tr>
+        <td height="50">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+</table>
+
+<hr>
+
+<p><font size="3" face="Arial"><i>© 1998,99 by </i></font><a
+href="mailto:dsteinwe@uos.de"><font size="3" face="Arial"><i>Dieter
+Steinwedel</i></font></a><font size="3" face="Arial"> </font></p>
+
+<p><a href="Index.htm"><font face="Arial">Back</font></a><font
+face="Arial"> to index</font></p>
+</body>
+</html>
