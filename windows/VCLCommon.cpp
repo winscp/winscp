@@ -55,13 +55,8 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
 //---------------------------------------------------------------------------
 void __fastcall UseSystemFont(TCustomForm * Control)
 {
-  assert(Screen && Screen->HintFont);
-//	TColor FontColor;
-//  FontColor = Control->Font->Color;
-  Control->Font->Name = Screen->HintFont->Name;
-//  Control->Font->Size = Screen->HintFont->Size;
-//  Control->Font->Height = Screen->HintFont->Height;
-//  Control->Font->Color = FontColor;
+  assert(Control && Control->Font);
+  Control->Font->Name = "MS Shell Dlg";
 };
 //---------------------------------------------------------------------------
 void __fastcall LinkLabel(TLabel * Label)

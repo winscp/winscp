@@ -11,6 +11,7 @@
 
 #include "Log.h"
 #include "NonVisual.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "LogMemo"
@@ -125,17 +126,17 @@ void __fastcall TLogForm::FormClose(TObject * /*Sender*/, TCloseAction & Action)
   // close command if this window) we only disable log window feature
   // (this function will be than called again, see case 1)
   LogMemo = NULL;
-  if (!Configuration->Logging || (Configuration->LogView != lvWindow) ||
+  if (!Configuration->Logging || (WinConfiguration->LogView != lvWindow) ||
       Application->Terminated)
   {
     Action = caFree;
   }
   else
   {
-    Configuration->LogView = lvNone;
+    WinConfiguration->LogView = lvNone;
     Action = caFree;
   }
-  Configuration->LogWindowParams = Configuration->StoreForm(this);
+  WinConfiguration->LogWindowParams = WinConfiguration->StoreForm(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLogForm::SetSessionLog(TSessionLog * value)
@@ -205,7 +206,7 @@ void __fastcall TLogForm::CreateParams(TCreateParams & Params)
   {
     FFormRestored = True;
     assert(Configuration);
-    Configuration->RestoreForm(Configuration->LogWindowParams, this);
+    WinConfiguration->RestoreForm(WinConfiguration->LogWindowParams, this);
   }
   TForm::CreateParams(Params);
   Params.WndParent = GetDesktopWindow();

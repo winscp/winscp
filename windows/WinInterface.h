@@ -10,7 +10,6 @@ class TConfiguration;
 class TTerminal;
 
 const int mpNeverAskAgainCheck = 1;
-//typedef Set<TMessageParam, mpNeverAskAgainCheck, mpNeverAskAgainCheck> TMessageParams;
 
 // windows\WinInterface.cpp
 int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
@@ -31,7 +30,7 @@ int __fastcall ExceptionMessageDialog(Exception * E,
 // windows\WinMain.cpp
 class TProgramParams;
 void __fastcall Execute(TProgramParams * Params);
-void __fastcall ReconnectTerminal();
+//void __fastcall ReconnectTerminal();
 
 // forms\InputDlg.cpp
 TPoint __fastcall GetAveCharSize(TCanvas* Canvas);
@@ -42,11 +41,11 @@ bool __fastcall InputDialog(const AnsiString ACaption,
 void __fastcall DoAboutDialog(TConfiguration *Configuration);
 
 // forms\Cleanup.cpp
-Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
+bool __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
     TConfiguration *Configuration);
 
 // forms\Console.cpp
-void __fastcall DoConsoleDialog(TTerminal * Terminal);
+void __fastcall DoConsoleDialog();
 
 // forms\Copy.cpp
 #ifdef UnixDirViewH
@@ -60,7 +59,7 @@ bool __fastcall DoCopyDialog(TTransferDirection Direction,
 enum TParamsForDirection { pdBoth, pdToRemote, pdToLocal, pdAll };
 
 // forms\ImportSessions.cpp
-Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList);
+bool __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList);
 
 // forms\Licence.cpp
 enum TLicence { lcNoLicence = -1, lcWinScp, lcPutty, lcRX };
@@ -72,8 +71,13 @@ bool __fastcall DoLoginDialog(TStoredSessionList * SessionList, TSessionData * D
 
 // forms\OpenDirectory.cpp
 enum TOpenDirectoryMode { odBrowse, odAddBookmark };
-Boolean __fastcall OpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
-  AnsiString & Directory, TStrings * Directories, TTerminal * Terminal);
+bool __fastcall OpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
+  AnsiString & Directory, TStrings * directories, TTerminal * Terminal);
+
+// forms\LocatinoProfiles.cpp
+bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
+  TOperationSide Side, AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
+  TStrings * RemoteDirectories, TTerminal * Terminal);
 
 // forms\Preferences.cpp
 enum TPreferencesMode { pmDefault, pmLogin, pmEditor };
@@ -94,9 +98,12 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     const AnsiString Directory, TStrings * GroupList,
     TRemoteProperties * Properties, int AllowedChanges);
 
-// forms\SaveSession.cpp
+// forms\ComboInput.cpp
+bool __fastcall DoComboInputDialog(
+  const AnsiString Caption, const AnsiString Prompt, AnsiString & Text,
+  TStrings * Items, TCloseQueryEvent OnCloseQuery, bool AllowEmpty);
 AnsiString __fastcall DoSaveSessionDialog(
-  TStoredSessionList *SessionList, const AnsiString DefaultName);
+  TStoredSessionList * SessionList, const AnsiString DefaultName);
 
 // forms\SelectMask.cpp
 #ifdef CustomDirViewHPP
@@ -108,7 +115,7 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
 class TSynchronizeParamType {
 public:
   TCopyParamType CopyParams;
-  Boolean AllowTransferMode;
+  bool AllowTransferMode;
   AnsiString LocalDirectory;
   AnsiString RemoteDirectory;
 
@@ -116,8 +123,8 @@ public:
   void __fastcall Assign(TSynchronizeParamType Source);
 };
 enum TSynchronizationStatus { ssStopped, ssWaiting, ssSynchronize, ssSynchronizing };
-typedef void __fastcall (__closure *TSynchronizeStartStopEvent)
-  (System::TObject* Sender, Boolean Start, TSynchronizeParamType Params);
+typedef void __fastcall (__closure * TSynchronizeStartStopEvent)
+  (System::TObject * Sender, bool Start, TSynchronizeParamType Params);
 void __fastcall DoSynchronizeDialog(TSynchronizeParamType Params,
     TSynchronizeStartStopEvent OnStartStop);
 

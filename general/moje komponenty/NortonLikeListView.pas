@@ -492,7 +492,7 @@ function TCustomNortonLikeListView.GetValid: Boolean;
 begin
   // Note that TCustomDirView::GetValid don't inherit
   // this method because of optimalization
-  Result := (not (csDestroying in ComponentState));
+  Result := (not (csDestroying in ComponentState)) and (not FClearingItems);
 end;
 
 procedure TCustomNortonLikeListView.BeginSelectionUpdate;

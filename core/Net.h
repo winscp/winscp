@@ -7,17 +7,12 @@
 class TSecureShell;
 extern TSecureShell * CurrentSSH;
 //---------------------------------------------------------------------------
-extern Integer SessionsCount;
-void NetInitialize();
-void NetFinalize();
+extern int SessionsCount;
+void __fastcall NetInitialize();
+void __fastcall NetFinalize();
 //---------------------------------------------------------------------------
 #endif
 //---------------------------------------------------------------------------
-/*void SSHLogEvent(char *string);
-void SSHFatalError(char *string);
-void SSHGotHostKey(void);*/
-//---------------------------------------------------------------------------
-static int get_line(const char *prompt, char *str, int maxlen, int is_pw);
 #endif
 //---------------------------------------------------------------------------
 

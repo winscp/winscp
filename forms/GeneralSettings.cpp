@@ -7,6 +7,7 @@
 #include <Common.h>
 #include <Configuration.h>
 #include <ScpMain.h>
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "XPGroupBox"
@@ -29,13 +30,12 @@ void __fastcall TGeneralSettingsFrame::ExplorerClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TGeneralSettingsFrame::SaveConfiguration()
 {
-  if (CommanderInterfaceButton->Checked) Configuration->Interface = ifCommander;
-    else Configuration->Interface = ifExplorer;
+  WinConfiguration->Interface = CommanderInterfaceButton->Checked ? ifCommander : ifExplorer;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGeneralSettingsFrame::LoadConfiguration()
 {
-  switch (Configuration->Interface) {
+  switch (WinConfiguration->Interface) {
     case ifCommander: CommanderInterfaceButton->Checked = True; break;
     case ifExplorer: ExplorerInterfaceButton->Checked = True; break;
     default: assert(false); break;

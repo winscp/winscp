@@ -1239,7 +1239,7 @@ end;
 function TCustomDirView.GetValid: Boolean;
 begin
   Result := (not (csDestroying in ComponentState)) and
-    (not Loading);
+    (not Loading) and (not FClearingItems);
 end;
 
 function TCustomDirView.ItemCanDrag(Item: TListItem): Boolean;
@@ -1293,27 +1293,40 @@ procedure TCustomDirView.KeyDown(var Key: Word; Shift: TShiftState);
 begin
   if Valid and (not IsEditing) then
   begin
-    if Key = VK_RETURN then
+    if (Key = VK_RETURN) or
+       ((Key = VK_NEXT) and (ssCtrl in Shift)) then
     begin
       if Assigned(ItemFocused) and (not Loading) then
       begin
-         if Shift = [] then Execute(ItemFocused)
+         Key := 0;
+         if (Key = VK_RETURN) and (Shift = [ssAlt]) then DisplayPropertiesMenu
            else
-         if Shift = [ssAlt] then
-         begin
-           Key := 0;
-           DisplayPropertiesMenu;
-         end;
+         if (Key <> VK_RETURN) or (Shift = []) then Execute(ItemFocused);
       end;
     end
       else
-    if (Key = VK_BACK) and (not Loading) and (not IsRoot) then ExecuteParentDirectory
+    if ((Key = VK_BACK) or ((Key = VK_PRIOR) and (ssCtrl in Shift))) and
+       (not Loading) and (not IsRoot) then
+    begin
+      Key := 0;
+      ExecuteParentDirectory;
+    end
       else
     if (Key = 220 { backslash }) and (ssCtrl in Shift) and (not Loading) and
-        (not IsRoot) then ExecuteRootDirectory
-      else inherited;
+        (not IsRoot) then
+    begin
+      Key := 0;
+      ExecuteRootDirectory;
+    end
+      else
+    begin
+      inherited;
+    end;
   end
-    else inherited;
+    else
+  begin
+    inherited;
+  end;
 end;
 
 procedure TCustomDirView.KeyPress(var Key: Char);
@@ -1684,7 +1697,7 @@ end;
 function TCustomDirView.GetFilesCount: Integer;
 begin
   Result := Items.Count;
-  if HasParentDir then Dec(Result);
+  if (Result > 0) and HasParentDir then Dec(Result);
 end;
 
 procedure TCustomDirView.SetViewStyle(Value: TViewStyle);
@@ -1895,7 +1908,7 @@ function TCustomDirView.CustomCreateFileList(Focused, OnlyFocused: Boolean;
   procedure AddItem(Item: TListItem);
   begin
     Assert(Assigned(Item));
-    if FullPath then Result.AddObject(ItemDragFileName(Item), Item.Data)
+    if FullPath then Result.AddObject(ItemFullFileName(Item), Item.Data)
       else Result.AddObject(ItemFileName(Item), Item.Data);
   end;
 
@@ -2619,7 +2632,7 @@ begin
       begin
         if Changed then
         begin
-          if FullPath then FileList.AddObject(ItemDragFileName(Item), Item.Data)
+          if FullPath then FileList.AddObject(ItemFullFileName(Item), Item.Data)
             else FileList.AddObject(ItemFileName(Item), Item.Data);
         end;
       end

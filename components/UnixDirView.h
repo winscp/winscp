@@ -47,6 +47,8 @@ private:
   bool FShowInaccesibleDirectories;
   AnsiString FDDTemporaryDirectory;
   TWarnLackOfTempSpaceEvent FOnWarnLackOfTempSpace;
+  AnsiString FDragDropSshTerminate;
+  TStrings * FDDFileList;
   bool __fastcall GetActive();
   TTimer * FDelayedDeletionTimer;
   TStrings * FDelayedDeletionList;

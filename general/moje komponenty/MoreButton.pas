@@ -10,10 +10,10 @@ type
   TMBChangingEvent = procedure (Sender: TObject; var AllowChange: Boolean) of object;
 
 type
-  TMoreButton = class(TButtonControl)
+  TMoreButton = class(TButton{Control})
   private
-    FDefault: Boolean;
-    FActive: Boolean;
+    //FDefault: Boolean;
+    //FActive: Boolean;
     FExpanded: Boolean;
     FCaptions: array[Boolean] of string;
     FExpandedHeight: Integer;
@@ -23,11 +23,11 @@ type
     FRepositionForm: Boolean;
     //FOwnerExpandedTop: Integer;
 
-    procedure SetDefault(Value: Boolean);
-    procedure CMDialogKey(var Message: TCMDialogKey); message CM_DIALOGKEY;
-    procedure CMDialogChar(var Message: TCMDialogChar); message CM_DIALOGCHAR;
-    procedure CMFocusChanged(var Message: TCMFocusChanged); message CM_FOCUSCHANGED;
-    procedure CNCommand(var Message: TWMCommand); message CN_COMMAND;
+    //procedure SetDefault(Value: Boolean);
+    //procedure CMDialogKey(var Message: TCMDialogKey); message CM_DIALOGKEY;
+    //procedure CMDialogChar(var Message: TCMDialogChar); message CM_DIALOGCHAR;
+    //procedure CMFocusChanged(var Message: TCMFocusChanged); message CM_FOCUSCHANGED;
+    //procedure CNCommand(var Message: TWMCommand); message CN_COMMAND;
     function DefaultCaptions(Expanded: Boolean): string;
     procedure SetCaptions(Index: Integer; Value: string);
     procedure SetExpanded(Value: Boolean);
@@ -37,29 +37,34 @@ type
     function StoreCaptions(Index: Integer): Boolean;
     function StoreExpanded: Boolean;
     function StoreExpandedHeight: Boolean;
-    procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
+    //procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
   protected
     function CanExpand: Boolean; virtual;
-    procedure CreateParams(var Params: TCreateParams); override;
-    procedure CreateWnd; override;
+    //procedure CreateParams(var Params: TCreateParams); override;
+    //procedure CreateWnd; override;
     procedure DoChange; virtual;
-    procedure SetButtonStyle(ADefault: Boolean); virtual;
+    //procedure SetButtonStyle(ADefault: Boolean); virtual;
+
+    property Caption;
+    property ModalResult;
+    property Cancel;
   public
     constructor Create(AOwner: TComponent); override;
     procedure Click; override;
-    function UseRightToLeftAlignment: Boolean; override;
+    //function UseRightToLeftAlignment: Boolean; override;
   published
     property CollapsedCaption: string index 0 read FCaptions[False] write SetCaptions stored StoreCaptions;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
+    property OnChanging: TMBChangingEvent read FOnChanging write FOnChanging;
     property Expanded: Boolean read FExpanded write SetExpanded stored StoreExpanded;
     property ExpandedCaption: string index 1 read FCaptions[True] write SetCaptions stored StoreCaptions;
     property ExpandedHeight: Integer read FExpandedHeight write SetExpandedHeight stored StoreExpandedHeight;
     property Panel: TWinControl read FPanel write SetPanel;
     property RepositionForm: Boolean read FRepositionForm write FRepositionForm;
-
-    property Action;
     property Anchors stored StoreAnchors;
-    property BiDiMode;
+
+    //property Action;
+    {property BiDiMode;
     property Constraints;
     property Default: Boolean read FDefault write SetDefault default False;
     property DragCursor;
@@ -82,16 +87,15 @@ type
     property OnEndDock;
     property OnEndDrag;
     property OnEnter;
-    property OnExit;
-    property OnChanging: TMBChangingEvent read FOnChanging write FOnChanging;
-    property OnKeyDown;
+    property OnExit;}
+    {property OnKeyDown;
     property OnKeyPress;
     property OnKeyUp;
     property OnMouseDown;
     property OnMouseMove;
     property OnMouseUp;
     property OnStartDock;
-    property OnStartDrag;
+    property OnStartDrag;}
   end;
 
 procedure Register;
@@ -126,10 +130,10 @@ begin
   FOnChanging := nil;
   FRepositionForm := False;
 
-  ControlStyle := [csSetCaption, csOpaque, csDoubleClicks];
+  {ControlStyle := [csSetCaption, csOpaque, csDoubleClicks];
   Width := 75;
   Height := 25;
-  TabStop := True;
+  TabStop := True;}
   Caption := FCaptions[Expanded];
   Anchors := [akLeft, akBottom];
 end;
@@ -255,7 +259,7 @@ end;
 
   { Following is tanken from TButton }
 
-function TMoreButton.UseRightToLeftAlignment: Boolean;
+{function TMoreButton.UseRightToLeftAlignment: Boolean;
 begin
   Result := False;
 end;
@@ -345,5 +349,5 @@ procedure TMoreButton.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 begin
   DefaultHandler(Message);
 end;
-
+}
 end.

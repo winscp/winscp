@@ -8,6 +8,7 @@
 #include <About.h>
 
 #include <ScpMain.h>
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -18,10 +19,11 @@ const AnsiString HomepageUrl = "http://winscp.sourceforge.net/";
 TCustomScpExplorerForm * __fastcall CreateScpExplorer()
 {
   TCustomScpExplorerForm * ScpExplorer;
-  if (Configuration->Interface == ifExplorer)
+  if (WinConfiguration->Interface == ifExplorer)
     Application->CreateForm(__classid(TScpExplorerForm), &ScpExplorer);
   else
     Application->CreateForm(__classid(TScpCommanderForm), &ScpExplorer);
+  ScpExplorer->Icon->Assign(Application->Icon);
   return ScpExplorer;
 }
 //---------------------------------------------------------------------------

@@ -19,13 +19,15 @@
 #include <FileOperationProgress.h>
 #include <Terminal.h>
 #include <WinInterface.h>
+#include <Bookmarks.h>
+#include "IEComboBox.hpp"
 //----------------------------------------------------------------------------
 class TOpenDirectoryDialog : public TForm
 {
 __published:
   TButton *OKBtn;
   TButton *CancelBtn;
-  TComboBox *RemoteDirectoryEdit;
+  TIEComboBox *RemoteDirectoryEdit;
   TDirectoryEdit *LocalDirectoryEdit;
   TLabel *EditLabel;
   TXPGroupBox *BookmarksGroup;
@@ -51,11 +53,34 @@ __published:
   void __fastcall FormShow(TObject *Sender);
   void __fastcall BookmarksListKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
+
+public:
+  __fastcall TOpenDirectoryDialog(TComponent* AOwner);
+  virtual __fastcall ~TOpenDirectoryDialog();
+
+  bool __fastcall Execute();
+
+  __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
+  __property TOperationSide OperationSide = { read = FOperationSide, write = SetOperationSide };
+  __property TStrings * Directories  = { read=GetDirectories, write=SetDirectories };
+  __property TOpenDirectoryMode Mode = { read = FMode, write = SetMode };
+  __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
+
+protected:
+  bool __fastcall AllowBookmarkDrag(int X, int Y);
+  void __fastcall BookmarkMove(int Source, int Dest);
+  Integer __fastcall FindBookmark(const AnsiString Bookmark);
+  void __fastcall UpdateControls(bool ListBoxUpdate = false);
+  void __fastcall AddAsBookmark();
+  __property TWinControl * CurrentEdit = { read = GetCurrentEdit };
+
 private:
   TOperationSide FOperationSide;
   TTerminal * FTerminal;
   int FBookmarkDragSource, FBookmarkDragDest;
   TOpenDirectoryMode FMode;
+  TBookmarkList * FBookmarkList;
+
   void __fastcall SetDirectory(AnsiString value);
   AnsiString __fastcall GetDirectory();
   TWinControl * __fastcall GetCurrentEdit();
@@ -63,21 +88,7 @@ private:
   void __fastcall SetDirectories(TStrings * value);
   TStrings * __fastcall GetDirectories();
   void __fastcall SetMode(TOpenDirectoryMode value);
-public:
-  bool __fastcall Execute();
-  __fastcall TOpenDirectoryDialog(TComponent* AOwner);
-  __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
-  __property TOperationSide OperationSide = { read = FOperationSide, write = SetOperationSide };
-  __property TStrings * Directories  = { read=GetDirectories, write=SetDirectories };
-  __property TOpenDirectoryMode Mode = { read = FMode, write = SetMode };
-  __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
-protected:
-  bool __fastcall AllowBookmarkDrag(int X, int Y);
-  void __fastcall BookmarkMove(int Source, int Dest);
-  Integer __fastcall FindBookmark(const AnsiString Bookmark);
-  void __fastcall UpdateControls();
-  void __fastcall AddAsBookmark();
-  __property TWinControl * CurrentEdit = { read = GetCurrentEdit };
+  void __fastcall LoadBookmarks();
 };
 //----------------------------------------------------------------------------
 #endif

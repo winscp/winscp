@@ -37,6 +37,7 @@ __published:
   TRadioButton *CCFirstUpperCaseButton;
   TXPGroupBox *CommonPropertiesGroup;
   TCheckBox *CommonPreserveTimestampCheck;
+  TCheckBox *ReplaceInvalidCharsCheck;
   void __fastcall ControlChange(TObject *Sender);
 private:
   TParamsForDirection FDirection;

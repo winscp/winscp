@@ -8,10 +8,12 @@ USEFORM("forms\OperationStatus.cpp", OperationStatusForm);
 USEFORM("forms\Console.cpp", ConsoleDialog);
 USEFORM("forms\Copy.cpp", CopyDialog);
 USEFORM("forms\CopyParams.cpp", CopyParamsFrame); /* TFrame: File Type */
+USEFORM("forms\ComboInput.cpp", ComboInputDialog);
 USEFORM("forms\Editor.cpp", EditorForm);
 USEFORM("forms\GeneralSettings.cpp", GeneralSettingsFrame); /* TFrame: File Type */
 USEFORM("forms\ImportSessions.cpp", ImportSessionsDialog);
 USEFORM("forms\Licence.cpp", LicenceDialog);
+USEFORM("forms\LocationProfiles.cpp", LocationProfilesDialog);
 USEFORM("forms\Log.cpp", LogForm);
 USEFORM("forms\LogSettings.cpp", LoggingFrame); /* TFrame: File Type */
 USEFORM("forms\Login.cpp", LoginDialog);
@@ -21,7 +23,6 @@ USEFORM("forms\Preferences.cpp", PreferencesDialog);
 USEFORM("forms\Progress.cpp", ProgressForm);
 USEFORM("forms\Properties.cpp", PropertiesDialog);
 USEFORM("forms\Rights.cpp", RightsFrame); /* TFrame: File Type */
-USEFORM("forms\SaveSession.cpp", SaveSessionDialog);
 USEFORM("forms\SelectMask.cpp", SelectMaskDialog);
 USEFORM("forms\Symlink.cpp", SymlinkDialog);
 USEFORM("forms\Synchronize.cpp", SynchronizeDialog);

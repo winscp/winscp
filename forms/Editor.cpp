@@ -2,8 +2,6 @@
 #include <vcl.h>        
 #pragma hdrstop
 
-#include <assert.h>
-
 #include "Editor.h"
 #include "WinInterface.h"
 #include "TextsWin.h"
@@ -11,6 +9,7 @@
 #include <Common.h>
 #include <ScpMain.h>
 #include "VCLCommon.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -41,20 +40,20 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FCaretPos.y = -1;
   FLastFindDialog = NULL;
   ApplyConfiguration();
-  FindDialog->FindText = Configuration->Editor.FindText;
+  FindDialog->FindText = WinConfiguration->Editor.FindText;
   TFindOptions Options = FindDialog->Options;
-  if (Configuration->Editor.FindMatchCase)
+  if (WinConfiguration->Editor.FindMatchCase)
   {
     Options << frMatchCase;
   }
-  if (Configuration->Editor.FindWholeWord)
+  if (WinConfiguration->Editor.FindWholeWord)
   {
     Options << frWholeWord;
   }
   FindDialog->Options = Options;
   ReplaceDialog->FindText = FindDialog->FindText;
   ReplaceDialog->Options = FindDialog->Options;
-  ReplaceDialog->ReplaceText = Configuration->Editor.ReplaceText;
+  ReplaceDialog->ReplaceText = WinConfiguration->Editor.ReplaceText;
   UseSystemFont(this);
 }
 //---------------------------------------------------------------------------
@@ -62,10 +61,10 @@ __fastcall TEditorForm::~TEditorForm()
 {
   if (FLastFindDialog)
   {
-    Configuration->Editor.FindText = FLastFindDialog->FindText;
-    Configuration->Editor.ReplaceText = ReplaceDialog->ReplaceText;
-    Configuration->Editor.FindMatchCase = FLastFindDialog->Options.Contains(frMatchCase);
-    Configuration->Editor.FindWholeWord = FLastFindDialog->Options.Contains(frWholeWord);
+    WinConfiguration->Editor.FindText = FLastFindDialog->FindText;
+    WinConfiguration->Editor.ReplaceText = ReplaceDialog->ReplaceText;
+    WinConfiguration->Editor.FindMatchCase = FLastFindDialog->Options.Contains(frMatchCase);
+    WinConfiguration->Editor.FindWholeWord = FLastFindDialog->Options.Contains(frWholeWord);
   }
 }
 //---------------------------------------------------------------------------
@@ -198,12 +197,12 @@ void __fastcall TEditorForm::ApplyConfiguration()
 {
   bool PrevModified = EditorMemo->Modified;
   assert(Configuration);
-  EditorMemo->Font->Name = Configuration->Editor.FontName;
-  EditorMemo->Font->Height = Configuration->Editor.FontHeight;
-  EditorMemo->Font->Charset = (TFontCharset)Configuration->Editor.FontCharset;
-  EditorMemo->Font->Style = IntToFontStyles(Configuration->Editor.FontStyle);
+  EditorMemo->Font->Name = WinConfiguration->Editor.FontName;
+  EditorMemo->Font->Height = WinConfiguration->Editor.FontHeight;
+  EditorMemo->Font->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
+  EditorMemo->Font->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
   EditorMemo->DefAttributes->Assign(EditorMemo->Font);
-  if (EditorMemo->WordWrap != Configuration->Editor.WordWrap)
+  if (EditorMemo->WordWrap != WinConfiguration->Editor.WordWrap)
   {
     if (Visible)
     {
@@ -211,7 +210,7 @@ void __fastcall TEditorForm::ApplyConfiguration()
       try
       {
         Content->Assign(EditorMemo->Lines);
-        EditorMemo->WordWrap = Configuration->Editor.WordWrap;
+        EditorMemo->WordWrap = WinConfiguration->Editor.WordWrap;
         EditorMemo->Lines = Content;
         EditorMemo->CaretPos = TPoint(0, 0);
       }
@@ -222,7 +221,7 @@ void __fastcall TEditorForm::ApplyConfiguration()
     }
     else
     {
-      EditorMemo->WordWrap = Configuration->Editor.WordWrap;
+      EditorMemo->WordWrap = WinConfiguration->Editor.WordWrap;
     }
   }
   EditorMemo->Modified = PrevModified;
@@ -242,19 +241,17 @@ void __fastcall TEditorForm::UpdateControls()
       ((int)FCaretPos.y+1, Count));
     StatusBar->Panels->Items[1]->Text = FMTLOAD(EDITOR_COLUMN_STATUS,
       ((int)FCaretPos.x+1));
+    AnsiString Character;
     if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
     {
       AnsiString Line = EditorMemo->Lines->Strings[FCaretPos.y];
       if (FCaretPos.x+1 <= Line.Length())
       {
-        StatusBar->Panels->Items[2]->Text = FMTLOAD(EDITOR_CHARACTER_STATUS,
+        Character = FMTLOAD(EDITOR_CHARACTER_STATUS,
           ((int)Line[FCaretPos.x+1], (int)Line[FCaretPos.x+1]));
       }
-      else
-      {
-        StatusBar->Panels->Items[2]->Text = "";
-      }
     }
+    StatusBar->Panels->Items[2]->Text = Character;
   }
   StatusBar->Panels->Items[3]->Text =
     (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : AnsiString(""));

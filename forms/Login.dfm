@@ -1,6 +1,6 @@
 object LoginDialog: TLoginDialog
-  Left = 320
-  Top = 154
+  Left = 353
+  Top = 185
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Login'
@@ -64,11 +64,11 @@ object LoginDialog: TLoginDialog
       Top = 0
       Width = 361
       Height = 318
-      ActivePage = SessionListSheet
+      ActivePage = EnvironmentSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
-      TabIndex = 0
+      TabIndex = 3
       TabOrder = 1
       OnChange = PageControlChange
       object SessionListSheet: TTabSheet
@@ -246,14 +246,13 @@ object LoginDialog: TLoginDialog
             Text = 'UserNameEdit'
             OnChange = DataChange
           end
-          object PasswordEdit: TEdit
+          object PasswordEdit: TPasswordEdit
             Left = 163
             Top = 85
             Width = 171
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
-            PasswordChar = '*'
             TabOrder = 2
             Text = 'PasswordEdit'
             OnChange = DataChange
@@ -298,7 +297,7 @@ object LoginDialog: TLoginDialog
             Top = 19
             Width = 153
             Height = 17
-            Caption = 'SFTP (allow SCP fallback)'
+            Caption = 'SFTP (allow SCP &fallback)'
             TabOrder = 1
             OnClick = DataChange
           end
@@ -307,7 +306,7 @@ object LoginDialog: TLoginDialog
             Top = 19
             Width = 65
             Height = 17
-            Caption = 'SCP'
+            Caption = 'S&CP'
             Checked = True
             TabOrder = 0
             TabStop = True
@@ -318,7 +317,7 @@ object LoginDialog: TLoginDialog
             Top = 19
             Width = 65
             Height = 17
-            Caption = 'SFTP'
+            Caption = '&SFTP'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -559,7 +558,7 @@ object LoginDialog: TLoginDialog
           Width = 345
           Height = 45
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'EOL (end-of-line) characters'
+          Caption = 'EOL (end-of-line) characters (SCP and SFTP version < 4)'
           TabOrder = 1
           object EOLTypeLFButton: TRadioButton
             Left = 12
@@ -763,6 +762,9 @@ object LoginDialog: TLoginDialog
             end
             inherited LogFilePanel: TPanel
               Width = 291
+              inherited LogFileAppendButton: TRadioButton
+                Caption = 'A&ppend'
+              end
             end
           end
         end
@@ -893,16 +895,16 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 8
           Width = 345
-          Height = 141
+          Height = 136
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Proxy'
           TabOrder = 0
           DesignSize = (
             345
-            141)
+            136)
           object Label15: TLabel
             Left = 11
-            Top = 42
+            Top = 41
             Width = 78
             Height = 13
             Caption = 'Pro&xy host name'
@@ -910,7 +912,7 @@ object LoginDialog: TLoginDialog
           end
           object Label18: TLabel
             Left = 240
-            Top = 42
+            Top = 41
             Width = 57
             Height = 13
             Anchors = [akTop, akRight]
@@ -919,7 +921,7 @@ object LoginDialog: TLoginDialog
           end
           object Label19: TLabel
             Left = 11
-            Top = 92
+            Top = 85
             Width = 51
             Height = 13
             Caption = '&User name'
@@ -927,7 +929,7 @@ object LoginDialog: TLoginDialog
           end
           object Label20: TLabel
             Left = 163
-            Top = 92
+            Top = 85
             Width = 46
             Height = 13
             Caption = '&Password'
@@ -942,36 +944,9 @@ object LoginDialog: TLoginDialog
             TabOrder = 0
             OnClick = DataChange
           end
-          object ProxyHTTPButton: TRadioButton
-            Left = 92
-            Top = 19
-            Width = 77
-            Height = 17
-            Caption = '&HTTP'
-            TabOrder = 1
-            OnClick = DataChange
-          end
-          object ProxySocksButton: TRadioButton
-            Left = 172
-            Top = 19
-            Width = 77
-            Height = 17
-            Caption = '&SOCKS'
-            TabOrder = 2
-            OnClick = DataChange
-          end
-          object ProxyTelnetButton: TRadioButton
-            Left = 252
-            Top = 19
-            Width = 85
-            Height = 17
-            Caption = '&Telnet'
-            TabOrder = 3
-            OnClick = DataChange
-          end
           object ProxyPortEdit: TUpDownEdit
             Left = 240
-            Top = 59
+            Top = 58
             Width = 94
             Height = 21
             MaxValue = 65535
@@ -982,7 +957,7 @@ object LoginDialog: TLoginDialog
           end
           object ProxyHostEdit: TEdit
             Left = 11
-            Top = 59
+            Top = 58
             Width = 214
             Height = 21
             Anchors = [akLeft, akTop, akRight]
@@ -993,7 +968,7 @@ object LoginDialog: TLoginDialog
           end
           object ProxyUsernameEdit: TEdit
             Left = 11
-            Top = 109
+            Top = 102
             Width = 137
             Height = 21
             MaxLength = 50
@@ -1001,73 +976,80 @@ object LoginDialog: TLoginDialog
             Text = 'UserNameEdit'
             OnChange = DataChange
           end
-          object ProxyPasswordEdit: TEdit
+          object ProxyPasswordEdit: TPasswordEdit
             Left = 163
-            Top = 109
+            Top = 102
             Width = 171
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
-            PasswordChar = '*'
             TabOrder = 7
             Text = 'PasswordEdit'
             OnChange = DataChange
           end
-        end
-        object SocksProxyGroup: TXPGroupBox
-          Left = 0
-          Top = 156
-          Width = 345
-          Height = 49
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'SOCKS proxy settings'
-          TabOrder = 1
-          object Label17: TLabel
-            Left = 12
-            Top = 20
-            Width = 73
-            Height = 13
-            Caption = 'SOCKS version'
-          end
-          object ProxySOCKSVersion4Button: TRadioButton
-            Left = 208
+          object ProxySocks4Button: TRadioButton
+            Left = 81
             Top = 19
-            Width = 89
+            Width = 77
             Height = 17
-            Caption = 'Version &4'
-            Checked = True
+            Caption = '&SOCKS4'
+            TabOrder = 2
+            OnClick = DataChange
+          end
+          object ProxySocks5Button: TRadioButton
+            Left = 148
+            Top = 19
+            Width = 67
+            Height = 17
+            Caption = 'SO&CKS5'
+            TabOrder = 8
+            OnClick = DataChange
+          end
+          object ProxyHTTPButton: TRadioButton
+            Left = 215
+            Top = 19
+            Width = 66
+            Height = 17
+            Caption = '&HTTP'
             TabOrder = 1
-            TabStop = True
             OnClick = DataChange
           end
-          object ProxySOCKSVersion5Button: TRadioButton
-            Left = 120
+          object ProxyTelnetButton: TRadioButton
+            Left = 282
             Top = 19
-            Width = 89
+            Width = 61
             Height = 17
-            Caption = 'Version &5'
-            TabOrder = 0
+            Caption = '&Telnet'
+            TabOrder = 3
             OnClick = DataChange
           end
         end
-        object TelnetProxyGroup: TXPGroupBox
+        object ProxySettingsGroup: TXPGroupBox
           Left = 0
-          Top = 212
+          Top = 149
           Width = 345
-          Height = 45
+          Height = 108
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Telnet proxy settings'
-          TabOrder = 2
+          Caption = 'Proxy settings'
+          TabOrder = 1
           DesignSize = (
             345
-            45)
+            108)
           object Label21: TLabel
-            Left = 12
+            Left = 11
             Top = 19
             Width = 79
             Height = 13
             Caption = 'Telnet co&mmand'
             FocusControl = ProxyTelnetCommandEdit
+          end
+          object Label17: TLabel
+            Left = 11
+            Top = 64
+            Width = 168
+            Height = 13
+            Caption = 'Do &DNS name lookup at proxy end:'
+            FocusControl = ProxyDNSOffButton
           end
           object ProxyTelnetCommandEdit: TEdit
             Left = 128
@@ -1079,6 +1061,38 @@ object LoginDialog: TLoginDialog
             TabOrder = 0
             Text = 'ProxyTelnetCommandEdit'
             OnChange = DataChange
+          end
+          object ProxyLocalhostCheck: TCheckBox
+            Left = 13
+            Top = 42
+            Width = 313
+            Height = 17
+            Caption = 'Consider pro&xying local host connections'
+            TabOrder = 1
+          end
+          object ProxyDNSOffButton: TRadioButton
+            Left = 12
+            Top = 83
+            Width = 85
+            Height = 17
+            Caption = 'No'
+            TabOrder = 2
+          end
+          object ProxyDNSAutoButton: TRadioButton
+            Left = 100
+            Top = 83
+            Width = 85
+            Height = 17
+            Caption = 'Auto'
+            TabOrder = 3
+          end
+          object ProxyDNSOnButton: TRadioButton
+            Left = 188
+            Top = 83
+            Width = 85
+            Height = 17
+            Caption = 'Yes'
+            TabOrder = 4
           end
         end
       end
@@ -1093,13 +1107,13 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 8
           Width = 345
-          Height = 191
+          Height = 217
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Detection of known bugs in SSH servers'
           TabOrder = 0
           DesignSize = (
             345
-            191)
+            217)
           object Label22: TLabel
             Left = 12
             Top = 20
@@ -1155,6 +1169,14 @@ object LoginDialog: TLoginDialog
             Height = 13
             Caption = 'Chokes on &Diffie-Hellman group exchange'
             FocusControl = BugDHGEx2Combo
+          end
+          object Label14: TLabel
+            Left = 12
+            Top = 188
+            Width = 160
+            Height = 13
+            Caption = 'Misuses the sessio&n ID in PK auth'
+            FocusControl = BugPKSessID2Combo
           end
           object BugIgnore1Combo: TComboBox
             Left = 272
@@ -1249,6 +1271,20 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 6
+            Items.Strings = (
+              'Auto'
+              'Off'
+              'On')
+          end
+          object BugPKSessID2Combo: TComboBox
+            Left = 272
+            Top = 183
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 7
             Items.Strings = (
               'Auto'
               'Off'
@@ -1373,7 +1409,7 @@ object LoginDialog: TLoginDialog
         Width = 129
         Height = 17
         Anchors = [akLeft, akRight]
-        Caption = 'Advanced options'
+        Caption = '&Advanced options'
         TabOrder = 2
         OnClick = DataChange
       end

@@ -39,6 +39,7 @@ private:
   bool FAddOutput;
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
+  void __fastcall TerminalManagerChangeTerminal(TObject * Sender);
 protected:
   void __fastcall DoChangeDirectory(TObject * Sender);
   void __fastcall DoLogAddLine(System::TObject* Sender, const AnsiString AddedLine);

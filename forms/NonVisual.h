@@ -21,6 +21,8 @@
 #define fcLocalStatusBar   0x12
 #define fcRemoteCoolBar    0x13
 #define fcRemoteStatusBar  0x14
+#define fcSessionCombo     0x15
+#define fcMenuToolBar      0x16
 
 #define fcExplorerMenuBand        0x0003
 #define fcExplorerAddressBand     0x0103
@@ -464,6 +466,9 @@ __published:	// IDE-managed Components
   TAction *AddEditLinkAction;
   TMenuItem *Addeditlink1;
   TMenuItem *Addeditlink2;
+  TAction *CloseApplicationAction;
+  TAction *OpenedSessionsAction;
+  TMenuItem *OpenedSessionsMenu;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall RightsActionsExecute(TBasicAction *Action, bool &Handled);
@@ -475,18 +480,24 @@ private:
   TRightsFrame * FRightsFrame;
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
+  bool FSessionIdleTimerExecuting;
+
+  void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
 protected:
   void __fastcall CreateSessionListMenu();
   TCustomDirView * __fastcall DirView(TOperationSide Side) { return ScpExplorer->DirView(Side); }
   void __fastcall OpenBrowser(AnsiString URL);
   void __fastcall SessionItemClick(TObject * Sender);
+  void __fastcall OpenedSessionItemClick(TObject * Sender);
 public:
   void __fastcall CommanderShortcuts();
-  void __fastcall ExplorerShortcuts();		// User declarations
-  __fastcall TNonVisualDataModule(TComponent* Owner);
+  void __fastcall ExplorerShortcuts();
+  void __fastcall CreateOpenedSessionListMenu();
+  TShortCut __fastcall OpenSessionShortCut(int Index);
+  __fastcall TNonVisualDataModule(TComponent * Owner);
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TRightsFrame * RightsFrame = { read = FRightsFrame, write = FRightsFrame };
-  __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = FScpExplorer };
+  __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TNonVisualDataModule *NonVisualDataModule;

@@ -15,7 +15,7 @@
 //---------------------------------------------------------------------------
 #define MAX_BUFSIZE 16384
 const TColor LogLineColors[] =
-  {clBlack, clGreen, clRed, clMaroon, clBlue, clGray};
+  {clGreen, clRed, clMaroon, clBlue, clGray};
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::TSecureShell()
 {
@@ -29,27 +29,38 @@ __fastcall TSecureShell::TSecureShell()
   FLog = new TSessionLog();
   FOnQueryUser = NULL;
   FOnUpdateStatus = NULL;
+  FOnClose = NULL;
   FCSCipher = cipWarn; // = not detected yet
   FSCCipher = cipWarn;
   FReachedStatus = 0;
   UpdateStatus(sshClosed);
+  FConfig = new Config();
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
-  ClearStdError();
-  Active = False;
-  delete FSessionData;
-  delete FLog;
+  try
+  {
+    ClearStdError();
+    Active = false;
+    SAFE_DESTROY(FSessionData);
+    SAFE_DESTROY(FLog);
+    delete FConfig;
+    FConfig = NULL;
+  }
+  __finally
+  {
+    if (CurrentSSH == this)
+    {
+      CurrentSSH = NULL;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Open()
 {
-  /* TODO 1 :
-     We can't connect second time, see crBegin in ssh.c
-     There's static variable crLine, it should be 0 at start up.
-     How to clear it?? */
-  char *err, *realhost;
+  const char * InitError;
+  char * RealHost;
 
   FReachedStatus = 0;
   SessionsCount++;
@@ -61,18 +72,33 @@ void __fastcall TSecureShell::Open()
 
   Log->AddStartupInfo();
 
-  Active = False;
-  Activate();
-  back = &ssh_backend;
+  Active = false;
+//  Activate();
+  FBackend = &ssh_backend;
 
   FAuthenticationLog = "";
   UpdateStatus(sshLookupHost);
-  err = back->init(SessionData->HostName.c_str(),
-    SessionData->PortNumber, &realhost, 0);
-  if (err) FatalError(err);
-  FRealHost = realhost;
-  UpdateStatus(sshConnect);
-  Init();
+  SessionData->StoreToConfig(FConfig);
+  assert(!CurrentSSH);
+  CurrentSSH = this;
+  try
+  {
+    InitError = FBackend->init(this, &FBackendHandle, FConfig,
+      SessionData->HostName.c_str(), SessionData->PortNumber, &RealHost, 0);
+    if (InitError)
+    {
+      FatalError(InitError);
+    }
+    FRealHost = RealHost;
+    UpdateStatus(sshConnect);
+    /*FLoggingContext = log_init(this, (void *)FConfig);
+    FBackend->provide_logctx(FBackendHandle, FLoggingContext);*/
+    Init();
+  }
+  __finally
+  {
+    CurrentSSH = NULL;
+  }
 
   CheckConnection(CONNECTION_FAILED);
   FLastDataSent = Now();
@@ -82,37 +108,39 @@ void __fastcall TSecureShell::Open()
   UpdateStatus(sshAuthenticated);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::Activate()
-{
-  if (SessionData)
-  {
-    if (SessionData->HostName.IsEmpty() || SessionData->UserName.IsEmpty())
-      FatalError("No hostname and/or username!");
-
-    SessionData->StoreToConfig(&cfg);
-  }
-    else FatalError("No session data!");
-  CurrentSSH = this;
-}
-//---------------------------------------------------------------------------
 void __fastcall TSecureShell::Init()
 {
-  try {
-    try {
-      while (!back->sendok()) {
+  try
+  {
+    try
+    {
+      while (!FBackend->sendok(FBackendHandle))
+      {
         WaitForData();
       }
-    } catch(Exception & E) {
-      if ((FReachedStatus == sshAuthenticate) && !FAuthenticationLog.IsEmpty())
-        FatalError(&E, FMTLOAD(AUTHENTICATION_LOG, (FAuthenticationLog)));
-      else
-        throw;
     }
-  } catch(Exception & E) {
+    catch(Exception & E)
+    {
+      if ((FReachedStatus == sshAuthenticate) && !FAuthenticationLog.IsEmpty())
+      {
+        FatalError(&E, FMTLOAD(AUTHENTICATION_LOG, (FAuthenticationLog)));
+      }
+      else
+      {
+        throw;
+      }
+    }
+  }
+  catch(Exception & E)
+  {
     if (FReachedStatus == sshAuthenticate)
+    {
       FatalError(&E, LoadStr(AUTHENTICATION_FAILED));
+    }
     else
+    {
       throw;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -130,7 +158,6 @@ int __fastcall TSecureShell::GetPassword(AnsiString &Password)
     Result = GetSessionPassword(
       FmtLoadStr(PROMPT_SESSION_PASSWORD,
         ARRAYOFCONST((SessionData->SessionName))), Password);
-    //SessionData->Password = Password;
   }
   FPasswordTried = true;
   return Result;
@@ -151,7 +178,7 @@ void __fastcall TSecureShell::FromBackend(Boolean IsStdErr, char * Data, Integer
   {
     AddStdError(AnsiString(Data, Length));
   }
-    else
+  else
   {
     unsigned char *p = (unsigned char *)Data;
     unsigned Len = (unsigned)Length;
@@ -275,7 +302,7 @@ void __fastcall TSecureShell::SendSpecial(int Code)
 {
   LogEvent(FORMAT("Sending special code: %d", (Code)));
   CheckConnection();
-  back->special((Telnet_Special)Code);
+  FBackend->special(FBackendHandle, (Telnet_Special)Code);
   FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
@@ -287,13 +314,13 @@ void __fastcall TSecureShell::SendEOF()
 void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
 {
   CheckConnection();
-  int BufSize = back->send((char *)Buf, Len);
+  int BufSize = FBackend->send(FBackendHandle, (char *)Buf, Len);
   FLastDataSent = Now();
   FBytesSent += Len;
   while (BufSize > MAX_BUFSIZE)
   {
     WaitForData();
-    BufSize = back->sendbuffer();
+    BufSize = FBackend->sendbuffer(FBackendHandle);
   }
 }
 //---------------------------------------------------------------------------
@@ -382,22 +409,30 @@ void __fastcall TSecureShell::SetSocket(SOCKET value)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SetSessionData(TSessionData * value)
 {
-  if (FActive) FatalError("Cannot set session data during connection");
+  assert(!FActive);
   FSessionData->Assign(value);
-  if (FLog) FLog->Data = value;
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecureShell::SetActive(Boolean value)
-{
-  if (FActive != value)
+  if (FLog)
   {
-    if (value) Open();
-      else
-    if (!value) Close();
+    FLog->Data = FSessionData;
   }
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TSecureShell::GetActive()
+void __fastcall TSecureShell::SetActive(bool value)
+{
+  if (FActive != value)
+  {
+    if (value)
+    {
+      Open();
+    }
+    else
+    {
+      Close();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::GetActive()
 {
   return FActive;
 }
@@ -406,19 +441,39 @@ void __fastcall TSecureShell::Close()
 {
   LogEvent("Closing connection.");
   CheckConnection();
-  ssh_close();
+
+  assert(!CurrentSSH || CurrentSSH == this);
+  TSecureShell * PCurrentSSH = CurrentSSH;
+  CurrentSSH = this;
+  try
+  {
+    ssh_close(FBackendHandle);
+  }
+  __finally
+  {
+    CurrentSSH = PCurrentSSH;
+  }
+
   FActive = false;
 
   SessionsCount--;
-  if (SessionsCount == 0) NetFinalize();
+  if (SessionsCount == 0)
+  {
+    NetFinalize();
+  }
+
+  if (OnClose)
+  {
+    OnClose(this);
+  }
 }
 //---------------------------------------------------------------------------
 void inline __fastcall TSecureShell::CheckConnection(int Message)
 {
-  if (!FActive || get_ssh_state_closed())
+  if (!FActive || get_ssh_state_closed(FBackendHandle))
   {
     AnsiString Str = LoadStr(Message >= 0 ? Message : NOT_CONNECTED);
-    int ExitCode = get_ssh_exitcode();
+    int ExitCode = get_ssh_exitcode(FBackendHandle);
     if (ExitCode >= 0)
     {
       Str += " " + FMTLOAD(SSH_EXITCODE, (ExitCode));
@@ -430,7 +485,7 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
 extern int select_result(WPARAM, LPARAM);
 void __fastcall TSecureShell::WaitForData()
 {
-  Integer R;
+  int R;
   do
   {
     CheckConnection();
@@ -457,14 +512,25 @@ void __fastcall TSecureShell::WaitForData()
         FatalError(LoadStr(USER_TERMINATED));
       }
     }
-  } while (R <= 0);
+  }
+  while (R <= 0);
 
-  select_result((WPARAM)FSocket, (LPARAM)FD_READ);
+  assert(!CurrentSSH || CurrentSSH == this);
+  TSecureShell * PrevSSH = CurrentSSH;
+  CurrentSSH = this;
+  try
+  {
+    select_result((WPARAM)FSocket, (LPARAM)FD_READ);
+  }
+  __finally
+  {
+    CurrentSSH = PrevSSH;
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::SshFallbackCmd()
 {
-  return ssh_fallback_cmd;
+  return ssh_fallback_cmd(FBackendHandle);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Error(AnsiString Error)
@@ -503,35 +569,37 @@ TDateTime __fastcall TSecureShell::GetDuration()
   return Now() - FLoginTime;
 }
 //---------------------------------------------------------------------------
-TCompressionType __fastcall TSecureShell::FuncToCompression(void * Compress)
+TCompressionType __fastcall TSecureShell::FuncToCompression(const void * Compress)
 {
   if (SshVersion == 1)
-    if (get_ssh1_compressing()) return ctZLib;
-      else return ctNone;
-
-  if ((ssh_compress *)Compress == &ssh_zlib) return ctZLib;
-    else return ctNone;
+  {
+    return get_ssh1_compressing(FBackendHandle) ? ctZLib : ctNone;
+  }
+  else
+  {
+    return (ssh_compress *)Compress == &ssh_zlib ? ctZLib : ctNone;
+  }
 }
 //---------------------------------------------------------------------------
 TCompressionType __fastcall TSecureShell::GetCSCompression()
 {
   CheckConnection();
-  return FuncToCompression(get_cscomp());
+  return FuncToCompression(get_cscomp(FBackendHandle));
 }
 //---------------------------------------------------------------------------
 TCompressionType __fastcall TSecureShell::GetSCCompression()
 {
   CheckConnection();
-  return FuncToCompression(get_sccomp());
+  return FuncToCompression(get_sccomp(FBackendHandle));
 }
 //---------------------------------------------------------------------------
 Integer __fastcall TSecureShell::GetSshVersion()
 {
   CheckConnection();
-  return get_ssh_version();
+  return get_ssh_version(FBackendHandle);
 }
 //---------------------------------------------------------------------------
-TCipher __fastcall TSecureShell::FuncToSsh1Cipher(void * Cipher)
+TCipher __fastcall TSecureShell::FuncToSsh1Cipher(const void * Cipher)
 {
   const ssh_cipher *CipherFuncs[] =
     {&ssh_3des, &ssh_des, &ssh_blowfish_ssh1};
@@ -546,7 +614,7 @@ TCipher __fastcall TSecureShell::FuncToSsh1Cipher(void * Cipher)
   return Result;
 }
 //---------------------------------------------------------------------------
-TCipher __fastcall TSecureShell::FuncToSsh2Cipher(void * Cipher)
+TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher)
 {
   const ssh2_ciphers *CipherFuncs[] =
     {&ssh2_3des, &ssh2_des, &ssh2_aes, &ssh2_blowfish};
@@ -570,8 +638,14 @@ TCipher __fastcall TSecureShell::GetCSCipher()
 
   if (FCSCipher == cipWarn)
   {
-    if (SshVersion == 1) FCSCipher = FuncToSsh1Cipher(get_cipher());
-      else FCSCipher = FuncToSsh2Cipher(get_cscipher());
+    if (SshVersion == 1)
+    {
+      FCSCipher = FuncToSsh1Cipher(get_cipher(FBackendHandle));
+    }
+    else
+    {
+      FCSCipher = FuncToSsh2Cipher(get_cscipher(FBackendHandle));
+    }
   }
   return FCSCipher;
 }
@@ -582,8 +656,14 @@ TCipher __fastcall TSecureShell::GetSCCipher()
 
   if (FSCCipher == cipWarn)
   {
-    if (SshVersion == 1) FSCCipher = FuncToSsh1Cipher(get_cipher());
-      else FSCCipher = FuncToSsh2Cipher(get_sccipher());
+    if (SshVersion == 1)
+    {
+      FSCCipher = FuncToSsh1Cipher(get_cipher(FBackendHandle));
+    }
+    else
+    {
+      FSCCipher = FuncToSsh2Cipher(get_sccipher(FBackendHandle));
+    }
   }
   return FSCCipher;
 }
@@ -736,9 +816,12 @@ void __fastcall TSessionLog::SetType(Integer Index, TLogLineType value)
 //---------------------------------------------------------------------------
 TLogLineType __fastcall TSessionLog::GetType(Integer Index)
 {
-  Integer P = AnsiString(LogLineMarks).Pos(Strings[Index - FTopIndex][1]);
-  if (P) return (TLogLineType)P;
-    else
+  int P = AnsiString(LogLineMarks).Pos(Strings[Index - FTopIndex][1]);
+  if (P)
+  {
+    return TLogLineType(P - 1);
+  }
+  else
   {
     assert(false);
     return (TLogLineType)0;
@@ -860,7 +943,9 @@ void __fastcall TSessionLog::CloseLogFile()
 void TSessionLog::OpenLogFile()
 {
   if (LogToFile)
-    try {
+  {
+    try
+    {
       assert(!FFile);
       assert(Configuration);
       FFile = fopen(LogFileName.c_str(), (Configuration->LogFileAppend ? "a" : "w"));
@@ -869,43 +954,63 @@ void TSessionLog::OpenLogFile()
         setvbuf((FILE *)FFile, NULL, _IONBF, BUFSIZ);
         FFileName = LogFileName;
       }
-        else throw Exception(FMTLOAD(LOG_OPENERROR, (LogFileName)));
-    } catch (Exception &E) {
+      else
+      {
+        throw Exception(FMTLOAD(LOG_OPENERROR, (LogFileName)));
+      }
+    }
+    catch (Exception &E)
+    {
       // We failed logging to file, turn it of and notify user.
       FFileName = "";
-      Configuration->LogToFile = False;
-      try {
+      Configuration->LogToFile = false;
+      try
+      {
         throw ExtException(&E, LOG_ERROR);
-      } catch (Exception &E) {
+      }
+      catch (Exception &E)
+      {
         ShowExtendedException(&E, this);
       }
     }
+  }
 }
 //---------------------------------------------------------------------------
 void TSessionLog::DeleteUnnecessary()
 {
   BeginUpdate();
-  try {
-    if (!Configuration || !Configuration->Logging) Clear();
-      else
-    while (!Configuration->LogWindowComplete && (Count > Configuration->LogWindowLines))
+  try
+  {
+    if (!Configuration || !Configuration->Logging)
     {
-      Delete(0);
-      FTopIndex++;
+      Clear();
     }
-  } __finally {
+    else
+    {
+      while (!Configuration->LogWindowComplete && (Count > Configuration->LogWindowLines))
+      {
+        Delete(0);
+        FTopIndex++;
+      }
+    }
+  }
+  __finally
+  {
     EndUpdate();
   }
 }
 //---------------------------------------------------------------------------
-TColor __fastcall TSessionLog::GetColor(Integer Index)
+TColor __fastcall TSessionLog::GetColor(int Index)
 {
   return LogLineColors[Type[Index]];
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::DoAddLine(const AnsiString AddedLine)
 {
-  if (FOnAddLine) FOnAddLine(this, AddedLine);
+  if (FOnAddLine)
+  {
+    FOnAddLine(this, AddedLine);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::AddStartupInfo()
@@ -914,7 +1019,8 @@ void __fastcall TSessionLog::AddStartupInfo()
   if (Configuration->Logging || FOnAddLine)
   {
     BeginUpdate();
-    try {
+    try
+    {
       #define ADF(S, F) Add(llMessage, FORMAT(S, F));
       AddSeparator();
       ADF("WinSCP %s", (Configuration->VersionStr));
@@ -938,18 +1044,20 @@ void __fastcall TSessionLog::AddStartupInfo()
       AnsiString Bugs;
       char const * BugFlags = "A+-";
       for (int Index = 0; Index < BUG_COUNT; Index++)
+      {
         Bugs += AnsiString(BugFlags[Data->Bug[(TSshBug)Index]])+(Index<BUG_COUNT?",":"");
+      }
       ADF("SSH Bugs: %s", (Bugs));
-      ADF("Proxy: %s", (ProxyTypeList[Data->ProxyType]));
-      if (Data->ProxyType != pxNone)
+      ADF("Proxy: %s", (ProxyMethodList[Data->ProxyMethod]));
+      if (Data->ProxyMethod != pmNone)
       {
         ADF("HostName: %s (Port: %d); Username: %s; Passwd: %s",
           (Data->ProxyHost, Data->ProxyPort,
            Data->ProxyUsername, BooleanToEngStr(!Data->ProxyPassword.IsEmpty())));
-        if (Data->ProxyType == pxSocks)
-          ADF("SOCKS Version: %d", (Data->ProxySOCKSVersion));
-        if (Data->ProxyType == pxTelnet)
+        if (Data->ProxyMethod == pmTelnet)
+        {
           ADF("Telnet command: %s", (Data->ProxyTelnetCommand));
+        }
       }
       ADF("Return code variable: %s; Lookup user groups: %s",
         ((Data->DetectReturnVar ? AnsiString("Autodetect") : Data->ReturnVar),
@@ -971,7 +1079,9 @@ void __fastcall TSessionLog::AddStartupInfo()
       AddSeparator();
 
       #undef ADF
-    } __finally {
+    }
+    __finally
+    {
       EndUpdate();
     }
   }
@@ -982,26 +1092,23 @@ void __fastcall TSessionLog::AddSeparator()
   Add(llMessage, "--------------------------------------------------------------------------");
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TSessionLog::GetIndexes(Integer Index)
+int __fastcall TSessionLog::GetIndexes(int Index)
 {
   assert((Index >= 0) && (Index < Count));
-  Integer Result = TopIndex + Index;
+  int Result = TopIndex + Index;
   assert((Result >= 0) && (Result < LoggedLines));
   return Result;
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TSessionLog::GetBottomIndex()
+int __fastcall TSessionLog::GetBottomIndex()
 {
-  if (Count) return Indexes[Count-1];
-    else return -1;
+  return (Count ? Indexes[Count-1] : -1);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TSessionLog::GetLogFileName()
 {
   assert(Configuration);
-  AnsiString Result = Configuration->LogFileName;
-  if ((Result.Length() > 2) && (Result[1] == '"') && (Result[Result.Length()] == '"'))
-    Result = Result.SubString(2, Result.Length() - 2);
+  AnsiString Result = StripPathQuotes(Configuration->LogFileName);
   return Result;
 }
 //---------------------------------------------------------------------------

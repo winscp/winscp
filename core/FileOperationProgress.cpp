@@ -145,7 +145,10 @@ void __fastcall TFileOperationProgressType::SetLocalSize(__int64 ASize)
 void __fastcall TFileOperationProgressType::AddLocalyUsed(__int64 ASize)
 {
   LocalyUsed += ASize;
-  assert(LocalyUsed <= LocalSize);
+  if (LocalyUsed > LocalSize)
+  {
+    LocalSize = LocalyUsed;
+  }
   DoProgress();
 } 
 //---------------------------------------------------------------------------
@@ -171,8 +174,13 @@ void __fastcall TFileOperationProgressType::SetTransferSize(__int64 ASize)
 void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize)
 {
   TransferedSize += ASize;
+  if (TransferedSize > TransferSize)
+  {
+    // this can happen with SFTP when downloading file that
+    // grows while being downloaded
+    TransferSize = TransferedSize;
+  }
   TotalTransfered += ASize;
-  assert(TransferedSize <= TransferSize);
   DoProgress();
 }
 //---------------------------------------------------------------------------
@@ -188,6 +196,11 @@ unsigned long __fastcall TFileOperationProgressType::TransferBlockSize()
   unsigned long Result = TRANSFER_BUF_SIZE;
   if (TransferedSize + Result > TransferSize) Result = (unsigned long)(TransferSize - TransferedSize);
   return Result;
+}
+//---------------------------------------------------------------------------
+unsigned long __fastcall TFileOperationProgressType::StaticBlockSize()
+{
+  return TRANSFER_BUF_SIZE;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileOperationProgressType::IsTransferDone()

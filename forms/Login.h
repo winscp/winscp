@@ -25,6 +25,7 @@
 #include "LogSettings.h"
 #include "GeneralSettings.h"
 #include <Menus.hpp>
+#include "PasswordEdit.hpp"
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -90,7 +91,7 @@ __published:
   TLabel *Label5;
   TEdit *HostNameEdit;
   TEdit *UserNameEdit;
-  TEdit *PasswordEdit;
+  TPasswordEdit *PasswordEdit;
   TUpDownEdit *PortNumberEdit;
   TFilenameEdit *PrivateKeyEdit;
   TXPGroupBox *DirectoriesGroup;
@@ -113,12 +114,8 @@ __published:
   TXPGroupBox *ProxyTypeGroup;
   TRadioButton *ProxyNoneButton;
   TRadioButton *ProxyHTTPButton;
-  TRadioButton *ProxySocksButton;
+  TRadioButton *ProxySocks4Button;
   TRadioButton *ProxyTelnetButton;
-  TXPGroupBox *SocksProxyGroup;
-  TLabel *Label17;
-  TRadioButton *ProxySOCKSVersion4Button;
-  TRadioButton *ProxySOCKSVersion5Button;
   TLabel *Label15;
   TLabel *Label18;
   TUpDownEdit *ProxyPortEdit;
@@ -126,8 +123,8 @@ __published:
   TEdit *ProxyUsernameEdit;
   TLabel *Label19;
   TLabel *Label20;
-  TEdit *ProxyPasswordEdit;
-  TXPGroupBox *TelnetProxyGroup;
+  TPasswordEdit *ProxyPasswordEdit;
+  TXPGroupBox *ProxySettingsGroup;
   TLabel *Label21;
   TEdit *ProxyTelnetCommandEdit;
   TTabSheet *BugsSheet;
@@ -180,6 +177,14 @@ __published:
   TMenuItem *Desktopicon1;
   TAction *SendToHookAction;
   TMenuItem *ExplorersSendtoshortcut1;
+  TLabel *Label14;
+  TComboBox *BugPKSessID2Combo;
+  TRadioButton *ProxySocks5Button;
+  TCheckBox *ProxyLocalhostCheck;
+  TLabel *Label17;
+  TRadioButton *ProxyDNSOffButton;
+  TRadioButton *ProxyDNSAutoButton;
+  TRadioButton *ProxyDNSOnButton;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,

@@ -245,16 +245,16 @@ object AboutDialog: TAboutDialog
     object Label5: TLabel
       Left = 8
       Top = 72
-      Width = 246
+      Width = 241
       Height = 13
-      Caption = 'SSH and SCP code based on PuTTY Version 0.53b'
+      Caption = 'SSH and SCP code based on PuTTY (2003-07-17)'
     end
     object Label6: TLabel
       Left = 8
       Top = 88
       Width = 181
       Height = 13
-      Caption = 'Copyright '#169' 1997-2002 Simon Tatham'
+      Caption = 'Copyright '#169' 1997-2003 Simon Tatham'
     end
     object PuttyHomepageLabel: TLabel
       Left = 8

@@ -1,7 +1,7 @@
 inherited ScpExplorerForm: TScpExplorerForm
-  Left = 336
-  Top = 144
-  Width = 656
+  Left = 340
+  Top = 148
+  Width = 648
   ActiveControl = RemoteDirView
   Caption = 'ScpExplorerForm'
   OldCreateOrder = True
@@ -9,14 +9,14 @@ inherited ScpExplorerForm: TScpExplorerForm
   PixelsPerInch = 96
   TextHeight = 13
   inherited TopCoolBar: TCoolBar
-    Width = 648
+    Width = 640
     Height = 170
     Bands = <
       item
         Control = MenuToolBar
         ImageIndex = -1
         MinHeight = 22
-        Width = 644
+        Width = 636
       end
       item
         Control = ToolBar5
@@ -24,38 +24,39 @@ inherited ScpExplorerForm: TScpExplorerForm
         MinHeight = 21
         MinWidth = 150
         Text = 'Address'
-        Width = 644
+        Width = 636
       end
       item
         Control = ButtonsToolBar
         ImageIndex = -1
         MinHeight = 22
-        Width = 644
+        Width = 636
       end
       item
         Control = SelectionToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 644
+        Width = 636
       end
       item
         Control = SessionToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 644
+        Width = 636
       end
       item
         Control = PreferencesToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 644
+        Width = 636
       end
       item
         Control = SortToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 644
+        Width = 636
       end>
+    FixedSize = False
     object MenuToolBar: TToolBar
       Left = 9
       Top = 0
@@ -128,7 +129,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object ButtonsToolBar: TToolBar
       Left = 9
-      Top = 48
+      Top = 47
       Width = 403
       Height = 22
       Hint = '|E'
@@ -260,7 +261,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SelectionToolbar: TToolBar
       Left = 9
-      Top = 72
+      Top = 71
       Width = 123
       Height = 22
       Hint = '|E'
@@ -313,8 +314,8 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SessionToolbar: TToolBar
       Left = 9
-      Top = 96
-      Width = 113
+      Top = 95
+      Width = 235
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -329,18 +330,41 @@ inherited ScpExplorerForm: TScpExplorerForm
       TabOrder = 3
       Transparent = True
       Wrapable = False
+      DesignSize = (
+        235
+        22)
       object ToolButton28: TToolButton
         Left = 0
         Top = 0
         Action = NonVisualDataModule.NewSessionAction
       end
-      object ToolButton29: TToolButton
+      object ToolButton47: TToolButton
         Left = 23
+        Top = 0
+        Width = 8
+        Caption = 'ToolButton47'
+        ImageIndex = 44
+        Style = tbsSeparator
+      end
+      object SessionCombo: TComboBox
+        Left = 31
+        Top = 0
+        Width = 114
+        Height = 19
+        Style = csOwnerDrawFixed
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        DropDownCount = 15
+        ItemHeight = 13
+        TabOrder = 0
+        TabStop = False
+      end
+      object ToolButton29: TToolButton
+        Left = 145
         Top = 0
         Action = NonVisualDataModule.CloseSessionAction
       end
       object ToolButton30: TToolButton
-        Left = 46
+        Left = 168
         Top = 0
         Width = 8
         Hint = 'E'
@@ -349,21 +373,21 @@ inherited ScpExplorerForm: TScpExplorerForm
         Style = tbsSeparator
       end
       object SavedSessionsButton: TToolButton
-        Left = 54
+        Left = 176
         Top = 0
         Action = NonVisualDataModule.SavedSessionsAction
         MenuItem = NonVisualDataModule.SavedSessionsMenu
         Style = tbsDropDown
       end
       object ToolButton34: TToolButton
-        Left = 90
+        Left = 212
         Top = 0
         Action = NonVisualDataModule.SaveCurrentSessionAction
       end
     end
     object PreferencesToolbar: TToolBar
       Left = 9
-      Top = 120
+      Top = 119
       Width = 90
       Height = 22
       Hint = '|E'
@@ -409,7 +433,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SortToolbar: TToolBar
       Left = 9
-      Top = 144
+      Top = 143
       Width = 192
       Height = 22
       Hint = '|E'
@@ -491,7 +515,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     object ToolBar5: TToolBar
       Left = 51
       Top = 24
-      Width = 589
+      Width = 581
       Height = 21
       Hint = '|E'
       Align = alClient
@@ -519,12 +543,12 @@ inherited ScpExplorerForm: TScpExplorerForm
   end
   inherited RemotePanel: TPanel
     Top = 170
-    Width = 648
-    Height = 281
+    Width = 640
+    Height = 259
     inherited RemoteStatusBar: TAssociatedStatusBar
       Tag = 1
-      Top = 262
-      Width = 648
+      Top = 240
+      Width = 640
       Hint = ''
       Panels = <
         item
@@ -569,8 +593,8 @@ inherited ScpExplorerForm: TScpExplorerForm
       OnDrawPanel = SessionStatusBarDrawPanel
     end
     inherited RemoteDirView: TUnixDirView
-      Width = 648
-      Height = 262
+      Width = 640
+      Height = 240
       PathComboBox = UnixPathComboBox
     end
   end

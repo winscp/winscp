@@ -43,6 +43,7 @@ private:
 	int FMaxHistorySize;
 	void __fastcall SetMaxHistorySize(int AMaxHistorySize);
 	bool __fastcall StoreSaveOn(void);
+	int __fastcall GetMaxItemWidth(void);
 	
 protected:
 	DYNAMIC void __fastcall DoExit(void);

@@ -121,6 +121,8 @@ __published:
   TToolButton *ToolButton45;
   TToolButton *ToolButton46;
   TToolButton *ToolButton47;
+  TToolButton *ToolButton48;
+  TComboBox *SessionCombo;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
@@ -136,6 +138,8 @@ __published:
           IDataObject *DataObj, int grfKeyState, TPoint &Point,
           int &dwEffect, bool &Accept);
   void __fastcall DirViewLoaded(TObject *Sender);
+  void __fastcall SessionComboCloseUp(TObject *Sender);
+
 private:
   TCustomDirView * FDirViewToSelect;
   float FLastLocalPanelWidth;
@@ -148,6 +152,7 @@ private:
   AnsiString FPrevPath[2];
   void __fastcall SetLocalPanelWidth(float value);
   float __fastcall GetLocalPanelWidth();
+
 protected:
   virtual Boolean __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, Boolean DragDrop, TStrings * FileList,
@@ -168,9 +173,10 @@ protected:
   void __fastcall SynchronizeNow();
   virtual void __fastcall DoOperationFinished(TOperationSide Side, Boolean DragDrop,
     const AnsiString FileName, Boolean Success, Boolean & DisconnectWhenFinished);
-  virtual void __fastcall SaveSessionData(TSessionData * aSessionData);
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
+  virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
+
 public:
   virtual void __fastcall AddEditLink();
   __fastcall TScpCommanderForm(TComponent* Owner);

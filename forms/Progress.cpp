@@ -11,6 +11,7 @@
 #include <WinInterface.h>
 
 #include "Progress.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
@@ -65,7 +66,7 @@ void __fastcall TProgressForm::UpdateControls()
       else
     if (!TransferOperation && TransferPanel->Visible) Delta += -TransferPanel->Height;
     TransferPanel->Visible = TransferOperation;
-    SpeedPanel->Visible = TransferOperation && Configuration->ExpertMode;
+    SpeedPanel->Visible = TransferOperation && WinConfiguration->ExpertMode;
 
     ClientHeight = ClientHeight + Delta;
     DisconnectWhenCompleteCheck->Top = DisconnectWhenCompleteCheck->Top + Delta;
@@ -80,7 +81,7 @@ void __fastcall TProgressForm::UpdateControls()
           break;
 
         case foDelete:
-          if ((FData.Side == osLocal) && Configuration->DeleteToRecycleBin)
+          if ((FData.Side == osLocal) && WinConfiguration->DeleteToRecycleBin)
             Animate->CommonAVI = aviRecycleFile;
           else
             Animate->CommonAVI = aviDeleteFile;
@@ -137,11 +138,11 @@ void __fastcall TProgressForm::UpdateControls()
       case rsEnabled: ResumeStatusStr = LoadStr(RESUME_ENABLED); break;
       case rsDisabled: ResumeStatusStr = LoadStr(RESUME_DISABLED); break;
       case rsNotAvailable: ResumeStatusStr = LoadStr(RESUME_NOT_AVAILABLE); break;
-      default: assert(false);
+      default:  assert(false);
     }
     ResumeLabel->Caption = ResumeStatusStr;
   }
-} 
+}
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType &AData)
 {
@@ -194,9 +195,9 @@ void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType 
       Application->ProcessMessages();
     }
   }
-  static double HalfSecond = double(1)/(24*60*60*2); 
-  if (FUpdateCounter % 5 == 0 ||
-      double(N) - double(FLastUpdate) > HalfSecond)
+  static double UpdateInterval = double(1)/(24*60*60*5);  // 1/5 sec
+  if ((FUpdateCounter % 5 == 0) ||
+      (double(N) - double(FLastUpdate) > UpdateInterval))
   {
     FLastUpdate = N;
     FUpdateCounter = 0;
@@ -235,6 +236,7 @@ void __fastcall TProgressForm::MinimizeButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::CancelOperation()
 {
+  // partially duplicated in TWinSCPFileSystem::CancelConfiguration (far\WinSCPFileSystem) 
   assert(FDataReceived);
   if (!FData.Suspended)
   {

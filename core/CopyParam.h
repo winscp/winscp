@@ -6,6 +6,7 @@
 #include "RemoteFiles.h"
 //---------------------------------------------------------------------------
 // When adding new options, mind TCopyParamType::GetLogStr()
+enum TOperationSide { osLocal, osRemote, osCurrent };
 enum TFileNameCase { ncNoChange, ncUpperCase, ncLowerCase, ncFirstUpperCase };
 enum TTransferMode { tmBinary, tmAscii, tmAutomatic };
 enum TResumeSupport { rsOn, rsSmart, rsOff };
@@ -23,6 +24,8 @@ private:
   TResumeSupport FResumeSupport;
   __int64 FResumeThreshold;
   AnsiString __fastcall GetLogStr() const;
+  bool FReplaceInvalidChars;
+  AnsiString FLocalInvalidChars;
 
 public:
   __fastcall TCopyParamType();
@@ -30,11 +33,12 @@ public:
   TCopyParamType & __fastcall operator =(const TCopyParamType & rhp);
   void __fastcall Assign(const TCopyParamType & Source);
   void __fastcall Default();
-  AnsiString __fastcall ChangeFileNameCase(AnsiString FileName) const;
+  AnsiString __fastcall ChangeFileName(AnsiString FileName, TOperationSide Side) const;
   int __fastcall LocalFileAttrs(const TRights & Rights) const;
   TRights __fastcall RemoteFileRights(int Attrs) const;
   bool __fastcall UseAsciiTransfer(const AnsiString FileName) const;
   bool __fastcall AllowResume(__int64 Size) const;
+  AnsiString __fastcall ValidLocalFileName(AnsiString FileName) const;
 
   __property TFileMasks AsciiFileMask = { read = FAsciiFileMask, write = FAsciiFileMask };
   __property TFileNameCase FileNameCase = { read = FFileNameCase, write = FFileNameCase };
@@ -47,6 +51,8 @@ public:
   __property bool PreserveRights = { read = FPreserveRights, write = FPreserveRights };
   __property TResumeSupport ResumeSupport = { read = FResumeSupport, write = FResumeSupport };
   __property __int64 ResumeThreshold = { read = FResumeThreshold, write = FResumeThreshold };
+  __property bool ReplaceInvalidChars = { read = FReplaceInvalidChars, write = FReplaceInvalidChars };
+  __property AnsiString LocalInvalidChars = { read = FLocalInvalidChars, write = FLocalInvalidChars };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -9,6 +9,7 @@
 #include <VCLCommon.h>
 
 #include "Synchronize.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "CopyParams"
 #pragma link "MoreButton"
@@ -57,7 +58,7 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent* AOwner)
 bool __fastcall TSynchronizeDialog::Execute()
 {
   SaveSettingsCheck->Checked = False;
-  MoreButton->Expanded = Configuration->CopyParamDialogExpanded;
+  MoreButton->Expanded = WinConfiguration->CopyParamDialogExpanded;
   CopyParamsFrame->BeforeExecute();
   bool Result = (ShowModal() == mrOk);
   if (Result)
@@ -66,7 +67,7 @@ bool __fastcall TSynchronizeDialog::Execute()
     Configuration->BeginUpdate();
     try
     {
-      Configuration->CopyParamDialogExpanded = MoreButton->Expanded;
+      WinConfiguration->CopyParamDialogExpanded = MoreButton->Expanded;
       if (SaveSettingsCheck->Checked)
       {
         Configuration->CopyParam = Params.CopyParams;

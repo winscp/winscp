@@ -80,6 +80,7 @@ public:
   void __fastcall SetFile(AnsiString AFileName);
   int __fastcall OperationProgress();
   unsigned long __fastcall TransferBlockSize();
+  unsigned long __fastcall StaticBlockSize();
   void __fastcall Resume();
   void __fastcall SetLocalSize(__int64 ASize);
   void __fastcall SetAsciiTransfer(bool AAsciiTransfer);

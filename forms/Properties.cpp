@@ -281,10 +281,12 @@ void __fastcall TPropertiesDialog::UpdateControls()
     // group name is specified or we set multiple-file properties and
     // no valid group was specified (there are at least two different groups)
     (!GroupComboBox->Text.IsEmpty() ||
-     (Multiple && !FOrigProperties.Valid.Contains(vpGroup))) &&
+     (Multiple && !FOrigProperties.Valid.Contains(vpGroup)) ||
+     (FOrigProperties.Group == GroupComboBox->Text)) &&
     // same but with owner
     (!OwnerComboBox->Text.IsEmpty() ||
-     (Multiple && !FOrigProperties.Valid.Contains(vpOwner))) &&
+     (Multiple && !FOrigProperties.Valid.Contains(vpOwner)) ||
+     (FOrigProperties.Owner == OwnerComboBox->Text)) &&
     ((FileProperties != FOrigProperties) || RecursiveCheck->Checked)
   );
   EnableControl(GroupComboBox, FAllowedChanges & cpGroup);

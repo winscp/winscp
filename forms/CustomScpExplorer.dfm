@@ -1,8 +1,8 @@
 object CustomScpExplorerForm: TCustomScpExplorerForm
-  Left = 333
-  Top = 184
-  Width = 654
-  Height = 485
+  Left = 328
+  Top = 166
+  Width = 636
+  Height = 470
   Caption = 'CustomScpExplorerForm'
   Color = clBtnFace
   ParentFont = True
@@ -15,7 +15,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   object TopCoolBar: TCoolBar
     Left = 0
     Top = 0
-    Width = 646
+    Width = 628
     Height = 41
     AutoSize = True
     BandMaximize = bmDblClick
@@ -25,15 +25,15 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   object RemotePanel: TPanel
     Left = 0
     Top = 41
-    Width = 646
-    Height = 410
+    Width = 628
+    Height = 395
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
     object RemoteStatusBar: TAssociatedStatusBar
       Left = 0
-      Top = 391
-      Width = 646
+      Top = 376
+      Width = 628
       Height = 19
       Hint = '1'
       Panels = <
@@ -51,8 +51,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object RemoteDirView: TUnixDirView
       Left = 0
       Top = 0
-      Width = 646
-      Height = 391
+      Width = 628
+      Height = 376
       Align = alClient
       FullDrag = True
       HideSelection = False

@@ -384,6 +384,7 @@ void __fastcall TIniFileStorage::GetSubKeyNames(Classes::TStrings* Strings)
   TStrings * Sections = new TStringList();
   try
   {
+    Strings->Clear();
     FIniFile->ReadSections(Sections);
     for (int i = 0; i < Sections->Count; i++)
     {
@@ -391,8 +392,17 @@ void __fastcall TIniFileStorage::GetSubKeyNames(Classes::TStrings* Strings)
       if (AnsiCompareText(CurrentSubKey,
           Section.SubString(1, CurrentSubKey.Length())) == 0)
       {
-        Strings->Add(Section.SubString(CurrentSubKey.Length() + 1,
-          Section.Length() - CurrentSubKey.Length()));
+        AnsiString SubSection = Section.SubString(CurrentSubKey.Length() + 1,
+          Section.Length() - CurrentSubKey.Length());
+        int P = SubSection.Pos("\\");
+        if (P)
+        {
+          SubSection.SetLength(P - 1);
+        }
+        if (Strings->IndexOf(SubSection) < 0)
+        {
+          Strings->Add(SubSection);
+        }
       }
     }
   }

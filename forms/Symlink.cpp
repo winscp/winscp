@@ -2,11 +2,11 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
 #include <Configuration.h>
 #include <TextsWin.h>
 #include "Symlink.h"
 #include "VCLCommon.h"
-#include <assert.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "XPGroupBox"

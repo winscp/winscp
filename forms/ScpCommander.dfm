@@ -1,8 +1,8 @@
 inherited ScpCommanderForm: TScpCommanderForm
-  Left = 339
-  Top = 125
-  Width = 669
-  Height = 553
+  Left = 337
+  Top = 103
+  Width = 661
+  Height = 583
   Caption = 'ScpCommanderForm'
   OldCreateOrder = True
   OnResize = FormResize
@@ -13,58 +13,59 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 313
     Top = 170
     Width = 5
-    Height = 308
+    Height = 338
     Cursor = crHSplit
     ResizeStyle = rsUpdate
     OnCanResize = SplitterCanResize
     OnMoved = SplitterMoved
   end
   inherited TopCoolBar: TCoolBar
-    Width = 661
+    Width = 653
     Height = 170
     Bands = <
       item
         Control = MenuToolBar
         ImageIndex = -1
         MinHeight = 22
-        Width = 657
+        Width = 649
       end
       item
         Control = SessionToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 657
+        Width = 649
       end
       item
         Control = PreferencesToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 657
+        Width = 649
       end
       item
         Control = SelectionToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 657
+        Width = 649
       end
       item
         Control = CommandToolBar
         ImageIndex = -1
         MinHeight = 22
-        Width = 657
+        Width = 649
       end
       item
         Control = SortToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 657
+        Width = 649
       end
       item
         Control = CommandsToolbar
         ImageIndex = -1
         MinHeight = 22
-        Width = 657
+        Width = 649
       end>
+    FixedSize = False
     object MenuToolBar: TToolBar
       Left = 9
       Top = 0
@@ -240,7 +241,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     object SessionToolbar: TToolBar
       Left = 9
       Top = 24
-      Width = 113
+      Width = 235
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -255,18 +256,42 @@ inherited ScpCommanderForm: TScpCommanderForm
       TabOrder = 3
       Transparent = True
       Wrapable = False
+      DesignSize = (
+        235
+        22)
       object ToolButton30: TToolButton
         Left = 0
         Top = 0
         Action = NonVisualDataModule.NewSessionAction
       end
-      object ToolButton31: TToolButton
+      object ToolButton48: TToolButton
         Left = 23
+        Top = 0
+        Width = 8
+        Caption = 'ToolButton48'
+        ImageIndex = 44
+        Style = tbsSeparator
+      end
+      object SessionCombo: TComboBox
+        Left = 31
+        Top = 1
+        Width = 114
+        Height = 19
+        Style = csOwnerDrawFixed
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        DropDownCount = 15
+        ItemHeight = 13
+        TabOrder = 0
+        TabStop = False
+        OnCloseUp = SessionComboCloseUp
+      end
+      object ToolButton31: TToolButton
+        Left = 145
         Top = 0
         Action = NonVisualDataModule.CloseSessionAction
       end
       object ToolButton32: TToolButton
-        Left = 46
+        Left = 168
         Top = 0
         Width = 8
         Hint = 'E'
@@ -275,14 +300,14 @@ inherited ScpCommanderForm: TScpCommanderForm
         Style = tbsSeparator
       end
       object SavedSessionsButton: TToolButton
-        Left = 54
+        Left = 176
         Top = 0
         Action = NonVisualDataModule.SavedSessionsAction
         MenuItem = NonVisualDataModule.SavedSessionsMenu
         Style = tbsDropDown
       end
       object ToolButton21: TToolButton
-        Left = 90
+        Left = 212
         Top = 0
         Action = NonVisualDataModule.SaveCurrentSessionAction
       end
@@ -519,26 +544,26 @@ inherited ScpCommanderForm: TScpCommanderForm
   inherited RemotePanel: TPanel
     Left = 318
     Top = 170
-    Width = 343
-    Height = 308
+    Width = 335
+    Height = 338
     Constraints.MinWidth = 170
     TabOrder = 1
     object RemotePathLabel: TPathLabel [0]
       Left = 0
       Top = 72
-      Width = 343
+      Width = 335
       Height = 15
       PopupMenu = NonVisualDataModule.RemotePanelPopup
     end
     inherited RemoteStatusBar: TAssociatedStatusBar
-      Top = 289
-      Width = 343
+      Top = 319
+      Width = 335
       Hint = ''
     end
     inherited RemoteDirView: TUnixDirView
       Top = 87
-      Width = 343
-      Height = 202
+      Width = 335
+      Height = 232
       Constraints.MinHeight = 100
       RowSelect = True
       NortonLike = True
@@ -550,7 +575,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     object RemoteCoolBar: TCoolBar
       Left = 0
       Top = 0
-      Width = 343
+      Width = 335
       Height = 72
       AutoSize = True
       BandMaximize = bmDblClick
@@ -560,19 +585,19 @@ inherited ScpCommanderForm: TScpCommanderForm
           ImageIndex = -1
           MinHeight = 22
           MinWidth = 50
-          Width = 339
+          Width = 331
         end
         item
           Control = ToolBar3
           ImageIndex = -1
           MinHeight = 22
-          Width = 339
+          Width = 331
         end
         item
           Control = ToolBar4
           ImageIndex = -1
           MinHeight = 22
-          Width = 339
+          Width = 331
         end>
       EdgeBorders = [ebLeft, ebRight, ebBottom]
       FixedSize = True
@@ -665,7 +690,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Tag = 1
         Left = 9
         Top = 0
-        Width = 326
+        Width = 318
         Height = 22
         Hint = '|E'
         Align = alClient
@@ -697,7 +722,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 0
     Top = 170
     Width = 313
-    Height = 308
+    Height = 338
     Align = alLeft
     BevelOuter = bvNone
     Constraints.MinWidth = 170
@@ -711,7 +736,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalStatusBar: TAssociatedStatusBar
       Left = 0
-      Top = 289
+      Top = 319
       Width = 313
       Height = 19
       Panels = <
@@ -731,7 +756,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 87
       Width = 313
-      Height = 202
+      Height = 232
       Align = alClient
       Constraints.MinHeight = 100
       FullDrag = True
@@ -907,8 +932,8 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   object ToolbarPanel: TToolbarPanel
     Left = 0
-    Top = 478
-    Width = 661
+    Top = 508
+    Width = 653
     Height = 22
     Category = 'Toolbar Operation (selected + rename + mkdir + close)'
     ActionList = NonVisualDataModule.ExplorerActions
@@ -919,8 +944,8 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 500
-    Width = 661
+    Top = 530
+    Width = 653
     Height = 19
     Panels = <
       item

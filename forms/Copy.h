@@ -31,10 +31,10 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
 private:
   TTransferDirection FDirection;
-  Boolean FDragDrop;
+  bool FDragDrop;
   TStrings * FFileList;
   TTransferType FTransferType;
-  Boolean __fastcall GetAllowTransferMode();
+  bool __fastcall GetAllowTransferMode();
   AnsiString __fastcall GetDirectory();
   void __fastcall SetDirection(TTransferDirection value);
   TCustomEdit * __fastcall GetDirectoryEdit();
@@ -46,13 +46,13 @@ private:
   void __fastcall SetFileList(TStrings * value);
   void __fastcall SetTransferType(TTransferType value);
 public:
-  Boolean __fastcall Execute();
+  bool __fastcall Execute();
   __fastcall TCopyDialog(TComponent* Owner);
-  __property Boolean AllowTransferMode = { read = GetAllowTransferMode, write = SetAllowTransferMode };
+  __property bool AllowTransferMode = { read = GetAllowTransferMode, write = SetAllowTransferMode };
   __property TTransferDirection Direction = { read = FDirection, write = SetDirection };
   __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
   __property TCustomEdit * DirectoryEdit = { read = GetDirectoryEdit };
-  __property Boolean DragDrop = { read = FDragDrop, write = SetDragDrop };
+  __property bool DragDrop = { read = FDragDrop, write = SetDragDrop };
   __property TStrings * FileList = { read = FFileList, write = SetFileList };
   __property TCopyParamType Params = { read = GetParams, write = SetParams };
   __property TTransferType TransferType = { read = FTransferType, write = SetTransferType };

@@ -12,6 +12,8 @@
 #include <Preferences.h>
 #include <Interface.h>
 #include <UserInterface.h>
+#include "WinConfiguration.h"
+#include "TerminalManager.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -72,30 +74,33 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
 {
   FRightsFrame = NULL;
   FListColumn = NULL;
+  FSessionIdleTimerExecuting = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::LogActionsUpdate(
       TBasicAction *Action, bool &Handled)
 {
-  Boolean ValidLogMemo = LogMemo && LogMemo->Parent;
+  TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
+  bool ValidLogMemo = LogMemo && LogMemo->Parent;
   UPD(LogClearAction, ValidLogMemo && LogMemo->Lines->Count)
   UPD(LogSelectAllAction, ValidLogMemo && LogMemo->Lines->Count &&
     LogMemo->SelLength != LogMemo->Lines->Text.Length())
   UPD(LogCopyAction, ValidLogMemo && LogMemo->SelLength)
 
-  UPD(LogCloseAction, Configuration->Logging && (Configuration->LogView == lvWindow))
+  UPD(LogCloseAction, Configuration->Logging && (WinConfiguration->LogView == lvWindow))
   ;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::LogActionsExecute(
       TBasicAction *Action, bool &Handled)
 {
+  TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
   assert(LogMemo && LogMemo->Parent);
   EXE(LogClearAction, LogMemo->SessionLog->Clear())
   EXE(LogSelectAllAction, LogMemo->SelectAll())
   EXE(LogCopyAction, LogMemo->CopyToClipboard())
 
-  EXE(LogCloseAction, Configuration->LogView = lvNone)
+  EXE(LogCloseAction, WinConfiguration->LogView = lvNone)
   ;
 }
 //---------------------------------------------------------------------------
@@ -148,15 +153,19 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // file operation
   UPD(CurrentRenameAction, EnableFocusedOperation)
   UPD(CurrentEditAction, EnableFocusedOperation &&
+    !WinConfiguration->DisableOpenEdit &&
     !DirView(osCurrent)->ItemIsDirectory(DirView(osCurrent)->ItemFocused))
   UPD(CurrentEditAlternativeAction, EnableFocusedOperation &&
+    !WinConfiguration->DisableOpenEdit &&
     !DirView(osCurrent)->ItemIsDirectory(DirView(osCurrent)->ItemFocused) &&
-    (Configuration->Editor.Editor == edExternal || !Configuration->Editor.ExternalEditor.IsEmpty()))
+    (WinConfiguration->Editor.Editor == edExternal || !WinConfiguration->Editor.ExternalEditor.IsEmpty()))
   UPD(CurrentOpenAction, EnableFocusedOperation &&
+    !WinConfiguration->DisableOpenEdit &&
     !DirView(osCurrent)->ItemIsDirectory(DirView(osCurrent)->ItemFocused))
-  UPD(AddEditLinkAction, DirView(osCurrent) != DirView(osRemote) ||
-    (ScpExplorer->Terminal->IsCapable[fcResolveSymlink] &&
-     ScpExplorer->Terminal->IsCapable[fcSymbolicLink]))
+  UPD(AddEditLinkAction, ScpExplorer->Terminal &&
+    (DirView(osCurrent) != DirView(osRemote) ||
+     (ScpExplorer->Terminal->IsCapable[fcResolveSymlink] &&
+      ScpExplorer->Terminal->IsCapable[fcSymbolicLink])))
   // selected operaton
   UPD(CurrentCopyAction, EnableSelectedOperation)
   UPD(CurrentMoveAction, EnableSelectedOperation)
@@ -238,7 +247,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(CommanderRemoteNavigationBand)
 
   UPDEX(ViewLogAction, Configuration->Logging,
-    ViewLogAction->Checked = (Configuration->LogView == lvWindow),
+    ViewLogAction->Checked = (WinConfiguration->LogView == lvWindow),
     ViewLogAction->Checked = false )
   UPD(PreferencesAction, true)
 
@@ -296,13 +305,15 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(NewSessionAction, true)
   UPD(CloseSessionAction, true)
   UPD(SavedSessionsAction, (StoredSessions->Count > 0))
+  UPD(OpenedSessionsAction, true)
   UPD(SaveCurrentSessionAction, true)
 
   // COMMAND
   UPD(CompareDirectoriesAction, true)
   UPD(SynchronizeAction, true)
-  UPD(ConsoleAction, ScpExplorer->Terminal->IsCapable[fcAnyCommand])
+  UPD(ConsoleAction, ScpExplorer->Terminal && ScpExplorer->Terminal->IsCapable[fcAnyCommand])
   UPD(SynchorizeBrowsingAction, true)
+  UPD(CloseApplicationAction, true)
 
   ;
 }
@@ -399,10 +410,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   EXECOMP(CommanderRemoteHistoryBand)
   EXECOMP(CommanderRemoteNavigationBand)
 
-  EXE(ViewLogAction,
-    if (Configuration->LogView == lvNone) Configuration->LogView = lvWindow;
-      else Configuration->LogView = lvNone
-  )
+  EXE(ViewLogAction, WinConfiguration->LogView =
+    (WinConfiguration->LogView == lvNone ? lvWindow : lvNone) )
   EXE(PreferencesAction, DoPreferencesDialog(pmDefault) )
 
   #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
@@ -456,8 +465,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
   // SESSION
   EXE(NewSessionAction, ScpExplorer->NewSession())
-  EXE(CloseSessionAction, ScpExplorer->Close())
+  EXE(CloseSessionAction, ScpExplorer->CloseSession())
   EXE(SavedSessionsAction, CreateSessionListMenu())
+  EXE(OpenedSessionsAction, )
   EXE(SaveCurrentSessionAction, ScpExplorer->SaveCurrentSession())
 
   // COMMAND
@@ -465,6 +475,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   EXE(SynchronizeAction, ScpExplorer->SynchronizeDirectories())
   EXE(ConsoleAction, ScpExplorer->OpenConsole())
   EXE(SynchorizeBrowsingAction, )
+  EXE(CloseApplicationAction, ScpExplorer->Close())
 
   ;
 }
@@ -504,8 +515,8 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   SelectAllAction->ShortCut = ShortCut('A', CTRL);
   InvertSelectionAction->ShortCut = ShortCut(VK_MULTIPLY, NONE);
   ClearSelectionAction->ShortCut = ShortCut('L', CTRL);
-  // session
-  CloseSessionAction->ShortCut = ShortCut(VK_F4, ALT);
+
+  CloseApplicationAction->ShortCut = ShortCut(VK_F4, ALT);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CommanderShortcuts()
@@ -541,27 +552,44 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   SelectAllAction->ShortCut = ShortCut('A', CTRL);
   InvertSelectionAction->ShortCut = ShortCut(VK_MULTIPLY, NONE);
   ClearSelectionAction->ShortCut = ShortCut('L', CTRL);
-  // session
-  CloseSessionAction->ShortCut = ShortCut(VK_F10, NONE);
+
+  CloseApplicationAction->ShortCut = ShortCut(VK_F10, NONE);
 }
 #undef CTRL
 #undef ALT
 #undef NONE
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::SetScpExplorer(TCustomScpExplorerForm * value)
+{
+  FScpExplorer = value;
+  SessionIdleTimer->Enabled = (FScpExplorer != NULL);
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::SessionIdleTimerTimer(
       TObject */*Sender*/)
 {
-  assert(ScpExplorer);
-  ScpExplorer->SessionIdle();
+  if (!FSessionIdleTimerExecuting)
+  {
+    FSessionIdleTimerExecuting = true;
+    try
+    {
+      assert(ScpExplorer);
+      ScpExplorer->SessionIdle();
+    }
+    __finally
+    {
+      FSessionIdleTimerExecuting = false;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionListMenu()
 {
-  Integer PrevCount = SavedSessionsMenu->Count;
+  int PrevCount = SavedSessionsMenu->Count;
   StoredSessions->Load();
-  for (Integer Index = 0; Index < StoredSessions->Count; Index++)
+  for (int Index = 0; Index < StoredSessions->Count; Index++)
   {
-    TSessionData *Data = StoredSessions->Sessions[Index];
+    TSessionData * Data = StoredSessions->Sessions[Index];
     TMenuItem * Item = new TMenuItem(this);
     Item->Caption = Data->Name;
     Item->Tag = Index;
@@ -569,8 +597,10 @@ void __fastcall TNonVisualDataModule::CreateSessionListMenu()
     Item->OnClick = SessionItemClick;
     SavedSessionsMenu->Add(Item);
   }
-  for (Integer Index = 0; Index < PrevCount; Index++)
+  for (int Index = 0; Index < PrevCount; Index++)
+  {
     SavedSessionsMenu->Delete(0);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::SessionItemClick(TObject * Sender)
@@ -579,7 +609,50 @@ void __fastcall TNonVisualDataModule::SessionItemClick(TObject * Sender)
   ScpExplorer->OpenStoredSession(StoredSessions->Sessions[((TMenuItem *)Sender)->Tag]);
 }
 //---------------------------------------------------------------------------
+TShortCut __fastcall TNonVisualDataModule::OpenSessionShortCut(int Index)
+{
+  if (Index >= 0 && Index < 10)
+  {
+    return ShortCut((Word)(Index < 9 ? '0' + 1 + Index : '0'),
+      TShiftState() << ssAlt);
+  }
+  else
+  {
+    return scNone;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu()
+{
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  TStrings * TerminalList = Manager->TerminalList;
+  int PrevCount = OpenedSessionsMenu->Count;
+  for (int Index = 0; Index < TerminalList->Count; Index++)
+  {
+    TTerminal * Terminal = dynamic_cast<TTerminal *>(TerminalList->Objects[Index]);
+    assert(Terminal);
+    TMenuItem * Item = new TMenuItem(this);
+    Item->Caption = TerminalList->Strings[Index];
+    Item->Tag = int(Terminal);
+    Item->Hint = FMTLOAD(OPENEDSESSION_HINT, (Item->Caption));
+    Item->Checked = (Manager->ActiveTerminal == Terminal);
+    Item->ShortCut = OpenSessionShortCut(Index);
+    Item->OnClick = OpenedSessionItemClick;
+    OpenedSessionsMenu->Add(Item);
+  }
+  for (int Index = 0; Index < PrevCount; Index++)
+  {
+    OpenedSessionsMenu->Delete(0);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::OpenedSessionItemClick(TObject * Sender)
+{
+  TTerminalManager::Instance()->ActiveTerminal = (TTerminal*)(((TMenuItem *)Sender)->Tag);
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::OpenBrowser(AnsiString URL)
 {
   ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
+

@@ -11,18 +11,20 @@
 //---------------------------------------------------------------------------
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES };
 #define CIPHER_COUNT (cipDES+1)
-enum TProtocol { PROT_RAW, PROT_TELNET, PROT_RLOGIN, PROT_SSH };
+enum TProtocol { ptRaw, ptTelnet, ptRLogin, ptSSH };
 enum TFSProtocol { fsSCPonly, fsSFTP, fsSFTPonly };
 #define FSPROTOCOL_COUNT (fsSFTPonly+1)
-enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet };
+enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet }; // 0.53b and older
+enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd }; // after 0.53b
 enum TSshProt { ssh1only, ssh1, ssh2, ssh2only };
-enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2, sbDHGEx2 };
-#define BUG_COUNT (sbDHGEx2+1)
-enum TSshBugHandling { bhAuto, bhOff, bhOn };
+enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
+  sbDHGEx2, sbPKSessID2 };
+#define BUG_COUNT (sbPKSessID2+1)
+enum TAutoSwitch { asOn, asOff, asAuto };
 //---------------------------------------------------------------------------
 extern const char CipherNames[CIPHER_COUNT][10];
 extern const char SshProtList[][10];
-extern const char ProxyTypeList[][10];
+extern const char ProxyMethodList[][10];
 extern const TCipher DefaultCipherList[CIPHER_COUNT];
 extern const char FSProtocolNames[FSPROTOCOL_COUNT][11];
 //---------------------------------------------------------------------------
@@ -63,14 +65,16 @@ private:
   bool FUnsetNationalVars;
   bool FIgnoreLsWarnings;
   bool FTcpNoDelay;
-  TProxyType FProxyType;
+  TProxyMethod FProxyMethod;
   AnsiString FProxyHost;
   int FProxyPort;
   AnsiString FProxyUsername;
   AnsiString FProxyPassword;
   AnsiString FProxyTelnetCommand;
-  int FProxySOCKSVersion;
-  TSshBugHandling FBugs[BUG_COUNT];
+  //int FProxySOCKSVersion;
+  TAutoSwitch FProxyDNS;
+  bool FProxyLocalhost;
+  TAutoSwitch FBugs[BUG_COUNT];
   AnsiString FCustomParam1;
   AnsiString FCustomParam2;
   bool FResolveSymlinks;
@@ -127,16 +131,18 @@ private:
   AnsiString __fastcall GetSshProtStr();
   void __fastcall SetCipherList(AnsiString value);
   AnsiString __fastcall GetCipherList();
-  void __fastcall SetProxyType(TProxyType value);
+  void __fastcall SetProxyMethod(TProxyMethod value);
   void __fastcall SetProxyHost(AnsiString value);
   void __fastcall SetProxyPort(int value);
   void __fastcall SetProxyUsername(AnsiString value);
   void __fastcall SetProxyPassword(AnsiString value);
   void __fastcall SetProxyTelnetCommand(AnsiString value);
-  void __fastcall SetProxySOCKSVersion(int value);
+  //void __fastcall SetProxySOCKSVersion(int value);
+  void __fastcall SetProxyDNS(TAutoSwitch value);
+  void __fastcall SetProxyLocalhost(bool value);
   AnsiString __fastcall GetProxyPassword();
-  void __fastcall SetBug(TSshBug Bug, TSshBugHandling value);
-  TSshBugHandling __fastcall GetBug(TSshBug Bug);
+  void __fastcall SetBug(TSshBug Bug, TAutoSwitch value);
+  TAutoSwitch __fastcall GetBug(TSshBug Bug);
   AnsiString __fastcall GetSessionKey();
   void __fastcall SetCustomParam1(AnsiString value);
   void __fastcall SetCustomParam2(AnsiString value);
@@ -145,7 +151,7 @@ private:
 public:
   __fastcall TSessionData(AnsiString aName);
   void __fastcall Default();
-  void __fastcall StoreToConfig(void * config);
+  virtual void __fastcall StoreToConfig(void * config);
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage);
   void __fastcall Remove();
@@ -197,14 +203,16 @@ public:
   __property bool TcpNoDelay  = { read=FTcpNoDelay, write=SetTcpNoDelay };
   __property AnsiString SshProtStr  = { read=GetSshProtStr };
   __property AnsiString CipherList  = { read=GetCipherList, write=SetCipherList };
-  __property TProxyType ProxyType  = { read=FProxyType, write=SetProxyType };
+  __property TProxyMethod ProxyMethod  = { read=FProxyMethod, write=SetProxyMethod };
   __property AnsiString ProxyHost  = { read=FProxyHost, write=SetProxyHost };
   __property int ProxyPort  = { read=FProxyPort, write=SetProxyPort };
   __property AnsiString ProxyUsername  = { read=FProxyUsername, write=SetProxyUsername };
   __property AnsiString ProxyPassword  = { read=GetProxyPassword, write=SetProxyPassword };
   __property AnsiString ProxyTelnetCommand  = { read=FProxyTelnetCommand, write=SetProxyTelnetCommand };
-  __property int ProxySOCKSVersion  = { read=FProxySOCKSVersion, write=SetProxySOCKSVersion };
-  __property TSshBugHandling Bug[TSshBug Bug]  = { read=GetBug, write=SetBug };
+  //__property int ProxySOCKSVersion  = { read=FProxySOCKSVersion, write=SetProxySOCKSVersion };
+  __property TAutoSwitch ProxyDNS  = { read=FProxyDNS, write=SetProxyDNS };
+  __property bool ProxyLocalhost  = { read=FProxyLocalhost, write=SetProxyLocalhost };
+  __property TAutoSwitch Bug[TSshBug Bug]  = { read=GetBug, write=SetBug };
   __property AnsiString CustomParam1 = { read = FCustomParam1, write = SetCustomParam1 };
   __property AnsiString CustomParam2 = { read = FCustomParam2, write = SetCustomParam2 };
   __property AnsiString SessionKey = { read = GetSessionKey };

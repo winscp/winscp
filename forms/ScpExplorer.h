@@ -25,7 +25,7 @@
 //---------------------------------------------------------------------------
 class TScpExplorerForm : public TCustomScpExplorerForm
 {
-__published:	// IDE-managed Components
+__published:
   TToolBar *MenuToolBar;
   TToolButton *ToolButton2;
   TToolButton *ToolButton19;
@@ -83,15 +83,19 @@ __published:	// IDE-managed Components
   TToolButton *ToolButton44;
   TToolButton *ToolButton45;
   TToolButton *ToolButton46;
+  TToolButton *ToolButton47;
+  TComboBox *SessionCombo;
   void __fastcall FormShow(TObject *Sender);
 private:
 protected:
-  virtual Boolean __fastcall CopyParamDialog(TTransferDirection Direction,
-    TTransferType Type, Boolean DragDrop, TStrings * FileList,
-    AnsiString & TargetDirectory, TCopyParamType & CopyParam, Boolean Confirm);
+  virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
+    TTransferType Type, bool DragDrop, TStrings * FileList,
+    AnsiString & TargetDirectory, TCopyParamType & CopyParam, bool Confirm);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall ConfigurationChanged();
+  virtual TControl * __fastcall GetComponent(Byte Component);
+
 public:
   __fastcall TScpExplorerForm(TComponent* Owner);
   virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);

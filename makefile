@@ -10,7 +10,7 @@ default: WinSCP3.exe
 
 WinSCP3.exe: WinSCP3.bpr
 WinSCP3.exe: lib\Moje_B5.lib lib\DragDrop_B5.lib lib\DriveDir_B5.lib
-WinSCP3.exe: lib\Putty53b.lib lib\ScpCore.lib lib\RScpComp.lib lib\ScpForms.lib
+WinSCP3.exe: lib\Putty.lib lib\ScpCore.lib lib\RScpComp.lib lib\ScpForms.lib
  $(BPR2MAK) WinSCP3.bpr
  $(MAKE)
 

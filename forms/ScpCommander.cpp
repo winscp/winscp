@@ -1,6 +1,6 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
-#pragma hdrstop
+#pragma hdrstop   
 
 #include "ScpCommander.h"
 
@@ -12,6 +12,7 @@
 
 #include "NonVisual.h"
 #include "Tools.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "AssociatedStatusBar"
@@ -62,20 +63,22 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   Splitter->ShowHint = True;
   ((TLabel*)Splitter)->OnDblClick = SplitterDblClick;
   RemotePathComboBox->TabStop = False;
-  // LocalPathComboBox->DoPreloadImages();
+
+  LocalDirView->Font = Screen->IconFont;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreFormParams()
 {
-  assert(Configuration);
+  assert(WinConfiguration);
   TCustomScpExplorerForm::RestoreFormParams();
-  Configuration->RestoreForm(Configuration->ScpCommander.WindowParams, this);
+  WinConfiguration->RestoreForm(WinConfiguration->ScpCommander.WindowParams, this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreParams()
 {
   assert(Configuration);
 
+  // called later once again after menu font is updated (see FormShow)
   SetCoolBandsMinWidth(TopCoolBar);
   SetCoolBandsMinWidth(LocalCoolBar);
   SetCoolBandsMinWidth(RemoteCoolBar);
@@ -84,16 +87,16 @@ void __fastcall TScpCommanderForm::RestoreParams()
   LocalDirView->HeaderImages = NonVisualDataModule->ArrowImages;
 
   TCustomScpExplorerForm::RestoreParams();
-  LocalPanelWidth = Configuration->ScpCommander.LocalPanelWidth;
-  LoadCoolbarLayoutStr(TopCoolBar, Configuration->ScpCommander.CoolBarLayout);
-  StatusBar->Visible = Configuration->ScpCommander.StatusBar;
-  ToolbarPanel->Visible = Configuration->ScpCommander.ToolBar;
-  if (Configuration->ScpCommander.CurrentPanel == osLocal) FDirViewToSelect = LocalDirView;
-    else FDirViewToSelect = RemoteDirView;
+  LocalPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
+  LoadCoolbarLayoutStr(TopCoolBar, WinConfiguration->ScpCommander.CoolBarLayout);
+  StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
+  ToolbarPanel->Visible = WinConfiguration->ScpCommander.ToolBar;
+  FDirViewToSelect = (WinConfiguration->ScpCommander.CurrentPanel == osLocal ?
+    (TCustomDirView *)LocalDirView : (TCustomDirView *)RemoteDirView);
   #define RESTORE_PANEL_PARAMS(PANEL) \
-    PANEL ## DirView->ColProperties->ParamsStr = Configuration->ScpCommander.PANEL ## Panel.DirViewParams; \
-    PANEL ## StatusBar->Visible = Configuration->ScpCommander.PANEL ## Panel.StatusBar; \
-    LoadCoolbarLayoutStr(PANEL ## CoolBar, Configuration->ScpCommander.PANEL ## Panel.CoolBarLayout)
+    PANEL ## DirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams; \
+    PANEL ## StatusBar->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar; \
+    LoadCoolbarLayoutStr(PANEL ## CoolBar, WinConfiguration->ScpCommander.PANEL ## Panel.CoolBarLayout)
   RESTORE_PANEL_PARAMS(Local);
   RESTORE_PANEL_PARAMS(Remote);
   #undef RESTORE_PANEL_PARAMS
@@ -101,40 +104,49 @@ void __fastcall TScpCommanderForm::RestoreParams()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::StoreParams()
 {
-  assert(Configuration);
+  assert(WinConfiguration);
 
-  Configuration->BeginUpdate();
-  try {
-    Configuration->ScpCommander.CoolBarLayout = GetCoolbarLayoutStr(TopCoolBar);
-    Configuration->ScpCommander.LocalPanelWidth = LocalPanelWidth;
-    Configuration->ScpCommander.StatusBar = StatusBar->Visible;
-    Configuration->ScpCommander.ToolBar = ToolbarPanel->Visible;
-    Configuration->ScpCommander.CurrentPanel =
+  WinConfiguration->BeginUpdate();
+  try
+  {
+    WinConfiguration->ScpCommander.CoolBarLayout = GetCoolbarLayoutStr(TopCoolBar);
+    WinConfiguration->ScpCommander.LocalPanelWidth = LocalPanelWidth;
+    WinConfiguration->ScpCommander.StatusBar = StatusBar->Visible;
+    WinConfiguration->ScpCommander.ToolBar = ToolbarPanel->Visible;
+    WinConfiguration->ScpCommander.CurrentPanel =
       ((FLastDirView == LocalDirView) ? osLocal : osRemote);
 
     #define STORE_PANEL_PARAMS(PANEL) \
-      Configuration->ScpCommander.PANEL ## Panel.DirViewParams = PANEL ## DirView->ColProperties->ParamsStr; \
-      Configuration->ScpCommander.PANEL ## Panel.StatusBar = PANEL ## StatusBar->Visible; \
-      Configuration->ScpCommander.PANEL ## Panel.CoolBarLayout = GetCoolbarLayoutStr(PANEL ## CoolBar)
+      WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams = PANEL ## DirView->ColProperties->ParamsStr; \
+      WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar = PANEL ## StatusBar->Visible; \
+      WinConfiguration->ScpCommander.PANEL ## Panel.CoolBarLayout = GetCoolbarLayoutStr(PANEL ## CoolBar)
     STORE_PANEL_PARAMS(Local);
     STORE_PANEL_PARAMS(Remote);
     #undef RESTORE_PANEL_PARAMS
 
-    Configuration->ScpCommander.WindowParams = Configuration->StoreForm(this);;
+    WinConfiguration->ScpCommander.WindowParams = WinConfiguration->StoreForm(this);;
     TCustomScpExplorerForm::StoreParams();
-  } __finally {
-    Configuration->EndUpdate();
+  }
+  __finally
+  {
+    WinConfiguration->EndUpdate();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateSessionData(TSessionData * Data)
 {
-  assert(LocalDirView);
   assert(Terminal && Terminal->SessionData);
-  if (!Data) Data = Terminal->SessionData;
+
+  if (!Data)
+  {
+    Data = Terminal->SessionData;
+  }
   TCustomScpExplorerForm::UpdateSessionData(Data);
   if (Data->UpdateDirectories || (Data != Terminal->SessionData))
+  {
+    assert(LocalDirView);
     Data->LocalDirectory = LocalDirView->PathName;
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
@@ -180,6 +192,12 @@ void __fastcall TScpCommanderForm::FormShow(TObject */*Sender*/)
 {
   assert(FDirViewToSelect);
   FDirViewToSelect->SetFocus();
+
+  // called for second time after menu font was updated (see also RestoreParams)
+  SetCoolBandsMinWidth(TopCoolBar);
+  SetCoolBandsMinWidth(LocalCoolBar);
+  SetCoolBandsMinWidth(RemoteCoolBar);
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -252,13 +270,18 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
 {
   TCustomScpExplorerForm::ConfigurationChanged();
   if (Configuration->DefaultDirIsHome && Terminal)
+  {
     LocalDirView->HomeDirectory = Terminal->SessionData->LocalDirectory;
-  else LocalDirView->HomeDirectory = "";
-  LocalDirView->DimmHiddenFiles = Configuration->DimmHiddenFiles;
-  LocalDirView->ShowHiddenFiles = Configuration->ShowHiddenFiles;
+  }
+  else
+  {
+    LocalDirView->HomeDirectory = "";
+  }
+  LocalDirView->DimmHiddenFiles = WinConfiguration->DimmHiddenFiles;
+  LocalDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
 
-  LocalDirView->NortonLike = !Configuration->ScpCommander.ExplorerStyleSelection;
-  RemoteDirView->NortonLike = !Configuration->ScpCommander.ExplorerStyleSelection;
+  LocalDirView->NortonLike = !WinConfiguration->ScpCommander.ExplorerStyleSelection;
+  RemoteDirView->NortonLike = !WinConfiguration->ScpCommander.ExplorerStyleSelection;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SetLocalPanelWidth(float value)
@@ -324,6 +347,11 @@ void __fastcall TScpCommanderForm::PathComboBoxCloseUp(TObject * /*Sender*/,
   FLastDirView->SetFocus();
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SessionComboCloseUp(TObject *Sender)
+{
+  PathComboBoxCloseUp(Sender, false);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::FormResize(TObject * /*Sender*/)
 {
   LocalPanelWidth = FLastLocalPanelWidth;
@@ -338,7 +366,9 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcLocalCoolBar: return LocalCoolBar;
     case fcLocalStatusBar: return LocalStatusBar;
     case fcRemoteCoolBar: return RemoteCoolBar;
-    case fcRemoteStatusBar: return RemoteStatusBar; 
+    case fcRemoteStatusBar: return RemoteStatusBar;
+    case fcSessionCombo: return SessionCombo;
+    case fcMenuToolBar: return MenuToolBar;
     default: return TCustomScpExplorerForm::GetComponent(Component);
   }
 }
@@ -382,8 +412,7 @@ void __fastcall TScpCommanderForm::SynchronizeDirectories()
 {
   TSynchronizeParamType Params;
   Params.CopyParams.Assign(Configuration->CopyParam);
-  Params.AllowTransferMode =
-    (Terminal->SessionData->EOLType != Configuration->LocalEOLType);
+  Params.AllowTransferMode = Terminal->IsCapable[fcTextMode];
   if (!Params.AllowTransferMode) Params.CopyParams.TransferMode = tmBinary;
   Params.LocalDirectory = LocalDirView->PathName;
   Params.RemoteDirectory = RemoteDirView->PathName;
@@ -470,12 +499,6 @@ void __fastcall TScpCommanderForm::DoOperationFinished(TOperationSide Side,
     TCustomScpExplorerForm::DoOperationFinished(Side, DragDrop, FileName,
       Success, DisconnectWhenFinished);
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::SaveSessionData(TSessionData * aSessionData)
-{
-  TCustomScpExplorerForm::SaveSessionData(aSessionData);
-  aSessionData->LocalDirectory = LocalDirView->Path;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ExploreLocalDirectory()
@@ -671,4 +694,41 @@ void __fastcall TScpCommanderForm::AddEditLink()
     TCustomScpExplorerForm::AddEditLink();
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
+  TOperationSide Side)
+{
+  if (WinConfiguration->UseLocationProfiles)
+  {
+    TStrings * RemoteDirectories = CreateVisitedDirectories(osRemote);
+    try
+    {
+      AnsiString Local = LocalDirView->PathName;
+      AnsiString Remote = RemoteDirView->PathName;
+
+      if (LocationProfilesDialog(Mode, Side, Local, Remote, RemoteDirectories, Terminal))
+      {
+        if (!Local.IsEmpty())
+        {
+          LocalDirView->Path = Local;
+        }
+        if (!Remote.IsEmpty())
+        {
+          RemoteDirView->Path = Remote;
+        }
+      }
+    }
+    __finally
+    {
+      delete RemoteDirectories;
+    }
+  }
+  else
+  {
+    TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
+  }
+}
+
+
+
 

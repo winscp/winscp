@@ -48,12 +48,12 @@ protected:
   AnsiString FCurrentDirectory;
   AnsiString FDirectoryToChangeTo;
   AnsiString FHomeDirectory;
+  AnsiString FEOL;
   TList * FPacketReservations;
   Variant FPacketNumbers;
   char FPreviousLoggedPacket;
   int FNotLoggedPackets;
   int FBusy;
-  TCursor FPreBusyCursor;
   bool FAvoidBusy;
 
   void __fastcall CustomReadFile(const AnsiString FileName,
@@ -73,13 +73,14 @@ protected:
     TSFTPPacket * Response);
   virtual void __fastcall SetCurrentDirectory(AnsiString value);
   virtual AnsiString __fastcall GetProtocolName() const;
-  void __fastcall ReceivePacket(TSFTPPacket * Packet, int ExpectedType = -1);
+  int __fastcall ReceivePacket(TSFTPPacket * Packet, int ExpectedType = -1,
+    int AllowStatus = -1);
   void __fastcall RemoveReservation(int Reservation);
   void __fastcall SendPacket(const TSFTPPacket * Packet);
-  void __fastcall ReceiveResponse(
-    const TSFTPPacket * Packet, TSFTPPacket * Response, int ExpectedType = -1);
-  void __fastcall SendPacketAndReceiveResponse(
-    const TSFTPPacket * Packet, TSFTPPacket * Response, int ExpectedType = -1);
+  int __fastcall ReceiveResponse(const TSFTPPacket * Packet,
+    TSFTPPacket * Response, int ExpectedType = -1, int AllowStatus = -1);
+  int __fastcall SendPacketAndReceiveResponse(const TSFTPPacket * Packet,
+    TSFTPPacket * Response, int ExpectedType = -1, int AllowStatus = -1);
   void __fastcall UnreserveResponse(TSFTPPacket * Response);
   void __fastcall TryOpenDirectory(const AnsiString Directory);
 
@@ -100,8 +101,11 @@ protected:
     TFileOperationProgressType * OperationProgress);
   void __fastcall SFTPSinkFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
+  char * __fastcall GetEOL() const; 
   inline void __fastcall BusyStart();
   inline void __fastcall BusyEnd();
+
+  static AnsiString __fastcall DecodeUTF(const AnsiString UTF);
 };
 //---------------------------------------------------------------------------
 #endif // SftpFileSystemH

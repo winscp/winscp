@@ -279,6 +279,7 @@ AnsiString __fastcall TSCPFileSystem::GetProtocolName() const
 //---------------------------------------------------------------------------
 bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
 {
+  assert(FTerminal);
   switch (Capability) {
     case fcUserGroupListing:
     case fcModeChanging:
@@ -289,6 +290,9 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcSymbolicLink:
     case fcResolveSymlink:
       return true;
+
+    case fcTextMode:
+      return FTerminal->SessionData->EOLType != FTerminal->Configuration->LocalEOLType;
 
     default:
       assert(false);
@@ -433,8 +437,10 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params)
 void __fastcall TSCPFileSystem::ExecCommand(const AnsiString Cmd, int Params)
 {
   if (Params < 0) Params = ecRaiseExcept;
-  TCursor OldCursor = Screen->Cursor;
-  if (FTerminal->UseBusyCursor) Screen->Cursor = crHourGlass;
+  if (FTerminal->UseBusyCursor)
+  {
+    Busy(true);
+  }
   try
   {
     SendCommand(Cmd);
@@ -456,7 +462,10 @@ void __fastcall TSCPFileSystem::ExecCommand(const AnsiString Cmd, int Params)
   }
   __finally
   {
-    if (FTerminal->UseBusyCursor) Screen->Cursor = OldCursor;
+    if (FTerminal->UseBusyCursor)
+    {
+      Busy(false);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -845,29 +854,6 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
-/*void __fastcall TSCPFileSystem::ChangeMode(const AnsiString FileName,
-  const TRights * Rights, bool Recursive)
-{
-  assert(Rights);
-  AnsiString Mode;
-  if (Rights->IsUndef) Mode = Rights->ModeStr;
-    else Mode = Rights->Octal;
-
-  ExecCommand(fsChangeMode, ARRAYOFCONST((RECURSIVE, Mode, DelimitStr(FileName))));
-}
-//---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::ChangeGroup(const AnsiString FileName,
-  const AnsiString Group, bool Recursive)
-{
-  ExecCommand(fsChangeGroup, ARRAYOFCONST((RECURSIVE, Group, DelimitStr(FileName))));
-}
-//---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::ChangeOwner(const AnsiString FileName,
-  const AnsiString Owner, bool Recursive)
-{
-  ExecCommand(fsChangeOwner, ARRAYOFCONST((RECURSIVE, DelimitStr(Owner), DelimitStr(FileName))));
-} */
-//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::AnyCommand(const AnsiString Command)
 {
   ExecCommand(fsAnyCommand, ARRAYOFCONST((Command)));
@@ -954,7 +940,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
       bool CanProceed;
 
       AnsiString FileNameOnly =
-        CopyParam->ChangeFileNameCase(ExtractFileName(FileName));
+        CopyParam->ChangeFileName(ExtractFileName(FileName), osLocal);
 
 
       if (CheckExistence)
@@ -967,7 +953,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         }
           else
         if (File && !OperationProgress->YesToAll &&
-            FTerminal->Configuration->ConfirmOverwriting)
+            FTerminal->Configuration->ConfirmOverwriting && !(Params & cpNoConfirmation))
         {
           AnsiString QuestionFmt;
           if (File->IsDirectory) QuestionFmt = LoadStr(DIRECTORY_OVERWRITE);
@@ -1082,7 +1068,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress)
 {
-  AnsiString DestFileName = CopyParam->ChangeFileNameCase(ExtractFileName(FileName));
+  AnsiString DestFileName = CopyParam->ChangeFileName(ExtractFileName(FileName), osLocal);
 
   FTerminal->LogEvent(FORMAT("File: \"%s\"", (FileName)));
 
@@ -1134,7 +1120,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
         // This is crucial, if it fails during file transfer, it's fatal error
         FILE_OPERATION_LOOP (FileName, FMTLOAD(READ_ERROR, (FileName)),
-          BlockBuf.LoadFile(File, OperationProgress->LocalBlockSize());
+          BlockBuf.LoadFile(File, OperationProgress->LocalBlockSize(), true);
         );
 
         OperationProgress->AddLocalyUsed(BlockBuf.Size);
@@ -1145,9 +1131,10 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
         // Than we add current block to file buffer
         if (OperationProgress->AsciiTransfer)
         {
-          BlockBuf.ConvertEOL(FTerminal->SessionData->EOLType);
+          BlockBuf.ConvertEOL(FTerminal->Configuration->LocalEOLType,
+            FTerminal->SessionData->EOLType);
           BlockBuf.Memory->Seek(0, soFromBeginning);
-          AsciiBuf.ReadStream(BlockBuf.Memory, BlockBuf.Size);
+          AsciiBuf.ReadStream(BlockBuf.Memory, BlockBuf.Size, true);
           // We don't need it any more
           BlockBuf.Memory->Clear();
           // Calculate total size to sent (assume that ratio between
@@ -1296,7 +1283,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
   FTerminal->LogEvent(FORMAT("Entering directory \"%s\".", (DirectoryName)));
 
   OperationProgress->SetFile(DirectoryName);
-  AnsiString DestFileName = CopyParam->ChangeFileNameCase(ExtractFileName(DirectoryName));
+  AnsiString DestFileName = CopyParam->ChangeFileName(ExtractFileName(DirectoryName), osLocal);
 
   // Get directory attributes
   FILE_OPERATION_LOOP (DirectoryName, FMTLOAD(CANT_GET_ATTRS, (DirectoryName)),
@@ -1403,7 +1390,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
         SkipFirstLine();
 
         // Filename is used only for error messaging
-        SCPSink(TargetDir, FileName, CopyParam, Success, OperationProgress);
+        SCPSink(TargetDir, FileName, CopyParam, Success, OperationProgress, Params);
         // operation succeded (no exception), so it's ok that
         // remote side closed SCP, but we continue with next file
         if (OperationProgress->Cancel == csRemoteAbort)
@@ -1413,7 +1400,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
 
         // Move operation -> delete file/directory afterwards
         // but only if copying succeded
-        if ((Params & cpDelete) && Success)
+        if ((Params & cpDelete) && Success && !OperationProgress->Cancel)
         {
           try
           {
@@ -1510,7 +1497,7 @@ void __fastcall TSCPFileSystem::SCPSendError(const AnsiString Message, bool Fata
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
   const AnsiString FileName, const TCopyParamType * CopyParam, bool & Success,
-  TFileOperationProgressType * OperationProgress)
+  TFileOperationProgressType * OperationProgress, int Params)
 {
   struct
   {
@@ -1636,7 +1623,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
 
         AnsiString DestFileName =
           IncludeTrailingBackslash(TargetDir) +
-          CopyParam->ChangeFileNameCase(OperationProgress->FileName);
+          CopyParam->ChangeFileName(OperationProgress->FileName, osRemote);
 
         FileData.Attrs = FileGetAttr(DestFileName);
         // If getting attrs failes, we suppose, that file/folder doesn't exists
@@ -1658,7 +1645,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           /* TODO 1 : Send whole path, CopyData.SourceFileName is not enough
              (just error messaging)*/
           SCPSink(DestFileName, OperationProgress->FileName, CopyParam,
-            Success, OperationProgress);
+            Success, OperationProgress, Params);
           continue;
         }
           else
@@ -1680,7 +1667,8 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                   EXCEPTION;
                 }
                 else if (!OperationProgress->YesToAll &&
-                    FTerminal->Configuration->ConfirmOverwriting)
+                    FTerminal->Configuration->ConfirmOverwriting &&
+                    !(Params & cpNoConfirmation))
                 {
                   int Answer;
                   SUSPEND_OPERATION (
@@ -1746,7 +1734,8 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                 if (OperationProgress->AsciiTransfer)
                 {
                   unsigned int PrevBlockSize = BlockBuf.Size;
-                  BlockBuf.ConvertEOL(FTerminal->Configuration->LocalEOLType);
+                  BlockBuf.ConvertEOL(FTerminal->SessionData->EOLType,
+                    FTerminal->Configuration->LocalEOLType);
                   OperationProgress->SetLocalSize(
                     OperationProgress->LocalSize - PrevBlockSize + BlockBuf.Size);
                 }

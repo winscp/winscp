@@ -1,6 +1,6 @@
 object ProgressForm: TProgressForm
-  Left = 354
-  Top = 189
+  Left = 462
+  Top = 188
   BorderStyle = bsDialog
   Caption = 'Operation'
   ClientHeight = 240

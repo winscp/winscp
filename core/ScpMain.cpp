@@ -13,6 +13,7 @@
 #include "Interface.h"
 #include "Configuration.h"
 #include "Terminal.h"
+#include "Net.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -57,13 +58,16 @@ void Initialize(const AnsiString IniFileName)
 {
   // initialize default seed path value same way as putty does (only change filename)
   putty_get_seedpath();
-  flags = FLAG_VERBOSE; // verbose log
+  flags = FLAG_VERBOSE | FLAG_SYNCAGENT; // verbose log
+  default_protocol = ptSSH;
+  default_port = 22;
+
   Randomize();
 #ifdef SCP_CONSOLE
   CallExceptionClass = new TCallExceptionClass();
   Application->OnException = CallExceptionClass->ShowException;
 #endif
-  Configuration = new TConfiguration();
+  Configuration = CreateConfiguration();
   if (!IniFileName.IsEmpty()) Configuration->IniFileStorageName = IniFileName;
   CATCH( Configuration->Load(); );
   StoredSessions = new TStoredSessionList();
@@ -110,4 +114,8 @@ long RegCreateWinSCPKey(HKEY Key, const char * SubKey,	HKEY * Result)
   return RegCreateKey(Key, TranslateRegKey(SubKey).c_str(), Result);
 }
 //---------------------------------------------------------------------------
+
+
+
+
 

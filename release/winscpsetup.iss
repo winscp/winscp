@@ -70,12 +70,14 @@ Source: "C:\Program Files\PuTTY\puttygen.exe"; DestDir: "{app}\PuTTY"; Component
 
 [INI]
 Filename: "{app}\WinSCP.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://winscp.sourceforge.net/"
+Filename: "{app}\Support forum.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://winscp.sourceforge.net/forum/"
 Filename: "{app}\PuTTY\PuTTY.url"; Section: "InternetShortcut"; Key: "URL"; String: "http://www.chiark.greenend.org.uk/~sgtatham/putty/"; Components: pageant puttygen
 
 [Icons]
 ; This is created always (unless user checks Don't create a Start menu folder, Setup\AllowNoIcons=yes)
 Name: "{group}\WinSCP"; Filename: "{app}\WinSCP3.exe"; Components: main
 Name: "{group}\WinSCP Web Site"; Filename: "{app}\WinSCP.url"; Components: main
+Name: "{group}\Support forum"; Filename: "{app}\Support forum.url"; Components: main
 ; This is created when pageant/puttygen component is selected (unless user checks Don't create a Start
 ; menu folder, Setup\AllowNoIcons=yes). Flag createonlyiffileexists is used instead of "Compomnents: xxx",
 ; because it would force creating the icons even when user doesn't want to create start menu folder.
@@ -103,6 +105,7 @@ Filename: "{app}\WinSCP3.exe"; Description: "Launch &WinSCP"; Flags: nowait post
 [UninstallDelete]
 ; These additional files are created by installer
 Type: files; Name: "{app}\WinSCP.url"
+Type: files; Name: "{app}\Support forum.url"
 Type: files; Name: "{app}\PuTTY\PuTTY.url"; Components: pageant puttygen
 ; These additional files are created by application
 Type: files; Name: "{app}\WinSCP3.ini"

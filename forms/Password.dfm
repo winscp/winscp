@@ -46,14 +46,13 @@ object PasswordDialog: TPasswordDialog
     ModalResult = 2
     TabOrder = 2
   end
-  object PasswordEdit: TEdit
+  object PasswordEdit: TPasswordEdit
     Left = 8
     Top = 24
     Width = 286
     Height = 21
     Anchors = [akLeft, akTop, akRight]
     MaxLength = 250
-    PasswordChar = '*'
     TabOrder = 0
   end
 end

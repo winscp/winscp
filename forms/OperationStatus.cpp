@@ -50,12 +50,13 @@ void __fastcall TOperationStatusForm::SetSecureShell(TSecureShell * value)
     {
       if (SecureShell->OnUpdateStatus == SecureShellUpdateStatus)
       {
-        SecureShell->OnUpdateStatus = NULL;
+        SecureShell->OnUpdateStatus = FPrevOnUpdateStatus;
       }
     }
     FSecureShell = value;
     if (SecureShell)
     {
+      FPrevOnUpdateStatus = SecureShell->OnUpdateStatus;
       SecureShell->OnUpdateStatus = SecureShellUpdateStatus;
       SecureShellUpdateStatus(SecureShell);
     }

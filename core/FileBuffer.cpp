@@ -2,9 +2,20 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Common.h"
 #include "FileBuffer.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+char * __fastcall EOLToStr(TEOLType EOLType)
+{
+  switch (EOLType) {
+    case eolLF: return "\n";
+    case eolCRLF: return "\r\n";
+    case eolCR: return "\r";
+    default: assert(false); return "";
+  }
+}
 //---------------------------------------------------------------------------
 __fastcall TFileBuffer::TFileBuffer()
 {
@@ -45,65 +56,123 @@ void __fastcall TFileBuffer::SetMemory(TMemoryStream * value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len)
+DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool ForceLen)
 {
   Size = Position + Len;
   // C++5
   // FMemory->SetSize(FMemory->Position + Len);
-  Stream->ReadBuffer(Data + Position, Len);
+  DWORD Result;
+  if (ForceLen)
+  {
+    Stream->ReadBuffer(Data + Position, Len);
+    Result = Len;
+  }
+  else
+  {
+    Result = Stream->Read(Data + Position, Len);
+  }
+  if (Result != Len)
+  {
+    Size = Size - Len + Result;
+  }
   FMemory->Seek(Len, soFromCurrent);
+  return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::ReadFile(const HANDLE File, const DWORD Len)
+DWORD __fastcall TFileBuffer::ReadFile(const HANDLE File, const DWORD Len, bool ForceLen)
 {
+  DWORD Result;
   TStream *Stream = NULL;
   try
   {
     Stream = new THandleStream((THandle)File);
-    ReadStream(Stream, Len);
+    Result = ReadStream(Stream, Len, ForceLen);
   }
   __finally
   {
     delete Stream;
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::LoadFile(const HANDLE File, const DWORD Len)
+DWORD __fastcall TFileBuffer::LoadFile(const HANDLE File, const DWORD Len, bool ForceLen)
 {
   FMemory->Seek(0, soFromBeginning);
-  ReadFile(File, Len);
+  return ReadFile(File, Len, ForceLen);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::ConvertEOL(TEOLType EOLType)
+void __fastcall TFileBuffer::ConvertEOL(char * Source, char * Dest)
 {
-  char *Ptr = Data;
-  Boolean PrevWasCR = False;
+  assert(strlen(Source) <= 2);
+  assert(strlen(Dest) <= 2);
 
-  for (Integer Index = 0; Index < Size; Index++)
+  if (strcmp(Source, Dest) == 0)
   {
-    if (*Ptr == '\n') /* LF */
-    {
-      if ((EOLType == eolCRLF) && !PrevWasCR)
-      {
-        Insert(Index, "\r", 1);
-        Index++; Ptr++;
-      }
-    }
-    else if (*Ptr == '\r') /* CR */
-    {
-      if (EOLType == eolLF)
-      {
-        Delete(Index, 1);
-        Index--; Ptr--;
-      }
-    };
-
-    PrevWasCR = (Index && (*Ptr == '\r'));
-    Ptr++;
+    return;
   }
-  // Never allow CR at end of buffer,
-  // it would be duplicated in next buffer starting with LF
-  if (PrevWasCR) Delete(Size-1, 1);
+
+  char * Ptr = Data;
+
+  // one character source EOL
+  if (!Source[1])
+  {
+    for (int Index = 0; Index < Size; Index++)
+    {
+      if (*Ptr == Source[0])
+      {
+        *Ptr = Dest[0];
+        if (Dest[1])
+        {
+          Insert(Index+1, Dest+1, 1);
+          Index++;
+          Ptr = Data + Index;
+        }
+      }
+      Ptr++;
+    }
+  }
+  // two character source EOL
+  else
+  {
+    int Index;
+    for (Index = 0; Index < Size - 1; Index++)
+    {
+      if ((*Ptr == Source[0]) && (*(Ptr+1) == Source[1]))
+      {
+        *Ptr = Dest[0];
+        if (Dest[1])
+        {
+          *(Ptr+1) = Dest[1];
+          Index++; Ptr++;
+        }
+        else
+        {
+          Delete(Index+1, 1);
+          Ptr = Data + Index;
+        }
+      }
+      Ptr++;
+    }
+    if ((Index < Size) && (*Ptr == Source[0]))
+    {
+      Delete(Index, 1);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileBuffer::ConvertEOL(TEOLType Source, TEOLType Dest)
+{
+  ConvertEOL(EOLToStr(Source), EOLToStr(Dest));
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileBuffer::ConvertEOL(char * Source, TEOLType Dest)
+{
+  ConvertEOL(Source, EOLToStr(Dest));
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileBuffer::ConvertEOL(TEOLType Source, char * Dest)
+{
+  ConvertEOL(EOLToStr(Source), Dest);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::Insert(int Index, const char * Buf, int Len)

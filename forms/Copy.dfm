@@ -54,10 +54,11 @@ object CopyDialog: TCopyDialog
     Top = 224
     Width = 75
     Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '<< &Less'
+    TabOrder = 3
     Panel = MorePanel
     RepositionForm = True
-    Anchors = [akRight, akBottom]
-    TabOrder = 3
   end
   object CopyButton: TButton
     Left = 339

@@ -9,13 +9,16 @@
 
 #include "Login.h"
 #include "WinInterface.h"
+#include "UserInterface.h"
 #include "Tools.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
 #pragma link "LogSettings"
 #pragma link "GeneralSettings"
 #pragma link "UpDownEdit"
 #pragma link "XPGroupBox"
+#pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
@@ -49,6 +52,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   NoUpdate = 0;
   LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
   UseSystemFont(this);
+  Caption = FORMAT("%s %s", (AppName, Caption));
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -174,22 +178,27 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     AliasGroupListCheck->Checked = aSessionData->AliasGroupList;
 
     // Proxy tab
-    switch (aSessionData->ProxyType) {
-      case pxHTTP: ProxyHTTPButton->Checked = true; break;
-      case pxSocks: ProxySocksButton->Checked = true; break;
-      case pxTelnet: ProxyTelnetButton->Checked = true; break;
+    switch (aSessionData->ProxyMethod) {
+      case pmHTTP: ProxyHTTPButton->Checked = true; break;
+      case pmSocks4: ProxySocks4Button->Checked = true; break;
+      case pmSocks5: ProxySocks5Button->Checked = true; break;
+      case pmTelnet: ProxyTelnetButton->Checked = true; break;
       default: ProxyNoneButton->Checked = true; break;
     }
     ProxyHostEdit->Text = aSessionData->ProxyHost;
     ProxyPortEdit->AsInteger = aSessionData->ProxyPort;
     ProxyUsernameEdit->Text = aSessionData->ProxyUsername;
     ProxyPasswordEdit->Text = aSessionData->ProxyPassword;
-    if (aSessionData->ProxySOCKSVersion == 5) ProxySOCKSVersion5Button->Checked = true;
-      else ProxySOCKSVersion4Button->Checked = true;
     ProxyTelnetCommandEdit->Text = aSessionData->ProxyTelnetCommand;
+    ProxyLocalhostCheck->Checked = aSessionData->ProxyDNS;
+    switch (aSessionData->ProxyLocalhost) {
+      case asOn: ProxyDNSOnButton->Checked = true; break;
+      case asOff: ProxyDNSOffButton->Checked = true; break;
+      default: ProxyDNSAutoButton->Checked = true; break;
+    }
 
     // Bugs tab
-    #define LOAD_BUG_COMBO(BUG) Bug ## BUG ## Combo->ItemIndex = aSessionData->Bug[sb ## BUG]
+    #define LOAD_BUG_COMBO(BUG) Bug ## BUG ## Combo->ItemIndex = 2 - aSessionData->Bug[sb ## BUG]
     LOAD_BUG_COMBO(Ignore1);
     LOAD_BUG_COMBO(PlainPW1);
     LOAD_BUG_COMBO(RSA1);
@@ -197,6 +206,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     LOAD_BUG_COMBO(DeriveKey2);
     LOAD_BUG_COMBO(RSAPad2);
     LOAD_BUG_COMBO(DHGEx2);
+    LOAD_BUG_COMBO(PKSessID2);
     #undef LOAD_BUG_COMBO
   }
   __finally
@@ -270,22 +280,29 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->AliasGroupList = AliasGroupListCheck->Checked;
 
   // proxy
-  if (ProxyHTTPButton->Checked) aSessionData->ProxyType = pxHTTP;
+  if (ProxyHTTPButton->Checked) aSessionData->ProxyMethod = pmHTTP;
     else
-  if (ProxySocksButton->Checked) aSessionData->ProxyType = pxSocks;
+  if (ProxySocks4Button->Checked) aSessionData->ProxyMethod = pmSocks4;
     else
-  if (ProxyTelnetButton->Checked) aSessionData->ProxyType = pxTelnet;
-    else aSessionData->ProxyType = pxNone;
+  if (ProxySocks5Button->Checked) aSessionData->ProxyMethod = pmSocks5;
+    else
+  if (ProxyTelnetButton->Checked) aSessionData->ProxyMethod = pmTelnet;
+    else aSessionData->ProxyMethod = pmNone;
 
   aSessionData->ProxyHost = ProxyHostEdit->Text;
   aSessionData->ProxyPort = ProxyPortEdit->AsInteger;
   aSessionData->ProxyUsername = ProxyUsernameEdit->Text;
   aSessionData->ProxyPassword = ProxyPasswordEdit->Text;
-  aSessionData->ProxySOCKSVersion = (ProxySOCKSVersion5Button->Checked ? 5 : 4);
   aSessionData->ProxyTelnetCommand = ProxyTelnetCommandEdit->Text;
+  aSessionData->ProxyLocalhost = ProxyLocalhostCheck->Checked;
+   
+  if (ProxyDNSOnButton->Checked) aSessionData->ProxyDNS = asOn;
+    else
+  if (ProxyDNSOffButton->Checked) aSessionData->ProxyDNS = asOff;
+    else aSessionData->ProxyDNS = asAuto;
 
   // Bugs tab
-  #define SAVE_BUG_COMBO(BUG) aSessionData->Bug[sb ## BUG] = (TSshBugHandling)Bug ## BUG ## Combo->ItemIndex;
+  #define SAVE_BUG_COMBO(BUG) aSessionData->Bug[sb ## BUG] = (TAutoSwitch)(2 - Bug ## BUG ## Combo->ItemIndex);
   SAVE_BUG_COMBO(Ignore1);
   SAVE_BUG_COMBO(PlainPW1);
   SAVE_BUG_COMBO(RSA1);
@@ -293,6 +310,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   SAVE_BUG_COMBO(DeriveKey2);
   SAVE_BUG_COMBO(RSAPad2);
   SAVE_BUG_COMBO(DHGEx2);
+  SAVE_BUG_COMBO(PKSessID2);
   #undef SAVE_BUG_COMBO
 }
 //---------------------------------------------------------------------
@@ -347,8 +365,8 @@ void __fastcall TLoginDialog::UpdateControls()
     EnableControl(ProxyPortEdit, !ProxyNoneButton->Checked);
     EnableControl(ProxyUsernameEdit, !ProxyNoneButton->Checked);
     EnableControl(ProxyPasswordEdit, !ProxyNoneButton->Checked);
-    EnableControl(SocksProxyGroup, ProxySocksButton->Checked);
-    EnableControl(TelnetProxyGroup, ProxyTelnetButton->Checked);
+    EnableControl(ProxySettingsGroup, !ProxyNoneButton->Checked);
+    EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
   }
   __finally
   {
@@ -364,7 +382,7 @@ void __fastcall TLoginDialog::DataChange(TObject * /*Sender*/)
 void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree)
 {
   Tree->FullExpand();
-  if (!Configuration->ExpertMode)
+  if (!WinConfiguration->ExpertMode)
   {
     int i = 0;
     while (i < Tree->Items->Count)
@@ -383,7 +401,7 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   PrepareNavigationTree(SimpleNavigationTree);
   PrepareNavigationTree(AdvancedNavigationTree);
 
-  if (!Configuration->ExpertMode)
+  if (!WinConfiguration->ExpertMode)
   {
     Label9->Visible = false;
     LocalDirectoryEdit->Visible = false;
@@ -624,13 +642,13 @@ Boolean __fastcall TLoginDialog::Execute()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveConfiguration()
 {
-  Configuration->BeginUpdate();
+  WinConfiguration->BeginUpdate();
   try {
     LoggingFrame->SaveConfiguration();
     GeneralSettingsFrame->SaveConfiguration();
-    Configuration->ShowAdvancedLoginOptions = ShowAdvancedLoginOptionsCheck->Checked;
+    WinConfiguration->ShowAdvancedLoginOptions = ShowAdvancedLoginOptionsCheck->Checked;
   } __finally {
-    Configuration->EndUpdate();
+    WinConfiguration->EndUpdate();
   }
 }
 //---------------------------------------------------------------------------
@@ -638,7 +656,7 @@ void __fastcall TLoginDialog::LoadConfiguration()
 {
   LoggingFrame->LoadConfiguration();
   GeneralSettingsFrame->LoadConfiguration();
-  ShowAdvancedLoginOptionsCheck->Checked = Configuration->ShowAdvancedLoginOptions;
+  ShowAdvancedLoginOptionsCheck->Checked = WinConfiguration->ShowAdvancedLoginOptions;
   UpdateControls();
 }
 //---------------------------------------------------------------------------

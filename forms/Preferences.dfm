@@ -21,11 +21,11 @@ object PreferencesDialog: TPreferencesDialog
     Top = 0
     Width = 386
     Height = 385
-    ActivePage = IntegrationSheet
+    ActivePage = CommanderSheet
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     MultiLine = True
-    TabIndex = 8
+    TabIndex = 4
     TabOrder = 0
     object PreferencesSheet: TTabSheet
       Caption = 'General'
@@ -402,6 +402,28 @@ object PreferencesDialog: TPreferencesDialog
           Anchors = [akLeft, akTop, akRight]
           Caption = '&Explorer style selection'
           TabOrder = 1
+          OnClick = ControlChange
+        end
+      end
+      object CommanderMiscGroup: TXPGroupBox
+        Left = 8
+        Top = 122
+        Width = 362
+        Height = 53
+        Anchors = [akLeft, akTop, akRight]
+        Caption = 'Miscellaneous'
+        TabOrder = 1
+        DesignSize = (
+          362
+          53)
+        object UseLocationProfilesCheck: TCheckBox
+          Left = 16
+          Top = 21
+          Width = 330
+          Height = 17
+          Anchors = [akLeft, akTop, akRight]
+          Caption = '&Use Location Profiles instead of Directory Bookmarks'
+          TabOrder = 0
           OnClick = ControlChange
         end
       end

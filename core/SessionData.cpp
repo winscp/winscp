@@ -18,7 +18,7 @@
 const char * DefaultSessionName = "Default Settings";
 const char CipherNames[CIPHER_COUNT][10] = {"WARN", "3des", "blowfish", "aes", "des"};
 const char SshProtList[][10] = {"1 only", "1", "2", "2 only"};
-const char ProxyTypeList[][10] = {"none", "HTTP", "SOCKS", "Telnet"};
+const char ProxyMethodList[][10] = {"none", "SOCKS4", "SOCKS5", "HTTP", "Telnet", "Cmd" };
 const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipBlowfish, cip3DES, cipWarn, cipDES };
 const char FSProtocolNames[FSPROTOCOL_COUNT][11] = { "SCP", "SFTP (SCP)", "SFTP" };
@@ -33,7 +33,7 @@ __fastcall TSessionData::TSessionData(AnsiString aName):
 void __fastcall TSessionData::Default()
 {
   HostName = "";
-  PortNumber = DEFAULT_PORT;
+  PortNumber = default_port;
   UserName = "";
   Password = "";
   PingInterval = 0;
@@ -49,20 +49,22 @@ void __fastcall TSessionData::Default()
     Cipher[Index] = DefaultCipherList[Index];
   }
   PublicKeyFile = "";
-  FProtocol = PROT_SSH;
+  FProtocol = ptSSH;
   TcpNoDelay = true;
 
-  ProxyType = pxNone;
+  ProxyMethod = pmNone;
   ProxyHost = "proxy";
   ProxyPort = 80;
   ProxyUsername = "";
   ProxyPassword = "";
   ProxyTelnetCommand = "connect %host %port\\n";
-  ProxySOCKSVersion = 5;
+  //ProxySOCKSVersion = 5;
+  ProxyDNS = asAuto;
+  ProxyLocalhost = false;
 
   for (int Index = 0; Index < LENOF(FBugs); Index++)
   {
-    Bug[(TSshBug)Index] = bhAuto;
+    Bug[(TSshBug)Index] = asAuto;
   }
 
   Special = false;
@@ -139,13 +141,14 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(TcpNoDelay);
     DUPL(AuthKI);
 
-    DUPL(ProxyType);
+    DUPL(ProxyMethod);
     DUPL(ProxyHost);
     DUPL(ProxyPort);
     DUPL(ProxyUsername);
     DUPL(ProxyPassword);
     DUPL(ProxyTelnetCommand);
-    DUPL(ProxySOCKSVersion);
+    DUPL(ProxyDNS);
+    DUPL(ProxyLocalhost);
 
     for (int Index = 0; Index < LENOF(FBugs); Index++)
     {
@@ -174,7 +177,7 @@ void __fastcall TSessionData::StoreToConfig(void * config)
   ASCOPY(cfg->host, HostName);
   ASCOPY(cfg->username, UserName);
   cfg->port = PortNumber;
-  cfg->protocol = Config::PROT_SSH;
+  cfg->protocol = PROT_SSH;
   cfg->ping_interval = PingInterval;
   cfg->compression = Compression;
   cfg->agentfwd = AgentFwd;
@@ -194,30 +197,26 @@ void __fastcall TSessionData::StoreToConfig(void * config)
   }
 
   AnsiString SPublicKeyFile = PublicKeyFile;
-  if (SPublicKeyFile.IsEmpty()) SPublicKeyFile = Configuration->EmbeddedKeyFile;
+  if (SPublicKeyFile.IsEmpty()) SPublicKeyFile = Configuration->DefaultKeyFile;
   SPublicKeyFile = StripPathQuotes(SPublicKeyFile);
-  ASCOPY(cfg->keyfile, SPublicKeyFile);
+  ASCOPY(cfg->keyfile.path, SPublicKeyFile);
   cfg->sshprot = SshProt;
   cfg->ssh2_des_cbc = Ssh2DES;
   cfg->try_tis_auth = AuthTIS;
   cfg->try_ki_auth = AuthKI;
 
-  switch (ProxyType) {
-    case pxNone: cfg->proxy_type = Config::PROXY_NONE; break;
-    case pxHTTP: cfg->proxy_type = Config::PROXY_HTTP; break;
-    case pxSocks: cfg->proxy_type = Config::PROXY_SOCKS; break;
-    case pxTelnet: cfg->proxy_type = Config::PROXY_TELNET; break;
-    default: assert(false);
-  }
-
+  cfg->proxy_type = ProxyMethod;
   ASCOPY(cfg->proxy_host, ProxyHost);
   cfg->proxy_port = ProxyPort;
   ASCOPY(cfg->proxy_username, ProxyUsername);
   ASCOPY(cfg->proxy_password, ProxyPassword);
   ASCOPY(cfg->proxy_telnet_command, ProxyTelnetCommand);
-  cfg->proxy_socks_version = ProxySOCKSVersion;
+  cfg->proxy_dns = ProxyDNS;
+  cfg->even_proxy_localhost = ProxyLocalhost;
 
   #pragma option push -w-eas
+  // after 0.53b values were reversed, however putty still stores
+  // settings to registry in save way as before
   cfg->sshbug_ignore1 = Bug[sbIgnore1];
   cfg->sshbug_plainpw1 = Bug[sbPlainPW1];
   cfg->sshbug_rsa1 = Bug[sbRSA1];
@@ -225,6 +224,8 @@ void __fastcall TSessionData::StoreToConfig(void * config)
   cfg->sshbug_derivekey2 = Bug[sbDeriveKey2];
   cfg->sshbug_rsapad2 = Bug[sbRSAPad2];
   cfg->sshbug_dhgex2 = Bug[sbDHGEx2];
+  // new after 0.53b
+  cfg->sshbug_pksessid2 = Bug[sbPKSessID2];
   #pragma option pop
 
   if (FSProtocol == fsSCPonly)
@@ -320,15 +321,39 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     // new in 53b
     TcpNoDelay = Storage->ReadBool("TcpNoDelay", TcpNoDelay);
 
-    ProxyType = (TProxyType)Storage->ReadInteger("ProxyType", ProxyType);
+    ProxyMethod = (TProxyMethod)Storage->ReadInteger("ProxyMethod", -1);
+    if (ProxyMethod < 0)
+    {
+      int ProxyType = Storage->ReadInteger("ProxyType", pxNone);
+      int ProxySOCKSVersion;
+      switch (ProxyType) {
+        case pxHTTP:
+          ProxyMethod = pmHTTP;
+          break;
+        case pxTelnet:
+          ProxyMethod = pmTelnet;
+          break;
+        case pxSocks:
+          ProxySOCKSVersion = Storage->ReadInteger("ProxySOCKSVersion", 5);
+          ProxyMethod = ProxySOCKSVersion == 5 ? pmSocks5 : pmSocks4;
+          break;
+        default:
+        case pxNone:
+          ProxyMethod = pmNone;
+          break;
+      }
+    }
     ProxyHost = Storage->ReadString("ProxyHost", ProxyHost);
     ProxyPort = Storage->ReadInteger("ProxyPort", ProxyPort);
     ProxyUsername = Storage->ReadString("ProxyUsername", ProxyUsername);
     FProxyPassword = Storage->ReadString("ProxyPassword", FProxyPassword);
-    ProxyTelnetCommand = Storage->ReadString("ProxyTelnetCommand", ProxyTelnetCommand);
-    ProxySOCKSVersion = Storage->ReadInteger("ProxySOCKSVersion", ProxySOCKSVersion);
+    ProxyTelnetCommand = Storage->ReadStringRaw("ProxyTelnetCommand", ProxyTelnetCommand);
+    ProxyDNS = TAutoSwitch((Storage->ReadInteger("ProxyDNS", ProxyDNS) + 1) % 3);
+    ProxyLocalhost = Storage->ReadBool("ProxyLocalhost", ProxyLocalhost);
 
-    #define READ_BUG(BUG) Bug[sb##BUG] = (TSshBugHandling)Storage->ReadInteger("Bug"#BUG, Bug[sb##BUG]);
+    #define READ_BUG(BUG) \
+      Bug[sb##BUG] = TAutoSwitch(2 - Storage->ReadInteger("Bug"#BUG, \
+        2 - Bug[sb##BUG]));
     READ_BUG(Ignore1);
     READ_BUG(PlainPW1);
     READ_BUG(RSA1);
@@ -336,12 +361,13 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     READ_BUG(DeriveKey2);
     READ_BUG(RSAPad2);
     READ_BUG(DHGEx2);
+    READ_BUG(PKSessID2);
     #undef READ_BUG
 
-    if ((Bug[sbHMAC2] == bhAuto) &&
+    if ((Bug[sbHMAC2] == asAuto) &&
         Storage->ReadBool("BuggyMAC", false))
     {
-        Bug[sbHMAC2] = bhOn;
+        Bug[sbHMAC2] = asOn;
     }
 
     // read only (used only on Import from Putty dialog)
@@ -399,15 +425,16 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage)
 
     Storage->WriteBool("TcpNoDelay", TcpNoDelay);
 
-    Storage->WriteInteger("ProxyType", ProxyType);
+    Storage->WriteInteger("ProxyMethod", ProxyMethod);
     Storage->WriteString("ProxyHost", ProxyHost);
     Storage->WriteInteger("ProxyPort", ProxyPort);
     Storage->WriteString("ProxyUsername", ProxyUsername);
     Storage->WriteString("ProxyPassword", FProxyPassword);
-    Storage->WriteString("ProxyTelnetCommand", ProxyTelnetCommand);
-    Storage->WriteInteger("ProxySOCKSVersion", ProxySOCKSVersion);
+    Storage->WriteStringRaw("ProxyTelnetCommand", ProxyTelnetCommand);
+    Storage->WriteInteger("ProxyDNS", (ProxyDNS+2) % 3);
+    Storage->WriteBool("ProxyLocalhost", ProxyLocalhost);
 
-    #define WRITE_BUG(BUG) Storage->WriteInteger("Bug"#BUG, Bug[sb##BUG]);
+    #define WRITE_BUG(BUG) Storage->WriteInteger("Bug"#BUG, 2 - Bug[sb##BUG]);
     WRITE_BUG(Ignore1);
     WRITE_BUG(PlainPW1);
     WRITE_BUG(RSA1);
@@ -415,6 +442,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage)
     WRITE_BUG(DeriveKey2);
     WRITE_BUG(RSAPad2);
     WRITE_BUG(DHGEx2);
+    WRITE_BUG(PKSessID2);
     #undef WRITE_BUG
 
     Storage->WriteString("CustomParam1", CustomParam1);
@@ -771,9 +799,9 @@ void __fastcall TSessionData::SetTcpNoDelay(bool value)
   SET_SESSION_PROPERTY(TcpNoDelay);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetProxyType(TProxyType value)
+void __fastcall TSessionData::SetProxyMethod(TProxyMethod value)
 {
-  SET_SESSION_PROPERTY(ProxyType);
+  SET_SESSION_PROPERTY(ProxyMethod);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetProxyHost(AnsiString value)
@@ -794,13 +822,11 @@ void __fastcall TSessionData::SetProxyUsername(AnsiString value)
 void __fastcall TSessionData::SetProxyPassword(AnsiString value)
 {
   // proxy password unencrypted to maintain compatibility with Putty
-  // value = EncryptPassword(value, ProxyUsername+ProxyHost);
   SET_SESSION_PROPERTY(ProxyPassword);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetProxyPassword()
 {
-  // return DecryptPassword(FProxyPassword, ProxyUsername+ProxyHost);
   return FProxyPassword;
 }
 //---------------------------------------------------------------------
@@ -809,18 +835,23 @@ void __fastcall TSessionData::SetProxyTelnetCommand(AnsiString value)
   SET_SESSION_PROPERTY(ProxyTelnetCommand);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetProxySOCKSVersion(int value)
+void __fastcall TSessionData::SetProxyDNS(TAutoSwitch value)
 {
-  SET_SESSION_PROPERTY(ProxySOCKSVersion);
+  SET_SESSION_PROPERTY(ProxyDNS);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetBug(TSshBug Bug, TSshBugHandling value)
+void __fastcall TSessionData::SetProxyLocalhost(bool value)
+{
+  SET_SESSION_PROPERTY(ProxyLocalhost);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetBug(TSshBug Bug, TAutoSwitch value)
 {
   assert(Bug >= 0 && Bug < LENOF(FBugs));
   SET_SESSION_PROPERTY(Bugs[Bug]);
 }
 //---------------------------------------------------------------------
-TSshBugHandling __fastcall TSessionData::GetBug(TSshBug Bug)
+TAutoSwitch __fastcall TSessionData::GetBug(TSshBug Bug)
 {
   assert(Bug >= 0 && Bug < LENOF(FBugs));
   return FBugs[Bug];
@@ -983,9 +1014,11 @@ void __fastcall TStoredSessionList::SelectSessionsToImport
   (TStoredSessionList * Dest, bool SSHOnly)
 {
   for (int Index = 0; Index < Count; Index++)
+  {
     Sessions[Index]->Selected =
-      (!SSHOnly || (Sessions[Index]->Protocol == PROT_SSH)) &&
+      (!SSHOnly || (Sessions[Index]->Protocol == ptSSH)) &&
       !Dest->FindByName(Sessions[Index]->Name);
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Cleanup()

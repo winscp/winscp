@@ -75,12 +75,14 @@ typedef int __fastcall (__closure *TFileOperationEvent)
   FILE_OPERATION_LOOP_EX(FILENAME, True, MESSAGE, OPERATION)
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
-  fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink };
+  fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink,
+  fcTextMode };
 //---------------------------------------------------------------------------
 const cpDelete = 1;
 //const cpCheckExistence = 2; !!! don't use
 const cpDragDrop = 4;
 const cpTemporary = 4; // alis to cpDragDrop
+const cpNoConfirmation = 8;
 //---------------------------------------------------------------------------
 class TTerminal : public TSecureShell
 {
@@ -157,7 +159,7 @@ public:
   virtual void __fastcall Open();
   virtual void __fastcall Close();
   void __fastcall AnyCommand(const AnsiString Command);
-  void __fastcall CloseOnCompletion();
+  void __fastcall CloseOnCompletion(const AnsiString Message = "");
   void __fastcall BeginTransaction();
   void __fastcall ReadCurrentDirectory();
   void __fastcall ReadDirectory(bool ReloadOnly);
@@ -199,6 +201,25 @@ public:
   __property Boolean UseBusyCursor = { read = FUseBusyCursor, write = FUseBusyCursor };
   __property AnsiString UserName  = { read=GetUserName };
   __property bool IsCapable[TFSCapability Capability] = { read = GetIsCapable };
+};
+//---------------------------------------------------------------------------
+class TTerminalList : public TObjectList
+{
+public:
+  __fastcall TTerminalList(TConfiguration * AConfiguration);
+  __fastcall ~TTerminalList();
+
+  virtual TTerminal * __fastcall NewTerminal(TSessionData * Data);
+  virtual void __fastcall FreeTerminal(TTerminal * Terminal);
+  void __fastcall FreeAndNullTerminal(TTerminal * & Terminal);
+  virtual void __fastcall Idle();
+
+  __property TTerminal * Terminals[int Index]  = { read=GetTerminal };
+
+private:
+  TConfiguration * FConfiguration;
+
+  TTerminal * __fastcall GetTerminal(int Index);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -66,10 +66,18 @@ private:
   int FExecutedFileTimestamp;
   TExecuteFileBy FFileExecutedBy;
   bool FForceExecution;
+  bool FShowStatusBarHint;
+  AnsiString FStatusBarHint;
+  bool FIgnoreNextSysCommand;
 
-  Boolean __fastcall GetEnableFocusedOperation(TOperationSide Side);
-  Boolean __fastcall GetEnableSelectedOperation(TOperationSide Side);
+  bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
+  bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
   void __fastcall SetTerminal(TTerminal * value);
+  void __fastcall SessionComboDropDown(TObject * Sender);
+  void __fastcall SessionComboDrawItem(TWinControl * Control, int Index,
+    const TRect & Rect, TOwnerDrawState State);
+  void __fastcall SessionComboChange(TObject * Sender);
+
 protected:
   TCustomDirView * FLastDirView;
   TCustomDirView * FDDTargetDirView;
@@ -96,12 +104,20 @@ protected:
   void __fastcall UpdateStatusBar();
   virtual void __fastcall DoOperationFinished(TOperationSide Side, bool DragDrop,
     const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
-  void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
-    const AnsiString Bookmark = "");
-  virtual void __fastcall SaveSessionData(TSessionData * aSessionData);
+  virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   void __fastcall ExecutedFileChanged(TObject * Sender);
+  void __fastcall CMAppSysCommand(TMessage & Message);
+  DYNAMIC void __fastcall DoShow();
+  TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
+
+  #pragma warn -inl
+  BEGIN_MESSAGE_MAP
+    VCL_MESSAGE_HANDLER(CM_APPSYSCOMMAND, TMessage, CMAppSysCommand)
+  END_MESSAGE_MAP(TForm)
+  #pragma warn +inl
+
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
   void __fastcall AddBookmark(TOperationSide Side);
@@ -115,6 +131,7 @@ public:
   virtual void __fastcall ChangePath(TOperationSide Side) = 0;
   virtual void __fastcall StoreParams();
   void __fastcall NewSession();
+  void __fastcall CloseSession();
   void __fastcall OpenDirectory(TOperationSide Side);
   void __fastcall OpenStoredSession(TSessionData * Data);
   void __fastcall SessionIdle();
@@ -127,6 +144,9 @@ public:
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall ExploreLocalDirectory();
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy);
+  void __fastcall LastTerminalClosed(TObject * Sender);
+  void __fastcall TerminalListChanged(TObject * Sender);
+
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation };
   __property bool EnableSelectedOperation[TOperationSide Side] = { read = GetEnableSelectedOperation };

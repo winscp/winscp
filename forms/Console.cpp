@@ -8,20 +8,25 @@
 #include <TextsWin.h>
 #include <Interface.h>
 #include <ScpFileSystem.h>
+#include <ScpMain.h>
 
 #include <VCLCommon.h>
+#include "WinConfiguration.h"
+#include "TerminalManager.h"
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-void __fastcall DoConsoleDialog(TTerminal * Terminal)
+void __fastcall DoConsoleDialog()
 {
   TConsoleDialog * Dialog = new TConsoleDialog(Application);
-  try {
-    Dialog->Terminal = Terminal;
+  try
+  {
     Dialog->Execute();
-  } __finally {
+  }
+  __finally
+  {
     delete Dialog;
   }
 }
@@ -36,9 +41,13 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
   UseSystemFont(this);
-  try {
+  try
+  {
     OutputMemo->Font->Name = "Courier New";
-  } catch(...) { }
+  }
+  catch(...)
+  {
+  }
 }
 //---------------------------------------------------------------------
 __fastcall TConsoleDialog::~TConsoleDialog()
@@ -52,18 +61,24 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
   {
     if (FTerminal)
     {
+      assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
       FTerminal->OnChangeDirectory = FOldChangeDirectory;
+      assert(FTerminal->Log->OnAddLine == DoLogAddLine);
       FTerminal->Log->OnAddLine = FOldLogAddLine;
       FOldChangeDirectory = NULL;
       FOldLogAddLine = NULL;
+      FTerminal->EndTransaction();
     }
     FTerminal = value;
     if (FTerminal)
     {
+      OutputMemo->Clear();
       FOldChangeDirectory = FTerminal->OnChangeDirectory;
       FTerminal->OnChangeDirectory = DoChangeDirectory;
       FOldLogAddLine = FTerminal->Log->OnAddLine;
       FTerminal->Log->OnAddLine = DoLogAddLine;
+      // avoid reloading directory after each change of current directory from console
+      FTerminal->BeginTransaction();
     }
     UpdateControls();
   }
@@ -81,27 +96,51 @@ void __fastcall TConsoleDialog::UpdateControls()
   EnableControl(ExecuteButton, !CommandEdit->Text.IsEmpty());
 }
 //---------------------------------------------------------------------
-Boolean __fastcall TConsoleDialog::Execute()
+bool __fastcall TConsoleDialog::Execute()
 {
-  try {
-    // avoid reloading directory after each change of current directory from console
+  TTerminalManager * Manager = TTerminalManager::Instance();
+  TNotifyEvent POnChangeTerminal = Manager->OnChangeTerminal;
+  Manager->OnChangeTerminal = TerminalManagerChangeTerminal;
+  try
+  {
+    Terminal = TTerminalManager::Instance()->ActiveTerminal;
     if (FTerminal)
     {
-      FTerminal->BeginTransaction();
-      if (FTerminal->Configuration->CommandsHistory->Count)
-        CommandEdit->Items = FTerminal->Configuration->CommandsHistory;
+      if (WinConfiguration->CommandsHistory->Count)
+      {
+        CommandEdit->Items = WinConfiguration->CommandsHistory;
+      }
       else
+      {
         CommandEdit->Items->Clear();
+      }
     }
     ShowModal();
-  } __finally {
+  }
+  __finally
+  {
+    assert(Manager->OnChangeTerminal == TerminalManagerChangeTerminal);
+    Manager->OnChangeTerminal = POnChangeTerminal;
     if (FTerminal)
     {
-      FTerminal->EndTransaction();
-      FTerminal->Configuration->CommandsHistory = CommandEdit->Items;
+      WinConfiguration->CommandsHistory = CommandEdit->Items;
     }
   }
   return true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::TerminalManagerChangeTerminal(TObject * /*Sender*/)
+{
+  TTerminal * NewTerminal = TTerminalManager::Instance()->ActiveTerminal;
+  if (!NewTerminal || NewTerminal->IsCapable[fcAnyCommand])
+  {
+    Terminal = TTerminalManager::Instance()->ActiveTerminal;
+  }
+  else
+  {
+    Terminal = NULL;
+    Close();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::ExecuteButtonClick(TObject * /*Sender*/)
@@ -113,19 +152,25 @@ void __fastcall TConsoleDialog::ExecuteCommand()
 {
   if (!FTerminal) return;
   CommandEdit->SelectAll();
-  try {
+  try
+  {
     FTerminal->ExceptionOnFail = true;
-    try {
+    try
+    {
       AnsiString Command = CommandEdit->Text;
       OutputMemo->Lines->Add(FORMAT("$ %s", ((Command))));
       FAddOutput = true;
       FTerminal->AnyCommand(Command);
-    } __finally {
+    }
+    __finally
+    {
       FAddOutput = false;
       FTerminal->ExceptionOnFail = false;
       if (FTerminal->Active) FTerminal->ReadCurrentDirectory();
     }
-  } catch(Exception & E) {
+  }
+  catch(Exception & E)
+  {
     ShowExtendedException(&E, this);
   }
 }

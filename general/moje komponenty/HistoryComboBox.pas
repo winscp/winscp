@@ -22,6 +22,7 @@ type
 
     procedure SetMaxHistorySize(AMaxHistorySize: Integer);
     function StoreSaveOn: Boolean;
+    function GetMaxItemWidth: Integer;
   protected
     { Protected declarations }
     procedure DoExit; override;
@@ -77,9 +78,17 @@ begin
 end;
 
 procedure THistoryComboBox.DropDown;
+var
+  ItemWidth: Integer;
 begin
   inherited;
   if soDropDown in SaveOn then SaveToHistory;
+
+  // taken from TIECustomComboBox:
+  ItemWidth := GetMaxItemWidth + 8;
+  if Items.Count > DropDowncount then
+    Inc(ItemWidth, 16);
+  Self.Perform(CB_SETDROPPEDWIDTH, ItemWidth, 0);
 end;
 
 procedure THistoryComboBox.SaveToHistory;
@@ -100,6 +109,30 @@ end;
 function THistoryComboBox.StoreSaveOn: Boolean;
 begin
   Result := (SaveOn <> DefaultHistorySaveOn);
+end;
+
+// taken from TIECustomComboBox:
+
+function THistoryComboBox.GetMaxItemWidth: Integer;
+var
+  DC: HDC;
+  SaveFont: HFont;
+  Size: TSize;
+  Index: Integer;
+begin
+  Result := 0;
+  DC := GetDC(0);
+  try
+    SaveFont := SelectObject(DC, Font.Handle);
+    for Index := 0 to Items.Count - 1 do
+    begin
+      GetTextExtentPoint32(DC, PChar(Items[Index]), Length(Items[Index]), Size);
+      if Size.Cx > Result then Result := Size.Cx;
+    end;
+    SelectObject(DC, SaveFont);
+  finally
+    ReleaseDC(0, DC);
+  end;
 end;
 
 end.

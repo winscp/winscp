@@ -5,6 +5,7 @@
 #include <VCLCommon.h>
 #include "Password.h"
 //---------------------------------------------------------------------
+#pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 Boolean __fastcall DoPasswordDialog(

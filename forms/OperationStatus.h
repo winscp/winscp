@@ -19,6 +19,7 @@ private:
   TSecureShell * FSecureShell;
   void * FFocusWindowList;
   void * FFocusActiveWindow;
+  TNotifyEvent FPrevOnUpdateStatus;
 
   void __fastcall SetSecureShell(TSecureShell * value);
   void __fastcall SetStatus(const AnsiString value);

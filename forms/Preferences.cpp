@@ -11,6 +11,7 @@
 #include "Tools.h"
 #include "TextsWin.h"
 #include "UserInterface.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "GeneralSettings"
 #pragma link "LogSettings"
@@ -73,7 +74,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     LoggingFrame->LoadConfiguration();
     GeneralSettingsFrame->LoadConfiguration();
   }
-  #define BOOLPROP(PROP) PROP ## Check->Checked = Configuration->PROP;
+  #define BOOLPROP(PROP) PROP ## Check->Checked = WinConfiguration->PROP;
   BOOLPROP(DefaultDirIsHome);
   BOOLPROP(DeleteToRecycleBin);
   BOOLPROP(DDAllowMove);
@@ -86,9 +87,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(ConfirmOverwriting);
   BOOLPROP(ConfirmDeleting);
   BOOLPROP(ConfirmClosingSession);
+  BOOLPROP(UseLocationProfiles);
   #undef BOOLPROP
 
-  if (Configuration->DDTemporaryDirectory.IsEmpty())
+  if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
   {
     DDSystemTemporaryDirectoryButton->Checked = true;
     DDTemporaryDirectoryEdit->Text = SystemTemporaryDirectory();
@@ -96,33 +98,33 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   else
   {
     DDCustomTemporaryDirectoryButton->Checked = true;
-    DDTemporaryDirectoryEdit->Text = Configuration->DDTemporaryDirectory;
+    DDTemporaryDirectoryEdit->Text = WinConfiguration->DDTemporaryDirectory;
   }
 
   ExplorerStyleSelectionCheck->Checked =
-    Configuration->ScpCommander.ExplorerStyleSelection;
+    WinConfiguration->ScpCommander.ExplorerStyleSelection;
   ShowFullAddressCheck->Checked =
-    Configuration->ScpExplorer.ShowFullAddress;
+    WinConfiguration->ScpExplorer.ShowFullAddress;
   RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
   IniFileStorageButton->Checked = (Configuration->Storage == stIniFile);
 
   RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
 
   // editor
-  EditorInternalButton->Checked = Configuration->Editor.Editor == edInternal;
-  EditorExternalButton->Checked = Configuration->Editor.Editor == edExternal;
+  EditorInternalButton->Checked = WinConfiguration->Editor.Editor == edInternal;
+  EditorExternalButton->Checked = WinConfiguration->Editor.Editor == edExternal;
 
-  AnsiString ExternalEditor = Configuration->Editor.ExternalEditor;
+  AnsiString ExternalEditor = WinConfiguration->Editor.ExternalEditor;
   if (!ExternalEditor.IsEmpty())
   {
-    TConfiguration::ReformatFileNameCommand(ExternalEditor);
+    TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
   }
   ExternalEditorEdit->Text = ExternalEditor;
-  EditorWordWrapCheck->Checked = Configuration->Editor.WordWrap;
-  FEditorFont->Name = Configuration->Editor.FontName;
-  FEditorFont->Height = Configuration->Editor.FontHeight;
-  FEditorFont->Charset = (TFontCharset)Configuration->Editor.FontCharset;
-  FEditorFont->Style = IntToFontStyles(Configuration->Editor.FontStyle);
+  EditorWordWrapCheck->Checked = WinConfiguration->Editor.WordWrap;
+  FEditorFont->Name = WinConfiguration->Editor.FontName;
+  FEditorFont->Height = WinConfiguration->Editor.FontHeight;
+  FEditorFont->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
+  FEditorFont->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
 
   CopyParamsFrame->Params = Configuration->CopyParam;
   ResumeOnButton->Checked = Configuration->CopyParam.ResumeSupport == rsOn;
@@ -130,16 +132,16 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   ResumeOffButton->Checked = Configuration->CopyParam.ResumeSupport == rsOff;
   ResumeThresholdEdit->Value = Configuration->CopyParam.ResumeThreshold / 1024;
 
-  TransferSheet->TabVisible = Configuration->ExpertMode;
-  GeneralSheet->TabVisible = (PreferencesMode != pmLogin) && Configuration->ExpertMode;
-  ExplorerSheet->TabVisible = Configuration->ExpertMode;
-  CommanderSheet->TabVisible = Configuration->ExpertMode;
+  TransferSheet->TabVisible = WinConfiguration->ExpertMode;
+  GeneralSheet->TabVisible = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
+  ExplorerSheet->TabVisible = WinConfiguration->ExpertMode;
+  CommanderSheet->TabVisible = WinConfiguration->ExpertMode;
   GeneralSheet->TabVisible = (PreferencesMode != pmLogin);
-  EditorSheet->TabVisible = Configuration->ExpertMode;
+  EditorSheet->TabVisible = WinConfiguration->ExpertMode && !WinConfiguration->DisableOpenEdit;
 
-  StorageGroup->Visible = Configuration->ExpertMode;
-  RandomSeedFileLabel->Visible = Configuration->ExpertMode;
-  RandomSeedFileEdit->Visible = Configuration->ExpertMode;
+  StorageGroup->Visible = WinConfiguration->ExpertMode;
+  RandomSeedFileLabel->Visible = WinConfiguration->ExpertMode;
+  RandomSeedFileEdit->Visible = WinConfiguration->ExpertMode;
 
   UpdateControls();
 }
@@ -154,7 +156,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       LoggingFrame->SaveConfiguration();
       GeneralSettingsFrame->SaveConfiguration();
     }
-    #define BOOLPROP(PROP) Configuration->PROP = PROP ## Check->Checked
+    #define BOOLPROP(PROP) WinConfiguration->PROP = PROP ## Check->Checked
     BOOLPROP(DefaultDirIsHome);
     BOOLPROP(DeleteToRecycleBin);
     BOOLPROP(DDAllowMove);
@@ -167,39 +169,40 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmOverwriting);
     BOOLPROP(ConfirmDeleting);
     BOOLPROP(ConfirmClosingSession);
+    BOOLPROP(UseLocationProfiles);
     #undef BOOLPROP
 
     if (DDSystemTemporaryDirectoryButton->Checked)
     {
-      Configuration->DDTemporaryDirectory = "";
+      WinConfiguration->DDTemporaryDirectory = "";
     }
     else
     {
-      Configuration->DDTemporaryDirectory = DDTemporaryDirectoryEdit->Text;
+      WinConfiguration->DDTemporaryDirectory = DDTemporaryDirectoryEdit->Text;
     }
 
     Configuration->Storage = RegistryStorageButton->Checked ? stRegistry : stIniFile;
 
-    TScpCommanderConfiguration ScpCommander = Configuration->ScpCommander;
+    TScpCommanderConfiguration ScpCommander = WinConfiguration->ScpCommander;
     ScpCommander.ExplorerStyleSelection = ExplorerStyleSelectionCheck->Checked;
-    Configuration->ScpCommander = ScpCommander;
+    WinConfiguration->ScpCommander = ScpCommander;
 
-    TScpExplorerConfiguration ScpExplorer = Configuration->ScpExplorer;
+    TScpExplorerConfiguration ScpExplorer = WinConfiguration->ScpExplorer;
     ScpExplorer.ShowFullAddress = ShowFullAddressCheck->Checked;
-    Configuration->ScpExplorer = ScpExplorer;
+    WinConfiguration->ScpExplorer = ScpExplorer;
 
     Configuration->RandomSeedFile = RandomSeedFileEdit->Text;
 
     // editor
-    Configuration->Editor.Editor =
+    WinConfiguration->Editor.Editor =
       (EditorInternalButton->Checked || ExternalEditorEdit->Text.IsEmpty()) ?
         edInternal : edExternal;
-    Configuration->Editor.ExternalEditor = ExternalEditorEdit->Text;
-    Configuration->Editor.WordWrap = EditorWordWrapCheck->Checked;
-    Configuration->Editor.FontName = FEditorFont->Name;
-    Configuration->Editor.FontHeight = FEditorFont->Height;
-    Configuration->Editor.FontCharset = FEditorFont->Charset;
-    Configuration->Editor.FontStyle = FontStylesToInt(FEditorFont->Style);
+    WinConfiguration->Editor.ExternalEditor = ExternalEditorEdit->Text;
+    WinConfiguration->Editor.WordWrap = EditorWordWrapCheck->Checked;
+    WinConfiguration->Editor.FontName = FEditorFont->Name;
+    WinConfiguration->Editor.FontHeight = FEditorFont->Height;
+    WinConfiguration->Editor.FontCharset = FEditorFont->Charset;
+    WinConfiguration->Editor.FontStyle = FontStylesToInt(FEditorFont->Style);
 
     TCopyParamType CopyParam = CopyParamsFrame->Params;
     if (ResumeOnButton->Checked) CopyParam.ResumeSupport = rsOn;
@@ -274,7 +277,7 @@ void __fastcall TPreferencesDialog::ExternalEditorEditExit(TObject * /*Sender*/)
     AnsiString ExternalEditor = ExternalEditorEdit->Text;
     if (!ExternalEditor.IsEmpty())
     {
-      TConfiguration::ReformatFileNameCommand(ExternalEditor);
+      TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
       ExternalEditorEdit->Text = ExternalEditor;
     }
   }

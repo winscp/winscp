@@ -13,7 +13,7 @@ Directory structure:
 /general     general visual components (both mine and 3rd party)
 /lib         this is where linked libraries are stored during build
 /packages    headers files of pascal components (duplicated from /general)
-/putty53b    source code of Putty SSH client (not all files are used by WinSCP)
+/putty       source code of Putty SSH client (not all files are used by WinSCP)
 /release     Inno Setup script to create setup package (see /release/readme)
 /resource    resources (icons, strings, etc)
 /windows     other sources

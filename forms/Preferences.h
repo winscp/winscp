@@ -93,6 +93,8 @@ __published:
   TButton *DesktopIconAllUsersButton;
   TButton *SendToHookButton;
   TLabel *ShellIconsLabel;
+  TXPGroupBox *CommanderMiscGroup;
+  TCheckBox *UseLocationProfilesCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

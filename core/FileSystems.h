@@ -53,7 +53,6 @@ public:
     const AnsiString NewName) = 0;
 
   __property AnsiString CurrentDirectory = { read = GetCurrentDirectory, write = SetCurrentDirectory };
-  //__property bool IsCapable[TFSCapability Capability] = { read = GetIsCapable };
   __property AnsiString ProtocolName = { read = GetProtocolName };
 protected:
   TTerminal * FTerminal;

@@ -17,6 +17,10 @@
 #define DOCUMENT_WAIT_ERROR     1116
 #define SYNC_DIR_BROWSE_ERROR   1117
 #define RESOLVE_SHORTCUT_ERROR  1118
+#define DUPLICATE_BOOKMARK      1119
+#define BOOKMARK_INVALID_NAME   1120
+#define BOOKMARK_FOLDER_INVALID_NAME 1121
+#define DUPLICATE_BOOKMARK_FOLDER 1122
 
 #define WIN_CONFIRMATION_STRINGS 1300
 #define CONFIRM_OVERWRITE_SESSION 1301
@@ -38,6 +42,8 @@
 #define SAVE_CHANGES            1317
 #define CONFIRM_CREATE_SENDTO   1318
 #define CONFIRM_CREATE_ICON     1319
+#define CLOSE_SESSIONS          1320
+#define DELETE_BOOKMARK_FOLDER  1321
 
 #define WIN_INFORMATION_STRINGS 1400
 #define APP_CAPTION             1401
@@ -46,6 +52,7 @@
 #define DOCUMENT_WAIT           1404
 #define SESSION_SENDTO_HOOK_NAME 1405
 #define SENDTO_HOOK_NAME        1406
+#define BOOKMARK_INFO_TIP       1407
 
 #define WIN_STATUS_STRINGS      1450
 #define STATUS_CLOSED           1451
@@ -133,6 +140,17 @@
 #define EDITOR_INVALID_LINE     1572
 #define LINK_EDIT_CAPTION       1573
 #define LINK_ADD_CAPTION        1574
+#define STATUS_DISCONNECTED     1575
+#define STATUS_CONNECTING       1576
+#define OPENEDSESSION_HINT      1577
+#define ADD_BOOKMARK_CAPTION    1578
+#define ADD_BOOKMARK_PROMPT     1579
+#define MOVE_BOOKMARK_CAPTION   1580
+#define MOVE_BOOKMARK_PROMPT    1581
+#define SAVE_SESSION_CAPTION    1582
+#define SAVE_SESSION_PROMPT     1583
+#define RENAME_BOOKMARK_CAPTION 1584
+#define RENAME_BOOKMARK_PROMPT  1585
 
 STRINGTABLE
 BEGIN
@@ -143,7 +161,7 @@ BEGIN
         WARN_FATAL_ERROR, "%s\n \nWarning: Aborting this operation will close connection!"
         NEWSESSION_ERROR, "Can't open new session."
         LOADSESSION_ERROR, "Can't open stored session '%s'."
-        SESSION_NOT_EXISTS_ERROR, "Session named '%s' does not exists."
+        SESSION_NOT_EXISTS_ERROR, "Session named '%s' doesn't exist."
         RECONNECT_ERROR, "Cannot launch another instance of %s to reconnect session."
         CREATE_SHORTCUT_ERROR, "Cannot create shortcut."
         CANNOT_OVERWRITE_SPECIAL_SESSION, "Cannot overwrite special session '%s'."
@@ -153,12 +171,16 @@ BEGIN
         EXECUTE_FILE_ERROR, "Cannot open or execute file '%s'"
         EDITOR_ERROR, "Cannot launch editor '%s'."
         DOCUMENT_WAIT_ERROR, "Error waiting for document to close."
-        SYNC_DIR_BROWSE_ERROR, "Cannot open respective directory in the opposite panel. Directory browsing synchronisation failed. It has been turned off."
+        SYNC_DIR_BROWSE_ERROR, "Cannot open corresponding directory in the opposite panel. Directory browsing synchronisation failed. It has been turned off."
         RESOLVE_SHORTCUT_ERROR, "Cannot resolve shortcut '%s'."
+        DUPLICATE_BOOKMARK, "Location Profile with name '%s' already exists."
+        BOOKMARK_INVALID_NAME, "'%s' is not valid Location Profile name."
+        BOOKMARK_FOLDER_INVALID_NAME, "'%s' is not valid Location Profile folder name."
+        DUPLICATE_BOOKMARK_FOLDER, "Location Profile folder with name '%s' already exists."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Session with name '%s' already exists. Overwrite?"
-        CREATE_LOCAL_DIRECTORY, "Directory '%s' doesn't exists. Create?"
+        CREATE_LOCAL_DIRECTORY, "Directory '%s' doesn't exist. Create?"
         CANCEL_OPERATION, "Cancel current operation?"
         CANCEL_OPERATION_FATAL, "Cancel file transfer?\n \nOperation can't be canceled in the middle of file transfer.\nPress 'Yes' to cancel file transfer and to close connection.\nPress 'No' to finish current file transfer.\nPress 'Cancel' to continue operation."
         CONFIRM_DELETE_FILE, "Are you sure you want to delete file '%s'?"
@@ -172,6 +194,8 @@ BEGIN
         CONFIRM_CREATE_SHORTCUT, "Create desktop shortcut for session '%s'?"
         CONFIRM_CREATE_SENDTO, "Create Explorer's 'send to' shortcut for session '%s'?"
         CONFIRM_CREATE_ICON, "Create selected icon/shortcut?"
+        CLOSE_SESSIONS, "Terminate all sessions and close application?"
+        DELETE_BOOKMARK_FOLDER, "Delete selected Location Profile folder?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"
@@ -183,11 +207,12 @@ BEGIN
         DOCUMENT_WAIT, "Waiting for the document to close..."
         SESSION_SENDTO_HOOK_NAME, "%s (upload using SFTP or SCP)"
         SENDTO_HOOK_NAME, "%s (upload using SFTP or SCP)"
+        BOOKMARK_INFO_TIP, "Local: %s\nRemote: %s"
 
         WIN_STATUS_STRINGS, "WIN_STATUS_STRINGS"
         STATUS_CLOSED, "Connection terminated."
         STATUS_INITWINSOCK, "Initialisation..."
-        STATUS_LOOKUPHOST, "Searching host..."
+        STATUS_LOOKUPHOST, "Searching for host..."
         STATUS_CONNECT, "Connecting to host..."
         STATUS_AUTHENTICATE, "Authenticating..."
         STATUS_AUTHENTICATED, "Authenticated."
@@ -264,11 +289,22 @@ BEGIN
         EDITOR_COLUMN_STATUS, "Column: %d"
         EDITOR_CHARACTER_STATUS, "Character: %d (0x%2x)"
         EDITOR_MODIFIED, "Modified"
-        EDITOR_FIND_END, "Count not find the string '%s'."
+        EDITOR_FIND_END, "Could not find the string '%s'."
         EDITOR_REPLACE_END, "Total replacements performed: %d"
         EDITOR_GO_TO_LINE, "Go to line"
         EDITOR_LINE_NUMBER, "Line number"
         EDITOR_INVALID_LINE, "Invalid line number."
         LINK_EDIT_CAPTION, "Edit link/shortcut"
         LINK_ADD_CAPTION, "Add link/shortcut"
+        STATUS_DISCONNECTED, "Disconnected."
+        STATUS_CONNECTING, "Connecting..."
+        OPENEDSESSION_HINT, "Select session '%s'"
+        ADD_BOOKMARK_CAPTION, "Add Location Profile"
+        ADD_BOOKMARK_PROMPT, "Location Profile name"
+        MOVE_BOOKMARK_CAPTION, "Move Location Profile"
+        MOVE_BOOKMARK_PROMPT, "New folder name"
+        SAVE_SESSION_CAPTION, "Save session as"
+        SAVE_SESSION_PROMPT, "&Save session as:"
+        RENAME_BOOKMARK_CAPTION, "Rename Location Profile"
+        RENAME_BOOKMARK_PROMPT, "New profile name"
 END

@@ -23,10 +23,10 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="SSH_DEFAULT;NO_WIN32_LEAN_AND_MEAN;WINSOCK_TWO;AUTO_WINSOCK;USE_COMPATIBLE_THREAD;_DEBUG"/>
+    <USERDEFINES value="NO_WIN32_LEAN_AND_MEAN;WINSOCK_TWO;AUTO_WINSOCK;USE_COMPATIBLE_THREAD;_DEBUG;_WINDOWS"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpCore.bpf"/>
-    <INCLUDEPATH value="core;putty53b;resource;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="core;putty;resource;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="core;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>

@@ -2,22 +2,27 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <ScpMain.h>
 #include <Configuration.h>
 #include <RemoteFiles.h>
 #include <VCLCommon.h>
 #include <TextsWin.h>
+#include <Common.h>
 
 #include "OpenDirectory.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "XPGroupBox"
+#pragma link "IEComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-Boolean __fastcall OpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
+bool __fastcall OpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
   AnsiString & Directory, TStrings * Directories, TTerminal * Terminal)
 {
-  Boolean Result;
+  bool Result;
   TOpenDirectoryDialog * Dialog = new TOpenDirectoryDialog(Application);
-  try {
+  try
+  {
     Dialog->Mode = Mode;
     Dialog->OperationSide = Side;
     Dialog->Directory = Directory;
@@ -25,21 +30,31 @@ Boolean __fastcall OpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide S
     Dialog->Terminal = Terminal;
     Result = Dialog->Execute();
     if (Result)
+    {
       Directory = Dialog->Directory;
-  } __finally {
+    }
+  }
+  __finally
+  {
     delete Dialog;
   }
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TOpenDirectoryDialog::TOpenDirectoryDialog(TComponent* AOwner)
-	: TForm(AOwner)
+__fastcall TOpenDirectoryDialog::TOpenDirectoryDialog(TComponent * AOwner):
+  TForm(AOwner)
 {
   FOperationSide = osCurrent;
   OperationSide = osLocal;
   FBookmarkDragDest = -1;
   FTerminal = NULL;
+  FBookmarkList = new TBookmarkList();
   UseSystemFont(this);
+}
+//---------------------------------------------------------------------
+__fastcall TOpenDirectoryDialog::~TOpenDirectoryDialog()
+{
+  SAFE_DESTROY(FBookmarkList);
 }
 //---------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::SetOperationSide(TOperationSide value)
@@ -59,8 +74,14 @@ void __fastcall TOpenDirectoryDialog::SetOperationSide(TOperationSide value)
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::SetDirectory(AnsiString value)
 {
-  if (OperationSide == osRemote) RemoteDirectoryEdit->Text = value;
-    else LocalDirectoryEdit->Text = value;
+  if (OperationSide == osRemote)
+  {
+    RemoteDirectoryEdit->Text = value;
+  }
+  else
+  {
+    LocalDirectoryEdit->Text = value;
+  }
   DirectoryEditChange(NULL);
 }
 //---------------------------------------------------------------------------
@@ -83,7 +104,7 @@ void __fastcall TOpenDirectoryDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TOpenDirectoryDialog::UpdateControls()
+void __fastcall TOpenDirectoryDialog::UpdateControls(bool ListBoxUpdate)
 {
   EnableControl(OKBtn, !Directory.IsEmpty());
   EnableControl(AddBookmarkButton,
@@ -92,6 +113,30 @@ void __fastcall TOpenDirectoryDialog::UpdateControls()
   EnableControl(UpBookmarkButton, BookmarksList->ItemIndex > 0);
   EnableControl(DownBookmarkButton, BookmarksList->ItemIndex >= 0 &&
     BookmarksList->ItemIndex < BookmarksList->Items->Count-1);
+
+  if (ListBoxUpdate)
+  {
+    int MaxWidth = 0;
+    for (int i = 0; i < BookmarksList->Items->Count; i++)
+    {
+      int Width = BookmarksList->Canvas->TextExtent(BookmarksList->Items->Strings[i]).cx;
+      if (Width > MaxWidth)
+      {
+        MaxWidth = Width;
+      }
+    }
+    BookmarksList->ScrollWidth = MaxWidth;
+    MaxWidth += 6;
+    if (BookmarksList->Items->Count > BookmarksList->ClientHeight / BookmarksList->ItemHeight)
+    {
+      MaxWidth += GetSystemMetrics(SM_CXVSCROLL);
+    }
+    if (MaxWidth > BookmarksList->Width)
+    {
+      int CWidth = ClientWidth + (MaxWidth - BookmarksList->Width);
+      ClientWidth = CWidth > 600 ? 600 : CWidth;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::SetDirectories(TStrings * value)
@@ -104,41 +149,88 @@ TStrings * __fastcall TOpenDirectoryDialog::GetDirectories()
   return RemoteDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
+void __fastcall TOpenDirectoryDialog::LoadBookmarks()
+{
+  BookmarksList->Items->Clear();
+  for (int i = 0; i < FBookmarkList->Count; i++)
+  {
+    TBookmark * Bookmark = FBookmarkList->Bookmarks[i];
+    AnsiString Directory = OperationSide == osLocal ? Bookmark->Local : Bookmark->Remote;
+    if (!Directory.IsEmpty() && (BookmarksList->Items->IndexOf(Directory) < 0))
+    {
+      BookmarksList->Items->AddObject(Directory, Bookmark);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TOpenDirectoryDialog::Execute()
 {
   bool Result;
   if (Terminal)
   {
-    TStrings * Bookmarks;
-    Bookmarks = Terminal->Configuration->Bookmarks[OperationSide][Terminal->SessionData->SessionKey];
-    if (Bookmarks) BookmarksList->Items = Bookmarks;
-      else BookmarksList->Items->Clear();
+    TBookmarkList * BookmarkList;
+    BookmarkList = WinConfiguration->Bookmarks[Terminal->SessionData->SessionKey];
+    if (BookmarkList)
+    {
+      FBookmarkList->Assign(BookmarkList);
+    }
+    else
+    {
+      FBookmarkList->Clear();
+    }
+    LoadBookmarks();
     DirectoryEditChange(NULL);
-    if (Mode == odAddBookmark) AddAsBookmark();
+    if (Mode == odAddBookmark)
+    {
+      AddAsBookmark();
+    }
   }
   Result = (ShowModal() == mrOk);
   if (Terminal)
-    Terminal->Configuration->Bookmarks[OperationSide][Terminal->SessionData->SessionKey] = BookmarksList->Items;
+  {
+    WinConfiguration->Bookmarks[Terminal->SessionData->SessionKey] = FBookmarkList;
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::AddAsBookmark()
 {
-  if (Directory.IsEmpty() || (FindBookmark(Directory) >= 0)) return;
+  if (Directory.IsEmpty() || (FindBookmark(Directory) >= 0))
+  {
+    return;
+  }
+
+  TBookmark * Bookmark = new TBookmark;
+
+  if (OperationSide == osRemote)
+  {
+    RemoteDirectoryEdit->SelectAll();
+    Bookmark->Remote = Directory;
+  }
+  else
+  {
+    LocalDirectoryEdit->SelectAll();
+    Bookmark->Local = Directory;
+  }
+  Bookmark->Name = Directory;
+
   if (BookmarksList->ItemIndex >= 0)
   {
     int PrevItemIndex = BookmarksList->ItemIndex;
-    BookmarksList->Items->Insert(BookmarksList->ItemIndex, Directory);
+    FBookmarkList->InsertBefore(
+      dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[BookmarksList->ItemIndex]),
+      Bookmark);
+    BookmarksList->Items->InsertObject(BookmarksList->ItemIndex, Directory, Bookmark);
     BookmarksList->ItemIndex = PrevItemIndex;
   }
   else
   {
-    BookmarksList->Items->Add(Directory);
+    FBookmarkList->Add(Bookmark);
+    BookmarksList->Items->AddObject(Directory, Bookmark);
     BookmarksList->ItemIndex = BookmarksList->Items->Count-1;
   }
-  if (OperationSide == osRemote) RemoteDirectoryEdit->SelectAll();
-    else LocalDirectoryEdit->SelectAll();
-  UpdateControls();
+
+  UpdateControls(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::AddBookmarkButtonClick(TObject */*Sender*/)
@@ -148,12 +240,21 @@ void __fastcall TOpenDirectoryDialog::AddBookmarkButtonClick(TObject */*Sender*/
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::RemoveBookmarkButtonClick(TObject * /*Sender*/)
 {
-  Integer PrevItemIndex = BookmarksList->ItemIndex;
-  BookmarksList->Items->Delete(BookmarksList->ItemIndex);
+  int PrevItemIndex = BookmarksList->ItemIndex;
+  TBookmark * Bookmark;
+  Bookmark = dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[PrevItemIndex]);
+  assert(Bookmark);
+  FBookmarkList->Delete(Bookmark);
+  BookmarksList->Items->Delete(PrevItemIndex);
   if (PrevItemIndex < BookmarksList->Items->Count)
+  {
     BookmarksList->ItemIndex = PrevItemIndex;
+  }
   else
+  {
     BookmarksList->ItemIndex = BookmarksList->Items->Count-1;
+  }
+  UpdateControls(true);
   BookmarksListClick(NULL);
 }
 //---------------------------------------------------------------------------
@@ -162,14 +263,22 @@ Integer __fastcall TOpenDirectoryDialog::FindBookmark(const AnsiString Bookmark)
   if (OperationSide == osRemote)
   {
     for (int Index = 0; Index < BookmarksList->Items->Count; Index++)
+    {
       if (AnsiCompareStr(BookmarksList->Items->Strings[Index], Bookmark) == 0)
+      {
         return Index;
+      }
+    }
   }
-    else
+  else
   {
     for (int Index = 0; Index < BookmarksList->Items->Count; Index++)
+    {
       if (AnsiCompareText(BookmarksList->Items->Strings[Index], Bookmark) == 0)
+      {
         return Index;
+      }
+    }
   }
   return -1;
 }
@@ -177,7 +286,9 @@ Integer __fastcall TOpenDirectoryDialog::FindBookmark(const AnsiString Bookmark)
 void __fastcall TOpenDirectoryDialog::BookmarksListClick(TObject * /*Sender*/)
 {
   if (BookmarksList->ItemIndex >= 0)
+  {
     Directory = BookmarksList->Items->Strings[BookmarksList->ItemIndex];
+  }
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -186,6 +297,9 @@ void __fastcall TOpenDirectoryDialog::BookmarkMove(int Source, int Dest)
   if (Source >= 0 && Source < BookmarksList->Items->Count &&
       Dest >= 0 && Dest < BookmarksList->Items->Count)
   {
+    FBookmarkList->MoveBefore(
+      dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[Dest]),
+      dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[Source]));
     BookmarksList->Items->Move(Source, Dest);
     BookmarksList->ItemIndex = Dest;
     BookmarksList->SetFocus();
@@ -249,14 +363,23 @@ void __fastcall TOpenDirectoryDialog::SetMode(TOpenDirectoryMode value)
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::FormShow(TObject * /*Sender*/)
 {
-  if (Mode == odBrowse) CurrentEdit->SetFocus();
-    else BookmarksList->SetFocus();
+  UpdateControls(true);
+  if (Mode == odBrowse)
+  {
+    CurrentEdit->SetFocus();
+  }
+  else
+  {
+    BookmarksList->SetFocus();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::BookmarksListKeyDown(TObject * /*Sender*/,
       WORD &Key, TShiftState /*Shift*/)
 {
-  if ((BookmarksList->ItemIndex >= 0) &&
-      (Key == VK_DELETE)) RemoveBookmarkButtonClick(NULL);
+  if ((BookmarksList->ItemIndex >= 0) && (Key == VK_DELETE))
+  {
+    RemoveBookmarkButtonClick(NULL);
+  }
 }
 //---------------------------------------------------------------------------

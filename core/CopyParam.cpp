@@ -29,6 +29,8 @@ void __fastcall TCopyParamType::Default()
   ResumeSupport = rsSmart;
   ResumeThreshold = 10 * 1024; // !!! DEBUG only
   //ResumeThreshold = 100 * 1024; // (100 kB)
+  ReplaceInvalidChars = true;
+  LocalInvalidChars = "/\\:*?\"<>|";
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Assign(const TCopyParamType & Source)
@@ -44,6 +46,8 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType & Source)
   COPY(PreserveRights);
   COPY(ResumeSupport);
   COPY(ResumeThreshold);
+  COPY(ReplaceInvalidChars);
+  COPY(LocalInvalidChars);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -53,17 +57,33 @@ TCopyParamType & __fastcall TCopyParamType::operator =(const TCopyParamType & rh
   return *this;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TCopyParamType::ChangeFileNameCase(AnsiString FileName) const
+AnsiString __fastcall TCopyParamType::ValidLocalFileName(AnsiString FileName) const
+{
+  char * InvalidChar;
+  while ((InvalidChar = strpbrk(FileName.c_str(), LocalInvalidChars.c_str())) != NULL)
+  {
+    FileName[InvalidChar - FileName.c_str() + 1] = '_';
+  }
+  return FileName;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TCopyParamType::ChangeFileName(AnsiString FileName, TOperationSide Side) const
 {
   switch (FileNameCase) {
-    case ncUpperCase: return FileName.UpperCase();
-    case ncLowerCase: return FileName.LowerCase();
-    case ncFirstUpperCase: return FileName.SubString(1, 1).UpperCase() +
-      FileName.SubString(2, FileName.Length()-1).LowerCase();
+    case ncUpperCase: FileName = FileName.UpperCase(); break;
+    case ncLowerCase: FileName = FileName.LowerCase(); break;
+    case ncFirstUpperCase: FileName = FileName.SubString(1, 1).UpperCase() +
+      FileName.SubString(2, FileName.Length()-1).LowerCase(); break;
     case ncNoChange:
     default:
-      return FileName;
+      /*nothing*/
+      break;
   }
+  if (ReplaceInvalidChars && (Side == osRemote))
+  {
+    FileName = ValidLocalFileName(FileName);
+  }
+  return FileName;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::UseAsciiTransfer(const AnsiString FileName) const
@@ -92,13 +112,14 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
   char ModeC[] = "BAM";
   char ResumeC[] = "YSN";
   return FORMAT(
-    "  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s; FnCs: %s; Resume: %s (%d)\n"
+    "  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s; FnCs: %s; RIC: %s; Resume: %s (%d)\n"
     "  TM: %s; AscM: %s ",
     (BooleanToEngStr(PreserveTime),
      BooleanToEngStr(PreserveReadOnly),
      Rights.Text,
      BooleanToEngStr(PreserveRights),
      CaseC[FileNameCase],
+     BooleanToEngStr(ReplaceInvalidChars),
      ResumeC[ResumeSupport],
      (int)ResumeThreshold,
      ModeC[TransferMode],

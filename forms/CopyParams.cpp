@@ -7,6 +7,7 @@
 #include <Common.h>
 #include <VCLCommon.h>
 #include <ScpMain.h>
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "Rights"
@@ -51,6 +52,8 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
     case ncFirstUpperCase: CCFirstUpperCaseButton->Checked = True; break;
   }
 
+  ReplaceInvalidCharsCheck->Checked = value.ReplaceInvalidChars;
+
   RightsFrame->AddXToDirectories = value.AddXToDirectories;
   RightsFrame->Rights = value.Rights;
   PreserveRightsCheck->Checked = value.PreserveRights;
@@ -89,6 +92,8 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   if (CCFirstUpperCaseButton->Checked) Result.FileNameCase = ncFirstUpperCase;
     else Result.FileNameCase = ncNoChange;
 
+  Result.ReplaceInvalidChars = ReplaceInvalidCharsCheck->Checked;
+
   Result.AddXToDirectories = RightsFrame->AddXToDirectories;
   Result.Rights = RightsFrame->Rights;
   Result.PreserveRights = PreserveRightsCheck->Checked;
@@ -118,6 +123,8 @@ void __fastcall TCopyParamsFrame::UpdateControls()
   EnableControl(AsciiFileMaskCombo,
     FAllowTransferMode && TMAutomaticButton->Checked && Enabled);
   EnableControl(RightsFrame, PreserveRightsCheck->Checked && Enabled);
+  EnableControl(ReplaceInvalidCharsCheck,
+    Direction == pdToLocal || Direction == pdBoth || Direction == pdAll);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)
@@ -133,6 +140,7 @@ void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)
     CommonPropertiesGroup->Visible = (Direction == pdBoth || Direction == pdAll );
     LocalPreserveTimeCheck->Visible = (Direction != pdAll);
     RemotePreserveTimeCheck->Visible = (Direction != pdAll);
+    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
@@ -143,13 +151,13 @@ void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::BeforeExecute()
 {
-  AsciiFileMaskCombo->Items->Text = Configuration->MaskHistory;
+  AsciiFileMaskCombo->Items->Text = WinConfiguration->MaskHistory;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::AfterExecute()
 {
   AsciiFileMaskCombo->SaveToHistory();
-  Configuration->MaskHistory = AsciiFileMaskCombo->Items->Text;
+  WinConfiguration->MaskHistory = AsciiFileMaskCombo->Items->Text;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SelectMask(Integer Start, Integer Length)

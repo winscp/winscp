@@ -112,14 +112,14 @@ object CopyParamsFrame: TCopyParamsFrame
     Top = 0
     Width = 120
     Height = 146
-    Caption = 'Change case to'
+    Caption = 'Filename modification'
     TabOrder = 1
     DesignSize = (
       120
       146)
     object CCNoChangeButton: TRadioButton
       Left = 8
-      Top = 21
+      Top = 19
       Width = 107
       Height = 17
       Anchors = [akLeft, akTop, akRight]
@@ -128,7 +128,7 @@ object CopyParamsFrame: TCopyParamsFrame
     end
     object CCUpperCaseButton: TRadioButton
       Left = 8
-      Top = 53
+      Top = 44
       Width = 107
       Height = 17
       Anchors = [akLeft, akTop, akRight]
@@ -137,7 +137,7 @@ object CopyParamsFrame: TCopyParamsFrame
     end
     object CCLowerCaseButton: TRadioButton
       Left = 8
-      Top = 85
+      Top = 69
       Width = 107
       Height = 17
       Anchors = [akLeft, akTop, akRight]
@@ -146,12 +146,21 @@ object CopyParamsFrame: TCopyParamsFrame
     end
     object CCFirstUpperCaseButton: TRadioButton
       Left = 8
-      Top = 117
+      Top = 94
       Width = 107
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = '&First upper case'
       TabOrder = 3
+    end
+    object ReplaceInvalidCharsCheck: TCheckBox
+      Left = 8
+      Top = 120
+      Width = 105
+      Height = 17
+      Caption = 'Replace '#39':*"?'#39' ...'
+      TabOrder = 4
+      OnClick = ControlChange
     end
   end
   object TransferModeGroup: TXPGroupBox

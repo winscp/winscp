@@ -11,6 +11,7 @@
 #include <VCLCommon.h>
 
 #include "Copy.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "ComboEdit"
@@ -26,7 +27,8 @@ bool __fastcall DoCopyDialog(TTransferDirection Direction,
 {
   bool Result;
   TCopyDialog *CopyDialog = new TCopyDialog(Application);
-  try {
+  try
+  {
     if (!AllowTransferMode)
     {
       // If local and remote EOL types are the same, there is no need
@@ -46,7 +48,9 @@ bool __fastcall DoCopyDialog(TTransferDirection Direction,
       if (!CopyDialog->DragDrop) TargetDirectory = CopyDialog->Directory;
       Params->Assign(CopyDialog->Params);
     }
-  } __finally {
+  }
+  __finally
+  {
     delete CopyDialog;
   }
   return Result;
@@ -79,16 +83,15 @@ void __fastcall TCopyDialog::SetDirection(TTransferDirection value)
     DirectoryEdit->Visible = !DragDrop;
     DirectoryLabel->FocusControl = DirectoryEdit;
     UpdateControls();
-    if (Direction == tdToLocal) CopyParamsFrame->Direction = pdToLocal;
-      else CopyParamsFrame->Direction = pdToRemote;
+    CopyParamsFrame->Direction = Direction == tdToLocal ? pdToLocal : pdToRemote;
   }
 }
 //---------------------------------------------------------------------------
 TCustomEdit * __fastcall TCopyDialog::GetDirectoryEdit()
 {
   assert((Direction == tdToRemote) || (Direction == tdToLocal));
-  if (Direction == tdToRemote) return RemoteDirectoryEdit;
-    else return LocalDirectoryEdit;
+  return Direction == tdToRemote ? (TCustomEdit *)RemoteDirectoryEdit :
+    (TCustomEdit *)LocalDirectoryEdit;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetParams(TCopyParamType value)
@@ -139,6 +142,7 @@ void __fastcall TCopyDialog::UpdateControls()
     AnsiString DirectionStr =
       LoadStr((DragDrop ? COPY_TODROP :
          (FDirection == tdToLocal ? COPY_TOLOCAL : COPY_TOREMOTE)));
+
     if (FileList->Count == 1)
     {
       AnsiString FileName;
@@ -147,16 +151,19 @@ void __fastcall TCopyDialog::UpdateControls()
       DirectoryLabel->Caption = FMTLOAD(COPY_FILE,
         (TransferStr, FileName, DirectionStr));
     }
-      else DirectoryLabel->Caption = FMTLOAD(COPY_FILES,
+    else
+    {
+      DirectoryLabel->Caption = FMTLOAD(COPY_FILES,
         (TransferStr, FFileList->Count, DirectionStr));
-
+    }
   }
+
   if (TransferType == ttCopy)
   {
     Caption = LoadStr(COPY_COPY_CAPTION);
     CopyButton->Caption = LoadStr(COPY_COPY_BUTTON);
   }
-    else
+  else
   {
     Caption = LoadStr(COPY_MOVE_CAPTION);
     CopyButton->Caption = LoadStr(COPY_MOVE_BUTTON);
@@ -197,23 +204,28 @@ void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
     else CopyButton->SetFocus();
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TCopyDialog::Execute()
+bool __fastcall TCopyDialog::Execute()
 {
-  SaveSettingsCheck->Checked = False;
+  SaveSettingsCheck->Checked = false;
   MoreButton->Expanded =
-    Configuration->CopyParamDialogExpanded && Configuration->ExpertMode;
-  MoreButton->Visible = Configuration->ExpertMode;
+    WinConfiguration->CopyParamDialogExpanded && WinConfiguration->ExpertMode;
+  MoreButton->Visible = WinConfiguration->ExpertMode;
   CopyParamsFrame->BeforeExecute();
-  Boolean Result = (ShowModal() == mrOk);
+  bool Result = (ShowModal() == mrOk);
   if (Result)
   {
     CopyParamsFrame->AfterExecute();
     Configuration->BeginUpdate();
-    try {
-      Configuration->CopyParamDialogExpanded = MoreButton->Expanded;
+    try
+    {
+      WinConfiguration->CopyParamDialogExpanded = MoreButton->Expanded;
       if (SaveSettingsCheck->Checked)
+      {
         Configuration->CopyParam = Params;
-    } __finally {
+      }
+    }
+    __finally
+    {
       Configuration->EndUpdate();
     }
   }
@@ -233,10 +245,13 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
         if (!ForceDirectories(Directory))
         {
           SimpleErrorDialog(FMTLOAD(CREATE_LOCAL_DIR_ERROR, (Directory)));
-          CanClose = False;
+          CanClose = false;
         }
       }
-        else CanClose = False;
+      else
+      {
+        CanClose = False;
+      }
 
       if (!CanClose)
       {
@@ -248,11 +263,11 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
     if (CanClose && (Params.TransferMode == tmAutomatic))
     {
       TFileMasks Masks = CopyParamsFrame->AsciiFileMask;
-      Integer Start, Length;
+      int Start, Length;
       if (!Masks.IsValid(Start, Length))
       {
-        MoreButton->Expanded = True;
-        CanClose = False;
+        MoreButton->Expanded = true;
+        CanClose = false;
         SimpleErrorDialog(FMTLOAD(MASK_ERROR, (Masks.Masks.SubString(Start+1, Length))));
         // After closing dialog whole text is selected, we want to select only invalid mask
         CopyParamsFrame->SelectMask(Start, Length);
@@ -266,7 +281,7 @@ void __fastcall TCopyDialog::SetAllowTransferMode(Boolean value)
   CopyParamsFrame->AllowTransferMode = value;
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TCopyDialog::GetAllowTransferMode()
+bool __fastcall TCopyDialog::GetAllowTransferMode()
 {
   return CopyParamsFrame->AllowTransferMode;
 }

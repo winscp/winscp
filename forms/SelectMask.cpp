@@ -10,6 +10,7 @@
 #include <VCLCommon.h>
 
 #include "SelectMask.h"
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
@@ -24,14 +25,14 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
     CenterFormOn(Dialog, Parent);
     Dialog->Select = Select;
     DefaultFileFilter(*Filter);
-    Filter->Masks = Configuration->SelectMask;
-    Filter->Directories = Configuration->SelectDirectories;
+    Filter->Masks = WinConfiguration->SelectMask;
+    Filter->Directories = WinConfiguration->SelectDirectories;
     Dialog->FileFilter = *Filter;
     Result = Dialog->Execute();
     {
       *Filter = Dialog->FileFilter;
-      Configuration->SelectMask = Filter->Masks;
-      Configuration->SelectDirectories = Filter->Directories;
+      WinConfiguration->SelectMask = Filter->Masks;
+      WinConfiguration->SelectDirectories = Filter->Directories;
     }
   } __finally {
     delete Dialog;
@@ -68,13 +69,13 @@ void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 Boolean __fastcall TSelectMaskDialog::Execute()
 {
-  MaskEdit->Items->Text = Configuration->MaskHistory;
+  MaskEdit->Items->Text = WinConfiguration->MaskHistory;
   ActiveControl = MaskEdit;
   Boolean Result = (ShowModal() == mrOk);
   if (Result)
   {
     MaskEdit->SaveToHistory();
-    Configuration->MaskHistory = MaskEdit->Items->Text;
+    WinConfiguration->MaskHistory = MaskEdit->Items->Text;
   }
   return Result;
 } /* TSelectMaskDialog::Execute */

@@ -48,6 +48,5 @@ extern PACKAGE TLogForm *LogForm;
 TLogForm * __fastcall CreateLogForm(TLogMemo *ALogMemo);
 TLogForm * __fastcall RequireLogForm(TLogMemo *ALogMemo);
 void __fastcall FreeLogForm();
-extern TLogMemo *LogMemo;
 //---------------------------------------------------------------------------
 #endif

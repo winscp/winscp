@@ -1,0 +1,11 @@
+This subdirectory contains a general character-set conversion
+library, used in the Unix port of PuTTY, and available for use in
+other ports if it should happen to be useful.
+
+I intend to use this same library in other programs at some future
+date. It is therefore a _strong_ design goal that this library
+should remain perfectly general, and not tied to particulars of
+PuTTY. It must not reference any code outside its own subdirectory;
+it should not have PuTTY-specific helper routines added to it unless
+they can be documented in a general manner which might make them
+useful in other circumstances as well.

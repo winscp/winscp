@@ -79,7 +79,7 @@ private:
   void __fastcall SCPSendError(const AnsiString Message, bool Fatal);
   void __fastcall SCPSink(const AnsiString TargetDir,
     const AnsiString FileName, const TCopyParamType * CopyParam, bool & Success,
-    TFileOperationProgressType * OperationProgress);
+    TFileOperationProgressType * OperationProgress, int Params);
   void __fastcall SCPSource(const AnsiString FileName,
     const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress);

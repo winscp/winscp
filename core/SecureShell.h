@@ -91,18 +91,27 @@ protected:
   __property Boolean LogToFile = { read = GetLogToFile };
 };
 //---------------------------------------------------------------------------
+#ifndef PuttyIntfH
+struct Backend;
+struct Config;
+#endif
+//---------------------------------------------------------------------------
 class TSecureShell : public TObject
 {
 private:
-  Boolean FPasswordTried;
+  bool FPasswordTried;
   SOCKET FSocket;
   TSessionData * FSessionData;
-  Boolean FActive;
+  bool FActive;
   __int64 FBytesReceived;
   __int64 FBytesSent;
   AnsiString FRealHost;
   TDateTime FLastDataSent;
   TQueryUserEvent FOnQueryUser;
+  Backend * FBackend;
+  void * FBackendHandle;
+  Config * FConfig;
+  //void * FLoggingContext;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -113,18 +122,18 @@ private:
   TConfiguration *FConfiguration;
   TDateTime FLoginTime;
   TNotifyEvent FOnUpdateStatus;
-  Integer FStatus;
-  Integer FReachedStatus;
+  TNotifyEvent FOnClose;
+  int FStatus;
+  int FReachedStatus;
   AnsiString FStdErrorTemp;
   AnsiString FAuthenticationLog;
 
   TCipher FCSCipher;
   TCipher FSCCipher;
 
-  void __fastcall Activate();
-  TCipher __fastcall FuncToSsh1Cipher(void * Cipher);
-  TCipher __fastcall FuncToSsh2Cipher(void * Cipher);
-  TCompressionType __fastcall FuncToCompression(void * Compress);
+  TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
+  TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
+  TCompressionType __fastcall FuncToCompression(const void * Compress);
   void __fastcall Init();
   void __fastcall SetSocket(SOCKET value);
   void __fastcall SetSessionData(TSessionData * value);
@@ -193,22 +202,23 @@ public:
 
   __property SOCKET Socket = { read = FSocket, write = SetSocket };
   __property TSessionData * SessionData = { read = FSessionData, write = SetSessionData };
-  __property Boolean Active = { read = GetActive, write = SetActive };
+  __property bool Active = { read = GetActive, write = SetActive };
   __property __int64 BytesReceived = { read = FBytesReceived };
   __property __int64 BytesSent = { read = FBytesSent };
   __property AnsiString RealHost = { read = FRealHost };
   __property TSessionLog * Log  = { read=FLog, write=SetLog };
-  __property TConfiguration *Configuration  = { read=FConfiguration, write=SetConfiguration };
+  __property TConfiguration * Configuration  = { read=FConfiguration, write=SetConfiguration };
   __property TCipher CSCipher = { read = GetCSCipher };
   __property TCompressionType CSCompression = { read = GetCSCompression };
   __property TDateTime Duration = { read = GetDuration };
   __property TDateTime LoginTime = { read = FLoginTime };
   __property TCipher SCCipher = { read = GetSCCipher };
   __property TCompressionType SCCompression = { read = GetSCCompression };
-  __property Integer SshVersion = { read = GetSshVersion };
+  __property int SshVersion = { read = GetSshVersion };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
   __property TNotifyEvent OnUpdateStatus = { read = FOnUpdateStatus, write = FOnUpdateStatus };
-  __property Integer Status = { read = GetStatus };
+  __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
+  __property int Status = { read = GetStatus };
 };
 //---------------------------------------------------------------------------
 #endif

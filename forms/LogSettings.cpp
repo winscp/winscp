@@ -8,6 +8,7 @@
 #include <ScpMain.h>
 
 #include <VCLCommon.h>
+#include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "ComboEdit"
@@ -31,7 +32,7 @@ void __fastcall TLoggingFrame::LoadConfiguration()
     LogFileAppendButton->Checked = True;
   else
     LogFileOverwriteButton->Checked = True;
-  LogShowWindowCheck->Checked = (Configuration->LogView == lvWindow);
+  LogShowWindowCheck->Checked = (WinConfiguration->LogView == lvWindow);
   if (Configuration->LogWindowComplete)
     LogWindowCompleteButton->Checked = True;
   else
@@ -51,8 +52,7 @@ void __fastcall TLoggingFrame::SaveConfiguration()
     if (LogToFileCheck->Checked)
       Configuration->LogFileName = LogFileNameEdit->Text;
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
-    if (LogShowWindowCheck->Checked) Configuration->LogView = lvWindow;
-      else Configuration->LogView = lvNone;
+    WinConfiguration->LogView = LogShowWindowCheck->Checked ? lvWindow : lvNone;
     Configuration->LogWindowComplete = LogWindowCompleteButton->Checked;
     if (!LogWindowCompleteButton->Checked)
       Configuration->LogWindowLines = LogWindowLinesEdit->AsInteger;

@@ -68,16 +68,15 @@ void __fastcall TTerminal::Open()
   TSecureShell::Open();
   assert(!FFileSystem);
   if ((SessionData->FSProtocol == fsSCPonly) ||
-      (SessionData->FSProtocol == fsSFTP && SshFallbackCmd()) ||
-      (!Configuration->ExpertMode))
+      (SessionData->FSProtocol == fsSFTP && SshFallbackCmd()))
   {
     FFileSystem = new TSCPFileSystem(this);
-    LogEvent("Using SCP protocol");
+    LogEvent("Using SCP protocol.");
   }
   else
   {
     FFileSystem = new TSFTPFileSystem(this);
-    LogEvent("Using SFTP protocol");
+    LogEvent("Using SFTP protocol.");
   }
 }
 //---------------------------------------------------------------------------
@@ -334,11 +333,12 @@ bool __fastcall TTerminal::HandleException(Exception * E)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CloseOnCompletion()
+void __fastcall TTerminal::CloseOnCompletion(const AnsiString Message)
 {
   LogEvent("Closing session after completed operation (as requested by user)");
   Close();
-  throw ESshTerminate(NULL, LoadStr(CLOSED_ON_COMPLETION));
+  throw ESshTerminate(NULL,
+    Message.IsEmpty() ? LoadStr(CLOSED_ON_COMPLETION) : Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::FileModified(const TRemoteFile * File)
@@ -662,9 +662,12 @@ void __fastcall TTerminal::ProcessFiles(TStrings * FileList,
       Progress.Stop();
     }
   }
-  catch (Exception &E)
+  catch (...)
   {
     DisconnectWhenComplete = false;
+    // this was missing here. was it by purpose?
+    // without it any error message is lost
+    throw;
   }
 
   if (DisconnectWhenComplete)
@@ -1182,6 +1185,64 @@ void __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
 
   if (DisconnectWhenComplete) CloseOnCompletion();
 }
-
-
+//---------------------------------------------------------------------------
+__fastcall TTerminalList::TTerminalList(TConfiguration * AConfiguration) :
+  TObjectList()
+{
+  assert(AConfiguration);
+  FConfiguration = AConfiguration;
+}
+//---------------------------------------------------------------------------
+__fastcall TTerminalList::~TTerminalList()
+{
+  assert(Count == 0);
+}
+//---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminalList::NewTerminal(TSessionData * Data)
+{
+  TTerminal * Terminal = new TTerminal();
+  try
+  {
+    Terminal->Configuration = FConfiguration;
+    Terminal->SessionData = Data;
+    Add(Terminal);
+  }
+  catch(...)
+  {
+    delete Terminal;
+    throw;
+  }
+  return Terminal;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalList::FreeTerminal(TTerminal * Terminal)
+{
+  assert(IndexOf(Terminal) >= 0);
+  Remove(Terminal);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalList::FreeAndNullTerminal(TTerminal * & Terminal)
+{
+  TTerminal * T = Terminal;
+  Terminal = NULL;
+  FreeTerminal(T);
+}
+//---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminalList::GetTerminal(int Index)
+{
+  return dynamic_cast<TTerminal *>(Items[Index]);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalList::Idle()
+{
+  TTerminal * Terminal;
+  for (int i = 0; i < Count; i++)
+  {
+    Terminal = Terminals[i];
+    if (Terminal->Status == sshReady)
+    {
+      Terminal->Idle();
+    }
+  }
+}
 

@@ -85,6 +85,14 @@
 #define INVALID_SHELL_COMMAND   186
 #define SFTP_SERVER_MESSAGE_UNSUPPORTED 187
 #define INVALID_OCTAL_PERMISSIONS 188
+#define SFTP_INVALID_EOL        189
+#define SFTP_UNKNOWN_FILE_TYPE  190
+#define SFTP_STATUS_INVALID_HANDLE 191
+#define SFTP_STATUS_NO_SUCH_PATH 192
+#define SFTP_STATUS_FILE_ALREADY_EXISTS 193
+#define SFTP_STATUS_WRITE_PROTECT 194
+#define SFTP_STATUS_NO_MEDIA    195
+#define DECODE_UTF_ERROR        196
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT 301
@@ -196,6 +204,14 @@ BEGIN
         INVALID_SHELL_COMMAND, "Invalid command '%s'."
         SFTP_SERVER_MESSAGE_UNSUPPORTED, "None"
         INVALID_OCTAL_PERMISSIONS, "'%s' is not valid permission in octal format."
+        SFTP_INVALID_EOL, "Server requires unsupported end-of-line sequence (%s)."
+        SFTP_UNKNOWN_FILE_TYPE, "Unknown file type (%d)"
+        SFTP_STATUS_INVALID_HANDLE, "Invalid handle."
+        SFTP_STATUS_NO_SUCH_PATH, "No such path."
+        SFTP_STATUS_FILE_ALREADY_EXISTS, "File already exists."
+        SFTP_STATUS_WRITE_PROTECT, "Write protect."
+        SFTP_STATUS_NO_MEDIA, "No media."
+        DECODE_UTF_ERROR, "Error decoding UTF-8 string."
 
         CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
         CONFIRM_PROLONG_TIMEOUT, "Host hasn't answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."

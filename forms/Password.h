@@ -12,6 +12,7 @@
 #include <vcl\Controls.hpp>
 #include <vcl\Buttons.hpp>
 #include <vcl\ExtCtrls.hpp>
+#include "PasswordEdit.hpp"
 //----------------------------------------------------------------------------
 class TPasswordDialog : public TForm
 {
@@ -19,7 +20,7 @@ __published:
   TLabel *PasswordLabel;
   TButton *OKButton;
   TButton *CancelButton;
-  TEdit *PasswordEdit;
+  TPasswordEdit *PasswordEdit;
 private:
   void __fastcall SetPasswordCaption(AnsiString value);
   AnsiString __fastcall GetPasswordCaption();
