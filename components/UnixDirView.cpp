@@ -974,8 +974,8 @@ void __fastcall TUnixDirView::ChangeDirectory(AnsiString Path)
 //---------------------------------------------------------------------------
 bool __fastcall TUnixDirView::CanEdit(TListItem* Item)
 {
-  assert(Terminal);
 #ifndef DESIGN_ONLY
+  assert(Terminal);
   return TCustomUnixDirView::CanEdit(Item) && Terminal->IsCapable[fcRename];
 #else
   return false;

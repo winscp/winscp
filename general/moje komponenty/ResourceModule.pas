@@ -175,6 +175,7 @@ begin
     if P <> @FileName then
     begin
       Inc(P);
+      R := 0;
       // First look for a locale registry override
       if LocaleOverride[0] <> #0 then
       begin

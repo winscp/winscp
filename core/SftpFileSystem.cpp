@@ -2155,6 +2155,10 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         {
           QueueLen = FTerminal->SessionData->SFTPUploadQueue;
         }
+        if (QueueLen < 1)
+        {
+          QueueLen = 1;
+        }
         
         bool Initialized;
         Initialized = Queue.Init(QueueLen, FileName, File, OperationProgress,

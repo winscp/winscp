@@ -87,15 +87,15 @@
       <FILE FILENAME="Moje komponenty\Filemanager Toolset\CustomPathComboBox.pas" FORMNAME="" UNITNAME="CustomPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Moje komponenty\Filemanager Toolset\IEPathComboBox.pas" FORMNAME="" UNITNAME="IEPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\ListExt.pas" FORMNAME="" UNITNAME="ListExt" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\bcbsmp.bpi" FORMNAME="" UNITNAME="bcbsmp" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\bcbie.bpi" FORMNAME="" UNITNAME="bcbie" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\bcbsmp.bpi" FORMNAME="" UNITNAME="bcbsmp" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\bcbie.bpi" FORMNAME="" UNITNAME="bcbie" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Moje komponenty\Filemanager Toolset\CompThread.pas" FORMNAME="" UNITNAME="CompThread" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\DirImg.rc" FORMNAME="" UNITNAME="DirImg.rc" CONTAINERID="RC" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje_B5.bpi" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="DragDrop_B5.bpi" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\Projekty\WinSCP2\Moje_B5.bpi" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="..\..\Projekty\WinSCP2\DragDrop_B5.bpi" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

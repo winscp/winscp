@@ -293,12 +293,12 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
 
 #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
 
-[Components]
-Name: transl\ru; Description: "Russian"; Types: fulllangs custom compact
+;[Components]
+;Name: transl\ru; Description: "Russian"; Types: fulllangs custom compact
 
-[Files]
-Source: "translations.nosetup\WinSCP3.ru"; DestDir: "{app}"; \
-  Components: transl\ru; Flags: ignoreversion
+;[Files]
+;Source: "translations.nosetup\WinSCP3.ru"; DestDir: "{app}"; \
+;  Components: transl\ru; Flags: ignoreversion
 
 #endif
 
