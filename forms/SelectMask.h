@@ -23,6 +23,7 @@ __published:
   TCheckBox *IncludingDirectoriesCheck;
   TLabel *Label2;
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+  void __fastcall MaskEditExit(TObject *Sender);
 private:
   TFileFilter FFileFilter;
   bool FSelect;

@@ -39,9 +39,10 @@ object SelectMaskDialog: TSelectMaskDialog
       Width = 241
       Height = 21
       ItemHeight = 13
-      MaxLength = 255
+      MaxLength = 1000
       TabOrder = 0
       Text = '*.*'
+      OnExit = MaskEditExit
     end
     object IncludingDirectoriesCheck: TCheckBox
       Left = 91

@@ -331,6 +331,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
       return FTerminal->SessionData->EOLType != FTerminal->Configuration->LocalEOLType;
 
     case fcNativeTextMode:
+    case fcNewerOnlyUpload:
       return false;
 
     default:
@@ -1177,13 +1178,31 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           int Answer;
           if (File->IsDirectory)
           {
+            TQueryParams Params(qpNeverAskAgainCheck);
             SUSPEND_OPERATION
             (
               Answer = FTerminal->DoQueryUser(
                 FMTLOAD(DIRECTORY_OVERWRITE, (FileNameOnly)),
                 qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
-                qpNeverAskAgainCheck);
+                &Params);
             );
+            switch (Answer)
+            {
+              case qaNeverAskAgain:
+                FTerminal->Configuration->ConfirmOverwriting = false;
+                Answer = qaYes;
+                break;
+
+              case qaYesToAll:
+                OperationProgress->YesToAll = true;
+                Answer = qaYes;
+                break;
+
+              case qaNoToAll:
+                OperationProgress->NoToAll = true;
+                Answer = qaNo;
+                break;
+            }
           }
           else
           {
@@ -1197,30 +1216,33 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
             FileParams.DestSize = File->Size;
             FileParams.DestTimestamp = File->Modification;
 
+            TQueryButtonAlias Aliases[1];
+            Aliases[0].Button = qaAll;
+            Aliases[0].Alias = LoadStr(YES_TO_NEWER_BUTTON);
+            TQueryParams Params(qpNeverAskAgainCheck);
+            Params.Aliases = Aliases;
+            Params.AliasesCount = LENOF(Aliases);
             SUSPEND_OPERATION
             (
               Answer = FTerminal->ConfirmFileOverwrite(
                 FileNameOnly, &FileParams,
-                qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
-                qpNeverAskAgainCheck, osRemote);
+                qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll | qaAll,
+                &Params, osRemote, OperationProgress);
             );
           }
           switch (Answer) {
-            case qaNeverAskAgain:
-              FTerminal->Configuration->ConfirmOverwriting = false;
-            case qaYesToAll:
-              OperationProgress->YesToAll = true;
             case qaYes:
               CanProceed = true;
               break;
 
             case qaAbort:
               if (!OperationProgress->Cancel) OperationProgress->Cancel = csCancel;
-            case qaNoToAll:
-              OperationProgress->NoToAll = true;
             case qaNo:
               CanProceed = false;
               break;
+
+            default:
+              assert(false);
           }
         }
           else CanProceed = true;
@@ -1247,9 +1269,10 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         }
         catch (EScpFileSkipped &E)
         {
+          TQueryParams Params(qpAllowContinueOnError);
           SUSPEND_OPERATION (
             if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (FileName)), E.Message,
-              qaOK | qaAbort, qpAllowContinueOnError) == qaAbort)
+              qaOK | qaAbort, &Params) == qaAbort)
             {
               OperationProgress->Cancel = csCancel;
             }
@@ -1311,6 +1334,13 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, int Level)
 {
+  if (FLAGCLEAR(Params, cpDelete) &&
+      !CopyParam->AllowTransfer(ExtractFileName(FileName)))
+  {
+    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    THROW_SKIP_FILE_NULL;  
+  }
+
   AnsiString DestFileName = CopyParam->ChangeFileName(
     ExtractFileName(FileName), osLocal, Level == 0);
 
@@ -1569,10 +1599,11 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
       }
       catch (EScpSkipFile &E)
       {
+        TQueryParams Params(qpAllowContinueOnError);
         // If ESkipFile occurs, just log it and continue with next file
         SUSPEND_OPERATION (
           if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (FileName)), E.Message,
-                qaOK | qaAbort, qpAllowContinueOnError) == qaAbort)
+                qaOK | qaAbort, &Params) == qaAbort)
           {
             OperationProgress->Cancel = csCancel;
           }
@@ -1654,7 +1685,9 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
             try
             {
               FILE_OPERATION_LOOP(FMTLOAD(DELETE_FILE_ERROR, (FileName)),
-                FTerminal->DeleteFile("", File)
+                // pass full file name in FileName, in case we are not moving
+                // from current directory
+                FTerminal->DeleteFile(FileName, File)
               );
             }
             __finally
@@ -1896,6 +1929,16 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           FTerminal->FatalError(LoadStr(ATTEMPT_TO_WRITE_TO_PARENT_DIR));
         }
 
+        if (FLAGCLEAR(Params, cpDelete) &&
+            !CopyParam->AllowTransfer(OperationProgress->FileName))
+        {
+
+          FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer",
+            (OperationProgress->FileName)));
+          SkipConfirmed = true;
+          SCPError("", false);
+        }
+
         AnsiString DestFileName =
           IncludeTrailingBackslash(TargetDir) +
           CopyParam->ChangeFileName(OperationProgress->FileName, osRemote,
@@ -1938,16 +1981,18 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
             {
               if (FileExists(DestFileName))
               {
+                int Answer;
                 if (OperationProgress->NoToAll)
                 {
-                  EXCEPTION;
+                  Answer = qaNo;
                 }
-                else if (!OperationProgress->YesToAll &&
-                    FTerminal->Configuration->ConfirmOverwriting &&
-                    !(Params & cpNoConfirmation))
+                // if overwrite confirmation is required or
+                // only newer files should be transfered, get both file timestamps
+                else if (FLAGSET(Params, cpNewerOnly) ||
+                    (!OperationProgress->YesToAll &&
+                     FTerminal->Configuration->ConfirmOverwriting &&
+                     FLAGCLEAR(Params, cpNoConfirmation)))
                 {
-                  int Answer;
-
                   unsigned long MTime;
                   TOverwriteFileParams FileParams;
                   FileParams.SourceSize = OperationProgress->TransferSize;
@@ -1957,21 +2002,25 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                     &FileParams.DestSize);
                   FileParams.DestTimestamp = UnixToDateTime(MTime,
                     FTerminal->SessionData->ConsiderDST);
-                  
+
+                  TQueryButtonAlias Aliases[1];
+                  Aliases[0].Button = qaAll;
+                  Aliases[0].Alias = LoadStr(YES_TO_NEWER_BUTTON);
+                  TQueryParams Params(qpNeverAskAgainCheck);
+                  Params.Aliases = Aliases;
+                  Params.AliasesCount = LENOF(Aliases);
                   SUSPEND_OPERATION (
                     Answer = FTerminal->ConfirmFileOverwrite(
                       OperationProgress->FileName, &FileParams,
-                      qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
-                      qpNeverAskAgainCheck, osLocal);
+                      qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll | qaAll,
+                      &Params, osLocal, OperationProgress);
                   );
+                }
 
-                  switch (Answer) {
-                    case qaNeverAskAgain: FTerminal->Configuration->ConfirmOverwriting = false; break;
-                    case qaYesToAll: OperationProgress->YesToAll = true; break;
-                    case qaAbort: OperationProgress->Cancel = csCancel; // continue on next case
-                    case qaNoToAll: OperationProgress->NoToAll = true;
-                    case qaNo: SkipConfirmed = true; EXCEPTION;
-                  }
+                switch (Answer)
+                {
+                  case qaAbort: OperationProgress->Cancel = csCancel; // continue on next case
+                  case qaNo: SkipConfirmed = true; EXCEPTION;
                 }
               }
 
@@ -2096,8 +2145,9 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
       if (!SkipConfirmed)
       {
         SUSPEND_OPERATION (
+          TQueryParams Params(qpAllowContinueOnError);
           if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (OperationProgress->FileName)),
-            E.Message, qaOK | qaAbort, qpAllowContinueOnError) == qaAbort)
+            E.Message, qaOK | qaAbort, &Params) == qaAbort)
           {
             OperationProgress->Cancel = csCancel;
           }

@@ -46,8 +46,8 @@
     <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="WinSCP3.cpp"/>
-    <INCLUDEPATH value="core;forms;windows;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="lib;windows;forms;packages\my\filemng;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="core;forms;windows;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="lib;windows;forms;packages\filemng;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
     <OTHERFILES value=""/>
@@ -99,8 +99,8 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
 MinorVer=6
-Release=1
-Build=220
+Release=5
+Build=232
 Debug=0
 PreRelease=0
 Special=0
@@ -112,13 +112,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.6.1.220
+FileVersion=3.6.5.232
 InternalName=winscp3
 LegalCopyright=(c) 2000-2004 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp361.exe
+OriginalFilename=winscp365.exe
 ProductName=WinSCP
-ProductVersion=3.6.1.0
+ProductVersion=3.6.5.0
 WWW=http://winscp.sourceforge.net/
 
 [Compiler]

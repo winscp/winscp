@@ -23,6 +23,9 @@ void __fastcall PathComboBoxKeyDown(
 void __fastcall PathEditKeyDown(
   TCustomEdit * Edit, WORD & Key, TShiftState Shift, bool Unix);
 void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar);
-void __fastcall SetControlsOrder(TControl ** ControlsOrder, int Count);
+void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count);
+void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count);
+TPoint __fastcall GetAveCharSize(TCanvas * Canvas);
+void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

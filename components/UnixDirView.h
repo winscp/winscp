@@ -7,74 +7,41 @@
 #include <Classes.hpp>
 #include <Forms.hpp>
 #include "CustomUnixDirView.hpp"
-
-#ifndef DESIGN_ONLY
-#include <Terminal.h>
-#else
-struct TCopyParamType {};
-#endif
 //---------------------------------------------------------------------------
+class TTerminal;
 class TUnixDirView;
+class TCustomUnixDriveView;
+class TRemoteFile;
+//---------------------------------------------------------------------------
 enum TTransferDirection { tdToRemote, tdToLocal };
 enum TTransferType { ttCopy, ttMove };
-typedef void __fastcall (__closure *TGetCopyParamEvent)
-  (TUnixDirView * Sender, TTransferDirection Direction, TTransferType Type,
-   AnsiString &TargetDirectory, TStrings * FileList, TCopyParamType & CopyParam);
-typedef void __fastcall (__closure *TWarnLackOfTempSpaceEvent)
-  (TUnixDirView * Sender, const AnsiString Path, __int64 RequiredSpace,
-    bool & Continue);
-typedef void __fastcall (__closure *TDDTargetDropEvent)
-  (TUnixDirView * Sender, int DropEffect, bool & Continue);
-#define DefaultDDDeleteDelay 120
-#define HOMEDIRECTORY ""
-#define CURRENTDIRECTORY "."
+typedef void __fastcall (__closure *TDDDragFileName)
+  (TObject * Sender, TRemoteFile * File, AnsiString & FileName);
 //---------------------------------------------------------------------------
 class PACKAGE TUnixDirView : public TCustomUnixDirView
 {
+friend class TCustomUnixDriveView;
 private:
   bool FDDAllowMove;
-  int FDDDeleteDelay;
   bool FDirLoadedAfterChangeDir;
-  int FLastDropEffect;
-  __int64 FDDTotalSize;
-  TNotifyEvent FOldChangeDirectory;
-  TNotifyEvent FOldReadDirectory;
   TNotifyEvent FOnDisplayProperties;
-  TGetCopyParamEvent FOnGetCopyParam;
   bool FFullLoad;
-#ifndef DESIGN_ONLY
   TTerminal *FTerminal;
-#endif
-  AnsiString FUniqTempDir;
   bool FShowInaccesibleDirectories;
-  AnsiString FDDTemporaryDirectory;
-  TWarnLackOfTempSpaceEvent FOnWarnLackOfTempSpace;
-  AnsiString FDragDropSshTerminate;
-  TStrings * FDDFileList;
-  TDDTargetDropEvent FOnDDTargetDrop;
+  TDDDragFileName FOnDDDragFileName;
   bool __fastcall GetActive();
-  TTimer * FDelayedDeletionTimer;
-  TStrings * FDelayedDeletionList;
+  TCustomUnixDriveView * FDriveView;
   void __fastcall SetDDAllowMove(bool value);
-  void __fastcall SetDDDeleteDelay(int value);
-#ifndef DESIGN_ONLY
   void __fastcall SetTerminal(TTerminal *value);
-#endif
   void __fastcall SetShowInaccesibleDirectories(bool value);
 protected:
-  void __fastcall AddDelayedDirectoryDeletion(
-    const AnsiString TempDir, int SecDelay);
   virtual void __fastcall DDDragDetect(int grfKeyState, const TPoint &DetectStart,
     const TPoint &Point, TDragDetectStatus DragStatus);
-  virtual void __fastcall DDGiveFeedback(int dwEffect, HRESULT & Result);
   virtual void __fastcall DDMenuDone(TObject* Sender, HMENU AMenu);
-  virtual void __fastcall DDQueryContinueDrag(BOOL FEscapePressed, int grfKeyState, HRESULT & Result);
-  void __fastcall DDTargetDrop();
   virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect);
   virtual void __fastcall AddToDragFileList(TFileList* FileList, TListItem* Item);
   void __fastcall DisplayContextMenu(const TPoint &Where);
   void __fastcall DoChangeDirectory(TObject * Sender);
-  void __fastcall DoDelayedDeletion(TObject * Sender);
   void __fastcall DoReadDirectory(TObject * Sender, bool ReloadOnly);
   virtual void __fastcall ExecuteFile(TListItem * Item);
   virtual bool __fastcall GetDirOK();
@@ -83,11 +50,9 @@ protected:
   virtual bool __fastcall GetIsRoot();
   virtual AnsiString __fastcall GetPath();
   virtual AnsiString __fastcall GetPathName();
-  AnsiString __fastcall GetUniqTempDir();
   void __fastcall ChangeDirectory(AnsiString Path);
   virtual void __fastcall InternalEdit(const tagLVITEMA & HItem);
   virtual TColor __fastcall ItemColor(TListItem * Item);
-  virtual AnsiString __fastcall ItemDragFileName(TListItem * Item);
   virtual AnsiString __fastcall ItemFileName(TListItem * Item);
   virtual __int64 __fastcall ItemFileSize(TListItem * Item);
   virtual int __fastcall ItemImageIndex(TListItem * Item, bool Cache);
@@ -104,9 +69,11 @@ protected:
   virtual bool __fastcall TargetHasDropHandler(TListItem * Item, int Effect);
   virtual TDateTime __fastcall ItemFileTime(TListItem * Item,
     TDateTimePrecision & Precision);
-  void __fastcall DoWarnLackOfTempSpace(const AnsiString Path, __int64 RequiredSpace,
-    bool & Continue);
   DYNAMIC bool __fastcall CanEdit(TListItem* Item);
+  void __fastcall SetDriveView(TCustomUnixDriveView * Value);
+
+  __property TCustomUnixDriveView * DriveView = { read = FDriveView, write = SetDriveView };
+
 public:
   __fastcall TUnixDirView(TComponent* Owner);
   virtual __fastcall ~TUnixDirView();
@@ -119,20 +86,15 @@ public:
   virtual bool __fastcall ItemIsDirectory(TListItem * Item);
   virtual bool __fastcall ItemIsParentDirectory(TListItem * Item);
   virtual AnsiString __fastcall ItemFullFileName(TListItem * Item);
+  virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "");
+
   __property bool Active = { read = GetActive };
-  __property AnsiString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=FDDTemporaryDirectory };
-#ifndef DESIGN_ONLY
   __property TTerminal *Terminal = { read = FTerminal, write = SetTerminal };
-#endif
 __published:
   __property bool DDAllowMove = { read = FDDAllowMove,
     write = SetDDAllowMove, default = False };
-  __property int DDDeleteDelay = { read = FDDDeleteDelay,
-    write = SetDDDeleteDelay, default = DefaultDDDeleteDelay };
-  __property TGetCopyParamEvent OnGetCopyParam = { read = FOnGetCopyParam,
-    write = FOnGetCopyParam};
-  __property TDDTargetDropEvent OnDDTargetDrop = { read = FOnDDTargetDrop,
-    write = FOnDDTargetDrop};
+  __property TDDDragFileName OnDDDragFileName = { read = FOnDDDragFileName,
+    write = FOnDDDragFileName};
   __property bool ShowInaccesibleDirectories  =
     { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories,
       default=true  };
@@ -162,6 +124,7 @@ __published:
   __property OnDDDrop;
   __property OnDDQueryContinueDrag;
   __property OnDDGiveFeedback;
+  __property OnDDChooseEffect;
   __property OnDDDragDetect;
   __property OnDDEnd;
   __property OnDDCreateDragFileList;
@@ -181,11 +144,8 @@ __published:
   __property ColumnClick;
   __property MultiSelect;
   __property TNotifyEvent OnDisplayProperties = { read = FOnDisplayProperties, write = FOnDisplayProperties };
-  __property TWarnLackOfTempSpaceEvent OnWarnLackOfTempSpace  = { read=FOnWarnLackOfTempSpace, write=FOnWarnLackOfTempSpace };
   __property ReadOnly;
   __property HeaderImages;
 };
-//---------------------------------------------------------------------------
-AnsiString __fastcall UniqTempDir(const AnsiString BaseDir = "");
 //---------------------------------------------------------------------------
 #endif

@@ -3,6 +3,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Consts.hpp>
 #include <shlobj.h>
 #include <Common.h>
 
@@ -144,3 +145,92 @@ AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
     Files->Count, Item);
 }
 //---------------------------------------------------------------------------
+void __fastcall CopyToClipboard(AnsiString Text)
+{
+  HANDLE Data;
+  void * DataPtr;
+
+  if (OpenClipboard(0))
+  {
+    try
+    {
+      Data = GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, Text.Length() + 1);
+      try
+      {
+        DataPtr = GlobalLock(Data);
+        try
+        {
+          memcpy(DataPtr, Text.c_str(), Text.Length() + 1);
+          EmptyClipboard();
+          SetClipboardData(CF_TEXT, Data);
+        }
+        __finally
+        {
+          GlobalUnlock(Data);
+        }
+      }
+      catch(...)
+      {
+        GlobalFree(Data);
+        throw;
+      }
+    }
+    __finally
+    {
+      CloseClipboard();
+    }
+  }
+  else
+  {
+    throw Exception(Consts_SCannotOpenClipboard);
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Identity)
+{
+  AnsiString TempDir;
+  TempDir = BaseDir.IsEmpty() ? SystemTemporaryDirectory() : BaseDir;
+  TempDir = IncludeTrailingBackslash(IncludeTrailingBackslash(TempDir) +
+    Identity + FormatDateTime("nnzzz", Now()));
+  return TempDir;
+}
+//---------------------------------------------------------------------------
+bool __fastcall DeleteDirectory(const AnsiString DirName)
+{
+  TSearchRec sr;
+  bool retval = true;
+  if (FindFirst(DirName + "\\*", faAnyFile, sr) == 0) // VCL Function
+  {
+    if (sr.Attr == faDirectory)
+    {
+      if (sr.Name != "." && sr.Name != "..")
+        retval = DeleteDirectory(DirName + "\\" + sr.Name);
+    }
+    else
+    {
+      retval = DeleteFile(DirName + "\\" + sr.Name);
+    }
+
+    if (retval)
+    {
+      while (FindNext(sr) == 0)
+      { // VCL Function
+        if (sr.Attr == faDirectory)
+        {
+          if (sr.Name != "." && sr.Name != "..")
+            retval = DeleteDirectory(DirName + "\\" + sr.Name);
+        }
+        else
+        {
+          retval = DeleteFile(DirName + "\\" + sr.Name);
+        }
+
+        if (!retval) break;
+      }
+    }
+  }
+  FindClose(sr);
+  if (retval) retval = RemoveDir(DirName); // VCL function
+  return retval;
+}
+

@@ -22,7 +22,6 @@ __fastcall TAboutDialog::TAboutDialog(TComponent* AOwner)
   LinkLabel(ForumUrlLabel);
   LinkLabel(PuttyLicenceLabel);
   LinkLabel(PuttyHomepageLabel);
-  LinkLabel(FilemanagerHomepageLabel);
   ApplicationLabel->Caption = AppName;
   HomepageLabel->Caption = LoadStr(HOMEPAGE_URL);
   ForumUrlLabel->Caption = LoadStr(FORUM_URL);

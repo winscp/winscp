@@ -140,16 +140,18 @@ TSynchronizeMode __fastcall TFullSynchronizeDialog::GetMode()
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::SetParams(int value)
 {
-  FParams = value & ~(spDelete | spNoConfirmation);
-  SynchronizeDeleteCheck->Checked = (value & spDelete) != 0;
-  SynchronizeNoConfirmationCheck->Checked = (value & spNoConfirmation) != 0;
+  FParams = value & ~(spDelete | spNoConfirmation | spExistingOnly);
+  SynchronizeDeleteCheck->Checked = FLAGSET(value, spDelete);
+  SynchronizeNoConfirmationCheck->Checked = FLAGSET(value, spNoConfirmation);
+  SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, spExistingOnly);
 }
 //---------------------------------------------------------------------------
 int __fastcall TFullSynchronizeDialog::GetParams()
 {
   return FParams |
     (SynchronizeDeleteCheck->Checked ? spDelete : 0) |
-    (SynchronizeNoConfirmationCheck->Checked ? spNoConfirmation : 0);
+    (SynchronizeNoConfirmationCheck->Checked ? spNoConfirmation : 0) |
+    (SynchronizeExistingOnlyCheck->Checked ? spExistingOnly : 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(
@@ -194,6 +196,12 @@ void __fastcall TFullSynchronizeDialog::DirectoryEditKeyDown(
 {
   PathComboBoxKeyDown(dynamic_cast<TCustomComboBox*>(Sender), Key, Shift,
     (Sender == RemoteDirectoryEdit));
+}
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::TransferPreferencesButtonClick(
+  TObject * /*Sender*/)
+{
+  DoPreferencesDialog(pmTransfer);
 }
 //---------------------------------------------------------------------------
 

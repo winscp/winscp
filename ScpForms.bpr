@@ -4,8 +4,8 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpForms.lib"/>
-    <OBJFILES value="forms\InputDlg.obj windows\VCLCommon.obj forms\About.obj 
-      forms\Cleanup.obj forms\Console.obj forms\Copy.obj 
+    <OBJFILES value="forms\InputDlg.obj forms\MessageDlg.obj windows\VCLCommon.obj 
+      forms\About.obj forms\Cleanup.obj forms\Console.obj forms\Copy.obj 
       forms\CopyParams.obj forms\ComboInput.obj forms\Editor.obj 
       forms\FileSystemInfo.obj forms\FullSynchronize.obj 
       forms\GeneralSettings.obj forms\ImportSessions.obj forms\Licence.obj 
@@ -45,7 +45,7 @@
     <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpForms.bpf"/>
-    <INCLUDEPATH value="forms;core;components;windows;resource;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="forms;core;components;windows;resource;packages\filemng;packages\dragndrop;packages\my;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="windows;forms;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -68,6 +68,7 @@
   <FILELIST>
       <FILE FILENAME="ScpForms.bpf" FORMNAME="" UNITNAME="ScpForms" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\InputDlg.cpp" FORMNAME="" UNITNAME="InputDlg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\MessageDlg.cpp" FORMNAME="" UNITNAME="MessageDlg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\VCLCommon.cpp" FORMNAME="" UNITNAME="VCLCommon" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\About.cpp" FORMNAME="AboutDialog" UNITNAME="About" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Cleanup.cpp" FORMNAME="CleanupDialog" UNITNAME="Cleanup" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

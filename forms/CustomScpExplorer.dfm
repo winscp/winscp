@@ -42,6 +42,16 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
+    object RemotePanelSplitter: TSplitter
+      Left = 169
+      Top = 0
+      Width = 3
+      Height = 233
+      Cursor = crHSplit
+      AutoSnap = False
+      MinSize = 70
+      ResizeStyle = rsUpdate
+    end
     object RemoteStatusBar: TAssociatedStatusBar
       Left = 0
       Top = 233
@@ -62,9 +72,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       FocusControl = RemoteDirView
     end
     object RemoteDirView: TUnixDirView
-      Left = 0
+      Left = 172
       Top = 0
-      Width = 628
+      Width = 456
       Height = 233
       Align = alClient
       FullDrag = True
@@ -72,24 +82,51 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       TabOrder = 1
       ViewStyle = vsReport
       OnColumnRightClick = DirViewColumnRightClick
-      OnEnter = DirViewEnter
+      OnEnter = RemoteDirViewEnter
       NortonLike = False
       UnixColProperties.ExtWidth = 20
       UnixColProperties.ExtVisible = False
-      OnGetCopyParam = RemoteDirViewGetCopyParam
-      OnDDTargetDrop = RemoteDirViewDDTargetDrop
+      OnDDDragFileName = RemoteFileControlDDDragFileName
       StatusBar = RemoteStatusBar
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
       OnExecFile = DirViewExecFile
-      OnDDDragEnter = DirViewDDDragEnter
-      OnDDDragLeave = DirViewDDDragLeave
-      OnDDGiveFeedback = RemoteDirViewDDGiveFeedback
-      OnDDEnd = RemoteDirViewDDEnd
-      OnDDCreateDragFileList = RemoteDirViewDDCreateDragFileList
-      OnDDCreateDataObject = RemoteDirViewDDCreateDataObject
+      OnDDDragEnter = FileControlDDDragEnter
+      OnDDDragLeave = FileControlDDDragLeave
+      OnDDQueryContinueDrag = RemoteFileControlDDQueryContinueDrag
+      OnDDGiveFeedback = RemoteFileControlDDGiveFeedback
+      OnDDChooseEffect = RemoteFileContolDDChooseEffect
+      OnDDDragDetect = RemoteFileControlDDDragDetect
+      OnDDEnd = RemoteFileControlDDEnd
+      OnDDCreateDragFileList = RemoteFileControlDDCreateDragFileList
+      OnDDFileOperation = RemoteFileControlDDFileOperation
+      OnDDCreateDataObject = RemoteFileControlDDCreateDataObject
       OnContextPopup = RemoteDirViewContextPopup
       OnDisplayProperties = RemoteDirViewDisplayProperties
-      OnWarnLackOfTempSpace = RemoteDirViewWarnLackOfTempSpace
+    end
+    object RemoteDriveView: TUnixDriveView
+      Left = 0
+      Top = 0
+      Width = 169
+      Height = 233
+      DirView = RemoteDirView
+      OnDDDragFileName = RemoteFileControlDDDragFileName
+      OnDDEnd = RemoteFileControlDDEnd
+      UseSystemContextMenu = False
+      OnDDDragEnter = FileControlDDDragEnter
+      OnDDDragLeave = FileControlDDDragLeave
+      OnDDQueryContinueDrag = RemoteFileControlDDQueryContinueDrag
+      OnDDChooseEffect = RemoteFileContolDDChooseEffect
+      OnDDGiveFeedback = RemoteFileControlDDGiveFeedback
+      OnDDDragDetect = RemoteFileControlDDDragDetect
+      OnDDFileOperation = RemoteFileControlDDFileOperation
+      OnDDCreateDragFileList = RemoteFileControlDDCreateDragFileList
+      OnDDCreateDataObject = RemoteFileControlDDCreateDataObject
+      Align = alLeft
+      Indent = 19
+      ParentColor = False
+      ReadOnly = True
+      TabOrder = 2
+      OnEnter = RemoteDriveViewEnter
     end
   end
   object QueuePanel: TPanel

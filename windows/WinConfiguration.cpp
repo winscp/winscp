@@ -53,7 +53,7 @@ void __fastcall TWinConfiguration::Default()
   FDDTemporaryDirectory = "";
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
-  FDDExtEnabled = true;
+  FDDExtEnabled = DDExtInstalled;
   FDDExtTimeout = 1000;
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
@@ -71,6 +71,7 @@ void __fastcall TWinConfiguration::Default()
   FExpertMode = true;
   FUseLocationProfiles = false;
   FDefaultDirIsHome = true;
+  FDDDeleteDelay = 120;
 
   FEditor.Editor = edInternal;
   FEditor.ExternalEditor = "notepad.exe";
@@ -95,13 +96,15 @@ void __fastcall TWinConfiguration::Default()
 
   FScpExplorer.WindowParams = "-1;-1;600;400;0";
   FScpExplorer.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,1|0;1;2;3;4;5";
-  FScpExplorer.CoolBarLayout = "5,1,0,381,6;3,0,0,137,5;4,1,0,249,4;6,0,0,240,3;2,1,1,634,2;1,1,0,638,1;0,1,1,634,0";
+  FScpExplorer.CoolBarLayout = "5,1,0,381,6;3,0,0,127,5;4,1,1,249,4;6,0,0,196,3;2,1,1,634,2;1,1,1,634,1;0,1,1,634,0";
   FScpExplorer.StatusBar = true;
   AnsiString PersonalFolder;
-  SpecialFolderLocation(CSIDL_PERSONAL, PersonalFolder);
+  ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalFolder);
   FScpExplorer.LastLocalTargetDirectory = PersonalFolder;
   FScpExplorer.ViewStyle = 0; /* vsIcon */
   FScpExplorer.ShowFullAddress = true;
+  FScpExplorer.DriveView = true;
+  FScpExplorer.DriveViewWidth = 180;
 
   FScpCommander.WindowParams = "-1;-1;600;400;0";
   FScpCommander.LocalPanelWidth = 0.5;
@@ -118,9 +121,13 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0|0;1;2;3;4;5";
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
+  FScpCommander.RemotePanel.DriveView = false;
+  FScpCommander.RemotePanel.DriveViewHeight = 100;
   FScpCommander.LocalPanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0|0;1;2;3;4;5";
   FScpCommander.LocalPanel.StatusBar = true;
   FScpCommander.LocalPanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
+  FScpCommander.LocalPanel.DriveView = false;
+  FScpCommander.LocalPanel.DriveViewHeight = 100;
 
   FBookmarks->Clear();
 
@@ -249,6 +256,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,  ScpExplorer.WindowParams); \
     KEY(Integer, ScpExplorer.ViewStyle); \
     KEY(Bool,    ScpExplorer.ShowFullAddress); \
+    KEY(Bool,    ScpExplorer.DriveView); \
+    KEY(Integer, ScpExplorer.DriveViewWidth); \
   ); \
   BLOCK("Interface\\Commander", CANCREATE, \
     KEY(String,  ScpCommander.CoolBarLayout); \
@@ -265,14 +274,18 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,    ScpCommander.SynchronizeBrowsing); \
   ); \
   BLOCK("Interface\\Commander\\LocalPanel", CANCREATE, \
-    KEY(String, ScpCommander.LocalPanel.CoolBarLayout); \
-    KEY(String, ScpCommander.LocalPanel.DirViewParams); \
-    KEY(Bool,   ScpCommander.LocalPanel.StatusBar); \
+    KEY(String,  ScpCommander.LocalPanel.CoolBarLayout); \
+    KEY(String,  ScpCommander.LocalPanel.DirViewParams); \
+    KEY(Bool,    ScpCommander.LocalPanel.StatusBar); \
+    KEY(Bool,    ScpCommander.LocalPanel.DriveView); \
+    KEY(Integer, ScpCommander.LocalPanel.DriveViewHeight); \
   ); \
   BLOCK("Interface\\Commander\\RemotePanel", CANCREATE, \
-    KEY(String, ScpCommander.RemotePanel.CoolBarLayout); \
-    KEY(String, ScpCommander.RemotePanel.DirViewParams); \
-    KEY(Bool,   ScpCommander.RemotePanel.StatusBar); \
+    KEY(String,  ScpCommander.RemotePanel.CoolBarLayout); \
+    KEY(String,  ScpCommander.RemotePanel.DirViewParams); \
+    KEY(Bool,    ScpCommander.RemotePanel.StatusBar); \
+    KEY(Bool,    ScpCommander.RemotePanel.DriveView); \
+    KEY(Integer, ScpCommander.RemotePanel.DriveViewHeight); \
   ); \
   BLOCK("Logging", CANCREATE, \
     KEY(Bool,    LogWindowOnStartup); \
@@ -653,6 +666,11 @@ void TWinConfiguration::ReformatFileNameCommand(AnsiString & Command)
 AnsiString __fastcall TWinConfiguration::GetDefaultKeyFile()
 {
   return FTemporaryKeyFile;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TWinConfiguration::TemporaryTranferDir()
+{
+  return UniqTempDir(DDTemporaryDirectory, "scp");
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 inherited ScpCommanderForm: TScpCommanderForm
   Left = 319
-  Top = 33
+  Top = 10
   Width = 661
-  Height = 622
+  Height = 651
   Caption = 'ScpCommanderForm'
   OldCreateOrder = True
   PixelsPerInch = 96
@@ -11,14 +11,14 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 313
     Top = 170
     Width = 5
-    Height = 213
+    Height = 307
     Cursor = crHSplit
     ResizeStyle = rsUpdate
     OnCanResize = SplitterCanResize
     OnMoved = SplitterMoved
   end
   inherited QueueSplitter: TSplitter
-    Top = 404
+    Top = 498
     Width = 653
   end
   inherited TopCoolBar: TCoolBar
@@ -568,8 +568,8 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 318
     Top = 170
     Width = 335
-    Height = 213
-    Constraints.MinHeight = 200
+    Height = 307
+    Constraints.MinHeight = 220
     Constraints.MinWidth = 185
     TabOrder = 1
     object RemotePathLabel: TPathLabel [0]
@@ -578,27 +578,46 @@ inherited ScpCommanderForm: TScpCommanderForm
       Width = 335
       Height = 15
       UnixPath = True
+      OnGetStatus = RemotePathLabelGetStatus
       AutoSize = False
       PopupMenu = NonVisualDataModule.RemotePanelPopup
+      OnDblClick = PathLabelDblClick
+    end
+    inherited RemotePanelSplitter: TSplitter
+      Left = 0
+      Top = 153
+      Width = 335
+      Height = 3
+      Cursor = crVSplit
+      Align = alTop
     end
     inherited RemoteStatusBar: TAssociatedStatusBar
-      Top = 194
+      Top = 288
       Width = 335
       Hint = ''
     end
     inherited RemoteDirView: TUnixDirView
-      Top = 87
+      Left = 0
+      Top = 156
       Width = 335
-      Height = 107
-      Constraints.MinHeight = 100
+      Height = 132
+      Constraints.MinHeight = 70
       RowSelect = True
       NortonLike = True
       PathComboBox = RemotePathComboBox
       PathLabel = RemotePathLabel
       AddParentDir = True
       OnLoaded = DirViewLoaded
-      OnDDFileOperationExecuted = RemoteDirViewDDFileOperationExecuted
-      OnWarnLackOfTempSpace = nil
+      OnDDFileOperationExecuted = RemoteFileControlDDFileOperationExecuted
+    end
+    inherited RemoteDriveView: TUnixDriveView
+      Top = 87
+      Width = 335
+      Height = 66
+      Align = alTop
+      Constraints.MinHeight = 30
+      HideSelection = False
+      TabStop = False
     end
     object RemoteCoolBar: TCoolBar
       Left = 0
@@ -664,7 +683,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       object ToolBar4: TToolBar
         Left = 9
         Top = 48
-        Width = 123
+        Width = 146
         Height = 22
         Hint = '|E'
         Align = alLeft
@@ -713,6 +732,11 @@ inherited ScpCommanderForm: TScpCommanderForm
           Top = 0
           Action = NonVisualDataModule.RemoteOpenDirAction
         end
+        object ToolButton69: TToolButton
+          Left = 123
+          Top = 0
+          Action = NonVisualDataModule.RemoteTreeAction
+        end
       end
       object ToolBar6: TToolBar
         Tag = 1
@@ -747,11 +771,13 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
   end
   inherited QueuePanel: TPanel
-    Top = 407
+    Top = 501
     Width = 653
+    Height = 75
     TabOrder = 5
     inherited QueueView: TListView
       Width = 653
+      Height = 49
       TabStop = False
     end
     inherited QueueCoolBar: TCoolBar
@@ -773,10 +799,10 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 0
     Top = 170
     Width = 313
-    Height = 213
+    Height = 307
     Align = alLeft
     BevelOuter = bvNone
-    Constraints.MinHeight = 200
+    Constraints.MinHeight = 220
     Constraints.MinWidth = 185
     TabOrder = 0
     object LocalPathLabel: TPathLabel
@@ -784,12 +810,25 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 72
       Width = 313
       Height = 15
+      OnGetStatus = LocalPathLabelGetStatus
       AutoSize = False
       PopupMenu = NonVisualDataModule.LocalPanelPopup
+      OnDblClick = PathLabelDblClick
+    end
+    object LocalPanelSplitter: TSplitter
+      Left = 0
+      Top = 153
+      Width = 313
+      Height = 3
+      Cursor = crVSplit
+      Align = alTop
+      AutoSnap = False
+      MinSize = 70
+      ResizeStyle = rsUpdate
     end
     object LocalStatusBar: TAssociatedStatusBar
       Left = 0
-      Top = 194
+      Top = 288
       Width = 313
       Height = 19
       Panels = <
@@ -808,18 +847,18 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDirView: TDirView
       Left = 0
-      Top = 87
+      Top = 156
       Width = 313
-      Height = 107
+      Height = 132
       Align = alClient
-      Constraints.MinHeight = 100
+      Constraints.MinHeight = 70
       FullDrag = True
       HideSelection = False
       RowSelect = True
       TabOrder = 1
       ViewStyle = vsReport
       OnColumnRightClick = DirViewColumnRightClick
-      OnEnter = DirViewEnter
+      OnEnter = LocalDirViewEnter
       DirColProperties.ExtVisible = False
       PathComboBox = LocalPathComboBox
       PathLabel = LocalPathLabel
@@ -828,17 +867,16 @@ inherited ScpCommanderForm: TScpCommanderForm
       HeaderImages = NonVisualDataModule.ArrowImages
       AddParentDir = True
       OnLoaded = DirViewLoaded
-      OnDDDragEnter = LocalDirViewDDDragEnter
-      OnDDDragLeave = DirViewDDDragLeave
-      OnDDDragOver = LocalDirViewDDDragOver
+      OnDDDragEnter = LocalFileControlDDDragEnter
+      OnDDDragLeave = FileControlDDDragLeave
+      OnDDDragOver = LocalFileControlDDDragOver
       OnDDTargetHasDropHandler = LocalDirViewDDTargetHasDropHandler
-      OnDDFileOperation = LocalDirViewDDFileOperation
-      OnDDMenuPopup = LocalDirViewDDMenuPopup
+      OnDDFileOperation = LocalFileControlDDFileOperation
+      OnDDMenuPopup = LocalFileControlDDMenuPopup
       OnExecFile = LocalDirViewExecFile
       ConfirmDelete = False
       ConfirmOverwrite = False
       WatchForChanges = True
-      OnChangeDetected = LocalDirViewChangeDetected
     end
     object LocalCoolBar: TCoolBar
       Left = 0
@@ -904,7 +942,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       object ToolBar2: TToolBar
         Left = 9
         Top = 48
-        Width = 123
+        Width = 146
         Height = 22
         Hint = '|E'
         Align = alLeft
@@ -953,6 +991,11 @@ inherited ScpCommanderForm: TScpCommanderForm
           Top = 0
           Action = NonVisualDataModule.LocalOpenDirAction
         end
+        object ToolButton68: TToolButton
+          Left = 123
+          Top = 0
+          Action = NonVisualDataModule.LocalTreeAction
+        end
       end
       object ToolBar5: TToolBar
         Tag = 1
@@ -986,10 +1029,31 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
       end
     end
+    object LocalDriveView: TDriveView
+      Left = 0
+      Top = 87
+      Width = 313
+      Height = 66
+      WatchDirectory = True
+      DirView = LocalDirView
+      OnDDDragEnter = LocalFileControlDDDragEnter
+      OnDDDragLeave = FileControlDDDragLeave
+      OnDDDragOver = LocalFileControlDDDragOver
+      OnDDFileOperation = LocalFileControlDDFileOperation
+      OnDDMenuPopup = LocalFileControlDDMenuPopup
+      Align = alTop
+      Constraints.MinHeight = 30
+      HideSelection = False
+      Indent = 19
+      ParentColor = False
+      TabOrder = 3
+      TabStop = False
+      OnEnter = LocalDriveViewEnter
+    end
   end
   object ToolbarPanel: TToolbarPanel
     Left = 0
-    Top = 547
+    Top = 576
     Width = 653
     Height = 22
     Category = 'Toolbar Operation (selected + rename + mkdir + close)'
@@ -1001,7 +1065,7 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 569
+    Top = 598
     Width = 653
     Height = 19
     Panels = <
@@ -1052,7 +1116,7 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   object CommandLinePanel: TPanel
     Left = 0
-    Top = 383
+    Top = 477
     Width = 653
     Height = 21
     Align = alBottom

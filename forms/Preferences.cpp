@@ -64,9 +64,11 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
 bool __fastcall TPreferencesDialog::Execute()
 {
   LoadConfiguration();
+  CopyParamsFrame->BeforeExecute();
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
+    CopyParamsFrame->AfterExecute();
     SaveConfiguration();
   }
   return Result;
@@ -129,13 +131,18 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(CopyOnDoubleClick);
   BOOLPROP(CopyOnDoubleClickConfirmation);
   BOOLPROP(ConfirmOverwriting);
+  BOOLPROP(ConfirmResume);
   BOOLPROP(ConfirmDeleting);
   BOOLPROP(ConfirmClosingSession);
   BOOLPROP(ConfirmExitOnCompletion);
   BOOLPROP(UseLocationProfiles);
   BOOLPROP(ContinueOnError);
   BOOLPROP(DDAllowMoveInit);
+  BOOLPROP(BeepOnFinish);
   #undef BOOLPROP
+
+  BeepOnFinishAfterEdit->AsInteger =
+    static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * (24*60*60);
 
   CompareByTimeCheck->Checked = WinConfiguration->ScpCommander.CompareByTime;
   CompareBySizeCheck->Checked = WinConfiguration->ScpCommander.CompareBySize;
@@ -250,13 +257,18 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(CopyOnDoubleClick);
     BOOLPROP(CopyOnDoubleClickConfirmation);
     BOOLPROP(ConfirmOverwriting);
+    BOOLPROP(ConfirmResume);
     BOOLPROP(ConfirmDeleting);
     BOOLPROP(ConfirmClosingSession);
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(UseLocationProfiles);
     BOOLPROP(ContinueOnError);
     BOOLPROP(DDAllowMoveInit);
+    BOOLPROP(BeepOnFinish);
     #undef BOOLPROP
+
+    GUIConfiguration->BeepOnFinishAfter =
+      static_cast<double>(BeepOnFinishAfterEdit->Value / (24*60*60));
 
     WinConfiguration->ScpCommander.CompareByTime = CompareByTimeCheck->Checked;
     WinConfiguration->ScpCommander.CompareBySize = CompareBySizeCheck->Checked;
@@ -361,6 +373,7 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
     case pmEditor: PageControl->ActivePage = EditorSheet; break;
     case pmCustomCommands: PageControl->ActivePage = CustomCommandsSheet; break;
     case pmQueue: PageControl->ActivePage = QueueSheet; break;
+    case pmTransfer: PageControl->ActivePage = TransferSheet; break;
     default: PageControl->ActivePage = PreferencesSheet; break;
   }
   PageControlChange(NULL);
@@ -374,6 +387,8 @@ void __fastcall TPreferencesDialog::ControlChange(TObject * /*Sender*/)
 void __fastcall TPreferencesDialog::UpdateControls()
 {
   EnableControl(CopyOnDoubleClickConfirmationCheck, CopyOnDoubleClickCheck->Checked);
+  EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
+  EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
   EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
 
   EditorFontLabel->Caption = FMTLOAD(EDITOR_FONT_FMT,
@@ -462,11 +477,15 @@ void __fastcall TPreferencesDialog::ExternalEditorEditChange(
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
-      bool & /*CanClose*/)
+  bool & /*CanClose*/)
 {
-  if (ModalResult != mrCancel && ExternalEditorEdit->Focused())
+  if (ModalResult != mrCancel)
   {
-    ExternalEditorEditExit(NULL);
+    if (ExternalEditorEdit->Focused())
+    {
+      ExternalEditorEditExit(NULL);
+    }
+    CopyParamsFrame->Validate();
   }
 }
 //---------------------------------------------------------------------------

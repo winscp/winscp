@@ -2,7 +2,7 @@ object CopyParamsFrame: TCopyParamsFrame
   Left = 0
   Top = 0
   Width = 508
-  Height = 150
+  Height = 193
   TabOrder = 0
   object CommonPropertiesGroup: TXPGroupBox
     Left = 331
@@ -221,9 +221,41 @@ object CopyParamsFrame: TCopyParamsFrame
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
-      MaxLength = 255
+      MaxLength = 1000
       TabOrder = 3
       Text = 'AsciiFileMaskCombo'
+      OnExit = ValidateMaskComboExit
+    end
+  end
+  object FilterGroup: TXPGroupBox
+    Left = 3
+    Top = 148
+    Width = 501
+    Height = 41
+    Caption = 'Filter'
+    TabOrder = 5
+    DesignSize = (
+      501
+      41)
+    object Label1: TLabel
+      Left = 10
+      Top = 17
+      Width = 66
+      Height = 13
+      Caption = 'Ex&clude mask'
+      FocusControl = ExcludeFileMaskCombo
+    end
+    object ExcludeFileMaskCombo: THistoryComboBox
+      Left = 101
+      Top = 12
+      Width = 393
+      Height = 21
+      Anchors = [akLeft, akTop, akRight]
+      ItemHeight = 13
+      MaxLength = 3000
+      TabOrder = 0
+      Text = 'ExcludeFileMaskCombo'
+      OnExit = ValidateMaskComboExit
     end
   end
 end

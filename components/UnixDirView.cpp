@@ -5,12 +5,13 @@
 #include <Common.h>
 
 #include "UnixDirView.h"
+#include "UnixDriveView.h"
 
 #include <FileCtrl.hpp>
 
 #ifndef DESIGN_ONLY
-#include <Interface.h>
 #include <ScpMain.h>
+#include <Terminal.h>
 #include <WinConfiguration.h>
 #endif
 
@@ -76,18 +77,7 @@ DEFINE_COMPARE_FUNC(Extension, AnsiCompareText);
 #undef RFILE
 #endif
 //---------------------------------------------------------------------------
-AnsiString __fastcall UniqTempDir(const AnsiString BaseDir)
-{
-  AnsiString TempDir;
-  #ifndef DESIGN_ONLY
-  if (BaseDir.IsEmpty()) TempDir = SystemTemporaryDirectory();
-    else
-  #endif
-  TempDir = BaseDir;
-  TempDir = IncludeTrailingBackslash(IncludeTrailingBackslash(TempDir) + "scp" +
-    FormatDateTime("nnzzz", Now()));
-  return TempDir;
-}
+#define HOMEDIRECTORY ""
 //---------------------------------------------------------------------------
 __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
         : TCustomUnixDirView(Owner)
@@ -95,18 +85,11 @@ __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
 #ifndef DESIGN_ONLY
   FTerminal = NULL;
 #endif
-  FUniqTempDir = "";
-  FDDDeleteDelay = DefaultDDDeleteDelay;
   FCaseSensitive = true;
   DDAllowMove = false;
   FShowInaccesibleDirectories = true;
-  FOnWarnLackOfTempSpace = NULL;
-  FDDTotalSize = -1;
-  FOnDDTargetDrop = NULL;
-  FDelayedDeletionTimer = NULL;
   FFullLoad = false;
-  FDDFileList = NULL;
-  FDelayedDeletionList = new TStringList();
+  FDriveView = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TUnixDirView::~TUnixDirView()
@@ -114,12 +97,6 @@ __fastcall TUnixDirView::~TUnixDirView()
 #ifndef DESIGN_ONLY
   Terminal = NULL;
 #endif
-  if (FDelayedDeletionTimer)
-  {
-    DoDelayedDeletion(NULL);
-    delete FDelayedDeletionTimer;
-  }
-  delete FDelayedDeletionList;
 }
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DisplayContextMenu(const TPoint &Where)
@@ -130,99 +107,6 @@ void __fastcall TUnixDirView::DisplayContextMenu(const TPoint &Where)
   {
     if (PopupMenu && !PopupMenu->AutoPopup)
       PopupMenu->Popup(Where.x, Where.y);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TUnixDirView::AddDelayedDirectoryDeletion(
-  const AnsiString TempDir, int SecDelay)
-{
-  TDateTime Alarm = Now() + (double)SecDelay*(double(1)/24/60/60);
-  AnsiString xx = Alarm.TimeString();
-  FDelayedDeletionList->AddObject(TempDir, (TObject*)Alarm.FileDate());
-  if (!FDelayedDeletionTimer)
-  {
-    assert(HandleAllocated());
-    FDelayedDeletionTimer = new TTimer(this);
-    FDelayedDeletionTimer->Interval = 10000;
-    FDelayedDeletionTimer->Enabled = true;
-    FDelayedDeletionTimer->OnTimer = DoDelayedDeletion;
-  }
-}
-//---------------------------------------------------------------------------
-bool DeleteCurrentFile(const AnsiString FileName)
-{
-  if (FileName == "." || FileName == "..")
-  {
-    return true;
-  }
-  else
-  {
-    return DeleteFile(FileName);
-  }
-}
-//---------------------------------------------------------------------------
-bool DeleteDirectory(const AnsiString DirName)
-{
-  TSearchRec sr;
-  bool retval = true;
-  if (FindFirst(DirName + "\\*", faAnyFile, sr) == 0) // VCL Function
-  {
-    if (sr.Attr == faDirectory)
-    {
-      if (sr.Name != "." && sr.Name != "..")
-        retval = DeleteDirectory(DirName + "\\" + sr.Name);
-    }
-    else
-    {
-      retval = DeleteCurrentFile(DirName + "\\" + sr.Name);
-    }
-
-    if (retval)
-    {
-      while (FindNext(sr) == 0)
-      { // VCL Function
-        if (sr.Attr == faDirectory)
-        {
-          if (sr.Name != "." && sr.Name != "..")
-            retval = DeleteDirectory(DirName + "\\" + sr.Name);
-        }
-        else
-        {
-          retval = DeleteCurrentFile(DirName + "\\" + sr.Name);
-        }
-
-        if (!retval) break;
-      }
-    }
-  }
-  FindClose(sr);
-  if (retval) retval = RemoveDir(DirName); // VCL function
-  return retval;
-}
-//---------------------------------------------------------------------------
-void __fastcall TUnixDirView::DoDelayedDeletion(TObject * Sender)
-{
-  assert(FDelayedDeletionList);
-
-  TDateTime N = Now();
-  TDateTime Alert;
-  AnsiString Directory;
-
-  for (int Index = FDelayedDeletionList->Count-1; Index >= 0; Index--)
-  {
-    Alert = FileDateToDateTime((int)FDelayedDeletionList->Objects[Index]);
-    if (N >= Alert || !Sender)
-    {
-      Directory = FDelayedDeletionList->Strings[Index];
-      if (DeleteDirectory(ExcludeTrailingBackslash(Directory)))
-      {
-        FDelayedDeletionList->Delete(Index);
-      }
-    }
-  }
-  if (FDelayedDeletionList->Count == 0)
-  {
-    FDelayedDeletionTimer->Enabled = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -357,16 +241,6 @@ __int64 __fastcall TUnixDirView::ItemFileSize(TListItem * Item)
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
   return ITEMFILE->IsDirectory ? 0 : ITEMFILE->Size;
-#else
-  return 0;
-#endif
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TUnixDirView::ItemDragFileName(TListItem * Item)
-{
-#ifndef DESIGN_ONLY
-  assert(Item && Item->Data && Terminal && (Terminal->Files->IndexOf(ITEMFILE) >= 0) && !FUniqTempDir.IsEmpty());
-  return FUniqTempDir + GUIConfiguration->CopyParam.ValidLocalFileName(ITEMFILE->FileName);
 #else
   return 0;
 #endif
@@ -518,95 +392,53 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMA &DispI
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item, int Effect)
+bool __fastcall TUnixDirView::PasteFromClipBoard(AnsiString TargetPath)
 {
-#ifndef DESIGN_ONLY
-  assert(DragDropFilesEx);
-
-  TTransferType Type;
-  TCopyParamType CopyParams = GUIConfiguration->CopyParam;
-  TStrings *FileList = NULL;
-  AnsiString Directory;
-
-  switch (Effect) {
-    case DROPEFFECT_COPY: Type = ttCopy; break;
-    case DROPEFFECT_MOVE: Type = ttMove; break;
-    // occures on WinXP (reported by user)
-    default: Type = ttCopy; //assert(false);
-  };
-
-  FileList = new TStringList();
-  try
+  DragDropFilesEx->FileList->Clear();
+  bool Result = false;
+  if (CanPasteFromClipBoard() &&
+      DragDropFilesEx->GetFromClipboard())
   {
-    AnsiString SourceDirectory;
-    for (int Index = 0; Index < DragDropFilesEx->FileList->Count; Index++)
+    if (TargetPath.IsEmpty())
     {
-      AnsiString FileName = DragDropFilesEx->FileList->Items[Index]->Name;
-      if (SourceDirectory.IsEmpty())
-      {
-        SourceDirectory = ExtractFilePath(FileName);
-      }
-      FileList->Add(FileName);
+      TargetPath = PathName;
     }
 
+    PerformItemDragDropOperation(NULL, DROPEFFECT_COPY);
+    if (OnDDExecuted != NULL)
+    {
+      OnDDExecuted(this, DROPEFFECT_COPY);
+    }
+    Result = true;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::PerformItemDragDropOperation(TListItem * Item,
+  int Effect)
+{
+#ifndef DESIGN_ONLY
+  if (OnDDFileOperation)
+  {
+    assert(DragDropFilesEx->FileList->Count > 0);
+
+    AnsiString SourceDirectory;
+    AnsiString TargetDirectory;
+
+    SourceDirectory = ExtractFilePath(DragDropFilesEx->FileList->Items[0]->Name);
     if (Item)
     {
       assert(ITEMFILE->IsDirectory && (Terminal->Files->IndexOf(ITEMFILE) >= 0));
-      Directory = ITEMFILE->FullFileName;
+      TargetDirectory = ITEMFILE->FullFileName;
     }
     else
     {
-      Directory = Path;
+      TargetDirectory = Path;
     }
 
     bool DoFileOperation = true;
-    if (OnDDFileOperation != NULL)
-    {
-      OnDDFileOperation(this, Effect, SourceDirectory, Directory,
-        DoFileOperation);
-    }
-
-    if (DoFileOperation)
-    {
-      if (OnGetCopyParam)
-      {
-        OnGetCopyParam(this, tdToRemote, Type, Directory, FileList, CopyParams);
-      }
-
-      assert(Terminal);
-      int Params = cpDragDrop;
-      if (Type == ttMove) Params |= cpDelete;
-      Terminal->CopyToRemote(FileList, Directory, &CopyParams, Params);
-
-      if (OnDDFileOperationExecuted)
-      {
-        OnDDFileOperationExecuted(this, Effect, SourceDirectory, Directory);
-      }
-
-      // If target is current directory, we try to focus first dropped file
-      if (!Item)
-      {
-        int RemoteIndex, DragIndex;
-        for (RemoteIndex = 0; RemoteIndex < Items->Count; RemoteIndex++)
-        {
-          for (DragIndex = 0; DragIndex < FileList->Count; DragIndex++)
-          {
-            if (ItemFileName(Items->Item[RemoteIndex]) ==
-              ExtractFileName(FileList->Strings[DragIndex]))
-            {
-              ItemFocused = Items->Item[RemoteIndex];
-              // We need to break both FOR cycles
-              RemoteIndex = Items->Count-1;
-              break;
-            }
-          }
-        }
-      }
-    }
-  }
-  __finally
-  {
-    delete FileList;
+    OnDDFileOperation(this, Effect, SourceDirectory, TargetDirectory,
+      DoFileOperation);
   }
 #endif
 }
@@ -620,6 +452,24 @@ void __fastcall TUnixDirView::SetItemImageIndex(TListItem * /* Item */, int /* I
 void __fastcall TUnixDirView::DDMenuDone(TObject* /* Sender */, HMENU /* AMenu */)
 {
   // TODO: Why I need to duplicate this method? (see TCustomDirView::DDMenuDone)
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::SetDriveView(TCustomUnixDriveView * Value)
+{
+  if (Value != FDriveView)
+  {
+    if (FDriveView != NULL)
+    {
+      FDriveView->Terminal = NULL;
+    }
+
+    FDriveView = Value;
+
+    if (FDriveView != NULL)
+    {
+      FDriveView->Terminal = Terminal;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 #ifndef DESIGN_ONLY
@@ -639,6 +489,10 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
       }
     }
     FTerminal = value;
+    if (FDriveView != NULL)
+    {
+      FDriveView->Terminal = FTerminal;
+    }
     if (FTerminal)
     {
       FTerminal->OnReadDirectory = DoReadDirectory;
@@ -667,6 +521,11 @@ void __fastcall TUnixDirView::DoReadDirectory(TObject * /*Sender*/, bool ReloadO
     {
       Load();
       PathChanged();
+    }
+
+    if ((FDriveView != NULL) && FDriveView->Visible)
+    {
+      FDriveView->LoadDirectory();
     }
   }
 #endif
@@ -751,37 +610,12 @@ bool __fastcall TUnixDirView::GetActive()
 #endif
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TUnixDirView::GetUniqTempDir()
-{
-  return UniqTempDir(DDTemporaryDirectory);
-}
-//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DDDragDetect(int grfKeyState,
   const TPoint &DetectStart, const TPoint &Point, TDragDetectStatus DragStatus)
 {
   if ((DragStatus == ddsDrag) && (!Loading) && (MarkedCount > 0))
   {
-    assert(FDragDropSshTerminate.IsEmpty());
-    FDragDropSshTerminate = "";
-    assert(!FDDFileList);
-    FDDFileList = NULL;
-    try
-    {
-      FDDFileList = new TStringList();
-      FUniqTempDir = GetUniqTempDir();
-      TCustomUnixDirView::DDDragDetect(grfKeyState, DetectStart, Point, DragStatus);
-      #ifndef DESIGN_ONLY
-      if (!FDragDropSshTerminate.IsEmpty())
-      {
-        throw ESshTerminate(NULL, FDragDropSshTerminate);
-      }
-      #endif
-    }
-    __finally
-    {
-      FDragDropSshTerminate = "";
-      SAFE_DESTROY(FDDFileList);
-    }
+    TCustomUnixDirView::DDDragDetect(grfKeyState, DetectStart, Point, DragStatus);
   }
 }
 //---------------------------------------------------------------------------
@@ -796,171 +630,19 @@ void __fastcall TUnixDirView::SetAddParentDir(bool Value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::SetDDDeleteDelay(int value)
-{
-  if (value < 0) value = -1;
-  if (FDDDeleteDelay != value)
-  {
-    FDDDeleteDelay = value;
-  }
-}
-//---------------------------------------------------------------------------
 bool __fastcall TUnixDirView::TargetHasDropHandler(TListItem * /* Item */, int /* Effect */)
 {
   return false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::DDGiveFeedback(int dwEffect, HRESULT & Result)
-{
-  // Remember drop effect so we know (when user dropes files), if we copy or move
-  FLastDropEffect = dwEffect;
-  TCustomUnixDirView::DDGiveFeedback(dwEffect, Result);
-}
-//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect)
 {
-  if (DDOwnerIsSource)
-  {
-    if (DropTarget != NULL)
-    {
-      // Hack: when moving is disabled, we at least allow to accept copy
-      // but it should be interpreted as move by the client
-      dwEffect = DDAllowMove ? DROPEFFECT_Move : DROPEFFECT_Copy;
-    }
-    else
-    {
-      dwEffect = DROPEFFECT_None;
-    }
-  }
-  else if ((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0)
+  if ((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0)
   {
     dwEffect = DROPEFFECT_Copy;
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TUnixDirView::DDQueryContinueDrag(BOOL FEscapePressed,
-  int grfKeyState, HRESULT & Result)
-{
-#ifndef DESIGN_ONLY
-  TCustomUnixDirView::DDQueryContinueDrag(FEscapePressed, grfKeyState, Result);
-  if (Result == DRAGDROP_S_DROP)
-  {
-    try
-    {
-      GlobalDragImageList->HideDragImage();
-      DDTargetDrop();
-    }
-    catch (Exception &E)
-    {
-      // If downloading fails we need to cancel drag&drop, othwerwise
-      // Explorer shows error
-      // But by the way exception probably never reach this point as
-      // it's catched on way
-      Result = DRAGDROP_S_CANCEL;
-      assert(Terminal != NULL);
-      Terminal->DoShowExtendedException(&E);
-    }
-  }
-#endif
-}
-//---------------------------------------------------------------------------
-void __fastcall TUnixDirView::DDTargetDrop()
-{
-#ifndef DESIGN_ONLY
-  bool Continue = true;
-  if (OnDDTargetDrop)
-  {
-    OnDDTargetDrop(this, FLastDropEffect, Continue);
-  }
 
-  if (Continue && (FLastDropEffect != DROPEFFECT_NONE))
-  {
-    assert(!FUniqTempDir.IsEmpty());
-    TTransferType Type;
-    AnsiString TempDir = FUniqTempDir;
-    // We clear FUniqTempDir before calling
-    // just in case it fail (raises exception)
-    FUniqTempDir = "";
-    Type = (FLastDropEffect & DROPEFFECT_MOVE ? ttMove : Type = ttCopy);
-
-    try
-    {
-      TStrings * FileList = new TStringList();
-      try
-      {
-        assert(DragDropFilesEx);
-        assert(FDDFileList);
-        TRemoteFile * File;
-        int FileIndex;
-        for (int Index = 0; Index < DragDropFilesEx->FileList->Count; Index++)
-        {
-          FileIndex = FDDFileList->IndexOf(DragDropFilesEx->FileList->Items[Index]->Name);
-          assert(FileIndex >= 0);
-          File = dynamic_cast<TRemoteFile *>(FDDFileList->Objects[FileIndex]);
-          assert(File);
-          FileList->AddObject(File->FileName, File);
-        }
-
-        TCopyParamType CopyParams = GUIConfiguration->CopyParam;
-        AnsiString TargetDir = "";
-
-        if (OnGetCopyParam)
-        {
-          OnGetCopyParam(this, tdToLocal, Type,
-            TargetDir /* empty directory parameter means temp directory -> don't display it! */,
-            FileList, CopyParams);
-        }
-
-        bool TemporaryDownload = TargetDir.IsEmpty();
-        bool Continue = true;
-
-        if (TemporaryDownload)
-        {
-          DoWarnLackOfTempSpace(TempDir, FDDTotalSize, Continue);
-          TargetDir = TempDir;
-        }
-
-        if (Continue)
-        {
-          if (TemporaryDownload)
-          {
-            if (ForceDirectories(TargetDir))
-            {
-              assert(Terminal && !TargetDir.IsEmpty());
-              try
-              {
-                Terminal->CopyToLocal(FileList, TargetDir, &CopyParams,
-                  cpDragDrop | (Type == ttMove ? cpDelete : 0));
-              }
-              __finally
-              {
-                AddDelayedDirectoryDeletion(TargetDir, DDDeleteDelay);
-              }
-            }
-            else
-            {
-              DragDropDirException(TargetDir);
-            }
-          }
-        }
-        else
-        {
-          Abort();
-        }
-      }
-      __finally
-      {
-        delete FileList;
-      }
-    }
-    catch(ESshTerminate & E)
-    {
-      assert(!E.MoreMessages); // not supported
-      assert(!E.Message.IsEmpty());
-      FDragDropSshTerminate = E.Message;
-    }
-  }
-#endif
+  TCustomDirView::DDChooseEffect(grfKeyState, dwEffect);
 }
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::SetDDAllowMove(bool value)
@@ -1118,31 +800,17 @@ void __fastcall TUnixDirView::SetShowInaccesibleDirectories(bool value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TUnixDirView::DoWarnLackOfTempSpace(const AnsiString Path,
-  __int64 RequiredSpace, bool & Continue)
+void __fastcall TUnixDirView::AddToDragFileList(TFileList * FileList,
+  TListItem * Item)
 {
-  if (FOnWarnLackOfTempSpace)
+  AnsiString FileName = ItemFullFileName(Item);
+  #ifndef DESIGN_ONLY
+  if (OnDDDragFileName != NULL)
   {
-    FOnWarnLackOfTempSpace(this, Path, RequiredSpace, Continue);
+    OnDDDragFileName(this, ITEMFILE, FileName);
   }
+  #endif
+  FileList->AddItem(NULL, FileName);
 }
-//---------------------------------------------------------------------------
-void __fastcall TUnixDirView::AddToDragFileList(TFileList* FileList, TListItem* Item)
-{
-#ifndef DESIGN_ONLY
-  if (FileList->Count == 0) FDDTotalSize = 0;
-  if (FDDTotalSize >= 0)
-  {
-    if (ItemIsDirectory(Item))
-    {
-      FDDTotalSize = -1;
-    }
-    else
-    {
-      FDDTotalSize += ItemFileSize(Item);
-    }
-  }
-  FDDFileList->AddObject(ItemDragFileName(Item), ITEMFILE);
-  TCustomUnixDirView::AddToDragFileList(FileList, Item);
-#endif
-}
+
+

@@ -17,7 +17,10 @@
 #include <ToolWin.hpp>
 
 #include <WinInterface.h>
+#include <Terminal.h>
 #include "QueueController.h"
+#include "UnixDriveView.h"
+#include "CustomDriveView.hpp"
 //---------------------------------------------------------------------------
 class TProgressForm;
 class TSynchronizeProgressForm;
@@ -26,6 +29,10 @@ class TTerminalQueueStatus;
 class TQueueItem;
 class TQueueItemProxy;
 class TQueueController;
+namespace Discmon
+{
+class TDiscMonitor;
+}
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -55,13 +62,10 @@ __published:
   TCoolBar *QueueCoolBar;
   TToolButton *ToolButton66;
   TToolButton *ToolButton67;
-  void __fastcall RemoteDirViewGetCopyParam(TUnixDirView *Sender,
-    TTransferDirection Direction, TTransferType Type,
-    AnsiString &TargetDirectory, TStrings *FileList,
-    TCopyParamType &CopyParam);
+  TUnixDriveView *RemoteDriveView;
+  TSplitter *RemotePanelSplitter;
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
     const TPoint &MousePos, bool &Handled);
-  void __fastcall DirViewEnter(TObject *Sender);
   void __fastcall RemoteDirViewGetSelectFilter(
     TCustomDirView *Sender, bool Select, TFileFilter &Filter);
   void __fastcall SessionStatusBarDrawPanel(TStatusBar *StatusBar,
@@ -76,20 +80,16 @@ __published:
     TListColumn *Column, TPoint &Point);
   void __fastcall DirViewExecFile(TObject *Sender, TListItem *Item, bool &AllowExec);
   void __fastcall ToolBarResize(TObject *Sender);
-  void __fastcall RemoteDirViewWarnLackOfTempSpace(TUnixDirView *Sender,
-    const AnsiString Path, __int64 RequiredSpace, bool &Continue);
-  void __fastcall DirViewDDDragEnter(TObject *Sender,
+  void __fastcall FileControlDDDragEnter(TObject *Sender,
     _di_IDataObject DataObj, int grfKeyState, const TPoint &Point,
     int &dwEffect, bool &Accept);
-  void __fastcall DirViewDDDragLeave(TObject *Sender);
-  void __fastcall RemoteDirViewDDCreateDragFileList(TObject *Sender,
+  void __fastcall FileControlDDDragLeave(TObject *Sender);
+  void __fastcall RemoteFileControlDDCreateDragFileList(TObject *Sender,
     TFileList *FileList, bool &Created);
-  void __fastcall RemoteDirViewDDEnd(TObject *Sender);
-  void __fastcall RemoteDirViewDDTargetDrop(TUnixDirView *Sender,
-    int DropEffect, bool &Continue);
-  void __fastcall RemoteDirViewDDCreateDataObject(TObject *Sender,
+  void __fastcall RemoteFileControlDDEnd(TObject *Sender);
+  void __fastcall RemoteFileControlDDCreateDataObject(TObject *Sender,
     TDataObject *&DataObject);
-  void __fastcall RemoteDirViewDDGiveFeedback(TObject *Sender,
+  void __fastcall RemoteFileControlDDGiveFeedback(TObject *Sender,
     int dwEffect, HRESULT &Result);
   void __fastcall QueueSplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -106,6 +106,20 @@ __published:
   void __fastcall QueueViewEnter(TObject *Sender);
   void __fastcall QueueViewSelectItem(TObject *Sender, TListItem *Item,
     bool Selected);
+  void __fastcall RemoteFileControlDDFileOperation(TObject * Sender,
+    int Effect, AnsiString SourcePath, AnsiString TargetPath,
+    bool & DoOperation);
+  void __fastcall RemoteFileContolDDChooseEffect(TObject * Sender,
+    int grfKeyState, int & dwEffect);
+  void __fastcall RemoteFileControlDDDragFileName(TObject * Sender,
+    TRemoteFile * File, AnsiString & FileName);
+  void __fastcall RemoteFileControlDDDragDetect(TObject * Sender,
+    int grfKeyState, const TPoint & DetectStart, const TPoint & Point,
+    TDragDetectStatus DragStatus);
+  void __fastcall RemoteFileControlDDQueryContinueDrag(TObject *Sender,
+          BOOL FEscapePressed, int grfKeyState, HRESULT &Result);
+  void __fastcall RemoteDirViewEnter(TObject *Sender);
+  void __fastcall RemoteDriveViewEnter(TObject *Sender);
   
 private:
   TTerminal * FTerminal;
@@ -127,12 +141,22 @@ private:
   TStringList * FErrorList;
   HANDLE FDDExtMutex;
   AnsiString FDragExtFakeDirectory;
+  TStrings * FDelayedDeletionList;
+  TTimer * FDelayedDeletionTimer;
+  TStrings * FDDFileList;
+  __int64 FDDTotalSize;
+  AnsiString FDragDropSshTerminate;
   HINSTANCE FOle32Library;
   HCURSOR FDragMoveCursor;
+  AnsiString FDragTempDir;
   bool FRefreshLocalDirectory;
   bool FRefreshRemoteDirectory;
   TListItem * FQueueActedItem;
   TQueueController * FQueueController;
+  TSynchronizeParamType FSynchronizeParams;
+  Discmon::TDiscMonitor * FSynchronizeMonitor;
+  TSynchronizeAbortEvent FSynchronizeAbort;
+  int FLastDropEffect;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
@@ -146,14 +170,13 @@ private:
     AnsiString & Value);
 
 protected:
-  TCustomDirView * FLastDirView;
-  TCustomDirView * FDDTargetDirView;
+  TOperationSide FCurrentSide;
+  TControl * FDDTargetControl;
   TProgressForm * FProgressForm;
   AnsiString FCustomCommandName;
   TSynchronizeProgressForm * FSynchronizeProgressForm;
   HANDLE FDDExtMapFile;
   bool FDDMoveSlipped;
-  TDateTime FDDDropTime;
   TTimer * FUserActionTimer;
   TQueueItemProxy * FPendingQueueActionItem;
 
@@ -185,6 +208,8 @@ protected:
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
+  void __fastcall OperationComplete(const TDateTime & StartTime);
+  void __fastcall ExecutedFileChangedNotification(TObject * Sender, const AnsiString Directory);
   void __fastcall ExecutedFileChanged(TObject * Sender);
   void __fastcall CMAppSysCommand(TMessage & Message);
   DYNAMIC void __fastcall DoShow();
@@ -194,13 +219,23 @@ protected:
     const AnsiString RemoteDirectory, bool & Continue);
   bool __fastcall DoFullSynchronizeDirectories(AnsiString & LocalDirectory,
     AnsiString & RemoteDirectory, TSynchronizeMode & Mode);
-  void __fastcall BatchStart(void *& Storage);
-  void __fastcall BatchEnd(void * Storage);
+  bool __fastcall DoSynchronizeDirectories(AnsiString & LocalDirectory,
+    AnsiString & RemoteDirectory);
+  void __fastcall SynchronizeStartStop(TObject * Sender, bool Start,
+    const TSynchronizeParamType & Params, TSynchronizeAbortEvent OnAbort);
+  void __fastcall SynchronizeChange(TObject * Sender, const AnsiString Directory);
+  void __fastcall SynchronizeInvalid(TObject * Sender, const AnsiString Directory);
+  void __fastcall Synchronize(const AnsiString LocalDirectory,
+    const AnsiString RemoteDirectory, TSynchronizeMode Mode,
+    const TCopyParamType & CopyParam, int Params);
+  void __fastcall SynchronizeAbort(bool Close);
+  virtual void __fastcall BatchStart(void *& Storage);
+  virtual void __fastcall BatchEnd(void * Storage);
   void __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     TStrings * FileList, bool NoConfirmation, void * Param);
   virtual void __fastcall DDGetTarget(AnsiString & Directory);
   virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
-  virtual void __fastcall DoDirViewEnter(TCustomDirView * DirView);
+  virtual void __fastcall SideEnter(TOperationSide Side);
   virtual TOperationSide __fastcall GetSide(TOperationSide Side);
   virtual void __fastcall PanelExportStore(TOperationSide Side,
     TPanelExport Export, TPanelExportDestination Destination,
@@ -216,6 +251,17 @@ protected:
   void __fastcall UserActionTimer(TObject * Sender);
   void __fastcall UpdateQueueView();
   bool __fastcall CanCloseQueue();
+  virtual bool __fastcall IsFileControl(TObject * Control, TOperationSide Side);
+  virtual void __fastcall ReloadLocalDirectory(const AnsiString Directory = "");
+  virtual bool __fastcall PanelOperation(TOperationSide Side, bool DragDrop);
+  void __fastcall DoWarnLackOfTempSpace(const AnsiString Path,
+    __int64 RequiredSpace, bool & Continue);
+  void __fastcall AddDelayedDirectoryDeletion(const AnsiString TempDir, int SecDelay);
+  void __fastcall DoDelayedDeletion(TObject * Sender);
+  TDragDropFilesEx * __fastcall DragDropFiles(TObject * Sender);
+  void __fastcall RemoteFileControlDDTargetDrop();
+  void __fastcall RemoteFileControlFileOperation(TObject * Sender,
+    TFileOperation Operation, bool NoConfirmation, void * Param);
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
@@ -251,6 +297,7 @@ public:
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall ExploreLocalDirectory();
   virtual void __fastcall GoToCommandLine();
+  virtual void __fastcall GoToTree();
   virtual void __fastcall PanelExport(TOperationSide Side, TPanelExport Export,
     TPanelExportDestination Destination, bool OnFocused = false);
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy);
@@ -261,7 +308,7 @@ public:
   void __fastcall TerminalListChanged(TObject * Sender);
   int __fastcall MoreMessageDialog(const AnsiString Message,
     TStrings * MoreMessages, TQueryType Type, int Answers,
-    int HelpCtx, int Params = 0);
+    int HelpCtx, const TMessageParams * Params = NULL);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
     bool DragDrop, const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);

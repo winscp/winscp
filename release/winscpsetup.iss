@@ -233,6 +233,8 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; 
   ValueName: "ShowAdvancedLoginOptions"; ValueData: 0; Check: IsTrue(20)
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "ShowAdvancedLoginOptions"; ValueData: 1; Check: IsTrue(21)
+Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
+  ValueName: "DDExtEnabled"; ValueData: 1; Components: shellext
 ; This will remove url handler on uninstall 
 ; (when urlhandler task was selected when installing)
 Root: HKCR; Subkey: "SFTP"; Flags: dontcreatekey uninsdeletekey; \
@@ -356,8 +358,7 @@ begin
     Caption2.Caption :=
         ExpandConstant('{cm:NortonCommanderInterface1}') + #13#10 +
         ExpandConstant('{cm:NortonCommanderInterface2}') + #13#10 +
-        ExpandConstant('{cm:NortonCommanderInterface3}') + #13#10 +
-        ExpandConstant('{cm:NortonCommanderInterface4}');
+        ExpandConstant('{cm:NortonCommanderInterface3}');
     Caption2.Left := 20;
     Caption2.Width := WizardForm.ScriptDlgPanel.Width - Caption.Left;
     Caption2.Top := CommanderRadioButton.Top + CommanderRadioButton.Height + 6;
@@ -394,7 +395,7 @@ begin
     AdvancedTabsCheckbox.Parent := WizardForm.ScriptDlgPanel;
     AdvancedTabsCheckbox.Top := Caption.Top + Caption.Height + 6;
 
-    Next := ScriptDlgPageProcessCustom();
+    Next := ScriptDlgPageProcessCustom(nil);
 
     if CommanderRadioButton.Checked then UserInterface := 0
         else UserInterface := 1;

@@ -56,6 +56,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FSavedSession = -1;
   FOptions = loStartup;
   FLocaleChanging = false;
+  InitControls();
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
@@ -79,12 +80,8 @@ void __fastcall TLoginDialog::ShowTabs(bool Show)
   ClientHeight += (Show ? 1 : -1) * 50;
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::Init()
+void __fastcall TLoginDialog::InitControls()
 {
-  LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
-  UseSystemSettings(this, &FSystemSettings);
-  Caption = FORMAT("%s %s", (AppName, Caption));
-
   InitializeBugsCombo(BugIgnore1Combo);
   InitializeBugsCombo(BugPlainPW1Combo);
   InitializeBugsCombo(BugRSA1Combo);
@@ -93,6 +90,15 @@ void __fastcall TLoginDialog::Init()
   InitializeBugsCombo(BugRSAPad2Combo);
   InitializeBugsCombo(BugDHGEx2Combo);
   InitializeBugsCombo(BugPKSessID2Combo);
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::Init()
+{
+  LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
+  UseSystemSettings(this, &FSystemSettings);
+  Caption = FORMAT("%s %s", (AppName, Caption));
+
+  InitControls();
 
   PrepareNavigationTree(SimpleNavigationTree);
   PrepareNavigationTree(AdvancedNavigationTree);
@@ -124,10 +130,13 @@ void __fastcall TLoginDialog::Init()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::InitializeBugsCombo(TComboBox * BugsCombo)
 {
+  int PrevIndex = BugsCombo->ItemIndex;
   BugsCombo->Clear();
   BugsCombo->Items->Add(LoadStr(LOGIN_BUG_AUTO));
   BugsCombo->Items->Add(LoadStr(LOGIN_BUG_OFF));
   BugsCombo->Items->Add(LoadStr(LOGIN_BUG_ON));
+  assert(PrevIndex < BugsCombo->Items->Count);
+  BugsCombo->ItemIndex = PrevIndex;
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessions()

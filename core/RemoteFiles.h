@@ -343,6 +343,8 @@ void __fastcall SkipPathComponent(const AnsiString & Text,
   int & SelStart, int & SelLength, bool Left, bool Unix);
 bool __fastcall ExtractCommonPath(TStrings * Files, AnsiString & Path);
 bool __fastcall UnixExtractCommonPath(TStrings * Files, AnsiString & Path);
+bool __fastcall IsUnixRootPath(const AnsiString Path);
+bool __fastcall IsUnixHiddenFile(const AnsiString Path);
 AnsiString __fastcall FromUnixPath(const AnsiString Path);
 AnsiString __fastcall ToUnixPath(const AnsiString Path);
 //---------------------------------------------------------------------------

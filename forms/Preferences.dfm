@@ -67,43 +67,35 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           378
           335)
-        object RandomSeedFileLabel: TLabel
-          Left = 16
-          Top = 297
-          Width = 82
-          Height = 13
-          Caption = '&Random seed file'
-          FocusControl = RandomSeedFileEdit
-        end
         object CommonPreferencesGroup: TXPGroupBox
           Left = 8
           Top = 8
           Width = 362
-          Height = 202
+          Height = 224
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             362
-            202)
+            224)
           object CopyOnDoubleClickCheck: TCheckBox
             Left = 16
-            Top = 131
+            Top = 153
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Copy files using double-click'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object CopyOnDoubleClickConfirmationCheck: TCheckBox
             Left = 32
-            Top = 153
+            Top = 175
             Width = 314
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Co&nfirm copy on double-click operation'
-            TabOrder = 6
+            TabOrder = 7
             OnClick = ControlChange
           end
           object ConfirmOverwritingCheck: TCheckBox
@@ -128,87 +120,94 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmClosingSessionCheck: TCheckBox
             Left = 16
-            Top = 65
-            Width = 330
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'E&xiting application'
-            TabOrder = 2
-            OnClick = ControlChange
-          end
-          object DDTransferConfirmationCheck: TCheckBox
-            Left = 16
-            Top = 109
-            Width = 338
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = '&Drag && drop operations'
-            TabOrder = 4
-            OnClick = ControlChange
-          end
-          object ContinueOnErrorCheck: TCheckBox
-            Left = 16
-            Top = 175
-            Width = 330
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Continue on &error (advanced users)'
-            TabOrder = 7
-            OnClick = ControlChange
-          end
-          object ConfirmExitOnCompletionCheck: TCheckBox
-            Left = 16
             Top = 87
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Exiting application on &operation completion'
+            Caption = 'E&xiting application'
             TabOrder = 3
             OnClick = ControlChange
           end
-        end
-        object RandomSeedFileEdit: TFilenameEdit
-          Left = 136
-          Top = 293
-          Width = 234
-          Height = 21
-          AcceptFiles = True
-          DefaultExt = 'log'
-          Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
-          DialogOptions = [ofHideReadOnly, ofPathMustExist]
-          DialogTitle = 'Select file for random seed'
-          ClickKey = 16397
-          Anchors = [akLeft, akTop, akRight]
-          TabOrder = 2
-          Text = 'RandomSeedFileEdit'
-          OnChange = ControlChange
-          OnKeyDown = PathEditsKeyDown
-        end
-        object StorageGroup: TXPGroupBox
-          Left = 8
-          Top = 216
-          Width = 362
-          Height = 68
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Configuration storage'
-          TabOrder = 1
-          object RegistryStorageButton: TRadioButton
+          object DDTransferConfirmationCheck: TCheckBox
             Left = 16
-            Top = 19
-            Width = 289
+            Top = 131
+            Width = 338
             Height = 17
-            Caption = 'Windows re&gistry'
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Drag && drop operations'
+            TabOrder = 5
+            OnClick = ControlChange
+          end
+          object ContinueOnErrorCheck: TCheckBox
+            Left = 16
+            Top = 197
+            Width = 330
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Continue on &error (advanced users)'
+            TabOrder = 8
+            OnClick = ControlChange
+          end
+          object ConfirmExitOnCompletionCheck: TCheckBox
+            Left = 16
+            Top = 109
+            Width = 330
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Exiting application on &operation completion'
+            TabOrder = 4
+            OnClick = ControlChange
+          end
+          object ConfirmResumeCheck: TCheckBox
+            Left = 16
+            Top = 65
+            Width = 330
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Transfer resuming'
+            TabOrder = 2
+            OnClick = ControlChange
+          end
+        end
+        object NotificationsGroup: TXPGroupBox
+          Left = 8
+          Top = 238
+          Width = 362
+          Height = 51
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Notifications'
+          TabOrder = 1
+          DesignSize = (
+            362
+            51)
+          object BeepOnFinishAfterText: TLabel
+            Left = 344
+            Top = 22
+            Width = 5
+            Height = 13
+            Caption = 's'
+          end
+          object BeepOnFinishCheck: TCheckBox
+            Left = 16
+            Top = 21
+            Width = 265
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Beep when work finishes, if it lasted more then'
             TabOrder = 0
             OnClick = ControlChange
           end
-          object IniFileStorageButton: TRadioButton
-            Left = 16
-            Top = 43
-            Width = 289
-            Height = 17
-            Caption = '&INI file (winscp3.ini)'
+          object BeepOnFinishAfterEdit: TUpDownEdit
+            Left = 283
+            Top = 18
+            Width = 57
+            Height = 21
+            Alignment = taRightJustify
+            Increment = 15
+            MaxValue = 999
+            MaxLength = 3
             TabOrder = 1
-            OnClick = ControlChange
+            OnChange = ControlChange
           end
         end
       end
@@ -515,32 +514,26 @@ object PreferencesDialog: TPreferencesDialog
           TabOrder = 0
           inherited CommonPropertiesGroup: TXPGroupBox
             Left = 198
-            Top = 156
-            Height = 66
+            Top = 209
+            Height = 73
             Caption = 'Common options'
             inherited CommonPreserveTimestampCheck: TCheckBox
-              Top = 18
-            end
-            inherited CommonCalculateSizeCheck: TCheckBox
-              Top = 40
+              Top = 19
             end
           end
           inherited LocalPropertiesGroup: TXPGroupBox
-            Left = 8
-            Top = 284
-            Width = 182
-            Height = 45
+            Left = 198
+            Top = 156
+            Height = 48
             Caption = 'Download options'
             DesignSize = (
-              182
-              45)
+              173
+              48)
             inherited PreserveReadOnlyCheck: TCheckBox
-              Top = 18
-              Width = 164
+              Top = 20
             end
             inherited LocalPreserveTimeCheck: TCheckBox
               Top = 92
-              Width = 164
             end
           end
           inherited RemotePropertiesGroup: TXPGroupBox
@@ -587,59 +580,13 @@ object PreferencesDialog: TPreferencesDialog
               Width = 213
             end
           end
-        end
-        object ResumeBox: TXPGroupBox
-          Left = 198
-          Top = 224
-          Width = 172
-          Height = 105
-          Caption = 'Enable transfer resume for'
-          TabOrder = 1
-          object ResumeThresholdUnitLabel: TLabel
-            Left = 136
-            Top = 61
-            Width = 13
-            Height = 13
-            Caption = 'kB'
-            FocusControl = ResumeThresholdEdit
-          end
-          object ResumeOnButton: TRadioButton
-            Left = 11
-            Top = 18
-            Width = 156
-            Height = 17
-            Caption = 'A&ll files (not recommended)'
-            TabOrder = 0
-            OnClick = ControlChange
-          end
-          object ResumeSmartButton: TRadioButton
-            Left = 11
-            Top = 38
-            Width = 156
-            Height = 17
-            Caption = 'Files abo&ve'
-            TabOrder = 1
-            OnClick = ControlChange
-          end
-          object ResumeOffButton: TRadioButton
-            Left = 12
-            Top = 82
-            Width = 156
-            Height = 17
-            Caption = 'Di&sable'
-            TabOrder = 3
-            OnClick = ControlChange
-          end
-          object ResumeThresholdEdit: TUpDownEdit
-            Left = 45
-            Top = 57
-            Width = 84
-            Height = 21
-            Alignment = taRightJustify
-            Increment = 10
-            MaxValue = 4194304
-            TabOrder = 2
-            OnClick = ControlChange
+          inherited FilterGroup: TXPGroupBox
+            Left = 8
+            Top = 284
+            Width = 363
+            inherited ExcludeFileMaskCombo: THistoryComboBox
+              Width = 255
+            end
           end
         end
       end
@@ -1284,6 +1231,131 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
+      object StorageSheet: TTabSheet
+        Tag = 13
+        Hint = 'Storage'
+        Caption = 'Storage'
+        ImageIndex = 12
+        DesignSize = (
+          378
+          335)
+        object RandomSeedFileLabel: TLabel
+          Left = 16
+          Top = 93
+          Width = 82
+          Height = 13
+          Caption = '&Random seed file'
+          FocusControl = RandomSeedFileEdit
+        end
+        object StorageGroup: TXPGroupBox
+          Left = 8
+          Top = 8
+          Width = 362
+          Height = 72
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Configuration storage'
+          TabOrder = 0
+          object RegistryStorageButton: TRadioButton
+            Left = 16
+            Top = 21
+            Width = 289
+            Height = 17
+            Caption = 'Windows re&gistry'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+          object IniFileStorageButton: TRadioButton
+            Left = 16
+            Top = 45
+            Width = 289
+            Height = 17
+            Caption = '&INI file (winscp3.ini)'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+        end
+        object RandomSeedFileEdit: TFilenameEdit
+          Left = 136
+          Top = 89
+          Width = 234
+          Height = 21
+          AcceptFiles = True
+          DefaultExt = 'log'
+          Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
+          DialogOptions = [ofHideReadOnly, ofPathMustExist]
+          DialogTitle = 'Select file for random seed'
+          ClickKey = 16397
+          Anchors = [akLeft, akTop, akRight]
+          TabOrder = 1
+          Text = 'RandomSeedFileEdit'
+          OnChange = ControlChange
+          OnKeyDown = PathEditsKeyDown
+        end
+      end
+      object TransferResumeSheet: TTabSheet
+        Tag = 14
+        Hint = 'Resume'
+        Caption = 'Resume'
+        ImageIndex = 13
+        DesignSize = (
+          378
+          335)
+        object ResumeBox: TXPGroupBox
+          Left = 8
+          Top = 8
+          Width = 362
+          Height = 121
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Enable transfer resume for'
+          TabOrder = 0
+          object ResumeThresholdUnitLabel: TLabel
+            Left = 136
+            Top = 71
+            Width = 13
+            Height = 13
+            Caption = 'kB'
+            FocusControl = ResumeThresholdEdit
+          end
+          object ResumeOnButton: TRadioButton
+            Left = 16
+            Top = 21
+            Width = 156
+            Height = 17
+            Caption = 'A&ll files (not recommended)'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+          object ResumeSmartButton: TRadioButton
+            Left = 16
+            Top = 45
+            Width = 156
+            Height = 17
+            Caption = 'Files abo&ve'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object ResumeOffButton: TRadioButton
+            Left = 16
+            Top = 93
+            Width = 156
+            Height = 17
+            Caption = 'Di&sable'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object ResumeThresholdEdit: TUpDownEdit
+            Left = 45
+            Top = 67
+            Width = 84
+            Height = 21
+            Alignment = taRightJustify
+            Increment = 10
+            MaxValue = 4194304
+            TabOrder = 2
+            OnClick = ControlChange
+          end
+        end
+      end
     end
     object LeftPanel: TPanel
       Left = 0
@@ -1309,21 +1381,23 @@ object PreferencesDialog: TPreferencesDialog
         TabOrder = 0
         OnChange = NavigationTreeChange
         Items.Data = {
-          06000000250000000000000001000000FFFFFFFFFFFFFFFF0000000005000000
+          07000000250000000000000001000000FFFFFFFFFFFFFFFF0000000004000000
           0C456E7669726F6E6D656E7458230000000000000003000000FFFFFFFFFFFFFF
           FF00000000000000000A496E7465726661636558200000000000000004000000
           FFFFFFFFFFFFFFFF00000000000000000750616E656C73582300000000000000
           05000000FFFFFFFFFFFFFFFF00000000000000000A436F6D6D616E6465725822
           0000000000000006000000FFFFFFFFFFFFFFFF0000000000000000094578706C
-          6F7265725822000000000000000B000000FFFFFFFFFFFFFFFF00000000000000
-          00094472616744726F7058200000000000000008000000FFFFFFFFFFFFFFFF00
-          0000000000000007456469746F7258220000000000000007000000FFFFFFFFFF
-          FFFFFF0000000001000000095472616E736665725824000000000000000C0000
-          00FFFFFFFFFFFFFFFF00000000000000000B4261636B67726F756E6458210000
-          000000000002000000FFFFFFFFFFFFFFFF0000000000000000084C6F6767696E
-          6758250000000000000009000000FFFFFFFFFFFFFFFF00000000000000000C49
-          6E746567726174696F6E5822000000000000000A000000FFFFFFFFFFFFFFFF00
-          0000000000000009436F6D6D616E647358}
+          6F72657258200000000000000008000000FFFFFFFFFFFFFFFF00000000000000
+          0007456469746F7258220000000000000007000000FFFFFFFFFFFFFFFF000000
+          0003000000095472616E736665725822000000000000000B000000FFFFFFFFFF
+          FFFFFF0000000000000000094472616744726F705824000000000000000C0000
+          00FFFFFFFFFFFFFFFF00000000000000000B4261636B67726F756E6458200000
+          00000000000E000000FFFFFFFFFFFFFFFF000000000000000007526573756D65
+          58210000000000000002000000FFFFFFFFFFFFFFFF0000000000000000084C6F
+          6767696E6758250000000000000009000000FFFFFFFFFFFFFFFF000000000000
+          00000C496E746567726174696F6E5822000000000000000A000000FFFFFFFFFF
+          FFFFFF000000000000000009436F6D6D616E64735821000000000000000D0000
+          00FFFFFFFFFFFFFFFF00000000000000000853746F7261676558}
       end
     end
   end

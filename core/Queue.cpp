@@ -27,7 +27,7 @@ protected:
     AnsiString Query;
     TStrings * MoreMessages;
     int Answers;
-    int Params;
+    const TQueryParams * Params;
     int Answer;
     TQueryType Type;
   };
@@ -62,7 +62,7 @@ protected:
   void __fastcall TerminalClose(TObject * Sender);
   void __fastcall TerminalQueryUser(TObject * Sender,
     const AnsiString Query, TStrings * MoreMessages, int Answers,
-    int Params, int & Answer, TQueryType Type);
+    const TQueryParams * Params, int & Answer, TQueryType Type);
   void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
     AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result);
   void __fastcall TerminalShowExtendedException(TSecureShell * SecureShell,
@@ -613,8 +613,8 @@ void __fastcall TTerminalQueue::DoListUpdate()
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalQueue::DoQueryUser(TObject * Sender,
-  const AnsiString Query, TStrings * MoreMessages, int Answers, int Params,
-  int & Answer, TQueryType Type)
+  const AnsiString Query, TStrings * MoreMessages, int Answers,
+  const TQueryParams * Params, int & Answer, TQueryType Type)
 {
   if (OnQueryUser != NULL)
   {
@@ -885,7 +885,7 @@ void __fastcall TTerminalItem::TerminalClose(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
   const AnsiString Query, TStrings * MoreMessages, int Answers,
-  int Params, int & Answer, TQueryType Type)
+  const TQueryParams * Params, int & Answer, TQueryType Type)
 {
   TQueryUserRec QueryUserRec;
   QueryUserRec.Sender = Sender;

@@ -503,31 +503,38 @@ void __fastcall TTerminalManager::DeleteLocalFile(const AnsiString FileName)
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalQueryUser(TObject * /*Sender*/,
   const AnsiString Query, TStrings * MoreMessages, int Answers,
-  int Params, int & Answer, TQueryType Type)
+  const TQueryParams * Params, int & Answer, TQueryType Type)
 {
+  TMessageParams MessageParams;
   AnsiString AQuery = Query;
-  if (Params & qpFatalAbort)
-  {
-    AQuery = FMTLOAD(WARN_FATAL_ERROR, (AQuery));
-  }
 
-  int MessageParams = 0;
-  if (Params & qpNeverAskAgainCheck)
+  if (Params != NULL)
   {
-    MessageParams |= mpNeverAskAgainCheck;
-  }
-  if (Params & qpAllowContinueOnError)
-  {
-    MessageParams |= mpAllowContinueOnError;
+    if (Params->Params & qpFatalAbort)
+    {
+      AQuery = FMTLOAD(WARN_FATAL_ERROR, (AQuery));
+    }
+
+    MessageParams.Aliases = Params->Aliases;
+    MessageParams.AliasesCount = Params->AliasesCount;
+
+    if (Params->Params & qpNeverAskAgainCheck)
+    {
+      MessageParams.Params |= mpNeverAskAgainCheck;
+    }
+    if (Params->Params & qpAllowContinueOnError)
+    {
+      MessageParams.Params |= mpAllowContinueOnError;
+    }
   }
 
   if (ScpExplorer)
   {
-    Answer = ScpExplorer->MoreMessageDialog(AQuery, MoreMessages, Type, Answers, 0, MessageParams);
+    Answer = ScpExplorer->MoreMessageDialog(AQuery, MoreMessages, Type, Answers, 0, &MessageParams);
   }
   else
   {
-    Answer = MoreMessageDialog(AQuery, MoreMessages, Type, Answers, 0, MessageParams);
+    Answer = MoreMessageDialog(AQuery, MoreMessages, Type, Answers, 0, &MessageParams);
   }
 }
 //---------------------------------------------------------------------------

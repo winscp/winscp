@@ -38,20 +38,11 @@ __fastcall TUnixPathComboBox::TUnixPathComboBox(TComponent* Owner)
   FRootName = DEFAULT_ROOTNAME;
   FPath = '/';
   ResetItemHeight();
-
-  TSHFileInfo SFI;
-  SHGetFileInfo("dummy", FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY,
-    &SFI, sizeof(SFI), SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
-  FCloseImage = SFI.iIcon;
-  SHGetFileInfo("dummy", FILE_ATTRIBUTE_NORMAL | FILE_ATTRIBUTE_DIRECTORY,
-    &SFI, sizeof(SFI), SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES | SHGFI_OPENICON);
-  FOpenImage = SFI.iIcon;
 }
 //---------------------------------------------------------------------------
 Integer __fastcall TUnixPathComboBox::GetItemImage(Integer Index)
 {
-  if (Index < Items->Count-1) return FCloseImage;
-    else return FOpenImage;
+  return (Index < Items->Count-1 ? StdDirIcon : StdDirSelIcon);
 }
 //---------------------------------------------------------------------------
 Integer __fastcall TUnixPathComboBox::GetItemIndent(Integer Index)
@@ -80,7 +71,7 @@ void __fastcall TUnixPathComboBox::ResetItems()
   try {
     Items->Clear();
     AnsiString APath = UnixExcludeTrailingBackslash(Path);
-    while (APath.Length() > 1)
+    while (!IsUnixRootPath(APath))
     {
       Integer P = APath.LastDelimiter('/');
       assert(P >= 0);
@@ -120,8 +111,16 @@ void __fastcall TUnixPathComboBox::PathChanged()
 {
 #ifndef DESIGN_ONLY
   AnsiString APath = UnixExcludeTrailingBackslash(Path);
-  for (Integer Index = ItemIndex; Index < Items->Count - 1; Index++)
+  for (int Index = ItemIndex; Index < Items->Count - 1; Index++)
+  {
     APath = UnixExtractFileDir(APath);
+  }
+  // VanDyke style paths
+  if (APath.IsEmpty())
+  {
+    assert(ItemIndex == 0);
+    APath = ROOTDIRECTORY;
+  }
   Path = APath;
   TCustomPathComboBox::PathChanged();
   // in case that path was not changed (e.g. inaccessible directory)

@@ -304,7 +304,8 @@ bool RegisterServer(bool AllUsers)
           reinterpret_cast<unsigned char*>(Filename), strlen(Filename) + 1);
 
         RegSetValueEx(HKey, "ThreadingModel", 0, REG_SZ,
-          THREADING_MODEL, sizeof(THREADING_MODEL));
+          reinterpret_cast<unsigned char*>(THREADING_MODEL),
+          sizeof(THREADING_MODEL));
       }
     }
     RegCloseKey(HKey);

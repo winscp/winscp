@@ -24,6 +24,8 @@
 #pragma link "IEComboBox"
 #pragma link "UnixPathComboBox"
 #pragma link "IEPathComboBox"
+#pragma link "CustomDriveView"
+#pragma link "UnixDriveView"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
@@ -36,6 +38,7 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
   TopCoolBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
   RemoteStatusBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
   QueueCoolBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
+  RemoteDriveView->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
 
   QueuePanel->Parent = RemotePanel;
   QueueSplitter->Parent = RemotePanel;
@@ -71,6 +74,8 @@ void __fastcall TScpExplorerForm::RestoreParams()
   RemoteDirView->ViewStyle = (TViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
   LoadCoolbarLayoutStr(TopCoolBar, WinConfiguration->ScpExplorer.CoolBarLayout);
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
+  RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
+  RemoteDriveView->Width = WinConfiguration->ScpExplorer.DriveViewWidth;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::StoreParams()
@@ -86,6 +91,8 @@ void __fastcall TScpExplorerForm::StoreParams()
     WinConfiguration->ScpExplorer.WindowParams = WinConfiguration->StoreForm(this);;
     WinConfiguration->ScpExplorer.DirViewParams = RemoteDirView->UnixColProperties->ParamsStr;
     WinConfiguration->ScpExplorer.ViewStyle = RemoteDirView->ViewStyle;
+    WinConfiguration->ScpExplorer.DriveView = RemoteDriveView->Visible;
+    WinConfiguration->ScpExplorer.DriveViewWidth = RemoteDriveView->Width;
     TCustomScpExplorerForm::StoreParams();
   }
   __finally
@@ -113,7 +120,6 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::DoShow()
 {
-  FLastDirView = RemoteDirView; // Only dir view
   RemoteDirView->SetFocus();
 
   // called for second time after menu font was updated (see also RestoreParams)
@@ -143,6 +149,16 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::SynchronizeDirectories()
+{
+  AnsiString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  AnsiString RemoteDirectory = RemoteDirView->PathName;
+  if (DoSynchronizeDirectories(LocalDirectory, RemoteDirectory))
+  {
+    WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
 {
   AnsiString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
@@ -150,7 +166,7 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
   TSynchronizeMode Mode = smRemote;
   if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode))
   {
-    WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory; 
+    WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
   }
 }
 //---------------------------------------------------------------------------
@@ -160,7 +176,11 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
   
   TControl * ControlsOrder[] =
     { RemoteDirView, QueueSplitter, QueuePanel, RemoteStatusBar };
-  SetControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+  SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+
+  TControl * RemoteControlsOrder[] =
+    { RemoteDriveView, RemotePanelSplitter, RemoteDirView };
+  SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RemoteStatusBarDblClick(TObject * /*Sender*/)

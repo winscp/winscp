@@ -27,6 +27,8 @@ namespace Pathlabel
 {
 //-- type declarations -------------------------------------------------------
 class DELPHICLASS TCustomPathLabel;
+typedef void __fastcall (__closure *TPathLabelGetStatusEvent)(TCustomPathLabel* Sender, bool &Active);
+
 class PASCALIMPLEMENTATION TCustomPathLabel : public Stdctrls::TCustomLabel 
 {
 	typedef Stdctrls::TCustomLabel inherited;
@@ -36,6 +38,7 @@ private:
 	int FIndentHorizontal;
 	int FIndentVertical;
 	bool FUnixPath;
+	TPathLabelGetStatusEvent FOnGetStatus;
 	HIDESBASE MESSAGE void __fastcall CMHintShow(Messages::TMessage &Message);
 	Graphics::TColor __fastcall GetColors(int Index);
 	void __fastcall SetColors(int Index, Graphics::TColor Value);
@@ -49,6 +52,7 @@ protected:
 	DYNAMIC void __fastcall DoDrawText(Types::TRect &Rect, int Flags);
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
 	virtual void __fastcall Paint(void);
+	bool __fastcall IsActive(void);
 	
 public:
 	__fastcall virtual TCustomPathLabel(Classes::TComponent* AnOwner);
@@ -60,6 +64,7 @@ public:
 	__property int IndentVertical = {read=FIndentVertical, write=SetIndentVertical, default=1};
 	__property Graphics::TColor InactiveColor = {read=GetColors, write=SetColors, index=0, default=-2147483645};
 	__property Graphics::TColor InactiveTextColor = {read=GetColors, write=SetColors, index=2, default=-2147483629};
+	__property TPathLabelGetStatusEvent OnGetStatus = {read=FOnGetStatus, write=FOnGetStatus};
 	__property FocusControl ;
 	__property Caption ;
 	__property Hint  = {stored=false};
@@ -85,6 +90,7 @@ __published:
 	__property IndentVertical  = {default=1};
 	__property InactiveColor  = {index=0, default=-2147483645};
 	__property InactiveTextColor  = {index=2, default=-2147483629};
+	__property OnGetStatus ;
 	__property Align  = {default=1};
 	__property Alignment  = {default=0};
 	__property Anchors  = {default=3};

@@ -4,7 +4,8 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\RScpComp.lib"/>
-    <OBJFILES value="components\LogMemo.obj components\UnixDirView.obj components\UnixPathComboBox.obj"/>
+    <OBJFILES value="components\LogMemo.obj components\UnixDirView.obj components\UnixDriveView.obj 
+      components\UnixPathComboBox.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
@@ -20,7 +21,7 @@
     <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="RScpComp.bpf"/>
-    <INCLUDEPATH value="components;core;windows;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="components;core;windows;packages\filemng;packages\dragndrop;packages\my;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="components;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -44,6 +45,7 @@
       <FILE FILENAME="RScpComp.bpf" FORMNAME="" UNITNAME="RScpComp" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="components\LogMemo.cpp" FORMNAME="" UNITNAME="LogMemo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="components\UnixDirView.cpp" FORMNAME="" UNITNAME="UnixDirView" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="components\UnixDriveView.cpp" FORMNAME="" UNITNAME="UnixDriveView" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="components\UnixPathComboBox.cpp" FORMNAME="" UNITNAME="UnixPathComboBox" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>

@@ -107,6 +107,7 @@ BEGIN
   MOVE_FILE_ERROR, "Error moving file '%s' to '%s'."
   SFTP_PACKET_TOO_BIG_INIT_EXPLAIN, "%s\n \nThe error is typically caused by message printed from startup script (like .profile). The message may start with \"%s\"."
   PRESERVE_TIME_PERM_ERROR, "Upload of file '%s' was successful, but error occurred while setting the permissions and/or timestamp. If the problem persists, turn off 'Set permissions' and/or 'Preserve timestamp' option."
+  ACCESS_VIOLATION_ERROR, "Invalid access to memory"
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT, "Host hasn't answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."
@@ -138,6 +139,8 @@ BEGIN
   SFTP_EXTENSION_INFO, "The server supports these SFTP extensions:"
   SCP_UNIX_NAME, "Remote unix system information (uname -a):"
   SCP_NO_UNIX_NAME, "The server is not unix or unix system information was not provided."
+  APPEND_BUTTON, "A&ppend"
+  YES_TO_NEWER_BUTTON, "Ne&wer only"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

@@ -12,6 +12,7 @@
 
 #include <Log.h>
 #include <TextsWin.h>
+#include <TextsCore.h>
 
 #include "CustomScpExplorer.h"
 #include "TerminalManager.h"
@@ -19,13 +20,14 @@
 #include "ProgParams.h"
 #include "Tools.h"
 #include "WinConfiguration.h"
+#include "GUITools.h"
 
 #include <NMHttp.hpp>
 #include <Psock.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TSessionData * GetLoginData(AnsiString SessionName)
+TSessionData * GetLoginData(AnsiString SessionName, AnsiString & DownloadFile)
 {
   bool ProtocolDefined = false;
   TFSProtocol Protocol;
@@ -60,7 +62,7 @@ TSessionData * GetLoginData(AnsiString SessionName)
     if (!AData)
     {
       Data->Assign(StoredSessions->DefaultSettings);
-      if (Data->ParseUrl(SessionName, 0))
+      if (Data->ParseUrl(SessionName, puExtractFileName, &DownloadFile))
       {
         Data->Name = "";
         DefaultsOnly = false;
@@ -120,11 +122,47 @@ void __fastcall Upload(TTerminal * Terminal, TProgramParams * Params,
     TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
 
     int Options = coDisableQueue |
+      (!Terminal->IsCapable[fcNewerOnlyUpload] ? coDisableNewerOnly : 0) |
       (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0);
     if (DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options))
     {
-      int Params = 0;
+      int Params = (CopyParam.NewerOnly ? cpNewerOnly : 0);
       Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
+    }
+  }
+  __finally
+  {
+    delete FileList;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall Download(TTerminal * Terminal, const AnsiString FileName)
+{
+  AnsiString TargetDirectory;
+  TGUICopyParamType CopyParam = GUIConfiguration->CopyParam;
+  TStrings * FileList = NULL;
+
+  try
+  {
+    FileList = new TStringList();
+    TRemoteFile * File = Terminal->Files->FindFile(FileName);
+    if (File == NULL)
+    {
+      throw Exception(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
+    }
+    FileList->AddObject(FileName, File);
+    AnsiString LocalDirectory = Terminal->SessionData->LocalDirectory;
+    if (LocalDirectory.IsEmpty())
+    {
+      ::SpecialFolderLocation(CSIDL_PERSONAL, LocalDirectory);
+    }
+    TargetDirectory = IncludeTrailingBackslash(LocalDirectory);
+
+    int Options = coDisableQueue |
+      (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0);
+    if (DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam, Options))
+    {
+      Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, 0);
     }
   }
   __finally
@@ -352,6 +390,7 @@ void __fastcall Execute(TProgramParams * Params)
       TSessionData * Data;
       int UploadListStart = 0;
       AnsiString AutoStartSession;
+      AnsiString DownloadFile;
 
       if (Params->ParamCount)
       {
@@ -378,7 +417,7 @@ void __fastcall Execute(TProgramParams * Params)
         AutoStartSession = WinConfiguration->AutoStartSession;
       }
 
-      Data = GetLoginData(AutoStartSession);
+      Data = GetLoginData(AutoStartSession, DownloadFile);
       if (Data)
       {
         try
@@ -412,6 +451,11 @@ void __fastcall Execute(TProgramParams * Params)
                   throw Exception(NO_UPLOAD_LIST_ERROR);
                 }
               }
+              else if (!DownloadFile.IsEmpty())
+              {
+                Download(TerminalManager->ActiveTerminal, DownloadFile);
+              }
+
               Application->Run();
             }
             __finally

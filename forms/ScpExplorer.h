@@ -22,6 +22,8 @@
 #include <UnixPathComboBox.h>
 #include <IEPathComboBox.hpp>
 #include <Buttons.hpp>
+#include "CustomDriveView.hpp"
+#include "UnixDriveView.h"
 //---------------------------------------------------------------------------
 class TScpExplorerForm : public TCustomScpExplorerForm
 {
@@ -40,8 +42,6 @@ __published:
   TToolButton *ToolButton10;
   TToolButton *ToolButton11;
   TToolButton *ToolButton18;
-  TToolButton *ToolButton3;
-  TToolButton *ToolButton5;
   TToolButton *ToolButton6;
   TToolButton *ToolButton7;
   TToolButton *ToolButton14;
@@ -88,6 +88,9 @@ __published:
   TToolButton *ToolButton48;
   TToolButton *ToolButton49;
   TToolButton *ToolButton50;
+  TToolButton *ToolButton51;
+  TToolButton *ToolButton57;
+  TToolButton *ToolButton3;
   void __fastcall RemoteStatusBarDblClick(TObject *Sender);
 private:
 protected:
@@ -106,6 +109,7 @@ public:
   virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall StoreParams();
   virtual void __fastcall FullSynchronizeDirectories();
+  virtual void __fastcall SynchronizeDirectories();
 };
 //---------------------------------------------------------------------------
 #endif

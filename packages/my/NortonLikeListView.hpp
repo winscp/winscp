@@ -77,6 +77,7 @@ protected:
 	Comctrls::TListItem* __fastcall GetItemFromHItem(const tagLVITEMA &Item);
 	virtual bool __fastcall GetValid(void);
 	virtual int __fastcall GetSelCount(void);
+	void __fastcall DDBeforeDrag(void);
 	
 public:
 	__fastcall virtual TCustomNortonLikeListView(Classes::TComponent* AOwner);

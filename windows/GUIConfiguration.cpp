@@ -57,6 +57,7 @@ void __fastcall TGUICopyParamType::GUIAssign(const TGUICopyParamType * Source)
 {
   Queue = Source->Queue;
   QueueNoConfirmation = Source->QueueNoConfirmation;
+  NewerOnly = Source->NewerOnly;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUICopyParamType::Default()
@@ -70,6 +71,7 @@ void __fastcall TGUICopyParamType::GUIDefault()
 {
   Queue = false;
   QueueNoConfirmation = true;
+  NewerOnly = false;
 }
 //---------------------------------------------------------------------------
 TGUICopyParamType & __fastcall TGUICopyParamType::operator =(const TCopyParamType & rhp)
@@ -108,18 +110,32 @@ void __fastcall TGUIConfiguration::Default()
   FCopyParamDialogExpanded = false;
   FErrorDialogExpanded = false;
   FContinueOnError = false;
-  FSynchronizeParams = TTerminal::spDelete | TTerminal::spNoConfirmation; 
+  FSynchronizeParams = TTerminal::spDelete | TTerminal::spNoConfirmation;
+  FSynchronizeRecurse = true; 
   FQueueTransfersLimit = 2;
   FQueueAutoPopup = true;
   AnsiString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
   FPuttyPath = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
   FPuttySession = "WinSCP temporary session";
+  FBeepOnFinish = false;
+  FBeepOnFinishAfter = TDateTime(0, 0, 30, 0);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property)
+{
+  if (Property == "CopyParam.ExcludeFileMask.Masks")
+  {
+    return "ExcludeFileMask";
+  }
+  else
+  {
+    int P = Property.LastDelimiter(".>");
+    return Property.SubString(P + 1, Property.Length() - P);
+  }
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
-#define LASTELEM(ELEM) \
-  ELEM.SubString(ELEM.LastDelimiter(".>")+1, ELEM.Length() - ELEM.LastDelimiter(".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKey(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKey(); }
 #define REGCONFIG(CANCREATE) \
@@ -128,11 +144,14 @@ void __fastcall TGUIConfiguration::Default()
     KEY(Bool,     ErrorDialogExpanded); \
     KEY(Bool,     ContinueOnError); \
     KEY(Integer,  SynchronizeParams); \
+    KEY(Bool,     SynchronizeRecurse); \
     KEY(Integer,  QueueTransfersLimit); \
     KEY(Bool,     QueueAutoPopup); \
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
     KEY(DateTime, IgnoreCancelBeforeFinish); \
+    KEY(Bool,     BeepOnFinish); \
+    KEY(DateTime, BeepOnFinishAfter); \
   ); \
   BLOCK("Interface\\CopyParam", CANCREATE, \
     KEY(Bool,    CopyParam.AddXToDirectories); \
@@ -150,6 +169,7 @@ void __fastcall TGUIConfiguration::Default()
     KEY(Bool,    CopyParam.CalculateSize); \
     KEY(Bool,    CopyParam.Queue); \
     KEY(Bool,    CopyParam.QueueNoConfirmation); \
+    KEY(String,  CopyParam.ExcludeFileMask.Masks); \
   ); \
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
@@ -157,7 +177,7 @@ void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
   TConfiguration::SaveSpecial(Storage);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
+  #define KEY(TYPE, VAR) Storage->Write ## TYPE(PropertyToKey(#VAR), VAR)
   REGCONFIG(true);
   #undef KEY
 }
@@ -167,7 +187,7 @@ void __fastcall TGUIConfiguration::LoadSpecial(THierarchicalStorage * Storage)
   TConfiguration::LoadSpecial(Storage);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
+  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(PropertyToKey(#VAR), VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas

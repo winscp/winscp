@@ -26,6 +26,7 @@ AnsiString __fastcall UnixIncludeTrailingBackslash(const AnsiString Path)
   }
 }
 //---------------------------------------------------------------------------
+// Keeps "/" for root path
 AnsiString __fastcall UnixExcludeTrailingBackslash(const AnsiString Path)
 {
   if ((Path.Length() > 1) && Path.IsDelimiter("/", Path.Length()))
@@ -171,6 +172,17 @@ bool __fastcall UnixExtractCommonPath(TStrings * Files, AnsiString & Path)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsUnixRootPath(const AnsiString Path)
+{
+  return Path.IsEmpty() || (Path == ROOTDIRECTORY);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsUnixHiddenFile(const AnsiString FileName)
+{
+  return (FileName != ROOTDIRECTORY) && (FileName != PARENTDIRECTORY) &&
+    !FileName.IsEmpty() && (FileName[1] == '.');
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall FromUnixPath(const AnsiString Path)
 {
   return StringReplace(Path, "/", "\\", TReplaceFlags() << rfReplaceAll);
@@ -263,8 +275,7 @@ Integer __fastcall TRemoteFile::GetIconIndex()
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsHidden()
 {
-  return (!IsParentDirectory && !IsThisDirectory &&
-    !FileName.IsEmpty() && (FileName[1] == '.'));
+  return IsUnixHiddenFile(FileName);
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsDirectory() const

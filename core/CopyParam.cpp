@@ -36,6 +36,7 @@ void __fastcall TCopyParamType::Default()
   LocalInvalidChars = "/\\:*?\"<>|";
   CalculateSize = true;
   FileMask = "*.*";
+  ExcludeFileMask.Masks = "";
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
@@ -56,6 +57,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(LocalInvalidChars);
   COPY(CalculateSize);
   COPY(FileMask);
+  COPY(ExcludeFileMask);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -127,7 +129,8 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
   return FORMAT(
     "  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s; FnCs: %s; RIC: %s; "
       "Resume: %s (%d); CalcS: %s; Mask: %s\n"
-    "  TM: %s; AscM: %s ",
+    "  TM: %s; ExclM: %s\n"
+    "  AscM: %s\n",
     (BooleanToEngStr(PreserveTime),
      BooleanToEngStr(PreserveReadOnly),
      Rights.Text,
@@ -139,6 +142,7 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
      BooleanToEngStr(CalculateSize),
      FileMask,
      ModeC[TransferMode],
+     ExcludeFileMask.Masks,
      AsciiFileMask.Masks));
 }
 //---------------------------------------------------------------------------
@@ -162,4 +166,13 @@ bool __fastcall TCopyParamType::AllowResume(__int64 Size) const
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCopyParamType::AllowTransfer(AnsiString FileName) const
+{
+  bool Result = true;
+  if (!ExcludeFileMask.Masks.IsEmpty())
+  {
+    Result = !ExcludeFileMask.Matches(FileName);
+  }
+  return Result;
+}
 

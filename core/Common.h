@@ -13,6 +13,9 @@
 #define FORMAT(S, F) Format(S, ARRAYOFCONST(F))
 #define FMTLOAD(I, F) FmtLoadStr(I, ARRAYOFCONST(F))
 #define LENOF(x) ( (sizeof((x))) / (sizeof(*(x))))
+#define FLAGSET(SET, FLAG) (((SET) & (FLAG)) == (FLAG))
+#define FLAGCLEAR(SET, FLAG) (((SET) & (FLAG)) == 0)
+#define FLAGMASK(ENABLE, FLAG) ((ENABLE) ? (FLAG) : 0)
 //---------------------------------------------------------------------------
 extern const char EngShortMonthNames[12][4];
 //---------------------------------------------------------------------------
@@ -79,13 +82,24 @@ private:
   TCriticalSection * FCriticalSection;
 };
 //---------------------------------------------------------------------------
+#ifdef _DEBUG
+#define TRACEENV "WINSCPTRACE"
+void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
+  int Line, const AnsiString Message);
+#define TRACE(MESSAGE) Trace(__FILE__, __FUNC__, __LINE__, MESSAGE)
+#define TRACEFMT(MESSAGE, PARAMS) Trace(__FILE__, __FUNC__, __LINE__, FORMAT(MESSAGE, PARAMS))
+#else // ifdef _DEBUG
+#define TRACE(PARAMS)
+#define TRACEFMT(MESSAGE, PARAMS) 
+#endif // ifdef _DEBUG
+//---------------------------------------------------------------------------
 #endif
 //---------------------------------------------------------------------------
 #include <assert.h>
 #ifndef _DEBUG
 #undef assert
 #define assert(p)   ((void)0)
-#endif
+#endif 
 #define USEDPARAM(p) ((p) == (p))
 //---------------------------------------------------------------------------
 #endif

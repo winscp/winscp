@@ -8,12 +8,17 @@ uses
   Messages, StdCtrls, Controls, Classes, Forms, Windows, Graphics;
 
 type
+  TCustomPathLabel = class;
+
+  TPathLabelGetStatusEvent = procedure(Sender: TCustomPathLabel; var Active: Boolean) of object;
+
   TCustomPathLabel = class(TCustomLabel)
   private
     FColors: array[0..3] of TColor;
     FIndentHorizontal: Integer;
     FIndentVertical: Integer;
     FUnixPath: Boolean;
+    FOnGetStatus: TPathLabelGetStatusEvent;
     procedure CMHintShow(var Message: TMessage); message CM_HINTSHOW;
     function GetColors(Index: Integer): TColor;
     procedure SetColors(Index: Integer; Value: TColor);
@@ -27,6 +32,7 @@ type
     procedure Notification(AComponent: TComponent;
       Operation: TOperation); override;
     procedure Paint; override;
+    function IsActive: Boolean;
 
   public
     constructor Create(AnOwner: TComponent); override;
@@ -45,6 +51,7 @@ type
       default clInactiveCaption;
     property InactiveTextColor: TColor index 2 read GetColors write SetColors
       default clInactiveCaptionText;
+    property OnGetStatus: TPathLabelGetStatusEvent read FOnGetStatus write FOnGetStatus;
 
     property FocusControl;
     property Caption;
@@ -62,32 +69,24 @@ type
     property IndentVertical;
     property InactiveColor;
     property InactiveTextColor;
+    property OnGetStatus;
 
     property Align;
     property Alignment;
     property Anchors;
     property AutoSize;
     property BiDiMode;
-    //property Caption;
-    //property Color;
     property Constraints;
     property DragCursor;
     property DragKind;
     property DragMode;
     property Enabled;
-    //property FocusControl;
     property Font;
     property ParentBiDiMode;
-    //property ParentColor;
     property ParentFont;
-    //property ParentShowHint;
     property PopupMenu;
-    //property ShowAccelChar;
-    //property ShowHint;
     property Transparent;
-    //property Layout;
     property Visible;
-    //property WordWrap;
     property OnClick;
     property OnDblClick;
     property OnDragDrop;
@@ -297,15 +296,27 @@ begin
   end;
 end;
 
-procedure TCustomPathLabel.UpdateStatus;
+function TCustomPathLabel.IsActive: Boolean;
 begin
-  Color :=
-    FColors[Integer(Assigned(FocusControl) and FocusControl.Focused)];
+  if csDestroying in ComponentState then Result := False
+    else
+  begin
+    Result := Assigned(FocusControl) and FocusControl.Focused;
+    if Assigned(OnGetStatus) then
+      OnGetStatus(Self, Result);
+  end;
+end;
+
+procedure TCustomPathLabel.UpdateStatus;
+var
+  Status: Boolean;
+begin
+  Status := IsActive;
+  Color := FColors[Integer(Status)];
   // We don't want to stote Font properties in DFM
   // which would be if Font.Color is set to something else than clWindowText
   if not (csDesigning in ComponentState) then
-    Font.Color :=
-      FColors[2 + Integer(Assigned(FocusControl) and FocusControl.Focused)];
+    Font.Color := FColors[2 + Integer(Status)];
 end; { UpdateStatus }
 
 procedure TCustomPathLabel.Notification(AComponent: TComponent;

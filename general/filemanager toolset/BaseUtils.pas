@@ -27,7 +27,7 @@ unit BaseUtils;
 interface
 
 uses
-  SysUtils, Windows, Forms, ShlObj, PIDL;
+  SysUtils, Windows, Forms, ShlObj, PIDL, Classes, Controls;
 
 type
   TDateTimePrecision = (tpDay, tpMinute, tpSecond, tpMillisecond);
@@ -49,6 +49,10 @@ function AnyValidPath: string;
 
 procedure ReduceDateTimePrecision(var DateTime: TDateTime;
   Precision: TDateTimePrecision);
+function SpecialFolderLocation(Folder: Integer; var Path: string;
+  var PIDL: PItemIDList): Boolean; overload;
+function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean; overload;
+function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
 
 resourcestring
   SNoValidPath = 'Can''t find any valid path.';
@@ -57,7 +61,7 @@ resourcestring
 implementation
 
 uses
-  IEDriveInfo, DateUtils;
+  IEDriveInfo, DateUtils, ShellApi;
 
 var
   GetDiskFreeSpaceEx: function (Directory: PChar;
@@ -313,6 +317,34 @@ begin
 
     DateTime := EncodeDate(Y, M, D) + EncodeTime(H, N, S, MS);
   end;
+end;
+
+
+function SpecialFolderLocation(Folder: Integer; var Path: string;
+  var PIDL: PItemIDList): Boolean;
+begin
+  SetLength(Path, MAX_PATH);
+  Result :=
+    (not Failed(SHGetSpecialFolderLocation(Application.Handle, Folder, PIDL))) and
+    SHGetPathFromIDList(PIDL, PChar(Path));
+  if Result then SetLength(Path, StrLen(PChar(Path)));
+end;
+
+function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean;
+var
+  PIDL: PItemIDList;
+begin
+  Result := SpecialFolderLocation(Folder, Path, PIDL);
+end;
+
+function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
+var
+  FileInfo: TShFileInfo;
+begin
+  Result := TImageList.Create(Owner);
+  Result.Handle := SHGetFileInfo('', 0, FileInfo, SizeOf(FileInfo),
+      SHGFI_SYSICONINDEX or Flags);
+  Result.ShareImages := True;
 end;
 
 initialization

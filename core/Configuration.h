@@ -25,7 +25,9 @@ private:
   AnsiString FLogFileName;
   int FLogWindowLines;
   bool FLogFileAppend;
+  bool FLogProtocol;
   bool FConfirmOverwriting;
+  bool FConfirmResume;
   AnsiString FIniFileStorageName;
   bool FRememberPassword;
 
@@ -58,6 +60,7 @@ private:
   void __fastcall SetLogWindowComplete(bool value);
   bool __fastcall GetLogWindowComplete();
   void __fastcall SetLogFileAppend(bool value);
+  void __fastcall SetLogProtocol(bool value);
   AnsiString __fastcall GetDefaultLogFileName();
   AnsiString __fastcall GetTimeFormat();
   void __fastcall SetStorage(TStorage value);
@@ -84,6 +87,8 @@ protected:
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
+  bool __fastcall GetConfirmResume();
+  void __fastcall SetConfirmResume(bool value);
 
   virtual AnsiString __fastcall ModuleFileName();
 
@@ -135,11 +140,13 @@ public:
   __property AnsiString LogFileName  = { read=FLogFileName, write=SetLogFileName };
   __property bool LogToFile  = { read=GetLogToFile, write=SetLogToFile };
   __property bool LogFileAppend  = { read=FLogFileAppend, write=SetLogFileAppend };
+  __property bool LogProtocol  = { read=FLogProtocol, write=SetLogProtocol };
   __property int LogWindowLines  = { read=FLogWindowLines, write=SetLogWindowLines };
   __property bool LogWindowComplete  = { read=GetLogWindowComplete, write=SetLogWindowComplete };
   __property AnsiString DefaultLogFileName  = { read=GetDefaultLogFileName };
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool ConfirmOverwriting = { read = GetConfirmOverwriting, write = SetConfirmOverwriting};
+  __property bool ConfirmResume = { read = GetConfirmResume, write = SetConfirmResume};
   __property bool RememberPassword = { read = FRememberPassword, write = FRememberPassword };
   __property AnsiString PartialExt = {read=GetPartialExt};
 

@@ -1,119 +1,200 @@
 object SynchronizeDialog: TSynchronizeDialog
-  Left = 343
-  Top = 210
+  Left = 367
+  Top = 198
   BorderStyle = bsDialog
-  Caption = 'Keep remote directory up to date'
-  ClientHeight = 284
-  ClientWidth = 511
+  Caption = 'Keep remote directory up to date X'
+  ClientHeight = 264
+  ClientWidth = 396
   Color = clBtnFace
-  ParentFont = True
-  OldCreateOrder = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  OldCreateOrder = False
   Position = poMainFormCenter
-  OnCloseQuery = FormCloseQuery
-  OnShow = FormShow
   DesignSize = (
-    511
-    284)
+    396
+    264)
   PixelsPerInch = 96
   TextHeight = 13
-  object StatusLabel: TLabel
+  object DirectoriesGroup: TXPGroupBox
     Left = 8
-    Top = 8
-    Width = 496
-    Height = 41
+    Top = 6
+    Width = 381
+    Height = 119
     Anchors = [akLeft, akTop, akRight]
-    AutoSize = False
-    Caption = 
-      'Watch for new or changed files in local directory XXX and automa' +
-      'tically upload them to remote directory XXX.'
-    WordWrap = True
-  end
-  object StartButton: TButton
-    Left = 37
-    Top = 249
-    Width = 75
-    Height = 25
-    Anchors = [akLeft, akBottom]
-    Caption = '&Start'
+    Caption = 'Directories'
     TabOrder = 0
-    OnClick = StartButtonClick
+    DesignSize = (
+      381
+      119)
+    object LocalDirectoryLabel: TLabel
+      Left = 11
+      Top = 19
+      Width = 200
+      Height = 13
+      Anchors = [akLeft, akTop, akRight]
+      Caption = '&Watch for changes in the local directory ...'
+      FocusControl = LocalDirectoryEdit
+    end
+    object RemoteDirectoryLabel: TLabel
+      Left = 11
+      Top = 68
+      Width = 263
+      Height = 13
+      Anchors = [akLeft, akTop, akRight]
+      Caption = '... &and automatically reflect them on the remote directory'
+      FocusControl = RemoteDirectoryEdit
+    end
+    object RemoteDirectoryEdit: THistoryComboBox
+      Left = 11
+      Top = 84
+      Width = 359
+      Height = 21
+      AutoComplete = False
+      Anchors = [akLeft, akTop, akRight]
+      ItemHeight = 13
+      MaxLength = 1000
+      TabOrder = 2
+      Text = 'RemoteDirectoryEdit'
+      OnChange = ControlChange
+      OnKeyDown = DirectoryEditKeyDown
+    end
+    object LocalDirectoryEdit: THistoryComboBox
+      Left = 11
+      Top = 35
+      Width = 276
+      Height = 21
+      AutoComplete = False
+      Anchors = [akLeft, akTop, akRight]
+      ItemHeight = 13
+      MaxLength = 1000
+      TabOrder = 0
+      Text = 'LocalDirectoryEdit'
+      OnChange = ControlChange
+      OnKeyDown = DirectoryEditKeyDown
+    end
+    object LocalDirectoryBrowseButton: TButton
+      Left = 293
+      Top = 33
+      Width = 75
+      Height = 25
+      Anchors = [akTop, akRight]
+      Caption = 'B&rowse...'
+      TabOrder = 1
+      OnClick = LocalDirectoryBrowseButtonClick
+    end
   end
   object StopButton: TButton
-    Left = 127
-    Top = 249
-    Width = 75
+    Left = 152
+    Top = 230
+    Width = 74
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = '&Stop'
-    TabOrder = 1
+    TabOrder = 4
     OnClick = StopButtonClick
   end
-  object CloseButton: TButton
-    Left = 305
-    Top = 249
-    Width = 75
+  object CancelButton: TButton
+    Left = 314
+    Top = 230
+    Width = 74
     Height = 25
     Anchors = [akLeft, akBottom]
     Cancel = True
     Caption = 'Close'
-    ModalResult = 1
-    TabOrder = 2
+    ModalResult = 2
+    TabOrder = 6
   end
-  object MorePanel: TPanel
-    Left = 0
-    Top = 52
-    Width = 510
-    Height = 190
-    Anchors = [akLeft, akTop, akRight, akBottom]
-    BevelOuter = bvNone
-    TabOrder = 3
-    inline CopyParamsFrame: TCopyParamsFrame
-      Left = 2
-      Top = 0
-      Width = 508
-      Height = 150
+  object OptionsGroup: TXPGroupBox
+    Left = 8
+    Top = 130
+    Width = 381
+    Height = 95
+    Anchors = [akLeft, akTop, akRight]
+    Caption = 'Upload options'
+    TabOrder = 1
+    DesignSize = (
+      381
+      95)
+    object SynchronizeDeleteCheck: TCheckBox
+      Left = 11
+      Top = 20
+      Width = 182
+      Height = 17
+      Caption = '&Delete files'
       TabOrder = 0
-      inherited TransferModeGroup: TXPGroupBox
-        inherited AsciiFileMaskLabel: TLabel
-          Caption = 'Transfer following files in text m&ode'
-        end
-      end
+      OnClick = ControlChange
+    end
+    object SynchronizeNoConfirmationCheck: TCheckBox
+      Left = 203
+      Top = 44
+      Width = 166
+      Height = 17
+      Anchors = [akLeft, akTop, akRight]
+      Caption = '&No confirmations'
+      TabOrder = 3
+      OnClick = ControlChange
     end
     object SaveSettingsCheck: TCheckBox
-      Left = 8
-      Top = 172
-      Width = 409
+      Left = 11
+      Top = 68
+      Width = 361
       Height = 17
-      Caption = 'Use &same settings next time'
+      Caption = 'Use same &options next time'
+      TabOrder = 4
+      OnClick = ControlChange
+    end
+    object SynchronizeExistingOnlyCheck: TCheckBox
+      Left = 203
+      Top = 20
+      Width = 166
+      Height = 17
+      Anchors = [akLeft, akTop, akRight]
+      Caption = '&Existing files only'
       TabOrder = 1
+      OnClick = ControlChange
     end
-    object ExistingOnlyCheck: TCheckBox
-      Left = 8
-      Top = 152
-      Width = 393
+    object SynchronizeRecursiveCheck: TCheckBox
+      Left = 11
+      Top = 44
+      Width = 182
       Height = 17
-      Caption = 'Update only &existing files'
+      Caption = 'Update s&ubdirectories'
       TabOrder = 2
+      OnClick = ControlChange
     end
   end
-  object MoreButton: TMoreButton
-    Left = 395
-    Top = 249
-    Width = 75
-    Height = 25
-    Caption = '<< &Less'
-    TabOrder = 4
-    Panel = MorePanel
-    RepositionForm = True
-  end
-  object MinimizeButton: TButton
-    Left = 215
-    Top = 249
-    Width = 75
+  object StartButton: TButton
+    Left = 152
+    Top = 230
+    Width = 74
     Height = 25
     Anchors = [akLeft, akBottom]
-    Caption = 'Minimi&ze'
+    Caption = '&Start'
+    Default = True
+    TabOrder = 3
+    OnClick = StartButtonClick
+  end
+  object MinimizeButton: TButton
+    Left = 233
+    Top = 230
+    Width = 74
+    Height = 25
+    Anchors = [akLeft, akBottom]
+    Caption = '&Minimize'
     TabOrder = 5
     OnClick = MinimizeButtonClick
+  end
+  object TransferPreferencesButton: TButton
+    Left = 8
+    Top = 230
+    Width = 137
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'Transfer &preferences...'
+    TabOrder = 2
+    OnClick = TransferPreferencesButtonClick
   end
 end

@@ -36,12 +36,14 @@ void __fastcall TConfiguration::Default()
     "winscp" + ExtractFileExt(ARandomSeedFile), "\\\\", "\\",
     TReplaceFlags() << rfReplaceAll);
   FConfirmOverwriting = true;
+  FConfirmResume = true;
   FRememberPassword = false;
 
   FLogging = false;
   FLogFileName = "";
   FLogFileAppend = true;
   FLogWindowLines = 100;
+  FLogProtocol = false;
 
   FDisablePasswordStoring = false;
 
@@ -80,6 +82,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
       BLOCK("Interface", CANCREATE, \
         KEY(String,   RandomSeedFile); \
         KEY(Bool,     ConfirmOverwriting); \
+        KEY(Bool,     ConfirmResume); \
         KEY(Bool,     RememberPassword); \
       ); \
       BLOCK("Logging", CANCREATE, \
@@ -87,6 +90,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
         KEY(String,  LogFileName); \
         KEY(Bool,    LogFileAppend); \
         KEY(Integer, LogWindowLines); \
+        KEY(Integer, LogProtocol); \
       ); \
       ADDON(Storage); \
     }; \
@@ -591,6 +595,11 @@ bool __fastcall TConfiguration::GetLogToFile()
   return !LogFileName.IsEmpty();
 }
 //---------------------------------------------------------------------
+void __fastcall TConfiguration::SetLogProtocol(bool value)
+{
+  SET_CONFIG_PROPERTY(LogProtocol);
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogFileAppend(bool value)
 {
   SET_CONFIG_PROPERTY(LogFileAppend);
@@ -630,6 +639,18 @@ bool __fastcall TConfiguration::GetConfirmOverwriting()
 {
   TGuard Guard(FCriticalSection);
   return FConfirmOverwriting;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetConfirmResume(bool value)
+{
+  TGuard Guard(FCriticalSection);
+  SET_CONFIG_PROPERTY(ConfirmResume);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::GetConfirmResume()
+{
+  TGuard Guard(FCriticalSection);
+  return FConfirmResume;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetTimeFormat()

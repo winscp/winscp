@@ -45,6 +45,7 @@ private:
 	TMBChangingEvent FOnChanging;
 	Controls::TWinControl* FPanel;
 	bool FRepositionForm;
+	bool FWasEnabled;
 	AnsiString __fastcall DefaultCaptions(bool Expanded);
 	void __fastcall SetCaptions(int Index, AnsiString Value);
 	void __fastcall SetExpanded(bool Value);

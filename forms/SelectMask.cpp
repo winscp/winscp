@@ -54,20 +54,13 @@ __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
 }
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
-      bool &CanClose)
+  bool & /*CanClose*/)
 {
   if (ModalResult != mrCancel)
   {
-    TFileMasks Masks = MaskEdit->Text;
-    int Start, Length;
-    if (!Masks.IsValid(Start, Length))
+    if (MaskEdit->Focused())
     {
-      CanClose = false;
-      SimpleErrorDialog(FMTLOAD(MASK_ERROR, (Masks.Masks.SubString(Start+1, Length))));
-      // After closing dialog whole text is selected, we want to select only invalid mask
-      MaskEdit->SetFocus();
-      MaskEdit->SelStart = Start;
-      MaskEdit->SelLength = Length;
+      MaskEditExit(NULL);
     }
   }
 }
@@ -108,4 +101,10 @@ TFileFilter __fastcall TSelectMaskDialog::GetFileFilter()
   Result.Masks = MaskEdit->Text;
   return Result;
 } /* TSelectMaskDialog::GetFileFilter */
+//---------------------------------------------------------------------------
+void __fastcall TSelectMaskDialog::MaskEditExit(TObject * /*Sender*/)
+{
+  ValidateMaskEdit(MaskEdit);
+}
+//---------------------------------------------------------------------------
 

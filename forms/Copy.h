@@ -29,6 +29,7 @@ __published:
   TButton *LocalDirectoryBrowseButton;
   TCheckBox *QueueCheck;
   TCheckBox *QueueNoConfirmationCheck;
+  TCheckBox *NewerOnlyCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);

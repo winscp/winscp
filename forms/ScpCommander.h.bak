@@ -171,9 +171,9 @@ __published:
   void __fastcall PathLabelDblClick(TObject *Sender);
   void __fastcall LocalDirViewEnter(TObject *Sender);
   void __fastcall LocalPathLabelGetStatus(TCustomPathLabel *Sender,
-    bool &Active);
+          bool &Active);
   void __fastcall RemotePathLabelGetStatus(TCustomPathLabel *Sender,
-    bool &Active);
+          bool &Active);
   void __fastcall LocalDriveViewEnter(TObject *Sender);
 
 private:

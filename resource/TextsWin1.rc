@@ -40,6 +40,9 @@ BEGIN
         INCOMPATIBLE_TRANSLATION, "File '%s' contains translation for %s version %s."
         DRAGEXT_TARGET_NOT_INSTALLED, "Shell drag extension support is enabled, but the extension was not loaded. Either it is not installed or you have not restarted the computer yet after installation. Install the extension or switch to compatible drag&&drop mode (from Preferences window), which uses temporary folder for downloads."
         GSSAPI_NOT_INSTALLED, "MIT Kerberos 5 GSSAPI not found. You need to install it before using this feature."
+        WATCH_ERROR_GENERAL, "Error watching for changes."
+        WATCH_ERROR_DIRECTORY, "Error watching for changes in directory '%s'."
+        DD_DIR_EXCEPTION, "Can't create temporary drag&drop directory '%s'."
 
         REGISTER_URL_ERROR, "Cannot register application to handle scp:// and sftp:// addresses."
 
@@ -63,7 +66,6 @@ BEGIN
         DELETE_BOOKMARK_FOLDER, "Delete selected Location Profile folder?"
         PREV_BUTTON, "&Previous"
         NEXT_BUTTON, "&Next"
-        APPEND_BUTTON, "A&ppend"
         CONFIRM_REGISTER_URL, "Do you want to register application to handle scp:// and sftp:// addresses?"
         UNINSTALL_CLEANUP, "Do you want to cleanup data stored by the application on this computer?"
         EXIT_ON_COMPLETION, "%s\n\nDo you want to close application?"
@@ -159,8 +161,6 @@ BEGIN
         STATUS_FILEINFO_HINT, "File selection info"
         SAVEDSESSION_HINT, "Open saved session '%s'"
         LICENCE_CAPTION, "%s licence"
-        SYCHRONIZE_DESCRIPTION, "Watch for new or changed files in local directory '%s' and automatically upload them to remote directory '%s'."
-        SYCHRONIZE_WAITING, "Watching for changes in local directory '%s'."
         CIPHER_NAME_WARN, "-- warn below here --"
         CIPHER_NAME_3DES, "3DES"
         CIPHER_NAME_BLOWFISH, "Blowfish"
@@ -221,6 +221,8 @@ BEGIN
         REMOTE_MOVE_FILE, "Move file '%s' to remote directory:"
         REMOTE_MOVE_FILES, "Move %d files to remote directory:"
         REMOTE_MOVE_TITLE, "Move"
+        SYCHRONIZE_TITLE, "Keep remote directory up to date"
+        SYCHRONIZE_SYCHRONIZING, "Keeping remote directory up to date ..."
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2004 Martin Prikryl"

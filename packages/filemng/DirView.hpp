@@ -14,8 +14,8 @@
 #include <PathLabel.hpp>	// Pascal unit
 #include <CustomPathComboBox.hpp>	// Pascal unit
 #include <Controls.hpp>	// Pascal unit
-#include <NortonLikeListView.hpp>	// Pascal unit
 #include <IEListView.hpp>	// Pascal unit
+#include <NortonLikeListView.hpp>	// Pascal unit
 #include <BaseUtils.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
 #include <FileCtrl.hpp>	// Pascal unit
@@ -296,6 +296,7 @@ private:
 	bool FConfirmOverwrite;
 	bool FUseIconCache;
 	Listext::TListExt* FInfoCacheList;
+	System::TObject* FDriveView;
 	Extctrls::TTimer* FChangeTimer;
 	unsigned FChangeInterval;
 	bool FUseIconUpdateThread;
@@ -342,6 +343,7 @@ private:
 protected:
 	virtual Listviewcolproperties::TCustomListViewColProperties* __fastcall NewColProperties(void);
 	virtual void __fastcall SetShowSubDirSize(bool Value);
+	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
 	DYNAMIC void __fastcall Delete(Comctrls::TListItem* Item);
 	virtual void __fastcall SetMask(AnsiString Value);
 	void __fastcall DDError(Customdirview::TDDError ErrorNo);
@@ -361,8 +363,8 @@ protected:
 	virtual void __fastcall SetPath(AnsiString Value);
 	virtual void __fastcall SetItemImageIndex(Comctrls::TListItem* Item, int Index);
 	void __fastcall SetCompressedColor(Graphics::TColor Value);
-	void __fastcall ChangeDetected(System::TObject* Sender);
-	void __fastcall ChangeInvalid(System::TObject* Sender);
+	void __fastcall ChangeDetected(System::TObject* Sender, const AnsiString Directory);
+	void __fastcall ChangeInvalid(System::TObject* Sender, const AnsiString Directory);
 	void __fastcall TimerOnTimer(System::TObject* Sender);
 	void __fastcall ResetItemImage(int Index);
 	void __fastcall SetAttrSpace(AnsiString Value);
@@ -397,6 +399,7 @@ protected:
 	
 public:
 	__property int DriveType = {read=FDriveType, nodefault};
+	__property System::TObject* DriveView = {read=FDriveView, write=FDriveView};
 	__property Items  = {stored=false};
 	__property Columns  = {stored=false};
 	__property _di_IShellFolder ParentFolder = {read=FParentFolder};
@@ -406,8 +409,7 @@ public:
 	DYNAMIC void __fastcall EmptyClipboard(void);
 	DYNAMIC bool __fastcall CopyToClipBoard(void);
 	DYNAMIC bool __fastcall CutToClipBoard(void);
-	DYNAMIC bool __fastcall CanPasteFromClipBoard(void);
-	DYNAMIC bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "");
+	virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "");
 	DYNAMIC bool __fastcall DuplicateSelectedFiles(void);
 	virtual void __fastcall DisplayPropertiesMenu(void);
 	virtual void __fastcall ExecuteParentDirectory(void);

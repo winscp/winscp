@@ -2,7 +2,8 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <Clipbrd.hpp>
+#include <DiscMon.hpp>
+
 #include <Common.h>
 
 #include "CustomScpExplorer.h"
@@ -36,6 +37,9 @@
 #pragma link "NortonLikeListView"
 #pragma link "UnixDirView"
 #pragma link "AssociatedStatusBar"
+#pragma link "CustomDriveView"
+#pragma link "UnixDriveView"
+#pragma link "CustomDriveView"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 #ifdef DEBUGMODE
@@ -92,9 +96,16 @@ private:
   HANDLE FMutex;
 };
 //---------------------------------------------------------------------------
-__fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
-    FLastDirView(NULL), FFormRestored(False), TForm(Owner)
+struct TTransferOperationParam
 {
+  AnsiString TargetDirectory;
+  bool DragDrop;
+};
+//---------------------------------------------------------------------------
+__fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
+    FFormRestored(False), TForm(Owner)
+{
+  FCurrentSide = osRemote;
   RestoreParams();
   RemoteDirView->Invalidate();
   assert(NonVisualDataModule && !NonVisualDataModule->ScpExplorer);
@@ -113,6 +124,12 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FDDExtMapFile = NULL;
   FDDExtMutex = CreateMutex(NULL, false, DRAG_EXT_MUTEX);
   assert(FDDExtMutex != NULL);
+  FDDTargetControl = NULL;
+  FDelayedDeletionTimer = NULL;
+  FDelayedDeletionList = new TStringList();
+  FDDFileList = NULL;
+
+  FSynchronizeMonitor = NULL;
 
   FQueueStatus = NULL;
   FQueueStatusSection = new TCriticalSection();
@@ -152,6 +169,13 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
+  if (FDelayedDeletionTimer)
+  {
+    DoDelayedDeletion(NULL);
+    SAFE_DESTROY(FDelayedDeletionTimer);
+  }
+  SAFE_DESTROY(FDelayedDeletionList);
+
   CloseHandle(FDDExtMutex);
   FDDExtMutex = NULL;
 
@@ -373,27 +397,12 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   RemoteDirView->DimmHiddenFiles = WinConfiguration->DimmHiddenFiles;
   RemoteDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
   RemoteDirView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
-  RemoteDirView->DDTemporaryDirectory = WinConfiguration->DDTemporaryDirectory;
+
+  RemoteDriveView->DDAllowMove = WinConfiguration->DDAllowMoveInit;
+  RemoteDriveView->DimmHiddenDirs = WinConfiguration->DimmHiddenFiles;
+  RemoteDriveView->ShowHiddenDirs = WinConfiguration->ShowHiddenFiles;
+  RemoteDriveView->ShowInaccesibleDirectories = WinConfiguration->ShowInaccesibleDirectories;
   UpdateQueueView();
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewGetCopyParam(
-      TUnixDirView * /*Sender*/, TTransferDirection Direction,
-      TTransferType Type, AnsiString &TargetDirectory, TStrings * FileList,
-      TCopyParamType &CopyParam)
-{
-  TGUICopyParamType GUICopyParam = GUIConfiguration->CopyParam;
-  // overwrites TCopyParamType fields only
-  GUICopyParam = CopyParam;
-  if (!CopyParamDialog(Direction, Type, true, FileList,
-        TargetDirectory, GUICopyParam, WinConfiguration->DDTransferConfirmation))
-  {
-    Abort();
-  }
-  else
-  {
-    CopyParam = GUICopyParam;
-  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
@@ -406,8 +415,9 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   if (DragDrop && (Direction == tdToLocal) && (Type == ttMove) &&
       !WinConfiguration->DDAllowMove)
   {
+    TMessageParams Params(mpNeverAskAgainCheck);
     int Answer = MessageDialog(LoadStr(DND_DOWNLOAD_MOVE_WARNING), qtWarning,
-      qaOK | qaCancel, 0, mpNeverAskAgainCheck);
+      qaOK | qaCancel, 0, &Params);
     if (Answer == qaNeverAskAgain)
     {
       WinConfiguration->DDAllowMove = true;
@@ -421,8 +431,12 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   bool DragDropTemp = (DragDrop && (Direction == tdToLocal));
   if (Result && Confirm)
   {
+    bool DisableNewerOnly =
+      (!Terminal->IsCapable[fcNewerOnlyUpload] && (Direction == tdToRemote)) ||
+      (DragDrop && (Direction == tdToLocal));
     int Options =
       (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0) |
+      (DisableNewerOnly ? coDisableNewerOnly : 0) |
       (DragDropTemp ? coDragDropTemp : 0);
     Result = DoCopyDialog(Direction == tdToRemote, Type == ttMove,
       FileList, TargetDirectory, &CopyParam, Options);
@@ -434,7 +448,8 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
 
     int Params =
       ((Type == ttMove) ? cpDelete : 0) |
-      (CopyParam.QueueNoConfirmation ? cpNoConfirmation : 0);
+      (CopyParam.QueueNoConfirmation ? cpNoConfirmation : 0) |
+      (CopyParam.NewerOnly ? cpNewerOnly : 0);
     TQueueItem * QueueItem;
     if (Direction == tdToRemote)
     {
@@ -505,8 +520,8 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
     //assert(Screen && Screen->ActiveCustomForm);
     FProgressForm = new TProgressForm(Application);
     FProgressForm->DeleteToRecycleBin = WinConfiguration->DeleteToRecycleBin;
-    // When main window is hidden, we suppose "/upload" mode
-    if (!Visible)
+    // When main window is hidden, we suppose "/upload" or URL download mode
+    if (!Visible && (ProgressData.Operation != foCalculateSize))
     {
       FProgressForm->DisconnectWhenComplete = true;
     }
@@ -515,6 +530,13 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   else if (!ProgressData.InProgress && FProgressForm)
   {
     SAFE_DESTROY(FProgressForm);
+
+    if ((ProgressData.Operation != foCalculateSize) &&
+        (ProgressData.Cancel == csContinue) &&
+        !FAutoOperation)
+    {
+      OperationComplete(ProgressData.StartTime);
+    }
   }
 
   if (FProgressForm)
@@ -527,10 +549,27 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::OperationComplete(
+  const TDateTime & StartTime)
+{
+  if (GUIConfiguration->BeepOnFinish &&
+      (Now() - StartTime > GUIConfiguration->BeepOnFinishAfter))
+  {
+    MessageBeep(MB_OK);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OperationProgress(
   TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
 {
   FileOperationProgress(ProgressData, Cancel);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::PanelOperation(TOperationSide /*Side*/,
+  bool DragDrop)
+{
+  return (!DragDrop && (DropSourceControl == NULL)) ||
+    (DropSourceControl == RemoteDirView);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoOperationFinished(
@@ -538,11 +577,12 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
   bool DragDrop, const AnsiString FileName, bool Success,
   bool & DisconnectWhenComplete)
 {
-  if (!FAutoOperation)
+  if ((FSynchronizeMonitor == NULL) && !FAutoOperation)
   {
     // no selection on "/upload", form servers only as event handler
     // (it is not displayed)
-    if (!DragDrop && Visible && (Operation != foCalculateSize))
+    if (PanelOperation(Side, DragDrop) &&
+        Visible && (Operation != foCalculateSize))
     {
       AnsiString FileNameOnly = (Side == osRemote) ?
         UnixExtractFileName(FileName) : ExtractFileName(FileName);
@@ -552,6 +592,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
       Item->MakeVisible(false);
     }
   }
+  
   if (FProgressForm)
   {
     DisconnectWhenComplete = FProgressForm->DisconnectWhenComplete;
@@ -569,8 +610,9 @@ void __fastcall TCustomScpExplorerForm::OperationFinished(
 //---------------------------------------------------------------------------
 TCustomDirView * __fastcall TCustomScpExplorerForm::DirView(TOperationSide Side)
 {
-  assert((Side == osRemote) || ((Side == osCurrent) && FLastDirView));
-  return (Side == osCurrent) ? FLastDirView : RemoteDirView;
+  assert(GetSide(Side) == osRemote);
+  USEDPARAM(Side);
+  return RemoteDirView;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::GetEnableFocusedOperation(TOperationSide Side)
@@ -581,6 +623,13 @@ bool __fastcall TCustomScpExplorerForm::GetEnableFocusedOperation(TOperationSide
 bool __fastcall TCustomScpExplorerForm::GetEnableSelectedOperation(TOperationSide Side)
 {
   return DirView(Side)->AnyFileSelected(false);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::IsFileControl(TObject * Control,
+  TOperationSide Side)
+{
+  return (Side == osRemote) &&
+    ((Control == RemoteDirView) || (Control == RemoteDriveView));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewContextPopup(
@@ -606,38 +655,25 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewContextPopup(
   Handled = true;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::BatchStart(void *& Storage)
+void __fastcall TCustomScpExplorerForm::ReloadLocalDirectory(const AnsiString Directory)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::BatchStart(void *& /*Storage*/)
 {
   assert(FErrorList == NULL);
-
-  Storage = new bool;
-  if (HasDirView[osLocal])
-  {
-    *static_cast<bool*>(Storage) = DirView(osLocal)->WatchForChanges;
-    DirView(osLocal)->WatchForChanges = false;
-  }
-
   if (WinConfiguration->ContinueOnError)
   {
     FErrorList = new TStringList();
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::BatchEnd(void * Storage)
+void __fastcall TCustomScpExplorerForm::BatchEnd(void * /*Storage*/)
 {
-  assert(Storage != NULL);
-
   if (FErrorList)
   {
     HandleErrorList(FErrorList);
   }
-
-  if (HasDirView[osLocal])
-  {
-    DirView(osLocal)->WatchForChanges = *static_cast<bool*>(Storage);
-  }
-
-  delete Storage;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Operation,
@@ -652,30 +688,43 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
       TTransferDirection Direction = (Side == osLocal ? tdToRemote : tdToLocal);
       TTransferType Type = (Operation == foCopy ? ttCopy : ttMove);
       AnsiString TargetDirectory;
+      bool DragDrop = false;
       if (Param != NULL)
       {
-        TargetDirectory = *static_cast<AnsiString*>(Param);
+        TTransferOperationParam& TParam =
+          *static_cast<TTransferOperationParam*>(Param);
+        TargetDirectory = TParam.TargetDirectory;
+        DragDrop = TParam.DragDrop;
       }
       TGUICopyParamType CopyParam = GUIConfiguration->CopyParam;
-      if (CopyParamDialog(Direction, Type, false, FileList, TargetDirectory,
+      if (CopyParamDialog(Direction, Type, DragDrop, FileList, TargetDirectory,
           CopyParam, !NoConfirmation))
       {
         assert(Terminal);
-        TCustomDirView * DView = DirView(Side);
         bool SelectionRestored = false;
-        DView->SaveSelection();
+        TCustomDirView * DView = NULL;
+        if (HasDirView[Side])
+        {
+          DView = DirView(Side);
+          DView->SaveSelection();
+        }
 
         try
         {
           if (Side == osLocal)
           {
-            int Params = 0;
-            if (Operation == foMove) Params |= cpDelete;
+            int Params =
+              FLAGMASK(Operation == foMove, cpDelete) |
+              FLAGMASK(CopyParam.NewerOnly, cpNewerOnly) |
+              FLAGMASK(DragDrop, cpDragDrop);
             Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
             if (Operation == foMove)
             {
-              DView->Reload(True);
-              DView->RestoreSelection();
+              ReloadLocalDirectory();
+              if (DView != NULL)
+              {
+                DView->RestoreSelection();
+              }
               SelectionRestored = true;
             }
           }
@@ -683,28 +732,29 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
           {
             try
             {
+              int Params =
+                (Operation == foMove ? cpDelete : 0) |
+                (CopyParam.NewerOnly ? cpNewerOnly : 0);
               Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam,
-                (Operation == foMove ? cpDelete : 0));
+                Params);
             }
             __finally
             {
               if (Operation == foMove)
               {
-                DView->RestoreSelection();
+                if (DView != NULL)
+                {
+                  DView->RestoreSelection();
+                }
                 SelectionRestored = true;
               }
-              if (HasDirView[osLocal] &&
-                  (IncludeTrailingBackslash(TargetDirectory) ==
-                    IncludeTrailingBackslash(DirView(osLocal)->Path)))
-              {
-                DirView(osLocal)->ReloadDirectory();
-              }
+              ReloadLocalDirectory(TargetDirectory);
             }
           }
         }
         __finally
         {
-          if (!SelectionRestored)
+          if (!SelectionRestored && (DView != NULL))
           {
             DView->DiscardSavedSelection();
           }
@@ -740,8 +790,9 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
           Query = FMTLOAD(CONFIRM_DELETE_FILES, (FileList->Count));
         }
 
+        TMessageParams Params(mpNeverAskAgainCheck);
         int Answer = MessageDialog(Query, qtConfirmation,
-          qaOK | qaCancel, 0, mpNeverAskAgainCheck);
+          qaOK | qaCancel, 0, &Params);
         if (Answer == qaNeverAskAgain)
         {
           Confirmed = true;
@@ -799,7 +850,7 @@ TOperationSide __fastcall TCustomScpExplorerForm::GetSide(TOperationSide Side)
 {
   if (Side == osCurrent)
   {
-    Side = osRemote;
+    Side = FCurrentSide;
   }
 
   return Side;
@@ -851,17 +902,26 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
         do
         {
           assert(Index >= 0 && Index < ErrorList->Count);
+          TQueryButtonAlias Aliases[2];
+          Aliases[0].Button = qaYes;
+          Aliases[0].Alias = LoadStr(PREV_BUTTON);
+          Aliases[1].Button = qaNo;
+          Aliases[1].Alias = LoadStr(NEXT_BUTTON);
+          TMessageParams Params;
+          Params.Aliases = Aliases;
+          Params.AliasesCount = LENOF(Aliases); 
+
           Answer = MoreMessageDialog(
             FMTLOAD(ERROR_LIST_NUMBER, (Index+1, ErrorList->Count, ErrorList->Strings[Index])),
             dynamic_cast<TStrings *>(ErrorList->Objects[Index]), qtError,
-            (Index ? qaPrev : 0) | (Index < ErrorList->Count - 1 ? qaNext : 0) |
-            qaOK, 0);
+            (Index ? qaYes : 0) | (Index < ErrorList->Count - 1 ? qaNo : 0) |
+            qaOK, 0, &Params);
 
-          if (Answer == qaNext)
+          if (Answer == qaNo)
           {
             Index++;
           }
-          if (Answer == qaPrev)
+          if (Answer == qaYes)
           {
             Index--;
           }
@@ -887,10 +947,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
 {
   assert(!WinConfiguration->DisableOpenEdit);
 
-  if (Side == osCurrent)
-  {
-    Side = FLastDirView == RemoteDirView ? osRemote : osLocal;
-  }
+  Side = GetSide(Side);
 
   bool Edit = (ExecuteFileBy == efEditor || ExecuteFileBy == efAlternativeEditor);
   bool InternalEdit = Edit &&
@@ -914,7 +971,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
       CopyParam.PreserveReadOnly = false;
       CopyParam.ResumeSupport = rsOff;
 
-      AnsiString TempDir = UniqTempDir(WinConfiguration->DDTemporaryDirectory);
+      AnsiString TempDir = WinConfiguration->TemporaryTranferDir();
       ForceDirectories(TempDir);
 
       FAutoOperation = true;
@@ -970,8 +1027,8 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
             DiscMonitor = new TDiscMonitor(this);
             DiscMonitor->SubTree = false;
             DiscMonitor->Filters = TMonitorFilters() << moLastWrite;
-            DiscMonitor->Directory = ExtractFilePath(FExecutedFile);
-            DiscMonitor->OnChange = ExecutedFileChanged;
+            DiscMonitor->AddDirectory(ExtractFilePath(FExecutedFile), false);
+            DiscMonitor->OnChange = ExecutedFileChangedNotification;
             DiscMonitor->Active = true;
           }
 
@@ -1050,7 +1107,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
       }
       else
       {
-        DirView(osLocal)->ReloadDirectory();
+        ReloadLocalDirectory();
       }
     }
   }
@@ -1141,15 +1198,26 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DirViewEnter(TObject *Sender)
+void __fastcall TCustomScpExplorerForm::ExecutedFileChangedNotification(
+  TObject * Sender, const AnsiString /*Directory*/)
 {
-  DoDirViewEnter(dynamic_cast<TCustomDirView*>(Sender));
+  ExecutedFileChanged(Sender);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DoDirViewEnter(TCustomDirView * DirView)
+void __fastcall TCustomScpExplorerForm::RemoteDirViewEnter(TObject * /*Sender*/)
 {
-  assert(DirView != NULL);
-  FLastDirView = DirView;
+  SideEnter(osRemote);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteDriveViewEnter(TObject * /*Sender*/)
+{
+  MakeNextInTabOrder(RemoteDirView, RemoteDriveView);
+  SideEnter(osRemote);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SideEnter(TOperationSide Side)
+{
+  FCurrentSide = Side;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
@@ -1173,7 +1241,7 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
       }
       __finally
       {
-        DView->Reload(true);
+        ReloadLocalDirectory();
       }
     }
   }
@@ -1188,7 +1256,11 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
 bool __fastcall TCustomScpExplorerForm::RemoteMoveDialog(TStrings * FileList,
   AnsiString & Target, AnsiString & FileMask, bool NoConfirmation)
 {
-  if (RemoteDirView->DropTarget != NULL)
+  if (RemoteDriveView->DropTarget != NULL)
+  {
+    Target = RemoteDriveView->NodePathName(RemoteDriveView->DropTarget);
+  }
+  else if (RemoteDirView->DropTarget != NULL)
   {
     assert(RemoteDirView->ItemIsDirectory(RemoteDirView->DropTarget));
     Target = RemoteDirView->ItemFullFileName(RemoteDirView->DropTarget);
@@ -1403,10 +1475,7 @@ void __fastcall TCustomScpExplorerForm::Idle(bool AppIdle)
     }
     if (FRefreshLocalDirectory)
     {
-      if (HasDirView[osLocal])
-      {
-        DirView(osLocal)->ReloadDirectory();
-      }
+      ReloadLocalDirectory();
       FRefreshLocalDirectory = false;
     }
   }
@@ -1593,17 +1662,18 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
   if (Terminal->Active && WinConfiguration->ConfirmClosingSession)
   {
     int Result;
+    TMessageParams Params(mpNeverAskAgainCheck);
+    AnsiString Message;
     if (TTerminalManager::Instance()->Count > 1)
     {
-      Result = MessageDialog(LoadStr(CLOSE_SESSIONS), qtConfirmation,
-        qaOK | qaCancel, 0, mpNeverAskAgainCheck);
+      Message = LoadStr(CLOSE_SESSIONS);
     }
     else
     {
-      Result = MessageDialog(FMTLOAD(CLOSE_SESSION,
-        (Terminal->SessionData->SessionName)), qtConfirmation,
-        qaOK | qaCancel, 0, mpNeverAskAgainCheck);
+      Message = FMTLOAD(CLOSE_SESSION, (Terminal->SessionData->SessionName));
     }
+    Result = MessageDialog(Message, qtConfirmation,
+      qaOK | qaCancel, 0, &Params);
 
     if (Result == qaNeverAskAgain)
     {
@@ -1697,6 +1767,7 @@ void __fastcall TCustomScpExplorerForm::FixControlsPlacement()
     RemoteDirView->ItemFocused->MakeVisible(false);
   }
   QueueSplitter->Visible = QueuePanel->Visible;
+  RemotePanelSplitter->Visible = RemoteDriveView->Visible;
 }
 //---------------------------------------------------------------------------
 TCoolBand * __fastcall TCustomScpExplorerForm::GetCoolBand(TCoolBar * Coolbar, int ID)
@@ -1712,6 +1783,7 @@ TControl * __fastcall TCustomScpExplorerForm::GetComponent(Byte Component)
     case fcRemotePopup: return reinterpret_cast<TControl *>(NonVisualDataModule->RemoteDirViewPopup);
     case fcQueueView: return QueuePanel;
     case fcQueueToolbar: return QueueCoolBar;
+    case fcRemoteTree: return RemoteDriveView;
     default: return NULL;
   }
 }
@@ -1782,9 +1854,153 @@ void __fastcall TCustomScpExplorerForm::SynchronizeDirectories()
   assert(false);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
+  AnsiString & LocalDirectory, AnsiString & RemoteDirectory)
+{
+  TSynchronizeParamType Params;
+  Params.LocalDirectory = LocalDirectory;
+  Params.RemoteDirectory = RemoteDirectory;
+  Params.Params = GUIConfiguration->SynchronizeParams;
+  Params.Recurse = GUIConfiguration->SynchronizeRecurse;
+  bool SaveSettings = false;
+  bool Result = DoSynchronizeDialog(Params, SynchronizeStartStop, SaveSettings);
+  if (Result)
+  {
+    if (SaveSettings)
+    {
+      GUIConfiguration->SynchronizeParams = Params.Params;
+      GUIConfiguration->SynchronizeRecurse = Params.Recurse;
+    }
+    LocalDirectory = Params.LocalDirectory;
+    RemoteDirectory = Params.RemoteDirectory;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeStartStop(TObject * /*Sender*/,
+  bool Start, const TSynchronizeParamType & Params, TSynchronizeAbortEvent OnAbort)
+{
+  if (Start)
+  {
+    try
+    {
+      FSynchronizeParams = Params;
+      assert(OnAbort);
+      FSynchronizeAbort = OnAbort;
+      FSynchronizeMonitor = new TDiscMonitor(this);
+      FSynchronizeMonitor->SubTree = false;
+      TMonitorFilters Filters;
+      Filters << moFilename << moLastWrite;
+      if (FSynchronizeParams.Recurse)
+      {
+        Filters << moDirName;
+      }
+      FSynchronizeMonitor->Filters = Filters;
+      FSynchronizeMonitor->AddDirectory(FSynchronizeParams.LocalDirectory,
+        FSynchronizeParams.Recurse);
+      FSynchronizeMonitor->OnChange = SynchronizeChange;
+      FSynchronizeMonitor->OnInvalid = SynchronizeInvalid;
+      FSynchronizeMonitor->Open();
+    }
+    catch(...)
+    {
+      //SAFE_DESTROY(FSynchronizeMonitor);
+      throw;
+    }
+  }
+  else
+  {
+    assert(FSynchronizeMonitor != NULL);
+    SAFE_DESTROY(FSynchronizeMonitor);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeChange(
+  TObject * /*Sender*/, const AnsiString Directory)
+{
+  try
+  {
+    AnsiString RemoteDirectory;
+    AnsiString RootLocalDirectory;
+    RootLocalDirectory = IncludeTrailingBackslash(FSynchronizeParams.LocalDirectory);
+    RemoteDirectory = UnixIncludeTrailingBackslash(FSynchronizeParams.RemoteDirectory);
+
+    AnsiString LocalDirectory = IncludeTrailingBackslash(Directory);
+
+    assert(LocalDirectory.SubString(1, RootLocalDirectory.Length()) ==
+      RootLocalDirectory);
+    RemoteDirectory = RemoteDirectory +
+      ToUnixPath(LocalDirectory.SubString(RootLocalDirectory.Length() + 1,
+        LocalDirectory.Length() - RootLocalDirectory.Length()));
+
+    TCopyParamType CopyParam = GUIConfiguration->CopyParam;
+    CopyParam.PreserveTime = true;
+    Synchronize(LocalDirectory, RemoteDirectory, smRemote, CopyParam,
+      FSynchronizeParams.Params | TTerminal::spNoRecurse | TTerminal::spUseCache |
+        TTerminal::spDelayProgress);
+  }
+  catch(Exception & E)
+  {
+    ShowExtendedExceptionEx(Terminal, &E);
+    SynchronizeAbort(dynamic_cast<EFatal*>(&E) != NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeAbort(bool Close)
+{
+  FSynchronizeMonitor->Close();
+  assert(FSynchronizeAbort);
+  FSynchronizeAbort(this, Close);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeInvalid(
+  TObject * /*Sender*/, const AnsiString Directory)
+{
+  if (!Directory.IsEmpty())
+  {
+    SimpleErrorDialog(FMTLOAD(WATCH_ERROR_DIRECTORY, (Directory)));
+  }
+  else
+  {
+    SimpleErrorDialog(LoadStr(WATCH_ERROR_GENERAL));
+  }
+
+  SynchronizeAbort(false);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FullSynchronizeDirectories()
 {
   assert(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::Synchronize(const AnsiString LocalDirectory,
+  const AnsiString RemoteDirectory, TSynchronizeMode Mode,
+  const TCopyParamType & CopyParam, int Params)
+{
+  assert(!FAutoOperation);
+  void * BatchStorage;
+  BatchStart(BatchStorage);
+  FAutoOperation = true;
+
+  try
+  {
+    FSynchronizeProgressForm = new TSynchronizeProgressForm(Application);
+    if (FLAGCLEAR(Params, TTerminal::spDelayProgress))
+    {
+      FSynchronizeProgressForm->Start();
+    }
+
+    Terminal->Synchronize(LocalDirectory, RemoteDirectory, 
+      static_cast<TTerminal::TSynchronizeMode>(Mode),
+      &CopyParam, Params, TerminalSynchronizeDirectory);
+  }
+  __finally
+  {
+    FAutoOperation = false;
+    SAFE_DESTROY(FSynchronizeProgressForm);
+    BatchEnd(BatchStorage);
+    ReloadLocalDirectory();
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
@@ -1803,31 +2019,11 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       GUIConfiguration->SynchronizeParams = Params;
     }
 
-    assert(!FAutoOperation);
-    void * BatchStorage;
-    BatchStart(BatchStorage);
-    FAutoOperation = true;
+    TDateTime StartTime = Now();
+    Synchronize(LocalDirectory, RemoteDirectory, Mode,
+      GUIConfiguration->CopyParam, Params);
 
-    try
-    {
-      TCopyParamType CopyParam = GUIConfiguration->CopyParam;
-      FSynchronizeProgressForm = new TSynchronizeProgressForm(Application);
-      FSynchronizeProgressForm->Start();
-
-      Terminal->Synchronize(LocalDirectory, RemoteDirectory,
-        static_cast<TTerminal::TSynchronizeMode>(Mode),
-        &CopyParam, Params, TerminalSynchronizeDirectory);
-    }
-    __finally
-    {
-      FAutoOperation = false;
-      SAFE_DESTROY(FSynchronizeProgressForm);
-      BatchEnd(BatchStorage);
-      if (HasDirView[osLocal])
-      {
-        DirView(osLocal)->Reload(true);
-      }
-    }
+    OperationComplete(StartTime);
   }
 
   return Result;
@@ -1837,6 +2033,10 @@ void __fastcall TCustomScpExplorerForm::TerminalSynchronizeDirectory(
   const AnsiString LocalDirectory, const AnsiString RemoteDirectory, bool & Continue)
 {
   assert(FSynchronizeProgressForm != NULL);
+  if (!FSynchronizeProgressForm->Started)
+  {
+    FSynchronizeProgressForm->Start();
+  }
   FSynchronizeProgressForm->SetData(LocalDirectory, RemoteDirectory, Continue);
 }
 //---------------------------------------------------------------------------
@@ -1882,14 +2082,36 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionData(TSessionData * Data)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ToolBarResize(TObject *Sender)
 {
-  TToolBar * ToolBar = (TToolBar*)Sender;
-  TControl * Child = (TControl *)ToolBar->Controls[0];
-  Child->Width = ToolBar->Width;
+  TToolBar * ToolBar = dynamic_cast<TToolBar*>(Sender);
+  assert(ToolBar != NULL);
+  if (ToolBar->ControlCount == 1)
+  {
+    ToolBar->Controls[0]->Width = ToolBar->Width;
+  }
+  else
+  {
+    TControl * ResizeControl = NULL;
+    int Width = ToolBar->Width;
+    for (int i = 0; i < ToolBar->ControlCount; i++)
+    {
+      TControl * Control = ToolBar->Controls[i];
+      if (Control->Tag != 0)
+      {
+        ResizeControl = Control;
+      }
+      else
+      {
+        Width -= Control->Width;
+      }
+    }
+
+    assert(ResizeControl != NULL);
+    ResizeControl->Width = Width;
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewWarnLackOfTempSpace(
-      TUnixDirView * /*Sender*/, const AnsiString Path, __int64 RequiredSpace,
-      bool &Continue)
+void __fastcall TCustomScpExplorerForm::DoWarnLackOfTempSpace(
+  const AnsiString Path, __int64 RequiredSpace, bool & Continue)
 {
   if (WinConfiguration->DDWarnLackOfTempSpace)
   {
@@ -1912,9 +2134,10 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewWarnLackOfTempSpace(
       if (MessageRes)
       {
         int Result;
+        TMessageParams Params(mpNeverAskAgainCheck);
         Result = MessageDialog(FMTLOAD(MessageRes, (Path,
           FormatBytes(FreeSpace), FormatBytes(RequiredSpace))),
-          qtWarning, qaYes | qaNo, 0, mpNeverAskAgainCheck);
+          qtWarning, qaYes | qaNo, 0, &Params);
 
         if (Result == qaNeverAskAgain)
         {
@@ -1990,30 +2213,31 @@ void __fastcall TCustomScpExplorerForm::OpenConsole(AnsiString Command)
   DoConsoleDialog(Terminal, Command);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DirViewDDDragEnter(
+void __fastcall TCustomScpExplorerForm::FileControlDDDragEnter(
       TObject *Sender, _di_IDataObject /*DataObj*/, int /*grfKeyState*/,
       const TPoint & /*Point*/, int & /*dwEffect*/, bool & Accept)
 {
-  if ((DropSourceControl == RemoteDirView) &&
+  if (IsFileControl(DropSourceControl, osRemote) &&
       (FDDExtMapFile != NULL))
   {
     Accept = true;
   }
 
-  FDDTargetDirView = (TCustomDirView*)Sender;
+  FDDTargetControl = dynamic_cast<TControl*>(Sender);
+  assert(FDDTargetControl != NULL);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DirViewDDDragLeave(
+void __fastcall TCustomScpExplorerForm::FileControlDDDragLeave(
       TObject *Sender)
 {
   USEDPARAM(Sender);
-  assert(FDDTargetDirView == Sender);
-  FDDTargetDirView = NULL;
+  assert(FDDTargetControl == Sender);
+  FDDTargetControl = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddEditLink()
 {
-  assert(FLastDirView == RemoteDirView);
+  assert(FCurrentSide == osRemote);
 
   bool Edit = false;
   TRemoteFile * File = NULL;
@@ -2191,9 +2415,10 @@ void __fastcall TCustomScpExplorerForm::DoShow()
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::MoreMessageDialog(const AnsiString Message,
     TStrings * MoreMessages, TQueryType Type, int Answers,
-    int HelpCtx, int Params)
+    int HelpCtx, const TMessageParams * Params)
 {
-  if (WinConfiguration->ContinueOnError && (Params & mpAllowContinueOnError) &&
+  if (WinConfiguration->ContinueOnError &&
+      (Params != NULL) && (Params->Params & mpAllowContinueOnError) &&
       FErrorList)
   {
     TStringList * MoreMessagesCopy = NULL;
@@ -2224,7 +2449,7 @@ int __fastcall TCustomScpExplorerForm::MoreMessageDialog(const AnsiString Messag
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewDDCreateDragFileList(
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDCreateDragFileList(
   TObject * /*Sender*/, TFileList * FileList, bool & Created)
 {
   if (FDDExtMapFile != NULL)
@@ -2247,7 +2472,7 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
   bool & Created)
 {
   FDragExtFakeDirectory =
-    ExcludeTrailingBackslash(UniqTempDir(WinConfiguration->DDTemporaryDirectory));
+    ExcludeTrailingBackslash(WinConfiguration->TemporaryTranferDir());
   ForceDirectories(FDragExtFakeDirectory);
   FileList->AddItem(NULL, FDragExtFakeDirectory);
 
@@ -2273,29 +2498,66 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
   FDDMoveSlipped = false;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewDDEnd(TObject * /*Sender*/)
+void __fastcall TCustomScpExplorerForm::RemoteFileControlFileOperation(
+  TObject * Sender, TFileOperation Operation, bool NoConfirmation, void * Param)
 {
+  if (Sender == RemoteDirView)
+  {
+    ExecuteFileOperation(Operation, osRemote, true, NoConfirmation, Param);
+  }
+  else
+  {
+    assert(Sender == RemoteDriveView);
+    TStrings * FileList = RemoteDriveView->DragFileList();
+    try
+    {
+      ExecuteFileOperation(Operation, osRemote, FileList, NoConfirmation, Param);
+    }
+    __finally
+    {
+      delete FileList;
+    }
+  }
+
+  if (FDDTargetControl == RemoteDriveView)
+  {
+    RemoteDriveView->UpdateDropTarget();
+  }
+  if (DropSourceControl == RemoteDriveView)
+  {
+    RemoteDriveView->UpdateDropSource();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
+{
+  SAFE_DESTROY(FDDFileList);
+
   if (FDDExtMapFile != NULL)
   {
     try
     {
-      if ((RemoteDirView->LastDDResult == drCopy) ||
-          (RemoteDirView->LastDDResult == drMove))
+      TDragResult DDResult = (Sender == RemoteDirView) ?
+        RemoteDirView->LastDDResult : RemoteDriveView->LastDDResult;
+        
+      if ((DDResult == drCopy) || (DDResult == drMove))
       {
         AnsiString TargetDirectory;
         TFileOperation Operation;
 
-        Operation = (RemoteDirView->LastDDResult == drMove) ? foMove : foCopy;
+        Operation = (DDResult == drMove) ? foMove : foCopy;
 
         if (FDDMoveSlipped)
         {
           Operation = foMove;
         }
 
-        DDGetTarget(TargetDirectory);
+        TTransferOperationParam Param;
+        DDGetTarget(Param.TargetDirectory);
+        Param.DragDrop = false;
 
-        ExecuteFileOperation(Operation, osRemote, true,
-          !WinConfiguration->DDTransferConfirmation, &TargetDirectory);
+        RemoteFileControlFileOperation(Sender, Operation,
+          !WinConfiguration->DDTransferConfirmation, &Param);
       }
     }
     __finally
@@ -2306,23 +2568,31 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewDDEnd(TObject * /*Sender*/)
       FDragExtFakeDirectory = "";
     }
   }
+
+  if (!FDragDropSshTerminate.IsEmpty())
+  {
+    throw ESshTerminate(NULL, FDragDropSshTerminate);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewDDGiveFeedback(
-  TObject * /*Sender*/, int dwEffect, HRESULT & /*Result*/)
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDGiveFeedback(
+  TObject * Sender, int dwEffect, HRESULT & /*Result*/)
 {
   HCURSOR SlippedCopyCursor;
 
   FDDMoveSlipped =
     (FDragMoveCursor != NULL) &&
-    (!RemoteDirView->DDAllowMove) && (dwEffect == DROPEFFECT_Copy) &&
-    ((FDDTargetDirView == RemoteDirView) ||
-     ((FDDTargetDirView != NULL) && (GetKeyState(VK_SHIFT) < 0)));
+    (!WinConfiguration->DDAllowMoveInit) && (dwEffect == DROPEFFECT_Copy) &&
+    (IsFileControl(FDDTargetControl, osRemote) ||
+     (IsFileControl(FDDTargetControl, osLocal) && (GetKeyState(VK_SHIFT) < 0)));
 
   SlippedCopyCursor = FDDMoveSlipped ? FDragMoveCursor : Dragdrop::DefaultCursor;
 
-  RemoteDirView->DragDropFilesEx->CHCopy = SlippedCopyCursor;
-  RemoteDirView->DragDropFilesEx->CHScrollCopy = SlippedCopyCursor;
+  DragDropFiles(Sender)->CHCopy = SlippedCopyCursor;
+  DragDropFiles(Sender)->CHScrollCopy = SlippedCopyCursor;
+
+  // Remember drop effect so we know (when user dropes files), if we copy or move
+  FLastDropEffect = dwEffect;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DDGetTarget(AnsiString & Directory)
@@ -2367,26 +2637,127 @@ void __fastcall TCustomScpExplorerForm::DDGetTarget(AnsiString & Directory)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewDDTargetDrop(
-  TUnixDirView * /*Sender*/, int DropEffect, bool & Continue)
+void __fastcall TCustomScpExplorerForm::AddDelayedDirectoryDeletion(
+  const AnsiString TempDir, int SecDelay)
 {
-  if (FDDTargetDirView == RemoteDirView)
+  TDateTime Alarm = Now() + (double)SecDelay*(double(1)/24/60/60);
+  FDelayedDeletionList->AddObject(TempDir, reinterpret_cast<TObject*>(Alarm.FileDate()));
+  if (FDelayedDeletionTimer == NULL)
+  {
+    assert(HandleAllocated());
+    FDelayedDeletionTimer = new TTimer(this);
+    FDelayedDeletionTimer->Interval = 10000;
+    FDelayedDeletionTimer->OnTimer = DoDelayedDeletion;
+  }
+  else
+  {
+    FDelayedDeletionTimer->Enabled = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoDelayedDeletion(TObject * Sender)
+{
+  assert(FDelayedDeletionList != NULL);
+
+  TDateTime N = Now();
+  TDateTime Alert;
+  AnsiString Directory;
+
+  for (int Index = FDelayedDeletionList->Count-1; Index >= 0; Index--)
+  {
+    Alert = FileDateToDateTime(reinterpret_cast<int>(FDelayedDeletionList->Objects[Index]));
+    if ((N >= Alert) || (Sender == NULL))
+    {
+      Directory = FDelayedDeletionList->Strings[Index];
+      if (DeleteDirectory(ExcludeTrailingBackslash(Directory)))
+      {
+        FDelayedDeletionList->Delete(Index);
+      }
+    }
+  }
+  
+  if (FDelayedDeletionList->Count == 0)
+  {
+    FDelayedDeletionTimer->Enabled = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
+{
+  if (IsFileControl(FDDTargetControl, osRemote))
   {
     // when move from remote side is disabled, we allow coying inside the remote
     // panel, but we interpret is as moving (we also slip in the move cursor)
-    if ((DropEffect == DROPEFFECT_MOVE) ||
-        ((!RemoteDirView->DDAllowMove) && (DropEffect == DROPEFFECT_COPY)))
+    if ((FLastDropEffect == DROPEFFECT_MOVE) ||
+        (!WinConfiguration->DDAllowMoveInit && (FLastDropEffect == DROPEFFECT_COPY)))
     {
-      ExecuteFileOperation(foRemoteMove, osRemote, true,
-        !WinConfiguration->DDTransferConfirmation);
+      RemoteFileControlFileOperation(DropSourceControl,
+        foRemoteMove, !WinConfiguration->DDTransferConfirmation, NULL);
     }
     // abort drag&drop
     Abort();
   }
-  else if (FDDExtMapFile != NULL)
+  else if ((FDDExtMapFile == NULL) && (FLastDropEffect != DROPEFFECT_NONE))
   {
-    Continue = false;
-    FDDDropTime = Now();
+    assert(!FDragTempDir.IsEmpty());
+    TTransferType Type;
+    AnsiString TempDir = FDragTempDir;
+    // We clear FUniqTempDir before calling
+    // just in case it fail (raises exception)
+    FDragTempDir = "";
+    Type = (FLastDropEffect & DROPEFFECT_MOVE ? ttMove : Type = ttCopy);
+
+    TGUICopyParamType CopyParams = GUIConfiguration->CopyParam;
+    // empty directory parameter means temp directory -> don't display it!
+    AnsiString TargetDir = "";
+
+    if (!CopyParamDialog(tdToLocal, Type, true, FDDFileList,
+          TargetDir, CopyParams, WinConfiguration->DDTransferConfirmation))
+    {
+      Abort();
+    }
+
+    // TargetDir is set when dropped on local file control
+    bool TemporaryDownload = TargetDir.IsEmpty();
+    bool Continue = true;
+
+    if (TemporaryDownload)
+    {
+      DoWarnLackOfTempSpace(TempDir, FDDTotalSize, Continue);
+      TargetDir = TempDir;
+    }
+
+    if (Continue)
+    {
+      if (TemporaryDownload)
+      {
+        if (ForceDirectories(TargetDir))
+        {
+          assert(Terminal && !TargetDir.IsEmpty());
+          try
+          {
+            // cpNewerOnly has no efect here,
+            // as we download to empty temp directory
+            int Params = cpDragDrop |
+              (Type == ttMove ? cpDelete : 0);
+            Terminal->CopyToLocal(FDDFileList, TargetDir, &CopyParams,
+              Params);
+          }
+          __finally
+          {
+            AddDelayedDirectoryDeletion(TargetDir, WinConfiguration->DDDeleteDelay);
+          }
+        }
+        else
+        {
+          throw Exception(FMTLOAD(DD_DIR_EXCEPTION, (TargetDir)));
+        }
+      }
+    }
+    else
+    {
+      Abort();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -2405,12 +2776,12 @@ public:
   }
 };
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteDirViewDDCreateDataObject(
-  TObject * /*Sender*/, TDataObject *& DataObject)
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDCreateDataObject(
+  TObject * Sender, TDataObject *& DataObject)
 {
   if (FDDExtMapFile != NULL)
   {
-    TFileList * FileList = RemoteDirView->DragDropFilesEx->FileList;
+    TFileList * FileList = DragDropFiles(Sender)->FileList;
     if (!FileList->RenderPIDLs() || !FileList->RenderNames())
     {
       Abort();
@@ -2434,6 +2805,12 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewDDCreateDataObject(
 void __fastcall TCustomScpExplorerForm::GoToCommandLine()
 {
   assert(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::GoToTree()
+{
+  ComponentVisible[fcRemoteTree] = true;
+  RemoteDriveView->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::PanelExport(TOperationSide Side,
@@ -2477,14 +2854,13 @@ void __fastcall TCustomScpExplorerForm::PanelExportStore(TOperationSide /*Side*/
 {
   if (Destination == pedClipboard)
   {
-    TClipboard * AClipboard = Clipboard();
     if (ExportData->Count == 1)
     {
-      AClipboard->AsText = ExportData->Strings[0];
+      CopyToClipboard(ExportData->Strings[0]);
     }
     else
     {
-      AClipboard->AsText = ExportData->Text;
+      CopyToClipboard(ExportData->Text);
     }
   }
   else
@@ -2621,3 +2997,161 @@ void __fastcall TCustomScpExplorerForm::QueueViewSelectItem(
   }
 }
 //---------------------------------------------------------------------------
+TDragDropFilesEx * __fastcall TCustomScpExplorerForm::DragDropFiles(TObject * Sender)
+{
+  TDragDropFilesEx * Result = NULL;
+  TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
+  if (DirView != NULL)
+  {
+    Result = DirView->DragDropFilesEx;
+  }
+  else
+  {
+    TCustomDriveView * DriveView = dynamic_cast<TCustomDriveView *>(Sender);
+    if (DriveView != NULL)
+    {
+      Result = DriveView->DragDropFilesEx;
+    }
+  }
+  assert(Result != NULL);
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDFileOperation(
+  TObject * Sender, int Effect, AnsiString /*SourcePath*/,
+  AnsiString TargetPath, bool & /*DoOperation*/)
+{
+  TFileOperation Operation;
+
+  switch (Effect)
+  {
+    case DROPEFFECT_MOVE:
+      Operation = foMove;
+      break;
+
+    case DROPEFFECT_COPY:
+    // occures on WinXP (reported by user)
+    default:
+      Operation = foCopy;
+      break;
+  };
+
+  TStrings * FileList = new TStringList();
+  try
+  {
+    TDragDropFilesEx * DragDropFilesEx = DragDropFiles(Sender);
+
+    for (int Index = 0; Index < DragDropFilesEx->FileList->Count; Index++)
+    {
+      FileList->Add(DragDropFilesEx->FileList->Items[Index]->Name);
+    }
+
+    TTransferOperationParam Param;
+    Param.TargetDirectory = TargetPath;
+    Param.DragDrop = true;
+    ExecuteFileOperation(Operation, osLocal, FileList, false, &Param);
+  }
+  __finally
+  {
+    delete FileList;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
+  TObject * Sender, int /*grfKeyState*/, int & dwEffect)
+{
+  if ((DropSourceControl == RemoteDriveView) &&
+      (RemoteDriveView->DragNode == RemoteDriveView->DropTarget))
+  {
+    dwEffect = DROPEFFECT_None;
+  }
+  else if (IsFileControl(DropSourceControl, osRemote))
+  {
+    if (((Sender == RemoteDriveView) && (RemoteDriveView->DropTarget != NULL)) ||
+        ((Sender == RemoteDirView) &&
+         ((RemoteDirView->DropTarget != NULL) || (DropSourceControl != RemoteDirView))))
+    {
+      // Hack: when moving is disabled, we at least allow to accept copy
+      // but it should be interpreted as move
+      dwEffect = WinConfiguration->DDAllowMoveInit ? DROPEFFECT_Move : DROPEFFECT_Copy;
+    }
+    else
+    {
+      dwEffect = DROPEFFECT_None;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDDragFileName(
+  TObject * Sender, TRemoteFile * File, AnsiString & FileName)
+{
+  if (FDDTotalSize >= 0)
+  {
+    if (File->IsDirectory)
+    {
+      FDDTotalSize = -1;
+    }
+    else
+    {
+      FDDTotalSize += File->Size;
+    }
+  }
+  assert(!FDragTempDir.IsEmpty());
+  FileName = FDragTempDir + GUIConfiguration->CopyParam.ValidLocalFileName(File->FileName);
+
+  AnsiString TransferFileName;
+  if (Sender == RemoteDriveView)
+  {
+    TransferFileName = UnixExcludeTrailingBackslash(File->FullFileName);
+  }
+  else
+  {
+    TransferFileName = File->FileName;
+  }
+  FDDFileList->AddObject(TransferFileName, File);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDDragDetect(
+  TObject * /*Sender*/, int /*grfKeyState*/, const TPoint & /*DetectStart*/,
+  const TPoint & /*Point*/, TDragDetectStatus /*DragStatus*/)
+{
+  FDDFileList = new TStringList();
+  FDragTempDir = WinConfiguration->TemporaryTranferDir();
+  FDDTotalSize = 0;
+  FDragDropSshTerminate = "";
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
+  TObject * /*Sender*/, BOOL /*FEscapePressed*/, int /*grfKeyState*/,
+  HRESULT & Result)
+{
+  if (Result == DRAGDROP_S_DROP)
+  {
+    try
+    {
+      GlobalDragImageList->HideDragImage();
+      try
+      {
+        RemoteFileControlDDTargetDrop();
+      }
+      catch(ESshTerminate & E)
+      {
+        assert(E.MoreMessages == NULL); // not supported
+        assert(!E.Message.IsEmpty());
+        FDragDropSshTerminate = E.Message;
+      }
+    }
+    catch (Exception &E)
+    {
+      // If downloading fails we need to cancel drag&drop, othwerwise
+      // Explorer shows error
+      // But by the way exception probably never reach this point as
+      // it's catched on way
+      Result = DRAGDROP_S_CANCEL;
+      assert(Terminal != NULL);
+      Terminal->DoShowExtendedException(&E);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+

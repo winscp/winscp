@@ -70,11 +70,50 @@ void __fastcall TCopyDialog::AdjustControls()
 {
   RemoteDirectoryEdit->Visible = false;
   LocalDirectoryEdit->Visible = false;
-  DirectoryEdit->Visible = ((Options & coDragDropTemp) == 0);
-  DirectoryEdit->Enabled = ((Options & coDisableDirectory) == 0);
+  DirectoryEdit->Visible = FLAGCLEAR(Options, coDragDropTemp);
+  DirectoryEdit->Enabled = FLAGCLEAR(Options, coDisableDirectory);
   DirectoryLabel->FocusControl = DirectoryEdit;
   CopyParamsFrame->Direction = !ToRemote ? pdToLocal : pdToRemote;
-  CopyParamsFrame->AllowTransferMode = ((Options & coDisableTransferMode) == 0);
+  CopyParamsFrame->Options =
+    FLAGMASK(FLAGCLEAR(Options, coDisableTransferMode), cfAllowTransferMode) |
+    FLAGMASK(!Move, cfAllowExcludeMask);
+  EnableControl(NewerOnlyCheck, FLAGCLEAR(Options, coDisableNewerOnly));
+
+  if (FileList && FileList->Count)
+  {
+    AnsiString TransferStr = LoadStr(!Move ? COPY_COPY : COPY_MOVE);
+    AnsiString DirectionStr =
+      LoadStr(((Options & coDragDropTemp) != 0) ? COPY_TODROP :
+        (ToRemote ? COPY_TOREMOTE : COPY_TOLOCAL));
+
+    if (FileList->Count == 1)
+    {
+      AnsiString FileName;
+      if (!ToRemote) FileName = UnixExtractFileName(FFileList->Strings[0]);
+        else FileName = ExtractFileName(FFileList->Strings[0]);
+      DirectoryLabel->Caption = FMTLOAD(COPY_FILE,
+        (TransferStr, FileName, DirectionStr));
+    }
+    else
+    {
+      DirectoryLabel->Caption = FMTLOAD(COPY_FILES,
+        (TransferStr, FFileList->Count, DirectionStr));
+    }
+  }
+
+  if (!Move)
+  {
+    Caption = LoadStr(COPY_COPY_CAPTION);
+    CopyButton->Caption = LoadStr(COPY_COPY_BUTTON);
+  }
+  else
+  {
+    Caption = LoadStr(COPY_MOVE_CAPTION);
+    CopyButton->Caption = LoadStr(COPY_MOVE_BUTTON);
+  }
+
+  LocalDirectoryBrowseButton->Visible = !ToRemote &&
+    ((Options & coDragDropTemp) == 0);
 
   UpdateControls();
 }
@@ -119,6 +158,7 @@ void __fastcall TCopyDialog::SetParams(const TGUICopyParamType & value)
   DirectoryEdit->Text = Directory + FParams.FileMask;
   QueueCheck->Checked = FParams.Queue;
   QueueNoConfirmationCheck->Checked = FParams.QueueNoConfirmation;
+  NewerOnlyCheck->Checked = FLAGCLEAR(Options, coDisableNewerOnly) && FParams.NewerOnly;
 }
 //---------------------------------------------------------------------------
 TGUICopyParamType __fastcall TCopyDialog::GetParams()
@@ -128,6 +168,7 @@ TGUICopyParamType __fastcall TCopyDialog::GetParams()
   FParams.FileMask = GetFileMask();
   FParams.Queue = QueueCheck->Checked;
   FParams.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
+  FParams.NewerOnly = FLAGCLEAR(Options, coDisableNewerOnly) && NewerOnlyCheck->Checked;
   return FParams;
 }
 //---------------------------------------------------------------------------
@@ -170,48 +211,12 @@ void __fastcall TCopyDialog::SetFileList(TStrings * value)
   if (FFileList != value)
   {
     FFileList = value;
-    UpdateControls();
+    AdjustControls();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::UpdateControls()
 {
-  if (FileList && FileList->Count)
-  {
-    AnsiString TransferStr = LoadStr(!Move ? COPY_COPY : COPY_MOVE);
-    AnsiString DirectionStr =
-      LoadStr(((Options & coDragDropTemp) != 0) ? COPY_TODROP :
-        (ToRemote ? COPY_TOREMOTE : COPY_TOLOCAL));
-
-    if (FileList->Count == 1)
-    {
-      AnsiString FileName;
-      if (!ToRemote) FileName = UnixExtractFileName(FFileList->Strings[0]);
-        else FileName = ExtractFileName(FFileList->Strings[0]);
-      DirectoryLabel->Caption = FMTLOAD(COPY_FILE,
-        (TransferStr, FileName, DirectionStr));
-    }
-    else
-    {
-      DirectoryLabel->Caption = FMTLOAD(COPY_FILES,
-        (TransferStr, FFileList->Count, DirectionStr));
-    }
-  }
-
-  if (!Move)
-  {
-    Caption = LoadStr(COPY_COPY_CAPTION);
-    CopyButton->Caption = LoadStr(COPY_COPY_BUTTON);
-  }
-  else
-  {
-    Caption = LoadStr(COPY_MOVE_CAPTION);
-    CopyButton->Caption = LoadStr(COPY_MOVE_BUTTON);
-  }
-
-  LocalDirectoryBrowseButton->Visible = !ToRemote &&
-    ((Options & coDragDropTemp) == 0);
-
   EnableControl(QueueCheck,
     (Options & (coDisableQueue | coDragDropTemp)) == 0);
   EnableControl(QueueNoConfirmationCheck,
@@ -224,7 +229,7 @@ void __fastcall TCopyDialog::SetMove(bool value)
   if (Move != value)
   {
     FMove = value;
-    UpdateControls();
+    AdjustControls();
   }
 }
 //---------------------------------------------------------------------------
@@ -316,18 +321,9 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
       }
     };
 
-    if (CanClose && (Params.TransferMode == tmAutomatic))
+    if (CanClose)
     {
-      TFileMasks Masks = CopyParamsFrame->AsciiFileMask;
-      int Start, Length;
-      if (!Masks.IsValid(Start, Length))
-      {
-        MoreButton->Expanded = true;
-        CanClose = false;
-        SimpleErrorDialog(FMTLOAD(MASK_ERROR, (Masks.Masks.SubString(Start+1, Length))));
-        // After closing dialog whole text is selected, we want to select only invalid mask
-        CopyParamsFrame->SelectMask(Start, Length);
-      }
+      CopyParamsFrame->Validate();
     }
   }
 }

@@ -25,17 +25,27 @@ const unsigned int qaNoToAll =  0x00000100;
 const unsigned int qaYesToAll = 0x00000200;
 const unsigned int qaHelp =     0x00000400;
 const unsigned int qaSkip =     0x00000800;
-const unsigned int qaPrev =     0x00001000;
-const unsigned int qaNext =     0x00002000;
-const unsigned int qaAppend =   0x00004000;
-// reserved for "More" button in VCL interface
-const unsigned int qaCustom =   0x00008000;
 
 const unsigned int qaNeverAskAgain = 0x00010000;
 
 const int qpFatalAbort =           0x01;
 const int qpNeverAskAgainCheck =   0x02;
 const int qpAllowContinueOnError = 0x04;
+
+struct TQueryButtonAlias
+{
+  unsigned int Button;
+  AnsiString Alias;
+};
+
+struct TQueryParams
+{
+  TQueryParams(unsigned int AParams = 0);
+
+  const TQueryButtonAlias * Aliases;
+  unsigned int AliasesCount;
+  unsigned int Params;
+};
 
 enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };
 enum TPromptKind { pkPassword, pkPassphrase, pkServerPrompt };

@@ -17,17 +17,23 @@ struct TScpExplorerConfiguration {
   AnsiString LastLocalTargetDirectory;
   int ViewStyle;
   bool ShowFullAddress;
+  bool DriveView;
+  int DriveViewWidth;
   bool __fastcall operator !=(TScpExplorerConfiguration & rhc)
     { return C(WindowParams) C(DirViewParams) C(CoolBarLayout) C(StatusBar)
-        C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress) 0; };
+        C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress)
+        C(DriveView) C(DriveViewWidth) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderPanelConfiguration {
   AnsiString DirViewParams;
   AnsiString CoolBarLayout;
   bool StatusBar;
+  bool DriveView;
+  int DriveViewHeight;
   bool __fastcall operator !=(TScpCommanderPanelConfiguration & rhc)
-    { return C(DirViewParams) C(CoolBarLayout) C(StatusBar) 0; };
+    { return C(DirViewParams) C(CoolBarLayout) C(StatusBar)
+        C(DriveView) C(DriveViewHeight) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderConfiguration {
@@ -142,6 +148,7 @@ private:
   bool FDisableOpenEdit;
   bool FForceDeleteTempFolder;
   bool FDefaultDirIsHome;
+  int FDDDeleteDelay;
 
   void __fastcall SetCopyOnDoubleClick(bool value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -208,6 +215,7 @@ public:
   void __fastcall ClearTemporaryLoginData();
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
   static void ReformatFileNameCommand(AnsiString & Command);
+  AnsiString __fastcall TemporaryTranferDir();
 
   __property TScpCommanderConfiguration ScpCommander = { read = FScpCommander, write = SetScpCommander };
   __property TScpExplorerConfiguration ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
@@ -244,6 +252,7 @@ public:
   __property bool DefaultDirIsHome = { read = FDefaultDirIsHome, write = SetDefaultDirIsHome };
   __property bool DisableOpenEdit = { read = FDisableOpenEdit };
   __property TCustomCommands * CustomCommands = { read = FCustomCommands, write = SetCustomCommands };
+  __property int DDDeleteDelay = { read = FDDDeleteDelay }; 
 };
 //---------------------------------------------------------------------------
 class TCustomCommands : public TStringList

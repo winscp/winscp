@@ -290,6 +290,7 @@ protected:
   void __fastcall SetOptions(int value);
   void __fastcall LocaleClick(TObject * Sender);
   void __fastcall Init();
+  void __fastcall InitControls();
   void __fastcall ShowTabs(bool Show);
 
   __property TTreeView * NavigationTree = { read=GetNavigationTree };

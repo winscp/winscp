@@ -26,7 +26,7 @@ enum TCompressionType { ctNone, ctZLib };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject* Sender, const AnsiString Query, TStrings * MoreMessages, int Answers,
-   int Params, int & Answer, TQueryType QueryType);
+   const TQueryParams * Params, int & Answer, TQueryType QueryType);
 typedef void __fastcall (__closure *TPromptUserEvent)
   (TSecureShell * SecureShell, AnsiString Prompt, TPromptKind Kind,
    AnsiString & Response, bool & Result);
@@ -207,12 +207,12 @@ public:
   void __fastcall OldKeyfileWarning();
 
   virtual int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
-    int Answers, int Params, TQueryType Type = qtConfirmation);
+    int Answers, const TQueryParams * Params, TQueryType Type = qtConfirmation);
   int __fastcall DoQueryUser(const AnsiString Query, const AnsiString OtherMessage,
-    int Answers, int Params);
-  int __fastcall DoQueryUser(const AnsiString Query, int Answers, int Params);
+    int Answers, const TQueryParams * Params);
+  int __fastcall DoQueryUser(const AnsiString Query, int Answers, const TQueryParams * Params);
   int __fastcall DoQueryUser(const AnsiString Query, Exception * E,
-    int Answers, int Params);
+    int Answers, const TQueryParams * Params);
   virtual void __fastcall DoShowExtendedException(Exception * E);
   void __fastcall DoHandleExtendedException(Exception * E);
   virtual bool __fastcall DoPromptUser(AnsiString Prompt, TPromptKind Kind,

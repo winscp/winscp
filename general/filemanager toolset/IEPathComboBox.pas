@@ -6,16 +6,29 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, CommCtrl, ShellAPI, ImgList,
+  StdCtrls, CommCtrl, ShellAPI, ImgList, ShlObj, 
   CustomPathComboBox, IEDriveInfo, IEComboBox, DirView;
 
 type
   TDirectoryToSelect = (dsCurrent, dsRoot);
   TDriveType = (dtUnknown, dtNoRootDrive, dtFloppy, dtFixed, dtRemote, dtCDROM, dtRAM);
   TDriveTypes = set of TDriveType;
+  TSpecialFolder = (sfDesktop, sfMyDocuments);
+  TSpecialFolders = set of TSpecialFolder;
 
 const
   DefaultDriveTypes = [dtFloppy, dtFixed, dtRemote, dtCDROM, dtRAM];
+  DefaultSpecialFolders = [sfDesktop, sfMyDocuments];
+
+type
+  TFolderInfo = record
+    Valid: Boolean;
+    Path: string;
+    DisplayName: string;
+    ImageIndex: Integer;
+    Text: string;
+    PIDL: PItemIDList;
+  end;
 
 type
   TIEPathComboBox = class(TCustomPathComboBox)
@@ -26,6 +39,8 @@ type
     FDriveTypes: TDriveTypes;
     FDontNotifyPathChange: Boolean;
     FInternalWindowHandle: HWND;
+    FShowSpecialFolders: TSpecialFolders;
+    FSpecialFolders: array[TSpecialFolder] of TFolderInfo;
 
     procedure SetDisplayStyle(Value: TVolumeDisplayStyle);
     procedure SetDrive(Value: TDrive);
@@ -33,6 +48,8 @@ type
     function DriveStored: Boolean;
     function GetFocusedDrive: Char;
     function GetItemDrive(Index: Integer): TDrive;
+    procedure SetShowSpecialFolders(Value: TSpecialFolders);
+
   protected
     procedure CreateWnd; override;
     procedure DropDown; override;
@@ -43,6 +60,10 @@ type
     procedure PathChanged; override;
     procedure SetPath(Value: string); override;
     procedure InternalWndProc(var Msg: TMessage);
+    function SpecialItems: Integer;
+    procedure LoadFolderInfo(var Info: TFolderInfo);
+    function GetItemSpecialFolder(Index: Integer): TSpecialFolder;
+    property ItemDrive[Index: Integer]: TDrive read GetItemDrive;
 
   public
     constructor Create(AOwner: TComponent); override;
@@ -50,7 +71,6 @@ type
     function GetDriveIndex(Drive: TDrive; Closest: Boolean): Integer;
     procedure ResetItems;
     property FocusedDrive: Char read GetFocusedDrive;
-    property ItemDrive[Index: Integer]: TDrive read GetItemDrive;
 
   published
     property Drive: TDrive read FDrive write SetDrive
@@ -61,6 +81,8 @@ type
       write SetDisplayStyle default doPrettyName;
     property DriveTypes: TDriveTypes
       read FDriveTypes write SetDriveTypes default DefaultDriveTypes;
+    property ShowSpecialFolders: TSpecialFolders
+      read FShowSpecialFolders write SetShowSpecialFolders default DefaultSpecialFolders;
 
     property DropDownFixedWidth;
     property OnCloseUp;
@@ -113,15 +135,48 @@ procedure Register;
 implementation
 
 uses
-  Math;
+  Math, CustomDirView, BaseUtils;
+
+resourcestring
+  SSpecialFolderMyDocuments = 'My documents';
+  SSpecialFolderDesktop = 'Desktop';
 
 constructor TIEPathComboBox.Create(AOwner : TComponent);
+var
+  InitPath: string;
+  F: TSpecialFolder;
 begin
   inherited;
 
   UseSystemImageList := True;
   FDirectoryToSelect := dsRoot;
-  FDrive := FirstFixedDrive;
+  FShowSpecialFolders := DefaultSpecialFolders;
+  for F := Low(FSpecialFolders) to High(FSpecialFolders) do
+  begin
+    FSpecialFolders[F].Valid := False;
+    FSpecialFolders[F].PIDL := nil; 
+  end;
+  SpecialFolderLocation(CSIDL_PERSONAL, FSpecialFolders[sfMyDocuments].Path,
+    FSpecialFolders[sfMyDocuments].PIDL);
+  FSpecialFolders[sfMyDocuments].Text := SSpecialFolderMyDocuments;
+  SpecialFolderLocation(CSIDL_DESKTOP, FSpecialFolders[sfDesktop].Path,
+    FSpecialFolders[sfDesktop].PIDL);
+  FSpecialFolders[sfDesktop].Text := SSpecialFolderDesktop;
+
+  InitPath := GetCurrentDir;
+  if IsUNCPath(InitPath) then
+  begin
+    InitPath := UserDocumentDirectory;
+    if IsUNCPath(InitPath) then
+    begin
+      InitPath := AnyValidPath;
+    end;
+  end;
+
+  InitPath := ExtractFileDrive(InitPath);
+  if (Length(InitPath) <> 2) or (InitPath[2] <> ':') then FDrive := FirstFixedDrive
+    else FDrive := InitPath[1];
+
   FDriveTypes := DefaultDriveTypes;
   FDontNotifyPathChange := False;
   ResetItemHeight;
@@ -170,13 +225,63 @@ begin
   inherited;
 end;
 
+function TIEPathComboBox.SpecialItems: Integer;
+begin
+  Result := 0;
+  if sfDesktop in ShowSpecialFolders then Inc(Result);
+  if sfMyDocuments in ShowSpecialFolders then Inc(Result);
+end;
+
+function TIEPathComboBox.GetItemSpecialFolder(Index: Integer): TSpecialFolder;
+begin
+  if (Index = 0) and (sfDesktop in ShowSpecialFolders) then Result := sfDesktop
+    else
+  if ((Index = 0) or (Index = 1)) and (sfMyDocuments in ShowSpecialFolders) then Result := sfMyDocuments
+    else Assert(False);
+end;
+
+procedure TIEPathComboBox.LoadFolderInfo(var Info: TFolderInfo);
+var
+  FileInfo: TShFileInfo;
+  Path: PChar;
+  Flags: Word;
+begin
+  if not Info.Valid then
+  begin
+    if Info.PIDL <> nil then
+    begin
+      Path := PChar(Info.PIDL);
+      Flags := SHGFI_PIDL;
+    end
+      else
+    begin
+      Path := PChar(Info.Path);
+      Flags := 0;
+    end;
+
+    SHGetFileInfo(Path, 0, FileInfo, SizeOf(FileInfo),
+      SHGFI_DISPLAYNAME or SHGFI_SYSICONINDEX or SHGFI_SMALLICON or Flags);
+    Info.ImageIndex := FileInfo.iIcon;
+    Info.DisplayName := FileInfo.szDisplayName;
+  end;
+end;
+
+procedure TIEPathComboBox.SetShowSpecialFolders(Value: TSpecialFolders);
+begin
+  if ShowSpecialFolders <> Value then
+  begin
+    FShowSpecialFolders := Value;
+    ResetItems;
+  end;
+end;
+
 function TIEPathComboBox.GetDriveIndex(Drive: TDrive; Closest: Boolean): Integer;
 var
   Index: Integer;
 begin
   Result := -1;
   Drive := UpCase(Drive);
-  for Index := Items.Count - 1 downto 0 do
+  for Index := Items.Count - 1 downto SpecialItems do
   begin
     if Items[Index][1] = Drive then
     begin
@@ -192,19 +297,40 @@ begin
 end; {TIEPathComboBox.GetDriveIndex}
 
 function TIEPathComboBox.GetItemImage(Index: Integer): Integer;
+var
+  SpecialFolder: TSpecialFolder;
 begin
-  Result := DriveInfo.GetImageIndex(ItemDrive[Index])
+  if Index < SpecialItems then
+  begin
+    SpecialFolder := GetItemSpecialFolder(Index);
+    LoadFolderInfo(FSpecialFolders[SpecialFolder]);
+    Result := FSpecialFolders[SpecialFolder].ImageIndex;
+  end
+    else
+  begin
+    Result := DriveInfo.GetImageIndex(ItemDrive[Index])
+  end;
 end;
 
 function TIEPathComboBox.GetItemTextEx(Index: Integer; ForList: Boolean): string;
 var
   ADrive: TDrive;
+  SpecialFolder: TSpecialFolder;
 begin
-  ADrive := ItemDrive[Index];
-  case DisplayStyle of
-    doPrettyName: Result := DriveInfo.GetPrettyName(ADrive);
-    doDisplayName: Result := DriveInfo.GetDisplayName(ADrive);
-    doLongPrettyName: Result := DriveInfo.GetLongPrettyName(ADrive);
+  if Index < SpecialItems then
+  begin
+    SpecialFolder := GetItemSpecialFolder(Index);
+    LoadFolderInfo(FSpecialFolders[SpecialFolder]);
+    Result := FSpecialFolders[SpecialFolder].Text;
+  end
+    else
+  begin
+    ADrive := ItemDrive[Index];
+    case DisplayStyle of
+      doPrettyName: Result := DriveInfo.GetPrettyName(ADrive);
+      doDisplayName: Result := DriveInfo.GetDisplayName(ADrive);
+      doLongPrettyName: Result := DriveInfo.GetLongPrettyName(ADrive);
+    end;
   end;
 end;
 
@@ -233,7 +359,9 @@ var
   Index: Integer;
 begin
   if Items.Count > 0 then Items.Clear;
-  
+
+  for Index := 0 to SpecialItems - 1 do Items.Add('');
+
   for Drive := FirstDrive to LastDrive do
   begin
     if DriveInfo[Drive].Valid and
@@ -301,13 +429,30 @@ begin
 end; {TIEPathComboBox.SetDisplayStyle}
 
 procedure TIEPathComboBox.PathChanged;
+var
+  Index: Integer;
+  SpecialFolder: TSpecialFolder;
 begin
-  FDrive := FocusedDrive;
-  if DirectoryToSelect = dsRoot then FPath := Format('%s:', [FDrive])
+  if ItemIndex < SpecialItems then
+  begin
+    SpecialFolder := GetItemSpecialFolder(Index);
+    FPath := FSpecialFolders[SpecialFolder].Path;
+    FDrive := Upcase(FPath[1]);
+    Index := GetDriveIndex(FDrive, False);
+    if Index >= 0 then
+    begin
+      ItemIndex := Index;
+    end
+  end
     else
   begin
-    GetDir(Integer(FDrive) - Integer('A') + 1, FPath);
-    FPath := ExcludeTrailingPathDelimiter(FPath);
+    FDrive := FocusedDrive;
+    if DirectoryToSelect = dsRoot then FPath := Format('%s:', [FDrive])
+      else
+    begin
+      GetDir(Integer(FDrive) - Integer('A') + 1, FPath);
+      FPath := ExcludeTrailingPathDelimiter(FPath);
+    end;
   end;
   inherited;
 end;

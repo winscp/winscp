@@ -303,6 +303,70 @@ void __fastcall TTerminal::AddCachedFileList(TRemoteFileList * FileList)
   FDirectoryCache->AddFileList(FileList);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::DirectoryFileList(const AnsiString Path,
+  TRemoteFileList *& FileList, bool CanLoad)
+{
+  bool Result = false;
+  if (UnixComparePaths(FFiles->Directory, Path))
+  {
+    Result = (FileList == NULL) || (FileList->Timestamp < FFiles->Timestamp);
+    if (Result)
+    {
+      if (FileList == NULL)
+      {
+        FileList = new TRemoteFileList();
+      }
+      FFiles->DuplicateTo(FileList);
+    }
+  }
+  else
+  {
+    if (((FileList == NULL) && FDirectoryCache->HasFileList(Path)) ||
+        ((FileList != NULL) && FDirectoryCache->HasNewerFileList(Path, FileList->Timestamp)))
+    {
+      bool Created = (FileList == NULL);
+      if (Created)
+      {
+        FileList = new TRemoteFileList();
+      }
+
+      Result = FDirectoryCache->GetFileList(Path, FileList);
+      if (!Result && Created)
+      {
+        SAFE_DESTROY(FileList);
+      }
+    }
+    // do not attempt to load file list if there is cached version,
+    // only absence of cached version indicates that we consider
+    // the directory content obsolete
+    else if (CanLoad && !FDirectoryCache->HasFileList(Path))
+    {
+      bool Created = (FileList == NULL);
+      if (Created)
+      {
+        FileList = new TRemoteFileList();
+      }
+      FileList->Directory = Path;
+
+      try
+      {
+        ReadDirectory(FileList);
+        Result = true;
+      }
+      catch(...)
+      {
+        if (Created)
+        {
+          SAFE_DESTROY(FileList);
+        }
+        throw;
+      }
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::SetCurrentDirectory(AnsiString value)
 {
   assert(FFileSystem);
@@ -483,7 +547,8 @@ int __fastcall TTerminal::CommandError(Exception * E, const AnsiString Msg,
   }
   else
   {
-    Result = DoQueryUser(Msg, E, Answers, qpAllowContinueOnError);
+    TQueryParams Params(qpAllowContinueOnError);
+    Result = DoQueryUser(Msg, E, Answers, &Params);
   }
   return Result;
 }
@@ -510,20 +575,52 @@ void __fastcall TTerminal::CloseOnCompletion(const AnsiString Message)
 }
 //---------------------------------------------------------------------------
 int __fastcall TTerminal::ConfirmFileOverwrite(const AnsiString FileName,
-  const TOverwriteFileParams * FileParams, int Answers, int Params,
-  TOperationSide Side)
+  const TOverwriteFileParams * FileParams, int Answers, const TQueryParams * Params,
+  TOperationSide Side, TFileOperationProgressType * OperationProgress)
 {
-  AnsiString Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE :
-    REMOTE_FILE_OVERWRITE), (FileName));
-  if (FileParams)
+  int Answer;
+  int AnswerForNewer =
+    (FileParams->SourceTimestamp > FileParams->DestTimestamp ? qaYes : qaNo);
+  if (OperationProgress->YesToNewer)
   {
-    Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
-      IntToStr(FileParams->SourceSize),
-      FormatDateTime("ddddd tt", FileParams->SourceTimestamp),
-      IntToStr(FileParams->DestSize),
-      FormatDateTime("ddddd tt", FileParams->DestTimestamp)));
+    Answer = AnswerForNewer;
   }
-  return DoQueryUser(Message, Answers, Params);
+  else
+  {
+    AnsiString Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE :
+      REMOTE_FILE_OVERWRITE), (FileName));
+    if (FileParams)
+    {
+      Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
+        IntToStr(FileParams->SourceSize),
+        FormatDateTime("ddddd tt", FileParams->SourceTimestamp),
+        IntToStr(FileParams->DestSize),
+        FormatDateTime("ddddd tt", FileParams->DestTimestamp)));
+    }
+    Answer = DoQueryUser(Message, Answers, Params);
+    switch (Answer)
+    {
+      case qaNeverAskAgain:
+        Configuration->ConfirmOverwriting = false;
+        Answer = qaYes;
+        break;
+
+      case qaYesToAll:
+        OperationProgress->YesToAll = true;
+        Answer = qaYes;
+        break;
+
+      case qaAll:
+        OperationProgress->YesToNewer = true;
+        Answer = AnswerForNewer;
+        break;
+
+      case qaNoToAll:
+        OperationProgress->NoToAll = true;
+        Answer = qaNo;
+    }
+  }
+  return Answer;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::FileModified(const TRemoteFile * File,
@@ -665,6 +762,10 @@ void __fastcall TTerminal::ReadCurrentDirectory()
       assert(FDirectoryChangesCache != NULL);
       FDirectoryChangesCache->AddDirectoryChange(OldDirectory,
         FLastDirectoryChange, CurrentDirectory);
+      // not to broke the cache, if the next directory change would not
+      // be initialited by ChangeDirectory(), which sets it
+      // (HomeDirectory() particularly)
+      FLastDirectoryChange = "";
     }
 
     if (OldDirectory.IsEmpty())
@@ -754,7 +855,7 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   ReactOnCommand(fsListDirectory);
 }
 //---------------------------------------------------------------------------
-TRemoteFileList * TTerminal::ReadDirectoryListing(AnsiString Directory)
+TRemoteFileList * TTerminal::ReadDirectoryListing(AnsiString Directory, bool UseCache)
 {
   TRemoteFileList * FileList;
   try
@@ -762,16 +863,26 @@ TRemoteFileList * TTerminal::ReadDirectoryListing(AnsiString Directory)
     FileList = new TRemoteFileList();
     try
     {
-      FileList->Directory = Directory;
-      AnsiString Directory = UnixIncludeTrailingBackslash(Directory);
-      ExceptionOnFail = true;
-      try
+      bool LoadedFromCache = UseCache && SessionData->CacheDirectories &&
+        FDirectoryCache->HasFileList(Directory);
+      if (LoadedFromCache)
       {
-        ReadDirectory(FileList);
+        LoadedFromCache = FDirectoryCache->GetFileList(Directory, FileList);
       }
-      __finally
+
+      if (!LoadedFromCache)
       {
-        ExceptionOnFail = false;
+        FileList->Directory = Directory;
+
+        ExceptionOnFail = true;
+        try
+        {
+          ReadDirectory(FileList);
+        }
+        __finally
+        {
+          ExceptionOnFail = false;
+        }
       }
     }
     catch(...)
@@ -786,16 +897,16 @@ TRemoteFileList * TTerminal::ReadDirectoryListing(AnsiString Directory)
     COMMAND_ERROR_ARI
     (
       "",
-      FileList = ReadDirectoryListing(Directory);
+      FileList = ReadDirectoryListing(Directory, UseCache);
     );
   }
   return FileList;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ProcessDirectory(const AnsiString DirName,
-  TProcessFileEvent CallBackFunc, void * Param)
+  TProcessFileEvent CallBackFunc, void * Param, bool UseCache)
 {
-  TRemoteFileList * FileList = ReadDirectoryListing(DirName);
+  TRemoteFileList * FileList = ReadDirectoryListing(DirName, UseCache);
 
   // skip if directory listing fails and user selects "skip"
   if (FileList)
@@ -1117,20 +1228,25 @@ void __fastcall TTerminal::CalculateFileSize(AnsiString FileName,
 {
   assert(Param);
   assert(File);
+  TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Param);
 
   if (FileName.IsEmpty() && File)
   {
     FileName = File->FileName;
   }
-  if (File->IsDirectory && !File->IsSymLink)
+
+  if ((AParams->CopyParam == NULL) ||
+      AParams->CopyParam->AllowTransfer(UnixExtractFileName(FileName)))
   {
-    LogEvent(FORMAT("Getting size of directory \"%s\"", (FileName)));
-    DoCalculateDirectorySize(FileName, File,
-      static_cast<TCalculateSizeParams*>(Param));
-  }
-  else
-  {
-    static_cast<TCalculateSizeParams*>(Param)->Size += File->Size;
+    if (File->IsDirectory && !File->IsSymLink)
+    {
+      LogEvent(FORMAT("Getting size of directory \"%s\"", (FileName)));
+      DoCalculateDirectorySize(FileName, File, AParams);
+    }
+    else
+    {
+      AParams->Size += File->Size;
+    }
   }
 
   if (OperationProgress && OperationProgress->Operation == foCalculateSize)
@@ -1161,11 +1277,12 @@ void __fastcall TTerminal::DoCalculateDirectorySize(const AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
-  __int64 & Size, int Params)
+  __int64 & Size, int Params, const TCopyParamType * CopyParam)
 {
   TCalculateSizeParams Param;
   Param.Size = 0;
   Param.Params = Params;
+  Param.CopyParam = CopyParam;
   ProcessFiles(FileList, foCalculateSize, CalculateFileSize, &Param);
   Size = Param.Size;
 }
@@ -1195,8 +1312,9 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
       if (DuplicateFile->IsDirectory) QuestionFmt = LoadStr(DIRECTORY_OVERWRITE);
         else QuestionFmt = LoadStr(FILE_OVERWRITE);
       int Result;
+      TQueryParams Params(qpNeverAskAgainCheck);
       Result = DoQueryUser(FORMAT(QuestionFmt, (NewName)),
-        qaYes | qaNo, qpNeverAskAgainCheck);
+        qaYes | qaNo, &Params);
       if (Result == qaNeverAskAgain)
       {
         Proceed = true;
@@ -1595,13 +1713,23 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateLocalFileSize(const AnsiString FileName,
-  const TSearchRec Rec, /*__int64*/ void * Size)
+  const TSearchRec Rec, /*TCalculateSizeParams*/ void * Params)
 {
-  if ((Rec.Attr & faDirectory) == 0)
+  TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Params);
+
+  if ((AParams->CopyParam == NULL) ||
+      AParams->CopyParam->AllowTransfer(ExtractFileName(FileName)))
   {
-    (*static_cast<__int64*>(Size)) +=
-      (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
-      Rec.FindData.nFileSizeLow;
+    if (FLAGCLEAR(Rec.Attr, faDirectory))
+    {
+      AParams->Size +=
+        (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
+        Rec.FindData.nFileSizeLow;
+    }
+    else
+    {
+      ProcessLocalDirectory(FileName, CalculateLocalFileSize, Params);
+    }
   }
 
   if (OperationProgress && OperationProgress->Operation == foCalculateSize)
@@ -1611,13 +1739,18 @@ void __fastcall TTerminal::CalculateLocalFileSize(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList, __int64 & Size)
+void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
+  __int64 & Size, const TCopyParamType * CopyParam)
 {
-  Size = 0;
   TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
   OperationProgress.Start(foCalculateSize, osLocal, FileList->Count);
   try
   {
+    TCalculateSizeParams Params;
+    Params.Size = 0;
+    Params.Params = 0;
+    Params.CopyParam = CopyParam;
+
     assert(!FOperationProgress);
     FOperationProgress = &OperationProgress;
     TSearchRec Rec;
@@ -1628,11 +1761,13 @@ void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList, __int64 
         if (Rec.Attr & faDirectory)
         {
           ProcessLocalDirectory(FileList->Strings[Index],
-            CalculateLocalFileSize, &Size);
+            CalculateLocalFileSize, &Params);
         }
-        CalculateLocalFileSize(FileList->Strings[Index], Rec, &Size);
+        CalculateLocalFileSize(FileList->Strings[Index], Rec, &Params);
       }
     }
+
+    Size = Params.Size;
   }
   __finally
   {
@@ -1686,6 +1821,17 @@ void __fastcall TTerminal::Synchronize(const AnsiString LocalDirectory,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::DoSynchronizeProgress(const TSynchronizeData & Data)
+{
+  bool Continue = true;
+  Data.OnSynchronizeDirectory(Data.LocalDirectory, Data.RemoteDirectory, Continue);
+
+  if (!Continue)
+  {
+    Abort();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirectory,
   const AnsiString RemoteDirectory, TSynchronizeMode Mode,
   const TCopyParamType * CopyParam, int Params,
@@ -1711,12 +1857,9 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
     "mode = %d, params = %d", (LocalDirectory, RemoteDirectory,
     int(Mode), int(Params))));
 
-  bool Continue = true;
-  OnSynchronizeDirectory(LocalDirectory, RemoteDirectory, Continue);
-
-  if (!Continue)
+  if (FLAGCLEAR(Params, spDelayProgress))
   {
-    Abort();
+    DoSynchronizeProgress(Data);
   }
 
   try
@@ -1741,7 +1884,10 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
         while (Found)
         {
           FileName = SearchRec.Name;
-          if ((FileName != ".") && (FileName != ".."))
+          if ((FileName != ".") && (FileName != "..") &&
+              (FLAGCLEAR(SearchRec.Attr, faDirectory) ||
+               FLAGCLEAR(Params, spNoRecurse)) &&
+              CopyParam->AllowTransfer(FileName))
           {
             TSynchronizeFileData * FileData = new TSynchronizeFileData;
             FileData->Time = SearchRec.Time;
@@ -1765,54 +1911,76 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
         FindClose(SearchRec);
       }
 
-      ProcessDirectory(RemoteDirectory, SynchronizeFile, &Data);
+      // can we expect that ProcessDirectory would take so little time
+      // that we can pospone showing progress window until anything actually happens?
+      bool Cached = FLAGSET(Params, spUseCache) && SessionData->CacheDirectories &&
+        FDirectoryCache->HasFileList(RemoteDirectory);
+
+      if (!Cached && FLAGSET(Params, spDelayProgress))
+      {
+        DoSynchronizeProgress(Data);
+      }
+
+      ProcessDirectory(RemoteDirectory, SynchronizeFile, &Data,
+        FLAGSET(Params, spUseCache));
 
       TSynchronizeFileData * FileData;
       for (int Index = 0; Index < Data.LocalFileList->Count; Index++)
       {
         FileData = reinterpret_cast<TSynchronizeFileData *>
           (Data.LocalFileList->Objects[Index]);
+        // add local file either if we are going to upload it
+        // (i.e. if it is updated or we want to upload even new files)
+        // or if we are going to delete it (i.e. all "new"=obsolete files)
         if ((FileData->Modified && ((Mode == smBoth) || (Mode == smRemote))) ||
-            (FileData->New))
+            (FileData->New && ((Mode == smLocal) || FLAGCLEAR(Params, spExistingOnly))))
         {
           LocalFileList->Add(Data.LocalDirectory + Data.LocalFileList->Strings[Index]);
         }
       }
 
+      if (((Mode == smBoth) || (Mode == smLocal)) &&
+          FLAGCLEAR(Params, spExistingOnly))
+      {
+        Data.ModifiedRemoteFileList->AddStrings(Data.NewRemoteFileList);
+      }
+
       int CopyParams = (Params & spNoConfirmation) != 0 ? cpNoConfirmation : 0;
 
-      if (LocalFileList->Count > 0)
+      bool Upload = (LocalFileList->Count > 0) &&
+        ((Mode == smBoth) || (Mode == smRemote));
+      bool DeleteLocal = (LocalFileList->Count > 0) &&
+        (Mode == smLocal) && Delete;
+      bool Download = (Data.ModifiedRemoteFileList->Count > 0) &&
+        ((Mode == smBoth) || (Mode == smLocal));
+      bool DeleteRemote = (Data.NewRemoteFileList->Count > 0) &&
+        (Mode == smRemote) && Delete;
+
+      if (Upload || DeleteLocal || Download || DeleteRemote)
       {
-        bool Result;
-        if ((Mode == smBoth) || (Mode == smRemote))
+        if (Cached && FLAGSET(Params, spDelayProgress))
         {
-          Result = CopyToRemote(LocalFileList, RemoteDirectory, CopyParam, CopyParams);
+          DoSynchronizeProgress(Data);
         }
-        else if ((Mode == smLocal) && Delete)
-        {
-          Result = DeleteLocalFiles(LocalFileList);
-        }
-        if (!Result)
+
+        if (Upload &&
+            !CopyToRemote(LocalFileList, RemoteDirectory, CopyParam, CopyParams))
         {
           Abort();
         }
-      }
 
-      if ((Mode == smBoth) || (Mode == smLocal))
-      {
-        Data.ModifiedRemoteFileList->AddStrings(Data.NewRemoteFileList);
-        if (Data.ModifiedRemoteFileList->Count > 0)
+        if (DeleteLocal && !DeleteLocalFiles(LocalFileList))
         {
-          if (!CopyToLocal(Data.ModifiedRemoteFileList, LocalDirectory,
-                CopyParam, CopyParams))
-          {
-            Abort();
-          }
+          Abort();
         }
-      }
-      if ((Mode == smRemote) && Delete && (Data.NewRemoteFileList->Count > 0))
-      {
-        if (!DeleteFiles(Data.NewRemoteFileList))
+
+        if (Download &&
+            !CopyToLocal(Data.ModifiedRemoteFileList, LocalDirectory, CopyParam, CopyParams))
+        {
+          Abort();
+        }
+
+        if (DeleteRemote && !DeleteFiles(Data.NewRemoteFileList))
         {
           Abort();
         }
@@ -1854,59 +2022,66 @@ void __fastcall TTerminal::SynchronizeFile(const AnsiString FileName,
 {
   TSynchronizeData * Data = static_cast<TSynchronizeData *>(Param);
 
-  bool Modified = false;
-  int Index = Data->LocalFileList->IndexOf(File->FileName);
-  bool New = (Index < 0);
-  if (!New)
+  if (Data->CopyParam->AllowTransfer(File->FileName))
   {
-    TSynchronizeFileData * LocalData =
-      reinterpret_cast<TSynchronizeFileData *>(Data->LocalFileList->Objects[Index]);
-
-    LocalData->New = false;
-
-    bool LocalDirectory = (LocalData->Attr & faDirectory) != 0;
-    if (File->IsDirectory != LocalDirectory)
+    bool Modified = false;
+    int Index = Data->LocalFileList->IndexOf(File->FileName);
+    bool New = (Index < 0);
+    if (!New)
     {
-      LogEvent(FORMAT("%s is directory on one side, but file on the another",
-        (File->FileName)));
-    }
-    else if (!File->IsDirectory)
-    {
-      FILETIME LocalLastWriteTime;
-      SYSTEMTIME SystemLastWriteTime;
-      FileTimeToLocalFileTime(&LocalData->LastWriteTime, &LocalLastWriteTime);
-      FileTimeToSystemTime(&LocalLastWriteTime, &SystemLastWriteTime);
-      TDateTime LocalTime = SystemTimeToDateTime(SystemLastWriteTime);
-      TDateTime RemoteTime = File->Modification;
+      TSynchronizeFileData * LocalData =
+        reinterpret_cast<TSynchronizeFileData *>(Data->LocalFileList->Objects[Index]);
 
-      UnifyDateTimePrecision(LocalTime, RemoteTime);
+      LocalData->New = false;
 
-      if (LocalTime < RemoteTime)
+      bool LocalDirectory = (LocalData->Attr & faDirectory) != 0;
+      if (File->IsDirectory != LocalDirectory)
       {
-        Modified = true;
+        LogEvent(FORMAT("%s is directory on one side, but file on the another",
+          (File->FileName)));
       }
-      else if (LocalTime > RemoteTime)
+      else if (!File->IsDirectory)
       {
-        LocalData->Modified = true;
+        FILETIME LocalLastWriteTime;
+        SYSTEMTIME SystemLastWriteTime;
+        FileTimeToLocalFileTime(&LocalData->LastWriteTime, &LocalLastWriteTime);
+        FileTimeToSystemTime(&LocalLastWriteTime, &SystemLastWriteTime);
+        TDateTime LocalTime = SystemTimeToDateTime(SystemLastWriteTime);
+        TDateTime RemoteTime = File->Modification;
+
+        UnifyDateTimePrecision(LocalTime, RemoteTime);
+
+        if (LocalTime < RemoteTime)
+        {
+          Modified = true;
+        }
+        else if (LocalTime > RemoteTime)
+        {
+          LocalData->Modified = true;
+        }
+      }
+      else if (FLAGCLEAR(Data->Params, spNoRecurse))
+      {
+        DoSynchronizeDirectory(
+          Data->LocalDirectory + File->FileName,
+          Data->RemoteDirectory + File->FileName,
+          Data->Mode, Data->CopyParam, Data->Params, Data->OnSynchronizeDirectory);
       }
     }
     else
     {
-      DoSynchronizeDirectory(
-        Data->LocalDirectory + File->FileName,
-        Data->RemoteDirectory + File->FileName,
-        Data->Mode, Data->CopyParam, Data->Params, Data->OnSynchronizeDirectory);
+      New = !File->IsDirectory || FLAGCLEAR(Data->Params, spNoRecurse);
     }
-  }
 
-  if (New || Modified)
-  {
-    assert(!New || !Modified);
+    if (New || Modified)
+    {
+      assert(!New || !Modified);
 
-    TStringList * FileList = New ? Data->NewRemoteFileList :
-      Data->ModifiedRemoteFileList;
-    FileList->AddObject(FileName,
-      const_cast<TRemoteFile *>(File)->Duplicate());
+      TStringList * FileList = New ? Data->NewRemoteFileList :
+        Data->ModifiedRemoteFileList;
+      FileList->AddObject(FileName,
+        const_cast<TRemoteFile *>(File)->Duplicate());
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1915,6 +2090,8 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
 {
   assert(FFileSystem);
   assert(FilesToCopy);
+
+  assert(IsCapable[fcNewerOnlyUpload] || FLAGCLEAR(Params, cpNewerOnly));
 
   bool Result = false;
   bool DisconnectWhenComplete = false;
@@ -1925,7 +2102,9 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
     __int64 Size;
     if (CopyParam->CalculateSize)
     {
-      CalculateLocalFilesSize(FilesToCopy, Size);
+      // dirty trick: when moving, do not pass copy param to avoid exclude mask
+      CalculateLocalFilesSize(FilesToCopy, Size,
+        (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL));
     }
 
     TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
@@ -1936,6 +2115,8 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
     {
       OperationProgress.SetTotalSize(Size);
     }
+
+    OperationProgress.YesToNewer = FLAGSET(Params, cpNewerOnly);
 
     FOperationProgress = &OperationProgress;
     try
@@ -2016,7 +2197,9 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
         ExceptionOnFail = true;
         try
         {
-          CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors);
+          // dirty trick: when moving, do not pass copy param to avoid exclude mask
+          CalculateFilesSize(FilesToCopy, TotalSize, csIgnoreErrors,
+            (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL));
           TotalSizeKnown = true;
         }
         __finally
@@ -2032,6 +2215,8 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
       {
         OperationProgress.SetTotalSize(TotalSize);
       }
+
+      OperationProgress.YesToNewer = FLAGSET(Params, cpNewerOnly);
 
       FOperationProgress = &OperationProgress;
       try

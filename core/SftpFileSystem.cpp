@@ -77,8 +77,6 @@ const int asAll = 0xFFFF;
     (cp)[1] = (unsigned char)((value) >> 16); \
     (cp)[2] = (unsigned char)((value) >> 8); \
     (cp)[3] = (unsigned char)(value); }
-
-#define THROW_SKIP_FILE_NULL THROW_SKIP_FILE(NULL, "")
 //---------------------------------------------------------------------------
 #define SFTP_PACKET_ALLOC_DELTA 256
 //---------------------------------------------------------------------------
@@ -1039,29 +1037,28 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
     case fcHardLink:
       return false;
 
-    case fcUserGroupListing:
-      return SupportsExtension(SFTP_EXT_OWNER_GROUP);
+    case fcModeChanging:
+    case fcNewerOnlyUpload:
+      return true;
 
-    case fcOwnerChanging:
-    case fcGroupChanging:
-      return (FVersion >= 4);
+    case fcRename:
+      return (FVersion >= 2);
 
     case fcSymbolicLink:
     case fcResolveSymlink:
       return (FVersion >= 3);
 
-    case fcModeChanging:
-      return true;
+    case fcOwnerChanging:
+    case fcGroupChanging:
+    case fcNativeTextMode:
+      return (FVersion >= 4);
 
     case fcTextMode:
       return (FVersion >= 4) ||
         strcmp(GetEOL(), EOLToStr(FTerminal->Configuration->LocalEOLType)) != 0;
 
-    case fcNativeTextMode:
-      return (FVersion >= 4);
-
-    case fcRename:
-      return (FVersion >= 2);
+    case fcUserGroupListing:
+      return SupportsExtension(SFTP_EXT_OWNER_GROUP);
 
     default:
       assert(false);
@@ -1215,7 +1212,8 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
     {
       if ((FPreviousLoggedPacket != SSH_FXP_READ &&
            FPreviousLoggedPacket != SSH_FXP_WRITE) ||
-          (Packet->Type != FPreviousLoggedPacket))
+          (Packet->Type != FPreviousLoggedPacket) ||
+          FTerminal->Configuration->LogProtocol)
       {
         if (FNotLoggedPackets)
         {
@@ -1225,6 +1223,10 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
         }
         FTerminal->Log->Add(llInput, FORMAT("Type: %s, Size: %d, Number: %d",
           (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
+        if (FTerminal->Configuration->LogProtocol)
+        {
+          FTerminal->Log->Add(llInput, Packet->Dump());
+        }
         FPreviousLoggedPacket = Packet->Type;
       }
       else
@@ -1369,7 +1371,8 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
       {
         if ((FPreviousLoggedPacket != SSH_FXP_READ &&
              FPreviousLoggedPacket != SSH_FXP_WRITE) ||
-            (Packet->Type != SSH_FXP_STATUS && Packet->Type != SSH_FXP_DATA))
+            (Packet->Type != SSH_FXP_STATUS && Packet->Type != SSH_FXP_DATA) ||
+            FTerminal->Configuration->LogProtocol)
         {
           if (FNotLoggedPackets)
           {
@@ -1379,6 +1382,10 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
           }
           FTerminal->Log->Add(llOutput, FORMAT("Type: %s, Size: %d, Number: %d",
             (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
+          if (FTerminal->Configuration->LogProtocol)
+          {
+            FTerminal->Log->Add(llOutput, Packet->Dump());
+          }
         }
         else
         {
@@ -2221,6 +2228,13 @@ void __fastcall TSFTPFileSystem::CreateDirectory(const AnsiString DirName,
   TSFTPPacket Packet(SSH_FXP_MKDIR);
   AnsiString CanonifiedName = Canonify(DirName);
   Packet.AddString(CanonifiedName);
+  Packet.AddProperties(NULL, 0, true, FVersion);
+  SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
+
+  // explicitly set permissions after directory creation,
+  // permissions specified in SSH_FXP_MKDIR are ignored at least by OpenSSH
+  Packet.ChangeType(SSH_FXP_SETSTAT);
+  Packet.AddString(CanonifiedName);
   Packet.AddProperties(Properties, 0, true, FVersion);
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
@@ -2359,17 +2373,26 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const AnsiString FileName,
     int Answer;
     SUSPEND_OPERATION
     (
-      int Answers = qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll;
+      int Answers = qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll | qaAll;
       if ((FVersion < 4) || !OperationProgress->AsciiTransfer)
       {
-        Answers |= qaAppend;
+        Answers |= qaRetry;
       }
+      TQueryButtonAlias Aliases[2];
+      Aliases[0].Button = qaRetry;
+      Aliases[0].Alias = LoadStr(APPEND_BUTTON);
+      Aliases[1].Button = qaAll;
+      Aliases[1].Alias = LoadStr(YES_TO_NEWER_BUTTON);
+      TQueryParams Params(qpNeverAskAgainCheck);
+      Params.Aliases = Aliases;
+      Params.AliasesCount = LENOF(Aliases);
       Answer = FTerminal->ConfirmFileOverwrite(FileName, FileParams,
-        Answers, qpNeverAskAgainCheck,
-        OperationProgress->Side == osLocal ? osRemote : osLocal);
+        Answers, &Params,
+        OperationProgress->Side == osLocal ? osRemote : osLocal,
+        OperationProgress);
     );
 
-    if (Answer == qaAppend)
+    if (Answer == qaRetry)
     {
       if (TargetBiggerThanSource || OperationProgress->AsciiTransfer)
       {
@@ -2400,16 +2423,8 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const AnsiString FileName,
     else
     {
       OverwriteMode = omOverwrite;
-      switch (Answer) {
-        case qaNeverAskAgain:
-          FTerminal->Configuration->ConfirmOverwriting = false;
-        case qaYesToAll:
-          OperationProgress->YesToAll = true;
-        case qaYes:
-          // file overwriting was confirmed, try to open file
-          // second time, now without exclusive flag (SSH_FXF_EXCL)
-          break;
-
+      switch (Answer)
+      {
         case qaAbort:
           if (!OperationProgress->Cancel)
           {
@@ -2418,8 +2433,6 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const AnsiString FileName,
           Abort();
           break;
 
-        case qaNoToAll:
-          OperationProgress->NoToAll = true;
         case qaNo:
           THROW_SKIP_FILE_NULL;
       }
@@ -2437,9 +2450,10 @@ bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
     int Answer;
     SUSPEND_OPERATION
     (
+      TQueryParams Params(qpAllowContinueOnError);
       Answer = FTerminal->DoQueryUser(
         FMTLOAD(PARTIAL_BIGGER_THAN_SOURCE, (DestFileName)), NULL,
-          qaOK | qaAbort, qpAllowContinueOnError, qtWarning);
+          qaOK | qaAbort, &Params, qtWarning);
     )
 
     if (Answer == qaAbort)
@@ -2452,17 +2466,20 @@ bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
     }
     ResumeTransfer = false;
   }
-  else
+  else if (FTerminal->Configuration->ConfirmResume)
   {
     int Answer;
     SUSPEND_OPERATION
     (
+      TQueryParams Params(qpAllowContinueOnError | qpNeverAskAgainCheck);
       Answer = FTerminal->DoQueryUser(
         FMTLOAD(RESUME_TRANSFER, (DestFileName)), qaYes | qaNo | qaAbort,
-        qpAllowContinueOnError);
+        &Params);
     );
 
     switch (Answer) {
+      case qaNeverAskAgain:
+        FTerminal->Configuration->ConfirmResume = false;
       case qaYes:
         ResumeTransfer = true;
         break;
@@ -2480,6 +2497,10 @@ bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
         break;
     }
   }
+  else
+  {
+    ResumeTransfer = true;
+  }
   return ResumeTransfer;
 }
 //---------------------------------------------------------------------------
@@ -2487,6 +2508,15 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, int Level)
 {
+  AnsiString OnlyFileName = ExtractFileName(FileName);
+
+  if (FLAGCLEAR(Params, cpDelete) &&
+      !CopyParam->AllowTransfer(OnlyFileName))
+  {
+    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    THROW_SKIP_FILE_NULL;
+  }
+
   FTerminal->LogEvent(FORMAT("File: \"%s\"", (FileName)));
 
   OperationProgress->SetFile(FileName);
@@ -2513,7 +2543,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       // File is regular file (not directory)
       assert(File);
 
-      AnsiString DestFileName = CopyParam->ChangeFileName(ExtractFileName(FileName),
+      AnsiString DestFileName = CopyParam->ChangeFileName(OnlyFileName,
         osLocal, Level == 0);
       AnsiString DestFullName = LocalCanonify(TargetDir + DestFileName);
       AnsiString DestPartinalFullName;
@@ -2588,8 +2618,10 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         else
         {
           // partial upload file does not exists, check for full file
-          if (DestFileExists && FTerminal->Configuration->ConfirmOverwriting &&
-              !OperationProgress->YesToAll && !(Params & cpNoConfirmation))
+          if (DestFileExists &&
+              (FLAGSET(Params, cpNewerOnly) ||
+               (FTerminal->Configuration->ConfirmOverwriting &&
+                !OperationProgress->YesToAll && FLAGCLEAR(Params, cpNoConfirmation))))
           {
             SFTPConfirmOverwrite(DestFileName,
               OpenParams.DestFileSize >= OperationProgress->LocalSize,
@@ -3002,10 +3034,18 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
   const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, int Level)
 {
+  AnsiString OnlyFileName = UnixExtractFileName(FileName);
+
+  if (FLAGCLEAR(Params, cpDelete) &&
+      !CopyParam->AllowTransfer(OnlyFileName))
+  {
+    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    THROW_SKIP_FILE_NULL;  
+  }
+
   assert(File);
   FTerminal->LogEvent(FORMAT("File: \"%s\"", (FileName)));
 
-  AnsiString OnlyFileName = UnixExtractFileName(FileName);
   OperationProgress->SetFile(OnlyFileName);
 
   AnsiString DestFileName = CopyParam->ChangeFileName(OnlyFileName,
@@ -3121,9 +3161,11 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
         }
       }
 
-      if ((Attrs >= 0) && FTerminal->Configuration->ConfirmOverwriting &&
-          !OperationProgress->YesToAll && !ResumeTransfer &&
-          !(Params & cpNoConfirmation))
+      if ((Attrs >= 0) && !ResumeTransfer &&
+          (FLAGSET(Params, cpNewerOnly) ||
+           (FTerminal->Configuration->ConfirmOverwriting &&
+            !OperationProgress->YesToAll &&
+            FLAGCLEAR(Params, cpNoConfirmation))))
       {
         __int64 DestFileSize;
         unsigned long MTime;

@@ -28,6 +28,7 @@ private:
   AnsiString FLocalInvalidChars;
   bool FCalculateSize;
   AnsiString FFileMask;
+  TFileMasks FExcludeFileMask;
 
 public:
   __fastcall TCopyParamType();
@@ -43,6 +44,7 @@ public:
   bool __fastcall UseAsciiTransfer(const AnsiString FileName) const;
   bool __fastcall AllowResume(__int64 Size) const;
   AnsiString __fastcall ValidLocalFileName(AnsiString FileName) const;
+  bool __fastcall AllowTransfer(AnsiString FileName) const;
 
   __property TFileMasks AsciiFileMask = { read = FAsciiFileMask, write = FAsciiFileMask };
   __property TFileNameCase FileNameCase = { read = FFileNameCase, write = FFileNameCase };
@@ -59,6 +61,7 @@ public:
   __property AnsiString LocalInvalidChars = { read = FLocalInvalidChars, write = FLocalInvalidChars };
   __property bool CalculateSize = { read = FCalculateSize, write = FCalculateSize };
   __property AnsiString FileMask = { read = FFileMask, write = FFileMask };
+  __property TFileMasks ExcludeFileMask = { read = FExcludeFileMask, write = FExcludeFileMask };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -24,6 +24,7 @@ enum TAutoSwitch { asOn, asOff, asAuto };
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 const puRequireUsername =     0x01;
 const puExcludeLeadingSlash = 0x02;
+const puExtractFileName =     0x04;
 //---------------------------------------------------------------------------
 extern const char CipherNames[CIPHER_COUNT][10];
 extern const char SshProtList[][10];
@@ -179,10 +180,11 @@ public:
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport = false);
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
-  bool __fastcall ParseUrl(AnsiString Url, int Params);
+  bool __fastcall ParseUrl(AnsiString Url, int Params, AnsiString * FileName);
   static bool __fastcall ParseUrl(AnsiString Url, int Params,
     AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
-    AnsiString * UserName, AnsiString * Password, AnsiString * Path);
+    AnsiString * UserName, AnsiString * Password, AnsiString * Path,
+    AnsiString * FileName);
 
   __property AnsiString HostName  = { read=FHostName, write=SetHostName };
   __property int PortNumber  = { read=FPortNumber, write=SetPortNumber };

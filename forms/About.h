@@ -34,7 +34,6 @@ __published:
   TLabel *PuttyHomepageLabel;
   TLabel *Label7;
   TLabel *Label8;
-  TLabel *FilemanagerHomepageLabel;
   TLabel *Label10;
   TLabel *ProlongBoxLabel;
   TButton *OKButton;

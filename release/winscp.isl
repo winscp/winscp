@@ -36,7 +36,6 @@ NortonCommanderInterface=Norton &Commander interface
 NortonCommanderInterface1=- two panels (left for local directory, right for remote directory)
 NortonCommanderInterface2=- keyboard shortcuts like in Norton Commander (and other similar programs as Total Commander, Midnight Commander...)
 NortonCommanderInterface3=- drag && drop to/from both panels
-NortonCommanderInterface4=- synchronization
 ExplorerInterface=&Explorer-like interface
 ExplorerInterface1=- only remote directory
 ExplorerInterface2=- keyboard shortcuts like in Windows Explorer

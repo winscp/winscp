@@ -27,6 +27,8 @@
 #define fcCommandLinePanel 0x18
 #define fcQueueView        0x19
 #define fcQueueToolbar     0x1A
+#define fcLocalTree        0x1B
+#define fcRemoteTree       0x1C
 
 #define fcExplorerMenuBand        0x0003
 #define fcExplorerAddressBand     0x0103
@@ -620,6 +622,27 @@ __published:	// IDE-managed Components
   TMenuItem *HidewhenEmpty6;
   TMenuItem *Show6;
   TMenuItem *N72;
+  TAction *PasteAction;
+  TMenuItem *Paste1;
+  TMenuItem *Paste2;
+  TMenuItem *KeepRemoteDirectoryUpToDate2;
+  TAction *RemoteTreeAction;
+  TAction *LocalTreeAction;
+  TMenuItem *N73;
+  TMenuItem *Tree1;
+  TMenuItem *N74;
+  TMenuItem *Tree2;
+  TMenuItem *Tree3;
+  TMenuItem *Tree4;
+  TMenuItem *N75;
+  TMenuItem *Tree5;
+  TMenuItem *N76;
+  TMenuItem *Tree6;
+  TMenuItem *N77;
+  TMenuItem *Tree7;
+  TMenuItem *N78;
+  TMenuItem *Tree8;
+  TAction *GoToTreeAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

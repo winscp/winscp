@@ -60,6 +60,13 @@ void __fastcall TCallExceptionClass::QueryUser(TObject* Sender, const AnsiString
 }
 #endif
 //---------------------------------------------------------------------------
+TQueryParams::TQueryParams(unsigned int AParams)
+{
+  Params = AParams;
+  Aliases = NULL;
+  AliasesCount = 0;
+}
+//---------------------------------------------------------------------------
 void Initialize(const AnsiString IniFileName)
 {
   // initialize default seed path value same way as putty does (only change filename)
@@ -116,12 +123,12 @@ static AnsiString TranslateRegKey(AnsiString RegKey)
   return RegKey;
 }
 //---------------------------------------------------------------------------
-long RegOpenWinSCPKey(HKEY Key, const char * SubKey,	HKEY * Result)
+long RegOpenWinSCPKey(HKEY Key, const char * SubKey,    HKEY * Result)
 {
   return RegOpenKey(Key, TranslateRegKey(SubKey).c_str(), Result);
 }
 //---------------------------------------------------------------------------
-long RegCreateWinSCPKey(HKEY Key, const char * SubKey,	HKEY * Result)
+long RegCreateWinSCPKey(HKEY Key, const char * SubKey,  HKEY * Result)
 {
   return RegCreateKey(Key, TranslateRegKey(SubKey).c_str(), Result);
 }

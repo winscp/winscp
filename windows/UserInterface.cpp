@@ -68,23 +68,24 @@ void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
       {
         TTerminalManager * Manager = TTerminalManager::Instance(false);
 
+        TQueryType Type;
+        bool CloseOnCompletion = (dynamic_cast<ESshTerminate*>(E) != NULL);
+        Type = CloseOnCompletion ? qtInformation : qtError;
+
         if (E->InheritsFrom(__classid(EFatal)) && (SecureShell != NULL) &&
             (Manager != NULL) && (Manager->ActiveTerminal == SecureShell))
         {
-          TQueryType Type;
-          bool CloseOnCompletion = E->InheritsFrom(__classid(ESshTerminate));
-          Type = CloseOnCompletion ? qtInformation : qtError;
-
           int Result;
           if (CloseOnCompletion)
           {
             if (WinConfiguration->ConfirmExitOnCompletion)
             {
+              TMessageParams Params(mpNeverAskAgainCheck);
               Result = FatalExceptionMessageDialog(E, Type,
                 Manager->Count > 1 ?
                   FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
                   LoadStr(EXIT_ON_COMPLETION),
-                qaYes | qaNo, 0, mpNeverAskAgainCheck);
+                qaYes | qaNo, 0, &Params);
 
               if (Result == qaNeverAskAgain)
               {
@@ -117,7 +118,7 @@ void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
         }
         else
         {
-          ExceptionMessageDialog(E, qtError, qaOK);
+          ExceptionMessageDialog(E, Type);
         }
       }
     }

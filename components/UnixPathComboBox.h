@@ -15,8 +15,6 @@ class PACKAGE TUnixPathComboBox : public TCustomPathComboBox
 {
 private:
   AnsiString FRootName;
-  Integer FCloseImage;
-  Integer FOpenImage;
   Boolean __fastcall IsRootNameStored();
   void __fastcall SetRootName(AnsiString value);
 protected:

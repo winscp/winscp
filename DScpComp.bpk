@@ -5,7 +5,7 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="DScpComp.bpl"/>
     <OBJFILES value="DScpComp.obj components\UnixDirView.obj components\UnixPathComboBox.obj 
-      components\LogMemo.obj"/>
+      components\LogMemo.obj components\UnixDriveView.obj"/>
     <RESFILES value="DScpComp.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
@@ -25,7 +25,7 @@
     <USERDEFINES value="OLD_DND;NORTON_LIKE;DESIGN_ONLY"/>
     <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="DScpComp.cpp"/>
-    <INCLUDEPATH value="components;core;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="components;core;packages\filemng;packages\dragndrop;packages\my;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="components;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -w-par -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -58,6 +58,7 @@
       <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="components\LogMemo.cpp" FORMNAME="" UNITNAME="LogMemo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="components\UnixDriveView.cpp" FORMNAME="" UNITNAME="UnixDriveView" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

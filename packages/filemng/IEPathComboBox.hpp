@@ -15,6 +15,7 @@
 #include <IEComboBox.hpp>	// Pascal unit
 #include <IEDriveInfo.hpp>	// Pascal unit
 #include <CustomPathComboBox.hpp>	// Pascal unit
+#include <ShlObj.hpp>	// Pascal unit
 #include <ImgList.hpp>	// Pascal unit
 #include <ShellAPI.hpp>	// Pascal unit
 #include <CommCtrl.hpp>	// Pascal unit
@@ -45,6 +46,26 @@ enum TDriveType { dtUnknown, dtNoRootDrive, dtFloppy, dtFixed, dtRemote, dtCDROM
 
 typedef Set<TDriveType, dtUnknown, dtRAM>  TDriveTypes;
 
+#pragma option push -b-
+enum TSpecialFolder { sfDesktop, sfMyDocuments };
+#pragma option pop
+
+typedef Set<TSpecialFolder, sfDesktop, sfMyDocuments>  TSpecialFolders;
+
+#pragma pack(push, 4)
+struct TFolderInfo
+{
+	bool Valid;
+	AnsiString Path;
+	AnsiString DisplayName;
+	int ImageIndex;
+	AnsiString Text;
+	_ITEMIDLIST *PIDL;
+} ;
+#pragma pack(pop)
+
+typedef TFolderInfo IEPathComboBox__2[2];
+
 class DELPHICLASS TIEPathComboBox;
 class PASCALIMPLEMENTATION TIEPathComboBox : public Custompathcombobox::TCustomPathComboBox 
 {
@@ -57,11 +78,14 @@ private:
 	TDriveTypes FDriveTypes;
 	bool FDontNotifyPathChange;
 	HWND FInternalWindowHandle;
+	TSpecialFolders FShowSpecialFolders;
+	TFolderInfo FSpecialFolders[2];
 	void __fastcall SetDisplayStyle(Dirview::TVolumeDisplayStyle Value);
 	void __fastcall SetDrive(char Value);
 	bool __fastcall DriveStored(void);
 	char __fastcall GetFocusedDrive(void);
 	char __fastcall GetItemDrive(int Index);
+	void __fastcall SetShowSpecialFolders(TSpecialFolders Value);
 	
 protected:
 	virtual void __fastcall CreateWnd(void);
@@ -73,6 +97,10 @@ protected:
 	virtual void __fastcall PathChanged(void);
 	virtual void __fastcall SetPath(AnsiString Value);
 	void __fastcall InternalWndProc(Messages::TMessage &Msg);
+	int __fastcall SpecialItems(void);
+	void __fastcall LoadFolderInfo(TFolderInfo &Info);
+	TSpecialFolder __fastcall GetItemSpecialFolder(int Index);
+	__property char ItemDrive[int Index] = {read=GetItemDrive};
 	
 public:
 	__fastcall virtual TIEPathComboBox(Classes::TComponent* AOwner);
@@ -80,13 +108,13 @@ public:
 	int __fastcall GetDriveIndex(char Drive, bool Closest);
 	void __fastcall ResetItems(void);
 	__property char FocusedDrive = {read=GetFocusedDrive, nodefault};
-	__property char ItemDrive[int Index] = {read=GetItemDrive};
 	
 __published:
 	__property char Drive = {read=FDrive, write=SetDrive, stored=DriveStored, nodefault};
 	__property TDirectoryToSelect DirectoryToSelect = {read=FDirectoryToSelect, write=FDirectoryToSelect, default=1};
 	__property Dirview::TVolumeDisplayStyle DisplayStyle = {read=FDisplayStyle, write=SetDisplayStyle, default=0};
 	__property TDriveTypes DriveTypes = {read=FDriveTypes, write=SetDriveTypes, default=124};
+	__property TSpecialFolders ShowSpecialFolders = {read=FShowSpecialFolders, write=SetShowSpecialFolders, default=3};
 	__property DropDownFixedWidth  = {default=0};
 	__property OnCloseUp ;
 	__property ShowFullPath  = {default=0};
@@ -140,6 +168,7 @@ public:
 
 //-- var, const, procedure ---------------------------------------------------
 #define DefaultDriveTypes (System::Set<TDriveType, dtUnknown, dtRAM> () << TDriveType(2) << TDriveType(3) << TDriveType(4) << TDriveType(5) << TDriveType(6) )
+#define DefaultSpecialFolders (System::Set<TSpecialFolder, sfDesktop, sfMyDocuments> () << TSpecialFolder(0) << TSpecialFolder(1) )
 extern PACKAGE void __fastcall Register(void);
 
 }	/* namespace Iepathcombobox */

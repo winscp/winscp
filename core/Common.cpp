@@ -11,6 +11,33 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+#ifdef _DEBUG
+#include <stdio.h>
+void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
+  int Line, const AnsiString Message)
+{
+  const char * FileName = getenv(TRACEENV);
+  // !!!
+  if (FileName == NULL)
+  {
+    FileName = "c:\\winscptrace.log";
+  }
+  // !!!
+  if (FileName != NULL)
+  {
+    FILE * File = fopen(FileName, "a");
+    if (File != NULL)
+    {
+      fprintf(File, "[%s] %s:%d:%s\n  %s\n",
+        Now().TimeString().c_str(),
+        ExtractFileName(SourceFile).c_str(), Line, Func.c_str(), Message.c_str());
+
+      fclose(File);
+    }
+  }
+}
+#endif // ifdef _DEBUG
+//---------------------------------------------------------------------------
 // TCriticalSection
 //---------------------------------------------------------------------------
 __fastcall TCriticalSection::TCriticalSection()
@@ -340,11 +367,6 @@ void __fastcall ProcessLocalDirectory(AnsiString DirName,
       {
         if ((SearchRec.Name != ".") && (SearchRec.Name != ".."))
         {
-          if (SearchRec.Attr & faDirectory)
-          {
-            ProcessLocalDirectory(DirName + SearchRec.Name, CallBackFunc,
-              Param, FindAttrs);
-          }
           CallBackFunc(DirName + SearchRec.Name, SearchRec, Param);
         }
 
@@ -419,7 +441,7 @@ static TDateTimeParams * __fastcall GetDateTimeParams()
       DateTimeParams.CurrentDifference =
         double(DateTimeParams.CurrentDifferenceSec) / 1440;
       DateTimeParams.CurrentDifferenceSec *= 60;
-      
+
       DateTimeParams.CurrentDaylightDifference =
         double(DateTimeParams.CurrentDaylightDifferenceSec) / 1440;
       DateTimeParams.CurrentDaylightDifferenceSec *= 60;
@@ -590,7 +612,7 @@ unsigned long __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
     FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
     FileTimeToSystemTime(&LocalFileTime, &SystemTime);
     DateTime = SystemTimeToDateTime(SystemTime);
-    
+
     TDateTimeParams * Params = GetDateTimeParams();
     Result += (IsDateInDST(DateTime) ?
       Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
@@ -667,7 +689,7 @@ bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin
 {
   SHFILEOPSTRUCT Data;
 
-  memset(&Data, 0, sizeof(Data)); 
+  memset(&Data, 0, sizeof(Data));
   Data.hwnd = NULL;
   Data.wFunc = FO_DELETE;
   AnsiString FileList(FileName);

@@ -133,7 +133,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     object ButtonsToolBar: TToolBar
       Left = 9
       Top = 47
-      Width = 434
+      Width = 426
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -198,47 +198,33 @@ inherited ScpExplorerForm: TScpExplorerForm
         ImageIndex = 9
         Style = tbsSeparator
       end
-      object ToolButton3: TToolButton
-        Left = 180
-        Top = 0
-        Action = NonVisualDataModule.RemoteOpenDirAction
-      end
-      object ToolButton5: TToolButton
-        Left = 203
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton5'
-        ImageIndex = 0
-        Style = tbsSeparator
-      end
       object ToolButton44: TToolButton
-        Left = 211
+        Left = 180
         Top = 0
         Action = NonVisualDataModule.CurrentEditAction
       end
       object ToolButton45: TToolButton
-        Left = 234
+        Left = 203
         Top = 0
         Action = NonVisualDataModule.CurrentOpenAction
       end
       object ToolButton6: TToolButton
-        Left = 257
+        Left = 226
         Top = 0
         Action = NonVisualDataModule.CurrentDeleteAction
       end
       object ToolButton7: TToolButton
-        Left = 280
+        Left = 249
         Top = 0
         Action = NonVisualDataModule.CurrentPropertiesAction
       end
       object ToolButton14: TToolButton
-        Left = 303
+        Left = 272
         Top = 0
         Action = NonVisualDataModule.CurrentRenameAction
       end
       object ToolButton15: TToolButton
-        Left = 326
+        Left = 295
         Top = 0
         Width = 8
         Hint = 'E'
@@ -247,30 +233,35 @@ inherited ScpExplorerForm: TScpExplorerForm
         Style = tbsSeparator
       end
       object ToolButton13: TToolButton
-        Left = 334
+        Left = 303
         Top = 0
         Action = NonVisualDataModule.CurrentCreateDirAction
       end
       object ToolButton46: TToolButton
-        Left = 357
+        Left = 326
         Top = 0
         Action = NonVisualDataModule.AddEditLinkAction
       end
       object ToolButton43: TToolButton
-        Left = 380
+        Left = 349
         Top = 0
         Action = NonVisualDataModule.ConsoleAction
       end
       object ToolButton48: TToolButton
-        Left = 403
+        Left = 372
         Top = 0
         Width = 8
         Caption = 'ToolButton48'
         ImageIndex = 56
         Style = tbsSeparator
       end
+      object ToolButton51: TToolButton
+        Left = 380
+        Top = 0
+        Action = NonVisualDataModule.SynchronizeAction
+      end
       object ToolButton49: TToolButton
-        Left = 411
+        Left = 403
         Top = 0
         Action = NonVisualDataModule.FullSynchronizeAction
       end
@@ -404,7 +395,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     object PreferencesToolbar: TToolBar
       Left = 9
       Top = 119
-      Width = 126
+      Width = 149
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -452,6 +443,11 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.QueueToggleShowAction
         DropdownMenu = NonVisualDataModule.QueueShowPopup
         Style = tbsDropDown
+      end
+      object ToolButton3: TToolButton
+        Left = 126
+        Top = 0
+        Action = NonVisualDataModule.RemoteTreeAction
       end
     end
     object SortToolbar: TToolBar
@@ -555,13 +551,18 @@ inherited ScpExplorerForm: TScpExplorerForm
       Wrapable = False
       OnResize = ToolBarResize
       object UnixPathComboBox: TUnixPathComboBox
-        Tag = 2
+        Tag = 1
         Left = 0
         Top = 0
-        Width = 595
+        Width = 555
         Height = 21
         Align = alClient
         TabOrder = 0
+      end
+      object ToolButton57: TToolButton
+        Left = 555
+        Top = 0
+        Action = NonVisualDataModule.RemoteOpenDirAction
       end
     end
   end
@@ -570,7 +571,10 @@ inherited ScpExplorerForm: TScpExplorerForm
     Width = 640
     Height = 123
     Constraints.MinHeight = 100
-    Constraints.MinWidth = 200
+    Constraints.MinWidth = 210
+    inherited RemotePanelSplitter: TSplitter
+      Height = 104
+    end
     inherited RemoteStatusBar: TAssociatedStatusBar
       Tag = 1
       Top = 104
@@ -620,9 +624,13 @@ inherited ScpExplorerForm: TScpExplorerForm
       OnDrawPanel = SessionStatusBarDrawPanel
     end
     inherited RemoteDirView: TUnixDirView
-      Width = 640
+      Width = 468
       Height = 104
       PathComboBox = UnixPathComboBox
+    end
+    inherited RemoteDriveView: TUnixDriveView
+      Height = 104
+      Constraints.MinWidth = 40
     end
   end
   inherited QueuePanel: TPanel

@@ -29,23 +29,26 @@
 namespace Discmon
 {
 //-- type declarations -------------------------------------------------------
+typedef void __fastcall (__closure *TDiscMonitorNotify)(System::TObject* Sender, const AnsiString Directory);
+
 class DELPHICLASS TDiscMonitorThread;
 class PASCALIMPLEMENTATION TDiscMonitorThread : public Compthread::TCompThread 
 {
 	typedef Compthread::TCompThread inherited;
 	
 private:
-	Classes::TNotifyEvent FOnChange;
-	Classes::TNotifyEvent FOnInvalid;
-	AnsiString FDirectory;
+	TDiscMonitorNotify FOnChange;
+	TDiscMonitorNotify FOnInvalid;
+	Classes::TStrings* FDirectories;
 	unsigned FFilters;
 	unsigned FDestroyEvent;
 	unsigned FChangeEvent;
 	bool FSubTree;
-	int fChangeDelay;
+	int FChangeDelay;
+	AnsiString FNotifiedDirectory;
 	void __fastcall InformChange(void);
 	void __fastcall InformInvalid(void);
-	void __fastcall SetDirectory(const AnsiString Value);
+	void __fastcall SetDirectories(const Classes::TStrings* Value);
 	void __fastcall SetFilters(unsigned Value);
 	void __fastcall SetSubTree(bool Value);
 	
@@ -56,16 +59,14 @@ protected:
 public:
 	__fastcall TDiscMonitorThread(void);
 	__fastcall virtual ~TDiscMonitorThread(void);
-	__property AnsiString Directory = {read=FDirectory, write=SetDirectory};
+	__property Classes::TStrings* Directories = {read=FDirectories, write=SetDirectories};
 	__property unsigned Filters = {read=FFilters, write=SetFilters, nodefault};
-	__property Classes::TNotifyEvent OnChange = {read=FOnChange, write=FOnChange};
-	__property Classes::TNotifyEvent OnInvalid = {read=FOnInvalid, write=FOnInvalid};
+	__property TDiscMonitorNotify OnChange = {read=FOnChange, write=FOnChange};
+	__property TDiscMonitorNotify OnInvalid = {read=FOnInvalid, write=FOnInvalid};
 	__property bool SubTree = {read=FSubTree, write=SetSubTree, nodefault};
-	__property int ChangeDelay = {read=fChangeDelay, write=fChangeDelay, default=500};
+	__property int ChangeDelay = {read=FChangeDelay, write=FChangeDelay, default=500};
 };
 
-
-typedef AnsiString TDiscMonitorDirStr;
 
 #pragma option push -b-
 enum TMonitorFilter { moFilename, moDirName, moAttributes, moSize, moLastWrite, moSecurity };
@@ -82,34 +83,38 @@ private:
 	bool FActive;
 	TDiscMonitorThread* FMonitor;
 	TMonitorFilters FFilters;
-	Classes::TNotifyEvent FOnChange;
-	Classes::TNotifyEvent FOnInvalid;
+	TDiscMonitorNotify FOnChange;
+	TDiscMonitorNotify FOnInvalid;
 	bool FShowMsg;
-	AnsiString __fastcall GetDirectory();
+	bool FPending;
+	Classes::TStrings* __fastcall GetDirectories(void);
 	bool __fastcall GetSubTree(void);
 	void __fastcall SetActive(bool Value);
-	void __fastcall SetDirectory(AnsiString Value);
+	void __fastcall SetDirectories(Classes::TStrings* Value);
 	void __fastcall SetFilters(TMonitorFilters Value);
 	void __fastcall SetSubTree(bool Value);
 	int __fastcall GetChangeDelay(void);
 	void __fastcall SetChangeDelay(int Value);
+	void __fastcall AddDirectory(Classes::TStrings* Dirs, AnsiString Directory)/* overload */;
 	
 protected:
-	void __fastcall Change(System::TObject* Sender);
-	void __fastcall Invalid(System::TObject* Sender);
+	void __fastcall Change(System::TObject* Sender, const AnsiString Directory);
+	void __fastcall Invalid(System::TObject* Sender, const AnsiString Directory);
 	
 public:
 	__fastcall virtual TDiscMonitor(Classes::TComponent* AOwner);
 	__fastcall virtual ~TDiscMonitor(void);
 	void __fastcall Close(void);
 	void __fastcall Open(void);
+	void __fastcall AddDirectory(AnsiString Directory, bool SubDirs)/* overload */;
+	void __fastcall SetDirectory(AnsiString Directory);
 	__property TDiscMonitorThread* Thread = {read=FMonitor};
 	
 __published:
-	__property AnsiString Directory = {read=GetDirectory, write=SetDirectory};
+	__property Classes::TStrings* Directories = {read=GetDirectories, write=SetDirectories};
 	__property bool ShowDesignMsg = {read=FShowMsg, write=FShowMsg, default=0};
-	__property Classes::TNotifyEvent OnChange = {read=FOnChange, write=FOnChange};
-	__property Classes::TNotifyEvent OnInvalid = {read=FOnInvalid, write=FOnInvalid};
+	__property TDiscMonitorNotify OnChange = {read=FOnChange, write=FOnChange};
+	__property TDiscMonitorNotify OnInvalid = {read=FOnInvalid, write=FOnInvalid};
 	__property TMonitorFilters Filters = {read=FFilters, write=SetFilters, default=1};
 	__property bool SubTree = {read=GetSubTree, write=SetSubTree, default=1};
 	__property bool Active = {read=FActive, write=SetActive, default=0};
@@ -117,12 +122,7 @@ __published:
 };
 
 
-#pragma option push -b
-enum TWinBool { winFalse, winTrue };
-#pragma option pop
-
 //-- var, const, procedure ---------------------------------------------------
-extern "C" unsigned __stdcall FixFindFirstChangeNotification(const char * lpPathName, TWinBool bWatchSubtree, unsigned dwNotifyFilter);
 extern PACKAGE void __fastcall Register(void);
 
 }	/* namespace Discmon */

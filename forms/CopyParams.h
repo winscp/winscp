@@ -14,6 +14,9 @@
 
 #include "Rights.h"
 //---------------------------------------------------------------------------
+const int cfAllowTransferMode = 0x01;
+const int cfAllowExcludeMask =  0x02;
+//---------------------------------------------------------------------------
 class TCopyParamsFrame : public TFrame
 {
 __published:
@@ -39,36 +42,37 @@ __published:
   TCheckBox *CommonPreserveTimestampCheck;
   TCheckBox *ReplaceInvalidCharsCheck;
   TCheckBox *CommonCalculateSizeCheck;
+  TXPGroupBox *FilterGroup;
+  TLabel *Label1;
+  THistoryComboBox *ExcludeFileMaskCombo;
   void __fastcall ControlChange(TObject *Sender);
+  void __fastcall ValidateMaskComboExit(TObject *Sender);
 private:
   TParamsForDirection FDirection;
   AnsiString FOrigMasks;
-  Boolean FAllowTransferMode;
   TCopyParamType * FParams;
-  bool FForcePreserveTime;
-  Boolean __fastcall GetAllowTransferMode();
-  AnsiString __fastcall GetAsciiFileMask();
+  int FOptions;
   void __fastcall SetParams(TCopyParamType value);
   TCopyParamType __fastcall GetParams();
-  void __fastcall SetAllowTransferMode(Boolean value);
   void __fastcall SetDirection(TParamsForDirection value);
   TCheckBox * __fastcall GetPreserveTimeCheck();
-  void __fastcall SetForcePreserveTime(bool value);
+  void __fastcall SetOptions(int value);
 protected:
   void __fastcall UpdateControls();
   virtual void __fastcall SetEnabled(Boolean Value);
+
+  __property TCheckBox * PreserveTimeCheck = { read = GetPreserveTimeCheck };
 public:
+  __fastcall TCopyParamsFrame(TComponent* Owner);
   __fastcall ~TCopyParamsFrame();
+
   void __fastcall BeforeExecute();
   void __fastcall AfterExecute();
-  void __fastcall SelectMask(Integer Start, Integer Length);
-  __fastcall TCopyParamsFrame(TComponent* Owner);
-  __property Boolean AllowTransferMode = { read = GetAllowTransferMode, write = SetAllowTransferMode };
-  __property AnsiString AsciiFileMask = { read = GetAsciiFileMask };
+  void __fastcall Validate();
+
+  __property int Options = { read = FOptions, write = SetOptions }; 
   __property TParamsForDirection Direction = { read = FDirection, write = SetDirection };
   __property TCopyParamType Params = { read = GetParams, write = SetParams };
-  __property TCheckBox * PreserveTimeCheck = { read = GetPreserveTimeCheck };
-  __property bool ForcePreserveTime = { read = FForcePreserveTime, write = SetForcePreserveTime };
 };
 //---------------------------------------------------------------------------
 #endif

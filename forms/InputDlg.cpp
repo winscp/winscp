@@ -9,17 +9,6 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TPoint __fastcall GetAveCharSize(TCanvas* Canvas)
-{
-  Integer I;
-  Char Buffer[52];
-  TSize Result;
-  for (I = 0; I <= 25; I++) Buffer[I] = (Char)('A' + I);
-  for (I = 0; I <= 25; I++) Buffer[I+26] = (Char)('a' + I);
-  GetTextExtentPoint(Canvas->Handle, Buffer, 52, &Result);
-  return TPoint(Result.cx / 52, Result.cy);
-}
-//---------------------------------------------------------------------------
 bool __fastcall InputDialog(const AnsiString ACaption,
   const AnsiString APrompt, AnsiString & Value, TStrings * History)
 {

@@ -96,7 +96,7 @@ protected:
   bool __fastcall TerminalFree(TTerminalItem * TerminalItem);
 
   void __fastcall DoQueryUser(TObject * Sender, const AnsiString Query,
-    TStrings * MoreMessages, int Answers, int Params, int & Answer,
+    TStrings * MoreMessages, int Answers, const TQueryParams * Params, int & Answer,
     TQueryType Type);
   void __fastcall DoPromptUser(TSecureShell * SecureShell, AnsiString Prompt,
     TPromptKind Kind, AnsiString & Response, bool & Result);

@@ -12,6 +12,7 @@
 #include "Security.h"
 #include "TextsCore.h"
 #include "PuttyIntf.h"
+#include "RemoteFiles.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -582,7 +583,8 @@ void __fastcall TSessionData::Remove()
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
   AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
-  AnsiString * UserName, AnsiString * Password, AnsiString * Path)
+  AnsiString * UserName, AnsiString * Password, AnsiString * Path,
+  AnsiString * FileName)
 {
   int PSlash = Url.Pos("/");
   if (PSlash == 0)
@@ -597,7 +599,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
   bool Result = (P > 0) || ((Params & puRequireUsername) == 0);
   if (Result)
   {
-    if (Path != NULL)
+    if ((Path != NULL) || (FileName != NULL))
     {
       bool ExcludeLeadingSlash = (Params & puExcludeLeadingSlash) != 0;
       int Delta = ExcludeLeadingSlash ? 1 : 0;
@@ -605,7 +607,21 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
         Url.Length() - PSlash - Delta + 1);
       if (ExcludeLeadingSlash || (APath != "/"))
       {
-        *Path = APath;
+        if ((APath.Length() > 0) && (APath[APath.Length()] != '/'))
+        {
+          if (FileName != NULL)
+          {
+            *FileName = UnixExtractFileName(APath);
+          }
+          if (FLAGSET(Params, puExtractFileName))
+          {
+            APath = UnixExtractFilePath(APath);
+          }
+        }
+        if (Path != NULL)
+        {
+          *Path = APath;
+        }
       }
     }
 
@@ -658,7 +674,8 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
   return Result;
 }
 //---------------------------------------------------------------------
-bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params)
+bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
+  AnsiString * FileName)
 {
   AnsiString AHostName = HostName;
   int APortNumber = PortNumber;
@@ -667,7 +684,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params)
   AnsiString ARemoteDirectory = RemoteDirectory;
 
   bool Result = ParseUrl(Url, Params, NULL, &AHostName, &APortNumber,
-    &AUserName, &APassword, &ARemoteDirectory);
+    &AUserName, &APassword, &ARemoteDirectory, FileName);
   if (Result)
   {
     HostName = AHostName;

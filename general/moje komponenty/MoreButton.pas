@@ -19,6 +19,7 @@ type
     FOnChanging: TMBChangingEvent;
     FPanel: TWinControl;
     FRepositionForm: Boolean;
+    FWasEnabled: Boolean;
 
     function DefaultCaptions(Expanded: Boolean): string;
     procedure SetCaptions(Index: Integer; Value: string);
@@ -150,7 +151,12 @@ begin
           OwnerForm.Top := OwnerForm.Top + (ExpandedHeight div 2);
       end;
       Panel.Visible := Value;
-      Panel.Enabled := Value;
+      if Value then Panel.Enabled := FWasEnabled
+        else
+      begin
+        FWasEnabled := Panel.Enabled;
+        Panel.Enabled := False;
+      end;
     end;
     DoChange;
   end;

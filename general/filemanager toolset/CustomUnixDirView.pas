@@ -18,7 +18,6 @@ type
   protected
     { Protected declarations }
     function NewColProperties: TCustomListViewColProperties; override;
-    procedure DragDropDirException(Directory: string);
   public
     { Public declarations }
     property Items;
@@ -26,9 +25,6 @@ type
     { Published declarations }
     property UnixColProperties: TUnixDirViewColProperties read GetUnixColProperties write SetUnixColProperties;
   end;
-
-resourcestring
-  SDragDropDirException = 'Can''t create temporary drag&drop directory ''%s''.';
 
 implementation
 
@@ -48,11 +44,6 @@ end;
 function TCustomUnixDirView.GetUnixColProperties: TUnixDirViewColProperties;
 begin
   Result := TUnixDirViewColProperties(ColProperties);
-end;
-
-procedure TCustomUnixDirView.DragDropDirException(Directory: string);
-begin
-  raise Exception.CreateFmt(SDragDropDirException, [Directory]);
 end;
 
 end.

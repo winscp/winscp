@@ -4,17 +4,16 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\DriveDir_B5.bpl"/>
-    <OBJFILES value="DriveDir_B5.obj &quot;Filemanager Toolset\DirView.obj&quot; &quot;Filemanager Toolset\DiscMon.obj&quot; 
-      &quot;Filemanager Toolset\DriveView.obj&quot; &quot;Filemanager Toolset\FileOperator.obj&quot; &quot;Filemanager Toolset\IEComboBox.obj&quot; 
-      &quot;Filemanager Toolset\BaseUtils.obj&quot; &quot;Filemanager Toolset\FileChanges.obj&quot; &quot;Filemanager Toolset\MaskSearch.obj&quot; 
-      &quot;Filemanager Toolset\IEListView.obj&quot; &quot;Filemanager Toolset\IEDriveInfo.obj&quot; &quot;Filemanager Toolset\ShellDialogs.obj&quot; 
-      &quot;Moje komponenty\DirViewColProperties.obj&quot; &quot;Moje komponenty\Filemanager Toolset\CustomDirView.obj&quot; 
-      &quot;Moje komponenty\Filemanager Toolset\CustomUnixDirView.obj&quot; &quot;Moje komponenty\UnixDirViewColProperties.obj&quot; 
-      &quot;Moje komponenty\Filemanager Toolset\CustomPathComboBox.obj&quot; &quot;Moje komponenty\Filemanager Toolset\IEPathComboBox.obj&quot; 
-      &quot;Filemanager Toolset\ListExt.obj&quot; &quot;Moje komponenty\Filemanager Toolset\CompThread.obj&quot;"/>
+    <OBJFILES value="DriveDir_B5.obj &quot;Filemanager Toolset\DirView.obj&quot; &quot;Filemanager Toolset\DriveView.obj&quot; 
+      &quot;Filemanager Toolset\FileOperator.obj&quot; &quot;Filemanager Toolset\IEComboBox.obj&quot; &quot;Filemanager Toolset\BaseUtils.obj&quot; 
+      &quot;Filemanager Toolset\FileChanges.obj&quot; &quot;Filemanager Toolset\MaskSearch.obj&quot; &quot;Filemanager Toolset\IEListView.obj&quot; 
+      &quot;Filemanager Toolset\IEDriveInfo.obj&quot; &quot;Filemanager Toolset\ShellDialogs.obj&quot; 
+      &quot;Filemanager Toolset\DirViewColProperties.obj&quot; &quot;Filemanager Toolset\CustomDirView.obj&quot; 
+      &quot;Filemanager Toolset\CustomUnixDirView.obj&quot; &quot;Filemanager Toolset\UnixDirViewColProperties.obj&quot; 
+      &quot;Filemanager Toolset\CustomPathComboBox.obj&quot; &quot;Filemanager Toolset\IEPathComboBox.obj&quot; 
+      &quot;Filemanager Toolset\ListExt.obj&quot; &quot;Filemanager Toolset\CustomDriveView.obj&quot;"/>
     <RESFILES value="DriveDir_B5.res &quot;Filemanager Toolset\DirView.dcr&quot; 
-      &quot;Filemanager Toolset\DiscMon.dcr&quot; &quot;Filemanager Toolset\DriveView.dcr&quot; 
-      &quot;Filemanager Toolset\FileOperator.dcr&quot; 
+      &quot;Filemanager Toolset\DriveView.dcr&quot; &quot;Filemanager Toolset\FileOperator.dcr&quot; 
       &quot;Filemanager Toolset\IEComboBox.dcr&quot; &quot;Filemanager Toolset\DirImg.res&quot;"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
@@ -33,7 +32,7 @@
     <PACKAGES value="DragDrop_B5.bpi Moje_B5.bpi bcbie.bpi bcbsmp.bpi
       rtl.bpi vcl.bpi vclx.bpi"/>
     <PATHCPP value=".;"/>
-    <PATHPAS value=".;&quot;Filemanager Toolset&quot;;&quot;Moje komponenty&quot;;&quot;Moje komponenty\Filemanager Toolset&quot;"/>
+    <PATHPAS value=".;&quot;Filemanager Toolset&quot;"/>
     <PATHRC value=".;&quot;Filemanager Toolset&quot;"/>
     <PATHASM value=".;"/>
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
@@ -42,15 +41,15 @@
     <USERDEFINES value="OLD_DND;NORTON_LIKE"/>
     <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="DriveDir_B5.cpp"/>
-    <INCLUDEPATH value="&quot;Moje komponenty\TNortonLikeListView&quot;;&quot;Filemanager Toolset&quot;;&quot;Drag and Drop Components&quot;;&quot;Moje komponenty&quot;;&quot;Moje komponenty\Filemanager Toolset&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\lib\;;&quot;Moje komponenty\TNortonLikeListView&quot;;&quot;Filemanager Toolset&quot;;&quot;Drag and Drop Components&quot;;&quot;Moje komponenty&quot;;&quot;Moje komponenty\Filemanager Toolset&quot;;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
+    <INCLUDEPATH value="&quot;Filemanager Toolset&quot;;&quot;Drag and Drop Components&quot;;&quot;Moje komponenty&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;&quot;Filemanager Toolset&quot;;&quot;Drag and Drop Components&quot;;&quot;Moje komponenty&quot;;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
     <WARNINGS value="-wuse -w-par"/>
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
     <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- 
       -k- -vi -c -tWM"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
     <LFLAGS value="-I -D&quot;Filemanager Toolset&quot; -aa -Tpp -GD -s -Gn -Gl -Gi -M"/>
@@ -67,8 +66,6 @@
       <FILE FILENAME="DriveDir_B5.res" FORMNAME="" UNITNAME="DriveDir_B5" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\DirView.pas" FORMNAME="" UNITNAME="DirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\DirView.dcr" FORMNAME="" UNITNAME="DirView" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Filemanager Toolset\DiscMon.pas" FORMNAME="" UNITNAME="DiscMon" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Filemanager Toolset\DiscMon.dcr" FORMNAME="" UNITNAME="DiscMon" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\DriveView.pas" FORMNAME="" UNITNAME="DriveView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\DriveView.dcr" FORMNAME="" UNITNAME="DriveView" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\FileOperator.pas" FORMNAME="" UNITNAME="FileOperator" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -81,22 +78,22 @@
       <FILE FILENAME="Filemanager Toolset\IEListView.pas" FORMNAME="" UNITNAME="IEListView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\IEDriveInfo.pas" FORMNAME="" UNITNAME="IEDriveInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\ShellDialogs.pas" FORMNAME="" UNITNAME="ShellDialogs" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje komponenty\DirViewColProperties.pas" FORMNAME="" UNITNAME="DirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje komponenty\Filemanager Toolset\CustomDirView.pas" FORMNAME="" UNITNAME="CustomDirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje komponenty\Filemanager Toolset\CustomUnixDirView.pas" FORMNAME="" UNITNAME="CustomUnixDirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje komponenty\UnixDirViewColProperties.pas" FORMNAME="" UNITNAME="UnixDirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje komponenty\Filemanager Toolset\CustomPathComboBox.pas" FORMNAME="" UNITNAME="CustomPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje komponenty\Filemanager Toolset\IEPathComboBox.pas" FORMNAME="" UNITNAME="IEPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Filemanager Toolset\DirViewColProperties.pas" FORMNAME="" UNITNAME="DirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Filemanager Toolset\CustomDirView.pas" FORMNAME="" UNITNAME="CustomDirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Filemanager Toolset\CustomUnixDirView.pas" FORMNAME="" UNITNAME="CustomUnixDirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Filemanager Toolset\UnixDirViewColProperties.pas" FORMNAME="" UNITNAME="UnixDirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Filemanager Toolset\CustomPathComboBox.pas" FORMNAME="" UNITNAME="CustomPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Filemanager Toolset\IEPathComboBox.pas" FORMNAME="" UNITNAME="IEPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\ListExt.pas" FORMNAME="" UNITNAME="ListExt" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\bcbsmp.bpi" FORMNAME="" UNITNAME="bcbsmp" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\Projekty\WinSCP2\Filemanager Toolset\mODBC\mODBC\Projekty\WinSCP2\release\src\bcbie.bpi" FORMNAME="" UNITNAME="bcbie" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje komponenty\Filemanager Toolset\CompThread.pas" FORMNAME="" UNITNAME="CompThread" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="bcbsmp.bpi" FORMNAME="" UNITNAME="bcbsmp" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="bcbie.bpi" FORMNAME="" UNITNAME="bcbie" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Filemanager Toolset\DirImg.rc" FORMNAME="" UNITNAME="DirImg.rc" CONTAINERID="RC" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\Projekty\WinSCP2\Moje_B5.bpi" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="..\..\Projekty\WinSCP2\DragDrop_B5.bpi" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Moje_B5.bpi" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="DragDrop_B5.bpi" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Filemanager Toolset\CustomDriveView.pas" FORMNAME="" UNITNAME="CustomDriveView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

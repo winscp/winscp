@@ -41,6 +41,7 @@ type
   TDDOnDrop = procedure(Sender: TObject; DataObj: IDataObject; grfKeyState: Longint;  Point: TPoint; var dwEffect: Longint) of object;
   TDDOnQueryContinueDrag = procedure(Sender: TObject; FEscapePressed: BOOL; grfKeyState: Longint; var Result: HResult) of object;
   TDDOnGiveFeedback = procedure(Sender: TObject; dwEffect: Longint; var Result: HResult) of object;
+  TDDOnChooseEffect = procedure(Sender: TObject; grfKeyState: Longint; var dwEffect: Longint) of object;
   TDDOnDragDetect = procedure(Sender: TObject; grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus) of object;
   TDDOnCreateDragFileList = procedure(Sender: TObject; FileList: TFileList; var Created: Boolean) of object;
   TDDOnCreateDataObject = procedure(Sender: TObject; var DataObject: TDataObject) of object;
@@ -109,6 +110,7 @@ type
     FOnDDDrop: TDDOnDrop;
     FOnDDQueryContinueDrag: TDDOnQueryContinueDrag;
     FOnDDGiveFeedback: TDDOnGiveFeedback;
+    FOnDDChooseEffect: TDDOnChooseEffect;
     FOnDDDragDetect: TDDOnDragDetect;
     FOnDDCreateDragFileList: TDDOnCreateDragFileList;
     FOnDDProcessDropped: TOnProcessDropped;
@@ -211,7 +213,7 @@ type
     procedure DDDragEnter(DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: longint; var Accept: Boolean);
     procedure DDDragLeave;
     procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint);
-    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); virtual; abstract;
+    procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); virtual;
     procedure DDDrop(DataObj: IDataObject; grfKeyState: LongInt; Point: TPoint; var dwEffect: Longint);
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint; Point: TPoint; dwEffect: Longint); virtual;
     procedure DDGiveFeedback(dwEffect: Longint; var Result: HResult); virtual;
@@ -231,7 +233,7 @@ type
     procedure ColClick(Column: TListColumn); override;
     procedure CreateWnd; override;
     function CustomCreateFileList(Focused, OnlyFocused: Boolean;
-      FullPath: Boolean; FileList: TStrings = nil): TStrings;
+      FullPath: Boolean; FileList: TStrings = nil; ItemObject: Boolean = False): TStrings;
     function CustomDrawItem(Item: TListItem; State: TCustomDrawState;
       Stage: TCustomDrawStage): Boolean; override;
     function CustomDrawSubItem(Item: TListItem; SubItem: Integer;
@@ -251,7 +253,6 @@ type
     procedure IconsSetImageList; virtual;
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function ItemColor(Item: TListItem): TColor; virtual;
-    function ItemDragFileName(Item: TListItem): string; virtual;
     function ItemFileSize(Item: TListItem): Int64; virtual; abstract;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; virtual; abstract;
@@ -329,6 +330,8 @@ type
     procedure SaveSelection;
     procedure RestoreSelection;
     procedure DiscardSavedSelection;
+    function CanPasteFromClipBoard: Boolean; dynamic;
+    function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract; 
 
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
@@ -403,6 +406,8 @@ type
       read FOnDDQueryContinueDrag write FOnDDQueryContinueDrag;
     property OnDDGiveFeedback: TDDOnGiveFeedback
       read FOnDDGiveFeedback write FOnDDGiveFeedback;
+    property OnDDChooseEffect: TDDOnChooseEffect
+      read FOnDDChooseEffect write FOnDDChooseEffect;
     {A drag&drop operation is about to be initiated whith
      the components window as the source:}
     property OnDDDragDetect: TDDOnDragDetect
@@ -455,6 +460,7 @@ resourcestring
   SParentDir = 'Parent directory';
   SIconUpdateThreadTerminationError = 'Can''t terminate icon update thread.';
   SDragDropError = 'DragDrop Error: %d';
+  SDriveNotReady = 'Drive ''%s:'' is not ready.';
   SDirNotExists = 'Directory ''%s'' doesn''t exist.';
 
 {Additional non-component specific functions:}
@@ -495,7 +501,7 @@ var
 implementation
 
 uses
-  {DriveView, }Math, Masks;
+  Math, Masks;
 
 const
   Space = ' ';
@@ -926,10 +932,16 @@ begin
       LoadEnabled := True;
     LVN_BEGINDRAG:
       if FDragEnabled and (not Loading) then
+      begin
+        DDBeforeDrag;
         DDDragDetect(MK_LBUTTON, FStartPos, Mouse.CursorPos, ddsDrag);
+      end;
     LVN_BEGINRDRAG:
       if FDragEnabled and (not Loading) then
+      begin
+        DDBeforeDrag;
         DDDragDetect(MK_RBUTTON, FStartPos, Mouse.CursorPos, ddsDrag);
+      end;
   end;
 
   inherited;
@@ -1308,22 +1320,11 @@ begin
 end;
 
 procedure TCustomDirView.IconsSetImageList;
-
-  function ShellImageList(Flags: UINT): TImageList;
-  var
-    FileInfo: TShFileInfo;
-  begin
-    Result := TImageList.Create(Self);
-    Result.Handle := SHGetFileInfo('', 0, FileInfo, SizeOf(FileInfo),
-        SHGFI_SYSICONINDEX or Flags);
-    Result.ShareImages := True;
-  end;
-
 begin
   if not Assigned(SmallImages) then
-    SmallImages := ShellImageList(SHGFI_SMALLICON);
+    SmallImages := ShellImageList(Self, SHGFI_SMALLICON);
   if not Assigned(LargeImages) then
-    LargeImages := ShellImageList(SHGFI_LARGEICON);
+    LargeImages := ShellImageList(Self, SHGFI_LARGEICON);
 end; {IconsSetImageList}
 
 function TCustomDirView.ItemIsRecycleBin(Item: TListItem): Boolean;
@@ -1511,7 +1512,7 @@ begin
 end;
 
 procedure TCustomDirView.WMLButtonDown(var Message: TWMLButtonDown);
-Begin
+begin
   GetCursorPos(FStartPos);
   FDragEnabled := (not Loading);
   inherited;
@@ -1741,11 +1742,6 @@ begin
   end;
 end;
 
-function TCustomDirView.ItemDragFileName(Item: TListItem): string;
-begin
-  Result := ItemFullFileName(Item);
-end;
-
 function TCustomDirView.GetFilesCount: Integer;
 begin
   Result := Items.Count;
@@ -1841,9 +1837,10 @@ end;
 
 procedure TCustomDirView.DDDragLeave;
 begin
-  if Assigned(DropTarget) and GlobalDragImageList.Dragging then
+  if Assigned(DropTarget) then
   begin
-    GlobalDragImageList.HideDragImage;
+    if GlobalDragImageList.Dragging then
+      GlobalDragImageList.HideDragImage;
     DropTarget := nil;
     Update; {ie30}
   end
@@ -1945,13 +1942,18 @@ begin
 end;
 
 function TCustomDirView.CustomCreateFileList(Focused, OnlyFocused: Boolean;
-  FullPath: Boolean; FileList: TStrings): TStrings;
+  FullPath: Boolean; FileList: TStrings; ItemObject: Boolean): TStrings;
 
   procedure AddItem(Item: TListItem);
+  var
+    AObject: TObject;
   begin
     Assert(Assigned(Item));
-    if FullPath then Result.AddObject(ItemFullFileName(Item), Item.Data)
-      else Result.AddObject(ItemFileName(Item), Item.Data);
+    if ItemObject then AObject := Item
+      else AObject := Item.Data;
+
+    if FullPath then Result.AddObject(ItemFullFileName(Item), AObject)
+      else Result.AddObject(ItemFileName(Item), AObject);
   end;
 
 var
@@ -2092,6 +2094,12 @@ procedure TCustomDirView.DDDropHandlerSucceeded(Sender: TObject;
   grfKeyState: Integer; Point: TPoint; dwEffect: Integer);
 begin
   DropTarget := nil;
+end;
+
+procedure TCustomDirView.DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer);
+begin
+  if Assigned(FOnDDChooseEffect) then
+    FOnDDChooseEffect(Self, grfKeyState, dwEffect);
 end;
 
 procedure TCustomDirView.DDGiveFeedback(dwEffect: Integer;
@@ -2257,7 +2265,7 @@ end;
 
 procedure TCustomDirView.AddToDragFileList(FileList: TFileList; Item: TListItem);
 begin
-  FileList.AddItem(nil, ItemDragFileName(Item));
+  FileList.AddItem(nil, ItemFullFileName(Item));
 end;
 
 procedure TCustomDirView.DDDragDetect(grfKeyState: Integer; DetectStart,
@@ -2281,6 +2289,8 @@ begin
   if Assigned(FOnDDDragDetect) then
     FOnDDDragDetect(Self, grfKeyState, DetectStart, Point, DragStatus);
 
+  FLastDDResult := drCancelled; 
+
   if (DragStatus = ddsDrag) and (not Loading) and (MarkedCount > 0) then
   begin
     DragDropFilesEx.CompleteFileList := DragCompleteFileList;
@@ -2289,6 +2299,7 @@ begin
     FilesCount := 0;
     DirsCount := 0;
     FileListCreated := False;
+    AvoidDragImage := False;
 
     if Assigned(OnDDCreateDragFileList) then
     begin
@@ -2424,15 +2435,15 @@ begin
 
         Application.ProcessMessages;
       finally
-        DropSourceControl := nil;
-
         DragDropFilesEx.FileList.Clear;
         FContextMenu := False;
-        DropTarget := nil;
 
-        if Assigned(OnDDEnd) then
-        begin
-          OnDDEnd(Self);
+        try
+          if Assigned(OnDDEnd) then
+            OnDDEnd(Self);
+        finally
+          DropTarget := nil;
+          DropSourceControl := nil;
         end;
       end;
     end;
@@ -2773,6 +2784,16 @@ begin
   end;
 end;
 
+function TCustomDirView.CanPasteFromClipBoard: Boolean;
+begin
+  Result := False;
+  if DirOK and (Path <> '') and Windows.OpenClipboard(0) then
+  begin
+    Result := IsClipboardFormatAvailable(CF_HDROP);
+    Windows.CloseClipBoard;
+  end;
+end; {CanPasteFromClipBoard}
+
 procedure TCustomDirView.CompareFiles(DirView: TCustomDirView;
   ExistingOnly: Boolean; Criterias: TCompareCriterias);
 begin
@@ -2841,8 +2862,6 @@ begin
   end;
 end;
 
-var
-  DocPIDL: PItemIDList;
 initialization
   HasExtendedCOMCTL32 := COMCTL32OK;
 
@@ -2854,10 +2873,7 @@ initialization
   SetLength(TempDir, MAX_PATH);
   SetLength(TempDir, GetTempPath(MAX_PATH, PChar(TempDir)));
 
-  SetLength(UserDocumentDirectory, MAX_PATH);
-  SHGetSpecialFolderLocation(Application.Handle, CSIDL_PERSONAL, DocPIDL);
-  SHGetPathFromIDList(DocPIDL, PChar(UserDocumentDirectory));
-  SetLength(UserDocumentDirectory, StrLen(PChar(UserDocumentDirectory)));
+  SpecialFolderLocation(CSIDL_PERSONAL, UserDocumentDirectory);
 
   UnknownFileIcon := GetshFileInfo('$#)(.#$)', FILE_ATTRIBUTE_NORMAL,
     SHGFI_SYSICONINDEX or SHGFI_USEFILEATTRIBUTES).iIcon;

@@ -15,6 +15,7 @@ class TRemoteFile;
 class TCustomFileSystem;
 struct TCalculateSizeParams;
 struct TOverwriteFileParams;
+struct TSynchronizeData;
 typedef TStringList TUsersGroupsList;
 typedef void __fastcall (__closure *TReadDirectoryEvent)(System::TObject* Sender, Boolean ReloadOnly);
 typedef void __fastcall (__closure *TProcessFileEvent)
@@ -36,6 +37,7 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
 
 #define THROW_SKIP_FILE(EXCEPTION, MESSAGE) \
   throw EScpSkipFile(EXCEPTION, MESSAGE)
+#define THROW_SKIP_FILE_NULL THROW_SKIP_FILE(NULL, "")
 
 /* TODO : Better user interface (query to user) */
 #define FILE_OPERATION_LOOP_CUSTOM(TERMINAL, ALLOW_SKIP, MESSAGE, OPERATION) { \
@@ -62,9 +64,9 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
       TERMINAL->DoHandleExtendedException(&E); \
       int Answers = qaRetry | qaAbort | ((ALLOW_SKIP) ? qaSkip : 0); \
       int Answer; \
-      int Params = qpAllowContinueOnError | (!(ALLOW_SKIP) ? qpFatalAbort : 0); \
+      TQueryParams Params(qpAllowContinueOnError | (!(ALLOW_SKIP) ? qpFatalAbort : 0)); \
       SUSPEND_OPERATION ( \
-        Answer = TERMINAL->DoQueryUser(MESSAGE, &E, Answers, Params); \
+        Answer = TERMINAL->DoQueryUser(MESSAGE, &E, Answers, &Params); \
       ); \
       DoRepeat = (Answer == qaRetry); \
       if (Answer == qaAbort) OperationProgress->Cancel = csCancel; \
@@ -79,13 +81,14 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink,
-  fcTextMode, fcRename, fcNativeTextMode };
+  fcTextMode, fcRename, fcNativeTextMode, fcNewerOnlyUpload };
 enum TCurrentFSProtocol { cfsUnknown, cfsSCP, cfsSFTP };
 //---------------------------------------------------------------------------
 const cpDelete = 0x01;
 const cpDragDrop = 0x04;
 const cpTemporary = 0x04; // alias to cpDragDrop
 const cpNoConfirmation = 0x08;
+const cpNewerOnly = 0x10;
 //---------------------------------------------------------------------------
 const ccApplyToDirectories = 0x01;
 const ccRecursive = 0x02;
@@ -98,6 +101,10 @@ public:
   enum TSynchronizeMode { smRemote, smLocal, smBoth };
   static const spDelete = 0x01;
   static const spNoConfirmation = 0x02;
+  static const spExistingOnly = 0x04;
+  static const spNoRecurse = 0x08;
+  static const spUseCache = 0x10;
+  static const spDelayProgress = 0x20;
 
 // for TranslateLockedPath()
 friend class TRemoteFile;
@@ -174,7 +181,7 @@ protected:
   bool __fastcall ProcessFiles(TStrings * FileList, TFileOperation Operation,
     TProcessFileEvent ProcessFile, void * Param = NULL, TOperationSide Side = osRemote);
   void __fastcall ProcessDirectory(const AnsiString DirName,
-    TProcessFileEvent CallBackFunc, void * Param = NULL);
+    TProcessFileEvent CallBackFunc, void * Param = NULL, bool UseCache = false);
   AnsiString __fastcall TranslateLockedPath(AnsiString Path, bool Lock);
   void __fastcall ReadDirectory(TRemoteFileList * FileList);
   void __fastcall CustomReadDirectory(TRemoteFileList * FileList);
@@ -184,7 +191,7 @@ protected:
   void __fastcall OpenLocalFile(const AnsiString FileName, int Access,
     int * Attrs, HANDLE * Handle, unsigned long * ACTime, unsigned long * MTime,
     unsigned long * ATime, __int64 * Size, bool TryWriteReadOnly = true);
-  TRemoteFileList * ReadDirectoryListing(AnsiString Directory);
+  TRemoteFileList * ReadDirectoryListing(AnsiString Directory, bool UseCache);
   bool __fastcall HandleException(Exception * E);
   void __fastcall CalculateFileSize(AnsiString FileName,
     const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);
@@ -192,17 +199,19 @@ protected:
     const TRemoteFile * File, TCalculateSizeParams * Params);
   void __fastcall CalculateLocalFileSize(const AnsiString FileName,
     const TSearchRec Rec, /*__int64*/ void * Size);
-  void __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size);
+  void __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
+    const TCopyParamType * CopyParam = NULL);
   TStrings * __fastcall GetAdditionalInfo();
   int __fastcall ConfirmFileOverwrite(const AnsiString FileName,
-    const TOverwriteFileParams * FileParams, int Answers, int Params,
-    TOperationSide Side);
+    const TOverwriteFileParams * FileParams, int Answers, const TQueryParams * Params,
+    TOperationSide Side, TFileOperationProgressType * OperationProgress);
   void __fastcall DoSynchronizeDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory);
   void __fastcall SynchronizeFile(const AnsiString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
+  void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data);
   void __fastcall DeleteLocalFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
 
@@ -256,12 +265,15 @@ public:
     /*const TMoveFileParams*/ void * Param);
   bool __fastcall MoveFiles(TStrings * FileList, const AnsiString Target,
     const AnsiString FileMask);
-  void __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size, int Params);
+  void __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
+    int Params, const TCopyParamType * CopyParam = NULL);
   void __fastcall ClearCaches();
   void __fastcall Synchronize(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory);
+  bool __fastcall DirectoryFileList(const AnsiString Path,
+    TRemoteFileList *& FileList, bool CanLoad);
 
   static bool __fastcall IsAbsolutePath(const AnsiString Path);
   static AnsiString __fastcall ExpandFileName(AnsiString Path,
@@ -317,6 +329,7 @@ struct TCalculateSizeParams
 {
   __int64 Size;
   int Params;
+  const TCopyParamType * CopyParam;
 };
 //---------------------------------------------------------------------------
 struct TOverwriteFileParams

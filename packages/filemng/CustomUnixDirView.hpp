@@ -43,7 +43,6 @@ private:
 	
 protected:
 	virtual Listviewcolproperties::TCustomListViewColProperties* __fastcall NewColProperties(void);
-	void __fastcall DragDropDirException(AnsiString Directory);
 	
 public:
 	__property Items ;
@@ -67,8 +66,6 @@ public:
 
 
 //-- var, const, procedure ---------------------------------------------------
-extern PACKAGE System::ResourceString _SDragDropDirException;
-#define Customunixdirview_SDragDropDirException System::LoadResourceString(&Customunixdirview::_SDragDropDirException)
 
 }	/* namespace Customunixdirview */
 using namespace Customunixdirview;

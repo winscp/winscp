@@ -10,6 +10,8 @@
 #pragma delphiheader begin
 #pragma option push -w-
 #pragma option push -Vx
+#include <Controls.hpp>	// Pascal unit
+#include <Classes.hpp>	// Pascal unit
 #include <PIDL.hpp>	// Pascal unit
 #include <ShlObj.hpp>	// Pascal unit
 #include <Forms.hpp>	// Pascal unit
@@ -47,6 +49,9 @@ extern PACKAGE AnsiString __fastcall FormatSize(__int64 Size)/* overload */;
 extern PACKAGE void __fastcall FreePIDL(Shlobj::PItemIDList &PIDL);
 extern PACKAGE __int64 __fastcall DiskSize(Byte Drive);
 extern PACKAGE void __fastcall ReduceDateTimePrecision(System::TDateTime &DateTime, TDateTimePrecision Precision);
+extern PACKAGE bool __fastcall SpecialFolderLocation(int Folder, AnsiString &Path, Shlobj::PItemIDList &PIDL)/* overload */;
+extern PACKAGE bool __fastcall SpecialFolderLocation(int Folder, AnsiString &Path)/* overload */;
+extern PACKAGE Controls::TImageList* __fastcall ShellImageList(Classes::TComponent* Owner, unsigned Flags);
 
 }	/* namespace Baseutils */
 using namespace Baseutils;

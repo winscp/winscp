@@ -623,8 +623,9 @@ void __fastcall TSecureShell::WaitForData()
     else if (R == 0)
     {
       LogEvent("Waiting for data timed out, asking user what to do.");
+      TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
       if (DoQueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT, (FSessionData->Timeout)),
-            qaRetry | qaAbort, qpFatalAbort | qpAllowContinueOnError) != qaRetry)
+            qaRetry | qaAbort, &Params) != qaRetry)
       {
         FatalError(LoadStr(USER_TERMINATED));
       }
@@ -828,7 +829,7 @@ void __fastcall TSecureShell::DoHandleExtendedException(Exception * E)
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
-  TStrings * MoreMessages, int Answers, int Params, TQueryType Type)
+  TStrings * MoreMessages, int Answers, const TQueryParams * Params, TQueryType Type)
 {
   LogEvent(FORMAT("Asking user:\n%s (%s)", (Query, (MoreMessages ? MoreMessages->CommaText : AnsiString() ))));
   int Answer = qaCancel;
@@ -840,7 +841,7 @@ int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
-  const AnsiString OtherMessage, int Answers, int Params)
+  const AnsiString OtherMessage, int Answers, const TQueryParams * Params)
 {
   TStrings * MoreMessages = new TStringList();
   Integer Result;
@@ -854,13 +855,13 @@ int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
-  int Answers, int Params)
+  int Answers, const TQueryParams * Params)
 {
   return DoQueryUser(Query, "", Answers, Params);
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
-  Exception * E, int Answers, int Params)
+  Exception * E, int Answers, const TQueryParams * Params)
 {
   int Result;
   TStrings * MoreMessages = new TStringList();

@@ -287,23 +287,6 @@ object AboutDialog: TAboutDialog
       Height = 13
       Caption = 'Filemanager Toolset library Version 2.6'
     end
-    object FilemanagerHomepageLabel: TLabel
-      Left = 8
-      Top = 184
-      Width = 257
-      Height = 13
-      Cursor = crHandPoint
-      Caption = 'http://home.t-online.de/home/ingo.eckel/d4comp.htm'
-      Color = clBtnFace
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clBlue
-      Font.Height = -11
-      Font.Name = 'MS Sans Serif'
-      Font.Style = [fsUnderline]
-      ParentColor = False
-      ParentFont = False
-      OnClick = HomepageLabelClick
-    end
     object Label10: TLabel
       Left = 8
       Top = 168
@@ -313,7 +296,7 @@ object AboutDialog: TAboutDialog
     end
     object ProlongBoxLabel: TLabel
       Left = 8
-      Top = 198
+      Top = 184
       Width = 63
       Height = 13
       Caption = '                     '

@@ -61,6 +61,8 @@ typedef void __fastcall (__closure *TDDOnQueryContinueDrag)(System::TObject* Sen
 
 typedef void __fastcall (__closure *TDDOnGiveFeedback)(System::TObject* Sender, int dwEffect, HRESULT &Result);
 
+typedef void __fastcall (__closure *TDDOnChooseEffect)(System::TObject* Sender, int grfKeyState, int &dwEffect);
+
 typedef void __fastcall (__closure *TDDOnDragDetect)(System::TObject* Sender, int grfKeyState, const Types::TPoint &DetectStart, const Types::TPoint &Point, Dragdrop::TDragDetectStatus DragStatus);
 
 typedef void __fastcall (__closure *TDDOnCreateDragFileList)(System::TObject* Sender, Dragdropfilesex::TFileList* FileList, bool &Created);
@@ -163,6 +165,7 @@ private:
 	TDDOnDrop FOnDDDrop;
 	TDDOnQueryContinueDrag FOnDDQueryContinueDrag;
 	TDDOnGiveFeedback FOnDDGiveFeedback;
+	TDDOnChooseEffect FOnDDChooseEffect;
 	TDDOnDragDetect FOnDDDragDetect;
 	TDDOnCreateDragFileList FOnDDCreateDragFileList;
 	TOnProcessDropped FOnDDProcessDropped;
@@ -265,7 +268,7 @@ protected:
 	void __fastcall DDDragEnter(_di_IDataObject DataObj, int grfKeyState, const Types::TPoint &Point, int &dwEffect, bool &Accept);
 	void __fastcall DDDragLeave(void);
 	void __fastcall DDDragOver(int grfKeyState, const Types::TPoint &Point, int &dwEffect);
-	virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect) = 0 ;
+	virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect);
 	void __fastcall DDDrop(_di_IDataObject DataObj, int grfKeyState, const Types::TPoint &Point, int &dwEffect);
 	virtual void __fastcall DDDropHandlerSucceeded(System::TObject* Sender, int grfKeyState, const Types::TPoint &Point, int dwEffect);
 	virtual void __fastcall DDGiveFeedback(int dwEffect, HRESULT &Result);
@@ -280,7 +283,7 @@ protected:
 	virtual int __fastcall GetFilesCount(void);
 	DYNAMIC void __fastcall ColClick(Comctrls::TListColumn* Column);
 	virtual void __fastcall CreateWnd(void);
-	Classes::TStrings* __fastcall CustomCreateFileList(bool Focused, bool OnlyFocused, bool FullPath, Classes::TStrings* FileList = (Classes::TStrings*)(0x0));
+	Classes::TStrings* __fastcall CustomCreateFileList(bool Focused, bool OnlyFocused, bool FullPath, Classes::TStrings* FileList = (Classes::TStrings*)(0x0), bool ItemObject = false);
 	virtual bool __fastcall CustomDrawItem(Comctrls::TListItem* Item, Comctrls::TCustomDrawState State, Comctrls::TCustomDrawStage Stage);
 	virtual bool __fastcall CustomDrawSubItem(Comctrls::TListItem* Item, int SubItem, Comctrls::TCustomDrawState State, Comctrls::TCustomDrawStage Stage);
 	void __fastcall CustomSortItems(void * SortProc);
@@ -298,7 +301,6 @@ protected:
 	virtual void __fastcall IconsSetImageList(void);
 	virtual bool __fastcall ItemCanDrag(Comctrls::TListItem* Item);
 	virtual Graphics::TColor __fastcall ItemColor(Comctrls::TListItem* Item);
-	virtual AnsiString __fastcall ItemDragFileName(Comctrls::TListItem* Item);
 	virtual __int64 __fastcall ItemFileSize(Comctrls::TListItem* Item) = 0 ;
 	virtual int __fastcall ItemImageIndex(Comctrls::TListItem* Item, bool Cache) = 0 ;
 	virtual System::TDateTime __fastcall ItemFileTime(Comctrls::TListItem* Item, Baseutils::TDateTimePrecision &Precision) = 0 ;
@@ -372,6 +374,8 @@ public:
 	void __fastcall SaveSelection(void);
 	void __fastcall RestoreSelection(void);
 	void __fastcall DiscardSavedSelection(void);
+	DYNAMIC bool __fastcall CanPasteFromClipBoard(void);
+	virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "") = 0 ;
 	__property bool AddParentDir = {read=FAddParentDir, write=SetAddParentDir, default=0};
 	__property bool DimmHiddenFiles = {read=FDimmHiddenFiles, write=SetDimmHiddenFiles, default=1};
 	__property bool ShowDirectories = {read=FShowDirectories, write=SetShowDirectories, default=1};
@@ -432,6 +436,7 @@ public:
 	__property TDDOnDrop OnDDDrop = {read=FOnDDDrop, write=FOnDDDrop};
 	__property TDDOnQueryContinueDrag OnDDQueryContinueDrag = {read=FOnDDQueryContinueDrag, write=FOnDDQueryContinueDrag};
 	__property TDDOnGiveFeedback OnDDGiveFeedback = {read=FOnDDGiveFeedback, write=FOnDDGiveFeedback};
+	__property TDDOnChooseEffect OnDDChooseEffect = {read=FOnDDChooseEffect, write=FOnDDChooseEffect};
 	__property TDDOnDragDetect OnDDDragDetect = {read=FOnDDDragDetect, write=FOnDDDragDetect};
 	__property TDDOnCreateDragFileList OnDDCreateDragFileList = {read=FOnDDCreateDragFileList, write=FOnDDCreateDragFileList};
 	__property Classes::TNotifyEvent OnDDEnd = {read=FOnDDEnd, write=FOnDDEnd};
@@ -494,6 +499,8 @@ extern PACKAGE System::ResourceString _SIconUpdateThreadTerminationError;
 #define Customdirview_SIconUpdateThreadTerminationError System::LoadResourceString(&Customdirview::_SIconUpdateThreadTerminationError)
 extern PACKAGE System::ResourceString _SDragDropError;
 #define Customdirview_SDragDropError System::LoadResourceString(&Customdirview::_SDragDropError)
+extern PACKAGE System::ResourceString _SDriveNotReady;
+#define Customdirview_SDriveNotReady System::LoadResourceString(&Customdirview::_SDriveNotReady)
 extern PACKAGE System::ResourceString _SDirNotExists;
 #define Customdirview_SDirNotExists System::LoadResourceString(&Customdirview::_SDirNotExists)
 extern PACKAGE int StdDirIcon;

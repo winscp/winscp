@@ -62,6 +62,7 @@ public:
   __int64 TotalSkipped;
   __int64 TotalSize;
   bool YesToAll;
+  bool YesToNewer;
   bool NoToAll;
 
   bool TotalSizeSet;

@@ -7,6 +7,8 @@
 
 #include <Common.h>
 #include <TextsWin.h>
+#include <FileMasks.h>
+#include <WinInterface.h>
 
 #include "Tools.h"
 //---------------------------------------------------------------------------
@@ -225,4 +227,18 @@ void __fastcall CreateDesktopShortCut(const AnsiString &Name,
     throw Exception(CREATE_SHORTCUT_ERROR);
   }
 }
-
+//---------------------------------------------------------------------------
+void __fastcall ValidateMaskEdit(TComboBox * Edit)
+{
+  assert(Edit != NULL);
+  TFileMasks Masks = Edit->Text;
+  int Start, Length;
+  if (!Masks.IsValid(Start, Length))
+  {
+    SimpleErrorDialog(FMTLOAD(MASK_ERROR, (Masks.Masks.SubString(Start + 1, Length))));
+    Edit->SetFocus();
+    Edit->SelStart = Start;
+    Edit->SelLength = Length;
+    Abort();
+  }
+}

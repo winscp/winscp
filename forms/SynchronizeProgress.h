@@ -36,6 +36,8 @@ public:
   void __fastcall SetData(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, bool & Continue);
 
+  __property bool Started = { read = FStarted };
+
 private:
   TDateTime FStartTime;
   TDateTime FElapsed;

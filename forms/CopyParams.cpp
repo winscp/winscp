@@ -10,6 +10,7 @@
 #include <ScpMain.h>
 #include "CustomWinConfiguration.h"
 #include "TextsWin.h"
+#include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "Rights"
@@ -23,8 +24,7 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   FDirection = pdToLocal;
   Direction = pdToRemote;
 
-  FForcePreserveTime = false;
-  FAllowTransferMode = True;
+  FOptions = cfAllowTransferMode | cfAllowExcludeMask;
   RightsFrame->AllowAddXToDirectories = True;
   FParams = new TCopyParamType();
   TCopyParamType DefParams;
@@ -67,14 +67,11 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
 
   CommonCalculateSizeCheck->Checked = value.CalculateSize;
 
+  ExcludeFileMaskCombo->Text = value.ExcludeFileMask.Masks;
+
   *FParams = value;
 
   UpdateControls();
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TCopyParamsFrame::GetAsciiFileMask()
-{
-  return AsciiFileMaskCombo->Text;
 }
 //---------------------------------------------------------------------------
 TCopyParamType __fastcall TCopyParamsFrame::GetParams()
@@ -109,6 +106,8 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
 
   Result.CalculateSize = CommonCalculateSizeCheck->Checked;
 
+  Result.ExcludeFileMask.Masks = ExcludeFileMaskCombo->Text;
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -124,19 +123,16 @@ TCheckBox * __fastcall TCopyParamsFrame::GetPreserveTimeCheck()
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::UpdateControls()
 {
-  EnableControl(TransferModeGroup, FAllowTransferMode && Enabled);
+  EnableControl(TransferModeGroup,
+    FLAGSET(Options, cfAllowTransferMode) && Enabled);
   EnableControl(AsciiFileMaskLabel,
-    FAllowTransferMode && TMAutomaticButton->Checked && Enabled);
+    FLAGSET(Options, cfAllowTransferMode) && TMAutomaticButton->Checked && Enabled);
   EnableControl(AsciiFileMaskCombo,
-    FAllowTransferMode && TMAutomaticButton->Checked && Enabled);
+    FLAGSET(Options, cfAllowTransferMode) && TMAutomaticButton->Checked && Enabled);
   EnableControl(RightsFrame, PreserveRightsCheck->Checked && Enabled);
   EnableControl(ReplaceInvalidCharsCheck,
     Direction == pdToLocal || Direction == pdBoth || Direction == pdAll);
-  EnableControl(PreserveTimeCheck, !ForcePreserveTime);
-  if (ForcePreserveTime)
-  {
-    PreserveTimeCheck->Checked = true;
-  }
+  EnableControl(FilterGroup, FLAGSET(Options, cfAllowExcludeMask));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)
@@ -165,6 +161,7 @@ void __fastcall TCopyParamsFrame::BeforeExecute()
 {
   assert(CustomWinConfiguration);
   AsciiFileMaskCombo->Items = CustomWinConfiguration->History["Mask"];
+  ExcludeFileMaskCombo->Items = CustomWinConfiguration->History["ExcludeMask"];
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::AfterExecute()
@@ -172,30 +169,26 @@ void __fastcall TCopyParamsFrame::AfterExecute()
   assert(CustomWinConfiguration);
   AsciiFileMaskCombo->SaveToHistory();
   CustomWinConfiguration->History["Mask"] = AsciiFileMaskCombo->Items;
+  ExcludeFileMaskCombo->SaveToHistory();
+  CustomWinConfiguration->History["ExcludeMask"] = ExcludeFileMaskCombo->Items;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyParamsFrame::SelectMask(Integer Start, Integer Length)
+void __fastcall TCopyParamsFrame::Validate()
 {
-  AsciiFileMaskCombo->SetFocus();
-  AsciiFileMaskCombo->SelStart = Start;
-  AsciiFileMaskCombo->SelLength = Length;
+  if (AsciiFileMaskCombo->Focused())
+  {
+    ValidateMaskEdit(AsciiFileMaskCombo);
+  }
+  if (ExcludeFileMaskCombo->Focused())
+  {
+    ValidateMaskEdit(ExcludeFileMaskCombo);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyParamsFrame::SetAllowTransferMode(Boolean value)
+void __fastcall TCopyParamsFrame::SetOptions(int value)
 {
-  FAllowTransferMode = value;
+  FOptions = value;
   UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TCopyParamsFrame::SetForcePreserveTime(bool value)
-{
-  FForcePreserveTime = value;
-  UpdateControls();
-}
-//---------------------------------------------------------------------------
-Boolean __fastcall TCopyParamsFrame::GetAllowTransferMode()
-{
-  return FAllowTransferMode;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetEnabled(Boolean Value)
@@ -203,4 +196,10 @@ void __fastcall TCopyParamsFrame::SetEnabled(Boolean Value)
   TFrame::SetEnabled(Value);
   UpdateControls();
 }
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::ValidateMaskComboExit(TObject * Sender)
+{
+  ValidateMaskEdit(dynamic_cast<TComboBox*>(Sender));
+}
+//---------------------------------------------------------------------------
 

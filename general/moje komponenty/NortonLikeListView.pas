@@ -49,6 +49,7 @@ type
     function GetItemFromHItem(const Item: TLVItem): TListItem;
     function GetValid: Boolean; virtual;
     function GetSelCount: Integer; override;
+    procedure DDBeforeDrag;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -276,6 +277,12 @@ begin
     end;
 
   inherited;
+end;
+
+procedure TCustomNortonLikeListView.DDBeforeDrag;
+begin
+  FDontSelectItem := False;
+  FDontUnSelectItem := False;
 end;
 
 procedure TCustomNortonLikeListView.CNNotify(var Message: TWMNotify);

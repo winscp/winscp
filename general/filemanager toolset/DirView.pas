@@ -19,7 +19,7 @@ unit DirView;
 
     Modifications (for WinSCP):
     ===========================
-    (c) Martin Prikryl 2001- 2003
+    (c) Martin Prikryl 2001- 2004
 
     V2.6:
     - Shows "shared"-symbol with directories
@@ -36,6 +36,7 @@ unit DirView;
 interface
 
 {$WARN UNIT_PLATFORM OFF}
+{$DEFINE USE_DRIVEVIEW}
 
 uses
   Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
@@ -272,8 +273,8 @@ type
     procedure SetPath(Value: string); override;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); override;
     procedure SetCompressedColor(Value: TColor);
-    procedure ChangeDetected(Sender: TObject);
-    procedure ChangeInvalid(Sender: TObject);
+    procedure ChangeDetected(Sender: TObject; const Directory: string);
+    procedure ChangeInvalid(Sender: TObject; const Directory: string);
     procedure TimerOnTimer(Sender: TObject);
     procedure ResetItemImage(Index: Integer);
     procedure SetAttrSpace(Value: string);
@@ -329,8 +330,7 @@ type
     procedure EmptyClipboard; dynamic;
     function CopyToClipBoard: Boolean; dynamic;
     function CutToClipBoard: Boolean; dynamic;
-    function CanPasteFromClipBoard: Boolean; dynamic;
-    function PasteFromClipBoard(TargetPath: string = ''): Boolean; dynamic;
+    function PasteFromClipBoard(TargetPath: string = ''): Boolean; override;
     function DuplicateSelectedFiles: Boolean; dynamic;
     procedure DisplayPropertiesMenu; override;
 
@@ -1013,12 +1013,18 @@ end;
 
 procedure TDirView.SetPath(Value: string);
 begin
-  Value := StringReplace(Value, '/', '\', [rfReplaceAll]);
-  while (Length(Value) > 0) and (Value[Length(Value)] = '\') do
-    SetLength(Value, Length(Value) - 1);
-
+  if Assigned(FDriveView) and
+     (TDriveView(FDriveView).Directory <> Value) then
+  begin
+    TDriveView(FDriveView).Directory := Value;
+  end
+    else
   if FPath <> Value then
   try
+    Value := StringReplace(Value, '/', '\', [rfReplaceAll]);
+    while (Length(Value) > 0) and (Value[Length(Value)] = '\') do
+      SetLength(Value, Length(Value) - 1);
+
     if IsUncPath(Value) then
       raise Exception.CreateFmt(SUcpPathsNotSupported, [Value]);
     if not DirectoryExists(Value) then
@@ -1483,9 +1489,6 @@ begin
   try
     if Length(FPath) > 0 then
     begin
-      {$IFDEF USE_DRIVEVIEW}
-      if not Assigned(FDriveView) then
-      {$ENDIF}
       DriveInfo.ReadDriveStatus(FPath[1], dsSize);
       FDriveType := DriveInfo[FPath[1]].DriveType;
     end
@@ -1527,7 +1530,6 @@ begin
         begin
           ActMask := GetNextMask(TempMask);
           Inc(ScanRun);
-          //ItemsAdded := 0;
 
           if Assigned(FileList) and (Length(TempMask) > 0) then
             FileList.Sort;
@@ -2633,54 +2635,50 @@ begin
     ValidateFile(FindFileItem(ExtractFileName(FileName)));
 end; {ValidateFile}
 
-Procedure TDirView.ValidateSelectedFiles;
-Var i          : Integer;
-    StartIndex : Integer;
-    Upd        : Boolean;
-    LastCount  : Integer;
+procedure TDirView.ValidateSelectedFiles;
+var
+  FileList: TStrings;
+  i: Integer;
+  ToDelete: Boolean;
+  Updating: Boolean;
+  Deleted: Boolean;
+  Item: TListItem;
+begin
+  if SelCount > 50 then Reload2
+    else
+  begin
+    Updating := False;
+    Deleted := False;
+    FileList := CustomCreateFileList(True, False, True, nil, True);
+    try
+      for i := 0 to FileList.Count - 1 do
+      begin
+        Item := TListItem(FileList.Objects[i]);
+        if ItemIsDirectory(Item) then
+          ToDelete := not DirectoryExists(FileList[i])
+        else
+          ToDelete := not FileExists(FileList[i]);
 
-Begin
-  IF SelCount > 50 Then
-  Begin
-    Reload2;
-    Exit;
-  End;
-  Upd := False;
-  LastCount := Items.Count;
-
-  Try
-    i := ListView_GetNextItem(Handle, -1, LVNI_ALL Or LVNI_SELECTED);
-    While i >= 0 Do
-    Begin
-      Case PFileRec(Items[i].Data)^.isDirectory Of
-        True:  Begin
-                 If Not DirExists(ItemFullFileName(Items[i])) Then
-                 Begin
-                   Items[i].Delete;
-                   Dec(i);
-                 End;
-               End;
-        False: IF Not FileExists(ItemFullFileName(Items[i])) Then
-               Begin
-                 IF (SelCount > 10) And Not Upd Then
-                 Begin
-                   Items.BeginUpdate;
-                   Upd := True;
-                 End;
-                 Items[i].Delete;
-                 Dec(i);
-               End;
-      End;
-      StartIndex := i;
-      i := ListView_GetNextItem(Handle, StartIndex, LVNI_ALL Or LVNI_SELECTED);
-    End;
-  Finally
-    IF Upd Then
-    Items.EndUpdate;
-    IF (LastCount <> Items.Count) And Assigned(OnDirUpdated) Then
-      OnDirUpdated(Self);
-  End;
-End; {ValidateSelectedFiles}
+        if ToDelete then
+        begin
+          if (SelCount > 10) and (not Updating) then
+          begin
+            Items.BeginUpdate;
+            Updating := True;
+          end;
+          Item.Delete;
+          Deleted := True;
+        end;
+      end;
+    finally
+      if Updating then
+        Items.EndUpdate;
+      FileList.Free;
+      if Deleted and Assigned(OnDirUpdated) then
+        OnDirUpdated(Self);
+    end;
+  end;
+end; {ValidateSelectedFiles}
 
 function TDirView.CreateFile(NewName: string): TListItem;
 var
@@ -3182,7 +3180,7 @@ begin
         ChangeDelay := msThreadChangeDelay;
         SubTree := False;
         Filters := [moDirName, moFileName, moSize, moAttributes, moLastWrite];
-        Directory := PathName;
+        SetDirectory(PathName);
         OnChange := ChangeDetected;
         OnInvalid := ChangeInvalid;
         Open;
@@ -3190,7 +3188,7 @@ begin
     end
       else
     begin
-      FDiscMonitor.Directory := PathName;
+      FDiscMonitor.SetDirectory(PathName);
       FDiscMonitor.Open;
     end;
   end
@@ -3211,7 +3209,7 @@ begin
   end
 end; {TimerOnTimer}
 
-procedure TDirView.ChangeDetected(Sender: TObject);
+procedure TDirView.ChangeDetected(Sender: TObject; const Directory: string);
 begin
   FDirty := True;
   FChangeTimer.Enabled := False;
@@ -3220,7 +3218,7 @@ begin
   FChangeTimer.Enabled := True;
 end; {ChangeDetected}
 
-procedure TDirView.ChangeInvalid(Sender: TObject);
+procedure TDirView.ChangeInvalid(Sender: TObject; const Directory: string);
 begin
   FDiscMonitor.Close;
   if Assigned(FOnChangeInvalid) then
@@ -3239,7 +3237,7 @@ end; {Syncronize}
 {$IFNDEF NO_THREADS}
 
 function TDirView.WatchThreadActive: Boolean;
-Begin
+begin
   Result := WatchForChanges and Assigned(FDiscMonitor) and
     FDiscMonitor.Active;
 end; {WatchThreadActive}
@@ -3698,10 +3696,10 @@ begin
       if UpperCase(ExtractFileExt(PFileRec(Item.Data)^.DisplayName)) =
         ('.' + PFileRec(Item.Data)^.FileExt) then
           FileList.AddItemEx(PFileRec(Item.Data)^.PIDL,
-            ItemDragFileName(Item), PFileRec(Item.Data)^.DisplayName)
+            ItemFullFileName(Item), PFileRec(Item.Data)^.DisplayName)
       else
         FileList.AddItemEx(PFileRec(Item.Data)^.PIDL,
-          ItemDragFileName(Item), PFileRec(Item.Data)^.DisplayName +
+          ItemFullFileName(Item), PFileRec(Item.Data)^.DisplayName +
             ExtractFileExt(PFileRec(Item.Data)^.FileName));
     end;
   end
@@ -3743,6 +3741,8 @@ begin
        (DragDropFilesEx.AvailableDropEffects and DropEffect_Move <> 0))
          or IsRecycleBin) then dwEffect := DropEffect_Move;
   end;
+
+  inherited;
 end;
 
 procedure TDirView.PerformDragDropFileOperation(TargetPath: string;
@@ -3769,7 +3769,8 @@ begin
     end
       else
     begin
-      IsRecycleBin := Self.IsRecycleBin or ItemIsRecycleBin(DropTarget);
+      IsRecycleBin := Self.IsRecycleBin or
+        ((DropTarget <> nil) and ItemIsRecycleBin(DropTarget));
       if not (DragDropFilesEx.FileNamesAreMapped and IsRecycleBin) then
       begin
         OldCursor := Screen.Cursor;
@@ -4082,17 +4083,7 @@ begin
   end;
 end; {CutToClipBoard}
 
-function TDirView.CanPasteFromClipBoard: Boolean;
-begin
-  Result := False;
-  if DirOK and (Path <> '') and Windows.OpenClipboard(0) then
-  begin
-    Result := IsClipboardFormatAvailable(CF_HDROP);
-    Windows.CloseClipBoard;
-  end;
-end; {CanPasteFromClipBoard}
-
-function TDirView.PasteFromClipBoard(TargetPath: string = ''): Boolean;
+function TDirView.PasteFromClipBoard(TargetPath: string): Boolean;
 begin
   DragDropFilesEx.FileList.Clear;
   Result := False;
@@ -4141,7 +4132,7 @@ begin
       try
         SelectNewFiles := True;
         Selected := nil;
-        Result := PasteFromClipBoard;
+        Result := PasteFromClipBoard();
       finally
         SelectNewFiles := False;
         if Assigned(Selected) then

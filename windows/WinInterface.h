@@ -14,6 +14,15 @@ class TSecureShell;
 const int mpNeverAskAgainCheck =   0x01;
 const int mpAllowContinueOnError = 0x02;
 
+struct TMessageParams
+{
+  TMessageParams(unsigned int AParams = 0);
+  
+  const TQueryButtonAlias * Aliases;
+  unsigned int AliasesCount;
+  unsigned int Params;
+};
+
 class TCustomScpExplorerForm;
 TCustomScpExplorerForm * __fastcall CreateScpExplorer();
 
@@ -30,20 +39,21 @@ void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell, Exception * 
 
 // windows\WinInterface.cpp
 int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
-  int Answers, int HelpCtx = 0, int Params = 0);
+  int Answers, int HelpCtx = 0, const TMessageParams * Params = NULL);
 int __fastcall MessageDialog(int Ident, TQueryType Type,
-  int Answers, int HelpCtx = 0, int Params = 0);
+  int Answers, int HelpCtx = 0, const TMessageParams * Params = NULL);
 int __fastcall SimpleErrorDialog(const AnsiString Msg);
 
 int __fastcall MoreMessageDialog(const AnsiString Message,
   TStrings * MoreMessages, TQueryType Type, int Answers,
-  int HelpCtx, int Params = 0);
+    int HelpCtx, const TMessageParams * Params = NULL);
 
-int __fastcall FatalExceptionMessageDialog(Exception * E,
-  TQueryType Type, AnsiString MessageFormat = "%s", int Answers = qaOK,
-  int HelpCtx = 0, int Params = 0);
-int __fastcall ExceptionMessageDialog(Exception * E,
-  TQueryType Type, int Answers, int HelpCtx = 0);
+int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
+  const AnsiString MessageFormat = "%s", int Answers = qaOK, int HelpCtx = 0,
+  const TMessageParams * Params = NULL);
+int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
+  const AnsiString MessageFormat = "%s", int Answers = qaOK, int HelpCtx = 0,
+  const TMessageParams * Params = NULL);
 
 // windows\WinMain.cpp
 class TProgramParams;
@@ -51,7 +61,6 @@ void __fastcall Execute(TProgramParams * Params);
 //void __fastcall ReconnectTerminal();
 
 // forms\InputDlg.cpp
-TPoint __fastcall GetAveCharSize(TCanvas* Canvas);
 bool __fastcall InputDialog(const AnsiString ACaption,
   const AnsiString APrompt, AnsiString & Value, TStrings * History = NULL);
 
@@ -71,6 +80,7 @@ const coDragDropTemp        = 0x01;
 const coDisableQueue        = 0x02;
 const coDisableTransferMode = 0x04;
 const coDisableDirectory    = 0x08; // not used anymore
+const coDisableNewerOnly    = 0x10;
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, AnsiString & TargetDirectory,
   TGUICopyParamType * Params, int Options);
@@ -113,7 +123,8 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   TStrings * RemoteDirectories, TTerminal * Terminal);
 
 // forms\Preferences.cpp
-enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands, pmQueue };
+enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands, 
+    pmQueue, pmTransfer };
 typedef void __fastcall (__closure *TGetDefaultLogFileName)
   (System::TObject* Sender, AnsiString &DefaultLogFileName);
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode);
@@ -147,26 +158,28 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
     TFileFilter * Filter, TConfiguration * Configuration);
 #endif
 
-// forms\Synchronize.cpp
-class TSynchronizeParamType {
-public:
-  TCopyParamType CopyParams;
-  bool AllowTransferMode;
-  AnsiString LocalDirectory;
-  AnsiString RemoteDirectory;
-
-  TSynchronizeParamType __fastcall operator =(TSynchronizeParamType rhp);
-  void __fastcall Assign(TSynchronizeParamType Source);
-};
-enum TSynchronizationStatus { ssStopped, ssWaiting, ssSynchronize, ssSynchronizing };
-typedef void __fastcall (__closure * TSynchronizeStartStopEvent)
-  (System::TObject * Sender, bool Start, TSynchronizeParamType Params);
-void __fastcall DoSynchronizeDialog(TSynchronizeParamType Params,
-    TSynchronizeStartStopEvent OnStartStop);
-
-enum TSynchronizeMode { smRemote, smLocal, smBoth };
 const spDelete = 0x01;
 const spNoConfirmation = 0x02;
+const spExistingOnly = 0x04;
+
+// forms\Synchronize.cpp
+struct TSynchronizeParamType 
+{
+  AnsiString LocalDirectory;
+  AnsiString RemoteDirectory;
+  int Params;
+  bool Recurse;
+};
+typedef void __fastcall (__closure * TSynchronizeAbortEvent)
+  (System::TObject * Sender, bool Close);
+typedef void __fastcall (__closure * TSynchronizeStartStopEvent)
+  (System::TObject * Sender, bool Start, const TSynchronizeParamType & Params,
+   TSynchronizeAbortEvent OnAbort);
+bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
+  TSynchronizeStartStopEvent OnStartStop, bool & SaveSettings);
+
+// forms\FullSynchronize.cpp
+enum TSynchronizeMode { smRemote, smLocal, smBoth };
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   AnsiString & LocalDirectory, AnsiString & RemoteDirectory, bool & SaveSettings);
 
@@ -182,5 +195,11 @@ void __fastcall DoFileSystemInfoDialog(TTerminal * Terminal);
 // windows\WinMain.cpp
 void __fastcall CheckForUpdates();
 void __fastcall RegisterAsUrlHandler();
+
+// forms\MessageDlg.cpp
+TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
+  TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
+  TQueryButtonAlias * Aliases = NULL, unsigned int AliasesCount = 0);
+
 //---------------------------------------------------------------------------
 #endif // WinInterfaceH

@@ -9,9 +9,9 @@
       &quot;Moje komponenty\MoreButton.obj&quot; &quot;Moje komponenty\NortonLikeListView.obj&quot; 
       &quot;Moje komponenty\PathLabel.obj&quot; &quot;Moje komponenty\ToolbarPanel.obj&quot; &quot;Moje komponenty\UpDownEdit.obj&quot; 
       &quot;Moje komponenty\ComboEdit.obj&quot; &quot;Moje komponenty\XPGroupBox.obj&quot; &quot;Moje komponenty\PasswordEdit.obj&quot; 
-      &quot;Moje komponenty\ResourceModule.obj&quot;"/>
+      &quot;Moje komponenty\ResourceModule.obj&quot; &quot;Moje komponenty\CompThread.obj&quot; &quot;Moje komponenty\DiscMon.obj&quot;"/>
     <RESFILES value="Moje_B5.res &quot;Moje komponenty\HistoryComboBox.dcr&quot; 
-      &quot;Moje komponenty\NortonLikeListView.dcr&quot; &quot;Moje komponenty\PathLabel.dcr&quot;"/>
+      &quot;Moje komponenty\NortonLikeListView.dcr&quot; &quot;Moje komponenty\PathLabel.dcr&quot; &quot;Moje komponenty\DiscMon.dcr&quot;"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
@@ -80,6 +80,9 @@
       <FILE FILENAME="Moje komponenty\XPGroupBox.pas" FORMNAME="" UNITNAME="XPGroupBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Moje komponenty\PasswordEdit.pas" FORMNAME="" UNITNAME="PasswordEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Moje komponenty\ResourceModule.pas" FORMNAME="" UNITNAME="ResourceModule" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Moje komponenty\CompThread.pas" FORMNAME="" UNITNAME="CompThread" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Moje komponenty\DiscMon.pas" FORMNAME="" UNITNAME="DiscMon" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Moje komponenty\DiscMon.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

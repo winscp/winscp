@@ -95,7 +95,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 2
+    TabOrder = 3
   end
   object CancelButton: TButton
     Left = 312
@@ -106,7 +106,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 3
+    TabOrder = 4
   end
   object OptionsGroup: TXPGroupBox
     Left = 8
@@ -153,12 +153,12 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       OnClick = ControlChange
     end
     object SynchronizeNoConfirmationCheck: TCheckBox
-      Left = 123
+      Left = 235
       Top = 44
-      Width = 158
+      Width = 135
       Height = 17
       Caption = '&No confirmations'
-      TabOrder = 4
+      TabOrder = 5
       OnClick = ControlChange
     end
     object SaveSettingsCheck: TCheckBox
@@ -167,7 +167,26 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Width = 361
       Height = 17
       Caption = 'Use &same options next time'
-      TabOrder = 5
+      TabOrder = 6
     end
+    object SynchronizeExistingOnlyCheck: TCheckBox
+      Left = 123
+      Top = 44
+      Width = 107
+      Height = 17
+      Caption = '&Existing files only'
+      TabOrder = 4
+      OnClick = ControlChange
+    end
+  end
+  object TransferPreferencesButton: TButton
+    Left = 8
+    Top = 232
+    Width = 137
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'Transfer &preferences...'
+    TabOrder = 2
+    OnClick = TransferPreferencesButtonClick
   end
 end

@@ -23,6 +23,7 @@ public:
 
   __property bool Queue = { read = FQueue, write = FQueue };
   __property bool QueueNoConfirmation = { read = FQueueNoConfirmation, write = FQueueNoConfirmation };
+  __property bool NewerOnly = { read = FNewerOnly, write = FNewerOnly };
 
 protected:
   void __fastcall GUIDefault();
@@ -31,6 +32,7 @@ protected:
 private:
   bool FQueue;
   bool FQueueNoConfirmation;
+  bool FNewerOnly;
 };
 //---------------------------------------------------------------------------
 class TGUIConfiguration : public TConfiguration
@@ -44,10 +46,13 @@ private:
   AnsiString FPuttyPath;
   AnsiString FPuttySession;
   int FSynchronizeParams;
+  bool FSynchronizeRecurse;
   TDateTime FIgnoreCancelBeforeFinish;
   bool FQueueAutoPopup;
   int FQueueTransfersLimit;
   TGUICopyParamType FCopyParam;
+  bool FBeepOnFinish;
+  TDateTime FBeepOnFinishAfter;
 
 protected:
   LCID FLocale;
@@ -65,6 +70,7 @@ protected:
   TPasLibModule * __fastcall FindModule(void * Instance);
   void __fastcall FreeResourceModule(HANDLE Instance);
   void __fastcall SetCopyParam(TGUICopyParamType value);
+  static AnsiString __fastcall PropertyToKey(const AnsiString Property);
 
 public:
   __fastcall TGUIConfiguration();
@@ -75,6 +81,7 @@ public:
   __property bool ErrorDialogExpanded = { read = FErrorDialogExpanded, write = FErrorDialogExpanded };
   __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };
   __property int SynchronizeParams = { read = FSynchronizeParams, write = FSynchronizeParams };
+  __property bool SynchronizeRecurse = { read = FSynchronizeRecurse, write = FSynchronizeRecurse };
   __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = FQueueTransfersLimit };
   __property bool QueueAutoPopup = { read = FQueueAutoPopup, write = FQueueAutoPopup };
   __property LCID Locale = { read = GetLocale, write = SetLocale };
@@ -84,6 +91,8 @@ public:
   __property AnsiString PuttySession = { read = FPuttySession, write = FPuttySession };
   __property TDateTime IgnoreCancelBeforeFinish = { read = FIgnoreCancelBeforeFinish, write = FIgnoreCancelBeforeFinish };
   __property TGUICopyParamType CopyParam = { read = FCopyParam, write = SetCopyParam };
+  __property bool BeepOnFinish = { read = FBeepOnFinish, write = FBeepOnFinish };
+  __property TDateTime BeepOnFinishAfter = { read = FBeepOnFinishAfter, write = FBeepOnFinishAfter };
 };
 //---------------------------------------------------------------------------
 #define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))

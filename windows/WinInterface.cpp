@@ -9,6 +9,7 @@
 #include <SecureShell.h>
 #include <ScpMain.h>
 #include <TextsWin.h>
+#include <TextsCore.h>
 #include <Interface.h>
 
 #include "WinInterface.h"
@@ -19,8 +20,39 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
-  int Answers, int HelpCtx, int Params)
+TMessageParams::TMessageParams(unsigned int AParams)
+{
+  Params = AParams;
+  Aliases = NULL;
+  AliasesCount = 0;
+}
+//---------------------------------------------------------------------------
+inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
+{
+  bool Result = true;
+  #define MAP_BUTTON(TYPE) if (Answer == qa ## TYPE) Button = mb ## TYPE; else
+  MAP_BUTTON(Yes)
+  MAP_BUTTON(No)
+  MAP_BUTTON(OK)
+  MAP_BUTTON(Cancel)
+  MAP_BUTTON(Abort)
+  MAP_BUTTON(Retry)
+  MAP_BUTTON(Ignore)
+  MAP_BUTTON(All)
+  MAP_BUTTON(NoToAll)
+  MAP_BUTTON(YesToAll)
+  MAP_BUTTON(Help)
+  #undef MAP_BUTTON
+  if (Answer == qaSkip) Button = mbIgnore;
+    else
+  Result = false;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
+  TStrings * MoreMessages, TQueryType Type, int Answers, int HelpCtx,
+  const TMessageParams * Params)
 {
   TMsgDlgButtons Buttons;
   TMsgDlgType DlgType;
@@ -33,53 +65,55 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
     default: assert(false);
   }
 
-  #define ADD_BUTTON(TYPE) if (Answers & qa ## TYPE) Buttons << mb ## TYPE;
-  ADD_BUTTON(Yes);
-  ADD_BUTTON(No);
-  ADD_BUTTON(OK);
-  ADD_BUTTON(Cancel);
-  ADD_BUTTON(Abort);
-  ADD_BUTTON(Retry);
-  ADD_BUTTON(Ignore);
-  ADD_BUTTON(All);
-  ADD_BUTTON(NoToAll);
-  ADD_BUTTON(YesToAll);
-  ADD_BUTTON(Help);
-  #undef ADD_BUTTON
-
-  if (Answers & qaSkip)
+  int AAnswers = Answers;
+  int Answer = 0x01;
+  while (AAnswers > 0)
   {
-    assert((Answers & qaIgnore) == 0);
-    Buttons << mbIgnore;
-  }
-
-  if (Answers & qaPrev)
-  {
-    assert((Answers & qaYes) == 0);
-    Buttons << mbYes;
-  }
-
-  if (Answers & qaNext)
-  {
-    assert((Answers & qaNo) == 0);
-    Buttons << mbNo;
-  }
-
-  if (Answers & qaCustom)
-  {
-    assert((Answers & qaHelp) == 0);
-    Buttons << mbHelp;
-  }
-
-  if (Answers & qaAppend)
-  {
-    assert((Answers & qaRetry) == 0);
-    Buttons << mbRetry;
+    if ((AAnswers & Answer) != 0)
+    {
+      TMsgDlgBtn Button;
+      if (MapButton(Answer, Button))
+      {
+        Buttons << Button;
+      }
+      AAnswers &= ~Answer;
+    }
+    Answer <<= 1;
   }
 
   assert(!Buttons.Empty());
 
-  TForm * Dialog = CreateMessageDialog(Msg, DlgType, Buttons);
+  if ((MoreMessages != NULL) && (MoreMessages->Count == 0))
+  {
+    MoreMessages = NULL;
+  }
+  TForm * Dialog;
+
+  if ((Params == NULL) || (Params->Aliases == NULL))
+  {
+    Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons);
+  }
+  else
+  {
+    TQueryButtonAlias * Aliases = new TQueryButtonAlias[Params->AliasesCount];
+    try
+    {
+      for (unsigned int i = 0; i < Params->AliasesCount; i++)
+      {
+        TMsgDlgBtn Button;
+        bool R = MapButton(Params->Aliases[i].Button, Button);
+        assert(R);
+        Aliases[i].Button = Button;
+        Aliases[i].Alias = Params->Aliases[i].Alias;
+      }
+      Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons,
+        Aliases, Params->AliasesCount);
+    }
+    __finally
+    {
+      delete Aliases;
+    }
+  }
 
   try
   {
@@ -90,49 +124,7 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
       IgnoreButton->Caption = LoadStr(SKIP_BUTTON);
     }
 
-    if (Answers & qaPrev)
-    {
-      TButton * YesButton = dynamic_cast<TButton *>(Dialog->FindComponent("Yes"));
-      assert(YesButton);
-      YesButton->Caption = LoadStr(PREV_BUTTON);
-    }
-
-    if (Answers & qaNext)
-    {
-      TButton * NoButton = dynamic_cast<TButton *>(Dialog->FindComponent("No"));
-      assert(NoButton);
-      NoButton->Caption = LoadStr(NEXT_BUTTON);
-    }
-
-    if (Answers & qaAppend)
-    {
-      TButton * RetryButton = dynamic_cast<TButton *>(Dialog->FindComponent("Retry"));
-      assert(RetryButton);
-      RetryButton->Caption = LoadStr(APPEND_BUTTON);
-    }
-
-    if (Answers & qaCustom)
-    {
-      TButton * HelpButton = dynamic_cast<TButton *>(Dialog->FindComponent("Help"));
-      assert(HelpButton);
-      HelpButton->Name = "Custom";
-      HelpButton->ModalResult = mrCustom;
-    }
-
-    // temporary fix of accelerators (&Abort vs. &All/Yes to &All)
-    // must be removed
-    for (int Index = 0; Index < Dialog->ComponentCount; Index++)
-    {
-      TButton * B = dynamic_cast<TButton *>(Dialog->Components[Index]);
-      if (B)
-      {
-        if (B->Caption == "&All") B->Caption = "A&ll";
-          else
-        if (B->Caption == "Yes to &All") B->Caption = "Yes to A&ll";
-      }
-    }
-
-    if (Params & mpNeverAskAgainCheck)
+    if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
     {
       Dialog->ClientHeight = Dialog->ClientHeight + 20;
 
@@ -156,8 +148,17 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
   return Dialog;
 }
 //---------------------------------------------------------------------------
-int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
+int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageParams * Params)
 {
+  TMoreButton * MoreButton = dynamic_cast<TMoreButton *>(Dialog->FindComponent("MoreButton"));
+  if (MoreButton != NULL)
+  {
+    // WinConfiguration may be destroyed already, if called from
+    // try ... catch statement of main()
+    MoreButton->Expanded = (GUIConfiguration != NULL) &&
+      GUIConfiguration->ErrorDialogExpanded;
+  }
+
   int Result, Answer;
   FlashOnBackground();
   Result = Dialog->ShowModal();
@@ -169,8 +170,9 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
     MAP_RESULT(All);
     MAP_RESULT(NoToAll);
     MAP_RESULT(YesToAll);
-
-    MAP_RESULT(Custom);
+    MAP_RESULT(Yes);
+    MAP_RESULT(No);
+    MAP_RESULT(Retry);
     #undef MAP_RESULT
 
     case mrOk:
@@ -180,21 +182,9 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
     case mrIgnore:
       Answer = (Answers & qaSkip) ? qaSkip : qaIgnore;
       break;
-
-    case mrYes:
-      Answer = (Answers & qaPrev) ? qaPrev : qaYes;
-      break;
-
-    case mrNo:
-      Answer = (Answers & qaNext) ? qaNext : qaNo;
-      break;
-
-    case mrRetry:
-      Answer = (Answers & qaAppend) ? qaAppend : qaRetry;
-      break;
   }
 
-  if (Params & mpNeverAskAgainCheck)
+  if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
   {
     TCheckBox * NeverAskAgainCheck =
       dynamic_cast<TCheckBox *>(Dialog->FindComponent("NeverAskAgainCheck"));
@@ -207,10 +197,7 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
     }
   }
 
-  TMoreButton * MoreButton = dynamic_cast<TMoreButton *>(Dialog->FindComponent("MoreButton"));
-  // WinConfiguration may be destroyed already, if called from
-  // try ... catch statement of main()
-  if (MoreButton && GUIConfiguration)
+  if ((MoreButton != NULL) && (GUIConfiguration != NULL))
   {
     // store state even when user selects 'Cancel'?
     GUIConfiguration->ErrorDialogExpanded = MoreButton->Expanded;
@@ -219,106 +206,12 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
   return Answer;
 }
 //---------------------------------------------------------------------------
-int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
-  int Answers, int HelpCtx, int Params)
-{
-  int Result;
-  TForm * Dialog = CreateMessageDialogEx(Msg, Type, Answers, HelpCtx, Params);
-  try
-  {
-    Result = ExecuteMessageDialog(Dialog, Answers, Params);
-  }
-  __finally
-  {
-    delete Dialog;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-TForm * __fastcall CreateMoreMessageDialog(const AnsiString Message,
-  TStrings * MoreMessages, TQueryType Type, int Answers,
-  int HelpCtx, int Params)
-{
-  if (!MoreMessages || (MoreMessages->Count == 0))
-  {
-    return CreateMessageDialogEx(Message, Type, Answers, HelpCtx, Params);
-  }
-  else
-  {
-    TForm * Dialog;
-    Answers |= qaCustom;
-
-    Dialog = CreateMessageDialogEx(Message, Type, Answers, HelpCtx, Params);
-    try
-    {
-      TButton * CustomButton = dynamic_cast<TButton *>(Dialog->FindComponent("Custom"));
-      TLabel * MsgLabel = dynamic_cast<TLabel *>(Dialog->FindComponent("Message"));
-      assert(MsgLabel && CustomButton);
-
-      int OrigButtonTop = CustomButton->Top;
-      int WidthDelta = 0;
-      if (Dialog->ClientWidth < 400)
-      {
-        WidthDelta = (400 - Dialog->ClientWidth);
-      }
-      Dialog->ClientHeight = Dialog->ClientHeight + 130;
-      Dialog->ClientWidth = Dialog->ClientWidth + WidthDelta;
-      MsgLabel->Width = MsgLabel->Width + WidthDelta;
-
-      for (int Index = 0; Index < Dialog->ControlCount; Index++)
-      {
-        if (Dialog->Controls[Index]->InheritsFrom(__classid(TButton)))
-        {
-          TControl * Control = Dialog->Controls[Index];
-          Control->Anchors = TAnchors() << akBottom << akLeft;
-          Control->Top = Control->Top + 130;
-          Control->Left = Control->Left + (WidthDelta / 2);
-        }
-      }
-
-      TMemo * MessageMemo = new TMemo(Dialog);
-      MessageMemo->Parent = Dialog;
-      MessageMemo->ReadOnly = True;
-      MessageMemo->WantReturns = False;
-      MessageMemo->ScrollBars = ssVertical;
-      MessageMemo->Anchors = TAnchors() << akLeft << akRight << akTop; //akBottom;
-      MessageMemo->BoundsRect = TRect(MsgLabel->Left, OrigButtonTop - 10,
-        Dialog->ClientWidth - 20, CustomButton->Top - 10);
-      MessageMemo->Color = clBtnFace;
-      MessageMemo->Lines->Text = MoreMessages->Text;
-
-      TMoreButton * MoreButton = new TMoreButton(Dialog);
-      MoreButton->Parent = Dialog;
-      MoreButton->BoundsRect = CustomButton->BoundsRect;
-      MoreButton->Anchors = CustomButton->Anchors;
-      MoreButton->Panel = MessageMemo;
-      // WinConfiguration may be destroyed already, if called from
-      // try ... catch statement of main()
-      MoreButton->Expanded = GUIConfiguration && GUIConfiguration->ErrorDialogExpanded;
-      MoreButton->Name = "MoreButton";
-
-      MessageMemo->TabOrder = 20;
-
-      delete CustomButton;
-    }
-    catch(...)
-    {
-      delete Dialog;
-      throw;
-    }
-
-    return Dialog;
-  }
-}
-//---------------------------------------------------------------------------
 int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessages,
-  TQueryType Type, int Answers, int HelpCtx, int Params)
+  TQueryType Type, int Answers, int HelpCtx, const TMessageParams * Params)
 {
   int Result;
-  TForm * Dialog;
-
-  Dialog = CreateMoreMessageDialog(Message, MoreMessages, Type,
-    Answers, HelpCtx, Params);
+  TForm * Dialog = CreateMessageDialogEx(Message, MoreMessages, Type, Answers,
+    HelpCtx, Params);
   try
   {
     Result = ExecuteMessageDialog(Dialog, Answers, Params);
@@ -327,69 +220,66 @@ int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessag
   {
     delete Dialog;
   }
-
   return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
+  int Answers, int HelpCtx, const TMessageParams * Params)
+{
+  return MoreMessageDialog(Msg, NULL, Type, Answers, HelpCtx, Params);
 }
 //---------------------------------------------------------------------------
 int __fastcall SimpleErrorDialog(const AnsiString Msg)
 {
-  return MessageDialog(Msg, qtError, qaOK, 0);
+  return MoreMessageDialog(Msg, NULL, qtError, qaOK, NULL);
 }
 //---------------------------------------------------------------------------
-int __fastcall ExceptionMessageDialog(Exception * E,
-  TQueryType Type, int Answers, int HelpCtx)
+AnsiString __fastcall TranslateExceptionMessage(const Exception * E)
 {
-  TStrings * MoreMessages = NULL;
-  if (E->InheritsFrom(__classid(ExtException)))
+  if (dynamic_cast<const EAccessViolation*>(E) != NULL)
   {
-    MoreMessages = ((ExtException *)E)->MoreMessages;
+    return LoadStr(ACCESS_VIOLATION_ERROR);
   }
-
-  int Result;
-  TForm * Dialog;
-
-  Dialog = CreateMoreMessageDialog(E->Message, MoreMessages, Type,
-    Answers, HelpCtx, 0);
-  try
+  else
   {
-    Result = ExecuteMessageDialog(Dialog, Answers, 0);
+    return E->Message;
   }
-  __finally
-  {
-    delete Dialog;
-  }
-  return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall FatalExceptionMessageDialog(Exception * E,
-  TQueryType Type, AnsiString MessageFormat, int Answers, int HelpCtx, int Params)
+int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
+  const AnsiString MessageFormat, int Answers, int HelpCtx, const TMessageParams * Params)
 {
   TStrings * MoreMessages = NULL;
-  if (E->InheritsFrom(__classid(ExtException)))
+  ExtException * EE = dynamic_cast<ExtException *>(E);
+  if (EE != NULL)
   {
-    MoreMessages = ((ExtException *)E)->MoreMessages;
+    MoreMessages = EE->MoreMessages;
   }
 
+  return MoreMessageDialog(FORMAT(MessageFormat, (TranslateExceptionMessage(E))),
+    MoreMessages, Type, Answers, HelpCtx, Params);
+}
+//---------------------------------------------------------------------------
+int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
+  const AnsiString MessageFormat, int Answers, int HelpCtx, const TMessageParams * Params)
+{
   assert((Answers & qaRetry) == 0);
   Answers |= qaRetry;
-  int Result;
 
-  TForm * Dialog = CreateMoreMessageDialog(
-    FORMAT(MessageFormat, (E->Message)), MoreMessages, Type,
-    Answers, HelpCtx, Params);
-  try
-  {
-    TButton * RetryButton = dynamic_cast<TButton *>(Dialog->FindComponent("Retry"));
-    assert(RetryButton);
-    RetryButton->Caption = LoadStr(RECONNECT_BUTTON);
+  TQueryButtonAlias Aliases[1];
+  Aliases[0].Button = qaRetry;
+  Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
 
-    Result = ExecuteMessageDialog(Dialog, Answers, Params);
-  }
-  __finally
+  TMessageParams AParams;
+  if (Params != NULL)
   {
-    delete Dialog;
+    assert(Params->Aliases == NULL);
+    AParams = *Params;
   }
-  return Result;
+  AParams.Aliases = Aliases;
+  AParams.AliasesCount = LENOF(Aliases);
+
+  return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpCtx, &AParams);
 }
 //---------------------------------------------------------------------------
 void __fastcall Busy(bool Start)

@@ -281,7 +281,7 @@ void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar)
   StatusBar->SimplePanel = !StatusBar->SimplePanel;
 }
 //---------------------------------------------------------------------------
-void __fastcall SetControlsOrder(TControl ** ControlsOrder, int Count)
+void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count)
 {
   for (int Index = Count - 1; Index > 0; Index--)
   {
@@ -295,4 +295,39 @@ void __fastcall SetControlsOrder(TControl ** ControlsOrder, int Count)
   }
 }
 //---------------------------------------------------------------------------
-
+void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count)
+{
+  for (int Index = Count - 1; Index > 0; Index--)
+  {
+    if ((ControlsOrder[Index]->Left < ControlsOrder[Index - 1]->Left) &&
+        ControlsOrder[Index - 1]->Visible)
+    {
+      ControlsOrder[Index]->Left = ControlsOrder[Index - 1]->Left +
+        ControlsOrder[Index - 1]->Width;
+      Index = Count;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TPoint __fastcall GetAveCharSize(TCanvas* Canvas)
+{
+  Integer I;
+  Char Buffer[52];
+  TSize Result;
+  for (I = 0; I <= 25; I++) Buffer[I] = (Char)('A' + I);
+  for (I = 0; I <= 25; I++) Buffer[I+26] = (Char)('a' + I);
+  GetTextExtentPoint(Canvas->Handle, Buffer, 52, &Result);
+  return TPoint(Result.cx / 52, Result.cy);
+}
+//---------------------------------------------------------------------------
+void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After)
+{
+  if (After->TabOrder > Control->TabOrder)
+  {
+    After->TabOrder = Control->TabOrder;
+  }
+  else if (After->TabOrder < Control->TabOrder - 1)
+  {
+    After->TabOrder = static_cast<TTabOrder>(Control->TabOrder - 1);
+  }
+}
