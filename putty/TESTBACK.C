@@ -1,4 +1,4 @@
-/* $Id: testback.c,v 1.9 2003/05/10 11:57:55 ben Exp $ */
+/* $Id: TESTBACK.C,v 1.3 2003/12/30 23:22:26 martinprikryl Exp $ */
 /*
  * Copyright (c) 1999 Simon Tatham
  * Copyright (c) 1999 Ben Harris

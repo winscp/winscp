@@ -130,6 +130,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(ConfirmOverwriting);
   BOOLPROP(ConfirmDeleting);
   BOOLPROP(ConfirmClosingSession);
+  BOOLPROP(ConfirmExitOnCompletion);
   BOOLPROP(UseLocationProfiles);
   BOOLPROP(ContinueOnError);
   #undef BOOLPROP
@@ -229,6 +230,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmOverwriting);
     BOOLPROP(ConfirmDeleting);
     BOOLPROP(ConfirmClosingSession);
+    BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(UseLocationProfiles);
     BOOLPROP(ContinueOnError);
     #undef BOOLPROP

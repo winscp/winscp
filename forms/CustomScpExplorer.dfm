@@ -70,8 +70,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnExecFile = DirViewExecFile
       OnDDDragEnter = DirViewDDDragEnter
       OnDDDragLeave = DirViewDDDragLeave
-      OnDDCreateDragFileList = RemoteDirViewDDCreateDragFileList
+      OnDDGiveFeedback = RemoteDirViewDDGiveFeedback
       OnDDEnd = RemoteDirViewDDEnd
+      OnDDCreateDragFileList = RemoteDirViewDDCreateDragFileList
       OnDDCreateDataObject = RemoteDirViewDDCreateDataObject
       OnContextPopup = RemoteDirViewContextPopup
       OnDisplayProperties = RemoteDirViewDisplayProperties

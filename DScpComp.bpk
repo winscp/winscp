@@ -20,7 +20,7 @@
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="OLD_DND;NORTON_LIKE;DESIGN_ONLY;_DEBUG"/>
+    <USERDEFINES value="OLD_DND;NORTON_LIKE;DESIGN_ONLY"/>
     <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="DScpComp.cpp"/>
     <INCLUDEPATH value="components;core;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
@@ -30,12 +30,12 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-Od -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 
-      -b- -k -y -v -vi- -c -tWM"/>
-    <PFLAGS value="  -$Y+ -$W -$O- -$C- -$A8 -v -JPHNE -M"/>
+    <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- 
+      -k- -vi -c -tWM"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
-    <AFLAGS value="/mx /w2 /zi"/>
-    <LFLAGS value="-I -D&quot;WinSCP components&quot; -aa -Tpp -Gpd -x -Gn -Gl -Gi -v"/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-I -D&quot;WinSCP components&quot; -aa -Tpp -Gpd -GD -s -Gn -Gl -Gi -M"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

@@ -68,6 +68,8 @@ __published:
     int DropEffect, bool &Continue);
   void __fastcall RemoteDirViewDDCreateDataObject(TObject *Sender,
     TDataObject *&DataObject);
+  void __fastcall RemoteDirViewDDGiveFeedback(TObject *Sender,
+    int dwEffect, HRESULT &Result);
   
 private:
   TTerminal * FTerminal;
@@ -83,6 +85,8 @@ private:
   TStringList * FErrorList;
   HANDLE FDDExtMutex;
   AnsiString FDragExtFakeDirectory;
+  HINSTANCE FOle32Library;
+  HCURSOR FDragCopyCursor;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
@@ -101,7 +105,8 @@ protected:
   AnsiString FCustomCommandName;
   TSynchronizeProgressForm * FSynchronizeProgressForm;
   HANDLE FDDExtMapFile;
-  int FDDExtDropEffect;
+  bool FDDExtCopySlipped;
+  TDateTime FDDDropTime;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,

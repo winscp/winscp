@@ -106,10 +106,14 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FErrorList = NULL;
   FSynchronizeProgressForm = NULL;
   FProgressForm = NULL;
-  FDDExtDropEffect = DROPEFFECT_NONE;
+  FDDExtCopySlipped = false;
   FDDExtMapFile = NULL;
   FDDExtMutex = CreateMutex(NULL, false, DRAG_EXT_MUTEX);
   assert(FDDExtMutex != NULL);
+
+  FOle32Library = LoadLibrary("Ole32.dll");
+  FDragCopyCursor = FOle32Library != NULL ?
+    LoadCursor(FOle32Library, MAKEINTRESOURCE(3)) : NULL;
 
   UseSystemSettings(this);
 
@@ -136,6 +140,10 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
   CloseHandle(FDDExtMutex);
   FDDExtMutex = NULL;
+
+  FreeLibrary(FOle32Library);
+  FOle32Library = NULL;
+  FDragCopyCursor = NULL;
 
   assert(!FErrorList);
   StoreParams();
@@ -1916,7 +1924,7 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
     UnmapViewOfFile(CommStruct);
   }
 
-  FDDExtDropEffect = DROPEFFECT_NONE;
+  FDDExtCopySlipped = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewDDEnd(TObject * /*Sender*/)
@@ -1925,14 +1933,30 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewDDEnd(TObject * /*Sender*/)
   {
     try
     {
-      if (FDDExtDropEffect != DROPEFFECT_NONE)
+      if ((RemoteDirView->LastDDResult == drCopy) ||
+          (RemoteDirView->LastDDResult == drMove))
       {
         AnsiString TargetDirectory;
+        TFileOperation Operation;
+
+        Operation = (RemoteDirView->LastDDResult == drMove) ? foMove : foCopy;
+
+        // Heuristics: if we slipped copy operation, but interval between
+        // DDTargetDrop() and DDEnd() is greater than some interval,
+        // we suppose that target (explorer) has shown the drop menu.
+        // If such case we use actual operation returned by target application.
+        if (FDDExtCopySlipped)
+        {
+          int SlipInterval = MSecsPerDay * (Now() - FDDDropTime);
+          if (SlipInterval < WinConfiguration->DDExtCopySlipTimeout)
+          {
+            Operation = foCopy;
+          }
+        }
 
         DDGetTarget(TargetDirectory);
 
-        ExecuteFileOperation(
-          FDDExtDropEffect == DROPEFFECT_MOVE ? foMove : foCopy, osRemote, true,
+        ExecuteFileOperation(Operation, osRemote, true,
           !WinConfiguration->DDTransferConfirmation, &TargetDirectory);
       }
     }
@@ -1944,6 +1968,28 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewDDEnd(TObject * /*Sender*/)
       FDragExtFakeDirectory = "";
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::RemoteDirViewDDGiveFeedback(
+  TObject * /*Sender*/, int dwEffect, HRESULT & /*Result*/)
+{
+  HCURSOR SlippedMoveCursor;
+
+  // When dragging outside of winscp using shellext, move operation is usually
+  // selected as default (by explorer). We want copy instead. As the operation is
+  // finally hold by us, we can slip "copy" cursor in place of "move" cursor.
+  // Thus explorer thinks that file is moving, but we display copy cursor
+  // and we do actually copy, when shellext steals processing from explorer.
+  // See TCustomScpExplorerForm::DDGetTarget
+  FDDExtCopySlipped =
+    (FDDExtMapFile != NULL) && (FDDTargetDirView == NULL) &&
+    (dwEffect == DROPEFFECT_Move) && (FDragCopyCursor != NULL) &&
+    (GetKeyState(VK_SHIFT) >= 0) && (GetKeyState(VK_CONTROL) >= 0);
+
+  SlippedMoveCursor = FDDExtCopySlipped ? FDragCopyCursor : Dragdrop::DefaultCursor;
+
+  RemoteDirView->DragDropFilesEx->CHMove = SlippedMoveCursor;
+  RemoteDirView->DragDropFilesEx->CHScrollMove = SlippedMoveCursor;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DDGetTarget(AnsiString & Directory)
@@ -1999,7 +2045,7 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewDDTargetDrop(
   else if (FDDExtMapFile != NULL)
   {
     Continue = false;
-    FDDExtDropEffect = DropEffect;
+    FDDDropTime = Now();
   }
 }
 //---------------------------------------------------------------------------

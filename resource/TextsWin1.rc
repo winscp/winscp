@@ -12,10 +12,7 @@ BEGIN
         DELETE_LOCAL_FILE_ERROR, "Error deleting file '%s'."
         MASK_ERROR, "'%s' is invalid mask"
         WARN_FATAL_ERROR, "%s\n \nWarning: Aborting this operation will close connection!"
-//        NEWSESSION_ERROR, "Can't open new session."
-//        LOADSESSION_ERROR, "Can't open stored session '%s'."
         SESSION_NOT_EXISTS_ERROR, "Session named '%s' doesn't exist."
-//        RECONNECT_ERROR, "Cannot launch another instance of %s to reconnect session."
         CREATE_SHORTCUT_ERROR, "Cannot create shortcut."
         CANNOT_OVERWRITE_SPECIAL_SESSION, "Cannot overwrite special session '%s'."
         EXPLORE_LOCAL_DIR_ERROR, "Cannot explore directory '%s'."
@@ -36,10 +33,11 @@ BEGIN
         EXECUTE_APP_ERROR, "Cannot execute '%s'."
         FILE_NOT_FOUND, "File '%s' not found."
         ABSOLUTE_PATH_REQUIRED, "Only full (absolute) path may be used."
-        UNKNOWN_PROTOCOL, "Unknown or undefined protocol (%s)"
         MUTEX_RELEASE_TIMEOUT, "Mutex was not released in required interval."
         DRAGEXT_MUTEX_RELEASE_TIMEOUT, "Shell drag extension mutex was not released in required interval."
         DRAGEXT_TARGET_UNKNOWN, "WinSCP was not able to detect folder, where the dragged file(s) was dropped. Either you have not dropped the file(s) to regular folder (e.g. Windows Explorer) or WinSCP shell drag extension is not installed. Install the extension or switch to compatible drag&&drop mode (from Preferences window), which uses temporary folder for downloads. It allows you to drop files to any destination."
+        UNKNOWN_TRANSLATION, "File '%s' does not contain translation for this product version."
+        INCOMPATIBLE_TRANSLATION, "File '%s' contains translation for %s version %s."
 
         REGISTER_URL_ERROR, "Cannot register application to handle scp:// and sftp:// addresses."
 
@@ -65,6 +63,9 @@ BEGIN
         NEXT_BUTTON, "&Next"
         APPEND_BUTTON, "A&ppend"
         CONFIRM_REGISTER_URL, "Do you want to register application to handle scp:// and sftp:// addresses?"
+        UNINSTALL_CLEANUP, "Do you want to cleanup data stored by the application on this computer?"
+        EXIT_ON_COMPLETION, "%s\n\nDo you want to close application?"
+        DISCONNECT_ON_COMPLETION, "%%s\n\nDo you want to terminate %d remaining session(s) and close the application?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"

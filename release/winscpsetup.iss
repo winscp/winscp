@@ -53,7 +53,6 @@ AppVersion={#Version}
 AppVerName=WinSCP {#Version}
 OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup{#SetupExt}
 SolidCompression=yes
-Compression=lzma
 ShowTasksTreeLines=yes
 
 #define FindHandle
@@ -154,9 +153,9 @@ Name: main; Description: {#Transl("ApplicationComponent")}; \
   Types: {#FullLangs} full custom compact; Flags: fixed; Languages: {#Lang}
 Name: shellext; Description: {#Transl("ShellExtComponent")}; \
   Types: {#FullLangs} compact full; Languages: {#Lang}
-Name: pageant; Description: {#Transl("PuTTYgenComponent")}; \
+Name: pageant; Description: {#Transl("PageantComponent")}; \
   Types: {#FullLangs} full; Languages: {#Lang}
-Name: puttygen; Description: {#Transl("PageantComponent")}; \
+Name: puttygen; Description: {#Transl("PuTTYgenComponent")}; \
   Types: {#FullLangs} full; Languages: {#Lang}
 #ifdef INTL
 Name: transl; Description: {#Transl("TranslationsComponent")}; \
@@ -328,7 +327,7 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
 #endif
 
 [UninstallRun]
-Filename: "{app}\WinSCP3.exe"; Parameters: "/RandomSeedFileCleanup"; RunOnceId: "RandomSeedFileCleanup"
+Filename: "{app}\WinSCP3.exe"; Parameters: "/UninstallCleanup"; RunOnceId: "UninstallCleanup"
 
 [Code]
 var

@@ -95,10 +95,10 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
 MinorVer=5
-Release=5
-Build=211
+Release=6
+Build=213
 Debug=0
-PreRelease=1
+PreRelease=0
 Special=0
 Private=0
 DLL=0
@@ -108,13 +108,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.5.5.211
+FileVersion=3.5.6.213
 InternalName=winscp3
 LegalCopyright=(c) 2000-2004 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp355.exe
+OriginalFilename=winscp356.exe
 ProductName=WinSCP
-ProductVersion=3.5.5.0
+ProductVersion=3.5.6.0
 WWW=http://winscp.sourceforge.net/
 
 [Compiler]

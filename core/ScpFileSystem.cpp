@@ -941,6 +941,8 @@ void __fastcall TSCPFileSystem::CustomReadFile(const AnsiString FileName,
 void __fastcall TSCPFileSystem::DeleteFile(const AnsiString FileName,
   const TRemoteFile * File, bool Recursive)
 {
+  USEDPARAM(Recursive);
+  USEDPARAM(File);
   assert(Recursive || (File && File->IsSymLink));
   ExecCommand(fsDeleteFile, ARRAYOFCONST((DelimitStr(FileName))));
 }
@@ -954,6 +956,7 @@ void __fastcall TSCPFileSystem::RenameFile(const AnsiString FileName,
 void __fastcall TSCPFileSystem::CreateDirectory(const AnsiString DirName,
   const TRemoteProperties * Properties)
 {
+  USEDPARAM(Properties);
   assert(!Properties); // not implemented yet
   ExecCommand(fsCreateDirectory, ARRAYOFCONST((DelimitStr(DirName))));
 }

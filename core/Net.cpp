@@ -81,6 +81,7 @@ int from_backend(void * frontend, int is_stderr, char * data, int datalen)
 //---------------------------------------------------------------------------
 static int get_line(const char * prompt, char * str, int maxlen, int is_pw)
 {
+  USEDPARAM(is_pw);
   assert(is_pw);
   assert(CurrentSSH);
 

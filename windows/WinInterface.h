@@ -39,7 +39,8 @@ int __fastcall MoreMessageDialog(const AnsiString Message,
   int HelpCtx, int Params = 0);
 
 int __fastcall FatalExceptionMessageDialog(Exception * E,
-  TQueryType Type, int HelpCtx = 0);
+  TQueryType Type, AnsiString MessageFormat = "%s", int Answers = qaOK,
+  int HelpCtx = 0, int Params = 0);
 int __fastcall ExceptionMessageDialog(Exception * E,
   TQueryType Type, int Answers, int HelpCtx = 0);
 

@@ -1182,6 +1182,12 @@ void __fastcall TTerminal::DoRenameFile(const AnsiString FileName,
 void __fastcall TTerminal::MoveFile(const AnsiString FileName,
   const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)
 {
+  if (OperationProgress && (OperationProgress->Operation == foRemoteMove))
+  {
+    if (OperationProgress->Cancel != csContinue) Abort();
+    OperationProgress->SetFile(FileName);
+  }
+  
   assert(Param != NULL);
   const TMoveFileParams & Params = *static_cast<const TMoveFileParams*>(Param);
   AnsiString NewName = UnixIncludeTrailingBackslash(Params.Target) +

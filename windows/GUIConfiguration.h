@@ -28,11 +28,13 @@ protected:
   virtual LCID __fastcall GetLocale();
   void __fastcall SetLocale(LCID value);
   void __fastcall SetLocaleSafe(LCID value);
-  HANDLE LoadNewResourceModule(LCID Locale);
-  virtual void __fastcall ReinitLocale();
+  virtual HANDLE __fastcall LoadNewResourceModule(LCID Locale,
+    AnsiString * FileName = NULL);
+  virtual void __fastcall SetResourceModule(HANDLE Instance);
   TStrings * __fastcall GetLocales();
   LCID __fastcall InternalLocale();
-  TPasLibModule * FindModule(void * Instance);
+  TPasLibModule * __fastcall FindModule(void * Instance);
+  void __fastcall FreeResourceModule(HANDLE Instance);
 
 public:
   __fastcall TGUIConfiguration();

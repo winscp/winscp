@@ -52,11 +52,11 @@ object PreferencesDialog: TPreferencesDialog
       Top = 0
       Width = 386
       Height = 390
-      ActivePage = CustomCommandsSheet
+      ActivePage = PreferencesSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
-      TabIndex = 9
+      TabIndex = 0
       TabOrder = 0
       OnChange = PageControlChange
       object PreferencesSheet: TTabSheet
@@ -69,7 +69,7 @@ object PreferencesDialog: TPreferencesDialog
           335)
         object RandomSeedFileLabel: TLabel
           Left = 16
-          Top = 276
+          Top = 297
           Width = 82
           Height = 13
           Caption = '&Random seed file'
@@ -79,31 +79,31 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 181
+          Height = 202
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             362
-            181)
+            202)
           object CopyOnDoubleClickCheck: TCheckBox
             Left = 16
-            Top = 109
+            Top = 131
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Copy files using double-click'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = ControlChange
           end
           object CopyOnDoubleClickConfirmationCheck: TCheckBox
             Left = 32
-            Top = 131
+            Top = 153
             Width = 314
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Co&nfirm copy on double-click operation'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object ConfirmOverwritingCheck: TCheckBox
@@ -132,34 +132,44 @@ object PreferencesDialog: TPreferencesDialog
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Closing &session'
+            Caption = 'E&xiting application'
             TabOrder = 2
             OnClick = ControlChange
           end
           object DDTransferConfirmationCheck: TCheckBox
             Left = 16
-            Top = 87
+            Top = 109
             Width = 338
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Drag && drop operations'
-            TabOrder = 3
+            TabOrder = 4
             OnClick = ControlChange
           end
           object ContinueOnErrorCheck: TCheckBox
             Left = 16
-            Top = 153
+            Top = 175
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Continue on &error (advanced users)'
-            TabOrder = 6
+            TabOrder = 7
+            OnClick = ControlChange
+          end
+          object ConfirmExitOnCompletionCheck: TCheckBox
+            Left = 16
+            Top = 87
+            Width = 330
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Exiting application on &operation completion'
+            TabOrder = 3
             OnClick = ControlChange
           end
         end
         object RandomSeedFileEdit: TFilenameEdit
           Left = 136
-          Top = 272
+          Top = 293
           Width = 234
           Height = 21
           AcceptFiles = True
@@ -175,7 +185,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object StorageGroup: TXPGroupBox
           Left = 8
-          Top = 195
+          Top = 216
           Width = 362
           Height = 68
           Anchors = [akLeft, akTop, akRight]
@@ -822,7 +832,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = RegisterAsUrlHandlerButtonClick
           end
         end
-        object XPGroupBox1: TXPGroupBox
+        object ExternalAppsGroup: TXPGroupBox
           Left = 8
           Top = 248
           Width = 362

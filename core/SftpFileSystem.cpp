@@ -66,6 +66,8 @@ const int asAll = 0xFFFF;
 //---------------------------------------------------------------------------
 #define SFTP_PACKET_ALLOC_DELTA 256
 //---------------------------------------------------------------------------
+#pragma warn -inl
+//---------------------------------------------------------------------------
 class TSFTPPacket
 {
 public:
@@ -150,38 +152,92 @@ public:
     Add(Value.c_str(), Value.Length());
   }
 
+  void AddProperties(unsigned short * Rights, AnsiString * Owner,
+    AnsiString * Group, unsigned long * MTime, unsigned long * ATime,
+    bool IsDirectory, int Version)
+  {
+    int Flags = 0;
+    if (Rights != NULL)
+    {
+      Flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+    }
+    if ((Owner != NULL) || (Group != NULL))
+    {
+      Flags |= SSH_FILEXFER_ATTR_OWNERGROUP;
+    }
+    if ((Version < 4) && ((MTime != NULL) || (ATime != NULL)))
+    {
+      Flags |= SSH_FILEXFER_ATTR_ACMODTIME;
+    }
+    if ((Version >= 4) && (ATime != NULL))
+    {
+      Flags |= SSH_FILEXFER_ATTR_ACCESSTIME;
+    }
+    if ((Version >= 4) && (MTime != NULL))
+    {
+      Flags |= SSH_FILEXFER_ATTR_MODIFYTIME;
+    }
+    AddCardinal(Flags);
+
+    if (Version >= 4)
+    {
+      AddByte(static_cast<unsigned char>(IsDirectory ?
+        SSH_FILEXFER_TYPE_DIRECTORY : SSH_FILEXFER_TYPE_REGULAR));
+    }
+
+    if ((Owner != NULL) || (Group != NULL))
+    {
+      assert(Version >= 4);
+      AddString(Owner != NULL ? *Owner : AnsiString());
+      AddString(Group != NULL ? *Group : AnsiString());
+    }
+
+    if (Rights != NULL)
+    {
+      AddCardinal(*Rights);
+    }
+
+    if ((Version < 4) && ((MTime != NULL) || (ATime != NULL)))
+    {
+      AddCardinal(ATime != NULL ? *ATime : *MTime);
+      AddCardinal(MTime != NULL ? *MTime : *ATime);
+    }
+    if ((Version >= 4) && (ATime != NULL))
+    {
+      AddInt64(*ATime);
+    }
+    if ((Version >= 4) && (MTime != NULL))
+    {
+      AddInt64(*MTime);
+    }
+  }
+
   void AddProperties(const TRemoteProperties * Properties,
     unsigned short BaseRights, bool IsDirectory, int Version)
   {
-    int Flags = 0;
-    if (Properties)
+    enum { valNone = 0, valRights = 0x01, valOwner = 0x02, valGroup = 0x04 }
+      Valid = valNone;
+    unsigned short RightsNum = 0;
+    AnsiString Owner;
+    AnsiString Group;
+
+    if (Properties != NULL)
     {
-      if (Properties->Valid.Contains(vpOwner) || Properties->Valid.Contains(vpGroup))
+      if (Properties->Valid.Contains(vpGroup))
       {
-        Flags |= SSH_FILEXFER_ATTR_OWNERGROUP;
+        Valid |= valGroup;
+        Group = Properties->Group;
       }
+
+      if (Properties->Valid.Contains(vpOwner))
+      {
+        Valid |= valOwner;
+        Owner = Properties->Owner;
+      }
+
       if (Properties->Valid.Contains(vpRights))
       {
-        Flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
-      }
-    }
-    AddCardinal(Flags);
-    if (Version >= 4)
-    {
-      AddByte((unsigned char)(IsDirectory ? SSH_FILEXFER_TYPE_DIRECTORY : SSH_FILEXFER_TYPE_REGULAR));
-    }
-    if (Properties)
-    {
-      if (Flags & SSH_FILEXFER_ATTR_OWNERGROUP)
-      {
-        assert(Version >= 4);
-        AddString(Properties->Valid.Contains(vpOwner) ?
-          Properties->Owner : AnsiString());
-        AddString(Properties->Valid.Contains(vpGroup) ?
-          Properties->Group : AnsiString());
-      }
-      if (Flags & SSH_FILEXFER_ATTR_PERMISSIONS)
-      {
+        Valid |= valRights;
         TRights Rights = BaseRights;
         Rights |= Properties->Rights.NumberSet;
         Rights &= (unsigned short)~Properties->Rights.NumberUnset;
@@ -189,9 +245,15 @@ public:
         {
           Rights.AddExecute();
         }
-        AddCardinal(Rights);
+        RightsNum = Rights;
       }
     }
+
+    AddProperties(
+      Valid & valRights ? &RightsNum : NULL,
+      Valid & valOwner ? &Owner : NULL,
+      Valid & valGroup ? &Group : NULL,
+      NULL, NULL, IsDirectory, Version); 
   }
 
   char GetByte()
@@ -848,6 +910,8 @@ private:
   unsigned long FLastBlockSize;
 };
 //---------------------------------------------------------------------------
+#pragma warn .inl
+//---------------------------------------------------------------------------
 class TSFTPBusy
 {
 public:
@@ -1433,7 +1497,7 @@ AnsiString __fastcall TSFTPFileSystem::RealPath(const AnsiString Path,
   return RealPath(APath);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall inline TSFTPFileSystem::LocalCanonify(const AnsiString Path)
+AnsiString __fastcall TSFTPFileSystem::LocalCanonify(const AnsiString & Path)
 {
   // TODO: improve (handle .. etc.)
   if (TTerminal::IsAbsolutePath(Path)) return Path;
@@ -1443,7 +1507,7 @@ AnsiString __fastcall inline TSFTPFileSystem::LocalCanonify(const AnsiString Pat
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall inline TSFTPFileSystem::Canonify(AnsiString Path)
+AnsiString __fastcall TSFTPFileSystem::Canonify(AnsiString Path)
 {
   // inspired by canonify() from PSFTP.C
   AnsiString Result;
@@ -1848,7 +1912,7 @@ void __fastcall TSFTPFileSystem::ReadFile(const AnsiString FileName,
   CustomReadFile(FileName, File, SSH_FXP_LSTAT);
 }
 //---------------------------------------------------------------------------
-bool __fastcall inline TSFTPFileSystem::RemoteFileExists(const AnsiString FullPath,
+bool __fastcall TSFTPFileSystem::RemoteFileExists(const AnsiString FullPath,
   TRemoteFile ** File)
 {
   bool Result;
@@ -1954,6 +2018,7 @@ void __fastcall TSFTPFileSystem::CreateDirectory(const AnsiString DirName,
 void __fastcall TSFTPFileSystem::CreateLink(const AnsiString FileName,
   const AnsiString PointTo, bool Symbolic)
 {
+  USEDPARAM(Symbolic);
   assert(Symbolic); // only symlinks are supported by SFTP
   assert(FVersion >= 3); // symlinks are supported with SFTP version 3 and later
   TSFTPPacket Packet(SSH_FXP_SYMLINK);
@@ -2230,6 +2295,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       bool ResumeAllowed;
       bool ResumeTransfer = false;
       bool DestFileExists = false;
+      TRights DestRights;
+
       __int64 ResumeOffset;
 
       FTerminal->LogEvent(FORMAT("Copying \"%s\" to remote directory started.", (FileName)));
@@ -2268,6 +2335,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           OpenParams.DestFileSize = File->Size;
           FileParams.DestSize = OpenParams.DestFileSize;
           FileParams.DestTimestamp = File->Modification;
+          DestRights = *File->Rights;
           delete File;
           File = NULL;
         }
@@ -2396,31 +2464,32 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           if (DestFileExists)
           {
             DeleteFile(DestFullName);
-            DestFileExists = false;
+            // DestFileExists used to be set to false here. Had it any reason?
           }
           RenameFile(OpenParams.RemoteFileName, DestFileName);
         );
       }
 
-      if (CopyParam->PreserveTime)
+      bool SetRights = ((DoResume && DestFileExists) || CopyParam->PreserveRights);
+      if (CopyParam->PreserveTime || SetRights)
       {
-        FILE_OPERATION_LOOP(FMTLOAD(PRESERVE_TIME_ERROR, (DestFileName)),
+        FILE_OPERATION_LOOP(FMTLOAD(PRESERVE_TIME_PERM_ERROR, (DestFileName)),
           TSFTPPacket Packet(SSH_FXP_SETSTAT);
           Packet.AddString(DestFullName);
-          if (FVersion >= 4)
+          unsigned short Rights = 0;
+          if (CopyParam->PreserveRights)
           {
-            Packet.AddCardinal(SSH_FILEXFER_ATTR_ACCESSTIME |
-              SSH_FILEXFER_ATTR_MODIFYTIME);
-            Packet.AddByte(SSH_FILEXFER_TYPE_REGULAR);
-            Packet.AddInt64(ATime);
-            Packet.AddInt64(MTime);
+            Rights = CopyParam->RemoteFileRights(OpenParams.LocalFileAttrs);
           }
-          else
+          else if (DoResume && DestFileExists)
           {
-            Packet.AddCardinal(SSH_FILEXFER_ATTR_ACMODTIME);
-            Packet.AddCardinal(ATime);
-            Packet.AddCardinal(MTime);
+            Rights = DestRights.NumberSet;
           }
+
+          Packet.AddProperties(
+            SetRights ? &Rights : NULL, NULL, NULL,
+            CopyParam->PreserveTime ? &MTime : NULL,
+            CopyParam->PreserveTime ? &ATime : NULL, false, FVersion);
           SendPacketAndReceiveResponse(&Packet, NULL, SSH_FXP_STATUS);
         );
       }
@@ -2472,17 +2541,8 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
       OpenRequest.AddString(OpenParams->RemoteFileName);
       OpenRequest.AddCardinal(SSH_FXF_WRITE | SSH_FXF_CREAT | OpenType );
 
-      OpenRequest.AddCardinal(
-        OpenParams->CopyParam->PreserveRights ? SSH_FILEXFER_ATTR_PERMISSIONS : 0);
-      if (FVersion >= 4)
-      {
-        OpenRequest.AddByte(SSH_FILEXFER_TYPE_REGULAR);
-      }
-      if (OpenParams->CopyParam->PreserveRights)
-      {
-        OpenRequest.AddCardinal(
-          OpenParams->CopyParam->RemoteFileRights(OpenParams->LocalFileAttrs));
-      }
+      OpenRequest.AddProperties(NULL, NULL, NULL, NULL, NULL, false, FVersion);
+        
       SendPacketAndReceiveResponse(&OpenRequest, &OpenRequest, SSH_FXP_HANDLE);
       OpenParams->RemoteFileHandle = OpenRequest.GetString();
       Success = true;

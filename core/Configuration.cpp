@@ -318,18 +318,47 @@ AnsiString __fastcall TConfiguration::ModuleFileName()
   return ParamStr(0);
 }
 //---------------------------------------------------------------------------
+void * __fastcall TConfiguration::GetFileApplicationInfo(const AnsiString FileName)
+{
+  void * Result;
+  if (FileName.IsEmpty())
+  {
+    if (!FApplicationInfo)
+    {
+      FApplicationInfo = CreateFileInfo(ModuleFileName());
+    }
+    Result = FApplicationInfo;
+  }
+  else
+  {
+    Result = CreateFileInfo(FileName);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void * __fastcall TConfiguration::GetApplicationInfo()
 {
-  if (!FApplicationInfo)
-  {
-    FApplicationInfo = CreateFileInfo(ModuleFileName());
-  }
-  return FApplicationInfo;
+  return GetFileApplicationInfo("");
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetFileProductName(const AnsiString FileName)
+{
+  return GetFileFileInfoString("ProductName", FileName);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetProductName()
+{
+  return GetFileProductName("");
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetFileProductVersion(const AnsiString FileName)
+{
+  return TrimVersion(GetFileFileInfoString("ProductVersion", FileName));
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetProductVersion()
 {
-  return TrimVersion(FileInfoString["ProductVersion"]);
+  return GetFileProductVersion("");
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::TrimVersion(AnsiString Version)
@@ -375,22 +404,38 @@ AnsiString __fastcall TConfiguration::GetVersion()
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TConfiguration::GetFileInfoString(const AnsiString Key)
+AnsiString __fastcall TConfiguration::GetFileFileInfoString(const AnsiString Key,
+  const AnsiString FileName)
 {
   AnsiString Result;
-  if (GetTranslationCount(ApplicationInfo) > 0)
+  void * Info = GetFileApplicationInfo(FileName);
+  try
   {
-    TTranslation Translation;
-    Translation = GetTranslation(ApplicationInfo, 0);
-    Result = ::GetFileInfoString(ApplicationInfo,
-      Translation, Key);
+    if ((Info != NULL) && (GetTranslationCount(Info) > 0))
+    {
+      TTranslation Translation;
+      Translation = GetTranslation(Info, 0);
+      Result = ::GetFileInfoString(Info, Translation, Key);
+    }
+    else
+    {
+      assert(!FileName.IsEmpty());
+    }
   }
-  else
+  __finally
   {
-    assert(false);
+    if (!FileName.IsEmpty())
+    {
+      FreeFileInfo(Info);
+    }
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetFileInfoString(const AnsiString Key)
+{
+  return GetFileFileInfoString(Key, "");
+} 
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetRegistryStorageKey()
 {

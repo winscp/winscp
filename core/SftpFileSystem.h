@@ -76,10 +76,10 @@ protected:
   AnsiString __fastcall GetHomeDirectory();
   unsigned long __fastcall GotStatusPacket(TSFTPPacket * Packet, int AllowStatus);
   bool __fastcall inline IsAbsolutePath(const AnsiString Path);
-  bool __fastcall inline RemoteFileExists(const AnsiString FullPath, TRemoteFile ** File = NULL);
+  bool __fastcall RemoteFileExists(const AnsiString FullPath, TRemoteFile ** File = NULL);
   TRemoteFile * __fastcall LoadFile(TSFTPPacket * Packet,
     TRemoteFile * ALinkedByFile);
-  AnsiString __fastcall inline LocalCanonify(const AnsiString Path);
+  AnsiString __fastcall LocalCanonify(const AnsiString & Path);
   AnsiString __fastcall Canonify(AnsiString Path);
   AnsiString __fastcall RealPath(const AnsiString Path);
   AnsiString __fastcall RealPath(const AnsiString Path, const AnsiString BaseDir);

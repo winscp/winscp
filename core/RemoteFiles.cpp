@@ -345,7 +345,7 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     {
       FSize = ASize;
 
-      Word Day = 0, Month, Year, Hour, Min, P;
+      Word Day, Month, Year, Hour, Min, P;
 
       GETCOL;
       Day = (Word)StrToIntDef(Col, 0);

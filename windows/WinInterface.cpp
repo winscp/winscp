@@ -362,7 +362,7 @@ int __fastcall ExceptionMessageDialog(Exception * E,
 }
 //---------------------------------------------------------------------------
 int __fastcall FatalExceptionMessageDialog(Exception * E,
-  TQueryType Type, int HelpCtx)
+  TQueryType Type, AnsiString MessageFormat, int Answers, int HelpCtx, int Params)
 {
   TStrings * MoreMessages = NULL;
   if (E->InheritsFrom(__classid(ExtException)))
@@ -370,19 +370,20 @@ int __fastcall FatalExceptionMessageDialog(Exception * E,
     MoreMessages = ((ExtException *)E)->MoreMessages;
   }
 
-  int Result, Answers;
+  assert((Answers & qaRetry) == 0);
+  Answers |= qaRetry;
+  int Result;
 
-  Answers = qaOK | qaRetry;
-
-  TForm * Dialog = CreateMoreMessageDialog(E->Message, MoreMessages, Type,
-    Answers, HelpCtx, 0);
+  TForm * Dialog = CreateMoreMessageDialog(
+    FORMAT(MessageFormat, (E->Message)), MoreMessages, Type,
+    Answers, HelpCtx, Params);
   try
   {
     TButton * RetryButton = dynamic_cast<TButton *>(Dialog->FindComponent("Retry"));
     assert(RetryButton);
     RetryButton->Caption = LoadStr(RECONNECT_BUTTON);
 
-    Result = ExecuteMessageDialog(Dialog, Answers, 0);
+    Result = ExecuteMessageDialog(Dialog, Answers, Params);
   }
   __finally
   {

@@ -97,7 +97,7 @@ __published:
   TButton *QuickLaunchIconButton;
   TButton *DesktopIconAllUsersButton;
   TButton *SendToHookButton;
-  TXPGroupBox *XPGroupBox1;
+  TXPGroupBox *ExternalAppsGroup;
   TLabel *Label2;
   TFilenameEdit *PuttyPathEdit;
   TTabSheet *CustomCommandsSheet;
@@ -131,6 +131,7 @@ __published:
   TDirectoryEdit *DDTemporaryDirectoryEdit;
   TCheckBox *DDWarnLackOfTempSpaceCheck;
   TCheckBox *DDWarnOnMoveCheck;
+  TCheckBox *ConfirmExitOnCompletionCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

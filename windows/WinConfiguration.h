@@ -114,7 +114,9 @@ private:
   bool FDDExtEnabled;
   int FDDExtInstalled;
   int FDDExtTimeout;
+  int FDDExtCopySlipTimeout;
   bool FConfirmClosingSession;
+  bool FConfirmExitOnCompletion;
   double FDDWarnLackOfTempSpaceRatio;
   AnsiString FTemporarySessionFile;
   AnsiString FTemporaryKeyFile;
@@ -146,7 +148,9 @@ private:
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetDDExtEnabled(bool value);
   void __fastcall SetDDExtTimeout(int value);
+  void __fastcall SetDDExtCopySlipTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
+  void __fastcall SetConfirmExitOnCompletion(bool value);
   void __fastcall SetForceDeleteTempFolder(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
   void __fastcall SetBookmarks(AnsiString Key, TBookmarkList * value);
@@ -172,8 +176,11 @@ protected:
     HANDLE HInst, TComponent * Instance);
   bool __fastcall InitComponent(TComponent * Instance,
     TClass RootAncestor, TClass ClassType);
-  virtual void __fastcall ReinitLocale();
+  virtual HANDLE __fastcall LoadNewResourceModule(LCID Locale,
+    AnsiString * FileName = NULL);
+  virtual void __fastcall SetResourceModule(HANDLE Instance);
   virtual LCID __fastcall GetLocale();
+  void __fastcall CheckTranslationVersion(const AnsiString FileName);
 
 public:
   __fastcall TWinConfiguration();
@@ -208,7 +215,9 @@ public:
   __property bool DDExtEnabled = { read=FDDExtEnabled, write=SetDDExtEnabled };
   __property bool DDExtInstalled = { read=GetDDExtInstalled };
   __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
+  __property int DDExtCopySlipTimeout = { read=FDDExtCopySlipTimeout, write=SetDDExtCopySlipTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
+  __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
   __property bool ForceDeleteTempFolder  = { read=FForceDeleteTempFolder, write=SetForceDeleteTempFolder };
   __property double DDWarnLackOfTempSpaceRatio  = { read=FDDWarnLackOfTempSpaceRatio, write=SetDDWarnLackOfTempSpaceRatio };
   __property TBookmarkList * Bookmarks[AnsiString Key] = { read = GetBookmarks, write = SetBookmarks };

@@ -325,9 +325,13 @@ void __fastcall Execute(TProgramParams * Params)
 
     Application->HintHidePause = 1000;
 
-    if (Params->FindSwitch("RandomSeedFileCleanup"))
+    if (Params->FindSwitch("UninstallCleanup"))
     {
-      Configuration->CleanupRandomSeedFile();
+      if (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
+            qaOK | qaCancel, 0) == qaOK)
+      {
+        DoCleanupDialog(StoredSessions, Configuration);
+      }
     }
     else if (Params->FindSwitch("RegisterAsUrlHandler"))
     {

@@ -19,6 +19,9 @@ struct TPasLibModule {
   void * ResInstance;
 };
 //---------------------------------------------------------------------------
+static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
+static const AnsiString AdditionaLanguagePrefix("XX");
+//---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
 {
   FLocale = 0;
@@ -85,7 +88,7 @@ void __fastcall TGUIConfiguration::LoadSpecial(THierarchicalStorage * Storage)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-TPasLibModule * TGUIConfiguration::FindModule(void * Instance)
+TPasLibModule * __fastcall TGUIConfiguration::FindModule(void * Instance)
 {
   TPasLibModule * CurModule;
   CurModule = reinterpret_cast<TPasLibModule*>(LibModuleList);
@@ -104,20 +107,30 @@ TPasLibModule * TGUIConfiguration::FindModule(void * Instance)
   return CurModule;
 }
 //---------------------------------------------------------------------------
-HANDLE TGUIConfiguration::LoadNewResourceModule(LCID ALocale)
+HANDLE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
+  AnsiString * FileName)
 {
+  AnsiString LibraryFileName;
   HANDLE NewInstance = 0;
   bool Internal = (ALocale == InternalLocale());
   if (!Internal)
   {
     AnsiString Module;
     AnsiString LocaleName;
-    char LocaleStr[4];
 
     Module = ModuleFileName();
-    GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, sizeof(LocaleStr));
-    LocaleName = LocaleStr;
-    assert(!LocaleName.IsEmpty());
+    if ((ALocale & AdditionaLanguageMask) != AdditionaLanguageMask)
+    {
+      char LocaleStr[4];
+      GetLocaleInfo(ALocale, LOCALE_SABBREVLANGNAME, LocaleStr, sizeof(LocaleStr));
+      LocaleName = LocaleStr;
+      assert(!LocaleName.IsEmpty());
+    }
+    else
+    {
+      LocaleName = AdditionaLanguagePrefix +
+        char(ALocale & ~AdditionaLanguageMask);
+    }
 
     Module = ChangeFileExt(Module, AnsiString(".") + LocaleName);
     // Look for a potential language/country translation
@@ -127,6 +140,14 @@ HANDLE TGUIConfiguration::LoadNewResourceModule(LCID ALocale)
       // Finally look for a language only translation
       Module.SetLength(Module.Length() - 1);
       NewInstance = LoadLibraryEx(Module.c_str(), 0, LOAD_LIBRARY_AS_DATAFILE);
+      if (NewInstance)
+      {
+        LibraryFileName = Module;
+      }
+    }
+    else
+    {
+      LibraryFileName = Module;
     }
   }
 
@@ -136,17 +157,18 @@ HANDLE TGUIConfiguration::LoadNewResourceModule(LCID ALocale)
   }
   else
   {
-    TPasLibModule * MainModule = FindModule(HInstance);
-    if (MainModule->ResInstance != MainModule->Instance)
-    {
-      FreeLibrary(static_cast<HMODULE>(MainModule->ResInstance));
-    }
-    MainModule->ResInstance = Internal ? MainModule->Instance : NewInstance;
     if (Internal)
     {
+      TPasLibModule * MainModule = FindModule(HInstance);
       NewInstance = MainModule->Instance;
     }
   }
+
+  if (FileName != NULL)
+  {
+    *FileName = LibraryFileName;
+  }
+
   return NewInstance;
 }
 //---------------------------------------------------------------------------
@@ -180,10 +202,11 @@ void __fastcall TGUIConfiguration::SetLocale(LCID value)
 {
   if (Locale != value)
   {
-    if (LoadNewResourceModule(value))
+    HANDLE Module = LoadNewResourceModule(value);
+    if (Module != NULL)
     {
       FLocale = value;
-      ReinitLocale();
+      SetResourceModule(Module);
     }
     else
     {
@@ -196,27 +219,40 @@ void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
 {
   if (Locale != value)
   {
-    bool Result;
+    HANDLE Module;
 
     try
     {
-      Result = LoadNewResourceModule(value);
+      Module = LoadNewResourceModule(value);
     }
     catch(...)
     {
       // ignore any exception while loading locale
+      Module = NULL;
     }
 
-    if (Result)
+    if (Module != NULL)
     {
       FLocale = value;
-      ReinitLocale();
+      SetResourceModule(Module);
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::ReinitLocale()
+void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
 {
+  TPasLibModule * MainModule = FindModule(HInstance);
+  if (Instance != MainModule->Instance)
+  {
+    FreeLibrary(Instance);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::SetResourceModule(HANDLE Instance)
+{
+  TPasLibModule * MainModule = FindModule(HInstance);
+  FreeResourceModule(MainModule->ResInstance);
+  MainModule->ResInstance = Instance;
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TGUIConfiguration::GetLocales()
@@ -310,6 +346,22 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
           FLocales->AddObject(Name, reinterpret_cast<TObject*>(Locale));
         }
         Index++;
+      }
+
+      for (int Index = 0; Index < Exts->Count; Index++)
+      {
+        if ((Exts->Objects[Index] == NULL) &&
+            (Exts->Strings[Index].Length() == 3) && 
+            SameText(Exts->Strings[Index].SubString(1, 2), AdditionaLanguagePrefix))
+        {
+          AnsiString LangName = GetFileFileInfoString("LangName",
+            ChangeFileExt(ModuleFileName(), AnsiString(".") + Exts->Strings[Index]));
+          if (!LangName.IsEmpty())
+          {
+            FLocales->AddObject(LangName, reinterpret_cast<TObject*>(
+              AdditionaLanguageMask + Exts->Strings[Index][3]));
+          }
+        }
       }
     }
   }

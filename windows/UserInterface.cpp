@@ -67,18 +67,51 @@ void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
       if (!E->InheritsFrom(__classid(EAbort)))
       {
         TQueryType Type;
-        Type = (E->InheritsFrom(__classid(ESshTerminate)) ?
-          qtInformation : qtError);
+        bool CloseOnCompletion = E->InheritsFrom(__classid(ESshTerminate));
+        Type = CloseOnCompletion ? qtInformation : qtError;
 
         if (E->InheritsFrom(__classid(EFatal)) && !NoReconnect)
         {
-          if (FatalExceptionMessageDialog(E, Type) == qaRetry)
+          TTerminalManager * Manager = TTerminalManager::Instance();
+
+          int Result;
+          if (CloseOnCompletion)
           {
-            TTerminalManager::Instance()->ReconnectActiveTerminal();
+            if (WinConfiguration->ConfirmExitOnCompletion)
+            {
+              Result = FatalExceptionMessageDialog(E, Type,
+                Manager->Count > 1 ?
+                  FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
+                  LoadStr(EXIT_ON_COMPLETION),
+                qaYes | qaNo, 0, mpNeverAskAgainCheck);
+
+              if (Result == qaNeverAskAgain)
+              {
+                Result = qaYes;
+                WinConfiguration->ConfirmExitOnCompletion = false;
+              }
+            }
+            else
+            {
+              Result = qaYes;
+            }
           }
           else
           {
-            TTerminalManager::Instance()->FreeActiveTerminal();
+            Result = FatalExceptionMessageDialog(E, Type);
+          }
+
+          if (Result == qaYes)
+          {
+            Application->Terminate();
+          }
+          else if (Result == qaRetry)
+          {
+            Manager->ReconnectActiveTerminal();
+          }
+          else
+          {
+            Manager->FreeActiveTerminal();
           }
         }
         else

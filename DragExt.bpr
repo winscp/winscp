@@ -1,0 +1,97 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="DragExt.dll"/>
+    <OBJFILES value="dragext\DragExt.obj"/>
+    <RESFILES value="DragExt.res"/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES)"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value=""/>
+    <SPARELIBS value=""/>
+    <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi adortl.bpi vcldb.bpi 
+      qrpt.bpi bdertl.bpi vcldbx.bpi dsnap.bpi cds.bpi bdecds.bpi teeui.bpi 
+      teedb.bpi tee.bpi teeqr.bpi ibxpress.bpi visualclx.bpi visualdbclx.bpi 
+      vclie.bpi xmlrtl.bpi inet.bpi inetdbbde.bpi inetdbxpress.bpi inetdb.bpi 
+      nmfast.bpi bcbie.bpi soaprtl.bpi dclocx.bpi dbexpress.bpi dbxcds.bpi 
+      indy.bpi bcb2kaxserver.bpi Moje_B5.bpi DragDrop_B5.bpi DriveDir_B5.bpi"/>
+    <PATHCPP value=".;dragext"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value="_DEBUG"/>
+    <SYSDEFINES value="NO_STRICT;_NO_VCL"/>
+    <MAINSOURCE value="DragExt.bpf"/>
+    <INCLUDEPATH value="dragext;$(BCB)\include"/>
+    <LIBPATH value="dragext;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <WARNINGS value="-w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-WD -Od -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -r- -a8 -b- -k -y -v -vi- 
+      -tWD -tWM -c"/>
+    <PFLAGS value="  -$YD -$W -$O- -$A8 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zd"/>
+    <LFLAGS value="-I -D&quot;&quot; -aa -Tpd -x -Gn -Gi -v"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0d32.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cw32mt.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="DragExt.bpf" FORMNAME="" UNITNAME="DragExt" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragext\DragExt.cpp" FORMNAME="" UNITNAME="DragExt" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="DragExt.res" FORMNAME="" UNITNAME="DragExt.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=1
+MajorVer=1
+MinorVer=0
+Release=1
+Build=28
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=1
+Locale=1033
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=Martin Prikryl
+FileDescription=Drag&amp;Drop shell extension for WinSCP
+FileVersion=1.0.1.28
+InternalName=dragext
+LegalCopyright=(c) 2004 Martin Prikryl
+LegalTrademarks=
+OriginalFilename=dragext.dll
+ProductName=WinSCP
+ProductVersion=3.5.6.0
+Comments=
+WWW=http://winscp.sourceforge.net/
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[Linker]
+LibPrefix=
+LibSuffix=
+LibVersion=
+  </IDEOPTIONS>
+</PROJECT>

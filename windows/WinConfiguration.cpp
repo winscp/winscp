@@ -23,6 +23,15 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FBookmarks = new TBookmarks();
   FCustomCommands = new TCustomCommands();
   Default();
+
+  try
+  {
+    CheckTranslationVersion(GetResourceModule(ModuleFileName().c_str()));
+  }
+  catch(...)
+  {
+    LocaleSafe = InternalLocale(); 
+  }
 }
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::~TWinConfiguration()
@@ -44,7 +53,8 @@ void __fastcall TWinConfiguration::Default()
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
   FDDExtEnabled = true;
-  FDDExtTimeout = 1000; 
+  FDDExtTimeout = 1000;
+  FDDExtCopySlipTimeout = 100;  
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
   FSelectMask = "*.*";
@@ -52,6 +62,7 @@ void __fastcall TWinConfiguration::Default()
   FShowInaccesibleDirectories = true;
   FConfirmDeleting = true;
   FConfirmClosingSession = true;
+  FConfirmExitOnCompletion = true;
   FForceDeleteTempFolder = true;
   FCopyOnDoubleClick = false;
   FCopyOnDoubleClickConfirmation = false;
@@ -177,12 +188,14 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     ShowInaccesibleDirectories); \
     KEY(Bool,     ConfirmDeleting); \
     KEY(Bool,     ConfirmClosingSession); \
+    KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(String,   AutoStartSession); \
     KEY(Bool,     UseLocationProfiles); \
     KEY(Bool,     ForceDeleteTempFolder); \
     KEY(Integer,  LocaleSafe); \
     KEY(Bool,     DDExtEnabled); \
     KEY(Integer,  DDExtTimeout); \
+    KEY(Integer,  DDExtCopySlipTimeout); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
     KEY(Integer,  Editor.Editor); \
@@ -460,6 +473,11 @@ void __fastcall TWinConfiguration::SetDDExtTimeout(int value)
   SET_CONFIG_PROPERTY(DDExtTimeout);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDDExtCopySlipTimeout(int value)
+{
+  SET_CONFIG_PROPERTY(DDExtCopySlipTimeout);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDWarnLackOfTempSpace(bool value)
 {
   SET_CONFIG_PROPERTY(DDWarnLackOfTempSpace);
@@ -518,6 +536,11 @@ void __fastcall TWinConfiguration::SetUseLocationProfiles(bool value)
 void __fastcall TWinConfiguration::SetConfirmClosingSession(bool value)
 {
   SET_CONFIG_PROPERTY(ConfirmClosingSession);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetConfirmExitOnCompletion(bool value)
+{
+  SET_CONFIG_PROPERTY(ConfirmExitOnCompletion);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetForceDeleteTempFolder(bool value)
@@ -716,9 +739,34 @@ LCID __fastcall TWinConfiguration::GetLocale()
   return TCustomWinConfiguration::GetLocale();
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::ReinitLocale()
+HANDLE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
+  AnsiString * FileName)
 {
-  TCustomWinConfiguration::ReinitLocale();
+  AnsiString FileNameStorage;
+  if (FileName == NULL)
+  {
+    FileName = &FileNameStorage;
+  }
+
+  HANDLE Instance = TCustomWinConfiguration::LoadNewResourceModule(ALocale, FileName);
+  if (Instance != NULL)
+  {
+    try
+    {
+      CheckTranslationVersion(*FileName);
+    }
+    catch(...)
+    {
+      FreeResourceModule(Instance);
+      throw;
+    }
+  }
+  return Instance;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetResourceModule(HANDLE Instance)
+{
+  TCustomWinConfiguration::SetResourceModule(Instance);
 
   Busy(true);
   try
@@ -778,6 +826,25 @@ void __fastcall TWinConfiguration::ReinitLocale()
   __finally
   {
     Busy(false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::CheckTranslationVersion(const AnsiString FileName)
+{
+  AnsiString TranslationProductVersion = GetFileProductVersion(FileName);
+  AnsiString TranslationProductName = GetFileProductName(FileName);
+  if ((ProductName != TranslationProductName) ||
+      (ProductVersion != TranslationProductVersion))
+  {
+    if (TranslationProductName.IsEmpty() || TranslationProductVersion.IsEmpty())
+    {
+      throw Exception(FMTLOAD(UNKNOWN_TRANSLATION, (FileName)));
+    }
+    else
+    {
+      throw Exception(FMTLOAD(INCOMPATIBLE_TRANSLATION,
+        (FileName, TranslationProductName, TranslationProductVersion)));
+    }
   }
 }
 //---------------------------------------------------------------------------

@@ -36,6 +36,7 @@ private:
   virtual AnsiString __fastcall GetVersionStr();
   virtual AnsiString __fastcall GetVersion();
   AnsiString __fastcall GetProductVersion();
+  AnsiString __fastcall GetProductName();
   AnsiString __fastcall TrimVersion(AnsiString Version);
   AnsiString __fastcall GetStoredSessionsSubKey();
   AnsiString __fastcall GetPuttySessionsKey();
@@ -67,7 +68,7 @@ private:
   AnsiString __fastcall GetPartialExt() const;
   AnsiString __fastcall GetFileInfoString(const AnsiString Key);
   AnsiString __fastcall GetLocalInvalidChars();
-  
+
 protected:
   TStorage FStorage;
 
@@ -83,6 +84,13 @@ protected:
   virtual void __fastcall SetConfirmOverwriting(bool value);
 
   virtual AnsiString __fastcall ModuleFileName();
+
+  AnsiString __fastcall GetFileFileInfoString(const AnsiString Key,
+    const AnsiString FileName);
+  void * __fastcall GetFileApplicationInfo(const AnsiString FileName);
+  AnsiString __fastcall GetFileProductVersion(const AnsiString FileName);
+  AnsiString __fastcall TConfiguration::GetFileProductName(
+    const AnsiString FileName);
 
 public:
   __fastcall TConfiguration();
@@ -119,6 +127,7 @@ public:
   __property AnsiString VersionStr = { read=GetVersionStr };
   __property AnsiString Version = { read=GetVersion };
   __property AnsiString ProductVersion = { read=GetProductVersion };
+  __property AnsiString ProductName = { read=GetProductName };
   __property AnsiString FileInfoString[AnsiString Key] = { read = GetFileInfoString };
   __property bool Logging  = { read=FLogging, write=SetLogging };
   __property AnsiString LogFileName  = { read=FLogFileName, write=SetLogFileName };

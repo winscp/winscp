@@ -106,7 +106,7 @@ BEGIN
   DUPLICATE_BOOKMARK, "Location Profile with name '%s' already exists."
   MOVE_FILE_ERROR, "Error moving file '%s' to '%s'."
   SFTP_PACKET_TOO_BIG_INIT_EXPLAIN, "%s\n \nThe error is typically caused by message printed from startup script (like .profile). The message may start with \"%s\"."
-  PRESERVE_TIME_ERROR, "Upload of file '%s' was successful, but error occurred while setting the timestamp. If the problem persists, turn off 'Preserve timestamp' option."
+  PRESERVE_TIME_PERM_ERROR, "Upload of file '%s' was successful, but error occurred while setting the permissions and/or timestamp. If the problem persists, turn off 'Set permissions' and/or 'Preserve timestamp' option."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT, "Host hasn't answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."
