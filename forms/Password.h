@@ -29,19 +29,24 @@ __published:
   void __fastcall HideTypingCheckClick(TObject *Sender);
 
 private:
-  TPasswordKind FKind;
+  TPromptKind FKind;
+  TShowHintEvent FApplicationShowHint;
 
   void __fastcall SetPasswordCaption(const AnsiString value);
   AnsiString __fastcall GetPasswordCaption();
   void __fastcall SetPassword(const AnsiString value);
   AnsiString __fastcall GetPassword();
-  void __fastcall SetKind(TPasswordKind value);
+  void __fastcall SetKind(TPromptKind value);
+  void __fastcall ApplicationShowHint(AnsiString & HintStr,
+    bool & CanShow, THintInfo & HintInfo);
 
 public:
   virtual __fastcall TPasswordDialog(TComponent* AOwner);
+  __fastcall ~TPasswordDialog();
+
   __property AnsiString PasswordCaption  = { read=GetPasswordCaption, write=SetPasswordCaption };
   __property AnsiString Password  = { read=GetPassword, write=SetPassword };
-  __property TPasswordKind Kind = { read=FKind, write=SetKind };
+  __property TPromptKind Kind = { read=FKind, write=SetKind };
 };
 //----------------------------------------------------------------------------
 #endif

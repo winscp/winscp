@@ -21,7 +21,7 @@
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, bool DragDrop, TStrings * FileList,
   bool AllowTransferMode, AnsiString & TargetDirectory,
-  TCopyParamType * Params, bool AllowDirectory)
+  TCopyParamType * Params, int & Options, bool AllowDirectory)
 {
   bool Result;
   TCopyDialog *CopyDialog = new TCopyDialog(Application);
@@ -41,11 +41,13 @@ bool __fastcall DoCopyDialog(bool ToRemote,
     CopyDialog->Params = *Params;
     CopyDialog->Move = Move;
     CopyDialog->AllowDirectory = AllowDirectory;
+    CopyDialog->Options = Options;
     Result = CopyDialog->Execute();
     if (Result)
     {
       if (!CopyDialog->DragDrop) TargetDirectory = CopyDialog->Directory;
       Params->Assign(CopyDialog->Params);
+      Options = CopyDialog->Options;
     }
   }
   __finally
@@ -66,6 +68,7 @@ __fastcall TCopyDialog::TCopyDialog(TComponent* Owner)
   Move = false;
   AllowTransferMode = true;
   AllowDirectory = true;
+  FOptions = 0;
 
   UseSystemSettings(this);
 }
@@ -95,6 +98,21 @@ void __fastcall TCopyDialog::SetAllowDirectory(bool value)
     FAllowDirectory = value;
     DirectoryEdit->Enabled = AllowDirectory;
   }
+}
+//---------------------------------------------------------------------------
+int __fastcall TCopyDialog::GetOptions()
+{
+  return
+    (FOptions & ~(coQueue | coQueueNoConfirmation)) |
+    (QueueCheck->Checked ? coQueue : 0) |
+    (QueueNoConfirmationCheck->Checked ? coQueueNoConfirmation : 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::SetOptions(int value)
+{
+  FOptions = value;
+  QueueCheck->Checked = ((value & coQueue) != 0);
+  QueueNoConfirmationCheck->Checked = ((value & coQueueNoConfirmation) != 0);
 }
 //---------------------------------------------------------------------------
 THistoryComboBox * __fastcall TCopyDialog::GetDirectoryEdit()
@@ -205,8 +223,12 @@ void __fastcall TCopyDialog::UpdateControls()
     Caption = LoadStr(COPY_MOVE_CAPTION);
     CopyButton->Caption = LoadStr(COPY_MOVE_BUTTON);
   }
-  
+
   LocalDirectoryBrowseButton->Visible = !ToRemote && !DragDrop && AllowDirectory;
+
+  EnableControl(QueueCheck, !DragDrop && ((Options & coQueueDisable) == 0));
+  EnableControl(QueueNoConfirmationCheck, !DragDrop && QueueCheck->Checked);
+  QueueNoConfirmationCheck->Visible = MoreButton->Expanded;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetDragDrop(Boolean value)
@@ -240,6 +262,7 @@ void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
     else
   if (MoreButton->Expanded) MorePanel->SetFocus();
     else CopyButton->SetFocus();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyDialog::Execute()
@@ -348,4 +371,17 @@ void __fastcall TCopyDialog::LocalDirectoryBrowseButtonClick(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCopyDialog::DirectoryEditKeyDown(TObject * Sender,
+  WORD & Key, TShiftState Shift)
+{
+  PathComboBoxKeyDown(dynamic_cast<TCustomComboBox*>(Sender), Key, Shift,
+    (Sender == RemoteDirectoryEdit));
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
+{
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+
 

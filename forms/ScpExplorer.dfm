@@ -8,6 +8,9 @@ inherited ScpExplorerForm: TScpExplorerForm
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
+  inherited QueueSplitter: TSplitter
+    Width = 640
+  end
   inherited TopCoolBar: TCoolBar
     Width = 640
     Height = 170
@@ -402,7 +405,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     object PreferencesToolbar: TToolBar
       Left = 9
       Top = 119
-      Width = 90
+      Width = 126
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -443,6 +446,13 @@ inherited ScpExplorerForm: TScpExplorerForm
         Top = 0
         Action = NonVisualDataModule.ViewLogAction
         Style = tbsCheck
+      end
+      object ToolButton50: TToolButton
+        Left = 90
+        Top = 0
+        Action = NonVisualDataModule.QueueToggleShowAction
+        DropdownMenu = NonVisualDataModule.QueueShowPopup
+        Style = tbsDropDown
       end
     end
     object SortToolbar: TToolBar
@@ -558,10 +568,12 @@ inherited ScpExplorerForm: TScpExplorerForm
   inherited RemotePanel: TPanel
     Top = 170
     Width = 640
-    Height = 266
+    Height = 123
+    Constraints.MinHeight = 100
+    Constraints.MinWidth = 200
     inherited RemoteStatusBar: TAssociatedStatusBar
       Tag = 1
-      Top = 247
+      Top = 104
       Width = 640
       Hint = ''
       Panels = <
@@ -603,13 +615,34 @@ inherited ScpExplorerForm: TScpExplorerForm
           Alignment = taCenter
           Width = 80
         end>
+      OnDblClick = RemoteStatusBarDblClick
       OnMouseMove = SessionStatusBarMouseMove
       OnDrawPanel = SessionStatusBarDrawPanel
     end
     inherited RemoteDirView: TUnixDirView
       Width = 640
-      Height = 247
+      Height = 104
       PathComboBox = UnixPathComboBox
+    end
+  end
+  inherited QueuePanel: TPanel
+    Width = 640
+    inherited QueueView: TListView
+      Width = 640
+    end
+    inherited QueueCoolBar: TCoolBar
+      Width = 640
+      Bands = <
+        item
+          Control = QueueToolBar
+          ImageIndex = -1
+          MinHeight = 22
+          Width = 636
+        end>
+      PopupMenu = NonVisualDataModule.ExplorerBarPopup
+      inherited QueueToolBar: TToolBar
+        Width = 623
+      end
     end
   end
 end

@@ -3,7 +3,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   Top = 186
   BorderStyle = bsDialog
   Caption = 'Import sessions from PuTTY'
-  ClientHeight = 275
+  ClientHeight = 293
   ClientWidth = 351
   Color = clBtnFace
   ParentFont = True
@@ -13,7 +13,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   OnShow = FormShow
   DesignSize = (
     351
-    275)
+    293)
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -39,31 +39,31 @@ object ImportSessionsDialog: TImportSessionsDialog
   end
   object OKButton: TButton
     Left = 191
-    Top = 244
+    Top = 262
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 1
+    TabOrder = 3
   end
   object CancelButton: TButton
     Left = 271
-    Top = 244
+    Top = 262
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 2
+    TabOrder = 4
   end
   object SessionListView: TListView
     Left = 8
     Top = 72
     Width = 337
-    Height = 164
+    Height = 160
     Anchors = [akLeft, akTop, akRight, akBottom]
     Checkboxes = True
     Columns = <
@@ -85,5 +85,23 @@ object ImportSessionsDialog: TImportSessionsDialog
     OnInfoTip = SessionListViewInfoTip
     OnKeyUp = SessionListViewKeyUp
     OnMouseDown = SessionListViewMouseDown
+  end
+  object CheckAllButton: TButton
+    Left = 8
+    Top = 262
+    Width = 89
+    Height = 25
+    Anchors = [akLeft, akBottom]
+    Caption = 'Un/check &all'
+    TabOrder = 2
+    OnClick = CheckAllButtonClick
+  end
+  object ImportKeysCheck: TCheckBox
+    Left = 16
+    Top = 238
+    Width = 329
+    Height = 17
+    Caption = 'Import cached host &keys for checked sessions'
+    TabOrder = 1
   end
 end

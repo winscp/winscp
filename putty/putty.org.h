@@ -682,8 +682,8 @@ extern Backend telnet_backend;
  * on ssh.c.)
  */
 
-GLOBAL int (*ssh_get_line) (const char *prompt, char *str, int maxlen,
-			    int is_pw);
+GLOBAL int (*ssh_get_line) (void *frontend, const char *prompt, char *str, int maxlen,
+                            int is_pw);
 GLOBAL int ssh_getline_pw_only;
 extern Backend ssh_backend;
 

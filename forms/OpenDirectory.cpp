@@ -383,3 +383,16 @@ void __fastcall TOpenDirectoryDialog::BookmarksListKeyDown(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TOpenDirectoryDialog::RemoteDirectoryEditKeyDown(
+  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+{
+  PathComboBoxKeyDown(RemoteDirectoryEdit, Key, Shift, true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TOpenDirectoryDialog::LocalDirectoryEditKeyDown(
+  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+{
+  PathEditKeyDown(LocalDirectoryEdit, Key, Shift, false);
+}
+//---------------------------------------------------------------------------
+

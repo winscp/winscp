@@ -16,39 +16,53 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
 {
   FOnChange = NULL;
   FAllowAddXToDirectories = true;
+  // to avoid duplication of reference in forms that uses the frame
+  PopupMenu = RightsPopup;
 }
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()
 {
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::SetStates(TRightsFlag Flag, TRightState value)
+void __fastcall TRightsFrame::SetStates(TRights::TRight Right, TRights::TState value)
 {
-  assert(((value == rsNo) || (value == rsYes) || (value == rsUndef)));
-  TCheckBox *CheckBox = Checks[(TRightsFlag)Flag];
-  switch (value) {
-    case rsNo: CheckBox->State = cbUnchecked; break;
-    case rsYes: CheckBox->State = cbChecked; break;
-    case rsUndef: CheckBox->State = cbGrayed; break;
+  assert(((value == TRights::rsNo) || (value == TRights::rsYes) || (value == TRights::rsUndef)));
+  TCheckBox * CheckBox = Checks[Right];
+  if (CheckBox != NULL)
+  {
+    switch (value) {
+      case TRights::rsNo: CheckBox->State = cbUnchecked; break;
+      case TRights::rsYes: CheckBox->State = cbChecked; break;
+      case TRights::rsUndef: CheckBox->State = cbGrayed; break;
+    }
   }
 }
 //---------------------------------------------------------------------------
-TRightState __fastcall TRightsFrame::GetStates(TRightsFlag Flag)
+TRights::TState __fastcall TRightsFrame::GetStates(TRights::TRight Right)
 {
-  switch (Checks[(TRightsFlag)Flag]->State) {
-    case cbUnchecked: return rsNo;
-    case cbChecked: return rsYes;
-    case cbGrayed:
-    default: return rsUndef;
+  TCheckBox * CheckBox = Checks[Right];
+  if (CheckBox != NULL)
+  {
+    switch (CheckBox->State) {
+      case cbUnchecked: return TRights::rsNo;
+      case cbChecked: return TRights::rsYes;
+      case cbGrayed:
+      default: return TRights::rsUndef;
+    }
+  }
+  else
+  {
+    return TRights::rsNo;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::SetRights(TRights value)
+void __fastcall TRightsFrame::SetRights(const TRights & value)
 {
   AllowUndef = true; // temporarily
-  for (int Flag = 0; Flag < RightsFlagCount; Flag++)
+  for (int Right = TRights::rrFirst; Right <= TRights::rrLast; Right++)
   {
-    States[(TRightsFlag)Flag] = value.RightUndef[(TRightsFlag)Flag];
+    States[static_cast<TRights::TRight>(Right)] =
+      value.RightUndef[static_cast<TRights::TRight>(Right)];
   }
   AllowUndef = value.AllowUndef;
   UpdateControls();
@@ -58,58 +72,59 @@ TRights __fastcall TRightsFrame::GetRights()
 {
   TRights Result;
   Result.AllowUndef = AllowUndef;
-  for (int Flag = 0; Flag < RightsFlagCount; Flag++)
+  for (int Right = TRights::rrFirst; Right <= TRights::rrLast; Right++)
   {
-    Result.RightUndef[(TRightsFlag)Flag] = States[(TRightsFlag)Flag];
+    Result.RightUndef[static_cast<TRights::TRight>(Right)] =
+      States[static_cast<TRights::TRight>(Right)];
   }
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetAllowUndef(bool value)
 {
-  for (int Index = 0; Index < CheckCount; Index++)
+  for (int Right = TRights::rrFirst; Right <= TRights::rrLast; Right++)
   {
-    Checks[(TRightsFlag)Index]->AllowGrayed = value;
+    TCheckBox * CheckBox = Checks[static_cast<TRights::TRight>(Right)];
+    if (CheckBox != NULL)
+    {
+      CheckBox->AllowGrayed = value;
+    }
   }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRightsFrame::GetAllowUndef()
 {
   bool Result = false, First = true;
-  for (int Index = 0; Index < CheckCount; Index++)
+  for (int Right = TRights::rrFirst; Right <= TRights::rrLast; Right++)
   {
-    TCheckBox *Check = Checks[(TRightsFlag)Index];
-    if (First)
+    TCheckBox * Check = Checks[static_cast<TRights::TRight>(Right)];
+    if (Check != NULL)
     {
-      Result = Check->AllowGrayed;
-      First = false;
-    }
-    else if (Result != Check->AllowGrayed)
-    {
-      assert(false);
+      if (First)
+      {
+        Result = Check->AllowGrayed;
+        First = false;
+      }
+      else if (Result != Check->AllowGrayed)
+      {
+        assert(false);
+      }
     }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-TCheckBox * __fastcall TRightsFrame::GetChecks(TRightsFlag Flag)
+TCheckBox * __fastcall TRightsFrame::GetChecks(TRights::TRight Right)
 {
-  assert((Flag >= 0) && (Flag < RightsFlagCount));
   for (int Index = 0; Index < ControlCount; Index++)
   {
     if (Controls[Index]->InheritsFrom(__classid(TCheckBox)) &&
-        ((Controls[Index]->Tag - 1) == Flag))
+        (Controls[Index]->Tag == TRights::RightToFlag(Right)))
     {
       return ((TCheckBox *)Controls[Index]);
     }
   }
-  assert(false);
   return NULL;
-}
-//---------------------------------------------------------------------------
-int __fastcall TRightsFrame::GetCheckCount()
-{
-  return RightsFlagCount;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetAddXToDirectories(bool value)
@@ -129,47 +144,51 @@ void __fastcall TRightsFrame::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::UpdateControls()
 {
-  TRights R = Rights;
   DirectoriesXCheck->Visible = AllowAddXToDirectories;
   EnableControl(DirectoriesXCheck,
-    Enabled && !((R.NumberSet & raExecute) == raExecute));
-    
-  if (!OctalEdit->Focused())
-  {
-    OctalEdit->Text = R.IsUndef ? AnsiString() : R.Octal;
-    OctalEdit->Modified = false;
-  }
+    Enabled && !((Rights.NumberSet & TRights::rfExec) == TRights::rfExec));
   DoChange();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CycleRights(int Group)
 {
-  TRightState State;
+  TRights::TState State;
   bool Same = true;
-  for (int Flag = 0; Flag < 3; Flag++)
+  for (int Right = 0; Right < 3; Right++)
   {
-    TRightState CState = States[(TRightsFlag)(Flag + ((Group - 1) * 3))];
-    if (Flag == 0) State = CState;
+    TRights::TState CState = States[static_cast<TRights::TRight>(
+      TRights::rrUserRead + Right + ((Group - 1) * 3))];
+
+    if (Right == 0) State = CState;
       else
     if (State != CState) Same = False;
   }
 
   if (!Same)
   {
-    State = rsYes;
+    State = TRights::rsYes;
   }
   else
   {
     switch (State) {
-      case rsYes: State = rsNo; break;
-      case rsNo: if (AllowUndef) State = rsUndef; else State = rsYes; break;
-      case rsUndef: State = rsYes; break;
+      case TRights::rsYes:
+        State = TRights::rsNo;
+        break;
+
+      case TRights::rsNo:
+        State = AllowUndef ? TRights::rsUndef : TRights::rsYes;
+        break;
+
+      case TRights::rsUndef:
+        State = TRights::rsYes;
+        break;
     }
   }
 
-  for (int Flag = 0; Flag < 3; Flag++)
+  for (int Right = 0; Right < 3; Right++)
   {
-    States[(TRightsFlag)(Flag + ((Group - 1) * 3))] = State;
+    States[static_cast<TRights::TRight>(
+      TRights::rrUserRead + Right + ((Group - 1) * 3))] = State;
   }
   UpdateControls();
 }
@@ -197,73 +216,33 @@ void __fastcall TRightsFrame::DoChange()
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetEnabled(bool Value)
-{                 
+{
   TFrame::SetEnabled(Value);
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::UpdateByOctal()
+void __fastcall TRightsFrame::ForceUpdate()
 {
-  if (!OctalEdit->Text.IsEmpty())
-  {
-    TRights R = Rights;
-    R.Octal = OctalEdit->Text;
-    Rights = R;
-  }
-  UpdateControls();
-  OctalEdit->Modified = false;
-}
-//---------------------------------------------------------------------------
-void __fastcall TRightsFrame::OctalEditExit(TObject * /*Sender*/)
-{
-  if (OctalEdit->Modified)
-  {
-    try
-    {
-      UpdateByOctal();
-    }
-    catch(...)
-    {
-      OctalEdit->SelectAll();
-      OctalEdit->SetFocus();
-      throw;
-    }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TRightsFrame::OctalEditChange(TObject * /*Sender*/)
-{
-  if (OctalEdit->Modified && OctalEdit->Text.Length() == 3)
-  {
-    try
-    {
-      UpdateByOctal();
-    }
-    catch(...)
-    {
-      OctalEdit->Modified = true;
-    }
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
   bool & Handled)
 {
   TRights R = Rights;
-  R.Number = raNo;
+  R.Number = TRights::rfNo;
 
   Handled = true;
   if (Action == NoRightsAction)
   {
-    R = raNo;
+    R = TRights::rfNo;
   }
   else if (Action == DefaultRightsAction)
   {
-    R = raDefault;
+    R = TRights::rfDefault;
   }
   else if (Action == AllRightsAction)
   {
-    R = raAll;
+    R = TRights::rfAll;
   }
   else if (Action == LeaveRightsAsIsAction)
   {
@@ -274,6 +253,7 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
     Handled = false;
   }
   Rights = R;
+  ForceUpdate();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::RightsActionsUpdate(TBasicAction *Action,
@@ -284,20 +264,21 @@ void __fastcall TRightsFrame::RightsActionsUpdate(TBasicAction *Action,
   Handled = true;
   if (Action == NoRightsAction)
   {
-    NoRightsAction->Checked = !R.IsUndef && (R.NumberSet == raNo);
+    NoRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfNo);
   }
   else if (Action == DefaultRightsAction)
   {
-    DefaultRightsAction->Checked = !R.IsUndef && (R.NumberSet == raDefault);
+    DefaultRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfDefault);
   }
   else if (Action == AllRightsAction)
   {
-    AllRightsAction->Checked = !R.IsUndef && (R.NumberSet == raAll);
+    AllRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfAll);
   }
   else if (Action == LeaveRightsAsIsAction)
   {
     LeaveRightsAsIsAction->Enabled = R.AllowUndef;
-    LeaveRightsAsIsAction->Checked = (R.NumberSet == raNo) && (R.NumberUnset == raNo);
+    LeaveRightsAsIsAction->Checked = (R.NumberSet == TRights::rfNo) &&
+      (R.NumberUnset == TRights::rfNo);
   }
   else
   {

@@ -32,6 +32,8 @@ __published:
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+  void __fastcall DirectoryEditKeyDown(TObject *Sender, WORD &Key,
+    TShiftState Shift);
   
 private:
   int FParams;

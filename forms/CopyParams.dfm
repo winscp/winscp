@@ -83,66 +83,11 @@ object CopyParamsFrame: TCopyParamsFrame
       Left = 7
       Top = 36
       Width = 163
-      Height = 85
-      PopupMenu = RightsFrame.RightsPopup
+      Height = 87
       TabOrder = 1
-      inherited OthersButton: TSpeedButton
-        Width = 56
-      end
-      inherited GroupButton: TSpeedButton
-        Width = 56
-      end
-      inherited OwnerButton: TSpeedButton
-        Width = 56
-      end
-      inherited OctalLabel: TLabel
-        Visible = False
-      end
-      inherited OwnerReadCheck: TCheckBox
-        Left = 58
-        Width = 31
-      end
-      inherited OwnerWriteCheck: TCheckBox
-        Left = 95
-        Width = 31
-      end
-      inherited OwnerExecuteCheck: TCheckBox
-        Left = 132
-        Width = 31
-      end
-      inherited GroupReadCheck: TCheckBox
-        Left = 58
-        Width = 31
-      end
-      inherited GroupWriteCheck: TCheckBox
-        Left = 95
-        Width = 30
-      end
-      inherited GroupExecuteCheck: TCheckBox
-        Left = 132
-        Width = 31
-      end
-      inherited OthersReadCheck: TCheckBox
-        Left = 58
-        Width = 31
-      end
-      inherited OthersWriteCheck: TCheckBox
-        Left = 95
-        Width = 30
-      end
-      inherited OthersExecuteCheck: TCheckBox
-        Left = 132
-        Width = 31
-      end
-      inherited OctalEdit: TEdit
-        Visible = False
-      end
-      inherited DirectoriesXCheck: TCheckBox
-        Top = 65
-      end
     end
     object PreserveRightsCheck: TCheckBox
-      Left = 9
+      Left = 12
       Top = 16
       Width = 156
       Height = 17

@@ -64,6 +64,10 @@ __published:
           TTreeNode *Node);
   void __fastcall ProfilesViewGetSelectedIndex(TObject *Sender,
           TTreeNode *Node);
+  void __fastcall LocalDirectoryEditKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
+  void __fastcall RemoteDirectoryEditKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
 
 public:
   __fastcall TLocationProfilesDialog(TComponent* AOwner);

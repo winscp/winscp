@@ -2,9 +2,10 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "Preferences.h"
 
-#include <Common.h>
 #include <ScpMain.h>
 #include <Terminal.h>
 
@@ -133,13 +134,13 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(ConfirmExitOnCompletion);
   BOOLPROP(UseLocationProfiles);
   BOOLPROP(ContinueOnError);
+  BOOLPROP(DDAllowMoveInit);
   #undef BOOLPROP
 
   CompareByTimeCheck->Checked = WinConfiguration->ScpCommander.CompareByTime;
   CompareBySizeCheck->Checked = WinConfiguration->ScpCommander.CompareBySize;
 
-  DDExtEnabledButton->Checked = WinConfiguration->DDExtEnabled &&
-    WinConfiguration->DDExtInstalled;
+  DDExtEnabledButton->Checked = WinConfiguration->DDExtEnabled;
   DDExtDisabledButton->Checked = !DDExtEnabledButton->Checked;
   DDWarnOnMoveCheck->Checked = !WinConfiguration->DDAllowMove;
 
@@ -175,6 +176,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
   }
   ExternalEditorEdit->Text = ExternalEditor;
+  ExternalEditorTextCheck->Checked = WinConfiguration->Editor.ExternalEditorText;
   EditorWordWrapCheck->Checked = WinConfiguration->Editor.WordWrap;
   FEditorFont->Name = WinConfiguration->Editor.FontName;
   FEditorFont->Height = WinConfiguration->Editor.FontHeight;
@@ -205,6 +207,21 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
   PuttyPathEdit->FileName = WinConfiguration->PuttyPath;
 
+  QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
+  QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
+  if (WinConfiguration->QueueView.Show == qvShow)
+  {
+    QueueViewShowButton->Checked = true;
+  }
+  else if (WinConfiguration->QueueView.Show == qvHideWhenEmpty)
+  {
+    QueueViewHideWhenEmptyButton->Checked = true;
+  }
+  else
+  {
+    QueueViewHideButton->Checked = true;
+  }
+
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -233,6 +250,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(UseLocationProfiles);
     BOOLPROP(ContinueOnError);
+    BOOLPROP(DDAllowMoveInit);
     #undef BOOLPROP
 
     WinConfiguration->ScpCommander.CompareByTime = CompareByTimeCheck->Checked;
@@ -267,6 +285,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       (EditorInternalButton->Checked || ExternalEditorEdit->Text.IsEmpty()) ?
         edInternal : edExternal;
     WinConfiguration->Editor.ExternalEditor = ExternalEditorEdit->Text;
+    WinConfiguration->Editor.ExternalEditorText = ExternalEditorTextCheck->Checked;
     WinConfiguration->Editor.WordWrap = EditorWordWrapCheck->Checked;
     WinConfiguration->Editor.FontName = FEditorFont->Name;
     WinConfiguration->Editor.FontHeight = FEditorFont->Height;
@@ -283,6 +302,21 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->CustomCommands = FCustomCommands;
 
     WinConfiguration->PuttyPath = PuttyPathEdit->FileName;
+
+    GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
+    GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
+    if (QueueViewShowButton->Checked)
+    {
+      WinConfiguration->QueueView.Show = qvShow;
+    }
+    else if (QueueViewHideWhenEmptyButton->Checked)
+    {
+      WinConfiguration->QueueView.Show = qvHideWhenEmpty;
+    }
+    else
+    {
+      WinConfiguration->QueueView.Show = qvHide;
+    }
   }
   __finally
   {
@@ -315,6 +349,7 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
   switch (PreferencesMode) {
     case pmEditor: PageControl->ActivePage = EditorSheet; break;
     case pmCustomCommands: PageControl->ActivePage = CustomCommandsSheet; break;
+    case pmQueue: PageControl->ActivePage = QueueSheet; break;
     default: PageControl->ActivePage = PreferencesSheet; break;
   }
   PageControlChange(NULL);
@@ -353,6 +388,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
   EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
   EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled && 
     DDCustomTemporaryDirectoryButton->Checked);
+  EnableControl(DDWarnOnMoveCheck, DDExtDisabledButton->Checked &&
+    DDAllowMoveInitCheck->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
@@ -751,6 +788,12 @@ void __fastcall TPreferencesDialog::DDExtLabelClick(TObject * Sender)
 {
   ((Sender == DDExtEnabledLabel) ? DDExtEnabledButton : DDExtDisabledButton)->
     Checked = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PathEditsKeyDown(
+  TObject * Sender, WORD & Key, TShiftState Shift)
+{
+  PathEditKeyDown(dynamic_cast<TCustomEdit*>(Sender), Key, Shift, false);
 }
 //---------------------------------------------------------------------------
 

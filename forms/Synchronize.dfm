@@ -71,13 +71,8 @@ object SynchronizeDialog: TSynchronizeDialog
       Left = 2
       Top = 0
       Width = 508
-      Height = 148
+      Height = 150
       TabOrder = 0
-      inherited RemotePropertiesGroup: TXPGroupBox
-        inherited PreserveRightsCheck: TCheckBox
-          Left = 12
-        end
-      end
       inherited TransferModeGroup: TXPGroupBox
         inherited AsciiFileMaskLabel: TLabel
           Caption = 'Transfer following files in text m&ode'

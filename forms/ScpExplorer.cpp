@@ -10,6 +10,7 @@
 #include "NonVisual.h"
 #include "Tools.h"
 #include "WinConfiguration.h"
+#include <VCLCommon.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "AssociatedStatusBar"
@@ -34,6 +35,10 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
 
   TopCoolBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
   RemoteStatusBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
+  QueueCoolBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
+
+  QueuePanel->Parent = RemotePanel;
+  QueueSplitter->Parent = RemotePanel;
 
   // set common explorer shorcuts to our actions
   NonVisualDataModule->ExplorerShortcuts();
@@ -146,6 +151,19 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory; 
   }
 }
-
-
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::FixControlsPlacement()
+{
+  TCustomScpExplorerForm::FixControlsPlacement();
+  
+  TControl * ControlsOrder[] =
+    { RemoteDirView, QueueSplitter, QueuePanel, RemoteStatusBar };
+  SetControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::RemoteStatusBarDblClick(TObject * /*Sender*/)
+{
+  DoFileSystemInfoDialog(Terminal);
+}
+//---------------------------------------------------------------------------
 

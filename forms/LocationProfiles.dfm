@@ -163,6 +163,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
+    OnKeyDown = LocalDirectoryEditKeyDown
   end
   object RemoteDirectoryEdit: TIEComboBox
     Left = 8
@@ -175,6 +176,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     TabOrder = 1
     Text = 'RemoteDirectoryEdit'
     OnChange = DirectoryEditChange
+    OnKeyDown = RemoteDirectoryEditKeyDown
   end
   object BookmarkImageList: TImageList
     Left = 40

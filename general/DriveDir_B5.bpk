@@ -4,14 +4,14 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\DriveDir_B5.bpl"/>
-    <OBJFILES value="DriveDir_B5.obj DirView.obj DiscMon.obj 
-      DriveView.obj FileOperator.obj IEComboBox.obj 
-      BaseUtils.obj FileChanges.obj MaskSearch.obj 
-      IEListView.obj IEDriveInfo.obj ShellDialogs.obj 
-      DirViewColProperties.obj CustomDirView.obj 
-      CustomUnixDirView.obj UnixDirViewColProperties.obj 
-      CustomPathComboBox.obj IEPathComboBox.obj 
-      ListExt.obj CompThread.obj"/>
+    <OBJFILES value="DriveDir_B5.obj &quot;Filemanager Toolset\DirView.obj&quot; &quot;Filemanager Toolset\DiscMon.obj&quot; 
+      &quot;Filemanager Toolset\DriveView.obj&quot; &quot;Filemanager Toolset\FileOperator.obj&quot; &quot;Filemanager Toolset\IEComboBox.obj&quot; 
+      &quot;Filemanager Toolset\BaseUtils.obj&quot; &quot;Filemanager Toolset\FileChanges.obj&quot; &quot;Filemanager Toolset\MaskSearch.obj&quot; 
+      &quot;Filemanager Toolset\IEListView.obj&quot; &quot;Filemanager Toolset\IEDriveInfo.obj&quot; &quot;Filemanager Toolset\ShellDialogs.obj&quot; 
+      &quot;Moje komponenty\DirViewColProperties.obj&quot; &quot;Moje komponenty\Filemanager Toolset\CustomDirView.obj&quot; 
+      &quot;Moje komponenty\Filemanager Toolset\CustomUnixDirView.obj&quot; &quot;Moje komponenty\UnixDirViewColProperties.obj&quot; 
+      &quot;Moje komponenty\Filemanager Toolset\CustomPathComboBox.obj&quot; &quot;Moje komponenty\Filemanager Toolset\IEPathComboBox.obj&quot; 
+      &quot;Filemanager Toolset\ListExt.obj&quot; &quot;Moje komponenty\Filemanager Toolset\CompThread.obj&quot;"/>
     <RESFILES value="DriveDir_B5.res &quot;Filemanager Toolset\DirView.dcr&quot; 
       &quot;Filemanager Toolset\DiscMon.dcr&quot; &quot;Filemanager Toolset\DriveView.dcr&quot; 
       &quot;Filemanager Toolset\FileOperator.dcr&quot; 
@@ -19,18 +19,19 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib dbxcds.lib dclocx.lib 
-      soaprtl.lib nmfast.lib dbexpress.lib inetdbxpress.lib inetdb.lib 
-      inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib teeqr.lib tee.lib teedb.lib 
-      teeui.lib bdecds.lib cds.lib dsnap.lib vcldbx.lib bdertl.lib qrpt.lib 
-      adortl.lib dbrtl.lib vcldb.lib"/>
-    <SPARELIBS value="rtl.lib vcl.lib bcbsmp.lib vcldb.lib dbrtl.lib adortl.lib qrpt.lib 
-      bdertl.lib vcldbx.lib dsnap.lib cds.lib bdecds.lib teeui.lib teedb.lib 
-      tee.lib teeqr.lib ibxpress.lib xmlrtl.lib inet.lib inetdbbde.lib 
-      inetdb.lib inetdbxpress.lib dbexpress.lib nmfast.lib bcbie.lib soaprtl.lib 
-      dclocx.lib dbxcds.lib indy.lib bcb2kaxserver.lib visualdbclx.lib 
-      DragDrop_B5.lib Moje_B5.lib"/>
-    <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi bcbsmp.bpi bcbie.bpi Moje_B5.bpi DragDrop_B5.bpi"/>
+    <LIBRARIES value="adortl.lib bcb2kaxserver.lib bdecds.lib bdertl.lib
+      cds.lib dbexpress.lib dbrtl.lib dbxcds.lib dclocx.lib dsnap.lib
+      ibxpress.lib indy.lib inet.lib inetdb.lib inetdbbde.lib inetdbxpress.lib
+      nmfast.lib qrpt.lib soaprtl.lib tee.lib teedb.lib teeqr.lib teeui.lib
+      vcldb.lib vcldbx.lib visualdbclx.lib xmlrtl.lib"/>
+    <SPARELIBS value="DragDrop_B5.lib Moje_B5.lib adortl.lib
+      bcb2kaxserver.lib bcbie.lib bcbsmp.lib bdecds.lib bdertl.lib cds.lib
+      dbexpress.lib dbrtl.lib dbxcds.lib dclocx.lib dsnap.lib ibxpress.lib
+      indy.lib inet.lib inetdb.lib inetdbbde.lib inetdbxpress.lib nmfast.lib
+      qrpt.lib rtl.lib soaprtl.lib tee.lib teedb.lib teeqr.lib teeui.lib
+      vcl.lib vcldb.lib vcldbx.lib visualdbclx.lib xmlrtl.lib"/>
+    <PACKAGES value="DragDrop_B5.bpi Moje_B5.bpi bcbie.bpi bcbsmp.bpi
+      rtl.bpi vcl.bpi vclx.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;&quot;Filemanager Toolset&quot;;&quot;Moje komponenty&quot;;&quot;Moje komponenty\Filemanager Toolset&quot;"/>
     <PATHRC value=".;&quot;Filemanager Toolset&quot;"/>
@@ -52,7 +53,7 @@
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
-    <LFLAGS value="-I -D&quot;Filemanager Toolset&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
+    <LFLAGS value="-I -D&quot;Filemanager Toolset&quot; -aa -Tpp -GD -s -Gn -Gl -Gi -M"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

@@ -594,4 +594,16 @@ void __fastcall TLocationProfilesDialog::ProfilesViewGetSelectedIndex(
   Node->SelectedIndex = Node->Data ? 0 : (Node->Expanded ? 1 : 2);
 }
 //---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::LocalDirectoryEditKeyDown(
+  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+{
+  PathEditKeyDown(LocalDirectoryEdit, Key, Shift, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::RemoteDirectoryEditKeyDown(
+  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+{
+  PathComboBoxKeyDown(RemoteDirectoryEdit, Key, Shift, true);
+}
+//---------------------------------------------------------------------------
 

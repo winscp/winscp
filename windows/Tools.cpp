@@ -12,7 +12,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TFontStyles IntToFontStyles(int value)
+TFontStyles __fastcall IntToFontStyles(int value)
 {
   TFontStyles Result;
   for (int i = fsBold; i <= fsStrikeOut; i++)
@@ -26,7 +26,7 @@ TFontStyles IntToFontStyles(int value)
   return Result;
 }
 //---------------------------------------------------------------------------
-int FontStylesToInt(const TFontStyles value)
+int __fastcall FontStylesToInt(const TFontStyles value)
 {
   int Result = 0;
   for (int i = fsStrikeOut; i >= fsBold; i--)
@@ -75,6 +75,31 @@ void __fastcall LoadCoolbarLayoutStr(TCoolBar * CoolBar, AnsiString LayoutStr)
       Band->Width = StrToInt(CutToChar(BarStr, ',', true));
       Band->Index = StrToInt(BarStr);
     }
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall GetListViewStr(TListView * ListView)
+{
+  AnsiString Result;
+  for (int Index = 0; Index < ListView->Columns->Count; Index++)
+  {
+    if (!Result.IsEmpty())
+    {
+      Result += ",";
+    }
+    Result += IntToStr(ListView->Column[Index]->Width);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall LoadListViewStr(TListView * ListView, AnsiString LayoutStr)
+{
+  int Index = 0;
+  while (!LayoutStr.IsEmpty() && (Index < ListView->Columns->Count))
+  {
+    ListView->Column[Index]->Width = StrToIntDef(
+      CutToChar(LayoutStr, ',', true), ListView->Column[Index]->Width);
+    Index++;  
   }
 }
 //---------------------------------------------------------------------------

@@ -4,10 +4,10 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\DragDrop_B5.bpl"/>
-    <OBJFILES value="DragDrop_B5.obj DragDrop.obj DragDropBitmap.obj 
-      DragDropFiles.obj DragDropFilesEx.obj 
-      DragDropText.obj DragDropURL.obj ListSort.obj 
-      PIDL.obj"/>
+    <OBJFILES value="DragDrop_B5.obj &quot;Drag and Drop Components\DragDrop.obj&quot; &quot;Drag and Drop Components\DragDropBitmap.obj&quot; 
+      &quot;Drag and Drop Components\DragDropFiles.obj&quot; &quot;Drag and Drop Components\DragDropFilesEx.obj&quot; 
+      &quot;Drag and Drop Components\DragDropText.obj&quot; &quot;Drag and Drop Components\DragDropURL.obj&quot; &quot;Drag and Drop Components\ListSort.obj&quot; 
+      &quot;Drag and Drop Components\PIDL.obj&quot;"/>
     <RESFILES value="DragDrop_B5.res &quot;Drag and Drop Components\DragDrop.dcr&quot; 
       &quot;Drag and Drop Components\DragDropBitmap.dcr&quot; 
       &quot;Drag and Drop Components\DragDropFiles.dcr&quot; 
@@ -16,17 +16,18 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib 
-      dbxcds.lib dclocx.lib soaprtl.lib bcbie.lib nmfast.lib dbexpress.lib 
-      inetdbxpress.lib inetdb.lib inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib 
-      teeqr.lib tee.lib teedb.lib teeui.lib bdecds.lib cds.lib dsnap.lib 
-      vcldbx.lib bdertl.lib qrpt.lib adortl.lib dbrtl.lib vcldb.lib bcbsmp.lib"/>
-    <SPARELIBS value="rtl.lib vcl.lib bcbsmp.lib vcldb.lib dbrtl.lib adortl.lib qrpt.lib 
-      bdertl.lib vcldbx.lib dsnap.lib cds.lib bdecds.lib teeui.lib teedb.lib 
-      tee.lib teeqr.lib ibxpress.lib xmlrtl.lib inet.lib inetdbbde.lib 
-      inetdb.lib inetdbxpress.lib dbexpress.lib nmfast.lib bcbie.lib soaprtl.lib 
-      dclocx.lib dbxcds.lib indy.lib bcb2kaxserver.lib visualdbclx.lib 
-      "/>
+    <LIBRARIES value="adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib
+      bdecds.lib bdertl.lib cds.lib dbexpress.lib dbrtl.lib dbxcds.lib
+      dclocx.lib dsnap.lib ibxpress.lib indy.lib inet.lib inetdb.lib
+      inetdbbde.lib inetdbxpress.lib nmfast.lib qrpt.lib soaprtl.lib tee.lib
+      teedb.lib teeqr.lib teeui.lib vcldb.lib vcldbx.lib visualdbclx.lib
+      xmlrtl.lib"/>
+    <SPARELIBS value="adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib
+      bdecds.lib bdertl.lib cds.lib dbexpress.lib dbrtl.lib dbxcds.lib
+      dclocx.lib dsnap.lib ibxpress.lib indy.lib inet.lib inetdb.lib
+      inetdbbde.lib inetdbxpress.lib nmfast.lib qrpt.lib rtl.lib soaprtl.lib
+      tee.lib teedb.lib teeqr.lib teeui.lib vcl.lib vcldb.lib vcldbx.lib
+      visualdbclx.lib xmlrtl.lib"/>
     <PACKAGES value="rtl.bpi vcl.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;&quot;Drag and Drop Components&quot;"/>

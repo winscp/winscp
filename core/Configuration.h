@@ -9,6 +9,8 @@
 #define SET_CONFIG_PROPERTY(PROPERTY) \
   if (PROPERTY != value) { F ## PROPERTY = value; Changed(); }
 //---------------------------------------------------------------------------
+class TCriticalSection;
+//---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
 private:
@@ -20,8 +22,6 @@ private:
   
   TCopyParamType FCopyParam;
   void * FApplicationInfo;
-  bool FDefaultDirIsHome;
-  TDateTime FIgnoreCancelBeforeFinish;
   bool FLogging;
   AnsiString FLogFileName;
   int FLogWindowLines;
@@ -31,12 +31,14 @@ private:
 
   bool FDisablePasswordStoring;
 
+  AnsiString __fastcall GetOSVersionStr();
   TVSFixedFileInfo *__fastcall GetFixedApplicationInfo();
   void * __fastcall GetApplicationInfo();
   virtual AnsiString __fastcall GetVersionStr();
   virtual AnsiString __fastcall GetVersion();
   AnsiString __fastcall GetProductVersion();
   AnsiString __fastcall GetProductName();
+  AnsiString __fastcall GetCompanyName();
   AnsiString __fastcall TrimVersion(AnsiString Version);
   AnsiString __fastcall GetStoredSessionsSubKey();
   AnsiString __fastcall GetPuttySessionsKey();
@@ -46,9 +48,7 @@ private:
   AnsiString __fastcall GetSshHostKeysSubKey();
   AnsiString __fastcall GetRootKeyStr();
   AnsiString __fastcall GetConfigurationSubKey();
-  void __fastcall CleanupRegistry(AnsiString CleanupSubKey);
   TEOLType __fastcall GetLocalEOLType();
-  void __fastcall SetDefaultDirIsHome(bool value);
   void __fastcall SetCopyParam(TCopyParamType value);
   void __fastcall SetLogging(bool value);
   void __fastcall SetLogFileName(AnsiString value);
@@ -60,7 +60,6 @@ private:
   void __fastcall SetLogFileAppend(bool value);
   AnsiString __fastcall GetDefaultLogFileName();
   AnsiString __fastcall GetTimeFormat();
-  void __fastcall SetIgnoreCancelBeforeFinish(TDateTime value);
   void __fastcall SetStorage(TStorage value);
   AnsiString __fastcall GetRegistryStorageKey();
   AnsiString __fastcall GetIniFileStorageName();
@@ -71,6 +70,7 @@ private:
 
 protected:
   TStorage FStorage;
+  TCriticalSection * FCriticalSection;
 
   virtual TStorage __fastcall GetStorage();
   virtual void __fastcall Changed();
@@ -79,6 +79,7 @@ protected:
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual AnsiString __fastcall GetDefaultKeyFile();
   virtual void __fastcall ModifyAll();
+  void __fastcall CleanupRegistry(AnsiString CleanupSubKey);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
@@ -89,12 +90,12 @@ protected:
     const AnsiString FileName);
   void * __fastcall GetFileApplicationInfo(const AnsiString FileName);
   AnsiString __fastcall GetFileProductVersion(const AnsiString FileName);
-  AnsiString __fastcall TConfiguration::GetFileProductName(
-    const AnsiString FileName);
+  AnsiString __fastcall GetFileProductName(const AnsiString FileName);
+  AnsiString __fastcall GetFileCompanyName(const AnsiString FileName);
 
 public:
   __fastcall TConfiguration();
-  __fastcall ~TConfiguration();
+  virtual __fastcall ~TConfiguration();
   virtual void __fastcall Default();
   virtual void __fastcall Load();
   virtual void __fastcall Save();
@@ -112,7 +113,6 @@ public:
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
-  __property bool DefaultDirIsHome = { read = FDefaultDirIsHome, write = SetDefaultDirIsHome };
   __property TCopyParamType CopyParam = { read = FCopyParam, write = SetCopyParam };
   __property AnsiString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property AnsiString PuttyRegistryStorageKey  = { read=GetPuttyRegistryStorageKey };
@@ -128,7 +128,9 @@ public:
   __property AnsiString Version = { read=GetVersion };
   __property AnsiString ProductVersion = { read=GetProductVersion };
   __property AnsiString ProductName = { read=GetProductName };
+  __property AnsiString CompanyName = { read=GetCompanyName };
   __property AnsiString FileInfoString[AnsiString Key] = { read = GetFileInfoString };
+  __property AnsiString OSVersionStr = { read = GetOSVersionStr };
   __property bool Logging  = { read=FLogging, write=SetLogging };
   __property AnsiString LogFileName  = { read=FLogFileName, write=SetLogFileName };
   __property bool LogToFile  = { read=GetLogToFile, write=SetLogToFile };
@@ -136,7 +138,6 @@ public:
   __property int LogWindowLines  = { read=FLogWindowLines, write=SetLogWindowLines };
   __property bool LogWindowComplete  = { read=GetLogWindowComplete, write=SetLogWindowComplete };
   __property AnsiString DefaultLogFileName  = { read=GetDefaultLogFileName };
-  __property TDateTime IgnoreCancelBeforeFinish = { read = FIgnoreCancelBeforeFinish, write = SetIgnoreCancelBeforeFinish };
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool ConfirmOverwriting = { read = GetConfirmOverwriting, write = SetConfirmOverwriting};
   __property AnsiString PartialExt = {read=GetPartialExt};

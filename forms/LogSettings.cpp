@@ -2,9 +2,10 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "LogSettings.h"
 
-#include <Common.h>
 #include <ScpMain.h>
 
 #include <VCLCommon.h>
@@ -125,4 +126,11 @@ void __fastcall TLoggingFrame::SetEnableLogWindow(bool value)
     UpdateControls();
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TLoggingFrame::LogFileNameEditKeyDown(TObject * /*Sender*/,
+  WORD & Key, TShiftState Shift)
+{
+  PathEditKeyDown(LogFileNameEdit, Key, Shift, false);
+}
+//---------------------------------------------------------------------------
 

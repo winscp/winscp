@@ -123,6 +123,8 @@ BEGIN
   APPEND_OR_RESUME, "Do you want to append file '%s' at the end of existing file? Press 'No' to resume file transfer instead."
   FILE_OVERWRITE_DETAILS, "%s\n \nNew:\t\t%s bytes, %s\nExisting:\t%s bytes, %s"
   READ_ONLY_OVERWRITE, "File '%s' is read-only. Overwrite?"
+  LOCAL_FILE_OVERWRITE, "Local file '%s' already exists. Overwrite?"
+  REMOTE_FILE_OVERWRITE, "Remote file '%s' already exists. Overwrite?"
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"

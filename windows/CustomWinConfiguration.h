@@ -30,7 +30,7 @@ protected:
 
 public:
   __fastcall TCustomWinConfiguration();
-  __fastcall ~TCustomWinConfiguration();
+  virtual __fastcall ~TCustomWinConfiguration();
   virtual void __fastcall Default();
 
   __property TLogView LogView = { read = FLogView, write = SetLogView };

@@ -29,6 +29,9 @@ interface
 uses
   SysUtils, Windows, Forms, ShlObj, PIDL;
 
+type
+  TDateTimePrecision = (tpDay, tpMinute, tpSecond, tpMillisecond);
+
 function CheckFileExists(FileName: string): Boolean;
 function DirExists(Dir: string): Boolean; overload;
 function DirExists(Dir: string; var Attrs: Integer): Boolean; overload;
@@ -44,19 +47,8 @@ procedure StrTranslate(var Str: string; Code: string);
 function IsUncPath(Path: string): Boolean;
 function AnyValidPath: string;
 
-procedure UnifyDateTimePrecision(var DateTime1: TDateTime; var DateTime2: TDateTime);
-
-//from math.pas of VCL
-{function Min(const A, B: Integer): Integer; overload;
-function Min(const A, B: Int64): Int64; overload;
-function Min(const A, B: Single): Single; overload;
-function Min(const A, B: Double): Double; overload;
-function Min(const A, B: Extended): Extended; overload;
-function Max(const A, B: Integer): Integer; overload;
-function Max(const A, B: Int64): Int64; overload;
-function Max(const A, B: Single): Single; overload;
-function Max(const A, B: Double): Double; overload;
-function Max(const A, B: Extended): Extended; overload;}
+procedure ReduceDateTimePrecision(var DateTime: TDateTime;
+  Precision: TDateTimePrecision);
 
 resourcestring
   SNoValidPath = 'Can''t find any valid path.';
@@ -290,118 +282,39 @@ begin
     GetDiskFreeSpaceEx := @BackfillGetDiskFreeSpaceEx;
 end;
 
-procedure UnifyDateTimePrecision(var DateTime1: TDateTime; var DateTime2: TDateTime);
-
-  function Unify(var V1, V2: Word): Boolean;
-  begin
-    Result := (V1 = 0) or (V2 = 0);
-    if Result then
-    begin
-      V1 := 0;
-      V2 := 0;
-    end;
-  end;
-
+procedure ReduceDateTimePrecision(var DateTime: TDateTime;
+  Precision: TDateTimePrecision);
 var
-  Y1, M1, D1, H1, N1, S1, MS1: Word;
-  Y2, M2, D2, H2, N2, S2, MS2: Word;
-  Changed: Boolean;
+  Y, M, D, H, N, S, MS: Word;
 begin
-  if DateTime1 <> DateTime2 then
+  if Precision <> tpMillisecond then
   begin
-    DecodeDateTime(DateTime1, Y1, M1, D1, H1, N1, S1, MS1);
-    DecodeDateTime(DateTime2, Y2, M2, D2, H2, N2, S2, MS2);
-    Changed := Unify(MS1, MS2);
-    if Changed and Unify(S1, S2) and Unify(N1, N2) and Unify(H1, H2) and
-       Unify(D1, D2) and Unify(M1, M2) then Unify(Y1, Y2);
-    if Changed then
-    begin
-      DateTime1 := EncodeDate(Y1, M1, D1) + EncodeTime(H1, N1, S1, MS1);
-      DateTime2 := EncodeDate(Y2, M2, D2) + EncodeTime(H2, N2, S2, MS2);
+    DecodeDateTime(DateTime, Y, M, D, H, N, S, MS);
+    case Precision of
+      tpDay:
+        begin
+          H := 0;
+          N := 0;
+          S := 0;
+          MS := 0;
+        end;
+
+      tpMinute:
+        begin
+          S := 0;
+          MS := 0;
+        end;
+
+      tpSecond:
+        begin
+          MS := 0;
+        end;
     end;
+
+    DateTime := EncodeDate(Y, M, D) + EncodeTime(H, N, S, MS);
   end;
 end;
 
-{function Min(const A, B: Integer): Integer;
-begin
-  if A < B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Min(const A, B: Int64): Int64;
-begin
-  if A < B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Min(const A, B: Single): Single;
-begin
-  if A < B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Min(const A, B: Double): Double;
-begin
-  if A < B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Min(const A, B: Extended): Extended;
-begin
-  if A < B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Max(const A, B: Integer): Integer;
-begin
-  if A > B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Max(const A, B: Int64): Int64;
-begin
-  if A > B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Max(const A, B: Single): Single;
-begin
-  if A > B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Max(const A, B: Double): Double;
-begin
-  if A > B then
-    Result := A
-  else
-    Result := B;
-end;
-
-function Max(const A, B: Extended): Extended;
-begin
-  if A > B then
-    Result := A
-  else
-    Result := B;
-end;
-    }
 initialization
   InitDriveSpacePtr;
 end.

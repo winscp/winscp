@@ -20,7 +20,7 @@
     <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="RScpComp.bpf"/>
-    <INCLUDEPATH value="components;core;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="components;core;windows;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="components;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>

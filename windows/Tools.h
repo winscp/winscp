@@ -12,7 +12,9 @@ bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Para
 void __fastcall CreateDesktopShortCut(const AnsiString &Name,
   const AnsiString &File, const AnsiString & Params, const AnsiString & Description,
   int SpecialFolder = -1);
-TFontStyles IntToFontStyles(int value);
-int FontStylesToInt(const TFontStyles value);
+AnsiString __fastcall GetListViewStr(TListView * ListView);
+void __fastcall LoadListViewStr(TListView * ListView, AnsiString LayoutStr);
+TFontStyles __fastcall IntToFontStyles(int value);
+int __fastcall FontStylesToInt(const TFontStyles value);
 //---------------------------------------------------------------------------
 #endif

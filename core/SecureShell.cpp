@@ -10,6 +10,7 @@
 #include "SecureShell.h"
 #include "TextsCore.h"
 #include "Common.h"
+#include "ScpMain.h"
 
 #ifndef AUTO_WINSOCK
 #include <winsock2.h>
@@ -30,8 +31,10 @@ __fastcall TSecureShell::TSecureShell()
   FStdErrorTemp = "";
   FBytesSent = 0;
   FBytesReceived = 0;
-  FLog = new TSessionLog();
+  FLog = new TSessionLog(this);
   FOnQueryUser = NULL;
+  FOnPromptUser = NULL;
+  FOnShowExtendedException = NULL;
   FOnUpdateStatus = NULL;
   FOnClose = NULL;
   FCSCipher = cipWarn; // = not detected yet
@@ -45,34 +48,26 @@ __fastcall TSecureShell::TSecureShell()
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
-  try
+  if (FReachedStatus)
   {
-    if (FReachedStatus)
-    {
-      SessionsCount--;
-      if (SessionsCount == 0)
-      {
-        NetFinalize();
-      }
-    }
+    TCoreGuard Guard;
 
-    ClearStdError();
-    Active = false;
-    SAFE_DESTROY(FSessionData);
-    SAFE_DESTROY(FLog);
-    delete FConfig;
-    FConfig = NULL;
-    UserObject = NULL;
-    delete FSocket;
-    FSocket = NULL;
-  }
-  __finally
-  {
-    if (CurrentSSH == this)
+    SessionsCount--;
+    if (SessionsCount == 0)
     {
-      CurrentSSH = NULL;
+      NetFinalize();
     }
   }
+
+  ClearStdError();
+  Active = false;
+  SAFE_DESTROY(FSessionData);
+  SAFE_DESTROY(FLog);
+  delete FConfig;
+  FConfig = NULL;
+  UserObject = NULL;
+  delete FSocket;
+  FSocket = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Open()
@@ -80,43 +75,41 @@ void __fastcall TSecureShell::Open()
   const char * InitError;
   char * RealHost;
 
+  FPasswordTried = false;
+  FPasswordTriedForKI = false;
   FReachedStatus = 0;
-  SessionsCount++;
-  if (SessionsCount == 1)
+
   {
-    UpdateStatus(sshInitWinSock);
-    NetInitialize();
+    TCoreGuard Guard;
+
+    SessionsCount++;
+    if (SessionsCount == 1)
+    {
+      UpdateStatus(sshInitWinSock);
+      NetInitialize();
+    }
   }
 
   Log->AddStartupInfo();
 
   Active = false;
-//  Activate();
   FBackend = &ssh_backend;
 
   FAuthenticationLog = "";
   UpdateStatus(sshLookupHost);
   SessionData->StoreToConfig(FConfig);
-  assert(!CurrentSSH);
-  CurrentSSH = this;
-  try
+
+  InitError = FBackend->init(this, &FBackendHandle, FConfig,
+    SessionData->HostName.c_str(), SessionData->PortNumber, &RealHost, 0);
+  if (InitError)
   {
-    InitError = FBackend->init(this, &FBackendHandle, FConfig,
-      SessionData->HostName.c_str(), SessionData->PortNumber, &RealHost, 0);
-    if (InitError)
-    {
-      FatalError(InitError);
-    }
-    FRealHost = RealHost;
-    UpdateStatus(sshConnect);
-    /*FLoggingContext = log_init(this, (void *)FConfig);
-    FBackend->provide_logctx(FBackendHandle, FLoggingContext);*/
-    Init();
+    FatalError(InitError);
   }
-  __finally
-  {
-    CurrentSSH = NULL;
-  }
+  FRealHost = RealHost;
+  UpdateStatus(sshConnect);
+  /*FLoggingContext = log_init(this, (void *)FConfig);
+  FBackend->provide_logctx(FBackendHandle, FLoggingContext);*/
+  Init();
 
   CheckConnection(CONNECTION_FAILED);
   FLastDataSent = Now();
@@ -162,30 +155,98 @@ void __fastcall TSecureShell::Init()
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall TSecureShell::GetPassword(AnsiString &Password)
+bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
+  AnsiString & Response, bool IsPassword)
 {
-  int Result;
+  assert(IsPassword);
 
-  if (SessionData->Password.Length() && !FPasswordTried)
+  bool Result;
+  if (Prompt.Pos("Passphrase for key ") == 1)
   {
-    LogEvent("Using stored password.");
-    Result = 1;
-    Password = SessionData->Password;
+    AnsiString Key(Prompt);
+    int P = Prompt.Pos("\"");
+    if (P > 0)
+    {
+      Key.Delete(1, P);
+      P = Key.LastDelimiter("\"");
+      if (P > 0)
+      {
+        Key.SetLength(P - 1);
+      }
+    }
+
+    LogEvent(FORMAT("Passphrase prompt (%s)", (Prompt)));
+
+    Result = DoPromptUser(FMTLOAD(PROMPT_KEY_PASSPHRASE, (Key)),
+      pkPassphrase, Response);
+  }
+  else if (Prompt.Pos("'s password: "))
+  {
+    LogEvent(FORMAT("Session password prompt (%s)", (Prompt)));
+
+    if (!SessionData->Password.IsEmpty() && !FPasswordTried)
+    {
+      LogEvent("Using stored password.");
+      Result = true;
+      Response = SessionData->Password;
+    }
+    else
+    {
+      LogEvent("Asking user for password.");
+      Result = DoPromptUser(
+        FMTLOAD(PROMPT_SESSION_PASSWORD, (SessionData->SessionName)),
+        pkPassword, Response);
+    }
+    FPasswordTried = true;
   }
   else
   {
-    LogEvent("Asking user for password.");
-    Result = GetSessionPassword(
-      FMTLOAD(PROMPT_SESSION_PASSWORD, (SessionData->SessionName)),
-      pkPassword, Password);
+    // in other cases we assume TIS/Cryptocard/keyboard-interactive authentification prompt
+    LogEvent(FORMAT("%s prompt from server (%s)",
+      (IsPassword ? "Password" : "Normal", Prompt)));
+
+    if (!SessionData->Password.IsEmpty() && IsPassword &&
+        SessionData->AuthKIPassword && !FPasswordTriedForKI)
+    {
+      LogEvent("Responding with stored password.");
+      Result = true;
+      Response = SessionData->Password;
+    }
+    else
+    {
+      LogEvent("Asking user for response.");
+
+      static const AnsiString ResponseSuffix("\r\nResponse: ");
+
+      // Strip Cryptocard/TIS "Response" suffix
+      AnsiString UserPrompt = Prompt;
+      if (UserPrompt.SubString(UserPrompt.Length() - ResponseSuffix.Length() + 1,
+            ResponseSuffix.Length()) == ResponseSuffix)
+      {
+        UserPrompt.SetLength(UserPrompt.Length() - ResponseSuffix.Length());
+      }
+
+      Result = DoPromptUser(UserPrompt, pkServerPrompt, Response);
+    }
+    FPasswordTriedForKI = true;
+  };
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::DoPromptUser(AnsiString Prompt, TPromptKind Kind,
+  AnsiString & Response)
+{
+  bool Result = false;
+  if (OnPromptUser != NULL)
+  {
+    OnPromptUser(this, Prompt, Kind, Response, Result);
   }
-  FPasswordTried = true;
   return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::GotHostKey()
 {
-  CurrentSSH->UpdateStatus(sshAuthenticate);
+  UpdateStatus(sshAuthenticate);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::FromBackend(Boolean IsStdErr, char * Data, Integer Length)
@@ -392,8 +453,11 @@ void __fastcall TSecureShell::ClearStdError()
   // Flush std error cache
   if (!FStdErrorTemp.IsEmpty())
   {
-    FAuthenticationLog +=
-      (FAuthenticationLog.IsEmpty() ? "" : "\n") + FStdErrorTemp;
+    if (Status == sshAuthenticate)
+    {
+      FAuthenticationLog +=
+        (FAuthenticationLog.IsEmpty() ? "" : "\n") + FStdErrorTemp;
+    }
     Log->Add(llStdError, FStdErrorTemp);
     FStdErrorTemp = "";
   }
@@ -440,10 +504,6 @@ void __fastcall TSecureShell::SetSessionData(TSessionData * value)
 {
   assert(!FActive);
   FSessionData->Assign(value);
-  if (FLog)
-  {
-    FLog->Data = FSessionData;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SetActive(bool value)
@@ -484,19 +544,9 @@ void __fastcall TSecureShell::Close()
   LogEvent("Closing connection.");
   CheckConnection();
 
-  assert(!CurrentSSH || CurrentSSH == this);
-  TSecureShell * PCurrentSSH = CurrentSSH;
-  CurrentSSH = this;
-  try
-  {
-    ssh_close(FBackendHandle);
-    // This should be called insted, but there seem tu be error in freeing
-    // FBackend->free(FBackendHandle);
-  }
-  __finally
-  {
-    CurrentSSH = PCurrentSSH;
-  }
+  ssh_close(FBackendHandle);
+  // This should be called insted, but there seem tu be error in freeing
+  // FBackend->free(FBackendHandle);
 
   Discard();
 }
@@ -548,17 +598,7 @@ void __fastcall TSecureShell::WaitForData()
   }
   while (R <= 0);
 
-  assert(!CurrentSSH || CurrentSSH == this);
-  TSecureShell * PrevSSH = CurrentSSH;
-  CurrentSSH = this;
-  try
-  {
-    select_result((WPARAM)(*static_cast<SOCKET*>(FSocket)), (LPARAM)FD_READ);
-  }
-  __finally
-  {
-    CurrentSSH = PrevSSH;
-  }
+  select_result((WPARAM)(*static_cast<SOCKET*>(FSocket)), (LPARAM)FD_READ);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::SshFallbackCmd() const
@@ -595,7 +635,6 @@ void __fastcall TSecureShell::KeepAlive()
 void __fastcall TSecureShell::SetLog(TSessionLog * value)
 {
   FLog->Assign(value);
-  FLog->Data = SessionData;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SetConfiguration(TConfiguration *value)
@@ -740,6 +779,20 @@ TCipher __fastcall TSecureShell::GetSCCipher()
   return FSCCipher;
 }
 //---------------------------------------------------------------------------
+void __fastcall TSecureShell::DoShowExtendedException(Exception * E)
+{
+  DoHandleExtendedException(E);
+  if (OnShowExtendedException != NULL)
+  {
+    OnShowExtendedException(this, E);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::DoHandleExtendedException(Exception * E)
+{
+  Log->AddException(E);
+}
+//---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
   TStrings * MoreMessages, int Answers, int Params, TQueryType Type)
 {
@@ -869,10 +922,11 @@ void __fastcall TSecureShell::SetUserObject(TObject * value)
 }
 //=== TSessionLog -----------------------------------------------------------
 const char *LogLineMarks = "<>!.*";
-__fastcall TSessionLog::TSessionLog(): TStringList()
+__fastcall TSessionLog::TSessionLog(TSecureShell * AOwner): TStringList()
 {
+  FEnabled = true;
+  FOwner = AOwner;
   FFile = NULL;
-  FData = NULL;
   FLoggedLines = 0;
   FTopIndex = -1;
   FFileName = "";
@@ -881,6 +935,13 @@ __fastcall TSessionLog::TSessionLog(): TStringList()
 __fastcall TSessionLog::~TSessionLog()
 {
   CloseLogFile();
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TSessionLog::GetSessionName()
+{
+  assert(FOwner != NULL);
+  assert(FOwner->SessionData != NULL);
+  return FOwner->SessionData->SessionName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::SetLine(Integer Index, AnsiString value)
@@ -914,8 +975,8 @@ TLogLineType __fastcall TSessionLog::GetType(Integer Index)
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::Add(TLogLineType aType, AnsiString aLine)
 {
-  assert(Configuration && Data);
-  if (Configuration->Logging || FOnAddLine)
+  assert(Configuration);
+  if (IsLogging())
   {
     try
     {
@@ -967,7 +1028,7 @@ void __fastcall TSessionLog::Add(TLogLineType aType, AnsiString aLine)
       }
       catch (Exception &E)
       {
-        ShowExtendedException(&E, this);
+        FOwner->DoShowExtendedException(&E);
       }
     }
   }
@@ -978,16 +1039,6 @@ void __fastcall TSessionLog::AddException(Exception * E)
   if (E)
   {
     Add(llException, ExceptionLogString(E));
-  }
-}
-//---------------------------------------------------------------------------
-void TSessionLog::SetData(TSessionData * value)
-{
-  if (Data != value)
-  {
-    FData = value;
-    // In TSessionData there is no longer any settings that needs to be reflected
-    // ReflectSettings();
   }
 }
 //---------------------------------------------------------------------------
@@ -1009,9 +1060,19 @@ void __fastcall TSessionLog::ReflectSettings()
   DeleteUnnecessary();
 }
 //---------------------------------------------------------------------------
+void __fastcall TSessionLog::SetEnabled(bool value)
+{
+  if (FEnabled != value)
+  {
+    FEnabled = value;
+    ReflectSettings();
+  }
+}
+//---------------------------------------------------------------------------
 Boolean __fastcall TSessionLog::GetLogToFile()
 {
-  return (Configuration && Configuration->Logging && Configuration->LogToFile);
+  return Enabled && (Configuration != NULL) && Configuration->Logging &&
+    Configuration->LogToFile;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::CloseLogFile()
@@ -1054,7 +1115,7 @@ void TSessionLog::OpenLogFile()
       }
       catch (Exception &E)
       {
-        ShowExtendedException(&E, this);
+        FOwner->DoShowExtendedException(&E);
       }
     }
   }
@@ -1099,6 +1160,9 @@ void __fastcall TSessionLog::DoAddLine(const AnsiString AddedLine)
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::AddStartupInfo()
 {
+  assert(FOwner != NULL);
+  TSessionData * Data = FOwner->SessionData;
+  assert(Data != NULL);
   assert(Configuration);
   if (Configuration->Logging || FOnAddLine)
   {
@@ -1107,7 +1171,7 @@ void __fastcall TSessionLog::AddStartupInfo()
     {
       #define ADF(S, F) Add(llMessage, FORMAT(S, F));
       AddSeparator();
-      ADF("WinSCP %s", (Configuration->VersionStr));
+      ADF("WinSCP %s (OS %s)", (Configuration->VersionStr, Configuration->OSVersionStr));
       ADF("Login time: %s", (FormatDateTime("dddddd tt", Now())));
       AddSeparator();
       ADF("Session name: %s", (Data->SessionName));

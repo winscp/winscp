@@ -20,9 +20,9 @@ void __fastcall TCopyParamType::Default()
   FileNameCase = ncNoChange;
   PreserveReadOnly = true;
   PreserveTime = true;
-  Rights.Number = 0644;
+  Rights.Number = TRights::rfDefault;
   PreserveRights = false; // Was True until #106
-  AsciiFileMask.Masks = "*.*htm*; *.txt; *.php*; *.cgi; *.c; *.cpp; *.h; *.pas; "
+  AsciiFileMask.Masks = "*.*html; *.htm; *.txt; *.php*; *.cgi; *.c; *.cpp; *.h; *.pas; "
     "*.bas; *.tex; *.pl; .htaccess; *.xtml; *.css; *.cfg; *.ini; *.sh; *.xml";
   TransferMode = tmAutomatic;
   AddXToDirectories = true;
@@ -140,7 +140,7 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
 int __fastcall TCopyParamType::LocalFileAttrs(const TRights & Rights) const
 {
   int Result = 0;
-  if (PreserveReadOnly && !Rights.Right[rfUserWrite])
+  if (PreserveReadOnly && !Rights.Right[TRights::rrUserWrite])
   {
     Result |= faReadOnly;
   }

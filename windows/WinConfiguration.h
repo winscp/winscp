@@ -69,6 +69,7 @@ struct TScpCommanderConfiguration {
 struct TEditorConfiguration {
   TEditor Editor;
   AnsiString ExternalEditor;
+  bool ExternalEditorText;
   AnsiString FontName;
   int FontHeight;
   int FontCharset;
@@ -79,9 +80,19 @@ struct TEditorConfiguration {
   bool FindMatchCase;
   bool FindWholeWord;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
-    { return C(Editor) C(ExternalEditor) C(FontName) C(FontHeight)
+    { return C(Editor) C(ExternalEditor) C(ExternalEditorText) C(FontName) C(FontHeight)
       C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) 0; };
+};
+//---------------------------------------------------------------------------
+enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };
+struct TQueueViewConfiguration {
+  int Height;
+  AnsiString Layout;
+  TQueueViewShow Show;
+  bool ToolBar;
+  bool __fastcall operator !=(TQueueViewConfiguration & rhc)
+    { return C(Height) C(Layout) C(Show) C(ToolBar) 0; };
 };
 #undef C
 //---------------------------------------------------------------------------
@@ -96,6 +107,7 @@ private:
   bool FCopyOnDoubleClick;
   bool FCopyOnDoubleClickConfirmation;
   bool FDDAllowMove;
+  bool FDDAllowMoveInit;
   bool FDDTransferConfirmation;
   bool FDeleteToRecycleBin;
   bool FDimmHiddenFiles;
@@ -123,15 +135,19 @@ private:
   TBookmarks * FBookmarks;
   TCustomCommands * FCustomCommands;
   bool FCustomCommandsModified;
+  bool FCustomCommandsDefaults;
   TEditorConfiguration FEditor;
+  TQueueViewConfiguration FQueueView;
   bool FEmbeddedSessions;
   bool FExpertMode;
   bool FDisableOpenEdit;
   bool FForceDeleteTempFolder;
+  bool FDefaultDirIsHome;
 
   void __fastcall SetCopyOnDoubleClick(bool value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
   void __fastcall SetDDAllowMove(bool value);
+  void __fastcall SetDDAllowMoveInit(bool value);
   void __fastcall SetDDTransferConfirmation(bool value);
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetDimmHiddenFiles(bool value);
@@ -157,7 +173,9 @@ private:
   TBookmarkList * __fastcall GetBookmarks(AnsiString Key);
   void __fastcall SetAutoStartSession(AnsiString value);
   void __fastcall SetExpertMode(bool value);
+  void __fastcall SetDefaultDirIsHome(bool value);
   void __fastcall SetEditor(TEditorConfiguration value);
+  void __fastcall SetQueueView(TQueueViewConfiguration value);
   void __fastcall SetCustomCommands(TCustomCommands * value);
 
   bool __fastcall GetDDExtInstalled();
@@ -181,10 +199,11 @@ protected:
   virtual void __fastcall SetResourceModule(HANDLE Instance);
   virtual LCID __fastcall GetLocale();
   void __fastcall CheckTranslationVersion(const AnsiString FileName);
+  void __fastcall DefaultLocalized();
 
 public:
   __fastcall TWinConfiguration();
-  __fastcall ~TWinConfiguration();
+  virtual __fastcall ~TWinConfiguration();
   virtual void __fastcall Default();
   void __fastcall RestoreForm(AnsiString Data, TCustomForm * Form);
   AnsiString __fastcall StoreForm(TCustomForm * Form);
@@ -199,10 +218,12 @@ public:
   __property bool ShowHiddenFiles = { read = FShowHiddenFiles, write = SetShowHiddenFiles };
   __property bool ShowInaccesibleDirectories = { read = FShowInaccesibleDirectories, write = SetShowInaccesibleDirectories };
   __property TEditorConfiguration Editor = { read = FEditor, write = SetEditor };
+  __property TQueueViewConfiguration QueueView = { read = FQueueView, write = SetQueueView };
   __property AnsiString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
   __property bool CopyOnDoubleClick = { read = FCopyOnDoubleClick, write = SetCopyOnDoubleClick };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
   __property bool DDAllowMove = { read = FDDAllowMove, write = SetDDAllowMove };
+  __property bool DDAllowMoveInit = { read = FDDAllowMoveInit, write = SetDDAllowMoveInit };
   __property bool DDTransferConfirmation = { read = FDDTransferConfirmation, write = SetDDTransferConfirmation };
   __property bool LogWindowOnStartup = { read = FLogWindowOnStartup, write = SetLogWindowOnStartup };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
@@ -223,6 +244,7 @@ public:
   __property TBookmarkList * Bookmarks[AnsiString Key] = { read = GetBookmarks, write = SetBookmarks };
   __property bool EmbeddedSessions = { read = FEmbeddedSessions };
   __property bool ExpertMode = { read = FExpertMode, write = SetExpertMode };
+  __property bool DefaultDirIsHome = { read = FDefaultDirIsHome, write = SetDefaultDirIsHome };
   __property bool DisableOpenEdit = { read = FDisableOpenEdit };
   __property TCustomCommands * CustomCommands = { read = FCustomCommands, write = SetCustomCommands };
 };

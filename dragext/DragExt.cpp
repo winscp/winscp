@@ -4,7 +4,11 @@
 #ifndef STRICT
 #define STRICT
 #endif
-#define DLLEXPORT extern "C" __declspec(dllexport)
+//---------------------------------------------------------------------------
+#ifdef MSVC
+#include <objbase.h>
+#define snprintf _snprintf
+#endif
 //---------------------------------------------------------------------------
 #include <initguid.h>
 #include <shlguid.h>
@@ -14,6 +18,11 @@
 #include <time.h>
 #include "DragExt.h"
 //---------------------------------------------------------------------------
+#ifdef __BORLANDC__
+#undef STDAPI
+#define STDAPI EXTERN_C __declspec(dllexport) HRESULT STDAPICALLTYPE
+#endif
+//---------------------------------------------------------------------------
 #define DEBUG(MSG) \
   if (GLogOn) \
   { \
@@ -22,6 +31,7 @@
 //---------------------------------------------------------------------------
 #define DRAG_EXT_REG_KEY "Software\\Martin Prikryl\\WinSCP 2\\DragExt"
 #define DRAG_EXT_NAME "WinSCP Shell Extension"
+#define THREADING_MODEL "Apartment"
 #define CLSID_SIZE 39
 //---------------------------------------------------------------------------
 class CShellExtClassFactory : public IClassFactory
@@ -137,11 +147,11 @@ void LogVersion(HINSTANCE HInstance)
       Size = GetFileVersionInfoSize(FileName, &InfoHandle);
       if (Size > 0)
       {
-        void * Info;
+        void* Info;
         Info = new char[Size];
         if (GetFileVersionInfo(FileName, InfoHandle, Size, Info) != 0)
         {
-          VS_FIXEDFILEINFO * VersionInfo;
+          VS_FIXEDFILEINFO* VersionInfo;
           unsigned int VersionInfoSize;
           if (VerQueryValue(Info, "\\", reinterpret_cast<void**>(&VersionInfo),
                 &VersionInfoSize) != 0)
@@ -199,7 +209,7 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID Reserved)
 
         Size = sizeof(Value);
         if ((RegQueryValueEx(Key, "Enable", NULL, &Type,
-              reinterpret_cast<char*>(&Value), &Size) == ERROR_SUCCESS) &&
+               reinterpret_cast<unsigned char*>(&Value), &Size) == ERROR_SUCCESS) &&
             (Type == REG_DWORD))
         {
           GEnabled = (Value != 0);
@@ -207,7 +217,7 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID Reserved)
 
         Size = sizeof(Buf);
         if ((RegQueryValueEx(Key, "LogFile", NULL, &Type,
-              reinterpret_cast<char*>(&Buf), &Size) == ERROR_SUCCESS) &&
+               reinterpret_cast<unsigned char*>(&Buf), &Size) == ERROR_SUCCESS) &&
             (Type == REG_SZ))
         {
           strncpy(GLogFile, Buf, sizeof(GLogFile));
@@ -232,15 +242,14 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID Reserved)
   return 1;   // ok
 }
 //---------------------------------------------------------------------------
-DLLEXPORT STDMETHODIMP DllCanUnloadNow(void)
+STDAPI DllCanUnloadNow(void)
 {
   bool CanUnload = (GRefThisDll == 0);
   DEBUG(CanUnload ? "DllCanUnloadNow can" : "DllCanUnloadNow cannot");
   return (CanUnload ? S_OK : S_FALSE);
 }
 //---------------------------------------------------------------------------
-DLLEXPORT STDMETHODIMP DllGetClassObject(REFCLSID Rclsid, REFIID Riid,
-  LPVOID* PpvOut)
+STDAPI DllGetClassObject(REFCLSID Rclsid, REFIID Riid, LPVOID* PpvOut)
 {
   DEBUG("DllGetClassObject");
 
@@ -268,9 +277,13 @@ bool RegisterServer(bool AllUsers)
   HKEY RootKey = AllUsers ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
   HKEY HKey;
   DWORD Unused;
-  wchar_t ClassID[CLSID_SIZE];
+  wchar_t wClassID[CLSID_SIZE];
+  // double size will guarante char to fit space
+  char ClassID[CLSID_SIZE * 2];
 
-  StringFromGUID2(CLSID_ShellExtension, ClassID, CLSID_SIZE);
+  StringFromGUID2(CLSID_ShellExtension, wClassID, CLSID_SIZE);
+  ZeroMemory(ClassID, CLSID_SIZE * 2);
+  wcstombs(ClassID, wClassID, CLSID_SIZE * 2);
 
   if ((RegOpenKeyEx(RootKey, "Software\\Classes", 0, KEY_WRITE, &HKey) ==
          ERROR_SUCCESS) &&
@@ -278,21 +291,20 @@ bool RegisterServer(bool AllUsers)
          REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &HKey, &Unused) ==
            ERROR_SUCCESS))
   {
-    if (RegCreateKeyW(HKey, ClassID, &HKey) == ERROR_SUCCESS)
+    if (RegCreateKey(HKey, ClassID, &HKey) == ERROR_SUCCESS)
     {
-      RegSetValueEx(HKey, NULL, 0, REG_SZ, DRAG_EXT_NAME,
-        strlen(DRAG_EXT_NAME) + 1);
+      RegSetValueEx(HKey, NULL, 0, REG_SZ,
+        reinterpret_cast<unsigned char*>(DRAG_EXT_NAME), sizeof(DRAG_EXT_NAME));
 
       if (RegCreateKey(HKey, "InProcServer32", &HKey) == ERROR_SUCCESS)
       {
         char Filename[MAX_PATH];
         GetModuleFileName(GInstance, Filename, sizeof(Filename));
-        RegSetValueEx(HKey, NULL, 0, REG_SZ, Filename,
-          strlen(Filename) + 1);
+        RegSetValueEx(HKey, NULL, 0, REG_SZ,
+          reinterpret_cast<unsigned char*>(Filename), strlen(Filename) + 1);
 
-        const char* ThreadingModel = "Apartment";
-        RegSetValueEx(HKey, "ThreadingModel", 0, REG_SZ, ThreadingModel,
-          strlen(ThreadingModel) + 1);
+        RegSetValueEx(HKey, "ThreadingModel", 0, REG_SZ,
+          THREADING_MODEL, sizeof(THREADING_MODEL));
       }
     }
     RegCloseKey(HKey);
@@ -304,14 +316,8 @@ bool RegisterServer(bool AllUsers)
            0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &HKey,
            &Unused) == ERROR_SUCCESS))
     {
-      int Len = wcslen(ClassID);
-      char* MBClassID = new char[Len + 1];
-      wcstombs(MBClassID, ClassID, Len);
-      
       RegSetValueEx(HKey, NULL, 0, REG_SZ,
-        MBClassID, strlen(MBClassID) + 1);
-      delete MBClassID;
-
+        reinterpret_cast<unsigned char*>(ClassID), strlen(ClassID) + 1);
       RegCloseKey(HKey);
 
       if ((RegCreateKeyEx(RootKey, DRAG_EXT_REG_KEY,
@@ -320,7 +326,7 @@ bool RegisterServer(bool AllUsers)
       {
         unsigned long Value = 1;
         RegSetValueEx(HKey, "Enable", 0, REG_DWORD,
-          reinterpret_cast<char*>(&Value), sizeof(Value));
+          reinterpret_cast<unsigned char*>(&Value), sizeof(Value));
         
         RegCloseKey(HKey);
         
@@ -336,7 +342,7 @@ bool RegisterServer(bool AllUsers)
   return Result;
 }
 //---------------------------------------------------------------------------
-DLLEXPORT STDMETHODIMP DllRegisterServer()
+STDAPI DllRegisterServer()
 {
   DEBUG("DllRegisterServer enter");
 
@@ -362,9 +368,12 @@ bool UnregisterServer(bool AllUsers)
   DEBUG(AllUsers ? "UnregisterServer all users" : "UnregisterServer current users");
 
   bool Result = false;
-  OLECHAR ClassID[CLSID_SIZE];
+  wchar_t wClassID[CLSID_SIZE];
+  char ClassID[CLSID_SIZE * 2];
 
-  StringFromGUID2(CLSID_ShellExtension, ClassID, CLSID_SIZE);
+  StringFromGUID2(CLSID_ShellExtension, wClassID, CLSID_SIZE);
+  ZeroMemory(ClassID, CLSID_SIZE * 2);
+  wcstombs(ClassID, wClassID, CLSID_SIZE * 2);
 
   HKEY RootKey = AllUsers ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
   HKEY HKey;
@@ -384,8 +393,7 @@ bool UnregisterServer(bool AllUsers)
       (RegOpenKeyEx(HKey, "CLSID", 0, KEY_WRITE, &HKey) ==
         ERROR_SUCCESS))
   {
-    if (RegOpenKeyExW(HKey, ClassID, 0, KEY_WRITE, &HKey) ==
-          ERROR_SUCCESS)
+    if (RegOpenKeyEx(HKey, ClassID, 0, KEY_WRITE, &HKey) == ERROR_SUCCESS)
     {
       RegDeleteKey(HKey, "InProcServer32");
 
@@ -396,7 +404,7 @@ bool UnregisterServer(bool AllUsers)
           (RegOpenKeyEx(HKey, "CLSID", 0, KEY_WRITE, &HKey) ==
              ERROR_SUCCESS))
       {
-        RegDeleteKeyW(HKey, ClassID);
+        RegDeleteKey(HKey, ClassID);
 
         RegCloseKey(HKey);
 
@@ -410,7 +418,7 @@ bool UnregisterServer(bool AllUsers)
   {
     unsigned long Value = 0;
     RegSetValueEx(HKey, "Enable", 0, REG_DWORD,
-      reinterpret_cast<char*>(&Value), sizeof(Value));
+      reinterpret_cast<unsigned char*>(&Value), sizeof(Value));
 
     RegCloseKey(HKey);
 
@@ -424,7 +432,7 @@ bool UnregisterServer(bool AllUsers)
   return Result;
 }
 //---------------------------------------------------------------------------
-DLLEXPORT STDMETHODIMP DllUnregisterServer()
+STDAPI DllUnregisterServer()
 {
   DEBUG("DllUnregisterServer enter");
 
@@ -460,7 +468,7 @@ CShellExtClassFactory::~CShellExtClassFactory()
   GRefThisDll--;
 }
 //---------------------------------------------------------------------------
-STDMETHODIMP CShellExtClassFactory::QueryInterface(REFIID Riid, LPVOID FAR * Ppv)
+STDMETHODIMP CShellExtClassFactory::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
 {
   DEBUG("QueryInterface");
 
@@ -503,7 +511,7 @@ STDMETHODIMP_(ULONG) CShellExtClassFactory::Release()
 }
 //---------------------------------------------------------------------------
 STDMETHODIMP CShellExtClassFactory::CreateInstance(LPUNKNOWN UnkOuter,
-  REFIID Riid, LPVOID * PpvObj)
+  REFIID Riid, LPVOID* PpvObj)
 {
   DEBUG("CreateInstance");
 
@@ -520,7 +528,7 @@ STDMETHODIMP CShellExtClassFactory::CreateInstance(LPUNKNOWN UnkOuter,
   // QueryInterface with IID_IShellExtInit--this is how shell extensions are
   // initialized.
 
-  CShellExt * ShellExt = new CShellExt();  //Create the CShellExt object
+  CShellExt* ShellExt = new CShellExt();  //Create the CShellExt object
 
   if (NULL == ShellExt)
   {
@@ -569,11 +577,11 @@ CShellExt::~CShellExt()
   DEBUG("~CShellExt leave");
 }
 //---------------------------------------------------------------------------
-STDMETHODIMP CShellExt::QueryInterface(REFIID Riid, LPVOID FAR * Ppv)
+STDMETHODIMP CShellExt::QueryInterface(REFIID Riid, LPVOID FAR* Ppv)
 {
   DEBUG("CShellExt::QueryInterface enter");
 
-  STDMETHODIMP Result = E_NOINTERFACE;
+  HRESULT Result = E_NOINTERFACE;
   *Ppv = NULL;
 
   if (!GEnabled)

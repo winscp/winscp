@@ -6,6 +6,7 @@
 //---------------------------------------------------------------------------
 class TSFTPPacket;
 class TOverwriteFileParams;
+struct TSFTPSupport;
 //---------------------------------------------------------------------------
 enum TSFTPOverwriteMode { omOverwrite, omAppend, omResume };
 //---------------------------------------------------------------------------
@@ -45,7 +46,7 @@ public:
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
   virtual void __fastcall AdditionalInfo(TStrings * AdditionalInfo, bool Initial);
-  virtual void __fastcall LookupUserGroups();
+  virtual void __fastcall LookupUsersGroups();
   virtual void __fastcall ReadCurrentDirectory();
   virtual void __fastcall ReadDirectory(TRemoteFileList * FileList);
   virtual void __fastcall ReadFile(const AnsiString FileName,
@@ -68,6 +69,7 @@ protected:
   int FBusy;
   bool FAvoidBusy;
   TStrings * FExtensions;
+  TSFTPSupport * FSupport;
 
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, char Type, TRemoteFile * ALinkedByFile = NULL,
@@ -78,7 +80,7 @@ protected:
   bool __fastcall inline IsAbsolutePath(const AnsiString Path);
   bool __fastcall RemoteFileExists(const AnsiString FullPath, TRemoteFile ** File = NULL);
   TRemoteFile * __fastcall LoadFile(TSFTPPacket * Packet,
-    TRemoteFile * ALinkedByFile);
+    TRemoteFile * ALinkedByFile, const AnsiString FileName);
   AnsiString __fastcall LocalCanonify(const AnsiString & Path);
   AnsiString __fastcall Canonify(AnsiString Path);
   AnsiString __fastcall RealPath(const AnsiString Path);
@@ -97,10 +99,13 @@ protected:
     TSFTPPacket * Response, int ExpectedType = -1, int AllowStatus = -1);
   void __fastcall UnreserveResponse(TSFTPPacket * Response);
   void __fastcall TryOpenDirectory(const AnsiString Directory);
+  bool __fastcall SupportsExtension(const AnsiString & Extension) const;
 
   void __fastcall SFTPSource(const AnsiString FileName,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, int Level);
+  AnsiString __fastcall SFTPOpenRemoteFile(const AnsiString & FileName,
+    unsigned int OpenType, __int64 Size = -1);
   int __fastcall SFTPOpenRemote(void * AOpenParams, void * /*Param2*/);
   void __fastcall SFTPCloseRemote(const AnsiString Handle,
     const AnsiString FileName, TFileOperationProgressType * OperationProgress,

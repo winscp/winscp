@@ -52,13 +52,13 @@ void __fastcall FlashOnBackground()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ShowExtendedException(Exception * E, TObject * Sender)
+void __fastcall ShowExtendedException(Exception * E)
 {
-  ShowExtendedExceptionEx(E, Sender, false);
+  ShowExtendedExceptionEx(NULL, E);
 }
 //---------------------------------------------------------------------------
-void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
-  bool NoReconnect)
+void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
+  Exception * E)
 {
   if (!E->Message.IsEmpty())
   {
@@ -66,13 +66,14 @@ void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
     {
       if (!E->InheritsFrom(__classid(EAbort)))
       {
-        TQueryType Type;
-        bool CloseOnCompletion = E->InheritsFrom(__classid(ESshTerminate));
-        Type = CloseOnCompletion ? qtInformation : qtError;
+        TTerminalManager * Manager = TTerminalManager::Instance(false);
 
-        if (E->InheritsFrom(__classid(EFatal)) && !NoReconnect)
+        if (E->InheritsFrom(__classid(EFatal)) && (SecureShell != NULL) &&
+            (Manager != NULL) && (Manager->ActiveTerminal == SecureShell))
         {
-          TTerminalManager * Manager = TTerminalManager::Instance();
+          TQueryType Type;
+          bool CloseOnCompletion = E->InheritsFrom(__classid(ESshTerminate));
+          Type = CloseOnCompletion ? qtInformation : qtError;
 
           int Result;
           if (CloseOnCompletion)
@@ -116,7 +117,7 @@ void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
         }
         else
         {
-          ExceptionMessageDialog(E, Type, qaOK);
+          ExceptionMessageDialog(E, qtError, qaOK);
         }
       }
     }
@@ -125,16 +126,6 @@ void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
       FlashOnBackground();
       ShowException(ExceptObject(), ExceptAddr());
     }
-  }
-  HandleExtendedException(E, Sender);
-}
-//---------------------------------------------------------------------------
-void __fastcall HandleExtendedException(Exception * E, TObject* /*Sender*/)
-{
-  if (TTerminalManager::Instance(false) &&
-      TTerminalManager::Instance()->ActiveTerminal)
-  {
-    TTerminalManager::Instance()->ActiveTerminal->Log->AddException(E);
   }
 }
 //---------------------------------------------------------------------------

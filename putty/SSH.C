@@ -2564,7 +2564,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen, int ispkt)
     {
 	if ((flags & FLAG_INTERACTIVE) && !*ssh->cfg.username) {
 	    if (ssh_get_line && !ssh_getline_pw_only) {
-		if (!ssh_get_line("login as: ",
+		if (!ssh_get_line(ssh->frontend, "login as: ",
 				  s->username, sizeof(s->username), FALSE)) {
 		    /*
 		     * get_line failed to get a username.
@@ -2864,7 +2864,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	 * authentication.
 	 */
 	if (ssh_get_line) {
-	    if (!ssh_get_line(s->prompt, s->password,
+	    if (!ssh_get_line(ssh->frontend, s->prompt, s->password,
 			      sizeof(s->password), TRUE)) {
 		/*
 		 * get_line failed to get a password (for example
@@ -4550,7 +4550,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	     */
 	} else if ((flags & FLAG_INTERACTIVE) && !*ssh->cfg.username) {
 	    if (ssh_get_line && !ssh_getline_pw_only) {
-		if (!ssh_get_line("login as: ",
+		if (!ssh_get_line(ssh->frontend, "login as: ",
 				  s->username, sizeof(s->username), FALSE)) {
 		    /*
 		     * get_line failed to get a username.
@@ -5083,7 +5083,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 
 	    if (s->need_pw) {
 		if (ssh_get_line) {
-		    if (!ssh_get_line(s->pwprompt, s->password,
+		    if (!ssh_get_line(ssh->frontend, s->pwprompt, s->password,
 				      sizeof(s->password), TRUE)) {
 			/*
 			 * get_line failed to get a password (for

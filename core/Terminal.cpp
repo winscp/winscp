@@ -43,8 +43,9 @@ __fastcall TTerminal::TTerminal(): TSecureShell()
   FInTransaction = 0;
   FReadCurrentDirectoryPending = false;
   FReadDirectoryPending = false;
-  FUserGroupsLookedup = False;
-  FUserGroups = new TUserGroupsList();
+  FUsersGroupsLookedup = False;
+  FGroups = new TUsersGroupsList();
+  FUsers = new TUsersGroupsList();
   FOnProgress = NULL;
   FOnFinished = NULL;
   FOnDeleteLocalFile = NULL;
@@ -67,7 +68,8 @@ __fastcall TTerminal::~TTerminal()
 
   SAFE_DESTROY(FFileSystem);
   delete FFiles;
-  delete FUserGroups;
+  delete FGroups;
+  delete FUsers;
   delete FDirectoryCache;
   delete FDirectoryChangesCache;
   delete FAdditionalInfo;
@@ -88,7 +90,7 @@ void __fastcall TTerminal::KeepAlive()
     {
       if (Active)
       {
-        HandleExtendedException(&E, this);
+        DoHandleExtendedException(&E);
       }
       else
       {
@@ -290,6 +292,17 @@ void __fastcall TTerminal::ClearCaches()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::ClearCachedFileList(const AnsiString Path,
+  bool SubDirs)
+{
+  FDirectoryCache->ClearFileList(Path, SubDirs);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::AddCachedFileList(TRemoteFileList * FileList)
+{
+  FDirectoryCache->AddFileList(FileList);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::SetCurrentDirectory(AnsiString value)
 {
   assert(FFileSystem);
@@ -324,15 +337,26 @@ AnsiString __fastcall TTerminal::PeekCurrentDirectory()
   return TranslateLockedPath(FCurrentDirectory, true);
 }
 //---------------------------------------------------------------------------
-TUserGroupsList * __fastcall TTerminal::GetUserGroups()
+TUsersGroupsList * __fastcall TTerminal::GetGroups()
 {
   assert(FFileSystem);
-  if (!FUserGroupsLookedup && SessionData->LookupUserGroups &&
+  if (!FUsersGroupsLookedup && SessionData->LookupUserGroups &&
       IsCapable[fcUserGroupListing])
   {
-    LookupUserGroups();
+    LookupUsersGroups();
   }
-  return FUserGroups;
+  return FGroups;
+}
+//---------------------------------------------------------------------------
+TUsersGroupsList * __fastcall TTerminal::GetUsers()
+{
+  assert(FFileSystem);
+  if (!FUsersGroupsLookedup && SessionData->LookupUserGroups &&
+      IsCapable[fcUserGroupListing])
+  {
+    LookupUsersGroups();
+  }
+  return FUsers;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TTerminal::GetUserName() const
@@ -450,7 +474,7 @@ int __fastcall TTerminal::CommandError(Exception * E, const AnsiString Msg,
     ECommand * ECmd = new ECommand(E, Msg);
     try
     {
-      ShowExtendedException(ECmd, this);
+      DoShowExtendedException(ECmd);
     }
     __finally
     {
@@ -472,7 +496,7 @@ bool __fastcall TTerminal::HandleException(Exception * E)
   }
   else
   {
-    HandleExtendedException(E, this);
+    DoHandleExtendedException(E);
     return true;
   }
 }
@@ -486,9 +510,11 @@ void __fastcall TTerminal::CloseOnCompletion(const AnsiString Message)
 }
 //---------------------------------------------------------------------------
 int __fastcall TTerminal::ConfirmFileOverwrite(const AnsiString FileName,
-  const TOverwriteFileParams * FileParams, int Answers, int Params)
+  const TOverwriteFileParams * FileParams, int Answers, int Params,
+  TOperationSide Side)
 {
-  AnsiString Message = FMTLOAD(FILE_OVERWRITE, (FileName));
+  AnsiString Message = FMTLOAD((Side == osLocal ? LOCAL_FILE_OVERWRITE :
+    REMOTE_FILE_OVERWRITE), (FileName));
   if (FileParams)
   {
     Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
@@ -510,31 +536,44 @@ void __fastcall TTerminal::FileModified(const TRemoteFile * File,
       if (File->IsDirectory)
       {
         // do not use UnixIncludeTrailingBackslash(CurrentDirectory)
-        FDirectoryCache->ClearFileList(
+        DirectoryModified(
           File->Directory->FullDirectory + File->FileName, true);
       }
-      FDirectoryCache->ClearFileList(File->Directory->Directory, false);
+      DirectoryModified(File->Directory->Directory, false);
     }
     else if (!FileName.IsEmpty())
     {
       AnsiString Directory = UnixExtractFilePath(FileName);
-      FDirectoryCache->ClearFileList(
+      DirectoryModified(
         !Directory.IsEmpty() ? Directory : CurrentDirectory, false);
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DirectoryModified(const AnsiString UnlockedPath, bool SubDirs)
+void __fastcall TTerminal::DoDirectoryModified(const AnsiString Path, bool SubDirs)
 {
-  FDirectoryCache->ClearFileList(TranslateLockedPath(UnlockedPath, true),
-    SubDirs);
+  if (OnDirectoryModified != NULL)
+  {
+    OnDirectoryModified(this, Path, SubDirs);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DirectoryModified(const AnsiString Path, bool SubDirs)
+{
+  ClearCachedFileList(Path, SubDirs);
+  DoDirectoryModified(Path, SubDirs);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DirectoryLoaded(TRemoteFileList * FileList)
+{
+  AddCachedFileList(FileList);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ReloadDirectory()
 {
   if (SessionData->CacheDirectories)
   {
-    FDirectoryCache->ClearFileList(CurrentDirectory, false);
+    DirectoryModified(CurrentDirectory, false);
   }
   if (SessionData->CacheDirectoryChanges)
   {
@@ -544,8 +583,18 @@ void __fastcall TTerminal::ReloadDirectory()
 
   ReadCurrentDirectory();
   FReadCurrentDirectoryPending = false;
-  ReadDirectory(True);
+  ReadDirectory(true);
   FReadDirectoryPending = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::RefreshDirectory()
+{
+  if (SessionData->CacheDirectories &&
+      FDirectoryCache->HasNewerFileList(CurrentDirectory, FFiles->Timestamp))
+  {
+    ReadDirectory(true);
+    FReadDirectoryPending = false;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::EnsureNonExistence(const AnsiString FileName)
@@ -579,7 +628,7 @@ void __fastcall TTerminal::DoStartup()
 
     if (SessionData->LookupUserGroups && IsCapable[fcUserGroupListing])
     {
-      LookupUserGroups();
+      LookupUsersGroups();
     }
 
     UpdateStatus(sshOpenDirectory);
@@ -630,13 +679,9 @@ void __fastcall TTerminal::ReadCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ReadDirectory(bool ReloadOnly)
 {
-  TRemoteFileList * CachedFileList = NULL;
-  if (SessionData->CacheDirectories)
-  {
-    CachedFileList = FDirectoryCache->GetFileList(CurrentDirectory);
-  }
+  bool LoadedFromCache = false;
 
-  if (CachedFileList)
+  if (SessionData->CacheDirectories && FDirectoryCache->HasFileList(CurrentDirectory))
   {
     if (ReloadOnly)
     {
@@ -647,16 +692,25 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly)
       DoStartReadDirectory();
       try
       {
-        CachedFileList->DuplicateTo(FFiles);
+        LoadedFromCache = FDirectoryCache->GetFileList(CurrentDirectory, FFiles);
       }
       __finally
       {
         DoReadDirectory(ReloadOnly);
       }
-      LogEvent("Directory content loaded from cache.");
+
+      if (LoadedFromCache)
+      {
+        LogEvent("Directory content loaded from cache.");
+      }
+      else
+      {
+        LogEvent("Cached Directory content has been removed.");
+      }
     }
   }
-  else
+
+  if (!LoadedFromCache)
   {
     DoStartReadDirectory();
     FFiles->Directory = CurrentDirectory;
@@ -677,7 +731,7 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly)
         {
           if (SessionData->CacheDirectories)
           {
-            FDirectoryCache->AddFileList(FFiles);
+            DirectoryLoaded(FFiles);
           }
         }
       }
@@ -857,7 +911,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
       {
         EndTransaction();
       }
-      
+
       if (Progress.Cancel == csContinue)
       {
         Result = true;
@@ -1187,7 +1241,7 @@ void __fastcall TTerminal::MoveFile(const AnsiString FileName,
     if (OperationProgress->Cancel != csContinue) Abort();
     OperationProgress->SetFile(FileName);
   }
-  
+
   assert(Param != NULL);
   const TMoveFileParams & Params = *static_cast<const TMoveFileParams*>(Param);
   AnsiString NewName = UnixIncludeTrailingBackslash(Params.Target) +
@@ -1245,7 +1299,7 @@ void __fastcall TTerminal::CreateLink(const AnsiString FileName,
   EnsureNonExistence(FileName);
   if (SessionData->CacheDirectories)
   {
-    FDirectoryCache->ClearFileList(CurrentDirectory, false);
+    DirectoryModified(CurrentDirectory, false);
   }
 
   LogEvent(FORMAT("Creating link \"%s\" to \"%s\" (symbolic: %s).",
@@ -1316,24 +1370,44 @@ void __fastcall TTerminal::ChangeDirectory(const AnsiString Directory)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::LookupUserGroups()
+void __fastcall TTerminal::LookupUsersGroups()
 {
   assert(FFileSystem);
   assert(IsCapable[fcUserGroupListing]);
 
   try
   {
-    FUserGroupsLookedup = true;
-    LogEvent("Looking up current user groups.");
-    FFileSystem->LookupUserGroups();
-    ReactOnCommand(fsLookupUserGroups);
+    FUsersGroupsLookedup = true;
+    LogEvent("Looking up groups and users.");
+    FFileSystem->LookupUsersGroups();
+    ReactOnCommand(fsLookupUsersGroups);
 
     if (IsLogging())
     {
-      LogEvent("Following groups found:");
-      for (int Index = 0; Index < FUserGroups->Count; Index++)
+      if (FGroups->Count > 0)
       {
-        LogEvent(AnsiString("  ") + FUserGroups->Strings[Index]);
+        LogEvent("Following groups found:");
+        for (int Index = 0; Index < FGroups->Count; Index++)
+        {
+          LogEvent(AnsiString("  ") + FGroups->Strings[Index]);
+        }
+      }
+      else
+      {
+        LogEvent("No groups found.");
+      }
+
+      if (FUsers->Count > 0)
+      {
+        LogEvent("Following users found:");
+        for (int Index = 0; Index < FUsers->Count; Index++)
+        {
+          LogEvent(AnsiString("  ") + FUsers->Strings[Index]);
+        }
+      }
+      else
+      {
+        LogEvent("No users found.");
       }
     }
   }
@@ -1341,6 +1415,11 @@ void __fastcall TTerminal::LookupUserGroups()
   {
     CommandError(&E, LoadStr(LOOKUP_GROUPS_ERROR));
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::AllowedAnyCommand(const AnsiString Command)
+{
+  return !Command.Trim().IsEmpty();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::AnyCommand(const AnsiString Command)
@@ -1356,7 +1435,7 @@ void __fastcall TTerminal::AnyCommand(const AnsiString Command)
   catch (Exception &E)
   {
     if (ExceptionOnFail || (E.InheritsFrom(__classid(EFatal)))) throw;
-      else ShowExtendedException(&E, this);
+      else DoShowExtendedException(&E);
   }
 }
 //---------------------------------------------------------------------------
@@ -1370,8 +1449,8 @@ bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
     bool Done;
     do
     {
-      *AHandle = CreateFile(FileName.c_str(), GENERIC_WRITE, 0, NULL,
-        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+      *AHandle = CreateFile(FileName.c_str(), GENERIC_WRITE, FILE_SHARE_READ,
+        NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
       Done = (*AHandle != INVALID_HANDLE_VALUE);
       if (!Done)
       {
@@ -1422,7 +1501,7 @@ bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
     }
     while (!Done);
   );
-  
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1448,10 +1527,10 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
       Access = GENERIC_READ;
       NoHandle = true;
     }
-    
+
     FILE_OPERATION_LOOP (FMTLOAD(OPENFILE_ERROR, (FileName)),
       Handle = CreateFile(FileName.c_str(), Access,
-        Access == GENERIC_READ ? FILE_SHARE_READ : 0,
+        Access == GENERIC_READ ? FILE_SHARE_READ | FILE_SHARE_WRITE : FILE_SHARE_READ,
         NULL, OPEN_EXISTING, 0, 0);
       if (Handle == INVALID_HANDLE_VALUE)
       {
@@ -1462,7 +1541,7 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
 
     try
     {
-      if (AATime || AMTime)
+      if (AATime || AMTime || ACTime)
       {
         // Get last file access and modification time
         FILE_OPERATION_LOOP (FMTLOAD(CANT_GET_ATTRS, (FileName)),
@@ -1470,9 +1549,18 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
           FILETIME MTime;
           FILETIME CTime;
           if (!GetFileTime(Handle, &CTime, &ATime, &MTime)) EXCEPTION;
-          if (ACTime) TIME_WIN_TO_POSIX(CTime, *ACTime);
-          if (AATime) TIME_WIN_TO_POSIX(ATime, *AATime);
-          if (AMTime) TIME_WIN_TO_POSIX(MTime, *AMTime);
+          if (ACTime)
+          {
+            *ACTime = ConvertTimestampToUnix(CTime, SessionData->ConsiderDST);
+          }
+          if (AATime)
+          {
+            *AATime = ConvertTimestampToUnix(ATime, SessionData->ConsiderDST);
+          }
+          if (AMTime)
+          {
+            *AMTime = ConvertTimestampToUnix(MTime, SessionData->ConsiderDST);
+          }
         );
       }
 
@@ -1514,7 +1602,7 @@ void __fastcall TTerminal::CalculateLocalFileSize(const AnsiString FileName,
       (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
       Rec.FindData.nFileSizeLow;
   }
-  
+
   if (OperationProgress && OperationProgress->Operation == foCalculateSize)
   {
     if (OperationProgress->Cancel != csContinue) Abort();
@@ -1735,7 +1823,7 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
       }
       delete Data.LocalFileList;
     }
-    
+
     TStringList * FileList = Data.NewRemoteFileList;
     while (FileList != Data.ModifiedRemoteFileList)
     {
@@ -1807,7 +1895,7 @@ void __fastcall TTerminal::SynchronizeFile(const AnsiString FileName,
   if (New || Modified)
   {
     assert(!New || !Modified);
-    
+
     TStringList * FileList = New ? Data->NewRemoteFileList :
       Data->ModifiedRemoteFileList;
     FileList->AddObject(FileName,
@@ -1867,7 +1955,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
           EndTransaction();
         }
       }
-      
+
       if (OperationProgress.Cancel == csContinue)
       {
         Result = true;
@@ -1962,7 +2050,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
           CommandError(&E, LoadStr(TOLOCAL_COPY_ERROR));
           DisconnectWhenComplete = false;
         }
-        
+
         if (OperationProgress.Cancel == csContinue)
         {
           Result = true;

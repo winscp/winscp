@@ -24,6 +24,8 @@ __published:
   TListView *SessionListView;
   TLabel *Label1;
   TLabel *Label2;
+  TButton *CheckAllButton;
+  TCheckBox *ImportKeysCheck;
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
   void __fastcall SessionListViewInfoTip(TObject *Sender,
     TListItem *Item, AnsiString &InfoTip);
@@ -32,6 +34,8 @@ __published:
   void __fastcall SessionListViewKeyUp(TObject *Sender, WORD &Key,
     TShiftState Shift);
   void __fastcall FormShow(TObject *Sender);
+  void __fastcall CheckAllButtonClick(TObject *Sender);
+  bool __fastcall GetImportKeys();
 private:
   TStoredSessionList *FSessionList;
   void __fastcall UpdateControls();
@@ -40,6 +44,7 @@ private:
 public:
   virtual __fastcall TImportSessionsDialog(TComponent* AOwner);
   __property TStoredSessionList *SessionList  = { read=FSessionList, write=SetSessionList };
+  __property bool ImportKeys = { read=GetImportKeys };
 };
 //----------------------------------------------------------------------------
 #endif

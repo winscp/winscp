@@ -4,15 +4,17 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="DScpComp.bpl"/>
-    <OBJFILES value="components\DScpComp.obj components\UnixDirView.obj components\UnixPathComboBox.obj 
+    <OBJFILES value="DScpComp.obj components\UnixDirView.obj components\UnixPathComboBox.obj 
       components\LogMemo.obj"/>
     <RESFILES value="DScpComp.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
-    <SPARELIBS value="rtl.lib vcl.lib Moje_B5.lib vclx.lib DriveDir_B5.lib DRAGDROP_B5.lib"/>
-    <PACKAGES value="Moje_B5.bpi DriveDir_B5.bpi DragDrop_B5.bpi rtl.bpi vcl.bpi vclx.bpi"/>
+    <SPARELIBS value="DRAGDROP_B5.lib DriveDir_B5.lib Moje_B5.lib
+      rtl.lib vcl.lib vclx.lib"/>
+    <PACKAGES value="DragDrop_B5.bpi DriveDir_B5.bpi Moje_B5.bpi
+      rtl.bpi vcl.bpi vclx.bpi"/>
     <PATHCPP value=".;components"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
@@ -39,7 +41,7 @@
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
-    <ALLOBJ value="components\c0pkg32.obj $(PACKAGES) components\sysinit.obj $(OBJFILES)"/>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) sysinit.obj $(OBJFILES)"/>
     <ALLRES value="$(RESFILES)"/>
     <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
     <OTHERFILES value=""/>

@@ -27,9 +27,14 @@ __published:
   TCheckBox *SaveSettingsCheck;
   TCopyParamsFrame *CopyParamsFrame;
   TButton *LocalDirectoryBrowseButton;
+  TCheckBox *QueueCheck;
+  TCheckBox *QueueNoConfirmationCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
+  void __fastcall DirectoryEditKeyDown(TObject *Sender, WORD &Key,
+    TShiftState Shift);
+  void __fastcall ControlChange(TObject *Sender);
 private:
   bool FToRemote;
   bool FDragDrop;
@@ -37,6 +42,7 @@ private:
   bool FMove;
   AnsiString FFileMask;
   bool FAllowDirectory;
+  int FOptions;
   bool __fastcall GetAllowTransferMode();
   AnsiString __fastcall GetDirectory();
   void __fastcall SetToRemote(bool value);
@@ -51,9 +57,12 @@ private:
   void __fastcall SetFileMask(const AnsiString value);
   AnsiString __fastcall GetFileMask();
   void __fastcall SetAllowDirectory(bool value);
+  int __fastcall GetOptions();
+  void __fastcall SetOptions(int value);
 public:
-  bool __fastcall Execute();
   __fastcall TCopyDialog(TComponent* Owner);
+  bool __fastcall Execute();
+  
   __property bool AllowTransferMode = { read = GetAllowTransferMode, write = SetAllowTransferMode };
   __property bool ToRemote = { read = FToRemote, write = SetToRemote };
   __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
@@ -63,6 +72,7 @@ public:
   __property TCopyParamType Params = { read = GetParams, write = SetParams };
   __property bool Move = { read = FMove, write = SetMove };
   __property bool AllowDirectory = { read = FAllowDirectory, write = SetAllowDirectory };
+  __property int Options = { read = GetOptions, write = SetOptions };
 protected:
   void __fastcall UpdateControls();
 };

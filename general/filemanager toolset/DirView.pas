@@ -41,7 +41,7 @@ uses
   Windows, ShlObj, ComCtrls, CompThread, CustomDirView, ListExt,
   ExtCtrls, Graphics, FileOperator, DiscMon, Classes, DirViewColProperties,
   DragDrop, Messages, ListViewColProperties, CommCtrl, DragDropFilesEx,
-  FileCtrl, SysUtils;
+  FileCtrl, SysUtils, BaseUtils;
 
 {$I ResStrings.pas }
 
@@ -292,7 +292,7 @@ type
     function ItemFileExt(Item: TListItem): string;
     function ItemFileNameOnly(Item: TListItem): string;
     function ItemFileSize(Item: TListItem): Int64; override;
-    function ItemFileTime(Item: TListItem): TDateTime; override;
+    function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; override;
     function ItemIsFile(Item: TListItem): Boolean; override;
     function ItemIsRecycleBin(Item: TListItem): Boolean; override;
@@ -531,7 +531,7 @@ uses
   ShellAPI, ComObj,
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
-  MaskSearch, FileChanges, BaseUtils, Math;
+  MaskSearch, FileChanges, Math;
 
 procedure Register;
 begin
@@ -3573,9 +3573,11 @@ begin
       if Size >= 0 then Result := Size;
 end;
 
-function TDirView.ItemFileTime(Item: TListItem): TDateTime;
+function TDirView.ItemFileTime(Item: TListItem;
+  var Precision: TDateTimePrecision): TDateTime;
 begin
   Result := FileTimeToDateTime(PFileRec(Item.Data)^.FileTime);
+  Precision := tpMillisecond;
 end;
 
 function TDirView.ItemImageIndex(Item: TListItem;

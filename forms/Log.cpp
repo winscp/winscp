@@ -110,10 +110,6 @@ void __fastcall TLogForm::LogMemoChange(TObject * /*Sender*/)
   if (!ComponentState.Contains(csDestroying))
   {
     UpdateActions();
-    /*if (!SessionLog->Count)
-    {
-      LogMemo->Invalidate();
-    } */
   }
 }
 //---------------------------------------------------------------------------
@@ -156,8 +152,7 @@ void __fastcall TLogForm::UpdateControls()
     SetStatusBarText(SessionLog->LoggingToFile ? SessionLog->LogFileName :
       LoadStr(LOG_NOLOGFILE));
 
-    assert(SessionLog->Data);
-    Caption = FMTLOAD(LOG_CAPTION, (SessionLog->Data->SessionName));
+    Caption = FMTLOAD(LOG_CAPTION, (SessionLog->SessionName));
   }
   else
   {

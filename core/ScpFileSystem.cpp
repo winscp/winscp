@@ -659,25 +659,26 @@ void __fastcall TSCPFileSystem::SkipStartupMessage()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::LookupUserGroups()
+void __fastcall TSCPFileSystem::LookupUsersGroups()
 {
-  ExecCommand(fsLookupUserGroups);
-  FTerminal->FUserGroups->Clear();
+  ExecCommand(fsLookupUsersGroups);
+  FTerminal->FUsers->Clear();
+  FTerminal->FGroups->Clear();
   if (FOutput->Count > 0)
   {
-    FTerminal->FUserGroups->BeginUpdate();
+    FTerminal->FGroups->BeginUpdate();
     try
     {
       AnsiString Groups = FOutput->Strings[0];
       while (!Groups.IsEmpty())
       {
         AnsiString NewGroup = CutToChar(Groups, ' ', False);
-        FTerminal->FUserGroups->Add(NewGroup);
+        FTerminal->FGroups->Add(NewGroup);
       }
     }
     __finally
     {
-      FTerminal->FUserGroups->EndUpdate();
+      FTerminal->FGroups->EndUpdate();
     }
   }
 }
@@ -874,10 +875,7 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
       for (int Index = 0; Index < OutputCopy->Count; Index++)
       {
-        File = new TRemoteFile();
-        File->Terminal = FTerminal;
-        File->ListingStr = OutputCopy->Strings[Index];
-        File->ShiftTime(FTerminal->SessionData->TimeDifference);
+      	File = CreateRemoteFile(OutputCopy->Strings[Index]);
         FileList->AddFile(File);
       }
     }
@@ -910,6 +908,26 @@ void __fastcall TSCPFileSystem::ReadFile(const AnsiString FileName,
   CustomReadFile(FileName, File, NULL);
 }
 //---------------------------------------------------------------------------
+TRemoteFile * __fastcall TSCPFileSystem::CreateRemoteFile(
+  const AnsiString & ListingStr, TRemoteFile * LinkedByFile)
+{
+  TRemoteFile * File = new TRemoteFile(LinkedByFile);
+  try
+  {
+    File->Terminal = FTerminal;
+    File->ListingStr = ListingStr;
+    File->ShiftTime(FTerminal->SessionData->TimeDifference);
+    File->Complete();
+  }
+  catch(...)
+  {
+    delete File;
+    throw;
+  }
+
+  return File;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CustomReadFile(const AnsiString FileName,
   TRemoteFile *& File, TRemoteFile * ALinkedByFile)
 {
@@ -923,18 +941,7 @@ void __fastcall TSCPFileSystem::CustomReadFile(const AnsiString FileName,
       LineIndex++;
     }
 
-    File = new TRemoteFile(ALinkedByFile);
-    try
-    {
-      File->Terminal = FTerminal;
-      File->ListingStr = FOutput->Strings[LineIndex];
-    }
-    catch(...)
-    {
-      delete File;
-      File = NULL;
-      throw;
-    }
+    File = CreateRemoteFile(FOutput->Strings[LineIndex], ALinkedByFile);
   }
 }
 //---------------------------------------------------------------------------
@@ -1185,7 +1192,8 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
             FTerminal->OpenLocalFile(FileName, GENERIC_READ,
               NULL, NULL, NULL, &MTime, NULL,
               &FileParams.SourceSize);
-            FileParams.SourceTimestamp = UnixToDateTime(MTime);
+            FileParams.SourceTimestamp = UnixToDateTime(MTime,
+              FTerminal->SessionData->ConsiderDST);
             FileParams.DestSize = File->Size;
             FileParams.DestTimestamp = File->Modification;
 
@@ -1194,7 +1202,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
               Answer = FTerminal->ConfirmFileOverwrite(
                 FileNameOnly, &FileParams,
                 qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
-                qpNeverAskAgainCheck);
+                qpNeverAskAgainCheck, osRemote);
             );
           }
           switch (Answer) {
@@ -1294,7 +1302,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
       {
         // Only show error message (it should always succeed, but
         // some pending error maybe in queque) }
-        HandleExtendedException(&E, this);
+        FTerminal->DoHandleExtendedException(&E);
       }
     }
   }
@@ -1412,7 +1420,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
           // Send file modes (rights), filesize and file name
           // TVarRec don't understand 'unsigned int' -> we use sprintf()
-          Buf.sprintf("C0%s %Ld %s",
+          Buf.sprintf("C%s %Ld %s",
             CopyParam->RemoteFileRights(Attrs).Octal.data(),
             (OperationProgress->AsciiTransfer ? (__int64)AsciiBuf.Size :
               OperationProgress->LocalSize),
@@ -1534,7 +1542,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
   /* TODO 1: maybe send filetime */
 
   // Send directory modes (rights), filesize and file name
-  Buf = FORMAT("D0%s 0 %s",
+  Buf = FORMAT("D%s 0 %s",
     (CopyParam->RemoteFileRights(Attrs).Octal, DestFileName));
   FTerminal->SendLine(Buf);
   SCPResponse();
@@ -1829,9 +1837,12 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
             unsigned long MTime, ATime;
             if (sscanf(Line.c_str(), "%ld %*d %ld %*d",  &MTime, &ATime) == 2)
             {
-              TIME_POSIX_TO_WIN(ATime, FileData.AcTime);
-              TIME_POSIX_TO_WIN(MTime, FileData.WrTime);
-              SourceTimestamp = UnixToDateTime(MTime);
+              FileData.AcTime = DateTimeToFileTime(UnixToDateTime(ATime,
+                FTerminal->SessionData->ConsiderDST), FTerminal->SessionData->ConsiderDST);
+              FileData.WrTime = DateTimeToFileTime(UnixToDateTime(MTime,
+                FTerminal->SessionData->ConsiderDST), FTerminal->SessionData->ConsiderDST);
+              SourceTimestamp = UnixToDateTime(MTime,
+                FTerminal->SessionData->ConsiderDST);
               FTerminal->SendNull();
               // File time is only valid until next pass
               FileData.SetTime = 2;
@@ -1853,7 +1864,6 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
         // We reach this point only if control record was 'C' or 'D'
         try
         {
-          Line.Delete(1, 1); // Zero at beginning
           FileData.RemoteRights.Octal = CutToChar(Line, ' ', True);
           __int64 TSize = StrToInt64(CutToChar(Line, ' ', True));
           // Security fix: ensure the file ends up where we asked for it.
@@ -1870,7 +1880,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
         catch (Exception &E)
         {
           SUSPEND_OPERATION (
-            HandleExtendedException(&E);
+            FTerminal->DoHandleExtendedException(&E);
           );
           SCPError(LoadStr(SCP_ILLEGAL_FILE_DESCRIPTOR), false);
         }
@@ -1946,13 +1956,14 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                   FTerminal->OpenLocalFile(DestFileName, GENERIC_READ,
                     NULL, NULL, NULL, &MTime, NULL,
                     &FileParams.DestSize);
-                  FileParams.DestTimestamp = UnixToDateTime(MTime);
+                  FileParams.DestTimestamp = UnixToDateTime(MTime,
+                    FTerminal->SessionData->ConsiderDST);
                   
                   SUSPEND_OPERATION (
                     Answer = FTerminal->ConfirmFileOverwrite(
                       OperationProgress->FileName, &FileParams,
                       qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
-                      qpNeverAskAgainCheck);
+                      qpNeverAskAgainCheck, osLocal);
                   );
 
                   switch (Answer) {
@@ -2091,7 +2102,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           {
             OperationProgress->Cancel = csCancel;
           }
-          HandleExtendedException(&E, this);
+          FTerminal->DoHandleExtendedException(&E);
         );
       }
       // this was inside above condition, but then transfer was considered

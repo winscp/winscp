@@ -17,8 +17,16 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+#define CATCH(command) \
+  try {command;} catch (Exception &E) {ShowExtendedException(&E);}
+//---------------------------------------------------------------------------
 TConfiguration *Configuration;
 TStoredSessionList *StoredSessions;
+TCriticalSection * CoreCriticalSection = NULL;
+//---------------------------------------------------------------------------
+TCoreGuard::TCoreGuard() : TGuard(CoreCriticalSection)
+{
+}
 //---------------------------------------------------------------------------
 #ifdef SCP_CONSOLE
 /* TODO 1 : Won't be needed (while debuggin we hang TSessionLog::OnAddLine to it) */
@@ -35,7 +43,7 @@ TCallExceptionClass *CallExceptionClass;
 //---------------------------------------------------------------------------
 void __fastcall TCallExceptionClass::ShowException(TObject* Sender, Exception* E)
 {
-  ShowExtendedException(E, Sender);
+  ShowExtendedException(E);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCallExceptionClass::PrintLine(TObject* Sender, const AnsiString Line)
@@ -61,6 +69,9 @@ void Initialize(const AnsiString IniFileName)
   default_port = 22;
 
   Randomize();
+
+  CoreCriticalSection = new TCriticalSection();
+
 #ifdef SCP_CONSOLE
   CallExceptionClass = new TCallExceptionClass();
   Application->OnException = CallExceptionClass->ShowException;
@@ -84,6 +95,9 @@ void Finalize()
   delete CallExceptionClass;
   CallExceptionClass = NULL;
 #endif
+
+  delete CoreCriticalSection;
+  CoreCriticalSection = NULL;
 }
 //---------------------------------------------------------------------------
 static AnsiString TranslateRegKey(AnsiString RegKey)

@@ -20,12 +20,18 @@
 //---------------------------------------------------------------------------
 class TProgressForm;
 class TSynchronizeProgressForm;
+class TTerminalQueue;
+class TTerminalQueueStatus;
+class TQueueItem;
+class TQueueItemProxy; 
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
 enum TExecuteFileBy { efDefault, efEditor, efAlternativeEditor };
 enum TPanelExport { pePath, peFileList, peFullFileList };
 enum TPanelExportDestination { pedClipboard, pedCommandLine };
+enum TQueueOperation { qoNone, qoGoTo, qoPreferences, qoItemQuery, qoItemError,
+  qoItemPrompt, qoItemDelete, qoItemExecute, qoItemUp, qoItemDown };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
@@ -34,6 +40,21 @@ __published:
   TAssociatedStatusBar *RemoteStatusBar;
   TUnixDirView *RemoteDirView;
   TCoolBar *TopCoolBar;
+  TListView *QueueView;
+  TPanel *QueuePanel;
+  TSplitter *QueueSplitter;
+  TToolBar *QueueToolBar;
+  TToolButton *ToolButton52;
+  TToolButton *ToolButton54;
+  TToolButton *ToolButton53;
+  TToolButton *ToolButton55;
+  TToolButton *ToolButton63;
+  TToolButton *ToolButton56;
+  TToolButton *ToolButton64;
+  TToolButton *ToolButton65;
+  TCoolBar *QueueCoolBar;
+  TToolButton *ToolButton66;
+  TToolButton *ToolButton67;
   void __fastcall RemoteDirViewGetCopyParam(TUnixDirView *Sender,
     TTransferDirection Direction, TTransferType Type,
     AnsiString &TargetDirectory, TStrings *FileList,
@@ -70,11 +91,36 @@ __published:
     TDataObject *&DataObject);
   void __fastcall RemoteDirViewDDGiveFeedback(TObject *Sender,
     int dwEffect, HRESULT &Result);
+  void __fastcall QueueViewDblClick(TObject *Sender);
+  void __fastcall QueueViewKeyDown(TObject *Sender, WORD &Key,
+    TShiftState Shift);
+  void __fastcall QueueSplitterCanResize(TObject *Sender, int &NewSize,
+    bool &Accept);
+  void __fastcall FormResize(TObject *Sender);
+  void __fastcall StatusBarResize(TObject *Sender);
+  void __fastcall QueueViewContextPopup(TObject *Sender, TPoint &MousePos,
+    bool &Handled);
+  void __fastcall QueueViewDeletion(TObject *Sender, TListItem *Item);
+  void __fastcall QueueViewStartDrag(TObject *Sender,
+    TDragObject *&DragObject);
+  void __fastcall QueueViewDragOver(TObject *Sender, TObject *Source,
+    int X, int Y, TDragState State, bool &Accept);
+  void __fastcall QueueViewDragDrop(TObject *Sender, TObject *Source,
+    int X, int Y);
+  void __fastcall QueueViewEnter(TObject *Sender);
+  void __fastcall QueueViewSelectItem(TObject *Sender, TListItem *Item,
+    bool Selected);
   
 private:
   TTerminal * FTerminal;
+  TTerminalQueue * FQueue;
+  TTerminalQueueStatus * FQueueStatus; 
+  TCriticalSection * FQueueStatusSection;
+  bool FQueueStatusInvalidated;
+  bool FQueueItemInvalidated;
   bool FFormRestored;
   bool FAutoOperation;
+  bool FExecutedFileForceText;
   AnsiString FExecutedFile;
   int FExecutedFileTimestamp;
   TExecuteFileBy FFileExecutedBy;
@@ -87,10 +133,15 @@ private:
   AnsiString FDragExtFakeDirectory;
   HINSTANCE FOle32Library;
   HCURSOR FDragCopyCursor;
+  HCURSOR FDragMoveCursor;
+  bool FRefreshLocalDirectory;
+  bool FRefreshRemoteDirectory;
+  TListItem * FQueueActedItem;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
   void __fastcall SetTerminal(TTerminal * value);
+  void __fastcall SetQueue(TTerminalQueue * value);
   void __fastcall SessionComboDropDown(TObject * Sender);
   void __fastcall SessionComboDrawItem(TWinControl * Control, int Index,
     const TRect & Rect, TOwnerDrawState State);
@@ -106,7 +157,10 @@ protected:
   TSynchronizeProgressForm * FSynchronizeProgressForm;
   HANDLE FDDExtMapFile;
   bool FDDExtCopySlipped;
+  bool FDDMoveSlipped;
   TDateTime FDDDropTime;
+  TTimer * FUserActionTimer;
+  TQueueItemProxy * FPendingQueueActionItem;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,
@@ -125,8 +179,10 @@ protected:
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall SetComponentVisible(Word Component, bool value);
+  virtual void __fastcall FixControlsPlacement();
   void __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
   virtual void __fastcall TerminalChanged();
+  virtual void __fastcall QueueChanged();
   void __fastcall UpdateStatusBar();
   virtual void __fastcall DoOperationFinished(TFileOperation Operation,
     TOperationSide Side, bool DragDrop, const AnsiString FileName, bool Success,
@@ -154,6 +210,19 @@ protected:
   virtual void __fastcall PanelExportStore(TOperationSide Side,
     TPanelExport Export, TPanelExportDestination Destination,
     TStringList * ExportData);
+  void __fastcall QueueListUpdate(TTerminalQueue * Queue);
+  void __fastcall QueueItemUpdate(TTerminalQueue * Queue, TQueueItem * Item);
+  TQueueItemProxy * __fastcall QueueViewItemToQueueItem(TListItem * Item,
+    bool * Detail = NULL);
+  void __fastcall UpdateQueueStatus();
+  TQueueItemProxy * __fastcall RefreshQueueItems();
+  virtual int __fastcall GetStaticComponentsHeight();
+  virtual void __fastcall DoResize();
+  void __fastcall FillQueueViewItem(TListItem * Item,
+    TQueueItemProxy * QueueItem, bool Detail);
+  void __fastcall QueueViewDeleteItem(int Index);
+  void __fastcall UserActionTimer(TObject * Sender);
+  void __fastcall UpdateQueueView();
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
@@ -177,7 +246,7 @@ public:
   void __fastcall CloseSession();
   void __fastcall OpenDirectory(TOperationSide Side);
   void __fastcall OpenStoredSession(TSessionData * Data);
-  void __fastcall SessionIdle();
+  void __fastcall Idle(bool AppIdle);
   __fastcall TCustomScpExplorerForm(TComponent* Owner);
   void __fastcall SaveCurrentSession();
   virtual void __fastcall CompareDirectories();
@@ -192,6 +261,9 @@ public:
   virtual void __fastcall PanelExport(TOperationSide Side, TPanelExport Export,
     TPanelExportDestination Destination, bool OnFocused = false);
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy);
+  bool __fastcall AllowQueueOperation(TQueueOperation Operation);
+  void __fastcall ExecuteQueueOperation(TQueueOperation Operation);
+  TQueueOperation __fastcall DefaultQueueOperation();
   void __fastcall LastTerminalClosed(TObject * Sender);
   void __fastcall TerminalListChanged(TObject * Sender);
   int __fastcall MoreMessageDialog(const AnsiString Message,
@@ -206,6 +278,7 @@ public:
   __property bool EnableSelectedOperation[TOperationSide Side] = { read = GetEnableSelectedOperation };
   __property bool HasDirView[TOperationSide Side] = { read = GetHasDirView };
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
+  __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -2,6 +2,8 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "ImportSessions.h"
 
 #include <Configuration.h>
@@ -26,7 +28,16 @@ Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList)
 
     Result = (ImportSessionsDialog->ShowModal() == mrOk);
     if (Result)
+    {
       SessionList->Import(ImportSessionsDialog->SessionList, True);
+      if (ImportSessionsDialog->ImportKeys)
+      {
+        TStoredSessionList::ImportHostKeys(
+          Configuration->RegistryStorageKey + "\\" + Configuration->SshHostKeysSubKey,
+          Configuration->PuttyRegistryStorageKey + "\\" + Configuration->SshHostKeysSubKey,
+          ImportSessionsDialog->SessionList, true);
+      }
+    }
   } __finally {
     delete ImportSessionsDialog;
     delete ImportSessionList;
@@ -42,10 +53,10 @@ __fastcall TImportSessionsDialog::TImportSessionsDialog(TComponent* AOwner)
 //---------------------------------------------------------------------
 void __fastcall TImportSessionsDialog::UpdateControls()
 {
-  Boolean Checked = False;
-  for (Integer Index = 0; Index < SessionListView->Items->Count; Index ++)
-    if (SessionListView->Items->Item[Index]->Checked) Checked = True;
-  EnableControl(OKButton, Checked);
+  bool AnyChecked = ListViewAnyChecked(SessionListView);
+  EnableControl(OKButton, AnyChecked);
+  EnableControl(ImportKeysCheck, AnyChecked);
+  EnableControl(CheckAllButton, SessionListView->Items->Count > 0);
   AdjustListColumnsWidth(SessionListView);
 }
 //---------------------------------------------------------------------
@@ -113,3 +124,14 @@ void __fastcall TImportSessionsDialog::FormShow(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+void __fastcall TImportSessionsDialog::CheckAllButtonClick(TObject * /*Sender*/)
+{
+  ListViewCheckAll(SessionListView, caToggle);
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TImportSessionsDialog::GetImportKeys()
+{
+  return ImportKeysCheck->Checked;
+}
+

@@ -8,6 +8,7 @@
 class TStoredSessionList;
 class TConfiguration;
 class TTerminal;
+class TSecureShell;
 
 const int mpNeverAskAgainCheck =   0x01;
 const int mpAllowContinueOnError = 0x02;
@@ -24,8 +25,7 @@ extern const AnsiString AppNameVersion;
 
 void __fastcall FlashOnBackground();
 
-void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
-  bool NoReconnect);
+void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell, Exception * E);
 
 // windows\WinInterface.cpp
 int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
@@ -66,10 +66,13 @@ void __fastcall DoConsoleDialog(TTerminal * Terminal,
     const AnsiString Command = "");
 
 // forms\Copy.cpp
+const coQueue               = 0x01;
+const coQueueNoConfirmation = 0x02;
+const coQueueDisable        = 0x04;
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, bool DragDrop, TStrings * FileList,
   bool AllowTransferMode, AnsiString & TargetDirectory,
-  TCopyParamType * Params, bool AllowDirectory);
+  TCopyParamType * Params, int & Options, bool AllowDirectory);
 
 // forms\CopyParams.cpp
 enum TParamsForDirection { pdBoth, pdToRemote, pdToLocal, pdAll };
@@ -109,13 +112,13 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   TStrings * RemoteDirectories, TTerminal * Terminal);
 
 // forms\Preferences.cpp
-enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands };
+enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands, pmQueue };
 typedef void __fastcall (__closure *TGetDefaultLogFileName)
   (System::TObject* Sender, AnsiString &DefaultLogFileName);
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode);
 
 // forms\Password.cpp
-bool __fastcall DoPasswordDialog(const AnsiString Caption, TPasswordKind Kind,
+bool __fastcall DoPasswordDialog(const AnsiString Caption, TPromptKind Kind,
   AnsiString & Password);
 
 // forms\Properties.cpp
@@ -124,7 +127,7 @@ const cpMode =  0x01;
 const cpOwner = 0x02;
 const cpGroup = 0x04;
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
-    const AnsiString Directory, TStrings * GroupList,
+    const AnsiString Directory, TStrings * GroupList, TStrings * UserList,
     TRemoteProperties * Properties, int AllowedChanges,
     TTerminal * Terminal);
 

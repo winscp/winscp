@@ -182,6 +182,7 @@ object PreferencesDialog: TPreferencesDialog
           TabOrder = 2
           Text = 'RandomSeedFileEdit'
           OnChange = ControlChange
+          OnKeyDown = PathEditsKeyDown
         end
         object StorageGroup: TXPGroupBox
           Left = 8
@@ -548,10 +549,6 @@ object PreferencesDialog: TPreferencesDialog
             Width = 182
             Height = 126
             Caption = 'Upload options'
-            inherited RightsFrame: TRightsFrame
-              Height = 88
-              PopupMenu = CopyParamsFrame.RightsFrame.RightsPopup
-            end
             inherited RemotePreserveTimeCheck: TCheckBox
               Top = 161
             end
@@ -658,13 +655,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 103
+          Height = 122
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Default editor'
           TabOrder = 0
           DesignSize = (
             362
-            103)
+            122)
           object EditorInternalButton: TRadioButton
             Left = 16
             Top = 21
@@ -695,11 +692,20 @@ object PreferencesDialog: TPreferencesDialog
             Text = 'ExternalEditorEdit'
             OnChange = ExternalEditorEditChange
             OnExit = ExternalEditorEditExit
+            OnKeyDown = PathEditsKeyDown
+          end
+          object ExternalEditorTextCheck: TCheckBox
+            Left = 40
+            Top = 96
+            Width = 305
+            Height = 17
+            Caption = 'Force &text transfer mode for files edited in external editor'
+            TabOrder = 3
           end
         end
         object EditorFontGroup: TXPGroupBox
           Left = 8
-          Top = 117
+          Top = 136
           Width = 362
           Height = 56
           Anchors = [akLeft, akTop, akRight]
@@ -730,7 +736,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object EditorOptionsGroup: TXPGroupBox
           Left = 8
-          Top = 179
+          Top = 198
           Width = 362
           Height = 51
           Anchors = [akLeft, akTop, akRight]
@@ -798,7 +804,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 25
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Create a &Quick Launch icon'
-            TabOrder = 1
+            TabOrder = 2
             OnClick = IconButtonClick
           end
           object DesktopIconAllUsersButton: TButton
@@ -808,7 +814,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 25
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Create a desktop icon (&all users)'
-            TabOrder = 2
+            TabOrder = 1
             OnClick = IconButtonClick
           end
           object SendToHookButton: TButton
@@ -849,6 +855,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 61
             Height = 13
             Caption = '&PuTTY path:'
+            FocusControl = PuttyPathEdit
           end
           object PuttyPathEdit: TFilenameEdit
             Left = 16
@@ -866,6 +873,7 @@ object PreferencesDialog: TPreferencesDialog
             Text = 'PuttyPathEdit'
             OnChange = ExternalEditorEditChange
             OnExit = ExternalEditorEditExit
+            OnKeyDown = PathEditsKeyDown
           end
         end
       end
@@ -1053,13 +1061,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 267
+          Height = 286
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Drag && Drop download mode'
           TabOrder = 0
           DesignSize = (
             362
-            267)
+            286)
           object DDExtEnabledLabel: TLabel
             Left = 35
             Top = 44
@@ -1112,12 +1120,12 @@ object PreferencesDialog: TPreferencesDialog
             Left = 34
             Top = 160
             Width = 325
-            Height = 102
+            Height = 121
             BevelOuter = bvNone
             TabOrder = 2
             DesignSize = (
               325
-              102)
+              121)
             object DDSystemTemporaryDirectoryButton: TRadioButton
               Left = 0
               Top = 0
@@ -1148,6 +1156,7 @@ object PreferencesDialog: TPreferencesDialog
               TabOrder = 2
               Text = 'DDTemporaryDirectoryEdit'
               OnClick = ControlChange
+              OnKeyDown = PathEditsKeyDown
             end
             object DDWarnLackOfTempSpaceCheck: TCheckBox
               Left = 0
@@ -1159,15 +1168,103 @@ object PreferencesDialog: TPreferencesDialog
               OnClick = ControlChange
             end
             object DDWarnOnMoveCheck: TCheckBox
+              Left = 16
+              Top = 99
+              Width = 303
+              Height = 17
+              Anchors = [akLeft, akTop, akRight]
+              Caption = 'Warn when mo&ving to temporary directory'
+              TabOrder = 5
+              OnClick = ControlChange
+            end
+            object DDAllowMoveInitCheck: TCheckBox
               Left = 0
               Top = 76
               Width = 319
               Height = 17
               Anchors = [akLeft, akTop, akRight]
-              Caption = 'Warn when &moving to temporary directory'
+              Caption = 'Allow &moving via temporary directory'
               TabOrder = 4
               OnClick = ControlChange
             end
+          end
+        end
+      end
+      object QueueSheet: TTabSheet
+        Tag = 12
+        Hint = 'Background'
+        Caption = 'Queue'
+        ImageIndex = 11
+        DesignSize = (
+          378
+          335)
+        object QueueGroup: TXPGroupBox
+          Left = 8
+          Top = 8
+          Width = 362
+          Height = 81
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Background transfers'
+          TabOrder = 0
+          object Label5: TLabel
+            Left = 16
+            Top = 25
+            Width = 211
+            Height = 13
+            Caption = '&Maximal number of transfers at the same time'
+            FocusControl = QueueTransferLimitEdit
+          end
+          object QueueTransferLimitEdit: TUpDownEdit
+            Left = 272
+            Top = 21
+            Width = 73
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 9
+            MinValue = 1
+            MaxLength = 1
+            TabOrder = 0
+          end
+          object QueueAutoPopupCheck: TCheckBox
+            Left = 16
+            Top = 50
+            Width = 337
+            Height = 17
+            Caption = '&Automatically popup prompts of background transfers when idle'
+            TabOrder = 1
+          end
+        end
+        object QueueViewGroup: TXPGroupBox
+          Left = 8
+          Top = 96
+          Width = 362
+          Height = 105
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Queue list'
+          TabOrder = 1
+          object QueueViewShowButton: TRadioButton
+            Left = 16
+            Top = 24
+            Width = 337
+            Height = 17
+            Caption = '&Show'
+            TabOrder = 0
+          end
+          object QueueViewHideWhenEmptyButton: TRadioButton
+            Left = 16
+            Top = 48
+            Width = 337
+            Height = 17
+            Caption = 'Hide when &empty'
+            TabOrder = 1
+          end
+          object QueueViewHideButton: TRadioButton
+            Left = 16
+            Top = 72
+            Width = 337
+            Height = 17
+            Caption = '&Hide'
+            TabOrder = 2
           end
         end
       end
@@ -1205,11 +1302,12 @@ object PreferencesDialog: TPreferencesDialog
           6F7265725822000000000000000B000000FFFFFFFFFFFFFFFF00000000000000
           00094472616744726F7058200000000000000008000000FFFFFFFFFFFFFFFF00
           0000000000000007456469746F7258220000000000000007000000FFFFFFFFFF
-          FFFFFF0000000000000000095472616E73666572582100000000000000020000
-          00FFFFFFFFFFFFFFFF0000000000000000084C6F6767696E6758250000000000
-          000009000000FFFFFFFFFFFFFFFF00000000000000000C496E74656772617469
-          6F6E5822000000000000000A000000FFFFFFFFFFFFFFFF000000000000000009
-          436F6D6D616E647358}
+          FFFFFF0000000001000000095472616E736665725824000000000000000C0000
+          00FFFFFFFFFFFFFFFF00000000000000000B4261636B67726F756E6458210000
+          000000000002000000FFFFFFFFFFFFFFFF0000000000000000084C6F6767696E
+          6758250000000000000009000000FFFFFFFFFFFFFFFF00000000000000000C49
+          6E746567726174696F6E5822000000000000000A000000FFFFFFFFFFFFFFFF00
+          0000000000000009436F6D6D616E647358}
       end
     end
   end

@@ -294,6 +294,7 @@ object LoginDialog: TLoginDialog
             TabOrder = 4
             Text = 'PrivateKeyEdit'
             OnChange = DataChange
+            OnKeyDown = PathEditsKeyDown
           end
         end
         object TransferProtocolGroup: TXPGroupBox
@@ -480,6 +481,74 @@ object LoginDialog: TLoginDialog
         DesignSize = (
           353
           269)
+        object EOLTypeGroup: TXPGroupBox
+          Left = 0
+          Top = 6
+          Width = 345
+          Height = 45
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'EOL (end-of-line) characters (SCP and SFTP version < 4)'
+          TabOrder = 0
+          object EOLTypeLFButton: TRadioButton
+            Left = 12
+            Top = 19
+            Width = 133
+            Height = 17
+            Caption = 'L&F [10] (Unix)'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object EOLTypeCRLFButton: TRadioButton
+            Left = 152
+            Top = 19
+            Width = 185
+            Height = 17
+            Caption = '&CR/LF [13/10] (Windows)'
+            TabOrder = 1
+            OnClick = DataChange
+          end
+        end
+        object ConsiderDSTGroup: TXPGroupBox
+          Left = 0
+          Top = 59
+          Width = 345
+          Height = 70
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Daylight saving time'
+          TabOrder = 1
+          DesignSize = (
+            345
+            70)
+          object ConsiderDSTOnCheck: TRadioButton
+            Left = 12
+            Top = 19
+            Width = 317
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Server works in &UTC time (adjust DST locally)'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object ConsiderDSTOffCheck: TRadioButton
+            Left = 12
+            Top = 42
+            Width = 317
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Server adjusts &DST'
+            TabOrder = 1
+            OnClick = DataChange
+          end
+        end
+      end
+      object DirectoriesSheet: TTabSheet
+        Tag = 12
+        Hint = 'Directories'
+        Caption = 'Dir'
+        ImageIndex = 11
+        DesignSize = (
+          353
+          269)
         object DirectoriesGroup: TXPGroupBox
           Left = 0
           Top = 6
@@ -526,6 +595,7 @@ object LoginDialog: TLoginDialog
             TabOrder = 6
             Text = 'LocalDirectoryEdit'
             OnChange = DataChange
+            OnKeyDown = PathEditsKeyDown
           end
           object RemoteDirectoryEdit: TEdit
             Left = 11
@@ -537,6 +607,7 @@ object LoginDialog: TLoginDialog
             TabOrder = 5
             Text = 'RemoteDirectoryEdit'
             OnChange = DataChange
+            OnKeyDown = PathEditsKeyDown
           end
           object UpdateDirectoriesCheck: TCheckBox
             Left = 11
@@ -583,33 +654,6 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Permanent cache'
             TabOrder = 3
-          end
-        end
-        object EOLTypeGroup: TXPGroupBox
-          Left = 0
-          Top = 220
-          Width = 345
-          Height = 43
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'EOL (end-of-line) characters (SCP and SFTP version < 4)'
-          TabOrder = 1
-          object EOLTypeLFButton: TRadioButton
-            Left = 12
-            Top = 18
-            Width = 133
-            Height = 17
-            Caption = 'L&F [10] (Unix)'
-            TabOrder = 0
-            OnClick = DataChange
-          end
-          object EOLTypeCRLFButton: TRadioButton
-            Left = 152
-            Top = 18
-            Width = 185
-            Height = 17
-            Caption = '&CR/LF [13/10] (Windows)'
-            TabOrder = 1
-            OnClick = DataChange
           end
         end
       end
@@ -1407,13 +1451,13 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 6
           Width = 345
-          Height = 97
+          Height = 123
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication options'
           TabOrder = 0
           DesignSize = (
             345
-            97)
+            123)
           object AuthTISCheck: TCheckBox
             Left = 12
             Top = 19
@@ -1426,12 +1470,12 @@ object LoginDialog: TLoginDialog
           end
           object AgentFwdCheck: TCheckBox
             Left = 12
-            Top = 67
+            Top = 91
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Allow agent &forwarding'
-            TabOrder = 1
+            TabOrder = 3
             OnClick = DataChange
           end
           object AuthKICheck: TCheckBox
@@ -1441,6 +1485,16 @@ object LoginDialog: TLoginDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Attempt '#39'keyboard-&interactive'#39' authentication (SSH2)'
+            TabOrder = 1
+            OnClick = DataChange
+          end
+          object AuthKIPasswordCheck: TCheckBox
+            Left = 32
+            Top = 67
+            Width = 305
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Respond with &password to the first prompt'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -1475,10 +1529,11 @@ object LoginDialog: TLoginDialog
           0400000021000000000000000200000000000000FFFFFFFF0000000001000000
           0853657373696F6E5829000000000000000100000000000000FFFFFFFF000000
           00000000001053746F7265642073657373696F6E735825000000000000000400
-          000000000000FFFFFFFF00000000000000000C456E7669726F6E6D656E74581D
-          000000000000000300000000000000FFFFFFFF00000000000000000453534858
-          25000000000000000700000020000000FFFFFFFF00000000000000000C507265
-          666572656E63657358}
+          000000000000FFFFFFFF00000000010000000C456E7669726F6E6D656E745825
+          000000000000000C000000FFFFFFFFFFFFFFFF00000000000000000C44697265
+          63746F72696573581D000000000000000300000000000000FFFFFFFF00000000
+          00000000045353485825000000000000000700000020000000FFFFFFFF000000
+          00000000000C507265666572656E63657358}
       end
       object AdvancedNavigationTree: TTreeView
         Left = 8
@@ -1497,16 +1552,17 @@ object LoginDialog: TLoginDialog
           0853657373696F6E5829000000000000000100000000000000FFFFFFFF000000
           00000000001053746F7265642073657373696F6E735821000000000000000600
           000000000000FFFFFFFF0000000000000000084C6F6767696E67582500000000
-          0000000400000000000000FFFFFFFF00000000010000000C456E7669726F6E6D
-          656E74581D000000000000000500000000000000FFFFFFFF0000000000000000
-          045343505824000000000000000800000000000000FFFFFFFF00000000010000
-          000B436F6E6E656374696F6E581F000000000000000900000000000000FFFFFF
-          FF00000000000000000650726F7879581D000000000000000300000000000000
-          FFFFFFFF0000000002000000045353485828000000000000000B000000000000
-          00FFFFFFFF00000000000000000F41757468656E7469636174696F6E581E0000
-          00000000000A00000000000000FFFFFFFF000000000000000005427567735825
-          000000000000000700000020000000FFFFFFFF00000000000000000C50726566
-          6572656E63657358}
+          0000000400000000000000FFFFFFFF00000000020000000C456E7669726F6E6D
+          656E745825000000000000000C000000FFFFFFFFFFFFFFFF0000000000000000
+          0C4469726563746F72696573581D000000000000000500000000000000FFFFFF
+          FF0000000000000000045343505824000000000000000800000000000000FFFF
+          FFFF00000000010000000B436F6E6E656374696F6E581F000000000000000900
+          000000000000FFFFFFFF00000000000000000650726F7879581D000000000000
+          000300000000000000FFFFFFFF00000000020000000453534858280000000000
+          00000B00000000000000FFFFFFFF00000000000000000F41757468656E746963
+          6174696F6E581E000000000000000A00000000000000FFFFFFFF000000000000
+          000005427567735825000000000000000700000020000000FFFFFFFF00000000
+          000000000C507265666572656E63657358}
       end
       object ShowAdvancedLoginOptionsCheck: TCheckBox
         Left = 16

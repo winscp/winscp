@@ -15,10 +15,11 @@
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
+#pragma link "RightsExt"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
-	const AnsiString Directory, TStrings * GroupList,
+	const AnsiString Directory, TStrings * GroupList, TStrings * UserList,
 	TRemoteProperties * Properties, int AllowedChanges,
   TTerminal * Terminal)
 {
@@ -30,6 +31,7 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     PropertiesDialog->Directory = Directory;
     PropertiesDialog->FileList = FileList;
     PropertiesDialog->GroupList = GroupList;
+    PropertiesDialog->UserList = UserList;
     PropertiesDialog->FileProperties = *Properties;
     PropertiesDialog->Terminal = Terminal;
     
@@ -125,7 +127,8 @@ void __fastcall TPropertiesDialog::SetFileList(TStrings * value)
   {
     FFileList->Assign(value);
     LoadInfo();
-    FGroupsSet = False;
+    FGroupsSet = false;
+    FUsersSet = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -148,10 +151,13 @@ void __fastcall TPropertiesDialog::LoadInfo()
       assert(File && FShellImageList);
       FShellImageList->GetIcon(File->IconIndex, FileIconImage->Picture->Icon);
       FileLabel->Caption = File->FileName;
-      OwnerComboBox->Items->Text = File->Owner;
+      if (!FUsersSet)
+      {
+        OwnerComboBox->Items->Text = File->Owner;
+      }
       if (!FGroupsSet)
       {
-        GroupComboBox->Items->Text = File->Owner;
+        GroupComboBox->Items->Text = File->Group;
       }
       FilesSize = File->Size;
 
@@ -241,7 +247,10 @@ void __fastcall TPropertiesDialog::LoadInfo()
         }
         FileLabel->Caption = FilesStr;
 
-        OwnerComboBox->Items = OwnerList;
+        if (!FUsersSet)
+        {
+          OwnerComboBox->Items = OwnerList;
+        }
         if (!FGroupsSet)
         {
           GroupComboBox->Items = GroupList;
@@ -339,7 +348,7 @@ TRemoteProperties __fastcall TPropertiesDialog::GetFileProperties()
   }
 
   #define STORE_NAME(PROPERTY) \
-    if (!PROPERTY ## ComboBox->Text.IsEmpty() && \
+    if (!PROPERTY ## ComboBox->Text.Trim().IsEmpty() && \
         AllowedChanges & cp ## PROPERTY) \
     { \
       Result.Valid << vp ## PROPERTY; \
@@ -364,11 +373,11 @@ void __fastcall TPropertiesDialog::UpdateControls()
   EnableControl(OkButton,
     // group name is specified or we set multiple-file properties and
     // no valid group was specified (there are at least two different groups)
-    (!GroupComboBox->Text.IsEmpty() ||
+    (!GroupComboBox->Text.Trim().IsEmpty() ||
      (Multiple && !FOrigProperties.Valid.Contains(vpGroup)) ||
      (FOrigProperties.Group == GroupComboBox->Text)) &&
     // same but with owner
-    (!OwnerComboBox->Text.IsEmpty() ||
+    (!OwnerComboBox->Text.Trim().IsEmpty() ||
      (Multiple && !FOrigProperties.Valid.Contains(vpOwner)) ||
      (FOrigProperties.Owner == OwnerComboBox->Text)) &&
     ((FileProperties != FOrigProperties) || RecursiveCheck->Checked)
@@ -386,13 +395,30 @@ bool __fastcall TPropertiesDialog::GetMultiple()
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::SetGroupList(TStrings * value)
 {
-  GroupComboBox->Items = value;
-  FGroupsSet = True;
+  if (FGroupsSet || ((value != NULL) && (value->Count > 0)))
+  {
+    GroupComboBox->Items = value;
+    FGroupsSet = true;
+  }
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TPropertiesDialog::GetGroupList()
 {
   return GroupComboBox->Items;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::SetUserList(TStrings * value)
+{
+  if (FUsersSet || ((value != NULL) && (value->Count > 0)))
+  {
+    OwnerComboBox->Items = value;
+    FUsersSet = true;
+  }
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TPropertiesDialog::GetUserList()
+{
+  return OwnerComboBox->Items;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::FormCloseQuery(TObject * /*Sender*/,

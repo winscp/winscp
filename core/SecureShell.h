@@ -20,13 +20,18 @@
 #define sshOpenDirectory 7
 #define sshReady 8
 //---------------------------------------------------------------------------
+class TSecureShell;
+class TConfiguration;
+enum TCompressionType { ctNone, ctZLib };
+//---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject* Sender, const AnsiString Query, TStrings * MoreMessages, int Answers,
    int Params, int & Answer, TQueryType QueryType);
-//---------------------------------------------------------------------------
-class TSessionLog;
-class TConfiguration;
-enum TCompressionType { ctNone, ctZLib };
+typedef void __fastcall (__closure *TPromptUserEvent)
+  (TSecureShell * SecureShell, AnsiString Prompt, TPromptKind Kind,
+   AnsiString & Response, bool & Result);
+typedef void __fastcall (__closure *TExtendedExceptionEvent)
+  (TSecureShell * SecureShell, Exception * E);
 //---------------------------------------------------------------------------
 // Duplicated in LogMemo.h for design-time-only purposes
 enum TLogLineType {llOutput, llInput, llStdError, llMessage, llException};
@@ -37,8 +42,9 @@ typedef void __fastcall (__closure *TLogAddLineEvent)(System::TObject* Sender, c
 class TSessionLog : public TStringList
 {
 private:
+  TSecureShell * FOwner;
   TConfiguration * FConfiguration;
-  TSessionData * FData;
+  bool FEnabled;
   void * FFile;
   AnsiString FFileName;
   Integer FLoggedLines;
@@ -48,7 +54,6 @@ private:
   AnsiString __fastcall GetLine(Integer Index);
   void __fastcall SetType(Integer Index, TLogLineType value);
   TLogLineType __fastcall GetType(Integer Index);
-  void SetData(TSessionData * value);
   void DeleteUnnecessary();
   void OpenLogFile();
   TColor __fastcall GetColor(Integer Index);
@@ -58,30 +63,38 @@ private:
   AnsiString __fastcall GetLogFileName();
   Boolean __fastcall GetLoggingToFile();
   Boolean __fastcall GetLogToFile();
+  void __fastcall SetEnabled(bool value);
   void __fastcall SetConfiguration(TConfiguration * value);
+  AnsiString __fastcall GetSessionName();
 
 public:
+  __fastcall TSessionLog(TSecureShell * AOwner);
+  __fastcall ~TSessionLog();
   HIDESBASE void __fastcall Add(TLogLineType aType, AnsiString aLine);
   void __fastcall AddStartupInfo();
-  __fastcall TSessionLog();
-  __fastcall ~TSessionLog();
   void __fastcall AddException(Exception * E);
   void __fastcall AddSeparator();
   virtual void __fastcall Clear();
   void __fastcall ReflectSettings();
+  bool __fastcall inline IsLogging()
+  {
+    return Enabled && (Configuration->Logging || (OnAddLine != NULL));
+  }
+
   __property Integer BottomIndex = { read = GetBottomIndex };
-  __property TSessionData * Data  = { read=FData, write=SetData };
   __property AnsiString Line[Integer Index]  = { read=GetLine, write=SetLine };
   __property TLogLineType Type[Integer Index]  = { read=GetType, write=SetType };
   __property TColor Color[Integer Index]  = { read=GetColor };
   __property TConfiguration * Configuration = { read = FConfiguration, write = SetConfiguration };
   __property OnChange;
+  __property bool Enabled = { read = FEnabled, write = SetEnabled };
   __property Integer Indexes[Integer Index] = { read = GetIndexes };
   __property AnsiString LogFileName = { read = GetLogFileName };
   __property Integer LoggedLines = { read = FLoggedLines };
   __property Boolean LoggingToFile = { read = GetLoggingToFile };
   __property TLogAddLineEvent OnAddLine = { read = FOnAddLine, write = FOnAddLine };
   __property Integer TopIndex = { read = FTopIndex };
+  __property AnsiString SessionName = { read = GetSessionName };
 protected:
   void __fastcall CloseLogFile();
   __property Boolean LogToFile = { read = GetLogToFile };
@@ -96,6 +109,7 @@ class TSecureShell : public TObject
 {
 private:
   bool FPasswordTried;
+  bool FPasswordTriedForKI;
   void * FSocket;
   TSessionData * FSessionData;
   bool FActive;
@@ -104,6 +118,8 @@ private:
   AnsiString FRealHost;
   TDateTime FLastDataSent;
   TQueryUserEvent FOnQueryUser;
+  TPromptUserEvent FOnPromptUser;
+  TExtendedExceptionEvent FOnShowExtendedException;
   Backend * FBackend;
   void * FBackendHandle;
   unsigned long FMaxPacketSize;
@@ -163,7 +179,8 @@ public:
   __fastcall ~TSecureShell();
   virtual void __fastcall Open();
   virtual void __fastcall Close();
-  int __fastcall GetPassword(AnsiString & Password);
+  bool __fastcall PromptUser(const AnsiString Prompt, AnsiString & Response,
+    bool IsPassword);
   int __fastcall Receive(char * Buf, int Len);
   AnsiString __fastcall ReceiveLine();
   void __fastcall Send(const char * Buf, int Len);
@@ -185,17 +202,21 @@ public:
   void __fastcall AskCipher(const AnsiString CipherName, int CipherType);
   void __fastcall OldKeyfileWarning();
 
+  virtual int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
+    int Answers, int Params, TQueryType Type = qtConfirmation);
   int __fastcall DoQueryUser(const AnsiString Query, const AnsiString OtherMessage,
     int Answers, int Params);
   int __fastcall DoQueryUser(const AnsiString Query, int Answers, int Params);
-  int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
-    int Answers, int Params, TQueryType Type = qtConfirmation);
   int __fastcall DoQueryUser(const AnsiString Query, Exception * E,
     int Answers, int Params);
+  virtual void __fastcall DoShowExtendedException(Exception * E);
+  void __fastcall DoHandleExtendedException(Exception * E);
+  virtual bool __fastcall DoPromptUser(AnsiString Prompt, TPromptKind Kind,
+    AnsiString & Response);
 
   bool __fastcall inline IsLogging()
   {
-    return Configuration->Logging || Log->OnAddLine;
+    return Log->IsLogging();
   }
   void __fastcall inline LogEvent(const AnsiString & Str)
   {
@@ -217,6 +238,8 @@ public:
   __property TCompressionType SCCompression = { read = GetSCCompression };
   __property int SshVersion = { read = GetSshVersion };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
+  __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
+  __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
   __property TNotifyEvent OnUpdateStatus = { read = FOnUpdateStatus, write = FOnUpdateStatus };
   __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
   __property int Status = { read = GetStatus };

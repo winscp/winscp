@@ -93,13 +93,6 @@ __published:
   TPasswordEdit *PasswordEdit;
   TUpDownEdit *PortNumberEdit;
   TFilenameEdit *PrivateKeyEdit;
-  TXPGroupBox *DirectoriesGroup;
-  TLabel *LocalDirectoryLabel;
-  TLabel *RemoteDirectoryLabel;
-  TLabel *LocalDirectoryDescLabel;
-  TDirectoryEdit *LocalDirectoryEdit;
-  TEdit *RemoteDirectoryEdit;
-  TCheckBox *UpdateDirectoriesCheck;
   TTreeView *SimpleNavigationTree;
   TTabSheet *ConnSheet;
   TXPGroupBox *TimeoutGroup;
@@ -160,7 +153,6 @@ __published:
   TMenuItem *Cleanup1;
   TButton *ShellIconsButton;
   TAction *DesktopIconAction;
-  TCheckBox *CacheDirectoriesCheck;
   TXPGroupBox *EOLTypeGroup;
   TRadioButton *EOLTypeLFButton;
   TRadioButton *EOLTypeCRLFButton;
@@ -168,7 +160,6 @@ __published:
   TRadioButton *SFTPButton;
   TRadioButton *SCPonlyButton;
   TRadioButton *SFTPonlyButton;
-  TCheckBox *ResolveSymlinksCheck;
   TPopupMenu *IconsPopupMenu;
   TMenuItem *Desktopicon1;
   TAction *SendToHookAction;
@@ -188,8 +179,6 @@ __published:
   TMenuItem *CheckForUpdates1;
   TButton *SaveButton;
   TButton *LanguagesButton;
-  TCheckBox *CacheDirectoryChangesCheck;
-  TCheckBox *PreserveDirectoryChangesCheck;
   TXPGroupBox *PingGroup;
   TLabel *Label6;
   TUpDownEdit *PingIntervalSecEdit;
@@ -198,6 +187,22 @@ __published:
   TRadioButton *PingDummyCommandButton;
   TUpDownEdit *TimeDifferenceMinutesEdit;
   TLabel *Label9;
+  TCheckBox *AuthKIPasswordCheck;
+  TTabSheet *DirectoriesSheet;
+  TXPGroupBox *DirectoriesGroup;
+  TLabel *LocalDirectoryLabel;
+  TLabel *RemoteDirectoryLabel;
+  TLabel *LocalDirectoryDescLabel;
+  TDirectoryEdit *LocalDirectoryEdit;
+  TEdit *RemoteDirectoryEdit;
+  TCheckBox *UpdateDirectoriesCheck;
+  TCheckBox *CacheDirectoriesCheck;
+  TCheckBox *ResolveSymlinksCheck;
+  TCheckBox *CacheDirectoryChangesCheck;
+  TCheckBox *PreserveDirectoryChangesCheck;
+  TXPGroupBox *ConsiderDSTGroup;
+  TRadioButton *ConsiderDSTOnCheck;
+  TRadioButton *ConsiderDSTOffCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -235,6 +240,8 @@ __published:
   void __fastcall SendToHookActionExecute(TObject *Sender);
   void __fastcall CheckForUpdatesActionExecute(TObject *Sender);
   void __fastcall LanguagesButtonClick(TObject *Sender);
+  void __fastcall PathEditsKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
 
 private:
   int NoUpdate;

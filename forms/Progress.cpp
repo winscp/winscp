@@ -9,6 +9,7 @@
 #include <TextsWin.h>
 #include <VCLCommon.h>
 #include <WinInterface.h>
+#include <GUIConfiguration.h>
 
 #include "Progress.h"
 //---------------------------------------------------------------------
@@ -296,7 +297,7 @@ void __fastcall TProgressForm::CancelOperation()
       TCancelStatus ACancel;
       int Result;
       if (FData.TransferingFile &&
-          (FData.TimeExpected() > Configuration->IgnoreCancelBeforeFinish))
+          (FData.TimeExpected() > GUIConfiguration->IgnoreCancelBeforeFinish))
       {
         Result = MessageDialog(LoadStr(CANCEL_OPERATION_FATAL), qtWarning,
           qaYes | qaNo | qaCancel, 0);

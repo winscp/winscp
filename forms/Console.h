@@ -35,6 +35,7 @@ __published:
   
 private:
   TTerminal * FTerminal;
+  TTerminal * FLastTerminal;
   TNotifyEvent FOldChangeDirectory;
   TLogAddLineEvent FOldLogAddLine;
   bool FAddOutput;

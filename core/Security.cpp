@@ -30,11 +30,12 @@ unsigned char SimpleDecryptNextChar(AnsiString &Str)
 AnsiString EncryptPassword(AnsiString Password, AnsiString Key, Integer /* Algorithm */)
 {
   AnsiString Result("");
-  unsigned char Shift, Index;
+  int Shift, Index;
 
   if (!RandSeed) Randomize();
   Password = Key + Password;
-  Shift = (unsigned char)random(PWALG_SIMPLE_MAXLEN - Password.Length());
+  Shift = (Password.Length() < PWALG_SIMPLE_MAXLEN) ?
+    (unsigned char)random(PWALG_SIMPLE_MAXLEN - Password.Length()) : 0;
   Result += SimpleEncryptChar((Char)PWALG_SIMPLE_FLAG); // Flag
   Result += SimpleEncryptChar((Char)0); // Dummy
   Result += SimpleEncryptChar((Char)Password.Length());

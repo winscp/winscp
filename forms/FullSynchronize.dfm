@@ -60,6 +60,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       TabOrder = 2
       Text = 'RemoteDirectoryEdit'
       OnChange = ControlChange
+      OnKeyDown = DirectoryEditKeyDown
     end
     object LocalDirectoryEdit: THistoryComboBox
       Left = 11
@@ -73,6 +74,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       TabOrder = 0
       Text = 'LocalDirectoryEdit'
       OnChange = ControlChange
+      OnKeyDown = DirectoryEditKeyDown
     end
     object LocalDirectoryBrowseButton: TButton
       Left = 293

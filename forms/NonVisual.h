@@ -25,6 +25,8 @@
 #define fcMenuToolBar      0x16
 #define fcRemotePopup      0x17
 #define fcCommandLinePanel 0x18
+#define fcQueueView        0x19
+#define fcQueueToolbar     0x1A
 
 #define fcExplorerMenuBand        0x0003
 #define fcExplorerAddressBand     0x0103
@@ -523,15 +525,112 @@ __published:	// IDE-managed Components
   TMenuItem *CopytoClipboard2;
   TMenuItem *CopyPathtoClipboard5;
   TMenuItem *CommandLine2;
+  TImageList *QueueImages;
+  TAction *QueueItemQueryAction;
+  TAction *QueueItemPromptAction;
+  TAction *QueueItemErrorAction;
+  TAction *QueueItemDeleteAction;
+  TAction *QueueItemExecuteAction;
+  TAction *QueueGoToAction;
+  TPopupMenu *QueuePopup;
+  TMenuItem *ExecuteNow1;
+  TMenuItem *Delete4;
+  TMenuItem *N53;
+  TMenuItem *ShowQuery1;
+  TMenuItem *ShowError1;
+  TMenuItem *ShowPrompt1;
+  TMenuItem *N54;
+  TAction *QueueItemUpAction;
+  TAction *QueueItemDownAction;
+  TMenuItem *MoveUp1;
+  TMenuItem *MoveDown1;
+  TAction *QueueToggleShowAction;
+  TAction *QueueShowAction;
+  TAction *QueueHideWhenEmptyAction;
+  TAction *QueueHideAction;
+  TPopupMenu *QueueShowPopup;
+  TMenuItem *Show1;
+  TMenuItem *Hide1;
+  TMenuItem *HidewhenEmpty1;
+  TMenuItem *Queue1;
+  TMenuItem *Queue3;
+  TMenuItem *ShowQuery2;
+  TMenuItem *ShowError2;
+  TMenuItem *ShowPrompt2;
+  TMenuItem *N55;
+  TMenuItem *ExecuteNow2;
+  TMenuItem *Delete5;
+  TMenuItem *N56;
+  TMenuItem *MoveUp2;
+  TMenuItem *MoveDown2;
+  TMenuItem *QueueGoToAction1;
+  TMenuItem *N57;
+  TMenuItem *Queue4;
+  TMenuItem *MoveDown3;
+  TMenuItem *MoveUp3;
+  TMenuItem *N58;
+  TMenuItem *Delete6;
+  TMenuItem *ExecuteNow3;
+  TMenuItem *N59;
+  TMenuItem *ShowPrompt3;
+  TMenuItem *ShowError3;
+  TMenuItem *ShowQuery3;
+  TMenuItem *N60;
+  TMenuItem *QueueGoToAction2;
+  TMenuItem *Queue5;
+  TMenuItem *HidewhenEmpty2;
+  TMenuItem *Show2;
+  TMenuItem *N61;
+  TAction *QueueToolbarAction;
+  TMenuItem *Toolbar1;
+  TAction *QueuePreferencesAction;
+  TMenuItem *N62;
+  TMenuItem *Customize1;
+  TMenuItem *Queue6;
+  TMenuItem *Customize2;
+  TMenuItem *N63;
+  TMenuItem *Toolbar2;
+  TMenuItem *N64;
+  TMenuItem *Hide2;
+  TMenuItem *HidewhenEmpty3;
+  TMenuItem *Show3;
+  TMenuItem *Queue2;
+  TMenuItem *Customize3;
+  TMenuItem *N65;
+  TMenuItem *Toolbar3;
+  TMenuItem *N66;
+  TMenuItem *Hide3;
+  TMenuItem *HidewhenEmpty4;
+  TMenuItem *Show4;
+  TMenuItem *N67;
+  TMenuItem *Options1;
+  TMenuItem *Customize4;
+  TMenuItem *N68;
+  TMenuItem *Toolbar4;
+  TMenuItem *N69;
+  TMenuItem *Hide4;
+  TMenuItem *HidewhenEmpty5;
+  TMenuItem *Show5;
+  TMenuItem *Queue7;
+  TMenuItem *Customize5;
+  TMenuItem *N70;
+  TMenuItem *Toolbar5;
+  TMenuItem *N71;
+  TMenuItem *Hide5;
+  TMenuItem *HidewhenEmpty6;
+  TMenuItem *Show6;
+  TMenuItem *N72;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
+  void __fastcall QueuePopupPopup(TObject *Sender);
 private:
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
   bool FSessionIdleTimerExecuting;
+  bool FIdle;
 
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
 protected:
@@ -541,16 +640,19 @@ protected:
   void __fastcall SessionItemClick(TObject * Sender);
   void __fastcall OpenedSessionItemClick(TObject * Sender);
   void __fastcall CustomCommandClick(TObject * Sender);
+  void __fastcall DoIdle();
 public:
   void __fastcall CommanderShortcuts();
   void __fastcall ExplorerShortcuts();
   void __fastcall CreateOpenedSessionListMenu();
   TShortCut __fastcall OpenSessionShortCut(int Index);
   void __fastcall OpenBrowser(AnsiString URL);
+  void __fastcall UpdateNonVisibleActions();
 
   __fastcall TNonVisualDataModule(TComponent * Owner);
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
+  __property bool Idle = { read = FIdle };
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TNonVisualDataModule *NonVisualDataModule;

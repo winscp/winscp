@@ -16,6 +16,7 @@
 #include <Controls.hpp>	// Pascal unit
 #include <IEListView.hpp>	// Pascal unit
 #include <NortonLikeListView.hpp>	// Pascal unit
+#include <BaseUtils.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
 #include <FileCtrl.hpp>	// Pascal unit
 #include <DragDropFilesEx.hpp>	// Pascal unit
@@ -380,7 +381,7 @@ protected:
 	AnsiString __fastcall ItemFileExt(Comctrls::TListItem* Item);
 	AnsiString __fastcall ItemFileNameOnly(Comctrls::TListItem* Item);
 	virtual __int64 __fastcall ItemFileSize(Comctrls::TListItem* Item);
-	virtual System::TDateTime __fastcall ItemFileTime(Comctrls::TListItem* Item);
+	virtual System::TDateTime __fastcall ItemFileTime(Comctrls::TListItem* Item, Baseutils::TDateTimePrecision &Precision);
 	virtual int __fastcall ItemImageIndex(Comctrls::TListItem* Item, bool Cache);
 	virtual bool __fastcall ItemIsFile(Comctrls::TListItem* Item);
 	virtual bool __fastcall ItemIsRecycleBin(Comctrls::TListItem* Item);

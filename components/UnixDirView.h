@@ -102,7 +102,8 @@ protected:
   virtual void __fastcall SetPath(AnsiString Value);
   virtual void __fastcall SortItems();
   virtual bool __fastcall TargetHasDropHandler(TListItem * Item, int Effect);
-  virtual TDateTime __fastcall ItemFileTime(TListItem * Item);
+  virtual TDateTime __fastcall ItemFileTime(TListItem * Item,
+    TDateTimePrecision & Precision);
   void __fastcall DoWarnLackOfTempSpace(const AnsiString Path, __int64 RequiredSpace,
     bool & Continue);
   DYNAMIC bool __fastcall CanEdit(TListItem* Item);

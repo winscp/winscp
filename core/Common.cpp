@@ -5,10 +5,48 @@
 #include "Common.h"
 #include "Exceptions.h"
 #include "TextsCore.h"
+#include "Interface.h"
 #include <math.h>
 #include <shellapi.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+// TCriticalSection
+//---------------------------------------------------------------------------
+__fastcall TCriticalSection::TCriticalSection()
+{
+  InitializeCriticalSection(&FSection);
+}
+//---------------------------------------------------------------------------
+__fastcall TCriticalSection::~TCriticalSection()
+{
+  DeleteCriticalSection(&FSection);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCriticalSection::Enter()
+{
+  EnterCriticalSection(&FSection);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCriticalSection::Leave()
+{
+  LeaveCriticalSection(&FSection);
+}
+//---------------------------------------------------------------------------
+// TGuard
+//---------------------------------------------------------------------------
+__fastcall TGuard::TGuard(TCriticalSection * ACriticalSection) :
+  FCriticalSection(ACriticalSection)
+{
+  assert(ACriticalSection != NULL);
+  FCriticalSection->Enter();
+}
+//---------------------------------------------------------------------------
+__fastcall TGuard::~TGuard()
+{
+  FCriticalSection->Leave();
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 const char EngShortMonthNames[12][4] =
   {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -319,54 +357,200 @@ void __fastcall ProcessLocalDirectory(AnsiString DirName,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall DateTimeParams(TDateTime * AUnixEpoch,
-  double * ADifference, long * ADifferenceSec)
-{
-  static double Difference;
-  static long DifferenceSec;
-  static TDateTime UnixEpoch = 0;
-
-  if (double(UnixEpoch) == 0)
-  {
-    TIME_ZONE_INFORMATION TZI;
-    unsigned long GTZI;
-
-    GTZI = GetTimeZoneInformation(&TZI);
-    switch (GTZI) {
-      case TIME_ZONE_ID_UNKNOWN:
-        Difference = 0;
-        break;
-
-      case TIME_ZONE_ID_STANDARD:
-        DifferenceSec = TZI.Bias + TZI.StandardBias;
-        break;
-
-      case TIME_ZONE_ID_DAYLIGHT:
-        DifferenceSec = TZI.Bias + TZI.DaylightBias;
-        break;
-
-      case TIME_ZONE_ID_INVALID:
-      default:
-        throw Exception(TIMEZONE_ERROR);
-    }
-    // Is it same as SysUtils::UnixDateDelta = 25569 ??
-    UnixEpoch = EncodeDate(1970, 1, 1);
-    Difference = double(DifferenceSec) / 1440;
-    DifferenceSec *= 60;
-  }
-  if (AUnixEpoch) *AUnixEpoch = UnixEpoch;
-  if (ADifference) *ADifference = Difference;
-  if (ADifferenceSec) *ADifferenceSec = DifferenceSec;
-}
-//---------------------------------------------------------------------------
-TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp)
+struct TDateTimeParams
 {
   TDateTime UnixEpoch;
-  double Difference;
-  DateTimeParams(&UnixEpoch, &Difference, NULL);
+  double BaseDifference;
+  long BaseDifferenceSec;
+  double CurrentDaylightDifference;
+  long CurrentDaylightDifferenceSec;
+  double CurrentDifference;
+  long CurrentDifferenceSec;
+  double StandardDifference;
+  long StandardDifferenceSec;
+  double DaylightDifference;
+  long DaylightDifferenceSec;
+  SYSTEMTIME StandardDate;
+  SYSTEMTIME DaylightDate;
+};
+static bool DateTimeParamsInitialized = false;
+static TDateTimeParams DateTimeParams;
+static TCriticalSection DateTimeParamsSection;
+//---------------------------------------------------------------------------
+static TDateTimeParams * __fastcall GetDateTimeParams()
+{
+  if (!DateTimeParamsInitialized)
+  {
+    TGuard Guard(&DateTimeParamsSection);
+    if (!DateTimeParamsInitialized)
+    {
+      TIME_ZONE_INFORMATION TZI;
+      unsigned long GTZI;
+
+      GTZI = GetTimeZoneInformation(&TZI);
+      switch (GTZI)
+      {
+        case TIME_ZONE_ID_UNKNOWN:
+          DateTimeParams.CurrentDifferenceSec = 0;
+          DateTimeParams.CurrentDaylightDifferenceSec = 0;
+          break;
+
+        case TIME_ZONE_ID_STANDARD:
+          DateTimeParams.CurrentDaylightDifferenceSec = TZI.StandardBias;
+          break;
+
+        case TIME_ZONE_ID_DAYLIGHT:
+          DateTimeParams.CurrentDaylightDifferenceSec = TZI.DaylightBias;
+          break;
+
+        case TIME_ZONE_ID_INVALID:
+        default:
+          throw Exception(TIMEZONE_ERROR);
+      }
+      // Is it same as SysUtils::UnixDateDelta = 25569 ??
+      DateTimeParams.UnixEpoch = EncodeDate(1970, 1, 1);
+
+      DateTimeParams.BaseDifferenceSec = TZI.Bias;
+      DateTimeParams.BaseDifference = double(TZI.Bias) / 1440;
+      DateTimeParams.BaseDifferenceSec *= 60;
+
+      DateTimeParams.CurrentDifferenceSec = TZI.Bias +
+        DateTimeParams.CurrentDaylightDifferenceSec;
+      DateTimeParams.CurrentDifference =
+        double(DateTimeParams.CurrentDifferenceSec) / 1440;
+      DateTimeParams.CurrentDifferenceSec *= 60;
+      
+      DateTimeParams.CurrentDaylightDifference =
+        double(DateTimeParams.CurrentDaylightDifferenceSec) / 1440;
+      DateTimeParams.CurrentDaylightDifferenceSec *= 60;
+
+      DateTimeParams.DaylightDifferenceSec = TZI.DaylightBias * 60;
+      DateTimeParams.DaylightDifference = double(TZI.DaylightBias) / 1440;
+      DateTimeParams.StandardDifferenceSec = TZI.StandardBias * 60;
+      DateTimeParams.StandardDifference = double(TZI.StandardBias) / 1440;
+
+      DateTimeParams.StandardDate = TZI.StandardDate;
+      DateTimeParams.DaylightDate = TZI.DaylightDate;
+
+      DateTimeParamsInitialized = true;
+    }
+  }
+  return &DateTimeParams;
+}
+//---------------------------------------------------------------------------
+static void __fastcall EncodeDSTMargin(const SYSTEMTIME & Date, unsigned short Year,
+  TDateTime & Result)
+{
+  if (Date.wYear == 0)
+  {
+    TDateTime Temp = EncodeDate(Year, Date.wMonth, 1);
+    Result = Temp + ((Date.wDayOfWeek - DayOfWeek(Temp) + 8) % 7) +
+      (7 * (Date.wDay - 1));
+    if (Date.wDay == 5)
+    {
+      unsigned short Month = static_cast<unsigned short>(Date.wMonth + 1);
+      if (Month > 12)
+      {
+        Month = static_cast<unsigned short>(Month - 12);
+        Year++;
+      }
+
+      if (Result > EncodeDate(Year, Month, 1))
+      {
+        Result -= 7;
+      }
+    }
+    Result += EncodeTime(Date.wHour, Date.wMinute, Date.wSecond,
+      Date.wMilliseconds);
+  }
+  else
+  {
+    Result = EncodeDate(Year, Date.wMonth, Date.wDay) +
+      EncodeTime(Date.wHour, Date.wMinute, Date.wSecond, Date.wMilliseconds);
+  }
+}
+//---------------------------------------------------------------------------
+static bool __fastcall IsDateInDST(const TDateTime & DateTime)
+{
+  struct TDSTCache
+  {
+    bool Filled;
+    unsigned short Year;
+    TDateTime StandardDate;
+    TDateTime DaylightDate;
+  };
+  static TDSTCache DSTCache[10];
+  static int DSTCacheCount = 0;
+  static TCriticalSection Section;
+
+  TDateTimeParams * Params = GetDateTimeParams();
+  bool Result;
+
+  if (Params->StandardDate.wMonth == 0)
+  {
+    Result = false;
+  }
+  else
+  {
+    unsigned short Year, Month, Day;
+    DecodeDate(DateTime, Year, Month, Day);
+
+    TDSTCache * CurrentCache = &DSTCache[0];
+
+    int CacheIndex = 0;
+    while ((CacheIndex < DSTCacheCount) && (CacheIndex < LENOF(DSTCache)) &&
+      CurrentCache->Filled && (CurrentCache->Year != Year))
+    {
+      CacheIndex++;
+      CurrentCache++;
+    }
+
+    if ((CacheIndex < DSTCacheCount) && (CacheIndex < LENOF(DSTCache)) &&
+        CurrentCache->Filled)
+    {
+      assert(CurrentCache->Year == Year);
+      Result = (DateTime >= CurrentCache->DaylightDate) &&
+        (DateTime < CurrentCache->StandardDate);
+    }
+    else
+    {
+      TDSTCache NewCache;
+
+      EncodeDSTMargin(Params->StandardDate, Year, NewCache.StandardDate);
+      EncodeDSTMargin(Params->DaylightDate, Year, NewCache.DaylightDate);
+      AnsiString SD = FormatDateTime("dddddd tt", NewCache.StandardDate);
+      AnsiString DD = FormatDateTime("dddddd tt", NewCache.DaylightDate);
+      if (DSTCacheCount < LENOF(DSTCache))
+      {
+        TGuard Guard(&Section);
+        if (DSTCacheCount < LENOF(DSTCache))
+        {
+          NewCache.Year = Year;
+          DSTCache[DSTCacheCount] = NewCache;
+          DSTCache[DSTCacheCount].Filled = true;
+          DSTCacheCount++;
+        }
+      }
+      Result = (DateTime >= NewCache.DaylightDate) &&
+        (DateTime < NewCache.StandardDate);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp, bool ConsiderDST)
+{
+  TDateTimeParams * Params = GetDateTimeParams();
 
   TDateTime Result;
-  Result = UnixEpoch + (double(TimeStamp) / 86400) - Difference;
+  Result = Params->UnixEpoch + (double(TimeStamp) / 86400) - Params->CurrentDifference;
+
+  if (ConsiderDST)
+  {
+    Result -= (IsDateInDST(Result) ?
+      Params->DaylightDifference : Params->StandardDifference);
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -377,22 +561,66 @@ inline __int64 __fastcall Round(double Number)
   return ((Number - Floor) > (Ceil - Number)) ? Ceil : Floor;
 }
 //---------------------------------------------------------------------------
-FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime)
+FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
+  bool /*ConsiderDST*/)
 {
+  TDateTimeParams * Params = GetDateTimeParams();
+
   __int64 UnixTimeStamp;
   FILETIME Result;
-  TDateTime UnixEpoch;
-  long Difference;
 
-  DateTimeParams(&UnixEpoch, NULL, &Difference);
-  UnixTimeStamp = Round(double(DateTime - UnixEpoch) * 86400) + Difference;
+  UnixTimeStamp = Round(double(DateTime - Params->UnixEpoch) * 86400) +
+    Params->CurrentDifferenceSec;
+
   TIME_POSIX_TO_WIN(UnixTimeStamp, Result);
   return Result;
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall AdjustDateTimeFromUnix(const TDateTime DateTime)
+unsigned long __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
+  bool ConsiderDST)
 {
-  // to be implemented
+  unsigned long Result;
+  TIME_WIN_TO_POSIX(FileTime, Result);
+
+  if (ConsiderDST)
+  {
+    FILETIME LocalFileTime;
+    SYSTEMTIME SystemTime;
+    TDateTime DateTime;
+    FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
+    FileTimeToSystemTime(&LocalFileTime, &SystemTime);
+    DateTime = SystemTimeToDateTime(SystemTime);
+    
+    TDateTimeParams * Params = GetDateTimeParams();
+    Result += (IsDateInDST(DateTime) ?
+      Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, bool ConsiderDST)
+{
+  TDateTimeParams * Params = GetDateTimeParams();
+
+  DateTime = DateTime - Params->CurrentDaylightDifference;
+
+  bool IsInDST = IsDateInDST(DateTime);
+  // shift always, even with ConsiderDST == false
+  DateTime = DateTime - (!IsInDST ? Params->DaylightDifference :
+    Params->StandardDifference);
+  if (ConsiderDST)
+  {
+    if (IsInDST)
+    {
+      //DateTime = DateTime - Params->DaylightDifference;
+    }
+    else
+    {
+      DateTime = DateTime + Params->DaylightDifference;
+    }
+  }
+
   return DateTime;
 }
 //---------------------------------------------------------------------------
@@ -457,3 +685,31 @@ bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin
   int Result = SHFileOperation(&Data);
   return (Result == 0);
 }
+//---------------------------------------------------------------------------
+int __fastcall CancelAnswer(int Answers)
+{
+  int Result;
+  if ((Answers & qaCancel) != 0)
+  {
+    Result = qaCancel;
+  }
+  else if ((Answers & qaAbort) != 0)
+  {
+    Result = qaAbort;
+  }
+  else if ((Answers & qaNo) != 0)
+  {
+    Result = qaNo;
+  }
+  else if ((Answers & qaOK) != 0)
+  {
+    Result = qaOK;
+  }
+  else
+  {
+    assert(false);
+    Result = qaOK;
+  }
+  return Result;
+}
+

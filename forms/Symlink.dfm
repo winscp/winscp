@@ -56,6 +56,7 @@ object SymlinkDialog: TSymlinkDialog
       MaxLength = 250
       TabOrder = 0
       OnChange = ControlChange
+      OnKeyDown = PathEditsKeyDown
     end
     object PointToEdit: TEdit
       Left = 11
@@ -66,6 +67,7 @@ object SymlinkDialog: TSymlinkDialog
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange
+      OnKeyDown = PathEditsKeyDown
     end
     object SymbolicCheck: TCheckBox
       Left = 17

@@ -4,29 +4,29 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\Moje_B5.bpl"/>
-    <OBJFILES value="Moje_B5.obj AssociatedStatusBar.obj 
-      HistoryComboBox.obj ListViewColProperties.obj 
-      MoreButton.obj NortonLikeListView.obj 
-      PathLabel.obj ToolbarPanel.obj UpDownEdit.obj 
-      ComboEdit.obj XPGroupBox.obj PasswordEdit.obj 
-      ResourceModule.obj"/>
+    <OBJFILES value="Moje_B5.obj &quot;Moje komponenty\AssociatedStatusBar.obj&quot; 
+      &quot;Moje komponenty\HistoryComboBox.obj&quot; &quot;Moje komponenty\ListViewColProperties.obj&quot; 
+      &quot;Moje komponenty\MoreButton.obj&quot; &quot;Moje komponenty\NortonLikeListView.obj&quot; 
+      &quot;Moje komponenty\PathLabel.obj&quot; &quot;Moje komponenty\ToolbarPanel.obj&quot; &quot;Moje komponenty\UpDownEdit.obj&quot; 
+      &quot;Moje komponenty\ComboEdit.obj&quot; &quot;Moje komponenty\XPGroupBox.obj&quot; &quot;Moje komponenty\PasswordEdit.obj&quot; 
+      &quot;Moje komponenty\ResourceModule.obj&quot;"/>
     <RESFILES value="Moje_B5.res &quot;Moje komponenty\HistoryComboBox.dcr&quot; 
       &quot;Moje komponenty\NortonLikeListView.dcr&quot; &quot;Moje komponenty\PathLabel.dcr&quot;"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="visualdbclx.lib bcb2kaxserver.lib indy.lib 
-      dbxcds.lib dclocx.lib soaprtl.lib nmfast.lib dbexpress.lib 
-      inetdbxpress.lib inetdb.lib inetdbbde.lib inet.lib xmlrtl.lib ibxpress.lib 
-      teeqr.lib tee.lib teedb.lib teeui.lib bdecds.lib cds.lib dsnap.lib 
-      vcldbx.lib bdertl.lib qrpt.lib adortl.lib dbrtl.lib vcldb.lib"/>
-    <SPARELIBS value="rtl.lib vcl.lib bcbsmp.lib vcldb.lib dbrtl.lib adortl.lib qrpt.lib 
-      bdertl.lib vcldbx.lib dsnap.lib cds.lib bdecds.lib teeui.lib teedb.lib 
-      tee.lib teeqr.lib ibxpress.lib xmlrtl.lib inet.lib inetdbbde.lib 
-      inetdb.lib inetdbxpress.lib dbexpress.lib nmfast.lib bcbie.lib soaprtl.lib 
-      dclocx.lib dbxcds.lib indy.lib bcb2kaxserver.lib visualdbclx.lib 
-      "/>
-    <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi bcbsmp.bpi bcbie.bpi"/>
+    <LIBRARIES value="adortl.lib bcb2kaxserver.lib bdecds.lib bdertl.lib
+      cds.lib dbexpress.lib dbrtl.lib dbxcds.lib dclocx.lib dsnap.lib
+      ibxpress.lib indy.lib inet.lib inetdb.lib inetdbbde.lib inetdbxpress.lib
+      nmfast.lib qrpt.lib soaprtl.lib tee.lib teedb.lib teeqr.lib teeui.lib
+      vcldb.lib vcldbx.lib visualdbclx.lib xmlrtl.lib"/>
+    <SPARELIBS value="adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib
+      bdecds.lib bdertl.lib cds.lib dbexpress.lib dbrtl.lib dbxcds.lib
+      dclocx.lib dsnap.lib ibxpress.lib indy.lib inet.lib inetdb.lib
+      inetdbbde.lib inetdbxpress.lib nmfast.lib qrpt.lib rtl.lib soaprtl.lib
+      tee.lib teedb.lib teeqr.lib teeui.lib vcl.lib vcldb.lib vcldbx.lib
+      visualdbclx.lib xmlrtl.lib"/>
+    <PACKAGES value="bcbie.bpi bcbsmp.bpi rtl.bpi vcl.bpi vclx.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;&quot;Moje komponenty&quot;"/>
     <PATHRC value=".;"/>

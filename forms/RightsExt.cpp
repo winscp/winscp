@@ -1,0 +1,83 @@
+//---------------------------------------------------------------------------
+#include <vcl.h>
+#pragma hdrstop
+
+#include "RightsExt.h"
+//---------------------------------------------------------------------------
+#pragma package(smart_init)
+#pragma link "Rights"
+#pragma resource "*.dfm"
+//---------------------------------------------------------------------------
+__fastcall TRightsExtFrame::TRightsExtFrame(TComponent* Owner)
+  : TRightsFrame(Owner)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsExtFrame::UpdateControls()
+{
+  if (!OctalEdit->Focused())
+  {
+    ForceUpdate();
+  }
+  TRightsFrame::UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsExtFrame::UpdateByOctal()
+{
+  if (!OctalEdit->Text.IsEmpty())
+  {
+    TRights R = Rights;
+    R.Octal = OctalEdit->Text;
+    Rights = R;
+  }
+  UpdateControls();
+  OctalEdit->Modified = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsExtFrame::ForceUpdate()
+{
+  TRightsFrame::ForceUpdate();
+  TRights R = Rights;
+  OctalEdit->Text = R.IsUndef ? AnsiString() : R.Octal;
+  OctalEdit->Modified = false;
+  OctalEdit->SelectAll();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsExtFrame::OctalEditChange(TObject * /*Sender*/)
+{
+  if (OctalEdit->Modified && OctalEdit->Text.Length() >= 3)
+  {
+    try
+    {
+      UpdateByOctal();
+    }
+    catch(...)
+    {
+      OctalEdit->Modified = true;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsExtFrame::OctalEditExit(TObject * /*Sender*/)
+{
+  if (OctalEdit->Modified)
+  {
+    // Now the text in OctalEdit is almost necessarily invalid, otherwise
+    // OctalEditChange would have already cleared Modified flag
+    try
+    {
+      UpdateByOctal();
+    }
+    catch(...)
+    {
+      OctalEdit->SelectAll();
+      OctalEdit->SetFocus();
+      throw;
+    }
+  }
+  else
+  {
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------

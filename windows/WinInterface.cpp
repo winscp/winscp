@@ -392,12 +392,6 @@ int __fastcall FatalExceptionMessageDialog(Exception * E,
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall GetSessionPassword(AnsiString Prompt,
-  TPasswordKind Kind, AnsiString & Password)
-{
-  return DoPasswordDialog(Prompt, Kind, Password);
-}
-//---------------------------------------------------------------------------
 void __fastcall Busy(bool Start)
 {
   static int Busy = 0;

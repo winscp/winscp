@@ -15,6 +15,7 @@
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
+  FCriticalSection = new TCriticalSection();
   FUpdating = 0;
   FStorage = stDetect;
   DontSave = false;
@@ -24,15 +25,15 @@ __fastcall TConfiguration::TConfiguration()
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Default()
 {
+  TGuard Guard(FCriticalSection);
+
   AnsiString ARandomSeedFile = RandomSeedFile;
   // This works correct only when Default() is called before first
   // change to RandomSeedFile property
   RandomSeedFile = StringReplace(ExtractFilePath(ARandomSeedFile) +
     "winscp" + ExtractFileExt(ARandomSeedFile), "\\\\", "\\",
     TReplaceFlags() << rfReplaceAll);
-  FIgnoreCancelBeforeFinish = TDateTime(0, 0, 3, 0);
   FConfirmOverwriting = true;
-  FDefaultDirIsHome = true;
   FCopyParam.Default();
 
   FLogging = false;
@@ -50,6 +51,7 @@ __fastcall TConfiguration::~TConfiguration()
   assert(!FUpdating);
   if (RandomSeedSave) random_save_seed();
   if (FApplicationInfo) FreeFileInfo(FApplicationInfo);
+  delete FCriticalSection;
 }
 //---------------------------------------------------------------------------
 THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
@@ -74,9 +76,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
     Storage->AccessMode = ACCESS; \
     if (Storage->OpenSubKey(ConfigurationSubKey, CANCREATE)) { \
       BLOCK("Interface", CANCREATE, \
-        KEY(Bool,     DefaultDirIsHome); \
         KEY(String,   RandomSeedFile); \
-        KEY(DateTime, IgnoreCancelBeforeFinish); \
         KEY(Bool,     ConfirmOverwriting); \
       ); \
       BLOCK("Interface\\CopyParam", CANCREATE, \
@@ -132,6 +132,8 @@ void __fastcall TConfiguration::LoadAdmin(THierarchicalStorage * Storage)
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Load()
 {
+  TGuard Guard(FCriticalSection);
+
   #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
   #pragma warn -eas
   REGCONFIG(smRead, false, LoadSpecial);
@@ -308,6 +310,20 @@ void __fastcall TConfiguration::CleanupIniFile()
   }
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetOSVersionStr()
+{
+  AnsiString Result;
+  OSVERSIONINFO OSVersionInfo;
+  OSVersionInfo.dwOSVersionInfoSize = sizeof(OSVersionInfo);
+  if (GetVersionEx(&OSVersionInfo) != 0)
+  {
+    Result = FORMAT("%d.%d.%d %s", (int(OSVersionInfo.dwMajorVersion),
+      int(OSVersionInfo.dwMinorVersion), int(OSVersionInfo.dwBuildNumber),
+      OSVersionInfo.szCSDVersion)).Trim();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TVSFixedFileInfo *__fastcall TConfiguration::GetFixedApplicationInfo()
 {
   return GetFixedFileInfo(ApplicationInfo);
@@ -346,9 +362,19 @@ AnsiString __fastcall TConfiguration::GetFileProductName(const AnsiString FileNa
   return GetFileFileInfoString("ProductName", FileName);
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetFileCompanyName(const AnsiString FileName)
+{
+  return GetFileFileInfoString("CompanyName", FileName);
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetProductName()
 {
   return GetFileProductName("");
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetCompanyName()
+{
+  return GetFileCompanyName("");
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetFileProductVersion(const AnsiString FileName)
@@ -373,6 +399,7 @@ AnsiString __fastcall TConfiguration::TrimVersion(AnsiString Version)
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetVersionStr()
 {
+  TGuard Guard(FCriticalSection);
   try
   {
     return FmtLoadStr(VERSION, ARRAYOFCONST((
@@ -389,6 +416,7 @@ AnsiString __fastcall TConfiguration::GetVersionStr()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetVersion()
 {
+  TGuard Guard(FCriticalSection);
   try
   {
     AnsiString Result;
@@ -407,6 +435,8 @@ AnsiString __fastcall TConfiguration::GetVersion()
 AnsiString __fastcall TConfiguration::GetFileFileInfoString(const AnsiString Key,
   const AnsiString FileName)
 {
+  TGuard Guard(FCriticalSection);
+
   AnsiString Result;
   void * Info = GetFileApplicationInfo(FileName);
   try
@@ -599,22 +629,14 @@ AnsiString __fastcall TConfiguration::GetDefaultLogFileName()
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetConfirmOverwriting(bool value)
 {
+  TGuard Guard(FCriticalSection);
   SET_CONFIG_PROPERTY(ConfirmOverwriting);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetConfirmOverwriting()
 {
+  TGuard Guard(FCriticalSection);
   return FConfirmOverwriting;
-}
-//---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetDefaultDirIsHome(bool value)
-{
-  SET_CONFIG_PROPERTY(DefaultDirIsHome);
-}
-//---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetIgnoreCancelBeforeFinish(TDateTime value)
-{
-  SET_CONFIG_PROPERTY(IgnoreCancelBeforeFinish);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetTimeFormat()

@@ -58,6 +58,7 @@ object LoggingFrame: TLoggingFrame
       TabOrder = 1
       Text = 'LogFileNameEdit'
       OnChange = DataChange
+      OnKeyDown = LogFileNameEditKeyDown
     end
     object LogShowWindowCheck: TCheckBox
       Left = 16

@@ -14,7 +14,7 @@ class TRemoteProperties;
 //---------------------------------------------------------------------------
 enum TFSCommand { fsNull = 0, fsVarValue, fsLastLine, fsFirstLine,
   fsCurrentDirectory, fsChangeDirectory, fsListDirectory, fsListCurrentDirectory,
-  fsListFile, fsLookupUserGroups, fsCopyToRemote, fsCopyToLocal, fsDeleteFile,
+  fsListFile, fsLookupUsersGroups, fsCopyToRemote, fsCopyToLocal, fsDeleteFile,
   fsRenameFile, fsCreateDirectory, fsChangeMode, fsChangeGroup, fsChangeOwner,
   fsHomeDirectory, fsUnset, fsUnalias, fsAliasGroupList, fsCreateLink,
   fsAnyCommand, fsReadSymlink, fsChangeProperties, fsMoveFile };
@@ -54,7 +54,7 @@ public:
   virtual void __fastcall HomeDirectory() = 0;
   virtual bool __fastcall IsCapable(int Capability) const = 0;
   virtual void __fastcall AdditionalInfo(TStrings * AdditionalInfo, bool Initial) = 0;
-  virtual void __fastcall LookupUserGroups() = 0;
+  virtual void __fastcall LookupUsersGroups() = 0;
   virtual void __fastcall ReadCurrentDirectory() = 0;
   virtual void __fastcall ReadDirectory(TRemoteFileList * FileList) = 0;
   virtual void __fastcall ReadFile(const AnsiString FileName,

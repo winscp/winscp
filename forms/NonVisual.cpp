@@ -72,6 +72,7 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
 {
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
+  FIdle = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::LogActionsUpdate(
@@ -91,14 +92,26 @@ void __fastcall TNonVisualDataModule::LogActionsUpdate(
 void __fastcall TNonVisualDataModule::LogActionsExecute(
       TBasicAction *Action, bool &Handled)
 {
-  TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
-  assert(LogMemo && LogMemo->Parent);
-  EXE(LogClearAction, LogMemo->SessionLog->Clear())
-  EXE(LogSelectAllAction, LogMemo->SelectAll())
-  EXE(LogCopyAction, LogMemo->CopyToClipboard())
+  assert(FIdle);
+  FIdle = false;
 
-  EXE(LogCloseAction, WinConfiguration->LogView = lvNone)
-  ;
+  try
+  {
+    TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
+    assert(LogMemo && LogMemo->Parent);
+    EXE(LogClearAction, LogMemo->SessionLog->Clear())
+    EXE(LogSelectAllAction, LogMemo->SelectAll())
+    EXE(LogCopyAction, LogMemo->CopyToClipboard())
+
+    EXE(LogCloseAction, WinConfiguration->LogView = lvNone)
+    ;
+  }
+  __finally
+  {
+    FIdle = true;
+  }
+  
+  DoIdle();
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
@@ -309,6 +322,34 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ScpExplorer->Terminal && ScpExplorer->Terminal->IsCapable[fcAnyCommand])
   UPD(CustomCommandsCustomizeAction, true)
 
+  // QUEUE
+  #define UPDQUEUE(OPERATION) UPD(Queue ## OPERATION ## Action, \
+    ScpExplorer->AllowQueueOperation(qo ## OPERATION))
+  UPDQUEUE(GoTo)
+  UPDQUEUE(Preferences)
+  UPDEX(QueueItemQueryAction, ScpExplorer->AllowQueueOperation(qoItemQuery),
+    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+  UPDEX(QueueItemErrorAction, ScpExplorer->AllowQueueOperation(qoItemError),
+    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+  UPDEX(QueueItemPromptAction, ScpExplorer->AllowQueueOperation(qoItemPrompt),
+    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
+  UPDQUEUE(ItemDelete)
+  UPDQUEUE(ItemExecute)
+  UPDQUEUE(ItemUp)
+  UPDQUEUE(ItemDown)
+  #undef UPDQUEUE
+  UPDACT(QueueToggleShowAction,
+    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueView])
+  #define QUEUEACTION(SHOW) UPDACT(Queue ## SHOW ## Action, \
+    ((TAction *)Action)->Checked = WinConfiguration->QueueView.Show == qv ## SHOW)
+  QUEUEACTION(Show)
+  QUEUEACTION(HideWhenEmpty)
+  QUEUEACTION(Hide)
+  #undef QUEUEACTION
+  UPDCOMP(CommanderPreferencesBand)
+  UPDACT(QueueToolbarAction,
+    ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
+    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueToolbar]);
   ;
 }
 //---------------------------------------------------------------------------
@@ -321,176 +362,223 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     Handled = true;
     return;
   }
-  // focused operation
-  EXE(CurrentCopyFocusedAction, ScpExplorer->ExecuteFileOperation(foCopy, osCurrent, true))
-  EXE(CurrentMoveFocusedAction, ScpExplorer->ExecuteFileOperation(foMove, osCurrent, true))
-  EXE(CurrentDeleteFocusedAction, ScpExplorer->ExecuteFileOperation(foDelete, osCurrent, true))
-  EXE(CurrentPropertiesFocusedAction, ScpExplorer->ExecuteFileOperation(foSetProperties, osCurrent, true))
-  EXE(RemoteMoveToFocusedAction, ScpExplorer->ExecuteFileOperation(foRemoteMove, osCurrent, true))
-  // operation
-  EXE(CurrentCopyAction, ScpExplorer->ExecuteFileOperation(foCopy, osCurrent, false))
-  EXE(CurrentMoveAction, ScpExplorer->ExecuteFileOperation(foMove, osCurrent, false))
-  EXE(CurrentEditAction, ScpExplorer->ExecuteFile(osCurrent, efEditor))
-  EXE(CurrentEditAlternativeAction, ScpExplorer->ExecuteFile(osCurrent, efAlternativeEditor))
-  EXE(CurrentOpenAction, ScpExplorer->ExecuteCurrentFile())
-  EXE(AddEditLinkAction, ScpExplorer->AddEditLink())
-  EXE(CurrentRenameAction, ScpExplorer->ExecuteFileOperation(foRename, osCurrent, false))
-  EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperation(foDelete, osCurrent, false))
-  EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperation(foSetProperties, osCurrent, false))
-  EXE(RemoteMoveToAction, ScpExplorer->ExecuteFileOperation(foRemoteMove, osCurrent, false))
-  EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
-  EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
-  EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
-  // directory
-  EXE(CurrentCreateDirAction, ScpExplorer->CreateDirectory(osCurrent))
-  //selection
-  EXE(SelectOneAction, DirView(osCurrent)->SelectCurrentItem(DirView(osCurrent)->NortonLike))
-  EXE(SelectAction, DirView(osCurrent)->DoSelectByMask(true))
-  EXE(UnselectAction, DirView(osCurrent)->DoSelectByMask(false))
-  EXE(SelectAllAction, DirView(osCurrent)->SelectAll(smAll))
-  EXE(InvertSelectionAction, DirView(osCurrent)->SelectAll(smInvert))
-  EXE(ClearSelectionAction, DirView(osCurrent)->SelectAll(smNone))
+  
+  assert(FIdle);
+  FIdle = false;
+  try
+  {
+    // focused operation
+    EXE(CurrentCopyFocusedAction, ScpExplorer->ExecuteFileOperation(foCopy, osCurrent, true))
+    EXE(CurrentMoveFocusedAction, ScpExplorer->ExecuteFileOperation(foMove, osCurrent, true))
+    EXE(CurrentDeleteFocusedAction, ScpExplorer->ExecuteFileOperation(foDelete, osCurrent, true))
+    EXE(CurrentPropertiesFocusedAction, ScpExplorer->ExecuteFileOperation(foSetProperties, osCurrent, true))
+    EXE(RemoteMoveToFocusedAction, ScpExplorer->ExecuteFileOperation(foRemoteMove, osCurrent, true))
+    // operation
+    EXE(CurrentCopyAction, ScpExplorer->ExecuteFileOperation(foCopy, osCurrent, false))
+    EXE(CurrentMoveAction, ScpExplorer->ExecuteFileOperation(foMove, osCurrent, false))
+    EXE(CurrentEditAction, ScpExplorer->ExecuteFile(osCurrent, efEditor))
+    EXE(CurrentEditAlternativeAction, ScpExplorer->ExecuteFile(osCurrent, efAlternativeEditor))
+    EXE(CurrentOpenAction, ScpExplorer->ExecuteCurrentFile())
+    EXE(AddEditLinkAction, ScpExplorer->AddEditLink())
+    EXE(CurrentRenameAction, ScpExplorer->ExecuteFileOperation(foRename, osCurrent, false))
+    EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperation(foDelete, osCurrent, false))
+    EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperation(foSetProperties, osCurrent, false))
+    EXE(RemoteMoveToAction, ScpExplorer->ExecuteFileOperation(foRemoteMove, osCurrent, false))
+    EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
+    EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
+    EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
+    // directory
+    EXE(CurrentCreateDirAction, ScpExplorer->CreateDirectory(osCurrent))
+    //selection
+    EXE(SelectOneAction, DirView(osCurrent)->SelectCurrentItem(DirView(osCurrent)->NortonLike))
+    EXE(SelectAction, DirView(osCurrent)->DoSelectByMask(true))
+    EXE(UnselectAction, DirView(osCurrent)->DoSelectByMask(false))
+    EXE(SelectAllAction, DirView(osCurrent)->SelectAll(smAll))
+    EXE(InvertSelectionAction, DirView(osCurrent)->SelectAll(smInvert))
+    EXE(ClearSelectionAction, DirView(osCurrent)->SelectAll(smNone))
 
-  // style
-  EXE(CurrentCycleStyleAction,
-    if (DirView(osCurrent)->ViewStyle == vsReport) DirView(osCurrent)->ViewStyle = vsIcon;
-      else DirView(osCurrent)->ViewStyle = (TViewStyle)(DirView(osCurrent)->ViewStyle + 1);
-  )
-  #define STYLEACTION(Style) EXE(Current ## Style ## Action, \
-    DirView(osCurrent)->ViewStyle = vs ## Style)
-  STYLEACTION(Icon)
-  STYLEACTION(SmallIcon)
-  STYLEACTION(List)
-  STYLEACTION(Report)
-  #undef STYLEACTION
+    // style
+    EXE(CurrentCycleStyleAction,
+      if (DirView(osCurrent)->ViewStyle == vsReport) DirView(osCurrent)->ViewStyle = vsIcon;
+        else DirView(osCurrent)->ViewStyle = (TViewStyle)(DirView(osCurrent)->ViewStyle + 1);
+    )
+    #define STYLEACTION(Style) EXE(Current ## Style ## Action, \
+      DirView(osCurrent)->ViewStyle = vs ## Style)
+    STYLEACTION(Icon)
+    STYLEACTION(SmallIcon)
+    STYLEACTION(List)
+    STYLEACTION(Report)
+    #undef STYLEACTION
 
-  #define PANEL_ACTIONS(SIDE) \
-    EXE(SIDE ## BackAction, DirView(os ## SIDE)->HistoryGo(-1)) \
-    EXE(SIDE ## ForwardAction, DirView(os ## SIDE)->HistoryGo(1)) \
-    EXE(SIDE ## ParentDirAction, DirView(os ## SIDE)->ExecuteParentDirectory()) \
-    EXE(SIDE ## RootDirAction, DirView(os ## SIDE)->ExecuteRootDirectory()) \
-    EXE(SIDE ## HomeDirAction, DirView(os ## SIDE)->ExecuteHomeDirectory()) \
-    EXE(SIDE ## RefreshAction, DirView(os ## SIDE)->ReloadDirectory()) \
-    EXE(SIDE ## OpenDirAction, ScpExplorer->OpenDirectory(os ## SIDE)) \
-    EXE(SIDE ## ChangePathAction, ScpExplorer->ChangePath(os ## SIDE)) \
-    EXE(SIDE ## AddBookmarkAction, ScpExplorer->AddBookmark(os ## SIDE)) \
-    EXE(SIDE ## PathToClipboardAction, ScpExplorer->PanelExport(os ## SIDE, pePath, pedClipboard))
-  PANEL_ACTIONS(Local)
-  PANEL_ACTIONS(Remote)
-  #undef PANEL_ACTIONS
-  EXE(LocalExploreDirectoryAction, ScpExplorer->ExploreLocalDirectory())
+    #define PANEL_ACTIONS(SIDE) \
+      EXE(SIDE ## BackAction, DirView(os ## SIDE)->HistoryGo(-1)) \
+      EXE(SIDE ## ForwardAction, DirView(os ## SIDE)->HistoryGo(1)) \
+      EXE(SIDE ## ParentDirAction, DirView(os ## SIDE)->ExecuteParentDirectory()) \
+      EXE(SIDE ## RootDirAction, DirView(os ## SIDE)->ExecuteRootDirectory()) \
+      EXE(SIDE ## HomeDirAction, DirView(os ## SIDE)->ExecuteHomeDirectory()) \
+      EXE(SIDE ## RefreshAction, DirView(os ## SIDE)->ReloadDirectory()) \
+      EXE(SIDE ## OpenDirAction, ScpExplorer->OpenDirectory(os ## SIDE)) \
+      EXE(SIDE ## ChangePathAction, ScpExplorer->ChangePath(os ## SIDE)) \
+      EXE(SIDE ## AddBookmarkAction, ScpExplorer->AddBookmark(os ## SIDE)) \
+      EXE(SIDE ## PathToClipboardAction, ScpExplorer->PanelExport(os ## SIDE, pePath, pedClipboard))
+    PANEL_ACTIONS(Local)
+    PANEL_ACTIONS(Remote)
+    #undef PANEL_ACTIONS
+    EXE(LocalExploreDirectoryAction, ScpExplorer->ExploreLocalDirectory())
 
-  //HELP
-  EXE(AboutAction, DoAboutDialog(Configuration))
-  EXE(HomepageAction, OpenBrowser(LoadStr(HOMEPAGE_URL)))
-  EXE(HistoryPageAction, OpenBrowser(LoadStr(HISTORY_URL)))
-  EXE(RequirementsPageAction, OpenBrowser(LoadStr(REQUIREMENTS_URL)))
-  EXE(ForumPageAction, OpenBrowser(LoadStr(FORUM_URL)))
-  EXE(CheckForUpdatesAction, CheckForUpdates())
-  EXE(DonatePageAction, OpenBrowser(LoadStr(DONATE_URL)))
+    //HELP
+    EXE(AboutAction, DoAboutDialog(Configuration))
+    EXE(HomepageAction, OpenBrowser(LoadStr(HOMEPAGE_URL)))
+    EXE(HistoryPageAction, OpenBrowser(LoadStr(HISTORY_URL)))
+    EXE(RequirementsPageAction, OpenBrowser(LoadStr(REQUIREMENTS_URL)))
+    EXE(ForumPageAction, OpenBrowser(LoadStr(FORUM_URL)))
+    EXE(CheckForUpdatesAction, CheckForUpdates())
+    EXE(DonatePageAction, OpenBrowser(LoadStr(DONATE_URL)))
 
-  // VIEW
-  EXECOMP(StatusBar)
-  EXECOMP(ToolBar)
-  EXECOMP(LocalStatusBar)
-  EXECOMP(RemoteStatusBar)
-  EXECOMP(ExplorerMenuBand)
-  EXECOMP(ExplorerAddressBand)
-  EXECOMP(ExplorerToolbarBand)
-  EXECOMP(ExplorerSelectionBand)
-  EXECOMP(ExplorerSessionBand)
-  EXECOMP(ExplorerPreferencesBand)
-  EXECOMP(ExplorerSortBand)
-  EXECOMP(CommanderMenuBand)
-  EXECOMP(CommanderSessionBand)
-  EXECOMP(CommanderPreferencesBand)
-  EXECOMP(CommanderSelectionBand)
-  EXECOMP(CommanderToolbarBand)
-  EXECOMP(CommanderSortBand)
-  EXECOMP(CommanderCommandsBand)
-  EXECOMP(CommanderLocalHistoryBand)
-  EXECOMP(CommanderLocalNavigationBand)
-  EXECOMP(CommanderRemoteHistoryBand)
-  EXECOMP(CommanderRemoteNavigationBand)
-  EXECOMP(CommandLinePanel)
-  EXE(GoToCommandLineAction, ScpExplorer->GoToCommandLine())
+    // VIEW
+    EXECOMP(StatusBar)
+    EXECOMP(ToolBar)
+    EXECOMP(LocalStatusBar)
+    EXECOMP(RemoteStatusBar)
+    EXECOMP(ExplorerMenuBand)
+    EXECOMP(ExplorerAddressBand)
+    EXECOMP(ExplorerToolbarBand)
+    EXECOMP(ExplorerSelectionBand)
+    EXECOMP(ExplorerSessionBand)
+    EXECOMP(ExplorerPreferencesBand)
+    EXECOMP(ExplorerSortBand)
+    EXECOMP(CommanderMenuBand)
+    EXECOMP(CommanderSessionBand)
+    EXECOMP(CommanderPreferencesBand)
+    EXECOMP(CommanderSelectionBand)
+    EXECOMP(CommanderToolbarBand)
+    EXECOMP(CommanderSortBand)
+    EXECOMP(CommanderCommandsBand)
+    EXECOMP(CommanderLocalHistoryBand)
+    EXECOMP(CommanderLocalNavigationBand)
+    EXECOMP(CommanderRemoteHistoryBand)
+    EXECOMP(CommanderRemoteNavigationBand)
+    EXECOMP(CommandLinePanel)
+    EXE(GoToCommandLineAction, ScpExplorer->GoToCommandLine())
 
-  EXE(ViewLogAction, WinConfiguration->LogView =
-    (WinConfiguration->LogView == lvNone ? lvWindow : lvNone) )
-  EXE(ShowHiddenFilesAction, WinConfiguration->ShowHiddenFiles = !WinConfiguration->ShowHiddenFiles)
-  EXE(PreferencesAction, DoPreferencesDialog(pmDefault) )
+    EXE(ViewLogAction, WinConfiguration->LogView =
+      (WinConfiguration->LogView == lvNone ? lvWindow : lvNone) )
+    EXE(ShowHiddenFilesAction, WinConfiguration->ShowHiddenFiles = !WinConfiguration->ShowHiddenFiles)
+    EXE(PreferencesAction, DoPreferencesDialog(pmDefault) )
 
-  #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
-  // SORT
-  EXESORTA(Local)
-  EXESORT(Local, dv, Name)
-  EXESORT(Local, dv, Ext)
-  EXESORT(Local, dv, Size)
-  EXESORT(Local, dv, Type)
-  EXESORT(Local, dv, Changed)
-  EXESORT(Local, dv, Attr)
-  EXESORTA(Remote)
-  EXESORT(Remote, uv, Name)
-  EXESORT(Remote, uv, Ext)
-  EXESORT(Remote, uv, Size)
-  EXESORT(Remote, uv, Changed)
-  EXESORT(Remote, uv, Rights)
-  EXESORT(Remote, uv, Owner)
-  EXESORT(Remote, uv, Group)
-  EXESORTA(Current)
-  EXESORTC(Name, dvName, uvName)
-  EXESORTC(Ext, dvExt, uvExt)
-  EXESORTC(Size, dvSize, uvSize)
-  EXESORTC(Type, dvType, uvName)
-  EXESORTC(Changed, dvChanged, uvChanged)
-  EXESORTC(Rights, dvAttr, uvRights)
-  EXESORTC(Owner, dvName, uvOwner)
-  EXESORTC(Group, dvName, uvGroup)
-  EXE(SortColumnAscendingAction, assert(ListColumn);
-    COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = true; ListColumn = NULL )
-  EXE(SortColumnDescendingAction, assert(ListColumn);
-    COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = false; ListColumn = NULL )
+    #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
+    // SORT
+    EXESORTA(Local)
+    EXESORT(Local, dv, Name)
+    EXESORT(Local, dv, Ext)
+    EXESORT(Local, dv, Size)
+    EXESORT(Local, dv, Type)
+    EXESORT(Local, dv, Changed)
+    EXESORT(Local, dv, Attr)
+    EXESORTA(Remote)
+    EXESORT(Remote, uv, Name)
+    EXESORT(Remote, uv, Ext)
+    EXESORT(Remote, uv, Size)
+    EXESORT(Remote, uv, Changed)
+    EXESORT(Remote, uv, Rights)
+    EXESORT(Remote, uv, Owner)
+    EXESORT(Remote, uv, Group)
+    EXESORTA(Current)
+    EXESORTC(Name, dvName, uvName)
+    EXESORTC(Ext, dvExt, uvExt)
+    EXESORTC(Size, dvSize, uvSize)
+    EXESORTC(Type, dvType, uvName)
+    EXESORTC(Changed, dvChanged, uvChanged)
+    EXESORTC(Rights, dvAttr, uvRights)
+    EXESORTC(Owner, dvName, uvOwner)
+    EXESORTC(Group, dvName, uvGroup)
+    EXE(SortColumnAscendingAction, assert(ListColumn);
+      COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = true; ListColumn = NULL )
+    EXE(SortColumnDescendingAction, assert(ListColumn);
+      COLVIEWPROPS->SortColumn = ListColumn->Index; COLVIEWPROPS->SortAscending = false; ListColumn = NULL )
 
-  // SHOW/HIDE COLUMN
-  EXESHCOL(Local, dv, Name)
-  EXESHCOL(Local, dv, Ext)
-  EXESHCOL(Local, dv, Size)
-  EXESHCOL(Local, dv, Type)
-  EXESHCOL(Local, dv, Changed)
-  EXESHCOL(Local, dv, Attr)
-  EXESHCOL(Remote, uv, Name)
-  EXESHCOL(Remote, uv, Ext)
-  EXESHCOL(Remote, uv, Size)
-  EXESHCOL(Remote, uv, Changed)
-  EXESHCOL(Remote, uv, Rights)
-  EXESHCOL(Remote, uv, Owner)
-  EXESHCOL(Remote, uv, Group)
-  EXE(HideColumnAction, assert(ListColumn);
-    COLVIEWPROPS->Visible[ListColumn->Index] = false; ListColumn = NULL )
-  #undef COLVIEWPROPS
+    // SHOW/HIDE COLUMN
+    EXESHCOL(Local, dv, Name)
+    EXESHCOL(Local, dv, Ext)
+    EXESHCOL(Local, dv, Size)
+    EXESHCOL(Local, dv, Type)
+    EXESHCOL(Local, dv, Changed)
+    EXESHCOL(Local, dv, Attr)
+    EXESHCOL(Remote, uv, Name)
+    EXESHCOL(Remote, uv, Ext)
+    EXESHCOL(Remote, uv, Size)
+    EXESHCOL(Remote, uv, Changed)
+    EXESHCOL(Remote, uv, Rights)
+    EXESHCOL(Remote, uv, Owner)
+    EXESHCOL(Remote, uv, Group)
+    EXE(HideColumnAction, assert(ListColumn);
+      COLVIEWPROPS->Visible[ListColumn->Index] = false; ListColumn = NULL )
+    #undef COLVIEWPROPS
 
-  // SESSION
-  EXE(NewSessionAction, ScpExplorer->NewSession())
-  EXE(CloseSessionAction, ScpExplorer->CloseSession())
-  EXE(SavedSessionsAction, CreateSessionListMenu())
-  EXE(OpenedSessionsAction, )
-  EXE(SaveCurrentSessionAction, ScpExplorer->SaveCurrentSession())
+    // SESSION
+    EXE(NewSessionAction, ScpExplorer->NewSession())
+    EXE(CloseSessionAction, ScpExplorer->CloseSession())
+    EXE(SavedSessionsAction, CreateSessionListMenu())
+    EXE(OpenedSessionsAction, )
+    EXE(SaveCurrentSessionAction, ScpExplorer->SaveCurrentSession())
 
-  // COMMAND
-  EXE(CompareDirectoriesAction, ScpExplorer->CompareDirectories())
-  EXE(SynchronizeAction, ScpExplorer->SynchronizeDirectories())
-  EXE(FullSynchronizeAction, ScpExplorer->FullSynchronizeDirectories())
-  EXE(ConsoleAction, ScpExplorer->OpenConsole())
-  EXE(PuttyAction, ScpExplorer->OpenInPutty())
-  EXE(SynchronizeBrowsingAction, )
-  EXE(CloseApplicationAction, ScpExplorer->Close())
-  EXE(FileSystemInfoAction, DoFileSystemInfoDialog(ScpExplorer->Terminal))
-  EXE(ClearCachesAction, ScpExplorer->Terminal->ClearCaches())
+    // COMMAND
+    EXE(CompareDirectoriesAction, ScpExplorer->CompareDirectories())
+    EXE(SynchronizeAction, ScpExplorer->SynchronizeDirectories())
+    EXE(FullSynchronizeAction, ScpExplorer->FullSynchronizeDirectories())
+    EXE(ConsoleAction, ScpExplorer->OpenConsole())
+    EXE(PuttyAction, ScpExplorer->OpenInPutty())
+    EXE(SynchronizeBrowsingAction, )
+    EXE(CloseApplicationAction, ScpExplorer->Close())
+    EXE(FileSystemInfoAction, DoFileSystemInfoDialog(ScpExplorer->Terminal))
+    EXE(ClearCachesAction, ScpExplorer->Terminal->ClearCaches())
 
-  // CUSTOM COMMANDS
-  EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction))
-  EXE(CustomCommandsCustomizeAction, DoPreferencesDialog(pmCustomCommands))
-  ;
+    // CUSTOM COMMANDS
+    EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction))
+    EXE(CustomCommandsCustomizeAction, DoPreferencesDialog(pmCustomCommands))
+
+    // QUEUE
+    #define EXEQUEUE(OPERATION) EXE(Queue ## OPERATION ## Action, \
+      ScpExplorer->ExecuteQueueOperation(qo ## OPERATION))
+    EXEQUEUE(GoTo)
+    EXEQUEUE(Preferences)
+    EXEQUEUE(ItemQuery)
+    EXEQUEUE(ItemError)
+    EXEQUEUE(ItemPrompt)
+    EXEQUEUE(ItemDelete)
+    EXEQUEUE(ItemExecute)
+    EXEQUEUE(ItemUp)
+    EXEQUEUE(ItemDown)
+    #undef EXEQUEUE
+    EXE(QueueToggleShowAction,
+      TQueueViewConfiguration Config = WinConfiguration->QueueView;
+      Config.Show = ScpExplorer->ComponentVisible[fcQueueView] ? qvHide : qvShow;
+      WinConfiguration->QueueView = Config)
+    #define QUEUEACTION(SHOW) EXE(Queue ## SHOW ## Action, \
+      TQueueViewConfiguration Config = WinConfiguration->QueueView; \
+      Config.Show = qv ## SHOW; WinConfiguration->QueueView = Config)
+    QUEUEACTION(Show)
+    QUEUEACTION(HideWhenEmpty)
+    QUEUEACTION(Hide)
+    #undef QUEUEACTION
+    EXECOMP(QueueToolbar);
+    ;
+  }
+  __finally
+  {
+    FIdle = true;
+  }
+
+  DoIdle();
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::UpdateNonVisibleActions()
+{
+  // following actions needs to be updated even when all clients
+  // are invisible, so the queue list toolbar button can be shown
+  NonVisualDataModule->QueueItemQueryAction->Update();
+  NonVisualDataModule->QueueItemErrorAction->Update();
+  NonVisualDataModule->QueueItemPromptAction->Update();
 }
 //---------------------------------------------------------------------------
 #define CTRL TShiftState() << ssCtrl
@@ -590,13 +678,18 @@ void __fastcall TNonVisualDataModule::SetScpExplorer(TCustomScpExplorerForm * va
 void __fastcall TNonVisualDataModule::SessionIdleTimerTimer(
       TObject */*Sender*/)
 {
+  DoIdle();
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::DoIdle()
+{
   if (!FSessionIdleTimerExecuting)
   {
     FSessionIdleTimerExecuting = true;
     try
     {
       assert(ScpExplorer);
-      ScpExplorer->SessionIdle();
+      ScpExplorer->Idle(FIdle);
     }
     __finally
     {
@@ -733,4 +826,46 @@ void __fastcall TNonVisualDataModule::OpenBrowser(AnsiString URL)
   ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::QueuePopupPopup(TObject * /*Sender*/)
+{
+  TAction * Action = NULL;
+  bool HideFirstLine = true;
+
+  switch (ScpExplorer->DefaultQueueOperation())
+  {
+    case qoItemQuery:
+      Action = QueueItemQueryAction;
+      HideFirstLine = false;
+      break;
+
+    case qoItemError:
+      Action = QueueItemErrorAction;
+      HideFirstLine = false;
+      break;
+
+    case qoItemPrompt:
+      Action = QueueItemPromptAction;
+      HideFirstLine = false;
+      break;
+
+    case qoItemExecute:
+      Action = QueueItemExecuteAction;
+      break;
+  }
+
+  TMenuItem * Item;
+  for (int Index = 0; Index < QueuePopup->Items->Count; Index++)
+  {
+    Item = QueuePopup->Items->Items[Index];
+    Item->Default = (Action != NULL) && (Item->Action == Action);
+    if (Item->Caption == "-")
+    {
+      Item->Visible = !HideFirstLine;
+      HideFirstLine = false;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+
+
 

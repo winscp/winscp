@@ -7,6 +7,7 @@
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
 class TLogMemo;
+class TTerminalQueue;
 //---------------------------------------------------------------------------
 enum TTerminalPendingAction { tpNull, tpNone, tpReconnect, tpFree };
 //---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ public:
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
+  __property TTerminalQueue * ActiveQueue = { read = GetActiveQueue };
   __property int ActiveTerminalIndex = { read = GetActiveTerminalIndex, write = SetActiveTerminalIndex };
   __property AnsiString ActiveTerminalTitle = { read = GetActiveTerminalTitle };
   __property TStrings * TerminalList = { read = GetTerminalList };
@@ -49,6 +51,7 @@ private:
   TStrings * FTerminalList;
   int FProgress;
   ::TFileOperation FOperation;
+  TList * FQueues;
 
   void __fastcall CreateLogMemo();
   void __fastcall FreeLogMemo();
@@ -62,11 +65,16 @@ private:
   void __fastcall TerminalQueryUser(TObject * Sender,
     const AnsiString Query, TStrings * MoreMessages, int Answers,
     int Params, int & Answer, TQueryType Type);
+  void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
+    AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result);
+  void __fastcall TerminalShowExtendedException(TSecureShell * SecureShell,
+    Exception * E);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();
   int __fastcall GetActiveTerminalIndex();
   AnsiString __fastcall GetActiveTerminalTitle();
+  TTerminalQueue * __fastcall GetActiveQueue();
   void __fastcall SaveTerminal(TTerminal * Terminal);
   void __fastcall SetActiveTerminalIndex(int value);
   void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,

@@ -6,6 +6,7 @@
 
 #include <Common.h>
 #include <TextsWin.h>
+#include <RemoteFiles.h>
 
 #include <FileCtrl.hpp>
 //---------------------------------------------------------------------------
@@ -71,7 +72,7 @@ void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings)
   bool Flip;
   AnsiString FlipStr = LoadStr(FLIP_CHILDREN);
   Flip = !FlipStr.IsEmpty() && static_cast<bool>(StrToInt(FlipStr));
-  
+
   if (Settings)
   {
     TSavedSystemSettings * SSettings = new TSavedSystemSettings();
@@ -205,4 +206,93 @@ bool __fastcall SelectDirectory(AnsiString & Path, const AnsiString Prompt,
 
   return Result;
 }
+//---------------------------------------------------------------------------
+bool __fastcall ListViewAnyChecked(TListView * ListView, bool Checked)
+{
+  bool AnyChecked = false;
+  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  {
+    if (ListView->Items->Item[Index]->Checked == Checked)
+    {
+      AnyChecked = true;
+      break;
+    }
+  }
+  return AnyChecked;
+}
+//---------------------------------------------------------------------------
+void __fastcall ListViewCheckAll(TListView * ListView,
+  TListViewCheckAll CheckAll)
+{
+  bool Check;
+
+  if (CheckAll == caToggle)
+  {
+    Check = ListViewAnyChecked(ListView, false);
+  }
+  else
+  {
+    Check = (CheckAll == caCheck);
+  }
+
+  for (int Index = 0; Index < ListView->Items->Count; Index++)
+  {
+    ListView->Items->Item[Index]->Checked = Check;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall PathComboBoxKeyDown(
+  TCustomComboBox * ComboBox, WORD & Key, TShiftState Shift, bool Unix)
+{
+  assert(ComboBox != NULL);
+
+  if (((Key == VK_LEFT) || (Key == VK_RIGHT)) && Shift.Contains(ssCtrl))
+  {
+    int SelStart = ComboBox->SelStart;
+    int SelLength = ComboBox->SelLength;
+    SkipPathComponent(reinterpret_cast<TComboBox*>(ComboBox)->Text,
+      SelStart, SelLength, (Key == VK_LEFT), Unix);
+    ComboBox->SelStart = SelStart;
+    ComboBox->SelLength = SelLength;
+    Key = 0;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall PathEditKeyDown(
+  TCustomEdit * Edit, WORD & Key, TShiftState Shift, bool Unix)
+{
+  assert(Edit != NULL);
+
+  if (((Key == VK_LEFT) || (Key == VK_RIGHT)) && Shift.Contains(ssCtrl))
+  {
+    int SelStart = Edit->SelStart;
+    int SelLength = Edit->SelLength;
+    SkipPathComponent(Edit->Text,
+      SelStart, SelLength, (Key == VK_LEFT), Unix);
+    Edit->SelStart = SelStart;
+    Edit->SelLength = SelLength;
+    Key = 0;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar)
+{
+  StatusBar->SimplePanel = !StatusBar->SimplePanel;
+  StatusBar->SimplePanel = !StatusBar->SimplePanel;
+}
+//---------------------------------------------------------------------------
+void __fastcall SetControlsOrder(TControl ** ControlsOrder, int Count)
+{
+  for (int Index = Count - 1; Index > 0; Index--)
+  {
+    if ((ControlsOrder[Index]->Top < ControlsOrder[Index - 1]->Top) &&
+        ControlsOrder[Index - 1]->Visible)
+    {
+      ControlsOrder[Index]->Top = ControlsOrder[Index - 1]->Top +
+        ControlsOrder[Index - 1]->Height;
+      Index = Count;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 

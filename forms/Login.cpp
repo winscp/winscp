@@ -190,7 +190,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
       default: SFTPonlyButton->Checked = true; break;
     }
 
-    // Environment tab
+    // Directories tab
     LocalDirectoryEdit->Text = aSessionData->LocalDirectory;
     RemoteDirectoryEdit->Text = aSessionData->RemoteDirectory;
     UpdateDirectoriesCheck->Checked = aSessionData->UpdateDirectories;
@@ -199,6 +199,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     PreserveDirectoryChangesCheck->Checked = aSessionData->PreserveDirectoryChanges;
     ResolveSymlinksCheck->Checked = aSessionData->ResolveSymlinks;
 
+    // Environment tab
+    ConsiderDSTOnCheck->Checked = aSessionData->ConsiderDST;
+    ConsiderDSTOffCheck->Checked = !aSessionData->ConsiderDST;
     if (aSessionData->EOLType == eolLF)
     {
       EOLTypeLFButton->Checked = true;
@@ -208,12 +211,14 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
       EOLTypeCRLFButton->Checked = true;
     }
 
+    // Authentication tab
     AuthTISCheck->Checked = aSessionData->AuthTIS;
     AuthKICheck->Checked = aSessionData->AuthKI;
+    AuthKIPasswordCheck->Checked = aSessionData->AuthKIPassword;
     AgentFwdCheck->Checked = aSessionData->AgentFwd;
-    Ssh2LegacyDESCheck->Checked = aSessionData->Ssh2DES;
 
     // SSH tab
+    Ssh2LegacyDESCheck->Checked = aSessionData->Ssh2DES;
     CompressionCheck->Checked = aSessionData->Compression;
 
     switch (aSessionData->SshProt) {
@@ -268,7 +273,11 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     Scp1CompatibilityCheck->Checked = aSessionData->Scp1Compatibility;
     UnsetNationalVarsCheck->Checked = aSessionData->UnsetNationalVars;
     AliasGroupListCheck->Checked = aSessionData->AliasGroupList;
-    int TimeDifferenceMin = double(aSessionData->TimeDifference) * 24 * 60;
+    int TimeDifferenceMin = DateTimeToTimeStamp(aSessionData->TimeDifference).Time / 60000;
+    if (double(aSessionData->TimeDifference) < 0)
+    {
+      TimeDifferenceMin = -TimeDifferenceMin;
+    }
     TimeDifferenceEdit->AsInteger = TimeDifferenceMin / 60;
     TimeDifferenceMinutesEdit->AsInteger = TimeDifferenceMin % 60;
 
@@ -348,6 +357,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   // Authentication tab
   aSessionData->AuthTIS = AuthTISCheck->Checked;
   aSessionData->AuthKI = AuthKICheck->Checked;
+  aSessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
   aSessionData->AgentFwd = AgentFwdCheck->Checked;
 
   // Connection tab
@@ -366,7 +376,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->PingInterval = PingIntervalSecEdit->AsInteger;
   aSessionData->Timeout = TimeoutEdit->AsInteger;
 
-  // Environment tab
+  // Directories tab
   aSessionData->LocalDirectory = LocalDirectoryEdit->Text;
   aSessionData->RemoteDirectory = RemoteDirectoryEdit->Text;
   aSessionData->UpdateDirectories = UpdateDirectoriesCheck->Checked;
@@ -374,6 +384,11 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->CacheDirectoryChanges = CacheDirectoryChangesCheck->Checked;
   aSessionData->PreserveDirectoryChanges = PreserveDirectoryChangesCheck->Checked;
   aSessionData->ResolveSymlinks = ResolveSymlinksCheck->Checked;
+
+  // Environment tab
+  aSessionData->ConsiderDST = ConsiderDSTOnCheck->Checked;
+  if (EOLTypeLFButton->Checked) aSessionData->EOLType = eolLF;
+    else aSessionData->EOLType = eolCRLF;
 
   // Shell tab
   aSessionData->DefaultShell = DefaultShellButton->Checked;
@@ -386,8 +401,6 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->ClearAliases = ClearAliasesCheck->Checked;
   aSessionData->IgnoreLsWarnings = IgnoreLsWarningsCheck->Checked;
   aSessionData->Scp1Compatibility = Scp1CompatibilityCheck->Checked;
-  if (EOLTypeLFButton->Checked) aSessionData->EOLType = eolLF;
-    else aSessionData->EOLType = eolCRLF;
   aSessionData->UnsetNationalVars = UnsetNationalVarsCheck->Checked;
   aSessionData->AliasGroupList = AliasGroupListCheck->Checked;
   aSessionData->TimeDifference =
@@ -461,6 +474,8 @@ void __fastcall TLoginDialog::UpdateControls()
 
       EnableControl(AuthTISCheck, !SshProt2onlyButton->Checked);
       EnableControl(AuthKICheck, !SshProt1onlyButton->Checked);
+      EnableControl(AuthKIPasswordCheck,
+        AuthTISCheck->Checked || AuthKICheck->Checked);
 
       EnableControl(CipherUpButton, CipherListBox->ItemIndex > 0);
       EnableControl(CipherDownButton, CipherListBox->ItemIndex >= 0 &&
@@ -1098,6 +1113,13 @@ void __fastcall TLoginDialog::LocaleClick(TObject * Sender)
   GUIConfiguration->Locale =
     static_cast<LCID>(dynamic_cast<TMenuItem*>(Sender)->Tag);
   LanguagesButton->SetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::PathEditsKeyDown(TObject * Sender,
+  WORD & Key, TShiftState Shift)
+{
+  PathEditKeyDown(dynamic_cast<TCustomEdit*>(Sender), Key, Shift,
+    (Sender == RemoteDirectoryEdit));
 }
 //---------------------------------------------------------------------------
 

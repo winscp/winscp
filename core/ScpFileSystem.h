@@ -38,7 +38,7 @@ public:
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
   virtual void __fastcall AdditionalInfo(TStrings * AdditionalInfo, bool Initial);
-  virtual void __fastcall LookupUserGroups();
+  virtual void __fastcall LookupUsersGroups();
   virtual void __fastcall ReadCurrentDirectory();
   virtual void __fastcall ReadDirectory(TRemoteFileList * FileList);
   virtual void __fastcall ReadFile(const AnsiString FileName,
@@ -96,6 +96,8 @@ private:
   void __fastcall SkipFirstLine();
   void __fastcall SkipStartupMessage();
   void __fastcall UnsetNationalVars();
+  TRemoteFile * __fastcall CreateRemoteFile(const AnsiString & ListingStr, 
+  	TRemoteFile * LinkedByFile = NULL);
 };
 //---------------------------------------------------------------------------
 #endif // ScpFileSystemH

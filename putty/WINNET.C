@@ -599,7 +599,7 @@ static void *sk_tcp_get_private_ptr(Socket s);
 static void sk_tcp_set_frozen(Socket s, int is_frozen);
 static const char *sk_tcp_socket_error(Socket s);
 
-extern char *do_select(SOCKET skt, int startup);
+extern char *do_select(Plug plug, SOCKET skt, int startup);
 
 Socket sk_register(void *sock, Plug plug)
 {
@@ -646,7 +646,7 @@ Socket sk_register(void *sock, Plug plug)
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
-    errstr = do_select(ret->s, 1);
+    errstr = do_select(plug, ret->s, 1);
     if (errstr) {
 	ret->error = errstr;
 	return (Socket) ret;
@@ -797,7 +797,7 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
-    errstr = do_select(s, 1);
+    errstr = do_select(plug, s, 1);
     if (errstr) {
 	ret->error = errstr;
 	return (Socket) ret;
@@ -966,7 +966,7 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
-    errstr = do_select(s, 1);
+    errstr = do_select(plug, s, 1);
     if (errstr) {
 	ret->error = errstr;
 	return (Socket) ret;
@@ -979,11 +979,11 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
 
 static void sk_tcp_close(Socket sock)
 {
-    extern char *do_select(SOCKET skt, int startup);
+    extern char *do_select(Plug plug, SOCKET skt, int startup);
     Actual_Socket s = (Actual_Socket) sock;
 
     del234(sktree, s);
-    do_select(s->s, 0);
+    do_select(s->plug, s->s, 0);
     p_closesocket(s->s);
     sfree(s);
 }

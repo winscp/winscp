@@ -3,7 +3,7 @@ object CopyDialog: TCopyDialog
   Top = 198
   BorderStyle = bsDialog
   Caption = 'CopyDialog'
-  ClientHeight = 254
+  ClientHeight = 276
   ClientWidth = 511
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,7 +17,7 @@ object CopyDialog: TCopyDialog
   OnShow = FormShow
   DesignSize = (
     511
-    254)
+    276)
   PixelsPerInch = 96
   TextHeight = 13
   object DirectoryLabel: TLabel
@@ -36,6 +36,7 @@ object CopyDialog: TCopyDialog
     ItemHeight = 13
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
+    OnKeyDown = DirectoryEditKeyDown
   end
   object RemoteDirectoryEdit: THistoryComboBox
     Left = 8
@@ -48,21 +49,23 @@ object CopyDialog: TCopyDialog
     MaxLength = 1000
     TabOrder = 2
     Text = 'RemoteDirectoryEdit'
+    OnKeyDown = DirectoryEditKeyDown
   end
   object MoreButton: TMoreButton
     Left = 251
-    Top = 224
+    Top = 246
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '<< &Less'
     TabOrder = 4
+    OnChange = ControlChange
     Panel = MorePanel
     RepositionForm = True
   end
   object CopyButton: TButton
     Left = 339
-    Top = 224
+    Top = 246
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -73,7 +76,7 @@ object CopyDialog: TCopyDialog
   end
   object CancelButton: TButton
     Left = 427
-    Top = 224
+    Top = 246
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -101,17 +104,9 @@ object CopyDialog: TCopyDialog
     inline CopyParamsFrame: TCopyParamsFrame
       Left = 2
       Top = 0
-      Width = 506
-      Height = 149
+      Width = 508
+      Height = 150
       TabOrder = 0
-      inherited RemotePropertiesGroup: TXPGroupBox
-        inherited RightsFrame: TRightsFrame
-          PopupMenu = CopyParamsFrame.RightsFrame.RightsPopup
-        end
-        inherited PreserveRightsCheck: TCheckBox
-          Left = 12
-        end
-      end
     end
   end
   object LocalDirectoryBrowseButton: TButton
@@ -122,5 +117,25 @@ object CopyDialog: TCopyDialog
     Caption = 'B&rowse...'
     TabOrder = 1
     OnClick = LocalDirectoryBrowseButtonClick
+  end
+  object QueueCheck: TCheckBox
+    Left = 8
+    Top = 224
+    Width = 301
+    Height = 17
+    Anchors = [akLeft, akBottom]
+    Caption = 'Transfer on background (add to transfer &queue)'
+    TabOrder = 7
+    OnClick = ControlChange
+  end
+  object QueueNoConfirmationCheck: TCheckBox
+    Left = 312
+    Top = 224
+    Width = 193
+    Height = 17
+    Anchors = [akLeft, akBottom]
+    Caption = 'No &confirmations'
+    TabOrder = 8
+    OnClick = ControlChange
   end
 end

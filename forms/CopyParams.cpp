@@ -2,9 +2,10 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "CopyParams.h"
 
-#include <Common.h>
 #include <VCLCommon.h>
 #include <ScpMain.h>
 #include "CustomWinConfiguration.h"

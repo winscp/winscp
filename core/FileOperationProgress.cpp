@@ -9,15 +9,17 @@
 //---------------------------------------------------------------------------
 __fastcall TFileOperationProgressType::TFileOperationProgressType()
 {
+  FOnProgress = NULL;
+  FOnFinished = NULL;
   Clear();
-} 
+}
 //---------------------------------------------------------------------------
 __fastcall TFileOperationProgressType::TFileOperationProgressType(
   TFileOperationProgressEvent AOnProgress, TFileOperationFinished AOnFinished)
 {
-  Clear();
   FOnProgress = AOnProgress;
   FOnFinished = AOnFinished;
+  Clear();
 }
 //---------------------------------------------------------------------------
 __fastcall TFileOperationProgressType::~TFileOperationProgressType()
@@ -38,18 +40,25 @@ void __fastcall TFileOperationProgressType::Clear()
   FSuspendTime = 0;
   InProgress = false;
   TotalTransfered = 0;
-  TotalResumed = 0;
+  TotalSkipped = 0;
   TotalSize = 0;
   TotalSizeSet = false;
   Operation = foNone;
   DragDrop = false;
   YesToAll = false;
   NoToAll = false;
+  // to bypass check in ClearTransfer()
+  TransferSize = 0;
   ClearTransfer();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::ClearTransfer()
 {
+  if ((TransferSize > 0) && (TransferedSize < TransferSize))
+  {
+    __int64 RemainingSide = (TransferSize - TransferedSize);
+    TotalSkipped += RemainingSide;
+  }
   LocalSize = 0;
   TransferSize = 0;
   LocalyUsed = 0;
@@ -73,8 +82,17 @@ void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
   DoProgress();
 }
 //---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::Reset()
+{
+  InProgress = false;
+  Suspended = false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Stop()
 {
+  // added to include remaining bytes to TotalSkipped, in case
+  // the progress happes to update before closing
+  ClearTransfer();
   InProgress = false;
   DoProgress();
 }
@@ -113,7 +131,7 @@ int __fastcall TFileOperationProgressType::TransferProgress()
 int __fastcall TFileOperationProgressType::TotalTransferProgress()
 {
   assert(TotalSizeSet);
-  int Result = TotalSize > 0 ? (int)((TotalTransfered * 100)/TotalSize) : 0;
+  int Result = TotalSize > 0 ? (int)(((TotalTransfered + TotalSkipped) * 100)/TotalSize) : 0;
   return Result < 100 ? Result : Result;
 }
 //---------------------------------------------------------------------------
@@ -200,7 +218,8 @@ void __fastcall TFileOperationProgressType::SetTransferSize(__int64 ASize)
   DoProgress();
 } 
 //---------------------------------------------------------------------------
-void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize)
+void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize,
+  bool AddToTotals)
 {
   TransferedSize += ASize;
   if (TransferedSize > TransferSize)
@@ -213,14 +232,17 @@ void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize)
     }
     TransferSize = TransferedSize;
   }
-  TotalTransfered += ASize;
+  if (AddToTotals)
+  {
+    TotalTransfered += ASize;
+  }
   DoProgress();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::AddResumed(__int64 ASize)
 {
-  TotalResumed += ASize;
-  AddTransfered(ASize);
+  TotalSkipped += ASize;
+  AddTransfered(ASize, false);
   AddLocalyUsed(ASize);
 }
 //---------------------------------------------------------------------------
@@ -266,7 +288,7 @@ unsigned int __fastcall TFileOperationProgressType::CPS()
   
   if ((double)RealTime > 0)
   {
-    return (TotalTransfered - TotalResumed) / ((double)RealTime * (24 * 60 * 60));
+    return TotalTransfered / ((double)RealTime * (24 * 60 * 60));
   }
   else
   {

@@ -2,7 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <assert.h>
+#include <Common.h>
 #include <VCLCommon.h>
 #include <TextsWin.h>
 
@@ -12,7 +12,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 bool __fastcall DoPasswordDialog(const AnsiString Caption,
-  TPasswordKind Kind, AnsiString &Password)
+  TPromptKind Kind, AnsiString &Password)
 {
   bool Result = false;
   TPasswordDialog * PasswordDialog = new TPasswordDialog(Application);
@@ -22,7 +22,7 @@ bool __fastcall DoPasswordDialog(const AnsiString Caption,
     PasswordDialog->Password = "";
     PasswordDialog->Kind = Kind;
     Result = (bool)(PasswordDialog->ShowModal() == mrOk);
-    
+
     if (Result)
     {
       Password = PasswordDialog->Password;
@@ -36,20 +36,58 @@ bool __fastcall DoPasswordDialog(const AnsiString Caption,
 }
 //---------------------------------------------------------------------
 __fastcall TPasswordDialog::TPasswordDialog(TComponent* AOwner)
-	: TForm(AOwner)
+    : TForm(AOwner)
 {
   UseSystemSettings(this);
   Kind = pkPassword;
+  FApplicationShowHint = Application->OnShowHint;
+  Application->OnShowHint = ApplicationShowHint;
+}
+//---------------------------------------------------------------------
+__fastcall TPasswordDialog::~TPasswordDialog()
+{
+  assert(Application->OnShowHint == ApplicationShowHint);
+  Application->OnShowHint = FApplicationShowHint;
 }
 //---------------------------------------------------------------------
 void __fastcall TPasswordDialog::SetPasswordCaption(const AnsiString value)
 {
-  PasswordLabel->Caption = value;
+  AnsiString Caption = value;
+  bool MultiLine = false;
+  int P = Caption.Pos("\n");
+  if (P > 0)
+  {
+    MultiLine = true;
+    Caption.SetLength(P - 1);
+  }
+  P = Caption.Pos("\r");
+  if (P > 0)
+  {
+    MultiLine = true;
+    Caption.SetLength(P - 1);
+  }
+
+  bool NeedTrim = MultiLine ||
+    (PasswordLabel->Canvas->TextWidth(Caption) > PasswordLabel->Width);
+  if (NeedTrim)
+  {
+    static AnsiString Ellipsis(" ...");
+    while (PasswordLabel->Canvas->TextWidth(Caption + Ellipsis) >
+        PasswordLabel->Width)
+    {
+      Caption.SetLength(Caption.Length() - 1);
+    }
+    Caption = Caption + Ellipsis;
+  }
+
+  PasswordLabel->Caption = Caption;
+  PasswordLabel->Hint = value;
+  PasswordLabel->ShowHint = NeedTrim;
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TPasswordDialog::GetPasswordCaption()
 {
-  return PasswordLabel->Caption;
+  return PasswordLabel->Hint;
 }
 //---------------------------------------------------------------------
 void __fastcall TPasswordDialog::SetPassword(const AnsiString value)
@@ -62,7 +100,7 @@ AnsiString __fastcall TPasswordDialog::GetPassword()
   return PasswordEdit->Text;
 }
 //---------------------------------------------------------------------
-void __fastcall TPasswordDialog::SetKind(TPasswordKind value)
+void __fastcall TPasswordDialog::SetKind(TPromptKind value)
 {
   FKind = value;
   int Title;
@@ -87,4 +125,18 @@ void __fastcall TPasswordDialog::HideTypingCheckClick(TObject * /*Sender*/)
   PasswordEdit->Password = HideTypingCheck->Checked;
 }
 //---------------------------------------------------------------------------
+void __fastcall TPasswordDialog::ApplicationShowHint(AnsiString & HintStr,
+  bool & CanShow, THintInfo & HintInfo)
+{
+  if (FApplicationShowHint != NULL)
+  {
+    FApplicationShowHint(HintStr, CanShow, HintInfo);
+  }
 
+  if (HintInfo.HintControl == PasswordLabel)
+  {
+    HintInfo.HintPos.x = PasswordLabel->ClientOrigin.x - 3;
+    HintInfo.HintPos.y = PasswordLabel->ClientOrigin.y - 3;
+    HintInfo.HideTimeout = 2500;
+  }
+}

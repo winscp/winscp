@@ -30,7 +30,7 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   }
   catch(...)
   {
-    LocaleSafe = InternalLocale(); 
+    LocaleSafe = InternalLocale();
   }
 }
 //---------------------------------------------------------------------------
@@ -48,13 +48,14 @@ void __fastcall TWinConfiguration::Default()
   TCustomWinConfiguration::Default();
 
   FDDAllowMove = false;
+  FDDAllowMoveInit = false;
   FDDTransferConfirmation = true;
   FDDTemporaryDirectory = "";
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
   FDDExtEnabled = true;
   FDDExtTimeout = 1000;
-  FDDExtCopySlipTimeout = 100;  
+  FDDExtCopySlipTimeout = 100;
   FDeleteToRecycleBin = true;
   FSelectDirectories = false;
   FSelectMask = "*.*";
@@ -70,9 +71,11 @@ void __fastcall TWinConfiguration::Default()
   FAutoStartSession = "";
   FExpertMode = true;
   FUseLocationProfiles = false;
+  FDefaultDirIsHome = true;
 
   FEditor.Editor = edInternal;
   FEditor.ExternalEditor = "notepad.exe";
+  FEditor.ExternalEditorText = true;
   FEditor.FontName = "Courier New";
   FEditor.FontHeight = -12;
   FEditor.FontStyle = 0;
@@ -83,12 +86,17 @@ void __fastcall TWinConfiguration::Default()
   FEditor.FindMatchCase = false;
   FEditor.FindWholeWord = false;
 
+  FQueueView.Height = 100;
+  FQueueView.Layout = "70,170,170,80,80";
+  FQueueView.Show = qvHideWhenEmpty;
+  FQueueView.ToolBar = false;
+
   FLogWindowOnStartup = true;
   FLogWindowParams = "-1;-1;500;400";
 
   FScpExplorer.WindowParams = "-1;-1;600;400;0";
   FScpExplorer.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,1|0;1;2;3;4;5";
-  FScpExplorer.CoolBarLayout = "5,0,0,94,6;1,1,0,638,5;4,0,0,239,4;3,1,0,424,3;6,1,0,206,2;2,1,1,634,1;0,1,1,634,0";
+  FScpExplorer.CoolBarLayout = "5,1,0,381,6;3,0,0,137,5;4,1,0,249,4;6,0,0,240,3;2,1,1,634,2;1,1,0,638,1;0,1,1,634,0";
   FScpExplorer.StatusBar = true;
   AnsiString PersonalFolder;
   SpecialFolderLocation(CSIDL_PERSONAL, PersonalFolder);
@@ -103,7 +111,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.CommandLine = false;
   FScpCommander.ExplorerStyleSelection = false;
   FScpCommander.PreserveLocalDirectory = false;
-  FScpCommander.CoolBarLayout = "5,0,0,219,6;1,1,0,319,5;4,0,0,227,4;3,1,0,136,3;6,1,0,121,2;2,1,1,67,1;0,1,1,649,0";
+  FScpCommander.CoolBarLayout = "5,0,0,219,6;1,1,0,249,5;4,0,0,227,4;3,1,0,137,3;6,1,0,145,2;2,1,1,104,1;0,1,1,644,0";
   FScpCommander.CurrentPanel = osLocal;
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
@@ -116,15 +124,31 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
 
   FBookmarks->Clear();
-  FCustomCommands->Clear();
-  FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_EXECUTE)] = "\"!\"";
-  FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_EXECUTE)] = 0;
-  FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TOUCH)] = "touch \"!\"";
-  FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TOUCH)] = ccApplyToDirectories | ccRecursive;
-  FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_MOVE)] =
-    FORMAT("mv \"!\" \"!?%s?!\"", (LoadStr(CUSTOM_COMMAND_MOVE_PARAM)));
-  FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_MOVE)] = ccApplyToDirectories;
-  FCustomCommandsModified = false;
+
+  FCustomCommandsDefaults = true;
+  DefaultLocalized();
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::DefaultLocalized()
+{
+  if (FCustomCommandsDefaults)
+  {
+    FCustomCommands->Clear();
+    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_EXECUTE)] = "\"!\"";
+    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_EXECUTE)] = 0;
+    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TOUCH)] = "touch \"!\"";
+    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TOUCH)] = ccApplyToDirectories | ccRecursive;
+    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TAR)] =
+      FORMAT("tar -cz  -f \"!?%s?archive.tgz!\" \"!\"",
+        (LoadStr(CUSTOM_COMMAND_TAR_ARCHIVE)));
+    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TAR)] = ccApplyToDirectories;
+    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_UNTAR)] =
+      FORMAT("tar -xz --directory=\"!?%s?.!\" -f \"!\"",
+        (LoadStr(CUSTOM_COMMAND_UNTAR_DIRECTORY)));
+    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_UNTAR)] = 0;
+    FCustomCommandsDefaults = true;
+    FCustomCommandsModified = false;
+  }
 }
 //---------------------------------------------------------------------------
 TStorage __fastcall TWinConfiguration::GetStorage()
@@ -176,6 +200,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     CopyOnDoubleClick); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
     KEY(Bool,     DDAllowMove); \
+    KEY(Bool,     DDAllowMoveInit); \
     KEY(Bool,     DDTransferConfirmation); \
     KEY(String,   DDTemporaryDirectory); \
     KEY(Bool,     DDWarnLackOfTempSpace); \
@@ -196,10 +221,12 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     DDExtEnabled); \
     KEY(Integer,  DDExtTimeout); \
     KEY(Integer,  DDExtCopySlipTimeout); \
+    KEY(Bool,     DefaultDirIsHome); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
     KEY(Integer,  Editor.Editor); \
     KEY(String,   Editor.ExternalEditor); \
+    KEY(Bool,     Editor.ExternalEditorText); \
     KEY(String,   Editor.FontName); \
     KEY(Integer,  Editor.FontHeight); \
     KEY(Integer,  Editor.FontStyle); \
@@ -209,6 +236,12 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,   Editor.ReplaceText); \
     KEY(Bool,     Editor.FindMatchCase); \
     KEY(Bool,     Editor.FindWholeWord); \
+  ); \
+  BLOCK("Interface\\QueueView", CANCREATE, \
+    KEY(Integer,  QueueView.Height); \
+    KEY(String,   QueueView.Layout); \
+    KEY(Integer,  QueueView.Show); \
+    KEY(Bool,     QueueView.ToolBar); \
   ); \
   BLOCK("Interface\\Explorer", CANCREATE, \
     KEY(String,  ScpExplorer.CoolBarLayout); \
@@ -246,7 +279,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
   BLOCK("Logging", CANCREATE, \
     KEY(Bool,    LogWindowOnStartup); \
     KEY(String,  LogWindowParams); \
-  ); 
+  );
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
 {
@@ -317,10 +350,12 @@ void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
       }
       Storage->CloseSubKey();
     }
+    FCustomCommandsDefaults = false;
   }
   else if (FCustomCommandsModified)
   {
     FCustomCommands->Clear();
+    FCustomCommandsDefaults = false;
   }
   FCustomCommandsModified = false;
 }
@@ -453,6 +488,11 @@ void __fastcall TWinConfiguration::SetDDAllowMove(bool value)
   SET_CONFIG_PROPERTY(DDAllowMove);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDDAllowMoveInit(bool value)
+{
+  SET_CONFIG_PROPERTY(DDAllowMoveInit);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDDTransferConfirmation(bool value)
 {
   SET_CONFIG_PROPERTY(DDTransferConfirmation);
@@ -501,6 +541,11 @@ void __fastcall TWinConfiguration::SetScpCommander(TScpCommanderConfiguration va
 void __fastcall TWinConfiguration::SetEditor(TEditorConfiguration value)
 {
   SET_CONFIG_PROPERTY(Editor);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetQueueView(TQueueViewConfiguration value)
+{
+  SET_CONFIG_PROPERTY(QueueView);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDeleteToRecycleBin(bool value)
@@ -573,6 +618,11 @@ void __fastcall TWinConfiguration::SetExpertMode(bool value)
   SET_CONFIG_PROPERTY(ExpertMode);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetDefaultDirIsHome(bool value)
+{
+  SET_CONFIG_PROPERTY(DefaultDirIsHome);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
 {
   assert(FCustomCommands);
@@ -580,6 +630,7 @@ void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
   {
     FCustomCommands->Assign(value);
     FCustomCommandsModified = true;
+    FCustomCommandsDefaults = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -611,6 +662,8 @@ AnsiString __fastcall TWinConfiguration::GetDefaultKeyFile()
   return FTemporaryKeyFile;
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#pragma warn -inl
 //---------------------------------------------------------------------------
 class TAsInheritedReader : public TReader
 {
@@ -646,6 +699,8 @@ public:
     }
   }
 };
+//---------------------------------------------------------------------------
+#pragma warn .inl
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::InternalReloadComponentRes(const AnsiString ResName,
   HANDLE HInst, TComponent * Instance)
@@ -767,6 +822,8 @@ HANDLE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
 void __fastcall TWinConfiguration::SetResourceModule(HANDLE Instance)
 {
   TCustomWinConfiguration::SetResourceModule(Instance);
+
+  DefaultLocalized();
 
   Busy(true);
   try

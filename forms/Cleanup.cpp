@@ -2,6 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Common.h"
 #include <VCLCommon.h>
 #include "Cleanup.h"
 #include "TextsWin.h"
@@ -75,19 +76,7 @@ void __fastcall TCleanupDialog::InitControls()
 //---------------------------------------------------------------------
 void __fastcall TCleanupDialog::UpdateControls()
 {
-  int I = 0;
-  bool Checked = false;
-  bool UnChecked = false;
-  while (I < DataListView->Items->Count)
-  {
-    TListItem *Item = DataListView->Items->Item[I];
-    if (Item->Checked) Checked = true;
-    if (!Item->Checked) UnChecked = true;
-
-    I++;
-  }
-  EnableControl(OKButton, Checked);
-  EnableControl(CheckAllButton, UnChecked);
+  EnableControl(OKButton, ListViewAnyChecked(DataListView));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCleanupDialog::DataListViewMouseDown(
@@ -111,8 +100,7 @@ void __fastcall TCleanupDialog::FormShow(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCleanupDialog::CheckAllButtonClick(TObject * /*Sender*/)
 {
-  for (Integer Index = 0; Index < DataListView->Items->Count; Index ++)
-    DataListView->Items->Item[Index]->Checked = True;
+  ListViewCheckAll(DataListView, caToggle);
   UpdateControls();
 }
 //---------------------------------------------------------------------------

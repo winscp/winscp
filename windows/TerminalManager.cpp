@@ -13,6 +13,7 @@
 #include <ScpMain.h>
 #include <TextsWin.h>
 #include <Progress.h>
+#include <Queue.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -45,13 +46,14 @@ __fastcall TTerminalManager::TTerminalManager() :
 
   assert(Application && !Application->OnException);
   Application->OnException = ApplicationException;
-  
+
   assert(Configuration && !Configuration->OnChange);
   Configuration->OnChange = ConfigurationChange;
   FOnLastTerminalClosed = NULL;
   FOnTerminalListChanged = NULL;
 
   FTerminalList = new TStringList();
+  FQueues = new TList();
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminalManager::~TTerminalManager()
@@ -66,6 +68,7 @@ __fastcall TTerminalManager::~TTerminalManager()
   assert(Application && (Application->OnException == ApplicationException));
   Application->OnException = NULL;
 
+  delete FQueues;
   delete FTerminalList;
 }
 //---------------------------------------------------------------------------
@@ -73,12 +76,23 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
 {
   FTerminalList->Clear();
   TTerminal * Terminal = TTerminalList::NewTerminal(Data);
+  TTerminalQueue * Queue = NULL;
   try
   {
+    Queue = new TTerminalQueue(Terminal, Configuration);
+    Queue->TransfersLimit = GUIConfiguration->QueueTransfersLimit;
+    Queue->OnQueryUser = TerminalQueryUser;
+    Queue->OnPromptUser = TerminalPromptUser;
+    Queue->OnShowExtendedException = TerminalShowExtendedException;
+    FQueues->Add(Queue);
+
     Terminal->OnQueryUser = TerminalQueryUser;
+    Terminal->OnPromptUser = TerminalPromptUser;
+    Terminal->OnShowExtendedException = TerminalShowExtendedException;
     Terminal->OnProgress = OperationProgress;
     Terminal->OnFinished = OperationFinished;
-    Terminal->OnDeleteLocalFile = DeleteLocalFile; 
+    Terminal->OnDeleteLocalFile = DeleteLocalFile;
+
     if (!ActiveTerminal)
     {
       ActiveTerminal = Terminal;
@@ -86,9 +100,13 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
   }
   catch(...)
   {
-    FreeTerminal(Terminal);
+    if (Terminal != NULL)
+    {
+      FreeTerminal(Terminal);
+    }
     throw;
   }
+
   if (OnTerminalListChanged)
   {
     OnTerminalListChanged(this);
@@ -162,7 +180,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
       {
         FreeLogForm();
       }
-  
+
       if (ShowLogPending)
       {
         RequireLogForm(LogMemo);
@@ -175,7 +193,8 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
       FTerminalPendingAction = tpNone;
       try
       {
-        ShowExtendedException(&E, this);
+        assert(ActiveTerminal != NULL);
+        ActiveTerminal->DoShowExtendedException(&E);
         Action = FTerminalPendingAction;
       }
       __finally
@@ -270,6 +289,12 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
     int Index = IndexOf(Terminal);
     FTerminalList->Clear();
     Extract(Terminal);
+    
+    TTerminalQueue * Queue;
+    Queue = reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
+    FQueues->Delete(Index);
+    delete Queue;
+    
     if (ActiveTerminal && (Terminal == ActiveTerminal))
     {
       if ((Count > 0) && !FDestroying)
@@ -317,6 +342,7 @@ void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
     {
       assert(!OnChangeTerminal);
       FScpExplorer->Terminal = ActiveTerminal;
+      FScpExplorer->Queue = ActiveQueue;
       FOnLastTerminalClosed = FScpExplorer->LastTerminalClosed;
       FOnTerminalListChanged = FScpExplorer->TerminalListChanged;
     }
@@ -360,6 +386,7 @@ void __fastcall TTerminalManager::SetActiveTerminal(TTerminal * value)
       else
       {
         ScpExplorer->Terminal = NULL;
+        ScpExplorer->Queue = NULL;
       }
     }
 
@@ -409,7 +436,7 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     NewTitle = FORMAT("%d%% %s - %s",
       (FProgress, TProgressForm::OperationName(FOperation), NewTitle));
   }
-  
+
   Application->Title = NewTitle;
 }
 //---------------------------------------------------------------------------
@@ -461,9 +488,10 @@ void __fastcall TTerminalManager::FreeLogMemo()
   SAFE_DESTROY(FLogMemo);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::ApplicationException(TObject * Sender, Exception * E)
+void __fastcall TTerminalManager::ApplicationException(TObject * /*Sender*/,
+  Exception * E)
 {
-  ShowExtendedException(E, Sender);
+  ShowExtendedExceptionEx(ActiveTerminal, E);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DeleteLocalFile(const AnsiString FileName)
@@ -504,6 +532,19 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::TerminalPromptUser(
+  TSecureShell * /*SecureShell*/, AnsiString Prompt, TPromptKind Kind,
+  AnsiString & Response, bool & Result)
+{
+  Result = DoPasswordDialog(Prompt, Kind, Response);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::TerminalShowExtendedException(
+  TSecureShell * SecureShell, Exception * E)
+{
+  ShowExtendedExceptionEx(SecureShell, E);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
   TOperationSide Side, bool DragDrop, const AnsiString FileName, bool Success,
   bool & DisconnectWhenFinished)
@@ -517,7 +558,7 @@ void __fastcall TTerminalManager::OperationProgress(
   TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
 {
   FProgress = ProgressData.InProgress ? ProgressData.OverallProgress() : -1;
-  FOperation = ProgressData.Operation;              
+  FOperation = ProgressData.Operation;
   UpdateAppTitle();
   assert(ScpExplorer);
   ScpExplorer->OperationProgress(ProgressData, Cancel);
@@ -541,10 +582,13 @@ void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
     FreeLogForm();
   }
 
-  if (ActiveTerminal)
+  TTerminalQueue * Queue;
+  for (int Index = 0; Index < Count; Index++)
   {
-    assert(ActiveTerminal->Log);
-    ActiveTerminal->Log->ReflectSettings();
+    assert(Terminals[Index]->Log);
+    Terminals[Index]->Log->ReflectSettings();
+    Queue = reinterpret_cast<TTerminalQueue *>(FQueues->Items[Index]);
+    Queue->TransfersLimit = GUIConfiguration->QueueTransfersLimit;
   }
 
   if (ScpExplorer)
@@ -556,6 +600,7 @@ void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)
 void __fastcall TTerminalManager::TerminalReady()
 {
   ScpExplorer->Terminal = ActiveTerminal;
+  ScpExplorer->Queue = ActiveQueue;
   if (OnChangeTerminal)
   {
     OnChangeTerminal(this);
@@ -601,6 +646,16 @@ AnsiString __fastcall TTerminalManager::GetActiveTerminalTitle()
 {
   AnsiString Result = ActiveTerminal ?
     TerminalList->Strings[IndexOf(ActiveTerminal)] : AnsiString("");
+  return Result;
+}
+//---------------------------------------------------------------------------
+TTerminalQueue * __fastcall TTerminalManager::GetActiveQueue()
+{
+  TTerminalQueue * Result = NULL;
+  if (ActiveTerminal != NULL)
+  {
+    Result = reinterpret_cast<TTerminalQueue *>(FQueues->Items[ActiveTerminalIndex]);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------

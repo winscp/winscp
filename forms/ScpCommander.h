@@ -130,6 +130,7 @@ __published:
   THistoryComboBox *CommandLineCombo;
   TPathLabel *CommandLineLabel;
   TLabel *CommandLinePromptLabel;
+  TToolButton *ToolButton50;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
@@ -137,7 +138,6 @@ __published:
   void __fastcall SplitterDblClick(TObject *Sender);
   void __fastcall PathComboBoxCloseUp(TObject *Sender,
     bool Canceled);
-  void __fastcall FormResize(TObject *Sender);
   void __fastcall LocalDirViewChangeDetected(TObject *Sender);
   void __fastcall LocalDirViewExecFile(TObject *Sender, TListItem *Item,
     bool &AllowExec);
@@ -160,6 +160,7 @@ __published:
   void __fastcall CommandLineComboExit(TObject *Sender);
   void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,
     TListItem *Item, int &Effect, bool &DropHandler);
+  void __fastcall StatusBarDblClick(TObject *Sender);
 
 private:
   TCustomDirView * FDirViewToSelect;
@@ -187,7 +188,7 @@ protected:
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
-  virtual void __fastcall SetComponentVisible(Word Component, bool value);
+  virtual void __fastcall FixControlsPlacement();
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
@@ -213,6 +214,8 @@ protected:
     TPanelExport Export, TPanelExportDestination Destination,
     TStringList * ExportData);
   void __fastcall CommandLinePopulate();
+  virtual int __fastcall GetStaticComponentsHeight();
+  virtual void __fastcall DoResize();
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

@@ -2,9 +2,10 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "Console.h"
 
-#include <Common.h>
 #include <TextsWin.h>
 #include <Interface.h>
 #include <ScpFileSystem.h>
@@ -37,6 +38,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FTerminal = NULL;
   FOldLogAddLine = NULL;
   FOldChangeDirectory = NULL;
+  FLastTerminal = NULL;
   FAddOutput = false;
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
@@ -79,6 +81,7 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
       FTerminal->Log->OnAddLine = DoLogAddLine;
       // avoid reloading directory after each change of current directory from console
       FTerminal->BeginTransaction();
+      FLastTerminal = FTerminal;
     }
     UpdateControls();
   }
@@ -93,7 +96,8 @@ void __fastcall TConsoleDialog::DoChangeDirectory(TObject * Sender)
 void __fastcall TConsoleDialog::UpdateControls()
 {
   DirectoryLabel->Caption = (FTerminal ? FTerminal->CurrentDirectory : AnsiString());
-  EnableControl(ExecuteButton, !CommandEdit->Text.IsEmpty());
+  EnableControl(ExecuteButton,
+    (FTerminal != NULL) ? FTerminal->AllowedAnyCommand(CommandEdit->Text) : false);
 }
 //---------------------------------------------------------------------
 bool __fastcall TConsoleDialog::Execute(const AnsiString Command)
@@ -184,7 +188,8 @@ void __fastcall TConsoleDialog::ExecuteCommand()
   }
   catch(Exception & E)
   {
-    ShowExtendedException(&E, this);
+    assert(FLastTerminal != NULL);
+    FLastTerminal->DoShowExtendedException(&E);
   }
 }
 //---------------------------------------------------------------------------

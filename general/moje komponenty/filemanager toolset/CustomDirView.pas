@@ -10,7 +10,7 @@ uses
   Windows, Messages, Classes, Graphics, Controls,
   Forms, ComCtrls, ShellAPI, ComObj, ShlObj, Dialogs,
   ActiveX, CommCtrl, Extctrls, ImgList, Menus,
-  PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo,
+  PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo, 
   IEListView, PathLabel, AssociatedStatusBar, CustomPathComboBox, SysUtils;
 
 const
@@ -251,7 +251,7 @@ type
     function ItemDragFileName(Item: TListItem): string; virtual;
     function ItemFileSize(Item: TListItem): Int64; virtual; abstract;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
-    function ItemFileTime(Item: TListItem): TDateTime; virtual; abstract;
+    function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; virtual; abstract;
     // ItemIsDirectory and ItemFullFileName is in public block
     function ItemIsRecycleBin(Item: TListItem): Boolean; virtual;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
@@ -2664,6 +2664,7 @@ var
   Index: Integer;
   Changed: Boolean;
   SameTime: Boolean;
+  Precision, MirrorPrecision: TDateTimePrecision;
 begin
   Assert(Valid);
   OldCursor := Screen.Cursor;
@@ -2691,9 +2692,14 @@ begin
         begin
           if ccTime in Criterias then
           begin
-            FileTime := ItemFileTime(Item);
-            MirrorFileTime := DirView.ItemFileTime(MirrorItem);
-            UnifyDateTimePrecision(FileTime, MirrorFileTime);
+            FileTime := ItemFileTime(Item, Precision);
+            MirrorFileTime := DirView.ItemFileTime(MirrorItem, MirrorPrecision);
+            if MirrorPrecision < Precision then Precision := MirrorPrecision;
+            if Precision <> tpMillisecond then
+            begin
+              ReduceDateTimePrecision(FileTime, Precision);
+              ReduceDateTimePrecision(MirrorFileTime, Precision);
+            end;
             Changed :=
               (FileTime > MirrorFileTime) { or
               ((FileTime = MirrorFileTime) and

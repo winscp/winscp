@@ -13,7 +13,7 @@
       putty\SSHDSS.obj putty\SSHMD5.obj putty\SSHPUBK.obj 
       putty\SSHRAND.obj putty\SSHRSA.obj putty\SSHSH512.obj 
       putty\SSHSHA.obj putty\SSHZLIB.obj putty\TREE234.obj 
-      putty\UTF8.obj putty\WILDCARD.obj putty\WINDEFS.obj 
+      putty\CHARSET\UTF8.obj putty\WILDCARD.obj putty\WINDEFS.obj 
       putty\WINMISC.obj putty\WINNET.obj putty\WINSTORE_.obj 
       putty\X11FWD.obj"/>
     <RESFILES value=""/>

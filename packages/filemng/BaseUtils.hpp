@@ -23,6 +23,10 @@
 namespace Baseutils
 {
 //-- type declarations -------------------------------------------------------
+#pragma option push -b-
+enum TDateTimePrecision { tpDay, tpMinute, tpSecond, tpMillisecond };
+#pragma option pop
+
 //-- var, const, procedure ---------------------------------------------------
 extern PACKAGE System::ResourceString _SNoValidPath;
 #define Baseutils_SNoValidPath System::LoadResourceString(&Baseutils::_SNoValidPath)
@@ -42,7 +46,7 @@ extern PACKAGE AnsiString __fastcall FormatSize(unsigned Size)/* overload */;
 extern PACKAGE AnsiString __fastcall FormatSize(__int64 Size)/* overload */;
 extern PACKAGE void __fastcall FreePIDL(Shlobj::PItemIDList &PIDL);
 extern PACKAGE __int64 __fastcall DiskSize(Byte Drive);
-extern PACKAGE void __fastcall UnifyDateTimePrecision(System::TDateTime &DateTime1, System::TDateTime &DateTime2);
+extern PACKAGE void __fastcall ReduceDateTimePrecision(System::TDateTime &DateTime, TDateTimePrecision Precision);
 
 }	/* namespace Baseutils */
 using namespace Baseutils;

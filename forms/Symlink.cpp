@@ -52,6 +52,7 @@ void __fastcall TSymlinkDialog::UpdateControls()
   assert(Side == osLocal || Side == osRemote);
   FileNameEdit->Color = !Edit ? clWindow : clBtnFace;
   FileNameEdit->ReadOnly = Edit;
+  FileNameEdit->TabStop = !Edit;
   EnableControl(SymbolicCheck, Side == osRemote && !Edit && AllowSymbolic);
   EnableControl(OkButton, !FileName.IsEmpty() && !PointTo.IsEmpty());
 }
@@ -117,15 +118,14 @@ bool __fastcall TSymlinkDialog::Execute()
 void __fastcall TSymlinkDialog::FormShow(TObject * /*Sender*/)
 {
   Caption = LoadStr(Edit ? LINK_EDIT_CAPTION : LINK_ADD_CAPTION);
-  if (Edit)
-  {
-    PointToEdit->SetFocus();
-  }
-  else
-  {
-    FileNameEdit->SetFocus();
-  }
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSymlinkDialog::PathEditsKeyDown(TObject * Sender,
+  WORD & Key, TShiftState Shift)
+{
+  PathEditKeyDown(dynamic_cast<TCustomEdit*>(Sender), Key, Shift,
+    (Side == osRemote));
 }
 //---------------------------------------------------------------------------
 

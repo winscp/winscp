@@ -4,18 +4,18 @@ object PasswordDialog: TPasswordDialog
   BorderStyle = bsDialog
   Caption = 'Enter password'
   ClientHeight = 151
-  ClientWidth = 300
+  ClientWidth = 404
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poScreenCenter
+  Position = poMainFormCenter
   DesignSize = (
-    300
+    404
     151)
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
-    Left = 131
+    Left = 235
     Top = 119
     Width = 75
     Height = 25
@@ -26,7 +26,7 @@ object PasswordDialog: TPasswordDialog
     TabOrder = 2
   end
   object CancelButton: TButton
-    Left = 219
+    Left = 323
     Top = 119
     Width = 75
     Height = 25
@@ -39,18 +39,18 @@ object PasswordDialog: TPasswordDialog
   object PasswordPanel: TPanel
     Left = 0
     Top = 0
-    Width = 300
+    Width = 404
     Height = 50
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
     DesignSize = (
-      300
+      404
       50)
     object PasswordLabel: TLabel
       Left = 8
       Top = 8
-      Width = 280
+      Width = 389
       Height = 13
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
@@ -60,7 +60,7 @@ object PasswordDialog: TPasswordDialog
     object PasswordEdit: TPasswordEdit
       Left = 8
       Top = 24
-      Width = 286
+      Width = 390
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
@@ -70,18 +70,18 @@ object PasswordDialog: TPasswordDialog
   object ServerPromptPanel: TPanel
     Left = 0
     Top = 50
-    Width = 300
+    Width = 404
     Height = 69
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 1
     DesignSize = (
-      300
+      404
       69)
     object ServerPromptLabel: TLabel
       Left = 8
       Top = 24
-      Width = 284
+      Width = 388
       Height = 44
       Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False

@@ -204,12 +204,11 @@ object PropertiesDialog: TPropertiesDialog
         Anchors = [akLeft, akTop, akRight]
         Shape = bsTopLine
       end
-      inline RightsFrame: TRightsFrame
+      inline RightsFrame: TRightsExtFrame
         Left = 87
         Top = 200
-        Width = 163
+        Width = 239
         Height = 109
-        PopupMenu = RightsFrame.RightsPopup
         TabOrder = 3
       end
       object GroupComboBox: TComboBox

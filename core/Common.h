@@ -4,8 +4,6 @@
 
 #ifndef C_ONLY
 //---------------------------------------------------------------------------
-#define CATCH(command) \
-  try {command;} catch (Exception &E) {ShowExtendedException(&E);}
 #define EXCEPTION throw ExtException(NULL, "")
 #define SCOPY(dest, source) \
   strncpy(dest, source, sizeof(dest)); \
@@ -39,6 +37,7 @@ bool __fastcall IsDisplayableStr(const AnsiString Str);
 AnsiString __fastcall StrToHex(const AnsiString Str);
 AnsiString __fastcall HexToStr(const AnsiString Hex);
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
+int __fastcall CancelAnswer(int Answers);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TProcessLocalFileEvent)
   (const AnsiString FileName, const TSearchRec Rec, void * Param);
@@ -50,11 +49,35 @@ void __fastcall ProcessLocalDirectory(AnsiString DirName,
     ((LONGLONG) (t) + (LONGLONG) 11644473600) * (LONGLONG) 10000000)
 #define TIME_WIN_TO_POSIX(ft, t) ((t) = (unsigned long) \
     ((*(LONGLONG*)&(ft)) / (LONGLONG) 10000000 - (LONGLONG) 11644473600))
-TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp);
-FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime);
-TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp);
-TDateTime __fastcall AdjustDateTimeFromUnix(const TDateTime DateTime);
+TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp, bool ConsiderDST);
+FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime, bool ConsiderDST);
+TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, bool ConsiderDST);
 void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTime2);
+unsigned long __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
+  bool ConsiderDST);
+//---------------------------------------------------------------------------
+class TCriticalSection
+{
+public:
+  __fastcall TCriticalSection();
+  __fastcall ~TCriticalSection();
+
+  void __fastcall Enter();
+  void __fastcall Leave();
+
+private:
+  TRTLCriticalSection FSection;
+};
+//---------------------------------------------------------------------------
+class TGuard
+{
+public:
+  __fastcall TGuard(TCriticalSection * ACriticalSection);
+  __fastcall ~TGuard();
+
+private:
+  TCriticalSection * FCriticalSection;
+};
 //---------------------------------------------------------------------------
 #endif
 //---------------------------------------------------------------------------

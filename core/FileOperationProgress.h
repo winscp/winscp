@@ -58,7 +58,7 @@ public:
   TDateTime StartTime;
   // bytes transfered
   __int64 TotalTransfered;
-  __int64 TotalResumed;
+  __int64 TotalSkipped;
   __int64 TotalSize;
   bool YesToAll;
   bool NoToAll;
@@ -67,11 +67,12 @@ public:
 
   bool Suspended;
 
+  __fastcall TFileOperationProgressType();
   __fastcall TFileOperationProgressType(
     TFileOperationProgressEvent AOnProgress, TFileOperationFinished AOnFinished);
   __fastcall ~TFileOperationProgressType();
   void __fastcall AddLocalyUsed(__int64 ASize);
-  void __fastcall AddTransfered(__int64 ASize);
+  void __fastcall AddTransfered(__int64 ASize, bool AddToTotals = true);
   void __fastcall AddResumed(__int64 ASize);
   void __fastcall Clear();
   unsigned int __fastcall CPS();
@@ -84,6 +85,7 @@ public:
   int __fastcall OperationProgress();
   unsigned long __fastcall TransferBlockSize();
   static unsigned long __fastcall StaticBlockSize();
+  void __fastcall Reset();
   void __fastcall Resume();
   void __fastcall SetLocalSize(__int64 ASize);
   void __fastcall SetAsciiTransfer(bool AAsciiTransfer);
@@ -95,7 +97,6 @@ public:
     const AnsiString ADirectory = "");
   void __fastcall Stop();
   void __fastcall Suspend();
-  __fastcall TFileOperationProgressType();
   // whole operation
   TDateTime __fastcall TimeElapsed();
   // only current file

@@ -33,6 +33,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     TabOrder = 1
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
+    OnKeyDown = LocalDirectoryEditKeyDown
   end
   object RemoteDirectoryEdit: TIEComboBox
     Left = 8
@@ -45,6 +46,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     TabOrder = 0
     Text = 'RemoteDirectoryEdit'
     OnChange = DirectoryEditChange
+    OnKeyDown = RemoteDirectoryEditKeyDown
   end
   object OKBtn: TButton
     Left = 204

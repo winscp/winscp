@@ -2,6 +2,8 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "UnixDirView.h"
 
 #include <FileCtrl.hpp>
@@ -9,9 +11,8 @@
 #ifndef DESIGN_ONLY
 #include <Interface.h>
 #include <ScpMain.h>
+#include <WinConfiguration.h>
 #endif
-
-#include <Common.h>
 
 #pragma package(smart_init)
 #ifndef DESIGN_ONLY
@@ -262,7 +263,7 @@ void __fastcall TUnixDirView::ExecuteHomeDirectory()
   // don't select any directory
   FLastPath = "";
   AnsiString APath = Terminal->SessionData->RemoteDirectory;
-  if (Configuration->DefaultDirIsHome && !APath.IsEmpty() &&
+  if (WinConfiguration->DefaultDirIsHome && !APath.IsEmpty() &&
       !Terminal->SessionData->UpdateDirectories)
   {
     if (APath[1] != '/')
@@ -820,7 +821,16 @@ void __fastcall TUnixDirView::DDChooseEffect(int grfKeyState, int &dwEffect)
 {
   if (DDOwnerIsSource)
   {
-    dwEffect = (DropTarget != NULL) ? DROPEFFECT_Move : DROPEFFECT_None;
+    if (DropTarget != NULL)
+    {
+      // Hack: when moving is disabled, we at least allow to accept copy
+      // but it should be interpreted as move by the client
+      dwEffect = DDAllowMove ? DROPEFFECT_Move : DROPEFFECT_Copy;
+    }
+    else
+    {
+      dwEffect = DROPEFFECT_None;
+    }
   }
   else if ((grfKeyState & (MK_CONTROL | MK_SHIFT)) == 0)
   {
@@ -847,7 +857,8 @@ void __fastcall TUnixDirView::DDQueryContinueDrag(BOOL FEscapePressed,
       // But by the way exception probably never reach this point as
       // it's catched on way
       Result = DRAGDROP_S_CANCEL;
-      ShowExtendedException(&E);
+      assert(Terminal != NULL);
+      Terminal->DoShowExtendedException(&E);
     }
   }
 #endif
@@ -862,7 +873,7 @@ void __fastcall TUnixDirView::DDTargetDrop()
     OnDDTargetDrop(this, FLastDropEffect, Continue);
   }
 
-  if (Continue)
+  if (Continue && (FLastDropEffect != DROPEFFECT_NONE))
   {
     assert(!FUniqTempDir.IsEmpty());
     TTransferType Type;
@@ -1071,12 +1082,29 @@ TColor __fastcall TUnixDirView::ItemColor(TListItem * Item)
   }
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item)
+TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item,
+  TDateTimePrecision & Precision)
 {
   assert(Item);
 #ifndef DESIGN_ONLY
+  switch (ITEMFILE->ModificationFmt)
+  {
+    case mfMDHM:
+      Precision = tpMinute;
+      break;
+
+    case mfMDY:
+      Precision = tpDay;
+      break;
+
+    case mfFull:
+    default:
+      Precision = tpSecond;
+      break;
+  }
   return ITEMFILE->Modification;
 #else
+  Precision = tpSecond;
   return Now();
 #endif
 }

@@ -132,6 +132,17 @@ __published:
   TCheckBox *DDWarnLackOfTempSpaceCheck;
   TCheckBox *DDWarnOnMoveCheck;
   TCheckBox *ConfirmExitOnCompletionCheck;
+  TCheckBox *ExternalEditorTextCheck;
+  TTabSheet *QueueSheet;
+  TXPGroupBox *QueueGroup;
+  TUpDownEdit *QueueTransferLimitEdit;
+  TLabel *Label5;
+  TXPGroupBox *QueueViewGroup;
+  TRadioButton *QueueViewShowButton;
+  TRadioButton *QueueViewHideWhenEmptyButton;
+  TRadioButton *QueueViewHideButton;
+  TCheckBox *QueueAutoPopupCheck;
+  TCheckBox *DDAllowMoveInitCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -162,6 +173,8 @@ __published:
   void __fastcall PageControlChange(TObject *Sender);
   void __fastcall RegisterAsUrlHandlerButtonClick(TObject *Sender);
   void __fastcall DDExtLabelClick(TObject *Sender);
+  void __fastcall PathEditsKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;

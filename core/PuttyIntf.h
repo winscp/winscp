@@ -34,6 +34,7 @@ extern "C"
 
   void ssh_close(void * handle);
   int get_ssh_version(void * handle);
+  void * get_ssh_frontend(void * handle);
   int get_ssh1_compressing(void * handle);
   const struct ssh_cipher * get_cipher(void * handle);
   const struct ssh2_cipher * get_cscipher(void * handle);

@@ -13,10 +13,10 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 int SessionsCount = 0;
-TSecureShell * CurrentSSH = NULL;
 //---------------------------------------------------------------------------
 void __fastcall InitWinsock();
-static int get_line(const char * prompt, char * str, int maxlen, int is_pw);
+static int get_line(void * frontend, const char * prompt, char * str,
+  int maxlen, int is_pw);
 //---------------------------------------------------------------------------
 void __fastcall NetInitialize()
 {
@@ -57,18 +57,18 @@ void __fastcall InitWinsock(void)
   }
 }
 //---------------------------------------------------------------------------
-extern "C" char * do_select(SOCKET skt, int startup)
+extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
 {
-  assert(CurrentSSH);
+  assert(plug != NULL);
+  void * frontend = get_ssh_frontend(plug);
+  assert(frontend);
 
-  if (CurrentSSH)
+  if (startup == 0)
   {
-    if (!startup)
-    {
-      skt = INVALID_SOCKET;
-    }
-    CurrentSSH->SetSocket(&skt);
+    skt = INVALID_SOCKET;
   }
+  reinterpret_cast<TSecureShell*>(frontend)->SetSocket(&skt);
+  
   return NULL;
 }
 //---------------------------------------------------------------------------
@@ -79,55 +79,20 @@ int from_backend(void * frontend, int is_stderr, char * data, int datalen)
   return 0;
 }
 //---------------------------------------------------------------------------
-static int get_line(const char * prompt, char * str, int maxlen, int is_pw)
+static int get_line(void * frontend, const char * prompt, char * str,
+  int maxlen, int is_pw)
 {
-  USEDPARAM(is_pw);
-  assert(is_pw);
-  assert(CurrentSSH);
+  assert(frontend != NULL);
 
-  AnsiString Password, Prompt(prompt);
-
-  int Result;
-  if (Prompt.Pos("Passphrase for key ") == 1)
-  {
-    AnsiString Key(Prompt);
-    int P = Prompt.Pos("\"");
-    if (P > 0)
-    {
-      Key.Delete(1, P);
-      P = Key.LastDelimiter("\"");
-      if (P > 0)
-      {
-        Key.SetLength(P - 1);
-      }
-    }
-
-    CurrentSSH->LogEvent(FORMAT("Passphrase prompt (%s)", (Prompt)));
-
-    Result = GetSessionPassword(FMTLOAD(PROMPT_KEY_PASSPHRASE, (Key)),
-      pkPassphrase, Password);
-  }
-  else if (Prompt.Pos("'s password: "))
-  {
-    CurrentSSH->LogEvent(FORMAT("Session password prompt (%s)", (Prompt)));
-
-    assert(CurrentSSH);
-    Result = CurrentSSH->GetPassword(Password);
-  }
-  else
-  {
-    CurrentSSH->LogEvent(FORMAT("Server prompt (%s)", (Prompt)));
-
-    // in other cases we assume TIS/Cryptocard/keyboard-interactive authentification prompt
-    Result = GetSessionPassword(AnsiString(prompt), pkServerPrompt, Password);
-  };
-
+  TSecureShell * SecureShell = reinterpret_cast<TSecureShell*>(frontend);
+  AnsiString Response;
+  bool Result = SecureShell->PromptUser(prompt, Response, is_pw);
   if (Result)
   {
-    strcpy(str, Password.SubString(1, maxlen).c_str());
+    strcpy(str, Response.SubString(1, maxlen).c_str());
   }
-  
-  return Result;
+
+  return Result ? 1 : 0;
 }
 //---------------------------------------------------------------------------
 void SSHLogEvent(void * frontend, char * string)
@@ -168,6 +133,5 @@ void SSHAskCipher(void * frontend, char * CipherName, int CipherType)
 //---------------------------------------------------------------------------
 void SSHOldKeyfileWarning(void)
 {
-  assert(CurrentSSH);
-  CurrentSSH->OldKeyfileWarning();
+  // no reference to TSecureShell instace available
 }

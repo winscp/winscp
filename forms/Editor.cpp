@@ -2,11 +2,11 @@
 #include <vcl.h>        
 #pragma hdrstop
 
+#include <Common.h>
 #include "Editor.h"
 #include "WinInterface.h"
 #include "TextsWin.h"
 #include "Tools.h"
-#include <Common.h>
 #include <ScpMain.h>
 #include "VCLCommon.h"
 #include "WinConfiguration.h"

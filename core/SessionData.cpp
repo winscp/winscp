@@ -42,6 +42,7 @@ void __fastcall TSessionData::Default()
   AgentFwd = false;
   AuthTIS = false;
   AuthKI = true;
+  AuthKIPassword = true;
   Compression = false;
   SshProt = ssh2;
   Ssh2DES = false;
@@ -80,6 +81,7 @@ void __fastcall TSessionData::Default()
   PreserveDirectoryChanges = true;
   LockInHome = false;
   ResolveSymlinks = true;
+  ConsiderDST = false;
 
   // SCP
   ReturnVar = "";
@@ -106,6 +108,12 @@ void __fastcall TSessionData::Default()
   FModified = false;
 
   // add also to TSessionLog::AddStartupInfo()
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::NonPersistant()
+{
+  UpdateDirectories = false;
+  PreserveDirectoryChanges = false;
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Assign(TPersistent * Source)
@@ -138,6 +146,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(PreserveDirectoryChanges);
 
     DUPL(ResolveSymlinks);
+    DUPL(ConsiderDST);
     DUPL(LockInHome);
     DUPL(Special);
     DUPL(Selected);
@@ -154,6 +163,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     // new in 53b
     DUPL(TcpNoDelay);
     DUPL(AuthKI);
+    DUPL(AuthKIPassword);
 
     DUPL(ProxyMethod);
     DUPL(ProxyHost);
@@ -319,6 +329,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     AgentFwd = Storage->ReadBool("AgentFwd", AgentFwd);
     AuthTIS = Storage->ReadBool("AuthTIS", AuthTIS);
     AuthKI = Storage->ReadBool("AuthKI", AuthKI);
+    AuthKIPassword = Storage->ReadBool("AuthKIPassword", AuthKIPassword);
     Compression = Storage->ReadBool("Compression", Compression);
     SshProt = (TSshProt)Storage->ReadInteger("SshProt", SshProt);
     Ssh2DES = Storage->ReadBool("Ssh2DES", Ssh2DES);
@@ -334,6 +345,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     PreserveDirectoryChanges = Storage->ReadBool("PreserveDirectoryChanges", PreserveDirectoryChanges);
 
     ResolveSymlinks = Storage->ReadBool("ResolveSymlinks", ResolveSymlinks);
+    ConsiderDST = Storage->ReadBool("ConsiderDST", ConsiderDST);
     LockInHome = Storage->ReadBool("LockInHome", LockInHome);
     Special = Storage->ReadBool("Special", Special);
     Shell = Storage->ReadString("Shell", Shell);
@@ -429,6 +441,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
     Storage->WriteBool("AgentFwd", AgentFwd);
     Storage->WriteBool("AuthTIS", AuthTIS);
     Storage->WriteBool("AuthKI", AuthKI);
+    Storage->WriteBool("AuthKIPassword", AuthKIPassword);
     Storage->WriteBool("Compression", Compression);
     Storage->WriteInteger("SshProt", SshProt);
     Storage->WriteBool("Ssh2DES", Ssh2DES);
@@ -452,6 +465,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
       Storage->WriteBool("PreserveDirectoryChanges", PreserveDirectoryChanges);
 
       Storage->WriteBool("ResolveSymlinks", ResolveSymlinks);
+      Storage->WriteBool("ConsiderDST", ConsiderDST);
       Storage->WriteBool("LockInHome", LockInHome);
       // Special is never stored (if it would, login dialog must be modified not to
       // duplicate Special parameter when Special session is loaded and then stored
@@ -764,6 +778,11 @@ void __fastcall TSessionData::SetAuthKI(bool value)
   SET_SESSION_PROPERTY(AuthKI);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetAuthKIPassword(bool value)
+{
+  SET_SESSION_PROPERTY(AuthKIPassword);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetCompression(bool value)
 {
   SET_SESSION_PROPERTY(Compression);
@@ -836,7 +855,11 @@ AnsiString __fastcall TSessionData::GetCipherList()
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPublicKeyFile(AnsiString value)
 {
-  SET_SESSION_PROPERTY(PublicKeyFile);
+  if (FPublicKeyFile != value)
+  {
+    FPublicKeyFile = StripPathQuotes(value);
+    FModified = true;
+  }
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetDefaultLogFileName()
@@ -1003,6 +1026,11 @@ void __fastcall TSessionData::SetPreserveDirectoryChanges(bool value)
 void __fastcall TSessionData::SetResolveSymlinks(bool value)
 {
   SET_SESSION_PROPERTY(ResolveSymlinks);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetConsiderDST(bool value)
+{
+  SET_SESSION_PROPERTY(ConsiderDST);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetLockInHome(bool value)
@@ -1324,3 +1352,55 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
     Save();
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TStoredSessionList::ImportHostKeys(const AnsiString TargetKey,
+  const AnsiString SourceKey, TStoredSessionList * Sessions,
+  bool OnlySelected)
+{
+  TRegistryStorage * SourceStorage = NULL;
+  TRegistryStorage * TargetStorage = NULL;
+  TStringList * KeyList = NULL;
+  try
+  {
+    SourceStorage = new TRegistryStorage(SourceKey);
+    TargetStorage = new TRegistryStorage(TargetKey);
+    TargetStorage->AccessMode = smReadWrite;
+    KeyList = new TStringList();
+
+    if (SourceStorage->OpenRootKey(false) &&
+        TargetStorage->OpenRootKey(true))
+    {
+      SourceStorage->GetValueNames(KeyList);
+
+      TSessionData * Session;
+      AnsiString HostKeyName;
+      assert(Sessions != NULL);
+      for (int Index = 0; Index < Sessions->Count; Index++)
+      {
+        Session = Sessions->Sessions[Index];
+        if (!OnlySelected || Session->Selected)
+        {
+          HostKeyName = MungeStr(FORMAT("@%d:%s", (Session->PortNumber, Session->HostName)));
+          AnsiString KeyName;
+          for (int KeyIndex = 0; KeyIndex < KeyList->Count; KeyIndex++)
+          {
+            KeyName = KeyList->Strings[KeyIndex];
+            int P = KeyName.Pos(HostKeyName);
+            if ((P > 0) && (P == KeyName.Length() - HostKeyName.Length() + 1))
+            {
+              TargetStorage->WriteStringRaw(KeyName,
+                SourceStorage->ReadStringRaw(KeyName, ""));
+            }
+          }
+        }
+      }
+    }
+  }
+  __finally
+  {
+    delete SourceStorage;
+    delete TargetStorage;
+    delete KeyList;
+  }
+}
+

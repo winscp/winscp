@@ -95,7 +95,7 @@ object CleanupDialog: TCleanupDialog
     Width = 89
     Height = 25
     Anchors = [akLeft, akBottom]
-    Caption = 'Check &all'
+    Caption = 'Un/check &all'
     TabOrder = 1
     OnClick = CheckAllButtonClick
   end

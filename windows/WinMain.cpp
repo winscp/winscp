@@ -47,10 +47,15 @@ TSessionData * GetLoginData(AnsiString SessionName)
   if (!SessionName.IsEmpty())
   {
     TSessionData * AData = NULL;
-    if (!ProtocolDefined)
+    // lookup stored session session even if protocol was defined
+    // (this allows setting for example default username for host
+    // by creating stored session named by host)
+    AnsiString ASessionName(SessionName); 
+    if (ASessionName[ASessionName.Length()] == '/')
     {
-      AData = (TSessionData *)StoredSessions->FindByName(SessionName, False);
+      ASessionName.SetLength(ASessionName.Length() - 1);
     }
+    AData = (TSessionData *)StoredSessions->FindByName(ASessionName, False);
     
     if (!AData)
     {
@@ -114,8 +119,9 @@ void __fastcall Upload(TTerminal * Terminal, TProgramParams * Params,
     }
     TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
 
-    if (DoCopyDialog(true, false, false, FileList,
-          Terminal->IsCapable[fcTextMode], TargetDirectory, &CopyParam, true))
+    int Options = coQueueDisable;
+    if (DoCopyDialog(true, false, false, FileList, Terminal->IsCapable[fcTextMode],
+          TargetDirectory, &CopyParam, Options, true))
     {
       int Params = 0;
       Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
@@ -417,7 +423,7 @@ void __fastcall Execute(TProgramParams * Params)
         }
         catch (Exception &E)
         {
-          ShowExtendedExceptionEx(&E, Application, true);
+          ShowExtendedException(&E);
         }
       }
     }

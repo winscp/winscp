@@ -2,11 +2,12 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
+
 #include "FullSynchronize.h"
 #include "VCLCommon.h"
 
 #include <ScpMain.h>
-#include <Common.h>
 #include <Configuration.h>
 #include <TextsWin.h>
 #include <CustomWinConfiguration.h>
@@ -187,4 +188,12 @@ bool __fastcall TFullSynchronizeDialog::GetSaveSettings()
 {
   return SaveSettingsCheck->Checked;
 }
+//---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::DirectoryEditKeyDown(
+  TObject * Sender, WORD & Key, TShiftState Shift)
+{
+  PathComboBoxKeyDown(dynamic_cast<TCustomComboBox*>(Sender), Key, Shift,
+    (Sender == RemoteDirectoryEdit));
+}
+//---------------------------------------------------------------------------
 

@@ -4,11 +4,11 @@
 #pragma hdrstop
 
 #include <shlobj.h>
+#include <Common.h>
 
 #include "GUITools.h"
 #include "GUIConfiguration.h"
 #include <TextsWin.h>
-#include <Common.h>
 #include <ScpMain.h>
 #include <SessionData.h>
 //---------------------------------------------------------------------------

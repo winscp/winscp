@@ -10,6 +10,11 @@ int get_ssh_version(void * handle)
   return ((Ssh)handle)->version;
 }
 
+void * get_ssh_frontend(void * handle)
+{
+  return ((Ssh)handle)->frontend;
+}
+
 int get_ssh1_compressing(void * handle)
 {
   return ((Ssh)handle)->v1_compressing;

@@ -19,6 +19,9 @@ private:
   AnsiString FPuttyPath;
   AnsiString FPuttySession;
   int FSynchronizeParams;
+  TDateTime FIgnoreCancelBeforeFinish;
+  bool FQueueAutoPopup;
+  int FQueueTransfersLimit;
 
 protected:
   LCID FLocale;
@@ -38,18 +41,21 @@ protected:
 
 public:
   __fastcall TGUIConfiguration();
-  __fastcall ~TGUIConfiguration();
+  virtual __fastcall ~TGUIConfiguration();
   virtual void __fastcall Default();
 
   __property bool CopyParamDialogExpanded = { read = FCopyParamDialogExpanded, write = FCopyParamDialogExpanded };
   __property bool ErrorDialogExpanded = { read = FErrorDialogExpanded, write = FErrorDialogExpanded };
   __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };
   __property int SynchronizeParams = { read = FSynchronizeParams, write = FSynchronizeParams };
+  __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = FQueueTransfersLimit };
+  __property bool QueueAutoPopup = { read = FQueueAutoPopup, write = FQueueAutoPopup };
   __property LCID Locale = { read = GetLocale, write = SetLocale };
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
   __property TStrings * Locales = { read = GetLocales };
   __property AnsiString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
   __property AnsiString PuttySession = { read = FPuttySession, write = FPuttySession };
+  __property TDateTime IgnoreCancelBeforeFinish = { read = FIgnoreCancelBeforeFinish, write = FIgnoreCancelBeforeFinish };
 };
 //---------------------------------------------------------------------------
 #define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))

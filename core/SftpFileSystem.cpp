@@ -29,6 +29,11 @@
 #define SSH_FILEXFER_ATTR_OWNERGROUP        0x00000080
 #define SSH_FILEXFER_ATTR_SUBSECOND_TIMES   0x00000100
 
+#define SSH_FILEXFER_ATTR_COMMON \
+  (SSH_FILEXFER_ATTR_SIZE | SSH_FILEXFER_ATTR_OWNERGROUP | \
+   SSH_FILEXFER_ATTR_PERMISSIONS | SSH_FILEXFER_ATTR_ACCESSTIME | \
+   SSH_FILEXFER_ATTR_MODIFYTIME)
+
 #define SSH_FILEXFER_TYPE_REGULAR          1
 #define SSH_FILEXFER_TYPE_DIRECTORY        2
 #define SSH_FILEXFER_TYPE_SYMLINK          3
@@ -38,6 +43,17 @@
 #define SSH_FXF_TEXT            0x00000040
 
 #define SFTP_MAX_PACKET_LEN   102400
+//---------------------------------------------------------------------------
+#define SFTP_EXT_WINSCP "winscp@winscp.sourceforge.net"
+#define SFTP_EXT_OWNER_GROUP "owner-group-query@generic-extensions"
+#define SFTP_EXT_OWNER_GROUP_REPLY "owner-group-query-reply@generic-extensions"
+#define SFTP_EXT_SOFTWARE "software@generic-extensions"
+#define SFTP_EXT_SOFTWARE_OS "Microsoft Windows"
+#define SFTP_EXT_NEWLINE "newline"
+#define SFTP_EXT_SUPPORTED "supported"
+//---------------------------------------------------------------------------
+#define OGQ_LIST_OWNERS 0x01
+#define OGQ_LIST_GROUPS 0x02
 //---------------------------------------------------------------------------
 const int SFTPMinVersion = 0;
 const int SFTPMaxVersion = 4;
@@ -68,6 +84,16 @@ const int asAll = 0xFFFF;
 //---------------------------------------------------------------------------
 #pragma warn -inl
 //---------------------------------------------------------------------------
+struct TSFTPSupport
+{
+  unsigned int AttributeMask;
+  unsigned int AttributeBits;
+  unsigned int OpenFlags;
+  unsigned int AccessMask;
+  unsigned int MaxReadSize;
+  TStrings * Extensions;
+};
+//---------------------------------------------------------------------------
 class TSFTPPacket
 {
 public:
@@ -88,6 +114,22 @@ public:
     ChangeType(AType);
   }
 
+  TSFTPPacket(const char * Source, unsigned int Len)
+  {
+    Init();
+    FLength = Len;
+    Capacity = FLength;
+    memcpy(Data, Source, Len);
+  }
+
+  TSFTPPacket(const AnsiString & Source)
+  {
+    Init();
+    FLength = Source.Length();
+    Capacity = FLength;
+    memcpy(Data, Source.c_str(), Source.Length());
+  }
+
   ~TSFTPPacket()
   {
     delete[] FData;
@@ -101,7 +143,7 @@ public:
     Capacity = 0;
     FType = AType;
     AddByte(FType);
-    if (FType != SSH_FXP_INIT)
+    if ((FType != 1) && (FType != SSH_FXP_INIT))
     {
       AssignNumber();
       AddCardinal(FMessageNumber);
@@ -154,16 +196,20 @@ public:
 
   void AddProperties(unsigned short * Rights, AnsiString * Owner,
     AnsiString * Group, unsigned long * MTime, unsigned long * ATime,
-    bool IsDirectory, int Version)
+    __int64 * Size, bool IsDirectory, int Version)
   {
     int Flags = 0;
-    if (Rights != NULL)
+    if (Size != NULL)
     {
-      Flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
+      Flags |= SSH_FILEXFER_ATTR_SIZE;
     }
     if ((Owner != NULL) || (Group != NULL))
     {
       Flags |= SSH_FILEXFER_ATTR_OWNERGROUP;
+    }
+    if (Rights != NULL)
+    {
+      Flags |= SSH_FILEXFER_ATTR_PERMISSIONS;
     }
     if ((Version < 4) && ((MTime != NULL) || (ATime != NULL)))
     {
@@ -183,6 +229,11 @@ public:
     {
       AddByte(static_cast<unsigned char>(IsDirectory ?
         SSH_FILEXFER_TYPE_DIRECTORY : SSH_FILEXFER_TYPE_REGULAR));
+    }
+
+    if (Size != NULL)
+    {
+      AddInt64(*Size);
     }
 
     if ((Owner != NULL) || (Group != NULL))
@@ -253,7 +304,7 @@ public:
       Valid & valRights ? &RightsNum : NULL,
       Valid & valOwner ? &Owner : NULL,
       Valid & valGroup ? &Group : NULL,
-      NULL, NULL, IsDirectory, Version); 
+      NULL, NULL, NULL, IsDirectory, Version);
   }
 
   char GetByte()
@@ -291,7 +342,7 @@ public:
     return Result;
   }
 
-  void GetFile(TRemoteFile * File, int Version)
+  void GetFile(TRemoteFile * File, int Version, bool ConsiderDST)
   {
     assert(File);
     unsigned int Flags;
@@ -310,7 +361,7 @@ public:
     if (Version >= 4)
     {
       char FXType = GetByte();
-      char Types[] = "-DLSU";
+      static char Types[] = "-DLSU";
       if (FXType < 1 || FXType > (char)strlen(Types))
       {
         throw Exception(FMTLOAD(SFTP_UNKNOWN_FILE_TYPE, (int(FXType))));
@@ -341,35 +392,35 @@ public:
     {
       if (Flags & SSH_FILEXFER_ATTR_ACMODTIME)
       {
-        File->LastAccess = UnixToDateTime(GetCardinal());
-        File->Modification = UnixToDateTime(GetCardinal());
+        File->LastAccess = UnixToDateTime(GetCardinal(), ConsiderDST);
+        File->Modification = UnixToDateTime(GetCardinal(), ConsiderDST);
       }
     }
     else
     {
       if (Flags & SSH_FILEXFER_ATTR_ACCESSTIME)
       {
-        File->LastAccess = UnixToDateTime((unsigned long)GetInt64());
-      }
-      if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
-      {
-        GetCardinal(); // skip access time subseconds
+        File->LastAccess = UnixToDateTime((unsigned long)GetInt64(), ConsiderDST);
+        if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
+        {
+          GetCardinal(); // skip access time subseconds
+        }
       }
       if (Flags & SSH_FILEXFER_ATTR_CREATETIME)
       {
         GetInt64(); // skip create time
-      }
-      if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
-      {
-        GetCardinal(); // skip create time subseconds
+        if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
+        {
+          GetCardinal(); // skip create time subseconds
+        }
       }
       if (Flags & SSH_FILEXFER_ATTR_MODIFYTIME)
       {
-        File->Modification = UnixToDateTime((unsigned long)GetInt64());
-      }
-      if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
-      {
-        GetCardinal(); // skip modification time subseconds
+        File->Modification = UnixToDateTime((unsigned long)GetInt64(), ConsiderDST);
+        if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
+        {
+          GetCardinal(); // skip modification time subseconds
+        }
       }
     }
 
@@ -391,12 +442,14 @@ public:
 
     if (Type == SSH_FXP_ATTRS || Version >= 4 || ParsingFailed)
     {
-      File->Rights->Number = (unsigned short)(Permissions & 0777);
+      File->Rights->Number = (unsigned short)(Permissions & TRights::rfAllSpecials);
       if (Version < 4)
       {
-        File->Type = (Permissions & 0040000 ? FILETYPE_DIRECTORY : '-');
+        File->Type = (Permissions & TRights::rfDirectory ? FILETYPE_DIRECTORY : '-');
       }
     }
+
+    File->Complete();
 
     // TODO: read extended attributes (Flags & SSH_FILEXFER_ATTR_EXTENDED)
     // Format: Count=Cardinal, Count*(Name=String, Value=String)
@@ -443,8 +496,6 @@ public:
   __property unsigned int Length = { read = FLength };
   __property char * Data = { read = FData };
   __property char * NextData = { read = GetNextData };
-  __property char * Content = { read = GetContent };
-  __property unsigned int ContentLength = { read = GetContentLength };
   __property unsigned int Capacity = { read = FCapacity, write = SetCapacity };
   __property unsigned char Type = { read = FType };
   __property unsigned char RequestType = { read = GetRequestType };
@@ -563,16 +614,6 @@ private:
     }
   }
 
-  char * GetContent()
-  {
-    return Data + sizeof(Byte) + (FType != SSH_FXP_VERSION ? sizeof(Cardinal) : 0);
-  }
-
-  unsigned int GetContentLength()
-  {
-    return Length - sizeof(Byte) - (FType != SSH_FXP_VERSION ? sizeof(Cardinal) : 0);
-  }
-
   char * GetNextData()
   {
     return FPosition < FLength ? FData + FPosition : NULL;
@@ -659,7 +700,7 @@ public:
         if (FFileSystem->FTerminal->Active)
         {
           FFileSystem->FTerminal->LogEvent("Error while disposing the SFTP queue.");
-          HandleExtendedException(&E);
+          FFileSystem->FTerminal->DoHandleExtendedException(&E);
         }
         else
         {
@@ -964,11 +1005,15 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal):
   FNotLoggedPackets = 0;
   FBusy = 0;
   FAvoidBusy = false;
+  FSupport = new TSFTPSupport();
+  FSupport->Extensions = new TStringList();
   FExtensions = new TStringList();
 }
 //---------------------------------------------------------------------------
 __fastcall TSFTPFileSystem::~TSFTPFileSystem()
 {
+  delete FSupport->Extensions;
+  delete FSupport;
   delete FPacketReservations;
   delete FExtensions;
 }
@@ -982,10 +1027,12 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
 {
   assert(FTerminal);
   switch (Capability) {
-    case fcUserGroupListing:
     case fcAnyCommand:
     case fcHardLink:
       return false;
+
+    case fcUserGroupListing:
+      return SupportsExtension(SFTP_EXT_OWNER_GROUP);
 
     case fcOwnerChanging:
     case fcGroupChanging:
@@ -1012,6 +1059,11 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
       assert(false);
       return false;
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSFTPFileSystem::SupportsExtension(const AnsiString & Extension) const
+{
+  return (FSupport->Extensions->IndexOf(Extension) >= 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::KeepAlive()
@@ -1513,6 +1565,7 @@ AnsiString __fastcall TSFTPFileSystem::Canonify(AnsiString Path)
   AnsiString Result;
   FTerminal->LogEvent(FORMAT("Canonifying: \"%s\"", (Path)));
   Path = LocalCanonify(Path);
+  bool TryParent = false;
   try
   {
     Result = RealPath(Path);
@@ -1521,36 +1574,41 @@ AnsiString __fastcall TSFTPFileSystem::Canonify(AnsiString Path)
   {
     if (FTerminal->Active)
     {
-      AnsiString APath = UnixExcludeTrailingBackslash(Path);
-      AnsiString Name = UnixExtractFileName(APath);
-      if (Name == "." || Name == "..")
-      {
-        Result = Path;
-      }
-      else
-      {
-        AnsiString FPath = UnixExtractFilePath(APath);
-        try
-        {
-          Result = RealPath(FPath);
-          Result = UnixIncludeTrailingBackslash(Result) + Name;
-        }
-        catch(...)
-        {
-          if (FTerminal->Active)
-          {
-            Result = Path;
-          }
-          else
-          {
-            throw;
-          }
-        }
-      }
+      TryParent = true;
     }
     else
     {
       throw;
+    }
+  }
+
+  if (TryParent)
+  {
+    AnsiString APath = UnixExcludeTrailingBackslash(Path);
+    AnsiString Name = UnixExtractFileName(APath);
+    if (Name == "." || Name == "..")
+    {
+      Result = Path;
+    }
+    else
+    {
+      AnsiString FPath = UnixExtractFilePath(APath);
+      try
+      {
+        Result = RealPath(FPath);
+        Result = UnixIncludeTrailingBackslash(Result) + Name;
+      }
+      catch(...)
+      {
+        if (FTerminal->Active)
+        {
+          Result = Path;
+        }
+        else
+        {
+          throw;
+        }
+      }
     }
   }
 
@@ -1574,13 +1632,17 @@ AnsiString __fastcall TSFTPFileSystem::GetHomeDirectory()
 }
 //---------------------------------------------------------------------------
 TRemoteFile * __fastcall TSFTPFileSystem::LoadFile(TSFTPPacket * Packet,
-  TRemoteFile * ALinkedByFile)
+  TRemoteFile * ALinkedByFile, const AnsiString FileName)
 {
   TRemoteFile * File = new TRemoteFile(ALinkedByFile);
   try
   {
     File->Terminal = FTerminal;
-    Packet->GetFile(File, FVersion);
+    if (!FileName.IsEmpty())
+    {
+      File->FileName = FileName;
+    }
+    Packet->GetFile(File, FVersion, FTerminal->SessionData->ConsiderDST);
   }
   catch(...)
   {
@@ -1634,7 +1696,7 @@ void __fastcall TSFTPFileSystem::DoStartup()
       ExtensionData = Packet.GetString();
       ExtensionDisplayData = IsDisplayableStr(ExtensionData) ? ExtensionData :
         "0x" + StrToHex(ExtensionData);
-      if (ExtensionName == "newline")
+      if (ExtensionName == SFTP_EXT_NEWLINE)
       {
         FEOL = ExtensionData;
         FTerminal->LogEvent(FORMAT("Server requests EOL sequence %s.",
@@ -1642,6 +1704,42 @@ void __fastcall TSFTPFileSystem::DoStartup()
         if (FEOL.Length() < 1 || FEOL.Length() > 2)
         {
           FTerminal->FatalError(FMTLOAD(SFTP_INVALID_EOL, (ExtensionDisplayData)));
+        }
+      }
+      else if (ExtensionName == SFTP_EXT_SUPPORTED)
+      {
+        TSFTPPacket SupportedStruct(ExtensionData);
+        FSupport->AttributeMask = SupportedStruct.GetCardinal();
+        FSupport->AttributeBits = SupportedStruct.GetCardinal();
+        FSupport->OpenFlags = SupportedStruct.GetCardinal();
+        FSupport->AccessMask = SupportedStruct.GetCardinal();
+        FSupport->MaxReadSize = SupportedStruct.GetCardinal();
+        AnsiString Extension;
+        FSupport->Extensions->Clear();
+        while (SupportedStruct.NextData)
+        {
+          Extension = SupportedStruct.GetString();
+          FSupport->Extensions->Add(Extension);
+        }
+
+        if (FTerminal->IsLogging())
+        {
+          FTerminal->LogEvent(FORMAT(
+            "Server support information:\n"
+            "  Attribute mask: %s, Attribute bits: %s, Open flags: %s\n"
+            "  Access mask: %s, Max read size: %s\n"
+            "  Extensions (%d)\n",
+            (IntToHex(__int64(FSupport->AttributeMask), 4),
+             IntToHex(__int64(FSupport->AttributeBits), 4),
+             IntToHex(__int64(FSupport->OpenFlags), 4),
+             IntToHex(__int64(FSupport->AccessMask), 4),
+             IntToStr(__int64(FSupport->MaxReadSize)),
+             FSupport->Extensions->Count)));
+          for (int Index = 0; Index < FSupport->Extensions->Count; Index++)
+          {
+            FTerminal->LogEvent(
+              FORMAT("    %s", (FSupport->Extensions->Strings[Index])));
+          }
         }
       }
       else
@@ -1653,8 +1751,25 @@ void __fastcall TSFTPFileSystem::DoStartup()
     }
 
     Packet.ChangeType(SSH_FXP_EXTENDED);
-    Packet.AddString("winscp@winscp.sourceforge.net");
-    int Status = SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS,
+    Packet.AddString(SFTP_EXT_WINSCP);
+    SendPacket(&Packet);
+    ReserveResponse(&Packet, &Packet);
+
+    TSFTPPacket PacketSoftware(SSH_FXP_EXTENDED);
+    bool SoftwareExt = SupportsExtension(SFTP_EXT_SOFTWARE);
+    if (SoftwareExt)
+    {
+      PacketSoftware.AddString(SFTP_EXT_SOFTWARE);
+      PacketSoftware.AddString(FTerminal->Configuration->ProductName);
+      PacketSoftware.AddString(FTerminal->Configuration->ProductVersion);
+      PacketSoftware.AddString(FTerminal->Configuration->CompanyName);
+      PacketSoftware.AddString(SFTP_EXT_SOFTWARE_OS);
+      PacketSoftware.AddString(FTerminal->Configuration->OSVersionStr);
+      SendPacket(&PacketSoftware);
+      ReserveResponse(&PacketSoftware, &PacketSoftware);
+    }
+
+    int Status = ReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS,
       asOK | asOpUnsupported);
     if (Status == SSH_FX_OK)
     {
@@ -1663,6 +1778,30 @@ void __fastcall TSFTPFileSystem::DoStartup()
     else
     {
       FTerminal->LogEvent("Server does not recognise WinSCP.");
+    }
+
+    if (SoftwareExt)
+    {
+      ReceiveResponse(&PacketSoftware, &PacketSoftware, SSH_FXP_EXTENDED_REPLY,
+        asOpUnsupported);
+      if ((PacketSoftware.Type != SSH_FXP_EXTENDED_REPLY) ||
+          (PacketSoftware.GetString() != SFTP_EXT_SOFTWARE))
+      {
+        FTerminal->LogEvent(FORMAT("Invalid response to %s", (SFTP_EXT_SOFTWARE)));
+      }
+      else
+      {
+        AnsiString Software(PacketSoftware.GetString());
+        AnsiString Vendor(PacketSoftware.GetString());
+        AnsiString Version(PacketSoftware.GetString());
+        AnsiString OS(PacketSoftware.GetString());
+        AnsiString OSVersion(PacketSoftware.GetString());
+
+        FTerminal->LogEvent(FORMAT("Server software: %s %s by %s",
+          (Software, Version, Vendor)));
+        FTerminal->LogEvent(FORMAT("Server OS: %s %s",
+          (OS, OSVersion)));
+      }
     }
   }
 }
@@ -1680,9 +1819,59 @@ char * __fastcall TSFTPFileSystem::GetEOL() const
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSFTPFileSystem::LookupUserGroups()
+void __fastcall TSFTPFileSystem::LookupUsersGroups()
 {
-  assert(false);
+  assert(SupportsExtension(SFTP_EXT_OWNER_GROUP));
+
+  TSFTPPacket PacketOwners(SSH_FXP_EXTENDED);
+  TSFTPPacket PacketGroups(SSH_FXP_EXTENDED);
+  TSFTPPacket * Packet;
+  TUsersGroupsList * List;
+
+  TSFTPPacket * Packets[] = { &PacketOwners, &PacketGroups };
+  TUsersGroupsList * Lists[] = { FTerminal->FUsers, FTerminal->FGroups };
+  char ListTypes[] = { OGQ_LIST_OWNERS, OGQ_LIST_GROUPS };
+
+  for (int Index = 0; Index < LENOF(Packets); Index++)
+  {
+    Packet = Packets[Index];
+    Packet->AddString(SFTP_EXT_OWNER_GROUP);
+    Packet->AddByte(ListTypes[Index]);
+    SendPacket(Packet);
+    ReserveResponse(Packet, Packet);
+  }
+
+  for (int Index = 0; Index < LENOF(Packets); Index++)
+  {
+    Packet = Packets[Index];
+
+    ReceiveResponse(Packet, Packet, SSH_FXP_EXTENDED_REPLY, asOpUnsupported);
+
+    if ((Packet->Type != SSH_FXP_EXTENDED_REPLY) ||
+        (Packet->GetString() != SFTP_EXT_OWNER_GROUP_REPLY))
+    {
+      FTerminal->LogEvent(FORMAT("Invalid response to %s", (SFTP_EXT_OWNER_GROUP)));
+    }
+    else
+    {
+      List = Lists[Index];
+      unsigned long Count = Packet->GetCardinal();
+
+      List->BeginUpdate();
+      try
+      {
+        List->Clear();
+        for (unsigned long Item = 0; Item < Count; Item++)
+        {
+          List->Add(Packet->GetString());
+        }
+      }
+      __finally
+      {
+        List->EndUpdate();
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::ReadCurrentDirectory()
@@ -1708,7 +1897,7 @@ void __fastcall TSFTPFileSystem::TryOpenDirectory(const AnsiString Directory)
 {
   FTerminal->LogEvent(FORMAT("Trying to open directory \"%s\".", (Directory)));
   TSFTPPacket Packet(SSH_FXP_OPENDIR);
-  Packet.AddString(Directory);
+  Packet.AddString(UnixExcludeTrailingBackslash(Directory));
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
   AnsiString Handle = Packet.GetString();
   Packet.ChangeType(SSH_FXP_CLOSE);
@@ -1740,7 +1929,8 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 {
   assert(FileList && !FileList->Directory.IsEmpty());
 
-  AnsiString Directory = LocalCanonify(FileList->Directory);
+  AnsiString Directory;
+  Directory = UnixExcludeTrailingBackslash(LocalCanonify(FileList->Directory));
   FTerminal->LogEvent(FORMAT("Listing directory \"%s\".", (Directory)));
 
   // moved before SSH_FXP_OPENDIR, so directory listing does not retain
@@ -1797,7 +1987,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
         for (unsigned long Index = 0; Index < Count; Index++)
         {
-          File = LoadFile(&ListingPacket, NULL);
+          File = LoadFile(&ListingPacket, NULL, "");
           FileList->AddFile(File);
 
           Total++;
@@ -1891,6 +2081,10 @@ void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   // (performance benefit)
   TSFTPPacket AttrsPacket(SSH_FXP_STAT);
   AttrsPacket.AddString(FileName);
+  if (FVersion >= 4)
+  {
+    AttrsPacket.AddCardinal(SSH_FILEXFER_ATTR_COMMON);
+  }
   SendPacket(&AttrsPacket);
   ReserveResponse(&AttrsPacket, &AttrsPacket);
 
@@ -1902,8 +2096,9 @@ void __fastcall TSFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
   SymlinkFile->LinkTo = ReadLinkPacket.GetString();
 
   ReceiveResponse(&AttrsPacket, &AttrsPacket, SSH_FXP_ATTRS);
-  File = LoadFile(&AttrsPacket, SymlinkFile);
-  File->FileName = UnixExtractFileName(SymlinkFile->FileName);
+  // SymlinkFile->FileName was used instead SymlinkFile->LinkTo before, why?
+  File = LoadFile(&AttrsPacket, SymlinkFile,
+    UnixExtractFileName(SymlinkFile->LinkTo));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::ReadFile(const AnsiString FileName,
@@ -1962,8 +2157,7 @@ void __fastcall TSFTPFileSystem::CustomReadFile(const AnsiString FileName,
 
   if (Packet.Type == SSH_FXP_ATTRS)
   {
-    File = LoadFile(&Packet, ALinkedByFile);
-    File->FileName = UnixExtractFileName(FileName);
+    File = LoadFile(&Packet, ALinkedByFile, UnixExtractFileName(FileName));
   }
   else
   {
@@ -2001,7 +2195,18 @@ void __fastcall TSFTPFileSystem::RenameFile(const AnsiString FileName,
   TSFTPPacket Packet(SSH_FXP_RENAME);
   AnsiString RealName = LocalCanonify(FileName);
   Packet.AddString(RealName);
-  Packet.AddString(UnixExtractFilePath(RealName) + NewName);
+  AnsiString TargetName;
+  if (UnixExtractFilePath(NewName).IsEmpty())
+  {
+    // rename case (TTerminal::RenameFile)
+    TargetName = UnixExtractFilePath(RealName) + NewName;
+  }
+  else
+  {
+    // move case (TTerminal::MoveFiles)
+    TargetName = NewName;
+  }
+  Packet.AddString(TargetName);
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
@@ -2141,7 +2346,8 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(const AnsiString FileName,
         Answers |= qaAppend;
       }
       Answer = FTerminal->ConfirmFileOverwrite(FileName, FileParams,
-        Answers, qpNeverAskAgainCheck);
+        Answers, qpNeverAskAgainCheck,
+        OperationProgress->Side == osLocal ? osRemote : osLocal);
     );
 
     if (Answer == qaAppend)
@@ -2321,7 +2527,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
       TOverwriteFileParams FileParams;
       FileParams.SourceSize = OperationProgress->LocalSize;
-      FileParams.SourceTimestamp = UnixToDateTime(MTime);
+      FileParams.SourceTimestamp = UnixToDateTime(MTime,
+        FTerminal->SessionData->ConsiderDST);
 
       if (ResumeAllowed)
       {
@@ -2429,7 +2636,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           {
             while (Queue.Next(SSH_FXP_STATUS))
             {
-              if (OperationProgress->Cancel == csCancel)
+              if (OperationProgress->Cancel)
               {
                 Abort();
               }
@@ -2489,7 +2696,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           Packet.AddProperties(
             SetRights ? &Rights : NULL, NULL, NULL,
             CopyParam->PreserveTime ? &MTime : NULL,
-            CopyParam->PreserveTime ? &ATime : NULL, false, FVersion);
+            CopyParam->PreserveTime ? &ATime : NULL,
+            NULL, false, FVersion);
           SendPacketAndReceiveResponse(&Packet, NULL, SSH_FXP_STATUS);
         );
       }
@@ -2505,13 +2713,27 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   if (Params & cpDelete) Sysutils::DeleteFile(FileName);
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TSFTPFileSystem::SFTPOpenRemoteFile(
+  const AnsiString & FileName, unsigned int OpenType, __int64 Size)
+{
+  TSFTPPacket Packet(SSH_FXP_OPEN);
+
+  Packet.AddString(FileName);
+  Packet.AddCardinal(OpenType);
+  Packet.AddProperties(NULL, NULL, NULL, NULL, NULL,
+    Size >= 0 ? &Size : NULL, false, FVersion);
+
+  SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
+
+  return Packet.GetString();
+}
+//---------------------------------------------------------------------------
 int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Param2*/)
 {
   TOpenRemoteFileParams * OpenParams = (TOpenRemoteFileParams *)AOpenParams;
   assert(OpenParams);
   TFileOperationProgressType * OperationProgress = OpenParams->OperationProgress;
 
-  TSFTPPacket OpenRequest;
   int OpenType;
   bool Confirmed = false;
   bool Success = false;
@@ -2520,8 +2742,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
   {
     try
     {
-      OpenType = 0;
-      OpenRequest.ChangeType(SSH_FXP_OPEN);
+      OpenType = SSH_FXF_WRITE | SSH_FXF_CREAT;
       if (FTerminal->Configuration->ConfirmOverwriting &&
           !Confirmed && !OperationProgress->YesToAll && !OpenParams->Resume &&
           !(OpenParams->Params & cpNoConfirmation) &&
@@ -2538,13 +2759,9 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         OpenType |= SSH_FXF_TEXT;
       }
 
-      OpenRequest.AddString(OpenParams->RemoteFileName);
-      OpenRequest.AddCardinal(SSH_FXF_WRITE | SSH_FXF_CREAT | OpenType );
+      OpenParams->RemoteFileHandle = SFTPOpenRemoteFile(
+        OpenParams->RemoteFileName, OpenType, OperationProgress->LocalSize);
 
-      OpenRequest.AddProperties(NULL, NULL, NULL, NULL, NULL, false, FVersion);
-        
-      SendPacketAndReceiveResponse(&OpenRequest, &OpenRequest, SSH_FXP_HANDLE);
-      OpenParams->RemoteFileHandle = OpenRequest.GetString();
       Success = true;
     }
     catch(...)
@@ -2900,7 +3117,8 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
         TOverwriteFileParams FileParams;
         FileParams.SourceSize = OperationProgress->TransferSize;
         FileParams.SourceTimestamp = File->Modification;
-        FileParams.DestTimestamp = UnixToDateTime(MTime);
+        FileParams.DestTimestamp = UnixToDateTime(MTime,
+          FTerminal->SessionData->ConsiderDST);
         FileParams.DestSize = DestFileSize;
         SFTPConfirmOverwrite(DestFileName, (DestFileSize >= OperationProgress->TransferSize),
           OperationProgress, OverwriteMode, &FileParams);
@@ -2952,22 +3170,12 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
 
       FTerminal->LogEvent("Opening remote file.");
       FILE_OPERATION_LOOP (FMTLOAD(SFTP_OPEN_FILE_ERROR, (FileName)),
-        TSFTPPacket Packet;
-        Packet.ChangeType(SSH_FXP_OPEN);
-        Packet.AddString(FileName);
         int OpenType = SSH_FXF_READ;
         if ((FVersion >= 4) && OperationProgress->AsciiTransfer)
         {
           OpenType |= SSH_FXF_TEXT;
         }
-        Packet.AddCardinal(OpenType);
-        Packet.AddCardinal(0); // no attrs
-        if (FVersion >= 4)
-        {
-          Packet.AddByte(SSH_FILEXFER_TYPE_REGULAR);
-        }
-        SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_HANDLE);
-        RemoteHandle = Packet.GetString();
+        RemoteHandle = SFTPOpenRemoteFile(FileName, OpenType);
       );
 
       FileStream = new THandleStream((THandle)LocalHandle);
@@ -3101,8 +3309,10 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
 
       if (CopyParam->PreserveTime)
       {
-        FILETIME AcTime = DateTimeToFileTime(File->LastAccess);
-        FILETIME WrTime = DateTimeToFileTime(File->Modification);
+        FILETIME AcTime = DateTimeToFileTime(File->LastAccess,
+          FTerminal->SessionData->ConsiderDST);
+        FILETIME WrTime = DateTimeToFileTime(File->Modification,
+          FTerminal->SessionData->ConsiderDST);
         SetFileTime(LocalHandle, NULL, &AcTime, &WrTime);
       }
 

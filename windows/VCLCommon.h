@@ -14,5 +14,15 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage);
 void __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
 bool __fastcall SelectDirectory(AnsiString & Path, const AnsiString Prompt,
   bool PreserveFileName);
+enum TListViewCheckAll { caCheck, caUncheck, caToggle };
+bool __fastcall ListViewAnyChecked(TListView * ListView, bool Checked = true);
+void __fastcall ListViewCheckAll(TListView * ListView,
+  TListViewCheckAll CheckAll);
+void __fastcall PathComboBoxKeyDown(
+  TCustomComboBox * ComboBox, WORD & Key, TShiftState Shift, bool Unix);
+void __fastcall PathEditKeyDown(
+  TCustomEdit * Edit, WORD & Key, TShiftState Shift, bool Unix);
+void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar);
+void __fastcall SetControlsOrder(TControl ** ControlsOrder, int Count);
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

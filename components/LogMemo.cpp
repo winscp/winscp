@@ -2,9 +2,9 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "LogMemo.h"
-
 #include <Common.h>
+
+#include "LogMemo.h"
 
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

@@ -299,7 +299,7 @@ protected:
 	virtual AnsiString __fastcall ItemDragFileName(Comctrls::TListItem* Item);
 	virtual __int64 __fastcall ItemFileSize(Comctrls::TListItem* Item) = 0 ;
 	virtual int __fastcall ItemImageIndex(Comctrls::TListItem* Item, bool Cache) = 0 ;
-	virtual System::TDateTime __fastcall ItemFileTime(Comctrls::TListItem* Item) = 0 ;
+	virtual System::TDateTime __fastcall ItemFileTime(Comctrls::TListItem* Item, Baseutils::TDateTimePrecision &Precision) = 0 ;
 	virtual bool __fastcall ItemIsRecycleBin(Comctrls::TListItem* Item);
 	DYNAMIC void __fastcall KeyDown(Word &Key, Classes::TShiftState Shift);
 	DYNAMIC void __fastcall KeyPress(char &Key);

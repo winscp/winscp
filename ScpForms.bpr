@@ -4,37 +4,39 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpForms.lib"/>
-    <OBJFILES value="forms\InputDlg.obj forms\VCLCommon.obj forms\About.obj 
-      forms\Cleanup.obj forms\OperationStatus.obj forms\Console.obj 
-      forms\Copy.obj forms\CopyParams.obj forms\ComboInput.obj 
-      forms\Editor.obj forms\FileSystemInfo.obj forms\FullSynchronize.obj 
+    <OBJFILES value="forms\InputDlg.obj windows\VCLCommon.obj forms\About.obj 
+      forms\Cleanup.obj forms\Console.obj forms\Copy.obj 
+      forms\CopyParams.obj forms\ComboInput.obj forms\Editor.obj 
+      forms\FileSystemInfo.obj forms\FullSynchronize.obj 
       forms\GeneralSettings.obj forms\ImportSessions.obj forms\Licence.obj 
       forms\LocationProfiles.obj forms\Log.obj forms\LogSettings.obj 
-      forms\Login.obj forms\OpenDirectory.obj forms\Password.obj 
-      forms\Preferences.obj forms\Progress.obj forms\Properties.obj 
-      forms\Rights.obj forms\SelectMask.obj forms\Symlink.obj 
-      forms\Synchronize.obj forms\SynchronizeProgress.obj"/>
+      forms\Login.obj forms\OpenDirectory.obj forms\OperationStatus.obj 
+      forms\Password.obj forms\Preferences.obj forms\Progress.obj 
+      forms\Properties.obj forms\Rights.obj forms\RightsExt.obj 
+      forms\SelectMask.obj forms\Symlink.obj forms\Synchronize.obj 
+      forms\SynchronizeProgress.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
-    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Cleanup.dfm forms\OperationStatus.dfm 
-      forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm forms\ComboInput.dfm 
-      forms\Editor.dfm forms\FileSystemInfo.dfm forms\FullSynchronize.dfm 
+    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Cleanup.dfm forms\Console.dfm 
+      forms\Copy.dfm forms\CopyParams.dfm forms\ComboInput.dfm forms\Editor.dfm 
+      forms\FileSystemInfo.dfm forms\FullSynchronize.dfm 
       forms\GeneralSettings.dfm forms\ImportSessions.dfm forms\Licence.dfm 
       forms\LocationProfiles.dfm forms\Log.dfm forms\LogSettings.dfm 
-      forms\Login.dfm forms\OpenDirectory.dfm forms\Password.dfm 
-      forms\Preferences.dfm forms\Progress.dfm forms\Properties.dfm 
-      forms\Rights.dfm forms\SelectMask.dfm forms\Symlink.dfm 
-      forms\Synchronize.dfm forms\SynchronizeProgress.dfm"/>
+      forms\Login.dfm forms\OpenDirectory.dfm forms\OperationStatus.dfm 
+      forms\Password.dfm forms\Preferences.dfm forms\Progress.dfm 
+      forms\Properties.dfm forms\Rights.dfm forms\RightsExt.dfm 
+      forms\SelectMask.dfm forms\Symlink.dfm forms\Synchronize.dfm 
+      forms\SynchronizeProgress.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
     <SPARELIBS value=""/>
-    <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi adortl.bpi vcldb.bpi 
-      qrpt.bpi bdertl.bpi vcldbx.bpi dsnap.bpi cds.bpi bdecds.bpi teeui.bpi 
-      teedb.bpi tee.bpi teeqr.bpi ibxpress.bpi vclie.bpi xmlrtl.bpi inet.bpi 
-      inetdbbde.bpi inetdbxpress.bpi inetdb.bpi nmfast.bpi soaprtl.bpi 
-      dclocx.bpi dbexpress.bpi dbxcds.bpi indy.bpi bcb2kaxserver.bpi 
-      DragDrop_B5.bpi visualclx.bpi visualdbclx.bpi bcbie.bpi Moje_B5.bpi 
-      DriveDir_B5.bpi"/>
+    <PACKAGES value="DragDrop_B5.bpi DriveDir_B5.bpi Moje_B5.bpi
+      adortl.bpi bcb2kaxserver.bpi bcbie.bpi bcbsmp.bpi bdecds.bpi bdertl.bpi
+      cds.bpi dbexpress.bpi dbrtl.bpi dbxcds.bpi dclocx.bpi dsnap.bpi
+      ibxpress.bpi indy.bpi inet.bpi inetdb.bpi inetdbbde.bpi inetdbxpress.bpi
+      nmfast.bpi qrpt.bpi rtl.bpi soaprtl.bpi tee.bpi teedb.bpi teeqr.bpi
+      teeui.bpi vcl.bpi vcldb.bpi vcldbx.bpi vclie.bpi vclx.bpi visualclx.bpi
+      visualdbclx.bpi xmlrtl.bpi"/>
     <PATHCPP value=".;forms;windows"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
@@ -69,7 +71,6 @@
       <FILE FILENAME="windows\VCLCommon.cpp" FORMNAME="" UNITNAME="VCLCommon" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\About.cpp" FORMNAME="AboutDialog" UNITNAME="About" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Cleanup.cpp" FORMNAME="CleanupDialog" UNITNAME="Cleanup" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="forms\OperationStatus.cpp" FORMNAME="OperationStatusForm" UNITNAME="OperationStatus" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Console.cpp" FORMNAME="ConsoleDialog" UNITNAME="Console" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Copy.cpp" FORMNAME="CopyDialog" UNITNAME="Copy" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CopyParams.cpp" FORMNAME="CopyParamsFrame" UNITNAME="CopyParams" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
@@ -85,11 +86,13 @@
       <FILE FILENAME="forms\LogSettings.cpp" FORMNAME="LoggingFrame" UNITNAME="LogSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Login.cpp" FORMNAME="LoginDialog" UNITNAME="Login" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\OpenDirectory.cpp" FORMNAME="OpenDirectoryDialog" UNITNAME="OpenDirectory" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\OperationStatus.cpp" FORMNAME="OperationStatusForm" UNITNAME="OperationStatus" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Password.cpp" FORMNAME="PasswordDialog" UNITNAME="Password" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Preferences.cpp" FORMNAME="PreferencesDialog" UNITNAME="Preferences" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Progress.cpp" FORMNAME="ProgressForm" UNITNAME="Progress" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Properties.cpp" FORMNAME="PropertiesDialog" UNITNAME="Properties" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Rights.cpp" FORMNAME="RightsFrame" UNITNAME="Rights" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\RightsExt.cpp" FORMNAME="RightsExtFrame" UNITNAME="RightsExt" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\SelectMask.cpp" FORMNAME="SelectMaskDialog" UNITNAME="SelectMask" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Symlink.cpp" FORMNAME="SymlinkDialog" UNITNAME="Symlink" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Synchronize.cpp" FORMNAME="SynchronizeDialog" UNITNAME="Synchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

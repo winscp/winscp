@@ -16,6 +16,7 @@
 #include <PathLabel.hpp>
 
 #include "Rights.h"
+#include "RightsExt.h"
 //----------------------------------------------------------------------------
 class TTerminal;
 //----------------------------------------------------------------------------
@@ -36,7 +37,6 @@ __published:
   TLabel *LinksToLabelLabel;
   TPathLabel *LinksToLabel;
   TBevel *Bevel2;
-  TRightsFrame *RightsFrame;
   TLabel *Label3;
   TBevel *Bevel3;
   TLabel *Label4;
@@ -47,6 +47,7 @@ __published:
   TBevel *RecursiveBevel;
   TCheckBox *RecursiveCheck;
   TButton *CalculateSizeButton;
+  TRightsExtFrame *RightsFrame;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
@@ -56,6 +57,7 @@ private:
   TStrings * FFileList;
   TRemoteProperties FOrigProperties;
   bool FGroupsSet;
+  bool FUsersSet;
   TImageList * FShellImageList;
   bool FAllowCalculateSize;
   bool FSizeNotCalculated;
@@ -66,11 +68,13 @@ private:
   AnsiString __fastcall GetDirectory();
   TRemoteProperties __fastcall GetFileProperties();
   TStrings * __fastcall GetGroupList();
+  TStrings * __fastcall GetUserList();
   bool __fastcall GetMultiple();
   void __fastcall SetAllowedChanges(int value);
   void __fastcall SetFileList(TStrings * value);
   void __fastcall SetFileProperties(TRemoteProperties value);
   void __fastcall SetGroupList(TStrings * value);
+  void __fastcall SetUserList(TStrings * value);
   void __fastcall TerminalClose(TObject * /*Sender*/);
 
 protected:
@@ -90,6 +94,7 @@ public:
   __property TStrings * FileList = { read = FFileList, write = SetFileList };
   __property TRemoteProperties FileProperties = { read = GetFileProperties, write = SetFileProperties };
   __property TStrings * GroupList = { read = GetGroupList, write = SetGroupList };
+  __property TStrings * UserList = { read = GetUserList, write = SetUserList };
   __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
 };
 //----------------------------------------------------------------------------

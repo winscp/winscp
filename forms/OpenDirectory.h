@@ -53,6 +53,10 @@ __published:
   void __fastcall FormShow(TObject *Sender);
   void __fastcall BookmarksListKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
+  void __fastcall RemoteDirectoryEditKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
+  void __fastcall LocalDirectoryEditKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
 
 public:
   __fastcall TOpenDirectoryDialog(TComponent* AOwner);
