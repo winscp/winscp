@@ -217,7 +217,19 @@ void __fastcall TFileOperationProgressType::SetTransferSize(__int64 ASize)
 {
   TransferSize = ASize;
   DoProgress();
-} 
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::ChangeTransferSize(__int64 ASize)
+{
+  // reflect change on file size (due to text transfer mode conversion particulary)
+  // on total transfer size
+  if (TotalSizeSet)
+  {
+    TotalSize += (ASize - TransferSize); 
+  }
+  TransferSize = ASize;
+  DoProgress();
+}
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize,
   bool AddToTotals)

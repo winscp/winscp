@@ -93,6 +93,7 @@ public:
   void __fastcall SetAsciiTransfer(bool AAsciiTransfer);
   void __fastcall SetResumeStatus(TResumeStatus AResumeStatus);
   void __fastcall SetTransferSize(__int64 ASize);
+  void __fastcall ChangeTransferSize(__int64 ASize);
   void __fastcall SetTotalSize(__int64 ASize);
   void __fastcall Start(TFileOperation AOperation,
     TOperationSide ASide, int ACount, bool ADragDrop = false,

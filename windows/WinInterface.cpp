@@ -102,6 +102,7 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
       {
         TMsgDlgBtn Button;
         bool R = MapButton(Params->Aliases[i].Button, Button);
+        USEDPARAM(R);
         assert(R);
         Aliases[i].Button = Button;
         Aliases[i].Alias = Params->Aliases[i].Alias;
@@ -165,7 +166,6 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageP
 
   switch (Result) {
     #define MAP_RESULT(RESULT) case mr ## RESULT: Answer = qa ## RESULT; break;
-    MAP_RESULT(Cancel);
     MAP_RESULT(Abort);
     MAP_RESULT(All);
     MAP_RESULT(NoToAll);
@@ -174,6 +174,12 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageP
     MAP_RESULT(No);
     MAP_RESULT(Retry);
     #undef MAP_RESULT
+
+    case mrCancel:
+      // mrCancel is returned always when X button is pressed, despite
+      // no Cancel button was on the dialog. Find valid "cancel" answer.  
+      Answer = CancelAnswer(Answers);
+      break;
 
     case mrOk:
       Answer = qaOK;
@@ -255,8 +261,9 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   {
     MoreMessages = EE->MoreMessages;
   }
-
-  return MoreMessageDialog(FORMAT(MessageFormat, (TranslateExceptionMessage(E))),
+  AnsiString Message = TranslateExceptionMessage(E);
+  
+  return MoreMessageDialog(FORMAT(MessageFormat, (Message)),
     MoreMessages, Type, Answers, HelpCtx, Params);
 }
 //---------------------------------------------------------------------------

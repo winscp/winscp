@@ -313,7 +313,7 @@ AnsiString __fastcall StrToHex(const AnsiString Str)
 //---------------------------------------------------------------------------
 AnsiString __fastcall HexToStr(const AnsiString Hex)
 {
-  static AnsiString Digits = "01234556789ABCDEF";
+  static AnsiString Digits = "0123456789ABCDEF";
   AnsiString Result;
   int L, P1, P2;
   L = Hex.Length();
@@ -715,13 +715,13 @@ int __fastcall CancelAnswer(int Answers)
   {
     Result = qaCancel;
   }
-  else if ((Answers & qaAbort) != 0)
-  {
-    Result = qaAbort;
-  }
   else if ((Answers & qaNo) != 0)
   {
     Result = qaNo;
+  }
+  else if ((Answers & qaAbort) != 0)
+  {
+    Result = qaAbort;
   }
   else if ((Answers & qaOK) != 0)
   {
@@ -730,7 +730,7 @@ int __fastcall CancelAnswer(int Answers)
   else
   {
     assert(false);
-    Result = qaOK;
+    Result = qaCancel;
   }
   return Result;
 }

@@ -75,6 +75,7 @@ protected:
 	bool FDimmHiddenDirs;
 	bool FShowHiddenDirs;
 	bool FContinue;
+	Controls::TImageList* FImageList;
 	Customdirview::TDDOnDragEnter FOnDDDragEnter;
 	Customdirview::TDDOnDragLeave FOnDDDragLeave;
 	Customdirview::TDDOnDragOver FOnDDDragOver;
@@ -103,6 +104,9 @@ protected:
 	virtual void __fastcall SetCustomDirView(Customdirview::TCustomDirView* Value) = 0 ;
 	virtual void __fastcall CreateWnd(void);
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
+	Comctrls::TTreeNode* __fastcall GetNodeFromHItem(const tagTVITEMA &Item);
+	virtual bool __fastcall IsCustomDrawn(Comctrls::TCustomDrawTarget Target, Comctrls::TCustomDrawStage Stage);
+	virtual bool __fastcall CustomDrawItem(Comctrls::TTreeNode* Node, Comctrls::TCustomDrawState State, Comctrls::TCustomDrawStage Stage, bool &PaintImages);
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Msg);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Msg);
 	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Msg);
@@ -136,7 +140,9 @@ protected:
 	virtual bool __fastcall NodePathExists(Comctrls::TTreeNode* Node);
 	virtual Graphics::TColor __fastcall NodeColor(Comctrls::TTreeNode* Node) = 0 ;
 	virtual bool __fastcall NodeCanDrag(Comctrls::TTreeNode* Node);
+	virtual Word __fastcall NodeOverlayIndexes(Comctrls::TTreeNode* Node);
 	virtual Comctrls::TTreeNode* __fastcall FindPathNode(AnsiString Path) = 0 ;
+	virtual void __fastcall ClearDragFileList(Dragdropfilesex::TFileList* FileList);
 	virtual void __fastcall AddToDragFileList(Dragdropfilesex::TFileList* FileList, Comctrls::TTreeNode* Node);
 	virtual void __fastcall ValidateDirectoryEx(Comctrls::TTreeNode* Node, TRecursiveScan Recurse, bool NewDirs) = 0 ;
 	void __fastcall ValidateVisibleDirectories(Comctrls::TTreeNode* Node);
@@ -144,6 +150,7 @@ protected:
 	virtual void __fastcall RebuildTree(void) = 0 ;
 	virtual void __fastcall DisplayContextMenu(Comctrls::TTreeNode* Node, const Types::TPoint &ScreenPos) = 0 ;
 	virtual void __fastcall DisplayPropertiesMenu(Comctrls::TTreeNode* Node) = 0 ;
+	__property Controls::TImageList* ImageList = {read=FImageList};
 	
 public:
 	__fastcall virtual TCustomDriveView(Classes::TComponent* AOwner);

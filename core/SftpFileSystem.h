@@ -103,7 +103,7 @@ protected:
 
   void __fastcall SFTPSource(const AnsiString FileName,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, int Level);
+    TFileOperationProgressType * OperationProgress, unsigned int Flags);
   AnsiString __fastcall SFTPOpenRemoteFile(const AnsiString & FileName,
     unsigned int OpenType, __int64 Size = -1);
   int __fastcall SFTPOpenRemote(void * AOpenParams, void * /*Param2*/);
@@ -112,7 +112,7 @@ protected:
     bool TransferFinished);
   void __fastcall SFTPDirectorySource(const AnsiString DirectoryName,
     const AnsiString TargetDir, int /*Attrs*/, const TCopyParamType * CopyParam,
-    int Params, TFileOperationProgressType * OperationProgress, int Level);
+    int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPConfirmOverwrite(const AnsiString FileName,
     bool TargetBiggerThanSource, TFileOperationProgressType * OperationProgress,
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
@@ -121,7 +121,7 @@ protected:
   void __fastcall SFTPSink(const AnsiString FileName,
     const TRemoteFile * File, const AnsiString TargetDir,
     const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, int Level);
+    TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPSinkFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
   char * __fastcall GetEOL() const; 

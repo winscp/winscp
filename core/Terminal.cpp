@@ -2111,16 +2111,16 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
       FilesToCopy->Count, Params & cpDragDrop, TargetDir);
 
-    if (CopyParam->CalculateSize)
-    {
-      OperationProgress.SetTotalSize(Size);
-    }
-
     OperationProgress.YesToNewer = FLAGSET(Params, cpNewerOnly);
 
     FOperationProgress = &OperationProgress;
     try
     {
+      if (CopyParam->CalculateSize)
+      {
+        OperationProgress.SetTotalSize(Size);
+      }
+
       AnsiString UnlockedTargetDir = TranslateLockedPath(TargetDir, false);
       BeginTransaction();
       try
@@ -2211,16 +2211,15 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
       OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
         FilesToCopy->Count, Params & cpDragDrop, TargetDir);
 
-      if (TotalSizeKnown)
-      {
-        OperationProgress.SetTotalSize(TotalSize);
-      }
-
       OperationProgress.YesToNewer = FLAGSET(Params, cpNewerOnly);
 
       FOperationProgress = &OperationProgress;
       try
       {
+        if (TotalSizeKnown)
+        {
+          OperationProgress.SetTotalSize(TotalSize);
+        }
 
         try
         {

@@ -117,38 +117,6 @@ bool __fastcall THierarchicalStorage::HasSubKeys()
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall THierarchicalStorage::KeyExists(const AnsiString SubKey)
-{
-  bool Result;
-  TStrings * SubKeys = new TStringList();
-  try
-  {
-    GetSubKeyNames(SubKeys);
-    Result = (SubKeys->IndexOf(SubKey) >= 0);
-  }
-  __finally
-  {
-    delete SubKeys;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall THierarchicalStorage::ValueExists(const AnsiString Value)
-{
-  bool Result;
-  TStrings * Values = new TStringList();
-  try
-  {
-    GetValueNames(Values);
-    Result = (Values->IndexOf(Value) >= 0);
-  }
-  __finally
-  {
-    delete Values;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::ReadValues(Classes::TStrings* Strings,
   bool MaintainKeys)
 {
@@ -584,6 +552,16 @@ void __fastcall TIniFileStorage::GetSubKeyNames(Classes::TStrings* Strings)
 void __fastcall TIniFileStorage::GetValueNames(Classes::TStrings* Strings)
 {
   return FIniFile->ReadSection(CurrentSection, Strings);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TIniFileStorage::KeyExists(const AnsiString SubKey)
+{
+  return FIniFile->SectionExists(CurrentSubKey + SubKey);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TIniFileStorage::ValueExists(const AnsiString Value)
+{
+  return FIniFile->ValueExists(CurrentSection, Value);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::DeleteValue(const AnsiString Name)

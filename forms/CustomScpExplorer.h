@@ -29,10 +29,7 @@ class TTerminalQueueStatus;
 class TQueueItem;
 class TQueueItemProxy;
 class TQueueController;
-namespace Discmon
-{
-class TDiscMonitor;
-}
+class TSynchronizeController;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -153,10 +150,8 @@ private:
   bool FRefreshRemoteDirectory;
   TListItem * FQueueActedItem;
   TQueueController * FQueueController;
-  TSynchronizeParamType FSynchronizeParams;
-  Discmon::TDiscMonitor * FSynchronizeMonitor;
-  TSynchronizeAbortEvent FSynchronizeAbort;
   int FLastDropEffect;
+  bool FPendingTempSpaceWarn;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
@@ -221,14 +216,12 @@ protected:
     AnsiString & RemoteDirectory, TSynchronizeMode & Mode);
   bool __fastcall DoSynchronizeDirectories(AnsiString & LocalDirectory,
     AnsiString & RemoteDirectory);
-  void __fastcall SynchronizeStartStop(TObject * Sender, bool Start,
-    const TSynchronizeParamType & Params, TSynchronizeAbortEvent OnAbort);
-  void __fastcall SynchronizeChange(TObject * Sender, const AnsiString Directory);
-  void __fastcall SynchronizeInvalid(TObject * Sender, const AnsiString Directory);
+  void __fastcall DoSynchronize(TSynchronizeController * Sender,
+    const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+    const TSynchronizeParamType & Params);
   void __fastcall Synchronize(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType & CopyParam, int Params);
-  void __fastcall SynchronizeAbort(bool Close);
   virtual void __fastcall BatchStart(void *& Storage);
   virtual void __fastcall BatchEnd(void * Storage);
   void __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,

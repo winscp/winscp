@@ -520,6 +520,7 @@ extern PACKAGE bool __fastcall CreateFileShortCut(AnsiString SourceFile, AnsiStr
 extern PACKAGE int __fastcall GetIconIndex(const AnsiString AFile, unsigned Attrs, unsigned Flags);
 extern PACKAGE _SHFILEINFOA __fastcall GetshFileInfo(const AnsiString AFile, unsigned Attrs, unsigned Flags);
 extern PACKAGE bool __fastcall GetShellDisplayName(const _di_IShellFolder ShellFolder, Shlobj::PItemIDList IDList, unsigned Flags, AnsiString &Name);
+extern PACKAGE Controls::TImageList* __fastcall OverlayImageList(int Size);
 
 }	/* namespace Customdirview */
 using namespace Customdirview;

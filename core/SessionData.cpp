@@ -62,7 +62,6 @@ void __fastcall TSessionData::Default()
   ProxyUsername = "";
   ProxyPassword = "";
   ProxyTelnetCommand = "connect %host %port\\n";
-  //ProxySOCKSVersion = 5;
   ProxyDNS = asAuto;
   ProxyLocalhost = false;
 
@@ -327,14 +326,20 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     {
       FPassword = Storage->ReadString("Password", FPassword);
     }
+    // Putty uses PingIntervalSecs
+    int PingIntervalSecs = Storage->ReadInteger("PingIntervalSecs", -1);
+    if (PingIntervalSecs < 0)
+    {
+      PingIntervalSecs = Storage->ReadInteger("PingIntervalSec", PingInterval%60);
+    }
     PingInterval =
       Storage->ReadInteger("PingInterval", PingInterval/60)*60 +
-      Storage->ReadInteger("PingIntervalSec", PingInterval%60);
+      PingIntervalSecs;
     PingType = static_cast<TPingType>
       (Storage->ReadInteger("PingType", PingInterval > 0 ? ptNullPacket : ptOff));
     if (PingInterval == 0)
     {
-      PingInterval = 60;
+      PingInterval = 30;
     }
     Timeout = Storage->ReadInteger("Timeout", Timeout);
     AgentFwd = Storage->ReadBool("AgentFwd", AgentFwd);
@@ -402,7 +407,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     ProxyUsername = Storage->ReadString("ProxyUsername", ProxyUsername);
     FProxyPassword = Storage->ReadString("ProxyPassword", FProxyPassword);
     ProxyTelnetCommand = Storage->ReadStringRaw("ProxyTelnetCommand", ProxyTelnetCommand);
-    ProxyDNS = TAutoSwitch((Storage->ReadInteger("ProxyDNS", ProxyDNS) + 1) % 3);
+    ProxyDNS = TAutoSwitch((Storage->ReadInteger("ProxyDNS", (ProxyDNS + 2) % 3) + 1) % 3);
     ProxyLocalhost = Storage->ReadBool("ProxyLocalhost", ProxyLocalhost);
 
     #define READ_BUG(BUG) \
@@ -437,69 +442,88 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
   FModified = false;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExport)
+void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
+  bool PuttyExport, const TSessionData * Default)
 {
   if (Modified && Storage->OpenSubKey(StorageKey, true))
   {
-    Storage->WriteString("HostName", HostName);
-    Storage->WriteInteger("PortNumber", PortNumber);
-    Storage->WriteString("UserName", UserName);
-    if (!Configuration->DisablePasswordStoring && !PuttyExport)
-    {
-      Storage->WriteString("Password", FPassword);
-    }
-    Storage->WriteInteger("PingInterval", PingInterval/60);
-    Storage->WriteInteger("PingIntervalSec", PingInterval%60);
-    Storage->WriteInteger("PingType", PingType);
-    Storage->WriteInteger("Timeout", Timeout);
-    Storage->WriteBool("AgentFwd", AgentFwd);
-    Storage->WriteBool("AuthTIS", AuthTIS);
-    Storage->WriteBool("AuthKI", AuthKI);
-    Storage->WriteBool("AuthKIPassword", AuthKIPassword);
-    Storage->WriteBool("Compression", Compression);
-    Storage->WriteInteger("SshProt", SshProt);
-    Storage->WriteBool("Ssh2DES", Ssh2DES);
-    Storage->WriteString("Cipher", CipherList);
+    #define WRITE_DATA_EX(TYPE, NAME, PROPERTY, CONV) \
+      if ((Default != NULL) && (CONV(Default->PROPERTY) == CONV(PROPERTY))) \
+      { \
+        Storage->DeleteValue(NAME); \
+      } \
+      else \
+      { \
+        Storage->Write ## TYPE(NAME, CONV(PROPERTY)); \
+      }
+    #define WRITE_DATA_CONV(TYPE, NAME, PROPERTY) WRITE_DATA_EX(TYPE, NAME, PROPERTY, WRITE_DATA_CONV_FUNC)
+    #define WRITE_DATA(TYPE, PROPERTY) WRITE_DATA_EX(TYPE, #PROPERTY, PROPERTY, )
 
-    Storage->WriteBool("TcpNoDelay", TcpNoDelay);
-
-    if (PuttyExport)
+    WRITE_DATA(String, HostName);
+    WRITE_DATA(Integer, PortNumber);
+    WRITE_DATA(String, UserName);
+    if (!Configuration->DisablePasswordStoring && !PuttyExport && !Password.IsEmpty())
     {
-      Storage->WriteStringRaw("PublicKeyFile", PublicKeyFile);
+      WRITE_DATA_EX(String, "Password", FPassword, );
     }
     else
     {
-      Storage->WriteBool("AuthGSSAPI", AuthGSSAPI);
-      Storage->WriteString("PublicKeyFile", PublicKeyFile);
-      Storage->WriteInteger("FSProtocol", FSProtocol);
-      Storage->WriteString("LocalDirectory", LocalDirectory);
-      Storage->WriteString("RemoteDirectory", RemoteDirectory);
-      Storage->WriteBool("UpdateDirectories", UpdateDirectories);
-      Storage->WriteBool("CacheDirectories", CacheDirectories);
-      Storage->WriteBool("CacheDirectoryChanges", CacheDirectoryChanges);
-      Storage->WriteBool("PreserveDirectoryChanges", PreserveDirectoryChanges);
+      Storage->DeleteValue("Password");
+    }
+    WRITE_DATA_EX(Integer, "PingInterval", PingInterval / 60, );
+    WRITE_DATA_EX(Integer, "PingIntervalSecs", PingInterval % 60, );
+    Storage->DeleteValue("PingIntervalSec"); // obsolete
+    // store PingType always as it does not have fixed default
+    Storage->WriteInteger("PingType", PingType);
+    WRITE_DATA(Integer, Timeout);
+    WRITE_DATA(Bool, AgentFwd);
+    WRITE_DATA(Bool, AuthTIS);
+    WRITE_DATA(Bool, AuthKI);
+    WRITE_DATA(Bool, AuthKIPassword);
+    WRITE_DATA(Bool, Compression);
+    WRITE_DATA(Integer, SshProt);
+    WRITE_DATA(Bool, Ssh2DES);
+    WRITE_DATA_EX(String, "Cipher", CipherList, );
 
-      Storage->WriteBool("ResolveSymlinks", ResolveSymlinks);
-      Storage->WriteBool("ConsiderDST", ConsiderDST);
-      Storage->WriteBool("LockInHome", LockInHome);
+    WRITE_DATA(Bool, TcpNoDelay);
+
+    if (PuttyExport)
+    {
+      WRITE_DATA(StringRaw, PublicKeyFile);
+    }
+    else
+    {
+      WRITE_DATA(Bool, AuthGSSAPI);
+      WRITE_DATA(String, PublicKeyFile);
+      WRITE_DATA(Integer, FSProtocol);
+      WRITE_DATA(String, LocalDirectory);
+      WRITE_DATA(String, RemoteDirectory);
+      WRITE_DATA(Bool, UpdateDirectories);
+      WRITE_DATA(Bool, CacheDirectories);
+      WRITE_DATA(Bool, CacheDirectoryChanges);
+      WRITE_DATA(Bool, PreserveDirectoryChanges);
+
+      WRITE_DATA(Bool, ResolveSymlinks);
+      WRITE_DATA(Bool, ConsiderDST);
+      WRITE_DATA(Bool, LockInHome);
       // Special is never stored (if it would, login dialog must be modified not to
       // duplicate Special parameter when Special session is loaded and then stored
       // under different name)
-      // Storage->WriteBool("Special", Special);
-      Storage->WriteString("Shell", Shell);
-      Storage->WriteBool("ClearAliases", ClearAliases);
-      Storage->WriteBool("UnsetNationalVars", UnsetNationalVars);
-      Storage->WriteBool("AliasGroupList", AliasGroupList);
-      Storage->WriteBool("IgnoreLsWarnings", IgnoreLsWarnings);
-      Storage->WriteBool("Scp1Compatibility", Scp1Compatibility);
-      Storage->WriteFloat("TimeDifference", TimeDifference);
+      // WRITE_DATA(Bool, Special);
+      WRITE_DATA(String, Shell);
+      WRITE_DATA(Bool, ClearAliases);
+      WRITE_DATA(Bool, UnsetNationalVars);
+      WRITE_DATA(Bool, AliasGroupList);
+      WRITE_DATA(Bool, IgnoreLsWarnings);
+      WRITE_DATA(Bool, Scp1Compatibility);
+      WRITE_DATA(Float, TimeDifference);
 
-      Storage->WriteString("ReturnVar", ReturnVar);
-      Storage->WriteBool("LookupUserGroups", LookupUserGroups);
-      Storage->WriteInteger("EOLType", EOLType);
+      WRITE_DATA(String, ReturnVar);
+      WRITE_DATA(Bool, LookupUserGroups);
+      WRITE_DATA(Integer, EOLType);
     }
 
-    Storage->WriteInteger("ProxyMethod", ProxyMethod);
+    WRITE_DATA(Integer, ProxyMethod);
     if (PuttyExport)
     {
       // support for Putty 0.53b and older
@@ -528,15 +552,23 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
       Storage->WriteInteger("ProxyType", ProxyType);
       Storage->WriteInteger("ProxySOCKSVersion", ProxySOCKSVersion);
     }
-    Storage->WriteString("ProxyHost", ProxyHost);
-    Storage->WriteInteger("ProxyPort", ProxyPort);
-    Storage->WriteString("ProxyUsername", ProxyUsername);
-    Storage->WriteString("ProxyPassword", FProxyPassword);
-    Storage->WriteStringRaw("ProxyTelnetCommand", ProxyTelnetCommand);
-    Storage->WriteInteger("ProxyDNS", (ProxyDNS+2) % 3);
-    Storage->WriteBool("ProxyLocalhost", ProxyLocalhost);
+    else
+    {
+      Storage->DeleteValue("ProxyType"); 
+      Storage->DeleteValue("ProxySOCKSVersion");
+    }
+    WRITE_DATA(String, ProxyHost);
+    WRITE_DATA(Integer, ProxyPort);
+    WRITE_DATA(String, ProxyUsername);
+    WRITE_DATA_EX(String, "ProxyPassword", FProxyPassword, );
+    WRITE_DATA(StringRaw, ProxyTelnetCommand);
+    #define WRITE_DATA_CONV_FUNC(X) (((X) + 2) % 3)
+    WRITE_DATA_CONV(Integer, "ProxyDNS", ProxyDNS);
+    #undef WRITE_DATA_CONV_FUNC
+    WRITE_DATA(Bool, ProxyLocalhost);
 
-    #define WRITE_BUG(BUG) Storage->WriteInteger("Bug"#BUG, 2 - Bug[sb##BUG]);
+    #define WRITE_DATA_CONV_FUNC(X) (2 - (X))
+    #define WRITE_BUG(BUG) WRITE_DATA_CONV(Integer, "Bug" #BUG, Bug[sb##BUG]);
     WRITE_BUG(Ignore1);
     WRITE_BUG(PlainPW1);
     WRITE_BUG(RSA1);
@@ -546,18 +578,21 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
     WRITE_BUG(DHGEx2);
     WRITE_BUG(PKSessID2);
     #undef WRITE_BUG
+    #undef WRITE_DATA_CONV_FUNC
+
+    Storage->DeleteValue("BuggyMAC");
 
     if (PuttyExport)
     {
-      Storage->WriteString("Protocol", ProtocolStr);
+      WRITE_DATA_EX(String, "Protocol", ProtocolStr, );
     }
 
     if (!PuttyExport)
     {
-      Storage->WriteInteger("SFTPSymlinkBug", SFTPSymlinkBug);
-      
-      Storage->WriteString("CustomParam1", CustomParam1);
-      Storage->WriteString("CustomParam2", CustomParam2);
+      WRITE_DATA(Integer, SFTPSymlinkBug);
+
+      WRITE_DATA(String, CustomParam1);
+      WRITE_DATA(String, CustomParam2);
     }
 
     Storage->CloseSubKey();
@@ -847,7 +882,7 @@ void __fastcall TSessionData::SetCipher(int Index, TCipher value)
   SET_SESSION_PROPERTY(Ciphers[Index]);
 }
 //---------------------------------------------------------------------
-TCipher __fastcall TSessionData::GetCipher(int Index)
+TCipher __fastcall TSessionData::GetCipher(int Index) const
 {
   assert(Index >= 0 && Index < CIPHER_COUNT);
   return FCiphers[Index];
@@ -881,7 +916,7 @@ void __fastcall TSessionData::SetCipherList(AnsiString value)
   }
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall TSessionData::GetCipherList()
+AnsiString __fastcall TSessionData::GetCipherList() const
 {
   AnsiString Result;
   for (int Index = 0; Index < CIPHER_COUNT; Index++)
@@ -974,7 +1009,7 @@ void __fastcall TSessionData::SetProtocolStr(AnsiString value)
   }
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall TSessionData::GetProtocolStr()
+AnsiString __fastcall TSessionData::GetProtocolStr() const
 {
   for (int Index = 0; backends[Index].name != NULL; Index++)
   {
@@ -1143,7 +1178,7 @@ void __fastcall TSessionData::SetBug(TSshBug Bug, TAutoSwitch value)
   SET_SESSION_PROPERTY(Bugs[Bug]);
 }
 //---------------------------------------------------------------------
-TAutoSwitch __fastcall TSessionData::GetBug(TSshBug Bug)
+TAutoSwitch __fastcall TSessionData::GetBug(TSshBug Bug) const
 {
   assert(Bug >= 0 && Bug < LENOF(FBugs));
   return FBugs[Bug];
@@ -1258,14 +1293,22 @@ void __fastcall TStoredSessionList::Load()
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Save(THierarchicalStorage * Storage)
 {
-  for (int Index = 0; Index < Count+HiddenCount; Index++)
+  TSessionData * FactoryDefaults = new TSessionData("");
+  try
   {
-    TSessionData *SessionData = (TSessionData *)Items[Index];
-    if (SessionData->Modified)
-      SessionData->Save(Storage);
+    for (int Index = 0; Index < Count+HiddenCount; Index++)
+    {
+      TSessionData *SessionData = (TSessionData *)Items[Index];
+      if (SessionData->Modified)
+        SessionData->Save(Storage, false, FactoryDefaults);
+    }
+    if (FDefaultSettings->Modified)
+      FDefaultSettings->Save(Storage, false, FactoryDefaults);
   }
-  if (FDefaultSettings->Modified)
-    FDefaultSettings->Save(Storage);
+  __finally
+  {
+    delete FactoryDefaults;
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Save(AnsiString aKey)

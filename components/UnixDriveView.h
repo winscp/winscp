@@ -46,6 +46,7 @@ protected:
   inline TNodeData * __fastcall NodeData(const TTreeNode * Node);
   inline TRemoteFileList * __fastcall NodeFileList(const TTreeNode * Node);
   inline TRemoteFile * __fastcall NodeFile(const TTreeNode * Node);
+  inline TRemoteFile * __fastcall NodeFileForce(TTreeNode * Node);
   inline bool __fastcall NodeIsHidden(const TTreeNode * Node);
   inline bool __fastcall NodeCanDelete(TTreeNode * Node);
 
@@ -63,9 +64,10 @@ protected:
 	virtual bool __fastcall NodeIsRecycleBin(TTreeNode * Node);
 	virtual bool __fastcall NodePathExists(TTreeNode * Node);
 	virtual TColor __fastcall NodeColor(TTreeNode * Node);
-	virtual bool __fastcall NodeCanDrag(TTreeNode * Node);
 	virtual TTreeNode * __fastcall FindPathNode(AnsiString Path);
   virtual void __fastcall GetImageIndex(TTreeNode * Node);
+  virtual Word __fastcall NodeOverlayIndexes(TTreeNode * Node);
+  virtual void __fastcall ClearDragFileList(TFileList * FileList);
   virtual void __fastcall AddToDragFileList(TFileList * FileList, TTreeNode * Node);
 
 	virtual void __fastcall ValidateDirectoryEx(TTreeNode * Node,
@@ -93,6 +95,7 @@ private:
   bool FDDAllowMove;
   TDDDragFileName FOnDDDragFileName;
   bool FShowInaccesibleDirectories;
+  TRemoteFile * FDummyDragFile;
 
   bool __fastcall IsRootNameStored();
   void __fastcall SetShowInaccesibleDirectories(bool value);

@@ -20,8 +20,8 @@ public:
   virtual void __fastcall GetSubKeyNames(Classes::TStrings* Strings) = 0;
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings) = 0;
   bool __fastcall HasSubKeys();
-  virtual bool __fastcall KeyExists(const AnsiString SubKey);
-  virtual bool __fastcall ValueExists(const AnsiString Value);
+  virtual bool __fastcall KeyExists(const AnsiString SubKey) = 0;
+  virtual bool __fastcall ValueExists(const AnsiString Value) = 0;
   virtual void __fastcall RecursiveDeleteSubKey(const AnsiString Key);
   virtual void __fastcall ReadValues(Classes::TStrings* Strings, bool MaintainKeys = false);
   virtual void __fastcall WriteValues(Classes::TStrings* Strings, bool MaintainKeys = false);
@@ -125,6 +125,8 @@ public:
   virtual bool __fastcall DeleteSubKey(const AnsiString SubKey);
   virtual bool __fastcall DeleteValue(const AnsiString Name);
   virtual void __fastcall GetSubKeyNames(Classes::TStrings* Strings);
+  virtual bool __fastcall KeyExists(const AnsiString SubKey);
+  virtual bool __fastcall ValueExists(const AnsiString Value);
 
   virtual int __fastcall BinaryDataSize(const AnsiString Name);
 

@@ -65,6 +65,9 @@ const int asEOF =           1 << SSH_FX_EOF;
 const int asOpUnsupported = 1 << SSH_FX_OP_UNSUPPORTED;
 const int asNoSuchFile =    1 << SSH_FX_NO_SUCH_FILE;
 const int asAll = 0xFFFF;
+
+const int tfFirstLevel =   0x01;
+const int tfNewDirectory = 0x02;
 //---------------------------------------------------------------------------
 #define GET_32BIT(cp) \
     (((unsigned long)(unsigned char)(cp)[0] << 24) | \
@@ -923,7 +926,7 @@ protected:
         BlockBuf.Convert(FTerminal->Configuration->LocalEOLType,
           FFileSystem->GetEOL(), cpRemoveCtrlZ);
         // update transfer size with difference arised from EOL conversion
-        OperationProgress->SetTransferSize(OperationProgress->TransferSize -
+        OperationProgress->ChangeTransferSize(OperationProgress->TransferSize -
           PrevBufSize + BlockBuf.Size);
       }
 
@@ -999,7 +1002,7 @@ struct TSinkFileParams
   int Params;
   TFileOperationProgressType * OperationProgress;
   bool Skipped;
-  int Level;
+  unsigned int Flags;
 };
 //===========================================================================
 __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal):
@@ -2341,7 +2344,8 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
               FileNameOnly, true);
           }
         }
-        SFTPSource(FileName, FullTargetDir, CopyParam, Params, OperationProgress, 0);
+        SFTPSource(FileName, FullTargetDir, CopyParam, Params, OperationProgress,
+          tfFirstLevel);
         Success = true;
       }
       catch(EScpSkipFile & E)
@@ -2506,7 +2510,7 @@ bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, int Level)
+  TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   AnsiString OnlyFileName = ExtractFileName(FileName);
 
@@ -2534,7 +2538,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   if (OpenParams.LocalFileAttrs & faDirectory)
   {
     SFTPDirectorySource(IncludeTrailingBackslash(FileName), TargetDir,
-      OpenParams.LocalFileAttrs, CopyParam, Params, OperationProgress, Level);
+      OpenParams.LocalFileAttrs, CopyParam, Params, OperationProgress, Flags);
   }
   else
   {
@@ -2544,7 +2548,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       assert(File);
 
       AnsiString DestFileName = CopyParam->ChangeFileName(OnlyFileName,
-        osLocal, Level == 0);
+        osLocal, FLAGSET(Flags, tfFirstLevel));
       AnsiString DestFullName = LocalCanonify(TargetDir + DestFileName);
       AnsiString DestPartinalFullName;
       bool ResumeAllowed;
@@ -2570,6 +2574,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           " transfer mode selected.");
 
       ResumeAllowed = !OperationProgress->AsciiTransfer &&
+        FLAGCLEAR(Flags, tfNewDirectory) &&
         CopyParam->AllowResume(OperationProgress->LocalSize) &&
         IsCapable(fcRename);
       OperationProgress->SetResumeStatus(ResumeAllowed ? rsEnabled : rsDisabled);
@@ -2899,10 +2904,11 @@ void __fastcall TSFTPFileSystem::SFTPCloseRemote(const AnsiString Handle,
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryName,
   const AnsiString TargetDir, int Attrs, const TCopyParamType * CopyParam,
-  int Params, TFileOperationProgressType * OperationProgress, int Level)
+  int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   AnsiString DestDirectoryName = CopyParam->ChangeFileName(
-    ExtractFileName(ExcludeTrailingBackslash(DirectoryName)), osLocal, Level == 0);
+    ExtractFileName(ExcludeTrailingBackslash(DirectoryName)), osLocal,
+    FLAGSET(Flags, tfFirstLevel));
   AnsiString DestFullName = UnixIncludeTrailingBackslash(TargetDir + DestDirectoryName);
 
   OperationProgress->SetFile(DirectoryName);
@@ -2935,6 +2941,7 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
       Properties.Rights = CopyParam->RemoteFileRights(Attrs);
     }
     FTerminal->CreateDirectory(DestFullName, &Properties);
+    Flags |= tfNewDirectory;
   }
 
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
@@ -2954,7 +2961,7 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
       if ((SearchRec.Name != ".") && (SearchRec.Name != ".."))
       {
         SFTPSource(FileName, DestFullName, CopyParam, Params, OperationProgress,
-          Level + 1);
+          Flags & ~tfFirstLevel);
       }
     }
     catch (EScpSkipFile &E)
@@ -3006,7 +3013,7 @@ void __fastcall TSFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
       try
       {
         SFTPSink(LocalCanonify(FileName), File, FullTargetDir, CopyParam,
-          Params, OperationProgress, 0);
+          Params, OperationProgress, tfFirstLevel);
         Success = true;
       }
       catch(EScpSkipFile & E)
@@ -3032,7 +3039,7 @@ void __fastcall TSFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
 void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
   const TRemoteFile * File, const AnsiString TargetDir,
   const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress, int Level)
+  TFileOperationProgressType * OperationProgress, unsigned int Flags)
 {
   AnsiString OnlyFileName = UnixExtractFileName(FileName);
 
@@ -3049,7 +3056,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
   OperationProgress->SetFile(OnlyFileName);
 
   AnsiString DestFileName = CopyParam->ChangeFileName(OnlyFileName,
-    osRemote, Level == 0);
+    osRemote, FLAGSET(Flags, tfFirstLevel));
   AnsiString DestFullName = TargetDir + DestFileName;
 
   if (File->IsDirectory)
@@ -3071,7 +3078,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
       SinkFileParams.Params = Params;
       SinkFileParams.OperationProgress = OperationProgress;
       SinkFileParams.Skipped = false;
-      SinkFileParams.Level = Level + 1;
+      SinkFileParams.Flags = Flags & ~tfFirstLevel;
 
       FTerminal->ProcessDirectory(FileName, SFTPSinkFile, &SinkFileParams);
 
@@ -3448,7 +3455,7 @@ void __fastcall TSFTPFileSystem::SFTPSinkFile(AnsiString FileName,
   try
   {
     SFTPSink(FileName, File, Params->TargetDir, Params->CopyParam,
-      Params->Params, Params->OperationProgress, Params->Level);
+      Params->Params, Params->OperationProgress, Params->Flags);
   }
   catch(EScpSkipFile & E)
   {

@@ -1,0 +1,139 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="..\lib\DriveDir_B5.bpl"/>
+    <OBJFILES value="DriveDir_B5.obj &quot;filemng\DirView.obj&quot; &quot;filemng\DriveView.obj&quot; 
+      &quot;filemng\FileOperator.obj&quot; &quot;filemng\IEComboBox.obj&quot; &quot;filemng\BaseUtils.obj&quot; 
+      &quot;filemng\FileChanges.obj&quot; &quot;filemng\MaskSearch.obj&quot; &quot;filemng\IEListView.obj&quot; 
+      &quot;filemng\IEDriveInfo.obj&quot; &quot;filemng\ShellDialogs.obj&quot; 
+      &quot;filemng\DirViewColProperties.obj&quot; &quot;filemng\CustomDirView.obj&quot; 
+      &quot;filemng\CustomUnixDirView.obj&quot; &quot;filemng\UnixDirViewColProperties.obj&quot; 
+      &quot;filemng\CustomPathComboBox.obj&quot; &quot;filemng\IEPathComboBox.obj&quot; 
+      &quot;filemng\ListExt.obj&quot; &quot;filemng\CustomDriveView.obj&quot;"/>
+    <RESFILES value="DriveDir_B5.res &quot;filemng\DirView.dcr&quot; 
+      &quot;filemng\DriveView.dcr&quot; &quot;filemng\FileOperator.dcr&quot; 
+      &quot;filemng\IEComboBox.dcr&quot; &quot;filemng\DirImg.res&quot;"/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES)"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="adortl.lib bcb2kaxserver.lib bdecds.lib bdertl.lib
+      cds.lib dbexpress.lib dbrtl.lib dbxcds.lib dclocx.lib dsnap.lib
+      ibxpress.lib indy.lib inet.lib inetdb.lib inetdbbde.lib inetdbxpress.lib
+      nmfast.lib qrpt.lib soaprtl.lib tee.lib teedb.lib teeqr.lib teeui.lib
+      vcldb.lib vcldbx.lib visualdbclx.lib xmlrtl.lib"/>
+    <SPARELIBS value="DragDrop_B5.lib Moje_B5.lib adortl.lib
+      bcb2kaxserver.lib bcbie.lib bcbsmp.lib bdecds.lib bdertl.lib cds.lib
+      dbexpress.lib dbrtl.lib dbxcds.lib dclocx.lib dsnap.lib ibxpress.lib
+      indy.lib inet.lib inetdb.lib inetdbbde.lib inetdbxpress.lib nmfast.lib
+      qrpt.lib rtl.lib soaprtl.lib tee.lib teedb.lib teeqr.lib teeui.lib
+      vcl.lib vcldb.lib vcldbx.lib visualdbclx.lib xmlrtl.lib"/>
+    <PACKAGES value="DragDrop_B5.bpi Moje_B5.bpi bcbie.bpi bcbsmp.bpi
+      rtl.bpi vcl.bpi vclx.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;&quot;filemng&quot;"/>
+    <PATHRC value=".;&quot;filemng&quot;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value="OLD_DND;NORTON_LIKE"/>
+    <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
+    <MAINSOURCE value="DriveDir_B5.cpp"/>
+    <INCLUDEPATH value="&quot;filemng&quot;;&quot;dragndrop&quot;;&quot;my&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;&quot;filemng&quot;;&quot;dragndrop&quot;;&quot;my&quot;;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
+    <WARNINGS value="-wuse -w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- 
+      -k- -vi -c -tWM"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-I -D&quot;filemng&quot; -aa -Tpp -GD -s -Gn -Gl -Gi -M"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="DriveDir_B5.cpp" FORMNAME="" UNITNAME="DriveDir_B5" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="DriveDir_B5.res" FORMNAME="" UNITNAME="DriveDir_B5" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\DirView.pas" FORMNAME="" UNITNAME="DirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\DirView.dcr" FORMNAME="" UNITNAME="DirView" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\DriveView.pas" FORMNAME="" UNITNAME="DriveView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\DriveView.dcr" FORMNAME="" UNITNAME="DriveView" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\FileOperator.pas" FORMNAME="" UNITNAME="FileOperator" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\FileOperator.dcr" FORMNAME="" UNITNAME="FileOperator" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\IEComboBox.pas" FORMNAME="" UNITNAME="IEComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\IEComboBox.dcr" FORMNAME="" UNITNAME="IEComboBox" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\BaseUtils.pas" FORMNAME="" UNITNAME="BaseUtils" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\FileChanges.pas" FORMNAME="" UNITNAME="FileChanges" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\MaskSearch.pas" FORMNAME="" UNITNAME="MaskSearch" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\IEListView.pas" FORMNAME="" UNITNAME="IEListView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\IEDriveInfo.pas" FORMNAME="" UNITNAME="IEDriveInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\ShellDialogs.pas" FORMNAME="" UNITNAME="ShellDialogs" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\DirViewColProperties.pas" FORMNAME="" UNITNAME="DirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\CustomDirView.pas" FORMNAME="" UNITNAME="CustomDirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\CustomUnixDirView.pas" FORMNAME="" UNITNAME="CustomUnixDirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\UnixDirViewColProperties.pas" FORMNAME="" UNITNAME="UnixDirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\CustomPathComboBox.pas" FORMNAME="" UNITNAME="CustomPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\IEPathComboBox.pas" FORMNAME="" UNITNAME="IEPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\ListExt.pas" FORMNAME="" UNITNAME="ListExt" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="bcbsmp.bpi" FORMNAME="" UNITNAME="bcbsmp" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="bcbie.bpi" FORMNAME="" UNITNAME="bcbie" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\DirImg.rc" FORMNAME="" UNITNAME="DirImg.rc" CONTAINERID="RC" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="Moje_B5.bpi" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="DragDrop_B5.bpi" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filemng\CustomDriveView.pas" FORMNAME="" UNITNAME="CustomDriveView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1029
+CodePage=1250
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Compiler]
+ShowInfoMsgs=1
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[Linker]
+LibPrefix=
+LibSuffix=
+LibVersion=
+  </IDEOPTIONS>
+</PROJECT>

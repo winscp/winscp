@@ -233,8 +233,11 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; 
   ValueName: "ShowAdvancedLoginOptions"; ValueData: 0; Check: IsTrue(20)
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "ShowAdvancedLoginOptions"; ValueData: 1; Check: IsTrue(21)
+; If installer enabled ddext, let it reset the settings on uninstall,
+; so the default is used on the next run
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
-  ValueName: "DDExtEnabled"; ValueData: 1; Components: shellext
+  ValueName: "DDExtEnabled"; ValueData: 1; Components: shellext; \
+  Flags: uninsdeletevalue
 ; This will remove url handler on uninstall 
 ; (when urlhandler task was selected when installing)
 Root: HKCR; Subkey: "SFTP"; Flags: dontcreatekey uninsdeletekey; \

@@ -137,6 +137,10 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   {
     CancelButton = mbNo;
   }
+  else if (Buttons.Contains(mbAbort))
+  {
+    CancelButton = mbAbort;
+  }
   else
   {
     CancelButton = mbOK;

@@ -13,7 +13,6 @@
 #include <ScpMain.h>
 #include <FileSystems.h>
 #include <TextsWin.h>
-#include <DiscMon.hpp>
 
 #include <VCLCommon.h>
 #include <Log.h>
@@ -128,8 +127,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FDelayedDeletionTimer = NULL;
   FDelayedDeletionList = new TStringList();
   FDDFileList = NULL;
-
-  FSynchronizeMonitor = NULL;
+  FPendingTempSpaceWarn = false;
 
   FQueueStatus = NULL;
   FQueueStatusSection = new TCriticalSection();
@@ -514,6 +512,18 @@ void __fastcall TCustomScpExplorerForm::CreateParams(TCreateParams & Params)
 void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   TFileOperationProgressType & ProgressData, TCancelStatus & /*Cancel*/)
 {
+  // Download to temporary local directory
+  if (FPendingTempSpaceWarn && ProgressData.InProgress && ProgressData.TotalSizeSet)
+  {
+    bool Continue = true;
+    FPendingTempSpaceWarn = false;
+    DoWarnLackOfTempSpace(ProgressData.Directory, ProgressData.TotalSize, Continue);
+    if (!Continue)
+    {
+      Abort();
+    }
+  }
+
   // operation is being executed and we still didn't show up progress form
   if (ProgressData.InProgress && !FProgressForm)
   {
@@ -577,7 +587,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
   bool DragDrop, const AnsiString FileName, bool Success,
   bool & DisconnectWhenComplete)
 {
-  if ((FSynchronizeMonitor == NULL) && !FAutoOperation)
+  if (!FAutoOperation)
   {
     // no selection on "/upload", form servers only as event handler
     // (it is not displayed)
@@ -1863,7 +1873,8 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
   Params.Params = GUIConfiguration->SynchronizeParams;
   Params.Recurse = GUIConfiguration->SynchronizeRecurse;
   bool SaveSettings = false;
-  bool Result = DoSynchronizeDialog(Params, SynchronizeStartStop, SaveSettings);
+  TSynchronizeController Controller(&DoSynchronize);
+  bool Result = DoSynchronizeDialog(Params, Controller.StartStop, SaveSettings);
   if (Result)
   {
     if (SaveSettings)
@@ -1877,95 +1888,24 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SynchronizeStartStop(TObject * /*Sender*/,
-  bool Start, const TSynchronizeParamType & Params, TSynchronizeAbortEvent OnAbort)
-{
-  if (Start)
-  {
-    try
-    {
-      FSynchronizeParams = Params;
-      assert(OnAbort);
-      FSynchronizeAbort = OnAbort;
-      FSynchronizeMonitor = new TDiscMonitor(this);
-      FSynchronizeMonitor->SubTree = false;
-      TMonitorFilters Filters;
-      Filters << moFilename << moLastWrite;
-      if (FSynchronizeParams.Recurse)
-      {
-        Filters << moDirName;
-      }
-      FSynchronizeMonitor->Filters = Filters;
-      FSynchronizeMonitor->AddDirectory(FSynchronizeParams.LocalDirectory,
-        FSynchronizeParams.Recurse);
-      FSynchronizeMonitor->OnChange = SynchronizeChange;
-      FSynchronizeMonitor->OnInvalid = SynchronizeInvalid;
-      FSynchronizeMonitor->Open();
-    }
-    catch(...)
-    {
-      //SAFE_DESTROY(FSynchronizeMonitor);
-      throw;
-    }
-  }
-  else
-  {
-    assert(FSynchronizeMonitor != NULL);
-    SAFE_DESTROY(FSynchronizeMonitor);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SynchronizeChange(
-  TObject * /*Sender*/, const AnsiString Directory)
+void __fastcall TCustomScpExplorerForm::DoSynchronize(
+  TSynchronizeController * /*Sender*/, const AnsiString LocalDirectory,
+  const AnsiString RemoteDirectory, const TSynchronizeParamType & Params)
 {
   try
   {
-    AnsiString RemoteDirectory;
-    AnsiString RootLocalDirectory;
-    RootLocalDirectory = IncludeTrailingBackslash(FSynchronizeParams.LocalDirectory);
-    RemoteDirectory = UnixIncludeTrailingBackslash(FSynchronizeParams.RemoteDirectory);
-
-    AnsiString LocalDirectory = IncludeTrailingBackslash(Directory);
-
-    assert(LocalDirectory.SubString(1, RootLocalDirectory.Length()) ==
-      RootLocalDirectory);
-    RemoteDirectory = RemoteDirectory +
-      ToUnixPath(LocalDirectory.SubString(RootLocalDirectory.Length() + 1,
-        LocalDirectory.Length() - RootLocalDirectory.Length()));
-
     TCopyParamType CopyParam = GUIConfiguration->CopyParam;
     CopyParam.PreserveTime = true;
+
     Synchronize(LocalDirectory, RemoteDirectory, smRemote, CopyParam,
-      FSynchronizeParams.Params | TTerminal::spNoRecurse | TTerminal::spUseCache |
-        TTerminal::spDelayProgress);
+      Params.Params | TTerminal::spNoRecurse | TTerminal::spUseCache |
+      TTerminal::spDelayProgress);
   }
   catch(Exception & E)
   {
     ShowExtendedExceptionEx(Terminal, &E);
-    SynchronizeAbort(dynamic_cast<EFatal*>(&E) != NULL);
+    throw;
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SynchronizeAbort(bool Close)
-{
-  FSynchronizeMonitor->Close();
-  assert(FSynchronizeAbort);
-  FSynchronizeAbort(this, Close);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::SynchronizeInvalid(
-  TObject * /*Sender*/, const AnsiString Directory)
-{
-  if (!Directory.IsEmpty())
-  {
-    SimpleErrorDialog(FMTLOAD(WATCH_ERROR_DIRECTORY, (Directory)));
-  }
-  else
-  {
-    SimpleErrorDialog(LoadStr(WATCH_ERROR_GENERAL));
-  }
-
-  SynchronizeAbort(false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::FullSynchronizeDirectories()
@@ -2119,23 +2059,14 @@ void __fastcall TCustomScpExplorerForm::DoWarnLackOfTempSpace(
     if (!ADrive.IsEmpty())
     {
       __int64 FreeSpace = DiskFree((Byte)(ADrive[1]-'A'+1));
-      Integer MessageRes = 0;
-      if (RequiredSpace >= 0)
-      {
-        __int64 RequiredWithReserve;
-        RequiredWithReserve = (__int64)(RequiredSpace * WinConfiguration->DDWarnLackOfTempSpaceRatio);
-        if (FreeSpace < RequiredWithReserve) MessageRes = DD_WARN_LACK_OF_TEMP_SPACE;
-      }
-      else
-      {
-        MessageRes = DD_WARN_UNKNOWN_TEMP_SPACE;
-      }
-
-      if (MessageRes)
+      assert(RequiredSpace >= 0);
+      __int64 RequiredWithReserve;
+      RequiredWithReserve = (__int64)(RequiredSpace * WinConfiguration->DDWarnLackOfTempSpaceRatio);
+      if (FreeSpace < RequiredWithReserve)
       {
         int Result;
         TMessageParams Params(mpNeverAskAgainCheck);
-        Result = MessageDialog(FMTLOAD(MessageRes, (Path,
+        Result = MessageDialog(FMTLOAD(DD_WARN_LACK_OF_TEMP_SPACE, (Path,
           FormatBytes(FreeSpace), FormatBytes(RequiredSpace))),
           qtWarning, qaYes | qaNo, 0, &Params);
 
@@ -2523,7 +2454,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlFileOperation(
   {
     RemoteDriveView->UpdateDropTarget();
   }
-  if (DropSourceControl == RemoteDriveView)
+  if ((Operation == foMove) && (DropSourceControl == RemoteDriveView))
   {
     RemoteDriveView->UpdateDropSource();
   }
@@ -2718,45 +2649,36 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
     }
 
     // TargetDir is set when dropped on local file control
-    bool TemporaryDownload = TargetDir.IsEmpty();
-    bool Continue = true;
-
-    if (TemporaryDownload)
+    // (this was workaround for legacy dirview event handling, now it should be
+    // made prettier)
+    if (TargetDir.IsEmpty())
     {
-      DoWarnLackOfTempSpace(TempDir, FDDTotalSize, Continue);
       TargetDir = TempDir;
-    }
 
-    if (Continue)
-    {
-      if (TemporaryDownload)
+      if (ForceDirectories(TargetDir))
       {
-        if (ForceDirectories(TargetDir))
+        assert(Terminal && !TargetDir.IsEmpty());
+        // do not attempt to warn unless we know total transfer size
+        FPendingTempSpaceWarn = CopyParams.CalculateSize;
+        try
         {
-          assert(Terminal && !TargetDir.IsEmpty());
-          try
-          {
-            // cpNewerOnly has no efect here,
-            // as we download to empty temp directory
-            int Params = cpDragDrop |
-              (Type == ttMove ? cpDelete : 0);
-            Terminal->CopyToLocal(FDDFileList, TargetDir, &CopyParams,
-              Params);
-          }
-          __finally
-          {
-            AddDelayedDirectoryDeletion(TargetDir, WinConfiguration->DDDeleteDelay);
-          }
+          // cpNewerOnly has no efect here,
+          // as we download to empty temp directory
+          int Params = cpDragDrop |
+            (Type == ttMove ? cpDelete : 0);
+          Terminal->CopyToLocal(FDDFileList, TargetDir, &CopyParams,
+            Params);
         }
-        else
+        __finally
         {
-          throw Exception(FMTLOAD(DD_DIR_EXCEPTION, (TargetDir)));
+          FPendingTempSpaceWarn = false;
+          AddDelayedDirectoryDeletion(TargetDir, WinConfiguration->DDDeleteDelay);
         }
       }
-    }
-    else
-    {
-      Abort();
+      else
+      {
+        throw Exception(FMTLOAD(DD_DIR_EXCEPTION, (TargetDir)));
+      }
     }
   }
 }

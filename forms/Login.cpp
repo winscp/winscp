@@ -310,7 +310,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     }
 
     // Bugs tab
-    #define LOAD_BUG_COMBO(BUG) Bug ## BUG ## Combo->ItemIndex = 2 - aSessionData->Bug[sb ## BUG]
+    #define LOAD_BUG_COMBO(BUG) \
+      Bug ## BUG ## Combo->ItemIndex = 2 - aSessionData->Bug[sb ## BUG]; \
+      if (Bug ## BUG ## Combo->ItemIndex < 0) Bug ## BUG ## Combo->ItemIndex = 0
     LOAD_BUG_COMBO(Ignore1);
     LOAD_BUG_COMBO(PlainPW1);
     LOAD_BUG_COMBO(RSA1);

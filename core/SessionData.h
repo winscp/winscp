@@ -108,11 +108,11 @@ private:
   void __fastcall SetSshProt(TSshProt value);
   void __fastcall SetSsh2DES(bool value);
   void __fastcall SetCipher(int Index, TCipher value);
-  TCipher __fastcall GetCipher(int Index);
+  TCipher __fastcall GetCipher(int Index) const;
   void __fastcall SetPublicKeyFile(AnsiString value);
 
   void __fastcall SetProtocolStr(AnsiString value);
-  AnsiString __fastcall GetProtocolStr();
+  AnsiString __fastcall GetProtocolStr() const;
   bool __fastcall GetCanLogin();
   void __fastcall SetPingIntervalDT(TDateTime value);
   TDateTime __fastcall GetPingIntervalDT();
@@ -148,7 +148,7 @@ private:
   void __fastcall SetTcpNoDelay(bool value);
   AnsiString __fastcall GetSshProtStr();
   void __fastcall SetCipherList(AnsiString value);
-  AnsiString __fastcall GetCipherList();
+  AnsiString __fastcall GetCipherList() const;
   void __fastcall SetProxyMethod(TProxyMethod value);
   void __fastcall SetProxyHost(AnsiString value);
   void __fastcall SetProxyPort(int value);
@@ -159,7 +159,7 @@ private:
   void __fastcall SetProxyLocalhost(bool value);
   AnsiString __fastcall GetProxyPassword();
   void __fastcall SetBug(TSshBug Bug, TAutoSwitch value);
-  TAutoSwitch __fastcall GetBug(TSshBug Bug);
+  TAutoSwitch __fastcall GetBug(TSshBug Bug) const;
   AnsiString __fastcall GetSessionKey();
   void __fastcall SetCustomParam1(AnsiString value);
   void __fastcall SetCustomParam2(AnsiString value);
@@ -177,7 +177,8 @@ public:
   void __fastcall NonPersistant();
   virtual void __fastcall StoreToConfig(void * config);
   void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport = false);
+  void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
+    const TSessionData * Default = NULL);
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
   bool __fastcall ParseUrl(AnsiString Url, int Params, AnsiString * FileName);

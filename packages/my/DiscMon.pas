@@ -129,6 +129,7 @@ type
     function  GetChangeDelay: Integer;
     procedure SetChangeDelay(Value: Integer);
     procedure AddDirectory(Dirs: TStrings; Directory: string); overload;
+    function GetMaxDirectories: Integer;
   protected
     procedure Change(Sender: TObject; const Directory: string);
     procedure Invalid(Sender: TObject; const Directory: string);
@@ -143,6 +144,7 @@ type
     procedure SetDirectory(Directory: string);
     // read-only property to access the thread directly
     property Thread: TDiscMonitorThread read FMonitor;
+    property MaxDirectories: Integer read GetMaxDirectories;
   published
     // the directories to monitor
     property Directories: TStrings read GetDirectories write SetDirectories;
@@ -456,15 +458,20 @@ begin
   Active := True
 end;
 
+function TDiscMonitor.GetMaxDirectories: Integer;
+begin
+  Result := MAXIMUM_WAIT_OBJECTS - 2;
+end;
+
 // Control the thread by using it's resume and suspend methods
 procedure TDiscMonitor.SetActive(Value: Boolean);
 begin
   if Value <> FActive then
   begin
-    if Value and (Directories.Count > MAXIMUM_WAIT_OBJECTS - 2) then
+    if Value and (Directories.Count > MaxDirectories) then
     begin
       raise Exception.CreateFmt(STooManyWatchDirectories,
-        [Directories.Count, MAXIMUM_WAIT_OBJECTS - 2]);
+        [Directories.Count, MaxDirectories]);
     end;
 
     FActive := Value;

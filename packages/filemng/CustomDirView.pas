@@ -488,6 +488,8 @@ function FileNameMatchesMasks(FileName: string; Masks: string): Boolean;
 
 procedure DefaultFileFilter(var Filter: TFileFilter);
 
+function OverlayImageList(Size: Integer): TImageList;
+
 var
   StdDirIcon: Integer;
   StdDirSelIcon: Integer;
@@ -715,6 +717,31 @@ begin
     end;
   end;
 end; {COMCTL32OK}
+
+function OverlayImageList(Size: Integer): TImageList;
+
+  procedure GetOverlayBitmap(ImageList: TImageList; BitmapName: string);
+  var
+    Bitmap: TBitmap;
+  begin
+    Bitmap := TBitmap.Create;
+    try
+      Bitmap.LoadFromResourceName(hInstance, BitmapName);
+      ImageList.AddMasked(Bitmap, Bitmap.Canvas.Pixels[0, 0]);
+    finally
+      Bitmap.Free;
+    end;
+  end; {GetOverlayBitmap}
+
+begin
+  Result := TImageList.CreateSize(Size, Size);
+  Result.DrawingStyle := dsTransparent;
+  Result.BkColor := clNone;
+  GetOverlayBitmap(Result, Format(ResDirUp, [Size]));
+  GetOverlayBitmap(Result, Format(ResLink, [Size]));
+  GetOverlayBitmap(Result, Format(ResBrokenLink, [Size]));
+end;
+
 
   { TLoadAnimationStartThread }
 
@@ -1117,30 +1144,6 @@ begin
 end;
 
 procedure TCustomDirView.CreateWnd;
-
-  procedure GetOverlayBitmap(ImageList: TImageList; BitmapName: string);
-  var
-    Bitmap: TBitmap;
-  begin
-    Bitmap := TBitmap.Create;
-    try
-      Bitmap.LoadFromResourceName(hInstance, BitmapName);
-      ImageList.AddMasked(Bitmap, Bitmap.Canvas.Pixels[0, 0]);
-    finally
-      Bitmap.Free;
-    end;
-  end; {GetOverlayBitmap}
-
-  function OverlayImageList(Size: Integer): TImageList;
-  begin
-    Result := TImageList.CreateSize(Size, Size);
-    Result.DrawingStyle := dsTransparent;
-    Result.BkColor := clNone;
-    GetOverlayBitmap(Result, Format(ResDirUp, [Size]));
-    GetOverlayBitmap(Result, Format(ResLink, [Size]));
-    GetOverlayBitmap(Result, Format(ResBrokenLink, [Size]));
-  end;
-
 begin
   inherited;
 
@@ -1933,6 +1936,19 @@ begin
     if Assigned(FOnDDDragOver) then
       FOnDDDragOver(Self, grfKeyState, Point, dwEffect);
 
+    // cannot drop to dragged files
+    if DragDropFilesEx.OwnerIsSource and Assigned(DropItem) then
+    begin
+      if Assigned(ItemFocused) and (not ItemFocused.Selected) then
+      begin
+        if DropItem = ItemFocused then
+          dwEffect := DropEffect_None;
+      end
+        else
+      if DropItem.Selected then
+        dwEffect := DropEffect_None;
+    end;
+
     if DragDropFilesEx.OwnerIsSource and (dwEffect = DropEffect_Move) and
       (not Assigned(DropTarget)) then dwEffect := DropEffect_None
       else
@@ -2312,13 +2328,15 @@ begin
 
     if not FileListCreated then
     begin
-      if Assigned(ItemFocused) and (not ItemFocused.Selected) and
-         ItemCanDrag(ItemFocused) then
+      if Assigned(ItemFocused) and (not ItemFocused.Selected) then
       begin
-        FirstItem := ItemFocused;
-        AddToDragFileList(DragDropFilesEx.FileList, ItemFocused);
-        if ItemIsDirectory(ItemFocused) then Inc(DirsCount)
-          else Inc(FilesCount);
+        if ItemCanDrag(ItemFocused) then
+        begin
+          FirstItem := ItemFocused;
+          AddToDragFileList(DragDropFilesEx.FileList, ItemFocused);
+          if ItemIsDirectory(ItemFocused) then Inc(DirsCount)
+            else Inc(FilesCount);
+        end;
       end
         else
       if SelCount > 0 then

@@ -37,6 +37,7 @@ __published:
   void __fastcall DirectoryEditKeyDown(TObject *Sender, WORD &Key,
     TShiftState Shift);
   void __fastcall TransferPreferencesButtonClick(TObject *Sender);
+  void __fastcall FormShow(TObject *Sender);
   
 private:
   int FParams;

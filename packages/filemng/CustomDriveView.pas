@@ -46,6 +46,7 @@ type
     FDimmHiddenDirs: Boolean;
     FShowHiddenDirs: Boolean;
     FContinue: Boolean;
+    FImageList: TImageList;
 
     FOnDDDragEnter: TDDOnDragEnter;
     FOnDDDragLeave: TDDOnDragLeave;
@@ -79,6 +80,10 @@ type
 
     procedure CreateWnd; override;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+    function GetNodeFromHItem(Item: TTVItem): TTreeNode;
+    function IsCustomDrawn(Target: TCustomDrawTarget; Stage: TCustomDrawStage): Boolean; override;
+    function CustomDrawItem(Node: TTreeNode; State: TCustomDrawState;
+      Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean; override;
 
     procedure CNNotify(var Msg: TWMNotify); message CN_NOTIFY;
     procedure WMLButtonDown(var Msg: TWMLButtonDown); message WM_LBUTTONDOWN;
@@ -127,7 +132,9 @@ type
     function NodePathExists(Node: TTreeNode): Boolean; virtual;
     function NodeColor(Node: TTreeNode): TColor; virtual; abstract;
     function NodeCanDrag(Node: TTreeNode): Boolean; virtual;
+    function NodeOverlayIndexes(Node: TTreeNode): Word; virtual;
     function FindPathNode(Path: string): TTreeNode; virtual; abstract;
+    procedure ClearDragFileList(FileList: TFileList); virtual;
     procedure AddToDragFileList(FileList: TFileList; Node: TTreeNode); virtual;
 
     procedure ValidateDirectoryEx(Node: TTreeNode; Recurse: TRecursiveScan;
@@ -138,6 +145,8 @@ type
 
     procedure DisplayContextMenu(Node: TTreeNode; ScreenPos: TPoint); virtual; abstract;
     procedure DisplayPropertiesMenu(Node: TTreeNode); virtual; abstract;
+
+    property ImageList: TImageList read FImageList;
 
   public
     constructor Create(AOwner: TComponent); override;
@@ -214,7 +223,7 @@ resourcestring
 implementation
 
 uses
-  SysUtils, ShellApi,
+  SysUtils, ShellApi, ImgList,
   IEListView, BaseUtils;
 
 const
@@ -276,6 +285,8 @@ end;
 
 destructor TCustomDriveView.Destroy;
 begin
+  FreeAndNil(FImageList);
+
   if Assigned(Images) then
     Images.Free;
 
@@ -313,6 +324,8 @@ begin
 
   FDragDropFilesEx.DragDropControl := Self;
   FParentForm := GetParentForm(Self);
+
+  FImageList := OverlayImageList(16);
 end;
 
 procedure TCustomDriveView.Notification(AComponent: TComponent; Operation: TOperation);
@@ -707,7 +720,7 @@ begin
 
     finally
       DropTarget := nil;
-      FDragDropFilesEx.FileList.Clear;
+      ClearDragFileList(FDragDropFilesEx.FileList);
     end;
   except
     Application.HandleException(Self);
@@ -761,7 +774,7 @@ begin
 
     FDragDrive := #0;
 
-    FDragDropFilesEx.FileList.Clear;
+    ClearDragFileList(FDragDropFilesEx.FileList);
     FDragDropFilesEx.CompleteFileList := DragCompleteFileList;
     FileListCreated := False;
     AvoidDragImage := False;
@@ -823,7 +836,7 @@ begin
       Application.ProcessMessages;
       
     finally
-      FDragDropFilesEx.FileList.Clear;
+      ClearDragFileList(FDragDropFilesEx.FileList);
 
       FDragDrive := #0;
       DropTarget := nil;
@@ -848,6 +861,65 @@ begin
     OnDDCreateDataObject(Self, DataObject);
     
   Result := FDragDropFilesEx.Execute(nil);
+end;
+
+function TCustomDriveView.GetNodeFromHItem(Item: TTVItem): TTreeNode;
+begin
+  Result := nil;
+  if Items <> nil then
+    with Item do
+      if (state and TVIF_PARAM) <> 0 then
+        Result := Pointer(lParam)
+      else
+        Result := Items.GetNode(hItem);
+end; {GetNodeFromItem}
+
+function TCustomDriveView.IsCustomDrawn(Target: TCustomDrawTarget;
+  Stage: TCustomDrawStage): Boolean;
+begin
+  Result := inherited IsCustomDrawn(Target, Stage) or
+    ((Target = dtItem) and (Stage = cdPostPaint));
+end;
+
+function TCustomDriveView.CustomDrawItem(Node: TTreeNode; State: TCustomDrawState;
+  Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean;
+var
+  Point: TPoint;
+  Index: Integer;
+  OverlayIndexes: Word;
+  OverlayIndex: Word;
+  Image: Word;
+begin
+  Result := inherited CustomDrawItem(Node, State, Stage, PaintImages);
+
+  if Result and (Stage = cdPostPaint) and HasExtendedCOMCTL32 then
+  begin
+    Assert(Assigned(Node));
+    OverlayIndexes := NodeOverlayIndexes(Node);
+    OverlayIndex := 1;
+    while OverlayIndexes > 0 do
+    begin
+      if (OverlayIndex and OverlayIndexes) <> 0 then
+      begin
+        Index := 0;
+        Image := OverlayIndex;
+        while Image > 1 do
+        begin
+          Inc(Index);
+          Image := Image shr 1;
+        end;
+
+        Point := Node.DisplayRect(True).TopLeft;
+        Dec(Point.X, Indent);
+
+        ImageList_Draw(ImageList.Handle, Index, Self.Canvas.Handle,
+          Point.X, Point.Y, ILD_TRANSPARENT);
+
+        Dec(OverlayIndexes, OverlayIndex);
+      end;
+      OverlayIndex := OverlayIndex shl 1;
+    end;
+  end;
 end;
 
 procedure TCustomDriveView.CNNotify(var Msg: TWMNotify);
@@ -1138,14 +1210,24 @@ begin {IterateSubTree}
   Result := True;
 end; {IterateSubTree}
 
+procedure TCustomDriveView.ClearDragFileList(FileList: TFileList);
+begin
+  FileList.Clear;
+end;
+
 procedure TCustomDriveView.AddToDragFileList(FileList: TFileList; Node: TTreeNode);
 begin
-  FDragDropFilesEx.FileList.AddItem(nil, NodePathName(Node));
+  FileList.AddItem(nil, NodePathName(Node));
 end;
 
 function TCustomDriveView.NodeCanDrag(Node: TTreeNode): Boolean;
 begin
   Result := True;
+end;
+
+function TCustomDriveView.NodeOverlayIndexes(Node: TTreeNode): Word;
+begin
+  Result := oiNoOverlay;
 end;
 
 function TCustomDriveView.NodeIsRecycleBin(Node: TTreeNode): Boolean;

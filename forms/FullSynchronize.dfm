@@ -14,6 +14,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   OldCreateOrder = False
   Position = poMainFormCenter
   OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
   DesignSize = (
     396
     265)

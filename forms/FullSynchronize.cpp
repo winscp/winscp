@@ -204,4 +204,9 @@ void __fastcall TFullSynchronizeDialog::TransferPreferencesButtonClick(
   DoPreferencesDialog(pmTransfer);
 }
 //---------------------------------------------------------------------------
+void __fastcall TFullSynchronizeDialog::FormShow(TObject * /*Sender*/)
+{
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
 

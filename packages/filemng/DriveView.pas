@@ -214,7 +214,6 @@ type
     procedure SetDirectory(Value: string); override;
     procedure SetDrive(Drive: TDrive);
     function  GetDrive: TDrive;
-    function  GetNodeFromHItem(Item: TTVItem): TTreeNode;
     procedure GetNodeShellAttr(ParentFolder: IShellFolder; NodeData: TNodeData;
       Path: string; ContentMask: Boolean = True);
     function  DoScanDir(FromNode: TTreeNode): Boolean; virtual;
@@ -727,9 +726,8 @@ function TDriveView.NodePath(Node: TTreeNode): string;
 var
   ParentNode: TTreeNode;
 begin
-  IF Not Assigned(Node) Then
-  Raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['GetDirPath']));
-//  Assert(Assigned(Node));
+  if not Assigned(Node) then
+    raise ENodeNotAssigned.Create(Format(ErrorNodeNA, ['GetDirPath']));
 
   Result := GetDirName(Node);
   ParentNode := Node.Parent;
@@ -743,7 +741,7 @@ begin
 
     ParentNode := ParentNode.Parent;
   end;
-  
+
   if Length(Result) = 3 then
     SetLength(Result, 2);
 end;
@@ -768,118 +766,118 @@ begin
 end;
 
 function TDriveView.CanEdit(Node: TTreeNode): Boolean;
-Begin
-  Result := Inherited CanEdit(Node) Or FForceRename;
-  IF Result Then
-  Result := Assigned(Node.Parent) And
-            Not TNodeData(Node.Data).isRecycleBin And
-            Not ReadOnly And
-            (FDragDropFilesEx.DragDetectStatus <> ddsDrag) And
-            (TNodeData(Node.Data).Attr and (faReadOnly or faSysFile) = 0) And
-            (UpperCase(Node.Text) = UpperCase(GetDirName(Node)));
+begin
+  Result := inherited CanEdit(Node) or FForceRename;
+  if Result then
+  begin
+    Result := Assigned(Node.Parent) and
+      (not TNodeData(Node.Data).isRecycleBin) and
+      (not ReadOnly) and
+      (FDragDropFilesEx.DragDetectStatus <> ddsDrag) and
+      ((TNodeData(Node.Data).Attr and (faReadOnly or faSysFile)) = 0) and
+      (UpperCase(Node.Text) = UpperCase(GetDirName(Node)));
+  end;
   FForceRename := False;
-End; {CanEdit}
+end; {CanEdit}
 
 procedure TDriveView.Edit(const Item: TTVItem);
-Var NewDirName: String;
-    SRec: TSearchRec;
-    Node: TTreeNode;
-    Info: String;
-    i: Integer;
-
-Begin
+var
+  NewDirName: String;
+  SRec: TSearchRec;
+  Node: TTreeNode;
+  Info: String;
+  i: Integer;
+begin
   Node := GetNodeFromHItem(Item);
-  IF (Length(Item.pszText) > 0) And (Item.pszText <> Node.Text) Then
-  Begin
-    IF StrContains(coInvalidDosChars, Item.pszText) Then
-    Begin
+  if (Length(Item.pszText) > 0) and (Item.pszText <> Node.Text) then
+  begin
+    if StrContains(coInvalidDosChars, Item.pszText) then
+    begin
       Info := coInvalidDosChars;
-      For i := Length(Info) DownTo 1 Do
-      System.Insert(Space, Info, i);
+      for i := Length(Info) downto 1 do
+        System.Insert(Space, Info, i);
 
-      IF Assigned(OnEdited) Then
-      Begin
+      if Assigned(OnEdited) then
+      begin
         NewDirName := Node.Text;
         OnEdited(Self, Node, NewDirName);
-      End;
-      IF Length(Item.pszText) > 0 Then
-        Raise EInvalidDirName.CreateFmt(SErrorInvalidDirName, [Info]);
+      end;
+      if Length(Item.pszText) > 0 then
+        raise EInvalidDirName.CreateFmt(SErrorInvalidDirName, [Info]);
       Exit;
-    End;
+    end;
 
 {$IFNDEF NO_THREADS}
     StopWatchThread;
-    IF Assigned(DirView) Then
-    DirView.StopWatchThread;
+    if Assigned(DirView) then
+      DirView.StopWatchThread;
 {$ENDIF}
 
-    With FFileOperator Do
-    Begin
+    with FFileOperator do
+    begin
       Flags := [foAllowUndo, foNoConfirmation];
       Operation := foRename;
       OperandFrom.Clear;
       OperandTo.Clear;
       OperandFrom.Add(NodePath(Node));
       OperandTo.Add(IncludeTrailingBackslash(NodePath(Node.Parent)) + Item.pszText);
-    End;
+    end;
 
-    Try
-      IF FFileOperator.Execute Then
-      {IF RenameFile(NodePath(Node), AddSlash(NodePath(Node.Parent)) + Item.pszText) Then}
-      Begin
+    try
+      if FFileOperator.Execute then
+      begin
         Node.Text := Item.pszText;
         TNodeData(Node.Data).Dirname := Item.pszText;
-        IF FindFirst(IncludeTrailingBackslash(NodePath(Node.Parent)) + Item.pszText, faAnyFile, Srec) = 0 Then
-          TNodeData(Node.Data).ShortName := Srec.FindData.cAlternateFileName;
-        FindClose(Srec);
+        if FindFirst(IncludeTrailingBackslash(NodePath(Node.Parent)) + Item.pszText,
+             faAnyFile, SRec) = 0 then
+        begin
+          TNodeData(Node.Data).ShortName := SRec.FindData.cAlternateFileName;
+        end;
+        FindClose(SRec);
         SortChildren(Node.Parent, False);
 
-        Inherited Edit(Item);
-      End
-      Else
-      Begin
-        {
-         Raise ERenameFileFailed.Create(ErrorRenameFile + Item.pszText);
-         }
-        IF FileOrDirExists(IncludeTrailingBackslash(NodePath(Node.Parent)) + Item.pszText) Then
+        inherited;
+      end
+        else
+      begin
+        if FileOrDirExists(IncludeTrailingBackslash(NodePath(Node.Parent)) + Item.pszText) then
           Info := SErrorRenameFileExists + Item.pszText
-        Else
+        else
           Info := SErrorRenameFile + Item.pszText;
 
         MessageBeep(MB_ICONHAND);
-        IF MessageDlg(Info, mtError, [mbOK, mbAbort], 0) = mrOK Then
-        Begin
+        if MessageDlg(Info, mtError, [mbOK, mbAbort], 0) = mrOK then
+        begin
           FLastRenameName := Item.pszText;
-          FRenameNode     := Node;
-          PostMessage(Self. Handle, WM_USER_RENAME, 0 , 0);
-        End;
-
-      End;
-    Finally
+          FRenameNode := Node;
+          PostMessage(Self.Handle, WM_USER_RENAME, 0, 0);
+        end;
+      end;
+    finally
 {$IFNDEF NO_THREADS}
       StartWatchThread;
 {$ENDIF}
-      IF Assigned(DirView) Then
-      Begin
+      if Assigned(DirView) then
+      begin
         DirView.Reload2;
 {$IFNDEF NO_THREADS}
         DirView.StartWatchThread;
 {$ENDIF}
-      End;
-    End;
-  End;
-End; {Edit}
+      end;
+    end;
+  end;
+end; {Edit}
 
-procedure TDriveView.WMUserRename(Var Message: TMessage);
-Begin
-  IF Assigned(FRenameNode) Then
-  Begin
+procedure TDriveView.WMUserRename(var Message: TMessage);
+begin
+  if Assigned(FRenameNode) then
+  begin
     FForceRename := True;
     TreeView_EditLabel(Handle, FRenameNode.ItemID);
     SetWindowText(TreeView_GetEditControl(Self.Handle), PChar(FLastRenameName));
-    FRenameNode := NIL;
-  End;
-End; {WMUserRename}
+    FRenameNode := nil;
+  end;
+end; {WMUserRename}
 
 function  TDriveView.CanExpand(Node: TTreeNode): Boolean;
 var
@@ -1096,15 +1094,6 @@ begin
 
   inherited;
 end; {Change}
-
-function TDriveView.GetNodeFromHItem(Item: TTVItem): TTreeNode;
-begin
-  with Item do
-    if (State and TVIF_PARAM) <> 0 then
-      Result := Pointer(lParam)
-    else
-      Result := Items.GetNode(hItem);
-end; {GetNodeFromItem}
 
 procedure TDriveView.SetImageIndex(Node: TTreeNode);
 var
@@ -2772,7 +2761,7 @@ begin
       SourcePath := TFDDListItem(FDragDropFilesEx.FileList[0]^).Name;
       SourceParentPath := ExtractFilePath(ExcludeTrailingBackslash(SourcePath));
 
-      FDragDropFilesEx.FileList.Clear;
+      ClearDragFileList(FDragDropFilesEx.FileList);
 
       FFileOperator.Flags := [foAllowUndo, foNoConfirmMkDir];
 
@@ -2978,8 +2967,8 @@ begin
   if Result then
   begin
     EmptyClipBoard;
-    FDragDropFilesEx.FileList.Clear;
-    FDragDropFilesEx.FileList.AddItem(nil, NodePathName(Selected));
+    ClearDragFileList(FDragDropFilesEx.FileList);
+    AddToDragFileList(FDragDropFilesEx.FileList, Selected);
     Result := FDragDropFilesEx.CopyToClipBoard;
     LastClipBoardOperation := cboCopy;
   end;
@@ -3007,7 +2996,7 @@ end; {CanPasteFromClipBoard}
 
 function TDriveView.PasteFromClipBoard(TargetPath: String = ''): Boolean;
 begin
-  FDragDropFilesEx.FileList.Clear;
+  ClearDragFileList(FDragDropFilesEx.FileList);
   Result := False;
   if CanPasteFromClipBoard and
     {MP}{$IFDEF OLD_DND} FDragDropFilesEx.GetFromClipBoard {$ELSE} FDragDropFilesEx.PasteFromClipboard {$ENDIF}{/MP}

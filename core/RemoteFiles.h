@@ -37,6 +37,7 @@ private:
   Char FType;
   bool FSelected;
   bool FCyclicLink;
+  AnsiString FFullFileName;
   int __fastcall GetAttr();
   bool __fastcall GetBrokenLink();
   bool __fastcall GetIsDirectory() const;
@@ -94,7 +95,7 @@ public:
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property Char Type = { read = GetType, write = SetType };
   __property bool Selected  = { read=FSelected, write=FSelected };
-  __property AnsiString FullFileName  = { read=GetFullFileName };
+  __property AnsiString FullFileName  = { read = GetFullFileName, write = FFullFileName };
   __property int IconIndex = { read = GetIconIndex };
   __property bool IsHidden = { read = GetIsHidden };
   __property bool IsParentDirectory = { read = GetIsParentDirectory };
@@ -103,7 +104,13 @@ public:
   __property AnsiString Extension  = { read=GetExtension };
 };
 //---------------------------------------------------------------------------
-class TRemoteParentDirectory : public TRemoteFile
+class TRemoteDirectoryFile : public TRemoteFile
+{
+public:
+  __fastcall TRemoteDirectoryFile();
+};
+//---------------------------------------------------------------------------
+class TRemoteParentDirectory : public TRemoteDirectoryFile
 {
 public:
   __fastcall TRemoteParentDirectory();

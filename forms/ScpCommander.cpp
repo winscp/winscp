@@ -1207,19 +1207,15 @@ void __fastcall TScpCommanderForm::PathLabelDblClick(TObject * Sender)
 void __fastcall TScpCommanderForm::LocalPathLabelGetStatus(
   TCustomPathLabel * /*Sender*/, bool & Active)
 {
-  if (LocalDriveView->Focused())
-  {
-    Active = true;
-  }
+  // this strange form is here to make borland compiler work :-)
+  Active = Active || LocalDriveView->Focused();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RemotePathLabelGetStatus(
   TCustomPathLabel * /*Sender*/, bool & Active)
 {
-  if (RemoteDriveView->Focused())
-  {
-    Active = true;
-  }
+  // this strange form is here to make borland compiler work :-)
+  Active = Active || RemoteDriveView->Focused();
 }
 //---------------------------------------------------------------------------
 

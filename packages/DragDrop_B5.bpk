@@ -1,0 +1,123 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="..\lib\DragDrop_B5.bpl"/>
+    <OBJFILES value="DragDrop_B5.obj &quot;dragndrop\DragDrop.obj&quot; &quot;dragndrop\DragDropBitmap.obj&quot; 
+      &quot;dragndrop\DragDropFiles.obj&quot; &quot;dragndrop\DragDropFilesEx.obj&quot; 
+      &quot;dragndrop\DragDropText.obj&quot; &quot;dragndrop\DragDropURL.obj&quot; &quot;dragndrop\ListSort.obj&quot; 
+      &quot;dragndrop\PIDL.obj&quot;"/>
+    <RESFILES value="DragDrop_B5.res &quot;dragndrop\DragDrop.dcr&quot; 
+      &quot;dragndrop\DragDropBitmap.dcr&quot; 
+      &quot;dragndrop\DragDropFiles.dcr&quot; 
+      &quot;dragndrop\DragDropFilesEx.dcr&quot; 
+      &quot;dragndrop\DragDropText.dcr&quot; &quot;dragndrop\ListSort.dcr&quot;"/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES)"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib
+      bdecds.lib bdertl.lib cds.lib dbexpress.lib dbrtl.lib dbxcds.lib
+      dclocx.lib dsnap.lib ibxpress.lib indy.lib inet.lib inetdb.lib
+      inetdbbde.lib inetdbxpress.lib nmfast.lib qrpt.lib soaprtl.lib tee.lib
+      teedb.lib teeqr.lib teeui.lib vcldb.lib vcldbx.lib visualdbclx.lib
+      xmlrtl.lib"/>
+    <SPARELIBS value="adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib
+      bdecds.lib bdertl.lib cds.lib dbexpress.lib dbrtl.lib dbxcds.lib
+      dclocx.lib dsnap.lib ibxpress.lib indy.lib inet.lib inetdb.lib
+      inetdbbde.lib inetdbxpress.lib nmfast.lib qrpt.lib rtl.lib soaprtl.lib
+      tee.lib teedb.lib teeqr.lib teeui.lib vcl.lib vcldb.lib vcldbx.lib
+      visualdbclx.lib xmlrtl.lib"/>
+    <PACKAGES value="rtl.bpi vcl.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;&quot;dragndrop&quot;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value=""/>
+    <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
+    <MAINSOURCE value="DragDrop_B5.cpp"/>
+    <INCLUDEPATH value="&quot;dragndrop&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;&quot;dragndrop&quot;;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <WARNINGS value="-w-par"/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Q -w -Vx -Ve -X- 
+      -a8 -b- -k- -vi -c -tWM"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zn"/>
+    <LFLAGS value="-I -D&quot;dragndrop&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="DragDrop_B5.cpp" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="DragDrop_B5.res" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDrop.pas" FORMNAME="" UNITNAME="DragDrop" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDrop.dcr" FORMNAME="" UNITNAME="DragDrop" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropBitmap.pas" FORMNAME="" UNITNAME="DragDropBitmap" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropBitmap.dcr" FORMNAME="" UNITNAME="DragDropBitmap" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropFiles.pas" FORMNAME="" UNITNAME="DragDropFiles" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropFiles.dcr" FORMNAME="" UNITNAME="DragDropFiles" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropFilesEx.pas" FORMNAME="" UNITNAME="DragDropFilesEx" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropFilesEx.dcr" FORMNAME="" UNITNAME="DragDropFilesEx" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropText.pas" FORMNAME="" UNITNAME="DragDropText" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropText.dcr" FORMNAME="" UNITNAME="DragDropText" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\DragDropURL.pas" FORMNAME="" UNITNAME="DragDropURL" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\ListSort.pas" FORMNAME="" UNITNAME="ListSort" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\ListSort.dcr" FORMNAME="" UNITNAME="ListSort" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dragndrop\PIDL.pas" FORMNAME="" UNITNAME="PIDL" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1029
+CodePage=1250
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Compiler]
+ShowInfoMsgs=1
+LinkDebugVcl=0
+LinkCGLIB=0
+
+[Linker]
+LibPrefix=
+LibSuffix=
+LibVersion=
+  </IDEOPTIONS>
+</PROJECT>

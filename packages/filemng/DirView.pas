@@ -198,6 +198,7 @@ type
     FPath: string;
     FDrawLinkOverlay: Boolean;
     SelectNewFiles: Boolean;
+    FSelfDropDuplicates: Boolean;
 
     {File selection properties:}
     FSelArchive: TSelAttr;
@@ -486,6 +487,8 @@ type
     property NoCheckDrives: string read FNoCheckDrives write SetNoCheckDrives;
     {Watch current directory for filename changes (create, rename, delete files)}
     property WatchForChanges;
+    property SelfDropDuplicates: Boolean
+      read FSelfDropDuplicates write FSelfDropDuplicates default False;
 
     {Additional events:}
     {The watchthread has detected new, renamed or deleted files}
@@ -916,6 +919,7 @@ begin
   SelectNewFiles := False;
   FDrawLinkOverlay := True;
   DragOnDriveIsMove := True;
+  FSelfDropDuplicates := False;
 
   FFileOperator := TFileOperator.Create(Self);
   FFileOperator.ProgressTitle := coFileOperatorTitle;
@@ -3730,6 +3734,10 @@ end; {DDDragDetect}
 procedure TDirView.DDChooseEffect(grfKeyState: Integer;
   var dwEffect: Integer);
 begin
+  if (not SelfDropDuplicates) and DragDropFilesEx.OwnerIsSource and
+     (dwEffect = DropEffect_Copy) and (not Assigned(DropTarget)) then
+        dwEffect := DropEffect_None
+    else
   if (grfKeyState and (MK_CONTROL or MK_SHIFT) = 0) then
   begin
     if ExeDrag and (Path[1] >= FirstFixedDrive) and

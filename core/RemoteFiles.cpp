@@ -651,14 +651,21 @@ AnsiString __fastcall TRemoteFile::GetListingStr()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetFullFileName()
 {
-  assert(Terminal);
-  assert(Directory != NULL);
-  AnsiString Path;
-  if (IsParentDirectory) Path = Directory->ParentPath;
-    else
-  if (IsDirectory) Path = UnixIncludeTrailingBackslash(Directory->FullDirectory + FileName);
-    else Path = Directory->FullDirectory + FileName;
-  return Terminal->TranslateLockedPath(Path, true);
+  if (FFullFileName.IsEmpty())
+  {
+    assert(Terminal);
+    assert(Directory != NULL);
+    AnsiString Path;
+    if (IsParentDirectory) Path = Directory->ParentPath;
+      else
+    if (IsDirectory) Path = UnixIncludeTrailingBackslash(Directory->FullDirectory + FileName);
+      else Path = Directory->FullDirectory + FileName;
+    return Terminal->TranslateLockedPath(Path, true);
+  }
+  else
+  {
+    return FFullFileName;
+  }
 }
 //---------------------------------------------------------------------------
 Integer __fastcall TRemoteFile::GetAttr()
@@ -679,13 +686,18 @@ void __fastcall TRemoteFile::SetTerminal(TTerminal * value)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TRemoteParentDirectory::TRemoteParentDirectory() : TRemoteFile()
+__fastcall TRemoteDirectoryFile::TRemoteDirectoryFile() : TRemoteFile()
 {
-  FileName = PARENTDIRECTORY;
   Modification = Now();
   LastAccess = Modification;
   Type = 'D';
   Size = 0;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TRemoteParentDirectory::TRemoteParentDirectory() : TRemoteDirectoryFile()
+{
+  FileName = PARENTDIRECTORY;
 }
 //=== TRemoteFileList ------------------------------------------------------
 __fastcall TRemoteFileList::TRemoteFileList():

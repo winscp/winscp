@@ -1419,11 +1419,11 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
             __int64 X = OperationProgress->LocalSize;
             X *= AsciiBuf.Size;
             X /= OperationProgress->LocalyUsed;
-            OperationProgress->SetTransferSize(X);
+            OperationProgress->ChangeTransferSize(X);
           }
             else
           {
-            OperationProgress->SetTransferSize(0);
+            OperationProgress->ChangeTransferSize(0);
           }
         }
 
@@ -1468,7 +1468,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
             FTerminal->LogEvent(FORMAT("Sending ASCII data (%ud bytes)",
               (AsciiBuf.Size)));
             // Should be equal, just in case it's rounded (see above)
-            OperationProgress->SetTransferSize(AsciiBuf.Size);
+            OperationProgress->ChangeTransferSize(AsciiBuf.Size);
             while (!OperationProgress->IsTransferDone())
             {
               FTerminal->Send(

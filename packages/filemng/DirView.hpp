@@ -14,8 +14,8 @@
 #include <PathLabel.hpp>	// Pascal unit
 #include <CustomPathComboBox.hpp>	// Pascal unit
 #include <Controls.hpp>	// Pascal unit
-#include <IEListView.hpp>	// Pascal unit
 #include <NortonLikeListView.hpp>	// Pascal unit
+#include <IEListView.hpp>	// Pascal unit
 #include <BaseUtils.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
 #include <FileCtrl.hpp>	// Pascal unit
@@ -313,6 +313,7 @@ private:
 	AnsiString FPath;
 	bool FDrawLinkOverlay;
 	bool SelectNewFiles;
+	bool FSelfDropDuplicates;
 	Customdirview::TSelAttr FSelArchive;
 	Customdirview::TSelAttr FSelHidden;
 	Customdirview::TSelAttr FSelSysFile;
@@ -509,6 +510,7 @@ __published:
 	__property AnsiString AttrSpace = {read=FAttrSpace, write=SetAttrSpace};
 	__property AnsiString NoCheckDrives = {read=FNoCheckDrives, write=SetNoCheckDrives};
 	__property WatchForChanges  = {default=0};
+	__property bool SelfDropDuplicates = {read=FSelfDropDuplicates, write=FSelfDropDuplicates, default=0};
 	__property Classes::TNotifyEvent OnChangeDetected = {read=FOnChangeDetected, write=FOnChangeDetected};
 	__property Classes::TNotifyEvent OnChangeInvalid = {read=FOnChangeInvalid, write=FOnChangeInvalid};
 	__property TDirViewAddFileEvent OnAddFile = {read=FOnAddFile, write=FOnAddFile};

@@ -48,11 +48,16 @@ __fastcall TCustomUnixDriveView::TCustomUnixDriveView(TComponent* Owner) :
   FPrevSelected = NULL;
   DDAllowMove = false;
   FShowInaccesibleDirectories = true;
+  FDummyDragFile = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomUnixDriveView::~TCustomUnixDriveView()
 {
   Terminal = NULL;
+  if (FDummyDragFile != NULL)
+  {
+    SAFE_DESTROY(FDummyDragFile);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::CreateWnd()
@@ -340,6 +345,22 @@ TRemoteFile * __fastcall TCustomUnixDriveView::NodeFile(const TTreeNode * Node)
   return static_cast<TNodeData*>(Node->Data)->File;
 }
 //---------------------------------------------------------------------------
+TRemoteFile * __fastcall TCustomUnixDriveView::NodeFileForce(TTreeNode * Node)
+{
+  TRemoteFile * File = NodeFile(Node);
+
+  if (File == NULL)
+  {
+    SAFE_DESTROY(FDummyDragFile);
+    FDummyDragFile = new TRemoteDirectoryFile();
+    FDummyDragFile->FileName = Node->Text;
+    FDummyDragFile->FullFileName = NodePathName(Node);
+    File = FDummyDragFile;
+  }
+
+  return File;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::Delete(TTreeNode * Node)
 {
   TNodeData * Data = NULL;
@@ -465,7 +486,7 @@ TStrings * __fastcall TCustomUnixDriveView::DragFileList()
   {
     #ifndef DESIGN_ONLY
     FileList->AddObject(ExcludeTrailingBackslash(NodePathName(DragNode)),
-      NodeFile(DragNode));
+      NodeFileForce(DragNode));
     #endif
   }
   catch(...)
@@ -498,25 +519,26 @@ AnsiString __fastcall TCustomUnixDriveView::NodePathName(TTreeNode * Node)
   return NodeData(Node)->Directory;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomUnixDriveView::NodeCanDrag(TTreeNode * Node)
+void __fastcall TCustomUnixDriveView::ClearDragFileList(TFileList * FileList)
 {
-  TRemoteFile * File = NodeFile(Node);
-  return (File != NULL);
+  if (FDummyDragFile != NULL)
+  {
+    SAFE_DESTROY(FDummyDragFile);
+  }
+  TCustomDriveView::ClearDragFileList(FileList);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::AddToDragFileList(TFileList * FileList,
   TTreeNode * Node)
 {
-  TRemoteFile * File = NodeFile(Node);
-  if (File != NULL)
+  AnsiString FileName = NodePathName(Node);
+  TRemoteFile * File = NodeFileForce(Node);
+
+  if (OnDDDragFileName != NULL)
   {
-    AnsiString FileName = NodePathName(Node);
-    if (OnDDDragFileName != NULL)
-    {
-      OnDDDragFileName(this, File, FileName);
-    }
-    FileList->AddItem(NULL, FileName);
+    OnDDDragFileName(this, File, FileName);
   }
+  FileList->AddItem(NULL, FileName);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TCustomUnixDriveView::NodePath(TTreeNode * Node)
@@ -549,6 +571,27 @@ TColor __fastcall TCustomUnixDriveView::NodeColor(TTreeNode * Node)
   }
   #endif
   return Result;
+}
+//---------------------------------------------------------------------------
+Word __fastcall TCustomUnixDriveView::NodeOverlayIndexes(TTreeNode * Node)
+{
+#ifndef DESIGN_ONLY
+  Word Result = oiNoOverlay;
+  // Cannot query root node for file
+  if (Node->Parent != NULL)
+  {
+    TRemoteFile * File = NodeFile(Node);
+    if ((File != NULL) && (File->IsSymLink))
+    {
+      // broken link cannot probably happen anyway
+      // as broken links are treated as files
+      Result |= File->BrokenLink ? oiBrokenLink : oiLink;
+    }
+  }
+  return Result;
+#else
+  return 0;
+#endif
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::GetImageIndex(TTreeNode * Node)

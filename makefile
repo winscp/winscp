@@ -18,8 +18,8 @@ DragExt.dll: DragExt.bpr
  $(BPR2MAK) DragExt.bpr
  $(MAKE)
 
-{general}.bpk{lib}.lib:
- cd general
+{packages}.bpk{lib}.lib:
+ cd packages
  $(BPR2MAK) $.
  $(MAKE)
  cd ..

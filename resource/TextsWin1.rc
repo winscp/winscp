@@ -56,7 +56,6 @@ BEGIN
         CLOSE_SESSION, "Terminate session '%s' and close application?"
         NEVER_ASK_AGAIN, "Never ask me a&gain"
         DD_WARN_LACK_OF_TEMP_SPACE, "Too little space on temporary drive!\n\nWhen dragging files from remote directory, files are downloaded first to temporary directory '%s'. There is %s free on the drive. Total size of dragged files is %s.\n\nNote: Temporary directory can be changed from Preferences window.\n\nDo you still want to download files?"
-        DD_WARN_UNKNOWN_TEMP_SPACE, "When dragging files from remote directory, files are downloaded first to temporary directory '%s'. There is %s free on the drive. Total size of dragged files is unknown (selection contains directories).\n\nNote: Temporary directory can be changed from Preferences window.\n\nDo you still want to download files?"
         ADD_BOOKMARK_CONFIRM, "Add directory '%s' to bookmarks?"
         RECONNECT_BUTTON, "&Reconnect"
         CONFIRM_CREATE_SHORTCUT, "Create desktop shortcut for session '%s'?"

@@ -338,7 +338,6 @@ protected:
 	virtual void __fastcall SetDirectory(AnsiString Value);
 	void __fastcall SetDrive(char Drive);
 	char __fastcall GetDrive(void);
-	Comctrls::TTreeNode* __fastcall GetNodeFromHItem(const tagTVITEMA &Item);
 	void __fastcall GetNodeShellAttr(_di_IShellFolder ParentFolder, TNodeData* NodeData, AnsiString Path, bool ContentMask = true);
 	virtual bool __fastcall DoScanDir(Comctrls::TTreeNode* FromNode);
 	virtual Comctrls::TTreeNode* __fastcall AddChildNode(Comctrls::TTreeNode* ParentNode, const Sysutils::TSearchRec &SRec);

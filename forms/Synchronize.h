@@ -39,6 +39,7 @@ __published:
   void __fastcall StartButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
   void __fastcall MinimizeButtonClick(TObject *Sender);
+  void __fastcall FormShow(TObject *Sender);
 
 private:
   TSynchronizeParamType FParams;

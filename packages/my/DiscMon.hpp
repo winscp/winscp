@@ -96,6 +96,7 @@ private:
 	int __fastcall GetChangeDelay(void);
 	void __fastcall SetChangeDelay(int Value);
 	void __fastcall AddDirectory(Classes::TStrings* Dirs, AnsiString Directory)/* overload */;
+	int __fastcall GetMaxDirectories(void);
 	
 protected:
 	void __fastcall Change(System::TObject* Sender, const AnsiString Directory);
@@ -109,6 +110,7 @@ public:
 	void __fastcall AddDirectory(AnsiString Directory, bool SubDirs)/* overload */;
 	void __fastcall SetDirectory(AnsiString Directory);
 	__property TDiscMonitorThread* Thread = {read=FMonitor};
+	__property int MaxDirectories = {read=GetMaxDirectories, nodefault};
 	
 __published:
 	__property Classes::TStrings* Directories = {read=GetDirectories, write=SetDirectories};

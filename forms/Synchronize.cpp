@@ -223,4 +223,10 @@ bool __fastcall TSynchronizeDialog::GetSaveSettings()
 {
   return SaveSettingsCheck->Checked;
 }
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::FormShow(TObject * /*Sender*/)
+{
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
 
