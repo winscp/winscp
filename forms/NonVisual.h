@@ -192,7 +192,7 @@ __published:	// IDE-managed Components
   TMenuItem *SelectAll2;
   TMenuItem *UnselectFiles1;
   TMenuItem *SelectFiles1;
-  TMenuItem *CommanderCommandsMenu;
+  TMenuItem *CommanderFilesMenu;
   TMenuItem *Copyto3;
   TMenuItem *Moveto3;
   TMenuItem *Delete3;
@@ -421,7 +421,6 @@ __published:	// IDE-managed Components
   TAction *HideColumnAction;
   TMenuItem *Hidecolumn1;
   TMenuItem *Hidecolumn2;
-  TMenuItem *N39;
   TAction *CompareDirectoriesAction;
   TMenuItem *Comparedirectories1;
   TAction *CommanderCommandsBandAction;
@@ -469,6 +468,25 @@ __published:	// IDE-managed Components
   TAction *CloseApplicationAction;
   TAction *OpenedSessionsAction;
   TMenuItem *OpenedSessionsMenu;
+  TAction *CustomCommandsAction;
+  TMenuItem *CustomCommandsMenu;
+  TMenuItem *N43;
+  TMenuItem *CommanderCommandsMenu;
+  TMenuItem *N39;
+  TMenuItem *CustomCommands1;
+  TMenuItem *RemoteDirViewCustomCommandsMenu;
+  TMenuItem *N45;
+  TAction *CustomCommandsCustomizeAction;
+  TAction *CheckForUpdatesAction;
+  TMenuItem *N44;
+  TMenuItem *CheckForUpdates1;
+  TMenuItem *N46;
+  TMenuItem *Quit1;
+  TMenuItem *N47;
+  TMenuItem *Quit2;
+  TAction *PuttyAction;
+  TMenuItem *OpeninPuTTY1;
+  TMenuItem *OpeninPuTTY2;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall RightsActionsExecute(TBasicAction *Action, bool &Handled);
@@ -485,15 +503,18 @@ private:
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
 protected:
   void __fastcall CreateSessionListMenu();
+  void __fastcall CreateCustomCommandsMenu(TAction * Action);
   TCustomDirView * __fastcall DirView(TOperationSide Side) { return ScpExplorer->DirView(Side); }
-  void __fastcall OpenBrowser(AnsiString URL);
   void __fastcall SessionItemClick(TObject * Sender);
   void __fastcall OpenedSessionItemClick(TObject * Sender);
+  void __fastcall CustomCommandClick(TObject * Sender);
 public:
   void __fastcall CommanderShortcuts();
   void __fastcall ExplorerShortcuts();
   void __fastcall CreateOpenedSessionListMenu();
   TShortCut __fastcall OpenSessionShortCut(int Index);
+  void __fastcall OpenBrowser(AnsiString URL);
+
   __fastcall TNonVisualDataModule(TComponent * Owner);
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TRightsFrame * RightsFrame = { read = FRightsFrame, write = FRightsFrame };

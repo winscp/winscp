@@ -41,9 +41,10 @@ AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
 //---------------------------------------------------------------------------
 #endif
 //---------------------------------------------------------------------------
-#ifndef _DEBUG
-#define NDEBUG
-#endif
 #include <assert.h>
+#ifndef _DEBUG
+#undef assert
+#define assert(p)   ((void)0)
+#endif
 //---------------------------------------------------------------------------
 #endif

@@ -221,6 +221,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(HistoryPageAction, true)
   UPD(RequirementsPageAction, true)
   UPD(ForumPageAction, true)
+  UPD(CheckForUpdatesAction, true)
 
   // VIEW
   UPDCOMP(StatusBar)
@@ -312,10 +313,17 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CompareDirectoriesAction, true)
   UPD(SynchronizeAction, true)
   UPD(ConsoleAction, ScpExplorer->Terminal && ScpExplorer->Terminal->IsCapable[fcAnyCommand])
+  UPD(PuttyAction, true)
   UPD(SynchorizeBrowsingAction, true)
   UPD(CloseApplicationAction, true)
 
-  ;
+  // CUSTOM COMMANDS
+  UPD(CustomCommandsAction,
+    (ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)) &&
+    ScpExplorer->Terminal && ScpExplorer->Terminal->IsCapable[fcAnyCommand])
+  UPD(CustomCommandsCustomizeAction, true)
+
+  ;            
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
@@ -385,6 +393,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   EXE(HistoryPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/history.php"))
   EXE(RequirementsPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/requirements.php"))
   EXE(ForumPageAction, OpenBrowser("http://winscp.sourceforge.net/eng/forum.php"))
+  EXE(CheckForUpdatesAction, CheckForUpdates())
 
   // VIEW
   EXECOMP(StatusBar)
@@ -474,9 +483,13 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   EXE(CompareDirectoriesAction, ScpExplorer->CompareDirectories())
   EXE(SynchronizeAction, ScpExplorer->SynchronizeDirectories())
   EXE(ConsoleAction, ScpExplorer->OpenConsole())
+  EXE(PuttyAction, ScpExplorer->OpenInPutty())
   EXE(SynchorizeBrowsingAction, )
   EXE(CloseApplicationAction, ScpExplorer->Close())
 
+  // CUSTOM COMMANDS
+  EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction))
+  EXE(CustomCommandsCustomizeAction, DoPreferencesDialog(pmCustomCommands))
   ;
 }
 //---------------------------------------------------------------------------
@@ -583,6 +596,61 @@ void __fastcall TNonVisualDataModule::SessionIdleTimerTimer(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
+{
+  assert(Action);
+  TMenuItem * Menu = dynamic_cast<TMenuItem *>(Action->ActionComponent);
+  if (Menu)
+  {
+    int PrevCount = Menu->Count;
+    for (int Index = 0; Index < WinConfiguration->CustomCommands->Count; Index++)
+    {
+      AnsiString Description = WinConfiguration->CustomCommands->Names[Index];
+      AnsiString Command = WinConfiguration->CustomCommands->Values[Description];
+
+      TMenuItem * Item = new TMenuItem(Menu);
+      Item->Caption = Description;
+      Item->Tag = Index;
+      if (Menu == RemoteDirViewCustomCommandsMenu)
+      {
+        Item->Tag = Item->Tag | 0x0100; 
+      }
+      Item->Hint = FMTLOAD(CUSTOM_COMMAND_HINT,
+        (StringReplace(Description, "&", "", TReplaceFlags() << rfReplaceAll)));
+      Item->OnClick = CustomCommandClick;
+      Menu->Add(Item);
+    }
+
+    TMenuItem * Item;
+    if (WinConfiguration->CustomCommands->Count)
+    {
+      Item = new TMenuItem(Menu);
+      Item->Caption = "-";
+      Item->Hint = "E";
+      Menu->Add(Item);
+    }
+
+    Item = new TMenuItem(Menu);
+    Item->Action = CustomCommandsCustomizeAction;
+    Menu->Add(Item);
+
+    for (int Index = 0; Index < PrevCount; Index++)
+    {
+      Menu->Delete(0);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
+{
+  TMenuItem * Item = dynamic_cast<TMenuItem *>(Sender);
+  assert(Item);
+  AnsiString Command = WinConfiguration->CustomCommands->Values[
+    WinConfiguration->CustomCommands->Names[Item->Tag & 0x00FF]];
+  ScpExplorer->ExecuteFileOperation(foCustomCommand, osRemote,
+    (Item->Tag & 0xFF00) != 0, false, &Command);
+}
+//---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionListMenu()
 {
   int PrevCount = SavedSessionsMenu->Count;
@@ -590,7 +658,7 @@ void __fastcall TNonVisualDataModule::CreateSessionListMenu()
   for (int Index = 0; Index < StoredSessions->Count; Index++)
   {
     TSessionData * Data = StoredSessions->Sessions[Index];
-    TMenuItem * Item = new TMenuItem(this);
+    TMenuItem * Item = new TMenuItem(SavedSessionsMenu);
     Item->Caption = Data->Name;
     Item->Tag = Index;
     Item->Hint = FMTLOAD(SAVEDSESSION_HINT, (Data->Name));
@@ -655,4 +723,6 @@ void __fastcall TNonVisualDataModule::OpenBrowser(AnsiString URL)
 {
   ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
+//---------------------------------------------------------------------------
+
 

@@ -322,6 +322,9 @@ int SaneDialogBox(HINSTANCE hinst,
 
 void SaneEndDialog(HWND hwnd, int ret);
 
+extern OSVERSIONINFO osVersion;
+BOOL init_winver(void);
+
 /*
  * Exports from sizetip.c.
  */

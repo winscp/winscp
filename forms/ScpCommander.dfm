@@ -69,7 +69,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     object MenuToolBar: TToolBar
       Left = 9
       Top = 0
-      Width = 311
+      Width = 343
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -105,12 +105,21 @@ inherited ScpCommanderForm: TScpCommanderForm
         Top = 0
         Hint = 'File operation commands'
         AutoSize = True
+        Caption = '&Files'
+        Grouped = True
+        MenuItem = NonVisualDataModule.CommanderFilesMenu
+      end
+      object ToolButton49: TToolButton
+        Left = 104
+        Top = 0
+        Hint = 'Other commands'
+        AutoSize = True
         Caption = '&Commands'
         Grouped = True
         MenuItem = NonVisualDataModule.CommanderCommandsMenu
       end
       object ToolButton19: TToolButton
-        Left = 135
+        Left = 167
         Top = 0
         Hint = 'Session commands'
         AutoSize = True
@@ -119,7 +128,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         MenuItem = NonVisualDataModule.CommonSessionMenu
       end
       object ToolButton7: TToolButton
-        Left = 183
+        Left = 215
         Top = 0
         Hint = 'Change program layout/preferences'
         AutoSize = True
@@ -128,7 +137,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         MenuItem = NonVisualDataModule.CommanderOptionsMenu
       end
       object ToolButton3: TToolButton
-        Left = 230
+        Left = 262
         Top = 0
         Hint = 'Change remote panel layout or change displayed directory'
         AutoSize = True
@@ -137,7 +146,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         MenuItem = NonVisualDataModule.CommanderRemoteMenu
       end
       object ToolButton20: TToolButton
-        Left = 278
+        Left = 310
         Top = 0
         Hint = 'Help'
         AutoSize = True
@@ -571,6 +580,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       PathLabel = RemotePathLabel
       AddParentDir = True
       OnLoaded = DirViewLoaded
+      OnWarnLackOfTempSpace = nil
     end
     object RemoteCoolBar: TCoolBar
       Left = 0

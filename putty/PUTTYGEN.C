@@ -681,14 +681,14 @@ void load_key_file(HWND hwnd, struct MainDlgState *state,
 	if (type == SSH_KEYTYPE_SSH1) {
 	    if (realtype == type)
 		ret = loadrsakey(&filename, &newkey1,
-				 passphrase);
+				 passphrase, NULL);
 	    else
 		ret = import_ssh1(&filename, realtype,
 				  &newkey1, passphrase);
 	} else {
 	    if (realtype == type)
 		newkey2 = ssh2_load_userkey(&filename,
-					    passphrase);
+					    passphrase, NULL);
 	    else
 		newkey2 = import_ssh2(&filename, realtype,
 				      passphrase);

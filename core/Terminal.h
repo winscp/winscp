@@ -59,7 +59,7 @@ typedef int __fastcall (__closure *TFileOperationEvent)
       HandleExtendedException(&E, this); \
       int Answers = qaRetry | qaAbort | ((ALLOW_SKIP) ? qaSkip : 0); \
       int Answer; \
-      int Params = !(ALLOW_SKIP) ? qpFatalAbort : 0; \
+      int Params = qpAllowContinueOnError | (!(ALLOW_SKIP) ? qpFatalAbort : 0); \
       SUSPEND_OPERATION ( \
         Answer = FTerminal->DoQueryUser(MESSAGE, &E, Answers, Params); \
       ); \
@@ -79,9 +79,8 @@ enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcTextMode };
 //---------------------------------------------------------------------------
 const cpDelete = 1;
-//const cpCheckExistence = 2; !!! don't use
 const cpDragDrop = 4;
-const cpTemporary = 4; // alis to cpDragDrop
+const cpTemporary = 4; // alias to cpDragDrop
 const cpNoConfirmation = 8;
 //---------------------------------------------------------------------------
 class TTerminal : public TSecureShell
@@ -96,17 +95,17 @@ private:
   AnsiString FLockDirectory;
   Integer FExceptionOnFail;
   TRemoteDirectory * FFiles;
-  Integer FInTransaction;
+  int FInTransaction;
   TNotifyEvent FOnChangeDirectory;
   TReadDirectoryEvent FOnReadDirectory;
   bool FReadCurrentDirectoryPending;
   bool FReadDirectoryPending;
   TUserGroupsList * FUserGroups;
-  Boolean FUserGroupsLookedup;
+  bool FUserGroupsLookedup;
   TFileOperationProgressEvent FOnProgress;
   TFileOperationFinished FOnFinished;
   TFileOperationProgressType * FOperationProgress;
-  Boolean FUseBusyCursor;
+  bool FUseBusyCursor;
   TRemoteDirectoryCache * FDirectoryCache;
   TCustomFileSystem * FFileSystem;
   void __fastcall CommandError(Exception * E, const AnsiString Msg);
@@ -125,6 +124,8 @@ protected:
     const TRemoteProperties * Properties);
   void __fastcall DoDeleteFile(const AnsiString FileName,
     const TRemoteFile * File, void * Param);
+  void __fastcall DoCustomCommandOnFile(AnsiString FileName,
+    const TRemoteFile * File, AnsiString Command);
   void __fastcall DoRenameFile(const AnsiString FileName, const AnsiString NewName);
   void __fastcall DoChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
@@ -174,8 +175,10 @@ public:
   void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   void __fastcall DeleteFile(AnsiString FileName,
     const TRemoteFile * File = NULL, void * Recursive = NULL);
-  //void __fastcall DeleteFile(const TRemoteFile * File);
   void __fastcall DeleteFiles(TStrings * FilesToDelete, bool * Recursive = NULL);
+  void __fastcall CustomCommandOnFile(AnsiString FileName,
+    const TRemoteFile * File, void * ACommand);
+  void __fastcall CustomCommandOnFiles(AnsiString Command, TStrings * Files);
   void __fastcall ChangeDirectory(const AnsiString Directory);
   void __fastcall DoStartup();
   void __fastcall EndTransaction();
@@ -190,7 +193,7 @@ public:
   void __fastcall RenameFile(const AnsiString FileName, const AnsiString NewName);
   void __fastcall RenameFile(const TRemoteFile * File, const AnsiString NewName, bool CheckExistence);
   __property AnsiString CurrentDirectory = { read = GetCurrentDirectory, write = SetCurrentDirectory };
-  __property Boolean ExceptionOnFail = { read = GetExceptionOnFail, write = SetExceptionOnFail };
+  __property bool ExceptionOnFail = { read = GetExceptionOnFail, write = SetExceptionOnFail };
   __property TRemoteDirectory * Files = { read = FFiles };
   __property TNotifyEvent OnChangeDirectory = { read = FOnChangeDirectory, write = FOnChangeDirectory };
   __property TReadDirectoryEvent OnReadDirectory = { read = FOnReadDirectory, write = FOnReadDirectory };
@@ -198,7 +201,7 @@ public:
   __property TFileOperationProgressEvent OnProgress  = { read=FOnProgress, write=FOnProgress };
   __property TFileOperationFinished OnFinished  = { read=FOnFinished, write=FOnFinished };
   __property AnsiString ProtocolName = { read = GetProtocolName };
-  __property Boolean UseBusyCursor = { read = FUseBusyCursor, write = FUseBusyCursor };
+  __property bool UseBusyCursor = { read = FUseBusyCursor, write = FUseBusyCursor };
   __property AnsiString UserName  = { read=GetUserName };
   __property bool IsCapable[TFSCapability Capability] = { read = GetIsCapable };
 };

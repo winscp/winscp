@@ -111,7 +111,6 @@ private:
   Backend * FBackend;
   void * FBackendHandle;
   Config * FConfig;
-  //void * FLoggingContext;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -127,6 +126,7 @@ private:
   int FReachedStatus;
   AnsiString FStdErrorTemp;
   AnsiString FAuthenticationLog;
+  TObject * FUserObject;
 
   TCipher FCSCipher;
   TCipher FSCCipher;
@@ -138,18 +138,19 @@ private:
   void __fastcall SetSocket(SOCKET value);
   void __fastcall SetSessionData(TSessionData * value);
   void __fastcall SetActive(Boolean value);
-  Boolean __fastcall GetActive();
+  bool __fastcall GetActive();
   TCipher __fastcall GetCSCipher();
   TCompressionType __fastcall GetCSCompression();
   TDateTime __fastcall GetDuration();
   TCipher __fastcall GetSCCipher();
   TCompressionType __fastcall GetSCCompression();
-  Integer __fastcall GetSshVersion();
-  Integer __fastcall GetStatus();
+  int __fastcall GetSshVersion();
+  int __fastcall GetStatus();
   void inline __fastcall CheckConnection(int Message = -1);
   void __fastcall WaitForData();
   void __fastcall SetLog(TSessionLog * value);
-  void __fastcall SetConfiguration(TConfiguration *value);
+  void __fastcall SetConfiguration(TConfiguration * value);
+  void __fastcall SetUserObject(TObject * value);
 
 protected:
   AnsiString StdError;
@@ -195,7 +196,7 @@ public:
   {
     return Configuration->Logging || Log->OnAddLine;
   }
-  void __fastcall inline LogEvent(const AnsiString Str)
+  void __fastcall inline LogEvent(const AnsiString & Str)
   {
     if (IsLogging()) Log->Add(llMessage, Str);
   }
@@ -219,6 +220,7 @@ public:
   __property TNotifyEvent OnUpdateStatus = { read = FOnUpdateStatus, write = FOnUpdateStatus };
   __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
   __property int Status = { read = GetStatus };
+  __property TObject * UserObject = { read = FUserObject, write = SetUserObject };
 };
 //---------------------------------------------------------------------------
 #endif

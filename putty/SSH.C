@@ -2169,7 +2169,6 @@ static const char *connect_to_host(Ssh ssh, char *host, int port,
     ssh->fn = &fn_table;
     ssh->s = new_connection(addr, *realhost, port,
 			    0, 1, nodelay, (Plug) ssh, &ssh->cfg);
-    sk_addr_free(addr);
     if ((err = sk_socket_error(ssh->s)) != NULL) {
 	ssh->s = NULL;
 	return err;
@@ -2603,7 +2602,7 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen, int ispkt)
     /* Load the public half of ssh->cfg.keyfile so we notice if it's in Pageant */
     if (!filename_is_null(ssh->cfg.keyfile)) {
 	if (!rsakey_pubblob(&ssh->cfg.keyfile,
-			    &s->publickey_blob, &s->publickey_bloblen))
+			    &s->publickey_blob, &s->publickey_bloblen, NULL))
 	    s->publickey_blob = NULL;
     } else
 	s->publickey_blob = NULL;
@@ -2889,11 +2888,15 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	    s->tried_publickey = 1;
 	    
 	    {
-		int ret = loadrsakey(&ssh->cfg.keyfile, &s->key, s->password);
+		const char *error = NULL;
+		int ret = loadrsakey(&ssh->cfg.keyfile, &s->key, s->password,
+				     &error);
 		if (ret == 0) {
 		    c_write_str(ssh, "Couldn't load private key from ");
 		    c_write_str(ssh, filename_to_str(&ssh->cfg.keyfile));
-		    c_write_str(ssh, ".\r\n");
+		    c_write_str(ssh, " (");
+		    c_write_str(ssh, error);
+		    c_write_str(ssh, ").\r\n");
 		    continue;	       /* go and try password */
 		}
 		if (ret == -1) {
@@ -4587,7 +4590,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	    if (keytype == SSH_KEYTYPE_SSH2) {
 		s->publickey_blob =
 		    ssh2_userkey_loadpub(&ssh->cfg.keyfile, NULL,
-					 &s->publickey_bloblen);
+					 &s->publickey_bloblen, NULL);
 	    } else {
 		char *msgbuf;
 		logeventf(ssh, "Unable to use this key file (%s)",
@@ -4917,7 +4920,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 		pub_blob =
 		    (unsigned char *)ssh2_userkey_loadpub(&ssh->cfg.keyfile,
 							  &algorithm,
-							  &pub_blob_len);
+							  &pub_blob_len,
+							  NULL);
 		if (pub_blob) {
 		    ssh2_pkt_init(ssh, SSH2_MSG_USERAUTH_REQUEST);
 		    ssh2_pkt_addstring(ssh, s->username);
@@ -5094,14 +5098,18 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 		 * We have our passphrase. Now try the actual authentication.
 		 */
 		struct ssh2_userkey *key;
+		const char *error = NULL;
 
-		key = ssh2_load_userkey(&ssh->cfg.keyfile, s->password);
+		key = ssh2_load_userkey(&ssh->cfg.keyfile, s->password,
+					&error);
 		if (key == SSH2_WRONG_PASSPHRASE || key == NULL) {
 		    if (key == SSH2_WRONG_PASSPHRASE) {
 			c_write_str(ssh, "Wrong passphrase\r\n");
 			s->tried_pubkey_config = FALSE;
 		    } else {
-			c_write_str(ssh, "Unable to load private key\r\n");
+			c_write_str(ssh, "Unable to load private key (");
+			c_write_str(ssh, error);
+			c_write_str(ssh, ")\r\n");
 			s->tried_pubkey_config = TRUE;
 		    }
 		    /* Send a spurious AUTH_NONE to return to the top. */

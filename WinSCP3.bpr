@@ -14,8 +14,10 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) forms\CustomScpExplorer.dfm forms\NonVisual.dfm"/>
     <LIBFILES value="lib\Putty.lib lib\RScpComp.lib lib\ScpCore.lib lib\ScpForms.lib"/>
-    <LIBRARIES value="DragDrop_B5.lib DriveDir_B5.lib Moje_B5.lib vclx.lib rtl.lib vcl.lib"/>
-    <SPARELIBS value="vcl.lib rtl.lib vclx.lib Moje_B5.lib DriveDir_B5.lib DragDrop_B5.lib"/>
+    <LIBRARIES value="nmfast.lib DragDrop_B5.lib DriveDir_B5.lib Moje_B5.lib vclx.lib rtl.lib 
+      vcl.lib"/>
+    <SPARELIBS value="vcl.lib rtl.lib vclx.lib Moje_B5.lib DriveDir_B5.lib DragDrop_B5.lib 
+      nmfast.lib"/>
     <PACKAGES value="vcl.bpi rtl.bpi vclx.bpi bcbsmp.bpi dbrtl.bpi adortl.bpi vcldb.bpi 
       qrpt.bpi bdertl.bpi vcldbx.bpi dsnap.bpi cds.bpi bdecds.bpi teeui.bpi 
       teedb.bpi tee.bpi teeqr.bpi ibxpress.bpi vclie.bpi xmlrtl.bpi inet.bpi 
@@ -29,7 +31,7 @@
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
-    <USERDEFINES value="SSH_DEFAULT;OLD_DND;_DEBUG"/>
+    <USERDEFINES value="OLD_DND;_DEBUG"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="WinSCP3.cpp"/>
     <INCLUDEPATH value="core;forms;windows;resource;components;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
@@ -87,9 +89,9 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
-MinorVer=2
-Release=1
-Build=174
+MinorVer=3
+Release=0
+Build=178
 Debug=0
 PreRelease=0
 Special=0
@@ -101,13 +103,14 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.2.1.174
+FileVersion=3.3.0.178
 InternalName=winscp3
 LegalCopyright=(c) 2000-2003 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp321.exe
+OriginalFilename=winscp330.exe
 ProductName=WinSCP
-ProductVersion=3.2.1.0
+ProductVersion=3.3.0.0
+WWW=http://winscp.sourceforge.net/
 
 [Compiler]
 ShowInfoMsgs=1

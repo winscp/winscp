@@ -350,8 +350,10 @@ const char *pfd_newconnect(Socket *s, char *hostname, int port,
      * Try to find host.
      */
     addr = name_lookup(hostname, port, &dummy_realhost, cfg);
-    if ((err = sk_addr_error(addr)) != NULL)
+    if ((err = sk_addr_error(addr)) != NULL) {
+	sk_addr_free(addr);
 	return err;
+    }
 
     /*
      * Open socket.
@@ -373,7 +375,6 @@ const char *pfd_newconnect(Socket *s, char *hostname, int port,
     }
 
     sk_set_private_ptr(*s, pr);
-    sk_addr_free(addr);
     return NULL;
 }
 

@@ -91,7 +91,7 @@ bool __fastcall TRightsFrame::GetAllowUndef()
     }
     else if (Result != Check->AllowGrayed)
     {
-      throw Exception("AllowGrayed property of all checkboxes of TRightsFrame don't have same value");
+      assert(false);
     }
   }
   return Result;
@@ -219,26 +219,46 @@ void __fastcall TRightsFrame::SetEnabled(bool Value)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+void __fastcall TRightsFrame::UpdateByOctal()
+{
+  if (!OctalEdit->Text.IsEmpty())
+  {
+    TRights R = Rights;
+    R.Octal = OctalEdit->Text;
+    Rights = R;
+  }
+  UpdateControls();
+  OctalEdit->Modified = false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TRightsFrame::OctalEditExit(TObject * /*Sender*/)
 {
   if (OctalEdit->Modified)
   {
     try
     {
-      if (!OctalEdit->Text.IsEmpty())
-      {
-        TRights R = Rights;
-        R.Octal = OctalEdit->Text;
-        Rights = R;
-      }
-      UpdateControls();
-      OctalEdit->Modified = false;
+      UpdateByOctal();
     }
     catch(...)
     {
       OctalEdit->SelectAll();
       OctalEdit->SetFocus();
       throw;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::OctalEditChange(TObject * /*Sender*/)
+{
+  if (OctalEdit->Modified && OctalEdit->Text.Length() == 3)
+  {
+    try
+    {
+      UpdateByOctal();
+    }
+    catch(...)
+    {
+      OctalEdit->Modified = true;
     }
   }
 }

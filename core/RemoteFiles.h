@@ -105,7 +105,8 @@ public:
   virtual __fastcall ~TRemoteFile();
   TRemoteFile * __fastcall Duplicate();
 
-  //void __fastcall SetProperties(const TRemoteProperties & Properties);
+  void __fastcall ShiftTime(const TDateTime & Difference);
+
   __property int Attr = { read = GetAttr };
   __property bool BrokenLink = { read = GetBrokenLink };
   __property TRemoteFileList * Directory = { read = FDirectory, write = FDirectory };
@@ -122,9 +123,7 @@ public:
   __property bool IsSymLink = { read = FIsSymLink };
   __property bool IsDirectory = { read = GetIsDirectory };
   __property TRemoteFile * LinkedFile = { read = GetLinkedFile, write = SetLinkedFile };
-  //__property const TRemoteFile * LinkedByFile = { read = FLinkedByFile, write = FLinkedByFile };
   __property AnsiString LinkTo = { read = FLinkTo, write = FLinkTo };
-  //__property bool CyclicLink = { read = FCyclicLink, write = FCyclicLink };
   __property AnsiString ListingStr = { read = GetListingStr, write = SetListingStr };
   __property TRights * Rights = { read = FRights, write = SetRights };
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
@@ -288,11 +287,12 @@ public:
   AnsiString Owner;
 
   __fastcall TRemoteProperties();
-/*  __fastcall TRemoteProperties(const TRemoteProperties & Source);
-  void __fastcall Clear();
-  void __fastcall operator =(const TRemoteProperties &rhp);*/
   bool __fastcall operator ==(const TRemoteProperties & rhp) const;
   bool __fastcall operator !=(const TRemoteProperties & rhp) const;
+
+  static TRemoteProperties __fastcall CommonProperties(TStrings * FileList);
+  static TRemoteProperties __fastcall ChangedProperties(
+    const TRemoteProperties & OriginalProperties, TRemoteProperties NewProperties);
 };
 //---------------------------------------------------------------------------
 AnsiString __fastcall UnixIncludeTrailingBackslash(const AnsiString Path);

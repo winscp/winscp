@@ -14,6 +14,8 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+const char CustomCommandFileNamePattern[] = "!";
+//---------------------------------------------------------------------------
 bool SpecialFolderLocation(int PathID, AnsiString & Path)
 {
   LPITEMIDLIST Pidl;
@@ -53,6 +55,8 @@ void __fastcall TConfiguration::Default()
   FLogFileName = "";
   FLogFileAppend = true;
   FLogWindowLines = 100;
+
+  FDisablePasswordStoring = false;
 
   Changed();
 }
@@ -136,6 +140,11 @@ void __fastcall TConfiguration::LoadSpecial(THierarchicalStorage * /*Storage*/)
 {
 }
 //---------------------------------------------------------------------------
+void __fastcall TConfiguration::LoadAdmin(THierarchicalStorage * Storage)
+{
+  FDisablePasswordStoring = Storage->ReadBool("DisablePasswordStoring", FDisablePasswordStoring);
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::Load()
 {
   #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
@@ -143,6 +152,21 @@ void __fastcall TConfiguration::Load()
   REGCONFIG(smRead, false, LoadSpecial);
   #pragma warn +eas
   #undef KEY
+
+  TRegistryStorage * AdminStorage;
+  AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE);
+  try
+  {
+    if (AdminStorage->OpenRootKey(false))
+    {
+      LoadAdmin(AdminStorage);
+      AdminStorage->CloseSubKey();
+    }
+  }
+  __finally
+  {
+    delete AdminStorage;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Changed()
@@ -263,13 +287,32 @@ TVSFixedFileInfo *__fastcall TConfiguration::GetFixedApplicationInfo()
   return GetFixedFileInfo(ApplicationInfo);
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::ModuleFileName()
+{
+  return ParamStr(0);
+}
+//---------------------------------------------------------------------------
 void * __fastcall TConfiguration::GetApplicationInfo()
 {
   if (!FApplicationInfo)
   {
-    FApplicationInfo = CreateFileInfo(ParamStr(0));
+    FApplicationInfo = CreateFileInfo(ModuleFileName());
   }
   return FApplicationInfo;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetProductVersion()
+{
+  return TrimVersion(FileInfoString["ProductVersion"]);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::TrimVersion(AnsiString Version)
+{
+  while (Version.SubString(Version.Length() - 1, 2) == ".0")
+  {
+    Version.SetLength(Version.Length() - 2);
+  }
+  return Version;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetVersionStr()
@@ -293,16 +336,34 @@ AnsiString __fastcall TConfiguration::GetVersion()
   try
   {
     AnsiString Result;
-    Result = FORMAT("%d.%d.%d.%d", (HIWORD(FixedApplicationInfo->dwFileVersionMS),
+    Result = TrimVersion(FORMAT("%d.%d.%d.%d", (HIWORD(FixedApplicationInfo->dwFileVersionMS),
       LOWORD(FixedApplicationInfo->dwFileVersionMS),
       HIWORD(FixedApplicationInfo->dwFileVersionLS),
-      LOWORD(FixedApplicationInfo->dwFileVersionLS)));
+      LOWORD(FixedApplicationInfo->dwFileVersionLS))));
     return Result;
   }
   catch (Exception &E)
   {
     throw ExtException(&E, "Can't get application version");
   }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetFileInfoString(const AnsiString Key)
+{
+  AnsiString Result;
+  if (GetTranslationCount(ApplicationInfo) > 0)
+  {
+    TTranslation Translation;
+    Translation = GetTranslation(ApplicationInfo, 0);
+    Result = ::GetFileInfoString(ApplicationInfo,
+      Translation, Key);
+    PackStr(Result);
+  }
+  else
+  {
+    assert(false);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetRegistryStorageKey()
@@ -468,6 +529,11 @@ AnsiString __fastcall TConfiguration::GetDefaultLogFileName()
 void __fastcall TConfiguration::SetConfirmOverwriting(bool value)
 {
   SET_CONFIG_PROPERTY(ConfirmOverwriting);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::GetConfirmOverwriting()
+{
+  return FConfirmOverwriting;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetDefaultDirIsHome(bool value)

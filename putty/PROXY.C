@@ -90,6 +90,7 @@ static void sk_proxy_close (Socket s)
     Proxy_Socket ps = (Proxy_Socket) s;
 
     sk_close(ps->sub_socket);
+    sk_addr_free(ps->remote_addr);
     sfree(ps);
 }
 
@@ -391,7 +392,7 @@ Socket new_connection(SockAddr addr, char *hostname,
 	ret->fn = &socket_fn_table;
 	ret->cfg = *cfg;	       /* STRUCTURE COPY */
 	ret->plug = plug;
-	ret->remote_addr = addr;
+	ret->remote_addr = addr;       /* will need to be freed on close */
 	ret->remote_port = port;
 
 	ret->error = NULL;
@@ -442,8 +443,6 @@ Socket new_connection(SockAddr addr, char *hostname,
 				 nodelay, (Plug) pplug);
 	if (sk_socket_error(ret->sub_socket) != NULL)
 	    return (Socket) ret;
-
-	sk_addr_free(proxy_addr);
 
 	/* start the proxy negotiation process... */
 	sk_set_frozen(ret->sub_socket, 0);

@@ -93,6 +93,7 @@
 #define SFTP_STATUS_WRITE_PROTECT 194
 #define SFTP_STATUS_NO_MEDIA    195
 #define DECODE_UTF_ERROR        196
+#define CUSTOM_COMMAND_ERROR    197
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT 301
@@ -212,6 +213,7 @@ BEGIN
         SFTP_STATUS_WRITE_PROTECT, "Write protect."
         SFTP_STATUS_NO_MEDIA, "No media."
         DECODE_UTF_ERROR, "Error decoding UTF-8 string."
+        CUSTOM_COMMAND_ERROR, "Error executing custom command '%s' on file '%s'."
 
         CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
         CONFIRM_PROLONG_TIMEOUT, "Host hasn't answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."

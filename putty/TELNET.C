@@ -710,8 +710,10 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
 	sfree(buf);
     }
     addr = name_lookup(host, port, realhost, &telnet->cfg);
-    if ((err = sk_addr_error(addr)) != NULL)
+    if ((err = sk_addr_error(addr)) != NULL) {
+	sk_addr_free(addr);
 	return err;
+    }
 
     if (port < 0)
 	port = 23;		       /* default telnet port */
@@ -730,8 +732,6 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
 			       nodelay, (Plug) telnet, &telnet->cfg);
     if ((err = sk_socket_error(telnet->s)) != NULL)
 	return err;
-
-    sk_addr_free(addr);
 
     /*
      * Initialise option states.

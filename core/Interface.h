@@ -2,7 +2,6 @@
 #ifndef InterfaceH
 #define InterfaceH
 //---------------------------------------------------------------------------
-//!!!#include <Classes.hpp>
 #include "Configuration.h"
 #include "SessionData.h"
 //---------------------------------------------------------------------------
@@ -28,23 +27,16 @@ const int qaNoToAll =  0x0100;
 const int qaYesToAll = 0x0200;
 const int qaHelp =     0x0400;
 const int qaSkip =     0x0800;
-const int qaResume =   0x1000;
-const int qaCustom =   0x2000; // reserved for "More" button in VCL interface
+const int qaPrev =     0x1000;
+const int qaNext =     0x2000;
+const int qaCustom =   0x4000; // reserved for "More" button in VCL interface
 
 const int qaNeverAskAgain = 0x8000;
 
-const int qpFatalAbort =         0x01;
-const int qpNeverAskAgainCheck = 0x02;
+const int qpFatalAbort =           0x01;
+const int qpNeverAskAgainCheck =   0x02;
+const int qpAllowContinueOnError = 0x04;
 
 enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };
-
-/*#define mb_YesNoCancel (TMsgDlgButtons() << mbYes << mbNo << mbCancel)
-#define mb_OKCancel (TMsgDlgButtons() << mbOK << mbCancel)
-#define mb_YesNo (TMsgDlgButtons() << mbYes << mbNo)
-#define mb_RetryAbort (TMsgDlgButtons() << mbRetry << mbAbort)
-#define mb_OKAbort (TMsgDlgButtons() << mbOK << mbAbort)*/
-//#define mbSkip mbIgnore
-//#define mbResume mbHelp
-//#define mrNeverAskAgain 100
 //---------------------------------------------------------------------------
 #endif

@@ -75,6 +75,7 @@ static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 static int TranslateKey(UINT message, WPARAM wParam, LPARAM lParam,
 			unsigned char *output);
 static void cfgtopalette(void);
+static void systopalette(void);
 static void init_palette(void);
 static void init_fonts(int, int);
 static void another_font(int);
@@ -179,8 +180,6 @@ static int compose_state = 0;
 
 static int wsa_started = 0;
 
-static OSVERSIONINFO osVersion;
-
 static UINT wm_mousewheel = WM_MOUSEWHEEL;
 
 /* Dummy routine, only required in plink. */
@@ -221,16 +220,13 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
      * config box. */
     defuse_showwindow();
 
+    if (!init_winver())
     {
-	ZeroMemory(&osVersion, sizeof(osVersion));
-	osVersion.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
-	if (!GetVersionEx ( (OSVERSIONINFO *) &osVersion)) {
-	    char *str = dupprintf("%s Fatal Error", appname);
-            MessageBox(NULL, "Windows refuses to report a version",
-                       str, MB_OK | MB_ICONEXCLAMATION);
-	    sfree(str);
-	    return 1;
-        }
+	char *str = dupprintf("%s Fatal Error", appname);
+	MessageBox(NULL, "Windows refuses to report a version",
+		   str, MB_OK | MB_ICONEXCLAMATION);
+	sfree(str);
+	return 1;
     }
 
     /*
@@ -1019,6 +1015,38 @@ static void cfgtopalette(void)
 	defpal[i].rgbtRed = cfg.colours[w][0];
 	defpal[i].rgbtGreen = cfg.colours[w][1];
 	defpal[i].rgbtBlue = cfg.colours[w][2];
+    }
+
+    /* Override with system colours if appropriate */
+    if (cfg.system_colour)
+        systopalette();
+}
+
+/*
+ * Override bit of defpal with colours from the system.
+ * (NB that this takes a copy the system colours at the time this is called,
+ * so subsequent colour scheme changes don't take effect. To fix that we'd
+ * probably want to be using GetSysColorBrush() and the like.)
+ */
+static void systopalette(void)
+{
+    int i;
+    static const struct { int nIndex; int norm; int bold; } or[] =
+    {
+	{ COLOR_WINDOWTEXT,	16, 17 }, /* Default Foreground */
+	{ COLOR_WINDOW,		18, 19 }, /* Default Background */
+	{ COLOR_HIGHLIGHTTEXT,	20, 21 }, /* Cursor Text */
+	{ COLOR_HIGHLIGHT,	22, 23 }, /* Cursor Colour */
+    };
+
+    for (i = 0; i < (sizeof(or)/sizeof(or[0])); i++) {
+	COLORREF colour = GetSysColor(or[i].nIndex);
+	defpal[or[i].norm].rgbtRed =
+	   defpal[or[i].bold].rgbtRed = GetRValue(colour);
+	defpal[or[i].norm].rgbtGreen =
+	   defpal[or[i].bold].rgbtGreen = GetGValue(colour);
+	defpal[or[i].norm].rgbtBlue =
+	   defpal[or[i].bold].rgbtBlue = GetBValue(colour);
     }
 }
 

@@ -179,7 +179,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Width = 164
       Height = 13
       Anchors = [akLeft, akTop, akRight]
-      Caption = 'Transfer following files in text &mode'
+      Caption = 'Transfer following &files in text mode'
       FocusControl = AsciiFileMaskCombo
     end
     object TMTextButton: TRadioButton

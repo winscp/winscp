@@ -164,6 +164,7 @@ object RightsFrame: TRightsFrame
     MaxLength = 3
     TabOrder = 9
     Text = 'OctalEdit'
+    OnChange = OctalEditChange
     OnExit = OctalEditExit
   end
   object DirectoriesXCheck: TCheckBox

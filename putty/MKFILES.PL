@@ -586,8 +586,8 @@ print
 "\trm -f *.o". (join "", map { " $_" } &progrealnames("XU")) . "\n".
 "\n",
 "install:\n",
-map("\t\$(INSTALL_PROGRAM) -m 755 $_ \$(bindir)/$_\n", &progrealnames("XU")),
-map("\t\$(INSTALL_DATA) -m 644 $_ \$(man1dir)/$_\n", &manpages("XU", "1")),
+map("\t\$(INSTALL_PROGRAM) -m 755 $_ \$(DESTDIR)\$(bindir)/$_\n", &progrealnames("XU")),
+map("\t\$(INSTALL_DATA) -m 644 $_ \$(DESTDIR)\$(man1dir)/$_\n", &manpages("XU", "1")),
 "\n",
 "install-strip:\n",
 "\t\$(MAKE) install INSTALL_PROGRAM=\"\$(INSTALL_PROGRAM) -s\"\n",

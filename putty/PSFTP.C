@@ -2,8 +2,6 @@
  * psftp.c: front end for PSFTP.
  */
 
-#include <windows.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -12,6 +10,7 @@
 
 #define PUTTY_DO_GLOBALS
 #include "putty.h"
+#include "psftp.h"
 #include "storage.h"
 #include "ssh.h"
 #include "sftp.h"
@@ -895,20 +894,20 @@ int sftp_cmd_chmod(struct sftp_command *cmd)
 		  default:
 		    printf("chmod: file mode '%.*s' contains unrecognised"
 			   " user/group/other specifier '%c'\n",
-			   strcspn(modebegin, ","), modebegin, *mode);
+			   (int)strcspn(modebegin, ","), modebegin, *mode);
 		    return 0;
 		}
 		mode++;
 	    }
 	    if (!*mode || *mode == ',') {
 		printf("chmod: file mode '%.*s' is incomplete\n",
-		       strcspn(modebegin, ","), modebegin);
+		       (int)strcspn(modebegin, ","), modebegin);
 		return 0;
 	    }
 	    action = *mode++;
 	    if (!*mode || *mode == ',') {
 		printf("chmod: file mode '%.*s' is incomplete\n",
-		       strcspn(modebegin, ","), modebegin);
+		       (int)strcspn(modebegin, ","), modebegin);
 		return 0;
 	    }
 	    perms = 0;
@@ -923,7 +922,7 @@ int sftp_cmd_chmod(struct sftp_command *cmd)
 			(subset & 06777) != 02070) {
 			printf("chmod: file mode '%.*s': set[ug]id bit should"
 			       " be used with exactly one of u or g only\n",
-			       strcspn(modebegin, ","), modebegin);
+			       (int)strcspn(modebegin, ","), modebegin);
 			return 0;
 		    }
 		    perms |= 06000;
@@ -931,7 +930,7 @@ int sftp_cmd_chmod(struct sftp_command *cmd)
 		  default:
 		    printf("chmod: file mode '%.*s' contains unrecognised"
 			   " permission specifier '%c'\n",
-			   strcspn(modebegin, ","), modebegin, *mode);
+			   (int)strcspn(modebegin, ","), modebegin, *mode);
 		    return 0;
 		}
 		mode++;
@@ -939,7 +938,7 @@ int sftp_cmd_chmod(struct sftp_command *cmd)
 	    if (!(subset & 06777) && (perms &~ subset)) {
 		printf("chmod: file mode '%.*s' contains no user/group/other"
 		       " specifier and permissions other than 't' \n",
-		       strcspn(modebegin, ","), modebegin);
+		       (int)strcspn(modebegin, ","), modebegin);
 		return 0;
 	    }
 	    perms &= subset;
@@ -1024,34 +1023,21 @@ static int sftp_cmd_open(struct sftp_command *cmd)
 
 static int sftp_cmd_lcd(struct sftp_command *cmd)
 {
-    char *currdir;
-    int len;
+    char *currdir, *errmsg;
 
     if (cmd->nwords < 2) {
 	printf("lcd: expects a local directory name\n");
 	return 0;
     }
 
-    if (!SetCurrentDirectory(cmd->words[1])) {
-	LPVOID message;
-	int i;
-	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		      FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_IGNORE_INSERTS,
-		      NULL, GetLastError(),
-		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		      (LPTSTR)&message, 0, NULL);
-	i = strcspn((char *)message, "\n");
-	printf("lcd: unable to change directory: %.*s\n", i, (LPCTSTR)message);
-	LocalFree(message);
+    errmsg = psftp_lcd(cmd->words[1]);
+    if (errmsg) {
+	printf("lcd: unable to change directory: %s\n", errmsg);
+	sfree(errmsg);
 	return 0;
     }
 
-    currdir = snewn(256, char);
-    len = GetCurrentDirectory(256, currdir);
-    if (len > 256)
-	currdir = sresize(currdir, len, char);
-    GetCurrentDirectory(len, currdir);
+    currdir = psftp_getcwd();
     printf("New local directory is %s\n", currdir);
     sfree(currdir);
 
@@ -1061,13 +1047,8 @@ static int sftp_cmd_lcd(struct sftp_command *cmd)
 static int sftp_cmd_lpwd(struct sftp_command *cmd)
 {
     char *currdir;
-    int len;
 
-    currdir = snewn(256, char);
-    len = GetCurrentDirectory(256, currdir);
-    if (len > 256)
-	currdir = sresize(currdir, len, char);
-    GetCurrentDirectory(len, currdir);
+    currdir = psftp_getcwd();
     printf("Current local directory is %s\n", currdir);
     sfree(currdir);
 
@@ -1108,9 +1089,10 @@ static struct sftp_cmd_lookup {
      * in ASCII order.
      */
     {
-	"!", TRUE, "run a local Windows command",
+	"!", TRUE, "run a local command",
 	    "<command>\n"
-	    "  Runs a local Windows command. For example, \"!del myfile\".\n",
+	    /* FIXME: this example is crap for non-Windows. */
+	    "  Runs a local command. For example, \"!del myfile\".\n",
 	    sftp_cmd_pling
     },
     {
@@ -1621,20 +1603,6 @@ void ldisc_send(void *handle, char *buf, int len, int interactive)
 }
 
 /*
- * Be told what socket we're supposed to be using.
- */
-static SOCKET sftp_ssh_socket;
-char *do_select(SOCKET skt, int startup)
-{
-    if (startup)
-	sftp_ssh_socket = skt;
-    else
-	sftp_ssh_socket = INVALID_SOCKET;
-    return NULL;
-}
-extern int select_result(WPARAM, LPARAM);
-
-/*
  * In psftp, all agent requests should be synchronous, so this is a
  * never-called stub.
  */
@@ -1729,13 +1697,8 @@ int sftp_recvdata(char *buf, int len)
     }
 
     while (outlen > 0) {
-	fd_set readfds;
-
-	FD_ZERO(&readfds);
-	FD_SET(sftp_ssh_socket, &readfds);
-	if (select(1, &readfds, NULL, NULL, NULL) < 0)
+	if (ssh_sftp_loop_iteration() < 0)
 	    return 0;		       /* doom */
-	select_result((WPARAM) sftp_ssh_socket, (LPARAM) FD_READ);
     }
 
     return 1;
@@ -1744,42 +1707,6 @@ int sftp_senddata(char *buf, int len)
 {
     back->send(backhandle, (unsigned char *) buf, len);
     return 1;
-}
-
-/*
- * Loop through the ssh connection and authentication process.
- */
-static void ssh_sftp_init(void)
-{
-    if (sftp_ssh_socket == INVALID_SOCKET)
-	return;
-    while (!back->sendok(backhandle)) {
-	fd_set readfds;
-	FD_ZERO(&readfds);
-	FD_SET(sftp_ssh_socket, &readfds);
-	if (select(1, &readfds, NULL, NULL, NULL) < 0)
-	    return;		       /* doom */
-	select_result((WPARAM) sftp_ssh_socket, (LPARAM) FD_READ);
-    }
-}
-
-/*
- *  Initialize the Win$ock driver.
- */
-static void init_winsock(void)
-{
-    WORD winsock_ver;
-    WSADATA wsadata;
-
-    winsock_ver = MAKEWORD(1, 1);
-    if (WSAStartup(winsock_ver, &wsadata)) {
-	fprintf(stderr, "Unable to initialise WinSock");
-	cleanup_exit(1);
-    }
-    if (LOBYTE(wsadata.wVersion) != 1 || HIBYTE(wsadata.wVersion) != 1) {
-	fprintf(stderr, "WinSock version is incompatible with 1.1");
-	cleanup_exit(1);
-    }
 }
 
 /*
@@ -1813,6 +1740,7 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
 {
     char *host, *realhost;
     const char *err;
+    void *logctx;
 
     /* Separate host and username */
     host = userhost;
@@ -1963,7 +1891,12 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
     logctx = log_init(NULL, &cfg);
     back->provide_logctx(backhandle, logctx);
     console_provide_logctx(logctx);
-    ssh_sftp_init();
+    while (!back->sendok(backhandle)) {
+	if (ssh_sftp_loop_iteration() < 0) {
+	    fprintf(stderr, "ssh_init: error during SSH connection setup\n");
+	    return 1;
+	}
+    }
     if (verbose && realhost != NULL)
 	printf("Connected to %s\n", realhost);
     return 0;
@@ -1983,7 +1916,7 @@ void cmdline_error(char *p, ...)
 /*
  * Main program. Parse arguments etc.
  */
-int main(int argc, char *argv[])
+int psftp_main(int argc, char *argv[])
 {
     int i;
     int portnumber = 0;
@@ -1993,10 +1926,13 @@ int main(int argc, char *argv[])
     char *batchfile = NULL;
     int errors = 0;
 
-    flags = FLAG_STDERR | FLAG_INTERACTIVE | FLAG_SYNCAGENT;
+    flags = FLAG_STDERR | FLAG_INTERACTIVE
+#ifdef FLAG_SYNCAGENT
+	| FLAG_SYNCAGENT
+#endif
+	;
     cmdline_tooltype = TOOLTYPE_FILETRANSFER;
     ssh_get_line = &console_get_line;
-    init_winsock();
     sk_init();
 
     userhost = user = NULL;
@@ -2064,7 +2000,6 @@ int main(int argc, char *argv[])
 	back->special(backhandle, TS_EOF);
 	sftp_recvdata(&ch, 1);
     }
-    WSACleanup();
     random_save_seed();
 
     return 0;

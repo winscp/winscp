@@ -69,6 +69,7 @@ private:
   bool FShowStatusBarHint;
   AnsiString FStatusBarHint;
   bool FIgnoreNextSysCommand;
+  TStringList * FErrorList;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
@@ -111,6 +112,7 @@ protected:
   void __fastcall CMAppSysCommand(TMessage & Message);
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
+  void __fastcall HandleErrorList(TStringList *& ErrorList);
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
@@ -126,7 +128,7 @@ public:
   virtual void __fastcall ConfigurationChanged();
   void __fastcall CreateDirectory(TOperationSide Side);
   void __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
-    bool OnFocused, bool NoConfirmation = False);
+    bool OnFocused, bool NoConfirmation = false, void * Param = NULL);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   virtual void __fastcall ChangePath(TOperationSide Side) = 0;
   virtual void __fastcall StoreParams();
@@ -140,12 +142,16 @@ public:
   virtual void __fastcall CompareDirectories();
   void __fastcall ExecuteCurrentFile();
   void __fastcall OpenConsole();
+  void __fastcall OpenInPutty();
   virtual void __fastcall UpdateSessionData(TSessionData * Data = NULL);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall ExploreLocalDirectory();
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy);
   void __fastcall LastTerminalClosed(TObject * Sender);
   void __fastcall TerminalListChanged(TObject * Sender);
+  int __fastcall MoreMessageDialog(const AnsiString Message,
+    TStrings * MoreMessages, TQueryType Type, int Answers,
+    int HelpCtx, int Params = 0);
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation };

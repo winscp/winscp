@@ -277,8 +277,10 @@ const char *x11_init(Socket * s, char *display, void *c, void *auth,
      * Try to find host.
      */
     addr = name_lookup(host, port, &dummy_realhost, cfg);
-    if ((err = sk_addr_error(addr)) != NULL)
+    if ((err = sk_addr_error(addr)) != NULL) {
+	sk_addr_free(addr);
 	return err;
+    }
 
     /*
      * Open socket.
@@ -315,7 +317,6 @@ const char *x11_init(Socket * s, char *display, void *c, void *auth,
     }
 
     sk_set_private_ptr(*s, pr);
-    sk_addr_free(addr);
     return NULL;
 }
 

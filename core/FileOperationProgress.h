@@ -5,7 +5,8 @@
 #include "Configuration.h"
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;
-enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties, foRename };
+enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,
+  foRename, foCustomCommand };
 enum TCancelStatus { csContinue = 0, csCancel, csCancelTransfer, csRemoteAbort };
 enum TResumeStatus { rsNotAvailable, rsEnabled, rsDisabled };
 typedef void __fastcall (__closure *TFileOperationProgressEvent)

@@ -45,7 +45,7 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
-	: TForm(AOwner)
+        : TForm(AOwner)
 {
   FSessionData = new TSessionData("");
   Default();
@@ -116,15 +116,32 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
       case fsSCPonly: SCPonlyButton->Checked = true; break;
       case fsSFTP: SFTPButton->Checked = true; break;
       case fsSFTPonly:
-      default: SFTPonlyButton->Checked = fsSFTPonly; break;
+      default: SFTPonlyButton->Checked = true; break;
     }
 
-    // SSH tab
+    // Environment tab
+    LocalDirectoryEdit->Text = aSessionData->LocalDirectory;
+    RemoteDirectoryEdit->Text = aSessionData->RemoteDirectory;
+    UpdateDirectoriesCheck->Checked = aSessionData->UpdateDirectories;
+    CacheDirectoriesCheck->Checked = aSessionData->CacheDirectories;
+    ResolveSymlinksCheck->Checked = aSessionData->ResolveSymlinks;
+
+    if (aSessionData->EOLType == eolLF)
+    {
+      EOLTypeLFButton->Checked = true;
+    }
+    else
+    {
+      EOLTypeCRLFButton->Checked = true;
+    }
+
     AuthTISCheck->Checked = aSessionData->AuthTIS;
     AuthKICheck->Checked = aSessionData->AuthKI;
     AgentFwdCheck->Checked = aSessionData->AgentFwd;
-    CompressionCheck->Checked = aSessionData->Compression;
     Ssh2DESCheck->Checked = aSessionData->Ssh2DES;
+
+    // SSH tab
+    CompressionCheck->Checked = aSessionData->Compression;
 
     switch (aSessionData->SshProt) {
       case ssh1only:  SshProt1onlyButton->Checked = true; break;
@@ -149,13 +166,6 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
       PingIntervalSecEdit->AsInteger = 60;
     TimeoutEdit->AsInteger = aSessionData->Timeout;
 
-    // Directories tab
-    LocalDirectoryEdit->Text = aSessionData->LocalDirectory;
-    RemoteDirectoryEdit->Text = aSessionData->RemoteDirectory;
-    UpdateDirectoriesCheck->Checked = aSessionData->UpdateDirectories;
-    CacheDirectoriesCheck->Checked = aSessionData->CacheDirectories;
-    ResolveSymlinksCheck->Checked = aSessionData->ResolveSymlinks;
-
     // Shell tab
     if (aSessionData->DefaultShell)
       DefaultShellButton->Checked = true;
@@ -172,10 +182,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     ClearAliasesCheck->Checked = aSessionData->ClearAliases;
     IgnoreLsWarningsCheck->Checked = aSessionData->IgnoreLsWarnings;
     Scp1CompatibilityCheck->Checked = aSessionData->Scp1Compatibility;
-    if (aSessionData->EOLType == eolLF) EOLTypeLFButton->Checked = true;
-      else EOLTypeCRLFButton->Checked = true;
     UnsetNationalVarsCheck->Checked = aSessionData->UnsetNationalVars;
     AliasGroupListCheck->Checked = aSessionData->AliasGroupList;
+    TimeDifferenceEdit->AsInteger = int(aSessionData->TimeDifference) * 24;
 
     // Proxy tab
     switch (aSessionData->ProxyMethod) {
@@ -232,9 +241,6 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
     else aSessionData->FSProtocol = fsSFTPonly;
 
   // SSH tab
-  aSessionData->AuthTIS = AuthTISCheck->Checked;
-  aSessionData->AuthKI = AuthKICheck->Checked;
-  aSessionData->AgentFwd = AgentFwdCheck->Checked;
   aSessionData->Compression = CompressionCheck->Checked;
   aSessionData->Ssh2DES = Ssh2DESCheck->Checked;
 
@@ -250,13 +256,18 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
     aSessionData->Cipher[Index] = (TCipher)CipherListBox->Items->Objects[Index];
   }
 
+  // Authentication tab
+  aSessionData->AuthTIS = AuthTISCheck->Checked;
+  aSessionData->AuthKI = AuthKICheck->Checked;
+  aSessionData->AgentFwd = AgentFwdCheck->Checked;
+
   // Connection tab
   aSessionData->PingEnabled = PingIntervalCheck->Checked;
   if (PingIntervalCheck->Checked)
     aSessionData->PingInterval = PingIntervalSecEdit->AsInteger;
   aSessionData->Timeout = TimeoutEdit->AsInteger;
 
-  // Directories tab
+  // Environment tab
   aSessionData->LocalDirectory = LocalDirectoryEdit->Text;
   aSessionData->RemoteDirectory = RemoteDirectoryEdit->Text;
   aSessionData->UpdateDirectories = UpdateDirectoriesCheck->Checked;
@@ -278,6 +289,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
     else aSessionData->EOLType = eolCRLF;
   aSessionData->UnsetNationalVars = UnsetNationalVarsCheck->Checked;
   aSessionData->AliasGroupList = AliasGroupListCheck->Checked;
+  aSessionData->TimeDifference = double(TimeDifferenceEdit->AsInteger) / 24;
 
   // proxy
   if (ProxyHTTPButton->Checked) aSessionData->ProxyMethod = pmHTTP;
@@ -295,7 +307,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->ProxyPassword = ProxyPasswordEdit->Text;
   aSessionData->ProxyTelnetCommand = ProxyTelnetCommandEdit->Text;
   aSessionData->ProxyLocalhost = ProxyLocalhostCheck->Checked;
-   
+
   if (ProxyDNSOnButton->Checked) aSessionData->ProxyDNS = asOn;
     else
   if (ProxyDNSOffButton->Checked) aSessionData->ProxyDNS = asOff;
@@ -392,7 +404,7 @@ void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree)
       else
         i++;
     }
-    ToolsMenuButton->Visible = false;    
+    ToolsMenuButton->Visible = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -551,6 +563,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
     TListItem * Item;
     TSessionData *NewSession =
       StoredSessions->NewSession(SessionName, FSessionData);
+    StoredSessions->Save();
     // by now list must contais same number of items or one less
     assert(StoredSessions->Count == SessionListView->Items->Count ||
       StoredSessions->Count == SessionListView->Items->Count+1);
@@ -866,7 +879,3 @@ void __fastcall TLoginDialog::SessionListViewCustomDrawItem(
   DefaultDraw = true;
 }
 //---------------------------------------------------------------------------
-
-
-
-

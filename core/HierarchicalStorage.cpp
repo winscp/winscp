@@ -117,7 +117,8 @@ bool __fastcall THierarchicalStorage::HasSubKeys()
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall THierarchicalStorage::ReadValues(Classes::TStrings* Strings)
+void __fastcall THierarchicalStorage::ReadValues(Classes::TStrings* Strings,
+  bool MaintainKeys)
 {
   TStrings * Names = new TStringList();
   try
@@ -125,7 +126,15 @@ void __fastcall THierarchicalStorage::ReadValues(Classes::TStrings* Strings)
     GetValueNames(Names);
     for (int Index = 0; Index < Names->Count; Index++)
     {
-      Strings->Add(ReadString(Names->Strings[Index], ""));
+      if (MaintainKeys)
+      {
+        Strings->Add(FORMAT("%s=%s", (Names->Strings[Index],
+          ReadString(Names->Strings[Index], ""))));
+      }
+      else
+      {
+        Strings->Add(ReadString(Names->Strings[Index], ""));
+      }
     }
   }
   __finally
@@ -134,7 +143,8 @@ void __fastcall THierarchicalStorage::ReadValues(Classes::TStrings* Strings)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall THierarchicalStorage::WriteValues(Classes::TStrings* Strings)
+void __fastcall THierarchicalStorage::WriteValues(Classes::TStrings * Strings,
+  bool MaintainKeys)
 {
   TStrings * Names = new TStringList();
   try
@@ -154,7 +164,15 @@ void __fastcall THierarchicalStorage::WriteValues(Classes::TStrings* Strings)
   {
     for (int Index = 0; Index < Strings->Count; Index++)
     {
-      WriteString(IntToStr(Index), Strings->Strings[Index]);
+      if (MaintainKeys)
+      {
+        assert(Strings->Strings[Index].Pos("=") > 1);
+        WriteString(Strings->Names[Index], Strings->Values[Strings->Names[Index]]);
+      }
+      else
+      {
+        WriteString(IntToStr(Index), Strings->Strings[Index]);
+      }
     }
   }
 }
@@ -182,10 +200,22 @@ AnsiString __fastcall THierarchicalStorage::ExcludeTrailingBackslash(const AnsiS
 __fastcall TRegistryStorage::TRegistryStorage(const AnsiString AStorage):
   THierarchicalStorage(IncludeTrailingBackslash(AStorage))
 {
+  Init();
+};
+//---------------------------------------------------------------------------
+__fastcall TRegistryStorage::TRegistryStorage(const AnsiString AStorage, HKEY ARootKey):
+  THierarchicalStorage(IncludeTrailingBackslash(AStorage))
+{
+  Init();
+  FRegistry->RootKey = ARootKey;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRegistryStorage::Init()
+{
   FFailed = 0;
   FRegistry = new TRegistry();
   FRegistry->Access = KEY_READ;
-};
+}
 //---------------------------------------------------------------------------
 __fastcall TRegistryStorage::~TRegistryStorage()
 {
@@ -362,6 +392,42 @@ __fastcall TIniFileStorage::~TIniFileStorage()
 AnsiString __fastcall TIniFileStorage::GetCurrentSection()
 {
   return ExcludeTrailingBackslash(CurrentSubKey);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TIniFileStorage::OpenSubKey(const AnsiString SubKey, bool CanCreate)
+{
+  bool Result = CanCreate;
+
+  if (!Result)
+  {
+    TStringList * Sections = new TStringList();
+    try
+    {
+      Sections->Sorted = true;
+      FIniFile->ReadSections(Sections);
+      AnsiString NewKey = ExcludeTrailingBackslash(CurrentSubKey+SubKey);
+      int Index = -1;
+      if (Sections->Count)
+      {
+        Result = Sections->Find(NewKey, Index);
+        if (!Result && Index < Sections->Count &&
+            Sections->Strings[Index].SubString(1, NewKey.Length()+1) == NewKey + "\\")
+        {
+          Result = true;
+        }
+      }
+    }
+    __finally
+    {
+      delete Sections;
+    }
+  }
+  
+  if (Result)
+  {
+    Result = THierarchicalStorage::OpenSubKey(SubKey, CanCreate);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::DeleteSubKey(const AnsiString SubKey)

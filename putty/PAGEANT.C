@@ -416,7 +416,7 @@ static void add_keyfile(Filename filename)
 	int i, nkeys, bloblen;
 
 	if (type == SSH_KEYTYPE_SSH1) {
-	    if (!rsakey_pubblob(&filename, &blob, &bloblen)) {
+	    if (!rsakey_pubblob(&filename, &blob, &bloblen, NULL)) {
 		MessageBox(NULL, "Couldn't load private key.", APPNAME,
 			   MB_OK | MB_ICONERROR);
 		return;
@@ -424,7 +424,7 @@ static void add_keyfile(Filename filename)
 	    keylist = get_keylist1();
 	} else {
 	    unsigned char *blob2;
-	    blob = ssh2_userkey_loadpub(&filename, NULL, &bloblen);
+	    blob = ssh2_userkey_loadpub(&filename, NULL, &bloblen, NULL);
 	    if (!blob) {
 		MessageBox(NULL, "Couldn't load private key.", APPNAME,
 			   MB_OK | MB_ICONERROR);
@@ -498,9 +498,9 @@ static void add_keyfile(Filename filename)
 	} else
 	    *passphrase = '\0';
 	if (type == SSH_KEYTYPE_SSH1)
-	    ret = loadrsakey(&filename, rkey, passphrase);
+	    ret = loadrsakey(&filename, rkey, passphrase, NULL);
 	else {
-	    skey = ssh2_load_userkey(&filename, passphrase);
+	    skey = ssh2_load_userkey(&filename, passphrase, NULL);
 	    if (skey == SSH2_WRONG_PASSPHRASE)
 		ret = -1;
 	    else if (!skey)
@@ -1810,7 +1810,6 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 {
     WNDCLASS wndclass;
     MSG msg;
-    OSVERSIONINFO osi;
     HMODULE advapi;
     char *command = NULL;
     int added_keys = 0;
@@ -1821,9 +1820,11 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
      * Determine whether we're an NT system (should have security
      * APIs) or a non-NT system (don't do security).
      */
-    memset(&osi, 0, sizeof(OSVERSIONINFO));
-    osi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    if (GetVersionEx(&osi) && osi.dwPlatformId == VER_PLATFORM_WIN32_NT) {
+    if (!init_winver())
+    {
+	modalfatalbox("Windows refuses to report a version");
+    }
+    if (osVersion.dwPlatformId == VER_PLATFORM_WIN32_NT) {
 	has_security = TRUE;
     } else
 	has_security = FALSE;

@@ -729,6 +729,7 @@ Bignum bigmuladd(Bignum a, Bignum b, Bignum addend)
     }
     ret[0] = maxspot;
 
+    sfree(workspace);
     return ret;
 }
 
@@ -1009,5 +1010,6 @@ char *bignum_decimal(Bignum x)
     /*
      * Done.
      */
+    sfree(workspace);
     return ret;
 }

@@ -248,7 +248,7 @@ void __fastcall TEditorForm::UpdateControls()
       if (FCaretPos.x+1 <= Line.Length())
       {
         Character = FMTLOAD(EDITOR_CHARACTER_STATUS,
-          ((int)Line[FCaretPos.x+1], (int)Line[FCaretPos.x+1]));
+          (int((unsigned char)Line[FCaretPos.x+1]), int((unsigned char)Line[FCaretPos.x+1])));
       }
     }
     StatusBar->Panels->Items[2]->Text = Character;

@@ -247,7 +247,7 @@ object AboutDialog: TAboutDialog
       Top = 72
       Width = 241
       Height = 13
-      Caption = 'SSH and SCP code based on PuTTY (2003-07-17)'
+      Caption = 'SSH and SCP code based on PuTTY (2003-09-12)'
     end
     object Label6: TLabel
       Left = 8

@@ -67,10 +67,12 @@ static struct sftp_packet *sftp_pkt_init(int pkt_type)
     sftp_pkt_addbyte(pkt, (unsigned char) pkt_type);
     return pkt;
 }
+/*
 static void sftp_pkt_addbool(struct sftp_packet *pkt, unsigned char value)
 {
     sftp_pkt_adddata(pkt, &value, 1);
 }
+*/
 static void sftp_pkt_adduint32(struct sftp_packet *pkt,
 			       unsigned long value)
 {
@@ -282,7 +284,6 @@ static tree234 *sftp_requests;
 
 static struct sftp_request *sftp_alloc_request(void)
 {
-    const unsigned CHANNEL_NUMBER_OFFSET = 256;
     unsigned low, high, mid;
     int tsize;
     struct sftp_request *r;
@@ -296,7 +297,7 @@ static struct sftp_request *sftp_alloc_request(void)
      * B-tree to find the largest ID which is in a contiguous
      * sequence from the beginning. (Precisely everything in that
      * sequence must have ID equal to its tree index plus
-     * SEQUENCE_NUMBER_OFFSET.)
+     * REQUEST_ID_OFFSET.)
      */
     tsize = count234(sftp_requests);
 

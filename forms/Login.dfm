@@ -414,7 +414,7 @@ object LoginDialog: TLoginDialog
             Top = 19
             Width = 160
             Height = 13
-            Caption = 'Encryption cipher &selection policy:'
+            Caption = '&Encryption cipher selection policy:'
             FocusControl = CipherListBox
           end
           object CipherListBox: TListBox
@@ -539,7 +539,7 @@ object LoginDialog: TLoginDialog
             Width = 321
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Cache visited remote directories'
+            Caption = 'Cache &visited remote directories'
             TabOrder = 1
           end
           object ResolveSymlinksCheck: TCheckBox
@@ -591,10 +591,29 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 108
           Width = 345
-          Height = 86
+          Height = 113
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Other options'
           TabOrder = 2
+          DesignSize = (
+            345
+            113)
+          object Label29: TLabel
+            Left = 13
+            Top = 88
+            Width = 105
+            Height = 13
+            Caption = 'Server time&zone offset'
+            FocusControl = TimeDifferenceEdit
+          end
+          object Label30: TLabel
+            Left = 204
+            Top = 88
+            Width = 26
+            Height = 13
+            Caption = 'hours'
+            FocusControl = TimeDifferenceEdit
+          end
           object LookupUserGroupsCheck: TCheckBox
             Left = 12
             Top = 18
@@ -648,6 +667,20 @@ object LoginDialog: TLoginDialog
             Caption = 'Use scp&2 with scp1 compat.'
             TabOrder = 5
             OnClick = DataChange
+          end
+          object TimeDifferenceEdit: TUpDownEdit
+            Left = 137
+            Top = 83
+            Width = 61
+            Height = 21
+            Alignment = taRightJustify
+            Decimal = 1
+            MaxValue = 12
+            MinValue = -12
+            Value = 1
+            Anchors = [akTop, akRight]
+            TabOrder = 6
+            OnChange = DataChange
           end
         end
         object ReturnVarGroup: TXPGroupBox

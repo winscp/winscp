@@ -37,6 +37,7 @@ __published:
   void __fastcall RightsButtonsClick(TObject *Sender);
   void __fastcall FrameEnter(TObject *Sender);
   void __fastcall OctalEditExit(TObject *Sender);
+  void __fastcall OctalEditChange(TObject *Sender);
 private:
   bool FAllowAddXToDirectories;
   TNotifyEvent FOnChange;
@@ -70,6 +71,7 @@ protected:
   void __fastcall DoChange();
   void __fastcall UpdateControls();
   virtual void __fastcall SetEnabled(bool Value);
+  void __fastcall UpdateByOctal();
 };
 //---------------------------------------------------------------------------
 #endif

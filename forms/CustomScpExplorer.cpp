@@ -66,6 +66,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FForceExecution = false;
   FShowStatusBarHint = false;
   FIgnoreNextSysCommand = false;
+  FErrorList = NULL;
 
   UseSystemFont(this);
 
@@ -82,11 +83,12 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   assert(MenuToolBar->ControlCount);
   MenuToolBar->Height = MenuToolBar->Controls[0]->Height;
 
-  RemoteDirView->Font = Screen->IconFont; 
+  RemoteDirView->Font = Screen->IconFont;
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
+  assert(!FErrorList);
   StoreParams();
   Terminal = NULL;
   assert(NonVisualDataModule && (NonVisualDataModule->ScpExplorer == this));
@@ -221,7 +223,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
       FProgressForm = NULL;
     }
   }
-  
+
   if (FProgressForm)
   {
     FProgressForm->SetProgressData(ProgressData);
@@ -299,14 +301,14 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewContextPopup(
     NonVisualDataModule->CurrentCopyMenuItem->Default = WinConfiguration->CopyOnDoubleClick;
     NonVisualDataModule->CurrentOpenMenuItem->Visible = WinConfiguration->ExpertMode;
     NonVisualDataModule->CurentEditMenuItem->Visible = WinConfiguration->ExpertMode;
-    
+
     NonVisualDataModule->RemoteDirViewPopup->Popup(ScreenPoint.x, ScreenPoint.y);
   }
   Handled = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Operation,
-  TOperationSide Side, bool OnFocused, bool NoConfirmation)
+  TOperationSide Side, bool OnFocused, bool NoConfirmation, void * Param)
 {
   if (Side == osCurrent)
   {
@@ -320,11 +322,17 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
       Side = osLocal;
     }
   }
-  bool PrevWatchForChanges = (HasDirView[osLocal] ? DirView(osLocal)->WatchForChanges : false);
 
-  TStrings *FileList = DirView(Side)->CreateFileList(OnFocused, (Side == osLocal), NULL);
+  bool PrevWatchForChanges = (HasDirView[osLocal] ? DirView(osLocal)->WatchForChanges : false);
+  TStrings * FileList = NULL;
   try
   {
+    if (WinConfiguration->ContinueOnError)
+    {
+      FErrorList = new TStringList();
+    }
+    FileList = DirView(Side)->CreateFileList(OnFocused, (Side == osLocal), NULL);
+
     if ((Operation == foCopy) || (Operation == foMove))
     {
       TTransferDirection Direction = (Side == osLocal ? tdToRemote : tdToLocal);
@@ -426,6 +434,12 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
     {
       SetProperties(Side, FileList);
     }
+    else if (Operation == foCustomCommand)
+    {
+      assert(Param);
+      assert(Side == osRemote);
+      Terminal->CustomCommandOnFiles(*((AnsiString *)Param), FileList);
+    }
     else
     {
       assert(false);
@@ -433,11 +447,60 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   }
   __finally
   {
-    delete FileList;
+    if (FErrorList)
+    {
+      HandleErrorList(FErrorList);
+    }
     if (HasDirView[osLocal])
     {
       DirView(osLocal)->WatchForChanges = PrevWatchForChanges;
     }
+    delete FileList;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList)
+{
+  try
+  {
+    if (ErrorList->Count)
+    {
+      if (MessageDialog(FMTLOAD(ERROR_LIST_COUNT, (ErrorList->Count)), qtError,
+          qaOK | qaCancel, 0) == qaOK)
+      {
+        int Answer;
+        int Index = 0;
+        do
+        {
+          assert(Index >= 0 && Index < ErrorList->Count);
+          Answer = MoreMessageDialog(
+            FMTLOAD(ERROR_LIST_NUMBER, (Index+1, ErrorList->Count, ErrorList->Strings[Index])),
+            dynamic_cast<TStrings *>(ErrorList->Objects[Index]), qtError,
+            (Index ? qaPrev : 0) | (Index < ErrorList->Count - 1 ? qaNext : 0) |
+            qaOK, 0);
+
+          if (Answer == qaNext)
+          {
+            Index++;
+          }
+          if (Answer == qaPrev)
+          {
+            Index--;
+          }
+        }
+        while (Answer != qaOK);
+      }
+    }
+  }
+  __finally
+  {
+    TStrings * List = ErrorList;
+    ErrorList = NULL;
+    for (int i = 0; i < List->Count; i++)
+    {
+      delete List->Objects[i];
+    }
+    delete List;
   }
 }
 //---------------------------------------------------------------------------
@@ -728,7 +791,7 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
           }
           catch (Exception & E)
           {
-            int Result = ExceptionMessageDialog(&E, qtError, qaRetry | qaIgnore | qaAbort);
+            int Result = ExceptionMessageDialog(&E, qtError, qaRetry | qaSkip | qaAbort);
             if (Result == qaRetry)
             {
               Index--;
@@ -790,42 +853,7 @@ void __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
   {
     TRemoteProperties CurrentProperties;
 
-    for (Integer Index = 0; Index < FileList->Count; Index++)
-    {
-      TRemoteFile * File = (TRemoteFile *)(FileList->Objects[Index]);
-      assert(File);
-      if (!Index)
-      {
-        CurrentProperties.Rights = *(File->Rights);
-        CurrentProperties.Rights.AllowUndef = File->IsDirectory || File->Rights->IsUndef;
-        CurrentProperties.Valid << vpRights;
-        if (!File->Owner.IsEmpty())
-        {
-          CurrentProperties.Owner = File->Owner;
-          CurrentProperties.Valid << vpOwner;
-        }
-        if (!File->Group.IsEmpty())
-        {
-          CurrentProperties.Group = File->Group;
-          CurrentProperties.Valid << vpGroup;
-        }
-      }
-      else
-      {
-        CurrentProperties.Rights.AllowUndef = True;
-        CurrentProperties.Rights &= *File->Rights;
-        if (CurrentProperties.Owner != File->Owner)
-        {
-          CurrentProperties.Owner = "";
-          CurrentProperties.Valid >> vpOwner;
-        };
-        if (CurrentProperties.Group != File->Group)
-        {
-          CurrentProperties.Group = "";
-          CurrentProperties.Valid >> vpGroup;
-        };
-      }
-    }
+    CurrentProperties = TRemoteProperties::CommonProperties(FileList);
 
     int Flags = 0;
     if (Terminal->IsCapable[fcModeChanging]) Flags |= cpMode;
@@ -836,16 +864,7 @@ void __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
     if (DoPropertiesDialog(FileList, RemoteDirView->PathName,
         Terminal->UserGroups, &NewProperties, Flags))
     {
-      if (!NewProperties.Recursive)
-      {
-        if (NewProperties.Rights == CurrentProperties.Rights &&
-            !NewProperties.AddXToDirectories) NewProperties.Valid >> vpRights;
-        if (NewProperties.Group == CurrentProperties.Group)
-          NewProperties.Valid >> vpGroup;
-        if (NewProperties.Owner == CurrentProperties.Owner)
-          NewProperties.Valid >> vpOwner;
-      }
-
+      NewProperties = TRemoteProperties::ChangedProperties(CurrentProperties, NewProperties);
       Terminal->ChangeFilesProperties(FileList, &NewProperties);
     }
   }
@@ -914,6 +933,7 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
     SessionStatusBar->Panels->Items[Index + 6]->Text =
       FormatDateTime(Configuration->TimeFormat, Terminal->Duration);
   }
+  SessionStatusBar->Invalidate();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SessionStatusBarDrawPanel(
@@ -1001,7 +1021,7 @@ void __fastcall TCustomScpExplorerForm::SessionStatusBarMouseMove(
               (BooleanToStr(Terminal->CSCompression), BooleanToStr(Terminal->SCCompression)));
           }
           break;
-              
+
         case 4:
           if (Terminal->CSCipher == Terminal->SCCipher)
           {
@@ -1260,6 +1280,7 @@ void __fastcall TCustomScpExplorerForm::SaveCurrentSession()
       SessionData->Assign(Terminal->SessionData);
       UpdateSessionData(SessionData);
       StoredSessions->NewSession(SessionName, SessionData);
+      StoredSessions->Save();
     }
     __finally
     {
@@ -1380,6 +1401,44 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
     {
       delete VisitedDirectories;
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::OpenInPutty()
+{
+  if (FileExists(WinConfiguration->PuttyPath))
+  {
+    THierarchicalStorage * Storage = NULL;
+    TSessionData * ExportData = NULL;
+    try
+    {
+      ExportData = new TSessionData("");
+      ExportData->Assign(Terminal->SessionData);
+      ExportData->Modified = true;
+      ExportData->Name = WinConfiguration->PuttySession;
+      ExportData->Password = "";
+      Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
+      Storage->AccessMode = smReadWrite;
+      if (Storage->OpenRootKey(true))
+      {
+        ExportData->Save(Storage, true);
+      }
+    }
+    __finally
+    {
+      delete Storage;
+      delete ExportData;
+    }
+
+    if (!ExecuteShell(WinConfiguration->PuttyPath,
+          FORMAT("-load \"%s\"", (WinConfiguration->PuttySession))))
+    {
+      throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (WinConfiguration->PuttyPath)));
+    }
+  }
+  else
+  {
+    throw Exception(FMTLOAD(FILE_NOT_FOUND, (WinConfiguration->PuttyPath)));
   }
 }
 //---------------------------------------------------------------------------
@@ -1577,4 +1636,39 @@ void __fastcall TCustomScpExplorerForm::DoShow()
   MenuToolBar->Height = MenuToolBar->Controls[0]->Height;
 
   TForm::DoShow();
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomScpExplorerForm::MoreMessageDialog(const AnsiString Message,
+    TStrings * MoreMessages, TQueryType Type, int Answers,
+    int HelpCtx, int Params)
+{
+  if (WinConfiguration->ContinueOnError && (Params & mpAllowContinueOnError) &&
+      FErrorList)
+  {
+    TStringList * MoreMessagesCopy = NULL;
+    if (MoreMessages)
+    {
+      MoreMessagesCopy = new TStringList();
+      MoreMessagesCopy->Assign(MoreMessages);
+    }
+    FErrorList->AddObject(Message, MoreMessagesCopy);
+    if (Answers & qaSkip) return qaSkip;
+      else
+    if (Answers & qaIgnore) return qaIgnore;
+      else
+    if (Answers & qaOK) return qaOK;
+      else
+    if (Answers & qaYes) return qaYes;
+      else
+    if (Answers & qaRetry) return qaRetry;
+      else
+    {
+      assert(false);
+      return qaYes;
+    }
+  }
+  else
+  {
+    return ::MoreMessageDialog(Message, MoreMessages, Type, Answers, HelpCtx, Params);
+  }
 }

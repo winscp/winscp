@@ -1,6 +1,6 @@
 object PreferencesDialog: TPreferencesDialog
-  Left = 379
-  Top = 133
+  Left = 380
+  Top = 111
   BorderStyle = bsDialog
   Caption = 'Preferences'
   ClientHeight = 425
@@ -21,11 +21,11 @@ object PreferencesDialog: TPreferencesDialog
     Top = 0
     Width = 386
     Height = 385
-    ActivePage = CommanderSheet
+    ActivePage = IntegrationSheet
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     MultiLine = True
-    TabIndex = 4
+    TabIndex = 8
     TabOrder = 0
     object PreferencesSheet: TTabSheet
       Caption = 'General'
@@ -35,7 +35,7 @@ object PreferencesDialog: TPreferencesDialog
         339)
       object RandomSeedFileLabel: TLabel
         Left = 16
-        Top = 258
+        Top = 276
         Width = 82
         Height = 13
         Caption = '&Random seed file'
@@ -44,13 +44,13 @@ object PreferencesDialog: TPreferencesDialog
         Left = 8
         Top = 8
         Width = 362
-        Height = 161
+        Height = 181
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Confirmations'
         TabOrder = 0
         DesignSize = (
           362
-          161)
+          181)
         object CopyOnDoubleClickCheck: TCheckBox
           Left = 16
           Top = 109
@@ -111,10 +111,20 @@ object PreferencesDialog: TPreferencesDialog
           TabOrder = 3
           OnClick = ControlChange
         end
+        object ContinueOnErrorCheck: TCheckBox
+          Left = 16
+          Top = 153
+          Width = 330
+          Height = 17
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Continue on &error (advanced users)'
+          TabOrder = 6
+          OnClick = ControlChange
+        end
       end
       object RandomSeedFileEdit: TFilenameEdit
         Left = 128
-        Top = 254
+        Top = 272
         Width = 242
         Height = 21
         AcceptFiles = True
@@ -130,7 +140,7 @@ object PreferencesDialog: TPreferencesDialog
       end
       object StorageGroup: TXPGroupBox
         Left = 8
-        Top = 176
+        Top = 195
         Width = 362
         Height = 68
         Anchors = [akLeft, akTop, akRight]
@@ -195,12 +205,12 @@ object PreferencesDialog: TPreferencesDialog
       object Label1: TLabel
         Left = 8
         Top = 226
-        Width = 320
+        Width = 361
         Height = 33
         AutoSize = False
         Caption = 
           'Note: a change to this setting will only take effect the next ti' +
-          'me you open session in WinSCP.'
+          'me you start the application.'
         WordWrap = True
       end
       inline GeneralSettingsFrame: TGeneralSettingsFrame
@@ -377,13 +387,13 @@ object PreferencesDialog: TPreferencesDialog
         Left = 8
         Top = 38
         Width = 362
-        Height = 76
+        Height = 99
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Panels'
         TabOrder = 0
         DesignSize = (
           362
-          76)
+          99)
         object DeleteToRecycleBinCheck: TCheckBox
           Left = 16
           Top = 21
@@ -404,10 +414,20 @@ object PreferencesDialog: TPreferencesDialog
           TabOrder = 1
           OnClick = ControlChange
         end
+        object PreserveLocalDirectoryCheck: TCheckBox
+          Left = 16
+          Top = 69
+          Width = 330
+          Height = 17
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Do not &change local directory when switching sessions'
+          TabOrder = 2
+          OnClick = ControlChange
+        end
       end
       object CommanderMiscGroup: TXPGroupBox
         Left = 8
-        Top = 122
+        Top = 146
         Width = 362
         Height = 53
         Anchors = [akLeft, akTop, akRight]
@@ -476,6 +496,19 @@ object PreferencesDialog: TPreferencesDialog
         Width = 529
         Height = 345
         TabOrder = 0
+        inherited RemotePropertiesGroup: TXPGroupBox
+          Left = 8
+          Top = 156
+          Width = 182
+          Height = 126
+          Caption = 'Upload options'
+          inherited RightsFrame: TRightsFrame
+            Height = 88
+          end
+          inherited RemotePreserveTimeCheck: TCheckBox
+            Top = 161
+          end
+        end
         inherited CommonPropertiesGroup: TXPGroupBox
           Left = 198
           Top = 156
@@ -506,19 +539,6 @@ object PreferencesDialog: TPreferencesDialog
           inherited LocalPreserveTimeCheck: TCheckBox
             Top = 92
             Width = 164
-          end
-        end
-        inherited RemotePropertiesGroup: TXPGroupBox
-          Left = 8
-          Top = 156
-          Width = 182
-          Height = 126
-          Caption = 'Upload options'
-          inherited RightsFrame: TRightsFrame
-            Height = 88
-          end
-          inherited RemotePreserveTimeCheck: TCheckBox
-            Top = 161
           end
         end
         inherited ChangeCaseGroup: TXPGroupBox
@@ -770,9 +790,180 @@ object PreferencesDialog: TPreferencesDialog
           Top = 120
           Width = 305
           Height = 25
-          Caption = 'Add upload shortcut to Explorer'#39's '#39'Send to'#39' context menu'
+          Caption = 'Add upload shortcut to Explorer'#39's '#39'&Send to'#39' context menu'
           TabOrder = 3
           OnClick = IconButtonClick
+        end
+      end
+      object XPGroupBox1: TXPGroupBox
+        Left = 8
+        Top = 224
+        Width = 362
+        Height = 78
+        Anchors = [akLeft, akTop, akRight]
+        Caption = 'External applications'
+        TabOrder = 1
+        DesignSize = (
+          362
+          78)
+        object Label2: TLabel
+          Left = 16
+          Top = 24
+          Width = 61
+          Height = 13
+          Caption = '&PuTTY path:'
+        end
+        object PuttyPathEdit: TFilenameEdit
+          Left = 16
+          Top = 41
+          Width = 330
+          Height = 21
+          OnAfterDialog = ExternalEditorEditAfterDialog
+          Filter = 
+            'PuTTY executable (putty.exe)|putty.exe|Executable files (*.exe)|' +
+            '*.exe|All files (*.*)|*.*'
+          ClickKey = 16397
+          Anchors = [akLeft, akTop, akRight]
+          TabOrder = 0
+          Text = 'PuttyPathEdit'
+          OnChange = ExternalEditorEditChange
+          OnExit = ExternalEditorEditExit
+        end
+      end
+    end
+    object CustomCommandsSheet: TTabSheet
+      Caption = 'Commands'
+      ImageIndex = 9
+      DesignSize = (
+        378
+        339)
+      object CustomCommandsGroup: TXPGroupBox
+        Left = 8
+        Top = 8
+        Width = 362
+        Height = 321
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Caption = 'Custom commands (SCP only)'
+        TabOrder = 0
+        DesignSize = (
+          362
+          321)
+        object LocalDirectoryLabel: TLabel
+          Left = 16
+          Top = 24
+          Width = 141
+          Height = 13
+          Caption = 'Custom command descri&ption:'
+          FocusControl = CustomCommandDescEdit
+        end
+        object RemoteDirectoryLabel: TLabel
+          Left = 16
+          Top = 72
+          Width = 232
+          Height = 13
+          Caption = '&Custom command (! is replaced with name of file):'
+          FocusControl = CustomCommandEdit
+        end
+        object CustomCommandDescEdit: TEdit
+          Left = 16
+          Top = 41
+          Width = 330
+          Height = 21
+          Anchors = [akLeft, akTop, akRight]
+          TabOrder = 0
+          Text = 'CustomCommandDescEdit'
+          OnChange = ControlChange
+        end
+        object CustomCommandEdit: TEdit
+          Left = 16
+          Top = 89
+          Width = 330
+          Height = 21
+          Anchors = [akLeft, akTop, akRight]
+          MaxLength = 1000
+          TabOrder = 1
+          Text = 'CustomCommandEdit'
+          OnChange = ControlChange
+        end
+        object CustomCommandsView: TListView
+          Left = 16
+          Top = 120
+          Width = 238
+          Height = 185
+          Anchors = [akLeft, akTop, akRight, akBottom]
+          Columns = <
+            item
+              Caption = 'Description'
+              Width = 80
+            end
+            item
+              Caption = 'Command'
+              Width = 140
+            end>
+          ColumnClick = False
+          DragMode = dmAutomatic
+          HideSelection = False
+          OwnerData = True
+          ReadOnly = True
+          RowSelect = True
+          TabOrder = 2
+          ViewStyle = vsReport
+          OnData = CustomCommandsViewData
+          OnDragDrop = CustomCommandsViewDragDrop
+          OnDragOver = CustomCommandsViewDragOver
+          OnKeyDown = CustomCommandsViewKeyDown
+          OnSelectItem = CustomCommandsViewSelectItem
+          OnStartDrag = CustomCommandsViewStartDrag
+        end
+        object AddCommandButton: TButton
+          Left = 263
+          Top = 120
+          Width = 83
+          Height = 25
+          Anchors = [akTop, akRight]
+          Caption = '&Add'
+          TabOrder = 3
+          OnClick = AddCommandButtonClick
+        end
+        object RemoveCommandButton: TButton
+          Left = 263
+          Top = 184
+          Width = 83
+          Height = 25
+          Anchors = [akTop, akRight]
+          Caption = '&Remove'
+          TabOrder = 5
+          OnClick = RemoveCommandButtonClick
+        end
+        object UpCommandButton: TButton
+          Left = 263
+          Top = 248
+          Width = 83
+          Height = 25
+          Anchors = [akTop, akRight]
+          Caption = '&Up'
+          TabOrder = 6
+          OnClick = UpDownCommandButtonClick
+        end
+        object DownCommandButton: TButton
+          Left = 263
+          Top = 280
+          Width = 83
+          Height = 25
+          Anchors = [akTop, akRight]
+          Caption = '&Down'
+          TabOrder = 7
+          OnClick = UpDownCommandButtonClick
+        end
+        object SaveCommandButton: TButton
+          Left = 263
+          Top = 152
+          Width = 83
+          Height = 25
+          Anchors = [akTop, akRight]
+          Caption = '&Save'
+          TabOrder = 4
+          OnClick = SaveCommandButtonClick
         end
       end
     end

@@ -21,8 +21,8 @@ public:
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings) = 0;
   bool __fastcall HasSubKeys();
   virtual void __fastcall RecursiveDeleteSubKey(const AnsiString Key);
-  virtual void __fastcall ReadValues(Classes::TStrings* Strings);
-  virtual void __fastcall WriteValues(Classes::TStrings* Strings);
+  virtual void __fastcall ReadValues(Classes::TStrings* Strings, bool MaintainKeys = false);
+  virtual void __fastcall WriteValues(Classes::TStrings* Strings, bool MaintainKeys = false);
   virtual bool __fastcall DeleteValue(const AnsiString Name) = 0;
 
   virtual bool __fastcall ReadBool(const AnsiString Name, bool Default) = 0;
@@ -61,7 +61,8 @@ protected:
 class TRegistryStorage : public THierarchicalStorage
 {
 public:
-  __fastcall TRegistryStorage(const AnsiString aRoot);
+  __fastcall TRegistryStorage(const AnsiString AStorage, HKEY ARootKey);
+  __fastcall TRegistryStorage(const AnsiString AStorage);
   virtual __fastcall ~TRegistryStorage();
   virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate);
   virtual bool __fastcall CreateSubKey(const AnsiString SubKey);
@@ -94,6 +95,8 @@ protected:
 private:
   TRegistry * FRegistry;
   int FFailed;
+
+  void __fastcall Init();
 };
 //---------------------------------------------------------------------------
 class TIniFileStorage : public THierarchicalStorage
@@ -102,6 +105,7 @@ public:
   __fastcall TIniFileStorage(const AnsiString FileName);
   virtual __fastcall ~TIniFileStorage();
 
+  virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate);
   virtual bool __fastcall DeleteSubKey(const AnsiString SubKey);
   virtual bool __fastcall DeleteValue(const AnsiString Name);
   virtual void __fastcall GetSubKeyNames(Classes::TStrings* Strings);

@@ -21,7 +21,8 @@
 #include "CopyParams.h"
 #include "GeneralSettings.h"
 #include "LogSettings.h"
-#include "UpDownEdit.hpp"           
+#include "UpDownEdit.hpp"
+#include "IEComboBox.hpp"
 //----------------------------------------------------------------------------
 class TPreferencesDialog : public TForm
 {
@@ -95,6 +96,23 @@ __published:
   TLabel *ShellIconsLabel;
   TXPGroupBox *CommanderMiscGroup;
   TCheckBox *UseLocationProfilesCheck;
+  TTabSheet *CustomCommandsSheet;
+  TXPGroupBox *CustomCommandsGroup;
+  TLabel *LocalDirectoryLabel;
+  TEdit *CustomCommandDescEdit;
+  TLabel *RemoteDirectoryLabel;
+  TEdit *CustomCommandEdit;
+  TListView *CustomCommandsView;
+  TButton *AddCommandButton;
+  TButton *RemoveCommandButton;
+  TButton *UpCommandButton;
+  TButton *DownCommandButton;
+  TButton *SaveCommandButton;
+  TCheckBox *ContinueOnErrorCheck;
+  TCheckBox *PreserveLocalDirectoryCheck;
+  TXPGroupBox *XPGroupBox1;
+  TFilenameEdit *PuttyPathEdit;
+  TLabel *Label2;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -104,10 +122,29 @@ __published:
   void __fastcall ExternalEditorEditChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall IconButtonClick(TObject *Sender);
+  void __fastcall CustomCommandsViewData(TObject *Sender, TListItem *Item);
+  void __fastcall CustomCommandsViewSelectItem(TObject *Sender,
+          TListItem *Item, bool Selected);
+  void __fastcall CustomCommandsViewKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
+  void __fastcall AddCommandButtonClick(TObject *Sender);
+  void __fastcall SaveCommandButtonClick(TObject *Sender);
+  void __fastcall RemoveCommandButtonClick(TObject *Sender);
+  void __fastcall UpDownCommandButtonClick(TObject *Sender);
+  void __fastcall CustomCommandsViewStartDrag(TObject *Sender,
+          TDragObject *&DragObject);
+  void __fastcall CustomCommandsViewDragDrop(TObject *Sender,
+          TObject *Source, int X, int Y);
+  void __fastcall CustomCommandsViewDragOver(TObject *Sender,
+          TObject *Source, int X, int Y, TDragState State, bool &Accept);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
+  TStrings * FCustomCommands;
+  bool FCustomCommandChanging;
   bool FAfterExternalEditorDialog;
+  int FCustomCommandDragSource;
+  int FCustomCommandDragDest;
   void __fastcall SetPreferencesMode(TPreferencesMode value);
 public:
   virtual __fastcall ~TPreferencesDialog();
@@ -119,6 +156,10 @@ protected:
   void __fastcall LoggingGetDefaultLogFileName(System::TObject * Sender, AnsiString & DefaultLogFileName);
   void __fastcall SaveConfiguration();
   void __fastcall UpdateControls();
+  void __fastcall UpdateCustomCommandsView();
+  AnsiString __fastcall CustomCommandString(int Index = -1);
+  void __fastcall CustomCommandMove(int Source, int Dest);
+  bool __fastcall AllowCustomCommandsDrag(int X, int Y);
 };
 //----------------------------------------------------------------------------
 #endif

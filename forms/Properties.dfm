@@ -1,6 +1,6 @@
 object PropertiesDialog: TPropertiesDialog
-  Left = 362
-  Top = 120
+  Left = 523
+  Top = 133
   BorderStyle = bsDialog
   Caption = 'Properties'
   ClientHeight = 416

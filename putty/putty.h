@@ -1,29 +1,10 @@
 #ifndef PUTTY_PUTTY_H
 
-// workaround for some error in Borland's preprocessor when Local Options are set
-/*#ifndef GLOBAL
-#ifdef PUTTY_DO_GLOBALS
-#define GLOBAL
-#else
-#define GLOBAL extern
-#endif
-#endif
-
-#include <windows.h>
-#include "winstuff.h"
-#define PUTTY_PUTTYPS_H*/
-
 #include "putty.org.h"
 
 #ifndef PUTTY_ORIGINAL
 
 #if defined(PUTTY_LIB)
-
-// safemalloc() and saferealloc() in misc.c call MessageBox() directly
-// we want to raise exception instead.
-//#pragma option push -w-dup
-//#define MessageBox(A, Message, B, C) fatalbox(Message)
-//#pragma option pop
 
 long reg_open_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
 long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);

@@ -13,6 +13,7 @@
 #include "NonVisual.h"
 #include "Tools.h"
 #include "WinConfiguration.h"
+#include "TerminalManager.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "AssociatedStatusBar"
@@ -39,6 +40,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   FSynchronization = ssStopped;
   FSynchronizeDialog = NULL;
   FSynchronisingBrowse = false;
+  FFirstTerminal = true;
 
   LocalBackButton->DropdownMenu = LocalDirView->BackMenu;
   LocalForwardButton->DropdownMenu = LocalDirView->ForwardMenu;
@@ -146,6 +148,16 @@ void __fastcall TScpCommanderForm::UpdateSessionData(TSessionData * Data)
   {
     assert(LocalDirView);
     Data->LocalDirectory = LocalDirView->PathName;
+    Terminal->UserObject = NULL;
+  }
+  else
+  {
+    if (!Terminal->UserObject)
+    {
+      Terminal->UserObject = new TTerminalUserObject();
+    }
+    dynamic_cast<TTerminalUserObject *>(Terminal->UserObject)->LocalDirectory =
+      LocalDirView->PathName;
   }
 }
 //---------------------------------------------------------------------------
@@ -236,33 +248,46 @@ void __fastcall TScpCommanderForm::TerminalChanged()
   TCustomScpExplorerForm::TerminalChanged();
   if (Terminal)
   {
-    AnsiString LocalDirectory = Terminal->SessionData->LocalDirectory;
-    bool DocumentsDir = LocalDirectory.IsEmpty();
-
-    if (!DocumentsDir)
+    if (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory)
     {
-      try
+      AnsiString LocalDirectory;
+
+      if (Terminal->UserObject)
       {
-        LocalDirView->Path = LocalDirectory;
+        LocalDirectory = dynamic_cast<TTerminalUserObject *>(Terminal->UserObject)->LocalDirectory;
       }
-      catch(Exception & E)
+      else
       {
-        DocumentsDir = true;
-        ShowExtendedException(&E, this);
+        LocalDirectory = Terminal->SessionData->LocalDirectory;
+      }
+      bool DocumentsDir = LocalDirectory.IsEmpty();
+
+      if (!DocumentsDir)
+      {
+        try
+        {
+          LocalDirView->Path = LocalDirectory;
+        }
+        catch(Exception & E)
+        {
+          DocumentsDir = true;
+          ShowExtendedException(&E, this);
+        }
+      }
+
+      if (DocumentsDir)
+      {
+        LocalDirView->HomeDirectory = "";
+        LocalDirView->ExecuteHomeDirectory();
+      }
+
+      if (Configuration->DefaultDirIsHome &&
+          !Terminal->SessionData->UpdateDirectories)
+      {
+        LocalDirView->HomeDirectory = LocalDirectory;
       }
     }
-
-    if (DocumentsDir)
-    {
-      LocalDirView->HomeDirectory = "";
-      LocalDirView->ExecuteHomeDirectory();
-    }
-
-    if (Configuration->DefaultDirIsHome &&
-        !Terminal->SessionData->UpdateDirectories)
-    {
-      LocalDirView->HomeDirectory = LocalDirectory;
-    }
+    FFirstTerminal = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -728,7 +753,4 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
     TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
   }
 }
-
-
-
 

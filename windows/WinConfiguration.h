@@ -39,12 +39,13 @@ struct TScpCommanderConfiguration {
   bool ToolBar;
   TOperationSide CurrentPanel;
   bool ExplorerStyleSelection;
+  bool PreserveLocalDirectory;
   TScpCommanderPanelConfiguration LocalPanel;
   TScpCommanderPanelConfiguration RemotePanel;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(CoolBarLayout) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(ToolBar)
-      C(ExplorerStyleSelection) 0; };
+      C(ExplorerStyleSelection) C(PreserveLocalDirectory) 0; };
 };
 //---------------------------------------------------------------------------
 struct TEditorConfiguration {
@@ -80,6 +81,7 @@ private:
   bool FDDTransferConfirmation;
   bool FDeleteToRecycleBin;
   bool FDimmHiddenFiles;
+  bool FContinueOnError;
   TLogView FLogView;
   bool FLogWindowOnStartup;
   AnsiString FLogWindowParams;
@@ -101,10 +103,15 @@ private:
   AnsiString FTemporaryKeyFile;
   TBookmarks * FBookmarks;
   TStrings * FCommandsHistory;
+  bool FCommandsHistoryModified;
+  TStrings * FCustomCommands;
+  bool FCustomCommandsModified;
   TEditorConfiguration FEditor;
   bool FEmbeddedSessions;
   bool FExpertMode;
   bool FDisableOpenEdit;
+  AnsiString FPuttyPath;
+  AnsiString FPuttySession;
 
   void __fastcall SetCopyOnDoubleClick(bool value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -125,6 +132,7 @@ private:
   void __fastcall SetShowAdvancedLoginOptions(bool value);
   void __fastcall SetConfirmDeleting(bool value);
   void __fastcall SetUseLocationProfiles(bool value);
+  void __fastcall SetContinueOnError(bool value);
   void __fastcall SetDDTemporaryDirectory(AnsiString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetConfirmClosingSession(bool value);
@@ -135,6 +143,9 @@ private:
   void __fastcall SetCommandsHistory(TStrings * value);
   void __fastcall SetExpertMode(bool value);
   void __fastcall SetEditor(TEditorConfiguration value);
+  void __fastcall SetCustomCommands(TStrings * value);
+  void __fastcall SetPuttyPath(const AnsiString value);
+  void __fastcall SetPuttySession(const AnsiString value);
 
 protected:
   virtual TStorage __fastcall GetStorage();
@@ -142,14 +153,15 @@ protected:
     const AnsiString ResName, const AnsiString FileName);
   virtual void __fastcall SaveSpecial(THierarchicalStorage * Storage);
   virtual void __fastcall LoadSpecial(THierarchicalStorage * Storage);
+  virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual AnsiString __fastcall GetDefaultKeyFile();
   virtual void __fastcall ModifyAll();
+  bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2); 
 
 public:
   __fastcall TWinConfiguration();
   __fastcall ~TWinConfiguration();
   virtual void __fastcall Default();
-  virtual void __fastcall Load();
   void __fastcall RestoreForm(AnsiString Data, TCustomForm * Form);
   AnsiString __fastcall StoreForm(TCustomForm * Form);
   void __fastcall ClearTemporaryLoginData();
@@ -178,6 +190,7 @@ public:
   __property AnsiString MaskHistory = { read = FMaskHistory, write = SetMaskHistory };
   __property bool ConfirmDeleting = { read = FConfirmDeleting, write = SetConfirmDeleting};
   __property bool UseLocationProfiles = { read = FUseLocationProfiles, write = SetUseLocationProfiles};
+  __property bool ContinueOnError = { read = FContinueOnError, write = SetContinueOnError};
   __property AnsiString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
@@ -187,6 +200,9 @@ public:
   __property bool EmbeddedSessions = { read = FEmbeddedSessions };
   __property bool ExpertMode = { read = FExpertMode, write = SetExpertMode };
   __property bool DisableOpenEdit = { read = FDisableOpenEdit };
+  __property TStrings * CustomCommands = { read = FCustomCommands, write = SetCustomCommands };
+  __property AnsiString PuttyPath = { read = FPuttyPath, write = SetPuttyPath };
+  __property AnsiString PuttySession = { read = FPuttySession, write = SetPuttySession };
 };
 //---------------------------------------------------------------------------
 #define WinConfiguration ((TWinConfiguration *) Configuration)

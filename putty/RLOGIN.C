@@ -130,8 +130,10 @@ static const char *rlogin_init(void *frontend_handle, void **backend_handle,
 	sfree(buf);
     }
     addr = name_lookup(host, port, realhost, cfg);
-    if ((err = sk_addr_error(addr)) != NULL)
+    if ((err = sk_addr_error(addr)) != NULL) {
+	sk_addr_free(addr);
 	return err;
+    }
 
     if (port < 0)
 	port = 513;		       /* default rlogin port */
@@ -150,8 +152,6 @@ static const char *rlogin_init(void *frontend_handle, void **backend_handle,
 			       nodelay, (Plug) rlogin, cfg);
     if ((err = sk_socket_error(rlogin->s)) != NULL)
 	return err;
-
-    sk_addr_free(addr);
 
     /*
      * Send local username, remote username, terminal/speed

@@ -185,6 +185,9 @@ __published:
   TRadioButton *ProxyDNSOffButton;
   TRadioButton *ProxyDNSAutoButton;
   TRadioButton *ProxyDNSOnButton;
+  TUpDownEdit *TimeDifferenceEdit;
+  TLabel *Label29;
+  TLabel *Label30;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,

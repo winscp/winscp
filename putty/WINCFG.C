@@ -271,6 +271,10 @@ void win_setup_config_box(struct controlbox *b, HWND *hwndp, int has_help,
     ctrl_checkbox(s, "Attempt to use logical palettes", 'l',
 		  HELPCTX(colours_logpal),
 		  dlg_stdcheckbox_handler, I(offsetof(Config,try_palette)));
+    ctrl_checkbox(s, "Use system colours", 's',
+                  HELPCTX(colours_system),
+                  dlg_stdcheckbox_handler, I(offsetof(Config,system_colour)));
+
 
     /*
      * Resize-by-changing-font is a Windows insanity.

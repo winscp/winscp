@@ -30,6 +30,8 @@ public:
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const AnsiString FileName,
     const TRemoteFile * File = NULL, bool Recursive = false);
+  virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
+    const TRemoteFile * File, AnsiString Command);
   virtual void __fastcall DoStartup();
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;

@@ -429,6 +429,7 @@ struct config_tag {
     char answerback[256];
     char printer[128];
     /* Colour options */
+    int system_colour;
     int try_palette;
     int bold_colour;
     unsigned char colours[22][3];
@@ -470,6 +471,7 @@ struct config_tag {
     int stamp_utmp;
     int login_shell;
     int scrollbar_on_left;
+    int shadowbold;
     FontSpec boldfont;
     FontSpec widefont;
     FontSpec wideboldfont;
@@ -844,5 +846,6 @@ Filename filename_from_str(const char *string);
 const char *filename_to_str(const Filename *fn);
 int filename_equal(Filename f1, Filename f2);
 int filename_is_null(Filename fn);
+char *get_username(void);	       /* return value needs freeing */
 
 #endif

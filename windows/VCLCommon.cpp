@@ -10,17 +10,21 @@
 //---------------------------------------------------------------------------
 void __fastcall AdjustListColumnsWidth(TListView* ListView)
 {
-	Integer OriginalWidth, NewWidth, i, CWidth;
+  int OriginalWidth, NewWidth, i, CWidth;
 
   OriginalWidth = 0;
   for (i = 0; i < ListView->Columns->Count; i++)
+  {
   	OriginalWidth += ListView->Columns->Items[i]->Width;
+  }
 
   NewWidth = 0;
   CWidth = ListView->ClientWidth;
   if ((ListView->VisibleRowCount < ListView->Items->Count) &&
       (ListView->Width - ListView->ClientWidth < GetSystemMetrics(SM_CXVSCROLL)))
-     		CWidth -= GetSystemMetrics(SM_CXVSCROLL);
+  {
+  	CWidth -= GetSystemMetrics(SM_CXVSCROLL);
+  }
   for (i = 0; i < ListView->Columns->Count-1;i++)
   {
     if (ListView->Columns->Items[i]->Tag == 0)

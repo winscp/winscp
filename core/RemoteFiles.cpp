@@ -284,6 +284,18 @@ bool __fastcall TRemoteFile::GetBrokenLink()
   // "!FLinkTo.IsEmpty()" removed because it does not work with SFTP
 }
 //---------------------------------------------------------------------------
+void __fastcall TRemoteFile::ShiftTime(const TDateTime & Difference)
+{
+  double D = double(Difference);
+  if ((D != 0) && (FModificationFmt != mfMDY))
+  {
+    assert(int(FModification) != 0);
+    FModification = double(FModification) + D;
+    assert(int(FLastAccess) != 0);
+    FLastAccess = double(FLastAccess) + D;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TRemoteFile::SetModification(const TDateTime & value)
 {
   if (FModification != value)
@@ -442,6 +454,10 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
 
       FModification = AdjustDateTimeFromUnix(
         EncodeDate(Year, Month, Day) + EncodeTime(Hour, Min, 0, 0));
+      if (double(FLastAccess) == 0)
+      {
+        FLastAccess = FModification;
+      }
 
       // separating space is already deleted, other spaces are treated as part of name
 
@@ -894,9 +910,10 @@ void __fastcall TRights::SetNumber(Word value)
 AnsiString __fastcall TRights::GetOctal() const
 {
   AnsiString Result;
-  Result += (char)('0' + ((Number & 0700) >> 6));
-  Result += (char)('0' + ((Number & 0070) >> 3));
-  Result += (char)('0' + ((Number & 0007) >> 0));
+  Word N = NumberSet; // used to be "Number"
+  Result += (char)('0' + ((N & 0700) >> 6));
+  Result += (char)('0' + ((N & 0070) >> 3));
+  Result += (char)('0' + ((N & 0007) >> 0));
 
   return Result;
 }
@@ -1217,5 +1234,70 @@ bool __fastcall TRemoteProperties::operator !=(const TRemoteProperties & rhp) co
 {
   return !(*this == rhp);
 }
+//---------------------------------------------------------------------------
+TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * FileList)
+{
+  TRemoteProperties CommonProperties;
+  for (int Index = 0; Index < FileList->Count; Index++)
+  {
+    TRemoteFile * File = (TRemoteFile *)(FileList->Objects[Index]);
+    assert(File);
+    if (!Index)
+    {
+      CommonProperties.Rights = *(File->Rights);
+      CommonProperties.Rights.AllowUndef = File->IsDirectory || File->Rights->IsUndef;
+      CommonProperties.Valid << vpRights;
+      if (!File->Owner.IsEmpty())
+      {
+        CommonProperties.Owner = File->Owner;
+        CommonProperties.Valid << vpOwner;
+      }
+      if (!File->Group.IsEmpty())
+      {
+        CommonProperties.Group = File->Group;
+        CommonProperties.Valid << vpGroup;
+      }
+    }
+    else
+    {
+      CommonProperties.Rights.AllowUndef = True;
+      CommonProperties.Rights &= *File->Rights;
+      if (CommonProperties.Owner != File->Owner)
+      {
+        CommonProperties.Owner = "";
+        CommonProperties.Valid >> vpOwner;
+      };
+      if (CommonProperties.Group != File->Group)
+      {
+        CommonProperties.Group = "";
+        CommonProperties.Valid >> vpGroup;
+      };
+    }
+  }
+  return CommonProperties;
+}
+//---------------------------------------------------------------------------
+TRemoteProperties __fastcall TRemoteProperties::ChangedProperties(
+  const TRemoteProperties & OriginalProperties, TRemoteProperties NewProperties)
+{
+  if (!NewProperties.Recursive)
+  {
+    if (NewProperties.Rights == OriginalProperties.Rights &&
+        !NewProperties.AddXToDirectories)
+    {
+      NewProperties.Valid >> vpRights;
+    }
 
+    if (NewProperties.Group == OriginalProperties.Group)
+    {
+      NewProperties.Valid >> vpGroup;
+    }
+
+    if (NewProperties.Owner == OriginalProperties.Owner)
+    {
+      NewProperties.Valid >> vpOwner;
+    }
+  }
+  return NewProperties;
+}
 

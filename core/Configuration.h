@@ -9,6 +9,8 @@
 #define SET_CONFIG_PROPERTY(PROPERTY) \
   if (PROPERTY != value) { F ## PROPERTY = value; Changed(); }
 //---------------------------------------------------------------------------
+extern const char CustomCommandFileNamePattern[];
+//---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
 private:
@@ -29,10 +31,14 @@ private:
   bool FConfirmOverwriting;
   AnsiString FIniFileStorageName;
 
+  bool FDisablePasswordStoring;
+
   TVSFixedFileInfo *__fastcall GetFixedApplicationInfo();
   void * __fastcall GetApplicationInfo();
   virtual AnsiString __fastcall GetVersionStr();
   virtual AnsiString __fastcall GetVersion();
+  AnsiString __fastcall GetProductVersion();
+  AnsiString __fastcall TrimVersion(AnsiString Version);
   AnsiString __fastcall GetStoredSessionsSubKey();
   AnsiString __fastcall GetPuttySessionsKey();
   AnsiString __fastcall GetPuttyRegistryStorageKey();
@@ -56,12 +62,13 @@ private:
   AnsiString __fastcall GetDefaultLogFileName();
   AnsiString __fastcall GetTimeFormat();
   void __fastcall SetIgnoreCancelBeforeFinish(TDateTime value);
-  void __fastcall SetConfirmOverwriting(bool value);
   void __fastcall SetStorage(TStorage value);
   AnsiString __fastcall GetRegistryStorageKey();
   AnsiString __fastcall GetIniFileStorageName();
   void __fastcall SetIniFileStorageName(AnsiString value);
   AnsiString __fastcall GetPartialExt() const;
+  AnsiString __fastcall GetFileInfoString(const AnsiString Key);
+  
 protected:
   TStorage FStorage;
 
@@ -69,8 +76,14 @@ protected:
   virtual void __fastcall Changed();
   virtual void __fastcall SaveSpecial(THierarchicalStorage * Storage);
   virtual void __fastcall LoadSpecial(THierarchicalStorage * Storage);
+  virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual AnsiString __fastcall GetDefaultKeyFile();
   virtual void __fastcall ModifyAll();
+
+  virtual bool __fastcall GetConfirmOverwriting();
+  virtual void __fastcall SetConfirmOverwriting(bool value);
+
+  virtual AnsiString __fastcall ModuleFileName();
 
 public:
   __fastcall TConfiguration();
@@ -100,8 +113,10 @@ public:
   __property bool DontSave  = { read=FDontSave, write=FDontSave };
   __property bool RandomSeedSave  = { read=FRandomSeedSave, write=FRandomSeedSave };
   __property TEOLType LocalEOLType = { read = GetLocalEOLType };
-  __property AnsiString VersionStr  = { read=GetVersionStr };
-  __property AnsiString Version  = { read=GetVersion };
+  __property AnsiString VersionStr = { read=GetVersionStr };
+  __property AnsiString Version = { read=GetVersion };
+  __property AnsiString ProductVersion = { read=GetProductVersion };
+  __property AnsiString FileInfoString[AnsiString Key] = { read = GetFileInfoString };
   __property bool Logging  = { read=FLogging, write=SetLogging };
   __property AnsiString LogFileName  = { read=FLogFileName, write=SetLogFileName };
   __property bool LogToFile  = { read=GetLogToFile, write=SetLogToFile };
@@ -111,7 +126,7 @@ public:
   __property AnsiString DefaultLogFileName  = { read=GetDefaultLogFileName };
   __property TDateTime IgnoreCancelBeforeFinish = { read = FIgnoreCancelBeforeFinish, write = SetIgnoreCancelBeforeFinish };
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
-  __property bool ConfirmOverwriting = { read = FConfirmOverwriting, write = SetConfirmOverwriting};
+  __property bool ConfirmOverwriting = { read = GetConfirmOverwriting, write = SetConfirmOverwriting};
   __property AnsiString PartialExt = {read=GetPartialExt};
 
   __property AnsiString TimeFormat = { read = GetTimeFormat };
@@ -119,6 +134,8 @@ public:
   __property AnsiString RegistryStorageKey  = { read=GetRegistryStorageKey };
   __property AnsiString IniFileStorageName  = { read=GetIniFileStorageName, write=SetIniFileStorageName };
   __property AnsiString DefaultKeyFile = { read = GetDefaultKeyFile };
+
+  __property bool DisablePasswordStoring = { read = FDisablePasswordStoring }; 
 };
 //---------------------------------------------------------------------------
 bool SpecialFolderLocation(int PathID, AnsiString & Path);

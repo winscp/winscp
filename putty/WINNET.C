@@ -701,6 +701,9 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 
     add234(sktree, ret);
 
+    /* We're done with 'addr' now. */
+    sk_addr_free(addr);
+
     return (Socket) ret;
 }
 

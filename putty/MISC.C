@@ -11,9 +11,12 @@
 
 char *dupstr(const char *s)
 {
-    int len = strlen(s);
-    char *p = snewn(len + 1, char);
-    strcpy(p, s);
+    char *p = NULL;
+    if (s) {
+        int len = strlen(s);
+        p = snewn(len + 1, char);
+        strcpy(p, s);
+    }
     return p;
 }
 

@@ -9,7 +9,8 @@ class TStoredSessionList;
 class TConfiguration;
 class TTerminal;
 
-const int mpNeverAskAgainCheck = 1;
+const int mpNeverAskAgainCheck =   0x01;
+const int mpAllowContinueOnError = 0x02;
 
 // windows\WinInterface.cpp
 int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
@@ -80,7 +81,7 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   TStrings * RemoteDirectories, TTerminal * Terminal);
 
 // forms\Preferences.cpp
-enum TPreferencesMode { pmDefault, pmLogin, pmEditor };
+enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands };
 typedef void __fastcall (__closure *TGetDefaultLogFileName)
   (System::TObject* Sender, AnsiString &DefaultLogFileName);
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode);
@@ -133,6 +134,9 @@ void __fastcall DoEditorForm(const AnsiString FileName, TCustomForm * ParentForm
 
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic);
+
+// windows\WinMain.cpp
+void __fastcall CheckForUpdates();
 
 //---------------------------------------------------------------------------
 #endif // WinInterfaceH

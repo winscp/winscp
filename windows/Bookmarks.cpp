@@ -90,26 +90,29 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
       {
         Name = Directory;
       }
-      Bookmark = BookmarkList->FindByName(Key, Name);
-      bool New;
-      New = (Bookmark == NULL);
-      if (New)
+      if (!Name.IsEmpty())
       {
-        Bookmark = new TBookmark();
-        Bookmark->Node = Key;
-        Bookmark->Name = Name;
-      }
-      if (Local)
-      {
-        Bookmark->Local = Directory;
-      }
-      else
-      {
-        Bookmark->Remote = Directory;
-      }
-      if (New)
-      {
-        BookmarkList->Add(Bookmark);
+        Bookmark = BookmarkList->FindByName(Key, Name);
+        bool New;
+        New = (Bookmark == NULL);
+        if (New)
+        {
+          Bookmark = new TBookmark();
+          Bookmark->Node = Key;
+          Bookmark->Name = Name;
+        }
+        if (Local)
+        {
+          Bookmark->Local = Directory;
+        }
+        else
+        {
+          Bookmark->Remote = Directory;
+        }
+        if (New)
+        {
+          BookmarkList->Add(Bookmark);
+        }
       }
     }
 

@@ -123,6 +123,7 @@ __published:
   TToolButton *ToolButton47;
   TToolButton *ToolButton48;
   TComboBox *SessionCombo;
+  TToolButton *ToolButton49;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
@@ -150,6 +151,7 @@ private:
   TSynchronizeParamType FSynchronizeParams;
   TSynchronizeDialog * FSynchronizeDialog;
   AnsiString FPrevPath[2];
+  bool FFirstTerminal;
   void __fastcall SetLocalPanelWidth(float value);
   float __fastcall GetLocalPanelWidth();
 

@@ -89,6 +89,7 @@ void __fastcall TSessionData::Default()
   AliasGroupList = false;
   IgnoreLsWarnings = true;
   Scp1Compatibility = false;
+  TimeDifference = 0;
 
   CustomParam1 = "";
   CustomParam2 = "";
@@ -137,6 +138,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(UnsetNationalVars);
     DUPL(AliasGroupList);
     DUPL(IgnoreLsWarnings);
+    DUPL(TimeDifference);
     // new in 53b
     DUPL(TcpNoDelay);
     DUPL(AuthKI);
@@ -285,7 +287,10 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     HostName = Storage->ReadString("HostName", HostName);
     PortNumber = Storage->ReadInteger("PortNumber", PortNumber);
     UserName = Storage->ReadString("UserName", UserName);
-    FPassword = Storage->ReadString("Password", FPassword);
+    if (!Configuration->DisablePasswordStoring)
+    {
+      FPassword = Storage->ReadString("Password", FPassword);
+    }
     PingInterval =
       Storage->ReadInteger("PingInterval", PingInterval/60)*60 +
       Storage->ReadInteger("PingIntervalSec", PingInterval%60);
@@ -313,6 +318,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     AliasGroupList = Storage->ReadBool("AliasGroupList", AliasGroupList);
     IgnoreLsWarnings = Storage->ReadBool("IgnoreLsWarnings", IgnoreLsWarnings);
     Scp1Compatibility = Storage->ReadBool("Scp1Compatibility", Scp1Compatibility);
+    TimeDifference = Storage->ReadFloat("TimeDifference", TimeDifference);
 
     ReturnVar = Storage->ReadString("ReturnVar", ReturnVar);
     LookupUserGroups = Storage->ReadBool("LookupUserGroups", LookupUserGroups);
@@ -381,14 +387,17 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
   FModified = false;
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::Save(THierarchicalStorage * Storage)
+void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExport)
 {
   if (Modified && Storage->OpenSubKey(MungeStr(Name), true))
   {
     Storage->WriteString("HostName", HostName);
     Storage->WriteInteger("PortNumber", PortNumber);
     Storage->WriteString("UserName", UserName);
-    Storage->WriteString("Password", FPassword);
+    if (!Configuration->DisablePasswordStoring && !PuttyExport)
+    {
+      Storage->WriteString("Password", FPassword);
+    }
     Storage->WriteInteger("PingInterval", PingInterval/60);
     Storage->WriteInteger("PingIntervalSec", PingInterval%60);
     Storage->WriteInteger("Timeout", Timeout);
@@ -401,29 +410,33 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage)
     Storage->WriteString("Cipher", CipherList);
     Storage->WriteString("PublicKeyFile", PublicKeyFile);
 
-    Storage->WriteInteger("FSProtocol", FSProtocol);
-    Storage->WriteString("LocalDirectory", LocalDirectory);
-    Storage->WriteString("RemoteDirectory", RemoteDirectory);
-    Storage->WriteBool("UpdateDirectories", UpdateDirectories);
-    Storage->WriteBool("CacheDirectories", CacheDirectories);
-    Storage->WriteBool("ResolveSymlinks", ResolveSymlinks);
-    Storage->WriteBool("LockInHome", LockInHome);
-    // Special is never stored (if it would, login dialog must be modified not to
-    // duplicate Special parameter when Special session is loaded and then stored
-    // under different name)
-    // Storage->WriteBool("Special", Special);
-    Storage->WriteString("Shell", Shell);
-    Storage->WriteBool("ClearAliases", ClearAliases);
-    Storage->WriteBool("UnsetNationalVars", UnsetNationalVars);
-    Storage->WriteBool("AliasGroupList", AliasGroupList);
-    Storage->WriteBool("IgnoreLsWarnings", IgnoreLsWarnings);
-    Storage->WriteBool("Scp1Compatibility", Scp1Compatibility);
-
-    Storage->WriteString("ReturnVar", ReturnVar);
-    Storage->WriteBool("LookupUserGroups", LookupUserGroups);
-    Storage->WriteInteger("EOLType", EOLType);
-
     Storage->WriteBool("TcpNoDelay", TcpNoDelay);
+
+    if (!PuttyExport)
+    {
+      Storage->WriteInteger("FSProtocol", FSProtocol);
+      Storage->WriteString("LocalDirectory", LocalDirectory);
+      Storage->WriteString("RemoteDirectory", RemoteDirectory);
+      Storage->WriteBool("UpdateDirectories", UpdateDirectories);
+      Storage->WriteBool("CacheDirectories", CacheDirectories);
+      Storage->WriteBool("ResolveSymlinks", ResolveSymlinks);
+      Storage->WriteBool("LockInHome", LockInHome);
+      // Special is never stored (if it would, login dialog must be modified not to
+      // duplicate Special parameter when Special session is loaded and then stored
+      // under different name)
+      // Storage->WriteBool("Special", Special);
+      Storage->WriteString("Shell", Shell);
+      Storage->WriteBool("ClearAliases", ClearAliases);
+      Storage->WriteBool("UnsetNationalVars", UnsetNationalVars);
+      Storage->WriteBool("AliasGroupList", AliasGroupList);
+      Storage->WriteBool("IgnoreLsWarnings", IgnoreLsWarnings);
+      Storage->WriteBool("Scp1Compatibility", Scp1Compatibility);
+      Storage->WriteFloat("TimeDifference", TimeDifference);
+
+      Storage->WriteString("ReturnVar", ReturnVar);
+      Storage->WriteBool("LookupUserGroups", LookupUserGroups);
+      Storage->WriteInteger("EOLType", EOLType);
+    }
 
     Storage->WriteInteger("ProxyMethod", ProxyMethod);
     Storage->WriteString("ProxyHost", ProxyHost);
@@ -445,8 +458,16 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage)
     WRITE_BUG(PKSessID2);
     #undef WRITE_BUG
 
-    Storage->WriteString("CustomParam1", CustomParam1);
-    Storage->WriteString("CustomParam2", CustomParam2);
+    if (PuttyExport)
+    {
+      Storage->WriteString("Protocol", ProtocolStr);
+    }
+  
+    if (!PuttyExport)
+    {
+      Storage->WriteString("CustomParam1", CustomParam1);
+      Storage->WriteString("CustomParam2", CustomParam2);
+    }
 
     Storage->CloseSubKey();
     FModified = false;
@@ -754,6 +775,11 @@ AnsiString __fastcall TSessionData::GetSessionName()
     else return "session";
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetTimeDifference(TDateTime value)
+{
+  SET_SESSION_PROPERTY(TimeDifference);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetLocalDirectory(AnsiString value)
 {
   SET_SESSION_PROPERTY(LocalDirectory);
@@ -893,7 +919,7 @@ __fastcall TStoredSessionList::~TStoredSessionList()
   delete FDefaultSettings;
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage)
+void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage, bool AsModified)
 {
   TStringList *SubKeys = new TStringList();
   try {
@@ -911,6 +937,10 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage)
         Add(SessionData);
       }
       SessionData->Load(Storage);
+      if (AsModified)
+      {
+        SessionData->Modified = true;
+      }
     }
   } __finally {
     delete SubKeys;
@@ -1055,7 +1085,7 @@ TSessionData * __fastcall TStoredSessionList::NewSession(
     DuplicateSession->Assign(Session);
     DuplicateSession->Name = SessionName;
     // make sure, that new stored session is saved to registry
-    DuplicateSession->Modified = True;
+    DuplicateSession->Modified = true;
     Add(DuplicateSession);
   }
     else
@@ -1064,7 +1094,8 @@ TSessionData * __fastcall TStoredSessionList::NewSession(
     DuplicateSession->Name = SessionName;
     DuplicateSession->Modified = true;
   }
-  Save();
+  // list was saved here before to default storage, but it would not allow
+  // to work with special lists (export/import) not using default storage 
   return DuplicateSession;
 }
 //---------------------------------------------------------------------------

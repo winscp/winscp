@@ -45,34 +45,20 @@ __fastcall TProgressForm::~TProgressForm()
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
 {
-  assert((FData.Operation >= foCopy) && (FData.Operation <= foSetProperties));
+  assert(FData.Operation == foCustomCommand ||
+    ((FData.Operation >= foCopy) && (FData.Operation <= foSetProperties)));
+
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
-    
+
   if (FData.Operation != FLastOperation)
   {
-    bool AVisible = (FData.Operation != foSetProperties);
-    int Delta = 0;
-    if (AVisible && !Animate->Visible) Delta = Animate->Height;
-      else
-    if (!AVisible && Animate->Visible) Delta = -Animate->Height;
-
-    MainPanel->Top = MainPanel->Top + Delta;
-    TransferPanel->Top = TransferPanel->Top + Delta;
-    SpeedPanel->Top = SpeedPanel->Top + Delta;
-    Animate->Visible = AVisible;
-
-    if (TransferOperation && !TransferPanel->Visible) Delta += TransferPanel->Height;
-      else
-    if (!TransferOperation && TransferPanel->Visible) Delta += -TransferPanel->Height;
-    TransferPanel->Visible = TransferOperation;
-    SpeedPanel->Visible = TransferOperation && WinConfiguration->ExpertMode;
-
-    ClientHeight = ClientHeight + Delta;
-    DisconnectWhenCompleteCheck->Top = DisconnectWhenCompleteCheck->Top + Delta;
+    bool AVisible;
+    THandle ShellModule;
 
     try
     {
+      AVisible = true;
       switch (FData.Operation) {
         case foCopy:
         case foMove:
@@ -87,17 +73,55 @@ void __fastcall TProgressForm::UpdateControls()
             Animate->CommonAVI = aviDeleteFile;
           break;
 
+        case foSetProperties:
+          ShellModule = SafeLoadLibrary("shell32.dll");
+          if (!ShellModule)
+          {
+            Abort();
+          }
+          // workaround, VCL is not able to set both ResId and ResHandle otherwise
+          Animate->Active = false;
+          Animate->ResHandle = 0;
+          Animate->ComponentState << csLoading;
+          Animate->ResId = 165;
+          Animate->ResHandle = ShellModule;
+          Animate->ComponentState >> csLoading;
+          Animate->Active = true;
+          break;
+
         default:
-          assert(FData.Operation == foSetProperties);
+          assert(FData.Operation == foSetProperties || FData.Operation == foCustomCommand);
           Animate->CommonAVI = aviNone;
+          AVisible = false;
       }
-      Animate->Active = (Animate->CommonAVI != aviNone);
     }
     catch (...)
     {
+      AVisible = false;
     };
 
-    const int Captions[] = {PROGRESS_COPY, PROGRESS_MOVE, PROGRESS_DELETE, PROGRESS_SETPROPERTIES};
+    int Delta = 0;
+    if (AVisible && !Animate->Visible) Delta = Animate->Height;
+      else
+    if (!AVisible && Animate->Visible) Delta = -Animate->Height;
+
+    MainPanel->Top = MainPanel->Top + Delta;
+    TransferPanel->Top = TransferPanel->Top + Delta;
+    SpeedPanel->Top = SpeedPanel->Top + Delta;
+    Animate->Visible = AVisible;
+    Animate->Active = AVisible;
+
+    if (TransferOperation && !TransferPanel->Visible) Delta += TransferPanel->Height;
+      else
+    if (!TransferOperation && TransferPanel->Visible) Delta += -TransferPanel->Height;
+    TransferPanel->Visible = TransferOperation;
+    SpeedPanel->Visible = TransferOperation && WinConfiguration->ExpertMode;
+
+    ClientHeight = ClientHeight + Delta;
+    DisconnectWhenCompleteCheck->Top = DisconnectWhenCompleteCheck->Top + Delta;
+
+    const int Captions[] = { PROGRESS_COPY, PROGRESS_MOVE, PROGRESS_DELETE,
+      PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND };
     Caption = LoadStr(Captions[(int)FData.Operation - 1]);
 
     TargetLabel->Visible = TransferOperation;

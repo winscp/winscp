@@ -135,34 +135,34 @@ pscp.exe: be_none.o cmdline.o console.o int64.o logging.o misc.o noise.o \
 		settings.o sftp.o ssh.o sshaes.o sshblowf.o sshbn.o sshcrc.o \
 		sshcrcda.o sshdes.o sshdh.o sshdss.o sshmd5.o sshpubk.o \
 		sshrand.o sshrsa.o sshsh512.o sshsha.o sshzlib.o tree234.o \
-		version.o wildcard.o windefs.o winmisc.o winnet.o winstore.o \
-		x11fwd.o
+		version.o wildcard.o windefs.o winmisc.o winnet.o winsftp.o \
+		winstore.o x11fwd.o
 	$(CC) $(LDFLAGS) -o $@ be_none.o cmdline.o console.o int64.o \
 		logging.o misc.o noise.o pageantc.o portfwd.o pproxy.o \
 		proxy.o scp.o scp.res.o settings.o sftp.o ssh.o sshaes.o \
 		sshblowf.o sshbn.o sshcrc.o sshcrcda.o sshdes.o sshdh.o \
 		sshdss.o sshmd5.o sshpubk.o sshrand.o sshrsa.o sshsh512.o \
 		sshsha.o sshzlib.o tree234.o version.o wildcard.o windefs.o \
-		winmisc.o winnet.o winstore.o x11fwd.o -ladvapi32 -lcomctl32 \
-		-lcomdlg32 -lgdi32 -limm32 -lshell32 -luser32 -lwinmm \
-		-lwinspool -lwsock32
+		winmisc.o winnet.o winsftp.o winstore.o x11fwd.o -ladvapi32 \
+		-lcomctl32 -lcomdlg32 -lgdi32 -limm32 -lshell32 -luser32 \
+		-lwinmm -lwinspool -lwsock32
 
 psftp.exe: be_none.o cmdline.o console.o int64.o logging.o misc.o noise.o \
 		pageantc.o portfwd.o pproxy.o proxy.o psftp.o scp.res.o \
 		settings.o sftp.o ssh.o sshaes.o sshblowf.o sshbn.o sshcrc.o \
 		sshcrcda.o sshdes.o sshdh.o sshdss.o sshmd5.o sshpubk.o \
 		sshrand.o sshrsa.o sshsh512.o sshsha.o sshzlib.o tree234.o \
-		version.o wildcard.o windefs.o winmisc.o winnet.o winstore.o \
-		x11fwd.o
+		version.o wildcard.o windefs.o winmisc.o winnet.o winsftp.o \
+		winstore.o x11fwd.o
 	$(CC) $(LDFLAGS) -o $@ be_none.o cmdline.o console.o int64.o \
 		logging.o misc.o noise.o pageantc.o portfwd.o pproxy.o \
 		proxy.o psftp.o scp.res.o settings.o sftp.o ssh.o sshaes.o \
 		sshblowf.o sshbn.o sshcrc.o sshcrcda.o sshdes.o sshdh.o \
 		sshdss.o sshmd5.o sshpubk.o sshrand.o sshrsa.o sshsh512.o \
 		sshsha.o sshzlib.o tree234.o version.o wildcard.o windefs.o \
-		winmisc.o winnet.o winstore.o x11fwd.o -ladvapi32 -lcomctl32 \
-		-lcomdlg32 -lgdi32 -limm32 -lshell32 -luser32 -lwinmm \
-		-lwinspool -lwsock32
+		winmisc.o winnet.o winsftp.o winstore.o x11fwd.o -ladvapi32 \
+		-lcomctl32 -lcomdlg32 -lgdi32 -limm32 -lshell32 -luser32 \
+		-lwinmm -lwinspool -lwsock32
 
 putty.exe: be_all.o cmdline.o config.o dialog.o ldisc.o ldiscucs.o logging.o \
 		misc.o noise.o pageantc.o portfwd.o pproxy.o printing.o \
@@ -326,15 +326,15 @@ portfwd.o: portfwd.c putty.h ssh.h puttyps.h network.h misc.h puttymem.h \
 pproxy.o: pproxy.c putty.h network.h proxy.h puttyps.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
-printing.o: printing.c putty.h puttyps.h network.h misc.h winstuff.h \
-		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
+printing.o: printing.c putty.h winstuff.h puttyps.h network.h misc.h \
+		tree234.h winhelp.h mac/macstuff.h unix/unix.h puttymem.h \
 		charset/charset.h
 proxy.o: proxy.c putty.h network.h proxy.h puttyps.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
-psftp.o: psftp.c putty.h storage.h ssh.h sftp.h int64.h puttyps.h network.h \
-		misc.h puttymem.h winstuff.h mac/macstuff.h unix/unix.h \
-		tree234.h winhelp.h charset/charset.h
+psftp.o: psftp.c putty.h psftp.h storage.h ssh.h sftp.h int64.h puttyps.h \
+		network.h misc.h puttymem.h winstuff.h mac/macstuff.h \
+		unix/unix.h tree234.h winhelp.h charset/charset.h
 pterm.o: unix/pterm.c putty.h terminal.h puttyps.h network.h misc.h \
 		tree234.h winstuff.h mac/macstuff.h unix/unix.h puttymem.h \
 		winhelp.h charset/charset.h
@@ -355,9 +355,9 @@ rlogin.o: rlogin.c putty.h puttyps.h network.h misc.h winstuff.h \
 		charset/charset.h
 sbcs.o: charset/sbcs.c charset/charset.h charset/internal.h
 sbcsdat.o: charset/sbcsdat.c charset/charset.h charset/internal.h
-scp.o: scp.c putty.h ssh.h sftp.h winstuff.h storage.h puttyps.h network.h \
-		misc.h puttymem.h int64.h tree234.h winhelp.h mac/macstuff.h \
-		unix/unix.h charset/charset.h
+scp.o: scp.c putty.h psftp.h ssh.h sftp.h storage.h puttyps.h network.h \
+		misc.h puttymem.h int64.h winstuff.h mac/macstuff.h \
+		unix/unix.h tree234.h winhelp.h charset/charset.h
 scp.res.o: scp.rc scp.ico
 settings.o: settings.c putty.h storage.h puttyps.h network.h misc.h \
 		winstuff.h mac/macstuff.h unix/unix.h puttymem.h tree234.h \
@@ -448,6 +448,9 @@ uxputty.o: unix/uxputty.c putty.h storage.h puttyps.h network.h misc.h \
 uxsel.o: unix/uxsel.c putty.h tree234.h puttyps.h network.h misc.h \
 		winstuff.h mac/macstuff.h unix/unix.h puttymem.h winhelp.h \
 		charset/charset.h
+uxsftp.o: unix/uxsftp.c putty.h psftp.h puttyps.h network.h misc.h \
+		winstuff.h mac/macstuff.h unix/unix.h puttymem.h tree234.h \
+		winhelp.h charset/charset.h
 uxstore.o: unix/uxstore.c putty.h storage.h tree234.h puttyps.h network.h \
 		misc.h winstuff.h mac/macstuff.h unix/unix.h puttymem.h \
 		winhelp.h charset/charset.h
@@ -485,6 +488,9 @@ winmisc.o: winmisc.c putty.h winstuff.h puttyps.h network.h misc.h tree234.h \
 		charset/charset.h
 winnet.o: winnet.c putty.h network.h tree234.h puttyps.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h winhelp.h \
+		charset/charset.h
+winsftp.o: winsftp.c putty.h psftp.h puttyps.h network.h misc.h winstuff.h \
+		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
 winstore.o: winstore.c putty.h storage.h puttyps.h network.h misc.h \
 		winstuff.h mac/macstuff.h unix/unix.h puttymem.h tree234.h \

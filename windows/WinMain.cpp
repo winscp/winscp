@@ -20,6 +20,9 @@
 #include "ProgParams.h"
 #include "Tools.h"
 #include "WinConfiguration.h"
+
+#include <NMHttp.hpp>
+#include <Psock.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -114,6 +117,80 @@ void __fastcall Upload(TTerminal * Terminal, TProgramParams * Params,
   }
 }
 //---------------------------------------------------------------------------
+int __fastcall CalculateCompoundVersion(int MajorVer,
+  int MinorVer, int Release, int Build)
+{
+  int CompoundVer = Build + 1000 * (Release + 100 * (MinorVer +
+    100 * MajorVer));
+  return CompoundVer;
+}
+//---------------------------------------------------------------------------
+void __fastcall CheckForUpdates()
+{
+  bool Found = false;
+  try
+  {
+    AnsiString Response;
+
+    TNMHTTP * CheckForUpdatesHTTP = new TNMHTTP(Application);
+    try
+    {
+      CheckForUpdatesHTTP->Get("http://winscp.sourceforge.net/updates.php");
+      Response = CheckForUpdatesHTTP->Body;
+    }
+    __finally
+    {
+      delete CheckForUpdatesHTTP;
+    }
+
+    while (!Response.IsEmpty() && !Found)
+    {
+      AnsiString Line = ::CutToChar(Response, '\n', false);
+      AnsiString Name = ::CutToChar(Line, '=', false);
+      if (AnsiSameText(Name, "Version"))
+      {
+        Found = true;
+        int MajorVer = StrToInt(::CutToChar(Line, '.', false));
+        int MinorVer = StrToInt(::CutToChar(Line, '.', false));
+        int Release = StrToInt(::CutToChar(Line, '.', false));
+        int Build = StrToInt(::CutToChar(Line, '.', false));
+        int CompoundVer = CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
+
+        AnsiString VersionStr =
+          FORMAT("%d.%d", (MajorVer, MinorVer)) + (Release ? "."+IntToStr(Release) : AnsiString()); 
+
+        TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
+        int CurrentCompoundVer = CalculateCompoundVersion(
+          HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
+          HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
+
+        if (CurrentCompoundVer < CompoundVer)
+        {
+          if (MessageDialog(FMTLOAD(NEW_VERSION, (VersionStr)), qtInformation,
+                qaOK | qaCancel, 0) == qaOK)
+          {
+            NonVisualDataModule->OpenBrowser("http://winscp.sourceforge.net/eng/download.php");
+          }
+        }
+        else
+        {
+          MessageDialog(LoadStr(NO_NEW_VERSION), qtInformation, qaOK, 0);
+        }
+      }
+    }
+
+  }
+  catch(Exception & E)
+  {
+    throw ExtException(&E, LoadStr(CHECK_FOR_UPDATES_ERROR));
+  }
+
+  if (!Found)
+  {
+    throw Exception(LoadStr(CHECK_FOR_UPDATES_ERROR));
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall Execute(TProgramParams * Params)
 {
   assert(StoredSessions);
@@ -133,6 +210,10 @@ void __fastcall Execute(TProgramParams * Params)
     if (Params->FindSwitch("RandomSeedFileCleanup"))
     {
       Configuration->CleanupRandomSeedFile();
+    }
+    else if (Params->FindSwitch("Update"))
+    {
+      CheckForUpdates();
     }
     else
     {

@@ -115,7 +115,7 @@ pscp.exe: be_none.obj cmdline.obj console.obj int64.obj logging.obj misc.obj \
 		sshdh.obj sshdss.obj sshmd5.obj sshpubk.obj sshrand.obj \
 		sshrsa.obj sshsh512.obj sshsha.obj sshzlib.obj tree234.obj \
 		version.obj wildcard.obj windefs.obj winmisc.obj winnet.obj \
-		winstore.obj x11fwd.obj pscp.rsp
+		winsftp.obj winstore.obj x11fwd.obj pscp.rsp
 	link $(LFLAGS) -out:pscp.exe -map:pscp.map @pscp.rsp
 
 psftp.exe: be_none.obj cmdline.obj console.obj int64.obj logging.obj \
@@ -125,7 +125,7 @@ psftp.exe: be_none.obj cmdline.obj console.obj int64.obj logging.obj \
 		sshdes.obj sshdh.obj sshdss.obj sshmd5.obj sshpubk.obj \
 		sshrand.obj sshrsa.obj sshsh512.obj sshsha.obj sshzlib.obj \
 		tree234.obj version.obj wildcard.obj windefs.obj winmisc.obj \
-		winnet.obj winstore.obj x11fwd.obj psftp.rsp
+		winnet.obj winsftp.obj winstore.obj x11fwd.obj psftp.rsp
 	link $(LFLAGS) -out:psftp.exe -map:psftp.map @psftp.rsp
 
 putty.exe: be_all.obj cmdline.obj config.obj dialog.obj ldisc.obj \
@@ -197,7 +197,8 @@ pscp.rsp: $(MAKEFILE)
 	echo sshrsa.obj sshsh512.obj sshsha.obj sshzlib.obj >> pscp.rsp
 	echo tree234.obj user32.lib version.obj wildcard.obj >> pscp.rsp
 	echo windefs.obj winmisc.obj winmm.lib winnet.obj >> pscp.rsp
-	echo winspool.lib winstore.obj wsock32.lib x11fwd.obj >> pscp.rsp
+	echo winsftp.obj winspool.lib winstore.obj wsock32.lib >> pscp.rsp
+	echo x11fwd.obj >> pscp.rsp
 
 psftp.rsp: $(MAKEFILE)
 	echo /nologo /subsystem:console > psftp.rsp
@@ -212,8 +213,8 @@ psftp.rsp: $(MAKEFILE)
 	echo sshrand.obj sshrsa.obj sshsh512.obj sshsha.obj >> psftp.rsp
 	echo sshzlib.obj tree234.obj user32.lib version.obj >> psftp.rsp
 	echo wildcard.obj windefs.obj winmisc.obj winmm.lib >> psftp.rsp
-	echo winnet.obj winspool.lib winstore.obj wsock32.lib >> psftp.rsp
-	echo x11fwd.obj >> psftp.rsp
+	echo winnet.obj winsftp.obj winspool.lib winstore.obj >> psftp.rsp
+	echo wsock32.lib x11fwd.obj >> psftp.rsp
 
 putty.rsp: $(MAKEFILE)
 	echo /nologo /subsystem:windows > putty.rsp
@@ -376,13 +377,13 @@ portfwd.obj: portfwd.c putty.h ssh.h puttyps.h network.h misc.h puttymem.h \
 pproxy.obj: pproxy.c putty.h network.h proxy.h puttyps.h misc.h winstuff.h \
 		mac\macstuff.h unix\unix.h puttymem.h tree234.h winhelp.h \
 		charset\charset.h
-printing.obj: printing.c putty.h puttyps.h network.h misc.h winstuff.h \
-		mac\macstuff.h unix\unix.h puttymem.h tree234.h winhelp.h \
+printing.obj: printing.c putty.h winstuff.h puttyps.h network.h misc.h \
+		tree234.h winhelp.h mac\macstuff.h unix\unix.h puttymem.h \
 		charset\charset.h
 proxy.obj: proxy.c putty.h network.h proxy.h puttyps.h misc.h winstuff.h \
 		mac\macstuff.h unix\unix.h puttymem.h tree234.h winhelp.h \
 		charset\charset.h
-psftp.obj: psftp.c putty.h storage.h ssh.h sftp.h int64.h puttyps.h \
+psftp.obj: psftp.c putty.h psftp.h storage.h ssh.h sftp.h int64.h puttyps.h \
 		network.h misc.h puttymem.h winstuff.h mac\macstuff.h \
 		unix\unix.h tree234.h winhelp.h charset\charset.h
 pterm.obj: unix\pterm.c putty.h terminal.h puttyps.h network.h misc.h \
@@ -405,9 +406,9 @@ rlogin.obj: rlogin.c putty.h puttyps.h network.h misc.h winstuff.h \
 		charset\charset.h
 sbcs.obj: charset\sbcs.c charset\charset.h charset\internal.h
 sbcsdat.obj: charset\sbcsdat.c charset\charset.h charset\internal.h
-scp.obj: scp.c putty.h ssh.h sftp.h winstuff.h storage.h puttyps.h network.h \
-		misc.h puttymem.h int64.h tree234.h winhelp.h mac\macstuff.h \
-		unix\unix.h charset\charset.h
+scp.obj: scp.c putty.h psftp.h ssh.h sftp.h storage.h puttyps.h network.h \
+		misc.h puttymem.h int64.h winstuff.h mac\macstuff.h \
+		unix\unix.h tree234.h winhelp.h charset\charset.h
 scp.res: scp.rc scp.ico
 settings.obj: settings.c putty.h storage.h puttyps.h network.h misc.h \
 		winstuff.h mac\macstuff.h unix\unix.h puttymem.h tree234.h \
@@ -498,6 +499,9 @@ uxputty.obj: unix\uxputty.c putty.h storage.h puttyps.h network.h misc.h \
 uxsel.obj: unix\uxsel.c putty.h tree234.h puttyps.h network.h misc.h \
 		winstuff.h mac\macstuff.h unix\unix.h puttymem.h winhelp.h \
 		charset\charset.h
+uxsftp.obj: unix\uxsftp.c putty.h psftp.h puttyps.h network.h misc.h \
+		winstuff.h mac\macstuff.h unix\unix.h puttymem.h tree234.h \
+		winhelp.h charset\charset.h
 uxstore.obj: unix\uxstore.c putty.h storage.h tree234.h puttyps.h network.h \
 		misc.h winstuff.h mac\macstuff.h unix\unix.h puttymem.h \
 		winhelp.h charset\charset.h
@@ -535,6 +539,9 @@ winmisc.obj: winmisc.c putty.h winstuff.h puttyps.h network.h misc.h \
 		charset\charset.h
 winnet.obj: winnet.c putty.h network.h tree234.h puttyps.h misc.h winstuff.h \
 		mac\macstuff.h unix\unix.h puttymem.h winhelp.h \
+		charset\charset.h
+winsftp.obj: winsftp.c putty.h psftp.h puttyps.h network.h misc.h winstuff.h \
+		mac\macstuff.h unix\unix.h puttymem.h tree234.h winhelp.h \
 		charset\charset.h
 winstore.obj: winstore.c putty.h storage.h puttyps.h network.h misc.h \
 		winstuff.h mac\macstuff.h unix\unix.h puttymem.h tree234.h \

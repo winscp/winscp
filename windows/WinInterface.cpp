@@ -15,8 +15,7 @@
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 
-#define mrResume (mrYesToAll    + 1)
-#define mrCustom (mrResume  + 1)
+#define mrCustom (mrYesToAll + 1)
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -118,10 +117,21 @@ TForm * CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
     Buttons << mbIgnore;
   }
 
-  if ((Answers & qaResume) || (Answers & qaCustom))
+  if (Answers & qaPrev)
+  {
+    assert((Answers & qaYes) == 0);
+    Buttons << mbYes;
+  }
+
+  if (Answers & qaNext)
+  {
+    assert((Answers & qaNo) == 0);
+    Buttons << mbNo;
+  }
+
+  if (Answers & qaCustom)
   {
     assert((Answers & qaHelp) == 0);
-    assert(((Answers & qaResume) == 0) || ((Answers & qaCustom) == 0));
     Buttons << mbHelp;
   }
 
@@ -133,33 +143,39 @@ TForm * CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
   {
     if (Answers & qaSkip)
     {
-      TButton * IgnoreButton = (TButton*)(Dialog->FindComponent("Ignore"));
+      TButton * IgnoreButton = dynamic_cast<TButton *>(Dialog->FindComponent("Ignore"));
       assert(IgnoreButton);
       IgnoreButton->Caption = LoadStr(SKIP_BUTTON);
     }
 
-    if ((Answers & qaResume) || (Answers & qaCustom))
+    if (Answers & qaPrev)
     {
-      TButton * HelpButton = (TButton*)(Dialog->FindComponent("Help"));
+      TButton * YesButton = dynamic_cast<TButton *>(Dialog->FindComponent("Yes"));
+      assert(YesButton);
+      YesButton->Caption = LoadStr(PREV_BUTTON);
+    }
+
+    if (Answers & qaNext)
+    {
+      TButton * NoButton = dynamic_cast<TButton *>(Dialog->FindComponent("No"));
+      assert(NoButton);
+      NoButton->Caption = LoadStr(NEXT_BUTTON);
+    }
+
+    if (Answers & qaCustom)
+    {
+      TButton * HelpButton = dynamic_cast<TButton *>(Dialog->FindComponent("Help"));
       assert(HelpButton);
-      if (Answers & qaResume)
-      {
-        HelpButton->Caption = LoadStr(RESUME_BUTTON);
-        HelpButton->ModalResult = mrResume;
-      }
-      else
-      {
-        HelpButton->Name = "Custom";
-        HelpButton->ModalResult = mrCustom;
-      }
+      HelpButton->Name = "Custom";
+      HelpButton->ModalResult = mrCustom;
     }
 
     // temporary fix of accelerators (&Abort vs. &All/Yes to &All)
     // must be removed
     for (int Index = 0; Index < Dialog->ComponentCount; Index++)
     {
-      TButton * B = (TButton *)Dialog->Components[Index];
-      if (B->InheritsFrom(__classid(TButton)))
+      TButton * B = dynamic_cast<TButton *>(Dialog->Components[Index]);
+      if (B)
       {
         if (B->Caption == "&All") B->Caption = "A&ll";
           else
@@ -199,8 +215,6 @@ int ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
 
   switch (Result) {
     #define MAP_RESULT(RESULT) case mr ## RESULT: Answer = qa ## RESULT; break;
-    MAP_RESULT(Yes);
-    MAP_RESULT(No);
     MAP_RESULT(Cancel);
     MAP_RESULT(Abort);
     MAP_RESULT(Retry);
@@ -208,7 +222,6 @@ int ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
     MAP_RESULT(NoToAll);
     MAP_RESULT(YesToAll);
 
-    MAP_RESULT(Resume);
     MAP_RESULT(Custom);
     #undef MAP_RESULT
 
@@ -217,21 +230,22 @@ int ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
       break;
 
     case mrIgnore:
-      if (Answers & qaSkip)
-      {
-        Answer = qaSkip;
-      }
-      else
-      {
-        Answer = qaIgnore;
-      }
+      Answer = (Answers & qaSkip) ? qaSkip : qaIgnore;
+      break;
+
+    case mrYes:
+      Answer = (Answers & qaPrev) ? qaPrev : qaYes;
+      break;
+
+    case mrNo:
+      Answer = (Answers & qaNext) ? qaNext : qaNo;
       break;
   }
 
   if (Params & mpNeverAskAgainCheck)
   {
     TCheckBox * NeverAskAgainCheck =
-      (TCheckBox *)(Dialog->FindComponent("NeverAskAgainCheck"));
+      dynamic_cast<TCheckBox *>(Dialog->FindComponent("NeverAskAgainCheck"));
     assert(NeverAskAgainCheck);
 
     if (NeverAskAgainCheck->Checked &&
@@ -241,7 +255,7 @@ int ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
     }
   }
 
-  TMoreButton * MoreButton = (TMoreButton *)(Dialog->FindComponent("Custom"));
+  TMoreButton * MoreButton = dynamic_cast<TMoreButton *>(Dialog->FindComponent("MoreButton"));
   if (MoreButton)
   {
     // store state even when user selects 'Cancel'?
@@ -283,8 +297,8 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString Message,
     Dialog = CreateMessageDialogEx(Message, Type, Answers, HelpCtx, Params);
     try
     {
-      TButton * CustomButton = (TButton*)(Dialog->FindComponent("Custom"));
-      TLabel * MsgLabel = (TLabel*)(Dialog->FindComponent("Message"));
+      TButton * CustomButton = dynamic_cast<TButton *>(Dialog->FindComponent("Custom"));
+      TLabel * MsgLabel = dynamic_cast<TLabel *>(Dialog->FindComponent("Message"));
       assert(MsgLabel && CustomButton);
 
       int OrigButtonTop = CustomButton->Top;
@@ -408,7 +422,7 @@ int __fastcall FatalExceptionMessageDialog(Exception * E,
     Answers, HelpCtx, 0);
   try
   {
-    TButton * RetryButton = (TButton *)(Dialog->FindComponent("Retry"));
+    TButton * RetryButton = dynamic_cast<TButton *>(Dialog->FindComponent("Retry"));
     assert(RetryButton);
     RetryButton->Caption = LoadStr(RECONNECT_BUTTON);
 
@@ -455,4 +469,3 @@ AnsiString __fastcall SshVersionString()
 {
   return FORMAT("WinSCP-release-%s", (Configuration->Version));
 }
-

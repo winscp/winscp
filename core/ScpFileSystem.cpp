@@ -725,6 +725,7 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         File = new TRemoteFile();
         File->Terminal = FTerminal;
         File->ListingStr = OutputCopy->Strings[Index];
+        File->ShiftTime(FTerminal->SessionData->TimeDifference);
         FileList->AddFile(File);
       }
     }
@@ -851,6 +852,44 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const AnsiString FileName,
   {
     ExecCommand(fsChangeOwner,
       ARRAYOFCONST((RecursiveStr, DelimitStr(Properties->Owner), DelimitedName)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::CustomCommandOnFile(const AnsiString FileName,
+    const TRemoteFile * File, AnsiString Command)
+{
+  assert(File);
+  if (File->IsDirectory && !File->IsSymLink)
+  {
+    FTerminal->ProcessDirectory(FileName, FTerminal->CustomCommandOnFile, &Command);
+  }
+  else
+  {
+    AnsiString Cmd = Command;
+
+    int LastP = 0;
+    int P;
+    do
+    {
+      P = Cmd.SubString(LastP + 1, Cmd.Length() - LastP).Pos(CustomCommandFileNamePattern);
+      if (P)
+      {
+        LastP += P;
+        if ((Cmd.Length() > LastP) && (Cmd[LastP + 1] == '!'))
+        {
+          LastP++;
+        }
+        else
+        {
+          Cmd.Delete(LastP, strlen(CustomCommandFileNamePattern));
+          Cmd.Insert(FileName, LastP);
+          LastP += FileName.Length() - strlen(CustomCommandFileNamePattern);
+        }
+      }
+    }
+    while (P);
+
+    AnyCommand(Cmd);
   }
 }
 //---------------------------------------------------------------------------
@@ -1009,7 +1048,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         {
           SUSPEND_OPERATION (
             if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (FileName)), E.Message,
-              qaOK | qaAbort, 0) == qaAbort)
+              qaOK | qaAbort, qpAllowContinueOnError) == qaAbort)
             {
               OperationProgress->Cancel = csCancel;
             }
@@ -1327,7 +1366,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
         // If ESkipFile occurs, just log it and continue with next file
         SUSPEND_OPERATION (
           if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (FileName)), E.Message,
-                qaOK | qaAbort, 0) == qaAbort)
+                qaOK | qaAbort, qpAllowContinueOnError) == qaAbort)
           {
             OperationProgress->Cancel = csCancel;
           }
@@ -1813,7 +1852,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
       {
         SUSPEND_OPERATION (
           if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (OperationProgress->FileName)),
-            E.Message, qaOK | qaAbort, 0) == qaAbort)
+            E.Message, qaOK | qaAbort, qpAllowContinueOnError) == qaAbort)
           {
             OperationProgress->Cancel = csCancel;
           }

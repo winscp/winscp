@@ -139,8 +139,9 @@ putty    : [G] GUITERM NONSSH WINSSH be_all WINMISC win_res.res LIBS1
 puttytel : [G] GUITERM NONSSH be_nossh WINMISC win_res.res LIBS1
 plink    : [C] plink console NONSSH WINSSH be_all logging WINMISC
          + plink.res LIBS2
-pscp     : [C] scp console WINSSH be_none SFTP wildcard WINMISC scp.res LIBS1
-psftp    : [C] psftp console WINSSH be_none SFTP WINMISC scp.res LIBS1
+pscp     : [C] scp winsftp console WINSSH be_none SFTP wildcard WINMISC
+         + scp.res LIBS1
+psftp    : [C] psftp winsftp console WINSSH be_none SFTP WINMISC scp.res LIBS1
 
 pageant  : [G] pageant sshrsa sshpubk sshdes sshbn sshmd5 version tree234
          + misc sshaes sshsha pageantc sshdss sshsh512 winutils winmisc
@@ -158,6 +159,9 @@ puttytel : [X] UXTERM uxmisc misc ldisc settings pty uxsel be_nossh uxstore
          + signal CHARSET uxputty NONSSH UXMISC
 
 plink    : [U] uxplink uxcons NONSSH UXSSH be_all logging UXMISC signal ux_x11
+
+pscp     : [U] scp uxsftp uxcons UXSSH be_none SFTP wildcard UXMISC
+psftp    : [U] psftp uxsftp uxcons UXSSH be_none SFTP UXMISC
 
 PuTTY    : [M] terminal wcwidth ldiscucs logging be_all mac macdlg macevlog
          + macterm macucs mac_res.rsrc testback NONSSH MACSSH MACMISC CHARSET

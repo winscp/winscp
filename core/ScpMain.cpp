@@ -22,8 +22,6 @@ TStoredSessionList *StoredSessions;
 //---------------------------------------------------------------------------
 #ifdef SCP_CONSOLE
 /* TODO 1 : Won't be needed (while debuggin we hang TSessionLog::OnAddLine to it) */
-//class TCallExceptionClass;
-//extern TCallExceptionClass *CallExceptionClass;
 class TCallExceptionClass : public TObject
 {
 public:

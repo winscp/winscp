@@ -315,7 +315,7 @@ int __fastcall TTerminal::CommandError(Exception * E, const AnsiString Msg,
   }
   else
   {
-    Result = DoQueryUser(Msg, E, Answers, 0);
+    Result = DoQueryUser(Msg, E, Answers, qpAllowContinueOnError);
   }
   return Result;
 }
@@ -344,13 +344,12 @@ void __fastcall TTerminal::CloseOnCompletion(const AnsiString Message)
 void __fastcall TTerminal::FileModified(const TRemoteFile * File)
 {
   assert(File);
-  if (SessionData->CacheDirectories && File->Directory
-      /*!!! && File->Directory == FFiles*/)
+  if (SessionData->CacheDirectories && File->Directory)
   {
     if (File->IsDirectory)
     {
+      // do not use UnixIncludeTrailingBackslash(CurrentDirectory) 
       FDirectoryCache->ClearFileList(
-        //!!!UnixIncludeTrailingBackslash(CurrentDirectory)+
         File->Directory->FullDirectory + File->FileName, true);
     }
     FDirectoryCache->ClearFileList(File->Directory->Directory, false);
@@ -701,7 +700,7 @@ void __fastcall TTerminal::DoDeleteFile(const AnsiString FileName,
   {
     assert(FFileSystem);
     // 'File' parameter: SFTPFileSystem needs to know if file is file or directory
-    FFileSystem->DeleteFile(FileName, File, 
+    FFileSystem->DeleteFile(FileName, File,
       Recursive ? *((bool*)Recursive) : true);
   }
   catch(Exception & E)
@@ -717,6 +716,49 @@ void __fastcall TTerminal::DoDeleteFile(const AnsiString FileName,
 void __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, bool * Recursive)
 {
   ProcessFiles(FilesToDelete, foDelete, DeleteFile, Recursive);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CustomCommandOnFile(AnsiString FileName,
+  const TRemoteFile * File, void * ACommand)
+{
+  AnsiString Command = *((AnsiString *)ACommand);
+  if (FileName.IsEmpty() && File)
+  {
+    FileName = File->FileName;
+  }
+  if (OperationProgress && OperationProgress->Operation == foCustomCommand)
+  {
+    if (OperationProgress->Cancel != csContinue) Abort();
+    OperationProgress->SetFile(FileName);
+  }
+  LogEvent(FORMAT("Executing custom command \"%s\" on file \"%s\".",
+    (Command, FileName)));
+  if (File) FileModified(File);
+  DoCustomCommandOnFile(FileName, File, Command);
+  ReactOnCommand(fsAnyCommand);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
+  const TRemoteFile * File, AnsiString Command)
+{
+  try
+  {
+    assert(FFileSystem);
+    FFileSystem->CustomCommandOnFile(FileName, File, Command);
+  }
+  catch(Exception & E)
+  {
+    COMMAND_ERROR_ARI
+    (
+      FMTLOAD(CUSTOM_COMMAND_ERROR, (Command, FileName)),
+      DoCustomCommandOnFile(FileName, File, Command)
+    );
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CustomCommandOnFiles(AnsiString Command, TStrings * Files)
+{
+  ProcessFiles(Files, foCustomCommand, CustomCommandOnFile, &Command);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ChangeFileProperties(AnsiString FileName,
@@ -755,14 +797,6 @@ void __fastcall TTerminal::ChangeFileProperties(AnsiString FileName,
   DoChangeFileProperties(FileName, File, RProperties);
   ReactOnCommand(fsChangeProperties);
 }
-//---------------------------------------------------------------------------
-/*void __fastcall TTerminal::ChangeFileProperties(const TRemoteFile * File,
-  const TRemoteProperties * Properties)
-{
-  assert(File);
-  FileModified(File);
-  ChangeFileProperties(File->FileName, Properties, File);
-} */
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoChangeFileProperties(const AnsiString FileName,
   const TRemoteFile * File, const TRemoteProperties * Properties)
@@ -981,6 +1015,7 @@ void __fastcall TTerminal::AnyCommand(const AnsiString Command)
   assert(FFileSystem);
   try
   {
+    DirectoryModified(CurrentDirectory, false);
     LogEvent("Executing used defined command.");
     FFileSystem->AnyCommand(Command);
     ReactOnCommand(fsAnyCommand);

@@ -443,7 +443,7 @@ end; { CreateButtons }
 procedure TCustomToolbarPanel.BeginUpdate;
 begin
   Inc(FUpdating);
-  Assert(FUpdating < 5);
+  Assert(FUpdating < 20);
 end; { BeginUpdate }
 
 procedure TCustomToolbarPanel.ConstraintsChange(Sender: TObject);

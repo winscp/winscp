@@ -240,6 +240,7 @@ static void usage(void)
     printf("  -1 -2     force use of particular protocol version\n");
     printf("  -C        enable compression\n");
     printf("  -i key    private key file for authentication\n");
+    printf("  -s        remote command is an SSH subsystem (SSH-2 only)\n");
     exit(1);
 }
 
@@ -279,6 +280,7 @@ int main(int argc, char **argv)
     int connopen;
     int exitcode;
     int errors;
+    int use_subsystem = 0;
 
     ssh_get_line = console_get_line;
 
@@ -331,6 +333,9 @@ int main(int argc, char **argv)
 		continue;
 	    } else if (!strcmp(p, "-batch")) {
 		console_batch_mode = 1;
+	    } else if (!strcmp(p, "-s")) {
+		/* Save status to write to cfg later. */
+		use_subsystem = 1;
 	    } else {
 		fprintf(stderr, "plink: unknown option \"%s\"\n", p);
 		errors = 1;
@@ -487,6 +492,12 @@ int main(int argc, char **argv)
      * Perform command-line overrides on session configuration.
      */
     cmdline_run_saved(&cfg);
+
+    /*
+     * Apply subsystem status.
+     */
+    if (use_subsystem)
+	cfg.ssh_subsys = TRUE;
 
     /*
      * Trim a colon suffix off the hostname if it's there.

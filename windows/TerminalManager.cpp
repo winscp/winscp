@@ -96,7 +96,6 @@ void __fastcall TTerminalManager::FreeActiveTerminal()
 {
   if (FTerminalPendingAction == tpNull)
   {
-    //SaveActiveTerminal();
     assert(ActiveTerminal);
     FreeTerminal(ActiveTerminal);
   }
@@ -190,26 +189,6 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
 
   return Result;
 }
-//---------------------------------------------------------------------------
-/*void __fastcall TTerminalManager::SaveActiveTerminal()
-{
-  assert(ActiveTerminal);
-
-  if (!ActiveTerminal->SessionData->Name.IsEmpty())
-  {
-    assert(ScpExplorer);
-    ScpExplorer->UpdateSessionData();
-
-    TSessionData * Data;
-    Data = (TSessionData *)StoredSessions->FindByName(
-      ActiveTerminal->SessionData->Name);
-    if (Data)
-    {
-      Data->Assign(ActiveTerminal->SessionData);
-      StoredSessions->Save();
-    }
-  }
-} */
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ReconnectActiveTerminal()
 {
@@ -309,17 +288,9 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
         ActiveTerminal = NULL;
       }
     }
-
-    if (!Terminal->SessionData->Name.IsEmpty())
+    else
     {
-      TSessionData * Data;
-      Data = (TSessionData *)StoredSessions->FindByName(
-        Terminal->SessionData->Name);
-      if (Data)
-      {
-        Data->Assign(Terminal->SessionData);
-        StoredSessions->Save();
-      }
+      SaveTerminal(Terminal);
     }
 
     delete Terminal;
@@ -394,6 +365,12 @@ void __fastcall TTerminalManager::SetActiveTerminal(TTerminal * value)
         ScpExplorer->Terminal = NULL;
       }
     }
+
+    if (PActiveTerminal && !PActiveTerminal->Active)
+    {
+      SaveTerminal(PActiveTerminal);
+    }
+
     if (ActiveTerminal)
     {
       if (!PActiveTerminal)
@@ -414,6 +391,20 @@ void __fastcall TTerminalManager::SetActiveTerminal(TTerminal * value)
       {
         OnLastTerminalClosed(this);
       }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
+{
+  if (!Terminal->SessionData->Name.IsEmpty())
+  {
+    TSessionData * Data;
+    Data = (TSessionData *)StoredSessions->FindByName(Terminal->SessionData->Name);
+    if (Data)
+    {
+      Data->Assign(Terminal->SessionData);
+      StoredSessions->Save();
     }
   }
 }
@@ -462,8 +453,19 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * /*Sender*/,
   {
     MessageParams |= mpNeverAskAgainCheck;
   }
-  
-  Answer = MoreMessageDialog(AQuery, MoreMessages, Type, Answers, 0, MessageParams);
+  if (Params & qpAllowContinueOnError)
+  {
+    MessageParams |= mpAllowContinueOnError;
+  }
+
+  if (ScpExplorer)
+  {
+    Answer = ScpExplorer->MoreMessageDialog(AQuery, MoreMessages, Type, Answers, 0, MessageParams);
+  }
+  else
+  {
+    Answer = MoreMessageDialog(AQuery, MoreMessages, Type, Answers, 0, MessageParams);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ConfigurationChange(TObject * /*Sender*/)

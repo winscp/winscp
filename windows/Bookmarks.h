@@ -14,6 +14,7 @@ public:
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage);
   void __fastcall ModifyAll(bool Modify);
+  void __fastcall Clear();
 
   __property TBookmarkList * Bookmarks[AnsiString Index] = { read = GetBookmarks, write = SetBookmarks };
 
@@ -24,7 +25,6 @@ private:
   void __fastcall SetBookmarks(AnsiString Index, TBookmarkList * value);
   void __fastcall LoadLevel(THierarchicalStorage * Storage, const AnsiString Key,
     bool Local, TBookmarkList * BookmarkList);
-  void __fastcall Clear();
 };
 //---------------------------------------------------------------------------
 class TBookmarkList : public TPersistent

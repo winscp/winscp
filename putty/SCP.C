@@ -12,14 +12,6 @@
  * to licensing issues.)
  */
 
-#include <windows.h>
-#ifndef AUTO_WINSOCK
-#ifdef WINSOCK_TWO
-#include <winsock2.h>
-#else
-#include <winsock.h>
-#endif
-#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -29,53 +21,10 @@
 
 #define PUTTY_DO_GLOBALS
 #include "putty.h"
+#include "psftp.h"
 #include "ssh.h"
 #include "sftp.h"
-#include "winstuff.h"
 #include "storage.h"
-
-#define TIME_POSIX_TO_WIN(t, ft) (*(LONGLONG*)&(ft) = \
-	((LONGLONG) (t) + (LONGLONG) 11644473600) * (LONGLONG) 10000000)
-#define TIME_WIN_TO_POSIX(ft, t) ((t) = (unsigned long) \
-	((*(LONGLONG*)&(ft)) / (LONGLONG) 10000000 - (LONGLONG) 11644473600))
-
-/* GUI Adaptation - Sept 2000 */
-
-/* This is just a base value from which the main message numbers are
- * derived. */
-#define   WM_APP_BASE		0x8000
-
-/* These two pass a single character value in wParam. They represent
- * the visible output from PSCP. */
-#define   WM_STD_OUT_CHAR	( WM_APP_BASE+400 )
-#define   WM_STD_ERR_CHAR	( WM_APP_BASE+401 )
-
-/* These pass a transfer status update. WM_STATS_CHAR passes a single
- * character in wParam, and is called repeatedly to pass the name of
- * the file, terminated with "\n". WM_STATS_SIZE passes the size of
- * the file being transferred in wParam. WM_STATS_ELAPSED is called
- * to pass the elapsed time (in seconds) in wParam, and
- * WM_STATS_PERCENT passes the percentage of the transfer which is
- * complete, also in wParam. */
-#define   WM_STATS_CHAR		( WM_APP_BASE+402 )
-#define   WM_STATS_SIZE 	( WM_APP_BASE+403 )
-#define   WM_STATS_PERCENT	( WM_APP_BASE+404 )
-#define   WM_STATS_ELAPSED	( WM_APP_BASE+405 )
-
-/* These are used at the end of a run to pass an error code in
- * wParam: zero means success, nonzero means failure. WM_RET_ERR_CNT
- * is used after a copy, and WM_LS_RET_ERR_CNT is used after a file
- * list operation. */
-#define   WM_RET_ERR_CNT	( WM_APP_BASE+406 )
-#define   WM_LS_RET_ERR_CNT	( WM_APP_BASE+407 )
-
-/* More transfer status update messages. WM_STATS_DONE passes the
- * number of bytes sent so far in wParam. WM_STATS_ETA passes the
- * estimated time to completion (in seconds). WM_STATS_RATEBS passes
- * the average transfer rate (in bytes per second). */
-#define   WM_STATS_DONE		( WM_APP_BASE+408 )
-#define   WM_STATS_ETA		( WM_APP_BASE+409 )
-#define   WM_STATS_RATEBS	( WM_APP_BASE+410 )
 
 static int list = 0;
 static int verbose = 0;
@@ -86,17 +35,7 @@ static int statistics = 1;
 static int prev_stats_len = 0;
 static int scp_unsafe_mode = 0;
 static int errs = 0;
-/* GUI Adaptation - Sept 2000 */
-#define NAME_STR_MAX 2048
-static char statname[NAME_STR_MAX + 1];
-static unsigned long statsize = 0;
-static unsigned long statdone = 0;
-static unsigned long stateta = 0;
-static unsigned long statratebs = 0;
-static int statperct = 0;
-static unsigned long statelapsed = 0;
 static int gui_mode = 0;
-static char *gui_hwnd = NULL;
 static int using_sftp = 0;
 
 static Backend *back;
@@ -106,14 +45,6 @@ static Config cfg;
 static void source(char *src);
 static void rsource(char *src);
 static void sink(char *targ, char *src);
-/* GUI Adaptation - Sept 2000 */
-static void tell_char(FILE * stream, char c);
-static void tell_str(FILE * stream, char *str);
-static void tell_user(FILE * stream, char *fmt, ...);
-static void gui_update_stats(char *name, unsigned long size,
-			     int percentage, unsigned long elapsed, 
-			     unsigned long done, unsigned long eta,
-			     unsigned long ratebs);
 
 /*
  * The maximum amount of queued data we accept before we stop and
@@ -132,23 +63,12 @@ void ldisc_send(void *handle, char *buf, int len, int interactive)
     assert(len == 0);
 }
 
-/* GUI Adaptation - Sept 2000 */
-static void send_msg(HWND h, UINT message, WPARAM wParam)
-{
-    while (!PostMessage(h, message, wParam, 0))
-	SleepEx(1000, TRUE);
-}
-
 static void tell_char(FILE * stream, char c)
 {
     if (!gui_mode)
 	fputc(c, stream);
-    else {
-	unsigned int msg_id = WM_STD_OUT_CHAR;
-	if (stream == stderr)
-	    msg_id = WM_STD_ERR_CHAR;
-	send_msg((HWND) atoi(gui_hwnd), msg_id, (WPARAM) c);
-    }
+    else
+	gui_send_char(stream == stderr, c);
 }
 
 static void tell_str(FILE * stream, char *str)
@@ -172,48 +92,6 @@ static void tell_user(FILE * stream, char *fmt, ...)
     sfree(str2);
 }
 
-static void gui_update_stats(char *name, unsigned long size,
-			     int percentage, unsigned long elapsed,
-			     unsigned long done, unsigned long eta,
-			     unsigned long ratebs)
-{
-    unsigned int i;
-
-    if (strcmp(name, statname) != 0) {
-	for (i = 0; i < strlen(name); ++i)
-	    send_msg((HWND) atoi(gui_hwnd), WM_STATS_CHAR,
-		     (WPARAM) name[i]);
-	send_msg((HWND) atoi(gui_hwnd), WM_STATS_CHAR, (WPARAM) '\n');
-	strcpy(statname, name);
-    }
-    if (statsize != size) {
-	send_msg((HWND) atoi(gui_hwnd), WM_STATS_SIZE, (WPARAM) size);
-	statsize = size;
-    }
-    if (statdone != done) {
-	send_msg((HWND) atoi(gui_hwnd), WM_STATS_DONE, (WPARAM) done);
-	statdone = done;
-    }
-    if (stateta != eta) {
-	send_msg((HWND) atoi(gui_hwnd), WM_STATS_ETA, (WPARAM) eta);
-	stateta = eta;
-    }
-    if (statratebs != ratebs) {
-	send_msg((HWND) atoi(gui_hwnd), WM_STATS_RATEBS, (WPARAM) ratebs);
-	statratebs = ratebs;
-    }
-    if (statelapsed != elapsed) {
-	send_msg((HWND) atoi(gui_hwnd), WM_STATS_ELAPSED,
-		 (WPARAM) elapsed);
-	statelapsed = elapsed;
-    }
-    if (statperct != percentage) {
-	send_msg((HWND) atoi(gui_hwnd), WM_STATS_PERCENT,
-		 (WPARAM) percentage);
-	statperct = percentage;
-    }
-}
-
 /*
  *  Print an error message and perform a fatal exit.
  */
@@ -230,14 +108,8 @@ void fatalbox(char *fmt, ...)
     sfree(str2);
     errs++;
 
-    if (gui_mode) {
-	unsigned int msg_id = WM_RET_ERR_CNT;
-	if (list)
-	    msg_id = WM_LS_RET_ERR_CNT;
-	while (!PostMessage
-	       ((HWND) atoi(gui_hwnd), msg_id, (WPARAM) errs,
-		0 /*lParam */ ))SleepEx(1000, TRUE);
-    }
+    if (gui_mode)
+	gui_send_errcount(list, errs);
 
     cleanup_exit(1);
 }
@@ -254,14 +126,8 @@ void modalfatalbox(char *fmt, ...)
     sfree(str2);
     errs++;
 
-    if (gui_mode) {
-	unsigned int msg_id = WM_RET_ERR_CNT;
-	if (list)
-	    msg_id = WM_LS_RET_ERR_CNT;
-	while (!PostMessage
-	       ((HWND) atoi(gui_hwnd), msg_id, (WPARAM) errs,
-		0 /*lParam */ ))SleepEx(1000, TRUE);
-    }
+    if (gui_mode)
+	gui_send_errcount(list, errs);
 
     cleanup_exit(1);
 }
@@ -278,31 +144,11 @@ void connection_fatal(void *frontend, char *fmt, ...)
     sfree(str2);
     errs++;
 
-    if (gui_mode) {
-	unsigned int msg_id = WM_RET_ERR_CNT;
-	if (list)
-	    msg_id = WM_LS_RET_ERR_CNT;
-	while (!PostMessage
-	       ((HWND) atoi(gui_hwnd), msg_id, (WPARAM) errs,
-		0 /*lParam */ ))SleepEx(1000, TRUE);
-    }
+    if (gui_mode)
+	gui_send_errcount(list, errs);
 
     cleanup_exit(1);
 }
-
-/*
- * Be told what socket we're supposed to be using.
- */
-static SOCKET scp_ssh_socket;
-char *do_select(SOCKET skt, int startup)
-{
-    if (startup)
-	scp_ssh_socket = skt;
-    else
-	scp_ssh_socket = INVALID_SOCKET;
-    return NULL;
-}
-extern int select_result(WPARAM, LPARAM);
 
 /*
  * In pscp, all agent requests should be synchronous, so this is a
@@ -373,17 +219,6 @@ int from_backend(void *frontend, int is_stderr, const char *data, int datalen)
 
     return 0;
 }
-static int scp_process_network_event(void)
-{
-    fd_set readfds;
-
-    FD_ZERO(&readfds);
-    FD_SET(scp_ssh_socket, &readfds);
-    if (select(1, &readfds, NULL, NULL, NULL) < 0)
-	return 0;		       /* doom */
-    select_result((WPARAM) scp_ssh_socket, (LPARAM) FD_READ);
-    return 1;
-}
 static int ssh_scp_recv(unsigned char *buf, int len)
 {
     outptr = buf;
@@ -412,7 +247,7 @@ static int ssh_scp_recv(unsigned char *buf, int len)
     }
 
     while (outlen > 0) {
-	if (!scp_process_network_event())
+	if (ssh_sftp_loop_iteration() < 0)
 	    return 0;		       /* doom */
     }
 
@@ -424,15 +259,9 @@ static int ssh_scp_recv(unsigned char *buf, int len)
  */
 static void ssh_scp_init(void)
 {
-    if (scp_ssh_socket == INVALID_SOCKET)
-	return;
     while (!back->sendok(backhandle)) {
-	fd_set readfds;
-	FD_ZERO(&readfds);
-	FD_SET(scp_ssh_socket, &readfds);
-	if (select(1, &readfds, NULL, NULL, NULL) < 0)
+	if (ssh_sftp_loop_iteration() < 0)
 	    return;		       /* doom */
-	select_result((WPARAM) scp_ssh_socket, (LPARAM) FD_READ);
     }
     using_sftp = !ssh_fallback_cmd(backhandle);
     if (verbose) {
@@ -465,14 +294,8 @@ static void bump(char *fmt, ...)
 	ssh_scp_recv(&ch, 1);
     }
 
-    if (gui_mode) {
-	unsigned int msg_id = WM_RET_ERR_CNT;
-	if (list)
-	    msg_id = WM_LS_RET_ERR_CNT;
-	while (!PostMessage
-	       ((HWND) atoi(gui_hwnd), msg_id, (WPARAM) errs,
-		0 /*lParam */ ))SleepEx(1000, TRUE);
-    }
+    if (gui_mode)
+	gui_send_errcount(list, errs);
 
     cleanup_exit(1);
 }
@@ -484,7 +307,7 @@ static void do_cmd(char *host, char *user, char *cmd)
 {
     const char *err;
     char *realhost;
-    DWORD namelen;
+    void *logctx;
 
     if (host == NULL || host[0] == '\0')
 	bump("Empty host name");
@@ -558,16 +381,16 @@ static void do_cmd(char *host, char *user, char *cmd)
 	strncpy(cfg.username, user, sizeof(cfg.username) - 1);
 	cfg.username[sizeof(cfg.username) - 1] = '\0';
     } else if (cfg.username[0] == '\0') {
-	namelen = 0;
-	if (GetUserName(user, &namelen) == FALSE)
+	user = get_username();
+	if (!user)
 	    bump("Empty user name");
-	user = snewn(namelen, char);
-	GetUserName(user, &namelen);
-	if (verbose)
-	    tell_user(stderr, "Guessing user name: %s", user);
-	strncpy(cfg.username, user, sizeof(cfg.username) - 1);
-	cfg.username[sizeof(cfg.username) - 1] = '\0';
-	free(user);
+	else {
+	    if (verbose)
+		tell_user(stderr, "Guessing user name: %s", user);
+	    strncpy(cfg.username, user, sizeof(cfg.username) - 1);
+	    cfg.username[sizeof(cfg.username) - 1] = '\0';
+	    sfree(user);
+	}
     }
 
     /*
@@ -632,11 +455,10 @@ static void print_stats(char *name, unsigned long size, unsigned long done,
 
     pct = (int) (100 * (done * 1.0 / size));
 
-    if (gui_mode)
-	/* GUI Adaptation - Sept 2000 */
+    if (gui_mode) {
 	gui_update_stats(name, size, pct, elap, done, eta, 
 			 (unsigned long) ratebs);
-    else {
+    } else {
 	len = printf("\r%-25.25s | %10ld kB | %5.1f kB/s | ETA: %8s | %3d%%",
 		     name, done / 1024, ratebs / 1024.0, etastr, pct);
 	if (len < prev_stats_len)
@@ -991,7 +813,7 @@ int scp_send_filedata(char *data, int len)
 	 * we have space in the buffer again.
 	 */
 	while (bufsize > MAX_SCP_BUFSIZE) {
-	    if (!scp_process_network_event())
+	    if (ssh_sftp_loop_iteration() < 0)
 		return 1;
 	    bufsize = back->sendbuffer(backhandle);
 	}
@@ -1645,20 +1467,23 @@ static void run_err(const char *fmt, ...)
 static void source(char *src)
 {
     unsigned long size;
+    unsigned long mtime, atime;
     char *last;
-    HANDLE f;
-    DWORD attr;
+    RFile *f;
+    int attr;
     unsigned long i;
     unsigned long stat_bytes;
     time_t stat_starttime, stat_lasttime;
 
-    attr = GetFileAttributes(src);
-    if (attr == (DWORD) - 1) {
-	run_err("%s: No such file or directory", src);
+    attr = file_type(src);
+    if (attr == FILE_TYPE_NONEXISTENT ||
+	attr == FILE_TYPE_WEIRD) {
+	run_err("%s: %s file or directory", src,
+		(attr == FILE_TYPE_WEIRD ? "Not a" : "No such"));
 	return;
     }
 
-    if ((attr & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+    if (attr == FILE_TYPE_DIRECTORY) {
 	if (recursive) {
 	    /*
 	     * Avoid . and .. directories.
@@ -1690,24 +1515,16 @@ static void source(char *src)
     if (last == src && strchr(src, ':') != NULL)
 	last = strchr(src, ':') + 1;
 
-    f = CreateFile(src, GENERIC_READ, FILE_SHARE_READ, NULL,
-		   OPEN_EXISTING, 0, 0);
-    if (f == INVALID_HANDLE_VALUE) {
+    f = open_existing_file(src, &size, &mtime, &atime);
+    if (f == NULL) {
 	run_err("%s: Cannot open file", src);
 	return;
     }
-
     if (preserve) {
-	FILETIME actime, wrtime;
-	unsigned long mtime, atime;
-	GetFileTime(f, NULL, &actime, &wrtime);
-	TIME_WIN_TO_POSIX(actime, atime);
-	TIME_WIN_TO_POSIX(wrtime, mtime);
 	if (scp_send_filetimes(mtime, atime))
 	    return;
     }
 
-    size = GetFileSize(f, NULL);
     if (verbose)
 	tell_user(stderr, "Sending file %s, size=%lu", last, size);
     if (scp_send_filename(last, size, 0644))
@@ -1719,11 +1536,11 @@ static void source(char *src)
 
     for (i = 0; i < size; i += 4096) {
 	char transbuf[4096];
-	DWORD j, k = 4096;
+	int j, k = 4096;
 
 	if (i + k > size)
 	    k = size - i;
-	if (!ReadFile(f, transbuf, k, &j, NULL) || j != k) {
+	if ((j = read_from_file(f, transbuf, k)) != k) {
 	    if (statistics)
 		printf("\n");
 	    bump("%s: Read error", src);
@@ -1741,7 +1558,7 @@ static void source(char *src)
 	}
 
     }
-    CloseHandle(f);
+    close_rfile(f);
 
     (void) scp_send_finish();
 }
@@ -1751,11 +1568,9 @@ static void source(char *src)
  */
 static void rsource(char *src)
 {
-    char *last, *findfile;
+    char *last;
     char *save_target;
-    HANDLE dir;
-    WIN32_FIND_DATA fdat;
-    int ok;
+    DirHandle *dir;
 
     if ((last = strrchr(src, '/')) == NULL)
 	last = src;
@@ -1775,22 +1590,17 @@ static void rsource(char *src)
     if (scp_send_dirname(last, 0755))
 	return;
 
-    findfile = dupcat(src, "/*", NULL);
-    dir = FindFirstFile(findfile, &fdat);
-    ok = (dir != INVALID_HANDLE_VALUE);
-    while (ok) {
-	if (strcmp(fdat.cFileName, ".") == 0 ||
-	    strcmp(fdat.cFileName, "..") == 0) {
-	    /* ignore . and .. */
-	} else {
-	    char *foundfile = dupcat(src, "/", fdat.cFileName, NULL);
+    dir = open_directory(src);
+    if (dir != NULL) {
+	char *filename;
+	while ((filename = read_filename(dir)) != NULL) {
+	    char *foundfile = dupcat(src, "/", filename, NULL);
 	    source(foundfile);
 	    sfree(foundfile);
+	    sfree(filename);
 	}
-	ok = FindNextFile(dir, &fdat);
     }
-    FindClose(dir);
-    sfree(findfile);
+    close_directory(dir);
 
     (void) scp_send_enddir();
 
@@ -1805,16 +1615,16 @@ static void sink(char *targ, char *src)
     char *destfname;
     int targisdir = 0;
     int exists;
-    DWORD attr;
-    HANDLE f;
+    int attr;
+    WFile *f;
     unsigned long received;
     int wrerror = 0;
     unsigned long stat_bytes;
     time_t stat_starttime, stat_lasttime;
     char *stat_name;
 
-    attr = GetFileAttributes(targ);
-    if (attr != (DWORD) - 1 && (attr & FILE_ATTRIBUTE_DIRECTORY) != 0)
+    attr = file_type(targ);
+    if (attr == FILE_TYPE_DIRECTORY)
 	targisdir = 1;
 
     if (targetshouldbedirectory && !targisdir)
@@ -1901,7 +1711,7 @@ static void sink(char *targ, char *src)
 	    }
 
 	    if (targ[0] != '\0')
-		destfname = dupcat(targ, "\\", striptarget, NULL);
+		destfname = dir_file_cat(targ, striptarget);
 	    else
 		destfname = dupstr(striptarget);
 	} else {
@@ -1912,16 +1722,16 @@ static void sink(char *targ, char *src)
 	     */
 	    destfname = dupstr(targ);
 	}
-	attr = GetFileAttributes(destfname);
-	exists = (attr != (DWORD) - 1);
+	attr = file_type(destfname);
+	exists = (attr != FILE_TYPE_NONEXISTENT);
 
 	if (act.action == SCP_SINK_DIR) {
-	    if (exists && (attr & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+	    if (exists && attr != FILE_TYPE_DIRECTORY) {
 		run_err("%s: Not a directory", destfname);
 		continue;
 	    }
 	    if (!exists) {
-		if (!CreateDirectory(destfname, NULL)) {
+		if (!create_directory(destfname)) {
 		    run_err("%s: Cannot create directory", destfname);
 		    continue;
 		}
@@ -1931,9 +1741,8 @@ static void sink(char *targ, char *src)
 	    continue;
 	}
 
-	f = CreateFile(destfname, GENERIC_WRITE, 0, NULL,
-		       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-	if (f == INVALID_HANDLE_VALUE) {
+	f = open_new_file(destfname);
+	if (f == NULL) {
 	    run_err("%s: Cannot create file", destfname);
 	    continue;
 	}
@@ -1949,17 +1758,16 @@ static void sink(char *targ, char *src)
 	received = 0;
 	while (received < act.size) {
 	    char transbuf[4096];
-	    DWORD blksize, read, written;
+	    int blksize, read;
 	    blksize = 4096;
-	    if (blksize > act.size - received)
+	    if (blksize > (int)(act.size - received))
 		blksize = act.size - received;
 	    read = scp_recv_filedata(transbuf, blksize);
 	    if (read <= 0)
 		bump("Lost connection");
 	    if (wrerror)
 		continue;
-	    if (!WriteFile(f, transbuf, read, &written, NULL) ||
-		written != read) {
+	    if (write_to_file(f, transbuf, read) != (int)read) {
 		wrerror = 1;
 		/* FIXME: in sftp we can actually abort the transfer */
 		if (statistics)
@@ -1980,13 +1788,10 @@ static void sink(char *targ, char *src)
 	    received += read;
 	}
 	if (act.settime) {
-	    FILETIME actime, wrtime;
-	    TIME_POSIX_TO_WIN(act.atime, actime);
-	    TIME_POSIX_TO_WIN(act.mtime, wrtime);
-	    SetFileTime(f, NULL, &actime, &wrtime);
+	    set_file_times(f, act.mtime, act.atime);
 	}
 
-	CloseHandle(f);
+	close_wfile(f);
 	if (wrerror) {
 	    run_err("%s: Write error", destfname);
 	    continue;
@@ -2004,7 +1809,7 @@ static void toremote(int argc, char *argv[])
 {
     char *src, *targ, *host, *user;
     char *cmd;
-    int i;
+    int i, wc_type;
 
     targ = argv[argc - 1];
 
@@ -2031,18 +1836,14 @@ static void toremote(int argc, char *argv[])
     }
 
     if (argc == 2) {
-	/* Find out if the source filespec covers multiple files
-	   if so, we should set the targetshouldbedirectory flag */
-	HANDLE fh;
-	WIN32_FIND_DATA fdat;
 	if (colon(argv[0]) != NULL)
 	    bump("%s: Remote to remote not supported", argv[0]);
-	fh = FindFirstFile(argv[0], &fdat);
-	if (fh == INVALID_HANDLE_VALUE)
+
+	wc_type = test_wildcard(argv[0], 1);
+	if (wc_type == WCTYPE_NONEXISTENT)
 	    bump("%s: No such file or directory\n", argv[0]);
-	if (FindNextFile(fh, &fdat))
+	else if (wc_type == WCTYPE_WILDCARD)
 	    targetshouldbedirectory = 1;
-	FindClose(fh);
     }
 
     cmd = dupprintf("scp%s%s%s%s -t %s",
@@ -2056,9 +1857,6 @@ static void toremote(int argc, char *argv[])
     scp_source_setup(targ, targetshouldbedirectory);
 
     for (i = 0; i < argc - 1; i++) {
-	char *srcpath, *last;
-	HANDLE dir;
-	WIN32_FIND_DATA fdat;
 	src = argv[i];
 	if (colon(src) != NULL) {
 	    tell_user(stderr, "%s: Remote to remote not supported\n", src);
@@ -2066,49 +1864,30 @@ static void toremote(int argc, char *argv[])
 	    continue;
 	}
 
-	/*
-	 * Trim off the last pathname component of `src', to
-	 * provide the base pathname which will be prepended to
-	 * filenames returned from Find{First,Next}File.
-	 */
-	srcpath = dupstr(src);
-	last = stripslashes(srcpath, 1);
-	*last = '\0';
-
-	dir = FindFirstFile(src, &fdat);
-	if (dir == INVALID_HANDLE_VALUE) {
+	wc_type = test_wildcard(src, 1);
+	if (wc_type == WCTYPE_NONEXISTENT) {
 	    run_err("%s: No such file or directory", src);
 	    continue;
-	}
-	do {
+	} else if (wc_type == WCTYPE_FILENAME) {
+	    source(src);
+	    continue;
+	} else {
+	    WildcardMatcher *wc;
 	    char *filename;
-	    /*
-	     * Ensure that . and .. are never matched by wildcards,
-	     * but only by deliberate action.
-	     */
-	    if (!strcmp(fdat.cFileName, ".") ||
-		!strcmp(fdat.cFileName, "..")) {
-		/*
-		 * Find*File has returned a special dir. We require
-		 * that _either_ `src' ends in a backslash followed
-		 * by that string, _or_ `src' is precisely that
-		 * string.
-		 */
-		int len = strlen(src), dlen = strlen(fdat.cFileName);
-		if (len == dlen && !strcmp(src, fdat.cFileName)) {
-		    /* ok */ ;
-		} else if (len > dlen + 1 && src[len - dlen - 1] == '\\' &&
-			   !strcmp(src + len - dlen, fdat.cFileName)) {
-		    /* ok */ ;
-		} else
-		    continue;	       /* ignore this one */
+
+	    wc = begin_wildcard_matching(src);
+	    if (wc == NULL) {
+		run_err("%s: No such file or directory", src);
+		continue;
 	    }
-	    filename = dupcat(srcpath, fdat.cFileName, NULL);
-	    source(filename);
-	    sfree(filename);
-	} while (FindNextFile(dir, &fdat));
-	FindClose(dir);
-	sfree(srcpath);
+
+	    while ((filename = wildcard_get_filename(wc)) != NULL) {
+		source(filename);
+		sfree(filename);
+	    }
+
+	    finish_wildcard_matching(wc);
+	}
     }
 }
 
@@ -2223,21 +2002,6 @@ static void get_dir_list(int argc, char *argv[])
 }
 
 /*
- *  Initialize the Win$ock driver.
- */
-static void init_winsock(void)
-{
-    WORD winsock_ver;
-    WSADATA wsadata;
-
-    winsock_ver = MAKEWORD(1, 1);
-    if (WSAStartup(winsock_ver, &wsadata))
-	bump("Unable to initialise WinSock");
-    if (LOBYTE(wsadata.wVersion) != 1 || HIBYTE(wsadata.wVersion) != 1)
-	bump("WinSock version is incompatible with 1.1");
-}
-
-/*
  *  Short description of parameters.
  */
 static void usage(void)
@@ -2288,18 +2052,22 @@ void cmdline_error(char *p, ...)
 }
 
 /*
- *  Main program (no, really?)
+ * Main program. (Called `psftp_main' because it gets called from
+ * *sftp.c; bit silly, I know, but it had to be called _something_.)
  */
-int main(int argc, char *argv[])
+int psftp_main(int argc, char *argv[])
 {
     int i;
 
     default_protocol = PROT_TELNET;
 
-    flags = FLAG_STDERR | FLAG_SYNCAGENT;
+    flags = FLAG_STDERR
+#ifdef FLAG_SYNCAGENT
+	| FLAG_SYNCAGENT
+#endif
+	;
     cmdline_tooltype = TOOLTYPE_FILETRANSFER;
     ssh_get_line = &console_get_line;
-    init_winsock();
     sk_init();
 
     for (i = 1; i < argc; i++) {
@@ -2324,7 +2092,7 @@ int main(int argc, char *argv[])
 	} else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "-?") == 0) {
 	    usage();
 	} else if (strcmp(argv[i], "-gui") == 0 && i + 1 < argc) {
-	    gui_hwnd = argv[++i];
+	    gui_enable(argv[++i]);
 	    gui_mode = 1;
 	    console_batch_mode = TRUE;
         } else if (strcmp(argv[i], "-ls") == 0) {
@@ -2367,18 +2135,11 @@ int main(int argc, char *argv[])
 	back->special(backhandle, TS_EOF);
 	ssh_scp_recv(&ch, 1);
     }
-    WSACleanup();
     random_save_seed();
 
-    /* GUI Adaptation - August 2000 */
-    if (gui_mode) {
-	unsigned int msg_id = WM_RET_ERR_CNT;
-	if (list)
-	    msg_id = WM_LS_RET_ERR_CNT;
-	while (!PostMessage
-	       ((HWND) atoi(gui_hwnd), msg_id, (WPARAM) errs,
-		0 /*lParam */ ))SleepEx(1000, TRUE);
-    }
+    if (gui_mode)
+	gui_send_errcount(list, errs);
+
     return (errs == 0 ? 0 : 1);
 }
 

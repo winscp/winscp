@@ -327,9 +327,10 @@ Bignum dh_create_e(void *, int nbits);
 Bignum dh_find_K(void *, Bignum f);
 
 int loadrsakey(const Filename *filename, struct RSAKey *key,
-	       char *passphrase);
+	       char *passphrase, const char **errorstr);
 int rsakey_encrypted(const Filename *filename, char **comment);
-int rsakey_pubblob(const Filename *filename, void **blob, int *bloblen);
+int rsakey_pubblob(const Filename *filename, void **blob, int *bloblen,
+		   const char **errorstr);
 
 int saversakey(const Filename *filename, struct RSAKey *key, char *passphrase);
 
@@ -344,9 +345,9 @@ extern struct ssh2_userkey ssh2_wrong_passphrase;
 
 int ssh2_userkey_encrypted(const Filename *filename, char **comment);
 struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
-				       char *passphrase);
+				       char *passphrase, const char **errorstr);
 char *ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
-			   int *pub_blob_len);
+			   int *pub_blob_len, const char **errorstr);
 int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
 		      char *passphrase);
 

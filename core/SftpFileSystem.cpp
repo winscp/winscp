@@ -213,6 +213,8 @@ public:
     assert(File);
     unsigned int Flags;
     AnsiString ListingStr;
+    unsigned long Permissions;
+    bool ParsingFailed = false;
     if (Type != SSH_FXP_ATTRS)
     {
       File->FileName = GetString();
@@ -250,15 +252,7 @@ public:
     }
     if (Flags & SSH_FILEXFER_ATTR_PERMISSIONS)
     {
-      unsigned long Permissions = GetCardinal();
-      if (Type == SSH_FXP_ATTRS || Version >= 4)
-      {
-        File->Rights->Number = (unsigned short)(Permissions & 0777);
-        if (Version < 4)
-        {
-          File->Type = (Permissions & 0040000 ? FILETYPE_DIRECTORY : '-');
-        }
-      }
+      Permissions = GetCardinal();
     }
     if (Version < 4)
     {
@@ -298,9 +292,27 @@ public:
 
     if ((Version < 4) && (Type != SSH_FXP_ATTRS))
     {
-      // update permissions and user/group name
-      // modification time and filename is ignored
-      File->ListingStr = ListingStr;
+      try
+      {
+        // update permissions and user/group name
+        // modification time and filename is ignored
+        File->ListingStr = ListingStr;
+      }
+      catch(...)
+      {
+        // ignore any error while parsing listing line,
+        // SFTP specification do not recommend to parse it
+        ParsingFailed = true;
+      }
+    }
+
+    if (Type == SSH_FXP_ATTRS || Version >= 4 || ParsingFailed)
+    {
+      File->Rights->Number = (unsigned short)(Permissions & 0777);
+      if (Version < 4)
+      {
+        File->Type = (Permissions & 0040000 ? FILETYPE_DIRECTORY : '-');
+      }
     }
 
     // TODO: read extended attributes (Flags & SSH_FILEXFER_ATTR_EXTENDED)
@@ -615,7 +627,7 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
       {
         if (FNotLoggedPackets)
         {
-          FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ and SSH_FXP_STATUS packets.",
+          FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ, SSH_FXP_DATA and SSH_FXP_STATUS packets.",
             (FNotLoggedPackets)));
           FNotLoggedPackets = 0;
         }
@@ -661,7 +673,6 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     SFTP_STATUS_NO_MEDIA,
   };
   int Message;
-  FTerminal->Log->Add(llOutput, FORMAT("Status/error code: %d", ((int)Code)));
   if ((AllowStatus & (0x01 << Code)) == 0)
   {
     if (Code >= sizeof(Messages) / sizeof(*Messages))
@@ -689,7 +700,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     }
     if (FTerminal->IsLogging())
     {
-      FTerminal->LogEvent(FORMAT("Error status: %d, Message: %d, Server: %s, Language: %s ",
+      FTerminal->Log->Add(llOutput, FORMAT("Status/error code: %d, Message: %d, Server: %s, Language: %s ",
         (int(Code), (int)Packet->MessageNumber, ServerMessage, LanguageTag)));
     }
     FTerminal->TerminalError(NULL, FMTLOAD(SFTP_ERROR_FORMAT,
@@ -698,6 +709,10 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
   }
   else
   {
+    if (!FNotLoggedPackets || Code)
+    {
+      FTerminal->Log->Add(llOutput, FORMAT("Status/error code: %d", ((int)Code)));
+    }
     return Code;
   }
 }
@@ -744,11 +759,11 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
         {
           if ((FPreviousLoggedPacket != SSH_FXP_READ &&
                FPreviousLoggedPacket != SSH_FXP_WRITE) ||
-              (Packet->Type != SSH_FXP_STATUS))
+              (Packet->Type != SSH_FXP_STATUS && Packet->Type != SSH_FXP_DATA))
           {
             if (FNotLoggedPackets)
             {
-              FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ and SSH_FXP_STATUS packets.",
+              FTerminal->LogEvent(FORMAT("%d skipped SSH_FXP_WRITE, SSH_FXP_READ, SSH_FXP_DATA and SSH_FXP_STATUS packets.",
                 (FNotLoggedPackets)));
               FNotLoggedPackets = 0;
             }
@@ -1448,6 +1463,12 @@ void __fastcall TSFTPFileSystem::ChangeFileProperties(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSFTPFileSystem::CustomCommandOnFile(const AnsiString /*FileName*/,
+    const TRemoteFile * /*File*/, AnsiString /*Command*/)
+{
+  assert(false);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::AnyCommand(const AnsiString /*Command*/)
 {
   assert(false);
@@ -1566,7 +1587,7 @@ bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
     (
       Answer = FTerminal->DoQueryUser(
         FMTLOAD(PARTIAL_BIGGER_THAN_SOURCE, (DestFileName)), NULL,
-          qaOK | qaAbort, 0, qtWarning);
+          qaOK | qaAbort, qpAllowContinueOnError, qtWarning);
     )
 
     if (Answer == qaAbort)
@@ -1585,7 +1606,8 @@ bool TSFTPFileSystem::SFTPConfirmResume(const AnsiString DestFileName,
     SUSPEND_OPERATION
     (
       Answer = FTerminal->DoQueryUser(
-        FMTLOAD(RESUME_TRANSFER, (DestFileName)), qaYes | qaNo | qaAbort, 0);
+        FMTLOAD(RESUME_TRANSFER, (DestFileName)), qaYes | qaNo | qaAbort,
+        qpAllowContinueOnError);
     );
 
     switch (Answer) {
@@ -1848,23 +1870,21 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
   TFileOperationProgressType * OperationProgress = OpenParams->OperationProgress;
 
   TSFTPPacket OpenRequest;
-  int OpenType = 0;
+  int OpenType;
+  bool Confirmed = false;
   bool Success = false;
 
   do
   {
     try
     {
+      OpenType = 0;
       OpenRequest.ChangeType(SSH_FXP_OPEN);
       if (FTerminal->Configuration->ConfirmOverwriting &&
-          !OpenType && !OperationProgress->YesToAll && !OpenParams->Resume &&
+          !Confirmed && !OperationProgress->YesToAll && !OpenParams->Resume &&
           !(OpenParams->Params & cpNoConfirmation))
       {
         OpenType |= SSH_FXF_EXCL;
-      }
-      else
-      {
-        OpenType &= ~SSH_FXF_EXCL;
       }
       if (!OpenParams->Resume)
       {
@@ -1895,10 +1915,10 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
     }
     catch(Exception & E)
     {
-      if (OpenType && FTerminal->Active)
+      if (!Confirmed && (OpenType & SSH_FXF_EXCL) && FTerminal->Active)
       {
         // When exclusive opening of file fails, try to detect if file exists.
-        // When file exists, failure was probably caused by 'permission denied'
+        // When file does not exist, failure was probably caused by 'permission denied'
         // or similar error. In this case throw original exception.
         try
         {
@@ -1924,6 +1944,7 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
         // confirmation duplicated in SFTPSource for resumable file transfers.
         SFTPConfirmOverwrite(UnixExtractFileName(OpenParams->RemoteFileName),
           OperationProgress);
+        Confirmed = true; 
       }
       else
       {
@@ -1994,7 +2015,7 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
       // If ESkipFile occurs, just log it and continue with next file
       SUSPEND_OPERATION (
         if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (FileName)), E.Message,
-              qaOK | qaAbort, 0) == qaAbort)
+              qaOK | qaAbort, qpAllowContinueOnError) == qaAbort)
         {
           OperationProgress->Cancel = csCancel;
         }

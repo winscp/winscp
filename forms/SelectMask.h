@@ -23,15 +23,15 @@ __published:
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
 private:
   TFileFilter FFileFilter;
-  Boolean FSelect;
+  bool FSelect;
   void __fastcall SetFileFilter(TFileFilter value);
   TFileFilter __fastcall GetFileFilter();
-  void __fastcall SetSelect(Boolean value);
+  void __fastcall SetSelect(bool value);
 public:
-  Boolean __fastcall Execute();
+  bool __fastcall Execute();
   __fastcall TSelectMaskDialog(TComponent* Owner);
   __property TFileFilter FileFilter = { read = GetFileFilter, write = SetFileFilter };
-  __property Boolean Select = { read = FSelect, write = SetSelect };
+  __property bool Select = { read = FSelect, write = SetSelect };
 };
 //---------------------------------------------------------------------------
 #endif

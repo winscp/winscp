@@ -29,6 +29,7 @@ static void gpps(void *handle, const char *name, const char *def,
 	pdef = platform_default_s(name);
 	if (pdef) {
 	    strncpy(val, pdef, len);
+	    sfree(pdef);
 	} else {
 	    strncpy(val, def, len);
 	}
@@ -279,6 +280,7 @@ void save_open_settings(void *sesskey, int do_host, Config *cfg)
     write_setting_i(sesskey, "TermHeight", cfg->height);
     write_setting_fontspec(sesskey, "Font", cfg->font);
     write_setting_i(sesskey, "FontVTMode", cfg->vtmode);
+    write_setting_i(sesskey, "UseSystemColours", cfg->system_colour);
     write_setting_i(sesskey, "TryPalette", cfg->try_palette);
     write_setting_i(sesskey, "BoldAsColour", cfg->bold_colour);
     for (i = 0; i < 22; i++) {
@@ -351,6 +353,7 @@ void save_open_settings(void *sesskey, int do_host, Config *cfg)
     write_setting_i(sesskey, "LoginShell", cfg->login_shell);
     write_setting_i(sesskey, "ScrollbarOnLeft", cfg->scrollbar_on_left);
     write_setting_fontspec(sesskey, "BoldFont", cfg->boldfont);
+    write_setting_i(sesskey, "ShadowBold", cfg->shadowbold);
     write_setting_i(sesskey, "ShadowBoldOffset", cfg->shadowboldoffset);
 }
 
@@ -532,6 +535,7 @@ void load_open_settings(void *sesskey, int do_host, Config *cfg)
     gppi(sesskey, "TermHeight", 24, &cfg->height);
     gppfont(sesskey, "Font", &cfg->font);
     gppi(sesskey, "FontVTMode", VT_UNICODE, (int *) &cfg->vtmode);
+    gppi(sesskey, "UseSystemColours", 0, &cfg->system_colour);
     gppi(sesskey, "TryPalette", 0, &cfg->try_palette);
     gppi(sesskey, "BoldAsColour", 1, &cfg->bold_colour);
     for (i = 0; i < 22; i++) {
@@ -644,6 +648,7 @@ void load_open_settings(void *sesskey, int do_host, Config *cfg)
     gppi(sesskey, "StampUtmp", 1, &cfg->stamp_utmp);
     gppi(sesskey, "LoginShell", 1, &cfg->login_shell);
     gppi(sesskey, "ScrollbarOnLeft", 0, &cfg->scrollbar_on_left);
+    gppi(sesskey, "ShadowBold", 0, &cfg->shadowbold);
     gppfont(sesskey, "BoldFont", &cfg->boldfont);
     gppfont(sesskey, "WideFont", &cfg->widefont);
     gppfont(sesskey, "WideBoldFont", &cfg->wideboldfont);

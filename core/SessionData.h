@@ -71,13 +71,13 @@ private:
   AnsiString FProxyUsername;
   AnsiString FProxyPassword;
   AnsiString FProxyTelnetCommand;
-  //int FProxySOCKSVersion;
   TAutoSwitch FProxyDNS;
   bool FProxyLocalhost;
   TAutoSwitch FBugs[BUG_COUNT];
   AnsiString FCustomParam1;
   AnsiString FCustomParam2;
   bool FResolveSymlinks;
+  TDateTime FTimeDifference;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -100,6 +100,7 @@ private:
   bool __fastcall GetCanLogin();
   void __fastcall SetPingIntervalDT(TDateTime value);
   TDateTime __fastcall GetPingIntervalDT();
+  void __fastcall SetTimeDifference(TDateTime value);
   void __fastcall SetPingEnabled(bool value);
   bool __fastcall GetPingEnabled();
   AnsiString __fastcall GetSessionName();
@@ -137,7 +138,6 @@ private:
   void __fastcall SetProxyUsername(AnsiString value);
   void __fastcall SetProxyPassword(AnsiString value);
   void __fastcall SetProxyTelnetCommand(AnsiString value);
-  //void __fastcall SetProxySOCKSVersion(int value);
   void __fastcall SetProxyDNS(TAutoSwitch value);
   void __fastcall SetProxyLocalhost(bool value);
   AnsiString __fastcall GetProxyPassword();
@@ -153,7 +153,7 @@ public:
   void __fastcall Default();
   virtual void __fastcall StoreToConfig(void * config);
   void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall Save(THierarchicalStorage * Storage);
+  void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport = false);
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
 
@@ -179,6 +179,7 @@ public:
   __property bool CanLogin  = { read=GetCanLogin };
   __property bool ClearAliases = { read = FClearAliases, write = SetClearAliases };
   __property TDateTime PingIntervalDT = { read = GetPingIntervalDT, write = SetPingIntervalDT };
+  __property TDateTime TimeDifference = { read = FTimeDifference, write = SetTimeDifference };
   __property bool PingEnabled = { read = GetPingEnabled, write = SetPingEnabled };
   __property AnsiString SessionName  = { read=GetSessionName };
   __property AnsiString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
@@ -209,7 +210,6 @@ public:
   __property AnsiString ProxyUsername  = { read=FProxyUsername, write=SetProxyUsername };
   __property AnsiString ProxyPassword  = { read=GetProxyPassword, write=SetProxyPassword };
   __property AnsiString ProxyTelnetCommand  = { read=FProxyTelnetCommand, write=SetProxyTelnetCommand };
-  //__property int ProxySOCKSVersion  = { read=FProxySOCKSVersion, write=SetProxySOCKSVersion };
   __property TAutoSwitch ProxyDNS  = { read=FProxyDNS, write=SetProxyDNS };
   __property bool ProxyLocalhost  = { read=FProxyLocalhost, write=SetProxyLocalhost };
   __property TAutoSwitch Bug[TSshBug Bug]  = { read=GetBug, write=SetBug };
@@ -227,6 +227,8 @@ public:
   void __fastcall Load();
   void __fastcall Save(AnsiString aKey);
   void __fastcall Save();
+  void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false);
+  void __fastcall Save(THierarchicalStorage * Storage);
   void __fastcall SelectAll(bool Select);
   void __fastcall Import(TStoredSessionList * From, bool OnlySelected);
   TSessionData * __fastcall AtSession(int Index)
@@ -238,10 +240,6 @@ public:
   virtual __fastcall ~TStoredSessionList();
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };
-
-protected:
-  void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall Save(THierarchicalStorage * Storage);
 
 private:
   TStorage LastStorage;

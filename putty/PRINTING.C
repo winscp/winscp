@@ -4,35 +4,22 @@
 
 #include <windows.h>
 #include "putty.h"
-
-/*
- * Boggle. Flipping between the two branches of this #if appears to
- * make all the difference as to whether network printers show up
- * under PRINTER_ENUM_CONNECTIONS on NT 4. I don't pretend to
- * understand this...
- */
-#if 0
-#define ENUM_LEVEL 5
-#define ENUM_PTR LPPRINTER_INFO_5
-#define ENUM_TYPE PRINTER_INFO_5
-#define ENUM_MEMBER pPrinterName
-#else
-#define ENUM_LEVEL 1
-#define ENUM_PTR LPPRINTER_INFO_1
-#define ENUM_TYPE PRINTER_INFO_1
-#define ENUM_MEMBER pName
-#endif
+#include "winstuff.h"
 
 struct printer_enum_tag {
     int nprinters;
-    ENUM_PTR info;
+    DWORD enum_level;
+    union {
+	LPPRINTER_INFO_4 i4;
+	LPPRINTER_INFO_5 i5;
+    } info;
 };
 
 struct printer_job_tag {
     HANDLE hprinter;
 };
 
-static char *printer_add_enum(int param, char *buffer,
+static char *printer_add_enum(int param, DWORD level, char *buffer,
                               int offset, int *nprinters_ptr)
 {
     DWORD needed, nprinters;
@@ -44,7 +31,7 @@ static char *printer_add_enum(int param, char *buffer,
      * we'll need for the output. Discard the return value since it
      * will almost certainly be a failure due to lack of space.
      */
-    EnumPrinters(param, NULL, ENUM_LEVEL, buffer+offset, 512,
+    EnumPrinters(param, NULL, level, buffer+offset, 512,
 		 &needed, &nprinters);
 
     if (needed < 512)
@@ -52,7 +39,7 @@ static char *printer_add_enum(int param, char *buffer,
 
     buffer = sresize(buffer, offset+needed, char);
 
-    if (EnumPrinters(param, NULL, ENUM_LEVEL, buffer+offset,
+    if (EnumPrinters(param, NULL, level, buffer+offset,
                      needed, &needed, &nprinters) == 0)
         return NULL;
 
@@ -69,14 +56,37 @@ printer_enum *printer_start_enum(int *nprinters_ptr)
     *nprinters_ptr = 0;		       /* default return value */
     buffer = snewn(512, char);
 
+    /*
+     * Determine what enumeration level to use.
+     * When enumerating printers, we need to use PRINTER_INFO_4 on
+     * NT-class systems to avoid Windows looking too hard for them and
+     * slowing things down; and we need to avoid PRINTER_INFO_5 as
+     * we've seen network printers not show up.
+     * On 9x-class systems, PRINTER_INFO_4 isn't available and
+     * PRINTER_INFO_5 is recommended.
+     * Bletch.
+     */
+    if (osVersion.dwPlatformId != VER_PLATFORM_WIN32_NT) {
+	ret->enum_level = 5;
+    } else {
+	ret->enum_level = 4;
+    }
+
     retval = printer_add_enum(PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS,
-			      buffer, 0, nprinters_ptr);
+			      ret->enum_level, buffer, 0, nprinters_ptr);
     if (!retval)
         goto error;
     else
         buffer = retval;
 
-    ret->info = (ENUM_PTR)buffer;
+    switch (ret->enum_level) {
+      case 4:
+	ret->info.i4 = (LPPRINTER_INFO_4)buffer;
+	break;
+      case 5:
+	ret->info.i5 = (LPPRINTER_INFO_5)buffer;
+	break;
+    }
     ret->nprinters = *nprinters_ptr;
     
     return ret;
@@ -94,14 +104,28 @@ char *printer_get_name(printer_enum *pe, int i)
 	return NULL;
     if (i < 0 || i >= pe->nprinters)
 	return NULL;
-    return pe->info[i].ENUM_MEMBER;
+    switch (pe->enum_level) {
+      case 4:
+	return pe->info.i4[i].pPrinterName;
+      case 5:
+	return pe->info.i5[i].pPrinterName;
+      default:
+	return NULL;
+    }
 }
 
 void printer_finish_enum(printer_enum *pe)
 {
     if (!pe)
 	return;
-    sfree(pe->info);
+    switch (pe->enum_level) {
+      case 4:
+	sfree(pe->info.i4);
+	break;
+      case 5:
+	sfree(pe->info.i5);
+	break;
+    }
     sfree(pe);
 }
 

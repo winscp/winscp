@@ -47,6 +47,7 @@ __fastcall TSecureShell::~TSecureShell()
     SAFE_DESTROY(FLog);
     delete FConfig;
     FConfig = NULL;
+    UserObject = NULL;
   }
   __finally
   {
@@ -507,7 +508,7 @@ void __fastcall TSecureShell::WaitForData()
     {
       LogEvent("Waiting for data timed out, asking user what to do.");
       if (DoQueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT, (FSessionData->Timeout)),
-            qaRetry | qaAbort, qpFatalAbort) != qaRetry)
+            qaRetry | qaAbort, qpFatalAbort | qpAllowContinueOnError) != qaRetry)
       {
         FatalError(LoadStr(USER_TERMINATED));
       }
@@ -781,6 +782,18 @@ void __fastcall TSecureShell::UpdateStatus(Integer Value)
     FStatus = Value;
     if (FStatus > FReachedStatus) FReachedStatus = FStatus;
     if (FOnUpdateStatus) FOnUpdateStatus(this);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::SetUserObject(TObject * value)
+{
+  if (UserObject != value)
+  {
+    if (UserObject)
+    {
+      delete UserObject;
+    }
+    FUserObject = value;
   }
 }
 //=== TSessionLog -----------------------------------------------------------

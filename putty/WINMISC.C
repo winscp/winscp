@@ -8,6 +8,8 @@
 #include "putty.h"
 #include "winstuff.h"
 
+OSVERSIONINFO osVersion;
+
 void platform_get_x11_auth(char *display, int *proto,
                            unsigned char *data, int *datalen)
 {
@@ -35,6 +37,21 @@ int filename_equal(Filename f1, Filename f2)
 int filename_is_null(Filename fn)
 {
     return !*fn.path;
+}
+
+char *get_username(void)
+{
+    DWORD namelen;
+    char *user;
+
+    namelen = 0;
+    if (GetUserName(NULL, &namelen) == FALSE)
+	return NULL;
+
+    user = snewn(namelen, char);
+    GetUserName(user, &namelen);
+
+    return user;
 }
 
 int SaneDialogBox(HINSTANCE hinst,
@@ -86,6 +103,13 @@ void SaneEndDialog(HWND hwnd, int ret)
 {
     SetWindowLong(hwnd, BOXRESULT, ret);
     SetWindowLong(hwnd, BOXFLAGS, DF_END);
+}
+
+BOOL init_winver(void)
+{
+    ZeroMemory(&osVersion, sizeof(osVersion));
+    osVersion.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
+    return GetVersionEx ( (OSVERSIONINFO *) &osVersion);
 }
 
 #ifdef DEBUG

@@ -75,6 +75,8 @@ struct plug_function_table {
 };
 
 /* proxy indirection layer */
+/* NB, control of 'addr' is passed via new_connection, which takes
+ * responsibility for freeing it */
 Socket new_connection(SockAddr addr, char *hostname,
 		      int port, int privport,
 		      int oobinline, int nodelay, Plug plug,
@@ -85,6 +87,7 @@ SockAddr name_lookup(char *host, int port, char **canonicalname,
 		     const Config *cfg);
 
 /* platform-dependent callback from new_connection() */
+/* (same caveat about addr as new_connection()) */
 Socket platform_new_connection(SockAddr addr, char *hostname,
 			       int port, int privport,
 			       int oobinline, int nodelay, Plug plug,
@@ -105,6 +108,8 @@ int sk_addrtype(SockAddr addr);
 void sk_addrcopy(SockAddr addr, char *buf);
 void sk_addr_free(SockAddr addr);
 
+/* NB, control of 'addr' is passed via sk_new, which takes responsibility
+ * for freeing it, as for new_connection() */
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 	      int nodelay, Plug p);
 

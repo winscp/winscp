@@ -38,7 +38,7 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="SSH_DEFAULT;OLD_DND;_DEBUG"/>
+    <USERDEFINES value="OLD_DND;_DEBUG"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpForms.bpf"/>
     <INCLUDEPATH value="forms;core;components;windows;resource;packages\filemng;packages\dragndrop;packages\my;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>

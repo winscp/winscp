@@ -97,8 +97,10 @@ static const char *raw_init(void *frontend_handle, void **backend_handle,
 	sfree(buf);
     }
     addr = name_lookup(host, port, realhost, cfg);
-    if ((err = sk_addr_error(addr)) != NULL)
+    if ((err = sk_addr_error(addr)) != NULL) {
+	sk_addr_free(addr);
 	return err;
+    }
 
     if (port < 0)
 	port = 23;		       /* default telnet port */
@@ -117,8 +119,6 @@ static const char *raw_init(void *frontend_handle, void **backend_handle,
 			    (Plug) raw, cfg);
     if ((err = sk_socket_error(raw->s)) != NULL)
 	return err;
-
-    sk_addr_free(addr);
 
     return NULL;
 }
