@@ -1149,7 +1149,7 @@ void setup_config_box(struct controlbox *b, struct sesslist *sesslist,
 		  'r', 100, HELPCTX(translation_codepage),
 		  codepage_handler, P(NULL), P(NULL));
 
-    str = dupprintf("Adjust how %s displays line drawing characters", appname);
+    str = dupprintf("Adjust how %s handles line drawing characters", appname);
     s = ctrl_getset(b, "Window/Translation", "linedraw", str);
     sfree(str);
     ctrl_radiobuttons(s, "Handling of line drawing characters:", NO_SHORTCUT,1,
@@ -1159,17 +1159,14 @@ void setup_config_box(struct controlbox *b, struct sesslist *sesslist,
 		      "Use Unicode line drawing code points",'u',I(VT_UNICODE),
 		      "Poor man's line drawing (+, - and |)",'p',I(VT_POORMAN),
 		      NULL);
+    ctrl_checkbox(s, "Copy and paste line drawing characters as lqqqk",'d',
+		  HELPCTX(selection_linedraw),
+		  dlg_stdcheckbox_handler, I(offsetof(Config,rawcnp)));
 
     /*
      * The Window/Selection panel.
      */
     ctrl_settitle(b, "Window/Selection", "Options controlling copy and paste");
-
-    s = ctrl_getset(b, "Window/Selection", "trans",
-		    "Translation of pasted characters");
-    ctrl_checkbox(s, "Paste VT100 line drawing chars as lqqqk",'d',
-		  HELPCTX(selection_linedraw),
-		  dlg_stdcheckbox_handler, I(offsetof(Config,rawcnp)));
 	
     s = ctrl_getset(b, "Window/Selection", "mouse",
 		    "Control use of mouse");
@@ -1494,7 +1491,7 @@ void setup_config_box(struct controlbox *b, struct sesslist *sesslist,
 			  cipherlist_handler, P(NULL));
 	c->listbox.height = 6;
 	
-	ctrl_checkbox(s, "Enable non-standard use of single-DES in SSH 2", 'i',
+	ctrl_checkbox(s, "Enable legacy use of single-DES in SSH 2", 'i',
 		      HELPCTX(ssh_ciphers),
 		      dlg_stdcheckbox_handler,
 		      I(offsetof(Config,ssh2_des_cbc)));

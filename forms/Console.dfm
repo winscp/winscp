@@ -1,14 +1,13 @@
 object ConsoleDialog: TConsoleDialog
   Left = 349
   Top = 169
-  AutoScroll = False
+  Width = 567
+  Height = 431
   BorderIcons = [biSystemMenu, biMaximize]
   Caption = 'Console'
-  ClientHeight = 397
-  ClientWidth = 559
   Color = clBtnFace
   Constraints.MinHeight = 250
-  Constraints.MinWidth = 300
+  Constraints.MinWidth = 380
   ParentFont = True
   OldCreateOrder = True
   Position = poMainFormCenter

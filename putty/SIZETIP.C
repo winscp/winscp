@@ -1,10 +1,8 @@
-#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <tchar.h>
 
 #include "putty.h"
-#include "winstuff.h"
 
 static ATOM tip_class = 0;
 

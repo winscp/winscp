@@ -2,8 +2,6 @@
  * PuTTY key generation front end.
  */
 
-#include <windows.h>
-#include <commctrl.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +10,8 @@
 
 #include "putty.h"
 #include "ssh.h"
-#include "winstuff.h"
+
+#include <commctrl.h>
 
 #ifdef MSVC4
 #define ICON_BIG        1
@@ -405,7 +404,7 @@ static void setupbigedit2(HWND hwnd, int id, int idstatic,
     strcpy(p, key->comment);
     SetDlgItemText(hwnd, id, buffer);
     SetDlgItemText(hwnd, idstatic, "&Public key for pasting into "
-		   "OpenSSH authorized_keys2 file:");
+		   "OpenSSH authorized_keys file:");
     sfree(pub_blob);
     sfree(buffer);
 }

@@ -12,78 +12,11 @@
 #include <Interface.h>
 
 #include "WinInterface.h"
-#include "WinConfiguration.h"
-#include "TerminalManager.h"
+#include "GUIConfiguration.h"
 
 #define mrCustom (mrYesToAll + 1)
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-//---------------------------------------------------------------------------
-TConfiguration * __fastcall CreateConfiguration()
-{
-  return new TWinConfiguration();
-}
-//---------------------------------------------------------------------------
-void __fastcall FlashOnBackground()
-{
-  assert(Application);
-  if (GetForegroundWindow() != GetActiveWindow())
-  {
-    FlashWindow(Application->Handle, true);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall ShowExtendedException(Exception * E, TObject * Sender)
-{
-  ShowExtendedExceptionEx(E, Sender, false);
-}
-//---------------------------------------------------------------------------
-void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
-  bool NoReconnect)
-{
-  if (!E->Message.IsEmpty())
-  {
-    if (E->InheritsFrom(__classid(Exception)))
-    {
-      if (!E->InheritsFrom(__classid(EAbort)))
-      {
-        TQueryType Type;
-        Type = (E->InheritsFrom(__classid(ESshTerminate)) ?
-          qtInformation : qtError);
-        if (E->InheritsFrom(__classid(EFatal)) && !NoReconnect)
-        {
-          if (FatalExceptionMessageDialog(E, Type) == qaRetry)
-          {
-            TTerminalManager::Instance()->ReconnectActiveTerminal();
-          }
-          else
-          {
-            TTerminalManager::Instance()->FreeActiveTerminal();
-          }
-        }
-        else
-        {
-          ExceptionMessageDialog(E, Type, qaOK);
-        }
-      }
-    }
-    else
-    {
-      FlashOnBackground();
-      ShowException(ExceptObject(), ExceptAddr());
-    }
-  }
-  HandleExtendedException(E, Sender);
-}
-//---------------------------------------------------------------------------
-void __fastcall HandleExtendedException(Exception * E, TObject* /*Sender*/)
-{
-  if (TTerminalManager::Instance(false) &&
-      TTerminalManager::Instance()->ActiveTerminal)
-  {
-    TTerminalManager::Instance()->ActiveTerminal->Log->AddException(E);
-  }
-}
 //---------------------------------------------------------------------------
 TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg, TQueryType Type,
   int Answers, int HelpCtx, int Params)
@@ -276,10 +209,10 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, int Params)
   TMoreButton * MoreButton = dynamic_cast<TMoreButton *>(Dialog->FindComponent("MoreButton"));
   // WinConfiguration may be destroyed already, if called from
   // try ... catch statement of main()
-  if (MoreButton && WinConfiguration)
+  if (MoreButton && GUIConfiguration)
   {
     // store state even when user selects 'Cancel'?
-    WinConfiguration->ErrorDialogExpanded = MoreButton->Expanded;
+    GUIConfiguration->ErrorDialogExpanded = MoreButton->Expanded;
   }
 
   return Answer;
@@ -360,7 +293,7 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString Message,
       MoreButton->Panel = MessageMemo;
       // WinConfiguration may be destroyed already, if called from
       // try ... catch statement of main()
-      MoreButton->Expanded = WinConfiguration && WinConfiguration->ErrorDialogExpanded;
+      MoreButton->Expanded = GUIConfiguration && GUIConfiguration->ErrorDialogExpanded;
       MoreButton->Name = "MoreButton";
 
       MessageMemo->TabOrder = 20;
@@ -488,7 +421,3 @@ void __fastcall Busy(bool Start)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall SshVersionString()
-{
-  return FORMAT("WinSCP-release-%s", (Configuration->Version));
-}

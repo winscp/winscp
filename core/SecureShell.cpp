@@ -10,6 +10,10 @@
 #include "SecureShell.h"
 #include "TextsCore.h"
 #include "Common.h"
+
+#ifndef AUTO_WINSOCK
+#include <winsock2.h>
+#endif
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -35,12 +39,23 @@ __fastcall TSecureShell::TSecureShell()
   FReachedStatus = 0;
   UpdateStatus(sshClosed);
   FConfig = new Config();
+  FSocket = new SOCKET;
+  FMaxPacketSize = 0;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
   try
   {
+    if (FReachedStatus)
+    {
+      SessionsCount--;
+      if (SessionsCount == 0)
+      {
+        NetFinalize();
+      }
+    }
+
     ClearStdError();
     Active = false;
     SAFE_DESTROY(FSessionData);
@@ -48,6 +63,8 @@ __fastcall TSecureShell::~TSecureShell()
     delete FConfig;
     FConfig = NULL;
     UserObject = NULL;
+    delete FSocket;
+    FSocket = NULL;
   }
   __finally
   {
@@ -402,13 +419,21 @@ void __fastcall TSecureShell::FatalError(AnsiString Error)
   FatalError(NULL, Error);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::SetSocket(SOCKET value)
+void __fastcall TSecureShell::SetSocket(void * value)
 {
-  if (FActive && (value != INVALID_SOCKET))
+  assert(value);
+  if (FActive && (*static_cast<SOCKET*>(value) != INVALID_SOCKET))
     FatalError("Cannot set socket during connection");
-  FSocket = value;
-  FActive = (FSocket != INVALID_SOCKET);
-  if (!FActive) FStatus = sshClosed;
+  assert(FSocket);
+  *static_cast<SOCKET*>(FSocket) = *static_cast<SOCKET*>(value);
+  if (*static_cast<SOCKET*>(FSocket) != INVALID_SOCKET)
+  {
+    FActive = true;
+  }
+  else
+  {
+    Discard();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SetSessionData(TSessionData * value)
@@ -436,9 +461,22 @@ void __fastcall TSecureShell::SetActive(bool value)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::GetActive()
+bool __fastcall TSecureShell::GetActive() const
 {
   return FActive;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::Discard()
+{
+  bool WasActive = FActive;
+  FActive = false;
+
+  if (WasActive && OnClose)
+  {
+    OnClose(this);
+  }
+  
+  FStatus = sshClosed;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Close()
@@ -452,24 +490,15 @@ void __fastcall TSecureShell::Close()
   try
   {
     ssh_close(FBackendHandle);
+    // This should be called insted, but there seem tu be error in freeing
+    // FBackend->free(FBackendHandle);
   }
   __finally
   {
     CurrentSSH = PCurrentSSH;
   }
 
-  FActive = false;
-
-  SessionsCount--;
-  if (SessionsCount == 0)
-  {
-    NetFinalize();
-  }
-
-  if (OnClose)
-  {
-    OnClose(this);
-  }
+  Discard();
 }
 //---------------------------------------------------------------------------
 void inline __fastcall TSecureShell::CheckConnection(int Message)
@@ -497,7 +526,7 @@ void __fastcall TSecureShell::WaitForData()
     struct timeval time;
     fd_set readfds;
     FD_ZERO(&readfds);
-    FD_SET(FSocket, &readfds);
+    FD_SET(*static_cast<SOCKET*>(FSocket), &readfds);
 
     time.tv_sec = FSessionData->Timeout;
     time.tv_usec = 0;
@@ -524,7 +553,7 @@ void __fastcall TSecureShell::WaitForData()
   CurrentSSH = this;
   try
   {
-    select_result((WPARAM)FSocket, (LPARAM)FD_READ);
+    select_result((WPARAM)(*static_cast<SOCKET*>(FSocket)), (LPARAM)FD_READ);
   }
   __finally
   {
@@ -532,12 +561,12 @@ void __fastcall TSecureShell::WaitForData()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::SshFallbackCmd()
+bool __fastcall TSecureShell::SshFallbackCmd() const
 {
   return ssh_fallback_cmd(FBackendHandle);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::Error(AnsiString Error)
+void __fastcall TSecureShell::Error(const AnsiString Error) const
 {
   SSH_ERROR(Error);
 }
@@ -548,12 +577,19 @@ void __fastcall TSecureShell::Idle()
   // each 10 min when in background
   noise_regular();
   // Keep session alive
-  if (FSessionData->PingEnabled &&
+  if ((FSessionData->PingType != ptOff) &&
       (Now() - FLastDataSent > FSessionData->PingIntervalDT))
   {
-    LogEvent("Pinging host to keep session alive.");
-    SendSpecial(TS_PING);
+    KeepAlive();
+    // in case keep alive could not be processed, postpone next attempt
+    FLastDataSent = Now();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::KeepAlive()
+{
+  LogEvent("Sending null packet to keep session alive.");
+  SendSpecial(TS_PING);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SetLog(TSessionLog * value)
@@ -568,12 +604,34 @@ void __fastcall TSecureShell::SetConfiguration(TConfiguration *value)
   Log->Configuration = value;
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall TSecureShell::GetDuration()
+TDateTime __fastcall TSecureShell::GetDuration() const
 {
   return Now() - FLoginTime;
 }
 //---------------------------------------------------------------------------
-TCompressionType __fastcall TSecureShell::FuncToCompression(const void * Compress)
+unsigned long __fastcall TSecureShell::MaxPacketSize()
+{
+  if (SshVersion == 1)
+  {
+    return 0;
+  }
+  else
+  {
+    if (FMaxPacketSize == 0)
+    {
+      unsigned long RemWindow = ssh2_remwindow(FBackendHandle);
+      FMaxPacketSize = ssh2_remmaxpkt(FBackendHandle);
+      if (RemWindow < FMaxPacketSize)
+      {
+        FMaxPacketSize = RemWindow;
+      }
+    }
+    return FMaxPacketSize;
+  }
+}
+//---------------------------------------------------------------------------
+TCompressionType __fastcall TSecureShell::FuncToCompression(
+  const void * Compress) const
 {
   if (SshVersion == 1)
   {
@@ -585,25 +643,25 @@ TCompressionType __fastcall TSecureShell::FuncToCompression(const void * Compres
   }
 }
 //---------------------------------------------------------------------------
-TCompressionType __fastcall TSecureShell::GetCSCompression()
+TCompressionType __fastcall TSecureShell::GetCSCompression() const
 {
-  CheckConnection();
+  assert(Active);
   return FuncToCompression(get_cscomp(FBackendHandle));
 }
 //---------------------------------------------------------------------------
-TCompressionType __fastcall TSecureShell::GetSCCompression()
+TCompressionType __fastcall TSecureShell::GetSCCompression() const
 {
-  CheckConnection();
+  assert(Active);
   return FuncToCompression(get_sccomp(FBackendHandle));
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TSecureShell::GetSshVersion()
+int __fastcall TSecureShell::GetSshVersion() const
 {
-  CheckConnection();
+  assert(Active);
   return get_ssh_version(FBackendHandle);
 }
 //---------------------------------------------------------------------------
-TCipher __fastcall TSecureShell::FuncToSsh1Cipher(const void * Cipher)
+TCipher __fastcall TSecureShell::FuncToSsh1Cipher(const void * Cipher) const
 {
   const ssh_cipher *CipherFuncs[] =
     {&ssh_3des, &ssh_des, &ssh_blowfish_ssh1};
@@ -611,14 +669,19 @@ TCipher __fastcall TSecureShell::FuncToSsh1Cipher(const void * Cipher)
   assert(LENOF(CipherFuncs) == LENOF(TCiphers));
   TCipher Result = cipWarn;
 
-  for (Integer Index = 0; Index < LENOF(TCiphers); Index++)
-    if ((ssh_cipher *)Cipher == CipherFuncs[Index]) Result = TCiphers[Index];
+  for (int Index = 0; Index < LENOF(TCiphers); Index++)
+  {
+    if ((ssh_cipher *)Cipher == CipherFuncs[Index])
+    {
+      Result = TCiphers[Index];
+    }
+  }
 
   assert(Result != cipWarn);
   return Result;
 }
 //---------------------------------------------------------------------------
-TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher)
+TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher) const
 {
   const ssh2_ciphers *CipherFuncs[] =
     {&ssh2_3des, &ssh2_des, &ssh2_aes, &ssh2_blowfish};
@@ -629,16 +692,21 @@ TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher)
   for (int C = 0; C < LENOF(TCiphers); C++)
   {
     for (int F = 0; F < CipherFuncs[C]->nciphers; F++)
-      if ((ssh2_cipher *)Cipher == CipherFuncs[C]->list[F]) Result = TCiphers[C];
+    {
+      if ((ssh2_cipher *)Cipher == CipherFuncs[C]->list[F])
+      {
+        Result = TCiphers[C];
+      }
+    }
   }
 
   assert(Result != cipWarn);
   return Result;
 }
 //---------------------------------------------------------------------------
-TCipher __fastcall TSecureShell::GetCSCipher()
+TCipher __fastcall TSecureShell::GetCSCipher() 
 {
-  CheckConnection();
+  assert(Active);
 
   if (FCSCipher == cipWarn)
   {
@@ -773,12 +841,12 @@ void __fastcall TSecureShell::OldKeyfileWarning()
   DoQueryUser(LoadStr(OLD_KEY), NULL, qaOK, 0, qtWarning);
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TSecureShell::GetStatus()
+int __fastcall TSecureShell::GetStatus() const
 {
   return FStatus;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::UpdateStatus(Integer Value)
+void __fastcall TSecureShell::UpdateStatus(int Value)
 {
   if (FStatus != Value)
   {
@@ -1055,8 +1123,9 @@ void __fastcall TSessionLog::AddStartupInfo()
          BooleanToEngStr(Data->AuthKI)));
       ADF("Ciphers: %s; Ssh2DES: %s",
         (Data->CipherList, BooleanToEngStr(Data->Ssh2DES)));
-      ADF("Ping interval: %d sec (0 = off); Timeout: %d sec",
-        (Data->PingInterval, Data->Timeout));
+      char * PingTypes = "-NC";
+      ADF("Ping type: %s, Ping interval: %d sec; Timeout: %d sec",
+        (AnsiString(PingTypes[Data->PingType]), Data->PingInterval, Data->Timeout));
       AnsiString Bugs;
       char const * BugFlags = "A+-";
       for (int Index = 0; Index < BUG_COUNT; Index++)
@@ -1084,6 +1153,9 @@ void __fastcall TSessionLog::AddStartupInfo()
          (Data->RemoteDirectory.IsEmpty() ? AnsiString("home") : Data->RemoteDirectory),
          BooleanToEngStr(Data->UpdateDirectories),
          BooleanToEngStr(Data->CacheDirectories)));
+      ADF("Cache directory changes: %s, Permanent: %s",
+        (BooleanToEngStr(Data->CacheDirectoryChanges),
+         BooleanToEngStr(Data->PreserveDirectoryChanges)));
       ADF("Clear aliases: %s, Unset nat.vars: %s, Resolve symlinks: %s",
         (BooleanToEngStr(Data->ClearAliases), BooleanToEngStr(Data->UnsetNationalVars),
          BooleanToEngStr(Data->ResolveSymlinks)));
@@ -1139,6 +1211,8 @@ void __fastcall TSessionLog::Clear()
   FTopIndex += Count;
   TStringList::Clear();
 }
+
+
 
 
 

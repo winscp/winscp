@@ -45,13 +45,16 @@ __published:
   void __fastcall EmailLabelClick(TObject *Sender);
   void __fastcall DisplayLicence(TObject *Sender);
   void __fastcall LicenceButtonClick(TObject *Sender);
+  bool __fastcall GetAllowLicence();
 private:
   TConfiguration * FConfiguration;
   void __fastcall SetConfiguration(TConfiguration * value);
+  void __fastcall SetAllowLicence(bool value);
 public:
   virtual __fastcall TAboutDialog(TComponent* AOwner);
   void __fastcall LoadData();
   __property TConfiguration * Configuration  = { read=FConfiguration, write=SetConfiguration };
+  __property bool AllowLicence = { read=GetAllowLicence, write=SetAllowLicence };
 protected:
   void __fastcall OpenAddress(const AnsiString Address);
 };

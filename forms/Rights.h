@@ -9,6 +9,9 @@
 #include <Buttons.hpp>
 
 #include <RemoteFiles.h>
+#include <ActnList.hpp>
+#include <ImgList.hpp>
+#include <Menus.hpp>
 //---------------------------------------------------------------------------
 class TRightsFrame : public TFrame
 {
@@ -31,13 +34,24 @@ __published:
   TSpeedButton *OthersButton;
   TLabel *OctalLabel;
   TEdit *OctalEdit;
+  TPopupMenu *RightsPopup;
+  TMenuItem *Norights1;
+  TMenuItem *Defaultrights1;
+  TMenuItem *Allrights1;
+  TMenuItem *Leaveasis1;
+  TActionList *RightsActions;
+  TAction *NoRightsAction;
+  TAction *DefaultRightsAction;
+  TAction *AllRightsAction;
+  TAction *LeaveRightsAsIsAction;
+  TImageList *RightsImages;
   void __fastcall ControlChange(TObject *Sender);
-  void __fastcall FrameContextPopup(TObject *Sender,
-    TPoint &MousePos, bool &Handled);
   void __fastcall RightsButtonsClick(TObject *Sender);
-  void __fastcall FrameEnter(TObject *Sender);
   void __fastcall OctalEditExit(TObject *Sender);
   void __fastcall OctalEditChange(TObject *Sender);
+  void __fastcall RightsActionsExecute(TBasicAction *Action,
+          bool &Handled);
+  void __fastcall RightsActionsUpdate(TBasicAction *Action, bool &Handled);
 private:
   bool FAllowAddXToDirectories;
   TNotifyEvent FOnChange;

@@ -6,7 +6,6 @@
 #include <shlobj.h>
 
 #include <Common.h>
-#include <FileOperator.hpp>
 #include <TextsWin.h>
 
 #include "Tools.h"
@@ -37,27 +36,6 @@ int FontStylesToInt(const TFontStyles value)
     {
       Result |= 1;
     }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-int __fastcall FileOperatorDelete(const AnsiString FileName, bool ToRecycleBin)
-{
-  TFileOperator * FileOperator = new TFileOperator(Application);
-  int Result;
-  try
-  {
-    TFileOperationFlags Flags;
-    Flags << foNoConfirmation << foNoConfirmMkDir << foRenameOnCollision << foSilent;
-    if (ToRecycleBin) Flags << foAllowUndo;
-    FileOperator->Flags = Flags;
-    FileOperator->Operation = foDelete;
-    FileOperator->OperandFrom->Text = FileName;
-    Result = FileOperator->Execute();
-  }
-  __finally
-  {
-    delete FileOperator;
   }
   return Result;
 }
@@ -112,12 +90,6 @@ void __fastcall SetCoolBandsMinWidth(TCoolBar * CoolBar)
       Band->MinWidth = Band->Control->Width;
     }
   }
-}
-//---------------------------------------------------------------------------
-bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params)
-{
-  return ((int)ShellExecute(Application->Handle, "open", (char*)Path.data(),
-    (char*)Params.data(), NULL, SW_SHOWNORMAL) > 32);
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params)

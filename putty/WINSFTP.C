@@ -2,15 +2,6 @@
  * winsftp.c: the Windows-specific parts of PSFTP and PSCP.
  */
 
-#include <windows.h>
-#ifndef AUTO_WINSOCK
-#ifdef WINSOCK_TWO
-#include <winsock2.h>
-#else
-#include <winsock.h>
-#endif
-#endif
-
 #include "putty.h"
 #include "psftp.h"
 
@@ -481,25 +472,6 @@ char *do_select(SOCKET skt, int startup)
 extern int select_result(WPARAM, LPARAM);
 
 /*
- * Initialize the WinSock driver.
- */
-static void init_winsock(void)
-{
-    WORD winsock_ver;
-    WSADATA wsadata;
-
-    winsock_ver = MAKEWORD(1, 1);
-    if (WSAStartup(winsock_ver, &wsadata)) {
-	fprintf(stderr, "Unable to initialise WinSock");
-	cleanup_exit(1);
-    }
-    if (LOBYTE(wsadata.wVersion) != 1 || HIBYTE(wsadata.wVersion) != 1) {
-	fprintf(stderr, "WinSock version is incompatible with 1.1");
-	cleanup_exit(1);
-    }
-}
-
-/*
  * Wait for some network data and process it.
  */
 int ssh_sftp_loop_iteration(void)
@@ -511,7 +483,7 @@ int ssh_sftp_loop_iteration(void)
 
     FD_ZERO(&readfds);
     FD_SET(sftp_ssh_socket, &readfds);
-    if (select(1, &readfds, NULL, NULL, NULL) < 0)
+    if (p_select(1, &readfds, NULL, NULL, NULL) < 0)
 	return -1;		       /* doom */
 
     select_result((WPARAM) sftp_ssh_socket, (LPARAM) FD_READ);
@@ -525,9 +497,7 @@ int main(int argc, char *argv[])
 {
     int ret;
 
-    init_winsock();
     ret = psftp_main(argc, argv);
-    WSACleanup();
 
     return ret;
 }

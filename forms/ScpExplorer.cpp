@@ -135,6 +135,16 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
     default: return TCustomScpExplorerForm::GetComponent(Component);
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
+{
+  AnsiString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  AnsiString RemoteDirectory = RemoteDirView->PathName;
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory))
+  {
+    WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory; 
+  }
+}
 
 
 

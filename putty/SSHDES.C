@@ -942,9 +942,12 @@ static const struct ssh2_cipher ssh_3des_ssh2 = {
 };
 
 /*
- * Single DES in ssh2. It isn't clear that "des-cbc" is an official
- * cipher name, but ssh.com support it and apparently aren't the
- * only people to do so, so we sigh and implement it anyway.
+ * Single DES in ssh2. "des-cbc" is marked as HISTORIC in
+ * draft-ietf-secsh-assignednumbers-04.txt, referring to
+ * FIPS-46-3.  ("Single DES (i.e., DES) will be permitted 
+ * for legacy systems only.") , but ssh.com support it and 
+ * apparently aren't the only people to do so, so we sigh 
+ * and implement it anyway.
  */
 static const struct ssh2_cipher ssh_des_ssh2 = {
     des_make_context, des3_free_context, des3_iv, des_key,

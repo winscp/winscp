@@ -19,6 +19,7 @@
 #include <WinInterface.h>
 //---------------------------------------------------------------------------
 class TProgressForm;
+class TSynchronizeProgressForm;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -87,6 +88,7 @@ protected:
   TCustomDirView * FDDTargetDirView;
   TProgressForm * FProgressForm;
   AnsiString FCustomCommandName;
+  TSynchronizeProgressForm * FSynchronizeProgressForm;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,
@@ -95,6 +97,7 @@ protected:
   void __fastcall DeleteFiles(TOperationSide Side, TStrings * FileList);
   virtual void __fastcall DoDirViewExecFile(TObject * Sender, TListItem * Item, bool & AllowExec);
   virtual TControl * __fastcall GetComponent(Byte Component);
+  virtual TCoolBand * __fastcall GetCoolBand(TCoolBar * Coolbar, int ID);
   bool __fastcall GetComponentVisible(Word Component);
   virtual Boolean __fastcall GetHasDirView(TOperationSide Side);
   DYNAMIC void __fastcall KeyDown(Word & Key, Classes::TShiftState Shift);
@@ -115,6 +118,12 @@ protected:
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
   void __fastcall HandleErrorList(TStringList *& ErrorList);
+  void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
+    const AnsiString RemoteDirectory, bool & Continue);
+  bool __fastcall DoFullSynchronizeDirectories(AnsiString & LocalDirectory,
+    AnsiString & RemoteDirectory);
+  void __fastcall BatchStart(void *& Storage);
+  void __fastcall BatchEnd(void * Storage);
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
@@ -147,6 +156,7 @@ public:
   void __fastcall OpenInPutty();
   virtual void __fastcall UpdateSessionData(TSessionData * Data = NULL);
   virtual void __fastcall SynchronizeDirectories();
+  virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall ExploreLocalDirectory();
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy);
   void __fastcall LastTerminalClosed(TObject * Sender);

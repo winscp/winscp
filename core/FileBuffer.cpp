@@ -129,6 +129,14 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
           Ptr = Data + Index;
         }
       }
+      // this should fix LF -> CR/LF conversion "bug" on CR/FL files,
+      // which led to CR/CR/FL
+      else if (*Ptr == Dest[0] || *Ptr == Dest[1])
+      {
+        Delete(Index, 1);
+        Index--;
+        Ptr = Data + Index;
+      }
       Ptr++;
     }
   }
@@ -160,7 +168,7 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
     }
   }
 
-  if (RemoveCtrlZ && ((*(Data + Size - 1)) == '\x1A'))
+  if (RemoveCtrlZ && (Size > 0) && ((*(Data + Size - 1)) == '\x1A'))
   {
     Delete(Size-1, 1);
   }

@@ -163,10 +163,10 @@ void save_open_settings(void *sesskey, int do_host, Config *cfg)
     write_setting_i(sesskey, "Present", 1);
     if (do_host) {
 	write_setting_s(sesskey, "HostName", cfg->host);
-	write_setting_filename(sesskey, "LogFileName", cfg->logfilename);
-	write_setting_i(sesskey, "LogType", cfg->logtype);
-	write_setting_i(sesskey, "LogFileClash", cfg->logxfovr);
     }
+    write_setting_filename(sesskey, "LogFileName", cfg->logfilename);
+    write_setting_i(sesskey, "LogType", cfg->logtype);
+    write_setting_i(sesskey, "LogFileClash", cfg->logxfovr);
     p = "raw";
     for (i = 0; backends[i].name != NULL; i++)
 	if (backends[i].protocol == cfg->protocol) {

@@ -8,7 +8,6 @@
 #include <Common.h>
 #include "About.h"
 #include "WinInterface.h"
-#include "UserInterface.h"
 #include "TextsCore.h"
 #include "TextsWin.h"
 //---------------------------------------------------------------------
@@ -72,6 +71,16 @@ void __fastcall TAboutDialog::DisplayLicence(TObject * Sender)
 void __fastcall TAboutDialog::LicenceButtonClick(TObject * /*Sender*/)
 {
   DoProductLicence();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TAboutDialog::GetAllowLicence()
+{
+  return LicenceButton->Visible;
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::SetAllowLicence(bool value)
+{
+  LicenceButton->Visible = value;
 }
 //---------------------------------------------------------------------------
 

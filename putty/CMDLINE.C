@@ -51,6 +51,14 @@ static void cmdline_save_param(char *p, char *value, int pri)
     saves[pri].nsaved++;
 }
 
+void cmdline_cleanup(void)
+{
+    int pri;
+
+    for (pri = 0; pri < NPRIORITIES; pri++)
+	sfree(saves[pri].params);
+}
+
 #define SAVEABLE(pri) do { \
     if (need_save) { cmdline_save_param(p, value, pri); return ret; } \
 } while (0)

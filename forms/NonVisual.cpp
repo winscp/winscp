@@ -2,16 +2,14 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "NonVisual.h"       
+#include "NonVisual.h"
 
 #include <Common.h>
 #include <ScpMain.h>
 #include <TextsWin.h>
 
 #include <Log.h>
-#include <Preferences.h>
 #include <Interface.h>
-#include <UserInterface.h>
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 //---------------------------------------------------------------------------
@@ -72,7 +70,6 @@ TNonVisualDataModule *NonVisualDataModule;
 __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
         : TDataModule(Owner)
 {
-  FRightsFrame = NULL;
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
 }
@@ -101,35 +98,6 @@ void __fastcall TNonVisualDataModule::LogActionsExecute(
   EXE(LogCopyAction, LogMemo->CopyToClipboard())
 
   EXE(LogCloseAction, WinConfiguration->LogView = lvNone)
-  ;
-}
-//---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::RightsActionsExecute(
-      TBasicAction *Action, bool &Handled)
-{
-  assert(RightsFrame);
-  TRights Rights = RightsFrame->Rights;
-  Rights.Number = raNo;
-  EXE(NoRightsAction, Rights = raNo)
-  EXE(DefaultRightsAction, Rights = raDefault)
-  EXE(AllRightsAction, Rights = raAll)
-  EXE(AllRightsAction, Rights = raAll)
-  EXE(LeaveRightsAsIsAction, Rights.AllUndef())
-  ;
-  RightsFrame->Rights = Rights;
-}
-//---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::RightsActionsUpdate(
-      TBasicAction *Action, bool &Handled)
-{
-  UPDEX(NoRightsAction, RightsFrame != NULL,
-    NoRightsAction->Checked = (!RightsFrame->Rights.IsUndef && RightsFrame->Rights.NumberSet == raNo),)
-  UPDEX(DefaultRightsAction, RightsFrame != NULL,
-    DefaultRightsAction->Checked = (!RightsFrame->Rights.IsUndef && RightsFrame->Rights.NumberSet == raDefault),)
-  UPDEX(AllRightsAction, RightsFrame != NULL,
-    AllRightsAction->Checked = (!RightsFrame->Rights.IsUndef && RightsFrame->Rights.NumberSet == raAll),)
-  UPDEX(LeaveRightsAsIsAction, RightsFrame != NULL && RightsFrame->Rights.AllowUndef,
-    LeaveRightsAsIsAction->Checked = (RightsFrame->Rights.NumberSet == raNo && RightsFrame->Rights.NumberUnset == raNo),)
   ;
 }
 //---------------------------------------------------------------------------
@@ -315,10 +283,13 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // COMMAND
   UPD(CompareDirectoriesAction, true)
   UPD(SynchronizeAction, true)
+  UPD(FullSynchronizeAction, true)
   UPD(ConsoleAction, ScpExplorer->Terminal && ScpExplorer->Terminal->IsCapable[fcAnyCommand])
   UPD(PuttyAction, true)
   UPD(SynchorizeBrowsingAction, true)
   UPD(CloseApplicationAction, true)
+  UPD(FileSystemInfoAction, true)
+  UPD(ClearCachesAction, (ScpExplorer->Terminal != NULL) && !ScpExplorer->Terminal->AreCachesEmpty)
 
   // CUSTOM COMMANDS
   UPD(CustomCommandsAction,
@@ -486,10 +457,13 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
   // COMMAND
   EXE(CompareDirectoriesAction, ScpExplorer->CompareDirectories())
   EXE(SynchronizeAction, ScpExplorer->SynchronizeDirectories())
+  EXE(FullSynchronizeAction, ScpExplorer->FullSynchronizeDirectories())
   EXE(ConsoleAction, ScpExplorer->OpenConsole())
   EXE(PuttyAction, ScpExplorer->OpenInPutty())
   EXE(SynchorizeBrowsingAction, )
   EXE(CloseApplicationAction, ScpExplorer->Close())
+  EXE(FileSystemInfoAction, DoFileSystemInfoDialog(ScpExplorer->Terminal))
+  EXE(ClearCachesAction, ScpExplorer->Terminal->ClearCaches())
 
   // CUSTOM COMMANDS
   EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction))

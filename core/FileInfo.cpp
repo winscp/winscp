@@ -10,19 +10,19 @@
 // Return pointer to file version info block
 void * __fastcall CreateFileInfo(AnsiString FileName)
 {
-        DWORD Handle, Size;
-        void * Result = NULL;
+  DWORD Handle, Size;
+  void * Result = NULL;
 
   // Get file version info block size
   Size = GetFileVersionInfoSize(FileName.c_str(), &Handle);
   // If size is valid
   if (Size)
   {
-                Result = new char[Size];
+    Result = new char[Size];
     // Get file version info block
     if (!GetFileVersionInfo(FileName.c_str(), Handle, Size, Result))
     {
-        delete Result;
+      delete[] Result;
       Result = NULL;
     }
   }
@@ -32,7 +32,7 @@ void * __fastcall CreateFileInfo(AnsiString FileName)
 // Free file version info block memory
 void __fastcall FreeFileInfo(void * FileInfo)
 {
-  delete FileInfo;
+  delete[] FileInfo;
 }
 //---------------------------------------------------------------------------
 typedef TTranslation TTranslations[65536];
@@ -41,8 +41,8 @@ typedef TTranslation *PTranslations;
 // Return pointer to fixed file version info
 PVSFixedFileInfo __fastcall GetFixedFileInfo(void * FileInfo)
 {
-        UINT Len;
-        PVSFixedFileInfo Result;
+  UINT Len;
+  PVSFixedFileInfo Result;
   if (!VerQueryValue(FileInfo, "\\", (void**)&Result, &Len))
     throw Exception("Fixed file info not available");
   return Result;
@@ -61,7 +61,7 @@ unsigned __fastcall GetTranslationCount(void * FileInfo)
 // Return i-th translation in the file version info translation list
 TTranslation __fastcall GetTranslation(void * FileInfo, unsigned i)
 {
-        PTranslations P;
+  PTranslations P;
   UINT Len;
 
   if (!VerQueryValue(FileInfo, "\\VarFileInfo\\Translation", (void**)&P, &Len))

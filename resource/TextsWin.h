@@ -1,6 +1,6 @@
-#ifndef TextsWinH 
-#define TextsWinH 
- 
+#ifndef TextsWinH
+#define TextsWinH
+
 #define LICENCE         1001
 #define LICENCE_2       1002
 #define LICENCE_3       1003
@@ -21,7 +21,7 @@
 #define LICENCE_18      1018
 #define LICENCE_PUTTY   1021
 #define LICENCE_PUTTY_2 1022
- 
+
 #define WIN_ERROR_STRINGS       1100
 #define MASK_ERROR              1101
 #define WARN_FATAL_ERROR        1102
@@ -38,7 +38,6 @@
 #define DOCUMENT_WAIT_ERROR     1116
 #define SYNC_DIR_BROWSE_ERROR   1117
 #define RESOLVE_SHORTCUT_ERROR  1118
-#define DUPLICATE_BOOKMARK      1119
 #define BOOKMARK_INVALID_NAME   1120
 #define BOOKMARK_FOLDER_INVALID_NAME 1121
 #define DUPLICATE_BOOKMARK_FOLDER 1122
@@ -48,6 +47,8 @@
 #define CHECK_FOR_UPDATES_ERROR 1126
 #define EXECUTE_APP_ERROR       1127
 #define FILE_NOT_FOUND          1128
+#define ABSOLUTE_PATH_REQUIRED  1129
+
 #define WIN_CONFIRMATION_STRINGS 1300
 #define CONFIRM_OVERWRITE_SESSION 1301
 #define CREATE_LOCAL_DIRECTORY  1302
@@ -72,6 +73,7 @@
 #define PREV_BUTTON             1321
 #define NEXT_BUTTON             1322
 #define APPEND_BUTTON           1323
+
 #define WIN_INFORMATION_STRINGS 1400
 #define APP_CAPTION             1401
 #define COMPARE_NO_DIFFERENCES  1402
@@ -100,6 +102,7 @@
 #define STATUS_STARTUP          1457
 #define STATUS_OPEN_DIRECTORY   1458
 #define STATUS_READY            1459
+
 #define WIN_FORMS_STRINGS       1500
 #define LOG_NOLOG               1501
 #define LOG_NOLOGFILE           1502
@@ -214,9 +217,11 @@
 #define UPDATES_URL             1706
 #define DOWNLOAD_URL            1707
 #define DONATE_URL              1708
+#define SELECT_LOCAL_DIRECTORY  1709
+
 #define TRANSLATOR_INFO         1801
 #define MIDDLE_EAST             1802
 #define BIDI_MODE               1803
 #define FLIP_CHILDREN           1804
- 
-#endif // TextsWin 
+
+#endif // TextsWin

@@ -85,6 +85,8 @@ __published:
   TToolButton *ToolButton46;
   TToolButton *ToolButton47;
   TComboBox *SessionCombo;
+  TToolButton *ToolButton48;
+  TToolButton *ToolButton49;
   void __fastcall FormShow(TObject *Sender);
 private:
 protected:
@@ -100,6 +102,7 @@ public:
   __fastcall TScpExplorerForm(TComponent* Owner);
   virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall StoreParams();
+  virtual void __fastcall FullSynchronizeDirectories();
 };
 //---------------------------------------------------------------------------
 #endif

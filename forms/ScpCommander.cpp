@@ -278,8 +278,16 @@ void __fastcall TScpCommanderForm::TerminalChanged()
 
       if (DocumentsDir)
       {
-        LocalDirView->HomeDirectory = "";
-        LocalDirView->ExecuteHomeDirectory();
+        try
+        {
+          LocalDirView->HomeDirectory = "";
+          LocalDirView->ExecuteHomeDirectory();
+        }
+        catch(Exception & E)
+        {
+          ShowExtendedException(&E, this);
+          LocalDirView->Path = ExtractFilePath(Application->ExeName);
+        }
       }
 
       if (Configuration->DefaultDirIsHome &&
@@ -468,6 +476,13 @@ void __fastcall TScpCommanderForm::SynchronizeStartStop(System::TObject* Sender,
   {
     FSynchronizeDialog = NULL;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
+{
+  AnsiString LocalDirectory = LocalDirView->PathName;
+  AnsiString RemoteDirectory = RemoteDirView->PathName;
+  DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewChangeDetected(

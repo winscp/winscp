@@ -182,6 +182,9 @@ int loadrsakey(const Filename *filename, struct RSAKey *key, char *passphrase,
      * key file.
      */
     if (fgets(buf, sizeof(buf), fp) && !strcmp(buf, rsa_signature)) {
+	/*
+	 * This routine will take care of calling fclose() for us.
+	 */
 	ret = loadrsakey_main(fp, key, FALSE, NULL, passphrase, &error);
 	goto end;
     }
@@ -189,10 +192,10 @@ int loadrsakey(const Filename *filename, struct RSAKey *key, char *passphrase,
     /*
      * Otherwise, we have nothing. Return empty-handed.
      */
-    fclose(fp);
     error = "not an SSH-1 RSA file";
 
   end:
+    fclose(fp);
     if ((ret != 1) && errorstr)
 	*errorstr = error;
     return ret;
@@ -217,6 +220,9 @@ int rsakey_encrypted(const Filename *filename, char **comment)
      */
     if (fgets(buf, sizeof(buf), fp) && !strcmp(buf, rsa_signature)) {
 	const char *dummy;
+	/*
+	 * This routine will take care of calling fclose() for us.
+	 */
 	return loadrsakey_main(fp, NULL, FALSE, comment, NULL, &dummy);
     }
     fclose(fp);
@@ -261,10 +267,11 @@ int rsakey_pubblob(const Filename *filename, void **blob, int *bloblen,
 	}
     } else {
 	error = "not an SSH-1 RSA file";
-        fclose(fp);
     }
 
   end:
+    if (fp)
+	fclose(fp);
     if ((ret != 1) && errorstr)
 	*errorstr = error;
     return ret;

@@ -178,14 +178,13 @@ int from_backend(void *frontend, int is_stderr, const char *data, int datalen)
     unsigned char *p = (unsigned char *) data;
     unsigned len = (unsigned) datalen;
 
-    assert(len > 0);
-
     /*
      * stderr data is just spouted to local stderr and otherwise
      * ignored.
      */
     if (is_stderr) {
-	fwrite(data, 1, len, stderr);
+	if (len > 0)
+	    fwrite(data, 1, len, stderr);
 	return 0;
     }
 
@@ -195,7 +194,7 @@ int from_backend(void *frontend, int is_stderr, const char *data, int datalen)
     if (!outptr)
 	return 0;
 
-    if (outlen > 0) {
+    if ((outlen > 0) && (len > 0)) {
 	unsigned used = outlen;
 	if (used > len)
 	    used = len;
@@ -467,6 +466,8 @@ static void print_stats(char *name, unsigned long size, unsigned long done,
 
 	if (done == size)
 	    printf("\n");
+
+	fflush(stdout);
     }
 }
 
@@ -673,6 +674,7 @@ static int scp_sftp_preserve, scp_sftp_recursive;
 static unsigned long scp_sftp_mtime, scp_sftp_atime;
 static int scp_has_times;
 static struct fxp_handle *scp_sftp_filehandle;
+static struct fxp_xfer *scp_sftp_xfer;
 static uint64 scp_sftp_fileoffset;
 
 void scp_source_setup(char *target, int shouldbedir)
@@ -767,6 +769,8 @@ int scp_send_filename(char *name, unsigned long size, int modes)
 	    return 1;
 	}
 	scp_sftp_fileoffset = uint64_make(0, 0);
+	scp_sftp_xfer = xfer_upload_init(scp_sftp_filehandle,
+					 scp_sftp_fileoffset);
 	sfree(fullname);
 	return 0;
     } else {
@@ -784,23 +788,23 @@ int scp_send_filedata(char *data, int len)
     if (using_sftp) {
 	int ret;
 	struct sftp_packet *pktin;
-	struct sftp_request *req, *rreq;
 
 	if (!scp_sftp_filehandle) {
 	    return 1;
 	}
 
-	sftp_register(req = fxp_write_send(scp_sftp_filehandle,
-					   data, scp_sftp_fileoffset, len));
-	rreq = sftp_find_request(pktin = sftp_recv());
-	assert(rreq == req);
-	ret = fxp_write_recv(pktin, rreq);
-
-	if (!ret) {
-	    tell_user(stderr, "error while writing: %s\n", fxp_error());
-	    errs++;
-	    return 1;
+	while (!xfer_upload_ready(scp_sftp_xfer)) {
+	    pktin = sftp_recv();
+	    ret = xfer_upload_gotpkt(scp_sftp_xfer, pktin);
+	    if (!ret) {
+		tell_user(stderr, "error while writing: %s\n", fxp_error());
+		errs++;
+		return 1;
+	    }
 	}
+
+	xfer_upload_data(scp_sftp_xfer, data, len);
+
 	scp_sftp_fileoffset = uint64_add32(scp_sftp_fileoffset, len);
 	return 0;
     } else {
@@ -829,6 +833,12 @@ int scp_send_finish(void)
 	struct sftp_packet *pktin;
 	struct sftp_request *req, *rreq;
 	int ret;
+
+	while (!xfer_done(scp_sftp_xfer)) {
+	    pktin = sftp_recv();
+	    xfer_upload_gotpkt(scp_sftp_xfer, pktin);
+	}
+	xfer_cleanup(scp_sftp_xfer);
 
 	if (!scp_sftp_filehandle) {
 	    return 1;
@@ -1388,6 +1398,8 @@ int scp_accept_filexfer(void)
 	    return 1;
 	}
 	scp_sftp_fileoffset = uint64_make(0, 0);
+	scp_sftp_xfer = xfer_download_init(scp_sftp_filehandle,
+					   scp_sftp_fileoffset);
 	sfree(scp_sftp_currentname);
 	return 0;
     } else {
@@ -1400,21 +1412,30 @@ int scp_recv_filedata(char *data, int len)
 {
     if (using_sftp) {
 	struct sftp_packet *pktin;
-	struct sftp_request *req, *rreq;
-	int actuallen;
+	int ret, actuallen;
+	void *vbuf;
 
-	sftp_register(req = fxp_read_send(scp_sftp_filehandle,
-					  scp_sftp_fileoffset, len));
-	rreq = sftp_find_request(pktin = sftp_recv());
-	assert(rreq == req);
-	actuallen = fxp_read_recv(pktin, rreq, data, len);
+	xfer_download_queue(scp_sftp_xfer);
+	pktin = sftp_recv();
+	ret = xfer_download_gotpkt(scp_sftp_xfer, pktin);
 
-	if (actuallen == -1 && fxp_error_type() != SSH_FX_EOF) {
+	if (ret < 0) {
 	    tell_user(stderr, "pscp: error while reading: %s", fxp_error());
 	    errs++;
 	    return -1;
 	}
-	if (actuallen < 0)
+
+	if (xfer_download_data(scp_sftp_xfer, &vbuf, &actuallen)) {
+	    /*
+	     * This assertion relies on the fact that the natural
+	     * block size used in the xfer manager is at most that
+	     * used in this module. I don't like crossing layers in
+	     * this way, but it'll do for now.
+	     */
+	    assert(actuallen <= len);
+	    memcpy(data, vbuf, actuallen);
+	    sfree(vbuf);
+	} else
 	    actuallen = 0;
 
 	scp_sftp_fileoffset = uint64_add32(scp_sftp_fileoffset, actuallen);
@@ -1430,6 +1451,23 @@ int scp_finish_filerecv(void)
     if (using_sftp) {
 	struct sftp_packet *pktin;
 	struct sftp_request *req, *rreq;
+
+	/*
+	 * Ensure that xfer_done() will work correctly, so we can
+	 * clean up any outstanding requests from the file
+	 * transfer.
+	 */
+	xfer_set_error(scp_sftp_xfer);
+	while (!xfer_done(scp_sftp_xfer)) {
+	    void *vbuf;
+	    int len;
+
+	    pktin = sftp_recv();
+	    xfer_download_gotpkt(scp_sftp_xfer, pktin);
+	    if (xfer_download_data(scp_sftp_xfer, &vbuf, &len))
+		sfree(vbuf);
+	}
+	xfer_cleanup(scp_sftp_xfer);
 
 	sftp_register(req = fxp_close_send(scp_sftp_filehandle));
 	rreq = sftp_find_request(pktin = sftp_recv());
@@ -2140,6 +2178,12 @@ int psftp_main(int argc, char *argv[])
     if (gui_mode)
 	gui_send_errcount(list, errs);
 
+    cmdline_cleanup();
+    console_provide_logctx(NULL);
+    back->free(backhandle);
+    backhandle = NULL;
+    back = NULL;
+    sk_cleanup();
     return (errs == 0 ? 0 : 1);
 }
 

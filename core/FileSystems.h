@@ -28,8 +28,11 @@ public:
   static AnsiString __fastcall CompleteCustomCommand(AnsiString Command,
     const AnsiString FileName, TGetParamValueEvent OnGetParamValue);
 
+  virtual AnsiString __fastcall AbsolutePath(AnsiString Path) = 0;
+  virtual void __fastcall KeepAlive() = 0;
   virtual void __fastcall AnyCommand(const AnsiString Command) = 0;
   virtual void __fastcall ChangeDirectory(const AnsiString Directory) = 0;
+  virtual void __fastcall CachedChangeDirectory(const AnsiString Directory) = 0;
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties) = 0;
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
@@ -50,6 +53,7 @@ public:
   virtual void __fastcall DoStartup() = 0;
   virtual void __fastcall HomeDirectory() = 0;
   virtual bool __fastcall IsCapable(int Capability) const = 0;
+  virtual void __fastcall AdditionalInfo(TStrings * AdditionalInfo, bool Initial) = 0;
   virtual void __fastcall LookupUserGroups() = 0;
   virtual void __fastcall ReadCurrentDirectory() = 0;
   virtual void __fastcall ReadDirectory(TRemoteFileList * FileList) = 0;

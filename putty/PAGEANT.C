@@ -2,10 +2,6 @@
  * Pageant: the PuTTY Authentication Agent.
  */
 
-#include <windows.h>
-#ifndef NO_SECURITY
-#include <aclapi.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -16,7 +12,10 @@
 #include "ssh.h"
 #include "misc.h"
 #include "tree234.h"
-#include "winstuff.h"
+
+#ifndef NO_SECURITY
+#include <aclapi.h>
+#endif
 
 #define IDI_MAINICON 200
 #define IDI_TRAYICON 201

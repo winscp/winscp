@@ -71,7 +71,12 @@ void *crcda_make_context(void)
 
 void crcda_free_context(void *handle)
 {
-    sfree(handle);
+    struct crcda_ctx *ctx = (struct crcda_ctx *)handle;
+    if (ctx) {
+	sfree(ctx->h);
+	ctx->h = NULL;
+	sfree(ctx);
+    }
 }
 
 static void crc_update(uint32 *a, void *b)

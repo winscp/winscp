@@ -25,6 +25,7 @@
 
 static int psftp_connect(char *userhost, char *user, int portnumber);
 static int do_sftp_init(void);
+void do_sftp_cleanup();
 
 /* ----------------------------------------------------------------------
  * sftp client state.
@@ -370,6 +371,7 @@ int sftp_general_get(struct sftp_command *cmd, int restart)
     struct fxp_handle *fh;
     struct sftp_packet *pktin;
     struct sftp_request *req, *rreq;
+    struct fxp_xfer *xfer;
     char *fname, *outfname;
     uint64 offset;
     FILE *fp;
@@ -439,40 +441,44 @@ int sftp_general_get(struct sftp_command *cmd, int restart)
      * thus put up a progress bar.
      */
     ret = 1;
-    while (1) {
-	char buffer[4096];
-	int len;
+    xfer = xfer_download_init(fh, offset);
+    while (!xfer_done(xfer)) {
+	void *vbuf;
+	int ret, len;
 	int wpos, wlen;
 
-	sftp_register(req = fxp_read_send(fh, offset, sizeof(buffer)));
-	rreq = sftp_find_request(pktin = sftp_recv());
-	assert(rreq == req);
-	len = fxp_read_recv(pktin, rreq, buffer, sizeof(buffer));
+	xfer_download_queue(xfer);
+	pktin = sftp_recv();
+	ret = xfer_download_gotpkt(xfer, pktin);
 
-	if ((len == -1 && fxp_error_type() == SSH_FX_EOF) || len == 0)
-	    break;
-	if (len == -1) {
-	    printf("error while reading: %s\n", fxp_error());
-	    ret = 0;
-	    break;
+	if (ret < 0) {
+            printf("error while reading: %s\n", fxp_error());
+            ret = 0;
 	}
 
-	wpos = 0;
-	while (wpos < len) {
-	    wlen = fwrite(buffer, 1, len - wpos, fp);
-	    if (wlen <= 0) {
-		printf("error while writing local file\n");
-		ret = 0;
-		break;
+	while (xfer_download_data(xfer, &vbuf, &len)) {
+	    unsigned char *buf = (unsigned char *)vbuf;
+
+	    wpos = 0;
+	    while (wpos < len) {
+		wlen = fwrite(buf + wpos, 1, len - wpos, fp);
+		if (wlen <= 0) {
+		    printf("error while writing local file\n");
+		    ret = 0;
+		    xfer_set_error(xfer);
+		}
+		wpos += wlen;
 	    }
-	    wpos += wlen;
+	    if (wpos < len) {	       /* we had an error */
+		ret = 0;
+		xfer_set_error(xfer);
+	    }
+
+	    sfree(vbuf);
 	}
-	if (wpos < len) {	       /* we had an error */
-	    ret = 0;
-	    break;
-	}
-	offset = uint64_add32(offset, len);
     }
+
+    xfer_cleanup(xfer);
 
     fclose(fp);
 
@@ -503,12 +509,13 @@ int sftp_cmd_reget(struct sftp_command *cmd)
 int sftp_general_put(struct sftp_command *cmd, int restart)
 {
     struct fxp_handle *fh;
+    struct fxp_xfer *xfer;
     char *fname, *origoutfname, *outfname;
     struct sftp_packet *pktin;
     struct sftp_request *req, *rreq;
     uint64 offset;
     FILE *fp;
-    int ret;
+    int ret, err, eof;
 
     if (back == NULL) {
 	printf("psftp: not connected to a host; use \"open host.name\"\n");
@@ -592,31 +599,35 @@ int sftp_general_put(struct sftp_command *cmd, int restart)
      * thus put up a progress bar.
      */
     ret = 1;
-    while (1) {
+    xfer = xfer_upload_init(fh, offset);
+    err = eof = 0;
+    while ((!err && !eof) || !xfer_done(xfer)) {
 	char buffer[4096];
 	int len, ret;
 
-	len = fread(buffer, 1, sizeof(buffer), fp);
-	if (len == -1) {
-	    printf("error while reading local file\n");
-	    ret = 0;
-	    break;
-	} else if (len == 0) {
-	    break;
+	while (xfer_upload_ready(xfer) && !err && !eof) {
+	    len = fread(buffer, 1, sizeof(buffer), fp);
+	    if (len == -1) {
+		printf("error while reading local file\n");
+		err = 1;
+	    } else if (len == 0) {
+		eof = 1;
+	    } else {
+		xfer_upload_data(xfer, buffer, len);
+	    }
 	}
 
-	sftp_register(req = fxp_write_send(fh, buffer, offset, len));
-	rreq = sftp_find_request(pktin = sftp_recv());
-	assert(rreq == req);
-	ret = fxp_write_recv(pktin, rreq);
-
-	if (!ret) {
-	    printf("error while writing: %s\n", fxp_error());
-	    ret = 0;
-	    break;
+	if (!xfer_done(xfer)) {
+	    pktin = sftp_recv();
+	    ret = xfer_upload_gotpkt(xfer, pktin);
+	    if (!ret) {
+		printf("error while writing: %s\n", fxp_error());
+		err = 1;
+	    }
 	}
-	offset = uint64_add32(offset, len);
     }
+
+    xfer_cleanup(xfer);
 
     sftp_register(req = fxp_close_send(fh));
     rreq = sftp_find_request(pktin = sftp_recv());
@@ -1394,8 +1405,8 @@ struct sftp_command *sftp_getcmd(FILE *fp, int mode, int modeflags)
 	 */
 	cmd->nwords = cmd->wordssize = 2;
 	cmd->words = sresize(cmd->words, cmd->wordssize, char *);
-	cmd->words[0] = "!";
-	cmd->words[1] = p+1;
+	cmd->words[0] = dupstr("!");
+	cmd->words[1] = dupstr(p+1);
     } else {
 
 	/*
@@ -1438,10 +1449,11 @@ struct sftp_command *sftp_getcmd(FILE *fp, int mode, int modeflags)
 		cmd->wordssize = cmd->nwords + 16;
 		cmd->words = sresize(cmd->words, cmd->wordssize, char *);
 	    }
-	    cmd->words[cmd->nwords++] = q;
+	    cmd->words[cmd->nwords++] = dupstr(q);
 	}
     }
 
+	sfree(line);
     /*
      * Now parse the first word and assign a function.
      */
@@ -1494,6 +1506,23 @@ static int do_sftp_init(void)
     return 0;
 }
 
+void do_sftp_cleanup()
+{
+    char ch;
+    back->special(backhandle, TS_EOF);
+    sftp_recvdata(&ch, 1);
+    back->free(backhandle);
+    sftp_cleanup_request();
+    if (pwd) {
+	sfree(pwd);
+	pwd = NULL;
+    }
+    if (homedir) {
+	sfree(homedir);
+	homedir = NULL;
+    }
+}
+
 void do_sftp(int mode, int modeflags, char *batchfile)
 {
     FILE *fp;
@@ -1512,7 +1541,15 @@ void do_sftp(int mode, int modeflags, char *batchfile)
 	    cmd = sftp_getcmd(stdin, 0, 0);
 	    if (!cmd)
 		break;
-	    if (cmd->obey(cmd) < 0)
+	    ret = cmd->obey(cmd);
+	    if (cmd->words) {
+		int i;
+		for(i = 0; i < cmd->nwords; i++)
+		    sfree(cmd->words[i]);
+		sfree(cmd->words);
+	    }
+	    sfree(cmd);
+	    if (ret < 0)
 		break;
 	}
     } else {
@@ -1630,14 +1667,13 @@ int from_backend(void *frontend, int is_stderr, const char *data, int datalen)
     unsigned char *p = (unsigned char *) data;
     unsigned len = (unsigned) datalen;
 
-    assert(len > 0);
-
     /*
      * stderr data is just spouted to local stderr and otherwise
      * ignored.
      */
     if (is_stderr) {
-	fwrite(data, 1, len, stderr);
+	if (len > 0)
+	    fwrite(data, 1, len, stderr);
 	return 0;
     }
 
@@ -1647,7 +1683,7 @@ int from_backend(void *frontend, int is_stderr, const char *data, int datalen)
     if (!outptr)
 	return 0;
 
-    if (outlen > 0) {
+    if ((outlen > 0) && (len > 0)) {
 	unsigned used = outlen;
 	if (used > len)
 	    used = len;
@@ -1899,6 +1935,8 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
     }
     if (verbose && realhost != NULL)
 	printf("Connected to %s\n", realhost);
+    if (realhost != NULL)
+	sfree(realhost);
     return 0;
 }
 
@@ -1984,13 +2022,16 @@ int psftp_main(int argc, char *argv[])
      * it now.
      */
     if (userhost) {
-	if (psftp_connect(userhost, user, portnumber))
+	int ret;
+	ret = psftp_connect(userhost, user, portnumber);
+	sfree(userhost);
+	if (ret)
 	    return 1;
 	if (do_sftp_init())
 	    return 1;
     } else {
 	printf("psftp: no hostname specified; use \"open host.name\""
-	    " to connect\n");
+	       " to connect\n");
     }
 
     do_sftp(mode, modeflags, batchfile);
@@ -2001,6 +2042,12 @@ int psftp_main(int argc, char *argv[])
 	sftp_recvdata(&ch, 1);
     }
     random_save_seed();
+    cmdline_cleanup();
+    console_provide_logctx(NULL);
+    do_sftp_cleanup();
+    backhandle = NULL;
+    back = NULL;
+    sk_cleanup();
 
     return 0;
 }

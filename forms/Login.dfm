@@ -1,10 +1,10 @@
 object LoginDialog: TLoginDialog
-  Left = 353
-  Top = 185
+  Left = 351
+  Top = 167
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Login'
-  ClientHeight = 358
+  ClientHeight = 364
   ClientWidth = 522
   Color = clBtnFace
   ParentFont = True
@@ -14,12 +14,12 @@ object LoginDialog: TLoginDialog
   OnShow = FormShow
   DesignSize = (
     522
-    358)
+    364)
   PixelsPerInch = 96
   TextHeight = 13
   object SaveButton: TButton
     Left = 260
-    Top = 327
+    Top = 333
     Width = 75
     Height = 25
     Action = SaveSessionAction
@@ -28,7 +28,7 @@ object LoginDialog: TLoginDialog
   end
   object LoginButton: TButton
     Left = 348
-    Top = 327
+    Top = 333
     Width = 75
     Height = 25
     Action = LoginAction
@@ -39,7 +39,7 @@ object LoginDialog: TLoginDialog
   end
   object CloseButton: TButton
     Left = 436
-    Top = 327
+    Top = 333
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -50,7 +50,7 @@ object LoginDialog: TLoginDialog
   end
   object AboutButton: TButton
     Left = 11
-    Top = 327
+    Top = 333
     Width = 82
     Height = 25
     Action = AboutAction
@@ -60,7 +60,7 @@ object LoginDialog: TLoginDialog
   end
   object LanguagesButton: TButton
     Left = 105
-    Top = 327
+    Top = 333
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -72,7 +72,7 @@ object LoginDialog: TLoginDialog
     Left = 0
     Top = 0
     Width = 522
-    Height = 318
+    Height = 324
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
@@ -82,12 +82,12 @@ object LoginDialog: TLoginDialog
       Left = 161
       Top = 0
       Width = 361
-      Height = 318
-      ActivePage = BugsSheet
+      Height = 324
+      ActivePage = EnvironmentSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
-      TabIndex = 9
+      TabIndex = 3
       TabOrder = 1
       OnChange = PageControlChange
       object SessionListSheet: TTabSheet
@@ -96,7 +96,7 @@ object LoginDialog: TLoginDialog
         Caption = 'StSe'
         DesignSize = (
           353
-          263)
+          269)
         object LoadButton: TButton
           Left = 258
           Top = 35
@@ -119,7 +119,7 @@ object LoginDialog: TLoginDialog
           Left = 2
           Top = 3
           Width = 247
-          Height = 258
+          Height = 264
           Anchors = [akLeft, akTop, akRight, akBottom]
           Columns = <
             item
@@ -158,7 +158,7 @@ object LoginDialog: TLoginDialog
         end
         object ToolsMenuButton: TButton
           Left = 258
-          Top = 236
+          Top = 242
           Width = 88
           Height = 25
           Anchors = [akRight, akBottom]
@@ -184,10 +184,10 @@ object LoginDialog: TLoginDialog
         ImageIndex = 1
         DesignSize = (
           353
-          263)
+          269)
         object BasicGroup: TXPGroupBox
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
           Height = 169
           Anchors = [akLeft, akTop, akRight]
@@ -298,7 +298,7 @@ object LoginDialog: TLoginDialog
         end
         object TransferProtocolGroup: TXPGroupBox
           Left = 0
-          Top = 184
+          Top = 182
           Width = 345
           Height = 48
           Anchors = [akLeft, akTop, akRight]
@@ -342,10 +342,10 @@ object LoginDialog: TLoginDialog
         ImageIndex = 2
         DesignSize = (
           353
-          263)
+          269)
         object ProtocolGroup: TXPGroupBox
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
           Height = 87
           Anchors = [akLeft, akTop, akRight]
@@ -413,7 +413,7 @@ object LoginDialog: TLoginDialog
         end
         object EncryptionGroup: TXPGroupBox
           Left = 0
-          Top = 102
+          Top = 100
           Width = 345
           Height = 149
           Anchors = [akLeft, akTop, akRight]
@@ -479,62 +479,62 @@ object LoginDialog: TLoginDialog
         ImageIndex = 6
         DesignSize = (
           353
-          263)
+          269)
         object DirectoriesGroup: TXPGroupBox
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
-          Height = 196
+          Height = 209
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Directories'
           TabOrder = 0
           DesignSize = (
             345
-            196)
-          object Label9: TLabel
+            209)
+          object LocalDirectoryLabel: TLabel
             Left = 11
-            Top = 128
-            Width = 121
+            Top = 144
+            Width = 69
             Height = 13
-            Caption = '&Local directory (left panel)'
+            Caption = '&Local directory'
             FocusControl = LocalDirectoryEdit
           end
-          object Label10: TLabel
+          object RemoteDirectoryLabel: TLabel
             Left = 11
-            Top = 84
-            Width = 138
+            Top = 101
+            Width = 80
             Height = 13
-            Caption = '&Remote directory (right panel)'
+            Caption = '&Remote directory'
             FocusControl = RemoteDirectoryEdit
           end
-          object Label16: TLabel
+          object LocalDirectoryDescLabel: TLabel
             Left = 11
-            Top = 172
+            Top = 186
             Width = 251
             Height = 13
             Caption = 'Local directory is not used with explorer-like interface.'
           end
           object LocalDirectoryEdit: TDirectoryEdit
             Left = 11
-            Top = 145
+            Top = 161
             Width = 323
             Height = 21
             AcceptFiles = True
             DialogText = 'Select startup local directory.'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
-            TabOrder = 4
+            TabOrder = 6
             Text = 'LocalDirectoryEdit'
             OnChange = DataChange
           end
           object RemoteDirectoryEdit: TEdit
             Left = 11
-            Top = 101
+            Top = 118
             Width = 323
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 1000
-            TabOrder = 3
+            TabOrder = 5
             Text = 'RemoteDirectoryEdit'
             OnChange = DataChange
           end
@@ -549,7 +549,7 @@ object LoginDialog: TLoginDialog
           end
           object CacheDirectoriesCheck: TCheckBox
             Left = 11
-            Top = 41
+            Top = 40
             Width = 321
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -558,19 +558,38 @@ object LoginDialog: TLoginDialog
           end
           object ResolveSymlinksCheck: TCheckBox
             Left = 11
-            Top = 62
+            Top = 80
             Width = 321
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Resolve symbolic li&nks'
+            TabOrder = 4
+          end
+          object CacheDirectoryChangesCheck: TCheckBox
+            Left = 11
+            Top = 60
+            Width = 182
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Cache &directory changes'
             TabOrder = 2
+            OnClick = DataChange
+          end
+          object PreserveDirectoryChangesCheck: TCheckBox
+            Left = 202
+            Top = 60
+            Width = 139
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Permanent cache'
+            TabOrder = 3
           end
         end
         object EOLTypeGroup: TXPGroupBox
           Left = 0
-          Top = 211
+          Top = 220
           Width = 345
-          Height = 45
+          Height = 43
           Anchors = [akLeft, akTop, akRight]
           Caption = 'EOL (end-of-line) characters (SCP and SFTP version < 4)'
           TabOrder = 1
@@ -601,10 +620,10 @@ object LoginDialog: TLoginDialog
         ImageIndex = 3
         DesignSize = (
           353
-          263)
+          269)
         object OtherShellOptionsGroup: TXPGroupBox
           Left = 0
-          Top = 108
+          Top = 106
           Width = 345
           Height = 113
           Anchors = [akLeft, akTop, akRight]
@@ -631,7 +650,7 @@ object LoginDialog: TLoginDialog
           end
           object LookupUserGroupsCheck: TCheckBox
             Left = 12
-            Top = 18
+            Top = 17
             Width = 140
             Height = 17
             Caption = 'Lookup &user groups'
@@ -700,7 +719,7 @@ object LoginDialog: TLoginDialog
         end
         object ReturnVarGroup: TXPGroupBox
           Left = 0
-          Top = 57
+          Top = 55
           Width = 345
           Height = 44
           Anchors = [akLeft, akTop, akRight]
@@ -744,7 +763,7 @@ object LoginDialog: TLoginDialog
         end
         object ShellGroup: TXPGroupBox
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
           Height = 44
           Anchors = [akLeft, akTop, akRight]
@@ -837,14 +856,14 @@ object LoginDialog: TLoginDialog
         ImageIndex = 5
         object Label13: TLabel
           Left = 16
-          Top = 226
+          Top = 224
           Width = 104
           Height = 13
           Caption = 'Other general options:'
         end
         object PreferencesButton: TButton
           Left = 184
-          Top = 220
+          Top = 218
           Width = 90
           Height = 25
           Caption = '&Preferences...'
@@ -853,7 +872,7 @@ object LoginDialog: TLoginDialog
         end
         inline GeneralSettingsFrame: TGeneralSettingsFrame
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
           Height = 202
           TabOrder = 0
@@ -875,25 +894,15 @@ object LoginDialog: TLoginDialog
         ImageIndex = 7
         DesignSize = (
           353
-          263)
+          269)
         object TimeoutGroup: TXPGroupBox
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
-          Height = 95
+          Height = 46
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Timeouts'
           TabOrder = 0
-          DesignSize = (
-            345
-            95)
-          object Label6: TLabel
-            Left = 32
-            Top = 68
-            Width = 140
-            Height = 13
-            Caption = 'Seconds &between keepalives'
-          end
           object Label11: TLabel
             Left = 12
             Top = 19
@@ -910,28 +919,6 @@ object LoginDialog: TLoginDialog
             Caption = 'seconds'
             FocusControl = TimeoutEdit
           end
-          object PingIntervalCheck: TCheckBox
-            Left = 12
-            Top = 43
-            Width = 324
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Sending of null packets to &keep session alive'
-            TabOrder = 1
-            OnClick = DataChange
-          end
-          object PingIntervalSecEdit: TUpDownEdit
-            Left = 208
-            Top = 63
-            Width = 73
-            Height = 21
-            Alignment = taRightJustify
-            MaxValue = 60
-            MinValue = 1
-            MaxLength = 2
-            TabOrder = 2
-            OnChange = DataChange
-          end
           object TimeoutEdit: TUpDownEdit
             Left = 208
             Top = 14
@@ -946,6 +933,68 @@ object LoginDialog: TLoginDialog
             OnChange = DataChange
           end
         end
+        object PingGroup: TXPGroupBox
+          Left = 0
+          Top = 58
+          Width = 345
+          Height = 111
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Keepalives'
+          TabOrder = 1
+          DesignSize = (
+            345
+            111)
+          object Label6: TLabel
+            Left = 12
+            Top = 84
+            Width = 140
+            Height = 13
+            Caption = 'Seconds &between keepalives'
+            FocusControl = PingIntervalSecEdit
+          end
+          object PingIntervalSecEdit: TUpDownEdit
+            Left = 208
+            Top = 79
+            Width = 73
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 60
+            MinValue = 1
+            MaxLength = 2
+            TabOrder = 3
+            OnChange = DataChange
+          end
+          object PingOffButton: TRadioButton
+            Left = 12
+            Top = 19
+            Width = 317
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Off'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object PingNullPacketButton: TRadioButton
+            Left = 12
+            Top = 39
+            Width = 317
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Sending of &null SSH packets'
+            TabOrder = 1
+            OnClick = DataChange
+          end
+          object PingDummyCommandButton: TRadioButton
+            Left = 12
+            Top = 59
+            Width = 317
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Executing &dummy protocol commands'
+            TabOrder = 2
+            OnClick = DataChange
+          end
+        end
       end
       object ProxySheet: TTabSheet
         Tag = 9
@@ -954,10 +1003,10 @@ object LoginDialog: TLoginDialog
         ImageIndex = 8
         DesignSize = (
           353
-          263)
+          269)
         object ProxyTypeGroup: TXPGroupBox
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
           Height = 136
           Anchors = [akLeft, akTop, akRight]
@@ -1090,7 +1139,7 @@ object LoginDialog: TLoginDialog
         end
         object ProxySettingsGroup: TXPGroupBox
           Left = 0
-          Top = 149
+          Top = 147
           Width = 345
           Height = 108
           Anchors = [akLeft, akTop, akRight]
@@ -1167,10 +1216,10 @@ object LoginDialog: TLoginDialog
         ImageIndex = 9
         DesignSize = (
           353
-          263)
+          269)
         object BugsGroupBox: TXPGroupBox
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
           Height = 217
           Anchors = [akLeft, akTop, akRight]
@@ -1250,7 +1299,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 0
           end
           object BugPlainPW1Combo: TComboBox
@@ -1260,7 +1309,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 1
           end
           object BugRSA1Combo: TComboBox
@@ -1270,7 +1319,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 2
           end
           object BugHMAC2Combo: TComboBox
@@ -1280,7 +1329,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 3
           end
           object BugDeriveKey2Combo: TComboBox
@@ -1290,7 +1339,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 4
           end
           object BugRSAPad2Combo: TComboBox
@@ -1300,7 +1349,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 5
           end
           object BugDHGEx2Combo: TComboBox
@@ -1310,7 +1359,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 6
           end
           object BugPKSessID2Combo: TComboBox
@@ -1320,7 +1369,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 7
           end
         end
@@ -1332,10 +1381,10 @@ object LoginDialog: TLoginDialog
         ImageIndex = 10
         DesignSize = (
           353
-          263)
+          269)
         object AuthenticationGroup: TXPGroupBox
           Left = 0
-          Top = 8
+          Top = 6
           Width = 345
           Height = 97
           Anchors = [akLeft, akTop, akRight]
@@ -1370,7 +1419,7 @@ object LoginDialog: TLoginDialog
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Attempt ''keyboard-&interactive'' authentication (SSH2)'
+            Caption = 'Attempt '#39'keyboard-&interactive'#39' authentication (SSH2)'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -1381,18 +1430,18 @@ object LoginDialog: TLoginDialog
       Left = 0
       Top = 0
       Width = 161
-      Height = 318
+      Height = 324
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
         161
-        318)
+        324)
       object SimpleNavigationTree: TTreeView
         Left = 8
         Top = 9
         Width = 145
-        Height = 282
+        Height = 288
         Anchors = [akLeft, akTop, akRight, akBottom]
         HideSelection = False
         HotTrack = True
@@ -1402,19 +1451,19 @@ object LoginDialog: TLoginDialog
         TabOrder = 0
         OnChange = NavigationTreeChange
         Items.Data = {
-          04000000210000000000000002000000FFFFFFFFFFFFFFFF0000000001000000
-          0853657373696F6E58290000000000000001000000FFFFFFFFFFFFFFFF000000
+          0400000021000000000000000200000000000000FFFFFFFF0000000001000000
+          0853657373696F6E5829000000000000000100000000000000FFFFFFFF000000
           00000000001053746F7265642073657373696F6E735825000000000000000400
-          0000FFFFFFFFFFFFFFFF00000000000000000C456E7669726F6E6D656E74581D
-          0000000000000003000000FFFFFFFFFFFFFFFF00000000000000000453534858
-          250000000000000087010000FFFFFFFFFFFFFFFF00000000000000000C507265
+          000000000000FFFFFFFF00000000000000000C456E7669726F6E6D656E74581D
+          000000000000000300000000000000FFFFFFFF00000000000000000453534858
+          25000000000000000700000020000000FFFFFFFF00000000000000000C507265
           666572656E63657358}
       end
       object AdvancedNavigationTree: TTreeView
         Left = 8
         Top = 9
         Width = 145
-        Height = 282
+        Height = 288
         Anchors = [akLeft, akTop, akRight, akBottom]
         HideSelection = False
         HotTrack = True
@@ -1423,24 +1472,24 @@ object LoginDialog: TLoginDialog
         TabOrder = 1
         OnChange = NavigationTreeChange
         Items.Data = {
-          05000000210000000000000002000000FFFFFFFFFFFFFFFF0000000002000000
-          0853657373696F6E58290000000000000001000000FFFFFFFFFFFFFFFF000000
+          0500000021000000000000000200000000000000FFFFFFFF0000000002000000
+          0853657373696F6E5829000000000000000100000000000000FFFFFFFF000000
           00000000001053746F7265642073657373696F6E735821000000000000000600
-          0000FFFFFFFFFFFFFFFF0000000000000000084C6F6767696E67582500000000
-          00000004000000FFFFFFFFFFFFFFFF00000000010000000C456E7669726F6E6D
-          656E74581D0000000000000005000000FFFFFFFFFFFFFFFF0000000000000000
-          0453435058240000000000000008000000FFFFFFFFFFFFFFFF00000000010000
-          000B436F6E6E656374696F6E581F0000000000000009000000FFFFFFFFFFFFFF
-          FF00000000000000000650726F7879581D0000000000000003000000FFFFFFFF
-          FFFFFFFF0000000002000000045353485828000000000000000B000000FFFFFF
-          FFFFFFFFFF00000000000000000F41757468656E7469636174696F6E581E0000
-          00000000000A000000FFFFFFFFFFFFFFFF000000000000000005427567735825
-          0000000000000087010000FFFFFFFFFFFFFFFF00000000000000000C50726566
+          000000000000FFFFFFFF0000000000000000084C6F6767696E67582500000000
+          0000000400000000000000FFFFFFFF00000000010000000C456E7669726F6E6D
+          656E74581D000000000000000500000000000000FFFFFFFF0000000000000000
+          045343505824000000000000000800000000000000FFFFFFFF00000000010000
+          000B436F6E6E656374696F6E581F000000000000000900000000000000FFFFFF
+          FF00000000000000000650726F7879581D000000000000000300000000000000
+          FFFFFFFF0000000002000000045353485828000000000000000B000000000000
+          00FFFFFFFF00000000000000000F41757468656E7469636174696F6E581E0000
+          00000000000A00000000000000FFFFFFFF000000000000000005427567735825
+          000000000000000700000020000000FFFFFFFF00000000000000000C50726566
           6572656E63657358}
       end
       object ShowAdvancedLoginOptionsCheck: TCheckBox
         Left = 16
-        Top = 298
+        Top = 304
         Width = 129
         Height = 17
         Anchors = [akLeft, akRight, akBottom]
@@ -1505,7 +1554,7 @@ object LoginDialog: TLoginDialog
     end
     object SendToHookAction: TAction
       Category = 'Sessions'
-      Caption = 'Explorer''s ''Send to'' shortcut'
+      Caption = 'Explorer'#39's '#39'Send to'#39' shortcut'
       OnExecute = SendToHookActionExecute
     end
     object CheckForUpdatesAction: TAction

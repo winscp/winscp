@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 #include "misc.h"
 #include "int64.h"
@@ -257,6 +258,7 @@ struct sftp_packet *sftp_recv(void)
 struct sftp_request {
     unsigned id;
     int registered;
+    void *userdata;
 };
 
 static int sftp_reqcmp(void *av, void *bv)
@@ -327,8 +329,17 @@ static struct sftp_request *sftp_alloc_request(void)
     r = snew(struct sftp_request);
     r->id = low + 1 + REQUEST_ID_OFFSET;
     r->registered = 0;
+    r->userdata = NULL;
     add234(sftp_requests, r);
     return r;
+}
+
+void sftp_cleanup_request(void)
+{
+    if (sftp_requests == NULL) {
+	freetree234(sftp_requests);
+	sftp_requests = NULL;
+    }
 }
 
 void sftp_register(struct sftp_request *req)
@@ -1017,4 +1028,333 @@ void fxp_free_name(struct fxp_name *name)
     sfree(name->filename);
     sfree(name->longname);
     sfree(name);
+}
+
+/*
+ * Store user data in an sftp_request structure.
+ */
+void *fxp_get_userdata(struct sftp_request *req)
+{
+    return req->userdata;
+}
+
+void fxp_set_userdata(struct sftp_request *req, void *data)
+{
+    req->userdata = data;
+}
+
+/*
+ * A wrapper to go round fxp_read_* and fxp_write_*, which manages
+ * the queueing of multiple read/write requests.
+ */
+
+struct req {
+    char *buffer;
+    int len, retlen, complete;
+    uint64 offset;
+    struct req *next, *prev;
+};
+
+struct fxp_xfer {
+    uint64 offset, furthestdata, filesize;
+    int req_totalsize, req_maxsize, eof, err;
+    struct fxp_handle *fh;
+    struct req *head, *tail;
+};
+
+static struct fxp_xfer *xfer_init(struct fxp_handle *fh, uint64 offset)
+{
+    struct fxp_xfer *xfer = snew(struct fxp_xfer);
+
+    xfer->fh = fh;
+    xfer->offset = offset;
+    xfer->head = xfer->tail = NULL;
+    xfer->req_totalsize = 0;
+    xfer->req_maxsize = 16384;
+    xfer->err = 0;
+    xfer->filesize = uint64_make(ULONG_MAX, ULONG_MAX);
+    xfer->furthestdata = uint64_make(0, 0);
+
+    return xfer;
+}
+
+int xfer_done(struct fxp_xfer *xfer)
+{
+    /*
+     * We're finished if we've seen EOF _and_ there are no
+     * outstanding requests.
+     */
+    return (xfer->eof || xfer->err) && !xfer->head;
+}
+
+void xfer_download_queue(struct fxp_xfer *xfer)
+{
+    while (xfer->req_totalsize < xfer->req_maxsize && !xfer->eof) {
+	/*
+	 * Queue a new read request.
+	 */
+	struct req *rr;
+	struct sftp_request *req;
+
+	rr = snew(struct req);
+	rr->offset = xfer->offset;
+	rr->complete = 0;
+	if (xfer->tail) {
+	    xfer->tail->next = rr;
+	    rr->prev = xfer->tail;
+	} else {
+	    xfer->head = rr;
+	    rr->prev = NULL;
+	}
+	xfer->tail = rr;
+	rr->next = NULL;
+
+	rr->len = 4096;
+	rr->buffer = snewn(rr->len, char);
+	sftp_register(req = fxp_read_send(xfer->fh, rr->offset, rr->len));
+	fxp_set_userdata(req, rr);
+
+	xfer->offset = uint64_add32(xfer->offset, rr->len);
+	xfer->req_totalsize += rr->len;
+
+#ifdef DEBUG_DOWNLOAD
+	{ char buf[40]; uint64_decimal(rr->offset, buf); printf("queueing read request %p at %s\n", rr, buf); }
+#endif
+    }
+}
+
+struct fxp_xfer *xfer_download_init(struct fxp_handle *fh, uint64 offset)
+{
+    struct fxp_xfer *xfer = xfer_init(fh, offset);
+
+    xfer->eof = FALSE;
+    xfer_download_queue(xfer);
+
+    return xfer;
+}
+
+int xfer_download_gotpkt(struct fxp_xfer *xfer, struct sftp_packet *pktin)
+{
+    struct sftp_request *rreq;
+    struct req *rr;
+
+    rreq = sftp_find_request(pktin);
+    rr = (struct req *)fxp_get_userdata(rreq);
+    if (!rr)
+	return 0;		       /* this packet isn't ours */
+    rr->retlen = fxp_read_recv(pktin, rreq, rr->buffer, rr->len);
+#ifdef DEBUG_DOWNLOAD
+    printf("read request %p has returned [%d]\n", rr, rr->retlen);
+#endif
+
+    if ((rr->retlen < 0 && fxp_error_type()==SSH_FX_EOF) || rr->retlen == 0) {
+	xfer->eof = TRUE;
+	rr->complete = -1;
+#ifdef DEBUG_DOWNLOAD
+	printf("setting eof\n");
+#endif
+    } else if (rr->retlen < 0) {
+	/* some error other than EOF; signal it back to caller */
+	return -1;
+    }
+
+    rr->complete = 1;
+
+    /*
+     * Special case: if we have received fewer bytes than we
+     * actually read, we should do something. For the moment I'll
+     * just throw an ersatz FXP error to signal this; the SFTP
+     * draft I've got says that it can't happen except on special
+     * files, in which case seeking probably has very little
+     * meaning and so queueing an additional read request to fill
+     * up the gap sounds like the wrong answer. I'm not sure what I
+     * should be doing here - if it _was_ a special file, I suspect
+     * I simply shouldn't have been queueing multiple requests in
+     * the first place...
+     */
+    if (rr->retlen > 0 && uint64_compare(xfer->furthestdata, rr->offset) < 0) {
+	xfer->furthestdata = rr->offset;
+#ifdef DEBUG_DOWNLOAD
+	{ char buf[40];
+	uint64_decimal(xfer->furthestdata, buf);
+	printf("setting furthestdata = %s\n", buf); }
+#endif
+    }
+
+    if (rr->retlen < rr->len) {
+	uint64 filesize = uint64_add32(rr->offset,
+				       (rr->retlen < 0 ? 0 : rr->retlen));
+#ifdef DEBUG_DOWNLOAD
+	{ char buf[40];
+	uint64_decimal(filesize, buf);
+	printf("short block! trying filesize = %s\n", buf); }
+#endif
+	if (uint64_compare(xfer->filesize, filesize) > 0) {
+	    xfer->filesize = filesize;
+#ifdef DEBUG_DOWNLOAD
+	    printf("actually changing filesize\n");
+#endif	    
+	}
+    }
+
+    if (uint64_compare(xfer->furthestdata, xfer->filesize) > 0) {
+	fxp_error_message = "received a short buffer from FXP_READ, but not"
+	    " at EOF";
+	fxp_errtype = -1;
+	xfer_set_error(xfer);
+	return -1;
+    }
+
+    return 1;
+}
+
+void xfer_set_error(struct fxp_xfer *xfer)
+{
+    xfer->err = 1;
+}
+
+int xfer_download_data(struct fxp_xfer *xfer, void **buf, int *len)
+{
+    void *retbuf = NULL;
+    int retlen = 0;
+
+    /*
+     * Discard anything at the head of the rr queue with complete <
+     * 0; return the first thing with complete > 0.
+     */
+    while (xfer->head && xfer->head->complete && !retbuf) {
+	struct req *rr = xfer->head;
+
+	if (rr->complete > 0) {
+	    retbuf = rr->buffer;
+	    retlen = rr->retlen;
+#ifdef DEBUG_DOWNLOAD
+	    printf("handing back data from read request %p\n", rr);
+#endif
+	}
+#ifdef DEBUG_DOWNLOAD
+	else
+	    printf("skipping failed read request %p\n", rr);
+#endif
+
+	xfer->head = xfer->head->next;
+	if (xfer->head)
+	    xfer->head->prev = NULL;
+	else
+	    xfer->tail = NULL;
+	xfer->req_totalsize -= rr->len;
+	sfree(rr);
+    }
+
+    if (retbuf) {
+	*buf = retbuf;
+	*len = retlen;
+	return 1;
+    } else
+	return 0;
+}
+
+struct fxp_xfer *xfer_upload_init(struct fxp_handle *fh, uint64 offset)
+{
+    struct fxp_xfer *xfer = xfer_init(fh, offset);
+
+    /*
+     * We set `eof' to 1 because this will cause xfer_done() to
+     * return true iff there are no outstanding requests. During an
+     * upload, our caller will be responsible for working out
+     * whether all the data has been sent, so all it needs to know
+     * from us is whether the outstanding requests have been
+     * handled once that's done.
+     */
+    xfer->eof = 1;
+
+    return xfer;
+}
+
+int xfer_upload_ready(struct fxp_xfer *xfer)
+{
+    if (xfer->req_totalsize < xfer->req_maxsize)
+	return 1;
+    else
+	return 0;
+}
+
+void xfer_upload_data(struct fxp_xfer *xfer, char *buffer, int len)
+{
+    struct req *rr;
+    struct sftp_request *req;
+
+    rr = snew(struct req);
+    rr->offset = xfer->offset;
+    rr->complete = 0;
+    if (xfer->tail) {
+	xfer->tail->next = rr;
+	rr->prev = xfer->tail;
+    } else {
+	xfer->head = rr;
+	rr->prev = NULL;
+    }
+    xfer->tail = rr;
+    rr->next = NULL;
+
+    rr->len = len;
+    rr->buffer = NULL;
+    sftp_register(req = fxp_write_send(xfer->fh, buffer, rr->offset, len));
+    fxp_set_userdata(req, rr);
+
+    xfer->offset = uint64_add32(xfer->offset, rr->len);
+    xfer->req_totalsize += rr->len;
+
+#ifdef DEBUG_UPLOAD
+    { char buf[40]; uint64_decimal(rr->offset, buf); printf("queueing write request %p at %s [len %d]\n", rr, buf, len); }
+#endif
+}
+
+int xfer_upload_gotpkt(struct fxp_xfer *xfer, struct sftp_packet *pktin)
+{
+    struct sftp_request *rreq;
+    struct req *rr, *prev, *next;
+    int ret;
+
+    rreq = sftp_find_request(pktin);
+    rr = (struct req *)fxp_get_userdata(rreq);
+    if (!rr)
+	return 0;		       /* this packet isn't ours */
+    ret = fxp_write_recv(pktin, rreq);
+#ifdef DEBUG_UPLOAD
+    printf("write request %p has returned [%d]\n", rr, ret);
+#endif
+
+    /*
+     * Remove this one from the queue.
+     */
+    prev = rr->prev;
+    next = rr->next;
+    if (prev)
+	prev->next = next;
+    else
+	xfer->head = next;
+    if (next)
+	next->prev = prev;
+    else
+	xfer->tail = prev;
+    xfer->req_totalsize -= rr->len;
+    sfree(rr);
+
+    if (!ret)
+	return -1;
+
+    return 1;
+}
+
+void xfer_cleanup(struct fxp_xfer *xfer)
+{
+    struct req *rr;
+    while (xfer->head) {
+	rr = xfer->head;
+	xfer->head = xfer->head->next;
+	sfree(rr->buffer);
+	sfree(rr);
+    }
+    sfree(xfer);
 }

@@ -2,10 +2,6 @@
 #ifndef SecureShellH
 #define SecureShellH
 
-#ifndef AUTO_WINSOCK
-#include <winsock2.h>
-#endif
-
 #include "Interface.h"
 #include "Configuration.h"
 #include "Exceptions.h"
@@ -100,7 +96,7 @@ class TSecureShell : public TObject
 {
 private:
   bool FPasswordTried;
-  SOCKET FSocket;
+  void * FSocket;
   TSessionData * FSessionData;
   bool FActive;
   __int64 FBytesReceived;
@@ -110,6 +106,7 @@ private:
   TQueryUserEvent FOnQueryUser;
   Backend * FBackend;
   void * FBackendHandle;
+  unsigned long FMaxPacketSize;
   Config * FConfig;
 
   unsigned PendLen;
@@ -131,43 +128,45 @@ private:
   TCipher FCSCipher;
   TCipher FSCCipher;
 
-  TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
-  TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
-  TCompressionType __fastcall FuncToCompression(const void * Compress);
+  TCipher __fastcall FuncToSsh1Cipher(const void * Cipher) const;
+  TCipher __fastcall FuncToSsh2Cipher(const void * Cipher) const;
+  TCompressionType __fastcall FuncToCompression(const void * Compress) const;
   void __fastcall Init();
-  void __fastcall SetSocket(SOCKET value);
   void __fastcall SetSessionData(TSessionData * value);
-  void __fastcall SetActive(Boolean value);
-  bool __fastcall GetActive();
+  void __fastcall SetActive(bool value);
+  bool __fastcall GetActive() const;
   TCipher __fastcall GetCSCipher();
-  TCompressionType __fastcall GetCSCompression();
-  TDateTime __fastcall GetDuration();
+  TCompressionType __fastcall GetCSCompression() const;
+  TDateTime __fastcall GetDuration() const;
   TCipher __fastcall GetSCCipher();
-  TCompressionType __fastcall GetSCCompression();
-  int __fastcall GetSshVersion();
-  int __fastcall GetStatus();
+  TCompressionType __fastcall GetSCCompression() const;
+  int __fastcall GetSshVersion() const;
+  int __fastcall GetStatus() const;
   void inline __fastcall CheckConnection(int Message = -1);
   void __fastcall WaitForData();
   void __fastcall SetLog(TSessionLog * value);
   void __fastcall SetConfiguration(TConfiguration * value);
   void __fastcall SetUserObject(TObject * value);
+  void __fastcall Discard();
 
 protected:
   AnsiString StdError;
-  void __fastcall Error(AnsiString Error);
-  virtual void __fastcall UpdateStatus(Integer Value);
-  bool __fastcall SshFallbackCmd();
+  void __fastcall Error(const AnsiString Error) const;
+  virtual void __fastcall UpdateStatus(int Value);
+  bool __fastcall SshFallbackCmd() const;
   void __fastcall GotHostKey();
+  unsigned long __fastcall MaxPacketSize();
+  virtual void __fastcall KeepAlive();
 
 public:
   __fastcall TSecureShell();
   __fastcall ~TSecureShell();
   virtual void __fastcall Open();
   virtual void __fastcall Close();
-  Integer __fastcall GetPassword(AnsiString &Password);
-  Integer __fastcall Receive(char * Buf, Integer Len);
+  int __fastcall GetPassword(AnsiString & Password);
+  int __fastcall Receive(char * Buf, int Len);
   AnsiString __fastcall ReceiveLine();
-  void __fastcall Send(const char * Buf, Integer Len);
+  void __fastcall Send(const char * Buf, int Len);
   void __fastcall SendStr(AnsiString Str);
   void __fastcall SendSpecial(int Code);
   void __fastcall AddStdError(AnsiString Str);
@@ -177,9 +176,10 @@ public:
   void __fastcall SendLine(AnsiString Line);
   void __fastcall FatalError(Exception * E, AnsiString Msg);
   void __fastcall SendNull();
+  void __fastcall SetSocket(void * value);
 
   void __fastcall FatalError(AnsiString Error);
-  void __fastcall FromBackend(Boolean IsStdErr, char * Data, Integer Length);
+  void __fastcall FromBackend(bool IsStdErr, char * Data, int Length);
   void __fastcall VerifyHostKey(const AnsiString Host, int Port,
     const AnsiString KeyType, const AnsiString KeyStr, const AnsiString Fingerprint);
   void __fastcall AskCipher(const AnsiString CipherName, int CipherType);
@@ -202,7 +202,6 @@ public:
     if (IsLogging()) Log->Add(llMessage, Str);
   }
 
-  __property SOCKET Socket = { read = FSocket, write = SetSocket };
   __property TSessionData * SessionData = { read = FSessionData, write = SetSessionData };
   __property bool Active = { read = GetActive, write = SetActive };
   __property __int64 BytesReceived = { read = FBytesReceived };

@@ -2,6 +2,8 @@ unit CustomDirView;
 
 interface
 
+{$R DirImg.res}
+
 {$WARN UNIT_PLATFORM OFF}
 
 uses
@@ -473,14 +475,8 @@ uses
 const
   Space = ' ';
   ResDirUp = 'DIRUP%2.2d';
-  ResDirUp16 = 'DIRUP16';
-  ResDirUp32 = 'DIRUP32';
   ResLink = 'LINK%2.2d';
-  ResLink16 = 'LINK16';
-  ResLink32 = 'LINK32';
   ResBrokenLink = 'BROKEN%2.2d';
-  ResBrokenLink16 = 'BROKEN16';
-  ResBrokenLink32 = 'BROKEN32';
 
 var
   WinDir: string;

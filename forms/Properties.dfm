@@ -209,7 +209,7 @@ object PropertiesDialog: TPropertiesDialog
         Top = 200
         Width = 163
         Height = 109
-        PopupMenu = NonVisualDataModule.RightsPopup
+        PopupMenu = RightsFrame.RightsPopup
         TabOrder = 3
       end
       object GroupComboBox: TComboBox

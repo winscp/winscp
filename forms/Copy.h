@@ -6,11 +6,10 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <ComboEdit.hpp>
 #include <Mask.hpp>
 #include <MoreButton.hpp>
 #include <ExtCtrls.hpp>
-#include <UnixDirView.h>
+#include <HistoryComboBox.hpp>
 
 #include "Rights.h"
 #include "CopyParams.h"
@@ -19,43 +18,51 @@ class TCopyDialog : public TForm
 {
 __published:
   TLabel *DirectoryLabel;
-  TDirectoryEdit *LocalDirectoryEdit;
-  TEdit *RemoteDirectoryEdit;
+  THistoryComboBox *LocalDirectoryEdit;
+  THistoryComboBox *RemoteDirectoryEdit;
   TMoreButton *MoreButton;
   TButton *CopyButton;
   TButton *CancelButton;
   TPanel *MorePanel;
   TCheckBox *SaveSettingsCheck;
   TCopyParamsFrame *CopyParamsFrame;
+  TButton *LocalDirectoryBrowseButton;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+  void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
 private:
-  TTransferDirection FDirection;
+  bool FToRemote;
   bool FDragDrop;
   TStrings * FFileList;
-  TTransferType FTransferType;
+  bool FMove;
+  AnsiString FFileMask;
+  bool FAllowDirectory;
   bool __fastcall GetAllowTransferMode();
   AnsiString __fastcall GetDirectory();
-  void __fastcall SetDirection(TTransferDirection value);
-  TCustomEdit * __fastcall GetDirectoryEdit();
+  void __fastcall SetToRemote(bool value);
+  THistoryComboBox * __fastcall GetDirectoryEdit();
   void __fastcall SetParams(TCopyParamType value);
   TCopyParamType __fastcall GetParams();
   void __fastcall SetAllowTransferMode(Boolean value);
   void __fastcall SetDirectory(AnsiString value);
   void __fastcall SetDragDrop(Boolean value);
   void __fastcall SetFileList(TStrings * value);
-  void __fastcall SetTransferType(TTransferType value);
+  void __fastcall SetMove(bool value);
+  void __fastcall SetFileMask(const AnsiString value);
+  AnsiString __fastcall GetFileMask();
+  void __fastcall SetAllowDirectory(bool value);
 public:
   bool __fastcall Execute();
   __fastcall TCopyDialog(TComponent* Owner);
   __property bool AllowTransferMode = { read = GetAllowTransferMode, write = SetAllowTransferMode };
-  __property TTransferDirection Direction = { read = FDirection, write = SetDirection };
+  __property bool ToRemote = { read = FToRemote, write = SetToRemote };
   __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
-  __property TCustomEdit * DirectoryEdit = { read = GetDirectoryEdit };
+  __property THistoryComboBox * DirectoryEdit = { read = GetDirectoryEdit };
   __property bool DragDrop = { read = FDragDrop, write = SetDragDrop };
   __property TStrings * FileList = { read = FFileList, write = SetFileList };
   __property TCopyParamType Params = { read = GetParams, write = SetParams };
-  __property TTransferType TransferType = { read = FTransferType, write = SetTransferType };
+  __property bool Move = { read = FMove, write = SetMove };
+  __property bool AllowDirectory = { read = FAllowDirectory, write = SetAllowDirectory };
 protected:
   void __fastcall UpdateControls();
 };

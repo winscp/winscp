@@ -4,7 +4,7 @@
 #include <Common.h>
 #include "Bookmarks.h"
 #include "HierarchicalStorage.h"
-#include "TextsWin.h"
+#include "TextsCore.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------

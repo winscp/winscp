@@ -1,6 +1,3 @@
-#include <windows.h>
-#include <commctrl.h>
-#include <commdlg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -8,12 +5,14 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "ssh.h"
 #include "putty.h"
-#include "winstuff.h"
+#include "ssh.h"
 #include "win_res.h"
 #include "storage.h"
 #include "dialog.h"
+
+#include <commctrl.h>
+#include <commdlg.h>
 
 #ifdef MSVC4
 #define TVINSERTSTRUCT  TV_INSERTSTRUCT

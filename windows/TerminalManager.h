@@ -86,6 +86,7 @@ private:
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
   void __fastcall UpdateAppTitle();
+  void __fastcall DeleteLocalFile(const AnsiString FileName);
 };
 //---------------------------------------------------------------------------
 #endif

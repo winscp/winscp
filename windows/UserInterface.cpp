@@ -2,19 +2,25 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "UserInterface.h"
 #include "ScpCommander.h"
 #include "ScpExplorer.h"
 #include <About.h>
 
 #include <ScpMain.h>
+#include <Common.h>
 #include "WinConfiguration.h"
+#include "TerminalManager.h"
 #include "TextsWin.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const AnsiString AppName = "WinSCP";
 const AnsiString AppNameVersion = "WinSCP3";
+//---------------------------------------------------------------------------
+TConfiguration * __fastcall CreateConfiguration()
+{
+  return new TWinConfiguration();
+}
 //---------------------------------------------------------------------------
 TCustomScpExplorerForm * __fastcall CreateScpExplorer()
 {
@@ -27,9 +33,76 @@ TCustomScpExplorerForm * __fastcall CreateScpExplorer()
   return ScpExplorer;
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall SshVersionString()
+{
+  return FORMAT("WinSCP-release-%s", (Configuration->Version));
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall GetRegistryKey()
 {
   return "Software\\Martin Prikryl\\WinSCP 2";
+}
+//---------------------------------------------------------------------------
+void __fastcall FlashOnBackground()
+{
+  assert(Application);
+  if (GetForegroundWindow() != GetActiveWindow())
+  {
+    FlashWindow(Application->Handle, true);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ShowExtendedException(Exception * E, TObject * Sender)
+{
+  ShowExtendedExceptionEx(E, Sender, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
+  bool NoReconnect)
+{
+  if (!E->Message.IsEmpty())
+  {
+    if (E->InheritsFrom(__classid(Exception)))
+    {
+      if (!E->InheritsFrom(__classid(EAbort)))
+      {
+        TQueryType Type;
+        Type = (E->InheritsFrom(__classid(ESshTerminate)) ?
+          qtInformation : qtError);
+
+        if (E->InheritsFrom(__classid(EFatal)) && !NoReconnect)
+        {
+          if (FatalExceptionMessageDialog(E, Type) == qaRetry)
+          {
+            TTerminalManager::Instance()->ReconnectActiveTerminal();
+          }
+          else
+          {
+            TTerminalManager::Instance()->FreeActiveTerminal();
+          }
+        }
+        else
+        {
+          ExceptionMessageDialog(E, Type, qaOK);
+        }
+      }
+    }
+    else
+    {
+      FlashOnBackground();
+      ShowException(ExceptObject(), ExceptAddr());
+    }
+  }
+  HandleExtendedException(E, Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall HandleExtendedException(Exception * E, TObject* /*Sender*/)
+{
+  if (TTerminalManager::Instance(false) &&
+      TTerminalManager::Instance()->ActiveTerminal)
+  {
+    TTerminalManager::Instance()->ActiveTerminal->Log->AddException(E);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall ConfigureInterface()

@@ -1,23 +1,3 @@
-#include <windows.h>
-#include <imm.h>
-#include <commctrl.h>
-#include <richedit.h>
-#include <mmsystem.h>
-#ifndef AUTO_WINSOCK
-#ifdef WINSOCK_TWO
-#include <winsock2.h>
-#else
-#include <winsock.h>
-#endif
-#endif
-
-#ifndef NO_MULTIMON
-#if WINVER < 0x0500
-#define COMPILE_MULTIMON_STUBS
-#include <multimon.h>
-#endif
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -27,9 +7,20 @@
 #define PUTTY_DO_GLOBALS	       /* actually _define_ globals */
 #include "putty.h"
 #include "terminal.h"
-#include "winstuff.h"
 #include "storage.h"
 #include "win_res.h"
+
+#ifndef NO_MULTIMON
+#if WINVER < 0x0500
+#define COMPILE_MULTIMON_STUBS
+#include <multimon.h>
+#endif
+#endif
+
+#include <imm.h>
+#include <commctrl.h>
+#include <richedit.h>
+#include <mmsystem.h>
 
 #define IDM_SHOWLOG   0x0010
 #define IDM_NEWSESS   0x0020
@@ -42,6 +33,7 @@
 #define IDM_SAVEDSESS 0x0160
 #define IDM_COPYALL   0x0170
 #define IDM_FULLSCREEN	0x0180
+#define IDM_PASTE     0x0190
 
 #define IDM_SESSLGP   0x0250	       /* log type printable */
 #define IDM_SESSLGA   0x0260	       /* log type all chars */
@@ -120,6 +112,12 @@ static int session_closed;
 static const struct telnet_special *specials;
 static int specials_menu_position;
 
+static struct {
+    HMENU menu;
+    int specials_submenu_pos;
+} popup_menus[2];
+enum { SYSMENU, CTXMENU };
+
 Config cfg;			       /* exported to windlg.c */
 
 extern struct sesslist sesslist;       /* imported from windlg.c */
@@ -178,8 +176,6 @@ static char *window_name, *icon_name;
 
 static int compose_state = 0;
 
-static int wsa_started = 0;
-
 static UINT wm_mousewheel = WM_MOUSEWHEEL;
 
 /* Dummy routine, only required in plink. */
@@ -189,8 +185,6 @@ void ldisc_update(void *frontend, int echo, int edit)
 
 int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 {
-    WORD winsock_ver;
-    WSADATA wsadata;
     WNDCLASS wndclass;
     MSG msg;
     int guess_width, guess_height;
@@ -198,20 +192,6 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
     hinst = inst;
     flags = FLAG_VERBOSE | FLAG_INTERACTIVE;
 
-    winsock_ver = MAKEWORD(1, 1);
-    if (WSAStartup(winsock_ver, &wsadata)) {
-	MessageBox(NULL, "Unable to initialise WinSock", "WinSock Error",
-		   MB_OK | MB_ICONEXCLAMATION);
-	return 1;
-    }
-    if (LOBYTE(wsadata.wVersion) != 1 || HIBYTE(wsadata.wVersion) != 1) {
-	MessageBox(NULL, "WinSock version is incompatible with 1.1",
-		   "WinSock Error", MB_OK | MB_ICONEXCLAMATION);
-	WSACleanup();
-	return 1;
-    }
-    wsa_started = 1;
-    /* WISHLIST: maybe allow config tweaking even if winsock not present? */
     sk_init();
 
     InitCommonControls();
@@ -305,8 +285,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	    p[i] = '\0';
 	    do_defaults(p + 1, &cfg);
 	    if (!*cfg.host && !do_config()) {
-		WSACleanup();
-		return 0;
+		cleanup_exit(0);
 	    }
 	} else if (*p == '&') {
 	    /*
@@ -324,8 +303,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 		UnmapViewOfFile(cp);
 		CloseHandle(filemap);
 	    } else if (!do_config()) {
-		WSACleanup();
-		return 0;
+		cleanup_exit(0);
 	    }
 	} else {
 	    /*
@@ -430,8 +408,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	cmdline_run_saved(&cfg);
 
 	if (!*cfg.host && !do_config()) {
-	    WSACleanup();
-	    return 0;
+	    cleanup_exit(0);
 	}
 
 	/*
@@ -493,8 +470,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	    MessageBox(NULL, "Unsupported protocol number found",
 		       str, MB_OK | MB_ICONEXCLAMATION);
 	    sfree(str);
-	    WSACleanup();
-	    return 1;
+	    cleanup_exit(1);
 	}
     }
 
@@ -504,8 +480,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	MessageBox(NULL, "Invalid Port Number",
 		   str, MB_OK | MB_ICONEXCLAMATION);
 	sfree(str);
-	WSACleanup();
-	return 1;
+	cleanup_exit(1);
     }
 
     if (!prev) {
@@ -682,17 +657,14 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
      * Set up the session-control options on the system menu.
      */
     {
-	HMENU m = GetSystemMenu(hwnd, FALSE);
-	HMENU s;
-	int i;
+	HMENU s, m;
+	int i, j;
 	char *str;
 
-	AppendMenu(m, MF_SEPARATOR, 0, 0);
-	specials_menu_position = GetMenuItemCount(m);
-	AppendMenu(m, MF_ENABLED, IDM_SHOWLOG, "&Event Log");
-	AppendMenu(m, MF_SEPARATOR, 0, 0);
-	AppendMenu(m, MF_ENABLED, IDM_NEWSESS, "Ne&w Session...");
-	AppendMenu(m, MF_ENABLED, IDM_DUPSESS, "&Duplicate Session");
+	popup_menus[SYSMENU].menu = GetSystemMenu(hwnd, FALSE);
+	popup_menus[CTXMENU].menu = CreatePopupMenu();
+	AppendMenu(popup_menus[CTXMENU].menu, MF_ENABLED, IDM_PASTE, "&Paste");
+
 	s = CreateMenu();
 	get_sesslist(&sesslist, TRUE);
 	for (i = 1;
@@ -700,21 +672,32 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 	     i++)
 	    AppendMenu(s, MF_ENABLED, IDM_SAVED_MIN + (16 * i),
 		       sesslist.sessions[i]);
-	AppendMenu(m, MF_POPUP | MF_ENABLED, (UINT) s, "Sa&ved Sessions");
-	AppendMenu(m, MF_ENABLED, IDM_RECONF, "Chan&ge Settings...");
-	AppendMenu(m, MF_SEPARATOR, 0, 0);
-	AppendMenu(m, MF_ENABLED, IDM_COPYALL, "C&opy All to Clipboard");
-	AppendMenu(m, MF_ENABLED, IDM_CLRSB, "C&lear Scrollback");
-	AppendMenu(m, MF_ENABLED, IDM_RESET, "Rese&t Terminal");
-	AppendMenu(m, MF_SEPARATOR, 0, 0);
-	AppendMenu(m, (cfg.resize_action == RESIZE_DISABLED) ?
-		   MF_GRAYED : MF_ENABLED, IDM_FULLSCREEN, "&Full Screen");
-	AppendMenu(m, MF_SEPARATOR, 0, 0);
-        if (help_path)
-            AppendMenu(m, MF_ENABLED, IDM_HELP, "&Help");
-	str = dupprintf("&About %s", appname);
-	AppendMenu(m, MF_ENABLED, IDM_ABOUT, str);
-	sfree(str);
+
+	for (j = 0; j < lenof(popup_menus); j++) {
+	    m = popup_menus[j].menu;
+
+	    AppendMenu(m, MF_SEPARATOR, 0, 0);
+	    popup_menus[j].specials_submenu_pos = GetMenuItemCount(m);
+	    AppendMenu(m, MF_ENABLED, IDM_SHOWLOG, "&Event Log");
+	    AppendMenu(m, MF_SEPARATOR, 0, 0);
+	    AppendMenu(m, MF_ENABLED, IDM_NEWSESS, "Ne&w Session...");
+	    AppendMenu(m, MF_ENABLED, IDM_DUPSESS, "&Duplicate Session");
+	    AppendMenu(m, MF_POPUP | MF_ENABLED, (UINT) s, "Sa&ved Sessions");
+	    AppendMenu(m, MF_ENABLED, IDM_RECONF, "Chan&ge Settings...");
+	    AppendMenu(m, MF_SEPARATOR, 0, 0);
+	    AppendMenu(m, MF_ENABLED, IDM_COPYALL, "C&opy All to Clipboard");
+	    AppendMenu(m, MF_ENABLED, IDM_CLRSB, "C&lear Scrollback");
+	    AppendMenu(m, MF_ENABLED, IDM_RESET, "Rese&t Terminal");
+	    AppendMenu(m, MF_SEPARATOR, 0, 0);
+	    AppendMenu(m, (cfg.resize_action == RESIZE_DISABLED) ?
+		       MF_GRAYED : MF_ENABLED, IDM_FULLSCREEN, "&Full Screen");
+	    AppendMenu(m, MF_SEPARATOR, 0, 0);
+	    if (help_path)
+		AppendMenu(m, MF_ENABLED, IDM_HELP, "&Help");
+	    str = dupprintf("&About %s", appname);
+	    AppendMenu(m, MF_ENABLED, IDM_ABOUT, str);
+	    sfree(str);
+	}
     }
 
     update_specials_menu(NULL);
@@ -840,8 +823,6 @@ void cleanup_exit(int code)
     if (pal)
 	DeleteObject(pal);
     sk_cleanup();
-    if (wsa_started)
-	WSACleanup();
 
     if (cfg.protocol == PROT_SSH) {
 	random_save_seed();
@@ -868,8 +849,8 @@ char *do_select(SOCKET skt, int startup)
     }
     if (!hwnd)
 	return "do_select(): internal error (hwnd==NULL)";
-    if (WSAAsyncSelect(skt, hwnd, msg, events) == SOCKET_ERROR) {
-	switch (WSAGetLastError()) {
+    if (p_WSAAsyncSelect(skt, hwnd, msg, events) == SOCKET_ERROR) {
+	switch (p_WSAGetLastError()) {
 	  case WSAENETDOWN:
 	    return "Network is down";
 	  default:
@@ -886,7 +867,7 @@ void update_specials_menu(void *frontend)
 {
     HMENU m = GetSystemMenu(hwnd, FALSE);
     int menu_already_exists = (specials != NULL);
-    int i;
+    int i, j;
 
     specials = back->get_specials(backhandle);
     if (specials) {
@@ -899,14 +880,20 @@ void update_specials_menu(void *frontend)
 	    else
 		AppendMenu(p, MF_SEPARATOR, 0, 0);
 	}
-	if (menu_already_exists)
-	    DeleteMenu(m, specials_menu_position, MF_BYPOSITION);
-	else
-	    InsertMenu(m, specials_menu_position,
-		       MF_BYPOSITION | MF_SEPARATOR, 0, 0);
-	InsertMenu(m, specials_menu_position,
-		   MF_BYPOSITION | MF_POPUP | MF_ENABLED,
-		   (UINT) p, "Special Command");
+	for (j = 0; j < lenof(popup_menus); j++) {
+	    if (menu_already_exists)
+		DeleteMenu(popup_menus[j].menu,
+			   popup_menus[j].specials_submenu_pos,
+			   MF_BYPOSITION);
+	    else
+		InsertMenu(popup_menus[j].menu,
+			   popup_menus[j].specials_submenu_pos,
+			   MF_BYPOSITION | MF_SEPARATOR, 0, 0);
+	    InsertMenu(popup_menus[j].menu,
+		       popup_menus[j].specials_submenu_pos,
+		       MF_BYPOSITION | MF_POPUP | MF_ENABLED,
+		       (UINT) p, "Special Command");
+	}
     }
 }
 
@@ -1653,9 +1640,9 @@ static Mouse_Button translate_button(Mouse_Button button)
     if (button == MBT_LEFT)
 	return MBT_SELECT;
     if (button == MBT_MIDDLE)
-	return cfg.mouse_is_xterm ? MBT_PASTE : MBT_EXTEND;
+	return cfg.mouse_is_xterm == 1 ? MBT_PASTE : MBT_EXTEND;
     if (button == MBT_RIGHT)
-	return cfg.mouse_is_xterm ? MBT_EXTEND : MBT_PASTE;
+	return cfg.mouse_is_xterm == 1 ? MBT_EXTEND : MBT_PASTE;
     return 0;			       /* shouldn't happen */
 }
 
@@ -1745,6 +1732,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	show_mouseptr(1);
 	PostQuitMessage(0);
 	return 0;
+      case WM_COMMAND:
       case WM_SYSCOMMAND:
 	switch (wParam & ~0xF) {       /* low 4 bits reserved to Windows */
 	  case IDM_SHOWLOG:
@@ -1966,6 +1954,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	  case IDM_COPYALL:
 	    term_copyall(term);
 	    break;
+	  case IDM_PASTE:
+	    term_do_paste(term);
+	    break;
 	  case IDM_CLRSB:
 	    term_clrsb(term);
 	    break;
@@ -2037,6 +2028,18 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       case WM_LBUTTONUP:
       case WM_MBUTTONUP:
       case WM_RBUTTONUP:
+	if (message == WM_RBUTTONDOWN &&
+	    ((wParam & MK_CONTROL) || (cfg.mouse_is_xterm == 2))) {
+	    POINT cursorpos;
+
+	    show_mouseptr(1);	       /* make sure pointer is visible */
+	    GetCursorPos(&cursorpos);
+	    TrackPopupMenu(popup_menus[CTXMENU].menu,
+			   TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RIGHTBUTTON,
+			   cursorpos.x, cursorpos.y,
+			   0, hwnd, NULL);
+	    break;
+	}
 	{
 	    int button, press;
 
@@ -2121,7 +2124,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
       case WM_NCMOUSEMOVE:
 	show_mouseptr(1);
 	noise_ultralight(lParam);
-	return 0;
+	break;
       case WM_IGNORE_CLIP:
 	ignore_clip = wParam;	       /* don't panic on DESTROYCLIPBOARD */
 	break;
@@ -4430,10 +4433,10 @@ void beep(void *frontend, int mode)
     } else if (mode == BELL_WAVEFILE) {
 	if (!PlaySound(cfg.bell_wavefile.path, NULL,
 		       SND_ASYNC | SND_FILENAME)) {
-	    char buf[sizeof(cfg.bell_wavefile) + 80];
+	    char buf[sizeof(cfg.bell_wavefile.path) + 80];
 	    char otherbuf[100];
 	    sprintf(buf, "Unable to play sound file\n%s\n"
-		    "Using default sound instead", cfg.bell_wavefile);
+		    "Using default sound instead", cfg.bell_wavefile.path);
 	    sprintf(otherbuf, "%.70s Sound Error", appname);
 	    MessageBox(hwnd, buf, otherbuf,
 		       MB_OK | MB_ICONEXCLAMATION);
@@ -4581,7 +4584,7 @@ int is_full_screen()
  * one monitor is present. */
 static int get_fullscreen_rect(RECT * ss)
 {
-#ifdef MONITOR_DEFAULTTONEAREST
+#if defined(MONITOR_DEFAULTTONEAREST) && !defined(NO_MULTIMON)
 	HMONITOR mon;
 	MONITORINFO mi;
 	mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);

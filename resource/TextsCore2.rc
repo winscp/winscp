@@ -1,6 +1,4 @@
-#define UNKNOWN_KEY     1
-#define DIFFERENT_KEY   2
-#define OLD_KEY         3
+#include "TextsCore.h"
 
 STRINGTABLE
 BEGIN

@@ -738,6 +738,7 @@ static int rsa2_verifysig(void *key, char *sig, int siglen,
 	if (bignum_byte(out, i) != hash[j])
 	    ret = 0;
     }
+    freebn(out);
 
     return ret;
 }

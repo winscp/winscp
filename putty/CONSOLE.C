@@ -3,8 +3,6 @@
  * the console PuTTY tools
  */
 
-#include <windows.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -26,7 +24,6 @@ void cleanup_exit(int code)
      * Clean up.
      */
     sk_cleanup();
-    WSACleanup();
 
     random_save_seed();
 #ifdef MSCRYPTOAPI

@@ -23,16 +23,14 @@ __fastcall TOperationStatusForm::TOperationStatusForm(TComponent* Owner)
 {
   FSecureShell = NULL;
   UseSystemSettings(this);
+  FShowAsModalStorage = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TOperationStatusForm::~TOperationStatusForm()
 {
   SecureShell = NULL;
-    
-  if (FFormState.Contains(fsModal))
-  {
-    HideAsModal();
-  }
+
+  ReleaseAsModal(this, FShowAsModalStorage);
 }
 //---------------------------------------------------------------------------
 void __fastcall TOperationStatusForm::SecureShellUpdateStatus(TObject * /*Sender*/)
@@ -79,36 +77,11 @@ AnsiString __fastcall TOperationStatusForm::GetStatus()
 //---------------------------------------------------------------------------
 void __fastcall TOperationStatusForm::ShowAsModal()
 {
-  // method duplicated in TProgressForm
-  CancelDrag();
-  if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
-  ReleaseCapture();
-  FFormState << fsModal;
-  FFocusActiveWindow = GetActiveWindow();
-
-  FFocusWindowList = DisableTaskWindows(0);
-  Show();
-  SendMessage(Handle, CM_ACTIVATE, 0, 0);
+  ::ShowAsModal(this, FShowAsModalStorage);
 }
 //---------------------------------------------------------------------------
 void __fastcall TOperationStatusForm::HideAsModal()
 {
-  // method duplicated in TProgressForm
-  assert(FFormState.Contains(fsModal));
-  SendMessage(Handle, CM_DEACTIVATE, 0, 0);
-  if (GetActiveWindow() != Handle)
-  {
-    FFocusActiveWindow = 0;
-  }
-  Hide();
-
-  EnableTaskWindows(FFocusWindowList);
-
-  if (FFocusActiveWindow != 0)
-  {
-    SetActiveWindow(FFocusActiveWindow);
-  }
-
-  FFormState >> fsModal;
+  ::HideAsModal(this, FShowAsModalStorage);
 }
 

@@ -3,7 +3,6 @@
 
 #ifdef _WINDOWS
 
-#include <windows.h>
 #include "winstuff.h"
 
 #elif defined(macintosh)

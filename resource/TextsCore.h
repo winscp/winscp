@@ -1,10 +1,10 @@
-#ifndef TextsCoreH 
-#define TextsCoreH 
- 
+#ifndef TextsCoreH
+#define TextsCoreH
+
 #define UNKNOWN_KEY     1
 #define DIFFERENT_KEY   2
 #define OLD_KEY         3
- 
+
 #define CORE_ERROR_STRINGS      100
 #define KEY_NOT_VERIFIED        101
 #define CONNECTION_FAILED       102
@@ -106,6 +106,8 @@
 #define CALCULATE_SIZE_ERROR    200
 #define SFTP_PACKET_TOO_BIG     201
 #define SCP_INIT_ERROR          202
+#define DUPLICATE_BOOKMARK      203
+
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT 301
 #define PROMPT_SESSION_PASSWORD 302
@@ -119,6 +121,9 @@
 #define RESUME_TRANSFER         310
 #define PARTIAL_BIGGER_THAN_SOURCE 311
 #define APPEND_OR_RESUME        312
+#define FILE_OVERWRITE_DETAILS  313
+#define READ_ONLY_OVERWRITE     314
+
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401
 #define NO_STR                  402
@@ -126,10 +131,16 @@
 #define VERSION                 404
 #define CLOSED_ON_COMPLETION    405
 #define SFTP_PROTOCOL_NAME      406
+#define FS_RENAME_NOT_SUPPORTED 407
+#define SFTP_NO_EXTENSION_INFO  408
+#define SFTP_EXTENSION_INFO     409
+#define SCP_UNIX_NAME           410
+#define SCP_NO_UNIX_NAME        411
+
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601
 #define PUTTY_VERSION           602
 #define PUTTY_COPYRIGHT         603
 #define PUTTY_URL               604
- 
-#endif // TextsCore 
+
+#endif // TextsCore

@@ -814,6 +814,7 @@ void printer_finish_job(printer_job *);
  */
 int cmdline_process_param(char *, char *, int, Config *);
 void cmdline_run_saved(Config *);
+void cmdline_cleanup(void);
 extern char *cmdline_password;
 #define TOOLTYPE_FILETRANSFER 1
 #define TOOLTYPE_NONNETWORK 2

@@ -21,6 +21,9 @@ enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
   sbDHGEx2, sbPKSessID2 };
 #define BUG_COUNT (sbPKSessID2+1)
 enum TAutoSwitch { asOn, asOff, asAuto };
+enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
+const puRequireUsername =     0x01;
+const puExcludeLeadingSlash = 0x02;
 //---------------------------------------------------------------------------
 extern const char CipherNames[CIPHER_COUNT][10];
 extern const char SshProtList[][10];
@@ -36,6 +39,7 @@ private:
   AnsiString FUserName;
   AnsiString FPassword;
   int FPingInterval;
+  TPingType FPingType;
   bool FAgentFwd;
   bool FAliasGroupList;
   bool FAuthTIS;
@@ -56,6 +60,8 @@ private:
   bool FSpecial;
   bool FUpdateDirectories;
   bool FCacheDirectories;
+  bool FCacheDirectoryChanges;
+  bool FPreserveDirectoryChanges;
   bool FSelected;
   bool FLookupUserGroups;
   AnsiString FReturnVar;
@@ -104,8 +110,7 @@ private:
   void __fastcall SetPingIntervalDT(TDateTime value);
   TDateTime __fastcall GetPingIntervalDT();
   void __fastcall SetTimeDifference(TDateTime value);
-  void __fastcall SetPingEnabled(bool value);
-  bool __fastcall GetPingEnabled();
+  void __fastcall SetPingType(TPingType value);
   AnsiString __fastcall GetSessionName();
   void __fastcall SetFSProtocol(TFSProtocol value);
   AnsiString __fastcall GetFSProtocolStr();
@@ -113,6 +118,8 @@ private:
   void __fastcall SetRemoteDirectory(AnsiString value);
   void __fastcall SetUpdateDirectories(bool value);
   void __fastcall SetCacheDirectories(bool value);
+  void __fastcall SetCacheDirectoryChanges(bool value);
+  void __fastcall SetPreserveDirectoryChanges(bool value);
   void __fastcall SetLockInHome(bool value);
   void __fastcall SetSpecial(bool value);
   AnsiString __fastcall GetInfoTip();
@@ -153,6 +160,7 @@ private:
   void __fastcall SetSFTPDownloadQueue(int value);
   void __fastcall SetSFTPUploadQueue(int value);
   void __fastcall SetSFTPListingQueue(int value);
+  AnsiString __fastcall GetStorageKey();
 
 public:
   __fastcall TSessionData(AnsiString aName);
@@ -162,6 +170,10 @@ public:
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport = false);
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
+  bool __fastcall ParseUrl(AnsiString Url, int Params);
+  static bool __fastcall ParseUrl(AnsiString Url, int Params,
+    AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
+    AnsiString * UserName, AnsiString * Password, AnsiString * Path);
 
   __property AnsiString HostName  = { read=FHostName, write=SetHostName };
   __property int PortNumber  = { read=FPortNumber, write=SetPortNumber };
@@ -186,12 +198,14 @@ public:
   __property bool ClearAliases = { read = FClearAliases, write = SetClearAliases };
   __property TDateTime PingIntervalDT = { read = GetPingIntervalDT, write = SetPingIntervalDT };
   __property TDateTime TimeDifference = { read = FTimeDifference, write = SetTimeDifference };
-  __property bool PingEnabled = { read = GetPingEnabled, write = SetPingEnabled };
+  __property TPingType PingType = { read = FPingType, write = SetPingType };
   __property AnsiString SessionName  = { read=GetSessionName };
   __property AnsiString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
   __property AnsiString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool UpdateDirectories = { read=FUpdateDirectories, write=SetUpdateDirectories };
   __property bool CacheDirectories = { read=FCacheDirectories, write=SetCacheDirectories };
+  __property bool CacheDirectoryChanges = { read=FCacheDirectoryChanges, write=SetCacheDirectoryChanges };
+  __property bool PreserveDirectoryChanges = { read=FPreserveDirectoryChanges, write=SetPreserveDirectoryChanges };
   __property bool LockInHome = { read=FLockInHome, write=SetLockInHome };
   __property bool Special = { read=FSpecial, write=SetSpecial };
   __property bool Selected  = { read=FSelected, write=FSelected };
@@ -226,6 +240,7 @@ public:
   __property int SFTPDownloadQueue = { read = FSFTPDownloadQueue, write = SetSFTPDownloadQueue };
   __property int SFTPUploadQueue = { read = FSFTPUploadQueue, write = SetSFTPUploadQueue };
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
+  __property AnsiString StorageKey = { read = GetStorageKey };
 };
 //---------------------------------------------------------------------------
 class TStoredSessionList : public TNamedObjectList

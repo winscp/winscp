@@ -124,24 +124,22 @@ MACMISC  = misc version macstore settings tree234 macnet mtcpnet otnet proxy
 # Character set library, for use in pterm.
 CHARSET  = sbcsdat slookup sbcs utf8 toucs fromucs xenc mimeenc macenc localenc
 
-# Standard libraries, and the same with WinSocks 1 and 2.
+# Standard libraries.
 LIBS     = advapi32.lib user32.lib gdi32.lib comctl32.lib comdlg32.lib
          + shell32.lib winmm.lib imm32.lib winspool.lib
-LIBS1    = LIBS wsock32.lib
-LIBS2    = LIBS ws2_32.lib
 
 # Definitions of actual programs. The program name, followed by a
 # colon, followed by a list of objects. Also in the list may be the
 # keywords [G] for Windows GUI app, [C] for Console app, [X] for
 # X/GTK Unix app, [U] for command-line Unix app, [M] for Macintosh app.
 
-putty    : [G] GUITERM NONSSH WINSSH be_all WINMISC win_res.res LIBS1
-puttytel : [G] GUITERM NONSSH be_nossh WINMISC win_res.res LIBS1
+putty    : [G] GUITERM NONSSH WINSSH be_all WINMISC win_res.res LIBS
+puttytel : [G] GUITERM NONSSH be_nossh WINMISC win_res.res LIBS
 plink    : [C] plink console NONSSH WINSSH be_all logging WINMISC
-         + plink.res LIBS2
+         + plink.res LIBS
 pscp     : [C] scp winsftp console WINSSH be_none SFTP wildcard WINMISC
-         + scp.res LIBS1
-psftp    : [C] psftp winsftp console WINSSH be_none SFTP WINMISC scp.res LIBS1
+         + scp.res LIBS
+psftp    : [C] psftp winsftp console WINSSH be_none SFTP WINMISC scp.res LIBS
 
 pageant  : [G] pageant sshrsa sshpubk sshdes sshbn sshmd5 version tree234
          + misc sshaes sshsha pageantc sshdss sshsh512 winutils winmisc

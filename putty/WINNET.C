@@ -38,14 +38,6 @@
  */
 /* #define IPV6 1 */
 
-#ifdef IPV6
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <tpipv6.h>
-#else
-#include <winsock.h>
-#endif
-#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -55,8 +47,13 @@
 #include "network.h"
 #include "tree234.h"
 
+#include <ws2tcpip.h>
+#ifdef IPV6
+#include <tpipv6.h>
+#endif
+
 #define ipv4_is_loopback(addr) \
-	((ntohl(addr.s_addr) & 0xFF000000L) == 0x7F000000L)
+	((p_ntohl(addr.s_addr) & 0xFF000000L) == 0x7F000000L)
 
 struct Socket_tag {
     const struct socket_function_table *fn;
@@ -128,8 +125,106 @@ static int cmpforsearch(void *av, void *bv)
     return 0;
 }
 
+#define NOTHING
+#define DECL_WINSOCK_FUNCTION(linkage, rettype, name, params) \
+    typedef rettype (WINAPI *t_##name) params; \
+    linkage t_##name p_##name
+#define GET_WINSOCK_FUNCTION(name) \
+    p_##name = (t_##name) GetProcAddress(winsock_module, #name)
+
+DECL_WINSOCK_FUNCTION(NOTHING, int, WSAAsyncSelect,
+		      (SOCKET, HWND, u_int, long));
+DECL_WINSOCK_FUNCTION(NOTHING, int, WSAEventSelect, (SOCKET, WSAEVENT, long));
+DECL_WINSOCK_FUNCTION(NOTHING, int, select,
+		      (int, fd_set FAR *, fd_set FAR *,
+		       fd_set FAR *, const struct timeval FAR *));
+DECL_WINSOCK_FUNCTION(NOTHING, int, WSAGetLastError, (void));
+DECL_WINSOCK_FUNCTION(NOTHING, int, WSAEnumNetworkEvents,
+		      (SOCKET, WSAEVENT, LPWSANETWORKEVENTS));
+DECL_WINSOCK_FUNCTION(static, int, WSAStartup, (WORD, LPWSADATA));
+DECL_WINSOCK_FUNCTION(static, int, WSACleanup, (void));
+DECL_WINSOCK_FUNCTION(static, int, closesocket, (SOCKET));
+DECL_WINSOCK_FUNCTION(static, u_long, ntohl, (u_long));
+DECL_WINSOCK_FUNCTION(static, u_long, htonl, (u_long));
+DECL_WINSOCK_FUNCTION(static, u_short, htons, (u_short));
+DECL_WINSOCK_FUNCTION(static, u_short, ntohs, (u_short));
+DECL_WINSOCK_FUNCTION(static, struct hostent FAR *, gethostbyname,
+		      (const char FAR *));
+DECL_WINSOCK_FUNCTION(static, struct servent FAR *, getservbyname,
+		      (const char FAR *, const char FAR *));
+DECL_WINSOCK_FUNCTION(static, unsigned long, inet_addr, (const char FAR *));
+DECL_WINSOCK_FUNCTION(static, char FAR *, inet_ntoa, (struct in_addr));
+DECL_WINSOCK_FUNCTION(static, int, connect,
+		      (SOCKET, const struct sockaddr FAR *, int));
+DECL_WINSOCK_FUNCTION(static, int, bind,
+		      (SOCKET, const struct sockaddr FAR *, int));
+DECL_WINSOCK_FUNCTION(static, int, setsockopt,
+		      (SOCKET, int, int, const char FAR *, int));
+DECL_WINSOCK_FUNCTION(static, SOCKET, socket, (int, int, int));
+DECL_WINSOCK_FUNCTION(static, int, listen, (SOCKET, int));
+DECL_WINSOCK_FUNCTION(static, int, send, (SOCKET, const char FAR *, int, int));
+DECL_WINSOCK_FUNCTION(static, int, ioctlsocket,
+		      (SOCKET, long, u_long FAR *));
+DECL_WINSOCK_FUNCTION(static, SOCKET, accept,
+		      (SOCKET, struct sockaddr FAR *, int FAR *));
+DECL_WINSOCK_FUNCTION(static, int, recv, (SOCKET, char FAR *, int, int));
+DECL_WINSOCK_FUNCTION(static, int, WSAIoctl,
+		      (SOCKET, DWORD, LPVOID, DWORD, LPVOID, DWORD,
+		       LPDWORD, LPWSAOVERLAPPED,
+		       LPWSAOVERLAPPED_COMPLETION_ROUTINE));
+
+static HMODULE winsock_module;
+
 void sk_init(void)
 {
+    WORD winsock_ver;
+    WSADATA wsadata;
+
+    winsock_ver = MAKEWORD(2, 0);
+    winsock_module = LoadLibrary("WS2_32.DLL");
+    if (!winsock_module) {
+	winsock_module = LoadLibrary("WSOCK32.DLL");
+	winsock_ver = MAKEWORD(1, 1);
+    }
+    if (!winsock_module)
+	fatalbox("Unable to load any WinSock library");
+
+    GET_WINSOCK_FUNCTION(WSAAsyncSelect);
+    GET_WINSOCK_FUNCTION(WSAEventSelect);
+    GET_WINSOCK_FUNCTION(select);
+    GET_WINSOCK_FUNCTION(WSAGetLastError);
+    GET_WINSOCK_FUNCTION(WSAEnumNetworkEvents);
+    GET_WINSOCK_FUNCTION(WSAStartup);
+    GET_WINSOCK_FUNCTION(WSACleanup);
+    GET_WINSOCK_FUNCTION(closesocket);
+    GET_WINSOCK_FUNCTION(ntohl);
+    GET_WINSOCK_FUNCTION(htonl);
+    GET_WINSOCK_FUNCTION(htons);
+    GET_WINSOCK_FUNCTION(ntohs);
+    GET_WINSOCK_FUNCTION(gethostbyname);
+    GET_WINSOCK_FUNCTION(getservbyname);
+    GET_WINSOCK_FUNCTION(inet_addr);
+    GET_WINSOCK_FUNCTION(inet_ntoa);
+    GET_WINSOCK_FUNCTION(connect);
+    GET_WINSOCK_FUNCTION(bind);
+    GET_WINSOCK_FUNCTION(setsockopt);
+    GET_WINSOCK_FUNCTION(socket);
+    GET_WINSOCK_FUNCTION(listen);
+    GET_WINSOCK_FUNCTION(send);
+    GET_WINSOCK_FUNCTION(ioctlsocket);
+    GET_WINSOCK_FUNCTION(accept);
+    GET_WINSOCK_FUNCTION(recv);
+    GET_WINSOCK_FUNCTION(WSAIoctl);
+
+    if (p_WSAStartup(winsock_ver, &wsadata)) {
+	fatalbox("Unable to initialise WinSock");
+    }
+    if (LOBYTE(wsadata.wVersion) != LOBYTE(winsock_ver)) {
+        p_WSACleanup();
+	fatalbox("WinSock version is incompatible with %d.%d",
+		 LOBYTE(winsock_ver), HIBYTE(winsock_ver));
+    }
+
     sktree = newtree234(cmpfortree);
 }
 
@@ -140,9 +235,15 @@ void sk_cleanup(void)
 
     if (sktree) {
 	for (i = 0; (s = index234(sktree, i)) != NULL; i++) {
-	    closesocket(s->s);
+	    p_closesocket(s->s);
 	}
+	freetree234(sktree);
+	sktree = NULL;
     }
+
+    p_WSACleanup();
+    if (winsock_module)
+	FreeLibrary(winsock_module);
 }
 
 char *winsock_error_string(int error)
@@ -236,7 +337,7 @@ SockAddr sk_namelookup(const char *host, char **canonicalname)
     ret->family = 0;		       /* We set this one when we have resolved the host. */
     *realhost = '\0';
 
-    if ((a = inet_addr(host)) == (unsigned long) INADDR_NONE) {
+    if ((a = p_inet_addr(host)) == (unsigned long) INADDR_NONE) {
 #ifdef IPV6
 
 	/* Try to get the getaddrinfo() function from wship6.dll */
@@ -272,14 +373,14 @@ SockAddr sk_namelookup(const char *host, char **canonicalname)
 	     */
 	    if (ret->family == 0) {
 		/*debug(("Resolving \"%s\" with gethostbyname() (IPv4 only)...\n", host)); */
-		if ( (h = gethostbyname(host)) )
+		if ( (h = p_gethostbyname(host)) )
 		    ret->family = AF_INET;
 	    }
 	}
 	/*debug(("Done resolving...(family is %d) AF_INET = %d, AF_INET6 = %d\n", ret->family, AF_INET, AF_INET6)); */
 
 	if (ret->family == 0) {
-	    DWORD err = WSAGetLastError();
+	    DWORD err = p_WSAGetLastError();
 	    ret->error = (err == WSAENETDOWN ? "Network is down" :
 			  err ==
 			  WSAHOST_NOT_FOUND ? "Host does not exist" : err
@@ -355,7 +456,7 @@ SockAddr sk_namelookup(const char *host, char **canonicalname)
 	ret->family = AF_INET;
 	strncpy(realhost, host, sizeof(realhost));
     }
-    ret->address = ntohl(a);
+    ret->address = p_ntohl(a);
     realhost[lenof(realhost)-1] = '\0';
     *canonicalname = snewn(1+strlen(realhost), char);
     strcpy(*canonicalname, realhost);
@@ -381,8 +482,8 @@ void sk_getaddr(SockAddr addr, char *buf, int buflen)
 #endif
     if (addr->family == AF_INET) {
 	struct in_addr a;
-	a.s_addr = htonl(addr->address);
-	strncpy(buf, inet_ntoa(a), buflen);
+	a.s_addr = p_htonl(addr->address);
+	strncpy(buf, p_inet_ntoa(a), buflen);
 	buf[buflen-1] = '\0';
     } else {
 	assert(addr->family == AF_UNSPEC);
@@ -396,6 +497,37 @@ int sk_hostname_is_local(char *name)
     return !strcmp(name, "localhost");
 }
 
+static INTERFACE_INFO local_interfaces[16];
+static int n_local_interfaces;       /* 0=not yet, -1=failed, >0=number */
+
+static int ipv4_is_local_addr(struct in_addr addr)
+{
+    if (ipv4_is_loopback(addr))
+	return 1;		       /* loopback addresses are local */
+    if (!n_local_interfaces) {
+	SOCKET s = p_socket(AF_INET, SOCK_DGRAM, 0);
+	DWORD retbytes;
+
+	if (p_WSAIoctl &&
+	    p_WSAIoctl(s, SIO_GET_INTERFACE_LIST, NULL, 0,
+		       local_interfaces, sizeof(local_interfaces),
+		       &retbytes, NULL, NULL) == 0)
+	    n_local_interfaces = retbytes / sizeof(INTERFACE_INFO);
+	else
+	    logevent(NULL, "Unable to get list of local IP addresses");
+    }
+    if (n_local_interfaces > 0) {
+	int i;
+	for (i = 0; i < n_local_interfaces; i++) {
+	    SOCKADDR_IN *address =
+		(SOCKADDR_IN *)&local_interfaces[i].iiAddress;
+	    if (address->sin_addr.s_addr == addr.s_addr)
+		return 1;	       /* this address is local */
+	}
+    }
+    return 0;		       /* this address is not local */
+}
+
 int sk_address_is_local(SockAddr addr)
 {
 #ifdef IPV6
@@ -405,8 +537,8 @@ int sk_address_is_local(SockAddr addr)
 #endif
     if (addr->family == AF_INET) {
 	struct in_addr a;
-	a.s_addr = htonl(addr->address);
-	return ipv4_is_loopback(a);
+	a.s_addr = p_htonl(addr->address);
+	return ipv4_is_local_addr(a);
     } else {
 	assert(addr->family == AF_UNSPEC);
 	return 0;		       /* we don't know; assume not */
@@ -432,7 +564,7 @@ void sk_addrcopy(SockAddr addr, char *buf)
 #endif
     if (addr->family == AF_INET) {
 	struct in_addr a;
-	a.s_addr = htonl(addr->address);
+	a.s_addr = p_htonl(addr->address);
 	memcpy(buf, (char*) &a.s_addr, 4);
     }
 }
@@ -505,7 +637,7 @@ Socket sk_register(void *sock, Plug plug)
     ret->s = (SOCKET)sock;
 
     if (ret->s == INVALID_SOCKET) {
-	err = WSAGetLastError();
+	err = p_WSAGetLastError();
 	ret->error = winsock_error_string(err);
 	return (Socket) ret;
     }
@@ -570,11 +702,11 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
      * Open socket.
      */
     assert(addr->family != AF_UNSPEC);
-    s = socket(addr->family, SOCK_STREAM, 0);
+    s = p_socket(addr->family, SOCK_STREAM, 0);
     ret->s = s;
 
     if (s == INVALID_SOCKET) {
-	err = WSAGetLastError();
+	err = p_WSAGetLastError();
 	ret->error = winsock_error_string(err);
 	return (Socket) ret;
     }
@@ -582,12 +714,12 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
     ret->oobinline = oobinline;
     if (oobinline) {
 	BOOL b = TRUE;
-	setsockopt(s, SOL_SOCKET, SO_OOBINLINE, (void *) &b, sizeof(b));
+	p_setsockopt(s, SOL_SOCKET, SO_OOBINLINE, (void *) &b, sizeof(b));
     }
 
     if (nodelay) {
 	BOOL b = TRUE;
-	setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void *) &b, sizeof(b));
+	p_setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (void *) &b, sizeof(b));
     }
 
     /*
@@ -607,28 +739,28 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 	    memset(&a6, 0, sizeof(a6));
 	    a6.sin6_family = AF_INET6;
 /*a6.sin6_addr      = in6addr_any; *//* == 0 */
-	    a6.sin6_port = htons(localport);
+	    a6.sin6_port = p_htons(localport);
 	} else
 #endif
 	{
 	    a.sin_family = AF_INET;
-	    a.sin_addr.s_addr = htonl(INADDR_ANY);
-	    a.sin_port = htons(localport);
+	    a.sin_addr.s_addr = p_htonl(INADDR_ANY);
+	    a.sin_port = p_htons(localport);
 	}
 #ifdef IPV6
-	retcode = bind(s, (addr->family == AF_INET6 ?
+	retcode = p_bind(s, (addr->family == AF_INET6 ?
 			   (struct sockaddr *) &a6 :
 			   (struct sockaddr *) &a),
 		       (addr->family ==
 			AF_INET6 ? sizeof(a6) : sizeof(a)));
 #else
-	retcode = bind(s, (struct sockaddr *) &a, sizeof(a));
+	retcode = p_bind(s, (struct sockaddr *) &a, sizeof(a));
 #endif
 	if (retcode != SOCKET_ERROR) {
 	    err = 0;
 	    break;		       /* done */
 	} else {
-	    err = WSAGetLastError();
+	    err = p_WSAGetLastError();
 	    if (err != WSAEADDRINUSE)  /* failed, for a bad reason */
 		break;
 	}
@@ -652,15 +784,15 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
     if (addr->family == AF_INET6) {
 	memset(&a, 0, sizeof(a));
 	a6.sin6_family = AF_INET6;
-	a6.sin6_port = htons((short) port);
+	a6.sin6_port = p_htons((short) port);
 	a6.sin6_addr =
 	    ((struct sockaddr_in6 *) addr->ai->ai_addr)->sin6_addr;
     } else
 #endif
     {
 	a.sin_family = AF_INET;
-	a.sin_addr.s_addr = htonl(addr->address);
-	a.sin_port = htons((short) port);
+	a.sin_addr.s_addr = p_htonl(addr->address);
+	a.sin_port = p_htons((short) port);
     }
 
     /* Set up a select mechanism. This could be an AsyncSelect on a
@@ -673,14 +805,14 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 
     if ((
 #ifdef IPV6
-	    connect(s, ((addr->family == AF_INET6) ?
+	    p_connect(s, ((addr->family == AF_INET6) ?
 			(struct sockaddr *) &a6 : (struct sockaddr *) &a),
 		    (addr->family == AF_INET6) ? sizeof(a6) : sizeof(a))
 #else
-	    connect(s, (struct sockaddr *) &a, sizeof(a))
+	    p_connect(s, (struct sockaddr *) &a, sizeof(a))
 #endif
 	) == SOCKET_ERROR) {
-	err = WSAGetLastError();
+	err = p_WSAGetLastError();
 	/*
 	 * We expect a potential EWOULDBLOCK here, because the
 	 * chances are the front end has done a select for
@@ -750,18 +882,18 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
     /*
      * Open socket.
      */
-    s = socket(AF_INET, SOCK_STREAM, 0);
+    s = p_socket(AF_INET, SOCK_STREAM, 0);
     ret->s = s;
 
     if (s == INVALID_SOCKET) {
-	err = WSAGetLastError();
+	err = p_WSAGetLastError();
 	ret->error = winsock_error_string(err);
 	return (Socket) ret;
     }
 
     ret->oobinline = 0;
 
-    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&on, sizeof(on));
+    p_setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char *)&on, sizeof(on));
 
 #ifdef IPV6
 	if (addr->family == AF_INET6) {
@@ -773,7 +905,7 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
 		a6.sin6_addr = in6addr_loopback;
 	    else
 		a6.sin6_addr = in6addr_any;
-	    a6.sin6_port = htons(port);
+	    a6.sin6_port = p_htons(port);
 	} else
 #endif
 	{
@@ -785,7 +917,7 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
 	     * specified one...
 	     */
 	    if (srcaddr) {
-		a.sin_addr.s_addr = inet_addr(srcaddr);
+		a.sin_addr.s_addr = p_inet_addr(srcaddr);
 		if (a.sin_addr.s_addr != INADDR_NONE) {
 		    /* Override localhost_only with specified listen addr. */
 		    ret->localhost_only = ipv4_is_loopback(a.sin_addr);
@@ -798,26 +930,26 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
 	     */
 	    if (!got_addr) {
 		if (local_host_only)
-		    a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+		    a.sin_addr.s_addr = p_htonl(INADDR_LOOPBACK);
 		else
-		    a.sin_addr.s_addr = htonl(INADDR_ANY);
+		    a.sin_addr.s_addr = p_htonl(INADDR_ANY);
 	    }
 
-	    a.sin_port = htons((short)port);
+	    a.sin_port = p_htons((short)port);
 	}
 #ifdef IPV6
-	retcode = bind(s, (addr->family == AF_INET6 ?
+	retcode = p_bind(s, (addr->family == AF_INET6 ?
 			   (struct sockaddr *) &a6 :
 			   (struct sockaddr *) &a),
 		       (addr->family ==
 			AF_INET6 ? sizeof(a6) : sizeof(a)));
 #else
-	retcode = bind(s, (struct sockaddr *) &a, sizeof(a));
+	retcode = p_bind(s, (struct sockaddr *) &a, sizeof(a));
 #endif
 	if (retcode != SOCKET_ERROR) {
 	    err = 0;
 	} else {
-	    err = WSAGetLastError();
+	    err = p_WSAGetLastError();
 	}
 
     if (err) {
@@ -826,8 +958,8 @@ Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only)
     }
 
 
-    if (listen(s, SOMAXCONN) == SOCKET_ERROR) {
-        closesocket(s);
+    if (p_listen(s, SOMAXCONN) == SOCKET_ERROR) {
+        p_closesocket(s);
 	ret->error = winsock_error_string(err);
 	return (Socket) ret;
     }
@@ -852,7 +984,7 @@ static void sk_tcp_close(Socket sock)
 
     del234(sktree, s);
     do_select(s->s, 0);
-    closesocket(s->s);
+    p_closesocket(s->s);
     sfree(s);
 }
 
@@ -876,10 +1008,10 @@ void try_send(Actual_Socket s)
 	    urgentflag = 0;
 	    bufchain_prefix(&s->output_data, &data, &len);
 	}
-	nsent = send(s->s, data, len, urgentflag);
+	nsent = p_send(s->s, data, len, urgentflag);
 	noise_ultralight(nsent);
 	if (nsent <= 0) {
-	    err = (nsent < 0 ? WSAGetLastError() : 0);
+	    err = (nsent < 0 ? p_WSAGetLastError() : 0);
 	    if ((err < WSABASEERR && nsent < 0) || err == WSAEWOULDBLOCK) {
 		/*
 		 * Perfectly normal: we've sent all we can for the moment.
@@ -1012,7 +1144,7 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	 */
 	if (s->oobinline) {
 	    atmark = 1;
-	    ioctlsocket(s->s, SIOCATMARK, &atmark);
+	    p_ioctlsocket(s->s, SIOCATMARK, &atmark);
 	    /*
 	     * Avoid checking the return value from ioctlsocket(),
 	     * on the grounds that some WinSock wrappers don't
@@ -1023,10 +1155,10 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	} else
 	    atmark = 1;
 
-	ret = recv(s->s, buf, sizeof(buf), 0);
+	ret = p_recv(s->s, buf, sizeof(buf), 0);
 	noise_ultralight(ret);
 	if (ret < 0) {
-	    err = WSAGetLastError();
+	    err = p_WSAGetLastError();
 	    if (err == WSAEWOULDBLOCK) {
 		break;
 	    }
@@ -1047,11 +1179,11 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	 * and get back OOB data, which we will send to the back
 	 * end with type==2 (urgent data).
 	 */
-	ret = recv(s->s, buf, sizeof(buf), MSG_OOB);
+	ret = p_recv(s->s, buf, sizeof(buf), MSG_OOB);
 	noise_ultralight(ret);
 	if (ret <= 0) {
 	    char *str = (ret == 0 ? "Internal networking trouble" :
-			 winsock_error_string(WSAGetLastError()));
+			 winsock_error_string(p_WSAGetLastError()));
 	    /* We're inside the Windows frontend here, so we know
 	     * that the frontend handle is unnecessary. */
 	    logevent(NULL, str);
@@ -1075,9 +1207,9 @@ int select_result(WPARAM wParam, LPARAM lParam)
 	/* Signal a close on the socket. First read any outstanding data. */
 	open = 1;
 	do {
-	    ret = recv(s->s, buf, sizeof(buf), 0);
+	    ret = p_recv(s->s, buf, sizeof(buf), 0);
 	    if (ret < 0) {
-		err = WSAGetLastError();
+		err = p_WSAGetLastError();
 		if (err == WSAEWOULDBLOCK)
 		    break;
 		return plug_closing(s->plug, winsock_error_string(err),
@@ -1098,18 +1230,18 @@ int select_result(WPARAM wParam, LPARAM lParam)
 
 	    memset(&isa, 0, sizeof(struct sockaddr_in));
 	    err = 0;
-	    t = accept(s->s,(struct sockaddr *)&isa,&addrlen);
+	    t = p_accept(s->s,(struct sockaddr *)&isa,&addrlen);
 	    if (t == INVALID_SOCKET)
 	    {
-		err = WSAGetLastError();
+		err = p_WSAGetLastError();
 		if (err == WSATRY_AGAIN)
 		    break;
 	    }
 
-	    if (s->localhost_only && !ipv4_is_loopback(isa.sin_addr)) {
-		closesocket(t);	       /* dodgy WinSock let nonlocal through */
+	    if (s->localhost_only && !ipv4_is_local_addr(isa.sin_addr)) {
+		p_closesocket(t);      /* dodgy WinSock let nonlocal through */
 	    } else if (plug_accepting(s->plug, (void*)t)) {
-		closesocket(t);	       /* denied or error */
+		p_closesocket(t);      /* denied or error */
 	    }
 	}
     }
@@ -1194,7 +1326,7 @@ static void sk_tcp_set_frozen(Socket sock, int is_frozen)
     s->frozen = is_frozen;
     if (!is_frozen && s->frozen_readable) {
 	char c;
-	recv(s->s, &c, 1, MSG_PEEK);
+	p_recv(s->s, &c, 1, MSG_PEEK);
     }
     s->frozen_readable = 0;
 }
@@ -1219,9 +1351,9 @@ SOCKET next_socket(int *state)
 int net_service_lookup(char *service)
 {
     struct servent *se;
-    se = getservbyname(service, NULL);
+    se = p_getservbyname(service, NULL);
     if (se != NULL)
-	return ntohs(se->s_port);
+	return p_ntohs(se->s_port);
     else
 	return 0;
 }

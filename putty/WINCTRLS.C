@@ -13,17 +13,14 @@
  *    button.
  */
 
-#include <windows.h>
-#include <commctrl.h>
 #include <assert.h>
 #include <ctype.h>
 
-#include "winstuff.h"
+#include "putty.h"
 #include "misc.h"
 #include "dialog.h"
-#include "puttymem.h"
 
-#include "putty.h"
+#include <commctrl.h>
 
 #define GAPBETWEEN 3
 #define GAPWITHIN 1

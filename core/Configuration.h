@@ -96,6 +96,10 @@ public:
   void __fastcall CleanupRandomSeedFile();
   void __fastcall BeginUpdate();
   void __fastcall EndUpdate();
+  void __fastcall LoadDirectoryChangesCache(const AnsiString SessionKey,
+    TRemoteDirectoryChangesCache * DirectoryChangesCache);   
+  void __fastcall SaveDirectoryChangesCache(const AnsiString SessionKey,
+    TRemoteDirectoryChangesCache * DirectoryChangesCache);
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
@@ -137,7 +141,5 @@ public:
 
   __property bool DisablePasswordStoring = { read = FDisablePasswordStoring };
 };
-//---------------------------------------------------------------------------
-bool SpecialFolderLocation(int PathID, AnsiString & Path);
 //---------------------------------------------------------------------------
 #endif

@@ -16,7 +16,7 @@
 #pragma link "IEComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-bool __fastcall OpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
+bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
   AnsiString & Directory, TStrings * Directories, TTerminal * Terminal)
 {
   bool Result;

@@ -3,7 +3,6 @@
 #pragma hdrstop
 
 #include "Rights.h"
-#include "NonVisual.h"
 
 #include <Common.h>
 
@@ -21,10 +20,6 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()
 {
-  if (NonVisualDataModule->RightsFrame == this)
-  {
-    NonVisualDataModule->RightsFrame = NULL;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetStates(TRightsFlag Flag, TRightState value)
@@ -147,18 +142,6 @@ void __fastcall TRightsFrame::UpdateControls()
   DoChange();
 }
 //---------------------------------------------------------------------------
-void __fastcall TRightsFrame::FrameContextPopup(TObject * /*Sender*/,
-      TPoint & /*MousePos*/, bool & /*Handled*/)
-{
-  NonVisualDataModule->RightsFrame = this;
-}
-//---------------------------------------------------------------------------
-void __fastcall TRightsFrame::FrameEnter(TObject * /*Sender*/)
-{
-  // allow keyboard shortcuts
-  NonVisualDataModule->RightsFrame = this;
-}
-//---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CycleRights(int Group)
 {
   TRightState State;
@@ -260,6 +243,65 @@ void __fastcall TRightsFrame::OctalEditChange(TObject * /*Sender*/)
     {
       OctalEdit->Modified = true;
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
+  bool & Handled)
+{
+  TRights R = Rights;
+  R.Number = raNo;
+
+  Handled = true;
+  if (Action == NoRightsAction)
+  {
+    R = raNo;
+  }
+  else if (Action == DefaultRightsAction)
+  {
+    R = raDefault;
+  }
+  else if (Action == AllRightsAction)
+  {
+    R = raAll;
+  }
+  else if (Action == LeaveRightsAsIsAction)
+  {
+    R.AllUndef();
+  }
+  else
+  {
+    Handled = false;
+  }
+  Rights = R;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::RightsActionsUpdate(TBasicAction *Action,
+      bool &Handled)
+{
+  TRights R = Rights;
+
+  Handled = true;
+  if (Action == NoRightsAction)
+  {
+    NoRightsAction->Checked = !R.IsUndef && (R.NumberSet == raNo);
+  }
+  else if (Action == DefaultRightsAction)
+  {
+    DefaultRightsAction->Checked = !R.IsUndef && (R.NumberSet == raDefault);
+  }
+  else if (Action == AllRightsAction)
+  {
+    AllRightsAction->Checked = !R.IsUndef && (R.NumberSet == raAll);
+  }
+  else if (Action == LeaveRightsAsIsAction)
+  {
+    LeaveRightsAsIsAction->Enabled = R.AllowUndef;
+    LeaveRightsAsIsAction->Checked = (R.NumberSet == raNo) && (R.NumberUnset == raNo);
+  }
+  else
+  {
+    Handled = false;
   }
 }
 //---------------------------------------------------------------------------

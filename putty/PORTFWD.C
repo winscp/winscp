@@ -107,7 +107,12 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
     struct PFwdPrivate *pr = (struct PFwdPrivate *) plug;
     if (pr->dynamic) {
 	while (len--) {
+	    /*
+	     * Throughout SOCKS negotiation, "hostname" is re-used as a
+	     * random protocol buffer with "port" storing the length.
+	     */ 
 	    if (pr->port >= lenof(pr->hostname)) {
+		/* Request too long. */
 		if ((pr->dynamic >> 12) == 4) {
 		    /* Send back a SOCKS 4 error before closing. */
 		    char data[8];
@@ -133,6 +138,7 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 		    pr->dynamic = 0x4000;
 		if (pr->port < 2) continue;/* don't have command code yet */
 		if (pr->hostname[1] != 1) {
+		    /* Not CONNECT. */
 		    /* Send back a SOCKS 4 error before closing. */
 		    char data[8];
 		    memset(data, 0, sizeof(data));
@@ -141,9 +147,9 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 		    pfd_close(pr->s);
 		    return 1;
 		}
-		if (pr->port < 8) continue;   /* haven't started username */
+		if (pr->port <= 8) continue; /* haven't started user/hostname */
 		if (pr->hostname[pr->port-1] != 0)
-		    continue;	       /* haven't _finished_ username */
+		    continue;	       /* haven't _finished_ user/hostname */
 		/*
 		 * Now we have a full SOCKS 4 request. Check it to
 		 * see if it's a SOCKS 4A request.
@@ -165,7 +171,7 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 		    pr->hostname[0] = 0;   /* reply version code */
 		    pr->hostname[1] = 90;   /* request granted */
 		    sk_write(pr->s, pr->hostname, 8);
-		    len= pr->port;
+		    len= pr->port - 8;
 		    pr->port = GET_16BIT_MSB_FIRST(pr->hostname+2);
 		    memmove(pr->hostname, pr->hostname + 8, len);
 		    goto connect;
@@ -220,7 +226,23 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 		}
 
 		if (pr->dynamic == 0x5001) {
+		    /*
+		     * We're receiving a SOCKS request.
+		     */
+		    unsigned char reply[10]; /* SOCKS5 atyp=1 reply */
 		    int atype, alen = 0;
+
+		    /*
+		     * Pre-fill reply packet.
+		     * In all cases, we set BND.{HOST,ADDR} to 0.0.0.0:0
+		     * (atyp=1) in the reply; if we succeed, we don't know
+		     * the right answers, and if we fail, they should be
+		     * ignored.
+		     */
+		    memset(reply, 0, lenof(reply));
+		    reply[0] = 5; /* VER */
+		    reply[3] = 1; /* ATYP = 1 (IPv4, 0.0.0.0:0) */
+
 		    if (pr->port < 6) continue;
 		    atype = (unsigned char)pr->hostname[3];
 		    if (atype == 1)    /* IPv4 address */
@@ -231,9 +253,9 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 			alen = 1 + (unsigned char)pr->hostname[4];
 		    if (pr->port < 6 + alen) continue;
 		    if (pr->hostname[1] != 1 || pr->hostname[2] != 0) {
-			pr->hostname[1] = 1;   /* generic failure */
-			pr->hostname[2] = 0;   /* reserved */
-			sk_write(pr->s, pr->hostname, pr->port);
+			/* Not CONNECT or reserved field nonzero - error */
+			reply[1] = 1;	/* generic failure */
+			sk_write(pr->s, reply, lenof(reply));
 			pfd_close(pr->s);
 			return 1;
 		    }
@@ -243,8 +265,8 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 		     */
 		    pr->port = GET_16BIT_MSB_FIRST(pr->hostname+4+alen);
 		    if (atype == 1) {
-			pr->hostname[1] = 0;   /* succeeded */
-			sk_write(pr->s, pr->hostname, alen + 6);
+			/* REP=0 (success) already */
+			sk_write(pr->s, reply, lenof(reply));
 			sprintf(pr->hostname, "%d.%d.%d.%d",
 				(unsigned char)pr->hostname[4],
 				(unsigned char)pr->hostname[5],
@@ -252,8 +274,8 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 				(unsigned char)pr->hostname[7]);
 			goto connect;
 		    } else if (atype == 3) {
-			pr->hostname[1] = 0;   /* succeeded */
-			sk_write(pr->s, pr->hostname, alen + 6);
+			/* REP=0 (success) already */
+			sk_write(pr->s, reply, lenof(reply));
 			memmove(pr->hostname, pr->hostname + 5, alen-1);
 			pr->hostname[alen-1] = '\0';
 			goto connect;
@@ -261,8 +283,8 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 			/*
 			 * Unknown address type. (FIXME: support IPv6!)
 			 */
-			pr->hostname[1] = 8;   /* atype not supported */
-			sk_write(pr->s, pr->hostname, pr->port);
+			reply[1] = 8;	/* atype not supported */
+			sk_write(pr->s, reply, lenof(reply));
 			pfd_close(pr->s);
 			return 1;			
 		    }
@@ -415,7 +437,7 @@ static int pfd_accepting(Plug p, OSSocket sock)
 
     if (org->dynamic) {
 	pr->dynamic = 1;
-	pr->port = 0;		       /* hostname buffer is so far empty */
+	pr->port = 0;		       /* "hostname" buffer is so far empty */
 	sk_set_frozen(s, 0);	       /* we want to receive SOCKS _now_! */
     } else {
 	pr->dynamic = 0;
@@ -547,3 +569,4 @@ void pfd_confirm(Socket s)
 	pr->buffer = NULL;
     }
 }
+

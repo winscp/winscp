@@ -35,7 +35,7 @@
     <RELEASELIBPATH value="$(BCB)\lib\release"/>
     <LINKER value="ilink32"/>
     <USERDEFINES value=""/>
-    <SYSDEFINES value="_RTLDLL;NO_STRICT;USEPACKAGES"/>
+    <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="Moje_B5.cpp"/>
     <INCLUDEPATH value="&quot;Moje komponenty&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="..\lib\;&quot;Moje komponenty&quot;;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
@@ -52,9 +52,9 @@
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
-    <ALLOBJ value="c0pkg32.obj $(PACKAGES) Memmgr.Lib sysinit.obj $(OBJFILES)"/>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) sysinit.obj $(OBJFILES)"/>
     <ALLRES value="$(RESFILES)"/>
-    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mti.lib"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
     <OTHERFILES value=""/>
   </LINKER>
   <FILELIST>

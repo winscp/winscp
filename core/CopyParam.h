@@ -27,6 +27,7 @@ private:
   bool FReplaceInvalidChars;
   AnsiString FLocalInvalidChars;
   bool FCalculateSize;
+  AnsiString FFileMask;
 
 public:
   __fastcall TCopyParamType();
@@ -34,7 +35,8 @@ public:
   TCopyParamType & __fastcall operator =(const TCopyParamType & rhp);
   void __fastcall Assign(const TCopyParamType & Source);
   void __fastcall Default();
-  AnsiString __fastcall ChangeFileName(AnsiString FileName, TOperationSide Side) const;
+  AnsiString __fastcall ChangeFileName(AnsiString FileName,
+    TOperationSide Side, bool FirstLevel) const;
   int __fastcall LocalFileAttrs(const TRights & Rights) const;
   TRights __fastcall RemoteFileRights(int Attrs) const;
   bool __fastcall UseAsciiTransfer(const AnsiString FileName) const;
@@ -55,6 +57,7 @@ public:
   __property bool ReplaceInvalidChars = { read = FReplaceInvalidChars, write = FReplaceInvalidChars };
   __property AnsiString LocalInvalidChars = { read = FLocalInvalidChars, write = FLocalInvalidChars };
   __property bool CalculateSize = { read = FCalculateSize, write = FCalculateSize };
+  __property AnsiString FileMask = { read = FFileMask, write = FFileMask };
 };
 //---------------------------------------------------------------------------
 #endif

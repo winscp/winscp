@@ -27,26 +27,26 @@ object CopyDialog: TCopyDialog
     Height = 13
     Caption = 'Copy 2 selected files to remote directory'
   end
-  object LocalDirectoryEdit: TDirectoryEdit
+  object LocalDirectoryEdit: THistoryComboBox
     Left = 8
     Top = 25
-    Width = 496
+    Width = 410
     Height = 21
-    AcceptFiles = True
-    DialogText = 'Select target local directory.'
-    ClickKey = 16397
     Anchors = [akLeft, akTop, akRight]
+    ItemHeight = 13
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
   end
-  object RemoteDirectoryEdit: TEdit
+  object RemoteDirectoryEdit: THistoryComboBox
     Left = 8
     Top = 25
     Width = 494
     Height = 21
+    AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
+    ItemHeight = 13
     MaxLength = 1000
-    TabOrder = 1
+    TabOrder = 2
     Text = 'RemoteDirectoryEdit'
   end
   object MoreButton: TMoreButton
@@ -56,7 +56,7 @@ object CopyDialog: TCopyDialog
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '<< &Less'
-    TabOrder = 3
+    TabOrder = 4
     Panel = MorePanel
     RepositionForm = True
   end
@@ -69,7 +69,7 @@ object CopyDialog: TCopyDialog
     Caption = 'Copy'
     Default = True
     ModalResult = 1
-    TabOrder = 4
+    TabOrder = 5
   end
   object CancelButton: TButton
     Left = 427
@@ -80,7 +80,7 @@ object CopyDialog: TCopyDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 5
+    TabOrder = 6
   end
   object MorePanel: TPanel
     Left = 0
@@ -89,7 +89,7 @@ object CopyDialog: TCopyDialog
     Height = 170
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
-    TabOrder = 2
+    TabOrder = 3
     object SaveSettingsCheck: TCheckBox
       Left = 8
       Top = 152
@@ -105,10 +105,22 @@ object CopyDialog: TCopyDialog
       Height = 149
       TabOrder = 0
       inherited RemotePropertiesGroup: TXPGroupBox
+        inherited RightsFrame: TRightsFrame
+          PopupMenu = CopyParamsFrame.RightsFrame.RightsPopup
+        end
         inherited PreserveRightsCheck: TCheckBox
           Left = 12
         end
       end
     end
+  end
+  object LocalDirectoryBrowseButton: TButton
+    Left = 427
+    Top = 23
+    Width = 75
+    Height = 25
+    Caption = 'B&rowse...'
+    TabOrder = 1
+    OnClick = LocalDirectoryBrowseButtonClick
   end
 end

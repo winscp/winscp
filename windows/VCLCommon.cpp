@@ -6,6 +6,8 @@
 
 #include <Common.h>
 #include <TextsWin.h>
+
+#include <FileCtrl.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -103,4 +105,104 @@ void __fastcall LinkLabel(TLabel * Label)
   Label->Font->Color = clBlue;
 }
 //---------------------------------------------------------------------------
+class TPublicForm : public TForm
+{
+friend void __fastcall ShowAsModal(TForm * Form, void *& Storage);
+friend void __fastcall HideAsModal(TForm * Form, void *& Storage);
+};
+//---------------------------------------------------------------------------
+struct TShowAsModalStorage
+{
+  void * FocusWindowList;
+  void * FocusActiveWindow;
+};
+//---------------------------------------------------------------------------
+void __fastcall ShowAsModal(TForm * Form, void *& Storage)
+{
+  CancelDrag();
+  if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
+  ReleaseCapture();
+  (static_cast<TPublicForm*>(Form))->FFormState << fsModal;
+
+  TShowAsModalStorage * AStorage = new TShowAsModalStorage;
+
+  AStorage->FocusActiveWindow = GetActiveWindow();
+
+  AStorage->FocusWindowList = DisableTaskWindows(0);
+  Form->Show();
+  SendMessage(Form->Handle, CM_ACTIVATE, 0, 0);
+
+  Storage = AStorage;
+}
+//---------------------------------------------------------------------------
+void __fastcall HideAsModal(TForm * Form, void *& Storage)
+{
+  assert((static_cast<TPublicForm*>(Form))->FFormState.Contains(fsModal));
+  TShowAsModalStorage * AStorage = static_cast<TShowAsModalStorage *>(Storage);
+  Storage = NULL;
+
+  SendMessage(Form->Handle, CM_DEACTIVATE, 0, 0);
+  if (GetActiveWindow() != Form->Handle)
+  {
+    AStorage->FocusActiveWindow = 0;
+  }
+  Form->Hide();
+
+  EnableTaskWindows(AStorage->FocusWindowList);
+
+  if (AStorage->FocusActiveWindow != 0)
+  {
+    SetActiveWindow(AStorage->FocusActiveWindow);
+  }
+
+  (static_cast<TPublicForm*>(Form))->FFormState >> fsModal;
+
+  delete AStorage;
+}
+//---------------------------------------------------------------------------
+void __fastcall ReleaseAsModal(TForm * Form, void *& Storage)
+{
+  if (Storage != NULL)
+  {
+    HideAsModal(Form, Storage);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall SelectDirectory(AnsiString & Path, const AnsiString Prompt,
+  bool PreserveFileName)
+{
+  bool Result;
+  unsigned int ErrorMode;
+  ErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
+
+  try
+  {
+    AnsiString Directory;
+    AnsiString FileName;
+    if (!PreserveFileName || DirectoryExists(Path))
+    {
+      Directory = Path;
+    }
+    else
+    {
+      Directory = ExtractFilePath(Path);
+      FileName = ExtractFileName(Path);
+    }
+    Result = SelectDirectory(Prompt, "", Directory);
+    if (Result)
+    {
+      Path = Directory;
+      if (!FileName.IsEmpty())
+      {
+        Path = IncludeTrailingBackslash(Path) + FileName;
+      }
+    }
+  }
+  __finally
+  {
+    SetErrorMode(ErrorMode);
+  }
+
+  return Result;
+}
 

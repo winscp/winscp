@@ -56,11 +56,16 @@ ShowTasksTreeLines=yes
 #dim Languages[100]
 #define RuntimeMessageCount
 #dim RuntimeMessageID[100]
-#dim RuntimeMessages[100][100]
+#dim RuntimeMessages[300][100]
 #define LanguageCount 0
 #define LangI
 #define MessageID
 #define MessagesPath
+#define MessageStr
+#define QuotePos
+#dim QuoteStack[100]
+#define QuoteStackSize
+#expr QuoteStackSize = 0
 
 #expr RuntimeMessageCount = 15
 #define UserSettingsTitle 0
@@ -314,9 +319,22 @@ var
 procedure InitRuntimeMessages;
 begin
 
+#sub DoubleQuotes
+  #expr QuotePos = Pos('''', MessageStr);
+  #if QuotePos > 0
+    #expr QuoteStack[QuoteStackSize] = Copy(MessageStr, 1, QuotePos) + ''''
+    #expr QuoteStackSize++
+    #expr MessageStr = Copy(MessageStr, QuotePos + 1, Len(MessageStr) - QuotePos)
+    #expr DoubleQuotes
+    #expr QuoteStackSize--
+    #expr MessageStr = QuoteStack[QuoteStackSize] + MessageStr
+  #endif
+#endsub
+
 #sub EmitRuntimeMessage
-    RuntimeMessages[{#MessageID}] :=
-      '{#RuntimeMessages[LangI * RuntimeMessageCount + MessageID]}';
+  #expr MessageStr = RuntimeMessages[LangI * RuntimeMessageCount + MessageID];
+  #expr DoubleQuotes
+  RuntimeMessages[{#MessageID}] := '{#MessageStr}';
 #endsub
 
 #sub EmitLangRuntimeMessages

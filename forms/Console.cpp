@@ -11,19 +11,19 @@
 #include <ScpMain.h>
 
 #include <VCLCommon.h>
-#include "WinConfiguration.h"
-#include "TerminalManager.h"
+#include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-void __fastcall DoConsoleDialog()
+void __fastcall DoConsoleDialog(TTerminal * Terminal, const AnsiString Command)
 {
   TConsoleDialog * Dialog = new TConsoleDialog(Application);
   try
   {
-    Dialog->Execute();
+    Dialog->Terminal = Terminal;
+    Dialog->Execute(Command);
   }
   __finally
   {
@@ -96,50 +96,53 @@ void __fastcall TConsoleDialog::UpdateControls()
   EnableControl(ExecuteButton, !CommandEdit->Text.IsEmpty());
 }
 //---------------------------------------------------------------------
-bool __fastcall TConsoleDialog::Execute()
+bool __fastcall TConsoleDialog::Execute(const AnsiString Command)
 {
-  TTerminalManager * Manager = TTerminalManager::Instance();
-  TNotifyEvent POnChangeTerminal = Manager->OnChangeTerminal;
-  Manager->OnChangeTerminal = TerminalManagerChangeTerminal;
+  FPrevTerminalClose = NULL;;
+  if (FTerminal)
+  {
+    FPrevTerminalClose = FTerminal->OnClose;
+    // used instead of previous TTerminalManager::OnChangeTerminal
+    FTerminal->OnClose = TerminalClose;
+  }
+  
   try
   {
-    Terminal = TTerminalManager::Instance()->ActiveTerminal;
-    if (FTerminal)
+    TStrings * CommandsHistory = CustomWinConfiguration->History["Commands"];
+    if ((CommandsHistory != NULL) && (CommandsHistory->Count > 0))
     {
-      if (WinConfiguration->CommandsHistory->Count)
-      {
-        CommandEdit->Items = WinConfiguration->CommandsHistory;
-      }
-      else
-      {
-        CommandEdit->Items->Clear();
-      }
+      CommandEdit->Items = CommandsHistory;
+    }
+    else
+    {
+      CommandEdit->Items->Clear();
+    }
+    if (!Command.IsEmpty())
+    {
+      CommandEdit->Text = Command;
+      DoExecuteCommand();
     }
     ShowModal();
   }
   __finally
   {
-    assert(Manager->OnChangeTerminal == TerminalManagerChangeTerminal);
-    Manager->OnChangeTerminal = POnChangeTerminal;
     if (FTerminal)
     {
-      WinConfiguration->CommandsHistory = CommandEdit->Items;
+      assert(FTerminal->OnClose == TerminalClose);
+      FTerminal->OnClose = FPrevTerminalClose;
+      CustomWinConfiguration->History["Commands"] = CommandEdit->Items;
     }
   }
   return true;
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::TerminalManagerChangeTerminal(TObject * /*Sender*/)
+void __fastcall TConsoleDialog::TerminalClose(TObject * Sender)
 {
-  TTerminal * NewTerminal = TTerminalManager::Instance()->ActiveTerminal;
-  if (!NewTerminal || NewTerminal->IsCapable[fcAnyCommand])
+  Close();
+  Terminal = NULL;
+  if (FPrevTerminalClose)
   {
-    Terminal = TTerminalManager::Instance()->ActiveTerminal;
-  }
-  else
-  {
-    Terminal = NULL;
-    Close();
+    FPrevTerminalClose(Sender);
   }
 }
 //---------------------------------------------------------------------------
@@ -148,26 +151,36 @@ void __fastcall TConsoleDialog::ExecuteButtonClick(TObject * /*Sender*/)
   ExecuteCommand();
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::ExecuteCommand()
+void __fastcall TConsoleDialog::DoExecuteCommand()
 {
-  if (!FTerminal) return;
   CommandEdit->SelectAll();
+  FTerminal->ExceptionOnFail = true;
   try
   {
-    FTerminal->ExceptionOnFail = true;
-    try
+    AnsiString Command = CommandEdit->Text;
+    OutputMemo->Lines->Add(FORMAT("$ %s", ((Command))));
+    FAddOutput = true;
+    FTerminal->AnyCommand(Command);
+  }
+  __finally
+  {
+    FAddOutput = false;
+    if (FTerminal)
     {
-      AnsiString Command = CommandEdit->Text;
-      OutputMemo->Lines->Add(FORMAT("$ %s", ((Command))));
-      FAddOutput = true;
-      FTerminal->AnyCommand(Command);
-    }
-    __finally
-    {
-      FAddOutput = false;
       FTerminal->ExceptionOnFail = false;
-      if (FTerminal->Active) FTerminal->ReadCurrentDirectory();
+      if (FTerminal->Active)
+      {
+        FTerminal->ReadCurrentDirectory();
+      }
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::ExecuteCommand()
+{
+  try
+  {
+    DoExecuteCommand();
   }
   catch(Exception & E)
   {
@@ -196,3 +209,11 @@ void __fastcall TConsoleDialog::DoLogAddLine(TObject* /*Sender*/,
     }
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::CreateParams(TCreateParams & Params)
+{
+  TForm::CreateParams(Params);
+  Params.Style = Params.Style & ~WS_SYSMENU;
+}
+//---------------------------------------------------------------------------
+

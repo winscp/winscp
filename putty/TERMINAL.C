@@ -4792,8 +4792,6 @@ int term_ldisc(Terminal *term, int option)
 
 int term_data(Terminal *term, int is_stderr, const char *data, int len)
 {
-    assert(len > 0);
-
     bufchain_add(&term->inbuf, data, len);
 
     if (!term->in_term_out) {

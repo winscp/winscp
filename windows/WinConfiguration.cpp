@@ -6,21 +6,18 @@
 #include "Bookmarks.h"
 #include "Terminal.h"
 #include "TextsWin.h"
-#include "UserInterface.h"
+#include "WinInterface.h"
+#include "GUITools.h"
 #include <stdio.h>
 #include <ResourceModule.hpp>
-//---------------------------------------------------------------------------
-#define CSIDL_PERSONAL                  0x0005        // My Documents
-#define CSIDL_PROGRAM_FILES             0x0026      // C:\Program Files
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const char ShellCommandFileNamePattern[] = "!.!";
 //---------------------------------------------------------------------------
-__fastcall TWinConfiguration::TWinConfiguration(): TGUIConfiguration()
+__fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
   FBookmarks = new TBookmarks();
-  FCommandsHistory = new TStringList();
   FCustomCommands = new TCustomCommands();
   Default();
 }
@@ -31,15 +28,12 @@ __fastcall TWinConfiguration::~TWinConfiguration()
   ClearTemporaryLoginData();
 
   delete FBookmarks;
-  delete FCommandsHistory;
   delete FCustomCommands;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::Default()
 {
-  TGUIConfiguration::Default();
-
-  FInterface = ifCommander;
+  TCustomWinConfiguration::Default();
 
   FDDAllowMove = false;
   FDDTransferConfirmation = true;
@@ -47,12 +41,10 @@ void __fastcall TWinConfiguration::Default()
   FDDWarnLackOfTempSpace = true;
   FDDWarnLackOfTempSpaceRatio = 1.1;
   FDeleteToRecycleBin = true;
-  FMaskHistory = "";
   FSelectDirectories = false;
   FSelectMask = "*.*";
   FShowHiddenFiles = true;
   FShowInaccesibleDirectories = true;
-  FShowAdvancedLoginOptions = false;
   FConfirmDeleting = true;
   FConfirmClosingSession = true;
   FForceDeleteTempFolder = true;
@@ -62,11 +54,6 @@ void __fastcall TWinConfiguration::Default()
   FAutoStartSession = "";
   FExpertMode = true;
   FUseLocationProfiles = true;
-  FContinueOnError = false;
-  FPuttySession = "WinSCP temporary session";
-  AnsiString ProgramsFolder;
-  SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
-  FPuttyPath = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
 
   FEditor.Editor = edInternal;
   FEditor.ExternalEditor = "notepad.exe";
@@ -80,13 +67,12 @@ void __fastcall TWinConfiguration::Default()
   FEditor.FindMatchCase = false;
   FEditor.FindWholeWord = false;
 
-  FLogView = lvNone;
   FLogWindowOnStartup = true;
   FLogWindowParams = "-1;-1;500;400";
 
   FScpExplorer.WindowParams = "-1;-1;600;400;0";
   FScpExplorer.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,1|0;1;2;3;4;5";
-  FScpExplorer.CoolBarLayout = "6,0,1,196,6;2,1,0,531,5;5,1,1,103,4;3,0,1,127,3;4,1,0,636,2;1,1,1,636,1;0,1,1,636,0";
+  FScpExplorer.CoolBarLayout = "5,0,0,94,6;1,1,0,638,5;4,0,0,239,4;3,1,0,424,3;6,1,0,206,2;2,1,1,634,1;0,1,1,634,0";
   FScpExplorer.StatusBar = true;
   AnsiString PersonalFolder;
   SpecialFolderLocation(CSIDL_PERSONAL, PersonalFolder);
@@ -112,8 +98,6 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
 
   FBookmarks->Clear();
-  FCommandsHistory->Clear();
-  FCommandsHistoryModified = false;
   FCustomCommands->Clear();
   FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_EXECUTE)] = "\"!\"";
   FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_EXECUTE)] = 0;
@@ -142,14 +126,13 @@ TStorage __fastcall TWinConfiguration::GetStorage()
       }
     }
   }
-  return TGUIConfiguration::GetStorage();
+  return TCustomWinConfiguration::GetStorage();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::ModifyAll()
 {
-  TGUIConfiguration::ModifyAll();
+  TCustomWinConfiguration::ModifyAll();
   FBookmarks->ModifyAll(true);
-  FCommandsHistoryModified = true;
   FCustomCommandsModified = true;
 }
 //---------------------------------------------------------------------------
@@ -161,7 +144,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
   }
   else
   {
-    return TGUIConfiguration::CreateScpStorage(SessionList);
+    return TCustomWinConfiguration::CreateScpStorage(SessionList);
   }
 }
 //---------------------------------------------------------------------------
@@ -181,20 +164,14 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Float,    DDWarnLackOfTempSpaceRatio); \
     KEY(Bool,     DeleteToRecycleBin); \
     KEY(Bool,     DimmHiddenFiles); \
-    KEY(Integer,  Interface); \
-    KEY(String,   MaskHistory); \
     KEY(Bool,     SelectDirectories); \
     KEY(String,   SelectMask); \
     KEY(Bool,     ShowHiddenFiles); \
     KEY(Bool,     ShowInaccesibleDirectories); \
-    KEY(Bool,     ShowAdvancedLoginOptions); \
     KEY(Bool,     ConfirmDeleting); \
     KEY(Bool,     ConfirmClosingSession); \
     KEY(String,   AutoStartSession); \
     KEY(Bool,     UseLocationProfiles); \
-    KEY(Bool,     ContinueOnError); \
-    KEY(String,   PuttyPath); \
-    KEY(String,   PuttySession); \
     KEY(Bool,     ForceDeleteTempFolder); \
     KEY(Integer,  LocaleSafe); \
   ); \
@@ -243,14 +220,13 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,   ScpCommander.RemotePanel.StatusBar); \
   ); \
   BLOCK("Logging", CANCREATE, \
-    KEY(Integer, LogView); \
     KEY(Bool,    LogWindowOnStartup); \
     KEY(String,  LogWindowParams); \
   );
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
 {
-  TGUIConfiguration::SaveSpecial(Storage);
+  TCustomWinConfiguration::SaveSpecial(Storage);
 
   // duplicated from core\configuration.cpp
   #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
@@ -262,12 +238,6 @@ void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
     FBookmarks->Save(Storage);
 
     Storage->CloseSubKey();
-  }
-  if (FCommandsHistoryModified && Storage->OpenSubKey("Commands", true))
-  {
-    Storage->WriteValues(FCommandsHistory);
-    Storage->CloseSubKey();
-    FCommandsHistoryModified = false;
   }
   if (FCustomCommandsModified)
   {
@@ -292,7 +262,7 @@ void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
 {
-  TGUIConfiguration::LoadSpecial(Storage);
+  TCustomWinConfiguration::LoadSpecial(Storage);
 
   // duplicated from core\configuration.cpp
   #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
@@ -306,18 +276,6 @@ void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
     FBookmarks->Load(Storage);
     Storage->CloseSubKey();
   }
-
-  if (Storage->OpenSubKey("Commands", false))
-  {
-    FCommandsHistory->Clear();
-    Storage->ReadValues(FCommandsHistory);
-    Storage->CloseSubKey();
-  }
-  else if (FCommandsHistoryModified)
-  {
-    FCommandsHistory->Clear();
-  }
-  FCommandsHistoryModified = false;
 
   if (Storage->OpenSubKey("CustomCommands", false))
   {
@@ -441,11 +399,6 @@ AnsiString __fastcall TWinConfiguration::StoreForm(TCustomForm * Form)
     (int)Form->BoundsRect.Right, (int)Form->BoundsRect.Bottom,
     (int)Form->WindowState));
 }
-//---------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetLogView(TLogView value)
-{
-  SET_CONFIG_PROPERTY(LogView);
-}
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLogWindowOnStartup(bool value)
 {
@@ -482,11 +435,6 @@ void __fastcall TWinConfiguration::SetDDWarnLackOfTempSpaceRatio(double value)
   SET_CONFIG_PROPERTY(DDWarnLackOfTempSpaceRatio);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetMaskHistory(AnsiString value)
-{
-  SET_CONFIG_PROPERTY(MaskHistory);
-}
-//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetScpExplorer(TScpExplorerConfiguration value)
 {
   SET_CONFIG_PROPERTY(ScpExplorer);
@@ -500,11 +448,6 @@ void __fastcall TWinConfiguration::SetScpCommander(TScpCommanderConfiguration va
 void __fastcall TWinConfiguration::SetEditor(TEditorConfiguration value)
 {
   SET_CONFIG_PROPERTY(Editor);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetInterface(TInterface value)
-{
-  SET_CONFIG_PROPERTY(Interface);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDeleteToRecycleBin(bool value)
@@ -527,11 +470,6 @@ void __fastcall TWinConfiguration::SetShowInaccesibleDirectories(bool value)
   SET_CONFIG_PROPERTY(ShowInaccesibleDirectories);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetShowAdvancedLoginOptions(bool value)
-{
-  SET_CONFIG_PROPERTY(ShowAdvancedLoginOptions);
-}
-//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetConfirmDeleting(bool value)
 {
   SET_CONFIG_PROPERTY(ConfirmDeleting);
@@ -540,11 +478,6 @@ void __fastcall TWinConfiguration::SetConfirmDeleting(bool value)
 void __fastcall TWinConfiguration::SetUseLocationProfiles(bool value)
 {
   SET_CONFIG_PROPERTY(UseLocationProfiles);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetContinueOnError(bool value)
-{
-  SET_CONFIG_PROPERTY(ContinueOnError);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetConfirmClosingSession(bool value)
@@ -580,26 +513,6 @@ void __fastcall TWinConfiguration::SetAutoStartSession(AnsiString value)
 void __fastcall TWinConfiguration::SetExpertMode(bool value)
 {
   SET_CONFIG_PROPERTY(ExpertMode);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetPuttyPath(const AnsiString value)
-{
-  SET_CONFIG_PROPERTY(PuttyPath);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetPuttySession(const AnsiString value)
-{
-  SET_CONFIG_PROPERTY(PuttySession);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetCommandsHistory(TStrings * value)
-{
-  assert(FCommandsHistory);
-  if (!FCommandsHistory->Equals(value))
-  {
-    FCommandsHistory->Assign(value);
-    FCommandsHistoryModified = true;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
@@ -699,7 +612,7 @@ bool __fastcall TWinConfiguration::InternalReloadComponentRes(const AnsiString R
 
       try
       {
-        Instance = Reader->ReadRootComponent(Instance);
+        /*Instance =*/ Reader->ReadRootComponent(Instance);
       }
       __finally
       {
@@ -765,12 +678,12 @@ LCID __fastcall TWinConfiguration::GetLocale()
     }
   }
 
-  return TGUIConfiguration::GetLocale();
+  return TCustomWinConfiguration::GetLocale();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::ReinitLocale()
 {
-  TGUIConfiguration::ReinitLocale();
+  TCustomWinConfiguration::ReinitLocale();
 
   Busy(true);
   try
@@ -880,4 +793,3 @@ bool __fastcall TCustomCommands::Equals(TCustomCommands * Commands)
   }
   return Result;
 }
-

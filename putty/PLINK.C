@@ -2,10 +2,6 @@
  * PLink - a command-line (stdin/stdout) variant of PuTTY.
  */
 
-#ifndef AUTO_WINSOCK
-#include <winsock2.h>
-#endif
-#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -35,7 +31,6 @@ void fatalbox(char *p, ...)
     vfprintf(stderr, p, ap);
     va_end(ap);
     fputc('\n', stderr);
-    WSACleanup();
     cleanup_exit(1);
 }
 void modalfatalbox(char *p, ...)
@@ -46,7 +41,6 @@ void modalfatalbox(char *p, ...)
     vfprintf(stderr, p, ap);
     va_end(ap);
     fputc('\n', stderr);
-    WSACleanup();
     cleanup_exit(1);
 }
 void connection_fatal(void *frontend, char *p, ...)
@@ -57,7 +51,6 @@ void connection_fatal(void *frontend, char *p, ...)
     vfprintf(stderr, p, ap);
     va_end(ap);
     fputc('\n', stderr);
-    WSACleanup();
     cleanup_exit(1);
 }
 void cmdline_error(char *p, ...)
@@ -180,8 +173,6 @@ int from_backend(void *frontend_handle, int is_stderr,
 {
     int osize, esize;
 
-    assert(len > 0);
-
     if (is_stderr) {
 	bufchain_add(&stderr_data, data, len);
 	try_output(1);
@@ -253,12 +244,12 @@ char *do_select(SOCKET skt, int startup)
     } else {
 	events = 0;
     }
-    if (WSAEventSelect(skt, netevent, events) == SOCKET_ERROR) {
-	switch (WSAGetLastError()) {
+    if (p_WSAEventSelect(skt, netevent, events) == SOCKET_ERROR) {
+	switch (p_WSAGetLastError()) {
 	  case WSAENETDOWN:
 	    return "Network is down";
 	  default:
-	    return "WSAAsyncSelect(): unknown error";
+	    return "WSAEventSelect(): unknown error";
 	}
     }
     return NULL;
@@ -266,8 +257,6 @@ char *do_select(SOCKET skt, int startup)
 
 int main(int argc, char **argv)
 {
-    WSADATA wsadata;
-    WORD winsock_ver;
     WSAEVENT stdinevent, stdoutevent, stderrevent;
     HANDLE handles[4];
     DWORD in_threadid, out_threadid, err_threadid;
@@ -547,22 +536,11 @@ int main(int argc, char **argv)
     if (portnumber != -1)
 	cfg.port = portnumber;
 
-    /*
-     * Initialise WinSock.
-     */
-    winsock_ver = MAKEWORD(2, 0);
-    if (WSAStartup(winsock_ver, &wsadata)) {
-	MessageBox(NULL, "Unable to initialise WinSock", "WinSock Error",
-		   MB_OK | MB_ICONEXCLAMATION);
-	return 1;
-    }
-    if (LOBYTE(wsadata.wVersion) != 2 || HIBYTE(wsadata.wVersion) != 0) {
-	MessageBox(NULL, "WinSock version is incompatible with 2.0",
-		   "WinSock Error", MB_OK | MB_ICONEXCLAMATION);
-	WSACleanup();
-	return 1;
-    }
     sk_init();
+    if (p_WSAEventSelect == NULL) {
+	fprintf(stderr, "Plink requires WinSock 2\n");
+	return 1;
+    }
 
     /*
      * Start up the connection.
@@ -704,7 +682,7 @@ int main(int argc, char **argv)
 		WPARAM wp;
 		socket = sklist[i];
 		wp = (WPARAM) socket;
-		if (!WSAEnumNetworkEvents(socket, NULL, &things)) {
+		if (!p_WSAEnumNetworkEvents(socket, NULL, &things)) {
                     static const struct { int bit, mask; } eventtypes[] = {
                         {FD_CONNECT_BIT, FD_CONNECT},
                         {FD_READ_BIT, FD_READ},
@@ -782,11 +760,11 @@ int main(int argc, char **argv)
 	    bufchain_size(&stderr_data) == 0)
 	    break;		       /* we closed the connection */
     }
-    WSACleanup();
     exitcode = back->exitcode(backhandle);
     if (exitcode < 0) {
 	fprintf(stderr, "Remote process exit code unavailable\n");
 	exitcode = 1;		       /* this is an error condition */
     }
-    return exitcode;
+    cleanup_exit(exitcode);
+    return 0;			       /* placate compiler warning */
 }

@@ -1,23 +1,4 @@
-#define LICENCE         1001
-#define LICENCE_2       1002
-#define LICENCE_3       1003
-#define LICENCE_4       1004
-#define LICENCE_5       1005
-#define LICENCE_6       1006
-#define LICENCE_7       1007
-#define LICENCE_8       1008
-#define LICENCE_9       1009
-#define LICENCE_10      1010
-#define LICENCE_11      1011
-#define LICENCE_12      1012
-#define LICENCE_13      1013
-#define LICENCE_14      1014
-#define LICENCE_15      1015
-#define LICENCE_16      1016
-#define LICENCE_17      1017
-#define LICENCE_18      1018
-#define LICENCE_PUTTY   1021
-#define LICENCE_PUTTY_2 1022
+#include "TextsWin.h"
 
 STRINGTABLE
 BEGIN

@@ -6,11 +6,13 @@
 
 #include <Common.h>
 #include <ScpMain.h>
+#include <Terminal.h>
 
 #include "VCLCommon.h"
+#include "GUITools.h"
 #include "Tools.h"
 #include "TextsWin.h"
-#include "UserInterface.h"
+#include "WinInterface.h"
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "GeneralSettings"

@@ -2,9 +2,7 @@
  * Printing interface for PuTTY.
  */
 
-#include <windows.h>
 #include "putty.h"
-#include "winstuff.h"
 
 struct printer_enum_tag {
     int nprinters;

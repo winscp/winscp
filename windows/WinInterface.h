@@ -12,6 +12,18 @@ class TTerminal;
 const int mpNeverAskAgainCheck =   0x01;
 const int mpAllowContinueOnError = 0x02;
 
+class TCustomScpExplorerForm;
+TCustomScpExplorerForm * __fastcall CreateScpExplorer();
+
+void __fastcall ConfigureInterface();
+
+void __fastcall DoProductLicence();
+
+extern const AnsiString AppName;
+extern const AnsiString AppNameVersion;
+
+void __fastcall FlashOnBackground();
+
 void __fastcall ShowExtendedExceptionEx(Exception * E, TObject * Sender,
   bool NoReconnect);
 
@@ -49,15 +61,14 @@ bool __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
     TConfiguration *Configuration);
 
 // forms\Console.cpp
-void __fastcall DoConsoleDialog();
+void __fastcall DoConsoleDialog(TTerminal * Terminal,
+    const AnsiString Command = "");
 
 // forms\Copy.cpp
-#ifdef UnixDirViewH
-bool __fastcall DoCopyDialog(TTransferDirection Direction,
-  TTransferType Type, bool DragDrop, TStrings * FileList,
+bool __fastcall DoCopyDialog(bool ToRemote,
+  bool Move, bool DragDrop, TStrings * FileList,
   bool AllowTransferMode, AnsiString & TargetDirectory,
-  TCopyParamType * Params);
-#endif
+  TCopyParamType * Params, bool AllowDirectory);
 
 // forms\CopyParams.cpp
 enum TParamsForDirection { pdBoth, pdToRemote, pdToLocal, pdAll };
@@ -71,12 +82,24 @@ void __fastcall DoLicenceDialog(TLicence Licence);
 void __fastcall DoLicenceDialog(const AnsiString LicenceText);
 
 // forms\Login.cpp
+const loLocalDirectory = 0x01;
+const loLanguage       = 0x02;
+const loTools          = 0x04;
+const loLogWindow      = 0x08;
+const loAbout          = 0x10;
+
+const loPreferences    = 0x20;
+
+const loNone           = 0x00;
+const loAddSession     = (loLocalDirectory | loLogWindow);
+const loStartup        = (loLocalDirectory | loLanguage | loTools |
+  loLogWindow | loPreferences | loAbout);
 bool __fastcall DoLoginDialog(TStoredSessionList * SessionList,
-  TSessionData * Data, bool Initial);
+  TSessionData * Data, int Options);
 
 // forms\OpenDirectory.cpp
 enum TOpenDirectoryMode { odBrowse, odAddBookmark };
-bool __fastcall OpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
+bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
   AnsiString & Directory, TStrings * directories, TTerminal * Terminal);
 
 // forms\LocatinoProfiles.cpp
@@ -134,14 +157,22 @@ typedef void __fastcall (__closure * TSynchronizeStartStopEvent)
 void __fastcall DoSynchronizeDialog(TSynchronizeParamType Params,
     TSynchronizeStartStopEvent OnStartStop);
 
+enum TSynchronizeMode { smRemote, smLocal, smBoth };
+const spDelete = 0x01;
+const spNoConfirmation = 0x02;
+bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
+  AnsiString & LocalDirectory, AnsiString & RemoteDirectory);
+
 void __fastcall DoEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, const AnsiString Caption = "");
 
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic);
 
+// forms\FileSystemInfo.cpp
+void __fastcall DoFileSystemInfoDialog(TTerminal * Terminal);
+
 // windows\WinMain.cpp
 void __fastcall CheckForUpdates();
-
 //---------------------------------------------------------------------------
 #endif // WinInterfaceH

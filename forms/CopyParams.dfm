@@ -84,7 +84,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 36
       Width = 163
       Height = 85
-      PopupMenu = NonVisualDataModule.RightsPopup
+      PopupMenu = RightsFrame.RightsPopup
       TabOrder = 1
       inherited OthersButton: TSpeedButton
         Width = 56

@@ -1,6 +1,6 @@
 object ProgressForm: TProgressForm
-  Left = 462
-  Top = 188
+  Left = 356
+  Top = 204
   BorderStyle = bsDialog
   Caption = 'Operation'
   ClientHeight = 240
@@ -117,6 +117,31 @@ object ProgressForm: TProgressForm
     DesignSize = (
       299
       79)
+    object StartTimeLabel: TLabel
+      Left = 88
+      Top = 18
+      Width = 65
+      Height = 13
+      Alignment = taRightJustify
+      AutoSize = False
+      Caption = '00:00:00'
+    end
+    object TimeEstimatedLabel: TLabel
+      Left = 88
+      Top = 18
+      Width = 65
+      Height = 13
+      Alignment = taRightJustify
+      AutoSize = False
+      Caption = '00:00:00'
+    end
+    object TimeEstimatedLabelLabel: TLabel
+      Left = 0
+      Top = 18
+      Width = 74
+      Height = 13
+      Caption = 'Time estimated:'
+    end
     object CPSLabel: TLabel
       Left = 234
       Top = 34
@@ -165,15 +190,6 @@ object ProgressForm: TProgressForm
       AutoSize = False
       Caption = '0 KB'
     end
-    object StartTimeLabel: TLabel
-      Left = 88
-      Top = 18
-      Width = 65
-      Height = 13
-      Alignment = taRightJustify
-      AutoSize = False
-      Caption = '00:00:00'
-    end
     object Label3: TLabel
       Left = 162
       Top = 18
@@ -182,7 +198,7 @@ object ProgressForm: TProgressForm
       Anchors = [akTop, akRight]
       Caption = 'Time elapsed:'
     end
-    object Label5: TLabel
+    object StartTimeLabelLabel: TLabel
       Left = 0
       Top = 18
       Width = 47

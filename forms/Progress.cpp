@@ -11,7 +11,6 @@
 #include <WinInterface.h>
 
 #include "Progress.h"
-#include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
@@ -28,6 +27,7 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
 	: FData(), TForm(AOwner)
 {
   FLastOperation = foNone;
+  FLastTotalSizeSet = false;
   FDataReceived = false;
   FAsciiTransferChanged = false;
   FResumeStatusChanged = false;
@@ -35,6 +35,8 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FMinimizedByMe = false;
   FUpdateCounter = 0;
   FLastUpdate = 0;
+  FDeleteToRecycleBin = false;
+  FShowAsModalStorage = NULL;
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
@@ -44,11 +46,8 @@ __fastcall TProgressForm::~TProgressForm()
   FData.Clear();
   if (IsIconic(Application->Handle) && FMinimizedByMe)
     Application->Restore();
-    
-  if (FFormState.Contains(fsModal))
-  {
-    HideAsModal();
-  }
+
+  ReleaseAsModal(this, FShowAsModalStorage);
 }
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
@@ -75,10 +74,8 @@ void __fastcall TProgressForm::UpdateControls()
           break;
 
         case foDelete:
-          if ((FData.Side == osLocal) && WinConfiguration->DeleteToRecycleBin)
-            Animate->CommonAVI = aviRecycleFile;
-          else
-            Animate->CommonAVI = aviDeleteFile;
+          Animate->CommonAVI = ((FData.Side == osLocal) && DeleteToRecycleBin) ?
+            aviRecycleFile : aviDeleteFile;
           break;
 
         case foSetProperties:
@@ -123,7 +120,7 @@ void __fastcall TProgressForm::UpdateControls()
       else
     if (!TransferOperation && TransferPanel->Visible) Delta += -TransferPanel->Height;
     TransferPanel->Visible = TransferOperation;
-    SpeedPanel->Visible = TransferOperation && WinConfiguration->ExpertMode;
+    SpeedPanel->Visible = TransferOperation;
 
     ClientHeight = ClientHeight + Delta;
     DisconnectWhenCompleteCheck->Top = DisconnectWhenCompleteCheck->Top + Delta;
@@ -135,13 +132,25 @@ void __fastcall TProgressForm::UpdateControls()
     TargetPathLabel->UnixPath = (FData.Side == osLocal);
 
     FileLabel->UnixPath = (FData.Side == osRemote);
-    
+
     FLastOperation = FData.Operation;
+    FLastTotalSizeSet = !FData.TotalSizeSet;
   };
 
+  if (FLastTotalSizeSet != FData.TotalSizeSet)
+  {
+    StartTimeLabelLabel->Visible = !FData.TotalSizeSet;
+    StartTimeLabel->Visible = !FData.TotalSizeSet;
+    TimeEstimatedLabelLabel->Visible = FData.TotalSizeSet;
+    TimeEstimatedLabel->Visible = FData.TotalSizeSet;
+    FLastTotalSizeSet = FData.TotalSizeSet; 
+  }
+
   FileLabel->Caption = FData.FileName;
-  OperationProgress->Position = FData.OverallProgress();
-  OperationProgress->Hint = FORMAT("%d%%", (OperationProgress->Position));
+  int OverallProgress = FData.OverallProgress();
+  OperationProgress->Position = OverallProgress;
+  OperationProgress->Hint = FORMAT("%d%%", (OverallProgress));
+  Caption = FORMAT("%d%% %s", (OverallProgress, OperationName(FData.Operation)));
 
   if (TransferOperation)
   {
@@ -153,7 +162,13 @@ void __fastcall TProgressForm::UpdateControls()
     {
       TargetPathLabel->Caption = LoadStr(PROGRESS_DRAGDROP_TARGET);
     }
+
     StartTimeLabel->Caption = FData.StartTime.TimeString();
+    if (FData.TotalSizeSet)
+    {
+      TimeEstimatedLabel->Caption = FormatDateTime(Configuration->TimeFormat,
+        FData.TotalTimeExpected());
+    }
     TimeElapsedLabel->Caption = FormatDateTime(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferedLabel->Caption = FormatBytes(FData.TotalTransfered);
     CPSLabel->Caption = FORMAT("%s/s", (FormatBytes(FData.CPS())));
@@ -202,7 +217,7 @@ void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType 
   if (!FDataReceived)
   {
     FDataReceived = true;
-    ShowAsModal(); 
+    ShowAsModal(this, FShowAsModalStorage);
   }
 
   if (InstantUpdate)
@@ -325,39 +340,14 @@ bool __fastcall TProgressForm::GetDisconnectWhenComplete()
   return DisconnectWhenCompleteCheck->Checked;
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::ShowAsModal()
+bool __fastcall TProgressForm::GetAllowMinimize()
 {
-  // method duplicated in TOperationStatusForm
-  CancelDrag();
-  if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
-  ReleaseCapture();
-  FFormState << fsModal;
-  FFocusActiveWindow = GetActiveWindow();
-
-  FFocusWindowList = DisableTaskWindows(0);
-  Show();
-  SendMessage(Handle, CM_ACTIVATE, 0, 0);
+  return MinimizeButton->Visible;
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::HideAsModal()
+void __fastcall TProgressForm::SetAllowMinimize(bool value)
 {
-  // method duplicated in TOperationStatusForm
-  assert(FFormState.Contains(fsModal));
-  SendMessage(Handle, CM_DEACTIVATE, 0, 0);
-  if (GetActiveWindow() != Handle)
-  {
-    FFocusActiveWindow = 0;
-  }
-  Hide();
-
-  EnableTaskWindows(FFocusWindowList);
-
-  if (FFocusActiveWindow != 0)
-  {
-    SetActiveWindow(FFocusActiveWindow);
-  }
-
-  FFormState >> fsModal;
+  MinimizeButton->Visible = value;
 }
 
 

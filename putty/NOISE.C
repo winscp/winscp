@@ -3,7 +3,6 @@
  * generator.
  */
 
-#include <windows.h>
 #include <stdio.h>
 
 #include "putty.h"
@@ -145,3 +144,7 @@ void noise_ultralight(unsigned long data)
     if (QueryPerformanceCounter(&perftime))
 	random_add_noise(&perftime, sizeof(perftime));
 }
+
+
+
+

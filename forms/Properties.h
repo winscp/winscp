@@ -60,6 +60,7 @@ private:
   bool FAllowCalculateSize;
   bool FSizeNotCalculated;
   TTerminal * FTerminal;
+  TNotifyEvent FPrevTerminalClose;
 
   void __fastcall SetDirectory(const AnsiString value);
   AnsiString __fastcall GetDirectory();
@@ -70,7 +71,7 @@ private:
   void __fastcall SetFileList(TStrings * value);
   void __fastcall SetFileProperties(TRemoteProperties value);
   void __fastcall SetGroupList(TStrings * value);
-  void __fastcall TerminalManagerChangeTerminal(TObject * /*Sender*/);
+  void __fastcall TerminalClose(TObject * /*Sender*/);
 
 protected:
   void __fastcall LoadInfo();

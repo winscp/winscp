@@ -9,9 +9,9 @@
 
 #include "Login.h"
 #include "WinInterface.h"
-#include "UserInterface.h"
+#include "GUITools.h"
 #include "Tools.h"
-#include "WinConfiguration.h"
+#include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
 #pragma link "LogSettings"
@@ -22,7 +22,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
-  TSessionData * Data, bool Initial)
+  TSessionData * Data, int Options)
 {
   assert(Data);
   TLoginDialog *LoginDialog = new TLoginDialog(Application);
@@ -31,7 +31,7 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
   {
     LoginDialog->StoredSessions = SessionList;
     LoginDialog->SessionData = Data;
-    LoginDialog->Initial = Initial;
+    LoginDialog->Options = Options;
     Result = LoginDialog->Execute();
     if (Result)
     {
@@ -54,7 +54,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FInitialized = false;
   FSavedTab = NULL;
   FSavedSession = -1;
-  FInitial = true;
+  FOptions = loStartup;
   FLocaleChanging = false;
 }
 //---------------------------------------------------------------------
@@ -63,6 +63,8 @@ __fastcall TLoginDialog::~TLoginDialog()
   LoggingFrame->OnGetDefaultLogFileName = NULL;
   // SelectItem event is called after destructor! Why?
   SessionListView->Selected = NULL;
+  delete FSystemSettings;
+  FSystemSettings = NULL;
   delete FSessionData;
   delete FLanguagesPopupMenu;
 }
@@ -95,19 +97,19 @@ void __fastcall TLoginDialog::Init()
   PrepareNavigationTree(SimpleNavigationTree);
   PrepareNavigationTree(AdvancedNavigationTree);
 
-  if (!WinConfiguration->ExpertMode)
+  if ((Options & loLocalDirectory) == 0)
   {
-    Label9->Visible = false;
+    LocalDirectoryLabel->Visible = false;
     LocalDirectoryEdit->Visible = false;
-    Label16->Visible = false;
+    LocalDirectoryDescLabel->Visible = false;
     int PrevHeight = DirectoriesGroup->Height;
     DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + 12;
-    EOLTypeGroup->Top = EOLTypeGroup->Top - PrevHeight + RemoteDirectoryEdit->Height;
+    EOLTypeGroup->Top = EOLTypeGroup->Top - PrevHeight + DirectoriesGroup->Height;
   }
 
   ShowTabs(false);
 
-  if (StoredSessions->Count && StoredSessions &&
+  if (StoredSessions && StoredSessions->Count && 
       (FSessionData->Name == StoredSessions->DefaultSettings->Name))
   {
     ChangePage(SessionListSheet);
@@ -150,7 +152,8 @@ void __fastcall TLoginDialog::LoadSessions()
   {
     SessionListView->Items->EndUpdate();
   }
-  SelectedSession = NULL;
+  SelectedSession = StoredSessions->Count > 0 ?
+    dynamic_cast<TSessionData*>(StoredSessions->AtObject(0)) : NULL;
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -165,6 +168,7 @@ void __fastcall TLoginDialog::Default()
     FSessionData->Default();
   }
   LoadSession(FSessionData);
+  FCurrentSessionName = "";
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
@@ -191,6 +195,8 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     RemoteDirectoryEdit->Text = aSessionData->RemoteDirectory;
     UpdateDirectoriesCheck->Checked = aSessionData->UpdateDirectories;
     CacheDirectoriesCheck->Checked = aSessionData->CacheDirectories;
+    CacheDirectoryChangesCheck->Checked = aSessionData->CacheDirectoryChanges;
+    PreserveDirectoryChangesCheck->Checked = aSessionData->PreserveDirectoryChanges;
     ResolveSymlinksCheck->Checked = aSessionData->ResolveSymlinks;
 
     if (aSessionData->EOLType == eolLF)
@@ -227,11 +233,21 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     }
 
     // Connection tab
-    PingIntervalCheck->Checked = (aSessionData->PingInterval > 0);
-    if (aSessionData->PingEnabled)
-      PingIntervalSecEdit->AsInteger = aSessionData->PingInterval;
-    else
-      PingIntervalSecEdit->AsInteger = 60;
+    switch (aSessionData->PingType)
+    {
+      case ptNullPacket:
+        PingNullPacketButton->Checked = true;
+        break;
+
+      case ptDummyCommand:
+        PingDummyCommandButton->Checked = true;
+        break;
+
+      default:
+        PingOffButton->Checked = true;
+        break;
+    }
+    PingIntervalSecEdit->AsInteger = aSessionData->PingInterval;
     TimeoutEdit->AsInteger = aSessionData->Timeout;
 
     // Shell tab
@@ -291,11 +307,13 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     NoUpdate--;
     UpdateControls();
   }
+
+  FCurrentSessionName = aSessionData->Name;
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
 {
-  aSessionData->Name = "";
+  aSessionData->Name = FCurrentSessionName;
   // Basic tab
   aSessionData->UserName = UserNameEdit->Text;
   aSessionData->PortNumber = PortNumberEdit->AsInteger;
@@ -331,9 +349,19 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->AgentFwd = AgentFwdCheck->Checked;
 
   // Connection tab
-  aSessionData->PingEnabled = PingIntervalCheck->Checked;
-  if (PingIntervalCheck->Checked)
-    aSessionData->PingInterval = PingIntervalSecEdit->AsInteger;
+  if (PingNullPacketButton->Checked)
+  {
+    aSessionData->PingType = ptNullPacket;
+  }
+  else if (PingDummyCommandButton->Checked)
+  {
+    aSessionData->PingType = ptDummyCommand;
+  }
+  else
+  {
+    aSessionData->PingType = ptOff;
+  }
+  aSessionData->PingInterval = PingIntervalSecEdit->AsInteger;
   aSessionData->Timeout = TimeoutEdit->AsInteger;
 
   // Environment tab
@@ -341,6 +369,8 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->RemoteDirectory = RemoteDirectoryEdit->Text;
   aSessionData->UpdateDirectories = UpdateDirectoriesCheck->Checked;
   aSessionData->CacheDirectories = CacheDirectoriesCheck->Checked;
+  aSessionData->CacheDirectoryChanges = CacheDirectoryChangesCheck->Checked;
+  aSessionData->PreserveDirectoryChanges = PreserveDirectoryChangesCheck->Checked;
   aSessionData->ResolveSymlinks = ResolveSymlinksCheck->Checked;
 
   // Shell tab
@@ -419,7 +449,7 @@ void __fastcall TLoginDialog::UpdateControls()
       if (!PasswordEdit->Text.IsEmpty()) PrivateKeyEdit->Clear();
       EnableControl(PrivateKeyEdit, PasswordEdit->Text.IsEmpty());
 
-      EnableControl(PingIntervalSecEdit, PingIntervalCheck->Checked);
+      EnableControl(PingIntervalSecEdit, !PingOffButton->Checked);
 
       EnableControl(SessionListView, SessionListView->Items->Count);
       AdjustListColumnsWidth(SessionListView);
@@ -450,6 +480,14 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ProxyPasswordEdit, !ProxyNoneButton->Checked);
       EnableControl(ProxySettingsGroup, !ProxyNoneButton->Checked);
       EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
+
+      EnableControl(PreserveDirectoryChangesCheck, CacheDirectoryChangesCheck->Checked);
+
+      AboutButton->Visible = (Options & loAbout);
+      LanguagesButton->Visible = (Options & loLanguage);
+      ShellIconsButton->Visible = (Options & loTools);
+      ToolsMenuButton->Visible = (Options & loTools);
+      LoggingFrame->EnableLogWindow = (Options & loLogWindow);
     }
     __finally
     {
@@ -469,10 +507,8 @@ void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree)
   int i = 0;
   while (i < Tree->Items->Count)
   {
-    if ((!WinConfiguration->ExpertMode &&
-         Tree->Items->Item[i]->SelectedIndex & 128) ||
-        (!Initial &&
-         Tree->Items->Item[i]->SelectedIndex & 256))
+    if ((Tree->Items->Item[i]->StateIndex > 0) &&
+        ((Options & Tree->Items->Item[i]->StateIndex) == 0))
     {
       Tree->Items->Delete(Tree->Items->Item[i]);
     }
@@ -480,7 +516,7 @@ void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree)
     {
       for (int pi = 0; pi < PageControl->PageCount; pi++)
       {
-        if (PageControl->Pages[pi]->Tag == (Tree->Items->Item[i]->SelectedIndex & 127))
+        if (PageControl->Pages[pi]->Tag == Tree->Items->Item[i]->SelectedIndex)
         {
           Tree->Items->Item[i]->Text = PageControl->Pages[pi]->Hint;
           break;
@@ -489,7 +525,6 @@ void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree)
       i++;
     }
   }
-  ToolsMenuButton->Visible = WinConfiguration->ExpertMode;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
@@ -498,7 +533,15 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
   {
     FInitialized = true;
     Init();
-    Default();
+    TSessionData * Data = GetSessionData();
+    if (Data == FSessionData)
+    {
+      LoadSession(Data);
+    }
+    else
+    {
+      Default();
+    }
   }
   if (FLocaleChanging)
   {
@@ -582,6 +625,7 @@ void __fastcall TLoginDialog::SetSelectedSession(TSessionData * value)
       TListItem *Item = SessionListView->Items->Item[Index];
       Item->Focused = true;
       Item->Selected = true;
+      Item->MakeVisible(false);
     }
   }
   else
@@ -642,7 +686,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
     SelectedSession = NewSession;
     SessionData = NewSession;
 
-    PageControl->ActivePage = SessionListSheet;
+    ChangePage(SessionListSheet);
   }
 }
 //---------------------------------------------------------------------------
@@ -650,7 +694,7 @@ void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
 {
   if (SelectedSession)
   {
-    Integer PrevSelectedIndex = SessionListView->Selected->Index;
+    int PrevSelectedIndex = SessionListView->Selected->Index;
     SelectedSession->Remove();
     StoredSessions->Remove(SelectedSession);
     SessionListView->Selected->Delete();
@@ -731,24 +775,26 @@ bool __fastcall TLoginDialog::Execute()
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveConfiguration()
 {
-  WinConfiguration->BeginUpdate();
+  assert(CustomWinConfiguration);
+  CustomWinConfiguration->BeginUpdate();
   try
   {
     LoggingFrame->SaveConfiguration();
     GeneralSettingsFrame->SaveConfiguration();
-    WinConfiguration->ShowAdvancedLoginOptions = ShowAdvancedLoginOptionsCheck->Checked;
+    CustomWinConfiguration->ShowAdvancedLoginOptions = ShowAdvancedLoginOptionsCheck->Checked;
   }
   __finally
   {
-    WinConfiguration->EndUpdate();
+    CustomWinConfiguration->EndUpdate();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadConfiguration()
 {
+  assert(CustomWinConfiguration);
   LoggingFrame->LoadConfiguration();
   GeneralSettingsFrame->LoadConfiguration();
-  ShowAdvancedLoginOptionsCheck->Checked = WinConfiguration->ShowAdvancedLoginOptions;
+  ShowAdvancedLoginOptionsCheck->Checked = CustomWinConfiguration->ShowAdvancedLoginOptions;
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -782,7 +828,7 @@ void __fastcall TLoginDialog::NavigationTreeChange(TObject * /*Sender*/,
   {
     for (Integer Index = 0; Index < PageControl->PageCount; Index++)
     {
-      if (PageControl->Pages[Index]->Tag == (Node->SelectedIndex & 127))
+      if (PageControl->Pages[Index]->Tag == Node->SelectedIndex)
       {
         PageControl->ActivePage = PageControl->Pages[Index];
         return;
@@ -805,7 +851,7 @@ void __fastcall TLoginDialog::PageControlChange(TObject *Sender)
   {
     for (int Index = 0; Index < NavigationTree->Items->Count; Index++)
     {
-      if ((NavigationTree->Items->Item[Index]->SelectedIndex & 127) ==
+      if (NavigationTree->Items->Item[Index]->SelectedIndex ==
             PageControl->ActivePage->Tag)
       {
         NavigationTree->Items->Item[Index]->Selected = true;
@@ -874,7 +920,9 @@ void __fastcall TLoginDialog::Dispatch(void *Message)
       FSavedTab = PageControl->ActivePage;
       FSavedSession = SessionListView->ItemIndex;
 
+      assert(FSystemSettings);
       RevokeSystemSettings(this, FSystemSettings);
+      FSystemSettings = NULL;
       ShowTabs(true);
 
       Hide();
@@ -1009,12 +1057,12 @@ void __fastcall TLoginDialog::CheckForUpdatesActionExecute(TObject * /*Sender*/)
   CheckForUpdates();
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SetInitial(bool value)
+void __fastcall TLoginDialog::SetOptions(int value)
 {
-  if (Initial != value)
+  if (Options != value)
   {
-    FInitial = value;
-    LanguagesButton->Visible = Initial;
+    FOptions = value;
+    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
@@ -1024,7 +1072,7 @@ void __fastcall TLoginDialog::LanguagesButtonClick(TObject * /*Sender*/)
   delete FLanguagesPopupMenu;
   FLanguagesPopupMenu = new TPopupMenu(this);
 
-  TStrings * Locales = WinConfiguration->Locales;
+  TStrings * Locales = GUIConfiguration->Locales;
   for (int Index = 0; Index < Locales->Count; Index++)
   {
     TMenuItem * Item = new TMenuItem(FLanguagesPopupMenu);
@@ -1033,7 +1081,7 @@ void __fastcall TLoginDialog::LanguagesButtonClick(TObject * /*Sender*/)
     Item->Tag = reinterpret_cast<int>(Locales->Objects[Index]);
     Item->OnClick = LocaleClick;
     Item->Checked = (reinterpret_cast<LCID>(Locales->Objects[Index]) ==
-      WinConfiguration->Locale);
+      GUIConfiguration->Locale);
   }
 
   FLanguagesPopupMenu->Popup(PopupPoint.x, PopupPoint.y);
@@ -1042,7 +1090,7 @@ void __fastcall TLoginDialog::LanguagesButtonClick(TObject * /*Sender*/)
 void __fastcall TLoginDialog::LocaleClick(TObject * Sender)
 {
   assert(Sender);
-  WinConfiguration->Locale =
+  GUIConfiguration->Locale =
     static_cast<LCID>(dynamic_cast<TMenuItem*>(Sender)->Tag);
   LanguagesButton->SetFocus();
 }

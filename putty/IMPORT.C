@@ -160,12 +160,11 @@ static int ber_read_id_len(void *source, int sourcelen,
     if ((*p & 0x1F) == 0x1F) {
 	*id = 0;
 	while (*p & 0x80) {
-	    *id = (*id << 7) | (*p & 0x7F);
 	    p++, sourcelen--;
 	    if (sourcelen == 0)
 		return -1;
+	    *id = (*id << 7) | (*p & 0x7F);
 	}
-	*id = (*id << 7) | (*p & 0x7F);
 	p++, sourcelen--;
     } else {
 	*id = *p & 0x1F;

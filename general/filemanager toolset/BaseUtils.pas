@@ -307,15 +307,18 @@ var
   Y2, M2, D2, H2, N2, S2, MS2: Word;
   Changed: Boolean;
 begin
-  DecodeDateTime(DateTime1, Y1, M1, D1, H1, N1, S1, MS1);
-  DecodeDateTime(DateTime2, Y2, M2, D2, H2, N2, S2, MS2);
-  Changed := Unify(MS1, MS2);
-  if Changed and Unify(S1, S2) and Unify(N1, N2) and Unify(H1, H2) and
-     Unify(D1, D2) and Unify(M1, M2) then Unify(Y1, Y2);
-  if Changed then
+  if DateTime1 <> DateTime2 then
   begin
-    DateTime1 := EncodeDate(Y1, M1, D1) + EncodeTime(H1, N1, S1, MS1);
-    DateTime2 := EncodeDate(Y2, M2, D2) + EncodeTime(H2, N2, S2, MS2);
+    DecodeDateTime(DateTime1, Y1, M1, D1, H1, N1, S1, MS1);
+    DecodeDateTime(DateTime2, Y2, M2, D2, H2, N2, S2, MS2);
+    Changed := Unify(MS1, MS2);
+    if Changed and Unify(S1, S2) and Unify(N1, N2) and Unify(H1, H2) and
+       Unify(D1, D2) and Unify(M1, M2) then Unify(Y1, Y2);
+    if Changed then
+    begin
+      DateTime1 := EncodeDate(Y1, M1, D1) + EncodeTime(H1, N1, S1, MS1);
+      DateTime2 := EncodeDate(Y2, M2, D2) + EncodeTime(H2, N2, S2, MS2);
+    end;
   end;
 end;
 

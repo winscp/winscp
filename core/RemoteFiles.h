@@ -41,11 +41,6 @@ enum TRightState {rsNo, rsYes, rsUndef};
 #define FILETYPE_SYMLINK 'L'
 #define FILETYPE_DIRECTORY 'D'
 //---------------------------------------------------------------------------
-#define TIME_POSIX_TO_WIN(t, ft) (*(LONGLONG*)&(ft) = \
-    ((LONGLONG) (t) + (LONGLONG) 11644473600) * (LONGLONG) 10000000)
-#define TIME_WIN_TO_POSIX(ft, t) ((t) = (unsigned long) \
-    ((*(LONGLONG*)&(ft)) / (LONGLONG) 10000000 - (LONGLONG) 11644473600))
-//---------------------------------------------------------------------------
 class TRemoteDirectory;
 class TTerminal;
 class TRights;
@@ -138,6 +133,12 @@ public:
   __property AnsiString Extension  = { read=GetExtension };
 };
 //---------------------------------------------------------------------------
+class TRemoteParentDirectory : public TRemoteFile
+{
+public:
+  __fastcall TRemoteParentDirectory();
+};
+//---------------------------------------------------------------------------
 class TRemoteFileList : public TObjectList
 {
 friend class TSCPFileSystem;
@@ -184,7 +185,6 @@ private:
   void __fastcall SetIncludeThisDirectory(Boolean value);
 protected:
   virtual void __fastcall Clear();
-  //virtual TRemoteFile * __fastcall NewFile(TRemoteFile * ALinkedByFile = NULL);
 public:
   __fastcall TRemoteDirectory(TTerminal * aTerminal);
   virtual void __fastcall AddFile(TRemoteFile * File);
@@ -206,8 +206,36 @@ public:
   TRemoteFileList * __fastcall GetFileList(const AnsiString Directory);
   void __fastcall AddFileList(TRemoteFileList * FileList);
   void __fastcall ClearFileList(AnsiString Directory, bool SubDirs);
+  void __fastcall Clear();
+
+  __property bool IsEmpty = { read = GetIsEmpty };
 protected:
   virtual void __fastcall Delete(int Index);
+private:
+  bool __fastcall GetIsEmpty() const;
+};
+//---------------------------------------------------------------------------
+class TRemoteDirectoryChangesCache : private TStringList
+{
+public:
+  __fastcall TRemoteDirectoryChangesCache();
+
+  void __fastcall AddDirectoryChange(const AnsiString SourceDir,
+    const AnsiString Change, const AnsiString TargetDir);
+  void __fastcall ClearDirectoryChange(AnsiString SourceDir);
+  bool __fastcall GetDirectoryChange(const AnsiString SourceDir,
+    const AnsiString Change, AnsiString & TargetDir);
+  void __fastcall Clear();
+
+  void __fastcall Serialize(AnsiString & Data);
+  void __fastcall Deserialize(const AnsiString Data);
+
+  __property bool IsEmpty = { read = GetIsEmpty };
+
+private:
+  static bool __fastcall DirectoryChangeKey(const AnsiString SourceDir,
+    const AnsiString Change, AnsiString & Key);
+  bool __fastcall GetIsEmpty() const;
 };
 //---------------------------------------------------------------------------
 class TRights {
@@ -301,9 +329,6 @@ AnsiString __fastcall UnixExtractFilePath(const AnsiString Path);
 AnsiString __fastcall UnixExtractFileName(const AnsiString Path);
 AnsiString __fastcall UnixExtractFileExt(const AnsiString Path);
 Boolean __fastcall UnixComparePaths(const AnsiString Path1, const AnsiString Path2);
-//---------------------------------------------------------------------------
-TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp);
-FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime);
 //---------------------------------------------------------------------------
 #endif
 

@@ -124,6 +124,7 @@ __published:
   TToolButton *ToolButton48;
   TComboBox *SessionCombo;
   TToolButton *ToolButton49;
+  TToolButton *ToolButton51;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
@@ -189,6 +190,7 @@ public:
   virtual void __fastcall CompareDirectories();
   virtual void __fastcall UpdateSessionData(TSessionData * Data = NULL);
   virtual void __fastcall SynchronizeDirectories();
+  virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall StoreParams();
   virtual void __fastcall ExploreLocalDirectory();
   __property float LocalPanelWidth = { read = GetLocalPanelWidth, write = SetLocalPanelWidth };

@@ -5,6 +5,8 @@
 #include "Configuration.h"
 //---------------------------------------------------------------------------
 struct TPasLibModule;
+enum TLogView { lvNone, lvWindow, pvPanel };
+enum TInterface { ifCommander, ifExplorer };
 //---------------------------------------------------------------------------
 class TGUIConfiguration : public TConfiguration
 {
@@ -13,6 +15,9 @@ private:
   bool FErrorDialogExpanded;
   TStrings * FLocales;
   AnsiString FLastLocalesExts;
+  bool FContinueOnError;
+  AnsiString FPuttyPath;
+  AnsiString FPuttySession;
 
 protected:
   LCID FLocale;
@@ -35,11 +40,14 @@ public:
 
   __property bool CopyParamDialogExpanded = { read = FCopyParamDialogExpanded, write = FCopyParamDialogExpanded };
   __property bool ErrorDialogExpanded = { read = FErrorDialogExpanded, write = FErrorDialogExpanded };
+  __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError};
   __property LCID Locale = { read = GetLocale, write = SetLocale };
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
   __property TStrings * Locales = { read = GetLocales };
+  __property AnsiString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
+  __property AnsiString PuttySession = { read = FPuttySession, write = FPuttySession };
 };
 //---------------------------------------------------------------------------
-#define GUIConfiguration ((TGUIConfiguration *) Configuration)
+#define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))
 //---------------------------------------------------------------------------
 #endif

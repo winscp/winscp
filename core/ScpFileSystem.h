@@ -12,8 +12,11 @@ public:
   __fastcall TSCPFileSystem(TTerminal * ATerminal);
   virtual __fastcall ~TSCPFileSystem();
 
+  virtual AnsiString __fastcall AbsolutePath(AnsiString Path);
+  virtual void __fastcall KeepAlive();
   virtual void __fastcall AnyCommand(const AnsiString Command);
   virtual void __fastcall ChangeDirectory(const AnsiString Directory);
+  virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
@@ -34,6 +37,7 @@ public:
   virtual void __fastcall DoStartup();
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
+  virtual void __fastcall AdditionalInfo(TStrings * AdditionalInfo, bool Initial);
   virtual void __fastcall LookupUserGroups();
   virtual void __fastcall ReadCurrentDirectory();
   virtual void __fastcall ReadDirectory(TRemoteFileList * FileList);
@@ -60,6 +64,8 @@ private:
   AnsiString FCurrentDirectory;
   TStrings * FOutput;
   int FReturnCode;
+  AnsiString FCachedDirectoryChange;
+  bool FProcessingCommand;
 
   void __fastcall AliasGroupList();
   void __fastcall ClearAliases();
@@ -69,6 +75,7 @@ private:
   void __fastcall DetectReturnVar();
   bool __fastcall IsLastLine(AnsiString & Line);
   static bool __fastcall IsTotalListingLine(const AnsiString Line);
+  void __fastcall EnsureLocation();
   void __fastcall ExecCommand(const AnsiString Cmd, int Params = -1);
   void __fastcall ExecCommand(TFSCommand Cmd, const TVarRec * args = NULL,
     int size = 0, int Params = -1);
@@ -76,15 +83,15 @@ private:
   void __fastcall SCPResponse(bool * GotLastLine = NULL);
   void __fastcall SCPDirectorySource(const AnsiString DirectoryName,
     const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress);
+    TFileOperationProgressType * OperationProgress, int Level);
   void __fastcall SCPError(const AnsiString Message, bool Fatal);
   void __fastcall SCPSendError(const AnsiString Message, bool Fatal);
   void __fastcall SCPSink(const AnsiString TargetDir,
     const AnsiString FileName, const TCopyParamType * CopyParam, bool & Success,
-    TFileOperationProgressType * OperationProgress, int Params, bool Initialized);
+    TFileOperationProgressType * OperationProgress, int Params, int Level);
   void __fastcall SCPSource(const AnsiString FileName,
     const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress);
+    TFileOperationProgressType * OperationProgress, int Level);
   void __fastcall SendCommand(const AnsiString Cmd);
   void __fastcall SkipFirstLine();
   void __fastcall SkipStartupMessage();

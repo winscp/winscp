@@ -2,7 +2,6 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <shlobj.hpp>
 #include <FileInfo.h>
 
 #include "Exceptions.h"
@@ -13,19 +12,6 @@
 #include "Interface.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-//---------------------------------------------------------------------------
-bool SpecialFolderLocation(int PathID, AnsiString & Path)
-{
-  LPITEMIDLIST Pidl;
-  char Buf[256];
-  if (SHGetSpecialFolderLocation(NULL, PathID, &Pidl) == NO_ERROR &&
-      SHGetPathFromIDList(Pidl, Buf))
-  {
-    Path = AnsiString(Buf);
-    return true;
-  }
-  return false;
-}
 //---------------------------------------------------------------------------
 __fastcall TConfiguration::TConfiguration()
 {
@@ -168,6 +154,47 @@ void __fastcall TConfiguration::Load()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TConfiguration::LoadDirectoryChangesCache(const AnsiString SessionKey,
+  TRemoteDirectoryChangesCache * DirectoryChangesCache)
+{
+  THierarchicalStorage * Storage = CreateScpStorage(false); 
+  try
+  {
+    Storage->AccessMode = smRead;
+    if (Storage->OpenSubKey(ConfigurationSubKey, false) &&
+        Storage->OpenSubKey("CDCache", false) &&
+        Storage->ValueExists(SessionKey))
+    {
+      DirectoryChangesCache->Deserialize(Storage->ReadBinaryData(SessionKey));
+    }
+  }
+  __finally
+  {
+    delete Storage;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SaveDirectoryChangesCache(const AnsiString SessionKey,
+  TRemoteDirectoryChangesCache * DirectoryChangesCache)
+{
+  THierarchicalStorage * Storage = CreateScpStorage(false); 
+  try
+  {
+    Storage->AccessMode = smReadWrite;
+    if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
+        Storage->OpenSubKey("CDCache", true))
+    {
+      AnsiString Data;
+      DirectoryChangesCache->Serialize(Data);
+      Storage->WriteBinaryData(SessionKey, Data);
+    }
+  }
+  __finally
+  {
+    delete Storage;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::Changed()
 {
   if (FUpdating == 0)
@@ -307,7 +334,8 @@ AnsiString __fastcall TConfiguration::GetProductVersion()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::TrimVersion(AnsiString Version)
 {
-  while (Version.SubString(Version.Length() - 1, 2) == ".0")
+  while ((Version.Pos(".") != Version.LastDelimiter(".")) &&
+    (Version.SubString(Version.Length() - 1, 2) == ".0"))
   {
     Version.SetLength(Version.Length() - 2);
   }
@@ -335,10 +363,10 @@ AnsiString __fastcall TConfiguration::GetVersion()
   try
   {
     AnsiString Result;
-    Result = TrimVersion(FORMAT("%d.%d.%d.%d", (HIWORD(FixedApplicationInfo->dwFileVersionMS),
+    Result = TrimVersion(FORMAT("%d.%d.%d", (
+      HIWORD(FixedApplicationInfo->dwFileVersionMS),
       LOWORD(FixedApplicationInfo->dwFileVersionMS),
-      HIWORD(FixedApplicationInfo->dwFileVersionLS),
-      LOWORD(FixedApplicationInfo->dwFileVersionLS))));
+      HIWORD(FixedApplicationInfo->dwFileVersionLS))));
     return Result;
   }
   catch (Exception &E)
@@ -402,7 +430,7 @@ AnsiString __fastcall TConfiguration::GetPuttySessionsKey()
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetStoredSessionsSubKey()
-{
+{   
   return "Sessions";
 }
 //---------------------------------------------------------------------------

@@ -91,6 +91,7 @@ void __fastcall TLogMemo::SetSessionLog(TSessionLog * value)
 void __fastcall TLogMemo::SessionLogChange(TObject * Sender)
 {
 #ifndef DESIGN_ONLY
+  USEDPARAM(Sender);
   assert(Sender && (Sender == SessionLog));
 #endif
   UpdateFromLog();

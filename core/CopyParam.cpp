@@ -31,6 +31,7 @@ void __fastcall TCopyParamType::Default()
   ReplaceInvalidChars = true;
   LocalInvalidChars = "/\\:*?\"<>|";
   CalculateSize = true;
+  FileMask = "*.*";
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamType::Assign(const TCopyParamType & Source)
@@ -49,6 +50,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType & Source)
   COPY(ReplaceInvalidChars);
   COPY(LocalInvalidChars);
   COPY(CalculateSize);
+  COPY(FileMask);
   #undef COPY
 }
 //---------------------------------------------------------------------------
@@ -68,8 +70,13 @@ AnsiString __fastcall TCopyParamType::ValidLocalFileName(AnsiString FileName) co
   return FileName;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TCopyParamType::ChangeFileName(AnsiString FileName, TOperationSide Side) const
+AnsiString __fastcall TCopyParamType::ChangeFileName(AnsiString FileName,
+  TOperationSide Side, bool FirstLevel) const
 {
+  if (FirstLevel)
+  {
+    FileName = MaskFileName(FileName, FileMask);
+  }
   switch (FileNameCase) {
     case ncUpperCase: FileName = FileName.UpperCase(); break;
     case ncLowerCase: FileName = FileName.LowerCase(); break;
@@ -114,7 +121,7 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
   char ResumeC[] = "YSN";
   return FORMAT(
     "  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s; FnCs: %s; RIC: %s; "
-      "Resume: %s (%d); CalcS: %s\n"
+      "Resume: %s (%d); CalcS: %s; Mask: %s\n"
     "  TM: %s; AscM: %s ",
     (BooleanToEngStr(PreserveTime),
      BooleanToEngStr(PreserveReadOnly),
@@ -125,6 +132,7 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
      ResumeC[ResumeSupport],
      (int)ResumeThreshold,
      BooleanToEngStr(CalculateSize),
+     FileMask,
      ModeC[TransferMode],
      AsciiFileMask.Masks));
 }

@@ -10,6 +10,8 @@ USEFORM("forms\Copy.cpp", CopyDialog);
 USEFORM("forms\CopyParams.cpp", CopyParamsFrame); /* TFrame: File Type */
 USEFORM("forms\ComboInput.cpp", ComboInputDialog);
 USEFORM("forms\Editor.cpp", EditorForm);
+USEFORM("forms\FileSystemInfo.cpp", FileSystemInfoDialog);
+USEFORM("forms\FullSynchronize.cpp", FullSynchronizeDialog);
 USEFORM("forms\GeneralSettings.cpp", GeneralSettingsFrame); /* TFrame: File Type */
 USEFORM("forms\ImportSessions.cpp", ImportSessionsDialog);
 USEFORM("forms\Licence.cpp", LicenceDialog);
@@ -26,6 +28,7 @@ USEFORM("forms\Rights.cpp", RightsFrame); /* TFrame: File Type */
 USEFORM("forms\SelectMask.cpp", SelectMaskDialog);
 USEFORM("forms\Symlink.cpp", SymlinkDialog);
 USEFORM("forms\Synchronize.cpp", SynchronizeDialog);
+USEFORM("forms\SynchronizeProgress.cpp", SynchronizeProgressForm);
 //---------------------------------------------------------------------------
 #define Library
 

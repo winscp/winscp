@@ -6,10 +6,6 @@
   #error Should be included sooner than "Putty.h" !!
 #endif
 //---------------------------------------------------------------------------
-#ifndef AUTO_WINSOCK
-#include <winsock2.h>
-#endif
-//---------------------------------------------------------------------------
 struct charset_spec;
 #include "charset\Charset.h"
 //---------------------------------------------------------------------------
@@ -48,11 +44,10 @@ extern "C"
   int get_ssh_state_closed(void * handle);
   int get_ssh_exitcode(void * handle);
   int ssh_fallback_cmd(void * handle);
+  unsigned int ssh2_remmaxpkt(void * handle);
+  unsigned int ssh2_remwindow(void * handle);
 
   // -------------
-  char * do_select(SOCKET skt, int startup);
-  /*void fatalbox(char * fmt, ...);
-  void modalfatalbox(char *fmt, ...);*/
   int from_backend(void * frontend, int is_stderr, char * data, int datalen);
 
   // from ssh.h for key generation

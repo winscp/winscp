@@ -1,7 +1,3 @@
-#ifdef WINDOWS
-#include <windows.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -1015,7 +1011,7 @@ int decode_codepage(char *cp_name)
 	 * 1254 -> ISO 8859-9
 	 * 1255 -> ISO 8859-8
 	 * 1256 -> ISO 8859-6
-	 * 1257 -> ISO 8859-4
+	 * 1257 -> ISO 8859-13 (changed from 8859-4 on advice of a Lithuanian)
 	 * 
 	 * and for anything else, choose direct-to-font.
 	 */
@@ -1028,7 +1024,7 @@ int decode_codepage(char *cp_name)
 	  case 1254: cp_name = "ISO-8859-9"; break;
 	  case 1255: cp_name = "ISO-8859-8"; break;
 	  case 1256: cp_name = "ISO-8859-6"; break;
-	  case 1257: cp_name = "ISO-8859-4"; break;
+	  case 1257: cp_name = "ISO-8859-13"; break;
 	    /* default: leave it blank, which will select -1, direct->font */
 	}
     }

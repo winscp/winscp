@@ -2,13 +2,9 @@
  * windefs.c: default settings that are specific to Windows.
  */
 
-#include <windows.h>
-#include <commctrl.h>
-
-#include "winstuff.h"
-#include "puttymem.h"
-
 #include "putty.h"
+
+#include <commctrl.h>
 
 FontSpec platform_default_fontspec(const char *name)
 {

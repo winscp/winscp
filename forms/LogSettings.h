@@ -33,13 +33,17 @@ __published:
   void __fastcall DataChange(TObject *Sender);
 private:
   TGetDefaultLogFileName FOnGetDefaultLogFileName;
+  bool FEnableLogWindow;
+
   AnsiString __fastcall GetDefaultLogFileName();
+  void __fastcall SetEnableLogWindow(bool value);
 public:
   void __fastcall LoadConfiguration();
   void __fastcall SaveConfiguration();
   __fastcall TLoggingFrame(TComponent* Owner);
   __property AnsiString DefaultLogFileName = { read = GetDefaultLogFileName };
   __property TGetDefaultLogFileName OnGetDefaultLogFileName = { read = FOnGetDefaultLogFileName, write = FOnGetDefaultLogFileName };
+  __property bool EnableLogWindow = { read = FEnableLogWindow, write = SetEnableLogWindow };
 protected:
   void __fastcall UpdateControls();
 };

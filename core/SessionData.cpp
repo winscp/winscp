@@ -36,7 +36,8 @@ void __fastcall TSessionData::Default()
   PortNumber = default_port;
   UserName = "";
   Password = "";
-  PingInterval = 0;
+  PingInterval = 30;
+  PingType = ptOff;
   Timeout = 15;
   AgentFwd = false;
   AuthTIS = false;
@@ -68,13 +69,15 @@ void __fastcall TSessionData::Default()
   }
 
   Special = false;
-  FSProtocol = fsSCPonly;
+  FSProtocol = fsSFTP;
 
   // FS common
   LocalDirectory = "";
   RemoteDirectory = "";
   UpdateDirectories = false;
   CacheDirectories = true;
+  CacheDirectoryChanges = true;
+  PreserveDirectoryChanges = true;
   LockInHome = false;
   ResolveSymlinks = true;
 
@@ -116,6 +119,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(UserName);
     DUPL(Password);
     DUPL(PingInterval);
+    DUPL(PingType);
     DUPL(Timeout);
     DUPL(AgentFwd);
     DUPL(AuthTIS);
@@ -130,6 +134,9 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(RemoteDirectory);
     DUPL(UpdateDirectories);
     DUPL(CacheDirectories);
+    DUPL(CacheDirectoryChanges);
+    DUPL(PreserveDirectoryChanges);
+
     DUPL(ResolveSymlinks);
     DUPL(LockInHome);
     DUPL(Special);
@@ -185,7 +192,8 @@ void __fastcall TSessionData::StoreToConfig(void * config)
   ASCOPY(cfg->username, UserName);
   cfg->port = PortNumber;
   cfg->protocol = PROT_SSH;
-  cfg->ping_interval = PingInterval;
+  // ping_interval is not used anyway
+  cfg->ping_interval = (PingType == ptNullPacket) ? PingInterval : 0;
   cfg->compression = Compression;
   cfg->agentfwd = AgentFwd;
 
@@ -287,7 +295,7 @@ void __fastcall TSessionData::StoreToConfig(void * config)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 {
-  if (Storage->OpenSubKey(MungeStr(Name), False))
+  if (Storage->OpenSubKey(StorageKey, False))
   {
     PortNumber = Storage->ReadInteger("PortNumber", PortNumber);
     UserName = Storage->ReadString("UserName", UserName);
@@ -301,6 +309,12 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     PingInterval =
       Storage->ReadInteger("PingInterval", PingInterval/60)*60 +
       Storage->ReadInteger("PingIntervalSec", PingInterval%60);
+    PingType = static_cast<TPingType>
+      (Storage->ReadInteger("PingType", PingInterval > 0 ? ptNullPacket : ptOff));
+    if (PingInterval == 0)
+    {
+      PingInterval = 60;
+    }
     Timeout = Storage->ReadInteger("Timeout", Timeout);
     AgentFwd = Storage->ReadBool("AgentFwd", AgentFwd);
     AuthTIS = Storage->ReadBool("AuthTIS", AuthTIS);
@@ -316,6 +330,9 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     RemoteDirectory = Storage->ReadString("RemoteDirectory", RemoteDirectory);
     UpdateDirectories = Storage->ReadBool("UpdateDirectories", UpdateDirectories);
     CacheDirectories = Storage->ReadBool("CacheDirectories", CacheDirectories);
+    CacheDirectoryChanges = Storage->ReadBool("CacheDirectoryChanges", CacheDirectoryChanges);
+    PreserveDirectoryChanges = Storage->ReadBool("PreserveDirectoryChanges", PreserveDirectoryChanges);
+
     ResolveSymlinks = Storage->ReadBool("ResolveSymlinks", ResolveSymlinks);
     LockInHome = Storage->ReadBool("LockInHome", LockInHome);
     Special = Storage->ReadBool("Special", Special);
@@ -396,7 +413,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExport)
 {
-  if (Modified && Storage->OpenSubKey(MungeStr(Name), true))
+  if (Modified && Storage->OpenSubKey(StorageKey, true))
   {
     Storage->WriteString("HostName", HostName);
     Storage->WriteInteger("PortNumber", PortNumber);
@@ -407,6 +424,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
     }
     Storage->WriteInteger("PingInterval", PingInterval/60);
     Storage->WriteInteger("PingIntervalSec", PingInterval%60);
+    Storage->WriteInteger("PingType", PingType);
     Storage->WriteInteger("Timeout", Timeout);
     Storage->WriteBool("AgentFwd", AgentFwd);
     Storage->WriteBool("AuthTIS", AuthTIS);
@@ -430,6 +448,9 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage, bool PuttyExp
       Storage->WriteString("RemoteDirectory", RemoteDirectory);
       Storage->WriteBool("UpdateDirectories", UpdateDirectories);
       Storage->WriteBool("CacheDirectories", CacheDirectories);
+      Storage->WriteBool("CacheDirectoryChanges", CacheDirectoryChanges);
+      Storage->WriteBool("PreserveDirectoryChanges", PreserveDirectoryChanges);
+
       Storage->WriteBool("ResolveSymlinks", ResolveSymlinks);
       Storage->WriteBool("LockInHome", LockInHome);
       // Special is never stored (if it would, login dialog must be modified not to
@@ -520,13 +541,110 @@ void __fastcall TSessionData::Remove()
   {
     if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, false))
     {
-      Storage->RecursiveDeleteSubKey(MungeStr(Name));
+      Storage->RecursiveDeleteSubKey(StorageKey);
     }
   }
   __finally
   {
     delete Storage;
   }
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
+  AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
+  AnsiString * UserName, AnsiString * Password, AnsiString * Path)
+{
+  int PSlash = Url.Pos("/");
+  if (PSlash == 0)
+  {
+    PSlash = Url.Length() + 1;
+  }
+
+  AnsiString AConnectInfo;
+  AConnectInfo = Url.SubString(1, PSlash - 1);
+
+  int P = AConnectInfo.Pos("@");
+  bool Result = (P > 0) || ((Params & puRequireUsername) == 0);
+  if (Result)
+  {
+    if (Path != NULL)
+    {
+      int Delta = ((Params & puExcludeLeadingSlash) == 0) ? 0 : 1;
+      *Path = Url.SubString(PSlash + Delta,
+        Url.Length() - PSlash - Delta + 1);
+    }
+
+    if (ConnectInfo != NULL)
+    {
+      *ConnectInfo = AConnectInfo;
+    }
+
+    AnsiString UserInfo;
+    AnsiString HostInfo;
+
+    if (P > 0)
+    {
+      UserInfo = AConnectInfo.SubString(1, P - 1);
+      HostInfo = AConnectInfo.SubString(P + 1, AConnectInfo.Length() - P);
+    }
+    else
+    {
+      HostInfo = AConnectInfo;
+    }
+
+    if (HostName != NULL)
+    {
+      *HostName = CutToChar(HostInfo, ':', true);
+    }
+    else
+    {
+      CutToChar(HostInfo, ':', true);
+    }
+
+    if (PortNumber != NULL)
+    {
+      *PortNumber = HostInfo.IsEmpty() ? -1 : StrToIntDef(HostInfo, -1);
+    }
+
+    if (UserName != NULL)
+    {
+      *UserName = CutToChar(UserInfo, ':', false);
+    }
+    else
+    {
+      CutToChar(UserInfo, ':', false);
+    }
+
+    if (Password != NULL)
+    {
+      *Password = UserInfo;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params)
+{
+  AnsiString AHostName = HostName;
+  int APortNumber = PortNumber;
+  AnsiString AUserName = UserName;
+  AnsiString APassword = Password;
+  AnsiString ARemoteDirectory = RemoteDirectory;
+
+  bool Result = ParseUrl(Url, Params, NULL, &AHostName, &APortNumber,
+    &AUserName, &APassword, &ARemoteDirectory);
+  if (Result)
+  {
+    HostName = AHostName;
+    if (APortNumber >= 0)
+    {
+      PortNumber = APortNumber;
+    }
+    UserName = AUserName;
+    Password = APassword;
+    RemoteDirectory = ARemoteDirectory;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::GetCanLogin()
@@ -537,6 +655,11 @@ bool __fastcall TSessionData::GetCanLogin()
 AnsiString __fastcall TSessionData::GetSessionKey()
 {
   return FORMAT("%s@%s", (UserName, HostName));
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TSessionData::GetStorageKey()
+{
+  return MungeStr(Name);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetHostName(AnsiString value)
@@ -811,27 +934,30 @@ TDateTime __fastcall TSessionData::GetPingIntervalDT()
     (unsigned short)(PingInterval/60%60), (unsigned short)(PingInterval%60), 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSessionData::SetPingEnabled(bool value)
+void __fastcall TSessionData::SetPingType(TPingType value)
 {
-  if (value && !FPingInterval) FPingInterval = 60;
-    else
-  if (!value) FPingInterval = 0;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TSessionData::GetPingEnabled()
-{
-  return (bool)(FPingInterval > 0);
+  SET_SESSION_PROPERTY(PingType);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetSessionName()
 {
-  if (!Name.IsEmpty() && !TNamedObjectList::IsHidden(this)) return Name;
-    else
-  if (!HostName.IsEmpty() && !UserName.IsEmpty())
-      return Format("%s@%s", ARRAYOFCONST((UserName, HostName)));
-    else
-  if (!HostName.IsEmpty()) return HostName;
-    else return "session";
+  if (!Name.IsEmpty() && !TNamedObjectList::IsHidden(this) &&
+      (Name != DefaultSessionName))
+  {
+    return Name;
+  }
+  else if (!HostName.IsEmpty() && !UserName.IsEmpty())
+  {
+    return FORMAT("%s@%s", (UserName, HostName));
+  }
+  else if (!HostName.IsEmpty())
+  {
+    return HostName;
+  }
+  else
+  {
+    return "session";
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetTimeDifference(TDateTime value)
@@ -857,6 +983,16 @@ void __fastcall TSessionData::SetUpdateDirectories(bool value)
 void __fastcall TSessionData::SetCacheDirectories(bool value)
 {
   SET_SESSION_PROPERTY(CacheDirectories);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetCacheDirectoryChanges(bool value)
+{
+  SET_SESSION_PROPERTY(CacheDirectoryChanges);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetPreserveDirectoryChanges(bool value)
+{
+  SET_SESSION_PROPERTY(PreserveDirectoryChanges);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetResolveSymlinks(bool value)

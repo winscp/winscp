@@ -181,6 +181,8 @@ void bufchain_add(bufchain *ch, const void *data, int len)
 {
     const char *buf = (const char *)data;
 
+    if (len == 0) return;
+
     ch->buffersize += len;
 
     if (ch->tail && ch->tail->buflen < BUFFER_GRANULE) {

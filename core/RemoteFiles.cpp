@@ -33,99 +33,31 @@ Boolean __fastcall UnixComparePaths(const AnsiString Path1, const AnsiString Pat
 //---------------------------------------------------------------------------
 AnsiString __fastcall UnixExtractFileDir(const AnsiString Path)
 {
-  Integer Pos = Path.LastDelimiter('/');
-  if (Pos > 1) return Path.SubString(1, Pos - 1);
-    else
-  if (Pos == 1) return "/";
-    else return Path;
+  int Pos = Path.LastDelimiter('/');
+  // it used to return Path when no slash was found
+  return (Pos > 1) ? Path.SubString(1, Pos - 1) :
+    ((Pos == 1) ? AnsiString("/") : AnsiString());
 }
 //---------------------------------------------------------------------------
 // must return trailing backslash
 AnsiString __fastcall UnixExtractFilePath(const AnsiString Path)
 {
-  Integer Pos = Path.LastDelimiter('/');
-  if (Pos) return Path.SubString(1, Pos);
-    else return Path;
+  int Pos = Path.LastDelimiter('/');
+  // it used to return Path when no slash was found
+  return (Pos > 0) ? Path.SubString(1, Pos) : AnsiString();
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall UnixExtractFileName(const AnsiString Path)
 {
-  Integer Pos = Path.LastDelimiter('/');
-  if (Pos) return Path.SubString(Pos + 1, Path.Length() - Pos);
-    else return Path;
+  int Pos = Path.LastDelimiter('/');
+  return (Pos > 0) ? Path.SubString(Pos + 1, Path.Length() - Pos) : Path;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall UnixExtractFileExt(const AnsiString Path)
 {
   AnsiString FileName = UnixExtractFileName(Path);
-  Integer Pos = FileName.LastDelimiter(".");
-  if (Pos) return Path.SubString(Pos, Path.Length() - Pos + 1);
-    else return "";
-}
-//---------------------------------------------------------------------------
-void __fastcall DateTimeParams(TDateTime * AUnixEpoch, double * ADifference)
-{
-  static double Difference;
-  static TDateTime UnixEpoch = 0;
-
-  if (double(UnixEpoch) == 0)
-  {
-    TIME_ZONE_INFORMATION TZI;
-    unsigned long GTZI;
-
-    GTZI = GetTimeZoneInformation(&TZI);
-    switch (GTZI) {
-      case TIME_ZONE_ID_UNKNOWN:
-        Difference = 0;
-        break;
-
-      case TIME_ZONE_ID_STANDARD:
-        Difference = double(TZI.Bias + TZI.StandardBias) / 1440;
-        break;
-
-      case TIME_ZONE_ID_DAYLIGHT:
-        Difference = double(TZI.Bias + TZI.DaylightBias) / 1440;
-        break;
-
-      case TIME_ZONE_ID_INVALID:
-      default:
-        throw Exception(TIMEZONE_ERROR);
-    }
-    // Is it same as SysUtils::UnixDateDelta = 25569 ?? 
-    UnixEpoch = EncodeDate(1970, 1, 1);
-  }
-  if (AUnixEpoch) *AUnixEpoch = UnixEpoch;
-  if (ADifference) *ADifference = Difference;
-}
-//---------------------------------------------------------------------------
-TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp)
-{
-  TDateTime UnixEpoch;
-  double Difference;
-  DateTimeParams(&UnixEpoch, &Difference);
-
-  TDateTime Result;
-  Result = UnixEpoch + (double(TimeStamp) / 86400) - Difference;
-  return Result;
-}
-//---------------------------------------------------------------------------
-FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime)
-{
-  unsigned long UnixTimeStamp;
-  FILETIME Result;
-  TDateTime UnixEpoch;
-  double Difference;
-
-  DateTimeParams(&UnixEpoch, &Difference);
-  UnixTimeStamp = (unsigned long)((double(DateTime - UnixEpoch + Difference) * 86400));
-  TIME_POSIX_TO_WIN(UnixTimeStamp, Result);
-  return Result;
-}
-//---------------------------------------------------------------------------
-TDateTime AdjustDateTimeFromUnix(const TDateTime DateTime)
-{
-  // to be implemented
-  return DateTime;
+  int Pos = FileName.LastDelimiter(".");
+  return (Pos > 0) ? Path.SubString(Pos, Path.Length() - Pos + 1) : AnsiString();
 }
 //- TRemoteFiles ------------------------------------------------------------
 __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
@@ -592,6 +524,16 @@ void __fastcall TRemoteFile::SetTerminal(TTerminal * value)
     FLinkedFile->Terminal = value;
   }
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TRemoteParentDirectory::TRemoteParentDirectory() : TRemoteFile()
+{
+  FileName = "..";
+  Modification = Now();
+  LastAccess = Modification;
+  Type = 'D';
+  Size = 0;
+}
 //=== TRemoteFileList ------------------------------------------------------
 __fastcall TRemoteFileList::TRemoteFileList():
   TObjectList()
@@ -790,11 +732,28 @@ __fastcall TRemoteDirectoryCache::TRemoteDirectoryCache(): TStringList()
 //---------------------------------------------------------------------------
 __fastcall TRemoteDirectoryCache::~TRemoteDirectoryCache()
 {
-  for (int Index = 0; Index < Count; Index++)
+  Clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryCache::Clear()
+{
+  try
   {
-    delete (TRemoteFileList *)Objects[Index];
-    Objects[Index] = NULL;
+    for (int Index = 0; Index < Count; Index++)
+    {
+      delete (TRemoteFileList *)Objects[Index];
+      Objects[Index] = NULL;
+    }
   }
+  __finally
+  {
+    TStringList::Clear();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteDirectoryCache::GetIsEmpty() const
+{
+  return (const_cast<TRemoteDirectoryCache*>(this)->Count == 0);
 }
 //---------------------------------------------------------------------------
 TRemoteFileList * __fastcall TRemoteDirectoryCache::GetFileList(const AnsiString Directory)
@@ -838,6 +797,111 @@ void __fastcall TRemoteDirectoryCache::Delete(int Index)
 {
   delete (TRemoteFileList *)Objects[Index];
   TStringList::Delete(Index);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TRemoteDirectoryChangesCache::TRemoteDirectoryChangesCache() :
+  TStringList()
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryChangesCache::Clear()
+{
+  TStringList::Clear();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteDirectoryChangesCache::GetIsEmpty() const
+{
+  return (const_cast<TRemoteDirectoryChangesCache*>(this)->Count == 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryChangesCache::AddDirectoryChange(
+  const AnsiString SourceDir, const AnsiString Change,
+  const AnsiString TargetDir)
+{
+  assert(!TargetDir.IsEmpty());
+  Values[TargetDir] = "//";
+  if (TTerminal::ExpandFileName(Change, SourceDir) != TargetDir)
+  {
+    AnsiString Key;
+    if (DirectoryChangeKey(SourceDir, Change, Key))
+    {
+      Values[Key] = TargetDir;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryChangesCache::ClearDirectoryChange(
+  AnsiString SourceDir)
+{
+  for (int Index = 0; Index < Count; Index++)
+  {
+    if (Names[Index].SubString(1, SourceDir.Length()) == SourceDir)
+    {
+      Delete(Index);
+      Index--;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteDirectoryChangesCache::GetDirectoryChange(
+  const AnsiString SourceDir, const AnsiString Change, AnsiString & TargetDir)
+{
+  AnsiString Key;
+  bool Result;
+  Key = TTerminal::ExpandFileName(Change, SourceDir);
+  Result = (IndexOfName(Key) >= 0);
+  if (Result)
+  {
+    TargetDir = Key;
+  }
+  else
+  {
+    Result = DirectoryChangeKey(SourceDir, Change, Key);
+    if (Result)
+    {
+      AnsiString Directory = Values[Key];
+      Result = !Directory.IsEmpty();
+      if (Result)
+      {
+        TargetDir = Directory;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryChangesCache::Serialize(AnsiString & Data)
+{
+  Data = "A" + Text;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryChangesCache::Deserialize(const AnsiString Data)
+{
+  if (Data.IsEmpty())
+  {
+    Text = "";
+  }
+  else
+  {
+    Text = Data.c_str() + 1; 
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteDirectoryChangesCache::DirectoryChangeKey(
+  const AnsiString SourceDir, const AnsiString Change, AnsiString & Key)
+{
+  bool Result = !Change.IsEmpty();
+  if (Result)
+  {
+    bool Absolute = TTerminal::IsAbsolutePath(Change);
+    Result = !SourceDir.IsEmpty() || Absolute;
+    if (Result)
+    {
+      Key = Absolute ? Change : SourceDir + "," + Change;
+    }
+  }
+  return Result;
 }
 //=== TRights ---------------------------------------------------------------
 __fastcall TRights::TRights()

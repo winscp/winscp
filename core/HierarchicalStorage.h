@@ -20,11 +20,15 @@ public:
   virtual void __fastcall GetSubKeyNames(Classes::TStrings* Strings) = 0;
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings) = 0;
   bool __fastcall HasSubKeys();
+  virtual bool __fastcall KeyExists(const AnsiString SubKey);
+  virtual bool __fastcall ValueExists(const AnsiString Value);
   virtual void __fastcall RecursiveDeleteSubKey(const AnsiString Key);
   virtual void __fastcall ReadValues(Classes::TStrings* Strings, bool MaintainKeys = false);
   virtual void __fastcall WriteValues(Classes::TStrings* Strings, bool MaintainKeys = false);
   virtual void __fastcall ClearValues();
   virtual bool __fastcall DeleteValue(const AnsiString Name) = 0;
+
+  virtual int __fastcall BinaryDataSize(const AnsiString Name) = 0;
 
   virtual bool __fastcall ReadBool(const AnsiString Name, bool Default) = 0;
   virtual int __fastcall ReadInteger(const AnsiString Name, int Default) = 0;
@@ -32,8 +36,10 @@ public:
   virtual TDateTime __fastcall ReadDateTime(const AnsiString Name, TDateTime Default) = 0;
   virtual double __fastcall ReadFloat(const AnsiString Name, double Default) = 0;
   virtual AnsiString __fastcall ReadStringRaw(const AnsiString Name, const AnsiString Default) = 0;
+  virtual int __fastcall ReadBinaryData(const AnsiString Name, void * Buffer, int Size) = 0;
 
   virtual AnsiString __fastcall ReadString(AnsiString Name, AnsiString Default);
+  AnsiString __fastcall ReadBinaryData(const AnsiString Name);
 
   virtual void __fastcall WriteBool(const AnsiString Name, bool Value) = 0;
   virtual void __fastcall WriteStringRaw(const AnsiString Name, const AnsiString Value) = 0;
@@ -41,8 +47,10 @@ public:
   virtual void __fastcall WriteInt64(AnsiString Name, __int64 Value) = 0;
   virtual void __fastcall WriteDateTime(const AnsiString Name, TDateTime Value) = 0;
   virtual void __fastcall WriteFloat(const AnsiString Name, double Value) = 0;
+  virtual void __fastcall WriteBinaryData(const AnsiString Name, void * Buffer, int Size) = 0;
 
   virtual void __fastcall WriteString(const AnsiString Name, const AnsiString Value);
+  void __fastcall WriteBinaryData(const AnsiString Name, const AnsiString Value);
 
   __property AnsiString Storage  = { read=FStorage };
   __property AnsiString CurrentSubKey  = { read=GetCurrentSubKey };
@@ -71,6 +79,10 @@ public:
   virtual bool __fastcall DeleteSubKey(const AnsiString SubKey);
   virtual bool __fastcall DeleteValue(const AnsiString Name);
   virtual void __fastcall GetSubKeyNames(Classes::TStrings* Strings);
+  virtual bool __fastcall KeyExists(const AnsiString SubKey);
+  virtual bool __fastcall ValueExists(const AnsiString Value);
+
+  virtual int __fastcall BinaryDataSize(const AnsiString Name);
 
   virtual bool __fastcall ReadBool(const AnsiString Name, bool Default);
   virtual int __fastcall ReadInteger(const AnsiString Name, int Default);
@@ -78,6 +90,7 @@ public:
   virtual TDateTime __fastcall ReadDateTime(const AnsiString Name, TDateTime Default);
   virtual double __fastcall ReadFloat(const AnsiString Name, double Default);
   virtual AnsiString __fastcall ReadStringRaw(const AnsiString Name, const AnsiString Default);
+  virtual int __fastcall ReadBinaryData(const AnsiString Name, void * Buffer, int Size);
 
   virtual void __fastcall WriteBool(const AnsiString Name, bool Value);
   virtual void __fastcall WriteInteger(const AnsiString Name, int Value);
@@ -85,6 +98,8 @@ public:
   virtual void __fastcall WriteDateTime(const AnsiString Name, TDateTime Value);
   virtual void __fastcall WriteFloat(const AnsiString Name, double Value);
   virtual void __fastcall WriteStringRaw(const AnsiString Name, const AnsiString Value);
+  virtual void __fastcall WriteBinaryData(const AnsiString Name, void * Buffer, int Size);
+
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings);
 
 protected:
@@ -111,12 +126,15 @@ public:
   virtual bool __fastcall DeleteValue(const AnsiString Name);
   virtual void __fastcall GetSubKeyNames(Classes::TStrings* Strings);
 
+  virtual int __fastcall BinaryDataSize(const AnsiString Name);
+
   virtual bool __fastcall ReadBool(const AnsiString Name, bool Default);
   virtual int __fastcall ReadInteger(const AnsiString Name, int Default);
   virtual __int64 __fastcall ReadInt64(const AnsiString Name, __int64 Default);
   virtual TDateTime __fastcall ReadDateTime(const AnsiString Name, TDateTime Default);
   virtual double __fastcall ReadFloat(const AnsiString Name, double Default);
   virtual AnsiString __fastcall ReadStringRaw(const AnsiString Name, const AnsiString Default);
+  virtual int __fastcall ReadBinaryData(const AnsiString Name, void * Buffer, int Size);
 
   virtual void __fastcall WriteBool(const AnsiString Name, bool Value);
   virtual void __fastcall WriteInteger(const AnsiString Name, int Value);
@@ -124,6 +142,8 @@ public:
   virtual void __fastcall WriteDateTime(const AnsiString Name, TDateTime Value);
   virtual void __fastcall WriteFloat(const AnsiString Name, double Value);
   virtual void __fastcall WriteStringRaw(const AnsiString Name, const AnsiString Value);
+  virtual void __fastcall WriteBinaryData(const AnsiString Name, void * Buffer, int Size);
+
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings);
 
 private:

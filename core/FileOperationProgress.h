@@ -27,7 +27,6 @@ private:
   // how long current file transfer was stopped (e.g. while displaying error message)
   TDateTime FFileStopped;
   int FFilesFinished;
-  bool FTotalSizeSet;
   TFileOperationProgressEvent FOnProgress;
   TFileOperationFinished FOnFinished;
 
@@ -64,6 +63,8 @@ public:
   bool YesToAll;
   bool NoToAll;
 
+  bool TotalSizeSet;
+
   bool Suspended;
 
   __fastcall TFileOperationProgressType(
@@ -82,7 +83,7 @@ public:
   void __fastcall SetFile(AnsiString AFileName);
   int __fastcall OperationProgress();
   unsigned long __fastcall TransferBlockSize();
-  unsigned long __fastcall StaticBlockSize();
+  static unsigned long __fastcall StaticBlockSize();
   void __fastcall Resume();
   void __fastcall SetLocalSize(__int64 ASize);
   void __fastcall SetAsciiTransfer(bool AAsciiTransfer);
@@ -99,9 +100,28 @@ public:
   TDateTime __fastcall TimeElapsed();
   // only current file
   TDateTime __fastcall TimeExpected();
+  TDateTime __fastcall TotalTimeExpected();
   int __fastcall TransferProgress();
   int __fastcall OverallProgress();
   int __fastcall TotalTransferProgress();
+};
+//---------------------------------------------------------------------------
+class TSuspendFileOperationProgress
+{
+public:
+  __fastcall TSuspendFileOperationProgress(TFileOperationProgressType * OperationProgress)
+  {
+    FOperationProgress = OperationProgress;
+    FOperationProgress->Suspend();
+  }
+
+  __fastcall ~TSuspendFileOperationProgress()
+  {
+    FOperationProgress->Resume();
+  }
+
+private:
+  TFileOperationProgressType * FOperationProgress;
 };
 //---------------------------------------------------------------------------
 #endif

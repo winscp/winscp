@@ -74,13 +74,13 @@ void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 bool __fastcall TSelectMaskDialog::Execute()
 {
-  MaskEdit->Items->Text = WinConfiguration->MaskHistory;
+  MaskEdit->Items = WinConfiguration->History["Mask"];
   ActiveControl = MaskEdit;
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
     MaskEdit->SaveToHistory();
-    WinConfiguration->MaskHistory = MaskEdit->Items->Text;
+    WinConfiguration->History["Mask"] = MaskEdit->Items;
   }
   return Result;
 } /* TSelectMaskDialog::Execute */

@@ -57,13 +57,17 @@ void __fastcall InitWinsock(void)
   }
 }
 //---------------------------------------------------------------------------
-char * do_select(SOCKET skt, int startup)
+extern "C" char * do_select(SOCKET skt, int startup)
 {
   assert(CurrentSSH);
 
   if (CurrentSSH)
   {
-    CurrentSSH->Socket = startup ? skt : INVALID_SOCKET;
+    if (!startup)
+    {
+      skt = INVALID_SOCKET;
+    }
+    CurrentSSH->SetSocket(&skt);
   }
   return NULL;
 }
@@ -127,8 +131,11 @@ static int get_line(const char * prompt, char * str, int maxlen, int is_pw)
 //---------------------------------------------------------------------------
 void SSHLogEvent(void * frontend, char * string)
 {
-  assert(frontend);
-  ((TSecureShell *)frontend)->LogEvent(string);
+  // Frontend maybe NULL here
+  if (frontend != NULL)
+  {
+    ((TSecureShell *)frontend)->LogEvent(string);
+  }
 }
 //---------------------------------------------------------------------------
 void SSHFatalError(char * string)

@@ -128,7 +128,7 @@ plink.exe: be_all.o cmdline.o console.o ldisc.o logging.o misc.o noise.o \
 		sshsh512.o sshsha.o sshzlib.o telnet.o tree234.o version.o \
 		wildcard.o windefs.o winmisc.o winnet.o winstore.o x11fwd.o \
 		-ladvapi32 -lcomctl32 -lcomdlg32 -lgdi32 -limm32 -lshell32 \
-		-luser32 -lwinmm -lwinspool -lws2_32
+		-luser32 -lwinmm -lwinspool
 
 pscp.exe: be_none.o cmdline.o console.o int64.o logging.o misc.o noise.o \
 		pageantc.o portfwd.o pproxy.o proxy.o scp.o scp.res.o \
@@ -145,7 +145,7 @@ pscp.exe: be_none.o cmdline.o console.o int64.o logging.o misc.o noise.o \
 		sshsha.o sshzlib.o tree234.o version.o wildcard.o windefs.o \
 		winmisc.o winnet.o winsftp.o winstore.o x11fwd.o -ladvapi32 \
 		-lcomctl32 -lcomdlg32 -lgdi32 -limm32 -lshell32 -luser32 \
-		-lwinmm -lwinspool -lwsock32
+		-lwinmm -lwinspool
 
 psftp.exe: be_none.o cmdline.o console.o int64.o logging.o misc.o noise.o \
 		pageantc.o portfwd.o pproxy.o proxy.o psftp.o scp.res.o \
@@ -162,7 +162,7 @@ psftp.exe: be_none.o cmdline.o console.o int64.o logging.o misc.o noise.o \
 		sshsha.o sshzlib.o tree234.o version.o wildcard.o windefs.o \
 		winmisc.o winnet.o winsftp.o winstore.o x11fwd.o -ladvapi32 \
 		-lcomctl32 -lcomdlg32 -lgdi32 -limm32 -lshell32 -luser32 \
-		-lwinmm -lwinspool -lwsock32
+		-lwinmm -lwinspool
 
 putty.exe: be_all.o cmdline.o config.o dialog.o ldisc.o ldiscucs.o logging.o \
 		misc.o noise.o pageantc.o portfwd.o pproxy.o printing.o \
@@ -183,7 +183,7 @@ putty.exe: be_all.o cmdline.o config.o dialog.o ldisc.o ldiscucs.o logging.o \
 		wcwidth.o wildcard.o win_res.res.o wincfg.o winctrls.o \
 		windefs.o windlg.o window.o winmisc.o winnet.o winstore.o \
 		winutils.o x11fwd.o -ladvapi32 -lcomctl32 -lcomdlg32 -lgdi32 \
-		-limm32 -lshell32 -luser32 -lwinmm -lwinspool -lwsock32
+		-limm32 -lshell32 -luser32 -lwinmm -lwinspool
 
 puttygen.exe: import.o misc.o noise.o puttygen.o puttygen.res.o sshaes.o \
 		sshbn.o sshdes.o sshdss.o sshdssg.o sshmd5.o sshprime.o \
@@ -210,7 +210,7 @@ puttytel.exe: be_nossh.o cmdline.o config.o dialog.o ldisc.o ldiscucs.o \
 		win_res.res.o wincfg.o winctrls.o windefs.o windlg.o \
 		window.o winmisc.o winnet.o winstore.o winutils.o -ladvapi32 \
 		-lcomctl32 -lcomdlg32 -lgdi32 -limm32 -lshell32 -luser32 \
-		-lwinmm -lwinspool -lwsock32
+		-lwinmm -lwinspool
 
 be_all.o: be_all.c putty.h puttyps.h network.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
@@ -309,9 +309,9 @@ noise.o: noise.c putty.h ssh.h storage.h puttyps.h network.h misc.h \
 otnet.o: mac/otnet.c putty.h network.h mac/mac.h puttyps.h misc.h \
 		charset/charset.h tree234.h winstuff.h mac/macstuff.h \
 		unix/unix.h puttymem.h winhelp.h
-pageant.o: pageant.c putty.h ssh.h misc.h tree234.h winstuff.h puttyps.h \
-		network.h puttymem.h int64.h winhelp.h mac/macstuff.h \
-		unix/unix.h charset/charset.h
+pageant.o: pageant.c putty.h ssh.h misc.h tree234.h puttyps.h network.h \
+		puttymem.h int64.h winstuff.h mac/macstuff.h unix/unix.h \
+		winhelp.h charset/charset.h
 pageant.res.o: pageant.rc pageant.ico pageants.ico
 pageantc.o: pageantc.c putty.h puttyps.h network.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
@@ -326,8 +326,8 @@ portfwd.o: portfwd.c putty.h ssh.h puttyps.h network.h misc.h puttymem.h \
 pproxy.o: pproxy.c putty.h network.h proxy.h puttyps.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
-printing.o: printing.c putty.h winstuff.h puttyps.h network.h misc.h \
-		tree234.h winhelp.h mac/macstuff.h unix/unix.h puttymem.h \
+printing.o: printing.c putty.h puttyps.h network.h misc.h winstuff.h \
+		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
 proxy.o: proxy.c putty.h network.h proxy.h puttyps.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
@@ -344,9 +344,9 @@ ptermm.o: unix/ptermm.c putty.h puttyps.h network.h misc.h winstuff.h \
 pty.o: unix/pty.c putty.h puttyps.h network.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
-puttygen.o: puttygen.c putty.h ssh.h winstuff.h puttyps.h network.h misc.h \
-		puttymem.h int64.h tree234.h winhelp.h mac/macstuff.h \
-		unix/unix.h charset/charset.h
+puttygen.o: puttygen.c putty.h ssh.h puttyps.h network.h misc.h puttymem.h \
+		int64.h winstuff.h mac/macstuff.h unix/unix.h tree234.h \
+		winhelp.h charset/charset.h
 puttygen.res.o: puttygen.rc puttygen.ico
 raw.o: raw.c putty.h puttyps.h network.h misc.h winstuff.h mac/macstuff.h \
 		unix/unix.h puttymem.h tree234.h winhelp.h charset/charset.h
@@ -364,8 +364,8 @@ settings.o: settings.c putty.h storage.h puttyps.h network.h misc.h \
 		winhelp.h charset/charset.h
 sftp.o: sftp.c misc.h int64.h tree234.h sftp.h puttymem.h
 signal.o: unix/signal.c
-sizetip.o: sizetip.c putty.h winstuff.h puttyps.h network.h misc.h tree234.h \
-		winhelp.h mac/macstuff.h unix/unix.h puttymem.h \
+sizetip.o: sizetip.c putty.h puttyps.h network.h misc.h winstuff.h \
+		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
 slookup.o: charset/slookup.c charset/charset.h charset/internal.h \
 		charset/enum.c charset/sbcsdat.c charset/utf8.c
@@ -471,20 +471,21 @@ win_res.res.o: win_res.rc win_res.h putty.ico puttycfg.ico
 wincfg.o: wincfg.c putty.h dialog.h storage.h puttyps.h network.h misc.h \
 		winstuff.h mac/macstuff.h unix/unix.h puttymem.h tree234.h \
 		winhelp.h charset/charset.h
-winctrls.o: winctrls.c winstuff.h misc.h dialog.h puttymem.h putty.h \
-		tree234.h winhelp.h puttyps.h network.h mac/macstuff.h \
-		unix/unix.h charset/charset.h
-windefs.o: windefs.c winstuff.h puttymem.h putty.h tree234.h winhelp.h \
-		puttyps.h network.h misc.h mac/macstuff.h unix/unix.h \
+winctrls.o: winctrls.c putty.h misc.h dialog.h puttyps.h network.h \
+		puttymem.h winstuff.h mac/macstuff.h unix/unix.h tree234.h \
+		winhelp.h charset/charset.h
+windefs.o: windefs.c putty.h puttyps.h network.h misc.h winstuff.h \
+		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
-windlg.o: windlg.c ssh.h putty.h winstuff.h win_res.h storage.h dialog.h \
-		puttymem.h network.h int64.h misc.h puttyps.h tree234.h \
-		winhelp.h mac/macstuff.h unix/unix.h charset/charset.h
-window.o: window.c putty.h terminal.h winstuff.h storage.h win_res.h \
-		puttyps.h network.h misc.h tree234.h winhelp.h \
-		mac/macstuff.h unix/unix.h puttymem.h charset/charset.h
-winmisc.o: winmisc.c putty.h winstuff.h puttyps.h network.h misc.h tree234.h \
-		winhelp.h mac/macstuff.h unix/unix.h puttymem.h \
+windlg.o: windlg.c putty.h ssh.h win_res.h storage.h dialog.h puttyps.h \
+		network.h misc.h puttymem.h int64.h winstuff.h \
+		mac/macstuff.h unix/unix.h tree234.h winhelp.h \
+		charset/charset.h
+window.o: window.c putty.h terminal.h storage.h win_res.h puttyps.h \
+		network.h misc.h tree234.h winstuff.h mac/macstuff.h \
+		unix/unix.h puttymem.h winhelp.h charset/charset.h
+winmisc.o: winmisc.c putty.h puttyps.h network.h misc.h winstuff.h \
+		mac/macstuff.h unix/unix.h puttymem.h tree234.h winhelp.h \
 		charset/charset.h
 winnet.o: winnet.c putty.h network.h tree234.h puttyps.h misc.h winstuff.h \
 		mac/macstuff.h unix/unix.h puttymem.h winhelp.h \

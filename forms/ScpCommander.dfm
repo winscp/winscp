@@ -494,7 +494,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     object CommandsToolbar: TToolBar
       Left = 9
       Top = 144
-      Width = 108
+      Width = 131
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -519,8 +519,13 @@ inherited ScpCommanderForm: TScpCommanderForm
         Top = 0
         Action = NonVisualDataModule.SynchronizeAction
       end
-      object ToolButton41: TToolButton
+      object ToolButton51: TToolButton
         Left = 46
+        Top = 0
+        Action = NonVisualDataModule.FullSynchronizeAction
+      end
+      object ToolButton41: TToolButton
+        Left = 69
         Top = 0
         Width = 8
         Hint = 'E'
@@ -529,12 +534,12 @@ inherited ScpCommanderForm: TScpCommanderForm
         Style = tbsSeparator
       end
       object ToolButton42: TToolButton
-        Left = 54
+        Left = 77
         Top = 0
         Action = NonVisualDataModule.ConsoleAction
       end
       object ToolButton45: TToolButton
-        Left = 77
+        Left = 100
         Top = 0
         Width = 8
         Hint = 'E'
@@ -543,7 +548,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Style = tbsSeparator
       end
       object ToolButton46: TToolButton
-        Left = 85
+        Left = 108
         Top = 0
         Action = NonVisualDataModule.SynchorizeBrowsingAction
         Style = tbsCheck

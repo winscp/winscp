@@ -13,6 +13,9 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+#define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
+  FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION)
+//---------------------------------------------------------------------------
 const coRaiseExcept = 1;
 const coExpectNoOutput = 2;
 const coWaitForLastLine = 4;
@@ -110,7 +113,7 @@ const TCommandType DefaultCommandSet[ShellCommandCount] = {
 /*ListDirectory*/       { -1, -1, F, F, F, "ls -la \"%s\"" /* directory */ },
 /*ListCurrentDirectory*/{ -1, -1, F, F, F, "ls -la" },
 /*ListFile*/            {  1,  1, F, F, F, "ls -lad \"%s\"" /* file/directory */ },
-/*LookupUserGroups*/    {  1,  1, F, F, F, "groups" },
+/*LookupUserGroups*/    {  0,  1, F, F, F, "groups" },
 /*CopyToRemote*/        { -1, -1, T, F, T, "scp -r %s -d -t \"%s\"" /* options, directory */ },
 /*CopyToLocal*/         { -1, -1, F, F, T, "scp -r %s -d -f \"%s\"" /* options, file */ },
 /*DeleteFile*/          {  0,  0, T, F, F, "rm -f -r \"%s\"" /* file/directory */},
@@ -264,6 +267,7 @@ __fastcall TSCPFileSystem::TSCPFileSystem(TTerminal * ATerminal):
 {
   FCommandSet = new TCommandSet(FTerminal->SessionData);
   FOutput = new TStringList();
+  FProcessingCommand = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TSCPFileSystem::~TSCPFileSystem()
@@ -275,6 +279,37 @@ __fastcall TSCPFileSystem::~TSCPFileSystem()
 AnsiString __fastcall TSCPFileSystem::GetProtocolName() const
 {
   return "SCP";
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TSCPFileSystem::AbsolutePath(AnsiString Path)
+{
+  AnsiString Result;
+  if (Path.IsEmpty())
+  {
+    Result = CurrentDirectory;
+  }
+  else if (Path[1] == '/')
+  {
+    Result = UnixExcludeTrailingBackslash(Path);
+  }
+  else
+  {
+    Result = UnixIncludeTrailingBackslash(
+      UnixIncludeTrailingBackslash(CurrentDirectory) + Path);
+    int P;
+    while ((P = Result.Pos("/../")) > 0)
+    {
+      int P2 = Result.SubString(1, P-1).LastDelimiter("/");
+      assert(P2 > 0);
+      Result.Delete(P2, P - P2 + 3); 
+    }
+    while ((P = Result.Pos("/./")) > 0)
+    {
+      Result.Delete(P, 2); 
+    }
+    Result = UnixExcludeTrailingBackslash(Result);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
@@ -295,9 +330,70 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcTextMode:
       return FTerminal->SessionData->EOLType != FTerminal->Configuration->LocalEOLType;
 
+    case fcNativeTextMode:
+      return false;
+
     default:
       assert(false);
       return false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::KeepAlive()
+{
+  if (!FProcessingCommand)
+  {
+    ExecCommand(fsNull, NULL, 0, 0);
+  }
+  else
+  {
+    FTerminal->LogEvent("Cannot send keepalive, command is being executed");
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::AdditionalInfo(TStrings * AdditionalInfo,
+  bool Initial)
+{
+  if (Initial)
+  {
+    AnsiString UName;
+    FTerminal->ExceptionOnFail = true;
+    try
+    {
+      try
+      {
+        AnyCommand("uname -a");
+        for (int Index = 0; Index < Output->Count; Index++)
+        {
+          if (Index > 0)
+          {
+            UName += "; ";
+          }
+          UName += Output->Strings[Index];
+        }
+      }
+      catch(...)
+      {
+        if (!FTerminal->Active)
+        {
+          throw;
+        }
+      }
+    }
+    __finally
+    {
+      FTerminal->ExceptionOnFail = false;
+    }
+
+    if (!UName.IsEmpty())
+    {
+      AdditionalInfo->Add(LoadStr(SCP_UNIX_NAME));
+      AdditionalInfo->Add(UName);
+    }
+    else
+    {
+      AdditionalInfo->Add(LoadStr(SCP_NO_UNIX_NAME));
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -326,8 +422,35 @@ AnsiString __fastcall TSCPFileSystem::DelimitStr(AnsiString Str)
   return Str;
 }
 //---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::EnsureLocation()
+{
+  if (!FCachedDirectoryChange.IsEmpty())
+  {
+    FTerminal->LogEvent(FORMAT("Locating to cached directory \"%s\".",
+      (FCachedDirectoryChange)));
+    AnsiString Directory = FCachedDirectoryChange;
+    FCachedDirectoryChange = "";
+    try
+    {
+      ChangeDirectory(Directory);
+    }
+    catch(...)
+    {
+      // when location to cached directory fails, pretend again
+      // location in cached directory 
+      if (FTerminal->Active && (CurrentDirectory != Directory))
+      {
+        FCachedDirectoryChange = Directory;
+      }
+      throw;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SendCommand(const AnsiString Cmd)
 {
+  EnsureLocation();
+
   AnsiString Line;
   FTerminal->ClearStdError();
   FReturnCode = 0;
@@ -335,6 +458,7 @@ void __fastcall TSCPFileSystem::SendCommand(const AnsiString Cmd)
   // We suppose, that 'Cmd' already contains command that ensures,
   // that 'LastLine' will be printed
   FTerminal->SendLine(Cmd);
+  FProcessingCommand = true;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSCPFileSystem::IsTotalListingLine(const AnsiString Line)
@@ -393,6 +517,7 @@ void __fastcall TSCPFileSystem::SkipFirstLine()
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ReadCommandOutput(int Params)
 {
+  FProcessingCommand = false;
   if (Params & coWaitForLastLine)
   {
     AnsiString Line;
@@ -538,19 +663,22 @@ void __fastcall TSCPFileSystem::LookupUserGroups()
 {
   ExecCommand(fsLookupUserGroups);
   FTerminal->FUserGroups->Clear();
-  FTerminal->FUserGroups->BeginUpdate();
-  try
+  if (FOutput->Count > 0)
   {
-    AnsiString Groups = FOutput->Strings[0];
-    while (!Groups.IsEmpty())
+    FTerminal->FUserGroups->BeginUpdate();
+    try
     {
-      AnsiString NewGroup = CutToChar(Groups, ' ', False);
-      FTerminal->FUserGroups->Add(NewGroup);
+      AnsiString Groups = FOutput->Strings[0];
+      while (!Groups.IsEmpty())
+      {
+        AnsiString NewGroup = CutToChar(Groups, ' ', False);
+        FTerminal->FUserGroups->Add(NewGroup);
+      }
     }
-  }
-  __finally
-  {
-    FTerminal->FUserGroups->EndUpdate();
+    __finally
+    {
+      FTerminal->FUserGroups->EndUpdate();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -667,8 +795,15 @@ void __fastcall TSCPFileSystem::UnsetNationalVars()
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ReadCurrentDirectory()
 {
-  ExecCommand(fsCurrentDirectory);
-  FCurrentDirectory = UnixExcludeTrailingBackslash(FOutput->Strings[0]);
+  if (FCachedDirectoryChange.IsEmpty())
+  {
+    ExecCommand(fsCurrentDirectory);
+    FCurrentDirectory = UnixExcludeTrailingBackslash(FOutput->Strings[0]);
+  }
+  else
+  {
+    FCurrentDirectory = FCachedDirectoryChange;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::HomeDirectory()
@@ -679,7 +814,8 @@ void __fastcall TSCPFileSystem::HomeDirectory()
 void __fastcall TSCPFileSystem::ChangeDirectory(const AnsiString Directory)
 {
   AnsiString ToDir;
-  if (!Directory.IsEmpty() && (Directory[1] != '~'))
+  if (!Directory.IsEmpty() &&
+      ((Directory[1] != '~') || (Directory.SubString(1, 2) == "~ ")))
   {
     ToDir = "\"" + DelimitStr(Directory) + "\"";
   }
@@ -688,6 +824,12 @@ void __fastcall TSCPFileSystem::ChangeDirectory(const AnsiString Directory)
     ToDir = DelimitStr(Directory);
   }
   ExecCommand(fsChangeDirectory, ARRAYOFCONST((ToDir)));
+  FCachedDirectoryChange = "";
+}
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::CachedChangeDirectory(const AnsiString Directory)
+{
+  FCachedDirectoryChange = Directory;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
@@ -923,7 +1065,16 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
         /* TODO 1 : Show stderror to user? */
         FTerminal->ClearStdError();
 
-        ReadCommandOutput(coExpectNoOutput | coRaiseExcept | coOnlyReturnCode);
+        try
+        {
+          ReadCommandOutput(coExpectNoOutput | coRaiseExcept | coOnlyReturnCode);
+        }
+        catch(...)
+        {
+          // when ReadCommandOutput() fails than remote SCP is terminated already
+          *GotLastLine = true;
+          throw;
+        }
       }
         else
       if (Resp == 1)
@@ -1000,8 +1151,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
       bool CanProceed;
 
       AnsiString FileNameOnly =
-        CopyParam->ChangeFileName(ExtractFileName(FileName), osLocal);
-
+        CopyParam->ChangeFileName(ExtractFileName(FileName), osLocal, true);
 
       if (CheckExistence)
       {
@@ -1011,19 +1161,39 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         {
           CanProceed = false;
         }
-          else
-        if (File && !OperationProgress->YesToAll &&
-            FTerminal->Configuration->ConfirmOverwriting && !(Params & cpNoConfirmation))
+        else if (File && !OperationProgress->YesToAll &&
+          FTerminal->Configuration->ConfirmOverwriting && !(Params & cpNoConfirmation))
         {
-          AnsiString QuestionFmt;
-          if (File->IsDirectory) QuestionFmt = LoadStr(DIRECTORY_OVERWRITE);
-            else QuestionFmt = LoadStr(FILE_OVERWRITE);
           int Answer;
-          SUSPEND_OPERATION (
-            Answer = FTerminal->DoQueryUser(FORMAT(QuestionFmt, (FileNameOnly)), 
-              qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
-              qpNeverAskAgainCheck);
-          );
+          if (File->IsDirectory)
+          {
+            SUSPEND_OPERATION
+            (
+              Answer = FTerminal->DoQueryUser(
+                FMTLOAD(DIRECTORY_OVERWRITE, (FileNameOnly)),
+                qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
+                qpNeverAskAgainCheck);
+            );
+          }
+          else
+          {
+            unsigned long MTime;
+            TOverwriteFileParams FileParams;
+            FTerminal->OpenLocalFile(FileName, GENERIC_READ,
+              NULL, NULL, NULL, &MTime, NULL,
+              &FileParams.SourceSize);
+            FileParams.SourceTimestamp = UnixToDateTime(MTime);
+            FileParams.DestSize = File->Size;
+            FileParams.DestTimestamp = File->Modification;
+
+            SUSPEND_OPERATION
+            (
+              Answer = FTerminal->ConfirmFileOverwrite(
+                FileNameOnly, &FileParams,
+                qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
+                qpNeverAskAgainCheck);
+            );
+          }
           switch (Answer) {
             case qaNeverAskAgain:
               FTerminal->Configuration->ConfirmOverwriting = false;
@@ -1062,7 +1232,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         AnsiString OrigFileNameOnly = ExtractFileName(FileName);
         try
         {
-          SCPSource(FileName, CopyParam, Params, OperationProgress);
+          SCPSource(FileName, CopyParam, Params, OperationProgress, 0);
           OperationProgress->Finish(OrigFileNameOnly, true, DisconnectWhenComplete);
         }
         catch (EScpFileSkipped &E)
@@ -1124,18 +1294,15 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         HandleExtendedException(&E, this);
       }
     }
-    else
-    {
-      throw;
-    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress)
+  TFileOperationProgressType * OperationProgress, int Level)
 {
-  AnsiString DestFileName = CopyParam->ChangeFileName(ExtractFileName(FileName), osLocal);
+  AnsiString DestFileName = CopyParam->ChangeFileName(
+    ExtractFileName(FileName), osLocal, Level == 0);
 
   FTerminal->LogEvent(FORMAT("File: \"%s\"", (FileName)));
 
@@ -1151,7 +1318,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
   if (Attrs & faDirectory)
   {
-    SCPDirectorySource(FileName, CopyParam, Params, OperationProgress);
+    SCPDirectorySource(FileName, CopyParam, Params, OperationProgress, Level);
   }
     else
   try
@@ -1186,7 +1353,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
         TFileBuffer BlockBuf;
 
         // This is crucial, if it fails during file transfer, it's fatal error
-        FILE_OPERATION_LOOP (FileName, FMTLOAD(READ_ERROR, (FileName)),
+        FILE_OPERATION_LOOP (FMTLOAD(READ_ERROR, (FileName)),
           BlockBuf.LoadFile(File, OperationProgress->LocalBlockSize(), true);
         );
 
@@ -1343,17 +1510,18 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryName,
   const TCopyParamType * CopyParam, int Params,
-  TFileOperationProgressType * OperationProgress)
+  TFileOperationProgressType * OperationProgress, int Level)
 {
   int Attrs;
 
   FTerminal->LogEvent(FORMAT("Entering directory \"%s\".", (DirectoryName)));
 
   OperationProgress->SetFile(DirectoryName);
-  AnsiString DestFileName = CopyParam->ChangeFileName(ExtractFileName(DirectoryName), osLocal);
+  AnsiString DestFileName = CopyParam->ChangeFileName(
+    ExtractFileName(DirectoryName), osLocal, Level == 0);
 
   // Get directory attributes
-  FILE_OPERATION_LOOP (DirectoryName, FMTLOAD(CANT_GET_ATTRS, (DirectoryName)),
+  FILE_OPERATION_LOOP (FMTLOAD(CANT_GET_ATTRS, (DirectoryName)),
     Attrs = FileGetAttr(DirectoryName);
     if (Attrs == -1) EXCEPTION;
   )
@@ -1374,7 +1542,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
     TSearchRec SearchRec;
     bool FindOK;
 
-    FILE_OPERATION_LOOP (DirectoryName, FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),
+    FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),
       FindOK = (bool)(FindFirst(IncludeTrailingBackslash(DirectoryName) + "*.*",
         FindAttrs, SearchRec) == 0);
     );
@@ -1386,7 +1554,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
       {
         if ((SearchRec.Name != ".") && (SearchRec.Name != ".."))
         {
-          SCPSource(FileName, CopyParam, Params, OperationProgress);
+          SCPSource(FileName, CopyParam, Params, OperationProgress, Level + 1);
         }
       }
       catch (EScpSkipFile &E)
@@ -1402,7 +1570,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
         );
       }
 
-      FILE_OPERATION_LOOP (DirectoryName, FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),
+      FILE_OPERATION_LOOP (FMTLOAD(LIST_DIR_ERROR, (DirectoryName)),
         FindOK = (FindNext(SearchRec) == 0);
       );
     };
@@ -1458,7 +1626,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
 
         // Filename is used only for error messaging
         SCPSink(TargetDir, FileName, CopyParam, Success, OperationProgress,
-          Params, false);
+          Params, 0);
         // operation succeded (no exception), so it's ok that
         // remote side closed SCP, but we continue with next file
         if (OperationProgress->Cancel == csRemoteAbort)
@@ -1475,8 +1643,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
             FTerminal->ExceptionOnFail = true;
             try
             {
-              FILE_OPERATION_LOOP(FileName,
-                FMTLOAD(DELETE_FILE_ERROR, (FileName)),
+              FILE_OPERATION_LOOP(FMTLOAD(DELETE_FILE_ERROR, (FileName)),
                 FTerminal->DeleteFile("", File)
               );
             }
@@ -1566,7 +1733,7 @@ void __fastcall TSCPFileSystem::SCPSendError(const AnsiString Message, bool Fata
 void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
   const AnsiString FileName, const TCopyParamType * CopyParam, bool & Success,
   TFileOperationProgressType * OperationProgress, int Params,
-  bool Initialized)
+  int Level)
 {
   struct
   {
@@ -1577,8 +1744,10 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
     int Attrs;
     bool Exists;
   } FileData;
+  TDateTime SourceTimestamp;
 
   bool SkipConfirmed = false;
+  bool Initialized = (Level > 0);
 
   FileData.SetTime = 0;
 
@@ -1608,7 +1777,11 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
         FTerminal->ClearStdError();
         try
         {
-          ReadCommandOutput(coExpectNoOutput | coRaiseExcept | coOnlyReturnCode);
+          // coIgnoreWarnings should allow batch transfer to continue when
+          // download of one the files failes (user denies overwritting
+          // of target local file, no read permissions...)
+          ReadCommandOutput(coExpectNoOutput | coRaiseExcept |
+            coOnlyReturnCode | coIgnoreWarnings);
           if (!Initialized)
           {
             throw Exception("");
@@ -1655,6 +1828,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
             {
               TIME_POSIX_TO_WIN(ATime, FileData.AcTime);
               TIME_POSIX_TO_WIN(MTime, FileData.WrTime);
+              SourceTimestamp = UnixToDateTime(MTime);
               FTerminal->SendNull();
               // File time is only valid until next pass
               FileData.SetTime = 2;
@@ -1712,7 +1886,8 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
 
         AnsiString DestFileName =
           IncludeTrailingBackslash(TargetDir) +
-          CopyParam->ChangeFileName(OperationProgress->FileName, osRemote);
+          CopyParam->ChangeFileName(OperationProgress->FileName, osRemote,
+            Level == 0);
 
         FileData.Attrs = FileGetAttr(DestFileName);
         // If getting attrs failes, we suppose, that file/folder doesn't exists
@@ -1726,7 +1901,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
 
           if (!FileData.Exists)
           {
-            FILE_OPERATION_LOOP (DestFileName, FMTLOAD(CREATE_DIR_ERROR, (DestFileName)),
+            FILE_OPERATION_LOOP (FMTLOAD(CREATE_DIR_ERROR, (DestFileName)),
               if (!ForceDirectories(DestFileName)) EXCEPTION;
             );
             /* SCP: can we set the timestamp for directories ? */
@@ -1734,7 +1909,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           /* TODO 1 : Send whole path, CopyData.SourceFileName is not enough
              (just error messaging)*/
           SCPSink(DestFileName, OperationProgress->FileName, CopyParam,
-            Success, OperationProgress, Params, true);
+            Success, OperationProgress, Params, Level + 1);
           continue;
         }
           else
@@ -1760,9 +1935,19 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                     !(Params & cpNoConfirmation))
                 {
                   int Answer;
+
+                  unsigned long MTime;
+                  TOverwriteFileParams FileParams;
+                  FileParams.SourceSize = OperationProgress->TransferSize;
+                  FileParams.SourceTimestamp = SourceTimestamp;
+                  FTerminal->OpenLocalFile(DestFileName, GENERIC_READ,
+                    NULL, NULL, NULL, &MTime, NULL,
+                    &FileParams.DestSize);
+                  FileParams.DestTimestamp = UnixToDateTime(MTime);
+                  
                   SUSPEND_OPERATION (
-                    Answer = FTerminal->DoQueryUser(
-                      FMTLOAD(FILE_OVERWRITE, (OperationProgress->FileName)),
+                    Answer = FTerminal->ConfirmFileOverwrite(
+                      OperationProgress->FileName, &FileParams,
                       qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll,
                       qpNeverAskAgainCheck);
                   );
@@ -1777,12 +1962,11 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                 }
               }
 
-              // Create file
-              FILE_OPERATION_LOOP (DestFileName, FMTLOAD(CREATE_FILE_ERROR, (DestFileName)),
-                File = CreateFile(DestFileName.c_str(), GENERIC_WRITE, 0, NULL,
-                  CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-                if (File == INVALID_HANDLE_VALUE) EXCEPTION;
-              );
+              if (!FTerminal->CreateLocalFile(DestFileName, OperationProgress, &File))
+              {
+                SkipConfirmed = true;
+                EXCEPTION;
+              }
 
               FileStream = new THandleStream((THandle)File);
             }
@@ -1816,7 +2000,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
               {
                 BlockBuf.Size = OperationProgress->TransferBlockSize();
                 BlockBuf.Position = 0;
-                
+
                 FTerminal->Receive(BlockBuf.Data, BlockBuf.Size);
                 OperationProgress->AddTransfered(BlockBuf.Size);
 
@@ -1830,8 +2014,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                 }
 
                 // This is crucial, if it fails during file transfer, it's fatal error
-                FILE_OPERATION_LOOP_EX (
-                  DestFileName, false, FMTLOAD(WRITE_ERROR, (DestFileName)),
+                FILE_OPERATION_LOOP_EX (false, FMTLOAD(WRITE_ERROR, (DestFileName)),
                   BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
                 );
 
@@ -1888,8 +2071,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           int NewAttrs = CopyParam->LocalFileAttrs(FileData.RemoteRights);
           if ((NewAttrs & FileData.Attrs) != NewAttrs)
           {
-            FILE_OPERATION_LOOP (DestFileName, FMTLOAD(CANT_SET_ATTRS, (DestFileName)),
-
+            FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DestFileName)),
               FileSetAttr(DestFileName, FileData.Attrs | NewAttrs);
             );
           }

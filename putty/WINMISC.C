@@ -2,11 +2,9 @@
  * winmisc.c: miscellaneous Windows-specific things.
  */
 
-#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "putty.h"
-#include "winstuff.h"
 
 OSVERSIONINFO osVersion;
 
@@ -359,3 +357,4 @@ void *minefield_c_realloc(void *p, size_t size)
 }
 
 #endif				/* MINEFIELD */
+

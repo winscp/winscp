@@ -12,7 +12,6 @@
 #include <TextsWin.h>
 
 #include "WinInterface.h"
-#include "TerminalManager.h"
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
@@ -78,9 +77,15 @@ __fastcall TPropertiesDialog::~TPropertiesDialog()
 bool __fastcall TPropertiesDialog::Execute()
 {
   bool Result;
-  TTerminalManager * Manager = TTerminalManager::Instance();
-  TNotifyEvent POnChangeTerminal = Manager->OnChangeTerminal;
-  Manager->OnChangeTerminal = TerminalManagerChangeTerminal;
+
+  FPrevTerminalClose = NULL;;
+  if (FTerminal)
+  {
+    FPrevTerminalClose = FTerminal->OnClose;
+    // used instead of previous TTerminalManager::OnChangeTerminal
+    FTerminal->OnClose = TerminalClose;
+  }
+  
   try
   {
     if (AllowedChanges & cpGroup) ActiveControl = GroupComboBox;
@@ -95,15 +100,23 @@ bool __fastcall TPropertiesDialog::Execute()
   }
   __finally
   {
-    assert(Manager->OnChangeTerminal == TerminalManagerChangeTerminal);
-    Manager->OnChangeTerminal = POnChangeTerminal;
+    if (FTerminal)
+    {
+      assert(FTerminal->OnClose == TerminalClose);
+      FTerminal->OnClose = FPrevTerminalClose;
+    }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::TerminalManagerChangeTerminal(TObject * /*Sender*/)
+void __fastcall TPropertiesDialog::TerminalClose(TObject * Sender)
 {
   Close();
+  Terminal = NULL;
+  if (FPrevTerminalClose)
+  {
+    FPrevTerminalClose(Sender);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::SetFileList(TStrings * value)

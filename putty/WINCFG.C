@@ -3,8 +3,6 @@
  * box.
  */
 
-#include <windows.h>
-
 #include <assert.h>
 #include <stdlib.h>
 
@@ -235,8 +233,8 @@ void win_setup_config_box(struct controlbox *b, HWND *hwndp, int has_help,
     /*
      * RTF paste is Windows-specific.
      */
-    s = ctrl_getset(b, "Window/Selection", "trans",
-		    "Translation of pasted characters");
+    s = ctrl_getset(b, "Window/Selection", "format",
+		    "Formatting of pasted characters");
     ctrl_checkbox(s, "Paste to clipboard in RTF as well as plain text", 'f',
 		  HELPCTX(selection_rtf),
 		  dlg_stdcheckbox_handler, I(offsetof(Config,rtf_paste)));
@@ -248,12 +246,13 @@ void win_setup_config_box(struct controlbox *b, HWND *hwndp, int has_help,
      */
     s = ctrl_getset(b, "Window/Selection", "mouse",
 		    "Control use of mouse");
-    ctrl_radiobuttons(s, "Action of mouse buttons:", NO_SHORTCUT, 1,
+    ctrl_radiobuttons(s, "Action of mouse buttons:", 'm', 1,
 		      HELPCTX(selection_buttons),
 		      dlg_stdradiobutton_handler,
 		      I(offsetof(Config, mouse_is_xterm)),
-		      "Windows (Right pastes, Middle extends)", 'w', I(0),
-		      "xterm (Right extends, Middle pastes)", 'x', I(1), NULL);
+		      "Windows (Middle extends, Right brings up menu)", I(2),
+		      "Compromise (Middle extends, Right pastes)", I(0),
+		      "xterm (Right extends, Middle pastes)", I(1), NULL);
     /*
      * This really ought to go at the _top_ of its box, not the
      * bottom, so we'll just do some shuffling now we've set it

@@ -85,6 +85,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       object ToolButton42: TToolButton
         Left = 27
         Top = 0
+        Hint = 'Other commands'
         AutoSize = True
         Caption = '&Commands'
         Grouped = True
@@ -130,7 +131,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     object ButtonsToolBar: TToolBar
       Left = 9
       Top = 47
-      Width = 403
+      Width = 434
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -257,6 +258,19 @@ inherited ScpExplorerForm: TScpExplorerForm
         Left = 380
         Top = 0
         Action = NonVisualDataModule.ConsoleAction
+      end
+      object ToolButton48: TToolButton
+        Left = 403
+        Top = 0
+        Width = 8
+        Caption = 'ToolButton48'
+        ImageIndex = 56
+        Style = tbsSeparator
+      end
+      object ToolButton49: TToolButton
+        Left = 411
+        Top = 0
+        Action = NonVisualDataModule.FullSynchronizeAction
       end
     end
     object SelectionToolbar: TToolBar

@@ -2,7 +2,8 @@
 #include <vcl.h>
 #pragma hdrstop
 #include "GUIConfiguration.h"
-#include "Common.h"
+#include "GUITools.h"
+#include <Common.h>
 #include <FileInfo.h>
 #include <TextsCore.h>
 //---------------------------------------------------------------------------
@@ -21,7 +22,7 @@ __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
 {
   FLocale = 0;
   FLocales = new TStringList();
-  FLastLocalesExts = "*"; 
+  FLastLocalesExts = "*";
   dynamic_cast<TStringList*>(FLocales)->Sorted = true;
   dynamic_cast<TStringList*>(FLocales)->CaseSensitive = false;
 }
@@ -37,6 +38,11 @@ void __fastcall TGUIConfiguration::Default()
 
   FCopyParamDialogExpanded = false;
   FErrorDialogExpanded = false;
+  FContinueOnError = false;
+  AnsiString ProgramsFolder;
+  SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
+  FPuttyPath = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
+  FPuttySession = "WinSCP temporary session";
 }
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
@@ -48,7 +54,10 @@ void __fastcall TGUIConfiguration::Default()
   BLOCK("Interface", CANCREATE, \
     KEY(Bool,     CopyParamDialogExpanded); \
     KEY(Bool,     ErrorDialogExpanded); \
-  ); 
+    KEY(Bool,     ContinueOnError); \
+    KEY(String,   PuttySession); \
+    KEY(String,   PuttyPath); \
+  );
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
 {
@@ -127,7 +136,7 @@ HANDLE TGUIConfiguration::LoadNewResourceModule(LCID ALocale)
     TPasLibModule * MainModule = FindModule(HInstance);
     if (MainModule->ResInstance != MainModule->Instance)
     {
-      FreeLibrary(MainModule->ResInstance);
+      FreeLibrary(static_cast<HMODULE>(MainModule->ResInstance));
     }
     MainModule->ResInstance = Internal ? MainModule->Instance : NewInstance;
     if (Internal)
@@ -185,7 +194,7 @@ void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
   if (Locale != value)
   {
     bool Result;
-    
+
     try
     {
       Result = LoadNewResourceModule(value);
@@ -194,7 +203,7 @@ void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
     {
       // ignore any exception while loading locale
     }
-    
+
     if (Result)
     {
       FLocale = value;
@@ -269,7 +278,7 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
               Locale = MAKELANGID(PRIMARYLANGID(Locale), SUBLANG_DEFAULT);
             }
           }
-          
+
           if (Ext >= 0)
           {
             Exts->Objects[Ext] = reinterpret_cast<TObject*>(Locale);
@@ -308,5 +317,3 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
 
   return FLocales;
 }
-
-

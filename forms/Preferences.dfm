@@ -613,6 +613,7 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Upload options'
             inherited RightsFrame: TRightsFrame
               Height = 88
+              PopupMenu = CopyParamsFrame.RightsFrame.RightsPopup
             end
             inherited RemotePreserveTimeCheck: TCheckBox
               Top = 161

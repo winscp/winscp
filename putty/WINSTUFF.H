@@ -5,6 +5,10 @@
 #ifndef PUTTY_WINSTUFF_H
 #define PUTTY_WINSTUFF_H
 
+#ifndef AUTO_WINSOCK
+#include <winsock2.h>
+#endif
+#include <windows.h>
 #include <stdio.h>		       /* for FILENAME_MAX */
 
 #include "tree234.h"
@@ -128,6 +132,23 @@ GLOBAL void *logctx;
 			      "All Files (*.*)\0*\0\0\0")
 #define FILTER_WAVE_FILES ("Wave Files (*.wav)\0*.WAV\0" \
 			       "All Files (*.*)\0*\0\0\0")
+
+/*
+ * winnet.c dynamically loads WinSock 2 or WinSock 1 depending on
+ * what it can get, which means any WinSock routines used outside
+ * that module must be exported from it as function pointers. So
+ * here they are.
+ */
+extern int (WINAPI *p_WSAAsyncSelect)
+    (SOCKET s, HWND hWnd, u_int wMsg, long lEvent);
+extern int (WINAPI *p_WSAEventSelect)
+    (SOCKET s, WSAEVENT hEventObject, long lNetworkEvents);
+extern int (WINAPI *p_select)
+    (int nfds, fd_set FAR * readfds, fd_set FAR * writefds,
+     fd_set FAR *exceptfds, const struct timeval FAR * timeout);
+extern int (WINAPI *p_WSAGetLastError)(void);
+extern int (WINAPI *p_WSAEnumNetworkEvents)
+    (SOCKET s, WSAEVENT hEventObject, LPWSANETWORKEVENTS lpNetworkEvents);
 
 /*
  * Exports from winctrls.c.

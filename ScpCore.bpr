@@ -4,14 +4,14 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpCore.lib"/>
-    <OBJFILES value="core\Common.obj core\Configuration.obj core\CopyParam.obj 
-      core\Exceptions.obj core\FileBuffer.obj core\FileInfo.obj 
-      core\FileMasks.obj core\FileOperationProgress.obj 
-      core\FileSystems.obj core\HierarchicalStorage.obj core\KeyGen.obj 
-      core\NamedObjs.obj core\Net.obj core\PuttyIntf.obj 
-      core\RemoteFiles.obj core\ScpFileSystem.obj core\ScpMain.obj 
-      core\SecureShell.obj core\Security.obj core\SessionData.obj 
-      core\SftpFileSystem.obj core\Terminal.obj"/>
+    <OBJFILES value="core\Bookmarks.obj core\Common.obj core\Configuration.obj 
+      core\CopyParam.obj core\Exceptions.obj core\FileBuffer.obj 
+      core\FileInfo.obj core\FileMasks.obj 
+      core\FileOperationProgress.obj core\FileSystems.obj 
+      core\HierarchicalStorage.obj core\NamedObjs.obj core\Net.obj 
+      core\PuttyIntf.obj core\RemoteFiles.obj core\ScpFileSystem.obj 
+      core\ScpMain.obj core\SecureShell.obj core\Security.obj 
+      core\SessionData.obj core\SftpFileSystem.obj core\Terminal.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
@@ -23,18 +23,18 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="NO_WIN32_LEAN_AND_MEAN;WINSOCK_TWO;AUTO_WINSOCK;USE_COMPATIBLE_THREAD;_WINDOWS"/>
+    <USERDEFINES value="USE_COMPATIBLE_THREAD;_WINDOWS"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpCore.bpf"/>
-    <INCLUDEPATH value="core;putty;resource;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="core;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="windows;core;putty;resource;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="windows;core;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
     <LISTFILE value=""/>
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <AFLAGS value="/mx /w2 /zn"/>
     <LFLAGS value="/P128"/>
@@ -47,6 +47,7 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="ScpCore.bpf" FORMNAME="" UNITNAME="ScpCore" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="core\Bookmarks.cpp" FORMNAME="" UNITNAME="Bookmarks" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Common.cpp" FORMNAME="" UNITNAME="Common.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Configuration.cpp" FORMNAME="" UNITNAME="Configuration.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\CopyParam.cpp" FORMNAME="" UNITNAME="CopyParam.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -57,7 +58,6 @@
       <FILE FILENAME="core\FileOperationProgress.cpp" FORMNAME="" UNITNAME="FileOperationProgress.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\FileSystems.cpp" FORMNAME="" UNITNAME="FileSystems" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\HierarchicalStorage.cpp" FORMNAME="" UNITNAME="HierarchicalStorage.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="core\KeyGen.cpp" FORMNAME="" UNITNAME="KeyGen" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\NamedObjs.cpp" FORMNAME="" UNITNAME="NamedObjs.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Net.cpp" FORMNAME="" UNITNAME="Net.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\PuttyIntf.c" FORMNAME="" UNITNAME="PuttyIntf" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -75,8 +75,6 @@
 
   <FILES>
     <FILE type="override" value="core\SftpFileSystem.cpp" translator="Auto">
-    </FILE>
-    <FILE type="override" value="core\KeyGen.cpp" translator="Auto">
     </FILE>
   </FILES>
 

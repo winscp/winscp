@@ -7,7 +7,6 @@
 #include "LogMemo.h"
 #include "NonVisual.h"
 #include "WinConfiguration.h"
-#include "UserInterface.h"
 #include <Log.h>
 #include <OperationStatus.h>
 #include <Common.h>
@@ -79,6 +78,7 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
     Terminal->OnQueryUser = TerminalQueryUser;
     Terminal->OnProgress = OperationProgress;
     Terminal->OnFinished = OperationFinished;
+    Terminal->OnDeleteLocalFile = DeleteLocalFile; 
     if (!ActiveTerminal)
     {
       ActiveTerminal = Terminal;
@@ -140,7 +140,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
       try
       {
         Form->SecureShell = ActiveTerminal;
-        Form->Show();
+        Form->ShowAsModal();
         ActiveTerminal->Open();
         ActiveTerminal->DoStartup();
       }
@@ -454,6 +454,14 @@ void __fastcall TTerminalManager::FreeLogMemo()
 void __fastcall TTerminalManager::ApplicationException(TObject * Sender, Exception * E)
 {
   ShowExtendedException(E, Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::DeleteLocalFile(const AnsiString FileName)
+{
+  if (!RecursiveDeleteFile(FileName, WinConfiguration->DeleteToRecycleBin))
+  {
+    throw Exception(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalQueryUser(TObject * /*Sender*/,

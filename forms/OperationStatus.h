@@ -17,8 +17,7 @@ __published:
   TBevel *Bevel1;
 private:
   TSecureShell * FSecureShell;
-  void * FFocusWindowList;
-  void * FFocusActiveWindow;
+  void * FShowAsModalStorage;
   TNotifyEvent FPrevOnUpdateStatus;
 
   void __fastcall SetSecureShell(TSecureShell * value);

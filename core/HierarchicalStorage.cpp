@@ -117,6 +117,38 @@ bool __fastcall THierarchicalStorage::HasSubKeys()
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::KeyExists(const AnsiString SubKey)
+{
+  bool Result;
+  TStrings * SubKeys = new TStringList();
+  try
+  {
+    GetSubKeyNames(SubKeys);
+    Result = (SubKeys->IndexOf(SubKey) >= 0);
+  }
+  __finally
+  {
+    delete SubKeys;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::ValueExists(const AnsiString Value)
+{
+  bool Result;
+  TStrings * Values = new TStringList();
+  try
+  {
+    GetValueNames(Values);
+    Result = (Values->IndexOf(Value) >= 0);
+  }
+  __finally
+  {
+    delete Values;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::ReadValues(Classes::TStrings* Strings,
   bool MaintainKeys)
 {
@@ -187,9 +219,24 @@ AnsiString __fastcall THierarchicalStorage::ReadString(const AnsiString Name, co
   return UnMungeStr(ReadStringRaw(Name, Default));
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall THierarchicalStorage::ReadBinaryData(const AnsiString Name)
+{
+  int Size = BinaryDataSize(Name);
+  AnsiString Value;
+  Value.SetLength(Size);
+  ReadBinaryData(Name, Value.c_str(), Size);
+  return Value;
+}
+//---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::WriteString(const AnsiString Name, const AnsiString Value)
 {
   WriteStringRaw(Name, MungeStr(Value));
+}
+//---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::WriteBinaryData(const AnsiString Name,
+  const AnsiString Value)
+{
+  WriteBinaryData(Name, Value.c_str(), Value.Length());
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall THierarchicalStorage::IncludeTrailingBackslash(const AnsiString S) const
@@ -297,6 +344,21 @@ bool __fastcall TRegistryStorage::DeleteValue(const AnsiString Name)
   return FRegistry->DeleteValue(Name);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TRegistryStorage::KeyExists(const AnsiString SubKey)
+{
+  return FRegistry->KeyExists(SubKey);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRegistryStorage::ValueExists(const AnsiString Value)
+{
+  return FRegistry->ValueExists(Value);
+}
+//---------------------------------------------------------------------------
+int __fastcall TRegistryStorage::BinaryDataSize(const AnsiString Name)
+{
+  return FRegistry->GetDataSize(Name);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::ReadBool(const AnsiString Name, bool Default)
 {
   READ_REGISTRY(ReadBool);
@@ -339,6 +401,29 @@ AnsiString __fastcall TRegistryStorage::ReadStringRaw(const AnsiString Name, con
   READ_REGISTRY(ReadString);
 }
 //---------------------------------------------------------------------------
+int __fastcall TRegistryStorage::ReadBinaryData(const AnsiString Name,
+  void * Buffer, int Size)
+{
+  int Result;
+  if (FRegistry->ValueExists(Name))
+  {
+    try
+    {
+      Result = FRegistry->ReadBinaryData(Name, Buffer, Size);
+    }
+    catch(...)
+    {
+      Result = 0;
+      FFailed++;
+    }
+  }
+  else
+  {
+    Result = 0;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::WriteBool(const AnsiString Name, bool Value)
 {
   WRITE_REGISTRY(WriteBool);
@@ -369,6 +454,19 @@ void __fastcall TRegistryStorage::WriteInt64(const AnsiString Name, __int64 Valu
   try
   {
     FRegistry->WriteBinaryData(Name, &Value, sizeof(Value));
+  }
+  catch(...)
+  {
+    FFailed++;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRegistryStorage::WriteBinaryData(const AnsiString Name,
+  void * Buffer, int Size)
+{
+  try
+  {
+    FRegistry->WriteBinaryData(Name, Buffer, Size);
   }
   catch(...)
   {
@@ -494,6 +592,11 @@ bool __fastcall TIniFileStorage::DeleteValue(const AnsiString Name)
   return true;
 }
 //---------------------------------------------------------------------------
+int __fastcall TIniFileStorage::BinaryDataSize(const AnsiString Name)
+{
+  return FIniFile->ReadString(CurrentSection, Name, "").Length() / 2;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::ReadBool(const AnsiString Name, bool Default)
 {
   return FIniFile->ReadBool(CurrentSection, Name, Default);
@@ -531,6 +634,20 @@ AnsiString __fastcall TIniFileStorage::ReadStringRaw(const AnsiString Name, Ansi
   return FIniFile->ReadString(CurrentSection, Name, Default);
 }
 //---------------------------------------------------------------------------
+int __fastcall TIniFileStorage::ReadBinaryData(const AnsiString Name,
+  void * Buffer, int Size)
+{
+  AnsiString Value = HexToStr(ReadStringRaw(Name, ""));
+  int Len = Value.Length();
+  if (Size > Len)
+  {
+    Size = Len;
+  }
+  assert(Buffer);
+  memcpy(Buffer, Value.c_str(), Size);
+  return Size;
+}
+//---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteBool(const AnsiString Name, bool Value)
 {
   FIniFile->WriteBool(CurrentSection, Name, Value);
@@ -559,4 +676,10 @@ void __fastcall TIniFileStorage::WriteFloat(const AnsiString Name, double Value)
 void __fastcall TIniFileStorage::WriteStringRaw(const AnsiString Name, const AnsiString Value)
 {
   FIniFile->WriteString(CurrentSection, Name, Value);
+}
+//---------------------------------------------------------------------------
+void __fastcall TIniFileStorage::WriteBinaryData(const AnsiString Name,
+  void * Buffer, int Size)
+{
+  WriteStringRaw(Name, StrToHex(AnsiString(static_cast<char*>(Buffer), Size)));
 }

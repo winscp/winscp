@@ -8,6 +8,68 @@
 
 #include "Common.h"
 //---------------------------------------------------------------------------
+AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask)
+{
+  AnsiString Result;
+  int RestStart = 1;
+  for (int Index = 1; Index <= Mask.Length(); Index++)
+  {
+    switch (Mask[Index])
+    {
+      case '*':
+        Result += Part.SubString(RestStart, Part.Length() - RestStart + 1);
+        RestStart = Part.Length() + 1; 
+        break;
+
+      case '?':
+        if (RestStart <= Part.Length())
+        {
+          Result += Part[RestStart];
+          RestStart++;
+        }
+        break;
+
+      default:
+        Result += Mask[Index];
+        RestStart++;
+        break; 
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall MaskFileName(AnsiString FileName, const AnsiString Mask)
+{
+  if (!Mask.IsEmpty() && (Mask != "*") && (Mask != "*.*"))
+  {
+    int P = Mask.LastDelimiter(".");
+    if (P > 0)
+    {
+      int P2 = FileName.LastDelimiter(".");
+      // only dot at beginning of file name is not considered as
+      // name/ext separator
+      AnsiString FileExt = P2 > 1 ?
+        FileName.SubString(P2 + 1, FileName.Length() - P2) : AnsiString();
+      FileExt = MaskFilePart(FileExt, Mask.SubString(P + 1, Mask.Length() - P));
+      if (P2 > 1)
+      {
+        FileName.SetLength(P2 - 1);
+      }
+      FileName = MaskFilePart(FileName, Mask.SubString(1, P - 1));
+      if (!FileExt.IsEmpty())
+      {
+        FileName += "." + FileExt;
+      }
+    }
+    else
+    {
+      FileName = MaskFilePart(FileName, Mask);
+    }
+  }
+  return FileName;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TFileMasks::TFileMasks()
 {
   FMasks = "";

@@ -23,4 +23,6 @@ private:
   AnsiString FMasks;
 };
 //---------------------------------------------------------------------------
+AnsiString __fastcall MaskFileName(AnsiString FileName, const AnsiString Mask);
+//---------------------------------------------------------------------------
 #endif

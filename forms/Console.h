@@ -32,22 +32,29 @@ __published:
   TPathLabel *DirectoryLabel;
   void __fastcall ExecuteButtonClick(TObject *Sender);
   void __fastcall CommandEditChange(TObject *Sender);
+  
 private:
   TTerminal * FTerminal;
   TNotifyEvent FOldChangeDirectory;
   TLogAddLineEvent FOldLogAddLine;
   bool FAddOutput;
+  TNotifyEvent FPrevTerminalClose;
+  
+  void __fastcall DoExecuteCommand();
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
-  void __fastcall TerminalManagerChangeTerminal(TObject * Sender);
+  void __fastcall TerminalClose(TObject * Sender);
+
 protected:
   void __fastcall DoChangeDirectory(TObject * Sender);
   void __fastcall DoLogAddLine(System::TObject* Sender, const AnsiString AddedLine);
   void __fastcall UpdateControls();
+  virtual void __fastcall CreateParams(TCreateParams & Params);
+
 public:
   virtual __fastcall ~TConsoleDialog();
 	virtual __fastcall TConsoleDialog(TComponent* AOwner);
-  Boolean __fastcall Execute();
+  bool __fastcall Execute(const AnsiString Command = "");
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
 };
 //----------------------------------------------------------------------------
