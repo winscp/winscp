@@ -4,6 +4,7 @@
 
 #include <VCLCommon.h>
 #include "Cleanup.h"
+#include "TextsWin.h"
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
@@ -44,15 +45,14 @@ __fastcall TCleanupDialog::TCleanupDialog(TComponent* AOwner)
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------
-void __fastcall TCleanupDialog::UpdateControls()
+void __fastcall TCleanupDialog::InitControls()
 {
-  Boolean Checked = False, UnChecked = False;
-  for (Integer Index = 0; Index < DataListView->Items->Count; Index ++)
+  int I = 0;
+  while (I < DataListView->Items->Count)
   {
-    TListItem *Item = DataListView->Items->Item[Index];
-    if (Item->Checked) Checked = True;
-    if (!Item->Checked) UnChecked = True;
+    TListItem *Item = DataListView->Items->Item[I];
     AnsiString Location;
+    Item->Caption = LoadStr(CLEANUP_CONFIG + Item->ImageIndex - 1);
     switch (Item->ImageIndex) {
       case wdConfiguration: Location = Configuration->ConfigurationSubKey; break;
       case wdStoredSessions: Location = Configuration->StoredSessionsSubKey; break;
@@ -61,20 +61,33 @@ void __fastcall TCleanupDialog::UpdateControls()
       case wdRandomSeedFile: Location = Configuration->RandomSeedFile; break;
       default: Location = ""; break;
     }
+
     if (Item->ImageIndex < wdConfigurationIniFile)
+    {
       Location = Configuration->RootKeyStr + '\\' +
         Configuration->RegistryStorageKey + '\\' + Location;
-
-    if (Item->SubItems->Count)
-    {
-      if (Item->SubItems->Strings[0] != Location)
-        Item->SubItems->Strings[0] = Location;
     }
-      else Item->SubItems->Add(Location);
+
+    Item->SubItems->Add(Location);
+    I++;
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TCleanupDialog::UpdateControls()
+{
+  int I = 0;
+  bool Checked = false;
+  bool UnChecked = false;
+  while (I < DataListView->Items->Count)
+  {
+    TListItem *Item = DataListView->Items->Item[I];
+    if (Item->Checked) Checked = true;
+    if (!Item->Checked) UnChecked = true;
+
+    I++;
   }
   EnableControl(OKButton, Checked);
   EnableControl(CheckAllButton, UnChecked);
-//  AdjustListColumnsWidth(DataListView);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCleanupDialog::DataListViewMouseDown(
@@ -92,6 +105,7 @@ void __fastcall TCleanupDialog::DataListViewKeyUp(
 //---------------------------------------------------------------------------
 void __fastcall TCleanupDialog::FormShow(TObject * /*Sender*/)
 {
+  InitControls();
   UpdateControls();
 }
 //---------------------------------------------------------------------------

@@ -347,8 +347,7 @@ void __fastcall TLocationProfilesDialog::BookmarkButtonClick(TObject *Sender)
 {
   TTreeNode * Node = ProfilesView->Selected;
   assert(Node);
-  TBookmark * Bookmark = (TBookmark *)Node->Data;
-  assert(Bookmark);
+  assert(Node->Data);
 
   TTreeNode * TargetNode;
   if (Sender == UpBookmarkButton)

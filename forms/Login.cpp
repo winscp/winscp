@@ -226,6 +226,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
         (TObject*)aSessionData->Cipher[Index]);
     }
 
+    // Connection tab
     PingIntervalCheck->Checked = (aSessionData->PingInterval > 0);
     if (aSessionData->PingEnabled)
       PingIntervalSecEdit->AsInteger = aSessionData->PingInterval;
@@ -251,7 +252,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     Scp1CompatibilityCheck->Checked = aSessionData->Scp1Compatibility;
     UnsetNationalVarsCheck->Checked = aSessionData->UnsetNationalVars;
     AliasGroupListCheck->Checked = aSessionData->AliasGroupList;
-    TimeDifferenceEdit->AsInteger = int(aSessionData->TimeDifference) * 24;
+    TimeDifferenceEdit->AsInteger = double(aSessionData->TimeDifference) * 24;
 
     // Proxy tab
     switch (aSessionData->ProxyMethod) {
@@ -266,8 +267,8 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     ProxyUsernameEdit->Text = aSessionData->ProxyUsername;
     ProxyPasswordEdit->Text = aSessionData->ProxyPassword;
     ProxyTelnetCommandEdit->Text = aSessionData->ProxyTelnetCommand;
-    ProxyLocalhostCheck->Checked = aSessionData->ProxyDNS;
-    switch (aSessionData->ProxyLocalhost) {
+    ProxyLocalhostCheck->Checked = aSessionData->ProxyLocalhost;
+    switch (aSessionData->ProxyDNS) {
       case asOn: ProxyDNSOnButton->Checked = true; break;
       case asOff: ProxyDNSOffButton->Checked = true; break;
       default: ProxyDNSAutoButton->Checked = true; break;
@@ -359,7 +360,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->AliasGroupList = AliasGroupListCheck->Checked;
   aSessionData->TimeDifference = double(TimeDifferenceEdit->AsInteger) / 24;
 
-  // proxy
+  // Proxy tab
   if (ProxyHTTPButton->Checked) aSessionData->ProxyMethod = pmHTTP;
     else
   if (ProxySocks4Button->Checked) aSessionData->ProxyMethod = pmSocks4;

@@ -49,5 +49,6 @@ void __fastcall ProcessLocalDirectory(AnsiString DirName,
 #undef assert
 #define assert(p)   ((void)0)
 #endif
+#define USEDPARAM(p) ((p) == (p))
 //---------------------------------------------------------------------------
 #endif

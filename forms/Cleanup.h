@@ -40,6 +40,7 @@ __published:
 private:
   TStoredSessionList *FSessionList;
   TConfiguration * FConfiguration;
+  void __fastcall InitControls();
   void __fastcall UpdateControls();
   void __fastcall SetCleanupData(TWinSCPData Data, Boolean value);
   Boolean __fastcall GetCleanupData(TWinSCPData Data);

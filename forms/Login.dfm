@@ -83,11 +83,11 @@ object LoginDialog: TLoginDialog
       Top = 0
       Width = 361
       Height = 318
-      ActivePage = GeneralSheet
+      ActivePage = BugsSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
-      TabIndex = 6
+      TabIndex = 9
       TabOrder = 1
       OnChange = PageControlChange
       object SessionListSheet: TTabSheet
@@ -1370,7 +1370,7 @@ object LoginDialog: TLoginDialog
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Attempt '#39'keyboard-&interactive'#39' authentication (SSH2)'
+            Caption = 'Attempt ''keyboard-&interactive'' authentication (SSH2)'
             TabOrder = 2
             OnClick = DataChange
           end
@@ -1505,7 +1505,7 @@ object LoginDialog: TLoginDialog
     end
     object SendToHookAction: TAction
       Category = 'Sessions'
-      Caption = 'Explorer'#39's '#39'Send to'#39' shortcut'
+      Caption = 'Explorer''s ''Send to'' shortcut'
       OnExecute = SendToHookActionExecute
     end
     object CheckForUpdatesAction: TAction

@@ -773,7 +773,7 @@ protected:
       Request->AddData(BlockBuf.Data, BlockBuf.Size);
       FLastBlockSize = BlockBuf.Size;
 
-      FTransfered += FBlockSize;
+      FTransfered += BlockBuf.Size;
     }
 
     return Result;
