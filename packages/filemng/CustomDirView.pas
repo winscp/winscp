@@ -199,6 +199,7 @@ type
     FHasParentDir: Boolean;
     FIsRecycleBin: Boolean;
     FLastPath: string;
+    FHistoryPath: string;
     FLoadEnabled: Boolean;
     FLoading: Boolean;
     FSelectFile: string;
@@ -822,6 +823,7 @@ begin
   FAbortLoading := False;
   FDirty := False;
   FLastPath := '';
+  FHistoryPath := '';
   FNotifyEnabled := True;
   FForceRename := False;
   FLastRenameName := '';
@@ -2241,7 +2243,7 @@ begin
   Assert(Assigned(Item));
   if Assigned(Item) and Assigned(Item.Data) and (not Loading) then
   begin
-    if IsRecycleBin then DisplayPropertiesMenu
+    if IsRecycleBin and (not ItemIsParentDirectory(Item)) then DisplayPropertiesMenu
       else
     begin
       AllowExec := True;
@@ -2664,16 +2666,20 @@ begin
 end; { DoHistoryChange }
 
 procedure TCustomDirView.HistoryGo(Index: Integer);
+var
+  PrevPath: string;
 begin
   if Index <> 0 then
   begin
+    PrevPath := FHistoryPath;
     FDontRecordPath := True;
     try
       Path := HistoryPath[Index];
     finally
       FDontRecordPath := False;
     end;
-    FHistoryPaths.Insert(FBackCount, LastPath);
+
+    FHistoryPaths.Insert(FBackCount, PrevPath);
     FHistoryPaths.Delete(Index + BackCount);
     Inc(FBackCount, Index);
     DoHistoryChange;
@@ -2686,15 +2692,16 @@ var
 begin
   UpdatePathComboBox;
 
-  if (not FDontRecordPath) and (LastPath <> '') and (LastPath <> PathName) then
+  if (not FDontRecordPath) and (FHistoryPath <> '') and (FHistoryPath <> PathName) then
   begin
     Assert(Assigned(FHistoryPaths));
     for Index := FHistoryPaths.Count - 1 downto BackCount do
       FHistoryPaths.Delete(Index);
-    FHistoryPaths.Add(LastPath);
+    FHistoryPaths.Add(FHistoryPath);
     Inc(FBackCount);
     DoHistoryChange;
   end;
+  FHistoryPath := PathName;
 end; { PathChanged }
 
 procedure TCustomDirView.ProcessChangedFiles(DirView: TCustomDirView;

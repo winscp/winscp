@@ -175,6 +175,10 @@ __published:
   void __fastcall RemotePathLabelGetStatus(TCustomPathLabel *Sender,
     bool &Active);
   void __fastcall LocalDriveViewEnter(TObject *Sender);
+  void __fastcall LocalPathLabelPathClick(TCustomPathLabel *Sender,
+    AnsiString Path);
+  void __fastcall RemotePathLabelPathClick(TCustomPathLabel *Sender,
+    AnsiString Path);
 
 private:
   TCustomDirView * FDirViewToSelect;

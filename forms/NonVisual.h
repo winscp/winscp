@@ -51,6 +51,8 @@
 #define fcCommanderRemoteHistoryBand    0x0113
 #define fcCommanderRemoteNavigationBand 0x0213
 //---------------------------------------------------------------------------
+class TGlyphsModule;
+//---------------------------------------------------------------------------
 class TNonVisualDataModule : public TDataModule
 {
 __published:	// IDE-managed Components
@@ -645,6 +647,14 @@ __published:	// IDE-managed Components
   TAction *GoToTreeAction;
   TMenuItem *OpenDirectoryBookmark1;
   TMenuItem *OpenDirectoryBookmark2;
+  TAction *EditNewAction;
+  TMenuItem *Editnewfile1;
+  TMenuItem *Editnewfile2;
+  TAction *RemoteCopyToFocusedAction;
+  TAction *RemoteCopyToAction;
+  TMenuItem *Duplicate1;
+  TMenuItem *Duplicate2;
+  TMenuItem *Duplicate3;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -656,6 +666,7 @@ private:
   TCustomScpExplorerForm * FScpExplorer;
   bool FSessionIdleTimerExecuting;
   bool FIdle;
+  TGlyphsModule * FGlyphsModule;
 
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
 protected:
@@ -667,6 +678,9 @@ protected:
   void __fastcall CustomCommandClick(TObject * Sender);
   void __fastcall DoIdle();
 public:
+  __fastcall TNonVisualDataModule(TComponent * Owner);
+  virtual __fastcall ~TNonVisualDataModule();
+
   void __fastcall CommanderShortcuts();
   void __fastcall ExplorerShortcuts();
   void __fastcall CreateOpenedSessionListMenu();
@@ -674,7 +688,6 @@ public:
   void __fastcall OpenBrowser(AnsiString URL);
   void __fastcall UpdateNonVisibleActions();
 
-  __fastcall TNonVisualDataModule(TComponent * Owner);
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property bool Idle = { read = FIdle };

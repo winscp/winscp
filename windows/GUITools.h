@@ -26,7 +26,8 @@ AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
 AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
   const AnsiString MultiFileFormat, TStrings * Files, bool Remote);
 void __fastcall CopyToClipboard(AnsiString Text);
-AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Identity);
+AnsiString __fastcall UniqTempDir(const AnsiString BaseDir,
+  const AnsiString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const AnsiString DirName);
 AnsiString __fastcall TranslateExceptionMessage(const Exception * E);
 //---------------------------------------------------------------------------

@@ -353,10 +353,75 @@ void __fastcall CheckForUpdates()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TemporaryDirectoryCleanup()
+{
+  bool Continue = true;
+  TStrings * Folders = NULL;
+  try
+  {
+    if (WinConfiguration->ConfirmTemporaryDirectoryCleanup)
+    {
+      Folders = WinConfiguration->FindTemporaryFolders();
+      Continue = (Folders != NULL);
+
+      if (Continue)
+      {
+        TQueryButtonAlias Aliases[1];
+        Aliases[0].Button = qaRetry;
+        Aliases[0].Alias = LoadStr(OPEN_BUTTON);
+        TMessageParams Params(mpNeverAskAgainCheck);
+        Params.Aliases = Aliases;
+        Params.AliasesCount = LENOF(Aliases);
+
+        int Answer = MoreMessageDialog(
+          FMTLOAD(CLEAN_TEMP_CONFIRM, (Folders->Count)), Folders,
+          qtWarning, qaYes | qaNo | qaRetry, 0, &Params);
+
+        if (Answer == qaNeverAskAgain)
+        {
+          WinConfiguration->ConfirmTemporaryDirectoryCleanup = false;
+          Answer = qaYes;
+        }
+        else if (Answer == qaRetry)
+        {
+          for (int Index = 0; Index < Folders->Count; Index++)
+          {
+            ShellExecute(Application->Handle, NULL,
+              Folders->Strings[Index].c_str(), NULL, NULL, SW_SHOWNORMAL);
+          }
+        }
+        Continue = (Answer == qaYes);
+      }
+    }
+
+    if (Continue)
+    {
+      TStrings * F = Folders;
+      Folders = NULL;
+      try
+      {
+        WinConfiguration->CleanupTemporaryFolders(F);
+      }
+      catch (Exception &E)
+      {
+        ShowExtendedException(&E);
+      }
+    }
+  }
+  __finally
+  {
+    delete Folders;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall Execute(TProgramParams * Params)
 {
   assert(StoredSessions);
   assert(Params);
+
+  // let installer know, that some instance of application is running
+  CreateMutex(NULL, False, AppName.c_str());
+  bool OnlyInstance = (GetLastError() == 0);
 
   TTerminalManager * TerminalManager = NULL;
   NonVisualDataModule = NULL;
@@ -368,6 +433,12 @@ void __fastcall Execute(TProgramParams * Params)
     LogForm = NULL;
 
     Application->HintHidePause = 1000;
+
+    if (OnlyInstance &&
+        WinConfiguration->TemporaryDirectoryCleanup)
+    {
+      TemporaryDirectoryCleanup();
+    }
 
     if (Params->FindSwitch("UninstallCleanup"))
     {

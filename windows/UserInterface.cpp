@@ -118,7 +118,22 @@ void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
         }
         else
         {
-          ExceptionMessageDialog(E, Type);
+          if (CloseOnCompletion)
+          {
+            if (WinConfiguration->ConfirmExitOnCompletion)
+            {
+              TMessageParams Params(mpNeverAskAgainCheck);
+              if (ExceptionMessageDialog(E, Type, "", qaOK, 0, &Params) ==
+                    qaNeverAskAgain)
+              {
+                WinConfiguration->ConfirmExitOnCompletion = false;
+              }
+            }
+          }
+          else
+          {
+            ExceptionMessageDialog(E, Type);
+          }
         }
       }
     }

@@ -26,7 +26,6 @@ public:
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
-  bool __fastcall IsValidTerminal(TTerminal * Terminal);
   static void ConnectTerminal(TTerminal * Terminal);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
@@ -39,6 +38,7 @@ public:
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
   __property TNotifyEvent OnChangeTerminal = { read = FOnChangeTerminal, write = FOnChangeTerminal };
   __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
+  __property TNotifyEvent OnTerminalClosed = { read = FOnTerminalClosed, write = FOnTerminalClosed };
 
 private:
   static TTerminalManager * FInstance;
@@ -50,6 +50,7 @@ private:
   TNotifyEvent FOnLastTerminalClosed;
   TNotifyEvent FOnTerminalListChanged;
   TNotifyEvent FOnChangeTerminal;
+  TNotifyEvent FOnTerminalClosed;
   TStrings * FTerminalList;
   int FProgress;
   ::TFileOperation FOperation;

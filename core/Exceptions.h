@@ -10,6 +10,7 @@ class ExtException : public Sysutils::Exception
 {
 public:
 	__fastcall ExtException(Exception* E, AnsiString Msg);
+	__fastcall ExtException(AnsiString Msg, AnsiString MoreMessages);
 	__fastcall ExtException(Exception* E, int Ident);
 	__fastcall virtual ~ExtException(void);
 	__property TStrings* MoreMessages = {read=FMoreMessages};

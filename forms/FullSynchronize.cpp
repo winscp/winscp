@@ -140,10 +140,11 @@ TSynchronizeMode __fastcall TFullSynchronizeDialog::GetMode()
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::SetParams(int value)
 {
-  FParams = value & ~(spDelete | spNoConfirmation | spExistingOnly);
+  FParams = value & ~(spDelete | spNoConfirmation | spExistingOnly | spPreviewChanges);
   SynchronizeDeleteCheck->Checked = FLAGSET(value, spDelete);
   SynchronizeNoConfirmationCheck->Checked = FLAGSET(value, spNoConfirmation);
   SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, spExistingOnly);
+  SynchronizePreviewChangesCheck->Checked = FLAGSET(value, spPreviewChanges);
 }
 //---------------------------------------------------------------------------
 int __fastcall TFullSynchronizeDialog::GetParams()
@@ -151,7 +152,8 @@ int __fastcall TFullSynchronizeDialog::GetParams()
   return FParams |
     (SynchronizeDeleteCheck->Checked ? spDelete : 0) |
     (SynchronizeNoConfirmationCheck->Checked ? spNoConfirmation : 0) |
-    (SynchronizeExistingOnlyCheck->Checked ? spExistingOnly : 0);
+    (SynchronizeExistingOnlyCheck->Checked ? spExistingOnly : 0) |
+    (SynchronizePreviewChangesCheck->Checked ? spPreviewChanges : 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::LocalDirectoryBrowseButtonClick(

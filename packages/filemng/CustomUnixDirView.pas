@@ -26,6 +26,9 @@ type
     property UnixColProperties: TUnixDirViewColProperties read GetUnixColProperties write SetUnixColProperties;
   end;
 
+resourcestring
+  SUnixDefaultRootName = '/ <root>';
+
 implementation
 
 { TCustomUnixDirView }

@@ -126,15 +126,34 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
 
     if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
     {
-      Dialog->ClientHeight = Dialog->ClientHeight + 20;
+      static const int VertSpace = 20;
+      Dialog->ClientHeight = Dialog->ClientHeight + VertSpace;
+
+      for (int Index = 0; Index < Dialog->ControlCount; Index++)
+      {
+        TControl * Control = Dialog->Controls[Index];
+        if (Control->Anchors.Contains(akBottom))
+        {
+          if (Control->Anchors.Contains(akTop))
+          {
+            Control->Height = Control->Height - VertSpace; 
+          }
+          else
+          {
+            Control->Top = Control->Top - VertSpace; 
+          }
+        }
+      }
 
       TCheckBox * NeverAskAgainCheck = new TCheckBox(Dialog);
       NeverAskAgainCheck->Name = "NeverAskAgainCheck";
       NeverAskAgainCheck->Parent = Dialog;
       NeverAskAgainCheck->BoundsRect =  TRect(60, Dialog->ClientHeight - 27,
         Dialog->ClientWidth - 10, Dialog->ClientHeight - 5);
-      NeverAskAgainCheck->Caption = LoadStr(NEVER_ASK_AGAIN);
+      NeverAskAgainCheck->Caption =
+        LoadStr(Answers == qaOK ? NEVER_SHOW_AGAIN : NEVER_ASK_AGAIN);
       NeverAskAgainCheck->Checked = false;
+      NeverAskAgainCheck->Anchors = TAnchors() << akBottom << akLeft;
     }
 
     Dialog->HelpContext = HelpCtx;
@@ -250,7 +269,8 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   }
   AnsiString Message = TranslateExceptionMessage(E);
   
-  return MoreMessageDialog(FORMAT(MessageFormat, (Message)),
+  return MoreMessageDialog(
+    FORMAT(MessageFormat.IsEmpty() ? AnsiString("%s") : MessageFormat, (Message)),
     MoreMessages, Type, Answers, HelpCtx, Params);
 }
 //---------------------------------------------------------------------------
@@ -301,15 +321,17 @@ void __fastcall Busy(bool Start)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall DoRemoteMoveDialog(TStrings * FileList, AnsiString & Target,
-  AnsiString & FileMask)
+bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
+  AnsiString & FileMask, bool Move)
 {
-  AnsiString Prompt = FileNameFormatString(LoadStr(REMOTE_MOVE_FILE),
-    LoadStr(REMOTE_MOVE_FILES), FileList, true);
+  AnsiString Prompt = FileNameFormatString(
+    LoadStr(Move ? REMOTE_MOVE_FILE : REMOTE_COPY_FILE),
+    LoadStr(Move ? REMOTE_MOVE_FILES : REMOTE_COPY_FILES), FileList, true);
 
   AnsiString Value = UnixIncludeTrailingBackslash(Target) + FileMask;
   TStrings * History = CustomWinConfiguration->History["RemoteTarget"];
-  bool Result = InputDialog(LoadStr(REMOTE_MOVE_TITLE), Prompt,
+  bool Result = InputDialog(
+    LoadStr(Move ? REMOTE_MOVE_TITLE : REMOTE_COPY_TITLE), Prompt,
     Value, History);
   if (Result)
   {

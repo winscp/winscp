@@ -351,6 +351,20 @@ begin
       Message.Result := 1;
   end
     else
+  if NortonLike and (Message.CharCode in [VK_LEFT, VK_RIGHT]) and
+     (ViewStyle = vsReport) and
+     ((GetWindowLong(Handle, GWL_STYLE) and WS_HSCROLL) = 0) then
+  begin
+    if Items.Count > 0 then
+    begin
+      if Message.CharCode = VK_LEFT then Items[0].Focused := True
+        else Items[Items.Count - 1].Focused := True;
+      if Assigned(ItemFocused) then
+        ItemFocused.MakeVisible(False);  
+    end;
+    Message.Result := 1;
+  end
+    else
   if (Message.CharCode in [VK_SPACE, VK_PRIOR, VK_NEXT, VK_END, VK_HOME, VK_LEFT,
     VK_UP, VK_RIGHT, VK_DOWN, VK_SELECT]) then
   begin

@@ -119,6 +119,15 @@ object CopyParamsFrame: TCopyParamsFrame
     DesignSize = (
       120
       146)
+    object CCLowerCaseShortButton: TRadioButton
+      Left = 8
+      Top = 119
+      Width = 107
+      Height = 17
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'Lower case &8.3'
+      TabOrder = 4
+    end
     object CCNoChangeButton: TRadioButton
       Left = 8
       Top = 19
@@ -161,7 +170,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Width = 105
       Height = 17
       Caption = 'Replace '#39'\:*?'#39' ...'
-      TabOrder = 4
+      TabOrder = 5
       OnClick = ControlChange
     end
   end

@@ -204,6 +204,11 @@ __published:
   TRadioButton *ConsiderDSTOnCheck;
   TRadioButton *ConsiderDSTOffCheck;
   TCheckBox *AuthGSSAPICheck;
+  TXPGroupBox *RecycleBinGroup;
+  TCheckBox *DeleteToRecycleBinCheck;
+  TCheckBox *OverwrittenToRecycleBinCheck;
+  TLabel *RecycleBinPathLabel;
+  TEdit *RecycleBinPathEdit;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,

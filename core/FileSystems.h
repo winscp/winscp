@@ -16,7 +16,7 @@ enum TFSCommand { fsNull = 0, fsVarValue, fsLastLine, fsFirstLine,
   fsCurrentDirectory, fsChangeDirectory, fsListDirectory, fsListCurrentDirectory,
   fsListFile, fsLookupUsersGroups, fsCopyToRemote, fsCopyToLocal, fsDeleteFile,
   fsRenameFile, fsCreateDirectory, fsChangeMode, fsChangeGroup, fsChangeOwner,
-  fsHomeDirectory, fsUnset, fsUnalias, fsAliasGroupList, fsCreateLink,
+  fsHomeDirectory, fsUnset, fsUnalias, fsAliasGroupList, fsCreateLink, fsCopyFile, 
   fsAnyCommand, fsReadSymlink, fsChangeProperties, fsMoveFile };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TGetParamValueEvent)
@@ -62,6 +62,8 @@ public:
   virtual void __fastcall ReadSymlink(TRemoteFile * SymLinkFile,
     TRemoteFile *& File) = 0;
   virtual void __fastcall RenameFile(const AnsiString FileName,
+    const AnsiString NewName) = 0;
+  virtual void __fastcall CopyFile(const AnsiString FileName,
     const AnsiString NewName) = 0;
 
   __property AnsiString CurrentDirectory = { read = GetCurrentDirectory, write = SetCurrentDirectory };

@@ -140,6 +140,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(ContinueOnError);
   BOOLPROP(DDAllowMoveInit);
   BOOLPROP(BeepOnFinish);
+  BOOLPROP(TemporaryDirectoryCleanup);
+  BOOLPROP(ConfirmTemporaryDirectoryCleanup);
   #undef BOOLPROP
 
   BeepOnFinishAfterEdit->AsInteger =
@@ -270,6 +272,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ContinueOnError);
     BOOLPROP(DDAllowMoveInit);
     BOOLPROP(BeepOnFinish);
+    BOOLPROP(TemporaryDirectoryCleanup);
+    BOOLPROP(ConfirmTemporaryDirectoryCleanup);
     #undef BOOLPROP
 
     GUIConfiguration->BeepOnFinishAfter =
@@ -423,6 +427,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     DDCustomTemporaryDirectoryButton->Checked);
   EnableControl(DDWarnOnMoveCheck, DDExtDisabledButton->Checked &&
     DDAllowMoveInitCheck->Checked);
+  EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
+    TemporaryDirectoryCleanupCheck->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)

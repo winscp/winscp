@@ -83,6 +83,9 @@ void __fastcall TSessionData::Default()
   LockInHome = false;
   ResolveSymlinks = true;
   ConsiderDST = false;
+  DeleteToRecycleBin = false;
+  OverwrittenToRecycleBin = false;
+  RecycleBinPath = "/tmp";
 
   // SCP
   ReturnVar = "";
@@ -168,6 +171,9 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(AuthKI);
     DUPL(AuthKIPassword);
     DUPL(AuthGSSAPI);
+    DUPL(DeleteToRecycleBin);
+    DUPL(OverwrittenToRecycleBin);
+    DUPL(RecycleBinPath);
 
     DUPL(ProxyMethod);
     DUPL(ProxyHost);
@@ -375,6 +381,9 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     IgnoreLsWarnings = Storage->ReadBool("IgnoreLsWarnings", IgnoreLsWarnings);
     Scp1Compatibility = Storage->ReadBool("Scp1Compatibility", Scp1Compatibility);
     TimeDifference = Storage->ReadFloat("TimeDifference", TimeDifference);
+    DeleteToRecycleBin = Storage->ReadBool("DeleteToRecycleBin", DeleteToRecycleBin);
+    OverwrittenToRecycleBin = Storage->ReadBool("OverwrittenToRecycleBin", OverwrittenToRecycleBin);
+    RecycleBinPath = Storage->ReadString("RecycleBinPath", RecycleBinPath);
 
     ReturnVar = Storage->ReadString("ReturnVar", ReturnVar);
     LookupUserGroups = Storage->ReadBool("LookupUserGroups", LookupUserGroups);
@@ -521,6 +530,9 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Bool, IgnoreLsWarnings);
       WRITE_DATA(Bool, Scp1Compatibility);
       WRITE_DATA(Float, TimeDifference);
+      WRITE_DATA(Bool, DeleteToRecycleBin);
+      WRITE_DATA(Bool, OverwrittenToRecycleBin);
+      WRITE_DATA(String, RecycleBinPath);
 
       WRITE_DATA(String, ReturnVar);
       WRITE_DATA(Bool, LookupUserGroups);
@@ -1111,6 +1123,21 @@ void __fastcall TSessionData::SetConsiderDST(bool value)
 {
   SET_SESSION_PROPERTY(ConsiderDST);
 }
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetDeleteToRecycleBin(bool value)
+{
+  SET_SESSION_PROPERTY(DeleteToRecycleBin);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetOverwrittenToRecycleBin(bool value)
+{
+  SET_SESSION_PROPERTY(OverwrittenToRecycleBin);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetRecycleBinPath(AnsiString value)
+{
+  SET_SESSION_PROPERTY(RecycleBinPath);
+}
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetLockInHome(bool value)
 {
@@ -1251,7 +1278,8 @@ __fastcall TStoredSessionList::~TStoredSessionList()
   delete FDefaultSettings;
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage, bool AsModified)
+void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
+  bool AsModified, bool UseDefaults)
 {
   TStringList *SubKeys = new TStringList();
   try {
@@ -1263,15 +1291,23 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage, bool As
       if (SessionName == FDefaultSettings->Name) SessionData = FDefaultSettings;
         else SessionData = (TSessionData*)FindByName(SessionName);
 
-      if (!SessionData)
+      if ((SessionData != FDefaultSettings) || !UseDefaults)
       {
-        SessionData = new TSessionData(SessionName);
-        Add(SessionData);
-      }
-      SessionData->Load(Storage);
-      if (AsModified)
-      {
-        SessionData->Modified = true;
+        if (!SessionData)
+        {
+          SessionData = new TSessionData("");
+          if (UseDefaults)
+          {
+            SessionData->Assign(DefaultSettings);
+          }
+          SessionData->Name = SessionName;
+          Add(SessionData);
+        }
+        SessionData->Load(Storage);
+        if (AsModified)
+        {
+          SessionData->Modified = true;
+        }
       }
     }
   } __finally {
@@ -1279,12 +1315,12 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage, bool As
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Load(AnsiString aKey)
+void __fastcall TStoredSessionList::Load(AnsiString aKey, bool UseDefaults)
 {
   TRegistryStorage * Storage = new TRegistryStorage(aKey);
   try {
     LastStorage = stRegistry;
-    if (Storage->OpenRootKey(False)) Load(Storage);
+    if (Storage->OpenRootKey(False)) Load(Storage, false, UseDefaults);
   } __finally {
     delete Storage;
   }
@@ -1446,7 +1482,10 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
   {
     FDefaultSettings->Assign(value);
     FDefaultSettings->Name = DefaultSessionName;
-    Save();
+    if (!FReadOnly)
+    {
+      Save();
+    }
   }
 }
 //---------------------------------------------------------------------------

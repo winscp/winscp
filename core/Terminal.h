@@ -81,7 +81,7 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink,
-  fcTextMode, fcRename, fcNativeTextMode, fcNewerOnlyUpload };
+  fcTextMode, fcRename, fcNativeTextMode, fcNewerOnlyUpload, fcRemoteCopy };
 enum TCurrentFSProtocol { cfsUnknown, cfsSCP, cfsSFTP };
 //---------------------------------------------------------------------------
 const cpDelete = 0x01;
@@ -105,6 +105,7 @@ public:
   static const spNoRecurse = 0x08;
   static const spUseCache = 0x10;
   static const spDelayProgress = 0x20;
+  static const spPreviewChanges = 0x40;
 
 // for TranslateLockedPath()
 friend class TRemoteFile;
@@ -171,6 +172,7 @@ protected:
     const TRemoteFile * File, AnsiString Command, int Params);
   void __fastcall DoRenameFile(const AnsiString FileName,
     const AnsiString NewName, bool Move);
+  void __fastcall DoCopyFile(const AnsiString FileName, const AnsiString NewName);
   void __fastcall DoChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
   void __fastcall DoChangeDirectory();
@@ -217,6 +219,8 @@ protected:
   void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data);
   void __fastcall DeleteLocalFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
+  void __fastcall RecycleFile(AnsiString FileName, const TRemoteFile * File);
+  bool __fastcall IsRecycledFile(AnsiString FileName);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -267,6 +271,10 @@ public:
   void __fastcall MoveFile(const AnsiString FileName, const TRemoteFile * File,
     /*const TMoveFileParams*/ void * Param);
   bool __fastcall MoveFiles(TStrings * FileList, const AnsiString Target,
+    const AnsiString FileMask);
+  void __fastcall CopyFile(const AnsiString FileName, const TRemoteFile * File,
+    /*const TMoveFileParams*/ void * Param);
+  bool __fastcall CopyFiles(TStrings * FileList, const AnsiString Target,
     const AnsiString FileMask);
   void __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
     int Params, const TCopyParamType * CopyParam = NULL);

@@ -300,7 +300,7 @@ object PreferencesDialog: TPreferencesDialog
           335)
         object PanelsRemoteDirectoryGroup: TXPGroupBox
           Left = 8
-          Top = 105
+          Top = 111
           Width = 362
           Height = 51
           Anchors = [akLeft, akTop, akRight]
@@ -324,13 +324,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 91
+          Height = 97
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             362
-            91)
+            97)
           object ShowHiddenFilesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -343,7 +343,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DefaultDirIsHomeCheck: TCheckBox
             Left = 16
-            Top = 63
+            Top = 69
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -353,7 +353,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DeleteToRecycleBinCheck: TCheckBox
             Left = 16
-            Top = 42
+            Top = 45
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1216,13 +1216,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 140
           Width = 362
-          Height = 105
+          Height = 99
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Queue list'
           TabOrder = 1
           object QueueViewShowButton: TRadioButton
             Left = 16
-            Top = 24
+            Top = 21
             Width = 337
             Height = 17
             Caption = '&Show'
@@ -1230,7 +1230,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueViewHideWhenEmptyButton: TRadioButton
             Left = 16
-            Top = 48
+            Top = 45
             Width = 337
             Height = 17
             Caption = 'Hide when &empty'
@@ -1238,7 +1238,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueViewHideButton: TRadioButton
             Left = 16
-            Top = 72
+            Top = 69
             Width = 337
             Height = 17
             Caption = '&Hide'
@@ -1256,7 +1256,7 @@ object PreferencesDialog: TPreferencesDialog
           335)
         object RandomSeedFileLabel: TLabel
           Left = 16
-          Top = 202
+          Top = 250
           Width = 82
           Height = 13
           Caption = '&Random seed file'
@@ -1291,7 +1291,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object RandomSeedFileEdit: TFilenameEdit
           Left = 136
-          Top = 198
+          Top = 246
           Width = 234
           Height = 21
           AcceptFiles = True
@@ -1310,13 +1310,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 88
           Width = 362
-          Height = 99
+          Height = 148
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Temporary directory'
           TabOrder = 1
           DesignSize = (
             362
-            99)
+            148)
           object Label6: TLabel
             Left = 16
             Top = 22
@@ -1359,6 +1359,26 @@ object PreferencesDialog: TPreferencesDialog
             Text = 'DDTemporaryDirectoryEdit'
             OnClick = ControlChange
             OnKeyDown = PathEditsKeyDown
+          end
+          object TemporaryDirectoryCleanupCheck: TCheckBox
+            Left = 16
+            Top = 94
+            Width = 330
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Cleanup obsolete temporary directories on startup'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object ConfirmTemporaryDirectoryCleanupCheck: TCheckBox
+            Left = 32
+            Top = 119
+            Width = 314
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Ask before cleanup'
+            TabOrder = 4
+            OnClick = ControlChange
           end
         end
       end

@@ -578,7 +578,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       Width = 335
       Height = 15
       UnixPath = True
+      HotTrack = True
       OnGetStatus = RemotePathLabelGetStatus
+      OnPathClick = RemotePathLabelPathClick
       AutoSize = False
       PopupMenu = NonVisualDataModule.RemotePanelPopup
       OnDblClick = PathLabelDblClick
@@ -810,7 +812,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       Top = 72
       Width = 313
       Height = 15
+      HotTrack = True
       OnGetStatus = LocalPathLabelGetStatus
+      OnPathClick = LocalPathLabelPathClick
       AutoSize = False
       PopupMenu = NonVisualDataModule.LocalPanelPopup
       OnDblClick = PathLabelDblClick

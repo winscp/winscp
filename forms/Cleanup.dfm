@@ -3,7 +3,7 @@ object CleanupDialog: TCleanupDialog
   Top = 218
   BorderStyle = bsDialog
   Caption = 'Cleanup application data'
-  ClientHeight = 288
+  ClientHeight = 299
   ClientWidth = 489
   Color = clBtnFace
   ParentFont = True
@@ -12,7 +12,7 @@ object CleanupDialog: TCleanupDialog
   OnShow = FormShow
   DesignSize = (
     489
-    288)
+    299)
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -32,7 +32,7 @@ object CleanupDialog: TCleanupDialog
   end
   object OKButton: TButton
     Left = 329
-    Top = 257
+    Top = 268
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -43,7 +43,7 @@ object CleanupDialog: TCleanupDialog
   end
   object CancelButton: TButton
     Left = 409
-    Top = 257
+    Top = 268
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -56,7 +56,7 @@ object CleanupDialog: TCleanupDialog
     Left = 8
     Top = 104
     Width = 475
-    Height = 145
+    Height = 156
     Anchors = [akLeft, akTop, akRight, akBottom]
     Checkboxes = True
     Columns = <
@@ -72,13 +72,14 @@ object CleanupDialog: TCleanupDialog
     ColumnClick = False
     HideSelection = False
     Items.Data = {
-      D00000000500000001000000FFFFFFFFFFFFFFFF00000000000000001647656E
+      F70000000600000001000000FFFFFFFFFFFFFFFF00000000000000001647656E
       6572616C20636F6E66696775726174696F6E5802000000FFFFFFFFFFFFFFFF00
       000000000000001053746F7265642073657373696F6E735803000000FFFFFFFF
       FFFFFFFF00000000000000001143616368656420686F7374206B657973580400
       0000FFFFFFFFFFFFFFFF000000000000000017436F6E66696775726174696F6E
       20494E492066696C655805000000FFFFFFFFFFFFFFFF00000000000000001152
-      616E646F6D20736565642066696C6558}
+      616E646F6D20736565642066696C655806000000FFFFFFFFFFFFFFFF00000000
+      000000001254656D706F7261727920666F6C6465727358}
     ReadOnly = True
     RowSelect = True
     ParentShowHint = False
@@ -91,7 +92,7 @@ object CleanupDialog: TCleanupDialog
   end
   object CheckAllButton: TButton
     Left = 8
-    Top = 255
+    Top = 266
     Width = 89
     Height = 25
     Anchors = [akLeft, akBottom]

@@ -93,6 +93,9 @@ private:
   int FSFTPMaxVersion;
   bool FConsiderDST;
   TAutoSwitch FSFTPSymlinkBug;
+  bool FDeleteToRecycleBin;
+  bool FOverwrittenToRecycleBin;
+  AnsiString FRecycleBinPath;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -172,6 +175,9 @@ private:
   void __fastcall SetSFTPSymlinkBug(TAutoSwitch value);
   AnsiString __fastcall GetStorageKey();
   void __fastcall SetConsiderDST(bool value);
+  void __fastcall SetDeleteToRecycleBin(bool value);
+  void __fastcall SetOverwrittenToRecycleBin(bool value);
+  void __fastcall SetRecycleBinPath(AnsiString value);
 
 public:
   __fastcall TSessionData(AnsiString aName);
@@ -259,6 +265,9 @@ public:
   __property int SFTPMaxVersion = { read = FSFTPMaxVersion, write = SetSFTPMaxVersion };
   __property TAutoSwitch SFTPSymlinkBug = { read = FSFTPSymlinkBug, write = SetSFTPSymlinkBug };
   __property bool ConsiderDST = { read = FConsiderDST, write = SetConsiderDST };
+  __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
+  __property bool OverwrittenToRecycleBin = { read = FOverwrittenToRecycleBin, write = SetOverwrittenToRecycleBin };
+  __property AnsiString RecycleBinPath = { read = FRecycleBinPath, write = SetRecycleBinPath };
   __property AnsiString StorageKey = { read = GetStorageKey };
 };
 //---------------------------------------------------------------------------
@@ -266,11 +275,12 @@ class TStoredSessionList : public TNamedObjectList
 {
 public:
   __fastcall TStoredSessionList(bool aReadOnly = false);
-  void __fastcall Load(AnsiString aKey);
+  void __fastcall Load(AnsiString aKey, bool UseDefaults);
   void __fastcall Load();
   void __fastcall Save(AnsiString aKey);
   void __fastcall Save();
-  void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false);
+  void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false,
+    bool UseDefaults = false);
   void __fastcall Save(THierarchicalStorage * Storage);
   void __fastcall SelectAll(bool Select);
   void __fastcall Import(TStoredSessionList * From, bool OnlySelected);

@@ -53,6 +53,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
     case ncLowerCase: CCLowerCaseButton->Checked = True; break;
     case ncUpperCase: CCUpperCaseButton->Checked = True; break;
     case ncFirstUpperCase: CCFirstUpperCaseButton->Checked = True; break;
+    case ncLowerCaseShort: CCLowerCaseShortButton->Checked = True; break;
   }
 
   ReplaceInvalidCharsCheck->Checked = value.ReplaceInvalidChars;
@@ -92,6 +93,8 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   if (CCUpperCaseButton->Checked) Result.FileNameCase = ncUpperCase;
     else
   if (CCFirstUpperCaseButton->Checked) Result.FileNameCase = ncFirstUpperCase;
+    else
+  if (CCLowerCaseShortButton->Checked) Result.FileNameCase = ncLowerCaseShort;
     else Result.FileNameCase = ncNoChange;
 
   Result.ReplaceInvalidChars = ReplaceInvalidCharsCheck->Checked;
@@ -130,8 +133,6 @@ void __fastcall TCopyParamsFrame::UpdateControls()
   EnableControl(AsciiFileMaskCombo,
     FLAGSET(Options, cfAllowTransferMode) && TMAutomaticButton->Checked && Enabled);
   EnableControl(RightsFrame, PreserveRightsCheck->Checked && Enabled);
-  EnableControl(ReplaceInvalidCharsCheck,
-    Direction == pdToLocal || Direction == pdBoth || Direction == pdAll);
   EnableControl(FilterGroup, FLAGSET(Options, cfAllowExcludeMask));
 }
 //---------------------------------------------------------------------------
@@ -148,6 +149,20 @@ void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)
     CommonPropertiesGroup->Visible = (Direction == pdBoth || Direction == pdAll );
     LocalPreserveTimeCheck->Visible = (Direction != pdAll);
     RemotePreserveTimeCheck->Visible = (Direction != pdAll);
+    ReplaceInvalidCharsCheck->Visible =
+      (Direction == pdToLocal || Direction == pdBoth || Direction == pdAll);
+    CCFirstUpperCaseButton->Visible =
+      (Direction == pdToLocal || Direction == pdToRemote);
+    CCLowerCaseShortButton->Visible =
+      (Direction == pdToRemote || Direction == pdBoth || Direction == pdAll);
+    if (Direction == pdBoth || Direction == pdAll)
+    {
+      CCLowerCaseShortButton->Top = CCFirstUpperCaseButton->Top;
+    }
+    else
+    {
+      CCLowerCaseShortButton->Top = ReplaceInvalidCharsCheck->Top;
+    }
     UpdateControls();
   }
 }

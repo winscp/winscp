@@ -19,7 +19,7 @@
 #include <WinInterface.h>
 //---------------------------------------------------------------------
 enum TWinSCPData {wdConfiguration = 1, wdStoredSessions, wdHostKeys,
-  wdConfigurationIniFile, wdRandomSeedFile };
+  wdConfigurationIniFile, wdRandomSeedFile, wdTemporaryFolders };
 //---------------------------------------------------------------------
 class TCleanupDialog : public TForm
 {

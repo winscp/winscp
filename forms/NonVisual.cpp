@@ -10,6 +10,7 @@
 
 #include <Log.h>
 #include <Interface.h>
+#include <Glyphs.h>
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 //---------------------------------------------------------------------------
@@ -73,6 +74,34 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
   FIdle = true;
+
+  FGlyphsModule = NULL;
+  HANDLE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
+  try
+  {
+    FGlyphsModule = new TGlyphsModule(Owner);
+  }
+  __finally
+  {
+    GUIConfiguration->ChangeResourceModule(ResourceModule);
+  }
+
+  for (int i = 0; i < FGlyphsModule->ComponentCount; i++)
+  {
+    TImageList * Source = dynamic_cast<TImageList *>(FGlyphsModule->Components[i]);
+    if (Source != NULL)
+    {
+      TImageList * Dest = dynamic_cast<TImageList *>(FindComponent(Source->Name));
+      assert(Dest != NULL);
+      assert(Dest->ShareImages);
+      Dest->Handle = Source->Handle;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+__fastcall TNonVisualDataModule::~TNonVisualDataModule()
+{
+  delete FGlyphsModule;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::LogActionsUpdate(
@@ -132,6 +161,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentDeleteFocusedAction, EnableFocusedOperation)
   UPD(CurrentPropertiesFocusedAction, EnableFocusedOperation)
   UPD(RemoteMoveToFocusedAction, EnableFocusedOperation && (DirView(osRemote) == DirView(osCurrent)))
+  UPD(RemoteCopyToFocusedAction, EnableFocusedOperation && (DirView(osRemote) == DirView(osCurrent)))
   // file operation
   UPD(CurrentRenameAction, EnableFocusedOperation &&
     ((ScpExplorer->HasDirView[osLocal] && DirView(osLocal) == DirView(osCurrent)) ||
@@ -156,6 +186,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentDeleteAction, EnableSelectedOperation)
   UPD(CurrentPropertiesAction, EnableSelectedOperation)
   UPD(RemoteMoveToAction, EnableSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
+  UPD(RemoteCopyToAction, EnableSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
   UPD(FileListToCommandLineAction, EnableSelectedOperation)
   UPD(FileListToClipboardAction, EnableSelectedOperation)
   UPD(FullFileListToClipboardAction, EnableSelectedOperation)
@@ -318,6 +349,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CloseApplicationAction, true)
   UPD(FileSystemInfoAction, true)
   UPD(ClearCachesAction, (ScpExplorer->Terminal != NULL) && !ScpExplorer->Terminal->AreCachesEmpty)
+  UPD(EditNewAction, !WinConfiguration->DisableOpenEdit)
 
   // CUSTOM COMMANDS
   UPD(CustomCommandsAction,
@@ -375,6 +407,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentDeleteFocusedAction, ScpExplorer->ExecuteFileOperation(foDelete, osCurrent, true))
     EXE(CurrentPropertiesFocusedAction, ScpExplorer->ExecuteFileOperation(foSetProperties, osCurrent, true))
     EXE(RemoteMoveToFocusedAction, ScpExplorer->ExecuteFileOperation(foRemoteMove, osCurrent, true))
+    EXE(RemoteCopyToFocusedAction, ScpExplorer->ExecuteFileOperation(foRemoteCopy, osCurrent, true))
     // operation
     EXE(CurrentCopyAction, ScpExplorer->ExecuteFileOperation(foCopy, osCurrent, false))
     EXE(CurrentMoveAction, ScpExplorer->ExecuteFileOperation(foMove, osCurrent, false))
@@ -386,6 +419,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperation(foDelete, osCurrent, false))
     EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperation(foSetProperties, osCurrent, false))
     EXE(RemoteMoveToAction, ScpExplorer->ExecuteFileOperation(foRemoteMove, osCurrent, false))
+    EXE(RemoteCopyToAction, ScpExplorer->ExecuteFileOperation(foRemoteCopy, osCurrent, false))
     EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
     EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
@@ -538,6 +572,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CloseApplicationAction, ScpExplorer->Close())
     EXE(FileSystemInfoAction, DoFileSystemInfoDialog(ScpExplorer->Terminal))
     EXE(ClearCachesAction, ScpExplorer->Terminal->ClearCaches())
+    EXE(EditNewAction, ScpExplorer->EditNew(osCurrent));
 
     // CUSTOM COMMANDS
     EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction))
@@ -643,6 +678,7 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   CurrentDeleteFocusedAction->ShortCut = ShortCut(VK_F8, NONE);
   CurrentPropertiesFocusedAction->ShortCut = ShortCut(VK_F9, NONE);
   RemoteMoveToFocusedAction->ShortCut = ShortCut(VK_F6, SHIFT);
+  RemoteCopyToFocusedAction->ShortCut = ShortCut(VK_F5, SHIFT);
   // remote directory
   RemoteOpenDirAction->ShortCut = ShortCut('O', CTRL);
   RemoteRefreshAction->ShortCut = ShortCut('R', CTRL);
@@ -661,6 +697,7 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   CurrentDeleteAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_DELETE, NONE)));
   CurrentPropertiesAction->ShortCut = CurrentPropertiesFocusedAction->ShortCut;
   RemoteMoveToAction->ShortCut = ShortCut(VK_F6, SHIFT);
+  RemoteCopyToAction->ShortCut = ShortCut(VK_F5, SHIFT);
   // selection
   SelectOneAction->ShortCut = VK_INSERT;
   SelectAction->ShortCut = ShortCut(VK_ADD, NONE);

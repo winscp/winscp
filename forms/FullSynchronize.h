@@ -31,6 +31,7 @@ __published:
   TCheckBox *SaveSettingsCheck;
   TCheckBox *SynchronizeExistingOnlyCheck;
   TButton *TransferPreferencesButton;
+  TCheckBox *SynchronizePreviewChangesCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);

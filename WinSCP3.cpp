@@ -15,8 +15,6 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
   try
   {
     TProgramParams Params;
-    // let installer know, that some instance of application is running
-    CreateMutex(NULL, False, AppName.c_str());
     Application->Initialize();
     Initialize(Params.SwitchValue("ini"));
     ConfigureInterface();

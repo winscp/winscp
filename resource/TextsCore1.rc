@@ -109,8 +109,9 @@ BEGIN
   PRESERVE_TIME_PERM_ERROR, "Upload of file '%s' was successful, but error occurred while setting the permissions and/or timestamp. If the problem persists, turn off 'Set permissions' and/or 'Preserve timestamp' option."
   ACCESS_VIOLATION_ERROR, "Invalid access to memory"
   SFTP_STATUS_NO_SPACE_ON_FILESYSTEM, "There is no free space on the filesystem."
-  SFTP_STATUS_QUOTA_EXCEEDED, "Operation cannot be completed because the it would exceed the users storage quota."
+  SFTP_STATUS_QUOTA_EXCEEDED, "Operation cannot be completed because it would exceed the users storage quota."
   SFTP_STATUS_UNKNOWN_PRINCIPLE, "Unknown principle: %s"
+  COPY_FILE_ERROR, "Error copying file '%s' to '%s'."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT, "Host hasn't answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."
@@ -129,6 +130,10 @@ BEGIN
   READ_ONLY_OVERWRITE, "File '%s' is read-only. Overwrite?"
   LOCAL_FILE_OVERWRITE, "Local file '%s' already exists. Overwrite?"
   REMOTE_FILE_OVERWRITE, "Remote file '%s' already exists. Overwrite?"
+  SYNCHRONIZE_UPLOAD, "%d new or changed file(s) in local directory '%s' were found. They will be uploaded to remote directory '%s'. Continue?"
+  SYNCHRONIZE_REMOTE_DELETE, "%d obsolete file(s) in remote directory '%s' were found. They will be deleted. Continue?"
+  SYNCHRONIZE_DOWNLOAD, "%d new or changed file(s) in remote directory '%s' were found. They will be uploaded to local directory '%s'. Continue?"
+  SYNCHRONIZE_LOCAL_DELETE, "%d obsolete file(s) in local directory '%s' were found. They will be deleted. Continue?"
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"

@@ -70,6 +70,7 @@ void __fastcall TFileSystemInfoDialog::UpdateControls()
   AnyCommandEdit->Text = CapabilityStr(fcAnyCommand);
   SymbolicHardLinkEdit->Text = CapabilityStr(fcSymbolicLink, fcHardLink);
   UserGroupListingEdit->Text = CapabilityStr(fcUserGroupListing);
+  RemoteCopyEdit->Text = CapabilityStr(fcRemoteCopy);
   NativeTextModeEdit->Text = CapabilityStr(fcNativeTextMode);
 
   InfoMemo->Lines = Terminal->AdditionalInfo;

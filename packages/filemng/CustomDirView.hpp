@@ -255,6 +255,7 @@ protected:
 	bool FHasParentDir;
 	bool FIsRecycleBin;
 	AnsiString FLastPath;
+	AnsiString FHistoryPath;
 	bool FLoadEnabled;
 	bool FLoading;
 	AnsiString FSelectFile;

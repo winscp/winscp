@@ -26,11 +26,10 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 
   try
   {
-    CheckTranslationVersion(GetResourceModule(ModuleFileName().c_str()));
+    CheckTranslationVersion(GetResourceModule(ModuleFileName().c_str()), true);
   }
   catch(Exception & E)
   {
-    LocaleSafe = InternalLocale();
     MoreMessageDialog(FMTLOAD(INVALID_DEFAULT_TRANSLATION, (E.Message)),
       NULL, qtWarning, qaOK, 0);
   }
@@ -74,6 +73,8 @@ void __fastcall TWinConfiguration::Default()
   FUseLocationProfiles = false;
   FDefaultDirIsHome = true;
   FDDDeleteDelay = 120;
+  FTemporaryDirectoryCleanup = true;
+  FConfirmTemporaryDirectoryCleanup = true;
 
   FEditor.Editor = edInternal;
   FEditor.ExternalEditor = "notepad.exe";
@@ -232,6 +233,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     DDExtEnabled); \
     KEY(Integer,  DDExtTimeout); \
     KEY(Bool,     DefaultDirIsHome); \
+    KEY(Bool,     TemporaryDirectoryCleanup); \
+    KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
     KEY(Integer,  Editor.Editor); \
@@ -635,6 +638,16 @@ void __fastcall TWinConfiguration::SetDefaultDirIsHome(bool value)
   SET_CONFIG_PROPERTY(DefaultDirIsHome);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTemporaryDirectoryCleanup(bool value)
+{
+  SET_CONFIG_PROPERTY(TemporaryDirectoryCleanup);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetConfirmTemporaryDirectoryCleanup(bool value)
+{
+  SET_CONFIG_PROPERTY(ConfirmTemporaryDirectoryCleanup);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
 {
   assert(FCustomCommands);
@@ -674,9 +687,88 @@ AnsiString __fastcall TWinConfiguration::GetDefaultKeyFile()
   return FTemporaryKeyFile;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TWinConfiguration::TemporaryTranferDir()
+AnsiString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
 {
-  return UniqTempDir(DDTemporaryDirectory, "scp");
+  return UniqTempDir(DDTemporaryDirectory, "scp", Mask);
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
+{
+  TStrings * Result = new TStringList();
+  try
+  {
+    TSearchRec SRec;
+    AnsiString Mask = TemporaryDir(true);
+    AnsiString Directory = ExtractFilePath(Mask);
+    if (FindFirst(Mask, faDirectory, SRec) == 0)
+    {
+      do
+      {
+        if (FLAGSET(SRec.Attr, faDirectory))
+        {
+          Result->Add(Directory + SRec.Name);
+        }
+      }
+      while (FindNext(SRec) == 0);
+    }
+
+    if (Result->Count == 0)
+    {
+      delete Result;
+      Result = NULL;
+    }
+  }
+  catch(...)
+  {
+    delete Result;
+    throw;
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
+{
+  AnsiString ErrorList;
+  TStrings * F;
+  if (Folders == NULL)
+  {
+    F = FindTemporaryFolders();
+  }
+  else
+  {
+    F = Folders; 
+  }
+
+  if (F != NULL)
+  {
+    try
+    {
+      for (int i = 0; i < F->Count; i++)
+      {
+        if (!DeleteDirectory(F->Strings[i]))
+        {
+          if (!ErrorList.IsEmpty())
+          {
+            ErrorList += "\n";
+          }
+          ErrorList += F->Strings[i];
+        }
+      }
+    }
+    __finally
+    {
+      if (Folders == NULL)
+      {
+        delete F;
+      }
+    }
+
+    if (!ErrorList.IsEmpty())
+    {
+      throw ExtException(LoadStr(CLEANUP_TEMP_ERROR), ErrorList);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -825,7 +917,7 @@ HANDLE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
   {
     try
     {
-      CheckTranslationVersion(*FileName);
+      CheckTranslationVersion(*FileName, false);
     }
     catch(...)
     {
@@ -903,13 +995,19 @@ void __fastcall TWinConfiguration::SetResourceModule(HANDLE Instance)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::CheckTranslationVersion(const AnsiString FileName)
+void __fastcall TWinConfiguration::CheckTranslationVersion(const AnsiString FileName,
+  bool InternalLocaleOnError)
 {
   AnsiString TranslationProductVersion = GetFileProductVersion(FileName);
   AnsiString TranslationProductName = GetFileProductName(FileName);
   if ((ProductName != TranslationProductName) ||
       (ProductVersion != TranslationProductVersion))
   {
+    if (InternalLocaleOnError)
+    {
+      LocaleSafe = InternalLocale();
+    }
+    
     if (TranslationProductName.IsEmpty() || TranslationProductVersion.IsEmpty())
     {
       throw Exception(FMTLOAD(UNKNOWN_TRANSLATION, (FileName)));

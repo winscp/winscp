@@ -150,6 +150,8 @@ private:
   bool FForceDeleteTempFolder;
   bool FDefaultDirIsHome;
   int FDDDeleteDelay;
+  bool FTemporaryDirectoryCleanup;
+  bool FConfirmTemporaryDirectoryCleanup;
 
   void __fastcall SetCopyOnDoubleClick(bool value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -183,6 +185,8 @@ private:
   void __fastcall SetEditor(TEditorConfiguration value);
   void __fastcall SetQueueView(TQueueViewConfiguration value);
   void __fastcall SetCustomCommands(TCustomCommands * value);
+  void __fastcall SetTemporaryDirectoryCleanup(bool value);
+  void __fastcall SetConfirmTemporaryDirectoryCleanup(bool value);
 
   bool __fastcall GetDDExtInstalled();
 
@@ -204,7 +208,8 @@ protected:
     AnsiString * FileName = NULL);
   virtual void __fastcall SetResourceModule(HANDLE Instance);
   virtual LCID __fastcall GetLocale();
-  void __fastcall CheckTranslationVersion(const AnsiString FileName);
+  void __fastcall CheckTranslationVersion(const AnsiString FileName,
+    bool InternalLocaleOnError);
   void __fastcall DefaultLocalized();
 
 public:
@@ -216,7 +221,9 @@ public:
   void __fastcall ClearTemporaryLoginData();
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
   static void ReformatFileNameCommand(AnsiString & Command);
-  AnsiString __fastcall TemporaryTranferDir();
+  AnsiString __fastcall TemporaryDir(bool Mask = false);
+  TStrings * __fastcall FindTemporaryFolders();
+  void __fastcall CleanupTemporaryFolders(TStrings * Folders = NULL);
 
   __property TScpCommanderConfiguration ScpCommander = { read = FScpCommander, write = SetScpCommander };
   __property TScpExplorerConfiguration ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
@@ -253,7 +260,9 @@ public:
   __property bool DefaultDirIsHome = { read = FDefaultDirIsHome, write = SetDefaultDirIsHome };
   __property bool DisableOpenEdit = { read = FDisableOpenEdit };
   __property TCustomCommands * CustomCommands = { read = FCustomCommands, write = SetCustomCommands };
-  __property int DDDeleteDelay = { read = FDDDeleteDelay }; 
+  __property int DDDeleteDelay = { read = FDDDeleteDelay };
+  __property bool TemporaryDirectoryCleanup = { read = FTemporaryDirectoryCleanup, write = SetTemporaryDirectoryCleanup };
+  __property bool ConfirmTemporaryDirectoryCleanup = { read = FConfirmTemporaryDirectoryCleanup, write = SetConfirmTemporaryDirectoryCleanup };
 };
 //---------------------------------------------------------------------------
 class TCustomCommands : public TStringList

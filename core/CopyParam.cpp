@@ -89,6 +89,13 @@ AnsiString __fastcall TCopyParamType::ChangeFileName(AnsiString FileName,
     case ncLowerCase: FileName = FileName.LowerCase(); break;
     case ncFirstUpperCase: FileName = FileName.SubString(1, 1).UpperCase() +
       FileName.SubString(2, FileName.Length()-1).LowerCase(); break;
+    case ncLowerCaseShort:
+      if ((FileName.Length() <= 12) && (FileName.Pos(".") <= 9) &&
+          (FileName == FileName.UpperCase()))
+      {
+        FileName = FileName.LowerCase();
+      }
+      break;
     case ncNoChange:
     default:
       /*nothing*/
@@ -123,7 +130,7 @@ TRights __fastcall TCopyParamType::RemoteFileRights(Integer Attrs) const
 //---------------------------------------------------------------------------
 AnsiString __fastcall TCopyParamType::GetLogStr() const
 {
-  char CaseC[] = "NULF";
+  char CaseC[] = "NULFS";
   char ModeC[] = "BAM";
   char ResumeC[] = "YSN";
   return FORMAT(

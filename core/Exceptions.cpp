@@ -19,6 +19,16 @@ __fastcall ExtException::ExtException(Exception* E, int Ident):
   AddMoreMessages(E);
 }
 //---------------------------------------------------------------------------
+__fastcall ExtException::ExtException(AnsiString Msg, AnsiString MoreMessages) :
+  Exception(Msg)
+{
+  if (!MoreMessages.IsEmpty())
+  {
+    FMoreMessages = new TStringList();
+    FMoreMessages->Text = MoreMessages;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall ExtException::AddMoreMessages(Exception* E)
 {
   if (E != NULL)

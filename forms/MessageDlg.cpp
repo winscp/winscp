@@ -329,6 +329,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
     ALeft = Result->ClientWidth - ALeft - Message->Width;
   }
   Message->SetBounds(ALeft, VertMargin, TextRect.Right, TextRect.Bottom);
+  int ButtonTop = IconTextHeight + VertMargin + VertSpacing + MoreMessageHeight;
 
   if (Result->MessageMemo != NULL)
   {
@@ -336,14 +337,19 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
       Message->Top + Message->Height + VertSpacing,
       Result->ClientWidth - HorzMargin,
       Message->Top + Message->Height + VertSpacing + MoreMessageHeight);
+    // rather hack, whole control positioning is wrong
+    if (Result->MessageMemo->Top + Result->MessageMemo->Height > ButtonTop - VertSpacing)
+    {
+      Result->MessageMemo->Height =
+        (ButtonTop - VertSpacing) - Result->MessageMemo->Top;
+    }
   }
 
   int X = (Result->ClientWidth - ButtonGroupWidth) / 2;
   for (int i = 0; i < ButtonControlsCount; i++)
   {
     ButtonControls[i]->SetBounds(X,
-      IconTextHeight + VertMargin + VertSpacing + MoreMessageHeight,
-      ButtonWidth, ButtonHeight);
+      ButtonTop, ButtonWidth, ButtonHeight);
     X += ButtonWidth + ButtonSpacing;
   }
 

@@ -43,7 +43,7 @@ __fastcall TCustomUnixDriveView::TCustomUnixDriveView(TComponent* Owner) :
   TCustomDriveView(Owner)
 {
   FTerminal = NULL;
-  FRootName = DEFAULT_ROOTNAME;
+  FRootName = Customunixdirview_SUnixDefaultRootName;
   FIgnoreChange = false;
   FPrevSelected = NULL;
   DDAllowMove = false;
@@ -108,7 +108,7 @@ void __fastcall TCustomUnixDriveView::SetCustomDirView(TCustomDirView * Value)
 //---------------------------------------------------------------------------
 bool __fastcall TCustomUnixDriveView::IsRootNameStored()
 {
-  return (FRootName != DEFAULT_ROOTNAME);
+  return (FRootName != Customunixdirview_SUnixDefaultRootName);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomUnixDriveView::NodeIsHidden(const TTreeNode * Node)

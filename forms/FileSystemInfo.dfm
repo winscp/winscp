@@ -3,7 +3,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   Top = 178
   BorderStyle = bsDialog
   Caption = 'Server and protocol information'
-  ClientHeight = 385
+  ClientHeight = 401
   ClientWidth = 367
   Color = clBtnFace
   ParentFont = True
@@ -11,12 +11,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   Position = poMainFormCenter
   DesignSize = (
     367
-    385)
+    401)
   PixelsPerInch = 96
   TextHeight = 13
   object CloseButton: TButton
     Left = 283
-    Top = 351
+    Top = 367
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -142,13 +142,13 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     Left = 8
     Top = 120
     Width = 351
-    Height = 223
+    Height = 241
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Protocol capabilities/information'
     TabOrder = 2
     DesignSize = (
       351
-      223)
+      241)
     object Label4: TLabel
       Left = 10
       Top = 18
@@ -179,7 +179,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     end
     object Label9: TLabel
       Left = 10
-      Top = 98
+      Top = 114
       Width = 162
       Height = 13
       Caption = 'Native text (ASCII) mode transfers:'
@@ -190,6 +190,13 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       Width = 115
       Height = 13
       Caption = 'Can lookup user groups:'
+    end
+    object Label12: TLabel
+      Left = 10
+      Top = 98
+      Width = 124
+      Height = 13
+      Caption = 'Can duplicate remote files:'
     end
     object ModeChangingEdit: TEdit
       Left = 214
@@ -245,7 +252,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     end
     object NativeTextModeEdit: TEdit
       Left = 214
-      Top = 98
+      Top = 114
       Width = 129
       Height = 17
       TabStop = False
@@ -253,7 +260,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       BorderStyle = bsNone
       Color = clBtnFace
       ReadOnly = True
-      TabOrder = 4
+      TabOrder = 6
       Text = 'NativeTextModeEdit'
     end
     object UserGroupListingEdit: TEdit
@@ -266,14 +273,14 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       BorderStyle = bsNone
       Color = clBtnFace
       ReadOnly = True
-      TabOrder = 5
+      TabOrder = 4
       Text = 'UserGroupListingEdit'
     end
     object InfoMemo: TMemo
       Left = 8
-      Top = 120
+      Top = 136
       Width = 335
-      Height = 93
+      Height = 95
       TabStop = False
       Anchors = [akLeft, akTop, akRight, akBottom]
       Color = clBtnFace
@@ -281,9 +288,22 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         'InfoMemo')
       ReadOnly = True
       ScrollBars = ssBoth
-      TabOrder = 6
+      TabOrder = 7
       WantReturns = False
       WordWrap = False
+    end
+    object RemoteCopyEdit: TEdit
+      Left = 214
+      Top = 98
+      Width = 129
+      Height = 17
+      TabStop = False
+      Anchors = [akLeft, akTop, akRight]
+      BorderStyle = bsNone
+      Color = clBtnFace
+      ReadOnly = True
+      TabOrder = 5
+      Text = 'RemoteCopyEdit'
     end
   end
 end

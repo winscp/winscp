@@ -163,6 +163,7 @@ private:
   void __fastcall CustomCommandGetParamValue(const AnsiString Name,
     AnsiString & Value);
   void __fastcall CloseInternalEditor(TObject * Sender);
+  void __fastcall ForceCloseInternalEditor(TObject * Sender);
 
 protected:
   TOperationSide FCurrentSide;
@@ -178,11 +179,11 @@ protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool DragDrop, TStrings * FileList,
     AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm);
-  virtual bool __fastcall RemoteMoveDialog(TStrings * FileList,
-    AnsiString & Target, AnsiString & FileMask, bool NoConfirmation);
+  virtual bool __fastcall RemoteTransferDialog(TStrings * FileList,
+    AnsiString & Target, AnsiString & FileMask, bool NoConfirmation, bool Move);
   virtual void __fastcall CreateParams(TCreateParams & Params);
   void __fastcall DeleteFiles(TOperationSide Side, TStrings * FileList);
-  void __fastcall RemoteMoveFiles(TStrings * FileList, bool NoConfirmation);
+  void __fastcall RemoteTransferFiles(TStrings * FileList, bool NoConfirmation, bool Move);
   virtual void __fastcall DoDirViewExecFile(TObject * Sender, TListItem * Item, bool & AllowExec);
   virtual TControl * __fastcall GetComponent(Byte Component);
   virtual TCoolBand * __fastcall GetCoolBand(TCoolBar * Coolbar, int ID);
@@ -257,7 +258,12 @@ protected:
   void __fastcall RemoteFileControlDDTargetDrop();
   void __fastcall RemoteFileControlFileOperation(TObject * Sender,
     TFileOperation Operation, bool NoConfirmation, void * Param);
-  bool __fastcall EnsureAnyCommandCapability();
+  bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
+  void __fastcall FileTerminalClosed(const AnsiString FileName,
+    TEditedFileData & Data, void * Arg);
+  void __fastcall CustomExecuteFile(TOperationSide Side,
+    TExecuteFileBy ExecuteFileBy, AnsiString FileName);
+  bool __fastcall RemoteExecuteForceText(TExecuteFileBy ExecuteFileBy);
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
@@ -297,10 +303,12 @@ public:
   virtual void __fastcall PanelExport(TOperationSide Side, TPanelExport Export,
     TPanelExportDestination Destination, bool OnFocused = false);
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy);
+  void __fastcall EditNew(TOperationSide Side);
   bool __fastcall AllowQueueOperation(TQueueOperation Operation);
   void __fastcall ExecuteQueueOperation(TQueueOperation Operation);
   TQueueOperation __fastcall DefaultQueueOperation();
   void __fastcall LastTerminalClosed(TObject * Sender);
+  void __fastcall TerminalClosed(TObject * Sender);
   void __fastcall TerminalListChanged(TObject * Sender);
   int __fastcall MoreMessageDialog(const AnsiString Message,
     TStrings * MoreMessages, TQueryType Type, int Answers,

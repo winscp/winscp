@@ -158,6 +158,8 @@ __published:
   TRadioButton *DDCustomTemporaryDirectoryButton;
   TDirectoryEdit *DDTemporaryDirectoryEdit;
   TLabel *Label6;
+  TCheckBox *TemporaryDirectoryCleanupCheck;
+  TCheckBox *ConfirmTemporaryDirectoryCleanupCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

@@ -8,9 +8,9 @@
       forms\About.obj forms\Cleanup.obj forms\ComboInput.obj 
       forms\Console.obj forms\Copy.obj forms\CopyParams.obj 
       forms\Editor.obj forms\FileSystemInfo.obj forms\FullSynchronize.obj 
-      forms\GeneralSettings.obj forms\ImportSessions.obj forms\Licence.obj 
-      forms\LocationProfiles.obj forms\Log.obj forms\Login.obj 
-      forms\LogSettings.obj forms\OpenDirectory.obj 
+      forms\GeneralSettings.obj forms\Glyphs.obj forms\ImportSessions.obj 
+      forms\Licence.obj forms\LocationProfiles.obj forms\Log.obj 
+      forms\Login.obj forms\LogSettings.obj forms\OpenDirectory.obj 
       forms\OperationStatus.obj forms\Password.obj forms\Preferences.obj 
       forms\Progress.obj forms\Properties.obj forms\Rights.obj 
       forms\RightsExt.obj forms\SelectMask.obj forms\Symlink.obj 
@@ -20,8 +20,8 @@
     <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Cleanup.dfm forms\ComboInput.dfm 
       forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm forms\Editor.dfm 
       forms\FileSystemInfo.dfm forms\FullSynchronize.dfm 
-      forms\GeneralSettings.dfm forms\ImportSessions.dfm forms\Licence.dfm 
-      forms\LocationProfiles.dfm forms\Log.dfm forms\Login.dfm 
+      forms\GeneralSettings.dfm forms\Glyphs.dfm forms\ImportSessions.dfm 
+      forms\Licence.dfm forms\LocationProfiles.dfm forms\Log.dfm forms\Login.dfm 
       forms\LogSettings.dfm forms\OpenDirectory.dfm forms\OperationStatus.dfm 
       forms\Password.dfm forms\Preferences.dfm forms\Progress.dfm 
       forms\Properties.dfm forms\Rights.dfm forms\RightsExt.dfm 
@@ -80,6 +80,7 @@
       <FILE FILENAME="forms\FileSystemInfo.cpp" FORMNAME="FileSystemInfoDialog" UNITNAME="FileSystemInfo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FullSynchronize.cpp" FORMNAME="FullSynchronizeDialog" UNITNAME="FullSynchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\GeneralSettings.cpp" FORMNAME="GeneralSettingsFrame" UNITNAME="GeneralSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Glyphs.cpp" FORMNAME="GlyphsModule" UNITNAME="Glyphs" CONTAINERID="CCompiler" DESIGNCLASS="TDataModule" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ImportSessions.cpp" FORMNAME="ImportSessionsDialog" UNITNAME="ImportSessions" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Licence.cpp" FORMNAME="LicenceDialog" UNITNAME="Licence" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\LocationProfiles.cpp" FORMNAME="LocationProfilesDialog" UNITNAME="LocationProfiles" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

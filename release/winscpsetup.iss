@@ -33,7 +33,7 @@
 [Setup]
 AppId=winscp3
 AppName=WinSCP3
-AppMutex=winscp3
+AppMutex=WinSCP
 AppPublisher=Martin Prikryl
 AppPublisherURL=http://winscp.sourceforge.net/
 AppSupportURL=http://winscp.sourceforge.net/forum/
@@ -167,7 +167,7 @@ Name: "{group}\{cm:RSAKeyTools}\{cm:PageantManual}"; \
   Filename: "winhlp32.exe"; Parameters: "-ipageant.general {app}\PuTTY\putty.hlp"; \
   Components: pageant
 Name: "{group}\{cm:RSAKeyTools}\{cm:KeysManual}"; \
-  Filename: "winhlp32.exe"; Parameters: "-it00000112 {app}\PuTTY\putty.hlp"; \
+  Filename: "winhlp32.exe"; Parameters: "-it00000115 {app}\PuTTY\putty.hlp"; \
   Components: pageant puttygen
 Name: "{group}\{cm:RSAKeyTools}\{cm:PuttyWebSite}"; \
   Filename: "{app}\PuTTY\PuTTY.url"; Components: pageant puttygen

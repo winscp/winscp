@@ -17,12 +17,6 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
   int Line, const AnsiString Message)
 {
   const char * FileName = getenv(TRACEENV);
-  // !!!
-  if (FileName == NULL)
-  {
-    FileName = "c:\\winscptrace.log";
-  }
-  // !!!
   if (FileName != NULL)
   {
     FILE * File = fopen(FileName, "a");

@@ -2301,49 +2301,53 @@ begin
     Selected := Items[Min(ItemIndex, Pred(Items.Count))];
 end; {DeleteSelectedFiles}
 
-Function CompareFileName (I1, I2: TListItem; AOwner : TDirView): Integer; StdCall;
-Var P1, P2 : PFileRec;
-Begin
-  If I1 = I2 then  Result := fEqual    else
-  If I1 = NIL then Result := fLess     else
-  If I2 = NIL then Result := fGreater  else
-  Begin
+function CompareFileName(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+var
+  P1, P2: PFileRec;
+begin
+  if I1 = I2 then  Result := fEqual
+    else
+  if I1 = nil then Result := fLess
+    else
+  if I2 = nil then Result := fGreater
+    else
+  begin
     P1 := PFileRec(I1.Data);
     P2 := PFileRec(I2.Data);
-    IF P1.isParentDir Then
-    Begin
+    if P1.isParentDir then
+    begin
       Result := fLess;
       Exit;
-    End
-    Else IF P2.isParentDir Then
-    Begin
+    end
+      else
+    if P2.isParentDir then
+    begin
       Result := fGreater;
       Exit;
-    End;
+    end;
 
     {Directories allways should appear "grouped":}
-    IF P1.isDirectory <> P2.isDirectory Then
-    Begin
-      IF P1.isDirectory Then
-      Begin
+    if P1.isDirectory <> P2.isDirectory then
+    begin
+      if P1.isDirectory then
+      begin
         Result := fLess;
-        IF AOwner.DirsOnTop Then
+        if AOwner.DirsOnTop then
         Exit;
-      End
-      Else
-      Begin
+      end
+        else
+      begin
         Result := fGreater;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End;
-    End
-    Else
-      Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
-  End;
+        if AOwner.DirsOnTop then
+          Exit;
+      end;
+    end
+      else Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
+  end;
 
-  IF Not AOwner.SortAscending Then
-  Result := -Result;
-End; {CompareFileName}
+  if not AOwner.SortAscending then
+    Result := -Result;
+end; {CompareFileName}
 
 function CompareFileSize(I1, I2: TListItem; AOwner : TDirView): Integer; stdcall;
 var
@@ -2396,53 +2400,58 @@ begin
     Result := -Result;
 end; {CompareFileSize}
 
-Function CompareFileType (I1, I2: TListItem; AOwner : TDirView): Integer; StdCall;
-Var P1, P2 : PFileRec;
-Begin
-  If I1 = I2 then  Result := fEqual    else
-  If I1 = NIL then Result := fLess     else
-  If I2 = NIL then Result := fGreater  else
+function CompareFileType(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+var
+  P1, P2: PFileRec;
+begin
+  if I1 = I2 then  Result := fEqual
+    else
+  if I1 = nil then Result := fLess
+    else
+  if I2 = nil then Result := fGreater
+    else
   begin
     P1 := PFileRec(I1.Data);
     P2 := PFileRec(I2.Data);
-    IF P1.isParentDir Then
-    Begin
+    if P1.isParentDir then
+    begin
       Result := fLess;
       Exit;
-    End
-    Else IF P2.isParentDir Then
-    Begin
+    end
+      else
+    if P2.isParentDir then
+    begin
       Result := fGreater;
       Exit;
-    End;
+    end;
 
     {Directories allways should appear "grouped":}
-    IF P1.isDirectory <> P2.isDirectory Then
-    Begin
-      IF P1.isDirectory Then
-      Begin
+    if P1.isDirectory <> P2.isDirectory then
+    begin
+      if P1.isDirectory then
+      begin
         Result := fLess;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End
-      Else
-      Begin
+        if AOwner.DirsOnTop then
+          Exit;
+      end
+        else
+      begin
         Result := fGreater;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End;
-    End
-    Else
-    Begin
-      IF P1.Empty Then TDirView(I1.ListView).GetDisplayData(I1, False);
-      IF P2.Empty Then TDirView(I2.ListView).GetDisplayData(I2, False);
+        if AOwner.DirsOnTop then
+          Exit;
+      end;
+    end
+      else
+    begin
+      if P1.Empty then TDirView(I1.ListView).GetDisplayData(I1, False);
+      if P2.Empty then TDirView(I2.ListView).GetDisplayData(I2, False);
       Result := lstrcmpi(PChar(P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName),
                          PChar(P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName));
-      End;
-  End;
-  IF Not AOwner.SortAscending Then
-  Result := -Result;
-End; {CompareFileType}
+    end;
+  end;
+  if not AOwner.SortAscending then
+    Result := -Result;
+end; {CompareFileType}
 
 Function CompareFileExt (I1, I2: TListItem; AOwner : TDirView): Integer; StdCall;
 Var P1, P2 : PFileRec;

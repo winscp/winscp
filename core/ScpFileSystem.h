@@ -47,6 +47,8 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall RenameFile(const AnsiString FileName,
     const AnsiString NewName);
+  virtual void __fastcall CopyFile(const AnsiString FileName,
+    const AnsiString NewName);
 
   static bool __fastcall RemoveLastLine(AnsiString & Line,
     int & ReturnCode, AnsiString LastLine = "");

@@ -10,6 +10,7 @@
 #include <Net.h>
 #include <ScpMain.h>
 #include <FileSystems.h>
+#include <TextsCore.h>
 #include <TextsWin.h>
 
 #include <VCLCommon.h>
@@ -169,6 +170,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
+  FEditorManager->CloseInternalEditors(ForceCloseInternalEditor);
   delete FEditorManager;
 
   if (FDelayedDeletionTimer)
@@ -533,7 +535,9 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   {
     //assert(Screen && Screen->ActiveCustomForm);
     FProgressForm = new TProgressForm(Application);
-    FProgressForm->DeleteToRecycleBin = WinConfiguration->DeleteToRecycleBin;
+    FProgressForm->DeleteToRecycleBin = (ProgressData.Side == osLocal ?
+      WinConfiguration->DeleteToRecycleBin :
+      Terminal->SessionData->DeleteToRecycleBin);
     // When main window is hidden, we suppose "/upload" or URL download mode
     if (!Visible && (ProgressData.Operation != foCalculateSize))
     {
@@ -829,7 +833,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
       assert(Param);
       assert(Side == osRemote);
 
-      if (EnsureAnyCommandCapability())
+      if (EnsureCommandSessionFallback(fcAnyCommand))
       {
         FCustomCommandName = *((AnsiString *)Param);
         try
@@ -847,10 +851,10 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
         }
       }
     }
-    else if (Operation == foRemoteMove)
+    else if ((Operation == foRemoteMove) || (Operation == foRemoteCopy))
     {
       assert(Side == osRemote);
-      RemoteMoveFiles(FileList, NoConfirmation);
+      RemoteTransferFiles(FileList, NoConfirmation, (Operation == foRemoteMove));
     }
     else
     {
@@ -959,15 +963,77 @@ void __fastcall TCustomScpExplorerForm::HandleErrorList(TStringList *& ErrorList
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
-  TExecuteFileBy ExecuteFileBy)
+void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
 {
   assert(!WinConfiguration->DisableOpenEdit);
 
-  if (!FEditorManager->CanAddFile())
+  Side = GetSide(Side);
+
+  AnsiString Name = LoadStr(NEW_FILE);
+  if (InputDialog(LoadStr(NEW_FILE_CAPTION), LoadStr(NEW_FILE_PROMPT), Name))
   {
-    throw Exception(LoadStr(TOO_MANY_EDITORS));
+    AnsiString LocalFileName;
+    AnsiString TempDir;
+    if (Side == osRemote)
+    {
+      TempDir = WinConfiguration->TemporaryDir();
+      if (!ForceDirectories(TempDir))
+      {
+        throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (TempDir)));
+      }
+
+      LocalFileName = TempDir + UnixExtractFileName(Name);
+    }
+    else
+    {
+      if (ExtractFilePath(Name).IsEmpty())
+      {
+        LocalFileName = IncludeTrailingBackslash(DirView(Side)->PathName) + Name;
+      }
+      else
+      {
+        LocalFileName = ExpandFileName(Name);
+      }
+    }
+
+    if (!FileExists(LocalFileName))
+    {
+      int File = FileCreate(LocalFileName);
+      if (File < 0)
+      {
+        if (!TempDir.IsEmpty())
+        {
+          RemoveDir(TempDir);
+        }
+        throw Exception(FMTLOAD(CREATE_FILE_ERROR, (LocalFileName)));
+      }
+      else
+      {
+        FileClose(File);
+      }
+    }
+
+    CustomExecuteFile(Side, efEditor, LocalFileName);
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::RemoteExecuteForceText(
+  TExecuteFileBy ExecuteFileBy)
+{
+  return
+    // editing
+    ((ExecuteFileBy == efEditor) || (ExecuteFileBy == efAlternativeEditor)) &&
+    // internal editor
+    (((WinConfiguration->Editor.Editor == edInternal) !=
+      (ExecuteFileBy == efAlternativeEditor)) ||
+    // external editor needs text mode
+     WinConfiguration->Editor.ExternalEditorText);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
+  TExecuteFileBy ExecuteFileBy, AnsiString FileName)
+{
+  assert(!WinConfiguration->DisableOpenEdit);
 
   Side = GetSide(Side);
 
@@ -975,60 +1041,13 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
   bool InternalEdit = Edit &&
     ((WinConfiguration->Editor.Editor == edInternal) !=
      (ExecuteFileBy == efAlternativeEditor));
-  AnsiString FileName;
-  bool ForceText = (InternalEdit || (Edit && WinConfiguration->Editor.ExternalEditorText));
-
-  TStrings * FileList = DirView(Side)->CreateFocusedFileList(Side == osLocal);
-  try
-  {
-    assert(FileList->Count == 1);
-    if (Side == osRemote)
-    {
-      TCopyParamType CopyParam = GUIConfiguration->CopyParam;
-      if (ForceText)
-      {
-        CopyParam.TransferMode = tmAscii;
-      }
-      CopyParam.FileNameCase = ncNoChange;
-      CopyParam.PreserveReadOnly = false;
-      CopyParam.ResumeSupport = rsOff;
-
-      AnsiString TempDir = WinConfiguration->TemporaryTranferDir();
-      if (!ForceDirectories(TempDir))
-      {
-        throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (TempDir)));
-      }
-
-      FAutoOperation = true;
-      Terminal->ExceptionOnFail = true;
-      try
-      {
-        Terminal->CopyToLocal(FileList, TempDir, &CopyParam, cpTemporary);
-      }
-      __finally
-      {
-        FAutoOperation = false;
-        Terminal->ExceptionOnFail = false;
-      }
-
-      FileName = TempDir + FileList->Strings[0];
-    }
-    else
-    {
-      FileName = FileList->Strings[0];
-    }
-  }
-  __finally
-  {
-    delete FileList;
-  }
 
   TEditedFileData Data;
   if (Side == osRemote)
   {
     Data.Terminal = Terminal;
     Data.Queue = Queue;
-    Data.ForceText = ForceText;
+    Data.ForceText = RemoteExecuteForceText(ExecuteFileBy);
     Data.RemoteDirectory = RemoteDirView->PathName;
     Data.SessionName = Terminal->SessionData->SessionName;
   }
@@ -1092,6 +1111,10 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
 
       if (Side == osRemote)
       {
+        if (Process == NULL)
+        {
+          throw Exception(LoadStr(OPEN_FILE_NO_PROCESS));
+        }
         FEditorManager->AddFileExternal(FileName, Data, PCloseFlag, Process);
       }
     }
@@ -1114,11 +1137,72 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
+  TExecuteFileBy ExecuteFileBy)
+{
+  assert(!WinConfiguration->DisableOpenEdit);
+
+  Side = GetSide(Side);
+
+  if ((Side == osRemote) && !FEditorManager->CanAddFile())
+  {
+    throw Exception(LoadStr(TOO_MANY_EDITORS));
+  }
+
+  AnsiString FileName;
+
+  TStrings * FileList = DirView(Side)->CreateFocusedFileList(Side == osLocal);
+  try
+  {
+    assert(FileList->Count == 1);
+    if (Side == osRemote)
+    {
+      TCopyParamType CopyParam = GUIConfiguration->CopyParam;
+      if (RemoteExecuteForceText(ExecuteFileBy))
+      {
+        CopyParam.TransferMode = tmAscii;
+      }
+      CopyParam.FileNameCase = ncNoChange;
+      CopyParam.PreserveReadOnly = false;
+      CopyParam.ResumeSupport = rsOff;
+
+      AnsiString TempDir = WinConfiguration->TemporaryDir();
+      if (!ForceDirectories(TempDir))
+      {
+        throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (TempDir)));
+      }
+
+      FAutoOperation = true;
+      Terminal->ExceptionOnFail = true;
+      try
+      {
+        Terminal->CopyToLocal(FileList, TempDir, &CopyParam, cpTemporary);
+      }
+      __finally
+      {
+        FAutoOperation = false;
+        Terminal->ExceptionOnFail = false;
+      }
+
+      FileName = TempDir + FileList->Strings[0];
+    }
+    else
+    {
+      FileName = FileList->Strings[0];
+    }
+  }
+  __finally
+  {
+    delete FileList;
+  }
+
+  CustomExecuteFile(Side, ExecuteFileBy, FileName);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const AnsiString FileName,
   const TEditedFileData & Data, HANDLE UploadCompleteEvent)
 {
-  if (!TTerminalManager::Instance()->IsValidTerminal(Data.Terminal) ||
-      !Data.Terminal->Active)
+  if ((Data.Terminal == NULL) || !Data.Terminal->Active)
   {
     throw Exception(FMTLOAD(EDIT_SESSION_CLOSED,
       (ExtractFileName(FileName), Data.SessionName)));
@@ -1223,8 +1307,8 @@ void __fastcall TCustomScpExplorerForm::DeleteFiles(TOperationSide Side,
   DView->RestoreSelection();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::RemoteMoveDialog(TStrings * FileList,
-  AnsiString & Target, AnsiString & FileMask, bool NoConfirmation)
+bool __fastcall TCustomScpExplorerForm::RemoteTransferDialog(TStrings * FileList,
+  AnsiString & Target, AnsiString & FileMask, bool NoConfirmation, bool Move)
 {
   if (RemoteDriveView->DropTarget != NULL)
   {
@@ -1244,22 +1328,30 @@ bool __fastcall TCustomScpExplorerForm::RemoteMoveDialog(TStrings * FileList,
   bool Result = true;
   if (!NoConfirmation)
   {
-    Result = DoRemoteMoveDialog(FileList, Target, FileMask);
+    Result = DoRemoteTransferDialog(FileList, Target, FileMask, Move);
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::RemoteMoveFiles(
-  TStrings * FileList, bool NoConfirmation)
+void __fastcall TCustomScpExplorerForm::RemoteTransferFiles(
+  TStrings * FileList, bool NoConfirmation, bool Move)
 {
   AnsiString Target, FileMask;
-  if (RemoteMoveDialog(FileList, Target, FileMask, NoConfirmation))
+  if ((Move || EnsureCommandSessionFallback(fcRemoteCopy)) && 
+      RemoteTransferDialog(FileList, Target, FileMask, NoConfirmation, Move))
   {
     RemoteDirView->SaveSelection();
 
     try
     {
-      Terminal->MoveFiles(FileList, Target, FileMask);
+      if (Move)
+      {
+        Terminal->MoveFiles(FileList, Target, FileMask);
+      }
+      else
+      {
+        Terminal->CopyFiles(FileList, Target, FileMask);
+      }
     }
     catch(...)
     {
@@ -1672,6 +1764,12 @@ void __fastcall TCustomScpExplorerForm::CloseInternalEditor(TObject * Sender)
   TForm * Form = dynamic_cast<TForm *>(Sender);
   assert(Form != NULL);
   Form->Close();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ForceCloseInternalEditor(TObject * Sender)
+{
+  TForm * Form = dynamic_cast<TForm *>(Sender);
+  delete Form;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DropDownButtonMenu(TObject *Sender)
@@ -2128,9 +2226,9 @@ void __fastcall TCustomScpExplorerForm::OpenInPutty()
   OpenSessionInPutty(Terminal->SessionData);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomScpExplorerForm::EnsureAnyCommandCapability()
+bool __fastcall TCustomScpExplorerForm::EnsureCommandSessionFallback(TFSCapability Capability)
 {
-  bool Result = FTerminal->IsCapable[fcAnyCommand] ||
+  bool Result = FTerminal->IsCapable[Capability] ||
     FTerminal->CommandSessionOpened;
 
   if (!Result)
@@ -2142,7 +2240,7 @@ bool __fastcall TCustomScpExplorerForm::EnsureAnyCommandCapability()
     else
     {
       TMessageParams Params(mpNeverAskAgainCheck);
-      int Answer = MessageDialog(FMTLOAD(OPEN_COMMAND_SESSION,
+      int Answer = MessageDialog(FMTLOAD(PERFORM_ON_COMMAND_SESSION,
         (Terminal->ProtocolName, Terminal->ProtocolName)), qtConfirmation,
         qaOK | qaCancel, 0, &Params);
       if (Answer == qaNeverAskAgain)
@@ -2175,7 +2273,7 @@ bool __fastcall TCustomScpExplorerForm::EnsureAnyCommandCapability()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OpenConsole(AnsiString Command)
 {
-  if (EnsureAnyCommandCapability())
+  if (EnsureCommandSessionFallback(fcAnyCommand))
   {
     DoConsoleDialog(Terminal, Command);
   }
@@ -2262,6 +2360,23 @@ void __fastcall TCustomScpExplorerForm::ExecuteCurrentFile()
   __finally
   {
     FForceExecution = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TerminalClosed(TObject * Sender)
+{
+  FEditorManager->ProcessFiles(FileTerminalClosed, Sender);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FileTerminalClosed(const AnsiString FileName,
+  TEditedFileData & Data, void * Arg)
+{
+  TTerminal * Terminal = static_cast<TTerminal *>(Arg);
+  assert(Terminal != NULL);
+
+  if (Data.Terminal == Terminal)
+  {
+    Data.Terminal = NULL;
   }
 }
 //---------------------------------------------------------------------------
@@ -2440,7 +2555,7 @@ void __fastcall TCustomScpExplorerForm::DDExtInitDrag(TFileList * FileList,
   bool & Created)
 {
   FDragExtFakeDirectory =
-    ExcludeTrailingBackslash(WinConfiguration->TemporaryTranferDir());
+    ExcludeTrailingBackslash(WinConfiguration->TemporaryDir());
   if (!ForceDirectories(FDragExtFakeDirectory))
   {
     throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (FDragExtFakeDirectory)));
@@ -2554,7 +2669,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDGiveFeedback(
   FDDMoveSlipped =
     (FDragMoveCursor != NULL) &&
     (!WinConfiguration->DDAllowMoveInit) && (dwEffect == DROPEFFECT_Copy) &&
-    (IsFileControl(FDDTargetControl, osRemote) ||
+    ((IsFileControl(FDDTargetControl, osRemote) && (GetKeyState(VK_CONTROL) >= 0)) ||
      (IsFileControl(FDDTargetControl, osLocal) && (GetKeyState(VK_SHIFT) < 0)));
 
   SlippedCopyCursor = FDDMoveSlipped ? FDragMoveCursor : Dragdrop::DefaultCursor;
@@ -2660,10 +2775,16 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDTargetDrop()
     // when move from remote side is disabled, we allow coying inside the remote
     // panel, but we interpret is as moving (we also slip in the move cursor)
     if ((FLastDropEffect == DROPEFFECT_MOVE) ||
-        (!WinConfiguration->DDAllowMoveInit && (FLastDropEffect == DROPEFFECT_COPY)))
+        (!WinConfiguration->DDAllowMoveInit && (FLastDropEffect == DROPEFFECT_COPY) &&
+         FDDMoveSlipped))
     {
       RemoteFileControlFileOperation(DropSourceControl,
         foRemoteMove, !WinConfiguration->DDTransferConfirmation, NULL);
+    }
+    else if (FLastDropEffect == DROPEFFECT_COPY) 
+    {
+      RemoteFileControlFileOperation(DropSourceControl,
+        foRemoteCopy, !WinConfiguration->DDTransferConfirmation, NULL);
     }
     // abort drag&drop
     Abort();
@@ -3020,7 +3141,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDFileOperation(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
-  TObject * Sender, int /*grfKeyState*/, int & dwEffect)
+  TObject * Sender, int grfKeyState, int & dwEffect)
 {
   if ((DropSourceControl == RemoteDriveView) &&
       (RemoteDriveView->DragNode == RemoteDriveView->DropTarget))
@@ -3035,7 +3156,9 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
     {
       // Hack: when moving is disabled, we at least allow to accept copy
       // but it should be interpreted as move
-      dwEffect = WinConfiguration->DDAllowMoveInit ? DROPEFFECT_Move : DROPEFFECT_Copy;
+      dwEffect =
+        (WinConfiguration->DDAllowMoveInit && FLAGCLEAR(grfKeyState, MK_CONTROL)) ?
+        DROPEFFECT_Move : DROPEFFECT_Copy;
     }
     else
     {
@@ -3078,7 +3201,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDDragDetect(
   const TPoint & /*Point*/, TDragDetectStatus /*DragStatus*/)
 {
   FDDFileList = new TStringList();
-  FDragTempDir = WinConfiguration->TemporaryTranferDir();
+  FDragTempDir = WinConfiguration->TemporaryDir();
   FDDTotalSize = 0;
   FDragDropSshTerminate = "";
 }

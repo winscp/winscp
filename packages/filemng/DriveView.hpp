@@ -293,6 +293,7 @@ private:
 	bool FForceRename;
 	Comctrls::TTreeNode* FRenameNode;
 	AnsiString FLastRenameName;
+	HWND FInternalWindowHandle;
 	_di_IShellFolder FDesktop;
 	_di_IShellFolder FWorkPlace;
 	Classes::TNotifyEvent FOnStartScan;
@@ -342,6 +343,7 @@ protected:
 	virtual bool __fastcall DoScanDir(Comctrls::TTreeNode* FromNode);
 	virtual Comctrls::TTreeNode* __fastcall AddChildNode(Comctrls::TTreeNode* ParentNode, const Sysutils::TSearchRec &SRec);
 	virtual void __fastcall CreateWatchThread(char Drive);
+	void __fastcall InternalWndProc(Messages::TMessage &Msg);
 	int __fastcall DirAttrMask(void);
 	virtual void __fastcall ValidateDirectoryEx(Comctrls::TTreeNode* Node, Customdriveview::TRecursiveScan Recurse, bool NewDirs);
 	void __fastcall ValidateDirectoryEasy(Comctrls::TTreeNode* Node);

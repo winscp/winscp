@@ -19,6 +19,9 @@ struct TEditedFileData
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
   (const AnsiString FileName, const TEditedFileData & Data, HANDLE CompleteEvent);
 //---------------------------------------------------------------------------
+typedef void __fastcall (__closure * TEditedFileProcessEvent)
+  (const AnsiString FileName, TEditedFileData & Data, void * Arg);
+//---------------------------------------------------------------------------
 class TEditorManager
 {
 public:
@@ -38,6 +41,8 @@ public:
 
   void __fastcall FileChanged(TObject * Token);
   void __fastcall FileClosed(TObject * Token);
+
+  void __fastcall ProcessFiles(TEditedFileProcessEvent Callback, void * Arg);
 
   __property TEditedFileChangedEvent OnFileChange = { read = FOnFileChange, write = FOnFileChange };
 

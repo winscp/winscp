@@ -66,6 +66,8 @@ public:
 
 
 //-- var, const, procedure ---------------------------------------------------
+extern PACKAGE System::ResourceString _SUnixDefaultRootName;
+#define Customunixdirview_SUnixDefaultRootName System::LoadResourceString(&Customunixdirview::_SUnixDefaultRootName)
 
 }	/* namespace Customunixdirview */
 using namespace Customunixdirview;

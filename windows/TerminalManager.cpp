@@ -51,6 +51,7 @@ __fastcall TTerminalManager::TTerminalManager() :
   Configuration->OnChange = ConfigurationChange;
   FOnLastTerminalClosed = NULL;
   FOnTerminalListChanged = NULL;
+  FOnTerminalClosed = NULL;
 
   FTerminalList = new TStringList();
   FQueues = new TList();
@@ -111,11 +112,6 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
     OnTerminalListChanged(this);
   }
   return Terminal;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TTerminalManager::IsValidTerminal(TTerminal * Terminal)
-{
-  return (IndexOf(Terminal) >= 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::FreeActiveTerminal()
@@ -292,6 +288,11 @@ void __fastcall TTerminalManager::FreeTerminal(TTerminal * Terminal)
   try
   {
     Terminal->Active = false;
+
+    if (OnTerminalClosed)
+    {
+      OnTerminalClosed(Terminal);
+    }
   }
   __finally
   {
@@ -354,11 +355,13 @@ void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
       FScpExplorer->Queue = ActiveQueue;
       FOnLastTerminalClosed = FScpExplorer->LastTerminalClosed;
       FOnTerminalListChanged = FScpExplorer->TerminalListChanged;
+      FOnTerminalClosed = FScpExplorer->TerminalClosed;
     }
     else
     {
       FOnLastTerminalClosed = NULL;
       FOnTerminalListChanged = NULL;
+      FOnTerminalClosed = NULL;
     }
   }
 }

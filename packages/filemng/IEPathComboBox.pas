@@ -38,7 +38,6 @@ type
     FDisplayStyle: TVolumeDisplayStyle;
     FDriveTypes: TDriveTypes;
     FDontNotifyPathChange: Boolean;
-    FInternalWindowHandle: HWND;
     FShowSpecialFolders: TSpecialFolders;
     FSpecialFolders: array[TSpecialFolder] of TFolderInfo;
 
@@ -59,7 +58,6 @@ type
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
     procedure PathChanged; override;
     procedure SetPath(Value: string); override;
-    procedure InternalWndProc(var Msg: TMessage);
     function SpecialItems: Integer;
     procedure LoadFolderInfo(var Info: TFolderInfo);
     function GetItemSpecialFolder(Index: Integer): TSpecialFolder;
@@ -67,7 +65,6 @@ type
 
   public
     constructor Create(AOwner: TComponent); override;
-    destructor Destroy; override;
     function GetDriveIndex(Drive: TDrive; Closest: Boolean): Integer;
     procedure ResetItems;
     property FocusedDrive: Char read GetFocusedDrive;
@@ -180,34 +177,7 @@ begin
   FDriveTypes := DefaultDriveTypes;
   FDontNotifyPathChange := False;
   ResetItemHeight;
-  FInternalWindowHandle := Classes.AllocateHWnd(InternalWndProc);
 end; {TIEPathComboBox.Create}
-
-destructor TIEPathComboBox.Destroy;
-begin
-  Classes.DeallocateHWnd(FInternalWindowHandle);
-  inherited;
-end;
-
-procedure TIEPathComboBox.InternalWndProc(var Msg: TMessage);
-begin
-  with Msg do
-  begin
-    if (Msg = WM_DEVICECHANGE) and
-       ((wParam = {DBT_CONFIGCHANGED} $0018) or (wParam = {DBT_DEVICEARRIVAL} $8000) or
-          (wParam = {DBT_DEVICEREMOVECOMPLETE} $8004)) then
-    begin
-      try
-        DriveInfo.Load;
-        ResetItems;
-      except
-        Application.HandleException(Self);
-      end
-    end;
-
-    Result := DefWindowProc(FInternalWindowHandle, Msg, wParam, lParam);
-  end;
-end;
 
 procedure TIEPathComboBox.CreateWnd;
 begin
@@ -435,7 +405,7 @@ var
 begin
   if ItemIndex < SpecialItems then
   begin
-    SpecialFolder := GetItemSpecialFolder(Index);
+    SpecialFolder := GetItemSpecialFolder(ItemIndex);
     FPath := FSpecialFolders[SpecialFolder].Path;
     FDrive := Upcase(FPath[1]);
     Index := GetDriveIndex(FDrive, False);

@@ -540,6 +540,56 @@ object LoginDialog: TLoginDialog
             OnClick = DataChange
           end
         end
+        object RecycleBinGroup: TXPGroupBox
+          Left = 0
+          Top = 137
+          Width = 345
+          Height = 114
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Recycle bin'
+          TabOrder = 2
+          DesignSize = (
+            345
+            114)
+          object RecycleBinPathLabel: TLabel
+            Left = 11
+            Top = 64
+            Width = 91
+            Height = 13
+            Caption = '&Remote recycle bin'
+            FocusControl = RecycleBinPathEdit
+          end
+          object DeleteToRecycleBinCheck: TCheckBox
+            Left = 12
+            Top = 19
+            Width = 317
+            Height = 17
+            Caption = '&Preserve deleted remote files to recycle bin'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object OverwrittenToRecycleBinCheck: TCheckBox
+            Left = 12
+            Top = 42
+            Width = 317
+            Height = 17
+            Caption = 'Preserve &overwritten remote files to recycle bin (SFTP only)'
+            TabOrder = 1
+            OnClick = DataChange
+          end
+          object RecycleBinPathEdit: TEdit
+            Left = 11
+            Top = 81
+            Width = 323
+            Height = 21
+            Anchors = [akLeft, akTop, akRight]
+            MaxLength = 1000
+            TabOrder = 2
+            Text = 'RecycleBinPathEdit'
+            OnChange = DataChange
+            OnKeyDown = PathEditsKeyDown
+          end
+        end
       end
       object DirectoriesSheet: TTabSheet
         Tag = 12

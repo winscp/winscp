@@ -5159,6 +5159,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	s->tried_keyb_inter = FALSE;
 	s->kbd_inter_running = FALSE;
 #ifdef GSSAPI
+	s->gssctxt = NULL;
 	s->gss_supported = NULL;
 	s->tried_gssapi = FALSE;
 	s->gss_mech = 0;
@@ -5353,7 +5354,7 @@ auth_begin:
 				logevent(msgbuf);
 				if (flags & FLAG_VERBOSE)
 					c_write_str(ssh, msgbuf);
-				sfree(message);
+				sfree(msgbuf);
 			} else {
 				if (gssapiLoadFuncs())
 					s->method = AUTH_GSSAPI;

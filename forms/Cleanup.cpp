@@ -2,10 +2,11 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "Common.h"
+#include <Common.h>
 #include <VCLCommon.h>
+#include <WinConfiguration.h>
+#include <TextsWin.h>
 #include "Cleanup.h"
-#include "TextsWin.h"
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
@@ -23,16 +24,45 @@ Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
     Result = (CleanupDialog->ShowModal() == mrOk);
     if (Result)
     {
-      if (CleanupDialog->CleanupData[wdConfiguration])
-        Configuration->CleanupConfiguration();
-      if (CleanupDialog->CleanupData[wdStoredSessions])
-        SessionList->Cleanup();
-      if (CleanupDialog->CleanupData[wdHostKeys])
-        Configuration->CleanupHostKeys();
-      if (CleanupDialog->CleanupData[wdConfigurationIniFile])
-        Configuration->CleanupIniFile();
-      if (CleanupDialog->CleanupData[wdRandomSeedFile])
-        Configuration->CleanupRandomSeedFile();
+      for (int i = wdConfiguration; i <= wdTemporaryFolders; i++)
+      {
+        if (CleanupDialog->CleanupData[(TWinSCPData)i])
+        {
+          try
+          {
+            switch (i)
+            {
+              case wdConfiguration:
+                Configuration->CleanupConfiguration();
+                break;
+
+              case wdStoredSessions:
+                SessionList->Cleanup();
+                break;
+
+              case wdHostKeys:
+                Configuration->CleanupHostKeys();
+                break;
+
+              case wdConfigurationIniFile:
+                Configuration->CleanupIniFile();
+                break;
+
+              case wdRandomSeedFile:
+                Configuration->CleanupRandomSeedFile();
+                break;
+
+              case wdTemporaryFolders:
+                WinConfiguration->CleanupTemporaryFolders();
+                break;
+            }
+          }
+          catch(Exception & E)
+          {
+            ShowExtendedException(&E);
+          }
+        }
+      }
     }
   } __finally {
     delete CleanupDialog;
@@ -48,18 +78,23 @@ __fastcall TCleanupDialog::TCleanupDialog(TComponent* AOwner)
 //---------------------------------------------------------------------
 void __fastcall TCleanupDialog::InitControls()
 {
+  static const int Captions[] = {
+    CLEANUP_CONFIG, CLEANUP_SESSIONS, CLEANUP_HOSTKEYS, CLEANUP_INIFILE,
+    CLEANUP_SEEDFILE, CLEANUP_TEMP_FOLDERS };
+
   int I = 0;
   while (I < DataListView->Items->Count)
   {
     TListItem *Item = DataListView->Items->Item[I];
     AnsiString Location;
-    Item->Caption = LoadStr(CLEANUP_CONFIG + Item->ImageIndex - 1);
+    Item->Caption = LoadStr(Captions[Item->ImageIndex - 1]);
     switch (Item->ImageIndex) {
       case wdConfiguration: Location = Configuration->ConfigurationSubKey; break;
       case wdStoredSessions: Location = Configuration->StoredSessionsSubKey; break;
       case wdHostKeys: Location = Configuration->SshHostKeysSubKey; break;
       case wdConfigurationIniFile: Location = Configuration->IniFileStorageName; break;
       case wdRandomSeedFile: Location = Configuration->RandomSeedFile; break;
+      case wdTemporaryFolders: Location = WinConfiguration->TemporaryDir(true); break;
       default: Location = ""; break;
     }
 

@@ -53,6 +53,7 @@ function SpecialFolderLocation(Folder: Integer; var Path: string;
   var PIDL: PItemIDList): Boolean; overload;
 function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean; overload;
 function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
+procedure Trace(Msg: string);
 
 resourcestring
   SNoValidPath = 'Can''t find any valid path.';
@@ -345,6 +346,24 @@ begin
   Result.Handle := SHGetFileInfo('', 0, FileInfo, SizeOf(FileInfo),
       SHGFI_SYSICONINDEX or Flags);
   Result.ShareImages := True;
+end;
+
+procedure Trace(Msg: string);
+const
+  TRACEENV = 'WINSCPTRACE';
+var
+  FileName: string;
+  F: Text;
+begin
+  FileName := GetEnvironmentVariable(TRACEENV);
+  if FileName <> '' then
+  begin
+    AssignFile(F, FileName);
+    Append(F);
+    Write(F, Format('[%s] %s:%d:%s'#13#10'  %s'#13#10,
+      [TimeToStr(Now), 'PAS', 0, 'unk', Msg]));
+    CloseFile(F);
+  end;
 end;
 
 initialization

@@ -78,6 +78,8 @@ public:
   virtual __fastcall ~TGUIConfiguration();
   virtual void __fastcall Default();
 
+  HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
+
   __property bool CopyParamDialogExpanded = { read = FCopyParamDialogExpanded, write = FCopyParamDialogExpanded };
   __property bool ErrorDialogExpanded = { read = FErrorDialogExpanded, write = FErrorDialogExpanded };
   __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };

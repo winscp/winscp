@@ -21,8 +21,9 @@ Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList)
   try {
     ImportSessionsDialog = new TImportSessionsDialog(Application);
     ImportSessionList = new TStoredSessionList(true);
+    ImportSessionList->DefaultSettings = SessionList->DefaultSettings;
 
-    ImportSessionList->Load(Configuration->PuttySessionsKey);
+    ImportSessionList->Load(Configuration->PuttySessionsKey, true);
     ImportSessionList->SelectSessionsToImport(SessionList, True);
     ImportSessionsDialog->SessionList = ImportSessionList;
 

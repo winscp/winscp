@@ -220,6 +220,7 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
     case fsDeleteFile:
     case fsRenameFile:
     case fsMoveFile:
+    case fsCopyFile:
     case fsCreateDirectory:
     case fsChangeMode:
     case fsChangeGroup:
@@ -687,7 +688,14 @@ void __fastcall TTerminal::DoDirectoryModified(const AnsiString Path, bool SubDi
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DirectoryModified(const AnsiString Path, bool SubDirs)
 {
-  ClearCachedFileList(Path, SubDirs);
+  if (Path.IsEmpty())
+  {
+    ClearCachedFileList(CurrentDirectory, SubDirs);
+  }
+  else
+  {
+    ClearCachedFileList(Path, SubDirs);
+  }
   DoDirectoryModified(Path, SubDirs);
 }
 //---------------------------------------------------------------------------
@@ -1081,6 +1089,38 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::IsRecycledFile(AnsiString FileName)
+{
+  AnsiString Path = UnixExtractFilePath(FileName);
+  if (Path.IsEmpty())
+  {
+    Path = CurrentDirectory;
+  }
+  return UnixComparePaths(Path, SessionData->RecycleBinPath);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::RecycleFile(AnsiString FileName,
+  const TRemoteFile * File)
+{
+  if (FileName.IsEmpty())
+  {
+    assert(File != NULL);
+    FileName = File->FileName;
+  }
+
+  if (!IsRecycledFile(FileName))
+  {
+    LogEvent(FORMAT("Moving file \"%s\" to remote recycle bin '%s'.",
+      (FileName, SessionData->RecycleBinPath)));
+
+    TMoveFileParams Params;
+    Params.Target = SessionData->RecycleBinPath;
+    Params.FileMask = FORMAT("*-%s.*", (FormatDateTime("yyyymmdd-hhnnss", Now())));
+
+    MoveFile(FileName, File, &Params);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DeleteFile(AnsiString FileName,
   const TRemoteFile * File, void * Recursive)
 {
@@ -1093,10 +1133,17 @@ void __fastcall TTerminal::DeleteFile(AnsiString FileName,
     if (OperationProgress->Cancel != csContinue) Abort();
     OperationProgress->SetFile(FileName);
   }
-  LogEvent(FORMAT("Deleting file \"%s\".", (FileName)));
-  if (File) FileModified(File, FileName);
-  DoDeleteFile(FileName, File, Recursive);
-  ReactOnCommand(fsDeleteFile);
+  if (SessionData->DeleteToRecycleBin && !IsRecycledFile(FileName))
+  {
+    RecycleFile(FileName, File);
+  }
+  else
+  {
+    LogEvent(FORMAT("Deleting file \"%s\".", (FileName)));
+    if (File) FileModified(File, FileName);
+    DoDeleteFile(FileName, File, Recursive);
+    ReactOnCommand(fsDeleteFile);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoDeleteFile(const AnsiString FileName,
@@ -1404,7 +1451,9 @@ void __fastcall TTerminal::DoRenameFile(const AnsiString FileName,
 void __fastcall TTerminal::MoveFile(const AnsiString FileName,
   const TRemoteFile * File, /*const TMoveFileParams*/ void * Param)
 {
-  if (OperationProgress && (OperationProgress->Operation == foRemoteMove))
+  if (OperationProgress &&
+      ((OperationProgress->Operation == foRemoteMove) ||
+       (OperationProgress->Operation == foDelete)))
   {
     if (OperationProgress->Cancel != csContinue) Abort();
     OperationProgress->SetFile(FileName);
@@ -1428,6 +1477,63 @@ bool __fastcall TTerminal::MoveFiles(TStrings * FileList, const AnsiString Targe
   Params.FileMask = FileMask;
   DirectoryModified(Target, true);
   return ProcessFiles(FileList, foRemoteMove, MoveFile, &Params);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoCopyFile(const AnsiString FileName,
+  const AnsiString NewName)
+{
+  try
+  {
+    assert(FFileSystem);
+    if (IsCapable[fcRemoteCopy])
+    {
+      FFileSystem->CopyFile(FileName, NewName);
+    }
+    else
+    {
+      assert(CommandSessionOpened);
+      assert(FCommandSession->FSProtocol == cfsSCP);
+      LogEvent("Copying file on command session.");
+      FCommandSession->CurrentDirectory = CurrentDirectory;
+      FCommandSession->FFileSystem->CopyFile(FileName, NewName);
+    }
+  }
+  catch(Exception & E)
+  {
+    COMMAND_ERROR_ARI
+    (
+      FMTLOAD(COPY_FILE_ERROR, (FileName, NewName)),
+      DoCopyFile(FileName, NewName)
+    );
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CopyFile(const AnsiString FileName,
+  const TRemoteFile * /*File*/, /*const TMoveFileParams*/ void * Param)
+{
+  if (OperationProgress && (OperationProgress->Operation == foRemoteCopy))
+  {
+    if (OperationProgress->Cancel != csContinue) Abort();
+    OperationProgress->SetFile(FileName);
+  }
+
+  assert(Param != NULL);
+  const TMoveFileParams & Params = *static_cast<const TMoveFileParams*>(Param);
+  AnsiString NewName = UnixIncludeTrailingBackslash(Params.Target) +
+    MaskFileName(UnixExtractFileName(FileName), Params.FileMask);
+  LogEvent(FORMAT("Copying file \"%s\" to \"%s\".", (FileName, NewName)));
+  DoCopyFile(FileName, NewName);
+  ReactOnCommand(fsCopyFile);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::CopyFiles(TStrings * FileList, const AnsiString Target,
+  const AnsiString FileMask)
+{
+  TMoveFileParams Params;
+  Params.Target = Target;
+  Params.FileMask = FileMask;
+  DirectoryModified(Target, true);
+  return ProcessFiles(FileList, foRemoteCopy, CopyFile, &Params);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CreateDirectory(const AnsiString DirName,
@@ -2077,23 +2183,37 @@ void __fastcall TTerminal::DoSynchronizeDirectory(const AnsiString LocalDirector
         }
 
         if (Upload &&
-            !CopyToRemote(LocalFileList, RemoteDirectory, CopyParam, CopyParams))
+            ((FLAGSET(Params, spPreviewChanges) &&
+              (DoQueryUser(FMTLOAD(SYNCHRONIZE_UPLOAD, (LocalFileList->Count, LocalDirectory, RemoteDirectory)),
+                 LocalFileList, qaYes | qaNo, NULL) == qaNo)) ||
+             !CopyToRemote(LocalFileList, RemoteDirectory, CopyParam, CopyParams)))
         {
           Abort();
         }
 
-        if (DeleteLocal && !DeleteLocalFiles(LocalFileList))
+        if (DeleteLocal &&
+            ((FLAGSET(Params, spPreviewChanges) &&
+              (DoQueryUser(FMTLOAD(SYNCHRONIZE_LOCAL_DELETE, (LocalFileList->Count, LocalDirectory)),
+                 LocalFileList, qaYes | qaNo, NULL) == qaNo)) ||
+             !DeleteLocalFiles(LocalFileList)))
         {
           Abort();
         }
 
         if (Download &&
-            !CopyToLocal(Data.ModifiedRemoteFileList, LocalDirectory, CopyParam, CopyParams))
+            ((FLAGSET(Params, spPreviewChanges) &&
+              (DoQueryUser(FMTLOAD(SYNCHRONIZE_DOWNLOAD, (Data.ModifiedRemoteFileList->Count, RemoteDirectory, LocalDirectory)),
+                 Data.ModifiedRemoteFileList, qaYes | qaNo, NULL) == qaNo)) ||
+             !CopyToLocal(Data.ModifiedRemoteFileList, LocalDirectory, CopyParam, CopyParams)))
         {
           Abort();
         }
 
-        if (DeleteRemote && !DeleteFiles(Data.NewRemoteFileList))
+        if (DeleteRemote &&
+            ((FLAGSET(Params, spPreviewChanges) &&
+              (DoQueryUser(FMTLOAD(SYNCHRONIZE_REMOTE_DELETE, (Data.NewRemoteFileList->Count, RemoteDirectory)),
+                 Data.NewRemoteFileList, qaYes | qaNo, NULL) == qaNo)) ||
+             !DeleteFiles(Data.NewRemoteFileList)))
         {
           Abort();
         }

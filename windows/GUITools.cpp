@@ -209,12 +209,25 @@ void __fastcall CopyToClipboard(AnsiString Text)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Identity)
+AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Identity,
+  bool Mask)
 {
   AnsiString TempDir;
-  TempDir = BaseDir.IsEmpty() ? SystemTemporaryDirectory() : BaseDir;
-  TempDir = IncludeTrailingBackslash(IncludeTrailingBackslash(TempDir) +
-    Identity + FormatDateTime("nnzzz", Now()));
+  do
+  {
+    TempDir = BaseDir.IsEmpty() ? SystemTemporaryDirectory() : BaseDir;
+    TempDir = IncludeTrailingBackslash(TempDir) + Identity;
+    if (Mask)
+    {
+      TempDir += "?????";
+    }
+    else
+    {
+      TempDir += IncludeTrailingBackslash(FormatDateTime("nnzzz", Now()));
+    };
+  }
+  while (!Mask && DirectoryExists(TempDir));
+
   return TempDir;
 }
 //---------------------------------------------------------------------------
@@ -224,7 +237,7 @@ bool __fastcall DeleteDirectory(const AnsiString DirName)
   bool retval = true;
   if (FindFirst(DirName + "\\*", faAnyFile, sr) == 0) // VCL Function
   {
-    if (sr.Attr == faDirectory)
+    if (FLAGSET(sr.Attr, faDirectory))
     {
       if (sr.Name != "." && sr.Name != "..")
         retval = DeleteDirectory(DirName + "\\" + sr.Name);
@@ -238,7 +251,7 @@ bool __fastcall DeleteDirectory(const AnsiString DirName)
     {
       while (FindNext(sr) == 0)
       { // VCL Function
-        if (sr.Attr == faDirectory)
+        if (FLAGSET(sr.Attr, faDirectory))
         {
           if (sr.Name != "." && sr.Name != "..")
             retval = DeleteDirectory(DirName + "\\" + sr.Name);

@@ -1033,7 +1033,7 @@ void __fastcall TScpCommanderForm::ExecuteCommandLine()
   if (!CommandLineCombo->Text.Trim().IsEmpty() &&
       ((FCurrentSide != osRemote) ||
        (Terminal->AllowedAnyCommand(CommandLineCombo->Text) &&
-        EnsureAnyCommandCapability())))
+        EnsureCommandSessionFallback(fcAnyCommand))))
   {
     CommandLinePopulate();
     CommandLineCombo->SaveToHistory();
@@ -1214,6 +1214,32 @@ void __fastcall TScpCommanderForm::RemotePathLabelGetStatus(
 {
   // this strange form is here to make borland compiler work :-)
   Active = Active || RemoteDriveView->Focused();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathLabelPathClick(
+  TCustomPathLabel * /*Sender*/, AnsiString Path)
+{
+  if (ComparePaths(Path, LocalDirView->Path))
+  {
+    OpenDirectory(osLocal);
+  }
+  else
+  {
+    LocalDirView->Path = Path;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::RemotePathLabelPathClick(
+  TCustomPathLabel * /*Sender*/, AnsiString Path)
+{
+  if (UnixComparePaths(Path, RemoteDirView->Path))
+  {
+    OpenDirectory(osRemote);
+  }
+  else
+  {
+    RemoteDirView->Path = Path;
+  }
 }
 //---------------------------------------------------------------------------
 

@@ -45,6 +45,7 @@ __published:
   TXPGroupBox *FilterGroup;
   TLabel *Label1;
   THistoryComboBox *ExcludeFileMaskCombo;
+  TRadioButton *CCLowerCaseShortButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
 private:

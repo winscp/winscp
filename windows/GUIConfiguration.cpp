@@ -268,8 +268,7 @@ HANDLE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
   {
     if (Internal)
     {
-      TPasLibModule * MainModule = FindModule(HInstance);
-      NewInstance = MainModule->Instance;
+      NewInstance = HInstance;
     }
   }
 
@@ -357,11 +356,22 @@ void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
   }
 }
 //---------------------------------------------------------------------------
+HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
+{
+  if (Instance == NULL)
+  {
+    Instance = HInstance;
+  }
+  TPasLibModule * MainModule = FindModule(HInstance);
+  HANDLE Result = MainModule->ResInstance;
+  MainModule->ResInstance = Instance;
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetResourceModule(HANDLE Instance)
 {
-  TPasLibModule * MainModule = FindModule(HInstance);
-  FreeResourceModule(MainModule->ResInstance);
-  MainModule->ResInstance = Instance;
+  HANDLE PrevHandle = ChangeResourceModule(Instance);
+  FreeResourceModule(PrevHandle);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TGUIConfiguration::GetLocales()

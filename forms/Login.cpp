@@ -217,6 +217,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     {                
       EOLTypeCRLFButton->Checked = true;
     }
+    DeleteToRecycleBinCheck->Checked = aSessionData->DeleteToRecycleBin;
+    OverwrittenToRecycleBinCheck->Checked = aSessionData->OverwrittenToRecycleBin;
+    RecycleBinPathEdit->Text = aSessionData->RecycleBinPath;
 
     // Authentication tab
     AuthTISCheck->Checked = aSessionData->AuthTIS;
@@ -400,6 +403,9 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->ConsiderDST = ConsiderDSTOnCheck->Checked;
   if (EOLTypeLFButton->Checked) aSessionData->EOLType = eolLF;
     else aSessionData->EOLType = eolCRLF;
+  aSessionData->DeleteToRecycleBin = DeleteToRecycleBinCheck->Checked;
+  aSessionData->OverwrittenToRecycleBin = OverwrittenToRecycleBinCheck->Checked;
+  aSessionData->RecycleBinPath = RecycleBinPathEdit->Text;
 
   // Shell tab
   aSessionData->DefaultShell = DefaultShellButton->Checked;
@@ -513,6 +519,11 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
 
       EnableControl(PreserveDirectoryChangesCheck, CacheDirectoryChangesCheck->Checked);
+
+      EnableControl(OverwrittenToRecycleBinCheck, !SCPonlyButton->Checked);
+      EnableControl(RecycleBinPathEdit, DeleteToRecycleBinCheck->Checked ||
+        OverwrittenToRecycleBinCheck->Checked);
+      EnableControl(RecycleBinPathLabel, RecycleBinPathEdit->Enabled);
 
       AboutButton->Visible = (Options & loAbout);
       LanguagesButton->Visible = (Options & loLanguage);

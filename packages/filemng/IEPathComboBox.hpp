@@ -77,7 +77,6 @@ private:
 	Dirview::TVolumeDisplayStyle FDisplayStyle;
 	TDriveTypes FDriveTypes;
 	bool FDontNotifyPathChange;
-	HWND FInternalWindowHandle;
 	TSpecialFolders FShowSpecialFolders;
 	TFolderInfo FSpecialFolders[2];
 	void __fastcall SetDisplayStyle(Dirview::TVolumeDisplayStyle Value);
@@ -96,7 +95,6 @@ protected:
 	DYNAMIC void __fastcall KeyDown(Word &Key, Classes::TShiftState Shift);
 	virtual void __fastcall PathChanged(void);
 	virtual void __fastcall SetPath(AnsiString Value);
-	void __fastcall InternalWndProc(Messages::TMessage &Msg);
 	int __fastcall SpecialItems(void);
 	void __fastcall LoadFolderInfo(TFolderInfo &Info);
 	TSpecialFolder __fastcall GetItemSpecialFolder(int Index);
@@ -104,7 +102,6 @@ protected:
 	
 public:
 	__fastcall virtual TIEPathComboBox(Classes::TComponent* AOwner);
-	__fastcall virtual ~TIEPathComboBox(void);
 	int __fastcall GetDriveIndex(char Drive, bool Closest);
 	void __fastcall ResetItems(void);
 	__property char FocusedDrive = {read=GetFocusedDrive, nodefault};
@@ -158,6 +155,11 @@ __published:
 	__property OnKeyUp ;
 	__property OnStartDock ;
 	__property OnStartDrag ;
+public:
+	#pragma option push -w-inl
+	/* TIECustomComboBox.Destroy */ inline __fastcall virtual ~TIEPathComboBox(void) { }
+	#pragma option pop
+	
 public:
 	#pragma option push -w-inl
 	/* TWinControl.CreateParented */ inline __fastcall TIEPathComboBox(HWND ParentWindow) : Custompathcombobox::TCustomPathComboBox(ParentWindow) { }

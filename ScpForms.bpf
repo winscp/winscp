@@ -12,6 +12,7 @@ USEFORM("forms\Editor.cpp", EditorForm);
 USEFORM("forms\FileSystemInfo.cpp", FileSystemInfoDialog);
 USEFORM("forms\FullSynchronize.cpp", FullSynchronizeDialog);
 USEFORM("forms\GeneralSettings.cpp", GeneralSettingsFrame); /* TFrame: File Type */
+USEFORM("forms\Glyphs.cpp", GlyphsModule); /* TDataModule: File Type */
 USEFORM("forms\ImportSessions.cpp", ImportSessionsDialog);
 USEFORM("forms\Licence.cpp", LicenceDialog);
 USEFORM("forms\LocationProfiles.cpp", LocationProfilesDialog);

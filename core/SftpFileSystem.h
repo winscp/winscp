@@ -55,6 +55,8 @@ public:
     TRemoteFile *& File);
   virtual void __fastcall RenameFile(const AnsiString FileName,
     const AnsiString NewName);
+  virtual void __fastcall CopyFile(const AnsiString FileName,
+    const AnsiString NewName);
 
 protected:
   int FVersion;

@@ -127,6 +127,7 @@ const TCommandType DefaultCommandSet[ShellCommandCount] = {
 /*Unalias*/             {  0,  0, F, F, F, "unalias \"%s\"" /* alias */ },
 /*AliasGroupList*/      {  0,  0, F, F, F, "alias ls=\"ls -g\"" },
 /*CreateLink*/          {  0,  0, T, F, F, "ln %s \"%s\" \"%s\"" /*symbolic (-s), filename, point to*/},
+/*CopyFile*/            {  0,  0, T, F, F, "cp -r -f \"%s\" \"%s\"" /* file/directory, target name*/},
 /*AnyCommand*/          {  0, -1, T, T, F, "%s" }
 };
 #undef F
@@ -325,6 +326,7 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcSymbolicLink:
     case fcResolveSymlink:
     case fcRename:
+    case fcRemoteCopy:
       return true;
 
     case fcTextMode:
@@ -959,6 +961,12 @@ void __fastcall TSCPFileSystem::RenameFile(const AnsiString FileName,
   const AnsiString NewName)
 {
   ExecCommand(fsRenameFile, ARRAYOFCONST((DelimitStr(FileName), DelimitStr(NewName))));
+}
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::CopyFile(const AnsiString FileName,
+  const AnsiString NewName)
+{
+  ExecCommand(fsCopyFile, ARRAYOFCONST((DelimitStr(FileName), DelimitStr(NewName))));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CreateDirectory(const AnsiString DirName,

@@ -10,7 +10,7 @@
 
 #include <Common.h>
 
-#include <CustomDirView.hpp>
+#include <CustomUnixDirView.hpp>
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 // ValidCtrCheck is used to assure that the components created do not have
@@ -35,7 +35,7 @@ __fastcall TUnixPathComboBox::TUnixPathComboBox(TComponent* Owner)
         : TCustomPathComboBox(Owner)
 {
   UseSystemImageList = True;
-  FRootName = DEFAULT_ROOTNAME;
+  FRootName = Customunixdirview_SUnixDefaultRootName;
   FPath = '/';
   ResetItemHeight();
 }
@@ -61,7 +61,7 @@ void __fastcall TUnixPathComboBox::SetRootName(AnsiString value)
 //---------------------------------------------------------------------------
 Boolean __fastcall TUnixPathComboBox::IsRootNameStored()
 {
-  return (FRootName != DEFAULT_ROOTNAME);
+  return (FRootName != Customunixdirview_SUnixDefaultRootName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TUnixPathComboBox::ResetItems()

@@ -61,6 +61,15 @@ bool __fastcall TEditorManager::CanAddFile()
   return (FFiles.size() < MAXIMUM_WAIT_OBJECTS);
 }
 //---------------------------------------------------------------------------
+void __fastcall TEditorManager::ProcessFiles(TEditedFileProcessEvent Callback, void * Arg)
+{
+  for (unsigned int i = 0; i < FFiles.size(); i++)
+  {
+    TFileData * FileData = &FFiles[i];
+    Callback(FileData->FileName, FileData->Data, Arg);
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
 {
   // Traverse from end, as closing internal editor causes deletion of
@@ -73,7 +82,7 @@ bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
     if (i <= FFiles.size())
     {
       TFileData * FileData = &FFiles[i - 1];
-      // PrevToken is simple chack not to ask same editor twice, however
+      // PrevToken is simple check not to ask same editor twice, however
       // it does not solve all posibilities
       if (!FileData->Closed && (FileData->Token != NULL) &&
           (FileData->Token != PrevToken))

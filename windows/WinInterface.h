@@ -50,10 +50,10 @@ int __fastcall MoreMessageDialog(const AnsiString Message,
     int HelpCtx, const TMessageParams * Params = NULL);
 
 int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
-  const AnsiString MessageFormat = "%s", int Answers = qaOK, int HelpCtx = 0,
+  const AnsiString MessageFormat = "", int Answers = qaOK, int HelpCtx = 0,
   const TMessageParams * Params = NULL);
 int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  const AnsiString MessageFormat = "%s", int Answers = qaOK, int HelpCtx = 0,
+  const AnsiString MessageFormat = "", int Answers = qaOK, int HelpCtx = 0,
   const TMessageParams * Params = NULL);
 
 // windows\WinMain.cpp
@@ -150,8 +150,8 @@ bool __fastcall DoComboInputDialog(
   TStrings * Items, TCloseQueryEvent OnCloseQuery, bool AllowEmpty);
 AnsiString __fastcall DoSaveSessionDialog(
   TStoredSessionList * SessionList, const AnsiString DefaultName);
-bool __fastcall DoRemoteMoveDialog(TStrings * FileList, AnsiString & Target,
-  AnsiString & FileMask);
+bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
+  AnsiString & FileMask, bool Move);
 
 // forms\SelectMask.cpp
 #ifdef CustomDirViewHPP
@@ -162,6 +162,7 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
 const spDelete = 0x01;
 const spNoConfirmation = 0x02;
 const spExistingOnly = 0x04;
+const spPreviewChanges = 0x40;
 
 // forms\Synchronize.cpp
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,

@@ -163,12 +163,12 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       OnClick = ControlChange
     end
     object SaveSettingsCheck: TCheckBox
-      Left = 11
+      Left = 123
       Top = 68
-      Width = 361
+      Width = 249
       Height = 17
       Caption = 'Use &same options next time'
-      TabOrder = 6
+      TabOrder = 7
     end
     object SynchronizeExistingOnlyCheck: TCheckBox
       Left = 123
@@ -177,6 +177,15 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Height = 17
       Caption = '&Existing files only'
       TabOrder = 4
+      OnClick = ControlChange
+    end
+    object SynchronizePreviewChangesCheck: TCheckBox
+      Left = 11
+      Top = 68
+      Width = 112
+      Height = 17
+      Caption = 'Pre&view changes'
+      TabOrder = 6
       OnClick = ControlChange
     end
   end

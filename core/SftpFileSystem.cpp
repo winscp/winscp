@@ -4,8 +4,6 @@
 
 #include "SftpFileSystem.h"
 
-#include <sftp.h>
-
 #include "PuttyIntf.h"
 #include "Common.h"
 #include "Interface.h"
@@ -19,10 +17,45 @@
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
   FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION)
 //---------------------------------------------------------------------------
-// additional constants for SFTP protocol not defined in Putty's sftp.h
+#define SSH_FX_OK                                 0
+#define SSH_FX_EOF                                1
+#define SSH_FX_NO_SUCH_FILE                       2
+#define SSH_FX_OP_UNSUPPORTED                     8
+
+#define SSH_FXP_INIT               1
+#define SSH_FXP_VERSION            2
+#define SSH_FXP_OPEN               3
+#define SSH_FXP_CLOSE              4
+#define SSH_FXP_READ               5
+#define SSH_FXP_WRITE              6
+#define SSH_FXP_LSTAT              7 
+#define SSH_FXP_FSTAT              8 
+#define SSH_FXP_SETSTAT            9 
+#define SSH_FXP_FSETSTAT           10
+#define SSH_FXP_OPENDIR            11
+#define SSH_FXP_READDIR            12
+#define SSH_FXP_REMOVE             13
+#define SSH_FXP_MKDIR              14 
+#define SSH_FXP_RMDIR              15 
+#define SSH_FXP_REALPATH           16 
+#define SSH_FXP_STAT               17 
+#define SSH_FXP_RENAME             18
 #define SSH_FXP_READLINK           19
 #define SSH_FXP_SYMLINK            20
+#define SSH_FXP_STATUS             101   
+#define SSH_FXP_HANDLE             102   
+#define SSH_FXP_DATA               103   
+#define SSH_FXP_NAME               104   
+#define SSH_FXP_ATTRS              105   
+#define SSH_FXP_EXTENDED           200   
+#define SSH_FXP_EXTENDED_REPLY     201
+#define SSH_FXP_ATTRS              105
 
+#define SSH_FILEXFER_ATTR_SIZE              0x00000001
+#define SSH_FILEXFER_ATTR_UIDGID            0x00000002
+#define SSH_FILEXFER_ATTR_PERMISSIONS       0x00000004
+#define SSH_FILEXFER_ATTR_ACMODTIME         0x00000008
+#define SSH_FILEXFER_ATTR_EXTENDED          0x80000000
 #define SSH_FILEXFER_ATTR_ACCESSTIME        0x00000008
 #define SSH_FILEXFER_ATTR_CREATETIME        0x00000010
 #define SSH_FILEXFER_ATTR_MODIFYTIME        0x00000020
@@ -43,6 +76,12 @@
 #define SSH_FILEXFER_TYPE_SPECIAL          4
 #define SSH_FILEXFER_TYPE_UNKNOWN          5
 
+#define SSH_FXF_READ            0x00000001
+#define SSH_FXF_WRITE           0x00000002
+#define SSH_FXF_APPEND          0x00000004
+#define SSH_FXF_CREAT           0x00000008
+#define SSH_FXF_TRUNC           0x00000010
+#define SSH_FXF_EXCL            0x00000020
 #define SSH_FXF_TEXT            0x00000040
 
 #define SSH_FXF_ACCESS_DISPOSITION        0x00000007
@@ -1091,6 +1130,7 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
   switch (Capability) {
     case fcAnyCommand:
     case fcHardLink:
+    case fcRemoteCopy:
       return false;
 
     case fcModeChanging:
@@ -2302,6 +2342,12 @@ void __fastcall TSFTPFileSystem::RenameFile(const AnsiString FileName,
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 }
 //---------------------------------------------------------------------------
+void __fastcall TSFTPFileSystem::CopyFile(const AnsiString /*FileName*/,
+  const AnsiString /*NewName*/)
+{
+  assert(false);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::CreateDirectory(const AnsiString DirName,
   const TRemoteProperties * Properties)
 {
@@ -2980,6 +3026,11 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
           TargetBiggerThanSource, OperationProgress, OpenParams->OverwriteMode,
           OpenParams->FileParams);
         Confirmed = true;
+
+        if (FTerminal->SessionData->OverwrittenToRecycleBin)
+        {
+          FTerminal->RecycleFile(OpenParams->RemoteFileName, NULL);
+        }
       }
       else
       {

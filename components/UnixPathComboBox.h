@@ -9,8 +9,6 @@
 
 #include <CustomPathComboBox.hpp>
 //---------------------------------------------------------------------------
-#define DEFAULT_ROOTNAME "/ <root>"
-//---------------------------------------------------------------------------
 class PACKAGE TUnixPathComboBox : public TCustomPathComboBox
 {
 private:

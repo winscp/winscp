@@ -5,8 +5,6 @@
 #include "CustomDriveView.hpp"
 #include "UnixDirView.h"
 //---------------------------------------------------------------------------
-#define DEFAULT_ROOTNAME "/ <root>"
-//---------------------------------------------------------------------------
 struct TNodeData;
 class TTerminal;
 class TRemoteFileList;

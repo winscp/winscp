@@ -45,6 +45,8 @@ __published:
   TMemo *InfoMemo;
   TEdit *SshImplementationEdit;
   TLabel *Label11;
+  TLabel *Label12;
+  TEdit *RemoteCopyEdit;
 public:
 	virtual __fastcall TFileSystemInfoDialog(TComponent* AOwner);
 

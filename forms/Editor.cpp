@@ -66,6 +66,18 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
 //---------------------------------------------------------------------------
 __fastcall TEditorForm::~TEditorForm()
 {
+  if (FOnWindowClose != NULL)
+  {
+    try
+    {
+      FOnWindowClose(this);
+    }
+    catch(Exception & E)
+    {
+      ShowExtendedException(&E);
+    }
+  }
+
   if (FLastFindDialog)
   {
     WinConfiguration->Editor.FindText = FLastFindDialog->FindText;
@@ -448,21 +460,9 @@ void __fastcall TEditorForm::GoToLine()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorForm::FormClose(TObject * Sender,
+void __fastcall TEditorForm::FormClose(TObject * /*Sender*/,
   TCloseAction & Action)
 {
-  if (FOnWindowClose != NULL)
-  {
-    try
-    {
-      FOnWindowClose(Sender);
-    }
-    catch(Exception & E)
-    {
-      ShowExtendedException(&E);
-    }
-  }
-
   Action = caFree;
 }
 //---------------------------------------------------------------------------
