@@ -62,9 +62,7 @@ __published:
   TCheckBox *LookupUserGroupsCheck;
   TCheckBox *ClearAliasesCheck;
   TCheckBox *UnsetNationalVarsCheck;
-  TCheckBox *AliasGroupListCheck;
   TCheckBox *Scp1CompatibilityCheck;
-  TCheckBox *IgnoreLsWarningsCheck;
   TXPGroupBox *ReturnVarGroup;
   TRadioButton *ReturnVarAutodetectButton;
   TRadioButton *ReturnVarEnterButton;
@@ -209,6 +207,10 @@ __published:
   TCheckBox *OverwrittenToRecycleBinCheck;
   TLabel *RecycleBinPathLabel;
   TEdit *RecycleBinPathEdit;
+  TXPGroupBox *ScpLsOptionsGroup;
+  TCheckBox *IgnoreLsWarningsCheck;
+  TCheckBox *AliasGroupListCheck;
+  TCheckBox *SCPLsFullTimeAutoCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,

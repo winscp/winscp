@@ -15,6 +15,7 @@
 #include "TextsWin.h"
 #include "WinInterface.h"
 #include "WinConfiguration.h"
+#include "Setup.h"
 //---------------------------------------------------------------------
 #pragma link "GeneralSettings"
 #pragma link "LogSettings"
@@ -47,7 +48,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
   CopyParamsFrame->Direction = pdAll;
   FEditorFont = new TFont();
-  FAfterExternalEditorDialog = false;
+  FAfterFilenameEditDialog = false;
   FCustomCommands = new TCustomCommands();
   FCustomCommandChanging = false;
   FCustomCommandDragDest = -1;
@@ -169,6 +170,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     WinConfiguration->ScpCommander.ExplorerStyleSelection;
   PreserveLocalDirectoryCheck->Checked =
     WinConfiguration->ScpCommander.PreserveLocalDirectory;
+  SwappedPanelsCheck->Checked = 
+    WinConfiguration->ScpCommander.SwappedPanels;
   ShowFullAddressCheck->Checked =
     WinConfiguration->ScpExplorer.ShowFullAddress;
   RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
@@ -216,13 +219,14 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   FCustomCommands->Assign(WinConfiguration->CustomCommands);
   UpdateCustomCommandsView();
 
-  PuttyPathEdit->FileName = WinConfiguration->PuttyPath;
+  PuttyPathEdit->Text = GUIConfiguration->PuttyPath;
+  PuttyPasswordCheck->Checked = GUIConfiguration->PuttyPassword;
 
   // Queue
   QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
   QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
   QueueCheck->Checked = GUIConfiguration->CopyParam.Queue;
-  RememberPasswordCheck->Checked = Configuration->RememberPassword;
+  RememberPasswordCheck->Checked = GUIConfiguration->QueueRememberPassword;
   if (WinConfiguration->QueueView.Show == qvShow)
   {
     QueueViewShowButton->Checked = true;
@@ -296,6 +300,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     TScpCommanderConfiguration ScpCommander = WinConfiguration->ScpCommander;
     ScpCommander.ExplorerStyleSelection = ExplorerStyleSelectionCheck->Checked;
     ScpCommander.PreserveLocalDirectory = PreserveLocalDirectoryCheck->Checked;
+    ScpCommander.SwappedPanels = SwappedPanelsCheck->Checked;
     WinConfiguration->ScpCommander = ScpCommander;
 
     TScpExplorerConfiguration ScpExplorer = WinConfiguration->ScpExplorer;
@@ -327,13 +332,14 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     WinConfiguration->CustomCommands = FCustomCommands;
 
-    WinConfiguration->PuttyPath = PuttyPathEdit->FileName;
+    GUIConfiguration->PuttyPath = PuttyPathEdit->Text;
+    GUIConfiguration->PuttyPassword = PuttyPasswordCheck->Checked;
 
     // Queue
     GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
-    Configuration->RememberPassword = RememberPasswordCheck->Checked;
+    GUIConfiguration->QueueRememberPassword = RememberPasswordCheck->Checked;
 
     if (QueueViewShowButton->Checked)
     {
@@ -442,41 +448,42 @@ void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::ExternalEditorEditExit(TObject * /*Sender*/)
+void __fastcall TPreferencesDialog::FilenameEditExit(TObject * Sender)
 {
+  TFilenameEdit * FilenameEdit = dynamic_cast<TFilenameEdit *>(Sender);
   try
   {
-    AnsiString ExternalEditor = ExternalEditorEdit->Text;
-    if (!ExternalEditor.IsEmpty())
+    AnsiString Filename = FilenameEdit->Text;
+    if (!Filename.IsEmpty())
     {
-      TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
-      ExternalEditorEdit->Text = ExternalEditor;
+      TWinConfiguration::ReformatFileNameCommand(Filename);
+      FilenameEdit->Text = Filename;
     }
   }
   catch(...)
   {
-    ExternalEditorEdit->SelectAll();
-    ExternalEditorEdit->SetFocus();
+    FilenameEdit->SelectAll();
+    FilenameEdit->SetFocus();
     throw;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::ExternalEditorEditAfterDialog(
+void __fastcall TPreferencesDialog::FilenameEditAfterDialog(
       TObject * /*Sender*/, AnsiString & /*Name*/, bool & Action)
 {
   if (Action)
   {
-    FAfterExternalEditorDialog = true;
+    FAfterFilenameEditDialog = true;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::ExternalEditorEditChange(
+void __fastcall TPreferencesDialog::FilenameEditChange(
       TObject *Sender)
 {
-  if (FAfterExternalEditorDialog)
+  if (FAfterFilenameEditDialog)
   {
-    FAfterExternalEditorDialog = false;
-    ExternalEditorEditExit(Sender);
+    FAfterFilenameEditDialog = false;
+    FilenameEditExit(Sender);
   }
 }
 //---------------------------------------------------------------------------
@@ -487,7 +494,7 @@ void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
   {
     if (ExternalEditorEdit->Focused())
     {
-      ExternalEditorEditExit(NULL);
+      FilenameEditExit(ExternalEditorEdit);
     }
     CopyParamsFrame->Validate();
   }
@@ -727,6 +734,8 @@ void __fastcall TPreferencesDialog::NavigationTreeChange(TObject * /*Sender*/,
       if (PageControl->Pages[Index]->Tag == (Node->SelectedIndex & 127))
       {
         PageControl->ActivePage = PageControl->Pages[Index];
+        // reshow the accelerators, etc
+        ResetSystemSettings(this);
         return;
       }
     }

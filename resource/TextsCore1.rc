@@ -124,9 +124,10 @@ BEGIN
   SCRIPT_SESSION_INDEX_INVALID, "Invalid session number '%s'."
   SCRIPT_OPTION_UNKNOWN, "Unknown option '%s'."
   SCRIPT_VALUE_UNKNOWN, "Unknown value '%s' of option '%s'."
+  UNKNOWN_SOCKET_STATUS, "Cannot determine status of socket (%d)."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
-  CONFIRM_PROLONG_TIMEOUT, "Host hasn't answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."
+  CONFIRM_PROLONG_TIMEOUT, "Host has not answered for %d seconds.\n\nWait for another %0:d seconds? Pressing 'Abort' button will close session."
   PROMPT_SESSION_PASSWORD, "'%s' session password:"
   PROMPT_KEY_PASSPHRASE, "Passphrase for key '%s':"
   FILE_OVERWRITE, "File '%s' already exists. Overwrite?"
@@ -146,6 +147,7 @@ BEGIN
   SYNCHRONIZE_REMOTE_DELETE, "%d obsolete file(s) in remote directory '%s' were found. They will be deleted. Continue?"
   SYNCHRONIZE_DOWNLOAD, "%d new or changed file(s) in remote directory '%s' were found. They will be uploaded to local directory '%s'. Continue?"
   SYNCHRONIZE_LOCAL_DELETE, "%d obsolete file(s) in local directory '%s' were found. They will be deleted. Continue?"
+  TIMEOUT_STILL_WAITING, "Host has not answered for more than %d seconds. Still waiting..."
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"
@@ -193,7 +195,7 @@ BEGIN
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"
-  PUTTY_VERSION, "0.55"
+  PUTTY_VERSION, "0.56"
   PUTTY_COPYRIGHT, "Copyright © 1997-2004 Simon Tatham"
   PUTTY_URL, "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
 END

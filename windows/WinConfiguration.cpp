@@ -114,6 +114,7 @@ void __fastcall TWinConfiguration::Default()
 
   FScpCommander.WindowParams = "-1;-1;600;400;0";
   FScpCommander.LocalPanelWidth = 0.5;
+  FScpCommander.SwappedPanels = false;
   FScpCommander.StatusBar = true;
   FScpCommander.ToolBar = true;
   FScpCommander.CommandLine = false;
@@ -162,7 +163,7 @@ void __fastcall TWinConfiguration::DefaultLocalized()
       FORMAT("grep \"!?%s?!\" !&", (LoadStr(CUSTOM_COMMAND_GREP_PATTERN)));
     FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_GREP)] = ccShowResults;
     FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_FC)] =
-      "cmd /c fc \"!\" \!^!\" | more && pause";
+      "cmd /c fc \"!\" \"\!^!\" | more && pause";
     FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_FC)] = ccLocal;
     FCustomCommandsDefaults = true;
     FCustomCommandsModified = false;
@@ -280,6 +281,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,  ScpCommander.CoolBarLayout); \
     KEY(Integer, ScpCommander.CurrentPanel); \
     KEY(Float,   ScpCommander.LocalPanelWidth); \
+    KEY(Bool,    ScpCommander.SwappedPanels); \
     KEY(Bool,    ScpCommander.StatusBar); \
     KEY(Bool,    ScpCommander.CommandLine); \
     KEY(Bool,    ScpCommander.ToolBar); \

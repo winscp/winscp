@@ -5,6 +5,7 @@
 #ifndef C_ONLY
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, "")
+#define THROWIFFALSE(C) if (!(C)) EXCEPTION
 #define SCOPY(dest, source) \
   strncpy(dest, source, sizeof(dest)); \
   dest[sizeof(dest)-1] = '\0'
@@ -16,6 +17,8 @@
 #define FLAGSET(SET, FLAG) (((SET) & (FLAG)) == (FLAG))
 #define FLAGCLEAR(SET, FLAG) (((SET) & (FLAG)) == 0)
 #define FLAGMASK(ENABLE, FLAG) ((ENABLE) ? (FLAG) : 0)
+#define SWAP(TYPE, FIRST, SECOND) \
+  { TYPE __Backup = FIRST; FIRST = SECOND; SECOND = __Backup; }
 //---------------------------------------------------------------------------
 extern const char EngShortMonthNames[12][4];
 //---------------------------------------------------------------------------
@@ -39,6 +42,7 @@ bool __fastcall IsDisplayableStr(const AnsiString Str);
 AnsiString __fastcall StrToHex(const AnsiString Str);
 AnsiString __fastcall HexToStr(const AnsiString Hex);
 unsigned int __fastcall HexToInt(const AnsiString Hex);
+AnsiString __fastcall DecodeUrlChars(AnsiString S);
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
 int __fastcall CancelAnswer(int Answers);
 int __fastcall AbortAnswer(int Answers);
@@ -105,7 +109,7 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
 #define TRACEFMT(MESSAGE, PARAMS) Trace(__FILE__, __FUNC__, __LINE__, FORMAT(MESSAGE, PARAMS))
 #else // ifdef _DEBUG
 #define TRACE(PARAMS)
-#define TRACEFMT(MESSAGE, PARAMS) 
+#define TRACEFMT(MESSAGE, PARAMS)
 #endif // ifdef _DEBUG
 //---------------------------------------------------------------------------
 #endif
@@ -114,7 +118,7 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
 #ifndef _DEBUG
 #undef assert
 #define assert(p)   ((void)0)
-#endif 
+#endif
 #define USEDPARAM(p) ((p) == (p))
 //---------------------------------------------------------------------------
 #endif

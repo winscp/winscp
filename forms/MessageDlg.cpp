@@ -80,8 +80,11 @@ AnsiString __fastcall TMessageForm::GetFormText()
   {
     MoreMessages = MessageMemo->Text + DividerLine;
   }
+  AnsiString MessageCaption;
+  MessageCaption = StringReplace(Message->Caption, "\r", "", TReplaceFlags() << rfReplaceAll);
+  MessageCaption = StringReplace(MessageCaption, "\n", "\r\n", TReplaceFlags() << rfReplaceAll);
   AnsiString Result = FORMAT("%s%s%s%s%s%s%s%s%s%s%s", (DividerLine, Caption, sLineBreak,
-    DividerLine, Message->Caption, sLineBreak, DividerLine, MoreMessages,
+    DividerLine, MessageCaption, sLineBreak, DividerLine, MoreMessages,
     ButtonCaptions, sLineBreak, DividerLine));
   return Result;
 }

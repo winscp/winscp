@@ -524,6 +524,11 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * /*Sender*/,
   if ((Params != NULL) && FLAGSET(Params->Params, qpFatalAbort))
   {
     AQuery = FMTLOAD(WARN_FATAL_ERROR, (AQuery));
+
+    if (!MessageParams.TimerMessage.IsEmpty())
+    {
+      MessageParams.TimerMessage = FMTLOAD(WARN_FATAL_ERROR, (MessageParams.TimerMessage));
+    }
   }
 
   if (ScpExplorer)

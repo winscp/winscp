@@ -3,7 +3,7 @@ object CopyDialog: TCopyDialog
   Top = 198
   BorderStyle = bsDialog
   Caption = 'CopyDialog'
-  ClientHeight = 341
+  ClientHeight = 359
   ClientWidth = 511
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,7 +17,7 @@ object CopyDialog: TCopyDialog
   OnShow = FormShow
   DesignSize = (
     511
-    341)
+    359)
   PixelsPerInch = 96
   TextHeight = 13
   object DirectoryLabel: TLabel
@@ -53,7 +53,7 @@ object CopyDialog: TCopyDialog
   end
   object MoreButton: TMoreButton
     Left = 251
-    Top = 311
+    Top = 329
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -65,7 +65,7 @@ object CopyDialog: TCopyDialog
   end
   object CopyButton: TButton
     Left = 339
-    Top = 311
+    Top = 329
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -76,7 +76,7 @@ object CopyDialog: TCopyDialog
   end
   object CancelButton: TButton
     Left = 427
-    Top = 311
+    Top = 329
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -89,13 +89,13 @@ object CopyDialog: TCopyDialog
     Left = 0
     Top = 52
     Width = 511
-    Height = 235
+    Height = 253
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 3
     object SaveSettingsCheck: TCheckBox
       Left = 8
-      Top = 217
+      Top = 235
       Width = 377
       Height = 17
       Caption = 'Use &same settings next time'
@@ -105,12 +105,12 @@ object CopyDialog: TCopyDialog
       Left = 2
       Top = 0
       Width = 508
-      Height = 195
+      Height = 213
       TabOrder = 0
     end
     object NewerOnlyCheck: TCheckBox
       Left = 8
-      Top = 197
+      Top = 215
       Width = 377
       Height = 17
       Caption = 'N&ew and updated file(s) only'
@@ -128,7 +128,7 @@ object CopyDialog: TCopyDialog
   end
   object QueueCheck: TCheckBox
     Left = 8
-    Top = 289
+    Top = 307
     Width = 301
     Height = 17
     Anchors = [akLeft, akBottom]
@@ -138,7 +138,7 @@ object CopyDialog: TCopyDialog
   end
   object QueueNoConfirmationCheck: TCheckBox
     Left = 312
-    Top = 289
+    Top = 307
     Width = 193
     Height = 17
     Anchors = [akLeft, akBottom]

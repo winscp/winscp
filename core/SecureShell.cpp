@@ -182,7 +182,8 @@ AnsiString __fastcall TSecureShell::GetSshImplementation()
 //---------------------------------------------------------------------
 AnsiString __fastcall TSecureShell::GetPassword()
 {
-  return DecryptPassword(FPassword, SessionData->SessionName);
+  return (FPassword.IsEmpty() ? AnsiString() : 
+    DecryptPassword(FPassword, SessionData->SessionName));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
@@ -628,7 +629,7 @@ bool __fastcall TSecureShell::Select(int Sec)
 
   if (R < 0)
   {
-    SSH_FATAL_ERROR(FORMAT("Cannot determine status of socket (%d).", (R)));
+    SSH_FATAL_ERROR(FMTLOAD(UNKNOWN_SOCKET_STATUS, (R)));
   }
 
   return (R > 0);
@@ -656,6 +657,8 @@ void __fastcall TSecureShell::WaitForData()
       TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
       Params.Timer = 500;
       Params.TimerEvent = PoolForData;
+      Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING, (FSessionData->Timeout));
+      Params.TimerAnswers = qaAbort;
       if (DoQueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT, (FSessionData->Timeout)),
             qaRetry | qaAbort, &Params) != qaRetry)
       {

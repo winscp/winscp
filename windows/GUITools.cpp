@@ -44,10 +44,12 @@ bool __fastcall FileExistsEx(AnsiString Path)
   return FindFile(Path);
 }
 //---------------------------------------------------------------------------
-void __fastcall OpenSessionInPutty(TSessionData * SessionData)
+void __fastcall OpenSessionInPutty(TSessionData * SessionData, 
+  const AnsiString Password)
 {
-  AnsiString PuttyPath = GUIConfiguration->PuttyPath;
-  if (FindFile(PuttyPath))
+  AnsiString Program, Params, Dir;
+  SplitCommand(GUIConfiguration->PuttyPath, Program, Params, Dir);
+  if (FindFile(Program))
   {
     AnsiString SessionName;
     THierarchicalStorage * Storage = NULL;
@@ -80,14 +82,24 @@ void __fastcall OpenSessionInPutty(TSessionData * SessionData)
       delete ExportData;
     }
 
-    if (!ExecuteShell(PuttyPath, FORMAT("-load \"%s\"", (SessionName))))
+    if (!Params.IsEmpty())
     {
-      throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (PuttyPath)));
+      Params += " ";
+    }
+    if (!Password.IsEmpty())
+    {
+      Params += FORMAT("-pw \"%s\" ", (Password)); 
+    }
+    Params += FORMAT("-load \"%s\"", (SessionName)); 
+    
+    if (!ExecuteShell(Program, Params))
+    {
+      throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
     }
   }
   else
   {
-    throw Exception(FMTLOAD(FILE_NOT_FOUND, (GUIConfiguration->PuttyPath)));
+    throw Exception(FMTLOAD(FILE_NOT_FOUND, (Program)));
   }
 }
 //---------------------------------------------------------------------------

@@ -180,6 +180,8 @@ resourcestring
 
 implementation
 
+{$WARN SYMBOL_PLATFORM OFF}
+
 {$IFDEF BUGFIX}
 {$Z4}
 type TWinBool = (winFalse, winTrue);

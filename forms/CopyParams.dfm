@@ -2,7 +2,7 @@ object CopyParamsFrame: TCopyParamsFrame
   Left = 0
   Top = 0
   Width = 508
-  Height = 193
+  Height = 211
   TabOrder = 0
   object CommonPropertiesGroup: TXPGroupBox
     Left = 331
@@ -236,17 +236,17 @@ object CopyParamsFrame: TCopyParamsFrame
       OnExit = ValidateMaskComboExit
     end
   end
-  object FilterGroup: TXPGroupBox
+  object OtherGroup: TXPGroupBox
     Left = 3
     Top = 148
     Width = 501
-    Height = 41
-    Caption = 'Filter'
+    Height = 61
+    Caption = 'Other'
     TabOrder = 5
     DesignSize = (
       501
-      41)
-    object Label1: TLabel
+      61)
+    object ExcludeFileMaskLabel: TLabel
       Left = 10
       Top = 17
       Width = 66
@@ -265,6 +265,14 @@ object CopyParamsFrame: TCopyParamsFrame
       TabOrder = 0
       Text = 'ExcludeFileMaskCombo'
       OnExit = ValidateMaskComboExit
+    end
+    object ClearArchiveCheck: TCheckBox
+      Left = 10
+      Top = 37
+      Width = 231
+      Height = 17
+      Caption = 'Clear source file '#39'Archi&ve'#39' attribute'
+      TabOrder = 1
     end
   end
 end

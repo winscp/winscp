@@ -170,7 +170,7 @@ private:
   void __fastcall Discard();
   AnsiString __fastcall GetSshImplementation();
   AnsiString __fastcall GetPassword();
-  inline bool __fastcall Select(int Sec);
+  bool __fastcall Select(int Sec);
   void __fastcall PoolForData(unsigned int & Result);
 
 protected:

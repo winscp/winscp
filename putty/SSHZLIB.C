@@ -40,7 +40,25 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#ifdef ZLIB_STANDALONE
+
+/*
+ * This module also makes a handy zlib decoding tool for when
+ * you're picking apart Zip files or PDFs or PNGs. If you compile
+ * it with ZLIB_STANDALONE defined, it builds on its own and
+ * becomes a command-line utility.
+ * 
+ * Therefore, here I provide a self-contained implementation of the
+ * macros required from the rest of the PuTTY sources.
+ */
+#define snew(type) ( (type *) malloc(sizeof(type)) )
+#define snewn(n, type) ( (type *) malloc((n) * sizeof(type)) )
+#define sresize(x, n, type) ( (type *) realloc((x), (n) * sizeof(type)) )
+#define sfree(x) ( free((x)) )
+
+#else
 #include "ssh.h"
+#endif
 
 #ifndef FALSE
 #define FALSE 0
@@ -1027,13 +1045,14 @@ int zlib_decompress_block(void *handle, unsigned char *block, int len,
 {
     struct zlib_decompress_ctx *dctx = (struct zlib_decompress_ctx *)handle;
     const coderecord *rec;
-    int code, blktype, rep, dist, nlen;
+    int code, blktype, rep, dist, nlen, header;
     static const unsigned char lenlenmap[] = {
 	16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15
     };
 
-    dctx->outblk = NULL;
-    dctx->outsize = dctx->outlen = 0;
+    dctx->outblk = snewn(256, unsigned char);
+    dctx->outsize = 256;
+    dctx->outlen = 0;
 
     while (len > 0 || dctx->nbits > 0) {
 	while (dctx->nbits < 24 && len > 0) {
@@ -1043,10 +1062,35 @@ int zlib_decompress_block(void *handle, unsigned char *block, int len,
 	}
 	switch (dctx->state) {
 	  case START:
-	    /* Expect 16-bit zlib header, which we'll dishonourably ignore. */
+	    /* Expect 16-bit zlib header. */
 	    if (dctx->nbits < 16)
 		goto finished;	       /* done all we can */
-	    EATBITS(16);
+
+            /*
+             * The header is stored as a big-endian 16-bit integer,
+             * in contrast to the general little-endian policy in
+             * the rest of the format :-(
+             */
+            header = (((dctx->bits & 0xFF00) >> 8) |
+                      ((dctx->bits & 0x00FF) << 8));
+            EATBITS(16);
+
+            /*
+             * Check the header:
+             *
+             *  - bits 8-11 should be 1000 (Deflate/RFC1951)
+             *  - bits 12-15 should be at most 0111 (window size)
+             *  - bit 5 should be zero (no dictionary present)
+             *  - we don't care about bits 6-7 (compression rate)
+             *  - bits 0-4 should be set up to make the whole thing
+             *    a multiple of 31 (checksum).
+             */
+            if ((header & 0x0F00) != 0x0800 ||
+                (header & 0xF000) >  0x7000 ||
+                (header & 0x0020) != 0x0000 ||
+                (header % 31) != 0)
+                goto decode_error;
+
 	    dctx->state = OUTSIDEBLK;
 	    break;
 	  case OUTSIDEBLK:
@@ -1242,6 +1286,86 @@ int zlib_decompress_block(void *handle, unsigned char *block, int len,
     return 0;
 }
 
+#ifdef ZLIB_STANDALONE
+
+#include <stdio.h>
+#include <string.h>
+
+int main(int argc, char **argv)
+{
+    unsigned char buf[16], *outbuf;
+    int ret, outlen;
+    void *handle;
+    int noheader = FALSE, opts = TRUE;
+    char *filename = NULL;
+    FILE *fp;
+
+    while (--argc) {
+        char *p = *++argv;
+
+        if (p[0] == '-' && opts) {
+            if (!strcmp(p, "-d"))
+                noheader = TRUE;
+            else if (!strcmp(p, "--"))
+                opts = FALSE;          /* next thing is filename */
+            else {
+                fprintf(stderr, "unknown command line option '%s'\n", p);
+                return 1;
+            }
+        } else if (!filename) {
+            filename = p;
+        } else {
+            fprintf(stderr, "can only handle one filename\n");
+            return 1;
+        }
+    }
+
+    handle = zlib_decompress_init();
+
+    if (noheader) {
+        /*
+         * Provide missing zlib header if -d was specified.
+         */
+        zlib_decompress_block(handle, "\x78\x9C", 2, &outbuf, &outlen);
+        assert(outlen == 0);
+    }
+
+    if (filename)
+        fp = fopen(filename, "rb");
+    else
+        fp = stdin;
+
+    if (!fp) {
+        assert(filename);
+        fprintf(stderr, "unable to open '%s'\n", filename);
+        return 1;
+    }
+
+    while (1) {
+	ret = fread(buf, 1, sizeof(buf), fp);
+	if (ret <= 0)
+	    break;
+	zlib_decompress_block(handle, buf, ret, &outbuf, &outlen);
+        if (outbuf) {
+            if (outlen)
+                fwrite(outbuf, 1, outlen, stdout);
+            sfree(outbuf);
+        } else {
+            fprintf(stderr, "decoding error\n");
+            return 1;
+        }
+    }
+
+    zlib_decompress_cleanup(handle);
+
+    if (filename)
+        fclose(fp);
+
+    return 0;
+}
+
+#else
+
 const struct ssh_compress ssh_zlib = {
     "zlib",
     zlib_compress_init,
@@ -1253,3 +1377,5 @@ const struct ssh_compress ssh_zlib = {
     zlib_disable_compression,
     "zlib (RFC1950)"
 };
+
+#endif

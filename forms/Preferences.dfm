@@ -3,7 +3,7 @@ object PreferencesDialog: TPreferencesDialog
   Top = 161
   BorderStyle = bsDialog
   Caption = 'Preferences'
-  ClientHeight = 427
+  ClientHeight = 444
   ClientWidth = 527
   Color = clBtnFace
   ParentFont = True
@@ -13,12 +13,12 @@ object PreferencesDialog: TPreferencesDialog
   OnShow = FormShow
   DesignSize = (
     527
-    427)
+    444)
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
     Left = 352
-    Top = 396
+    Top = 413
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -29,7 +29,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object CloseButton: TButton
     Left = 440
-    Top = 396
+    Top = 413
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -42,7 +42,7 @@ object PreferencesDialog: TPreferencesDialog
     Left = 0
     Top = 0
     Width = 527
-    Height = 390
+    Height = 407
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
@@ -51,7 +51,7 @@ object PreferencesDialog: TPreferencesDialog
       Left = 141
       Top = 0
       Width = 386
-      Height = 390
+      Height = 407
       ActivePage = PreferencesSheet
       Align = alClient
       MultiLine = True
@@ -66,7 +66,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 2
         DesignSize = (
           378
-          335)
+          352)
         object CommonPreferencesGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -228,7 +228,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 4
         DesignSize = (
           378
-          335)
+          352)
         inline LoggingFrame: TLoggingFrame
           Left = 5
           Top = 0
@@ -260,7 +260,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 5
         DesignSize = (
           378
-          335)
+          352)
         object Label1: TLabel
           Left = 8
           Top = 226
@@ -297,7 +297,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 3
         DesignSize = (
           378
-          335)
+          352)
         object PanelsRemoteDirectoryGroup: TXPGroupBox
           Left = 8
           Top = 111
@@ -348,7 +348,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Default directory is &home directory'
-            TabOrder = 1
+            TabOrder = 2
             OnClick = ControlChange
           end
           object DeleteToRecycleBinCheck: TCheckBox
@@ -358,7 +358,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Delete local files to recycle bin'
-            TabOrder = 2
+            TabOrder = 1
             OnClick = ControlChange
           end
         end
@@ -370,7 +370,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 3
         DesignSize = (
           378
-          335)
+          352)
         object Label3: TLabel
           Left = 8
           Top = 8
@@ -387,13 +387,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 38
           Width = 362
-          Height = 75
+          Height = 99
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Panels'
           TabOrder = 0
           DesignSize = (
             362
-            75)
+            99)
           object ExplorerStyleSelectionCheck: TCheckBox
             Left = 16
             Top = 21
@@ -414,10 +414,20 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 1
             OnClick = ControlChange
           end
+          object SwappedPanelsCheck: TCheckBox
+            Left = 16
+            Top = 69
+            Width = 330
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'S&wap panels (local on right, remote on left)'
+            TabOrder = 2
+            OnClick = ControlChange
+          end
         end
         object CommanderMiscGroup: TXPGroupBox
           Left = 8
-          Top = 122
+          Top = 146
           Width = 362
           Height = 53
           Anchors = [akLeft, akTop, akRight]
@@ -439,7 +449,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object CompareCriterionsGroup: TXPGroupBox
           Left = 8
-          Top = 185
+          Top = 209
           Width = 362
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -477,7 +487,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 5
         DesignSize = (
           378
-          335)
+          352)
         object Label4: TLabel
           Left = 8
           Top = 8
@@ -599,13 +609,13 @@ object PreferencesDialog: TPreferencesDialog
               Width = 213
             end
           end
-          inherited FilterGroup: TXPGroupBox
+          inherited OtherGroup: TXPGroupBox
             Left = 8
             Top = 284
             Width = 362
             DesignSize = (
               362
-              41)
+              61)
             inherited ExcludeFileMaskCombo: THistoryComboBox
               Width = 254
             end
@@ -619,7 +629,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 7
         DesignSize = (
           378
-          335)
+          352)
         object EditorGroup: TXPGroupBox
           Left = 8
           Top = 87
@@ -652,15 +662,15 @@ object PreferencesDialog: TPreferencesDialog
             Top = 69
             Width = 315
             Height = 21
-            OnAfterDialog = ExternalEditorEditAfterDialog
+            OnAfterDialog = FilenameEditAfterDialog
             Filter = 'Executable files (*.exe)|*.exe|All files (*.*)|*.*'
             DialogTitle = 'Select editor application.'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 2
             Text = 'ExternalEditorEdit'
-            OnChange = ExternalEditorEditChange
-            OnExit = ExternalEditorEditExit
+            OnChange = FilenameEditChange
+            OnExit = FilenameEditExit
             OnKeyDown = PathEditsKeyDown
           end
           object ExternalEditorTextCheck: TCheckBox
@@ -758,7 +768,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 8
         DesignSize = (
           378
-          335)
+          352)
         object ShellIconsGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -827,7 +837,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 330
             Height = 25
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Register to handle scp:// and sftp:// addresses'
+            Caption = 'Register to &handle scp:// and sftp:// addresses'
             TabOrder = 4
             OnClick = RegisterAsUrlHandlerButtonClick
           end
@@ -836,16 +846,16 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 248
           Width = 362
-          Height = 78
+          Height = 91
           Anchors = [akLeft, akTop, akRight]
           Caption = 'External applications'
           TabOrder = 1
           DesignSize = (
             362
-            78)
+            91)
           object Label2: TLabel
             Left = 16
-            Top = 24
+            Top = 21
             Width = 61
             Height = 13
             Caption = '&PuTTY path:'
@@ -853,10 +863,9 @@ object PreferencesDialog: TPreferencesDialog
           end
           object PuttyPathEdit: TFilenameEdit
             Left = 16
-            Top = 41
+            Top = 38
             Width = 330
             Height = 21
-            OnAfterDialog = ExternalEditorEditAfterDialog
             Filter = 
               'PuTTY executable (putty.exe)|putty.exe|Executable files (*.exe)|' +
               '*.exe|All files (*.*)|*.*'
@@ -865,9 +874,15 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
             Text = 'PuttyPathEdit'
-            OnChange = ExternalEditorEditChange
-            OnExit = ExternalEditorEditExit
             OnKeyDown = PathEditsKeyDown
+          end
+          object PuttyPasswordCheck: TCheckBox
+            Left = 24
+            Top = 65
+            Width = 329
+            Height = 17
+            Caption = '&Remember session password and pass it to PuTTY'
+            TabOrder = 1
           end
         end
       end
@@ -878,23 +893,23 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 9
         DesignSize = (
           378
-          335)
+          352)
         object CustomCommandsGroup: TXPGroupBox
           Left = 8
           Top = 8
           Width = 362
-          Height = 317
+          Height = 334
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Custom commands'
           TabOrder = 0
           DesignSize = (
             362
-            317)
+            334)
           object CustomCommandsView: TListView
             Left = 16
             Top = 24
             Width = 329
-            Height = 209
+            Height = 226
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -932,50 +947,50 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddCommandButton: TButton
             Left = 15
-            Top = 244
+            Top = 261
             Width = 83
             Height = 25
-            Anchors = [akTop, akRight]
+            Anchors = [akRight, akBottom]
             Caption = '&Add ...'
             TabOrder = 1
             OnClick = AddEditCommandButtonClick
           end
           object RemoveCommandButton: TButton
             Left = 15
-            Top = 276
+            Top = 293
             Width = 83
             Height = 25
-            Anchors = [akTop, akRight]
+            Anchors = [akRight, akBottom]
             Caption = '&Remove'
             TabOrder = 3
             OnClick = RemoveCommandButtonClick
           end
           object UpCommandButton: TButton
             Left = 263
-            Top = 244
+            Top = 261
             Width = 83
             Height = 25
-            Anchors = [akTop, akRight]
+            Anchors = [akRight, akBottom]
             Caption = '&Up'
             TabOrder = 4
             OnClick = UpDownCommandButtonClick
           end
           object DownCommandButton: TButton
             Left = 263
-            Top = 276
+            Top = 293
             Width = 83
             Height = 25
-            Anchors = [akTop, akRight]
+            Anchors = [akRight, akBottom]
             Caption = '&Down'
             TabOrder = 5
             OnClick = UpDownCommandButtonClick
           end
           object EditCommandButton: TButton
             Left = 111
-            Top = 244
+            Top = 261
             Width = 83
             Height = 25
-            Anchors = [akTop, akRight]
+            Anchors = [akRight, akBottom]
             Caption = '&Edit ...'
             TabOrder = 2
             OnClick = AddEditCommandButtonClick
@@ -989,7 +1004,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 10
         DesignSize = (
           378
-          335)
+          352)
         object DragDropDownloadsGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1036,7 +1051,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Use &shell extension'
-            TabOrder = 0
+            TabOrder = 1
             OnClick = ControlChange
           end
           object DDExtDisabledButton: TRadioButton
@@ -1046,7 +1061,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Use &temporary folder'
-            TabOrder = 1
+            TabOrder = 2
             OnClick = ControlChange
           end
           object DDExtDisabledPanel: TPanel
@@ -1055,7 +1070,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 325
             Height = 51
             BevelOuter = bvNone
-            TabOrder = 2
+            TabOrder = 3
             DesignSize = (
               325
               51)
@@ -1086,7 +1101,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Allow &moving from remote directory to other applications'
-            TabOrder = 3
+            TabOrder = 0
             OnClick = ControlChange
           end
         end
@@ -1098,7 +1113,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 11
         DesignSize = (
           378
-          335)
+          352)
         object QueueGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1192,15 +1207,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 12
         DesignSize = (
           378
-          335)
-        object RandomSeedFileLabel: TLabel
-          Left = 16
-          Top = 250
-          Width = 82
-          Height = 13
-          Caption = '&Random seed file'
-          FocusControl = RandomSeedFileEdit
-        end
+          352)
         object StorageGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1227,23 +1234,6 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 1
             OnClick = ControlChange
           end
-        end
-        object RandomSeedFileEdit: TFilenameEdit
-          Left = 136
-          Top = 246
-          Width = 234
-          Height = 21
-          AcceptFiles = True
-          DefaultExt = 'log'
-          Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
-          DialogOptions = [ofHideReadOnly, ofPathMustExist]
-          DialogTitle = 'Select file for random seed'
-          ClickKey = 16397
-          Anchors = [akLeft, akTop, akRight]
-          TabOrder = 2
-          Text = 'RandomSeedFileEdit'
-          OnChange = ControlChange
-          OnKeyDown = PathEditsKeyDown
         end
         object TemporaryDirectoryGrouo: TXPGroupBox
           Left = 8
@@ -1320,6 +1310,43 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
+        object OtherStorageGroup: TXPGroupBox
+          Left = 8
+          Top = 243
+          Width = 362
+          Height = 53
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Other'
+          TabOrder = 2
+          DesignSize = (
+            362
+            53)
+          object RandomSeedFileLabel: TLabel
+            Left = 16
+            Top = 24
+            Width = 82
+            Height = 13
+            Caption = '&Random seed file'
+            FocusControl = RandomSeedFileEdit
+          end
+          object RandomSeedFileEdit: TFilenameEdit
+            Left = 128
+            Top = 19
+            Width = 221
+            Height = 21
+            AcceptFiles = True
+            DefaultExt = 'log'
+            Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
+            DialogOptions = [ofHideReadOnly, ofPathMustExist]
+            DialogTitle = 'Select file for random seed'
+            ClickKey = 16397
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 0
+            Text = 'RandomSeedFileEdit'
+            OnChange = ControlChange
+            OnKeyDown = PathEditsKeyDown
+          end
+        end
       end
       object TransferResumeSheet: TTabSheet
         Tag = 14
@@ -1328,7 +1355,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 13
         DesignSize = (
           378
-          335)
+          352)
         object ResumeBox: TXPGroupBox
           Left = 8
           Top = 8
@@ -1390,18 +1417,18 @@ object PreferencesDialog: TPreferencesDialog
       Left = 0
       Top = 0
       Width = 141
-      Height = 390
+      Height = 407
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
         141
-        390)
+        407)
       object NavigationTree: TTreeView
         Left = 8
         Top = 9
         Width = 125
-        Height = 380
+        Height = 397
         Anchors = [akLeft, akTop, akRight, akBottom]
         HideSelection = False
         HotTrack = True

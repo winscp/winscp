@@ -84,7 +84,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       ShowCaptions = True
       TabOrder = 0
       Wrapable = False
-      object ToolButton2: TToolButton
+      object LeftMenuButton: TToolButton
         Left = 0
         Top = 0
         Hint = 'Change local panel layout or change displayed directory/drive'
@@ -138,7 +138,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         Grouped = True
         MenuItem = NonVisualDataModule.CommanderOptionsMenu
       end
-      object ToolButton3: TToolButton
+      object RightMenuButton: TToolButton
         Left = 262
         Top = 0
         Hint = 'Change remote panel layout or change displayed directory'

@@ -53,11 +53,12 @@ struct TScpCommanderConfiguration {
   bool CompareByTime;
   bool CompareBySize;
   bool SynchronizeBrowsing;
+  bool SwappedPanels;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(CoolBarLayout) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(ToolBar) C(CommandLine)
       C(ExplorerStyleSelection) C(PreserveLocalDirectory)
-      C(CompareBySize) C(CompareByTime) C(SynchronizeBrowsing) 0; };
+      C(CompareBySize) C(CompareByTime) C(SynchronizeBrowsing) C(SwappedPanels) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {

@@ -643,6 +643,8 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
   AnsiString * UserName, AnsiString * Password, AnsiString * Path,
   AnsiString * FileName)
 {
+  #define DECODE(S) (FLAGSET(Params, puDecodeUrlChars) ? DecodeUrlChars(S) : S)
+
   int PSlash = Url.Pos("/");
   if (PSlash == 0)
   {
@@ -668,7 +670,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
         {
           if (FileName != NULL)
           {
-            *FileName = UnixExtractFileName(APath);
+            *FileName = DECODE(UnixExtractFileName(APath));
           }
           if (FLAGSET(Params, puExtractFileName))
           {
@@ -677,7 +679,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
         }
         if (Path != NULL)
         {
-          *Path = APath;
+          *Path = DECODE(APath);
         }
       }
     }
@@ -702,7 +704,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
 
     if (HostName != NULL)
     {
-      *HostName = CutToChar(HostInfo, ':', true);
+      *HostName = DECODE(CutToChar(HostInfo, ':', true));
     }
     else
     {
@@ -711,12 +713,12 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
 
     if (PortNumber != NULL)
     {
-      *PortNumber = HostInfo.IsEmpty() ? -1 : StrToIntDef(HostInfo, -1);
+      *PortNumber = HostInfo.IsEmpty() ? -1 : StrToIntDef(DECODE(HostInfo), -1);
     }
 
     if (UserName != NULL)
     {
-      *UserName = CutToChar(UserInfo, ':', false);
+      *UserName = DECODE(CutToChar(UserInfo, ':', false));
     }
     else
     {
@@ -725,10 +727,11 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
 
     if (Password != NULL)
     {
-      *Password = UserInfo;
+      *Password = DECODE(UserInfo);
     }
   }
   return Result;
+  #undef DECODE
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,

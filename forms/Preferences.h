@@ -129,8 +129,6 @@ __published:
   TXPGroupBox *StorageGroup;
   TRadioButton *RegistryStorageButton;
   TRadioButton *IniFileStorageButton;
-  TLabel *RandomSeedFileLabel;
-  TFilenameEdit *RandomSeedFileEdit;
   TXPGroupBox *NotificationsGroup;
   TCheckBox *BeepOnFinishCheck;
   TUpDownEdit *BeepOnFinishAfterEdit;
@@ -153,13 +151,18 @@ __published:
   TLabel *Label6;
   TCheckBox *TemporaryDirectoryCleanupCheck;
   TCheckBox *ConfirmTemporaryDirectoryCleanupCheck;
+  TCheckBox *PuttyPasswordCheck;
+  TXPGroupBox *OtherStorageGroup;
+  TLabel *RandomSeedFileLabel;
+  TFilenameEdit *RandomSeedFileEdit;
+  TCheckBox *SwappedPanelsCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
-  void __fastcall ExternalEditorEditExit(TObject *Sender);
-  void __fastcall ExternalEditorEditAfterDialog(TObject *Sender,
+  void __fastcall FilenameEditExit(TObject *Sender);
+  void __fastcall FilenameEditAfterDialog(TObject *Sender,
           AnsiString &Name, bool &Action);
-  void __fastcall ExternalEditorEditChange(TObject *Sender);
+  void __fastcall FilenameEditChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall IconButtonClick(TObject *Sender);
   void __fastcall CustomCommandsViewData(TObject *Sender, TListItem *Item);
@@ -190,7 +193,7 @@ private:
   TFont * FEditorFont;
   TCustomCommands * FCustomCommands;
   bool FCustomCommandChanging;
-  bool FAfterExternalEditorDialog;
+  bool FAfterFilenameEditDialog;
   int FCustomCommandDragSource;
   int FCustomCommandDragDest;
   void __fastcall SetPreferencesMode(TPreferencesMode value);

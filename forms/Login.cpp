@@ -11,6 +11,7 @@
 #include "WinInterface.h"
 #include "GUITools.h"
 #include "Tools.h"
+#include "Setup.h"
 #include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "ComboEdit"
@@ -284,6 +285,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     Scp1CompatibilityCheck->Checked = aSessionData->Scp1Compatibility;
     UnsetNationalVarsCheck->Checked = aSessionData->UnsetNationalVars;
     AliasGroupListCheck->Checked = aSessionData->AliasGroupList;
+    SCPLsFullTimeAutoCheck->Checked = (aSessionData->SCPLsFullTime != asOff);
     int TimeDifferenceMin = DateTimeToTimeStamp(aSessionData->TimeDifference).Time / 60000;
     if (double(aSessionData->TimeDifference) < 0)
     {
@@ -420,6 +422,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->Scp1Compatibility = Scp1CompatibilityCheck->Checked;
   aSessionData->UnsetNationalVars = UnsetNationalVarsCheck->Checked;
   aSessionData->AliasGroupList = AliasGroupListCheck->Checked;
+  aSessionData->SCPLsFullTime = SCPLsFullTimeAutoCheck->Checked ? asAuto : asOff;
   aSessionData->TimeDifference =
     (double(TimeDifferenceEdit->AsInteger) / 24) +
     (double(TimeDifferenceMinutesEdit->AsInteger) / 24 / 60);
@@ -710,27 +713,31 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
 {
   AnsiString SessionName;
   SaveSession(FSessionData);
-  SessionName = DoSaveSessionDialog(StoredSessions, FSessionData->SessionName);
-  if (!SessionName.IsEmpty())
+  if (FSessionData->Password.IsEmpty() ||
+      (MessageDialog(LoadStr(SAVE_PASSWORD), qtWarning, qaOK | qaCancel) == qaOK))
   {
-    TListItem * Item;
-    TSessionData *NewSession =
-      StoredSessions->NewSession(SessionName, FSessionData);
-    StoredSessions->Save();
-    // by now list must contais same number of items or one less
-    assert(StoredSessions->Count == SessionListView->Items->Count ||
-      StoredSessions->Count == SessionListView->Items->Count+1);
-    if (StoredSessions->Count > SessionListView->Items->Count)
-      Item = SessionListView->Items->Insert(StoredSessions->IndexOf(NewSession));
-    else
-      Item = SessionListView->Items->Item[StoredSessions->IndexOf(NewSession)];
+    SessionName = DoSaveSessionDialog(StoredSessions, FSessionData->SessionName);
+    if (!SessionName.IsEmpty())
+    {
+      TListItem * Item;
+      TSessionData *NewSession =
+        StoredSessions->NewSession(SessionName, FSessionData);
+      StoredSessions->Save();
+      // by now list must contais same number of items or one less
+      assert(StoredSessions->Count == SessionListView->Items->Count ||
+        StoredSessions->Count == SessionListView->Items->Count+1);
+      if (StoredSessions->Count > SessionListView->Items->Count)
+        Item = SessionListView->Items->Insert(StoredSessions->IndexOf(NewSession));
+      else
+        Item = SessionListView->Items->Item[StoredSessions->IndexOf(NewSession)];
 
-    LoadSessionItem(Item);
-    SelectedSession = NewSession;
-    SessionData = NewSession;
+      LoadSessionItem(Item);
+      SelectedSession = NewSession;
+      SessionData = NewSession;
 
-    ChangePage(SessionListSheet);
-    SessionListView->SetFocus();
+      ChangePage(SessionListSheet);
+      SessionListView->SetFocus();
+    }
   }
 }
 //---------------------------------------------------------------------------

@@ -37,7 +37,6 @@ void __fastcall TConfiguration::Default()
     TReplaceFlags() << rfReplaceAll);
   FConfirmOverwriting = true;
   FConfirmResume = true;
-  FRememberPassword = false;
 
   FLogging = false;
   FLogFileName = "";
@@ -83,7 +82,6 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
         KEY(String,   RandomSeedFile); \
         KEY(Bool,     ConfirmOverwriting); \
         KEY(Bool,     ConfirmResume); \
-        KEY(Bool,     RememberPassword); \
       ); \
       BLOCK("Logging", CANCREATE, \
         KEY(Bool,    Logging); \
@@ -671,6 +669,11 @@ AnsiString __fastcall TConfiguration::GetDefaultKeyFile()
 AnsiString __fastcall TConfiguration::GetLocalInvalidChars()
 {
   return "/\\:*?\"<>|";
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::GetRememberPassword()
+{
+  return false;
 }
 
 

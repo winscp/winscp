@@ -7,6 +7,8 @@
 #include <Common.h>
 #include <ScpMain.h>
 #include <TextsWin.h>
+#include <Tools.h>
+#include <Setup.h>
 
 #include <Log.h>
 #include <Interface.h>
@@ -863,11 +865,6 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu()
 void __fastcall TNonVisualDataModule::OpenedSessionItemClick(TObject * Sender)
 {
   TTerminalManager::Instance()->ActiveTerminal = (TTerminal*)(((TMenuItem *)Sender)->Tag);
-}
-//---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::OpenBrowser(AnsiString URL)
-{
-  ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::QueuePopupPopup(TObject * /*Sender*/)

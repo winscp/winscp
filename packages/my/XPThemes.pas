@@ -15,7 +15,7 @@ type
   TXPTheme = class
   public
     constructor Create;
-    destructor Destroy;
+    destructor Destroy; override;
     
     function ThemesActive: Boolean;
     function XPComCtl: Boolean;

@@ -105,9 +105,11 @@ void __fastcall TGUIConfiguration::Default()
   FSynchronizeRecurse = true; 
   FQueueTransfersLimit = 2;
   FQueueAutoPopup = true;
+  FQueueRememberPassword = false;
   AnsiString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
-  FPuttyPath = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
+  FPuttyPath = FormatCommand(IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe", "");
+  FPuttyPassword = false;
   FPuttySession = "WinSCP temporary session";
   FBeepOnFinish = false;
   FBeepOnFinishAfter = TDateTime(0, 0, 30, 0);
@@ -139,8 +141,10 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
     KEY(Bool,     SynchronizeRecurse); \
     KEY(Integer,  QueueTransfersLimit); \
     KEY(Bool,     QueueAutoPopup); \
+    KEY(Bool,     QueueRememberPassword); \
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
+    KEY(Bool,     PuttyPassword); \
     KEY(DateTime, IgnoreCancelBeforeFinish); \
     KEY(Bool,     BeepOnFinish); \
     KEY(DateTime, BeepOnFinishAfter); \
@@ -162,6 +166,7 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
     KEY(Bool,    CopyParam.Queue); \
     KEY(Bool,    CopyParam.QueueNoConfirmation); \
     KEY(String,  CopyParam.ExcludeFileMask.Masks); \
+    KEY(Bool,    CopyParam.ClearArchive); \
   ); \
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
@@ -467,5 +472,10 @@ void __fastcall TGUIConfiguration::SetCopyParam(TGUICopyParamType value)
 {
   FCopyParam.Assign(&value);
   Changed();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TGUIConfiguration::GetRememberPassword()
+{
+  return QueueRememberPassword || PuttyPassword;
 }
 

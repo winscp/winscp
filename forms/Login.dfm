@@ -487,7 +487,7 @@ object LoginDialog: TLoginDialog
           Width = 345
           Height = 45
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'EOL (end-of-line) characters (SCP and SFTP version < 4)'
+          Caption = 'Server EOL (end-of-line) characters (SCP and SFTP version < 4)'
           TabOrder = 0
           object EOLTypeLFButton: TRadioButton
             Left = 12
@@ -717,18 +717,18 @@ object LoginDialog: TLoginDialog
           269)
         object OtherShellOptionsGroup: TXPGroupBox
           Left = 0
-          Top = 106
+          Top = 171
           Width = 345
-          Height = 113
+          Height = 92
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Other options'
-          TabOrder = 2
+          TabOrder = 3
           DesignSize = (
             345
-            113)
+            92)
           object Label29: TLabel
             Left = 13
-            Top = 88
+            Top = 67
             Width = 105
             Height = 13
             Caption = 'Server time&zone offset'
@@ -736,7 +736,7 @@ object LoginDialog: TLoginDialog
           end
           object Label30: TLabel
             Left = 196
-            Top = 88
+            Top = 67
             Width = 26
             Height = 13
             Caption = 'hours'
@@ -744,7 +744,7 @@ object LoginDialog: TLoginDialog
           end
           object Label9: TLabel
             Left = 298
-            Top = 88
+            Top = 67
             Width = 36
             Height = 13
             Caption = 'minutes'
@@ -777,36 +777,18 @@ object LoginDialog: TLoginDialog
             TabOrder = 1
             OnClick = DataChange
           end
-          object AliasGroupListCheck: TCheckBox
+          object Scp1CompatibilityCheck: TCheckBox
             Left = 152
             Top = 38
             Width = 185
             Height = 17
-            Caption = 'Alias LS to display g&roup name'
-            TabOrder = 3
-            OnClick = DataChange
-          end
-          object IgnoreLsWarningsCheck: TCheckBox
-            Left = 12
-            Top = 59
-            Width = 140
-            Height = 17
-            Caption = 'Ignore LS &warnings'
-            TabOrder = 4
-            OnClick = DataChange
-          end
-          object Scp1CompatibilityCheck: TCheckBox
-            Left = 152
-            Top = 59
-            Width = 185
-            Height = 17
             Caption = 'Use scp&2 with scp1 compat.'
-            TabOrder = 5
+            TabOrder = 3
             OnClick = DataChange
           end
           object TimeDifferenceEdit: TUpDownEdit
             Left = 137
-            Top = 83
+            Top = 62
             Width = 54
             Height = 21
             Alignment = taRightJustify
@@ -814,12 +796,12 @@ object LoginDialog: TLoginDialog
             MinValue = -13
             Value = -13
             Anchors = [akTop, akRight]
-            TabOrder = 6
+            TabOrder = 4
             OnChange = DataChange
           end
           object TimeDifferenceMinutesEdit: TUpDownEdit
             Left = 239
-            Top = 83
+            Top = 62
             Width = 54
             Height = 21
             Alignment = taRightJustify
@@ -828,13 +810,13 @@ object LoginDialog: TLoginDialog
             MinValue = -45
             Value = -13
             Anchors = [akTop, akRight]
-            TabOrder = 7
+            TabOrder = 5
             OnChange = DataChange
           end
         end
         object ReturnVarGroup: TXPGroupBox
           Left = 0
-          Top = 55
+          Top = 54
           Width = 345
           Height = 44
           Anchors = [akLeft, akTop, akRight]
@@ -918,6 +900,42 @@ object LoginDialog: TLoginDialog
             Items.Strings = (
               '/bin/bash'
               '/bin/ksh')
+          end
+        end
+        object ScpLsOptionsGroup: TXPGroupBox
+          Left = 0
+          Top = 103
+          Width = 345
+          Height = 63
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Directory listing'
+          TabOrder = 2
+          object IgnoreLsWarningsCheck: TCheckBox
+            Left = 12
+            Top = 17
+            Width = 140
+            Height = 17
+            Caption = 'Ignore LS &warnings'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object AliasGroupListCheck: TCheckBox
+            Left = 152
+            Top = 17
+            Width = 185
+            Height = 17
+            Caption = 'Alias LS to display g&roup name'
+            TabOrder = 1
+            OnClick = DataChange
+          end
+          object SCPLsFullTimeAutoCheck: TCheckBox
+            Left = 12
+            Top = 38
+            Width = 325
+            Height = 17
+            Caption = 'Try to get &full timestamp'
+            TabOrder = 2
+            OnClick = DataChange
           end
         end
       end

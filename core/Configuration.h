@@ -29,7 +29,6 @@ private:
   bool FConfirmOverwriting;
   bool FConfirmResume;
   AnsiString FIniFileStorageName;
-  bool FRememberPassword;
 
   bool FDisablePasswordStoring;
   int FGSSAPIInstalled; 
@@ -89,6 +88,7 @@ protected:
   virtual void __fastcall SetConfirmOverwriting(bool value);
   bool __fastcall GetConfirmResume();
   void __fastcall SetConfirmResume(bool value);
+  virtual bool __fastcall GetRememberPassword();
 
   virtual AnsiString __fastcall ModuleFileName();
 
@@ -147,7 +147,7 @@ public:
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool ConfirmOverwriting = { read = GetConfirmOverwriting, write = SetConfirmOverwriting};
   __property bool ConfirmResume = { read = GetConfirmResume, write = SetConfirmResume};
-  __property bool RememberPassword = { read = FRememberPassword, write = FRememberPassword };
+  __property bool RememberPassword = { read = GetRememberPassword };
   __property AnsiString PartialExt = {read=GetPartialExt};
 
   __property AnsiString TimeFormat = { read = GetTimeFormat };

@@ -15,8 +15,12 @@ DesktopIconTask=Create a &desktop icon
 DesktopIconUserTask=For the current user only
 DesktopIconCommonTask=For all users
 QuickLaunchIconTask=Create a &Quick Launch icon
-SendToHookTask=Add upload shortcut to Explorer's 'Send to' context menu
-RegisterAsUrlHandler=Register to handle scp:// and sftp:// addresses
+SendToHookTask=Add &upload shortcut to Explorer's 'Send to' context menu
+RegisterAsUrlHandler=Register to handle scp:// and sftp:// &addresses
+AddSearchPath=Add installation directory to &search path (%PATH%)
+
+RegisteringAsUrlHandler=Registering to handle scp:// and sftp:// addresses
+AddingSearchPath=Adding installation directory to search path (%PATH%)
 
 SupportForum=Support forum
 WebSite=WinSCP Web Site

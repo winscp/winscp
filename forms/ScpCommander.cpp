@@ -43,7 +43,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
 {
   FCurrentSide = osLocal;
-  FLastLocalPanelWidth = LocalPanelWidth;
+  FLastLeftPanelWidth = LeftPanelWidth;
   FSynchronisingBrowse = false;
   FFirstTerminal = true;
   FInternalDDDownloadList = new TStringList();
@@ -109,7 +109,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
   LocalDirView->HeaderImages = NonVisualDataModule->ArrowImages;
 
   TCustomScpExplorerForm::RestoreParams();
-  LocalPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
+  LeftPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
   LoadCoolbarLayoutStr(TopCoolBar, WinConfiguration->ScpCommander.CoolBarLayout);
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
   ToolbarPanel->Visible = WinConfiguration->ScpCommander.ToolBar;
@@ -139,7 +139,7 @@ void __fastcall TScpCommanderForm::StoreParams()
   try
   {
     WinConfiguration->ScpCommander.CoolBarLayout = GetCoolbarLayoutStr(TopCoolBar);
-    WinConfiguration->ScpCommander.LocalPanelWidth = LocalPanelWidth;
+    WinConfiguration->ScpCommander.LocalPanelWidth = LeftPanelWidth;
     WinConfiguration->ScpCommander.StatusBar = StatusBar->Visible;
     WinConfiguration->ScpCommander.ToolBar = ToolbarPanel->Visible;
 
@@ -429,30 +429,56 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     !WinConfiguration->DDExtEnabled;
   LocalDriveView->DragDropFilesEx->ShellExtensions->DropHandler =
     !WinConfiguration->DDExtEnabled;
+
+  if ((LocalPanel->Left > RemotePanel->Left) != WinConfiguration->ScpCommander.SwappedPanels)
+  {
+    int AWidth = ClientWidth;
+    Panel(false)->Align = alClient;
+    Panel(true)->Align = alLeft;
+    TControl * ControlsOrder[] =
+      { Panel(true), Splitter, Panel(false) };
+    SetHorizontalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
+    Panel(true)->TabOrder = 0;
+    Panel(false)->TabOrder = 1;
+    ClientWidth = AWidth;
+    LeftPanelWidth = FLastLeftPanelWidth;
+
+    SWAP(AnsiString, LeftMenuButton->Caption, RightMenuButton->Caption);
+    SWAP(AnsiString, LeftMenuButton->Hint, RightMenuButton->Hint);
+    SWAP(TMenuItem*, LeftMenuButton->MenuItem, RightMenuButton->MenuItem);
+    SWAP(TShortCut, NonVisualDataModule->LocalChangePathAction->ShortCut, 
+      NonVisualDataModule->RemoteChangePathAction->ShortCut);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::SetLocalPanelWidth(float value)
+TPanel * __fastcall TScpCommanderForm::Panel(bool Left)
+{
+  return (WinConfiguration->ScpCommander.SwappedPanels == Left ?
+    RemotePanel : LocalPanel);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SetLeftPanelWidth(float value)
 {
   float Total = LocalPanel->Width + RemotePanel->Width;
-  FLocalPanelWidth = value;
-  if (value * Total != LocalPanel->Width)
+  FLeftPanelWidth = value;
+  if (value * Total != Panel(true)->Width)
   {
-    LocalPanel->Width = value * Total;
+    Panel(true)->Width = value * Total;
     UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
-float __fastcall TScpCommanderForm::GetLocalPanelWidth()
+float __fastcall TScpCommanderForm::GetLeftPanelWidth()
 {
-  return FLocalPanelWidth;
+  return FLeftPanelWidth;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SplitterMoved(TObject * /*Sender*/)
 {
-  float Local = LocalPanel->Width;
+  float Left = Panel(true)->Width;
   float Total = LocalPanel->Width + RemotePanel->Width;
-  FLocalPanelWidth = Local / Total;
-  FLastLocalPanelWidth = LocalPanelWidth;
+  FLeftPanelWidth = Left / Total;
+  FLastLeftPanelWidth = LeftPanelWidth;
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -462,13 +488,13 @@ void __fastcall TScpCommanderForm::SplitterCanResize(TObject * /*Sender*/,
   // When splitter is drag so far to right, that width contraint of remote panel would
   // be violated, it doesn't stop, but extend form width.
   // Following prevents this behaviour.
-  if (ClientWidth - NewSize - Splitter->Width < RemotePanel->Constraints->MinWidth)
-    NewSize = (ClientWidth - RemotePanel->Constraints->MinWidth - Splitter->Width);
+  if (ClientWidth - NewSize - Splitter->Width < Panel(false)->Constraints->MinWidth)
+    NewSize = (ClientWidth - Panel(false)->Constraints->MinWidth - Splitter->Width);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SplitterDblClick(TObject * /*Sender*/)
 {
-  LocalPanelWidth = 0.5;
+  LeftPanelWidth = 0.5;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::PanelSplitterDblClick(TObject * Sender)
@@ -504,7 +530,7 @@ void __fastcall TScpCommanderForm::PanelSplitterDblClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateControls()
 {
-  Splitter->Hint = FormatFloat("0%|X", LocalPanelWidth*100);
+  Splitter->Hint = FormatFloat("0%|X", LeftPanelWidth*100);
   CommandLineLabel->UnixPath = (FCurrentSide == osRemote);
   CommandLineLabel->Caption = DirView(osCurrent)->PathName;
   CommandLinePromptLabel->Caption =
@@ -1167,7 +1193,7 @@ void __fastcall TScpCommanderForm::Resize()
 {
   TCustomScpExplorerForm::Resize();
 
-  LocalPanelWidth = FLastLocalPanelWidth;
+  LeftPanelWidth = FLastLeftPanelWidth;
   UpdateControls();
 }
 //---------------------------------------------------------------------------

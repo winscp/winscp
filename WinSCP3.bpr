@@ -8,7 +8,7 @@
       windows\CustomWinConfiguration.obj windows\EditorManager.obj 
       windows\GUIConfiguration.obj windows\GUITools.obj forms\NonVisual.obj 
       windows\ConsoleRunner.obj windows\ProgParams.obj 
-      windows\QueueController.obj forms\ScpCommander.obj 
+      windows\QueueController.obj windows\Setup.obj forms\ScpCommander.obj 
       forms\ScpExplorer.obj windows\SynchronizeController.obj 
       windows\TerminalManager.obj windows\Tools.obj windows\UserInterface.obj 
       windows\WinConfiguration.obj windows\WinInterface.obj windows\WinMain.obj"/>
@@ -64,6 +64,7 @@
       <FILE FILENAME="windows\ConsoleRunner.cpp" FORMNAME="" UNITNAME="ConsoleRunner" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\ProgParams.cpp" FORMNAME="" UNITNAME="ProgParams" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\QueueController.cpp" FORMNAME="" UNITNAME="QueueController" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\Setup.cpp" FORMNAME="" UNITNAME="Setup" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ScpCommander.cpp" FORMNAME="ScpCommanderForm" UNITNAME="ScpCommander" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ScpExplorer.cpp" FORMNAME="ScpExplorerForm" UNITNAME="ScpExplorer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\SynchronizeController.cpp" FORMNAME="" UNITNAME="SynchronizeController" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -89,8 +90,8 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
 MinorVer=7
-Release=0
-Build=253
+Release=1
+Build=256
 Debug=0
 PreRelease=0
 Special=0
@@ -102,13 +103,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.7.0.253
+FileVersion=3.7.1.256
 InternalName=winscp3
 LegalCopyright=(c) 2000-2004 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp370.exe
+OriginalFilename=winscp371.exe
 ProductName=WinSCP
-ProductVersion=3.7.0.0
+ProductVersion=3.7.1.0
 WWW=http://winscp.sourceforge.net/
 
 [Compiler]

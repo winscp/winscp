@@ -36,6 +36,8 @@ TMessageParams::TMessageParams(const TQueryParams * AParams)
     AliasesCount = AParams->AliasesCount;
     Timer = AParams->Timer;
     TimerEvent = AParams->TimerEvent;
+    TimerMessage = AParams->TimerMessage;
+    TimerAnswers = AParams->TimerAnswers;
 
     if (FLAGSET(AParams->Params, qpNeverAskAgainCheck))
     {
@@ -55,6 +57,8 @@ inline void TMessageParams::Reset()
   AliasesCount = 0;
   Timer = NULL;
   TimerEvent = NULL;
+  TimerMessage = "";
+  TimerAnswers = 0;
 }
 //---------------------------------------------------------------------------
 inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
@@ -80,7 +84,7 @@ inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
   return Result;
 }
 //---------------------------------------------------------------------------
-inline int MapResult(int Result, unsigned int Answers)
+int MapResult(int Result, unsigned int Answers)
 {
   int Answer;
 
@@ -316,14 +320,27 @@ int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessag
   TMessageTimer * Timer = NULL;
   try
   {
-    Dialog = CreateMessageDialogEx(Message, MoreMessages, Type, Answers,
-      HelpCtx, Params);
-
+    AnsiString AMessage = Message;
     if ((Params != NULL) && (Params->Timer > 0))
     {
       Timer = new TMessageTimer(Application);
       Timer->Interval = Params->Timer;
       Timer->Event = Params->TimerEvent;
+      if (Params->TimerAnswers > 0)
+      {
+        Answers = Params->TimerAnswers;
+      }
+      if (!Params->TimerMessage.IsEmpty())
+      {
+        AMessage = Params->TimerMessage;
+      }
+    }
+
+    Dialog = CreateMessageDialogEx(AMessage, MoreMessages, Type, Answers,
+      HelpCtx, Params);
+
+    if (Timer != NULL)
+    {
       Timer->Dialog = Dialog;
     }
 

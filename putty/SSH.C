@@ -501,7 +501,7 @@ struct ssh_channel {
 	struct ssh_agent_channel {
 	    unsigned char *message;
 	    unsigned char msglen[4];
-	    int lensofar, totallen;
+	    unsigned lensofar, totallen;
 	} a;
 	struct ssh_x11_channel {
 	    Socket s;
@@ -565,6 +565,9 @@ static void ssh_throttle_all(Ssh ssh, int enable, int bufsize);
 static void ssh2_set_window(struct ssh_channel *c, unsigned newwin);
 static int ssh_sendbuffer(void *handle);
 static void ssh_do_close(Ssh ssh);
+static unsigned long ssh_pkt_getuint32(Ssh ssh);
+static int ssh2_pkt_getbool(Ssh ssh);
+static void ssh_pkt_getstring(Ssh ssh, char **p, int *length);
 
 struct rdpkt1_state_tag {
     long len, pad, biglen, to_read;
@@ -1013,15 +1016,14 @@ static int ssh1_rdpkt(Ssh ssh, unsigned char **data, int *datalen)
     }
 
     if (ssh->pktin.type == SSH1_MSG_DEBUG) {
-	/* log debug message */
-	char buf[512];
-	int stringlen = GET_32BIT(ssh->pktin.body);
-	strcpy(buf, "Remote debug message: ");
-	if (stringlen > 480)
-	    stringlen = 480;
-	memcpy(buf + 8, ssh->pktin.body + 4, stringlen);
-	buf[8 + stringlen] = '\0';
+        char *buf, *msg;
+        int msglen;
+
+        ssh_pkt_getstring(ssh, &msg, &msglen);
+        buf = dupprintf("Remote debug message: %.*s", msglen, msg);
 	logevent(buf);
+        sfree(buf);
+
 	goto next_packet;
     } else if (ssh->pktin.type == SSH1_MSG_IGNORE) {
 	/* do nothing */
@@ -1030,17 +1032,12 @@ static int ssh1_rdpkt(Ssh ssh, unsigned char **data, int *datalen)
 
     if (ssh->pktin.type == SSH1_MSG_DISCONNECT) {
 	/* log reason code in disconnect message */
-	char buf[256];
-	unsigned msglen = GET_32BIT(ssh->pktin.body);
-	unsigned nowlen;
-	strcpy(buf, "Remote sent disconnect: ");
-	nowlen = strlen(buf);
-	if (msglen > sizeof(buf) - nowlen - 1)
-	    msglen = sizeof(buf) - nowlen - 1;
-	memcpy(buf + nowlen, ssh->pktin.body + 4, msglen);
-	buf[nowlen + msglen] = '\0';
-	/* logevent(buf); (this is now done within the bombout macro) */
-	bombout(("Server sent disconnect message:\n\"%s\"", buf+nowlen));
+	char *msg;
+	int msglen;
+
+        ssh_pkt_getstring(ssh, &msg, &msglen);
+
+	bombout(("Server sent disconnect message:\n\"%.*s\"", msglen, msg));
 	crStop(0);
     }
 
@@ -1209,10 +1206,11 @@ static int ssh2_rdpkt(Ssh ssh, unsigned char **data, int *datalen)
       case SSH2_MSG_DISCONNECT:
         {
             /* log reason code in disconnect message */
-            char *buf;
-	    int nowlen;
-            int reason = GET_32BIT(ssh->pktin.data + 6);
-            unsigned msglen = GET_32BIT(ssh->pktin.data + 10);
+            char *buf, *msg;
+            int nowlen, reason, msglen;
+
+            reason = ssh_pkt_getuint32(ssh);
+            ssh_pkt_getstring(ssh, &msg, &msglen);
 
             if (reason > 0 && reason < lenof(ssh2_disconnect_reasons)) {
                 buf = dupprintf("Received disconnect message (%s)",
@@ -1224,7 +1222,7 @@ static int ssh2_rdpkt(Ssh ssh, unsigned char **data, int *datalen)
             logevent(buf);
 	    sfree(buf);
             buf = dupprintf("Disconnection message text: %n%.*s",
-			    &nowlen, msglen, ssh->pktin.data + 14);
+			    &nowlen, msglen, msg);
             logevent(buf);
             bombout(("Server sent disconnect message\ntype %d (%s):\n\"%s\"",
                      reason,
@@ -1240,19 +1238,19 @@ static int ssh2_rdpkt(Ssh ssh, unsigned char **data, int *datalen)
       case SSH2_MSG_DEBUG:
 	{
 	    /* log the debug message */
-	    char buf[512];
-	    /* int display = ssh->pktin.body[6]; */
-	    int stringlen = GET_32BIT(ssh->pktin.data+7);
-	    int prefix;
-	    strcpy(buf, "Remote debug message: ");
-	    prefix = strlen(buf);
-	    if (stringlen > (int)(sizeof(buf)-prefix-1))
-		stringlen = sizeof(buf)-prefix-1;
-	    memcpy(buf + prefix, ssh->pktin.data + 11, stringlen);
-	    buf[prefix + stringlen] = '\0';
+	    char *buf, *msg;
+	    int msglen;
+	    int always_display;
+
+	    /* XXX maybe we should actually take notice of this */
+            always_display = ssh2_pkt_getbool(ssh);
+            ssh_pkt_getstring(ssh, &msg, &msglen);
+
+            buf = dupprintf("Remote debug message: %.*s", msglen, msg);
 	    logevent(buf);
+            sfree(buf);
 	}
-        goto next_packet;              /* FIXME: print the debug message */
+        goto next_packet;
 
         /*
          * These packets we need do nothing about here.
@@ -5200,6 +5198,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen, int ispkt)
 	int siglen, retlen, len;
 	char *q, *agentreq, *ret;
 	int try_send;
+	int num_env, env_left, env_ok;
 #ifdef GSSAPI
 	Gssctxt *gssctxt;
 	gss_OID_set gss_supported;
@@ -5735,7 +5734,7 @@ auth_begin:
 		    ssh2_pkt_addstring_data(ssh, (char *)pub_blob,
 					    pub_blob_len);
 		    ssh2_pkt_send(ssh);
-		    logevent("Offered public key");	/* FIXME */
+		    logevent("Offered public key");
 
 		    crWaitUntilV(ispkt);
 		    if (ssh->pktin.type != SSH2_MSG_USERAUTH_PK_OK) {
@@ -6184,10 +6183,12 @@ auth_begin:
      * point; there's no need to send SERVICE_REQUEST.
      */
 
-    /*
-     * So now create a channel with a session in it.
-     */
     ssh->channels = newtree234(ssh_channelcmp);
+
+    /*
+     * Create the main session channel.
+     */
+    if (!ssh->cfg.ssh_no_shell) {
     ssh->mainchan = snew(struct ssh_channel);
     ssh->mainchan->ssh = ssh;
     ssh->mainchan->localid = alloc_channel_id(ssh);
@@ -6215,12 +6216,15 @@ auth_begin:
     ssh->mainchan->v.v2.remmaxpkt = ssh_pkt_getuint32(ssh);
     bufchain_init(&ssh->mainchan->v.v2.outbuffer);
     add234(ssh->channels, ssh->mainchan);
+	update_specials_menu(ssh->frontend);
     logevent("Opened channel for session");
+    } else
+	ssh->mainchan = NULL;
 
     /*
      * Potentially enable X11 forwarding.
      */
-    if (ssh->cfg.x11_forward) {
+    if (ssh->mainchan && ssh->cfg.x11_forward) {
 	char proto[20], data[64];
 	logevent("Requesting X11 forwarding");
 	ssh->x11auth = x11_invent_auth(proto, sizeof(proto),
@@ -6433,7 +6437,7 @@ auth_begin:
     /*
      * Potentially enable agent forwarding.
      */
-    if (ssh->cfg.agentfwd && agent_exists()) {
+    if (ssh->mainchan && ssh->cfg.agentfwd && agent_exists()) {
 	logevent("Requesting OpenSSH-style agent forwarding");
 	ssh2_pkt_init(ssh, SSH2_MSG_CHANNEL_REQUEST);
 	ssh2_pkt_adduint32(ssh, ssh->mainchan->remoteid);
@@ -6469,7 +6473,7 @@ auth_begin:
     /*
      * Now allocate a pty for the session.
      */
-    if (!ssh->cfg.nopty) {
+    if (ssh->mainchan && !ssh->cfg.nopty) {
 	/* Unpick the terminal-speed string. */
 	/* XXX perhaps we should allow no speeds to be sent. */
         ssh->ospeed = 38400; ssh->ispeed = 38400; /* last-resort defaults */
@@ -6522,11 +6526,87 @@ auth_begin:
     }
 
     /*
+     * Send environment variables.
+     * 
+     * Simplest thing here is to send all the requests at once, and
+     * then wait for a whole bunch of successes or failures.
+     */
+    if (ssh->mainchan && *ssh->cfg.environmt) {
+	char *e = ssh->cfg.environmt;
+	char *var, *varend, *val;
+
+	s->num_env = 0;
+
+	while (*e) {
+	    var = e;
+	    while (*e && *e != '\t') e++;
+	    varend = e;
+	    if (*e == '\t') e++;
+	    val = e;
+	    while (*e) e++;
+	    e++;
+
+	    ssh2_pkt_init(ssh, SSH2_MSG_CHANNEL_REQUEST);
+	    ssh2_pkt_adduint32(ssh, ssh->mainchan->remoteid);
+	    ssh2_pkt_addstring(ssh, "env");
+	    ssh2_pkt_addbool(ssh, 1);	       /* want reply */
+	    ssh2_pkt_addstring_start(ssh);
+	    ssh2_pkt_addstring_data(ssh, var, varend-var);
+	    ssh2_pkt_addstring(ssh, val);
+	    ssh2_pkt_send(ssh);
+
+	    s->num_env++;
+	}
+
+	logeventf(ssh, "Sent %d environment variables", s->num_env);
+
+	s->env_ok = 0;
+	s->env_left = s->num_env;
+
+	while (s->env_left > 0) {
+	    do {
+		crWaitUntilV(ispkt);
+		if (ssh->pktin.type == SSH2_MSG_CHANNEL_WINDOW_ADJUST) {
+		    unsigned i = ssh_pkt_getuint32(ssh);
+		    struct ssh_channel *c;
+		    c = find234(ssh->channels, &i, ssh_channelfind);
+		    if (!c)
+			continue;	       /* nonexistent channel */
+		    c->v.v2.remwindow += ssh_pkt_getuint32(ssh);
+		}
+	    } while (ssh->pktin.type == SSH2_MSG_CHANNEL_WINDOW_ADJUST);
+
+	    if (ssh->pktin.type != SSH2_MSG_CHANNEL_SUCCESS) {
+		if (ssh->pktin.type != SSH2_MSG_CHANNEL_FAILURE) {
+		    bombout(("Unexpected response to environment request:"
+			     " packet type %d", ssh->pktin.type));
+		    crStopV;
+		}
+	    } else {
+		s->env_ok++;
+	    }
+
+	    s->env_left--;
+	}
+
+	if (s->env_ok == s->num_env) {
+	    logevent("All environment variables successfully set");
+	} else if (s->env_ok == 0) {
+	    logevent("All environment variables refused");
+	    c_write_str(ssh, "Server refused to set environment variables\r\n");
+	} else {
+	    logeventf(ssh, "%d environment variables refused",
+		      s->num_env - s->env_ok);
+	    c_write_str(ssh, "Server refused to set all environment variables\r\n");
+	}
+    }
+
+    /*
      * Start a shell or a remote command. We may have to attempt
      * this twice if the config data has provided a second choice
      * of command.
      */
-    while (1) {
+    if (ssh->mainchan) while (1) {
 	int subsys;
 	char *cmd;
 
@@ -6600,6 +6680,7 @@ auth_begin:
      */
     if (ssh->ldisc)
 	ldisc_send(ssh->ldisc, NULL, 0, 0);/* cause ldisc to notice changes */
+    if (ssh->mainchan)
     ssh->send_ok = 1;
     while (1) {
 	crReturnV;
@@ -6717,7 +6798,9 @@ auth_begin:
 		/* Do pre-close processing on the channel. */
 		switch (c->type) {
 		  case CHAN_MAINSESSION:
-		    break;	       /* nothing to see here, move along */
+		    ssh->mainchan = NULL;
+		    update_specials_menu(ssh->frontend);
+		    break;
 		  case CHAN_X11:
 		    if (c->u.x11.s != NULL)
 			x11_close(c->u.x11.s);
@@ -6743,8 +6826,10 @@ auth_begin:
 
 		/*
 		 * See if that was the last channel left open.
+		 * (This is only our termination condition if we're
+		 * not running in -N mode.)
 		 */
-		if (count234(ssh->channels) == 0) {
+		if (!ssh->cfg.ssh_no_shell && count234(ssh->channels) == 0) {
 		    logevent("All channels closed. Disconnecting");
 #if 0
                     /*
@@ -6839,6 +6924,7 @@ auth_begin:
  		unsigned localid;
 		char *type;
 		int typelen, want_reply;
+		int reply = SSH2_MSG_CHANNEL_FAILURE; /* default */
 		struct ssh_channel *c;
 
 		localid = ssh_pkt_getuint32(ssh);
@@ -6870,18 +6956,94 @@ auth_begin:
 		 * the request type string to see if it's something
 		 * we recognise.
 		 */
-		if (typelen == 11 && !memcmp(type, "exit-status", 11) &&
-		    c == ssh->mainchan) {
-		    /* We recognise "exit-status" on the primary channel. */
-		    char buf[100];
+		if (c == ssh->mainchan) {
+		    /*
+		     * We recognise "exit-status" and "exit-signal" on
+		     * the primary channel.
+		     */
+		    if (typelen == 11 &&
+			!memcmp(type, "exit-status", 11)) {
+
 		    ssh->exitcode = ssh_pkt_getuint32(ssh);
-		    sprintf(buf, "Server sent command exit status %d",
+			logeventf(ssh, "Server sent command exit status %d",
 			    ssh->exitcode);
-		    logevent(buf);
-		    if (want_reply) {
-			ssh2_pkt_init(ssh, SSH2_MSG_CHANNEL_SUCCESS);
-			ssh2_pkt_adduint32(ssh, c->remoteid);
-			ssh2_pkt_send(ssh);
+			reply = SSH2_MSG_CHANNEL_SUCCESS;
+
+		    } else if (typelen == 11 &&
+			       !memcmp(type, "exit-signal", 11)) {
+
+			int is_plausible = TRUE, is_int = FALSE;
+			char *fmt_sig = "", *fmt_msg = "";
+			char *msg;
+			int msglen = 0, core = FALSE;
+			/* ICK: older versions of OpenSSH (e.g. 3.4p1)
+			 * provide an `int' for the signal, despite its
+			 * having been a `string' in the drafts since at
+			 * least 2001. (Fixed in session.c 1.147.) Try to
+			 * infer which we can safely parse it as. */
+			{
+			    unsigned char *p = ssh->pktin.body +
+				               ssh->pktin.savedpos;
+			    long len = ssh->pktin.length - ssh->pktin.savedpos;
+			    unsigned long num = GET_32BIT(p); /* what is it? */
+			    /* If it's 0, it hardly matters; assume string */
+			    if (num == 0) {
+				is_int = FALSE;
+			    } else {
+				int maybe_int = FALSE, maybe_str = FALSE;
+#define CHECK_HYPOTHESIS(offset, result) \
+    do { \
+	long q = offset; \
+	if (q >= 0 && q+4 <= len) { \
+	    q = q + 4 + GET_32BIT(p+q); \
+	    if (q >= 0 && q+4 <= len && \
+		    (q = q + 4 + GET_32BIT(p+q)) && q == len) \
+		result = TRUE; \
+	} \
+    } while(0)
+				CHECK_HYPOTHESIS(4+1, maybe_int);
+				CHECK_HYPOTHESIS(4+num+1, maybe_str);
+#undef CHECK_HYPOTHESIS
+				if (maybe_int && !maybe_str)
+				    is_int = TRUE;
+				else if (!maybe_int && maybe_str)
+				    is_int = FALSE;
+				else
+				    /* Crikey. Either or neither. Panic. */
+				    is_plausible = FALSE;
+			    }
+			}
+			if (is_plausible) {
+			    if (is_int) {
+				/* Old non-standard OpenSSH. */
+				int signum = ssh_pkt_getuint32(ssh);
+				fmt_sig = dupprintf(" %d", signum);
+			    } else {
+				/* As per the drafts. */
+				char *sig;
+				int siglen;
+				ssh_pkt_getstring(ssh, &sig, &siglen);
+				/* Signal name isn't supposed to be blank, but
+				 * let's cope gracefully if it is. */
+				if (siglen) {
+				    fmt_sig = dupprintf(" \"%.*s\"",
+							siglen, sig);
+				}
+			    }
+			    core = ssh2_pkt_getbool(ssh);
+			    ssh_pkt_getstring(ssh, &msg, &msglen);
+			    if (msglen) {
+				fmt_msg = dupprintf(" (\"%.*s\")", msglen, msg);
+			    }
+			    /* ignore lang tag */
+			} /* else don't attempt to parse */
+			logeventf(ssh, "Server exited on signal%s%s%s",
+				  fmt_sig, core ? " (core dumped)" : "",
+				  fmt_msg);
+			if (*fmt_sig) sfree(fmt_sig);
+			if (*fmt_msg) sfree(fmt_msg);
+			reply = SSH2_MSG_CHANNEL_SUCCESS;
+
 		    }
 		} else {
 		    /*
@@ -6890,12 +7052,13 @@ auth_begin:
 		     * or respond with CHANNEL_FAILURE, depending
 		     * on want_reply.
 		     */
+		    reply = SSH2_MSG_CHANNEL_FAILURE;
+		}
 		    if (want_reply) {
-			ssh2_pkt_init(ssh, SSH2_MSG_CHANNEL_FAILURE);
+		    ssh2_pkt_init(ssh, reply);
 			ssh2_pkt_adduint32(ssh, c->remoteid);
 			ssh2_pkt_send(ssh);
 		    }
-		}
 	    } else if (ssh->pktin.type == SSH2_MSG_GLOBAL_REQUEST) {
 		char *type;
 		int typelen, want_reply;
@@ -7024,7 +7187,7 @@ auth_begin:
 		bombout(("Strange packet received: type %d", ssh->pktin.type));
 		crStopV;
 	    }
-	} else {
+	} else if (ssh->mainchan) {
 	    /*
 	     * We have spare data. Add it to the channel buffer.
 	     */
@@ -7344,7 +7507,7 @@ static void ssh_size(void *handle, int width, int height)
 			    PKT_INT, ssh->term_height,
 			    PKT_INT, ssh->term_width,
 			    PKT_INT, 0, PKT_INT, 0, PKT_END);
-	    } else {
+	    } else if (ssh->mainchan) {
 		ssh2_pkt_init(ssh, SSH2_MSG_CHANNEL_REQUEST);
 		ssh2_pkt_adduint32(ssh, ssh->mainchan->remoteid);
 		ssh2_pkt_addstring(ssh, "window-change");
@@ -7366,23 +7529,62 @@ static void ssh_size(void *handle, int width, int height)
  */
 static const struct telnet_special *ssh_get_specials(void *handle)
 {
+    static const struct telnet_special ignore_special[] = {
+	{"IGNORE message", TS_NOP},
+    };
+    static const struct telnet_special ssh2_session_specials[] = {
+	{NULL, TS_SEP},
+	{"Break", TS_BRK},
+	/* These are the signal names defined by draft-ietf-secsh-connect-19.
+	 * They include all the ISO C signals, but are a subset of the POSIX
+	 * required signals. */
+	{"SIGINT (Interrupt)", TS_SIGINT},
+	{"SIGTERM (Terminate)", TS_SIGTERM},
+	{"SIGKILL (Kill)", TS_SIGKILL},
+	{"SIGQUIT (Quit)", TS_SIGQUIT},
+	{"SIGHUP (Hangup)", TS_SIGHUP},
+	{"More signals", TS_SUBMENU},
+	  {"SIGABRT", TS_SIGABRT}, {"SIGALRM", TS_SIGALRM},
+	  {"SIGFPE",  TS_SIGFPE},  {"SIGILL",  TS_SIGILL},
+	  {"SIGPIPE", TS_SIGPIPE}, {"SIGSEGV", TS_SIGSEGV},
+	  {"SIGUSR1", TS_SIGUSR1}, {"SIGUSR2", TS_SIGUSR2},
+	{NULL, TS_EXITMENU}
+    };
+    static const struct telnet_special specials_end[] = {
+	{NULL, TS_EXITMENU}
+    };
+    static struct telnet_special ssh_specials[lenof(ignore_special) +
+					      lenof(ssh2_session_specials) +
+					      lenof(specials_end)];
     Ssh ssh = (Ssh) handle;
+    int i = 0;
+#define ADD_SPECIALS(name) \
+    do { \
+	assert((i + lenof(name)) <= lenof(ssh_specials)); \
+	memcpy(&ssh_specials[i], name, sizeof name); \
+	i += lenof(name); \
+    } while(0)
 
     if (ssh->version == 1) {
-	static const struct telnet_special ssh1_specials[] = {
-	    {"IGNORE message", TS_NOP},
-	    {NULL, 0}
-	};
-	return ssh1_specials;
+	/* Don't bother offering IGNORE if we've decided the remote
+	 * won't cope with it, since we wouldn't bother sending it if
+	 * asked anyway. */
+	if (!(ssh->remote_bugs & BUG_CHOKES_ON_SSH1_IGNORE))
+	    ADD_SPECIALS(ignore_special);
     } else if (ssh->version == 2) {
-	static const struct telnet_special ssh2_specials[] = {
-	    {"Break", TS_BRK},
-	    {"IGNORE message", TS_NOP},
-	    {NULL, 0}
-	};
-	return ssh2_specials;
-    } else
+	/* XXX add rekey, when implemented */
+	ADD_SPECIALS(ignore_special);
+	if (ssh->mainchan)
+	    ADD_SPECIALS(ssh2_session_specials);
+    } /* else we're not ready yet */
+
+    if (i) {
+	ADD_SPECIALS(specials_end);
+	return ssh_specials;
+    } else {
 	return NULL;
+}
+#undef ADD_SPECIALS
 }
 
 /*
@@ -7406,7 +7608,7 @@ static void ssh_special(void *handle, Telnet_Special code)
 	}
 	if (ssh->version == 1) {
 	    send_packet(ssh, SSH1_CMSG_EOF, PKT_END);
-	} else {
+	} else if (ssh->mainchan) {
 	    ssh2_pkt_init(ssh, SSH2_MSG_CHANNEL_EOF);
 	    ssh2_pkt_adduint32(ssh, ssh->mainchan->remoteid);
 	    ssh2_pkt_send(ssh);
@@ -7428,7 +7630,7 @@ static void ssh_special(void *handle, Telnet_Special code)
 	    || ssh->state == SSH_STATE_PREPACKET) return;
 	if (ssh->version == 1) {
 	    logevent("Unable to send BREAK signal in SSH1");
-	} else {
+	} else if (ssh->mainchan) {
 	    ssh2_pkt_init(ssh, SSH2_MSG_CHANNEL_REQUEST);
 	    ssh2_pkt_adduint32(ssh, ssh->mainchan->remoteid);
 	    ssh2_pkt_addstring(ssh, "break");
@@ -7437,7 +7639,37 @@ static void ssh_special(void *handle, Telnet_Special code)
 	    ssh2_pkt_send(ssh);
 	}
     } else {
-	/* do nothing */
+	/* Is is a POSIX signal? */
+	char *signame = NULL;
+	if (code == TS_SIGABRT) signame = "ABRT";
+	if (code == TS_SIGALRM) signame = "ALRM";
+	if (code == TS_SIGFPE)  signame = "FPE";
+	if (code == TS_SIGHUP)  signame = "HUP";
+	if (code == TS_SIGILL)  signame = "ILL";
+	if (code == TS_SIGINT)  signame = "INT";
+	if (code == TS_SIGKILL) signame = "KILL";
+	if (code == TS_SIGPIPE) signame = "PIPE";
+	if (code == TS_SIGQUIT) signame = "QUIT";
+	if (code == TS_SIGSEGV) signame = "SEGV";
+	if (code == TS_SIGTERM) signame = "TERM";
+	if (code == TS_SIGUSR1) signame = "USR1";
+	if (code == TS_SIGUSR2) signame = "USR2";
+	/* The SSH-2 protocol does in principle support arbitrary named
+	 * signals, including signame@domain, but we don't support those. */
+	if (signame) {
+	    /* It's a signal. */
+	    if (ssh->version == 2 && ssh->mainchan) {
+		ssh2_pkt_init(ssh, SSH2_MSG_CHANNEL_REQUEST);
+		ssh2_pkt_adduint32(ssh, ssh->mainchan->remoteid);
+		ssh2_pkt_addstring(ssh, "signal");
+		ssh2_pkt_addbool(ssh, 0);
+		ssh2_pkt_addstring(ssh, signame);
+		ssh2_pkt_send(ssh);
+		logeventf(ssh, "Sent signal SIG%s", signame);
+	    }
+	} else {
+	    /* Never heard of it. Do nothing */
+	}
     }
 }
 

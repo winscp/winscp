@@ -1307,7 +1307,8 @@ void __fastcall TManagementScript::DoConnect(const AnsiString Session)
 {
   bool DefaultsOnly;
 
-  TSessionData * Data = FStoredSessions->ParseUrl(Session, DefaultsOnly, 0, NULL);
+  TSessionData * Data = FStoredSessions->ParseUrl(Session, DefaultsOnly,
+    puDecodeUrlChars, NULL);
   try
   {
     assert(Data != NULL);

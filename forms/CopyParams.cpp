@@ -25,7 +25,7 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   FDirection = pdToLocal;
   Direction = pdToRemote;
 
-  FOptions = cfAllowTransferMode | cfAllowExcludeMask;
+  FOptions = cfAllowTransferMode | cfAllowExcludeMask | cfAllowClearArchive;
   RightsFrame->AllowAddXToDirectories = True;
   FParams = new TCopyParamType();
   TCopyParamType DefParams;
@@ -70,6 +70,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   CommonCalculateSizeCheck->Checked = value.CalculateSize;
 
   ExcludeFileMaskCombo->Text = value.ExcludeFileMask.Masks;
+  ClearArchiveCheck->Checked = value.ClearArchive;
 
   *FParams = value;
 
@@ -111,6 +112,7 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.CalculateSize = CommonCalculateSizeCheck->Checked;
 
   Result.ExcludeFileMask.Masks = ExcludeFileMaskCombo->Text;
+  Result.ClearArchive = ClearArchiveCheck->Checked;
 
   return Result;
 }
@@ -134,7 +136,9 @@ void __fastcall TCopyParamsFrame::UpdateControls()
   EnableControl(AsciiFileMaskCombo,
     FLAGSET(Options, cfAllowTransferMode) && TMAutomaticButton->Checked && Enabled);
   EnableControl(RightsFrame, PreserveRightsCheck->Checked && Enabled);
-  EnableControl(FilterGroup, FLAGSET(Options, cfAllowExcludeMask));
+  EnableControl(ExcludeFileMaskCombo, FLAGSET(Options, cfAllowExcludeMask));
+  EnableControl(ExcludeFileMaskLabel, ExcludeFileMaskCombo->Enabled);
+  EnableControl(ClearArchiveCheck, FLAGSET(Options, cfAllowClearArchive));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)

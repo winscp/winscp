@@ -838,3 +838,28 @@ AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength)
 
   return Result;
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall DecodeUrlChars(AnsiString S)
+{
+  int i = 1;
+  while (i <= S.Length())
+  {
+    switch (S[i])
+    {
+      case '+':
+        S[i] = ' ';
+        break;
+
+      case '%':
+        if (i <= S.Length() - 2)
+        {
+          S[i] = HexToStr(S.SubString(i + 1, 2))[1];
+          S.Delete(i + 1, 2);
+        }
+        break;
+    }
+    i++;
+  }
+  return S;
+}
+

@@ -480,7 +480,7 @@ class TConsoleRunner
 public:
   TConsoleRunner(TConsole * Console);
 
-  void __fastcall Run(const AnsiString Session, const AnsiString ScriptFile);
+  int __fastcall Run(const AnsiString Session, const AnsiString ScriptFile);
 
 protected:
   bool __fastcall Input(AnsiString & Str, bool Echo);
@@ -495,6 +495,7 @@ private:
   TSynchronizeController FSynchronizeController;
   int FLastProgressLen;
   bool FSynchronizeAborted;
+  bool FAnyError;
 
   void __fastcall ScriptPrint(TScript * Script, const AnsiString Str);
   void __fastcall ScriptPrintProgress(TScript * Script, const AnsiString Str);
@@ -526,6 +527,7 @@ TConsoleRunner::TConsoleRunner(TConsole * Console) :
   FConsole = Console;
   FLastProgressLen = 0;
   FScript = NULL;
+  FAnyError = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptInput(TScript * /*Script*/,
@@ -796,6 +798,10 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   PrintLine(AnswerCaption);
 
   Answer = Buttons[AnswerIndex - 1];
+  if (Answer == qaAbort)
+  {
+    FAnyError = true;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptQueryCancel(TScript * /*Script*/, bool & Cancel)
@@ -865,6 +871,7 @@ void __fastcall TConsoleRunner::ShowException(Exception * E)
   if (!E->Message.IsEmpty() &&
       (dynamic_cast<EAbort *>(E) == NULL))
   {
+    FAnyError = true;
     PrintMessage(E->Message);
     ExtException * EE = dynamic_cast<ExtException *>(E);
     if ((EE != NULL) && (EE->MoreMessages != NULL))
@@ -889,7 +896,7 @@ bool __fastcall TConsoleRunner::Input(AnsiString & Str, bool Echo)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::Run(const AnsiString Session, const AnsiString ScriptFile)
+int __fastcall TConsoleRunner::Run(const AnsiString Session, const AnsiString ScriptFile)
 {
   TStrings * ScriptCommands = NULL;
   FScript = new TManagementScript(StoredSessions);
@@ -951,6 +958,8 @@ void __fastcall TConsoleRunner::Run(const AnsiString Session, const AnsiString S
     FScript = NULL;
     delete ScriptCommands;
   }
+
+  return FAnyError ? 1 : 0;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::UpdateTitle()
@@ -967,8 +976,9 @@ void __fastcall TConsoleRunner::UpdateTitle()
   FConsole->SetTitle(NewTitle);
 }
 //---------------------------------------------------------------------------
-void __fastcall Console(TProgramParams * Params, bool Help)
+int __fastcall Console(TProgramParams * Params, bool Help)
 {
+  int Result = 0;
   TConsole * Console = NULL;
   TConsoleRunner * Runner = NULL;
   try
@@ -1006,7 +1016,7 @@ void __fastcall Console(TProgramParams * Params, bool Help)
       {
         Session = Params->Param[1];
       }
-      Runner->Run(Session, ScriptFile);
+      Result = Runner->Run(Session, ScriptFile);
     }
   }
   __finally
@@ -1014,4 +1024,6 @@ void __fastcall Console(TProgramParams * Params, bool Help)
     delete Runner;
     delete Console;
   }
+
+  return Result;
 }

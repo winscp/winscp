@@ -12,6 +12,7 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
+  int Result = 0;
   try
   {
     TProgramParams Params;
@@ -22,7 +23,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     try
     {
       Application->Title = AppName;
-      Execute(&Params);
+      Result = Execute(&Params);
     }
     __finally
     {
@@ -33,6 +34,6 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
   {
     ShowExtendedException(&E);
   }
-  return 0;
+  return Result;
 }
 //---------------------------------------------------------------------------

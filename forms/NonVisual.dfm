@@ -360,7 +360,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Parent Directory'
       Hint = 'Parent directory|Go to parent directory'
       ImageIndex = 12
-      ShortCut = 8
     end
     object RemoteRootDirAction: TAction
       Tag = 12
@@ -542,7 +541,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Parent Directory'
       Hint = 'Parent directory|Go to parent directory'
       ImageIndex = 12
-      ShortCut = 8
     end
     object LocalRootDirAction: TAction
       Tag = 8
@@ -2780,6 +2778,13 @@ object NonVisualDataModule: TNonVisualDataModule
     object CopyPathtoClipboard6: TMenuItem
       Action = RemotePathToClipboardAction
     end
+    object N79: TMenuItem
+      Caption = '-'
+      Hint = 'E'
+    end
+    object CreateDirectory3: TMenuItem
+      Action = CurrentCreateDirAction
+    end
   end
   object LocalDirViewPopup: TPopupMenu
     Images = ExplorerImages
@@ -2826,6 +2831,13 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object CopyPathtoClipboard7: TMenuItem
       Action = LocalPathToClipboardAction
+    end
+    object N82: TMenuItem
+      Caption = '-'
+      Hint = 'E'
+    end
+    object CreateDirectory4: TMenuItem
+      Action = CurrentCreateDirAction
     end
   end
 end

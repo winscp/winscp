@@ -247,4 +247,8 @@ void __fastcall ValidateMaskEdit(TComboBox * Edit)
     Abort();
   }
 }
-
+//---------------------------------------------------------------------------
+void __fastcall OpenBrowser(AnsiString URL)
+{
+  ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+}

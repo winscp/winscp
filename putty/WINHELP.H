@@ -80,6 +80,7 @@
 #define WINHELP_CTX_telnet_newline "telnet.newline"
 #define WINHELP_CTX_rlogin_localuser "rlogin.localuser"
 #define WINHELP_CTX_ssh_nopty "ssh.nopty"
+#define WINHELP_CTX_ssh_noshell "ssh.noshell"
 #define WINHELP_CTX_ssh_ciphers "ssh.ciphers"
 #define WINHELP_CTX_ssh_protocol "ssh.protocol"
 #define WINHELP_CTX_ssh_command "ssh.command"

@@ -2163,7 +2163,8 @@ void __fastcall TCustomScpExplorerForm::DoDirViewExecFile(TObject * Sender,
 {
   assert(Sender && Item && Configuration);
   TCustomDirView * ADirView = (TCustomDirView *)Sender;
-  if (ADirView->ItemIsDirectory(Item))
+  if (ADirView->ItemIsDirectory(Item) ||
+      !Terminal->SessionData->ResolveSymlinks || !Terminal->IsCapable[fcResolveSymlink])
   {
     AllowExec = true;
   }
@@ -2487,7 +2488,8 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OpenInPutty()
 {
-  OpenSessionInPutty(Terminal->SessionData);
+  OpenSessionInPutty(Terminal->SessionData,
+    GUIConfiguration->PuttyPassword ? Terminal->Password : AnsiString());
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::EnsureCommandSessionFallback(TFSCapability Capability)

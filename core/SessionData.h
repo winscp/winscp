@@ -25,6 +25,7 @@ enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 const puRequireUsername =     0x01;
 const puExcludeLeadingSlash = 0x02;
 const puExtractFileName =     0x04;
+const puDecodeUrlChars =      0x08;
 //---------------------------------------------------------------------------
 extern const char CipherNames[CIPHER_COUNT][10];
 extern const char SshProtList[][10];

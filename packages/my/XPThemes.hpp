@@ -31,7 +31,7 @@ class PASCALIMPLEMENTATION TXPTheme : public System::TObject
 	
 public:
 	__fastcall TXPTheme(void);
-	__fastcall ~TXPTheme(void);
+	__fastcall virtual ~TXPTheme(void);
 	bool __fastcall ThemesActive(void);
 	bool __fastcall XPComCtl(void);
 	void __fastcall ShowFocus(Forms::TCustomForm* Form);

@@ -119,7 +119,8 @@ void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
-  if (ITEMFILE->IsDirectory)
+  if (ITEMFILE->IsDirectory ||
+      !Terminal->SessionData->ResolveSymlinks || !Terminal->IsCapable[fcResolveSymlink])
   {
     FLastPath = PathName;
     ChangeDirectory(ITEMFILE->FileName);

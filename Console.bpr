@@ -56,7 +56,7 @@ AutoIncBuild=1
 MajorVer=1
 MinorVer=0
 Release=0
-Build=40
+Build=42
 Debug=0
 PreRelease=0
 Special=0
@@ -68,13 +68,13 @@ CodePage=1250
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Console interface for WinSCP
-FileVersion=1.0.0.40
+FileVersion=1.0.0.42
 InternalName=console
 LegalCopyright=(c) 2004 Martin Prikryl
 LegalTrademarks=
 OriginalFilename=winscp3.com
 ProductName=WinSCP
-ProductVersion=3.7.0.0
+ProductVersion=3.7.1.0
 Comments=
 
 [Compiler]

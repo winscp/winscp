@@ -45,11 +45,13 @@ private:
   bool FContinueOnError;
   bool FConfirmCommandSession;
   AnsiString FPuttyPath;
+  bool FPuttyPassword;
   AnsiString FPuttySession;
   int FSynchronizeParams;
   bool FSynchronizeRecurse;
   TDateTime FIgnoreCancelBeforeFinish;
   bool FQueueAutoPopup;
+  bool FQueueRememberPassword;
   int FQueueTransfersLimit;
   TGUICopyParamType FCopyParam;
   bool FBeepOnFinish;
@@ -70,6 +72,7 @@ protected:
   LCID __fastcall InternalLocale();
   void __fastcall FreeResourceModule(HANDLE Instance);
   void __fastcall SetCopyParam(TGUICopyParamType value);
+  virtual bool __fastcall GetRememberPassword();
   static AnsiString __fastcall PropertyToKey(const AnsiString Property);
 
 public:
@@ -87,10 +90,12 @@ public:
   __property bool SynchronizeRecurse = { read = FSynchronizeRecurse, write = FSynchronizeRecurse };
   __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = FQueueTransfersLimit };
   __property bool QueueAutoPopup = { read = FQueueAutoPopup, write = FQueueAutoPopup };
+  __property bool QueueRememberPassword = { read = FQueueRememberPassword, write = FQueueRememberPassword };
   __property LCID Locale = { read = GetLocale, write = SetLocale };
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
   __property TStrings * Locales = { read = GetLocales };
   __property AnsiString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
+  __property bool PuttyPassword = { read = FPuttyPassword, write = FPuttyPassword };
   __property AnsiString PuttySession = { read = FPuttySession, write = FPuttySession };
   __property TDateTime IgnoreCancelBeforeFinish = { read = FIgnoreCancelBeforeFinish, write = FIgnoreCancelBeforeFinish };
   __property TGUICopyParamType CopyParam = { read = FCopyParam, write = SetCopyParam };

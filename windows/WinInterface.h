@@ -25,6 +25,8 @@ struct TMessageParams
   unsigned int Params;
   unsigned int Timer;
   TQueryParamsTimerEvent TimerEvent;
+  AnsiString TimerMessage;
+  unsigned int TimerAnswers;
 
 private:
   inline void Reset();
@@ -64,8 +66,7 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
 
 // windows\WinMain.cpp
 class TProgramParams;
-void __fastcall Execute(TProgramParams * Params);
-//void __fastcall ReconnectTerminal();
+int __fastcall Execute(TProgramParams * Params);
 
 // forms\InputDlg.cpp
 bool __fastcall InputDialog(const AnsiString ACaption,
@@ -196,17 +197,13 @@ bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
 // forms\FileSystemInfo.cpp
 void __fastcall DoFileSystemInfoDialog(TTerminal * Terminal);
 
-// windows\WinMain.cpp
-void __fastcall CheckForUpdates();
-void __fastcall RegisterAsUrlHandler();
-
 // forms\MessageDlg.cpp
 TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
   TQueryButtonAlias * Aliases = NULL, unsigned int AliasesCount = 0);
 
 // windows\\Console.cpp
-void __fastcall Console(TProgramParams * Params, bool Help);
+int __fastcall Console(TProgramParams * Params, bool Help);
 
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand

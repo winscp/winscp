@@ -2,6 +2,8 @@ unit TcpIp;
 
 interface
 
+{$WARN SYMBOL_DEPRECATED OFF}
+
 { Based on TCP/IP component V0.2                              }
 { Copyright 1997 Andreas Hörstemeier Version 0.22  2001-07-09 }
 { http://www.hoerstemeier.com/tcpip.htm                       }
@@ -29,8 +31,8 @@ type
   ETcpIpError = class(Exception);
 
   ESocketError = class(ETcpIpError)
-    ErrorNumber: Word;
-    constructor Create(Number: Word);
+    ErrorNumber: Cardinal;
+    constructor Create(Number: Cardinal);
   end;
 
   EProtocolError = class(ETcpIpError)
@@ -130,7 +132,7 @@ type
   end;
 
 const
-  WM_SocketEvent = WM_User + $100; // my magic message number
+  WM_SocketEvent: Cardinal = WM_User + $100; // my magic message number
 
 procedure Register;
 
@@ -143,7 +145,7 @@ implementation
 const
   BackLog = 2; // possible values 1..5
   BufSize = $7F00; // size of the internal standard buffer
-  INVALID_IP_ADDRESS= $FFFFFFFF; // only invalid as a host ip, maybe OK for broadcast
+  INVALID_IP_ADDRESS= -1; // only invalid as a host ip, maybe OK for broadcast ($FFFFFFFF as longint)
 
 function LookupHostname(const Hostname: string): LongInt;
 var
@@ -273,7 +275,7 @@ begin
   ErrorNumber := Number;
 end;
 
-constructor ESocketError.Create(Number: Word);
+constructor ESocketError.Create(Number: Cardinal);
 const
   UnknownSuccessError = $1BD0000;
 var
@@ -386,7 +388,7 @@ procedure TTcpIp.WndProc(var Msg: TMessage);
 begin
   if Msg.Msg = WM_SocketEvent then
   begin
-    if Msg.LParamHi = socket_error then
+    if Msg.LParamHi = Word(socket_error) then
       else
     begin
       case Msg.LParamLo of

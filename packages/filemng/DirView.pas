@@ -36,6 +36,7 @@ unit DirView;
 interface
 
 {$WARN UNIT_PLATFORM OFF}
+{$WARN SYMBOL_PLATFORM OFF}
 {$DEFINE USE_DRIVEVIEW}
 
 uses
@@ -1855,13 +1856,13 @@ begin
               DosError := FindNext(SRec);
             end;
             SysUtils.FindClose(SRec);
-          End; {If FShowDirectories}
+          end; {If FShowDirectories}
 
 
           {Check wether displayed Items still exists:}
           FItems.Sort;
           for Index := Items.Count - 1 downto 0 do
-          Begin
+          begin
             if not FItems.Find(PFileRec(Items[Index].Data)^.FileName, Dummy) then
             begin
               if not PUpdate then
@@ -1907,19 +1908,19 @@ begin
           finally
             FDirOK := True;
 {$IFNDEF NO_THREADS}
-            IF fUseIconUpdateThread And (not FisRecycleBin) Then
+            if FUseIconUpdateThread and (not FisRecycleBin) then
               StartIconUpdateThread;
             StartWatchThread;
 {$ENDIF}
-            IF Assigned(ItemFocused) Then
-            ItemFocused.MakeVisible(False);
-            IF PUpdate And Assigned(OnDirUpdated) Then
-            OnDirUpdated(Self);
+            if Assigned(ItemFocused) then
+              ItemFocused.MakeVisible(False);
+            if PUpdate and Assigned(OnDirUpdated) then
+              OnDirUpdated(Self);
 
             Screen.Cursor := SaveCursor;
-          End;
-        End; {Finally}
-      End;
+          end;
+        end; {Finally}
+      end;
     end;
   end;
 end; {Reload2}

@@ -45,7 +45,7 @@ private:
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall TerminalClose(TObject * Sender);
-  inline void __fastcall AddLine(AnsiString Line);
+  void __fastcall AddLine(AnsiString Line);
 
 protected:
   void __fastcall DoChangeDirectory(TObject * Sender);

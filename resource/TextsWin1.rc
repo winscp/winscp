@@ -58,6 +58,8 @@ BEGIN
         CONSOLE_COMM_ERROR, "Cannot open mapping object to start comunication with external console."
         CONSOLE_SEND_TIMEOUT, "Timeout waiting for external console to complete the command."
         EXTERNAL_CONSOLE_INCOMPATIBLE, "Incompatible external console protocol version %d."
+        ADD_PATH_ERROR, "Error adding path '%s' to search path (%%PATH%%)."
+        REMOVE_PATH_ERROR, "Error removing path '%s' from search path (%%PATH%%)."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
         CONFIRM_OVERWRITE_SESSION, "Session with name '%s' already exists. Overwrite?"
@@ -88,6 +90,7 @@ BEGIN
         CLEAN_TEMP_CONFIRM, "WinSCP has found %d temporary folders, which it has probably created in past. These folders may contain files previously edited or downloaded. Do you want to delete these folders? You may also open the folders to review their content and to delete them yourself."
         OPEN_BUTTON, "&Open"
         NEVER_SHOW_AGAIN, "Never show this message a&gain"
+        SAVE_PASSWORD, "You are about to store session with filled password.\n \nSaved passwords are stored in a manner that they can easily be recovered. It is not possible to securely encrypt passwords in a way that still allows for automatic use. Do not use the save password feature if you are not absolutely sure of the physical and electronic security of the system on which you are storing passwords.\n \nIf you do not save password along with other session options, you will be prompted for it once you attempt to open the stored session.\n \nSave the password anyway?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"

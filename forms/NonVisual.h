@@ -55,7 +55,7 @@ class TGlyphsModule;
 //---------------------------------------------------------------------------
 class TNonVisualDataModule : public TDataModule
 {
-__published:	// IDE-managed Components
+__published:    // IDE-managed Components
   TActionList *LogActions;
   TAction *LogClearAction;
   TAction *LogSelectAllAction;
@@ -682,6 +682,10 @@ __published:	// IDE-managed Components
   TMenuItem *Refresh5;
   TMenuItem *AddToBookmarks5;
   TMenuItem *CopyPathtoClipboard7;
+  TMenuItem *N79;
+  TMenuItem *CreateDirectory3;
+  TMenuItem *N82;
+  TMenuItem *CreateDirectory4;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -712,7 +716,6 @@ public:
   void __fastcall ExplorerShortcuts();
   void __fastcall CreateOpenedSessionListMenu();
   TShortCut __fastcall OpenSessionShortCut(int Index);
-  void __fastcall OpenBrowser(AnsiString URL);
   void __fastcall UpdateNonVisibleActions();
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };

@@ -78,8 +78,8 @@ class PASCALIMPLEMENTATION ESocketError : public ETcpIpError
 	typedef ETcpIpError inherited;
 	
 public:
-	Word ErrorNumber;
-	__fastcall ESocketError(Word Number);
+	unsigned ErrorNumber;
+	__fastcall ESocketError(unsigned Number);
 public:
 	#pragma option push -w-inl
 	/* Exception.CreateFmt */ inline __fastcall ESocketError(const AnsiString Msg, const System::TVarRec * Args, const int Args_Size) : ETcpIpError(Msg, Args, Args_Size) { }
@@ -248,7 +248,7 @@ __published:
 
 
 //-- var, const, procedure ---------------------------------------------------
-static const Word WM_SocketEvent = 0x500;
+extern PACKAGE unsigned WM_SocketEvent;
 extern PACKAGE System::ResourceString _SSocketError;
 #define Tcpip_SSocketError System::LoadResourceString(&Tcpip::_SSocketError)
 extern PACKAGE System::ResourceString _SUnknownSockError;

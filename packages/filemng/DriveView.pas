@@ -39,6 +39,8 @@ interface
 {Required compiler options for TDriveView:}
 {$A+,B-,X+,H+,P+}
 
+{$WARN SYMBOL_PLATFORM OFF}
+
 uses
   Windows, Messages, SysUtils, Classes,  Graphics, Controls, Forms, ComObj,
   Dialogs, ComCtrls, ShellApi, CommCtrl, ExtCtrls, ActiveX,  ShlObj,

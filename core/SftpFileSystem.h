@@ -132,6 +132,7 @@ protected:
   unsigned long __fastcall MaxTransferBlockSize(unsigned long Overhead);
 
   static AnsiString __fastcall DecodeUTF(const AnsiString UTF);
+  static AnsiString __fastcall EncodeUTF(const WideString Source);
 };
 //---------------------------------------------------------------------------
 #endif // SftpFileSystemH

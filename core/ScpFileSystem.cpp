@@ -562,7 +562,7 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params)
       }
         else
       if (!(Params & coOnlyReturnCode) &&
-          ((!Message.IsEmpty() && !(Params & coIgnoreWarnings)) ||
+          ((!Message.IsEmpty() && ((FOutput->Count == 0) || !(Params & coIgnoreWarnings))) ||
            WrongReturnCode))
       {
         FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED, ("%s", ReturnCode, Message)));
@@ -858,11 +858,8 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
       Again = false;
       try
       {
-        // if we are detecting support for --full-time, do not ignore
-        // errors, any error is considered as "unknown parameter --full-time)
         int Params = ecDefault |
-          FLAGMASK((FTerminal->SessionData->IgnoreLsWarnings &&
-            (FLsFullTime != asAuto)), ecIgnoreWarnings);
+          FLAGMASK(FTerminal->SessionData->IgnoreLsWarnings, ecIgnoreWarnings);
         const char * Options =
           ((FLsFullTime == asAuto) || (FLsFullTime == asOn)) ? FullTimeOption : "";
         bool ListCurrentDirectory = (FileList->Directory == FTerminal->CurrentDirectory);
@@ -1011,7 +1008,7 @@ void __fastcall TSCPFileSystem::CustomReadFile(const AnsiString FileName,
 {
   File = NULL;
   int Params = ecDefault |
-    (FTerminal->SessionData->IgnoreLsWarnings ? ecIgnoreWarnings : 0);
+    FLAGMASK(FTerminal->SessionData->IgnoreLsWarnings, ecIgnoreWarnings);
   // the auto-detection of --full-time support is not implemented for fsListFile,
   // so we use it only if we already know that it is supported (asOn).
   const char * Options = (FLsFullTime == asOn) ? FullTimeOption : "";
@@ -1631,7 +1628,16 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
   /* TODO : Delete also read-only files. */
   /* TODO : Show error message on failure. */
-  if (Params & cpDelete) Sysutils::DeleteFile(FileName);
+  if (FLAGSET(Params, cpDelete)) 
+  {
+    Sysutils::DeleteFile(FileName);
+  }
+  else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
+  {
+    FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
+      THROWIFFALSE(FileSetAttr(FileName, Attrs & ~faArchive) == 0);
+    )
+  }
 
   FTerminal->LogEvent(FORMAT("Copying \"%s\" to remote directory finished.", (FileName)));
 }
@@ -1708,8 +1714,19 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
 
     /* TODO : Delete also read-only directories. */
     /* TODO : Show error message on failure. */
-    if ((Params & cpDelete) && !OperationProgress->Cancel) RemoveDir(DirectoryName);
-
+    if (!OperationProgress->Cancel)
+    {
+      if (FLAGSET(Params, cpDelete)) 
+      {
+        RemoveDir(DirectoryName);
+      }
+      else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
+      {
+        FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DirectoryName)),
+          THROWIFFALSE(FileSetAttr(DirectoryName, Attrs & ~faArchive) == 0);
+        )
+      }
+    }
   }
   __finally
   {

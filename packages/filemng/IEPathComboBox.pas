@@ -207,7 +207,11 @@ begin
   if (Index = 0) and (sfDesktop in ShowSpecialFolders) then Result := sfDesktop
     else
   if ((Index = 0) or (Index = 1)) and (sfMyDocuments in ShowSpecialFolders) then Result := sfMyDocuments
-    else Assert(False);
+    else
+  begin
+    Assert(False);
+    Result := sfDesktop; // to satisfy compiler
+  end;
 end;
 
 procedure TIEPathComboBox.LoadFolderInfo(var Info: TFolderInfo);

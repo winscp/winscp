@@ -30,6 +30,7 @@ private:
   bool FCalculateSize;
   AnsiString FFileMask;
   TFileMasks FExcludeFileMask;
+  bool FClearArchive;
 
 public:
   __fastcall TCopyParamType();
@@ -63,6 +64,7 @@ public:
   __property bool CalculateSize = { read = FCalculateSize, write = FCalculateSize };
   __property AnsiString FileMask = { read = FFileMask, write = FFileMask };
   __property TFileMasks ExcludeFileMask = { read = FExcludeFileMask, write = FExcludeFileMask };
+  __property bool ClearArchive = { read = FClearArchive, write = FClearArchive };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -78,7 +78,8 @@ void __fastcall TCopyDialog::AdjustControls()
   CopyParamsFrame->Direction = !ToRemote ? pdToLocal : pdToRemote;
   CopyParamsFrame->Options =
     FLAGMASK(FLAGCLEAR(Options, coDisableTransferMode), cfAllowTransferMode) |
-    FLAGMASK(!Move, cfAllowExcludeMask);
+    FLAGMASK(!Move, cfAllowExcludeMask) |
+    FLAGMASK(!Move && ToRemote, cfAllowClearArchive);
   EnableControl(NewerOnlyCheck, FLAGCLEAR(Options, coDisableNewerOnly));
 
   if (FileList && FileList->Count)

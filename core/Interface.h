@@ -49,6 +49,8 @@ struct TQueryParams
   unsigned int Params;
   unsigned int Timer;
   TQueryParamsTimerEvent TimerEvent;
+  AnsiString TimerMessage;
+  unsigned int TimerAnswers;
 };
 
 enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };

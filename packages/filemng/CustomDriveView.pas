@@ -962,6 +962,7 @@ var
   Point: TPoint;
   PrevAutoPopup: Boolean;
 begin
+  PrevAutoPopup := False;
   try
     if Assigned(PopupMenu) then
     begin

@@ -19,5 +19,6 @@ void __fastcall LoadListViewStr(TListView * ListView, AnsiString LayoutStr);
 TFontStyles __fastcall IntToFontStyles(int value);
 int __fastcall FontStylesToInt(const TFontStyles value);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);
+void __fastcall OpenBrowser(AnsiString URL);
 //---------------------------------------------------------------------------
 #endif

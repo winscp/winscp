@@ -2,14 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <stdio.h>
-
-#include <Interface.h>
-#include <Common.h>
-#include <Configuration.h>
 #include <ScpMain.h>
-#include <Terminal.h>
-#include <Net.h>
 
 #include <Log.h>
 #include <TextsWin.h>
@@ -19,11 +12,9 @@
 #include "TerminalManager.h"
 #include "NonVisual.h"
 #include "ProgParams.h"
-#include "Tools.h"
+#include "Setup.h"
 #include "WinConfiguration.h"
 #include "GUITools.h"
-
-#include <TcpIp.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -33,7 +24,7 @@ TSessionData * GetLoginData(AnsiString SessionName, AnsiString & DownloadFile)
   TSessionData * Data;
 
   Data = StoredSessions->ParseUrl(SessionName, DefaultsOnly,
-    puExtractFileName, &DownloadFile);
+    puExtractFileName | puDecodeUrlChars, &DownloadFile);
   assert(Data != NULL);
 
   if (!Data->CanLogin || DefaultsOnly)
@@ -172,261 +163,7 @@ void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpEx
   Abort();
 }
 //---------------------------------------------------------------------------
-int __fastcall CalculateCompoundVersion(int MajorVer,
-  int MinorVer, int Release, int Build)
-{
-  int CompoundVer = Build + 1000 * (Release + 100 * (MinorVer +
-    100 * MajorVer));
-  return CompoundVer;
-}
-//---------------------------------------------------------------------------
-void __fastcall RegisterAsUrlHandler()
-{
-  try
-  {
-    bool Success;
-    bool User = true;
-    TRegistry * Registry = new TRegistry();
-    try
-    {
-      do
-      {
-        Success = true;
-        User = !User;
-
-        try
-        {
-          assert(Configuration != NULL);
-          AnsiString FileName = Application->ExeName;
-          AnsiString BaseKey;
-
-          Registry->Access = KEY_WRITE;
-          if (User)
-          {
-            Registry->RootKey = HKEY_CURRENT_USER;
-            BaseKey = "Software\\Classes\\";
-          }
-          else
-          {
-            Registry->RootKey = HKEY_CLASSES_ROOT;
-            BaseKey = "";
-          }
-
-          AnsiString Protocol;
-          for (int Index = 0; Index <= 1; Index++)
-          {
-            Protocol = (Index == 0) ? "SCP" : "SFTP";
-            if (Registry->OpenKey(BaseKey + Protocol, true))
-            {
-              Registry->WriteString("", FMTLOAD(PROTOCOL_URL_DESC, (Protocol)));
-              Registry->WriteString("URL Protocol", "");
-              Registry->WriteInteger("EditFlags", 0x02);
-              Registry->WriteInteger("BrowserFlags", 0x08);
-              if (Registry->OpenKey("DefaultIcon", true))
-              {
-                Registry->WriteString("", FORMAT("\"%s\",0", (FileName)));
-                Registry->CloseKey();
-              }
-              else
-              {
-                Abort();
-              }
-            }
-            else
-            {
-              Abort();
-            }
-
-            if (Registry->OpenKey(BaseKey + Protocol, false) &&
-                Registry->OpenKey("shell", true) &&
-                Registry->OpenKey("open", true) &&
-                Registry->OpenKey("command", true))
-            {
-              Registry->WriteString("", FORMAT("\"%s\" %%1", (FileName)));
-              Registry->CloseKey();
-            }
-            else
-            {
-              Abort();
-            }
-          }
-        }
-        catch(...)
-        {
-          Success = false;
-        }
-      }
-      while (!Success && !User);
-    }
-    __finally
-    {
-      delete Registry;
-    }
-  }
-  catch(Exception & E)
-  {
-    throw ExtException(&E, LoadStr(REGISTER_URL_ERROR));
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall CheckForUpdates()
-{
-  bool Found = false;
-  TCustomForm * ActiveForm = Screen->ActiveCustomForm;
-  Busy(true);
-  try
-  {
-    if (ActiveForm)
-    {
-      assert(ActiveForm->Enabled);
-      ActiveForm->Enabled = false;
-    }
-
-    try
-    {
-      AnsiString Response;
-
-      if (SessionsCount == 0)
-      {
-        NetInitialize();
-      }
-
-      THttp * CheckForUpdatesHTTP = new THttp(Application);
-      try
-      {
-        CheckForUpdatesHTTP->URL = LoadStr(UPDATES_URL);
-        CheckForUpdatesHTTP->Action();
-        Response.SetLength(static_cast<int>(CheckForUpdatesHTTP->Stream->Size));
-        CheckForUpdatesHTTP->Stream->Read(Response.c_str(), Response.Length());
-      }
-      __finally
-      {
-        delete CheckForUpdatesHTTP;
-        if (SessionsCount == 0)
-        {
-          NetFinalize();
-        }
-      }
-
-      while (!Response.IsEmpty() && !Found)
-      {
-        AnsiString Line = ::CutToChar(Response, '\n', false);
-        AnsiString Name = ::CutToChar(Line, '=', false);
-        if (AnsiSameText(Name, "Version"))
-        {
-          Found = true;
-          int MajorVer = StrToInt(::CutToChar(Line, '.', false));
-          int MinorVer = StrToInt(::CutToChar(Line, '.', false));
-          int Release = StrToInt(::CutToChar(Line, '.', false));
-          int Build = StrToInt(::CutToChar(Line, '.', false));
-          int CompoundVer = CalculateCompoundVersion(MajorVer, MinorVer, Release, Build);
-
-          AnsiString VersionStr =
-            FORMAT("%d.%d", (MajorVer, MinorVer)) + (Release ? "."+IntToStr(Release) : AnsiString());
-
-          TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
-          int CurrentCompoundVer = CalculateCompoundVersion(
-            HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
-            HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
-
-          if (CurrentCompoundVer < CompoundVer)
-          {
-            if (MessageDialog(FMTLOAD(NEW_VERSION, (VersionStr)), qtInformation,
-                  qaOK | qaCancel, 0) == qaOK)
-            {
-              NonVisualDataModule->OpenBrowser(LoadStr(DOWNLOAD_URL));
-            }
-          }
-          else
-          {
-            MessageDialog(LoadStr(NO_NEW_VERSION), qtInformation, qaOK, 0);
-          }
-        }
-      }
-
-    }
-    catch(Exception & E)
-    {
-      throw ExtException(&E, LoadStr(CHECK_FOR_UPDATES_ERROR));
-    }
-  }
-  __finally
-  {
-    if (ActiveForm)
-    {
-      ActiveForm->Enabled = true;
-    }
-    Busy(false);
-  }
-
-  if (!Found)
-  {
-    throw Exception(LoadStr(CHECK_FOR_UPDATES_ERROR));
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TemporaryDirectoryCleanup()
-{
-  bool Continue = true;
-  TStrings * Folders = NULL;
-  try
-  {
-    if (WinConfiguration->ConfirmTemporaryDirectoryCleanup)
-    {
-      Folders = WinConfiguration->FindTemporaryFolders();
-      Continue = (Folders != NULL);
-
-      if (Continue)
-      {
-        TQueryButtonAlias Aliases[1];
-        Aliases[0].Button = qaRetry;
-        Aliases[0].Alias = LoadStr(OPEN_BUTTON);
-        TMessageParams Params(mpNeverAskAgainCheck);
-        Params.Aliases = Aliases;
-        Params.AliasesCount = LENOF(Aliases);
-
-        int Answer = MoreMessageDialog(
-          FMTLOAD(CLEAN_TEMP_CONFIRM, (Folders->Count)), Folders,
-          qtWarning, qaYes | qaNo | qaRetry, 0, &Params);
-
-        if (Answer == qaNeverAskAgain)
-        {
-          WinConfiguration->ConfirmTemporaryDirectoryCleanup = false;
-          Answer = qaYes;
-        }
-        else if (Answer == qaRetry)
-        {
-          for (int Index = 0; Index < Folders->Count; Index++)
-          {
-            ShellExecute(Application->Handle, NULL,
-              Folders->Strings[Index].c_str(), NULL, NULL, SW_SHOWNORMAL);
-          }
-        }
-        Continue = (Answer == qaYes);
-      }
-    }
-
-    if (Continue)
-    {
-      TStrings * F = Folders;
-      Folders = NULL;
-      try
-      {
-        WinConfiguration->CleanupTemporaryFolders(F);
-      }
-      catch (Exception &E)
-      {
-        ShowExtendedException(&E);
-      }
-    }
-  }
-  __finally
-  {
-    delete Folders;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall Execute(TProgramParams * Params)
+int __fastcall Execute(TProgramParams * Params)
 {
   assert(StoredSessions);
   assert(Params);
@@ -438,8 +175,7 @@ void __fastcall Execute(TProgramParams * Params)
   bool Help = Params->FindSwitch("help") || Params->FindSwitch("h") || Params->FindSwitch("?");
   if (Help || Params->FindSwitch("Console"))
   {
-    Console(Params, Help);
-    return;
+    return Console(Params, Help);
   }
 
   TTerminalManager * TerminalManager = NULL;
@@ -462,7 +198,7 @@ void __fastcall Execute(TProgramParams * Params)
     if (Params->FindSwitch("UninstallCleanup"))
     {
       if (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
-            qaOK | qaCancel, 0) == qaOK)
+            qaYes | qaNo, 0) == qaYes)
       {
         DoCleanupDialog(StoredSessions, Configuration);
       }
@@ -470,6 +206,14 @@ void __fastcall Execute(TProgramParams * Params)
     else if (Params->FindSwitch("RegisterAsUrlHandler"))
     {
       RegisterAsUrlHandler();
+    }
+    else if (Params->FindSwitch("AddSearchPath"))
+    {
+      AddSearchPath(ExtractFilePath(Application->ExeName));
+    }
+    else if (Params->FindSwitch("RemoveSearchPath"))
+    {
+      RemoveSearchPath(ExtractFilePath(Application->ExeName));
     }
     else if (Params->FindSwitch("Update"))
     {
@@ -597,5 +341,7 @@ void __fastcall Execute(TProgramParams * Params)
     NonVisualDataModule = NULL;
     TTerminalManager::DestroyInstance();
   }
+
+  return 0;
 }
 

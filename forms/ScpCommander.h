@@ -46,10 +46,10 @@ __published:
   TToolbarPanel *ToolbarPanel;
   TStatusBar *StatusBar;
   TToolBar *MenuToolBar;
-  TToolButton *ToolButton2;
+  TToolButton *LeftMenuButton;
   TToolButton *ToolButton19;
   TToolButton *ToolButton1;
-  TToolButton *ToolButton3;
+  TToolButton *RightMenuButton;
   TToolButton *ToolButton4;
   TToolBar *SelectionToolbar;
   TToolButton *ToolButton23;
@@ -182,8 +182,8 @@ __published:
 
 private:
   TCustomDirView * FDirViewToSelect;
-  float FLastLocalPanelWidth;
-  float FLocalPanelWidth;
+  float FLastLeftPanelWidth;
+  float FLeftPanelWidth;
   int FLastWidth;
   bool FSynchronisingBrowse;
   TStrings * FInternalDDDownloadList;
@@ -192,8 +192,9 @@ private:
   AnsiString FDDExtTarget;
   bool FCommandLineComboPopulated;
 
-  void __fastcall SetLocalPanelWidth(float value);
-  float __fastcall GetLocalPanelWidth();
+  void __fastcall SetLeftPanelWidth(float value);
+  float __fastcall GetLeftPanelWidth();
+  inline TPanel * __fastcall Panel(bool Left);
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
@@ -247,7 +248,7 @@ public:
   virtual void __fastcall GoToCommandLine();
   virtual void __fastcall GoToTree();
   virtual void __fastcall OpenConsole(AnsiString Command = "");
-  __property float LocalPanelWidth = { read = GetLocalPanelWidth, write = SetLocalPanelWidth };
+  __property float LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };
 //---------------------------------------------------------------------------
 #endif

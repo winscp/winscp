@@ -135,6 +135,8 @@ Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
   Flags: unchecked
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandler}
+Name: searchpath; Description: {cm:AddSearchPath} \
+  Flags: unchecked
 
 [INI]
 Filename: "{app}\{cm:SupportForum}.url"; Section: "InternetShortcut"; \
@@ -193,7 +195,9 @@ Filename: "{app}\WinSCP3.exe"; Description: "{cm:Launch}"; \
   Flags: nowait postinstall skipifsilent
 ; This is called when urlhandler task is selected
 Filename: "{app}\WinSCP3.exe"; Parameters: "/RegisterAsUrlHandler"; \
-  Tasks: urlhandler
+  StatusMsg: {cm:RegisteringAsUrlHandler}; Tasks: urlhandler 
+Filename: "{app}\WinSCP3.exe"; Parameters: "/AddSearchPath"; \
+  StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
 
 [UninstallDelete]
 ; These additional files are created by installer
@@ -285,6 +289,8 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
 [UninstallRun]
 Filename: "{app}\WinSCP3.exe"; Parameters: "/UninstallCleanup"; \
   RunOnceId: "UninstallCleanup"
+Filename: "{app}\WinSCP3.exe"; Parameters: "/RemoveSearchPath"; \
+  RunOnceId: "RemoveSearchPath"
 
 [Code]
 var

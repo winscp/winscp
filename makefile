@@ -36,5 +36,5 @@ Console.com: Console.bpr
  $(MAKE)
 
 {}.bpr{lib}.lib:
- $(BPR2MAK) -t$(ROOT)\bin\deflib.bmk $.
+ $(BPR2MAK) -tlib.bmk $.
  $(MAKE)

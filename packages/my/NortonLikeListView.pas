@@ -387,6 +387,13 @@ var
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
 begin
+  if Message.CharCode in [Word('+'), Word('-'), Word('*')] then
+  begin
+    // ugly fix to avoid Windows beeping when these keys are processed by 
+    // WMKeyDown instead of here (WMChar)
+    Message.Result := 1;
+  end
+    else
   if NortonLike and (Message.CharCode = Byte(' ')) then
   begin
     if (GetKeyState(VK_CONTROL) >= 0) then

@@ -1230,11 +1230,13 @@ end;
 
 procedure TCustomDirView.Delete(Item: TListItem);
 begin
-  Assert(Assigned(Item));
-  // This causes access violation when size is stored in structure
-  // pointed by TListItem->Data and this structure is not valid any more
-  if Valid then Dec(FFilesSize, ItemFileSize(Item));
-  inherited Delete(Item);
+  if Assigned(Item) then
+  begin
+    // This causes access violation when size is stored in structure
+    // pointed by TListItem->Data and this structure is not valid any more
+    if Valid then Dec(FFilesSize, ItemFileSize(Item));
+    inherited Delete(Item);
+  end;
 end;
 
 destructor TCustomDirView.Destroy;
