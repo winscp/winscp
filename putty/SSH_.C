@@ -2,14 +2,22 @@
 
 void ssh_close(void * handle)
 {
-  ssh_do_close((Ssh)handle);
+  ssh_do_close((Ssh)handle, FALSE);
 }
 
 int is_ssh(void * handle)
 {
   Plug fn = (Plug)handle;
   return (*fn)->closing == ssh_closing;
-} 
+}
+
+void call_ssh_timer(void * handle)
+{
+  if (((Ssh)handle)->version == 2)
+  {
+    ssh2_timer(handle, GETTICKCOUNT());
+  }
+}
 
 int get_ssh_version(void * handle)
 {
@@ -66,12 +74,12 @@ int get_ssh_exitcode(void * handle)
   return ssh_return_exitcode(handle);
 }
 
-unsigned int ssh2_remmaxpkt(void * handle)
+const unsigned int * ssh2_remmaxpkt(void * handle)
 {
-  return ((Ssh)handle)->mainchan->v.v2.remmaxpkt;
+  return &((Ssh)handle)->mainchan->v.v2.remmaxpkt;
 }
 
-unsigned int ssh2_remwindow(void * handle)
+const unsigned int * ssh2_remwindow(void * handle)
 {
-  return ((Ssh)handle)->mainchan->v.v2.remwindow;
+  return &((Ssh)handle)->mainchan->v.v2.remwindow;
 }

@@ -666,7 +666,14 @@ void __fastcall TIniFileStorage::WriteFloat(const AnsiString Name, double Value)
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteStringRaw(const AnsiString Name, const AnsiString Value)
 {
-  FIniFile->WriteString(CurrentSection, Name, Value);
+  if ((Value.Length() >= 2) && (Value[1] == '"') && (Value[Value.Length()] == '"'))
+  {
+    FIniFile->WriteString(CurrentSection, Name, "\"" + Value + "\"");
+  }
+  else
+  {
+    FIniFile->WriteString(CurrentSection, Name, Value);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteBinaryData(const AnsiString Name,

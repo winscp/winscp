@@ -185,17 +185,36 @@ static void internal_mod(BignumInt *a, int alen,
 	    ai1 = a[i + 1];
 
 	/* Find q = h:a[i] / m0 */
-	DIVMOD_WORD(q, r, h, a[i], m0);
+	if (h >= m0) {
+	    /*
+	     * Special case.
+	     * 
+	     * To illustrate it, suppose a BignumInt is 8 bits, and
+	     * we are dividing (say) A1:23:45:67 by A1:B2:C3. Then
+	     * our initial division will be 0xA123 / 0xA1, which
+	     * will give a quotient of 0x100 and a divide overflow.
+	     * However, the invariants in this division algorithm
+	     * are not violated, since the full number A1:23:... is
+	     * _less_ than the quotient prefix A1:B2:... and so the
+	     * following correction loop would have sorted it out.
+	     * 
+	     * In this situation we set q to be the largest
+	     * quotient we _can_ stomach (0xFF, of course).
+	     */
+	    q = BIGNUM_INT_MASK;
+	} else {
+	    DIVMOD_WORD(q, r, h, a[i], m0);
 
-	/* Refine our estimate of q by looking at
-	   h:a[i]:a[i+1] / m0:m1 */
-	t = MUL_WORD(m1, q);
-	if (t > ((BignumDblInt) r << BIGNUM_INT_BITS) + ai1) {
-	    q--;
-	    t -= m1;
-	    r = (r + m0) & BIGNUM_INT_MASK;     /* overflow? */
-	    if (r >= (BignumDblInt) m0 &&
-		t > ((BignumDblInt) r << BIGNUM_INT_BITS) + ai1) q--;
+	    /* Refine our estimate of q by looking at
+	     h:a[i]:a[i+1] / m0:m1 */
+	    t = MUL_WORD(m1, q);
+	    if (t > ((BignumDblInt) r << BIGNUM_INT_BITS) + ai1) {
+		q--;
+		t -= m1;
+		r = (r + m0) & BIGNUM_INT_MASK;     /* overflow? */
+		if (r >= (BignumDblInt) m0 &&
+		    t > ((BignumDblInt) r << BIGNUM_INT_BITS) + ai1) q--;
+	    }
 	}
 
 	/* Subtract q * m from a[i...] */

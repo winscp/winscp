@@ -658,7 +658,7 @@ AnsiString __fastcall TConfiguration::GetTimeFormat()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetPartialExt() const
 {
-  return ".filepart";
+  return PARTIAL_EXT;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetDefaultKeyFile()

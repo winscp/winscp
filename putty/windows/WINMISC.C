@@ -50,8 +50,14 @@ char *get_username(void)
     char *user;
 
     namelen = 0;
-    if (GetUserName(NULL, &namelen) == FALSE)
-	return NULL;
+    if (GetUserName(NULL, &namelen) == FALSE) {
+	/*
+	 * Apparently this doesn't work at least on Windows XP SP2.
+	 * Thus assume a maximum of 256. It will fail again if it
+	 * doesn't fit.
+	 */
+	namelen = 256;
+    }
 
     user = snewn(namelen, char);
     GetUserName(user, &namelen);

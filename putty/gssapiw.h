@@ -3,7 +3,7 @@
  *
  * Copyright 2004 Vaclav Tomec <v_t_m@seznam.cz>
  *
- * 
+ *
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without fee,
  * provided that the above copyright notice appears in all copies and
@@ -13,7 +13,7 @@
  * without specific, written prior permission. OpenVision makes no
  * representations about the suitability of this software for any
  * purpose.  It is provided "as is" without express or implied warranty.
- * 
+ *
  * OPENVISION DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN NO
  * EVENT SHALL OPENVISION BE LIABLE FOR ANY SPECIAL, INDIRECT OR
@@ -24,17 +24,14 @@
  */
 
 /*
- *
- *  wrapper for gssapi32.dll
- *  you don't need link PuTTY with gssapi32.lib
- *
+ *  wrapper for GSSAPI shared library
+ *  gssapi32.dll
+ *  or
+ *  libgssapi_krb5.so
  */
 
 #ifndef GSSAPIW_H
 #define GSSAPIW_H
-
-
-HMODULE gssapiDLLH;
 
 
 typedef unsigned int gss_uint32;
@@ -151,8 +148,8 @@ static gss_OID_desc oids[] = {
 	 * infosys(1) gssapi(2) generic(1) user_name(1)}.  The constant
 	 * GSS_C_NT_USER_NAME should be initialized to point
 	 * to that gss_OID_desc.
-	 */                                
-    
+	 */
+
     /*
 	 * The implementation must reserve static storage for a
 	 * gss_OID_desc object containing the value */
@@ -163,7 +160,7 @@ static gss_OID_desc oids[] = {
 	 * The constant GSS_C_NT_MACHINE_UID_NAME should be
 	 * initialized to point to that gss_OID_desc.
 	 */
-     
+
     /*
     * The implementation must reserve static storage for a
     * gss_OID_desc object containing the value */
@@ -174,7 +171,7 @@ static gss_OID_desc oids[] = {
     * The constant GSS_C_NT_STRING_UID_NAME should be
     * initialized to point to that gss_OID_desc.
     */
-    
+
     /*
      * The implementation must reserve static storage for a
      * gss_OID_desc object containing the value */
@@ -192,15 +189,15 @@ static gss_OID_desc oids[] = {
      * parameter, but should not be emitted by GSS-API
      * implementations
      */
-    
+
     /*
      * The implementation must reserve static storage for a
      * gss_OID_desc object containing the value */
-    {10, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04"}, 
-    /* corresponding to an object-identifier value of 
-     * {iso(1) member-body(2) Unites States(840) mit(113554) 
-     * infosys(1) gssapi(2) generic(1) service_name(4)}.  
-     * The constant GSS_C_NT_HOSTBASED_SERVICE should be 
+    {10, (void *)"\x2a\x86\x48\x86\xf7\x12\x01\x02\x01\x04"},
+    /* corresponding to an object-identifier value of
+     * {iso(1) member-body(2) Unites States(840) mit(113554)
+     * infosys(1) gssapi(2) generic(1) service_name(4)}.
+     * The constant GSS_C_NT_HOSTBASED_SERVICE should be
      * initialized to point to that gss_OID_desc.
      */
 
@@ -214,7 +211,7 @@ static gss_OID_desc oids[] = {
      * and GSS_C_NT_ANONYMOUS should be initialized to point
      * to that gss_OID_desc.
      */
-    
+
     /*
      * The implementation must reserve static storage for a
      * gss_OID_desc object containing the value */
@@ -231,8 +228,8 @@ static gss_OID_desc oids[] = {
  *
  * Constants of the form GSS_C_NT_* are specified by rfc 2744.
  *
- * Constants of the form gss_nt_* are the original MIT krb5 names 
- * found in gssapi_generic.h.  They are provided for compatibility. */ 
+ * Constants of the form gss_nt_* are the original MIT krb5 names
+ * found in gssapi_generic.h.  They are provided for compatibility. */
 
 gss_OID GSS_C_NT_USER_NAME           = oids+0;
 gss_OID gss_nt_user_name             = oids+0;
@@ -259,34 +256,58 @@ gss_OID gss_nt_exported_name         = oids+6;
 
 
 
-#define DECLARE_DLL_FUNCTION(ret, cc, func, params) \
-	ret	(cc* func)params;
+#ifdef _WINDOWS
 
-#define LOAD_DLL_FUNCTION(ret, cc, func, params, origin) \
+#define GSSAPISHLIB "gssapi32"
+
+#define DECLARE_LIB_FUNCTION(ret, func, params) \
+	ret	(CALLBACK* func)params;
+
+#define LOAD_LIB_FUNCTION(ret, func, params, origin) \
 	if (retval) \
 	{ \
-		func = (ret (cc* )params)GetProcAddress(gssapiDLLH, origin); \
+		func = (ret (CALLBACK*) params) GetProcAddress (lib, origin); \
 	} \
 	if (!func) \
 		retval = 0;
 
+#else
 
-DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
+#include <dlfcn.h>
+
+#define GSSAPISHLIB "libgssapi_krb5.so"
+
+#define DECLARE_LIB_FUNCTION(ret, func, params) \
+	ret	(*func)params;
+
+#define LOAD_LIB_FUNCTION(ret, func, params, origin) \
+	if (retval) \
+	{ \
+		func = (ret (*)params) dlsym (lib, origin); \
+	} \
+	if (!func) \
+		retval = 0;
+
+#endif
+
+
+
+DECLARE_LIB_FUNCTION(OM_uint32,
 						gss_indicate_mechs, (OM_uint32 *, gss_OID_set *))
 
-DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
+DECLARE_LIB_FUNCTION(OM_uint32,
 						gss_display_status, (OM_uint32 *, OM_uint32, int, gss_OID, OM_uint32 *, gss_buffer_t))
 
-DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
+DECLARE_LIB_FUNCTION(OM_uint32,
 						gss_release_buffer, (OM_uint32 *, gss_buffer_t))
 
-DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
+DECLARE_LIB_FUNCTION(OM_uint32,
 						gss_delete_sec_context, (OM_uint32 *, gss_ctx_id_t *, gss_buffer_t))
 
-DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
+DECLARE_LIB_FUNCTION(OM_uint32,
 						gss_release_name, (OM_uint32 *, gss_name_t *))
 
-DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
+DECLARE_LIB_FUNCTION(OM_uint32,
 						gss_init_sec_context,
 						(OM_uint32 *,
 						 gss_cred_id_t,
@@ -302,10 +323,10 @@ DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
 						 OM_uint32 *,
 						 OM_uint32 *))
 
-DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
+DECLARE_LIB_FUNCTION(OM_uint32,
 						gss_import_name, (OM_uint32 *, gss_buffer_t, gss_OID, gss_name_t *))
 
-DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
+DECLARE_LIB_FUNCTION(OM_uint32,
 						gss_get_mic,
 						(OM_uint32 *,
 					    gss_ctx_id_t,
@@ -316,33 +337,33 @@ DECLARE_DLL_FUNCTION(OM_uint32, CALLBACK,
 
 
 int
-gssapiLoadFuncs(void) {
+shlibloadfcs(void *lib) {
 	int retval = 1;
 
-	if (gssapiDLLH == NULL)
+	if (lib == NULL)
 		retval = 0;
 
-	LOAD_DLL_FUNCTION(OM_uint32, CALLBACK,
+	LOAD_LIB_FUNCTION(OM_uint32,
 						gss_indicate_mechs, (OM_uint32 *, gss_OID_set *),
 						"gss_indicate_mechs")
 
-	LOAD_DLL_FUNCTION(OM_uint32, CALLBACK,
+	LOAD_LIB_FUNCTION(OM_uint32,
 						gss_display_status, (OM_uint32 *, OM_uint32, int, gss_OID, OM_uint32 *, gss_buffer_t),
 						"gss_display_status")
 
-	LOAD_DLL_FUNCTION(OM_uint32, CALLBACK,
+	LOAD_LIB_FUNCTION(OM_uint32,
 						gss_release_buffer, (OM_uint32 *, gss_buffer_t),
 						"gss_release_buffer")
 
-	LOAD_DLL_FUNCTION(OM_uint32, CALLBACK,
+	LOAD_LIB_FUNCTION(OM_uint32,
 						gss_delete_sec_context, (OM_uint32 *, gss_ctx_id_t *, gss_buffer_t),
 						"gss_delete_sec_context")
 
-	LOAD_DLL_FUNCTION(OM_uint32, CALLBACK,
+	LOAD_LIB_FUNCTION(OM_uint32,
 						gss_release_name, (OM_uint32 *, gss_name_t *),
 						"gss_release_name")
 
-	LOAD_DLL_FUNCTION(OM_uint32, CALLBACK,
+	LOAD_LIB_FUNCTION(OM_uint32,
 						gss_init_sec_context,
 						(OM_uint32 *,
 						 gss_cred_id_t,
@@ -359,11 +380,11 @@ gssapiLoadFuncs(void) {
 						 OM_uint32 *),
 						"gss_init_sec_context")
 
-	LOAD_DLL_FUNCTION(OM_uint32, CALLBACK,
+	LOAD_LIB_FUNCTION(OM_uint32,
 						gss_import_name, (OM_uint32 *, gss_buffer_t, gss_OID, gss_name_t *),
 						"gss_import_name")
 
-	LOAD_DLL_FUNCTION(OM_uint32, CALLBACK,
+	LOAD_LIB_FUNCTION(OM_uint32,
 						gss_get_mic,
 						(OM_uint32 *,
 					    gss_ctx_id_t,

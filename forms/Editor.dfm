@@ -3,6 +3,9 @@ object EditorForm: TEditorForm
   Top = 186
   Width = 625
   Height = 419
+  HelpType = htKeyword
+  HelpKeyword = 'ui_editor'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'EditorForm'
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET

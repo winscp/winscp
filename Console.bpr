@@ -28,7 +28,7 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -tWC -tWM- -c"/>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -tWC -tWM- -c"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zd"/>
@@ -54,31 +54,31 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=1
-MinorVer=0
+MinorVer=1
 Release=0
-Build=42
+Build=45
 Debug=0
 PreRelease=0
 Special=0
 Private=0
 DLL=0
-Locale=1029
-CodePage=1250
+Locale=1033
+CodePage=1252
 
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Console interface for WinSCP
-FileVersion=1.0.0.42
+FileVersion=1.1.0.45
 InternalName=console
-LegalCopyright=(c) 2004 Martin Prikryl
+LegalCopyright=(c) 2004-2005 Martin Prikryl
 LegalTrademarks=
 OriginalFilename=winscp3.com
 ProductName=WinSCP
-ProductVersion=3.7.1.0
+ProductVersion=3.7.2.0
 Comments=
 
 [Compiler]
 ShowInfoMsgs=0
-LinkDebugVcl=1
+LinkDebugVcl=0
   </IDEOPTIONS>
 </PROJECT>

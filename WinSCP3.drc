@@ -283,8 +283,8 @@
 #define Unixdirviewcolproperties_SUnixDirViewRightsCol 65490
 #define Unixdirviewcolproperties_SUnixDirViewOwnerCol 65491
 #define Unixdirviewcolproperties_SUnixDirViewGroupCol 65492
-#define IEPathComboBox_16394 65493
-#define IEPathComboBox_16396 65494
+#define Iepathcombobox_SSpecialFolderMyDocuments 65493
+#define Iepathcombobox_SSpecialFolderDesktop 65494
 #define Customdriveview_SDragDropError 65495
 #define Associatedstatusbar_SDefaultFileInfoFormat 65496
 #define Morebutton_SDefaultExpandedCaption 65497
@@ -604,8 +604,8 @@ BEGIN
 	Unixdirviewcolproperties_SUnixDirViewRightsCol,	"Rights"
 	Unixdirviewcolproperties_SUnixDirViewOwnerCol,	"Owner"
 	Unixdirviewcolproperties_SUnixDirViewGroupCol,	"Group"
-	IEPathComboBox_16394,	"My documents"
-	IEPathComboBox_16396,	"Desktop"
+	Iepathcombobox_SSpecialFolderMyDocuments,	"My documents"
+	Iepathcombobox_SSpecialFolderDesktop,	"Desktop"
 	Customdriveview_SDragDropError,	"Drag&drop error: %d"
 	Associatedstatusbar_SDefaultFileInfoFormat,	"%s of %s in %s of %s"
 	Morebutton_SDefaultExpandedCaption,	"<< &Less"

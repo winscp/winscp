@@ -38,7 +38,7 @@ type
     destructor Destroy; override;
     procedure Resume;
     procedure Suspend;
-    procedure Terminate;
+    procedure Terminate; virtual;
     function WaitFor: LongWord;
     property FreeOnTerminate: Boolean read FFreeOnTerminate write FFreeOnTerminate;
     property Handle: THandle read FHandle;

@@ -42,7 +42,7 @@ __fastcall TTerminalManager::TTerminalManager() :
   FScpExplorer = NULL;
   FDestroying = false;
   FTerminalPendingAction = tpNull;
-  FProgress = -1;
+  FDirectoryReadingStart = 0;
 
   assert(Application && !Application->OnException);
   Application->OnException = ApplicationException;
@@ -92,6 +92,7 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
     Terminal->OnProgress = OperationProgress;
     Terminal->OnFinished = OperationFinished;
     Terminal->OnDeleteLocalFile = DeleteLocalFile;
+    Terminal->OnReadDirectoryProgress = TerminalReadDirectoryProgress;
 
     if (!ActiveTerminal)
     {
@@ -443,10 +444,9 @@ void __fastcall TTerminalManager::UpdateAppTitle()
     NewTitle = AppName;
   }
 
-  if (FProgress >= 0)
+  if (!FProgressTitle.IsEmpty())
   {
-    NewTitle = FORMAT("%d%% %s - %s",
-      (FProgress, TProgressForm::OperationName(FOperation), NewTitle));
+    NewTitle = FProgressTitle + " - " + NewTitle;
   }
 
   Application->Title = NewTitle;
@@ -554,6 +554,32 @@ void __fastcall TTerminalManager::TerminalShowExtendedException(
   ShowExtendedExceptionEx(SecureShell, E);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
+  TObject * /*Sender*/, int Progress)
+{
+  static TDateTime DirectoryReadingProgressDelay(0, 0, 1, 500);
+
+  if (Progress == 0)
+  {
+    FDirectoryReadingStart = Now();
+    if (!FProgressTitle.IsEmpty())
+    {
+      FProgressTitle = "";
+      UpdateAppTitle();
+    }
+  }
+  else if (Progress < 0)
+  {
+    FProgressTitle = "";
+    UpdateAppTitle();
+  }
+  else if ((Now() - FDirectoryReadingStart) >= DirectoryReadingProgressDelay)
+  {
+    FProgressTitle = FMTLOAD(DIRECTORY_READING_PROGRESS, (Progress));    
+    UpdateAppTitle();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
   TOperationSide Side, bool DragDrop, const AnsiString FileName, bool Success,
   bool & DisconnectWhenFinished)
@@ -566,8 +592,17 @@ void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
 void __fastcall TTerminalManager::OperationProgress(
   TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
 {
-  FProgress = ProgressData.InProgress ? ProgressData.OverallProgress() : -1;
-  FOperation = ProgressData.Operation;
+  if (ProgressData.InProgress)
+  {
+    FProgressTitle = FORMAT("%d%% %s",
+      (ProgressData.OverallProgress(),
+       TProgressForm::OperationName(ProgressData.Operation)));
+  }
+  else
+  {
+    FProgressTitle = "";
+  }
+
   UpdateAppTitle();
   assert(ScpExplorer);
   ScpExplorer->OperationProgress(ProgressData, Cancel);

@@ -84,7 +84,6 @@ __published:
   TLabel *ShellIconsLabel;
   TButton *DesktopIconButton;
   TButton *QuickLaunchIconButton;
-  TButton *DesktopIconAllUsersButton;
   TButton *SendToHookButton;
   TXPGroupBox *ExternalAppsGroup;
   TLabel *Label2;
@@ -156,6 +155,9 @@ __published:
   TLabel *RandomSeedFileLabel;
   TFilenameEdit *RandomSeedFileEdit;
   TCheckBox *SwappedPanelsCheck;
+  TCheckBox *PreservePanelStateCheck;
+  TButton *AddSearchPathButton;
+  TCheckBox *MDIExternalEditorCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -188,6 +190,7 @@ __published:
   void __fastcall PathEditsKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
   void __fastcall CustomCommandsViewDblClick(TObject *Sender);
+  void __fastcall AddSearchPathButtonClick(TObject *Sender);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;

@@ -15,6 +15,7 @@ class TSFTPFileSystem : public TCustomFileSystem
 friend class TSFTPPacket;
 friend class TSFTPQueue;
 friend class TSFTPUploadQueue;
+friend class TSFTPDownloadQueue;
 friend class TSFTPBusy;
 public:
   __fastcall TSFTPFileSystem(TTerminal * ATerminal);
@@ -41,7 +42,7 @@ public:
   virtual void __fastcall DeleteFile(const AnsiString FileName,
     const TRemoteFile * File = NULL, bool Recursive = false);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command, int Params);
+    const TRemoteFile * File, AnsiString Command, int Params, TLogAddLineEvent OutputEvent);
   virtual void __fastcall DoStartup();
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
@@ -57,6 +58,7 @@ public:
     const AnsiString NewName);
   virtual void __fastcall CopyFile(const AnsiString FileName,
     const AnsiString NewName);
+  virtual AnsiString __fastcall FileUrl(const AnsiString FileName);
 
 protected:
   int FVersion;
@@ -72,6 +74,7 @@ protected:
   bool FAvoidBusy;
   TStrings * FExtensions;
   TSFTPSupport * FSupport;
+  bool FUtfStrings;
 
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, char Type, TRemoteFile * ALinkedByFile = NULL,
@@ -111,7 +114,7 @@ protected:
   int __fastcall SFTPOpenRemote(void * AOpenParams, void * /*Param2*/);
   void __fastcall SFTPCloseRemote(const AnsiString Handle,
     const AnsiString FileName, TFileOperationProgressType * OperationProgress,
-    bool TransferFinished);
+    bool TransferFinished, bool Request, TSFTPPacket * Packet);
   void __fastcall SFTPDirectorySource(const AnsiString DirectoryName,
     const AnsiString TargetDir, int /*Attrs*/, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
@@ -129,7 +132,12 @@ protected:
   char * __fastcall GetEOL() const; 
   inline void __fastcall BusyStart();
   inline void __fastcall BusyEnd();
-  unsigned long __fastcall MaxTransferBlockSize(unsigned long Overhead);
+  inline unsigned long __fastcall TransferBlockSize(unsigned long Overhead,
+    TFileOperationProgressType * OperationProgress, unsigned long MaxPacketSize = 0);
+  inline unsigned long __fastcall UploadBlockSize(const AnsiString & Handle,
+    TFileOperationProgressType * OperationProgress);
+  inline unsigned long __fastcall DownloadBlockSize(
+    TFileOperationProgressType * OperationProgress);
 
   static AnsiString __fastcall DecodeUTF(const AnsiString UTF);
   static AnsiString __fastcall EncodeUTF(const WideString Source);

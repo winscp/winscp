@@ -21,24 +21,6 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-inline void __fastcall OemToAnsi(AnsiString & Str)
-{
-  if (!Str.IsEmpty())
-  {
-    Str.Unique();
-    OemToChar(Str.c_str(), Str.c_str());
-  }
-}
-//---------------------------------------------------------------------------
-inline void __fastcall AnsiToOem(AnsiString & Str)
-{
-  if (!Str.IsEmpty())
-  {
-    Str.Unique();
-    CharToOem(Str.c_str(), Str.c_str());
-  }
-}
-//---------------------------------------------------------------------------
 class TConsole
 {
 public:
@@ -898,65 +880,73 @@ bool __fastcall TConsoleRunner::Input(AnsiString & Str, bool Echo)
 //---------------------------------------------------------------------------
 int __fastcall TConsoleRunner::Run(const AnsiString Session, const AnsiString ScriptFile)
 {
-  TStrings * ScriptCommands = NULL;
-  FScript = new TManagementScript(StoredSessions);
   try
   {
-    FScript->CopyParam = GUIConfiguration->CopyParam;
-    FScript->OnPrint = ScriptPrint;
-    FScript->OnPrintProgress = ScriptPrintProgress;
-    FScript->OnInput = ScriptInput;
-    FScript->OnTerminalUpdateStatus = ScriptTerminalUpdateStatus;
-    FScript->OnTerminalPromptUser = ScriptTerminalPromptUser;
-    FScript->OnShowExtendedException = ScriptShowExtendedException;
-    FScript->OnTerminalQueryUser = ScriptTerminalQueryUser;
-    FScript->OnQueryCancel = ScriptQueryCancel;
-    FScript->OnSynchronizeStartStop = ScriptSynchronizeStartStop;
-
-    UpdateTitle();
-    
-    if (!Session.IsEmpty())
+    TStrings * ScriptCommands = NULL;
+    FScript = new TManagementScript(StoredSessions);
+    try
     {
-      FScript->Connect(Session);
-    }
+      FScript->CopyParam = GUIConfiguration->CopyParam;
+      FScript->OnPrint = ScriptPrint;
+      FScript->OnPrintProgress = ScriptPrintProgress;
+      FScript->OnInput = ScriptInput;
+      FScript->OnTerminalUpdateStatus = ScriptTerminalUpdateStatus;
+      FScript->OnTerminalPromptUser = ScriptTerminalPromptUser;
+      FScript->OnShowExtendedException = ScriptShowExtendedException;
+      FScript->OnTerminalQueryUser = ScriptTerminalQueryUser;
+      FScript->OnQueryCancel = ScriptQueryCancel;
+      FScript->OnSynchronizeStartStop = ScriptSynchronizeStartStop;
 
-    if (!ScriptFile.IsEmpty())
-    {
-      ScriptCommands = new TStringList();
-      ScriptCommands->LoadFromFile(ScriptFile);
-    }
-
-    int ScriptPos = 0;
-    bool Result;
-    do
-    {
       UpdateTitle();
+    
+      if (!Session.IsEmpty())
+      {
+        FScript->Connect(Session);
+      }
 
-      AnsiString Command;
-      if ((ScriptCommands != NULL) && (ScriptPos < ScriptCommands->Count))
+      if (!ScriptFile.IsEmpty())
       {
-        Result = true;
-        Command = ScriptCommands->Strings[ScriptPos];
-        ScriptPos++;
+        ScriptCommands = new TStringList();
+        ScriptCommands->LoadFromFile(ScriptFile);
       }
-      else
+
+      int ScriptPos = 0;
+      bool Result;
+      do
       {
-        Print("winscp> ");
-        Result = Input(Command, true);
-      }
+        UpdateTitle();
+
+        AnsiString Command;
+        if ((ScriptCommands != NULL) && (ScriptPos < ScriptCommands->Count))
+        {
+          Result = true;
+          Command = ScriptCommands->Strings[ScriptPos];
+          ScriptPos++;
+        }
+        else
+        {
+          Print("winscp> ");
+          Result = Input(Command, true);
+        }
       
-      if (Result)
-      {
-        FScript->Command(Command);
+        if (Result)
+        {
+          FScript->Command(Command);
+        }
       }
+      while (Result && FScript->Continue);
     }
-    while (Result && FScript->Continue);
+    __finally
+    {
+      delete FScript;
+      FScript = NULL;
+      delete ScriptCommands;
+    }
   }
-  __finally
+  catch(Exception & E)
   {
-    delete FScript;
-    FScript = NULL;
-    delete ScriptCommands;
+    ShowException(&E);
+    FAnyError = true;
   }
 
   return FAnyError ? 1 : 0;

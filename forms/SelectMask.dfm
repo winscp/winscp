@@ -1,6 +1,9 @@
 object SelectMaskDialog: TSelectMaskDialog
   Left = 369
   Top = 257
+  HelpType = htKeyword
+  HelpKeyword = 'ui_select'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Select'
   ClientHeight = 145

@@ -43,6 +43,8 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
   QueuePanel->Parent = RemotePanel;
   QueueSplitter->Parent = RemotePanel;
 
+  reinterpret_cast<TLabel*>(SessionComboResizer)->OnDblClick = SessionComboResizerDblClick;
+
   // set common explorer shorcuts to our actions
   NonVisualDataModule->ExplorerShortcuts();
 }
@@ -71,8 +73,10 @@ void __fastcall TScpExplorerForm::RestoreParams()
   TCustomScpExplorerForm::RestoreParams();
 
   RemoteDirView->UnixColProperties->ParamsStr = WinConfiguration->ScpExplorer.DirViewParams;
+  RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
   RemoteDirView->ViewStyle = (TViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
   LoadCoolbarLayoutStr(TopCoolBar, WinConfiguration->ScpExplorer.CoolBarLayout);
+  SessionCombo->Width = WinConfiguration->ScpExplorer.SessionComboWidth;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
   RemoteDriveView->Width = WinConfiguration->ScpExplorer.DriveViewWidth;
@@ -86,6 +90,7 @@ void __fastcall TScpExplorerForm::StoreParams()
   try
   {
     WinConfiguration->ScpExplorer.CoolBarLayout = GetCoolbarLayoutStr(TopCoolBar);
+    WinConfiguration->ScpExplorer.SessionComboWidth = SessionCombo->Width;
     WinConfiguration->ScpExplorer.StatusBar = RemoteStatusBar->Visible;
 
     WinConfiguration->ScpExplorer.WindowParams = WinConfiguration->StoreForm(this);;

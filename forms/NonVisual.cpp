@@ -29,7 +29,8 @@ TNonVisualDataModule *NonVisualDataModule;
   ((TCustomAction *)Action)->Enabled = (Condition); Handled = true; } else
 #define EXE(HandleAction, Command) if (Action == HandleAction) { \
   Command; Handled = true; } else
-#define UPDACT(HandleAction, Command) EXE(HandleAction, Command)
+#define UPDACT(HandleAction, Command) \
+  EXE(HandleAction, ((TCustomAction *)Action)->Enabled = true; Command)
 #define UPDCOMP(COMP) if (Action == COMP ## Action) { COMP ## Action->Enabled = true; \
   COMP ## Action->Checked = ScpExplorer->ComponentVisible[fc ## COMP]; Handled = true; } else
 #define EXECOMP(COMP) EXE(COMP ## Action, \
@@ -192,6 +193,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(FileListToCommandLineAction, EnableSelectedOperation)
   UPD(FileListToClipboardAction, EnableSelectedOperation)
   UPD(FullFileListToClipboardAction, EnableSelectedOperation)
+  UPD(UrlToClipboardAction, EnableSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
   // directory
   UPD(CurrentCreateDirAction, true)
   // selection
@@ -243,7 +245,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(AboutAction, true)
   UPD(HomepageAction, true)
   UPD(HistoryPageAction, true)
-  UPD(RequirementsPageAction, true)
+  UPD(TableOfContentsAction, true)
   UPD(ForumPageAction, true)
   UPD(CheckForUpdatesAction, true)
   UPD(DonatePageAction, true)
@@ -425,6 +427,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FileListToCommandLineAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedCommandLine))
     EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
+    EXE(UrlToClipboardAction, ScpExplorer->PanelExport(osCurrent, peUrl, pedClipboard))
     // directory
     EXE(CurrentCreateDirAction, ScpExplorer->CreateDirectory(osCurrent))
     //selection
@@ -469,7 +472,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(AboutAction, DoAboutDialog(Configuration))
     EXE(HomepageAction, OpenBrowser(LoadStr(HOMEPAGE_URL)))
     EXE(HistoryPageAction, OpenBrowser(LoadStr(HISTORY_URL)))
-    EXE(RequirementsPageAction, OpenBrowser(LoadStr(REQUIREMENTS_URL)))
+    EXE(TableOfContentsAction, Application->HelpSystem->ShowTableOfContents())
     EXE(ForumPageAction, OpenBrowser(LoadStr(FORUM_URL)))
     EXE(CheckForUpdatesAction, CheckForUpdates())
     EXE(DonatePageAction, OpenBrowser(LoadStr(DONATE_URL)))

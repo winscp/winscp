@@ -128,8 +128,6 @@ __published:
   TComboBox *BugDeriveKey2Combo;
   TLabel *Label27;
   TComboBox *BugRSAPad2Combo;
-  TLabel *Label28;
-  TComboBox *BugDHGEx2Combo;
   TRadioButton *SshProt1onlyButton;
   TRadioButton *SshProt2onlyButton;
   TTabSheet *AuthSheet;
@@ -211,6 +209,29 @@ __published:
   TCheckBox *IgnoreLsWarningsCheck;
   TCheckBox *AliasGroupListCheck;
   TCheckBox *SCPLsFullTimeAutoCheck;
+  TTabSheet *SftpSheet;
+  TXPGroupBox *SFTPBugsGroupBox;
+  TLabel *Label10;
+  TLabel *Label16;
+  TComboBox *SFTPBugSymlinkCombo;
+  TComboBox *SFTPBugUtfCombo;
+  TTabSheet *KexSheet;
+  TXPGroupBox *KexOptionsGroup;
+  TLabel *Label28;
+  TListBox *KexListBox;
+  TButton *KexUpButton;
+  TButton *KexDownButton;
+  TXPGroupBox *KexReexchangeGroup;
+  TLabel *Label31;
+  TUpDownEdit *RekeyTimeEdit;
+  TLabel *Label32;
+  TEdit *RekeyDataEdit;
+  TXPGroupBox *IPvGroup;
+  TRadioButton *IPAutoButton;
+  TRadioButton *IPv4Button;
+  TRadioButton *IPv6Button;
+  TLabel *Label33;
+  TComboBox *BugRekey2Combo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -232,11 +253,11 @@ __published:
   void __fastcall NewSessionActionExecute(TObject *Sender);
   void __fastcall NavigationTreeChange(TObject *Sender, TTreeNode *Node);
   void __fastcall PageControlChange(TObject *Sender);
-  void __fastcall CipherListBoxStartDrag(TObject *Sender,
+  void __fastcall AlgListBoxStartDrag(TObject *Sender,
           TDragObject *&DragObject);
-  void __fastcall CipherListBoxDragOver(TObject *Sender, TObject *Source,
+  void __fastcall AlgListBoxDragOver(TObject *Sender, TObject *Source,
           int X, int Y, TDragState State, bool &Accept);
-  void __fastcall CipherListBoxDragDrop(TObject *Sender, TObject *Source,
+  void __fastcall AlgListBoxDragDrop(TObject *Sender, TObject *Source,
           int X, int Y);
   void __fastcall CipherButtonClick(TObject *Sender);
   void __fastcall SetDefaultSessionActionExecute(TObject *Sender);
@@ -251,12 +272,13 @@ __published:
   void __fastcall PathEditsKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
   void __fastcall AuthGSSAPICheckClick(TObject *Sender);
+  void __fastcall KexButtonClick(TObject *Sender);
 
 private:
   int NoUpdate;
   TSessionData * FSessionData;
   TStoredSessionList * FStoredSessions;
-  int FCipherDragSource, FCipherDragDest;
+  int FAlgDragSource, FAlgDragDest;
   int FOptions;
   TPopupMenu * FLanguagesPopupMenu;
   AnsiString FOrigCaption;
@@ -291,11 +313,12 @@ protected:
   void __fastcall ShowPreferencesDialog();
   void __fastcall ChangePage(TTabSheet * Tab);
   virtual void __fastcall Dispatch(void * Message);
-  bool __fastcall AllowCipherDrag(int X, int Y);
-  void __fastcall CipherMove(int Source, int Dest);
+  bool __fastcall AllowAlgDrag(TListBox * AlgListBox, int X, int Y);
+  void __fastcall AlgMove(TListBox * AlgListBox, int Source, int Dest);
   void __fastcall PrepareNavigationTree(TTreeView * Tree);
   void __fastcall SetOptions(int value);
   void __fastcall LocaleClick(TObject * Sender);
+  void __fastcall LocaleGetClick(TObject * Sender);
   void __fastcall Init();
   void __fastcall InitControls();
   void __fastcall ShowTabs(bool Show);

@@ -135,7 +135,7 @@ Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
   Flags: unchecked
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandler}
-Name: searchpath; Description: {cm:AddSearchPath} \
+Name: searchpath; Description: {cm:AddSearchPath}; \
   Flags: unchecked
 
 [INI]
@@ -155,10 +155,7 @@ Name: "{group}\{cm:WebSite}"; Filename: "{app}\WinSCP.url"; Components: main
 Name: "{group}\{cm:SupportForum}"; \
   Filename: "{app}\{cm:SupportForum}.url"; Components: main
 ; This is created when pageant/puttygen component is selected (unless user
-; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes). Flag
-; createonlyiffileexists is used instead of "Components: xxx",
-; because it would force creating the icons even when user doesn't want to
-; create start menu folder.
+; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes).
 Name: "{group}\{cm:RSAKeyTools}\PuTTYgen"; \
   Filename: "{app}\PuTTY\puttygen.exe"; Components: puttygen
 Name: "{group}\{cm:RSAKeyTools}\{cm:PuTTYgenManual}"; \
@@ -170,7 +167,7 @@ Name: "{group}\{cm:RSAKeyTools}\{cm:PageantManual}"; \
   Filename: "winhlp32.exe"; Parameters: "-ipageant.general {app}\PuTTY\putty.hlp"; \
   Components: pageant
 Name: "{group}\{cm:RSAKeyTools}\{cm:KeysManual}"; \
-  Filename: "winhlp32.exe"; Parameters: "-it00000115 {app}\PuTTY\putty.hlp"; \
+  Filename: "winhlp32.exe"; Parameters: "-it00000117 {app}\PuTTY\putty.hlp"; \
   Components: pageant puttygen
 Name: "{group}\{cm:RSAKeyTools}\{cm:PuttyWebSite}"; \
   Filename: "{app}\PuTTY\PuTTY.url"; Components: pageant puttygen
@@ -195,9 +192,11 @@ Filename: "{app}\WinSCP3.exe"; Description: "{cm:Launch}"; \
   Flags: nowait postinstall skipifsilent
 ; This is called when urlhandler task is selected
 Filename: "{app}\WinSCP3.exe"; Parameters: "/RegisterAsUrlHandler"; \
-  StatusMsg: {cm:RegisteringAsUrlHandler}; Tasks: urlhandler 
+  StatusMsg: {cm:RegisteringAsUrlHandler}; Tasks: urlhandler
 Filename: "{app}\WinSCP3.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
+Filename: "{app}\WinSCP3.exe"; Parameters: "/InvalidDefaultTranslation"; \
+  StatusMsg: {cm:RemovingInvalidDefaultTranslation}
 
 [UninstallDelete]
 ; These additional files are created by installer
@@ -231,15 +230,15 @@ Root: HKCU; Subkey: "{#ParentRegistryKey}"; Flags: uninsdeletekeyifempty
 Root: HKCU; Subkey: "{#RegistryKey}"; Flags: uninsdeletekeyifempty
 ; Norton Commander interface
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
-  ValueName: "Interface"; ValueData: 0; Check: IsTrue(10)
+  ValueName: "Interface"; ValueData: 0; Check: UserSettings(1)
 ; Explorer-like interface
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
-  ValueName: "Interface"; ValueData: 1; Check: IsTrue(11)
+  ValueName: "Interface"; ValueData: 1; Check: not UserSettings(1)
 ; Advanced tab on login dialog
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
-  ValueName: "ShowAdvancedLoginOptions"; ValueData: 0; Check: IsTrue(20)
+  ValueName: "ShowAdvancedLoginOptions"; ValueData: 0; Check: not UserSettings(2)
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
-  ValueName: "ShowAdvancedLoginOptions"; ValueData: 1; Check: IsTrue(21)
+  ValueName: "ShowAdvancedLoginOptions"; ValueData: 1; Check: UserSettings(2)
 ; If installer enabled ddext, let it reset the settings on uninstall,
 ; so the default is used on the next run
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
@@ -266,9 +265,9 @@ Name: transl\eng; Description: "English"; Types: fulllangs full custom compact; 
 
 [Components]
 Name: transl\{#Languages[LangI*3]}; Description: {#Languages[LangI*3+1]}; \
-  Types: fulllangs full compact custom; Check: IsLang({#Languages[LangI*3]})
+  Types: fulllangs full compact custom; Check: IsLang('{#Languages[LangI*3]}')
 Name: transl\{#Languages[LangI*3]}; Description: {#Languages[LangI*3+1]}; \
-  Types: fulllangs; Check: IsNotLang({#Languages[LangI*3]})
+  Types: fulllangs; Check: not IsLang('{#Languages[LangI*3]}')
 
 [Files]
 Source: "{#TranslationDir}\WinSCP3.{#Languages[LangI*3]}"; DestDir: "{app}"; \
@@ -294,35 +293,35 @@ Filename: "{app}\WinSCP3.exe"; Parameters: "/RemoveSearchPath"; \
 
 [Code]
 var
-  UserInterface: Cardinal;
-  AdvancedTabs: Cardinal;
+  CommanderRadioButton: TRadioButton;
+  ExplorerRadioButton: TRadioButton;
+  AdvancedTabsCheckbox: TCheckbox;
 
 function IsLang(Lang: String): Boolean;
 begin
   Result := (Lang = ActiveLanguage);
 end;
 
-function IsNotLang(Lang: String): Boolean;
+function UserSettings(Settings: Integer): Boolean;
 begin
-  Result := (Lang <> ActiveLanguage);
+  case Settings of
+    1: Result := CommanderRadioButton.Checked;
+    2: Result := AdvancedTabsCheckbox.Checked;
+    else Result := False;
+  end;
 end;
 
-function IsTrue(Check: String): Boolean;
+procedure InitializeWizard();
 var
-  Variable: Integer;
-  Value: Integer;
-  CheckInt: Integer;
+  UserInterface: Cardinal;
+  AdvancedTabs: Cardinal;
+  InterfacePage: TWizardPage;
+  Caption, Caption2: TLabel;
 begin
-  CheckInt := StrToInt(Check);
-  if CheckInt div 10 = 1 then Variable := UserInterface
-    else Variable := AdvancedTabs;
-  Value := CheckInt mod 10;
-  Result := (Variable = Value);
-end;
+  InterfacePage := CreateCustomPage(wpSelectTasks,
+    ExpandConstant('{cm:UserSettingsTitle}'),
+    ExpandConstant('{cm:UserSettingsPrompt}'));
 
-function InitializeSetup(): Boolean;
-begin
-  { read settings of current installation (if any) }
   UserInterface := 0; { default is commander }
   RegQueryDWordValue(HKCU, '{#RegistryKey}\Configuration\Interface',
     'Interface', UserInterface);
@@ -330,115 +329,71 @@ begin
   RegQueryDWordValue(HKCU, '{#RegistryKey}\Configuration\Interface',
     'ShowAdvancedLoginOptions', AdvancedTabs);
 
-  { let setup run }
-  Result := True;
+  Caption := TLabel.Create(InterfacePage);
+  Caption.Caption := ExpandConstant('{cm:UserInterfaceStyle}');
+  Caption.Width := InterfacePage.SurfaceWidth;
+  Caption.Parent := InterfacePage.Surface;
+
+  CommanderRadioButton := TRadioButton.Create(InterfacePage);
+  CommanderRadioButton.Caption := ExpandConstant('{cm:NortonCommanderInterface}');
+  CommanderRadioButton.Checked := (UserInterface = 0);
+  CommanderRadioButton.Left := ScaleX(4);
+  CommanderRadioButton.Width := InterfacePage.SurfaceWidth -
+    CommanderRadioButton.Left;
+  CommanderRadioButton.Top := Caption.Top + Caption.Height + ScaleY(6);
+  CommanderRadioButton.Parent := InterfacePage.Surface;
+
+  Caption := TLabel.Create(InterfacePage);
+  Caption.WordWrap := True;
+  Caption.Caption :=
+      ExpandConstant('{cm:NortonCommanderInterface1}') + #13#10 +
+      ExpandConstant('{cm:NortonCommanderInterface2}') + #13#10 +
+      ExpandConstant('{cm:NortonCommanderInterface3}');
+  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
+  Caption.Top := CommanderRadioButton.Top + CommanderRadioButton.Height +
+    ScaleY(6);
+  Caption.Parent := InterfacePage.Surface;
+
+  ExplorerRadioButton := TRadioButton.Create(InterfacePage);
+  ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterface}');
+  ExplorerRadioButton.Checked := (UserInterface <> 0);
+  ExplorerRadioButton.Left := ScaleX(4);
+  ExplorerRadioButton.Width := InterfacePage.SurfaceWidth -
+    ExplorerRadioButton.Left;
+  ExplorerRadioButton.Top := Caption.Top + Caption.Height + ScaleY(6);
+  ExplorerRadioButton.Parent := InterfacePage.Surface;
+
+  Caption := TLabel.Create(InterfacePage);
+  Caption.WordWrap := True;
+  Caption.Caption :=
+      ExpandConstant('{cm:ExplorerInterface1}') + #13#10 +
+      ExpandConstant('{cm:ExplorerInterface2}') + #13#10 +
+      ExpandConstant('{cm:ExplorerInterface3}');
+  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Width := InterfacePage.SurfaceWidth - Caption.Left;
+  Caption.Top := ExplorerRadioButton.Top + ExplorerRadioButton.Height +
+    ScaleY(6);
+  Caption.Parent := InterfacePage.Surface;
+
+  Caption2 := TLabel.Create(InterfacePage);
+  Caption2.Caption := ExpandConstant('{cm:AdditionalOptions}');
+  Caption2.Width := InterfacePage.SurfaceWidth;
+  Caption2.Top := Caption.Top + Caption.Height + ScaleY(10);
+  Caption2.Parent := InterfacePage.Surface;
+
+  AdvancedTabsCheckbox := TCheckbox.Create(InterfacePage);
+  AdvancedTabsCheckbox.Caption := ExpandConstant('{cm:AdvancedLoginOptions}');
+  AdvancedTabsCheckbox.Checked := (AdvancedTabs <> 0);
+  AdvancedTabsCheckbox.Left := ScaleX(4);
+  AdvancedTabsCheckbox.Width := InterfacePage.SurfaceWidth -
+    AdvancedTabsCheckbox.Left;
+  AdvancedTabsCheckbox.Top := Caption2.Top + Caption2.Height + ScaleY(6);
+  AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
 end;
 
-function ScriptDlgPages(CurPage: Integer; BackClicked: Boolean): Boolean;
-var
-  CommanderRadioButton: TRadioButton;
-  ExplorerRadioButton: TRadioButton;
-  AdvancedTabsCheckbox: TCheckbox;
-  Caption, Caption2: TLabel;
-  Next: Boolean;
-begin
-  if (not BackClicked and (CurPage = wpSelectTasks)) or
-     (BackClicked and (CurPage = wpReady)) then
-  begin
-    ScriptDlgPageOpen();
-
-    ScriptDlgPageSetCaption(ExpandConstant('{cm:UserSettingsPrompt}'));
-    //ScriptDlgPageSetCaption(ExpandConstant('{cm:UserSettingsTitle}'));
-    ScriptDlgPageSetSubCaption1(ExpandConstant('{cm:UserSettingsPrompt}'));
-
-    OutputMsg(ExpandConstant('{cm:UserInterfaceStyle}'), False);
-
-    Caption := TLabel.Create(WizardForm.ScriptDlgPanel);
-    Caption.Caption := 'User interface style';
-    Caption.Width := WizardForm.ScriptDlgPanel.Width;
-    Caption.Parent := WizardForm.ScriptDlgPanel;
-
-    CommanderRadioButton := TRadioButton.Create(WizardForm.ScriptDlgPanel);
-    CommanderRadioButton.Caption := ExpandConstant('{cm:NortonCommanderInterface}');
-    CommanderRadioButton.Checked := (UserInterface = 0);
-    CommanderRadioButton.Width := WizardForm.ScriptDlgPanel.Width;
-    CommanderRadioButton.Parent := WizardForm.ScriptDlgPanel;
-    CommanderRadioButton.Top := Caption.Top + Caption.Height + 6;
-
-    Caption2 := TLabel.Create(WizardForm.ScriptDlgPanel);
-    Caption2.WordWrap := True;
-    Caption2.Caption :=
-        ExpandConstant('{cm:NortonCommanderInterface1}') + #13#10 +
-        ExpandConstant('{cm:NortonCommanderInterface2}') + #13#10 +
-        ExpandConstant('{cm:NortonCommanderInterface3}');
-    Caption2.Left := 20;
-    Caption2.Width := WizardForm.ScriptDlgPanel.Width - Caption.Left;
-    Caption2.Top := CommanderRadioButton.Top + CommanderRadioButton.Height + 6;
-    Caption2.Parent := WizardForm.ScriptDlgPanel;
-
-    ExplorerRadioButton := TRadioButton.Create(WizardForm.ScriptDlgPanel);
-    ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterface}');
-    ExplorerRadioButton.Checked := (UserInterface <> 0);
-    ExplorerRadioButton.Width := WizardForm.ScriptDlgPanel.Width;
-    ExplorerRadioButton.Parent := WizardForm.ScriptDlgPanel;
-    ExplorerRadioButton.Top := Caption2.Top + Caption2.Height + 6;
-
-    Caption2 := TLabel.Create(WizardForm.ScriptDlgPanel);
-    Caption.WordWrap := True;
-    Caption2.Caption :=
-        ExpandConstant('{cm:ExplorerInterface1}') + #13#10 +
-        ExpandConstant('{cm:ExplorerInterface2}') + #13#10 +
-        ExpandConstant('{cm:ExplorerInterface3}');
-    Caption2.Left := 20;
-    Caption2.Width := WizardForm.ScriptDlgPanel.Width - Caption.Left;
-    Caption2.Top := ExplorerRadioButton.Top + ExplorerRadioButton.Height + 6;
-    Caption2.Parent := WizardForm.ScriptDlgPanel;
-
-    Caption := TLabel.Create(WizardForm.ScriptDlgPanel);
-    Caption.Caption := ExpandConstant('{cm:AdditionalOptions}');
-    Caption.Width := WizardForm.ScriptDlgPanel.Width;
-    Caption.Parent := WizardForm.ScriptDlgPanel;
-    Caption.Top := Caption2.Top + Caption2.Height + 10;
-
-    AdvancedTabsCheckbox := TCheckbox.Create(WizardForm.ScriptDlgPanel);
-    AdvancedTabsCheckbox.Caption := ExpandConstant('{cm:AdvancedLoginOptions}');
-    AdvancedTabsCheckbox.Checked := (AdvancedTabs <> 0);
-    AdvancedTabsCheckbox.Width := WizardForm.ScriptDlgPanel.Width;
-    AdvancedTabsCheckbox.Parent := WizardForm.ScriptDlgPanel;
-    AdvancedTabsCheckbox.Top := Caption.Top + Caption.Height + 6;
-
-    Next := ScriptDlgPageProcessCustom(nil);
-
-    if CommanderRadioButton.Checked then UserInterface := 0
-        else UserInterface := 1;
-
-    if AdvancedTabsCheckbox.Checked then AdvancedTabs := 1
-        else AdvancedTabs := 0;
-
-    if not BackClicked then
-      Result := Next
-    else
-      Result := not Next;
-
-    ScriptDlgPageClose(not Result);
-  end
-    else
-  begin
-    Result := True;
-  end;
-end;
-
-function NextButtonClick(CurPage: Integer): Boolean;
-begin
-  Result := ScriptDlgPages(CurPage, False);
-end;
-
-function BackButtonClick(CurPage: Integer): Boolean;
-begin
-  Result := ScriptDlgPages(CurPage, True);
-end;
-
-function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo, MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
+  MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
 var
   S: String;
   S2: String;
@@ -459,13 +414,13 @@ begin
 
   S := S + ExpandConstant('{cm:UserSettingsOverview}') + NewLine;
   S := S + Space;
-  if UserInterface = 0 then S2 := ExpandConstant('{cm:NortonCommanderInterface}')
+  if CommanderRadioButton.Checked then S2 := ExpandConstant('{cm:NortonCommanderInterface}')
     else S2 := ExpandConstant('{cm:ExplorerInterface}');
   StringChange(S2, '&', '');
   S := S + S2;
   S := S + NewLine;
 
-  if AdvancedTabs <> 0 then
+  if AdvancedTabsCheckbox.Checked then
   begin
     S2 := ExpandConstant('{cm:AdvancedLoginOptions}');
     StringChange(S2, '&', '');

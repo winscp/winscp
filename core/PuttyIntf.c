@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <putty.h>
+
 // Suppress Parameter 'xxx' is never used warning.
 // It cannot be suppressed by not using param name, beacuse it is not possible in C
 #pragma option push -w-par
@@ -20,15 +22,20 @@
 //---------------------------------------------------------------------------
 char sshver[50];
 //---------------------------------------------------------------------------
-void SSHLogEvent(void * frontend, char * string);
+void SSHLogEvent(void * frontend, const char * string);
 void SSHFatalError(char * string);
 void SSHConnectionFatal(void * frontend, char * string);
 void SSHVerifyHostKey(void * frontend, char *host, int port, char * keytype,
   char * keystr, char * fingerprint);
 void SSHOldKeyfileWarning(void);
-void SSHAskCipher(void * frontend, char * CipherName, int CipherType);
+void SSHAskAlg(void * frontend, const char * AlgType, const char * AlgName);
 long RegOpenWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
 long RegCreateWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
+long RegQueryWinSCPValueEx(HKEY Key, const char * ValueName, unsigned long * Reserved,
+  unsigned long * Type, unsigned char * Data, unsigned long * DataSize);
+long RegSetWinSCPValueEx(HKEY Key, const char * ValueName, unsigned long Reserved,
+  unsigned long Type, const unsigned char * Data, unsigned long DataSize);
+long RegCloseWinSCPKey(HKEY Key);
 //---------------------------------------------------------------------------
 #define FATAL_MSG(FMT) \
   va_list ap; \
@@ -57,7 +64,7 @@ void modalfatalbox(char *fmt, ...)
   // Maybe this is good point for showing main window 
 } */
 //---------------------------------------------------------------------------
-void logevent(void * frontend, char * string)
+void logevent(void * frontend, const char * string)
 {
   SSHLogEvent(frontend, string);
 }
@@ -74,7 +81,7 @@ void verify_ssh_host_key(void * frontend, char * host, int port, char * keytype,
   SSHVerifyHostKey(frontend, host, port, keytype, keystr, fingerprint);
 }
 //---------------------------------------------------------------------------
-int askappend(void * frontend, char * filename)
+int askappend(void * frontend, Filename filename)
 {
   // this is called from loggin.c of putty, which is never used with WinSCP
   assert(0);
@@ -86,9 +93,9 @@ void old_keyfile_warning(void)
   SSHOldKeyfileWarning();
 }
 //---------------------------------------------------------------------------
-void askcipher(void * frontend, char * ciphername, int cs)
+void askalg(void * frontend, const char * algtype, const char * algname)
 {
-  SSHAskCipher(frontend, ciphername, cs);
+  SSHAskAlg(frontend, algtype, algname);
 }
 //---------------------------------------------------------------------------
 void cleanup_exit(int code)
@@ -117,10 +124,32 @@ long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result)
   return RegCreateWinSCPKey(Key, SubKey, Result);
 }
 //---------------------------------------------------------------------------
+long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long * Reserved,
+  unsigned long * Type, unsigned char * Data, unsigned long * DataSize)
+{
+  return RegQueryWinSCPValueEx(Key, ValueName, Reserved, Type, Data, DataSize);
+} 
+//---------------------------------------------------------------------------
+long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Reserved,
+  unsigned long Type, const unsigned char * Data, unsigned long DataSize)
+{
+  return RegSetWinSCPValueEx(Key, ValueName, Reserved, Type, Data, DataSize);
+}
+//---------------------------------------------------------------------------
+long reg_close_winscp_key(HKEY Key)
+{
+  return RegCloseWinSCPKey(Key);
+}
+//---------------------------------------------------------------------------
 void agent_schedule_callback(void (* callback)(void *, void *, int),
   void * callback_ctx, void * data, int len)
 {
   assert(0);
+}
+//---------------------------------------------------------------------------
+void notify_remote_exit(void *frontend)
+{
+  // nothing
 }
 //---------------------------------------------------------------------------
 void update_specials_menu(void * frontend)
@@ -128,4 +157,29 @@ void update_specials_menu(void * frontend)
   // nothing
 }
 //---------------------------------------------------------------------------
+typedef void (*timer_fn_t)(void *ctx, long now);
+long schedule_timer(int ticks, timer_fn_t fn, void * ctx)
+{
+  return ticks + GetTickCount();
+}
+//---------------------------------------------------------------------------
+void expire_timer_context(void * ctx)
+{
+  // nothing
+}
+//---------------------------------------------------------------------------
+Pinger pinger_new(Config * cfg, Backend * back, void * backhandle)
+{
+  return NULL;
+}
+//---------------------------------------------------------------------------
+void pinger_reconfig(Pinger pinger, Config * oldcfg, Config * newcfg)
+{
+  // nothing
+}
+//---------------------------------------------------------------------------
+void pinger_free(Pinger pinger)
+{
+  // nothing
+}
 #pragma option pop // -w-par

@@ -20,7 +20,8 @@ const
   oiDirUp = $01;
   oiLink = $02;
   oiBrokenLink = $04;
-  oiShared = $08;
+  oiPartial = $08;
+  oiShared = $10; // not used
   DefaultHistoryMenuWidth = 300;
   DefaultHistoryMenuLen = 9;
   DefaultHistoryCount = 200;
@@ -82,6 +83,7 @@ type
   TDirViewExecFileEvent = procedure(Sender: TObject; Item: TListItem; var AllowExec: Boolean) of object;
   TRenameEvent = procedure(Sender: TObject; Item: TListItem; NewName: string) of object;
   TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Masks: string; var Matches: Boolean) of object;
+  TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
 
 type
   TCustomDirView = class;
@@ -127,7 +129,6 @@ type
     FWantUseDragImages: Boolean;
     FCanUseDragImages: Boolean;
     FDragDropFilesEx: TCustomizableDragDropFilesEx;
-    FInvalidNameChars: string;
     FSingleClickToExec: Boolean;
     FUseSystemContextMenu: Boolean;
     FOnGetSelectFilter: TDVGetFilterEvent;
@@ -196,6 +197,7 @@ type
     FSavedSelectionLastFile: string;
     FPendingFocusSomething: Boolean;
     FOnMatchMask: TMatchMaskEvent;
+    FOnGetOverlay: TDirViewGetOverlayEvent;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
@@ -241,6 +243,7 @@ type
     FLoading: Boolean;
     FSelectFile: string;
     FWatchForChanges: Boolean;
+    FInvalidNameChars: string;
 
     procedure AddToDragFileList(FileList: TFileList; Item: TListItem); virtual;
     function CanEdit(Item: TListItem): Boolean; override;
@@ -369,6 +372,7 @@ type
     procedure SaveSelection;
     procedure RestoreSelection;
     procedure DiscardSavedSelection;
+    procedure ContinueSession(Continue: Boolean);
     function CanPasteFromClipBoard: Boolean; dynamic;
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract; 
 
@@ -481,6 +485,7 @@ type
       read FOnExecFile write FOnExecFile;
     property OnHistoryChange: THistoryChangeEvent read FOnHistoryChange write FOnHistoryChange;
     property OnMatchMask: TMatchMaskEvent read FOnMatchMask write FOnMatchMask; 
+    property OnGetOverlay: TDirViewGetOverlayEvent read FOnGetOverlay write FOnGetOverlay; 
     property PathComboBox: TCustomPathComboBox read FPathComboBox write SetPathComboBox;
     property PathLabel: TCustomPathLabel read FPathLabel write SetPathLabel;
     property ShowHiddenFiles: Boolean read FShowHiddenFiles write SetShowHiddenFiles default True;
@@ -548,6 +553,7 @@ const
   ResDirUp = 'DIRUP%2.2d';
   ResLink = 'LINK%2.2d';
   ResBrokenLink = 'BROKEN%2.2d';
+  ResPartial = 'PARTIAL%2.2d';
 
 var
   WinDir: string;
@@ -768,6 +774,7 @@ begin
   GetOverlayBitmap(Result, Format(ResDirUp, [Size]));
   GetOverlayBitmap(Result, Format(ResLink, [Size]));
   GetOverlayBitmap(Result, Format(ResBrokenLink, [Size]));
+  GetOverlayBitmap(Result, Format(ResPartial, [Size]));
 end;
 
 
@@ -883,6 +890,7 @@ begin
   OnCustomDrawSubItem := DumbCustomDrawSubItem;
 
   FOnMatchMask := nil;
+  FOnGetOverlay := nil;
 
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
   with FDragDropFilesEx do
@@ -918,6 +926,8 @@ begin
     OnProcessDropped := DDProcessDropped;
     OnDragDetect := DDDragDetect;
   end;
+
+  DesktopFont := True;
 end;
 
 procedure TCustomDirView.ClearItems;
@@ -1382,6 +1392,8 @@ end;
 function TCustomDirView.ItemOverlayIndexes(Item: TListItem): Word;
 begin
   Result := oiNoOverlay;
+  if Assigned(OnGetOverlay) then
+    OnGetOverlay(Self, Item, Result);
 end;
 
 procedure TCustomDirView.KeyDown(var Key: Word; Shift: TShiftState);
@@ -2996,6 +3008,12 @@ begin
     FPendingFocusSomething := False;
     FocusSomething;
   end;
+end;
+
+procedure TCustomDirView.ContinueSession(Continue: Boolean);
+begin
+  if Continue then FLastPath := PathName
+    else FLastPath := '';
 end;
 
 initialization

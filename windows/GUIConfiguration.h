@@ -9,6 +9,9 @@ struct TPasLibModule;
 enum TLogView { lvNone, lvWindow, pvPanel };
 enum TInterface { ifCommander, ifExplorer };
 //---------------------------------------------------------------------------
+extern const ccLocal;
+extern const ccShowResults;
+//---------------------------------------------------------------------------
 class TGUICopyParamType : public TCopyParamType
 {
 public:
@@ -56,6 +59,7 @@ private:
   TGUICopyParamType FCopyParam;
   bool FBeepOnFinish;
   TDateTime FBeepOnFinishAfter;
+  AnsiString FDefaultPuttyPath;
 
 protected:
   LCID FLocale;

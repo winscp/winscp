@@ -2,11 +2,11 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Terminal.h"
 #include "ScpFileSystem.h"
 
 #include "Common.h"
 #include "Interface.h"
-#include "Terminal.h"
 #include "TextsCore.h"
 
 #include <stdio.h>
@@ -21,9 +21,11 @@ const coExpectNoOutput = 2;
 const coWaitForLastLine = 4;
 const coOnlyReturnCode = 8;
 const coIgnoreWarnings = 16;
+const coReadProgress = 32;
 
 const ecRaiseExcept = 1;
 const ecIgnoreWarnings = 2;
+const ecReadProgress = 4;
 const ecDefault = ecRaiseExcept;
 //---------------------------------------------------------------------------
 #define THROW_FILE_SKIPPED(EXCEPTION, MESSAGE) \
@@ -532,13 +534,26 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params)
     {
       AnsiString Line;
       bool IsLast;
+      unsigned int Total = 0;
       // #55: fixed so, even when last line of command output does not
       // contain CR/LF, we can recognize last line
       do
       {
         Line = FTerminal->ReceiveLine();
         IsLast = IsLastLine(Line);
-        if (!IsLast || !Line.IsEmpty()) FOutput->Add(Line);
+        if (!IsLast || !Line.IsEmpty()) 
+        {
+          FOutput->Add(Line);
+          if (FLAGSET(Params, coReadProgress))
+          {
+            Total++;
+          
+            if (Total % 10 == 0)
+            {
+              FTerminal->DoReadDirectoryProgress(Total);
+            }
+          }
+        }
       }
       while (!IsLast);
     }
@@ -590,6 +605,7 @@ void __fastcall TSCPFileSystem::ExecCommand(const AnsiString Cmd, int Params)
       int COParams = coWaitForLastLine;
       if (Params & ecRaiseExcept) COParams |= coRaiseExcept;
       if (Params & ecIgnoreWarnings) COParams |= coIgnoreWarnings;
+      if (Params & ecReadProgress) COParams |= coReadProgress;
       ReadCommandOutput(COParams);
     }
     catch (ETerminal &E)
@@ -858,7 +874,7 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
       Again = false;
       try
       {
-        int Params = ecDefault |
+        int Params = ecDefault | ecReadProgress |
           FLAGMASK(FTerminal->SessionData->IgnoreLsWarnings, ecIgnoreWarnings);
         const char * Options =
           ((FLsFullTime == asAuto) || (FLsFullTime == asOn)) ? FullTimeOption : "";
@@ -1104,7 +1120,8 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CustomCommandOnFile(const AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command, int Params)
+    const TRemoteFile * File, AnsiString Command, int Params, 
+    TLogAddLineEvent OutputEvent)
 {
   assert(File);
   bool Dir = File->IsDirectory && !File->IsSymLink;
@@ -1113,6 +1130,7 @@ void __fastcall TSCPFileSystem::CustomCommandOnFile(const AnsiString FileName,
     TCustomCommandParams AParams;
     AParams.Command = Command;
     AParams.Params = Params;
+    AParams.OutputEvent = OutputEvent;
     FTerminal->ProcessDirectory(FileName, FTerminal->CustomCommandOnFile,
       &AParams);
   }
@@ -1121,13 +1139,33 @@ void __fastcall TSCPFileSystem::CustomCommandOnFile(const AnsiString FileName,
   {
     AnsiString Cmd = TRemoteCustomCommand(FileName, "").Complete(Command, true);
 
-    AnyCommand(Cmd);
+    TLogAddLineEvent PrevAddLine = FTerminal->Log->OnAddLine;
+    if (OutputEvent != NULL)
+    {
+      FTerminal->Log->OnAddLine = OutputEvent;
+    }
+    
+    try
+    {
+      AnyCommand(Cmd);
+    }
+    __finally
+    {
+      FTerminal->Log->OnAddLine = PrevAddLine;
+    }  
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::AnyCommand(const AnsiString Command)
 {
   ExecCommand(fsAnyCommand, ARRAYOFCONST((Command)));
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TSCPFileSystem::FileUrl(const AnsiString FileName)
+{
+  assert(FileName.Length() > 0);
+  return AnsiString("scp://") + FTerminal->SessionData->SessionName + 
+    (FileName[1] == '/' ? "" : "/") + FileName;
 }
 //---------------------------------------------------------------------------
 // transfer protocol
@@ -1202,7 +1240,8 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
   assert(FilesToCopy && OperationProgress);
 
   AnsiString Options = "";
-  bool CheckExistence = UnixComparePaths(TargetDir, FTerminal->CurrentDirectory);
+  bool CheckExistence = UnixComparePaths(TargetDir, FTerminal->CurrentDirectory) &&
+    (FTerminal->FFiles != NULL) && FTerminal->FFiles->Loaded;
   bool CopyBatchStarted = false;
   bool Failed = true;
   bool GotLastLine = false;
@@ -1251,7 +1290,8 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
 
       if (CheckExistence)
       {
-        assert(FTerminal->FFiles && FTerminal->FFiles->Loaded);
+        // previously there was assertion on FTerminal->FFiles->Loaded, but it
+        // fails for scripting, is 'ls' is not issued before
         TRemoteFile * File = FTerminal->FFiles->FindFile(FileNameOnly);
         if (File && OperationProgress->NoToAll)
         {
@@ -1907,7 +1947,11 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
     if (FileData.SetTime) FileData.SetTime--;
 
     // In case of error occured before control record arrived
-    OperationProgress->FileName = FileName;
+    // (we used to set whole path here, but it was inconsistent with only-filename
+    // set later)
+    // (we used to set the file into OperationProgress->FileName, but it collided
+    // with progress outputing, particularly for scripting)
+    AnsiString ErrorFileName = UnixExtractFileName(FileName);
 
     try
     {
@@ -2002,7 +2046,8 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
         try
         {
           FileData.RemoteRights.Octal = CutToChar(Line, ' ', True);
-          __int64 TSize = StrToInt64(CutToChar(Line, ' ', True));
+          // do not trim leading spaces of the filename
+          __int64 TSize = StrToInt64(CutToChar(Line, ' ', False).TrimRight());
           // Security fix: ensure the file ends up where we asked for it.
           // (accept only filename, not path)
           AnsiString OnlyFileName = UnixExtractFileName(Line);
@@ -2012,6 +2057,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           }
 
           OperationProgress->SetFile(OnlyFileName);
+          ErrorFileName = OnlyFileName;
           OperationProgress->SetTransferSize(TSize);
         }
         catch (Exception &E)
@@ -2037,9 +2083,8 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
         if (FLAGCLEAR(Params, cpDelete) &&
             !CopyParam->AllowTransfer(OperationProgress->FileName))
         {
-
           FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer",
-            (OperationProgress->FileName)));
+            (ErrorFileName)));
           SkipConfirmed = true;
           SCPError("", false);
         }
@@ -2258,7 +2303,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
       {
         SUSPEND_OPERATION (
           TQueryParams Params(qpAllowContinueOnError);
-          if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (OperationProgress->FileName)),
+          if (FTerminal->DoQueryUser(FMTLOAD(COPY_ERROR, (ErrorFileName)),
             E.Message, qaOK | qaAbort, &Params) == qaAbort)
           {
             OperationProgress->Cancel = csCancel;

@@ -376,7 +376,8 @@ int saversakey(const Filename *filename, struct RSAKey *key, char *passphrase)
     fp = f_open(*filename, "wb");
     if (fp) {
 	int ret = (fwrite(buf, 1, p - buf, fp) == (size_t) (p - buf));
-	ret = ret && (fclose(fp) == 0);
+        if (fclose(fp))
+            ret = 0;
 	return ret;
     } else
 	return 0;

@@ -9,6 +9,39 @@
 #include <assert.h>
 #include "putty.h"
 
+/*
+ * Parse a string block size specification. This is approximately a
+ * subset of the block size specs supported by GNU fileutils:
+ *  "nk" = n kilobytes
+ *  "nM" = n megabytes
+ *  "nG" = n gigabytes
+ * All numbers are decimal, and suffixes refer to powers of two.
+ * Case-insensitive.
+ */
+unsigned long parse_blocksize(const char *bs)
+{
+    char *suf;
+    unsigned long r = strtoul(bs, &suf, 10);
+    if (*suf != '\0') {
+	while (isspace(*suf)) suf++;
+	switch (*suf) {
+	  case 'k': case 'K':
+	    r *= 1024ul;
+	    break;
+	  case 'm': case 'M':
+	    r *= 1024ul * 1024ul;
+	    break;
+	  case 'g': case 'G':
+	    r *= 1024ul * 1024ul * 1024ul;
+	    break;
+	  case '\0':
+	  default:
+	    break;
+	}
+    }
+    return r;
+}
+
 /* ----------------------------------------------------------------------
  * String handling routines.
  */
@@ -139,6 +172,29 @@ char *dupvprintf(const char *fmt, va_list ap)
 	}
 	buf = sresize(buf, size, char);
     }
+}
+
+/*
+ * Read an entire line of text from a file. Return a buffer
+ * malloced to be as big as necessary (caller must free).
+ */
+char *fgetline(FILE *fp)
+{
+    char *ret = snewn(512, char);
+    int size = 512, len = 0;
+    while (fgets(ret + len, size - len, fp)) {
+	len += strlen(ret + len);
+	if (ret[len-1] == '\n')
+	    break;		       /* got a newline, we're done */
+	size = len + 512;
+	ret = sresize(ret, size, char);
+    }
+    if (len == 0) {		       /* first fgets returned NULL */
+	sfree(ret);
+	return NULL;
+    }
+    ret[len] = '\0';
+    return ret;
 }
 
 /* ----------------------------------------------------------------------

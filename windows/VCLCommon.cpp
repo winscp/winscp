@@ -88,6 +88,12 @@ void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings)
     Control->FlipChildren(true);
   }
 
+  if (Control->HelpKeyword.IsEmpty())
+  {
+    // temporary help keyword to enable F1 key in all forms
+    Control->HelpKeyword = "start";
+  }
+
   ResetSystemSettings(Control);
 };
 //---------------------------------------------------------------------------

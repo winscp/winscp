@@ -1,6 +1,9 @@
 object OpenDirectoryDialog: TOpenDirectoryDialog
   Left = 408
   Top = 195
+  HelpType = htKeyword
+  HelpKeyword = 'ui_opendir'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Open directory'
   ClientHeight = 308
@@ -150,6 +153,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Top = 23
     Width = 75
     Height = 25
+    Anchors = [akTop, akRight]
     Caption = 'B&rowse...'
     TabOrder = 2
     OnClick = LocalDirectoryBrowseButtonClick

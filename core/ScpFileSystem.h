@@ -33,7 +33,7 @@ public:
   virtual void __fastcall DeleteFile(const AnsiString FileName,
     const TRemoteFile * File, bool Recursive);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command, int Params);
+    const TRemoteFile * File, AnsiString Command, int Params, TLogAddLineEvent OutputEvent);
   virtual void __fastcall DoStartup();
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
@@ -49,6 +49,7 @@ public:
     const AnsiString NewName);
   virtual void __fastcall CopyFile(const AnsiString FileName,
     const AnsiString NewName);
+  virtual AnsiString __fastcall FileUrl(const AnsiString FileName);
 
   static bool __fastcall RemoveLastLine(AnsiString & Line,
     int & ReturnCode, AnsiString LastLine = "");

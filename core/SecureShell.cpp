@@ -19,7 +19,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-#define MAX_BUFSIZE 16384
+#define MAX_BUFSIZE 32768
 const TColor LogLineColors[] =
   {clGreen, clRed, clMaroon, clBlue, clGray};
 //---------------------------------------------------------------------------
@@ -45,7 +45,8 @@ __fastcall TSecureShell::TSecureShell()
   UpdateStatus(sshClosed);
   FConfig = new Config();
   FSocket = new SOCKET;
-  FMaxPacketSize = 0;
+  FMaxPacketSize = NULL;
+  FBufSize = 0;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
@@ -186,6 +187,12 @@ AnsiString __fastcall TSecureShell::GetPassword()
     DecryptPassword(FPassword, SessionData->SessionName));
 }
 //---------------------------------------------------------------------------
+TDateTime __fastcall TSecureShell::GetIdleInterval()
+{
+  return (FSessionData->PingType != ptOff) ? FSessionData->PingIntervalDT :
+   TDateTime(0);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
   AnsiString & Response, bool IsPassword)
 {
@@ -283,7 +290,11 @@ bool __fastcall TSecureShell::DoPromptUser(AnsiString Prompt, TPromptKind Kind,
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::GotHostKey()
 {
-  UpdateStatus(sshAuthenticate);
+  // due to re-key GotHostKey() may be called again later during session
+  if (FReachedStatus < sshAuthenticate)
+  {
+    UpdateStatus(sshAuthenticate);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::FromBackend(Boolean IsStdErr, char * Data, Integer Length)
@@ -433,13 +444,15 @@ void __fastcall TSecureShell::SendEOF()
 void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
 {
   CheckConnection();
-  int BufSize = FBackend->send(FBackendHandle, (char *)Buf, Len);
+  FBufSize = FBackend->send(FBackendHandle, (char *)Buf, Len);
   FLastDataSent = Now();
   FBytesSent += Len;
-  while (BufSize > MAX_BUFSIZE)
+  while (FBufSize > MAX_BUFSIZE)
   {
+    // it seems that this does not work anyway
+    // (i.e. once the send buffer fills we hang here)
     WaitForData();
-    BufSize = FBackend->sendbuffer(FBackendHandle);
+    FBufSize = FBackend->sendbuffer(FBackendHandle);
   }
 }
 //---------------------------------------------------------------------------
@@ -593,9 +606,7 @@ void __fastcall TSecureShell::Close()
   LogEvent("Closing connection.");
   CheckConnection();
 
-  ssh_close(FBackendHandle);
-  // This should be called insted, but there seem tu be error in freeing
-  // FBackend->free(FBackendHandle);
+  FBackend->free(FBackendHandle);
 
   Discard();
 }
@@ -648,6 +659,17 @@ extern int select_result(WPARAM, LPARAM);
 void __fastcall TSecureShell::WaitForData()
 {
   bool R;
+
+  SOCKET & Socket = *static_cast<SOCKET*>(FSocket);
+  if (socket_writable(Socket))
+  {
+    select_result((WPARAM)(Socket), (LPARAM)FD_WRITE);
+  }
+  if (FBufSize > 0)
+  {
+    FBufSize = FBackend->send(FBackendHandle, "", 0);
+  }
+
   do
   {
     R = Select(FSessionData->Timeout);
@@ -668,7 +690,7 @@ void __fastcall TSecureShell::WaitForData()
   }
   while (!R);
 
-  select_result((WPARAM)(*static_cast<SOCKET*>(FSocket)), (LPARAM)FD_READ);
+  select_result((WPARAM)(Socket), (LPARAM)FD_READ);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::SshFallbackCmd() const
@@ -681,10 +703,11 @@ void __fastcall TSecureShell::Error(const AnsiString Error) const
   SSH_ERROR(Error);
 }
 //---------------------------------------------------------------------------
+extern int (WINAPI *p_WSAEnumNetworkEvents)
+    (SOCKET s, WSAEVENT hEventObject, LPWSANETWORKEVENTS lpNetworkEvents);
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::Idle()
 {
-  // In Putty this is called each 100 ms when in foreground and
-  // each 10 min when in background
   noise_regular();
   // Keep session alive
   if ((FSessionData->PingType != ptOff) &&
@@ -693,6 +716,16 @@ void __fastcall TSecureShell::Idle()
     KeepAlive();
     // in case keep alive could not be processed, postpone next attempt
     FLastDataSent = Now();
+  }
+
+  call_ssh_timer(FBackendHandle);
+
+  // to let detect dropped connection immediatelly, also to let
+  // process SSH-level communication with the server (KEX particularly)
+  if (Select(0))
+  {
+    select_result((WPARAM)(*static_cast<SOCKET*>(FSocket)), (LPARAM)FD_READ);
+    CheckConnection();
   }
 }
 //---------------------------------------------------------------------------
@@ -718,6 +751,11 @@ TDateTime __fastcall TSecureShell::GetDuration() const
   return Now() - FLoginTime;
 }
 //---------------------------------------------------------------------------
+int __fastcall TSecureShell::RemainingSendBuffer()
+{
+  return MAX_BUFSIZE - FBufSize;
+}
+//---------------------------------------------------------------------------
 unsigned long __fastcall TSecureShell::MaxPacketSize()
 {
   if (SshVersion == 1)
@@ -726,16 +764,11 @@ unsigned long __fastcall TSecureShell::MaxPacketSize()
   }
   else
   {
-    if (FMaxPacketSize == 0)
+    if (FMaxPacketSize == NULL)
     {
-      unsigned long RemWindow = ssh2_remwindow(FBackendHandle);
       FMaxPacketSize = ssh2_remmaxpkt(FBackendHandle);
-      if (RemWindow < FMaxPacketSize)
-      {
-        FMaxPacketSize = RemWindow;
-      }
     }
-    return FMaxPacketSize;
+    return *FMaxPacketSize;
   }
 }
 //---------------------------------------------------------------------------
@@ -926,6 +959,8 @@ void __fastcall TSecureShell::VerifyHostKey(const AnsiString Host, int Port,
 
   int Result;
 
+  FHostKeyFingerprint = Fingerprint;
+
   // Verify the key against the registry.
   Result = verify_host_key(Host.c_str(), Port, KeyType.c_str(), KeyStr.c_str());
   
@@ -946,12 +981,36 @@ void __fastcall TSecureShell::VerifyHostKey(const AnsiString Host, int Port,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AskCipher(const AnsiString CipherName, int CipherType)
+void __fastcall TSecureShell::AskAlg(const AnsiString AlgType, 
+  const AnsiString AlgName)
 {
-  static int CipherTypeRes[] = {CIPHER_TYPE_BOTH, CIPHER_TYPE_CS, CIPHER_TYPE_SC};
-  assert(CipherType >= 0 && CipherType < LENOF(CipherTypeRes));
-  AnsiString Msg = FMTLOAD(CIPHER_BELOW_TRESHOLD,
-    (LoadStr(CipherTypeRes[CipherType]), CipherName));
+  AnsiString Msg;
+  if (AlgType == "key-exchange algorithm")
+  {
+    Msg = FMTLOAD(KEX_BELOW_TRESHOLD, (AlgName));
+  }
+  else 
+  {
+    int CipherType;
+    if (AlgType == "cipher")
+    {
+      CipherType = CIPHER_TYPE_BOTH;
+    }
+    else if (AlgType == "client-to-server cipher")
+    {
+      CipherType = CIPHER_TYPE_CS;
+    }
+    else if (AlgType == "server-to-client cipher")
+    {
+      CipherType = CIPHER_TYPE_SC;
+    }
+    else 
+    {
+      assert(false);
+    }
+
+    Msg = FMTLOAD(CIPHER_BELOW_TRESHOLD, (LoadStr(CipherType), AlgName));
+  }
 
   if (DoQueryUser(Msg, NULL, qaYes | qaNo, 0, qtWarning) == qaNo)
   {
@@ -1291,9 +1350,15 @@ void __fastcall TSessionLog::AddStartupInfo()
       char const * BugFlags = "A+-";
       for (int Index = 0; Index < BUG_COUNT; Index++)
       {
-        Bugs += AnsiString(BugFlags[Data->Bug[(TSshBug)Index]])+(Index<BUG_COUNT?",":"");
+        Bugs += AnsiString(BugFlags[Data->Bug[(TSshBug)Index]])+(Index<BUG_COUNT-1?",":"");
       }
       ADF("SSH Bugs: %s", (Bugs));
+      Bugs = "";
+      for (int Index = 0; Index < SFTP_BUG_COUNT; Index++)
+      {
+        Bugs += AnsiString(BugFlags[Data->SFTPBug[(TSftpBug)Index]])+(Index<SFTP_BUG_COUNT-1?",":"");
+      }
+      ADF("SFTP Bugs: %s", (Bugs));
       ADF("Proxy: %s", (ProxyMethodList[Data->ProxyMethod]));
       if (Data->ProxyMethod != pmNone)
       {

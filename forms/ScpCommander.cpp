@@ -44,6 +44,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
 {
   FCurrentSide = osLocal;
   FLastLeftPanelWidth = LeftPanelWidth;
+  FNormalPanelsWidth = -1;
   FSynchronisingBrowse = false;
   FFirstTerminal = true;
   FInternalDDDownloadList = new TStringList();
@@ -75,13 +76,12 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   reinterpret_cast<TLabel*>(Splitter)->OnDblClick = SplitterDblClick;
   reinterpret_cast<TLabel*>(LocalPanelSplitter)->OnDblClick = PanelSplitterDblClick;
   reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = PanelSplitterDblClick;
+  reinterpret_cast<TLabel*>(SessionComboResizer)->OnDblClick = SessionComboResizerDblClick;
   RemotePathComboBox->TabStop = False;
 
   CommandLineLabel->FocusControl = CommandLineCombo;
   CommandLineCombo->Text = "";
   FCommandLineComboPopulated = false;
-
-  LocalDirView->Font = Screen->IconFont;
 }
 //---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::~TScpCommanderForm()
@@ -111,6 +111,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
   TCustomScpExplorerForm::RestoreParams();
   LeftPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
   LoadCoolbarLayoutStr(TopCoolBar, WinConfiguration->ScpCommander.CoolBarLayout);
+  SessionCombo->Width = WinConfiguration->ScpCommander.SessionComboWidth;
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
   ToolbarPanel->Visible = WinConfiguration->ScpCommander.ToolBar;
 
@@ -128,6 +129,10 @@ void __fastcall TScpCommanderForm::RestoreParams()
   RESTORE_PANEL_PARAMS(Remote);
   #undef RESTORE_PANEL_PARAMS
 
+  // just to make sure
+  LocalDirView->DirColProperties->ExtVisible = false;
+  RemoteDirView->UnixColProperties->ExtVisible = false;
+
   NonVisualDataModule->SynchronizeBrowsingAction->Checked = WinConfiguration->ScpCommander.SynchronizeBrowsing;
 }
 //---------------------------------------------------------------------------
@@ -139,6 +144,7 @@ void __fastcall TScpCommanderForm::StoreParams()
   try
   {
     WinConfiguration->ScpCommander.CoolBarLayout = GetCoolbarLayoutStr(TopCoolBar);
+    WinConfiguration->ScpCommander.SessionComboWidth = SessionCombo->Width;
     WinConfiguration->ScpCommander.LocalPanelWidth = LeftPanelWidth;
     WinConfiguration->ScpCommander.StatusBar = StatusBar->Visible;
     WinConfiguration->ScpCommander.ToolBar = ToolbarPanel->Visible;
@@ -344,6 +350,23 @@ void __fastcall TScpCommanderForm::BatchEnd(void * Storage)
   delete Storage;
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::TerminalChanging()
+{
+  TCustomScpExplorerForm::TerminalChanging();
+
+  // ExplorerState should be already created by TCustomScpExplorerForm
+  if (WinConfiguration->PreservePanelState &&
+      (Terminal != NULL) && (Terminal->UserObject != NULL))
+  {
+    TExporerState * ExplorerState = dynamic_cast<TExporerState *>(Terminal->UserObject);
+    assert(ExplorerState != NULL);
+
+    ExplorerState->Local.SortStr = LocalDirView->DirColProperties->SortStr;
+    ExplorerState->Local.FocusedItem = LocalDirView->ItemFocused != NULL ?
+      LocalDirView->ItemFocused->Caption : AnsiString("");
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::TerminalChanged()
 {
   if (Terminal)
@@ -352,6 +375,10 @@ void __fastcall TScpCommanderForm::TerminalChanged()
     NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
 
     TCustomScpExplorerForm::TerminalChanged();
+
+    // we will load completelly different directory, so particularly
+    // do not attempt to select previously selected directory
+    LocalDirView->ContinueSession(false);
 
     if (FFirstTerminal || !WinConfiguration->ScpCommander.PreserveLocalDirectory)
     {
@@ -398,6 +425,25 @@ void __fastcall TScpCommanderForm::TerminalChanged()
           UnixExtractFileName(RemoteDirView->PathName)))
     {
       NonVisualDataModule->SynchronizeBrowsingAction->Checked = true;
+    }
+
+    if (WinConfiguration->PreservePanelState &&
+        (Terminal->UserObject != NULL) &&
+        !WinConfiguration->ScpCommander.PreserveLocalDirectory)
+    {
+      TExporerState * ExplorerState = dynamic_cast<TExporerState *>(Terminal->UserObject);
+      assert(ExplorerState != NULL);
+      
+      LocalDirView->DirColProperties->SortStr = ExplorerState->Local.SortStr;
+      if (!ExplorerState->Local.FocusedItem.IsEmpty())
+      {
+        TListItem * ListItem = LocalDirView->FindFileItem(ExplorerState->Local.FocusedItem);
+        if (ListItem != NULL)
+        {
+          LocalDirView->ItemFocused = ListItem;
+          ListItem->MakeVisible(false);
+        }
+      }
     }
   }
   else
@@ -1189,6 +1235,26 @@ int __fastcall TScpCommanderForm::GetStaticComponentsHeight()
     (StatusBar->Visible ? StatusBar->Height : 0);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SysResizing(unsigned int Cmd)
+{
+  TCustomScpExplorerForm::SysResizing(Cmd);
+
+  if ((Cmd == SC_MAXIMIZE) || (Cmd == 61490) ||
+      ((Cmd == SC_DEFAULT) && (WindowState != wsMaximized)))
+  {
+    FNormalPanelsWidth = LocalPanel->Width + RemotePanel->Width;
+  }
+  else if ((Cmd == SC_RESTORE) || (Cmd == 61730) ||
+    ((Cmd == SC_DEFAULT) && (WindowState == wsMaximized)))
+  {
+    if (FNormalPanelsWidth >= 0)
+    {
+      Panel(true)->Width = FLeftPanelWidth * FNormalPanelsWidth;
+      FNormalPanelsWidth = -1;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::Resize()
 {
   TCustomScpExplorerForm::Resize();
@@ -1280,4 +1346,13 @@ void __fastcall TScpCommanderForm::RemotePathLabelPathClick(
   }
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TScpCommanderForm::LocalDirViewFileIconForName(
+  TObject * /*Sender*/, TListItem * /*Item*/, AnsiString & FileName)
+{
+  AnsiString PartialExt = Configuration->PartialExt;
+  if (SameText(ExtractFileExt(FileName), PartialExt))
+  {
+    FileName.SetLength(FileName.Length() - PartialExt.Length());
+  }
+}
+//---------------------------------------------------------------------------

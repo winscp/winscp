@@ -2,6 +2,8 @@ inherited ScpExplorerForm: TScpExplorerForm
   Left = 340
   Top = 148
   Width = 648
+  HelpType = htKeyword
+  HelpKeyword = 'ui_explorer'
   ActiveControl = RemoteDirView
   Caption = 'ScpExplorerForm'
   OldCreateOrder = True
@@ -322,7 +324,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     object SessionToolbar: TToolBar
       Left = 9
       Top = 95
-      Width = 235
+      Width = 242
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -337,9 +339,6 @@ inherited ScpExplorerForm: TScpExplorerForm
       TabOrder = 3
       Transparent = True
       Wrapable = False
-      DesignSize = (
-        235
-        22)
       object ToolButton28: TToolButton
         Left = 0
         Top = 0
@@ -355,23 +354,41 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
       object SessionCombo: TComboBox
         Left = 31
-        Top = 1
+        Top = 0
         Width = 114
-        Height = 19
+        Height = 21
         Style = csOwnerDrawFixed
-        Anchors = [akLeft, akTop, akRight, akBottom]
         DropDownCount = 15
-        ItemHeight = 13
+        ItemHeight = 15
         TabOrder = 0
         TabStop = False
       end
-      object ToolButton29: TToolButton
+      object SessionComboResizer: TSplitter
         Left = 145
+        Top = 0
+        Width = 4
+        Height = 22
+        Cursor = crHSplit
+        Hint = 'Drag to resize session drop down menu'
+        AutoSnap = False
+        ResizeStyle = rsUpdate
+        OnMoved = SessionComboResizerMoved
+      end
+      object ToolButton5: TToolButton
+        Left = 149
+        Top = 0
+        Width = 3
+        Caption = 'ToolButton5'
+        ImageIndex = 44
+        Style = tbsSeparator
+      end
+      object ToolButton29: TToolButton
+        Left = 152
         Top = 0
         Action = NonVisualDataModule.CloseSessionAction
       end
       object ToolButton30: TToolButton
-        Left = 168
+        Left = 175
         Top = 0
         Width = 8
         Hint = 'E'
@@ -380,14 +397,14 @@ inherited ScpExplorerForm: TScpExplorerForm
         Style = tbsSeparator
       end
       object SavedSessionsButton: TToolButton
-        Left = 176
+        Left = 183
         Top = 0
         Action = NonVisualDataModule.SavedSessionsAction
         MenuItem = NonVisualDataModule.SavedSessionsMenu
         Style = tbsDropDown
       end
       object ToolButton34: TToolButton
-        Left = 212
+        Left = 219
         Top = 0
         Action = NonVisualDataModule.SaveCurrentSessionAction
       end

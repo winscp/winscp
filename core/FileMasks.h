@@ -5,6 +5,9 @@
 class TFileMasks
 {
 public:
+  static bool __fastcall IsMask(const AnsiString Mask);
+  static bool __fastcall SingleMaskMatch(const AnsiString Mask, const AnsiString FileName);
+
   __fastcall TFileMasks();
   __fastcall TFileMasks(const TFileMasks & Source);
   __fastcall TFileMasks(const AnsiString AMasks);
@@ -24,6 +27,8 @@ private:
 };
 //---------------------------------------------------------------------------
 AnsiString __fastcall MaskFileName(AnsiString FileName, const AnsiString Mask);
+bool __fastcall IsFileNameMask(const AnsiString Mask);
+AnsiString __fastcall DelimitFileNameMask(AnsiString Mask);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TCustomCommandPatternEvent)
   (int Index, const AnsiString Pattern, void * Arg, AnsiString & Replacement,

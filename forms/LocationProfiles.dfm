@@ -1,6 +1,9 @@
 object LocationProfilesDialog: TLocationProfilesDialog
   Left = 343
   Top = 147
+  HelpType = htKeyword
+  HelpKeyword = 'ui_locationprofile'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Location profiles'
   ClientHeight = 424
@@ -182,6 +185,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     Top = 23
     Width = 75
     Height = 25
+    Anchors = [akTop, akRight]
     Caption = 'B&rowse...'
     TabOrder = 1
     OnClick = LocalDirectoryBrowseButtonClick

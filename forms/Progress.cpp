@@ -10,6 +10,7 @@
 #include <VCLCommon.h>
 #include <WinInterface.h>
 #include <GUIConfiguration.h>
+#include <GUITools.h>
 
 #include "Progress.h"
 //---------------------------------------------------------------------
@@ -59,6 +60,10 @@ void __fastcall TProgressForm::UpdateControls()
 {
   assert((FData.Operation >= foCopy) && (FData.Operation <= foRemoteCopy) &&
     FData.Operation != foRename );
+
+  CancelButton->Enabled = !FReadOnly;
+  DisconnectWhenCompleteCheck->Enabled =
+    !FReadOnly && (FData.Operation != foCalculateSize);
 
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
@@ -172,10 +177,10 @@ void __fastcall TProgressForm::UpdateControls()
     StartTimeLabel->Caption = FData.StartTime.TimeString();
     if (FData.TotalSizeSet)
     {
-      TimeEstimatedLabel->Caption = FormatDateTime(Configuration->TimeFormat,
+      TimeEstimatedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat,
         FData.TotalTimeExpected());
     }
-    TimeElapsedLabel->Caption = FormatDateTime(Configuration->TimeFormat, FData.TimeElapsed());
+    TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferedLabel->Caption = FormatBytes(FData.TotalTransfered);
     CPSLabel->Caption = FORMAT("%s/s", (FormatBytes(FData.CPS())));
     FileProgress->Position = FData.TransferProgress();
@@ -360,12 +365,12 @@ void __fastcall TProgressForm::SetReadOnly(bool value)
 {
   if (FReadOnly != value)
   {
-    CancelButton->Enabled = !value;
-    DisconnectWhenCompleteCheck->Enabled = !value;
+    FReadOnly = value;
     if (!value)
     {
       DisconnectWhenCompleteCheck->Checked = false;
     }
+    UpdateControls();
   }
 }
 

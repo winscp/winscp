@@ -1,6 +1,9 @@
 object CopyDialog: TCopyDialog
   Left = 363
   Top = 198
+  HelpType = htKeyword
+  HelpKeyword = 'ui_copy'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CopyDialog'
   ClientHeight = 359

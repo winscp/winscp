@@ -13,30 +13,48 @@ using namespace Masks;
 #include "Common.h"
 #include "TextsCore.h"
 //---------------------------------------------------------------------------
-AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask)
+AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask, bool& Masked)
 {
   AnsiString Result;
   int RestStart = 1;
+  bool Delim = false;
   for (int Index = 1; Index <= Mask.Length(); Index++)
   {
     switch (Mask[Index])
     {
+      case '\\':
+        if (!Delim)
+        {
+          Delim = true;
+          Masked = true;
+          break;
+        }
+    
       case '*':
-        Result += Part.SubString(RestStart, Part.Length() - RestStart + 1);
-        RestStart = Part.Length() + 1; 
-        break;
+        if (!Delim)
+        {
+          Result += Part.SubString(RestStart, Part.Length() - RestStart + 1);
+          RestStart = Part.Length() + 1; 
+          Masked = true;
+          break;
+        }
 
       case '?':
-        if (RestStart <= Part.Length())
+        if (!Delim)
         {
-          Result += Part[RestStart];
-          RestStart++;
+          if (RestStart <= Part.Length())
+          {
+            Result += Part[RestStart];
+            RestStart++;
+          }
+          Masked = true;
+          break;
         }
-        break;
 
       default:
         Result += Mask[Index];
         RestStart++;
+        Delim = false;
         break; 
     }
   }
@@ -47,6 +65,7 @@ AnsiString __fastcall MaskFileName(AnsiString FileName, const AnsiString Mask)
 {
   if (!Mask.IsEmpty() && (Mask != "*") && (Mask != "*.*"))
   {
+    bool Masked;
     int P = Mask.LastDelimiter(".");
     if (P > 0)
     {
@@ -55,12 +74,12 @@ AnsiString __fastcall MaskFileName(AnsiString FileName, const AnsiString Mask)
       // name/ext separator
       AnsiString FileExt = P2 > 1 ?
         FileName.SubString(P2 + 1, FileName.Length() - P2) : AnsiString();
-      FileExt = MaskFilePart(FileExt, Mask.SubString(P + 1, Mask.Length() - P));
+      FileExt = MaskFilePart(FileExt, Mask.SubString(P + 1, Mask.Length() - P), Masked);
       if (P2 > 1)
       {
         FileName.SetLength(P2 - 1);
       }
-      FileName = MaskFilePart(FileName, Mask.SubString(1, P - 1));
+      FileName = MaskFilePart(FileName, Mask.SubString(1, P - 1), Masked);
       if (!FileExt.IsEmpty())
       {
         FileName += "." + FileExt;
@@ -68,12 +87,42 @@ AnsiString __fastcall MaskFileName(AnsiString FileName, const AnsiString Mask)
     }
     else
     {
-      FileName = MaskFilePart(FileName, Mask);
+      FileName = MaskFilePart(FileName, Mask, Masked);
     }
   }
   return FileName;
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsFileNameMask(const AnsiString Mask)
+{
+  bool Masked = false;
+  MaskFilePart("", Mask, Masked);
+  return Masked;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall DelimitFileNameMask(AnsiString Mask)
+{
+  for (int i = 1; i <= Mask.Length(); i++)
+  {
+    if (strchr("\\*?", Mask[i]) != NULL)
+    {
+      Mask.Insert("\\", i);
+      i++;
+    }
+  }
+  return Mask;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+bool __fastcall TFileMasks::IsMask(const AnsiString Mask)
+{
+  return (Mask.LastDelimiter("?*[") > 0);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileMasks::SingleMaskMatch(const AnsiString Mask, const AnsiString FileName)
+{
+  return MatchesMask(FileName, Mask);
+}
 //---------------------------------------------------------------------------
 __fastcall TFileMasks::TFileMasks()
 {

@@ -2,6 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "SecureShell.h"
 #include "FileSystems.h"
 #include "RemoteFiles.h"
 #include "Common.h"

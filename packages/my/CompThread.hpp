@@ -53,7 +53,7 @@ public:
 	__fastcall virtual ~TCompThread(void);
 	void __fastcall Resume(void);
 	void __fastcall Suspend(void);
-	void __fastcall Terminate(void);
+	virtual void __fastcall Terminate(void);
 	unsigned __fastcall WaitFor(void);
 	__property bool FreeOnTerminate = {read=FFreeOnTerminate, write=FFreeOnTerminate, nodefault};
 	__property unsigned Handle = {read=FHandle, nodefault};

@@ -17,20 +17,27 @@ enum TFSProtocol { fsSCPonly, fsSFTP, fsSFTPonly };
 enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet }; // 0.53b and older
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd }; // after 0.53b
 enum TSshProt { ssh1only, ssh1, ssh2, ssh2only };
+enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx };
+#define KEX_COUNT (kexDHGEx+1)
 enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
-  sbDHGEx2, sbPKSessID2 };
+  sbRekey2, sbPKSessID2 };
 #define BUG_COUNT (sbPKSessID2+1)
+enum TSftpBug { sbSymlink, sbUtf };
+#define SFTP_BUG_COUNT (sbUtf+1)
 enum TAutoSwitch { asOn, asOff, asAuto };
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
+enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 const puRequireUsername =     0x01;
 const puExcludeLeadingSlash = 0x02;
 const puExtractFileName =     0x04;
 const puDecodeUrlChars =      0x08;
 //---------------------------------------------------------------------------
 extern const char CipherNames[CIPHER_COUNT][10];
+extern const char KexNames[KEX_COUNT][20];
 extern const char SshProtList[][10];
 extern const char ProxyMethodList[][10];
 extern const TCipher DefaultCipherList[CIPHER_COUNT];
+extern const TKex DefaultKexList[KEX_COUNT];
 extern const char FSProtocolNames[FSPROTOCOL_COUNT][11];
 //---------------------------------------------------------------------------
 class TSessionData : public TNamedObject
@@ -48,10 +55,12 @@ private:
   bool FAuthKI;
   bool FAuthKIPassword;
   bool FAuthGSSAPI;
+  bool FChangeUsername;
   bool FCompression;
   TSshProt FSshProt;
   bool FSsh2DES;
   TCipher FCiphers[CIPHER_COUNT];
+  TKex FKex[KEX_COUNT];
   bool FClearAliases;
   TEOLType FEOLType;
   AnsiString FPublicKeyFile;
@@ -93,11 +102,14 @@ private:
   int FSFTPListingQueue;
   int FSFTPMaxVersion;
   bool FConsiderDST;
-  TAutoSwitch FSFTPSymlinkBug;
+  TAutoSwitch FSFTPBugs[SFTP_BUG_COUNT];
   bool FDeleteToRecycleBin;
   bool FOverwrittenToRecycleBin;
   AnsiString FRecycleBinPath;
   TAutoSwitch FSCPLsFullTime;
+  TAddressFamily FAddressFamily;
+  AnsiString FRekeyData;
+  unsigned int FRekeyTime;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -110,11 +122,14 @@ private:
   void __fastcall SetAuthKI(bool value);
   void __fastcall SetAuthKIPassword(bool value);
   void __fastcall SetAuthGSSAPI(bool value);
+  void __fastcall SetChangeUsername(bool value);
   void __fastcall SetCompression(bool value);
   void __fastcall SetSshProt(TSshProt value);
   void __fastcall SetSsh2DES(bool value);
   void __fastcall SetCipher(int Index, TCipher value);
   TCipher __fastcall GetCipher(int Index) const;
+  void __fastcall SetKex(int Index, TKex value);
+  TKex __fastcall GetKex(int Index) const;
   void __fastcall SetPublicKeyFile(AnsiString value);
 
   void __fastcall SetProtocolStr(AnsiString value);
@@ -155,6 +170,8 @@ private:
   AnsiString __fastcall GetSshProtStr();
   void __fastcall SetCipherList(AnsiString value);
   AnsiString __fastcall GetCipherList() const;
+  void __fastcall SetKexList(AnsiString value);
+  AnsiString __fastcall GetKexList() const;
   void __fastcall SetProxyMethod(TProxyMethod value);
   void __fastcall SetProxyHost(AnsiString value);
   void __fastcall SetProxyPort(int value);
@@ -174,13 +191,17 @@ private:
   void __fastcall SetSFTPUploadQueue(int value);
   void __fastcall SetSFTPListingQueue(int value);
   void __fastcall SetSFTPMaxVersion(int value);
-  void __fastcall SetSFTPSymlinkBug(TAutoSwitch value);
+  void __fastcall SetSFTPBug(TSftpBug Bug, TAutoSwitch value);
+  TAutoSwitch __fastcall GetSFTPBug(TSftpBug Bug) const;
   void __fastcall SetSCPLsFullTime(TAutoSwitch value);
   AnsiString __fastcall GetStorageKey();
   void __fastcall SetConsiderDST(bool value);
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetOverwrittenToRecycleBin(bool value);
   void __fastcall SetRecycleBinPath(AnsiString value);
+  void __fastcall SetAddressFamily(TAddressFamily value);
+  void __fastcall SetRekeyData(AnsiString value);
+  void __fastcall SetRekeyTime(unsigned int value);
 
 public:
   __fastcall TSessionData(AnsiString aName);
@@ -209,10 +230,12 @@ public:
   __property bool AuthKI  = { read=FAuthKI, write=SetAuthKI };
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
   __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
+  __property bool ChangeUsername  = { read=FChangeUsername, write=SetChangeUsername };
   __property bool Compression  = { read=FCompression, write=SetCompression };
   __property TSshProt SshProt  = { read=FSshProt, write=SetSshProt };
   __property bool Ssh2DES  = { read=FSsh2DES, write=SetSsh2DES };
   __property TCipher Cipher[int Index] = { read=GetCipher, write=SetCipher };
+  __property TKex Kex[int Index] = { read=GetKex, write=SetKex };
   __property AnsiString PublicKeyFile  = { read=FPublicKeyFile, write=SetPublicKeyFile };
   __property TProtocol Protocol  = { read=FProtocol };
   __property AnsiString ProtocolStr  = { read=GetProtocolStr, write=SetProtocolStr };
@@ -249,6 +272,7 @@ public:
   __property bool TcpNoDelay  = { read=FTcpNoDelay, write=SetTcpNoDelay };
   __property AnsiString SshProtStr  = { read=GetSshProtStr };
   __property AnsiString CipherList  = { read=GetCipherList, write=SetCipherList };
+  __property AnsiString KexList  = { read=GetKexList, write=SetKexList };
   __property TProxyMethod ProxyMethod  = { read=FProxyMethod, write=SetProxyMethod };
   __property AnsiString ProxyHost  = { read=FProxyHost, write=SetProxyHost };
   __property int ProxyPort  = { read=FProxyPort, write=SetProxyPort };
@@ -266,12 +290,15 @@ public:
   __property int SFTPUploadQueue = { read = FSFTPUploadQueue, write = SetSFTPUploadQueue };
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
   __property int SFTPMaxVersion = { read = FSFTPMaxVersion, write = SetSFTPMaxVersion };
-  __property TAutoSwitch SFTPSymlinkBug = { read = FSFTPSymlinkBug, write = SetSFTPSymlinkBug };
+  __property TAutoSwitch SFTPBug[TSftpBug Bug]  = { read=GetSFTPBug, write=SetSFTPBug };
   __property TAutoSwitch SCPLsFullTime = { read = FSCPLsFullTime, write = SetSCPLsFullTime };
   __property bool ConsiderDST = { read = FConsiderDST, write = SetConsiderDST };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool OverwrittenToRecycleBin = { read = FOverwrittenToRecycleBin, write = SetOverwrittenToRecycleBin };
   __property AnsiString RecycleBinPath = { read = FRecycleBinPath, write = SetRecycleBinPath };
+  __property TAddressFamily AddressFamily = { read = FAddressFamily, write = SetAddressFamily };
+  __property AnsiString RekeyData = { read = FRekeyData, write = SetRekeyData };
+  __property unsigned int RekeyTime = { read = FRekeyTime, write = SetRekeyTime };
   __property AnsiString StorageKey = { read = GetStorageKey };
 };
 //---------------------------------------------------------------------------

@@ -55,6 +55,7 @@ public:
 
   void __fastcall AddItem(TQueueItem * Item);
   TTerminalQueueStatus * __fastcall CreateStatus(TTerminalQueueStatus * Current);
+  void __fastcall Idle();
 
   __property bool IsEmpty = { read = GetIsEmpty };
   __property int TransfersLimit = { read = FTransfersLimit, write = SetTransfersLimit };
@@ -80,6 +81,8 @@ protected:
   TList * FTerminals;
   int FTemporaryTerminals;
   int FTransfersLimit;
+  TDateTime FIdleInterval;
+  TDateTime FLastIdle;
 
   TQueueItem * __fastcall GetItem(int Index);
   bool __fastcall ItemGetData(TQueueItem * Item, TQueueItemProxy * Proxy);

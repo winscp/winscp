@@ -9,7 +9,6 @@
 
 #include "Common.h"
 #include "FileBuffer.h"
-#include "FileSystems.h"
 #include "Interface.h"
 #include "RemoteFiles.h"
 #include "ScpFileSystem.h"
@@ -49,6 +48,7 @@ __fastcall TTerminal::TTerminal(): TSecureShell()
   FOnProgress = NULL;
   FOnFinished = NULL;
   FOnDeleteLocalFile = NULL;
+  FOnReadDirectoryProgress = NULL;
   FAdditionalInfo = NULL;
   FUseBusyCursor = True;
   FLockDirectory = "";
@@ -57,6 +57,7 @@ __fastcall TTerminal::TTerminal(): TSecureShell()
   FFSProtocol = cfsUnknown;
   FCommandSession = NULL;
   FAutoReadDirectory = true;
+  FReadingCurrentDirectory = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -77,6 +78,30 @@ __fastcall TTerminal::~TTerminal()
   delete FDirectoryCache;
   delete FDirectoryChangesCache;
   delete FAdditionalInfo;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::Idle()
+{
+  TSecureShell::Idle();
+
+  if (CommandSessionOpened)
+  {
+    try
+    {
+      FCommandSession->Idle();
+    }
+    catch(Exception & E)
+    {
+      // If the secondary session is dropped, ignore the error and let
+      // it be reconnected when needed.
+      // BTW, non-fatal error can hardly happen here, that's why
+      // it is displayed, because it can be useful to know.
+      if (FCommandSession->Active)
+      {
+        FCommandSession->DoShowExtendedException(&E);
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::KeepAlive()
@@ -105,11 +130,6 @@ void __fastcall TTerminal::KeepAlive()
   else
   {
     TSecureShell::KeepAlive();
-  }
-
-  if (CommandSessionOpened)
-  {
-    FCommandSession->KeepAlive();
   }
 }
 //---------------------------------------------------------------------------
@@ -477,6 +497,14 @@ void __fastcall TTerminal::DoStartReadDirectory()
   if (FOnStartReadDirectory)
   {
     FOnStartReadDirectory(this);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoReadDirectoryProgress(int Progress)
+{
+  if (FReadingCurrentDirectory && (FOnReadDirectoryProgress != NULL))
+  {
+    FOnReadDirectoryProgress(this, Progress);
   }
 }
 //---------------------------------------------------------------------------
@@ -860,6 +888,8 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
   if (!LoadedFromCache)
   {
     DoStartReadDirectory();
+    FReadingCurrentDirectory = true;
+    DoReadDirectoryProgress(0);
     FFiles->Directory = CurrentDirectory;
 
     try
@@ -870,6 +900,8 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
       }
       __finally
       {
+        DoReadDirectoryProgress(-1);
+        FReadingCurrentDirectory = false;
         // this must be called before error is displayed, otherwise
         // TUnixDirView would be drawn with invalid data (it keeps reference
         // to already destoroyed old listing)
@@ -1040,7 +1072,11 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
     FOperationProgress = &Progress;
     try
     {
-      BeginTransaction();
+      if (Side == osRemote)
+      {
+        BeginTransaction();
+      }
+      
       try
       {
         int Index = 0;
@@ -1064,7 +1100,10 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
       }
       __finally
       {
-        EndTransaction();
+        if (Side == osRemote)
+        {
+          EndTransaction();
+        }
       }
 
       if (Progress.Cancel == csContinue)
@@ -1213,30 +1252,41 @@ void __fastcall TTerminal::CustomCommandOnFile(AnsiString FileName,
   LogEvent(FORMAT("Executing custom command \"%s\" (%d) on file \"%s\".",
     (Params->Command, Params->Params, FileName)));
   if (File) FileModified(File, FileName);
-  DoCustomCommandOnFile(FileName, File, Params->Command, Params->Params);
+  DoCustomCommandOnFile(FileName, File, Params->Command, Params->Params,
+    Params->OutputEvent);
   ReactOnCommand(fsAnyCommand);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
-  const TRemoteFile * File, AnsiString Command, int Params)
+  const TRemoteFile * File, AnsiString Command, int Params,
+  TLogAddLineEvent OutputEvent)
 {
   try
   {
     if (IsCapable[fcAnyCommand])
     {
       assert(FFileSystem);
-      FFileSystem->CustomCommandOnFile(FileName, File, Command, Params);
+      FFileSystem->CustomCommandOnFile(FileName, File, Command, Params, OutputEvent);
     }
     else
     {
       assert(CommandSessionOpened);
       assert(FCommandSession->FSProtocol == cfsSCP);
       LogEvent("Executing custom command on command session.");
-      FCommandSession->Log->OnAddLine = Log->AddFromOtherLog;
+      // TODO: we should set FCommandSession->Log->OnAddLine to 
+      // Log->AddFromOtherLog always as in AnyCommand()
+      // to log shell output, but it collides with OutputEvent, so currenly
+      // there's no logging when OutputEvent is required
+      assert(FCommandSession->Log->OnAddLine == NULL);
+      if (OutputEvent == NULL)
+      {
+        FCommandSession->Log->OnAddLine = Log->AddFromOtherLog;
+      }
+      
       try
       {
         FCommandSession->CurrentDirectory = CurrentDirectory;
-        FCommandSession->FFileSystem->CustomCommandOnFile(FileName, File, Command, Params);
+        FCommandSession->FFileSystem->CustomCommandOnFile(FileName, File, Command, Params, OutputEvent);
       }
       __finally
       {
@@ -1249,19 +1299,20 @@ void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
     COMMAND_ERROR_ARI
     (
       FMTLOAD(CUSTOM_COMMAND_ERROR, (Command, FileName)),
-      DoCustomCommandOnFile(FileName, File, Command, Params)
+      DoCustomCommandOnFile(FileName, File, Command, Params, OutputEvent)
     );
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CustomCommandOnFiles(AnsiString Command,
-  int Params, TStrings * Files)
+  int Params, TStrings * Files, TLogAddLineEvent OutputEvent)
 {
   if (!TRemoteCustomCommand().IsFileListCommand(Command))
   {
     TCustomCommandParams AParams;
     AParams.Command = Command;
     AParams.Params = Params;
+    AParams.OutputEvent = OutputEvent;
     ProcessFiles(Files, foCustomCommand, CustomCommandOnFile, &AParams);
   }
   else
@@ -1284,7 +1335,16 @@ void __fastcall TTerminal::CustomCommandOnFiles(AnsiString Command,
     }
     
     AnsiString Cmd = TRemoteCustomCommand("", FileList).Complete(Command, true);
-    AnyCommand(Cmd);
+    assert(Log->OnAddLine == NULL);
+    Log->OnAddLine = OutputEvent;
+    try
+    {
+      AnyCommand(Cmd);
+    }
+    __finally
+    {
+      Log->OnAddLine = NULL;
+    }  
   }
 }
 //---------------------------------------------------------------------------
@@ -1820,42 +1880,55 @@ bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
 
   FILE_OPERATION_LOOP (FMTLOAD(CREATE_FILE_ERROR, (FileName)),
     bool Done;
+    unsigned int CreateAttr = FILE_ATTRIBUTE_NORMAL;
     do
     {
       *AHandle = CreateFile(FileName.c_str(), GENERIC_WRITE, FILE_SHARE_READ,
-        NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+        NULL, CREATE_ALWAYS, CreateAttr, 0);
       Done = (*AHandle != INVALID_HANDLE_VALUE);
       if (!Done)
       {
         int FileAttr;
         if (FileExists(FileName) &&
-          (((FileAttr = FileGetAttr(FileName)) & faReadOnly) != 0))
+          (((FileAttr = FileGetAttr(FileName)) & (faReadOnly | faHidden)) != 0))
         {
-          if (OperationProgress->NoToAll)
+          if (FLAGSET(FileAttr, faReadOnly))
           {
-            Result = false;
-          }
-          else if (!OperationProgress->YesToAll)
-          {
-            int Answer;
-            SUSPEND_OPERATION
-            (
-              Answer = DoQueryUser(
-                FMTLOAD(READ_ONLY_OVERWRITE, (FileName)),
-                qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll, 0);
-            );
-            switch (Answer) {
-              case qaYesToAll: OperationProgress->YesToAll = true; break;
-              case qaAbort: OperationProgress->Cancel = csCancel; // continue on next case
-              case qaNoToAll: OperationProgress->NoToAll = true;
-              case qaNo: Result = false; break;
+            if (OperationProgress->NoToAll)
+            {
+              Result = false;
             }
+            else if (!OperationProgress->YesToAll)
+            {
+              int Answer;
+              SUSPEND_OPERATION
+              (
+                Answer = DoQueryUser(
+                  FMTLOAD(READ_ONLY_OVERWRITE, (FileName)),
+                  qaYes | qaNo | qaAbort | qaYesToAll | qaNoToAll, 0);
+              );
+              switch (Answer) {
+                case qaYesToAll: OperationProgress->YesToAll = true; break;
+                case qaAbort: OperationProgress->Cancel = csCancel; // continue on next case
+                case qaNoToAll: OperationProgress->NoToAll = true;
+                case qaNo: Result = false; break;
+              }
+            }
+          }
+          else
+          {
+            assert(FLAGSET(FileAttr, faHidden));
+            Result = true;
           }
 
           if (Result)
           {
+            CreateAttr |=
+              FLAGMASK(FLAGSET(FileAttr, faHidden), FILE_ATTRIBUTE_HIDDEN) |
+              FLAGMASK(FLAGSET(FileAttr, faReadOnly), FILE_ATTRIBUTE_READONLY);
+          
             FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
-              if (FileSetAttr(FileName, FileAttr & ~faReadOnly) != 0)
+              if (FileSetAttr(FileName, FileAttr & ~(faReadOnly | faHidden)) != 0)
               {
                 EXCEPTION;
               }
@@ -1966,6 +2039,28 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
   if (AHandle) *AHandle = Handle;
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TTerminal::FileUrl(const AnsiString FileName)
+{
+  return FFileSystem->FileUrl(FileName);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::MakeLocalFileList(const AnsiString FileName,
+  const TSearchRec Rec, void * Param)
+{
+  TMakeLocalFileListParams & Params = *static_cast<TMakeLocalFileListParams*>(Param);
+
+  bool Directory = FLAGSET(Rec.Attr, faDirectory);
+  if (Directory && Params.Recursive)
+  {
+    ProcessLocalDirectory(FileName, MakeLocalFileList, &Params);
+  }
+
+  if (!Directory || Params.IncludeDirs)
+  {
+    Params.FileList->Add(FileName);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::CalculateLocalFileSize(const AnsiString FileName,
   const TSearchRec Rec, /*TCalculateSizeParams*/ void * Params)
 {
@@ -1997,6 +2092,7 @@ void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
   __int64 & Size, const TCopyParamType * CopyParam)
 {
   TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
+  bool DisconnectWhenComplete = false;
   OperationProgress.Start(foCalculateSize, osLocal, FileList->Count);
   try
   {
@@ -2010,14 +2106,11 @@ void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
     TSearchRec Rec;
     for (int Index = 0; Index < FileList->Count; Index++)
     {
-      if (FileSearchRec(FileList->Strings[Index], Rec))
+      AnsiString FileName = FileList->Strings[Index];
+      if (FileSearchRec(FileName, Rec))
       {
-        if (Rec.Attr & faDirectory)
-        {
-          ProcessLocalDirectory(FileList->Strings[Index],
-            CalculateLocalFileSize, &Params);
-        }
-        CalculateLocalFileSize(FileList->Strings[Index], Rec, &Params);
+        CalculateLocalFileSize(FileName, Rec, &Params);
+        OperationProgress.Finish(FileName, true, DisconnectWhenComplete);
       }
     }
 
@@ -2027,6 +2120,11 @@ void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
   {
     FOperationProgress = NULL;
     OperationProgress.Stop();
+  }
+
+  if (DisconnectWhenComplete)
+  {
+    CloseOnCompletion();
   }
 }
 //---------------------------------------------------------------------------

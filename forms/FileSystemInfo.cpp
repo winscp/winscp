@@ -63,6 +63,8 @@ void __fastcall TFileSystemInfoDialog::UpdateControls()
   }
   CompressionEdit->Text = Str;
 
+  HostKeyFingerprintEdit->Text = Terminal->HostKeyFingerprint;
+
   FSProtocolEdit->Text = Terminal->ProtocolName;
 
   ModeChangingEdit->Text = CapabilityStr(fcModeChanging);

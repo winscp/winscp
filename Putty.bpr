@@ -5,33 +5,35 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\Putty.lib"/>
     <OBJFILES value="putty\BE_NONE.obj putty\BUFFER.obj putty\CPROXY.obj 
-      putty\INT64.obj putty\LOGGING.obj putty\MISC.obj putty\NOISE.obj 
-      putty\PAGEANTC.obj putty\PORTFWD.obj putty\PPROXY.obj 
-      putty\PROXY.obj putty\SSH_.obj putty\SSHAES.obj putty\SSHBLOWF.obj 
-      putty\SSHBN.obj putty\SSHCRC.obj putty\SSHCRCDA.obj 
-      putty\SSHDES.obj putty\SSHDH.obj putty\SSHDSS.obj putty\SSHMD5.obj 
-      putty\SSHPUBK.obj putty\SSHRAND.obj putty\SSHRSA.obj 
-      putty\SSHSH512.obj putty\SSHSHA.obj putty\SSHZLIB.obj 
-      putty\TREE234.obj putty\CHARSET\UTF8.obj putty\WILDCARD.obj 
-      putty\WINMISC.obj putty\WINNET.obj putty\WINSTORE_.obj 
-      putty\X11FWD.obj"/>
+      putty\INT64.obj putty\LOGGING.obj putty\MISC.obj putty\PORTFWD.obj 
+      putty\PPROXY.obj putty\PROXY.obj putty\SSH_.obj putty\SSHAES.obj 
+      putty\SSHBLOWF.obj putty\SSHBN.obj putty\SSHCRC.obj 
+      putty\SSHCRCDA.obj putty\SSHDES.obj putty\SSHDH.obj 
+      putty\SSHDSS.obj putty\SSHMD5.obj putty\SSHPUBK.obj 
+      putty\SSHRAND.obj putty\SSHRSA.obj putty\SSHSH512.obj 
+      putty\SSHSHA.obj putty\SSHZLIB.obj putty\TREE234.obj 
+      putty\CHARSET\UTF8.obj putty\WILDCARD.obj putty\WINDOWS\WINMISC.obj 
+      putty\WINDOWS\WINNET.obj putty\WINDOWS\WINNOISE.obj putty\WINDOWS\WINPGNTC.obj 
+      putty\WINDOWS\WINSTORE_.obj putty\WINDOWS\WINTIME.obj putty\X11FWD.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
     <PACKAGES value=""/>
-    <PATHCPP value=".;putty;putty\CHARSET"/>
+    <PATHCPP value=".;putty;putty\CHARSET;putty\WINDOWS"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="PUTTY_LIB;GSSAPI;MPEXT;_WINDOWS;_MSC_VER=1000"/>
+    <USERDEFINES value="GSSAPI;MPEXT;_WINDOWS;_MSC_VER=1000"/>
     <SYSDEFINES value="_RTLDLL;NO_STRICT"/>
     <MAINSOURCE value="Putty.bpf"/>
-    <INCLUDEPATH value="putty;putty\CHARSET;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="putty\CHARSET;putty;$(BCB)\lib\obj;$(BCB)\lib"/>
-    <WARNINGS value="-w-sus -w-rvl -w-rch -w-pia -w-pck -w-pch -w-par -w-8027 -w-eff -w-aus"/>
+    <INCLUDEPATH value="putty;putty\CHARSET;putty\WINDOWS;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="putty;putty\CHARSET;putty\WINDOWS;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -w-sus -wstv -wstu -w-rvl -w-rch -w-pia 
+      -w-pck -w-pch -w-par -wnod -wnak -w-8027 -w-eff -w-csu -wcln -wbbf -w-aus 
+      -wasm -wamp -wamb"/>
     <LISTFILE value=""/>
     <OTHERFILES value=""/>
   </MACROS>
@@ -55,8 +57,6 @@
       <FILE FILENAME="putty\INT64.C" FORMNAME="" UNITNAME="INT64.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\LOGGING.C" FORMNAME="" UNITNAME="LOGGING.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\MISC.C" FORMNAME="" UNITNAME="MISC.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="putty\NOISE.C" FORMNAME="" UNITNAME="NOISE.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="putty\PAGEANTC.C" FORMNAME="" UNITNAME="PAGEANTC.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\PORTFWD.C" FORMNAME="" UNITNAME="PORTFWD.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\PPROXY.C" FORMNAME="" UNITNAME="PPROXY.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\PROXY.C" FORMNAME="" UNITNAME="PROXY.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -79,9 +79,12 @@
       <FILE FILENAME="putty\TREE234.C" FORMNAME="" UNITNAME="TREE234.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\CHARSET\UTF8.C" FORMNAME="" UNITNAME="UTF8" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\WILDCARD.C" FORMNAME="" UNITNAME="WILDCARD.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="putty\WINMISC.C" FORMNAME="" UNITNAME="WINMISC.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="putty\WINNET.C" FORMNAME="" UNITNAME="WINNET.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="putty\WINSTORE_.C" FORMNAME="" UNITNAME="WINSTORE_.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\WINDOWS\WINMISC.C" FORMNAME="" UNITNAME="WINMISC.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\WINDOWS\WINNET.C" FORMNAME="" UNITNAME="WINNET.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\WINDOWS\WINNOISE.C" FORMNAME="" UNITNAME="WINNOISE.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\WINDOWS\WINPGNTC.C" FORMNAME="" UNITNAME="WINPGNTC.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\WINDOWS\WINSTORE_.C" FORMNAME="" UNITNAME="WINSTORE_.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\WINDOWS\WINTIME.C" FORMNAME="" UNITNAME="WINTIME.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\X11FWD.C" FORMNAME="" UNITNAME="X11FWD.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>

@@ -30,6 +30,8 @@ AnsiString RootKeyToStr(HKEY RootKey);
 AnsiString BooleanToStr(bool B);
 AnsiString BooleanToEngStr(bool B);
 AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim);
+void __fastcall OemToAnsi(AnsiString & Str);
+void __fastcall AnsiToOem(AnsiString & Str);
 AnsiString ExceptionLogString(Exception *E);
 bool IsDots(const AnsiString Str);
 AnsiString __fastcall SystemTemporaryDirectory();
@@ -37,6 +39,7 @@ AnsiString __fastcall StripPathQuotes(const AnsiString Path);
 AnsiString __fastcall AddPathQuotes(AnsiString Path);
 void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
   AnsiString & Params, AnsiString & Dir);
+AnsiString __fastcall ExtractProgram(AnsiString Command);
 AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
 bool __fastcall IsDisplayableStr(const AnsiString Str);
 AnsiString __fastcall StrToHex(const AnsiString Str);
@@ -50,7 +53,7 @@ AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength);
 struct TPasLibModule;
 TPasLibModule * __fastcall FindModule(void * Instance);
 //---------------------------------------------------------------------------
-typedef void __fastcall (__closure *TProcessLocalFileEvent)
+typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const AnsiString FileName, const TSearchRec Rec, void * Param);
 bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec);
 void __fastcall ProcessLocalDirectory(AnsiString DirName,
@@ -118,6 +121,9 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
 #ifndef _DEBUG
 #undef assert
 #define assert(p)   ((void)0)
+#define CHECK(p) p
+#else
+#define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
 #endif
 #define USEDPARAM(p) ((p) == (p))
 //---------------------------------------------------------------------------

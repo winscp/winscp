@@ -1,6 +1,9 @@
 object ProgressForm: TProgressForm
   Left = 356
   Top = 204
+  HelpType = htKeyword
+  HelpKeyword = 'ui_progress'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Operation'
   ClientHeight = 240
@@ -208,9 +211,9 @@ object ProgressForm: TProgressForm
     object Label4: TLabel
       Left = 0
       Top = 34
-      Width = 79
+      Width = 82
       Height = 13
-      Caption = 'Bytes transfered:'
+      Caption = 'Bytes transferred:'
     end
     object Label7: TLabel
       Left = 162

@@ -87,6 +87,8 @@ typedef void __fastcall (__closure *TRenameEvent)(System::TObject* Sender, Comct
 
 typedef void __fastcall (__closure *TMatchMaskEvent)(System::TObject* Sender, AnsiString FileName, AnsiString Masks, bool &Matches);
 
+typedef void __fastcall (__closure *TDirViewGetOverlayEvent)(System::TObject* Sender, Comctrls::TListItem* Item, Word &Indexes);
+
 #pragma option push -b-
 enum TSelAttr { selDontCare, selYes, selNo };
 #pragma option pop
@@ -161,7 +163,6 @@ private:
 	bool FWantUseDragImages;
 	bool FCanUseDragImages;
 	TCustomizableDragDropFilesEx* FDragDropFilesEx;
-	AnsiString FInvalidNameChars;
 	bool FSingleClickToExec;
 	bool FUseSystemContextMenu;
 	TDVGetFilterEvent FOnGetSelectFilter;
@@ -236,6 +237,7 @@ private:
 	AnsiString FSavedSelectionLastFile;
 	bool FPendingFocusSomething;
 	TMatchMaskEvent FOnMatchMask;
+	TDirViewGetOverlayEvent FOnGetOverlay;
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDblClk(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Message);
@@ -276,6 +278,7 @@ protected:
 	bool FLoading;
 	AnsiString FSelectFile;
 	bool FWatchForChanges;
+	AnsiString FInvalidNameChars;
 	virtual void __fastcall AddToDragFileList(Dragdropfilesex::TFileList* FileList, Comctrls::TListItem* Item);
 	DYNAMIC bool __fastcall CanEdit(Comctrls::TListItem* Item);
 	virtual bool __fastcall CanChangeSelection(Comctrls::TListItem* Item, bool Select);
@@ -392,6 +395,7 @@ public:
 	void __fastcall SaveSelection(void);
 	void __fastcall RestoreSelection(void);
 	void __fastcall DiscardSavedSelection(void);
+	void __fastcall ContinueSession(bool Continue);
 	DYNAMIC bool __fastcall CanPasteFromClipBoard(void);
 	virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "") = 0 ;
 	__property bool AddParentDir = {read=FAddParentDir, write=SetAddParentDir, default=0};
@@ -469,6 +473,7 @@ public:
 	__property TDirViewExecFileEvent OnExecFile = {read=FOnExecFile, write=FOnExecFile};
 	__property THistoryChangeEvent OnHistoryChange = {read=FOnHistoryChange, write=FOnHistoryChange};
 	__property TMatchMaskEvent OnMatchMask = {read=FOnMatchMask, write=FOnMatchMask};
+	__property TDirViewGetOverlayEvent OnGetOverlay = {read=FOnGetOverlay, write=FOnGetOverlay};
 	__property Custompathcombobox::TCustomPathComboBox* PathComboBox = {read=FPathComboBox, write=SetPathComboBox};
 	__property Pathlabel::TCustomPathLabel* PathLabel = {read=FPathLabel, write=SetPathLabel};
 	__property bool ShowHiddenFiles = {read=FShowHiddenFiles, write=SetShowHiddenFiles, default=1};
@@ -489,7 +494,8 @@ static const Shortint oiNoOverlay = 0x0;
 static const Shortint oiDirUp = 0x1;
 static const Shortint oiLink = 0x2;
 static const Shortint oiBrokenLink = 0x4;
-static const Shortint oiShared = 0x8;
+static const Shortint oiPartial = 0x8;
+static const Shortint oiShared = 0x10;
 static const Word DefaultHistoryMenuWidth = 0x12c;
 static const Shortint DefaultHistoryMenuLen = 0x9;
 static const Byte DefaultHistoryCount = 0xc8;

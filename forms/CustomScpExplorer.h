@@ -36,7 +36,7 @@ struct TEditedFileData;
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
 enum TExecuteFileBy { efDefault, efEditor, efAlternativeEditor };
-enum TPanelExport { pePath, peFileList, peFullFileList };
+enum TPanelExport { pePath, peFileList, peFullFileList, peUrl };
 enum TPanelExportDestination { pedClipboard, pedCommandLine };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
@@ -121,7 +121,11 @@ __published:
   void __fastcall RemoteDriveViewEnter(TObject *Sender);
   void __fastcall DirViewMatchMask(TObject *Sender,
           AnsiString FileName, AnsiString Masks, bool &Matches);
-  
+  void __fastcall RemoteDirViewGetOverlay(TObject *Sender, TListItem *Item,
+          WORD &Indexes);
+  void __fastcall SessionComboResizerMoved(TObject *Sender);
+  void __fastcall SessionComboResizerDblClick(TObject * Sender);
+
 private:
   TTerminal * FTerminal;
   TTerminalQueue * FQueue;
@@ -165,8 +169,6 @@ private:
   void __fastcall SessionComboChange(TObject * Sender);
   void __fastcall CloseInternalEditor(TObject * Sender);
   void __fastcall ForceCloseInternalEditor(TObject * Sender);
-  void __fastcall MakeFileList(const AnsiString FileName, const TSearchRec Rec,
-    void * Param);
   void __fastcall TerminalCaptureLog(TObject* Sender, const AnsiString AddedLine);
 
 protected:
@@ -199,6 +201,7 @@ protected:
   virtual void __fastcall FixControlsPlacement();
   void __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
   void __fastcall CustomCommand(TStrings * FileList, const AnsiString & Name);
+  virtual void __fastcall TerminalChanging();
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall QueueChanged();
   void __fastcall UpdateStatusBar();
@@ -211,8 +214,12 @@ protected:
   void __fastcall OperationComplete(const TDateTime & StartTime);
   void __fastcall ExecutedFileChanged(const AnsiString FileName,
     const TEditedFileData & Data, HANDLE UploadCompleteEvent);
+  void __fastcall ExecutedFileEarlyClosed(const AnsiString FileName,
+    bool * CloseFlag, bool & KeepOpen);
   void __fastcall CMAppSysCommand(TMessage & Message);
   void __fastcall WMAppCommand(TMessage & Message);
+  void __fastcall WMSysCommand(TMessage & Message);
+  virtual void __fastcall SysResizing(unsigned int Cmd);
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
   void __fastcall HandleErrorList(TStringList *& ErrorList);
@@ -263,15 +270,16 @@ protected:
   void __fastcall FileTerminalClosed(const AnsiString FileName,
     TEditedFileData & Data, void * Arg);
   void __fastcall CustomExecuteFile(TOperationSide Side,
-    TExecuteFileBy ExecuteFileBy, AnsiString FileName);
+    TExecuteFileBy ExecuteFileBy, AnsiString FileName, AnsiString OriginalFileName);
   bool __fastcall RemoteExecuteForceText(TExecuteFileBy ExecuteFileBy);
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
-    AnsiString & TempDir);
+    AnsiString & TempDir, bool AllFiles, bool GetTargetNames);
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
     VCL_MESSAGE_HANDLER(CM_APPSYSCOMMAND, TMessage, CMAppSysCommand)
     VCL_MESSAGE_HANDLER(_WM_APPCOMMAND, TMessage, WMAppCommand)
+    VCL_MESSAGE_HANDLER(WM_SYSCOMMAND, TMessage, WMSysCommand)
   END_MESSAGE_MAP(TForm)
   #pragma warn +inl
 
@@ -332,6 +340,19 @@ public:
   __property bool HasDirView[TOperationSide Side] = { read = GetHasDirView };
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
+};
+//---------------------------------------------------------------------------
+class TExporerState : public TObject
+{
+public:
+  struct TDirViewState
+  {
+    AnsiString SortStr;
+    AnsiString FocusedItem;
+  };
+
+  TDirViewState Remote;
+  TDirViewState Local;
 };
 //---------------------------------------------------------------------------
 #endif

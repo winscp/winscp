@@ -1,6 +1,9 @@
 object AboutDialog: TAboutDialog
   Left = 373
   Top = 184
+  HelpType = htKeyword
+  HelpKeyword = 'ui_about'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'About application'
   ClientHeight = 334

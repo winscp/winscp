@@ -21,6 +21,7 @@ AddSearchPath=Add installation directory to &search path (%PATH%)
 
 RegisteringAsUrlHandler=Registering to handle scp:// and sftp:// addresses
 AddingSearchPath=Adding installation directory to search path (%PATH%)
+RemovingInvalidDefaultTranslation=Looking for obsolete default translation
 
 SupportForum=Support forum
 WebSite=WinSCP Web Site

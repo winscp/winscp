@@ -148,6 +148,7 @@ BEGIN
   SYNCHRONIZE_DOWNLOAD, "%d new or changed file(s) in remote directory '%s' were found. They will be uploaded to local directory '%s'. Continue?"
   SYNCHRONIZE_LOCAL_DELETE, "%d obsolete file(s) in local directory '%s' were found. They will be deleted. Continue?"
   TIMEOUT_STILL_WAITING, "Host has not answered for more than %d seconds. Still waiting..."
+  KEX_BELOW_TRESHOLD, "The first key-exchange algorithm supported by the server is %s, which is below the configured warning threshold.\n\nDo you want to continue with this connection?"
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"
@@ -196,6 +197,6 @@ BEGIN
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"
   PUTTY_VERSION, "0.56"
-  PUTTY_COPYRIGHT, "Copyright © 1997-2004 Simon Tatham"
+  PUTTY_COPYRIGHT, "Copyright © 1997-2005 Simon Tatham"
   PUTTY_URL, "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
 END

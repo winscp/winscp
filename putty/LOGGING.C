@@ -169,7 +169,6 @@ void logfopen(void *handle)
 {
     struct LogContext *ctx = (struct LogContext *)handle;
     char buf[256];
-    time_t t;
     struct tm tm;
     char writemod[4];
 
@@ -181,8 +180,7 @@ void logfopen(void *handle)
 	return;
     sprintf(writemod, "wb");	       /* default to rewrite */
 
-    time(&t);
-    tm = *localtime(&t);
+    tm = ltime();
 
     /* substitute special codes in file name */
     xlatlognam(&ctx->currlogfilename, ctx->cfg.logfilename,ctx->cfg.host, &tm);

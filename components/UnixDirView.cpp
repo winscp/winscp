@@ -90,6 +90,7 @@ __fastcall TUnixDirView::TUnixDirView(TComponent* Owner)
   FShowInaccesibleDirectories = true;
   FFullLoad = false;
   FDriveView = NULL;
+  FInvalidNameChars = "/";
 }
 //---------------------------------------------------------------------------
 __fastcall TUnixDirView::~TUnixDirView()
@@ -296,7 +297,7 @@ Word __fastcall TUnixDirView::ItemOverlayIndexes(TListItem * Item)
 {
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
-  Word Result = oiNoOverlay;
+  Word Result = TCustomDirView::ItemOverlayIndexes(Item);
   if (ITEMFILE->IsParentDirectory)
   {
     Result |= oiDirUp;
@@ -481,7 +482,9 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
     if (FTerminal)
     {
       assert(FTerminal->OnReadDirectory == DoReadDirectory);
-      Terminal->OnReadDirectory = NULL;
+      FTerminal->OnReadDirectory = NULL;
+      assert(FTerminal->OnStartReadDirectory == DoStartReadDirectory);
+      FTerminal->OnStartReadDirectory = NULL;
       assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
       FTerminal->OnChangeDirectory = NULL;
       if (!value || !value->Files->Loaded)
@@ -490,6 +493,7 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
       }
     }
     FTerminal = value;
+    FLastPath = "";
     if (FDriveView != NULL)
     {
       FDriveView->Terminal = FTerminal;
@@ -497,11 +501,13 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
     if (FTerminal)
     {
       FTerminal->OnReadDirectory = DoReadDirectory;
+      FTerminal->OnStartReadDirectory = DoStartReadDirectory;
       FTerminal->OnChangeDirectory = DoChangeDirectory;
       FTerminal->Files->IncludeParentDirectory = AddParentDir;
       if (FTerminal->Files->Loaded)
       {
         DoChangeDirectory(FTerminal);
+        DoStartReadDirectory(FTerminal); // just for style and the assertions
         DoReadDirectory(FTerminal, false);
       }
     }
@@ -509,8 +515,17 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
 }
 #endif
 //---------------------------------------------------------------------------
+void __fastcall TUnixDirView::DoStartReadDirectory(TObject * /*Sender*/)
+{
+  assert(!FLoading);
+  FLoading = true;
+}
+//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::DoReadDirectory(TObject * /*Sender*/, bool ReloadOnly)
 {
+  assert(FLoading);
+  FLoading = false;
+
 #ifndef DESIGN_ONLY
   if (Terminal->Active)
   {

@@ -163,6 +163,18 @@ void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpEx
   Abort();
 }
 //---------------------------------------------------------------------------
+void __fastcall InvalidDefaultTranslation(const AnsiString FileName)
+{
+  if (WinConfiguration->ConfirmRemoveDefaultTranslation())
+  {
+    if (!DeleteFile(WinConfiguration->DefaultTranslationFile))
+    {
+      throw Exception(FMTLOAD(DELETE_LOCAL_FILE_ERROR,
+        (WinConfiguration->DefaultTranslationFile)));
+    }
+  }
+}
+//---------------------------------------------------------------------------
 int __fastcall Execute(TProgramParams * Params)
 {
   assert(StoredSessions);
@@ -195,6 +207,8 @@ int __fastcall Execute(TProgramParams * Params)
       TemporaryDirectoryCleanup();
     }
 
+    AnsiString Value;
+
     if (Params->FindSwitch("UninstallCleanup"))
     {
       if (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
@@ -219,6 +233,10 @@ int __fastcall Execute(TProgramParams * Params)
     {
       CheckForUpdates();
     }
+    else if (Params->FindSwitch("InvalidDefaultTranslation", Value))
+    {
+      InvalidDefaultTranslation(Value);
+    }
     else
     {
       TSessionData * Data;
@@ -227,6 +245,8 @@ int __fastcall Execute(TProgramParams * Params)
       int CommandParamsStart;
       AnsiString AutoStartSession;
       AnsiString DownloadFile;
+
+      WinConfiguration->CheckDefaultTranslation();
 
       if (Params->Count > 0)
       {
@@ -247,7 +267,7 @@ int __fastcall Execute(TProgramParams * Params)
         {
           ParamCommand = pcSynchronize;
         }
-        else
+        else if (Params->ParamCount > 0)
         {
           AutoStartSession = Params->Param[1];
         }

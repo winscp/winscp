@@ -802,6 +802,7 @@ static unsigned char *rsa2_sign(void *key, char *data, int datalen,
     SHA_Simple(data, datalen, hash);
 
     nbytes = (bignum_bitcount(rsa->modulus) - 1) / 8;
+    assert(1 <= nbytes - 20 - ASN1_LEN);
     bytes = snewn(nbytes, unsigned char);
 
     bytes[0] = 1;

@@ -1,6 +1,9 @@
 object FullSynchronizeDialog: TFullSynchronizeDialog
   Left = 365
   Top = 185
+  HelpType = htKeyword
+  HelpKeyword = 'ui_synchronize'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Synchronize'
   ClientHeight = 299

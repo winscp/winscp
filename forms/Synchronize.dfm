@@ -1,6 +1,9 @@
 object SynchronizeDialog: TSynchronizeDialog
   Left = 367
   Top = 198
+  HelpType = htKeyword
+  HelpKeyword = 'ui_keepuptodate'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Keep remote directory up to date X'
   ClientHeight = 264

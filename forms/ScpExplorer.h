@@ -91,6 +91,8 @@ __published:
   TToolButton *ToolButton51;
   TToolButton *ToolButton57;
   TToolButton *ToolButton3;
+  TSplitter *SessionComboResizer;
+  TToolButton *ToolButton5;
   void __fastcall RemoteStatusBarDblClick(TObject *Sender);
 private:
 protected:

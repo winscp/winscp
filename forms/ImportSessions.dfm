@@ -1,6 +1,9 @@
 object ImportSessionsDialog: TImportSessionsDialog
   Left = 362
   Top = 186
+  HelpType = htKeyword
+  HelpKeyword = 'ui_import'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Import sessions from PuTTY'
   ClientHeight = 293

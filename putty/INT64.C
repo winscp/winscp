@@ -36,11 +36,11 @@ void uint64_decimal(uint64 x, char *buffer)
     int start = 20;
     int d;
 
-    while (x.hi || x.lo) {
+    do {
 	x = uint64_div10(x, &d);
 	assert(start > 0);
 	buf[--start] = d + '0';
-    }
+    } while (x.hi || x.lo);
 
     memcpy(buffer, buf + start, sizeof(buf) - start);
     buffer[sizeof(buf) - start] = '\0';

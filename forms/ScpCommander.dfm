@@ -3,6 +3,8 @@ inherited ScpCommanderForm: TScpCommanderForm
   Top = 10
   Width = 661
   Height = 651
+  HelpType = htKeyword
+  HelpKeyword = 'ui_commander'
   Caption = 'ScpCommanderForm'
   OldCreateOrder = True
   PixelsPerInch = 96
@@ -259,7 +261,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     object SessionToolbar: TToolBar
       Left = 9
       Top = 24
-      Width = 235
+      Width = 242
       Height = 22
       Hint = '|E'
       Align = alLeft
@@ -274,9 +276,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       TabOrder = 3
       Transparent = True
       Wrapable = False
-      DesignSize = (
-        235
-        22)
       object ToolButton30: TToolButton
         Left = 0
         Top = 0
@@ -292,24 +291,42 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       object SessionCombo: TComboBox
         Left = 31
-        Top = 1
+        Top = 0
         Width = 114
-        Height = 19
+        Height = 21
         Style = csOwnerDrawFixed
-        Anchors = [akLeft, akTop, akRight, akBottom]
         DropDownCount = 15
-        ItemHeight = 13
+        ItemHeight = 15
         TabOrder = 0
         TabStop = False
         OnCloseUp = SessionComboCloseUp
       end
-      object ToolButton31: TToolButton
+      object SessionComboResizer: TSplitter
         Left = 145
+        Top = 0
+        Width = 4
+        Height = 22
+        Cursor = crHSplit
+        Hint = 'Drag to resize session drop down menu'
+        AutoSnap = False
+        ResizeStyle = rsUpdate
+        OnMoved = SessionComboResizerMoved
+      end
+      object ToolButton2: TToolButton
+        Left = 149
+        Top = 0
+        Width = 3
+        Caption = 'ToolButton2'
+        ImageIndex = 44
+        Style = tbsSeparator
+      end
+      object ToolButton31: TToolButton
+        Left = 152
         Top = 0
         Action = NonVisualDataModule.CloseSessionAction
       end
       object ToolButton32: TToolButton
-        Left = 168
+        Left = 175
         Top = 0
         Width = 8
         Hint = 'E'
@@ -318,14 +335,14 @@ inherited ScpCommanderForm: TScpCommanderForm
         Style = tbsSeparator
       end
       object SavedSessionsButton: TToolButton
-        Left = 176
+        Left = 183
         Top = 0
         Action = NonVisualDataModule.SavedSessionsAction
         MenuItem = NonVisualDataModule.SavedSessionsMenu
         Style = tbsDropDown
       end
       object ToolButton21: TToolButton
-        Left = 212
+        Left = 219
         Top = 0
         Action = NonVisualDataModule.SaveCurrentSessionAction
       end
@@ -859,6 +876,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       FullDrag = True
       HideSelection = False
       RowSelect = True
+      ParentFont = False
       PopupMenu = NonVisualDataModule.LocalDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport
@@ -880,9 +898,11 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnDDMenuPopup = LocalFileControlDDMenuPopup
       OnExecFile = LocalDirViewExecFile
       OnMatchMask = DirViewMatchMask
+      OnGetOverlay = RemoteDirViewGetOverlay
       ConfirmDelete = False
       ConfirmOverwrite = False
       WatchForChanges = True
+      OnFileIconForName = LocalDirViewFileIconForName
     end
     object LocalCoolBar: TCoolBar
       Left = 0
@@ -1027,6 +1047,7 @@ inherited ScpCommanderForm: TScpCommanderForm
           Top = 0
           Width = 296
           Height = 21
+          DirectoryToSelect = dsLast
           OnCloseUp = PathComboBoxCloseUp
           Align = alClient
           DropDownCount = 30

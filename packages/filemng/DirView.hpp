@@ -251,6 +251,8 @@ typedef void __fastcall (__closure *TDirViewAddFileEvent)(System::TObject* Sende
 
 typedef void __fastcall (__closure *TDirViewFileSizeChanged)(System::TObject* Sender, Comctrls::TListItem* Item);
 
+typedef void __fastcall (__closure *TDirViewFileIconForName)(System::TObject* Sender, Comctrls::TListItem* Item, AnsiString &FileName);
+
 class DELPHICLASS TSubDirScanner;
 class DELPHICLASS TDirView;
 class DELPHICLASS TIconUpdateThread;
@@ -276,9 +278,11 @@ protected:
 	void __fastcall DoFetchData(void);
 	void __fastcall DoUpdateIcon(void);
 	virtual void __fastcall Execute(void);
-	HIDESBASE void __fastcall Terminate(void);
 	__property int Index = {read=FIndex, write=SetIndex, nodefault};
 	__property int MaxIndex = {read=FMaxIndex, write=SetMaxIndex, nodefault};
+	
+public:
+	virtual void __fastcall Terminate(void);
 public:
 	#pragma option push -w-inl
 	/* TCompThread.Destroy */ inline __fastcall virtual ~TIconUpdateThread(void) { }
@@ -331,6 +335,7 @@ private:
 	Classes::TList* FSubDirScanner;
 	TDirViewAddFileEvent FOnAddFile;
 	TDirViewFileSizeChanged FOnFileSizeChanged;
+	TDirViewFileIconForName FOnFileIconForName;
 	Classes::TNotifyEvent FOnChangeDetected;
 	Classes::TNotifyEvent FOnChangeInvalid;
 	_di_IShellFolder iRecycleFolder;
@@ -500,6 +505,7 @@ __published:
 	__property OnDDMenuPopup ;
 	__property OnExecFile ;
 	__property OnMatchMask ;
+	__property OnGetOverlay ;
 	__property Graphics::TColor CompressedColor = {read=FCompressedColor, write=SetCompressedColor, default=16711680};
 	__property bool ConfirmDelete = {read=FConfirmDelete, write=FConfirmDelete, default=1};
 	__property bool ConfirmOverwrite = {read=FConfirmOverwrite, write=FConfirmOverwrite, default=1};
@@ -516,6 +522,7 @@ __published:
 	__property Classes::TNotifyEvent OnChangeInvalid = {read=FOnChangeInvalid, write=FOnChangeInvalid};
 	__property TDirViewAddFileEvent OnAddFile = {read=FOnAddFile, write=FOnAddFile};
 	__property TDirViewFileSizeChanged OnFileSizeChanged = {read=FOnFileSizeChanged, write=FOnFileSizeChanged};
+	__property TDirViewFileIconForName OnFileIconForName = {read=FOnFileIconForName, write=FOnFileIconForName};
 	__property UseSystemContextMenu  = {default=1};
 	__property OnContextPopup ;
 	__property OnBeginRename ;

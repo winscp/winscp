@@ -10,6 +10,7 @@ enum TModificationFmt { mfMDHM, mfMDY, mfFull };
 #define ROOTDIRECTORY "/"
 #define FILETYPE_SYMLINK 'L'
 #define FILETYPE_DIRECTORY 'D'
+#define PARTIAL_EXT ".filepart"
 //---------------------------------------------------------------------------
 class TTerminal;
 class TRights;
@@ -357,6 +358,7 @@ bool __fastcall IsUnixHiddenFile(const AnsiString Path);
 AnsiString __fastcall FromUnixPath(const AnsiString Path);
 AnsiString __fastcall ToUnixPath(const AnsiString Path);
 AnsiString __fastcall MinimizeName(const AnsiString FileName, int MaxLen, bool Unix);
+AnsiString __fastcall MakeFileList(TStrings * FileList);
 //---------------------------------------------------------------------------
 #endif
 

@@ -1,9 +1,12 @@
 object FileSystemInfoDialog: TFileSystemInfoDialog
   Left = 345
   Top = 178
+  HelpType = htKeyword
+  HelpKeyword = 'ui_fsinfo'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Server and protocol information'
-  ClientHeight = 401
+  ClientHeight = 430
   ClientWidth = 367
   Color = clBtnFace
   ParentFont = True
@@ -11,12 +14,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   Position = poMainFormCenter
   DesignSize = (
     367
-    401)
+    430)
   PixelsPerInch = 96
   TextHeight = 13
   object CloseButton: TButton
     Left = 283
-    Top = 367
+    Top = 396
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -140,15 +143,15 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   end
   object ProtocolGroup: TXPGroupBox
     Left = 8
-    Top = 120
+    Top = 156
     Width = 351
-    Height = 241
+    Height = 233
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Protocol capabilities/information'
     TabOrder = 2
     DesignSize = (
       351
-      241)
+      233)
     object Label4: TLabel
       Left = 10
       Top = 18
@@ -280,7 +283,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       Left = 8
       Top = 136
       Width = 335
-      Height = 95
+      Height = 89
       TabStop = False
       Anchors = [akLeft, akTop, akRight, akBottom]
       Color = clBtnFace
@@ -304,6 +307,31 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       ReadOnly = True
       TabOrder = 5
       Text = 'RemoteCopyEdit'
+    end
+  end
+  object HostKeyGroup: TXPGroupBox
+    Left = 8
+    Top = 116
+    Width = 351
+    Height = 37
+    Anchors = [akLeft, akTop, akRight]
+    Caption = 'Server host key fingerprint'
+    TabOrder = 3
+    DesignSize = (
+      351
+      37)
+    object HostKeyFingerprintEdit: TEdit
+      Left = 10
+      Top = 16
+      Width = 334
+      Height = 17
+      TabStop = False
+      Anchors = [akLeft, akTop, akRight]
+      BorderStyle = bsNone
+      Color = clBtnFace
+      ReadOnly = True
+      TabOrder = 0
+      Text = 'HostKeyFingerprintEdit'
     end
   end
 end

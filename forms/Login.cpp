@@ -89,8 +89,11 @@ void __fastcall TLoginDialog::InitControls()
   InitializeBugsCombo(BugHMAC2Combo);
   InitializeBugsCombo(BugDeriveKey2Combo);
   InitializeBugsCombo(BugRSAPad2Combo);
-  InitializeBugsCombo(BugDHGEx2Combo);
+  InitializeBugsCombo(BugRekey2Combo);
   InitializeBugsCombo(BugPKSessID2Combo);
+
+  InitializeBugsCombo(SFTPBugSymlinkCombo);
+  InitializeBugsCombo(SFTPBugUtfCombo);
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::Init()
@@ -222,6 +225,14 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     OverwrittenToRecycleBinCheck->Checked = aSessionData->OverwrittenToRecycleBin;
     RecycleBinPathEdit->Text = aSessionData->RecycleBinPath;
 
+    // SFTP tab
+    #define LOAD_SFTP_BUG_COMBO(BUG) \
+      SFTPBug ## BUG ## Combo->ItemIndex = 2 - aSessionData->SFTPBug[sb ## BUG]; \
+      if (SFTPBug ## BUG ## Combo->ItemIndex < 0) SFTPBug ## BUG ## Combo->ItemIndex = 0
+    LOAD_SFTP_BUG_COMBO(Symlink);
+    LOAD_SFTP_BUG_COMBO(Utf);
+    #undef LOAD_SFTP_BUG_COMBO
+    
     // Authentication tab
     AuthTISCheck->Checked = aSessionData->AuthTIS;
     AuthKICheck->Checked = aSessionData->AuthKI;
@@ -249,6 +260,20 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
         (TObject*)aSessionData->Cipher[Index]);
     }
 
+    // KEX tab
+
+    KexListBox->Items->Clear();
+    assert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_DHGEX);
+    for (int Index = 0; Index < KEX_COUNT; Index++)
+    {
+      KexListBox->Items->AddObject(
+        LoadStr(KEX_NAME_WARN+aSessionData->Kex[Index]),
+        (TObject*)aSessionData->Kex[Index]);
+    }
+
+    RekeyTimeEdit->AsInteger = aSessionData->RekeyTime;
+    RekeyDataEdit->Text = aSessionData->RekeyData;
+
     // Connection tab
     switch (aSessionData->PingType)
     {
@@ -266,6 +291,22 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     }
     PingIntervalSecEdit->AsInteger = aSessionData->PingInterval;
     TimeoutEdit->AsInteger = aSessionData->Timeout;
+
+    switch (aSessionData->AddressFamily)
+    {
+      case afIPv4:
+        IPv4Button->Checked = true;
+        break;
+        
+      case afIPv6:
+        IPv6Button->Checked = true;
+        break;
+
+      case afAuto:
+      default:
+        IPAutoButton->Checked = true;
+        break;
+    }
 
     // Shell tab
     if (aSessionData->DefaultShell)
@@ -324,7 +365,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     LOAD_BUG_COMBO(HMAC2);
     LOAD_BUG_COMBO(DeriveKey2);
     LOAD_BUG_COMBO(RSAPad2);
-    LOAD_BUG_COMBO(DHGEx2);
+    LOAD_BUG_COMBO(Rekey2);
     LOAD_BUG_COMBO(PKSessID2);
     #undef LOAD_BUG_COMBO
   }
@@ -341,10 +382,10 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
 {
   aSessionData->Name = FCurrentSessionName;
   // Basic tab
-  aSessionData->UserName = UserNameEdit->Text;
+  aSessionData->UserName = UserNameEdit->Text.Trim();
   aSessionData->PortNumber = PortNumberEdit->AsInteger;
   // must be loaded after UserName, because HostName may be in format user@host
-  aSessionData->HostName = HostNameEdit->Text;
+  aSessionData->HostName = HostNameEdit->Text.Trim();
   aSessionData->Password = PasswordEdit->Text;
   aSessionData->PublicKeyFile = PrivateKeyEdit->Text;
 
@@ -369,6 +410,16 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
     aSessionData->Cipher[Index] = (TCipher)CipherListBox->Items->Objects[Index];
   }
 
+  // Kex tab
+
+  for (int Index = 0; Index < KEX_COUNT; Index++)
+  {
+    aSessionData->Kex[Index] = (TKex)KexListBox->Items->Objects[Index];
+  }
+
+  aSessionData->RekeyTime = RekeyTimeEdit->AsInteger;
+  aSessionData->RekeyData = RekeyDataEdit->Text;
+
   // Authentication tab
   aSessionData->AuthTIS = AuthTISCheck->Checked;
   aSessionData->AuthKI = AuthKICheck->Checked;
@@ -392,6 +443,19 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->PingInterval = PingIntervalSecEdit->AsInteger;
   aSessionData->Timeout = TimeoutEdit->AsInteger;
 
+  if (IPv4Button->Checked)
+  {
+    aSessionData->AddressFamily = afIPv4;
+  }
+  else if (IPv6Button->Checked)
+  {
+    aSessionData->AddressFamily = afIPv6;
+  }
+  else
+  {
+    aSessionData->AddressFamily = afAuto;
+  }
+
   // Directories tab
   aSessionData->LocalDirectory = LocalDirectoryEdit->Text;
   aSessionData->RemoteDirectory = RemoteDirectoryEdit->Text;
@@ -409,7 +473,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->OverwrittenToRecycleBin = OverwrittenToRecycleBinCheck->Checked;
   aSessionData->RecycleBinPath = RecycleBinPathEdit->Text;
 
-  // Shell tab
+  // SCP tab
   aSessionData->DefaultShell = DefaultShellButton->Checked;
   if (ShellEnterButton->Checked)
     aSessionData->Shell = ShellEdit->Text;
@@ -426,6 +490,12 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->TimeDifference =
     (double(TimeDifferenceEdit->AsInteger) / 24) +
     (double(TimeDifferenceMinutesEdit->AsInteger) / 24 / 60);
+
+  // SFTP tab
+  #define SAVE_SFTP_BUG_COMBO(BUG) aSessionData->SFTPBug[sb ## BUG] = (TAutoSwitch)(2 - SFTPBug ## BUG ## Combo->ItemIndex);
+  SAVE_SFTP_BUG_COMBO(Symlink);
+  SAVE_SFTP_BUG_COMBO(Utf);
+  #undef SAVE_SFTP_BUG_COMBO
 
   // Proxy tab
   if (ProxyHTTPButton->Checked) aSessionData->ProxyMethod = pmHTTP;
@@ -457,7 +527,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   SAVE_BUG_COMBO(HMAC2);
   SAVE_BUG_COMBO(DeriveKey2);
   SAVE_BUG_COMBO(RSAPad2);
-  SAVE_BUG_COMBO(DHGEx2);
+  SAVE_BUG_COMBO(Rekey2);
   SAVE_BUG_COMBO(PKSessID2);
   #undef SAVE_BUG_COMBO
 }
@@ -503,13 +573,18 @@ void __fastcall TLoginDialog::UpdateControls()
         CipherListBox->ItemIndex < CipherListBox->Items->Count-1);
       EnableControl(Ssh2LegacyDESCheck, !SshProt1onlyButton->Checked);
 
+      EnableControl(KexUpButton, KexListBox->ItemIndex > 0);
+      EnableControl(KexDownButton, KexListBox->ItemIndex >= 0 &&
+        KexListBox->ItemIndex < KexListBox->Items->Count-1);
+
       EnableControl(BugIgnore1Combo, !SshProt2onlyButton->Checked);
       EnableControl(BugPlainPW1Combo, !SshProt2onlyButton->Checked);
       EnableControl(BugRSA1Combo, !SshProt2onlyButton->Checked);
       EnableControl(BugHMAC2Combo, !SshProt1onlyButton->Checked);
       EnableControl(BugDeriveKey2Combo, !SshProt1onlyButton->Checked);
       EnableControl(BugRSAPad2Combo, !SshProt1onlyButton->Checked);
-      EnableControl(BugDHGEx2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugPKSessID2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugRekey2Combo, !SshProt1onlyButton->Checked);
 
       EnableControl(ShellEdit, ShellEnterButton->Checked);
       EnableControl(ReturnVarEdit, ReturnVarEnterButton->Checked);
@@ -517,7 +592,8 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ProxyHostEdit, !ProxyNoneButton->Checked);
       EnableControl(ProxyPortEdit, !ProxyNoneButton->Checked);
       EnableControl(ProxyUsernameEdit, !ProxyNoneButton->Checked);
-      EnableControl(ProxyPasswordEdit, !ProxyNoneButton->Checked);
+      EnableControl(ProxyPasswordEdit, !ProxyNoneButton->Checked &&
+        !ProxySocks4Button->Checked);
       EnableControl(ProxySettingsGroup, !ProxyNoneButton->Checked);
       EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
 
@@ -528,6 +604,8 @@ void __fastcall TLoginDialog::UpdateControls()
         (DeleteToRecycleBinCheck->Enabled && DeleteToRecycleBinCheck->Checked) ||
         (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked));
       EnableControl(RecycleBinPathLabel, RecycleBinPathEdit->Enabled);
+
+      EnableControl(SftpSheet, !SCPonlyButton->Checked);
 
       AboutButton->Visible = (Options & loAbout);
       LanguagesButton->Visible = (Options & loLanguage);
@@ -999,50 +1077,63 @@ void __fastcall TLoginDialog::Dispatch(void *Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::CipherListBoxStartDrag(TObject * /*Sender*/,
+void __fastcall TLoginDialog::AlgListBoxStartDrag(TObject * Sender,
       TDragObject *& /*DragObject*/)
 {
-  FCipherDragSource = CipherListBox->ItemIndex;
-  FCipherDragDest = -1;
+  FAlgDragSource = dynamic_cast<TListBox*>(Sender)->ItemIndex;
+  FAlgDragDest = -1;
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::CipherListBoxDragOver(TObject * /*Sender*/,
+void __fastcall TLoginDialog::AlgListBoxDragOver(TObject * Sender,
       TObject *Source, int X, int Y, TDragState /*State*/, bool &Accept)
 {
-  if (Source == CipherListBox) Accept = AllowCipherDrag(X, Y);
+  if (Source == Sender) 
+  {
+    Accept = AllowAlgDrag(dynamic_cast<TListBox*>(Sender), X, Y);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::CipherListBoxDragDrop(TObject * /*Sender*/,
+void __fastcall TLoginDialog::AlgListBoxDragDrop(TObject * Sender,
       TObject *Source, int X, int Y)
 {
-  if (Source == CipherListBox)
+  if (Source == Sender)
   {
-    if (AllowCipherDrag(X, Y)) CipherMove(FCipherDragSource, FCipherDragDest);
+    TListBox * AlgListBox = dynamic_cast<TListBox*>(Sender);
+    if (AllowAlgDrag(AlgListBox, X, Y))
+    {
+      AlgMove(AlgListBox, FAlgDragSource, FAlgDragDest);
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CipherButtonClick(TObject *Sender)
 {
-  CipherMove(CipherListBox->ItemIndex,
+  AlgMove(CipherListBox, CipherListBox->ItemIndex,
     CipherListBox->ItemIndex + (Sender == CipherUpButton ? -1 : 1));
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::AllowCipherDrag(int X, int Y)
+void __fastcall TLoginDialog::KexButtonClick(TObject *Sender)
 {
-  FCipherDragDest = CipherListBox->ItemAtPos(TPoint(X, Y), true);
-  return (FCipherDragDest >= 0) && (FCipherDragDest != FCipherDragSource);
+  AlgMove(KexListBox, KexListBox->ItemIndex,
+    KexListBox->ItemIndex + (Sender == KexUpButton ? -1 : 1));
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::CipherMove(int Source, int Dest)
+bool __fastcall TLoginDialog::AllowAlgDrag(TListBox * AlgListBox, int X, int Y)
 {
-  if (Source >= 0 && Source < CipherListBox->Items->Count &&
-      Dest >= 0 && Dest < CipherListBox->Items->Count)
+  FAlgDragDest = AlgListBox->ItemAtPos(TPoint(X, Y), true);
+  return (FAlgDragDest >= 0) && (FAlgDragDest != FAlgDragSource);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::AlgMove(TListBox * AlgListBox, int Source, int Dest)
+{
+  if (Source >= 0 && Source < AlgListBox->Items->Count &&
+      Dest >= 0 && Dest < AlgListBox->Items->Count)
   {
-    CipherListBox->Items->Move(Source, Dest);
-    CipherListBox->ItemIndex = Dest;
-    CipherListBox->SetFocus();
+    AlgListBox->Items->Move(Source, Dest);
+    AlgListBox->ItemIndex = Dest;
+    AlgListBox->SetFocus();
   }
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SetDefaultSessionActionExecute(
@@ -1125,10 +1216,11 @@ void __fastcall TLoginDialog::LanguagesButtonClick(TObject * /*Sender*/)
   delete FLanguagesPopupMenu;
   FLanguagesPopupMenu = new TPopupMenu(this);
 
+  TMenuItem * Item;
   TStrings * Locales = GUIConfiguration->Locales;
   for (int Index = 0; Index < Locales->Count; Index++)
   {
-    TMenuItem * Item = new TMenuItem(FLanguagesPopupMenu);
+    Item = new TMenuItem(FLanguagesPopupMenu);
     FLanguagesPopupMenu->Items->Add(Item);
     Item->Caption = Locales->Strings[Index];
     Item->Tag = reinterpret_cast<int>(Locales->Objects[Index]);
@@ -1136,6 +1228,14 @@ void __fastcall TLoginDialog::LanguagesButtonClick(TObject * /*Sender*/)
     Item->Checked = (reinterpret_cast<LCID>(Locales->Objects[Index]) ==
       GUIConfiguration->Locale);
   }
+  Item = new TMenuItem(FLanguagesPopupMenu);
+  FLanguagesPopupMenu->Items->Add(Item);
+  Item->Caption = "-";
+
+  Item = new TMenuItem(FLanguagesPopupMenu);
+  FLanguagesPopupMenu->Items->Add(Item);
+  Item->Caption = LoadStr(LOGIN_GET_LOCALES);
+  Item->OnClick = LocaleGetClick;
 
   FLanguagesPopupMenu->Popup(PopupPoint.x, PopupPoint.y);
 }
@@ -1146,6 +1246,11 @@ void __fastcall TLoginDialog::LocaleClick(TObject * Sender)
   GUIConfiguration->Locale =
     static_cast<LCID>(dynamic_cast<TMenuItem*>(Sender)->Tag);
   LanguagesButton->SetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::LocaleGetClick(TObject * /*Sender*/)
+{
+  OpenBrowser(LoadStr(LOCALES_URL));
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::PathEditsKeyDown(TObject * Sender,

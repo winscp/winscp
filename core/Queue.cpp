@@ -19,6 +19,7 @@ public:
   void __fastcall Process(TQueueItem * Item);
   void __fastcall ProcessUserAction();
   void __fastcall Cancel();
+  void __fastcall Idle();
 
 protected:
   struct TQueryUserRec
@@ -188,6 +189,8 @@ __fastcall TTerminalQueue::TTerminalQueue(TTerminal * Terminal,
   FOnShowExtendedException = NULL;
   FOnQueueItemUpdate = NULL;
   FOnListUpdate = NULL;
+  FLastIdle = Now();
+  FIdleInterval = EncodeTime(0, 0, 2, 0);
 
   assert(Terminal != NULL);
   FSessionData = new TSessionData("");
@@ -529,6 +532,34 @@ bool __fastcall TTerminalQueue::ItemDelete(TQueueItem * Item)
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalQueue::Idle()
+{
+  if (Now() - FLastIdle > FIdleInterval)
+  {
+    FLastIdle = FIdleInterval;
+    TTerminalItem * TerminalItem = NULL;
+
+    if (FFreeTerminals > 0)
+    {
+      TGuard Guard(FItemsSection);
+
+      if (FFreeTerminals > 0)
+      {
+        // take the last free terminal, because TerminalFree() puts it to the
+        // front, this ensures we cycle thru all free terminals
+        TerminalItem = reinterpret_cast<TTerminalItem*>(FTerminals->Items[FFreeTerminals - 1]);
+        FTerminals->Move(FFreeTerminals - 1, FTerminals->Count - 1);
+        FFreeTerminals--;
+      }
+    }
+
+    if (TerminalItem != NULL)
+    {
+      TerminalItem->Idle();
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalQueue::ProcessEvent()
 {
   TTerminalItem * TerminalItem;
@@ -746,6 +777,27 @@ void __fastcall TTerminalItem::ProcessEvent()
   else
   {
     FQueue->DeleteItem(Item);
+  }
+
+  if (!FTerminal->Active ||
+      !FQueue->TerminalFree(this))
+  {
+    Terminate();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalItem::Idle()
+{
+  TGuard Guard(FCriticalSection);
+
+  assert(FTerminal->Active);
+
+  try
+  {
+    FTerminal->Idle();
+  }
+  catch(...)
+  {
   }
 
   if (!FTerminal->Active ||

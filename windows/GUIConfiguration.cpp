@@ -10,6 +10,9 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+const ccLocal = ccUser;
+const ccShowResults = ccUser << 1;
+//---------------------------------------------------------------------------
 static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
 static const AnsiString AdditionaLanguagePrefix("XX");
 //---------------------------------------------------------------------------
@@ -108,7 +111,8 @@ void __fastcall TGUIConfiguration::Default()
   FQueueRememberPassword = false;
   AnsiString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
-  FPuttyPath = FormatCommand(IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe", "");
+  FDefaultPuttyPath = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
+  FPuttyPath = FormatCommand(FDefaultPuttyPath, "");
   FPuttyPassword = false;
   FPuttySession = "WinSCP temporary session";
   FBeepOnFinish = false;
@@ -189,6 +193,19 @@ void __fastcall TGUIConfiguration::LoadSpecial(THierarchicalStorage * Storage)
   REGCONFIG(false);
   #pragma warn +eas
   #undef KEY
+
+  // Make it compatible with versions prior to 3.7.1 that have not saved PuttyPath 
+  // with quotes. First check for absence of quotes. 
+  // Add quotes either if the path is set to default putty path (even if it does 
+  // not exists) or when the path points to existing file (so there are no parameters 
+  // yet in the string). Note that FileExists may display error dialog, but as
+  // it should be called only for custom users path, let's expect that the user
+  // can take care of it.
+  if ((FPuttyPath.SubString(1, 1) != "\"") &&
+      ((FPuttyPath == FDefaultPuttyPath) || FileExists(FPuttyPath)))
+  {
+    FPuttyPath = FormatCommand(FPuttyPath, "");
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

@@ -1,6 +1,9 @@
 object PropertiesDialog: TPropertiesDialog
   Left = 416
   Top = 133
+  HelpType = htKeyword
+  HelpKeyword = 'ui_properties'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Properties'
   ClientHeight = 416

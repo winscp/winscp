@@ -3,7 +3,9 @@
 
 #include "puttymem.h"
 
+#include <stdio.h>		       /* for FILE * */
 #include <stdarg.h>		       /* for va_list */
+#include <time.h>                      /* for struct tm */
 
 #ifndef FALSE
 #define FALSE 0
@@ -15,10 +17,14 @@
 typedef struct Filename Filename;
 typedef struct FontSpec FontSpec;
 
+unsigned long parse_blocksize(const char *bs);
+
 char *dupstr(const char *s);
 char *dupcat(const char *s1, ...);
 char *dupprintf(const char *fmt, ...);
 char *dupvprintf(const char *fmt, va_list ap);
+
+char *fgetline(FILE *fp);
 
 void base64_encode_atom(unsigned char *data, int n, char *out);
 
@@ -35,6 +41,8 @@ void bufchain_add(bufchain *ch, const void *data, int len);
 void bufchain_prefix(bufchain *ch, void **data, int *len);
 void bufchain_consume(bufchain *ch, int len);
 void bufchain_fetch(bufchain *ch, void *data, int len);
+
+struct tm ltime(void);
 
 /*
  * Debugging functions.

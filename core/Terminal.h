@@ -18,6 +18,8 @@ struct TOverwriteFileParams;
 struct TSynchronizeData;
 typedef TStringList TUsersGroupsList;
 typedef void __fastcall (__closure *TReadDirectoryEvent)(System::TObject* Sender, Boolean ReloadOnly);
+typedef void __fastcall (__closure *TReadDirectoryProgressEvent)(
+  System::TObject* Sender, int Progress);
 typedef void __fastcall (__closure *TProcessFileEvent)
   (const AnsiString FileName, const TRemoteFile * File, void * Param);
 typedef int __fastcall (__closure *TFileOperationEvent)
@@ -125,6 +127,7 @@ private:
   TReadDirectoryEvent FOnReadDirectory;
   TDirectoryModifiedEvent FOnDirectoryModified;
   TNotifyEvent FOnStartReadDirectory;
+  TReadDirectoryProgressEvent FOnReadDirectoryProgress;
   TDeleteLocalFileEvent FOnDeleteLocalFile;
   TUsersGroupsList * FGroups;
   TUsersGroupsList * FUsers;
@@ -141,6 +144,8 @@ private:
   TCurrentFSProtocol FFSProtocol;
   TTerminal * FCommandSession;
   bool FAutoReadDirectory;
+  bool FReadingCurrentDirectory;
+  bool * FClosedOnCompletion;
   void __fastcall CommandError(Exception * E, const AnsiString Msg);
   int __fastcall CommandError(Exception * E, const AnsiString Msg, int Answers);
   AnsiString __fastcall PeekCurrentDirectory();
@@ -165,6 +170,7 @@ protected:
 
   virtual void __fastcall KeepAlive();
   void __fastcall DoStartReadDirectory();
+  void __fastcall DoReadDirectoryProgress(int Progress);
   void __fastcall DoReadDirectory(bool ReloadOnly);
   void __fastcall DoDirectoryModified(const AnsiString Path, bool SubDirs);
   void __fastcall DoCreateDirectory(const AnsiString DirName,
@@ -172,7 +178,7 @@ protected:
   void __fastcall DoDeleteFile(const AnsiString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall DoCustomCommandOnFile(AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command, int Params);
+    const TRemoteFile * File, AnsiString Command, int Params, TLogAddLineEvent OutputEvent);
   void __fastcall DoRenameFile(const AnsiString FileName,
     const AnsiString NewName, bool Move);
   void __fastcall DoCopyFile(const AnsiString FileName, const AnsiString NewName);
@@ -233,6 +239,7 @@ public:
   virtual void __fastcall Close();
   virtual void __fastcall DirectoryModified(const AnsiString Path, bool SubDirs);
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
+  virtual void __fastcall Idle();
   bool __fastcall AllowedAnyCommand(const AnsiString Command);
   void __fastcall AnyCommand(const AnsiString Command);
   void __fastcall CloseOnCompletion(const AnsiString Message = "");
@@ -256,7 +263,8 @@ public:
   bool __fastcall DeleteLocalFiles(TStrings * FileList);
   void __fastcall CustomCommandOnFile(AnsiString FileName,
     const TRemoteFile * File, void * AParams);
-  void __fastcall CustomCommandOnFiles(AnsiString Command, int Params, TStrings * Files);
+  void __fastcall CustomCommandOnFiles(AnsiString Command, int Params, 
+    TStrings * Files, TLogAddLineEvent OutputEvent);
   void __fastcall ChangeDirectory(const AnsiString Directory);
   void __fastcall DoStartup();
   void __fastcall EndTransaction();
@@ -288,6 +296,9 @@ public:
     TSynchronizeDirectory OnSynchronizeDirectory);
   bool __fastcall DirectoryFileList(const AnsiString Path,
     TRemoteFileList *& FileList, bool CanLoad);
+  void __fastcall MakeLocalFileList(const AnsiString FileName, 
+    const TSearchRec Rec, void * Param);
+  AnsiString __fastcall FileUrl(const AnsiString FileName);
 
   static bool __fastcall IsAbsolutePath(const AnsiString Path);
   static AnsiString __fastcall ExpandFileName(AnsiString Path,
@@ -300,6 +311,7 @@ public:
   __property TReadDirectoryEvent OnReadDirectory = { read = FOnReadDirectory, write = FOnReadDirectory };
   __property TDirectoryModifiedEvent OnDirectoryModified = { read = FOnDirectoryModified, write = FOnDirectoryModified };
   __property TNotifyEvent OnStartReadDirectory = { read = FOnStartReadDirectory, write = FOnStartReadDirectory };
+  __property TReadDirectoryProgressEvent OnReadDirectoryProgress = { read = FOnReadDirectoryProgress, write = FOnReadDirectoryProgress };
   __property TDeleteLocalFileEvent OnDeleteLocalFile = { read = FOnDeleteLocalFile, write = FOnDeleteLocalFile };
   __property TUsersGroupsList * Groups = { read = GetGroups };
   __property TUsersGroupsList * Users = { read = GetUsers };
@@ -358,6 +370,7 @@ struct TCustomCommandParams
 {
   AnsiString Command;
   int Params;
+  TLogAddLineEvent OutputEvent;
 };
 //---------------------------------------------------------------------------
 struct TCalculateSizeParams
@@ -373,6 +386,13 @@ struct TOverwriteFileParams
   __int64 DestSize;
   TDateTime SourceTimestamp;
   TDateTime DestTimestamp;
+};
+//---------------------------------------------------------------------------
+struct TMakeLocalFileListParams
+{
+  TStrings * FileList;
+  bool IncludeDirs;
+  bool Recursive;
 };
 //---------------------------------------------------------------------------
 #endif

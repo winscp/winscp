@@ -401,6 +401,9 @@ int main(int argc, char* argv[])
     InitializeConsole(InstanceNumber, RequestEvent, ResponseEvent,
       CancelEvent, FileMapping);
 
+    char SavedTitle[512];
+    GetConsoleTitle(SavedTitle, sizeof(SavedTitle));
+
     try
     {
       #ifndef CONSOLE_TEST
@@ -453,6 +456,8 @@ int main(int argc, char* argv[])
       #ifndef CONSOLE_TEST
       FinalizeChild(Child);
       #endif
+      
+      SetConsoleTitle(SavedTitle);
     }
     catch(const exception& e)
     {

@@ -1,6 +1,9 @@
 object PasswordDialog: TPasswordDialog
   Left = 390
   Top = 251
+  HelpType = htKeyword
+  HelpKeyword = 'ui_password'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Enter password'
   ClientHeight = 151

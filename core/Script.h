@@ -77,9 +77,17 @@ protected:
   void __fastcall PrintLine(const AnsiString Str);
   void __fastcall Tokenize(const AnsiString Str, TStrings * Tokens);
   void __fastcall CheckSession();
-  enum TFileListType { fltDefault, fltDirectories, fltQueryServer };
+  enum TFileListType
+  { 
+    fltDefault =     0x00,
+    fltDirectories = 0x01,
+    fltQueryServer = 0x02,
+    fltMask =        0x04
+  };
   TStrings * __fastcall CreateFileList(TScriptProcParams * Parameters, int Start,
     int End, TFileListType ListType = fltDefault);
+  TStrings * __fastcall CreateLocalFileList(TScriptProcParams * Parameters,
+    int Start, int End, TFileListType ListType);
   void __fastcall FreeFileList(TStrings * FileList);
 
   void __fastcall SecondaryProc(TScriptProcParams * Parameters);

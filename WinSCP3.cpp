@@ -18,16 +18,19 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     TProgramParams Params;
     Application->Initialize();
     Initialize(Params.SwitchValue("ini"));
-    ConfigureInterface();
+    InitializeWebHelp();
 
     try
     {
+      ConfigureInterface();
+
       Application->Title = AppName;
       Result = Execute(&Params);
     }
     __finally
     {
       Finalize();
+      FinalizeWebHelp();
     }
   }
   catch (Exception &E)

@@ -46,6 +46,10 @@ void __fastcall FlashOnBackground();
 
 void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell, Exception * E);
 
+// windows\WinHelp.cpp
+void __fastcall InitializeWebHelp();
+void __fastcall FinalizeWebHelp();
+
 // windows\WinInterface.cpp
 int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
   int Answers, int HelpCtx = 0, const TMessageParams * Params = NULL);
@@ -161,7 +165,8 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
 // forms\ComboInput.cpp
 bool __fastcall DoComboInputDialog(
   const AnsiString Caption, const AnsiString Prompt, AnsiString & Text,
-  TStrings * Items, TCloseQueryEvent OnCloseQuery, bool AllowEmpty);
+  TStrings * Items, TCloseQueryEvent OnCloseQuery, bool AllowEmpty,
+  const AnsiString HelpKeyword = "");
 AnsiString __fastcall DoSaveSessionDialog(
   TStoredSessionList * SessionList, const AnsiString DefaultName);
 bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,

@@ -3,6 +3,9 @@ object LogForm: TLogForm
   Top = 178
   Width = 467
   Height = 341
+  HelpType = htKeyword
+  HelpKeyword = 'ui_log'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   Caption = 'Log'
   Color = clBtnFace
   Constraints.MinHeight = 170

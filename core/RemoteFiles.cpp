@@ -289,6 +289,29 @@ AnsiString __fastcall MinimizeName(const AnsiString FileName, int MaxLen, bool U
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall MakeFileList(TStrings * FileList)
+{
+  AnsiString Result;
+  for (int Index = 0; Index < FileList->Count; Index++)
+  {
+    if (!Result.IsEmpty())
+    {
+      Result += " ";
+    }
+
+    AnsiString FileName = FileList->Strings[Index];
+    if (FileName.Pos(" ") > 0)
+    {
+      Result += "\"" + FileName + "\"";
+    }
+    else
+    {
+      Result += FileName;
+    }
+  }
+  return Result;
+}
 //- TRemoteFiles ------------------------------------------------------------
 __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   TPersistent()
@@ -362,6 +385,13 @@ Integer __fastcall TRemoteFile::GetIconIndex()
     AnsiString DumbFileName = (IsSymLink && !LinkTo.IsEmpty() ? LinkTo : FileName);
     // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
     if (DumbFileName == "..") DumbFileName = "dumb";
+    // this should be somewhere else, probably in TUnixDirView,
+    // as the "partial" overlay is added there too
+    if (AnsiSameText(UnixExtractFileExt(DumbFileName), PARTIAL_EXT))
+    {
+      static const size_t PartialExtLen = sizeof(PARTIAL_EXT) - 1;
+      DumbFileName.SetLength(DumbFileName.Length() - PartialExtLen);
+    }
 
     SHGetFileInfo(DumbFileName.c_str(),
       Attrs, &SHFileInfo, sizeof(SHFileInfo),
@@ -508,12 +538,23 @@ AnsiString __fastcall TRemoteFile::GetModificationStr()
   Word Year, Month, Day, Hour, Min, Sec, MSec;
   Modification.DecodeDate(&Year, &Month, &Day);
   Modification.DecodeTime(&Hour, &Min, &Sec, &MSec);
-  if (FModificationFmt != mfMDY)
-    return FORMAT("%3s %2d %2d:%2.2d",
-      (EngShortMonthNames[Month-1], Day, Hour, Min));
-  else
-    return FORMAT("%3s %2d %2d",
-      (EngShortMonthNames[Month-1], Day, Year));
+  switch (FModificationFmt)
+  {
+    case mfMDY:
+      return FORMAT("%3s %2d %2d", (EngShortMonthNames[Month-1], Day, Year));
+        
+    case mfMDHM:
+      return FORMAT("%3s %2d %2d:%2.2d",
+        (EngShortMonthNames[Month-1], Day, Hour, Min));
+
+    default:
+      assert(false);
+      // fall thru
+            
+    case mfFull:
+      return FORMAT("%3s %2d %2d:%2.2d:%2.2d %4d", 
+        (EngShortMonthNames[Month-1], Day, Hour, Min, Sec, Year));
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetExtension()
@@ -623,7 +664,8 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
         Sec = (Word)Col.SubString(7, 2).ToInt();
         FModificationFmt = mfFull;
         // skip TZ (TODO)
-        GETCOL;
+        // do not trim leading space of filename
+        GETNCOL;
       }
       else
       {
@@ -664,7 +706,8 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
           Min = (Word)StrToInt(Col.SubString(4, 2));
           Sec = (Word)StrToInt(Col.SubString(7, 2));
           FModificationFmt = mfFull;
-          GETCOL;
+          // do not trim leading space of filename
+          GETNCOL;
           Year = (Word)StrToInt(Col);
         }
         else
@@ -830,6 +873,7 @@ void __fastcall TRemoteFile::FindLinkedFile()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetListingStr()
 {
+  // note that ModificationStr is longer than 12 for mfFull
   return Format("%s%s %3s %-8s %-8s %9s %-12s %s%s", ARRAYOFCONST((
     Type, Rights->Text, IntToStr(INodeBlocks), Owner,
     Group, IntToStr(Size), ModificationStr, FileName,

@@ -230,10 +230,11 @@ void hmacmd5_free_context(void *handle)
     sfree(handle);
 }
 
-void hmacmd5_key(void *handle, unsigned char const *key, int len)
+void hmacmd5_key(void *handle, void const *keyv, int len)
 {
     struct MD5Context *keys = (struct MD5Context *)handle;
     unsigned char foo[64];
+    unsigned char const *key = (unsigned char const *)keyv;
     int i;
 
     memset(foo, 0x36, 64);

@@ -10,10 +10,11 @@ uses
   CustomPathComboBox, IEDriveInfo, IEComboBox, DirView;
 
 type
-  TDirectoryToSelect = (dsCurrent, dsRoot);
+  TDirectoryToSelect = (dsCurrent, dsRoot, dsLast);
   TDriveType = (dtUnknown, dtNoRootDrive, dtFloppy, dtFixed, dtRemote, dtCDROM, dtRAM);
   TDriveTypes = set of TDriveType;
   TSpecialFolder = (sfDesktop, sfMyDocuments);
+  TDriveLetter = 'A'..'Z';
   TSpecialFolders = set of TSpecialFolder;
 
 const
@@ -40,6 +41,7 @@ type
     FDontNotifyPathChange: Boolean;
     FShowSpecialFolders: TSpecialFolders;
     FSpecialFolders: array[TSpecialFolder] of TFolderInfo;
+    FLastPath: array[TDriveLetter] of string;
 
     procedure SetDisplayStyle(Value: TVolumeDisplayStyle);
     procedure SetDrive(Value: TDrive);
@@ -129,24 +131,27 @@ type
 
 procedure Register;
 
+resourcestring
+  SSpecialFolderMyDocuments = 'My documents';
+  SSpecialFolderDesktop = 'Desktop';
+
 implementation
 
 uses
   Math, CustomDirView, BaseUtils;
 
-resourcestring
-  SSpecialFolderMyDocuments = 'My documents';
-  SSpecialFolderDesktop = 'Desktop';
-
 constructor TIEPathComboBox.Create(AOwner : TComponent);
 var
   InitPath: string;
   F: TSpecialFolder;
+  D: Char;
 begin
   inherited;
 
   UseSystemImageList := True;
   FDirectoryToSelect := dsRoot;
+  for D := Low(FLastPath) to High(FLastPath) do
+    FLastPath[D] := '';
   FShowSpecialFolders := DefaultSpecialFolders;
   for F := Low(FSpecialFolders) to High(FSpecialFolders) do
   begin
@@ -421,12 +426,26 @@ begin
     else
   begin
     FDrive := FocusedDrive;
-    if DirectoryToSelect = dsRoot then FPath := Format('%s:', [FDrive])
-      else
-    begin
-      GetDir(Integer(FDrive) - Integer('A') + 1, FPath);
-      FPath := ExcludeTrailingPathDelimiter(FPath);
+    case DirectoryToSelect of
+      dsRoot:
+        FPath := Format('%s:', [FDrive]);
+
+      dsCurrent: 
+        begin
+          GetDir(Integer(FDrive) - Integer('A') + 1, FPath);
+          FPath := ExcludeTrailingPathDelimiter(FPath);
+        end;
+
+      dsLast:
+        if FLastPath[FDrive] <> '' then FPath := FLastPath[FDrive]
+          else
+        begin
+          GetDir(Integer(FDrive) - Integer('A') + 1, FPath);
+          FPath := ExcludeTrailingPathDelimiter(FPath);
+        end;
     end;
+
+    FLastPath[FDrive] := FPath;
   end;
   inherited;
 end;
@@ -460,6 +479,8 @@ begin
       finally
         FDontNotifyPathChange := False;
       end;
+
+      FLastPath[Drive] := Expanded;
     end;
   end;
 end; { SetPath }

@@ -1,0 +1,47 @@
+#include "winstuff.h"
+
+long reg_open_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
+long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
+long reg_query_winscp_value_ex(HKEY Key, const char * ValueName,
+  unsigned long * Reserved, unsigned long * Type, unsigned char * Data,
+  unsigned long * DataSize);
+long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Reserved,
+  unsigned long Type, const unsigned char * Data, unsigned long DataSize);
+long reg_close_winscp_key(HKEY Key);
+
+#pragma option push -w-dup
+#define RegOpenKey reg_open_winscp_key
+#define RegCreateKey reg_create_winscp_key
+#define RegCreateKey reg_create_winscp_key
+#define RegQueryValueEx reg_query_winscp_value_ex
+#define RegSetValueEx reg_set_winscp_value_ex
+#define RegCloseKey reg_close_winscp_key
+#pragma option pop
+
+#include "winstore.c"
+
+void putty_mungestr(const char *in, char *out)
+{
+  mungestr(in, out);
+}
+
+void putty_unmungestr(const char *in, char *out, int outlen)
+{
+  unmungestr(in, out, outlen);
+}
+
+void putty_get_seedpath(void)
+{
+  get_seedpath();
+}
+
+char * seedpath_ptr()
+{
+  return seedpath;
+}
+
+int seedpath_size()
+{
+  return sizeof(seedpath);
+}
+

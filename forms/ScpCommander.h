@@ -125,7 +125,6 @@ __published:
   TToolButton *ToolButton46;
   TToolButton *ToolButton47;
   TToolButton *ToolButton48;
-  TComboBox *SessionCombo;
   TToolButton *ToolButton49;
   TToolButton *ToolButton51;
   TPanel *CommandLinePanel;
@@ -137,6 +136,9 @@ __published:
   TSplitter *LocalPanelSplitter;
   TToolButton *ToolButton68;
   TToolButton *ToolButton69;
+  TSplitter *SessionComboResizer;
+  TComboBox *SessionCombo;
+  TToolButton *ToolButton2;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -179,11 +181,14 @@ __published:
     AnsiString Path);
   void __fastcall RemotePathLabelPathClick(TCustomPathLabel *Sender,
     AnsiString Path);
+  void __fastcall LocalDirViewFileIconForName(TObject *Sender,
+          TListItem *Item, AnsiString &FileName);
 
 private:
   TCustomDirView * FDirViewToSelect;
   float FLastLeftPanelWidth;
   float FLeftPanelWidth;
+  int FNormalPanelsWidth;
   int FLastWidth;
   bool FSynchronisingBrowse;
   TStrings * FInternalDDDownloadList;
@@ -205,6 +210,7 @@ protected:
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall FixControlsPlacement();
+  virtual void __fastcall TerminalChanging();
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
@@ -226,6 +232,7 @@ protected:
   virtual int __fastcall GetStaticComponentsHeight();
   DYNAMIC void __fastcall Resize();
   DYNAMIC void __fastcall DoShow();
+  virtual void __fastcall SysResizing(unsigned int Cmd);
   virtual void __fastcall BatchStart(void *& Storage);
   virtual void __fastcall BatchEnd(void * Storage);
   virtual bool __fastcall IsFileControl(TObject * Control, TOperationSide Side);

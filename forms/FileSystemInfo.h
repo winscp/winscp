@@ -47,6 +47,8 @@ __published:
   TLabel *Label11;
   TLabel *Label12;
   TEdit *RemoteCopyEdit;
+  TXPGroupBox *HostKeyGroup;
+  TEdit *HostKeyFingerprintEdit;
 public:
 	virtual __fastcall TFileSystemInfoDialog(TComponent* AOwner);
 

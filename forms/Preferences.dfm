@@ -1,6 +1,9 @@
 object PreferencesDialog: TPreferencesDialog
   Left = 400
   Top = 161
+  HelpType = htKeyword
+  HelpKeyword = 'ui_preferences'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Preferences'
   ClientHeight = 444
@@ -300,7 +303,7 @@ object PreferencesDialog: TPreferencesDialog
           352)
         object PanelsRemoteDirectoryGroup: TXPGroupBox
           Left = 8
-          Top = 111
+          Top = 135
           Width = 362
           Height = 51
           Anchors = [akLeft, akTop, akRight]
@@ -324,13 +327,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 97
+          Height = 122
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             362
-            97)
+            122)
           object ShowHiddenFilesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -359,6 +362,16 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Delete local files to recycle bin'
             TabOrder = 1
+            OnClick = ControlChange
+          end
+          object PreservePanelStateCheck: TCheckBox
+            Left = 16
+            Top = 93
+            Width = 330
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Remember panels state when switching sessions'
+            TabOrder = 3
             OnClick = ControlChange
           end
         end
@@ -410,7 +423,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Do not &change local directory when switching sessions'
+            Caption = 'Do not &change state of local panel when switching sessions'
             TabOrder = 1
             OnClick = ControlChange
           end
@@ -632,15 +645,15 @@ object PreferencesDialog: TPreferencesDialog
           352)
         object EditorGroup: TXPGroupBox
           Left = 8
-          Top = 87
+          Top = 86
           Width = 362
-          Height = 122
+          Height = 144
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Default editor'
           TabOrder = 1
           DesignSize = (
             362
-            122)
+            144)
           object EditorInternalButton: TRadioButton
             Left = 16
             Top = 21
@@ -648,6 +661,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Caption = '&Internal editor'
             TabOrder = 0
+            OnClick = ControlChange
           end
           object EditorExternalButton: TRadioButton
             Left = 16
@@ -656,6 +670,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Caption = '&External editor'
             TabOrder = 1
+            OnClick = ControlChange
           end
           object ExternalEditorEdit: TFilenameEdit
             Left = 32
@@ -680,11 +695,21 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Caption = 'Force &text transfer mode for files edited in external editor'
             TabOrder = 3
+            OnClick = ControlChange
+          end
+          object MDIExternalEditorCheck: TCheckBox
+            Left = 40
+            Top = 118
+            Width = 305
+            Height = 17
+            Caption = 'External editor &opens multiple files in one window (process)'
+            TabOrder = 4
+            OnClick = ControlChange
           end
         end
         object EditorFontGroup: TXPGroupBox
           Left = 8
-          Top = 215
+          Top = 235
           Width = 362
           Height = 56
           Anchors = [akLeft, akTop, akRight]
@@ -715,7 +740,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object EditorOptionsGroup: TXPGroupBox
           Left = 8
-          Top = 277
+          Top = 296
           Width = 362
           Height = 51
           Anchors = [akLeft, akTop, akRight]
@@ -750,6 +775,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Caption = '&One file only, use main session to upload changed files'
             TabOrder = 0
+            OnClick = ControlChange
           end
           object EditorSingleEditorOffCheck: TRadioButton
             Left = 16
@@ -758,6 +784,7 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Caption = '&Multiple files, use background transfer to upload changed files'
             TabOrder = 1
+            OnClick = ControlChange
           end
         end
       end
@@ -803,43 +830,43 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QuickLaunchIconButton: TButton
             Left = 16
-            Top = 88
-            Width = 330
-            Height = 25
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Create a &Quick Launch icon'
-            TabOrder = 2
-            OnClick = IconButtonClick
-          end
-          object DesktopIconAllUsersButton: TButton
-            Left = 16
             Top = 56
             Width = 330
             Height = 25
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Create a desktop icon (&all users)'
+            Caption = 'Create a &Quick Launch icon'
             TabOrder = 1
             OnClick = IconButtonClick
           end
           object SendToHookButton: TButton
             Left = 16
-            Top = 120
+            Top = 88
             Width = 330
             Height = 25
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Add upload shortcut to Explorer'#39's '#39'&Send to'#39' context menu'
-            TabOrder = 3
+            TabOrder = 2
             OnClick = IconButtonClick
           end
           object RegisterAsUrlHandlerButton: TButton
+            Left = 16
+            Top = 120
+            Width = 330
+            Height = 25
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Register to &handle scp:// and sftp:// addresses'
+            TabOrder = 3
+            OnClick = RegisterAsUrlHandlerButtonClick
+          end
+          object AddSearchPathButton: TButton
             Left = 16
             Top = 152
             Width = 330
             Height = 25
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Register to &handle scp:// and sftp:// addresses'
+            Caption = 'Add WinSCP to &search path'
             TabOrder = 4
-            OnClick = RegisterAsUrlHandlerButtonClick
+            OnClick = AddSearchPathButtonClick
           end
         end
         object ExternalAppsGroup: TXPGroupBox

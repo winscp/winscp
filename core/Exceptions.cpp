@@ -61,9 +61,15 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
     {
       Message = Msg;
     }
-    else
+    else if (!Msg.IsEmpty())
     {
       FMoreMessages->Insert(0, Msg);
+    }
+
+    if (FMoreMessages->Count == 0)
+    {
+      delete FMoreMessages;
+      FMoreMessages = NULL;
     }
   }
 }

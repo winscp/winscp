@@ -124,6 +124,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   }
   #define BOOLPROP(PROP) PROP ## Check->Checked = WinConfiguration->PROP;
   BOOLPROP(DefaultDirIsHome);
+  BOOLPROP(PreservePanelState);
   BOOLPROP(DeleteToRecycleBin);
   BOOLPROP(DDTransferConfirmation);
   BOOLPROP(DDWarnLackOfTempSpace);
@@ -193,6 +194,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   }
   ExternalEditorEdit->Text = ExternalEditor;
   ExternalEditorTextCheck->Checked = WinConfiguration->Editor.ExternalEditorText;
+  MDIExternalEditorCheck->Checked = WinConfiguration->Editor.MDIExternalEditor;
   EditorWordWrapCheck->Checked = WinConfiguration->Editor.WordWrap;
   FEditorFont->Name = WinConfiguration->Editor.FontName;
   FEditorFont->Height = WinConfiguration->Editor.FontHeight;
@@ -257,6 +259,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     }
     #define BOOLPROP(PROP) WinConfiguration->PROP = PROP ## Check->Checked
     BOOLPROP(DefaultDirIsHome);
+    BOOLPROP(PreservePanelState);
     BOOLPROP(DeleteToRecycleBin);
     BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
@@ -317,6 +320,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
         edInternal : edExternal;
     WinConfiguration->Editor.ExternalEditor = ExternalEditorEdit->Text;
     WinConfiguration->Editor.ExternalEditorText = ExternalEditorTextCheck->Checked;
+    WinConfiguration->Editor.MDIExternalEditor = MDIExternalEditorCheck->Checked;
     WinConfiguration->Editor.WordWrap = EditorWordWrapCheck->Checked;
     WinConfiguration->Editor.FontName = FEditorFont->Name;
     WinConfiguration->Editor.FontHeight = FEditorFont->Height;
@@ -426,6 +430,10 @@ void __fastcall TPreferencesDialog::UpdateControls()
     DDAllowMoveInitCheck->Checked);
   EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
     TemporaryDirectoryCleanupCheck->Checked);
+
+  EnableControl(ExternalEditorTextCheck, !ExternalEditorEdit->Text.IsEmpty());
+  EnableControl(MDIExternalEditorCheck,
+    !ExternalEditorEdit->Text.IsEmpty() && !EditorSingleEditorOnCheck->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
@@ -459,6 +467,7 @@ void __fastcall TPreferencesDialog::FilenameEditExit(TObject * Sender)
       TWinConfiguration::ReformatFileNameCommand(Filename);
       FilenameEdit->Text = Filename;
     }
+    ControlChange(Sender);
   }
   catch(...)
   {
@@ -485,6 +494,10 @@ void __fastcall TPreferencesDialog::FilenameEditChange(
     FAfterFilenameEditDialog = false;
     FilenameEditExit(Sender);
   }
+  else
+  {
+    ControlChange(Sender);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -502,32 +515,55 @@ void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 {
-  if (MessageDialog(LoadStr(CONFIRM_CREATE_ICON),
-        qtConfirmation, qaYes | qaNo, 0) == qaYes)
+  AnsiString IconName, Params;
+  int SpecialFolder;
+  
+  if (Sender == DesktopIconButton)
   {
-    AnsiString IconName, Params;
-    int SpecialFolder;
-    if (Sender == SendToHookButton)
+    IconName = AppNameVersion;
+    int Result = 
+      MessageDialog(LoadStr(CREATE_DESKTOP_ICON), qtConfirmation, qaYes | qaNo | qaCancel);
+    switch (Result)
     {
-      IconName = FMTLOAD(SENDTO_HOOK_NAME, (AppNameVersion));
-      SpecialFolder = CSIDL_SENDTO;
-      Params = "/upload";
+      case qaYes:
+        SpecialFolder = CSIDL_COMMON_DESKTOPDIRECTORY;
+        break;
+
+      case qaNo:
+        SpecialFolder = CSIDL_DESKTOPDIRECTORY;
+        break;
+
+      default:
+        Abort();
+        break;
     }
-    else if (Sender == QuickLaunchIconButton)
+  }
+  else 
+  {
+    if (MessageDialog(LoadStr(CONFIRM_CREATE_ICON),
+          qtConfirmation, qaYes | qaNo, 0) == qaYes)
     {
-      IconName = "Microsoft\\Internet Explorer\\Quick Launch\\" +
-        AppNameVersion;
-      SpecialFolder = CSIDL_APPDATA;
+      if (Sender == SendToHookButton)
+      {
+        IconName = FMTLOAD(SENDTO_HOOK_NAME, (AppNameVersion));
+        SpecialFolder = CSIDL_SENDTO;
+        Params = "/upload";
+      }
+      else if (Sender == QuickLaunchIconButton)
+      {
+        IconName = "Microsoft\\Internet Explorer\\Quick Launch\\" +
+          AppNameVersion;
+        SpecialFolder = CSIDL_APPDATA;
+      }
     }
     else
     {
-      IconName = AppNameVersion;
-      SpecialFolder = Sender == DesktopIconButton ?
-        CSIDL_DESKTOPDIRECTORY :CSIDL_COMMON_DESKTOPDIRECTORY;
+      Abort();
     }
-    CreateDesktopShortCut(IconName,
-      Application->ExeName, Params, "", SpecialFolder);
   }
+  
+  CreateDesktopShortCut(IconName,
+    Application->ExeName, Params, "", SpecialFolder);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
@@ -820,7 +856,7 @@ void __fastcall TPreferencesDialog::RegisterAsUrlHandlerButtonClick(
 void __fastcall TPreferencesDialog::DDExtLabelClick(TObject * Sender)
 {
   ((Sender == DDExtEnabledLabel) ? DDExtEnabledButton : DDExtDisabledButton)->
-    Checked = true;
+    SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PathEditsKeyDown(
@@ -829,5 +865,15 @@ void __fastcall TPreferencesDialog::PathEditsKeyDown(
   PathEditKeyDown(dynamic_cast<TCustomEdit*>(Sender), Key, Shift, false);
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TPreferencesDialog::AddSearchPathButtonClick(
+  TObject * /*Sender*/)
+{
+  AnsiString AppPath = ExtractFilePath(Application->ExeName);
+  if (MessageDialog(FMTLOAD(CONFIRM_ADD_SEARCH_PATH, (AppPath)),
+        qtConfirmation, qaYes | qaNo, 0) == qaYes)
+  {
+    AddSearchPath(AppPath);
+  }
+}
+//---------------------------------------------------------------------------
 

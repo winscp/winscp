@@ -43,6 +43,7 @@ protected:
   void __fastcall DisplayContextMenu(const TPoint &Where);
   void __fastcall DoChangeDirectory(TObject * Sender);
   void __fastcall DoReadDirectory(TObject * Sender, bool ReloadOnly);
+  void __fastcall DoStartReadDirectory(TObject * Sender);
   virtual void __fastcall ExecuteFile(TListItem * Item);
   virtual bool __fastcall GetDirOK();
   virtual void __fastcall GetDisplayInfo(TListItem * ListItem, tagLVITEMA &DispInfo);
@@ -119,6 +120,7 @@ __published:
   __property OnLoaded;
   __property OnExecFile;
   __property OnMatchMask;
+  __property OnGetOverlay;
   __property OnDDDragEnter;
   __property OnDDDragLeave;
   __property OnDDDragOver;

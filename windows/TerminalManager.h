@@ -52,9 +52,9 @@ private:
   TNotifyEvent FOnChangeTerminal;
   TNotifyEvent FOnTerminalClosed;
   TStrings * FTerminalList;
-  int FProgress;
-  ::TFileOperation FOperation;
   TList * FQueues;
+  AnsiString FProgressTitle;
+  TDateTime FDirectoryReadingStart;
 
   void __fastcall CreateLogMemo();
   void __fastcall FreeLogMemo();
@@ -72,6 +72,7 @@ private:
     AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result);
   void __fastcall TerminalShowExtendedException(TSecureShell * SecureShell,
     Exception * E);
+  void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();

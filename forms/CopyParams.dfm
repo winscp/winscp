@@ -251,7 +251,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 17
       Width = 66
       Height = 13
-      Caption = 'Ex&clude mask'
+      Caption = 'Exclude mas&k'
       FocusControl = ExcludeFileMaskCombo
     end
     object ExcludeFileMaskCombo: THistoryComboBox

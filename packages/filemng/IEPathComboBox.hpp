@@ -37,7 +37,7 @@ namespace Iepathcombobox
 {
 //-- type declarations -------------------------------------------------------
 #pragma option push -b-
-enum TDirectoryToSelect { dsCurrent, dsRoot };
+enum TDirectoryToSelect { dsCurrent, dsRoot, dsLast };
 #pragma option pop
 
 #pragma option push -b-
@@ -49,6 +49,8 @@ typedef Set<TDriveType, dtUnknown, dtRAM>  TDriveTypes;
 #pragma option push -b-
 enum TSpecialFolder { sfDesktop, sfMyDocuments };
 #pragma option pop
+
+typedef char TDriveLetter;
 
 typedef Set<TSpecialFolder, sfDesktop, sfMyDocuments>  TSpecialFolders;
 
@@ -66,6 +68,8 @@ struct TFolderInfo
 
 typedef TFolderInfo IEPathComboBox__2[2];
 
+typedef AnsiString IEPathComboBox__3[26];
+
 class DELPHICLASS TIEPathComboBox;
 class PASCALIMPLEMENTATION TIEPathComboBox : public Custompathcombobox::TCustomPathComboBox 
 {
@@ -79,6 +83,7 @@ private:
 	bool FDontNotifyPathChange;
 	TSpecialFolders FShowSpecialFolders;
 	TFolderInfo FSpecialFolders[2];
+	AnsiString FLastPath[26];
 	void __fastcall SetDisplayStyle(Dirview::TVolumeDisplayStyle Value);
 	void __fastcall SetDrive(char Value);
 	bool __fastcall DriveStored(void);
@@ -171,6 +176,10 @@ public:
 //-- var, const, procedure ---------------------------------------------------
 #define DefaultDriveTypes (System::Set<TDriveType, dtUnknown, dtRAM> () << TDriveType(2) << TDriveType(3) << TDriveType(4) << TDriveType(5) << TDriveType(6) )
 #define DefaultSpecialFolders (System::Set<TSpecialFolder, sfDesktop, sfMyDocuments> () << TSpecialFolder(0) << TSpecialFolder(1) )
+extern PACKAGE System::ResourceString _SSpecialFolderMyDocuments;
+#define Iepathcombobox_SSpecialFolderMyDocuments System::LoadResourceString(&Iepathcombobox::_SSpecialFolderMyDocuments)
+extern PACKAGE System::ResourceString _SSpecialFolderDesktop;
+#define Iepathcombobox_SSpecialFolderDesktop System::LoadResourceString(&Iepathcombobox::_SSpecialFolderDesktop)
 extern PACKAGE void __fastcall Register(void);
 
 }	/* namespace Iepathcombobox */

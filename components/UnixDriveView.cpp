@@ -398,6 +398,13 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
   }
   else
   {
+    if (FDirView != NULL)
+    {
+      // remember current directory, so it gets selected if we move to parent
+      // directory
+      FDirView->ContinueSession(true);
+    }
+  
     // if previous node is child to newly selected one, do not expand it.
     // it is either already expanded and it is even being collapsed. 
     bool Expand = (FPrevSelected == NULL) || !FPrevSelected->HasAsParent(Node);

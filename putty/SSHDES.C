@@ -956,6 +956,13 @@ static const struct ssh2_cipher ssh_des_ssh2 = {
     8, 56, "single-DES"
 };
 
+static const struct ssh2_cipher ssh_des_sshcom_ssh2 = {
+    des_make_context, des3_free_context, des3_iv, des_key,
+    des_ssh2_encrypt_blk, des_ssh2_decrypt_blk,
+    "des-cbc@ssh.com",
+    8, 56, "single-DES"
+};
+
 static const struct ssh2_cipher *const des3_list[] = {
     &ssh_3des_ssh2
 };
@@ -966,11 +973,12 @@ const struct ssh2_ciphers ssh2_3des = {
 };
 
 static const struct ssh2_cipher *const des_list[] = {
-    &ssh_des_ssh2
+    &ssh_des_ssh2,
+    &ssh_des_sshcom_ssh2
 };
 
 const struct ssh2_ciphers ssh2_des = {
-    sizeof(des3_list) / sizeof(*des_list),
+    sizeof(des_list) / sizeof(*des_list),
     des_list
 };
 

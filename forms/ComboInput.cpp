@@ -6,6 +6,7 @@
 //---------------------------------------------------------------------
 #include <Common.h>
 #include <TextsWin.h>
+#include <HelpWin.h>
 #include <WinInterface.h>
 #include <VCLCommon.h>
 #include <ScpMain.h>
@@ -17,7 +18,7 @@
 bool __fastcall DoComboInputDialog(
   const AnsiString Caption, const AnsiString Prompt,
   AnsiString & Text, TStrings * Items, TCloseQueryEvent OnCloseQuery,
-  bool AllowEmpty)
+  bool AllowEmpty, const AnsiString HelpKeyword)
 {
   bool Result;
   TComboInputDialog * ComboInputDialog = new TComboInputDialog(Application);
@@ -29,6 +30,10 @@ bool __fastcall DoComboInputDialog(
     ComboInputDialog->Items = Items;
     ComboInputDialog->AllowEmpty = AllowEmpty;
     ComboInputDialog->OnCloseQuery = OnCloseQuery;
+    if (!HelpKeyword.IsEmpty())
+    {
+      ComboInputDialog->HelpKeyword = HelpKeyword;
+    }
     Result = (ComboInputDialog->ShowModal() == mrOk);
     if (Result)
     {
@@ -69,6 +74,7 @@ AnsiString __fastcall DoSaveSessionDialog(
     SaveSessionDialog->Caption = LoadStr(SAVE_SESSION_CAPTION);
     SaveSessionDialog->Prompt = LoadStr(SAVE_SESSION_PROMPT);
     SaveSessionDialog->OnCloseQuery = SaveSessionDialog->StoredSessionsCloseQuery;
+    SaveSessionDialog->HelpKeyword = HELP_UI_LOGIN_SAVE;
     if (SaveSessionDialog->ShowModal() == mrOk)
     {
       Result = SaveSessionDialog->Text;

@@ -14,10 +14,13 @@ struct TEditedFileData
   TTerminal * Terminal;
   TTerminalQueue * Queue;
   AnsiString SessionName;
+  AnsiString OriginalFileName;
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
   (const AnsiString FileName, const TEditedFileData & Data, HANDLE CompleteEvent);
+typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
+  (const AnsiString FileName, bool * CloseFlag, bool & KeepOpen);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileProcessEvent)
   (const AnsiString FileName, TEditedFileData & Data, void * Arg);
@@ -29,8 +32,10 @@ public:
   __fastcall ~TEditorManager();
 
   bool __fastcall Empty(bool IgnoreClosed);
-  bool __fastcall CanAddFile();
+  bool __fastcall CanAddFile(const AnsiString RemoteDirectory, 
+    const AnsiString OriginalFileName, TObject *& Token);
   bool __fastcall CloseInternalEditors(TNotifyEvent CloseCallback);
+  bool __fastcall CloseExternalFilesWithoutProcess();
 
   void __fastcall AddFileInternal(const AnsiString FileName,
     const TEditedFileData & Data, bool * CloseFlag, TObject * Token);
@@ -45,6 +50,7 @@ public:
   void __fastcall ProcessFiles(TEditedFileProcessEvent Callback, void * Arg);
 
   __property TEditedFileChangedEvent OnFileChange = { read = FOnFileChange, write = FOnFileChange };
+  __property TEditedFileEarlyClosedEvent OnFileEarlyClosed = { read = FOnFileEarlyClosed, write = FOnFileEarlyClosed };
 
 private:
   struct TFileData
@@ -52,14 +58,16 @@ private:
     AnsiString FileName;
     AnsiString LocalDirectory;
     HANDLE Monitor;
+    bool External;
     HANDLE Process;
     TObject * Token;
     int Timestamp;
-    int ErrorTimestamp;
     TEditedFileData Data;
     bool Closed;
     HANDLE UploadCompleteEvent;
     bool * CloseFlag;
+    TDateTime Opened;
+    bool Reupload;
   };
 
   std::vector<TFileData> FFiles;
@@ -67,10 +75,13 @@ private:
   std::vector<HANDLE> FProcesses;
   std::vector<HANDLE> FUploadCompleteEvents;
   TEditedFileChangedEvent FOnFileChange;
+  TEditedFileEarlyClosedEvent FOnFileEarlyClosed;
 
   void __fastcall AddFile(TFileData & FileData);
   void __fastcall UploadComplete(int Index);
   void __fastcall CloseFile(int Index, bool IgnoreErrors);
+  void __fastcall CloseProcess(int Index);
+  bool __fastcall EarlyClose(int Index);
   void __fastcall CheckFileChange(int Index, bool Force);
   int __fastcall FindFile(const TObject * Token);
 

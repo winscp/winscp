@@ -6,6 +6,7 @@
 #include "Configuration.h"
 #include "Exceptions.h"
 #include "SessionData.h"
+#include "FileSystems.h"
 #define SSH_ERROR(x) throw ESsh(NULL, x)
 #define SSH_FATAL_ERROR_EXT(E, x) throw ESshFatal(E, x)
 #define SSH_FATAL_ERROR(x) SSH_FATAL_ERROR_EXT(NULL, x)
@@ -37,7 +38,6 @@ typedef void __fastcall (__closure *TExtendedExceptionEvent)
 enum TLogLineType {llOutput, llInput, llStdError, llMessage, llException};
 typedef Set<TLogLineType, llOutput, llException> TLogLineTypes;
 extern const TColor LogLineColors[];
-typedef void __fastcall (__closure *TLogAddLineEvent)(System::TObject* Sender, const AnsiString AddedLine);
 //---------------------------------------------------------------------------
 class TSessionLog : public TStringList
 {
@@ -124,10 +124,12 @@ private:
   TExtendedExceptionEvent FOnShowExtendedException;
   Backend * FBackend;
   void * FBackendHandle;
-  unsigned long FMaxPacketSize;
+  const unsigned int * FMaxPacketSize;
+  int FBufSize;
   Config * FConfig;
   AnsiString FSshVersionString;
   AnsiString FPassword;
+  AnsiString FHostKeyFingerprint;
   TLogAddLineEvent FOnStdError;
 
   unsigned PendLen;
@@ -172,6 +174,7 @@ private:
   AnsiString __fastcall GetPassword();
   bool __fastcall Select(int Sec);
   void __fastcall PoolForData(unsigned int & Result);
+  TDateTime __fastcall GetIdleInterval();
 
 protected:
   AnsiString StdError;
@@ -180,6 +183,7 @@ protected:
   bool __fastcall SshFallbackCmd() const;
   void __fastcall GotHostKey();
   unsigned long __fastcall MaxPacketSize();
+  int __fastcall RemainingSendBuffer();
   virtual void __fastcall KeepAlive();
   virtual void __fastcall SetSessionData(TSessionData * value);
 
@@ -198,7 +202,7 @@ public:
   void __fastcall AddStdError(AnsiString Str);
   void __fastcall AddStdErrorLine(const AnsiString Str);
   void __fastcall ClearStdError();
-  void __fastcall Idle();
+  virtual void __fastcall Idle();
   void __fastcall SendEOF();
   void __fastcall SendLine(AnsiString Line);
   void __fastcall FatalError(Exception * E, AnsiString Msg);
@@ -209,7 +213,7 @@ public:
   void __fastcall FromBackend(bool IsStdErr, char * Data, int Length);
   void __fastcall VerifyHostKey(const AnsiString Host, int Port,
     const AnsiString KeyType, const AnsiString KeyStr, const AnsiString Fingerprint);
-  void __fastcall AskCipher(const AnsiString CipherName, int CipherType);
+  void __fastcall AskAlg(const AnsiString AlgType, const AnsiString AlgName);
   void __fastcall OldKeyfileWarning();
 
   virtual int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
@@ -250,6 +254,7 @@ public:
   __property int SshVersion = { read = GetSshVersion };
   __property AnsiString SshVersionString = { read = FSshVersionString };
   __property AnsiString SshImplementation = { read = GetSshImplementation };
+  __property AnsiString HostKeyFingerprint = { read = FHostKeyFingerprint };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
@@ -259,6 +264,7 @@ public:
   __property int Status = { read = GetStatus };
   __property TObject * UserObject = { read = FUserObject, write = SetUserObject };
   __property AnsiString Password = { read = GetPassword };
+  __property TDateTime IdleInterval = { read = GetIdleInterval };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -105,6 +105,22 @@ object NonVisualDataModule: TNonVisualDataModule
       object TMenuItem
       end
     end
+    object FileNames3: TMenuItem
+      Caption = '&File Names'
+      Hint = 'Operations with name(s) of selected file(s)'
+      object InserttoCommandLine2: TMenuItem
+        Action = FileListToCommandLineAction
+      end
+      object CopytoClipboard3: TMenuItem
+        Action = FileListToClipboardAction
+      end
+      object CopytoClipboardIncludePaths3: TMenuItem
+        Action = FullFileListToClipboardAction
+      end
+      object CopyURLtoClipboard3: TMenuItem
+        Action = UrlToClipboardAction
+      end
+    end
     object N1: TMenuItem
       Caption = '-'
       Hint = 'E'
@@ -870,23 +886,17 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 40
     end
     object HomepageAction: TAction
-      Tag = 12
+      Tag = 15
       Category = 'Help'
       Caption = 'Product &Homepage'
       Hint = 'Opens web browser and points it to application homepage '
       ImageIndex = 42
     end
     object HistoryPageAction: TAction
-      Tag = 12
+      Tag = 15
       Category = 'Help'
       Caption = '&Version History'
       Hint = 'Opens web browser and points it to application history page'
-    end
-    object RequirementsPageAction: TAction
-      Tag = 12
-      Category = 'Help'
-      Caption = 'Program &Requirements'
-      Hint = 'Opens web browser and points it to program requirements page'
     end
     object SaveCurrentSessionAction: TAction
       Tag = 15
@@ -1013,7 +1023,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ShortCut = 16469
     end
     object ForumPageAction: TAction
-      Tag = 12
+      Tag = 15
       Category = 'Help'
       Caption = '&Support Forum'
       Hint = 'Opens web browser and points it to support forum page'
@@ -1134,7 +1144,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 63
     end
     object DonatePageAction: TAction
-      Tag = 12
+      Tag = 15
       Category = 'Help'
       Caption = '&Donate'
       Hint = 'Opens web browser and points it to program donation page'
@@ -1295,6 +1305,22 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Duplicate|Duplicate selected file(s) to remote directory'
       ImageIndex = 78
     end
+    object UrlToClipboardAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = 'Copy &URL to Clipboard'
+      Hint = 'Copy URL'#39's of selected file(s) to clipboard'
+    end
+    object TableOfContentsAction: TAction
+      Tag = 12
+      Category = 'Help'
+      Caption = '&Contents'
+      Hint = 
+        'Opens web browser and points it to documentation table of conten' +
+        'ts'
+      ImageIndex = 79
+      ShortCut = 112
+    end
   end
   object ExplorerDisabledImages: TImageList
     ShareImages = True
@@ -1369,6 +1395,9 @@ object NonVisualDataModule: TNonVisualDataModule
         end
         object CopytoClipboardIncludePaths2: TMenuItem
           Action = FullFileListToClipboardAction
+        end
+        object CopyURLtoClipboard2: TMenuItem
+          Action = UrlToClipboardAction
         end
       end
       object N10: TMenuItem
@@ -1819,6 +1848,13 @@ object NonVisualDataModule: TNonVisualDataModule
     object CommonHelpMenu: TMenuItem
       Caption = '&Help'
       Hint = 'Help'
+      object Documentation1: TMenuItem
+        Action = TableOfContentsAction
+      end
+      object N85: TMenuItem
+        Caption = '-'
+        Hint = 'E'
+      end
       object WinSCPhomepage1: TMenuItem
         Action = HomepageAction
       end
@@ -1827,9 +1863,6 @@ object NonVisualDataModule: TNonVisualDataModule
       end
       object Versionhistory1: TMenuItem
         Action = HistoryPageAction
-      end
-      object Programrequirements1: TMenuItem
-        Action = RequirementsPageAction
       end
       object N48: TMenuItem
         Caption = '-'
@@ -2044,6 +2077,9 @@ object NonVisualDataModule: TNonVisualDataModule
         end
         object CopytoClipboardIncludePaths1: TMenuItem
           Action = FullFileListToClipboardAction
+        end
+        object CopyURLtoClipboard1: TMenuItem
+          Action = UrlToClipboardAction
         end
       end
       object N43: TMenuItem

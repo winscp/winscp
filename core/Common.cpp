@@ -264,6 +264,17 @@ void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
   }
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall ExtractProgram(AnsiString Command)
+{
+  AnsiString Program;
+  AnsiString Params;
+  AnsiString Dir;
+
+  SplitCommand(Command, Program, Params, Dir);
+
+  return Program;
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params)
 {
   Program = Program.Trim();
@@ -861,5 +872,23 @@ AnsiString __fastcall DecodeUrlChars(AnsiString S)
     i++;
   }
   return S;
+}
+//---------------------------------------------------------------------------
+void __fastcall OemToAnsi(AnsiString & Str)
+{
+  if (!Str.IsEmpty())
+  {
+    Str.Unique();
+    OemToChar(Str.c_str(), Str.c_str());
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall AnsiToOem(AnsiString & Str)
+{
+  if (!Str.IsEmpty())
+  {
+    Str.Unique();
+    CharToOem(Str.c_str(), Str.c_str());
+  }
 }
 

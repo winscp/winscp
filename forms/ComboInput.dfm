@@ -1,6 +1,7 @@
 object ComboInputDialog: TComboInputDialog
   Left = 403
   Top = 281
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Save session as'
   ClientHeight = 86

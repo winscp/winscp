@@ -5,6 +5,9 @@
 #include "putty.h"
 #include "ssh.h"
 
+/* Collect environmental noise every 5 minutes */
+#define NOISE_REGULAR_INTERVAL (5*60*TICKSPERSEC)
+
 void noise_get_heavy(void (*func) (void *, int));
 void noise_get_light(void (*func) (void *, int));
 
@@ -29,6 +32,10 @@ void noise_get_light(void (*func) (void *, int));
 #define HASHSIZE 20		       /* 160 bits SHA output */
 #define POOLSIZE 1200		       /* size of random pool */
 
+#ifdef MPEXT
+extern CRITICAL_SECTION noise_section;
+#endif MPEXT
+
 struct RandPool {
     unsigned char pool[POOLSIZE];
     int poolpos;
@@ -37,16 +44,27 @@ struct RandPool {
 
     unsigned char incomingb[HASHINPUT];
     int incomingpos;
+
+    int stir_pending;
 };
 
 static struct RandPool pool;
 int random_active = 0;
+long next_noise_collection;
 
 static void random_stir(void)
 {
     word32 block[HASHINPUT / sizeof(word32)];
     word32 digest[HASHSIZE / sizeof(word32)];
     int i, j, k;
+
+    /*
+     * noise_get_light will call random_add_noise, which may call
+     * back to here. Prevent recursive stirs.
+     */
+    if (pool.stir_pending)
+	return;
+    pool.stir_pending = TRUE;
 
     noise_get_light(random_add_noise);
 
@@ -111,6 +129,8 @@ static void random_stir(void)
     memcpy(pool.incoming, digest, sizeof(digest));
 
     pool.poolpos = sizeof(pool.incoming);
+
+    pool.stir_pending = FALSE;
 }
 
 void random_add_noise(void *noise, int length)
@@ -182,30 +202,89 @@ static void random_add_heavynoise_bitbybit(void *noise, int length)
     pool.poolpos = i;
 }
 
-void random_init(void)
+static void random_timer(void *ctx, long now)
 {
-    memset(&pool, 0, sizeof(pool));    /* just to start with */
+    if (random_active > 0 && now - next_noise_collection >= 0) {
+	noise_regular();
+	next_noise_collection =
+	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
+    }
+}
 
-    random_active = 1;
+void random_ref(void)
+{
+#ifdef MPEXT
+    EnterCriticalSection(&noise_section);
+#endif
+    if (!random_active) {
+	memset(&pool, 0, sizeof(pool));    /* just to start with */
 
-    noise_get_heavy(random_add_heavynoise_bitbybit);
-    random_stir();
+	noise_get_heavy(random_add_heavynoise_bitbybit);
+	random_stir();
+
+	next_noise_collection =
+	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
+    }
+
+    random_active++;
+#ifdef MPEXT
+    LeaveCriticalSection(&noise_section);
+#endif
+}
+
+void random_unref(void)
+{
+#ifdef MPEXT
+    EnterCriticalSection(&noise_section);
+#endif
+    random_active--;
+#ifdef MPEXT
+    LeaveCriticalSection(&noise_section);
+#endif
 }
 
 int random_byte(void)
 {
+#ifdef MPEXT
+    int pos = pool.poolpos;
+
+    if (pos < sizeof(pool.incoming) || pos >= POOLSIZE)
+    {
+      EnterCriticalSection(&noise_section);
+      if (pool.poolpos >= POOLSIZE)
+      {
+        random_stir();
+      }
+      pos = pool.poolpos;
+      pool.poolpos++;
+      LeaveCriticalSection(&noise_section);
+    }
+    else
+    {
+      pool.poolpos++;
+    }
+
+    return pool.pool[pos];
+#else
     if (pool.poolpos >= POOLSIZE)
 	random_stir();
 
     return pool.pool[pool.poolpos++];
+#endif
 }
 
 void random_get_savedata(void **data, int *len)
 {
     void *buf = snewn(POOLSIZE / 2, char);
+#ifdef MPEXT
+    EnterCriticalSection(&noise_section);
+#endif
     random_stir();
     memcpy(buf, pool.pool + pool.poolpos, POOLSIZE / 2);
     *len = POOLSIZE / 2;
     *data = buf;
     random_stir();
+#ifdef MPEXT
+    LeaveCriticalSection(&noise_section);
+#endif
 }

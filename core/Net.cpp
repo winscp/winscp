@@ -104,7 +104,7 @@ static int get_line(void * frontend, const char * prompt, char * str,
   return Result ? 1 : 0;
 }
 //---------------------------------------------------------------------------
-void SSHLogEvent(void * frontend, char * string)
+void SSHLogEvent(void * frontend, const char * string)
 {
   // Frontend maybe NULL here
   if (frontend != NULL)
@@ -134,10 +134,10 @@ void SSHVerifyHostKey(void * frontend, char * Host, int Port, char * KeyType,
   ((TSecureShell *)frontend)->VerifyHostKey(Host, Port, KeyType, KeyStr, Fingerprint);
 }
 //---------------------------------------------------------------------------
-void SSHAskCipher(void * frontend, char * CipherName, int CipherType)
+void SSHAskAlg(void * frontend, const char * AlgType, const char * AlgName)
 {
   assert(frontend);
-  ((TSecureShell *)frontend)->AskCipher(CipherName, CipherType);
+  ((TSecureShell *)frontend)->AskAlg(AlgType, AlgName);
 }
 //---------------------------------------------------------------------------
 void SSHOldKeyfileWarning(void)

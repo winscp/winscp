@@ -133,7 +133,7 @@ int __fastcall TFileOperationProgressType::TotalTransferProgress()
 {
   assert(TotalSizeSet);
   int Result = TotalSize > 0 ? (int)(((TotalTransfered + TotalSkipped) * 100)/TotalSize) : 0;
-  return Result < 100 ? Result : Result;
+  return Result < 100 ? Result : 100;
 }
 //---------------------------------------------------------------------------
 int __fastcall TFileOperationProgressType::OverallProgress()
@@ -320,9 +320,10 @@ TDateTime __fastcall TFileOperationProgressType::TotalTimeExpected()
 {
   assert(TotalSizeSet);
   unsigned int CurCps = CPS();
-  if (CurCps > 0)
+  // sanity check
+  if ((CurCps > 0) && (TotalSize > TotalSkipped))
   {
-    return TDateTime((double)((double)TotalSize / CurCps) /
+    return TDateTime((double)((double)(TotalSize - TotalSkipped) / CurCps) /
       (24 * 60 * 60));
   }
   else

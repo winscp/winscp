@@ -9,6 +9,10 @@
 #include "ssh.h"
 #include "storage.h"
 
+#ifdef MPEXT
+extern CRITICAL_SECTION noise_section;
+#endif
+
 /*
  * This function is called once, at PuTTY startup, and will do some
  * seriously silly things like listing directories and getting disk
@@ -80,6 +84,9 @@ void noise_regular(void)
     MEMORYSTATUS memstat;
     FILETIME times[4];
 
+#ifdef MPEXT
+    EnterCriticalSection(&noise_section);
+#endif
     w = GetForegroundWindow();
     random_add_noise(&w, sizeof(w));
     w = GetCapture();
@@ -101,6 +108,9 @@ void noise_regular(void)
     GetProcessTimes(GetCurrentProcess(), times, times + 1, times + 2,
 		    times + 3);
     random_add_noise(&times, sizeof(times));
+#ifdef MPEXT
+    LeaveCriticalSection(&noise_section);
+#endif
 }
 
 /*
@@ -114,6 +124,9 @@ void noise_ultralight(unsigned long data)
     DWORD wintime;
     LARGE_INTEGER perftime;
 
+#ifdef MPEXT
+    EnterCriticalSection(&noise_section);
+#endif
     random_add_noise(&data, sizeof(DWORD));
 
     wintime = GetTickCount();
@@ -121,4 +134,7 @@ void noise_ultralight(unsigned long data)
 
     if (QueryPerformanceCounter(&perftime))
 	random_add_noise(&perftime, sizeof(perftime));
+#ifdef MPEXT
+    LeaveCriticalSection(&noise_section);
+#endif
 }

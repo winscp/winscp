@@ -1,6 +1,9 @@
 object CustomCommandDialog: TCustomCommandDialog
   Left = 384
   Top = 214
+  HelpType = htKeyword
+  HelpKeyword = 'ui_customcommand'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CustomCommandDialog'
   ClientHeight = 305

@@ -16,11 +16,10 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const char ShellCommandFileNamePattern[] = "!.!";
-const ccLocal = ccUser;
-const ccShowResults = ccUser << 1;
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
+  FInvalidDefaultTranslation = false;
   FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
   FCustomCommands = new TCustomCommands();
@@ -28,12 +27,13 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 
   try
   {
-    CheckTranslationVersion(GetResourceModule(ModuleFileName().c_str()), true);
+    FDefaultTranslationFile = GetResourceModule(ModuleFileName().c_str());
+    CheckTranslationVersion(FDefaultTranslationFile, true);
   }
   catch(Exception & E)
   {
-    MoreMessageDialog(FMTLOAD(INVALID_DEFAULT_TRANSLATION, (E.Message)),
-      NULL, qtWarning, qaOK, 0);
+    FInvalidDefaultTranslationMessage = E.Message;
+    FInvalidDefaultTranslation = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -77,6 +77,7 @@ void __fastcall TWinConfiguration::Default()
   FDDDeleteDelay = 120;
   FTemporaryDirectoryCleanup = true;
   FConfirmTemporaryDirectoryCleanup = true;
+  FPreservePanelState = true;
 
   FEditor.Editor = edInternal;
   FEditor.ExternalEditor = "notepad.exe";
@@ -91,9 +92,13 @@ void __fastcall TWinConfiguration::Default()
   FEditor.FindMatchCase = false;
   FEditor.FindWholeWord = false;
   FEditor.SingleEditor = false;
+  FEditor.DetectMDIExternalEditor = true;
+  FEditor.MDIExternalEditor = false;
+  FEditor.MaxEditors = 500;
+  FEditor.EarlyClose = 2; // seconds
 
   FQueueView.Height = 100;
-  FQueueView.Layout = "70,170,170,80,80";
+  FQueueView.Layout = "70,160,160,80,80,80";
   FQueueView.Show = qvHideWhenEmpty;
   FQueueView.ToolBar = false;
 
@@ -111,6 +116,7 @@ void __fastcall TWinConfiguration::Default()
   FScpExplorer.ShowFullAddress = true;
   FScpExplorer.DriveView = true;
   FScpExplorer.DriveViewWidth = 180;
+  FScpExplorer.SessionComboWidth = 114;
 
   FScpCommander.WindowParams = "-1;-1;600;400;0";
   FScpCommander.LocalPanelWidth = 0.5;
@@ -125,6 +131,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
   FScpCommander.SynchronizeBrowsing = false;
+  FScpCommander.SessionComboWidth = 114;
   FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0|0;1;2;3;4;5";
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
@@ -244,6 +251,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     DefaultDirIsHome); \
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
+    KEY(Bool,     PreservePanelState); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
     KEY(Integer,  Editor.Editor); \
@@ -259,6 +267,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     Editor.FindMatchCase); \
     KEY(Bool,     Editor.FindWholeWord); \
     KEY(Bool,     Editor.SingleEditor); \
+    KEY(Bool,     Editor.MDIExternalEditor); \
+    KEY(Bool,     Editor.DetectMDIExternalEditor); \
+    KEY(Integer,  Editor.MaxEditors); \
+    KEY(Integer,  Editor.EarlyClose); \
   ); \
   BLOCK("Interface\\QueueView", CANCREATE, \
     KEY(Integer,  QueueView.Height); \
@@ -276,6 +288,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,    ScpExplorer.ShowFullAddress); \
     KEY(Bool,    ScpExplorer.DriveView); \
     KEY(Integer, ScpExplorer.DriveViewWidth); \
+    KEY(Integer, ScpExplorer.SessionComboWidth); \
   ); \
   BLOCK("Interface\\Commander", CANCREATE, \
     KEY(String,  ScpCommander.CoolBarLayout); \
@@ -291,6 +304,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
     KEY(Bool,    ScpCommander.SynchronizeBrowsing); \
+    KEY(Integer, ScpCommander.SessionComboWidth); \
   ); \
   BLOCK("Interface\\Commander\\LocalPanel", CANCREATE, \
     KEY(String,  ScpCommander.LocalPanel.CoolBarLayout); \
@@ -656,6 +670,11 @@ void __fastcall TWinConfiguration::SetTemporaryDirectoryCleanup(bool value)
 void __fastcall TWinConfiguration::SetConfirmTemporaryDirectoryCleanup(bool value)
 {
   SET_CONFIG_PROPERTY(ConfirmTemporaryDirectoryCleanup);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetPreservePanelState(bool value)
+{
+  SET_CONFIG_PROPERTY(PreservePanelState);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
@@ -1028,6 +1047,25 @@ void __fastcall TWinConfiguration::CheckTranslationVersion(const AnsiString File
         (FileName, TranslationProductName, TranslationProductVersion)));
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::CheckDefaultTranslation()
+{
+  if (InvalidDefaultTranslation)
+  {
+    MoreMessageDialog(FMTLOAD(INVALID_DEFAULT_TRANSLATION, 
+      (FInvalidDefaultTranslationMessage)), NULL, qtWarning, qaOK, 0);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::ConfirmRemoveDefaultTranslation()
+{
+  bool Result = 
+    InvalidDefaultTranslation &&
+    (MoreMessageDialog(FMTLOAD(REMOVE_DEFAULT_TRANSLATION, 
+      (FInvalidDefaultTranslationMessage)), NULL, qtWarning, 
+      qaOK | qaCancel, 0) == qaOK);
+  return Result;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

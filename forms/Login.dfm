@@ -1,6 +1,8 @@
 object LoginDialog: TLoginDialog
   Left = 351
   Top = 167
+  HelpType = htKeyword
+  HelpKeyword = 'ui_login'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Login'
@@ -22,6 +24,8 @@ object LoginDialog: TLoginDialog
     Top = 333
     Width = 75
     Height = 25
+    HelpType = htKeyword
+    HelpKeyword = 'ui_login_save'
     Action = SaveSessionAction
     Anchors = [akRight, akBottom]
     TabOrder = 2
@@ -83,6 +87,7 @@ object LoginDialog: TLoginDialog
       Top = 0
       Width = 361
       Height = 324
+      HelpType = htKeyword
       ActivePage = SessionListSheet
       Align = alClient
       MultiLine = True
@@ -93,6 +98,8 @@ object LoginDialog: TLoginDialog
       object SessionListSheet: TTabSheet
         Tag = 1
         Hint = 'Stored sessions'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_stored_sessions'
         Caption = 'StSe'
         DesignSize = (
           353
@@ -180,6 +187,8 @@ object LoginDialog: TLoginDialog
       object BasicSheet: TTabSheet
         Tag = 2
         Hint = 'Session'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_session'
         Caption = 'Basic'
         ImageIndex = 1
         DesignSize = (
@@ -339,6 +348,8 @@ object LoginDialog: TLoginDialog
       object AdvancedSheet: TTabSheet
         Tag = 3
         Hint = 'SSH'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_ssh'
         Caption = 'SSH'
         ImageIndex = 2
         DesignSize = (
@@ -440,9 +451,9 @@ object LoginDialog: TLoginDialog
             ItemHeight = 13
             TabOrder = 0
             OnClick = DataChange
-            OnDragDrop = CipherListBoxDragDrop
-            OnDragOver = CipherListBoxDragOver
-            OnStartDrag = CipherListBoxStartDrag
+            OnDragDrop = AlgListBoxDragDrop
+            OnDragOver = AlgListBoxDragOver
+            OnStartDrag = AlgListBoxStartDrag
           end
           object Ssh2LegacyDESCheck: TCheckBox
             Left = 16
@@ -476,6 +487,8 @@ object LoginDialog: TLoginDialog
       object EnvironmentSheet: TTabSheet
         Tag = 4
         Hint = 'Environment'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_environment'
         Caption = 'Env'
         ImageIndex = 6
         DesignSize = (
@@ -594,6 +607,8 @@ object LoginDialog: TLoginDialog
       object DirectoriesSheet: TTabSheet
         Tag = 12
         Hint = 'Directories'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_directories'
         Caption = 'Dir'
         ImageIndex = 11
         DesignSize = (
@@ -710,6 +725,8 @@ object LoginDialog: TLoginDialog
       object ScpSheet: TTabSheet
         Tag = 5
         Hint = 'SCP'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_scp'
         Caption = 'Scp'
         ImageIndex = 3
         DesignSize = (
@@ -939,9 +956,70 @@ object LoginDialog: TLoginDialog
           end
         end
       end
+      object SftpSheet: TTabSheet
+        Tag = 13
+        Hint = 'SFTP'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_sftp'
+        Caption = 'Sftp'
+        ImageIndex = 12
+        DesignSize = (
+          353
+          269)
+        object SFTPBugsGroupBox: TXPGroupBox
+          Left = 0
+          Top = 6
+          Width = 345
+          Height = 70
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Detection of known bugs in SFTP servers'
+          TabOrder = 0
+          DesignSize = (
+            345
+            70)
+          object Label10: TLabel
+            Left = 12
+            Top = 20
+            Width = 222
+            Height = 13
+            Caption = '&Reverses order of symlink command arguments'
+            FocusControl = SFTPBugSymlinkCombo
+          end
+          object Label16: TLabel
+            Left = 12
+            Top = 44
+            Width = 200
+            Height = 13
+            Caption = 'Does not use &UTF-8 for SFTP4 and newer'
+            FocusControl = SFTPBugUtfCombo
+          end
+          object SFTPBugSymlinkCombo: TComboBox
+            Left = 272
+            Top = 15
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 0
+          end
+          object SFTPBugUtfCombo: TComboBox
+            Left = 272
+            Top = 39
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 1
+          end
+        end
+      end
       object LogSheet: TTabSheet
         Tag = 6
         Hint = 'Logging'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_logging'
         Caption = 'Log'
         ImageIndex = 4
         inline LoggingFrame: TLoggingFrame
@@ -985,6 +1063,8 @@ object LoginDialog: TLoginDialog
       object GeneralSheet: TTabSheet
         Tag = 7
         Hint = 'Preferences'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_preferences'
         Caption = 'Int'
         ImageIndex = 5
         object Label13: TLabel
@@ -1023,6 +1103,8 @@ object LoginDialog: TLoginDialog
       object ConnSheet: TTabSheet
         Tag = 8
         Hint = 'Connection'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_connection'
         Caption = 'Conn'
         ImageIndex = 7
         DesignSize = (
@@ -1128,10 +1210,54 @@ object LoginDialog: TLoginDialog
             OnClick = DataChange
           end
         end
+        object IPvGroup: TXPGroupBox
+          Left = 0
+          Top = 176
+          Width = 345
+          Height = 45
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Internet protocol version'
+          TabOrder = 2
+          DesignSize = (
+            345
+            45)
+          object IPAutoButton: TRadioButton
+            Left = 12
+            Top = 19
+            Width = 101
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'A&uto'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object IPv4Button: TRadioButton
+            Left = 124
+            Top = 19
+            Width = 101
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'IPv&4'
+            TabOrder = 1
+            OnClick = DataChange
+          end
+          object IPv6Button: TRadioButton
+            Left = 236
+            Top = 19
+            Width = 101
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'IPv&6'
+            TabOrder = 2
+            OnClick = DataChange
+          end
+        end
       end
       object ProxySheet: TTabSheet
         Tag = 9
         Hint = 'Proxy'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_proxy'
         Caption = 'Proxy'
         ImageIndex = 8
         DesignSize = (
@@ -1198,7 +1324,7 @@ object LoginDialog: TLoginDialog
             MaxValue = 65535
             MinValue = 1
             Anchors = [akTop, akRight]
-            TabOrder = 5
+            TabOrder = 6
             OnChange = DataChange
           end
           object ProxyHostEdit: TEdit
@@ -1208,7 +1334,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
-            TabOrder = 4
+            TabOrder = 5
             Text = 'ProxyHostEdit'
             OnChange = DataChange
           end
@@ -1218,7 +1344,7 @@ object LoginDialog: TLoginDialog
             Width = 137
             Height = 21
             MaxLength = 50
-            TabOrder = 6
+            TabOrder = 7
             Text = 'ProxyUsernameEdit'
             OnChange = DataChange
           end
@@ -1229,8 +1355,8 @@ object LoginDialog: TLoginDialog
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
-            TabOrder = 7
-            Text = 'PasswordEdit'
+            TabOrder = 8
+            Text = 'ProxyPasswordEdit'
             OnChange = DataChange
           end
           object ProxySocks4Button: TRadioButton
@@ -1239,7 +1365,7 @@ object LoginDialog: TLoginDialog
             Width = 77
             Height = 17
             Caption = 'SOCKS&4'
-            TabOrder = 2
+            TabOrder = 1
             OnClick = DataChange
           end
           object ProxySocks5Button: TRadioButton
@@ -1248,7 +1374,7 @@ object LoginDialog: TLoginDialog
             Width = 67
             Height = 17
             Caption = 'SOCKS&5'
-            TabOrder = 8
+            TabOrder = 2
             OnClick = DataChange
           end
           object ProxyHTTPButton: TRadioButton
@@ -1257,7 +1383,7 @@ object LoginDialog: TLoginDialog
             Width = 66
             Height = 17
             Caption = '&HTTP'
-            TabOrder = 1
+            TabOrder = 3
             OnClick = DataChange
           end
           object ProxyTelnetButton: TRadioButton
@@ -1266,7 +1392,7 @@ object LoginDialog: TLoginDialog
             Width = 61
             Height = 17
             Caption = '&Telnet'
-            TabOrder = 3
+            TabOrder = 4
             OnClick = DataChange
           end
         end
@@ -1345,6 +1471,8 @@ object LoginDialog: TLoginDialog
       object BugsSheet: TTabSheet
         Tag = 10
         Hint = 'Bugs'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_bugs'
         Caption = 'Bugs'
         ImageIndex = 9
         DesignSize = (
@@ -1409,21 +1537,21 @@ object LoginDialog: TLoginDialog
             Caption = 'Requires &padding on SSH2 RSA signatures'
             FocusControl = BugRSAPad2Combo
           end
-          object Label28: TLabel
-            Left = 12
-            Top = 164
-            Width = 199
-            Height = 13
-            Caption = 'Chokes on &Diffie-Hellman group exchange'
-            FocusControl = BugDHGEx2Combo
-          end
           object Label14: TLabel
             Left = 12
-            Top = 188
+            Top = 164
             Width = 160
             Height = 13
             Caption = 'Misuses the sessio&n ID in PK auth'
             FocusControl = BugPKSessID2Combo
+          end
+          object Label33: TLabel
+            Left = 12
+            Top = 188
+            Width = 149
+            Height = 13
+            Caption = 'Handles &key re-exchange badly'
+            FocusControl = BugRekey2Combo
           end
           object BugIgnore1Combo: TComboBox
             Left = 272
@@ -1432,7 +1560,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 0
           end
           object BugPlainPW1Combo: TComboBox
@@ -1442,7 +1570,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 1
           end
           object BugRSA1Combo: TComboBox
@@ -1452,7 +1580,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 2
           end
           object BugHMAC2Combo: TComboBox
@@ -1462,7 +1590,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 3
           end
           object BugDeriveKey2Combo: TComboBox
@@ -1472,7 +1600,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 4
           end
           object BugRSAPad2Combo: TComboBox
@@ -1482,27 +1610,27 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 5
           end
-          object BugDHGEx2Combo: TComboBox
+          object BugPKSessID2Combo: TComboBox
             Left = 272
             Top = 159
             Width = 61
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 6
           end
-          object BugPKSessID2Combo: TComboBox
+          object BugRekey2Combo: TComboBox
             Left = 272
             Top = 183
             Width = 61
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 7
           end
         end
@@ -1510,6 +1638,8 @@ object LoginDialog: TLoginDialog
       object AuthSheet: TTabSheet
         Tag = 11
         Hint = 'Authentication'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_authentication'
         Caption = 'Auth'
         ImageIndex = 10
         DesignSize = (
@@ -1577,6 +1707,115 @@ object LoginDialog: TLoginDialog
           end
         end
       end
+      object KexSheet: TTabSheet
+        Tag = 14
+        Hint = 'Key exchange'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_kex'
+        Caption = 'KEX'
+        ImageIndex = 13
+        DesignSize = (
+          353
+          269)
+        object KexOptionsGroup: TXPGroupBox
+          Left = 0
+          Top = 6
+          Width = 345
+          Height = 117
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Key exchange algorithm options'
+          TabOrder = 0
+          object Label28: TLabel
+            Left = 12
+            Top = 19
+            Width = 121
+            Height = 13
+            Caption = 'Algorithm selection &policy:'
+            FocusControl = KexListBox
+          end
+          object KexListBox: TListBox
+            Left = 11
+            Top = 36
+            Width = 190
+            Height = 69
+            DragMode = dmAutomatic
+            ItemHeight = 13
+            TabOrder = 0
+            OnClick = DataChange
+            OnDragDrop = AlgListBoxDragDrop
+            OnDragOver = AlgListBoxDragOver
+            OnStartDrag = AlgListBoxStartDrag
+          end
+          object KexUpButton: TButton
+            Left = 211
+            Top = 36
+            Width = 70
+            Height = 25
+            Caption = '&Up'
+            TabOrder = 1
+            OnClick = KexButtonClick
+          end
+          object KexDownButton: TButton
+            Left = 211
+            Top = 68
+            Width = 70
+            Height = 25
+            Caption = '&Down'
+            TabOrder = 2
+            OnClick = KexButtonClick
+          end
+        end
+        object KexReexchangeGroup: TXPGroupBox
+          Left = 0
+          Top = 130
+          Width = 345
+          Height = 69
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Options controlling key re-exchange'
+          TabOrder = 1
+          object Label31: TLabel
+            Left = 12
+            Top = 20
+            Width = 186
+            Height = 13
+            Caption = 'Max &minutes before rekey (0 for no limit)'
+            Color = clBtnFace
+            FocusControl = RekeyTimeEdit
+            ParentColor = False
+          end
+          object Label32: TLabel
+            Left = 12
+            Top = 44
+            Width = 171
+            Height = 13
+            Caption = 'Ma&x data before rekey (0 for no limit)'
+            Color = clBtnFace
+            FocusControl = RekeyDataEdit
+            ParentColor = False
+          end
+          object RekeyTimeEdit: TUpDownEdit
+            Left = 256
+            Top = 15
+            Width = 73
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 1440
+            MinValue = 1
+            MaxLength = 4
+            TabOrder = 0
+            OnChange = DataChange
+          end
+          object RekeyDataEdit: TEdit
+            Left = 256
+            Top = 39
+            Width = 73
+            Height = 21
+            MaxLength = 10
+            TabOrder = 1
+            OnChange = DataChange
+          end
+        end
+      end
     end
     object LeftPanel: TPanel
       Left = 0
@@ -1629,17 +1868,19 @@ object LoginDialog: TLoginDialog
           0853657373696F6E5829000000000000000100000000000000FFFFFFFF000000
           00000000001053746F7265642073657373696F6E735821000000000000000600
           000000000000FFFFFFFF0000000000000000084C6F6767696E67582500000000
-          0000000400000000000000FFFFFFFF00000000020000000C456E7669726F6E6D
+          0000000400000000000000FFFFFFFF00000000030000000C456E7669726F6E6D
           656E745825000000000000000C00000000000000FFFFFFFF0000000000000000
           0C4469726563746F72696573581D000000000000000500000000000000FFFFFF
-          FF0000000000000000045343505824000000000000000800000000000000FFFF
-          FFFF00000000010000000B436F6E6E656374696F6E581F000000000000000900
-          000000000000FFFFFFFF00000000000000000650726F7879581D000000000000
-          000300000000000000FFFFFFFF00000000020000000453534858280000000000
-          00000B00000000000000FFFFFFFF00000000000000000F41757468656E746963
-          6174696F6E581E000000000000000A00000000000000FFFFFFFF000000000000
-          000005427567735825000000000000000700000020000000FFFFFFFF00000000
-          000000000C507265666572656E63657358}
+          FF000000000000000004534350581E000000000000000D00000000000000FFFF
+          FFFF000000000000000005534654505824000000000000000800000000000000
+          FFFFFFFF00000000010000000B436F6E6E656374696F6E581F00000000000000
+          0900000000000000FFFFFFFF00000000000000000650726F7879581D00000000
+          0000000300000000000000FFFFFFFF0000000003000000045353485826000000
+          000000000E00000000000000FFFFFFFF00000000000000000D4B657820657863
+          68616E67655828000000000000000B00000000000000FFFFFFFF000000000000
+          00000F41757468656E7469636174696F6E581E000000000000000A0000000000
+          0000FFFFFFFF0000000000000000054275677358250000000000000007000000
+          20000000FFFFFFFF00000000000000000C507265666572656E63657358}
       end
       object ShowAdvancedLoginOptionsCheck: TCheckBox
         Left = 16

@@ -9,10 +9,13 @@
 struct charset_spec;
 #include "charset\Charset.h"
 //---------------------------------------------------------------------------
+typedef UINT_PTR SOCKET;
+//---------------------------------------------------------------------------
 extern "C"
 {
   void sk_init();
   int select_result(WPARAM wParam, LPARAM lParam);
+  int socket_writable(SOCKET skt);
   void random_save_seed(void);
   int verify_host_key(char * hostname, int port, char * keytype, char * key);
   void store_host_key(char * hostname, int port, char * keytype, char * key);
@@ -36,6 +39,7 @@ extern "C"
 
   void ssh_close(void * handle);
   int get_ssh_version(void * handle);
+  void call_ssh_timer(void * handle);
   int is_ssh(void * handle);
   void * get_ssh_frontend(void * handle);
   int get_ssh1_compressing(void * handle);
@@ -48,8 +52,8 @@ extern "C"
   int get_ssh_state_closed(void * handle);
   int get_ssh_exitcode(void * handle);
   int ssh_fallback_cmd(void * handle);
-  unsigned int ssh2_remmaxpkt(void * handle);
-  unsigned int ssh2_remwindow(void * handle);
+  const unsigned int * ssh2_remmaxpkt(void * handle);
+  const unsigned int * ssh2_remwindow(void * handle);
 
   // -------------
   int from_backend(void * frontend, int is_stderr, char * data, int datalen);
@@ -71,13 +75,18 @@ extern "C"
   // -------------
   void SSHVerifyHostKey(void * frontend, char * host, int port, char * keytype,
     char * keystr, char * fingerprint);
-  void SSHLogEvent(void * frontend, char * string);
+  void SSHLogEvent(void * frontend, const char * string);
   void SSHConnectionFatal(void * frontend, char * string);
   void SSHFatalError(char * string);
-  void SSHAskCipher(void * frontend, char * CipherName, int CipherType);
+  void SSHAskAlg(void * frontend, const char * AlgType, const char * AlgName);
   void SSHOldKeyfileWarning(void);
   long RegOpenWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
   long RegCreateWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
+  long RegQueryWinSCPValueEx(HKEY Key, const char * ValueName, unsigned long * Reserved,
+    unsigned long * Type, unsigned char * Data, unsigned long * DataSize);
+  long RegSetWinSCPValueEx(HKEY Key, const char * ValueName, unsigned long Reserved,
+    unsigned long Type, const unsigned char * Data, unsigned long DataSize);
+  long RegCloseWinSCPKey(HKEY Key);
 }
 //---------------------------------------------------------------------------
 extern const struct ssh_compress ssh_zlib;

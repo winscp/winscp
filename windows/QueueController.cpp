@@ -3,9 +3,11 @@
 #pragma hdrstop
 
 #include <Common.h>
+#include <ScpMain.h>
 #include <Queue.h>
 #include <TextsWin.h>
 #include <AssociatedStatusBar.hpp>
+#include <GUITools.h>
 #include "QueueController.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -212,7 +214,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
     ((GetTickCount() % 1000) >= 500);
 
   int Image = -1;
-  AnsiString Values[4];
+  AnsiString Values[5];
   TFileOperationProgressType * ProgressData = QueueItem->ProgressData;
   TQueueItem::TInfo * Info = QueueItem->Info;
 
@@ -236,12 +238,13 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
     if (ProgressData != NULL)
     {
       Values[2] = FormatBytes(ProgressData->TotalTransfered);
+      Values[3] = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TimeElapsed());
       if (ProgressStr.IsEmpty())
       {
         ProgressStr = FORMAT("%d%%", (ProgressData->OverallProgress()));
       }
     }
-    Values[3] = ProgressStr;
+    Values[4] = ProgressStr;
   }
   else
   {
@@ -249,7 +252,8 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
     {
       Values[0] = ProgressData->FileName;
       Values[2] = FormatBytes(ProgressData->TransferedSize);
-      Values[3] = FORMAT("%d%%", (ProgressData->TransferProgress()));
+      Values[3] = FORMAT("%s/s", (FormatBytes(ProgressData->CPS())));
+      Values[4] = FORMAT("%d%%", (ProgressData->TransferProgress()));
     }
     else
     {

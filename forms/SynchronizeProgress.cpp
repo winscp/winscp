@@ -9,6 +9,7 @@
 #include <TextsWin.h>
 #include <WinInterface.h>
 #include <VCLCommon.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PathLabel"
@@ -68,7 +69,7 @@ void __fastcall TSynchronizeProgressForm::UpdateControls()
   {
     FElapsed = Now() - FStartTime;
   }
-  TimeElapsedLabel->Caption = FormatDateTime(Configuration->TimeFormat, FElapsed);
+  TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FElapsed);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::CancelButtonClick(TObject * /*Sender*/)

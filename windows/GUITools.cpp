@@ -131,6 +131,53 @@ bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params,
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path, 
+  const AnsiString Params, TProcessMessagesEvent ProcessMessages)
+{
+  bool Result;
+
+  TShellExecuteInfo ExecuteInfo;
+  memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
+  ExecuteInfo.cbSize = sizeof(ExecuteInfo);
+  ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+  ExecuteInfo.hwnd = Handle;
+  ExecuteInfo.lpFile = (char*)Path.data();
+  ExecuteInfo.lpParameters = (char*)Params.data();
+  ExecuteInfo.nShow = SW_SHOW;
+
+  Result = (ShellExecuteEx(&ExecuteInfo) != 0);
+  if (Result)
+  {
+    if (ProcessMessages != NULL)
+    {
+      unsigned long WaitResult;
+      do
+      {
+        WaitResult = WaitForSingleObject(ExecuteInfo.hProcess, 200);
+        if (WaitResult == WAIT_FAILED)
+        {
+          throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
+        }
+        ProcessMessages();
+      }
+      while (WaitResult == WAIT_TIMEOUT);
+    }
+    else
+    {
+      WaitForSingleObject(ExecuteInfo.hProcess, INFINITE);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Command, 
+  TProcessMessagesEvent ProcessMessages)
+{
+  AnsiString Program, Params, Dir;
+  SplitCommand(Command, Program, Params, Dir);
+  return ExecuteShellAndWait(Handle, Program, Params, ProcessMessages);
+} 
+//---------------------------------------------------------------------------
 bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path)
 {
   LPITEMIDLIST Pidl;
@@ -292,6 +339,19 @@ AnsiString __fastcall TranslateExceptionMessage(const Exception * E)
   {
     return E->Message;
   }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall FormatDateTimeSpan(const AnsiString TimeFormat, TDateTime DateTime)
+{
+  AnsiString Result;
+  if (int(DateTime) > 0)
+  {
+    Result = IntToStr(int(DateTime)) + ", ";
+  }
+  // days are decremented, because when there is to many of them,
+  // "integer overflow" error occures
+  Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
+  return Result;
 }
 //---------------------------------------------------------------------------
 TLocalCustomCommand::TLocalCustomCommand()

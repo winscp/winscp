@@ -123,6 +123,7 @@ type
   TDirViewAddFileEvent = procedure(Sender: TObject; var SearchRec: SysUtils.TSearchRec;
     var AddFile : Boolean) of object;
   TDirViewFileSizeChanged = procedure(Sender: TObject; Item: TListItem) of object;
+  TDirViewFileIconForName = procedure(Sender: TObject; Item: TListItem; var FileName: string) of object;
 
 type
   TDirView = class;
@@ -164,10 +165,12 @@ type
     procedure DoFetchData;
     procedure DoUpdateIcon;
     procedure Execute; override;
-    procedure Terminate;
 
     property Index: Integer read FIndex write SetIndex;
     property MaxIndex: Integer read FMaxIndex write SetMaxIndex;
+
+  public  
+    procedure Terminate; override;
   end;
 {$ENDIF}
 
@@ -226,6 +229,7 @@ type
     {Additional events:}
     FOnAddFile: TDirViewAddFileEvent;
     FOnFileSizeChanged: TDirViewFileSizeChanged;
+    FOnFileIconForName: TDirViewFileIconForName;
     FOnChangeDetected: TNotifyEvent;
     FOnChangeInvalid: TNotifyEvent;
 
@@ -458,6 +462,7 @@ type
 
     property OnExecFile;
     property OnMatchMask; 
+    property OnGetOverlay;
 
     property CompressedColor: TColor
       read FCompressedColor write SetCompressedColor default clBlue;
@@ -507,6 +512,8 @@ type
       read FOnAddFile write FOnAddFile;
     property OnFileSizeChanged: TDirViewFileSizeChanged
       read FOnFileSizeChanged write FOnFileSizeChanged;
+    property OnFileIconForName: TDirViewFileIconForName
+      read FOnFileIconForName write FOnFileIconForName;
     property UseSystemContextMenu;
     property OnContextPopup;
     property OnBeginRename;
@@ -794,6 +801,8 @@ var
   WStr: WideString;
   Eaten: ULONG;
   ShAttr: ULONG;
+  FileIconForName: string;
+  ForceByName: Boolean;
 begin
   if Assigned(FOwner.TopItem) then FIndex := FOwner.TopItem.Index
     else FIndex := 0;
@@ -813,6 +822,14 @@ begin
       CurrentItemData.IconEmpty then
     begin
       try
+        ForceByName := False;
+        FileIconForName := CurrentFilePath;
+        if Assigned(FOwner.FOnFileIconForName) then
+        begin
+          FOwner.FOnFileIconForName(FOwner, nil, FileIconForName); 
+          ForceByName := (FileIconForName <> CurrentFilePath);
+        end;
+        
         if not Assigned(CurrentItemData.PIDL) then
         begin
           WStr := CurrentFilePath;
@@ -820,11 +837,11 @@ begin
             PWideChar(WStr), Eaten, CurrentItemData.PIDL, ShAttr);
         end;
 
-        if Assigned(CurrentItemData.PIDL) then
+        if (not ForceByName) and Assigned(CurrentItemData.PIDL) then
           shGetFileInfo(PChar(CurrentItemData.PIDL), 0, FileInfo, SizeOf(FileInfo),
             SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL)
         else
-          shGetFileInfo(PChar(CurrentFilePath), 0, FileInfo, SizeOf(FileInfo),
+          shGetFileInfo(PChar(FileIconForName), 0, FileInfo, SizeOf(FileInfo),
             SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
 
       except
@@ -1019,6 +1036,15 @@ end;
 
 procedure TDirView.SetPath(Value: string);
 begin
+  // do checks before passing directory to drive view, because
+  // it would truncate non-existing directory to first superior existing
+  Value := StringReplace(Value, '/', '\', [rfReplaceAll]);
+
+  if IsUncPath(Value) then
+    raise Exception.CreateFmt(SUcpPathsNotSupported, [Value]);
+  if not DirectoryExists(Value) then
+    raise Exception.CreateFmt(SDirNotExists, [Value]);
+
   if Assigned(FDriveView) and
      (TDriveView(FDriveView).Directory <> Value) then
   begin
@@ -1027,14 +1053,8 @@ begin
     else
   if FPath <> Value then
   try
-    Value := StringReplace(Value, '/', '\', [rfReplaceAll]);
     while (Length(Value) > 0) and (Value[Length(Value)] = '\') do
       SetLength(Value, Length(Value) - 1);
-
-    if IsUncPath(Value) then
-      raise Exception.CreateFmt(SUcpPathsNotSupported, [Value]);
-    if not DirectoryExists(Value) then
-      raise Exception.CreateFmt(SDirNotExists, [Value]);
     FLastPath := PathName;
     FPath := Value;
     Load;
@@ -1412,7 +1432,7 @@ end;
 
 function TDirView.ItemOverlayIndexes(Item: TListItem): Word;
 begin
-  Result := oiNoOverlay;
+  Result := inherited ItemOverlayIndexes(Item);
   if Assigned(Item) and Assigned(Item.Data) then
   begin
     if PFileRec(Item.Data)^.IsParentDir then
@@ -1995,9 +2015,11 @@ var
   PExtItem: PInfoCache;
   CacheItem: TInfoCache;
   IsSpecialExt: Boolean;
+  ForceByName: Boolean;
   WStr: WideString;
   Eaten: ULONG;
   shAttr: ULONG;
+  FileIconForName, FullName: string;
 begin
   Assert(Assigned(Item) and Assigned(Item.Data));
   with PFileRec(Item.Data)^ do
@@ -2087,11 +2109,19 @@ begin
         begin
           {Retrieve icon and typename for the file}
           try
-            if Assigned(PIDL) then
+            ForceByName := False;
+            FullName := FPath + '\' + FileName;
+            FileIconForName := FullName;
+            if Assigned(OnFileIconForName) then
+            begin
+              OnFileIconForName(Self, Item, FileIconForName); 
+              ForceByName := (FileIconForName <> FullName);
+            end;
+            if (not ForceByName) and Assigned(PIDL) then
               SHGetFileInfo(PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
                 SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL)
             else
-              SHGetFileInfo(PChar(fPath + '\' + FileName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
+              SHGetFileInfo(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
                 SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
 
             TypeName := FileInfo.szTypeName;

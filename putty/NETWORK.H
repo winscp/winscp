@@ -46,6 +46,20 @@ struct socket_function_table {
 };
 
 struct plug_function_table {
+    void (*log)(Plug p, int type, SockAddr addr, int port,
+		const char *error_msg, int error_code);
+    /*
+     * Passes the client progress reports on the process of setting
+     * up the connection.
+     * 
+     * 	- type==0 means we are about to try to connect to address
+     * 	  `addr' (error_msg and error_code are ignored)
+     * 	- type==1 means we have failed to connect to address `addr'
+     * 	  (error_msg and error_code are supplied). This is not a
+     * 	  fatal error - we may well have other candidate addresses
+     * 	  to fall back to. When it _is_ fatal, the closing()
+     * 	  function will be called.
+     */
     int (*closing)
      (Plug p, const char *error_msg, int error_code, int calling_back);
     /* error_msg is NULL iff it is not an error (ie it closed normally) */
@@ -82,9 +96,9 @@ Socket new_connection(SockAddr addr, char *hostname,
 		      int oobinline, int nodelay, int keepalive,
 		      Plug plug, const Config *cfg);
 Socket new_listener(char *srcaddr, int port, Plug plug, int local_host_only,
-		    const Config *cfg);
+		    const Config *cfg, int addressfamily);
 SockAddr name_lookup(char *host, int port, char **canonicalname,
-		     const Config *cfg);
+		     const Config *cfg, int addressfamily);
 
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */
@@ -98,12 +112,11 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
 void sk_init(void);		       /* called once at program startup */
 void sk_cleanup(void);		       /* called just before program exit */
 
-SockAddr sk_namelookup(const char *host, char **canonicalname);
+SockAddr sk_namelookup(const char *host, char **canonicalname, int address_family);
 SockAddr sk_nonamelookup(const char *host);
 void sk_getaddr(SockAddr addr, char *buf, int buflen);
 int sk_hostname_is_local(char *name);
 int sk_address_is_local(SockAddr addr);
-enum { ADDRTYPE_IPV4, ADDRTYPE_IPV6, ADDRTYPE_NAME };
 int sk_addrtype(SockAddr addr);
 void sk_addrcopy(SockAddr addr, char *buf);
 void sk_addr_free(SockAddr addr);
@@ -113,7 +126,7 @@ void sk_addr_free(SockAddr addr);
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 	      int nodelay, int keepalive, Plug p);
 
-Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only);
+Socket sk_newlistener(char *srcaddr, int port, Plug plug, int local_host_only, int address_family);
 
 Socket sk_register(OSSocket sock, Plug plug);
 
@@ -124,6 +137,7 @@ Socket sk_register(OSSocket sock, Plug plug);
 #define sk_flush(s) (((*s)->flush) (s))
 
 #ifdef DEFINE_PLUG_METHOD_MACROS
+#define plug_log(p,type,addr,port,msg,code) (((*p)->log) (p, type, addr, port, msg, code))
 #define plug_closing(p,msg,code,callback) (((*p)->closing) (p, msg, code, callback))
 #define plug_receive(p,urgent,buf,len) (((*p)->receive) (p, urgent, buf, len))
 #define plug_sent(p,bufsize) (((*p)->sent) (p, bufsize))

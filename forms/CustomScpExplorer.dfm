@@ -79,6 +79,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Align = alClient
       FullDrag = True
       HideSelection = False
+      ParentFont = False
       PopupMenu = NonVisualDataModule.RemoteDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport
@@ -92,6 +93,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
       OnExecFile = DirViewExecFile
       OnMatchMask = DirViewMatchMask
+      OnGetOverlay = RemoteDirViewGetOverlay
       OnDDDragEnter = FileControlDDDragEnter
       OnDDDragLeave = FileControlDDDragLeave
       OnDDQueryContinueDrag = RemoteFileControlDDQueryContinueDrag
@@ -161,6 +163,11 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         item
           Alignment = taRightJustify
           Caption = 'Transfered'
+          Width = 80
+        end
+        item
+          Alignment = taRightJustify
+          Caption = 'Elap./Speed'
           Width = 80
         end
         item

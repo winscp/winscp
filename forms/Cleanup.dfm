@@ -1,6 +1,9 @@
 object CleanupDialog: TCleanupDialog
   Left = 356
   Top = 218
+  HelpType = htKeyword
+  HelpKeyword = 'ui_cleanup'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Cleanup application data'
   ClientHeight = 299

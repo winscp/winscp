@@ -314,7 +314,7 @@ void __fastcall TScript::Init()
   FLastPrintedLineTime = 0;
 
   FCommands = new TScriptCommands;
-  FCommands->Register("help", SCRIPT_HELP_DESC, SCRIPT_HELP_HELP, &HelpProc, 0, -1, (void*)NULL);
+  FCommands->Register("help", SCRIPT_HELP_DESC, SCRIPT_HELP_HELP, &HelpProc, 0, -1);
   FCommands->Register("man", 0, SCRIPT_HELP_HELP, &HelpProc, 0, -1);
   FCommands->Register("pwd", SCRIPT_PWD_DESC, SCRIPT_PWD_HELP, &PwdProc, 0, 0);
   FCommands->Register("cd", SCRIPT_CD_DESC, SCRIPT_CD_HELP, &CdProc, 0, 1);
@@ -431,36 +431,146 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
   int End, TFileListType ListType)
 {
   TStrings * Result = new TStringList();
+  TStrings * FileLists = NULL;
+  try
+  {
+    try
+    {
+      for (int i = Start; i <= End; i++)
+      {
+        AnsiString FileName = Parameters->Param[i];
+        if (FLAGSET(ListType, fltDirectories))
+        {
+          TRemoteFile * File = new TRemoteFile();
+          File->FileName = FileName;
+          File->Type = FILETYPE_DIRECTORY;
+          Result->AddObject(FileName, File);
+        }
+        else if (FLAGSET(ListType, fltMask) && TFileMasks::IsMask(FileName))
+        {
+          AnsiString FileDirectory = UnixExtractFilePath(FileName);
+          AnsiString Directory = FileDirectory;
+          if (Directory.IsEmpty())
+          {               
+            Directory = UnixIncludeTrailingBackslash(FTerminal->CurrentDirectory);
+          }
+          TRemoteFileList * FileList = NULL;
+          if (FileLists != NULL)
+          {
+            int Index = FileLists->IndexOf(Directory);
+            if (Index > 0)
+            {
+              FileList = dynamic_cast<TRemoteFileList *>(FileLists->Objects[Index]);
+            }
+          }
+          if (FileList == NULL)
+          {
+            FileList = FTerminal->ReadDirectoryListing(Directory, false);
+            if (FileLists == NULL)
+            {
+              FileLists = new TStringList();
+            }
+            FileLists->AddObject(Directory, FileList);
+          }
+
+          AnsiString Mask = UnixExtractFileName(FileName);
+          for (int i = 0; i < FileList->Count; i++)
+          {
+            TRemoteFile * File = FileList->Files[i];
+            if (!File->IsThisDirectory && !File->IsParentDirectory &&
+                TFileMasks::SingleMaskMatch(Mask, File->FileName))
+            {
+              Result->AddObject(FileDirectory + File->FileName, 
+                FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
+            }
+          }
+        }
+        else
+        {
+          TRemoteFile * File = NULL;
+          if (FLAGSET(ListType, fltQueryServer))
+          {
+            FTerminal->ExceptionOnFail = true;
+            try
+            {
+              FTerminal->ReadFile(FileName, File);
+            }
+            __finally
+            {
+              FTerminal->ExceptionOnFail = false;
+            }
+          }
+          Result->AddObject(FileName, File);
+        }
+      }
+    }
+    catch(...)
+    {
+      FreeFileList(Result);
+      throw;
+    }
+  }
+  __finally
+  {
+    if (FileLists != NULL)
+    {
+      for (int i = 0; i < FileLists->Count; i++)
+      {
+        delete FileLists->Objects[i];
+      }
+      delete FileLists;
+    }
+  }  
+  return Result;
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameters, 
+  int Start, int End, TFileListType ListType)
+{
+  TStrings * Result = new TStringList();
   try
   {
     for (int i = Start; i <= End; i++)
     {
       AnsiString FileName = Parameters->Param[i];
-      TRemoteFile * File = NULL;
-      if (ListType == fltDirectories)
+      if (FLAGSET(ListType, fltMask))
       {
-        File = new TRemoteFile();
-        File->FileName = FileName;
-        File->Type = FILETYPE_DIRECTORY;
-      }
-      else if (ListType == fltQueryServer)
+        TSearchRec SearchRec;
+        int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
+        if (FindFirst(FileName, FindAttrs, SearchRec) == 0)
+        {
+          AnsiString Directory = ExtractFilePath(FileName);
+          try
+          {
+            do
+            {
+              if ((SearchRec.Name != ".") && (SearchRec.Name != ".."))
+              {
+                Result->Add(Directory + SearchRec.Name);
+              }
+            }
+            while (FindNext(SearchRec) == 0);
+          }
+          __finally
+          {
+            FindClose(SearchRec);
+          }  
+        }
+        else
+        {
+          // not match, let it fail latter however
+          Result->Add(FileName);
+        }
+      }  
+      else
       {
-        FTerminal->ExceptionOnFail = true;
-        try
-        {
-          FTerminal->ReadFile(FileName, File);
-        }
-        __finally
-        {
-          FTerminal->ExceptionOnFail = false;
-        }
+        Result->Add(FileName);
       }
-      Result->AddObject(FileName, File);
     }
   }
   catch(...)
   {
-    FreeFileList(Result);
+    delete Result;
     throw;
   }
   return Result;
@@ -476,6 +586,7 @@ void __fastcall TScript::FreeFileList(TStrings * FileList)
       delete File;
     }
   }
+  delete FileList;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::Print(const AnsiString Str)
@@ -598,13 +709,24 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
   CheckSession();
 
   AnsiString Directory;
-  if (Parameters->ParamCount == 0)
-  {
-    Directory = FTerminal->CurrentDirectory;
-  }
-  else
+  AnsiString Mask;
+  if (Parameters->ParamCount > 0)
   {
     Directory = Parameters->Param[0];
+    Mask = UnixExtractFileName(Directory);
+    if (TFileMasks::IsMask(Mask))
+    {
+      Directory = UnixExtractFilePath(Directory);
+    }
+    else
+    {
+      Mask = "";
+    }
+  }
+
+  if (Directory.IsEmpty())
+  {
+    Directory = FTerminal->CurrentDirectory;
   }
 
   TRemoteFileList * FileList = FTerminal->ReadDirectoryListing(Directory, false);
@@ -612,7 +734,11 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
   {
     for (int i = 0; i < FileList->Count; i++)
     {
-      PrintLine(FileList->Files[i]->ListingStr);
+      TRemoteFile * File = FileList->Files[i];
+      if (Mask.IsEmpty() || TFileMasks::SingleMaskMatch(Mask, File->FileName))
+      {
+        PrintLine(FileList->Files[i]->ListingStr);
+      }
     }
   }
   __finally
@@ -625,7 +751,7 @@ void __fastcall TScript::RmProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  TStrings * FileList = CreateFileList(Parameters, 0, Parameters->ParamCount - 1);
+  TStrings * FileList = CreateFileList(Parameters, 0, Parameters->ParamCount - 1, fltMask);
   try
   {
     FTerminal->DeleteFiles(FileList);
@@ -655,7 +781,8 @@ void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  TStrings * FileList = CreateFileList(Parameters, 0, Parameters->ParamCount - 2);
+  TStrings * FileList = CreateFileList(Parameters, 0, Parameters->ParamCount - 2,
+    fltMask);
   try
   {
     assert(Parameters->ParamCount >= 1);
@@ -674,7 +801,8 @@ void __fastcall TScript::ChModProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  TStrings * FileList = CreateFileList(Parameters, 1, Parameters->ParamCount - 1);
+  TStrings * FileList = CreateFileList(Parameters, 1, Parameters->ParamCount - 1,
+    fltMask);
   try
   {
     TRemoteProperties Properties;
@@ -711,7 +839,8 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
   ResetTransfer();
 
   int LastFileParam = (Parameters->ParamCount == 1 ? 0 : Parameters->ParamCount - 2);
-  TStrings * FileList = CreateFileList(Parameters, 0, LastFileParam, fltQueryServer);
+  TStrings * FileList = CreateFileList(Parameters, 0, LastFileParam,
+    fltQueryServer | fltMask);
   try
   {
     TCopyParamType CopyParam = FCopyParam;
@@ -721,6 +850,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     if (Parameters->ParamCount == 1)
     {
       TargetDirectory = GetCurrentDir();
+      CopyParam.FileMask = "";
     }
     else
     {
@@ -748,7 +878,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
   ResetTransfer();
 
   int LastFileParam = (Parameters->ParamCount == 1 ? 0 : Parameters->ParamCount - 2);
-  TStrings * FileList = CreateFileList(Parameters, 0, LastFileParam, fltDefault);
+  TStrings * FileList = CreateLocalFileList(Parameters, 0, LastFileParam, fltMask);
   try
   {
     TCopyParamType CopyParam = FCopyParam;
@@ -758,6 +888,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
     if (Parameters->ParamCount == 1)
     {
       TargetDirectory = FTerminal->CurrentDirectory;
+      CopyParam.FileMask = "";
     }
     else
     {
@@ -1470,18 +1601,34 @@ void __fastcall TManagementScript::LCdProc(TScriptProcParams * Parameters)
 void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
 {
   AnsiString Directory;
-  if (Parameters->ParamCount == 0)
+  AnsiString Mask;
+  if (Parameters->ParamCount > 0)
+  {
+    Directory = Parameters->Param[0];
+    Mask = ExtractFileName(Directory);
+    if (TFileMasks::IsMask(Mask))
+    {
+      Directory = ExtractFilePath(Directory);
+    }
+    else
+    {
+      Mask = "";
+    }
+  }
+  
+  if (Directory.IsEmpty())
   {
     Directory = GetCurrentDir();
   }
-  else
+
+  if (Mask.IsEmpty())
   {
-    Directory = Parameters->Param[0];
+    Mask = "*.*";
   }
 
   TSearchRec SearchRec;
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
-  if (FindFirst(IncludeTrailingBackslash(Directory) + "*.*", FindAttrs, SearchRec) != 0)
+  if (FindFirst(IncludeTrailingBackslash(Directory) + Mask, FindAttrs, SearchRec) != 0)
   {
     throw Exception(FMTLOAD(LIST_DIR_ERROR, (Directory)));
   }

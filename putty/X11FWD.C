@@ -178,6 +178,12 @@ static char *x11_verify(unsigned long peer_ip, int peer_port,
     return NULL;
 }
 
+static void x11_log(Plug p, int type, SockAddr addr, int port,
+		    const char *error_msg, int error_code)
+{
+    /* We have no interface to the logging module here, so we drop these. */
+}
+
 static int x11_closing(Plug plug, const char *error_msg, int error_code,
 		       int calling_back)
 {
@@ -235,14 +241,14 @@ char *x11_display(const char *display) {
     char *ret;
     if(!display || !*display) {
 	/* try to find platform-specific local display */
-	if(!(ret = platform_get_x_display()))
+	if((ret = platform_get_x_display())==0)
 	    /* plausible default for all platforms */
 	    ret = dupstr(":0");
     } else
 	ret = dupstr(display);
     if(ret[0] == ':') {
 	/* no transport specified, use whatever we think is best */
-	char *s = dupcat(platform_x11_best_transport, display, (char *)0);
+	char *s = dupcat(platform_x11_best_transport, ret, (char *)0);
 	sfree(ret);
 	return s;
     } else
@@ -259,6 +265,7 @@ const char *x11_init(Socket * s, char *display, void *c, void *auth,
 		     const char *peeraddr, int peerport, const Config *cfg)
 {
     static const struct plug_function_table fn_table = {
+	x11_log,
 	x11_closing,
 	x11_receive,
 	x11_sent,
@@ -301,7 +308,7 @@ const char *x11_init(Socket * s, char *display, void *c, void *auth,
 	/*
 	 * Try to find host.
 	 */
-	addr = name_lookup(host, port, &dummy_realhost, cfg);
+	addr = name_lookup(host, port, &dummy_realhost, cfg, ADDRTYPE_UNSPEC);
 	if ((err = sk_addr_error(addr)) != NULL) {
 	    sk_addr_free(addr);
 	    return err;
@@ -474,9 +481,9 @@ int x11_send(Socket s, char *data, int len)
             char realauthdata[64];
             int realauthlen = 0;
             int authstrlen = strlen(x11_authnames[pr->auth->realproto]);
-	    unsigned long ip;
-	    int port;
+	    int buflen;
             static const char zeroes[4] = { 0,0,0,0 };
+	    void *buf;
 
             if (pr->auth->realproto == X11_MIT) {
                 assert(pr->auth->reallen <= lenof(realauthdata));
@@ -484,17 +491,19 @@ int x11_send(Socket s, char *data, int len)
                 memcpy(realauthdata, pr->auth->realdata, realauthlen);
             } else if (pr->auth->realproto == X11_XDM &&
 		       pr->auth->reallen == 16 &&
-		       sk_getxdmdata(s, &ip, &port)) {
+		       (buf = sk_getxdmdata(s, &buflen))) {
 		time_t t;
-                realauthlen = 24;
-		memset(realauthdata, 0, 24);
+                realauthlen = (buflen+12+7) & ~7;
+		assert(realauthlen <= lenof(realauthdata));
+		memset(realauthdata, 0, realauthlen);
 		memcpy(realauthdata, pr->auth->realdata, 8);
-		PUT_32BIT_MSB_FIRST(realauthdata+8, ip);
-		PUT_16BIT_MSB_FIRST(realauthdata+12, port);
+		memcpy(realauthdata+8, buf, buflen);
 		t = time(NULL);
-		PUT_32BIT_MSB_FIRST(realauthdata+14, t);
+		PUT_32BIT_MSB_FIRST(realauthdata+8+buflen, t);
 		des_encrypt_xdmauth(pr->auth->realdata+9,
-				    (unsigned char *)realauthdata, 24);
+				    (unsigned char *)realauthdata,
+				    realauthlen);
+		sfree(buf);
 	    }
             /* implement other auth methods here if required */
 

@@ -75,6 +75,9 @@ function GetLocaleInfo(Locale: Longint; LCType: Longint; lpLCData: PChar; cchDat
 function GetThreadLocale: Longint; stdcall;
   external kernel name 'GetThreadLocale';
 
+function FreeLibrary(ModuleHandle: Longint): LongBool; stdcall;
+  external kernel name 'FreeLibrary';
+
 function LoadLibraryEx(LibName: PChar; hFile: Longint; Flags: Longint): Longint; stdcall;
   external kernel name 'LoadLibraryExA';
 
@@ -191,7 +194,9 @@ begin
           lstrcpyn(P, LocaleName, sizeof(FileName) - (P - FileName));
           R := LoadLibraryEx(FileName, 0, LOAD_LIBRARY_AS_DATAFILE);
         end;
-      end
+      end;
+
+      if R <> 0 then FreeLibrary(R);
     end;
   end;
 

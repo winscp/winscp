@@ -117,11 +117,11 @@ GLOBAL void *logctx;
 /*
  * sk_getxdmdata() does not exist under Windows (not that I
  * couldn't write it if I wanted to, but I haven't bothered), so
- * it's a macro which always returns FALSE. With any luck this will
+ * it's a macro which always returns NULL. With any luck this will
  * cause the compiler to notice it can optimise away the
  * implementation of XDM-AUTHORIZATION-1 in x11fwd.c :-)
  */
-#define sk_getxdmdata(socket, ip, port) (0)
+#define sk_getxdmdata(socket, lenp) (NULL)
 
 /*
  * File-selector filter strings used in the config box. On Windows,
@@ -149,6 +149,8 @@ extern int (WINAPI *p_select)
 extern int (WINAPI *p_WSAGetLastError)(void);
 extern int (WINAPI *p_WSAEnumNetworkEvents)
     (SOCKET s, WSAEVENT hEventObject, LPWSANETWORKEVENTS lpNetworkEvents);
+
+extern int socket_writable(SOCKET skt);
 
 /*
  * Exports from winctrls.c.
@@ -325,7 +327,7 @@ void win_setup_config_box(struct controlbox *b, HWND *hwndp, int has_help,
  */
 void defuse_showwindow(void);
 int do_config(void);
-int do_reconfig(HWND);
+int do_reconfig(HWND, int);
 void showeventlog(HWND);
 void showabout(HWND);
 void force_normal(HWND hwnd);

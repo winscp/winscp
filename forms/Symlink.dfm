@@ -1,6 +1,9 @@
 object SymlinkDialog: TSymlinkDialog
   Left = 384
   Top = 214
+  HelpType = htKeyword
+  HelpKeyword = 'ui_symlink'
+  BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'SymlinkDialog'
   ClientHeight = 183
