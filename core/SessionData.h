@@ -22,8 +22,8 @@ enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx };
 enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
   sbRekey2, sbPKSessID2 };
 #define BUG_COUNT (sbPKSessID2+1)
-enum TSftpBug { sbSymlink, sbUtf };
-#define SFTP_BUG_COUNT (sbUtf+1)
+enum TSftpBug { sbSymlink, sbUtf, sbSignedTS };
+#define SFTP_BUG_COUNT (sbSignedTS+1)
 enum TAutoSwitch { asOn, asOff, asAuto };
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };

@@ -607,6 +607,8 @@ void __fastcall TLoginDialog::UpdateControls()
 
       EnableControl(SftpSheet, !SCPonlyButton->Checked);
 
+      EnableControl(KexSheet, !SshProt1onlyButton->Checked);
+
       AboutButton->Visible = (Options & loAbout);
       LanguagesButton->Visible = (Options & loLanguage);
       ShellIconsButton->Visible = (Options & loTools);

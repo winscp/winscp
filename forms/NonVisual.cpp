@@ -203,7 +203,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(SelectAllAction, DirView(osCurrent)->FilesCount)
   UPD(InvertSelectionAction, DirView(osCurrent)->FilesCount)
   UPD(ClearSelectionAction, DirView(osCurrent)->SelCount)
-  UPD(PasteAction, DirView(osCurrent)->CanPasteFromClipBoard())
+  UPD(PasteAction, ScpExplorer->CanPasteFromClipBoard())
 
   //style
   UPDACT(CurrentCycleStyleAction,
@@ -437,7 +437,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(SelectAllAction, DirView(osCurrent)->SelectAll(smAll))
     EXE(InvertSelectionAction, DirView(osCurrent)->SelectAll(smInvert))
     EXE(ClearSelectionAction, DirView(osCurrent)->SelectAll(smNone))
-    EXE(PasteAction, DirView(osCurrent)->PasteFromClipBoard())
+    EXE(PasteAction, ScpExplorer->PasteFromClipBoard())
 
     // style
     EXE(CurrentCycleStyleAction,
@@ -710,6 +710,8 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   SelectAllAction->ShortCut = ShortCut('A', CTRL);
   InvertSelectionAction->ShortCut = ShortCut(VK_MULTIPLY, NONE);
   ClearSelectionAction->ShortCut = ShortCut('L', CTRL);
+  // commands
+  EditNewAction->ShortCut = ShortCut(VK_F4, CTRLSHIFT);
 
   CloseApplicationAction->ShortCut = ShortCut(VK_F10, NONE);
 }

@@ -3769,3 +3769,53 @@ void __fastcall TCustomScpExplorerForm::SessionComboResizerDblClick(TObject * /*
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::CanPasteFromClipBoard()
+{
+  bool Result = false;
+  
+  if (OpenClipboard(0))
+  {
+    Result = IsClipboardFormatAvailable(CF_TEXT);
+    CloseClipboard();
+  }
+
+  if (!Result)
+  {
+    Result = DirView(osCurrent)->CanPasteFromClipBoard();
+  }
+  
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::PasteFromClipBoard()
+{
+  if (DirView(osCurrent)->CanPasteFromClipBoard())
+  {
+    DirView(osCurrent)->PasteFromClipBoard();
+  }
+  else if (OpenClipboard(0))
+  {
+    HANDLE Handle = NULL;
+    try
+    {
+      Handle = GetClipboardData(CF_TEXT);
+      if (Handle != NULL)
+      {
+        AnsiString Path = static_cast<const char*>(GlobalLock(Handle));
+        if (!Path.IsEmpty())
+        {
+          DirView(osCurrent)->Path = Path;
+        }
+      }
+    }
+    __finally
+    {
+      if (Handle != NULL)
+      {
+        GlobalUnlock(Handle);
+      }
+      CloseClipboard();
+    }  
+  }
+}
+

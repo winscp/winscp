@@ -104,20 +104,6 @@ void __fastcall TTerminal::Idle()
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::PushSendBuffer()
-{
-  bool Result;
-  if (FFileSystem != NULL)
-  {
-    Result = FFileSystem->PushSendBuffer();
-  }
-  else
-  {
-    Result = TSecureShell::PushSendBuffer();
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminal::KeepAlive()
 {
   if (SessionData->PingType == ptDummyCommand)
@@ -1966,8 +1952,8 @@ bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
-  int Access, int * AAttrs, HANDLE * AHandle, unsigned long * ACTime,
-  unsigned long * AMTime, unsigned long * AATime, __int64 * ASize,
+  int Access, int * AAttrs, HANDLE * AHandle, __int64 * ACTime,
+  __int64 * AMTime, __int64 * AATime, __int64 * ASize,
   bool TryWriteReadOnly)
 {
   int Attrs = 0;

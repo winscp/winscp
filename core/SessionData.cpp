@@ -497,6 +497,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
       SFTPBug[sb##BUG] = TAutoSwitch(Storage->ReadInteger("SFTP" #BUG "Bug", SFTPBug[sb##BUG]));
     READ_SFTP_BUG(Symlink);
     READ_SFTP_BUG(Utf);
+    READ_SFTP_BUG(SignedTS);
     #undef READ_SFTP_BUG
 
     SFTPMaxVersion = Storage->ReadInteger("SFTPMaxVersion", SFTPMaxVersion);
@@ -671,6 +672,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       #define WRITE_SFTP_BUG(BUG) WRITE_DATA_EX(Integer, "SFTP" #BUG "Bug", SFTPBug[sb##BUG], );
       WRITE_SFTP_BUG(Symlink);
       WRITE_SFTP_BUG(Utf);
+      WRITE_SFTP_BUG(SignedTS);
       #undef WRITE_SFTP_BUG
 
       WRITE_DATA(Integer, SFTPMaxVersion);

@@ -24,7 +24,6 @@ object LoginDialog: TLoginDialog
     Top = 333
     Width = 75
     Height = 25
-    HelpType = htKeyword
     HelpKeyword = 'ui_login_save'
     Action = SaveSessionAction
     Anchors = [akRight, akBottom]

@@ -54,7 +54,7 @@
       -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <AFLAGS value="/mx /w2 /zi"/>
-    <LFLAGS value="/P128"/>
+    <LFLAGS value="/P512"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

@@ -167,7 +167,7 @@ private:
   int __fastcall GetSshVersion() const;
   int __fastcall GetStatus() const;
   void inline __fastcall CheckConnection(int Message = -1);
-  void __fastcall WaitForData();
+  void __fastcall WaitForData(bool Sending);
   void __fastcall SetLog(TSessionLog * value);
   void __fastcall SetConfiguration(TConfiguration * value);
   void __fastcall SetUserObject(TObject * value);
@@ -188,7 +188,6 @@ protected:
   int __fastcall RemainingSendBuffer();
   virtual void __fastcall KeepAlive();
   virtual void __fastcall SetSessionData(TSessionData * value);
-  virtual bool __fastcall PushSendBuffer();
 
 public:
   __fastcall TSecureShell();

@@ -59,15 +59,11 @@ bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec);
 void __fastcall ProcessLocalDirectory(AnsiString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
 //---------------------------------------------------------------------------
-#define TIME_POSIX_TO_WIN(t, ft) (*(LONGLONG*)&(ft) = \
-    ((LONGLONG) (t) + (LONGLONG) 11644473600) * (LONGLONG) 10000000)
-#define TIME_WIN_TO_POSIX(ft, t) ((t) = (unsigned long) \
-    ((*(LONGLONG*)&(ft)) / (LONGLONG) 10000000 - (LONGLONG) 11644473600))
-TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp, bool ConsiderDST);
+TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, bool ConsiderDST);
 FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime, bool ConsiderDST);
 TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, bool ConsiderDST);
 void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTime2);
-unsigned long __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
+__int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   bool ConsiderDST);
 AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format);
 //---------------------------------------------------------------------------

@@ -578,7 +578,7 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
   return Result;
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall UnixToDateTime(unsigned long TimeStamp, bool ConsiderDST)
+TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, bool ConsiderDST)
 {
   TDateTimeParams * Params = GetDateTimeParams();
 
@@ -601,6 +601,11 @@ inline __int64 __fastcall Round(double Number)
   return ((Number - Floor) > (Ceil - Number)) ? Ceil : Floor;
 }
 //---------------------------------------------------------------------------
+#define TIME_POSIX_TO_WIN(t, ft) (*(LONGLONG*)&(ft) = \
+    ((LONGLONG) (t) + (LONGLONG) 11644473600) * (LONGLONG) 10000000)
+#define TIME_WIN_TO_POSIX(ft, t) ((t) = (__int64) \
+    ((*(LONGLONG*)&(ft)) / (LONGLONG) 10000000 - (LONGLONG) 11644473600))
+//---------------------------------------------------------------------------
 FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
   bool /*ConsiderDST*/)
 {
@@ -616,10 +621,10 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
   return Result;
 }
 //---------------------------------------------------------------------------
-unsigned long __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
+__int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   bool ConsiderDST)
 {
-  unsigned long Result;
+  __int64 Result;
   TIME_WIN_TO_POSIX(FileTime, Result);
 
   if (ConsiderDST)

@@ -23,7 +23,6 @@ public:
 
   virtual AnsiString __fastcall AbsolutePath(AnsiString Path);
   virtual void __fastcall KeepAlive();
-  virtual bool __fastcall PushSendBuffer();
   virtual void __fastcall AnyCommand(const AnsiString Command);
   virtual void __fastcall ChangeDirectory(const AnsiString Directory);
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
@@ -76,6 +75,7 @@ protected:
   TStrings * FExtensions;
   TSFTPSupport * FSupport;
   bool FUtfStrings;
+  bool FSignedTS;
 
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, char Type, TRemoteFile * ALinkedByFile = NULL,

@@ -31,7 +31,6 @@ BEGIN
         CHECK_FOR_UPDATES_HTTP, "Cannot query application homepage for updates information."
         EXECUTE_APP_ERROR, "Cannot execute '%s'."
         FILE_NOT_FOUND, "File '%s' not found."
-        ABSOLUTE_PATH_REQUIRED, "Only full (absolute) path may be used."
         REGISTER_URL_ERROR, "Cannot register application to handle scp:// and sftp:// addresses."
         MUTEX_RELEASE_TIMEOUT, "Mutex was not released in required interval."
         DRAGEXT_MUTEX_RELEASE_TIMEOUT, "Shell drag extension mutex was not released in required interval."

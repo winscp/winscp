@@ -124,7 +124,11 @@ void __fastcall TSecureShell::Init()
     {
       while (!FBackend->sendok(FBackendHandle))
       {
-        WaitForData();
+        if (Configuration->LogProtocol >= 1)
+        {
+          LogEvent("Waiting for the server to continue with the initialisation");
+        }
+        WaitForData(true);
       }
     }
     catch(Exception & E)
@@ -371,7 +375,14 @@ Integer __fastcall TSecureShell::Receive(char * Buf, Integer Len)
     }
 
     // I don't undestand this yet, but it works :-)
-    while (OutLen > 0) WaitForData();
+    while (OutLen > 0)
+    {
+      if (Configuration->LogProtocol >= 1)
+      {
+        LogEvent(FORMAT("Waiting for another %u bytes", (static_cast<int>(OutLen))));
+      }
+      WaitForData(false);
+    }
 
     // This seems ambiguous
     if (Len <= 0) FatalError(LoadStr(LOST_CONNECTION));
@@ -438,14 +449,28 @@ void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
 {
   CheckConnection();
   FBufSize = FBackend->send(FBackendHandle, (char *)Buf, Len);
+  if (Configuration->LogProtocol >= 1)
+  {
+    LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (FBufSize)));
+  }
   FLastDataSent = Now();
   FBytesSent += Len;
   while (FBufSize > MAX_BUFSIZE)
   {
+    if (Configuration->LogProtocol >= 1)
+    {
+      LogEvent(FORMAT("There are %u bytes remaining in the send buffer, "
+        "need to send at least another %u bytes",
+        (FBufSize, FBufSize - MAX_BUFSIZE)));
+    }
     // it seems that this does not work anyway
     // (i.e. once the send buffer fills we hang here)
-    WaitForData();
+    WaitForData(true);
     FBufSize = FBackend->sendbuffer(FBackendHandle);
+    if (Configuration->LogProtocol >= 1)
+    {
+      LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (FBufSize)));
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -650,11 +675,21 @@ bool __fastcall TSecureShell::Select(int Sec)
     SSH_FATAL_ERROR(FMTLOAD(UNKNOWN_SOCKET_STATUS, (R)));
   }
 
+  if (Configuration->LogProtocol >= 2)
+  {
+    LogEvent(FORMAT("Select result is %d", (R)));
+  }
+
   return (R > 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::PoolForData(unsigned int & Result)
 {
+  if (Configuration->LogProtocol >= 2)
+  {
+    LogEvent("Pooling for data in case they finally arrives");
+  }
+
   if (Select(0))
   {
     LogEvent("Data has arrived, closing query to user.");
@@ -662,50 +697,82 @@ void __fastcall TSecureShell::PoolForData(unsigned int & Result)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::PushSendBuffer()
-{
-  return false;
-}
-//---------------------------------------------------------------------------
 extern int select_result(WPARAM, LPARAM);
-void __fastcall TSecureShell::WaitForData()
+void __fastcall TSecureShell::WaitForData(bool Sending)
 {
-  bool R;
+  bool NeedToWait = true;
 
   SOCKET & Socket = *static_cast<SOCKET*>(FSocket);
-  if (PushSendBuffer())
+  if (socket_writable(Socket))
   {
-    if (socket_writable(Socket))
+    if (Configuration->LogProtocol >= 1)
     {
-      select_result((WPARAM)(Socket), (LPARAM)FD_WRITE);
+      LogEvent("Checking low level send buffer");
     }
-    if (FBufSize > 0)
+    select_result((WPARAM)(Socket), (LPARAM)FD_WRITE);
+  }
+  if (FBufSize > 0)
+  {
+    if (Configuration->LogProtocol >= 1)
     {
-      FBufSize = FBackend->send(FBackendHandle, "", 0);
+      LogEvent(FORMAT("Trying to dispatch send buffer (%u bytes)", (FBufSize)));
+    }
+    int NewBufSize = FBackend->send(FBackendHandle, "", 0);
+    if ((NewBufSize < FBufSize) && Sending)
+    {
+      NeedToWait = false;  
+    } 
+    FBufSize = NewBufSize;
+    if (Configuration->LogProtocol >= 1)
+    {
+      LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (FBufSize)));
     }
   }
 
-  do
+  bool IncomingData;
+  if (!NeedToWait)
   {
-    R = Select(FSessionData->Timeout);
-    if (!R)
+    if (Configuration->LogProtocol >= 2)
+   {
+      LogEvent("Looking for incoming data");
+    }
+
+    // This is just attempt to make it as close as possible to previous behaviour
+    // Maybe it is not necessary at all.
+    IncomingData = Select(0);
+  }
+  else
+  {
+    do
     {
-      LogEvent("Waiting for data timed out, asking user what to do.");
-      TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
-      Params.Timer = 500;
-      Params.TimerEvent = PoolForData;
-      Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING, (FSessionData->Timeout));
-      Params.TimerAnswers = qaAbort;
-      if (DoQueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT, (FSessionData->Timeout)),
-            qaRetry | qaAbort, &Params) != qaRetry)
+      if (Configuration->LogProtocol >= 2)
       {
-        FatalError(LoadStr(USER_TERMINATED));
+        LogEvent("Looking for incoming data");
+      }
+
+      IncomingData = Select(FSessionData->Timeout);
+      if (!IncomingData)
+      {
+        LogEvent("Waiting for data timed out, asking user what to do.");
+        TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
+        Params.Timer = 500;
+        Params.TimerEvent = PoolForData;
+        Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING, (FSessionData->Timeout));
+        Params.TimerAnswers = qaAbort;
+        if (DoQueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT, (FSessionData->Timeout)),
+              qaRetry | qaAbort, &Params) != qaRetry)
+        {
+          FatalError(LoadStr(USER_TERMINATED));
+        }
       }
     }
+    while (!IncomingData);
   }
-  while (!R);
 
-  select_result((WPARAM)(Socket), (LPARAM)FD_READ);
+  if (IncomingData)
+  {
+    select_result((WPARAM)(Socket), (LPARAM)FD_READ);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::SshFallbackCmd() const
@@ -723,6 +790,10 @@ extern int (WINAPI *p_WSAEnumNetworkEvents)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Idle()
 {
+  if (Configuration->LogProtocol >= 1)
+  {
+    LogEvent("Session upkeep");
+  }
   noise_regular();
   // Keep session alive
   if ((FSessionData->PingType != ptOff) &&
@@ -739,6 +810,7 @@ void __fastcall TSecureShell::Idle()
   // process SSH-level communication with the server (KEX particularly)
   if (Select(0))
   {
+    LogEvent("Detected incoming data while idle");
     select_result((WPARAM)(*static_cast<SOCKET*>(FSocket)), (LPARAM)FD_READ);
     CheckConnection();
   }

@@ -33,7 +33,7 @@
       -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <AFLAGS value="/mx /w2 /zi"/>
-    <LFLAGS value="/P32"/>
+    <LFLAGS value="/P64"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

@@ -1309,7 +1309,8 @@ __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
   if (FilesToCopy->Count > 1)
   {
     ExtractCommonPath(FilesToCopy, FInfo->Source);
-    FInfo->Source = ExcludeTrailingBackslash(FInfo->Source);
+    // this way the trailing backslash is preserved for root directories like D:\\
+    FInfo->Source = ExtractFileDir(IncludeTrailingBackslash(FInfo->Source));
   }
   else
   {

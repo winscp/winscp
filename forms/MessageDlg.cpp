@@ -25,6 +25,7 @@ protected:
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
   AnsiString __fastcall GetFormText();
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  DYNAMIC void __fastcall DoShow();
 
 private:
   TLabel * Message;
@@ -43,7 +44,7 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
   {
     Font->Handle = CreateFontIndirect(&NonClientMetrics.lfMessageFont);
   }
-  UseSystemSettings(this);
+  UseSystemSettingsPre(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
@@ -97,6 +98,13 @@ void __fastcall TMessageForm::CreateParams(TCreateParams & Params)
   {
     Params.WndParent = Screen->ActiveForm->Handle;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageForm::DoShow()
+{
+  UseSystemSettingsPost(this);
+  
+  TForm::DoShow();
 }
 //---------------------------------------------------------------------------
 const ResourceString * Captions[] = { &_SMsgDlgWarning, &_SMsgDlgError, &_SMsgDlgInformation,
@@ -328,10 +336,6 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   Message->BoundsRect = TextRect;
   Message->BiDiMode = Result->BiDiMode;
   int ALeft = IconTextWidth - TextRect.Right + HorzMargin;
-  if (Message->UseRightToLeftAlignment())
-  {
-    ALeft = Result->ClientWidth - ALeft - Message->Width;
-  }
   Message->SetBounds(ALeft, VertMargin, TextRect.Right, TextRect.Bottom);
   int ButtonTop = IconTextHeight + VertMargin + VertSpacing + MoreMessageHeight;
 

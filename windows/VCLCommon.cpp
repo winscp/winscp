@@ -68,33 +68,49 @@ struct TSavedSystemSettings
   bool Flipped;
 };
 //---------------------------------------------------------------------------
-void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings)
+// Settings that must be set as soon as possible.
+void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
 {
-  bool Flip;
-  AnsiString FlipStr = LoadStr(FLIP_CHILDREN);
-  Flip = !FlipStr.IsEmpty() && static_cast<bool>(StrToInt(FlipStr));
-
   if (Settings)
   {
     TSavedSystemSettings * SSettings = new TSavedSystemSettings();
     *Settings = static_cast<void*>(SSettings);
     SSettings->FontName = Control->Font->Name;
-    SSettings->Flipped = Flip;
   }
   assert(Control && Control->Font);
   Control->Font->Name = "MS Shell Dlg";
-  if (Flip)
-  {
-    Control->FlipChildren(true);
-  }
 
   if (Control->HelpKeyword.IsEmpty())
   {
     // temporary help keyword to enable F1 key in all forms
     Control->HelpKeyword = "start";
   }
+};
+//---------------------------------------------------------------------------
+// Settings that must be set only after whole form is constructed
+void __fastcall UseSystemSettingsPost(TCustomForm * Control, void * Settings)
+{
+  bool Flip;
+  AnsiString FlipStr = LoadStr(FLIP_CHILDREN);
+  Flip = !FlipStr.IsEmpty() && static_cast<bool>(StrToInt(FlipStr));
+
+  if (Settings != NULL)
+  {
+    static_cast<TSavedSystemSettings*>(Settings)->Flipped = Flip;
+  }
+  
+  if (Flip)
+  {
+    Control->FlipChildren(true);
+  }
 
   ResetSystemSettings(Control);
+};
+//---------------------------------------------------------------------------
+void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings)
+{
+  UseSystemSettingsPre(Control, Settings);
+  UseSystemSettingsPost(Control, (Settings != NULL) ? *Settings : NULL);
 };
 //---------------------------------------------------------------------------
 void __fastcall ResetSystemSettings(TCustomForm * Control)

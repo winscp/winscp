@@ -347,11 +347,6 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSCPFileSystem::PushSendBuffer()
-{
-  return false;
-}
-//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::KeepAlive()
 {
   if (!FProcessingCommand)
@@ -1336,7 +1331,7 @@ void __fastcall TSCPFileSystem::CopyToRemote(TStrings * FilesToCopy,
           }
           else
           {
-            unsigned long MTime;
+            __int64 MTime;
             TOverwriteFileParams FileParams;
             FTerminal->OpenLocalFile(FileName, GENERIC_READ,
               NULL, NULL, NULL, &MTime, NULL,
@@ -1480,7 +1475,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
   HANDLE File;
   int Attrs;
-  unsigned long MTime, ATime;
+  __int64 MTime, ATime;
   __int64 Size;
 
   FTerminal->OpenLocalFile(FileName, GENERIC_READ,
@@ -1572,7 +1567,8 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
           {
             // Send last file access and modification time
             // TVarRec don't understand 'unsigned int' -> we use sprintf()
-            Buf.sprintf("T%lu 0 %lu 0", MTime, ATime);
+            Buf.sprintf("T%lu 0 %lu 0", static_cast<unsigned long>(MTime),
+              static_cast<unsigned long>(ATime));
             FTerminal->SendLine(Buf);
             SCPResponse();
           }
@@ -1614,7 +1610,13 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
         {
           if (!OperationProgress->TransferedSize)
           {
-            FTerminal->LogEvent("Sending BINARY data (first block)");
+            FTerminal->LogEvent(FORMAT("Sending BINARY data (first block, %u bytes)",
+              (BlockBuf.Size)));
+          }
+          else if (FTerminal->Configuration->LogProtocol >= 1)
+          {
+            FTerminal->LogEvent(FORMAT("Sending BINARY data (%u bytes)",
+              (BlockBuf.Size)));
           }
           FTerminal->Send(BlockBuf.Data, BlockBuf.Size);
           OperationProgress->AddTransfered(BlockBuf.Size);
@@ -2148,7 +2150,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                      FTerminal->Configuration->ConfirmOverwriting &&
                      FLAGCLEAR(Params, cpNoConfirmation)))
                 {
-                  unsigned long MTime;
+                  __int64 MTime;
                   TOverwriteFileParams FileParams;
                   FileParams.SourceSize = OperationProgress->TransferSize;
                   FileParams.SourceTimestamp = SourceTimestamp;

@@ -6,6 +6,8 @@
 //---------------------------------------------------------------------------
 void __fastcall AdjustListColumnsWidth(TListView* ListView);
 void __fastcall EnableControl(TControl* Control, bool Enable);
+void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings = NULL);
+void __fastcall UseSystemSettingsPost(TCustomForm * Control, void * Settings = NULL);
 void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings = NULL);
 void __fastcall ResetSystemSettings(TCustomForm * Control);
 void __fastcall RevokeSystemSettings(TCustomForm * Control, void * Settings);

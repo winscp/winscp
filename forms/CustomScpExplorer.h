@@ -335,6 +335,8 @@ public:
     AnsiString & RemoteDirectory);
   bool __fastcall DoFullSynchronizeDirectories(AnsiString & LocalDirectory,
     AnsiString & RemoteDirectory, TSynchronizeMode & Mode);
+  bool __fastcall CanPasteFromClipBoard();
+  void __fastcall PasteFromClipBoard();
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation };

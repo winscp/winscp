@@ -169,7 +169,6 @@ protected:
   bool FReadDirectoryPending;
 
   virtual void __fastcall KeepAlive();
-  virtual bool __fastcall PushSendBuffer();
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress);
   void __fastcall DoReadDirectory(bool ReloadOnly);
@@ -204,8 +203,8 @@ protected:
   bool __fastcall CreateLocalFile(const AnsiString FileName,
     TFileOperationProgressType * OperationProgress, HANDLE * AHandle);
   void __fastcall OpenLocalFile(const AnsiString FileName, int Access,
-    int * Attrs, HANDLE * Handle, unsigned long * ACTime, unsigned long * MTime,
-    unsigned long * ATime, __int64 * Size, bool TryWriteReadOnly = true);
+    int * Attrs, HANDLE * Handle, __int64 * ACTime, __int64 * MTime,
+    __int64 * ATime, __int64 * Size, bool TryWriteReadOnly = true);
   bool __fastcall HandleException(Exception * E);
   void __fastcall CalculateFileSize(AnsiString FileName,
     const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);

@@ -296,7 +296,7 @@ public:
   }
 
   void AddProperties(unsigned short * Rights, AnsiString * Owner,
-    AnsiString * Group, unsigned long * MTime, unsigned long * ATime,
+    AnsiString * Group, __int64 * MTime, __int64 * ATime,
     __int64 * Size, bool IsDirectory, int Version, bool Utf)
   {
     int Flags = 0;
@@ -351,8 +351,11 @@ public:
 
     if ((Version < 4) && ((MTime != NULL) || (ATime != NULL)))
     {
-      AddCardinal(ATime != NULL ? *ATime : *MTime);
-      AddCardinal(MTime != NULL ? *MTime : *ATime);
+      // any way to reflect sbSignedTS here?
+      // (note that casting __int64 > 2^31 < 2^32 to unsigned long is wrapped,
+      // thus we never can set time after 2038, even if the server supports it)
+      AddCardinal(static_cast<unsigned long>(ATime != NULL ? *ATime : *MTime));
+      AddCardinal(static_cast<unsigned long>(MTime != NULL ? *MTime : *ATime));
     }
     if ((Version >= 4) && (ATime != NULL))
     {
@@ -458,7 +461,7 @@ public:
     return GetString((Version >= 4) && Utf);
   }
 
-  void GetFile(TRemoteFile * File, int Version, bool ConsiderDST, bool Utf)
+  void GetFile(TRemoteFile * File, int Version, bool ConsiderDST, bool Utf, bool SignedTS)
   {
     assert(File);
     unsigned int Flags;
@@ -510,15 +513,23 @@ public:
     {
       if (Flags & SSH_FILEXFER_ATTR_ACMODTIME)
       {
-        File->LastAccess = UnixToDateTime(GetCardinal(), ConsiderDST);
-        File->Modification = UnixToDateTime(GetCardinal(), ConsiderDST);
+        File->LastAccess = UnixToDateTime(
+          SignedTS ?
+            static_cast<__int64>(static_cast<signed long>(GetCardinal())) :
+            static_cast<__int64>(GetCardinal()),
+          ConsiderDST);
+        File->Modification = UnixToDateTime(
+          SignedTS ?
+            static_cast<__int64>(static_cast<signed long>(GetCardinal())) :
+            static_cast<__int64>(GetCardinal()),
+          ConsiderDST);
       }
     }
     else
     {
       if (Flags & SSH_FILEXFER_ATTR_ACCESSTIME)
       {
-        File->LastAccess = UnixToDateTime((unsigned long)GetInt64(), ConsiderDST);
+        File->LastAccess = UnixToDateTime(GetInt64(), ConsiderDST);
         if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
         {
           GetCardinal(); // skip access time subseconds
@@ -538,7 +549,7 @@ public:
       }
       if (Flags & SSH_FILEXFER_ATTR_MODIFYTIME)
       {
-        File->Modification = UnixToDateTime((unsigned long)GetInt64(), ConsiderDST);
+        File->Modification = UnixToDateTime(GetInt64(), ConsiderDST);
         if (Flags & SSH_FILEXFER_ATTR_SUBSECOND_TIMES)
         {
           GetCardinal(); // skip modification time subseconds
@@ -1265,6 +1276,7 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal):
   FBusy = 0;
   FAvoidBusy = false;
   FUtfStrings = false;
+  FSignedTS = false;
   FSupport = new TSFTPSupport();
   FSupport->Extensions = new TStringList();
   FExtensions = new TStringList();
@@ -1329,11 +1341,6 @@ bool __fastcall TSFTPFileSystem::IsCapable(int Capability) const
 bool __fastcall TSFTPFileSystem::SupportsExtension(const AnsiString & Extension) const
 {
   return (FSupport->Extensions->IndexOf(Extension) >= 0);
-}
-//---------------------------------------------------------------------------
-bool __fastcall TSFTPFileSystem::PushSendBuffer()
-{
-  return true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::KeepAlive()
@@ -2056,7 +2063,7 @@ TRemoteFile * __fastcall TSFTPFileSystem::LoadFile(TSFTPPacket * Packet,
     {
       File->FileName = FileName;
     }
-    Packet->GetFile(File, FVersion, FTerminal->SessionData->ConsiderDST, FUtfStrings);
+    Packet->GetFile(File, FVersion, FTerminal->SessionData->ConsiderDST, FUtfStrings, FSignedTS);
   }
   catch(...)
   {
@@ -2221,6 +2228,17 @@ void __fastcall TSFTPFileSystem::DoStartup()
         FTerminal->LogEvent(FORMAT("Server OS: %s %s",
           (OS, OSVersion)));
       }
+    }
+  }
+
+  if (FVersion < 4)
+  {
+    // currently enable the bug for all servers (really known on OpenSSH)  
+    FSignedTS = (FTerminal->SessionData->SFTPBug[sbSignedTS] == asOn) ||
+      (FTerminal->SessionData->SFTPBug[sbSignedTS] == asAuto);
+    if (FSignedTS)
+    {
+      FTerminal->LogEvent("We believe the server has signed timestamps bug");
     }
   }
 
@@ -2979,7 +2997,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   OpenParams.OverwriteMode = omOverwrite;
 
   HANDLE File;
-  unsigned long MTime, ATime;
+  __int64 MTime, ATime;
   __int64 Size;
 
   FTerminal->OpenLocalFile(FileName, GENERIC_READ, &OpenParams.LocalFileAttrs,
@@ -3734,7 +3752,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
             FLAGCLEAR(Params, cpNoConfirmation))))
       {
         __int64 DestFileSize;
-        unsigned long MTime;
+        __int64 MTime;
         FTerminal->OpenLocalFile(DestFullName, GENERIC_WRITE,
           NULL, &LocalHandle, NULL, &MTime, NULL, &DestFileSize, false);
 
