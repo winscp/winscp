@@ -1043,7 +1043,7 @@ object LoginDialog: TLoginDialog
             Increment = 5
             MaxValue = 300
             MinValue = 5
-            MaxLength = 2
+            MaxLength = 3
             TabOrder = 0
             OnChange = DataChange
           end

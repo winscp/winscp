@@ -32,6 +32,31 @@ const
   DDDragStartDelay = 500000;
   DirAttrMask = SysUtils.faDirectory or SysUtils.faSysFile or SysUtils.faHidden;
 
+{ Win2000 and newer only }
+const
+  _WM_XBUTTONUP = $020C;
+  _WM_APPCOMMAND = $0319;
+  _XBUTTON1 =     $0001;
+  _XBUTTON2 =     $0002;
+  _APPCOMMAND_BROWSER_BACKWARD   = 1;
+  _APPCOMMAND_BROWSER_FORWARD    = 2;
+  _APPCOMMAND_BROWSER_REFRESH    = 3;
+  _APPCOMMAND_BROWSER_STOP       = 4;
+  _APPCOMMAND_BROWSER_SEARCH     = 5;
+  _APPCOMMAND_BROWSER_FAVORITES  = 6;
+  _APPCOMMAND_BROWSER_HOME       = 7;
+  _VK_BROWSER_BACK =      $A6;
+  _VK_BROWSER_FORWARD =   $A7;
+  _VK_BROWSER_REFRESH =   $A8;
+  _VK_BROWSER_STOP =      $A9;
+  _VK_BROWSER_SEARCH =    $AA;
+  _VK_BROWSER_FAVORITES = $AB;
+  _VK_BROWSER_HOME =      $AC;
+  _FAPPCOMMAND_MOUSE =    $8000;
+  _FAPPCOMMAND_KEY =      0;
+  _FAPPCOMMAND_OEM =      $1000;
+  _FAPPCOMMAND_MASK =     $F000;
+
 type
   {Drag&Drop events:}
   TDDError = (DDCreateShortCutError, DDPathNotFoundError);
@@ -56,6 +81,7 @@ type
 
   TDirViewExecFileEvent = procedure(Sender: TObject; Item: TListItem; var AllowExec: Boolean) of object;
   TRenameEvent = procedure(Sender: TObject; Item: TListItem; NewName: string) of object;
+  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Masks: string; var Matches: Boolean) of object;
 
 type
   TCustomDirView = class;
@@ -76,6 +102,14 @@ type
     var Filter: TFileFilter) of object;
   TCompareCriteria = (ccTime, ccSize);
   TCompareCriterias = set of TCompareCriteria;
+
+  TWMXMouse = packed record
+    Msg: Cardinal;
+    Keys: Word;
+    Button: Word;
+    Pos: TSmallPoint;
+    Result: Longint
+  end;
 
   TCustomizableDragDropFilesEx = class(TDragDropFilesEx)
   public
@@ -161,6 +195,7 @@ type
     FSavedSelectionFile: string;
     FSavedSelectionLastFile: string;
     FPendingFocusSomething: Boolean;
+    FOnMatchMask: TMatchMaskEvent;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
@@ -168,6 +203,8 @@ type
     procedure WMContextMenu(var Message: TWMContextMenu); message WM_CONTEXTMENU;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
+    procedure WMXButtonUp(var Message: TWMXMouse); message _WM_XBUTTONUP;
+    procedure WMAppCommand(var Message: TMessage); message _WM_APPCOMMAND;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -300,6 +337,7 @@ type
     procedure UpdatePathLabel; dynamic;
     procedure UpdateStatusBar; dynamic;
     procedure WndProc(var Message: TMessage); override;
+    function FileNameMatchesMasks(FileName: string; Masks: string): Boolean;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -442,6 +480,7 @@ type
     property OnExecFile: TDirViewExecFileEvent
       read FOnExecFile write FOnExecFile;
     property OnHistoryChange: THistoryChangeEvent read FOnHistoryChange write FOnHistoryChange;
+    property OnMatchMask: TMatchMaskEvent read FOnMatchMask write FOnMatchMask; 
     property PathComboBox: TCustomPathComboBox read FPathComboBox write SetPathComboBox;
     property PathLabel: TCustomPathLabel read FPathLabel write SetPathLabel;
     property ShowHiddenFiles: Boolean read FShowHiddenFiles write SetShowHiddenFiles default True;
@@ -485,8 +524,6 @@ function IsExecutable(FileName: string): Boolean;
 
 function GetNextMask(var Mask: string): string;
 
-function FileNameMatchesMasks(FileName: string; Masks: string): Boolean;
-
 procedure DefaultFileFilter(var Filter: TFileFilter);
 
 function OverlayImageList(Size: Integer): TImageList;
@@ -504,7 +541,7 @@ var
 implementation
 
 uses
-  Math, Masks;
+  Math;
 
 const
   Space = ' ';
@@ -540,16 +577,6 @@ begin
     Result := Copy(Mask, 1, NextPos - 1);
     Delete(Mask, 1, NextPos);
   end;
-end;
-
-function FileNameMatchesMasks(FileName: string; Masks: string): Boolean;
-begin
-  Result := False;
-  // there needs to be atleast one dot,
-  // otherwise '*.*' mask would not select this file
-  if Pos('.', FileName) = 0 then FileName := FileName + '.';
-  while (not Result) and (Length(Masks) > 0) do
-    Result := MatchesMask(FileName, GetNextMask(Masks));
 end;
 
 procedure DefaultFileFilter(var Filter: TFileFilter);
@@ -855,6 +882,8 @@ begin
   OnCustomDrawItem := DumbCustomDrawItem;
   OnCustomDrawSubItem := DumbCustomDrawSubItem;
 
+  FOnMatchMask := nil;
+
   FDragDropFilesEx := TCustomizableDragDropFilesEx.Create(Self);
   with FDragDropFilesEx do
   begin
@@ -1017,6 +1046,17 @@ begin
       end;
 
   if UpdateStatusBarPending then UpdateStatusBar;
+end;
+
+function TCustomDirView.FileNameMatchesMasks(FileName: string; Masks: string): Boolean;
+begin
+  Result := False;
+  // there needs to be atleast one dot,
+  // otherwise '*.*' mask would not select this file
+  if Pos('.', FileName) = 0 then FileName := FileName + '.';
+  Result := False;
+  if Assigned(OnMatchMask) then
+    OnMatchMask(Self, FileName, Masks, Result)
 end;
 
 procedure TCustomDirView.SetAddParentDir(Value: Boolean);
@@ -1344,12 +1384,12 @@ end;
 
 procedure TCustomDirView.KeyDown(var Key: Word; Shift: TShiftState);
 begin
-  if Valid and (not IsEditing) then
+  if Valid and (not IsEditing) and (not Loading) then
   begin
     if (Key = VK_RETURN) or
        ((Key = VK_NEXT) and (ssCtrl in Shift)) then
     begin
-      if Assigned(ItemFocused) and (not Loading) then
+      if Assigned(ItemFocused) then
       begin
          Key := 0;
          if (Key = VK_RETURN) and (Shift = [ssAlt]) then DisplayPropertiesMenu
@@ -1359,17 +1399,26 @@ begin
     end
       else
     if ((Key = VK_BACK) or ((Key = VK_PRIOR) and (ssCtrl in Shift))) and
-       (not Loading) and (not IsRoot) then
+       (not IsRoot) then
     begin
       Key := 0;
       ExecuteParentDirectory;
     end
       else
-    if (Key = 220 { backslash }) and (ssCtrl in Shift) and (not Loading) and
-        (not IsRoot) then
+    if (Key = 220 { backslash }) and (ssCtrl in Shift) and (not IsRoot) then
     begin
       Key := 0;
       ExecuteRootDirectory;
+    end
+      else
+    if (Key = VK_LEFT) and (ssAlt in Shift) then
+    begin
+      if BackCount >= 1 then HistoryGo(-1);
+    end
+      else
+    if (Key = VK_RIGHT) and (ssAlt in Shift) then
+    begin
+      if ForwardCount >= 1 then HistoryGo(1);
     end
       else
     begin
@@ -1385,10 +1434,10 @@ end;
 procedure TCustomDirView.KeyPress(var Key: Char);
 begin
   if IsEditing and (Pos(Key, FInvalidNameChars) <> 0) Then
-  Begin
+  begin
     Beep;
     Key := #0;
-  End;
+  end;
   inherited;
 end;
 
@@ -1564,6 +1613,21 @@ begin
   end;
   FDragEnabled := False;
   inherited;
+end;
+
+procedure TCustomDirView.WMXButtonUp(var Message: TWMXMouse);
+begin
+  if Message.Button = _XBUTTON1 then
+  begin
+    HistoryGo(-1);
+    Message.Result := 1;
+  end
+    else
+  if Message.Button = _XBUTTON2 then
+  begin
+    HistoryGo(1);
+    Message.Result := 1;
+  end;
 end;
 
 procedure TCustomDirView.Reload(CacheIcons: Boolean);
@@ -2031,6 +2095,8 @@ var
   MousePos: TPoint;
   KnowTime: TFileTime;
 begin
+  // this method cannot throw exceptions, if it does d&d will not be possible
+  // anymore (see TDragDrop.ExecuteOperation, global GInternalSource)
   if Result = DRAGDROP_S_DROP then
   begin
     GetSystemTimeAsFileTime(KnowTime);
@@ -2041,28 +2107,33 @@ begin
   if Assigned(OnDDQueryContinueDrag) then
     OnDDQueryContinueDrag(Self, FEscapePressed, grfKeyState, Result);
 
-  if FEscapePressed then
-  begin
-    if GlobalDragImageList.Dragging then
-      GlobalDragImageList.HideDragImage;
-  end
-    else
-  begin
-    if GlobalDragImageList.Dragging Then
+  try
+    if FEscapePressed then
     begin
-      MousePos := ParentForm.ScreenToClient(Mouse.CursorPos);
-      {Move the drag image to the new position and show it:}
-      if (MousePos.X <> FDragPos.X) or (MousePos.Y <> FDragPos.Y) then
+      if GlobalDragImageList.Dragging then
+        GlobalDragImageList.HideDragImage;
+    end
+      else
+    begin
+      if GlobalDragImageList.Dragging Then
       begin
-        FDragPos := MousePos;
-        if PtInRect(ParentForm.BoundsRect, Mouse.CursorPos) then
+        MousePos := ParentForm.ScreenToClient(Mouse.CursorPos);
+        {Move the drag image to the new position and show it:}
+        if (MousePos.X <> FDragPos.X) or (MousePos.Y <> FDragPos.Y) then
         begin
-          GlobalDragImageList.DragMove(MousePos.X, MousePos.Y);
-          GlobalDragImageList.ShowDragImage;
-        end
-          else GlobalDragImageList.HideDragImage;
+          FDragPos := MousePos;
+          if PtInRect(ParentForm.BoundsRect, Mouse.CursorPos) then
+          begin
+            GlobalDragImageList.DragMove(MousePos.X, MousePos.Y);
+            GlobalDragImageList.ShowDragImage;
+          end
+            else GlobalDragImageList.HideDragImage;
+        end;
       end;
     end;
+  except
+    // do not care if the above fails
+    // (Mouse.CursorPos fails when desktop is locked by user)
   end;
 end;
 
@@ -2480,6 +2551,44 @@ begin
     if AComponent = PathComboBox then FPathComboBox := nil;
   end;
 end; { Notification }
+
+procedure TCustomDirView.WMAppCommand(var Message: TMessage);
+var
+  Command: Integer;
+  Shift: TShiftState;
+begin
+  Command := HiWord(Message.lParam) and (not _FAPPCOMMAND_MASK);
+  Shift := KeyDataToShiftState(HiWord(Message.lParam) and _FAPPCOMMAND_MASK);
+
+  if Shift * [ssShift, ssAlt, ssCtrl] = [] then
+  begin
+    if Command = _APPCOMMAND_BROWSER_BACKWARD then
+    begin
+      Message.Result := 1;
+      if BackCount >= 1 then HistoryGo(-1);
+    end
+      else
+    if Command = _APPCOMMAND_BROWSER_FORWARD then
+    begin
+      Message.Result := 1;
+      if ForwardCount >= 1 then HistoryGo(1);
+    end
+      else
+    if Command = _APPCOMMAND_BROWSER_REFRESH then
+    begin
+      Message.Result := 1;
+      ReloadDirectory;
+    end
+      else
+    if Command = _APPCOMMAND_BROWSER_HOME then
+    begin
+      Message.Result := 1;
+      ExecuteHomeDirectory;
+    end
+      else inherited;
+  end
+    else inherited;
+end;
 
 procedure TCustomDirView.WndProc(var Message: TMessage);
 begin

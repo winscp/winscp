@@ -550,10 +550,17 @@ public:
       }
     }
 
-    File->Complete();
+    if (Flags & SSH_FILEXFER_ATTR_EXTENDED)
+    {
+      unsigned int ExtendedCount = GetCardinal();
+      for (unsigned int Index = 0; Index < ExtendedCount; Index++)
+      {
+        GetString(); // skip extended_type
+        GetString(); // skip extended_data
+      }
+    }
 
-    // TODO: read extended attributes (Flags & SSH_FILEXFER_ATTR_EXTENDED)
-    // Format: Count=Cardinal, Count*(Name=String, Value=String)
+    File->Complete();
   }
 
   void DataUpdated(int ALength)
@@ -569,6 +576,48 @@ public:
     {
       FMessageNumber = SFTPNoMessageNumber;
     }
+  }
+
+  void LoadFromFile(const AnsiString FileName)
+  {
+    TStringList * DumpLines = new TStringList();
+    AnsiString Dump;
+    try
+    {
+      DumpLines->LoadFromFile(FileName);
+      Dump = DumpLines->Text;
+    }
+    __finally
+    {
+      delete DumpLines;
+    }
+
+    Capacity = 10240;
+    char Byte[3];
+    memset(Byte, '\0', sizeof(Byte));
+    int Index = 1;
+    unsigned int Length = 0;
+    while (Index < Dump.Length())
+    {
+      char C = Dump[Index];
+      if (((C >= '0') && (C <= '9')) || ((C >= 'A') && (C <= 'Z')))
+      {
+        if (Byte[0] == '\0')
+        {
+          Byte[0] = C;
+        }
+        else
+        {
+          Byte[1] = C;
+          assert(Length < Capacity);
+          Data[Length] = static_cast<unsigned char>(HexToInt(Byte));
+          Length++;  
+          memset(Byte, '\0', sizeof(Byte));
+        }
+      }
+      Index++;
+    }
+    DataUpdated(Length);
   }
 
   AnsiString __fastcall Dump() const
@@ -2331,8 +2380,7 @@ void __fastcall TSFTPFileSystem::RenameFile(const AnsiString FileName,
   }
   else
   {
-    // move case (TTerminal::MoveFiles)
-    TargetName = NewName;
+    TargetName = LocalCanonify(NewName);
   }
   Packet.AddString(TargetName);
   if (FVersion >= 5)
@@ -3517,7 +3565,14 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
             }
 
             FILE_OPERATION_LOOP (FMTLOAD(WRITE_ERROR, (LocalFileName)),
-              BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
+              try
+              {
+                BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
+              }
+              catch(...)
+              {
+                RaiseLastOSError();
+              }
             );
 
             OperationProgress->AddLocalyUsed(BlockBuf.Size);

@@ -71,7 +71,9 @@ void __fastcall TCopyDialog::AdjustControls()
   RemoteDirectoryEdit->Visible = false;
   LocalDirectoryEdit->Visible = false;
   DirectoryEdit->Visible = FLAGCLEAR(Options, coDragDropTemp);
-  DirectoryEdit->Enabled = FLAGCLEAR(Options, coDisableDirectory);
+  EnableControl(DirectoryEdit, FLAGCLEAR(Options, coDisableDirectory));
+  EnableControl(DirectoryLabel, DirectoryEdit->Enabled);
+  EnableControl(LocalDirectoryBrowseButton, DirectoryEdit->Enabled);
   DirectoryLabel->FocusControl = DirectoryEdit;
   CopyParamsFrame->Direction = !ToRemote ? pdToLocal : pdToRemote;
   CopyParamsFrame->Options =

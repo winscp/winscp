@@ -8,7 +8,7 @@
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
 #include <HistoryComboBox.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 
 #include <WinInterface.h>
 

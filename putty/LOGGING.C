@@ -35,6 +35,16 @@ void logtraffic(void *handle, unsigned char c, int logmode)
 }
 
 /*
+ * Flush any open log file.
+ */
+void logflush(void *handle) {
+    struct LogContext *ctx = (struct LogContext *)handle;
+    if (ctx->cfg.logtype > 0)
+	if (ctx->lgfp)
+	    fflush(ctx->lgfp);
+}
+
+/*
  * Log an Event Log entry. Used in SSH packet logging mode; this is
  * also as convenient a place as any to put the output of Event Log
  * entries to stderr when a command-line tool is in verbose mode.
@@ -60,12 +70,14 @@ void log_eventlog(void *handle, const char *event)
 
 /*
  * Log an SSH packet.
+ * If n_blanks != 0, blank or omit some parts.
+ * Set of blanking areas must be in increasing order.
  */
 void log_packet(void *handle, int direction, int type,
-		char *texttype, void *data, int len)
+		char *texttype, void *data, int len,
+		int n_blanks, const struct logblank_t *blanks)
 {
     struct LogContext *ctx = (struct LogContext *)handle;
-    int i, j;
     char dumpdata[80], smalldata[5];
 
     if (ctx->cfg.logtype != LGTYP_PACKETS)
@@ -73,21 +85,81 @@ void log_packet(void *handle, int direction, int type,
     if (!ctx->lgfp)
 	logfopen(ctx);
     if (ctx->lgfp) {
+	int p = 0, b = 0, omitted = 0;
+	int output_pos = 0; /* NZ if pending output in dumpdata */
+
+	/* Packet header. */
 	fprintf(ctx->lgfp, "%s packet type %d / 0x%02x (%s)\r\n",
 		direction == PKT_INCOMING ? "Incoming" : "Outgoing",
 		type, type, texttype);
-	for (i = 0; i < len; i += 16) {
-	    sprintf(dumpdata, "  %08x%*s\r\n", i, 1+3*16+2+16, "");
-	    for (j = 0; j < 16 && i+j < len; j++) {
-		int c = ((unsigned char *)data)[i+j];
-		sprintf(smalldata, "%02x", c);
-		dumpdata[10+2+3*j] = smalldata[0];
-		dumpdata[10+2+3*j+1] = smalldata[1];
-		dumpdata[10+1+3*16+2+j] = (isprint(c) ? c : '.');
+
+	/*
+	 * Output a hex/ASCII dump of the packet body, blanking/omitting
+	 * parts as specified.
+	 */
+	while (p < len) {
+	    int blktype;
+
+	    /* Move to a current entry in the blanking array. */
+	    while ((b < n_blanks) &&
+		   (p >= blanks[b].offset + blanks[b].len))
+		b++;
+	    /* Work out what type of blanking to apply to
+	     * this byte. */
+	    blktype = PKTLOG_EMIT; /* default */
+	    if ((b < n_blanks) &&
+		(p >= blanks[b].offset) &&
+		(p < blanks[b].offset + blanks[b].len))
+		blktype = blanks[b].type;
+
+	    /* If we're about to stop omitting, it's time to say how
+	     * much we omitted. */
+	    if ((blktype != PKTLOG_OMIT) && omitted) {
+		fprintf(ctx->lgfp, "  (%d byte%s omitted)\r\n",
+			omitted, (omitted==1?"":"s"));
+		omitted = 0;
 	    }
-	    strcpy(dumpdata + 10+1+3*16+2+j, "\r\n");
-	    fputs(dumpdata, ctx->lgfp);
+
+	    /* (Re-)initialise dumpdata as necessary
+	     * (start of row, or if we've just stopped omitting) */
+	    if (!output_pos && !omitted)
+		sprintf(dumpdata, "  %08x%*s\r\n", p-(p%16), 1+3*16+2+16, "");
+
+	    /* Deal with the current byte. */
+	    if (blktype == PKTLOG_OMIT) {
+		omitted++;
+	    } else {
+		int c;
+		if (blktype == PKTLOG_BLANK) {
+		    c = 'X';
+		    sprintf(smalldata, "XX");
+		} else {  /* PKTLOG_EMIT */
+		    c = ((unsigned char *)data)[p];
+		    sprintf(smalldata, "%02x", c);
+		}
+		dumpdata[10+2+3*(p%16)] = smalldata[0];
+		dumpdata[10+2+3*(p%16)+1] = smalldata[1];
+		dumpdata[10+1+3*16+2+(p%16)] = (isprint(c) ? c : '.');
+		output_pos = (p%16) + 1;
+	    }
+
+	    p++;
+
+	    /* Flush row if necessary */
+	    if (((p % 16) == 0) || (p == len) || omitted) {
+		if (output_pos) {
+		    strcpy(dumpdata + 10+1+3*16+2+output_pos, "\r\n");
+		    fputs(dumpdata, ctx->lgfp);
+		    output_pos = 0;
+		}
+	    }
+
 	}
+
+	/* Tidy up */
+	if (omitted)
+	    fprintf(ctx->lgfp, "  (%d byte%s omitted)\r\n",
+		    omitted, (omitted==1?"":"s"));
 	fflush(ctx->lgfp);
     }
 }

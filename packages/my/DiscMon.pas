@@ -640,7 +640,7 @@ end;
 
 procedure Register;
 begin
-  RegisterComponents('My', [TDiscMonitor]);
+  RegisterComponents('Martin', [TDiscMonitor]);
 end;
 
 end.

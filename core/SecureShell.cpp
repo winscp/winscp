@@ -37,6 +37,7 @@ __fastcall TSecureShell::TSecureShell()
   FOnPromptUser = NULL;
   FOnShowExtendedException = NULL;
   FOnUpdateStatus = NULL;
+  FOnStdError = NULL;
   FOnClose = NULL;
   FCSCipher = cipWarn; // = not detected yet
   FSCCipher = cipWarn;
@@ -475,12 +476,24 @@ void __fastcall TSecureShell::AddStdError(AnsiString Str)
   {
     Line = FStdErrorTemp.SubString(1, P-1);
     FStdErrorTemp.Delete(1, P);
+    AddStdErrorLine(Line);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::AddStdErrorLine(const AnsiString Str)
+{
+  if (OnStdError == NULL)
+  {
     if (Status == sshAuthenticate)
     {
-      FAuthenticationLog += (FAuthenticationLog.IsEmpty() ? "" : "\n") + Line;
+      FAuthenticationLog += (FAuthenticationLog.IsEmpty() ? "" : "\n") + Str;
     }
-    Log->Add(llStdError, Line);
   }
+  else
+  {
+    OnStdError(this, Str);
+  }
+  Log->Add(llStdError, Str);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ClearStdError()
@@ -600,31 +613,49 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSecureShell::Select(int Sec)
+{
+  CheckConnection();
+
+  struct timeval time;
+  fd_set readfds;
+  FD_ZERO(&readfds);
+  FD_SET(*static_cast<SOCKET*>(FSocket), &readfds);
+
+  time.tv_sec = Sec;
+  time.tv_usec = 0;
+  int R = select(1, &readfds, NULL, NULL, &time);
+
+  if (R < 0)
+  {
+    SSH_FATAL_ERROR(FORMAT("Cannot determine status of socket (%d).", (R)));
+  }
+
+  return (R > 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::PoolForData(unsigned int & Result)
+{
+  if (Select(0))
+  {
+    LogEvent("Data has arrived, closing query to user.");
+    Result = qaRetry;
+  }
+}
+//---------------------------------------------------------------------------
 extern int select_result(WPARAM, LPARAM);
 void __fastcall TSecureShell::WaitForData()
 {
-  int R;
+  bool R;
   do
   {
-    CheckConnection();
-
-    struct timeval time;
-    fd_set readfds;
-    FD_ZERO(&readfds);
-    FD_SET(*static_cast<SOCKET*>(FSocket), &readfds);
-
-    time.tv_sec = FSessionData->Timeout;
-    time.tv_usec = 0;
-    R = select(1, &readfds, NULL, NULL, &time);
-    if (R < 0)
-    {
-      SSH_FATAL_ERROR(
-        Format("Cannot determine status of socket (%d).", ARRAYOFCONST((R))));
-    }
-    else if (R == 0)
+    R = Select(FSessionData->Timeout);
+    if (!R)
     {
       LogEvent("Waiting for data timed out, asking user what to do.");
       TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
+      Params.Timer = 500;
+      Params.TimerEvent = PoolForData;
       if (DoQueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT, (FSessionData->Timeout)),
             qaRetry | qaAbort, &Params) != qaRetry)
       {
@@ -632,7 +663,7 @@ void __fastcall TSecureShell::WaitForData()
       }
     }
   }
-  while (R <= 0);
+  while (!R);
 
   select_result((WPARAM)(*static_cast<SOCKET*>(FSocket)), (LPARAM)FD_READ);
 }

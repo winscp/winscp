@@ -11,13 +11,8 @@
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
     <SPARELIBS value=""/>
-    <PACKAGES value="DragDrop_B5.bpi DriveDir_B5.bpi Moje_B5.bpi
-      adortl.bpi bcb2kaxserver.bpi bcbie.bpi bcbsmp.bpi bdecds.bpi bdertl.bpi
-      cds.bpi dbexpress.bpi dbrtl.bpi dbxcds.bpi dclocx.bpi dsnap.bpi
-      ibxpress.bpi indy.bpi inet.bpi inetdb.bpi inetdbbde.bpi inetdbxpress.bpi
-      nmfast.bpi qrpt.bpi rtl.bpi soaprtl.bpi tee.bpi teedb.bpi teeqr.bpi
-      teeui.bpi vcl.bpi vcldb.bpi vcldbx.bpi vclie.bpi vclx.bpi visualclx.bpi
-      visualdbclx.bpi xmlrtl.bpi"/>
+    <PACKAGES value="bcb2kaxserver.bpi bcbie.bpi bcbsmp.bpi dclocx.bpi
+      rtl.bpi vcl.bpi vclie.bpi vclx.bpi visualclx.bpi"/>
     <PATHCPP value=".;dragext"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
@@ -61,8 +56,8 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=1
 MinorVer=1
-Release=3
-Build=42
+Release=4
+Build=48
 Debug=0
 PreRelease=0
 Special=0
@@ -74,20 +69,19 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Drag&amp;Drop shell extension for WinSCP
-FileVersion=1.1.3.42
+FileVersion=1.1.4.48
 InternalName=dragext
 LegalCopyright=(c) 2004 Martin Prikryl
 LegalTrademarks=
 OriginalFilename=dragext.dll
 ProductName=WinSCP
-ProductVersion=3.6.8.0
+ProductVersion=3.7.0.0
 Comments=
 WWW=http://winscp.sourceforge.net/
 
 [Compiler]
 ShowInfoMsgs=0
 LinkDebugVcl=0
-LinkCGLIB=0
 
 [Linker]
 LibPrefix=

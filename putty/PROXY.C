@@ -859,15 +859,16 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 	 *     0x03 = CHAP
 	 */
 
-	char command[4];
+	char command[5];
 	int len;
 
 	command[0] = 5; /* version 5 */
 	if (p->cfg.proxy_username[0] || p->cfg.proxy_password[0]) {
-	    command[1] = 2;	       /* two methods supported: */
 	    command[2] = 0x00;	       /* no authentication */
-	    command[3] = 0x02;	       /* username/password */
-	    len = 4;
+	    len = 3;
+	    proxy_socks5_offerencryptedauth (command, &len);
+	    command[len++] = 0x02;	       /* username/password */
+	    command[1] = len - 2;	/* Number of methods supported */
 	} else {
 	    command[1] = 1;	       /* one methods supported: */
 	    command[2] = 0x00;	       /* no authentication */
@@ -923,7 +924,7 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 	     *    authentication methods:
 	     *     0x00 = no authentication
 	     *     0x01 = GSSAPI
-	     *     0x02 = username/password 
+	     *     0x02 = username/password
 	     *     0x03 = CHAP
 	     *     0xff = no acceptable methods
 	     */
@@ -986,6 +987,12 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 
 	    bufchain_consume(&p->pending_input_data, 2);
 	    p->state = 2;	       /* now proceed as authenticated */
+	}
+
+	if (p->state == 8) {
+	    int ret;
+	    ret = proxy_socks5_handlechap(p);
+	    if (ret) return ret;
 	}
 
 	if (p->state == 2) {
@@ -1156,10 +1163,9 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
 	}
 
 	if (p->state == 6) {
-	    /* TODO: Handle CHAP authentication */
-	    plug_closing(p->plug, "Proxy error: We don't support CHAP authentication",
-			 PROXY_ERROR_GENERAL, 0);
-	    return 1;
+	    int ret;
+	    ret = proxy_socks5_selectchap(p);
+	    if (ret) return ret;
 	}
 
     }

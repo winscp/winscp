@@ -10,6 +10,8 @@
 #define CSIDL_PROGRAM_FILES             0x0026        // C:\Program Files
 #define CSIDL_PERSONAL                  0x0005        // My Documents
 //---------------------------------------------------------------------------
+#include <FileMasks.H>
+//---------------------------------------------------------------------------
 class TSessionData;
 //---------------------------------------------------------------------------
 bool __fastcall FindFile(AnsiString & Path);
@@ -30,5 +32,23 @@ AnsiString __fastcall UniqTempDir(const AnsiString BaseDir,
   const AnsiString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const AnsiString DirName);
 AnsiString __fastcall TranslateExceptionMessage(const Exception * E);
+//---------------------------------------------------------------------------
+class TLocalCustomCommand : public TFileCustomCommand
+{
+public:
+  TLocalCustomCommand();
+  TLocalCustomCommand(const AnsiString & FileName, const AnsiString & LocalFileName,
+    const AnsiString & FileList);
+
+  bool __fastcall HasLocalFileName(const AnsiString & Command);
+
+protected:
+  virtual int __fastcall PatternLen(int Index, char PatternCmd);
+  virtual bool __fastcall PatternReplacement(int Index, const AnsiString & Pattern,
+    AnsiString & Replacement);
+
+private:
+  AnsiString FLocalFileName;
+};
 //---------------------------------------------------------------------------
 #endif

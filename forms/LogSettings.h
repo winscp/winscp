@@ -10,7 +10,7 @@
 #include <Mask.hpp>
 #include <ComboEdit.hpp>
 #include <UpDownEdit.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 
 #include <WinInterface.h>
 //---------------------------------------------------------------------------

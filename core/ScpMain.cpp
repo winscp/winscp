@@ -65,6 +65,8 @@ TQueryParams::TQueryParams(unsigned int AParams)
   Params = AParams;
   Aliases = NULL;
   AliasesCount = 0;
+  Timer = NULL;
+  TimerEvent = NULL;
 }
 //---------------------------------------------------------------------------
 void Initialize(const AnsiString IniFileName)

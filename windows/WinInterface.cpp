@@ -10,6 +10,7 @@
 #include <ScpMain.h>
 #include <TextsWin.h>
 #include <Interface.h>
+#include <VCLCommon.h>
 
 #include "WinInterface.h"
 #include "CustomWinConfiguration.h"
@@ -21,9 +22,39 @@
 //---------------------------------------------------------------------------
 TMessageParams::TMessageParams(unsigned int AParams)
 {
+  Reset();
   Params = AParams;
+}
+//---------------------------------------------------------------------------
+TMessageParams::TMessageParams(const TQueryParams * AParams)
+{
+  Reset();
+
+  if (AParams != NULL)
+  {
+    Aliases = AParams->Aliases;
+    AliasesCount = AParams->AliasesCount;
+    Timer = AParams->Timer;
+    TimerEvent = AParams->TimerEvent;
+
+    if (FLAGSET(AParams->Params, qpNeverAskAgainCheck))
+    {
+      Params |= mpNeverAskAgainCheck;
+    }
+    if (FLAGSET(AParams->Params, qpAllowContinueOnError))
+    {
+      Params |= mpAllowContinueOnError;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+inline void TMessageParams::Reset()
+{
+  Params = 0;
   Aliases = NULL;
   AliasesCount = 0;
+  Timer = NULL;
+  TimerEvent = NULL;
 }
 //---------------------------------------------------------------------------
 inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
@@ -47,6 +78,45 @@ inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
   Result = false;
 
   return Result;
+}
+//---------------------------------------------------------------------------
+inline int MapResult(int Result, unsigned int Answers)
+{
+  int Answer;
+
+  switch (Result)
+  {
+    #define MAP_RESULT(RESULT) case mr ## RESULT: Answer = qa ## RESULT; break;
+    MAP_RESULT(Abort);
+    MAP_RESULT(All);
+    MAP_RESULT(NoToAll);
+    MAP_RESULT(YesToAll);
+    MAP_RESULT(Yes);
+    MAP_RESULT(No);
+    MAP_RESULT(Retry);
+    #undef MAP_RESULT
+
+    case mrCancel:
+      // mrCancel is returned always when X button is pressed, despite
+      // no Cancel button was on the dialog. Find valid "cancel" answer.
+      Answer = CancelAnswer(Answers);
+      break;
+
+    case mrOk:
+      Answer = qaOK;
+      break;
+
+    case mrIgnore:
+      Answer = (Answers & qaSkip) ? qaSkip : qaIgnore;
+      break;
+
+    default:
+      assert(false);
+      Answer = CancelAnswer(Answers);
+      break;
+  }
+
+  return Answer;
 }
 //---------------------------------------------------------------------------
 TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
@@ -158,6 +228,8 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
 
     Dialog->HelpContext = HelpCtx;
     Dialog->Position = poMainFormCenter;
+    // must be called after setting Position
+    ResetSystemSettings(Dialog);
   }
   catch(...)
   {
@@ -178,35 +250,8 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageP
       GUIConfiguration->ErrorDialogExpanded;
   }
 
-  int Result, Answer;
   FlashOnBackground();
-  Result = Dialog->ShowModal();
-
-  switch (Result) {
-    #define MAP_RESULT(RESULT) case mr ## RESULT: Answer = qa ## RESULT; break;
-    MAP_RESULT(Abort);
-    MAP_RESULT(All);
-    MAP_RESULT(NoToAll);
-    MAP_RESULT(YesToAll);
-    MAP_RESULT(Yes);
-    MAP_RESULT(No);
-    MAP_RESULT(Retry);
-    #undef MAP_RESULT
-
-    case mrCancel:
-      // mrCancel is returned always when X button is pressed, despite
-      // no Cancel button was on the dialog. Find valid "cancel" answer.  
-      Answer = CancelAnswer(Answers);
-      break;
-
-    case mrOk:
-      Answer = qaOK;
-      break;
-
-    case mrIgnore:
-      Answer = (Answers & qaSkip) ? qaSkip : qaIgnore;
-      break;
-  }
+  int Answer = MapResult(Dialog->ShowModal(), Answers);
 
   if ((Params != NULL) && (Params->Params & mpNeverAskAgainCheck))
   {
@@ -230,19 +275,69 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageP
   return Answer;
 }
 //---------------------------------------------------------------------------
+class TMessageTimer : public TTimer
+{
+public:
+  TQueryParamsTimerEvent Event;
+  unsigned int Result;
+  TForm * Dialog;
+
+  __fastcall TMessageTimer(TComponent * AOwner);
+
+protected:
+  void __fastcall DoTimer(TObject * Sender);
+};
+//---------------------------------------------------------------------------
+__fastcall TMessageTimer::TMessageTimer(TComponent * AOwner) : TTimer(AOwner)
+{
+  Result = 0;
+  Event = NULL;
+  OnTimer = DoTimer;
+  Dialog = NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageTimer::DoTimer(TObject * /*Sender*/)
+{
+  if (Event != NULL)
+  {
+    Event(Result);
+    if (Result != 0)
+    {
+      Dialog->ModalResult = mrCancel;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessages,
   TQueryType Type, int Answers, int HelpCtx, const TMessageParams * Params)
 {
   int Result;
-  TForm * Dialog = CreateMessageDialogEx(Message, MoreMessages, Type, Answers,
-    HelpCtx, Params);
+  TForm * Dialog = NULL;
+  TMessageTimer * Timer = NULL;
   try
   {
+    Dialog = CreateMessageDialogEx(Message, MoreMessages, Type, Answers,
+      HelpCtx, Params);
+
+    if ((Params != NULL) && (Params->Timer > 0))
+    {
+      Timer = new TMessageTimer(Application);
+      Timer->Interval = Params->Timer;
+      Timer->Event = Params->TimerEvent;
+      Timer->Dialog = Dialog;
+    }
+
     Result = ExecuteMessageDialog(Dialog, Answers, Params);
+
+    if ((Timer != NULL) && (Timer->Result != 0))
+    {
+      Result = Timer->Result;
+    }
   }
   __finally
   {
     delete Dialog;
+    delete Timer;
   }
   return Result;
 }
@@ -341,3 +436,26 @@ bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+TWinInteractiveCustomCommand::TWinInteractiveCustomCommand(
+  TCustomCommand * ChildCustomCommand, const AnsiString CustomCommandName) :
+  TInteractiveCustomCommand(ChildCustomCommand)
+{
+  FCustomCommandName = StripHotkey(CustomCommandName);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinInteractiveCustomCommand::Prompt(int /*Index*/,
+  const AnsiString & Prompt, AnsiString & Value)
+{
+  AnsiString APrompt = Prompt;
+  if (APrompt.IsEmpty())
+  {
+    APrompt = FMTLOAD(CUSTOM_COMMANDS_PARAM_PROMPT, (FCustomCommandName));
+  }
+  if (!InputDialog(FMTLOAD(CUSTOM_COMMANDS_PARAM_TITLE, (FCustomCommandName)),
+        APrompt, Value))
+  {
+    Abort();
+  }
+}
+//---------------------------------------------------------------------------

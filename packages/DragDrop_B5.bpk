@@ -16,18 +16,9 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib
-      bdecds.lib bdertl.lib cds.lib dbexpress.lib dbrtl.lib dbxcds.lib
-      dclocx.lib dsnap.lib ibxpress.lib indy.lib inet.lib inetdb.lib
-      inetdbbde.lib inetdbxpress.lib nmfast.lib qrpt.lib soaprtl.lib tee.lib
-      teedb.lib teeqr.lib teeui.lib vcldb.lib vcldbx.lib visualdbclx.lib
-      xmlrtl.lib"/>
-    <SPARELIBS value="adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib
-      bdecds.lib bdertl.lib cds.lib dbexpress.lib dbrtl.lib dbxcds.lib
-      dclocx.lib dsnap.lib ibxpress.lib indy.lib inet.lib inetdb.lib
-      inetdbbde.lib inetdbxpress.lib nmfast.lib qrpt.lib rtl.lib soaprtl.lib
-      tee.lib teedb.lib teeqr.lib teeui.lib vcl.lib vcldb.lib vcldbx.lib
-      visualdbclx.lib xmlrtl.lib"/>
+    <LIBRARIES value="bcb2kaxserver.lib bcbie.lib bcbsmp.lib dclocx.lib"/>
+    <SPARELIBS value="bcb2kaxserver.lib bcbie.lib bcbsmp.lib dclocx.lib
+      rtl.lib vcl.lib"/>
     <PACKAGES value="rtl.bpi vcl.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;&quot;dragndrop&quot;"/>
@@ -111,9 +102,8 @@ ProductVersion=1.0.0.0
 Comments=
 
 [Compiler]
-ShowInfoMsgs=1
+ShowInfoMsgs=0
 LinkDebugVcl=0
-LinkCGLIB=0
 
 [Linker]
 LibPrefix=

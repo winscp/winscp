@@ -499,6 +499,7 @@ __published:
 	__property OnDDFileOperationExecuted ;
 	__property OnDDMenuPopup ;
 	__property OnExecFile ;
+	__property OnMatchMask ;
 	__property Graphics::TColor CompressedColor = {read=FCompressedColor, write=SetCompressedColor, default=16711680};
 	__property bool ConfirmDelete = {read=FConfirmDelete, write=FConfirmDelete, default=1};
 	__property bool ConfirmOverwrite = {read=FConfirmOverwrite, write=FConfirmOverwrite, default=1};

@@ -7,7 +7,7 @@
 #include <VCLCommon.h>
 #include "FileSystemInfo.h"
 //---------------------------------------------------------------------
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 void __fastcall DoFileSystemInfoDialog(TTerminal * Terminal)

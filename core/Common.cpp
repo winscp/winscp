@@ -17,6 +17,12 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
   int Line, const AnsiString Message)
 {
   const char * FileName = getenv(TRACEENV);
+  //!!!
+  if (FileName == NULL)
+  {
+    FileName = "C:\\winscptrace.log";
+  }
+  //!!!
   if (FileName != NULL)
   {
     FILE * File = fopen(FileName, "a");
@@ -313,6 +319,26 @@ AnsiString __fastcall HexToStr(const AnsiString Hex)
         Result += static_cast<char>((P1 - 1) * 16 + P2 - 1);
       }
     }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+unsigned int __fastcall HexToInt(const AnsiString Hex)
+{
+  static AnsiString Digits = "0123456789ABCDEF";
+  int Result = 0;
+  int I = 1;
+  while (I <= Hex.Length())
+  {
+    int A = Digits.Pos(Hex[I]);
+    if (A <= 0)
+    {
+      break;
+    }
+
+    Result = (Result * 16) + (A - 1);
+
+    I++;
   }
   return Result;
 }
@@ -666,6 +692,57 @@ void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTi
   }
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format)
+{
+  AnsiString Result = Format;
+  bool AsIs = false;
+
+  int Index = 1;
+  while (Index <= Result.Length())
+  {
+    char F = Result[Index];
+    if ((F == '\'') || (F == '\"'))
+    {
+      AsIs = !AsIs;
+      Index++;
+    }
+    else if (!AsIs && ((F == 'a') || (F == 'A')))
+    {
+      if (Result.SubString(Index, 5).LowerCase() == "am/pm")
+      {
+        Index += 5;
+      }
+      else if (Result.SubString(Index, 3).LowerCase() == "a/p")
+      {
+        Index += 3;
+      }
+      else if (Result.SubString(Index, 4).LowerCase() == "ampm")
+      {
+        Index += 4;
+      }
+      else
+      {
+        Index++;
+      }
+    }
+    else
+    {
+      if (!AsIs && (strchr("dDeEmMhHnNsS", F) != NULL) &&
+          ((Index == Result.Length()) || (Result[Index + 1] != F)))
+      {
+        Result.Insert(F, Index);
+      }
+      
+      while ((Index <= Result.Length()) && (F == Result[Index]))
+      {
+        Index++;
+      }
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin)
 {
   SHFILEOPSTRUCT Data;
@@ -715,4 +792,49 @@ int __fastcall CancelAnswer(int Answers)
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+int __fastcall AbortAnswer(int Answers)
+{
+  int Result;
+  if (FLAGSET(Answers, qaAbort))
+  {
+    Result = qaAbort;
+  }
+  else
+  {
+    Result = CancelAnswer(Answers);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+TPasLibModule * __fastcall FindModule(void * Instance)
+{
+  TPasLibModule * CurModule;
+  CurModule = reinterpret_cast<TPasLibModule*>(LibModuleList);
 
+  while (CurModule)
+  {
+    if (CurModule->Instance == Instance)
+    {
+      break;
+    }
+    else
+    {
+      CurModule = CurModule->Next;
+    }
+  }
+  return CurModule;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength)
+{
+  TPasLibModule * MainModule = FindModule(HInstance);
+  assert(MainModule != NULL);
+
+  AnsiString Result;
+  Result.SetLength(MaxLength);
+  int Length = LoadString(MainModule->ResInstance, Ident, Result.c_str(), MaxLength);
+  Result.SetLength(Length);
+
+  return Result;
+}

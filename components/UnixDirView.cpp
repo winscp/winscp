@@ -528,6 +528,13 @@ void __fastcall TUnixDirView::DoReadDirectory(TObject * /*Sender*/, bool ReloadO
       FDriveView->LoadDirectory();
     }
   }
+  else
+  {
+    // Make sure file list is cleared, to remove all references to invalid
+    // file objects. LoadFiles check for disconnected terminal, so no reloading
+    // actually occures.
+    Load();
+  }
 #endif
 }
 //---------------------------------------------------------------------------

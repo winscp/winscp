@@ -14,7 +14,7 @@
 #include <vcl\ExtCtrls.hpp>
 #include <Mask.hpp>
 #include <ComboEdit.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 
 #include <FileOperationProgress.h>
 #include <Terminal.h>
@@ -28,7 +28,7 @@ __published:
   TButton *OKBtn;
   TButton *CancelBtn;
   TIEComboBox *RemoteDirectoryEdit;
-  TDirectoryEdit *LocalDirectoryEdit;
+  TIEComboBox *LocalDirectoryEdit;
   TLabel *EditLabel;
   TXPGroupBox *BookmarksGroup;
   TListBox *BookmarksList;
@@ -37,6 +37,8 @@ __published:
   TButton *DownBookmarkButton;
   TButton *UpBookmarkButton;
   TLabel *Label1;
+  TButton *LocalDirectoryBrowseButton;
+  TButton *SwitchButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);
@@ -53,10 +55,10 @@ __published:
   void __fastcall FormShow(TObject *Sender);
   void __fastcall BookmarksListKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
-  void __fastcall RemoteDirectoryEditKeyDown(TObject *Sender, WORD &Key,
+  void __fastcall DirectoryEditKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
-  void __fastcall LocalDirectoryEditKeyDown(TObject *Sender, WORD &Key,
-          TShiftState Shift);
+  void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
+  void __fastcall SwitchButtonClick(TObject *Sender);
 
 public:
   __fastcall TOpenDirectoryDialog(TComponent* AOwner);
@@ -69,6 +71,7 @@ public:
   __property TStrings * Directories  = { read=GetDirectories, write=SetDirectories };
   __property TOpenDirectoryMode Mode = { read = FMode, write = SetMode };
   __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
+  __property bool AllowSwitch = { read = FAllowSwitch, write = FAllowSwitch };
 
 protected:
   bool __fastcall AllowBookmarkDrag(int X, int Y);
@@ -84,6 +87,7 @@ private:
   int FBookmarkDragSource, FBookmarkDragDest;
   TOpenDirectoryMode FMode;
   TBookmarkList * FBookmarkList;
+  bool FAllowSwitch;
 
   void __fastcall SetDirectory(AnsiString value);
   AnsiString __fastcall GetDirectory();

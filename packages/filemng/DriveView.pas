@@ -152,6 +152,7 @@ type
     FRenameNode: TTreeNode;
     FLastRenameName: string;
     FInternalWindowHandle: HWND;
+    FPrevSelected: TTreeNode;
 
     FDesktop: IShellFolder;
     FWorkPlace: IShellFolder;
@@ -633,6 +634,7 @@ begin
   FForceRename := False;
   FLastRenameName := '';
   FRenameNode := nil;
+  FPrevSelected := nil;
 
   FConfirmOverwrite := True;
   FLastPathCut := '';
@@ -976,6 +978,9 @@ procedure TDriveView.Delete(Node: TTreeNode);
 var
   NodeData: TNodeData;
 begin
+  if Node = FPrevSelected then
+    FPrevSelected := nil;
+
   NodeData := nil;
 
   if Assigned(Node) and Assigned(Node.Data) then
@@ -1121,6 +1126,10 @@ begin
         end;
       end;
     end;
+
+    if (not Assigned(FPrevSelected)) or (not FPrevSelected.HasAsParent(Node)) then
+      Node.Expand(false);
+    FPrevSelected := Node;
   end;
 
   inherited;

@@ -8,6 +8,7 @@
 // When adding new options, mind TCopyParamType::GetLogStr()
 enum TOperationSide { osLocal, osRemote, osCurrent };
 enum TFileNameCase { ncNoChange, ncUpperCase, ncLowerCase, ncFirstUpperCase, ncLowerCaseShort };
+// TScript::OptionProc depend on the order
 enum TTransferMode { tmBinary, tmAscii, tmAutomatic };
 enum TResumeSupport { rsOn, rsSmart, rsOff };
 //---------------------------------------------------------------------------

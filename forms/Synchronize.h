@@ -6,7 +6,7 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 #include <HistoryComboBox.hpp>
 
 #include <WinInterface.h>

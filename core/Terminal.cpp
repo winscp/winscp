@@ -56,6 +56,7 @@ __fastcall TTerminal::TTerminal(): TSecureShell()
   FDirectoryChangesCache = NULL;
   FFSProtocol = cfsUnknown;
   FCommandSession = NULL;
+  FAutoReadDirectory = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -236,16 +237,22 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
     if (!FInTransaction)
     {
       ReadCurrentDirectory();
-      ReadDirectory(false);
+      if (AutoReadDirectory)
+      {
+        ReadDirectory(false);
+      }
     }
       else
     {
       FReadCurrentDirectoryPending = true;
-      FReadDirectoryPending = true;
+      if (AutoReadDirectory)
+      {
+        FReadDirectoryPending = true;
+      }
     }
   }
     else
-  if (ModifiesFiles)
+  if (ModifiesFiles && AutoReadDirectory)
   {
     if (!FInTransaction) ReadDirectory(true);
       else FReadDirectoryPending = true;
@@ -515,8 +522,6 @@ void __fastcall TTerminal::EndTransaction()
 
   if (FCommandSession != NULL)
   {
-    // so far we do not require directory content to be loaded
-    FCommandSession->FReadDirectoryPending = false;
     FCommandSession->EndTransaction();
   }
 }
@@ -760,7 +765,7 @@ void __fastcall TTerminal::DoStartup()
 
     // Make sure that directory would be loaded at last
     FReadCurrentDirectoryPending = true;
-    FReadDirectoryPending = true;
+    FReadDirectoryPending = AutoReadDirectory;
 
     FFileSystem->DoStartup();
 
@@ -1013,7 +1018,7 @@ void __fastcall TTerminal::ReadFile(const AnsiString FileName,
   {
     if (File) delete File;
     File = NULL;
-    CommandError(&E, FMTLOAD(LIST_DIR_ERROR, (FileName)));
+    CommandError(&E, FMTLOAD(CANT_GET_ATTRS, (FileName)));
   }
 }
 //---------------------------------------------------------------------------
@@ -1252,10 +1257,35 @@ void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
 void __fastcall TTerminal::CustomCommandOnFiles(AnsiString Command,
   int Params, TStrings * Files)
 {
-  TCustomCommandParams AParams;
-  AParams.Command = Command;
-  AParams.Params = Params;
-  ProcessFiles(Files, foCustomCommand, CustomCommandOnFile, &AParams);
+  if (!TRemoteCustomCommand().IsFileListCommand(Command))
+  {
+    TCustomCommandParams AParams;
+    AParams.Command = Command;
+    AParams.Params = Params;
+    ProcessFiles(Files, foCustomCommand, CustomCommandOnFile, &AParams);
+  }
+  else
+  {
+    AnsiString FileList;
+    for (int i = 0; i < Files->Count; i++)
+    {
+      TRemoteFile * File = static_cast<TRemoteFile *>(Files->Objects[i]);
+      bool Dir = File->IsDirectory && !File->IsSymLink;
+
+      if (!Dir || FLAGSET(Params, ccApplyToDirectories))
+      {
+        if (!FileList.IsEmpty())
+        {
+          FileList += " ";
+        }
+
+        FileList += "\"" + Files->Strings[i] + "\"";
+      }
+    }
+    
+    AnsiString Cmd = TRemoteCustomCommand("", FileList).Complete(Command, true);
+    AnyCommand(Cmd);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ChangeFileProperties(AnsiString FileName,
@@ -1622,7 +1652,10 @@ void __fastcall TTerminal::ChangeDirectory(const AnsiString Directory)
   {
     AnsiString CachedDirectory;
     assert(!SessionData->CacheDirectoryChanges || (FDirectoryChangesCache != NULL));
-    if (SessionData->CacheDirectoryChanges &&
+    // never use directory change cache during startup, this ensures, we never
+    // end-up initially in non-existing directory 
+    if ((Status >= sshReady) &&
+        SessionData->CacheDirectoryChanges &&
         FDirectoryChangesCache->GetDirectoryChange(PeekCurrentDirectory(),
           Directory, CachedDirectory))
     {
@@ -1717,6 +1750,8 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
     try
     {
       FCommandSession = new TSecondaryTerminal(this);
+
+      FCommandSession->AutoReadDirectory = false;
 
       FCommandSession->Configuration = Configuration;
       FCommandSession->SessionData = SessionData;

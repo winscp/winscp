@@ -193,6 +193,7 @@ void __fastcall TBookmarks::ModifyAll(bool Modify)
 //---------------------------------------------------------------------------
 TBookmarkList * __fastcall TBookmarks::GetBookmarks(AnsiString Index)
 {
+  Index = SimpleMungeStr(Index);
   int I = FBookmarkLists->IndexOf(Index);
   if (I >= 0)
   {
@@ -206,6 +207,7 @@ TBookmarkList * __fastcall TBookmarks::GetBookmarks(AnsiString Index)
 //---------------------------------------------------------------------------
 void __fastcall TBookmarks::SetBookmarks(AnsiString Index, TBookmarkList * value)
 {
+  Index = SimpleMungeStr(Index);
   int I = FBookmarkLists->IndexOf(Index);
   if (I >= 0)
   {
@@ -278,26 +280,24 @@ void __fastcall TBookmarkList::InsertBefore(TBookmark * BeforeBookmark, TBookmar
   Insert(I, Bookmark);
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmarkList::MoveBefore(TBookmark * BeforeBookmark, TBookmark * Bookmark)
+void __fastcall TBookmarkList::MoveTo(TBookmark * ToBookmark,
+  TBookmark * Bookmark, bool Before)
 {
-  assert(BeforeBookmark);
-  int NewIndex = FBookmarks->IndexOf(BeforeBookmark->Key);
-  assert(Bookmark);
+  assert(ToBookmark != NULL);
+  int NewIndex = FBookmarks->IndexOf(ToBookmark->Key);
+  assert(Bookmark != NULL);
   int OldIndex = FBookmarks->IndexOf(Bookmark->Key);
-  if (NewIndex > OldIndex)
+  if (Before && (NewIndex > OldIndex))
   {
+    // otherwise item is moved after the item in the target index
     NewIndex--;
+  }
+  else if (!Before && (NewIndex < OldIndex))
+  {
+    NewIndex++;
   }
   FModified = true;
   FBookmarks->Move(OldIndex, NewIndex);
-}
-//---------------------------------------------------------------------------
-void __fastcall TBookmarkList::MoveAtEnd(TBookmark * Bookmark)
-{
-  assert(Bookmark);
-  int OldIndex = FBookmarks->IndexOf(Bookmark->Key);
-  FModified = true;
-  FBookmarks->Move(OldIndex, Count - 1);
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::Insert(int Index, TBookmark * Bookmark)

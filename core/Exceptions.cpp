@@ -45,13 +45,25 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
       FMoreMessages->Assign(ExtE->MoreMessages);
     }
 
+    AnsiString Msg;
     if (dynamic_cast<EAccessViolation*>(E) != NULL)
     {
-      FMoreMessages->Insert(0, LoadStr(ACCESS_VIOLATION_ERROR));
+      Msg = LoadStr(ACCESS_VIOLATION_ERROR);
     }
     else if (!E->Message.IsEmpty() && (dynamic_cast<EAbort *>(E) == NULL))
     {
-      FMoreMessages->Insert(0, E->Message);
+      Msg = E->Message;
+    }
+
+    // new exception does not have own message, this is in fact duplication of
+    // the exception data, but the exception class may being changed 
+    if (Message.IsEmpty())
+    {
+      Message = Msg;
+    }
+    else
+    {
+      FMoreMessages->Insert(0, Msg);
     }
   }
 }

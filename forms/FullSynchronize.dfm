@@ -3,7 +3,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   Top = 185
   BorderStyle = bsDialog
   Caption = 'Synchronize'
-  ClientHeight = 265
+  ClientHeight = 299
   ClientWidth = 396
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,7 +17,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   OnShow = FormShow
   DesignSize = (
     396
-    265)
+    299)
   PixelsPerInch = 96
   TextHeight = 13
   object DirectoriesGroup: TXPGroupBox
@@ -82,14 +82,14 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Top = 33
       Width = 75
       Height = 25
-      Caption = 'B&rowse...'
+      Caption = '&Browse...'
       TabOrder = 1
       OnClick = LocalDirectoryBrowseButtonClick
     end
   end
   object OkButton: TButton
     Left = 228
-    Top = 232
+    Top = 266
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -100,7 +100,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object CancelButton: TButton
     Left = 312
-    Top = 232
+    Top = 266
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -111,12 +111,75 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object OptionsGroup: TXPGroupBox
     Left = 8
-    Top = 130
+    Top = 184
     Width = 380
-    Height = 95
+    Height = 73
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Synchronize options'
     TabOrder = 1
+    object SynchronizeDeleteCheck: TCheckBox
+      Left = 11
+      Top = 20
+      Width = 97
+      Height = 17
+      Caption = '&Delete files'
+      TabOrder = 0
+      OnClick = ControlChange
+    end
+    object SynchronizeNoConfirmationCheck: TCheckBox
+      Left = 235
+      Top = 20
+      Width = 135
+      Height = 17
+      Caption = '&No confirmations'
+      TabOrder = 2
+      OnClick = ControlChange
+    end
+    object SaveSettingsCheck: TCheckBox
+      Left = 123
+      Top = 44
+      Width = 249
+      Height = 17
+      Caption = 'Use &same options next time'
+      TabOrder = 4
+    end
+    object SynchronizeExistingOnlyCheck: TCheckBox
+      Left = 123
+      Top = 20
+      Width = 107
+      Height = 17
+      Caption = '&Existing files only'
+      TabOrder = 1
+      OnClick = ControlChange
+    end
+    object SynchronizePreviewChangesCheck: TCheckBox
+      Left = 11
+      Top = 44
+      Width = 112
+      Height = 17
+      Caption = 'Pre&view changes'
+      TabOrder = 3
+      OnClick = ControlChange
+    end
+  end
+  object TransferPreferencesButton: TButton
+    Left = 8
+    Top = 266
+    Width = 137
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'Transfer &preferences...'
+    TabOrder = 2
+    OnClick = TransferPreferencesButtonClick
+  end
+  object DirectionGroup: TXPGroupBox
+    Left = 8
+    Top = 130
+    Width = 380
+    Height = 49
+    Anchors = [akLeft, akTop, akRight]
+    Caption = 'Direction'
+    TabOrder = 5
     object SynchronizeBothButton: TRadioButton
       Left = 11
       Top = 20
@@ -144,59 +207,5 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       TabOrder = 2
       OnClick = ControlChange
     end
-    object SynchronizeDeleteCheck: TCheckBox
-      Left = 11
-      Top = 44
-      Width = 97
-      Height = 17
-      Caption = '&Delete files'
-      TabOrder = 3
-      OnClick = ControlChange
-    end
-    object SynchronizeNoConfirmationCheck: TCheckBox
-      Left = 235
-      Top = 44
-      Width = 135
-      Height = 17
-      Caption = '&No confirmations'
-      TabOrder = 5
-      OnClick = ControlChange
-    end
-    object SaveSettingsCheck: TCheckBox
-      Left = 123
-      Top = 68
-      Width = 249
-      Height = 17
-      Caption = 'Use &same options next time'
-      TabOrder = 7
-    end
-    object SynchronizeExistingOnlyCheck: TCheckBox
-      Left = 123
-      Top = 44
-      Width = 107
-      Height = 17
-      Caption = '&Existing files only'
-      TabOrder = 4
-      OnClick = ControlChange
-    end
-    object SynchronizePreviewChangesCheck: TCheckBox
-      Left = 11
-      Top = 68
-      Width = 112
-      Height = 17
-      Caption = 'Pre&view changes'
-      TabOrder = 6
-      OnClick = ControlChange
-    end
-  end
-  object TransferPreferencesButton: TButton
-    Left = 8
-    Top = 232
-    Width = 137
-    Height = 25
-    Anchors = [akRight, akBottom]
-    Caption = 'Transfer &preferences...'
-    TabOrder = 2
-    OnClick = TransferPreferencesButtonClick
   end
 end

@@ -7,10 +7,11 @@
     <OBJFILES value="forms\InputDlg.obj forms\MessageDlg.obj windows\VCLCommon.obj 
       forms\About.obj forms\Cleanup.obj forms\ComboInput.obj 
       forms\Console.obj forms\Copy.obj forms\CopyParams.obj 
-      forms\Editor.obj forms\FileSystemInfo.obj forms\FullSynchronize.obj 
-      forms\GeneralSettings.obj forms\Glyphs.obj forms\ImportSessions.obj 
-      forms\Licence.obj forms\LocationProfiles.obj forms\Log.obj 
-      forms\Login.obj forms\LogSettings.obj forms\OpenDirectory.obj 
+      forms\CustomCommand.obj forms\Editor.obj forms\FileSystemInfo.obj 
+      forms\FullSynchronize.obj forms\GeneralSettings.obj forms\Glyphs.obj 
+      forms\ImportSessions.obj forms\Licence.obj 
+      forms\LocationProfiles.obj forms\Log.obj forms\Login.obj 
+      forms\LogSettings.obj forms\OpenDirectory.obj 
       forms\OperationStatus.obj forms\Password.obj forms\Preferences.obj 
       forms\Progress.obj forms\Properties.obj forms\Rights.obj 
       forms\RightsExt.obj forms\SelectMask.obj forms\Symlink.obj 
@@ -18,25 +19,21 @@
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Cleanup.dfm forms\ComboInput.dfm 
-      forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm forms\Editor.dfm 
-      forms\FileSystemInfo.dfm forms\FullSynchronize.dfm 
-      forms\GeneralSettings.dfm forms\Glyphs.dfm forms\ImportSessions.dfm 
-      forms\Licence.dfm forms\LocationProfiles.dfm forms\Log.dfm forms\Login.dfm 
-      forms\LogSettings.dfm forms\OpenDirectory.dfm forms\OperationStatus.dfm 
-      forms\Password.dfm forms\Preferences.dfm forms\Progress.dfm 
-      forms\Properties.dfm forms\Rights.dfm forms\RightsExt.dfm 
-      forms\SelectMask.dfm forms\Symlink.dfm forms\Synchronize.dfm 
-      forms\SynchronizeProgress.dfm"/>
+      forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm 
+      forms\CustomCommand.dfm forms\Editor.dfm forms\FileSystemInfo.dfm 
+      forms\FullSynchronize.dfm forms\GeneralSettings.dfm forms\Glyphs.dfm 
+      forms\ImportSessions.dfm forms\Licence.dfm forms\LocationProfiles.dfm 
+      forms\Log.dfm forms\Login.dfm forms\LogSettings.dfm 
+      forms\OpenDirectory.dfm forms\OperationStatus.dfm forms\Password.dfm 
+      forms\Preferences.dfm forms\Progress.dfm forms\Properties.dfm 
+      forms\Rights.dfm forms\RightsExt.dfm forms\SelectMask.dfm 
+      forms\Symlink.dfm forms\Synchronize.dfm forms\SynchronizeProgress.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
     <SPARELIBS value=""/>
     <PACKAGES value="DragDrop_B5.bpi DriveDir_B5.bpi Moje_B5.bpi
-      adortl.bpi bcb2kaxserver.bpi bcbie.bpi bcbsmp.bpi bdecds.bpi bdertl.bpi
-      cds.bpi dbexpress.bpi dbrtl.bpi dbxcds.bpi dclocx.bpi dsnap.bpi
-      ibxpress.bpi indy.bpi inet.bpi inetdb.bpi inetdbbde.bpi inetdbxpress.bpi
-      nmfast.bpi qrpt.bpi rtl.bpi soaprtl.bpi tee.bpi teedb.bpi teeqr.bpi
-      teeui.bpi vcl.bpi vcldb.bpi vcldbx.bpi vclie.bpi vclx.bpi visualclx.bpi
-      visualdbclx.bpi xmlrtl.bpi"/>
+      bcb2kaxserver.bpi bcbie.bpi bcbsmp.bpi dclocx.bpi rtl.bpi vcl.bpi
+      vclie.bpi vclx.bpi visualclx.bpi"/>
     <PATHCPP value=".;forms;windows"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
@@ -56,7 +53,7 @@
     <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 
       -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
-    <AFLAGS value="/mx /w2 /zn"/>
+    <AFLAGS value="/mx /w2 /zi"/>
     <LFLAGS value="/P128"/>
     <OTHERFILES value=""/>
   </OPTIONS>
@@ -76,6 +73,7 @@
       <FILE FILENAME="forms\Console.cpp" FORMNAME="ConsoleDialog" UNITNAME="Console" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Copy.cpp" FORMNAME="CopyDialog" UNITNAME="Copy" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CopyParams.cpp" FORMNAME="CopyParamsFrame" UNITNAME="CopyParams" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\CustomCommand.cpp" FORMNAME="CustomCommandDialog" UNITNAME="CustomCommand" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Editor.cpp" FORMNAME="EditorForm" UNITNAME="Editor" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FileSystemInfo.cpp" FORMNAME="FileSystemInfoDialog" UNITNAME="FileSystemInfo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FullSynchronize.cpp" FORMNAME="FullSynchronizeDialog" UNITNAME="FullSynchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -134,7 +132,5 @@ Comments=
 [Compiler]
 ShowInfoMsgs=0
 LinkDebugVcl=0
-LinkCGLIB=0
-
   </IDEOPTIONS>
 </PROJECT>

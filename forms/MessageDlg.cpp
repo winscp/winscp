@@ -43,6 +43,7 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
   {
     Font->Handle = CreateFontIndirect(&NonClientMetrics.lfMessageFont);
   }
+  UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
@@ -352,8 +353,6 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
       ButtonTop, ButtonWidth, ButtonHeight);
     X += ButtonWidth + ButtonSpacing;
   }
-
-  UseSystemSettings(Result);
 
   return Result;
 }

@@ -38,6 +38,8 @@ struct TQueryButtonAlias
   AnsiString Alias;
 };
 
+typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Result);
+
 struct TQueryParams
 {
   TQueryParams(unsigned int AParams = 0);
@@ -45,6 +47,8 @@ struct TQueryParams
   const TQueryButtonAlias * Aliases;
   unsigned int AliasesCount;
   unsigned int Params;
+  unsigned int Timer;
+  TQueryParamsTimerEvent TimerEvent;
 };
 
 enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };

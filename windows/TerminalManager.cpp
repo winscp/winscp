@@ -518,27 +518,12 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * /*Sender*/,
   const AnsiString Query, TStrings * MoreMessages, int Answers,
   const TQueryParams * Params, int & Answer, TQueryType Type)
 {
-  TMessageParams MessageParams;
+  TMessageParams MessageParams(Params);
   AnsiString AQuery = Query;
 
-  if (Params != NULL)
+  if ((Params != NULL) && FLAGSET(Params->Params, qpFatalAbort))
   {
-    if (Params->Params & qpFatalAbort)
-    {
-      AQuery = FMTLOAD(WARN_FATAL_ERROR, (AQuery));
-    }
-
-    MessageParams.Aliases = Params->Aliases;
-    MessageParams.AliasesCount = Params->AliasesCount;
-
-    if (Params->Params & qpNeverAskAgainCheck)
-    {
-      MessageParams.Params |= mpNeverAskAgainCheck;
-    }
-    if (Params->Params & qpAllowContinueOnError)
-    {
-      MessageParams.Params |= mpAllowContinueOnError;
-    }
+    AQuery = FMTLOAD(WARN_FATAL_ERROR, (AQuery));
   }
 
   if (ScpExplorer)

@@ -1,5 +1,6 @@
 #define MainFileSource "..\WinSCP3.exe"
 #define ShellExtFileSource "..\DragExt.dll"
+#define ConsoleFileSource "..\Console.com"
 #define ParentRegistryKey "Software\Martin Prikryl"
 #define RegistryKey ParentRegistryKey+"\WinSCP 2"
 #define PuttySourceDir "c:\Program Files\PuTTY"
@@ -145,16 +146,16 @@ Filename: "{app}\PuTTY\PuTTY.url"; Section: "InternetShortcut"; \
   Components: pageant puttygen
 
 [Icons]
-; This is created always (unless user checks Don't create a Start menu folder, 
+; This is created always (unless user checks Don't create a Start menu folder,
 ; Setup\AllowNoIcons=yes)
 Name: "{group}\WinSCP"; Filename: "{app}\WinSCP3.exe"; Components: main
 Name: "{group}\{cm:WebSite}"; Filename: "{app}\WinSCP.url"; Components: main
 Name: "{group}\{cm:SupportForum}"; \
   Filename: "{app}\{cm:SupportForum}.url"; Components: main
-; This is created when pageant/puttygen component is selected (unless user 
-; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes). Flag 
+; This is created when pageant/puttygen component is selected (unless user
+; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes). Flag
 ; createonlyiffileexists is used instead of "Components: xxx",
-; because it would force creating the icons even when user doesn't want to 
+; because it would force creating the icons even when user doesn't want to
 ; create start menu folder.
 Name: "{group}\{cm:RSAKeyTools}\PuTTYgen"; \
   Filename: "{app}\PuTTY\puttygen.exe"; Components: puttygen
@@ -205,6 +206,8 @@ Type: files; Name: "{app}\WinSCP3.ini"
 [Files]
 Source: "{#MainFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
+Source: "{#ConsoleFileSource}"; DestName: "WinSCP3.com"; DestDir: "{app}"; \
+  Components: main; Flags: ignoreversion
 Source: "licence"; DestName: "licence"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
@@ -238,7 +241,7 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; 
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "DDExtEnabled"; ValueData: 1; Components: shellext; \
   Flags: uninsdeletevalue
-; This will remove url handler on uninstall 
+; This will remove url handler on uninstall
 ; (when urlhandler task was selected when installing)
 Root: HKCR; Subkey: "SFTP"; Flags: dontcreatekey uninsdeletekey; \
   Tasks: urlhandler
@@ -337,13 +340,13 @@ begin
      (BackClicked and (CurPage = wpReady)) then
   begin
     ScriptDlgPageOpen();
-    
+
     ScriptDlgPageSetCaption(ExpandConstant('{cm:UserSettingsPrompt}'));
     //ScriptDlgPageSetCaption(ExpandConstant('{cm:UserSettingsTitle}'));
     ScriptDlgPageSetSubCaption1(ExpandConstant('{cm:UserSettingsPrompt}'));
 
     OutputMsg(ExpandConstant('{cm:UserInterfaceStyle}'), False);
-  
+
     Caption := TLabel.Create(WizardForm.ScriptDlgPanel);
     Caption.Caption := 'User interface style';
     Caption.Width := WizardForm.ScriptDlgPanel.Width;
@@ -384,7 +387,7 @@ begin
     Caption2.Width := WizardForm.ScriptDlgPanel.Width - Caption.Left;
     Caption2.Top := ExplorerRadioButton.Top + ExplorerRadioButton.Height + 6;
     Caption2.Parent := WizardForm.ScriptDlgPanel;
-    
+
     Caption := TLabel.Create(WizardForm.ScriptDlgPanel);
     Caption.Caption := ExpandConstant('{cm:AdditionalOptions}');
     Caption.Width := WizardForm.ScriptDlgPanel.Width;

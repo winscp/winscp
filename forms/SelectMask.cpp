@@ -14,7 +14,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,

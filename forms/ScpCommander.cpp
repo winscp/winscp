@@ -832,35 +832,47 @@ void __fastcall TScpCommanderForm::AddEditLink()
 void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
   TOperationSide Side)
 {
-  if (WinConfiguration->UseLocationProfiles)
+  bool UseLocationProfiles;
+  do
   {
-    TStrings * RemoteDirectories = CreateVisitedDirectories(osRemote);
-    try
+    UseLocationProfiles = WinConfiguration->UseLocationProfiles;
+    if (UseLocationProfiles)
     {
-      AnsiString Local = LocalDirView->PathName;
-      AnsiString Remote = RemoteDirView->PathName;
-
-      if (LocationProfilesDialog(Mode, Side, Local, Remote, RemoteDirectories, Terminal))
+      TStrings * LocalDirectories = NULL;
+      TStrings * RemoteDirectories = NULL;
+      try
       {
-        if (!Local.IsEmpty())
+        LocalDirectories = CreateVisitedDirectories(osLocal);
+        RemoteDirectories = CreateVisitedDirectories(osRemote);
+
+        AnsiString Local = LocalDirView->PathName;
+        AnsiString Remote = RemoteDirView->PathName;
+
+        if (LocationProfilesDialog(Mode, Side, Local, Remote, LocalDirectories,
+              RemoteDirectories, Terminal))
         {
-          LocalDirView->Path = Local;
-        }
-        if (!Remote.IsEmpty())
-        {
-          RemoteDirView->Path = Remote;
+          if (!Local.IsEmpty())
+          {
+            LocalDirView->Path = Local;
+          }
+          if (!Remote.IsEmpty())
+          {
+            RemoteDirView->Path = Remote;
+          }
         }
       }
+      __finally
+      {
+        delete LocalDirectories;
+        delete RemoteDirectories;
+      }
     }
-    __finally
+    else
     {
-      delete RemoteDirectories;
+      TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
     }
   }
-  else
-  {
-    TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
-  }
+  while (UseLocationProfiles != WinConfiguration->UseLocationProfiles);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewDDTargetHasDropHandler(

@@ -12,7 +12,7 @@
 #include <vcl\Controls.hpp>
 #include <vcl\Buttons.hpp>
 #include <vcl\ExtCtrls.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 //----------------------------------------------------------------------------
 class TTerminal;
 //----------------------------------------------------------------------------

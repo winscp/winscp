@@ -13,7 +13,7 @@
 #include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

@@ -16,7 +16,7 @@
 #include <Comboedit.hpp>
 #include <Mask.hpp>
 #include <ComboEdit.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 
 #include "CopyParams.h"
 #include "GeneralSettings.h"
@@ -91,19 +91,12 @@ __published:
   TFilenameEdit *PuttyPathEdit;
   TTabSheet *CustomCommandsSheet;
   TXPGroupBox *CustomCommandsGroup;
-  TLabel *LocalDirectoryLabel;
-  TLabel *RemoteDirectoryLabel;
-  TLabel *CustomCommandsPatternsLabel;
-  TEdit *CustomCommandDescEdit;
-  TEdit *CustomCommandEdit;
   TListView *CustomCommandsView;
   TButton *AddCommandButton;
   TButton *RemoveCommandButton;
   TButton *UpCommandButton;
   TButton *DownCommandButton;
-  TButton *SaveCommandButton;
-  TCheckBox *CustomCommandApplyToDirectoriesCheck;
-  TCheckBox *CustomCommandRecursiveCheck;
+  TButton *EditCommandButton;
   TPanel *LeftPanel;
   TTreeView *NavigationTree;
   TCheckBox *DeleteToRecycleBinCheck;
@@ -174,8 +167,7 @@ __published:
           TListItem *Item, bool Selected);
   void __fastcall CustomCommandsViewKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
-  void __fastcall AddCommandButtonClick(TObject *Sender);
-  void __fastcall SaveCommandButtonClick(TObject *Sender);
+  void __fastcall AddEditCommandButtonClick(TObject *Sender);
   void __fastcall RemoveCommandButtonClick(TObject *Sender);
   void __fastcall UpDownCommandButtonClick(TObject *Sender);
   void __fastcall CustomCommandsViewStartDrag(TObject *Sender,
@@ -192,6 +184,7 @@ __published:
   void __fastcall DDExtLabelClick(TObject *Sender);
   void __fastcall PathEditsKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
+  void __fastcall CustomCommandsViewDblClick(TObject *Sender);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
@@ -213,8 +206,6 @@ protected:
   void __fastcall SaveConfiguration();
   void __fastcall UpdateControls();
   void __fastcall UpdateCustomCommandsView();
-  AnsiString __fastcall CustomCommandString(int Index = -1);
-  int __fastcall CustomCommandParams();
   void __fastcall CustomCommandMove(int Source, int Dest);
   bool __fastcall AllowCustomCommandsDrag(int X, int Y);
   void __fastcall PrepareNavigationTree(TTreeView * Tree);

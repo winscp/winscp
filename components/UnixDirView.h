@@ -118,6 +118,7 @@ __published:
   __property OnStartLoading;
   __property OnLoaded;
   __property OnExecFile;
+  __property OnMatchMask;
   __property OnDDDragEnter;
   __property OnDDDragLeave;
   __property OnDDDragOver;

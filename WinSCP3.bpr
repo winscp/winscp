@@ -7,36 +7,22 @@
     <OBJFILES value="WinSCP3.obj forms\CustomScpExplorer.obj 
       windows\CustomWinConfiguration.obj windows\EditorManager.obj 
       windows\GUIConfiguration.obj windows\GUITools.obj forms\NonVisual.obj 
-      windows\ProgParams.obj windows\QueueController.obj 
-      forms\ScpCommander.obj forms\ScpExplorer.obj 
-      windows\SynchronizeController.obj windows\TerminalManager.obj 
-      windows\Tools.obj windows\UserInterface.obj windows\WinConfiguration.obj 
-      windows\WinInterface.obj windows\WinMain.obj"/>
+      windows\ConsoleRunner.obj windows\ProgParams.obj 
+      windows\QueueController.obj forms\ScpCommander.obj 
+      forms\ScpExplorer.obj windows\SynchronizeController.obj 
+      windows\TerminalManager.obj windows\Tools.obj windows\UserInterface.obj 
+      windows\WinConfiguration.obj windows\WinInterface.obj windows\WinMain.obj"/>
     <RESFILES value="windows\Windows.res WinSCP3.res"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) forms\CustomScpExplorer.dfm forms\NonVisual.dfm 
       forms\ScpCommander.dfm forms\ScpExplorer.dfm"/>
     <LIBFILES value="lib\Putty.lib lib\RScpComp.lib lib\ScpCore.lib lib\ScpForms.lib"/>
     <LIBRARIES value="DragDrop_B5.lib DriveDir_B5.lib Moje_B5.lib
-      adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib bdecds.lib bdertl.lib
-      cds.lib dbexpress.lib dbrtl.lib dbxcds.lib dclocx.lib dsnap.lib
-      ibxpress.lib indy.lib inet.lib inetdb.lib inetdbbde.lib inetdbxpress.lib
-      nmfast.lib qrpt.lib rtl.lib soaprtl.lib tee.lib teedb.lib teeqr.lib
-      teeui.lib vcl.lib vcldb.lib vcldbx.lib vclx.lib visualdbclx.lib
-      xmlrtl.lib"/>
+      bcb2kaxserver.lib bcbie.lib bcbsmp.lib dclocx.lib rtl.lib vcl.lib vclx.lib"/>
     <SPARELIBS value="DragDrop_B5.lib DriveDir_B5.lib Moje_B5.lib
-      adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib bdecds.lib bdertl.lib
-      cds.lib dbexpress.lib dbrtl.lib dbxcds.lib dclocx.lib dsnap.lib
-      ibxpress.lib indy.lib inet.lib inetdb.lib inetdbbde.lib inetdbxpress.lib
-      nmfast.lib qrpt.lib rtl.lib soaprtl.lib tee.lib teedb.lib teeqr.lib
-      teeui.lib vcl.lib vcldb.lib vcldbx.lib vclx.lib visualdbclx.lib
-      xmlrtl.lib"/>
-    <PACKAGES value="adortl.bpi bcb2kaxserver.bpi bcbie.bpi bcbsmp.bpi
-      bdecds.bpi bdertl.bpi cds.bpi dbexpress.bpi dbrtl.bpi dbxcds.bpi
-      dclocx.bpi dsnap.bpi ibxpress.bpi indy.bpi inet.bpi inetdb.bpi
-      inetdbbde.bpi inetdbxpress.bpi nmfast.bpi qrpt.bpi rtl.bpi soaprtl.bpi
-      tee.bpi teedb.bpi teeqr.bpi teeui.bpi vcl.bpi vcldb.bpi vcldbx.bpi
-      vclie.bpi vclx.bpi visualclx.bpi visualdbclx.bpi xmlrtl.bpi"/>
+      bcb2kaxserver.lib bcbie.lib bcbsmp.lib dclocx.lib rtl.lib vcl.lib vclx.lib"/>
+    <PACKAGES value="bcb2kaxserver.bpi bcbie.bpi bcbsmp.bpi dclocx.bpi
+      rtl.bpi vcl.bpi vclie.bpi vclx.bpi visualclx.bpi"/>
     <PATHCPP value=".;forms;windows"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;windows"/>
@@ -47,7 +33,7 @@
     <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="WinSCP3.cpp"/>
-    <INCLUDEPATH value="core;forms;windows;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="core;console;forms;windows;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="lib;windows;forms;packages\filemng;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -57,7 +43,7 @@
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
-    <AFLAGS value="/mx /w2 /zn"/>
+    <AFLAGS value="/mx /w2 /zi"/>
     <LFLAGS value="-I -D&quot;&quot; -S:0x1000000 -aa -Tpe -GD -s -Gn"/>
     <OTHERFILES value=""/>
   </OPTIONS>
@@ -75,6 +61,7 @@
       <FILE FILENAME="windows\GUIConfiguration.cpp" FORMNAME="" UNITNAME="GUIConfiguration" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\GUITools.cpp" FORMNAME="" UNITNAME="GUITools" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\NonVisual.cpp" FORMNAME="NonVisualDataModule" UNITNAME="NonVisual" CONTAINERID="CCompiler" DESIGNCLASS="TDataModule" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\ConsoleRunner.cpp" FORMNAME="" UNITNAME="ConsoleRunner" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\ProgParams.cpp" FORMNAME="" UNITNAME="ProgParams" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\QueueController.cpp" FORMNAME="" UNITNAME="QueueController" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ScpCommander.cpp" FORMNAME="ScpCommanderForm" UNITNAME="ScpCommander" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -101,9 +88,9 @@
 IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=3
-MinorVer=6
-Release=8
-Build=244
+MinorVer=7
+Release=0
+Build=253
 Debug=0
 PreRelease=0
 Special=0
@@ -115,19 +102,17 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SCP/SFTP client
-FileVersion=3.6.8.244
+FileVersion=3.7.0.253
 InternalName=winscp3
 LegalCopyright=(c) 2000-2004 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp368.exe
+OriginalFilename=winscp370.exe
 ProductName=WinSCP
-ProductVersion=3.6.8.0
+ProductVersion=3.7.0.0
 WWW=http://winscp.sourceforge.net/
 
 [Compiler]
-ShowInfoMsgs=1
+ShowInfoMsgs=0
 LinkDebugVcl=1
-LinkCGLIB=0
-
   </IDEOPTIONS>
 </PROJECT>

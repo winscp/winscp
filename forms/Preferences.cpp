@@ -18,7 +18,7 @@
 //---------------------------------------------------------------------
 #pragma link "GeneralSettings"
 #pragma link "LogSettings"
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
 #pragma link "IEComboBox"
@@ -214,8 +214,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   RandomSeedFileEdit->Visible = WinConfiguration->ExpertMode;
 
   FCustomCommands->Assign(WinConfiguration->CustomCommands);
-  CustomCommandDescEdit->Text = "";
-  CustomCommandEdit->Text = "";
   UpdateCustomCommandsView();
 
   PuttyPathEdit->FileName = WinConfiguration->PuttyPath;
@@ -405,20 +403,13 @@ void __fastcall TPreferencesDialog::UpdateControls()
   EditorFontLabel->Caption = FMTLOAD(EDITOR_FONT_FMT,
     (FEditorFont->Name, FEditorFont->Size));
 
-  bool CommandComplete = !CustomCommandDescEdit->Text.IsEmpty() &&
-    !CustomCommandEdit->Text.IsEmpty();
-  EnableControl(AddCommandButton, CommandComplete);
-  EnableControl(SaveCommandButton, CommandComplete &&
-    CustomCommandsView->Selected &&
-    (CustomCommandDescEdit->Text != FCustomCommands->Names[CustomCommandsView->ItemIndex] ||
-     CustomCommandEdit->Text != FCustomCommands->Values[
-      FCustomCommands->Names[CustomCommandsView->ItemIndex]] ||
-     CustomCommandParams() != FCustomCommands->Params[
-      FCustomCommands->Names[CustomCommandsView->ItemIndex]]));
-  EnableControl(RemoveCommandButton, CustomCommandsView->Selected);
-  EnableControl(UpCommandButton, CustomCommandsView->ItemIndex > 0);
-  EnableControl(DownCommandButton, CustomCommandsView->ItemIndex >= 0 &&
-    CustomCommandsView->ItemIndex < CustomCommandsView->Items->Count - 1);
+  bool CommandSelected = (CustomCommandsView->Selected != NULL);
+  EnableControl(EditCommandButton, CommandSelected);
+  EnableControl(RemoveCommandButton, CommandSelected);
+  EnableControl(UpCommandButton, CommandSelected &&
+    CustomCommandsView->ItemIndex > 0);
+  EnableControl(DownCommandButton, CommandSelected &&
+    (CustomCommandsView->ItemIndex < CustomCommandsView->Items->Count - 1));
 
   EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
   EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
@@ -544,39 +535,21 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
   AnsiString Name = FCustomCommands->Names[Index];
   Item->SubItems->Add(FCustomCommands->Values[Name]);
   int Params = FCustomCommands->Params[Name];
+  Item->SubItems->Add(LoadStr(
+    FLAGSET(Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
   AnsiString ParamsStr;
-  if ((Params & ccApplyToDirectories) && (Params & ccRecursive))
-  {
-    ParamsStr = FMTLOAD(CUSTOM_COMMAND_PARAMFMT,
-      (LoadStr(CUSTOM_COMMAND_DIRECTORIES), LoadStr(CUSTOM_COMMAND_RECURSE)));
-  }
-  else if (Params & ccApplyToDirectories)
-  {
-    ParamsStr = LoadStr(CUSTOM_COMMAND_DIRECTORIES);
-  }
-  else if (Params & ccRecursive)
-  {
-    ParamsStr = LoadStr(CUSTOM_COMMAND_RECURSE);
-  }
+  #define ADDPARAM(PARAM, STR) \
+    if (FLAGSET(Params, PARAM)) \
+      ParamsStr += (ParamsStr.IsEmpty() ? "" : "/") + LoadStr(STR);
+  ADDPARAM(ccApplyToDirectories, CUSTOM_COMMAND_DIRECTORIES);
+  ADDPARAM(ccRecursive, CUSTOM_COMMAND_RECURSE);
+  #undef ADDPARAM
   Item->SubItems->Add(ParamsStr);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandsViewSelectItem(
-      TObject * /*Sender*/, TListItem * Item, bool Selected)
+  TObject * /*Sender*/, TListItem * /*Item*/, bool /*Selected*/)
 {
-  if (Item && Selected)
-  {
-    assert(Item);
-    int Index = Item->Index;
-    assert(Index >= 0 && Index <= FCustomCommands->Count);
-
-    CustomCommandDescEdit->Text = FCustomCommands->Names[Index];
-    AnsiString Name = FCustomCommands->Names[Index];
-    CustomCommandEdit->Text = FCustomCommands->Values[Name];
-    int Params = FCustomCommands->Params[Name];
-    CustomCommandApplyToDirectoriesCheck->Checked = Params & ccApplyToDirectories;
-    CustomCommandRecursiveCheck->Checked = Params & ccRecursive;
-  }
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -594,56 +567,64 @@ void __fastcall TPreferencesDialog::CustomCommandsViewKeyDown(
   {
     RemoveCommandButtonClick(NULL);
   }
+
+  if (AddCommandButton->Enabled && (Key == VK_INSERT))
+  {
+    AddEditCommandButtonClick(AddCommandButton);
+  }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TPreferencesDialog::CustomCommandString(int Index)
+void __fastcall TPreferencesDialog::CustomCommandsViewDblClick(
+  TObject * /*Sender*/)
 {
-  if (CustomCommandDescEdit->Text.Pos("="))
+  if (EditCommandButton->Enabled)
   {
-    throw Exception(FMTLOAD(CUSTOM_COMMAND_INVALID, ("=")));
+    AddEditCommandButtonClick(EditCommandButton);
   }
-  int I = FCustomCommands->IndexOfName(CustomCommandDescEdit->Text);
-  if (I >= 0 && (Index < 0 || I != Index))
-  {
-    throw Exception(FMTLOAD(CUSTOM_COMMAND_DUPLICATE, (CustomCommandDescEdit->Text)));
-  }
-  return FORMAT("%s=%s", (CustomCommandDescEdit->Text, CustomCommandEdit->Text));
 }
 //---------------------------------------------------------------------------
-int __fastcall TPreferencesDialog::CustomCommandParams()
+void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
 {
-  return
-    (CustomCommandApplyToDirectoriesCheck->Checked ? ccApplyToDirectories : 0) |
-    (CustomCommandRecursiveCheck->Checked ? ccRecursive : 0);
-}
-//---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::AddCommandButtonClick(TObject * /*Sender*/)
-{
-  int Index;
-  if (CustomCommandsView->ItemIndex >= 0)
+  bool Edit = (Sender == EditCommandButton);
+  AnsiString Description;
+  AnsiString Command;
+  int Params = 0;
+
+  if (Edit)
   {
-    FCustomCommands->Insert(CustomCommandsView->ItemIndex, CustomCommandString());
-    Index = CustomCommandsView->ItemIndex;
+    int Index = CustomCommandsView->ItemIndex;
+    assert(Index >= 0 && Index <= FCustomCommands->Count);
+
+    Description = FCustomCommands->Names[Index];
+    Command = FCustomCommands->Values[Description];
+    Params = FCustomCommands->Params[Description];
   }
-  else
+
+  if (DoCustomCommandDialog(Description, Command, Params, FCustomCommands, Edit))
   {
-    Index = FCustomCommands->Add(CustomCommandString());
+    int Index = CustomCommandsView->ItemIndex;
+    AnsiString Record = FORMAT("%s=%s", (Description, Command));
+    if (Edit)
+    {
+      FCustomCommands->Strings[Index] = Record;
+    }
+    else
+    {
+      if (Index >= 0)
+      {
+        FCustomCommands->Insert(Index, Record);
+      }
+      else
+      {
+        Index = FCustomCommands->Add(Record);
+      }
+    }
+    
+    FCustomCommands->Params[Description] = Params;
+    UpdateCustomCommandsView();
+    CustomCommandsView->ItemIndex = Index;
+    UpdateControls();
   }
-  FCustomCommands->Params[CustomCommandDescEdit->Text] = CustomCommandParams();
-  CustomCommandsView->ItemIndex = Index;
-  UpdateCustomCommandsView();
-  UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::SaveCommandButtonClick(TObject * /*Sender*/)
-{
-  assert(CustomCommandsView->ItemIndex >= 0 &&
-    CustomCommandsView->ItemIndex < FCustomCommands->Count);
-  FCustomCommands->Strings[CustomCommandsView->ItemIndex] =
-    CustomCommandString(CustomCommandsView->ItemIndex);
-  FCustomCommands->Params[CustomCommandDescEdit->Text] = CustomCommandParams();
-  UpdateCustomCommandsView();
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::RemoveCommandButtonClick(
@@ -839,4 +820,5 @@ void __fastcall TPreferencesDialog::PathEditsKeyDown(
   PathEditKeyDown(dynamic_cast<TCustomEdit*>(Sender), Key, Shift, false);
 }
 //---------------------------------------------------------------------------
+
 

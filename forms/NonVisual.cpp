@@ -756,6 +756,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
       TMenuItem * Item = new TMenuItem(Menu);
       Item->Caption = Description;
       Item->Tag = Index;
+      Item->Enabled = ScpExplorer->EnableCustomCommand(Description);
       if (Menu == RemoteDirViewCustomCommandsMenu)
       {
         Item->Tag = Item->Tag | 0x0100;

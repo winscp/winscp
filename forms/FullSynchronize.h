@@ -6,7 +6,7 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 #include <HistoryComboBox.hpp>
 
 #include <WinInterface.h>
@@ -22,9 +22,6 @@ __published:
   THistoryComboBox *RemoteDirectoryEdit;
   THistoryComboBox *LocalDirectoryEdit;
   TXPGroupBox *OptionsGroup;
-  TRadioButton *SynchronizeBothButton;
-  TRadioButton *SynchronizeRemoteButton;
-  TRadioButton *SynchronizeLocalButton;
   TCheckBox *SynchronizeDeleteCheck;
   TCheckBox *SynchronizeNoConfirmationCheck;
   TButton *LocalDirectoryBrowseButton;
@@ -32,6 +29,10 @@ __published:
   TCheckBox *SynchronizeExistingOnlyCheck;
   TButton *TransferPreferencesButton;
   TCheckBox *SynchronizePreviewChangesCheck;
+  TXPGroupBox *DirectionGroup;
+  TRadioButton *SynchronizeBothButton;
+  TRadioButton *SynchronizeRemoteButton;
+  TRadioButton *SynchronizeLocalButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);

@@ -61,13 +61,46 @@ char *dupcat(const char *s1, ...)
 /*
  * Do an sprintf(), but into a custom-allocated buffer.
  * 
- * Irritatingly, we don't seem to be able to do this portably using
- * vsnprintf(), because there appear to be issues with re-using the
- * same va_list for two calls, and the excellent C99 va_copy is not
- * yet widespread. Bah. Instead I'm going to do a horrid, horrid
- * hack, in which I trawl the format string myself, work out the
- * maximum length of each format component, and resize the buffer
- * before printing it.
+ * Currently I'm doing this via vsnprintf. This has worked so far,
+ * but it's not good, because:
+ * 
+ *  - vsnprintf is not available on all platforms. There's an ifdef
+ *    to use `_vsnprintf', which seems to be the local name for it
+ *    on Windows. Other platforms may lack it completely, in which
+ *    case it'll be time to rewrite this function in a totally
+ *    different way.
+ * 
+ *  - technically you can't reuse a va_list like this: it is left
+ *    unspecified whether advancing a va_list pointer modifies its
+ *    value or something it points to, so on some platforms calling
+ *    vsnprintf twice on the same va_list might fail hideously. It
+ *    would be better to use the `va_copy' macro mandated by C99,
+ *    but that too is not yet ubiquitous.
+ * 
+ * The only `properly' portable solution I can think of is to
+ * implement my own format string scanner, which figures out an
+ * upper bound for the length of each formatting directive,
+ * allocates the buffer as it goes along, and calls sprintf() to
+ * actually process each directive. If I ever need to actually do
+ * this, some caveats:
+ * 
+ *  - It's very hard to find a reliable upper bound for
+ *    floating-point values. %f, in particular, when supplied with
+ *    a number near to the upper or lower limit of representable
+ *    numbers, could easily take several hundred characters. It's
+ *    probably feasible to predict this statically using the
+ *    constants in <float.h>, or even to predict it dynamically by
+ *    looking at the exponent of the specific float provided, but
+ *    it won't be fun.
+ * 
+ *  - Don't forget to _check_, after calling sprintf, that it's
+ *    used at most the amount of space we had available.
+ * 
+ *  - Fault any formatting directive we don't fully understand. The
+ *    aim here is to _guarantee_ that we never overflow the buffer,
+ *    because this is a security-critical function. If we see a
+ *    directive we don't know about, we should panic and die rather
+ *    than run any risk.
  */
 char *dupprintf(const char *fmt, ...)
 {

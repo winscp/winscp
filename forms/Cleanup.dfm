@@ -48,7 +48,7 @@ object CleanupDialog: TCleanupDialog
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
-    Caption = 'Cancel'
+    Caption = 'Close'
     ModalResult = 2
     TabOrder = 3
   end

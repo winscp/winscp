@@ -13,11 +13,11 @@
 #include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-const int WM_USER_STOP = WM_USER + 100;
+const int WM_USER_STOP = WM_WINSCP_USER + 2;
 //---------------------------------------------------------------------------
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   TSynchronizeStartStopEvent OnStartStop, bool & SaveSettings)

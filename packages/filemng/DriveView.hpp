@@ -294,6 +294,7 @@ private:
 	Comctrls::TTreeNode* FRenameNode;
 	AnsiString FLastRenameName;
 	HWND FInternalWindowHandle;
+	Comctrls::TTreeNode* FPrevSelected;
 	_di_IShellFolder FDesktop;
 	_di_IShellFolder FWorkPlace;
 	Classes::TNotifyEvent FOnStartScan;

@@ -101,6 +101,13 @@ struct TTransferOperationParam
   bool DragDrop;
 };
 //---------------------------------------------------------------------------
+struct TMakeFileListParam
+{
+  TStrings * FileList;
+  bool IncludeDirs;
+  bool Recursive;
+};
+//---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(False), TForm(Owner)
 {
@@ -128,6 +135,7 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FDelayedDeletionList = new TStringList();
   FDDFileList = NULL;
   FPendingTempSpaceWarn = false;
+  FCapturedLog = NULL;
 
   FEditorManager = new TEditorManager();
   FEditorManager->OnFileChange = ExecutedFileChanged;
@@ -538,8 +546,10 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
     FProgressForm->DeleteToRecycleBin = (ProgressData.Side == osLocal ?
       WinConfiguration->DeleteToRecycleBin :
       Terminal->SessionData->DeleteToRecycleBin);
-    // When main window is hidden, we suppose "/upload" or URL download mode
-    if (!Visible && (ProgressData.Operation != foCalculateSize))
+    // When main window is hidden, synchronisation form does not exist,
+    // we suppose "/upload" or URL download mode
+    if (!Visible && (ProgressData.Operation != foCalculateSize) &&
+        (FSynchronizeProgressForm == NULL))
     {
       FProgressForm->DisconnectWhenComplete = true;
     }
@@ -641,6 +651,268 @@ bool __fastcall TCustomScpExplorerForm::GetEnableFocusedOperation(TOperationSide
 bool __fastcall TCustomScpExplorerForm::GetEnableSelectedOperation(TOperationSide Side)
 {
   return DirView(Side)->AnyFileSelected(false);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::EnableCustomCommand(
+  const AnsiString & Description)
+{
+  AnsiString Command = WinConfiguration->CustomCommands->Values[Description];
+  int Params = WinConfiguration->CustomCommands->Params[Description];
+  bool Result = FLAGCLEAR(Params, ccLocal);
+  if (!Result)
+  {
+    TLocalCustomCommand LocalCustomCommand;
+    TInteractiveCustomCommand InteractiveCustomCommand(&LocalCustomCommand);
+    AnsiString Cmd = InteractiveCustomCommand.Complete(Command, false);
+    Result = !LocalCustomCommand.HasLocalFileName(Cmd) ||
+      (HasDirView[osLocal] && EnableSelectedOperation[osLocal]);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
+  const AnsiString & Name)
+{
+  int Params = WinConfiguration->CustomCommands->Params[Name];
+  if (FLAGCLEAR(Params, ccLocal))
+  {
+    if (EnsureCommandSessionFallback(fcAnyCommand))
+    {
+      TRemoteCustomCommand RemoteCustomCommand;
+      TWinInteractiveCustomCommand InteractiveCustomCommand(
+        &RemoteCustomCommand, Name);
+
+      AnsiString Command = InteractiveCustomCommand.Complete(
+        WinConfiguration->CustomCommands->Values[Name], false);
+
+      if (FLAGCLEAR(Params, ccShowResults))
+      {
+        Terminal->CustomCommandOnFiles(Command, Params, FileList);
+      }
+      else
+      {
+        assert(FCapturedLog == NULL);
+        FCapturedLog = new TStringList();
+
+        try
+        {
+          Terminal->BeginTransaction();
+          try
+          {
+            assert(FTerminal->Log->OnAddLine == NULL);
+            FTerminal->Log->OnAddLine = TerminalCaptureLog;
+            
+            Terminal->CustomCommandOnFiles(Command, Params, FileList);
+          }
+          __finally
+          {
+            assert(FTerminal->Log->OnAddLine == TerminalCaptureLog);
+            FTerminal->Log->OnAddLine = NULL;
+
+            Terminal->EndTransaction();
+          }
+
+          if (FCapturedLog->Count > 0)
+          {
+            DoConsoleDialog(Terminal, "", FCapturedLog);
+          }
+        }
+        __finally
+        {
+          SAFE_DESTROY(FCapturedLog);
+        }
+      }
+    }
+  }
+  else
+  {
+    TLocalCustomCommand LocalCustomCommand;
+    TWinInteractiveCustomCommand InteractiveCustomCommand(
+      &LocalCustomCommand, Name);
+
+    AnsiString Command = InteractiveCustomCommand.Complete(
+      WinConfiguration->CustomCommands->Values[Name], false);
+
+    TStrings * LocalFileList = NULL;
+    TStrings * RemoteFileList = NULL;
+    try
+    {
+      bool FileListCommand = LocalCustomCommand.IsFileListCommand(Command);
+      bool LocalFileCommand = LocalCustomCommand.HasLocalFileName(Command);
+
+      if (LocalFileCommand)
+      {
+        assert(HasDirView[osLocal]);
+        assert(EnableSelectedOperation[osLocal]);
+
+        LocalFileList = DirView(osLocal)->CreateFileList(false, true, NULL);
+
+        if (FileListCommand)
+        {
+          if (LocalFileList->Count != 1)
+          {
+            throw Exception(LoadStr(CUSTOM_COMMAND_SELECTED_UNMATCH1));
+          }
+        }
+        else
+        {
+          if ((LocalFileList->Count != 1) &&
+              (FileList->Count != 1) &&
+              (LocalFileList->Count != FileList->Count))
+          {
+            throw Exception(LoadStr(CUSTOM_COMMAND_SELECTED_UNMATCH));
+          }
+        }
+      }
+
+      AnsiString TempDir;
+
+      TemporarilyDownloadFiles(FileList, false, TempDir);
+
+      try
+      {
+        RemoteFileList = new TStringList();
+
+        TMakeFileListParam MakeFileListParam;
+        MakeFileListParam.FileList = RemoteFileList;
+        MakeFileListParam.IncludeDirs = FLAGSET(Params, ccApplyToDirectories);
+        MakeFileListParam.Recursive =
+          FLAGSET(Params, ccRecursive) && !FileListCommand;
+
+        ProcessLocalDirectory(TempDir, MakeFileList, &MakeFileListParam);
+
+        TFileOperationProgressType Progress(&OperationProgress, &OperationFinished);
+
+        Progress.Start(foCustomCommand, osRemote, FileListCommand ? 1 : FileList->Count);
+        assert(FProgressForm != NULL);
+        FProgressForm->ReadOnly = true;
+
+        try
+        {
+          if (FileListCommand)
+          {
+            AnsiString LocalFile;
+            AnsiString FileList;
+
+            if (LocalFileCommand)
+            {
+              assert(LocalFileList->Count == 1);
+              LocalFile = LocalFileList->Strings[0];
+            }
+
+            for (int Index = 0; Index < RemoteFileList->Count; Index++)
+            {
+              if (!FileList.IsEmpty())
+              {
+                FileList += " ";
+              }
+
+              AnsiString FileName = RemoteFileList->Strings[Index];
+              if (FileName.Pos(" ") > 0)
+              {
+                FileList += "\"" + FileName + "\"";
+              }
+              else
+              {
+                FileList += FileName;
+              }
+            }
+
+            TLocalCustomCommand CustomCommand("", LocalFile, FileList);
+            ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+          }
+          else if (LocalFileCommand)
+          {
+            if (LocalFileList->Count == 1)
+            {
+              AnsiString LocalFile = LocalFileList->Strings[0];
+
+              for (int Index = 0; Index < RemoteFileList->Count; Index++)
+              {
+                AnsiString FileName = RemoteFileList->Strings[Index];
+                TLocalCustomCommand CustomCommand
+                  (FileName, LocalFile, "");
+                ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+              }
+            }
+            else if (RemoteFileList->Count == 1)
+            {
+              AnsiString FileName = RemoteFileList->Strings[0];
+
+              for (int Index = 0; Index < LocalFileList->Count; Index++)
+              {
+                TLocalCustomCommand CustomCommand
+                  (FileName, LocalFileList->Strings[Index], "");
+                ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+              }
+            }
+            else
+            {
+              if (LocalFileList->Count != RemoteFileList->Count)
+              {
+                throw Exception(LoadStr(CUSTOM_COMMAND_PAIRS_DOWNLOAD_FAILED));
+              }
+
+              for (int Index = 0; Index < LocalFileList->Count; Index++)
+              {
+                AnsiString FileName = RemoteFileList->Strings[Index];
+                TLocalCustomCommand CustomCommand
+                  (FileName, LocalFileList->Strings[Index], "");
+                ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+              }
+            }
+          }
+          else
+          {
+            for (int Index = 0; Index < RemoteFileList->Count; Index++)
+            {
+              TLocalCustomCommand CustomCommand
+                (RemoteFileList->Strings[Index], "", "");
+              ExecuteShellAndWait(CustomCommand.Complete(Command, true));
+            }
+          }
+        }
+        __finally
+        {
+          Progress.Stop();
+        }
+      }
+      __finally
+      {
+        RecursiveDeleteFile(ExcludeTrailingBackslash(TempDir), false);
+      }
+    }
+    __finally
+    {
+      delete RemoteFileList;
+      delete LocalFileList;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TerminalCaptureLog(TObject* /*Sender*/,
+  const AnsiString AddedLine)
+{
+  assert(FCapturedLog != NULL);
+  FCapturedLog->Add(AddedLine);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::MakeFileList(const AnsiString FileName,
+  const TSearchRec Rec, void * Param)
+{
+  TMakeFileListParam & MakeFileListParam = *static_cast<TMakeFileListParam*>(Param);
+
+  bool Directory = FLAGSET(Rec.Attr, faDirectory);
+  if (Directory && MakeFileListParam.Recursive)
+  {
+    ProcessLocalDirectory(FileName, MakeFileList, &MakeFileListParam);
+  }
+
+  if (!Directory || MakeFileListParam.IncludeDirs)
+  {
+    MakeFileListParam.FileList->Add(FileName);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::IsFileControl(TObject * Control,
@@ -833,23 +1105,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
       assert(Param);
       assert(Side == osRemote);
 
-      if (EnsureCommandSessionFallback(fcAnyCommand))
-      {
-        FCustomCommandName = *((AnsiString *)Param);
-        try
-        {
-          AnsiString Command = TCustomFileSystem::CompleteCustomCommand(
-            WinConfiguration->CustomCommands->Values[FCustomCommandName],
-            "", CustomCommandGetParamValue);
-          Terminal->CustomCommandOnFiles(Command,
-            WinConfiguration->CustomCommands->Params[FCustomCommandName],
-            FileList);
-        }
-        __finally
-        {
-          FCustomCommandName = "";
-        }
-      }
+      CustomCommand(FileList, *((AnsiString *)Param));
     }
     else if ((Operation == foRemoteMove) || (Operation == foRemoteCopy))
     {
@@ -890,22 +1146,6 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
   __finally
   {
     delete FileList;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::CustomCommandGetParamValue(
-  const AnsiString AName, AnsiString & Value)
-{
-  assert(!FCustomCommandName.IsEmpty());
-  AnsiString Name = AName;
-  if (Name.IsEmpty())
-  {
-    Name = FMTLOAD(CUSTOM_COMMANDS_PARAM_PROMPT, (StripHotkey(FCustomCommandName)));
-  }
-  if (!InputDialog(FMTLOAD(CUSTOM_COMMANDS_PARAM_TITLE,
-        (StripHotkey(FCustomCommandName))), Name, Value))
-  {
-    Abort();
   }
 }
 //---------------------------------------------------------------------------
@@ -1137,6 +1377,51 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
+  TStrings * FileList, bool ForceText, AnsiString & TempDir)
+{
+  TCopyParamType CopyParam = GUIConfiguration->CopyParam;
+  if (ForceText)
+  {
+    CopyParam.TransferMode = tmAscii;
+  }
+  CopyParam.FileNameCase = ncNoChange;
+  CopyParam.PreserveReadOnly = false;
+  CopyParam.ResumeSupport = rsOff;
+
+  TempDir = WinConfiguration->TemporaryDir();
+  if (!ForceDirectories(TempDir))
+  {
+    throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (TempDir)));
+  }
+
+  FAutoOperation = true;
+  Terminal->ExceptionOnFail = true;
+  try
+  {
+    try
+    {
+      Terminal->CopyToLocal(FileList, TempDir, &CopyParam, cpTemporary);
+    }
+    catch(...)
+    {
+      try
+      {
+        RecursiveDeleteFile(ExcludeTrailingBackslash(TempDir), false);
+      }
+      catch(...)
+      {
+      }
+      throw;
+    }
+  }
+  __finally
+  {
+    FAutoOperation = false;
+    Terminal->ExceptionOnFail = false;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
   TExecuteFileBy ExecuteFileBy)
 {
@@ -1157,33 +1442,9 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
     assert(FileList->Count == 1);
     if (Side == osRemote)
     {
-      TCopyParamType CopyParam = GUIConfiguration->CopyParam;
-      if (RemoteExecuteForceText(ExecuteFileBy))
-      {
-        CopyParam.TransferMode = tmAscii;
-      }
-      CopyParam.FileNameCase = ncNoChange;
-      CopyParam.PreserveReadOnly = false;
-      CopyParam.ResumeSupport = rsOff;
-
-      AnsiString TempDir = WinConfiguration->TemporaryDir();
-      if (!ForceDirectories(TempDir))
-      {
-        throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (TempDir)));
-      }
-
-      FAutoOperation = true;
-      Terminal->ExceptionOnFail = true;
-      try
-      {
-        Terminal->CopyToLocal(FileList, TempDir, &CopyParam, cpTemporary);
-      }
-      __finally
-      {
-        FAutoOperation = false;
-        Terminal->ExceptionOnFail = false;
-      }
-
+      AnsiString TempDir;
+      TemporarilyDownloadFiles(FileList,
+        RemoteExecuteForceText(ExecuteFileBy), TempDir);
       FileName = TempDir + FileList->Strings[0];
     }
     else
@@ -1446,6 +1707,7 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
     if (Key == VK_TAB && Shift.Contains(ssCtrl))
     {
       TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
+      Key = 0;
     }
   }
 
@@ -1864,7 +2126,7 @@ TControl * __fastcall TCustomScpExplorerForm::GetComponent(Byte Component)
   switch (Component) {
     case fcStatusBar: return RemoteStatusBar;
     case fcCoolBar: return TopCoolBar;
-    case fcRemotePopup: return reinterpret_cast<TControl *>(NonVisualDataModule->RemoteDirViewPopup);
+    case fcRemotePopup: return reinterpret_cast<TControl *>(NonVisualDataModule->RemoteFilePopup);
     case fcQueueView: return QueuePanel;
     case fcQueueToolbar: return QueueCoolBar;
     case fcRemoteTree: return RemoteDriveView;
@@ -1944,7 +2206,8 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
   TSynchronizeParamType Params;
   Params.LocalDirectory = LocalDirectory;
   Params.RemoteDirectory = RemoteDirectory;
-  Params.Params = GUIConfiguration->SynchronizeParams;
+  int UnusedParams = (GUIConfiguration->SynchronizeParams & spPreviewChanges);
+  Params.Params = GUIConfiguration->SynchronizeParams & ~UnusedParams;
   Params.Recurse = GUIConfiguration->SynchronizeRecurse;
   bool SaveSettings = false;
   TSynchronizeController Controller(&DoSynchronize, &DoSynchronizeInvalid);
@@ -1953,7 +2216,7 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
   {
     if (SaveSettings)
     {
-      GUIConfiguration->SynchronizeParams = Params.Params;
+      GUIConfiguration->SynchronizeParams = Params.Params | UnusedParams;
       GUIConfiguration->SynchronizeRecurse = Params.Recurse;
     }
     LocalDirectory = Params.LocalDirectory;
@@ -2036,7 +2299,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   bool Result;
   int Params = GUIConfiguration->SynchronizeParams;
 
-  bool SaveSettings;
+  bool SaveSettings = false;
   Result = DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
     SaveSettings);
   if (Result)
@@ -2209,7 +2472,8 @@ void __fastcall TCustomScpExplorerForm::DoOpenDirectoryDialog(
     try
     {
       AnsiString Name = DirView(Side)->PathName;
-      if (::DoOpenDirectoryDialog(Mode, Side, Name, VisitedDirectories, Terminal))
+      if (::DoOpenDirectoryDialog(Mode, Side, Name, VisitedDirectories, Terminal,
+            HasDirView[osLocal]))
       {
         DirView(Side)->Path = Name;
       }
@@ -2473,6 +2737,28 @@ void __fastcall TCustomScpExplorerForm::SessionComboChange(TObject * Sender)
   Terminal = dynamic_cast<TTerminal *>(SessionCombo->Items->Objects[SessionCombo->ItemIndex]);
   assert(Terminal);
   TTerminalManager::Instance()->ActiveTerminal = Terminal;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMAppCommand(TMessage & Message)
+{
+  int Command  = GET_APPCOMMAND_LPARAM(Message.LParam);
+  TShiftState Shift = KeyDataToShiftState(GET_KEYSTATE_LPARAM(Message.LParam));
+  if ((Shift * (TShiftState() << ssShift << ssAlt << ssCtrl)).Empty())
+  {
+    if (Command == _APPCOMMAND_BROWSER_FAVORITES)
+    {
+      OpenDirectory(GetSide(osCurrent));
+      Message.Result = 1;
+    }
+    else
+    {
+      TForm::Dispatch(&Message);
+    }
+  }
+  else
+  {
+    TForm::Dispatch(&Message);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CMAppSysCommand(TMessage & Message)
@@ -3132,7 +3418,8 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDFileOperation(
     TTransferOperationParam Param;
     Param.TargetDirectory = TargetPath;
     Param.DragDrop = true;
-    ExecuteFileOperation(Operation, osLocal, FileList, false, &Param);
+    ExecuteFileOperation(Operation, osLocal, FileList,
+      !WinConfiguration->DDTransferConfirmation, &Param);
   }
   __finally
   {
@@ -3237,6 +3524,14 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
       Terminal->DoShowExtendedException(&E);
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DirViewMatchMask(
+  TObject * /*Sender*/, AnsiString FileName, AnsiString Masks,
+  bool & Matches)
+{
+  TFileMasks M(Masks);
+  Matches = M.Matches(FileName);
 }
 //---------------------------------------------------------------------------
 

@@ -68,7 +68,6 @@ protected:
   virtual void __fastcall SetResourceModule(HANDLE Instance);
   TStrings * __fastcall GetLocales();
   LCID __fastcall InternalLocale();
-  TPasLibModule * __fastcall FindModule(void * Instance);
   void __fastcall FreeResourceModule(HANDLE Instance);
   void __fastcall SetCopyParam(TGUICopyParamType value);
   static AnsiString __fastcall PropertyToKey(const AnsiString Property);

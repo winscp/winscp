@@ -99,6 +99,7 @@ void __fastcall TSessionData::Default()
   IgnoreLsWarnings = true;
   Scp1Compatibility = false;
   TimeDifference = 0;
+  SCPLsFullTime = asAuto;
 
   // SFTP
   SFTPDownloadQueue = 4;
@@ -165,6 +166,8 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(UnsetNationalVars);
     DUPL(AliasGroupList);
     DUPL(IgnoreLsWarnings);
+    DUPL(SCPLsFullTime);
+
     DUPL(TimeDifference);
     // new in 53b
     DUPL(TcpNoDelay);
@@ -379,6 +382,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     UnsetNationalVars = Storage->ReadBool("UnsetNationalVars", UnsetNationalVars);
     AliasGroupList = Storage->ReadBool("AliasGroupList", AliasGroupList);
     IgnoreLsWarnings = Storage->ReadBool("IgnoreLsWarnings", IgnoreLsWarnings);
+    SCPLsFullTime = TAutoSwitch(Storage->ReadInteger("SCPLsFullTime", SCPLsFullTime));
     Scp1Compatibility = Storage->ReadBool("Scp1Compatibility", Scp1Compatibility);
     TimeDifference = Storage->ReadFloat("TimeDifference", TimeDifference);
     DeleteToRecycleBin = Storage->ReadBool("DeleteToRecycleBin", DeleteToRecycleBin);
@@ -528,6 +532,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Bool, UnsetNationalVars);
       WRITE_DATA(Bool, AliasGroupList);
       WRITE_DATA(Bool, IgnoreLsWarnings);
+      WRITE_DATA(Integer, SCPLsFullTime);
       WRITE_DATA(Bool, Scp1Compatibility);
       WRITE_DATA(Float, TimeDifference);
       WRITE_DATA(Bool, DeleteToRecycleBin);
@@ -1252,6 +1257,11 @@ void __fastcall TSessionData::SetSFTPSymlinkBug(TAutoSwitch value)
   SET_SESSION_PROPERTY(SFTPSymlinkBug);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetSCPLsFullTime(TAutoSwitch value)
+{
+  SET_SESSION_PROPERTY(SCPLsFullTime);
+}
+//---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetInfoTip()
 {
   return FmtLoadStr(SESSION_INFO_TIP,
@@ -1538,5 +1548,84 @@ void __fastcall TStoredSessionList::ImportHostKeys(const AnsiString TargetKey,
     delete TargetStorage;
     delete KeyList;
   }
+}
+//---------------------------------------------------------------------------
+TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
+  bool & DefaultsOnly, int Params, AnsiString * FileName)
+{
+  bool ProtocolDefined = false;
+  TFSProtocol Protocol;
+  if (Url.SubString(1, 6).LowerCase() == "scp://")
+  {
+    Protocol = fsSCPonly;
+    Url.Delete(1, 6);
+    ProtocolDefined = true;
+  }
+  else if (Url.SubString(1, 7).LowerCase() == "sftp://")
+  {
+    Protocol = fsSFTPonly;
+    Url.Delete(1, 7);
+    ProtocolDefined = true;
+  }
+
+  DefaultsOnly = true;
+  TSessionData * Data = new TSessionData("");
+  try
+  {
+    if (!Url.IsEmpty())
+    {
+      TSessionData * AData;
+      // lookup stored session session even if protocol was defined
+      // (this allows setting for example default username for host
+      // by creating stored session named by host)
+      AnsiString AUrl(Url);
+      if (AUrl[AUrl.Length()] == '/')
+      {
+        AUrl.SetLength(AUrl.Length() - 1);
+      }
+      AData = dynamic_cast<TSessionData *>(FindByName(AUrl, false));
+    
+      if (AData == NULL)
+      {
+        Data->Assign(DefaultSettings);
+        if (Data->ParseUrl(Url, Params, FileName))
+        {
+          Data->Name = "";
+          DefaultsOnly = false;
+        }
+        else
+        {
+          throw Exception(FMTLOAD(SESSION_NOT_EXISTS_ERROR, (Url)));
+        }
+      }
+      else
+      {
+        DefaultsOnly = false;
+        Data->Assign(AData);
+        if (IsHidden(AData))
+        {
+          AData->Remove();
+          Remove(AData);
+          Save();
+        }
+      }
+    }
+    else
+    {
+      Data->Assign(DefaultSettings);
+    }
+
+    if (ProtocolDefined)
+    {
+      Data->FSProtocol = Protocol;
+    }
+  }
+  catch(...)
+  {
+    delete Data;
+    throw;
+  }
+
+  return Data;
 }
 

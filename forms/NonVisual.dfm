@@ -68,7 +68,7 @@ object NonVisualDataModule: TNonVisualDataModule
     Left = 232
     Top = 24
   end
-  object RemoteDirViewPopup: TPopupMenu
+  object RemoteFilePopup: TPopupMenu
     Images = ExplorerImages
     Left = 424
     Top = 336
@@ -227,6 +227,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Local Directory'
       Caption = '&Back'
       ImageIndex = 6
+      ShortCut = 32805
     end
     object CurrentCopyAction: TAction
       Tag = 15
@@ -337,12 +338,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Remote Directory'
       Caption = '&Back'
       ImageIndex = 6
+      ShortCut = 32805
     end
     object RemoteForwardAction: TAction
       Tag = 14
       Category = 'Remote Directory'
       Caption = '&Forward'
       ImageIndex = 7
+      ShortCut = 32807
     end
     object CommandLinePanelAction: TAction
       Tag = 8
@@ -531,6 +534,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Local Directory'
       Caption = '&Forward'
       ImageIndex = 7
+      ShortCut = 32807
     end
     object LocalParentDirAction: TAction
       Tag = 8
@@ -2731,6 +2735,97 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object Hide1: TMenuItem
       Action = QueueHideAction
+    end
+  end
+  object RemoteDirViewPopup: TPopupMenu
+    Images = ExplorerImages
+    Left = 360
+    Top = 400
+    object GoTo4: TMenuItem
+      Caption = '&Go To'
+      Hint = 'Go to directory'
+      object OpenDirectoryBookmark3: TMenuItem
+        Action = RemoteOpenDirAction
+      end
+      object N81: TMenuItem
+        Caption = '-'
+        Hint = 'E'
+      end
+      object ParentDirectory4: TMenuItem
+        Action = RemoteParentDirAction
+      end
+      object RootDirectory4: TMenuItem
+        Action = RemoteRootDirAction
+      end
+      object HomeDirectory4: TMenuItem
+        Action = RemoteHomeDirAction
+      end
+      object N80: TMenuItem
+        Caption = '-'
+        Hint = 'E'
+      end
+      object Back4: TMenuItem
+        Action = RemoteBackAction
+      end
+      object Forward4: TMenuItem
+        Action = RemoteForwardAction
+      end
+    end
+    object Refresh4: TMenuItem
+      Action = RemoteRefreshAction
+    end
+    object AddToBookmarks4: TMenuItem
+      Action = RemoteAddBookmarkAction
+    end
+    object CopyPathtoClipboard6: TMenuItem
+      Action = RemotePathToClipboardAction
+    end
+  end
+  object LocalDirViewPopup: TPopupMenu
+    Images = ExplorerImages
+    Left = 472
+    Top = 400
+    object GoTo5: TMenuItem
+      Caption = '&Go To'
+      Hint = 'Go to directory'
+      object OpenDirectoryBookmark4: TMenuItem
+        Action = LocalOpenDirAction
+      end
+      object ExploreDirectory2: TMenuItem
+        Action = LocalExploreDirectoryAction
+      end
+      object N84: TMenuItem
+        Caption = '-'
+        Hint = 'E'
+      end
+      object ParentDirectory5: TMenuItem
+        Action = LocalParentDirAction
+      end
+      object RootDirectory5: TMenuItem
+        Action = LocalRootDirAction
+      end
+      object HomeDirectory5: TMenuItem
+        Action = LocalHomeDirAction
+      end
+      object N83: TMenuItem
+        Caption = '-'
+        Hint = 'E'
+      end
+      object Back5: TMenuItem
+        Action = LocalBackAction
+      end
+      object Forward5: TMenuItem
+        Action = LocalForwardAction
+      end
+    end
+    object Refresh5: TMenuItem
+      Action = LocalRefreshAction
+    end
+    object AddToBookmarks5: TMenuItem
+      Action = LocalAddBookmarkAction
+    end
+    object CopyPathtoClipboard7: TMenuItem
+      Action = LocalPathToClipboardAction
     end
   end
 end

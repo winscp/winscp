@@ -12,13 +12,13 @@
 #include "LocationProfiles.h"
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma link "IEComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   TOperationSide Side, AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
-  TStrings * RemoteDirectories, TTerminal * Terminal)
+  TStrings * LocalDirectories, TStrings * RemoteDirectories, TTerminal * Terminal)
 {
   bool Result;
   TLocationProfilesDialog * Dialog = new TLocationProfilesDialog(Application);
@@ -29,6 +29,7 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
     Dialog->OperationSide = Side;
     Dialog->Terminal = Terminal;
     Dialog->RemoteDirectories = RemoteDirectories;
+    Dialog->LocalDirectories = LocalDirectories;
     Dialog->Mode = Mode;
 
     Result = Dialog->Execute();
@@ -105,6 +106,16 @@ void __fastcall TLocationProfilesDialog::SetRemoteDirectories(TStrings * value)
 TStrings * __fastcall TLocationProfilesDialog::GetRemoteDirectories()
 {
   return RemoteDirectoryEdit->Items;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::SetLocalDirectories(TStrings * value)
+{
+  LocalDirectoryEdit->Items = value;
+}
+//---------------------------------------------------------------------------
+TStrings * __fastcall TLocationProfilesDialog::GetLocalDirectories()
+{
+  return LocalDirectoryEdit->Items;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::FindProfile()
@@ -321,15 +332,29 @@ void __fastcall TLocationProfilesDialog::BookmarkMove(
   if (!Dest || !Dest->Data)
   {
     Bookmark->Node = Dest ? Dest->Text : AnsiString("");
-    FBookmarkList->MoveAtEnd(Bookmark);
+    FBookmarkList->MoveTo(FBookmarkList->Bookmarks[FBookmarkList->Count - 1],
+      Bookmark, false);
     ProfilesView->Selected->MoveTo(Dest, naAddChild);
   }
   else
   {
     TBookmark * DestBookmark = (TBookmark *)Dest->Data;
+
     Bookmark->Node = DestBookmark->Node;
-    FBookmarkList->MoveBefore(DestBookmark, Bookmark);
-    Source->MoveTo(Dest, naInsert);
+    FBookmarkList->MoveTo(DestBookmark, Bookmark,
+      Source->AbsoluteIndex > Dest->AbsoluteIndex);
+    if (Source->AbsoluteIndex > Dest->AbsoluteIndex)
+    {
+      Source->MoveTo(Dest, naInsert);
+    }
+    else if (Dest->getNextSibling() != NULL)
+    {
+      Source->MoveTo(Dest->getNextSibling(), naInsert);
+    }
+    else
+    {
+      Source->MoveTo(Dest, naAdd);
+    }
   }
   
   if (PrevFolderNode && !PrevFolderNode->Count)
@@ -358,8 +383,6 @@ void __fastcall TLocationProfilesDialog::BookmarkButtonClick(TObject *Sender)
   else
   {
     TargetNode = Node->getNextSibling();
-    assert(TargetNode);
-    TargetNode = TargetNode->getNextSibling();
   }
 
   BookmarkMove(Node, TargetNode ? TargetNode : Node->Parent);
@@ -381,23 +404,20 @@ void __fastcall TLocationProfilesDialog::ProfilesViewDragOver(
 {
   if (Source == ProfilesView)
   {
-    Accept = FBookmarkDragSource != ProfilesView->DropTarget;
+    Accept = (ProfilesView->DropTarget != NULL) &&
+      (FBookmarkDragSource != ProfilesView->DropTarget);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::ProfilesViewDragDrop(
       TObject * /*Sender*/, TObject * Source, int /*X*/, int /*Y*/)
 {
-  if ((Source == ProfilesView) && (FBookmarkDragSource != ProfilesView->DropTarget))
+  if ((Source == ProfilesView) && (ProfilesView->DropTarget != NULL) &&
+      (FBookmarkDragSource != ProfilesView->DropTarget))
   {
     assert(FBookmarkDragSource);
 
     TTreeNode * Target = ProfilesView->DropTarget;
-    if (Target->Data && (Target->AbsoluteIndex > FBookmarkDragSource->AbsoluteIndex))
-    {
-      Target = Target->getNextSibling() ? Target->getNextSibling() : Target->Parent;
-    }
-
     BookmarkMove(FBookmarkDragSource, Target);
     FBookmarkDragSource = NULL;
   }
@@ -594,16 +614,27 @@ void __fastcall TLocationProfilesDialog::ProfilesViewGetSelectedIndex(
   Node->SelectedIndex = Node->Data ? 0 : (Node->Expanded ? 1 : 2);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::LocalDirectoryEditKeyDown(
-  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+void __fastcall TLocationProfilesDialog::DirectoryEditKeyDown(
+  TObject * Sender, WORD & Key, TShiftState Shift)
 {
-  PathEditKeyDown(LocalDirectoryEdit, Key, Shift, false);
+  PathComboBoxKeyDown(dynamic_cast<TCustomComboBox*>(Sender), Key, Shift,
+    (Sender == RemoteDirectoryEdit));
 }
 //---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::RemoteDirectoryEditKeyDown(
-  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+void __fastcall TLocationProfilesDialog::LocalDirectoryBrowseButtonClick(
+  TObject * /*Sender*/)
 {
-  PathComboBoxKeyDown(RemoteDirectoryEdit, Key, Shift, true);
+  AnsiString Directory = LocalDirectoryEdit->Text;
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
+  {
+    LocalDirectoryEdit->Text = Directory;
+    DirectoryEditChange(LocalDirectoryEdit);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::SwitchButtonClick(TObject * /*Sender*/)
+{
+  WinConfiguration->UseLocationProfiles = false;
 }
 //---------------------------------------------------------------------------
 

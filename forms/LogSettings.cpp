@@ -14,7 +14,7 @@
 #pragma package(smart_init)
 #pragma link "ComboEdit"
 #pragma link "UpDownEdit"
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma resource "*.dfm"
 TLoggingFrame *LoggingFrame;
 //---------------------------------------------------------------------------

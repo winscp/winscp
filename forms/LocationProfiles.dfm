@@ -40,7 +40,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 3
+    TabOrder = 5
   end
   object CancelBtn: TButton
     Left = 471
@@ -51,7 +51,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 4
+    TabOrder = 6
   end
   object BookmarksGroup: TXPGroupBox
     Left = 8
@@ -59,7 +59,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     Width = 539
     Height = 277
     Anchors = [akLeft, akTop, akRight, akBottom]
-    TabOrder = 2
+    TabOrder = 3
     DesignSize = (
       539
       277)
@@ -152,18 +152,17 @@ object LocationProfilesDialog: TLocationProfilesDialog
       OnClick = MoveToButtonClick
     end
   end
-  object LocalDirectoryEdit: TDirectoryEdit
+  object LocalDirectoryEdit: TIEComboBox
     Left = 8
     Top = 25
-    Width = 539
+    Width = 457
     Height = 21
-    DialogText = 'Select local directory.'
-    ClickKey = 16397
     Anchors = [akLeft, akTop, akRight]
+    ItemHeight = 13
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
-    OnKeyDown = LocalDirectoryEditKeyDown
+    OnKeyDown = DirectoryEditKeyDown
   end
   object RemoteDirectoryEdit: TIEComboBox
     Left = 8
@@ -173,13 +172,33 @@ object LocationProfilesDialog: TLocationProfilesDialog
     Anchors = [akLeft, akTop, akRight]
     ItemHeight = 13
     MaxLength = 1000
-    TabOrder = 1
+    TabOrder = 2
     Text = 'RemoteDirectoryEdit'
     OnChange = DirectoryEditChange
-    OnKeyDown = RemoteDirectoryEditKeyDown
+    OnKeyDown = DirectoryEditKeyDown
+  end
+  object LocalDirectoryBrowseButton: TButton
+    Left = 470
+    Top = 23
+    Width = 75
+    Height = 25
+    Caption = 'B&rowse...'
+    TabOrder = 1
+    OnClick = LocalDirectoryBrowseButtonClick
+  end
+  object SwitchButton: TButton
+    Left = 8
+    Top = 390
+    Width = 97
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Bookmarks...'
+    ModalResult = 2
+    TabOrder = 4
+    OnClick = SwitchButtonClick
   end
   object BookmarkImageList: TImageList
-    Left = 40
+    Left = 232
     Top = 384
     Bitmap = {
       494C010103000400040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600

@@ -38,6 +38,7 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FUpdateCounter = 0;
   FLastUpdate = 0;
   FDeleteToRecycleBin = false;
+  FReadOnly = false;
   FShowAsModalStorage = NULL;
   UseSystemSettings(this);
 }
@@ -353,6 +354,19 @@ bool __fastcall TProgressForm::GetAllowMinimize()
 void __fastcall TProgressForm::SetAllowMinimize(bool value)
 {
   MinimizeButton->Visible = value;
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SetReadOnly(bool value)
+{
+  if (FReadOnly != value)
+  {
+    CancelButton->Enabled = !value;
+    DisconnectWhenCompleteCheck->Enabled = !value;
+    if (!value)
+    {
+      DisconnectWhenCompleteCheck->Checked = false;
+    }
+  }
 }
 
 

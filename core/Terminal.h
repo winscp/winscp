@@ -92,12 +92,14 @@ const cpNewerOnly = 0x10;
 //---------------------------------------------------------------------------
 const ccApplyToDirectories = 0x01;
 const ccRecursive = 0x02;
+const ccUser = 0x100;
 //---------------------------------------------------------------------------
 const csIgnoreErrors = 0x01;
 //---------------------------------------------------------------------------
 class TTerminal : public TSecureShell
 {
 public:
+  // TScript::SynchronizeProc relies on the order
   enum TSynchronizeMode { smRemote, smLocal, smBoth };
   static const spDelete = 0x01;
   static const spNoConfirmation = 0x02;
@@ -138,6 +140,7 @@ private:
   AnsiString FLastDirectoryChange;
   TCurrentFSProtocol FFSProtocol;
   TTerminal * FCommandSession;
+  bool FAutoReadDirectory;
   void __fastcall CommandError(Exception * E, const AnsiString Msg);
   int __fastcall CommandError(Exception * E, const AnsiString Msg, int Answers);
   AnsiString __fastcall PeekCurrentDirectory();
@@ -196,7 +199,6 @@ protected:
   void __fastcall OpenLocalFile(const AnsiString FileName, int Access,
     int * Attrs, HANDLE * Handle, unsigned long * ACTime, unsigned long * MTime,
     unsigned long * ATime, __int64 * Size, bool TryWriteReadOnly = true);
-  TRemoteFileList * ReadDirectoryListing(AnsiString Directory, bool UseCache);
   bool __fastcall HandleException(Exception * E);
   void __fastcall CalculateFileSize(AnsiString FileName,
     const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);
@@ -238,6 +240,7 @@ public:
   void __fastcall BeginTransaction();
   void __fastcall ReadCurrentDirectory();
   void __fastcall ReadDirectory(bool ReloadOnly, bool ForceCache = false);
+  TRemoteFileList * ReadDirectoryListing(AnsiString Directory, bool UseCache);
   void __fastcall ReadFile(const AnsiString FileName, TRemoteFile *& File);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(TStrings * FilesToCopy,
@@ -311,6 +314,7 @@ public:
   __property bool AreCachesEmpty = { read = GetAreCachesEmpty };
   __property bool CommandSessionOpened = { read = GetCommandSessionOpened };
   __property TTerminal * CommandSession = { read = GetCommandSession };
+  __property bool AutoReadDirectory = { read = FAutoReadDirectory, write = FAutoReadDirectory };
 };
 //---------------------------------------------------------------------------
 class TSecondaryTerminal : public TTerminal

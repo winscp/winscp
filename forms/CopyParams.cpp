@@ -15,6 +15,7 @@
 #pragma package(smart_init)
 #pragma link "Rights"
 #pragma link "HistoryComboBox"
+#pragma link "XPThemes"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)

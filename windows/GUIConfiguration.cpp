@@ -10,18 +10,8 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-// C++B TLibModule is invalid (differs from PAS definition)
-struct TPasLibModule {
-  TPasLibModule * Next;
-  void * Instance;
-  void * CodeInstance;
-  void * DataInstance;
-  void * ResInstance;
-};
-//---------------------------------------------------------------------------
 static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
 static const AnsiString AdditionaLanguagePrefix("XX");
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TGUICopyParamType::TGUICopyParamType()
   : TCopyParamType()
@@ -196,25 +186,6 @@ void __fastcall TGUIConfiguration::LoadSpecial(THierarchicalStorage * Storage)
   #undef KEY
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-TPasLibModule * __fastcall TGUIConfiguration::FindModule(void * Instance)
-{
-  TPasLibModule * CurModule;
-  CurModule = reinterpret_cast<TPasLibModule*>(LibModuleList);
-
-  while (CurModule)
-  {
-    if (CurModule->Instance == Instance)
-    {
-      break;
-    }
-    else
-    {
-      CurModule = CurModule->Next;
-    }
-  }
-  return CurModule;
-}
 //---------------------------------------------------------------------------
 HANDLE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
   AnsiString * FileName)

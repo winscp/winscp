@@ -38,8 +38,13 @@ AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
 bool __fastcall IsDisplayableStr(const AnsiString Str);
 AnsiString __fastcall StrToHex(const AnsiString Str);
 AnsiString __fastcall HexToStr(const AnsiString Hex);
+unsigned int __fastcall HexToInt(const AnsiString Hex);
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
 int __fastcall CancelAnswer(int Answers);
+int __fastcall AbortAnswer(int Answers);
+AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength);
+struct TPasLibModule;
+TPasLibModule * __fastcall FindModule(void * Instance);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TProcessLocalFileEvent)
   (const AnsiString FileName, const TSearchRec Rec, void * Param);
@@ -57,6 +62,7 @@ TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, bool ConsiderDST
 void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTime2);
 unsigned long __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   bool ConsiderDST);
+AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format);
 //---------------------------------------------------------------------------
 class TCriticalSection
 {
@@ -79,6 +85,16 @@ public:
 
 private:
   TCriticalSection * FCriticalSection;
+};
+//---------------------------------------------------------------------------
+// C++B TLibModule is invalid (differs from PAS definition)
+struct TPasLibModule
+{
+  TPasLibModule * Next;
+  void * Instance;
+  void * CodeInstance;
+  void * DataInstance;
+  void * ResInstance;
 };
 //---------------------------------------------------------------------------
 #ifdef _DEBUG

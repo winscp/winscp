@@ -9,6 +9,7 @@
 #include <RemoteFiles.h>
 
 #include <FileCtrl.hpp>
+#include <XPThemes.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -86,7 +87,15 @@ void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings)
   {
     Control->FlipChildren(true);
   }
+
+  ResetSystemSettings(Control);
 };
+//---------------------------------------------------------------------------
+void __fastcall ResetSystemSettings(TCustomForm * Control)
+{
+  XPTheme->ShowFocus(Control);
+  XPTheme->ShowAccelerators(Control);
+}
 //---------------------------------------------------------------------------
 void __fastcall RevokeSystemSettings(TCustomForm * Control,
   void * Settings)

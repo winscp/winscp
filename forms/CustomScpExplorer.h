@@ -119,6 +119,8 @@ __published:
           BOOL FEscapePressed, int grfKeyState, HRESULT &Result);
   void __fastcall RemoteDirViewEnter(TObject *Sender);
   void __fastcall RemoteDriveViewEnter(TObject *Sender);
+  void __fastcall DirViewMatchMask(TObject *Sender,
+          AnsiString FileName, AnsiString Masks, bool &Matches);
   
 private:
   TTerminal * FTerminal;
@@ -151,6 +153,7 @@ private:
   int FLastDropEffect;
   bool FPendingTempSpaceWarn;
   TEditorManager * FEditorManager;
+  TStrings * FCapturedLog;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
@@ -160,16 +163,16 @@ private:
   void __fastcall SessionComboDrawItem(TWinControl * Control, int Index,
     const TRect & Rect, TOwnerDrawState State);
   void __fastcall SessionComboChange(TObject * Sender);
-  void __fastcall CustomCommandGetParamValue(const AnsiString Name,
-    AnsiString & Value);
   void __fastcall CloseInternalEditor(TObject * Sender);
   void __fastcall ForceCloseInternalEditor(TObject * Sender);
+  void __fastcall MakeFileList(const AnsiString FileName, const TSearchRec Rec,
+    void * Param);
+  void __fastcall TerminalCaptureLog(TObject* Sender, const AnsiString AddedLine);
 
 protected:
   TOperationSide FCurrentSide;
   TControl * FDDTargetControl;
   TProgressForm * FProgressForm;
-  AnsiString FCustomCommandName;
   TSynchronizeProgressForm * FSynchronizeProgressForm;
   HANDLE FDDExtMapFile;
   bool FDDMoveSlipped;
@@ -195,6 +198,7 @@ protected:
   virtual void __fastcall SetComponentVisible(Word Component, bool value);
   virtual void __fastcall FixControlsPlacement();
   void __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
+  void __fastcall CustomCommand(TStrings * FileList, const AnsiString & Name);
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall QueueChanged();
   void __fastcall UpdateStatusBar();
@@ -208,15 +212,12 @@ protected:
   void __fastcall ExecutedFileChanged(const AnsiString FileName,
     const TEditedFileData & Data, HANDLE UploadCompleteEvent);
   void __fastcall CMAppSysCommand(TMessage & Message);
+  void __fastcall WMAppCommand(TMessage & Message);
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
   void __fastcall HandleErrorList(TStringList *& ErrorList);
   void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, bool & Continue);
-  bool __fastcall DoFullSynchronizeDirectories(AnsiString & LocalDirectory,
-    AnsiString & RemoteDirectory, TSynchronizeMode & Mode);
-  bool __fastcall DoSynchronizeDirectories(AnsiString & LocalDirectory,
-    AnsiString & RemoteDirectory);
   void __fastcall DoSynchronize(TSynchronizeController * Sender,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
     const TSynchronizeParamType & Params);
@@ -264,10 +265,13 @@ protected:
   void __fastcall CustomExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, AnsiString FileName);
   bool __fastcall RemoteExecuteForceText(TExecuteFileBy ExecuteFileBy);
+  void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
+    AnsiString & TempDir);
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
     VCL_MESSAGE_HANDLER(CM_APPSYSCOMMAND, TMessage, CMAppSysCommand)
+    VCL_MESSAGE_HANDLER(_WM_APPCOMMAND, TMessage, WMAppCommand)
   END_MESSAGE_MAP(TForm)
   #pragma warn +inl
 
@@ -283,6 +287,7 @@ public:
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   virtual void __fastcall ChangePath(TOperationSide Side) = 0;
   virtual void __fastcall StoreParams();
+  bool __fastcall EnableCustomCommand(const AnsiString & Description);
   void __fastcall NewSession();
   void __fastcall CloseSession();
   void __fastcall OpenDirectory(TOperationSide Side);
@@ -316,6 +321,10 @@ public:
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
     bool DragDrop, const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
+  bool __fastcall DoSynchronizeDirectories(AnsiString & LocalDirectory,
+    AnsiString & RemoteDirectory);
+  bool __fastcall DoFullSynchronizeDirectories(AnsiString & LocalDirectory,
+    AnsiString & RemoteDirectory, TSynchronizeMode & Mode);
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation };

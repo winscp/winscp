@@ -70,11 +70,13 @@ private:
   void * FShowAsModalStorage;
   TDateTime FLastUpdate;
   bool FDeleteToRecycleBin;
+  bool FReadOnly;
 
   void __fastcall SetDisconnectWhenComplete(bool value);
   bool __fastcall GetDisconnectWhenComplete();
   void __fastcall SetAllowMinimize(bool value);
   bool __fastcall GetAllowMinimize();
+  void __fastcall SetReadOnly(bool value);
 
 protected:
   void __fastcall CancelOperation();
@@ -91,6 +93,7 @@ public:
   __property bool DisconnectWhenComplete = { read=GetDisconnectWhenComplete, write=SetDisconnectWhenComplete };
   __property bool AllowMinimize = { read=GetAllowMinimize, write=SetAllowMinimize };
   __property bool DeleteToRecycleBin = { read=FDeleteToRecycleBin, write=FDeleteToRecycleBin };
+  __property bool ReadOnly = { read=FReadOnly, write=SetReadOnly };
 };
 //----------------------------------------------------------------------------
 #endif

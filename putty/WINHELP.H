@@ -13,6 +13,8 @@
 #define WINHELP_CTX_logging_main "logging.main"
 #define WINHELP_CTX_logging_filename "logging.filename"
 #define WINHELP_CTX_logging_exists "logging.exists"
+#define WINHELP_CTX_logging_ssh_omit_password "logging.ssh.omitpassword"
+#define WINHELP_CTX_logging_ssh_omit_data "logging.ssh.omitdata"
 #define WINHELP_CTX_keyboard_backspace "keyboard.backspace"
 #define WINHELP_CTX_keyboard_homeend "keyboard.homeend"
 #define WINHELP_CTX_keyboard_funkeys "keyboard.funkeys"

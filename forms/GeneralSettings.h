@@ -8,7 +8,7 @@
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
 #include <Graphics.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 //---------------------------------------------------------------------------
 class TGeneralSettingsFrame : public TFrame
 {

@@ -456,6 +456,7 @@ type
     property OnDDMenuPopup;
 
     property OnExecFile;
+    property OnMatchMask; 
 
     property CompressedColor: TColor
       read FCompressedColor write SetCompressedColor default clBlue;
@@ -2751,55 +2752,46 @@ var
 begin
   DirName := Path + '\' + DirName;
 
-  {Ermitteln des neuen Dateinamens:}
-  if FileOrDirExists(DirName) then LastIOResult := 183
-    else
-  begin
 {$IFNDEF NO_THREADS}
-    if WatchForChanges then StopWatchThread;
+  if WatchForChanges then StopWatchThread;
 
+  {$IFDEF USE_DRIVEVIEW}
+  if Assigned(FDriveView) then
+    TDriveView(FDriveView).StopWatchThread;
+  {$ENDIF}
+
+  StopIconUpdateThread;
+{$ENDIF}
+  try
+    {create the phyical directory:}
+    Win32Check(Windows.CreateDirectory(PChar(DirName), nil));
+
+    {Create the TListItem:}
+    if FindFirst(DirName, faAnyFile, SRec) = 0 then
+    begin
+      Item := AddItem(SRec);
+      ItemFocused := FindFileItem(GetFileRec(Item.Index)^.FileName);
+      SortItems;
+      if Assigned(ItemFocused) then
+        ItemFocused.MakeVisible(False);
+      if Assigned(OnDirUpdated) then
+        OnDirUpdated(Self);
+    end;
+    FindClose(SRec);
+
+  finally
+{$IFNDEF NO_THREADS}
+    if FUseIconUpdateThread then
+      StartIconUpdateThread;
+
+    if WatchForChanges then StartWatchThread;
+{$ENDIF}
     {$IFDEF USE_DRIVEVIEW}
     if Assigned(FDriveView) then
-      TDriveView(FDriveView).StopWatchThread;
+      with FDriveView as TDriveView do
+        if not WatchThreadActive and Assigned(Selected) then
+          ValidateDirectory(Selected);
     {$ENDIF}
-
-    StopIconUpdateThread;
-{$ENDIF}
-    try
-      {create the phyical directory:}
-      if Windows.CreateDirectory(PChar(DirName), nil) then LastIOResult := 0 // MP
-        else LastIOResult := GetLastError;
-
-      if LastIOResult = 0 then
-      begin
-        {Create the TListItem:}
-        if FindFirst(DirName, faAnyFile, SRec) = 0 then
-        begin
-          Item := AddItem(SRec);
-          ItemFocused := FindFileItem(GetFileRec(Item.Index)^.FileName);
-          SortItems;
-          if Assigned(ItemFocused) then
-            ItemFocused.MakeVisible(False);
-          if Assigned(OnDirUpdated) then
-            OnDirUpdated(Self);
-        end;
-        FindClose(SRec);
-      end;
-
-    finally
-{$IFNDEF NO_THREADS}
-      if FUseIconUpdateThread then
-        StartIconUpdateThread;
-
-      if WatchForChanges then StartWatchThread;
-{$ENDIF}
-      {$IFDEF USE_DRIVEVIEW}
-      if Assigned(FDriveView) then
-        with FDriveView as TDriveView do
-          if not WatchThreadActive and Assigned(Selected) then
-            ValidateDirectory(Selected);
-      {$ENDIF}
-    end;
   end;
 end; {CreateDirectory}
 

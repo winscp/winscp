@@ -18,13 +18,14 @@
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-void __fastcall DoConsoleDialog(TTerminal * Terminal, const AnsiString Command)
+void __fastcall DoConsoleDialog(TTerminal * Terminal, const AnsiString Command,
+  const TStrings * Log)
 {
   TConsoleDialog * Dialog = new TConsoleDialog(Application);
   try
   {
     Dialog->Terminal = Terminal;
-    Dialog->Execute(Command);
+    Dialog->Execute(Command, Log);
   }
   __finally
   {
@@ -33,7 +34,7 @@ void __fastcall DoConsoleDialog(TTerminal * Terminal, const AnsiString Command)
 }
 //---------------------------------------------------------------------
 __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
-	: TForm(AOwner)
+    : TForm(AOwner)
 {
   FTerminal = NULL;
   FOldLogAddLine = NULL;
@@ -100,7 +101,8 @@ void __fastcall TConsoleDialog::UpdateControls()
     (FTerminal != NULL) ? FTerminal->AllowedAnyCommand(CommandEdit->Text) : false);
 }
 //---------------------------------------------------------------------
-bool __fastcall TConsoleDialog::Execute(const AnsiString Command)
+bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
+  const TStrings * Log)
 {
   FPrevTerminalClose = NULL;;
   if (FTerminal)
@@ -121,6 +123,24 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command)
     {
       CommandEdit->Items->Clear();
     }
+
+    if (Log != NULL)
+    {
+      OutputMemo->Lines->BeginUpdate();
+      try
+      {
+        TStrings * ALog = const_cast<TStrings *>(Log);
+        for (int i = 0; i < ALog->Count; i++)
+        {
+          AddLine(ALog->Strings[i]);
+        }
+      }
+      __finally
+      {
+        OutputMemo->Lines->EndUpdate();
+      }
+    }
+
     if (!Command.IsEmpty())
     {
       CommandEdit->Text = Command;
@@ -201,11 +221,17 @@ void __fastcall TConsoleDialog::CommandEditChange(TObject * /*Sender*/)
 void __fastcall TConsoleDialog::DoLogAddLine(TObject* /*Sender*/,
   const AnsiString AddedLine)
 {
-  if (FAddOutput &&
-      !AddedLine.IsEmpty() && (AddedLine[1] == '<' || AddedLine[1] == '!'))
+  if (FAddOutput)
+  {
+    AddLine(AddedLine);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::AddLine(AnsiString Line)
+{
+  if (!Line.IsEmpty() && (Line[1] == '<' || Line[1] == '!'))
   {
     int ReturnCode;
-    AnsiString Line = AddedLine;
     Line.Delete(1, 2);
     if (!TSCPFileSystem::RemoveLastLine(Line, ReturnCode) ||
         !Line.IsEmpty())

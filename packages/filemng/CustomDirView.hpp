@@ -85,6 +85,8 @@ typedef void __fastcall (__closure *TDirViewExecFileEvent)(System::TObject* Send
 
 typedef void __fastcall (__closure *TRenameEvent)(System::TObject* Sender, Comctrls::TListItem* Item, AnsiString NewName);
 
+typedef void __fastcall (__closure *TMatchMaskEvent)(System::TObject* Sender, AnsiString FileName, AnsiString Masks, bool &Matches);
+
 #pragma option push -b-
 enum TSelAttr { selDontCare, selYes, selNo };
 #pragma option pop
@@ -115,6 +117,17 @@ enum TCompareCriteria { ccTime, ccSize };
 #pragma option pop
 
 typedef Set<TCompareCriteria, ccTime, ccSize>  TCompareCriterias;
+
+#pragma pack(push, 1)
+struct TWMXMouse
+{
+	unsigned Msg;
+	Word Keys;
+	Word Button;
+	Types::TSmallPoint Pos;
+	int Result;
+} ;
+#pragma pack(pop)
 
 class DELPHICLASS TCustomizableDragDropFilesEx;
 class PASCALIMPLEMENTATION TCustomizableDragDropFilesEx : public Dragdropfilesex::TDragDropFilesEx 
@@ -222,12 +235,15 @@ private:
 	AnsiString FSavedSelectionFile;
 	AnsiString FSavedSelectionLastFile;
 	bool FPendingFocusSomething;
+	TMatchMaskEvent FOnMatchMask;
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDblClk(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMContextMenu(Messages::TWMContextMenu &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMRButtonDown(Messages::TWMMouse &Message);
+	MESSAGE void __fastcall WMXButtonUp(TWMXMouse &Message);
+	MESSAGE void __fastcall WMAppCommand(Messages::TMessage &Message);
 	void __fastcall DumbCustomDrawItem(Comctrls::TCustomListView* Sender, Comctrls::TListItem* Item, Comctrls::TCustomDrawState State, bool &DefaultDraw);
 	void __fastcall DumbCustomDrawSubItem(Comctrls::TCustomListView* Sender, Comctrls::TListItem* Item, int SubItem, Comctrls::TCustomDrawState State, bool &DefaultDraw);
 	Menus::TPopupMenu* __fastcall GetBackMenu(void);
@@ -345,6 +361,7 @@ protected:
 	DYNAMIC void __fastcall UpdatePathLabel(void);
 	DYNAMIC void __fastcall UpdateStatusBar(void);
 	virtual void __fastcall WndProc(Messages::TMessage &Message);
+	bool __fastcall FileNameMatchesMasks(AnsiString FileName, AnsiString Masks);
 	__property Controls::TImageList* ImageList16 = {read=FImageList16};
 	__property Controls::TImageList* ImageList32 = {read=FImageList32};
 	
@@ -451,6 +468,7 @@ public:
 	__property Dragdrop::TOnMenuPopup OnDDMenuPopup = {read=FOnDDMenuPopup, write=FOnDDMenuPopup};
 	__property TDirViewExecFileEvent OnExecFile = {read=FOnExecFile, write=FOnExecFile};
 	__property THistoryChangeEvent OnHistoryChange = {read=FOnHistoryChange, write=FOnHistoryChange};
+	__property TMatchMaskEvent OnMatchMask = {read=FOnMatchMask, write=FOnMatchMask};
 	__property Custompathcombobox::TCustomPathComboBox* PathComboBox = {read=FPathComboBox, write=SetPathComboBox};
 	__property Pathlabel::TCustomPathLabel* PathLabel = {read=FPathLabel, write=SetPathLabel};
 	__property bool ShowHiddenFiles = {read=FShowHiddenFiles, write=SetShowHiddenFiles, default=1};
@@ -480,6 +498,28 @@ static const int DDVScrollDelay = 0x1e8480;
 static const int DDHScrollDelay = 0x1e8480;
 static const int DDDragStartDelay = 0x7a120;
 static const Shortint DirAttrMask = 0x16;
+static const Word _WM_XBUTTONUP = 0x20c;
+static const Word _WM_APPCOMMAND = 0x319;
+static const Shortint _XBUTTON1 = 0x1;
+static const Shortint _XBUTTON2 = 0x2;
+static const Shortint _APPCOMMAND_BROWSER_BACKWARD = 0x1;
+static const Shortint _APPCOMMAND_BROWSER_FORWARD = 0x2;
+static const Shortint _APPCOMMAND_BROWSER_REFRESH = 0x3;
+static const Shortint _APPCOMMAND_BROWSER_STOP = 0x4;
+static const Shortint _APPCOMMAND_BROWSER_SEARCH = 0x5;
+static const Shortint _APPCOMMAND_BROWSER_FAVORITES = 0x6;
+static const Shortint _APPCOMMAND_BROWSER_HOME = 0x7;
+static const Byte _VK_BROWSER_BACK = 0xa6;
+static const Byte _VK_BROWSER_FORWARD = 0xa7;
+static const Byte _VK_BROWSER_REFRESH = 0xa8;
+static const Byte _VK_BROWSER_STOP = 0xa9;
+static const Byte _VK_BROWSER_SEARCH = 0xaa;
+static const Byte _VK_BROWSER_FAVORITES = 0xab;
+static const Byte _VK_BROWSER_HOME = 0xac;
+static const Word _FAPPCOMMAND_MOUSE = 0x8000;
+static const Shortint _FAPPCOMMAND_KEY = 0x0;
+static const Word _FAPPCOMMAND_OEM = 0x1000;
+static const Word _FAPPCOMMAND_MASK = 0xf000;
 extern PACKAGE System::ResourceString _SErrorOpenFile;
 #define Customdirview_SErrorOpenFile System::LoadResourceString(&Customdirview::_SErrorOpenFile)
 extern PACKAGE System::ResourceString _SErrorRenameFile;
@@ -514,7 +554,6 @@ extern PACKAGE int DefaultExeIcon;
 extern PACKAGE AnsiString UserDocumentDirectory;
 extern PACKAGE bool __fastcall IsExecutable(AnsiString FileName);
 extern PACKAGE AnsiString __fastcall GetNextMask(AnsiString &Mask);
-extern PACKAGE bool __fastcall FileNameMatchesMasks(AnsiString FileName, AnsiString Masks);
 extern PACKAGE void __fastcall DefaultFileFilter(TFileFilter &Filter);
 extern PACKAGE AnsiString __fastcall ResolveFileShortCut(AnsiString SourceFile, bool ShowDialog = false);
 extern PACKAGE bool __fastcall CreateFileShortCut(AnsiString SourceFile, AnsiString Target, AnsiString DisplayName, bool UpdateIfExists = false);

@@ -10,9 +10,9 @@
       core\FileOperationProgress.obj core\FileSystems.obj 
       core\HierarchicalStorage.obj core\NamedObjs.obj core\Net.obj 
       core\PuttyIntf.obj core\Queue.obj core\RemoteFiles.obj 
-      core\ScpFileSystem.obj core\ScpMain.obj core\SecureShell.obj 
-      core\Security.obj core\SessionData.obj core\SftpFileSystem.obj 
-      core\Terminal.obj"/>
+      core\ScpFileSystem.obj core\ScpMain.obj core\Script.obj 
+      core\SecureShell.obj core\Security.obj core\SessionData.obj 
+      core\SftpFileSystem.obj core\Terminal.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
@@ -27,7 +27,7 @@
     <USERDEFINES value="USE_COMPATIBLE_THREAD;GSSAPI;_WINDOWS"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpCore.bpf"/>
-    <INCLUDEPATH value="windows;core;putty;resource;packages\my\filemng;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="windows;core;putty;resource;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="windows;core;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -37,7 +37,7 @@
   <OPTIONS>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
-    <AFLAGS value="/mx /w2 /zn"/>
+    <AFLAGS value="/mx /w2 /zi"/>
     <LFLAGS value="/P128"/>
     <OTHERFILES value=""/>
   </OPTIONS>
@@ -66,6 +66,7 @@
       <FILE FILENAME="core\RemoteFiles.cpp" FORMNAME="" UNITNAME="RemoteFiles.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\ScpFileSystem.cpp" FORMNAME="" UNITNAME="ScpFileSystem" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\ScpMain.cpp" FORMNAME="" UNITNAME="ScpMain.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="core\Script.cpp" FORMNAME="" UNITNAME="Script" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\SecureShell.cpp" FORMNAME="" UNITNAME="SecureShell.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Security.cpp" FORMNAME="" UNITNAME="Security.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\SessionData.cpp" FORMNAME="" UNITNAME="SessionData.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -109,9 +110,7 @@ ProductVersion=1.0.0.0
 Comments=
 
 [Compiler]
-ShowInfoMsgs=1
+ShowInfoMsgs=0
 LinkDebugVcl=0
-LinkCGLIB=0
-
   </IDEOPTIONS>
 </PROJECT>

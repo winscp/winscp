@@ -54,7 +54,7 @@ int makekey(unsigned char *data, int len, struct RSAKey *result,
     }
 
     n = ssh1_read_bignum(p, len, result ? &result->modulus : NULL);
-    if (n < 0) return -1;
+    if (n < 0 || (result && bignum_bitcount(result->modulus) == 0)) return -1;
     if (result)
 	result->bytes = n - 2;
     if (keystr)

@@ -9,6 +9,7 @@
 #include <Configuration.h>
 #include <ScpMain.h>
 #include <Terminal.h>
+#include <Net.h>
 
 #include <Log.h>
 #include <TextsWin.h>
@@ -22,77 +23,18 @@
 #include "WinConfiguration.h"
 #include "GUITools.h"
 
-#include <NMHttp.hpp>
-#include <Psock.hpp>
+#include <TcpIp.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 TSessionData * GetLoginData(AnsiString SessionName, AnsiString & DownloadFile)
 {
-  bool ProtocolDefined = false;
-  TFSProtocol Protocol;
-  if (SessionName.SubString(1, 6).LowerCase() == "scp://")
-  {
-    Protocol = fsSCPonly;
-    SessionName.Delete(1, 6);
-    ProtocolDefined = true;
-  }
-  else if (SessionName.SubString(1, 7).LowerCase() == "sftp://")
-  {
-    Protocol = fsSFTPonly;
-    SessionName.Delete(1, 7);
-    ProtocolDefined = true;
-  }
+  bool DefaultsOnly;
+  TSessionData * Data;
 
-  bool DefaultsOnly = true;
-  TSessionData *Data = new TSessionData("");
-  if (!SessionName.IsEmpty())
-  {
-    TSessionData * AData;
-    // lookup stored session session even if protocol was defined
-    // (this allows setting for example default username for host
-    // by creating stored session named by host)
-    AnsiString ASessionName(SessionName); 
-    if (ASessionName[ASessionName.Length()] == '/')
-    {
-      ASessionName.SetLength(ASessionName.Length() - 1);
-    }
-    AData = (TSessionData *)StoredSessions->FindByName(ASessionName, False);
-    
-    if (!AData)
-    {
-      Data->Assign(StoredSessions->DefaultSettings);
-      if (Data->ParseUrl(SessionName, puExtractFileName, &DownloadFile))
-      {
-        Data->Name = "";
-        DefaultsOnly = false;
-      }
-      else
-      {
-        SimpleErrorDialog(FMTLOAD(SESSION_NOT_EXISTS_ERROR, (SessionName)));
-      }
-    }
-    else
-    {
-      DefaultsOnly = false;
-      Data->Assign(AData);
-      if (StoredSessions->IsHidden(AData))
-      {
-        AData->Remove();
-        StoredSessions->Remove(AData);
-        StoredSessions->Save();
-      }
-    }
-  }
-  else
-  {
-    Data->Assign(StoredSessions->DefaultSettings);
-  }
-
-  if (ProtocolDefined)
-  {
-    Data->FSProtocol = Protocol;
-  }
+  Data = StoredSessions->ParseUrl(SessionName, DefaultsOnly,
+    puExtractFileName, &DownloadFile);
+  assert(Data != NULL);
 
   if (!Data->CanLogin || DefaultsOnly)
   {
@@ -169,6 +111,65 @@ void __fastcall Download(TTerminal * Terminal, const AnsiString FileName)
   {
     delete FileList;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall SynchronizeDirectories(TTerminal * Terminal,
+  TProgramParams * Params, int ParamStart,
+  AnsiString & LocalDirectory, AnsiString & RemoteDirectory)
+{
+  if (ParamStart <= Params->ParamCount)
+  {
+    LocalDirectory = Params->Param[ParamStart];
+  }
+  else if (!Terminal->SessionData->LocalDirectory.IsEmpty())
+  {
+    LocalDirectory = Terminal->SessionData->LocalDirectory;
+  }
+  else
+  {
+    LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
+  }
+
+  if (ParamStart + 1 <= Params->ParamCount)
+  {
+    RemoteDirectory = Params->Param[ParamStart + 1];
+  }
+  else
+  {
+    RemoteDirectory = Terminal->CurrentDirectory;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
+  TProgramParams * Params, int ParamStart)
+{
+  AnsiString LocalDirectory;
+  AnsiString RemoteDirectory;
+
+  SynchronizeDirectories(Terminal, Params, ParamStart, LocalDirectory, RemoteDirectory);
+
+  TSynchronizeMode Mode = smRemote;
+  if (ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory,
+        RemoteDirectory, Mode))
+  {
+    Terminal->CloseOnCompletion();
+  }
+  else
+  {
+    Abort();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
+  TProgramParams * Params, int ParamStart)
+{
+  AnsiString LocalDirectory;
+  AnsiString RemoteDirectory;
+
+  SynchronizeDirectories(Terminal, Params, ParamStart, LocalDirectory, RemoteDirectory);
+
+  ScpExplorer->DoSynchronizeDirectories(LocalDirectory, RemoteDirectory);
+  Abort();
 }
 //---------------------------------------------------------------------------
 int __fastcall CalculateCompoundVersion(int MajorVer,
@@ -285,15 +286,26 @@ void __fastcall CheckForUpdates()
     {
       AnsiString Response;
 
-      TNMHTTP * CheckForUpdatesHTTP = new TNMHTTP(Application);
+      if (SessionsCount == 0)
+      {
+        NetInitialize();
+      }
+
+      THttp * CheckForUpdatesHTTP = new THttp(Application);
       try
       {
-        CheckForUpdatesHTTP->Get(LoadStr(UPDATES_URL));
-        Response = CheckForUpdatesHTTP->Body;
+        CheckForUpdatesHTTP->URL = LoadStr(UPDATES_URL);
+        CheckForUpdatesHTTP->Action();
+        Response.SetLength(static_cast<int>(CheckForUpdatesHTTP->Stream->Size));
+        CheckForUpdatesHTTP->Stream->Read(Response.c_str(), Response.Length());
       }
       __finally
       {
         delete CheckForUpdatesHTTP;
+        if (SessionsCount == 0)
+        {
+          NetFinalize();
+        }
       }
 
       while (!Response.IsEmpty() && !Found)
@@ -423,6 +435,13 @@ void __fastcall Execute(TProgramParams * Params)
   CreateMutex(NULL, False, AppName.c_str());
   bool OnlyInstance = (GetLastError() == 0);
 
+  bool Help = Params->FindSwitch("help") || Params->FindSwitch("h") || Params->FindSwitch("?");
+  if (Help || Params->FindSwitch("Console"))
+  {
+    Console(Params, Help);
+    return;
+  }
+
   TTerminalManager * TerminalManager = NULL;
   NonVisualDataModule = NULL;
   try
@@ -459,24 +478,43 @@ void __fastcall Execute(TProgramParams * Params)
     else
     {
       TSessionData * Data;
-      int UploadListStart = 0;
+      enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize } ParamCommand;
+      ParamCommand = pcNone;
+      int CommandParamsStart;
       AnsiString AutoStartSession;
       AnsiString DownloadFile;
 
-      if (Params->ParamCount)
+      if (Params->Count > 0)
       {
         AnsiString DummyValue;
-        if (Params->FindSwitch("Upload", DummyValue, UploadListStart))
+        if (Params->FindSwitch("Upload", DummyValue, CommandParamsStart))
         {
-          UploadListStart++;
-          if (UploadListStart >= 2)
+          ParamCommand = pcUpload;
+          if (CommandParamsStart == Params->ParamCount)
           {
-            AutoStartSession = Params->Param[1];
+            throw Exception(NO_UPLOAD_LIST_ERROR);
           }
+        }
+        else if (Params->FindSwitch("Synchronize", DummyValue, CommandParamsStart))
+        {
+          ParamCommand = pcFullSynchronize;
+        }
+        else if (Params->FindSwitch("KeepUpToDate", DummyValue, CommandParamsStart))
+        {
+          ParamCommand = pcSynchronize;
         }
         else
         {
           AutoStartSession = Params->Param[1];
+        }
+
+        if (ParamCommand != pcNone)
+        {
+          CommandParamsStart++;
+          if (CommandParamsStart >= 2)
+          {
+            AutoStartSession = Params->Param[1];
+          }
         }
       }
       else if (WinConfiguration->EmbeddedSessions && StoredSessions->Count)
@@ -510,17 +548,27 @@ void __fastcall Execute(TProgramParams * Params)
             {
               // moved inside try .. __finally, because it can fail as well
               TerminalManager->ScpExplorer = ScpExplorer;
-              if (UploadListStart > 0)
+              if (ParamCommand == pcUpload)
               {
-                if (UploadListStart <= Params->ParamCount)
+                if (CommandParamsStart <= Params->ParamCount)
                 {
                   Upload(TerminalManager->ActiveTerminal, Params,
-                    UploadListStart, Params->ParamCount);
+                    CommandParamsStart, Params->ParamCount);
                 }
                 else
                 {
                   throw Exception(NO_UPLOAD_LIST_ERROR);
                 }
+              }
+              else if (ParamCommand == pcFullSynchronize)
+              {
+                FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                  Params, CommandParamsStart);
+              }
+              else if (ParamCommand == pcSynchronize)
+              {
+                Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                  Params, CommandParamsStart);
               }
               else if (!DownloadFile.IsEmpty())
               {

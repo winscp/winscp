@@ -281,4 +281,50 @@ AnsiString __fastcall TranslateExceptionMessage(const Exception * E)
     return E->Message;
   }
 }
+//---------------------------------------------------------------------------
+TLocalCustomCommand::TLocalCustomCommand()
+{
+}
+//---------------------------------------------------------------------------
+TLocalCustomCommand::TLocalCustomCommand(const AnsiString & FileName,
+  const AnsiString & LocalFileName, const AnsiString & FileList) :
+  TFileCustomCommand(FileName, FileList)
+{
+  FLocalFileName = LocalFileName;
+}
+//---------------------------------------------------------------------------
+int __fastcall TLocalCustomCommand::PatternLen(int Index, char PatternCmd)
+{
+  int Len;
+  if (PatternCmd == '^')
+  {
+    Len = 3;
+  }
+  else
+  {
+    Len = TFileCustomCommand::PatternLen(Index, PatternCmd);
+  }
+  return Len;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLocalCustomCommand::PatternReplacement(int Index,
+  const AnsiString & Pattern, AnsiString & Replacement)
+{
+  bool Result;
+  if (Pattern == "!^!")
+  {
+    Replacement = FLocalFileName;
+    Result = true;
+  }
+  else
+  {
+    Result = TFileCustomCommand::PatternReplacement(Index, Pattern, Replacement);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLocalCustomCommand::HasLocalFileName(const AnsiString & Command)
+{
+  return FindPattern(Command, '^');
+}
 

@@ -7,6 +7,8 @@
 //---------------------------------------------------------------------------
 enum TEditor { edInternal, edExternal };
 extern const char ShellCommandFileNamePattern[];
+extern const ccLocal;
+extern const ccShowResults;
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TScpExplorerConfiguration {

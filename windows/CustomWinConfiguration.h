@@ -3,8 +3,10 @@
 #define CustomWinConfigurationH
 //---------------------------------------------------------------------------
 #include "GUIConfiguration.h"
-//---------------------------------------------------------------------------
-#define WM_LOCALE_CHANGE (WM_USER + 1)
+#define WM_WINSCP_USER   (WM_USER + 0x2000)
+#define WM_LOCALE_CHANGE (WM_WINSCP_USER + 1)
+// WM_USER_STOP = WM_WINSCP_USER + 2 (in forms/Synchronize.cpp)
+// WM_INTERUPT_IDLE = WM_WINSCP_USER + 3 (in windows/Console.cpp)
 //---------------------------------------------------------------------------
 class TCustomWinConfiguration : public TGUIConfiguration
 {

@@ -17,7 +17,7 @@
 #include <ComboEdit.hpp>
 #include <ActnList.hpp>
 #include <UpDownEdit.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 #include <PasswordEdit.hpp>
 #include <Menus.hpp>
 //----------------------------------------------------------------------------

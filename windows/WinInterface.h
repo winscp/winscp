@@ -18,10 +18,16 @@ const int mpAllowContinueOnError = 0x02;
 struct TMessageParams
 {
   TMessageParams(unsigned int AParams = 0);
-  
+  TMessageParams(const TQueryParams * AParams);
+
   const TQueryButtonAlias * Aliases;
   unsigned int AliasesCount;
   unsigned int Params;
+  unsigned int Timer;
+  TQueryParamsTimerEvent TimerEvent;
+
+private:
+  inline void Reset();
 };
 
 class TCustomScpExplorerForm;
@@ -74,7 +80,7 @@ bool __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
 
 // forms\Console.cpp
 void __fastcall DoConsoleDialog(TTerminal * Terminal,
-    const AnsiString Command = "");
+    const AnsiString Command = "", const TStrings * Log = NULL);
 
 // forms\Copy.cpp
 const coDragDropTemp        = 0x01;
@@ -116,19 +122,26 @@ bool __fastcall DoLoginDialog(TStoredSessionList * SessionList,
 // forms\OpenDirectory.cpp
 enum TOpenDirectoryMode { odBrowse, odAddBookmark };
 bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
-  AnsiString & Directory, TStrings * directories, TTerminal * Terminal);
+  AnsiString & Directory, TStrings * Directories, TTerminal * Terminal,
+  bool AllowSwitch);
 
 // forms\LocatinoProfiles.cpp
 bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   TOperationSide Side, AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
-  TStrings * RemoteDirectories, TTerminal * Terminal);
+  TStrings * LocalDirectories, TStrings * RemoteDirectories, TTerminal * Terminal);
 
 // forms\Preferences.cpp
-enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands, 
+enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands,
     pmQueue, pmTransfer };
 typedef void __fastcall (__closure *TGetDefaultLogFileName)
   (System::TObject* Sender, AnsiString &DefaultLogFileName);
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode);
+
+// forms\CustomCommand.cpp
+class TCustomCommands;
+bool __fastcall DoCustomCommandDialog(AnsiString & Description,
+  AnsiString & Command, int & Params, const TCustomCommands * CustomCommands,
+  bool Edit);
 
 // forms\Password.cpp
 bool __fastcall DoPasswordDialog(const AnsiString Caption, TPromptKind Kind,
@@ -192,5 +205,22 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
   TQueryButtonAlias * Aliases = NULL, unsigned int AliasesCount = 0);
 
+// windows\\Console.cpp
+void __fastcall Console(TProgramParams * Params, bool Help);
+
+//---------------------------------------------------------------------------
+class TWinInteractiveCustomCommand : public TInteractiveCustomCommand
+{
+public:
+  TWinInteractiveCustomCommand(TCustomCommand * ChildCustomCommand,
+    const AnsiString CustomCommandName);
+
+protected:
+  virtual void __fastcall Prompt(int Index, const AnsiString & Prompt,
+    AnsiString & Value);
+
+private:
+  AnsiString FCustomCommandName;
+};
 //---------------------------------------------------------------------------
 #endif // WinInterfaceH

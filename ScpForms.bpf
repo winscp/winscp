@@ -8,6 +8,7 @@ USEFORM("forms\ComboInput.cpp", ComboInputDialog);
 USEFORM("forms\Console.cpp", ConsoleDialog);
 USEFORM("forms\Copy.cpp", CopyDialog);
 USEFORM("forms\CopyParams.cpp", CopyParamsFrame); /* TFrame: File Type */
+USEFORM("forms\CustomCommand.cpp", CustomCommandDialog);
 USEFORM("forms\Editor.cpp", EditorForm);
 USEFORM("forms\FileSystemInfo.cpp", FileSystemInfoDialog);
 USEFORM("forms\FullSynchronize.cpp", FullSynchronizeDialog);

@@ -22,18 +22,17 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Height = 13
     Caption = '&Open directory:'
   end
-  object LocalDirectoryEdit: TDirectoryEdit
+  object LocalDirectoryEdit: TIEComboBox
     Left = 8
     Top = 25
-    Width = 362
+    Width = 281
     Height = 21
-    DialogText = 'Select local directory.'
-    ClickKey = 16397
     Anchors = [akLeft, akTop, akRight]
+    ItemHeight = 13
     TabOrder = 1
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
-    OnKeyDown = LocalDirectoryEditKeyDown
+    OnKeyDown = DirectoryEditKeyDown
   end
   object RemoteDirectoryEdit: TIEComboBox
     Left = 8
@@ -46,7 +45,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     TabOrder = 0
     Text = 'RemoteDirectoryEdit'
     OnChange = DirectoryEditChange
-    OnKeyDown = RemoteDirectoryEditKeyDown
+    OnKeyDown = DirectoryEditKeyDown
   end
   object OKBtn: TButton
     Left = 204
@@ -57,7 +56,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 3
+    TabOrder = 5
   end
   object CancelBtn: TButton
     Left = 292
@@ -68,7 +67,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 4
+    TabOrder = 6
   end
   object BookmarksGroup: TXPGroupBox
     Left = 8
@@ -77,7 +76,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Height = 209
     Anchors = [akLeft, akTop, akRight, akBottom]
     Caption = 'Bookmarks'
-    TabOrder = 2
+    TabOrder = 3
     DesignSize = (
       359
       209)
@@ -145,5 +144,25 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       TabOrder = 4
       OnClick = BookmarkButtonClick
     end
+  end
+  object LocalDirectoryBrowseButton: TButton
+    Left = 293
+    Top = 23
+    Width = 75
+    Height = 25
+    Caption = 'B&rowse...'
+    TabOrder = 2
+    OnClick = LocalDirectoryBrowseButtonClick
+  end
+  object SwitchButton: TButton
+    Left = 8
+    Top = 274
+    Width = 121
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Location Profiles...'
+    ModalResult = 2
+    TabOrder = 4
+    OnClick = SwitchButtonClick
   end
 end

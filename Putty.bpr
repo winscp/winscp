@@ -4,8 +4,8 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\Putty.lib"/>
-    <OBJFILES value="putty\BE_NONE.obj putty\BUFFER.obj putty\INT64.obj 
-      putty\LOGGING.obj putty\MISC.obj putty\NOISE.obj 
+    <OBJFILES value="putty\BE_NONE.obj putty\BUFFER.obj putty\CPROXY.obj 
+      putty\INT64.obj putty\LOGGING.obj putty\MISC.obj putty\NOISE.obj 
       putty\PAGEANTC.obj putty\PORTFWD.obj putty\PPROXY.obj 
       putty\PROXY.obj putty\SSH_.obj putty\SSHAES.obj putty\SSHBLOWF.obj 
       putty\SSHBN.obj putty\SSHCRC.obj putty\SSHCRCDA.obj 
@@ -51,6 +51,7 @@
       <FILE FILENAME="Putty.bpf" FORMNAME="" UNITNAME="Putty" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\BE_NONE.C" FORMNAME="" UNITNAME="BE_NONE.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\BUFFER.C" FORMNAME="" UNITNAME="BUFFER.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\CPROXY.C" FORMNAME="" UNITNAME="CPROXY.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\INT64.C" FORMNAME="" UNITNAME="INT64.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\LOGGING.C" FORMNAME="" UNITNAME="LOGGING.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\MISC.C" FORMNAME="" UNITNAME="MISC.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -117,7 +118,5 @@ Comments=
 [Compiler]
 ShowInfoMsgs=0
 LinkDebugVcl=0
-LinkCGLIB=0
-
   </IDEOPTIONS>
 </PROJECT>

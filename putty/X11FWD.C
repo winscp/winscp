@@ -1,3 +1,7 @@
+/*
+ * Platform-independent bits of X11 forwarding.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -228,14 +232,21 @@ int x11_get_screen_number(char *display)
 
 /* Find the right display, returns an allocated string */
 char *x11_display(const char *display) {
-    if(!display || !*display)
-	if(!(display = getenv("DISPLAY")))
-	    display = ":0";
-    if(display[0] == ':') {
-	/* no transport specified, use whatever we think is best */
-	return dupcat(platform_x11_best_transport, display, (char *)0);
+    char *ret;
+    if(!display || !*display) {
+	/* try to find platform-specific local display */
+	if(!(ret = platform_get_x_display()))
+	    /* plausible default for all platforms */
+	    ret = dupstr(":0");
     } else
-	return dupstr(display);
+	ret = dupstr(display);
+    if(ret[0] == ':') {
+	/* no transport specified, use whatever we think is best */
+	char *s = dupcat(platform_x11_best_transport, display, (char *)0);
+	sfree(ret);
+	return s;
+    } else
+	return ret;
 }
 
 /*

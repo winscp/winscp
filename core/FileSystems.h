@@ -19,15 +19,9 @@ enum TFSCommand { fsNull = 0, fsVarValue, fsLastLine, fsFirstLine,
   fsHomeDirectory, fsUnset, fsUnalias, fsAliasGroupList, fsCreateLink, fsCopyFile, 
   fsAnyCommand, fsReadSymlink, fsChangeProperties, fsMoveFile };
 //---------------------------------------------------------------------------
-typedef void __fastcall (__closure * TGetParamValueEvent)
-  (const AnsiString Name, AnsiString & Value);
-//---------------------------------------------------------------------------
 class TCustomFileSystem : public TObject
 {
 public:
-  static AnsiString __fastcall CompleteCustomCommand(AnsiString Command,
-    const AnsiString FileName, TGetParamValueEvent OnGetParamValue);
-
   virtual AnsiString __fastcall AbsolutePath(AnsiString Path) = 0;
   virtual void __fastcall KeepAlive() = 0;
   virtual void __fastcall AnyCommand(const AnsiString Command) = 0;
@@ -76,6 +70,9 @@ protected:
   virtual AnsiString __fastcall GetCurrentDirectory() = 0;
   virtual AnsiString __fastcall GetProtocolName() const = 0;
   virtual void __fastcall SetCurrentDirectory(AnsiString value) = 0;
+
+  static void __fastcall FindCustomCommandPattern(
+    const AnsiString & Command, int Index, int & Len, char & PatternCmd);
 };
 //---------------------------------------------------------------------------
 #endif

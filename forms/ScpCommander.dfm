@@ -859,6 +859,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       FullDrag = True
       HideSelection = False
       RowSelect = True
+      PopupMenu = NonVisualDataModule.LocalDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport
       OnColumnRightClick = DirViewColumnRightClick
@@ -878,6 +879,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnDDFileOperation = LocalFileControlDDFileOperation
       OnDDMenuPopup = LocalFileControlDDMenuPopup
       OnExecFile = LocalDirViewExecFile
+      OnMatchMask = DirViewMatchMask
       ConfirmDelete = False
       ConfirmOverwrite = False
       WatchForChanges = True

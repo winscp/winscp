@@ -32,6 +32,19 @@ AnsiString __fastcall UnMungeStr(const AnsiString Str)
   PackStr(Result);
   return Result;
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall SimpleMungeStr(const AnsiString Str)
+{
+  AnsiString Result = Str;
+  for (int i = 1; i < Result.Length(); i++)
+  {
+    if ((Result[i] == '\\') || (Result[i] == '[') || (Result[i] == ']'))
+    {
+      Result[i] = '_';
+    }
+  }
+  return Result;
+}
 //===========================================================================
 __fastcall THierarchicalStorage::THierarchicalStorage(const AnsiString AStorage)
 {

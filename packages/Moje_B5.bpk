@@ -8,24 +8,17 @@
       &quot;my\HistoryComboBox.obj&quot; &quot;my\ListViewColProperties.obj&quot; 
       &quot;my\MoreButton.obj&quot; &quot;my\NortonLikeListView.obj&quot; 
       &quot;my\PathLabel.obj&quot; &quot;my\ToolbarPanel.obj&quot; &quot;my\UpDownEdit.obj&quot; 
-      &quot;my\ComboEdit.obj&quot; &quot;my\XPGroupBox.obj&quot; &quot;my\PasswordEdit.obj&quot; 
-      &quot;my\ResourceModule.obj&quot; &quot;my\CompThread.obj&quot; &quot;my\DiscMon.obj&quot;"/>
+      &quot;my\ComboEdit.obj&quot; &quot;my\XPThemes.obj&quot; &quot;my\PasswordEdit.obj&quot; 
+      &quot;my\ResourceModule.obj&quot; &quot;my\CompThread.obj&quot; &quot;my\DiscMon.obj&quot; 
+      &quot;my\TcpIp.obj&quot;"/>
     <RESFILES value="Moje_B5.res &quot;my\HistoryComboBox.dcr&quot; 
       &quot;my\NortonLikeListView.dcr&quot; &quot;my\PathLabel.dcr&quot; &quot;my\DiscMon.dcr&quot;"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="adortl.lib bcb2kaxserver.lib bdecds.lib bdertl.lib
-      cds.lib dbexpress.lib dbrtl.lib dbxcds.lib dclocx.lib dsnap.lib
-      ibxpress.lib indy.lib inet.lib inetdb.lib inetdbbde.lib inetdbxpress.lib
-      nmfast.lib qrpt.lib soaprtl.lib tee.lib teedb.lib teeqr.lib teeui.lib
-      vcldb.lib vcldbx.lib visualdbclx.lib xmlrtl.lib"/>
-    <SPARELIBS value="adortl.lib bcb2kaxserver.lib bcbie.lib bcbsmp.lib
-      bdecds.lib bdertl.lib cds.lib dbexpress.lib dbrtl.lib dbxcds.lib
-      dclocx.lib dsnap.lib ibxpress.lib indy.lib inet.lib inetdb.lib
-      inetdbbde.lib inetdbxpress.lib nmfast.lib qrpt.lib rtl.lib soaprtl.lib
-      tee.lib teedb.lib teeqr.lib teeui.lib vcl.lib vcldb.lib vcldbx.lib
-      visualdbclx.lib xmlrtl.lib"/>
+    <LIBRARIES value="bcb2kaxserver.lib dclocx.lib"/>
+    <SPARELIBS value="bcb2kaxserver.lib bcbie.lib bcbsmp.lib dclocx.lib
+      rtl.lib vcl.lib"/>
     <PACKAGES value="bcbie.bpi bcbsmp.bpi rtl.bpi vcl.bpi vclx.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;&quot;my&quot;"/>
@@ -47,7 +40,7 @@
       -a8 -b- -k- -vi -c -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
-    <AFLAGS value="/mx /w2 /zn"/>
+    <AFLAGS value="/mx /w2 /zi"/>
     <LFLAGS value="-I -D&quot;Martin's components&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
     <OTHERFILES value=""/>
   </OPTIONS>
@@ -77,12 +70,13 @@
       <FILE FILENAME="my\ToolbarPanel.pas" FORMNAME="" UNITNAME="ToolbarPanel" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\UpDownEdit.pas" FORMNAME="" UNITNAME="UpDownEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\ComboEdit.pas" FORMNAME="" UNITNAME="ComboEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="my\XPGroupBox.pas" FORMNAME="" UNITNAME="XPGroupBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="my\XPThemes.pas" FORMNAME="" UNITNAME="XPThemes" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\PasswordEdit.pas" FORMNAME="" UNITNAME="PasswordEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\ResourceModule.pas" FORMNAME="" UNITNAME="ResourceModule" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\CompThread.pas" FORMNAME="" UNITNAME="CompThread" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\DiscMon.pas" FORMNAME="" UNITNAME="DiscMon" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\DiscMon.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="my\TcpIp.pas" FORMNAME="" UNITNAME="TcpIp" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>
@@ -116,9 +110,8 @@ ProductVersion=1.0.0.0
 Comments=
 
 [Compiler]
-ShowInfoMsgs=1
+ShowInfoMsgs=0
 LinkDebugVcl=0
-LinkCGLIB=0
 
 [Linker]
 LibPrefix=

@@ -117,6 +117,44 @@ void __fastcall SetCoolBandsMinWidth(TCoolBar * CoolBar)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params)
+{
+  bool Result;
+
+  TShellExecuteInfo ExecuteInfo;
+  memset(&ExecuteInfo, 0, sizeof(ExecuteInfo));
+  ExecuteInfo.cbSize = sizeof(ExecuteInfo);
+  ExecuteInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+  ExecuteInfo.hwnd = Application->Handle;
+  ExecuteInfo.lpFile = (char*)Path.data();
+  ExecuteInfo.lpParameters = (char*)Params.data();
+  ExecuteInfo.nShow = SW_SHOW;
+
+  Result = (ShellExecuteEx(&ExecuteInfo) != 0);
+  if (Result)
+  {
+    unsigned long WaitResult;
+    do
+    {
+      WaitResult = WaitForSingleObject(ExecuteInfo.hProcess, 200);
+      if (WaitResult == WAIT_FAILED)
+      {
+        throw Exception(LoadStr(DOCUMENT_WAIT_ERROR));
+      }
+      Application->ProcessMessages();
+    }
+    while (WaitResult == WAIT_TIMEOUT);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall ExecuteShellAndWait(const AnsiString Command)
+{
+  AnsiString Program, Params, Dir;
+  SplitCommand(Command, Program, Params, Dir);
+  return ExecuteShellAndWait(Program, Params);
+}
+//---------------------------------------------------------------------------
 void __fastcall CreateDesktopShortCut(const AnsiString &Name,
   const AnsiString &File, const AnsiString & Params, const AnsiString & Description,
   int SpecialFolder)

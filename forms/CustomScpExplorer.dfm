@@ -79,6 +79,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Align = alClient
       FullDrag = True
       HideSelection = False
+      PopupMenu = NonVisualDataModule.RemoteDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport
       OnColumnRightClick = DirViewColumnRightClick
@@ -90,6 +91,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       StatusBar = RemoteStatusBar
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
       OnExecFile = DirViewExecFile
+      OnMatchMask = DirViewMatchMask
       OnDDDragEnter = FileControlDDDragEnter
       OnDDDragLeave = FileControlDDDragLeave
       OnDDQueryContinueDrag = RemoteFileControlDDQueryContinueDrag

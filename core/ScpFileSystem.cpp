@@ -24,6 +24,7 @@ const coIgnoreWarnings = 16;
 
 const ecRaiseExcept = 1;
 const ecIgnoreWarnings = 2;
+const ecDefault = ecRaiseExcept;
 //---------------------------------------------------------------------------
 #define THROW_FILE_SKIPPED(EXCEPTION, MESSAGE) \
   throw EScpFileSkipped(EXCEPTION, MESSAGE)
@@ -97,6 +98,7 @@ public:
 const char NationalVars[NationalVarCount][15] =
   {"LANG", "LANGUAGE", "LC_CTYPE", "LC_COLLATE", "LC_MONETARY", "LC_NUMERIC",
    "LC_TIME", "LC_MESSAGES", "LC_ALL", "HUMAN_BLOCKS" };
+const char FullTimeOption[] = "--full-time";
 //---------------------------------------------------------------------------
 #define F false
 #define T true
@@ -110,9 +112,9 @@ const TCommandType DefaultCommandSet[ShellCommandCount] = {
 /*CurrentDirectory*/    {  1,  1, F, F, F, "pwd" },
 /*ChangeDirectory*/     {  0,  0, F, T, F, "cd %s" /* directory */ },
 // list directory can be empty on permission denied, this is handled in ReadDirectory
-/*ListDirectory*/       { -1, -1, F, F, F, "ls -la \"%s\"" /* directory */ },
-/*ListCurrentDirectory*/{ -1, -1, F, F, F, "ls -la" },
-/*ListFile*/            {  1,  1, F, F, F, "ls -lad \"%s\"" /* file/directory */ },
+/*ListDirectory*/       { -1, -1, F, F, F, "ls -la %s \"%s\"" /* directory */ },
+/*ListCurrentDirectory*/{ -1, -1, F, F, F, "ls -la %s" },
+/*ListFile*/            {  1,  1, F, F, F, "ls -lad %s \"%s\"" /* file/directory */ },
 /*LookupUserGroups*/    {  0,  1, F, F, F, "groups" },
 /*CopyToRemote*/        { -1, -1, T, F, T, "scp -r %s -d -t \"%s\"" /* options, directory */ },
 /*CopyToLocal*/         { -1, -1, F, F, T, "scp -r %s -d -f \"%s\"" /* options, file */ },
@@ -127,7 +129,7 @@ const TCommandType DefaultCommandSet[ShellCommandCount] = {
 /*Unalias*/             {  0,  0, F, F, F, "unalias \"%s\"" /* alias */ },
 /*AliasGroupList*/      {  0,  0, F, F, F, "alias ls=\"ls -g\"" },
 /*CreateLink*/          {  0,  0, T, F, F, "ln %s \"%s\" \"%s\"" /*symbolic (-s), filename, point to*/},
-/*CopyFile*/            {  0,  0, T, F, F, "cp -r -f \"%s\" \"%s\"" /* file/directory, target name*/},
+/*CopyFile*/            {  0,  0, T, F, F, "cp -p -r -f \"%s\" \"%s\"" /* file/directory, target name*/},
 /*AnyCommand*/          {  0, -1, T, T, F, "%s" }
 };
 #undef F
@@ -256,7 +258,7 @@ TStrings * __fastcall TCommandSet::CreateCommandList()
     {
       Integer P = Cmd.Pos(" ");
       if (P) Cmd.SetLength(P-1);
-      if (CommandList->IndexOf(Cmd) < 0)
+      if ((Cmd != "%s") && (CommandList->IndexOf(Cmd) < 0))
         CommandList->Add(Cmd);
     }
   }
@@ -267,6 +269,7 @@ __fastcall TSCPFileSystem::TSCPFileSystem(TTerminal * ATerminal):
   TCustomFileSystem(ATerminal)
 {
   FCommandSet = new TCommandSet(FTerminal->SessionData);
+  FLsFullTime = FTerminal->SessionData->SCPLsFullTime;
   FOutput = new TStringList();
   FProcessingCommand = false;
 }
@@ -440,8 +443,11 @@ void __fastcall TSCPFileSystem::EnsureLocation()
     catch(...)
     {
       // when location to cached directory fails, pretend again
-      // location in cached directory 
-      if (FTerminal->Active && (CurrentDirectory != Directory))
+      // location in cached directory
+      // here used to be check (CurrentDirectory != Directory), but it is
+      // false always (currentdirectory is already set to cached directory),
+      // making the condition below useless. check remove.
+      if (FTerminal->Active)
       {
         FCachedDirectoryChange = Directory;
       }
@@ -520,52 +526,58 @@ void __fastcall TSCPFileSystem::SkipFirstLine()
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ReadCommandOutput(int Params)
 {
-  FProcessingCommand = false;
-  if (Params & coWaitForLastLine)
+  try
   {
-    AnsiString Line;
-    bool IsLast;
-    // #55: fixed so, even when last line of command output does not
-    // contain CR/LF, we can recognize last line
-    do
+    if (Params & coWaitForLastLine)
     {
-      Line = FTerminal->ReceiveLine();
-      IsLast = IsLastLine(Line);
-      if (!IsLast || !Line.IsEmpty()) FOutput->Add(Line);
+      AnsiString Line;
+      bool IsLast;
+      // #55: fixed so, even when last line of command output does not
+      // contain CR/LF, we can recognize last line
+      do
+      {
+        Line = FTerminal->ReceiveLine();
+        IsLast = IsLastLine(Line);
+        if (!IsLast || !Line.IsEmpty()) FOutput->Add(Line);
+      }
+      while (!IsLast);
     }
-    while (!IsLast);
+    if (Params & coRaiseExcept)
+    {
+      AnsiString Message = FTerminal->StdError;
+      if ((Params & coExpectNoOutput) && FOutput->Count)
+      {
+        if (!Message.IsEmpty()) Message += "\n";
+        Message += FOutput->Text;
+      }
+      while (!Message.IsEmpty() && (Message.LastDelimiter("\n\r") == Message.Length()))
+        Message.SetLength(Message.Length() - 1);
+
+      bool WrongReturnCode =
+        (ReturnCode > 1) || (ReturnCode == 1 && !(Params & coIgnoreWarnings));
+
+      if (Params & coOnlyReturnCode && WrongReturnCode)
+      {
+        FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED_CODEONLY, (ReturnCode)));
+      }
+        else
+      if (!(Params & coOnlyReturnCode) &&
+          ((!Message.IsEmpty() && !(Params & coIgnoreWarnings)) ||
+           WrongReturnCode))
+      {
+        FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED, ("%s", ReturnCode, Message)));
+      }
+    }
   }
-  if (Params & coRaiseExcept)
+  __finally
   {
-    AnsiString Message = FTerminal->StdError;
-    if ((Params & coExpectNoOutput) && FOutput->Count)
-    {
-      if (!Message.IsEmpty()) Message += "\n";
-      Message += FOutput->Text;
-    }
-    while (!Message.IsEmpty() && (Message.LastDelimiter("\n\r") == Message.Length()))
-      Message.SetLength(Message.Length() - 1);
-
-    bool WrongReturnCode =
-      (ReturnCode > 1) || (ReturnCode == 1 && !(Params & coIgnoreWarnings));
-
-    if (Params & coOnlyReturnCode && WrongReturnCode)
-    {
-      FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED_CODEONLY, (ReturnCode)));
-    }
-      else
-    if (!(Params & coOnlyReturnCode) &&
-        ((!Message.IsEmpty() && !(Params & coIgnoreWarnings)) ||
-         WrongReturnCode))
-    {
-      FTerminal->TerminalError(FMTLOAD(COMMAND_FAILED, ("%s", ReturnCode, Message)));
-    }
+    FProcessingCommand = false;
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ExecCommand(const AnsiString Cmd, int Params)
 {
-  if (Params < 0) Params = ecRaiseExcept;
+  if (Params < 0) Params = ecDefault;
   if (FTerminal->UseBusyCursor)
   {
     Busy(true);
@@ -601,14 +613,8 @@ void __fastcall TSCPFileSystem::ExecCommand(const AnsiString Cmd, int Params)
 void __fastcall TSCPFileSystem::ExecCommand(TFSCommand Cmd, const TVarRec * args,
   int size, int Params)
 {
-  if (Params < 0) Params = ecRaiseExcept;
+  if (Params < 0) Params = ecDefault;
   AnsiString FullCommand = FCommandSet->FullCommand(Cmd, args, size);
-  if (FTerminal->SessionData->IgnoreLsWarnings &&
-      (Cmd == fsListDirectory || Cmd == fsListCurrentDirectory ||
-       Cmd == fsListFile))
-  {
-    Params |= ecIgnoreWarnings;
-  }
   ExecCommand(FullCommand, Params);
   if (Params & ecRaiseExcept)
   {
@@ -842,56 +848,125 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
   TStringList * OutputCopy = NULL;
   try
   {
-    if (FileList->Directory == FTerminal->CurrentDirectory)
-    {
-      FTerminal->LogEvent("Listing current directory.");
-      ExecCommand(fsListCurrentDirectory);
-    }
-      else
-    {
-      FTerminal->LogEvent(FORMAT("Listing directory \"%s\".",
-        (FileList->Directory)));
-      ExecCommand(fsListDirectory, ARRAYOFCONST((DelimitStr(FileList->Directory))));
-    }
-
+    // emtying file list moved before command execution
     FileList->Clear();
 
-    TRemoteFile * File;
+    bool Again;
 
-    // If output is not empty, we have succesfully got file listing,
-    // otherwise there was an error, in case it was "permission denied"
-    // we try to get at least parent directory (see "else" statement below)
-    if (FOutput->Count > 0)
+    do
     {
-      // Copy LS command output, because eventual symlink analysis would
-      // modify FTerminal->Output
-      OutputCopy = new TStringList();
-      OutputCopy->Assign(FOutput);
-
-      // delete leading "total xxx" line
-      // On some hosts there is not "total" but "totalt". What's the reason??
-      // see mail from "Jan Wiklund (SysOp)" <jan@park.se>
-      if (IsTotalListingLine(OutputCopy->Strings[0]))
+      Again = false;
+      try
       {
-        OutputCopy->Delete(0);
+        // if we are detecting support for --full-time, do not ignore
+        // errors, any error is considered as "unknown parameter --full-time)
+        int Params = ecDefault |
+          FLAGMASK((FTerminal->SessionData->IgnoreLsWarnings &&
+            (FLsFullTime != asAuto)), ecIgnoreWarnings);
+        const char * Options =
+          ((FLsFullTime == asAuto) || (FLsFullTime == asOn)) ? FullTimeOption : "";
+        bool ListCurrentDirectory = (FileList->Directory == FTerminal->CurrentDirectory);
+        if (ListCurrentDirectory)
+        {
+          FTerminal->LogEvent("Listing current directory.");
+          ExecCommand(fsListCurrentDirectory, ARRAYOFCONST((Options)), Params);
+        }
+          else
+        {
+          FTerminal->LogEvent(FORMAT("Listing directory \"%s\".",
+            (FileList->Directory)));
+          ExecCommand(fsListDirectory, ARRAYOFCONST((Options, DelimitStr(FileList->Directory))),
+            Params);
+        }
+
+        TRemoteFile * File;
+
+        // If output is not empty, we have succesfully got file listing,
+        // otherwise there was an error, in case it was "permission denied"
+        // we try to get at least parent directory (see "else" statement below)
+        if (FOutput->Count > 0)
+        {
+          // Copy LS command output, because eventual symlink analysis would
+          // modify FTerminal->Output
+          OutputCopy = new TStringList();
+          OutputCopy->Assign(FOutput);
+
+          // delete leading "total xxx" line
+          // On some hosts there is not "total" but "totalt". What's the reason??
+          // see mail from "Jan Wiklund (SysOp)" <jan@park.se>
+          if (IsTotalListingLine(OutputCopy->Strings[0]))
+          {
+            OutputCopy->Delete(0);
+          }
+
+          for (int Index = 0; Index < OutputCopy->Count; Index++)
+          {
+            File = CreateRemoteFile(OutputCopy->Strings[Index]);
+            FileList->AddFile(File);
+          }
+        }
+          else
+        {
+          bool Empty;
+          if (ListCurrentDirectory)
+          {
+            // Empty file list -> probably "permision denied", we
+            // at least get link to parent directory ("..")
+            FTerminal->ReadFile(
+              UnixIncludeTrailingBackslash(FTerminal->FFiles->Directory) +
+                PARENTDIRECTORY, File);
+            Empty = (File == NULL);
+            if (!Empty)
+            {
+              assert(File->IsParentDirectory);
+              FileList->AddFile(File);
+            }
+          }
+          else
+          {
+            Empty = true;
+          }
+
+          if (Empty)
+          {
+            throw Exception(FMTLOAD(EMPTY_DIRECTORY, (FileList->Directory)));
+          }
+        }
+
+        if (FLsFullTime == asAuto)
+        {
+            FTerminal->LogEvent(
+              FORMAT("Directory listing with %s succeed, next time all errors during "
+                "directory listing will be displayed immediatelly.",
+                (FullTimeOption)));
+            FLsFullTime = asOn;
+        }
       }
-
-      for (int Index = 0; Index < OutputCopy->Count; Index++)
+      catch(Exception & E)
       {
-      	File = CreateRemoteFile(OutputCopy->Strings[Index]);
-        FileList->AddFile(File);
+      	if (FTerminal->Active)
+      	{
+      	  if (FLsFullTime == asAuto)
+      	  {
+            FTerminal->DoHandleExtendedException(&E);
+            FLsFullTime = asOff;
+            Again = true;
+            FTerminal->LogEvent(
+              FORMAT("Directory listing with %s failed, try again regular listing.",
+              (FullTimeOption)));
+      	  }
+      	  else
+      	  {
+      	    throw;
+      	  }
+      	}
+      	else
+      	{
+      	  throw;
+      	}
       }
     }
-      else
-    {
-      // Empty file list -> probably "permision denied", we
-      // at least get link to parent directory ("..")
-      FTerminal->ReadFile(
-        UnixIncludeTrailingBackslash(FTerminal->FFiles->Directory) +
-          PARENTDIRECTORY, File);
-      assert(File->IsParentDirectory);
-      FileList->AddFile(File);
-    }
+    while (Again);
   }
   __finally
   {
@@ -935,7 +1010,12 @@ void __fastcall TSCPFileSystem::CustomReadFile(const AnsiString FileName,
   TRemoteFile *& File, TRemoteFile * ALinkedByFile)
 {
   File = NULL;
-  ExecCommand(fsListFile, ARRAYOFCONST((DelimitStr(FileName))));
+  int Params = ecDefault |
+    (FTerminal->SessionData->IgnoreLsWarnings ? ecIgnoreWarnings : 0);
+  // the auto-detection of --full-time support is not implemented for fsListFile,
+  // so we use it only if we already know that it is supported (asOn).
+  const char * Options = (FLsFullTime == asOn) ? FullTimeOption : "";
+  ExecCommand(fsListFile, ARRAYOFCONST((Options, DelimitStr(FileName))), Params);
   if (FOutput->Count)
   {
     int LineIndex = 0;
@@ -1042,7 +1122,7 @@ void __fastcall TSCPFileSystem::CustomCommandOnFile(const AnsiString FileName,
 
   if (!Dir || (Params & ccApplyToDirectories))
   {
-    AnsiString Cmd = CompleteCustomCommand(Command, FileName, NULL);
+    AnsiString Cmd = TRemoteCustomCommand(FileName, "").Complete(Command, true);
 
     AnyCommand(Cmd);
   }
@@ -2085,7 +2165,14 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
 
                 // This is crucial, if it fails during file transfer, it's fatal error
                 FILE_OPERATION_LOOP_EX (false, FMTLOAD(WRITE_ERROR, (DestFileName)),
-                  BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
+                  try
+                  {
+                    BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
+                  }
+                  catch(...)
+                  {
+                    RaiseLastOSError();
+                  }
                 );
 
                 OperationProgress->AddLocalyUsed(BlockBuf.Size);

@@ -8,45 +8,86 @@
 //---------------------------------------------------------------------------
 TProgramParams::TProgramParams()
 {
+  FParameters = new TStringList();
+  for (int i = 0; i <= ::ParamCount(); i++)
+  {
+    FParameters->Add(ParamStr(i));
+  }
+
   FSwitchMarks = "-/";
   FSwitchValueDelimiters = ":=";
   FIgnoreCase = true;
-  FParamCount = -1;
+  for (int i = 0; i < (sizeof(FParamCount) / sizeof(*FParamCount)); i++)
+  {
+    FParamCount[i] = -1;
+  }
+}
+//---------------------------------------------------------------------------
+TProgramParams::~TProgramParams()
+{
+  delete FParameters;
 }
 //---------------------------------------------------------------------------
 Integer __fastcall TProgramParams::GetCount()
 {
-  return ::ParamCount();
+  return FParameters->Count - 1;
 }
 //---------------------------------------------------------------------------
 TParamType __fastcall TProgramParams::ParamType(Integer Index, AnsiString & Value)
 {
   if (Index < 1 || Index > Count) throw Exception("");
-  Value = ParamStr(Index);
-  if (!Value.IsEmpty() && (FSwitchMarks.Pos(Value[1]) > 0))
+  TParamType Result;
+  Value = FParameters->Strings[Index];
+  if ((Value.Length() >= 2) && (FSwitchMarks.Pos(Value[1]) > 0))
   {
-    Value.Delete(1, 1);
-    return ptSwitch;
+    Result = ptSwitch;
+    for (int i = 2; i <= Value.Length(); i++)
+    {
+      if ((i > 2) && (Value.IsDelimiter(FSwitchValueDelimiters, i)))
+      {
+        break;
+      }
+      else if ((Value[i] != '?') && ((UpCase(Value[i]) < 'A') || (UpCase(Value[i]) > 'Z')))
+      {
+        Result = ptParam;
+        break;
+      }
+    }
+
+    if (Result == ptSwitch)
+    {
+      Value.Delete(1, 1);
+    }
   }
-  else return ptParam;
+  else
+  {
+    Result = ptParam;
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TProgramParams::GetParamCount()
+Integer __fastcall TProgramParams::GetParamTypeCount(int Type)
 {
-  if (FParamCount < 0)
+  if (FParamCount[Type] < 0)
   {
-    FParamCount = 0;
+    FParamCount[Type] = 0;
     AnsiString S;
     for (Integer Index = 1; Index <= Count; Index++)
-      if (ParamType(Index, S) == ptParam) FParamCount++;
+    {
+      if (ParamType(Index, S) == Type)
+      {
+        FParamCount[Type]++;
+      }
+    }
   }
-  return FParamCount;
+  return FParamCount[Type];
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TProgramParams::GetParam(Integer Index)
 {
   if (Index < 0 || Index > ParamCount) throw Exception("");
-  if (Index == 0) return ParamStr(0);
+  if (Index == 0) return FParameters->Strings[0];
     else
   {
     AnsiString S;
@@ -122,3 +163,25 @@ AnsiString __fastcall TProgramParams::SwitchValue(const AnsiString Switch, const
   if (Value.IsEmpty()) Value = Default;
   return Value;
 }
+//---------------------------------------------------------------------------
+void __fastcall TProgramParams::ParamsProcessed(int Position, int Count)
+{
+  int Index = 1;
+  int APosition = 0;
+  while (Index <= Count)
+  {
+    AnsiString S;
+    if (ParamType(Index, S) == ptParam)
+    {
+      APosition++;
+
+      if ((APosition >= Position) && (APosition < Position + Count))
+      {
+        FParameters->Delete(Index);
+        Index--;
+      }
+    }
+    Index++;
+  }
+}
+

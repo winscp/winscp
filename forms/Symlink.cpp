@@ -9,7 +9,7 @@
 #include "VCLCommon.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,

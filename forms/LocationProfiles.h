@@ -14,7 +14,7 @@
 #include <vcl\ExtCtrls.hpp>
 #include <Mask.hpp>
 #include <ComboEdit.hpp>
-#include <XPGroupBox.hpp>
+#include <XPThemes.hpp>
 
 #include <FileOperationProgress.h>
 #include <Terminal.h>
@@ -36,12 +36,14 @@ __published:
   TButton *DownBookmarkButton;
   TButton *UpBookmarkButton;
   TLabel *LocalDirectoryLabel;
-  TDirectoryEdit *LocalDirectoryEdit;
   TIEComboBox *RemoteDirectoryEdit;
   TButton *RenameButton;
   TLabel *RemoteDirectoryLabel;
   TButton *MoveToButton;
   TImageList *BookmarkImageList;
+  TIEComboBox *LocalDirectoryEdit;
+  TButton *LocalDirectoryBrowseButton;
+  TButton *SwitchButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);
@@ -64,10 +66,10 @@ __published:
           TTreeNode *Node);
   void __fastcall ProfilesViewGetSelectedIndex(TObject *Sender,
           TTreeNode *Node);
-  void __fastcall LocalDirectoryEditKeyDown(TObject *Sender, WORD &Key,
+  void __fastcall DirectoryEditKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
-  void __fastcall RemoteDirectoryEditKeyDown(TObject *Sender, WORD &Key,
-          TShiftState Shift);
+  void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
+  void __fastcall SwitchButtonClick(TObject *Sender);
 
 public:
   __fastcall TLocationProfilesDialog(TComponent* AOwner);
@@ -80,6 +82,7 @@ public:
   __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
   __property TOperationSide OperationSide = { read = FOperationSide, write = FOperationSide };
   __property TStrings * RemoteDirectories  = { read=GetRemoteDirectories, write=SetRemoteDirectories };
+  __property TStrings * LocalDirectories  = { read=GetLocalDirectories, write=SetLocalDirectories };
   __property TOpenDirectoryMode Mode = { read = FMode, write = FMode };
 
 protected:
@@ -107,6 +110,8 @@ private:
   void __fastcall FindProfile();
   void __fastcall SetRemoteDirectories(TStrings * value);
   TStrings * __fastcall GetRemoteDirectories();
+  void __fastcall SetLocalDirectories(TStrings * value);
+  TStrings * __fastcall GetLocalDirectories();
 };
 //----------------------------------------------------------------------------
 #endif

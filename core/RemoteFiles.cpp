@@ -192,6 +192,103 @@ AnsiString __fastcall ToUnixPath(const AnsiString Path)
 {
   return StringReplace(Path, "\\", "/", TReplaceFlags() << rfReplaceAll);
 }
+//---------------------------------------------------------------------------
+static void __fastcall CutFirstDirectory(AnsiString & S, bool Unix)
+{
+  bool Root;
+  int P;
+  AnsiString Sep = Unix ? "/" : "\\";
+  if (S == Sep)
+  {
+    S = "";
+  }
+  else
+  {
+    if (S[1] == Sep[1])
+    {
+      Root = true;
+      S.Delete(1, 1);
+    }
+    else
+    {
+      Root = false;
+    }
+    if (S[1] == '.')
+    {
+      S.Delete(1, 4);
+    }
+    P = S.AnsiPos(Sep[1]);
+    if (P)
+    {
+      S.Delete(1, P);
+      S = "..." + Sep + S;
+    }
+    else
+    {
+      S = "";
+    }
+    if (Root)
+    {
+      S = Sep + S;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall MinimizeName(const AnsiString FileName, int MaxLen, bool Unix)
+{
+  AnsiString Drive, Dir, Name, Result;
+  AnsiString Sep = Unix ? "/" : "\\";
+
+  Result = FileName;
+  if (Unix)
+  {
+    int P = Result.LastDelimiter("/");
+    if (P)
+    {
+      Dir = Result.SubString(1, P);
+      Name = Result.SubString(P + 1, Result.Length() - P);
+    }
+    else
+    {
+      Dir = "";
+      Name = Result;
+    }
+  }
+  else
+  {
+    Dir = ExtractFilePath(Result);
+    Name = ExtractFileName(Result);
+
+    if (Dir.Length() >= 2 && Dir[2] == ':')
+    {
+      Drive = Dir.SubString(1, 2);
+      Dir.Delete(1, 2);
+    }
+  }
+
+  while ((!Dir.IsEmpty() || !Drive.IsEmpty()) && (Result.Length() > MaxLen))
+  {
+    if (Dir == Sep + "..." + Sep)
+    {
+      Dir = "..." + Sep;
+    }
+    else if (Dir == "")
+    {
+      Drive = "";
+    }
+    else
+    {
+      CutFirstDirectory(Dir, Unix);
+    }
+    Result = Drive + Dir + Name;
+  }
+
+  if (Result.Length() > MaxLen)
+  {
+    Result = Result.SubString(1, MaxLen);
+  }
+  return Result;
+}
 //- TRemoteFiles ------------------------------------------------------------
 __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   TPersistent()
@@ -496,61 +593,129 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     {
       FSize = ASize;
 
-      Word Day, Month, Year, Hour, Min, P;
+      bool FullTime = false;
+      bool DayMonthFormat = false;
+      Word Day, Month, Year, Hour, Min, Sec, P;
 
       GETCOL;
+      // format dd mmm or mmm dd ?
       Day = (Word)StrToIntDef(Col, 0);
       if (Day > 0)
       {
+        DayMonthFormat = true;
         GETCOL;
       }
       Month = 0;
-      for (Word IMonth = 0; IMonth < 12; IMonth++)
-        if (!Col.AnsiCompareIC(EngShortMonthNames[IMonth])) { Month = IMonth; Month++; break; }
-      if (!Month) Abort();
-
-      if (Day == 0)
+      #define COL2MONTH \
+        for (Word IMonth = 0; IMonth < 12; IMonth++) \
+          if (!Col.AnsiCompareIC(EngShortMonthNames[IMonth])) { Month = IMonth; Month++; break; }
+      COL2MONTH;
+      // if the column is not known month name, it may have been "yyyy-mm-dd"
+      // for --full-time format
+      if ((Month == 0) && (Col.Length() == 10) && (Col[5] == '-') && (Col[8] == '-'))
       {
-        GETNCOL;
-        Day = (Word)StrToInt(Col);
+        Year = (Word)Col.SubString(1, 4).ToInt();
+        Month = (Word)Col.SubString(6, 2).ToInt();
+        Day = (Word)Col.SubString(9, 2).ToInt();
+        GETCOL;
+        Hour = (Word)Col.SubString(1, 2).ToInt();
+        Min = (Word)Col.SubString(4, 2).ToInt();
+        Sec = (Word)Col.SubString(7, 2).ToInt();
+        FModificationFmt = mfFull;
+        // skip TZ (TODO)
+        GETCOL;
       }
-      if ((Day < 1) || (Day > 31)) Abort();
-
-      // Time/Year indicator is always 5 charactes long (???), on most
-      // systems year is aligned to right (_YYYY), but on some to left (YYYY_),
-      // we must ensure that trailing space is also deleted, so real
-      // separator space is not treated as part of file name
-      Col = Line.SubString(1, 6).Trim();
-      Line.Delete(1, 6);
-      // GETNCOL; // We don't want to trim input strings (name with space at beginning???)
-      // Check if we got time (contains :) or year
-      if ((P = (Word)Col.Pos(':')) > 0)
+      else
       {
-        Word CurrMonth, CurrDay;
-        Hour = (Word)StrToInt(Col.SubString(1, P-1));
-        Min = (Word)StrToInt(Col.SubString(P+1, Col.Length() - P));
-        if (Hour > 23 || Hour > 59) Abort();
-        // When we don't got year, we assume current year
-        // with exception that the date would be in future
-        // in this case we assume last year.
-        DecodeDate(Date(), Year, CurrMonth, CurrDay);
-        if ((Month > CurrMonth) ||
-            (Month == CurrMonth && Day > CurrDay)) Year--;
-        FModificationFmt = mfMDHM;
-      }
+        // or it may have been day name for another format of --full-time
+        if (Month == 0)
+        {
+          GETCOL;
+          COL2MONTH;
+          // neither standard, not --full-time format
+          if (Month == 0)
+          {
+            Abort();
+          }
+          else
+          {
+            FullTime = true;
+          }
+        }
+        #undef COL2MONTH
+
+        if (Day == 0)
+        {
+          GETNCOL;
+          Day = (Word)StrToInt(Col);
+        }
+        if ((Day < 1) || (Day > 31)) Abort();
+
+        // second full-time format
+        // ddd mmm dd hh:nn:ss yyyy
+        if (FullTime)
+        {
+          GETCOL;
+          if (Col.Length() != 8)
+          {
+            Abort();
+          }
+          Hour = (Word)StrToInt(Col.SubString(1, 2));
+          Min = (Word)StrToInt(Col.SubString(4, 2));
+          Sec = (Word)StrToInt(Col.SubString(7, 2));
+          FModificationFmt = mfFull;
+          GETCOL;
+          Year = (Word)StrToInt(Col);
+        }
         else
-      {
-        Year = (Word)StrToInt(Col);
-        if (Year > 10000) Abort();
-        // When we don't got time we assume midnight
-        Hour = 0; Min = 0;
-        FModificationFmt = mfMDY;
+        {
+          // for format dd mmm the below description seems not to be true,
+          // the year is not aligned to 5 characters
+          if (DayMonthFormat)
+          {
+            GETCOL;
+          }
+          else
+          {
+            // Time/Year indicator is always 5 charactes long (???), on most
+            // systems year is aligned to right (_YYYY), but on some to left (YYYY_),
+            // we must ensure that trailing space is also deleted, so real
+            // separator space is not treated as part of file name
+            Col = Line.SubString(1, 6).Trim();
+            Line.Delete(1, 6);
+          }
+          // GETNCOL; // We don't want to trim input strings (name with space at beginning???)
+          // Check if we got time (contains :) or year
+          if ((P = (Word)Col.Pos(':')) > 0)
+          {
+            Word CurrMonth, CurrDay;
+            Hour = (Word)StrToInt(Col.SubString(1, P-1));
+            Min = (Word)StrToInt(Col.SubString(P+1, Col.Length() - P));
+            if (Hour > 23 || Hour > 59) Abort();
+            // When we don't got year, we assume current year
+            // with exception that the date would be in future
+            // in this case we assume last year.
+            DecodeDate(Date(), Year, CurrMonth, CurrDay);
+            if ((Month > CurrMonth) ||
+                (Month == CurrMonth && Day > CurrDay)) Year--;
+            Sec = 0;
+            FModificationFmt = mfMDHM;
+          }
+            else
+          {
+            Year = (Word)StrToInt(Col);
+            if (Year > 10000) Abort();
+            // When we don't got time we assume midnight
+            Hour = 0; Min = 0; Sec = 0;
+            FModificationFmt = mfMDY;
+          }
+        }
       }
 
-      FModification = EncodeDate(Year, Month, Day) + EncodeTime(Hour, Min, 0, 0);
+      FModification = EncodeDate(Year, Month, Day) + EncodeTime(Hour, Min, Sec, 0);
       // adjust only when time is known,
       // adjusting default "midnight" time makes no sense
-      if (FModificationFmt == mfMDHM)
+      if ((FModificationFmt == mfMDHM) || (FModificationFmt == mfFull))
       {
         assert(Terminal != NULL);
         FModification = AdjustDateTimeFromUnix(FModification,
@@ -665,10 +830,10 @@ void __fastcall TRemoteFile::FindLinkedFile()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetListingStr()
 {
-  return Format("%s%s %3s %s-8s %-8s %9d %s %s%s", ARRAYOFCONST((
+  return Format("%s%s %3s %-8s %-8s %9s %-12s %s%s", ARRAYOFCONST((
     Type, Rights->Text, IntToStr(INodeBlocks), Owner,
     Group, IntToStr(Size), ModificationStr, FileName,
-    (FLinkedFile ? AnsiString(SYMLINKSTR) + FLinkedFile->FileName : AnsiString()))));
+    (IsSymLink ? AnsiString(SYMLINKSTR) + LinkTo : AnsiString()))));
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetFullFileName()

@@ -12,12 +12,13 @@
 #include "OpenDirectory.h"
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma link "IEComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side,
-  AnsiString & Directory, TStrings * Directories, TTerminal * Terminal)
+  AnsiString & Directory, TStrings * Directories, TTerminal * Terminal,
+  bool AllowSwitch)
 {
   bool Result;
   TOpenDirectoryDialog * Dialog = new TOpenDirectoryDialog(Application);
@@ -28,6 +29,7 @@ bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Si
     Dialog->Directory = Directory;
     Dialog->Directories = Directories;
     Dialog->Terminal = Terminal;
+    Dialog->AllowSwitch = AllowSwitch;
     Result = Dialog->Execute();
     if (Result)
     {
@@ -113,6 +115,8 @@ void __fastcall TOpenDirectoryDialog::UpdateControls(bool ListBoxUpdate)
   EnableControl(UpBookmarkButton, BookmarksList->ItemIndex > 0);
   EnableControl(DownBookmarkButton, BookmarksList->ItemIndex >= 0 &&
     BookmarksList->ItemIndex < BookmarksList->Items->Count-1);
+  LocalDirectoryBrowseButton->Visible = (OperationSide == osLocal);
+  SwitchButton->Visible = AllowSwitch;
 
   if (ListBoxUpdate)
   {
@@ -141,7 +145,7 @@ void __fastcall TOpenDirectoryDialog::UpdateControls(bool ListBoxUpdate)
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::SetDirectories(TStrings * value)
 {
-  RemoteDirectoryEdit->Items = value;
+  dynamic_cast<TCustomComboBox*>(CurrentEdit)->Items = value;
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TOpenDirectoryDialog::GetDirectories()
@@ -297,12 +301,14 @@ void __fastcall TOpenDirectoryDialog::BookmarkMove(int Source, int Dest)
   if (Source >= 0 && Source < BookmarksList->Items->Count &&
       Dest >= 0 && Dest < BookmarksList->Items->Count)
   {
-    FBookmarkList->MoveBefore(
+    FBookmarkList->MoveTo(
       dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[Dest]),
-      dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[Source]));
+      dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[Source]),
+      Source > Dest);
     BookmarksList->Items->Move(Source, Dest);
     BookmarksList->ItemIndex = Dest;
     BookmarksList->SetFocus();
+    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
@@ -383,16 +389,27 @@ void __fastcall TOpenDirectoryDialog::BookmarksListKeyDown(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TOpenDirectoryDialog::RemoteDirectoryEditKeyDown(
-  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+void __fastcall TOpenDirectoryDialog::DirectoryEditKeyDown(
+  TObject * Sender, WORD & Key, TShiftState Shift)
 {
-  PathComboBoxKeyDown(RemoteDirectoryEdit, Key, Shift, true);
+  PathComboBoxKeyDown(dynamic_cast<TCustomComboBox*>(Sender), Key, Shift,
+    (Sender == RemoteDirectoryEdit));
 }
 //---------------------------------------------------------------------------
-void __fastcall TOpenDirectoryDialog::LocalDirectoryEditKeyDown(
-  TObject * /*Sender*/, WORD & Key, TShiftState Shift)
+void __fastcall TOpenDirectoryDialog::LocalDirectoryBrowseButtonClick(
+  TObject * /*Sender*/)
 {
-  PathEditKeyDown(LocalDirectoryEdit, Key, Shift, false);
+  AnsiString Directory = LocalDirectoryEdit->Text;
+  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
+  {
+    LocalDirectoryEdit->Text = Directory;
+    DirectoryEditChange(LocalDirectoryEdit);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TOpenDirectoryDialog::SwitchButtonClick(TObject * /*Sender*/)
+{
+  WinConfiguration->UseLocationProfiles = true;
 }
 //---------------------------------------------------------------------------
 

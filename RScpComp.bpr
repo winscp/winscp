@@ -32,7 +32,7 @@
     <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 
       -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
-    <AFLAGS value="/mx /w2 /zn"/>
+    <AFLAGS value="/mx /w2 /zi"/>
     <LFLAGS value="/P32"/>
     <OTHERFILES value=""/>
   </OPTIONS>
@@ -80,9 +80,7 @@ ProductVersion=1.0.0.0
 Comments=
 
 [Compiler]
-ShowInfoMsgs=1
+ShowInfoMsgs=0
 LinkDebugVcl=0
-LinkCGLIB=0
-
   </IDEOPTIONS>
 </PROJECT>

@@ -16,6 +16,8 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const char ShellCommandFileNamePattern[] = "!.!";
+const ccLocal = ccUser;
+const ccShowResults = ccUser << 1;
 //---------------------------------------------------------------------------
 __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
@@ -149,13 +151,19 @@ void __fastcall TWinConfiguration::DefaultLocalized()
     FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TOUCH)] = "touch \"!\"";
     FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TOUCH)] = ccApplyToDirectories | ccRecursive;
     FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TAR)] =
-      FORMAT("tar -cz  -f \"!?%s?archive.tgz!\" \"!\"",
+      FORMAT("tar -cz  -f \"!?%s?archive.tgz!\" !&",
         (LoadStr(CUSTOM_COMMAND_TAR_ARCHIVE)));
     FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TAR)] = ccApplyToDirectories;
     FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_UNTAR)] =
       FORMAT("tar -xz --directory=\"!?%s?.!\" -f \"!\"",
         (LoadStr(CUSTOM_COMMAND_UNTAR_DIRECTORY)));
     FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_UNTAR)] = 0;
+    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_GREP)] =
+      FORMAT("grep \"!?%s?!\" !&", (LoadStr(CUSTOM_COMMAND_GREP_PATTERN)));
+    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_GREP)] = ccShowResults;
+    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_FC)] =
+      "cmd /c fc \"!\" \!^!\" | more && pause";
+    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_FC)] = ccLocal;
     FCustomCommandsDefaults = true;
     FCustomCommandsModified = false;
   }

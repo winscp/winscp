@@ -66,7 +66,7 @@ private:
   void __fastcall SetEnabled(bool value);
   void __fastcall SetConfiguration(TConfiguration * value);
   AnsiString __fastcall GetSessionName();
-  inline void __fastcall DoAdd(bool Formatted, TLogLineType aType, AnsiString aLine);
+  void __fastcall DoAdd(bool Formatted, TLogLineType aType, AnsiString aLine);
 
 public:
   __fastcall TSessionLog(TSecureShell * AOwner);
@@ -128,6 +128,7 @@ private:
   Config * FConfig;
   AnsiString FSshVersionString;
   AnsiString FPassword;
+  TLogAddLineEvent FOnStdError;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -169,6 +170,8 @@ private:
   void __fastcall Discard();
   AnsiString __fastcall GetSshImplementation();
   AnsiString __fastcall GetPassword();
+  inline bool __fastcall Select(int Sec);
+  void __fastcall PoolForData(unsigned int & Result);
 
 protected:
   AnsiString StdError;
@@ -193,6 +196,7 @@ public:
   void __fastcall SendStr(AnsiString Str);
   void __fastcall SendSpecial(int Code);
   void __fastcall AddStdError(AnsiString Str);
+  void __fastcall AddStdErrorLine(const AnsiString Str);
   void __fastcall ClearStdError();
   void __fastcall Idle();
   void __fastcall SendEOF();
@@ -250,6 +254,7 @@ public:
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
   __property TNotifyEvent OnUpdateStatus = { read = FOnUpdateStatus, write = FOnUpdateStatus };
+  __property TLogAddLineEvent OnStdError = { read = FOnStdError, write = FOnStdError };
   __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
   __property int Status = { read = GetStatus };
   __property TObject * UserObject = { read = FUserObject, write = SetUserObject };

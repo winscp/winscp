@@ -101,6 +101,13 @@ void MD5Init(struct MD5Context *context);
 void MD5Update(struct MD5Context *context, unsigned char const *buf,
 	       unsigned len);
 void MD5Final(unsigned char digest[16], struct MD5Context *context);
+void MD5Simple(void const *p, unsigned len, unsigned char output[16]);
+
+void *hmacmd5_make_context(void);
+void hmacmd5_free_context(void *handle);
+void hmacmd5_key(void *handle, unsigned char const *key, int len);
+void hmacmd5_do_hmac(void *handle, unsigned char const *blk, int len,
+		     unsigned char *hmac);
 
 typedef struct {
     uint32 h[5];
@@ -163,6 +170,7 @@ struct ssh_mac {
     int (*verify) (void *, unsigned char *blk, int len, unsigned long seq);
     char *name;
     int len;
+    char *text_name;
 };
 
 struct ssh_kex {
@@ -290,6 +298,8 @@ extern const char platform_x11_best_transport[];
 /* best X11 hostname for this platform if none specified */
 SockAddr platform_get_x11_unix_address(int displaynum, char **canonicalname);
 /* make up a SockAddr naming the address for displaynum */
+char *platform_get_x_display(void);
+/* allocated local X display string, if any */
 
 Bignum copybn(Bignum b);
 Bignum bn_power_2(int n);

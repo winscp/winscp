@@ -367,6 +367,10 @@ TRemoteFile * __fastcall TCustomUnixDriveView::NodeFileForce(TTreeNode * Node)
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::Delete(TTreeNode * Node)
 {
+  if (Node == FPrevSelected)
+  {
+    FPrevSelected = NULL;
+  }
   TNodeData * Data = NULL;
   if (Node != NULL)
   {
@@ -394,6 +398,9 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
   }
   else
   {
+    // if previous node is child to newly selected one, do not expand it.
+    // it is either already expanded and it is even being collapsed. 
+    bool Expand = (FPrevSelected == NULL) || !FPrevSelected->HasAsParent(Node);
     FDirectoryLoaded = false;
     try
     {
@@ -405,6 +412,10 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
       if (FDirectoryLoaded)
       {
         FPrevSelected = Selected;
+        if (Expand)
+        {
+          Selected->Expand(false);
+        }
       }
       else
       {

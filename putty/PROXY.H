@@ -81,6 +81,12 @@ struct Socket_proxy_tag {
 
     /* configuration, used to look up proxy settings */
     Config cfg;
+
+    /* CHAP transient data */
+    int chap_num_attributes;
+    int chap_num_attributes_processed;
+    int chap_current_attribute;
+    int chap_current_datalen;
 };
 
 typedef struct Plug_proxy_tag * Proxy_Plug;
@@ -105,5 +111,13 @@ extern int proxy_socks5_negotiate (Proxy_Socket, int);
  * platforms.
  */
 char *format_telnet_command(SockAddr addr, int port, const Config *cfg);
+
+/*
+ * These are implemented in cproxy.c or nocproxy.c, depending on
+ * whether encrypted proxy authentication is available.
+ */
+extern void proxy_socks5_offerencryptedauth(char *command, int *len);
+extern int proxy_socks5_handlechap (Proxy_Socket p);
+extern int proxy_socks5_selectchap(Proxy_Socket p);
 
 #endif

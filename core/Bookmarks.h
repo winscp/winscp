@@ -39,8 +39,7 @@ public:
   void __fastcall Add(TBookmark * Bookmark);
   void __fastcall Insert(int Index, TBookmark * Bookmark);
   void __fastcall InsertBefore(TBookmark * BeforeBookmark, TBookmark * Bookmark);
-  void __fastcall MoveBefore(TBookmark * BeforeBookmark, TBookmark * Bookmark);
-  void __fastcall MoveAtEnd(TBookmark * Bookmark);
+  void __fastcall MoveTo(TBookmark * ToBookmark, TBookmark * Bookmark, bool Before);
   void __fastcall Delete(TBookmark * Bookmark);
   TBookmark * __fastcall FindByName(const AnsiString Node, const AnsiString Name);
   virtual void __fastcall Assign(TPersistent * Source);
@@ -57,9 +56,6 @@ protected:
 private:
   TStringList * FBookmarks;
   bool FModified;
-  //TStrings * FSimpleBookmarks;
-
-  //TStrings * __fastcall GetSimpleBookmarks();
 
   int __fastcall GetCount();
   TBookmark * __fastcall GetBookmarks(int Index);

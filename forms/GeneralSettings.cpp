@@ -10,7 +10,7 @@
 #include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TGeneralSettingsFrame::TGeneralSettingsFrame(TComponent* Owner)

@@ -890,68 +890,24 @@ object PreferencesDialog: TPreferencesDialog
           DesignSize = (
             362
             317)
-          object LocalDirectoryLabel: TLabel
-            Left = 16
-            Top = 24
-            Width = 56
-            Height = 13
-            Caption = 'Descri&ption:'
-            FocusControl = CustomCommandDescEdit
-          end
-          object RemoteDirectoryLabel: TLabel
-            Left = 184
-            Top = 24
-            Width = 84
-            Height = 13
-            Caption = '&Custom command'
-            FocusControl = CustomCommandEdit
-          end
-          object CustomCommandsPatternsLabel: TLabel
-            Left = 16
-            Top = 92
-            Width = 329
-            Height = 45
-            AutoSize = False
-            Caption = 
-              'Patterns: !! - exclamation mark; ! - file name; !?prompt?default' +
-              '!'#160'-'#160'prompts user for parameter value'
-            WordWrap = True
-          end
-          object CustomCommandDescEdit: TEdit
-            Left = 16
-            Top = 41
-            Width = 153
-            Height = 21
-            Anchors = [akLeft, akTop, akRight]
-            TabOrder = 0
-            Text = 'CustomCommandDescEdit'
-            OnChange = ControlChange
-          end
-          object CustomCommandEdit: TEdit
-            Left = 184
-            Top = 41
-            Width = 161
-            Height = 21
-            Anchors = [akLeft, akTop, akRight]
-            MaxLength = 1000
-            TabOrder = 1
-            Text = 'CustomCommandEdit'
-            OnChange = ControlChange
-          end
           object CustomCommandsView: TListView
             Left = 16
-            Top = 136
-            Width = 238
-            Height = 165
+            Top = 24
+            Width = 329
+            Height = 209
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
                 Caption = 'Description'
-                Width = 75
+                Width = 85
               end
               item
                 Caption = 'Command'
-                Width = 115
+                Width = 140
+              end
+              item
+                Caption = 'L/R'
+                Width = 35
               end
               item
                 Caption = 'D/R'
@@ -964,9 +920,10 @@ object PreferencesDialog: TPreferencesDialog
             OwnerData = True
             ReadOnly = True
             RowSelect = True
-            TabOrder = 4
+            TabOrder = 0
             ViewStyle = vsReport
             OnData = CustomCommandsViewData
+            OnDblClick = CustomCommandsViewDblClick
             OnDragDrop = CustomCommandsViewDragDrop
             OnDragOver = CustomCommandsViewDragOver
             OnKeyDown = CustomCommandsViewKeyDown
@@ -974,23 +931,23 @@ object PreferencesDialog: TPreferencesDialog
             OnStartDrag = CustomCommandsViewStartDrag
           end
           object AddCommandButton: TButton
-            Left = 263
-            Top = 136
+            Left = 15
+            Top = 244
             Width = 83
             Height = 25
             Anchors = [akTop, akRight]
-            Caption = '&Add'
-            TabOrder = 5
-            OnClick = AddCommandButtonClick
+            Caption = '&Add ...'
+            TabOrder = 1
+            OnClick = AddEditCommandButtonClick
           end
           object RemoveCommandButton: TButton
-            Left = 263
-            Top = 200
+            Left = 15
+            Top = 276
             Width = 83
             Height = 25
             Anchors = [akTop, akRight]
             Caption = '&Remove'
-            TabOrder = 7
+            TabOrder = 3
             OnClick = RemoveCommandButtonClick
           end
           object UpCommandButton: TButton
@@ -998,9 +955,9 @@ object PreferencesDialog: TPreferencesDialog
             Top = 244
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akTop, akRight]
             Caption = '&Up'
-            TabOrder = 8
+            TabOrder = 4
             OnClick = UpDownCommandButtonClick
           end
           object DownCommandButton: TButton
@@ -1008,38 +965,20 @@ object PreferencesDialog: TPreferencesDialog
             Top = 276
             Width = 83
             Height = 25
-            Anchors = [akRight, akBottom]
+            Anchors = [akTop, akRight]
             Caption = '&Down'
-            TabOrder = 9
+            TabOrder = 5
             OnClick = UpDownCommandButtonClick
           end
-          object SaveCommandButton: TButton
-            Left = 263
-            Top = 168
+          object EditCommandButton: TButton
+            Left = 111
+            Top = 244
             Width = 83
             Height = 25
             Anchors = [akTop, akRight]
-            Caption = '&Save'
-            TabOrder = 6
-            OnClick = SaveCommandButtonClick
-          end
-          object CustomCommandApplyToDirectoriesCheck: TCheckBox
-            Left = 16
-            Top = 69
-            Width = 145
-            Height = 17
-            Caption = '&Apply to directories'
+            Caption = '&Edit ...'
             TabOrder = 2
-            OnClick = ControlChange
-          end
-          object CustomCommandRecursiveCheck: TCheckBox
-            Left = 184
-            Top = 69
-            Width = 145
-            Height = 17
-            Caption = '&Execute recursively'
-            TabOrder = 3
-            OnClick = ControlChange
+            OnClick = AddEditCommandButtonClick
           end
         end
       end
@@ -1409,7 +1348,7 @@ object PreferencesDialog: TPreferencesDialog
           object ResumeOnButton: TRadioButton
             Left = 16
             Top = 21
-            Width = 156
+            Width = 329
             Height = 17
             Caption = 'A&ll files (not recommended)'
             TabOrder = 0
@@ -1427,7 +1366,7 @@ object PreferencesDialog: TPreferencesDialog
           object ResumeOffButton: TRadioButton
             Left = 16
             Top = 93
-            Width = 156
+            Width = 329
             Height = 17
             Caption = 'Di&sable'
             TabOrder = 3

@@ -68,6 +68,7 @@ private:
   int FReturnCode;
   AnsiString FCachedDirectoryChange;
   bool FProcessingCommand;
+  int FLsFullTime;
 
   void __fastcall AliasGroupList();
   void __fastcall ClearAliases();

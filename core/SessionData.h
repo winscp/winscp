@@ -96,6 +96,7 @@ private:
   bool FDeleteToRecycleBin;
   bool FOverwrittenToRecycleBin;
   AnsiString FRecycleBinPath;
+  TAutoSwitch FSCPLsFullTime;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -173,6 +174,7 @@ private:
   void __fastcall SetSFTPListingQueue(int value);
   void __fastcall SetSFTPMaxVersion(int value);
   void __fastcall SetSFTPSymlinkBug(TAutoSwitch value);
+  void __fastcall SetSCPLsFullTime(TAutoSwitch value);
   AnsiString __fastcall GetStorageKey();
   void __fastcall SetConsiderDST(bool value);
   void __fastcall SetDeleteToRecycleBin(bool value);
@@ -264,6 +266,7 @@ public:
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
   __property int SFTPMaxVersion = { read = FSFTPMaxVersion, write = SetSFTPMaxVersion };
   __property TAutoSwitch SFTPSymlinkBug = { read = FSFTPSymlinkBug, write = SetSFTPSymlinkBug };
+  __property TAutoSwitch SCPLsFullTime = { read = FSCPLsFullTime, write = SetSCPLsFullTime };
   __property bool ConsiderDST = { read = FConsiderDST, write = SetConsiderDST };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool OverwrittenToRecycleBin = { read = FOverwrittenToRecycleBin, write = SetOverwrittenToRecycleBin };
@@ -290,6 +293,8 @@ public:
   void __fastcall Cleanup();
   int __fastcall IndexOf(TSessionData * Data);
   TSessionData * __fastcall NewSession(AnsiString SessionName, TSessionData * Session);
+  TSessionData * __fastcall ParseUrl(AnsiString Url, bool & DefaultsOnly,
+    int Params, AnsiString * FileName = NULL);
   virtual __fastcall ~TStoredSessionList();
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };

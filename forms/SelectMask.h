@@ -8,9 +8,9 @@
 #include <Forms.hpp>
 #include <HistoryComboBox.hpp>
 #include <CustomDirView.hpp>
+#include <XPThemes.hpp>
 
 #include <WinInterface.h>
-#include "XPGroupBox.hpp"
 //---------------------------------------------------------------------------
 class TSelectMaskDialog : public TForm
 {

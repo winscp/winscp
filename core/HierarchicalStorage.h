@@ -157,5 +157,6 @@ protected:
 //---------------------------------------------------------------------------
 AnsiString __fastcall MungeStr(const AnsiString Str);
 AnsiString __fastcall UnMungeStr(const AnsiString Str);
+AnsiString __fastcall SimpleMungeStr(const AnsiString Str);
 //---------------------------------------------------------------------------
 #endif

@@ -17,7 +17,7 @@
 #pragma link "LogSettings"
 #pragma link "GeneralSettings"
 #pragma link "UpDownEdit"
-#pragma link "XPGroupBox"
+#pragma link "XPThemes"
 #pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -521,8 +521,9 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(PreserveDirectoryChangesCheck, CacheDirectoryChangesCheck->Checked);
 
       EnableControl(OverwrittenToRecycleBinCheck, !SCPonlyButton->Checked);
-      EnableControl(RecycleBinPathEdit, DeleteToRecycleBinCheck->Checked ||
-        OverwrittenToRecycleBinCheck->Checked);
+      EnableControl(RecycleBinPathEdit,
+        (DeleteToRecycleBinCheck->Enabled && DeleteToRecycleBinCheck->Checked) ||
+        (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked));
       EnableControl(RecycleBinPathLabel, RecycleBinPathEdit->Enabled);
 
       AboutButton->Visible = (Options & loAbout);
@@ -874,6 +875,8 @@ void __fastcall TLoginDialog::NavigationTreeChange(TObject * /*Sender*/,
       if (PageControl->Pages[Index]->Tag == Node->SelectedIndex)
       {
         PageControl->ActivePage = PageControl->Pages[Index];
+        // reshow the accelerators, etc
+        ResetSystemSettings(this);
         return;
       }
     }

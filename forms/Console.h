@@ -45,6 +45,7 @@ private:
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall TerminalClose(TObject * Sender);
+  inline void __fastcall AddLine(AnsiString Line);
 
 protected:
   void __fastcall DoChangeDirectory(TObject * Sender);
@@ -54,8 +55,9 @@ protected:
 
 public:
   virtual __fastcall ~TConsoleDialog();
-	virtual __fastcall TConsoleDialog(TComponent* AOwner);
-  bool __fastcall Execute(const AnsiString Command = "");
+    virtual __fastcall TConsoleDialog(TComponent* AOwner);
+  bool __fastcall Execute(const AnsiString Command = "",
+    const TStrings * Log = NULL);
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
 };
 //----------------------------------------------------------------------------
