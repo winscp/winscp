@@ -6,6 +6,7 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "Rights"
+#pragma link "GrayedCheckBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TRightsExtFrame::TRightsExtFrame(TComponent* Owner)

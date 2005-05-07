@@ -1,5 +1,5 @@
 object CustomScpExplorerForm: TCustomScpExplorerForm
-  Left = 328
+  Left = 304
   Top = 166
   Width = 636
   Height = 470
@@ -24,21 +24,18 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     ResizeStyle = rsUpdate
     OnCanResize = QueueSplitterCanResize
   end
-  object TopCoolBar: TCoolBar
+  object TopDock: TTBXDock
     Left = 0
     Top = 0
     Width = 628
-    Height = 41
-    AutoSize = True
-    BandMaximize = bmDblClick
-    Bands = <>
-    FixedSize = True
+    Height = 9
+    FixAlign = True
   end
   object RemotePanel: TPanel
     Left = 0
-    Top = 41
+    Top = 9
     Width = 628
-    Height = 252
+    Height = 284
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
@@ -46,40 +43,31 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 169
       Top = 0
       Width = 3
-      Height = 233
+      Height = 265
       Cursor = crHSplit
       AutoSnap = False
       MinSize = 70
       ResizeStyle = rsUpdate
     end
-    object RemoteStatusBar: TAssociatedStatusBar
+    object RemoteStatusBar: TTBXStatusBar
       Left = 0
-      Top = 233
+      Top = 265
       Width = 628
       Height = 19
-      Hint = '1'
-      Panels = <
-        item
-          Text = '0 b of 0 b in 0 of 0'
-          Width = 50
-        end>
-      ParentFont = True
+      Panels = <>
       ParentShowHint = False
       ShowHint = True
-      SimplePanel = False
       UseSystemFont = False
-      OnResize = StatusBarResize
-      FocusControl = RemoteDirView
+      OnClick = RemoteStatusBarClick
     end
     object RemoteDirView: TUnixDirView
       Left = 172
       Top = 0
       Width = 456
-      Height = 233
+      Height = 265
       Align = alClient
       FullDrag = True
       HideSelection = False
-      ParentFont = False
       PopupMenu = NonVisualDataModule.RemoteDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport
@@ -87,10 +75,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnEnter = RemoteDirViewEnter
       NortonLike = False
       UnixColProperties.ExtWidth = 20
-      UnixColProperties.ExtVisible = False
       OnDDDragFileName = RemoteFileControlDDDragFileName
-      StatusBar = RemoteStatusBar
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
+      OnLoaded = DirViewLoaded
       OnExecFile = DirViewExecFile
       OnMatchMask = DirViewMatchMask
       OnGetOverlay = RemoteDirViewGetOverlay
@@ -105,13 +92,14 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnDDFileOperation = RemoteFileControlDDFileOperation
       OnDDCreateDataObject = RemoteFileControlDDCreateDataObject
       OnContextPopup = RemoteDirViewContextPopup
+      OnHistoryChange = DirViewHistoryChange
       OnDisplayProperties = RemoteDirViewDisplayProperties
     end
     object RemoteDriveView: TUnixDriveView
       Left = 0
       Top = 0
       Width = 169
-      Height = 233
+      Height = 265
       DirView = RemoteDirView
       OnDDDragFileName = RemoteFileControlDDDragFileName
       OnDDEnd = RemoteFileControlDDEnd
@@ -140,7 +128,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Height = 140
     Align = alBottom
     BevelOuter = bvNone
-    TabOrder = 2
+    TabOrder = 1
     object QueueView: TListView
       Left = 0
       Top = 26
@@ -180,8 +168,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       ReadOnly = True
       RowSelect = True
       PopupMenu = NonVisualDataModule.QueuePopup
-      SmallImages = NonVisualDataModule.QueueImages
-      StateImages = NonVisualDataModule.QueueImages
+      SmallImages = GlyphsModule.QueueImages
+      StateImages = GlyphsModule.QueueImages
       TabOrder = 0
       ViewStyle = vsReport
       OnContextPopup = QueueViewContextPopup
@@ -192,91 +180,46 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnSelectItem = QueueViewSelectItem
       OnStartDrag = QueueViewStartDrag
     end
-    object QueueCoolBar: TCoolBar
+    object QueueDock: TTBXDock
       Left = 0
       Top = 0
       Width = 628
       Height = 26
-      AutoSize = True
-      BandMaximize = bmDblClick
-      Bands = <
-        item
-          Control = QueueToolBar
-          ImageIndex = -1
-          MinHeight = 22
-          Width = 624
-        end>
-      FixedSize = True
-      object QueueToolBar: TToolBar
-        Left = 9
+      AllowDrag = False
+      object QueueToolbar: TTBXToolbar
+        Left = 0
         Top = 0
-        Width = 611
-        Height = 22
-        Hint = '|E'
-        Caption = 'QueueToolBar'
-        EdgeBorders = []
-        Flat = True
-        Images = NonVisualDataModule.ExplorerImages
+        Caption = 'QueueToolbar'
+        Images = GlyphsModule.ExplorerImages
         ParentShowHint = False
         ShowHint = True
         TabOrder = 0
-        Transparent = True
-        object ToolButton52: TToolButton
-          Left = 0
-          Top = 0
+        object TBXItem201: TTBXItem
           Action = NonVisualDataModule.QueueItemQueryAction
         end
-        object ToolButton54: TToolButton
-          Left = 23
-          Top = 0
+        object TBXItem202: TTBXItem
           Action = NonVisualDataModule.QueueItemErrorAction
         end
-        object ToolButton53: TToolButton
-          Left = 46
-          Top = 0
+        object TBXItem203: TTBXItem
           Action = NonVisualDataModule.QueueItemPromptAction
         end
-        object ToolButton55: TToolButton
-          Left = 69
-          Top = 0
+        object TBXItem204: TTBXItem
           Action = NonVisualDataModule.QueueItemExecuteAction
         end
-        object ToolButton63: TToolButton
-          Left = 92
-          Top = 0
+        object TBXItem205: TTBXItem
           Action = NonVisualDataModule.QueueItemDeleteAction
         end
-        object ToolButton56: TToolButton
-          Left = 115
-          Top = 0
-          Width = 8
-          Hint = 'E'
-          Caption = 'ToolButton56'
-          ImageIndex = 71
-          Style = tbsSeparator
+        object TBXSeparatorItem201: TTBXSeparatorItem
         end
-        object ToolButton64: TToolButton
-          Left = 123
-          Top = 0
+        object TBXItem206: TTBXItem
           Action = NonVisualDataModule.QueueItemUpAction
         end
-        object ToolButton65: TToolButton
-          Left = 146
-          Top = 0
+        object TBXItem207: TTBXItem
           Action = NonVisualDataModule.QueueItemDownAction
         end
-        object ToolButton66: TToolButton
-          Left = 169
-          Top = 0
-          Width = 8
-          Hint = 'E'
-          Caption = 'ToolButton66'
-          ImageIndex = 74
-          Style = tbsSeparator
+        object TBXSeparatorItem202: TTBXSeparatorItem
         end
-        object ToolButton67: TToolButton
-          Left = 177
-          Top = 0
+        object TBXItem208: TTBXItem
           Action = NonVisualDataModule.QueuePreferencesAction
         end
       end

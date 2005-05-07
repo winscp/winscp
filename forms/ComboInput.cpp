@@ -30,10 +30,7 @@ bool __fastcall DoComboInputDialog(
     ComboInputDialog->Items = Items;
     ComboInputDialog->AllowEmpty = AllowEmpty;
     ComboInputDialog->OnCloseQuery = OnCloseQuery;
-    if (!HelpKeyword.IsEmpty())
-    {
-      ComboInputDialog->HelpKeyword = HelpKeyword;
-    }
+    ComboInputDialog->HelpKeyword = HelpKeyword;
     Result = (ComboInputDialog->ShowModal() == mrOk);
     if (Result)
     {
@@ -74,7 +71,7 @@ AnsiString __fastcall DoSaveSessionDialog(
     SaveSessionDialog->Caption = LoadStr(SAVE_SESSION_CAPTION);
     SaveSessionDialog->Prompt = LoadStr(SAVE_SESSION_PROMPT);
     SaveSessionDialog->OnCloseQuery = SaveSessionDialog->StoredSessionsCloseQuery;
-    SaveSessionDialog->HelpKeyword = HELP_UI_LOGIN_SAVE;
+    SaveSessionDialog->HelpKeyword = HELP_SESSION_SAVE;
     if (SaveSessionDialog->ShowModal() == mrOk)
     {
       Result = SaveSessionDialog->Text;
@@ -89,7 +86,7 @@ AnsiString __fastcall DoSaveSessionDialog(
 }
 //---------------------------------------------------------------------
 __fastcall TComboInputDialog::TComboInputDialog(TComponent* AOwner)
-	: TForm(AOwner)
+  : TForm(AOwner)
 {
   FAllowEmpty = false;
   UseSystemSettings(this);
@@ -143,20 +140,45 @@ void __fastcall TComboInputDialog::StoredSessionsCloseQuery(TObject * /*Sender*/
   CanClose = true;
   if (ModalResult == mrOk)
   {
+    TSessionData::ValidateName(Text);
+
     assert(StoredSessions);
     TSessionData * Data = (TSessionData *)StoredSessions->FindByName(Text);
     if (Data && Data->Special)
     {
       MessageDialog(FMTLOAD(CANNOT_OVERWRITE_SPECIAL_SESSION, (Text)),
-        qtError, qaOK, 0);
+        qtError, qaOK, HELP_NONE);
       CanClose = false;
     }
     else if (Data &&
       MessageDialog(FMTLOAD(CONFIRM_OVERWRITE_SESSION, (Text)),
-        qtConfirmation, qaYes | qaNo, 0) != qaYes)
+        qtConfirmation, qaYes | qaNo, HELP_SESSION_SAVE_OVERWRITE) != qaYes)
     {
       CanClose = false;
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TComboInputDialog::FormShow(TObject * /*Sender*/)
+{
+  TBorderIcons BI = BorderIcons;
+  if (HelpKeyword.IsEmpty())
+  {
+    BI >> biHelp;
+
+    OKButton->Left = CancelButton->Left;
+    CancelButton->Left = HelpButton->Left;
+    HelpButton->Visible = false;
+  }
+  else
+  {
+    BI << biHelp;
+  }
+  BorderIcons = BI;
+}
+//---------------------------------------------------------------------------
+void __fastcall TComboInputDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------

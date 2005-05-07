@@ -11,7 +11,10 @@ public:
   ~TProgramParams();
   bool __fastcall FindSwitch(const AnsiString Switch);
   bool __fastcall FindSwitch(const AnsiString Switch, AnsiString & Value);
-  bool __fastcall FindSwitch(const AnsiString Switch, AnsiString & Value, int & Position);
+  bool __fastcall FindSwitch(const AnsiString Switch, int & ParamsStart,
+    int & ParamsCount);
+  bool __fastcall FindSwitch(const AnsiString Switch, TStrings * Params,
+    int ParamsMax = -1);
   void __fastcall ParamsProcessed(int Position, int Count);
   AnsiString __fastcall SwitchValue(const AnsiString Switch, const AnsiString Default = "");
   __property AnsiString SwitchValueDelimiters  = { read=FSwitchValueDelimiters, write=FSwitchValueDelimiters };
@@ -23,6 +26,8 @@ public:
   __property AnsiString SwitchMarks  = { read=FSwitchMarks, write=FSwitchMarks };
 protected:
   TParamType __fastcall ParamType(Integer Index, AnsiString & Value);
+  bool __fastcall FindSwitch(const AnsiString Switch,
+    AnsiString & Value, int & ParamsStart, int & ParamsCount);
 private:
   AnsiString FSwitchMarks;
   AnsiString FSwitchValueDelimiters;
@@ -33,6 +38,7 @@ private:
   Integer __fastcall GetParamTypeCount(int Type);
   Integer __fastcall GetCount();
   AnsiString __fastcall GetParam(Integer Index);
+  void __fastcall ResetParamCount();
 };
 //---------------------------------------------------------------------------
 #endif

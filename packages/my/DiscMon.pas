@@ -59,14 +59,17 @@ uses
 // you must call the Resume method.
 
 type
-  TDiscMonitorNotify = procedure(Sender: TObject; const Directory: string) of object;
+  TDiscMonitorNotify = procedure(Sender: TObject; const Directory: string; var SubdirsChanged: Boolean) of object;
+  TDiscMonitorInvalid = procedure(Sender: TObject; const Directory: string; const ErrorStr: string) of object;
   TDiscMonitorSynchronize = procedure(Sender: TObject; Method: TThreadMethod) of object;
+  TDiscMonitorFilter = procedure(Sender: TObject; const DirectoryName: string; var Add: Boolean) of object;
 
   TDiscMonitorThread = class(TCompThread)
   private
     FOnChange: TDiscMonitorNotify;
-    FOnInvalid: TDiscMonitorNotify;
+    FOnInvalid: TDiscMonitorInvalid;
     FOnSynchronize: TDiscMonitorSynchronize;
+    FOnFilter: TDiscMonitorFilter;
     FDirectories: TStrings;
     FFilters: DWORD;
     FDestroyEvent,
@@ -74,12 +77,15 @@ type
     FSubTree: Boolean;
     FChangeDelay: Integer;  {ie01}
     FNotifiedDirectory: string;
+    FSubdirsChanged: Boolean;
+    FInvalidMessage: string;
     procedure InformChange;
     procedure InformInvalid;
     procedure SetDirectories(const Value: TStrings);
     procedure SetFilters(Value: DWORD);
     procedure SetSubTree(Value: boolean);
     function GetMaxDirectories: Integer;
+    procedure SaveOSError;
   protected
     procedure Execute; override;
     procedure Update;
@@ -96,8 +102,9 @@ type
     // Event called when change noted in directory
     property OnChange: TDiscMonitorNotify read FOnChange write FOnChange;
     // Event called for invalid parameters
-    property OnInvalid: TDiscMonitorNotify read FOnInvalid write FOnInvalid;
+    property OnInvalid: TDiscMonitorInvalid read FOnInvalid write FOnInvalid;
     property OnSynchronize: TDiscMonitorSynchronize read FOnSynchronize write FOnSynchronize;
+    property OnFilter: TDiscMonitorFilter read FOnFilter write FOnFilter;
     // Include subdirectories below specified directory.
     property SubTree: Boolean read FSubTree write SetSubTree;
     // specify, how long the thread should wait, before the event OnChange is fired:
@@ -122,8 +129,9 @@ type
     FMonitor: TDiscMonitorThread;
     FFilters: TMonitorFilters;
     FOnChange: TDiscMonitorNotify;
-    FOnInvalid: TDiscMonitorNotify;
+    FOnInvalid: TDiscMonitorInvalid;
     FOnSynchronize: TDiscMonitorSynchronize;
+    FOnFilter: TDiscMonitorFilter;
     FShowMsg: Boolean;
     FPending: Boolean;
     function GetDirectories: TStrings;
@@ -134,11 +142,12 @@ type
     procedure SetSubTree(Value: Boolean);
     function  GetChangeDelay: Integer;
     procedure SetChangeDelay(Value: Integer);
-    procedure AddDirectory(Dirs: TStrings; Directory: string); overload;
     function GetMaxDirectories: Integer;
   protected
-    procedure Change(Sender: TObject; const Directory: string);
-    procedure Invalid(Sender: TObject; const Directory: string);
+    procedure Change(Sender: TObject; const Directory: string; 
+      var SubdirsChanged: Boolean);
+    procedure Invalid(Sender: TObject; const Directory: string; const ErrorStr: string);
+    procedure Filter(Sender: TObject; const DirectoryName: string; var Add: Boolean);
     procedure DoSynchronize(Sender: TObject; Method: TThreadMethod);
   public
     constructor Create(AOwner : TComponent); override;
@@ -147,7 +156,7 @@ type
     procedure Close;
     // start the monitoring thread running
     procedure Open;
-    procedure AddDirectory(Directory: string; SubDirs: Boolean); overload;
+    procedure AddDirectory(Directory: string; SubDirs: Boolean);
     procedure SetDirectory(Directory: string);
     // read-only property to access the thread directly
     property Thread: TDiscMonitorThread read FMonitor;
@@ -160,8 +169,9 @@ type
     // event called when a change is notified
     property OnChange: TDiscMonitorNotify read FOnChange write FOnChange;
     // event called if an invalid condition is found
-    property OnInvalid: TDiscMonitorNotify read FOnInvalid write FOnInvalid;
+    property OnInvalid: TDiscMonitorInvalid read FOnInvalid write FOnInvalid;
     property OnSynchronize: TDiscMonitorSynchronize read FOnSynchronize write FOnSynchronize;
+    property OnFilter: TDiscMonitorFilter read FOnFilter write FOnFilter;
     // notification filter conditions
     property Filters: TMonitorFilters read FFilters write SetFilters default [moFilename];
     // include subdirectories below the specified directory
@@ -190,6 +200,65 @@ function FixFindFirstChangeNotification(const lpPathName: PChar;
   external kernel32 name 'FindFirstChangeNotificationA';
 {$ENDIF}
 
+procedure AddDirectory(Dirs: TStrings; Directory: string; 
+  MaxDirectories: Integer; OnFilter: TDiscMonitorFilter; Tag: Boolean); 
+var
+  Found: Boolean;
+  SearchRec: TSearchRec;
+  FileName: string;
+  FindAttrs: Integer;
+  Add: Boolean;
+  Index: Integer;
+begin
+  FindAttrs := faReadOnly or faHidden or faSysFile or faDirectory or faArchive;
+  Directory := IncludeTrailingBackslash(Directory);
+  Found := (FindFirst(Directory + '*.*', FindAttrs, SearchRec) = 0);
+
+  if Found then
+  begin
+    try
+      while Found do
+      begin
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and
+           ((SearchRec.Attr and faDirectory) = faDirectory) then
+        begin
+          FileName := Directory + SearchRec.Name;
+          Add := True;
+          if Assigned(OnFilter) then OnFilter(nil, FileName, Add);
+          
+          if Add then
+          begin
+            if Tag then
+            begin
+              Index := Dirs.IndexOf(FileName);
+              if Index >= 0 then
+              begin
+                Assert(Dirs.Objects[Index] = TObject(1));
+                Dirs.Objects[Index] := TObject(0);
+              end;
+            end
+              else Index := -1;
+
+            if Index < 0 then
+            begin
+              if Tag then Dirs.AddObject(FileName, TObject(2))
+                else Dirs.Add(FileName);
+              if (MaxDirectories >= 0) and (Dirs.Count > MaxDirectories) then
+                raise Exception.CreateFmt(STooManyWatchDirectories, [MaxDirectories]);
+              // note that we are not re-scaning subdirectories of duplicate directory
+              AddDirectory(Dirs, FileName, MaxDirectories, OnFilter, Tag);
+            end;
+          end;
+        end;
+
+        Found := (FindNext(SearchRec) = 0);
+      end;
+    finally
+      FindClose(SearchRec);
+    end;
+  end;
+end;
+
 //=== MONITOR THREAD ===========================================================
 
 // Create the thread suspended.  Create two events, each are created using
@@ -203,8 +272,11 @@ constructor TDiscMonitorThread.Create;
 begin
   inherited Create(True);
   FDirectories := TStringList.Create;
+  (FDirectories as TStringList).CaseSensitive := False;
+  (FDirectories as TStringList).Sorted := True;
   FDestroyEvent := CreateEvent(nil, True,  False, nil);
   FChangeEvent  := CreateEvent(nil, False, False, nil);
+  FOnFilter := nil;
 end;
 
 // close OnXXXXX links, signal the thread that it is to close down
@@ -225,13 +297,22 @@ end;
 // called by the Execute procedure via Synchronize.  So this is VCL thread safe
 procedure TDiscMonitorThread.InformChange;
 begin
-  if Assigned(FOnChange) then FOnChange(Self, FNotifiedDirectory);
+  if Assigned(FOnChange) then FOnChange(Self, FNotifiedDirectory, FSubdirsChanged);
 end;
 
 // called by the Execute procedure via Synchronize.  So this is VCL thread safe
 procedure TDiscMonitorThread.InformInvalid;
 begin
-  if Assigned(FOnInvalid) then FOnInvalid(Self, FNotifiedDirectory);
+  if Assigned(FOnInvalid) then FOnInvalid(Self, FNotifiedDirectory, FInvalidMessage);
+end;
+
+procedure TDiscMonitorThread.SaveOSError;
+begin
+  try
+    RaiseLastOSError;
+  except
+    on E: Exception do FInvalidMessage := E.Message;
+  end;
 end;
 
 function TDiscMonitorThread.GetMaxDirectories: Integer;
@@ -318,6 +399,8 @@ procedure TDiscMonitorThread.Execute;
 var
   // used to give the handles to WaitFor...
   Handles: PWOHandleArray;
+  SysHandles: Word;
+  Count: Word;
 
   function StartMonitor(const Directory: string; ForceSubTree: Boolean): THandle;
   // There appears to be a bug in win 95 where the bWatchSubTree parameter
@@ -348,6 +431,7 @@ var
       begin
         // call the OnInvalid event
         FNotifiedDirectory := Directory;
+        SaveOSError;
         DoSynchronize(InformInvalid);
 
         // wait until either DestroyEvent or the ChangeEvents are signalled
@@ -355,6 +439,7 @@ var
         if Result = WAIT_FAILED then
         begin
           FNotifiedDirectory := '';
+          SaveOSError;
           DoSynchronize(InformInvalid);
           Again := False;
         end
@@ -364,40 +449,130 @@ var
     until (not Again);
   end; {StartMonitor}
 
-  procedure Notify(Directory: Integer; Handle: THandle);
+  function UpdateSubdirectories(Directory: Integer): Cardinal;
+  var
+    Path: string;
+    NewHandles: PWOHandleArray;
+    OrigDirectory: Integer;
+    NewAlloc: Integer;
+  begin
+    Assert(Directory >= 0);
+    Path := ExcludeTrailingBackslash(FDirectories[Directory]);
+
+    while ((Directory + 1 < FDirectories.Count) and 
+           SameText(Copy(FDirectories.Strings[Directory + 1], 1, Length(Path)), Path)) do
+    begin
+      FDirectories.Objects[Directory + 1] := TObject(1);
+      Inc(Directory);
+    end;
+
+    AddDirectory(FDirectories, Path, -1, OnFilter, True);
+
+    Result := WAIT_OBJECT_0;
+
+    // worst case limit
+    NewAlloc := SysHandles + FDirectories.Count;
+    GetMem(NewHandles, SizeOf(THandle) * NewAlloc);
+    Move(Handles^, NewHandles^, SizeOf(THandle) * SysHandles);
+
+    OrigDirectory := SysHandles;
+    Directory := SysHandles;
+
+    while Directory < SysHandles + FDirectories.Count do
+    begin
+      // removed directory
+      if Integer(FDirectories.Objects[Directory - SysHandles]) = 1 then
+      begin
+        FDirectories.Delete(Directory - SysHandles);
+        Assert(OrigDirectory < Count);
+        FindCloseChangeNotification(Handles^[OrigDirectory]);
+        Handles^[OrigDirectory] := INVALID_HANDLE_VALUE;
+        Inc(OrigDirectory);
+      end
+        else
+      // newly added
+      if Integer(FDirectories.Objects[Directory - SysHandles]) = 2 then
+      begin
+        Assert(Directory < NewAlloc);
+        NewHandles^[Directory] := StartMonitor(FDirectories[Directory - SysHandles], False);
+        if NewHandles^[Directory] = INVALID_HANDLE_VALUE then 
+        begin
+          // currently we resign on correct resource freeing
+          Result := WAIT_FAILED;
+          Break;
+        end;
+        FDirectories.Objects[Directory - SysHandles] := TObject(0);
+        Inc(Directory);
+      end
+        else
+      begin
+        Assert(Integer(FDirectories.Objects[Directory - SysHandles]) = 0);
+        Assert(Directory < NewAlloc);
+        Assert(OrigDirectory < Count);
+        NewHandles^[Directory] := Handles^[OrigDirectory];
+        Inc(Directory);
+        Inc(OrigDirectory);
+      end;
+    end;
+
+    if Result <> WAIT_FAILED then
+    begin
+      Assert(Count = OrigDirectory);
+
+      FreeMem(Handles);
+      Handles := NewHandles;
+      Count := SysHandles + FDirectories.Count;
+      
+      Assert(Count = Directory);
+      Assert(Count <= NewAlloc);
+    end;
+  end;
+  
+  function Notify(Directory: Integer; Handle: THandle): Cardinal;
   begin
     // Notification signalled, so fire the OnChange event and then FindNext..
     // loop back to re-WaitFor... the thread
     Sleep(FChangeDelay);
     FNotifiedDirectory := FDirectories[Directory];
+    FSubdirsChanged := False;
+
     DoSynchronize(InformChange);
+
+    if FSubdirsChanged then
+      Result := UpdateSubDirectories(Directory)
+    else
+      Result := WAIT_TIMEOUT;
+
     FindNextChangeNotification(Handle);
   end;  
 
-  function CheckAllObjects(Count: Integer; DirHandles: PWOHandleArray): Integer;
+  function CheckAllObjects(Count: Integer; DirHandles: PWOHandleArray): Cardinal;
   const
     Offset = MAXIMUM_WAIT_OBJECTS;
   var
-    C, Start: Integer;
+    C, Start, Directory: Cardinal;
   begin
     Result := WAIT_TIMEOUT;
     Start := 0;
-    while Start < Count do
+    while Start < Cardinal(Count) do
     begin 
-      if Count - Start > Offset then C := Offset
-        else C := Count - Start;
+      if Cardinal(Count) - Start > Offset then C := Offset
+        else C := Cardinal(Count) - Start;
       Result := WaitForMultipleObjects(C, @DirHandles[Start], false, 0);      
-      if (Result - WAIT_OBJECT_0 >= 0) and
-         (Result - WAIT_OBJECT_0 < C) then
+      Directory := Start + Result - WAIT_OBJECT_0;
+      // (Result - WAIT_OBJECT_0 >= 0) is always true
+      if Result - WAIT_OBJECT_0 < C then
       begin
-        Notify(Start + Result - WAIT_OBJECT_0, DirHandles^[Result - WAIT_OBJECT_0]);
+        Result := Notify(Directory, DirHandles^[Directory]);
+        // when new directory is found, restart,
+        // if not check the same range again for possibly different notification
+        if Result = WAIT_OBJECT_0 then Start := 0;
       end
-        else 
+        else Inc(Start, C);
       if Result <> WAIT_TIMEOUT then Break;
-      Inc(Start, C);
 
       Result := WaitForMultipleObjects(2, Handles, False, 0);
-      if Result <> WAIT_TIMEOUT then break;
+      if Result <> WAIT_TIMEOUT then Break;
     end;
   end;
   
@@ -406,10 +581,8 @@ const
   ChangeSlot = 1;
   HierNotifySlot = 2;
 var
-  SysHandles: Word; 
   HierMode: Boolean;
   WaitCount: Word;
-  Count: Word;
   I: Integer;
   Result: Cardinal;
 begin {Execute}
@@ -420,9 +593,7 @@ begin {Execute}
   begin
     Inc(SysHandles);
     Inc(Count);
-    WaitCount := SysHandles;
-  end
-    else WaitCount := Count;
+  end;
   GetMem(Handles, SizeOf(THandle) * Count);
   try
     Handles^[DestroySlot] := FDestroyEvent;      // put DestroyEvent handle in slot 0
@@ -444,13 +615,17 @@ begin {Execute}
       end;
 
       repeat
-        // handle is valid so wait for any of the change notification, destroy or
+        if HierMode then WaitCount := SysHandles
+          else WaitCount := Count;
+
+        // wait for any of the change notification, destroy or
         // change events to be signalled
         Result := WaitForMultipleObjects(WaitCount, Handles, False, INFINITE);
 
         if Result = WAIT_FAILED then
         begin
           FNotifiedDirectory := '';
+          SaveOSError;
           DoSynchronize(InformInvalid);
         end
           else
@@ -468,9 +643,12 @@ begin {Execute}
         if (Result >= WAIT_OBJECT_0 + SysHandles) and
            (Result < WAIT_OBJECT_0 + WaitCount) then
         begin
-          Notify(Result - WAIT_OBJECT_0 - SysHandles,
+          Result := Notify(Result - WAIT_OBJECT_0 - SysHandles,
             Handles^[Result - WAIT_OBJECT_0]);
+          if Result = WAIT_OBJECT_0 then Result := WAIT_TIMEOUT;
         end;
+      // note that WaitCount can be differen here than when 
+      // WaitForMultipleObjects  was called, but it should not matter as it is
       until (Result = WAIT_FAILED) or (Result = WAIT_OBJECT_0 + DestroySlot) or 
         (Result = WAIT_OBJECT_0 + ChangeSlot) or 
         ((Result >= WAIT_ABANDONED_0) and (Result < WAIT_ABANDONED_0 + WaitCount));
@@ -504,11 +682,13 @@ end;
 constructor TDiscMonitor.Create(AOwner: TComponent);
 begin
   inherited Create (AOwner);
+  FOnFilter := nil;
   FMonitor := TDiscMonitorThread.Create;  // create a monitor thread
   FMonitor.ChangeDelay := 500;            {ie01}
   FMonitor.OnChange := Change;            // hook into its event handlers
   FMonitor.OnInvalid := Invalid;
   FMonitor.OnSynchronize := DoSynchronize;
+  FMonitor.OnFilter := Filter;
   Filters := [moFilename];                // default filters to moFilename
   SubTree := True;                        // default sub-tree search to on
   FPending := True;
@@ -523,19 +703,26 @@ end;
 // Change notification from the thread has occurred. Call the component's event
 // handler and then, if in design mode, and if desired, put up a simple
 // notification message
-procedure TDiscMonitor.Change(Sender: TObject; const Directory: string);
+procedure TDiscMonitor.Change(Sender: TObject; const Directory: string; 
+  var SubdirsChanged: Boolean);
 begin
   if Assigned(FOnChange) then
-    FOnChange(Self, Directory)
+    FOnChange(Self, Directory, SubdirsChanged)
 end;
 
 // Invalid notification from the thread has occurred. Call the component's event
 // handler and then, if in design mode, and if desired, put up a simple
 // notification message
-procedure TDiscMonitor.Invalid(Sender: TObject; const Directory: string);
+procedure TDiscMonitor.Invalid(Sender: TObject; const Directory: string; const ErrorStr: string);
 begin
   if Assigned(FOnInvalid) then
-    FOnInvalid(Self, Directory)
+    FOnInvalid(Self, Directory, ErrorStr)
+end;
+
+procedure TDiscMonitor.Filter(Sender: TObject; const DirectoryName: string; var Add: Boolean);
+begin
+  if Assigned(FOnFilter) then
+    FOnFilter(Self, DirectoryName, Add)
 end;
 
 procedure TDiscMonitor.DoSynchronize(Sender: TObject; Method: TThreadMethod);
@@ -595,40 +782,6 @@ begin
   FMonitor.Directories := Value;
 end;
 
-procedure TDiscMonitor.AddDirectory(Dirs: TStrings; Directory: string);
-var
-  Found: Boolean;
-  SearchRec: TSearchRec;
-  FileName: string;
-  FindAttrs: Integer;
-begin
-  FindAttrs := faReadOnly or faHidden or faSysFile or faDirectory or faArchive;
-  Directory := IncludeTrailingBackslash(Directory);
-  Found := (FindFirst(Directory + '*.*', FindAttrs, SearchRec) = 0);
-
-  if Found then
-  begin
-    try
-      while Found do
-      begin
-        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and
-           ((SearchRec.Attr and faDirectory) = faDirectory) then
-        begin
-          FileName := Directory + SearchRec.Name;
-          Dirs.Add(FileName);
-          if Dirs.Count > MaxDirectories then
-            raise Exception.CreateFmt(STooManyWatchDirectories, [MaxDirectories]);
-          AddDirectory(Dirs, FileName);
-        end;
-
-        Found := (FindNext(SearchRec) = 0);
-      end;
-    finally
-      FindClose(SearchRec);
-    end;
-  end;
-end;
-
 procedure TDiscMonitor.AddDirectory(Directory: string; SubDirs: Boolean);
 var
   Dirs: TStringList;
@@ -642,7 +795,7 @@ begin
       Dirs.Assign(Directories);
       
       Dirs.Add(Directory);
-      if SubDirs then AddDirectory(Dirs, Directory);
+      if SubDirs then DiscMon.AddDirectory(Dirs, Directory, MaxDirectories, OnFilter, False);
 
       Directories := Dirs;
 

@@ -558,7 +558,7 @@ Bignum bignum_from_bytes(const unsigned char *data, int nbytes)
 }
 
 /*
- * Read an ssh1-format bignum from a data buffer. Return the number
+ * Read an SSH-1-format bignum from a data buffer. Return the number
  * of bytes consumed, or -1 if there wasn't enough data.
  */
 int ssh1_read_bignum(const unsigned char *data, int len, Bignum * result)
@@ -587,7 +587,7 @@ int ssh1_read_bignum(const unsigned char *data, int len, Bignum * result)
 }
 
 /*
- * Return the bit count of a bignum, for ssh1 encoding.
+ * Return the bit count of a bignum, for SSH-1 encoding.
  */
 int bignum_bitcount(Bignum bn)
 {
@@ -598,7 +598,7 @@ int bignum_bitcount(Bignum bn)
 }
 
 /*
- * Return the byte length of a bignum when ssh1 encoded.
+ * Return the byte length of a bignum when SSH-1 encoded.
  */
 int ssh1_bignum_length(Bignum bn)
 {
@@ -606,7 +606,7 @@ int ssh1_bignum_length(Bignum bn)
 }
 
 /*
- * Return the byte length of a bignum when ssh2 encoded.
+ * Return the byte length of a bignum when SSH-2 encoded.
  */
 int ssh2_bignum_length(Bignum bn)
 {
@@ -654,7 +654,7 @@ void bignum_set_bit(Bignum bn, int bitnum, int value)
 }
 
 /*
- * Write a ssh1-format bignum into a buffer. It is assumed the
+ * Write a SSH-1-format bignum into a buffer. It is assumed the
  * buffer is big enough. Returns the number of bytes used.
  */
 int ssh1_write_bignum(void *data, Bignum bn)

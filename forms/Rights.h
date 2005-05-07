@@ -12,6 +12,7 @@
 #include <ActnList.hpp>
 #include <ImgList.hpp>
 #include <Menus.hpp>
+#include "GrayedCheckBox.hpp"
 //---------------------------------------------------------------------------
 class TRightsFrame : public TFrame
 {
@@ -19,15 +20,15 @@ __published:
   TLabel *GroupLabel;
   TLabel *OthersLabel;
   TLabel *OwnerLabel;
-  TCheckBox *OwnerReadCheck;
-  TCheckBox *OwnerWriteCheck;
-  TCheckBox *OwnerExecuteCheck;
-  TCheckBox *GroupReadCheck;
-  TCheckBox *GroupWriteCheck;
-  TCheckBox *GroupExecuteCheck;
-  TCheckBox *OthersReadCheck;
-  TCheckBox *OthersWriteCheck;
-  TCheckBox *OthersExecuteCheck;
+  TGrayedCheckBox *OwnerReadCheck;
+  TGrayedCheckBox *OwnerWriteCheck;
+  TGrayedCheckBox *OwnerExecuteCheck;
+  TGrayedCheckBox *GroupReadCheck;
+  TGrayedCheckBox *GroupWriteCheck;
+  TGrayedCheckBox *GroupExecuteCheck;
+  TGrayedCheckBox *OthersReadCheck;
+  TGrayedCheckBox *OthersWriteCheck;
+  TGrayedCheckBox *OthersExecuteCheck;
   TCheckBox *DirectoriesXCheck;
   TSpeedButton *OwnerButton;
   TSpeedButton *GroupButton;

@@ -59,6 +59,7 @@ public:
   virtual void __fastcall CopyFile(const AnsiString FileName,
     const AnsiString NewName);
   virtual AnsiString __fastcall FileUrl(const AnsiString FileName);
+  virtual TStrings * __fastcall GetFixedPaths();
 
 protected:
   int FVersion;
@@ -75,11 +76,13 @@ protected:
   TStrings * FExtensions;
   TSFTPSupport * FSupport;
   bool FUtfStrings;
+  bool FUtfNever;
   bool FSignedTS;
+  TStrings * FFixedPaths;
 
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, char Type, TRemoteFile * ALinkedByFile = NULL,
-    bool AllowNonexistence = false);
+    int AllowStatus = -1);
   virtual AnsiString __fastcall GetCurrentDirectory();
   AnsiString __fastcall GetHomeDirectory();
   unsigned long __fastcall GotStatusPacket(TSFTPPacket * Packet, int AllowStatus);

@@ -751,7 +751,7 @@ static void *des3_make_context(void)
 
 static void *des3_ssh1_make_context(void)
 {
-    /* Need 3 keys for each direction, in SSH1 */
+    /* Need 3 keys for each direction, in SSH-1 */
     return snewn(6, DESContext);
 }
 
@@ -762,7 +762,7 @@ static void *des_make_context(void)
 
 static void *des_ssh1_make_context(void)
 {
-    /* Need one key for each direction, in SSH1 */
+    /* Need one key for each direction, in SSH-1 */
     return snewn(2, DESContext);
 }
 
@@ -942,7 +942,7 @@ static const struct ssh2_cipher ssh_3des_ssh2 = {
 };
 
 /*
- * Single DES in ssh2. "des-cbc" is marked as HISTORIC in
+ * Single DES in SSH-2. "des-cbc" is marked as HISTORIC in
  * draft-ietf-secsh-assignednumbers-04.txt, referring to
  * FIPS-46-3.  ("Single DES (i.e., DES) will be permitted 
  * for legacy systems only.") , but ssh.com support it and 

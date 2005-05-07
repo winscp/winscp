@@ -2,12 +2,12 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <WinInterface.h>
 #include "SynchronizeProgress.h"
 #include <Common.h>
 #include <Configuration.h>
 #include <ScpMain.h>
 #include <TextsWin.h>
-#include <WinInterface.h>
 #include <VCLCommon.h>
 #include <GUITools.h>
 //---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ void __fastcall TSynchronizeProgressForm::UpdateControls()
 void __fastcall TSynchronizeProgressForm::CancelButtonClick(TObject * /*Sender*/)
 {
   if (!FCanceled && (MessageDialog(LoadStr(CANCEL_OPERATION), qtConfirmation,
-       qaOK | qaCancel, 0) == qaOK))
+       qaOK | qaCancel, HELP_NONE) == qaOK))
   {
     FCanceled = true;
   }

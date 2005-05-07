@@ -52,7 +52,7 @@ struct tm ltime(void);
  * debug(()) (note the double brackets) is like printf().
  *
  * dmemdump() and dmemdumpl() both do memory dumps.  The difference
- * is that dmemdumpl() is more suited for when where the memory is is
+ * is that dmemdumpl() is more suited for when the memory address is
  * important (say because you'll be recording pointer values later
  * on).  dmemdump() is more concise.
  */

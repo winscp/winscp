@@ -7,6 +7,7 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include "XPThemes.hpp"
+#include "HistoryComboBox.hpp"
 //---------------------------------------------------------------------------
 class TCustomCommands;
 //---------------------------------------------------------------------------
@@ -16,27 +17,28 @@ __published:
   TXPGroupBox *Group;
   TButton *OkButton;
   TButton *CancelButton;
-  TLabel *FileNameLabel;
+  TLabel *DescriptionLabel;
   TEdit *DescriptionEdit;
   TLabel *Label1;
-  TEdit *CommandEdit;
+  THistoryComboBox *CommandEdit;
   TCheckBox *ApplyToDirectoriesCheck;
   TCheckBox *RecursiveCheck;
   TLabel *CustomCommandsPatternsLabel;
   TRadioButton *LocalCommandButton;
   TRadioButton *RemoteCommandButton;
   TCheckBox *ShowResultsCheck;
+  TButton *HelpButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
-  void __fastcall PathEditsKeyDown(TObject *Sender, WORD &Key,
-    TShiftState Shift);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+  void __fastcall HelpButtonClick(TObject *Sender);
 
 private:
-  bool FEdit;
+  TCustomCommandsMode FMode;
   int FParams;
   AnsiString FOrigDescription;
   const TCustomCommands * FCustomCommands;
+  TCustomCommandValidate FOnValidate;
 
   void __fastcall SetCommand(AnsiString value);
   AnsiString __fastcall GetCommand();
@@ -56,8 +58,9 @@ public:
   __property AnsiString Command = { read = GetCommand, write = SetCommand };
   __property AnsiString Description = { read = GetDescription, write = SetDescription };
   __property int Params = { read = GetParams, write = SetParams };
-  __property bool Edit = { read = FEdit, write = FEdit };
+  __property TCustomCommandsMode Mode = { read = FMode, write = FMode };
   __property const TCustomCommands * CustomCommands = { read = FCustomCommands, write = FCustomCommands };
+  __property TCustomCommandValidate OnValidate = { read = FOnValidate, write = FOnValidate };
 };
 //---------------------------------------------------------------------------
 #endif

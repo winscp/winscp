@@ -79,47 +79,6 @@ AnsiString __fastcall UnixExtractFileExt(const AnsiString Path)
   return (Pos > 0) ? Path.SubString(Pos, Path.Length() - Pos + 1) : AnsiString();
 }
 //---------------------------------------------------------------------------
-void __fastcall SkipPathComponent(const AnsiString & Text,
-  int & SelStart, int & SelLength, bool Left, bool Unix)
-{
-  AnsiString Delimiter = Unix ? "/" : "\\";
-
-  int P;
-  bool WholeSelected = (SelLength >= Text.Length());
-  if (!Left)
-  {
-    int ASelStart = WholeSelected ? 0 : SelStart;
-    int P2;
-    P = Text.SubString(ASelStart + 1, Text.Length()).Pos(Delimiter);
-    P2 = Text.SubString(ASelStart + 1, Text.Length()).Pos(" ");
-    if ((P2 >= 1) && ((P2 < P) || (P < 1)))
-    {
-      P = P2;
-    }
-
-    if (P < 1)
-    {
-      P = Text.Length();
-    }
-    else
-    {
-      P += ASelStart;
-    }
-  }
-  else
-  {
-    int ASelStart = WholeSelected ? Text.Length() : SelStart;
-    P = Text.SubString(1, ASelStart - 1).LastDelimiter(Delimiter + " ");
-    if (P < 1)
-    {
-      P = 0;
-    }
-  }
-
-  SelStart = P;
-  SelLength = 0;
-}
-//---------------------------------------------------------------------------
 bool __fastcall ExtractCommonPath(TStrings * Files, AnsiString & Path)
 {
   assert(Files->Count > 0);
@@ -312,6 +271,37 @@ AnsiString __fastcall MakeFileList(TStrings * FileList)
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+// copy from BaseUtils.pas
+void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
+  TModificationFmt Precision)
+{
+  if (Precision != mfFull)
+  {
+    unsigned short Y, M, D, H, N, S, MS;
+  
+    DecodeDate(DateTime, Y, M, D);
+    DecodeTime(DateTime, H, N, S, MS);
+    switch (Precision)
+    {
+      case mfMDHM:
+        S = 0;
+        MS = 0;
+        break;
+
+      case mfMDY:
+        H = 0;
+        N = 0;
+        S = 0;
+        MS = 0;
+
+      default:
+        assert(false);
+    }
+
+    DateTime = EncodeDate(Y, M, D) + EncodeTime(H, N, S, MS);
+  }
+}
 //- TRemoteFiles ------------------------------------------------------------
 __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   TPersistent()
@@ -333,7 +323,7 @@ __fastcall TRemoteFile::~TRemoteFile()
   delete FLinkedFile;
 }
 //---------------------------------------------------------------------------
-TRemoteFile * __fastcall TRemoteFile::Duplicate()
+TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone)
 {
   TRemoteFile * Result;
   Result = new TRemoteFile();
@@ -341,7 +331,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate()
   {
     if (FLinkedFile)
     {
-      Result->FLinkedFile = FLinkedFile->Duplicate();
+      Result->FLinkedFile = FLinkedFile->Duplicate(true);
       Result->FLinkedFile->FLinkedByFile = Result;
     }
     *Result->Rights = *FRights;
@@ -362,6 +352,10 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate()
     COPY_FP(Selected);
     COPY_FP(CyclicLink);
     #undef COPY_FP
+    if (Standalone && (!FFullFileName.IsEmpty() || (Directory != NULL)))
+    {
+      Result->FFullFileName = FullFileName;
+    }
   }
   catch(...)
   {
@@ -432,17 +426,17 @@ Boolean __fastcall TRemoteFile::GetIsDirectory() const
   return (toupper(Type) == FILETYPE_DIRECTORY);
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteFile::GetIsParentDirectory()
+Boolean __fastcall TRemoteFile::GetIsParentDirectory() const
 {
   return (FileName == PARENTDIRECTORY);
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteFile::GetIsThisDirectory()
+Boolean __fastcall TRemoteFile::GetIsThisDirectory() const
 {
   return (FileName == THISDIRECTORY);
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory()
+Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
 {
   Boolean Result;
   if (IsDirectory)
@@ -880,7 +874,7 @@ AnsiString __fastcall TRemoteFile::GetListingStr()
     (IsSymLink ? AnsiString(SYMLINKSTR) + LinkTo : AnsiString()))));
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TRemoteFile::GetFullFileName()
+AnsiString __fastcall TRemoteFile::GetFullFileName() const
 {
   if (FFullFileName.IsEmpty())
   {
@@ -949,7 +943,7 @@ void __fastcall TRemoteFileList::DuplicateTo(TRemoteFileList * Copy)
   for (int Index = 0; Index < Count; Index++)
   {
     TRemoteFile * File = Files[Index];
-    Copy->AddFile(File->Duplicate());
+    Copy->AddFile(File->Duplicate(false));
   }
   Copy->FDirectory = Directory;
   Copy->FTimestamp = FTimestamp;
@@ -1051,11 +1045,11 @@ void __fastcall TRemoteDirectory::DuplicateTo(TRemoteFileList * Copy)
   TRemoteFileList::DuplicateTo(Copy);
   if (ThisDirectory && !IncludeThisDirectory)
   {
-    Copy->AddFile(ThisDirectory->Duplicate());
+    Copy->AddFile(ThisDirectory->Duplicate(false));
   }
   if (ParentDirectory && !IncludeParentDirectory)
   {
-    Copy->AddFile(ParentDirectory->Duplicate());
+    Copy->AddFile(ParentDirectory->Duplicate(false));
   }
 }
 //---------------------------------------------------------------------------
@@ -1890,7 +1884,9 @@ bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) co
     if ((Valid.Contains(vpRights) &&
           (Rights != rhp.Rights || AddXToDirectories != rhp.AddXToDirectories)) ||
         (Valid.Contains(vpOwner) && Owner != rhp.Owner) ||
-        (Valid.Contains(vpGroup) && Group != rhp.Group))
+        (Valid.Contains(vpGroup) && Group != rhp.Group) ||
+        (Valid.Contains(vpModification) && (Modification != rhp.Modification)) ||
+        (Valid.Contains(vpLastAccess) && (LastAccess != rhp.LastAccess)))
     {
       Result = false;
     }
@@ -1905,6 +1901,7 @@ bool __fastcall TRemoteProperties::operator !=(const TRemoteProperties & rhp) co
 //---------------------------------------------------------------------------
 TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * FileList)
 {
+  // TODO: Modification and LastAccess
   TRemoteProperties CommonProperties;
   for (int Index = 0; Index < FileList->Count; Index++)
   {
@@ -1913,7 +1910,10 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
     if (!Index)
     {
       CommonProperties.Rights = *(File->Rights);
-      CommonProperties.Rights.AllowUndef = File->IsDirectory || File->Rights->IsUndef;
+      // previously we allowed undef implicitly for directories,
+      // now we do it explicitly in properties dialog and only in combination
+      // with "recursive" option
+      CommonProperties.Rights.AllowUndef = File->Rights->IsUndef;
       CommonProperties.Valid << vpRights;
       if (!File->Owner.IsEmpty())
       {
@@ -1948,6 +1948,7 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
 TRemoteProperties __fastcall TRemoteProperties::ChangedProperties(
   const TRemoteProperties & OriginalProperties, TRemoteProperties NewProperties)
 {
+  // TODO: Modification and LastAccess
   if (!NewProperties.Recursive)
   {
     if (NewProperties.Rights == OriginalProperties.Rights &&

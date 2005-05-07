@@ -28,7 +28,7 @@ __fastcall TEditorManager::~TEditorManager()
 
     if (!FileData->Closed)
     {
-      CloseFile(i - 1, true);
+      CloseFile(i - 1, true, true);
     }
   }
 }
@@ -58,7 +58,8 @@ bool __fastcall TEditorManager::Empty(bool IgnoreClosed)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory, 
-  const AnsiString OriginalFileName, TObject *& Token)
+  const AnsiString OriginalFileName, TObject *& Token,
+  AnsiString & ExistingLocalDirectory)
 {
   bool Result = true;
 
@@ -82,6 +83,7 @@ bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
       }
       else
       {
+        // MDI editor?
         if (FileData->Process == INVALID_HANDLE_VALUE)
         {
           // file is just being uploaded, do not allow new editor instance
@@ -91,7 +93,10 @@ bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
           }
           else
           {
-            CloseFile(i, false);
+            // get temp directory where the file already is so we download
+            // it there again
+            ExistingLocalDirectory = FileData->LocalDirectory;
+            CloseFile(i, false, false); // do not delete file
             Result = true;
           }
         }
@@ -170,7 +175,7 @@ bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
     if (!FileData->Closed && FileData->External &&
         (FileData->Process == INVALID_HANDLE_VALUE))
     {
-      CloseFile(i - 1, true);
+      CloseFile(i - 1, true, true);
     }
   }
   return true;
@@ -256,7 +261,7 @@ void __fastcall TEditorManager::Check()
           {
             // CheckFileChange may fail (file is already being uploaded),
             // but we want to close handles anyway
-            CloseFile(Index, false);
+            CloseFile(Index, false, true);
           }
         }
       }
@@ -321,7 +326,7 @@ void __fastcall TEditorManager::FileClosed(TObject * Token)
   assert(!FFiles[Index].External);
 
   CheckFileChange(Index, false);
-  CloseFile(Index, false);
+  CloseFile(Index, false, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::AddFile(TFileData & FileData)
@@ -349,7 +354,7 @@ void __fastcall TEditorManager::UploadComplete(int Index)
 
   if (FileData->Closed)
   {
-    CloseFile(Index, false);
+    CloseFile(Index, false, true);
   }
   else if (FileData->Reupload)
   {
@@ -367,7 +372,7 @@ void __fastcall TEditorManager::CloseProcess(int Index)
   FileData->Process = INVALID_HANDLE_VALUE;
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors)
+void __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Delete)
 {
   TFileData * FileData = &FFiles[Index];
 
@@ -398,20 +403,23 @@ void __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors)
 
     FFiles.erase(FFiles.begin() + Index);
 
-    bool Deleted;
+    if (Delete)
+    {
+      bool Deleted;
 
-    if (WinConfiguration->ForceDeleteTempFolder)
-    {
-      Deleted = RecursiveDeleteFile(ExcludeTrailingBackslash(LocalDirectory), false);
-    }
-    else
-    {
-      Deleted = DeleteFile(FileName) && RemoveDir(LocalDirectory);
-    }
+      if (WinConfiguration->ForceDeleteTempFolder)
+      {
+        Deleted = RecursiveDeleteFile(ExcludeTrailingBackslash(LocalDirectory), false);
+      }
+      else
+      {
+        Deleted = DeleteFile(FileName) && RemoveDir(LocalDirectory);
+      }
 
-    if (!Deleted && !IgnoreErrors)
-    {
-      throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (LocalDirectory)));
+      if (!Deleted && !IgnoreErrors)
+      {
+        throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (LocalDirectory)));
+      }
     }
   }
 }

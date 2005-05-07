@@ -104,7 +104,7 @@ void write_setting_i(void *handle, const char *key, int value)
 {
     if (handle)
 	RegSetValueEx((HKEY) handle, key, 0, REG_DWORD,
-		      (CONST BYTE *) & value, sizeof(value));
+		      (CONST BYTE *) &value, sizeof(value));
 }
 
 void close_settings_w(void *handle)
@@ -157,7 +157,7 @@ int read_setting_i(void *handle, const char *key, int defvalue)
 
     if (!handle ||
 	RegQueryValueEx((HKEY) handle, key, 0, &type,
-			(BYTE *) & val, &size) != ERROR_SUCCESS ||
+			(BYTE *) &val, &size) != ERROR_SUCCESS ||
 	size != sizeof(val) || type != REG_DWORD)
 	return defvalue;
     else

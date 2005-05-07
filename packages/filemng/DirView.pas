@@ -279,8 +279,9 @@ type
     procedure SetPath(Value: string); override;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); override;
     procedure SetCompressedColor(Value: TColor);
-    procedure ChangeDetected(Sender: TObject; const Directory: string);
-    procedure ChangeInvalid(Sender: TObject; const Directory: string);
+    procedure ChangeDetected(Sender: TObject; const Directory: string; 
+      var SubdirsChanged: Boolean);
+    procedure ChangeInvalid(Sender: TObject; const Directory: string; const ErrorStr: string);
     procedure TimerOnTimer(Sender: TObject);
     procedure ResetItemImage(Index: Integer);
     procedure SetAttrSpace(Value: string);
@@ -423,7 +424,7 @@ type
     property DirColProperties: TDirViewColProperties read GetDirColProperties write SetDirColProperties;
     property PathComboBox;
     property PathLabel;
-    property StatusBar;
+    property OnUpdateStatusBar;
     property OnGetSelectFilter;
     property HeaderImages;
 
@@ -1134,6 +1135,10 @@ begin
   New(PItem);
   with PItem^ do
   begin
+    // must be set as soon as possible, at least before Caption is set,
+    // because if come column is "autosized" setting Caption invokes some callbacks
+    Item.Data := PItem;
+
     FileName := SRec.Name;
     FileExt := UpperCase(Copy(ExtractFileExt(Srec.Name), 2, Pred(ExtLen)));
     DisplayName := ItemDisplayName(FileName);
@@ -1159,8 +1164,6 @@ begin
     if Size > 0 then Inc(FFilesSize, Size);
     PIDL := nil;
 
-    Item.Data := PItem;
-
     if FileExt = 'LNK' then Item.OverlayIndex := 1;
   end;
   if SelectNewFiles then Item.Selected := True;
@@ -1181,6 +1184,7 @@ begin
     FindClose(SRec);
   with PItem^ do
   begin
+    Item.Data := PItem;
     FileName := '..';
     FileExt := '';
     DisplayName := '..';
@@ -1198,7 +1202,6 @@ begin
     Empty := True;
     IconEmpty := False;
     PIDL := nil;
-    Item.Data := PItem;
 
     if HasExtendedCOMCTL32 then ImageIndex := StdDirIcon
       else ImageIndex  := StdDirSelIcon;
@@ -3245,7 +3248,8 @@ begin
   end
 end; {TimerOnTimer}
 
-procedure TDirView.ChangeDetected(Sender: TObject; const Directory: string);
+procedure TDirView.ChangeDetected(Sender: TObject; const Directory: string; 
+  var SubdirsChanged: Boolean);
 begin
   FDirty := True;
   FChangeTimer.Enabled := False;
@@ -3254,7 +3258,8 @@ begin
   FChangeTimer.Enabled := True;
 end; {ChangeDetected}
 
-procedure TDirView.ChangeInvalid(Sender: TObject; const Directory: string);
+procedure TDirView.ChangeInvalid(Sender: TObject; const Directory: string; 
+  const ErrorStr: string);
 begin
   FDiscMonitor.Close;
   if Assigned(FOnChangeInvalid) then

@@ -48,9 +48,11 @@ __published:
   TCheckBox *RecursiveCheck;
   TButton *CalculateSizeButton;
   TRightsExtFrame *RightsFrame;
+  TButton *HelpButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
+  void __fastcall HelpButtonClick(TObject *Sender);
   
 private:
   int FAllowedChanges;

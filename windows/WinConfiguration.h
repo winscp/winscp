@@ -12,7 +12,7 @@ extern const char ShellCommandFileNamePattern[];
 struct TScpExplorerConfiguration {
   AnsiString WindowParams;
   AnsiString DirViewParams;
-  AnsiString CoolBarLayout;
+  AnsiString ToolbarsLayout;
   bool StatusBar;
   AnsiString LastLocalTargetDirectory;
   int ViewStyle;
@@ -21,29 +21,27 @@ struct TScpExplorerConfiguration {
   int DriveViewWidth;
   int SessionComboWidth;
   bool __fastcall operator !=(TScpExplorerConfiguration & rhc)
-    { return C(WindowParams) C(DirViewParams) C(CoolBarLayout) C(StatusBar)
+    { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout) C(StatusBar)
         C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress)
         C(DriveView) C(DriveViewWidth) C(SessionComboWidth) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderPanelConfiguration {
   AnsiString DirViewParams;
-  AnsiString CoolBarLayout;
   bool StatusBar;
   bool DriveView;
   int DriveViewHeight;
   bool __fastcall operator !=(TScpCommanderPanelConfiguration & rhc)
-    { return C(DirViewParams) C(CoolBarLayout) C(StatusBar)
+    { return C(DirViewParams) C(StatusBar)
         C(DriveView) C(DriveViewHeight) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderConfiguration {
   AnsiString WindowParams;
   float LocalPanelWidth;
-  AnsiString CoolBarLayout;
+  AnsiString ToolbarsLayout;
   bool StatusBar;
   bool CommandLine;
-  bool ToolBar;
   TOperationSide CurrentPanel;
   bool ExplorerStyleSelection;
   bool PreserveLocalDirectory;
@@ -51,14 +49,13 @@ struct TScpCommanderConfiguration {
   TScpCommanderPanelConfiguration RemotePanel;
   bool CompareByTime;
   bool CompareBySize;
-  bool SynchronizeBrowsing;
   bool SwappedPanels;
   int SessionComboWidth;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
-    { return C(WindowParams) C(LocalPanelWidth) C(CoolBarLayout) C(StatusBar)
-      C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(ToolBar) C(CommandLine)
+    { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(StatusBar)
+      C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(CommandLine)
       C(ExplorerStyleSelection) C(PreserveLocalDirectory)
-      C(CompareBySize) C(CompareByTime) C(SynchronizeBrowsing) C(SwappedPanels) 
+      C(CompareBySize) C(CompareByTime) C(SwappedPanels) 
       C(SessionComboWidth) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
@@ -106,15 +103,48 @@ struct TQueueViewConfiguration {
   int Height;
   AnsiString Layout;
   TQueueViewShow Show;
+  TQueueViewShow LastHideShow;
   bool ToolBar;
   bool __fastcall operator !=(TQueueViewConfiguration & rhc)
-    { return C(Height) C(Layout) C(Show) C(ToolBar) 0; };
+    { return C(Height) C(Layout) C(Show) C(LastHideShow) C(ToolBar) 0; };
+};
+//---------------------------------------------------------------------------
+struct TUpdatesData
+{
+  int ForVersion;
+  int Version;
+  AnsiString Message;
+  bool Critical;
+  bool __fastcall operator !=(TUpdatesData & rhc)
+    { return C(ForVersion) C(Version) C(Message) C(Critical) 0; };
+  void Reset()
+  {
+    ForVersion = 0;
+    Version = 0;
+    Message = "";
+    Critical = false;
+  }  
+};
+//---------------------------------------------------------------------------
+struct TUpdatesConfiguration
+{
+  TDateTime Period;
+  TDateTime LastCheck;
+  AnsiString ProxyHost;
+  int ProxyPort;
+  bool HaveResults;
+  bool ShownResults;
+  TUpdatesData Results;
+  bool __fastcall operator !=(TUpdatesConfiguration & rhc)
+    { return C(Period) C(LastCheck) C(ProxyHost) C(ProxyPort) C(HaveResults)
+        C(ShownResults) C(Results)  0; };
 };
 #undef C
 //---------------------------------------------------------------------------
 class TBookmarks;
 class TBookmarkList;
 class TCustomCommands;
+enum TPathInCaption { picShort, picFull, picNone };
 //---------------------------------------------------------------------------
 class TWinConfiguration : public TCustomWinConfiguration
 {
@@ -165,6 +195,11 @@ private:
   bool FInvalidDefaultTranslation;
   AnsiString FInvalidDefaultTranslationMessage;
   bool FPreservePanelState;
+  AnsiString FTheme;
+  TPathInCaption FPathInCaption;
+  TUpdatesConfiguration FUpdates;
+  bool FCopyParamAutoSelectNotice;
+  bool FSessionToolbarAutoShown;
 
   void __fastcall SetCopyOnDoubleClick(bool value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -201,6 +236,12 @@ private:
   void __fastcall SetTemporaryDirectoryCleanup(bool value);
   void __fastcall SetConfirmTemporaryDirectoryCleanup(bool value);
   void __fastcall SetPreservePanelState(bool value);
+  void __fastcall SetTheme(AnsiString value);
+  void __fastcall SetPathInCaption(TPathInCaption value);
+  void __fastcall SetCopyParamAutoSelectNotice(bool value);
+  void __fastcall SetSessionToolbarAutoShown(bool value);
+  TUpdatesConfiguration __fastcall GetUpdates();
+  void __fastcall SetUpdates(TUpdatesConfiguration value);
 
   bool __fastcall GetDDExtInstalled();
 
@@ -224,7 +265,7 @@ protected:
   virtual LCID __fastcall GetLocale();
   void __fastcall CheckTranslationVersion(const AnsiString FileName,
     bool InternalLocaleOnError);
-  void __fastcall DefaultLocalized();
+  virtual void __fastcall DefaultLocalized();
 
 public:
   __fastcall TWinConfiguration();
@@ -249,6 +290,7 @@ public:
   __property bool ShowInaccesibleDirectories = { read = FShowInaccesibleDirectories, write = SetShowInaccesibleDirectories };
   __property TEditorConfiguration Editor = { read = FEditor, write = SetEditor };
   __property TQueueViewConfiguration QueueView = { read = FQueueView, write = SetQueueView };
+  __property TUpdatesConfiguration Updates = { read = GetUpdates, write = SetUpdates };
   __property AnsiString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
   __property bool CopyOnDoubleClick = { read = FCopyOnDoubleClick, write = SetCopyOnDoubleClick };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
@@ -280,8 +322,12 @@ public:
   __property bool TemporaryDirectoryCleanup = { read = FTemporaryDirectoryCleanup, write = SetTemporaryDirectoryCleanup };
   __property bool ConfirmTemporaryDirectoryCleanup = { read = FConfirmTemporaryDirectoryCleanup, write = SetConfirmTemporaryDirectoryCleanup };
   __property bool PreservePanelState = { read = FPreservePanelState, write = SetPreservePanelState };
+  __property AnsiString Theme = { read = FTheme, write = SetTheme };
+  __property TPathInCaption PathInCaption = { read = FPathInCaption, write = SetPathInCaption };
   __property bool InvalidDefaultTranslation = { read = FInvalidDefaultTranslation };
   __property AnsiString DefaultTranslationFile = { read = FDefaultTranslationFile };
+  __property bool CopyParamAutoSelectNotice = { read = FCopyParamAutoSelectNotice, write = SetCopyParamAutoSelectNotice };
+  __property bool SessionToolbarAutoShown = { read = FSessionToolbarAutoShown, write = SetSessionToolbarAutoShown };
 };
 //---------------------------------------------------------------------------
 class TCustomCommands : public TStringList

@@ -8,12 +8,12 @@
 #include <ScpMain.h>
 
 #include "NonVisual.h"
+#include "Glyphs.h"
 #include "Tools.h"
 #include "WinConfiguration.h"
 #include <VCLCommon.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "AssociatedStatusBar"
 #pragma link "CustomDirView"
 #pragma link "CustomScpExplorer"
 #pragma link "CustomUnixDirView"
@@ -26,24 +26,31 @@
 #pragma link "IEPathComboBox"
 #pragma link "CustomDriveView"
 #pragma link "UnixDriveView"
+#pragma link "TB2Dock"
+#pragma link "TBX"
+#pragma link "TB2Item"
+#pragma link "TB2Toolbar"
+#pragma link "TBXStatusBars"
+#pragma link "TBXExtItems"
+#pragma link "TB2ExtItems"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
 {          
-  BackButton->DropdownMenu = RemoteDirView->BackMenu;
-  ForwardButton->DropdownMenu = RemoteDirView->ForwardMenu;
-  SavedSessionsButton->OnClick = DropDownButtonMenu;
+  BackButton->LinkSubitems = HistoryMenu(osRemote, true)->Items;
+  ForwardButton->LinkSubitems = HistoryMenu(osRemote, false)->Items;
 
-  TopCoolBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
-  RemoteStatusBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
-  QueueCoolBar->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
-  RemoteDriveView->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
+  TopDock->PopupMenu = NonVisualDataModule->ExplorerBarPopup;
+  RemoteStatusBar->PopupMenu = TopDock->PopupMenu;
+  QueueDock->PopupMenu = TopDock->PopupMenu;
+  RemoteDriveView->PopupMenu = TopDock->PopupMenu;
+  BottomDock->PopupMenu = TopDock->PopupMenu;
+  LeftDock->PopupMenu = TopDock->PopupMenu;
+  RightDock->PopupMenu = TopDock->PopupMenu;
 
   QueuePanel->Parent = RemotePanel;
   QueueSplitter->Parent = RemotePanel;
-
-  reinterpret_cast<TLabel*>(SessionComboResizer)->OnDblClick = SessionComboResizerDblClick;
 
   // set common explorer shorcuts to our actions
   NonVisualDataModule->ExplorerShortcuts();
@@ -72,8 +79,8 @@ void __fastcall TScpExplorerForm::RestoreParams()
   RemoteDirView->UnixColProperties->ParamsStr = WinConfiguration->ScpExplorer.DirViewParams;
   RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
   RemoteDirView->ViewStyle = (TViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
-  LoadCoolbarLayoutStr(TopCoolBar, WinConfiguration->ScpExplorer.CoolBarLayout);
-  SessionCombo->Width = WinConfiguration->ScpExplorer.SessionComboWidth;
+  LoadToolbarsLayoutStr(this, WinConfiguration->ScpExplorer.ToolbarsLayout);
+  SessionCombo->EditWidth = WinConfiguration->ScpExplorer.SessionComboWidth;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
   RemoteDriveView->Width = WinConfiguration->ScpExplorer.DriveViewWidth;
@@ -86,8 +93,8 @@ void __fastcall TScpExplorerForm::StoreParams()
   Configuration->BeginUpdate();
   try
   {
-    WinConfiguration->ScpExplorer.CoolBarLayout = GetCoolbarLayoutStr(TopCoolBar);
-    WinConfiguration->ScpExplorer.SessionComboWidth = SessionCombo->Width;
+    WinConfiguration->ScpExplorer.ToolbarsLayout = GetToolbarsLayoutStr(this);
+    WinConfiguration->ScpExplorer.SessionComboWidth = SessionCombo->EditWidth;
     WinConfiguration->ScpExplorer.StatusBar = RemoteStatusBar->Visible;
 
     WinConfiguration->ScpExplorer.WindowParams = WinConfiguration->StoreForm(this);;
@@ -104,16 +111,17 @@ void __fastcall TScpExplorerForm::StoreParams()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
-  TTransferType Type, Boolean DragDrop, TStrings * FileList,
+  TTransferType Type, Boolean Temp, TStrings * FileList,
   AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm)
 {
-  if ((Direction == tdToLocal) && !DragDrop && TargetDirectory.IsEmpty())
+  // Temp means d&d here so far, may change in future!
+  if ((Direction == tdToLocal) && !Temp && TargetDirectory.IsEmpty())
   {
     TargetDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   }
   bool Result = TCustomScpExplorerForm::CopyParamDialog(
-    Direction, Type, DragDrop, FileList, TargetDirectory, CopyParam, Confirm);
-  if (Result && (Direction == tdToLocal) && !DragDrop)
+    Direction, Type, Temp, FileList, TargetDirectory, CopyParam, Confirm);
+  if (Result && (Direction == tdToLocal) && !Temp)
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = TargetDirectory;
   }
@@ -125,9 +133,6 @@ void __fastcall TScpExplorerForm::DoShow()
   TCustomScpExplorerForm::DoShow();
 
   RemoteDirView->SetFocus();
-
-  // when this is called before OnShow, some toolbars get right-aligned
-  SetCoolBandsMinWidth(TopCoolBar);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
@@ -145,8 +150,19 @@ bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed
 TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
 {
   switch (Component) {
-    case fcSessionCombo: return SessionCombo;
-    case fcMenuToolBar: return MenuToolBar;
+    case fcSessionCombo: return reinterpret_cast<TControl*>(SessionCombo);
+    case fcTransferCombo: return reinterpret_cast<TControl*>(TransferCombo);
+    case fcSessionToolbar: return SessionToolbar;
+
+    case fcExplorerMenuBand: return MenuToolbar;
+    case fcExplorerAddressBand: return AddressToolbar;
+    case fcExplorerToolbarBand: return ButtonsToolbar;
+    case fcExplorerSelectionBand: return SelectionToolbar;
+    case fcExplorerSessionBand: return SessionToolbar;
+    case fcExplorerPreferencesBand: return PreferencesToolbar;
+    case fcExplorerSortBand: return SortToolbar;
+    case fcExplorerUpdatesBand: return UpdatesToolbar;
+    case fcExplorerTransferBand: return TransferToolbar;
     default: return TCustomScpExplorerForm::GetComponent(Component);
   }
 }
@@ -165,10 +181,15 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
 {
   AnsiString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   AnsiString RemoteDirectory = RemoteDirView->PathName;
-  TSynchronizeMode Mode = smRemote;
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode))
+  bool SaveMode = true;
+  TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, SaveMode))
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
+    if (SaveMode)
+    {
+      GUIConfiguration->SynchronizeMode = Mode;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -177,7 +198,7 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
   TCustomScpExplorerForm::FixControlsPlacement();
   
   TControl * ControlsOrder[] =
-    { RemoteDirView, QueueSplitter, QueuePanel, RemoteStatusBar };
+    { RemoteDirView, QueueSplitter, QueuePanel, BottomDock, RemoteStatusBar };
   SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
 
   TControl * RemoteControlsOrder[] =
@@ -188,6 +209,12 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
 void __fastcall TScpExplorerForm::RemoteStatusBarDblClick(TObject * /*Sender*/)
 {
   DoFileSystemInfoDialog(Terminal);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(
+  TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
+{
+  UpdateFileStatusBar(RemoteStatusBar, FileInfo, 0);
 }
 //---------------------------------------------------------------------------
 

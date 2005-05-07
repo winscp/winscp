@@ -13,16 +13,13 @@ interface
 uses
   Sysutils,
   Classes,
-  Controls,
-  Forms,
   Winsock,
 {$ifdef ver80}
   Winprocs,
-  Wintypes,
+  Wintypes;
 {$else}
-  Windows,
+  Windows;
 {$endif}
-  Messages;
 
 type
   TSocketState = (invalid, valid, connected, state_unknown);
@@ -45,19 +42,15 @@ type
 
   TTcpIp = class(TComponent)
   protected
-    FHandle: THandle;
     FSocket: TSocket;
     FHostname: string;
     FTracer: TTraceProc;
     FSocketNumber: SmallInt;
     IpAddress: LongInt; // Network order!
     FEof: Boolean;
-    FNewData: Boolean;
     FStream: TStream;
     FBuffer: Pointer;
-    FAsync: Boolean;
     FLoggedIn: Boolean;
-    procedure WndProc(var Msg: TMessage); virtual;
     function CreateSocket: TSocket;
     procedure ConnectSocket(var Socket: TSocket; SocketNumber: SmallInt;
       IpAddress: LongInt);
@@ -130,9 +123,6 @@ type
     property ContentTypePost: string read FContentPost write FContentPost;
     property OnTrace;
   end;
-
-const
-  WM_SocketEvent: Cardinal = WM_User + $100; // my magic message number
 
 procedure Register;
 
@@ -366,9 +356,6 @@ begin
   FStream := TMemorystream.Create;
   FSocket := INVALID_SOCKET;
   IpAddress := INVALID_IP_ADDRESS;
-  // A windows dummy handle to get messages
-  FHandle := AllocateHwnd({self.}WndProc);
-  FAsync := False;
   FLoggedIn := False;
 end;
 
@@ -380,25 +367,7 @@ begin
   FStream.Free;
   if FSocket <> INVALID_SOCKET then
     Logout;
-  DeallocateHwnd(FHandle);
   inherited;
-end;
-
-procedure TTcpIp.WndProc(var Msg: TMessage);
-begin
-  if Msg.Msg = WM_SocketEvent then
-  begin
-    if Msg.LParamHi = Word(socket_error) then
-      else
-    begin
-      case Msg.LParamLo of
-        fd_read: FNewData := True;
-      end;
-    end
-  end
-    else
-  if Msg.Msg = WM_QueryEndSession then
-    Msg.Result := 1
 end;
 
 function TTcpIp.CreateSocket: TSocket;
@@ -660,17 +629,6 @@ begin
       if Ok <= 0 then
       begin
         Error := Winsock.WSAGetLastError;
-        // listening socket is always non-blocking, but this causes
-        // problems with the recv command
-        if Error = WSAEWouldBlock then
-        begin
-          if FAsync then
-          begin
-            FNewData := False;
-            while not FNewData do
-              Application.ProcessMessages;
-          end;
-        end;
         FEof := (Error <> WSAEWouldBlock);
       end
         else

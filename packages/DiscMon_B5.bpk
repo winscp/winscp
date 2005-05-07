@@ -34,7 +34,7 @@
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
-    <LFLAGS value="-I -D&quot;Martin's components&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
+    <LFLAGS value="-I -D&quot;Martin's components&quot; -aa -Tpp -Gpr -x -Gn -Gl -Gi"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

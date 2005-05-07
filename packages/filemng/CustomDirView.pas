@@ -11,7 +11,7 @@ uses
   Forms, ComCtrls, ShellAPI, ComObj, ShlObj, Dialogs,
   ActiveX, CommCtrl, Extctrls, ImgList, Menus,
   PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo, 
-  IEListView, PathLabel, AssociatedStatusBar, CustomPathComboBox, SysUtils;
+  IEListView, PathLabel, CustomPathComboBox, SysUtils;
 
 const
   clDefaultItemColor = -(COLOR_ENDCOLORS + 1);
@@ -22,8 +22,6 @@ const
   oiBrokenLink = $04;
   oiPartial = $08;
   oiShared = $10; // not used
-  DefaultHistoryMenuWidth = 300;
-  DefaultHistoryMenuLen = 9;
   DefaultHistoryCount = 200;
 
 const
@@ -59,6 +57,14 @@ const
   _FAPPCOMMAND_MASK =     $F000;
 
 type
+  TStatusFileInfo = record
+    FilesCount: Integer;
+    SelectedCount: Integer;
+    FilesSize: Int64;
+    SelectedSize: Int64;
+  end;
+
+type
   {Drag&Drop events:}
   TDDError = (DDCreateShortCutError, DDPathNotFoundError);
   TDDOnDragEnter = procedure(Sender: TObject; DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: Longint; var Accept: Boolean) of object;
@@ -84,6 +90,7 @@ type
   TRenameEvent = procedure(Sender: TObject; Item: TListItem; NewName: string) of object;
   TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Masks: string; var Matches: Boolean) of object;
   TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
+  TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
 
 type
   TCustomDirView = class;
@@ -171,23 +178,19 @@ type
     FAbortLoading: Boolean;
     FAnimation: TAnimate;
     FBackCount: Integer;
-    FBackMenu: TPopupMenu;
     FDontRecordPath: Boolean;
     FDragOnDriveIsMove: Boolean;
     FNotifyEnabled: Boolean;
     FDragStartTime: TFileTime;
-    FForwardMenu: TPopupMenu;
     FHistoryPaths: TStrings;
     FImageList16: TImageList;
     FImageList32: TImageList;
     FLoadAnimation: Boolean;
     FMaxHistoryCount: Integer;
-    FMaxHistoryMenuLen: Integer;
-    FMaxHistoryMenuWidth: Integer;
     FNeverPainted: Boolean;
     FPathComboBox: TCustomPathComboBox;
     FPathLabel: TCustomPathLabel;
-    FStatusBar: TAssociatedStatusBar;
+    FOnUpdateStatusBar: TDirViewUpdateStatusBarEvent;
     FOnBeginRename: TRenameEvent;
     FOnEndRename: TRenameEvent;
     FOnHistoryChange: THistoryChangeEvent;
@@ -213,20 +216,15 @@ type
     procedure DumbCustomDrawSubItem(Sender: TCustomListView;
       Item: TListItem; SubItem: Integer; State: TCustomDrawState;
       var DefaultDraw: Boolean);
-    function GetBackMenu: TPopupMenu;
     function GetFilesMarkedSize: Int64;
     function GetForwardCount: Integer;
-    function GetForwardMenu: TPopupMenu;
     function GetHistoryPath(Index: Integer): string;
 
     function GetTargetPopupMenu: Boolean;
     function GetUseDragImages: Boolean;
     procedure SetMaxHistoryCount(Value: Integer);
-    procedure SetMaxHistoryMenuLen(Value: Integer);
-    procedure SetMaxHistoryMenuWidth(Value: Integer);
     procedure SetPathComboBox(Value: TCustomPathComboBox);
     procedure SetPathLabel(Value: TCustomPathLabel);
-    procedure SetStatusBar(Value: TAssociatedStatusBar);
     procedure SetTargetPopupMenu(Value: Boolean);
     procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
     procedure WMUserRename(var Message: TMessage); message WM_User_Rename;
@@ -319,7 +317,6 @@ type
     procedure SetMultiSelect(Value: Boolean); override; //CLEAN virtual
     function GetPath: string; virtual; abstract;
     function GetValid: Boolean; override;
-    procedure HistoryItemClick(Sender: TObject);
     procedure InternalEdit(const HItem: TLVItem); virtual; abstract;
     function ItemIsFile(Item: TListItem): Boolean; virtual; abstract;
     function ItemMatchesFilter(Item: TListItem; const Filter: TFileFilter): Boolean; virtual; abstract;
@@ -335,7 +332,6 @@ type
     procedure SetViewStyle(Value: TViewStyle); override;
     procedure SetWatchForChanges(Value: Boolean); virtual;
     function TargetHasDropHandler(Item: TListItem; Effect: Integer): Boolean; virtual;
-    procedure UpdateHistoryMenu(Direction: THistoryDirection);
     procedure UpdatePathComboBox; dynamic;
     procedure UpdatePathLabel; dynamic;
     procedure UpdateStatusBar; dynamic;
@@ -375,6 +371,8 @@ type
     procedure ContinueSession(Continue: Boolean);
     function CanPasteFromClipBoard: Boolean; dynamic;
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract; 
+    function SaveState: TObject;
+    procedure RestoreState(AState: TObject);
 
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
@@ -403,7 +401,6 @@ type
     property Loading: Boolean read FLoading;
     property AbortLoading: Boolean read FAbortLoading write FAbortLoading stored False;
     property BackCount: Integer read FBackCount;
-    property BackMenu: TPopupMenu read GetBackMenu;
     {Enable or disable populating the item list:}
     property LoadAnimation: Boolean read FLoadAnimation write FLoadAnimation default True;
     property LoadEnabled: Boolean read FLoadEnabled write SetLoadEnabled default True;
@@ -419,15 +416,12 @@ type
     property DragSourceEffects: TDropEffectSet read GetDragSourceEffects{ write FDragSourceEffects};
     property ExeDrag: Boolean read FExeDrag;
     property ForwardCount: Integer read GetForwardCount;
-    property ForwardMenu: TPopupMenu read GetForwardMenu;
     property HistoryPath[Index: Integer]: string read GetHistoryPath;
     property IsRoot: Boolean read GetIsRoot;
     property LastDDResult: TDragResult read FLastDDResult;
     property SmallImages;
     property LargeImages;
     property MaxHistoryCount: Integer read FMaxHistoryCount write SetMaxHistoryCount default DefaultHistoryCount;
-    property MaxHistoryMenuLen: Integer read FMaxHistoryMenuLen write SetMaxHistoryMenuLen default DefaultHistoryMenuLen;
-    property MaxHistoryMenuWidth: Integer read FMaxHistoryMenuWidth write SetMaxHistoryMenuWidth default DefaultHistoryMenuWidth;
 
     property OnContextPopup;
     property OnBeginRename: TRenameEvent read FOnBeginRename write FOnBeginRename;
@@ -489,7 +483,7 @@ type
     property PathComboBox: TCustomPathComboBox read FPathComboBox write SetPathComboBox;
     property PathLabel: TCustomPathLabel read FPathLabel write SetPathLabel;
     property ShowHiddenFiles: Boolean read FShowHiddenFiles write SetShowHiddenFiles default True;
-    property StatusBar: TAssociatedStatusBar read FStatusBar write SetStatusBar;
+    property OnUpdateStatusBar: TDirViewUpdateStatusBarEvent read FOnUpdateStatusBar write FOnUpdateStatusBar;
     {Watch current directory for filename changes (create, rename, delete files)}
     property WatchForChanges: Boolean read FWatchForChanges write SetWatchForChanges default False;
   end;
@@ -546,7 +540,7 @@ var
 implementation
 
 uses
-  Math;
+  Math, DirViewColProperties;
 
 const
   Space = ' ';
@@ -555,10 +549,29 @@ const
   ResBrokenLink = 'BROKEN%2.2d';
   ResPartial = 'PARTIAL%2.2d';
 
+type
+  TDirViewState = class(TObject)
+  public
+    destructor Destroy; override;
+    
+  private
+    HistoryPaths: TStrings;
+    BackCount: Integer;
+    SortStr: string;
+    FocusedItem: string;
+  end;
+
 var
   WinDir: string;
   TempDir: string;
   COMCTL32Version: DWORD;
+
+destructor TDirViewState.Destroy;
+begin
+  HistoryPaths.Free;
+
+  inherited;
+end;
 
 function IsExecutable(FileName: string): Boolean;
 var
@@ -880,10 +893,6 @@ begin
   FHistoryPaths := TStringList.Create;
   FBackCount := 0;
   FDontRecordPath := False;
-  FBackMenu := nil;
-  FForwardMenu := nil;
-  FMaxHistoryMenuLen := DefaultHistoryMenuLen;
-  FMaxHistoryMenuWidth := DefaultHistoryMenuWidth;
   FMaxHistoryCount := DefaultHistoryCount;
 
   OnCustomDrawItem := DumbCustomDrawItem;
@@ -926,8 +935,6 @@ begin
     OnProcessDropped := DDProcessDropped;
     OnDragDetect := DDDragDetect;
   end;
-
-  DesktopFont := True;
 end;
 
 procedure TCustomDirView.ClearItems;
@@ -1175,21 +1182,6 @@ begin
   Result := FWantUseDragImages and FCanUseDragImages;
 end;
 
-procedure TCustomDirView.SetStatusBar(Value: TAssociatedStatusBar);
-begin
-  if FStatusBar <> Value then
-  begin
-    if Assigned(FStatusBar) and
-       (FStatusBar.FocusControl = Self) then
-          FStatusBar.FocusControl := nil;
-    FStatusBar := Value;
-    if Assigned(FStatusBar) and
-       (FStatusBar.FocusControl = nil) then
-          FStatusBar.FocusControl := Self;
-    UpdateStatusBar;
-  end;
-end; { SetStatusBar }
-
 procedure TCustomDirView.SetTargetPopupMenu(Value: Boolean);
 begin
   if Assigned(FDragDropFilesEx) then FDragDropFilesEx.TargetPopupMenu := Value;
@@ -1254,8 +1246,6 @@ begin
   Assert(not FSavedSelection);
 
   FreeAndNil(FHistoryPaths);
-  FreeAndNil(FBackMenu);
-  FreeAndNil(FForwardMenu);
 
   FreeAndNil(FDragDropFilesEx);
   FreeAndNil(FImageList16);
@@ -1534,7 +1524,7 @@ procedure TCustomDirView.UpdateStatusBar;
 var
   StatusFileInfo: TStatusFileInfo;
 begin
-  if (FUpdatingSelection = 0) and Assigned(StatusBar) then
+  if (FUpdatingSelection = 0) and Assigned(OnUpdateStatusBar) then
   begin
     with StatusFileInfo do
     begin
@@ -1543,7 +1533,7 @@ begin
       SelectedCount := SelCount;
       FilesCount := Self.FilesCount;
     end;
-    StatusBar.FileInfo := StatusFileInfo;
+    OnUpdateStatusBar(Self, StatusFileInfo);
   end;
 end; { UpdateStatusBar }
 
@@ -1633,13 +1623,13 @@ procedure TCustomDirView.WMXButtonUp(var Message: TWMXMouse);
 begin
   if Message.Button = _XBUTTON1 then
   begin
-    HistoryGo(-1);
+    if BackCount >= 1 then HistoryGo(-1);
     Message.Result := 1;
   end
     else
   if Message.Button = _XBUTTON2 then
   begin
-    HistoryGo(1);
+    if ForwardCount >= 1 then HistoryGo(1);
     Message.Result := 1;
   end;
 end;
@@ -2561,7 +2551,6 @@ begin
   if Operation = opRemove then
   begin
     if AComponent = PathLabel then FPathLabel := nil;
-    if AComponent = StatusBar then FStatusBar := nil;
     if AComponent = PathComboBox then FPathComboBox := nil;
   end;
 end; { Notification }
@@ -2662,31 +2651,6 @@ begin
   Result := FHistoryPaths.Count - BackCount;
 end; { GetForwardCount }
 
-function TCustomDirView.GetBackMenu: TPopupMenu;
-begin
-  if not Assigned(FBackMenu) then
-  begin
-    FBackMenu := TPopupMenu.Create(Self);
-    UpdateHistoryMenu(hdBack);
-  end;
-  Result := FBackMenu;
-end; { GetBackMenu }
-
-function TCustomDirView.GetForwardMenu: TPopupMenu;
-begin
-  if not Assigned(FForwardMenu) then
-  begin
-    FForwardMenu := TPopupMenu.Create(Self);
-    UpdateHistoryMenu(hdForward);
-  end;
-  Result := FForwardMenu;
-end; { GetForwardMenu }
-
-procedure TCustomDirView.HistoryItemClick(Sender: TObject);
-begin
-  HistoryGo((Sender as TMenuItem).Tag);
-end; { HistoryItemClick }
-
 procedure TCustomDirView.LimitHistorySize;
 begin
   while FHistoryPaths.Count > MaxHistoryCount do
@@ -2700,47 +2664,6 @@ begin
     FHistoryPaths.Delete(FHistoryPaths.Count-1);
   end;
 end; { LimitHistorySize }
-
-procedure TCustomDirView.UpdateHistoryMenu(Direction: THistoryDirection);
-var
-  Menu: TPopupMenu;
-  ICount: Integer;
-  Index: Integer;
-  Factor: Integer;
-  Item: TMenuItem;
-begin
-  if Direction = hdBack then
-  begin
-    Menu := BackMenu;
-    ICount := BackCount;
-    Factor := -1;
-  end
-    else
-  begin
-    Menu := ForwardMenu;
-    ICount := ForwardCount;
-    Factor := 1;
-  end;
-  if ICount > MaxHistoryMenuLen then ICount := MaxHistoryMenuLen;
-  if Assigned(Menu) then
-    with Menu.Items do
-    begin
-      Clear;
-      for Index := 1 to ICount do
-      begin
-        Item := TMenuItem.Create(Menu);
-        with Item do
-        begin
-          Caption := MinimizePath(HistoryPath[Index * Factor],
-            MaxHistoryMenuWidth);
-          Hint := HistoryPath[Index * Factor];
-          Tag := Index * Factor;
-          OnClick := HistoryItemClick;
-        end;
-        Add(Item);
-      end;
-    end;
-end; { UpdateHistoryMenu }
 
 function TCustomDirView.GetHistoryPath(Index: Integer): string;
 begin
@@ -2761,29 +2684,9 @@ begin
   end;
 end; { SetMaxHistoryCount }
 
-procedure TCustomDirView.SetMaxHistoryMenuLen(Value: Integer);
-begin
-  if FMaxHistoryMenuLen <> Value then
-  begin
-    FMaxHistoryMenuLen := Value;
-    DoHistoryChange;
-  end;
-end; { SetMaxHistoryMenuLen }
-
-procedure TCustomDirView.SetMaxHistoryMenuWidth(Value: Integer);
-begin
-  if FMaxHistoryMenuWidth <> Value then
-  begin
-    FMaxHistoryMenuWidth := Value;
-    DoHistoryChange;
-  end;
-end; { SetMaxHistoryMenuWidth }
-
 procedure TCustomDirView.DoHistoryChange;
 begin
   LimitHistorySize;
-  UpdateHistoryMenu(hdBack);
-  UpdateHistoryMenu(hdForward);
   if Assigned(OnHistoryChange) then
     OnHistoryChange(Self);
 end; { DoHistoryChange }
@@ -2872,11 +2775,15 @@ begin
             begin
               ReduceDateTimePrecision(FileTime, Precision);
               ReduceDateTimePrecision(MirrorFileTime, Precision);
+              if Precision = tpSecond then
+              begin
+                // 1 ms more solves the rounding issues
+                // (see also Common.cpp)
+                MirrorFileTime := MirrorFileTime + EncodeTime(0, 0, 1, 1);
+              end;
             end;
             Changed :=
-              (FileTime > MirrorFileTime) { or
-              ((FileTime = MirrorFileTime) and
-               (ItemFileSize(Item) <> DirView.ItemFileSize(MirrorItem))) };
+              (FileTime > MirrorFileTime);
             SameTime := (FileTime = MirrorFileTime);
           end
             else
@@ -3014,6 +2921,51 @@ procedure TCustomDirView.ContinueSession(Continue: Boolean);
 begin
   if Continue then FLastPath := PathName
     else FLastPath := '';
+end;
+
+function TCustomDirView.SaveState: TObject;
+var
+  State: TDirViewState;
+  DirColProperties: TCustomDirViewColProperties;
+begin
+  State := TDirViewState.Create;
+  State.HistoryPaths := TStringList.Create;
+  State.HistoryPaths.Assign(FHistoryPaths);
+  State.BackCount := FBackCount;
+  // TCustomDirViewColProperties should not be here
+  DirColProperties := ColProperties as TCustomDirViewColProperties;
+  Assert(Assigned(DirColProperties));
+  State.SortStr := DirColProperties.SortStr;
+  if Assigned(ItemFocused) then State.FocusedItem := ItemFocused.Caption
+    else State.FocusedItem := '';
+  Result := State;
+end;
+
+procedure TCustomDirView.RestoreState(AState: TObject);
+var
+  State: TDirViewState;
+  DirColProperties: TCustomDirViewColProperties;
+  ListItem: TListItem;
+begin
+  Assert(AState is TDirViewState);
+  State := AState as TDirViewState;
+  Assert(Assigned(State));
+  
+  FHistoryPaths.Assign(State.HistoryPaths);
+  FBackCount := State.BackCount;
+  // TCustomDirViewColProperties should not be here
+  DirColProperties := ColProperties as TCustomDirViewColProperties;
+  Assert(Assigned(DirColProperties));
+  DirColProperties.SortStr := State.SortStr;
+  if State.FocusedItem <> '' then
+  begin
+    ListItem := FindFileItem(State.FocusedItem);
+    if Assigned(ListItem) then
+    begin
+      ItemFocused := ListItem;
+      ListItem.MakeVisible(False);
+    end;
+  end;
 end;
 
 initialization

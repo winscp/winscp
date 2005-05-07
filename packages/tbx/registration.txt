@@ -1,0 +1,26 @@
+REGISTRATION AND DONATIONS
+
+The TBX package is a freeware product and you can use it for any 
+kind of applications provided the license conditions are satisfied. 
+Registration is required only if you don't want to include the 
+acknowledgement. The price of the license is US$100 for a single 
+user and US$200 per site. Proceed to [https://order.kagi.com/?GRH] 
+for registartion.
+
+As long as you include an acknowledgement, you can use the TBX 
+package free of charge even for commercial and shareware applications. 
+However, if you wish to express your appreciation for the time I 
+spend on developing, documenting and supporting it, I do accept and 
+appreciate donations.
+
+You can make your donation at [https://order.kagi.com/?GRH]. 
+The base amount is US$20, but if you would like to donate more, 
+feel free to order multiple copies of the "TBX donation" product.
+
+Thank you for your support.
+
+Alex A. Denisov
+alex@g32.org
+http://g32.org 
+
+

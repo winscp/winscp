@@ -18,7 +18,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   PixelsPerInch = 96
   TextHeight = 13
   object CloseButton: TButton
-    Left = 283
+    Left = 200
     Top = 396
     Width = 75
     Height = 25
@@ -333,5 +333,15 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       TabOrder = 0
       Text = 'HostKeyFingerprintEdit'
     end
+  end
+  object HelpButton: TButton
+    Left = 283
+    Top = 396
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 4
+    OnClick = HelpButtonClick
   end
 end

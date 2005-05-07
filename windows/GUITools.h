@@ -33,6 +33,7 @@ AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
   const AnsiString MultiItemsFormat, TStrings * Items);
 AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
   const AnsiString MultiFileFormat, TStrings * Files, bool Remote);
+AnsiString __fastcall FormatBytes(__int64 Bytes, bool UseOrders = true);
 void __fastcall CopyToClipboard(AnsiString Text);
 AnsiString __fastcall UniqTempDir(const AnsiString BaseDir,
   const AnsiString Identity, bool Mask = false);
@@ -47,6 +48,7 @@ public:
   TLocalCustomCommand(const AnsiString & FileName, const AnsiString & LocalFileName,
     const AnsiString & FileList);
 
+  virtual bool __fastcall IsFileCommand(const AnsiString & Command);
   bool __fastcall HasLocalFileName(const AnsiString & Command);
 
 protected:

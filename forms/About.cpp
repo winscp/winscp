@@ -6,15 +6,16 @@
 //---------------------------------------------------------------------
 #include <VCLCommon.h>
 #include <Common.h>
-#include "About.h"
+#include <Tools.h>
 #include "WinInterface.h"
+#include "About.h"
 #include "TextsCore.h"
 #include "TextsWin.h"
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TAboutDialog::TAboutDialog(TComponent* AOwner)
-	: TForm(AOwner)
+  : TForm(AOwner)
 {
   ThirdPartyBox->VertScrollBar->Position = 0;
   UseSystemSettings(this);
@@ -22,6 +23,8 @@ __fastcall TAboutDialog::TAboutDialog(TComponent* AOwner)
   LinkLabel(ForumUrlLabel);
   LinkLabel(PuttyLicenceLabel);
   LinkLabel(PuttyHomepageLabel);
+  LinkLabel(Toolbar2000HomepageLabel);
+  LinkLabel(TBXHomepageLabel);
   ApplicationLabel->Caption = AppName;
   HomepageLabel->Caption = LoadStr(HOMEPAGE_URL);
   ForumUrlLabel->Caption = LoadStr(FORUM_URL);
@@ -46,20 +49,14 @@ void __fastcall TAboutDialog::LoadData()
   VersionLabel->Caption = Configuration->VersionStr;
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::OpenAddress(const AnsiString Address)
-{
-  ShellExecute(Handle, "open", Address.c_str(),
-    NULL, NULL, SW_SHOWNORMAL);
-} 
-//---------------------------------------------------------------------------
 void __fastcall TAboutDialog::HomepageLabelClick(TObject * Sender)
 {
-  OpenAddress(((TLabel*)Sender)->Caption);
+  OpenBrowser(((TLabel*)Sender)->Caption);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::EmailLabelClick(TObject * Sender)
 {
-  OpenAddress("mailto:" + ((TLabel*)Sender)->Caption);
+  OpenBrowser("mailto:" + ((TLabel*)Sender)->Caption);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::DisplayLicence(TObject * Sender)
@@ -80,6 +77,11 @@ bool __fastcall TAboutDialog::GetAllowLicence()
 void __fastcall TAboutDialog::SetAllowLicence(bool value)
 {
   LicenceButton->Visible = value;
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 

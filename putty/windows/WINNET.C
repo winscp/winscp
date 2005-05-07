@@ -251,8 +251,10 @@ void sk_cleanup(void)
     p_WSACleanup();
     if (winsock_module)
 	FreeLibrary(winsock_module);
+#ifndef NO_IPV6
     if (wship6_module)
 	FreeLibrary(wship6_module);
+#endif
 }
 
 char *winsock_error_string(int error)
@@ -351,6 +353,9 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 		   address_family == ADDRTYPE_IPV6 ? AF_INET6 :
 #endif
 		   AF_UNSPEC);
+#ifndef NO_IPV6
+    ret->ai = ret->ais = NULL;
+#endif
     ret_family = AF_UNSPEC;
     *realhost = '\0';
 
@@ -452,11 +457,12 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 SockAddr sk_nonamelookup(const char *host)
 {
     SockAddr ret = snew(struct SockAddr_tag);
-#ifdef MPEXT
-    memset(ret, 0, sizeof(struct SockAddr_tag));
-#endif
     ret->error = NULL;
     ret->family = AF_UNSPEC;
+#ifndef NO_IPV6
+    ret->ai = ret->ais = NULL;
+#endif
+    ret->naddresses = 0;
     strncpy(ret->hostname, host, lenof(ret->hostname));
     ret->hostname[lenof(ret->hostname)-1] = '\0';
     return ret;
@@ -566,10 +572,18 @@ int sk_address_is_local(SockAddr addr)
     } else
 #endif
     if (addr->family == AF_INET) {
-	struct in_addr a;
-	assert(addr->addresses && addr->curraddr < addr->naddresses);
-	a.s_addr = p_htonl(addr->addresses[addr->curraddr]);
-	return ipv4_is_local_addr(a);
+#ifndef NO_IPV6
+	if (addr->ai) {
+	    return ipv4_is_local_addr(((struct sockaddr_in *)addr->ai->ai_addr)
+				      ->sin_addr);
+	} else
+#endif
+	{
+	    struct in_addr a;
+	    assert(addr->addresses && addr->curraddr < addr->naddresses);
+	    a.s_addr = p_htonl(addr->addresses[addr->curraddr]);
+	    return ipv4_is_local_addr(a);
+	}
     } else {
 	assert(addr->family == AF_UNSPEC);
 	return 0;		       /* we don't know; assume not */
@@ -1538,9 +1552,16 @@ static void sk_tcp_set_frozen(Socket sock, int is_frozen)
     if (s->frozen == is_frozen)
 	return;
     s->frozen = is_frozen;
-    if (!is_frozen && s->frozen_readable) {
-	char c;
-	p_recv(s->s, &c, 1, MSG_PEEK);
+    if (!is_frozen) {
+#ifdef MPEXT
+	do_select(s->plug, s->s, 1);
+#else
+	do_select(s->s, 1);
+#endif
+	if (s->frozen_readable) {
+	    char c;
+	    p_recv(s->s, &c, 1, MSG_PEEK);
+	}
     }
     s->frozen_readable = 0;
 }

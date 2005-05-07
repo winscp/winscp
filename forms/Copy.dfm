@@ -39,7 +39,6 @@ object CopyDialog: TCopyDialog
     ItemHeight = 13
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
-    OnKeyDown = DirectoryEditKeyDown
   end
   object RemoteDirectoryEdit: THistoryComboBox
     Left = 8
@@ -52,22 +51,21 @@ object CopyDialog: TCopyDialog
     MaxLength = 1000
     TabOrder = 2
     Text = 'RemoteDirectoryEdit'
-    OnKeyDown = DirectoryEditKeyDown
   end
   object MoreButton: TMoreButton
-    Left = 251
+    Left = 176
     Top = 329
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '<< &Less'
-    TabOrder = 6
+    TabOrder = 7
     OnChange = ControlChange
     Panel = MorePanel
     RepositionForm = True
   end
   object CopyButton: TButton
-    Left = 339
+    Left = 260
     Top = 329
     Width = 75
     Height = 25
@@ -75,10 +73,10 @@ object CopyDialog: TCopyDialog
     Caption = 'Copy'
     Default = True
     ModalResult = 1
-    TabOrder = 7
+    TabOrder = 8
   end
   object CancelButton: TButton
-    Left = 427
+    Left = 343
     Top = 329
     Width = 75
     Height = 25
@@ -86,7 +84,7 @@ object CopyDialog: TCopyDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 8
+    TabOrder = 9
   end
   object MorePanel: TPanel
     Left = 0
@@ -148,5 +146,25 @@ object CopyDialog: TCopyDialog
     Caption = 'No &confirmations'
     TabOrder = 5
     OnClick = ControlChange
+  end
+  object PresetsButton: TButton
+    Left = 8
+    Top = 329
+    Width = 97
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Presets...'
+    TabOrder = 6
+    OnClick = PresetsButtonClick
+  end
+  object HelpButton: TButton
+    Left = 427
+    Top = 329
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'Help'
+    TabOrder = 10
+    OnClick = HelpButtonClick
   end
 end

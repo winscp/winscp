@@ -1,6 +1,6 @@
 object PasswordDialog: TPasswordDialog
-  Left = 390
-  Top = 251
+  Left = 197
+  Top = 77
   HelpType = htKeyword
   HelpKeyword = 'ui_password'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
@@ -18,7 +18,7 @@ object PasswordDialog: TPasswordDialog
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
-    Left = 235
+    Left = 147
     Top = 119
     Width = 75
     Height = 25
@@ -29,7 +29,7 @@ object PasswordDialog: TPasswordDialog
     TabOrder = 2
   end
   object CancelButton: TButton
-    Left = 323
+    Left = 235
     Top = 119
     Width = 75
     Height = 25
@@ -98,11 +98,21 @@ object PasswordDialog: TPasswordDialog
       Top = 2
       Width = 275
       Height = 17
-      Caption = '&Hide typing'
+      Caption = 'Hide &typing'
       Checked = True
       State = cbChecked
       TabOrder = 0
       OnClick = HideTypingCheckClick
     end
+  end
+  object HelpButton: TButton
+    Left = 323
+    Top = 119
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 4
+    OnClick = HelpButtonClick
   end
 end

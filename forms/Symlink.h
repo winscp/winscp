@@ -20,10 +20,10 @@ __published:
   TLabel *Label1;
   TEdit *PointToEdit;
   TCheckBox *SymbolicCheck;
+  TButton *HelpButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
-  void __fastcall PathEditsKeyDown(TObject *Sender, WORD &Key,
-    TShiftState Shift);
+  void __fastcall HelpButtonClick(TObject *Sender);
 private:
   bool FAllowSymbolic;
   bool FEdit;

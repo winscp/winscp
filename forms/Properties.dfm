@@ -19,7 +19,7 @@ object PropertiesDialog: TPropertiesDialog
   PixelsPerInch = 96
   TextHeight = 13
   object OkButton: TButton
-    Left = 187
+    Left = 99
     Top = 386
     Width = 75
     Height = 25
@@ -30,7 +30,7 @@ object PropertiesDialog: TPropertiesDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 275
+    Left = 187
     Top = 386
     Width = 75
     Height = 25
@@ -111,7 +111,7 @@ object PropertiesDialog: TPropertiesDialog
         AutoSize = False
       end
       object FileLabel: TLabel
-        Left = 88
+        Left = 85
         Top = 18
         Width = 241
         Height = 13
@@ -126,7 +126,7 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Size:'
       end
       object SizeLabel: TLabel
-        Left = 88
+        Left = 85
         Top = 80
         Width = 160
         Height = 13
@@ -208,14 +208,23 @@ object PropertiesDialog: TPropertiesDialog
         Shape = bsTopLine
       end
       inline RightsFrame: TRightsExtFrame
-        Left = 87
+        Left = 84
         Top = 200
-        Width = 239
+        Width = 244
         Height = 109
         TabOrder = 3
+        inherited SetUidCheck: TGrayedCheckBox
+          Width = 75
+        end
+        inherited SetGIDCheck: TGrayedCheckBox
+          Width = 75
+        end
+        inherited StickyBitCheck: TGrayedCheckBox
+          Width = 75
+        end
       end
       object GroupComboBox: TComboBox
-        Left = 88
+        Left = 85
         Top = 135
         Width = 161
         Height = 21
@@ -226,7 +235,7 @@ object PropertiesDialog: TPropertiesDialog
         OnChange = ControlChange
       end
       object OwnerComboBox: TComboBox
-        Left = 88
+        Left = 85
         Top = 163
         Width = 161
         Height = 21
@@ -257,5 +266,15 @@ object PropertiesDialog: TPropertiesDialog
         OnClick = CalculateSizeButtonClick
       end
     end
+  end
+  object HelpButton: TButton
+    Left = 275
+    Top = 386
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 3
+    OnClick = HelpButtonClick
   end
 end

@@ -49,7 +49,7 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
 {
-  Application->HelpContext(HelpContext);
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMessageForm::KeyDown(Word & Key, TShiftState Shift)
@@ -335,6 +335,9 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   Message->Caption = Msg;
   Message->BoundsRect = TextRect;
   Message->BiDiMode = Result->BiDiMode;
+  // added to show & as & for messages containing !& pattern of custom commands
+  // (suppose that we actually never want to use & as accel in message text)
+  Message->ShowAccelChar = false;
   int ALeft = IconTextWidth - TextRect.Right + HorzMargin;
   Message->SetBounds(ALeft, VertMargin, TextRect.Right, TextRect.Bottom);
   int ButtonTop = IconTextHeight + VertMargin + VertSpacing + MoreMessageHeight;

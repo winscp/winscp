@@ -34,7 +34,7 @@ object CleanupDialog: TCleanupDialog
     WordWrap = True
   end
   object OKButton: TButton
-    Left = 329
+    Left = 249
     Top = 268
     Width = 75
     Height = 25
@@ -45,7 +45,7 @@ object CleanupDialog: TCleanupDialog
     TabOrder = 2
   end
   object CancelButton: TButton
-    Left = 409
+    Left = 329
     Top = 268
     Width = 75
     Height = 25
@@ -102,5 +102,15 @@ object CleanupDialog: TCleanupDialog
     Caption = 'Un/check &all'
     TabOrder = 1
     OnClick = CheckAllButtonClick
+  end
+  object HelpButton: TButton
+    Left = 409
+    Top = 268
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 4
+    OnClick = HelpButtonClick
   end
 end

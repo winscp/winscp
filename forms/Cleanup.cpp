@@ -168,3 +168,9 @@ Boolean __fastcall TCleanupDialog::GetCleanupData(TWinSCPData Data)
   }
   return False;
 }
+//---------------------------------------------------------------------------
+void __fastcall TCleanupDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
+}
+//---------------------------------------------------------------------------

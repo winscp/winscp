@@ -7,6 +7,7 @@
 #include <RemoteFiles.h>
 #include <VCLCommon.h>
 #include <TextsWin.h>
+#include <HelpWin.h>
 #include <Common.h>
 
 #include "LocationProfiles.h"
@@ -61,6 +62,9 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
   FFolders->Duplicates = dupIgnore;
 
   UseSystemSettings(this);
+
+  InstallPathWordBreakProc(LocalDirectoryEdit);
+  InstallPathWordBreakProc(RemoteDirectoryEdit);
 }
 //---------------------------------------------------------------------
 __fastcall TLocationProfilesDialog::~TLocationProfilesDialog()
@@ -205,10 +209,13 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks()
 bool __fastcall TLocationProfilesDialog::Execute()
 {
   bool Result;
+  AnsiString SessionKey;
   if (Terminal)
   {
     TBookmarkList * BookmarkList;
-    BookmarkList = WinConfiguration->Bookmarks[Terminal->SessionData->SessionKey];
+    // cache session key, in case terminal is closed while the window is open
+    SessionKey = Terminal->SessionData->SessionKey;
+    BookmarkList = WinConfiguration->Bookmarks[SessionKey];
     if (BookmarkList)
     {
       FBookmarkList->Assign(BookmarkList);
@@ -222,7 +229,7 @@ bool __fastcall TLocationProfilesDialog::Execute()
   Result = ((Mode != odAddBookmark) || AddAsBookmark()) && (ShowModal() == mrOk);
   if (Terminal)
   {
-    WinConfiguration->Bookmarks[Terminal->SessionData->SessionKey] = FBookmarkList;
+    WinConfiguration->Bookmarks[SessionKey] = FBookmarkList;
   }
   return Result;
 }
@@ -242,7 +249,8 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark()
   {
     BookmarkName = RemoteDirectory;
   }
-  Result = InputDialog(LoadStr(ADD_BOOKMARK_CAPTION), LoadStr(ADD_BOOKMARK_PROMPT), BookmarkName);
+  Result = InputDialog(LoadStr(ADD_BOOKMARK_CAPTION), LoadStr(ADD_BOOKMARK_PROMPT),
+    BookmarkName, HELP_LOCATION_PROFILE_ADD);
   if (Result)
   {
     if (BookmarkName.IsEmpty() || (StrToIntDef(BookmarkName, -123) != -123))
@@ -306,7 +314,7 @@ void __fastcall TLocationProfilesDialog::RemoveBookmarkButtonClick(TObject * /*S
   else
   {
     if (MessageDialog(LoadStr(DELETE_BOOKMARK_FOLDER), qtConfirmation,
-          qaYes | qaNo, 0) == qaYes)
+          qaYes | qaNo, HELP_LOCATION_PROFILE_DELETE) == qaYes)
     {
       assert(Node->Count);
       for (int i = 0; i < Node->Count; i++)
@@ -492,7 +500,8 @@ void __fastcall TLocationProfilesDialog::MoveToButtonClick(TObject * /*Sender*/)
   TBookmark * Bookmark = (TBookmark *)ProfilesView->Selected->Data;
   AnsiString Name = Bookmark->Node;
   if (DoComboInputDialog(LoadStr(MOVE_BOOKMARK_CAPTION), LoadStr(MOVE_BOOKMARK_PROMPT),
-      Name, FFolders, NULL, true) && Name != Bookmark->Node)
+      Name, FFolders, NULL, true, HELP_LOCATION_PROFILE_MOVE) &&
+      (Name != Bookmark->Node))
   {
     if (Name.Pos("\\"))
     {
@@ -543,7 +552,7 @@ void __fastcall TLocationProfilesDialog::RenameButtonClick(TObject * /*Sender*/)
   TTreeNode * Node = ProfilesView->Selected;
   AnsiString Name = Node->Text;
   if (InputDialog(LoadStr(RENAME_BOOKMARK_CAPTION), LoadStr(RENAME_BOOKMARK_PROMPT),
-      Name) && (Name != Node->Text))
+        Name, HELP_LOCATION_PROFILE_RENAME) && (Name != Node->Text))
   {
     if (Node->Data)
     {
@@ -614,13 +623,6 @@ void __fastcall TLocationProfilesDialog::ProfilesViewGetSelectedIndex(
   Node->SelectedIndex = Node->Data ? 0 : (Node->Expanded ? 1 : 2);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::DirectoryEditKeyDown(
-  TObject * Sender, WORD & Key, TShiftState Shift)
-{
-  PathComboBoxKeyDown(dynamic_cast<TCustomComboBox*>(Sender), Key, Shift,
-    (Sender == RemoteDirectoryEdit));
-}
-//---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
@@ -635,6 +637,11 @@ void __fastcall TLocationProfilesDialog::LocalDirectoryBrowseButtonClick(
 void __fastcall TLocationProfilesDialog::SwitchButtonClick(TObject * /*Sender*/)
 {
   WinConfiguration->UseLocationProfiles = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 

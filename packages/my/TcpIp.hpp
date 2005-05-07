@@ -10,11 +10,8 @@
 #pragma delphiheader begin
 #pragma option push -w-
 #pragma option push -Vx
-#include <Messages.hpp>	// Pascal unit
 #include <Windows.hpp>	// Pascal unit
 #include <WinSock.hpp>	// Pascal unit
-#include <Forms.hpp>	// Pascal unit
-#include <Controls.hpp>	// Pascal unit
 #include <Classes.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
 #include <SysInit.hpp>	// Pascal unit
@@ -159,19 +156,15 @@ class PASCALIMPLEMENTATION TTcpIp : public Classes::TComponent
 	typedef Classes::TComponent inherited;
 	
 protected:
-	unsigned FHandle;
 	int FSocket;
 	AnsiString FHostname;
 	TTraceProc FTracer;
 	short FSocketNumber;
 	int IpAddress;
 	bool FEof;
-	bool FNewData;
 	Classes::TStream* FStream;
 	void *FBuffer;
-	bool FAsync;
 	bool FLoggedIn;
-	virtual void __fastcall WndProc(Messages::TMessage &Msg);
 	int __fastcall CreateSocket(void);
 	void __fastcall ConnectSocket(int &Socket, short SocketNumber, int IpAddress);
 	void __fastcall BindSocket(int &Socket, Word OutPortMin, Word OutPortMax);
@@ -248,7 +241,6 @@ __published:
 
 
 //-- var, const, procedure ---------------------------------------------------
-extern PACKAGE unsigned WM_SocketEvent;
 extern PACKAGE System::ResourceString _SSocketError;
 #define Tcpip_SSocketError System::LoadResourceString(&Tcpip::_SSocketError)
 extern PACKAGE System::ResourceString _SUnknownSockError;

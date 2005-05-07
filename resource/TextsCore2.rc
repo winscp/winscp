@@ -2,35 +2,39 @@
 
 STRINGTABLE
 BEGIN
-  UNKNOWN_KEY,
+  UNKNOWN_KEY2,
     "The server's host key was not found it the cache. You have no guarantee "
-    "that the server is the computer you think it is. The server's key "
-    "fingerprint is: %s\n"
+    "that the server is the computer you think it is.\n"
+    "\n"
+    "The server's %s key fingerprint is:\n"
+    "%s\n"
     "\n"
     "If you trust this host, press Yes. "
     "To connect without adding host key to the cache, press No. "
     "To abandon the connection press Cancel.\n"
     "\n"
     "Continue connecting and add host key to the cache?"
-  DIFFERENT_KEY,
+  DIFFERENT_KEY2,
     "WARNING - POTENTIAL SECURITY BREACH!\n"
     "\n"
     "The server's host key does not match the one WinSCP has "
     "is cache. This means that either the "
     "server administrator has changed the host key, or you "
     "have actually connected to another computer pretending "
-    "to be the server. "
-    "The new key fingerprint is: %s\n"
+    "to be the server.\n"
+    "\n"
+    "The new %s key fingerprint is:\n"
+    "%s\n"
     "\n"
     "If you were expecting this change and trust the new key, "
     "press Yes to update cache and continue connecting. "
-    "If you want to carry on connecting but without updating"
+    "If you want to carry on connecting but without updating "
     "the cache, press No. "
     "If you want to abandon the connection completely, press "
     "Cancel. Pressing Cancel is the ONLY guaranteed safe "
     "choice.\n"
   OLD_KEY,
-    "You are loading an SSH 2 private key which has an "
+    "You are loading an SSH-2 private key which has an "
     "old version of the file format. This means your key "
     "file is not fully tamperproof. We recommend you convert "
     "your key to the new format.\n"
@@ -266,4 +270,14 @@ BEGIN
     "examples:\n"
     "  keepuptodate\n"
     "  keepuptodate d:\\www /home/martin/public_html\n"
+  SCRIPT_CALL_HELP,
+    "call <command>\n"
+    "  Executes arbitrary remote shell command.\n"
+    "  If current session does not allow execution of arbitrary remote command\n"
+    "  separate shell session will be automatically opened.\n"
+    "  The command must not require user input.\n"
+    "aliases:\n"
+    "  !\n"
+    "examples:\n"
+    "  call touch index.html\n"
 END

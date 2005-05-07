@@ -10,6 +10,7 @@
 #include <ScpMain.h>
 
 #include <VCLCommon.h>
+#include <WinInterface.h>
 //---------------------------------------------------------------------
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
@@ -47,7 +48,7 @@ Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList)
 }
 //---------------------------------------------------------------------
 __fastcall TImportSessionsDialog::TImportSessionsDialog(TComponent* AOwner)
-	: TForm(AOwner)
+  : TForm(AOwner)
 {
   UseSystemSettings(this);
 }
@@ -135,4 +136,10 @@ bool __fastcall TImportSessionsDialog::GetImportKeys()
 {
   return ImportKeysCheck->Checked;
 }
+//---------------------------------------------------------------------------
+void __fastcall TImportSessionsDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
+}
+//---------------------------------------------------------------------------
 

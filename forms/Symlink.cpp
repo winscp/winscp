@@ -7,6 +7,7 @@
 #include <TextsWin.h>
 #include "Symlink.h"
 #include "VCLCommon.h"
+#include <WinInterface.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "XPThemes"
@@ -45,6 +46,9 @@ __fastcall TSymlinkDialog::TSymlinkDialog(TComponent* Owner)
 {
   UseSystemSettings(this);
   FSide = osLocal;
+
+  InstallPathWordBreakProc(PointToEdit);
+  InstallPathWordBreakProc(FileNameEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSymlinkDialog::UpdateControls()
@@ -121,11 +125,9 @@ void __fastcall TSymlinkDialog::FormShow(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSymlinkDialog::PathEditsKeyDown(TObject * Sender,
-  WORD & Key, TShiftState Shift)
+void __fastcall TSymlinkDialog::HelpButtonClick(TObject * /*Sender*/)
 {
-  PathEditKeyDown(dynamic_cast<TCustomEdit*>(Sender), Key, Shift,
-    (Side == osRemote));
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 

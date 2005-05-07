@@ -16,12 +16,15 @@ class TCustomFileSystem;
 struct TCalculateSizeParams;
 struct TOverwriteFileParams;
 struct TSynchronizeData;
+struct TSynchronizeStats;
 typedef TStringList TUsersGroupsList;
 typedef void __fastcall (__closure *TReadDirectoryEvent)(System::TObject* Sender, Boolean ReloadOnly);
 typedef void __fastcall (__closure *TReadDirectoryProgressEvent)(
   System::TObject* Sender, int Progress);
 typedef void __fastcall (__closure *TProcessFileEvent)
   (const AnsiString FileName, const TRemoteFile * File, void * Param);
+typedef void __fastcall (__closure *TProcessFileEventEx)
+  (const AnsiString FileName, const TRemoteFile * File, void * Param, int Index);
 typedef int __fastcall (__closure *TFileOperationEvent)
   (void * Param1, void * Param2);
 typedef void __fastcall (__closure *TSynchronizeDirectory)
@@ -57,19 +60,37 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
     {                                                                       \
       throw;                                                                \
     }                                                                       \
-    catch (EFatal & E)                                                \
+    catch (EFatal & E)                                                      \
     {                                                                       \
       throw;                                                                \
     }                                                                       \
     catch (Exception & E)                                                   \
     { \
       TERMINAL->DoHandleExtendedException(&E); \
-      int Answers = qaRetry | qaAbort | ((ALLOW_SKIP) ? qaSkip : 0); \
-      int Answer; \
-      TQueryParams Params(qpAllowContinueOnError | (!(ALLOW_SKIP) ? qpFatalAbort : 0)); \
-      SUSPEND_OPERATION ( \
-        Answer = TERMINAL->DoQueryUser(MESSAGE, &E, Answers, &Params); \
-      ); \
+      int Answer;                                                           \
+      if ((ALLOW_SKIP) && OperationProgress->SkipToAll)                     \
+        Answer = qaSkip;                                                    \
+      else                                                                  \
+      {                                                                     \
+        int Answers = qaRetry | qaAbort | ((ALLOW_SKIP) ? (qaSkip | qaAll) : 0); \
+        TQueryParams Params(qpAllowContinueOnError | (!(ALLOW_SKIP) ? qpFatalAbort : 0)); \
+        TQueryButtonAlias Aliases[1];                                       \
+        if (FLAGSET(Answers, qaAll))                                        \
+        {                                                                   \
+          Aliases[0].Button = qaAll;                                        \
+          Aliases[0].Alias = LoadStr(SKIP_ALL_BUTTON);                      \
+          Params.Aliases = Aliases;                                         \
+          Params.AliasesCount = LENOF(Aliases);                             \
+        }                                                                   \
+        SUSPEND_OPERATION (                                                 \
+          Answer = TERMINAL->DoQueryUser(MESSAGE, &E, Answers, &Params, qtError); \
+        );                                                                  \
+        if (Answer == qaAll)                                                \
+        {                                                                   \
+          OperationProgress->SkipToAll = true;                              \
+          Answer = qaSkip;                                                  \
+        }                                                                   \
+      }                                                                     \
       DoRepeat = (Answer == qaRetry); \
       if (Answer == qaAbort) OperationProgress->Cancel = csCancel; \
       if (!DoRepeat && ALLOW_SKIP) THROW_SKIP_FILE(&E, MESSAGE); \
@@ -83,12 +104,12 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink,
-  fcTextMode, fcRename, fcNativeTextMode, fcNewerOnlyUpload, fcRemoteCopy };
+  fcTextMode, fcRename, fcNativeTextMode, fcNewerOnlyUpload, fcRemoteCopy,
+  fcTimestampChanging, fcRemoteMove };
 enum TCurrentFSProtocol { cfsUnknown, cfsSCP, cfsSFTP };
 //---------------------------------------------------------------------------
 const cpDelete = 0x01;
-const cpDragDrop = 0x04;
-const cpTemporary = 0x04; // alias to cpDragDrop
+const cpTemporary = 0x04;
 const cpNoConfirmation = 0x08;
 const cpNewerOnly = 0x10;
 //---------------------------------------------------------------------------
@@ -103,13 +124,17 @@ class TTerminal : public TSecureShell
 public:
   // TScript::SynchronizeProc relies on the order
   enum TSynchronizeMode { smRemote, smLocal, smBoth };
-  static const spDelete = 0x01;
-  static const spNoConfirmation = 0x02;
-  static const spExistingOnly = 0x04;
+  static const spDelete = 0x01; // cannot be combined with spTimestamp and spBySize
+  static const spNoConfirmation = 0x02; // has no effect for spTimestamp
+  static const spExistingOnly = 0x04; // is implicit for spTimestamp
   static const spNoRecurse = 0x08;
-  static const spUseCache = 0x10;
-  static const spDelayProgress = 0x20;
-  static const spPreviewChanges = 0x40;
+  static const spUseCache = 0x10; // cannot be combined with spTimestamp
+  static const spDelayProgress = 0x20; // cannot be combined with spTimestamp
+  static const spPreviewChanges = 0x40; // has no effect for spTimestamp
+  static const spSubDirs = 0x80; // cannot be combined with spTimestamp
+  static const spTimestamp = 0x100;
+  static const spNotByTime = 0x200; // cannot be combined with spTimestamp and smBoth
+  static const spBySize = 0x400; // cannot be combined with spTimestamp and smBoth
 
 // for TranslateLockedPath()
 friend class TRemoteFile;
@@ -193,7 +218,10 @@ protected:
     const AnsiString Message, void * Param1 = NULL, void * Param2 = NULL);
   bool __fastcall GetIsCapable(TFSCapability Capability) const;
   bool __fastcall ProcessFiles(TStrings * FileList, TFileOperation Operation,
-    TProcessFileEvent ProcessFile, void * Param = NULL, TOperationSide Side = osRemote);
+    TProcessFileEvent ProcessFile, void * Param = NULL, TOperationSide Side = osRemote,
+    bool Ex = false);
+  bool __fastcall ProcessFilesEx(TStrings * FileList, TFileOperation Operation,
+    TProcessFileEventEx ProcessFile, void * Param = NULL, TOperationSide Side = osRemote);
   void __fastcall ProcessDirectory(const AnsiString DirName,
     TProcessFileEvent CallBackFunc, void * Param = NULL, bool UseCache = false);
   AnsiString __fastcall TranslateLockedPath(AnsiString Path, bool Lock);
@@ -221,14 +249,19 @@ protected:
   void __fastcall DoSynchronizeDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory);
+    TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeStats * Stats);
   void __fastcall SynchronizeFile(const AnsiString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
+  void __fastcall SynchronizeRemoteTimestamp(const AnsiString FileName,
+    const TRemoteFile * File, void * Param);
+  void __fastcall SynchronizeLocalTimestamp(const AnsiString FileName,
+    const TRemoteFile * File, void * Param, int Index);
   void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data);
   void __fastcall DeleteLocalFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall RecycleFile(AnsiString FileName, const TRemoteFile * File);
   bool __fastcall IsRecycledFile(AnsiString FileName);
+  TStrings * __fastcall GetFixedPaths();
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -293,7 +326,7 @@ public:
   void __fastcall Synchronize(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory);
+    TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeStats * Stats);
   bool __fastcall DirectoryFileList(const AnsiString Path,
     TRemoteFileList *& FileList, bool CanLoad);
   void __fastcall MakeLocalFileList(const AnsiString FileName, 
@@ -327,6 +360,7 @@ public:
   __property bool CommandSessionOpened = { read = GetCommandSessionOpened };
   __property TTerminal * CommandSession = { read = GetCommandSession };
   __property bool AutoReadDirectory = { read = FAutoReadDirectory, write = FAutoReadDirectory };
+  __property TStrings * FixedPaths = { read = GetFixedPaths };
 };
 //---------------------------------------------------------------------------
 class TSecondaryTerminal : public TTerminal
@@ -359,11 +393,13 @@ public:
   virtual void __fastcall Idle();
 
   __property TTerminal * Terminals[int Index]  = { read=GetTerminal };
+  __property int ActiveCount = { read = GetActiveCount };
 
 private:
   TConfiguration * FConfiguration;
 
   TTerminal * __fastcall GetTerminal(int Index);
+  int __fastcall GetActiveCount();
 };
 //---------------------------------------------------------------------------
 struct TCustomCommandParams
@@ -393,6 +429,17 @@ struct TMakeLocalFileListParams
   TStrings * FileList;
   bool IncludeDirs;
   bool Recursive;
+};
+//---------------------------------------------------------------------------
+struct TSynchronizeStats
+{
+  TSynchronizeStats();
+
+  // currently we do not need any other stats
+  // (these are for keep remote directory up to date)
+  int NewDirectories;
+  int RemovedDirectories;
+  int ObsoleteDirectories;
 };
 //---------------------------------------------------------------------------
 #endif

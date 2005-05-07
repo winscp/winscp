@@ -27,15 +27,13 @@ enum TCompressionType { ctNone, ctZLib };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject* Sender, const AnsiString Query, TStrings * MoreMessages, int Answers,
-   const TQueryParams * Params, int & Answer, TQueryType QueryType);
+   const TQueryParams * Params, int & Answer, TQueryType QueryType, void * Arg);
 typedef void __fastcall (__closure *TPromptUserEvent)
   (TSecureShell * SecureShell, AnsiString Prompt, TPromptKind Kind,
-   AnsiString & Response, bool & Result);
+   AnsiString & Response, bool & Result, void * Arg);
 typedef void __fastcall (__closure *TExtendedExceptionEvent)
-  (TSecureShell * SecureShell, Exception * E);
+  (TSecureShell * SecureShell, Exception * E, void * Arg);
 //---------------------------------------------------------------------------
-// Duplicated in LogMemo.h for design-time-only purposes
-enum TLogLineType {llOutput, llInput, llStdError, llMessage, llException};
 typedef Set<TLogLineType, llOutput, llException> TLogLineTypes;
 extern const TColor LogLineColors[];
 //---------------------------------------------------------------------------
@@ -58,7 +56,7 @@ private:
   void DeleteUnnecessary();
   void OpenLogFile();
   TColor __fastcall GetColor(Integer Index);
-  void __fastcall DoAddLine(const AnsiString AddedLine);
+  void __fastcall DoAddLine(TLogLineType Type, const AnsiString AddedLine);
   Integer __fastcall GetBottomIndex();
   Integer __fastcall GetIndexes(Integer Index);
   AnsiString __fastcall GetLogFileName();
@@ -67,7 +65,7 @@ private:
   void __fastcall SetEnabled(bool value);
   void __fastcall SetConfiguration(TConfiguration * value);
   AnsiString __fastcall GetSessionName();
-  void __fastcall DoAdd(bool Formatted, TLogLineType aType, AnsiString aLine);
+  void __fastcall DoAdd(TLogLineType aType, AnsiString aLine);
 
 public:
   __fastcall TSessionLog(TSecureShell * AOwner);
@@ -76,7 +74,8 @@ public:
   void __fastcall AddStartupInfo();
   void __fastcall AddException(Exception * E);
   void __fastcall AddSeparator();
-  void __fastcall AddFromOtherLog(TObject * Sender, const AnsiString AddedLine);
+  void __fastcall AddFromOtherLog(TObject * Sender, TLogLineType aType, 
+    const AnsiString AddedLine);
   virtual void __fastcall Clear();
   void __fastcall ReflectSettings();
   bool __fastcall inline IsLogging()
@@ -112,8 +111,8 @@ struct Config;
 class TSecureShell : public TObject
 {
 private:
-  bool FPasswordTried;
-  bool FPasswordTriedForKI;
+  bool FStoredPasswordTried;
+  bool FStoredPasswordTriedForKI;
   void * FSocket;
   TSessionData * FSessionData;
   bool FActive;
@@ -177,6 +176,7 @@ private:
   bool __fastcall Select(int Sec);
   void __fastcall PoolForData(unsigned int & Result);
   TDateTime __fastcall GetIdleInterval();
+  bool __fastcall GetStoredPasswordTried();
 
 protected:
   AnsiString StdError;
@@ -221,10 +221,11 @@ public:
   virtual int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
     int Answers, const TQueryParams * Params, TQueryType Type = qtConfirmation);
   int __fastcall DoQueryUser(const AnsiString Query, const AnsiString OtherMessage,
-    int Answers, const TQueryParams * Params);
-  int __fastcall DoQueryUser(const AnsiString Query, int Answers, const TQueryParams * Params);
+    int Answers, const TQueryParams * Params, TQueryType Type);
+  int __fastcall DoQueryUser(const AnsiString Query, int Answers,
+    const TQueryParams * Params, TQueryType Type = qtConfirmation);
   int __fastcall DoQueryUser(const AnsiString Query, Exception * E,
-    int Answers, const TQueryParams * Params);
+    int Answers, const TQueryParams * Params, TQueryType Type);
   virtual void __fastcall DoShowExtendedException(Exception * E);
   void __fastcall DoHandleExtendedException(Exception * E);
   virtual bool __fastcall DoPromptUser(AnsiString Prompt, TPromptKind Kind,
@@ -267,6 +268,7 @@ public:
   __property TObject * UserObject = { read = FUserObject, write = SetUserObject };
   __property AnsiString Password = { read = GetPassword };
   __property TDateTime IdleInterval = { read = GetIdleInterval };
+  __property bool StoredPasswordTried = { read = GetStoredPasswordTried };
 };
 //---------------------------------------------------------------------------
 #endif

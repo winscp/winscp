@@ -9,27 +9,27 @@ inherited RightsExtFrame: TRightsExtFrame
     Caption = 'O&ctal'
     FocusControl = OctalEdit
   end
-  inherited GroupReadCheck: TCheckBox
+  inherited GroupReadCheck: TGrayedCheckBox
     TabOrder = 4
   end
-  inherited GroupWriteCheck: TCheckBox
+  inherited GroupWriteCheck: TGrayedCheckBox
     TabOrder = 5
   end
-  inherited GroupExecuteCheck: TCheckBox
+  inherited GroupExecuteCheck: TGrayedCheckBox
     TabOrder = 6
   end
-  inherited OthersReadCheck: TCheckBox
+  inherited OthersReadCheck: TGrayedCheckBox
     TabOrder = 8
   end
-  inherited OthersWriteCheck: TCheckBox
+  inherited OthersWriteCheck: TGrayedCheckBox
     TabOrder = 9
   end
-  inherited OthersExecuteCheck: TCheckBox
+  inherited OthersExecuteCheck: TGrayedCheckBox
     TabOrder = 10
   end
   inherited DirectoriesXCheck: TCheckBox
     Top = 89
-    TabOrder = 12
+    TabOrder = 13
   end
   object OctalEdit: TEdit [17]
     Left = 55
@@ -37,12 +37,12 @@ inherited RightsExtFrame: TRightsExtFrame
     Width = 64
     Height = 21
     MaxLength = 4
-    TabOrder = 13
+    TabOrder = 12
     Text = 'OctalEdit'
     OnChange = OctalEditChange
     OnExit = OctalEditExit
   end
-  object SetUidCheck: TCheckBox [18]
+  object SetUidCheck: TGrayedCheckBox [18]
     Tag = 2048
     Left = 169
     Top = 3
@@ -52,7 +52,7 @@ inherited RightsExtFrame: TRightsExtFrame
     TabOrder = 3
     OnClick = ControlChange
   end
-  object SetGIDCheck: TCheckBox [19]
+  object SetGIDCheck: TGrayedCheckBox [19]
     Tag = 1024
     Left = 169
     Top = 23
@@ -62,7 +62,7 @@ inherited RightsExtFrame: TRightsExtFrame
     TabOrder = 7
     OnClick = ControlChange
   end
-  object StickyBitCheck: TCheckBox [20]
+  object StickyBitCheck: TGrayedCheckBox [20]
     Tag = 512
     Left = 169
     Top = 43

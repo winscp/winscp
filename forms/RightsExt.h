@@ -11,15 +11,16 @@
 #include <Buttons.hpp>
 #include <ImgList.hpp>
 #include <Menus.hpp>
+#include "GrayedCheckBox.hpp"
 //---------------------------------------------------------------------------
 class TRightsExtFrame : public TRightsFrame
 {
 __published:
   TLabel *OctalLabel;
   TEdit *OctalEdit;
-  TCheckBox *SetUidCheck;
-  TCheckBox *SetGIDCheck;
-  TCheckBox *StickyBitCheck;
+  TGrayedCheckBox *SetUidCheck;
+  TGrayedCheckBox *SetGIDCheck;
+  TGrayedCheckBox *StickyBitCheck;
   void __fastcall OctalEditChange(TObject *Sender);
   void __fastcall OctalEditExit(TObject *Sender);
   

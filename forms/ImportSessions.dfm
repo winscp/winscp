@@ -7,7 +7,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   BorderStyle = bsDialog
   Caption = 'Import sessions from PuTTY'
   ClientHeight = 293
-  ClientWidth = 351
+  ClientWidth = 375
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
@@ -15,14 +15,14 @@ object ImportSessionsDialog: TImportSessionsDialog
   OnClose = FormClose
   OnShow = FormShow
   DesignSize = (
-    351
+    375
     293)
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
     Left = 8
     Top = 8
-    Width = 337
+    Width = 361
     Height = 45
     Anchors = [akLeft, akTop, akRight]
     AutoSize = False
@@ -34,14 +34,14 @@ object ImportSessionsDialog: TImportSessionsDialog
   object Label2: TLabel
     Left = 8
     Top = 52
-    Width = 290
+    Width = 314
     Height = 13
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Notice: This application always connects using SSH protocol.'
     WordWrap = True
   end
   object OKButton: TButton
-    Left = 191
+    Left = 135
     Top = 262
     Width = 75
     Height = 25
@@ -52,7 +52,7 @@ object ImportSessionsDialog: TImportSessionsDialog
     TabOrder = 3
   end
   object CancelButton: TButton
-    Left = 271
+    Left = 215
     Top = 262
     Width = 75
     Height = 25
@@ -65,7 +65,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   object SessionListView: TListView
     Left = 8
     Top = 72
-    Width = 337
+    Width = 361
     Height = 160
     Anchors = [akLeft, akTop, akRight, akBottom]
     Checkboxes = True
@@ -102,9 +102,19 @@ object ImportSessionsDialog: TImportSessionsDialog
   object ImportKeysCheck: TCheckBox
     Left = 16
     Top = 238
-    Width = 329
+    Width = 345
     Height = 17
     Caption = 'Import cached host &keys for checked sessions'
     TabOrder = 1
+  end
+  object HelpButton: TButton
+    Left = 294
+    Top = 262
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 5
+    OnClick = HelpButtonClick
   end
 end

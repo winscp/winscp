@@ -55,74 +55,54 @@ object LogForm: TLogForm
   OnClose = FormClose
   PixelsPerInch = 96
   TextHeight = 13
-  object StatusBar: TStatusBar
+  object StatusBar: TTBXStatusBar
     Left = 0
     Top = 288
     Width = 459
     Height = 19
-    Panels = <>
-    ParentFont = True
-    SimplePanel = True
+    Panels = <
+      item
+        Framed = False
+        MaxSize = 200
+        Size = 200
+        StretchPriority = 100
+        Tag = 0
+      end>
     UseSystemFont = False
-    OnResize = StatusBarResize
   end
-  object TopCoolBar: TCoolBar
+  object TopDock: TTBXDock
     Left = 0
     Top = 0
     Width = 459
     Height = 26
-    AutoSize = True
-    Bands = <
-      item
-        Control = ToolBar
-        ImageIndex = -1
-        MinHeight = 22
-        Width = 455
-      end>
-    object ToolBar: TToolBar
-      Left = 9
+    AllowDrag = False
+    object Toolbar: TTBXToolbar
+      Left = 0
       Top = 0
-      Width = 100
-      Height = 22
-      Align = alLeft
-      AutoSize = True
-      Caption = 'ToolBar'
-      DisabledImages = NonVisualDataModule.LogDisabledImages
-      EdgeBorders = []
-      Flat = True
-      Images = NonVisualDataModule.LogImages
+      Caption = 'Toolbar'
+      FullSize = True
+      Images = GlyphsModule.LogImages
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
-      Transparent = True
-      Wrapable = False
-      object ToolButton1: TToolButton
-        Left = 0
-        Top = 0
+      object TBXItem1: TTBXItem
         Action = NonVisualDataModule.LogCloseAction
       end
-      object ToolButton3: TToolButton
-        Left = 23
-        Top = 0
-        Width = 8
-        Caption = 'ToolButton3'
-        ImageIndex = 1
-        Style = tbsSeparator
+      object TBXSeparatorItem1: TTBXSeparatorItem
       end
-      object ToolButton2: TToolButton
-        Left = 31
-        Top = 0
+      object TBXItem2: TTBXItem
         Action = NonVisualDataModule.LogClearAction
       end
-      object ToolButton4: TToolButton
-        Left = 54
-        Top = 0
+      object TBXItem3: TTBXItem
         Action = NonVisualDataModule.LogCopyAction
       end
-      object ToolButton5: TToolButton
-        Left = 77
-        Top = 0
+      object TBXItem4: TTBXItem
         Action = NonVisualDataModule.LogSelectAllAction
+      end
+      object TBXSeparatorItem2: TTBXSeparatorItem
+      end
+      object TBXItem5: TTBXItem
+        Action = NonVisualDataModule.LogPreferencesAction
       end
     end
   end

@@ -4,6 +4,7 @@
 
 #include <Common.h>
 
+#include "WinInterface.h"
 #include "Console.h"
 
 #include <TextsWin.h>
@@ -132,7 +133,7 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
         TStrings * ALog = const_cast<TStrings *>(Log);
         for (int i = 0; i < ALog->Count; i++)
         {
-          AddLine(ALog->Strings[i]);
+          AddLine(llOutput, ALog->Strings[i]);
         }
       }
       __finally
@@ -219,20 +220,19 @@ void __fastcall TConsoleDialog::CommandEditChange(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::DoLogAddLine(TObject* /*Sender*/,
-  const AnsiString AddedLine)
+  TLogLineType Type, const AnsiString AddedLine)
 {
   if (FAddOutput)
   {
-    AddLine(AddedLine);
+    AddLine(Type, AddedLine);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::AddLine(AnsiString Line)
+void __fastcall TConsoleDialog::AddLine(TLogLineType Type, AnsiString Line)
 {
-  if (!Line.IsEmpty() && (Line[1] == '<' || Line[1] == '!'))
+  if (!Line.IsEmpty() && (Type == llOutput || Type == llStdError))
   {
     int ReturnCode;
-    Line.Delete(1, 2);
     if (!TSCPFileSystem::RemoveLastLine(Line, ReturnCode) ||
         !Line.IsEmpty())
     {
@@ -245,6 +245,11 @@ void __fastcall TConsoleDialog::CreateParams(TCreateParams & Params)
 {
   TForm::CreateParams(Params);
   Params.Style = Params.Style & ~WS_SYSMENU;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 

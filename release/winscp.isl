@@ -18,6 +18,7 @@ QuickLaunchIconTask=Create a &Quick Launch icon
 SendToHookTask=Add &upload shortcut to Explorer's 'Send to' context menu
 RegisterAsUrlHandler=Register to handle scp:// and sftp:// &addresses
 AddSearchPath=Add installation directory to &search path (%PATH%)
+EnableUpdates=Enable automatic &check for application updates (recommended)
 
 RegisteringAsUrlHandler=Registering to handle scp:// and sftp:// addresses
 AddingSearchPath=Adding installation directory to search path (%PATH%)
@@ -28,10 +29,16 @@ WebSite=WinSCP Web Site
 RSAKeyTools=Key tools
 PuTTYgenManual=PuTTYgen Manual
 PageantManual=Pageant Manual
+; used only to delete file from older version
+; (not to be translated for new languages)
 KeysManual=Using public keys for SSH authentication
 PuttyWebSite=PuTTY Web Site
 SendToHook=WinSCP3 (upload using SFTP or SCP)
 Launch=Launch &WinSCP
+DocumentationPage=Documentation
+
+HelpButton=&Help
+ProgramComment=Windows SFTP/SCP client
 
 ; WinSCP Runtime
 UserSettingsTitle=Initial user settings

@@ -43,6 +43,7 @@ extern const char FSProtocolNames[FSPROTOCOL_COUNT][11];
 class TSessionData : public TNamedObject
 {
 private:
+  static AnsiString FInvalidChars;
   AnsiString FHostName;
   int FPortNumber;
   AnsiString FUserName;
@@ -180,7 +181,7 @@ private:
   void __fastcall SetProxyTelnetCommand(AnsiString value);
   void __fastcall SetProxyDNS(TAutoSwitch value);
   void __fastcall SetProxyLocalhost(bool value);
-  AnsiString __fastcall GetProxyPassword();
+  AnsiString __fastcall GetProxyPassword() const;
   void __fastcall SetBug(TSshBug Bug, TAutoSwitch value);
   TAutoSwitch __fastcall GetBug(TSshBug Bug) const;
   AnsiString __fastcall GetSessionKey();
@@ -218,6 +219,7 @@ public:
     AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
     AnsiString * UserName, AnsiString * Password, AnsiString * Path,
     AnsiString * FileName);
+  static void __fastcall ValidateName(const AnsiString Name);
 
   __property AnsiString HostName  = { read=FHostName, write=SetHostName };
   __property int PortNumber  = { read=FPortNumber, write=SetPortNumber };

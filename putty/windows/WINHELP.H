@@ -1,7 +1,12 @@
 /*
- * winhelp.h - define Windows Help context names for the controls
- * in the PuTTY config box.
+ * winhelp.h - define Windows Help context names. These match up with
+ * the \cfg{winhelp-topic} directives in the Halibut source.
  */
+
+/* Maximum length for WINHELP_CTX_foo strings */
+#define WINHELP_CTX_MAXLEN 80
+
+/* These are used in the cross-platform configuration dialog code. */
 
 #define HELPCTX(x) P(WINHELP_CTX_ ## x)
 
@@ -111,6 +116,7 @@
 #define WINHELP_CTX_colours_logpal "colours.logpal"
 #define WINHELP_CTX_colours_config "colours.config"
 #define WINHELP_CTX_translation_codepage "translation.codepage"
+#define WINHELP_CTX_translation_cjk_ambig_wide "translation.cjkambigwide"
 #define WINHELP_CTX_translation_cyrillic "translation.cyrillic"
 #define WINHELP_CTX_translation_linedraw "translation.linedraw"
 #define WINHELP_CTX_ssh_tunnels_x11 "ssh.tunnels.x11"
@@ -126,3 +132,20 @@
 #define WINHELP_CTX_ssh_bugs_rsapad2 "ssh.bugs.rsapad2"
 #define WINHELP_CTX_ssh_bugs_pksessid2 "ssh.bugs.pksessid2"
 #define WINHELP_CTX_ssh_bugs_rekey2 "ssh.bugs.rekey2"
+
+/* These are used in Windows-specific bits of the frontend.
+ * We (ab)use "help context identifiers" (dwContextId) to identify them. */
+
+#define HELPCTXID(x) WINHELP_CTXID_ ## x
+
+#define WINHELP_CTXID_no_help 0
+#define WINHELP_CTX_errors_hostkey_absent "errors.hostkey.absent"
+#define WINHELP_CTXID_errors_hostkey_absent 1
+#define WINHELP_CTX_errors_hostkey_changed "errors.hostkey.changed"
+#define WINHELP_CTXID_errors_hostkey_changed 2
+#define WINHELP_CTX_errors_cantloadkey "errors.cantloadkey"
+#define WINHELP_CTXID_errors_cantloadkey 3
+#define WINHELP_CTX_option_cleanup "options.cleanup"
+#define WINHELP_CTXID_option_cleanup 4
+#define WINHELP_CTX_pgp_fingerprints "pgpfingerprints"
+#define WINHELP_CTXID_pgp_fingerprints 5

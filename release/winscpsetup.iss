@@ -7,6 +7,10 @@
 #define TranslationMask "translations\WinSCP3.???"
 #define TranslationDir ".\translations"
 #define DefaultLang "en"
+#define WebRoot "http://winscp.net/"
+#define WebForum WebRoot+"forum/"
+#define WebDocumentation WebRoot+"eng/docs/"
+#define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
 
 #ifexist "winscpsetup.tmp"
   #include "winscpsetup.tmp"
@@ -36,9 +40,9 @@ AppId=winscp3
 AppName=WinSCP3
 AppMutex=WinSCP
 AppPublisher=Martin Prikryl
-AppPublisherURL=http://winscp.sourceforge.net/
-AppSupportURL=http://winscp.sourceforge.net/forum/
-AppUpdatesURL=http://winscp.sourceforge.net/eng/download.php
+AppPublisherURL={#WebRoot}
+AppSupportURL={#WebForum}
+AppUpdatesURL={#WebRoot}eng/download.php
 VersionInfoCompany=Martin Prikryl
 VersionInfoDescription=Setup for WinSCP {#Version} (Freeware SCP/SFTP client for Windows)
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
@@ -125,6 +129,7 @@ Name: transl; Description: {cm:TranslationsComponent}; \
 #endif
 
 [Tasks]
+Name: enableupdates; Description: {cm:EnableUpdates};
 ; Windows integration
 Name: desktopicon; Description: {cm:DesktopIconTask}
 Name: desktopicon\user; Description: {cm:DesktopIconUserTask}; \
@@ -140,20 +145,28 @@ Name: searchpath; Description: {cm:AddSearchPath}; \
 
 [INI]
 Filename: "{app}\{cm:SupportForum}.url"; Section: "InternetShortcut"; \
-  Key: "URL"; String: "http://winscp.sourceforge.net/forum/"
+  Key: "URL"; String: "{#WebForum}"
+Filename: "{app}\{cm:DocumentationPage}.url"; Section: "InternetShortcut"; \
+  Key: "URL"; String: "{#WebDocumentation}"
 Filename: "{app}\WinSCP.url"; Section: "InternetShortcut"; \
-  Key: "URL"; String: "http://winscp.sourceforge.net/"
+  Key: "URL"; String: "{#WebRoot}"
 Filename: "{app}\PuTTY\PuTTY.url"; Section: "InternetShortcut"; \
-  Key: "URL"; String: "http://www.chiark.greenend.org.uk/~sgtatham/putty/"; \
+  Key: "URL"; String: "{#WebPuTTY}"; \
   Components: pageant puttygen
 
 [Icons]
 ; This is created always (unless user checks Don't create a Start menu folder,
 ; Setup\AllowNoIcons=yes)
-Name: "{group}\WinSCP"; Filename: "{app}\WinSCP3.exe"; Components: main
-Name: "{group}\{cm:WebSite}"; Filename: "{app}\WinSCP.url"; Components: main
+Name: "{group}\WinSCP"; Filename: "{app}\WinSCP3.exe"; Components: main; \
+  Comment: "{cm:ProgramComment}"
+Name: "{group}\{cm:WebSite}"; Filename: "{app}\WinSCP.url"; Components: main; \
+  Comment: "{#WebRoot}"
 Name: "{group}\{cm:SupportForum}"; \
-  Filename: "{app}\{cm:SupportForum}.url"; Components: main
+  Filename: "{app}\{cm:SupportForum}.url"; Components: main; \
+  Comment: "{#WebForum}"
+Name: "{group}\{cm:DocumentationPage}"; \
+  Filename: "{app}\{cm:DocumentationPage}.url"; Components: main; \
+  Comment: "{#WebDocumentation}"
 ; This is created when pageant/puttygen component is selected (unless user
 ; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes).
 Name: "{group}\{cm:RSAKeyTools}\PuTTYgen"; \
@@ -166,11 +179,9 @@ Name: "{group}\{cm:RSAKeyTools}\Pageant"; \
 Name: "{group}\{cm:RSAKeyTools}\{cm:PageantManual}"; \
   Filename: "winhlp32.exe"; Parameters: "-ipageant.general {app}\PuTTY\putty.hlp"; \
   Components: pageant
-Name: "{group}\{cm:RSAKeyTools}\{cm:KeysManual}"; \
-  Filename: "winhlp32.exe"; Parameters: "-it00000117 {app}\PuTTY\putty.hlp"; \
-  Components: pageant puttygen
 Name: "{group}\{cm:RSAKeyTools}\{cm:PuttyWebSite}"; \
-  Filename: "{app}\PuTTY\PuTTY.url"; Components: pageant puttygen
+  Filename: "{app}\PuTTY\PuTTY.url"; Components: pageant puttygen; \
+  Comment: "{#WebPuTTY}"
 ; This is created when desktopicon task is selected
 Name: "{userdesktop}\WinSCP3"; Filename: "{app}\WinSCP3.exe"; \
   Tasks: desktopicon\user
@@ -186,6 +197,7 @@ Name: "{sendto}\{cm:SendToHook}"; Filename: "{app}\WinSCP3.exe"; \
 [InstallDelete]
 Type: files; Name: "{sendto}\WinSCP3 (upload using SCP).lnk"
 Type: files; Name: "{sendto}\{cm:SendToHook}.lnk"
+Type: files; Name: "{group}\{cm:RSAKeyTools}\{cm:KeysManual}.lnk"
 
 [Run]
 Filename: "{app}\WinSCP3.exe"; Description: "{cm:Launch}"; \
@@ -202,6 +214,7 @@ Filename: "{app}\WinSCP3.exe"; Parameters: "/InvalidDefaultTranslation"; \
 ; These additional files are created by installer
 Type: files; Name: "{app}\WinSCP.url"
 Type: files; Name: "{app}\{cm:SupportForum}.url"
+Type: files; Name: "{app}\{cm:DocumentationPage}.url"
 Type: files; Name: "{app}\PuTTY\PuTTY.url"; Components: pageant puttygen
 ; These additional files are created by application
 Type: files; Name: "{app}\WinSCP3.ini"
@@ -254,6 +267,10 @@ Root: HKCU; Subkey: "Software\Classes\SFTP"; Flags: dontcreatekey uninsdeletekey
   Tasks: urlhandler
 Root: HKCU; Subkey: "Software\Classes\SCP"; Flags: dontcreatekey uninsdeletekey; \
   Tasks: urlhandler
+; Updates
+Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface\Updates"; \
+  ValueType: dword; ValueName: "Period"; ValueData: 7; \
+  Tasks: enableupdates
 
 #ifdef INTL
 
@@ -311,13 +328,66 @@ begin
   end;
 end;
 
+procedure OpenHelp;
+var
+  ErrorCode: Integer;
+begin
+  ShellExec('open', '{#WebDocumentation}installation', '', '',
+    SW_SHOWNORMAL, ewNoWait, ErrorCode);
+end;
+
+procedure HelpButtonClick(Sender: TObject);
+begin
+  OpenHelp;
+end;
+
+procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Key = 112 { VK_F1 } then
+  begin
+    OpenHelp;
+    Key := 0;
+  end;
+end;
+
+procedure InterfaceCaptionClick(Sender: TObject);
+begin
+  WizardForm.ActiveControl := TLabel(Sender).FocusControl;
+end;
+
 procedure InitializeWizard();
 var
   UserInterface: Cardinal;
   AdvancedTabs: Cardinal;
   InterfacePage: TWizardPage;
   Caption, Caption2: TLabel;
+  HelpButton: TButton;
 begin
+  WizardForm.KeyPreview := True;
+  WizardForm.OnKeyDown := @FormKeyDown;
+
+  // allow installation without requiring user to accept licence
+  WizardForm.LicenseAcceptedRadio.Checked := True;
+  WizardForm.LicenseAcceptedRadio.Visible := False;
+  WizardForm.LicenseLabel1.Visible := False;
+  WizardForm.LicenseNotAcceptedRadio.Visible := False;
+  WizardForm.LicenseMemo.Top := WizardForm.LicenseLabel1.Top;
+  WizardForm.LicenseMemo.Height :=
+    WizardForm.LicenseNotAcceptedRadio.Top + 
+    WizardForm.LicenseNotAcceptedRadio.Height -
+    WizardForm.LicenseMemo.Top - 5;
+
+  HelpButton := TButton.Create(WizardForm);
+  HelpButton.Parent := WizardForm;
+  HelpButton.Left :=
+    WizardForm.ClientWidth -
+    (WizardForm.CancelButton.Left + WizardForm.CancelButton.Width);
+  HelpButton.Top := WizardForm.CancelButton.Top;
+  HelpButton.Width := WizardForm.CancelButton.Width;
+  HelpButton.Height := WizardForm.CancelButton.Height;
+  HelpButton.Caption := ExpandConstant('{cm:HelpButton}');
+  HelpButton.OnClick := @HelpButtonClick;
+
   InterfacePage := CreateCustomPage(wpSelectTasks,
     ExpandConstant('{cm:UserSettingsTitle}'),
     ExpandConstant('{cm:UserSettingsPrompt}'));
@@ -354,6 +424,8 @@ begin
   Caption.Top := CommanderRadioButton.Top + CommanderRadioButton.Height +
     ScaleY(6);
   Caption.Parent := InterfacePage.Surface;
+  Caption.FocusControl := CommanderRadioButton;
+  Caption.OnClick := @InterfaceCaptionClick;
 
   ExplorerRadioButton := TRadioButton.Create(InterfacePage);
   ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterface}');
@@ -375,6 +447,8 @@ begin
   Caption.Top := ExplorerRadioButton.Top + ExplorerRadioButton.Height +
     ScaleY(6);
   Caption.Parent := InterfacePage.Surface;
+  Caption.FocusControl := ExplorerRadioButton;
+  Caption.OnClick := @InterfaceCaptionClick;
 
   Caption2 := TLabel.Create(InterfacePage);
   Caption2.Caption := ExpandConstant('{cm:AdditionalOptions}');

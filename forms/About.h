@@ -40,11 +40,19 @@ __published:
   TButton *LicenceButton;
   TLabel *PuttyLicenceLabel;
   TLabel *TranslatorLabel;
+  TLabel *Label1;
+  TLabel *Label2;
+  TLabel *Toolbar2000HomepageLabel;
+  TLabel *Label5;
+  TLabel *Label6;
+  TLabel *TBXHomepageLabel;
+  TButton *HelpButton;
   void __fastcall HomepageLabelClick(TObject *Sender);
   void __fastcall EmailLabelClick(TObject *Sender);
   void __fastcall DisplayLicence(TObject *Sender);
   void __fastcall LicenceButtonClick(TObject *Sender);
   bool __fastcall GetAllowLicence();
+  void __fastcall HelpButtonClick(TObject *Sender);
 private:
   TConfiguration * FConfiguration;
   void __fastcall SetConfiguration(TConfiguration * value);
@@ -54,8 +62,6 @@ public:
   void __fastcall LoadData();
   __property TConfiguration * Configuration  = { read=FConfiguration, write=SetConfiguration };
   __property bool AllowLicence = { read=GetAllowLicence, write=SetAllowLicence };
-protected:
-  void __fastcall OpenAddress(const AnsiString Address);
 };
 //----------------------------------------------------------------------------
 #endif

@@ -10,11 +10,17 @@
 #include <TextsWin.h>
 
 #include "Log.h"
+#include "Glyphs.h"
 #include "NonVisual.h"
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "LogMemo"
+#pragma link "TB2Dock"
+#pragma link "TB2Item"
+#pragma link "TB2Toolbar"
+#pragma link "TBX"
+#pragma link "TBXStatusBars"
 #pragma resource "*.dfm"
 TLogForm *LogForm = NULL;
 //---------------------------------------------------------------------------
@@ -61,7 +67,6 @@ void __fastcall FreeLogForm()
 __fastcall TLogForm::TLogForm(TComponent* Owner)
         : FFormRestored(False), TForm(Owner)
 {
-  FStatusBarFile = false;
   FLogMemo = NULL;
   FSessionLog = NULL;
   ShowWindow(Handle, SW_SHOWNA);
@@ -146,53 +151,27 @@ void __fastcall TLogForm::SetSessionLog(TSessionLog * value)
 //---------------------------------------------------------------------------
 void __fastcall TLogForm::UpdateControls()
 {
+  TTBXStatusPanel * Panel = StatusBar->Panels->Items[0];
   if (SessionLog)
   {
-    FStatusBarFile = SessionLog->LoggingToFile;
-    SetStatusBarText(SessionLog->LoggingToFile ? SessionLog->LogFileName :
-      LoadStr(LOG_NOLOGFILE));
-
+    if (SessionLog->LoggingToFile)
+    {
+      Panel->TextTruncation = twPathEllipsis;
+      Panel->Caption = SessionLog->LogFileName;
+    }
+    else
+    {
+      Panel->TextTruncation = twEndEllipsis;
+      Panel->Caption = LoadStr(LOG_NOLOGFILE);
+    }
     Caption = FMTLOAD(LOG_CAPTION, (SessionLog->SessionName));
   }
   else
   {
-    FStatusBarFile = False;
-    SetStatusBarText(LoadStr(LOG_NOLOG));
+    Panel->TextTruncation = twEndEllipsis;
+    Panel->Caption = LoadStr(LOG_NOLOG);
     Caption = LoadStr(LOG_NOLOGCAPTION);
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TLogForm::SetStatusBarText(AnsiString Text)
-{
-  StatusBar->Hint = Text;
-  if (StatusBar->Canvas->TextWidth(Text) > StatusBar->ClientWidth - 20)
-  {
-    StatusBar->ShowHint = true;
-
-    if (!FStatusBarFile)
-    {
-      Text += "...";
-      while ((Text.Length() > 3) &&
-        (StatusBar->Canvas->TextWidth(Text) > StatusBar->ClientWidth - 20))
-      {
-        Text.Delete(Text.Length() - 3, 1);
-      }
-    }
-    else
-    {
-      Text = MinimizeName(Text, StatusBar->Canvas, StatusBar->ClientWidth - 20);
-    }
-  }
-  else
-  {
-    StatusBar->ShowHint = false;
-  }
-  StatusBar->SimpleText = Text;
-}
-//---------------------------------------------------------------------------
-void __fastcall TLogForm::StatusBarResize(TObject * /*Sender*/)
-{
-  SetStatusBarText(StatusBar->Hint);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLogForm::CreateParams(TCreateParams & Params)

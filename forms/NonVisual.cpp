@@ -12,11 +12,13 @@
 
 #include <Log.h>
 #include <Interface.h>
-#include <Glyphs.h>
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
+#include "TBX.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+#pragma link "TB2Item"
+#pragma link "TBX"
 #pragma resource "*.dfm"
 TNonVisualDataModule *NonVisualDataModule;
 //---------------------------------------------------------------------------
@@ -77,34 +79,10 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
   FIdle = true;
-
-  FGlyphsModule = NULL;
-  HANDLE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
-  try
-  {
-    FGlyphsModule = new TGlyphsModule(Owner);
-  }
-  __finally
-  {
-    GUIConfiguration->ChangeResourceModule(ResourceModule);
-  }
-
-  for (int i = 0; i < FGlyphsModule->ComponentCount; i++)
-  {
-    TImageList * Source = dynamic_cast<TImageList *>(FGlyphsModule->Components[i]);
-    if (Source != NULL)
-    {
-      TImageList * Dest = dynamic_cast<TImageList *>(FindComponent(Source->Name));
-      assert(Dest != NULL);
-      assert(Dest->ShareImages);
-      Dest->Handle = Source->Handle;
-    }
-  }
 }
 //---------------------------------------------------------------------------
 __fastcall TNonVisualDataModule::~TNonVisualDataModule()
 {
-  delete FGlyphsModule;
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::LogActionsUpdate(
@@ -113,11 +91,12 @@ void __fastcall TNonVisualDataModule::LogActionsUpdate(
   TLogMemo * LogMemo = TTerminalManager::Instance()->LogMemo;
   bool ValidLogMemo = LogMemo && LogMemo->Parent;
   UPD(LogClearAction, ValidLogMemo && LogMemo->Lines->Count)
-  UPD(LogSelectAllAction, ValidLogMemo && LogMemo->Lines->Count &&
-    LogMemo->SelLength != LogMemo->Lines->Text.Length())
+  // removed potentially CPU intensive check for "all selected already"
+  UPD(LogSelectAllAction, ValidLogMemo && LogMemo->Lines->Count)
   UPD(LogCopyAction, ValidLogMemo && LogMemo->SelLength)
 
   UPD(LogCloseAction, Configuration->Logging && (WinConfiguration->LogView == lvWindow))
+  UPD(LogPreferencesAction, true)
   ;
 }
 //---------------------------------------------------------------------------
@@ -136,6 +115,7 @@ void __fastcall TNonVisualDataModule::LogActionsExecute(
     EXE(LogCopyAction, LogMemo->CopyToClipboard())
 
     EXE(LogCloseAction, WinConfiguration->LogView = lvNone)
+    EXE(LogPreferencesAction, PreferencesDialog(pmLogging));
     ;
   }
   __finally
@@ -163,7 +143,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentMoveFocusedAction, EnableFocusedOperation)
   UPD(CurrentDeleteFocusedAction, EnableFocusedOperation)
   UPD(CurrentPropertiesFocusedAction, EnableFocusedOperation)
-  UPD(RemoteMoveToFocusedAction, EnableFocusedOperation && (DirView(osRemote) == DirView(osCurrent)))
+  UPD(RemoteMoveToFocusedAction, EnableFocusedOperation &&
+    (DirView(osRemote) == DirView(osCurrent)) &&
+    ScpExplorer->Terminal->IsCapable[fcRemoteMove])
   UPD(RemoteCopyToFocusedAction, EnableFocusedOperation && (DirView(osRemote) == DirView(osCurrent)))
   // file operation
   UPD(CurrentRenameAction, EnableFocusedOperation &&
@@ -188,12 +170,15 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentMoveAction, EnableSelectedOperation)
   UPD(CurrentDeleteAction, EnableSelectedOperation)
   UPD(CurrentPropertiesAction, EnableSelectedOperation)
-  UPD(RemoteMoveToAction, EnableSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
+  UPD(RemoteMoveToAction, EnableSelectedOperation &&
+    (DirView(osRemote) == DirView(osCurrent)) &&
+    ScpExplorer->Terminal->IsCapable[fcRemoteMove])
   UPD(RemoteCopyToAction, EnableSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
   UPD(FileListToCommandLineAction, EnableSelectedOperation)
   UPD(FileListToClipboardAction, EnableSelectedOperation)
   UPD(FullFileListToClipboardAction, EnableSelectedOperation)
   UPD(UrlToClipboardAction, EnableSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
+  UPD(FileListFromClipboardAction, IsFormatInClipboard(CF_TEXT));
   // directory
   UPD(CurrentCreateDirAction, true)
   // selection
@@ -248,7 +233,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(TableOfContentsAction, true)
   UPD(ForumPageAction, true)
   UPD(CheckForUpdatesAction, true)
+  UPDACT(ShowUpdatesAction, ShowUpdatesUpdate())
+  UPD(UpdatesPreferencesAction, true)
   UPD(DonatePageAction, true)
+  UPD(DownloadPageAction, true)
 
   // VIEW
   UPDCOMP(StatusBar)
@@ -265,6 +253,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(ExplorerSessionBand)
   UPDCOMP(ExplorerPreferencesBand)
   UPDCOMP(ExplorerSortBand)
+  UPDCOMP(ExplorerUpdatesBand)
+  UPDCOMP(ExplorerTransferBand)
   UPDCOMP(CommanderMenuBand)
   UPDCOMP(CommanderSessionBand)
   UPDCOMP(CommanderPreferencesBand)
@@ -272,6 +262,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(CommanderToolbarBand)
   UPDCOMP(CommanderSortBand)
   UPDCOMP(CommanderCommandsBand)
+  UPDCOMP(CommanderUpdatesBand)
+  UPDCOMP(CommanderTransferBand)
   UPDCOMP(CommanderLocalHistoryBand)
   UPDCOMP(CommanderLocalNavigationBand)
   UPDCOMP(CommanderRemoteHistoryBand)
@@ -285,6 +277,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDEX(ShowHiddenFilesAction, true,
     ShowHiddenFilesAction->Checked = WinConfiguration->ShowHiddenFiles, )
   UPD(PreferencesAction, true)
+  UPD(PresetsPreferencesAction, true)
 
   // SORT
   UPDSORTA(Local)
@@ -334,7 +327,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDSHCOL(Remote, uv, Rights)
   UPDSHCOL(Remote, uv, Owner)
   UPDSHCOL(Remote, uv, Group)
+  UPDSHCOL(Remote, uv, LinkTarget)
   UPD(HideColumnAction, (ListColumn != NULL))
+  UPD(BestFitColumnAction, (ListColumn != NULL))
 
   // SESSION
   UPD(NewSessionAction, true)
@@ -356,8 +351,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(EditNewAction, !WinConfiguration->DisableOpenEdit)
 
   // CUSTOM COMMANDS
-  UPD(CustomCommandsAction,
-    (ScpExplorer->DirView(osCurrent) == ScpExplorer->DirView(osRemote)))
+  UPD(CustomCommandsAction, true)
+  UPD(CustomCommandsEnterAction, true)
   UPD(CustomCommandsCustomizeAction, true)
 
   // QUEUE
@@ -428,6 +423,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFileList, pedClipboard))
     EXE(FullFileListToClipboardAction, ScpExplorer->PanelExport(osCurrent, peFullFileList, pedClipboard))
     EXE(UrlToClipboardAction, ScpExplorer->PanelExport(osCurrent, peUrl, pedClipboard))
+    EXE(FileListFromClipboardAction, ScpExplorer->FileListFromClipboard())
     // directory
     EXE(CurrentCreateDirAction, ScpExplorer->CreateDirectory(osCurrent))
     //selection
@@ -474,8 +470,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(HistoryPageAction, OpenBrowser(LoadStr(HISTORY_URL)))
     EXE(TableOfContentsAction, Application->HelpSystem->ShowTableOfContents())
     EXE(ForumPageAction, OpenBrowser(LoadStr(FORUM_URL)))
-    EXE(CheckForUpdatesAction, CheckForUpdates())
+    EXE(CheckForUpdatesAction, CheckForUpdates(false))
+    EXE(ShowUpdatesAction, CheckForUpdates(true))
+    EXE(UpdatesPreferencesAction, PreferencesDialog(pmUpdates))
     EXE(DonatePageAction, OpenBrowser(LoadStr(DONATE_URL)))
+    EXE(DownloadPageAction, OpenBrowser(LoadStr(DOWNLOAD_URL)))
 
     // VIEW
     EXECOMP(StatusBar)
@@ -489,6 +488,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXECOMP(ExplorerSessionBand)
     EXECOMP(ExplorerPreferencesBand)
     EXECOMP(ExplorerSortBand)
+    EXECOMP(ExplorerUpdatesBand)
+    EXECOMP(ExplorerTransferBand)
     EXECOMP(CommanderMenuBand)
     EXECOMP(CommanderSessionBand)
     EXECOMP(CommanderPreferencesBand)
@@ -496,6 +497,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXECOMP(CommanderToolbarBand)
     EXECOMP(CommanderSortBand)
     EXECOMP(CommanderCommandsBand)
+    EXECOMP(CommanderUpdatesBand)
+    EXECOMP(CommanderTransferBand)
     EXECOMP(CommanderLocalHistoryBand)
     EXECOMP(CommanderLocalNavigationBand)
     EXECOMP(CommanderRemoteHistoryBand)
@@ -509,7 +512,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(ViewLogAction, WinConfiguration->LogView =
       (WinConfiguration->LogView == lvNone ? lvWindow : lvNone) )
     EXE(ShowHiddenFilesAction, WinConfiguration->ShowHiddenFiles = !WinConfiguration->ShowHiddenFiles)
-    EXE(PreferencesAction, DoPreferencesDialog(pmDefault) )
+    EXE(PreferencesAction, PreferencesDialog(pmDefault) )
+    EXE(PresetsPreferencesAction, PreferencesDialog(pmPresets) )
 
     #define COLVIEWPROPS ((TCustomDirViewColProperties*)(((TCustomDirView*)(((TListColumns*)(ListColumn->Collection))->Owner()))->ColProperties))
     // SORT
@@ -556,15 +560,17 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXESHCOL(Remote, uv, Rights)
     EXESHCOL(Remote, uv, Owner)
     EXESHCOL(Remote, uv, Group)
+    EXESHCOL(Remote, uv, LinkTarget)
     EXE(HideColumnAction, assert(ListColumn);
       COLVIEWPROPS->Visible[ListColumn->Index] = false; ListColumn = NULL )
+    EXE(BestFitColumnAction, assert(ListColumn); ListColumn = NULL ) // TODO
     #undef COLVIEWPROPS
 
     // SESSION
     EXE(NewSessionAction, ScpExplorer->NewSession())
     EXE(CloseSessionAction, ScpExplorer->CloseSession())
-    EXE(SavedSessionsAction, CreateSessionListMenu())
-    EXE(OpenedSessionsAction, )
+    EXE(SavedSessionsAction, CreateSessionListMenu(SavedSessionsAction))
+    EXE(OpenedSessionsAction, CreateOpenedSessionListMenu(OpenedSessionsAction))
     EXE(SaveCurrentSessionAction, ScpExplorer->SaveCurrentSession())
 
     // COMMAND
@@ -581,7 +587,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     // CUSTOM COMMANDS
     EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction))
-    EXE(CustomCommandsCustomizeAction, DoPreferencesDialog(pmCustomCommands))
+    EXE(CustomCommandsEnterAction, ScpExplorer->AdHocCustomCommand(
+      Action->ActionComponent == RemoteDirViewCustomCommandsMenu))
+    EXE(CustomCommandsCustomizeAction, PreferencesDialog(pmCustomCommands))
 
     // QUEUE
     #define EXEQUEUE(OPERATION) EXE(Queue ## OPERATION ## Action, \
@@ -596,13 +604,12 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXEQUEUE(ItemUp)
     EXEQUEUE(ItemDown)
     #undef EXEQUEUE
-    EXE(QueueToggleShowAction,
-      TQueueViewConfiguration Config = WinConfiguration->QueueView;
-      Config.Show = ScpExplorer->ComponentVisible[fcQueueView] ? qvHide : qvShow;
-      WinConfiguration->QueueView = Config)
+    EXE(QueueToggleShowAction, ScpExplorer->ToggleQueueVisibility())
     #define QUEUEACTION(SHOW) EXE(Queue ## SHOW ## Action, \
       TQueueViewConfiguration Config = WinConfiguration->QueueView; \
-      Config.Show = qv ## SHOW; WinConfiguration->QueueView = Config)
+      if (Config.Show != qvShow) Config.LastHideShow = Config.Show; \
+      Config.Show = qv ## SHOW; \
+      WinConfiguration->QueueView = Config)
     QUEUEACTION(Show)
     QUEUEACTION(HideWhenEmpty)
     QUEUEACTION(Hide)
@@ -751,39 +758,44 @@ void __fastcall TNonVisualDataModule::DoIdle()
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
 {
   assert(Action);
-  TMenuItem * Menu = dynamic_cast<TMenuItem *>(Action->ActionComponent);
+  TTBCustomItem * Menu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
   if (Menu)
   {
     int PrevCount = Menu->Count;
+    bool OnFocused = (Menu == RemoteDirViewCustomCommandsMenu);
     for (int Index = 0; Index < WinConfiguration->CustomCommands->Count; Index++)
     {
       AnsiString Description = WinConfiguration->CustomCommands->Names[Index];
       AnsiString Command = WinConfiguration->CustomCommands->Values[Description];
+      int State = ScpExplorer->CustomCommandState(Description, OnFocused);
 
-      TMenuItem * Item = new TMenuItem(Menu);
-      Item->Caption = Description;
-      Item->Tag = Index;
-      Item->Enabled = ScpExplorer->EnableCustomCommand(Description);
-      if (Menu == RemoteDirViewCustomCommandsMenu)
+      if (State >= 0)
       {
-        Item->Tag = Item->Tag | 0x0100;
+        TTBCustomItem * Item = new TTBXItem(Menu);
+        Item->Caption = Description;
+        Item->Tag = Index;
+        Item->Enabled = (State > 0);
+        if (OnFocused)
+        {
+          Item->Tag = Item->Tag | 0x0100;
+        }
+        Item->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (StripHotkey(Description)));
+        Item->OnClick = CustomCommandClick;
+        Menu->Add(Item);
       }
-      Item->Hint = FMTLOAD(CUSTOM_COMMAND_HINT,
-        (StringReplace(Description, "&", "", TReplaceFlags() << rfReplaceAll)));
-      Item->OnClick = CustomCommandClick;
-      Menu->Add(Item);
     }
 
-    TMenuItem * Item;
-    if (WinConfiguration->CustomCommands->Count)
-    {
-      Item = new TMenuItem(Menu);
-      Item->Caption = "-";
-      Item->Hint = "E";
-      Menu->Add(Item);
-    }
+    TTBCustomItem * Item;
+    Item = new TTBXItem(Menu);
+    Item->Action = CustomCommandsEnterAction;
+    Menu->Add(Item);
 
-    Item = new TMenuItem(Menu);
+    Item = new TTBXSeparatorItem(Menu);
+    Item->Caption = "-";
+    Item->Hint = "E";
+    Menu->Add(Item);
+
+    Item = new TTBXItem(Menu);
     Item->Action = CustomCommandsCustomizeAction;
     Menu->Add(Item);
 
@@ -796,22 +808,25 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
 {
-  TMenuItem * Item = dynamic_cast<TMenuItem *>(Sender);
+  TTBCustomItem * Item = dynamic_cast<TTBCustomItem *>(Sender);
   assert(Item);
-  AnsiString CommandName;
-  CommandName = WinConfiguration->CustomCommands->Names[Item->Tag & 0x00FF];
+  TCustomCommandParam Param;
+  Param.Name = WinConfiguration->CustomCommands->Names[Item->Tag & 0x00FF];
+  Param.Command = WinConfiguration->CustomCommands->Values[Param.Name];
+  Param.Params = WinConfiguration->CustomCommands->Params[Param.Name];
   ScpExplorer->ExecuteFileOperation(foCustomCommand, osRemote,
-    (Item->Tag & 0xFF00) != 0, false, &CommandName);
+    (Item->Tag & 0xFF00) != 0, false, &Param);
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::CreateSessionListMenu()
+void __fastcall TNonVisualDataModule::CreateSessionListMenu(TAction * Action)
 {
+  TTBCustomItem * SavedSessionsMenu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
   int PrevCount = SavedSessionsMenu->Count;
   StoredSessions->Load();
   for (int Index = 0; Index < StoredSessions->Count; Index++)
   {
     TSessionData * Data = StoredSessions->Sessions[Index];
-    TMenuItem * Item = new TMenuItem(SavedSessionsMenu);
+    TTBCustomItem * Item = new TTBXItem(SavedSessionsMenu);
     Item->Caption = Data->Name;
     Item->Tag = Index;
     Item->Hint = FMTLOAD(SAVEDSESSION_HINT, (Data->Name));
@@ -843,8 +858,10 @@ TShortCut __fastcall TNonVisualDataModule::OpenSessionShortCut(int Index)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu()
+void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu(TAction * Action)
 {
+  TTBCustomItem * OpenedSessionsMenu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
+  assert(OpenedSessionsMenu != NULL);
   TTerminalManager * Manager = TTerminalManager::Instance();
   TStrings * TerminalList = Manager->TerminalList;
   int PrevCount = OpenedSessionsMenu->Count;
@@ -852,13 +869,14 @@ void __fastcall TNonVisualDataModule::CreateOpenedSessionListMenu()
   {
     TTerminal * Terminal = dynamic_cast<TTerminal *>(TerminalList->Objects[Index]);
     assert(Terminal);
-    TMenuItem * Item = new TMenuItem(this);
+    TTBCustomItem * Item = new TTBXItem(OpenedSessionsMenu);
     Item->Caption = TerminalList->Strings[Index];
     Item->Tag = int(Terminal);
     Item->Hint = FMTLOAD(OPENEDSESSION_HINT, (Item->Caption));
     Item->Checked = (Manager->ActiveTerminal == Terminal);
     Item->ShortCut = OpenSessionShortCut(Index);
     Item->OnClick = OpenedSessionItemClick;
+    Item->RadioItem = true;
     OpenedSessionsMenu->Add(Item);
   }
   for (int Index = 0; Index < PrevCount; Index++)
@@ -875,23 +893,19 @@ void __fastcall TNonVisualDataModule::OpenedSessionItemClick(TObject * Sender)
 void __fastcall TNonVisualDataModule::QueuePopupPopup(TObject * /*Sender*/)
 {
   TAction * Action = NULL;
-  bool HideFirstLine = true;
 
   switch (ScpExplorer->DefaultQueueOperation())
   {
     case qoItemQuery:
       Action = QueueItemQueryAction;
-      HideFirstLine = false;
       break;
 
     case qoItemError:
       Action = QueueItemErrorAction;
-      HideFirstLine = false;
       break;
 
     case qoItemPrompt:
       Action = QueueItemPromptAction;
-      HideFirstLine = false;
       break;
 
     case qoItemExecute:
@@ -899,19 +913,50 @@ void __fastcall TNonVisualDataModule::QueuePopupPopup(TObject * /*Sender*/)
       break;
   }
 
-  TMenuItem * Item;
+  TTBCustomItem * Item;
   for (int Index = 0; Index < QueuePopup->Items->Count; Index++)
   {
     Item = QueuePopup->Items->Items[Index];
-    Item->Default = (Action != NULL) && (Item->Action == Action);
-    if (Item->Caption == "-")
+    TTBItemOptions O = Item->Options;
+    if ((Action != NULL) && (Item->Action == Action))
     {
-      Item->Visible = !HideFirstLine;
-      HideFirstLine = false;
+      O << tboDefault;
     }
+    else
+    {
+      O >> tboDefault;
+    }
+    Item->Options = O;
   }
 }
 //---------------------------------------------------------------------------
-
-
+void __fastcall TNonVisualDataModule::ShowUpdatesUpdate()
+{
+  TUpdatesConfiguration Updates = WinConfiguration->Updates;
+  unsigned short H, M, S, MS;
+  DecodeTime(Now(), H, M, S, MS);
+  TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
+  int CurrentCompoundVer = CalculateCompoundVersion(
+    HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
+    HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
+  ShowUpdatesAction->ImageIndex =
+    ((Updates.HaveResults && (Updates.Results.ForVersion == CurrentCompoundVer) &&
+      ((Updates.Results.Critical && !Updates.ShownResults && (MS >= 500)) ||
+       ((!Updates.Results.Critical || Updates.ShownResults) &&
+        ((Updates.Results.Version > CurrentCompoundVer) ||
+         !Updates.Results.Message.IsEmpty())))) ? 80 :
+     ((int(Updates.Period) <= 0) ? 81 : 63));
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::PreferencesDialog(TPreferencesMode APreferencesMode)
+{
+  if (ScpExplorer != NULL)
+  {
+    ScpExplorer->PreferencesDialog(APreferencesMode);
+  }
+  else
+  {
+    DoPreferencesDialog(APreferencesMode);
+  }
+}
 

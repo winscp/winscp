@@ -1,8 +1,8 @@
 inherited ScpCommanderForm: TScpCommanderForm
-  Left = 319
-  Top = 10
-  Width = 661
-  Height = 651
+  Left = 280
+  Top = 5
+  Width = 660
+  Height = 694
   HelpType = htKeyword
   HelpKeyword = 'ui_commander'
   Caption = 'ScpCommanderForm'
@@ -11,815 +11,1083 @@ inherited ScpCommanderForm: TScpCommanderForm
   TextHeight = 13
   object Splitter: TSplitter [0]
     Left = 313
-    Top = 170
+    Top = 205
     Width = 5
-    Height = 307
+    Height = 267
     Cursor = crHSplit
     ResizeStyle = rsUpdate
     OnCanResize = SplitterCanResize
     OnMoved = SplitterMoved
   end
   inherited QueueSplitter: TSplitter
-    Top = 498
-    Width = 653
+    Top = 493
+    Width = 652
   end
-  inherited TopCoolBar: TCoolBar
-    Width = 653
-    Height = 170
-    Bands = <
-      item
-        Control = MenuToolBar
-        ImageIndex = -1
-        MinHeight = 22
-        Width = 649
-      end
-      item
-        Control = SessionToolbar
-        ImageIndex = -1
-        MinHeight = 22
-        Width = 649
-      end
-      item
-        Control = PreferencesToolbar
-        ImageIndex = -1
-        MinHeight = 22
-        Width = 649
-      end
-      item
-        Control = SelectionToolbar
-        ImageIndex = -1
-        MinHeight = 22
-        Width = 649
-      end
-      item
-        Control = CommandToolBar
-        ImageIndex = -1
-        MinHeight = 22
-        Width = 649
-      end
-      item
-        Control = SortToolbar
-        ImageIndex = -1
-        MinHeight = 22
-        Width = 649
-      end
-      item
-        Control = CommandsToolbar
-        ImageIndex = -1
-        MinHeight = 22
-        Width = 649
-      end>
-    FixedSize = False
-    object MenuToolBar: TToolBar
-      Left = 9
+  inherited TopDock: TTBXDock
+    Width = 652
+    Height = 205
+    object MenuToolbar: TTBXToolbar
+      Left = 0
       Top = 0
-      Width = 343
-      Height = 22
-      Hint = '|E'
-      Align = alLeft
-      AutoSize = True
-      ButtonHeight = 21
-      ButtonWidth = 65
-      Caption = 'MenuToolBar'
-      EdgeBorders = []
-      Flat = True
-      ShowCaptions = True
-      TabOrder = 0
-      Wrapable = False
-      object LeftMenuButton: TToolButton
-        Left = 0
-        Top = 0
-        Hint = 'Change local panel layout or change displayed directory/drive'
-        AutoSize = True
+      Caption = 'Menu'
+      CloseButton = False
+      Images = GlyphsModule.ExplorerImages
+      MenuBar = True
+      ShrinkMode = tbsmWrap
+      Stretch = True
+      TabOrder = 6
+      object LocalMenuButton: TTBXSubmenuItem
         Caption = '&Local'
-        Grouped = True
-        MenuItem = NonVisualDataModule.CommanderLocalMenu
+        HelpKeyword = 'ui_commander_menu#local'
+        Hint = 'Change local panel layout or change displayed directory/drive'
+        object TBXItem1: TTBXItem
+          Action = NonVisualDataModule.LocalChangePathAction
+        end
+        object TBXSeparatorItem1: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXSubmenuItem2: TTBXSubmenuItem
+          Caption = '&Go To'
+          HelpKeyword = 'task_navigate'
+          Hint = 'Go to directory'
+          object TBXItem2: TTBXItem
+            Action = NonVisualDataModule.LocalOpenDirAction
+          end
+          object TBXItem3: TTBXItem
+            Action = NonVisualDataModule.LocalExploreDirectoryAction
+          end
+          object TBXSeparatorItem2: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem4: TTBXItem
+            Action = NonVisualDataModule.LocalParentDirAction
+          end
+          object TBXItem5: TTBXItem
+            Action = NonVisualDataModule.LocalRootDirAction
+          end
+          object TBXItem6: TTBXItem
+            Action = NonVisualDataModule.LocalHomeDirAction
+          end
+          object TBXSeparatorItem3: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem7: TTBXItem
+            Action = NonVisualDataModule.LocalBackAction
+          end
+          object TBXItem8: TTBXItem
+            Action = NonVisualDataModule.LocalForwardAction
+          end
+        end
+        object TBXItem9: TTBXItem
+          Action = NonVisualDataModule.LocalRefreshAction
+        end
+        object TBXItem10: TTBXItem
+          Action = NonVisualDataModule.LocalAddBookmarkAction
+        end
+        object TBXItem11: TTBXItem
+          Action = NonVisualDataModule.LocalPathToClipboardAction
+        end
+        object TBXSeparatorItem4: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXSubmenuItem3: TTBXSubmenuItem
+          Caption = '&Sort'
+          HelpKeyword = 'ui_file_panel#sorting_files'
+          Hint = 'Change file order in local panel'
+          object TBXItem12: TTBXItem
+            Action = NonVisualDataModule.LocalSortAscendingAction
+          end
+          object TBXSeparatorItem5: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem13: TTBXItem
+            Action = NonVisualDataModule.LocalSortByNameAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem14: TTBXItem
+            Action = NonVisualDataModule.LocalSortByExtAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem15: TTBXItem
+            Action = NonVisualDataModule.LocalSortByTypeAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem16: TTBXItem
+            Action = NonVisualDataModule.LocalSortByChangedAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem17: TTBXItem
+            Action = NonVisualDataModule.LocalSortBySizeAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem18: TTBXItem
+            Action = NonVisualDataModule.LocalSortByAttrAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+        end
+        object TBXSubmenuItem4: TTBXSubmenuItem
+          Caption = 'S&how Columns'
+          HelpKeyword = 'ui_file_panel#selecting_columns'
+          Hint = 'Select columns to show in panel'
+          object TBXItem19: TTBXItem
+            Action = NonVisualDataModule.ShowHideLocalNameColumnAction
+          end
+          object TBXItem20: TTBXItem
+            Action = NonVisualDataModule.ShowHideLocalSizeColumnAction
+          end
+          object TBXItem21: TTBXItem
+            Action = NonVisualDataModule.ShowHideLocalTypeColumnAction
+          end
+          object TBXItem22: TTBXItem
+            Action = NonVisualDataModule.ShowHideLocalChangedColumnAction
+          end
+          object TBXItem23: TTBXItem
+            Action = NonVisualDataModule.ShowHideLocalAttrColumnAction
+          end
+        end
       end
-      object ToolButton1: TToolButton
-        Left = 37
-        Top = 0
-        Hint = 'Mark commands'
-        AutoSize = True
+      object TBXSubmenuItem18: TTBXSubmenuItem
         Caption = '&Mark'
-        Grouped = True
-        MenuItem = NonVisualDataModule.CommonMarkMenu
+        HelpKeyword = 'ui_commander_menu#mark'
+        Hint = 'Mark commands'
+        object TBXItem107: TTBXItem
+          Action = NonVisualDataModule.SelectOneAction
+        end
+        object TBXItem108: TTBXItem
+          Action = NonVisualDataModule.SelectAction
+        end
+        object TBXItem109: TTBXItem
+          Action = NonVisualDataModule.UnselectAction
+        end
+        object TBXItem110: TTBXItem
+          Action = NonVisualDataModule.SelectAllAction
+        end
+        object TBXItem111: TTBXItem
+          Action = NonVisualDataModule.InvertSelectionAction
+        end
+        object TBXItem112: TTBXItem
+          Action = NonVisualDataModule.ClearSelectionAction
+        end
       end
-      object ToolButton4: TToolButton
-        Left = 72
-        Top = 0
-        Hint = 'File operation commands'
-        AutoSize = True
+      object TBXSubmenuItem5: TTBXSubmenuItem
         Caption = '&Files'
-        Grouped = True
-        MenuItem = NonVisualDataModule.CommanderFilesMenu
+        HelpKeyword = 'ui_commander_menu#files'
+        Hint = 'File operation commands'
+        object TBXItem24: TTBXItem
+          Action = NonVisualDataModule.CurrentCreateDirAction
+        end
+        object TBXSeparatorItem6: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem25: TTBXItem
+          Action = NonVisualDataModule.CurrentOpenAction
+        end
+        object TBXItem26: TTBXItem
+          Action = NonVisualDataModule.CurrentEditAction
+        end
+        object TBXItem27: TTBXItem
+          Action = NonVisualDataModule.CurrentEditAlternativeAction
+        end
+        object TBXItem28: TTBXItem
+          Action = NonVisualDataModule.EditNewAction
+        end
+        object TBXItem29: TTBXItem
+          Action = NonVisualDataModule.AddEditLinkAction
+        end
+        object TBXSeparatorItem7: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem30: TTBXItem
+          Action = NonVisualDataModule.CurrentCopyAction
+        end
+        object TBXItem31: TTBXItem
+          Action = NonVisualDataModule.RemoteCopyToAction
+        end
+        object TBXItem32: TTBXItem
+          Action = NonVisualDataModule.CurrentMoveAction
+        end
+        object TBXItem33: TTBXItem
+          Action = NonVisualDataModule.RemoteMoveToAction
+        end
+        object TBXItem34: TTBXItem
+          Action = NonVisualDataModule.CurrentDeleteAction
+        end
+        object TBXItem35: TTBXItem
+          Action = NonVisualDataModule.CurrentRenameAction
+        end
+        object TBXItem36: TTBXItem
+          Action = NonVisualDataModule.PasteAction
+        end
+        object TBXSeparatorItem8: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object CustomCommandsMenu: TTBXSubmenuItem
+          Action = NonVisualDataModule.CustomCommandsAction
+        end
+        object TBXSubmenuItem6: TTBXSubmenuItem
+          Caption = '&File Names'
+          HelpKeyword = 'filenames'
+          Hint = 'Operations with name(s) of selected file(s)'
+          object TBXItem37: TTBXItem
+            Action = NonVisualDataModule.FileListToCommandLineAction
+          end
+          object TBXItem38: TTBXItem
+            Action = NonVisualDataModule.FileListToClipboardAction
+          end
+          object TBXItem39: TTBXItem
+            Action = NonVisualDataModule.FullFileListToClipboardAction
+          end
+          object TBXItem40: TTBXItem
+            Action = NonVisualDataModule.UrlToClipboardAction
+          end
+        end
+        object TBXSeparatorItem9: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem41: TTBXItem
+          Action = NonVisualDataModule.CurrentPropertiesAction
+        end
       end
-      object ToolButton49: TToolButton
-        Left = 104
-        Top = 0
-        Hint = 'Other commands'
-        AutoSize = True
+      object TBXSubmenuItem7: TTBXSubmenuItem
         Caption = '&Commands'
-        Grouped = True
-        MenuItem = NonVisualDataModule.CommanderCommandsMenu
+        HelpKeyword = 'ui_commander_menu#commands'
+        Hint = 'Other commands'
+        object TBXItem42: TTBXItem
+          Action = NonVisualDataModule.CompareDirectoriesAction
+        end
+        object TBXItem43: TTBXItem
+          Action = NonVisualDataModule.SynchronizeAction
+        end
+        object TBXItem44: TTBXItem
+          Action = NonVisualDataModule.FullSynchronizeAction
+        end
+        object TBXItem45: TTBXItem
+          Action = NonVisualDataModule.SynchronizeBrowsingAction
+        end
+        object TBXSubmenuItem8: TTBXSubmenuItem
+          Caption = '&Queue'
+          HelpKeyword = 'ui_queue#managing_the_queue'
+          Hint = 'Queue list commands'
+          object TBXItem46: TTBXItem
+            Action = NonVisualDataModule.QueueGoToAction
+          end
+          object TBXSeparatorItem10: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem47: TTBXItem
+            Action = NonVisualDataModule.QueueItemQueryAction
+          end
+          object TBXItem48: TTBXItem
+            Action = NonVisualDataModule.QueueItemErrorAction
+          end
+          object TBXItem49: TTBXItem
+            Action = NonVisualDataModule.QueueItemPromptAction
+          end
+          object TBXSeparatorItem11: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem50: TTBXItem
+            Action = NonVisualDataModule.QueueItemExecuteAction
+          end
+          object TBXItem51: TTBXItem
+            Action = NonVisualDataModule.QueueItemDeleteAction
+          end
+          object TBXSeparatorItem12: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem52: TTBXItem
+            Action = NonVisualDataModule.QueueItemUpAction
+          end
+          object TBXItem53: TTBXItem
+            Action = NonVisualDataModule.QueueItemDownAction
+          end
+        end
+        object TBXSeparatorItem13: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem54: TTBXItem
+          Action = NonVisualDataModule.ConsoleAction
+        end
+        object TBXItem55: TTBXItem
+          Action = NonVisualDataModule.PuttyAction
+        end
+        object TBXSeparatorItem14: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem56: TTBXItem
+          Action = NonVisualDataModule.FileSystemInfoAction
+        end
+        object TBXItem57: TTBXItem
+          Action = NonVisualDataModule.ClearCachesAction
+        end
+        object TBXSeparatorItem15: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem58: TTBXItem
+          Action = NonVisualDataModule.CloseApplicationAction
+        end
       end
-      object ToolButton19: TToolButton
-        Left = 167
-        Top = 0
-        Hint = 'Session commands'
-        AutoSize = True
+      object TBXSubmenuItem19: TTBXSubmenuItem
         Caption = '&Session'
-        Grouped = True
-        MenuItem = NonVisualDataModule.CommonSessionMenu
+        HelpKeyword = 'ui_commander_menu#session'
+        Hint = 'Session commands'
+        object TBXItem113: TTBXItem
+          Action = NonVisualDataModule.NewSessionAction
+        end
+        object TBXSubmenuItem20: TTBXSubmenuItem
+          Action = NonVisualDataModule.SavedSessionsAction
+        end
+        object TBXSeparatorItem29: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXSubmenuItem21: TTBXSubmenuItem
+          Action = NonVisualDataModule.OpenedSessionsAction
+        end
+        object TBXItem114: TTBXItem
+          Action = NonVisualDataModule.SaveCurrentSessionAction
+        end
+        object TBXItem115: TTBXItem
+          Action = NonVisualDataModule.CloseSessionAction
+        end
       end
-      object ToolButton7: TToolButton
-        Left = 215
-        Top = 0
-        Hint = 'Change program layout/preferences'
-        AutoSize = True
+      object TBXSubmenuItem9: TTBXSubmenuItem
         Caption = '&Options'
-        Grouped = True
-        MenuItem = NonVisualDataModule.CommanderOptionsMenu
+        HelpKeyword = 'ui_commander_menu#options'
+        Hint = 'Change program layout/preferences'
+        object TBXSubmenuItem10: TTBXSubmenuItem
+          Caption = '&Toolbars'
+          HelpKeyword = 'ui_toolbars'
+          Hint = 'Show/hide toolbars'
+          object TBXItem59: TTBXItem
+            Action = NonVisualDataModule.CommanderToolbarBandAction
+          end
+          object TBXItem60: TTBXItem
+            Action = NonVisualDataModule.CommanderSessionBandAction
+          end
+          object TBXItem61: TTBXItem
+            Action = NonVisualDataModule.CommanderSelectionBandAction
+          end
+          object TBXItem62: TTBXItem
+            Action = NonVisualDataModule.CommanderPreferencesBandAction
+          end
+          object TBXItem63: TTBXItem
+            Action = NonVisualDataModule.CommanderSortBandAction
+          end
+          object TBXItem64: TTBXItem
+            Action = NonVisualDataModule.CommanderCommandsBandAction
+          end
+          object TBXItem186: TTBXItem
+            Action = NonVisualDataModule.CommanderUpdatesBandAction
+          end
+          object TBXItem188: TTBXItem
+            Action = NonVisualDataModule.CommanderTransferBandAction
+          end
+        end
+        object TBXSubmenuItem11: TTBXSubmenuItem
+          Caption = '&Local Panel'
+          HelpKeyword = 'ui_file_panel'
+          Hint = 'Change local panel layout'
+          object TBXItem65: TTBXItem
+            Action = NonVisualDataModule.CommanderLocalHistoryBandAction
+          end
+          object TBXItem66: TTBXItem
+            Action = NonVisualDataModule.CommanderLocalNavigationBandAction
+          end
+          object TBXSeparatorItem16: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem67: TTBXItem
+            Action = NonVisualDataModule.LocalTreeAction
+          end
+          object TBXSeparatorItem17: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem68: TTBXItem
+            Action = NonVisualDataModule.LocalStatusBarAction
+          end
+        end
+        object TBXSubmenuItem12: TTBXSubmenuItem
+          Caption = '&Remote Panel'
+          HelpKeyword = 'ui_file_panel'
+          Hint = 'Change remote panel layout'
+          object TBXItem69: TTBXItem
+            Action = NonVisualDataModule.CommanderRemoteHistoryBandAction
+          end
+          object TBXItem70: TTBXItem
+            Action = NonVisualDataModule.CommanderRemoteNavigationBandAction
+          end
+          object TBXSeparatorItem18: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem71: TTBXItem
+            Action = NonVisualDataModule.RemoteTreeAction
+          end
+          object TBXSeparatorItem19: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem72: TTBXItem
+            Action = NonVisualDataModule.RemoteStatusBarAction
+          end
+        end
+        object TBXSeparatorItem20: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem73: TTBXItem
+          Action = NonVisualDataModule.CommandLinePanelAction
+        end
+        object TBXItem74: TTBXItem
+          Action = NonVisualDataModule.ToolBarAction
+        end
+        object TBXItem75: TTBXItem
+          Action = NonVisualDataModule.StatusBarAction
+        end
+        object TBXItem76: TTBXItem
+          Action = NonVisualDataModule.ViewLogAction
+        end
+        object TBXSubmenuItem14: TTBXSubmenuItem
+          Caption = '&Queue'
+          HelpKeyword = 'ui_queue'
+          Hint = 'Configure queue list'
+          object TBXItem77: TTBXItem
+            Action = NonVisualDataModule.QueueShowAction
+            RadioItem = True
+          end
+          object TBXItem78: TTBXItem
+            Action = NonVisualDataModule.QueueHideWhenEmptyAction
+            RadioItem = True
+          end
+          object TBXItem79: TTBXItem
+            Action = NonVisualDataModule.QueueHideAction
+            RadioItem = True
+          end
+          object TBXSeparatorItem21: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem80: TTBXItem
+            Action = NonVisualDataModule.QueueToolbarAction
+          end
+          object TBXSeparatorItem22: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem81: TTBXItem
+            Action = NonVisualDataModule.QueuePreferencesAction
+          end
+        end
+        object TBXSeparatorItem23: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem82: TTBXItem
+          Action = NonVisualDataModule.PreferencesAction
+        end
       end
-      object RightMenuButton: TToolButton
-        Left = 262
-        Top = 0
-        Hint = 'Change remote panel layout or change displayed directory'
-        AutoSize = True
+      object RemoteMenuButton: TTBXSubmenuItem
         Caption = '&Remote'
-        Grouped = True
-        MenuItem = NonVisualDataModule.CommanderRemoteMenu
+        HelpKeyword = 'ui_commander_menu#remote'
+        Hint = 'Change remote panel layout or change displayed directory'
+        object TBXItem83: TTBXItem
+          Action = NonVisualDataModule.RemoteChangePathAction
+        end
+        object TBXSeparatorItem24: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXSubmenuItem15: TTBXSubmenuItem
+          Caption = '&Go To'
+          HelpKeyword = 'task_navigate'
+          Hint = 'Go to directory'
+          object TBXItem84: TTBXItem
+            Action = NonVisualDataModule.RemoteOpenDirAction
+          end
+          object TBXSeparatorItem25: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem85: TTBXItem
+            Action = NonVisualDataModule.RemoteParentDirAction
+          end
+          object TBXItem86: TTBXItem
+            Action = NonVisualDataModule.RemoteRootDirAction
+          end
+          object TBXItem87: TTBXItem
+            Action = NonVisualDataModule.RemoteHomeDirAction
+          end
+          object TBXSeparatorItem26: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem88: TTBXItem
+            Action = NonVisualDataModule.RemoteBackAction
+          end
+          object TBXItem89: TTBXItem
+            Action = NonVisualDataModule.RemoteForwardAction
+          end
+        end
+        object TBXItem90: TTBXItem
+          Action = NonVisualDataModule.RemoteRefreshAction
+        end
+        object TBXItem91: TTBXItem
+          Action = NonVisualDataModule.RemoteAddBookmarkAction
+        end
+        object TBXItem92: TTBXItem
+          Action = NonVisualDataModule.RemotePathToClipboardAction
+        end
+        object TBXSeparatorItem27: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXSubmenuItem16: TTBXSubmenuItem
+          Caption = '&Sort'
+          HelpKeyword = 'ui_file_panel#sorting_files'
+          Hint = 'Change file order in remote panel'
+          object TBXItem93: TTBXItem
+            Action = NonVisualDataModule.RemoteSortAscendingAction
+          end
+          object TBXSeparatorItem28: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem94: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByNameAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem95: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByExtAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem96: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByChangedAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem97: TTBXItem
+            Action = NonVisualDataModule.RemoteSortBySizeAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem98: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByRightsAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem99: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByOwnerAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+          object TBXItem100: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByGroupAction
+            GroupIndex = 1
+            RadioItem = True
+          end
+        end
+        object TBXSubmenuItem17: TTBXSubmenuItem
+          Caption = 'S&how Columns'
+          HelpKeyword = 'ui_file_panel#selecting_columns'
+          Hint = 'Select columns to show in panel'
+          object TBXItem101: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteNameColumnAction
+          end
+          object TBXItem102: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteSizeColumnAction
+          end
+          object TBXItem103: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction
+          end
+          object TBXItem104: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteRightsColumnAction
+          end
+          object TBXItem105: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteOwnerColumnAction
+          end
+          object TBXItem106: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteGroupColumnAction
+          end
+          object TBXItem179: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction
+          end
+        end
       end
-      object ToolButton20: TToolButton
-        Left = 310
-        Top = 0
-        Hint = 'Help'
-        AutoSize = True
+      object TBXSubmenuItem22: TTBXSubmenuItem
         Caption = '&Help'
-        Grouped = True
-        MenuItem = NonVisualDataModule.CommonHelpMenu
+        HelpKeyword = 'ui_commander_menu#help'
+        Hint = 'Help'
+        object TBXItem116: TTBXItem
+          Action = NonVisualDataModule.TableOfContentsAction
+        end
+        object TBXSeparatorItem30: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem117: TTBXItem
+          Action = NonVisualDataModule.HomepageAction
+        end
+        object TBXItem118: TTBXItem
+          Action = NonVisualDataModule.ForumPageAction
+        end
+        object TBXItem119: TTBXItem
+          Action = NonVisualDataModule.HistoryPageAction
+        end
+        object TBXSeparatorItem31: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem120: TTBXItem
+          Action = NonVisualDataModule.CheckForUpdatesAction
+        end
+        object TBXSeparatorItem32: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem121: TTBXItem
+          Action = NonVisualDataModule.DonatePageAction
+        end
+        object TBXSeparatorItem33: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem122: TTBXItem
+          Action = NonVisualDataModule.AboutAction
+        end
       end
     end
-    object SelectionToolbar: TToolBar
-      Left = 9
-      Top = 72
-      Width = 123
-      Height = 22
-      Hint = '|E'
-      Align = alLeft
-      AutoSize = True
-      Caption = 'SelectionToolbar'
-      DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-      EdgeBorders = []
-      Flat = True
-      Images = NonVisualDataModule.ExplorerImages
-      ParentShowHint = False
-      ShowHint = True
-      TabOrder = 1
-      Transparent = True
-      Wrapable = False
-      object ToolButton23: TToolButton
-        Left = 0
-        Top = 0
-        Action = NonVisualDataModule.SelectAction
-      end
-      object ToolButton24: TToolButton
-        Left = 23
-        Top = 0
-        Action = NonVisualDataModule.UnselectAction
-      end
-      object ToolButton25: TToolButton
-        Left = 46
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton25'
-        ImageIndex = 24
-        Style = tbsSeparator
-      end
-      object ToolButton26: TToolButton
-        Left = 54
-        Top = 0
-        Action = NonVisualDataModule.SelectAllAction
-      end
-      object ToolButton28: TToolButton
-        Left = 77
-        Top = 0
-        Action = NonVisualDataModule.InvertSelectionAction
-      end
-      object ToolButton29: TToolButton
-        Left = 100
-        Top = 0
-        Action = NonVisualDataModule.ClearSelectionAction
-      end
-    end
-    object PreferencesToolbar: TToolBar
-      Left = 9
-      Top = 48
-      Width = 90
-      Height = 22
-      Hint = '|E'
-      Align = alLeft
-      AutoSize = True
-      Caption = 'PreferencesToolbar'
-      DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-      EdgeBorders = []
-      Flat = True
-      Images = NonVisualDataModule.ExplorerImages
+    object SelectionToolbar: TTBXToolbar
+      Left = 0
+      Top = 75
+      Caption = 'Selection'
+      DockPos = 0
+      DockRow = 3
+      Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
       TabOrder = 2
-      Transparent = True
-      Wrapable = False
-      object ToolButton33: TToolButton
-        Left = 0
-        Top = 0
-        Action = NonVisualDataModule.PreferencesAction
+      object TBXItem131: TTBXItem
+        Action = NonVisualDataModule.SelectAction
       end
-      object ToolButton35: TToolButton
-        Left = 23
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton35'
-        ImageIndex = 28
-        Style = tbsSeparator
+      object TBXItem132: TTBXItem
+        Action = NonVisualDataModule.UnselectAction
       end
-      object ToolButton36: TToolButton
-        Left = 31
-        Top = 0
-        Action = NonVisualDataModule.ViewLogAction
-        Style = tbsCheck
+      object TBXSeparatorItem37: TTBXSeparatorItem
       end
-      object ToolButton50: TToolButton
-        Left = 54
-        Top = 0
-        Action = NonVisualDataModule.QueueToggleShowAction
-        DropdownMenu = NonVisualDataModule.QueueShowPopup
-        Style = tbsDropDown
+      object TBXItem133: TTBXItem
+        Action = NonVisualDataModule.SelectAllAction
+      end
+      object TBXItem134: TTBXItem
+        Action = NonVisualDataModule.InvertSelectionAction
+      end
+      object TBXItem135: TTBXItem
+        Action = NonVisualDataModule.ClearSelectionAction
       end
     end
-    object SessionToolbar: TToolBar
-      Left = 9
-      Top = 24
-      Width = 242
-      Height = 22
-      Hint = '|E'
-      Align = alLeft
-      AutoSize = True
-      Caption = 'SessionToolbar'
-      DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-      EdgeBorders = []
-      Flat = True
-      Images = NonVisualDataModule.ExplorerImages
+    object PreferencesToolbar: TTBXToolbar
+      Left = 0
+      Top = 49
+      Caption = 'Preferences'
+      DockPos = 0
+      DockRow = 2
+      Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 3
-      Transparent = True
-      Wrapable = False
-      object ToolButton30: TToolButton
-        Left = 0
-        Top = 0
+      TabOrder = 1
+      object TBXItem126: TTBXItem
+        Action = NonVisualDataModule.PreferencesAction
+      end
+      object TBXSeparatorItem36: TTBXSeparatorItem
+      end
+      object TBXItem127: TTBXItem
+        Action = NonVisualDataModule.ViewLogAction
+      end
+      object TBXSubmenuItem24: TTBXSubmenuItem
+        Action = NonVisualDataModule.QueueToggleShowAction
+        DropdownCombo = True
+        object TBXItem128: TTBXItem
+          Action = NonVisualDataModule.QueueShowAction
+        end
+        object TBXItem129: TTBXItem
+          Action = NonVisualDataModule.QueueHideWhenEmptyAction
+        end
+        object TBXItem130: TTBXItem
+          Action = NonVisualDataModule.QueueHideAction
+        end
+      end
+    end
+    object SessionToolbar: TTBXToolbar
+      Left = 0
+      Top = 23
+      Caption = 'Session'
+      DockPos = 0
+      DockRow = 1
+      Images = GlyphsModule.ExplorerImages
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 0
+      object TBXItem123: TTBXItem
         Action = NonVisualDataModule.NewSessionAction
       end
-      object ToolButton48: TToolButton
-        Left = 23
-        Top = 0
-        Width = 8
-        Caption = 'ToolButton48'
-        ImageIndex = 44
-        Style = tbsSeparator
+      object TBXSeparatorItem34: TTBXSeparatorItem
       end
-      object SessionCombo: TComboBox
-        Left = 31
-        Top = 0
-        Width = 114
-        Height = 21
-        Style = csOwnerDrawFixed
-        DropDownCount = 15
-        ItemHeight = 15
-        TabOrder = 0
-        TabStop = False
-        OnCloseUp = SessionComboCloseUp
+      object SessionCombo: TTBXComboBoxItem
+        EditWidth = 114
+        DropDownList = True
+        MaxVisibleItems = 15
       end
-      object SessionComboResizer: TSplitter
-        Left = 145
-        Top = 0
-        Width = 4
-        Height = 22
-        Cursor = crSizeWE
-        Hint = 'Drag to resize session drop down menu'
-        AutoSnap = False
-        ResizeStyle = rsUpdate
-        OnCanResize = SessionComboResizerCanResize
-        OnMoved = SessionComboResizerMoved
-      end
-      object ToolButton2: TToolButton
-        Left = 149
-        Top = 0
-        Width = 3
-        Caption = 'ToolButton2'
-        ImageIndex = 44
-        Style = tbsSeparator
-      end
-      object ToolButton31: TToolButton
-        Left = 152
-        Top = 0
+      object TBXItem124: TTBXItem
         Action = NonVisualDataModule.CloseSessionAction
       end
-      object ToolButton32: TToolButton
-        Left = 175
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton32'
-        ImageIndex = 27
-        Style = tbsSeparator
+      object TBXSeparatorItem35: TTBXSeparatorItem
       end
-      object SavedSessionsButton: TToolButton
-        Left = 183
-        Top = 0
+      object TBXSubmenuItem23: TTBXSubmenuItem
         Action = NonVisualDataModule.SavedSessionsAction
-        MenuItem = NonVisualDataModule.SavedSessionsMenu
-        Style = tbsDropDown
+        Options = [tboDropdownArrow]
       end
-      object ToolButton21: TToolButton
-        Left = 219
-        Top = 0
+      object TBXItem125: TTBXItem
         Action = NonVisualDataModule.SaveCurrentSessionAction
       end
     end
-    object CommandToolBar: TToolBar
-      Left = 9
-      Top = 96
-      Width = 223
-      Height = 22
-      Hint = '|E'
-      Align = alLeft
-      AutoSize = True
-      Caption = 'CommandToolBar'
-      DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-      EdgeBorders = []
-      Flat = True
-      Images = NonVisualDataModule.ExplorerImages
+    object CommandToolbar: TTBXToolbar
+      Left = 0
+      Top = 101
+      Caption = 'Standard'
+      DockPos = -5
+      DockRow = 4
+      Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 4
-      Transparent = True
-      Wrapable = False
-      object ToolButton6: TToolButton
-        Left = 0
-        Top = 0
+      TabOrder = 3
+      object TBXItem136: TTBXItem
         Action = NonVisualDataModule.CurrentCopyAction
       end
-      object ToolButton17: TToolButton
-        Left = 23
-        Top = 0
+      object TBXItem137: TTBXItem
         Action = NonVisualDataModule.CurrentMoveAction
       end
-      object ToolButton38: TToolButton
-        Left = 46
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton38'
-        ImageIndex = 6
-        Style = tbsSeparator
+      object TBXSeparatorItem38: TTBXSeparatorItem
       end
-      object ToolButton43: TToolButton
-        Left = 54
-        Top = 0
+      object TBXItem138: TTBXItem
         Action = NonVisualDataModule.CurrentEditAction
       end
-      object ToolButton44: TToolButton
-        Left = 77
-        Top = 0
+      object TBXItem139: TTBXItem
         Action = NonVisualDataModule.CurrentOpenAction
       end
-      object ToolButton5: TToolButton
-        Left = 100
-        Top = 0
+      object TBXItem140: TTBXItem
         Action = NonVisualDataModule.CurrentRenameAction
       end
-      object ToolButton27: TToolButton
-        Left = 123
-        Top = 0
+      object TBXItem141: TTBXItem
         Action = NonVisualDataModule.CurrentDeleteAction
       end
-      object ToolButton16: TToolButton
-        Left = 146
-        Top = 0
+      object TBXItem142: TTBXItem
         Action = NonVisualDataModule.CurrentPropertiesAction
       end
-      object ToolButton37: TToolButton
-        Left = 169
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton37'
-        ImageIndex = 6
-        Style = tbsSeparator
+      object TBXSeparatorItem39: TTBXSeparatorItem
       end
-      object ToolButton34: TToolButton
-        Left = 177
-        Top = 0
+      object TBXItem143: TTBXItem
         Action = NonVisualDataModule.CurrentCreateDirAction
       end
-      object ToolButton47: TToolButton
-        Left = 200
-        Top = 0
+      object TBXItem144: TTBXItem
         Action = NonVisualDataModule.AddEditLinkAction
       end
     end
-    object SortToolbar: TToolBar
-      Left = 9
-      Top = 120
-      Width = 215
-      Height = 22
-      Hint = '|E'
-      Align = alLeft
-      AutoSize = True
-      Caption = 'SortToolbar'
-      DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-      EdgeBorders = []
-      Flat = True
-      Images = NonVisualDataModule.ExplorerImages
+    object SortToolbar: TTBXToolbar
+      Left = 0
+      Top = 127
+      Caption = 'Sort'
+      DockPos = -8
+      DockRow = 5
+      Images = GlyphsModule.ExplorerImages
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 4
+      object TBXItem145: TTBXItem
+        Action = NonVisualDataModule.CurrentSortAscendingAction
+      end
+      object TBXSeparatorItem40: TTBXSeparatorItem
+      end
+      object TBXItem146: TTBXItem
+        Action = NonVisualDataModule.CurrentSortByNameAction
+      end
+      object TBXItem147: TTBXItem
+        Action = NonVisualDataModule.CurrentSortByExtAction
+      end
+      object TBXItem148: TTBXItem
+        Action = NonVisualDataModule.CurrentSortByTypeAction
+      end
+      object TBXItem149: TTBXItem
+        Action = NonVisualDataModule.CurrentSortByChangedAction
+      end
+      object TBXItem150: TTBXItem
+        Action = NonVisualDataModule.CurrentSortBySizeAction
+      end
+      object TBXItem151: TTBXItem
+        Action = NonVisualDataModule.CurrentSortByRightsAction
+      end
+      object TBXItem152: TTBXItem
+        Action = NonVisualDataModule.CurrentSortByOwnerAction
+      end
+      object TBXItem153: TTBXItem
+        Action = NonVisualDataModule.CurrentSortByGroupAction
+      end
+    end
+    object CommandsToolbar: TTBXToolbar
+      Left = 0
+      Top = 153
+      Caption = 'Commands'
+      DockPos = 0
+      DockRow = 6
+      Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
       TabOrder = 5
-      Transparent = True
-      Wrapable = False
-      object ToolButton8: TToolButton
-        Left = 0
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortAscendingAction
-        Style = tbsCheck
-      end
-      object ToolButton10: TToolButton
-        Left = 23
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton10'
-        ImageIndex = 6
-        Style = tbsSeparator
-      end
-      object ToolButton9: TToolButton
-        Left = 31
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortByNameAction
-        Grouped = True
-        Style = tbsCheck
-      end
-      object ToolButton22: TToolButton
-        Left = 54
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortByExtAction
-        Grouped = True
-        Style = tbsCheck
-      end
-      object ToolButton11: TToolButton
-        Left = 77
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortByTypeAction
-        Grouped = True
-        Style = tbsCheck
-      end
-      object ToolButton13: TToolButton
-        Left = 100
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortByChangedAction
-        Grouped = True
-        Style = tbsCheck
-      end
-      object ToolButton15: TToolButton
-        Left = 123
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortBySizeAction
-        Grouped = True
-        Style = tbsCheck
-      end
-      object ToolButton12: TToolButton
-        Left = 146
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortByRightsAction
-        Grouped = True
-        Style = tbsCheck
-      end
-      object ToolButton14: TToolButton
-        Left = 169
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortByOwnerAction
-        Style = tbsCheck
-      end
-      object ToolButton18: TToolButton
-        Left = 192
-        Top = 0
-        Action = NonVisualDataModule.CurrentSortByGroupAction
-        Style = tbsCheck
-      end
-    end
-    object CommandsToolbar: TToolBar
-      Left = 9
-      Top = 144
-      Width = 131
-      Height = 22
-      Hint = '|E'
-      Align = alLeft
-      AutoSize = True
-      Caption = 'CommandsToolbar'
-      DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-      EdgeBorders = []
-      Flat = True
-      Images = NonVisualDataModule.ExplorerImages
-      ParentShowHint = False
-      ShowHint = True
-      TabOrder = 6
-      Transparent = True
-      Wrapable = False
-      object ToolButton39: TToolButton
-        Left = 0
-        Top = 0
+      object TBXItem154: TTBXItem
         Action = NonVisualDataModule.CompareDirectoriesAction
       end
-      object ToolButton40: TToolButton
-        Left = 23
-        Top = 0
+      object TBXItem155: TTBXItem
         Action = NonVisualDataModule.SynchronizeAction
       end
-      object ToolButton51: TToolButton
-        Left = 46
-        Top = 0
+      object TBXItem156: TTBXItem
         Action = NonVisualDataModule.FullSynchronizeAction
       end
-      object ToolButton41: TToolButton
-        Left = 69
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton41'
-        ImageIndex = 54
-        Style = tbsSeparator
+      object TBXSeparatorItem41: TTBXSeparatorItem
       end
-      object ToolButton42: TToolButton
-        Left = 77
-        Top = 0
+      object TBXItem157: TTBXItem
         Action = NonVisualDataModule.ConsoleAction
       end
-      object ToolButton45: TToolButton
-        Left = 100
-        Top = 0
-        Width = 8
-        Hint = 'E'
-        Caption = 'ToolButton45'
-        ImageIndex = 56
-        Style = tbsSeparator
+      object TBXItem190: TTBXItem
+        Action = NonVisualDataModule.PuttyAction
       end
-      object ToolButton46: TToolButton
-        Left = 108
-        Top = 0
+      object TBXSeparatorItem42: TTBXSeparatorItem
+      end
+      object TBXItem158: TTBXItem
         Action = NonVisualDataModule.SynchronizeBrowsingAction
-        Style = tbsCheck
+      end
+    end
+    object UpdatesToolbar: TTBXToolbar
+      Left = 0
+      Top = 179
+      Caption = 'Updates'
+      DockPos = -7
+      DockRow = 7
+      Images = GlyphsModule.ExplorerImages
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 7
+      object TBXSubmenuItem1: TTBXSubmenuItem
+        Action = NonVisualDataModule.ShowUpdatesAction
+        DropdownCombo = True
+        object TBXItem184: TTBXItem
+          Action = NonVisualDataModule.CheckForUpdatesAction
+        end
+        object TBXSeparatorItem46: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem180: TTBXItem
+          Action = NonVisualDataModule.HomepageAction
+        end
+        object TBXItem187: TTBXItem
+          Action = NonVisualDataModule.DownloadPageAction
+        end
+        object TBXItem181: TTBXItem
+          Action = NonVisualDataModule.ForumPageAction
+        end
+        object TBXItem182: TTBXItem
+          Action = NonVisualDataModule.HistoryPageAction
+        end
+        object TBXItem185: TTBXItem
+          Action = NonVisualDataModule.DonatePageAction
+        end
+        object TBXSeparatorItem45: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object TBXItem183: TTBXItem
+          Action = NonVisualDataModule.UpdatesPreferencesAction
+        end
+      end
+    end
+    object TransferToolbar: TTBXToolbar
+      Left = 46
+      Top = 179
+      Caption = 'Transfer settings'
+      DockPos = 44
+      DockRow = 7
+      Images = GlyphsModule.ExplorerImages
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 8
+      object TransferCombo: TTBXComboBoxItem
+        EditWidth = 114
+        Hint = 'Select transfer settings preset'
+        DropDownList = True
+        MaxVisibleItems = 15
+      end
+      object TBXItem189: TTBXItem
+        Action = NonVisualDataModule.PresetsPreferencesAction
       end
     end
   end
   inherited RemotePanel: TPanel
     Left = 318
-    Top = 170
-    Width = 335
-    Height = 307
+    Top = 205
+    Width = 334
+    Height = 267
     Constraints.MinHeight = 220
     Constraints.MinWidth = 185
     TabOrder = 1
     object RemotePathLabel: TPathLabel [0]
       Left = 0
-      Top = 72
-      Width = 335
+      Top = 77
+      Width = 334
       Height = 15
       UnixPath = True
       HotTrack = True
       OnGetStatus = RemotePathLabelGetStatus
       OnPathClick = RemotePathLabelPathClick
       AutoSize = False
-      PopupMenu = NonVisualDataModule.RemotePanelPopup
       OnDblClick = PathLabelDblClick
     end
     inherited RemotePanelSplitter: TSplitter
       Left = 0
-      Top = 153
-      Width = 335
+      Top = 158
+      Width = 334
       Height = 3
       Cursor = crVSplit
       Align = alTop
     end
-    inherited RemoteStatusBar: TAssociatedStatusBar
-      Top = 288
-      Width = 335
-      Hint = ''
+    inherited RemoteStatusBar: TTBXStatusBar
+      Top = 248
+      Width = 334
+      SimplePanel = True
     end
     inherited RemoteDirView: TUnixDirView
       Left = 0
-      Top = 156
-      Width = 335
-      Height = 132
+      Top = 161
+      Width = 334
+      Height = 78
       Constraints.MinHeight = 70
       RowSelect = True
       NortonLike = True
       PathComboBox = RemotePathComboBox
+      OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
       PathLabel = RemotePathLabel
       AddParentDir = True
-      OnLoaded = DirViewLoaded
       OnDDFileOperationExecuted = RemoteFileControlDDFileOperationExecuted
     end
     inherited RemoteDriveView: TUnixDriveView
-      Top = 87
-      Width = 335
+      Top = 92
+      Width = 334
       Height = 66
       Align = alTop
       Constraints.MinHeight = 30
       HideSelection = False
       TabStop = False
     end
-    object RemoteCoolBar: TCoolBar
+    object RemoteTopDock: TTBXDock
       Left = 0
       Top = 0
-      Width = 335
-      Height = 72
-      AutoSize = True
-      BandMaximize = bmDblClick
-      Bands = <
-        item
-          Control = ToolBar6
-          ImageIndex = -1
-          MinHeight = 22
-          MinWidth = 50
-          Width = 331
-        end
-        item
-          Control = ToolBar3
-          ImageIndex = -1
-          MinHeight = 22
-          Width = 331
-        end
-        item
-          Control = ToolBar4
-          ImageIndex = -1
-          MinHeight = 22
-          Width = 331
-        end>
-      EdgeBorders = [ebLeft, ebRight, ebBottom]
-      FixedSize = True
-      PopupMenu = NonVisualDataModule.RemotePanelPopup
-      object ToolBar3: TToolBar
-        Left = 9
-        Top = 24
-        Width = 72
-        Height = 22
-        Hint = '|E'
-        Align = alLeft
-        AutoSize = True
-        Caption = 'ToolBar3'
-        DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-        EdgeBorders = []
-        Flat = True
-        Images = NonVisualDataModule.ExplorerImages
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 0
-        Transparent = True
-        Wrapable = False
-        object RemoteBackButton: TToolButton
-          Left = 0
-          Top = 0
-          Action = NonVisualDataModule.RemoteBackAction
-          Style = tbsDropDown
-        end
-        object RemoteForwardButton: TToolButton
-          Left = 36
-          Top = 0
-          Action = NonVisualDataModule.RemoteForwardAction
-          Style = tbsDropDown
-        end
-      end
-      object ToolBar4: TToolBar
-        Left = 9
-        Top = 48
-        Width = 146
-        Height = 22
-        Hint = '|E'
-        Align = alLeft
-        AutoSize = True
-        Caption = 'ToolBar4'
-        DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-        EdgeBorders = []
-        Flat = True
-        Images = NonVisualDataModule.ExplorerImages
+      Width = 334
+      Height = 77
+      FixAlign = True
+      object RemoteHistoryToolbar: TTBXToolbar
+        Left = 2
+        Top = 25
+        Caption = 'Remote history'
+        DockPos = 2
+        DockRow = 1
+        Images = GlyphsModule.ExplorerImages
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-        Transparent = True
-        Wrapable = False
-        object ToolButton87: TToolButton
-          Left = 0
-          Top = 0
-          Action = NonVisualDataModule.RemoteParentDirAction
+        object RemoteBackButton: TTBXSubmenuItem
+          Action = NonVisualDataModule.RemoteBackAction
+          DropdownCombo = True
         end
-        object ToolButton88: TToolButton
-          Left = 23
-          Top = 0
-          Action = NonVisualDataModule.RemoteRootDirAction
-        end
-        object ToolButton89: TToolButton
-          Left = 46
-          Top = 0
-          Action = NonVisualDataModule.RemoteHomeDirAction
-        end
-        object ToolButton90: TToolButton
-          Left = 69
-          Top = 0
-          Action = NonVisualDataModule.RemoteRefreshAction
-        end
-        object ToolButton91: TToolButton
-          Left = 92
-          Top = 0
-          Width = 8
-          Hint = 'E'
-          Caption = 'ToolButton91'
-          ImageIndex = 9
-          Style = tbsSeparator
-        end
-        object ToolButton92: TToolButton
-          Left = 100
-          Top = 0
-          Action = NonVisualDataModule.RemoteOpenDirAction
-        end
-        object ToolButton69: TToolButton
-          Left = 123
-          Top = 0
-          Action = NonVisualDataModule.RemoteTreeAction
+        object RemoteForwardButton: TTBXSubmenuItem
+          Action = NonVisualDataModule.RemoteForwardAction
+          DropdownCombo = True
         end
       end
-      object ToolBar6: TToolBar
-        Tag = 1
-        Left = 9
-        Top = 0
-        Width = 318
-        Height = 22
-        Hint = '|E'
-        Align = alClient
-        Caption = 'ToolBar6'
-        DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-        EdgeBorders = []
-        Flat = True
-        Images = NonVisualDataModule.ExplorerImages
+      object RemoteNavigationToolbar: TTBXToolbar
+        Left = 0
+        Top = 51
+        Caption = 'Remote navigation'
+        DockPos = 0
+        DockRow = 2
+        Images = GlyphsModule.ExplorerImages
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
-        Transparent = True
-        Wrapable = False
+        object TBXItem165: TTBXItem
+          Action = NonVisualDataModule.RemoteParentDirAction
+        end
+        object TBXItem166: TTBXItem
+          Action = NonVisualDataModule.RemoteRootDirAction
+        end
+        object TBXItem167: TTBXItem
+          Action = NonVisualDataModule.RemoteHomeDirAction
+        end
+        object TBXItem168: TTBXItem
+          Action = NonVisualDataModule.RemoteRefreshAction
+        end
+        object TBXSeparatorItem44: TTBXSeparatorItem
+        end
+        object TBXItem169: TTBXItem
+          Action = NonVisualDataModule.RemoteOpenDirAction
+        end
+        object TBXItem170: TTBXItem
+          Action = NonVisualDataModule.RemoteTreeAction
+        end
+      end
+      object RemotePathToolbar: TTBXToolbar
+        Left = 0
+        Top = 0
+        Caption = 'Remote path'
+        CloseButton = False
+        DockableTo = [dpTop, dpBottom]
+        DockMode = dmCannotFloat
+        DockPos = 0
+        Resizable = False
+        Stretch = True
+        TabOrder = 0
         OnResize = ToolBarResize
+        OnGetBaseSize = AddressToolbarGetBaseSize
+        object TBControlItem2: TTBControlItem
+          Control = RemotePathComboBox
+        end
         object RemotePathComboBox: TUnixPathComboBox
           Left = 0
           Top = 0
-          Width = 316
+          Width = 305
           Height = 21
           OnCloseUp = PathComboBoxCloseUp
-          Align = alClient
+          Constraints.MinWidth = 50
           DropDownCount = 20
           TabOrder = 0
         end
       end
     end
+    object RemoteBottomDock: TTBXDock
+      Left = 0
+      Top = 239
+      Width = 334
+      Height = 9
+      FixAlign = True
+      Position = dpBottom
+    end
   end
   inherited QueuePanel: TPanel
-    Top = 501
-    Width = 653
-    Height = 75
-    TabOrder = 5
+    Top = 496
+    Width = 652
+    Height = 116
+    TabOrder = 4
     inherited QueueView: TListView
-      Width = 653
-      Height = 49
+      Width = 652
+      Height = 90
       TabStop = False
     end
-    inherited QueueCoolBar: TCoolBar
-      Width = 653
-      Bands = <
-        item
-          Control = QueueToolBar
-          ImageIndex = -1
-          MinHeight = 22
-          Width = 649
-        end>
-      inherited QueueToolBar: TToolBar
-        Width = 636
-        PopupMenu = NonVisualDataModule.CommanderBarPopup
-      end
+    inherited QueueDock: TTBXDock
+      Width = 652
     end
   end
   object LocalPanel: TPanel
     Left = 0
-    Top = 170
+    Top = 205
     Width = 313
-    Height = 307
+    Height = 267
     Align = alLeft
     BevelOuter = bvNone
     Constraints.MinHeight = 220
@@ -827,7 +1095,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     TabOrder = 0
     object LocalPathLabel: TPathLabel
       Left = 0
-      Top = 72
+      Top = 77
       Width = 313
       Height = 15
       HotTrack = True
@@ -839,7 +1107,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalPanelSplitter: TSplitter
       Left = 0
-      Top = 153
+      Top = 158
       Width = 313
       Height = 3
       Cursor = crVSplit
@@ -848,36 +1116,28 @@ inherited ScpCommanderForm: TScpCommanderForm
       MinSize = 70
       ResizeStyle = rsUpdate
     end
-    object LocalStatusBar: TAssociatedStatusBar
+    object LocalStatusBar: TTBXStatusBar
       Left = 0
-      Top = 288
+      Top = 248
       Width = 313
       Height = 19
-      Panels = <
-        item
-          Text = '0 b of 0 b in 0 of 0'
-          Width = 50
-        end>
-      ParentFont = True
+      Panels = <>
       ParentShowHint = False
-      PopupMenu = NonVisualDataModule.LocalPanelPopup
+      SimplePanel = True
       ShowHint = True
-      SimplePanel = False
       UseSystemFont = False
-      OnResize = StatusBarResize
-      FocusControl = LocalDirView
+      OnClick = LocalStatusBarClick
     end
     object LocalDirView: TDirView
       Left = 0
-      Top = 156
+      Top = 161
       Width = 313
-      Height = 132
+      Height = 78
       Align = alClient
       Constraints.MinHeight = 70
       FullDrag = True
       HideSelection = False
       RowSelect = True
-      ParentFont = False
       PopupMenu = NonVisualDataModule.LocalDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport
@@ -886,9 +1146,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       DirColProperties.ExtVisible = False
       PathComboBox = LocalPathComboBox
       PathLabel = LocalPathLabel
-      StatusBar = LocalStatusBar
+      OnUpdateStatusBar = LocalDirViewUpdateStatusBar
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
-      HeaderImages = NonVisualDataModule.ArrowImages
+      HeaderImages = GlyphsModule.ArrowImages
       AddParentDir = True
       OnLoaded = DirViewLoaded
       OnDDDragEnter = LocalFileControlDDDragEnter
@@ -904,153 +1164,88 @@ inherited ScpCommanderForm: TScpCommanderForm
       ConfirmOverwrite = False
       WatchForChanges = True
       OnFileIconForName = LocalDirViewFileIconForName
+      OnHistoryChange = DirViewHistoryChange
     end
-    object LocalCoolBar: TCoolBar
+    object LocalTopDock: TTBXDock
       Left = 0
       Top = 0
       Width = 313
-      Height = 72
-      AutoSize = True
-      BandMaximize = bmDblClick
-      Bands = <
-        item
-          Control = ToolBar5
-          ImageIndex = -1
-          MinHeight = 22
-          MinWidth = 50
-          Width = 309
-        end
-        item
-          Control = ToolBar1
-          ImageIndex = -1
-          MinHeight = 22
-          Width = 309
-        end
-        item
-          Control = ToolBar2
-          ImageIndex = -1
-          MinHeight = 22
-          Width = 309
-        end>
-      EdgeBorders = [ebLeft, ebRight, ebBottom]
-      FixedSize = True
-      PopupMenu = NonVisualDataModule.LocalPanelPopup
-      object ToolBar1: TToolBar
-        Left = 9
-        Top = 24
-        Width = 72
-        Height = 22
-        Hint = '|E'
-        Align = alLeft
-        AutoSize = True
-        Caption = 'ToolBar1'
-        DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-        EdgeBorders = []
-        Flat = True
-        Images = NonVisualDataModule.ExplorerImages
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 0
-        Transparent = True
-        Wrapable = False
-        object LocalBackButton: TToolButton
-          Left = 0
-          Top = 0
-          Action = NonVisualDataModule.LocalBackAction
-          Style = tbsDropDown
-        end
-        object LocalForwardButton: TToolButton
-          Left = 36
-          Top = 0
-          Action = NonVisualDataModule.LocalForwardAction
-          Style = tbsDropDown
-        end
-      end
-      object ToolBar2: TToolBar
-        Left = 9
-        Top = 48
-        Width = 146
-        Height = 22
-        Hint = '|E'
-        Align = alLeft
-        AutoSize = True
-        Caption = 'ToolBar2'
-        DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-        EdgeBorders = []
-        Flat = True
-        Images = NonVisualDataModule.ExplorerImages
+      Height = 77
+      FixAlign = True
+      object LocalHistoryToolbar: TTBXToolbar
+        Left = 2
+        Top = 25
+        Caption = 'Local history'
+        DockPos = 2
+        DockRow = 1
+        Images = GlyphsModule.ExplorerImages
         ParentShowHint = False
         ShowHint = True
         TabOrder = 1
-        Transparent = True
-        Wrapable = False
-        object ToolButton57: TToolButton
-          Left = 0
-          Top = 0
-          Action = NonVisualDataModule.LocalParentDirAction
+        object LocalBackButton: TTBXSubmenuItem
+          Action = NonVisualDataModule.LocalBackAction
+          DropdownCombo = True
         end
-        object ToolButton58: TToolButton
-          Left = 23
-          Top = 0
-          Action = NonVisualDataModule.LocalRootDirAction
-        end
-        object ToolButton59: TToolButton
-          Left = 46
-          Top = 0
-          Action = NonVisualDataModule.LocalHomeDirAction
-        end
-        object ToolButton60: TToolButton
-          Left = 69
-          Top = 0
-          Action = NonVisualDataModule.LocalRefreshAction
-        end
-        object ToolButton61: TToolButton
-          Left = 92
-          Top = 0
-          Width = 8
-          Hint = 'E'
-          Caption = 'ToolButton61'
-          ImageIndex = 9
-          Style = tbsSeparator
-        end
-        object ToolButton62: TToolButton
-          Left = 100
-          Top = 0
-          Action = NonVisualDataModule.LocalOpenDirAction
-        end
-        object ToolButton68: TToolButton
-          Left = 123
-          Top = 0
-          Action = NonVisualDataModule.LocalTreeAction
+        object LocalForwardButton: TTBXSubmenuItem
+          Action = NonVisualDataModule.LocalForwardAction
+          DropdownCombo = True
         end
       end
-      object ToolBar5: TToolBar
-        Tag = 1
-        Left = 9
-        Top = 0
-        Width = 296
-        Height = 22
-        Hint = '|E'
-        Align = alClient
-        Caption = 'ToolBar5'
-        DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-        EdgeBorders = []
-        Flat = True
-        Images = NonVisualDataModule.ExplorerImages
+      object LocalNavigationToolbar: TTBXToolbar
+        Left = 0
+        Top = 51
+        Caption = 'Local navigation'
+        DockPos = 0
+        DockRow = 2
+        Images = GlyphsModule.ExplorerImages
         ParentShowHint = False
         ShowHint = True
         TabOrder = 2
-        Transparent = True
-        Wrapable = False
+        object TBXItem159: TTBXItem
+          Action = NonVisualDataModule.LocalParentDirAction
+        end
+        object TBXItem160: TTBXItem
+          Action = NonVisualDataModule.LocalRootDirAction
+        end
+        object TBXItem161: TTBXItem
+          Action = NonVisualDataModule.LocalHomeDirAction
+        end
+        object TBXItem162: TTBXItem
+          Action = NonVisualDataModule.LocalRefreshAction
+        end
+        object TBXSeparatorItem43: TTBXSeparatorItem
+        end
+        object TBXItem163: TTBXItem
+          Action = NonVisualDataModule.LocalOpenDirAction
+        end
+        object TBXItem164: TTBXItem
+          Action = NonVisualDataModule.LocalTreeAction
+        end
+      end
+      object LocalPathToolbar: TTBXToolbar
+        Left = 0
+        Top = 0
+        Caption = 'Local path'
+        CloseButton = False
+        DockableTo = [dpTop, dpBottom]
+        DockMode = dmCannotFloat
+        DockPos = 0
+        Resizable = False
+        Stretch = True
+        TabOrder = 0
         OnResize = ToolBarResize
+        OnGetBaseSize = AddressToolbarGetBaseSize
+        object TBControlItem1: TTBControlItem
+          Control = LocalPathComboBox
+        end
         object LocalPathComboBox: TIEPathComboBox
           Left = 0
           Top = 0
-          Width = 296
+          Width = 257
           Height = 21
           DirectoryToSelect = dsLast
           OnCloseUp = PathComboBoxCloseUp
-          Align = alClient
+          Constraints.MinWidth = 50
           DropDownCount = 30
           TabOrder = 0
           TabStop = False
@@ -1059,7 +1254,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDriveView: TDriveView
       Left = 0
-      Top = 87
+      Top = 92
       Width = 313
       Height = 66
       WatchDirectory = True
@@ -1074,85 +1269,152 @@ inherited ScpCommanderForm: TScpCommanderForm
       HideSelection = False
       Indent = 19
       ParentColor = False
-      TabOrder = 3
+      TabOrder = 2
       TabStop = False
       OnEnter = LocalDriveViewEnter
     end
+    object LocalBottomDock: TTBXDock
+      Left = 0
+      Top = 239
+      Width = 313
+      Height = 9
+      FixAlign = True
+      Position = dpBottom
+    end
   end
-  object ToolbarPanel: TToolbarPanel
+  object BottomDock: TTBXDock
     Left = 0
-    Top = 576
-    Width = 653
-    Height = 22
-    Category = 'Toolbar Operation (selected + rename + mkdir + close)'
-    ActionList = NonVisualDataModule.ExplorerActions
-    Stretch = True
-    DisabledImages = NonVisualDataModule.ExplorerDisabledImages
-    PopupMenu = NonVisualDataModule.CommanderBarPopup
-    TabOrder = 4
+    Top = 612
+    Width = 652
+    Height = 26
+    FixAlign = True
+    Position = dpBottom
+    object ToolbarToolbar: TTBXToolbar
+      Left = 0
+      Top = 0
+      Caption = 'Commands'
+      Images = GlyphsModule.ExplorerImages
+      ParentShowHint = False
+      ShowHint = False
+      Stretch = True
+      TabOrder = 0
+      object TBXItem171: TTBXItem
+        Action = NonVisualDataModule.CurrentRenameAction
+        DisplayMode = nbdmImageAndText
+        Stretch = True
+      end
+      object TBXItem172: TTBXItem
+        Action = NonVisualDataModule.CurrentEditAction
+        DisplayMode = nbdmImageAndText
+        Stretch = True
+      end
+      object TBXItem173: TTBXItem
+        Action = NonVisualDataModule.CurrentCopyAction
+        DisplayMode = nbdmImageAndText
+        Stretch = True
+      end
+      object TBXItem174: TTBXItem
+        Action = NonVisualDataModule.CurrentMoveAction
+        DisplayMode = nbdmImageAndText
+        Stretch = True
+      end
+      object TBXItem175: TTBXItem
+        Action = NonVisualDataModule.CurrentCreateDirAction
+        DisplayMode = nbdmImageAndText
+        Stretch = True
+      end
+      object TBXItem176: TTBXItem
+        Action = NonVisualDataModule.CurrentDeleteAction
+        DisplayMode = nbdmImageAndText
+        Stretch = True
+      end
+      object TBXItem177: TTBXItem
+        Action = NonVisualDataModule.CurrentPropertiesAction
+        DisplayMode = nbdmImageAndText
+        Stretch = True
+      end
+      object TBXItem178: TTBXItem
+        Action = NonVisualDataModule.CloseApplicationAction
+        DisplayMode = nbdmImageAndText
+        Stretch = True
+      end
+    end
   end
-  object StatusBar: TStatusBar
+  object StatusBar: TTBXStatusBar
     Left = 0
-    Top = 598
-    Width = 653
-    Height = 19
+    Top = 638
+    Width = 652
+    Images = GlyphsModule.SessionImages
     Panels = <
       item
         Alignment = taCenter
-        Width = 100
+        MaxSize = 100
+        Size = 100
+        Tag = 0
+        TextTruncation = twEndEllipsis
       end
       item
         Alignment = taCenter
-        Width = 100
+        MaxSize = 100
+        Size = 100
+        Tag = 0
+        TextTruncation = twEndEllipsis
       end
       item
         Alignment = taCenter
-        Style = psOwnerDraw
-        Width = 35
+        MaxSize = 35
+        ViewPriority = 96
+        Size = 35
+        Tag = 0
+        TextTruncation = twEndEllipsis
       end
       item
         Alignment = taCenter
-        Style = psOwnerDraw
-        Width = 35
+        MaxSize = 35
+        ViewPriority = 97
+        Size = 35
+        Tag = 0
+        TextTruncation = twEndEllipsis
       end
       item
-        Style = psOwnerDraw
-        Width = 100
+        MaxSize = 100
+        ViewPriority = 98
+        Size = 100
+        Tag = 0
+        TextTruncation = twEndEllipsis
       end
       item
         Alignment = taCenter
-        Width = 80
+        MaxSize = 80
+        ViewPriority = 99
+        Size = 80
+        Tag = 0
+        TextTruncation = twEndEllipsis
       end
       item
         Alignment = taCenter
-        Width = 80
-      end
-      item
-        Alignment = taCenter
-        Width = 50
+        MaxSize = 80
+        Size = 80
+        Tag = 0
+        TextTruncation = twEndEllipsis
       end>
-    ParentFont = True
     ParentShowHint = False
     PopupMenu = NonVisualDataModule.CommanderBarPopup
     ShowHint = True
-    SimplePanel = False
     UseSystemFont = False
     OnDblClick = StatusBarDblClick
-    OnMouseMove = SessionStatusBarMouseMove
-    OnDrawPanel = SessionStatusBarDrawPanel
-    OnResize = StatusBarResize
   end
   object CommandLinePanel: TPanel
     Left = 0
-    Top = 477
-    Width = 653
+    Top = 472
+    Width = 652
     Height = 21
     Align = alBottom
     BevelOuter = bvNone
     PopupMenu = NonVisualDataModule.CommanderBarPopup
     TabOrder = 2
     DesignSize = (
-      653
+      652
       21)
     object CommandLineLabel: TPathLabel
       Left = 4
@@ -1175,7 +1437,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     object CommandLineCombo: THistoryComboBox
       Left = 173
       Top = 0
-      Width = 477
+      Width = 476
       Height = 21
       AutoComplete = False
       Anchors = [akLeft, akTop, akRight, akBottom]

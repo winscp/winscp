@@ -30,6 +30,9 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   FParams = new TCopyParamType();
   TCopyParamType DefParams;
   Params = DefParams;
+
+  InstallPathWordBreakProc(AsciiFileMaskCombo);
+  InstallPathWordBreakProc(ExcludeFileMaskCombo);
 }
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::~TCopyParamsFrame()
@@ -69,6 +72,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
 
   CommonCalculateSizeCheck->Checked = value.CalculateSize;
 
+  NegativeExcludeCombo->ItemIndex = (value.NegativeExclude ? 1 : 0);
   ExcludeFileMaskCombo->Text = value.ExcludeFileMask.Masks;
   ClearArchiveCheck->Checked = value.ClearArchive;
 
@@ -112,6 +116,8 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.CalculateSize = CommonCalculateSizeCheck->Checked;
 
   Result.ExcludeFileMask.Masks = ExcludeFileMaskCombo->Text;
+  Result.NegativeExclude = (NegativeExcludeCombo->ItemIndex == 1);
+
   Result.ClearArchive = ClearArchiveCheck->Checked;
 
   return Result;
@@ -137,8 +143,10 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     FLAGSET(Options, cfAllowTransferMode) && TMAutomaticButton->Checked && Enabled);
   EnableControl(RightsFrame, PreserveRightsCheck->Checked && Enabled);
   EnableControl(ExcludeFileMaskCombo, FLAGSET(Options, cfAllowExcludeMask));
-  EnableControl(ExcludeFileMaskLabel, ExcludeFileMaskCombo->Enabled);
+  EnableControl(ExclusionFileMaskLabel, ExcludeFileMaskCombo->Enabled);
+  EnableControl(NegativeExcludeCombo, ExcludeFileMaskCombo->Enabled);
   EnableControl(ClearArchiveCheck, FLAGSET(Options, cfAllowClearArchive));
+  EnableControl(PreserveTimeCheck, FLAGCLEAR(Options, cfDisablePreserveTime));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)

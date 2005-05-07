@@ -57,6 +57,9 @@ typedef struct terminal_tag Terminal;
 #define PUTTY_REG_GPARENT "Software"
 #define PUTTY_REG_GPARENT_CHILD "SimonTatham"
 
+#define PUTTY_HELP_FILE "putty.hlp"
+#define PUTTY_HELP_CONTENTS "putty.cnt"
+
 #define GETTICKCOUNT GetTickCount
 #define CURSORBLINK GetCaretBlinkTime()
 #define TICKSPERSEC 1000	       /* GetTickCount returns milliseconds */
@@ -66,9 +69,10 @@ typedef struct terminal_tag Terminal;
 typedef HDC Context;
 
 /*
- * Window handles for the dialog boxes that can be running during a
+ * Window handles for the windows that can be running during a
  * PuTTY session.
  */
+GLOBAL HWND hwnd;	/* the main terminal window */
 GLOBAL HWND logbox;
 
 /*
@@ -81,6 +85,7 @@ GLOBAL HINSTANCE hinst;
  */
 GLOBAL char *help_path;
 GLOBAL int help_has_contents;
+GLOBAL int requested_help;
 
 /*
  * The terminal and logging context are notionally local to the
@@ -134,6 +139,15 @@ GLOBAL void *logctx;
 			       "All Files (*.*)\0*\0\0\0")
 
 /*
+ * On some versions of Windows, it has been known for WM_TIMER to
+ * occasionally get its callback time simply wrong, and call us
+ * back several minutes early. Defining these symbols enables
+ * compensation code in timing.c.
+ */
+#define TIMING_SYNC
+#define TIMING_SYNC_TICKCOUNT
+
+/*
  * winnet.c dynamically loads WinSock 2 or WinSock 1 depending on
  * what it can get, which means any WinSock routines used outside
  * that module must be exported from it as function pointers. So
@@ -169,6 +183,11 @@ struct ctlpos {
 /*
  * Exports from winutils.c.
  */
+typedef struct filereq_tag filereq; /* cwd for file requester */
+BOOL request_file(filereq *state, OPENFILENAME *of, int preserve, int save);
+filereq *filereq_new(void);
+void filereq_free(filereq *state);
+int message_box(LPCTSTR text, LPCTSTR caption, DWORD style, DWORD helpctxid);
 void split_into_argv(char *, int *, char ***, char ***);
 
 /*
@@ -337,14 +356,6 @@ void show_help(HWND hwnd);
 /*
  * Exports from winmisc.c.
  */
-
-int SaneDialogBox(HINSTANCE hinst,
-		  LPCTSTR tmpl,
-		  HWND hwndparent,
-		  DLGPROC lpDialogFunc);
-
-void SaneEndDialog(HWND hwnd, int ret);
-
 extern OSVERSIONINFO osVersion;
 BOOL init_winver(void);
 

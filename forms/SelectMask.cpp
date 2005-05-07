@@ -51,6 +51,7 @@ __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
   DefaultFileFilter(FFileFilter);
   SetFileFilter(FFileFilter);
   UseSystemSettings(this);
+  InstallPathWordBreakProc(MaskEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -105,6 +106,11 @@ TFileFilter __fastcall TSelectMaskDialog::GetFileFilter()
 void __fastcall TSelectMaskDialog::MaskEditExit(TObject * /*Sender*/)
 {
   ValidateMaskEdit(MaskEdit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSelectMaskDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 

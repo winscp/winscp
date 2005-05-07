@@ -10,12 +10,15 @@
 #include "Terminal.h"
 #include "SessionData.h"
 #include "ScpMain.h"
+#include "ScpFileSystem.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-__fastcall TScriptProcParams::TScriptProcParams(TStrings * Params)
+__fastcall TScriptProcParams::TScriptProcParams(TStrings * Params,
+  const AnsiString & ParamsStr)
 {
   FParams = Params;
+  FParamsStr = ParamsStr;
   FSkipParams = 0;
   FArg = 0;
 }
@@ -45,7 +48,7 @@ public:
   __fastcall TScriptCommands();
 
   void __fastcall Execute(TScriptProcParams * Parameters);
-  void __fastcall Execute(TStrings * Tokens);
+  void __fastcall Execute(TStrings * Tokens, AnsiString Params);
 
   void __fastcall Register(const char * Command,
     const AnsiString Description, const AnsiString Help, TCommandProc Proc,
@@ -268,9 +271,9 @@ void __fastcall TScriptCommands::Execute(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScriptCommands::Execute(TStrings * Tokens)
+void __fastcall TScriptCommands::Execute(TStrings * Tokens, AnsiString Params)
 {
-  TScriptProcParams * Parameters = new TScriptProcParams(Tokens);
+  TScriptProcParams * Parameters = new TScriptProcParams(Tokens, Params);
   try
   {
     Execute(Parameters);
@@ -314,8 +317,12 @@ void __fastcall TScript::Init()
   FLastPrintedLineTime = 0;
 
   FCommands = new TScriptCommands;
+  FCommands->Register(";", 0, 0, &DummyProc, 0, -1);
+  FCommands->Register("#", 0, 0, &DummyProc, 0, -1);
   FCommands->Register("help", SCRIPT_HELP_DESC, SCRIPT_HELP_HELP, &HelpProc, 0, -1);
   FCommands->Register("man", 0, SCRIPT_HELP_HELP, &HelpProc, 0, -1);
+  FCommands->Register("call", SCRIPT_CALL_DESC, SCRIPT_CALL_HELP, &CallProc, 1, -1);
+  FCommands->Register("!", 0, SCRIPT_CALL_HELP, &CallProc, 1, -1);
   FCommands->Register("pwd", SCRIPT_PWD_DESC, SCRIPT_PWD_HELP, &PwdProc, 0, 0);
   FCommands->Register("cd", SCRIPT_CD_DESC, SCRIPT_CD_HELP, &CdProc, 0, 1);
   FCommands->Register("ls", SCRIPT_LS_DESC, SCRIPT_LS_HELP, &LsProc, 0, 1);
@@ -356,10 +363,11 @@ void __fastcall TScript::Command(const AnsiString Cmd)
     TStrings * Tokens = new TStringList();
     try
     {
-      Tokenize(Cmd, Tokens);
+      AnsiString AllButFirst;
+      Tokenize(Cmd, Tokens, AllButFirst);
       if (Tokens->Count > 0)
       {
-        FCommands->Execute(Tokens);
+        FCommands->Execute(Tokens, AllButFirst);
       }
     }
     __finally
@@ -376,8 +384,10 @@ void __fastcall TScript::Command(const AnsiString Cmd)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::Tokenize(const AnsiString Str, TStrings * Tokens)
+void __fastcall TScript::Tokenize(const AnsiString Str, TStrings * Tokens,
+  AnsiString & AllButFirst)
 {
+  assert(Tokens->Count == 0);
   // inspired by Putty's sftp_getcmd() from PSFTP.C
   int Index = 1;
   while (Index <= Str.Length())
@@ -386,6 +396,11 @@ void __fastcall TScript::Tokenize(const AnsiString Str, TStrings * Tokens)
       ((Str[Index] == ' ') || (Str[Index] == '\t')))
     {
       Index++;
+    }
+
+    if (Tokens->Count == 1)
+    {
+      AllButFirst = Str.SubString(Index, Str.Length() - Index + 1);
     }
 
     if (Index <= Str.Length())
@@ -589,6 +604,12 @@ void __fastcall TScript::FreeFileList(TStrings * FileList)
   delete FileList;
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::ConnectTerminal(TTerminal * Terminal)
+{
+  Terminal->Open();
+  Terminal->DoStartup();
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::Print(const AnsiString Str)
 {
   if (FOnPrint != NULL)
@@ -604,13 +625,18 @@ void __fastcall TScript::PrintLine(const AnsiString Str)
   Print(Str + "\n");
 }
 //---------------------------------------------------------------------------
-bool __fastcall TScript::HandleExtendedException(Exception * E)
+bool __fastcall TScript::HandleExtendedException(Exception * E, TTerminal * Terminal)
 {
   bool Result = (OnShowExtendedException != NULL);
 
   if (Result)
   {
-    OnShowExtendedException(FTerminal, E);
+    if (Terminal == NULL)
+    {
+      Terminal = FTerminal;
+    }
+
+    OnShowExtendedException(Terminal, E, NULL);
   }
 
   return Result;
@@ -628,6 +654,27 @@ void __fastcall TScript::ResetTransfer()
 {
 }
 //---------------------------------------------------------------------------
+bool __fastcall TScript::EnsureCommandSessionFallback(TFSCapability Capability)
+{
+  bool Result = FTerminal->IsCapable[Capability] ||
+    FTerminal->CommandSessionOpened;
+
+  if (!Result)
+  {
+    try
+    {
+      ConnectTerminal(FTerminal->CommandSession);
+      Result = true;
+    }
+    catch(Exception & E)
+    {
+      HandleExtendedException(&E, FTerminal->CommandSession);
+      Result = false;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::SecondaryProc(TScriptProcParams * Parameters)
 {
   TScriptCommands * Commands = static_cast<TScriptCommands *>(Parameters->Arg);
@@ -642,6 +689,11 @@ void __fastcall TScript::SecondaryProc(TScriptProcParams * Parameters)
   {
     Commands->Execute(Parameters);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::DummyProc(TScriptProcParams * /*Parameters*/)
+{
+  // noop
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::HelpProc(TScriptProcParams * Parameters)
@@ -679,6 +731,40 @@ void __fastcall TScript::HelpProc(TScriptProcParams * Parameters)
   }
 
   Print(Output);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::CallProc(TScriptProcParams * Parameters)
+{
+  CheckSession();
+
+  if (EnsureCommandSessionFallback(fcAnyCommand))
+  {
+    assert(FTerminal->Log->OnAddLine == NULL);
+    FTerminal->Log->OnAddLine = TerminalCaptureLog;
+    try
+    {
+      FTerminal->AnyCommand(Parameters->ParamsStr);
+    }
+    __finally
+    {
+      FTerminal->Log->OnAddLine = NULL;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::TerminalCaptureLog(TObject* /*Sender*/,
+  TLogLineType Type, const AnsiString AddedLine)
+{
+  if ((Type == llOutput) || (Type == llStdError))
+  {
+    AnsiString Line = AddedLine;
+    int ReturnCode;
+    if (!TSCPFileSystem::RemoveLastLine(Line, ReturnCode) ||
+        !Line.IsEmpty())
+    {
+      PrintLine(Line);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::PwdProc(TScriptProcParams * /*Parameters*/)
@@ -1087,7 +1173,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     FTerminal->Synchronize(LocalDirectory, RemoteDirectory,
       static_cast<TTerminal::TSynchronizeMode>(FSynchronizeMode),
       &CopyParam, FSynchronizeParams | TTerminal::spNoConfirmation,
-      OnTerminalSynchronizeDirectory);
+      OnTerminalSynchronizeDirectory, NULL);
   }
   __finally
   {
@@ -1096,20 +1182,20 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::Synchronize(const AnsiString LocalDirectory,
-  const AnsiString RemoteDirectory)
+  const AnsiString RemoteDirectory, const TCopyParamType & ACopyParam,
+  TSynchronizeStats * /*Stats*/)
 {
   try
   {
     FKeepingUpToDate = true;
 
-    TCopyParamType CopyParam = FCopyParam;
+    TCopyParamType CopyParam = ACopyParam;
     CopyParam.CalculateSize = false;
-    CopyParam.PreserveTime = true;
 
     FTerminal->Synchronize(LocalDirectory, RemoteDirectory, TTerminal::smRemote, &CopyParam,
       FSynchronizeParams | TTerminal::spNoConfirmation | TTerminal::spNoRecurse |
-      TTerminal::spUseCache | TTerminal::spDelayProgress,
-      OnTerminalSynchronizeDirectory);
+      TTerminal::spUseCache | TTerminal::spDelayProgress | TTerminal::spSubDirs,
+      OnTerminalSynchronizeDirectory, NULL);
 
     // to break line after the last transfer (if any); 
     Print("");    
@@ -1260,13 +1346,23 @@ bool __fastcall TManagementScript::QueryCancel()
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalOnStdError(TObject * Sender,
-  const AnsiString AddedLine)
+  TLogLineType /*Type*/, const AnsiString AddedLine)
 {
   TTerminal * Terminal = dynamic_cast<TTerminal*>(Sender);
   assert(Terminal != NULL);
   if (Terminal->Status == sshAuthenticate)
   {
     PrintLine(AddedLine);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TManagementScript::TerminalPromptUser(TSecureShell * SecureShell,
+  AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
+  void * Arg)
+{
+  if (!SecureShell->StoredPasswordTried && (OnTerminalPromptUser != NULL))
+  {
+    OnTerminalPromptUser(SecureShell, Prompt, Kind, Response, Result, Arg);
   }
 }
 //---------------------------------------------------------------------------
@@ -1322,7 +1418,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalOperationFinished(
   TFileOperation Operation, TOperationSide /*Side*/,
-  bool /*DragDrop*/, const AnsiString FileName, Boolean Success,
+  bool /*Temp*/, const AnsiString FileName, Boolean Success,
   bool & /*DisconnectWhenComplete*/)
 {
   if (Success && (Operation != foCalculateSize) && (Operation != foCopy))
@@ -1400,15 +1496,21 @@ void __fastcall TManagementScript::PrintActiveSession()
     (FTerminalList->IndexOf(FTerminal) + 1, FTerminal->SessionData->SessionName)));
 }
 //---------------------------------------------------------------------------
-bool __fastcall TManagementScript::HandleExtendedException(Exception * E)
+bool __fastcall TManagementScript::HandleExtendedException(Exception * E,
+  TTerminal * Terminal)
 {
   bool Result = TScript::HandleExtendedException(E);
 
-  if ((FTerminal != NULL) && (dynamic_cast<EFatal*>(E) != NULL))
+  if (Terminal == NULL)
+  {
+    Terminal = FTerminal;
+  }
+
+  if ((Terminal != NULL) && (Terminal == FTerminal) && (dynamic_cast<EFatal*>(E) != NULL))
   {
     try
     {
-      DoClose(FTerminal);
+      DoClose(Terminal);
     }
     catch(...)
     {
@@ -1468,16 +1570,14 @@ void __fastcall TManagementScript::DoConnect(const AnsiString Session)
     {
       Terminal->AutoReadDirectory = false;
 
-      Terminal->OnUpdateStatus = OnTerminalUpdateStatus;
       Terminal->OnStdError = TerminalOnStdError;
-      Terminal->OnPromptUser = OnTerminalPromptUser;
+      Terminal->OnPromptUser = TerminalPromptUser;
       Terminal->OnShowExtendedException = OnShowExtendedException;
       Terminal->OnQueryUser = OnTerminalQueryUser;
       Terminal->OnProgress = TerminalOperationProgress;
       Terminal->OnFinished = TerminalOperationFinished;
 
-      Terminal->Open();
-      Terminal->DoStartup();
+      ConnectTerminal(Terminal);
     }
     catch(...)
     {
@@ -1493,6 +1593,20 @@ void __fastcall TManagementScript::DoConnect(const AnsiString Session)
   }
 
   PrintActiveSession();
+}
+//---------------------------------------------------------------------------
+void __fastcall TManagementScript::ConnectTerminal(TTerminal * Terminal)
+{
+  Terminal->OnUpdateStatus = OnTerminalUpdateStatus;
+
+  try
+  {
+    TScript::ConnectTerminal(Terminal);
+  }
+  __finally
+  {
+    Terminal->OnUpdateStatus = NULL;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::DoClose(TTerminal * Terminal)

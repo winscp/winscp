@@ -9,6 +9,7 @@
 #include <SecureShell.h>
 #include <ScpMain.h>
 #include <TextsWin.h>
+#include <HelpWin.h>
 #include <Interface.h>
 #include <VCLCommon.h>
 
@@ -124,9 +125,19 @@ int MapResult(int Result, unsigned int Answers)
 }
 //---------------------------------------------------------------------------
 TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
-  TStrings * MoreMessages, TQueryType Type, int Answers, int HelpCtx,
+  TStrings * MoreMessages, TQueryType Type, int Answers, AnsiString HelpKeyword,
   const TMessageParams * Params)
 {
+  // Original int HelpContext parameter to message boxes functions 
+  // were replaced with AnsiString HelpKeyword. We need to find all calls
+  // that passed 0
+  // TODO: Eventually remote this all.
+  assert(HelpKeyword != "0");
+  if (HelpKeyword == "0")
+  {
+    HelpKeyword = HELP_NONE;
+  }
+
   TMsgDlgButtons Buttons;
   TMsgDlgType DlgType;
 
@@ -155,6 +166,11 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
   }
 
   assert(!Buttons.Empty());
+
+  if (!HelpKeyword.IsEmpty())
+  {
+    Buttons << mbHelp;
+  }
 
   if ((MoreMessages != NULL) && (MoreMessages->Count == 0))
   {
@@ -230,7 +246,7 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
       NeverAskAgainCheck->Anchors = TAnchors() << akBottom << akLeft;
     }
 
-    Dialog->HelpContext = HelpCtx;
+    Dialog->HelpKeyword = HelpKeyword;
     Dialog->Position = poMainFormCenter;
     // must be called after setting Position
     ResetSystemSettings(Dialog);
@@ -313,7 +329,7 @@ void __fastcall TMessageTimer::DoTimer(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessages,
-  TQueryType Type, int Answers, int HelpCtx, const TMessageParams * Params)
+  TQueryType Type, int Answers, AnsiString HelpKeyword, const TMessageParams * Params)
 {
   int Result;
   TForm * Dialog = NULL;
@@ -337,7 +353,7 @@ int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessag
     }
 
     Dialog = CreateMessageDialogEx(AMessage, MoreMessages, Type, Answers,
-      HelpCtx, Params);
+      HelpKeyword, Params);
 
     if (Timer != NULL)
     {
@@ -360,18 +376,34 @@ int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessag
 }
 //---------------------------------------------------------------------------
 int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
-  int Answers, int HelpCtx, const TMessageParams * Params)
+  int Answers, AnsiString HelpKeyword, const TMessageParams * Params)
 {
-  return MoreMessageDialog(Msg, NULL, Type, Answers, HelpCtx, Params);
+  return MoreMessageDialog(Msg, NULL, Type, Answers, HelpKeyword, Params);
 }
 //---------------------------------------------------------------------------
-int __fastcall SimpleErrorDialog(const AnsiString Msg)
+int __fastcall SimpleErrorDialog(const AnsiString Msg, const AnsiString MoreMessages)
 {
-  return MoreMessageDialog(Msg, NULL, qtError, qaOK, NULL);
+  int Result;
+  TStrings * More = NULL;
+  try
+  {
+    if (!MoreMessages.IsEmpty())
+    {
+      More = new TStringList();
+      More->Text = MoreMessages;
+    }
+    Result = MoreMessageDialog(Msg, More, qtError, qaOK, HELP_NONE);
+  }
+  __finally
+  {
+    delete More;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
-  const AnsiString MessageFormat, int Answers, int HelpCtx, const TMessageParams * Params)
+  const AnsiString MessageFormat, int Answers, AnsiString HelpKeyword,
+  const TMessageParams * Params)
 {
   TStrings * MoreMessages = NULL;
   ExtException * EE = dynamic_cast<ExtException *>(E);
@@ -383,11 +415,12 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   
   return MoreMessageDialog(
     FORMAT(MessageFormat.IsEmpty() ? AnsiString("%s") : MessageFormat, (Message)),
-    MoreMessages, Type, Answers, HelpCtx, Params);
+    MoreMessages, Type, Answers, HelpKeyword, Params);
 }
 //---------------------------------------------------------------------------
 int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  const AnsiString MessageFormat, int Answers, int HelpCtx, const TMessageParams * Params)
+  const AnsiString MessageFormat, int Answers, AnsiString HelpKeyword,
+  const TMessageParams * Params)
 {
   assert((Answers & qaRetry) == 0);
   Answers |= qaRetry;
@@ -405,7 +438,7 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
   AParams.Aliases = Aliases;
   AParams.AliasesCount = LENOF(Aliases);
 
-  return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpCtx, &AParams);
+  return ExceptionMessageDialog(E, Type, MessageFormat, Answers, HelpKeyword, &AParams);
 }
 //---------------------------------------------------------------------------
 void __fastcall Busy(bool Start)
@@ -444,12 +477,93 @@ bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
   TStrings * History = CustomWinConfiguration->History["RemoteTarget"];
   bool Result = InputDialog(
     LoadStr(Move ? REMOTE_MOVE_TITLE : REMOTE_COPY_TITLE), Prompt,
-    Value, History);
+    Value, HELP_REMOTE_TRANSFER, History, true);
   if (Result)
   {
     CustomWinConfiguration->History["RemoteTarget"] = History;
     Target = UnixExtractFilePath(Value);
     FileMask = UnixExtractFileName(Value);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
+  const TCopyParamType & Param, AnsiString Preset, TNotifyEvent OnClick,
+  int Options)
+{
+  Menu->Items->Clear();
+
+  bool AnyChecked = false;
+  TMenuItem * Item = new TMenuItem(Menu);
+  Item->Caption = LoadStr(COPY_PARAM_DEFAULT);
+  Item->Tag = -1;
+  Item->Checked =
+    Preset.IsEmpty() && (GUIConfiguration->CopyParamPreset[""] == Param);
+  AnyChecked = AnyChecked || Item->Checked;
+  Item->OnClick = OnClick;
+  Menu->Items->Add(Item);
+
+  const TCopyParamList * CopyParamList = GUIConfiguration->CopyParamList;
+  for (int i = 0; i < CopyParamList->Count; i++)
+  {
+    Item = new TMenuItem(Menu);
+    AnsiString Name = CopyParamList->Names[i];
+    Item->Caption = Name;
+    Item->Tag = i;
+    Item->Checked =
+      (Preset == Name) && (GUIConfiguration->CopyParamPreset[Name] == Param);
+    AnyChecked = AnyChecked || Item->Checked;
+    Item->OnClick = OnClick;
+    Menu->Items->Add(Item);
+  }
+
+  if (FLAGSET(Options, cplCustomize))
+  {
+    Item = new TMenuItem(Menu);
+    Item->Caption = LoadStr(COPY_PARAM_CUSTOM);
+    Item->Tag = -3;
+    Item->Checked = !AnyChecked;
+    Item->Default = FLAGSET(Options, cplCustomizeDefault);
+    Item->OnClick = OnClick;
+    Menu->Items->Add(Item);
+  }
+  
+  Item = new TMenuItem(Menu);
+  Item->Caption = "-";
+  Menu->Items->Add(Item);
+
+  Item = new TMenuItem(Menu);
+  Item->Caption = LoadStr(COPY_PARAM_CONFIGURE);
+  Item->Tag = -2;
+  Item->OnClick = OnClick;
+  Menu->Items->Add(Item);
+  
+  Menu->Popup(P.x, P.y);
+}
+//---------------------------------------------------------------------------
+bool __fastcall CopyParamListPopupClick(TObject * Sender,
+  TCopyParamType & Param, AnsiString & Preset, int CustomizeOptions)
+{
+  TMenuItem * Item = dynamic_cast<TMenuItem*>(Sender);
+  assert(Item != NULL);
+  assert((Item->Tag >= -3) && (Item->Tag < GUIConfiguration->CopyParamList->Count));
+
+  bool Result;
+  if (Item->Tag == -2)
+  {
+    DoPreferencesDialog(pmPresets);
+    Result = false;
+  }
+  else if (Item->Tag == -3)
+  {
+    Result = DoCopyParamCustomDialog(Param, CustomizeOptions);
+  }
+  else
+  {
+    Preset = (Item->Tag >= 0) ?
+      GUIConfiguration->CopyParamList->Names[Item->Tag] : AnsiString();
+    Param = GUIConfiguration->CopyParamPreset[Preset];
+    Result = true;
   }
   return Result;
 }
@@ -469,8 +583,13 @@ void __fastcall TWinInteractiveCustomCommand::Prompt(int /*Index*/,
   {
     APrompt = FMTLOAD(CUSTOM_COMMANDS_PARAM_PROMPT, (FCustomCommandName));
   }
-  if (!InputDialog(FMTLOAD(CUSTOM_COMMANDS_PARAM_TITLE, (FCustomCommandName)),
-        APrompt, Value))
+  TStrings * History = CustomWinConfiguration->History["CustomCommandParam"];
+  if (InputDialog(FMTLOAD(CUSTOM_COMMANDS_PARAM_TITLE, (FCustomCommandName)),
+        APrompt, Value, HELP_CUSTOM_COMMAND_PARAM, History))
+  {
+    CustomWinConfiguration->History["CustomCommandParam"] = History;
+  }
+  else
   {
     Abort();
   }

@@ -437,7 +437,12 @@ begin
         end;
 
       dsLast:
-        if FLastPath[FDrive] <> '' then FPath := FLastPath[FDrive]
+        if FLastPath[FDrive] <> '' then 
+        begin
+          FPath := FLastPath[FDrive];
+          if not DirectoryExists(FPath) then
+            FPath := Format('%s:', [FDrive]);
+        end
           else
         begin
           GetDir(Integer(FDrive) - Integer('A') + 1, FPath);

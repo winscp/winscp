@@ -1,0 +1,105 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.06.00"/>
+    <PROJECT value="..\lib\tb2kdsgn_cb6.bpl"/>
+    <OBJFILES value="tb2kdsgn_cb6.obj tb2k\TB2DsgnConverter.obj 
+      tb2k\TB2DsgnItemEditor.obj tb2k\TB2DsgnConvertOptions.obj 
+      tb2k\TB2Reg.obj"/>
+    <RESFILES value="tb2k\TB2Reg.dcr"/>
+    <IDLFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) tb2k\TB2DsgnConverter.dfm tb2k\TB2DsgnItemEditor.dfm 
+      tb2k\TB2DsgnConvertOptions.dfm"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value=""/>
+    <SPARELIBS value="dclstd.lib rtl.lib tb2k_cb6.lib vcl.lib"/>
+    <PACKAGES value="dclstd.bpi designide.bpi rtl.bpi tb2k_cb6.bpi
+      vcl.bpi"/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;tb2k"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value="MPEXCLUDE"/>
+    <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
+    <MAINSOURCE value="tb2kdsgn_cb6.cpp"/>
+    <INCLUDEPATH value="tb2k;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;tb2k;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <WARNINGS value="-w-par -w-8027 -w-8026"/>
+    <WARNOPTSTR value=""/>
+    <OTHERFILES value=""/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
+    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M -LUdclstd 
+      -LUdesignide"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zd"/>
+    <LFLAGS value="-I -D&quot;Toolbar2000 Design Package (Jordan Russell)&quot; -aa -Tpp -Gpd -x 
+      -Gn -Gl -Gi"/>
+    <OTHERFILES value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0pkg32.obj $(PACKAGES) sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib"/>
+    <OTHERFILES value=""/>
+  </LINKER>
+  <FILELIST>
+      <FILE FILENAME="tb2kdsgn_cb6.cpp" FORMNAME="" UNITNAME="tb2kdsgn_cb6" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="tb2k\TB2DsgnConverter.pas" FORMNAME="TBConverterForm" UNITNAME="Tb2dsgnconverter" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="tb2k\TB2DsgnItemEditor.pas" FORMNAME="TBItemEditForm" UNITNAME="Tb2dsgnitemeditor" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="tb2k\TB2DsgnConvertOptions.pas" FORMNAME="TBConvertOptionsForm" UNITNAME="Tb2dsgnconvertoptions" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="tb2k\TB2Reg.pas" FORMNAME="" UNITNAME="TB2Reg" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="tb2k\TB2Reg.dcr" FORMNAME="" UNITNAME="TB2Reg" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="tb2k_cb6.bpi" FORMNAME="" UNITNAME="tb2k_cb6" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="dclstd.bpi" FORMNAME="" UNITNAME="dclstd" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="designide.bpi" FORMNAME="" UNITNAME="designide" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
+  </FILELIST>
+  <BUILDTOOLS>
+  </BUILDTOOLS>
+
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1033
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Compiler]
+ShowInfoMsgs=0
+LinkDebugVcl=0
+
+[Linker]
+LibPrefix=
+LibSuffix=
+LibVersion=
+  </IDEOPTIONS>
+</PROJECT>

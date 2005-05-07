@@ -49,6 +49,8 @@ __published:
   TEdit *RemoteCopyEdit;
   TXPGroupBox *HostKeyGroup;
   TEdit *HostKeyFingerprintEdit;
+  TButton *HelpButton;
+  void __fastcall HelpButtonClick(TObject *Sender);
 public:
 	virtual __fastcall TFileSystemInfoDialog(TComponent* AOwner);
 

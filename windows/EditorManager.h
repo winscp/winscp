@@ -33,7 +33,8 @@ public:
 
   bool __fastcall Empty(bool IgnoreClosed);
   bool __fastcall CanAddFile(const AnsiString RemoteDirectory, 
-    const AnsiString OriginalFileName, TObject *& Token);
+    const AnsiString OriginalFileName, TObject *& Token,
+    AnsiString & ExistingLocalDirectory);
   bool __fastcall CloseInternalEditors(TNotifyEvent CloseCallback);
   bool __fastcall CloseExternalFilesWithoutProcess();
 
@@ -79,7 +80,7 @@ private:
 
   void __fastcall AddFile(TFileData & FileData);
   void __fastcall UploadComplete(int Index);
-  void __fastcall CloseFile(int Index, bool IgnoreErrors);
+  void __fastcall CloseFile(int Index, bool IgnoreErrors, bool Delete);
   void __fastcall CloseProcess(int Index);
   bool __fastcall EarlyClose(int Index);
   void __fastcall CheckFileChange(int Index, bool Force);

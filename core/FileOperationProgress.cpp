@@ -44,10 +44,12 @@ void __fastcall TFileOperationProgressType::Clear()
   TotalSize = 0;
   TotalSizeSet = false;
   Operation = foNone;
-  DragDrop = false;
+  Temp = false;
   YesToAll = false;
   YesToNewer = false;
   NoToAll = false;
+  SkipToAll = false;
+  AlternateResumeAlways = false;
   // to bypass check in ClearTransfer()
   TransferSize = 0;
   ClearTransfer();
@@ -69,7 +71,7 @@ void __fastcall TFileOperationProgressType::ClearTransfer()
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
-  TOperationSide ASide, int ACount, bool ADragDrop,
+  TOperationSide ASide, int ACount, bool ATemp,
   const AnsiString ADirectory)
 {
   Clear();
@@ -79,7 +81,7 @@ void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
   InProgress = true;
   Cancel = csContinue;
   Directory = ADirectory;
-  DragDrop = ADragDrop;
+  Temp = ATemp;
   DoProgress();
 }
 //---------------------------------------------------------------------------
@@ -161,7 +163,7 @@ void __fastcall TFileOperationProgressType::Finish(AnsiString FileName,
 
   if (FOnFinished)
   {
-    FOnFinished(Operation, Side, DragDrop, FileName,
+    FOnFinished(Operation, Side, Temp, FileName,
       /* TODO : There wasn't 'Success' condition, was it by mistake or by purpose? */
       Success && (Cancel == csContinue), DisconnectWhenComplete);
   }
@@ -331,4 +333,19 @@ TDateTime __fastcall TFileOperationProgressType::TotalTimeExpected()
     return 0;
   }
 }
-
+//---------------------------------------------------------------------------
+TDateTime __fastcall TFileOperationProgressType::TotalTimeLeft()
+{
+  assert(TotalSizeSet);
+  unsigned int CurCps = CPS();
+  // sanity check
+  if ((CurCps > 0) && (TotalSize > TotalSkipped + TotalTransfered))
+  {
+    return TDateTime((double)((double)(TotalSize - TotalSkipped - TotalTransfered) / CurCps) /
+      (24 * 60 * 60));
+  }
+  else
+  {
+    return 0;
+  }
+}

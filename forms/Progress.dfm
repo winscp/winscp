@@ -1,6 +1,6 @@
 object ProgressForm: TProgressForm
-  Left = 356
-  Top = 204
+  Left = 445
+  Top = 291
   HelpType = htKeyword
   HelpKeyword = 'ui_progress'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
@@ -129,7 +129,7 @@ object ProgressForm: TProgressForm
       AutoSize = False
       Caption = '00:00:00'
     end
-    object TimeEstimatedLabel: TLabel
+    object TimeLeftLabel: TLabel
       Left = 88
       Top = 18
       Width = 65
@@ -138,12 +138,12 @@ object ProgressForm: TProgressForm
       AutoSize = False
       Caption = '00:00:00'
     end
-    object TimeEstimatedLabelLabel: TLabel
+    object TimeLeftLabelLabel: TLabel
       Left = 0
       Top = 18
-      Width = 74
+      Width = 43
       Height = 13
-      Caption = 'Time estimated:'
+      Caption = 'Time left:'
     end
     object CPSLabel: TLabel
       Left = 234

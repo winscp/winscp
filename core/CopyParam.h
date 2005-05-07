@@ -11,6 +11,7 @@ enum TFileNameCase { ncNoChange, ncUpperCase, ncLowerCase, ncFirstUpperCase, ncL
 // TScript::OptionProc depend on the order
 enum TTransferMode { tmBinary, tmAscii, tmAutomatic };
 enum TResumeSupport { rsOn, rsSmart, rsOff };
+class THierarchicalStorage;
 //---------------------------------------------------------------------------
 class TCopyParamType {
 private:
@@ -30,6 +31,7 @@ private:
   bool FCalculateSize;
   AnsiString FFileMask;
   TFileMasks FExcludeFileMask;
+  bool FNegativeExclude;
   bool FClearArchive;
 
 public:
@@ -43,10 +45,16 @@ public:
     TOperationSide Side, bool FirstLevel) const;
   int __fastcall LocalFileAttrs(const TRights & Rights) const;
   TRights __fastcall RemoteFileRights(int Attrs) const;
-  bool __fastcall UseAsciiTransfer(const AnsiString FileName) const;
+  bool __fastcall UseAsciiTransfer(AnsiString FileName, TOperationSide Side) const;
   bool __fastcall AllowResume(__int64 Size) const;
   AnsiString __fastcall ValidLocalFileName(AnsiString FileName) const;
-  bool __fastcall AllowTransfer(AnsiString FileName) const;
+  bool __fastcall AllowTransfer(AnsiString FileName, TOperationSide Side) const;
+
+  void __fastcall Load(THierarchicalStorage * Storage);
+  void __fastcall Save(THierarchicalStorage * Storage) const;
+  AnsiString __fastcall GetInfoStr(AnsiString Separator) const;
+
+  bool __fastcall operator==(const TCopyParamType & rhp) const;
 
   __property TFileMasks AsciiFileMask = { read = FAsciiFileMask, write = FAsciiFileMask };
   __property TFileNameCase FileNameCase = { read = FFileNameCase, write = FFileNameCase };
@@ -64,6 +72,7 @@ public:
   __property bool CalculateSize = { read = FCalculateSize, write = FCalculateSize };
   __property AnsiString FileMask = { read = FFileMask, write = FFileMask };
   __property TFileMasks ExcludeFileMask = { read = FExcludeFileMask, write = FExcludeFileMask };
+  __property bool NegativeExclude = { read = FNegativeExclude, write = FNegativeExclude };
   __property bool ClearArchive = { read = FClearArchive, write = FClearArchive };
 };
 //---------------------------------------------------------------------------

@@ -33,7 +33,7 @@ object CustomCommandDialog: TCustomCommandDialog
     DesignSize = (
       380
       255)
-    object FileNameLabel: TLabel
+    object DescriptionLabel: TLabel
       Left = 11
       Top = 16
       Width = 56
@@ -56,7 +56,7 @@ object CustomCommandDialog: TCustomCommandDialog
       Top = 189
       Width = 353
       Height = 61
-      Anchors = [akLeft, akTop, akRight, akBottom]
+      Anchors = [akLeft, akTop, akRight]
       AutoSize = False
       Caption = 
         'Patterns:'#160'!!'#160'-'#160'exclamation mark; !'#160'-'#160'file name; !?prompt?default' +
@@ -75,16 +75,16 @@ object CustomCommandDialog: TCustomCommandDialog
       TabOrder = 0
       OnChange = ControlChange
     end
-    object CommandEdit: TEdit
+    object CommandEdit: THistoryComboBox
       Left = 11
       Top = 80
       Width = 358
       Height = 21
       Anchors = [akLeft, akTop, akRight]
+      ItemHeight = 13
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange
-      OnKeyDown = PathEditsKeyDown
     end
     object ApplyToDirectoriesCheck: TCheckBox
       Left = 16
@@ -133,7 +133,7 @@ object CustomCommandDialog: TCustomCommandDialog
     end
   end
   object OkButton: TButton
-    Left = 228
+    Left = 144
     Top = 272
     Width = 75
     Height = 25
@@ -144,7 +144,7 @@ object CustomCommandDialog: TCustomCommandDialog
     TabOrder = 1
   end
   object CancelButton: TButton
-    Left = 312
+    Left = 228
     Top = 272
     Width = 75
     Height = 25
@@ -153,5 +153,15 @@ object CustomCommandDialog: TCustomCommandDialog
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 2
+  end
+  object HelpButton: TButton
+    Left = 312
+    Top = 272
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 3
+    OnClick = HelpButtonClick
   end
 end

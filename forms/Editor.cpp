@@ -12,6 +12,11 @@
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+#pragma link "TB2Dock"
+#pragma link "TBX"
+#pragma link "TB2Item"
+#pragma link "TB2Toolbar"
+#pragma link "TBXStatusBars"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
@@ -125,7 +130,8 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
       FLastFindDialog != NULL || !FindDialog->FindText.IsEmpty();
   }
   else if (Action == PreferencesAction || Action == CloseAction ||
-    Action == FindAction || Action == ReplaceAction || Action == GoToLineAction)
+    Action == FindAction || Action == ReplaceAction || Action == GoToLineAction ||
+    Action == HelpAction)
   {
     ((TAction *)Action)->Enabled = true;
   }
@@ -184,6 +190,10 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
     REPASTESPECIAL RepasteSpecial = { 0, 0 };
     SendMessage(EditorMemo->Handle, EM_PASTESPECIAL, CF_TEXT,
       (LPARAM)&RepasteSpecial);
+  }
+  else if (Action == HelpAction)
+  {
+    FormHelp(this);
   }
   else
   {
@@ -251,9 +261,9 @@ void __fastcall TEditorForm::UpdateControls()
   {
     FCaretPos = ACaretPos;
     int Count = EditorMemo->Lines->Count;
-    StatusBar->Panels->Items[0]->Text = FMTLOAD(EDITOR_LINE_STATUS,
+    StatusBar->Panels->Items[0]->Caption = FMTLOAD(EDITOR_LINE_STATUS,
       ((int)FCaretPos.y+1, Count));
-    StatusBar->Panels->Items[1]->Text = FMTLOAD(EDITOR_COLUMN_STATUS,
+    StatusBar->Panels->Items[1]->Caption = FMTLOAD(EDITOR_COLUMN_STATUS,
       ((int)FCaretPos.x+1));
     AnsiString Character;
     if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
@@ -265,9 +275,9 @@ void __fastcall TEditorForm::UpdateControls()
           (int((unsigned char)Line[FCaretPos.x+1]), int((unsigned char)Line[FCaretPos.x+1])));
       }
     }
-    StatusBar->Panels->Items[2]->Text = Character;
+    StatusBar->Panels->Items[2]->Caption = Character;
   }
-  StatusBar->Panels->Items[3]->Text =
+  StatusBar->Panels->Items[3]->Caption =
     (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : AnsiString(""));
   EditorActions->UpdateAction(SaveAction);  
 }
@@ -345,11 +355,11 @@ void __fastcall TEditorForm::Find()
     {
       if (!Replacements)
       {
-        MessageDialog(FMTLOAD(EDITOR_FIND_END, (FLastFindDialog->FindText)), qtInformation, qaOK, 0);
+        MessageDialog(FMTLOAD(EDITOR_FIND_END, (FLastFindDialog->FindText)), qtInformation, qaOK, HELP_NONE);
       }
       else
       {
-        MessageDialog(FMTLOAD(EDITOR_REPLACE_END, (Replacements)), qtInformation, qaOK, 0);
+        MessageDialog(FMTLOAD(EDITOR_REPLACE_END, (Replacements)), qtInformation, qaOK, HELP_NONE);
       }
     }
   }
@@ -360,6 +370,8 @@ void __fastcall TEditorForm::Find()
 void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
 {
   LoadFile();
+
+  CutFormToDesktop(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::LoadFile()

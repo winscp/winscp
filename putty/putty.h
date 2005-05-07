@@ -27,6 +27,15 @@ typedef struct terminal_tag Terminal;
 #include "network.h"
 #include "misc.h"
 
+/*
+ * Fingerprints of the PGP master keys that can be used to establish a trust
+ * path between an executable and other files.
+ */
+#define PGP_RSA_MASTER_KEY_FP \
+    "8F 15 97 DA 25 30 AB 0D  88 D1 92 54 11 CF 0C 4C"
+#define PGP_DSA_MASTER_KEY_FP \
+    "313C 3E76 4B74 C2C5 F2AE  83A8 4F5E 6DF5 6A93 B34E"
+
 /* Three attribute types: 
  * The ATTRs (normal attributes) are stored with the characters in
  * the main display arrays
@@ -245,12 +254,12 @@ enum {
 
 enum {
     /*
-     * SSH ciphers (both SSH1 and SSH2)
+     * SSH ciphers (both SSH-1 and SSH-2)
      */
     CIPHER_WARN,		       /* pseudo 'cipher' */
     CIPHER_3DES,
     CIPHER_BLOWFISH,
-    CIPHER_AES,			       /* (SSH 2 only) */
+    CIPHER_AES,			       /* (SSH-2 only) */
     CIPHER_DES,
     CIPHER_MAX			       /* no. ciphers (inc warn) */
 };
@@ -415,11 +424,11 @@ struct config_tag {
     int ssh_rekey_time;		       /* in minutes */
     char ssh_rekey_data[16];
     int agentfwd;
-    int change_username;	       /* allow username switching in SSH2 */
+    int change_username;	       /* allow username switching in SSH-2 */
     int ssh_cipherlist[CIPHER_MAX];
     Filename keyfile;
     int sshprot;		       /* use v1 or v2 when both available */
-    int ssh2_des_cbc;		       /* "des-cbc" nonstandard SSH2 cipher */
+    int ssh2_des_cbc;		       /* "des-cbc" unrecommended SSH-2 cipher */
     int try_tis_auth;
     int try_ki_auth;
 #ifdef GSSAPI
@@ -520,6 +529,7 @@ struct config_tag {
     /* translations */
     int vtmode;
     char line_codepage[128];
+    int cjk_ambig_wide;
     int utf8_override;
     int xlat_capslockcyr;
     /* X11 forwarding */
@@ -528,7 +538,7 @@ struct config_tag {
     int x11_auth;
     /* port forwarding */
     int lport_acceptall; /* accept conns from hosts other than localhost */
-    int rport_acceptall; /* same for remote forwarded ports (SSH2 only) */
+    int rport_acceptall; /* same for remote forwarded ports (SSH-2 only) */
     /*
      * The port forwarding string contains a number of
      * NUL-terminated substrings, terminated in turn by an empty
@@ -651,6 +661,16 @@ int is_iconic(void *frontend);
 void get_window_pos(void *frontend, int *x, int *y);
 void get_window_pixels(void *frontend, int *x, int *y);
 char *get_window_title(void *frontend, int icon);
+/* Hint from backend to frontend about time-consuming operations.
+ * Initial state is assumed to be BUSY_NOT. */
+enum {
+    BUSY_NOT,	    /* Not busy, all user interaction OK */
+    BUSY_WAITING,   /* Waiting for something; local event loops still running
+		       so some local interaction (e.g. menus) OK, but network
+		       stuff is suspended */
+    BUSY_CPU	    /* Locally busy (e.g. crypto); user interaction suspended */
+};
+void set_busy_status(void *frontend, int status);
 
 void cleanup_exit(int);
 
@@ -857,8 +877,10 @@ void get_unitab(int codepage, wchar_t * unitab, int ftype);
 /*
  * Exports from wcwidth.c
  */
-int wcwidth(wchar_t ucs);
-int wcswidth(const wchar_t *pwcs, size_t n);
+int mk_wcwidth(wchar_t ucs);
+int mk_wcswidth(const wchar_t *pwcs, size_t n);
+int mk_wcwidth_cjk(wchar_t ucs);
+int mk_wcswidth_cjk(const wchar_t *pwcs, size_t n);
 
 /*
  * Exports from mscrypto.c
@@ -892,13 +914,40 @@ int wc_match(const char *wildcard, const char *target);
 int wc_unescape(char *output, const char *wildcard);
 
 /*
- * Exports from windlg.c
+ * Exports from frontend (windlg.c etc)
  */
 void logevent(void *frontend, const char *);
-void verify_ssh_host_key(void *frontend, char *host, int port, char *keytype,
-			 char *keystr, char *fingerprint);
-void askalg(void *frontend, const char *algtype, const char *algname);
-int askappend(void *frontend, Filename filename);
+void pgp_fingerprints(void);
+/*
+ * verify_ssh_host_key() can return one of three values:
+ * 
+ *  - +1 means `key was OK' (either already known or the user just
+ *    approved it) `so continue with the connection'
+ * 
+ *  - 0 means `key was not OK, abandon the connection'
+ * 
+ *  - -1 means `I've initiated enquiries, please wait to be called
+ *    back via the provided function with a result that's either 0
+ *    or +1'.
+ */
+int verify_ssh_host_key(void *frontend, char *host, int port, char *keytype,
+                        char *keystr, char *fingerprint,
+                        void (*callback)(void *ctx, int result), void *ctx);
+/*
+ * askalg has the same set of return values as verify_ssh_host_key.
+ */
+int askalg(void *frontend, const char *algtype, const char *algname,
+	   void (*callback)(void *ctx, int result), void *ctx);
+/*
+ * askappend can return four values:
+ * 
+ *  - 2 means overwrite the log file
+ *  - 1 means append to the log file
+ *  - 0 means cancel logging for this session
+ *  - -1 means please wait.
+ */
+int askappend(void *frontend, Filename filename,
+	      void (*callback)(void *ctx, int result), void *ctx);
 
 /*
  * Exports from console.c (that aren't equivalents to things in

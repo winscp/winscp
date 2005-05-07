@@ -6,9 +6,6 @@
 #include <WinInterface.h>
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
-AnsiString __fastcall GetCoolbarLayoutStr(TCoolBar * CoolBar);
-void __fastcall LoadCoolbarLayoutStr(TCoolBar * CoolBar, AnsiString LayoutStr);
-void __fastcall SetCoolBandsMinWidth(TCoolBar * CoolBar);
 bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params);
 bool __fastcall ExecuteShellAndWait(const AnsiString Command);
 void __fastcall CreateDesktopShortCut(const AnsiString &Name,
@@ -20,5 +17,7 @@ TFontStyles __fastcall IntToFontStyles(int value);
 int __fastcall FontStylesToInt(const TFontStyles value);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);
 void __fastcall OpenBrowser(AnsiString URL);
+bool __fastcall IsFormatInClipboard(unsigned int Format);
+bool __fastcall TextFromClipboard(AnsiString & Text);
 //---------------------------------------------------------------------------
 #endif

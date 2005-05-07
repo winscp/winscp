@@ -126,8 +126,6 @@ public:
   __property AnsiString SshHostKeysSubKey  = { read=GetSshHostKeysSubKey };
   __property AnsiString RootKeyStr  = { read=GetRootKeyStr };
   __property AnsiString ConfigurationSubKey  = { read=GetConfigurationSubKey };
-  __property bool DontSave  = { read=FDontSave, write=FDontSave };
-  __property bool RandomSeedSave  = { read=FRandomSeedSave, write=FRandomSeedSave };
   __property TEOLType LocalEOLType = { read = GetLocalEOLType };
   __property AnsiString VersionStr = { read=GetVersionStr };
   __property AnsiString Version = { read=GetVersion };

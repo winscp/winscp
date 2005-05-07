@@ -11,6 +11,8 @@
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "TextsWin.h"
+#include "TBXThemes.hpp"
+#include "TBXOfficeXPTheme.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -85,7 +87,7 @@ void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
                 Manager->Count > 1 ?
                   FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
                   LoadStr(EXIT_ON_COMPLETION),
-                qaYes | qaNo, 0, &Params);
+                qaYes | qaNo, HELP_NONE, &Params);
 
               if (Result == qaNeverAskAgain)
               {
@@ -123,7 +125,7 @@ void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
             if (WinConfiguration->ConfirmExitOnCompletion)
             {
               TMessageParams Params(mpNeverAskAgainCheck);
-              if (ExceptionMessageDialog(E, Type, "", qaOK, 0, &Params) ==
+              if (ExceptionMessageDialog(E, Type, "", qaOK, HELP_NONE, &Params) ==
                     qaNeverAskAgain)
               {
                 WinConfiguration->ConfirmExitOnCompletion = false;
@@ -166,6 +168,19 @@ void __fastcall ConfigureInterface()
   {
     Application->BiDiMode = bdLeftToRight;
   }
+  SetTBXSysParam(TSP_XPVISUALSTYLE, XPVS_AUTOMATIC);
+  // Can be called during configuration creation.
+  // Skip now, will be called again later.
+  if (Configuration != NULL)
+  {
+    TBXSetTheme(WinConfiguration->Theme);
+  }
+}
+//---------------------------------------------------------------------------
+// dummy function to force linking of TBXOfficeXPTheme.pas
+TTBXOfficeXPTheme * CreateTheme()
+{
+  return new TTBXOfficeXPTheme("OfficeXP");
 }
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration *Configuration)
@@ -186,5 +201,19 @@ void __fastcall DoAboutDialog(TConfiguration *Configuration)
 void __fastcall DoProductLicence()
 {
   DoLicenceDialog(lcWinScp);
+}
+//---------------------------------------------------------------------
+void __fastcall FormHelp(TForm * Form, TControl * Control)
+{
+  AnsiString Keyword;
+  if ((Control != NULL) && !Control->HelpKeyword.IsEmpty())
+  {
+    Keyword = Control->HelpKeyword;
+  }
+  else
+  {
+    Keyword = Form->HelpKeyword;
+  }
+  Application->HelpKeyword(Keyword);
 }
 //---------------------------------------------------------------------

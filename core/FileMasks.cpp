@@ -12,6 +12,7 @@ using namespace Masks;
 
 #include "Common.h"
 #include "TextsCore.h"
+#include "RemoteFiles.h"
 //---------------------------------------------------------------------------
 AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask, bool& Masked)
 {
@@ -139,17 +140,46 @@ __fastcall TFileMasks::TFileMasks(const AnsiString AMasks)
   FMasks = AMasks;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::Matches(AnsiString FileName) const
+bool __fastcall TFileMasks::Matches(AnsiString FileName, AnsiString Path) const
 {
   AnsiString S = Masks;
-  FileName = ExtractFileName(FileName);
   while (!S.IsEmpty())
   {
     AnsiString M;
     M = CutToChar(S, ';', True);
-    if (MatchesMask(FileName, M)) return true;
+    int D = M.LastDelimiter("\\/");
+    bool PathMatch = true;
+    if (D > 0)
+    {
+      AnsiString MP = ToUnixPath(M.SubString(1, D - 1));
+      // 'Path' must already have unix slashes
+      PathMatch = MatchesMask(Path, MP);
+      M = M.SubString(D + 1, M.Length() - D);
+    }
+
+    if (PathMatch && MatchesMask(FileName, M)) return true;
   }
   return false;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileMasks::Matches(AnsiString FileName, bool Local) const
+{
+  AnsiString Path;
+  if (Local)
+  {
+    Path = ExtractFilePath(FileName);
+    if (!Path.IsEmpty())
+    {
+      Path = ToUnixPath(ExcludeTrailingBackslash(Path));
+    }
+    FileName = ExtractFileName(FileName);
+  }
+  else
+  {
+    Path = UnixExcludeTrailingBackslash(UnixExtractFilePath(FileName));
+    FileName = UnixExtractFileName(FileName);
+  }
+  return Matches(FileName, Path);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::IsValid()
@@ -366,7 +396,8 @@ bool __fastcall TCustomCommand::FindPattern(const AnsiString & Command,
     int Len;
     char APatternCmd;
     GetToken(Command, Index, Len, APatternCmd);
-    if (PatternCmd == APatternCmd)
+    if (((PatternCmd != '!') && (PatternCmd == APatternCmd)) ||
+        ((PatternCmd == '!') && (Len == 1) && (APatternCmd != TEXT_TOKEN)))
     {
       Result = true;
     }
@@ -517,6 +548,11 @@ void __fastcall TFileCustomCommand::ValidatePattern(const AnsiString & /*Command
 bool __fastcall TFileCustomCommand::IsFileListCommand(const AnsiString & Command)
 {
   return FindPattern(Command, '&');
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileCustomCommand::IsFileCommand(const AnsiString & Command)
+{
+  return FindPattern(Command, '!') || FindPattern(Command, '&');
 }
 //---------------------------------------------------------------------------
 

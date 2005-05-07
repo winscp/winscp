@@ -2,11 +2,11 @@ object LoggingFrame: TLoggingFrame
   Left = 0
   Top = 0
   Width = 314
-  Height = 212
+  Height = 233
   TabOrder = 0
   DesignSize = (
     314
-    212)
+    233)
   object LoggingCheck: TCheckBox
     Left = 14
     Top = 8
@@ -20,23 +20,31 @@ object LoggingFrame: TLoggingFrame
     Left = 3
     Top = 32
     Width = 309
-    Height = 177
+    Height = 198
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Logging options'
     TabOrder = 1
     DesignSize = (
       309
-      177)
+      198)
     object LogWindowLinesText: TLabel
       Left = 256
-      Top = 145
+      Top = 166
       Width = 21
       Height = 13
       Caption = 'lines'
     end
+    object LogProtocolLabel: TLabel
+      Left = 16
+      Top = 21
+      Width = 63
+      Height = 13
+      Caption = 'Logging &level'
+      FocusControl = LogProtocolCombo
+    end
     object LogToFileCheck: TCheckBox
       Left = 16
-      Top = 24
+      Top = 45
       Width = 193
       Height = 17
       Caption = 'Log to &file:'
@@ -45,7 +53,7 @@ object LoggingFrame: TLoggingFrame
     end
     object LogFileNameEdit: TFilenameEdit
       Left = 40
-      Top = 47
+      Top = 68
       Width = 255
       Height = 21
       AcceptFiles = True
@@ -58,11 +66,10 @@ object LoggingFrame: TLoggingFrame
       TabOrder = 1
       Text = 'LogFileNameEdit'
       OnChange = DataChange
-      OnKeyDown = LogFileNameEditKeyDown
     end
     object LogShowWindowCheck: TCheckBox
       Left = 16
-      Top = 100
+      Top = 121
       Width = 129
       Height = 17
       Caption = 'Show log &window:'
@@ -71,7 +78,7 @@ object LoggingFrame: TLoggingFrame
     end
     object LogWindowCompleteButton: TRadioButton
       Left = 40
-      Top = 121
+      Top = 142
       Width = 233
       Height = 17
       Caption = 'Display &complete session'
@@ -80,7 +87,7 @@ object LoggingFrame: TLoggingFrame
     end
     object LogWindowLinesButton: TRadioButton
       Left = 40
-      Top = 145
+      Top = 166
       Width = 136
       Height = 17
       Caption = 'Display only &last '
@@ -89,7 +96,7 @@ object LoggingFrame: TLoggingFrame
     end
     object LogWindowLinesEdit: TUpDownEdit
       Left = 176
-      Top = 141
+      Top = 162
       Width = 73
       Height = 21
       Alignment = taRightJustify
@@ -101,7 +108,7 @@ object LoggingFrame: TLoggingFrame
     end
     object LogFilePanel: TPanel
       Left = 40
-      Top = 72
+      Top = 93
       Width = 255
       Height = 25
       Anchors = [akLeft, akTop, akRight]
@@ -125,6 +132,20 @@ object LoggingFrame: TLoggingFrame
         TabOrder = 1
         OnClick = DataChange
       end
+    end
+    object LogProtocolCombo: TComboBox
+      Left = 112
+      Top = 15
+      Width = 113
+      Height = 21
+      Style = csDropDownList
+      Anchors = [akLeft, akTop, akRight]
+      ItemHeight = 13
+      TabOrder = 7
+      Items.Strings = (
+        'Normal'
+        'Debug 1'
+        'Debug 2')
     end
   end
 end

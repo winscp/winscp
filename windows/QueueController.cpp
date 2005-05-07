@@ -6,7 +6,6 @@
 #include <ScpMain.h>
 #include <Queue.h>
 #include <TextsWin.h>
-#include <AssociatedStatusBar.hpp>
 #include <GUITools.h>
 #include "QueueController.h"
 //---------------------------------------------------------------------------
@@ -232,16 +231,24 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
     }
     State = ((Info->Side == osLocal) ? 1 : 0);
 
-    Values[0] = Info->Source;
-    Values[1] = Info->Destination;
+    // cannot use ProgressData->Temp as it is set only after the trandfer actually starts
+    Values[0] = Info->Source.IsEmpty() ? LoadStr(PROGRESS_TEMP_DIR) : Info->Source;
+    Values[1] = Info->Destination.IsEmpty() ? LoadStr(PROGRESS_TEMP_DIR) : Info->Destination;
 
     if (ProgressData != NULL)
     {
-      Values[2] = FormatBytes(ProgressData->TotalTransfered);
-      Values[3] = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TimeElapsed());
-      if (ProgressStr.IsEmpty())
+      if (ProgressData->Operation == Info->Operation)
       {
-        ProgressStr = FORMAT("%d%%", (ProgressData->OverallProgress()));
+        Values[2] = FormatBytes(ProgressData->TotalTransfered);
+        Values[3] = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TimeElapsed());
+        if (ProgressStr.IsEmpty())
+        {
+          ProgressStr = FORMAT("%d%%", (ProgressData->OverallProgress()));
+        }
+      }
+      else if (ProgressData->Operation == foCalculateSize)
+      {
+        ProgressStr = LoadStr(QUEUE_CALCULATING_SIZE);
       }
     }
     Values[4] = ProgressStr;
@@ -250,10 +257,21 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
   {
     if (ProgressData != NULL)
     {
-      Values[0] = ProgressData->FileName;
-      Values[2] = FormatBytes(ProgressData->TransferedSize);
-      Values[3] = FORMAT("%s/s", (FormatBytes(ProgressData->CPS())));
-      Values[4] = FORMAT("%d%%", (ProgressData->TransferProgress()));
+      if ((Info->Side == osRemote) || !ProgressData->Temp)
+      {
+        Values[0] = ProgressData->FileName;
+      }
+      else
+      {
+        Values[0] = ExtractFileName(ProgressData->FileName);
+      }
+
+      if (ProgressData->Operation == Info->Operation)
+      {
+        Values[2] = FormatBytes(ProgressData->TransferedSize);
+        Values[3] = FORMAT("%s/s", (FormatBytes(ProgressData->CPS())));
+        Values[4] = FORMAT("%d%%", (ProgressData->TransferProgress()));
+      }
     }
     else
     {

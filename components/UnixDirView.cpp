@@ -71,6 +71,7 @@ DEFINE_COMPARE_FUNC(RightsStr, AnsiCompareText);
 DEFINE_COMPARE_FUNC(Owner, AnsiCompareText);
 DEFINE_COMPARE_FUNC(Group, AnsiCompareText);
 DEFINE_COMPARE_FUNC(Extension, AnsiCompareText);
+DEFINE_COMPARE_FUNC(LinkTo, AnsiCompareText);
 //---------------------------------------------------------------------------
 #undef DEFINE_COMPARE_FUNC
 #undef COMPARE_NUMBER
@@ -380,6 +381,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMA &DispI
         case uvOwner: Value = File->Owner; break;
         case uvGroup: Value = File->Group; break;
         case uvExt: Value = File->Extension; break;
+        case uvLinkTarget: Value = File->LinkTo; break;
         default: assert(false);
       }
       StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax);
@@ -617,6 +619,7 @@ void __fastcall TUnixDirView::SortItems()
       case uvOwner: SortProc = (PFNLVCOMPARE)CompareOwner; break;
       case uvGroup: SortProc = (PFNLVCOMPARE)CompareGroup; break;
       case uvExt: SortProc = (PFNLVCOMPARE)CompareExtension; break;
+      case uvLinkTarget: SortProc = (PFNLVCOMPARE)CompareLinkTo; break;
       default: assert(false);
     }
     CustomSortItems(SortProc);

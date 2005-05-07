@@ -10,34 +10,40 @@
 #include <ExtCtrls.hpp>
 #include <LogMemo.h>
 #include <ToolWin.hpp>
+#include "TB2Dock.hpp"
+#include "TB2Item.hpp"
+#include "TB2Toolbar.hpp"
+#include "TBX.hpp"
+#include <ActnList.hpp>
+#include <Menus.hpp>
+#include "TBXStatusBars.hpp"
 //---------------------------------------------------------------------------
 class TLogForm : public TForm
 {
 __published:	// IDE-managed Components
-  TStatusBar *StatusBar;
-  TCoolBar *TopCoolBar;
-  TToolBar *ToolBar;
-  TToolButton *ToolButton1;
-  TToolButton *ToolButton3;
-  TToolButton *ToolButton2;
-  TToolButton *ToolButton4;
-  TToolButton *ToolButton5;
+  TTBXStatusBar *StatusBar;
+  TTBXDock *TopDock;
+  TTBXToolbar *Toolbar;
+  TTBXItem *TBXItem1;
+  TTBXSeparatorItem *TBXSeparatorItem1;
+  TTBXItem *TBXItem2;
+  TTBXItem *TBXItem3;
+  TTBXItem *TBXItem4;
+  TTBXSeparatorItem *TBXSeparatorItem2;
+  TTBXItem *TBXItem5;
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
-  void __fastcall StatusBarResize(TObject *Sender);
 private:
   Boolean FFormRestored;
-  Boolean FStatusBarFile;
   TLogMemo * FLogMemo;
   TSessionLog * FSessionLog;
   void __fastcall SetLogMemo(TLogMemo * value);
-  void __fastcall SetSessionLog(TSessionLog * value);	// User declarations
+  void __fastcall SetSessionLog(TSessionLog * value);
 protected:
   virtual void __fastcall CreateParams(TCreateParams & Params);
   void __fastcall LogMemoChange(TObject * Sender);
-  void __fastcall SetStatusBarText(AnsiString Text);
   void __fastcall UpdateControls();
 public:
-  virtual __fastcall ~TLogForm();		// User declarations
+  virtual __fastcall ~TLogForm();
   __fastcall TLogForm(TComponent* Owner);
   __property TLogMemo * LogMemo = { read = FLogMemo, write = SetLogMemo };
   __property TSessionLog * SessionLog = { read = FSessionLog, write = SetSessionLog };

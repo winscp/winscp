@@ -131,7 +131,7 @@ int proxy_socks5_handlechap (Proxy_Socket p)
 		outbuf[3] = 0x10; /* Length */
 		hmacmd5_chap(data, p->chap_current_datalen,
 			     p->cfg.proxy_password, &outbuf[4]);
-		sk_write(p->sub_socket, outbuf, 20);
+		sk_write(p->sub_socket, (char *)outbuf, 20);
 	      break;
 	      case 0x11:
 	        /* Chose a protocol */

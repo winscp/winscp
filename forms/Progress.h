@@ -50,8 +50,8 @@ __published:
   TTrackBar *SpeedBar;
   TLabel *SpeedLowLabel;
   TLabel *SpeedHighLabel;
-  TLabel *TimeEstimatedLabelLabel;
-  TLabel *TimeEstimatedLabel;
+  TLabel *TimeLeftLabelLabel;
+  TLabel *TimeLeftLabel;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormHide(TObject *Sender);

@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include "Configuration.h"
 #include "SessionData.h"
+#define HELP_NONE ""
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration();
 
@@ -42,7 +43,7 @@ typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Resul
 
 struct TQueryParams
 {
-  TQueryParams(unsigned int AParams = 0);
+  TQueryParams(unsigned int AParams = 0, AnsiString AHelpKeyword = HELP_NONE);
 
   const TQueryButtonAlias * Aliases;
   unsigned int AliasesCount;
@@ -51,6 +52,7 @@ struct TQueryParams
   TQueryParamsTimerEvent TimerEvent;
   AnsiString TimerMessage;
   unsigned int TimerAnswers;
+  AnsiString HelpKeyword;
 };
 
 enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };

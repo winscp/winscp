@@ -6,6 +6,7 @@
 #include <TextsWin.h>
 
 #include <VCLCommon.h>
+#include "WinInterface.h"
 #include "Licence.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)

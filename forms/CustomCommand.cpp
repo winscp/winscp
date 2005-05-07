@@ -6,16 +6,20 @@
 #include <Terminal.h>
 #include <TextsWin.h>
 #include <WinConfiguration.h>
+#include <WinInterface.h>
 #include <GUITools.h>
+#include <ScpMain.h>
 #include "CustomCommand.h"
 #include "VCLCommon.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "XPThemes"
+#pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoCustomCommandDialog(AnsiString & Description,
-  AnsiString & Command, int & Params, const TCustomCommands * CustomCommands, bool Edit)
+  AnsiString & Command, int & Params, const TCustomCommands * CustomCommands,
+  TCustomCommandsMode Mode, TCustomCommandValidate OnValidate)
 {
   bool Result;
   TCustomCommandDialog * Dialog = new TCustomCommandDialog(Application);
@@ -25,7 +29,8 @@ bool __fastcall DoCustomCommandDialog(AnsiString & Description,
     Dialog->Command = Command;
     Dialog->Params = Params;
     Dialog->CustomCommands = CustomCommands;
-    Dialog->Edit = Edit;
+    Dialog->Mode = Mode;
+    Dialog->OnValidate = OnValidate;
     Result = Dialog->Execute();
     if (Result)
     {
@@ -46,7 +51,9 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner)
 {
   UseSystemSettings(this);
   FCustomCommands = NULL;
-  FEdit = true;
+  FMode = ccmEdit;
+  FOnValidate = NULL;
+  InstallPathWordBreakProc(CommandEdit);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::UpdateControls()
@@ -55,6 +62,7 @@ void __fastcall TCustomCommandDialog::UpdateControls()
 
   bool RemoteCommand = RemoteCommandButton->Checked;
   bool AllowRecursive = true;
+  bool AllowApplyToDirectories = true;
   try
   {
     TRemoteCustomCommand RemoteCustomCommand;
@@ -64,17 +72,20 @@ void __fastcall TCustomCommandDialog::UpdateControls()
 
     TInteractiveCustomCommand InteractiveCustomCommand(FileCustomCommand);
     AnsiString Cmd = InteractiveCustomCommand.Complete(Command, false);
-    AllowRecursive = !FileCustomCommand->IsFileListCommand(Cmd);
+    bool FileCommand = FileCustomCommand->IsFileCommand(Cmd);
+    AllowRecursive = FileCommand && !FileCustomCommand->IsFileListCommand(Cmd);
     if (AllowRecursive && !RemoteCommand)
     {
       AllowRecursive = !LocalCustomCommand.HasLocalFileName(Cmd);
     }
+    AllowApplyToDirectories = FileCommand;
   }
   catch(...)
   {
   }
 
   EnableControl(RecursiveCheck, AllowRecursive);
+  EnableControl(ApplyToDirectoriesCheck, AllowApplyToDirectories);
   EnableControl(ShowResultsCheck, RemoteCommand);
 }
 //---------------------------------------------------------------------------
@@ -125,19 +136,63 @@ void __fastcall TCustomCommandDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 bool __fastcall TCustomCommandDialog::Execute()
 {
-  return (ShowModal() == mrOk);
+  CommandEdit->Items = CustomWinConfiguration->History["CustomCommand"];
+  if (CommandEdit->Items->Count == 0)
+  {
+    TCustomCommands * CustomCommands = const_cast<TCustomCommands*>(FCustomCommands);
+    for (int i = 0; i < CustomCommands->Count; i++)
+    {
+      CommandEdit->Items->Add(CustomCommands->Values[CustomCommands->Names[i]]);
+    }
+  }
+  bool Result = (ShowModal() == mrOk);
+  if (Result)
+  {
+    CustomWinConfiguration->History["CustomCommand"] = CommandEdit->Items;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::FormShow(TObject * /*Sender*/)
 {
-  Caption = LoadStr(Edit ? CUSTOM_COMMAND_EDIT : CUSTOM_COMMAND_ADD);
+  int CaptionRes;
+  switch (Mode)
+  {
+    case ccmAdd:
+      CaptionRes = CUSTOM_COMMAND_ADD;
+      break;
+    case ccmEdit:
+      CaptionRes = CUSTOM_COMMAND_EDIT;
+      break;
+    case ccmAdHoc:
+    default:
+      CaptionRes = CUSTOM_COMMAND_AD_HOC;
+      break;
+  }
+  Caption = LoadStr(CaptionRes);
+
+  if (Mode == ccmAdHoc)
+  {
+    int Shift = CommandEdit->Top - DescriptionEdit->Top;
+
+    DescriptionLabel->Visible = false;
+    DescriptionEdit->Visible = false;
+    for (int i = 0; i < Group->ControlCount; i++)
+    {
+      TControl * Control = Group->Controls[i];
+      if (Control->Visible)
+      {
+        if (Control->Top > DescriptionLabel->Top)
+        {
+          Control->Top = Control->Top - Shift;
+        }
+      }
+    }
+
+    ClientHeight = ClientHeight - Shift;
+  }
+
   UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomCommandDialog::PathEditsKeyDown(TObject * /*Sender*/,
-  WORD & Key, TShiftState Shift)
-{
-  PathEditKeyDown(CommandEdit, Key, Shift, RemoteCommandButton->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -145,12 +200,22 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    AnsiString Desc = Description;
-    
-    if (Desc.Pos("=") > 0)
+    if ((Mode == ccmAdd) || (Mode == ccmEdit))
     {
-      DescriptionEdit->SetFocus();
-      throw Exception(FMTLOAD(CUSTOM_COMMAND_INVALID, ("=")));
+      AnsiString Desc = Description;
+    
+      if (Desc.Pos("=") > 0)
+      {
+        DescriptionEdit->SetFocus();
+        throw Exception(FMTLOAD(CUSTOM_COMMAND_INVALID, ("=")));
+      }
+
+      if (((Mode == ccmAdd) || ((Mode == ccmEdit) && (Desc != FOrigDescription))) &&
+          (const_cast<TCustomCommands*>(FCustomCommands)->IndexOfName(Desc) >= 0))
+      {
+        DescriptionEdit->SetFocus();
+        throw Exception(FMTLOAD(CUSTOM_COMMAND_DUPLICATE, (Desc)));
+      }
     }
 
     try
@@ -175,13 +240,16 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
       throw;
     }
 
-    if ((!Edit || (Desc != FOrigDescription)) &&
-        (const_cast<TCustomCommands*>(FCustomCommands)->IndexOfName(Desc) >= 0))
+    if (FOnValidate)
     {
-      DescriptionEdit->SetFocus();
-      throw Exception(FMTLOAD(CUSTOM_COMMAND_DUPLICATE, (Desc)));
+      FOnValidate(Command, Params);
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 

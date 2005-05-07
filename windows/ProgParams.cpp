@@ -17,15 +17,20 @@ TProgramParams::TProgramParams()
   FSwitchMarks = "-/";
   FSwitchValueDelimiters = ":=";
   FIgnoreCase = true;
-  for (int i = 0; i < (sizeof(FParamCount) / sizeof(*FParamCount)); i++)
-  {
-    FParamCount[i] = -1;
-  }
+  ResetParamCount();
 }
 //---------------------------------------------------------------------------
 TProgramParams::~TProgramParams()
 {
   delete FParameters;
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgramParams::ResetParamCount()
+{
+  for (int i = 0; i < (sizeof(FParamCount) / sizeof(*FParamCount)); i++)
+  {
+    FParamCount[i] = -1;
+  }
 }
 //---------------------------------------------------------------------------
 Integer __fastcall TProgramParams::GetCount()
@@ -102,13 +107,15 @@ AnsiString __fastcall TProgramParams::GetParam(Integer Index)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TProgramParams::FindSwitch(const AnsiString Switch,
-  AnsiString & Value, int & Position)
+  AnsiString & Value, int & ParamsStart, int & ParamsCount)
 {
-  Position = 0;
-  for (Integer Index = 1; Index <= Count; Index++)
+  ParamsStart = 0;
+  int Index = 1;
+  bool Found = false;
+  while ((Index <= Count) && !Found)
   {
     AnsiString S;
-    if (ParamType(Index, S) == ptParam) Position++;
+    if (ParamType(Index, S) == ptParam) ParamsStart++;
       else
     if (ParamType(Index, S) == ptSwitch)
     {
@@ -135,25 +142,69 @@ bool __fastcall TProgramParams::FindSwitch(const AnsiString Switch,
           (!IgnoreCase && (AnsiCompareStr(Switch, Sw) == 0)))
       {
         Value = V;
-        return true;
+        Found = true;
       }
     }
+    Index++;
   }
-  Position = 0;
-  return false;
+
+  ParamsCount = 0;
+  if (Found)
+  {
+    AnsiString S;
+    ParamsStart++;
+    while ((Index + ParamsCount <= Count) &&
+           (ParamType(Index + ParamsCount, S) == ptParam))
+    {
+      ParamsCount++;
+    }
+  }
+  else
+  {
+    ParamsStart = 0;
+  }
+  
+  return Found;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TProgramParams::FindSwitch(const AnsiString Switch, AnsiString & Value)
 {
-  int Position;
-  return FindSwitch(Switch, Value, Position);
+  int ParamsStart;
+  int ParamsCount;
+  return FindSwitch(Switch, Value, ParamsStart, ParamsCount);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TProgramParams::FindSwitch(const AnsiString Switch)
 {
   AnsiString Value;
-  int Position;
-  return FindSwitch(Switch, Value, Position);
+  int ParamsStart;
+  int ParamsCount;
+  return FindSwitch(Switch, Value, ParamsStart, ParamsCount);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TProgramParams::FindSwitch(const AnsiString Switch,
+  TStrings * Params, int ParamsMax)
+{
+  AnsiString Value;
+  int ParamsStart;
+  int ParamsCount;
+  bool Result = FindSwitch(Switch, Value, ParamsStart, ParamsCount);
+  if (Result)
+  {
+    if ((ParamsMax >= 0) && (ParamsCount > ParamsMax))
+    {
+      ParamsCount = ParamsMax;
+    }
+
+    int Index = 0;
+    while (Index < ParamsCount)
+    {
+      Params->Add(Param[ParamsStart + Index]);
+      Index++;
+    }
+    ParamsProcessed(ParamsStart, ParamsCount);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TProgramParams::SwitchValue(const AnsiString Switch, const AnsiString Default)
@@ -164,18 +215,18 @@ AnsiString __fastcall TProgramParams::SwitchValue(const AnsiString Switch, const
   return Value;
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgramParams::ParamsProcessed(int Position, int Count)
+void __fastcall TProgramParams::ParamsProcessed(int ParamsStart, int ParamsCount)
 {
   int Index = 1;
-  int APosition = 0;
-  while (Index <= Count)
+  int Position = 0;
+  while (Index <= this->Count)
   {
     AnsiString S;
     if (ParamType(Index, S) == ptParam)
     {
-      APosition++;
+      Position++;
 
-      if ((APosition >= Position) && (APosition < Position + Count))
+      if ((Position >= ParamsStart) && (Position < ParamsStart + ParamsCount))
       {
         FParameters->Delete(Index);
         Index--;
@@ -183,5 +234,6 @@ void __fastcall TProgramParams::ParamsProcessed(int Position, int Count)
     }
     Index++;
   }
+  ResetParamCount();
 }
 

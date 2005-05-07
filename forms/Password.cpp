@@ -6,6 +6,7 @@
 #include <VCLCommon.h>
 #include <TextsWin.h>
 
+#include "WinInterface.h"
 #include "Password.h"
 //---------------------------------------------------------------------
 #pragma link "PasswordEdit"
@@ -140,3 +141,9 @@ void __fastcall TPasswordDialog::ApplicationShowHint(AnsiString & HintStr,
     HintInfo.HideTimeout = 2500;
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TPasswordDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
+}
+//---------------------------------------------------------------------------

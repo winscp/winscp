@@ -161,8 +161,11 @@ begin
 end;
 
 procedure TCustomDirViewColProperties.SetSortStr(Value: string);
+var
+  ASortColumn: Integer;
 begin
-  SortColumn := StrToIntDef(CutToChar(Value, ';', True), SortColumn);
+  ASortColumn := StrToIntDef(CutToChar(Value, ';', True), SortColumn);
+  if ASortColumn < Count then SortColumn := ASortColumn;
   SortAscending := Boolean(StrToIntDef(CutToChar(Value, ';', True), Integer(SortAscending)));
   SortByExtension := Boolean(StrToIntDef(CutToChar(Value, ';', True), Integer(SortByExtension)));
 end;

@@ -321,8 +321,8 @@ private:
 	bool __fastcall CallBackDisplayName(Comctrls::TTreeNode* &Node, void * Data);
 	bool __fastcall CallBackSetDirSize(Comctrls::TTreeNode* &Node, void * Data);
 	bool __fastcall CallBackExpandLevel(Comctrls::TTreeNode* &Node, void * Data);
-	void __fastcall ChangeDetected(System::TObject* Sender, const AnsiString Directory);
-	void __fastcall ChangeInvalid(System::TObject* Sender, const AnsiString Directory);
+	void __fastcall ChangeDetected(System::TObject* Sender, const AnsiString Directory, bool &SubdirsChanged);
+	void __fastcall ChangeInvalid(System::TObject* Sender, const AnsiString Directory, const AnsiString ErrorStr);
 	void __fastcall ChangeTimerOnTimer(System::TObject* Sender);
 	
 protected:

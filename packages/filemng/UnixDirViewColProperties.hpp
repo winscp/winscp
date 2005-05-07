@@ -23,7 +23,7 @@ namespace Unixdirviewcolproperties
 {
 //-- type declarations -------------------------------------------------------
 #pragma option push -b-
-enum TUnixDirViewCol { uvName, uvSize, uvChanged, uvRights, uvOwner, uvGroup, uvExt };
+enum TUnixDirViewCol { uvName, uvSize, uvChanged, uvRights, uvOwner, uvGroup, uvExt, uvLinkTarget };
 #pragma option pop
 
 class DELPHICLASS TUnixDirViewColProperties;
@@ -75,8 +75,12 @@ __published:
 	__property Classes::TAlignment GroupAlignment = {read=GetAlignments, write=SetAlignments, stored=StoreAlignment, index=5, nodefault};
 	__property AnsiString ExtCaption = {read=GetCaptions, write=SetCaptions, stored=StoreCaption, index=6};
 	__property int ExtWidth = {read=GetWidths, write=SetWidths, stored=StoreWidth, index=6, nodefault};
-	__property bool ExtVisible = {read=GetVisible, write=SetVisible, index=6, default=1};
+	__property bool ExtVisible = {read=GetVisible, write=SetVisible, index=6, default=0};
 	__property Classes::TAlignment ExtAlignment = {read=GetAlignments, write=SetAlignments, stored=StoreAlignment, index=6, nodefault};
+	__property AnsiString LinkTargetCaption = {read=GetCaptions, write=SetCaptions, stored=StoreCaption, index=7};
+	__property int LinkTargetWidth = {read=GetWidths, write=SetWidths, stored=StoreWidth, index=7, nodefault};
+	__property bool LinkTargetVisible = {read=GetVisible, write=SetVisible, index=7, default=0};
+	__property Classes::TAlignment LinkTargetAlignment = {read=GetAlignments, write=SetAlignments, stored=StoreAlignment, index=7, nodefault};
 	__property TUnixDirViewCol Column1 = {read=GetDirOrder, write=SetDirOrder, index=0, default=0};
 	__property TUnixDirViewCol Column2 = {read=GetDirOrder, write=SetDirOrder, index=1, default=1};
 	__property TUnixDirViewCol Column3 = {read=GetDirOrder, write=SetDirOrder, index=2, default=2};
@@ -84,6 +88,7 @@ __published:
 	__property TUnixDirViewCol Column5 = {read=GetDirOrder, write=SetDirOrder, index=4, default=4};
 	__property TUnixDirViewCol Column6 = {read=GetDirOrder, write=SetDirOrder, index=5, default=5};
 	__property TUnixDirViewCol Column7 = {read=GetDirOrder, write=SetDirOrder, index=6, default=6};
+	__property TUnixDirViewCol Column8 = {read=GetDirOrder, write=SetDirOrder, index=7, default=7};
 public:
 	#pragma option push -w-inl
 	/* TPersistent.Destroy */ inline __fastcall virtual ~TUnixDirViewColProperties(void) { }
@@ -99,11 +104,13 @@ extern PACKAGE System::ResourceString _SUnixDirViewOwnerCol;
 #define Unixdirviewcolproperties_SUnixDirViewOwnerCol System::LoadResourceString(&Unixdirviewcolproperties::_SUnixDirViewOwnerCol)
 extern PACKAGE System::ResourceString _SUnixDirViewGroupCol;
 #define Unixdirviewcolproperties_SUnixDirViewGroupCol System::LoadResourceString(&Unixdirviewcolproperties::_SUnixDirViewGroupCol)
-static const Shortint UnixDirViewColumns = 0x7;
-extern PACKAGE void *DefaultUnixDirViewCaptions[7];
-extern PACKAGE int DefaultUnixDirViewWidths[7];
-extern PACKAGE Classes::TAlignment DefaultUnixDirViewAlignments[7];
-extern PACKAGE bool DefaultUnixDirViewVisible[7];
+extern PACKAGE System::ResourceString _SUnixDirViewLinkTargetCol;
+#define Unixdirviewcolproperties_SUnixDirViewLinkTargetCol System::LoadResourceString(&Unixdirviewcolproperties::_SUnixDirViewLinkTargetCol)
+static const Shortint UnixDirViewColumns = 0x8;
+extern PACKAGE void *DefaultUnixDirViewCaptions[8];
+extern PACKAGE int DefaultUnixDirViewWidths[8];
+extern PACKAGE Classes::TAlignment DefaultUnixDirViewAlignments[8];
+extern PACKAGE bool DefaultUnixDirViewVisible[8];
 
 }	/* namespace Unixdirviewcolproperties */
 using namespace Unixdirviewcolproperties;

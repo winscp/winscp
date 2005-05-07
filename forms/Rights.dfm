@@ -55,7 +55,7 @@ object RightsFrame: TRightsFrame
     Flat = True
     OnClick = RightsButtonsClick
   end
-  object OwnerReadCheck: TCheckBox
+  object OwnerReadCheck: TGrayedCheckBox
     Tag = 256
     Left = 58
     Top = 3
@@ -65,7 +65,7 @@ object RightsFrame: TRightsFrame
     TabOrder = 0
     OnClick = ControlChange
   end
-  object OwnerWriteCheck: TCheckBox
+  object OwnerWriteCheck: TGrayedCheckBox
     Tag = 128
     Left = 95
     Top = 3
@@ -75,7 +75,7 @@ object RightsFrame: TRightsFrame
     TabOrder = 1
     OnClick = ControlChange
   end
-  object OwnerExecuteCheck: TCheckBox
+  object OwnerExecuteCheck: TGrayedCheckBox
     Tag = 64
     Left = 132
     Top = 3
@@ -85,7 +85,7 @@ object RightsFrame: TRightsFrame
     TabOrder = 2
     OnClick = ControlChange
   end
-  object GroupReadCheck: TCheckBox
+  object GroupReadCheck: TGrayedCheckBox
     Tag = 32
     Left = 58
     Top = 23
@@ -95,7 +95,7 @@ object RightsFrame: TRightsFrame
     TabOrder = 3
     OnClick = ControlChange
   end
-  object GroupWriteCheck: TCheckBox
+  object GroupWriteCheck: TGrayedCheckBox
     Tag = 16
     Left = 95
     Top = 23
@@ -105,7 +105,7 @@ object RightsFrame: TRightsFrame
     TabOrder = 4
     OnClick = ControlChange
   end
-  object GroupExecuteCheck: TCheckBox
+  object GroupExecuteCheck: TGrayedCheckBox
     Tag = 8
     Left = 132
     Top = 23
@@ -115,7 +115,7 @@ object RightsFrame: TRightsFrame
     TabOrder = 5
     OnClick = ControlChange
   end
-  object OthersReadCheck: TCheckBox
+  object OthersReadCheck: TGrayedCheckBox
     Tag = 4
     Left = 58
     Top = 43
@@ -125,7 +125,7 @@ object RightsFrame: TRightsFrame
     TabOrder = 6
     OnClick = ControlChange
   end
-  object OthersWriteCheck: TCheckBox
+  object OthersWriteCheck: TGrayedCheckBox
     Tag = 2
     Left = 95
     Top = 43
@@ -135,7 +135,7 @@ object RightsFrame: TRightsFrame
     TabOrder = 7
     OnClick = ControlChange
   end
-  object OthersExecuteCheck: TCheckBox
+  object OthersExecuteCheck: TGrayedCheckBox
     Tag = 1
     Left = 132
     Top = 43

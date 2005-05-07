@@ -50,6 +50,7 @@ public:
   virtual void __fastcall CopyFile(const AnsiString FileName,
     const AnsiString NewName);
   virtual AnsiString __fastcall FileUrl(const AnsiString FileName);
+  virtual TStrings * __fastcall GetFixedPaths();
 
   static bool __fastcall RemoveLastLine(AnsiString & Line,
     int & ReturnCode, AnsiString LastLine = "");
@@ -91,7 +92,8 @@ private:
   void __fastcall SCPError(const AnsiString Message, bool Fatal);
   void __fastcall SCPSendError(const AnsiString Message, bool Fatal);
   void __fastcall SCPSink(const AnsiString TargetDir,
-    const AnsiString FileName, const TCopyParamType * CopyParam, bool & Success,
+    const AnsiString FileName, const AnsiString SourceDir,
+    const TCopyParamType * CopyParam, bool & Success,
     TFileOperationProgressType * OperationProgress, int Params, int Level);
   void __fastcall SCPSource(const AnsiString FileName,
     const TCopyParamType * CopyParam, int Params,

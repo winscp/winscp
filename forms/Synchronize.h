@@ -10,6 +10,7 @@
 #include <HistoryComboBox.hpp>
 
 #include <WinInterface.h>
+#include "GrayedCheckBox.hpp"
 //---------------------------------------------------------------------------
 class TSynchronizeDialog : public TForm
 {
@@ -29,18 +30,24 @@ __published:
   TCheckBox *SynchronizeExistingOnlyCheck;
   TButton *StartButton;
   TButton *MinimizeButton;
-  TButton *TransferPreferencesButton;
+  TButton *TransferSettingsButton;
   TCheckBox *SynchronizeRecursiveCheck;
+  TGrayedCheckBox *SynchronizeSynchronizeCheck;
+  TXPGroupBox *CopyParamGroup;
+  TLabel *CopyParamLabel;
+  TButton *HelpButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
-  void __fastcall DirectoryEditKeyDown(TObject *Sender, WORD &Key,
-    TShiftState Shift);
-  void __fastcall TransferPreferencesButtonClick(TObject *Sender);
+  void __fastcall TransferSettingsButtonClick(TObject *Sender);
   void __fastcall StartButtonClick(TObject *Sender);
   void __fastcall StopButtonClick(TObject *Sender);
   void __fastcall MinimizeButtonClick(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+  void __fastcall CopyParamGroupContextPopup(TObject *Sender,
+          TPoint &MousePos, bool &Handled);
+  void __fastcall CopyParamGroupDblClick(TObject *Sender);
+  void __fastcall HelpButtonClick(TObject *Sender);
 
 private:
   TSynchronizeParamType FParams;
@@ -49,26 +56,34 @@ private:
   bool FMinimizedByMe;
   bool FAbort;
   bool FClose;
+  TCopyParamType FCopyParams;
+  TPopupMenu * FPresetsMenu;
+  AnsiString FPreset;
 
   void __fastcall SetParams(const TSynchronizeParamType& value);
   TSynchronizeParamType __fastcall GetParams();
   void __fastcall SetSaveSettings(bool value);
   bool __fastcall GetSaveSettings();
+  void __fastcall SetCopyParams(const TCopyParamType & value);
+  TCopyParamType __fastcall GetCopyParams();
 
 protected:
-  void __fastcall DoStartStop(bool Start);
+  void __fastcall DoStartStop(bool Start, bool Synchronize);
   void __fastcall DoAbort(TObject * Sender, bool Close);
   void __fastcall Stop();
   virtual void __fastcall Dispatch(void * Message);
+  void __fastcall CopyParamClick(TObject * Sender);
 
 public:
   __fastcall TSynchronizeDialog(TComponent* Owner);
+  virtual __fastcall ~TSynchronizeDialog();
 
   bool __fastcall Execute();
 
   __property TSynchronizeParamType Params = { read = GetParams, write = SetParams };
   __property TSynchronizeStartStopEvent OnStartStop  = { read=FOnStartStop, write=FOnStartStop };
   __property bool SaveSettings = { read = GetSaveSettings, write = SetSaveSettings };
+  __property TCopyParamType CopyParams = { read = GetCopyParams, write = SetCopyParams };
 
 protected:
   void __fastcall UpdateControls();

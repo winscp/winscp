@@ -9,17 +9,18 @@
 #include <ScpMain.h>
 #include <Interface.h>
 #include <TextsWin.h>
+#include <HelpWin.h>
 #include <VCLCommon.h>
 #include <GUITools.h>
 #include <DragDrop.hpp>
 
+#include "Glyphs.h"
 #include "NonVisual.h"
 #include "Tools.h"
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "AssociatedStatusBar"
 #pragma link "CustomDirView"
 #pragma link "CustomScpExplorer"
 #pragma link "CustomUnixDirView"
@@ -32,11 +33,18 @@
 #pragma link "IEPathComboBox"
 #pragma link "PathLabel"
 #pragma link "UnixPathComboBox"
-#pragma link "ToolbarPanel"
 #pragma link "HistoryComboBox"
 #pragma link "CustomDriveView"
 #pragma link "DriveView"
 #pragma link "UnixDriveView"
+#pragma link "TB2Dock"
+#pragma link "TB2Item"
+#pragma link "TB2Toolbar"
+#pragma link "TBX"
+#pragma link "TB2ExtItems"
+#pragma link "TBXExtItems"
+#pragma link "TBXLists"
+#pragma link "TBXStatusBars"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
@@ -49,26 +57,27 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   FFirstTerminal = true;
   FInternalDDDownloadList = new TStringList();
 
-  LocalBackButton->DropdownMenu = LocalDirView->BackMenu;
-  LocalForwardButton->DropdownMenu = LocalDirView->ForwardMenu;
-  RemoteBackButton->DropdownMenu = RemoteDirView->BackMenu;
-  RemoteForwardButton->DropdownMenu = RemoteDirView->ForwardMenu;
-  SavedSessionsButton->OnClick = DropDownButtonMenu;
+  LocalBackButton->LinkSubitems = HistoryMenu(osLocal, true)->Items;
+  LocalForwardButton->LinkSubitems = HistoryMenu(osLocal, false)->Items;
+  RemoteBackButton->LinkSubitems = HistoryMenu(osRemote, true)->Items;
+  RemoteForwardButton->LinkSubitems = HistoryMenu(osRemote, false)->Items;
 
-  TopCoolBar->PopupMenu = NonVisualDataModule->CommanderBarPopup;
-  ToolbarPanel->PopupMenu = TopCoolBar->PopupMenu;
-  StatusBar->PopupMenu = TopCoolBar->PopupMenu;
-  QueueCoolBar->PopupMenu = TopCoolBar->PopupMenu;
+  TopDock->PopupMenu = NonVisualDataModule->CommanderBarPopup;
+  StatusBar->PopupMenu = TopDock->PopupMenu;
+  QueueDock->PopupMenu = TopDock->PopupMenu;
+  BottomDock->PopupMenu = TopDock->PopupMenu;
 
-  LocalCoolBar->PopupMenu = NonVisualDataModule->LocalPanelPopup;
-  LocalPathLabel->PopupMenu = LocalCoolBar->PopupMenu;
-  LocalStatusBar->PopupMenu = LocalCoolBar->PopupMenu;
-  LocalDriveView->PopupMenu = LocalCoolBar->PopupMenu;
+  LocalTopDock->PopupMenu = NonVisualDataModule->LocalPanelPopup;
+  LocalPathLabel->PopupMenu = LocalTopDock->PopupMenu;
+  LocalStatusBar->PopupMenu = LocalTopDock->PopupMenu;
+  LocalDriveView->PopupMenu = LocalTopDock->PopupMenu;
+  LocalBottomDock->PopupMenu = LocalTopDock->PopupMenu;
 
-  RemoteCoolBar->PopupMenu = NonVisualDataModule->RemotePanelPopup;
-  RemotePathLabel->PopupMenu = RemoteCoolBar->PopupMenu;
-  RemoteStatusBar->PopupMenu = RemoteCoolBar->PopupMenu;
-  RemoteDriveView->PopupMenu = RemoteCoolBar->PopupMenu;
+  RemoteTopDock->PopupMenu = NonVisualDataModule->RemotePanelPopup;
+  RemotePathLabel->PopupMenu = RemoteTopDock->PopupMenu;
+  RemoteStatusBar->PopupMenu = RemoteTopDock->PopupMenu;
+  RemoteDriveView->PopupMenu = RemoteTopDock->PopupMenu;
+  RemoteBottomDock->PopupMenu = RemoteTopDock->PopupMenu;
 
   // set common norton shorcuts to our actions
   NonVisualDataModule->CommanderShortcuts();
@@ -76,12 +85,22 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   reinterpret_cast<TLabel*>(Splitter)->OnDblClick = SplitterDblClick;
   reinterpret_cast<TLabel*>(LocalPanelSplitter)->OnDblClick = PanelSplitterDblClick;
   reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = PanelSplitterDblClick;
-  reinterpret_cast<TLabel*>(SessionComboResizer)->OnDblClick = SessionComboResizerDblClick;
   RemotePathComboBox->TabStop = False;
 
   CommandLineLabel->FocusControl = CommandLineCombo;
   CommandLineCombo->Text = "";
   FCommandLineComboPopulated = false;
+
+  for (int i = 0; i < ToolbarToolbar->Items->Count; i++)
+  {
+    TTBCustomItem * Item = ToolbarToolbar->Items->Items[i];
+    Item->Caption =
+      ShortCutToText(Item->ShortCut) + " " +
+      Trim(StringReplace(StripHotkey(Item->Caption),
+        "...", "", TReplaceFlags() << rfReplaceAll << rfIgnoreCase));
+  }
+
+  LocalDirView->Font = Screen->IconFont;
 }
 //---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::~TScpCommanderForm()
@@ -101,14 +120,13 @@ void __fastcall TScpCommanderForm::RestoreParams()
   assert(Configuration);
 
   // IDE often looses this link
-  LocalDirView->HeaderImages = NonVisualDataModule->ArrowImages;
+  LocalDirView->HeaderImages = GlyphsModule->ArrowImages;
 
   TCustomScpExplorerForm::RestoreParams();
   LeftPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
-  LoadCoolbarLayoutStr(TopCoolBar, WinConfiguration->ScpCommander.CoolBarLayout);
-  SessionCombo->Width = WinConfiguration->ScpCommander.SessionComboWidth;
+  LoadToolbarsLayoutStr(this, WinConfiguration->ScpCommander.ToolbarsLayout);
+  SessionCombo->EditWidth = WinConfiguration->ScpCommander.SessionComboWidth;
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
-  ToolbarPanel->Visible = WinConfiguration->ScpCommander.ToolBar;
 
   CommandLinePanel->Visible = WinConfiguration->ScpCommander.CommandLine;
 
@@ -117,7 +135,6 @@ void __fastcall TScpCommanderForm::RestoreParams()
   #define RESTORE_PANEL_PARAMS(PANEL) \
     PANEL ## DirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams; \
     PANEL ## StatusBar->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar; \
-    LoadCoolbarLayoutStr(PANEL ## CoolBar, WinConfiguration->ScpCommander.PANEL ## Panel.CoolBarLayout); \
     PANEL ## DriveView->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.DriveView; \
     PANEL ## DriveView->Height = WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight
   RESTORE_PANEL_PARAMS(Local);
@@ -128,7 +145,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
   LocalDirView->DirColProperties->ExtVisible = false;
   RemoteDirView->UnixColProperties->ExtVisible = false;
 
-  NonVisualDataModule->SynchronizeBrowsingAction->Checked = WinConfiguration->ScpCommander.SynchronizeBrowsing;
+  NonVisualDataModule->SynchronizeBrowsingAction->Checked = WinConfiguration->SynchronizeBrowsing;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::StoreParams()
@@ -138,11 +155,10 @@ void __fastcall TScpCommanderForm::StoreParams()
   WinConfiguration->BeginUpdate();
   try
   {
-    WinConfiguration->ScpCommander.CoolBarLayout = GetCoolbarLayoutStr(TopCoolBar);
-    WinConfiguration->ScpCommander.SessionComboWidth = SessionCombo->Width;
+    WinConfiguration->ScpCommander.ToolbarsLayout = GetToolbarsLayoutStr(this);
+    WinConfiguration->ScpCommander.SessionComboWidth = SessionCombo->EditWidth;
     WinConfiguration->ScpCommander.LocalPanelWidth = LeftPanelWidth;
     WinConfiguration->ScpCommander.StatusBar = StatusBar->Visible;
-    WinConfiguration->ScpCommander.ToolBar = ToolbarPanel->Visible;
 
     WinConfiguration->ScpCommander.CommandLine = CommandLinePanel->Visible;
     SaveCommandLine();
@@ -152,7 +168,6 @@ void __fastcall TScpCommanderForm::StoreParams()
     #define STORE_PANEL_PARAMS(PANEL) \
       WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams = PANEL ## DirView->ColProperties->ParamsStr; \
       WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar = PANEL ## StatusBar->Visible; \
-      WinConfiguration->ScpCommander.PANEL ## Panel.CoolBarLayout = GetCoolbarLayoutStr(PANEL ## CoolBar); \
       WinConfiguration->ScpCommander.PANEL ## Panel.DriveView = PANEL ## DriveView->Visible; \
       WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight = PANEL ## DriveView->Height 
     STORE_PANEL_PARAMS(Local);
@@ -161,7 +176,7 @@ void __fastcall TScpCommanderForm::StoreParams()
 
     WinConfiguration->ScpCommander.WindowParams = WinConfiguration->StoreForm(this);;
 
-    WinConfiguration->ScpCommander.SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+    WinConfiguration->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
 
     TCustomScpExplorerForm::StoreParams();
   }
@@ -227,11 +242,12 @@ bool __fastcall TScpCommanderForm::InternalDDDownload(AnsiString & TargetDirecto
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
-  TTransferType Type, bool DragDrop, TStrings * FileList, AnsiString & TargetDirectory,
+  TTransferType Type, bool Temp, TStrings * FileList, AnsiString & TargetDirectory,
   TGUICopyParamType & CopyParam, bool Confirm)
 {
   bool Result = false;
-  if (DragDrop && (Direction == tdToLocal) &&
+  // Temp means d&d here so far, may change in future!
+  if (Temp && (Direction == tdToLocal) &&
       IsFileControl(FDDTargetControl, osLocal))
   {
     Result = InternalDDDownload(TargetDirectory);
@@ -241,7 +257,7 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
       FInternalDDDownloadList->Assign(FileList);
     }
   }
-  else if (!DragDrop && TargetDirectory.IsEmpty())
+  else if (!Temp && TargetDirectory.IsEmpty())
   {
     if (Direction == tdToLocal)
     {
@@ -255,7 +271,7 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
 
   if (!Result)
   {
-    Result = TCustomScpExplorerForm::CopyParamDialog(Direction, Type, DragDrop,
+    Result = TCustomScpExplorerForm::CopyParamDialog(Direction, Type, Temp,
       FileList, TargetDirectory, CopyParam, Confirm);
   }
   return Result;
@@ -267,11 +283,6 @@ void __fastcall TScpCommanderForm::DoShow()
 
   assert(FDirViewToSelect);
   FDirViewToSelect->SetFocus();
-
-  // when this is called before OnShow, some toolbars get right-aligned
-  SetCoolBandsMinWidth(TopCoolBar);
-  SetCoolBandsMinWidth(LocalCoolBar);
-  SetCoolBandsMinWidth(RemoteCoolBar);
 
   UpdateControls();
 }
@@ -356,9 +367,8 @@ void __fastcall TScpCommanderForm::TerminalChanging()
     TExporerState * ExplorerState = dynamic_cast<TExporerState *>(Terminal->UserObject);
     assert(ExplorerState != NULL);
 
-    ExplorerState->Local.SortStr = LocalDirView->DirColProperties->SortStr;
-    ExplorerState->Local.FocusedItem = LocalDirView->ItemFocused != NULL ?
-      LocalDirView->ItemFocused->Caption : AnsiString("");
+    SAFE_DESTROY(ExplorerState->Local);
+    ExplorerState->Local = LocalDirView->SaveState();
   }
 }
 //---------------------------------------------------------------------------
@@ -428,17 +438,8 @@ void __fastcall TScpCommanderForm::TerminalChanged()
     {
       TExporerState * ExplorerState = dynamic_cast<TExporerState *>(Terminal->UserObject);
       assert(ExplorerState != NULL);
-      
-      LocalDirView->DirColProperties->SortStr = ExplorerState->Local.SortStr;
-      if (!ExplorerState->Local.FocusedItem.IsEmpty())
-      {
-        TListItem * ListItem = LocalDirView->FindFileItem(ExplorerState->Local.FocusedItem);
-        if (ListItem != NULL)
-        {
-          LocalDirView->ItemFocused = ListItem;
-          ListItem->MakeVisible(false);
-        }
-      }
+
+      LocalDirView->RestoreState(ExplorerState->Local);
     }
   }
   else
@@ -484,10 +485,12 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     ClientWidth = AWidth;
     LeftPanelWidth = FLastLeftPanelWidth;
 
-    SWAP(AnsiString, LeftMenuButton->Caption, RightMenuButton->Caption);
-    SWAP(AnsiString, LeftMenuButton->Hint, RightMenuButton->Hint);
-    SWAP(TMenuItem*, LeftMenuButton->MenuItem, RightMenuButton->MenuItem);
-    SWAP(TShortCut, NonVisualDataModule->LocalChangePathAction->ShortCut, 
+    int LocalIndex = MenuToolbar->Items->IndexOf(LocalMenuButton);
+    int RemoteIndex = MenuToolbar->Items->IndexOf(RemoteMenuButton);
+    MenuToolbar->Items->Move(LocalIndex, RemoteIndex);
+    RemoteIndex = MenuToolbar->Items->IndexOf(RemoteMenuButton);
+    MenuToolbar->Items->Move(RemoteIndex, LocalIndex);
+    SWAP(TShortCut, NonVisualDataModule->LocalChangePathAction->ShortCut,
       NonVisualDataModule->RemoteChangePathAction->ShortCut);
   }
 }
@@ -571,6 +574,8 @@ void __fastcall TScpCommanderForm::PanelSplitterDblClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::UpdateControls()
 {
+  TCustomScpExplorerForm::UpdateControls();
+
   Splitter->Hint = FormatFloat("0%|X", LeftPanelWidth*100);
   CommandLineLabel->UnixPath = (FCurrentSide == osRemote);
   CommandLineLabel->Caption = DirView(osCurrent)->PathName;
@@ -595,24 +600,32 @@ void __fastcall TScpCommanderForm::PathComboBoxCloseUp(TObject * /*Sender*/,
   DirView(osCurrent)->SetFocus();
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::SessionComboCloseUp(TObject *Sender)
-{
-  PathComboBoxCloseUp(Sender, false);
-}
-//---------------------------------------------------------------------------
 TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
 {
   switch (Component) {
-    case fcToolBar: return ToolbarPanel;
+    case fcToolBar: return ToolbarToolbar;
     case fcStatusBar: return StatusBar;
-    case fcLocalCoolBar: return LocalCoolBar;
     case fcLocalStatusBar: return LocalStatusBar;
-    case fcRemoteCoolBar: return RemoteCoolBar;
     case fcRemoteStatusBar: return RemoteStatusBar;
-    case fcSessionCombo: return SessionCombo;
-    case fcMenuToolBar: return MenuToolBar;
+    case fcSessionCombo: return reinterpret_cast<TControl*>(SessionCombo);
     case fcCommandLinePanel: return CommandLinePanel; 
     case fcLocalTree: return LocalDriveView;
+    case fcTransferCombo: return reinterpret_cast<TControl*>(TransferCombo);
+    case fcSessionToolbar: return SessionToolbar;
+
+    case fcCommanderMenuBand: return MenuToolbar;
+    case fcCommanderSessionBand: return SessionToolbar;
+    case fcCommanderPreferencesBand: return PreferencesToolbar;
+    case fcCommanderSelectionBand: return SelectionToolbar;
+    case fcCommanderToolbarBand: return CommandToolbar;
+    case fcCommanderSortBand: return SortToolbar;
+    case fcCommanderCommandsBand: return CommandsToolbar;
+    case fcCommanderUpdatesBand: return UpdatesToolbar;
+    case fcCommanderTransferBand: return TransferToolbar;
+    case fcCommanderLocalHistoryBand: return LocalHistoryToolbar;
+    case fcCommanderLocalNavigationBand: return LocalNavigationToolbar;
+    case fcCommanderRemoteHistoryBand: return RemoteHistoryToolbar;
+    case fcCommanderRemoteNavigationBand: return RemoteNavigationToolbar;
     default: return TCustomScpExplorerForm::GetComponent(Component);
   }
 }
@@ -624,15 +637,17 @@ void __fastcall TScpCommanderForm::FixControlsPlacement()
   LocalPanelSplitter->Visible = LocalDriveView->Visible;
 
   TControl * ControlsOrder[] =
-    { CommandLinePanel, QueueSplitter, QueuePanel, ToolbarPanel, StatusBar };
+    { CommandLinePanel, QueueSplitter, QueuePanel, BottomDock, StatusBar };
   SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
 
   TControl * LocalControlsOrder[] =
-    { LocalDriveView, LocalPanelSplitter, LocalDirView };
+    { LocalTopDock, LocalDriveView, LocalPanelSplitter, LocalDirView,
+      LocalBottomDock, LocalStatusBar };
   SetVerticalControlsOrder(LocalControlsOrder, LENOF(LocalControlsOrder));
 
   TControl * RemoteControlsOrder[] =
-    { RemoteDriveView, RemotePanelSplitter, RemoteDirView };
+    { RemoteTopDock, RemoteDriveView, RemotePanelSplitter, RemoteDirView,
+      RemoteBottomDock, RemoteStatusBar };
   SetVerticalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
 
   if (LocalDirView->ItemFocused != NULL)
@@ -654,7 +669,8 @@ void __fastcall TScpCommanderForm::CompareDirectories()
     WinConfiguration->ScpCommander.CompareCriterias());
   if (LocalDirView->SelCount + RemoteDirView->SelCount == 0)
   {
-    MessageDialog(LoadStr(COMPARE_NO_DIFFERENCES), qtInformation, qaOK, 0);
+    MessageDialog(LoadStr(COMPARE_NO_DIFFERENCES), qtInformation, qaOK,
+      HELP_COMPARE_NO_DIFFERENCES);
   }
 }
 //---------------------------------------------------------------------------
@@ -669,8 +685,17 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
 {
   AnsiString LocalDirectory = LocalDirView->PathName;
   AnsiString RemoteDirectory = RemoteDirView->PathName;
-  TSynchronizeMode Mode = (FCurrentSide == osLocal) ? smRemote : smLocal;
-  DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode);
+  bool SaveMode = !(GUIConfiguration->SynchronizeModeAuto < 0);
+  TSynchronizeMode Mode =
+    (SaveMode ? (TSynchronizeMode)GUIConfiguration->SynchronizeModeAuto :
+      ((FCurrentSide == osLocal) ? smRemote : smLocal));
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, SaveMode))
+  {
+    if (SaveMode)
+    {
+      GUIConfiguration->SynchronizeModeAuto = Mode;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ExploreLocalDirectory()
@@ -729,14 +754,16 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   TCustomScpExplorerForm::FileOperationProgress(ProgressData, Cancel);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DirViewLoaded(TObject *Sender)
+void __fastcall TScpCommanderForm::DoDirViewLoaded(TCustomDirView * ADirView)
 {
+  TCustomScpExplorerForm::DoDirViewLoaded(ADirView);
+
   UpdateControls();
-  
+
+  bool PrevNoTransferPresetAutoSelect = FNoTransferPresetAutoSelect;
+  FNoTransferPresetAutoSelect = true;
   try
   {
-    TCustomDirView * ADirView = dynamic_cast<TCustomDirView *>(Sender);
-    assert(ADirView);
     AnsiString PrevPath = FPrevPath[ADirView == LocalDirView];
     AnsiString FullPrevPath =
       (ADirView == LocalDirView) ? IncludeTrailingBackslash(PrevPath) :
@@ -813,15 +840,18 @@ void __fastcall TScpCommanderForm::DirViewLoaded(TObject *Sender)
       }
       FSynchronisingBrowse = false;
     }
+    FNoTransferPresetAutoSelect = PrevNoTransferPresetAutoSelect;
   }
   catch(Exception & E)
   {
+    FNoTransferPresetAutoSelect = PrevNoTransferPresetAutoSelect;
     FSynchronisingBrowse = false;
     NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
     if (!Application->Terminated)
     {
       Terminal->DoShowExtendedException(&E);
-      MessageDialog(LoadStr(SYNC_DIR_BROWSE_ERROR), qtInformation, qaOK, 0);
+      MessageDialog(LoadStr(SYNC_DIR_BROWSE_ERROR), qtInformation, qaOK,
+        HELP_SYNC_DIR_BROWSE_ERROR);
     }
     else
     {
@@ -1007,7 +1037,7 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
       {
         assert(FInternalDDDownloadList->Count > 0);
         assert(dwEffect == DROPEFFECT_Copy || dwEffect == DROPEFFECT_Move);
-        TGUICopyParamType CopyParams = GUIConfiguration->CopyParam;
+        TGUICopyParamType CopyParams = GUIConfiguration->CurrentCopyParam;
         TTransferType TransferType = dwEffect == DROPEFFECT_Copy ? ttCopy : ttMove;
         if (FDDMoveSlipped)
         {
@@ -1226,7 +1256,7 @@ int __fastcall TScpCommanderForm::GetStaticComponentsHeight()
 {
   return TCustomScpExplorerForm::GetStaticComponentsHeight() +
     (CommandLinePanel->Visible ? CommandLinePanel->Height : 0) +
-    (ToolbarPanel->Visible ? ToolbarPanel->Height : 0) +
+    (BottomDock->Visible ? BottomDock->Height : 0) +
     (StatusBar->Visible ? StatusBar->Height : 0);
 }
 //---------------------------------------------------------------------------
@@ -1351,3 +1381,64 @@ void __fastcall TScpCommanderForm::LocalDirViewFileIconForName(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalDirViewUpdateStatusBar(
+  TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
+{
+  UpdateFileStatusBar(LocalStatusBar, FileInfo, 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::RemoteDirViewUpdateStatusBar(
+  TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
+{
+  UpdateFileStatusBar(RemoteStatusBar, FileInfo, 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalStatusBarClick(TObject * /*Sender*/)
+{
+  LocalDirView->SetFocus();
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TScpCommanderForm::PathForCaption()
+{
+  AnsiString Result;
+  if (FCurrentSide == osLocal)
+  {
+    // for consistency do not show even local path when there is no terminal
+    if (Terminal != NULL)
+    {
+      switch (WinConfiguration->PathInCaption)
+      {
+        case picShort:
+          {
+            Result = ExtractFileName(LocalDirView->PathName);
+            if (Result.IsEmpty())
+            {
+              Result = LocalDirView->PathName;
+            }
+          }
+          break;
+
+        case picFull:
+          Result = LocalDirView->PathName;
+          break;
+      }
+    }
+  }
+  else
+  {
+    Result = TCustomScpExplorerForm::PathForCaption();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::GetTransferPresetAutoSelectData(
+  TCopyParamRuleData & Data)
+{
+  TCustomScpExplorerForm::GetTransferPresetAutoSelectData(Data);
+  Data.LocalDirectory = LocalDirView->PathName;
+}
+
+
+
+
+

@@ -75,15 +75,19 @@ void connection_fatal(void * frontend, char * fmt, ...)
   SSHConnectionFatal(frontend, stuff);
 }
 //---------------------------------------------------------------------------
-void verify_ssh_host_key(void * frontend, char * host, int port, char * keytype,
-  char * keystr, char * fingerprint)
+int verify_ssh_host_key(void * frontend, char * host, int port, char * keytype,
+  char * keystr, char * fingerprint, void (*callback)(void * ctx, int result),
+  void * ctx)
 {
   SSHVerifyHostKey(frontend, host, port, keytype, keystr, fingerprint);
+  // We should return 0 when key was not confirmed, we throw exception instead.
+  return 1;
 }
 //---------------------------------------------------------------------------
-int askappend(void * frontend, Filename filename)
+int askappend(void * frontend, Filename filename,
+  void (*callback)(void * ctx, int result), void * ctx)
 {
-  // this is called from loggin.c of putty, which is never used with WinSCP
+  // this is called from logging.c of putty, which is never used with WinSCP
   assert(0);
   return 0;
 }
@@ -93,9 +97,12 @@ void old_keyfile_warning(void)
   SSHOldKeyfileWarning();
 }
 //---------------------------------------------------------------------------
-void askalg(void * frontend, const char * algtype, const char * algname)
+int askalg(void * frontend, const char * algtype, const char * algname,
+  void (*callback)(void * ctx, int result), void * ctx)
 {
   SSHAskAlg(frontend, algtype, algname);
+  // We should return 0 when key was not confirmed, we throw exception instead.
+  return 1;
 }
 //---------------------------------------------------------------------------
 void cleanup_exit(int code)
@@ -182,4 +189,10 @@ void pinger_free(Pinger pinger)
 {
   // nothing
 }
+//---------------------------------------------------------------------------
+void set_busy_status(void * frontend, int status)
+{
+  // nothing
+}
+//---------------------------------------------------------------------------
 #pragma option pop // -w-par

@@ -16,11 +16,13 @@ extern "C"
   void sk_init();
   int select_result(WPARAM wParam, LPARAM lParam);
   int socket_writable(SOCKET skt);
+  void random_ref(void);
+  void random_unref(void);
   void random_save_seed(void);
   int verify_host_key(char * hostname, int port, char * keytype, char * key);
   void store_host_key(char * hostname, int port, char * keytype, char * key);
-  void * saferealloc(void * ptr, size_t size);
-  void * safemalloc(size_t size);
+  void * saferealloc(void * ptr, size_t n, size_t size);
+  void * safemalloc(size_t n, size_t size);
   void safefree(void * ptr);
   void noise_regular(void);
   void * log_init(void * frontend, void * cfg);

@@ -48,6 +48,8 @@ __fastcall TWinConfiguration::~TWinConfiguration()
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::Default()
 {
+  FCustomCommandsDefaults = true;
+
   TCustomWinConfiguration::Default();
 
   FDDAllowMove = false;
@@ -78,6 +80,10 @@ void __fastcall TWinConfiguration::Default()
   FTemporaryDirectoryCleanup = true;
   FConfirmTemporaryDirectoryCleanup = true;
   FPreservePanelState = true;
+  FTheme = "OfficeXP";
+  FPathInCaption = picShort;
+  FCopyParamAutoSelectNotice = true;
+  FSessionToolbarAutoShown = false;
 
   FEditor.Editor = edInternal;
   FEditor.ExternalEditor = "notepad.exe";
@@ -100,14 +106,33 @@ void __fastcall TWinConfiguration::Default()
   FQueueView.Height = 100;
   FQueueView.Layout = "70,160,160,80,80,80";
   FQueueView.Show = qvHideWhenEmpty;
+  FQueueView.LastHideShow = qvHideWhenEmpty;
   FQueueView.ToolBar = false;
+
+  FUpdates.Period = 0;
+  FUpdates.LastCheck = 0;
+  FUpdates.HaveResults = false;
+  FUpdates.ShownResults = false;
+  FUpdates.ProxyHost = "";
+  FUpdates.ProxyPort = 8080;
+  FUpdates.Results.Reset();
 
   FLogWindowOnStartup = true;
   FLogWindowParams = "-1;-1;500;400";
 
   FScpExplorer.WindowParams = "-1;-1;600;400;0";
-  FScpExplorer.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,1|0;1;2;3;4;5";
-  FScpExplorer.CoolBarLayout = "5,1,0,381,6;3,0,0,127,5;4,1,1,249,4;6,0,0,196,3;2,1,1,634,2;1,1,1,634,1;0,1,1,634,0";
+  FScpExplorer.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,1;20,0;150,0|0;1;2;3;4;5;6;7";
+  FScpExplorer.ToolbarsLayout =
+    "Queue_Visible=1,Queue_LastDock=QueueDock,Queue_DockRow=0,Queue_DockPos=-1,Queue_FloatLeft=0,Queue_FloatTop=0,Queue_FloatRightX=0,"
+    "Menu_Visible=1,Menu_DockedTo=TopDock,Menu_LastDock=TopDock,Menu_DockRow=0,Menu_DockPos=0,Menu_FloatLeft=0,Menu_FloatTop=0,Menu_FloatRightX=0,"
+    "Buttons_Visible=1,Buttons_DockedTo=TopDock,Buttons_LastDock=TopDock,Buttons_DockRow=2,Buttons_DockPos=0,Buttons_FloatLeft=0,Buttons_FloatTop=0,Buttons_FloatRightX=0,"
+    "Selection_Visible=0,Selection_DockedTo=TopDock,Selection_LastDock=TopDock,Selection_DockRow=3,Selection_DockPos=0,Selection_FloatLeft=227,Selection_FloatTop=445,Selection_FloatRightX=0,"
+    "Session_Visible=0,Session_DockedTo=TopDock,Session_LastDock=TopDock,Session_DockRow=6,Session_DockPos=0,Session_FloatLeft=39,Session_FloatTop=160,Session_FloatRightX=0,"
+    "Preferences_Visible=1,Preferences_DockedTo=TopDock,Preferences_LastDock=TopDock,Preferences_DockRow=4,Preferences_DockPos=0,Preferences_FloatLeft=0,Preferences_FloatTop=0,Preferences_FloatRightX=0,"
+    "Sort_Visible=0,Sort_DockedTo=TopDock,Sort_LastDock=TopDock,Sort_DockRow=5,Sort_DockPos=0,Sort_FloatLeft=0,Sort_FloatTop=0,Sort_FloatRightX=0,"
+    "Address_Visible=1,Address_DockedTo=TopDock,Address_LastDock=TopDock,Address_DockRow=1,Address_DockPos=0,Address_FloatLeft=0,Address_FloatTop=0,Address_FloatRightX=0,"
+    "Updates_Visible=1,Updates_DockedTo=TopDock,Updates_LastDock=TopDock,Updates_DockRow=4,Updates_DockPos=302,Updates_FloatLeft=0,Updates_FloatTop=0,Updates_FloatRightX=0,"
+    "Transfer_Visible=1,Transfer_DockedTo=TopDock,Transfer_LastDock=TopDock,Transfer_DockRow=4,Transfer_DockPos=155,Transfer_FloatLeft=0,Transfer_FloatTop=0,Transfer_FloatRightX=0";
   FScpExplorer.StatusBar = true;
   AnsiString PersonalFolder;
   ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalFolder);
@@ -123,35 +148,47 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanelWidth = 0.5;
   FScpCommander.SwappedPanels = false;
   FScpCommander.StatusBar = true;
-  FScpCommander.ToolBar = true;
   FScpCommander.CommandLine = false;
   FScpCommander.ExplorerStyleSelection = false;
   FScpCommander.PreserveLocalDirectory = false;
-  FScpCommander.CoolBarLayout = "5,0,0,219,6;1,1,0,249,5;4,0,0,227,4;3,1,0,137,3;6,1,0,145,2;2,1,1,104,1;0,1,1,644,0";
+  FScpCommander.ToolbarsLayout =
+    "Queue_Visible=1,Queue_LastDock=QueueDock,Queue_DockRow=0,Queue_DockPos=-1,Queue_FloatLeft=0,Queue_FloatTop=0,Queue_FloatRightX=0,"
+    "Session_Visible=0,Session_DockedTo=TopDock,Session_LastDock=TopDock,Session_DockRow=4,Session_DockPos=0,Session_FloatLeft=380,Session_FloatTop=197,Session_FloatRightX=0,"
+    "Preferences_Visible=1,Preferences_DockedTo=TopDock,Preferences_LastDock=TopDock,Preferences_DockRow=1,Preferences_DockPos=0,Preferences_FloatLeft=0,Preferences_FloatTop=0,Preferences_FloatRightX=0,"
+    "Selection_Visible=1,Selection_DockedTo=TopDock,Selection_LastDock=TopDock,Selection_DockRow=1,Selection_DockPos=257,Selection_FloatLeft=0,Selection_FloatTop=0,Selection_FloatRightX=0,"
+    "Command_Visible=0,Command_DockedTo=TopDock,Command_LastDock=TopDock,Command_DockRow=2,Command_DockPos=0,Command_FloatLeft=0,Command_FloatTop=0,Command_FloatRightX=0,"
+    "Sort_Visible=0,Sort_DockedTo=TopDock,Sort_LastDock=TopDock,Sort_DockRow=3,Sort_DockPos=0,Sort_FloatLeft=0,Sort_FloatTop=0,Sort_FloatRightX=0,"
+    "Commands_Visible=1,Commands_DockedTo=TopDock,Commands_LastDock=TopDock,Commands_DockRow=1,Commands_DockPos=97,Commands_FloatLeft=0,Commands_FloatTop=0,Commands_FloatRightX=0,"
+    "Menu_Visible=1,Menu_DockedTo=TopDock,Menu_LastDock=TopDock,Menu_DockRow=0,Menu_DockPos=0,Menu_FloatLeft=0,Menu_FloatTop=0,Menu_FloatRightX=0,"
+    "Updates_Visible=1,Updates_DockedTo=TopDock,Updates_LastDock=TopDock,Updates_DockRow=1,Updates_DockPos=535,Updates_FloatLeft=0,Updates_FloatTop=0,Updates_FloatRightX=0,"
+    "Transfer_Visible=1,Transfer_DockedTo=TopDock,Transfer_LastDock=TopDock,Transfer_DockRow=1,Transfer_DockPos=388,Transfer_FloatLeft=0,Transfer_FloatTop=0,Transfer_FloatRightX=0,"
+    "RemotePath_Visible=1,RemotePath_DockedTo=RemoteTopDock,RemotePath_LastDock=RemoteTopDock,RemotePath_DockRow=0,RemotePath_DockPos=0,RemotePath_FloatLeft=0,RemotePath_FloatTop=0,RemotePath_FloatRightX=0,"
+    "RemoteHistory_Visible=1,RemoteHistory_DockedTo=RemoteTopDock,RemoteHistory_LastDock=RemoteTopDock,RemoteHistory_DockRow=0,RemoteHistory_DockPos=135,RemoteHistory_FloatLeft=0,RemoteHistory_FloatTop=0,RemoteHistory_FloatRightX=0,"
+    "RemoteNavigation_Visible=1,RemoteNavigation_DockedTo=RemoteTopDock,RemoteNavigation_LastDock=RemoteTopDock,RemoteNavigation_DockRow=0,RemoteNavigation_DockPos=215,RemoteNavigation_FloatLeft=0,RemoteNavigation_FloatTop=0,RemoteNavigation_FloatRightX=0,"
+    "LocalPath_Visible=1,LocalPath_DockedTo=LocalTopDock,LocalPath_LastDock=LocalTopDock,LocalPath_DockRow=0,LocalPath_DockPos=0,LocalPath_FloatLeft=0,LocalPath_FloatTop=0,LocalPath_FloatRightX=0,"
+    "LocalHistory_Visible=1,LocalHistory_DockedTo=LocalTopDock,LocalHistory_LastDock=LocalTopDock,LocalHistory_DockRow=0,LocalHistory_DockPos=135,LocalHistory_FloatLeft=0,LocalHistory_FloatTop=0,LocalHistory_FloatRightX=0,"
+    "LocalNavigation_Visible=1,LocalNavigation_DockedTo=LocalTopDock,LocalNavigation_LastDock=LocalTopDock,LocalNavigation_DockRow=0,LocalNavigation_DockPos=215,LocalNavigation_FloatLeft=0,LocalNavigation_FloatTop=0,LocalNavigation_FloatRightX=0,"
+    "Toolbar_Visible=1,Toolbar_DockedTo=BottomDock,Toolbar_LastDock=BottomDock,Toolbar_DockRow=0,Toolbar_DockPos=0,Toolbar_FloatLeft=0,Toolbar_FloatTop=0,Toolbar_FloatRightX=0";
   FScpCommander.CurrentPanel = osLocal;
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
-  FScpCommander.SynchronizeBrowsing = false;
   FScpCommander.SessionComboWidth = 114;
-  FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0|0;1;2;3;4;5";
+  FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0;20,0;150,0|0;1;2;3;4;5;6;7";
   FScpCommander.RemotePanel.StatusBar = true;
-  FScpCommander.RemotePanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
   FScpCommander.RemotePanel.DriveView = false;
   FScpCommander.RemotePanel.DriveViewHeight = 100;
   FScpCommander.LocalPanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0|0;1;2;3;4;5";
   FScpCommander.LocalPanel.StatusBar = true;
-  FScpCommander.LocalPanel.CoolBarLayout = "2,1,0,137,2;1,1,0,86,1;0,1,1,91,0";
   FScpCommander.LocalPanel.DriveView = false;
   FScpCommander.LocalPanel.DriveViewHeight = 100;
 
   FBookmarks->Clear();
-
-  FCustomCommandsDefaults = true;
-  DefaultLocalized();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::DefaultLocalized()
 {
+  TGUIConfiguration::DefaultLocalized();
+
   if (FCustomCommandsDefaults)
   {
     FCustomCommands->Clear();
@@ -170,9 +207,14 @@ void __fastcall TWinConfiguration::DefaultLocalized()
     FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_GREP)] =
       FORMAT("grep \"!?%s?!\" !&", (LoadStr(CUSTOM_COMMAND_GREP_PATTERN)));
     FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_GREP)] = ccShowResults;
-    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_FC)] =
-      "cmd /c fc \"!\" \"\!^!\" | more && pause";
-    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_FC)] = ccLocal;
+    if (Win32Platform == VER_PLATFORM_WIN32_NT)
+    {
+      FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_FC)] =
+        "cmd /c fc \"!\" \"\!^!\" | more && pause";
+      FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_FC)] = ccLocal;
+    }
+    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_DF)] = "df";
+    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_DF)] = ccShowResults;
     FCustomCommandsDefaults = true;
     FCustomCommandsModified = false;
   }
@@ -204,7 +246,10 @@ void __fastcall TWinConfiguration::ModifyAll()
 {
   TCustomWinConfiguration::ModifyAll();
   FBookmarks->ModifyAll(true);
-  FCustomCommandsModified = true;
+  if (!FCustomCommandsDefaults)
+  {
+    FCustomCommandsModified = true;
+  }
 }
 //---------------------------------------------------------------------------
 THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
@@ -253,6 +298,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
     KEY(Bool,     PreservePanelState); \
+    KEY(String,   Theme); \
+    KEY(Integer,  PathInCaption); \
+    KEY(Bool,     CopyParamAutoSelectNotice); \
+    KEY(Bool,     SessionToolbarAutoShown); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
     KEY(Integer,  Editor.Editor); \
@@ -277,10 +326,23 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Integer,  QueueView.Height); \
     KEY(String,   QueueView.Layout); \
     KEY(Integer,  QueueView.Show); \
+    KEY(Integer,  QueueView.LastHideShow); \
     KEY(Bool,     QueueView.ToolBar); \
   ); \
+  BLOCK("Interface\\Updates", CANCREATE, \
+    KEY(Integer,  FUpdates.Period); \
+    KEY(DateTime, FUpdates.LastCheck); \
+    KEY(Integer,  FUpdates.HaveResults); \
+    KEY(Integer,  FUpdates.ShownResults); \
+    KEY(String,   FUpdates.ProxyHost); \
+    KEY(Integer,  FUpdates.ProxyPort); \
+    KEY(Integer,  FUpdates.Results.ForVersion); \
+    KEY(Integer,  FUpdates.Results.Version); \
+    KEY(String,   FUpdates.Results.Message); \
+    KEY(Integer,  FUpdates.Results.Critical); \
+  ); \
   BLOCK("Interface\\Explorer", CANCREATE, \
-    KEY(String,  ScpExplorer.CoolBarLayout); \
+    KEY(String,  ScpExplorer.ToolbarsLayout); \
     KEY(String,  ScpExplorer.DirViewParams); \
     KEY(String,  ScpExplorer.LastLocalTargetDirectory); \
     KEY(Bool,    ScpExplorer.StatusBar); \
@@ -292,30 +354,26 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Integer, ScpExplorer.SessionComboWidth); \
   ); \
   BLOCK("Interface\\Commander", CANCREATE, \
-    KEY(String,  ScpCommander.CoolBarLayout); \
+    KEY(String,  ScpCommander.ToolbarsLayout); \
     KEY(Integer, ScpCommander.CurrentPanel); \
     KEY(Float,   ScpCommander.LocalPanelWidth); \
     KEY(Bool,    ScpCommander.SwappedPanels); \
     KEY(Bool,    ScpCommander.StatusBar); \
     KEY(Bool,    ScpCommander.CommandLine); \
-    KEY(Bool,    ScpCommander.ToolBar); \
     KEY(String,  ScpCommander.WindowParams); \
     KEY(Bool,    ScpCommander.ExplorerStyleSelection); \
     KEY(Bool,    ScpCommander.PreserveLocalDirectory); \
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
-    KEY(Bool,    ScpCommander.SynchronizeBrowsing); \
     KEY(Integer, ScpCommander.SessionComboWidth); \
   ); \
   BLOCK("Interface\\Commander\\LocalPanel", CANCREATE, \
-    KEY(String,  ScpCommander.LocalPanel.CoolBarLayout); \
     KEY(String,  ScpCommander.LocalPanel.DirViewParams); \
     KEY(Bool,    ScpCommander.LocalPanel.StatusBar); \
     KEY(Bool,    ScpCommander.LocalPanel.DriveView); \
     KEY(Integer, ScpCommander.LocalPanel.DriveViewHeight); \
   ); \
   BLOCK("Interface\\Commander\\RemotePanel", CANCREATE, \
-    KEY(String,  ScpCommander.RemotePanel.CoolBarLayout); \
     KEY(String,  ScpCommander.RemotePanel.DirViewParams); \
     KEY(Bool,    ScpCommander.RemotePanel.StatusBar); \
     KEY(Bool,    ScpCommander.RemotePanel.DriveView); \
@@ -590,6 +648,22 @@ void __fastcall TWinConfiguration::SetQueueView(TQueueViewConfiguration value)
   SET_CONFIG_PROPERTY(QueueView);
 }
 //---------------------------------------------------------------------------
+TUpdatesConfiguration __fastcall TWinConfiguration::GetUpdates()
+{
+  TUpdatesConfiguration Result;
+  {
+    TGuard Guard(FCriticalSection);
+    Result = FUpdates;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetUpdates(TUpdatesConfiguration value)
+{
+  TGuard Guard(FCriticalSection);
+  SET_CONFIG_PROPERTY(Updates);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDeleteToRecycleBin(bool value)
 {
   SET_CONFIG_PROPERTY(DeleteToRecycleBin);
@@ -678,6 +752,26 @@ void __fastcall TWinConfiguration::SetConfirmTemporaryDirectoryCleanup(bool valu
 void __fastcall TWinConfiguration::SetPreservePanelState(bool value)
 {
   SET_CONFIG_PROPERTY(PreservePanelState);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTheme(AnsiString value)
+{
+  SET_CONFIG_PROPERTY(Theme);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetPathInCaption(TPathInCaption value)
+{
+  SET_CONFIG_PROPERTY(PathInCaption);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetCopyParamAutoSelectNotice(bool value)
+{
+  SET_CONFIG_PROPERTY(CopyParamAutoSelectNotice);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetSessionToolbarAutoShown(bool value)
+{
+  SET_CONFIG_PROPERTY(SessionToolbarAutoShown);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
@@ -964,8 +1058,6 @@ void __fastcall TWinConfiguration::SetResourceModule(HANDLE Instance)
 {
   TCustomWinConfiguration::SetResourceModule(Instance);
 
-  DefaultLocalized();
-
   Busy(true);
   try
   {
@@ -1057,7 +1149,7 @@ void __fastcall TWinConfiguration::CheckDefaultTranslation()
   if (InvalidDefaultTranslation)
   {
     MoreMessageDialog(FMTLOAD(INVALID_DEFAULT_TRANSLATION, 
-      (FInvalidDefaultTranslationMessage)), NULL, qtWarning, qaOK, 0);
+      (FInvalidDefaultTranslationMessage)), NULL, qtWarning, qaOK, HELP_NONE);
   }
 }
 //---------------------------------------------------------------------------
@@ -1067,7 +1159,7 @@ bool __fastcall TWinConfiguration::ConfirmRemoveDefaultTranslation()
     InvalidDefaultTranslation &&
     (MoreMessageDialog(FMTLOAD(REMOVE_DEFAULT_TRANSLATION, 
       (FInvalidDefaultTranslationMessage)), NULL, qtWarning, 
-      qaOK | qaCancel, 0) == qaOK);
+      qaOK | qaCancel, HELP_NONE) == qaOK);
   return Result;
 }
 //---------------------------------------------------------------------------

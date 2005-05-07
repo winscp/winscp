@@ -7,6 +7,8 @@
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
+TGlyphsModule * GlyphsModule;
+//---------------------------------------------------------------------------
 __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
   : TDataModule(Owner)
 {

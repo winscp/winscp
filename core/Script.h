@@ -19,17 +19,19 @@ typedef void __fastcall (__closure *TScriptSynchronizeStartStop)(TScript * Scrip
 class TScriptProcParams
 {
 public:
-  __fastcall TScriptProcParams(TStrings * Params);
+  __fastcall TScriptProcParams(TStrings * Params, const AnsiString & ParamsStr);
   void __fastcall SkipParam();
 
   __property AnsiString Param[int Index] = { read = GetParam };
   __property int ParamCount = { read = GetParamCount };
   __property void * Arg = { read = FArg, write = FArg };
+  __property AnsiString ParamsStr = { read = FParamsStr };
 
 private:
   TStrings * FParams;
   int FSkipParams;
   void * FArg;
+  AnsiString FParamsStr;
 
   AnsiString __fastcall GetParam(int Index);
   int __fastcall GetParamCount();
@@ -45,7 +47,8 @@ public:
   void __fastcall Command(const AnsiString Cmd);
 
   void __fastcall Synchronize(const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory);
+    const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
+    TSynchronizeStats * Stats);
 
   __property TScriptPrintEvent OnPrint = { read = FOnPrint, write = FOnPrint };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
@@ -73,12 +76,15 @@ protected:
   time_t FLastPrintedLineTime;
 
   virtual void __fastcall ResetTransfer();
+  virtual void __fastcall ConnectTerminal(TTerminal * Terminal);
+  bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   void __fastcall Print(const AnsiString Str);
   void __fastcall PrintLine(const AnsiString Str);
-  void __fastcall Tokenize(const AnsiString Str, TStrings * Tokens);
+  void __fastcall Tokenize(const AnsiString Str, TStrings * Tokens,
+    AnsiString & AllButFirst);
   void __fastcall CheckSession();
   enum TFileListType
-  { 
+  {
     fltDefault =     0x00,
     fltDirectories = 0x01,
     fltQueryServer = 0x02,
@@ -91,7 +97,9 @@ protected:
   void __fastcall FreeFileList(TStrings * FileList);
 
   void __fastcall SecondaryProc(TScriptProcParams * Parameters);
+  void __fastcall DummyProc(TScriptProcParams * Parameters);
   void __fastcall HelpProc(TScriptProcParams * Parameters);
+  void __fastcall CallProc(TScriptProcParams * Parameters);
   void __fastcall PwdProc(TScriptProcParams * Parameters);
   void __fastcall CdProc(TScriptProcParams * Parameters);
   void __fastcall LsProc(TScriptProcParams * Parameters);
@@ -112,7 +120,10 @@ protected:
   void __fastcall OptionImpl(AnsiString OptionName, AnsiString ValueName);
   void __fastcall SynchronizeDirectories(TScriptProcParams * Parameters,
     AnsiString & LocalDirectory, AnsiString & RemoteDirectory, int FirstParam);
-  virtual bool __fastcall HandleExtendedException(Exception * E);
+  virtual bool __fastcall HandleExtendedException(Exception * E,
+    TTerminal * Terminal = NULL);
+  void __fastcall TerminalCaptureLog(TObject * Sender, TLogLineType Type,
+    const AnsiString AddedLine);
 
 private:
   void __fastcall Init();
@@ -155,12 +166,14 @@ protected:
   bool FContinue;
 
   virtual void __fastcall ResetTransfer();
+  virtual void __fastcall ConnectTerminal(TTerminal * Terminal);
   void __fastcall Input(const AnsiString Prompt, AnsiString & Str, bool AllowEmpty);
-  void __fastcall TerminalOnStdError(TObject * Sender, const AnsiString AddedLine);
+  void __fastcall TerminalOnStdError(TObject * Sender, TLogLineType Type,
+    const AnsiString AddedLine);
   void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool DragDrop, const AnsiString FileName, Boolean Success,
+    bool Temp, const AnsiString FileName, Boolean Success,
     bool & DisconnectWhenComplete);
 
   void __fastcall PrintActiveSession();
@@ -172,7 +185,11 @@ protected:
     const AnsiString RemoteDirectory, bool & Continue);
   void __fastcall DoConnect(const AnsiString Session);
   void __fastcall DoClose(TTerminal * Terminal);
-  virtual bool __fastcall HandleExtendedException(Exception * E);
+  virtual bool __fastcall HandleExtendedException(Exception * E,
+    TTerminal * Terminal = NULL);
+  void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
+    AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
+    void * Arg);
 
   void __fastcall ExitProc(TScriptProcParams * Parameters);
   void __fastcall OpenProc(TScriptProcParams * Parameters);

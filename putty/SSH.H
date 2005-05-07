@@ -137,7 +137,7 @@ void SHA512_Simple(const void *p, int len, unsigned char *output);
 struct ssh_cipher {
     void *(*make_context)(void);
     void (*free_context)(void *);
-    void (*sesskey) (void *, unsigned char *key);	/* for ssh 1 */
+    void (*sesskey) (void *, unsigned char *key);	/* for SSH-1 */
     void (*encrypt) (void *, unsigned char *blk, int len);
     void (*decrypt) (void *, unsigned char *blk, int len);
     int blksize;
@@ -147,8 +147,8 @@ struct ssh_cipher {
 struct ssh2_cipher {
     void *(*make_context)(void);
     void (*free_context)(void *);
-    void (*setiv) (void *, unsigned char *key);	/* for ssh 2 */
-    void (*setkey) (void *, unsigned char *key);/* for ssh 2 */
+    void (*setiv) (void *, unsigned char *key);	/* for SSH-2 */
+    void (*setkey) (void *, unsigned char *key);/* for SSH-2 */
     void (*encrypt) (void *, unsigned char *blk, int len);
     void (*decrypt) (void *, unsigned char *blk, int len);
     char *name;
@@ -387,9 +387,9 @@ int import_possible(int type);
 int import_target_type(int type);
 int import_encrypted(const Filename *filename, int type, char **comment);
 int import_ssh1(const Filename *filename, int type,
-		struct RSAKey *key, char *passphrase);
+		struct RSAKey *key, char *passphrase, const char **errmsg_p);
 struct ssh2_userkey *import_ssh2(const Filename *filename, int type,
-				 char *passphrase);
+				 char *passphrase, const char **errmsg_p);
 int export_ssh1(const Filename *filename, int type,
 		struct RSAKey *key, char *passphrase);
 int export_ssh2(const Filename *filename, int type,
@@ -441,7 +441,7 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
 			  unsigned char **outblock, int *outlen);
 
 /*
- * SSH1 agent messages.
+ * SSH-1 agent messages.
  */
 #define SSH1_AGENTC_REQUEST_RSA_IDENTITIES    1
 #define SSH1_AGENT_RSA_IDENTITIES_ANSWER      2
@@ -452,13 +452,13 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
 #define SSH1_AGENTC_REMOVE_ALL_RSA_IDENTITIES 9	/* openssh private? */
 
 /*
- * Messages common to SSH1 and OpenSSH's SSH2.
+ * Messages common to SSH-1 and OpenSSH's SSH-2.
  */
 #define SSH_AGENT_FAILURE                    5
 #define SSH_AGENT_SUCCESS                    6
 
 /*
- * OpenSSH's SSH2 agent messages.
+ * OpenSSH's SSH-2 agent messages.
  */
 #define SSH2_AGENTC_REQUEST_IDENTITIES          11
 #define SSH2_AGENT_IDENTITIES_ANSWER            12
@@ -469,7 +469,7 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
 #define SSH2_AGENTC_REMOVE_ALL_IDENTITIES       19
 
 /*
- * Need this to warn about support for the original SSH2 keyfile
+ * Need this to warn about support for the original SSH-2 keyfile
  * format.
  */
 void old_keyfile_warning(void);

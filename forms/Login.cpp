@@ -5,6 +5,7 @@
 #include <ScpMain.h>
 #include <Common.h>
 #include <TextsWin.h>
+#include <HelpWin.h>
 #include <VCLCommon.h>
 
 #include "Login.h"
@@ -94,6 +95,12 @@ void __fastcall TLoginDialog::InitControls()
 
   InitializeBugsCombo(SFTPBugSymlinkCombo);
   InitializeBugsCombo(SFTPBugUtfCombo);
+  InitializeBugsCombo(SFTPBugSignedTSCombo);
+
+  InstallPathWordBreakProc(RemoteDirectoryEdit);
+  InstallPathWordBreakProc(LocalDirectoryEdit);
+  InstallPathWordBreakProc(PrivateKeyEdit);
+  InstallPathWordBreakProc(RecycleBinPathEdit);
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::Init()
@@ -104,8 +111,8 @@ void __fastcall TLoginDialog::Init()
 
   InitControls();
 
-  PrepareNavigationTree(SimpleNavigationTree);
-  PrepareNavigationTree(AdvancedNavigationTree);
+  PrepareNavigationTree(SimpleNavigationTree, false);
+  PrepareNavigationTree(AdvancedNavigationTree, true);
 
   if ((Options & loLocalDirectory) == 0)
   {
@@ -122,6 +129,12 @@ void __fastcall TLoginDialog::Init()
   {
     ChangePage(SessionListSheet);
     SessionListView->SetFocus();
+    assert(SessionListView->Items->Count > 0);
+    if (SessionListView->Items->Count > 0)
+    {
+      SessionListView->ItemIndex = 0;
+      SessionListView->ItemFocused = SessionListView->Selected;
+    }
   }
   else
   {
@@ -231,7 +244,10 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
       if (SFTPBug ## BUG ## Combo->ItemIndex < 0) SFTPBug ## BUG ## Combo->ItemIndex = 0
     LOAD_SFTP_BUG_COMBO(Symlink);
     LOAD_SFTP_BUG_COMBO(Utf);
+    LOAD_SFTP_BUG_COMBO(SignedTS);
     #undef LOAD_SFTP_BUG_COMBO
+
+    SFTPMaxVersionCombo->ItemIndex = aSessionData->SFTPMaxVersion;
     
     // Authentication tab
     AuthTISCheck->Checked = aSessionData->AuthTIS;
@@ -495,7 +511,10 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   #define SAVE_SFTP_BUG_COMBO(BUG) aSessionData->SFTPBug[sb ## BUG] = (TAutoSwitch)(2 - SFTPBug ## BUG ## Combo->ItemIndex);
   SAVE_SFTP_BUG_COMBO(Symlink);
   SAVE_SFTP_BUG_COMBO(Utf);
+  SAVE_SFTP_BUG_COMBO(SignedTS);
   #undef SAVE_SFTP_BUG_COMBO
+
+  aSessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
 
   // Proxy tab
   if (ProxyHTTPButton->Checked) aSessionData->ProxyMethod = pmHTTP;
@@ -627,7 +646,7 @@ void __fastcall TLoginDialog::DataChange(TObject * /*Sender*/)
   if (!NoUpdate) UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree)
+void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree, bool ClearHints)
 {
   Tree->FullExpand();
   int i = 0;
@@ -645,6 +664,10 @@ void __fastcall TLoginDialog::PrepareNavigationTree(TTreeView * Tree)
         if (PageControl->Pages[pi]->Tag == Tree->Items->Item[i]->SelectedIndex)
         {
           Tree->Items->Item[i]->Text = PageControl->Pages[pi]->Hint;
+          if (ClearHints)
+          {
+            PageControl->Pages[pi]->Hint = "";
+          }
           break;
         }
       }
@@ -794,7 +817,8 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
   AnsiString SessionName;
   SaveSession(FSessionData);
   if (FSessionData->Password.IsEmpty() ||
-      (MessageDialog(LoadStr(SAVE_PASSWORD), qtWarning, qaOK | qaCancel) == qaOK))
+      (MessageDialog(LoadStr(SAVE_PASSWORD), qtWarning, qaOK | qaCancel,
+         HELP_SESSION_SAVE_PASSWORD) == qaOK))
   {
     SessionName = DoSaveSessionDialog(StoredSessions, FSessionData->SessionName);
     if (!SessionName.IsEmpty())
@@ -1142,7 +1166,7 @@ void __fastcall TLoginDialog::SetDefaultSessionActionExecute(
       TObject * /*Sender*/)
 {
   if (MessageDialog(LoadStr(SET_DEFAULT_SESSION_SETTINGS), qtConfirmation,
-        qaOK | qaCancel, 0) == qaOK)
+        qaOK | qaCancel, HELP_SESSION_SAVE_DEFAULT) == qaOK)
   {
     SaveSession(FSessionData);
     StoredSessions->DefaultSettings = FSessionData;
@@ -1164,7 +1188,7 @@ void __fastcall TLoginDialog::ShellIconsButtonClick(TObject * /*Sender*/)
 void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
 {
   if (MessageDialog(FMTLOAD(CONFIRM_CREATE_SHORTCUT, (SelectedSession->Name)),
-        qtConfirmation, qaYes | qaNo, 0) == qaYes)
+        qtConfirmation, qaYes | qaNo, HELP_CREATE_SHORTCUT) == qaYes)
   {
     assert(SelectedSession);
     CreateDesktopShortCut(SelectedSession->Name, Application->ExeName,
@@ -1176,7 +1200,7 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
 void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
 {
   if (MessageDialog(FMTLOAD(CONFIRM_CREATE_SENDTO, (SelectedSession->Name)),
-        qtConfirmation, qaYes | qaNo, 0) == qaYes)
+        qtConfirmation, qaYes | qaNo, HELP_CREATE_SENDTO) == qaYes)
   {
     assert(SelectedSession);
     CreateDesktopShortCut(FMTLOAD(SESSION_SENDTO_HOOK_NAME, (SelectedSession->Name)),
@@ -1200,7 +1224,7 @@ void __fastcall TLoginDialog::SessionListViewCustomDrawItem(
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::CheckForUpdatesActionExecute(TObject * /*Sender*/)
 {
-  CheckForUpdates();
+  CheckForUpdates(false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SetOptions(int value)
@@ -1255,13 +1279,6 @@ void __fastcall TLoginDialog::LocaleGetClick(TObject * /*Sender*/)
   OpenBrowser(LoadStr(LOCALES_URL));
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::PathEditsKeyDown(TObject * Sender,
-  WORD & Key, TShiftState Shift)
-{
-  PathEditKeyDown(dynamic_cast<TCustomEdit*>(Sender), Key, Shift,
-    (Sender == RemoteDirectoryEdit));
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::AuthGSSAPICheckClick(TObject * /*Sender*/)
 {
   if (!NoUpdate)
@@ -1271,6 +1288,21 @@ void __fastcall TLoginDialog::AuthGSSAPICheckClick(TObject * /*Sender*/)
     {
       throw Exception(LoadStr(GSSAPI_NOT_INSTALLED));
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this, PageControl->ActivePage);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::FormKeyDown(TObject * /*Sender*/, WORD &Key,
+  TShiftState /*Shift*/)
+{
+  // we don't have "cancel" button, so we must handle "esc" ourselves
+  if (Key == VK_ESCAPE)
+  {
+    ModalResult = mrCancel;
   }
 }
 //---------------------------------------------------------------------------

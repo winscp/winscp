@@ -13,7 +13,6 @@
 #include <NortonLikeListView.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
 #include <CustomPathComboBox.hpp>	// Pascal unit
-#include <AssociatedStatusBar.hpp>	// Pascal unit
 #include <PathLabel.hpp>	// Pascal unit
 #include <IEListView.hpp>	// Pascal unit
 #include <IEDriveInfo.hpp>	// Pascal unit
@@ -45,6 +44,14 @@
 namespace Customdirview
 {
 //-- type declarations -------------------------------------------------------
+struct TStatusFileInfo
+{
+	int FilesCount;
+	int SelectedCount;
+	__int64 FilesSize;
+	__int64 SelectedSize;
+} ;
+
 #pragma option push -b-
 enum TDDError { DDCreateShortCutError, DDPathNotFoundError };
 #pragma option pop
@@ -88,6 +95,8 @@ typedef void __fastcall (__closure *TRenameEvent)(System::TObject* Sender, Comct
 typedef void __fastcall (__closure *TMatchMaskEvent)(System::TObject* Sender, AnsiString FileName, AnsiString Masks, bool &Matches);
 
 typedef void __fastcall (__closure *TDirViewGetOverlayEvent)(System::TObject* Sender, Comctrls::TListItem* Item, Word &Indexes);
+
+typedef void __fastcall (__closure *TDirViewUpdateStatusBarEvent)(System::TObject* Sender, const TStatusFileInfo &FileInfo);
 
 #pragma option push -b-
 enum TSelAttr { selDontCare, selYes, selNo };
@@ -211,23 +220,19 @@ private:
 	bool FAbortLoading;
 	Comctrls::TAnimate* FAnimation;
 	int FBackCount;
-	Menus::TPopupMenu* FBackMenu;
 	bool FDontRecordPath;
 	bool FDragOnDriveIsMove;
 	bool FNotifyEnabled;
 	_FILETIME FDragStartTime;
-	Menus::TPopupMenu* FForwardMenu;
 	Classes::TStrings* FHistoryPaths;
 	Controls::TImageList* FImageList16;
 	Controls::TImageList* FImageList32;
 	bool FLoadAnimation;
 	int FMaxHistoryCount;
-	int FMaxHistoryMenuLen;
-	int FMaxHistoryMenuWidth;
 	bool FNeverPainted;
 	Custompathcombobox::TCustomPathComboBox* FPathComboBox;
 	Pathlabel::TCustomPathLabel* FPathLabel;
-	Associatedstatusbar::TAssociatedStatusBar* FStatusBar;
+	TDirViewUpdateStatusBarEvent FOnUpdateStatusBar;
 	TRenameEvent FOnBeginRename;
 	TRenameEvent FOnEndRename;
 	THistoryChangeEvent FOnHistoryChange;
@@ -248,19 +253,14 @@ private:
 	MESSAGE void __fastcall WMAppCommand(Messages::TMessage &Message);
 	void __fastcall DumbCustomDrawItem(Comctrls::TCustomListView* Sender, Comctrls::TListItem* Item, Comctrls::TCustomDrawState State, bool &DefaultDraw);
 	void __fastcall DumbCustomDrawSubItem(Comctrls::TCustomListView* Sender, Comctrls::TListItem* Item, int SubItem, Comctrls::TCustomDrawState State, bool &DefaultDraw);
-	Menus::TPopupMenu* __fastcall GetBackMenu(void);
 	__int64 __fastcall GetFilesMarkedSize(void);
 	int __fastcall GetForwardCount(void);
-	Menus::TPopupMenu* __fastcall GetForwardMenu(void);
 	AnsiString __fastcall GetHistoryPath(int Index);
 	bool __fastcall GetTargetPopupMenu(void);
 	bool __fastcall GetUseDragImages(void);
 	void __fastcall SetMaxHistoryCount(int Value);
-	void __fastcall SetMaxHistoryMenuLen(int Value);
-	void __fastcall SetMaxHistoryMenuWidth(int Value);
 	void __fastcall SetPathComboBox(Custompathcombobox::TCustomPathComboBox* Value);
 	void __fastcall SetPathLabel(Pathlabel::TCustomPathLabel* Value);
-	void __fastcall SetStatusBar(Associatedstatusbar::TAssociatedStatusBar* Value);
 	void __fastcall SetTargetPopupMenu(bool Value);
 	HIDESBASE MESSAGE void __fastcall WMPaint(Messages::TWMPaint &Message);
 	MESSAGE void __fastcall WMUserRename(Messages::TMessage &Message);
@@ -343,7 +343,6 @@ protected:
 	virtual void __fastcall SetMultiSelect(bool Value);
 	virtual AnsiString __fastcall GetPath(void) = 0 ;
 	virtual bool __fastcall GetValid(void);
-	void __fastcall HistoryItemClick(System::TObject* Sender);
 	virtual void __fastcall InternalEdit(const tagLVITEMA &HItem) = 0 ;
 	virtual bool __fastcall ItemIsFile(Comctrls::TListItem* Item) = 0 ;
 	virtual bool __fastcall ItemMatchesFilter(Comctrls::TListItem* Item, const TFileFilter &Filter) = 0 ;
@@ -359,7 +358,6 @@ protected:
 	virtual void __fastcall SetViewStyle(Comctrls::TViewStyle Value);
 	virtual void __fastcall SetWatchForChanges(bool Value);
 	virtual bool __fastcall TargetHasDropHandler(Comctrls::TListItem* Item, int Effect);
-	void __fastcall UpdateHistoryMenu(THistoryDirection Direction);
 	DYNAMIC void __fastcall UpdatePathComboBox(void);
 	DYNAMIC void __fastcall UpdatePathLabel(void);
 	DYNAMIC void __fastcall UpdateStatusBar(void);
@@ -398,6 +396,8 @@ public:
 	void __fastcall ContinueSession(bool Continue);
 	DYNAMIC bool __fastcall CanPasteFromClipBoard(void);
 	virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "") = 0 ;
+	System::TObject* __fastcall SaveState(void);
+	void __fastcall RestoreState(System::TObject* AState);
 	__property bool AddParentDir = {read=FAddParentDir, write=SetAddParentDir, default=0};
 	__property bool DimmHiddenFiles = {read=FDimmHiddenFiles, write=SetDimmHiddenFiles, default=1};
 	__property bool ShowDirectories = {read=FShowDirectories, write=SetShowDirectories, default=1};
@@ -423,7 +423,6 @@ public:
 	__property bool Loading = {read=FLoading, nodefault};
 	__property bool AbortLoading = {read=FAbortLoading, write=FAbortLoading, stored=false, nodefault};
 	__property int BackCount = {read=FBackCount, nodefault};
-	__property Menus::TPopupMenu* BackMenu = {read=GetBackMenu};
 	__property bool LoadAnimation = {read=FLoadAnimation, write=FLoadAnimation, default=1};
 	__property bool LoadEnabled = {read=FLoadEnabled, write=SetLoadEnabled, default=1};
 	__property bool Dirty = {read=FDirty, nodefault};
@@ -436,15 +435,12 @@ public:
 	__property Dragdrop::TDropEffectSet DragSourceEffects = {read=GetDragSourceEffects, nodefault};
 	__property bool ExeDrag = {read=FExeDrag, nodefault};
 	__property int ForwardCount = {read=GetForwardCount, nodefault};
-	__property Menus::TPopupMenu* ForwardMenu = {read=GetForwardMenu};
 	__property AnsiString HistoryPath[int Index] = {read=GetHistoryPath};
 	__property bool IsRoot = {read=GetIsRoot, nodefault};
 	__property Dragdrop::TDragResult LastDDResult = {read=FLastDDResult, nodefault};
 	__property SmallImages ;
 	__property LargeImages ;
 	__property int MaxHistoryCount = {read=FMaxHistoryCount, write=SetMaxHistoryCount, default=200};
-	__property int MaxHistoryMenuLen = {read=FMaxHistoryMenuLen, write=SetMaxHistoryMenuLen, default=9};
-	__property int MaxHistoryMenuWidth = {read=FMaxHistoryMenuWidth, write=SetMaxHistoryMenuWidth, default=300};
 	__property OnContextPopup ;
 	__property TRenameEvent OnBeginRename = {read=FOnBeginRename, write=FOnBeginRename};
 	__property TRenameEvent OnEndRename = {read=FOnEndRename, write=FOnEndRename};
@@ -477,7 +473,7 @@ public:
 	__property Custompathcombobox::TCustomPathComboBox* PathComboBox = {read=FPathComboBox, write=SetPathComboBox};
 	__property Pathlabel::TCustomPathLabel* PathLabel = {read=FPathLabel, write=SetPathLabel};
 	__property bool ShowHiddenFiles = {read=FShowHiddenFiles, write=SetShowHiddenFiles, default=1};
-	__property Associatedstatusbar::TAssociatedStatusBar* StatusBar = {read=FStatusBar, write=SetStatusBar};
+	__property TDirViewUpdateStatusBarEvent OnUpdateStatusBar = {read=FOnUpdateStatusBar, write=FOnUpdateStatusBar};
 	__property bool WatchForChanges = {read=FWatchForChanges, write=SetWatchForChanges, default=0};
 public:
 	#pragma option push -w-inl
@@ -496,8 +492,6 @@ static const Shortint oiLink = 0x2;
 static const Shortint oiBrokenLink = 0x4;
 static const Shortint oiPartial = 0x8;
 static const Shortint oiShared = 0x10;
-static const Word DefaultHistoryMenuWidth = 0x12c;
-static const Shortint DefaultHistoryMenuLen = 0x9;
 static const Byte DefaultHistoryCount = 0xc8;
 static const Shortint DDMaxSlowCount = 0x3;
 static const int DDVScrollDelay = 0x1e8480;

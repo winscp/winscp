@@ -1,5 +1,5 @@
 /*
- * SHA1 hash algorithm. Used in SSH2 as a MAC, and the transform is
+ * SHA1 hash algorithm. Used in SSH-2 as a MAC, and the transform is
  * also used as a `stirring' function for the PuTTY random number
  * pool. Implemented directly from the specification by Simon
  * Tatham.

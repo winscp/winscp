@@ -50,6 +50,7 @@ bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin
 int __fastcall CancelAnswer(int Answers);
 int __fastcall AbortAnswer(int Answers);
 AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength);
+AnsiString __fastcall LoadStrPart(int Ident, int Part);
 struct TPasLibModule;
 TPasLibModule * __fastcall FindModule(void * Instance);
 //---------------------------------------------------------------------------
@@ -66,6 +67,7 @@ void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTi
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   bool ConsiderDST);
 AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format);
+int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
 //---------------------------------------------------------------------------
 class TCriticalSection
 {
@@ -85,6 +87,16 @@ class TGuard
 public:
   __fastcall TGuard(TCriticalSection * ACriticalSection);
   __fastcall ~TGuard();
+
+private:
+  TCriticalSection * FCriticalSection;
+};
+//---------------------------------------------------------------------------
+class TUnguard
+{
+public:
+  __fastcall TUnguard(TCriticalSection * ACriticalSection);
+  __fastcall ~TUnguard();
 
 private:
   TCriticalSection * FCriticalSection;

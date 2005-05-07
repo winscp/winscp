@@ -16,7 +16,8 @@ public:
   TFileMasks & __fastcall operator =(const AnsiString rhs);
   bool __fastcall operator ==(const TFileMasks & rhm) const;
   bool __fastcall operator ==(const AnsiString rhs) const;
-  bool __fastcall Matches(AnsiString FileName) const;
+  bool __fastcall Matches(AnsiString FileName, AnsiString Path = "") const;
+  bool __fastcall Matches(AnsiString FileName, bool Local) const;
   bool __fastcall IsValid();
   bool __fastcall IsValid(int & Start, int & Length);
 
@@ -85,6 +86,7 @@ public:
     int Index, int Len, char PatternCmd, void * Arg);
 
   bool __fastcall IsFileListCommand(const AnsiString & Command);
+  virtual bool __fastcall IsFileCommand(const AnsiString & Command);
 
 protected:
   virtual int __fastcall PatternLen(int Index, char PatternCmd);

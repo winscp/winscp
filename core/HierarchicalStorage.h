@@ -23,6 +23,7 @@ public:
   virtual bool __fastcall KeyExists(const AnsiString SubKey) = 0;
   virtual bool __fastcall ValueExists(const AnsiString Value) = 0;
   virtual void __fastcall RecursiveDeleteSubKey(const AnsiString Key);
+  virtual void __fastcall ClearSubKeys();
   virtual void __fastcall ReadValues(Classes::TStrings* Strings, bool MaintainKeys = false);
   virtual void __fastcall WriteValues(Classes::TStrings* Strings, bool MaintainKeys = false);
   virtual void __fastcall ClearValues();

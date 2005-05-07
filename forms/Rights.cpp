@@ -9,6 +9,7 @@
 #include <VCLCommon.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+#pragma link "GrayedCheckBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)

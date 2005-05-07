@@ -26,7 +26,9 @@ __published:
   TPanel *ServerPromptPanel;
   TLabel *ServerPromptLabel;
   TCheckBox *HideTypingCheck;
+  TButton *HelpButton;
   void __fastcall HideTypingCheckClick(TObject *Sender);
+  void __fastcall HelpButtonClick(TObject *Sender);
 
 private:
   TPromptKind FKind;

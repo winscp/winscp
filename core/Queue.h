@@ -5,30 +5,44 @@
 #include "SecureShell.h"
 #include "FileOperationProgress.h"
 //---------------------------------------------------------------------------
-class TSignalThread
+class TSimpleThread
 {
 friend int __fastcall ThreadProc(void * Thread);
 
 public:
-  void __fastcall Start();
-  void __fastcall Terminate();
+  __fastcall TSimpleThread();
+  virtual __fastcall ~TSimpleThread();
+
+  virtual void __fastcall Start();
   void __fastcall WaitFor();
-  void __fastcall TriggerEvent();
+  virtual void __fastcall Terminate() = 0;
+  void __fastcall Close();
 
 protected:
   HANDLE FThread;
+  bool FFinished;
+
+  virtual void __fastcall Execute() = 0;
+  virtual void __fastcall Finished();
+};
+//---------------------------------------------------------------------------
+class TSignalThread : public TSimpleThread
+{
+public:
+  virtual void __fastcall Start();
+  virtual void __fastcall Terminate();
+  void __fastcall TriggerEvent();
+
+protected:
   HANDLE FEvent;
   bool FTerminated;
-  bool FFinished;
 
   __fastcall TSignalThread();
   virtual __fastcall ~TSignalThread();
 
   bool __fastcall WaitForEvent();
   virtual void __fastcall Execute();
-  virtual void __fastcall Finished();
   virtual void __fastcall ProcessEvent() = 0;
-  void __fastcall Close();
 };
 //---------------------------------------------------------------------------
 class TTerminal;
@@ -86,7 +100,7 @@ protected:
 
   TQueueItem * __fastcall GetItem(int Index);
   bool __fastcall ItemGetData(TQueueItem * Item, TQueueItemProxy * Proxy);
-  bool __fastcall ItemProcessUserAction(TQueueItem * Item);
+  bool __fastcall ItemProcessUserAction(TQueueItem * Item, void * Arg);
   bool __fastcall ItemMove(TQueueItem * Item, TQueueItem * BeforeItem);
   bool __fastcall ItemExecuteNow(TQueueItem * Item);
   bool __fastcall ItemDelete(TQueueItem * Item);
@@ -100,11 +114,11 @@ protected:
 
   void __fastcall DoQueryUser(TObject * Sender, const AnsiString Query,
     TStrings * MoreMessages, int Answers, const TQueryParams * Params, int & Answer,
-    TQueryType Type);
+    TQueryType Type, void * Arg);
   void __fastcall DoPromptUser(TSecureShell * SecureShell, AnsiString Prompt,
-    TPromptKind Kind, AnsiString & Response, bool & Result);
+    TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg);
   void __fastcall DoShowExtendedException(TSecureShell * SecureShell,
-    Exception * E);
+    Exception * E, void * Arg);
   void __fastcall DoQueueItemUpdate(TQueueItem * Item);
   void __fastcall DoListUpdate();
 
@@ -164,7 +178,7 @@ friend class TTerminalQueue;
 
 public:
   bool __fastcall Update();
-  bool __fastcall ProcessUserAction();
+  bool __fastcall ProcessUserAction(void * Arg = NULL);
   bool __fastcall Move(bool Sooner);
   bool __fastcall Move(TQueueItemProxy * BeforeItem);
   bool __fastcall ExecuteNow();
@@ -173,9 +187,9 @@ public:
   __property TFileOperationProgressType * ProgressData = { read = GetProgressData };
   __property TQueueItem::TInfo * Info = { read = FInfo };
   __property TQueueItem::TStatus Status = { read = FStatus };
-  __property bool Flag = { read = FFlag, write = FFlag };
   __property bool ProcessingUserAction = { read = FProcessingUserAction };
   __property int Index = { read = GetIndex };
+  __property void * UserData = { read = FUserData, write = FUserData };
 
 private:
   TFileOperationProgressType * FProgressData;
@@ -184,8 +198,8 @@ private:
   TQueueItem * FQueueItem;
   TTerminalQueueStatus * FQueueStatus;
   TQueueItem::TInfo * FInfo;
-  bool FFlag;
   bool FProcessingUserAction;
+  void * FUserData;
 
   __fastcall TQueueItemProxy(TTerminalQueue * Queue, TQueueItem * QueueItem);
   virtual __fastcall ~TQueueItemProxy();

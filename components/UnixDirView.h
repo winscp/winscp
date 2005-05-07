@@ -101,7 +101,7 @@ __published:
       default=true  };
 
   __property PathComboBox;
-  __property StatusBar;
+  __property OnUpdateStatusBar;
   __property PathLabel;
   __property LoadAnimation;
   __property OnGetSelectFilter;
@@ -143,6 +143,7 @@ __published:
   __property OnContextPopup;
   __property OnBeginRename;
   __property OnEndRename;
+  __property OnHistoryChange;
 
   __property ColumnClick;
   __property MultiSelect;

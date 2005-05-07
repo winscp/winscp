@@ -19,10 +19,13 @@ __fastcall TConfiguration::TConfiguration()
   FCriticalSection = new TCriticalSection();
   FUpdating = 0;
   FStorage = stDetect;
-  DontSave = false;
-  RandomSeedSave = true;
+  FDontSave = false;
+  FRandomSeedSave = true;
   FApplicationInfo = NULL;
   FGSSAPIInstalled = -1;
+  // make sure random generator is initialised, so random_save_seed() 
+  // in destructor can proceed
+  random_ref();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Default()
@@ -52,7 +55,8 @@ void __fastcall TConfiguration::Default()
 __fastcall TConfiguration::~TConfiguration()
 {
   assert(!FUpdating);
-  if (RandomSeedSave) random_save_seed();
+  if (FRandomSeedSave) random_save_seed();
+  random_unref();
   if (FApplicationInfo) FreeFileInfo(FApplicationInfo);
   delete FCriticalSection;
 }
@@ -102,7 +106,7 @@ void __fastcall TConfiguration::SaveSpecial(THierarchicalStorage * /*Storage*/)
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Save()
 {
-  if (DontSave) return;
+  if (FDontSave) return;
 
   if (Storage == stRegistry) CleanupIniFile();
 
@@ -231,7 +235,7 @@ void __fastcall TConfiguration::CleanupConfiguration()
     CleanupRegistry(ConfigurationSubKey);
     if (Storage == stRegistry)
     {
-      DontSave = true;
+      FDontSave = true;
     }
   }
   catch (Exception &E)
@@ -269,7 +273,7 @@ void __fastcall TConfiguration::CleanupRandomSeedFile()
 {
   try
   {
-    RandomSeedSave = false;
+    FRandomSeedSave = false;
     if (FileExists(RandomSeedFile))
     {
       if (!DeleteFile(RandomSeedFile)) Abort();
@@ -291,7 +295,7 @@ void __fastcall TConfiguration::CleanupIniFile()
     }
     if (Storage == stIniFile)
     {
-      DontSave = true;
+      FDontSave = true;
     }
   }
   catch (Exception &E)

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <limits.h>
 #include <ctype.h>
 #include <assert.h>
 #include "putty.h"
@@ -23,7 +24,7 @@ unsigned long parse_blocksize(const char *bs)
     char *suf;
     unsigned long r = strtoul(bs, &suf, 10);
     if (*suf != '\0') {
-	while (isspace(*suf)) suf++;
+	while (*suf && isspace((unsigned char)*suf)) suf++;
 	switch (*suf) {
 	  case 'k': case 'K':
 	    r *= 1024ul;
@@ -388,14 +389,21 @@ void mlog(char *file, int line)
 }
 #endif
 
-void *safemalloc(size_t size)
+void *safemalloc(size_t n, size_t size)
 {
     void *p;
+
+    if (n > INT_MAX / size) {
+	p = NULL;
+    } else {
+	size *= n;
 #ifdef MINEFIELD
-    p = minefield_c_malloc(size);
+	p = minefield_c_malloc(size);
 #else
-    p = malloc(size);
+	p = malloc(size);
 #endif
+    }
+
     if (!p) {
 	char str[200];
 #ifdef MALLOC_LOG
@@ -415,22 +423,29 @@ void *safemalloc(size_t size)
     return p;
 }
 
-void *saferealloc(void *ptr, size_t size)
+void *saferealloc(void *ptr, size_t n, size_t size)
 {
     void *p;
-    if (!ptr) {
-#ifdef MINEFIELD
-	p = minefield_c_malloc(size);
-#else
-	p = malloc(size);
-#endif
+
+    if (n > INT_MAX / size) {
+	p = NULL;
     } else {
+	size *= n;
+	if (!ptr) {
 #ifdef MINEFIELD
-	p = minefield_c_realloc(ptr, size);
+	    p = minefield_c_malloc(size);
 #else
-	p = realloc(ptr, size);
+	    p = malloc(size);
 #endif
+	} else {
+#ifdef MINEFIELD
+	    p = minefield_c_realloc(ptr, size);
+#else
+	    p = realloc(ptr, size);
+#endif
+	}
     }
+
     if (!p) {
 	char str[200];
 #ifdef MALLOC_LOG

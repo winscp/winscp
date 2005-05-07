@@ -10,6 +10,7 @@ default: WinSCP3.exe DragExt.dll WinSCP3.com lib\DiscMon_B5.lib
 
 WinSCP3.exe: WinSCP3.bpr
 WinSCP3.exe: lib\Moje_B5.lib lib\DragDrop_B5.lib lib\DriveDir_B5.lib
+WinSCP3.exe: lib\tb2k_cb6.lib lib\tbx_cb6.lib
 WinSCP3.exe: lib\Putty.lib lib\ScpCore.lib lib\RScpComp.lib lib\ScpForms.lib
  $(BPR2MAK) WinSCP3.bpr
  $(MAKE)

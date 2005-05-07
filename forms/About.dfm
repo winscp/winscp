@@ -52,10 +52,10 @@ object AboutDialog: TAboutDialog
   object HomepageLabel: TLabel
     Left = 72
     Top = 72
-    Width = 188
+    Width = 129
     Height = 13
     Cursor = crHandPoint
-    Caption = 'http://XXXXXXwinscp.sourceforge.net/'
+    Caption = 'http://XXXXXXwinscp.net/'
     Color = clBtnFace
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
@@ -76,10 +76,10 @@ object AboutDialog: TAboutDialog
   object ForumUrlLabel: TLabel
     Left = 72
     Top = 112
-    Width = 205
+    Width = 146
     Height = 13
     Cursor = crHandPoint
-    Caption = 'http://XXXXwinscp.sourceforge.net/forum/'
+    Caption = 'http://XXXXwinscp.net/forum/'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
     Font.Height = -11
@@ -103,7 +103,7 @@ object AboutDialog: TAboutDialog
     Anchors = [akLeft, akTop, akBottom]
     BevelOuter = bvNone
     Color = clTeal
-    TabOrder = 2
+    TabOrder = 3
     DesignSize = (
       49
       318)
@@ -229,7 +229,7 @@ object AboutDialog: TAboutDialog
     HorzScrollBar.Visible = False
     VertScrollBar.Smooth = True
     Anchors = [akLeft, akRight, akBottom]
-    TabOrder = 3
+    TabOrder = 4
     DesignSize = (
       285
       137)
@@ -285,21 +285,21 @@ object AboutDialog: TAboutDialog
     end
     object Label8: TLabel
       Left = 8
-      Top = 152
+      Top = 264
       Width = 181
       Height = 13
       Caption = 'Filemanager Toolset library Version 2.6'
     end
     object Label10: TLabel
       Left = 8
-      Top = 168
+      Top = 280
       Width = 137
       Height = 13
       Caption = 'Copyright '#169' 1999 Ingo Eckel'
     end
     object ProlongBoxLabel: TLabel
       Left = 8
-      Top = 184
+      Top = 296
       Width = 63
       Height = 13
       Caption = '                     '
@@ -323,9 +323,71 @@ object AboutDialog: TAboutDialog
       ParentFont = False
       OnClick = DisplayLicence
     end
+    object Label1: TLabel
+      Left = 8
+      Top = 152
+      Width = 117
+      Height = 13
+      Caption = 'Toolbar2000 library 2.1.5'
+    end
+    object Label2: TLabel
+      Left = 8
+      Top = 168
+      Width = 182
+      Height = 13
+      Caption = 'Copyright '#169' 1998-2005 Jordan Russell'
+    end
+    object Toolbar2000HomepageLabel: TLabel
+      Left = 8
+      Top = 184
+      Width = 176
+      Height = 13
+      Cursor = crHandPoint
+      Caption = 'http://www.jrsoftware.org/tb2kdl.php'
+      Color = clBtnFace
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlue
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsUnderline]
+      ParentColor = False
+      ParentFont = False
+      OnClick = HomepageLabelClick
+    end
+    object Label5: TLabel
+      Left = 8
+      Top = 208
+      Width = 69
+      Height = 13
+      Caption = 'TBX library 2.1'
+    end
+    object Label6: TLabel
+      Left = 8
+      Top = 224
+      Width = 188
+      Height = 13
+      Caption = 'Copyright '#169' 2001-2005 Alex A. Denisov'
+    end
+    object TBXHomepageLabel: TLabel
+      Left = 8
+      Top = 240
+      Width = 118
+      Height = 13
+      Cursor = crHandPoint
+      Caption = 'http://www.g32.org/tbx/'
+      Color = clBtnFace
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlue
+      Font.Height = -11
+      Font.Name = 'MS Sans Serif'
+      Font.Style = [fsUnderline]
+      ParentColor = False
+      ParentFont = False
+      OnClick = HomepageLabelClick
+    end
   end
   object OKButton: TButton
-    Left = 303
+    Left = 221
     Top = 303
     Width = 75
     Height = 25
@@ -337,13 +399,23 @@ object AboutDialog: TAboutDialog
     TabOrder = 0
   end
   object LicenceButton: TButton
-    Left = 215
+    Left = 72
     Top = 303
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Licence...'
-    TabOrder = 1
+    TabOrder = 2
     OnClick = LicenceButtonClick
+  end
+  object HelpButton: TButton
+    Left = 303
+    Top = 303
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 1
+    OnClick = HelpButtonClick
   end
 end

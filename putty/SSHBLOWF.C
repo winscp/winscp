@@ -483,7 +483,7 @@ static void *blowfish_make_context(void)
 
 static void *blowfish_ssh1_make_context(void)
 {
-    /* In SSH1, need one key for each direction */
+    /* In SSH-1, need one key for each direction */
     return snewn(2, BlowfishContext);
 }
 

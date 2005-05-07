@@ -193,10 +193,10 @@ inline void Print(bool FromBeginning, const char * Message)
     {
       if (LastFromBeginning[0] != '\0')
       {
-        printf(LastFromBeginning);
+        printf("%s", LastFromBeginning);
         LastFromBeginning[0] = '\0';
       }
-      printf(Message);
+      printf("%s", Message);
     }
   }
   else
@@ -205,7 +205,7 @@ inline void Print(bool FromBeginning, const char * Message)
     {
       printf("\r");
     }
-    printf(Message);
+    printf("%s", Message);
   }
 }
 //---------------------------------------------------------------------------

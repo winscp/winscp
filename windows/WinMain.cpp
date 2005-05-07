@@ -7,10 +7,12 @@
 #include <Log.h>
 #include <TextsWin.h>
 #include <TextsCore.h>
+#include <HelpWin.h>
 
 #include "CustomScpExplorer.h"
 #include "TerminalManager.h"
 #include "NonVisual.h"
+#include "Glyphs.h"
 #include "ProgParams.h"
 #include "Setup.h"
 #include "WinConfiguration.h"
@@ -38,41 +40,27 @@ TSessionData * GetLoginData(AnsiString SessionName, AnsiString & DownloadFile)
   return Data;
 }
 //---------------------------------------------------------------------------
-void __fastcall Upload(TTerminal * Terminal, TProgramParams * Params,
-  int ListFrom, int ListTo)
+void __fastcall Upload(TTerminal * Terminal, TStrings * FileList)
 {
   AnsiString TargetDirectory;
-  TGUICopyParamType CopyParam = GUIConfiguration->CopyParam;
-  TStrings * FileList = NULL;
+  TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
 
-  try
-  {
-    FileList = new TStringList();
-    for (int Index = ListFrom; Index <= ListTo; Index++)
-    {
-      FileList->Add(Params->Param[Index]);
-    }
-    TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
+  TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
 
-    int Options = coDisableQueue |
-      (!Terminal->IsCapable[fcNewerOnlyUpload] ? coDisableNewerOnly : 0) |
-      (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0);
-    if (DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options))
-    {
-      int Params = (CopyParam.NewerOnly ? cpNewerOnly : 0);
-      Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
-    }
-  }
-  __finally
+  int Options = coDisableQueue |
+    (!Terminal->IsCapable[fcNewerOnlyUpload] ? coDisableNewerOnly : 0) |
+    (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0);
+  if (DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options))
   {
-    delete FileList;
+    int Params = (CopyParam.NewerOnly ? cpNewerOnly : 0);
+    Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall Download(TTerminal * Terminal, const AnsiString FileName)
 {
   AnsiString TargetDirectory;
-  TGUICopyParamType CopyParam = GUIConfiguration->CopyParam;
+  TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
   TStrings * FileList = NULL;
 
   try
@@ -105,12 +93,12 @@ void __fastcall Download(TTerminal * Terminal, const AnsiString FileName)
 }
 //---------------------------------------------------------------------------
 void __fastcall SynchronizeDirectories(TTerminal * Terminal,
-  TProgramParams * Params, int ParamStart,
+  TStrings * CommandParams,
   AnsiString & LocalDirectory, AnsiString & RemoteDirectory)
 {
-  if (ParamStart <= Params->ParamCount)
+  if (CommandParams->Count >= 1)
   {
-    LocalDirectory = Params->Param[ParamStart];
+    LocalDirectory = CommandParams->Strings[0];
   }
   else if (!Terminal->SessionData->LocalDirectory.IsEmpty())
   {
@@ -121,9 +109,9 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
     LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   }
 
-  if (ParamStart + 1 <= Params->ParamCount)
+  if (CommandParams->Count >= 2)
   {
-    RemoteDirectory = Params->Param[ParamStart + 1];
+    RemoteDirectory = CommandParams->Strings[1];
   }
   else
   {
@@ -132,17 +120,24 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
 }
 //---------------------------------------------------------------------------
 void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
-  TProgramParams * Params, int ParamStart)
+  TStrings * CommandParams)
 {
   AnsiString LocalDirectory;
   AnsiString RemoteDirectory;
 
-  SynchronizeDirectories(Terminal, Params, ParamStart, LocalDirectory, RemoteDirectory);
+  SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
 
-  TSynchronizeMode Mode = smRemote;
+  bool SaveMode = true;
+  // bit ugly
+  TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
   if (ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory,
-        RemoteDirectory, Mode))
+        RemoteDirectory, Mode, SaveMode))
   {
+    if (SaveMode)
+    {
+      GUIConfiguration->SynchronizeMode = Mode;
+    }
+
     Terminal->CloseOnCompletion();
   }
   else
@@ -152,18 +147,18 @@ void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * S
 }
 //---------------------------------------------------------------------------
 void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
-  TProgramParams * Params, int ParamStart)
+  TStrings * CommandParams)
 {
   AnsiString LocalDirectory;
   AnsiString RemoteDirectory;
 
-  SynchronizeDirectories(Terminal, Params, ParamStart, LocalDirectory, RemoteDirectory);
+  SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
 
   ScpExplorer->DoSynchronizeDirectories(LocalDirectory, RemoteDirectory);
   Abort();
 }
 //---------------------------------------------------------------------------
-void __fastcall InvalidDefaultTranslation(const AnsiString FileName)
+void __fastcall InvalidDefaultTranslation()
 {
   if (WinConfiguration->ConfirmRemoveDefaultTranslation())
   {
@@ -191,10 +186,21 @@ int __fastcall Execute(TProgramParams * Params)
   }
 
   TTerminalManager * TerminalManager = NULL;
+  GlyphsModule = NULL;
   NonVisualDataModule = NULL;
+  TStrings * CommandParams = new TStringList;
   try
   {
     TerminalManager = TTerminalManager::Instance();
+    HANDLE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
+    try
+    {
+      GlyphsModule = new TGlyphsModule(Application);
+    }
+    __finally
+    {
+      GUIConfiguration->ChangeResourceModule(ResourceModule);
+    }
     NonVisualDataModule = new TNonVisualDataModule(Application);
 
     LogForm = NULL;
@@ -212,7 +218,7 @@ int __fastcall Execute(TProgramParams * Params)
     if (Params->FindSwitch("UninstallCleanup"))
     {
       if (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
-            qaYes | qaNo, 0) == qaYes)
+            qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes)
       {
         DoCleanupDialog(StoredSessions, Configuration);
       }
@@ -231,18 +237,17 @@ int __fastcall Execute(TProgramParams * Params)
     }
     else if (Params->FindSwitch("Update"))
     {
-      CheckForUpdates();
+      CheckForUpdates(false);
     }
-    else if (Params->FindSwitch("InvalidDefaultTranslation", Value))
+    else if (Params->FindSwitch("InvalidDefaultTranslation"))
     {
-      InvalidDefaultTranslation(Value);
+      InvalidDefaultTranslation();
     }
     else
     {
       TSessionData * Data;
       enum { pcNone, pcUpload, pcFullSynchronize, pcSynchronize } ParamCommand;
       ParamCommand = pcNone;
-      int CommandParamsStart;
       AnsiString AutoStartSession;
       AnsiString DownloadFile;
 
@@ -250,35 +255,27 @@ int __fastcall Execute(TProgramParams * Params)
 
       if (Params->Count > 0)
       {
-        AnsiString DummyValue;
-        if (Params->FindSwitch("Upload", DummyValue, CommandParamsStart))
+        if (Params->FindSwitch("Upload", CommandParams))
         {
           ParamCommand = pcUpload;
-          if (CommandParamsStart == Params->ParamCount)
+          if (CommandParams->Count == 0)
           {
             throw Exception(NO_UPLOAD_LIST_ERROR);
           }
         }
-        else if (Params->FindSwitch("Synchronize", DummyValue, CommandParamsStart))
+        else if (Params->FindSwitch("Synchronize", CommandParams, 2))
         {
           ParamCommand = pcFullSynchronize;
         }
-        else if (Params->FindSwitch("KeepUpToDate", DummyValue, CommandParamsStart))
+        else if (Params->FindSwitch("KeepUpToDate", CommandParams, 2))
         {
           ParamCommand = pcSynchronize;
         }
-        else if (Params->ParamCount > 0)
+        
+        if (Params->ParamCount > 0)
         {
           AutoStartSession = Params->Param[1];
-        }
-
-        if (ParamCommand != pcNone)
-        {
-          CommandParamsStart++;
-          if (CommandParamsStart >= 2)
-          {
-            AutoStartSession = Params->Param[1];
-          }
+          Params->ParamsProcessed(1, 1);
         }
       }
       else if (WinConfiguration->EmbeddedSessions && StoredSessions->Count)
@@ -314,25 +311,17 @@ int __fastcall Execute(TProgramParams * Params)
               TerminalManager->ScpExplorer = ScpExplorer;
               if (ParamCommand == pcUpload)
               {
-                if (CommandParamsStart <= Params->ParamCount)
-                {
-                  Upload(TerminalManager->ActiveTerminal, Params,
-                    CommandParamsStart, Params->ParamCount);
-                }
-                else
-                {
-                  throw Exception(NO_UPLOAD_LIST_ERROR);
-                }
+                Upload(TerminalManager->ActiveTerminal, CommandParams);
               }
               else if (ParamCommand == pcFullSynchronize)
               {
                 FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
-                  Params, CommandParamsStart);
+                  CommandParams);
               }
               else if (ParamCommand == pcSynchronize)
               {
                 Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
-                  Params, CommandParamsStart);
+                  CommandParams);
               }
               else if (!DownloadFile.IsEmpty())
               {
@@ -359,7 +348,10 @@ int __fastcall Execute(TProgramParams * Params)
   {
     delete NonVisualDataModule;
     NonVisualDataModule = NULL;
+    delete GlyphsModule;
+    GlyphsModule = NULL;
     TTerminalManager::DestroyInstance();
+    delete CommandParams;
   }
 
   return 0;

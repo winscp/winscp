@@ -4,13 +4,12 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\Moje_B5.bpl"/>
-    <OBJFILES value="Moje_B5.obj &quot;my\AssociatedStatusBar.obj&quot; 
-      &quot;my\HistoryComboBox.obj&quot; &quot;my\ListViewColProperties.obj&quot; 
-      &quot;my\MoreButton.obj&quot; &quot;my\NortonLikeListView.obj&quot; 
-      &quot;my\PathLabel.obj&quot; &quot;my\ToolbarPanel.obj&quot; &quot;my\UpDownEdit.obj&quot; 
-      &quot;my\ComboEdit.obj&quot; &quot;my\XPThemes.obj&quot; &quot;my\PasswordEdit.obj&quot; 
-      &quot;my\ResourceModule.obj&quot; &quot;my\CompThread.obj&quot; &quot;my\DiscMon.obj&quot; 
-      &quot;my\TcpIp.obj&quot;"/>
+    <OBJFILES value="Moje_B5.obj &quot;my\HistoryComboBox.obj&quot; 
+      &quot;my\ListViewColProperties.obj&quot; &quot;my\MoreButton.obj&quot; 
+      &quot;my\NortonLikeListView.obj&quot; &quot;my\PathLabel.obj&quot; 
+      &quot;my\UpDownEdit.obj&quot; &quot;my\ComboEdit.obj&quot; &quot;my\XPThemes.obj&quot; 
+      &quot;my\PasswordEdit.obj&quot; &quot;my\ResourceModule.obj&quot; &quot;my\CompThread.obj&quot; 
+      &quot;my\DiscMon.obj&quot; &quot;my\TcpIp.obj&quot; &quot;my\GrayedCheckBox.obj&quot;"/>
     <RESFILES value="Moje_B5.res &quot;my\HistoryComboBox.dcr&quot; 
       &quot;my\NortonLikeListView.dcr&quot; &quot;my\PathLabel.dcr&quot; &quot;my\DiscMon.dcr&quot;"/>
     <DEFFILE value=""/>
@@ -58,7 +57,6 @@
       <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="bcbsmp.bpi" FORMNAME="" UNITNAME="bcbsmp" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="bcbie.bpi" FORMNAME="" UNITNAME="bcbie" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="my\AssociatedStatusBar.pas" FORMNAME="" UNITNAME="AssociatedStatusBar" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\HistoryComboBox.pas" FORMNAME="" UNITNAME="HistoryComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\HistoryComboBox.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\ListViewColProperties.pas" FORMNAME="" UNITNAME="ListViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -67,7 +65,6 @@
       <FILE FILENAME="my\NortonLikeListView.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\PathLabel.pas" FORMNAME="" UNITNAME="PathLabel" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\PathLabel.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="my\ToolbarPanel.pas" FORMNAME="" UNITNAME="ToolbarPanel" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\UpDownEdit.pas" FORMNAME="" UNITNAME="UpDownEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\ComboEdit.pas" FORMNAME="" UNITNAME="ComboEdit" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\XPThemes.pas" FORMNAME="" UNITNAME="XPThemes" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -77,6 +74,7 @@
       <FILE FILENAME="my\DiscMon.pas" FORMNAME="" UNITNAME="DiscMon" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\DiscMon.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\TcpIp.pas" FORMNAME="" UNITNAME="TcpIp" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="my\GrayedCheckBox.pas" FORMNAME="" UNITNAME="GrayedCheckBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

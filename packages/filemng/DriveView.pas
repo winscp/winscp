@@ -197,8 +197,9 @@ type
     function CallBackExpandLevel(var Node: TTreeNode; Data: Pointer): Boolean;
 
     {Notification procedures used by component TDiscMonitor:}
-    procedure ChangeDetected(Sender: TObject; const Directory: string);
-    procedure ChangeInvalid(Sender: TObject; const Directory: string);
+    procedure ChangeDetected(Sender: TObject; const Directory: string; 
+      var SubdirsChanged: Boolean);
+    procedure ChangeInvalid(Sender: TObject; const Directory: string; const ErrorStr: string);
 
     {Notification procedure used by component TTimer:}
     procedure ChangeTimerOnTimer(Sender: TObject);
@@ -2122,7 +2123,8 @@ begin
     DriveStatus[Drive].DiscMonitor.Active;
 end; {NodeWatched}
 
-procedure TDriveView.ChangeInvalid(Sender: TObject; const Directory: string);
+procedure TDriveView.ChangeInvalid(Sender: TObject; const Directory: string; 
+  const ErrorStr: string);
 var
   Dir: string;
 begin
@@ -2135,7 +2137,8 @@ begin
   end;
 end; {DirWatchChangeInvalid}
 
-procedure TDriveView.ChangeDetected(Sender: TObject; const Directory: string);
+procedure TDriveView.ChangeDetected(Sender: TObject; const Directory: string;
+  var SubdirsChanged: Boolean);
 var
   DirChanged: string;
 begin

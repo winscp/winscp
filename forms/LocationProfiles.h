@@ -44,6 +44,7 @@ __published:
   TIEComboBox *LocalDirectoryEdit;
   TButton *LocalDirectoryBrowseButton;
   TButton *SwitchButton;
+  TButton *HelpButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);
@@ -66,10 +67,9 @@ __published:
           TTreeNode *Node);
   void __fastcall ProfilesViewGetSelectedIndex(TObject *Sender,
           TTreeNode *Node);
-  void __fastcall DirectoryEditKeyDown(TObject *Sender, WORD &Key,
-          TShiftState Shift);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall SwitchButtonClick(TObject *Sender);
+  void __fastcall HelpButtonClick(TObject *Sender);
 
 public:
   __fastcall TLocationProfilesDialog(TComponent* AOwner);

@@ -13,7 +13,7 @@ enum TResumeStatus { rsNotAvailable, rsEnabled, rsDisabled };
 typedef void __fastcall (__closure *TFileOperationProgressEvent)
   (TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
 typedef void __fastcall (__closure *TFileOperationFinished)
-  (TFileOperation Operation, TOperationSide Side, bool DragDrop,
+  (TFileOperation Operation, TOperationSide Side, bool Temp,
     const AnsiString FileName, bool Success, bool & DisconnectWhenComplete);
 //---------------------------------------------------------------------------
 class TFileOperationProgressType
@@ -44,7 +44,7 @@ public:
   AnsiString Directory;
   bool AsciiTransfer;
   bool TransferingFile;
-  bool DragDrop;
+  bool Temp;
 
   // file size to read/write
   __int64 LocalSize;
@@ -64,6 +64,8 @@ public:
   bool YesToAll;
   bool YesToNewer;
   bool NoToAll;
+  bool SkipToAll;
+  bool AlternateResumeAlways;
 
   bool TotalSizeSet;
 
@@ -96,7 +98,7 @@ public:
   void __fastcall ChangeTransferSize(__int64 ASize);
   void __fastcall SetTotalSize(__int64 ASize);
   void __fastcall Start(TFileOperation AOperation,
-    TOperationSide ASide, int ACount, bool ADragDrop = false,
+    TOperationSide ASide, int ACount, bool ATemp = false,
     const AnsiString ADirectory = "");
   void __fastcall Stop();
   void __fastcall Suspend();
@@ -105,6 +107,7 @@ public:
   // only current file
   TDateTime __fastcall TimeExpected();
   TDateTime __fastcall TotalTimeExpected();
+  TDateTime __fastcall TotalTimeLeft();
   int __fastcall TransferProgress();
   int __fastcall OverallProgress();
   int __fastcall TotalTransferProgress();

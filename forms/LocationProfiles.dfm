@@ -35,7 +35,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     FocusControl = RemoteDirectoryEdit
   end
   object OKBtn: TButton
-    Left = 383
+    Left = 303
     Top = 390
     Width = 75
     Height = 25
@@ -46,7 +46,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     TabOrder = 5
   end
   object CancelBtn: TButton
-    Left = 471
+    Left = 387
     Top = 390
     Width = 75
     Height = 25
@@ -165,7 +165,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
     TabOrder = 0
     Text = 'LocalDirectoryEdit'
     OnChange = DirectoryEditChange
-    OnKeyDown = DirectoryEditKeyDown
   end
   object RemoteDirectoryEdit: TIEComboBox
     Left = 8
@@ -178,7 +177,6 @@ object LocationProfilesDialog: TLocationProfilesDialog
     TabOrder = 2
     Text = 'RemoteDirectoryEdit'
     OnChange = DirectoryEditChange
-    OnKeyDown = DirectoryEditKeyDown
   end
   object LocalDirectoryBrowseButton: TButton
     Left = 470
@@ -200,6 +198,16 @@ object LocationProfilesDialog: TLocationProfilesDialog
     ModalResult = 2
     TabOrder = 4
     OnClick = SwitchButtonClick
+  end
+  object HelpButton: TButton
+    Left = 471
+    Top = 390
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 7
+    OnClick = HelpButtonClick
   end
   object BookmarkImageList: TImageList
     Left = 232

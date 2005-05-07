@@ -246,33 +246,45 @@ object CopyParamsFrame: TCopyParamsFrame
     DesignSize = (
       501
       61)
-    object ExcludeFileMaskLabel: TLabel
-      Left = 10
-      Top = 17
-      Width = 66
+    object ExclusionFileMaskLabel: TLabel
+      Left = 90
+      Top = 18
+      Width = 25
       Height = 13
-      Caption = 'Exclude mas&k'
+      Caption = 'mas&k'
       FocusControl = ExcludeFileMaskCombo
     end
     object ExcludeFileMaskCombo: THistoryComboBox
-      Left = 101
-      Top = 12
-      Width = 393
+      Left = 136
+      Top = 14
+      Width = 358
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
       MaxLength = 3000
-      TabOrder = 0
+      TabOrder = 1
       Text = 'ExcludeFileMaskCombo'
       OnExit = ValidateMaskComboExit
     end
     object ClearArchiveCheck: TCheckBox
       Left = 10
-      Top = 37
+      Top = 39
       Width = 231
       Height = 17
       Caption = 'Clear source file '#39'Archi&ve'#39' attribute'
-      TabOrder = 1
+      TabOrder = 2
+    end
+    object NegativeExcludeCombo: TComboBox
+      Left = 10
+      Top = 14
+      Width = 76
+      Height = 21
+      Style = csDropDownList
+      ItemHeight = 13
+      TabOrder = 0
+      Items.Strings = (
+        'Exclude'
+        'Include')
     end
   end
 end

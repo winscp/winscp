@@ -54,13 +54,13 @@ private:
   void __fastcall SetType(char AType);
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall SetRights(TRights * value);
-  AnsiString __fastcall GetFullFileName();
+  AnsiString __fastcall GetFullFileName() const;
   int __fastcall GetIconIndex();
   bool __fastcall GetIsHidden();
   void __fastcall SetIsHidden(bool value);
-  bool __fastcall GetIsParentDirectory();
-  bool __fastcall GetIsThisDirectory();
-  bool __fastcall GetIsInaccesibleDirectory();
+  bool __fastcall GetIsParentDirectory() const;
+  bool __fastcall GetIsThisDirectory() const;
+  bool __fastcall GetIsInaccesibleDirectory() const;
   AnsiString __fastcall GetExtension();
   AnsiString __fastcall GetUserModificationStr();
 
@@ -70,7 +70,7 @@ protected:
 public:
   __fastcall TRemoteFile(TRemoteFile * ALinkedByFile = NULL);
   virtual __fastcall ~TRemoteFile();
-  TRemoteFile * __fastcall Duplicate();
+  TRemoteFile * __fastcall Duplicate(bool Standalone = true);
 
   void __fastcall ShiftTime(const TDateTime & Difference);
   void __fastcall Complete();
@@ -320,8 +320,8 @@ private:
   void __fastcall SetRightUndef(TRight Right, TState value);
 };
 //---------------------------------------------------------------------------
-enum TValidProperty { vpRights, vpGroup, vpOwner };
-typedef Set<TValidProperty, vpRights, vpOwner> TValidProperties;
+enum TValidProperty { vpRights, vpGroup, vpOwner, vpModification, vpLastAccess };
+typedef Set<TValidProperty, vpRights, vpLastAccess> TValidProperties;
 class TRemoteProperties
 {
 public:
@@ -331,6 +331,8 @@ public:
   bool AddXToDirectories;
   AnsiString Group;
   AnsiString Owner;
+  __int64 Modification; // unix time
+  __int64 LastAccess; // unix time
 
   __fastcall TRemoteProperties();
   bool __fastcall operator ==(const TRemoteProperties & rhp) const;
@@ -349,8 +351,6 @@ AnsiString __fastcall UnixExtractFileName(const AnsiString Path);
 AnsiString __fastcall UnixExtractFileExt(const AnsiString Path);
 Boolean __fastcall ComparePaths(const AnsiString Path1, const AnsiString Path2);
 Boolean __fastcall UnixComparePaths(const AnsiString Path1, const AnsiString Path2);
-void __fastcall SkipPathComponent(const AnsiString & Text,
-  int & SelStart, int & SelLength, bool Left, bool Unix);
 bool __fastcall ExtractCommonPath(TStrings * Files, AnsiString & Path);
 bool __fastcall UnixExtractCommonPath(TStrings * Files, AnsiString & Path);
 bool __fastcall IsUnixRootPath(const AnsiString Path);
@@ -359,6 +359,7 @@ AnsiString __fastcall FromUnixPath(const AnsiString Path);
 AnsiString __fastcall ToUnixPath(const AnsiString Path);
 AnsiString __fastcall MinimizeName(const AnsiString FileName, int MaxLen, bool Unix);
 AnsiString __fastcall MakeFileList(TStrings * FileList);
+void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
+  TModificationFmt Precision);
 //---------------------------------------------------------------------------
 #endif
-

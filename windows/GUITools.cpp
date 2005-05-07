@@ -226,6 +226,25 @@ AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
   return ItemsFormatString(SingleFileFormat, MultiFilesFormat,
     Files->Count, Item);
 }
+//---------------------------------------------------------------------
+AnsiString __fastcall FormatBytes(__int64 Bytes, bool UseOrders)
+{
+  AnsiString Result;
+
+  if (!UseOrders || (Bytes < __int64(100*1024)))
+  {
+    Result = FormatFloat("#,##0 \"B\"", Bytes);
+  }
+  else if (Bytes < __int64(100*1024*1024))
+  {
+    Result = FormatFloat("#,##0 \"KB\"", Bytes / 1024);
+  }
+  else
+  {
+    Result = FormatFloat("#,##0 \"MB\"", Bytes / (1024*1024));
+  }
+  return Result;
+}
 //---------------------------------------------------------------------------
 void __fastcall CopyToClipboard(AnsiString Text)
 {
@@ -398,5 +417,10 @@ bool __fastcall TLocalCustomCommand::PatternReplacement(int Index,
 bool __fastcall TLocalCustomCommand::HasLocalFileName(const AnsiString & Command)
 {
   return FindPattern(Command, '^');
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLocalCustomCommand::IsFileCommand(const AnsiString & Command)
+{
+  return TFileCustomCommand::IsFileCommand(Command) || HasLocalFileName(Command);
 }
 

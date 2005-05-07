@@ -29,10 +29,10 @@ __published:
   TPanel *LogFilePanel;
   TRadioButton *LogFileAppendButton;
   TRadioButton *LogFileOverwriteButton;
+  TLabel *LogProtocolLabel;
+  TComboBox *LogProtocolCombo;
   void __fastcall LogToFileCheckChange(TObject *Sender);
   void __fastcall DataChange(TObject *Sender);
-  void __fastcall LogFileNameEditKeyDown(TObject *Sender, WORD &Key,
-    TShiftState Shift);
 private:
   TGetDefaultLogFileName FOnGetDefaultLogFileName;
   bool FEnableLogWindow;

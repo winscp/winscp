@@ -11,18 +11,22 @@
 
 /* #define MALLOC_LOG  do this if you suspect putty of leaking memory */
 #ifdef MALLOC_LOG
-#define smalloc(z) (mlog(__FILE__,__LINE__), safemalloc(z))
-#define srealloc(y,z) (mlog(__FILE__,__LINE__), saferealloc(y,z))
+#define smalloc(z) (mlog(__FILE__,__LINE__), safemalloc(z,1))
+#define snmalloc(z,s) (mlog(__FILE__,__LINE__), safemalloc(z,s))
+#define srealloc(y,z) (mlog(__FILE__,__LINE__), saferealloc(y,z,1))
+#define snrealloc(y,z) (mlog(__FILE__,__LINE__), saferealloc(y,z,s))
 #define sfree(z) (mlog(__FILE__,__LINE__), safefree(z))
 void mlog(char *, int);
 #else
-#define smalloc safemalloc
-#define srealloc saferealloc
+#define smalloc(z) safemalloc(z,1)
+#define snmalloc safemalloc
+#define srealloc(y,z) saferealloc(y,z,1)
+#define snrealloc saferealloc
 #define sfree safefree
 #endif
 
-void *safemalloc(size_t);
-void *saferealloc(void *, size_t);
+void *safemalloc(size_t, size_t);
+void *saferealloc(void *, size_t, size_t);
 void safefree(void *);
 
 /*
@@ -31,8 +35,8 @@ void safefree(void *);
  * you don't mistakenly allocate enough space for one sort of
  * structure and assign it to a different sort of pointer.
  */
-#define snew(type) ((type *)smalloc(sizeof(type)))
-#define snewn(n, type) ((type *)smalloc((n)*sizeof(type)))
-#define sresize(ptr, n, type) ((type *)srealloc(ptr, (n)*sizeof(type)))
+#define snew(type) ((type *)snmalloc(1, sizeof(type)))
+#define snewn(n, type) ((type *)snmalloc((n), sizeof(type)))
+#define sresize(ptr, n, type) ((type *)snrealloc((ptr), (n), sizeof(type)))
 
 #endif

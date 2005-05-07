@@ -22,8 +22,10 @@ __published:
   THistoryComboBox *MaskEdit;
   TCheckBox *IncludingDirectoriesCheck;
   TLabel *Label2;
+  TButton *HelpButton;
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall MaskEditExit(TObject *Sender);
+  void __fastcall HelpButtonClick(TObject *Sender);
 private:
   TFileFilter FFileFilter;
   bool FSelect;

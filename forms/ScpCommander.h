@@ -8,7 +8,6 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <AssociatedStatusBar.hpp>
 #include <CustomDirView.hpp>
 #include <CustomUnixDirView.hpp>
 #include <IEListView.hpp>
@@ -23,7 +22,6 @@
 #include <IEPathComboBox.hpp>
 #include <PathLabel.hpp>
 #include <UnixPathComboBox.h>
-#include <ToolbarPanel.hpp>
 
 #include <WinInterface.h>
 
@@ -31,114 +29,325 @@
 #include "CustomDriveView.hpp"
 #include "DriveView.hpp"
 #include "UnixDriveView.h"
+#include "TB2Dock.hpp"
+#include "TB2Item.hpp"
+#include "TB2Toolbar.hpp"
+#include "TBX.hpp"
+#include <Menus.hpp>
+#include "TB2ExtItems.hpp"
+#include "TBXExtItems.hpp"
+#include "TBXLists.hpp"
+#include "TBXStatusBars.hpp"
 //---------------------------------------------------------------------------
 class TScpCommanderForm : public TCustomScpExplorerForm
 {
 __published:
   TSplitter *Splitter;
   TPanel *LocalPanel;
-  TAssociatedStatusBar *LocalStatusBar;
+  TTBXStatusBar *LocalStatusBar;
   TDirView *LocalDirView;
   TPathLabel *LocalPathLabel;
   TPathLabel *RemotePathLabel;
-  TCoolBar *LocalCoolBar;
-  TCoolBar *RemoteCoolBar;
-  TToolbarPanel *ToolbarPanel;
-  TStatusBar *StatusBar;
-  TToolBar *MenuToolBar;
-  TToolButton *LeftMenuButton;
-  TToolButton *ToolButton19;
-  TToolButton *ToolButton1;
-  TToolButton *RightMenuButton;
-  TToolButton *ToolButton4;
-  TToolBar *SelectionToolbar;
-  TToolButton *ToolButton23;
-  TToolButton *ToolButton24;
-  TToolButton *ToolButton25;
-  TToolButton *ToolButton26;
-  TToolButton *ToolButton28;
-  TToolButton *ToolButton29;
-  TToolBar *PreferencesToolbar;
-  TToolButton *ToolButton33;
-  TToolButton *ToolButton35;
-  TToolButton *ToolButton36;
-  TToolBar *SessionToolbar;
-  TToolButton *ToolButton30;
-  TToolButton *ToolButton31;
-  TToolButton *ToolButton32;
-  TToolButton *SavedSessionsButton;
-  TToolBar *CommandToolBar;
-  TToolButton *ToolButton5;
-  TToolButton *ToolButton6;
-  TToolButton *ToolButton17;
-  TToolButton *ToolButton27;
-  TToolButton *ToolButton34;
-  TToolButton *ToolButton16;
-  TToolButton *ToolButton37;
-  TToolButton *ToolButton38;
-  TToolBar *ToolBar1;
-  TToolButton *LocalBackButton;
-  TToolButton *LocalForwardButton;
-  TToolBar *ToolBar2;
-  TToolButton *ToolButton57;
-  TToolButton *ToolButton58;
-  TToolButton *ToolButton59;
-  TToolButton *ToolButton60;
-  TToolButton *ToolButton61;
-  TToolButton *ToolButton62;
-  TToolBar *ToolBar3;
-  TToolButton *RemoteBackButton;
-  TToolButton *RemoteForwardButton;
-  TToolBar *ToolBar4;
-  TToolButton *ToolButton87;
-  TToolButton *ToolButton88;
-  TToolButton *ToolButton89;
-  TToolButton *ToolButton90;
-  TToolButton *ToolButton91;
-  TToolButton *ToolButton92;
-  TToolButton *ToolButton7;
-  TToolBar *SortToolbar;
-  TToolButton *ToolButton8;
-  TToolButton *ToolButton9;
-  TToolButton *ToolButton10;
-  TToolButton *ToolButton11;
-  TToolButton *ToolButton13;
-  TToolButton *ToolButton15;
-  TToolButton *ToolButton12;
-  TToolButton *ToolButton14;
-  TToolButton *ToolButton18;
-  TToolButton *ToolButton20;
-  TToolButton *ToolButton21;
-  TToolButton *ToolButton22;
-  TToolBar *CommandsToolbar;
-  TToolButton *ToolButton39;
-  TToolButton *ToolButton40;
-  TToolButton *ToolButton41;
-  TToolBar *ToolBar5;
-  TIEPathComboBox *LocalPathComboBox;
-  TToolBar *ToolBar6;
-  TUnixPathComboBox *RemotePathComboBox;
-  TToolButton *ToolButton42;
-  TToolButton *ToolButton43;
-  TToolButton *ToolButton44;
-  TToolButton *ToolButton45;
-  TToolButton *ToolButton46;
-  TToolButton *ToolButton47;
-  TToolButton *ToolButton48;
-  TToolButton *ToolButton49;
-  TToolButton *ToolButton51;
+  TTBXStatusBar *StatusBar;
   TPanel *CommandLinePanel;
   THistoryComboBox *CommandLineCombo;
   TPathLabel *CommandLineLabel;
   TLabel *CommandLinePromptLabel;
-  TToolButton *ToolButton50;
   TDriveView *LocalDriveView;
   TSplitter *LocalPanelSplitter;
-  TToolButton *ToolButton68;
-  TToolButton *ToolButton69;
-  TSplitter *SessionComboResizer;
-  TComboBox *SessionCombo;
-  TToolButton *ToolButton2;
+  TTBXToolbar *SessionToolbar;
+  TTBXItem *TBXItem123;
+  TTBXSeparatorItem *TBXSeparatorItem34;
+  TTBXComboBoxItem *SessionCombo;
+  TTBXItem *TBXItem124;
+  TTBXSeparatorItem *TBXSeparatorItem35;
+  TTBXSubmenuItem *TBXSubmenuItem23;
+  TTBXItem *TBXItem125;
+  TTBXToolbar *PreferencesToolbar;
+  TTBXItem *TBXItem126;
+  TTBXSeparatorItem *TBXSeparatorItem36;
+  TTBXItem *TBXItem127;
+  TTBXSubmenuItem *TBXSubmenuItem24;
+  TTBXItem *TBXItem128;
+  TTBXItem *TBXItem129;
+  TTBXItem *TBXItem130;
+  TTBXToolbar *SelectionToolbar;
+  TTBXItem *TBXItem131;
+  TTBXItem *TBXItem132;
+  TTBXSeparatorItem *TBXSeparatorItem37;
+  TTBXItem *TBXItem133;
+  TTBXItem *TBXItem134;
+  TTBXItem *TBXItem135;
+  TTBXToolbar *CommandToolbar;
+  TTBXItem *TBXItem136;
+  TTBXItem *TBXItem137;
+  TTBXSeparatorItem *TBXSeparatorItem38;
+  TTBXItem *TBXItem138;
+  TTBXItem *TBXItem139;
+  TTBXItem *TBXItem140;
+  TTBXItem *TBXItem141;
+  TTBXItem *TBXItem142;
+  TTBXSeparatorItem *TBXSeparatorItem39;
+  TTBXItem *TBXItem143;
+  TTBXItem *TBXItem144;
+  TTBXToolbar *SortToolbar;
+  TTBXItem *TBXItem145;
+  TTBXSeparatorItem *TBXSeparatorItem40;
+  TTBXItem *TBXItem146;
+  TTBXItem *TBXItem147;
+  TTBXItem *TBXItem148;
+  TTBXItem *TBXItem149;
+  TTBXItem *TBXItem150;
+  TTBXItem *TBXItem151;
+  TTBXItem *TBXItem152;
+  TTBXItem *TBXItem153;
+  TTBXToolbar *CommandsToolbar;
+  TTBXItem *TBXItem154;
+  TTBXItem *TBXItem155;
+  TTBXItem *TBXItem156;
+  TTBXSeparatorItem *TBXSeparatorItem41;
+  TTBXItem *TBXItem157;
+  TTBXSeparatorItem *TBXSeparatorItem42;
+  TTBXItem *TBXItem158;
+  TTBXToolbar *MenuToolbar;
+  TTBXSubmenuItem *LocalMenuButton;
+  TTBXItem *TBXItem1;
+  TTBXSeparatorItem *TBXSeparatorItem1;
+  TTBXSubmenuItem *TBXSubmenuItem2;
+  TTBXItem *TBXItem2;
+  TTBXItem *TBXItem3;
+  TTBXSeparatorItem *TBXSeparatorItem2;
+  TTBXItem *TBXItem4;
+  TTBXItem *TBXItem5;
+  TTBXItem *TBXItem6;
+  TTBXSeparatorItem *TBXSeparatorItem3;
+  TTBXItem *TBXItem7;
+  TTBXItem *TBXItem8;
+  TTBXItem *TBXItem9;
+  TTBXItem *TBXItem10;
+  TTBXItem *TBXItem11;
+  TTBXSeparatorItem *TBXSeparatorItem4;
+  TTBXSubmenuItem *TBXSubmenuItem3;
+  TTBXItem *TBXItem12;
+  TTBXSeparatorItem *TBXSeparatorItem5;
+  TTBXItem *TBXItem13;
+  TTBXItem *TBXItem14;
+  TTBXItem *TBXItem15;
+  TTBXItem *TBXItem16;
+  TTBXItem *TBXItem17;
+  TTBXItem *TBXItem18;
+  TTBXSubmenuItem *TBXSubmenuItem4;
+  TTBXItem *TBXItem19;
+  TTBXItem *TBXItem20;
+  TTBXItem *TBXItem21;
+  TTBXItem *TBXItem22;
+  TTBXItem *TBXItem23;
+  TTBXSubmenuItem *TBXSubmenuItem18;
+  TTBXItem *TBXItem107;
+  TTBXItem *TBXItem108;
+  TTBXItem *TBXItem109;
+  TTBXItem *TBXItem110;
+  TTBXItem *TBXItem111;
+  TTBXItem *TBXItem112;
+  TTBXSubmenuItem *TBXSubmenuItem5;
+  TTBXItem *TBXItem24;
+  TTBXSeparatorItem *TBXSeparatorItem6;
+  TTBXItem *TBXItem25;
+  TTBXItem *TBXItem26;
+  TTBXItem *TBXItem27;
+  TTBXItem *TBXItem28;
+  TTBXItem *TBXItem29;
+  TTBXSeparatorItem *TBXSeparatorItem7;
+  TTBXItem *TBXItem30;
+  TTBXItem *TBXItem31;
+  TTBXItem *TBXItem32;
+  TTBXItem *TBXItem33;
+  TTBXItem *TBXItem34;
+  TTBXItem *TBXItem35;
+  TTBXItem *TBXItem36;
+  TTBXSeparatorItem *TBXSeparatorItem8;
+  TTBXSubmenuItem *CustomCommandsMenu;
+  TTBXSubmenuItem *TBXSubmenuItem6;
+  TTBXItem *TBXItem37;
+  TTBXItem *TBXItem38;
+  TTBXItem *TBXItem39;
+  TTBXItem *TBXItem40;
+  TTBXSeparatorItem *TBXSeparatorItem9;
+  TTBXItem *TBXItem41;
+  TTBXSubmenuItem *TBXSubmenuItem7;
+  TTBXItem *TBXItem42;
+  TTBXItem *TBXItem43;
+  TTBXItem *TBXItem44;
+  TTBXItem *TBXItem45;
+  TTBXSubmenuItem *TBXSubmenuItem8;
+  TTBXItem *TBXItem46;
+  TTBXSeparatorItem *TBXSeparatorItem10;
+  TTBXItem *TBXItem47;
+  TTBXItem *TBXItem48;
+  TTBXItem *TBXItem49;
+  TTBXSeparatorItem *TBXSeparatorItem11;
+  TTBXItem *TBXItem50;
+  TTBXItem *TBXItem51;
+  TTBXSeparatorItem *TBXSeparatorItem12;
+  TTBXItem *TBXItem52;
+  TTBXItem *TBXItem53;
+  TTBXSeparatorItem *TBXSeparatorItem13;
+  TTBXItem *TBXItem54;
+  TTBXItem *TBXItem55;
+  TTBXSeparatorItem *TBXSeparatorItem14;
+  TTBXItem *TBXItem56;
+  TTBXItem *TBXItem57;
+  TTBXSeparatorItem *TBXSeparatorItem15;
+  TTBXItem *TBXItem58;
+  TTBXSubmenuItem *TBXSubmenuItem19;
+  TTBXItem *TBXItem113;
+  TTBXSubmenuItem *TBXSubmenuItem20;
+  TTBXSeparatorItem *TBXSeparatorItem29;
+  TTBXSubmenuItem *TBXSubmenuItem21;
+  TTBXItem *TBXItem114;
+  TTBXItem *TBXItem115;
+  TTBXSubmenuItem *TBXSubmenuItem9;
+  TTBXSubmenuItem *TBXSubmenuItem10;
+  TTBXItem *TBXItem59;
+  TTBXItem *TBXItem60;
+  TTBXItem *TBXItem61;
+  TTBXItem *TBXItem62;
+  TTBXItem *TBXItem63;
+  TTBXItem *TBXItem64;
+  TTBXSubmenuItem *TBXSubmenuItem11;
+  TTBXItem *TBXItem65;
+  TTBXItem *TBXItem66;
+  TTBXSeparatorItem *TBXSeparatorItem16;
+  TTBXItem *TBXItem67;
+  TTBXSeparatorItem *TBXSeparatorItem17;
+  TTBXItem *TBXItem68;
+  TTBXSubmenuItem *TBXSubmenuItem12;
+  TTBXItem *TBXItem69;
+  TTBXItem *TBXItem70;
+  TTBXSeparatorItem *TBXSeparatorItem18;
+  TTBXItem *TBXItem71;
+  TTBXSeparatorItem *TBXSeparatorItem19;
+  TTBXItem *TBXItem72;
+  TTBXSeparatorItem *TBXSeparatorItem20;
+  TTBXItem *TBXItem73;
+  TTBXItem *TBXItem74;
+  TTBXItem *TBXItem75;
+  TTBXItem *TBXItem76;
+  TTBXSubmenuItem *TBXSubmenuItem14;
+  TTBXItem *TBXItem77;
+  TTBXItem *TBXItem78;
+  TTBXItem *TBXItem79;
+  TTBXSeparatorItem *TBXSeparatorItem21;
+  TTBXItem *TBXItem80;
+  TTBXSeparatorItem *TBXSeparatorItem22;
+  TTBXItem *TBXItem81;
+  TTBXSeparatorItem *TBXSeparatorItem23;
+  TTBXItem *TBXItem82;
+  TTBXSubmenuItem *RemoteMenuButton;
+  TTBXItem *TBXItem83;
+  TTBXSeparatorItem *TBXSeparatorItem24;
+  TTBXSubmenuItem *TBXSubmenuItem15;
+  TTBXItem *TBXItem84;
+  TTBXSeparatorItem *TBXSeparatorItem25;
+  TTBXItem *TBXItem85;
+  TTBXItem *TBXItem86;
+  TTBXItem *TBXItem87;
+  TTBXSeparatorItem *TBXSeparatorItem26;
+  TTBXItem *TBXItem88;
+  TTBXItem *TBXItem89;
+  TTBXItem *TBXItem90;
+  TTBXItem *TBXItem91;
+  TTBXItem *TBXItem92;
+  TTBXSeparatorItem *TBXSeparatorItem27;
+  TTBXSubmenuItem *TBXSubmenuItem16;
+  TTBXItem *TBXItem93;
+  TTBXSeparatorItem *TBXSeparatorItem28;
+  TTBXItem *TBXItem94;
+  TTBXItem *TBXItem95;
+  TTBXItem *TBXItem96;
+  TTBXItem *TBXItem97;
+  TTBXItem *TBXItem98;
+  TTBXItem *TBXItem99;
+  TTBXItem *TBXItem100;
+  TTBXSubmenuItem *TBXSubmenuItem17;
+  TTBXItem *TBXItem101;
+  TTBXItem *TBXItem102;
+  TTBXItem *TBXItem103;
+  TTBXItem *TBXItem104;
+  TTBXItem *TBXItem105;
+  TTBXItem *TBXItem106;
+  TTBXSubmenuItem *TBXSubmenuItem22;
+  TTBXItem *TBXItem116;
+  TTBXSeparatorItem *TBXSeparatorItem30;
+  TTBXItem *TBXItem117;
+  TTBXItem *TBXItem118;
+  TTBXItem *TBXItem119;
+  TTBXSeparatorItem *TBXSeparatorItem31;
+  TTBXItem *TBXItem120;
+  TTBXSeparatorItem *TBXSeparatorItem32;
+  TTBXItem *TBXItem121;
+  TTBXSeparatorItem *TBXSeparatorItem33;
+  TTBXItem *TBXItem122;
+  TTBXDock *LocalTopDock;
+  TTBXToolbar *LocalPathToolbar;
+  TTBControlItem *TBControlItem1;
+  TIEPathComboBox *LocalPathComboBox;
+  TTBXToolbar *LocalHistoryToolbar;
+  TTBXSubmenuItem *LocalBackButton;
+  TTBXSubmenuItem *LocalForwardButton;
+  TTBXToolbar *LocalNavigationToolbar;
+  TTBXItem *TBXItem159;
+  TTBXItem *TBXItem160;
+  TTBXItem *TBXItem161;
+  TTBXItem *TBXItem162;
+  TTBXSeparatorItem *TBXSeparatorItem43;
+  TTBXItem *TBXItem163;
+  TTBXItem *TBXItem164;
+  TTBXDock *LocalBottomDock;
+  TTBXDock *RemoteTopDock;
+  TTBXToolbar *RemotePathToolbar;
+  TTBXToolbar *RemoteHistoryToolbar;
+  TTBXSubmenuItem *RemoteBackButton;
+  TTBXSubmenuItem *RemoteForwardButton;
+  TTBXToolbar *RemoteNavigationToolbar;
+  TTBXItem *TBXItem165;
+  TTBXItem *TBXItem166;
+  TTBXItem *TBXItem167;
+  TTBXItem *TBXItem168;
+  TTBXSeparatorItem *TBXSeparatorItem44;
+  TTBXItem *TBXItem169;
+  TTBXItem *TBXItem170;
+  TTBControlItem *TBControlItem2;
+  TUnixPathComboBox *RemotePathComboBox;
+  TTBXDock *RemoteBottomDock;
+  TTBXDock *BottomDock;
+  TTBXToolbar *ToolbarToolbar;
+  TTBXItem *TBXItem171;
+  TTBXItem *TBXItem172;
+  TTBXItem *TBXItem173;
+  TTBXItem *TBXItem174;
+  TTBXItem *TBXItem175;
+  TTBXItem *TBXItem176;
+  TTBXItem *TBXItem177;
+  TTBXItem *TBXItem178;
+  TTBXItem *TBXItem179;
+  TTBXToolbar *UpdatesToolbar;
+  TTBXSubmenuItem *TBXSubmenuItem1;
+  TTBXItem *TBXItem180;
+  TTBXItem *TBXItem181;
+  TTBXItem *TBXItem182;
+  TTBXSeparatorItem *TBXSeparatorItem45;
+  TTBXItem *TBXItem183;
+  TTBXItem *TBXItem184;
+  TTBXSeparatorItem *TBXSeparatorItem46;
+  TTBXItem *TBXItem185;
+  TTBXItem *TBXItem186;
+  TTBXItem *TBXItem187;
+  TTBXToolbar *TransferToolbar;
+  TTBXComboBoxItem *TransferCombo;
+  TTBXItem *TBXItem188;
+  TTBXItem *TBXItem189;
+  TTBXItem *TBXItem190;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -151,8 +360,6 @@ __published:
   void __fastcall LocalFileControlDDDragEnter(TObject *Sender,
     IDataObject *DataObj, int grfKeyState, TPoint &Point,
     int &dwEffect, bool &Accept);
-  void __fastcall DirViewLoaded(TObject *Sender);
-  void __fastcall SessionComboCloseUp(TObject *Sender);
   void __fastcall LocalFileControlDDDragOver(TObject *Sender, int grfKeyState,
     TPoint &Point, int &dwEffect);
   void __fastcall LocalFileControlDDFileOperation(TObject *Sender,
@@ -183,6 +390,11 @@ __published:
     AnsiString Path);
   void __fastcall LocalDirViewFileIconForName(TObject *Sender,
           TListItem *Item, AnsiString &FileName);
+  void __fastcall LocalDirViewUpdateStatusBar(TObject *Sender,
+          const TStatusFileInfo &FileInfo);
+  void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
+          const TStatusFileInfo &FileInfo);
+  void __fastcall LocalStatusBarClick(TObject *Sender);
 
 private:
   TCustomDirView * FDirViewToSelect;
@@ -203,7 +415,7 @@ private:
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
-    TTransferType Type, bool DragDrop, TStrings * FileList,
+    TTransferType Type, bool Temp, TStrings * FileList,
     AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
@@ -214,7 +426,7 @@ protected:
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
-  void __fastcall UpdateControls();
+  virtual void __fastcall UpdateControls();
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode,
@@ -238,6 +450,8 @@ protected:
   virtual bool __fastcall IsFileControl(TObject * Control, TOperationSide Side);
   virtual void __fastcall ReloadLocalDirectory(const AnsiString Directory = "");
   virtual bool __fastcall PanelOperation(TOperationSide Side, bool DragDrop);
+  virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
+  virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -255,6 +469,8 @@ public:
   virtual void __fastcall GoToCommandLine();
   virtual void __fastcall GoToTree();
   virtual void __fastcall OpenConsole(AnsiString Command = "");
+  virtual AnsiString __fastcall PathForCaption();
+
   __property float LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };
 //---------------------------------------------------------------------------

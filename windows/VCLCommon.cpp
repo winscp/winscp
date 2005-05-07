@@ -2,6 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "WinInterface.h"
 #include "VCLCommon.h"
 
 #include <Common.h>
@@ -10,18 +11,25 @@
 
 #include <FileCtrl.hpp>
 #include <XPThemes.hpp>
+#include <TB2Dock.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 void __fastcall AdjustListColumnsWidth(TListView* ListView)
 {
-  int OriginalWidth, NewWidth, i, CWidth;
+  int OriginalWidth, NewWidth, i, CWidth, LastResizible;
 
   OriginalWidth = 0;
+  LastResizible = -1;
   for (i = 0; i < ListView->Columns->Count; i++)
   {
     OriginalWidth += ListView->Columns->Items[i]->Width;
+    if (ListView->Columns->Items[i]->Tag == 0)
+    {
+      LastResizible = i;
+    }
   }
+  assert(LastResizible >= 0);
 
   NewWidth = 0;
   CWidth = ListView->ClientWidth;
@@ -30,16 +38,19 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView)
   {
     CWidth -= GetSystemMetrics(SM_CXVSCROLL);
   }
-  for (i = 0; i < ListView->Columns->Count-1;i++)
+  for (i = 0; i < ListView->Columns->Count; i++)
   {
-    if (ListView->Columns->Items[i]->Tag == 0)
+    if (i != LastResizible)
     {
-      ListView->Columns->Items[i]->Width =
-        (CWidth * ListView->Columns->Items[i]->Width) / OriginalWidth;
+      if (ListView->Columns->Items[i]->Tag == 0)
+      {
+        ListView->Columns->Items[i]->Width =
+          (CWidth * ListView->Columns->Items[i]->Width) / OriginalWidth;
+      }
+      NewWidth += ListView->Columns->Items[i]->Width;
     }
-    NewWidth += ListView->Columns->Items[i]->Width;
   }
-  ListView->Columns->Items[ListView->Columns->Count-1]->Width = CWidth-NewWidth;
+  ListView->Columns->Items[LastResizible]->Width = CWidth-NewWidth;
 }
 //---------------------------------------------------------------------------
 void __fastcall EnableControl(TControl * Control, bool Enable)
@@ -272,55 +283,123 @@ void __fastcall ListViewCheckAll(TListView * ListView,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall PathComboBoxKeyDown(
-  TCustomComboBox * ComboBox, WORD & Key, TShiftState Shift, bool Unix)
+// Windows algorithm is as follows (tested on W2k):
+// right:
+//   is_delimiter(current)
+//     false:
+//       right(left(current) + 1)
+//     true:
+//       right(right(current) + 1)
+// left:
+//   right(left(current) + 1)
+int CALLBACK PathWordBreakProc(char * Ch, int Current, int Len, int Code)
 {
-  assert(ComboBox != NULL);
-
-  if (((Key == VK_LEFT) || (Key == VK_RIGHT)) && Shift.Contains(ssCtrl))
+  char Delimiters[] = "\\/ ;,.";
+  int Result;
+  AnsiString ACh;
+  // stupid unicode autodetection
+  // (on WinXP (or rather for RichEdit 2.0) we get unicode on input)
+  if ((Len > 1) && (Ch[1] == '\0'))
   {
-    int SelStart = ComboBox->SelStart;
-    int SelLength = ComboBox->SelLength;
-    SkipPathComponent(reinterpret_cast<TComboBox*>(ComboBox)->Text,
-      SelStart, SelLength, (Key == VK_LEFT), Unix);
-    ComboBox->SelStart = SelStart;
-    ComboBox->SelLength = SelLength;
-    Key = 0;
+    // this convertes the unicode to ansi
+    ACh = (wchar_t*)Ch;
   }
+  else
+  {
+    ACh = Ch;
+  }
+  if (Code == WB_ISDELIMITER)
+  {
+    // we return negacy of what WinAPI docs says
+    Result = (strchr(Delimiters, ACh[Current + 1]) == NULL);
+  }
+  else if (Code == WB_LEFT)
+  {
+    Result = ACh.SubString(1, Current - 1).LastDelimiter(Delimiters);
+  }
+  else if (Code == WB_RIGHT)
+  {
+    if (Current == 0)
+    {
+      // will be called gain with Current == 1
+      Result = 0;
+    }
+    else
+    {
+      const char * P = strpbrk(ACh.c_str() + Current - 1, Delimiters);
+      if (P == NULL)
+      {
+        Result = Len;
+      }
+      else
+      {
+        Result = P - ACh.c_str() + 1;
+      }
+    }
+  }
+  else
+  {
+    assert(false);
+    Result = 0;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall PathEditKeyDown(
-  TCustomEdit * Edit, WORD & Key, TShiftState Shift, bool Unix)
+class TPublicCustomCombo : public TCustomCombo
 {
-  assert(Edit != NULL);
-
-  if (((Key == VK_LEFT) || (Key == VK_RIGHT)) && Shift.Contains(ssCtrl))
+friend void __fastcall InstallPathWordBreakProc(TWinControl * Control);
+};
+//---------------------------------------------------------------------------
+void __fastcall InstallPathWordBreakProc(TWinControl * Control)
+{
+  HWND Wnd;
+  if (dynamic_cast<TCustomCombo*>(Control) != NULL)
   {
-    int SelStart = Edit->SelStart;
-    int SelLength = Edit->SelLength;
-    SkipPathComponent(Edit->Text,
-      SelStart, SelLength, (Key == VK_LEFT), Unix);
-    Edit->SelStart = SelStart;
-    Edit->SelLength = SelLength;
-    Key = 0;
+    TPublicCustomCombo * Combo =
+      static_cast<TPublicCustomCombo *>(dynamic_cast<TCustomCombo *>(Control));
+    Combo->HandleNeeded();
+    Wnd = Combo->EditHandle;
   }
+  else
+  {
+    Wnd = Control->Handle;
+  }
+  SendMessage(Wnd, EM_SETWORDBREAKPROC, 0, (LPARAM)(EDITWORDBREAKPROC)PathWordBreakProc);
 }
 //---------------------------------------------------------------------------
-void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar)
+static void __fastcall RemoveHiddenControlsFromOrder(TControl ** ControlsOrder, int & Count)
 {
-  StatusBar->SimplePanel = !StatusBar->SimplePanel;
-  StatusBar->SimplePanel = !StatusBar->SimplePanel;
+  int Shift = 0;
+  for (int Index = 0; Index < Count; Index++)
+  {
+    if (ControlsOrder[Index]->Visible)
+    {
+      ControlsOrder[Index - Shift] = ControlsOrder[Index];
+    }
+    else
+    {
+      Shift++;
+    }
+  }
+  Count -= Shift;
 }
 //---------------------------------------------------------------------------
 void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count)
 {
+  RemoveHiddenControlsFromOrder(ControlsOrder, Count);
+
   for (int Index = Count - 1; Index > 0; Index--)
   {
-    if ((ControlsOrder[Index]->Top < ControlsOrder[Index - 1]->Top) &&
-        ControlsOrder[Index - 1]->Visible)
+    if (ControlsOrder[Index]->Top < ControlsOrder[Index - 1]->Top)
     {
-      ControlsOrder[Index]->Top = ControlsOrder[Index - 1]->Top +
+      int NewPosition = ControlsOrder[Index - 1]->Top +
         ControlsOrder[Index - 1]->Height;
+      // because of empty docks
+      if (ControlsOrder[Index - 1]->Height == 0)
+      {
+        NewPosition++;
+      }
+      ControlsOrder[Index]->Top = NewPosition;
       Index = Count;
     }
   }
@@ -328,6 +407,8 @@ void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count)
 //---------------------------------------------------------------------------
 void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count)
 {
+  RemoveHiddenControlsFromOrder(ControlsOrder, Count);
+
   for (int Index = Count - 1; Index > 0; Index--)
   {
     if ((ControlsOrder[Index]->Left < ControlsOrder[Index - 1]->Left) &&
@@ -360,5 +441,150 @@ void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After)
   else if (After->TabOrder < Control->TabOrder - 1)
   {
     After->TabOrder = static_cast<TTabOrder>(Control->TabOrder - 1);
+  }
+}
+//---------------------------------------------------------------------------
+static inline void __fastcall GetToolbarKey(const AnsiString & ToolbarName,
+  const AnsiString & Value, AnsiString & ToolbarKey)
+{
+  int ToolbarNameLen;
+  if ((ToolbarName.Length() > 7) &&
+      (ToolbarName.SubString(ToolbarName.Length() - 7 + 1, 7) == "Toolbar"))
+  {
+    ToolbarNameLen = ToolbarName.Length() - 7;
+  }
+  else
+  {
+    ToolbarNameLen = ToolbarName.Length();
+  }
+  ToolbarKey = ToolbarName.SubString(1, ToolbarNameLen) + "_" + Value;
+}
+//---------------------------------------------------------------------------
+static int __fastcall ToolbarReadInt(const AnsiString ToolbarName,
+  const AnsiString Value, const int Default, const void * ExtraData)
+{
+  int Result;
+  if (Value == "Rev")
+  {
+    Result = 2000;
+  }
+  else
+  {
+    TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
+    AnsiString ToolbarKey;
+    GetToolbarKey(ToolbarName, Value, ToolbarKey);
+    if (Storage->IndexOfName(ToolbarKey) >= 0)
+    {
+      Result = StrToIntDef(Storage->Values[ToolbarKey], Default);
+    }
+    else
+    {
+      Result = Default;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static AnsiString __fastcall ToolbarReadString(const AnsiString ToolbarName,
+  const AnsiString Value, const AnsiString Default, const void * ExtraData)
+{
+  AnsiString Result;
+  TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
+  AnsiString ToolbarKey;
+  GetToolbarKey(ToolbarName, Value, ToolbarKey);
+  if (Storage->IndexOfName(ToolbarKey) >= 0)
+  {
+    Result = Storage->Values[ToolbarKey];
+  }
+  else
+  {
+    Result = Default;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static void __fastcall ToolbarWriteInt(const AnsiString ToolbarName,
+  const AnsiString Value, const int Data, const void * ExtraData)
+{
+  if (Value != "Rev")
+  {
+    TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
+    AnsiString ToolbarKey;
+    GetToolbarKey(ToolbarName, Value, ToolbarKey);
+    assert(Storage->IndexOfName(ToolbarKey) < 0);
+    Storage->Values[ToolbarKey] = IntToStr(Data);
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall ToolbarWriteString(const AnsiString ToolbarName,
+  const AnsiString Value, const AnsiString Data, const void * ExtraData)
+{
+  TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
+  AnsiString ToolbarKey;
+  GetToolbarKey(ToolbarName, Value, ToolbarKey);
+  assert(Storage->IndexOfName(ToolbarKey) < 0);
+  Storage->Values[ToolbarKey] = Data;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
+{
+  AnsiString Result;
+  TStrings * Storage = new TStringList();
+  try
+  {
+    TBCustomSavePositions(OwnerComponent, ToolbarWriteInt, ToolbarWriteString,
+      Storage);
+    Result = Storage->CommaText;
+  }
+  __finally
+  {
+    delete Storage;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr)
+{
+  TStrings * Storage = new TStringList();
+  try
+  {
+    Storage->CommaText = LayoutStr;
+    TBCustomLoadPositions(OwnerComponent, ToolbarReadInt, ToolbarReadString,
+      Storage);
+  }
+  __finally
+  {
+    delete Storage;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall CutFormToDesktop(TForm * Form)
+{
+  if (Form->Top + Form->Height > Screen->WorkAreaTop + Screen->WorkAreaHeight)
+  {
+    Form->Height = Screen->WorkAreaTop + Screen->WorkAreaHeight - Form->Top;
+  }
+  if (Form->Left + Form->Width >= Screen->WorkAreaLeft + Screen->WorkAreaWidth)
+  {
+    Form->Width = Screen->WorkAreaLeft + Screen->WorkAreaWidth - Form->Left;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall SetCorrectFormParent(TForm * Form)
+{
+  // Kind of hack (i do not understand this much).
+  // Rationale: for example when the preferences window is opened from login dialog
+  // settings Parent to Screen->ActiveForm leads to "cannot focus disabled control",
+  // so we set Parent only when absolutelly necessary 
+  // (dialog opened from log window or editor)
+  // TODO: does not work for dialogs opened from preferences dialog
+  if ((Application->MainForm != NULL) &&
+      (Application->MainForm != Screen->ActiveForm))
+  {
+    // this should better be check for modal form
+    if (Screen->ActiveForm->BorderStyle != bsDialog)
+    {
+      Form->ParentWindow = Screen->ActiveForm->Handle;
+    }
   }
 }

@@ -12,6 +12,9 @@ object SelectMaskDialog: TSelectMaskDialog
   ParentFont = True
   OldCreateOrder = True
   OnCloseQuery = FormCloseQuery
+  DesignSize = (
+    361
+    145)
   PixelsPerInch = 96
   TextHeight = 13
   object MaskGroup: TXPGroupBox
@@ -19,7 +22,7 @@ object SelectMaskDialog: TSelectMaskDialog
     Top = 6
     Width = 345
     Height = 96
-    TabOrder = 2
+    TabOrder = 0
     object Label1: TLabel
       Left = 11
       Top = 19
@@ -57,23 +60,33 @@ object SelectMaskDialog: TSelectMaskDialog
     end
   end
   object OKBtn: TButton
-    Left = 191
+    Left = 109
     Top = 112
     Width = 75
     Height = 25
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 0
+    TabOrder = 1
   end
   object CancelBtn: TButton
-    Left = 279
+    Left = 194
     Top = 112
     Width = 75
     Height = 25
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 1
+    TabOrder = 2
+  end
+  object HelpButton: TButton
+    Left = 277
+    Top = 112
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = '&Help'
+    TabOrder = 3
+    OnClick = HelpButtonClick
   end
 end

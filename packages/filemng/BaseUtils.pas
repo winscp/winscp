@@ -287,6 +287,7 @@ begin
     GetDiskFreeSpaceEx := @BackfillGetDiskFreeSpaceEx;
 end;
 
+// duplicated in RemoteFiles.cpp
 procedure ReduceDateTimePrecision(var DateTime: TDateTime;
   Precision: TDateTimePrecision);
 var

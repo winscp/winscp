@@ -5,6 +5,7 @@
 #include <Common.h>
 #include <Terminal.h>
 #include <VCLCommon.h>
+#include "WinInterface.h"
 #include "FileSystemInfo.h"
 //---------------------------------------------------------------------
 #pragma link "XPThemes"
@@ -25,7 +26,7 @@ void __fastcall DoFileSystemInfoDialog(TTerminal * Terminal)
 } 
 //---------------------------------------------------------------------
 __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent* AOwner)
-	: TForm(AOwner)
+    : TForm(AOwner)
 {
   UseSystemSettings(this);
 }
@@ -46,7 +47,7 @@ void __fastcall TFileSystemInfoDialog::UpdateControls()
 {
   assert(Terminal);
 
-  SshVersionEdit->Text = IntToStr(Terminal->SshVersion);
+  SshVersionEdit->Text = FORMAT("SSH-%d", (Terminal->SshVersion));
   SshImplementationEdit->Text = Terminal->SshImplementation;
 
   AnsiString Str = CipherNames[Terminal->CSCipher];
@@ -87,4 +88,9 @@ void __fastcall TFileSystemInfoDialog::SetTerminal(TTerminal * value)
   }
 }
 //---------------------------------------------------------------------
+void __fastcall TFileSystemInfoDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
+}
+//---------------------------------------------------------------------------
 

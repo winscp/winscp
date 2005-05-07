@@ -9,23 +9,24 @@ resourcestring
   SUnixDirViewRightsCol = 'Rights';
   SUnixDirViewOwnerCol = 'Owner';
   SUnixDirViewGroupCol = 'Group';
+  SUnixDirViewLinkTargetCol = 'Link target';
 
 const
-  UnixDirViewColumns = 7;
+  UnixDirViewColumns = 8;
   DefaultUnixDirViewCaptions: array[0..UnixDirViewColumns-1] of Pointer =
     (@SDirViewNameCol, @SDirViewSizeCol, @SDirViewChangedCol,
      @SUnixDirViewRightsCol, @SUnixDirViewOwnerCol, @SUnixDirViewGroupCol,
-     @SDirViewExtCol);
+     @SDirViewExtCol, @SUnixDirViewLinkTargetCol);
   DefaultUnixDirViewWidths: array[0..UnixDirViewColumns-1] of Integer =
-    (150, 80, 130, 100, 130, 130, 0);
+    (150, 80, 130, 100, 130, 130, 0, 150);
   DefaultUnixDirViewAlignments: array[0..UnixDirViewColumns-1] of TAlignment =
     (taLeftJustify, taRightJustify, taLeftJustify, taLeftJustify,
-     taLeftJustify, taLeftJustify, taLeftJustify);
+     taLeftJustify, taLeftJustify, taLeftJustify, taLeftJustify);
   DefaultUnixDirViewVisible: array[0..UnixDirViewColumns-1] of Boolean =
-    (True, True, True, True, True, True, False);
+    (True, True, True, True, True, True, False, False);
 
 type
-  TUnixDirViewCol = (uvName, uvSize, uvChanged, uvRights, uvOwner, uvGroup, uvExt);
+  TUnixDirViewCol = (uvName, uvSize, uvChanged, uvRights, uvOwner, uvGroup, uvExt, uvLinkTarget);
 
   TUnixDirViewColProperties = class(TCustomDirViewColProperties)
   private
@@ -79,8 +80,13 @@ type
 
     property ExtCaption: string index uvExt read GetCaptions write SetCaptions stored StoreCaption;
     property ExtWidth: Integer index uvExt read GetWidths write SetWidths stored StoreWidth;
-    property ExtVisible: Boolean index uvExt read GetVisible write SetVisible default True;
+    property ExtVisible: Boolean index uvExt read GetVisible write SetVisible default False;
     property ExtAlignment: TAlignment index uvExt read GetAlignments write SetAlignments stored StoreAlignment;
+
+    property LinkTargetCaption: string index uvLinkTarget read GetCaptions write SetCaptions stored StoreCaption;
+    property LinkTargetWidth: Integer index uvLinkTarget read GetWidths write SetWidths stored StoreWidth;
+    property LinkTargetVisible: Boolean index uvLinkTarget read GetVisible write SetVisible default False;
+    property LinkTargetAlignment: TAlignment index uvLinkTarget read GetAlignments write SetAlignments stored StoreAlignment;
 
     property Column1: TUnixDirViewCol index 0 read GetDirOrder write SetDirOrder default uvName;
     property Column2: TUnixDirViewCol index 1 read GetDirOrder write SetDirOrder default uvSize;
@@ -89,6 +95,7 @@ type
     property Column5: TUnixDirViewCol index 4 read GetDirOrder write SetDirOrder default uvOwner;
     property Column6: TUnixDirViewCol index 5 read GetDirOrder write SetDirOrder default uvGroup;
     property Column7: TUnixDirViewCol index 6 read GetDirOrder write SetDirOrder default uvExt;
+    property Column8: TUnixDirViewCol index 7 read GetDirOrder write SetDirOrder default uvLinkTarget;
   end; { TDirViewColProperties }
 
 

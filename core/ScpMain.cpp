@@ -61,7 +61,7 @@ void __fastcall TCallExceptionClass::QueryUser(TObject* Sender, const AnsiString
 }
 #endif
 //---------------------------------------------------------------------------
-TQueryParams::TQueryParams(unsigned int AParams)
+TQueryParams::TQueryParams(unsigned int AParams, AnsiString AHelpKeyword)
 {
   Params = AParams;
   Aliases = NULL;
@@ -69,6 +69,7 @@ TQueryParams::TQueryParams(unsigned int AParams)
   Timer = NULL;
   TimerEvent = NULL;
   TimerAnswers = 0;
+  HelpKeyword = AHelpKeyword;
 }
 //---------------------------------------------------------------------------
 void Initialize(const AnsiString IniFileName)

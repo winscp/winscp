@@ -29,6 +29,7 @@ __published:
   TListView *DataListView;
   TLabel *Label1;
   TButton *CheckAllButton;
+  TButton *HelpButton;
   void __fastcall DataListViewMouseDown(TObject *Sender,
     TMouseButton Button, TShiftState Shift, int X, int Y);
   void __fastcall DataListViewKeyUp(TObject *Sender, WORD &Key,
@@ -37,6 +38,7 @@ __published:
   void __fastcall CheckAllButtonClick(TObject *Sender);
   void __fastcall DataListViewInfoTip(TObject *Sender,
     TListItem *Item, AnsiString &InfoTip);
+  void __fastcall HelpButtonClick(TObject *Sender);
 private:
   TStoredSessionList *FSessionList;
   TConfiguration * FConfiguration;

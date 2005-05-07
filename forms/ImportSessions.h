@@ -26,6 +26,7 @@ __published:
   TLabel *Label2;
   TButton *CheckAllButton;
   TCheckBox *ImportKeysCheck;
+  TButton *HelpButton;
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
   void __fastcall SessionListViewInfoTip(TObject *Sender,
     TListItem *Item, AnsiString &InfoTip);
@@ -35,6 +36,7 @@ __published:
     TShiftState Shift);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall CheckAllButtonClick(TObject *Sender);
+  void __fastcall HelpButtonClick(TObject *Sender);
 private:
   TStoredSessionList *FSessionList;
   void __fastcall UpdateControls();

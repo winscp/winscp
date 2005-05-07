@@ -10,7 +10,6 @@
 #pragma delphiheader begin
 #pragma option push -w-
 #pragma option push -Vx
-#include <AssociatedStatusBar.hpp>	// Pascal unit
 #include <PathLabel.hpp>	// Pascal unit
 #include <CustomPathComboBox.hpp>	// Pascal unit
 #include <Controls.hpp>	// Pascal unit
@@ -369,8 +368,8 @@ protected:
 	virtual void __fastcall SetPath(AnsiString Value);
 	virtual void __fastcall SetItemImageIndex(Comctrls::TListItem* Item, int Index);
 	void __fastcall SetCompressedColor(Graphics::TColor Value);
-	void __fastcall ChangeDetected(System::TObject* Sender, const AnsiString Directory);
-	void __fastcall ChangeInvalid(System::TObject* Sender, const AnsiString Directory);
+	void __fastcall ChangeDetected(System::TObject* Sender, const AnsiString Directory, bool &SubdirsChanged);
+	void __fastcall ChangeInvalid(System::TObject* Sender, const AnsiString Directory, const AnsiString ErrorStr);
 	void __fastcall TimerOnTimer(System::TObject* Sender);
 	void __fastcall ResetItemImage(int Index);
 	void __fastcall SetAttrSpace(AnsiString Value);
@@ -469,7 +468,7 @@ __published:
 	__property Dirviewcolproperties::TDirViewColProperties* DirColProperties = {read=GetDirColProperties, write=SetDirColProperties};
 	__property PathComboBox ;
 	__property PathLabel ;
-	__property StatusBar ;
+	__property OnUpdateStatusBar ;
 	__property OnGetSelectFilter ;
 	__property HeaderImages ;
 	__property LoadAnimation  = {default=1};

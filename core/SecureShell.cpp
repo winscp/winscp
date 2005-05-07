@@ -9,6 +9,7 @@
 #include "Interface.h"
 #include "SecureShell.h"
 #include "TextsCore.h"
+#include "HelpCore.h"
 #include "Common.h"
 #include "ScpMain.h"
 #include "Security.h"
@@ -67,8 +68,8 @@ void __fastcall TSecureShell::Open()
   const char * InitError;
   char * RealHost;
 
-  FPasswordTried = false;
-  FPasswordTriedForKI = false;
+  FStoredPasswordTried = false;
+  FStoredPasswordTriedForKI = false;
   FReachedStatus = 0;
 
   {
@@ -183,6 +184,11 @@ AnsiString __fastcall TSecureShell::GetPassword()
   return (FPassword.IsEmpty() ? AnsiString() : 
     DecryptPassword(FPassword, SessionData->SessionName));
 }
+//---------------------------------------------------------------------
+bool __fastcall TSecureShell::GetStoredPasswordTried()
+{
+  return FStoredPasswordTried || FStoredPasswordTriedForKI;
+}
 //---------------------------------------------------------------------------
 TDateTime __fastcall TSecureShell::GetIdleInterval()
 {
@@ -193,7 +199,8 @@ TDateTime __fastcall TSecureShell::GetIdleInterval()
 bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
   AnsiString & Response, bool IsPassword)
 {
-  assert(IsPassword);
+  USEDPARAM(IsPassword);
+  assert(IsPassword); // false only for username prompts
 
   bool Result;
   if (Prompt.Pos("Passphrase for key ") == 1)
@@ -219,11 +226,12 @@ bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
   {
     LogEvent(FORMAT("Session password prompt (%s)", (Prompt)));
 
-    if (!SessionData->Password.IsEmpty() && !FPasswordTried)
+    if (!SessionData->Password.IsEmpty() && !FStoredPasswordTried)
     {
       LogEvent("Using stored password.");
       Result = true;
       Response = SessionData->Password;
+      FStoredPasswordTried = true;
     }
     else
     {
@@ -232,20 +240,19 @@ bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
         FMTLOAD(PROMPT_SESSION_PASSWORD, (SessionData->SessionName)),
         pkPassword, Response);
     }
-    FPasswordTried = true;
   }
   else
   {
     // in other cases we assume TIS/Cryptocard/keyboard-interactive authentification prompt
-    LogEvent(FORMAT("%s prompt from server (%s)",
-      (IsPassword ? "Password" : "Normal", Prompt)));
+    LogEvent(FORMAT("%s prompt from server", (Prompt)));
 
-    if (!SessionData->Password.IsEmpty() && IsPassword &&
-        SessionData->AuthKIPassword && !FPasswordTriedForKI)
+    if (!SessionData->Password.IsEmpty() &&
+        SessionData->AuthKIPassword && !FStoredPasswordTriedForKI)
     {
       LogEvent("Responding with stored password.");
       Result = true;
       Response = SessionData->Password;
+      FStoredPasswordTriedForKI = true;
     }
     else
     {
@@ -263,7 +270,6 @@ bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
 
       Result = DoPromptUser(UserPrompt, pkServerPrompt, Response);
     }
-    FPasswordTriedForKI = true;
   };
 
   if (Configuration->RememberPassword)
@@ -280,7 +286,7 @@ bool __fastcall TSecureShell::DoPromptUser(AnsiString Prompt, TPromptKind Kind,
   bool Result = false;
   if (OnPromptUser != NULL)
   {
-    OnPromptUser(this, Prompt, Kind, Response, Result);
+    OnPromptUser(this, Prompt, Kind, Response, Result, NULL);
   }
   return Result;
 }
@@ -523,7 +529,7 @@ void __fastcall TSecureShell::AddStdErrorLine(const AnsiString Str)
   }
   else
   {
-    OnStdError(this, Str);
+    OnStdError(this, llStdError, Str);
   }
   Log->Add(llStdError, Str);
 }
@@ -566,7 +572,10 @@ void __fastcall TSecureShell::FatalError(AnsiString Error)
 void __fastcall TSecureShell::SetSocket(void * value)
 {
   assert(value);
-  if (FActive && (*static_cast<SOCKET*>(value) != INVALID_SOCKET))
+  // now this can be called repeatedly, so allow being called again with
+  // the same socket
+  if (FActive && (*static_cast<SOCKET*>(value) != INVALID_SOCKET) &&
+      (*static_cast<SOCKET*>(FSocket) != *static_cast<SOCKET*>(value)))
     FatalError("Cannot set socket during connection");
   assert(FSocket);
   *static_cast<SOCKET*>(FSocket) = *static_cast<SOCKET*>(value);
@@ -974,7 +983,7 @@ void __fastcall TSecureShell::DoShowExtendedException(Exception * E)
   DoHandleExtendedException(E);
   if (OnShowExtendedException != NULL)
   {
-    OnShowExtendedException(this, E);
+    OnShowExtendedException(this, E, NULL);
   }
 }
 //---------------------------------------------------------------------------
@@ -990,19 +999,20 @@ int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
   int Answer = qaCancel;
   if (FOnQueryUser)
   {
-    FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, Type);
+    FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, Type, NULL);
   }
   return Answer;
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
-  const AnsiString OtherMessage, int Answers, const TQueryParams * Params)
+  const AnsiString OtherMessage, int Answers, const TQueryParams * Params,
+  TQueryType Type)
 {
   TStrings * MoreMessages = new TStringList();
   Integer Result;
   try {
     if (!OtherMessage.IsEmpty()) MoreMessages->Add(OtherMessage);
-    Result = DoQueryUser(Query, MoreMessages, Answers, Params);
+    Result = DoQueryUser(Query, MoreMessages, Answers, Params, Type);
   } __finally {
     delete MoreMessages;
   }
@@ -1010,13 +1020,13 @@ int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
-  int Answers, const TQueryParams * Params)
+  int Answers, const TQueryParams * Params, TQueryType Type)
 {
-  return DoQueryUser(Query, "", Answers, Params);
-}
+  return DoQueryUser(Query, "", Answers, Params, Type);
+} 
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
-  Exception * E, int Answers, const TQueryParams * Params)
+  Exception * E, int Answers, const TQueryParams * Params, TQueryType Type)
 {
   int Result;
   TStrings * MoreMessages = new TStringList();
@@ -1030,7 +1040,7 @@ int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
     if (!E->Message.IsEmpty() && !Query.IsEmpty()) MoreMessages->Insert(0, E->Message);
     Result = DoQueryUser(!Query.IsEmpty() ? Query : E->Message,
       MoreMessages->Count ? MoreMessages : NULL,
-      Answers, Params);
+      Answers, Params, Type);
   }
   __finally
   {
@@ -1053,9 +1063,11 @@ void __fastcall TSecureShell::VerifyHostKey(const AnsiString Host, int Port,
   
   if (Result != 0)
   {
+    TQueryParams Params;
+    Params.HelpKeyword = (Result == 1 ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
     int R = DoQueryUser(
-      FMTLOAD((Result == 1 ? UNKNOWN_KEY : DIFFERENT_KEY), (Fingerprint)),
-      NULL, qaYes | qaNo | qaCancel, 0, qtWarning);
+      FMTLOAD((Result == 1 ? UNKNOWN_KEY2 : DIFFERENT_KEY2), (KeyType, Fingerprint)),
+      qaYes | qaNo | qaCancel, &Params, qtWarning);
 
     switch (R) {
       case qaYes:
@@ -1099,7 +1111,7 @@ void __fastcall TSecureShell::AskAlg(const AnsiString AlgType,
     Msg = FMTLOAD(CIPHER_BELOW_TRESHOLD, (LoadStr(CipherType), AlgName));
   }
 
-  if (DoQueryUser(Msg, NULL, qaYes | qaNo, 0, qtWarning) == qaNo)
+  if (DoQueryUser(Msg, qaYes | qaNo, NULL, qtWarning) == qaNo)
   {
     Abort();
   }
@@ -1107,7 +1119,7 @@ void __fastcall TSecureShell::AskAlg(const AnsiString AlgType,
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::OldKeyfileWarning()
 {
-  DoQueryUser(LoadStr(OLD_KEY), NULL, qaOK, 0, qtWarning);
+  DoQueryUser(LoadStr(OLD_KEY), qaOK, NULL, qtWarning);
 }
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::GetStatus() const
@@ -1190,7 +1202,7 @@ TLogLineType __fastcall TSessionLog::GetType(Integer Index)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSessionLog::DoAdd(bool Formatted, TLogLineType aType, AnsiString aLine)
+void __fastcall TSessionLog::DoAdd(TLogLineType aType, AnsiString aLine)
 {
   assert(Configuration);
   if (IsLogging())
@@ -1206,38 +1218,25 @@ void __fastcall TSessionLog::DoAdd(bool Formatted, TLogLineType aType, AnsiStrin
       {
         while (!aLine.IsEmpty())
         {
-          AnsiString NewStr;
-          AnsiString FileStr;
-
-          static int TimestampLen = 25;
-          if (Formatted)
-          {
-            assert(aLine.Length() >= 2);
-            FileStr = aLine;
-            NewStr = aLine;
-            NewStr.Delete(2, TimestampLen);
-            aLine = "";
-          }
-          else
-          {
-            NewStr = AnsiString(LogLineMarks[aType]) + CutToChar(aLine, '\n', False);
-            FileStr = NewStr;
-            AnsiString Timestamp = FormatDateTime(" yyyy-mm-dd hh:nn:ss.zzz ", Now());
-            assert(Timestamp.Length() == TimestampLen);
-            FileStr.Insert(Timestamp, 2);
-          }
+          AnsiString MarkStr = LogLineMarks[aType];
+          AnsiString NewStr = CutToChar(aLine, '\n', False);
 
           if (Configuration->Logging)
           {
-            TStringList::Add(NewStr);
+            TStringList::Add(MarkStr + NewStr);
             FLoggedLines++;
           }
 
-          DoAddLine(FileStr);
+          DoAddLine(aType, NewStr);
           if (Configuration->Logging && Configuration->LogToFile)
           {
             if (!FFile) OpenLogFile();
-            if (FFile) fprintf((FILE *)FFile, "%s\n", FileStr.c_str());
+            if (FFile) 
+            {
+              AnsiString Timestamp = FormatDateTime(" yyyy-mm-dd hh:nn:ss.zzz ", Now());
+              fprintf((FILE *)FFile, "%s\n",
+                (MarkStr + Timestamp + NewStr).c_str());
+            }
           }
         }
         if (Configuration->Logging)
@@ -1272,13 +1271,13 @@ void __fastcall TSessionLog::DoAdd(bool Formatted, TLogLineType aType, AnsiStrin
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::Add(TLogLineType aType, AnsiString aLine)
 {
-  DoAdd(false, aType, aLine);
+  DoAdd(aType, aLine);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::AddFromOtherLog(TObject * /*Sender*/,
-  const AnsiString AddedLine)
+  TLogLineType aType, const AnsiString AddedLine)
 {
-  DoAdd(true, llMessage, AddedLine);
+  DoAdd(aType, AddedLine);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::AddException(Exception * E)
@@ -1403,11 +1402,11 @@ TColor __fastcall TSessionLog::GetColor(int Index)
   return LogLineColors[Type[Index]];
 }
 //---------------------------------------------------------------------------
-void __fastcall TSessionLog::DoAddLine(const AnsiString AddedLine)
+void __fastcall TSessionLog::DoAddLine(TLogLineType Type, const AnsiString AddedLine)
 {
   if (FOnAddLine)
   {
-    FOnAddLine(this, AddedLine);
+    FOnAddLine(this, Type, AddedLine);
   }
 }
 //---------------------------------------------------------------------------

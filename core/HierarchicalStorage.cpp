@@ -92,23 +92,28 @@ void __fastcall THierarchicalStorage::CloseSubKey()
     else FKeyHistory->Delete(FKeyHistory->Count-1);
 }
 //---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::ClearSubKeys()
+{
+  TStringList *SubKeys = new TStringList();
+  try
+  {
+    GetSubKeyNames(SubKeys);
+    for (int Index = 0; Index < SubKeys->Count; Index++)
+    {
+      RecursiveDeleteSubKey(SubKeys->Strings[Index]);
+    }
+  }
+  __finally
+  {
+    delete SubKeys;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::RecursiveDeleteSubKey(const AnsiString Key)
 {
   if (OpenSubKey(Key, false))
   {
-    TStringList *SubKeys = new TStringList();
-    try
-    {
-      GetSubKeyNames(SubKeys);
-      for (int Index = 0; Index < SubKeys->Count; Index++)
-      {
-        RecursiveDeleteSubKey(SubKeys->Strings[Index]);
-      }
-    }
-    __finally
-    {
-      delete SubKeys;
-    }
+    ClearSubKeys();
     CloseSubKey();
   }
   DeleteSubKey(Key);

@@ -22,7 +22,10 @@ __published:
   TButton * CancelButton;
   TComboBox * InputCombo;
   TLabel *InputLabel;
+  TButton *HelpButton;
   void __fastcall InputComboChange(TObject * Sender);
+  void __fastcall FormShow(TObject *Sender);
+  void __fastcall HelpButtonClick(TObject *Sender);
 
 public:
   virtual __fastcall TComboInputDialog(TComponent * AOwner);

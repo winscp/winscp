@@ -10,6 +10,7 @@
 
 #include "GUITools.h"
 #include "Tools.h"
+#include "TB2Dock.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -48,37 +49,6 @@ void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn)
   Form->Top = ScreenPoint.y + (CenterOn->Height / 2) - (Form->Height / 2);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall GetCoolbarLayoutStr(TCoolBar *CoolBar)
-{
-  assert(CoolBar);
-  AnsiString Result;
-  for (int Index = CoolBar->Bands->Count - 1; Index >= 0; Index--)
-  {
-    TCoolBand *Band = CoolBar->Bands->Items[Index];
-    if (!Result.IsEmpty()) Result += ";";
-    Result += FORMAT("%d,%d,%d,%d,%d", (Band->ID, (int)Band->Visible,
-      (int)Band->Break, Band->Width, Band->Index));
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall LoadCoolbarLayoutStr(TCoolBar * CoolBar, AnsiString LayoutStr)
-{
-  assert(CoolBar);
-  while (!LayoutStr.IsEmpty())
-  {
-    AnsiString BarStr = CutToChar(LayoutStr, ';', true);
-    TCoolBand * Band = (TCoolBand*)(CoolBar->Bands->FindItemID(StrToInt(CutToChar(BarStr, ',', true))));
-    if (Band)
-    {
-      Band->Visible = (bool)StrToInt(CutToChar(BarStr, ',', true));
-      Band->Break = (bool)StrToInt(CutToChar(BarStr, ',', true));
-      Band->Width = StrToInt(CutToChar(BarStr, ',', true));
-      Band->Index = StrToInt(BarStr);
-    }
-  }
-}
-//---------------------------------------------------------------------------
 AnsiString __fastcall GetListViewStr(TListView * ListView)
 {
   AnsiString Result;
@@ -101,24 +71,6 @@ void __fastcall LoadListViewStr(TListView * ListView, AnsiString LayoutStr)
     ListView->Column[Index]->Width = StrToIntDef(
       CutToChar(LayoutStr, ',', true), ListView->Column[Index]->Width);
     Index++;  
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall SetCoolBandsMinWidth(TCoolBar * CoolBar)
-{
-  assert(CoolBar);
-  for (int Index = 0; Index < CoolBar->Bands->Count; Index++)
-  {
-    TCoolBand * Band = CoolBar->Bands->Items[Index];
-    assert(Band->Control);
-    if (!Band->Control->Tag)
-    {
-      Band->MinWidth = Band->Control->Width;
-      if (Band->Width < Band->MinWidth)
-      {
-        Band->Width = Band->MinWidth;
-      }
-    }
   }
 }
 //---------------------------------------------------------------------------
@@ -230,4 +182,42 @@ void __fastcall ValidateMaskEdit(TComboBox * Edit)
 void __fastcall OpenBrowser(AnsiString URL)
 {
   ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsFormatInClipboard(unsigned int Format)
+{
+  bool Result = OpenClipboard(0);
+  if (Result)
+  {
+    Result = IsClipboardFormatAvailable(Format);
+    CloseClipboard();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TextFromClipboard(AnsiString & Text)
+{
+  bool Result = OpenClipboard(0);
+  if (Result)
+  {
+    HANDLE Handle = NULL;
+    try
+    {
+      Handle = GetClipboardData(CF_TEXT);
+      Result = (Handle != NULL);
+      if (Result)
+      {
+        Text = static_cast<const char*>(GlobalLock(Handle));
+      }
+    }
+    __finally
+    {
+      if (Handle != NULL)
+      {
+        GlobalUnlock(Handle);
+      }
+      CloseClipboard();
+    }
+  }
+  return Result;
 }

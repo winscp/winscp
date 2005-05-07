@@ -75,6 +75,19 @@ void __fastcall TCustomUnixDriveView::SetTerminal(TTerminal * value)
   {
     FTerminal = value;
     Items->Clear();
+    #ifndef DESIGN_ONLY
+    if (FTerminal != NULL)
+    {
+      TStrings * FixedPaths = FTerminal->FixedPaths;
+      if (FixedPaths != NULL)
+      {
+        for (int i = 0; i < FixedPaths->Count; i++)
+        {
+          LoadPath(FixedPaths->Strings[i]);
+        }
+      }
+    }
+    #endif
   }
 }
 //---------------------------------------------------------------------------

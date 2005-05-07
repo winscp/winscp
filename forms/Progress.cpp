@@ -2,13 +2,12 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <AssociatedStatusBar.hpp>
-
 #include <Common.h>
 #include <ScpMain.h>
 #include <TextsWin.h>
-#include <VCLCommon.h>
+#include <HelpWin.h>
 #include <WinInterface.h>
+#include <VCLCommon.h>
 #include <GUIConfiguration.h>
 #include <GUITools.h>
 
@@ -27,7 +26,7 @@ AnsiString __fastcall TProgressForm::OperationName(TFileOperation Operation)
 }
 //---------------------------------------------------------------------
 __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
-	: FData(), TForm(AOwner)
+    : FData(), TForm(AOwner)
 {
   FLastOperation = foNone;
   FLastTotalSizeSet = false;
@@ -152,12 +151,19 @@ void __fastcall TProgressForm::UpdateControls()
   {
     StartTimeLabelLabel->Visible = !FData.TotalSizeSet;
     StartTimeLabel->Visible = !FData.TotalSizeSet;
-    TimeEstimatedLabelLabel->Visible = FData.TotalSizeSet;
-    TimeEstimatedLabel->Visible = FData.TotalSizeSet;
+    TimeLeftLabelLabel->Visible = FData.TotalSizeSet;
+    TimeLeftLabel->Visible = FData.TotalSizeSet;
     FLastTotalSizeSet = FData.TotalSizeSet; 
   }
 
-  FileLabel->Caption = FData.FileName;
+  if ((FData.Side == osRemote) || !FData.Temp)
+  {
+    FileLabel->Caption = FData.FileName;
+  }
+  else
+  {
+    FileLabel->Caption = ExtractFileName(FData.FileName);
+  }
   int OverallProgress = FData.OverallProgress();
   OperationProgress->Position = OverallProgress;
   OperationProgress->Hint = FORMAT("%d%%", (OverallProgress));
@@ -165,20 +171,20 @@ void __fastcall TProgressForm::UpdateControls()
 
   if (TransferOperation)
   {
-    if (!FData.DragDrop || (FData.Side == osLocal))
+    if ((FData.Side == osLocal) || !FData.Temp)
     {
       TargetPathLabel->Caption = FData.Directory;
     }
     else
     {
-      TargetPathLabel->Caption = LoadStr(PROGRESS_DRAGDROP_TARGET);
+      TargetPathLabel->Caption = LoadStr(PROGRESS_TEMP_DIR);
     }
 
     StartTimeLabel->Caption = FData.StartTime.TimeString();
     if (FData.TotalSizeSet)
     {
-      TimeEstimatedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat,
-        FData.TotalTimeExpected());
+      TimeLeftLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat,
+        FData.TotalTimeLeft());
     }
     TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferedLabel->Caption = FormatBytes(FData.TotalTransfered);
@@ -306,12 +312,12 @@ void __fastcall TProgressForm::CancelOperation()
           (FData.TimeExpected() > GUIConfiguration->IgnoreCancelBeforeFinish))
       {
         Result = MessageDialog(LoadStr(CANCEL_OPERATION_FATAL), qtWarning,
-          qaYes | qaNo | qaCancel, 0);
+          qaYes | qaNo | qaCancel, HELP_PROGRESS_CANCEL);
       }
       else
       {
         Result = MessageDialog(LoadStr(CANCEL_OPERATION), qtConfirmation,
-          qaOK | qaCancel, 0);
+          qaOK | qaCancel, HELP_PROGRESS_CANCEL);
       }
       switch (Result) {
         case qaYes:
