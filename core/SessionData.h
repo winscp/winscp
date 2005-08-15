@@ -102,6 +102,7 @@ private:
   int FSFTPUploadQueue;
   int FSFTPListingQueue;
   int FSFTPMaxVersion;
+  unsigned long FSFTPMaxPacketSize;
   bool FConsiderDST;
   TAutoSwitch FSFTPBugs[SFTP_BUG_COUNT];
   bool FDeleteToRecycleBin;
@@ -192,6 +193,7 @@ private:
   void __fastcall SetSFTPUploadQueue(int value);
   void __fastcall SetSFTPListingQueue(int value);
   void __fastcall SetSFTPMaxVersion(int value);
+  void __fastcall SetSFTPMaxPacketSize(unsigned long value);
   void __fastcall SetSFTPBug(TSftpBug Bug, TAutoSwitch value);
   TAutoSwitch __fastcall GetSFTPBug(TSftpBug Bug) const;
   void __fastcall SetSCPLsFullTime(TAutoSwitch value);
@@ -292,6 +294,7 @@ public:
   __property int SFTPUploadQueue = { read = FSFTPUploadQueue, write = SetSFTPUploadQueue };
   __property int SFTPListingQueue = { read = FSFTPListingQueue, write = SetSFTPListingQueue };
   __property int SFTPMaxVersion = { read = FSFTPMaxVersion, write = SetSFTPMaxVersion };
+  __property unsigned long SFTPMaxPacketSize = { read = FSFTPMaxPacketSize, write = SetSFTPMaxPacketSize };
   __property TAutoSwitch SFTPBug[TSftpBug Bug]  = { read=GetSFTPBug, write=SetSFTPBug };
   __property TAutoSwitch SCPLsFullTime = { read = FSCPLsFullTime, write = SetSCPLsFullTime };
   __property bool ConsiderDST = { read = FConsiderDST, write = SetConsiderDST };

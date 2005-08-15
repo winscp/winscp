@@ -83,3 +83,11 @@ const unsigned int * ssh2_remwindow(void * handle)
 {
   return &((Ssh)handle)->mainchan->v.v2.remwindow;
 }
+
+void md5checksum(const char * buffer, int len, unsigned char output[16])
+{
+  struct MD5Context md5c;
+  MD5Init(&md5c);
+  MD5Update(&md5c, buffer, len);
+  MD5Final(output, &md5c);
+}

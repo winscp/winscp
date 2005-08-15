@@ -191,6 +191,56 @@ void __fastcall TConfiguration::SaveDirectoryChangesCache(const AnsiString Sessi
   }
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::BannerHash(const AnsiString & Banner)
+{
+  AnsiString Result;
+  Result.SetLength(16);
+  md5checksum(Banner.c_str(), Banner.Length(), (unsigned char*)Result.c_str());
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::ShowBanner(const AnsiString SessionKey,
+  const AnsiString & Banner)
+{
+  bool Result;
+  THierarchicalStorage * Storage = CreateScpStorage(false);
+  try
+  {
+    Storage->AccessMode = smRead;
+    Result =
+      !Storage->OpenSubKey(ConfigurationSubKey, false) ||
+      !Storage->OpenSubKey("Banners", false) ||
+      !Storage->ValueExists(SessionKey) ||
+      (Storage->ReadString(SessionKey, "") != StrToHex(BannerHash(Banner)));
+  }
+  __finally
+  {
+    delete Storage;
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::NeverShowBanner(const AnsiString SessionKey,
+  const AnsiString & Banner)
+{
+  THierarchicalStorage * Storage = CreateScpStorage(false);
+  try
+  {
+    Storage->AccessMode = smReadWrite;
+
+    if (Storage->OpenSubKey(ConfigurationSubKey, true) &&
+        Storage->OpenSubKey("Banners", true))
+    {
+      Storage->WriteString(SessionKey, StrToHex(BannerHash(Banner)));
+    }
+  }
+  __finally
+  {
+    delete Storage;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConfiguration::Changed()
 {
   if (FUpdating == 0)

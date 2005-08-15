@@ -287,6 +287,21 @@ void __fastcall CopyToClipboard(AnsiString Text)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall CopyToClipboard(TStrings * Strings)
+{
+  if (Strings->Count > 0)
+  {
+    if (Strings->Count == 1)
+    {
+      CopyToClipboard(Strings->Strings[0]);
+    }
+    else
+    {
+      CopyToClipboard(Strings->Text);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Identity,
   bool Mask)
 {
@@ -399,7 +414,7 @@ int __fastcall TLocalCustomCommand::PatternLen(int Index, char PatternCmd)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLocalCustomCommand::PatternReplacement(int Index,
-  const AnsiString & Pattern, AnsiString & Replacement)
+  const AnsiString & Pattern, AnsiString & Replacement, bool & Delimit)
 {
   bool Result;
   if (Pattern == "!^!")
@@ -409,9 +424,15 @@ bool __fastcall TLocalCustomCommand::PatternReplacement(int Index,
   }
   else
   {
-    Result = TFileCustomCommand::PatternReplacement(Index, Pattern, Replacement);
+    Result = TFileCustomCommand::PatternReplacement(Index, Pattern, Replacement, Delimit);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocalCustomCommand::DelimitReplacement(
+  AnsiString & /*Replacement*/, char /*Quote*/)
+{
+  // never delimit local commands
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLocalCustomCommand::HasLocalFileName(const AnsiString & Command)

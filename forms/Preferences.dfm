@@ -61,6 +61,7 @@ object PreferencesDialog: TPreferencesDialog
       Style = tsButtons
       TabIndex = 0
       TabOrder = 1
+      TabStop = False
       OnChange = PageControlChange
       object PreferencesSheet: TTabSheet
         Tag = 1
@@ -76,33 +77,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 245
+          Height = 210
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             362
-            245)
-          object CopyOnDoubleClickCheck: TCheckBox
-            Left = 16
-            Top = 153
-            Width = 330
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = '&Copy files using double-click'
-            TabOrder = 6
-            OnClick = ControlChange
-          end
-          object CopyOnDoubleClickConfirmationCheck: TCheckBox
-            Left = 32
-            Top = 175
-            Width = 314
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Co&nfirm copy on double-click operation'
-            TabOrder = 7
-            OnClick = ControlChange
-          end
+            210)
           object ConfirmOverwritingCheck: TCheckBox
             Left = 16
             Top = 21
@@ -115,7 +96,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmDeletingCheck: TCheckBox
             Left = 16
-            Top = 43
+            Top = 44
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -125,7 +106,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmClosingSessionCheck: TCheckBox
             Left = 16
-            Top = 87
+            Top = 90
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -135,7 +116,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DDTransferConfirmationCheck: TCheckBox
             Left = 16
-            Top = 131
+            Top = 136
             Width = 338
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -145,17 +126,17 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ContinueOnErrorCheck: TCheckBox
             Left = 16
-            Top = 219
+            Top = 182
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Continue on &error (advanced users)'
-            TabOrder = 9
+            TabOrder = 7
             OnClick = ControlChange
           end
           object ConfirmExitOnCompletionCheck: TCheckBox
             Left = 16
-            Top = 109
+            Top = 113
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -165,7 +146,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmResumeCheck: TCheckBox
             Left = 16
-            Top = 65
+            Top = 67
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -175,18 +156,18 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmCommandSessionCheck: TCheckBox
             Left = 16
-            Top = 197
+            Top = 159
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Opening separate &shell session'
-            TabOrder = 8
+            TabOrder = 6
             OnClick = ControlChange
           end
         end
         object NotificationsGroup: TXPGroupBox
           Left = 8
-          Top = 256
+          Top = 225
           Width = 362
           Height = 51
           Anchors = [akLeft, akTop, akRight]
@@ -272,7 +253,7 @@ object PreferencesDialog: TPreferencesDialog
           352)
         object Label1: TLabel
           Left = 8
-          Top = 226
+          Top = 218
           Width = 361
           Height = 33
           AutoSize = False
@@ -290,12 +271,44 @@ object PreferencesDialog: TPreferencesDialog
           TabOrder = 0
           inherited InterfaceGroup: TXPGroupBox
             Width = 362
-            inherited CommanderDescriptionLabel: TLabel
+            inherited CommanderDescriptionLabel2: TLabel
               Width = 223
             end
             inherited ExplorerDescriptionLabel: TLabel
               Width = 225
             end
+          end
+        end
+        object ThemeGroup: TXPGroupBox
+          Left = 8
+          Top = 256
+          Width = 361
+          Height = 52
+          Caption = 'Theme'
+          TabOrder = 1
+          DesignSize = (
+            361
+            52)
+          object Label7: TLabel
+            Left = 16
+            Top = 23
+            Width = 74
+            Height = 13
+            Caption = 'Interface &theme'
+            FocusControl = ThemeCombo
+          end
+          object ThemeCombo: TComboBox
+            Left = 120
+            Top = 18
+            Width = 113
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 0
+            Items.Strings = (
+              'System'
+              'Office XP')
           end
         end
       end
@@ -311,15 +324,15 @@ object PreferencesDialog: TPreferencesDialog
           352)
         object PanelsRemoteDirectoryGroup: TXPGroupBox
           Left = 8
-          Top = 135
+          Top = 202
           Width = 362
-          Height = 51
+          Height = 49
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Remote directory'
-          TabOrder = 1
+          TabOrder = 2
           DesignSize = (
             362
-            51)
+            49)
           object ShowInaccesibleDirectoriesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -335,13 +348,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 122
+          Height = 115
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             362
-            122)
+            115)
           object ShowHiddenFilesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -354,7 +367,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DefaultDirIsHomeCheck: TCheckBox
             Left = 16
-            Top = 69
+            Top = 65
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -364,7 +377,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DeleteToRecycleBinCheck: TCheckBox
             Left = 16
-            Top = 45
+            Top = 43
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -374,7 +387,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object PreservePanelStateCheck: TCheckBox
             Left = 16
-            Top = 93
+            Top = 87
             Width = 330
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -385,15 +398,15 @@ object PreferencesDialog: TPreferencesDialog
         end
         object PathInCaptionGroup: TXPGroupBox
           Left = 8
-          Top = 192
+          Top = 255
           Width = 362
-          Height = 99
+          Height = 90
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Path in window title'
-          TabOrder = 2
+          TabOrder = 3
           object PathInCaptionFullButton: TRadioButton
             Left = 16
-            Top = 21
+            Top = 20
             Width = 337
             Height = 17
             Caption = 'Show &full path'
@@ -401,7 +414,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object PathInCaptionShortButton: TRadioButton
             Left = 16
-            Top = 45
+            Top = 42
             Width = 337
             Height = 17
             Caption = 'Sho&w short path'
@@ -409,11 +422,56 @@ object PreferencesDialog: TPreferencesDialog
           end
           object PathInCaptionNoneButton: TRadioButton
             Left = 16
-            Top = 69
+            Top = 64
             Width = 337
             Height = 17
             Caption = 'Do &not show'
             TabOrder = 2
+          end
+        end
+        object DoubleClickGroup: TXPGroupBox
+          Left = 8
+          Top = 126
+          Width = 362
+          Height = 72
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Double click'
+          TabOrder = 1
+          DesignSize = (
+            362
+            72)
+          object DoubleClickActionLabel: TLabel
+            Left = 16
+            Top = 21
+            Width = 171
+            Height = 13
+            Caption = '&Operation to perform on double-click'
+            FocusControl = DoubleClickActionCombo
+          end
+          object CopyOnDoubleClickConfirmationCheck: TCheckBox
+            Left = 32
+            Top = 44
+            Width = 313
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Confirm copy on double-click operation'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
+          object DoubleClickActionCombo: TComboBox
+            Left = 232
+            Top = 17
+            Width = 113
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 0
+            OnChange = ControlChange
+            Items.Strings = (
+              'Open'
+              'Copy'
+              'Edit')
           end
         end
       end
@@ -448,15 +506,13 @@ object PreferencesDialog: TPreferencesDialog
           DesignSize = (
             362
             99)
-          object ExplorerStyleSelectionCheck: TCheckBox
+          object Label8: TLabel
             Left = 16
             Top = 21
-            Width = 330
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
+            Width = 107
+            Height = 13
             Caption = '&Explorer style selection'
-            TabOrder = 0
-            OnClick = ControlChange
+            FocusControl = NortonLikeModeCombo
           end
           object PreserveLocalDirectoryCheck: TCheckBox
             Left = 16
@@ -477,6 +533,21 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'S&wap panels (local on right, remote on left)'
             TabOrder = 2
             OnClick = ControlChange
+          end
+          object NortonLikeModeCombo: TComboBox
+            Left = 208
+            Top = 17
+            Width = 137
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 0
+            OnChange = ControlChange
+            Items.Strings = (
+              'Never'
+              'Mouse only'
+              'Mouse and Keyboard')
           end
         end
         object CommanderMiscGroup: TXPGroupBox
@@ -680,12 +751,15 @@ object PreferencesDialog: TPreferencesDialog
             inherited ExcludeFileMaskCombo: THistoryComboBox
               Width = 217
             end
+            inherited ExcludeFileMaskHintText: TStaticText
+              Left = 256
+            end
           end
         end
       end
       object EditorSheet: TTabSheet
         Tag = 8
-        Hint = 'Editor'
+        Hint = 'Editors'
         HelpType = htKeyword
         HelpKeyword = 'ui_pref_editor'
         Caption = 'Edit'
@@ -693,61 +767,9 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           378
           352)
-        object EditorGroup: TXPGroupBox
-          Left = 8
-          Top = 8
-          Width = 362
-          Height = 101
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Default editor'
-          TabOrder = 1
-          DesignSize = (
-            362
-            101)
-          object EditorInternalButton: TRadioButton
-            Left = 16
-            Top = 21
-            Width = 113
-            Height = 17
-            Caption = '&Internal editor'
-            TabOrder = 0
-            OnClick = ControlChange
-          end
-          object EditorExternalButton: TRadioButton
-            Left = 16
-            Top = 45
-            Width = 113
-            Height = 17
-            Caption = '&External editor'
-            TabOrder = 1
-            OnClick = ControlChange
-          end
-          object ExternalEditorEdit: THistoryComboBox
-            Left = 32
-            Top = 69
-            Width = 241
-            Height = 21
-            Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
-            TabOrder = 2
-            Text = 'ExternalEditorEdit'
-            OnChange = FilenameEditChange
-            OnExit = FilenameEditExit
-          end
-          object ExternalEditorBrowseButton: TButton
-            Left = 279
-            Top = 67
-            Width = 75
-            Height = 25
-            Anchors = [akTop, akRight]
-            Caption = 'B&rowse...'
-            TabOrder = 3
-            OnClick = ExternalEditorBrowseButtonClick
-          end
-        end
         object InternalEditorGroup: TXPGroupBox
           Left = 8
-          Top = 190
+          Top = 268
           Width = 362
           Height = 79
           Anchors = [akLeft, akTop, akRight]
@@ -789,41 +811,14 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object ExternalEditorGroup: TXPGroupBox
-          Left = 8
-          Top = 273
-          Width = 362
-          Height = 73
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'External editor options (affects editing remote files only)'
-          TabOrder = 3
-          object ExternalEditorTextCheck: TCheckBox
-            Left = 16
-            Top = 21
-            Width = 337
-            Height = 17
-            Caption = 'Force &text transfer mode for files edited in external editor'
-            TabOrder = 0
-            OnClick = ControlChange
-          end
-          object MDIExternalEditorCheck: TCheckBox
-            Left = 16
-            Top = 45
-            Width = 337
-            Height = 17
-            Caption = 'E&xternal editor opens multiple files in one window (process)'
-            TabOrder = 1
-            OnClick = ControlChange
-          end
-        end
         object SingleEditorGroup: TXPGroupBox
           Left = 8
-          Top = 113
+          Top = 191
           Width = 362
           Height = 73
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Allow multiple remote opened files (editors)'
-          TabOrder = 0
+          TabOrder = 1
           object EditorSingleEditorOnCheck: TRadioButton
             Left = 16
             Top = 21
@@ -843,6 +838,108 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
+        object EditorPreferenceGroup: TXPGroupBox
+          Left = 8
+          Top = 8
+          Width = 362
+          Height = 178
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Editor preference'
+          TabOrder = 0
+          DesignSize = (
+            362
+            178)
+          object EditorListView: TListView
+            Left = 16
+            Top = 24
+            Width = 329
+            Height = 80
+            Anchors = [akLeft, akTop, akRight, akBottom]
+            Columns = <
+              item
+                Caption = 'Mask'
+              end
+              item
+                Caption = 'Editor'
+                Width = 175
+              end
+              item
+                Caption = 'MDI'
+                Tag = 1
+                Width = 45
+              end
+              item
+                Caption = 'Text'
+                Tag = 1
+                Width = 45
+              end>
+            ColumnClick = False
+            DragMode = dmAutomatic
+            HideSelection = False
+            OwnerData = True
+            ReadOnly = True
+            RowSelect = True
+            TabOrder = 0
+            ViewStyle = vsReport
+            OnData = EditorListViewData
+            OnDblClick = EditorListViewDblClick
+            OnDragDrop = EditorListViewDragDrop
+            OnDragOver = ListViewDragOver
+            OnKeyDown = EditorListViewKeyDown
+            OnSelectItem = ListViewSelectItem
+            OnStartDrag = ListViewStartDrag
+          end
+          object AddEditorButton: TButton
+            Left = 15
+            Top = 111
+            Width = 83
+            Height = 25
+            Anchors = [akRight, akBottom]
+            Caption = '&Add ...'
+            TabOrder = 1
+            OnClick = AddEditEditorButtonClick
+          end
+          object EditEditorButton: TButton
+            Left = 111
+            Top = 111
+            Width = 83
+            Height = 25
+            Anchors = [akRight, akBottom]
+            Caption = '&Edit ...'
+            TabOrder = 2
+            OnClick = AddEditEditorButtonClick
+          end
+          object UpEditorButton: TButton
+            Left = 263
+            Top = 111
+            Width = 83
+            Height = 25
+            Anchors = [akRight, akBottom]
+            Caption = '&Up'
+            TabOrder = 3
+            OnClick = UpDownEditorButtonClick
+          end
+          object DownEditorButton: TButton
+            Left = 263
+            Top = 142
+            Width = 83
+            Height = 25
+            Anchors = [akRight, akBottom]
+            Caption = '&Down'
+            TabOrder = 4
+            OnClick = UpDownEditorButtonClick
+          end
+          object RemoveEditorButton: TButton
+            Left = 15
+            Top = 142
+            Width = 83
+            Height = 25
+            Anchors = [akRight, akBottom]
+            Caption = '&Remove'
+            TabOrder = 5
+            OnClick = RemoveEditorButtonClick
+          end
+        end
       end
       object IntegrationSheet: TTabSheet
         Tag = 9
@@ -858,24 +955,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 362
-          Height = 233
+          Height = 206
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Shell icons'
           TabOrder = 0
           DesignSize = (
             362
-            233)
-          object ShellIconsLabel: TLabel
-            Left = 16
-            Top = 184
-            Width = 329
-            Height = 44
-            AutoSize = False
-            Caption = 
-              'To add shortcuts, which directly open stored session, use button' +
-              ' '#39'Shell icon'#39' on '#39'Stored sessions'#39' tab of login dialog.'
-            WordWrap = True
-          end
+            206)
           object DesktopIconButton: TButton
             Left = 16
             Top = 24
@@ -908,36 +994,51 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RegisterAsUrlHandlerButton: TButton
             Left = 16
-            Top = 120
+            Top = 135
             Width = 330
             Height = 25
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Register to &handle scp:// and sftp:// addresses'
-            TabOrder = 3
+            TabOrder = 4
             OnClick = RegisterAsUrlHandlerButtonClick
           end
           object AddSearchPathButton: TButton
             Left = 16
-            Top = 152
+            Top = 167
             Width = 330
             Height = 25
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Add WinSCP to &search path'
-            TabOrder = 4
+            TabOrder = 5
             OnClick = AddSearchPathButtonClick
+          end
+          object ShellIconsText: TStaticText
+            Left = 16
+            Top = 116
+            Width = 330
+            Height = 17
+            Hint = 
+              'To add shortcuts, which directly open stored session, use button' +
+              ' '#39'Shell icon'#39' on '#39'Stored sessions'#39' tab of Login dialog.'
+            Alignment = taRightJustify
+            Anchors = [akTop, akRight]
+            AutoSize = False
+            Caption = 'Associate the icons with stored session'
+            TabOrder = 3
+            TabStop = True
           end
         end
         object ExternalAppsGroup: TXPGroupBox
           Left = 8
-          Top = 248
+          Top = 222
           Width = 362
-          Height = 91
+          Height = 119
           Anchors = [akLeft, akTop, akRight]
           Caption = 'External applications'
           TabOrder = 1
           DesignSize = (
             362
-            91)
+            119)
           object Label2: TLabel
             Left = 16
             Top = 21
@@ -959,6 +1060,7 @@ object PreferencesDialog: TPreferencesDialog
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0
             Text = 'PuttyPathEdit'
+            OnChange = ControlChange
           end
           object PuttyPasswordCheck: TCheckBox
             Left = 24
@@ -967,6 +1069,14 @@ object PreferencesDialog: TPreferencesDialog
             Height = 17
             Caption = '&Remember session password and pass it to PuTTY'
             TabOrder = 1
+          end
+          object AutoOpenInPuttyCheck: TCheckBox
+            Left = 24
+            Top = 90
+            Width = 314
+            Height = 17
+            Caption = 'Automatically &open new sessions in PuTTY'
+            TabOrder = 2
           end
         end
       end
@@ -1620,7 +1730,7 @@ object PreferencesDialog: TPreferencesDialog
           object UpdatesProxyCheck: TCheckBox
             Left = 12
             Top = 19
-            Width = 173
+            Width = 333
             Height = 17
             Caption = '&Use proxy server'
             TabOrder = 0

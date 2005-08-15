@@ -11,7 +11,7 @@ inherited ScpExplorerForm: TScpExplorerForm
   PixelsPerInch = 96
   TextHeight = 13
   inherited QueueSplitter: TSplitter
-    Top = 336
+    Top = 343
     Width = 640
   end
   inherited TopDock: TTBXDock
@@ -37,7 +37,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem26: TTBXItem
           Action = NonVisualDataModule.CurrentEditAction
         end
-        object TBXItem27: TTBXItem
+        object TBXSubmenuItem9: TTBXSubmenuItem
           Action = NonVisualDataModule.CurrentEditAlternativeAction
         end
         object TBXItem28: TTBXItem
@@ -144,6 +144,12 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem50: TTBXItem
             Action = NonVisualDataModule.QueueItemExecuteAction
           end
+          object TBXItem196: TTBXItem
+            Action = NonVisualDataModule.QueueItemPauseAction
+          end
+          object TBXItem197: TTBXItem
+            Action = NonVisualDataModule.QueueItemResumeAction
+          end
           object TBXItem51: TTBXItem
             Action = NonVisualDataModule.QueueItemDeleteAction
           end
@@ -155,6 +161,20 @@ inherited ScpExplorerForm: TScpExplorerForm
           end
           object TBXItem53: TTBXItem
             Action = NonVisualDataModule.QueueItemDownAction
+          end
+          object TBXSeparatorItem48: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXSubmenuItem13: TTBXSubmenuItem
+            Caption = '&All'
+            HelpKeyword = 'ui_queue#managing_the_queue'
+            Hint = 'Mass queue management commands'
+            object TBXItem198: TTBXItem
+              Action = NonVisualDataModule.QueuePauseAllAction
+            end
+            object TBXItem199: TTBXItem
+              Action = NonVisualDataModule.QueueResumeAllAction
+            end
           end
         end
         object TBXSeparatorItem13: TTBXSeparatorItem
@@ -206,6 +226,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         object TBXItem112: TTBXItem
           Action = NonVisualDataModule.ClearSelectionAction
+        end
+        object TBXItem27: TTBXItem
+          Action = NonVisualDataModule.RestoreSelectionAction
         end
       end
       object TBXSubmenuItem19: TTBXSubmenuItem
@@ -263,6 +286,12 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem83: TTBXItem
             Action = NonVisualDataModule.ExplorerTransferBandAction
           end
+          object TBXSeparatorItem19: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem92: TTBXItem
+            Action = NonVisualDataModule.LockToolbarsAction
+          end
         end
         object TBXItem13: TTBXItem
           Action = NonVisualDataModule.StatusBarAction
@@ -276,12 +305,15 @@ inherited ScpExplorerForm: TScpExplorerForm
           Hint = 'Configure queue list'
           object TBXItem77: TTBXItem
             Action = NonVisualDataModule.QueueShowAction
+            RadioItem = True
           end
           object TBXItem78: TTBXItem
             Action = NonVisualDataModule.QueueHideWhenEmptyAction
+            RadioItem = True
           end
           object TBXItem79: TTBXItem
             Action = NonVisualDataModule.QueueHideAction
+            RadioItem = True
           end
           object TBXSeparatorItem21: TTBXSeparatorItem
             Hint = 'E'
@@ -367,6 +399,10 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.RemoteSortByExtAction
             GroupIndex = 1
           end
+          object TBXItem132: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByTypeAction
+            RadioItem = True
+          end
           object TBXItem96: TTBXItem
             Action = NonVisualDataModule.RemoteSortByChangedAction
             GroupIndex = 1
@@ -397,6 +433,9 @@ inherited ScpExplorerForm: TScpExplorerForm
           end
           object TBXItem102: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteSizeColumnAction
+          end
+          object TBXItem131: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteTypeColumnAction
           end
           object TBXItem103: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction
@@ -559,6 +598,9 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXItem70: TTBXItem
         Action = NonVisualDataModule.ClearSelectionAction
       end
+      object TBXItem134: TTBXItem
+        Action = NonVisualDataModule.RestoreSelectionAction
+      end
     end
     object SessionToolbar: TTBXToolbar
       Left = 0
@@ -632,12 +674,15 @@ inherited ScpExplorerForm: TScpExplorerForm
         DropdownCombo = True
         object TBXItem128: TTBXItem
           Action = NonVisualDataModule.QueueShowAction
+          RadioItem = True
         end
         object TBXItem129: TTBXItem
           Action = NonVisualDataModule.QueueHideWhenEmptyAction
+          RadioItem = True
         end
         object TBXItem130: TTBXItem
           Action = NonVisualDataModule.QueueHideAction
+          RadioItem = True
         end
       end
       object TBXItem71: TTBXItem
@@ -664,6 +709,10 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
       object TBXItem147: TTBXItem
         Action = NonVisualDataModule.CurrentSortByExtAction
+      end
+      object TBXItem133: TTBXItem
+        Action = NonVisualDataModule.RemoteSortByTypeAction
+        RadioItem = True
       end
       object TBXItem149: TTBXItem
         Action = NonVisualDataModule.CurrentSortByChangedAction
@@ -761,7 +810,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object TransferToolbar: TTBXToolbar
-      Left = 46
+      Left = 44
       Top = 180
       Caption = 'Transfer settings'
       DockPos = 44
@@ -772,6 +821,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       TabOrder = 8
       object TransferCombo: TTBXComboBoxItem
         EditWidth = 114
+        Hint = 'Select transfer settings preset'
         DropDownList = True
         MaxVisibleItems = 15
       end
@@ -784,15 +834,18 @@ inherited ScpExplorerForm: TScpExplorerForm
     Left = 9
     Top = 206
     Width = 622
-    Height = 130
+    Height = 137
     Constraints.MinHeight = 100
     Constraints.MinWidth = 210
     inherited RemotePanelSplitter: TSplitter
-      Height = 99
+      Height = 106
+      Hint = 
+        'Drag to resize directory tree. Double click to hide directory tr' +
+        'ee.'
     end
     inherited RemoteStatusBar: TTBXStatusBar
       Tag = 1
-      Top = 108
+      Top = 115
       Width = 622
       Height = 22
       Images = GlyphsModule.SessionImages
@@ -862,17 +915,17 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     inherited RemoteDirView: TUnixDirView
       Width = 450
-      Height = 99
+      Height = 106
       PathComboBox = UnixPathComboBox
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
     end
     inherited RemoteDriveView: TUnixDriveView
-      Height = 99
+      Height = 106
       Constraints.MinWidth = 40
     end
     object BottomDock: TTBXDock
       Left = 0
-      Top = 99
+      Top = 106
       Width = 622
       Height = 9
       FixAlign = True
@@ -880,7 +933,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
   end
   inherited QueuePanel: TPanel
-    Top = 339
+    Top = 346
     Width = 640
     inherited QueueView: TListView
       Width = 640
@@ -893,14 +946,14 @@ inherited ScpExplorerForm: TScpExplorerForm
     Left = 0
     Top = 206
     Width = 9
-    Height = 130
+    Height = 137
     Position = dpLeft
   end
   object RightDock: TTBXDock
     Left = 631
     Top = 206
     Width = 9
-    Height = 130
+    Height = 137
     Position = dpRight
   end
 end

@@ -11,6 +11,7 @@
 #include <XPThemes.hpp>
 
 #include <WinInterface.h>
+#include <Buttons.hpp>
 //---------------------------------------------------------------------------
 class TSelectMaskDialog : public TForm
 {
@@ -18,11 +19,11 @@ __published:
   TButton *OKBtn;
   TButton *CancelBtn;
   TXPGroupBox *MaskGroup;
-  TLabel *Label1;
+  TLabel *Label3;
   THistoryComboBox *MaskEdit;
   TCheckBox *IncludingDirectoriesCheck;
-  TLabel *Label2;
   TButton *HelpButton;
+  TStaticText *HintText;
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall MaskEditExit(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);

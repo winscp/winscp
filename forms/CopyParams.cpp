@@ -33,6 +33,8 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
 
   InstallPathWordBreakProc(AsciiFileMaskCombo);
   InstallPathWordBreakProc(ExcludeFileMaskCombo);
+  HintLabel(ExcludeFileMaskHintText,
+    FORMAT("%s\n \n%s",(LoadStr(MASK_HINT), LoadStr(PATH_MASK_HINT))));
 }
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::~TCopyParamsFrame()
@@ -60,7 +62,8 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
     case ncLowerCaseShort: CCLowerCaseShortButton->Checked = True; break;
   }
 
-  ReplaceInvalidCharsCheck->Checked = value.ReplaceInvalidChars;
+  ReplaceInvalidCharsCheck->Checked =
+    (value.InvalidCharsReplacement != TCopyParamType::NoReplacement);
 
   RightsFrame->AddXToDirectories = value.AddXToDirectories;
   RightsFrame->Rights = value.Rights;
@@ -135,18 +138,29 @@ TCheckBox * __fastcall TCopyParamsFrame::GetPreserveTimeCheck()
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::UpdateControls()
 {
+  EnableControl(CommonPropertiesGroup, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
+  EnableControl(LocalPropertiesGroup, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
+  EnableControl(RemotePropertiesGroup, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
   EnableControl(TransferModeGroup,
-    FLAGSET(Options, cfAllowTransferMode) && Enabled);
+    FLAGSET(Options, cfAllowTransferMode) &&
+    FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
   EnableControl(AsciiFileMaskLabel,
-    FLAGSET(Options, cfAllowTransferMode) && TMAutomaticButton->Checked && Enabled);
+    TransferModeGroup->Enabled && TMAutomaticButton->Checked);
   EnableControl(AsciiFileMaskCombo,
-    FLAGSET(Options, cfAllowTransferMode) && TMAutomaticButton->Checked && Enabled);
-  EnableControl(RightsFrame, PreserveRightsCheck->Checked && Enabled);
-  EnableControl(ExcludeFileMaskCombo, FLAGSET(Options, cfAllowExcludeMask));
+    TransferModeGroup->Enabled && TMAutomaticButton->Checked);
+  EnableControl(PreserveRightsCheck, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
+  EnableControl(RightsFrame, PreserveRightsCheck->Checked &&
+    PreserveRightsCheck->Enabled);
+  EnableControl(ExcludeFileMaskCombo,
+    (FLAGSET(Options, cfAllowExcludeMask) || FLAGSET(Options, cfAllowExcludeMaskOnly)) &&
+    Enabled);
   EnableControl(ExclusionFileMaskLabel, ExcludeFileMaskCombo->Enabled);
   EnableControl(NegativeExcludeCombo, ExcludeFileMaskCombo->Enabled);
-  EnableControl(ClearArchiveCheck, FLAGSET(Options, cfAllowClearArchive));
-  EnableControl(PreserveTimeCheck, FLAGCLEAR(Options, cfDisablePreserveTime));
+  EnableControl(ClearArchiveCheck, FLAGSET(Options, cfAllowClearArchive) &&
+    FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
+  EnableControl(PreserveTimeCheck, FLAGCLEAR(Options, cfDisablePreserveTime) &&
+    FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
+  EnableControl(ChangeCaseGroup, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)

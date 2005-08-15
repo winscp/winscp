@@ -31,6 +31,8 @@ struct TMessageParams
   TQueryParamsTimerEvent TimerEvent;
   AnsiString TimerMessage;
   unsigned int TimerAnswers;
+  AnsiString NewerAskAgainTitle;
+  int NewerAskAgainAnswer;
 
 private:
   inline void Reset();
@@ -46,10 +48,17 @@ void __fastcall DoProductLicence();
 extern const AnsiString AppName;
 extern const AnsiString AppNameVersion;
 
+void __fastcall SetOnForeground(bool OnForeground);
 void __fastcall FlashOnBackground();
 
 void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell, Exception * E);
 void __fastcall FormHelp(TForm * Form, TControl * Control = NULL);
+
+AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent);
+void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr);
+
+namespace Tb2item { class TTBCustomItem; }
+void __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
 
 // windows\WinHelp.cpp
 void __fastcall InitializeWebHelp();
@@ -85,6 +94,10 @@ bool __fastcall InputDialog(const AnsiString ACaption,
 // forms\About.cpp
 void __fastcall DoAboutDialog(TConfiguration *Configuration);
 
+// forms\Banner.cpp
+void __fastcall DoBannerDialog(AnsiString SessionName,
+  const AnsiString & Banner, bool & NeverShowAgain);
+
 // forms\Cleanup.cpp
 bool __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
     TConfiguration *Configuration);
@@ -101,8 +114,11 @@ const coDisableDirectory    = 0x08; // not used anymore
 const coDisableNewerOnly    = 0x10;
 const coDoNotShowAgain      = 0x20;
 const coDisableSaveSettings = 0x40;
+const coDoNotUsePresets     = 0x80;
+const coAllowRemoteTransfer = 0x100;
 const cooDoNotShowAgain     = 0x01;
 const cooSaveSettings       = cooDoNotShowAgain;
+const cooRemoteTransfer     = 0x02;
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, AnsiString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int * OutputOptions = NULL);
@@ -114,7 +130,7 @@ enum TParamsForDirection { pdBoth, pdToRemote, pdToLocal, pdAll };
 bool __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList);
 
 // forms\Licence.cpp
-enum TLicence { lcNoLicence = -1, lcWinScp, lcPutty, lcRX };
+enum TLicence { lcNoLicence = -1, lcWinScp, lcPutty };
 void __fastcall DoLicenceDialog(TLicence Licence);
 void __fastcall DoLicenceDialog(const AnsiString LicenceText);
 
@@ -147,7 +163,7 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
 
 // forms\Preferences.cpp
 enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands,
-    pmQueue, pmTransfer, pmLogging, pmUpdates, pmPresets };
+    pmQueue, pmTransfer, pmLogging, pmUpdates, pmPresets, pmEditors };
 typedef void __fastcall (__closure *TGetDefaultLogFileName)
   (System::TObject* Sender, AnsiString &DefaultLogFileName);
 class TCopyParamRuleData;
@@ -214,22 +230,32 @@ const spPreviewChanges = 0x40;
 const spTimestamp = 0x100;
 const spNotByTime = 0x200;
 const spBySize = 0x400;
+const spSelectedOnly = 0x800;
 
 // forms\Synchronize.cpp
+const soDoNotUsePresets =  0x01;
+const soNoMinimize =       0x02;
+const soAllowSelectedOnly = 0x04;
+typedef void __fastcall (__closure *TGetSynchronizeOptionsEvent)
+  (int Params, TSynchronizeOptions & Options);
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
-  bool & SaveSettings);
+  bool & SaveSettings, int Options, TGetSynchronizeOptionsEvent OnGetOptions);
 
 // forms\FullSynchronize.cpp
 enum TSynchronizeMode { smRemote, smLocal, smBoth };
 const fsoDisableTimestamp = 0x01;
+const fsoDoNotUsePresets =  0x02;
+const fsoAllowSelectedOnly = 0x04;
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
   TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options);
 
+// forms\Editor.cpp
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnClose, const AnsiString Caption = "",
   bool ShowWindowButton = false);
+void __fastcall ReconfigureEditorForm(TForm * Form);
 
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic);
@@ -242,8 +268,14 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
   TQueryButtonAlias * Aliases = NULL, unsigned int AliasesCount = 0);
 
-// windows\\Console.cpp
+// windows\Console.cpp
 int __fastcall Console(TProgramParams * Params, bool Help);
+
+// windows\EditorPreferences.cpp
+enum TEditorPreferencesMode { epmAdd, epmEdit };
+class TEditorPreferences;
+bool __fastcall DoEditorPreferencesDialog(TEditorPreferences * Editor,
+  TEditorPreferencesMode Mode);
 
 const int cplNone =             0x00;
 const int cplCustomize =        0x01;

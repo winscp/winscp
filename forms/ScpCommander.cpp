@@ -50,6 +50,7 @@
 __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
 {
+  CALLSTACK;
   FCurrentSide = osLocal;
   FLastLeftPanelWidth = LeftPanelWidth;
   FNormalPanelsWidth = -1;
@@ -110,6 +111,7 @@ __fastcall TScpCommanderForm::~TScpCommanderForm()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreFormParams()
 {
+  CALLSTACK;
   assert(WinConfiguration);
   TCustomScpExplorerForm::RestoreFormParams();
   WinConfiguration->RestoreForm(WinConfiguration->ScpCommander.WindowParams, this);
@@ -124,7 +126,7 @@ void __fastcall TScpCommanderForm::RestoreParams()
 
   TCustomScpExplorerForm::RestoreParams();
   LeftPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
-  LoadToolbarsLayoutStr(this, WinConfiguration->ScpCommander.ToolbarsLayout);
+  LoadToolbarsLayoutStr(WinConfiguration->ScpCommander.ToolbarsLayout);
   SessionCombo->EditWidth = WinConfiguration->ScpCommander.SessionComboWidth;
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
 
@@ -155,7 +157,7 @@ void __fastcall TScpCommanderForm::StoreParams()
   WinConfiguration->BeginUpdate();
   try
   {
-    WinConfiguration->ScpCommander.ToolbarsLayout = GetToolbarsLayoutStr(this);
+    WinConfiguration->ScpCommander.ToolbarsLayout = GetToolbarsLayoutStr();
     WinConfiguration->ScpCommander.SessionComboWidth = SessionCombo->EditWidth;
     WinConfiguration->ScpCommander.LocalPanelWidth = LeftPanelWidth;
     WinConfiguration->ScpCommander.StatusBar = StatusBar->Visible;
@@ -279,6 +281,7 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DoShow()
 {
+  CALLSTACK;
   TCustomScpExplorerForm::DoShow();
 
   assert(FDirViewToSelect);
@@ -464,8 +467,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   LocalDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
   LocalDriveView->ShowHiddenDirs = WinConfiguration->ShowHiddenFiles;
 
-  LocalDirView->NortonLike = !WinConfiguration->ScpCommander.ExplorerStyleSelection;
-  RemoteDirView->NortonLike = !WinConfiguration->ScpCommander.ExplorerStyleSelection;
+  LocalDirView->NortonLike = WinConfiguration->ScpCommander.NortonLikeMode;
+  RemoteDirView->NortonLike = WinConfiguration->ScpCommander.NortonLikeMode;
 
   LocalDirView->DragDropFilesEx->ShellExtensions->DropHandler =
     !WinConfiguration->DDExtEnabled;
@@ -576,7 +579,9 @@ void __fastcall TScpCommanderForm::UpdateControls()
 {
   TCustomScpExplorerForm::UpdateControls();
 
-  Splitter->Hint = FormatFloat("0%|X", LeftPanelWidth*100);
+  AnsiString SplitterLongHint = Splitter->Hint;
+  SplitterLongHint.Delete(1, SplitterLongHint.Pos("|"));
+  Splitter->Hint = FORMAT("%0.0f%%|%s", (LeftPanelWidth*100, SplitterLongHint));
   CommandLineLabel->UnixPath = (FCurrentSide == osRemote);
   CommandLineLabel->Caption = DirView(osCurrent)->PathName;
   CommandLinePromptLabel->Caption =
@@ -632,12 +637,13 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::FixControlsPlacement()
 {
+  CALLSTACK;
   TCustomScpExplorerForm::FixControlsPlacement();
 
   LocalPanelSplitter->Visible = LocalDriveView->Visible;
 
   TControl * ControlsOrder[] =
-    { CommandLinePanel, QueueSplitter, QueuePanel, BottomDock, StatusBar };
+    { CommandLinePanel, BottomDock, QueueSplitter, QueuePanel, StatusBar };
   SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
 
   TControl * LocalControlsOrder[] =
@@ -948,13 +954,21 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
         if (LocationProfilesDialog(Mode, Side, Local, Remote, LocalDirectories,
               RemoteDirectories, Terminal))
         {
-          if (!Local.IsEmpty())
+          // make sure that whatever path is valid it is opened first and only
+          // after that an eventual error is reported
+          try
           {
-            LocalDirView->Path = Local;
+            if (!Local.IsEmpty())
+            {
+              LocalDirView->Path = Local;
+            }
           }
-          if (!Remote.IsEmpty())
+          __finally
           {
-            RemoteDirView->Path = Remote;
+            if (!Remote.IsEmpty())
+            {
+              RemoteDirView->Path = Remote;
+            }
           }
         }
       }
@@ -1282,6 +1296,7 @@ void __fastcall TScpCommanderForm::SysResizing(unsigned int Cmd)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::Resize()
 {
+  CALLSTACK;
   TCustomScpExplorerForm::Resize();
 
   LeftPanelWidth = FLastLeftPanelWidth;
@@ -1437,6 +1452,17 @@ void __fastcall TScpCommanderForm::GetTransferPresetAutoSelectData(
   TCustomScpExplorerForm::GetTransferPresetAutoSelectData(Data);
   Data.LocalDirectory = LocalDirView->PathName;
 }
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::BeforeAction()
+{
+  TCustomScpExplorerForm::BeforeAction();
+
+  if (LocalDirView->ItemFocused != NULL)
+  {
+    LocalDirView->ItemFocused->CancelEdit();
+  }
+}
+//---------------------------------------------------------------------------
 
 
 

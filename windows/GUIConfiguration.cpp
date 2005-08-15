@@ -12,6 +12,7 @@
 //---------------------------------------------------------------------------
 const ccLocal = ccUser;
 const ccShowResults = ccUser << 1;
+const ccCopyResults = ccUser << 2;
 //---------------------------------------------------------------------------
 static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
 static const AnsiString AdditionaLanguagePrefix("XX");
@@ -147,11 +148,11 @@ bool __fastcall TCopyParamRule::Match(const AnsiString & Mask,
     TFileMasks M(Mask);
     if (Path)
     {
-      Result = M.Matches(Value, Local);
+      Result = M.Matches(Value, Local, true);
     }
     else
     {
-      Result = M.Matches(Value);
+      Result = M.Matches(Value, false);
     }
   }
   return Result;
@@ -213,15 +214,8 @@ __fastcall TCopyParamList::TCopyParamList()
   Init();
 }
 //---------------------------------------------------------------------------
-__fastcall TCopyParamList::TCopyParamList(TGUIConfiguration * Configuration)
-{
-  Init();
-  FConfiguration = Configuration;
-}
-//---------------------------------------------------------------------------
 void __fastcall TCopyParamList::Init()
 {
-  FConfiguration = NULL;
   FCopyParams = new TList();
   FRules = new TList();
   FNames = new TStringList();
@@ -350,6 +344,11 @@ void __fastcall TCopyParamList::Change(int Index, const AnsiString Name,
     FRules->Items[Index] = (reinterpret_cast<TObject *>(Rule));
     Modify();
   }
+  else
+  {
+    delete CopyParam;
+    delete Rule;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamList::Move(int CurIndex, int NewIndex)
@@ -394,52 +393,44 @@ int __fastcall TCopyParamList::Find(const TCopyParamRuleData & Value) const
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamList::Load(THierarchicalStorage * Storage, int ACount)
 {
-  TStringList * SubKeys = new TStringList();
-  try
+  for (int Index = 0; Index < ACount; Index++)
   {
-    for (int Index = 0; Index < ACount; Index++)
+    AnsiString Name = IntToStr(Index);
+    TCopyParamRule * Rule = NULL;
+    TCopyParamType * CopyParam = new TCopyParamType();
+    try
     {
-      AnsiString Name = IntToStr(Index);
-      TCopyParamRule * Rule = NULL;
-      TCopyParamType * CopyParam = new TCopyParamType();
-      try
+      if (Storage->OpenSubKey(Name, false))
       {
-        if (Storage->OpenSubKey(Name, false))
+        try
         {
-          try
-          { 
-            Name = Storage->ReadString("Name", Name);
-            CopyParam->Load(Storage);
+          Name = Storage->ReadString("Name", Name);
+          CopyParam->Load(Storage);
 
-            if (Storage->ReadBool("HasRule", false))
-            {
-              Rule = new TCopyParamRule();
-              Rule->Load(Storage);
-            }
-          }
-          __finally
+          if (Storage->ReadBool("HasRule", false))
           {
-            Storage->CloseSubKey();
+            Rule = new TCopyParamRule();
+            Rule->Load(Storage);
           }
         }
+        __finally
+        {
+          Storage->CloseSubKey();
+        }
       }
-      catch(...)
-      {
-        delete CopyParam;
-        delete Rule;
-        throw;
-      }
-
-      FCopyParams->Add(reinterpret_cast<TObject *>(CopyParam));
-      FRules->Add(reinterpret_cast<TObject *>(Rule));
-      FNames->Add(Name);
     }
-    Reset();
+    catch(...)
+    {
+      delete CopyParam;
+      delete Rule;
+      throw;
+    }
+
+    FCopyParams->Add(reinterpret_cast<TObject *>(CopyParam));
+    FRules->Add(reinterpret_cast<TObject *>(Rule));
+    FNames->Add(Name);
   }
-  __finally
-  {
-    delete SubKeys;
-  }
+  Reset();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamList::Save(THierarchicalStorage * Storage) const
@@ -524,7 +515,7 @@ __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
   FLastLocalesExts = "*";
   dynamic_cast<TStringList*>(FLocales)->Sorted = true;
   dynamic_cast<TStringList*>(FLocales)->CaseSensitive = false;
-  FCopyParamList = new TCopyParamList(this);
+  FCopyParamList = new TCopyParamList();
 }
 //---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::~TGUIConfiguration()
@@ -551,6 +542,7 @@ void __fastcall TGUIConfiguration::Default()
   FSynchronizeParams = TTerminal::spNoConfirmation;
   FSynchronizeModeAuto = -1;
   FSynchronizeMode = TTerminal::smRemote;
+  FMaxWatchDirectories = 500;
   FSynchronizeOptions = soRecurse | soSynchronizeAsk;
   FQueueTransfersLimit = 2;
   FQueueAutoPopup = true;
@@ -618,6 +610,7 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
     KEY(Integer,  SynchronizeOptions); \
     KEY(Integer,  SynchronizeModeAuto); \
     KEY(Integer,  SynchronizeMode); \
+    KEY(Integer,  MaxWatchDirectories); \
     KEY(Integer,  QueueTransfersLimit); \
     KEY(Bool,     QueueAutoPopup); \
     KEY(Bool,     QueueRememberPassword); \

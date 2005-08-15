@@ -35,6 +35,10 @@ namespace Nortonlikelistview
 enum TSelectMode { smAll, smNone, smInvert };
 #pragma option pop
 
+#pragma option push -b-
+enum TNortonLikeMode { nlOn, nlOff, nlKeyboard };
+#pragma option pop
+
 class DELPHICLASS TCustomNortonLikeListView;
 typedef void __fastcall (__closure *TSelectByMaskEvent)(TCustomNortonLikeListView* Control, bool Select);
 
@@ -47,7 +51,7 @@ private:
 	bool FDontSelectItem;
 	bool FDontUnSelectItem;
 	int FSelCount;
-	bool FNortonLike;
+	TNortonLikeMode FNortonLike;
 	TSelectByMaskEvent FOnSelectByMask;
 	Comctrls::TListItem* FLastDeletedItem;
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Message);
@@ -74,6 +78,7 @@ protected:
 	DYNAMIC void __fastcall InsertItem(Comctrls::TListItem* Item);
 	virtual Listviewcolproperties::TCustomListViewColProperties* __fastcall NewColProperties(void);
 	virtual void __fastcall FocusSomething(void);
+	void __fastcall FocusItem(Comctrls::TListItem* Item);
 	Comctrls::TListItem* __fastcall GetItemFromHItem(const tagLVITEMA &Item);
 	virtual bool __fastcall GetValid(void);
 	virtual int __fastcall GetSelCount(void);
@@ -86,7 +91,7 @@ public:
 	void __fastcall SelectCurrentItem(bool FocusNext);
 	__property Listviewcolproperties::TCustomListViewColProperties* ColProperties = {read=FColProperties, write=FColProperties, stored=false};
 	__property MultiSelect  = {default=1};
-	__property bool NortonLike = {read=FNortonLike, write=FNortonLike, default=1};
+	__property TNortonLikeMode NortonLike = {read=FNortonLike, write=FNortonLike, default=0};
 	__property TSelectByMaskEvent OnSelectByMask = {read=FOnSelectByMask, write=FOnSelectByMask};
 	__property int MarkedCount = {read=GetMarkedCount, nodefault};
 	__property Comctrls::TListItem* MarkedFile = {read=GetMarkedFile};
@@ -180,7 +185,7 @@ __published:
 	__property OnResize ;
 	__property OnStartDock ;
 	__property OnSelectItem ;
-	__property NortonLike  = {default=1};
+	__property NortonLike  = {default=0};
 	__property OnSelectByMask ;
 	__property ColProperties ;
 public:

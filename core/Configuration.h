@@ -83,6 +83,7 @@ protected:
   virtual AnsiString __fastcall GetDefaultKeyFile();
   virtual void __fastcall ModifyAll();
   void __fastcall CleanupRegistry(AnsiString CleanupSubKey);
+  AnsiString __fastcall BannerHash(const AnsiString & Banner);
 
   virtual bool __fastcall GetConfirmOverwriting();
   virtual void __fastcall SetConfirmOverwriting(bool value);
@@ -115,6 +116,8 @@ public:
     TRemoteDirectoryChangesCache * DirectoryChangesCache);   
   void __fastcall SaveDirectoryChangesCache(const AnsiString SessionKey,
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
+  bool __fastcall ShowBanner(const AnsiString SessionKey, const AnsiString & Banner);
+  void __fastcall NeverShowBanner(const AnsiString SessionKey, const AnsiString & Banner);
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };

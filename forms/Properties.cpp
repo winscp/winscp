@@ -60,8 +60,8 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner)
   FShellImageList->ShareImages = True;
 
   FFileList = new TStringList();
-  FAllowCalculateSize = false;
-  FSizeNotCalculated = false;
+  FAllowCalculateStats = false;
+  FStatsNotCalculated = false;
 
   UseSystemSettings(this);
 }
@@ -135,10 +135,11 @@ void __fastcall TPropertiesDialog::LoadInfo()
   if (FFileList)
   {
     assert(FFileList->Count > 0);
-    FAllowCalculateSize = false;
-    FSizeNotCalculated = false;
+    FAllowCalculateStats = false;
+    FStatsNotCalculated = false;
     FileIconImage->Picture->Bitmap = NULL;
     __int64 FilesSize;
+    TCalculateSizeStats Stats;
 
     RightsFrame->AllowUndef = Multiple;
 
@@ -147,7 +148,6 @@ void __fastcall TPropertiesDialog::LoadInfo()
       TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
       assert(File && FShellImageList);
       FShellImageList->GetIcon(File->IconIndex, FileIconImage->Picture->Icon);
-      FileLabel->Caption = File->FileName;
       if (!FUsersSet)
       {
         OwnerComboBox->Items->Text = File->Owner;
@@ -164,10 +164,10 @@ void __fastcall TPropertiesDialog::LoadInfo()
       {
         LinksToLabel->Caption = File->LinkTo;
       }
-      if (File->IsDirectory)
+      if (File->IsDirectory && !File->IsSymLink)
       {
-        FAllowCalculateSize = true;
-        FSizeNotCalculated = true;
+        FAllowCalculateStats = true;
+        FStatsNotCalculated = true;
       }
 
       RightsFrame->AllowAddXToDirectories = File->IsDirectory;
@@ -191,9 +191,6 @@ void __fastcall TPropertiesDialog::LoadInfo()
 
       try
       {
-        int Directories = 0;
-        int Files = 0;
-        int SymLinks = 0;
         FilesSize = 0;
 
         for (int Index = 0; Index < FFileList->Count; Index++)
@@ -204,45 +201,24 @@ void __fastcall TPropertiesDialog::LoadInfo()
           OwnerList->Add(File->Owner);
           if (File->IsDirectory)
           {
-            Directories++;
-            FAllowCalculateSize = true;
-            FSizeNotCalculated = true;
+            Stats.Directories++;
+            if (!File->IsSymLink)
+            {
+              FAllowCalculateStats = true;
+              FStatsNotCalculated = true;
+            }
           }
           else
           {
-            Files++;
+            Stats.Files++;
           }
 
           if (File->IsSymLink)
           {
-            SymLinks++;
+            Stats.SymLinks++;
           }
           FilesSize += File->Size;
         }
-
-        AnsiString FilesStr;
-        if (Files)
-        {
-          FilesStr = (Files == 1) ? FMTLOAD(PROPERTIES_FILE, (Files)) :
-            FMTLOAD(PROPERTIES_FILES, (Files));
-          if (Directories)
-          {
-            FilesStr = FORMAT("%s, ", (FilesStr));
-          }
-        }
-        if (Directories)
-        {
-          FilesStr += (Directories == 1) ? FMTLOAD(PROPERTIES_DIRECTORY, (Directories)) :
-            FMTLOAD(PROPERTIES_DIRECTORIES, (Directories));
-        }
-        if (SymLinks)
-        {
-          AnsiString SymLinksStr;
-          SymLinksStr = SymLinks == 1 ? FMTLOAD(PROPERTIES_SYMLINK, (SymLinks)) :
-            FMTLOAD(PROPERTIES_SYMLINKS, (SymLinks));
-          FilesStr = FORMAT("%s (%s)", (FilesStr, SymLinksStr));
-        }
-        FileLabel->Caption = FilesStr;
 
         if (!FUsersSet)
         {
@@ -252,9 +228,9 @@ void __fastcall TPropertiesDialog::LoadInfo()
         {
           GroupComboBox->Items = GroupList;
         }
-        RightsFrame->AllowAddXToDirectories = (Directories > 0);
-        RecursiveCheck->Visible = (Directories > 0);
-        RecursiveBevel->Visible = (Directories > 0);
+        RightsFrame->AllowAddXToDirectories = (Stats.Directories > 0);
+        RecursiveCheck->Visible = (Stats.Directories > 0);
+        RecursiveBevel->Visible = (Stats.Directories > 0);
 
       }
       __finally
@@ -264,17 +240,19 @@ void __fastcall TPropertiesDialog::LoadInfo()
       }
     }
 
-    LoadSize(FilesSize);
+    LoadStats(FilesSize, Stats);
 
     FilesIconImage->Visible = Multiple;
     FileIconImage->Visible = !Multiple;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::LoadSize(__int64 FilesSize)
+void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
+  const TCalculateSizeStats & Stats)
 {
   AnsiString SizeStr;
-  if (FSizeNotCalculated)
+  AnsiString FilesStr;
+  if (FStatsNotCalculated)
   {
     SizeStr = LoadStr(PROPERTIES_UNKNOWN_SIZE);
   }
@@ -287,7 +265,40 @@ void __fastcall TPropertiesDialog::LoadSize(__int64 FilesSize)
       SizeStr = FORMAT("%s (%s)", (SizeStr, SizeUnorderedStr)); 
     }
   }
+
+  if (((Stats.Files + Stats.Directories) == 0) && !Multiple)
+  {
+    TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
+    assert(File != NULL);
+    FilesStr = File->FileName;
+  }
+  else
+  {
+    if (Stats.Files > 0)
+    {
+      FilesStr = (Stats.Files == 1) ? FMTLOAD(PROPERTIES_FILE, (Stats.Files)) :
+        FMTLOAD(PROPERTIES_FILES, (Stats.Files));
+      if (Stats.Directories > 0)
+      {
+        FilesStr = FORMAT("%s, ", (FilesStr));
+      }
+    }
+    if (Stats.Directories > 0)
+    {
+      FilesStr += (Stats.Directories == 1) ? FMTLOAD(PROPERTIES_DIRECTORY, (Stats.Directories)) :
+        FMTLOAD(PROPERTIES_DIRECTORIES, (Stats.Directories));
+    }
+    if (Stats.SymLinks > 0)
+    {
+      AnsiString SymLinksStr;
+      SymLinksStr = (Stats.SymLinks == 1) ? FMTLOAD(PROPERTIES_SYMLINK, (Stats.SymLinks)) :
+        FMTLOAD(PROPERTIES_SYMLINKS, (Stats.SymLinks));
+      FilesStr = FORMAT("%s (%s)", (FilesStr, SymLinksStr));
+    }
+  }
+
   SizeLabel->Caption = SizeStr;
+  FileLabel->Caption = FilesStr;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::SetDirectory(AnsiString value)
@@ -375,7 +386,7 @@ void __fastcall TPropertiesDialog::UpdateControls()
   EnableControl(GroupComboBox, FAllowedChanges & cpGroup);
   EnableControl(OwnerComboBox, FAllowedChanges & cpOwner);
   EnableControl(RightsFrame, FAllowedChanges & cpMode);
-  CalculateSizeButton->Visible = Terminal && FAllowCalculateSize;
+  CalculateSizeButton->Visible = Terminal && FAllowCalculateStats;
 
   if (!Multiple)
   {
@@ -450,9 +461,10 @@ void __fastcall TPropertiesDialog::CalculateSizeButtonClick(
 {
   assert(Terminal);
   __int64 Size;
-  Terminal->CalculateFilesSize(FileList, Size, 0);
-  FSizeNotCalculated = false;
-  LoadSize(Size);
+  TCalculateSizeStats Stats;
+  Terminal->CalculateFilesSize(FileList, Size, 0, NULL, &Stats);
+  FStatsNotCalculated = false;
+  LoadStats(Size, Stats);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::HelpButtonClick(TObject * /*Sender*/)

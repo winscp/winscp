@@ -156,7 +156,7 @@ __published:
 	__property OnMouseUp ;
 	__property OnResize ;
 	__property OnStartDock ;
-	__property NortonLike  = {default=1};
+	__property NortonLike  = {default=0};
 	__property OnSelectByMask ;
 public:
 	#pragma option push -w-inl

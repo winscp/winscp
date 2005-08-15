@@ -34,14 +34,14 @@ bool __fastcall DoCopyDialog(bool ToRemote,
     }
     CopyDialog->ToRemote = ToRemote;
     CopyDialog->Options = Options;
-    CopyDialog->Directory = TargetDirectory;
-    CopyDialog->FileList = FileList;
-    CopyDialog->Params = *Params;
-    CopyDialog->Move = Move;
     if (OutputOptions != NULL)
     {
       CopyDialog->OutputOptions = *OutputOptions;
     }
+    CopyDialog->Directory = TargetDirectory;
+    CopyDialog->FileList = FileList;
+    CopyDialog->Params = *Params;
+    CopyDialog->Move = Move;
     Result = CopyDialog->Execute();
     if (Result)
     {
@@ -81,6 +81,86 @@ __fastcall TCopyDialog::~TCopyDialog()
   delete FPresetsMenu;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCopyDialog::AdjustTransferControls()
+{
+  if (FileList && FileList->Count)
+  {
+    if (!ToRemote && !Move && FLAGSET(FOutputOptions, cooRemoteTransfer))
+    {
+      AnsiString Label;
+      if (FileList->Count == 1)
+      {
+        AnsiString FileName;
+        if (!ToRemote) FileName = UnixExtractFileName(FFileList->Strings[0]);
+          else FileName = ExtractFileName(FFileList->Strings[0]);
+        Label = FMTLOAD(REMOTE_COPY_FILE, (FileName));
+      }
+      else
+      {
+        Label = FMTLOAD(REMOTE_COPY_FILES, (FFileList->Count));
+      }
+
+      // hack to remove trailing colon used for "duplicate" prompt
+      if (!Label.IsEmpty() &&
+          (Label.ByteType(Label.Length()) == mbSingleByte) &&
+          (Label[Label.Length()] == ':'))
+      {
+        Label.SetLength(Label.Length() - 1);
+      }
+
+      DirectoryLabel->Caption = Label;
+    }
+    else
+    {
+      AnsiString TransferStr = LoadStr(!Move ? COPY_COPY : COPY_MOVE);
+      // currently the copy dialog is shown when downloading to temp folder
+      // only for drag&drop downloads, for we dare to display d&d specific prompt
+      AnsiString DirectionStr =
+        LoadStr(((Options & coTemp) != 0) ? COPY_TODROP :
+          (RemotePaths() ? COPY_TOREMOTE : COPY_TOLOCAL));
+
+      if (FileList->Count == 1)
+      {
+        AnsiString FileName;
+        if (!ToRemote) FileName = UnixExtractFileName(FFileList->Strings[0]);
+          else FileName = ExtractFileName(FFileList->Strings[0]);
+        DirectoryLabel->Caption = FMTLOAD(COPY_FILE,
+          (TransferStr, FileName, DirectionStr));
+      }
+      else
+      {
+        DirectoryLabel->Caption = FMTLOAD(COPY_FILES,
+          (TransferStr, FFileList->Count, DirectionStr));
+      }
+    }
+  }
+
+  if (!Move)
+  {
+    if (!ToRemote && FLAGSET(FOutputOptions, cooRemoteTransfer))
+    {
+      Caption = LoadStr(REMOTE_COPY_TITLE);
+    }
+    else
+    {
+      Caption = LoadStr(COPY_COPY_CAPTION);
+    }
+    CopyButton->Caption = LoadStr(COPY_COPY_BUTTON);
+  }
+  else
+  {
+    Caption = LoadStr(COPY_MOVE_CAPTION);
+    CopyButton->Caption = LoadStr(COPY_MOVE_BUTTON);
+  }
+
+  bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
+  assert(FLAGSET(Options, coAllowRemoteTransfer) || !RemoteTransfer);
+
+  EnableControl(CopyParamsFrame, !RemoteTransfer);
+  EnableControl(NewerOnlyCheck, FLAGCLEAR(Options, coDisableNewerOnly) && !RemoteTransfer);
+  EnableControl(PresetsButton, !RemoteTransfer);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCopyDialog::AdjustControls()
 {
   if (FLAGSET(Options, coDoNotShowAgain))
@@ -99,42 +179,9 @@ void __fastcall TCopyDialog::AdjustControls()
     FLAGMASK(FLAGCLEAR(Options, coDisableTransferMode), cfAllowTransferMode) |
     FLAGMASK(!Move, cfAllowExcludeMask) |
     FLAGMASK(!Move && ToRemote, cfAllowClearArchive);
-  EnableControl(NewerOnlyCheck, FLAGCLEAR(Options, coDisableNewerOnly));
+  PresetsButton->Visible = FLAGCLEAR(Options, coDoNotUsePresets);
 
-  if (FileList && FileList->Count)
-  {
-    AnsiString TransferStr = LoadStr(!Move ? COPY_COPY : COPY_MOVE);
-    // currently the copy dialog is shown when downloading to temp folder
-    // only for drag&drop downloads, for we dare to display d&d specific prompt
-    AnsiString DirectionStr =
-      LoadStr(((Options & coTemp) != 0) ? COPY_TODROP :
-        (ToRemote ? COPY_TOREMOTE : COPY_TOLOCAL));
-
-    if (FileList->Count == 1)
-    {
-      AnsiString FileName;
-      if (!ToRemote) FileName = UnixExtractFileName(FFileList->Strings[0]);
-        else FileName = ExtractFileName(FFileList->Strings[0]);
-      DirectoryLabel->Caption = FMTLOAD(COPY_FILE,
-        (TransferStr, FileName, DirectionStr));
-    }
-    else
-    {
-      DirectoryLabel->Caption = FMTLOAD(COPY_FILES,
-        (TransferStr, FFileList->Count, DirectionStr));
-    }
-  }
-
-  if (!Move)
-  {
-    Caption = LoadStr(COPY_COPY_CAPTION);
-    CopyButton->Caption = LoadStr(COPY_COPY_BUTTON);
-  }
-  else
-  {
-    Caption = LoadStr(COPY_MOVE_CAPTION);
-    CopyButton->Caption = LoadStr(COPY_MOVE_BUTTON);
-  }
+  AdjustTransferControls();
 
   LocalDirectoryBrowseButton->Visible = !ToRemote &&
     ((Options & coTemp) == 0);
@@ -184,9 +231,14 @@ THistoryComboBox * __fastcall TCopyDialog::GetDirectoryEdit()
   return ToRemote ? RemoteDirectoryEdit : LocalDirectoryEdit;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCopyDialog::RemotePaths()
+{
+  return (ToRemote || FLAGSET(FOutputOptions, cooRemoteTransfer));
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall TCopyDialog::GetFileMask()
 {
-  return ToRemote ? UnixExtractFileName(DirectoryEdit->Text) :
+  return RemotePaths() ? UnixExtractFileName(DirectoryEdit->Text) :
     ExtractFileName(DirectoryEdit->Text);
 }
 //---------------------------------------------------------------------------
@@ -215,8 +267,8 @@ void __fastcall TCopyDialog::SetDirectory(AnsiString value)
 {
   if (!value.IsEmpty())
   {
-    value = ToRemote ? UnixIncludeTrailingBackslash(value) :
-      IncludeTrailingBackslash(value);
+    value = RemotePaths() ?
+      UnixIncludeTrailingBackslash(value) : IncludeTrailingBackslash(value);
   }
   DirectoryEdit->Text = value + GetFileMask();
 }
@@ -226,7 +278,7 @@ AnsiString __fastcall TCopyDialog::GetDirectory()
   assert(DirectoryEdit);
 
   AnsiString Result = DirectoryEdit->Text;
-  if (ToRemote)
+  if (RemotePaths())
   {
     Result = UnixExtractFilePath(Result);
     if (!Result.IsEmpty())
@@ -256,12 +308,27 @@ void __fastcall TCopyDialog::SetFileList(TStrings * value)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::UpdateControls()
 {
+  if (!ToRemote && FLAGSET(Options, coAllowRemoteTransfer))
+  {
+    AnsiString Directory = DirectoryEdit->Text;
+    bool RemoteTransfer = (Directory.Pos("\\") == 0) && (Directory.Pos("/") > 0);
+    if (RemoteTransfer != FLAGSET(FOutputOptions, cooRemoteTransfer))
+    {
+      FOutputOptions =
+        (FOutputOptions & ~cooRemoteTransfer) |
+        FLAGMASK(RemoteTransfer, cooRemoteTransfer);
+      AdjustTransferControls();
+    }
+  }
+
+  bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   EnableControl(QueueCheck,
-    (Options & (coDisableQueue | coTemp)) == 0);
+    ((Options & (coDisableQueue | coTemp)) == 0) && !RemoteTransfer);
   EnableControl(QueueNoConfirmationCheck,
-    ((Options & coTemp) == 0) && QueueCheck->Checked);
+    (((Options & coTemp) == 0) && QueueCheck->Checked) && !RemoteTransfer);
   QueueNoConfirmationCheck->Visible = MoreButton->Expanded;
-  EnableControl(SaveSettingsCheck, FLAGCLEAR(Options, coDisableSaveSettings));
+  EnableControl(SaveSettingsCheck, FLAGCLEAR(Options, coDisableSaveSettings) &&
+    !RemoteTransfer);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetMove(bool value)
@@ -333,7 +400,7 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    if (!ToRemote && ((Options & coTemp) == 0))
+    if (!RemotePaths() && ((Options & coTemp) == 0))
     {
       AnsiString Dir = Directory;
       AnsiString Drive = ExtractFileDrive(Dir);
@@ -372,10 +439,17 @@ void __fastcall TCopyDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
   assert(!ToRemote);
-  AnsiString Directory = LocalDirectoryEdit->Text;
+  AnsiString Directory;
+  // if we are duplicating, we have remote path there
+  if (RemotePaths())
+  {
+    Directory = LocalDirectoryEdit->Text;
+  }
+
   if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
   {
     LocalDirectoryEdit->Text = Directory;
+    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------

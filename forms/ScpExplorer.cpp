@@ -48,6 +48,7 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
   BottomDock->PopupMenu = TopDock->PopupMenu;
   LeftDock->PopupMenu = TopDock->PopupMenu;
   RightDock->PopupMenu = TopDock->PopupMenu;
+  reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = RemotePanelSplitterDblClick;
 
   QueuePanel->Parent = RemotePanel;
   QueueSplitter->Parent = RemotePanel;
@@ -79,7 +80,7 @@ void __fastcall TScpExplorerForm::RestoreParams()
   RemoteDirView->UnixColProperties->ParamsStr = WinConfiguration->ScpExplorer.DirViewParams;
   RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
   RemoteDirView->ViewStyle = (TViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
-  LoadToolbarsLayoutStr(this, WinConfiguration->ScpExplorer.ToolbarsLayout);
+  LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout);
   SessionCombo->EditWidth = WinConfiguration->ScpExplorer.SessionComboWidth;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
@@ -93,7 +94,7 @@ void __fastcall TScpExplorerForm::StoreParams()
   Configuration->BeginUpdate();
   try
   {
-    WinConfiguration->ScpExplorer.ToolbarsLayout = GetToolbarsLayoutStr(this);
+    WinConfiguration->ScpExplorer.ToolbarsLayout = GetToolbarsLayoutStr();
     WinConfiguration->ScpExplorer.SessionComboWidth = SessionCombo->EditWidth;
     WinConfiguration->ScpExplorer.StatusBar = RemoteStatusBar->Visible;
 
@@ -217,4 +218,9 @@ void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(
   UpdateFileStatusBar(RemoteStatusBar, FileInfo, 0);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::RemotePanelSplitterDblClick(TObject * /*Sender*/)
+{
+  // for some reason PostComponentHide is not necessary here (see queue panel)
+  ComponentVisible[fcRemoteTree] = false;
+}
 

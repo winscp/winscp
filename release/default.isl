@@ -1,4 +1,4 @@
-; *** Inno Setup version 4.2.2+ English messages ***
+; *** Inno Setup version 5.1.0+ English messages ***
 ;
 ; To download user-contributed translations of this file, go to:
 ;   http://www.jrsoftware.org/is3rdparty.php
@@ -7,10 +7,10 @@
 ; messages that didn't have them already, because on those messages Inno
 ; Setup adds the periods automatically (appending a period would result in
 ; two periods being displayed).
-;
-; $jrsoftware: issrc/Files/Default.isl,v 1.58 2004/04/07 20:17:13 jr Exp $
 
 [LangOptions]
+; The following three entries are very important. Be sure to read and 
+; understand the '[LangOptions] section' topic in the help file.
 LanguageName=English
 LanguageID=$0409
 LanguageCodePage=0
@@ -28,7 +28,7 @@ LanguageCodePage=0
 [Messages]
 
 ; *** Application titles
-SetupAppTitle=Setup
+SetupAppTitle=Setup - WinSCP
 SetupWindowTitle=Setup - %1
 UninstallAppTitle=Uninstall
 UninstallAppFullTitle=%1 Uninstall
@@ -50,6 +50,8 @@ SetupFileCorrupt=The setup files are corrupted. Please obtain a new copy of the 
 SetupFileCorruptOrWrongVer=The setup files are corrupted, or are incompatible with this version of Setup. Please correct the problem or obtain a new copy of the program.
 NotOnThisPlatform=This program will not run on %1.
 OnlyOnThisPlatform=This program must be run on %1.
+OnlyOnTheseArchitectures=This program can only be installed on versions of Windows designed for the following processor architectures:%n%n%1
+MissingWOW64APIs=The version of Windows you are running does not include functionality required by Setup to perform a 64-bit installation. To correct this problem, please install Service Pack %1.
 WinVersionTooLowError=This program requires %1 version %2 or later.
 WinVersionTooHighError=This program cannot be installed on %1 version %2 or later.
 AdminPrivilegesRequired=You must be logged in as an administrator when installing this program.
@@ -68,6 +70,7 @@ AboutSetupMenuItem=&About Setup...
 AboutSetupTitle=About Setup
 AboutSetupMessage=%1 version %2%n%3%n%n%1 home page:%n%4
 AboutSetupNote=
+TranslatorNote=
 
 ; *** Buttons
 ButtonBack=< &Back
@@ -172,7 +175,6 @@ WizardSelectProgramGroup=Select Start Menu Folder
 SelectStartMenuFolderDesc=Where should Setup place the program's shortcuts?
 SelectStartMenuFolderLabel3=Setup will create the program's shortcuts in the following Start Menu folder.
 SelectStartMenuFolderBrowseLabel=To continue, click Next. If you would like to select a different folder, click Browse.
-NoIconsCheck=&Don't create any icons
 MustEnterGroupName=You must enter a folder name.
 GroupNameTooLong=The folder name or path is too long.
 InvalidGroupName=The folder name is not valid.
@@ -283,6 +285,7 @@ UninstallOpenError=File "%1" could not be opened. Cannot uninstall
 UninstallUnsupportedVer=The uninstall log file "%1" is in a format not recognized by this version of the uninstaller. Cannot uninstall
 UninstallUnknownEntry=An unknown entry (%1) was encountered in the uninstall log
 ConfirmUninstall=Are you sure you want to completely remove %1 and all of its components?
+UninstallOnlyOnWin64=This installation can only be uninstalled on 64-bit Windows.
 OnlyAdminCanUninstall=This installation can only be uninstalled by a user with administrative privileges.
 UninstallStatusLabel=Please wait while %1 is removed from your computer.
 UninstalledAll=%1 was successfully removed from your computer.

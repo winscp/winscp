@@ -92,7 +92,7 @@ typedef void __fastcall (__closure *TDirViewExecFileEvent)(System::TObject* Send
 
 typedef void __fastcall (__closure *TRenameEvent)(System::TObject* Sender, Comctrls::TListItem* Item, AnsiString NewName);
 
-typedef void __fastcall (__closure *TMatchMaskEvent)(System::TObject* Sender, AnsiString FileName, AnsiString Masks, bool &Matches);
+typedef void __fastcall (__closure *TMatchMaskEvent)(System::TObject* Sender, AnsiString FileName, bool Directory, AnsiString Masks, bool &Matches);
 
 typedef void __fastcall (__closure *TDirViewGetOverlayEvent)(System::TObject* Sender, Comctrls::TListItem* Item, Word &Indexes);
 
@@ -240,6 +240,7 @@ private:
 	bool FSavedSelection;
 	AnsiString FSavedSelectionFile;
 	AnsiString FSavedSelectionLastFile;
+	Classes::TStringList* FSavedNames;
 	bool FPendingFocusSomething;
 	TMatchMaskEvent FOnMatchMask;
 	TDirViewGetOverlayEvent FOnGetOverlay;
@@ -256,6 +257,7 @@ private:
 	__int64 __fastcall GetFilesMarkedSize(void);
 	int __fastcall GetForwardCount(void);
 	AnsiString __fastcall GetHistoryPath(int Index);
+	bool __fastcall GetSelectedNamesSaved(void);
 	bool __fastcall GetTargetPopupMenu(void);
 	bool __fastcall GetUseDragImages(void);
 	void __fastcall SetMaxHistoryCount(int Value);
@@ -351,6 +353,7 @@ protected:
 	virtual AnsiString __fastcall MinimizePath(AnsiString Path, int Len) = 0 ;
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
 	void __fastcall PathChanged(void);
+	void __fastcall PathChanging(bool Relative);
 	virtual void __fastcall SetPath(AnsiString Value) = 0 ;
 	void __fastcall SetSortByExtension(bool Value);
 	virtual void __fastcall SetShowHiddenFiles(bool Value);
@@ -362,7 +365,7 @@ protected:
 	DYNAMIC void __fastcall UpdatePathLabel(void);
 	DYNAMIC void __fastcall UpdateStatusBar(void);
 	virtual void __fastcall WndProc(Messages::TMessage &Message);
-	bool __fastcall FileNameMatchesMasks(AnsiString FileName, AnsiString Masks);
+	bool __fastcall FileNameMatchesMasks(AnsiString FileName, bool Directory, AnsiString Masks);
 	__property Controls::TImageList* ImageList16 = {read=FImageList16};
 	__property Controls::TImageList* ImageList32 = {read=FImageList32};
 	
@@ -393,6 +396,8 @@ public:
 	void __fastcall SaveSelection(void);
 	void __fastcall RestoreSelection(void);
 	void __fastcall DiscardSavedSelection(void);
+	void __fastcall SaveSelectedNames(void);
+	void __fastcall RestoreSelectedNames(void);
 	void __fastcall ContinueSession(bool Continue);
 	DYNAMIC bool __fastcall CanPasteFromClipBoard(void);
 	virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "") = 0 ;
@@ -441,6 +446,7 @@ public:
 	__property SmallImages ;
 	__property LargeImages ;
 	__property int MaxHistoryCount = {read=FMaxHistoryCount, write=SetMaxHistoryCount, default=200};
+	__property bool SelectedNamesSaved = {read=GetSelectedNamesSaved, nodefault};
 	__property OnContextPopup ;
 	__property TRenameEvent OnBeginRename = {read=FOnBeginRename, write=FOnBeginRename};
 	__property TRenameEvent OnEndRename = {read=FOnEndRename, write=FOnEndRename};

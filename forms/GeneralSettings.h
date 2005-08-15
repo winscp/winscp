@@ -14,7 +14,7 @@ class TGeneralSettingsFrame : public TFrame
 {
 __published:
   TXPGroupBox *InterfaceGroup;
-  TLabel *CommanderDescriptionLabel;
+  TLabel *CommanderDescriptionLabel2;
   TLabel *ExplorerDescriptionLabel;
   TImage *CommanderInterfacePicture;
   TImage *ExplorerInterfacePicture;

@@ -3,6 +3,7 @@ object PasswordDialog: TPasswordDialog
   Top = 77
   HelpType = htKeyword
   HelpKeyword = 'ui_password'
+  ActiveControl = PasswordEdit
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Enter password'
@@ -50,7 +51,7 @@ object PasswordDialog: TPasswordDialog
     DesignSize = (
       404
       50)
-    object PasswordLabel: TLabel
+    object PasswordLabel: TStaticText
       Left = 8
       Top = 8
       Width = 389
@@ -59,6 +60,7 @@ object PasswordDialog: TPasswordDialog
       AutoSize = False
       Caption = '&Password:'
       FocusControl = PasswordEdit
+      TabOrder = 0
     end
     object PasswordEdit: TPasswordEdit
       Left = 8
@@ -67,7 +69,7 @@ object PasswordDialog: TPasswordDialog
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       MaxLength = 250
-      TabOrder = 0
+      TabOrder = 1
     end
   end
   object ServerPromptPanel: TPanel

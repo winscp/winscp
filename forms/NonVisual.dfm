@@ -66,7 +66,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object CurrentOpenMenuItem: TTBXItem
       Action = CurrentOpenAction
     end
-    object CurentEditMenuItem: TTBXItem
+    object CurrentEditMenuItem: TTBXItem
       Action = CurrentEditAction
     end
     object CurrentCopyMenuItem: TTBXItem
@@ -134,7 +134,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object GoToTreeAction: TAction
       Tag = 15
       Category = 'View'
-      Caption = 'Go To Tree'
+      Caption = 'Go to Tree'
       HelpKeyword = 'ui_file_panel#directory_tree'
       Hint = 'Go to tree'
       ImageIndex = 76
@@ -185,7 +185,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object GoToCommandLineAction: TAction
       Tag = 11
       Category = 'View'
-      Caption = 'Go To Comma&nd Line'
+      Caption = 'Go to Comma&nd Line'
       HelpKeyword = 'ui_commander#command_line'
       Hint = 'Go to command line'
       ShortCut = 49230
@@ -193,7 +193,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object QueueItemDeleteAction: TAction
       Tag = 12
       Category = 'Queue'
-      Caption = '&Delete'
+      Caption = '&Cancel'
       HelpKeyword = 'ui_queue#managing_the_queue'
       Hint = 'Remove selected queue item'
       ImageIndex = 71
@@ -259,7 +259,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object CurrentCopyAction: TAction
       Tag = 15
       Category = 'Toolbar Operation (selected + rename + mkdir + close)'
-      Caption = '&Copy ...'
+      Caption = '&Copy...'
       HelpKeyword = 'task_download'
       Hint = 'Copy|Copy selected file(s)'
       ImageIndex = 0
@@ -267,7 +267,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object CurrentMoveAction: TAction
       Tag = 15
       Category = 'Toolbar Operation (selected + rename + mkdir + close)'
-      Caption = '&Move ...'
+      Caption = '&Move...'
       HelpKeyword = 'task_download'
       Hint = 'Move|Move selected file(s)'
       ImageIndex = 1
@@ -315,7 +315,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object CurrentCopyFocusedAction: TAction
       Tag = 12
       Category = 'Focused Operation'
-      Caption = '&Copy ...'
+      Caption = '&Copy...'
       HelpKeyword = 'task_download'
       Hint = 'Copy|Copy selected file(s) to local directory'
       ImageIndex = 0
@@ -323,14 +323,14 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteMoveToAction: TAction
       Tag = 14
       Category = 'Selected Operation'
-      Caption = 'Mo&ve to ...'
+      Caption = 'Mo&ve to...'
       HelpKeyword = 'task_move_duplicate#moving_remote_files'
       Hint = 'Move|Move selected file(s) to remote directory'
     end
     object CurrentMoveFocusedAction: TAction
       Tag = 12
       Category = 'Focused Operation'
-      Caption = '&Move ...'
+      Caption = '&Move...'
       HelpKeyword = 'task_download'
       Hint = 'Move|Move selected file(s) to local directory'
       ImageIndex = 1
@@ -434,7 +434,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object AboutAction: TAction
       Tag = 15
       Category = 'Help'
-      Caption = '&About ...'
+      Caption = '&About...'
       HelpKeyword = 'ui_about'
       Hint = 'About|Show About box'
       ImageIndex = 17
@@ -479,7 +479,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object SelectAction: TAction
       Tag = 15
       Category = 'Selection'
-      Caption = 'Sele&ct Files'
+      Caption = 'Sele&ct Files...'
       HelpKeyword = 'ui_select'
       Hint = 'Select|Select files by mask'
       ImageIndex = 19
@@ -487,7 +487,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object UnselectAction: TAction
       Tag = 15
       Category = 'Selection'
-      Caption = '&Unselect Files'
+      Caption = '&Unselect Files...'
       HelpKeyword = 'ui_select'
       Hint = 'Unselect|Unselect files by mask'
       ImageIndex = 20
@@ -904,6 +904,14 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 39
       ShortCut = 16504
     end
+    object RemoteSortByTypeAction: TAction
+      Tag = 14
+      Category = 'Sort'
+      Caption = 'By &Type'
+      HelpKeyword = 'ui_file_panel#sorting_files'
+      Hint = 'Sort by type|Sort remote panel by file type'
+      ImageIndex = 34
+    end
     object CurrentSortAscendingAction: TAction
       Tag = 15
       Category = 'Sort'
@@ -942,7 +950,7 @@ object NonVisualDataModule: TNonVisualDataModule
       ShortCut = 16501
     end
     object CurrentSortByTypeAction: TAction
-      Tag = 9
+      Tag = 15
       Category = 'Sort'
       Caption = 'By &Type'
       HelpKeyword = 'ui_file_panel#sorting_files'
@@ -1098,6 +1106,14 @@ object NonVisualDataModule: TNonVisualDataModule
         'el'
       ImageIndex = 82
     end
+    object ShowHideRemoteTypeColumnAction: TAction
+      Tag = 15
+      Category = 'Columns'
+      Caption = '&Type'
+      HelpKeyword = 'ui_file_panel#selecting_columns'
+      Hint = 'Show/hide type|Show/hide type column on remote panel'
+      ImageIndex = 46
+    end
     object ShowHideLocalNameColumnAction: TAction
       Tag = 15
       Category = 'Columns'
@@ -1162,7 +1178,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object SynchronizeAction: TAction
       Tag = 15
       Category = 'Command'
-      Caption = '&Keep Remote Directory Up To Date'
+      Caption = '&Keep Remote Directory up to Date...'
       HelpKeyword = 'task_keep_up_to_date'
       Hint = 
         'Keep remote directory up to date|Keep remote directory up to dat' +
@@ -1179,7 +1195,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object LocalAddBookmarkAction: TAction
       Tag = 9
       Category = 'Local Directory'
-      Caption = '&Add To Bookmarks'
+      Caption = '&Add to Bookmarks'
       HelpKeyword = 'task_navigate#bookmarks'
       Hint = 'Add to bookmarks|Add current local directory to bookmark list'
       ImageIndex = 54
@@ -1188,7 +1204,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteAddBookmarkAction: TAction
       Tag = 14
       Category = 'Remote Directory'
-      Caption = '&Add To Bookmarks'
+      Caption = '&Add to Bookmarks'
       HelpKeyword = 'task_navigate#bookmarks'
       Hint = 'Add to bookmarks|Add current remote directory to bookmark list'
       ImageIndex = 54
@@ -1305,7 +1321,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object CheckForUpdatesAction: TAction
       Tag = 15
       Category = 'Help'
-      Caption = '&Check For Updates'
+      Caption = '&Check for Updates'
       HelpKeyword = 'updates'
       Hint = 'Queries application homepage for updates'
       ImageIndex = 63
@@ -1319,7 +1335,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object FileSystemInfoAction: TAction
       Tag = 15
       Category = 'Command'
-      Caption = '&Server/protocol Information'
+      Caption = '&Server/Protocol Information'
       HelpKeyword = 'ui_fsinfo'
       Hint = 'Display server/protocol information'
       ImageIndex = 17
@@ -1334,7 +1350,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object FullSynchronizeAction: TAction
       Tag = 15
       Category = 'Command'
-      Caption = '&Synchronize'
+      Caption = '&Synchronize...'
       HelpKeyword = 'task_synchronize_full'
       Hint = 'Synchronize local directory with remote directory'
       ImageIndex = 66
@@ -1343,14 +1359,14 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteMoveToFocusedAction: TAction
       Tag = 14
       Category = 'Focused Operation'
-      Caption = 'Mo&ve to ...'
+      Caption = 'Mo&ve to...'
       HelpKeyword = 'task_move_duplicate#moving_remote_files'
       Hint = 'Move|Move selected file(s) to remote directory'
     end
     object ShowHiddenFilesAction: TAction
       Tag = 15
       Category = 'View'
-      Caption = 'Show/hide &hidden files'
+      Caption = 'Show/Hide &Hidden Files'
       HelpKeyword = 'ui_file_panel#special_files'
       Hint = 'Toggle showing hidden files in panel(s)'
       ShortCut = 49224
@@ -1472,15 +1488,23 @@ object NonVisualDataModule: TNonVisualDataModule
     object EditNewAction: TAction
       Tag = 15
       Category = 'Command'
-      Caption = 'Edit &new file ...'
+      Caption = 'Edit &New File...'
       HelpKeyword = 'task_edit'
       Hint = 'Edit new file|Create new file and open it in editor'
       ImageIndex = 77
     end
+    object EditorListCustomizeAction: TAction
+      Tag = 15
+      Category = 'Command'
+      Caption = '&Configure...'
+      HelpKeyword = 'ui_pref_editor'
+      Hint = 'Customize editors'
+      ImageIndex = 28
+    end
     object RemoteCopyToFocusedAction: TAction
       Tag = 14
       Category = 'Focused Operation'
-      Caption = '&Duplicate ...'
+      Caption = '&Duplicate...'
       HelpKeyword = 'task_move_duplicate#duplicating_remote_files'
       Hint = 'Duplicate|Duplicate selected file(s) to remote directory'
       ImageIndex = 78
@@ -1488,7 +1512,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteCopyToAction: TAction
       Tag = 14
       Category = 'Selected Operation'
-      Caption = '&Duplicate ...'
+      Caption = '&Duplicate...'
       HelpKeyword = 'task_move_duplicate#duplicating_remote_files'
       Hint = 'Duplicate|Duplicate selected file(s) to remote directory'
       ImageIndex = 78
@@ -1549,6 +1573,53 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Configure transfers settings presets'
       ImageIndex = 28
     end
+    object LockToolbarsAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Lock Toolbars'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Prevents moving and (un)docking of all toolbars'
+    end
+    object QueueItemPauseAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Suspend'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 'Suspend selected queue item'
+      ImageIndex = 83
+    end
+    object QueueItemResumeAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Resume'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 'Resume selected suspended queue item'
+      ImageIndex = 70
+    end
+    object QueuePauseAllAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Suspend All'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 'Suspend all running queue items'
+      ImageIndex = 84
+    end
+    object QueueResumeAllAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Resume All'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 'Resume all suspended queue items'
+      ImageIndex = 85
+    end
+    object RestoreSelectionAction: TAction
+      Tag = 15
+      Category = 'Selection'
+      Caption = '&Restore Selection'
+      HelpKeyword = 'ui_file_panel#selecting_files'
+      Hint = 'Restore previous selection'
+      ImageIndex = 86
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages
@@ -1577,6 +1648,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem4: TTBXItem
       Action = ExplorerTransferBandAction
+    end
+    object TBXItem7: TTBXItem
+      Action = LockToolbarsAction
     end
     object N5: TTBXSeparatorItem
       Hint = 'E'
@@ -1654,6 +1728,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem5: TTBXItem
       Action = CommanderTransferBandAction
+    end
+    object TBXItem6: TTBXItem
+      Action = LockToolbarsAction
     end
     object N26: TTBXSeparatorItem
       Hint = 'E'
@@ -1881,6 +1958,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object Size4: TTBXItem
         Action = ShowHideRemoteSizeColumnAction
       end
+      object TBXItem8: TTBXItem
+        Action = ShowHideRemoteTypeColumnAction
+      end
       object Modification4: TTBXItem
         Action = ShowHideRemoteChangedColumnAction
       end
@@ -1918,6 +1998,12 @@ object NonVisualDataModule: TNonVisualDataModule
     object ExecuteNow1: TTBXItem
       Action = QueueItemExecuteAction
     end
+    object TBXItem9: TTBXItem
+      Action = QueueItemPauseAction
+    end
+    object TBXItem10: TTBXItem
+      Action = QueueItemResumeAction
+    end
     object Delete4: TTBXItem
       Action = QueueItemDeleteAction
     end
@@ -1932,6 +2018,17 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object N67: TTBXSeparatorItem
       Hint = 'E'
+    end
+    object TBXSubmenuItem1: TTBXSubmenuItem
+      Caption = '&All'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 'Mass queue management commands'
+      object TBXItem11: TTBXItem
+        Action = QueuePauseAllAction
+      end
+      object TBXItem12: TTBXItem
+        Action = QueueResumeAllAction
+      end
     end
     object Queue2: TTBXSubmenuItem
       Caption = '&Options'

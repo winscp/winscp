@@ -20,6 +20,7 @@ public:
 
 private:
   TStringList * FBookmarkLists;
+  static AnsiString Keys[];
 
   TBookmarkList * __fastcall GetBookmarks(AnsiString Index);
   void __fastcall SetBookmarks(AnsiString Index, TBookmarkList * value);
@@ -43,9 +44,12 @@ public:
   void __fastcall Delete(TBookmark * Bookmark);
   TBookmark * __fastcall FindByName(const AnsiString Node, const AnsiString Name);
   virtual void __fastcall Assign(TPersistent * Source);
+  void __fastcall LoadOptions(THierarchicalStorage * Storage);
+  void __fastcall SaveOptions(THierarchicalStorage * Storage);
 
   __property int Count = { read = GetCount };
   __property TBookmark * Bookmarks[int Index] = { read = GetBookmarks };
+  __property bool NodeOpened[AnsiString Index] = { read = GetNodeOpened, write = SetNodeOpened };
 
 protected:
   int __fastcall IndexOf(TBookmark * Bookmark);
@@ -55,10 +59,13 @@ protected:
 
 private:
   TStringList * FBookmarks;
+  TStringList * FOpenedNodes;
   bool FModified;
 
   int __fastcall GetCount();
   TBookmark * __fastcall GetBookmarks(int Index);
+  bool __fastcall GetNodeOpened(AnsiString Index);
+  void __fastcall SetNodeOpened(AnsiString Index, bool value);
 };
 //---------------------------------------------------------------------------
 class TBookmark : public TPersistent

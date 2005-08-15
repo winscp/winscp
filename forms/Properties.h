@@ -19,6 +19,7 @@
 #include "RightsExt.h"
 //----------------------------------------------------------------------------
 class TTerminal;
+struct TCalculateSizeStats;
 //----------------------------------------------------------------------------
 class TPropertiesDialog : public TForm
 {
@@ -61,8 +62,8 @@ private:
   bool FGroupsSet;
   bool FUsersSet;
   TImageList * FShellImageList;
-  bool FAllowCalculateSize;
-  bool FSizeNotCalculated;
+  bool FAllowCalculateStats;
+  bool FStatsNotCalculated;
   TTerminal * FTerminal;
   TNotifyEvent FPrevTerminalClose;
 
@@ -82,7 +83,7 @@ private:
 protected:
   void __fastcall LoadInfo();
   void __fastcall UpdateControls();
-  void __fastcall LoadSize(__int64 FilesSize);
+  void __fastcall LoadStats(__int64 FilesSize, const TCalculateSizeStats & Stats);
 
   __property bool Multiple = { read = GetMultiple };
 

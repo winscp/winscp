@@ -241,8 +241,17 @@ long RegCloseWinSCPKey(HKEY Key)
   return R;
 }
 //---------------------------------------------------------------------------
-
-
-
-
-
+TKeyType KeyType(AnsiString FileName)
+{
+  assert(ktUnopenable == SSH_KEYTYPE_UNOPENABLE);
+  assert(ktSSHCom == SSH_KEYTYPE_SSHCOM);
+  Filename KeyFile;
+  ASCOPY(KeyFile.path, FileName);
+  return (TKeyType)key_type(&KeyFile);
+}
+//---------------------------------------------------------------------------
+AnsiString KeyTypeName(TKeyType KeyType)
+{
+  return key_type_to_str(KeyType);
+}
+//---------------------------------------------------------------------------

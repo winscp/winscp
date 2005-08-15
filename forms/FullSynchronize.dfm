@@ -127,12 +127,12 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       TabOrder = 1
       OnClick = ControlChange
     end
-    object SynchronizeNoConfirmationCheck: TCheckBox
+    object SynchronizeSelectedOnlyCheck: TCheckBox
       Left = 139
       Top = 68
       Width = 123
       Height = 17
-      Caption = '&No confirmations'
+      Caption = 'S&elected files only'
       TabOrder = 4
       OnClick = ControlChange
     end
@@ -180,7 +180,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     Width = 417
     Height = 49
     Anchors = [akLeft, akTop, akRight]
-    Caption = 'Direction'
+    Caption = 'Direction/Target directory'
     TabOrder = 1
     object SynchronizeBothButton: TRadioButton
       Left = 11
@@ -231,7 +231,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Top = 44
       Width = 121
       Height = 17
-      Caption = '&File size'
+      Caption = 'File si&ze'
       TabOrder = 1
       OnClick = SynchronizeByTimeSizeCheckClick
     end

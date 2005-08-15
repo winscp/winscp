@@ -31,11 +31,13 @@ __published:
   TEdit *LocalDirectoryEdit;
   TButton *CurrentRuleButton;
   TButton *HelpButton;
+  TStaticText *RuleMaskHintText;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CurrentRuleButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall MaskEditExit(TObject *Sender);
 
 private:
   TCopyParamPresetMode FMode;

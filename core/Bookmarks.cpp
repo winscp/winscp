@@ -33,13 +33,13 @@ void __fastcall TBookmarks::Clear()
   FBookmarkLists->Clear();
 }
 //---------------------------------------------------------------------------
+AnsiString TBookmarks::Keys[] = { "Local", "Remote", "Options" };
+//---------------------------------------------------------------------------
 void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
 {
-  bool Local = false;
-  do
+  for (int i = 0; i <= 2; i++)
   {
-    Local = !Local;
-    if (Storage->OpenSubKey(Local ? "Local" : "Remote", false))
+    if (Storage->OpenSubKey(Keys[i], false))
     {
       TStrings * BookmarkKeys = new TStringList();
       try
@@ -56,7 +56,14 @@ void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
               BookmarkList = new TBookmarkList();
               FBookmarkLists->AddObject(Key, BookmarkList);
             }
-            LoadLevel(Storage, "", Local, BookmarkList);
+            if (i < 2)
+            {
+              LoadLevel(Storage, "", (i == 0), BookmarkList);
+            }
+            else
+            {
+              BookmarkList->LoadOptions(Storage);
+            }
             Storage->CloseSubKey();
           }
         } 
@@ -68,7 +75,6 @@ void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
       Storage->CloseSubKey();
     }
   }
-  while (Local);
 
   ModifyAll(false);
 }
@@ -135,11 +141,9 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
 //---------------------------------------------------------------------------
 void __fastcall TBookmarks::Save(THierarchicalStorage * Storage)
 {
-  bool Local = false;
-  do
+  for (int i = 0; i <= 2; i++)
   {
-    Local = !Local;
-    if (Storage->OpenSubKey(Local ? "Local" : "Remote", true))
+    if (Storage->OpenSubKey(Keys[i], true))
     {
       for (int Index = 0; Index < FBookmarkLists->Count; Index++)
       {
@@ -151,22 +155,29 @@ void __fastcall TBookmarks::Save(THierarchicalStorage * Storage)
           Storage->RecursiveDeleteSubKey(Key);
           if (Storage->OpenSubKey(Key, true))
           {
-            for (int IndexB = 0; IndexB < BookmarkList->Count; IndexB++)
+            if (i < 2)
             {
-              TBookmark * Bookmark = BookmarkList->Bookmarks[IndexB];
-              AnsiString Directory = Local ? Bookmark->Local : Bookmark->Remote;
-              if (!Bookmark->Node.IsEmpty())
+              for (int IndexB = 0; IndexB < BookmarkList->Count; IndexB++)
               {
-                if (Storage->OpenSubKey(Bookmark->Node, true))
+                TBookmark * Bookmark = BookmarkList->Bookmarks[IndexB];
+                AnsiString Directory = (i == 0) ? Bookmark->Local : Bookmark->Remote;
+                if (!Bookmark->Node.IsEmpty())
+                {
+                  if (Storage->OpenSubKey(Bookmark->Node, true))
+                  {
+                    Storage->WriteString(Bookmark->Name, Directory);
+                    Storage->CloseSubKey();
+                  }
+                }
+                else
                 {
                   Storage->WriteString(Bookmark->Name, Directory);
-                  Storage->CloseSubKey();
                 }
               }
-              else
-              {
-                Storage->WriteString(Bookmark->Name, Directory);
-              }
+            }
+            else
+            {
+              BookmarkList->SaveOptions(Storage);
             }
             Storage->CloseSubKey();
           }
@@ -175,7 +186,6 @@ void __fastcall TBookmarks::Save(THierarchicalStorage * Storage)
       Storage->CloseSubKey();
     }
   }
-  while (Local);
 
   ModifyAll(false);
 }
@@ -229,12 +239,16 @@ __fastcall TBookmarkList::TBookmarkList(): TPersistent()
   FModified = false;
   FBookmarks = new TStringList();
   FBookmarks->CaseSensitive = false;
+  FOpenedNodes = new TStringList();
+  FOpenedNodes->CaseSensitive = false;
+  FOpenedNodes->Sorted = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TBookmarkList::~TBookmarkList()
 {
   Clear();
   SAFE_DESTROY(FBookmarks);
+  SAFE_DESTROY(FOpenedNodes);
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::Clear()
@@ -244,6 +258,7 @@ void __fastcall TBookmarkList::Clear()
     delete FBookmarks->Objects[i];
   }
   FBookmarks->Clear();
+  FOpenedNodes->Clear();
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::Assign(TPersistent * Source)
@@ -259,12 +274,23 @@ void __fastcall TBookmarkList::Assign(TPersistent * Source)
       Bookmark->Assign(dynamic_cast<TBookmark *>(SourceList->FBookmarks->Objects[i]));
       Add(Bookmark);
     }
+    FOpenedNodes->Assign(SourceList->FOpenedNodes);
     Modified = SourceList->Modified;
   }
   else
   {
     TPersistent::Assign(Source);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TBookmarkList::LoadOptions(THierarchicalStorage * Storage)
+{
+  FOpenedNodes->CommaText = Storage->ReadString("OpenedNodes", "");
+}
+//---------------------------------------------------------------------------
+void __fastcall TBookmarkList::SaveOptions(THierarchicalStorage * Storage)
+{
+  Storage->WriteString("OpenedNodes", FOpenedNodes->CommaText);
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarkList::Add(TBookmark * Bookmark)
@@ -361,6 +387,28 @@ TBookmark * __fastcall TBookmarkList::GetBookmarks(int Index)
   TBookmark * Bookmark = dynamic_cast<TBookmark *>(FBookmarks->Objects[Index]);
   assert(Bookmark);
   return Bookmark;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TBookmarkList::GetNodeOpened(AnsiString Index)
+{
+  return (FOpenedNodes->IndexOf(Index) >= 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TBookmarkList::SetNodeOpened(AnsiString Index, bool value)
+{
+  int I = FOpenedNodes->IndexOf(Index);
+  if ((I >= 0) != value)
+  {
+    if (value)
+    {
+      FOpenedNodes->Add(Index);
+    }
+    else
+    {
+      FOpenedNodes->Delete(I);
+    }
+    FModified = true;
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

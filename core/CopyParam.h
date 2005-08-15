@@ -26,13 +26,22 @@ private:
   TResumeSupport FResumeSupport;
   __int64 FResumeThreshold;
   AnsiString __fastcall GetLogStr() const;
-  bool FReplaceInvalidChars;
+  char FInvalidCharsReplacement;
   AnsiString FLocalInvalidChars;
+  AnsiString FTokenizibleChars;
   bool FCalculateSize;
   AnsiString FFileMask;
   TFileMasks FExcludeFileMask;
   bool FNegativeExclude;
   bool FClearArchive;
+  static const char TokenPrefix = '%';
+  static const char NoReplacement = char(false);
+  static const char TokenReplacement = char(true);
+
+  static AnsiString __fastcall Untokenize(AnsiString FileName);
+  void __fastcall SetLocalInvalidChars(AnsiString value);
+  bool __fastcall GetReplaceInvalidChars() const;
+  void __fastcall SetReplaceInvalidChars(bool value);
 
 public:
   __fastcall TCopyParamType();
@@ -48,11 +57,13 @@ public:
   bool __fastcall UseAsciiTransfer(AnsiString FileName, TOperationSide Side) const;
   bool __fastcall AllowResume(__int64 Size) const;
   AnsiString __fastcall ValidLocalFileName(AnsiString FileName) const;
-  bool __fastcall AllowTransfer(AnsiString FileName, TOperationSide Side) const;
+  bool __fastcall AllowTransfer(AnsiString FileName, TOperationSide Side,
+    bool Directory) const;
 
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage) const;
-  AnsiString __fastcall GetInfoStr(AnsiString Separator) const;
+  static const int cpiExcludeMaskOnly = 0x01;
+  AnsiString __fastcall GetInfoStr(AnsiString Separator, int Options = 0) const;
 
   bool __fastcall operator==(const TCopyParamType & rhp) const;
 
@@ -67,8 +78,9 @@ public:
   __property bool PreserveRights = { read = FPreserveRights, write = FPreserveRights };
   __property TResumeSupport ResumeSupport = { read = FResumeSupport, write = FResumeSupport };
   __property __int64 ResumeThreshold = { read = FResumeThreshold, write = FResumeThreshold };
-  __property bool ReplaceInvalidChars = { read = FReplaceInvalidChars, write = FReplaceInvalidChars };
-  __property AnsiString LocalInvalidChars = { read = FLocalInvalidChars, write = FLocalInvalidChars };
+  __property char InvalidCharsReplacement = { read = FInvalidCharsReplacement, write = FInvalidCharsReplacement };
+  __property bool ReplaceInvalidChars = { read = GetReplaceInvalidChars, write = SetReplaceInvalidChars };
+  __property AnsiString LocalInvalidChars = { read = FLocalInvalidChars, write = SetLocalInvalidChars };
   __property bool CalculateSize = { read = FCalculateSize, write = FCalculateSize };
   __property AnsiString FileMask = { read = FFileMask, write = FFileMask };
   __property TFileMasks ExcludeFileMask = { read = FExcludeFileMask, write = FExcludeFileMask };

@@ -45,10 +45,16 @@ AnsiString __fastcall GetRegistryKey()
   return "Software\\Martin Prikryl\\WinSCP 2";
 }
 //---------------------------------------------------------------------------
+static bool ForcedOnForeground = false;
+void __fastcall SetOnForeground(bool OnForeground)
+{
+  ForcedOnForeground = OnForeground;
+}
+//---------------------------------------------------------------------------
 void __fastcall FlashOnBackground()
 {
   assert(Application);
-  if (GetForegroundWindow() != GetActiveWindow())
+  if (!ForcedOnForeground && !ForegroundTask())
   {
     FlashWindow(Application->Handle, true);
   }
@@ -217,3 +223,124 @@ void __fastcall FormHelp(TForm * Form, TControl * Control)
   Application->HelpKeyword(Keyword);
 }
 //---------------------------------------------------------------------
+static inline void __fastcall GetToolbarKey(const AnsiString & ToolbarName,
+  const AnsiString & Value, AnsiString & ToolbarKey)
+{
+  int ToolbarNameLen;
+  if ((ToolbarName.Length() > 7) &&
+      (ToolbarName.SubString(ToolbarName.Length() - 7 + 1, 7) == "Toolbar"))
+  {
+    ToolbarNameLen = ToolbarName.Length() - 7;
+  }
+  else
+  {
+    ToolbarNameLen = ToolbarName.Length();
+  }
+  ToolbarKey = ToolbarName.SubString(1, ToolbarNameLen) + "_" + Value;
+}
+//---------------------------------------------------------------------------
+static int __fastcall ToolbarReadInt(const AnsiString ToolbarName,
+  const AnsiString Value, const int Default, const void * ExtraData)
+{
+  int Result;
+  if (Value == "Rev")
+  {
+    Result = 2000;
+  }
+  else
+  {
+    TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
+    AnsiString ToolbarKey;
+    GetToolbarKey(ToolbarName, Value, ToolbarKey);
+    if (Storage->IndexOfName(ToolbarKey) >= 0)
+    {
+      Result = StrToIntDef(Storage->Values[ToolbarKey], Default);
+    }
+    else
+    {
+      Result = Default;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static AnsiString __fastcall ToolbarReadString(const AnsiString ToolbarName,
+  const AnsiString Value, const AnsiString Default, const void * ExtraData)
+{
+  AnsiString Result;
+  TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
+  AnsiString ToolbarKey;
+  GetToolbarKey(ToolbarName, Value, ToolbarKey);
+  if (Storage->IndexOfName(ToolbarKey) >= 0)
+  {
+    Result = Storage->Values[ToolbarKey];
+  }
+  else
+  {
+    Result = Default;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+static void __fastcall ToolbarWriteInt(const AnsiString ToolbarName,
+  const AnsiString Value, const int Data, const void * ExtraData)
+{
+  if (Value != "Rev")
+  {
+    TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
+    AnsiString ToolbarKey;
+    GetToolbarKey(ToolbarName, Value, ToolbarKey);
+    assert(Storage->IndexOfName(ToolbarKey) < 0);
+    Storage->Values[ToolbarKey] = IntToStr(Data);
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall ToolbarWriteString(const AnsiString ToolbarName,
+  const AnsiString Value, const AnsiString Data, const void * ExtraData)
+{
+  TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
+  AnsiString ToolbarKey;
+  GetToolbarKey(ToolbarName, Value, ToolbarKey);
+  assert(Storage->IndexOfName(ToolbarKey) < 0);
+  Storage->Values[ToolbarKey] = Data;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
+{
+  AnsiString Result;
+  TStrings * Storage = new TStringList();
+  try
+  {
+    TBCustomSavePositions(OwnerComponent, ToolbarWriteInt, ToolbarWriteString,
+      Storage);
+    Result = Storage->CommaText;
+  }
+  __finally
+  {
+    delete Storage;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr)
+{
+  TStrings * Storage = new TStringList();
+  try
+  {
+    Storage->CommaText = LayoutStr;
+    TBCustomLoadPositions(OwnerComponent, ToolbarReadInt, ToolbarReadString,
+      Storage);
+  }
+  __finally
+  {
+    delete Storage;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall AddMenuSeparator(TTBCustomItem * Menu)
+{
+  TTBXSeparatorItem * Item = new TTBXSeparatorItem(Menu);
+  Item->Caption = "-";
+  Item->Hint = "E";
+  Menu->Add(Item);
+}

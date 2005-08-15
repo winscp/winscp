@@ -41,14 +41,10 @@ __fastcall TPasswordDialog::TPasswordDialog(TComponent* AOwner)
 {
   UseSystemSettings(this);
   Kind = pkPassword;
-  FApplicationShowHint = Application->OnShowHint;
-  Application->OnShowHint = ApplicationShowHint;
 }
 //---------------------------------------------------------------------
 __fastcall TPasswordDialog::~TPasswordDialog()
 {
-  assert(Application->OnShowHint == ApplicationShowHint);
-  Application->OnShowHint = FApplicationShowHint;
 }
 //---------------------------------------------------------------------
 void __fastcall TPasswordDialog::SetPasswordCaption(const AnsiString value)
@@ -68,22 +64,41 @@ void __fastcall TPasswordDialog::SetPasswordCaption(const AnsiString value)
     Caption.SetLength(P - 1);
   }
 
-  bool NeedTrim = MultiLine ||
-    (PasswordLabel->Canvas->TextWidth(Caption) > PasswordLabel->Width);
-  if (NeedTrim)
+  bool NeedTrim;
+  TControlCanvas * PasswordLabelCanvas = new TControlCanvas();
+  try
   {
-    static AnsiString Ellipsis(" ...");
-    while (PasswordLabel->Canvas->TextWidth(Caption + Ellipsis) >
-        PasswordLabel->Width)
+    PasswordLabelCanvas->Control = PasswordLabel;
+
+    NeedTrim = MultiLine ||
+      (PasswordLabelCanvas->TextWidth(Caption) > PasswordLabel->Width);
+    if (NeedTrim)
     {
-      Caption.SetLength(Caption.Length() - 1);
+      static AnsiString Ellipsis(" ...");
+      while (PasswordLabelCanvas->TextWidth(Caption + Ellipsis) >
+          PasswordLabel->Width)
+      {
+        Caption.SetLength(Caption.Length() - 1);
+      }
+      Caption = Caption + Ellipsis;
     }
-    Caption = Caption + Ellipsis;
+  }
+  __finally
+  {
+    delete PasswordLabelCanvas;
   }
 
   PasswordLabel->Caption = Caption;
-  PasswordLabel->Hint = value;
-  PasswordLabel->ShowHint = NeedTrim;
+  if (NeedTrim)
+  {
+    HintLabel(PasswordLabel, value);
+    PasswordLabel->TabStop = true;
+  }
+  else
+  {
+    // just to make GetPasswordCaption(), i.e. useless
+    PasswordLabel->Hint = value;
+  }
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TPasswordDialog::GetPasswordCaption()
@@ -124,22 +139,6 @@ void __fastcall TPasswordDialog::SetKind(TPromptKind value)
 void __fastcall TPasswordDialog::HideTypingCheckClick(TObject * /*Sender*/)
 {
   PasswordEdit->Password = HideTypingCheck->Checked;
-}
-//---------------------------------------------------------------------------
-void __fastcall TPasswordDialog::ApplicationShowHint(AnsiString & HintStr,
-  bool & CanShow, THintInfo & HintInfo)
-{
-  if (FApplicationShowHint != NULL)
-  {
-    FApplicationShowHint(HintStr, CanShow, HintInfo);
-  }
-
-  if (HintInfo.HintControl == PasswordLabel)
-  {
-    HintInfo.HintPos.x = PasswordLabel->ClientOrigin.x - 3;
-    HintInfo.HintPos.y = PasswordLabel->ClientOrigin.y - 3;
-    HintInfo.HideTimeout = 2500;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPasswordDialog::HelpButtonClick(TObject * /*Sender*/)

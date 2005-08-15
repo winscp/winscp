@@ -274,6 +274,7 @@ __fastcall TSCPFileSystem::TSCPFileSystem(TTerminal * ATerminal):
   FLsFullTime = FTerminal->SessionData->SCPLsFullTime;
   FOutput = new TStringList();
   FProcessingCommand = false;
+  FOnCaptureOutput = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TSCPFileSystem::~TSCPFileSystem()
@@ -372,7 +373,7 @@ void __fastcall TSCPFileSystem::AdditionalInfo(TStrings * AdditionalInfo,
     {
       try
       {
-        AnyCommand("uname -a");
+        AnyCommand("uname -a", NULL);
         for (int Index = 0; Index < Output->Count; Index++)
         {
           if (Index > 0)
@@ -411,22 +412,7 @@ AnsiString __fastcall TSCPFileSystem::DelimitStr(AnsiString Str)
 {
   if (!Str.IsEmpty())
   {
-    #define DELIMITCHAR(C) { \
-        Integer P, X = 0; \
-        while ((P = Str.SubString(X+1, Str.Length() - X).Pos(C)) != 0) { \
-          Str.Insert("\\", X+P); \
-          X += P+1; } \
-      }
-
-    DELIMITCHAR('\\');
-    DELIMITCHAR('`');
-    DELIMITCHAR('$');
-    DELIMITCHAR('"');
-    // #62 19.10.2001: delimiting ! doesn't work on BASH
-    //DELIMITCHAR('!');
-
-    #undef DELIMITCHAR
-
+    Str = ::DelimitStr(Str, "\\`$\"");
     if (Str[1] == '-') Str = "./"+Str;
   }
   return Str;
@@ -1143,27 +1129,45 @@ void __fastcall TSCPFileSystem::CustomCommandOnFile(const AnsiString FileName,
   {
     AnsiString Cmd = TRemoteCustomCommand(FileName, "").Complete(Command, true);
 
-    TLogAddLineEvent PrevAddLine = FTerminal->Log->OnAddLine;
-    if (OutputEvent != NULL)
-    {
-      FTerminal->Log->OnAddLine = OutputEvent;
-    }
-    
-    try
-    {
-      AnyCommand(Cmd);
-    }
-    __finally
-    {
-      FTerminal->Log->OnAddLine = PrevAddLine;
-    }  
+    AnyCommand(Cmd, OutputEvent);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::AnyCommand(const AnsiString Command)
+void __fastcall TSCPFileSystem::CaptureOutput(TObject * Sender,
+  TLogLineType Type, const AnsiString AddedLine)
 {
-  ExecCommand(fsAnyCommand, ARRAYOFCONST((Command)),
-    ecDefault | ecIgnoreWarnings);
+  assert((Type == llOutput || Type == llStdError));
+  int ReturnCode;
+  AnsiString Line = AddedLine;
+  if ((Type == llStdError) ||
+      !RemoveLastLine(Line, ReturnCode) ||
+      !Line.IsEmpty())
+  {
+    assert(FOnCaptureOutput != NULL);
+    FOnCaptureOutput(Sender, Type, AddedLine);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::AnyCommand(const AnsiString Command,
+  TLogAddLineEvent OutputEvent)
+{
+  assert(FTerminal->FOnCaptureOutput == NULL);
+  if (OutputEvent != NULL)
+  {
+    FTerminal->FOnCaptureOutput = CaptureOutput;
+    FOnCaptureOutput = OutputEvent;
+  }
+
+  try
+  {
+    ExecCommand(fsAnyCommand, ARRAYOFCONST((Command)),
+      ecDefault | ecIgnoreWarnings);
+  }
+  __finally
+  {
+    FOnCaptureOutput = NULL;
+    FTerminal->FOnCaptureOutput = NULL;
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TSCPFileSystem::FileUrl(const AnsiString FileName)
@@ -1469,13 +1473,6 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   const TCopyParamType * CopyParam, int Params,
   TFileOperationProgressType * OperationProgress, int Level)
 {
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !CopyParam->AllowTransfer(FileName, osLocal))
-  {
-    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
-    THROW_SKIP_FILE_NULL;  
-  }
-
   AnsiString DestFileName = CopyParam->ChangeFileName(
     ExtractFileName(FileName), osLocal, Level == 0);
 
@@ -1491,7 +1488,16 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   FTerminal->OpenLocalFile(FileName, GENERIC_READ,
     &Attrs, &File, NULL, &MTime, &ATime, &Size);
 
-  if (Attrs & faDirectory)
+  bool Dir = FLAGSET(Attrs, faDirectory);
+
+  if (FLAGCLEAR(Params, cpDelete) &&
+      !CopyParam->AllowTransfer(FileName, osLocal, Dir))
+  {
+    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    THROW_SKIP_FILE_NULL;
+  }
+
+  if (Dir)
   {
     SCPDirectorySource(FileName, CopyParam, Params, OperationProgress, Level);
   }
@@ -1528,8 +1534,16 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
         TFileBuffer BlockBuf;
 
         // This is crucial, if it fails during file transfer, it's fatal error
-        FILE_OPERATION_LOOP (FMTLOAD(READ_ERROR, (FileName)),
-          BlockBuf.LoadFile(File, OperationProgress->LocalBlockSize(), true);
+        FILE_OPERATION_LOOP_EX (!OperationProgress->TransferingFile,
+            FMTLOAD(READ_ERROR, (FileName)),
+          try
+          {
+            BlockBuf.LoadFile(File, OperationProgress->LocalBlockSize(), true);
+          }
+          catch(...)
+          {
+            RaiseLastOSError();
+          }
         );
 
         OperationProgress->AddLocalyUsed(BlockBuf.Size);
@@ -2108,9 +2122,10 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           FTerminal->FatalError(LoadStr(ATTEMPT_TO_WRITE_TO_PARENT_DIR));
         }
 
+        bool Dir = (Ctrl == 'D');
         AnsiString SourceFullName = SourceDir + OperationProgress->FileName;
         if (FLAGCLEAR(Params, cpDelete) &&
-            !CopyParam->AllowTransfer(SourceFullName, osRemote))
+            !CopyParam->AllowTransfer(SourceFullName, osRemote, Dir))
         {
           FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer",
             (ErrorFileName)));
@@ -2126,7 +2141,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
         FileData.Attrs = FileGetAttr(DestFileName);
         // If getting attrs failes, we suppose, that file/folder doesn't exists
         FileData.Exists = (FileData.Attrs != -1);
-        if (Ctrl == 'D')
+        if (Dir)
         {
           if (FileData.Exists && !(FileData.Attrs & faDirectory))
           {
@@ -2202,7 +2217,8 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                 }
               }
 
-              if (!FTerminal->CreateLocalFile(DestFileName, OperationProgress, &File))
+              if (!FTerminal->CreateLocalFile(DestFileName, OperationProgress,
+                     &File, FLAGSET(Params, cpNoConfirmation)))
               {
                 SkipConfirmed = true;
                 EXCEPTION;

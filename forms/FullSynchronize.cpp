@@ -6,6 +6,7 @@
 
 #include "WinInterface.h"
 #include "FullSynchronize.h"
+#include "CopyParams.h"
 #include "VCLCommon.h"
 
 #include <ScpMain.h>
@@ -64,6 +65,7 @@ __fastcall TFullSynchronizeDialog::TFullSynchronizeDialog(TComponent* Owner)
   FPresetsMenu = new TPopupMenu(this);
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
+  FSynchronizeBySizeCaption = SynchronizeBySizeCheck->Caption;
 }
 //---------------------------------------------------------------------------
 __fastcall TFullSynchronizeDialog::~TFullSynchronizeDialog()
@@ -78,31 +80,37 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
   {
     SynchronizeExistingOnlyCheck->Checked = true;
     SynchronizePreviewChangesCheck->Checked = false;
-    SynchronizeNoConfirmationCheck->Checked = false;
   }
-  if (SynchronizeTimestampCheck->Checked || SynchronizeBothButton->Checked)
+  if (SynchronizeTimestampCheck->Checked)
   {
     SynchronizeDeleteCheck->Checked = false;
     SynchronizeByTimeCheck->Checked = true;
+  }
+  if (SynchronizeBothButton->Checked)
+  {
     SynchronizeBySizeCheck->Checked = false;
   }
   EnableControl(SynchronizeDeleteCheck, !SynchronizeBothButton->Checked && 
     !SynchronizeTimestampCheck->Checked);
   EnableControl(SynchronizeExistingOnlyCheck, !SynchronizeTimestampCheck->Checked);
   EnableControl(SynchronizePreviewChangesCheck, !SynchronizeTimestampCheck->Checked);
-  EnableControl(SynchronizeNoConfirmationCheck, !SynchronizeTimestampCheck->Checked);
   EnableControl(SynchronizeByTimeCheck, !SynchronizeBothButton->Checked && 
     !SynchronizeTimestampCheck->Checked);
   EnableControl(SynchronizeBySizeCheck, !SynchronizeBothButton->Checked && 
     !SynchronizeTimestampCheck->Checked);
+  EnableControl(SynchronizeBySizeCheck, !SynchronizeBothButton->Checked);
+  EnableControl(SynchronizeSelectedOnlyCheck, FLAGSET(FOptions, fsoAllowSelectedOnly));
   EnableControl(OkButton, !LocalDirectoryEdit->Text.IsEmpty() &&
     !RemoteDirectoryEdit->Text.IsEmpty());
 
-  AnsiString InfoStr = FCopyParams.GetInfoStr("; ");
+  AnsiString InfoStr = FCopyParams.GetInfoStr("; ",
+    FLAGMASK(SynchronizeTimestampCheck->Checked, TCopyParamType::cpiExcludeMaskOnly));
   CopyParamLabel->Caption = InfoStr;
   CopyParamLabel->Hint = InfoStr;
   CopyParamLabel->ShowHint =
     (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+  SynchronizeBySizeCheck->Caption = SynchronizeTimestampCheck->Checked ?
+    LoadStr(SYNCHRONIZE_SAME_SIZE) : FSynchronizeBySizeCaption;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -188,12 +196,12 @@ TSynchronizeMode __fastcall TFullSynchronizeDialog::GetMode()
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::SetParams(int value)
 {
-  FParams = value & ~(spDelete | spNoConfirmation | spExistingOnly |
-    spPreviewChanges | spTimestamp | spNotByTime | spBySize);
+  FParams = value & ~(spDelete | spExistingOnly |
+    spPreviewChanges | spTimestamp | spNotByTime | spBySize | spSelectedOnly);
   SynchronizeDeleteCheck->Checked = FLAGSET(value, spDelete);
-  SynchronizeNoConfirmationCheck->Checked = FLAGSET(value, spNoConfirmation);
   SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, spExistingOnly);
   SynchronizePreviewChangesCheck->Checked = FLAGSET(value, spPreviewChanges);
+  SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value, spSelectedOnly);
   SynchronizeTimestampCheck->Checked = FLAGSET(value, spTimestamp) &&
     FLAGCLEAR(Options, fsoDisableTimestamp);
   SynchronizeByTimeCheck->Checked = FLAGCLEAR(value, spNotByTime);
@@ -205,9 +213,9 @@ int __fastcall TFullSynchronizeDialog::GetParams()
 {
   return FParams |
     FLAGMASK(SynchronizeDeleteCheck->Checked, spDelete) |
-    FLAGMASK(SynchronizeNoConfirmationCheck->Checked, spNoConfirmation) |
     FLAGMASK(SynchronizeExistingOnlyCheck->Checked, spExistingOnly) |
     FLAGMASK(SynchronizePreviewChangesCheck->Checked, spPreviewChanges) |
+    FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, spSelectedOnly) |
     FLAGMASK(SynchronizeTimestampCheck->Checked && FLAGCLEAR(Options, fsoDisableTimestamp),
       spTimestamp) |
     FLAGMASK(!SynchronizeByTimeCheck->Checked, spNotByTime) |
@@ -250,13 +258,21 @@ void __fastcall TFullSynchronizeDialog::SetOptions(int value)
 void __fastcall TFullSynchronizeDialog::TransferSettingsButtonClick(
   TObject * /*Sender*/)
 {
-  CopyParamListPopup(
-    TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-    FPresetsMenu, FCopyParams, FPreset, CopyParamClick, cplCustomize);
+  if (FLAGCLEAR(FOptions, fsoDoNotUsePresets))
+  {
+    CopyParamListPopup(
+      TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
+      FPresetsMenu, FCopyParams, FPreset, CopyParamClick, cplCustomize);
+  }
+  else
+  {
+    CopyParamGroupDblClick(NULL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
+  assert(FLAGCLEAR(FOptions, fsoDoNotUsePresets));
   if (CopyParamListPopupClick(Sender, FCopyParams, FPreset))
   {
     UpdateControls();
@@ -308,15 +324,19 @@ void __fastcall TFullSynchronizeDialog::SetCopyParams(const TCopyParamType & val
 void __fastcall TFullSynchronizeDialog::CopyParamGroupContextPopup(
   TObject * /*Sender*/, TPoint & MousePos, bool & Handled)
 {
-  CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), FPresetsMenu,
-    FCopyParams, FPreset, CopyParamClick, cplCustomize | cplCustomizeDefault);
-  Handled = true;
+  if (FLAGCLEAR(FOptions, fsoDoNotUsePresets))
+  {
+    CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), FPresetsMenu,
+      FCopyParams, FPreset, CopyParamClick, cplCustomize | cplCustomizeDefault);
+    Handled = true;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::CopyParamGroupDblClick(
   TObject * /*Sender*/)
 {
-  if (DoCopyParamCustomDialog(FCopyParams))
+  if (DoCopyParamCustomDialog(FCopyParams,
+       (SynchronizeTimestampCheck->Checked ? cfAllowExcludeMaskOnly : -1)))
   {
     UpdateControls();
   }

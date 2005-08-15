@@ -3,6 +3,7 @@
 #include <vcl.h>
 #pragma hdrstop
 USEFORM("forms\About.cpp", AboutDialog);
+USEFORM("forms\Banner.cpp", BannerDialog);
 USEFORM("forms\Cleanup.cpp", CleanupDialog);
 USEFORM("forms\ComboInput.cpp", ComboInputDialog);
 USEFORM("forms\Console.cpp", ConsoleDialog);
@@ -12,6 +13,7 @@ USEFORM("forms\CopyParamCustom.cpp", CopyParamCustomDialog);
 USEFORM("forms\CopyParamPreset.cpp", CopyParamPresetDialog);
 USEFORM("forms\CustomCommand.cpp", CustomCommandDialog);
 USEFORM("forms\Editor.cpp", EditorForm);
+USEFORM("forms\EditorPreferences.cpp", EditorPreferencesDialog);
 USEFORM("forms\FileSystemInfo.cpp", FileSystemInfoDialog);
 USEFORM("forms\FullSynchronize.cpp", FullSynchronizeDialog);
 USEFORM("forms\GeneralSettings.cpp", GeneralSettingsFrame); /* TFrame: File Type */

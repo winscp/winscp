@@ -29,7 +29,8 @@ class TCustomFileSystem : public TObject
 public:
   virtual AnsiString __fastcall AbsolutePath(AnsiString Path) = 0;
   virtual void __fastcall KeepAlive() = 0;
-  virtual void __fastcall AnyCommand(const AnsiString Command) = 0;
+  virtual void __fastcall AnyCommand(const AnsiString Command,
+    TLogAddLineEvent OutputEvent) = 0;
   virtual void __fastcall ChangeDirectory(const AnsiString Directory) = 0;
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory) = 0;
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,

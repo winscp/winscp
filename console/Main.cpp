@@ -12,6 +12,9 @@ HANDLE ConsoleInput = NULL;
 HANDLE Child = NULL;
 HANDLE CancelEvent = NULL;
 unsigned int OutputType = FILE_TYPE_UNKNOWN;
+enum { RESULT_GLOBAL_ERROR = 1, RESULT_INIT_ERROR = 2, RESULT_PROCESSING_ERROR = 3,
+  RESULT_UNKNOWN_ERROR = 4 };
+const char * CONSOLE_CHILD_PARAM = "consolechild";
 //---------------------------------------------------------------------------
 inline TConsoleCommStruct* GetCommStruct(HANDLE FileMapping)
 {
@@ -97,54 +100,66 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
 //---------------------------------------------------------------------------
 void InitializeChild(int argc, char* argv[], int InstanceNumber, HANDLE& Child)
 {
-  char ChildPath[MAX_PATH];
-  const char* AppPath = argv[0];
-  const char* LastDelimiter = strrchr(AppPath, '\\');
-  const char* AppFileName;
-  if (LastDelimiter != NULL)
+  int SkipParam = 0;
+  char ChildPath[MAX_PATH] = "";
+
+  for (int i = 1; i < argc; i++)
   {
-    strncpy(ChildPath, AppPath, LastDelimiter - AppPath + 1);
-    ChildPath[LastDelimiter - AppPath + 1] = '\0';
-    #ifndef TEST_CHILD
-    AppFileName = LastDelimiter + 1;
-    #endif
-  }
-  else
-  {
-    ChildPath[0] = '\0';
-    #ifndef TEST_CHILD
-    AppFileName = AppPath;
-    #endif
+    if ((strchr("-/", argv[i][0]) != NULL) &&
+        (strncmpi(argv[i] + 1, CONSOLE_CHILD_PARAM, strlen(CONSOLE_CHILD_PARAM)) == 0) &&
+        (argv[i][strlen(CONSOLE_CHILD_PARAM) + 1] == '='))
+    {
+      SkipParam = i;
+      strcpy(ChildPath, argv[i] + 1 + strlen(CONSOLE_CHILD_PARAM) + 1);
+      break;
+    }
   }
 
-  #ifdef TEST_CHILD
-  AppFileName = "WinSCP3.com";
-  #endif
+  if (strlen(ChildPath) == 0)
+  {
+    const char* AppPath = argv[0];
+    const char* LastDelimiter = strrchr(AppPath, '\\');
+    const char* AppFileName;
+    if (LastDelimiter != NULL)
+    {
+      strncpy(ChildPath, AppPath, LastDelimiter - AppPath + 1);
+      ChildPath[LastDelimiter - AppPath + 1] = '\0';
+      AppFileName = LastDelimiter + 1;
+    }
+    else
+    {
+      ChildPath[0] = '\0';
+      AppFileName = AppPath;
+    }
 
-  const char* ExtensionStart = strrchr(AppFileName, '.');
-  if (ExtensionStart != NULL)
-  {
-    char* End = ChildPath + strlen(ChildPath);
-    strncpy(End, AppFileName, ExtensionStart - AppFileName);
-    *(End + (ExtensionStart - AppFileName)) = '\0';
+    const char* ExtensionStart = strrchr(AppFileName, '.');
+    if (ExtensionStart != NULL)
+    {
+      char* End = ChildPath + strlen(ChildPath);
+      strncpy(End, AppFileName, ExtensionStart - AppFileName);
+      *(End + (ExtensionStart - AppFileName)) = '\0';
+    }
+    else
+    {
+      strcat(ChildPath, AppFileName);
+    }
+    strcat(ChildPath, ".exe");
   }
-  else
-  {
-    strcat(ChildPath, AppFileName);
-  }
-  strcat(ChildPath, ".exe");
 
   char Parameters[10240];
   sprintf(Parameters, "\"%s\" /console /consoleinstance=%d ", ChildPath, InstanceNumber);
   for (int i = 1; i < argc; i++)
   {
-    if (strlen(Parameters) + strlen(argv[i]) + 4 > sizeof(Parameters))
+    if (i != SkipParam)
     {
-      throw length_error("Too many parameters");
+      if (strlen(Parameters) + strlen(argv[i]) + 4 > sizeof(Parameters))
+      {
+        throw length_error("Too many parameters");
+      }
+      strcat(Parameters, "\"");
+      strcat(Parameters, argv[i]);
+      strcat(Parameters, "\" ");
     }
-    strcat(Parameters, "\"");
-    strcat(Parameters, argv[i]);
-    strcat(Parameters, "\" ");
   }
 
   STARTUPINFO StartupInfo = { sizeof(STARTUPINFO) };
@@ -385,7 +400,7 @@ BOOL WINAPI HandlerRoutine(DWORD CtrlType)
 #pragma argsused
 int main(int argc, char* argv[])
 {
-  unsigned long Result = 4;
+  unsigned long Result = RESULT_UNKNOWN_ERROR;
 
   try
   {
@@ -453,7 +468,7 @@ int main(int argc, char* argv[])
       catch(const exception& e)
       {
         puts(e.what());
-        Result = 3;
+        Result = RESULT_PROCESSING_ERROR;
       }
 
       #ifndef CONSOLE_TEST
@@ -465,7 +480,7 @@ int main(int argc, char* argv[])
     catch(const exception& e)
     {
       puts(e.what());
-      Result = 2;
+      Result = RESULT_INIT_ERROR;
     }
 
     FinalizeConsole(InstanceNumber, RequestEvent, ResponseEvent,
@@ -474,7 +489,7 @@ int main(int argc, char* argv[])
   catch(const exception& e)
   {
     puts(e.what());
-    Result = 1;
+    Result = RESULT_GLOBAL_ERROR;
   }
 
   return Result;

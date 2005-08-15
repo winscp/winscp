@@ -119,7 +119,7 @@ const ResourceString * ButtonCaptions[ButtonCount] = {
   &_SMsgDlgYes, &_SMsgDlgNo, &_SMsgDlgOK, &_SMsgDlgCancel, &_SMsgDlgAbort,
   &_SMsgDlgRetry, &_SMsgDlgIgnore, &_SMsgDlgAll, &_SMsgDlgNoToAll, &_SMsgDlgYesToAll,
   &_SMsgDlgHelp };
-const int ModalResults[ButtonCount] = {
+extern const int ModalResults[ButtonCount] = {
   mrYes, mrNo, mrOk, mrCancel, mrAbort, mrRetry, mrIgnore, mrAll, mrNoToAll,
   mrYesToAll, 0 };
 const int mcHorzMargin = 8;

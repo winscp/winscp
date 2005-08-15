@@ -6,7 +6,7 @@ object SynchronizeDialog: TSynchronizeDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Keep remote directory up to date X'
-  ClientHeight = 322
+  ClientHeight = 421
   ClientWidth = 396
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -14,13 +14,15 @@ object SynchronizeDialog: TSynchronizeDialog
   Font.Height = -11
   Font.Name = 'MS Sans Serif'
   Font.Style = []
+  KeyPreview = True
   OldCreateOrder = False
   Position = poMainFormCenter
   OnCloseQuery = FormCloseQuery
+  OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
     396
-    322)
+    421)
   PixelsPerInch = 96
   TextHeight = 13
   object DirectoriesGroup: TXPGroupBox
@@ -94,7 +96,6 @@ object SynchronizeDialog: TSynchronizeDialog
     Top = 288
     Width = 74
     Height = 25
-    Anchors = [akLeft, akBottom]
     Caption = '&Stop'
     TabOrder = 4
     OnClick = StopButtonClick
@@ -104,7 +105,6 @@ object SynchronizeDialog: TSynchronizeDialog
     Top = 288
     Width = 74
     Height = 25
-    Anchors = [akLeft, akBottom]
     Cancel = True
     Caption = 'Close'
     ModalResult = 2
@@ -128,16 +128,6 @@ object SynchronizeDialog: TSynchronizeDialog
       Height = 17
       Caption = '&Delete files'
       TabOrder = 0
-      OnClick = ControlChange
-    end
-    object SynchronizeNoConfirmationCheck: TCheckBox
-      Left = 203
-      Top = 44
-      Width = 166
-      Height = 17
-      Anchors = [akLeft, akTop, akRight]
-      Caption = '&No confirmations'
-      TabOrder = 3
       OnClick = ControlChange
     end
     object SaveSettingsCheck: TCheckBox
@@ -179,13 +169,22 @@ object SynchronizeDialog: TSynchronizeDialog
       TabOrder = 5
       OnClick = ControlChange
     end
+    object SynchronizeSelectedOnlyCheck: TCheckBox
+      Left = 203
+      Top = 44
+      Width = 166
+      Height = 17
+      Caption = 'S&elected files only'
+      TabOrder = 3
+      OnClick = ControlChange
+    end
   end
   object StartButton: TButton
     Left = 152
     Top = 288
     Width = 74
     Height = 25
-    Anchors = [akLeft, akBottom]
+    Anchors = [akTop, akRight]
     Caption = '&Start'
     Default = True
     TabOrder = 3
@@ -196,7 +195,7 @@ object SynchronizeDialog: TSynchronizeDialog
     Top = 288
     Width = 74
     Height = 25
-    Anchors = [akLeft, akBottom]
+    Anchors = [akTop, akRight]
     Caption = '&Minimize'
     TabOrder = 5
     OnClick = MinimizeButtonClick
@@ -206,7 +205,7 @@ object SynchronizeDialog: TSynchronizeDialog
     Top = 288
     Width = 137
     Height = 25
-    Anchors = [akRight, akBottom]
+    Anchors = [akTop, akRight]
     Caption = 'Transfer settin&gs...'
     TabOrder = 2
     OnClick = TransferSettingsButtonClick
@@ -240,9 +239,48 @@ object SynchronizeDialog: TSynchronizeDialog
     Top = 288
     Width = 75
     Height = 25
-    Anchors = [akRight, akBottom]
+    Anchors = [akTop, akRight]
     Caption = '&Help'
     TabOrder = 8
     OnClick = HelpButtonClick
+  end
+  object LogPanel: TPanel
+    Left = 0
+    Top = 321
+    Width = 396
+    Height = 100
+    Align = alBottom
+    BevelOuter = bvNone
+    TabOrder = 9
+    DesignSize = (
+      396
+      100)
+    object LogView: TListView
+      Left = 8
+      Top = 2
+      Width = 380
+      Height = 90
+      Anchors = [akLeft, akTop, akRight, akBottom]
+      Columns = <
+        item
+          Width = -1
+          WidthType = (
+            -1)
+        end
+        item
+          Width = -1
+          WidthType = (
+            -1)
+        end>
+      Items.Data = {
+        3A0000000100000000000000FFFFFFFFFFFFFFFF01000000000000000B32303A
+        33303A343520504D0F4465746563746564206368616E6765FFFF}
+      ReadOnly = True
+      RowSelect = True
+      ShowColumnHeaders = False
+      TabOrder = 0
+      ViewStyle = vsReport
+      OnKeyDown = LogViewKeyDown
+    end
   end
 end

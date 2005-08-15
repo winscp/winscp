@@ -175,9 +175,18 @@ int __fastcall Execute(TProgramParams * Params)
   assert(StoredSessions);
   assert(Params);
 
+  // do not flash message boxes on startup
+  SetOnForeground(true);
+
   // let installer know, that some instance of application is running
   CreateMutex(NULL, False, AppName.c_str());
   bool OnlyInstance = (GetLastError() == 0);
+
+  AnsiString KeyFile;
+  if (Params->FindSwitch("PrivateKey", KeyFile))
+  {
+    WinConfiguration->DefaultKeyFile = KeyFile;
+  }
 
   bool Help = Params->FindSwitch("help") || Params->FindSwitch("h") || Params->FindSwitch("?");
   if (Help || Params->FindSwitch("Console"))
@@ -205,13 +214,7 @@ int __fastcall Execute(TProgramParams * Params)
 
     LogForm = NULL;
 
-    Application->HintHidePause = 1000;
-
-    if (OnlyInstance &&
-        WinConfiguration->TemporaryDirectoryCleanup)
-    {
-      TemporaryDirectoryCleanup();
-    }
+    Application->HintHidePause = 3000;
 
     AnsiString Value;
 
@@ -251,6 +254,13 @@ int __fastcall Execute(TProgramParams * Params)
       AnsiString AutoStartSession;
       AnsiString DownloadFile;
 
+      // do not check for temp dirs for service tasks (like RegisterAsUrlHandler)
+      if (OnlyInstance &&
+          WinConfiguration->TemporaryDirectoryCleanup)
+      {
+        TemporaryDirectoryCleanup();
+      }
+
       WinConfiguration->CheckDefaultTranslation();
 
       if (Params->Count > 0)
@@ -263,6 +273,13 @@ int __fastcall Execute(TProgramParams * Params)
             throw Exception(NO_UPLOAD_LIST_ERROR);
           }
         }
+        if (Params->FindSwitch("UploadIfAny", CommandParams))
+        {
+          if (CommandParams->Count > 0)
+          {
+            ParamCommand = pcUpload;
+          }
+        }
         else if (Params->FindSwitch("Synchronize", CommandParams, 2))
         {
           ParamCommand = pcFullSynchronize;
@@ -271,12 +288,12 @@ int __fastcall Execute(TProgramParams * Params)
         {
           ParamCommand = pcSynchronize;
         }
-        
-        if (Params->ParamCount > 0)
-        {
-          AutoStartSession = Params->Param[1];
-          Params->ParamsProcessed(1, 1);
-        }
+      }
+
+      if (Params->ParamCount > 0)
+      {
+        AutoStartSession = Params->Param[1];
+        Params->ParamsProcessed(1, 1);
       }
       else if (WinConfiguration->EmbeddedSessions && StoredSessions->Count)
       {
@@ -286,6 +303,9 @@ int __fastcall Execute(TProgramParams * Params)
       {
         AutoStartSession = WinConfiguration->AutoStartSession;
       }
+
+      // from now flash message boxes on background
+      SetOnForeground(false);
 
       Data = GetLoginData(AutoStartSession, DownloadFile);
       if (Data)
@@ -302,8 +322,10 @@ int __fastcall Execute(TProgramParams * Params)
 
         try
         {
+          CALLSTACK;
           if (TerminalManager->ConnectActiveTerminal())
           {
+            CALLSTACK;
             TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
             try
             {
@@ -328,6 +350,7 @@ int __fastcall Execute(TProgramParams * Params)
                 Download(TerminalManager->ActiveTerminal, DownloadFile);
               }
 
+              CALLSTACK;
               Application->Run();
             }
             __finally

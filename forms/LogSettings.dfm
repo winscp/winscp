@@ -48,7 +48,7 @@ object LoggingFrame: TLoggingFrame
       Width = 193
       Height = 17
       Caption = 'Log to &file:'
-      TabOrder = 0
+      TabOrder = 1
       OnClick = LogToFileCheckChange
     end
     object LogFileNameEdit: TFilenameEdit
@@ -63,7 +63,7 @@ object LoggingFrame: TLoggingFrame
       DialogTitle = 'Select file for session log.'
       ClickKey = 16397
       Anchors = [akLeft, akTop, akRight]
-      TabOrder = 1
+      TabOrder = 2
       Text = 'LogFileNameEdit'
       OnChange = DataChange
     end
@@ -73,7 +73,7 @@ object LoggingFrame: TLoggingFrame
       Width = 129
       Height = 17
       Caption = 'Show log &window:'
-      TabOrder = 3
+      TabOrder = 4
       OnClick = DataChange
     end
     object LogWindowCompleteButton: TRadioButton
@@ -82,7 +82,7 @@ object LoggingFrame: TLoggingFrame
       Width = 233
       Height = 17
       Caption = 'Display &complete session'
-      TabOrder = 4
+      TabOrder = 5
       OnClick = DataChange
     end
     object LogWindowLinesButton: TRadioButton
@@ -91,7 +91,7 @@ object LoggingFrame: TLoggingFrame
       Width = 136
       Height = 17
       Caption = 'Display only &last '
-      TabOrder = 5
+      TabOrder = 6
       OnClick = DataChange
     end
     object LogWindowLinesEdit: TUpDownEdit
@@ -103,7 +103,7 @@ object LoggingFrame: TLoggingFrame
       Increment = 50
       MaxValue = 10000
       MinValue = 50
-      TabOrder = 6
+      TabOrder = 7
       OnChange = DataChange
     end
     object LogFilePanel: TPanel
@@ -113,7 +113,7 @@ object LoggingFrame: TLoggingFrame
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       BevelOuter = bvNone
-      TabOrder = 2
+      TabOrder = 3
       object LogFileAppendButton: TRadioButton
         Left = 0
         Top = 4
@@ -135,13 +135,13 @@ object LoggingFrame: TLoggingFrame
     end
     object LogProtocolCombo: TComboBox
       Left = 112
-      Top = 15
+      Top = 17
       Width = 113
       Height = 21
       Style = csDropDownList
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
-      TabOrder = 7
+      TabOrder = 0
       Items.Strings = (
         'Normal'
         'Debug 1'

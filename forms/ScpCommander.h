@@ -154,7 +154,6 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem6;
   TTBXItem *TBXItem25;
   TTBXItem *TBXItem26;
-  TTBXItem *TBXItem27;
   TTBXItem *TBXItem28;
   TTBXItem *TBXItem29;
   TTBXSeparatorItem *TBXSeparatorItem7;
@@ -348,6 +347,19 @@ __published:
   TTBXItem *TBXItem188;
   TTBXItem *TBXItem189;
   TTBXItem *TBXItem190;
+  TTBXSeparatorItem *TBXSeparatorItem47;
+  TTBXItem *TBXItem191;
+  TTBXItem *TBXItem192;
+  TTBXItem *TBXItem193;
+  TTBXItem *TBXItem196;
+  TTBXItem *TBXItem197;
+  TTBXSeparatorItem *TBXSeparatorItem48;
+  TTBXSubmenuItem *TBXSubmenuItem13;
+  TTBXItem *TBXItem198;
+  TTBXItem *TBXItem199;
+  TTBXSubmenuItem *TBXSubmenuItem25;
+  TTBXItem *TBXItem27;
+  TTBXItem *TBXItem200;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -470,6 +482,7 @@ public:
   virtual void __fastcall GoToTree();
   virtual void __fastcall OpenConsole(AnsiString Command = "");
   virtual AnsiString __fastcall PathForCaption();
+  virtual void __fastcall BeforeAction();
 
   __property float LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

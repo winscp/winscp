@@ -104,6 +104,7 @@ protected:
   bool __fastcall ItemMove(TQueueItem * Item, TQueueItem * BeforeItem);
   bool __fastcall ItemExecuteNow(TQueueItem * Item);
   bool __fastcall ItemDelete(TQueueItem * Item);
+  bool __fastcall ItemPause(TQueueItem * Item, bool Pause);
 
   void __fastcall RetryItem(TQueueItem * Item);
   void __fastcall DeleteItem(TQueueItem * Item);
@@ -133,15 +134,16 @@ friend class TTerminalItem;
 
 public:
   enum TStatus {
-    qsPending, qsConnecting, qsProcessing, qsPrompt, qsQuery, qsError, qsDone };
+    qsPending, qsConnecting, qsProcessing, qsPrompt, qsQuery, qsError,
+    qsPaused, qsDone };
   struct TInfo
   {
     TFileOperation Operation;
     TOperationSide Side;
     AnsiString Source;
     AnsiString Destination;
-    bool ModifiesLocal;
-    bool ModifiesRemote;
+    AnsiString ModifiedLocal;
+    AnsiString ModifiedRemote;
   };
 
   static bool __fastcall IsUserActionStatus(TStatus Status);
@@ -167,7 +169,7 @@ protected:
   virtual void __fastcall DoExecute(TTerminal * Terminal) = 0;
   void __fastcall SetProgress(const TFileOperationProgressType & ProgressData);
   void __fastcall GetData(TQueueItemProxy * Proxy);
-  virtual AnsiString __fastcall StartupDirectory() = 0; 
+  virtual AnsiString __fastcall StartupDirectory() = 0;
 };
 //---------------------------------------------------------------------------
 class TQueueItemProxy
@@ -183,6 +185,8 @@ public:
   bool __fastcall Move(TQueueItemProxy * BeforeItem);
   bool __fastcall ExecuteNow();
   bool __fastcall Delete();
+  bool __fastcall Pause();
+  bool __fastcall Resume();
 
   __property TFileOperationProgressType * ProgressData = { read = GetProgressData };
   __property TQueueItem::TInfo * Info = { read = FInfo };
@@ -243,7 +247,7 @@ protected:
   __fastcall TLocatedQueueItem(TTerminal * Terminal);
 
   virtual void __fastcall DoExecute(TTerminal * Terminal);
-  virtual AnsiString __fastcall StartupDirectory(); 
+  virtual AnsiString __fastcall StartupDirectory();
 
 private:
   AnsiString FCurrentDir;

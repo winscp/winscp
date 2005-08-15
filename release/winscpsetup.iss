@@ -60,43 +60,35 @@ OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup{#SetupExt}
 SolidCompression=yes
 ShowTasksTreeLines=yes
 
-#define FindHandle
-#dim Languages[100]
-#define LanguageCount 0
-#define LangI
-#define MessagesPath
+#define MessagesPath(L) TranslationDir + "\" + "WinSCP3." + L + ".isl"
 
-#sub ProcessTranslationFile
+[Languages]
+Name: {#DefaultLang}; MessagesFile: {#MessagesPath(DefaultLang)}
 
-  #if FindHandle
+#ifdef INTL
+
+  #define FindHandle
+  #dim Languages[100]
+  #define LanguageCount 0
+  #define LangI
+
+  #sub ProcessTranslationFile
+
     #define FileName FindGetFileName(FindHandle)
     #define Lang Copy(FileName, Pos(".", FileName)+1)
-  #else
-    #define Lang DefaultLang
-  #endif
 
-  #define MessagesFile "WinSCP3." + Lang + ".isl"
-  #expr MessagesPath = TranslationDir + "\" + MessagesFile
-  #define LangName ReadIni(MessagesPath, "LangOptions", "LanguageName")
-  #define LangID ReadIni(MessagesPath, "LangOptions", "LanguageID")
-  #define Transl(S) ReadIni(MessagesPath, "WinSCP", S)
+    #define LangName ReadIni(MessagesPath(Lang), "LangOptions", "LanguageName")
+    #define LangID ReadIni(MessagesPath(Lang), "LangOptions", "LanguageID")
 
-  #if Lang != DefaultLang
     #expr Languages[LanguageCount*3] = Lang
     #expr Languages[LanguageCount*3+1] = LangName
     #expr Languages[LanguageCount*3+2] = LangID
     #expr LanguageCount++
-  #endif
 
 [Languages]
-Name: {#Lang}; MessagesFile: {#MessagesPath}
+Name: {#Lang}; MessagesFile: {#MessagesPath(Lang)}
 
-#endsub /* sub ProcessTranslationFile */
-
-#define FindHandle 0
-#expr ProcessTranslationFile
-
-#ifdef INTL
+  #endsub /* sub ProcessTranslationFile */
 
   #if FindHandle = FindFirst(TranslationMask, 0)
     #define FResult 1

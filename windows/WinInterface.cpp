@@ -60,6 +60,7 @@ inline void TMessageParams::Reset()
   TimerEvent = NULL;
   TimerMessage = "";
   TimerAnswers = 0;
+  NewerAskAgainAnswer = 0;
 }
 //---------------------------------------------------------------------------
 inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
@@ -83,6 +84,59 @@ inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
   Result = false;
 
   return Result;
+}
+//---------------------------------------------------------------------------
+static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender)
+{
+  TCheckBox * CheckBox = dynamic_cast<TCheckBox *>(Sender);
+  assert(CheckBox != NULL);
+  TForm * Dialog = dynamic_cast<TForm *>(CheckBox->Owner);
+  assert(Dialog != NULL);
+
+  TModalResult PositiveAnswer = mrNone;
+
+  if (CheckBox->Checked)
+  {
+    if (CheckBox->Tag > 0)
+    {
+      PositiveAnswer = CheckBox->Tag - 1;
+    }
+    else
+    {
+      TModalResult PositiveAnswers[] = { mrYes, mrOk, mrYesToAll };
+      for (int i = 0; i < LENOF(PositiveAnswers); i++)
+      {
+        for (int ii = 0; ii < Dialog->ControlCount; ii++)
+        {
+          TButton * Button = dynamic_cast<TButton *>(Dialog->Controls[ii]);
+          if (Button != NULL)
+          {
+            if (Button->ModalResult == PositiveAnswers[i])
+            {
+              PositiveAnswer = PositiveAnswers[i];
+              break;
+            }
+          }
+        }
+
+        if (PositiveAnswer != mrNone)
+        {
+          break;
+        }
+      }
+    }
+
+    assert(PositiveAnswer != mrNone);
+  }
+
+  for (int ii = 0; ii < Dialog->ControlCount; ii++)
+  {
+    TButton * Button = dynamic_cast<TButton *>(Dialog->Controls[ii]);
+    if ((Button != NULL) && (Button->ModalResult != mrNone))
+    {
+      Button->Enabled = !CheckBox->Checked || (Button->ModalResult == PositiveAnswer);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 int MapResult(int Result, unsigned int Answers)
@@ -190,9 +244,7 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
       for (unsigned int i = 0; i < Params->AliasesCount; i++)
       {
         TMsgDlgBtn Button;
-        bool R = MapButton(Params->Aliases[i].Button, Button);
-        USEDPARAM(R);
-        assert(R);
+        CHECK(MapButton(Params->Aliases[i].Button, Button));
         Aliases[i].Button = Button;
         Aliases[i].Alias = Params->Aliases[i].Alias;
       }
@@ -241,9 +293,23 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
       NeverAskAgainCheck->BoundsRect =  TRect(60, Dialog->ClientHeight - 27,
         Dialog->ClientWidth - 10, Dialog->ClientHeight - 5);
       NeverAskAgainCheck->Caption =
-        LoadStr(Answers == qaOK ? NEVER_SHOW_AGAIN : NEVER_ASK_AGAIN);
+        ((Params != NULL) && !Params->NewerAskAgainTitle.IsEmpty()) ?
+          Params->NewerAskAgainTitle :
+          LoadStr(Answers == qaOK ? NEVER_SHOW_AGAIN : NEVER_ASK_AGAIN);
       NeverAskAgainCheck->Checked = false;
       NeverAskAgainCheck->Anchors = TAnchors() << akBottom << akLeft;
+      if ((Params != NULL) && (Params->NewerAskAgainAnswer > 0))
+      {
+        TMsgDlgBtn Button;
+        if (MapButton(Params->NewerAskAgainAnswer, Button))
+        {
+          extern const int ModalResults[];
+          NeverAskAgainCheck->Tag = ModalResults[Button] + 1;
+        }
+      }
+      TNotifyEvent OnClick;
+      ((TMethod*)&OnClick)->Code = NeverAskAgainCheckClick;
+      NeverAskAgainCheck->OnClick = OnClick;
     }
 
     Dialog->HelpKeyword = HelpKeyword;
@@ -279,10 +345,18 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageP
       dynamic_cast<TCheckBox *>(Dialog->FindComponent("NeverAskAgainCheck"));
     assert(NeverAskAgainCheck);
 
-    if (NeverAskAgainCheck->Checked &&
-        (Answer == qaYes || Answer == qaOK || Answer == qaYesToAll))
+    if (NeverAskAgainCheck->Checked)
     {
-      Answer = qaNeverAskAgain;
+      bool PossitiveAnswer = 
+        (Params->NewerAskAgainAnswer > 0) ?
+          (Answer == Params->NewerAskAgainAnswer) :
+          (Answer == qaYes || Answer == qaOK || Answer == qaYesToAll);
+      // now user should now have any other option
+      assert(PossitiveAnswer);
+      if (PossitiveAnswer)
+      {
+        Answer = qaNeverAskAgain;
+      }
     }
   }
 

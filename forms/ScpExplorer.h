@@ -45,7 +45,6 @@ __published:
   TTBXSubmenuItem *TBXSubmenuItem5;
   TTBXItem *TBXItem25;
   TTBXItem *TBXItem26;
-  TTBXItem *TBXItem27;
   TTBXItem *TBXItem28;
   TTBXSeparatorItem *TBXSeparatorItem7;
   TTBXItem *TBXItem30;
@@ -251,10 +250,26 @@ __published:
   TTBXItem *TBXItem83;
   TTBXItem *TBXItem90;
   TTBXItem *TBXItem91;
+  TTBXItem *TBXItem92;
+  TTBXSeparatorItem *TBXSeparatorItem19;
+  TTBXItem *TBXItem131;
+  TTBXItem *TBXItem132;
+  TTBXItem *TBXItem133;
+  TTBXItem *TBXItem196;
+  TTBXItem *TBXItem197;
+  TTBXSeparatorItem *TBXSeparatorItem48;
+  TTBXSubmenuItem *TBXSubmenuItem13;
+  TTBXItem *TBXItem198;
+  TTBXItem *TBXItem199;
+  TTBXSubmenuItem *TBXSubmenuItem9;
+  TTBXItem *TBXItem27;
+  TTBXItem *TBXItem134;
   void __fastcall RemoteStatusBarDblClick(TObject *Sender);
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
 private:
+  void __fastcall RemotePanelSplitterDblClick(TObject * Sender);
+
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,

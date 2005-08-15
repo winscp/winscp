@@ -6,7 +6,7 @@ object CustomCommandDialog: TCustomCommandDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CustomCommandDialog'
-  ClientHeight = 305
+  ClientHeight = 255
   ClientWidth = 396
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -20,19 +20,19 @@ object CustomCommandDialog: TCustomCommandDialog
   OnShow = FormShow
   DesignSize = (
     396
-    305)
+    255)
   PixelsPerInch = 96
   TextHeight = 13
   object Group: TXPGroupBox
     Left = 8
     Top = 8
     Width = 380
-    Height = 255
+    Height = 205
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     DesignSize = (
       380
-      255)
+      205)
     object DescriptionLabel: TLabel
       Left = 11
       Top = 16
@@ -50,20 +50,6 @@ object CustomCommandDialog: TCustomCommandDialog
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Custom command:'
       FocusControl = CommandEdit
-    end
-    object CustomCommandsPatternsLabel: TLabel
-      Left = 16
-      Top = 189
-      Width = 353
-      Height = 61
-      Anchors = [akLeft, akTop, akRight]
-      AutoSize = False
-      Caption = 
-        'Patterns:'#160'!!'#160'-'#160'exclamation mark; !'#160'-'#160'file name; !?prompt?default' +
-        '!'#160'-'#160'prompts user for parameter value; !&&'#160'-'#160'selected files list'#160 +
-        '(quoted, space-delimited)'#13#10'Local command patterns: !^!'#160'-'#160'file na' +
-        'me from local panel'
-      WordWrap = True
     end
     object DescriptionEdit: TEdit
       Left = 11
@@ -88,53 +74,74 @@ object CustomCommandDialog: TCustomCommandDialog
     end
     object ApplyToDirectoriesCheck: TCheckBox
       Left = 16
-      Top = 136
-      Width = 145
+      Top = 149
+      Width = 161
       Height = 17
       Caption = '&Apply to directories'
-      TabOrder = 4
+      TabOrder = 5
       OnClick = ControlChange
     end
     object RecursiveCheck: TCheckBox
       Left = 184
-      Top = 136
-      Width = 145
+      Top = 149
+      Width = 185
       Height = 17
       Caption = '&Execute recursively'
-      TabOrder = 5
+      TabOrder = 6
       OnClick = ControlChange
     end
     object LocalCommandButton: TRadioButton
       Left = 184
-      Top = 109
-      Width = 161
+      Top = 122
+      Width = 185
       Height = 17
       Caption = '&Local command'
-      TabOrder = 3
+      TabOrder = 4
       OnClick = ControlChange
     end
     object RemoteCommandButton: TRadioButton
       Left = 16
-      Top = 109
+      Top = 122
       Width = 161
       Height = 17
       Caption = '&Remote command'
-      TabOrder = 2
+      TabOrder = 3
       OnClick = ControlChange
     end
     object ShowResultsCheck: TCheckBox
       Left = 16
-      Top = 163
-      Width = 353
+      Top = 176
+      Width = 161
       Height = 17
       Caption = '&Show results in terminal'
-      TabOrder = 6
+      TabOrder = 7
       OnClick = ControlChange
+    end
+    object CopyResultsCheck: TCheckBox
+      Left = 184
+      Top = 176
+      Width = 185
+      Height = 17
+      Caption = 'Copy results to clip&board'
+      TabOrder = 8
+      OnClick = ControlChange
+    end
+    object HintText: TStaticText
+      Left = 290
+      Top = 103
+      Width = 79
+      Height = 16
+      Alignment = taRightJustify
+      Anchors = [akTop, akRight]
+      AutoSize = False
+      Caption = '&patterns'
+      TabOrder = 2
+      TabStop = True
     end
   end
   object OkButton: TButton
     Left = 144
-    Top = 272
+    Top = 222
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -145,7 +152,7 @@ object CustomCommandDialog: TCustomCommandDialog
   end
   object CancelButton: TButton
     Left = 228
-    Top = 272
+    Top = 222
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -156,7 +163,7 @@ object CustomCommandDialog: TCustomCommandDialog
   end
   object HelpButton: TButton
     Left = 312
-    Top = 272
+    Top = 222
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

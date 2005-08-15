@@ -10,7 +10,6 @@
 
 #include "GUITools.h"
 #include "Tools.h"
-#include "TB2Dock.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -176,6 +175,33 @@ void __fastcall ValidateMaskEdit(TComboBox * Edit)
     Edit->SelStart = Start;
     Edit->SelLength = Length;
     Abort();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ValidateMaskEdit(TEdit * Edit)
+{
+  assert(Edit != NULL);
+  TFileMasks Masks = Edit->Text;
+  int Start, Length;
+  if (!Masks.IsValid(Start, Length))
+  {
+    SimpleErrorDialog(FMTLOAD(MASK_ERROR, (Masks.Masks.SubString(Start + 1, Length))));
+    Edit->SetFocus();
+    Edit->SelStart = Start;
+    Edit->SelLength = Length;
+    Abort();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ExitActiveControl(TForm * Form)
+{
+  if (Form->ActiveControl != NULL)
+  {
+    TNotifyEvent OnExit = ((TEdit*)Form->ActiveControl)->OnExit;
+    if (OnExit != NULL)
+    {
+      OnExit(Form->ActiveControl);
+    }
   }
 }
 //---------------------------------------------------------------------------

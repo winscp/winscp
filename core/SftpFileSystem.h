@@ -23,7 +23,8 @@ public:
 
   virtual AnsiString __fastcall AbsolutePath(AnsiString Path);
   virtual void __fastcall KeepAlive();
-  virtual void __fastcall AnyCommand(const AnsiString Command);
+  virtual void __fastcall AnyCommand(const AnsiString Command,
+    TLogAddLineEvent OutputEvent);
   virtual void __fastcall ChangeDirectory(const AnsiString Directory);
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
@@ -79,6 +80,7 @@ protected:
   bool FUtfNever;
   bool FSignedTS;
   TStrings * FFixedPaths;
+  unsigned long FMaxPacketSize;
 
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, char Type, TRemoteFile * ALinkedByFile = NULL,

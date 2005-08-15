@@ -95,7 +95,7 @@ void __fastcall TSessionData::Default()
   PreserveDirectoryChanges = true;
   LockInHome = false;
   ResolveSymlinks = true;
-  ConsiderDST = false;
+  ConsiderDST = true;
   DeleteToRecycleBin = false;
   OverwrittenToRecycleBin = false;
   RecycleBinPath = "/tmp";
@@ -119,6 +119,7 @@ void __fastcall TSessionData::Default()
   SFTPUploadQueue = 4;
   SFTPListingQueue = 2;
   SFTPMaxVersion = 5;
+  SFTPMaxPacketSize = 0;
 
   for (int Index = 0; Index < LENOF(FSFTPBugs); Index++)
   {
@@ -219,6 +220,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(SFTPUploadQueue);
     DUPL(SFTPListingQueue);
     DUPL(SFTPMaxVersion);
+    DUPL(SFTPMaxPacketSize);
 
     for (int Index = 0; Index < LENOF(FSFTPBugs); Index++)
     {
@@ -343,6 +345,8 @@ void __fastcall TSessionData::StoreToConfig(void * config)
       if (!Shell.IsEmpty())
       {
         ASCOPY(cfg->remote_cmd2, Shell);
+        // Putty reads only "ptr" member for fallback
+        cfg->remote_cmd_ptr2 = cfg->remote_cmd2;
       }
     }
     else
@@ -504,6 +508,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     #undef READ_SFTP_BUG
 
     SFTPMaxVersion = Storage->ReadInteger("SFTPMaxVersion", SFTPMaxVersion);
+    SFTPMaxPacketSize = Storage->ReadInteger("SFTPMaxPacketSize", SFTPMaxPacketSize);
 
     // read only (used only on Import from Putty dialog)
     ProtocolStr = Storage->ReadString("Protocol", ProtocolStr);
@@ -651,7 +656,14 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
     else
     {
       // save password encrypted
-      WRITE_DATA_EX(String, "ProxyPasswordEnc", FProxyPassword, );
+      if (!ProxyPassword.IsEmpty())
+      {
+        WRITE_DATA_EX(String, "ProxyPasswordEnc", FProxyPassword, );
+      }
+      else
+      {
+        Storage->DeleteValue("ProxyPasswordEnc");
+      }
       Storage->DeleteValue("ProxyPassword");
     }
     WRITE_DATA(StringRaw, ProxyTelnetCommand);
@@ -689,6 +701,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       #undef WRITE_SFTP_BUG
 
       WRITE_DATA(Integer, SFTPMaxVersion);
+      WRITE_DATA(Integer, SFTPMaxPacketSize);
 
       WRITE_DATA(String, CustomParam1);
       WRITE_DATA(String, CustomParam2);
@@ -856,7 +869,8 @@ AnsiString __fastcall TSessionData::GetSessionKey()
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetStorageKey()
 {
-  return MungeStr(Name);
+  // particularly OpenSessionInPutty expect that StorageKey always returns something
+  return MungeStr(Name.IsEmpty() ? SessionKey : Name);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetHostName(AnsiString value)
@@ -1410,6 +1424,11 @@ void __fastcall TSessionData::SetSFTPMaxVersion(int value)
   SET_SESSION_PROPERTY(SFTPMaxVersion);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetSFTPMaxPacketSize(unsigned long value)
+{
+  SET_SESSION_PROPERTY(SFTPMaxPacketSize);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetSFTPBug(TSftpBug Bug, TAutoSwitch value)
 {
   assert(Bug >= 0 && Bug < LENOF(FSFTPBugs));
@@ -1751,17 +1770,18 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
   {
     if (!Url.IsEmpty())
     {
-      TSessionData * AData;
+      TSessionData * AData = NULL;
       // lookup stored session session even if protocol was defined
       // (this allows setting for example default username for host
       // by creating stored session named by host)
-      AnsiString AUrl(Url);
-      if (AUrl[AUrl.Length()] == '/')
+      AnsiString ConnectInfo;
+      AnsiString RemoteDirectory;
+      if (TSessionData::ParseUrl(Url, Params, &ConnectInfo, NULL, NULL, NULL,
+            NULL, &RemoteDirectory, FileName))
       {
-        AUrl.SetLength(AUrl.Length() - 1);
+        AData = dynamic_cast<TSessionData *>(FindByName(ConnectInfo, false));
       }
-      AData = dynamic_cast<TSessionData *>(FindByName(AUrl, false));
-    
+
       if (AData == NULL)
       {
         Data->Assign(DefaultSettings);
@@ -1779,6 +1799,10 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
       {
         DefaultsOnly = false;
         Data->Assign(AData);
+        if (!RemoteDirectory.IsEmpty())
+        {
+          Data->RemoteDirectory = RemoteDirectory;
+        }
         if (IsHidden(AData))
         {
           AData->Remove();

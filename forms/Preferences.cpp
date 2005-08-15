@@ -63,12 +63,13 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   FCustomCommandChanging = false;
   FListViewDragDest = -1;
   FCopyParamList = new TCopyParamList();
+  FEditorList = new TEditorList();
   UseSystemSettings(this);
 
   InstallPathWordBreakProc(RandomSeedFileEdit);
   InstallPathWordBreakProc(DDTemporaryDirectoryEdit);
   InstallPathWordBreakProc(PuttyPathEdit);
-  InstallPathWordBreakProc(ExternalEditorEdit);
+  HintLabel(ShellIconsText);
 }
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
@@ -77,6 +78,7 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
   delete FEditorFont;
   delete FCustomCommands;
   delete FCopyParamList;
+  delete FEditorList;
 }
 //---------------------------------------------------------------------
 bool __fastcall TPreferencesDialog::Execute(TPreferencesDialogData * DialogData)
@@ -149,7 +151,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(DDWarnLackOfTempSpace);
   BOOLPROP(ShowHiddenFiles);
   BOOLPROP(ShowInaccesibleDirectories);
-  BOOLPROP(CopyOnDoubleClick);
   BOOLPROP(CopyOnDoubleClickConfirmation);
   BOOLPROP(ConfirmOverwriting);
   BOOLPROP(ConfirmResume);
@@ -185,8 +186,19 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     DDTemporaryDirectoryEdit->Text = WinConfiguration->DDTemporaryDirectory;
   }
 
-  ExplorerStyleSelectionCheck->Checked =
-    WinConfiguration->ScpCommander.ExplorerStyleSelection;
+  if (WinConfiguration->ScpCommander.NortonLikeMode == nlOff)
+  {
+    NortonLikeModeCombo->ItemIndex = 2;
+  }
+  else if (WinConfiguration->ScpCommander.NortonLikeMode == nlKeyboard)
+  {
+    NortonLikeModeCombo->ItemIndex = 1;
+  }
+  else
+  {
+    NortonLikeModeCombo->ItemIndex = 0;
+  }
+
   PreserveLocalDirectoryCheck->Checked =
     WinConfiguration->ScpCommander.PreserveLocalDirectory;
   SwappedPanelsCheck->Checked = 
@@ -202,31 +214,13 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   EditorSingleEditorOnCheck->Checked = WinConfiguration->Editor.SingleEditor;
   EditorSingleEditorOffCheck->Checked = !WinConfiguration->Editor.SingleEditor;
 
-  EditorInternalButton->Checked = WinConfiguration->Editor.Editor == edInternal;
-  EditorExternalButton->Checked = WinConfiguration->Editor.Editor == edExternal;
-
-  AnsiString ExternalEditor = WinConfiguration->Editor.ExternalEditor;
-  if (!ExternalEditor.IsEmpty())
-  {
-    TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
-  }
-  ExternalEditorEdit->Text = ExternalEditor;
-  TStrings * ExternalEditorHistory = CustomWinConfiguration->History["ExternalEditor"];
-  if ((ExternalEditorHistory != NULL) && (ExternalEditorHistory->Count > 0))
-  {
-    ExternalEditorEdit->Items = ExternalEditorHistory;
-  }
-  else
-  {
-    ExternalEditorEdit->Items->Clear();
-  }
-  ExternalEditorTextCheck->Checked = WinConfiguration->Editor.ExternalEditorText;
-  MDIExternalEditorCheck->Checked = WinConfiguration->Editor.MDIExternalEditor;
   EditorWordWrapCheck->Checked = WinConfiguration->Editor.WordWrap;
   FEditorFont->Name = WinConfiguration->Editor.FontName;
   FEditorFont->Height = WinConfiguration->Editor.FontHeight;
   FEditorFont->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
   FEditorFont->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
+  (*FEditorList) = *WinConfiguration->EditorList;
+  UpdateEditorListView();
 
   CopyParamsFrame->Params = GUIConfiguration->DefaultCopyParam;
   ResumeOnButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOn;
@@ -250,6 +244,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
   PuttyPathEdit->Text = GUIConfiguration->PuttyPath;
   PuttyPasswordCheck->Checked = GUIConfiguration->PuttyPassword;
+  AutoOpenInPuttyCheck->Checked = WinConfiguration->AutoOpenInPutty;
 
   // Queue
   QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
@@ -283,6 +278,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   {
     PathInCaptionNoneButton->Checked = true;
   }
+  DoubleClickActionCombo->ItemIndex = WinConfiguration->DoubleClickAction;
 
   // updates
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -312,6 +308,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   (*FCopyParamList) = *WinConfiguration->CopyParamList;
   UpdateCopyParamListView();
   BOOLPROP(CopyParamAutoSelectNotice);
+
+  // interface
+  ThemeCombo->ItemIndex = (WinConfiguration->Theme == "OfficeXP" ? 1 : 0);
+
   #undef BOOLPROP
 
   UpdateControls();
@@ -337,7 +337,6 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
     BOOLPROP(ShowInaccesibleDirectories);
-    BOOLPROP(CopyOnDoubleClick);
     BOOLPROP(CopyOnDoubleClickConfirmation);
     BOOLPROP(ConfirmOverwriting);
     BOOLPROP(ConfirmResume);
@@ -372,7 +371,18 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->Storage = RegistryStorageButton->Checked ? stRegistry : stIniFile;
 
     TScpCommanderConfiguration ScpCommander = WinConfiguration->ScpCommander;
-    ScpCommander.ExplorerStyleSelection = ExplorerStyleSelectionCheck->Checked;
+    if (NortonLikeModeCombo->ItemIndex == 2)
+    {
+      ScpCommander.NortonLikeMode = nlOff;
+    }
+    else if (NortonLikeModeCombo->ItemIndex == 1)
+    {
+      ScpCommander.NortonLikeMode = nlKeyboard;
+    }
+    else
+    {
+      ScpCommander.NortonLikeMode = nlOn;
+    }
     ScpCommander.PreserveLocalDirectory = PreserveLocalDirectoryCheck->Checked;
     ScpCommander.SwappedPanels = SwappedPanelsCheck->Checked;
     WinConfiguration->ScpCommander = ScpCommander;
@@ -386,18 +396,12 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // editor
     WinConfiguration->Editor.SingleEditor = EditorSingleEditorOnCheck->Checked;
 
-    WinConfiguration->Editor.Editor =
-      (EditorInternalButton->Checked || ExternalEditorEdit->Text.IsEmpty()) ?
-        edInternal : edExternal;
-    WinConfiguration->Editor.ExternalEditor = ExternalEditorEdit->Text;
-    CustomWinConfiguration->History["ExternalEditor"] = ExternalEditorEdit->Items;
-    WinConfiguration->Editor.ExternalEditorText = ExternalEditorTextCheck->Checked;
-    WinConfiguration->Editor.MDIExternalEditor = MDIExternalEditorCheck->Checked;
     WinConfiguration->Editor.WordWrap = EditorWordWrapCheck->Checked;
     WinConfiguration->Editor.FontName = FEditorFont->Name;
     WinConfiguration->Editor.FontHeight = FEditorFont->Height;
     WinConfiguration->Editor.FontCharset = FEditorFont->Charset;
     WinConfiguration->Editor.FontStyle = FontStylesToInt(FEditorFont->Style);
+    WinConfiguration->EditorList = FEditorList;
 
     // overwrites only TCopyParamType fields
     CopyParam = CopyParamsFrame->Params;
@@ -410,6 +414,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     GUIConfiguration->PuttyPath = PuttyPathEdit->Text;
     GUIConfiguration->PuttyPassword = PuttyPasswordCheck->Checked;
+    WinConfiguration->AutoOpenInPutty = AutoOpenInPuttyCheck->Checked;
 
     // Queue
     GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
@@ -446,6 +451,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       WinConfiguration->PathInCaption = picNone;
     }
+    WinConfiguration->DoubleClickAction = (TDoubleClickAction)DoubleClickActionCombo->ItemIndex;
 
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -474,6 +480,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     // presets
     WinConfiguration->CopyParamList = FCopyParamList;
     BOOLPROP(CopyParamAutoSelectNotice);
+
+    // interface
+    WinConfiguration->Theme = (ThemeCombo->ItemIndex == 1 ? "OfficeXP" : "Default");
     #undef BOOLPROP
   }
   __finally
@@ -512,6 +521,7 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
     case pmLogging: PageControl->ActivePage = LogSheet; break;
     case pmUpdates: PageControl->ActivePage = UpdatesSheet; break;
     case pmPresets: PageControl->ActivePage = CopyParamListSheet; break;
+    case pmEditors: PageControl->ActivePage = EditorSheet; break;
     default: PageControl->ActivePage = PreferencesSheet; break;
   }
   PageControlChange(NULL);
@@ -524,10 +534,11 @@ void __fastcall TPreferencesDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateControls()
 {
-  EnableControl(CopyOnDoubleClickConfirmationCheck, CopyOnDoubleClickCheck->Checked);
   EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
   EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
   EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
+
+  EnableControl(CopyOnDoubleClickConfirmationCheck, (DoubleClickActionCombo->ItemIndex == 1));
 
   EditorFontLabel->Caption = FMTLOAD(EDITOR_FONT_FMT,
     (FEditorFont->Name, FEditorFont->Size));
@@ -561,13 +572,20 @@ void __fastcall TPreferencesDialog::UpdateControls()
   EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
     TemporaryDirectoryCleanupCheck->Checked);
 
-  EnableControl(ExternalEditorTextCheck, !ExternalEditorEdit->Text.IsEmpty());
-  EnableControl(MDIExternalEditorCheck,
-    !ExternalEditorEdit->Text.IsEmpty() && !EditorSingleEditorOnCheck->Checked);
   EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
+  bool EditorSelected = (EditorListView->Selected != NULL);
+  EnableControl(EditEditorButton, EditorSelected);
+  EnableControl(RemoveEditorButton, EditorSelected);
+  EnableControl(UpEditorButton, EditorSelected &&
+    (EditorListView->ItemIndex > 0));
+  EnableControl(DownEditorButton, EditorSelected &&
+    (EditorListView->ItemIndex < EditorListView->Items->Count - 1));
 
   EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
   EnableControl(UpdatesProxyPortEdit, UpdatesProxyCheck->Checked);
+
+  EnableControl(PuttyPasswordCheck, !PuttyPathEdit->Text.IsEmpty());
+  EnableControl(AutoOpenInPuttyCheck, PuttyPasswordCheck->Enabled);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
@@ -592,6 +610,7 @@ void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FilenameEditExit(TObject * Sender)
 {
+  // duplicated in TExternalEditorDialog::FilenameEditExit
   THistoryComboBox * FilenameEdit = dynamic_cast<THistoryComboBox *>(Sender);
   try
   {
@@ -612,8 +631,9 @@ void __fastcall TPreferencesDialog::FilenameEditExit(TObject * Sender)
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::FilenameEditChange(
-      TObject *Sender)
+  TObject * Sender)
 {
+  // duplicated in TExternalEditorDialog::FilenameEditChange
   if (FAfterFilenameEditDialog)
   {
     FAfterFilenameEditDialog = false;
@@ -630,10 +650,6 @@ void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    if (ExternalEditorEdit->Focused())
-    {
-      FilenameEditExit(ExternalEditorEdit);
-    }
     CopyParamsFrame->Validate();
   }
 }
@@ -725,7 +741,7 @@ void __fastcall TPreferencesDialog::ListViewSelectItem(
 void __fastcall TPreferencesDialog::UpdateCustomCommandsView()
 {
   CustomCommandsView->Items->Count = FCustomCommands->Count;
-  AdjustListColumnsWidth(CustomCommandsView);
+  AdjustListColumnsWidth(CustomCommandsView, FCustomCommands->Count);
   CustomCommandsView->Invalidate();
 }
 //---------------------------------------------------------------------------
@@ -962,6 +978,141 @@ void __fastcall TPreferencesDialog::CopyParamListViewKeyDown(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorMove(int Source, int Dest)
+{
+  if (Source >= 0 && Source < FEditorList->Count &&
+      Dest >= 0 && Dest < FEditorList->Count)
+  {
+    FEditorList->Move(Source, Dest);
+    // workaround for bug in VCL
+    EditorListView->ItemIndex = -1;
+    EditorListView->ItemFocused = EditorListView->Selected;
+    EditorListView->ItemIndex = Dest;
+    UpdateEditorListView();
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorListViewDragDrop(TObject * Sender,
+  TObject * Source, int X, int Y)
+{
+  if (Source == EditorListView)
+  {
+    if (AllowListViewDrag(Sender, X, Y))
+    {
+      EditorMove(FListViewDragSource, FListViewDragDest);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UpDownEditorButtonClick(TObject *Sender)
+{
+  EditorMove(EditorListView->ItemIndex,
+    EditorListView->ItemIndex + (Sender == UpEditorButton ? -1 : 1));
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::RemoveEditorButtonClick(
+  TObject * /*Sender*/)
+{
+  assert(EditorListView->ItemIndex >= 0 &&
+    EditorListView->ItemIndex < FEditorList->Count);
+  FEditorList->Delete(EditorListView->ItemIndex);
+  UpdateEditorListView();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
+{
+  TEditorPreferencesMode Mode = (Sender == EditEditorButton ? epmEdit : epmAdd);
+  int Index = EditorListView->ItemIndex;
+  TEditorPreferences * Editor;
+  if (Mode == epmEdit)
+  {
+    Editor = new TEditorPreferences(*FEditorList->Editors[Index]);
+  }
+  else
+  {
+    Editor = new TEditorPreferences();
+  }
+
+  try
+  {
+    if (DoEditorPreferencesDialog(Editor, Mode))
+    {
+      if (Mode == epmEdit)
+      {
+        FEditorList->Change(Index, Editor);
+      }
+      else
+      {
+        if (Index < 0)
+        {
+          Index = FEditorList->Count;
+          FEditorList->Add(Editor);
+        }
+        else
+        {
+          FEditorList->Insert(Index, Editor);
+        }
+      }
+      // ownership of the object lost
+      Editor = NULL;
+      
+      UpdateEditorListView();
+      EditorListView->ItemIndex = Index;
+      UpdateControls();
+    }
+  }
+  __finally
+  {
+    delete Editor;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorListViewDblClick(TObject * /*Sender*/)
+{
+  if (EditEditorButton->Enabled)
+  {
+    AddEditEditorButtonClick(EditEditorButton);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorListViewKeyDown(TObject * /*Sender*/,
+  WORD & Key, TShiftState /*Shift*/)
+{
+  if (RemoveEditorButton->Enabled && (Key == VK_DELETE))
+  {
+    RemoveEditorButtonClick(NULL);
+  }
+
+  if (AddEditorButton->Enabled && (Key == VK_INSERT))
+  {
+    AddEditEditorButtonClick(AddEditorButton);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UpdateEditorListView()
+{
+  EditorListView->Items->Count = FEditorList->Count;
+  AdjustListColumnsWidth(EditorListView, FEditorList->Count);
+  EditorListView->Invalidate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::EditorListViewData(TObject * /*Sender*/,
+  TListItem * Item)
+{
+  int Index = Item->Index;
+  assert(Index >= 0 && Index <= FEditorList->Count);
+  const TEditorPreferences * Editor = FEditorList->Editors[Index];
+  Item->Caption = Editor->Data.FileMask.Masks;
+  Item->SubItems->Add(Editor->Name);
+  if (Editor->Data.Editor == edExternal)
+  {
+    Item->SubItems->Add(BooleanToStr(Editor->Data.MDIExternalEditor));
+    Item->SubItems->Add(BooleanToStr(Editor->Data.ExternalEditorText));
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::NavigationTreeChange(TObject * /*Sender*/,
       TTreeNode *Node)
 {
@@ -1072,34 +1223,6 @@ void __fastcall TPreferencesDialog::AddSearchPathButtonClick(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::ExternalEditorBrowseButtonClick(
-  TObject * /*Sender*/)
-{
-  AnsiString ExternalEditor, Program, Params, Dir;
-  ExternalEditor = ExternalEditorEdit->Text;
-  TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
-  SplitCommand(ExternalEditor, Program, Params, Dir);
-
-  TOpenDialog * FileDialog = new TOpenDialog(this);
-  try
-  {
-    FileDialog->FileName = Program;
-    FileDialog->Filter = LoadStr(PREFERENCES_EXTERNAL_EDITOR_FILTER);
-    FileDialog->Title = LoadStr(PREFERENCES_SELECT_EXTERNAL_EDITOR);
-
-    if (FileDialog->Execute())
-    {
-      FAfterFilenameEditDialog = true;
-      ExternalEditorEdit->Text = FormatCommand(FileDialog->FileName, Params);
-      FilenameEditChange(ExternalEditorEdit);
-    }
-  }
-  __finally
-  {
-    delete FileDialog;
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontLabelDblClick(
   TObject * Sender)
 {
@@ -1109,7 +1232,7 @@ void __fastcall TPreferencesDialog::EditorFontLabelDblClick(
 void __fastcall TPreferencesDialog::UpdateCopyParamListView()
 {
   CopyParamListView->Items->Count = FCopyParamList->Count;
-  AdjustListColumnsWidth(CopyParamListView);
+  AdjustListColumnsWidth(CopyParamListView, FCopyParamList->Count);
   CopyParamListView->Invalidate();
 }
 //---------------------------------------------------------------------------

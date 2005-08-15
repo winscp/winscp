@@ -271,13 +271,13 @@
 #define Rtlconsts_SInvalidProperty 65469
 #define Rtlconsts_SInvalidPropertyPath 65470
 #define Rtlconsts_SInvalidPropertyValue 65471
-#define Customdriveview_SDragDropError 65472
-#define Morebutton_SDefaultExpandedCaption 65473
-#define Morebutton_SDefaultCollapsedCaption 65474
-#define Comboedit_SBrowse 65475
-#define Comboedit_SDefaultFilter 65476
-#define Comboedit_SInvalidFileName 65477
-#define Discmon_STooManyWatchDirectories 65478
+#define Iepathcombobox_SSpecialFolderDesktop 65472
+#define Customdriveview_SDragDropError 65473
+#define Morebutton_SDefaultExpandedCaption 65474
+#define Morebutton_SDefaultCollapsedCaption 65475
+#define Comboedit_SBrowse 65476
+#define Comboedit_SDefaultFilter 65477
+#define Comboedit_SInvalidFileName 65478
 #define Tcpip_SSocketError 65479
 #define Tcpip_SUnknownSockError 65480
 #define HelpIntfs_16398 65481
@@ -301,8 +301,8 @@
 #define Unixdirviewcolproperties_SUnixDirViewOwnerCol 65499
 #define Unixdirviewcolproperties_SUnixDirViewGroupCol 65500
 #define Unixdirviewcolproperties_SUnixDirViewLinkTargetCol 65501
-#define Iepathcombobox_SSpecialFolderMyDocuments 65502
-#define Iepathcombobox_SSpecialFolderDesktop 65503
+#define Unixdirviewcolproperties_SUnixDirViewTypeCol 65502
+#define Iepathcombobox_SSpecialFolderMyDocuments 65503
 #define Driveview_coInvalidDosChars 65504
 #define Driveview_Space 65505
 #define DriveView_16407 65506
@@ -601,13 +601,13 @@ BEGIN
 	Rtlconsts_SInvalidProperty,	"Invalid property value"
 	Rtlconsts_SInvalidPropertyPath,	"Invalid property path"
 	Rtlconsts_SInvalidPropertyValue,	"Invalid property value"
+	Iepathcombobox_SSpecialFolderDesktop,	"Desktop"
 	Customdriveview_SDragDropError,	"Drag&drop error: %d"
 	Morebutton_SDefaultExpandedCaption,	"<< &Less"
 	Morebutton_SDefaultCollapsedCaption,	"&More >>"
 	Comboedit_SBrowse,	"Browse"
 	Comboedit_SDefaultFilter,	"All files (*.*)|*.*"
 	Comboedit_SInvalidFileName,	"Invalid file name - %s"
-	Discmon_STooManyWatchDirectories,	"Cannot watch for changes in more then %d directories and subdirectories."
 	Tcpip_SSocketError,	"Error creating socket (%s)"
 	Tcpip_SUnknownSockError,	"Unknown error"
 	HelpIntfs_16398,	"Unable to find a Table of Contents"
@@ -631,8 +631,8 @@ BEGIN
 	Unixdirviewcolproperties_SUnixDirViewOwnerCol,	"Owner"
 	Unixdirviewcolproperties_SUnixDirViewGroupCol,	"Group"
 	Unixdirviewcolproperties_SUnixDirViewLinkTargetCol,	"Link target"
+	Unixdirviewcolproperties_SUnixDirViewTypeCol,	"Type"
 	Iepathcombobox_SSpecialFolderMyDocuments,	"My documents"
-	Iepathcombobox_SSpecialFolderDesktop,	"Desktop"
 	Driveview_coInvalidDosChars,	"\\/:*?\"<>|"
 	Driveview_Space,	" "
 	DriveView_16407,	"New name contains invalid characters %s"

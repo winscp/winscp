@@ -8,17 +8,22 @@
 #include <DiscMon.hpp>
 #include <Exceptions.h>
 #include "GUIConfiguration.h"
+#include "TextsCore.h"
 #include "SynchronizeController.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeController::TSynchronizeController(
-  TSynchronizeEvent AOnSynchronize, TSynchronizeInvalidEvent AOnSynchronizeInvalid)
+  TSynchronizeEvent AOnSynchronize, TSynchronizeInvalidEvent AOnSynchronizeInvalid,
+  TSynchronizeTooManyDirectories AOnTooManyDirectories)
 {
   FOnSynchronize = AOnSynchronize;
   FOnSynchronizeInvalid = AOnSynchronizeInvalid;
+  FOnTooManyDirectories = AOnTooManyDirectories;
   FSynchronizeMonitor = NULL;
   FSynchronizeAbort = NULL;
+  FSynchronizeLog = NULL;
+  FOptions = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeController::~TSynchronizeController()
@@ -28,26 +33,24 @@ __fastcall TSynchronizeController::~TSynchronizeController()
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::StartStop(TObject * Sender,
   bool Start, const TSynchronizeParamType & Params, const TCopyParamType & CopyParam,
-  TSynchronizeAbortEvent OnAbort, TSynchronizeThreadsEvent OnSynchronizeThreads)
+  TSynchronizeOptions * Options,
+  TSynchronizeAbortEvent OnAbort, TSynchronizeThreadsEvent OnSynchronizeThreads,
+  TSynchronizeLog OnSynchronizeLog)
 {
   if (Start)
   {
     try
     {
+      assert(OnSynchronizeLog != NULL);
+      FSynchronizeLog = OnSynchronizeLog;
+
+      FOptions = Options;
       if (FLAGSET(Params.Options, soSynchronize) &&
           (FOnSynchronize != NULL))
       {
-        try
-        {
-          FOnSynchronize(this, Params.LocalDirectory,
-            Params.RemoteDirectory, CopyParam,
-            Params, NULL, true);
-        }
-        catch(Exception & E)
-        {
-          SynchronizeAbort(dynamic_cast<EFatal*>(&E) != NULL);
-          throw;
-        }
+        FOnSynchronize(this, Params.LocalDirectory,
+          Params.RemoteDirectory, CopyParam,
+          Params, NULL, FOptions, true);
       }
 
       FCopyParam = CopyParam;
@@ -55,6 +58,13 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
 
       assert(OnAbort);
       FSynchronizeAbort = OnAbort;
+
+      if (FLAGSET(FSynchronizeParams.Options, soRecurse))
+      {
+        SynchronizeLog(slScan,
+          FMTLOAD(SYNCHRONIZE_SCAN, (FSynchronizeParams.LocalDirectory)));
+      }
+
       FSynchronizeMonitor = new TDiscMonitor(dynamic_cast<TComponent*>(Sender));
       FSynchronizeMonitor->SubTree = false;
       TMonitorFilters Filters;
@@ -64,13 +74,19 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
         Filters << moDirName;
       }
       FSynchronizeMonitor->Filters = Filters;
+      FSynchronizeMonitor->MaxDirectories = 0;
+      FSynchronizeMonitor->OnTooManyDirectories = SynchronizeTooManyDirectories;
       FSynchronizeMonitor->OnFilter = SynchronizeFilter;
       FSynchronizeMonitor->AddDirectory(FSynchronizeParams.LocalDirectory,
         FLAGSET(FSynchronizeParams.Options, soRecurse));
       FSynchronizeMonitor->OnChange = SynchronizeChange;
       FSynchronizeMonitor->OnInvalid = SynchronizeInvalid;
       FSynchronizeMonitor->OnSynchronize = OnSynchronizeThreads;
+      // get count before open to avoid thread issues
+      int Directories = FSynchronizeMonitor->Directories->Count;
       FSynchronizeMonitor->Open();
+
+      SynchronizeLog(slStart, FMTLOAD(SYNCHRONIZE_START, (Directories)));
     }
     catch(...)
     {
@@ -80,6 +96,7 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
   }
   else
   {
+    FOptions = NULL;
     SAFE_DESTROY(FSynchronizeMonitor);
   }
 }
@@ -102,11 +119,18 @@ void __fastcall TSynchronizeController::SynchronizeChange(
       ToUnixPath(LocalDirectory.SubString(RootLocalDirectory.Length() + 1,
         LocalDirectory.Length() - RootLocalDirectory.Length()));
 
+    SynchronizeLog(slChange, FMTLOAD(SYNCHRONIZE_CHANGE,
+      (ExcludeTrailingBackslash(LocalDirectory))));
+
     if (FOnSynchronize != NULL)
     {
       TSynchronizeStats Stats;
+      // this is completelly wrong as the options structure
+      // can contain non-root specific options in future
+      TSynchronizeOptions * Options =
+        ((LocalDirectory == RootLocalDirectory) ? FOptions : NULL);
       FOnSynchronize(this, LocalDirectory, RemoteDirectory, FCopyParam,
-        FSynchronizeParams, &Stats, false);
+        FSynchronizeParams, &Stats, Options, false);
       // note that ObsoleteDirectories may be non-zero even if nothing has changed
       // so this is sub-optimal
       SubdirsChanged =
@@ -130,10 +154,52 @@ void __fastcall TSynchronizeController::SynchronizeAbort(bool Close)
   FSynchronizeAbort(NULL, Close);
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeController::LogOperation(TSynchronizeOperation Operation,
+  const AnsiString FileName)
+{
+  TSynchronizeLogEntry Entry;
+  AnsiString Message;
+  switch (Operation)
+  {
+    case soDelete:
+      Entry = slDelete;
+      Message = FMTLOAD(SYNCHRONIZE_DELETED, (FileName));
+      break;
+
+    default:
+      assert(false);
+      // fallthru
+
+    case soUpload:
+      Entry = slUpload;
+      Message = FMTLOAD(SYNCHRONIZE_UPLOADED, (FileName));
+      break;
+  }
+  SynchronizeLog(Entry, Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeController::SynchronizeLog(TSynchronizeLogEntry Entry,
+  const AnsiString Message)
+{
+  if (FSynchronizeLog != NULL)
+  {
+    FSynchronizeLog(this, Entry, Message);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::SynchronizeFilter(TObject * /*Sender*/,
   const AnsiString DirectoryName, bool & Add)
 {
-  Add = FCopyParam.AllowTransfer(DirectoryName, osLocal);
+  if ((FOptions != NULL) && (FOptions->Filter != NULL))
+  {
+    if (IncludeTrailingBackslash(ExtractFilePath(DirectoryName)) ==
+          IncludeTrailingBackslash(FSynchronizeParams.LocalDirectory))
+    {
+      int FoundIndex;
+      Add = FOptions->Filter->Find(ExtractFileName(DirectoryName), FoundIndex);
+    }
+  }
+  Add = Add && FCopyParam.AllowTransfer(DirectoryName, osLocal, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::SynchronizeInvalid(
@@ -145,5 +211,14 @@ void __fastcall TSynchronizeController::SynchronizeInvalid(
   }
 
   SynchronizeAbort(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeController::SynchronizeTooManyDirectories(
+  TObject * /*Sender*/, int & MaxDirectories)
+{
+  if (FOnTooManyDirectories != NULL)
+  {
+    FOnTooManyDirectories(this, MaxDirectories);
+  }
 }
 

@@ -23,11 +23,12 @@ __published:
   THistoryComboBox *CommandEdit;
   TCheckBox *ApplyToDirectoriesCheck;
   TCheckBox *RecursiveCheck;
-  TLabel *CustomCommandsPatternsLabel;
   TRadioButton *LocalCommandButton;
   TRadioButton *RemoteCommandButton;
   TCheckBox *ShowResultsCheck;
   TButton *HelpButton;
+  TCheckBox *CopyResultsCheck;
+  TStaticText *HintText;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);

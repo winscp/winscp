@@ -2,7 +2,7 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
   Left = 264
   Top = 122
   HelpType = htKeyword
-  HelpKeyword = 'ui_transfer_preset'
+  HelpKeyword = 'ui_transfer_custom'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Transfer settings'
@@ -140,6 +140,9 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
         61)
       inherited ExcludeFileMaskCombo: THistoryComboBox
         Width = 217
+      end
+      inherited ExcludeFileMaskHintText: TStaticText
+        Left = 256
       end
     end
   end

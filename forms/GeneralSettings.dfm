@@ -18,7 +18,7 @@ object GeneralSettingsFrame: TGeneralSettingsFrame
     DesignSize = (
       306
       202)
-    object CommanderDescriptionLabel: TLabel
+    object CommanderDescriptionLabel2: TLabel
       Left = 132
       Top = 19
       Width = 167
@@ -29,7 +29,7 @@ object GeneralSettingsFrame: TGeneralSettingsFrame
         '- two panels (left for local directory, right for remote directo' +
         'ry)'#13#10'- keyboard shortcuts like in Norton Commander (and other si' +
         'milar programs as Total Commander, Midnight Commander...)'#13#10'- dra' +
-        'g && drop to/from both panels'#13#10'- synchronization'
+        'g && drop to/from both panels'
       WordWrap = True
       OnClick = CommanderClick
     end

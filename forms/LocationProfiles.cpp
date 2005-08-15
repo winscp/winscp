@@ -203,6 +203,11 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks()
       Parent = dynamic_cast<TTreeNode *>(FFolders->Objects[FFolders->IndexOf(Bookmark->Node)]);
     }
     ProfilesView->Items->AddChildObject(Parent, Bookmark->Name, Bookmark);
+    if ((Parent != NULL) && (Parent->Count == 1))
+    {
+      // only now, when folder node has its first child, we can eventually expand it
+      Parent->Expanded = FBookmarkList->NodeOpened[Parent->Text];
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -249,41 +254,92 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark()
   {
     BookmarkName = RemoteDirectory;
   }
-  Result = InputDialog(LoadStr(ADD_BOOKMARK_CAPTION), LoadStr(ADD_BOOKMARK_PROMPT),
-    BookmarkName, HELP_LOCATION_PROFILE_ADD);
-  if (Result)
-  {
-    if (BookmarkName.IsEmpty() || (StrToIntDef(BookmarkName, -123) != -123))
-    {
-      throw Exception(FMTLOAD(BOOKMARK_INVALID_NAME, (BookmarkName)));
-    }
 
-    TBookmark * Bookmark = new TBookmark();
-    Bookmark->Name = BookmarkName;
-    Bookmark->Local = LocalDirectory;
-    Bookmark->Remote = RemoteDirectory;
-    TTreeNode * Selected = ProfilesView->Selected;
-    if (Selected && Selected->Data)
+  TTreeNode * Selected = ProfilesView->Selected;
+  TBookmark * SelectedBookmark = NULL;
+  AnsiString SelectedNode;
+  if (Selected != NULL)
+  {
+    SelectedBookmark = (TBookmark *)Selected->Data;
+    if (SelectedBookmark != NULL)
     {
-      TBookmark * SelectedBookmark = (TBookmark *)Selected->Data;
-      Bookmark->Node = SelectedBookmark->Node;
-      FBookmarkList->InsertBefore(SelectedBookmark, Bookmark);
-      Selected = ProfilesView->Items->InsertObject(Selected, Bookmark->Name, Bookmark);
-    }
-    else if (Selected && !Selected->Data)
-    {
-      // must be a folder
-      assert(!Selected->Parent); // more than one level of folders is not supported
-      Bookmark->Node = Selected->Text;
-      FBookmarkList->Add(Bookmark);
-      Selected = ProfilesView->Items->AddChildObject(Selected, Bookmark->Name, Bookmark);
+      SelectedNode = SelectedBookmark->Node;
     }
     else
     {
-      FBookmarkList->Add(Bookmark);
-      Selected = ProfilesView->Items->AddObject(NULL, Bookmark->Name, Bookmark);
+      SelectedNode = Selected->Text;
     }
-    ProfilesView->Selected = Selected;
+  }
+  
+  TStrings * PeerBookmarks = new TStringList();
+  try
+  {
+    for (int Index = 0; Index < FBookmarkList->Count; Index++)
+    {
+      TBookmark * Bookmark = FBookmarkList->Bookmarks[Index];
+      if (Bookmark->Node == SelectedNode)
+      {
+        PeerBookmarks->Add(Bookmark->Name);
+      }
+    }
+
+    Result = DoComboInputDialog(LoadStr(ADD_BOOKMARK_CAPTION), LoadStr(ADD_BOOKMARK_PROMPT),
+      BookmarkName, PeerBookmarks, NULL, false, HELP_LOCATION_PROFILE_ADD);
+    if (Result)
+    {
+      if (BookmarkName.IsEmpty() || (StrToIntDef(BookmarkName, -123) != -123))
+      {
+        throw Exception(FMTLOAD(BOOKMARK_INVALID_NAME, (BookmarkName)));
+      }
+
+      TBookmark * Bookmark = FBookmarkList->FindByName(SelectedNode, BookmarkName);
+      if (Bookmark != NULL)
+      {
+        Bookmark->Local = LocalDirectory;
+        Bookmark->Remote = RemoteDirectory;
+
+        for (int Index = 0; Index < ProfilesView->Items->Count; Index++)
+        {
+          TTreeNode * Node = ProfilesView->Items->Item[Index];
+          if (Node->Data == Bookmark)
+          {
+            Selected = Node;
+            break;
+          }
+        }
+      }
+      else
+      {
+        Bookmark = new TBookmark();
+        Bookmark->Name = BookmarkName;
+        Bookmark->Local = LocalDirectory;
+        Bookmark->Remote = RemoteDirectory;
+        if (SelectedBookmark != NULL)
+        {
+          Bookmark->Node = SelectedBookmark->Node;
+          FBookmarkList->InsertBefore(SelectedBookmark, Bookmark);
+          Selected = ProfilesView->Items->InsertObject(Selected, Bookmark->Name, Bookmark);
+        }
+        else if ((Selected != NULL) && (SelectedBookmark == NULL))
+        {
+          // must be a folder
+          assert(!Selected->Parent); // more than one level of folders is not supported
+          Bookmark->Node = Selected->Text;
+          FBookmarkList->Add(Bookmark);
+          Selected = ProfilesView->Items->AddChildObject(Selected, Bookmark->Name, Bookmark);
+        }
+        else
+        {
+          FBookmarkList->Add(Bookmark);
+          Selected = ProfilesView->Items->AddObject(NULL, Bookmark->Name, Bookmark);
+        }
+      }
+      ProfilesView->Selected = Selected;
+    }
+  }
+  __finally
+  {
+    delete PeerBookmarks;
   }
 
   UpdateControls();
@@ -642,6 +698,22 @@ void __fastcall TLocationProfilesDialog::SwitchButtonClick(TObject * /*Sender*/)
 void __fastcall TLocationProfilesDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::ProfilesViewCollapsed(
+  TObject * /*Sender*/, TTreeNode * Node)
+{
+  assert(Node != NULL);
+  assert(Node->Data == NULL);
+  FBookmarkList->NodeOpened[Node->Text] = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::ProfilesViewExpanded(
+  TObject * /*Sender*/, TTreeNode * Node)
+{
+  assert(Node != NULL);
+  assert(Node->Data == NULL);
+  FBookmarkList->NodeOpened[Node->Text] = true;
 }
 //---------------------------------------------------------------------------
 

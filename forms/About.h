@@ -18,37 +18,33 @@
 class TAboutDialog : public TForm
 {
 __published:
-  TPanel *ImagePanel;
-  TShape *ImageShape;
-  TImage *Image;
   TLabel *ApplicationLabel;
   TLabel *VersionLabel;
   TLabel *WinSCPCopyrightLabel;
-  TLabel *HomepageLabel;
+  TStaticText *HomepageLabel;
   TLabel *ProductSpecificMessageLabel;
-  TLabel *ForumUrlLabel;
+  TStaticText *ForumUrlLabel;
   TScrollBox *ThirdPartyBox;
   TLabel *Label3;
   TLabel *PuttyVersionLabel;
   TLabel *PuttyCopyrightLabel;
-  TLabel *PuttyHomepageLabel;
+  TStaticText *PuttyHomepageLabel;
   TLabel *Label7;
   TLabel *Label8;
   TLabel *Label10;
-  TLabel *ProlongBoxLabel;
   TButton *OKButton;
   TButton *LicenceButton;
-  TLabel *PuttyLicenceLabel;
+  TStaticText *PuttyLicenceLabel;
   TLabel *TranslatorLabel;
   TLabel *Label1;
   TLabel *Label2;
-  TLabel *Toolbar2000HomepageLabel;
+  TStaticText *Toolbar2000HomepageLabel;
   TLabel *Label5;
   TLabel *Label6;
-  TLabel *TBXHomepageLabel;
+  TStaticText *TBXHomepageLabel;
   TButton *HelpButton;
-  void __fastcall HomepageLabelClick(TObject *Sender);
-  void __fastcall EmailLabelClick(TObject *Sender);
+  TImage *Image;
+  TStaticText *TranslatorUrlLabel;
   void __fastcall DisplayLicence(TObject *Sender);
   void __fastcall LicenceButtonClick(TObject *Sender);
   bool __fastcall GetAllowLicence();
@@ -57,6 +53,8 @@ private:
   TConfiguration * FConfiguration;
   void __fastcall SetConfiguration(TConfiguration * value);
   void __fastcall SetAllowLicence(bool value);
+  void __fastcall FirstScrollingControlEnter(TObject * Sender);
+  void __fastcall LastScrollingControlEnter(TObject * Sender);
 public:
   virtual __fastcall TAboutDialog(TComponent* AOwner);
   void __fastcall LoadData();

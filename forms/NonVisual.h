@@ -289,7 +289,7 @@ __published:    // IDE-managed Components
   TTBXItem *StatusBar10;
   TTBXPopupMenu *RemoteFilePopup;
   TTBXItem *CurrentOpenMenuItem;
-  TTBXItem *CurentEditMenuItem;
+  TTBXItem *CurrentEditMenuItem;
   TTBXItem *CurrentCopyMenuItem;
   TTBXItem *Duplicate3;
   TTBXItem *Moveto1;
@@ -416,6 +416,23 @@ __published:    // IDE-managed Components
   TAction *PresetsPreferencesAction;
   TAction *BestFitColumnAction;
   TAction *CustomCommandsEnterAction;
+  TAction *LockToolbarsAction;
+  TTBXItem *TBXItem6;
+  TTBXItem *TBXItem7;
+  TAction *ShowHideRemoteTypeColumnAction;
+  TTBXItem *TBXItem8;
+  TAction *RemoteSortByTypeAction;
+  TAction *QueueItemPauseAction;
+  TTBXItem *TBXItem9;
+  TAction *QueueItemResumeAction;
+  TTBXItem *TBXItem10;
+  TAction *QueuePauseAllAction;
+  TAction *QueueResumeAllAction;
+  TTBXSubmenuItem *TBXSubmenuItem1;
+  TTBXItem *TBXItem11;
+  TTBXItem *TBXItem12;
+  TAction *EditorListCustomizeAction;
+  TAction *RestoreSelectionAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -426,7 +443,7 @@ private:
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
   bool FSessionIdleTimerExecuting;
-  bool FIdle;
+  int FIdle;
 
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
 protected:
@@ -437,6 +454,8 @@ protected:
   void __fastcall SessionItemClick(TObject * Sender);
   void __fastcall OpenedSessionItemClick(TObject * Sender);
   void __fastcall CustomCommandClick(TObject * Sender);
+  void __fastcall CreateEditorListMenu(TAction * Action);
+  void __fastcall EditorItemClick(TObject * Sender);
   void __fastcall DoIdle();
   inline void __fastcall ShowUpdatesUpdate();
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
@@ -451,7 +470,6 @@ public:
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
-  __property bool Idle = { read = FIdle };
 };
 //---------------------------------------------------------------------------
 extern PACKAGE TNonVisualDataModule *NonVisualDataModule;

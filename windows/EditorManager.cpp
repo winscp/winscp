@@ -125,7 +125,7 @@ void __fastcall TEditorManager::ProcessFiles(TEditedFileProcessEvent Callback, v
   for (unsigned int i = 0; i < FFiles.size(); i++)
   {
     TFileData * FileData = &FFiles[i];
-    Callback(FileData->FileName, FileData->Data, Arg);
+    Callback(FileData->FileName, FileData->Data, FileData->Token, Arg);
   }
 }
 //---------------------------------------------------------------------------
@@ -298,7 +298,7 @@ bool __fastcall TEditorManager::EarlyClose(int Index)
   if (Result)
   {
     Result = false;
-    FOnFileEarlyClosed(FileData->Data.OriginalFileName, FileData->CloseFlag, Result);
+    FOnFileEarlyClosed(FileData->Data, FileData->CloseFlag, Result);
     if (Result)
     {
       // forget the associated process

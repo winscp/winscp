@@ -949,6 +949,9 @@ int askalg(void *frontend, const char *algtype, const char *algname,
 int askappend(void *frontend, Filename filename,
 	      void (*callback)(void *ctx, int result), void *ctx);
 
+#ifdef MPEXT
+void display_banner(void *frontend, const char* banner, int size);
+#endif
 /*
  * Exports from console.c (that aren't equivalents to things in
  * windlg.c).

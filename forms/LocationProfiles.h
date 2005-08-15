@@ -70,6 +70,8 @@ __published:
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall SwitchButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall ProfilesViewCollapsed(TObject *Sender, TTreeNode *Node);
+  void __fastcall ProfilesViewExpanded(TObject *Sender, TTreeNode *Node);
 
 public:
   __fastcall TLocationProfilesDialog(TComponent* AOwner);

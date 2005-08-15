@@ -24,13 +24,19 @@
 #define HELP_DND_DOWNLOAD_MOVE_WARNING "ui_pref_dragdrop#temporary_folder_mode"
 #define HELP_DD_WARN_LACK_OF_TEMP_SPACE HELP_DND_DOWNLOAD_MOVE_WARNING
 #define HELP_EDITOR_EARLY_CLOSED     "task_edit#problems_with_some_external_editors"
+#define HELP_APP_EARLY_CLOSED        "task_edit#problems_with_some_external_editors"
 #define HELP_ADD_BOOKMARK_CONFIRM    "task_navigate#bookmarks"
 #define HELP_PERFORM_ON_COMMAND_SESSION "shell_session"
-#define HELP_COPY_PARAM_AUTOSELECTED "transfer_preset"
+#define HELP_COPY_PARAM_AUTOSELECTED "transfer_settings#transfer_settings_presets"
 #define HELP_CLEAN_TEMP_CONFIRM      "temp_folders"
 #define HELP_UPDATES                 "updates"
 #define HELP_COMPARE_NO_DIFFERENCES  "task_compare_directories"
 #define HELP_SYNC_DIR_BROWSE_ERROR   "task_navigate#synchronize_browsing"
 #define HELP_UNINSTALL_CLEANUP       "ui_cleanup"
+#define HELP_EDITOR_FIND             "ui_editor_find"
+#define HELP_EDITOR_REPLACE          "ui_editor_replace"
+#define HELP_DELETE_SESSION          "ui_login_stored_sessions#session_management"
+#define HELP_TOO_MANY_WATCH_DIRECTORIES "ui_keepuptodate"
+#define HELP_LOGIN_KEY_TYPE          "public_key#private"
 
 #endif // TextsWin

@@ -353,99 +353,48 @@ type
     procedure Change(Node: TTreeNode); override;
 
   published
-   {Additional properties:}
+    {Additional properties:}
 
-   {Current selected directory:}
-   property Directory;
+    {Current selected directory:}
+    property Directory;
 
-   {Confirm deleting directories:}
-   Property ConfirmDelete: Boolean Read fConfirmDelete
-                                          Write fConfirmDelete
-                                          Default True;
-
-   {Confirm overwriting directories:}
-   Property ConfirmOverwrite: Boolean Read fConfirmOverwrite
-                                          Write fConfirmOverwrite
-                                          Default True;
-
-   {Scan all directories in method ScanDrive:}
-   Property FullDriveScan: Boolean Read fFullDriveScan
-                                        Write SetFullDriveScan
-                                        default False;
-
-   {Enable automatic update on filesystem changes:}
-   Property WatchDirectory: Boolean Read fWatchDirectory
-                                        Write SetWatchDirectory
-                                        default False;
-
-   {Peform automatic update after ChangeInterval milliseconds:}
-   Property ChangeInterval: Cardinal Read fChangeInterval
-                                         Write SetChangeInterval
-                                         Default 1000;
-
-   {Linked component TDirView:}
-   Property DirView: TDirView Read fDirView
-                                         Write SetDirView;
-
-   Property ShowDirSize: Boolean Read fShowDirSize
-                                        Write SetShowDirSize
-                                        Default False;
-
-   {Show the volume labels of drives:}
-   Property ShowVolLabel: Boolean Read fShowVolLabel
-                                        Write SetShowVolLabel
-                                        Default True;
-
-   {How to display the drives volume labels:}
-   Property VolDisplayStyle: TVolumeDisplayStyle Read fVolDisplayStyle
-                                                    Write SetVolDisplayStyle
-                                                    Default doPrettyName;
-
-   {Show AVI-animation when performing a full drive scan:}
-   Property ShowAnimation: Boolean Read  FShowAnimation
-                                       Write FShowAnimation
-                                       Default False;
-
-   {Don't watch these drives for changes:}
-   Property NoCheckDrives: String  Read  FNoCheckDrives
-                                       Write SetNoCheckDrives;
-
-   Property ReadDrives: Boolean Read FReadDrives
-                                       Write FReadDrives
-                                       Default True;
-
-   Property CompressedColor: TColor  Read FCompressedColor
-                                       Write SetCompressedColor
-                                       Default clBlue;
-
-    Property FileNameDisplay: TFileNameDisplay Read FFileNameDisplay
-                                                Write SetFileNameDisplay
-                                                Default fndStored;
-
-   {Additional events:}
-   Property OnStartScan: TNotifyEvent Read fOnStartScan
-                                       Write fOnStartScan;
-
-   Property OnEndScan: TNotifyEvent Read fOnEndScan
-                                       Write fOnEndScan;
-
-   Property OnScanDir: TDriveViewScanDirEvent    Read fOnScanDir
-                                                    Write fOnScanDir;
-
-   Property OnDiskChange: TDriveViewDiskChangeEvent Read fOnDiskChange
-                                                    Write fOnDiskChange;
-
-   Property OnInsertedDiskChange: TDriveViewDiskChangeEvent Read fOnInsertedDiskChange
-                                                           Write fOnInsertedDiskChange;
-
-   Property OnChangeDetected: TDriveViewDiskChangeEvent Read fOnChangeDetected
-                                                         Write fOnChangeDetected;
-
-   Property OnChangeInvalid: TDriveViewDiskChangeEvent Read fOnChangeInvalid
-                                                         Write fOnChangeInvalid;
-
-   Property OnDisplayContextMenu: TNotifyEvent           Read FOnDisplayContextMenu
-                                                         Write FOnDisplayContextMenu;
+    {Confirm deleting directories:}
+    property ConfirmDelete: Boolean read FConfirmDelete write FConfirmDelete default True;
+    {Confirm overwriting directories:}
+    property ConfirmOverwrite: Boolean read FConfirmOverwrite write FConfirmOverwrite default True;
+    {Scan all directories in method ScanDrive:}
+    property FullDriveScan: Boolean read FFullDriveScan write SetFullDriveScan default False;
+    {Enable automatic update on filesystem changes:}
+    property WatchDirectory: Boolean read FWatchDirectory write SetWatchDirectory default False;
+    {Peform automatic update after ChangeInterval milliseconds:}
+    property ChangeInterval: Cardinal read FChangeInterval write SetChangeInterval default 1000;
+    {Linked component TDirView:}
+    property DirView: TDirView read FDirView write SetDirView;
+    property ShowDirSize: Boolean read FShowDirSize write SetShowDirSize default False;
+    {Show the volume labels of drives:}
+    property ShowVolLabel: Boolean read FShowVolLabel write SetShowVolLabel default True;
+    {How to display the drives volume labels:}
+    property VolDisplayStyle: TVolumeDisplayStyle read FVolDisplayStyle write SetVolDisplayStyle default doPrettyName;
+    {Show AVI-animation when performing a full drive scan:}
+    property ShowAnimation: Boolean read FShowAnimation write FShowAnimation default False;
+    {Don't watch these drives for changes:}
+    property NoCheckDrives: string read  FNoCheckDrives write SetNoCheckDrives;
+    property ReadDrives: Boolean read FReadDrives write FReadDrives default True;
+    property CompressedColor: TColor read FCompressedColor write SetCompressedColor default clBlue;
+    property FileNameDisplay: TFileNameDisplay read FFileNameDisplay write SetFileNameDisplay default fndStored;
+    {Additional events:}
+    property OnStartScan: TNotifyEvent read fOnStartScan write fOnStartScan;
+    property OnEndScan: TNotifyEvent read FOnEndScan write FOnEndScan;
+    property OnScanDir: TDriveViewScanDirEvent read FOnScanDir write FOnScanDir;
+    property OnDiskChange: TDriveViewDiskChangeEvent read FOnDiskChange write FOnDiskChange;
+    property OnInsertedDiskChange: TDriveViewDiskChangeEvent read FOnInsertedDiskChange
+      write FOnInsertedDiskChange;
+    property OnChangeDetected: TDriveViewDiskChangeEvent read FOnChangeDetected
+      write FOnChangeDetected;
+    property OnChangeInvalid: TDriveViewDiskChangeEvent read FOnChangeInvalid
+      write FOnChangeInvalid;
+    property OnDisplayContextMenu: TNotifyEvent Read FOnDisplayContextMenu
+      write FOnDisplayContextMenu;
 
     property DDLinkOnExeDrag;
 
@@ -500,8 +449,6 @@ type
     property ShowButtons;
     property ShowHint;
     property ShowLines;
-    {property ShowRoot;}
-    {property SortType;}
     property TabOrder;
     property TabStop default True;
     property ToolTips;
@@ -915,7 +862,7 @@ begin
   end;
 end; {WMUserRename}
 
-function  TDriveView.CanExpand(Node: TTreeNode): Boolean;
+function TDriveView.CanExpand(Node: TTreeNode): Boolean;
 var
   SubNode: TTreeNode;
   Drive: TDrive;

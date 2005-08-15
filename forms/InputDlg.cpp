@@ -2,6 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "WinInterface.h"
 #include <VCLCommon.h>
 #include <Windows.hpp>
 #include <Consts.hpp>
@@ -26,7 +27,7 @@ bool __fastcall InputDialog(const AnsiString ACaption,
   TPoint DialogUnits;
   int ButtonTop, ButtonWidth, ButtonHeight;
   bool Result = False;
-  Form = new TForm(Application);
+  Form = new TForm(Application, 0); // bypass the VCL streaming (for Salamander)
   try
   {
     SetCorrectFormParent(Form);
@@ -120,7 +121,7 @@ bool __fastcall InputDialog(const AnsiString ACaption,
       Button->ModalResult = mrNone;
       Button->SetBounds(ButtonsStart + 2 * (ButtonWidth + ButtonSpace), ButtonTop,
         ButtonWidth, ButtonHeight);
-      TNotifyEvent OnClick;  
+      TNotifyEvent OnClick;
       ((TMethod*)&OnClick)->Code = InputDialogHelp;
       Button->OnClick = OnClick;
     }

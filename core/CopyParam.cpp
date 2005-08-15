@@ -35,7 +35,7 @@ void __fastcall TCopyParamType::Default()
   AddXToDirectories = true;
   ResumeSupport = rsSmart;
   ResumeThreshold = 100 * 1024; // (100 kB)
-  ReplaceInvalidChars = true;
+  InvalidCharsReplacement = TokenReplacement;
   LocalInvalidChars = "/\\:*?\"<>|";
   CalculateSize = true;
   FileMask = "*.*";
@@ -44,65 +44,90 @@ void __fastcall TCopyParamType::Default()
   ClearArchive = false;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TCopyParamType::GetInfoStr(AnsiString Separator) const
+AnsiString __fastcall TCopyParamType::GetInfoStr(AnsiString Separator, int Options) const
 {
   TCopyParamType Defaults;
   AnsiString Result;
 
   #define ADD(STR) Result += (Result.IsEmpty() ? AnsiString() : Separator) + (STR)
-  if ((TransferMode != Defaults.TransferMode) ||
-      ((TransferMode == tmAutomatic) && !(AsciiFileMask == Defaults.AsciiFileMask)))
+  if (FLAGCLEAR(Options, cpiExcludeMaskOnly))
   {
-    AnsiString S = FORMAT(LoadStrPart(COPY_INFO_TRANSFER_TYPE, 1),
-      (LoadStrPart(COPY_INFO_TRANSFER_TYPE, TransferMode + 2)));
-    if (TransferMode == tmAutomatic)
+    if ((TransferMode != Defaults.TransferMode) ||
+        ((TransferMode == tmAutomatic) && !(AsciiFileMask == Defaults.AsciiFileMask)))
     {
-      S = FORMAT(S, (AsciiFileMask.Masks));
+      AnsiString S = FORMAT(LoadStrPart(COPY_INFO_TRANSFER_TYPE, 1),
+        (LoadStrPart(COPY_INFO_TRANSFER_TYPE, TransferMode + 2)));
+      if (TransferMode == tmAutomatic)
+      {
+        S = FORMAT(S, (AsciiFileMask.Masks));
+      }
+      ADD(S);
     }
-    ADD(S);
-  }
 
-  if (FileNameCase != Defaults.FileNameCase)
-  {
-    ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
-      (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))));
-  }
+    if (FileNameCase != Defaults.FileNameCase)
+    {
+      ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
+        (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))));
+    }
 
-  if (ReplaceInvalidChars != Defaults.ReplaceInvalidChars)
-  {
-    assert(!ReplaceInvalidChars);
-    ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS));
-  }
+    if ((InvalidCharsReplacement == NoReplacement) !=
+          (Defaults.InvalidCharsReplacement == NoReplacement))
+    {
+      assert(InvalidCharsReplacement == NoReplacement);
+      if (InvalidCharsReplacement == NoReplacement)
+      {
+        ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS));
+      }
+    }
 
-  if ((PreserveRights != Defaults.PreserveRights) ||
-      (PreserveRights && 
-       ((Rights != Defaults.Rights) || (AddXToDirectories != Defaults.AddXToDirectories))))
-  {
-    assert(PreserveRights);
+    if ((PreserveRights != Defaults.PreserveRights) ||
+        (PreserveRights && 
+         ((Rights != Defaults.Rights) || (AddXToDirectories != Defaults.AddXToDirectories))))
+    {
+      assert(PreserveRights);
     
-    AnsiString RightsStr = Rights.Text;
-    if (AddXToDirectories)
-    {
-      RightsStr += ", " + LoadStr(COPY_INFO_ADD_X_TO_DIRS);
+      if (PreserveRights)
+      {
+        AnsiString RightsStr = Rights.Text;
+        if (AddXToDirectories)
+        {
+          RightsStr += ", " + LoadStr(COPY_INFO_ADD_X_TO_DIRS);
+        }
+        ADD(FORMAT(LoadStr(COPY_INFO_PERMISSIONS), (RightsStr)));
+      }
     }
-    ADD(FORMAT(LoadStr(COPY_INFO_PERMISSIONS), (RightsStr)));
-  }
 
-  if (PreserveReadOnly != Defaults.PreserveReadOnly)
-  {
-    assert(!PreserveReadOnly);
-    ADD(LoadStr(COPY_INFO_DONT_PRESERVE_READONLY));
-  }
+    if (PreserveReadOnly != Defaults.PreserveReadOnly)
+    {
+      assert(!PreserveReadOnly);
+      if (!PreserveReadOnly)
+      {
+        ADD(LoadStr(COPY_INFO_DONT_PRESERVE_READONLY));
+      }
+    }
 
-  if (PreserveTime != Defaults.PreserveTime)
-  {
-    ADD(LoadStr(PreserveTime ? COPY_INFO_TIMESTAMP : COPY_INFO_DONT_PRESERVE_TIME));
-  }
+    if (PreserveTime != Defaults.PreserveTime)
+    {
+      ADD(LoadStr(PreserveTime ? COPY_INFO_TIMESTAMP : COPY_INFO_DONT_PRESERVE_TIME));
+    }
 
-  if (CalculateSize != Defaults.CalculateSize)
-  {
-    assert(!CalculateSize);
-    ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE));
+    if (CalculateSize != Defaults.CalculateSize)
+    {
+      assert(!CalculateSize);
+      if (!CalculateSize)
+      {
+        ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE));
+      }
+    }
+
+    if (ClearArchive != Defaults.ClearArchive)
+    {
+      assert(ClearArchive);
+      if (ClearArchive)
+      {
+        ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE));
+      }
+    }
   }
 
   if ((NegativeExclude != Defaults.NegativeExclude) ||
@@ -110,12 +135,6 @@ AnsiString __fastcall TCopyParamType::GetInfoStr(AnsiString Separator) const
   {
     ADD(FORMAT(LoadStr(NegativeExclude ? COPY_INFO_INCLUDE_MASK : COPY_INFO_EXCLUDE_MASK),
       (ExcludeFileMask.Masks)));
-  }
-
-  if (ClearArchive != Defaults.ClearArchive)
-  {
-    assert(ClearArchive);
-    ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE));
   }
   #undef ADD
 
@@ -141,7 +160,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(PreserveRights);
   COPY(ResumeSupport);
   COPY(ResumeThreshold);
-  COPY(ReplaceInvalidChars);
+  COPY(InvalidCharsReplacement);
   COPY(LocalInvalidChars);
   COPY(CalculateSize);
   COPY(FileMask);
@@ -157,14 +176,91 @@ TCopyParamType & __fastcall TCopyParamType::operator =(const TCopyParamType & rh
   return *this;
 }
 //---------------------------------------------------------------------------
+void __fastcall TCopyParamType::SetLocalInvalidChars(AnsiString value)
+{
+  if (value != LocalInvalidChars)
+  {
+    FLocalInvalidChars = value;
+    FTokenizibleChars = FLocalInvalidChars + TokenPrefix;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCopyParamType::GetReplaceInvalidChars() const
+{
+  return (InvalidCharsReplacement != NoReplacement);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamType::SetReplaceInvalidChars(bool value)
+{
+  if (ReplaceInvalidChars != value)
+  {
+    InvalidCharsReplacement = (value ? TokenReplacement : NoReplacement);
+  }
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall TCopyParamType::ValidLocalFileName(AnsiString FileName) const
 {
-  char * InvalidChar;
-  while ((InvalidChar = strpbrk(FileName.c_str(), LocalInvalidChars.c_str())) != NULL)
+  if (InvalidCharsReplacement != NoReplacement)
   {
-    FileName[InvalidChar - FileName.c_str() + 1] = '_';
+    bool ATokenReplacement = (InvalidCharsReplacement == TokenReplacement);
+    const char * Chars =
+      (ATokenReplacement ? FTokenizibleChars : LocalInvalidChars).c_str();
+    char * InvalidChar = FileName.c_str();
+    while ((InvalidChar = strpbrk(InvalidChar, Chars)) != NULL)
+    {
+      int Index = InvalidChar - FileName.c_str() + 1;
+      if (FileName.ByteType(Index) == mbSingleByte)
+      {
+        if (ATokenReplacement)
+        {
+          FileName.Insert(CharToHex(FileName[Index]), Index + 1);
+          FileName[Index] = TokenPrefix;
+          InvalidChar = FileName.c_str() + Index + 2;
+        }
+        else
+        {
+          FileName[Index] = InvalidCharsReplacement;
+          InvalidChar++;
+        }
+      }
+      else
+      {
+        InvalidChar++;
+      }
+    }
   }
   return FileName;
+}
+//---------------------------------------------------------------------------
+// not used yet
+AnsiString __fastcall TCopyParamType::Untokenize(AnsiString FileName)
+{
+  char * Token;
+  AnsiString Result = FileName;
+  while ((Token = AnsiStrScan(Result.c_str(), TokenPrefix)) != NULL)
+  {
+    int Index = Token - Result.c_str() + 1;
+    if (Index > Result.Length() - 2)
+    {
+      Result = FileName;
+      break;
+    }
+    else
+    {
+      char Ch = (char)HexToInt(Result.SubString(Index + 1, 2), -1);
+      if (Ch == '\0')
+      {
+        Result = FileName;
+        break;
+      }
+      else
+      {
+        Result[Index] = Ch;
+        Result.Delete(Index + 1, 2);
+      }
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TCopyParamType::ChangeFileName(AnsiString FileName,
@@ -191,7 +287,7 @@ AnsiString __fastcall TCopyParamType::ChangeFileName(AnsiString FileName,
       /*nothing*/
       break;
   }
-  if (ReplaceInvalidChars && (Side == osRemote))
+  if (Side == osRemote)
   {
     FileName = ValidLocalFileName(FileName);
   }
@@ -204,7 +300,7 @@ bool __fastcall TCopyParamType::UseAsciiTransfer(AnsiString FileName,
   switch (TransferMode) {
     case tmBinary: return false;
     case tmAscii: return true;
-    case tmAutomatic: return AsciiFileMask.Matches(FileName, (Side == osLocal));
+    case tmAutomatic: return AsciiFileMask.Matches(FileName, (Side == osLocal), false);
     default: assert(false); return false;
   }
 }
@@ -234,7 +330,7 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
      Rights.Text,
      BooleanToEngStr(PreserveRights),
      CaseC[FileNameCase],
-     BooleanToEngStr(ReplaceInvalidChars),
+     CharToHex(InvalidCharsReplacement),
      ResumeC[ResumeSupport],
      (int)ResumeThreshold,
      BooleanToEngStr(CalculateSize),
@@ -267,12 +363,13 @@ bool __fastcall TCopyParamType::AllowResume(__int64 Size) const
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::AllowTransfer(AnsiString FileName,
-  TOperationSide Side) const
+  TOperationSide Side, bool Directory) const
 {
   bool Result = true;
   if (!ExcludeFileMask.Masks.IsEmpty())
   {
-    Result = (ExcludeFileMask.Matches(FileName, (Side == osLocal)) == NegativeExclude);
+    Result = (ExcludeFileMask.Matches(FileName, (Side == osLocal), Directory) ==
+      NegativeExclude);
   }
   return Result;
 }
@@ -289,10 +386,12 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   TransferMode = (TTransferMode)Storage->ReadInteger("TransferMode", TransferMode);
   ResumeSupport = (TResumeSupport)Storage->ReadInteger("ResumeSupport", ResumeSupport);
   ResumeThreshold = Storage->ReadInt64("ResumeThreshold", ResumeThreshold);
-  ReplaceInvalidChars = Storage->ReadBool("ReplaceInvalidChars", ReplaceInvalidChars);
+  InvalidCharsReplacement = (char)Storage->ReadInteger("ReplaceInvalidChars",
+    (unsigned char)InvalidCharsReplacement);
   LocalInvalidChars = Storage->ReadString("LocalInvalidChars", LocalInvalidChars);
   CalculateSize = Storage->ReadBool("CalculateSize", CalculateSize);
   ExcludeFileMask.Masks = Storage->ReadString("ExcludeFileMask", ExcludeFileMask.Masks);
+  NegativeExclude = Storage->ReadBool("NegativeExclude", NegativeExclude);
   ClearArchive = Storage->ReadBool("ClearArchive", ClearArchive);
 }
 //---------------------------------------------------------------------------
@@ -308,10 +407,11 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage) const
   Storage->WriteInteger("TransferMode", TransferMode);
   Storage->WriteInteger("ResumeSupport", ResumeSupport);
   Storage->WriteInt64("ResumeThreshold", ResumeThreshold);
-  Storage->WriteBool("ReplaceInvalidChars", ReplaceInvalidChars);
+  Storage->WriteInteger("ReplaceInvalidChars", (unsigned char)InvalidCharsReplacement);
   Storage->WriteString("LocalInvalidChars", LocalInvalidChars);
   Storage->WriteBool("CalculateSize", CalculateSize);
   Storage->WriteString("ExcludeFileMask", ExcludeFileMask.Masks);
+  Storage->WriteBool("NegativeExclude", NegativeExclude);
   Storage->WriteBool("ClearArchive", ClearArchive);
 }
 //---------------------------------------------------------------------------
@@ -329,7 +429,7 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(TransferMode) &&
     C(ResumeSupport) &&
     C(ResumeThreshold) &&
-    C(ReplaceInvalidChars) &&
+    C(InvalidCharsReplacement) &&
     C(LocalInvalidChars) &&
     C(CalculateSize) &&
     C(ExcludeFileMask) &&

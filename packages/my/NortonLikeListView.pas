@@ -9,6 +9,7 @@ uses
 type
   TCustomNortonLikeListView = class;
   TSelectMode = (smAll, smNone, smInvert);
+  TNortonLikeMode = (nlOn, nlOff, nlKeyboard);
   TSelectByMaskEvent = procedure(Control: TCustomNortonLikeListView; Select: Boolean) of object;
 
   TCustomNortonLikeListView = class(TCustomListView)
@@ -18,7 +19,7 @@ type
     FDontSelectItem: Boolean;
     FDontUnSelectItem: Boolean;
     FSelCount: Integer;
-    FNortonLike: Boolean;
+    FNortonLike: TNortonLikeMode;
     FOnSelectByMask: TSelectByMaskEvent;
     FLastDeletedItem: TListItem; // aby sme nepocitali smazany item 2x
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
@@ -46,6 +47,7 @@ type
     procedure InsertItem(Item: TListItem); override;
     function NewColProperties: TCustomListViewColProperties; virtual;
     procedure FocusSomething; virtual;
+    procedure FocusItem(Item: TListItem);
     function GetItemFromHItem(const Item: TLVItem): TListItem;
     function GetValid: Boolean; virtual;
     function GetSelCount: Integer; override;
@@ -61,7 +63,7 @@ type
     //CLEAN property SelCount: Integer read GetSelCount;
 
     property MultiSelect default True;
-    property NortonLike: Boolean read FNortonLike write FNortonLike default True;
+    property NortonLike: TNortonLikeMode read FNortonLike write FNortonLike default nlOn;
     property OnSelectByMask: TSelectByMaskEvent read FOnSelectByMask write FOnSelectByMask;
     property MarkedCount: Integer read GetMarkedCount;
     property MarkedFile: TListItem read GetMarkedFile;
@@ -169,7 +171,7 @@ begin
   MultiSelect := True;
   FDontSelectItem := False;
   FDontUnSelectItem := False;
-  FNortonLike := True;
+  FNortonLike := nlOn;
   FColProperties := NewColProperties;
   FLastDeletedItem := nil;
   FUpdatingSelection := 0;
@@ -201,9 +203,9 @@ begin
   Result := True;
   if (Change = LVIF_STATE) and
      ((((OldState and LVIS_SELECTED) < (NewState and LVIS_SELECTED)) and
-       ((FDontSelectItem and FNortonLike) or (not CanChangeSelection(Item, True)))) or
+       (FDontSelectItem or (not CanChangeSelection(Item, True)))) or
       (((OldState and LVIS_SELECTED) > (NewState and LVIS_SELECTED)) and
-       ((FDontUnSelectItem and FNortonLike) or (not CanChangeSelection(Item, False))))) then
+       (FDontUnSelectItem or (not CanChangeSelection(Item, False))))) then
   begin
     if (OldState or LVIS_SELECTED) <> (NewState or LVIS_SELECTED) then
       ListView_SetItemState(Handle, Item.Index, NewState,
@@ -246,7 +248,7 @@ function TCustomNortonLikeListView.ClosestUnselected(Item: TListItem): TListItem
 var
   Index: Integer;
 begin
-  if Assigned(Item) and (Item.Selected or (NortonLike and (SelCount = 0))) then
+  if Assigned(Item) and (Item.Selected or ((NortonLike <> nlOff) and (SelCount = 0))) then
   begin
     Index := Item.Index + 1;
     while (Index < Items.Count) and Items[Index].Selected do Inc(Index);
@@ -330,7 +332,7 @@ var
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
 begin
-  if NortonLike and (Message.CharCode = VK_INSERT) then
+  if (NortonLike <> nlOff) and (Message.CharCode = VK_INSERT) then
   begin
     if Items.Count > 0 then
     begin
@@ -339,7 +341,7 @@ begin
     end;
   end
     else
-  {if NortonLike and (Message.CharCode = VK_MULTIPLY) then
+  {if (NortonLike <> nlOff) and (Message.CharCode = VK_MULTIPLY) then
   begin
     SelectAll(smInvert)
     Message.Result := 1;
@@ -351,16 +353,17 @@ begin
       Message.Result := 1;
   end
     else
-  if NortonLike and (Message.CharCode in [VK_LEFT, VK_RIGHT]) and
+  if (NortonLike <> nlOff) and (Message.CharCode in [VK_LEFT, VK_RIGHT]) and
      (ViewStyle = vsReport) and
      ((GetWindowLong(Handle, GWL_STYLE) and WS_HSCROLL) = 0) then
   begin
     if Items.Count > 0 then
     begin
-      if Message.CharCode = VK_LEFT then Items[0].Focused := True
-        else Items[Items.Count - 1].Focused := True;
-      if Assigned(ItemFocused) then
-        ItemFocused.MakeVisible(False);  
+      // do not focus item directly to make later selecting work
+      if Message.CharCode = VK_LEFT then 
+        SendMessage(Handle, WM_KEYDOWN, VK_HOME, LongInt(0))
+      else
+        SendMessage(Handle, WM_KEYDOWN, VK_END, LongInt(0));
     end;
     Message.Result := 1;
   end
@@ -368,10 +371,10 @@ begin
   if (Message.CharCode in [VK_SPACE, VK_PRIOR, VK_NEXT, VK_END, VK_HOME, VK_LEFT,
     VK_UP, VK_RIGHT, VK_DOWN, VK_SELECT]) then
   begin
-    PDontSelectItem := FDontUnSelectItem;
+    PDontSelectItem := FDontSelectItem;
     PDontUnSelectItem := FDontUnSelectItem;
-    FDontSelectItem := True;
-    FDontUnSelectItem := True;
+    FDontSelectItem := FDontSelectItem or (NortonLike <> nlOff);
+    FDontUnSelectItem := FDontUnSelectItem or (NortonLike <> nlOff);
     try
       inherited;
     finally
@@ -394,7 +397,7 @@ begin
     Message.Result := 1;
   end
     else
-  if NortonLike and (Message.CharCode = Byte(' ')) then
+  if (NortonLike <> nlOff) and (Message.CharCode = Byte(' ')) then
   begin
     if (GetKeyState(VK_CONTROL) >= 0) then
     begin
@@ -405,10 +408,10 @@ begin
   end
     else
   begin
-    PDontSelectItem := FDontUnSelectItem;
+    PDontSelectItem := FDontSelectItem;
     PDontUnSelectItem := FDontUnSelectItem;
-    FDontSelectItem := True;
-    FDontUnSelectItem := True;
+    FDontSelectItem := FDontSelectItem or (NortonLike <> nlOff);
+    FDontUnSelectItem := FDontUnSelectItem or (NortonLike <> nlOff);
     try
       inherited;
     finally
@@ -422,12 +425,38 @@ procedure TCustomNortonLikeListView.FocusSomething;
 begin
   if Valid and (Items.Count > 0) and not Assigned(ItemFocused) then
   begin
-    if NortonLike then SendMessage(Handle, WM_KEYDOWN, VK_DOWN, LongInt(0));
+    if (NortonLike <> nlOff) then SendMessage(Handle, WM_KEYDOWN, VK_DOWN, LongInt(0));
     if not Assigned(ItemFocused) then
       ItemFocused := Items[0];
   end;
   if Assigned(ItemFocused) then
     ItemFocused.MakeVisible(False);
+end;
+
+procedure TCustomNortonLikeListView.FocusItem(Item: TListItem);
+var
+  P: TPoint;
+  PDontUnSelectItem: Boolean;
+  PDontSelectItem: Boolean;
+begin
+  Item.MakeVisible(False);
+  if Focused then
+  begin
+    P := Item.GetPosition;
+    PDontSelectItem := FDontSelectItem;
+    PDontUnSelectItem := FDontUnSelectItem;
+    FDontSelectItem := True;
+    FDontUnSelectItem := True;
+    try
+      SendMessage(Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(P.X, P.Y));
+    finally
+      FDontSelectItem := PDontSelectItem;
+      FDontUnSelectItem := PDontUnSelectItem;
+    end;
+    Assert(ItemFocused = Item);
+  end;
+  if ItemFocused <> Item then
+    ItemFocused := Item;
 end;
 
 procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode);
@@ -458,10 +487,10 @@ var
   Shift: TShiftState;
 begin
   Shift := KeysToShiftState(Message.Keys);
-  PDontSelectItem := FDontUnSelectItem;
+  PDontSelectItem := FDontSelectItem;
   PDontUnSelectItem := FDontUnSelectItem;
-  FDontSelectItem := ((Shift * [ssCtrl, ssShift]) = []);
-  FDontUnSelectItem := ((Shift * [ssCtrl]) = []);
+  FDontSelectItem := FDontSelectItem or ((NortonLike = nlOn) and ((Shift * [ssCtrl, ssShift]) = []));
+  FDontUnSelectItem := FDontUnSelectItem or ((NortonLike = nlOn) and ((Shift * [ssCtrl]) = []));
   try
     inherited;
   finally
@@ -475,10 +504,10 @@ var
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
 begin
-  PDontSelectItem := FDontUnSelectItem;
+  PDontSelectItem := FDontSelectItem;
   PDontUnSelectItem := FDontUnSelectItem;
-  FDontSelectItem := True;
-  FDontUnSelectItem := True;
+  FDontSelectItem := FDontSelectItem or (NortonLike = nlOn);
+  FDontUnSelectItem := FDontUnSelectItem or (NortonLike = nlOn);
   try
     inherited;
   finally
@@ -491,7 +520,7 @@ function TCustomNortonLikeListView.GetMarkedFile: TListItem;
 begin
   if Assigned(Selected) then Result := Selected
     else
-  if Assigned(ItemFocused) and NortonLike then Result := ItemFocused
+  if Assigned(ItemFocused) and (NortonLike <> nlOff) then Result := ItemFocused
     else Result := nil;
 end;
 
@@ -520,7 +549,7 @@ end;
 
 function TCustomNortonLikeListView.GetMarkedCount: Integer;
 begin
-  if (SelCount > 0) or (not NortonLike) then Result := SelCount
+  if (SelCount > 0) or (NortonLike = nlOff) then Result := SelCount
     else
   if Assigned(ItemFocused) then Result := 1
     else Result := 0;

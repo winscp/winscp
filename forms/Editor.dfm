@@ -104,7 +104,7 @@ object EditorForm: TEditorForm
     Left = 0
     Top = 26
     Width = 617
-    Height = 337
+    Height = 344
     Align = alClient
     HideSelection = False
     PlainText = True
@@ -118,7 +118,7 @@ object EditorForm: TEditorForm
   end
   object StatusBar: TTBXStatusBar
     Left = 0
-    Top = 363
+    Top = 370
     Width = 617
     Panels = <
       item
@@ -917,19 +917,6 @@ object EditorForm: TEditorForm
       8001FEBF800300038001FC9F80070FC38001FDDF807F00038001FDDF80FF8007
       8001FDDF81FFF87FFFFFFFFFFFFFFFFF00000000000000000000000000000000
       000000000000}
-  end
-  object FindDialog: TFindDialog
-    Options = [frDown, frHideUpDown]
-    OnFind = FindDialogFind
-    Left = 480
-    Top = 96
-  end
-  object ReplaceDialog: TReplaceDialog
-    Options = [frDown, frHideUpDown]
-    OnFind = FindDialogFind
-    OnReplace = FindDialogFind
-    Left = 536
-    Top = 96
   end
   object EditorPopup: TTBXPopupMenu
     Images = EditorImages

@@ -357,14 +357,12 @@ var
   F: Text;
 begin
   FileName := GetEnvironmentVariable(TRACEENV);
-  if FileName <> '' then
-  begin
-    AssignFile(F, FileName);
-    Append(F);
-    Write(F, Format('[%s] %s:%d:%s'#13#10'  %s'#13#10,
-      [TimeToStr(Now), 'PAS', 0, 'unk', Msg]));
-    CloseFile(F);
-  end;
+  if FileName = '' then FileName := 'C:\winscptrace.log';
+  AssignFile(F, FileName);
+  Append(F);
+  Write(F, Format('[%s] %s:%d:%s'#13#10'  %s'#13#10,
+    [TimeToStr(Now), 'PAS', 0, 'unk', Msg]));
+  CloseFile(F);
 end;
 
 initialization

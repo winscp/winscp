@@ -27,6 +27,7 @@
 #include "PasswordEdit.hpp"
 //----------------------------------------------------------------------------
 class TCustomCommands;
+class TEditorList;
 //----------------------------------------------------------------------------
 class TPreferencesDialog : public TForm
 {
@@ -37,8 +38,6 @@ __published:
   TPageControl *PageControl;
   TTabSheet *PreferencesSheet;
   TXPGroupBox *CommonPreferencesGroup;
-  TCheckBox *CopyOnDoubleClickCheck;
-  TCheckBox *CopyOnDoubleClickConfirmationCheck;
   TCheckBox *ConfirmOverwritingCheck;
   TCheckBox *ConfirmDeletingCheck;
   TCheckBox *ConfirmClosingSessionCheck;
@@ -58,7 +57,6 @@ __published:
   TTabSheet *CommanderSheet;
   TLabel *Label3;
   TXPGroupBox *PanelsGroup;
-  TCheckBox *ExplorerStyleSelectionCheck;
   TCheckBox *PreserveLocalDirectoryCheck;
   TXPGroupBox *CommanderMiscGroup;
   TCheckBox *UseLocationProfilesCheck;
@@ -72,17 +70,12 @@ __published:
   TTabSheet *TransferSheet;
   TCopyParamsFrame *CopyParamsFrame;
   TTabSheet *EditorSheet;
-  TXPGroupBox *EditorGroup;
-  TRadioButton *EditorInternalButton;
-  TRadioButton *EditorExternalButton;
-  THistoryComboBox *ExternalEditorEdit;
+  TXPGroupBox *EditorPreferenceGroup;
   TXPGroupBox *InternalEditorGroup;
   TLabel *EditorFontLabel;
   TButton *EditorFontButton;
-  TXPGroupBox *ExternalEditorGroup;
   TTabSheet *IntegrationSheet;
   TXPGroupBox *ShellIconsGroup;
-  TLabel *ShellIconsLabel;
   TButton *DesktopIconButton;
   TButton *QuickLaunchIconButton;
   TButton *SendToHookButton;
@@ -159,9 +152,6 @@ __published:
   TButton *AddSearchPathButton;
   TCheckBox *QueueNoConfirmationCheck;
   TCheckBox *EditorWordWrapCheck;
-  TCheckBox *ExternalEditorTextCheck;
-  TCheckBox *MDIExternalEditorCheck;
-  TButton *ExternalEditorBrowseButton;
   TXPGroupBox *PathInCaptionGroup;
   TRadioButton *PathInCaptionFullButton;
   TRadioButton *PathInCaptionShortButton;
@@ -190,6 +180,23 @@ __published:
   TXPGroupBox *CopyParamListOptionsGroup;
   TCheckBox *CopyParamAutoSelectNoticeCheck;
   TButton *HelpButton;
+  TXPGroupBox *ThemeGroup;
+  TLabel *Label7;
+  TComboBox *ThemeCombo;
+  TListView *EditorListView;
+  TButton *AddEditorButton;
+  TButton *EditEditorButton;
+  TButton *UpEditorButton;
+  TButton *DownEditorButton;
+  TButton *RemoveEditorButton;
+  TXPGroupBox *DoubleClickGroup;
+  TCheckBox *CopyOnDoubleClickConfirmationCheck;
+  TLabel *DoubleClickActionLabel;
+  TComboBox *DoubleClickActionCombo;
+  TLabel *Label8;
+  TComboBox *NortonLikeModeCombo;
+  TCheckBox *AutoOpenInPuttyCheck;
+  TStaticText *ShellIconsText;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -217,7 +224,6 @@ __published:
   void __fastcall DDExtLabelClick(TObject *Sender);
   void __fastcall CustomCommandsViewDblClick(TObject *Sender);
   void __fastcall AddSearchPathButtonClick(TObject *Sender);
-  void __fastcall ExternalEditorBrowseButtonClick(TObject *Sender);
   void __fastcall EditorFontLabelDblClick(TObject *Sender);
   void __fastcall CopyParamListViewData(TObject *Sender, TListItem *Item);
   void __fastcall CopyParamListViewInfoTip(TObject *Sender,
@@ -231,11 +237,21 @@ __published:
   void __fastcall AddEditCopyParamButtonClick(TObject *Sender);
   void __fastcall CopyParamListViewDblClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall EditorListViewDragDrop(TObject *Sender, TObject *Source,
+          int X, int Y);
+  void __fastcall UpDownEditorButtonClick(TObject *Sender);
+  void __fastcall RemoveEditorButtonClick(TObject *Sender);
+  void __fastcall AddEditEditorButtonClick(TObject *Sender);
+  void __fastcall EditorListViewDblClick(TObject *Sender);
+  void __fastcall EditorListViewKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
+  void __fastcall EditorListViewData(TObject *Sender, TListItem *Item);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
   TCustomCommands * FCustomCommands;
   TCopyParamList * FCopyParamList;
+  TEditorList * FEditorList;
   bool FCustomCommandChanging;
   bool FAfterFilenameEditDialog;
   int FListViewDragSource;
@@ -255,8 +271,10 @@ protected:
   void __fastcall UpdateControls();
   void __fastcall UpdateCustomCommandsView();
   void __fastcall UpdateCopyParamListView();
+  void __fastcall UpdateEditorListView();
   void __fastcall CustomCommandMove(int Source, int Dest);
   void __fastcall CopyParamMove(int Source, int Dest);
+  void __fastcall EditorMove(int Source, int Dest);
   bool __fastcall AllowListViewDrag(TObject * Sender, int X, int Y);
   void __fastcall PrepareNavigationTree(TTreeView * Tree);
   virtual void __fastcall Dispatch(void * Message);

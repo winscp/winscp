@@ -30,6 +30,7 @@ private:
   int FFilesFinished;
   TFileOperationProgressEvent FOnProgress;
   TFileOperationFinished FOnFinished;
+  bool FReset;
 
 protected:
   void __fastcall ClearTransfer();

@@ -15,7 +15,7 @@ object ConsoleDialog: TConsoleDialog
   Position = poMainFormCenter
   DesignSize = (
     559
-    397)
+    404)
   PixelsPerInch = 96
   TextHeight = 13
   object Bevel1: TBevel
@@ -63,7 +63,7 @@ object ConsoleDialog: TConsoleDialog
     Left = 0
     Top = 78
     Width = 559
-    Height = 319
+    Height = 326
     TabStop = False
     Align = alClient
     Color = clBtnFace
@@ -111,7 +111,7 @@ object ConsoleDialog: TConsoleDialog
     Top = 42
     Width = 75
     Height = 25
-    Anchors = [akRight, akBottom]
+    Anchors = [akTop, akRight]
     Caption = '&Help'
     TabOrder = 3
     OnClick = HelpButtonClick

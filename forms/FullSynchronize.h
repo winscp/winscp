@@ -23,7 +23,7 @@ __published:
   THistoryComboBox *LocalDirectoryEdit;
   TXPGroupBox *OptionsGroup;
   TCheckBox *SynchronizeDeleteCheck;
-  TCheckBox *SynchronizeNoConfirmationCheck;
+  TCheckBox *SynchronizeSelectedOnlyCheck;
   TButton *LocalDirectoryBrowseButton;
   TCheckBox *SynchronizeExistingOnlyCheck;
   TButton *TransferSettingsButton;
@@ -59,6 +59,7 @@ private:
   TCopyParamType FCopyParams;
   TPopupMenu * FPresetsMenu;
   AnsiString FPreset;
+  AnsiString FSynchronizeBySizeCaption;
   void __fastcall SetRemoteDirectory(const AnsiString value);
   AnsiString __fastcall GetRemoteDirectory();
   void __fastcall SetLocalDirectory(const AnsiString value);

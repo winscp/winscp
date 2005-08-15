@@ -35,6 +35,7 @@ AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
   const AnsiString MultiFileFormat, TStrings * Files, bool Remote);
 AnsiString __fastcall FormatBytes(__int64 Bytes, bool UseOrders = true);
 void __fastcall CopyToClipboard(AnsiString Text);
+void __fastcall CopyToClipboard(TStrings * Strings);
 AnsiString __fastcall UniqTempDir(const AnsiString BaseDir,
   const AnsiString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const AnsiString DirName);
@@ -54,7 +55,8 @@ public:
 protected:
   virtual int __fastcall PatternLen(int Index, char PatternCmd);
   virtual bool __fastcall PatternReplacement(int Index, const AnsiString & Pattern,
-    AnsiString & Replacement);
+    AnsiString & Replacement, bool & Delimit);
+  virtual void __fastcall DelimitReplacement(AnsiString & Replacement, char Quote);
 
 private:
   AnsiString FLocalFileName;

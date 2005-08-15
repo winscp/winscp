@@ -19,12 +19,13 @@ __fastcall TFileOperationProgressType::TFileOperationProgressType(
 {
   FOnProgress = AOnProgress;
   FOnFinished = AOnFinished;
+  FReset = false;
   Clear();
 }
 //---------------------------------------------------------------------------
 __fastcall TFileOperationProgressType::~TFileOperationProgressType()
 {
-  assert(!InProgress && !Suspended);
+  assert((!InProgress && !Suspended) || FReset);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Clear()
@@ -87,8 +88,7 @@ void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Reset()
 {
-  InProgress = false;
-  Suspended = false;
+  FReset = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Stop()

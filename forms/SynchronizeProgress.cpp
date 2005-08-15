@@ -15,7 +15,8 @@
 #pragma link "PathLabel"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent* Owner)
+__fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner,
+  bool AllowMinimize)
   : TForm(Owner)
 {
   FStarted = false;
@@ -23,6 +24,12 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent* Owner)
   FElapsed = EncodeTime(0, 0, 0, 0);
   FShowAsModalStorage = NULL;
   FMinimizedByMe = false;
+  if (!AllowMinimize)
+  {
+    CancelButton->Left = CancelButton->Left +
+      (MinimizeButton->Left - CancelButton->Left) / 2;
+    MinimizeButton->Visible = false;
+  }
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()

@@ -7,6 +7,7 @@
 #endif
 //---------------------------------------------------------------------------
 struct charset_spec;
+typedef struct Filename Filename;
 #include "charset\Charset.h"
 //---------------------------------------------------------------------------
 typedef UINT_PTR SOCKET;
@@ -21,6 +22,8 @@ extern "C"
   void random_save_seed(void);
   int verify_host_key(char * hostname, int port, char * keytype, char * key);
   void store_host_key(char * hostname, int port, char * keytype, char * key);
+  void display_banner(void * frontend, const char * banner, int size);
+  void md5checksum(const char * buffer, int len, unsigned char output[16]);
   void * saferealloc(void * ptr, size_t n, size_t size);
   void * safemalloc(size_t n, size_t size);
   void safefree(void * ptr);
@@ -37,6 +40,8 @@ extern "C"
     charset_state *state, void (*emit)(void *ctx, long int output), void *emitctx);
   void write_utf8(charset_spec const *charset, long int input_chr,
     charset_state *state, void (*emit)(void *ctx, long int output), void *emitctx);
+  int key_type(const Filename * filename);
+  char * key_type_to_str(int type);
   // -------------
 
   void ssh_close(void * handle);
@@ -82,6 +87,7 @@ extern "C"
   void SSHFatalError(char * string);
   void SSHAskAlg(void * frontend, const char * AlgType, const char * AlgName);
   void SSHOldKeyfileWarning(void);
+  void SSHDisplayBanner(void * frontend, const char * banner, int size);
   long RegOpenWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
   long RegCreateWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
   long RegQueryWinSCPValueEx(HKEY Key, const char * ValueName, unsigned long * Reserved,

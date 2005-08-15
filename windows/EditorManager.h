@@ -15,15 +15,16 @@ struct TEditedFileData
   TTerminalQueue * Queue;
   AnsiString SessionName;
   AnsiString OriginalFileName;
+  AnsiString Command;
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
   (const AnsiString FileName, const TEditedFileData & Data, HANDLE CompleteEvent);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
-  (const AnsiString FileName, bool * CloseFlag, bool & KeepOpen);
+  (const TEditedFileData & Data, bool * CloseFlag, bool & KeepOpen);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileProcessEvent)
-  (const AnsiString FileName, TEditedFileData & Data, void * Arg);
+  (const AnsiString FileName, TEditedFileData & Data, TObject * Token, void * Arg);
 //---------------------------------------------------------------------------
 class TEditorManager
 {
@@ -87,7 +88,7 @@ private:
   int __fastcall FindFile(const TObject * Token);
 
   enum TWaitHandle { MONITOR, PROCESS, EVENT };
-  int __fastcall WaitFor(unsigned int Count,	const HANDLE * Handles,
+  int __fastcall WaitFor(unsigned int Count, const HANDLE * Handles,
     TWaitHandle WaitFor);
 };
 //---------------------------------------------------------------------------

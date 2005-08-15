@@ -17,12 +17,314 @@
 //---------------------------------------------------------------------------
 const char ShellCommandFileNamePattern[] = "!.!";
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TEditorPreferences::TEditorPreferences()
+{
+  FData.FileMask = "*.*";
+  FData.Editor = edInternal;
+  FData.ExternalEditor = "";
+  FData.ExternalEditorText = true;
+  FData.MDIExternalEditor = false;
+  FData.DetectMDIExternalEditor = true;
+}
+//---------------------------------------------------------------------------
+__fastcall TEditorPreferences::TEditorPreferences(const TEditorPreferences & Source)
+{
+  FData.FileMask = Source.FData.FileMask;
+  FData.Editor = Source.FData.Editor;
+  FData.ExternalEditor = Source.FData.ExternalEditor;
+  FData.ExternalEditorText = Source.FData.ExternalEditorText;
+  FData.MDIExternalEditor = Source.FData.MDIExternalEditor;
+  FData.DetectMDIExternalEditor = Source.FData.DetectMDIExternalEditor;
+}
+//---------------------------------------------------------------------------
+#define C(Property) (Property == rhp.Property)
+bool __fastcall TEditorPreferences::operator==(const TEditorPreferences & rhp) const
+{
+  return
+    C(FData.FileMask) &&
+    C(FData.Editor) &&
+    C(FData.ExternalEditor) &&
+    C(FData.ExternalEditorText) &&
+    C(FData.MDIExternalEditor) &&
+    C(FData.DetectMDIExternalEditor) &&
+    true;
+}
+#undef C
+//---------------------------------------------------------------------------
+bool __fastcall TEditorPreferences::Matches(const AnsiString FileName, bool Local) const
+{
+  return FData.FileMask.Matches(FileName, Local, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorPreferences::LegacyDefaults()
+{
+  FData.ExternalEditor = "notepad.exe";
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorPreferences::Load(THierarchicalStorage * Storage, bool Legacy)
+{
+  if (!Legacy)
+  {
+    FData.FileMask = Storage->ReadString("FileMask", FData.FileMask.Masks);
+  }
+  FData.Editor = (TEditor)Storage->ReadInteger("Editor", FData.Editor);
+  FData.ExternalEditor = Storage->ReadString("ExternalEditor", FData.ExternalEditor);
+  FData.ExternalEditorText = Storage->ReadBool("ExternalEditorText", FData.ExternalEditorText);
+  FData.MDIExternalEditor = Storage->ReadBool("MDIExternalEditor", FData.MDIExternalEditor);
+  FData.DetectMDIExternalEditor = Storage->ReadBool("DetectMDIExternalEditor", FData.DetectMDIExternalEditor);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorPreferences::Save(THierarchicalStorage * Storage) const
+{
+  Storage->WriteString("FileMask", FData.FileMask.Masks);
+  Storage->WriteInteger("Editor", FData.Editor);
+  Storage->WriteString("ExternalEditor", FData.ExternalEditor);
+  Storage->WriteBool("ExternalEditorText", FData.ExternalEditorText);
+  Storage->WriteBool("MDIExternalEditor", FData.MDIExternalEditor);
+  Storage->WriteBool("DetectMDIExternalEditor", FData.DetectMDIExternalEditor);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TEditorPreferences::GetName() const
+{
+  if (FName.IsEmpty())
+  {
+    if (FData.Editor == edInternal)
+    {
+      FName = StripHotkey(LoadStr(INTERNAL_EDITOR_NAME));
+    }
+    else
+    {
+      AnsiString Program, Params, Dir;
+      AnsiString ExternalEditor = FData.ExternalEditor;
+      TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
+      SplitCommand(ExternalEditor, Program, Params, Dir);
+      FName = ExtractFileName(Program);
+      int P = FName.LastDelimiter(".");
+      if (P > 0)
+      {
+        FName.SetLength(P - 1);
+      }
+
+      if (FName.ByteType(1) == mbSingleByte)
+      {
+        if (FName.UpperCase() == FName)
+        {
+          FName = FName.LowerCase();
+        }
+
+        if (FName.LowerCase() == FName)
+        {
+          FName = FName.SubString(1, 1).UpperCase() +
+            FName.SubString(2, FName.Length() - 1);
+        }
+      }
+    }
+  }
+
+  return FName;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TEditorList::TEditorList()
+{
+  Init();
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Init()
+{
+  FEditors = new TList();
+  FModified = false;
+}
+//---------------------------------------------------------------------------
+__fastcall TEditorList::~TEditorList()
+{
+  Clear();
+  delete FEditors;
+}
+//---------------------------------------------------------------------
+void __fastcall TEditorList::Modify()
+{
+  FModified = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::operator=(const TEditorList & rhl)
+{
+  Clear();
+
+  for (int Index = 0; Index < rhl.Count; Index++)
+  {
+    Add(new TEditorPreferences(*rhl.Editors[Index]));
+  }
+  // there should be comparison of with the assigned list, be we rely on caller
+  // to do it instead (TWinConfiguration::SetEditorList)
+  Modify();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TEditorList::operator==(const TEditorList & rhl) const
+{
+  bool Result = (Count == rhl.Count);
+  if (Result)
+  {
+    int i = 0;
+    while ((i < Count) && Result)
+    {
+      Result = (*Editors[i]) == (*rhl.Editors[i]);
+      i++;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Clear()
+{
+  for (int i = 0; i < Count; i++)
+  {
+    delete Editors[i];
+  }
+  FEditors->Clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Add(TEditorPreferences * Editor)
+{
+  Insert(Count, Editor);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Insert(int Index, TEditorPreferences * Editor)
+{
+  FEditors->Insert(Index, reinterpret_cast<TObject *>(Editor));
+  Modify();
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Change(int Index, TEditorPreferences * Editor)
+{
+  if (!((*Editors[Index]) == *Editor))
+  {
+    delete Editors[Index];
+    FEditors->Items[Index] = (reinterpret_cast<TObject *>(Editor));
+    Modify();
+  }
+  else
+  {
+    delete Editor;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Move(int CurIndex, int NewIndex)
+{
+  if (CurIndex != NewIndex)
+  {
+    FEditors->Move(CurIndex, NewIndex);
+    Modify();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Delete(int Index)
+{
+  assert((Index >= 0) && (Index < Count));
+  delete Editors[Index];
+  FEditors->Delete(Index);
+  Modify();
+}
+//---------------------------------------------------------------------------
+const TEditorPreferences * __fastcall TEditorList::Find(
+  const AnsiString FileName, bool Local) const
+{
+  const TEditorPreferences * Result = NULL;
+  int i = 0;
+  while ((i < FEditors->Count) && (Result == NULL))
+  {
+    Result = Editors[i];
+    if (!Result->Matches(FileName, Local))
+    {
+      Result = NULL;
+    }
+    i++;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Load(THierarchicalStorage * Storage)
+{
+  int Index = 0;
+  bool Next;
+
+  do
+  {
+    AnsiString Name = IntToStr(Index);
+    TEditorPreferences * Editor = NULL;
+    try
+    {
+      Next = Storage->OpenSubKey(Name, false);
+      if (Next)
+      {
+        try
+        { 
+          Editor = new TEditorPreferences();
+          Editor->Load(Storage, false);
+        }
+        __finally
+        {
+          Storage->CloseSubKey();
+        }
+      }
+    }
+    catch(...)
+    {
+      delete Editor;
+      throw;
+    }
+
+    if (Editor != NULL)
+    {
+      FEditors->Add(reinterpret_cast<TObject *>(Editor));
+    }
+
+    Index++;
+  }
+  while (Next);
+
+  FModified = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Save(THierarchicalStorage * Storage) const
+{
+  Storage->ClearSubKeys();
+  for (int Index = 0; Index < Count; Index++)
+  {
+    if (Storage->OpenSubKey(IntToStr(Index), true))
+    {
+      try
+      {
+        Editors[Index]->Save(Storage);
+      }
+      __finally
+      {
+        Storage->CloseSubKey();
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall TEditorList::GetCount() const
+{
+  int X = FEditors->Count;
+  return X;
+}
+//---------------------------------------------------------------------------
+const TEditorPreferences * __fastcall TEditorList::GetEditor(int Index) const
+{
+  return reinterpret_cast<TEditorPreferences *>(FEditors->Items[Index]);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 {
   FInvalidDefaultTranslation = false;
   FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
   FCustomCommands = new TCustomCommands();
+  FEditorList = new TEditorList();
   Default();
 
   try
@@ -44,6 +346,7 @@ __fastcall TWinConfiguration::~TWinConfiguration()
 
   delete FBookmarks;
   delete FCustomCommands;
+  delete FEditorList;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::Default()
@@ -69,7 +372,7 @@ void __fastcall TWinConfiguration::Default()
   FConfirmClosingSession = true;
   FConfirmExitOnCompletion = true;
   FForceDeleteTempFolder = true;
-  FCopyOnDoubleClick = false;
+  FDoubleClickAction = dcaOpen;
   FCopyOnDoubleClickConfirmation = false;
   FDimmHiddenFiles = true;
   FAutoStartSession = "";
@@ -84,10 +387,9 @@ void __fastcall TWinConfiguration::Default()
   FPathInCaption = picShort;
   FCopyParamAutoSelectNotice = true;
   FSessionToolbarAutoShown = false;
+  FLockToolbars = false;
+  FAutoOpenInPutty = false;
 
-  FEditor.Editor = edInternal;
-  FEditor.ExternalEditor = "notepad.exe";
-  FEditor.ExternalEditorText = true;
   FEditor.FontName = "Courier New";
   FEditor.FontHeight = -12;
   FEditor.FontStyle = 0;
@@ -98,8 +400,6 @@ void __fastcall TWinConfiguration::Default()
   FEditor.FindMatchCase = false;
   FEditor.FindWholeWord = false;
   FEditor.SingleEditor = false;
-  FEditor.DetectMDIExternalEditor = true;
-  FEditor.MDIExternalEditor = false;
   FEditor.MaxEditors = 500;
   FEditor.EarlyClose = 2; // seconds
 
@@ -121,7 +421,7 @@ void __fastcall TWinConfiguration::Default()
   FLogWindowParams = "-1;-1;500;400";
 
   FScpExplorer.WindowParams = "-1;-1;600;400;0";
-  FScpExplorer.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,1;20,0;150,0|0;1;2;3;4;5;6;7";
+  FScpExplorer.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,1;20,0;150,0;125,0|0;1;8;2;3;4;5;6;7";
   FScpExplorer.ToolbarsLayout =
     "Queue_Visible=1,Queue_LastDock=QueueDock,Queue_DockRow=0,Queue_DockPos=-1,Queue_FloatLeft=0,Queue_FloatTop=0,Queue_FloatRightX=0,"
     "Menu_Visible=1,Menu_DockedTo=TopDock,Menu_LastDock=TopDock,Menu_DockRow=0,Menu_DockPos=0,Menu_FloatLeft=0,Menu_FloatTop=0,Menu_FloatRightX=0,"
@@ -149,8 +449,9 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.SwappedPanels = false;
   FScpCommander.StatusBar = true;
   FScpCommander.CommandLine = false;
-  FScpCommander.ExplorerStyleSelection = false;
+  FScpCommander.NortonLikeMode = nlOn;
   FScpCommander.PreserveLocalDirectory = false;
+  // Toolbar_FloatRightX=1 makes keybar apper initialy "in column" when undocked
   FScpCommander.ToolbarsLayout =
     "Queue_Visible=1,Queue_LastDock=QueueDock,Queue_DockRow=0,Queue_DockPos=-1,Queue_FloatLeft=0,Queue_FloatTop=0,Queue_FloatRightX=0,"
     "Session_Visible=0,Session_DockedTo=TopDock,Session_LastDock=TopDock,Session_DockRow=4,Session_DockPos=0,Session_FloatLeft=380,Session_FloatTop=197,Session_FloatRightX=0,"
@@ -168,12 +469,12 @@ void __fastcall TWinConfiguration::Default()
     "LocalPath_Visible=1,LocalPath_DockedTo=LocalTopDock,LocalPath_LastDock=LocalTopDock,LocalPath_DockRow=0,LocalPath_DockPos=0,LocalPath_FloatLeft=0,LocalPath_FloatTop=0,LocalPath_FloatRightX=0,"
     "LocalHistory_Visible=1,LocalHistory_DockedTo=LocalTopDock,LocalHistory_LastDock=LocalTopDock,LocalHistory_DockRow=0,LocalHistory_DockPos=135,LocalHistory_FloatLeft=0,LocalHistory_FloatTop=0,LocalHistory_FloatRightX=0,"
     "LocalNavigation_Visible=1,LocalNavigation_DockedTo=LocalTopDock,LocalNavigation_LastDock=LocalTopDock,LocalNavigation_DockRow=0,LocalNavigation_DockPos=215,LocalNavigation_FloatLeft=0,LocalNavigation_FloatTop=0,LocalNavigation_FloatRightX=0,"
-    "Toolbar_Visible=1,Toolbar_DockedTo=BottomDock,Toolbar_LastDock=BottomDock,Toolbar_DockRow=0,Toolbar_DockPos=0,Toolbar_FloatLeft=0,Toolbar_FloatTop=0,Toolbar_FloatRightX=0";
+    "Toolbar_Visible=1,Toolbar_DockedTo=BottomDock,Toolbar_LastDock=BottomDock,Toolbar_DockRow=0,Toolbar_DockPos=0,Toolbar_FloatLeft=0,Toolbar_FloatTop=0,Toolbar_FloatRightX=1";
   FScpCommander.CurrentPanel = osLocal;
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
   FScpCommander.SessionComboWidth = 114;
-  FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0;20,0;150,0|0;1;2;3;4;5;6;7";
+  FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0;20,0;150,0;125,0|0;1;8;2;3;4;5;6;7";
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.DriveView = false;
   FScpCommander.RemotePanel.DriveViewHeight = 100;
@@ -269,9 +570,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
   ELEM.SubString(ELEM.LastDelimiter(".>")+1, ELEM.Length() - ELEM.LastDelimiter(".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKey(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, VAR)
 #define REGCONFIG(CANCREATE) \
   BLOCK("Interface", CANCREATE, \
-    KEY(Bool,     CopyOnDoubleClick); \
+    KEYEX(Integer,DoubleClickAction, CopyOnDoubleClick); \
     KEY(Bool,     CopyOnDoubleClickConfirmation); \
     KEY(Bool,     DDAllowMove); \
     KEY(Bool,     DDAllowMoveInit); \
@@ -302,11 +604,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Integer,  PathInCaption); \
     KEY(Bool,     CopyParamAutoSelectNotice); \
     KEY(Bool,     SessionToolbarAutoShown); \
+    KEY(Bool,     LockToolbars); \
+    KEY(Bool,     AutoOpenInPutty); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
-    KEY(Integer,  Editor.Editor); \
-    KEY(String,   Editor.ExternalEditor); \
-    KEY(Bool,     Editor.ExternalEditorText); \
     KEY(String,   Editor.FontName); \
     KEY(Integer,  Editor.FontHeight); \
     KEY(Integer,  Editor.FontStyle); \
@@ -317,8 +618,6 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     Editor.FindMatchCase); \
     KEY(Bool,     Editor.FindWholeWord); \
     KEY(Bool,     Editor.SingleEditor); \
-    KEY(Bool,     Editor.MDIExternalEditor); \
-    KEY(Bool,     Editor.DetectMDIExternalEditor); \
     KEY(Integer,  Editor.MaxEditors); \
     KEY(Integer,  Editor.EarlyClose); \
   ); \
@@ -361,7 +660,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,    ScpCommander.StatusBar); \
     KEY(Bool,    ScpCommander.CommandLine); \
     KEY(String,  ScpCommander.WindowParams); \
-    KEY(Bool,    ScpCommander.ExplorerStyleSelection); \
+    KEYEX(Bool,  ScpCommander.NortonLikeMode, ExplorerStyleSelection); \
     KEY(Bool,    ScpCommander.PreserveLocalDirectory); \
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
@@ -389,9 +688,9 @@ void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
   TCustomWinConfiguration::SaveSpecial(Storage);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
+  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
   REGCONFIG(true);
-  #undef KEY
+  #undef KEYEX
 
   if (Storage->OpenSubKey("Bookmarks", true))
   {
@@ -418,6 +717,17 @@ void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
     }
     FCustomCommandsModified = false;
   }
+
+  if (FEditorList->Modified &&
+      Storage->OpenSubKey("Interface\\Editor", true))
+  try
+  {
+    FEditorList->Save(Storage);
+  }
+  __finally
+  {
+    Storage->CloseSubKey();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
@@ -425,11 +735,11 @@ void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
   TCustomWinConfiguration::LoadSpecial(Storage);
 
   // duplicated from core\configuration.cpp
-  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
   #pragma warn -eas
   REGCONFIG(false);
   #pragma warn +eas
-  #undef KEY
+  #undef KEYEX
 
   if (Storage->OpenSubKey("Bookmarks", false))
   {
@@ -461,6 +771,75 @@ void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
     FCustomCommandsDefaults = false;
   }
   FCustomCommandsModified = false;
+
+  if (Storage->OpenSubKey("Interface\\Editor", false))
+  try
+  {
+    FEditorList->Clear();
+    FEditorList->Load(Storage);
+  }
+  __finally
+  {
+    Storage->CloseSubKey();
+  }
+
+  int EditorCount = FEditorList->Count;
+  if (EditorCount == 0)
+  {
+    // load legacy configuration
+    TEditorPreferences * Editor = new TEditorPreferences();
+    TEditorPreferences * AlternativeEditor = NULL;
+    try
+    {
+      Editor->LegacyDefaults();
+
+      if (Storage->OpenSubKey("Interface\\Editor", false))
+      {
+        try
+        {
+          Editor->Load(Storage, true);
+        }
+        __finally
+        {
+          Storage->CloseSubKey();
+        }
+      }
+
+      if (Editor->Data.Editor == edInternal)
+      {
+        if (!Editor->Data.ExternalEditor.IsEmpty())
+        {
+          AlternativeEditor = new TEditorPreferences(*Editor);
+          AlternativeEditor->Data.Editor = edExternal;
+          Editor->Data.ExternalEditor = "";
+        }
+      }
+      else
+      {
+        if (Editor->Data.ExternalEditor.IsEmpty())
+        {
+          Editor->Data.Editor = edInternal;
+        }
+        else
+        {
+          AlternativeEditor = new TEditorPreferences(*Editor);
+          AlternativeEditor->Data.Editor = edInternal;
+        }
+      }
+    }
+    catch(...)
+    {
+      delete Editor;
+      delete AlternativeEditor;
+      throw;
+    }
+
+    FEditorList->Add(Editor);
+    if (AlternativeEditor != NULL)
+    {
+      FEditorList->Add(AlternativeEditor);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadAdmin(THierarchicalStorage * Storage)
@@ -709,9 +1088,9 @@ void __fastcall TWinConfiguration::SetForceDeleteTempFolder(bool value)
   SET_CONFIG_PROPERTY(ForceDeleteTempFolder);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetCopyOnDoubleClick(bool value)
+void __fastcall TWinConfiguration::SetDoubleClickAction(TDoubleClickAction value)
 {
-  SET_CONFIG_PROPERTY(CopyOnDoubleClick);
+  SET_CONFIG_PROPERTY(DoubleClickAction);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCopyOnDoubleClickConfirmation(bool value)
@@ -757,6 +1136,7 @@ void __fastcall TWinConfiguration::SetPreservePanelState(bool value)
 void __fastcall TWinConfiguration::SetTheme(AnsiString value)
 {
   SET_CONFIG_PROPERTY(Theme);
+  ConfigureInterface();
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetPathInCaption(TPathInCaption value)
@@ -772,6 +1152,16 @@ void __fastcall TWinConfiguration::SetCopyParamAutoSelectNotice(bool value)
 void __fastcall TWinConfiguration::SetSessionToolbarAutoShown(bool value)
 {
   SET_CONFIG_PROPERTY(SessionToolbarAutoShown);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetLockToolbars(bool value)
+{
+  SET_CONFIG_PROPERTY(LockToolbars);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetAutoOpenInPutty(bool value)
+{
+  SET_CONFIG_PROPERTY(AutoOpenInPutty);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
@@ -810,7 +1200,7 @@ void TWinConfiguration::ReformatFileNameCommand(AnsiString & Command)
 //---------------------------------------------------------------------------
 AnsiString __fastcall TWinConfiguration::GetDefaultKeyFile()
 {
-  return FTemporaryKeyFile;
+  return (!FDefaultKeyFile.IsEmpty() ? FDefaultKeyFile : FTemporaryKeyFile);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
@@ -1079,6 +1469,7 @@ void __fastcall TWinConfiguration::SetResourceModule(HANDLE Instance)
 
     for (int Index = 0; Index < Count; Index++)
     {
+      Form = Screen->Forms[Index];
       TComponent * Component;
       for (int Index = 0; Index < Form->ComponentCount; Index++)
       {
@@ -1161,6 +1552,26 @@ bool __fastcall TWinConfiguration::ConfirmRemoveDefaultTranslation()
       (FInvalidDefaultTranslationMessage)), NULL, qtWarning, 
       qaOK | qaCancel, HELP_NONE) == qaOK);
   return Result;
+}
+//---------------------------------------------------------------------------
+const TEditorPreferences * __fastcall TWinConfiguration::DefaultEditorForFile(
+  const AnsiString FileName, bool Local)
+{
+  return FEditorList->Find(FileName, Local);
+}
+//---------------------------------------------------------------------------
+const TEditorList * __fastcall TWinConfiguration::GetEditorList()
+{
+  return FEditorList;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetEditorList(const TEditorList * value)
+{
+  if (!(*FEditorList == *value))
+  {
+    *FEditorList = *value;
+    Changed();
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

@@ -6,6 +6,7 @@
 #include <TextsWin.h>
 #include <GUIConfiguration.h>
 #include <GUITools.h>
+#include <Tools.h>
 #include "CopyParamPreset.h"
 #include "VCLCommon.h"
 //---------------------------------------------------------------------------
@@ -43,6 +44,7 @@ __fastcall TCopyParamPresetDialog::TCopyParamPresetDialog(TComponent * Owner,
   InstallPathWordBreakProc(UserNameEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
+  HintLabel(RuleMaskHintText, LoadStr(MASK_HINT));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamPresetDialog::UpdateControls()
@@ -194,6 +196,8 @@ void __fastcall TCopyParamPresetDialog::FormCloseQuery(TObject * /*Sender*/,
       DescriptionEdit->SetFocus();
       throw Exception(FMTLOAD(COPY_PARAM_DUPLICATE, (Description)));
     }
+
+    ExitActiveControl(this);
   }
 }
 //---------------------------------------------------------------------------
@@ -209,3 +213,9 @@ void __fastcall TCopyParamPresetDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCopyParamPresetDialog::MaskEditExit(TObject * Sender)
+{
+  ValidateMaskEdit(dynamic_cast<TEdit*>(Sender));
+}
+//---------------------------------------------------------------------------
+

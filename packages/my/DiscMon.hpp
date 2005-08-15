@@ -30,6 +30,8 @@ typedef void __fastcall (__closure *TDiscMonitorSynchronize)(System::TObject* Se
 
 typedef void __fastcall (__closure *TDiscMonitorFilter)(System::TObject* Sender, const AnsiString DirectoryName, bool &Add);
 
+typedef void __fastcall (__closure *TDiscMonitorTooManyDirectories)(System::TObject* Sender, int &MaxDirectories);
+
 class DELPHICLASS TDiscMonitorThread;
 class PASCALIMPLEMENTATION TDiscMonitorThread : public Compthread::TCompThread 
 {
@@ -54,7 +56,6 @@ private:
 	void __fastcall SetDirectories(const Classes::TStrings* Value);
 	void __fastcall SetFilters(unsigned Value);
 	void __fastcall SetSubTree(bool Value);
-	int __fastcall GetMaxDirectories(void);
 	void __fastcall SaveOSError(void);
 	
 protected:
@@ -65,7 +66,6 @@ protected:
 public:
 	__fastcall TDiscMonitorThread(void);
 	__fastcall virtual ~TDiscMonitorThread(void);
-	__property int MaxDirectories = {read=GetMaxDirectories, nodefault};
 	__property Classes::TStrings* Directories = {read=FDirectories, write=SetDirectories};
 	__property unsigned Filters = {read=FFilters, write=SetFilters, nodefault};
 	__property TDiscMonitorNotify OnChange = {read=FOnChange, write=FOnChange};
@@ -96,8 +96,10 @@ private:
 	TDiscMonitorInvalid FOnInvalid;
 	TDiscMonitorSynchronize FOnSynchronize;
 	TDiscMonitorFilter FOnFilter;
+	TDiscMonitorTooManyDirectories FOnTooManyDirectories;
 	bool FShowMsg;
 	bool FPending;
+	int FMaxDirectories;
 	Classes::TStrings* __fastcall GetDirectories(void);
 	bool __fastcall GetSubTree(void);
 	void __fastcall SetActive(bool Value);
@@ -106,7 +108,6 @@ private:
 	void __fastcall SetSubTree(bool Value);
 	int __fastcall GetChangeDelay(void);
 	void __fastcall SetChangeDelay(int Value);
-	int __fastcall GetMaxDirectories(void);
 	
 protected:
 	void __fastcall Change(System::TObject* Sender, const AnsiString Directory, bool &SubdirsChanged);
@@ -122,15 +123,16 @@ public:
 	void __fastcall AddDirectory(AnsiString Directory, bool SubDirs);
 	void __fastcall SetDirectory(AnsiString Directory);
 	__property TDiscMonitorThread* Thread = {read=FMonitor};
-	__property int MaxDirectories = {read=GetMaxDirectories, nodefault};
+	__property int MaxDirectories = {read=FMaxDirectories, write=FMaxDirectories, nodefault};
 	
 __published:
-	__property Classes::TStrings* Directories = {read=GetDirectories, write=SetDirectories};
+	__property Classes::TStrings* Directories = {read=GetDirectories};
 	__property bool ShowDesignMsg = {read=FShowMsg, write=FShowMsg, default=0};
 	__property TDiscMonitorNotify OnChange = {read=FOnChange, write=FOnChange};
 	__property TDiscMonitorInvalid OnInvalid = {read=FOnInvalid, write=FOnInvalid};
 	__property TDiscMonitorSynchronize OnSynchronize = {read=FOnSynchronize, write=FOnSynchronize};
 	__property TDiscMonitorFilter OnFilter = {read=FOnFilter, write=FOnFilter};
+	__property TDiscMonitorTooManyDirectories OnTooManyDirectories = {read=FOnTooManyDirectories, write=FOnTooManyDirectories};
 	__property TMonitorFilters Filters = {read=FFilters, write=SetFilters, default=1};
 	__property bool SubTree = {read=GetSubTree, write=SetSubTree, default=1};
 	__property bool Active = {read=FActive, write=SetActive, default=0};
@@ -139,8 +141,6 @@ __published:
 
 
 //-- var, const, procedure ---------------------------------------------------
-extern PACKAGE System::ResourceString _STooManyWatchDirectories;
-#define Discmon_STooManyWatchDirectories System::LoadResourceString(&Discmon::_STooManyWatchDirectories)
 extern PACKAGE void __fastcall Register(void);
 
 }	/* namespace Discmon */

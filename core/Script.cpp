@@ -10,7 +10,6 @@
 #include "Terminal.h"
 #include "SessionData.h"
 #include "ScpMain.h"
-#include "ScpFileSystem.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -306,7 +305,7 @@ __fastcall TScript::TScript(TTerminal * Terminal)
 //---------------------------------------------------------------------------
 void __fastcall TScript::Init()
 {
-  FBatch = false;
+  FBatch = BatchOff;
   FConfirm = true;
   FSynchronizeParams = 0;
   FOnPrint = NULL;
@@ -314,7 +313,6 @@ void __fastcall TScript::Init()
   FOnSynchronizeStartStop = NULL;
   FSynchronizeMode = -1;
   FKeepingUpToDate = false;
-  FLastPrintedLineTime = 0;
 
   FCommands = new TScriptCommands;
   FCommands->Register(";", 0, 0, &DummyProc, 0, -1);
@@ -339,9 +337,9 @@ void __fastcall TScript::Init()
   FCommands->Register("recv", 0, SCRIPT_GET_HELP, &GetProc, 1, -1);
   FCommands->Register("put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP, &PutProc, 1, -1);
   FCommands->Register("send", 0, SCRIPT_PUT_HELP, &PutProc, 1, -1);
-  FCommands->Register("option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP, &OptionProc, -1, 2);
-  FCommands->Register("ascii", 0, SCRIPT_OPTION_HELP, &AsciiProc, 0, 0);
-  FCommands->Register("binary", 0, SCRIPT_OPTION_HELP, &BinaryProc, 0, 0);
+  FCommands->Register("option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP2, &OptionProc, -1, 2);
+  FCommands->Register("ascii", 0, SCRIPT_OPTION_HELP2, &AsciiProc, 0, 0);
+  FCommands->Register("binary", 0, SCRIPT_OPTION_HELP2, &BinaryProc, 0, 0);
   FCommands->Register("synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP, &SynchronizeProc, 1, 3);
   FCommands->Register("keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP, &KeepUpToDateProc, 0, 2);
 }
@@ -353,7 +351,9 @@ void __fastcall TScript::SetCopyParam(const TCopyParamType & value)
 //---------------------------------------------------------------------------
 void __fastcall TScript::SetSynchronizeParams(int value)
 {
-  FSynchronizeParams = (value & TTerminal::spDelete);
+  FSynchronizeParams = (value &
+    (TTerminal::spDelete | TTerminal::spExistingOnly | TTerminal::spTimestamp |
+     TTerminal::spNotByTime | TTerminal::spBySize));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::Command(const AnsiString Cmd)
@@ -620,8 +620,6 @@ void __fastcall TScript::Print(const AnsiString Str)
 //---------------------------------------------------------------------------
 void __fastcall TScript::PrintLine(const AnsiString Str)
 {
-  FLastPrintedLine = Str;
-  FLastPrintedLineTime = time(NULL);
   Print(Str + "\n");
 }
 //---------------------------------------------------------------------------
@@ -739,32 +737,17 @@ void __fastcall TScript::CallProc(TScriptProcParams * Parameters)
 
   if (EnsureCommandSessionFallback(fcAnyCommand))
   {
-    assert(FTerminal->Log->OnAddLine == NULL);
-    FTerminal->Log->OnAddLine = TerminalCaptureLog;
-    try
-    {
-      FTerminal->AnyCommand(Parameters->ParamsStr);
-    }
-    __finally
-    {
-      FTerminal->Log->OnAddLine = NULL;
-    }
+    FTerminal->AnyCommand(Parameters->ParamsStr, TerminalCaptureLog);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::TerminalCaptureLog(TObject* /*Sender*/,
   TLogLineType Type, const AnsiString AddedLine)
 {
-  if ((Type == llOutput) || (Type == llStdError))
-  {
-    AnsiString Line = AddedLine;
-    int ReturnCode;
-    if (!TSCPFileSystem::RemoveLastLine(Line, ReturnCode) ||
-        !Line.IsEmpty())
-    {
-      PrintLine(Line);
-    }
-  }
+  USEDPARAM(Type);
+  assert((Type == llOutput) || (Type == llStdError));
+
+  PrintLine(AddedLine);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::PwdProc(TScriptProcParams * /*Parameters*/)
@@ -998,11 +981,15 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
 //---------------------------------------------------------------------------
 void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
 {
-  enum { Batch, Confirm, Transfer, SynchDelete };
-  static const char * Names[] = { "batch", "confirm", "transfer", "synchdelete" };
+  enum { Batch, Confirm, Transfer, SynchDelete, Exclude, Include };
+  static const char * Names[] = { "batch", "confirm", "transfer", "synchdelete",
+    "exclude", "include" };
 
   enum { Off, On };
   static const char * ToggleNames[] = { "off", "on" };
+
+  assert((BatchOff == 0) && (BatchOn == 1) && (BatchAbort == 2));
+  static const char * BatchModeNames[] = { "off", "on", "abort" };
 
   assert((tmBinary == 0) && (tmAscii == 1) && (tmAutomatic == 2));
   static const char * TransferModeNames[] = { "binary", "ascii", "automatic" };
@@ -1029,15 +1016,15 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
   {
     if (SetValue)
     {
-      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      int Value = TScriptCommands::FindCommand(BatchModeNames, LENOF(BatchModeNames), ValueName);
       if (Value < 0)
       {
         throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
       }
-      FBatch = (Value == On);
+      FBatch = (TBatchMode)Value;
     }
 
-    PrintLine(FORMAT(ListFormat, (Names[Batch], (ToggleNames[FBatch ? On : Off]))));
+    PrintLine(FORMAT(ListFormat, (Names[Batch], BatchModeNames[FBatch])));
   }
 
   if (OPT(Confirm))
@@ -1052,7 +1039,7 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
       FConfirm = (Value == On);
     }
 
-    PrintLine(FORMAT(ListFormat, (Names[Confirm], (ToggleNames[FConfirm ? On : Off]))));
+    PrintLine(FORMAT(ListFormat, (Names[Confirm], ToggleNames[FConfirm ? On : Off])));
   }
 
   if (OPT(Transfer))
@@ -1088,7 +1075,41 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
     }
 
     PrintLine(FORMAT(ListFormat, (Names[SynchDelete],
-      (ToggleNames[FLAGSET(FSynchronizeParams, TTerminal::spDelete) ? On : Off]))));
+      ToggleNames[FLAGSET(FSynchronizeParams, TTerminal::spDelete) ? On : Off])));
+  }
+
+  static const char * Clear = "clear";
+
+  if (OPT(Include))
+  {
+    if (SetValue)
+    {
+      FCopyParam.NegativeExclude = true;
+      FCopyParam.ExcludeFileMask =
+        (ValueName == Clear ? AnsiString() : ValueName);
+    }
+
+    if (SetValue ||
+        (FCopyParam.NegativeExclude && !FCopyParam.ExcludeFileMask.Masks.IsEmpty()))
+    {
+      PrintLine(FORMAT(ListFormat, (Names[Include], FCopyParam.ExcludeFileMask.Masks)));
+    }
+  }
+
+  if (OPT(Exclude))
+  {
+    if (SetValue)
+    {
+      FCopyParam.NegativeExclude = false;
+      FCopyParam.ExcludeFileMask =
+        (ValueName == Clear ? AnsiString() : ValueName);
+    }
+
+    if (SetValue ||
+        (!FCopyParam.NegativeExclude && !FCopyParam.ExcludeFileMask.Masks.IsEmpty()))
+    {
+      PrintLine(FORMAT(ListFormat, (Names[Exclude], FCopyParam.ExcludeFileMask.Masks)));
+    }
   }
 
   #undef OPT
@@ -1173,7 +1194,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     FTerminal->Synchronize(LocalDirectory, RemoteDirectory,
       static_cast<TTerminal::TSynchronizeMode>(FSynchronizeMode),
       &CopyParam, FSynchronizeParams | TTerminal::spNoConfirmation,
-      OnTerminalSynchronizeDirectory, NULL);
+      OnTerminalSynchronizeDirectory, NULL, NULL);
   }
   __finally
   {
@@ -1195,7 +1216,7 @@ void __fastcall TScript::Synchronize(const AnsiString LocalDirectory,
     FTerminal->Synchronize(LocalDirectory, RemoteDirectory, TTerminal::smRemote, &CopyParam,
       FSynchronizeParams | TTerminal::spNoConfirmation | TTerminal::spNoRecurse |
       TTerminal::spUseCache | TTerminal::spDelayProgress | TTerminal::spSubDirs,
-      OnTerminalSynchronizeDirectory, NULL);
+      OnTerminalSynchronizeDirectory, NULL, NULL);
 
     // to break line after the last transfer (if any); 
     Print("");    
@@ -1313,11 +1334,11 @@ void __fastcall TManagementScript::Input(const AnsiString Prompt,
   while (Str.Trim().IsEmpty() && !AllowEmpty);
 }
 //---------------------------------------------------------------------------
-void __fastcall TManagementScript::PrintProgress(const AnsiString Str)
+void __fastcall TManagementScript::PrintProgress(bool First, const AnsiString Str)
 {
   if (FOnPrintProgress != NULL)
   {
-    FOnPrintProgress(this, Str);
+    FOnPrintProgress(this, First, Str);
   }
 }
 //---------------------------------------------------------------------------
@@ -1336,10 +1357,6 @@ bool __fastcall TManagementScript::QueryCancel()
   if (OnQueryCancel != NULL)
   {
     OnQueryCancel(this, Result);
-    if (Result)
-    {
-      PrintLine(LoadStr(USER_TERMINATED));
-    }
   }
 
   return Result;
@@ -1366,6 +1383,23 @@ void __fastcall TManagementScript::TerminalPromptUser(TSecureShell * SecureShell
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TManagementScript::Synchronizing()
+{
+  return (FKeepingUpToDate || (FSynchronizeMode >= 0));
+}
+//---------------------------------------------------------------------------
+void __fastcall TManagementScript::ShowPendingProgress()
+{
+  if (!FSynchronizeIntro.IsEmpty())
+  {
+    if (Synchronizing())
+    {
+      PrintLine(FSynchronizeIntro);
+    }
+    FSynchronizeIntro = "";
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalOperationProgress(
   TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
 {
@@ -1374,14 +1408,22 @@ void __fastcall TManagementScript::TerminalOperationProgress(
     if (ProgressData.InProgress  && !ProgressData.FileName.IsEmpty())
     {
       bool DoPrint = false;
-      if (ProgressData.FileName != FLastProgressFile)
+      bool First = false;
+      AnsiString ProgressFileName = ProgressData.FileName;
+      if (ProgressData.Side == osLocal)
       {
-        if (!FLastProgressFile.IsEmpty())
-        {
-          Print("");
-        }
+        ProgressFileName = ExcludeTrailingBackslash(ProgressFileName);
+      }
+      else
+      {
+        ProgressFileName = UnixExcludeTrailingBackslash(ProgressFileName);
+      }
+
+      if (ProgressFileName != FLastProgressFile)
+      {
+        First = true;
         DoPrint = true;
-        FLastProgressFile = ProgressData.FileName;
+        ShowPendingProgress();
       }
 
       if (!DoPrint && ((FLastProgressTime != time(NULL)) || ProgressData.IsTransferDone()))
@@ -1392,7 +1434,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
       if (DoPrint)
       {
         static int MaxFileName = 25;
-        AnsiString FileName = MinimizeName(ProgressData.FileName, MaxFileName,
+        AnsiString FileName = MinimizeName(ProgressFileName, MaxFileName,
           ProgressData.Side == osRemote);
         AnsiString ProgressMessage = FORMAT("%-*.*s | %10d kB | %6.1f kB/s | %-6.6s | %3d%%",
           (MaxFileName, MaxFileName, FileName,
@@ -1403,10 +1445,15 @@ void __fastcall TManagementScript::TerminalOperationProgress(
         if (FLastProgressMessage != ProgressMessage)
         {
           FLastProgressTime = time(NULL);
-          PrintProgress(ProgressMessage);
+          PrintProgress(First, ProgressMessage);
           FLastProgressMessage = ProgressMessage;
+          FLastProgressFile = ProgressFileName;
         }
       }
+    }
+    else
+    {
+      FLastProgressFile = "";
     }
   }
 
@@ -1423,8 +1470,11 @@ void __fastcall TManagementScript::TerminalOperationFinished(
 {
   if (Success && (Operation != foCalculateSize) && (Operation != foCopy))
   {
-    if ((FKeepingUpToDate || (FSynchronizeMode >= 0)) && (Operation == foDelete))
+    ShowPendingProgress();
+    // For FKeepingUpToDate we should send events to synchronize controller eventuelly.
+    if (Synchronizing() && (Operation == foDelete))
     {
+      // Note that this is duplicated with "keep up to date" log.
       PrintLine(FMTLOAD(SCRIPT_SYNCHRONIZE_DELETED, (FileName)));
     }
     else
@@ -1460,14 +1510,8 @@ void __fastcall TManagementScript::TerminalSynchronizeDirectory(
       break;
   }
 
-  AnsiString Str = FMTLOAD(SCRIPT_SYNCHRONIZE, (ExcludeTrailingBackslash(LocalDirectory),
+  FSynchronizeIntro = FMTLOAD(SCRIPT_SYNCHRONIZE, (ExcludeTrailingBackslash(LocalDirectory),
     Arrow, UnixExcludeTrailingBackslash(RemoteDirectory)));
-
-  if ((Str != FLastPrintedLine) ||
-      (FLastPrintedLineTime < time(NULL) - 2))
-  {
-    PrintLine(Str);
-  }
 
   if (QueryCancel())
   {

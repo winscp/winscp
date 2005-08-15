@@ -36,9 +36,11 @@ __fastcall TSecureShell::TSecureShell()
   FLog = new TSessionLog(this);
   FOnQueryUser = NULL;
   FOnPromptUser = NULL;
+  FOnDisplayBanner = NULL;
   FOnShowExtendedException = NULL;
   FOnUpdateStatus = NULL;
   FOnStdError = NULL;
+  FOnCaptureOutput = NULL;
   FOnClose = NULL;
   FCSCipher = cipWarn; // = not detected yet
   FSCCipher = cipWarn;
@@ -394,6 +396,10 @@ Integer __fastcall TSecureShell::Receive(char * Buf, Integer Len)
     if (Len <= 0) FatalError(LoadStr(LOST_CONNECTION));
   };
   FBytesReceived += Len;
+  if (Configuration->LogProtocol >= 1)
+  {
+    LogEvent(FORMAT("Received %u bytes", (static_cast<int>(Len))));
+  }
   return Len;
 }
 //---------------------------------------------------------------------------
@@ -434,7 +440,7 @@ AnsiString __fastcall TSecureShell::ReceiveLine()
 
   // We don't want end-of-line character
   Line.SetLength(Line.Length()-1);
-  Log->Add(llOutput, Line);
+  CaptureOutput(llOutput, Line);
   return Line;
 }
 //---------------------------------------------------------------------------
@@ -443,6 +449,7 @@ void __fastcall TSecureShell::SendSpecial(int Code)
   LogEvent(FORMAT("Sending special code: %d", (Code)));
   CheckConnection();
   FBackend->special(FBackendHandle, (Telnet_Special)Code);
+  CheckConnection();
   FLastDataSent = Now();
 }
 //---------------------------------------------------------------------------
@@ -457,6 +464,7 @@ void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
   FBufSize = FBackend->send(FBackendHandle, (char *)Buf, Len);
   if (Configuration->LogProtocol >= 1)
   {
+    LogEvent(FORMAT("Sent %u bytes", (static_cast<int>(Len))));
     LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (FBufSize)));
   }
   FLastDataSent = Now();
@@ -478,6 +486,7 @@ void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
       LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (FBufSize)));
     }
   }
+  CheckConnection();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::SendNull()
@@ -531,7 +540,7 @@ void __fastcall TSecureShell::AddStdErrorLine(const AnsiString Str)
   {
     OnStdError(this, llStdError, Str);
   }
-  Log->Add(llStdError, Str);
+  CaptureOutput(llStdError, Str);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ClearStdError()
@@ -544,10 +553,20 @@ void __fastcall TSecureShell::ClearStdError()
       FAuthenticationLog +=
         (FAuthenticationLog.IsEmpty() ? "" : "\n") + FStdErrorTemp;
     }
-    Log->Add(llStdError, FStdErrorTemp);
+    CaptureOutput(llStdError, FStdErrorTemp);
     FStdErrorTemp = "";
   }
   StdError = "";
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::CaptureOutput(TLogLineType Type,
+  const AnsiString & Line)
+{
+  if (FOnCaptureOutput != NULL)
+  {
+    FOnCaptureOutput(this, Type, Line);
+  }
+  Log->Add(Type, Line);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::FatalError(Exception * E, AnsiString Msg)
@@ -1115,6 +1134,25 @@ void __fastcall TSecureShell::AskAlg(const AnsiString AlgType,
   {
     Abort();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::DoDisplayBanner(const AnsiString & Banner)
+{
+  if ((OnDisplayBanner != NULL) &&
+      Configuration->ShowBanner(SessionData->SessionKey, Banner))
+  {
+    bool NeverShowAgain = false;
+    OnDisplayBanner(this, SessionData->SessionName, Banner, NeverShowAgain);
+    if (NeverShowAgain)
+    {
+      Configuration->NeverShowBanner(SessionData->SessionKey, Banner);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::DisplayBanner(const AnsiString & Banner)
+{
+  DoDisplayBanner(Banner);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::OldKeyfileWarning()

@@ -6996,6 +6996,10 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		    ssh_pkt_getstring(pktin, &banner, &size);
 		    if (banner)
 			c_write_untrusted(ssh, banner, size);
+			#ifdef MPEXT
+			if (banner)
+				display_banner(ssh->frontend, banner, size);
+			#endif
 		}
 		crWaitUntilV(pktin);
 	    }

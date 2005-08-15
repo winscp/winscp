@@ -28,7 +28,7 @@ __published:
   void __fastcall MinimizeButtonClick(TObject *Sender);
 
 public:
-  __fastcall TSynchronizeProgressForm(TComponent* Owner);
+  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize);
   virtual __fastcall ~TSynchronizeProgressForm();
 
   void __fastcall Start();

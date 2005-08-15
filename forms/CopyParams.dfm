@@ -272,7 +272,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Width = 231
       Height = 17
       Caption = 'Clear source file '#39'Archi&ve'#39' attribute'
-      TabOrder = 2
+      TabOrder = 3
     end
     object NegativeExcludeCombo: TComboBox
       Left = 10
@@ -285,6 +285,18 @@ object CopyParamsFrame: TCopyParamsFrame
       Items.Strings = (
         'Exclude'
         'Include')
+    end
+    object ExcludeFileMaskHintText: TStaticText
+      Left = 397
+      Top = 39
+      Width = 97
+      Height = 17
+      Alignment = taRightJustify
+      Anchors = [akTop, akRight]
+      AutoSize = False
+      Caption = 'mask hints'
+      TabOrder = 2
+      TabStop = True
     end
   end
 end

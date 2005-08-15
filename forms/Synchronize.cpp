@@ -8,6 +8,8 @@
 #include "Synchronize.h"
 #include "VCLCommon.h"
 #include "CopyParams.h"
+#include "Terminal.h"
+#include "GUITools.h"
 
 #include <ScpMain.h>
 #include <Configuration.h>
@@ -25,13 +27,14 @@ const int WM_USER_STOP = WM_WINSCP_USER + 2;
 //---------------------------------------------------------------------------
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
-  bool & SaveSettings)
+  bool & SaveSettings, int Options, TGetSynchronizeOptionsEvent OnGetOptions)
 {
   bool Result;
-  TSynchronizeDialog * Dialog = new TSynchronizeDialog(Application);
+  TSynchronizeDialog * Dialog = new TSynchronizeDialog(Application,
+    OnStartStop, OnGetOptions);
   try
   {
-    Dialog->OnStartStop = OnStartStop;
+    Dialog->Options = Options;
     Dialog->Params = Params;
     Dialog->CopyParams = *CopyParams;
     Dialog->SaveSettings = SaveSettings;
@@ -50,13 +53,20 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   return Result;
 }
 //---------------------------------------------------------------------------
-__fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent* Owner)
+const TSynchronizeDialog::MaxLogItems = 1000;
+//---------------------------------------------------------------------------
+__fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
+  TSynchronizeStartStopEvent OnStartStop, TGetSynchronizeOptionsEvent OnGetOptions)
   : TForm(Owner)
 {
   UseSystemSettings(this);
+  FOptions = 0;
   FSynchronizing = false;
   FMinimizedByMe = false;
   FPresetsMenu = new TPopupMenu(this);
+  FOnStartStop = OnStartStop;
+  FOnGetOptions = OnGetOptions;
+  FSynchronizeOptions = NULL;
 
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
@@ -64,6 +74,7 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent* Owner)
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeDialog::~TSynchronizeDialog()
 {
+  delete FSynchronizeOptions;
   delete FPresetsMenu;
 }
 //---------------------------------------------------------------------------
@@ -88,17 +99,34 @@ void __fastcall TSynchronizeDialog::UpdateControls()
   }
   Caption = LoadStr(FSynchronizing ? SYNCHRONIZE_SYCHRONIZING : SYNCHRONIZE_TITLE);
   EnableControl(TransferSettingsButton, !FSynchronizing);
-  CancelButton->Visible = !FSynchronizing;
+  CancelButton->Visible = !FSynchronizing || FLAGSET(FOptions, soNoMinimize);
+  EnableControl(CancelButton, !FSynchronizing);
   EnableControl(DirectoriesGroup, !FSynchronizing);
   EnableControl(OptionsGroup, !FSynchronizing);
   EnableControl(CopyParamGroup, !FSynchronizing);
-  MinimizeButton->Visible = FSynchronizing;
+  MinimizeButton->Visible = FSynchronizing && FLAGCLEAR(FOptions, soNoMinimize);
+  EnableControl(SynchronizeSelectedOnlyCheck,
+    OptionsGroup->Enabled && FLAGSET(FOptions, soAllowSelectedOnly));
 
   AnsiString InfoStr = CopyParams.GetInfoStr("; ");
   CopyParamLabel->Caption = InfoStr;
   CopyParamLabel->Hint = InfoStr;
   CopyParamLabel->ShowHint =
     (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+
+  if (LogPanel->Visible != FSynchronizing)
+  {
+    if (FSynchronizing)
+    {
+      LogPanel->Visible = true;
+      ClientHeight = ClientHeight + LogPanel->Height;
+    }
+    else
+    {
+      ClientHeight = ClientHeight - LogPanel->Height;
+      LogPanel->Visible = false;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -125,7 +153,7 @@ void __fastcall TSynchronizeDialog::SetParams(const TSynchronizeParamType& value
   LocalDirectoryEdit->Text = value.LocalDirectory;
   SynchronizeDeleteCheck->Checked = FLAGSET(value.Params, spDelete);
   SynchronizeExistingOnlyCheck->Checked = FLAGSET(value.Params, spExistingOnly);
-  SynchronizeNoConfirmationCheck->Checked = FLAGSET(value.Params, spNoConfirmation);
+  SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value.Params, spSelectedOnly);
   SynchronizeRecursiveCheck->Checked = FLAGSET(value.Options, soRecurse);
   SynchronizeSynchronizeCheck->State =
     FLAGSET(value.Options, soSynchronizeAsk) ? cbGrayed :
@@ -138,10 +166,10 @@ TSynchronizeParamType __fastcall TSynchronizeDialog::GetParams()
   Result.RemoteDirectory = RemoteDirectoryEdit->Text;
   Result.LocalDirectory = LocalDirectoryEdit->Text;
   Result.Params =
-    (Result.Params & ~(spDelete | spExistingOnly | spNoConfirmation)) |
+    (Result.Params & ~(spDelete | spExistingOnly | spSelectedOnly | spTimestamp)) |
     FLAGMASK(SynchronizeDeleteCheck->Checked, spDelete) |
     FLAGMASK(SynchronizeExistingOnlyCheck->Checked, spExistingOnly) |
-    FLAGMASK(SynchronizeNoConfirmationCheck->Checked, spNoConfirmation);
+    FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, spSelectedOnly);
   Result.Options =
     (Result.Options & ~(soRecurse | soSynchronize | soSynchronizeAsk)) |
     FLAGMASK(SynchronizeRecursiveCheck->Checked, soRecurse) |
@@ -160,12 +188,28 @@ void __fastcall TSynchronizeDialog::LocalDirectoryBrowseButtonClick(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::SetOptions(int value)
+{
+  if (Options != value)
+  {
+    FOptions = value;
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::TransferSettingsButtonClick(
   TObject * /*Sender*/)
 {
-  CopyParamListPopup(
-    TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
-    FPresetsMenu, FCopyParams, FPreset, CopyParamClick, cplCustomize);
+  if (FLAGCLEAR(FOptions, soDoNotUsePresets))
+  {
+    CopyParamListPopup(
+      TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
+      FPresetsMenu, FCopyParams, FPreset, CopyParamClick, cplCustomize);
+  }
+  else
+  {
+    CopyParamGroupDblClick(NULL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::DoStartStop(bool Start, bool Synchronize)
@@ -176,7 +220,14 @@ void __fastcall TSynchronizeDialog::DoStartStop(bool Start, bool Synchronize)
     SParams.Options =
       (SParams.Options & ~(soSynchronize | soSynchronizeAsk)) |
       FLAGMASK(Synchronize, soSynchronize);
-    FOnStartStop(this, Start, SParams, CopyParams, DoAbort, NULL);
+    if (Start)
+    {
+      delete FSynchronizeOptions;
+      FSynchronizeOptions = new TSynchronizeOptions;
+      FOnGetOptions(SParams.Params, *FSynchronizeOptions);
+    }
+    FOnStartStop(this, Start, SParams, CopyParams, FSynchronizeOptions, DoAbort,
+      NULL, DoLog);
   }
 }
 //---------------------------------------------------------------------------
@@ -206,6 +257,32 @@ void __fastcall TSynchronizeDialog::DoAbort(TObject * /*Sender*/, bool Close)
   FAbort = true;
   FClose = Close;
   PostMessage(Handle, WM_USER_STOP, 0, 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::DoLog(TSynchronizeController * /*Controller*/,
+  TSynchronizeLogEntry Entry, const AnsiString Message)
+{
+  LogView->Items->BeginUpdate();
+  try
+  {
+    TListItem * Item = LogView->Items->Add();
+    Item->Caption = Now().TimeString();
+    Item->SubItems->Add(Message);
+    Item->MakeVisible(false);
+    while (LogView->Items->Count > MaxLogItems)
+    {
+      LogView->Items->Delete(0);
+    }
+  }
+  __finally
+  {
+    LogView->Items->EndUpdate();
+    if (Entry == slScan)
+    {
+      // redraw log before the scanning block update
+      LogView->Repaint();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
@@ -256,6 +333,7 @@ void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
     try
     {
       UpdateControls();
+      Repaint();
 
       FAbort = false;
       DoStartStop(true, Synchronize);
@@ -279,6 +357,7 @@ void __fastcall TSynchronizeDialog::Stop()
   FSynchronizing = false;
   DoStartStop(false, false);
   UpdateControls();
+  Repaint();
   if (IsIconic(Application->Handle) && FMinimizedByMe)
   {
     FMinimizedByMe = false;
@@ -304,6 +383,7 @@ bool __fastcall TSynchronizeDialog::GetSaveSettings()
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::FormShow(TObject * /*Sender*/)
 {
+  ClearLog();
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -329,10 +409,16 @@ void __fastcall TSynchronizeDialog::SetCopyParams(const TCopyParamType & value)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+int __fastcall TSynchronizeDialog::CopyParamCustomDialogOptions()
+{
+  return cfAllowTransferMode | cfAllowExcludeMask | cfAllowClearArchive | cfDisablePreserveTime;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
+  assert(FLAGCLEAR(FOptions, soDoNotUsePresets));
   if (CopyParamListPopupClick(Sender, FCopyParams, FPreset,
-        cfAllowTransferMode | cfAllowExcludeMask | cfAllowClearArchive | cfDisablePreserveTime))
+        CopyParamCustomDialogOptions()))
   {
     UpdateControls();
   }
@@ -341,14 +427,17 @@ void __fastcall TSynchronizeDialog::CopyParamClick(TObject * Sender)
 void __fastcall TSynchronizeDialog::CopyParamGroupContextPopup(
   TObject * /*Sender*/, TPoint & MousePos, bool & Handled)
 {
-  CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), FPresetsMenu,
-    FCopyParams, FPreset, CopyParamClick, cplCustomize | cplCustomizeDefault);
-  Handled = true;
+  if (FLAGCLEAR(FOptions, soDoNotUsePresets))
+  {
+    CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), FPresetsMenu,
+      FCopyParams, FPreset, CopyParamClick, cplCustomize | cplCustomizeDefault);
+    Handled = true;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::CopyParamGroupDblClick(TObject * /*Sender*/)
 {
-  if (DoCopyParamCustomDialog(FCopyParams, cfDisablePreserveTime))
+  if (DoCopyParamCustomDialog(FCopyParams, CopyParamCustomDialogOptions()))
   {
     UpdateControls();
   }
@@ -357,6 +446,49 @@ void __fastcall TSynchronizeDialog::CopyParamGroupDblClick(TObject * /*Sender*/)
 void __fastcall TSynchronizeDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::ClearLog()
+{
+  // TListItems::Clear() does nothing without allocated handle
+  LogView->HandleNeeded();
+  LogView->Items->Clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::CopyLog()
+{
+  AnsiString Content;
+  for (int i = 0; i < LogView->Items->Count; i++)
+  {
+    TListItem * Item = LogView->Items->Item[i];
+    Content += Item->Caption + "\t" + Item->SubItems->Strings[0] + "\r\n";
+  }
+  CopyToClipboard(Content);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::LogViewKeyDown(TObject * /*Sender*/,
+  WORD & Key, TShiftState Shift)
+{
+  if (Key == VK_DELETE)
+  {
+    ClearLog();
+    Key = 0;
+  }
+  else if ((Key == 'C') && Shift.Contains(ssCtrl) && (LogView->Items->Count > 0))
+  {
+    CopyLog();
+    Key = 0;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::FormKeyDown(TObject * /*Sender*/, WORD & Key,
+  TShiftState /*Shift*/)
+{
+  if ((Key == VK_ESCAPE) && FSynchronizing)
+  {
+    Stop();
+    Key = 0;
+  }
 }
 //---------------------------------------------------------------------------
 

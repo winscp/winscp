@@ -40,6 +40,8 @@ private:
 class TScript
 {
 public:
+  enum TBatchMode { BatchOff, BatchOn, BatchAbort };
+
   __fastcall TScript();
   __fastcall TScript(TTerminal * Terminal);
   virtual __fastcall ~TScript();
@@ -56,7 +58,7 @@ public:
   __property TScriptSynchronizeStartStop OnSynchronizeStartStop = { read = FOnSynchronizeStartStop, write = FOnSynchronizeStartStop };
   __property TCopyParamType CopyParam = { read = FCopyParam, write = SetCopyParam };
   __property int SynchronizeParams = { read = FSynchronizeParams, write = SetSynchronizeParams };
-  __property bool Batch = { read = FBatch };
+  __property TBatchMode Batch = { read = FBatch };
   __property TTerminal * Terminal = { read = FTerminal };
 
 protected:
@@ -67,13 +69,12 @@ protected:
   TSynchronizeDirectory FOnTerminalSynchronizeDirectory;
   TScriptSynchronizeStartStop FOnSynchronizeStartStop;
   TCopyParamType FCopyParam;
-  bool FBatch;
+  TBatchMode FBatch;
   bool FConfirm;
   int FSynchronizeParams;
   int FSynchronizeMode;
   bool FKeepingUpToDate;
-  AnsiString FLastPrintedLine;
-  time_t FLastPrintedLineTime;
+  AnsiString FSynchronizeIntro;
 
   virtual void __fastcall ResetTransfer();
   virtual void __fastcall ConnectTerminal(TTerminal * Terminal);
@@ -129,11 +130,11 @@ private:
   void __fastcall Init();
   void __fastcall SetCopyParam(const TCopyParamType & value);
   void __fastcall SetSynchronizeParams(int value);
-  int __fastcall GetSynchronizeParams();
 };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptInputEvent)(TScript * Script, const AnsiString Prompt, AnsiString & Str);
 typedef void __fastcall (__closure *TScriptQueryCancelEvent)(TScript * Script, bool & Cancel);
+typedef void __fastcall (__closure *TScriptPrintProgressEvent)(TScript * Script, bool First, const AnsiString Str);
 //---------------------------------------------------------------------------
 class TManagementScript : public TScript
 {
@@ -148,7 +149,7 @@ public:
   __property TNotifyEvent OnTerminalUpdateStatus = { read = FOnTerminalUpdateStatus, write = FOnTerminalUpdateStatus };
   __property TPromptUserEvent OnTerminalPromptUser = { read = FOnTerminalPromptUser, write = FOnTerminalPromptUser };
   __property TQueryUserEvent OnTerminalQueryUser = { read = FOnTerminalQueryUser, write = FOnTerminalQueryUser };
-  __property TScriptPrintEvent OnPrintProgress = { read = FOnPrintProgress, write = FOnPrintProgress };
+  __property TScriptPrintProgressEvent OnPrintProgress = { read = FOnPrintProgress, write = FOnPrintProgress };
   __property bool Continue = { read = FContinue };
 
 protected:
@@ -157,7 +158,7 @@ protected:
   TNotifyEvent FOnTerminalUpdateStatus;
   TPromptUserEvent FOnTerminalPromptUser;
   TQueryUserEvent FOnTerminalQueryUser;
-  TScriptPrintEvent FOnPrintProgress;
+  TScriptPrintProgressEvent FOnPrintProgress;
   TStoredSessionList * FStoredSessions;
   TTerminalList * FTerminalList;
   AnsiString FLastProgressFile;
@@ -179,7 +180,7 @@ protected:
   void __fastcall PrintActiveSession();
   TTerminal * __fastcall FindSession(const AnsiString Index);
   void __fastcall FreeTerminal(TTerminal * Terminal);
-  void __fastcall PrintProgress(const AnsiString Str);
+  void __fastcall PrintProgress(bool First, const AnsiString Str);
   bool __fastcall QueryCancel();
   void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, bool & Continue);
@@ -190,6 +191,8 @@ protected:
   void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
     AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
     void * Arg);
+  inline bool __fastcall Synchronizing();
+  inline void __fastcall ShowPendingProgress();
 
   void __fastcall ExitProc(TScriptProcParams * Parameters);
   void __fastcall OpenProc(TScriptProcParams * Parameters);

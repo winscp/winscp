@@ -72,6 +72,7 @@ DEFINE_COMPARE_FUNC(Owner, AnsiCompareText);
 DEFINE_COMPARE_FUNC(Group, AnsiCompareText);
 DEFINE_COMPARE_FUNC(Extension, AnsiCompareText);
 DEFINE_COMPARE_FUNC(LinkTo, AnsiCompareText);
+DEFINE_COMPARE_FUNC(TypeName, AnsiCompareText);
 //---------------------------------------------------------------------------
 #undef DEFINE_COMPARE_FUNC
 #undef COMPARE_NUMBER
@@ -122,9 +123,9 @@ void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
 #ifndef DESIGN_ONLY
   ASSERT_VALID_ITEM;
   if (ITEMFILE->IsDirectory ||
-      !Terminal->SessionData->ResolveSymlinks || !Terminal->IsCapable[fcResolveSymlink])
+      !Terminal->ResolvingSymlinks)
   {
-    FLastPath = PathName;
+    PathChanging(true);
     ChangeDirectory(ITEMFILE->FileName);
   }
   else
@@ -137,8 +138,7 @@ void __fastcall TUnixDirView::ExecuteFile(TListItem * Item)
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::ExecuteParentDirectory()
 {
-  // We need to remember this to select directory being leaved in parent directory
-  FLastPath = PathName;
+  PathChanging(true);
 #ifndef DESIGN_ONLY
   ChangeDirectory(PARENTDIRECTORY);
 #endif
@@ -148,7 +148,7 @@ void __fastcall TUnixDirView::ExecuteHomeDirectory()
 {
 #ifndef DESIGN_ONLY
   // don't select any directory
-  FLastPath = "";
+  PathChanging(false);
   AnsiString APath = Terminal->SessionData->RemoteDirectory;
   if (WinConfiguration->DefaultDirIsHome && !APath.IsEmpty() &&
       !Terminal->SessionData->UpdateDirectories)
@@ -194,7 +194,7 @@ void __fastcall TUnixDirView::ExecuteRootDirectory()
   // after entering root directory
   // DISABLED: see PathChanged(): back moves to top directory, not to current
 
-  FLastPath = PathName;
+  PathChanging(false);
   ChangeDirectory(ROOTDIRECTORY);
 #endif
 }
@@ -288,7 +288,7 @@ bool __fastcall TUnixDirView::ItemMatchesFilter(TListItem * Item,
     ((!(int)Filter.ModificationFrom) || (File->Modification >= Filter.ModificationFrom)) &&
     ((!(int)Filter.ModificationTo) || (File->Modification <= Filter.ModificationTo)) &&
     ((Filter.Masks.IsEmpty()) ||
-     FileNameMatchesMasks(File->FileName, Filter.Masks));
+     FileNameMatchesMasks(File->FileName, File->IsDirectory, Filter.Masks));
 #else
   return false;
 #endif
@@ -382,6 +382,7 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMA &DispI
         case uvGroup: Value = File->Group; break;
         case uvExt: Value = File->Extension; break;
         case uvLinkTarget: Value = File->LinkTo; break;
+        case uvType: Value = File->TypeName; break;
         default: assert(false);
       }
       StrPLCopy(DispInfo.pszText, Value, DispInfo.cchTextMax);
@@ -495,7 +496,7 @@ void __fastcall TUnixDirView::SetTerminal(TTerminal *value)
       }
     }
     FTerminal = value;
-    FLastPath = "";
+    PathChanging(false);
     if (FDriveView != NULL)
     {
       FDriveView->Terminal = FTerminal;
@@ -598,7 +599,7 @@ void __fastcall TUnixDirView::SetPath(AnsiString Value)
 
   if (Active && (Terminal->CurrentDirectory != Value))
   {
-    FLastPath = PathName;
+    PathChanging(true);
     Terminal->CurrentDirectory = Value;
   }
 #endif
@@ -620,6 +621,7 @@ void __fastcall TUnixDirView::SortItems()
       case uvGroup: SortProc = (PFNLVCOMPARE)CompareGroup; break;
       case uvExt: SortProc = (PFNLVCOMPARE)CompareExtension; break;
       case uvLinkTarget: SortProc = (PFNLVCOMPARE)CompareLinkTo; break;
+      case uvType: SortProc = (PFNLVCOMPARE)CompareTypeName; break;
       default: assert(false);
     }
     CustomSortItems(SortProc);
@@ -742,6 +744,7 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMA & HItem)
   TListItem *Item = GetItemFromHItem(HItem);
   ASSERT_VALID_ITEM;
   FSelectFile = HItem.pszText;
+  LoadEnabled = true;
   Terminal->RenameFile(ITEMFILE, HItem.pszText, true);
 #endif
 }

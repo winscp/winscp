@@ -14,8 +14,10 @@
 #include "WinInterface.h"
 #include "ProgParams.h"
 #include "TextsWin.h"
+#include "TextsCore.h"
 #include "CustomWinConfiguration.h"
 #include "SynchronizeController.h"
+enum { RESULT_SUCCESS = 0, RESULT_ANY_ERROR = 1 };
 //---------------------------------------------------------------------------
 #define WM_INTERUPT_IDLE (WM_WINSCP_USER + 3)
 //---------------------------------------------------------------------------
@@ -101,9 +103,8 @@ BOOL WINAPI TOwnConsole::HandlerRoutine(DWORD CtrlType)
     InputRecord.Event.KeyEvent.uChar.AsciiChar = '\n';
 
     unsigned long Written;
-    bool Result = WriteConsoleInput(FInstance->FInput, &InputRecord, 1, &Written);
-    assert(Result);
-    USEDPARAM(Result);
+    // this assertion occasionally fails (when console is being exited)
+    CHECK(WriteConsoleInput(FInstance->FInput, &InputRecord, 1, &Written));
     assert(Written == 1);
 
     FInstance->FPendingAbort = true;
@@ -258,6 +259,7 @@ void __fastcall TOwnConsole::WaitBeforeExit()
   while (ReadConsoleInput(FInput, &Record, 1, &Read))
   {
     if ((Read == 1) && (Record.EventType == KEY_EVENT) &&
+        (Record.Event.KeyEvent.uChar.AsciiChar != 0) &&
         Record.Event.KeyEvent.bKeyDown)
     {
       break;
@@ -485,6 +487,7 @@ public:
   TConsoleRunner(TConsole * Console);
 
   int __fastcall Run(const AnsiString Session, TStrings * ScriptCommands);
+  void __fastcall ShowException(Exception * E);
 
 protected:
   bool __fastcall Input(AnsiString & Str, bool Echo);
@@ -492,6 +495,8 @@ protected:
   inline void __fastcall PrintLine(const AnsiString & Str);
   inline void __fastcall PrintMessage(const AnsiString & Str);
   void __fastcall UpdateTitle();
+  inline void __fastcall NotifyAbort();
+  inline bool __fastcall Aborted(bool AllowCompleteAbort = true);
 
 private:
   TManagementScript * FScript;
@@ -499,10 +504,12 @@ private:
   TSynchronizeController FSynchronizeController;
   int FLastProgressLen;
   bool FSynchronizeAborted;
-  bool FAnyError;
+  bool FCommandError;
+  bool FBatchScript;
+  bool FAborted;
 
   void __fastcall ScriptPrint(TScript * Script, const AnsiString Str);
-  void __fastcall ScriptPrintProgress(TScript * Script, const AnsiString Str);
+  void __fastcall ScriptPrintProgress(TScript * Script, bool First, const AnsiString Str);
   void __fastcall ScriptInput(TScript * Script, const AnsiString Prompt, AnsiString & Str);
   void __fastcall ScriptTerminalUpdateStatus(TObject * Sender);
   void __fastcall ScriptTerminalPromptUser(TSecureShell * SecureShell,
@@ -514,25 +521,30 @@ private:
     TQueryType QueryType, void * Arg);
   void __fastcall ScriptQueryCancel(TScript * Script, bool & Cancel);
   void __fastcall SynchronizeControllerAbort(TObject * Sender, bool Close);
+  void __fastcall SynchronizeControllerLog(TSynchronizeController * Controller,
+    TSynchronizeLogEntry Entry, const AnsiString Message);
   void __fastcall ScriptSynchronizeStartStop(TScript * Script, 
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory);
   void __fastcall SynchronizeControllerSynchronize(TSynchronizeController * Sender,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
     const TCopyParamType & CopyParam, const TSynchronizeParamType & Params,
-    TSynchronizeStats * Stats, bool Full);
+    TSynchronizeStats * Stats, TSynchronizeOptions * Options, bool Full);
   void __fastcall SynchronizeControllerSynchronizeInvalid(TSynchronizeController * Sender,
     const AnsiString Directory, const AnsiString ErrorStr);
-  void __fastcall ShowException(Exception * E);
+  void __fastcall SynchronizeControllerTooManyDirectories(TSynchronizeController * Sender,
+    int & MaxDirectories);
 };
 //---------------------------------------------------------------------------
 TConsoleRunner::TConsoleRunner(TConsole * Console) :
   FSynchronizeController(&SynchronizeControllerSynchronize,
-    &SynchronizeControllerSynchronizeInvalid)
+    &SynchronizeControllerSynchronizeInvalid,
+    &SynchronizeControllerTooManyDirectories)
 {
   FConsole = Console;
   FLastProgressLen = 0;
   FScript = NULL;
-  FAnyError = false;
+  FAborted = false;
+  FBatchScript = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptInput(TScript * /*Script*/,
@@ -571,6 +583,36 @@ void __fastcall TConsoleRunner::PrintMessage(const AnsiString & Str)
       "\n \n", "\n", TReplaceFlags() << rfReplaceAll));
 }
 //---------------------------------------------------------------------------
+void __fastcall TConsoleRunner::NotifyAbort()
+{
+  if (FBatchScript)
+  {
+    FAborted = true;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConsoleRunner::Aborted(bool AllowCompleteAbort)
+{
+  bool Result;
+  if (FAborted)
+  {
+    Result = true;
+  }
+  else
+  {
+    Result = FConsole->PendingAbort();
+    if (Result)
+    {
+      PrintLine(LoadStr(USER_TERMINATED));
+      if (AllowCompleteAbort)
+      {
+        NotifyAbort();
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptPrint(TScript * /*Script*/,
   const AnsiString Str)
 {
@@ -578,10 +620,14 @@ void __fastcall TConsoleRunner::ScriptPrint(TScript * /*Script*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptPrintProgress(TScript * /*Script*/,
-  const AnsiString Str)
+  bool First, const AnsiString Str)
 {
   AnsiString S = Str;
-  if (S.Length() < FLastProgressLen)
+  if (First && (FLastProgressLen > 0))
+  {
+    S = "\n" + S;
+  }
+  else if (S.Length() < FLastProgressLen)
   {
     S += AnsiString::StringOfChar(' ', FLastProgressLen - S.Length());
   }
@@ -790,13 +836,18 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   Print(Output);
 
   int AnswerIndex;
-  if (FScript->Batch)
+  if (FScript->Batch != TScript::BatchOff)
   {
     AnswerIndex = AbortIndex;
   }
   else
   {
-    AnswerIndex = FConsole->Choice(Accels, CancelIndex, AbortIndex);
+    AnswerIndex = FConsole->Choice(Accels, CancelIndex, -1);
+    if (AnswerIndex == -1)
+    {
+      NotifyAbort();
+      AnswerIndex = AbortIndex;
+    }
   }
   assert((AnswerIndex >= 1) && (AnswerIndex <= Accels.Length()));
   AnsiString AnswerCaption = Captions[AnswerIndex - 1];
@@ -808,13 +859,13 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   Answer = Buttons[AnswerIndex - 1];
   if (Answer == qaAbort)
   {
-    FAnyError = true;
+    FCommandError = true;
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptQueryCancel(TScript * /*Script*/, bool & Cancel)
 {
-  if (FConsole->PendingAbort())
+  if (Aborted())
   {
     Cancel = true;
   }
@@ -830,13 +881,14 @@ void __fastcall TConsoleRunner::ScriptSynchronizeStartStop(TScript * /*Script*/,
   Params.Options = soRecurse;
 
   FSynchronizeController.StartStop(Application, true, Params,
-    FScript->CopyParam, SynchronizeControllerAbort, NULL);
+    FScript->CopyParam, NULL, SynchronizeControllerAbort, NULL,
+    SynchronizeControllerLog);
 
   try
   {
     FSynchronizeAborted = false;
 
-    while (!FSynchronizeAborted && !FConsole->PendingAbort())
+    while (!FSynchronizeAborted && !Aborted(false))
     {
       Application->HandleMessage();
     }
@@ -844,8 +896,16 @@ void __fastcall TConsoleRunner::ScriptSynchronizeStartStop(TScript * /*Script*/,
   __finally
   {
     FSynchronizeController.StartStop(Application, false, Params,
-      FScript->CopyParam, SynchronizeControllerAbort, NULL);
+      FScript->CopyParam, NULL, SynchronizeControllerAbort, NULL,
+      SynchronizeControllerLog);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleRunner::SynchronizeControllerLog(
+  TSynchronizeController * /*Controller*/, TSynchronizeLogEntry /*Entry*/,
+  const AnsiString Message)
+{
+  PrintLine(Message);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::SynchronizeControllerAbort(TObject * /*Sender*/,
@@ -857,7 +917,8 @@ void __fastcall TConsoleRunner::SynchronizeControllerAbort(TObject * /*Sender*/,
 void __fastcall TConsoleRunner::SynchronizeControllerSynchronize(
   TSynchronizeController * /*Sender*/, const AnsiString LocalDirectory,
   const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
-  const TSynchronizeParamType & /*Params*/, TSynchronizeStats * Stats, bool Full)
+  const TSynchronizeParamType & /*Params*/, TSynchronizeStats * Stats,
+  TSynchronizeOptions * /*Options*/, bool Full)
 {
   if (!Full)
   {
@@ -883,12 +944,30 @@ void __fastcall TConsoleRunner::SynchronizeControllerSynchronizeInvalid(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TConsoleRunner::SynchronizeControllerTooManyDirectories(
+  TSynchronizeController * /*Sender*/, int & MaxDirectories)
+{
+  if (Aborted())
+  {
+    Abort();
+  }
+
+  if (MaxDirectories < GUIConfiguration->MaxWatchDirectories)
+  {
+    MaxDirectories = GUIConfiguration->MaxWatchDirectories;
+  }
+  else
+  {
+    MaxDirectories *= 2;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ShowException(Exception * E)
 {
   if (!E->Message.IsEmpty() &&
       (dynamic_cast<EAbort *>(E) == NULL))
   {
-    FAnyError = true;
+    FCommandError = true;
     PrintMessage(E->Message);
     ExtException * EE = dynamic_cast<ExtException *>(E);
     if ((EE != NULL) && (EE->MoreMessages != NULL))
@@ -909,18 +988,25 @@ bool __fastcall TConsoleRunner::Input(AnsiString & Str, bool Echo)
       Str.SetLength(Str.Length() - 1);
     }
   }
+  else
+  {
+    NotifyAbort();
+  }
 
   return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCommands)
 {
+  bool AnyError = false;
+ 
   try
   {
     FScript = new TManagementScript(StoredSessions);
     try
     {
       FScript->CopyParam = GUIConfiguration->DefaultCopyParam;
+      FScript->SynchronizeParams = GUIConfiguration->SynchronizeParams;
       FScript->OnPrint = ScriptPrint;
       FScript->OnPrintProgress = ScriptPrintProgress;
       FScript->OnInput = ScriptInput;
@@ -932,7 +1018,11 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCo
       FScript->OnSynchronizeStartStop = ScriptSynchronizeStartStop;
 
       UpdateTitle();
-    
+
+      // everything until the first manually entered command is "batch"
+      // (including opening session from command line and script file)
+      FBatchScript = true;
+
       if (!Session.IsEmpty())
       {
         FScript->Connect(Session);
@@ -953,16 +1043,28 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCo
         }
         else
         {
+          // no longer batch
+          FBatchScript = false;
           Print("winscp> ");
           Result = Input(Command, true);
         }
       
         if (Result)
         {
+          FCommandError = false;
           FScript->Command(Command);
+
+          if (FCommandError)
+          {
+            AnyError = true;
+            if (FScript->Batch == TScript::BatchAbort)
+            {
+              Result = false;
+            }
+          }
         }
       }
-      while (Result && FScript->Continue);
+      while (Result && FScript->Continue && !Aborted());
     }
     __finally
     {
@@ -973,10 +1075,10 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCo
   catch(Exception & E)
   {
     ShowException(&E);
-    FAnyError = true;
+    AnyError = true;
   }
 
-  return FAnyError ? 1 : 0;
+  return AnyError ? RESULT_ANY_ERROR : RESULT_SUCCESS;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::UpdateTitle()
@@ -1013,7 +1115,7 @@ int __fastcall Console(TProgramParams * Params, bool Help)
 
     if (Help)
     {
-      AnsiString Usage = LoadStr(USAGE);
+      AnsiString Usage = LoadStr(USAGE2);
       AnsiString ExeBaseName = ChangeFileExt(ExtractFileName(Application->ExeName), "");
       Usage = StringReplace(Usage, "%APP%", ExeBaseName,
         TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
@@ -1025,22 +1127,30 @@ int __fastcall Console(TProgramParams * Params, bool Help)
     }
     else
     {
-      AnsiString Value;
-      if (Params->FindSwitch("script", Value))
-      {
-        ScriptCommands->LoadFromFile(Value);
-      }
-      Params->FindSwitch("command", ScriptCommands);
-
       Runner = new TConsoleRunner(Console);
 
-      AnsiString Session;
-      if (Params->ParamCount >= 1)
+      try
       {
-        Session = Params->Param[1];
+        AnsiString Value;
+        if (Params->FindSwitch("script", Value))
+        {
+          ScriptCommands->LoadFromFile(Value);
+        }
+        Params->FindSwitch("command", ScriptCommands);
+
+        AnsiString Session;
+        if (Params->ParamCount >= 1)
+        {
+          Session = Params->Param[1];
+        }
+        Result = Runner->Run(Session,
+          (ScriptCommands->Count > 0 ? ScriptCommands : NULL));
       }
-      Result = Runner->Run(Session,
-        (ScriptCommands->Count > 0 ? ScriptCommands : NULL));
+      catch(Exception & E)
+      {
+        Runner->ShowException(&E);
+        Result = RESULT_ANY_ERROR;
+      }
     }
   }
   __finally

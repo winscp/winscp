@@ -6,7 +6,7 @@
 //---------------------------------------------------------------------------
 enum TQueueOperation { qoNone, qoGoTo, qoPreferences, qoItemUserAction,
   qoItemQuery, qoItemError, qoItemPrompt, qoItemDelete, qoItemExecute,
-  qoItemUp, qoItemDown };
+  qoItemUp, qoItemDown, qoItemPause, qoItemResume, qoPauseAll, qoResumeAll };
 class TCustomListView;
 class TCriticalSection;
 class TQueueItemProxy;
@@ -24,6 +24,7 @@ public:
 
   void __fastcall UpdateQueueStatus(TTerminalQueueStatus * QueueStatus);
   void __fastcall RefreshQueueItem(TQueueItemProxy * QueueItem);
+  static bool __fastcall QueueItemNeedsFrequentRefresh(TQueueItemProxy * QueueItem);
 
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
 

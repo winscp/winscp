@@ -78,6 +78,12 @@ TQueueOperation __fastcall TQueueController::DefaultOperation()
 
       case TQueueItem::qsPrompt:
         return qoItemPrompt;
+
+      case TQueueItem::qsProcessing:
+        return qoItemPause;
+
+      case TQueueItem::qsPaused:
+        return qoItemResume;
     }
   }
 
@@ -125,6 +131,28 @@ bool __fastcall TQueueController::AllowOperation(
         (QueueItem->Status == TQueueItem::qsPending) &&
         (FListView->ItemFocused->Index < (FListView->Items->Count - 1));
 
+    case qoItemPause:
+      return (QueueItem != NULL) &&
+        (QueueItem->Status == TQueueItem::qsProcessing);
+
+    case qoItemResume:
+      return (QueueItem != NULL) &&
+        (QueueItem->Status == TQueueItem::qsPaused);
+
+    case qoPauseAll:
+    case qoResumeAll:
+      {
+        TQueueItem::TStatus Status =
+          (Operation == qoPauseAll) ? TQueueItem::qsProcessing : TQueueItem::qsPaused;
+        bool Result = false;
+        for (int i = 0; !Result && (i < FQueueStatus->ActiveCount); i++)
+        {
+          QueueItem = FQueueStatus->Items[i];
+          Result = (QueueItem->Status == Status);
+        }
+        return Result;
+      }
+
     default:
       assert(false);
       return false;
@@ -162,6 +190,32 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation)
 
       case qoItemDelete:
         QueueItem->Delete();
+        break;
+
+      case qoItemPause:
+        QueueItem->Pause();
+        break;
+
+      case qoItemResume:
+        QueueItem->Resume();
+        break;
+
+      case qoPauseAll:
+      case qoResumeAll:
+        {
+          for (int i = 0; i < FQueueStatus->ActiveCount; i++)
+          {
+            QueueItem = FQueueStatus->Items[i];
+            if ((Operation == qoPauseAll) && (QueueItem->Status == TQueueItem::qsProcessing))
+            {
+              QueueItem->Pause();
+            }
+            else if ((Operation == qoResumeAll) && (QueueItem->Status == TQueueItem::qsPaused))
+            {
+              QueueItem->Resume();
+            }
+          }
+        }
         break;
 
       default:
@@ -206,9 +260,14 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       ProgressStr = LoadStr(QUEUE_PROMPT);
       State = 6;
       break;
+
+    case TQueueItem::qsPaused:
+      ProgressStr = LoadStr(QUEUE_PAUSED);
+      State = 7;
+      break;
   }
 
-  bool BlinkHide = TQueueItem::IsUserActionStatus(QueueItem->Status) &&
+  bool BlinkHide = QueueItemNeedsFrequentRefresh(QueueItem) &&
     !QueueItem->ProcessingUserAction &&
     ((GetTickCount() % 1000) >= 500);
 
@@ -231,7 +290,7 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
     }
     State = ((Info->Side == osLocal) ? 1 : 0);
 
-    // cannot use ProgressData->Temp as it is set only after the trandfer actually starts
+    // cannot use ProgressData->Temp as it is set only after the transfer actually starts
     Values[0] = Info->Source.IsEmpty() ? LoadStr(PROGRESS_TEMP_DIR) : Info->Source;
     Values[1] = Info->Destination.IsEmpty() ? LoadStr(PROGRESS_TEMP_DIR) : Info->Destination;
 
@@ -403,6 +462,14 @@ void __fastcall TQueueController::RefreshQueueItem(TQueueItemProxy * QueueItem)
   FillQueueViewItem(NextListItem, QueueItem, true);
 
   DoChange();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TQueueController::QueueItemNeedsFrequentRefresh(
+  TQueueItemProxy * QueueItem)
+{
+  return
+    (TQueueItem::IsUserActionStatus(QueueItem->Status) ||
+     (QueueItem->Status == TQueueItem::qsPaused));
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueController::DoChange()

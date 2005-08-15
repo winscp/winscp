@@ -5,10 +5,11 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpForms.lib"/>
     <OBJFILES value="forms\InputDlg.obj forms\MessageDlg.obj windows\VCLCommon.obj 
-      forms\About.obj forms\Cleanup.obj forms\ComboInput.obj 
-      forms\Console.obj forms\Copy.obj forms\CopyParams.obj 
-      forms\CopyParamCustom.obj forms\CopyParamPreset.obj 
-      forms\CustomCommand.obj forms\Editor.obj forms\FileSystemInfo.obj 
+      forms\About.obj forms\Banner.obj forms\Cleanup.obj 
+      forms\ComboInput.obj forms\Console.obj forms\Copy.obj 
+      forms\CopyParams.obj forms\CopyParamCustom.obj 
+      forms\CopyParamPreset.obj forms\CustomCommand.obj forms\Editor.obj 
+      forms\EditorPreferences.obj forms\FileSystemInfo.obj 
       forms\FullSynchronize.obj forms\GeneralSettings.obj forms\Glyphs.obj 
       forms\ImportSessions.obj forms\Licence.obj 
       forms\LocationProfiles.obj forms\Log.obj forms\Login.obj 
@@ -19,17 +20,18 @@
       forms\Synchronize.obj forms\SynchronizeProgress.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
-    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Cleanup.dfm forms\ComboInput.dfm 
-      forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm 
+    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Banner.dfm forms\Cleanup.dfm 
+      forms\ComboInput.dfm forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm 
       forms\CopyParamCustom.dfm forms\CopyParamPreset.dfm 
-      forms\CustomCommand.dfm forms\Editor.dfm forms\FileSystemInfo.dfm 
-      forms\FullSynchronize.dfm forms\GeneralSettings.dfm forms\Glyphs.dfm 
-      forms\ImportSessions.dfm forms\Licence.dfm forms\LocationProfiles.dfm 
-      forms\Log.dfm forms\Login.dfm forms\LogSettings.dfm 
-      forms\OpenDirectory.dfm forms\OperationStatus.dfm forms\Password.dfm 
-      forms\Preferences.dfm forms\Progress.dfm forms\Properties.dfm 
-      forms\Rights.dfm forms\RightsExt.dfm forms\SelectMask.dfm 
-      forms\Symlink.dfm forms\Synchronize.dfm forms\SynchronizeProgress.dfm"/>
+      forms\CustomCommand.dfm forms\Editor.dfm forms\EditorPreferences.dfm 
+      forms\FileSystemInfo.dfm forms\FullSynchronize.dfm 
+      forms\GeneralSettings.dfm forms\Glyphs.dfm forms\ImportSessions.dfm 
+      forms\Licence.dfm forms\LocationProfiles.dfm forms\Log.dfm forms\Login.dfm 
+      forms\LogSettings.dfm forms\OpenDirectory.dfm forms\OperationStatus.dfm 
+      forms\Password.dfm forms\Preferences.dfm forms\Progress.dfm 
+      forms\Properties.dfm forms\Rights.dfm forms\RightsExt.dfm 
+      forms\SelectMask.dfm forms\Symlink.dfm forms\Synchronize.dfm 
+      forms\SynchronizeProgress.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
     <SPARELIBS value=""/>
@@ -52,8 +54,7 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 
-      -b- -k- -vi -c -tW -tWM"/>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <AFLAGS value="/mx /w2 /zi"/>
     <LFLAGS value="/P512"/>
@@ -70,6 +71,7 @@
       <FILE FILENAME="forms\MessageDlg.cpp" FORMNAME="" UNITNAME="MessageDlg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\VCLCommon.cpp" FORMNAME="" UNITNAME="VCLCommon" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\About.cpp" FORMNAME="AboutDialog" UNITNAME="About" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Banner.cpp" FORMNAME="BannerDialog" UNITNAME="Banner" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Cleanup.cpp" FORMNAME="CleanupDialog" UNITNAME="Cleanup" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ComboInput.cpp" FORMNAME="ComboInputDialog" UNITNAME="ComboInput" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Console.cpp" FORMNAME="ConsoleDialog" UNITNAME="Console" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -79,6 +81,7 @@
       <FILE FILENAME="forms\CopyParamPreset.cpp" FORMNAME="CopyParamPresetDialog" UNITNAME="CopyParamPreset" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CustomCommand.cpp" FORMNAME="CustomCommandDialog" UNITNAME="CustomCommand" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Editor.cpp" FORMNAME="EditorForm" UNITNAME="Editor" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\EditorPreferences.cpp" FORMNAME="EditorPreferencesDialog" UNITNAME="EditorPreferences" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FileSystemInfo.cpp" FORMNAME="FileSystemInfoDialog" UNITNAME="FileSystemInfo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FullSynchronize.cpp" FORMNAME="FullSynchronizeDialog" UNITNAME="FullSynchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\GeneralSettings.cpp" FORMNAME="GeneralSettingsFrame" UNITNAME="GeneralSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>

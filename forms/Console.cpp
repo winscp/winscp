@@ -9,7 +9,6 @@
 
 #include <TextsWin.h>
 #include <Interface.h>
-#include <ScpFileSystem.h>
 #include <ScpMain.h>
 
 #include <VCLCommon.h>
@@ -38,10 +37,8 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
     : TForm(AOwner)
 {
   FTerminal = NULL;
-  FOldLogAddLine = NULL;
   FOldChangeDirectory = NULL;
   FLastTerminal = NULL;
-  FAddOutput = false;
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
   UseSystemSettings(this);
@@ -67,10 +64,7 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
     {
       assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
       FTerminal->OnChangeDirectory = FOldChangeDirectory;
-      assert(FTerminal->Log->OnAddLine == DoLogAddLine);
-      FTerminal->Log->OnAddLine = FOldLogAddLine;
       FOldChangeDirectory = NULL;
-      FOldLogAddLine = NULL;
       FTerminal->EndTransaction();
     }
     FTerminal = value;
@@ -79,8 +73,6 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
       OutputMemo->Clear();
       FOldChangeDirectory = FTerminal->OnChangeDirectory;
       FTerminal->OnChangeDirectory = DoChangeDirectory;
-      FOldLogAddLine = FTerminal->Log->OnAddLine;
-      FTerminal->Log->OnAddLine = DoLogAddLine;
       // avoid reloading directory after each change of current directory from console
       FTerminal->BeginTransaction();
       FLastTerminal = FTerminal;
@@ -115,15 +107,7 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
   
   try
   {
-    TStrings * CommandsHistory = CustomWinConfiguration->History["Commands"];
-    if ((CommandsHistory != NULL) && (CommandsHistory->Count > 0))
-    {
-      CommandEdit->Items = CommandsHistory;
-    }
-    else
-    {
-      CommandEdit->Items->Clear();
-    }
+    CommandEdit->Items = CustomWinConfiguration->History["Commands"];
 
     if (Log != NULL)
     {
@@ -155,6 +139,7 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
     {
       assert(FTerminal->OnClose == TerminalClose);
       FTerminal->OnClose = FPrevTerminalClose;
+      CommandEdit->SaveToHistory();
       CustomWinConfiguration->History["Commands"] = CommandEdit->Items;
     }
   }
@@ -183,13 +168,11 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
   try
   {
     AnsiString Command = CommandEdit->Text;
-    OutputMemo->Lines->Add(FORMAT("$ %s", ((Command))));
-    FAddOutput = true;
-    FTerminal->AnyCommand(Command);
+    OutputMemo->Lines->Add(FORMAT("%s$ %s", (FTerminal->CurrentDirectory, Command)));
+    FTerminal->AnyCommand(Command, DoLogAddLine);
   }
   __finally
   {
-    FAddOutput = false;
     if (FTerminal)
     {
       FTerminal->ExceptionOnFail = false;
@@ -222,22 +205,15 @@ void __fastcall TConsoleDialog::CommandEditChange(TObject * /*Sender*/)
 void __fastcall TConsoleDialog::DoLogAddLine(TObject* /*Sender*/,
   TLogLineType Type, const AnsiString AddedLine)
 {
-  if (FAddOutput)
-  {
-    AddLine(Type, AddedLine);
-  }
+  AddLine(Type, AddedLine);
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::AddLine(TLogLineType Type, AnsiString Line)
+void __fastcall TConsoleDialog::AddLine(TLogLineType Type, const AnsiString & Line)
 {
-  if (!Line.IsEmpty() && (Type == llOutput || Type == llStdError))
+  assert((Type == llOutput) || (Type == llStdError));
+  if (!Line.IsEmpty())
   {
-    int ReturnCode;
-    if (!TSCPFileSystem::RemoveLastLine(Line, ReturnCode) ||
-        !Line.IsEmpty())
-    {
-      OutputMemo->Lines->Add(Line);
-    }
+    OutputMemo->Lines->Add(Line);
   }
 }
 //---------------------------------------------------------------------------

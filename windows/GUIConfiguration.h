@@ -12,6 +12,7 @@ enum TInterface { ifCommander, ifExplorer };
 //---------------------------------------------------------------------------
 extern const ccLocal;
 extern const ccShowResults;
+extern const ccCopyResults;
 //---------------------------------------------------------------------------
 const soRecurse =        0x01;
 const soSynchronize =    0x02;
@@ -87,7 +88,6 @@ class TCopyParamList
 friend class TGUIConfiguration;
 public:
   __fastcall TCopyParamList();
-  __fastcall TCopyParamList(TGUIConfiguration * Configuration);
   virtual __fastcall ~TCopyParamList();
   int __fastcall Find(const TCopyParamRuleData & Value) const;
 
@@ -120,7 +120,6 @@ public:
   
 private:
   static AnsiString FInvalidChars;
-  TGUIConfiguration * FConfiguration;
   TList * FRules;
   TList * FCopyParams;
   TStrings * FNames;
@@ -157,6 +156,7 @@ private:
   int FSynchronizeOptions;
   int FSynchronizeModeAuto;
   int FSynchronizeMode;
+  int FMaxWatchDirectories;
   TDateTime FIgnoreCancelBeforeFinish;
   bool FQueueAutoPopup;
   bool FQueueRememberPassword;
@@ -212,6 +212,7 @@ public:
   __property int SynchronizeOptions = { read = FSynchronizeOptions, write = FSynchronizeOptions };
   __property int SynchronizeModeAuto = { read = FSynchronizeModeAuto, write = FSynchronizeModeAuto };
   __property int SynchronizeMode = { read = FSynchronizeMode, write = FSynchronizeMode };
+  __property int MaxWatchDirectories = { read = FMaxWatchDirectories, write = FMaxWatchDirectories };
   __property int QueueTransfersLimit = { read = FQueueTransfersLimit, write = FQueueTransfersLimit };
   __property bool QueueAutoPopup = { read = FQueueAutoPopup, write = FQueueAutoPopup };
   __property bool QueueRememberPassword = { read = FQueueRememberPassword, write = FQueueRememberPassword };

@@ -14,7 +14,8 @@ public:
 
   virtual AnsiString __fastcall AbsolutePath(AnsiString Path);
   virtual void __fastcall KeepAlive();
-  virtual void __fastcall AnyCommand(const AnsiString Command);
+  virtual void __fastcall AnyCommand(const AnsiString Command,
+    TLogAddLineEvent OutputEvent);
   virtual void __fastcall ChangeDirectory(const AnsiString Directory);
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
@@ -52,9 +53,6 @@ public:
   virtual AnsiString __fastcall FileUrl(const AnsiString FileName);
   virtual TStrings * __fastcall GetFixedPaths();
 
-  static bool __fastcall RemoveLastLine(AnsiString & Line,
-    int & ReturnCode, AnsiString LastLine = "");
-
 protected:
   __property TStrings * Output = { read = FOutput };
   __property int ReturnCode = { read = FReturnCode };
@@ -71,6 +69,7 @@ private:
   AnsiString FCachedDirectoryChange;
   bool FProcessingCommand;
   int FLsFullTime;
+  TLogAddLineEvent FOnCaptureOutput;
 
   void __fastcall AliasGroupList();
   void __fastcall ClearAliases();
@@ -104,6 +103,11 @@ private:
   void __fastcall UnsetNationalVars();
   TRemoteFile * __fastcall CreateRemoteFile(const AnsiString & ListingStr, 
   	TRemoteFile * LinkedByFile = NULL);
+  void __fastcall CaptureOutput(TObject * Sender, TLogLineType Type,
+    const AnsiString AddedLine);
+
+  static bool __fastcall RemoveLastLine(AnsiString & Line,
+    int & ReturnCode, AnsiString LastLine = "");
 };
 //---------------------------------------------------------------------------
 #endif // ScpFileSystemH

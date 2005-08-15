@@ -11,6 +11,8 @@
 
 #include <WinInterface.h>
 #include "GrayedCheckBox.hpp"
+#include <ComCtrls.hpp>
+#include <ExtCtrls.hpp>
 //---------------------------------------------------------------------------
 class TSynchronizeDialog : public TForm
 {
@@ -24,7 +26,6 @@ __published:
   THistoryComboBox *LocalDirectoryEdit;
   TXPGroupBox *OptionsGroup;
   TCheckBox *SynchronizeDeleteCheck;
-  TCheckBox *SynchronizeNoConfirmationCheck;
   TButton *LocalDirectoryBrowseButton;
   TCheckBox *SaveSettingsCheck;
   TCheckBox *SynchronizeExistingOnlyCheck;
@@ -36,6 +37,9 @@ __published:
   TXPGroupBox *CopyParamGroup;
   TLabel *CopyParamLabel;
   TButton *HelpButton;
+  TCheckBox *SynchronizeSelectedOnlyCheck;
+  TPanel *LogPanel;
+  TListView *LogView;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -48,10 +52,16 @@ __published:
           TPoint &MousePos, bool &Handled);
   void __fastcall CopyParamGroupDblClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall LogViewKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
+  void __fastcall FormKeyDown(TObject *Sender, WORD &Key,
+          TShiftState Shift);
 
 private:
   TSynchronizeParamType FParams;
   TSynchronizeStartStopEvent FOnStartStop;
+  TGetSynchronizeOptionsEvent FOnGetOptions;
+  int FOptions;
   bool FSynchronizing;
   bool FMinimizedByMe;
   bool FAbort;
@@ -59,6 +69,8 @@ private:
   TCopyParamType FCopyParams;
   TPopupMenu * FPresetsMenu;
   AnsiString FPreset;
+  TSynchronizeOptions * FSynchronizeOptions;
+  static const MaxLogItems;
 
   void __fastcall SetParams(const TSynchronizeParamType& value);
   TSynchronizeParamType __fastcall GetParams();
@@ -66,23 +78,30 @@ private:
   bool __fastcall GetSaveSettings();
   void __fastcall SetCopyParams(const TCopyParamType & value);
   TCopyParamType __fastcall GetCopyParams();
+  void __fastcall SetOptions(int value);
 
 protected:
   void __fastcall DoStartStop(bool Start, bool Synchronize);
   void __fastcall DoAbort(TObject * Sender, bool Close);
+  void __fastcall DoLog(TSynchronizeController * Controller, TSynchronizeLogEntry Entry,
+    const AnsiString Message);
   void __fastcall Stop();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall CopyParamClick(TObject * Sender);
+  void __fastcall ClearLog();
+  void __fastcall CopyLog();
+  static int __fastcall CopyParamCustomDialogOptions();
 
 public:
-  __fastcall TSynchronizeDialog(TComponent* Owner);
+  __fastcall TSynchronizeDialog(TComponent * Owner,
+    TSynchronizeStartStopEvent OnStartStop, TGetSynchronizeOptionsEvent OnGetOptions);
   virtual __fastcall ~TSynchronizeDialog();
 
   bool __fastcall Execute();
 
   __property TSynchronizeParamType Params = { read = GetParams, write = SetParams };
-  __property TSynchronizeStartStopEvent OnStartStop  = { read=FOnStartStop, write=FOnStartStop };
   __property bool SaveSettings = { read = GetSaveSettings, write = SetSaveSettings };
+  __property int Options = { read = FOptions, write = SetOptions };
   __property TCopyParamType CopyParams = { read = GetCopyParams, write = SetCopyParams };
 
 protected:

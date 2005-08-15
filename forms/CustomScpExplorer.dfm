@@ -10,6 +10,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   OldCreateOrder = False
   Position = poDefaultPosOnly
   OnCloseQuery = FormCloseQuery
+  OnConstrainedResize = FormConstrainedResize
   PixelsPerInch = 96
   TextHeight = 13
   object QueueSplitter: TSplitter
@@ -18,6 +19,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Width = 628
     Height = 3
     Cursor = crVSplit
+    Hint = 'Drag to resize queue list. Double click to hide queue list.'
     Align = alBottom
     AutoSnap = False
     MinSize = 70
@@ -73,8 +75,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       ViewStyle = vsReport
       OnColumnRightClick = DirViewColumnRightClick
       OnEnter = RemoteDirViewEnter
-      NortonLike = False
+      NortonLike = nlOff
       UnixColProperties.ExtWidth = 20
+      UnixColProperties.TypeVisible = False
       OnDDDragFileName = RemoteFileControlDDDragFileName
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
       OnLoaded = DirViewLoaded
@@ -181,6 +184,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       OnStartDrag = QueueViewStartDrag
     end
     object QueueDock: TTBXDock
+      Tag = 1
       Left = 0
       Top = 0
       Width = 628
@@ -205,6 +209,12 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         end
         object TBXItem204: TTBXItem
           Action = NonVisualDataModule.QueueItemExecuteAction
+        end
+        object TBXItem195: TTBXItem
+          Action = NonVisualDataModule.QueueItemPauseAction
+        end
+        object TBXItem194: TTBXItem
+          Action = NonVisualDataModule.QueueItemResumeAction
         end
         object TBXItem205: TTBXItem
           Action = NonVisualDataModule.QueueItemDeleteAction

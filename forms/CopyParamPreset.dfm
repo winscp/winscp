@@ -158,6 +158,9 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       inherited ExcludeFileMaskCombo: THistoryComboBox
         Width = 217
       end
+      inherited ExcludeFileMaskHintText: TStaticText
+        Left = 256
+      end
     end
   end
   object RuleGroup: TXPGroupBox
@@ -212,6 +215,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       MaxLength = 250
       TabOrder = 0
       OnChange = ControlChange
+      OnExit = MaskEditExit
     end
     object UserNameEdit: TEdit
       Left = 10
@@ -222,6 +226,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange
+      OnExit = MaskEditExit
     end
     object RemoteDirectoryEdit: TEdit
       Left = 10
@@ -232,6 +237,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       MaxLength = 250
       TabOrder = 2
       OnChange = ControlChange
+      OnExit = MaskEditExit
     end
     object LocalDirectoryEdit: TEdit
       Left = 10
@@ -242,6 +248,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       MaxLength = 250
       TabOrder = 3
       OnChange = ControlChange
+      OnExit = MaskEditExit
     end
     object CurrentRuleButton: TButton
       Left = 10
@@ -251,6 +258,18 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       Caption = 'Current'
       TabOrder = 4
       OnClick = CurrentRuleButtonClick
+    end
+    object RuleMaskHintText: TStaticText
+      Left = 127
+      Top = 207
+      Width = 97
+      Height = 17
+      Alignment = taRightJustify
+      Anchors = [akTop, akRight]
+      AutoSize = False
+      Caption = 'mask hints'
+      TabOrder = 5
+      TabStop = True
     end
   end
   object HasRuleCheck: TCheckBox

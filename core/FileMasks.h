@@ -16,8 +16,8 @@ public:
   TFileMasks & __fastcall operator =(const AnsiString rhs);
   bool __fastcall operator ==(const TFileMasks & rhm) const;
   bool __fastcall operator ==(const AnsiString rhs) const;
-  bool __fastcall Matches(AnsiString FileName, AnsiString Path = "") const;
-  bool __fastcall Matches(AnsiString FileName, bool Local) const;
+  bool __fastcall Matches(AnsiString FileName, bool Directory, AnsiString Path = "") const;
+  bool __fastcall Matches(AnsiString FileName, bool Local, bool Directory) const;
   bool __fastcall IsValid();
   bool __fastcall IsValid(int & Start, int & Length);
 
@@ -46,6 +46,8 @@ public:
   virtual void __fastcall Validate(const AnsiString & Command);
 
 protected:
+  static const char NoQuote;
+  static const AnsiString Quotes;
   void __fastcall GetToken(const AnsiString & Command,
     int Index, int & Len, char & PatternCmd);
   void __fastcall CustomValidate(const AnsiString & Command, void * Arg);
@@ -56,7 +58,8 @@ protected:
 
   virtual int __fastcall PatternLen(int Index, char PatternCmd) = 0;
   virtual bool __fastcall PatternReplacement(int Index, const AnsiString & Pattern,
-    AnsiString & Replacement) = 0;
+    AnsiString & Replacement, bool & Delimit) = 0;
+  virtual void __fastcall DelimitReplacement(AnsiString & Replacement, char Quote);
 };
 //---------------------------------------------------------------------------
 class TInteractiveCustomCommand : public TCustomCommand
@@ -69,7 +72,7 @@ protected:
     AnsiString & Value);
   virtual int __fastcall PatternLen(int Index, char PatternCmd);
   virtual bool __fastcall PatternReplacement(int Index, const AnsiString & Pattern,
-    AnsiString & Replacement);
+    AnsiString & Replacement, bool & Delimit);
 
 private:
   TCustomCommand * FChildCustomCommand;
@@ -91,7 +94,7 @@ public:
 protected:
   virtual int __fastcall PatternLen(int Index, char PatternCmd);
   virtual bool __fastcall PatternReplacement(int Index, const AnsiString & Pattern,
-    AnsiString & Replacement);
+    AnsiString & Replacement, bool & Delimit);
 
 private:
   AnsiString FFileName;

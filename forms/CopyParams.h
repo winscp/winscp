@@ -18,6 +18,7 @@ const int cfAllowTransferMode = 0x01;
 const int cfAllowExcludeMask =  0x02;
 const int cfAllowClearArchive = 0x04;
 const int cfDisablePreserveTime = 0x08;
+const int cfAllowExcludeMaskOnly = 0x10;
 //---------------------------------------------------------------------------
 class TCopyParamsFrame : public TFrame
 {
@@ -50,6 +51,7 @@ __published:
   TRadioButton *CCLowerCaseShortButton;
   TCheckBox *ClearArchiveCheck;
   TComboBox *NegativeExcludeCombo;
+  TStaticText *ExcludeFileMaskHintText;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
 private:

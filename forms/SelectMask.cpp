@@ -52,6 +52,7 @@ __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
   SetFileFilter(FFileFilter);
   UseSystemSettings(this);
   InstallPathWordBreakProc(MaskEdit);
+  HintLabel(HintText, LoadStr(MASK_HINT));
 }
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -81,11 +82,8 @@ bool __fastcall TSelectMaskDialog::Execute()
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::SetSelect(Boolean value)
 {
-  if (FSelect != value)
-  {
-    FSelect = value;
-    Caption = LoadStr(Select ? SELECT_MASK_SELECT_CAPTION : SELECT_MASK_DESELECT_CAPTION);
-  }
+  FSelect = value;
+  Caption = LoadStr(Select ? SELECT_MASK_SELECT_CAPTION : SELECT_MASK_DESELECT_CAPTION);
 } /* TSelectMaskDialog::SetSelect */
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::SetFileFilter(TFileFilter value)

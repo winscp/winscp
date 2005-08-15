@@ -54,6 +54,7 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner)
   FMode = ccmEdit;
   FOnValidate = NULL;
   InstallPathWordBreakProc(CommandEdit);
+  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::UpdateControls()
@@ -87,6 +88,7 @@ void __fastcall TCustomCommandDialog::UpdateControls()
   EnableControl(RecursiveCheck, AllowRecursive);
   EnableControl(ApplyToDirectoriesCheck, AllowApplyToDirectories);
   EnableControl(ShowResultsCheck, RemoteCommand);
+  EnableControl(CopyResultsCheck, RemoteCommand);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::SetCommand(AnsiString value)
@@ -117,16 +119,19 @@ void __fastcall TCustomCommandDialog::SetParams(int value)
   RecursiveCheck->Checked = FLAGSET(value, ccRecursive);
   (FLAGSET(value, ccLocal) ? LocalCommandButton : RemoteCommandButton)->Checked = true;
   ShowResultsCheck->Checked = FLAGSET(value, ccShowResults);
+  CopyResultsCheck->Checked = FLAGSET(value, ccCopyResults);
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomCommandDialog::GetParams()
 {
   return
-    (FParams & ~(ccApplyToDirectories | ccRecursive | ccLocal | ccShowResults)) |
+    (FParams & ~(ccApplyToDirectories | ccRecursive | ccLocal |
+       ccShowResults | ccCopyResults)) |
     FLAGMASK(!RemoteCommandButton->Checked, ccLocal) |
     FLAGMASK(ApplyToDirectoriesCheck->Checked, ccApplyToDirectories) |
     FLAGMASK(RecursiveCheck->Checked && RecursiveCheck->Enabled, ccRecursive) |
-    FLAGMASK(ShowResultsCheck->Checked && ShowResultsCheck->Enabled, ccShowResults);
+    FLAGMASK(ShowResultsCheck->Checked && ShowResultsCheck->Enabled, ccShowResults) |
+    FLAGMASK(CopyResultsCheck->Checked && CopyResultsCheck->Enabled, ccCopyResults);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::ControlChange(TObject * /*Sender*/)
@@ -148,6 +153,7 @@ bool __fastcall TCustomCommandDialog::Execute()
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
+    CommandEdit->SaveToHistory();
     CustomWinConfiguration->History["CustomCommand"] = CommandEdit->Items;
   }
   return Result;

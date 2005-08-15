@@ -953,7 +953,7 @@ begin
   {ChangeTimer: }
   if FChangeInterval = 0 then FChangeInterval := 1000;
   FChangeTimer := TTimer.Create(Self);
-  FChangeTimer.Interval := fChangeInterval;
+  FChangeTimer.Interval := FChangeInterval;
   FChangeTimer.Enabled := False;
   FChangeTimer.OnTimer := TimerOnTimer;
 
@@ -1056,7 +1056,7 @@ begin
   try
     while (Length(Value) > 0) and (Value[Length(Value)] = '\') do
       SetLength(Value, Length(Value) - 1);
-    FLastPath := PathName;
+    PathChanging(True);
     FPath := Value;
     Load;
   finally
@@ -1430,7 +1430,7 @@ begin
     ((Filter.ModificationFrom = 0) or (Modification >= Filter.ModificationFrom)) and
     ((Filter.ModificationTo = 0) or (Modification <= Filter.ModificationTo)) and
     ((Length(Filter.Masks) = 0) or
-     FileNameMatchesMasks(FileRec^.FileName, Filter.Masks));
+     FileNameMatchesMasks(FileRec^.FileName, FileRec^.IsDirectory, Filter.Masks));
 end;
 
 function TDirView.ItemOverlayIndexes(Item: TListItem): Word;
@@ -1719,15 +1719,16 @@ var
   end;
 
 begin
-  if not Loading then
+  if (not Loading) and LoadEnabled then
   begin
-    IF IsRecycleBin then Reload(True)
+    if IsRecycleBin then Reload(True)
       else
     begin
       if not DirExists(Path) then
       begin
         ClearItems;
         FDirOK := False;
+        FDirty := False;
       end
         else
       begin
@@ -1930,6 +1931,7 @@ begin
             end;
           finally
             FDirOK := True;
+            FDirty := false;
 {$IFNDEF NO_THREADS}
             if FUseIconUpdateThread and (not FisRecycleBin) then
               StartIconUpdateThread;
@@ -3251,11 +3253,14 @@ end; {TimerOnTimer}
 procedure TDirView.ChangeDetected(Sender: TObject; const Directory: string; 
   var SubdirsChanged: Boolean);
 begin
-  FDirty := True;
-  FChangeTimer.Enabled := False;
-  FChangeTimer.Interval := 0;
-  FChangeTimer.Interval := FChangeInterval;
-  FChangeTimer.Enabled := True;
+  // avoid prolonging the actual update with each change, as if continous change
+  // is occuring in current directory, the panel will never be updated
+  if not FChangeTimer.Enabled then
+  begin
+    FDirty := True;
+    FChangeTimer.Interval := FChangeInterval;
+    FChangeTimer.Enabled := True;
+  end;
 end; {ChangeDetected}
 
 procedure TDirView.ChangeInvalid(Sender: TObject; const Directory: string; 
@@ -3484,7 +3489,7 @@ procedure TDirView.ExecuteRootDirectory;
 begin
   if Valid then
   try
-    FLastPath := PathName;
+    PathChanging(False);
     FPath := ExtractFileDrive(Path);
     Load;
   finally

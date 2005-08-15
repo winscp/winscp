@@ -10,6 +10,8 @@
 #include <ScpMain.h>
 #include "VCLCommon.h"
 #include "WinConfiguration.h"
+#include "HelpWin.h"
+#include <CommDlg.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "TB2Dock"
@@ -43,6 +45,71 @@ TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * Paren
   return Dialog;
 }
 //---------------------------------------------------------------------------
+void __fastcall ReconfigureEditorForm(TForm * Form)
+{
+  TEditorForm * Editor = dynamic_cast<TEditorForm *>(Form);
+  assert(Editor != NULL);
+  Editor->ApplyConfiguration();
+}
+//---------------------------------------------------------------------------
+class TFindDialogEx : public TFindDialog
+{
+public:
+    __fastcall virtual TFindDialogEx(TComponent * AOwner) : TFindDialog(AOwner)
+  {
+    FHelpMsg = RegisterWindowMessage(HELPMSGSTRING);
+  }
+  
+protected:
+  unsigned int FHelpMsg;
+
+    virtual bool __fastcall MessageHook(TMessage & Msg)
+  {
+    bool Result = false;
+    if (Msg.Msg == FHelpMsg)
+    {
+      Application->HelpKeyword(HELP_EDITOR_FIND);
+      Result = true;
+    }
+
+    if (!Result)
+    {
+      Result = TFindDialog::MessageHook(Msg);
+    }
+
+    return Result;
+  }
+};
+//---------------------------------------------------------------------------
+class TReplaceDialogEx : public TReplaceDialog
+{
+public:
+    __fastcall virtual TReplaceDialogEx(TComponent * AOwner) : TReplaceDialog(AOwner)
+  {
+    FHelpMsg = RegisterWindowMessage(HELPMSGSTRING);
+  }
+  
+protected:
+  unsigned int FHelpMsg;
+
+    virtual bool __fastcall MessageHook(TMessage & Msg)
+  {
+    bool Result = false;
+    if (Msg.Msg == FHelpMsg)
+    {
+      Application->HelpKeyword(HELP_EDITOR_REPLACE);
+      Result = true;
+    }
+
+    if (!Result)
+    {
+      Result = TReplaceDialog::MessageHook(Msg);
+    }
+
+    return Result;
+  }
+};
+//---------------------------------------------------------------------------
 __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   : TForm(Owner)
 {
@@ -51,44 +118,22 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   FCaretPos.y = -1;
   FLastFindDialog = NULL;
   FShowWindowButton = false;
+  FCloseAnnounced = false;
   ApplyConfiguration();
-  FindDialog->FindText = WinConfiguration->Editor.FindText;
-  TFindOptions Options = FindDialog->Options;
-  if (WinConfiguration->Editor.FindMatchCase)
-  {
-    Options << frMatchCase;
-  }
-  if (WinConfiguration->Editor.FindWholeWord)
-  {
-    Options << frWholeWord;
-  }
-  FindDialog->Options = Options;
-  ReplaceDialog->FindText = FindDialog->FindText;
-  ReplaceDialog->Options = FindDialog->Options;
-  ReplaceDialog->ReplaceText = WinConfiguration->Editor.ReplaceText;
+  FFindDialog = new TFindDialogEx(this);
+  FFindDialog->OnFind = FindDialogFind;
+  FReplaceDialog = new TReplaceDialogEx(this);
+  FReplaceDialog->OnFind = FindDialogFind;
+  FReplaceDialog->OnReplace = FindDialogFind;
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TEditorForm::~TEditorForm()
 {
-  if (FOnWindowClose != NULL)
+  // see FormClose for explanation
+  if (!FCloseAnnounced)
   {
-    try
-    {
-      FOnWindowClose(this);
-    }
-    catch(Exception & E)
-    {
-      ShowExtendedException(&E);
-    }
-  }
-
-  if (FLastFindDialog)
-  {
-    WinConfiguration->Editor.FindText = FLastFindDialog->FindText;
-    WinConfiguration->Editor.ReplaceText = ReplaceDialog->ReplaceText;
-    WinConfiguration->Editor.FindMatchCase = FLastFindDialog->Options.Contains(frMatchCase);
-    WinConfiguration->Editor.FindWholeWord = FLastFindDialog->Options.Contains(frWholeWord);
+    DoWindowClose();
   }
 }
 //---------------------------------------------------------------------------
@@ -127,7 +172,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   else if (Action == FindNextAction)
   {
     FindNextAction->Enabled =
-      FLastFindDialog != NULL || !FindDialog->FindText.IsEmpty();
+      FLastFindDialog != NULL || !FFindDialog->FindText.IsEmpty();
   }
   else if (Action == PreferencesAction || Action == CloseAction ||
     Action == FindAction || Action == ReplaceAction || Action == GoToLineAction ||
@@ -158,10 +203,7 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   }
   else if (Action == PreferencesAction)
   {
-    if (DoPreferencesDialog(pmEditor))
-    {
-      ApplyConfiguration();
-    }
+    DoPreferencesDialog(pmEditor);
   }
   else if (Action == CloseAction)
   {
@@ -175,7 +217,7 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   {
     if (!FLastFindDialog)
     {
-      FLastFindDialog = FindDialog;
+      FLastFindDialog = FFindDialog;
     }
     Find();
   }
@@ -317,33 +359,40 @@ void __fastcall TEditorForm::Find()
 
     // length condition is there to improve performance when large
     // block is selected in editor
-    if (FLastFindDialog == ReplaceDialog &&
-        (ReplaceDialog->Options.Contains(frReplace) ||
-         ReplaceDialog->Options.Contains(frReplaceAll)) &&
-        ReplaceDialog->FindText.Length() == EditorMemo->SelLength &&
-        AnsiSameText(ReplaceDialog->FindText, EditorMemo->SelText))
+    if (FLastFindDialog == FReplaceDialog &&
+        (FReplaceDialog->Options.Contains(frReplace) ||
+         FReplaceDialog->Options.Contains(frReplaceAll)) &&
+        FReplaceDialog->FindText.Length() == EditorMemo->SelLength &&
+        AnsiSameText(FReplaceDialog->FindText, EditorMemo->SelText))
     {
-      EditorMemo->SelText = ReplaceDialog->ReplaceText;
+      EditorMemo->SelText = FReplaceDialog->ReplaceText;
       Replacements++;
     }
 
-    if (FLastFindDialog->Options.Contains(frMatchCase))
+    TEditorConfiguration EditorConfiguration = WinConfiguration->Editor;
+    EditorConfiguration.FindText = FLastFindDialog->FindText;
+    EditorConfiguration.ReplaceText = FReplaceDialog->ReplaceText;
+    EditorConfiguration.FindMatchCase = FLastFindDialog->Options.Contains(frMatchCase);
+    EditorConfiguration.FindWholeWord = FLastFindDialog->Options.Contains(frWholeWord);
+    WinConfiguration->Editor = EditorConfiguration;
+
+    if (EditorConfiguration.FindMatchCase)
     {
       SearchTypes << stMatchCase;
     }
-    if (FLastFindDialog->Options.Contains(frWholeWord))
+    if (EditorConfiguration.FindWholeWord)
     {
       SearchTypes << stWholeWord;
     }
 
-    NewPos = EditorMemo->FindText(FLastFindDialog->FindText,
+    NewPos = EditorMemo->FindText(EditorConfiguration.FindText,
       EditorMemo->SelLength ? EditorMemo->SelStart+1 : EditorMemo->SelStart,
       EditorMemo->Text.Length(), SearchTypes);
 
     if (NewPos >= 0)
     {
       EditorMemo->SelStart = NewPos;
-      EditorMemo->SelLength = FLastFindDialog->FindText.Length();
+      EditorMemo->SelLength = EditorConfiguration.FindText.Length();
     }
 
     if (FLastFindDialog->Handle)
@@ -353,18 +402,30 @@ void __fastcall TEditorForm::Find()
 
     if (NewPos < 0)
     {
-      if (!Replacements)
+      if ((Replacements == 0) || FReplaceDialog->Options.Contains(frReplaceAll))
       {
-        MessageDialog(FMTLOAD(EDITOR_FIND_END, (FLastFindDialog->FindText)), qtInformation, qaOK, HELP_NONE);
-      }
-      else
-      {
-        MessageDialog(FMTLOAD(EDITOR_REPLACE_END, (Replacements)), qtInformation, qaOK, HELP_NONE);
+        // now Screen->ActiveForm can be NULL when other form was meanwhile
+        // activated and then focus was returned back to "find" dialog
+        // (non VCL form)
+        if (Screen->ActiveForm != this)
+        {
+          SetFocus();
+          FLastFindDialog->Execute();
+        }
+
+        if (Replacements == 0)
+        {
+          MessageDialog(FMTLOAD(EDITOR_FIND_END, (EditorConfiguration.FindText)), qtInformation, qaOK, HELP_NONE);
+        }
+        else if (FReplaceDialog->Options.Contains(frReplaceAll))
+        {
+          MessageDialog(FMTLOAD(EDITOR_REPLACE_END, (Replacements)), qtInformation, qaOK, HELP_NONE);
+        }
       }
     }
   }
-  while (NewPos >= 0 && FLastFindDialog == ReplaceDialog &&
-         ReplaceDialog->Options.Contains(frReplaceAll));
+  while (NewPos >= 0 && FLastFindDialog == FReplaceDialog &&
+         FReplaceDialog->Options.Contains(frReplaceAll));
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
@@ -416,25 +477,23 @@ void __fastcall TEditorForm::PositionFindDialog(bool VerticalOnly)
   assert(FLastFindDialog);
   if (!VerticalOnly)
   {
-    FLastFindDialog->Left = EditorMemo->Left + EditorMemo->Width / 2 - 100;
+    FLastFindDialog->Left = Left + EditorMemo->Left + EditorMemo->Width / 2 - 100;
   }
-  FLastFindDialog->Top = EditorMemo->Top + (EditorMemo->Height / 4) +
-    (CursorInUpperPart() ? (EditorMemo->Height / 2) : 0) - 30;
+  FLastFindDialog->Top = Top + EditorMemo->Top + (EditorMemo->Height / 4) +
+    (CursorInUpperPart() ? (EditorMemo->Height / 2) : 0) - 40;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::StartFind(bool Find)
 {
   AnsiString Text = EditorMemo->SelText;
   TFindOptions Options;
-  if (FLastFindDialog)
+  Options << frHideUpDown; // not implemented
+  Options << frShowHelp;
+  if (Text.IsEmpty())
   {
-    Options = FLastFindDialog->Options;
-    if (Text.IsEmpty())
-    {
-      Text = FLastFindDialog->FindText;
-    }
+    Text = WinConfiguration->Editor.FindText;
   }
-  TFindDialog * Dialog = Find ? FindDialog : ReplaceDialog;
+  TFindDialog * Dialog = Find ? FFindDialog : FReplaceDialog;
   if (FLastFindDialog && Dialog != FLastFindDialog && FLastFindDialog->Handle)
   {
     FLastFindDialog->CloseDialog();
@@ -444,10 +503,16 @@ void __fastcall TEditorForm::StartFind(bool Find)
   {
     FLastFindDialog->FindText = Text;
   }
-  if (!Options.Empty())
+  FReplaceDialog->ReplaceText = WinConfiguration->Editor.ReplaceText;
+  if (WinConfiguration->Editor.FindMatchCase)
   {
-    FLastFindDialog->Options = Options;
+    Options << frMatchCase;
   }
+  if (WinConfiguration->Editor.FindWholeWord)
+  {
+    Options << frWholeWord;
+  }
+  FLastFindDialog->Options = Options;
   if (!FLastFindDialog->Handle)
   {
     PositionFindDialog(false);
@@ -475,7 +540,30 @@ void __fastcall TEditorForm::GoToLine()
 void __fastcall TEditorForm::FormClose(TObject * /*Sender*/,
   TCloseAction & Action)
 {
+  // Preferably announce closure here as this is called from within TForm::Close(),
+  // so the annoucement will be synchronous (and editor manager thus
+  // will consider the form to be really closed and will not block
+  // application closure).
+  // However FormClose is not called when form is closed due to
+  // application exit, so there is last resort call from destructor.
+  DoWindowClose();
+  FCloseAnnounced = true;
   Action = caFree;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::DoWindowClose()
+{
+  if (FOnWindowClose != NULL)
+  {
+    try
+    {
+      FOnWindowClose(this);
+    }
+    catch(Exception & E)
+    {
+      ShowExtendedException(&E);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::SetShowWindowButton(bool value)

@@ -13,6 +13,7 @@ object LoginDialog: TLoginDialog
   KeyPreview = True
   OldCreateOrder = True
   Position = poMainFormCenter
+  OnCloseQuery = FormCloseQuery
   OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
@@ -95,6 +96,7 @@ object LoginDialog: TLoginDialog
       Style = tsButtons
       TabIndex = 0
       TabOrder = 1
+      TabStop = False
       OnChange = PageControlChange
       object SessionListSheet: TTabSheet
         Tag = 1
@@ -253,7 +255,7 @@ object LoginDialog: TLoginDialog
             Width = 226
             Height = 21
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 0
             Text = 'HostNameEdit'
             OnChange = DataChange
@@ -296,6 +298,7 @@ object LoginDialog: TLoginDialog
             Width = 323
             Height = 21
             AcceptFiles = True
+            OnAfterDialog = PrivateKeyEditAfterDialog
             Filter = 'PuTTY Private Key Files (*.ppk)|*.ppk|All files (*.*)|*.*'
             DialogOptions = [ofReadOnly, ofPathMustExist, ofFileMustExist]
             DialogTitle = 'Select private key file'
@@ -688,6 +691,7 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Cache &visited remote directories'
             TabOrder = 1
+            OnClick = DataChange
           end
           object ResolveSymlinksCheck: TCheckBox
             Left = 11
@@ -1143,7 +1147,7 @@ object LoginDialog: TLoginDialog
           TabOrder = 0
           inherited InterfaceGroup: TXPGroupBox
             Width = 345
-            inherited CommanderDescriptionLabel: TLabel
+            inherited CommanderDescriptionLabel2: TLabel
               Width = 206
             end
             inherited ExplorerDescriptionLabel: TLabel

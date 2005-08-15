@@ -28,6 +28,8 @@ public:
   void __fastcall CycleTerminals(bool Forward);
   static void ConnectTerminal(TTerminal * Terminal);
   AnsiString __fastcall UpdateAppTitle();
+  bool __fastcall CanOpenInPutty();
+  void __fastcall OpenInPutty();
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
@@ -57,6 +59,7 @@ private:
   AnsiString FProgressTitle;
   TDateTime FDirectoryReadingStart;
 
+  bool __fastcall ConnectActiveTerminalImpl();
   void __fastcall CreateLogMemo();
   void __fastcall FreeLogMemo();
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
@@ -74,6 +77,8 @@ private:
   void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
     AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, 
     void * Arg);
+  void __fastcall TerminalDisplayBanner(TSecureShell * SecureShell,
+    AnsiString SessionName, const AnsiString & Banner, bool & NeverShowAgain);
   void __fastcall TerminalShowExtendedException(TSecureShell * SecureShell,
     Exception * E, void * Arg);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress);

@@ -21,7 +21,7 @@ __published:
   TButton *OKButton;
   TButton *CancelButton;
   TPanel *PasswordPanel;
-  TLabel *PasswordLabel;
+  TStaticText *PasswordLabel;
   TPasswordEdit *PasswordEdit;
   TPanel *ServerPromptPanel;
   TLabel *ServerPromptLabel;
@@ -32,7 +32,6 @@ __published:
 
 private:
   TPromptKind FKind;
-  TShowHintEvent FApplicationShowHint;
 
   void __fastcall SetPasswordCaption(const AnsiString value);
   AnsiString __fastcall GetPasswordCaption();

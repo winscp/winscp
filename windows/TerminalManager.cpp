@@ -11,6 +11,7 @@
 #include <OperationStatus.h>
 #include <Common.h>
 #include <ScpMain.h>
+#include <GUITools.h>
 #include <TextsWin.h>
 #include <Progress.h>
 #include <Queue.h>
@@ -92,6 +93,7 @@ TTerminal * __fastcall TTerminalManager::NewTerminal(TSessionData * Data)
 
     Terminal->OnQueryUser = TerminalQueryUser;
     Terminal->OnPromptUser = TerminalPromptUser;
+    Terminal->OnDisplayBanner = TerminalDisplayBanner;
     Terminal->OnShowExtendedException = TerminalShowExtendedException;
     Terminal->OnProgress = OperationProgress;
     Terminal->OnFinished = OperationFinished;
@@ -151,7 +153,7 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminalManager::ConnectActiveTerminal()
+bool __fastcall TTerminalManager::ConnectActiveTerminalImpl()
 {
   TTerminalPendingAction Action;
   bool Result;
@@ -195,6 +197,7 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
       {
         RequireLogForm(LogMemo);
       }
+
       Result = true;
     }
     catch(Exception & E)
@@ -218,6 +221,25 @@ bool __fastcall TTerminalManager::ConnectActiveTerminal()
   if (Action == tpFree)
   {
     FreeActiveTerminal();
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::ConnectActiveTerminal()
+{
+  bool Result = ConnectActiveTerminalImpl();
+
+  if (Result && WinConfiguration->AutoOpenInPutty && CanOpenInPutty())
+  {
+    try
+    {
+      OpenInPutty();
+    }
+    catch(Exception & E)
+    {
+      ShowExtendedExceptionEx(NULL, &E);
+    }
   }
 
   return Result;
@@ -258,7 +280,7 @@ void __fastcall TTerminalManager::ReconnectActiveTerminal()
     ActiveTerminal = Terminal;
     if (FTerminalPendingAction == tpNull)
     {
-      ConnectActiveTerminal();
+      ConnectActiveTerminalImpl();
     }
     else
     {
@@ -525,9 +547,16 @@ void __fastcall TTerminalManager::ApplicationShowHint(AnsiString & HintStr,
   TLabel * HintLabel = dynamic_cast<TLabel *>(HintInfo.HintControl);
   if ((HintLabel != NULL) && (HintLabel->Caption == HintStr))
   {
+    // Hack for transfer setting labels.
+    // Should be converted to something like HintLabel()
     HintInfo.HintPos = HintLabel->ClientToScreen(TPoint(0, 0));
     HintInfo.HintMaxWidth = HintLabel->Width;
     HintInfo.HideTimeout = 100000; // "almost" never
+  }
+  else if (dynamic_cast<TProgressBar *>(HintInfo.HintControl) != NULL)
+  {
+    HintInfo.HideTimeout = 100000; // "almost" never
+    HintInfo.ReshowTimeout = 500; // updated each 0.5s
   }
   else
   {
@@ -583,6 +612,13 @@ void __fastcall TTerminalManager::TerminalPromptUser(
   AnsiString & Response, bool & Result, void * /*Arg*/)
 {
   Result = DoPasswordDialog(Prompt, Kind, Response);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::TerminalDisplayBanner(
+  TSecureShell * /*SecureShell*/, AnsiString SessionName,
+  const AnsiString & Banner, bool & NeverShowAgain)
+{
+  DoBannerDialog(SessionName, Banner, NeverShowAgain);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalShowExtendedException(
@@ -753,5 +789,17 @@ void __fastcall TTerminalManager::CycleTerminals(bool Forward)
     Index = 0;
   }
   ActiveTerminalIndex = Index;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalManager::CanOpenInPutty()
+{
+  return (ActiveTerminal != NULL) && !GUIConfiguration->PuttyPath.Trim().IsEmpty();
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::OpenInPutty()
+{
+  assert(ActiveTerminal != NULL);
+  OpenSessionInPutty(ActiveTerminal->SessionData,
+    GUIConfiguration->PuttyPassword ? ActiveTerminal->Password : AnsiString());
 }
 

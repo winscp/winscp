@@ -39,15 +39,13 @@ private:
   TTerminal * FTerminal;
   TTerminal * FLastTerminal;
   TNotifyEvent FOldChangeDirectory;
-  TLogAddLineEvent FOldLogAddLine;
-  bool FAddOutput;
   TNotifyEvent FPrevTerminalClose;
   
   void __fastcall DoExecuteCommand();
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall TerminalClose(TObject * Sender);
-  void __fastcall AddLine(TLogLineType Type, AnsiString Line);
+  inline void __fastcall AddLine(TLogLineType Type, const AnsiString & Line);
 
 protected:
   void __fastcall DoChangeDirectory(TObject * Sender);

@@ -5,6 +5,7 @@
 #include <ScpMain.h>
 #include <Common.h>
 #include <TextsWin.h>
+#include <TextsCore.h>
 #include <HelpWin.h>
 #include <VCLCommon.h>
 
@@ -566,15 +567,6 @@ void __fastcall TLoginDialog::UpdateControls()
 
       EnableControl(ShellIconsButton, SessionListView->Selected);
 
-      if (!PrivateKeyEdit->Text.IsEmpty())
-      {
-        PasswordEdit->Clear();
-      }
-      EnableControl(PasswordEdit, PrivateKeyEdit->Text.IsEmpty());
-
-      if (!PasswordEdit->Text.IsEmpty()) PrivateKeyEdit->Clear();
-      EnableControl(PrivateKeyEdit, PasswordEdit->Text.IsEmpty());
-
       EnableControl(PingIntervalSecEdit, !PingOffButton->Checked);
 
       EnableControl(SessionListView, SessionListView->Items->Count);
@@ -616,7 +608,10 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ProxySettingsGroup, !ProxyNoneButton->Checked);
       EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
 
-      EnableControl(PreserveDirectoryChangesCheck, CacheDirectoryChangesCheck->Checked);
+      EnableControl(CacheDirectoryChangesCheck,
+        !SCPonlyButton->Checked || CacheDirectoriesCheck->Checked);
+      EnableControl(PreserveDirectoryChangesCheck,
+        CacheDirectoryChangesCheck->Enabled && CacheDirectoryChangesCheck->Checked);
 
       EnableControl(OverwrittenToRecycleBinCheck, !SCPonlyButton->Checked);
       EnableControl(RecycleBinPathEdit,
@@ -847,7 +842,9 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
 {
-  if (SelectedSession)
+  if (SelectedSession &&
+      (MessageDialog(FMTLOAD(CONFIRM_DELETE_SESSION, (SelectedSession->SessionName)),
+         qtConfirmation, qaOK | qaCancel, HELP_DELETE_SESSION) == qaOK))
   {
     int PrevSelectedIndex = SessionListView->Selected->Index;
     SelectedSession->Remove();
@@ -1192,7 +1189,7 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
   {
     assert(SelectedSession);
     CreateDesktopShortCut(SelectedSession->Name, Application->ExeName,
-      FORMAT("\"%s\"", (SelectedSession->Name)),
+      FORMAT("\"%s\" /UploadIfAny", (SelectedSession->Name)),
       FMTLOAD(SHORTCUT_INFO_TIP, (SelectedSession->Name, SelectedSession->InfoTip)));
   }
 }
@@ -1205,7 +1202,7 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
     assert(SelectedSession);
     CreateDesktopShortCut(FMTLOAD(SESSION_SENDTO_HOOK_NAME, (SelectedSession->Name)),
       Application->ExeName,
-      FORMAT("\"%s\" /upload", (SelectedSession->Name)), "",
+      FORMAT("\"%s\" /Upload", (SelectedSession->Name)), "",
       CSIDL_SENDTO);
   }
 }
@@ -1303,6 +1300,76 @@ void __fastcall TLoginDialog::FormKeyDown(TObject * /*Sender*/, WORD &Key,
   if (Key == VK_ESCAPE)
   {
     ModalResult = mrCancel;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::VerifyKey(AnsiString FileName, bool TypeOnly)
+{
+  if (!FileName.Trim().IsEmpty())
+  {
+    TKeyType Type = KeyType(FileName);
+    AnsiString Message;
+    switch (Type)
+    {
+      case ktOpenSSH:
+        Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, "OpenSSH SSH-2"));
+        break;
+
+      case ktSSHCom:
+        Message = FMTLOAD(KEY_TYPE_UNSUPPORTED, (FileName, "ssh.com SSH-2"));
+        break;
+
+      case ktSSH1:
+      case ktSSH2:
+        // on file select do not check for SSH version as user may
+        // inted to change it only after he/she selects key file
+        if (!TypeOnly)
+        {
+          TSessionData * Data = SessionData;
+          if ((Type == ktSSH1) !=
+                ((Data->SshProt == ssh1only) || (Data->SshProt == ssh1)))
+          {
+            Message = FMTLOAD(KEY_TYPE_DIFFERENT_SSH,
+              (FileName, (Type == ktSSH1 ? "SSH-1" : "PuTTY SSH-2")));
+          }
+        }
+        break;
+
+      default:
+        assert(false);
+        // fallthru
+      case ktUnopenable:
+      case ktUnknown:
+        Message = FMTLOAD(KEY_TYPE_UNKNOWN, (FileName));
+        break;
+    }
+
+    if (!Message.IsEmpty())
+    {
+      if (MessageDialog(Message, qtWarning, qaIgnore | qaAbort,
+           HELP_LOGIN_KEY_TYPE) == qaAbort)
+      {
+        Abort();
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::PrivateKeyEditAfterDialog(TObject * /*Sender*/,
+  AnsiString & Name, bool & /*Action*/)
+{
+  if (Name != PrivateKeyEdit->Text)
+  {
+    VerifyKey(Name, true);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::FormCloseQuery(TObject * /*Sender*/,
+  bool & /*CanClose*/)
+{
+  if (ModalResult != mrCancel)
+  {
+    VerifyKey(SessionData->PublicKeyFile, false);
   }
 }
 //---------------------------------------------------------------------------

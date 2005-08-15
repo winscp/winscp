@@ -20,6 +20,8 @@ public:
   bool __fastcall ProcessUserAction(void * Arg);
   void __fastcall Cancel();
   void __fastcall Idle();
+  bool __fastcall Pause();
+  bool __fastcall Resume();
 
 protected:
   struct TQueryUserRec
@@ -54,6 +56,7 @@ protected:
   TCriticalSection * FCriticalSection;
   void * FUserActionParams;
   bool FCancel;
+  bool FPause;
 
   virtual void __fastcall ProcessEvent();
   virtual void __fastcall Finished();
@@ -510,12 +513,13 @@ bool __fastcall TTerminalQueue::ItemExecuteNow(TQueueItem * Item)
       TGuard Guard(FItemsSection);
 
       int Index = FItems->IndexOf(Item);
-      Result = (Index >= 0) && (Item->GetStatus() == TQueueItem::qsPending);
+      Result = (Index >= 0) && (Item->GetStatus() == TQueueItem::qsPending) &&
+        // prevent double-initiation when "execute" is clicked twice too fast
+        (Index >= FItemsInProcess);
       if (Result)
       {
-        if (Index != FItemsInProcess)
+        if (Index > FItemsInProcess)
         {
-          assert(Index > FItemsInProcess);
           FItems->Move(Index, FItemsInProcess);
         }
 
@@ -567,6 +571,42 @@ bool __fastcall TTerminalQueue::ItemDelete(TQueueItem * Item)
     {
       DoListUpdate();
       TriggerEvent();
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalQueue::ItemPause(TQueueItem * Item, bool Pause)
+{
+  // to prevent deadlocks when closing queue from other thread
+  bool Result = !FFinished;
+  if (Result)
+  {
+    TTerminalItem * TerminalItem;
+
+    {
+      TGuard Guard(FItemsSection);
+
+      Result = (FItems->IndexOf(Item) >= 0) &&
+        ((Pause && (Item->Status == TQueueItem::qsProcessing)) ||
+         (!Pause && (Item->Status == TQueueItem::qsPaused)));
+      if (Result)
+      {
+        TerminalItem = Item->FTerminalItem;
+      }
+    }
+
+    if (Result)
+    {
+      if (Pause)
+      {
+        Result = TerminalItem->Pause();
+      }
+      else
+      {
+        Result = TerminalItem->Resume();
+      }
     }
   }
 
@@ -776,6 +816,7 @@ void __fastcall TTerminalItem::ProcessEvent()
   bool Retry = true;
 
   FCancel = false;
+  FPause = false;
   FItem->FTerminalItem = this;
 
   try
@@ -852,6 +893,32 @@ void __fastcall TTerminalItem::Idle()
 void __fastcall TTerminalItem::Cancel()
 {
   FCancel = true;
+  if (FItem->GetStatus() == TQueueItem::qsPaused)
+  {
+    TriggerEvent();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalItem::Pause()
+{
+  assert(FItem != NULL);
+  bool Result = (FItem->GetStatus() == TQueueItem::qsProcessing) && !FPause;
+  if (Result)
+  {
+    FPause = true;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalItem::Resume()
+{
+  assert(FItem != NULL);
+  bool Result = (FItem->GetStatus() == TQueueItem::qsPaused);
+  if (Result)
+  {
+    TriggerEvent();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalItem::ProcessUserAction(void * Arg)
@@ -1011,6 +1078,28 @@ void __fastcall TTerminalItem::OperationFinished(TFileOperation /*Operation*/,
 void __fastcall TTerminalItem::OperationProgress(
   TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
 {
+  if (FPause && !FTerminated && !FCancel)
+  {
+    TQueueItem::TStatus PrevStatus = FItem->GetStatus();
+    assert(PrevStatus == TQueueItem::qsProcessing);
+    // must be set before TFileOperationProgressType::Suspend(), because
+    // it invokes this method back
+    FPause = false;
+    ProgressData.Suspend();
+
+    try
+    {
+      FItem->SetStatus(TQueueItem::qsPaused);
+
+      WaitForEvent();
+    }
+    __finally
+    {
+      FItem->SetStatus(PrevStatus);
+      ProgressData.Resume();
+    }
+  }
+
   if (FTerminated || FCancel)
   {
     if (ProgressData.TransferingFile)
@@ -1203,6 +1292,16 @@ bool __fastcall TQueueItemProxy::Delete()
   return FQueue->ItemDelete(FQueueItem);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TQueueItemProxy::Pause()
+{
+  return FQueue->ItemPause(FQueueItem, true);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TQueueItemProxy::Resume()
+{
+  return FQueue->ItemPause(FQueueItem, false);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TQueueItemProxy::ProcessUserAction(void * Arg)
 {
   assert(FQueueItem != NULL);
@@ -1372,12 +1471,15 @@ __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
     if (FLAGSET(Params, cpTemporary))
     {
       FInfo->Source = "";
+      FInfo->ModifiedLocal = "";
     }
     else
     {
       ExtractCommonPath(FilesToCopy, FInfo->Source);
       // this way the trailing backslash is preserved for root directories like D:\\
       FInfo->Source = ExtractFileDir(IncludeTrailingBackslash(FInfo->Source));
+      FInfo->ModifiedLocal = FLAGCLEAR(Params, cpDelete) ? AnsiString() :
+        IncludeTrailingBackslash(FInfo->Source);
     }
   }
   else
@@ -1385,18 +1487,20 @@ __fastcall TUploadQueueItem::TUploadQueueItem(TTerminal * Terminal,
     if (FLAGSET(Params, cpTemporary))
     {
       FInfo->Source = ExtractFileName(FilesToCopy->Strings[0]);
+      FInfo->ModifiedLocal = "";
     }
     else
     {
       assert(FilesToCopy->Count > 0);
       FInfo->Source = FilesToCopy->Strings[0];
+      FInfo->ModifiedLocal = FLAGCLEAR(Params, cpDelete) ? AnsiString() :
+        IncludeTrailingBackslash(ExtractFilePath(FInfo->Source));
     }
   }
 
   FInfo->Destination =
     UnixIncludeTrailingBackslash(TargetDir) + CopyParam->FileMask;
-  FInfo->ModifiesLocal = ((Params & cpDelete) != 0);
-  FInfo->ModifiesRemote = true;
+  FInfo->ModifiedRemote = UnixIncludeTrailingBackslash(TargetDir);
 }
 //---------------------------------------------------------------------------
 void __fastcall TUploadQueueItem::DoExecute(TTerminal * Terminal)
@@ -1421,6 +1525,8 @@ __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
       FInfo->Source = Terminal->CurrentDirectory;
     }
     FInfo->Source = UnixExcludeTrailingBackslash(FInfo->Source);
+    FInfo->ModifiedRemote = FLAGCLEAR(Params, cpDelete) ? AnsiString() :
+      UnixIncludeTrailingBackslash(FInfo->Source);
   }
   else
   {
@@ -1430,6 +1536,13 @@ __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
     {
       FInfo->Source = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory) +
         FInfo->Source;
+      FInfo->ModifiedRemote = FLAGCLEAR(Params, cpDelete) ? AnsiString() :
+        UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
+    }
+    else
+    {
+      FInfo->ModifiedRemote = FLAGCLEAR(Params, cpDelete) ? AnsiString() :
+        UnixExtractFilePath(FInfo->Source);
     }
   }
 
@@ -1442,8 +1555,7 @@ __fastcall TDownloadQueueItem::TDownloadQueueItem(TTerminal * Terminal,
     FInfo->Destination =
       IncludeTrailingBackslash(TargetDir) + CopyParam->FileMask;
   }
-  FInfo->ModifiesLocal = true;
-  FInfo->ModifiesRemote = ((Params & cpDelete) != 0);
+  FInfo->ModifiedLocal = IncludeTrailingBackslash(TargetDir);
 }
 //---------------------------------------------------------------------------
 void __fastcall TDownloadQueueItem::DoExecute(TTerminal * Terminal)

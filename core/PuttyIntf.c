@@ -28,6 +28,7 @@ void SSHConnectionFatal(void * frontend, char * string);
 void SSHVerifyHostKey(void * frontend, char *host, int port, char * keytype,
   char * keystr, char * fingerprint);
 void SSHOldKeyfileWarning(void);
+void SSHDisplayBanner(void * frontend, const char * banner, int size);
 void SSHAskAlg(void * frontend, const char * AlgType, const char * AlgName);
 long RegOpenWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
 long RegCreateWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
@@ -193,6 +194,11 @@ void pinger_free(Pinger pinger)
 void set_busy_status(void * frontend, int status)
 {
   // nothing
+}
+//---------------------------------------------------------------------------
+void display_banner(void * frontend, const char * banner, int size)
+{
+  SSHDisplayBanner(frontend, banner, size);
 }
 //---------------------------------------------------------------------------
 #pragma option pop // -w-par

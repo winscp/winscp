@@ -76,11 +76,14 @@ object LocationProfilesDialog: TLocationProfilesDialog
       HideSelection = False
       Images = BookmarkImageList
       Indent = 19
+      ReadOnly = True
       TabOrder = 0
       OnChange = ProfilesViewChange
+      OnCollapsed = ProfilesViewCollapsed
       OnDblClick = ProfilesViewDblClick
       OnDragDrop = ProfilesViewDragDrop
       OnDragOver = ProfilesViewDragOver
+      OnExpanded = ProfilesViewExpanded
       OnGetImageIndex = ProfilesViewGetImageIndex
       OnGetSelectedIndex = ProfilesViewGetSelectedIndex
       OnKeyDown = ProfilesViewKeyDown

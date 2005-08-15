@@ -40,6 +40,7 @@ __published:
   void __fastcall PresetsButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
 private:
+  bool FDefaultToRemote;
   bool FToRemote;
   TStrings * FFileList;
   bool FMove;
@@ -64,6 +65,8 @@ private:
 protected:
   void __fastcall UpdateControls();
   void __fastcall AdjustControls();
+  void __fastcall AdjustTransferControls();
+  bool __fastcall RemotePaths();
 public:
   __fastcall TCopyDialog(TComponent* Owner);
   virtual __fastcall ~TCopyDialog();

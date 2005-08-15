@@ -43,7 +43,7 @@ struct TScpCommanderConfiguration {
   bool StatusBar;
   bool CommandLine;
   TOperationSide CurrentPanel;
-  bool ExplorerStyleSelection;
+  TNortonLikeMode NortonLikeMode;
   bool PreserveLocalDirectory;
   TScpCommanderPanelConfiguration LocalPanel;
   TScpCommanderPanelConfiguration RemotePanel;
@@ -54,7 +54,7 @@ struct TScpCommanderConfiguration {
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(CommandLine)
-      C(ExplorerStyleSelection) C(PreserveLocalDirectory)
+      C(NortonLikeMode) C(PreserveLocalDirectory)
       C(CompareBySize) C(CompareByTime) C(SwappedPanels) 
       C(SessionComboWidth) 0; };
 
@@ -74,9 +74,6 @@ struct TScpCommanderConfiguration {
 };
 //---------------------------------------------------------------------------
 struct TEditorConfiguration {
-  TEditor Editor;
-  AnsiString ExternalEditor;
-  bool ExternalEditorText;
   AnsiString FontName;
   int FontHeight;
   int FontCharset;
@@ -87,15 +84,13 @@ struct TEditorConfiguration {
   bool FindMatchCase;
   bool FindWholeWord;
   bool SingleEditor;
-  bool MDIExternalEditor;
-  bool DetectMDIExternalEditor;
   unsigned int MaxEditors;
   unsigned int EarlyClose;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
-    { return C(Editor) C(ExternalEditor) C(ExternalEditorText) C(FontName) C(FontHeight)
+    { return C(FontName) C(FontHeight)
       C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
-      C(FindMatchCase) C(FindWholeWord) C(SingleEditor) C(MDIExternalEditor)
-      C(DetectMDIExternalEditor) C(MaxEditors) C(EarlyClose) 0; };
+      C(FindMatchCase) C(FindWholeWord) C(SingleEditor)
+      C(MaxEditors) C(EarlyClose) 0; };
 };
 //---------------------------------------------------------------------------
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };
@@ -139,18 +134,91 @@ struct TUpdatesConfiguration
     { return C(Period) C(LastCheck) C(ProxyHost) C(ProxyPort) C(HaveResults)
         C(ShownResults) C(Results)  0; };
 };
+//---------------------------------------------------------------------------
+struct TEditorData
+{
+  TFileMasks FileMask;
+  TEditor Editor;
+  AnsiString ExternalEditor;
+  bool ExternalEditorText;
+  bool MDIExternalEditor;
+  bool DetectMDIExternalEditor;
+};
+//---------------------------------------------------------------------------
 #undef C
+//---------------------------------------------------------------------------
+class TEditorPreferences
+{
+public:
+  __fastcall TEditorPreferences();
+  __fastcall TEditorPreferences(const TEditorPreferences & Source);
+
+  bool __fastcall Matches(const AnsiString FileName, bool Local) const;
+  void __fastcall Load(THierarchicalStorage * Storage, bool Legacy);
+  void __fastcall Save(THierarchicalStorage * Storage) const;
+  void __fastcall LegacyDefaults();
+
+  bool __fastcall operator ==(const TEditorPreferences & rhp) const;
+
+  __property TEditorData Data = { read = FData, write = FData };
+  __property AnsiString Name = { read = GetName };
+
+private:
+  TEditorData FData;
+  mutable AnsiString FName;
+
+  AnsiString __fastcall GetName() const;
+};
+//---------------------------------------------------------------------------
+class TEditorList
+{
+public:
+  __fastcall TEditorList();
+  virtual __fastcall ~TEditorList();
+
+  const TEditorPreferences * __fastcall Find(const AnsiString FileName,
+    bool Local) const;
+
+  void __fastcall Load(THierarchicalStorage * Storage);
+  void __fastcall Save(THierarchicalStorage * Storage) const;
+
+  void __fastcall operator=(const TEditorList & rhl);
+  bool __fastcall operator==(const TEditorList & rhl) const;
+
+  void __fastcall Clear();
+  void __fastcall Add(TEditorPreferences * Editor);
+  void __fastcall Insert(int Index, TEditorPreferences * Editor);
+  void __fastcall Change(int Index, TEditorPreferences * Editor);
+  void __fastcall Move(int CurIndex, int NewIndex);
+  void __fastcall Delete(int Index);
+
+  __property int Count = { read = GetCount };
+  __property const TEditorPreferences * Editors[int Index] = { read = GetEditor };
+  __property bool Modified = { read = FModified };
+  
+private:
+  TList * FEditors;
+  bool FModified;
+
+  int __fastcall GetCount() const;
+
+  void __fastcall Init();
+  void __fastcall Modify();
+  const TEditorPreferences * __fastcall GetEditor(int Index) const;
+};
 //---------------------------------------------------------------------------
 class TBookmarks;
 class TBookmarkList;
 class TCustomCommands;
 enum TPathInCaption { picShort, picFull, picNone };
+// constants must be compatible with legacy CopyOnDoubleClick
+enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
 //---------------------------------------------------------------------------
 class TWinConfiguration : public TCustomWinConfiguration
 {
 private:
   AnsiString FAutoStartSession;
-  bool FCopyOnDoubleClick;
+  TDoubleClickAction FDoubleClickAction;
   bool FCopyOnDoubleClickConfirmation;
   bool FDDAllowMove;
   bool FDDAllowMoveInit;
@@ -200,8 +268,12 @@ private:
   TUpdatesConfiguration FUpdates;
   bool FCopyParamAutoSelectNotice;
   bool FSessionToolbarAutoShown;
+  bool FLockToolbars;
+  TEditorList * FEditorList;
+  AnsiString FDefaultKeyFile;
+  bool FAutoOpenInPutty;
 
-  void __fastcall SetCopyOnDoubleClick(bool value);
+  void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
   void __fastcall SetDDAllowMove(bool value);
   void __fastcall SetDDAllowMoveInit(bool value);
@@ -242,6 +314,10 @@ private:
   void __fastcall SetSessionToolbarAutoShown(bool value);
   TUpdatesConfiguration __fastcall GetUpdates();
   void __fastcall SetUpdates(TUpdatesConfiguration value);
+  void __fastcall SetLockToolbars(bool value);
+  const TEditorList * __fastcall GetEditorList();
+  void __fastcall SetEditorList(const TEditorList * value);
+  void __fastcall SetAutoOpenInPutty(bool value);
 
   bool __fastcall GetDDExtInstalled();
 
@@ -281,6 +357,8 @@ public:
   void __fastcall CleanupTemporaryFolders(TStrings * Folders = NULL);
   void __fastcall CheckDefaultTranslation();
   bool __fastcall ConfirmRemoveDefaultTranslation();
+  const TEditorPreferences * __fastcall DefaultEditorForFile(
+    const AnsiString FileName, bool Local);
 
   __property TScpCommanderConfiguration ScpCommander = { read = FScpCommander, write = SetScpCommander };
   __property TScpExplorerConfiguration ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
@@ -292,7 +370,7 @@ public:
   __property TQueueViewConfiguration QueueView = { read = FQueueView, write = SetQueueView };
   __property TUpdatesConfiguration Updates = { read = GetUpdates, write = SetUpdates };
   __property AnsiString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
-  __property bool CopyOnDoubleClick = { read = FCopyOnDoubleClick, write = SetCopyOnDoubleClick };
+  __property TDoubleClickAction DoubleClickAction = { read = FDoubleClickAction, write = SetDoubleClickAction };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
   __property bool DDAllowMove = { read = FDDAllowMove, write = SetDDAllowMove };
   __property bool DDAllowMoveInit = { read = FDDAllowMoveInit, write = SetDDAllowMoveInit };
@@ -328,6 +406,10 @@ public:
   __property AnsiString DefaultTranslationFile = { read = FDefaultTranslationFile };
   __property bool CopyParamAutoSelectNotice = { read = FCopyParamAutoSelectNotice, write = SetCopyParamAutoSelectNotice };
   __property bool SessionToolbarAutoShown = { read = FSessionToolbarAutoShown, write = SetSessionToolbarAutoShown };
+  __property bool LockToolbars = { read = FLockToolbars, write = SetLockToolbars };
+  __property bool AutoOpenInPutty = { read = FAutoOpenInPutty, write = SetAutoOpenInPutty };
+  __property const TEditorList * EditorList = { read = GetEditorList, write = SetEditorList };
+  __property AnsiString DefaultKeyFile = { read = GetDefaultKeyFile, write = FDefaultKeyFile };
 };
 //---------------------------------------------------------------------------
 class TCustomCommands : public TStringList

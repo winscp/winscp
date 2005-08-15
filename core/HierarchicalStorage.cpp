@@ -627,7 +627,20 @@ double __fastcall TIniFileStorage::ReadFloat(const AnsiString Name, double Defau
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::ReadStringRaw(const AnsiString Name, AnsiString Default)
 {
-  return FIniFile->ReadString(CurrentSection, Name, Default);
+  AnsiString Section = CurrentSection;
+  AnsiString Result;
+  Result = FIniFile->ReadString(Section, Name, Default);
+  // TIniFile::ReadString has limit of 2 kB.
+  // We could straithly use our routine, but call to legacy code is preserved
+  // until ours it proved to work and also to save memory overhead
+  if (Result.Length() == 2047)
+  {
+    char Buffer[10240];
+    GetPrivateProfileString(Section.c_str(), Name.c_str(), Default.c_str(),
+      Buffer, sizeof(Buffer), FIniFile->FileName.c_str());
+    Result = Buffer;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall TIniFileStorage::ReadBinaryData(const AnsiString Name,

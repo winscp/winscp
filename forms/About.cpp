@@ -19,20 +19,31 @@ __fastcall TAboutDialog::TAboutDialog(TComponent* AOwner)
 {
   ThirdPartyBox->VertScrollBar->Position = 0;
   UseSystemSettings(this);
-  LinkLabel(HomepageLabel);
-  LinkLabel(ForumUrlLabel);
-  LinkLabel(PuttyLicenceLabel);
-  LinkLabel(PuttyHomepageLabel);
+  LinkLabel(HomepageLabel, LoadStr(HOMEPAGE_URL));
+  LinkLabel(ForumUrlLabel, LoadStr(FORUM_URL));
+  LinkLabel(PuttyLicenceLabel, "", FirstScrollingControlEnter);
+  LinkLabel(PuttyHomepageLabel, LoadStr(PUTTY_URL));
   LinkLabel(Toolbar2000HomepageLabel);
-  LinkLabel(TBXHomepageLabel);
+  LinkLabel(TBXHomepageLabel, "", LastScrollingControlEnter);
+  ApplicationLabel->ParentFont = true;
+  ApplicationLabel->Font->Style = ApplicationLabel->Font->Style << fsBold;
   ApplicationLabel->Caption = AppName;
-  HomepageLabel->Caption = LoadStr(HOMEPAGE_URL);
-  ForumUrlLabel->Caption = LoadStr(FORUM_URL);
-  PuttyHomepageLabel->Caption = LoadStr(PUTTY_URL);
   PuttyVersionLabel->Caption = FMTLOAD(PUTTY_BASED_ON, (LoadStr(PUTTY_VERSION)));
   PuttyCopyrightLabel->Caption = LoadStr(PUTTY_COPYRIGHT);
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
-  TranslatorLabel->Caption = LoadStr(TRANSLATOR_INFO);
+  AnsiString Translator = LoadStr(TRANSLATOR_INFO);
+  if (Translator.IsEmpty())
+  {
+    TranslatorLabel->Visible = false;
+    TranslatorUrlLabel->Visible = false;
+    ClientHeight = ClientHeight -
+      (TranslatorLabel->Top - ProductSpecificMessageLabel->Top);
+  }
+  else
+  {
+    TranslatorLabel->Caption = LoadStr(TRANSLATOR_INFO);
+    LinkLabel(TranslatorUrlLabel, LoadStr(TRANSLATOR_URL));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::SetConfiguration(TConfiguration * value)
@@ -46,17 +57,13 @@ void __fastcall TAboutDialog::SetConfiguration(TConfiguration * value)
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LoadData()
 {
-  VersionLabel->Caption = Configuration->VersionStr;
-}
-//---------------------------------------------------------------------------
-void __fastcall TAboutDialog::HomepageLabelClick(TObject * Sender)
-{
-  OpenBrowser(((TLabel*)Sender)->Caption);
-}
-//---------------------------------------------------------------------------
-void __fastcall TAboutDialog::EmailLabelClick(TObject * Sender)
-{
-  OpenBrowser("mailto:" + ((TLabel*)Sender)->Caption);
+  AnsiString Version = Configuration->VersionStr;
+  if (Configuration->Version != Configuration->ProductVersion)
+  {
+    Version = FMTLOAD(ABOUT_BASED_ON_PRODUCT,
+      (Configuration->ProductName, Configuration->ProductVersion));
+  }
+  VersionLabel->Caption = Version;
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::DisplayLicence(TObject * Sender)
@@ -82,6 +89,17 @@ void __fastcall TAboutDialog::SetAllowLicence(bool value)
 void __fastcall TAboutDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::FirstScrollingControlEnter(TObject * /*Sender*/)
+{
+  ThirdPartyBox->VertScrollBar->Position = 0;
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::LastScrollingControlEnter(TObject * /*Sender*/)
+{
+  ThirdPartyBox->VertScrollBar->Position =
+    ThirdPartyBox->VertScrollBar->Range - ThirdPartyBox->ClientHeight;
 }
 //---------------------------------------------------------------------------
 

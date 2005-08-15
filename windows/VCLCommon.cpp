@@ -8,14 +8,15 @@
 #include <Common.h>
 #include <TextsWin.h>
 #include <RemoteFiles.h>
+#include <GUITools.h>
+#include <Tools.h>
 
 #include <FileCtrl.hpp>
 #include <XPThemes.hpp>
-#include <TB2Dock.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-void __fastcall AdjustListColumnsWidth(TListView* ListView)
+void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount)
 {
   int OriginalWidth, NewWidth, i, CWidth, LastResizible;
 
@@ -31,9 +32,16 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView)
   }
   assert(LastResizible >= 0);
 
+  // when listview is virtual, ListView->Items->Count seems to return invalid
+  // value, thus provide a method to pass actual count explicitly
+  if (RowCount < 0)
+  {
+    RowCount = ListView->Items->Count;
+  }
+  
   NewWidth = 0;
   CWidth = ListView->ClientWidth;
-  if ((ListView->VisibleRowCount < ListView->Items->Count) &&
+  if ((ListView->VisibleRowCount < RowCount) &&
       (ListView->Width - ListView->ClientWidth < GetSystemMetrics(SM_CXVSCROLL)))
   {
     CWidth -= GetSystemMetrics(SM_CXVSCROLL);
@@ -140,13 +148,6 @@ void __fastcall RevokeSystemSettings(TCustomForm * Control,
   }
   delete Settings;
 };
-//---------------------------------------------------------------------------
-void __fastcall LinkLabel(TLabel * Label)
-{
-  Label->ParentFont = true;
-  Label->Font->Style = Label->Font->Style << fsUnderline;
-  Label->Font->Color = clBlue;
-}
 //---------------------------------------------------------------------------
 class TPublicForm : public TForm
 {
@@ -444,120 +445,6 @@ void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After)
   }
 }
 //---------------------------------------------------------------------------
-static inline void __fastcall GetToolbarKey(const AnsiString & ToolbarName,
-  const AnsiString & Value, AnsiString & ToolbarKey)
-{
-  int ToolbarNameLen;
-  if ((ToolbarName.Length() > 7) &&
-      (ToolbarName.SubString(ToolbarName.Length() - 7 + 1, 7) == "Toolbar"))
-  {
-    ToolbarNameLen = ToolbarName.Length() - 7;
-  }
-  else
-  {
-    ToolbarNameLen = ToolbarName.Length();
-  }
-  ToolbarKey = ToolbarName.SubString(1, ToolbarNameLen) + "_" + Value;
-}
-//---------------------------------------------------------------------------
-static int __fastcall ToolbarReadInt(const AnsiString ToolbarName,
-  const AnsiString Value, const int Default, const void * ExtraData)
-{
-  int Result;
-  if (Value == "Rev")
-  {
-    Result = 2000;
-  }
-  else
-  {
-    TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
-    AnsiString ToolbarKey;
-    GetToolbarKey(ToolbarName, Value, ToolbarKey);
-    if (Storage->IndexOfName(ToolbarKey) >= 0)
-    {
-      Result = StrToIntDef(Storage->Values[ToolbarKey], Default);
-    }
-    else
-    {
-      Result = Default;
-    }
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-static AnsiString __fastcall ToolbarReadString(const AnsiString ToolbarName,
-  const AnsiString Value, const AnsiString Default, const void * ExtraData)
-{
-  AnsiString Result;
-  TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
-  AnsiString ToolbarKey;
-  GetToolbarKey(ToolbarName, Value, ToolbarKey);
-  if (Storage->IndexOfName(ToolbarKey) >= 0)
-  {
-    Result = Storage->Values[ToolbarKey];
-  }
-  else
-  {
-    Result = Default;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-static void __fastcall ToolbarWriteInt(const AnsiString ToolbarName,
-  const AnsiString Value, const int Data, const void * ExtraData)
-{
-  if (Value != "Rev")
-  {
-    TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
-    AnsiString ToolbarKey;
-    GetToolbarKey(ToolbarName, Value, ToolbarKey);
-    assert(Storage->IndexOfName(ToolbarKey) < 0);
-    Storage->Values[ToolbarKey] = IntToStr(Data);
-  }
-}
-//---------------------------------------------------------------------------
-static void __fastcall ToolbarWriteString(const AnsiString ToolbarName,
-  const AnsiString Value, const AnsiString Data, const void * ExtraData)
-{
-  TStrings * Storage = static_cast<TStrings *>(const_cast<void*>(ExtraData));
-  AnsiString ToolbarKey;
-  GetToolbarKey(ToolbarName, Value, ToolbarKey);
-  assert(Storage->IndexOfName(ToolbarKey) < 0);
-  Storage->Values[ToolbarKey] = Data;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent)
-{
-  AnsiString Result;
-  TStrings * Storage = new TStringList();
-  try
-  {
-    TBCustomSavePositions(OwnerComponent, ToolbarWriteInt, ToolbarWriteString,
-      Storage);
-    Result = Storage->CommaText;
-  }
-  __finally
-  {
-    delete Storage;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr)
-{
-  TStrings * Storage = new TStringList();
-  try
-  {
-    Storage->CommaText = LayoutStr;
-    TBCustomLoadPositions(OwnerComponent, ToolbarReadInt, ToolbarReadString,
-      Storage);
-  }
-  __finally
-  {
-    delete Storage;
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall CutFormToDesktop(TForm * Form)
 {
   if (Form->Top + Form->Height > Screen->WorkAreaTop + Screen->WorkAreaHeight)
@@ -572,19 +459,437 @@ void __fastcall CutFormToDesktop(TForm * Form)
 //---------------------------------------------------------------------------
 void __fastcall SetCorrectFormParent(TForm * Form)
 {
-  // Kind of hack (i do not understand this much).
-  // Rationale: for example when the preferences window is opened from login dialog
-  // settings Parent to Screen->ActiveForm leads to "cannot focus disabled control",
-  // so we set Parent only when absolutelly necessary 
-  // (dialog opened from log window or editor)
-  // TODO: does not work for dialogs opened from preferences dialog
-  if ((Application->MainForm != NULL) &&
-      (Application->MainForm != Screen->ActiveForm))
+  try
   {
-    // this should better be check for modal form
-    if (Screen->ActiveForm->BorderStyle != bsDialog)
+    // Kind of hack (i do not understand this much).
+    // Rationale: for example when the preferences window is opened from login dialog
+    // settings Parent to Screen->ActiveForm leads to "cannot focus disabled control",
+    // so we set Parent only when absolutelly necessary 
+    // (dialog opened from log window or editor)
+    // TODO: does not work for dialogs opened from preferences dialog
+    if ((Application->MainForm != NULL) &&
+        (Application->MainForm != Screen->ActiveForm))
     {
-      Form->ParentWindow = Screen->ActiveForm->Handle;
+      // this should better be check for modal form
+      AnsiString C = Screen->ActiveForm->Caption;
+      if ((Screen->ActiveForm != NULL) &&
+          (Screen->ActiveForm->BorderStyle != bsDialog))
+      {
+        Form->ParentWindow = Screen->ActiveForm->Handle;
+      }
     }
   }
+  catch(...)
+  {
+    // avoid any errors, however we want to know about this in debug version.
+    #ifdef _DEBUG
+    throw;
+    #endif
+  }
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TPublicControl : public TWinControl
+{
+friend void __fastcall ControlWndProc(TWinControl * Control, TMessage & Message);
+};
+//---------------------------------------------------------------------------
+void __fastcall ControlWndProc(TWinControl * Control, TMessage & Message)
+{
+  TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
+  PublicControl->WndProc(Message);
+}
+//---------------------------------------------------------------------------
+static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
+  TControlCanvas ** ACanvas, TRect & R)
+{
+  TControlCanvas * Canvas = new TControlCanvas();
+  try
+  {
+    Canvas->Control = StaticText;
+
+    R = StaticText->ClientRect;
+
+    AnsiString Caption = StaticText->Caption;
+    bool AccelChar = false;
+    if (StaticText->ShowAccelChar)
+    {
+      Caption = StripHotkey(Caption);
+      AccelChar = (Caption != StaticText->Caption);
+    }
+      
+    TSize TextSize = Canvas->TextExtent(Caption);
+    assert(StaticText->BorderStyle == sbsNone); // not taken into account
+    if (AccelChar)
+    {
+      TextSize.cy += 2;
+    }
+  
+    R.Bottom = R.Top + TextSize.cy;
+    if (StaticText->Alignment == taRightJustify)
+    {
+      R.Left = R.Right - TextSize.cx;
+    }
+    else
+    {
+      R.Right = R.Left + TextSize.cx;
+    }
+  }
+  __finally
+  {
+    if (ACanvas == NULL)
+    {
+      delete Canvas;
+    }
+  }
+
+  if (ACanvas != NULL)
+  {
+    *ACanvas = Canvas;
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
+  bool & Clicked)
+{
+  Clicked = false;
+  TStaticText * StaticText = static_cast<TStaticText *>(Data);
+  if (Message.Msg == WM_LBUTTONDOWN)
+  {
+    StaticText->SetFocus();
+    // in case the action takes long, make sure focus is shown immediatelly
+    UpdateWindow(StaticText->Handle);
+    Clicked = true;
+    Message.Result = 1;
+  }
+  if (Message.Msg == WM_RBUTTONDOWN)
+  {
+    StaticText->SetFocus();
+    Message.Result = 1;
+  }
+  else if (Message.Msg == WM_CHAR)
+  {
+    if (reinterpret_cast<TWMChar &>(Message).CharCode == ' ')
+    {
+      Clicked = true;
+      Message.Result = 1;
+    }
+    else
+    {
+      ControlWndProc(StaticText, Message);
+    }
+  }
+  else if (Message.Msg == CM_DIALOGCHAR)
+  {                                     
+    if (StaticText->Enabled && StaticText->ShowAccelChar &&
+        IsAccel(reinterpret_cast<TCMDialogChar &>(Message).CharCode, StaticText->Caption))
+    {
+      StaticText->SetFocus();
+      // in case the action takes long, make sure focus is shown immediatelly
+      UpdateWindow(StaticText->Handle);
+      Clicked = true;
+      Message.Result = 1;
+    }
+    else
+    {
+      ControlWndProc(StaticText, Message);
+    }    
+  }
+  else
+  {
+    ControlWndProc(StaticText, Message);
+  }
+
+  if (Message.Msg == WM_PAINT)
+  {
+    TRect R;
+    TControlCanvas * Canvas;
+    FocusableLabelCanvas(StaticText, &Canvas, R); 
+    try
+    {
+      if (StaticText->Focused())
+      {
+        Canvas->DrawFocusRect(R);
+      }
+      else if (!StaticText->Font->Style.Contains(fsUnderline))
+      {
+        Canvas->Pen->Style = psDot;
+        Canvas->Brush->Style = bsClear;
+        if (!StaticText->Enabled)
+        {
+          Canvas->Pen->Color = clBtnHighlight;
+          Canvas->MoveTo(R.Left + 1 + 1, R.Bottom);
+          Canvas->LineTo(R.Right + 1, R.Bottom);
+          Canvas->Pen->Color = clGrayText;
+        }
+        Canvas->MoveTo(R.Left + 1, R.Bottom - 1);
+        Canvas->LineTo(R.Right, R.Bottom - 1);
+      }
+    }
+    __finally
+    {
+      delete Canvas;
+    }
+  }
+  else if ((Message.Msg == WM_SETFOCUS) || (Message.Msg == WM_KILLFOCUS) ||
+    (Message.Msg == CM_ENABLEDCHANGED))
+  {
+    StaticText->Invalidate();
+  }
+}
+//---------------------------------------------------------------------------
+static THintWindow * PersistentHintWindow = NULL;
+static TControl * PersistentHintControl = NULL;
+//---------------------------------------------------------------------------
+void __fastcall CancelPersistentHint()
+{
+  if (PersistentHintWindow != NULL)
+  {
+    PersistentHintControl = NULL;
+    SAFE_DESTROY(PersistentHintWindow);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ShowPersistentHint(TControl * Control, TPoint HintPos)
+{
+  CancelPersistentHint();
+
+  THintInfo HintInfo;
+  HintInfo.HintControl = Control;
+  HintInfo.HintPos = HintPos;
+  HintInfo.HintMaxWidth = Screen->Width;
+  HintInfo.HintColor = Application->HintColor;
+  HintInfo.HintStr = GetShortHint(Control->Hint);
+  HintInfo.HintData = NULL;
+
+  bool CanShow = true;
+  Application->OnShowHint(HintInfo.HintStr, CanShow, HintInfo);
+
+  if (CanShow)
+  {
+    PersistentHintControl = Control;
+      
+    PersistentHintWindow = new THintWindow(Application);
+    PersistentHintWindow->BiDiMode = Control->BiDiMode;
+    PersistentHintWindow->Color = HintInfo.HintColor;
+
+    TRect HintWinRect;
+    if (HintInfo.HintMaxWidth < Control->Width)
+    {
+      HintInfo.HintMaxWidth = Control->Width;
+    }
+    HintWinRect = PersistentHintWindow->CalcHintRect(
+      HintInfo.HintMaxWidth, HintInfo.HintStr, HintInfo.HintData);
+    OffsetRect(HintWinRect, HintInfo.HintPos.x, HintInfo.HintPos.y);
+    // TODO: right align window placement for UseRightToLeftAlignment, see Forms.pas
+
+    PersistentHintWindow->ActivateHintData(HintWinRect, HintInfo.HintStr, HintInfo.HintData);
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall HintLabelWindowProc(void * Data, TMessage & Message)
+{
+  bool Clicked = false;
+
+  TStaticText * StaticText = static_cast<TStaticText *>(Data);
+  if (Message.Msg == CM_HINTSHOW)
+  {
+    TCMHintShow & HintShow = reinterpret_cast<TCMHintShow &>(Message);
+    if (PersistentHintControl == StaticText)
+    {
+      // do not allow standard hint when persistent is already shown
+      HintShow.Result = 1;
+    }
+    else
+    {
+      HintShow.HintInfo->HideTimeout = 100000; // never
+    }
+  }
+  else if (Message.Msg == CN_KEYDOWN)
+  {
+    if ((reinterpret_cast<TWMKey &>(Message).CharCode == VK_ESCAPE) &&
+        (PersistentHintControl == StaticText))
+    {
+      CancelPersistentHint();
+      StaticText->Invalidate();
+      Message.Result = 1;
+    }
+    else
+    {
+      FocusableLabelWindowProc(Data, Message, Clicked);
+    }
+  }
+  else
+  {
+    FocusableLabelWindowProc(Data, Message, Clicked);
+  }
+
+  if ((Message.Msg == WM_DESTROY) || (Message.Msg == WM_KILLFOCUS))
+  {
+    if (PersistentHintControl == StaticText)
+    {
+      CancelPersistentHint();
+    }
+  }
+
+  if (Clicked && (PersistentHintControl != StaticText))
+  {
+    TRect R;
+    TPoint HintPos;
+
+    FocusableLabelCanvas(StaticText, NULL, R); 
+    HintPos.y = R.Bottom - R.Top;
+    HintPos.x = R.Left;
+
+    ShowPersistentHint(StaticText, StaticText->ClientToScreen(HintPos));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall HintLabel(TStaticText * StaticText, AnsiString Hint)
+{
+  StaticText->ParentFont = true;
+  if (!Hint.IsEmpty())
+  {
+    StaticText->Hint = Hint;
+  }
+  StaticText->ShowHint = true;
+  StaticText->Cursor = crHandPoint;
+
+  TWndMethod WindowProc;
+  ((TMethod*)&WindowProc)->Data = StaticText;
+  ((TMethod*)&WindowProc)->Code = HintLabelWindowProc;
+  StaticText->WindowProc = WindowProc;
+}
+//---------------------------------------------------------------------------
+static void __fastcall LinkLabelClick(TStaticText * StaticText)
+{
+  if (StaticText->OnClick != NULL)
+  {
+    StaticText->OnClick(StaticText);
+  }
+  else
+  {
+    AnsiString Url = StaticText->Caption;
+    if (!SameText(Url.SubString(1, 4), "http") && (Url.Pos("@") > 0))
+    {
+      Url = "mailto:" + Url;
+    }
+    OpenBrowser(Url);
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall LinkLabelWindowProc(void * Data, TMessage & Message)
+{
+  bool Clicked = false;
+
+  TStaticText * StaticText = static_cast<TStaticText *>(Data);
+  if (Message.Msg == WM_CONTEXTMENU)
+  {
+    TWMContextMenu & ContextMenu = reinterpret_cast<TWMContextMenu &>(Message);
+
+    if ((ContextMenu.Pos.x < 0) && (ContextMenu.Pos.y < 0))
+    {
+      TRect R;
+      FocusableLabelCanvas(StaticText, NULL, R); 
+      TPoint P = StaticText->ClientToScreen(TPoint(R.Left, R.Bottom));
+      ContextMenu.Pos.x = static_cast<short>(P.x);
+      ContextMenu.Pos.y = static_cast<short>(P.y);
+    }
+  }
+  else if (Message.Msg == WM_KEYDOWN)
+  {
+    TWMKey & Key = reinterpret_cast<TWMKey &>(Message);
+    if ((GetKeyState(VK_CONTROL) < 0) && (Key.CharCode == 'C'))
+    {
+      CopyToClipboard(StaticText->Caption);
+      Message.Result = 1;
+    }
+    else
+    {
+      FocusableLabelWindowProc(Data, Message, Clicked);
+    }
+  }  
+
+  FocusableLabelWindowProc(Data, Message, Clicked);
+
+  if (Message.Msg == WM_DESTROY)
+  {
+    delete StaticText->PopupMenu;
+    assert(StaticText->PopupMenu == NULL);
+  }
+
+  if (Clicked)
+  {
+    LinkLabelClick(StaticText);
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall LinkLabelContextMenuClick(void * Data, TObject * Sender)
+{
+  TStaticText * StaticText = static_cast<TStaticText *>(Data);
+  TMenuItem * MenuItem = dynamic_cast<TMenuItem *>(Sender);
+  assert(MenuItem != NULL);
+
+  if (MenuItem->Tag == 0)
+  {
+    LinkLabelClick(StaticText);
+  }
+  else
+  {
+    CopyToClipboard(StaticText->Caption);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
+  TNotifyEvent OnEnter)
+{
+  StaticText->ParentFont = true;
+  StaticText->Font->Style = StaticText->Font->Style << fsUnderline;
+  StaticText->Font->Color = clBlue;
+  StaticText->Cursor = crHandPoint;
+  reinterpret_cast<TButton*>(StaticText)->OnEnter = OnEnter;
+  if (!Url.IsEmpty())
+  {
+    StaticText->Caption = Url;
+  }
+
+  if (StaticText->OnClick == NULL)
+  {
+    assert(StaticText->PopupMenu == NULL);
+    StaticText->PopupMenu = new TPopupMenu(StaticText);
+    try
+    {
+      TNotifyEvent ContextMenuOnClick;
+      ((TMethod*)&ContextMenuOnClick)->Data = StaticText;
+      ((TMethod*)&ContextMenuOnClick)->Code = LinkLabelContextMenuClick;
+    
+      TMenuItem * Item;
+
+      Item = new TMenuItem(StaticText->PopupMenu);
+      Item->Caption = LoadStr(URL_LINK_OPEN);
+      Item->Tag = 0;
+      Item->ShortCut = ShortCut(' ', TShiftState());
+      Item->OnClick = ContextMenuOnClick;
+      StaticText->PopupMenu->Items->Add(Item);
+
+      Item = new TMenuItem(StaticText->PopupMenu);
+      Item->Caption = LoadStr(URL_LINK_COPY);
+      Item->Tag = 1;
+      Item->ShortCut = ShortCut('C', TShiftState() << ssCtrl);
+      Item->OnClick = ContextMenuOnClick;
+      StaticText->PopupMenu->Items->Add(Item);
+    }
+    catch(...)
+    {
+      delete StaticText->PopupMenu;
+      assert(StaticText->PopupMenu == NULL);
+      throw;
+    }
+  }
+
+  TWndMethod WindowProc;
+  ((TMethod*)&WindowProc)->Data = StaticText;
+  ((TMethod*)&WindowProc)->Code = LinkLabelWindowProc;
+  StaticText->WindowProc = WindowProc;
+}
+

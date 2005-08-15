@@ -260,6 +260,7 @@ AnsiString __fastcall MakeFileList(TStrings * FileList)
     }
 
     AnsiString FileName = FileList->Strings[Index];
+    // currently this is used for local file only, so no delimiting is done
     if (FileName.Pos(" ") > 0)
     {
       Result += "\"" + FileName + "\"";
@@ -346,6 +347,7 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone)
     COPY_FP(LastAccess);
     COPY_FP(Group);
     COPY_FP(IconIndex);
+    COPY_FP(TypeName);
     COPY_FP(IsSymLink);
     COPY_FP(LinkTo);
     COPY_FP(Type);
@@ -365,34 +367,50 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone)
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TRemoteFile::LoadTypeInfo()
+{
+  /* TODO : If file is link: Should be attributes taken from linked file? */
+  unsigned long Attrs = FILE_ATTRIBUTE_NORMAL;
+  if (IsDirectory) Attrs |= FILE_ATTRIBUTE_DIRECTORY;
+  if (IsHidden) Attrs |= FILE_ATTRIBUTE_HIDDEN;
+
+  TSHFileInfo SHFileInfo;
+  AnsiString DumbFileName = (IsSymLink && !LinkTo.IsEmpty() ? LinkTo : FileName);
+  // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
+  if (DumbFileName == "..") DumbFileName = "dumb";
+  // this should be somewhere else, probably in TUnixDirView,
+  // as the "partial" overlay is added there too
+  if (AnsiSameText(UnixExtractFileExt(DumbFileName), PARTIAL_EXT))
+  {
+    static const size_t PartialExtLen = sizeof(PARTIAL_EXT) - 1;
+    DumbFileName.SetLength(DumbFileName.Length() - PartialExtLen);
+  }
+
+  SHGetFileInfo(DumbFileName.c_str(),
+    Attrs, &SHFileInfo, sizeof(SHFileInfo),
+    SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES | SHGFI_TYPENAME);
+  FIconIndex = SHFileInfo.iIcon;
+  FTypeName = SHFileInfo.szTypeName;
+}
+//---------------------------------------------------------------------------
 Integer __fastcall TRemoteFile::GetIconIndex()
 {
   assert(FIconIndex >= -1);
   if (FIconIndex < 0)
   {
-    /* TODO : If file is link: Should be attributes taken from linked file? */
-    unsigned long Attrs = FILE_ATTRIBUTE_NORMAL;
-    if (IsDirectory) Attrs |= FILE_ATTRIBUTE_DIRECTORY;
-    if (IsHidden) Attrs |= FILE_ATTRIBUTE_HIDDEN;
-
-    TSHFileInfo SHFileInfo;
-    AnsiString DumbFileName = (IsSymLink && !LinkTo.IsEmpty() ? LinkTo : FileName);
-    // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
-    if (DumbFileName == "..") DumbFileName = "dumb";
-    // this should be somewhere else, probably in TUnixDirView,
-    // as the "partial" overlay is added there too
-    if (AnsiSameText(UnixExtractFileExt(DumbFileName), PARTIAL_EXT))
-    {
-      static const size_t PartialExtLen = sizeof(PARTIAL_EXT) - 1;
-      DumbFileName.SetLength(DumbFileName.Length() - PartialExtLen);
-    }
-
-    SHGetFileInfo(DumbFileName.c_str(),
-      Attrs, &SHFileInfo, sizeof(SHFileInfo),
-      SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES);
-    FIconIndex = SHFileInfo.iIcon;
+    LoadTypeInfo();
   }
   return FIconIndex;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TRemoteFile::GetTypeName()
+{
+  // check avilability of type info by icon index, because type name can be empty
+  if (FIconIndex < 0)
+  {
+    LoadTypeInfo();
+  }
+  return FTypeName;
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TRemoteFile::GetIsHidden()
@@ -488,7 +506,7 @@ bool __fastcall TRemoteFile::GetBrokenLink()
   assert(Terminal);
   // If file is symlink but we couldn't find linked file we assume broken link
   return (IsSymLink && (FCyclicLink || !FLinkedFile) &&
-    Terminal->SessionData->ResolveSymlinks && Terminal->IsCapable[fcResolveSymlink]);
+    Terminal->ResolvingSymlinks);
   // "!FLinkTo.IsEmpty()" removed because it does not work with SFTP
 }
 //---------------------------------------------------------------------------
@@ -800,8 +818,7 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
 void __fastcall TRemoteFile::Complete()
 {
   assert(Terminal != NULL);
-  if (IsSymLink && Terminal->SessionData->ResolveSymlinks &&
-      Terminal->IsCapable[fcResolveSymlink])
+  if (IsSymLink && Terminal->ResolvingSymlinks)
   {
     FindLinkedFile();
   }
@@ -844,7 +861,7 @@ void __fastcall TRemoteFile::FindLinkedFile()
   }
   else
   {
-    assert(Terminal->SessionData->ResolveSymlinks && Terminal->IsCapable[fcResolveSymlink]);
+    assert(Terminal->ResolvingSymlinks);
     Terminal->ExceptionOnFail = true;
     try
     {
@@ -1281,6 +1298,21 @@ void __fastcall TRemoteDirectoryChangesCache::ClearDirectoryChange(
   for (int Index = 0; Index < Count; Index++)
   {
     if (Names[Index].SubString(1, SourceDir.Length()) == SourceDir)
+    {
+      Delete(Index);
+      Index--;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryChangesCache::ClearDirectoryChangeTarget(
+  AnsiString TargetDir)
+{
+  for (int Index = 0; Index < Count; Index++)
+  {
+    AnsiString Name = Names[Index];
+    if ((Name.SubString(1, TargetDir.Length()) == TargetDir) ||
+        (Values[Name].SubString(1, TargetDir.Length()) == TargetDir))
     {
       Delete(Index);
       Index--;

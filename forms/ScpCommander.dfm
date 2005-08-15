@@ -15,12 +15,15 @@ inherited ScpCommanderForm: TScpCommanderForm
     Width = 5
     Height = 267
     Cursor = crHSplit
+    Hint = 
+      '|Drag to change ratio of file panels. Double click to make width' +
+      ' of file panels equal.'
     ResizeStyle = rsUpdate
     OnCanResize = SplitterCanResize
     OnMoved = SplitterMoved
   end
   inherited QueueSplitter: TSplitter
-    Top = 493
+    Top = 519
     Width = 652
   end
   inherited TopDock: TTBXDock
@@ -174,6 +177,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem112: TTBXItem
           Action = NonVisualDataModule.ClearSelectionAction
         end
+        object TBXItem27: TTBXItem
+          Action = NonVisualDataModule.RestoreSelectionAction
+        end
       end
       object TBXSubmenuItem5: TTBXSubmenuItem
         Caption = '&Files'
@@ -191,7 +197,7 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem26: TTBXItem
           Action = NonVisualDataModule.CurrentEditAction
         end
-        object TBXItem27: TTBXItem
+        object TBXSubmenuItem25: TTBXSubmenuItem
           Action = NonVisualDataModule.CurrentEditAlternativeAction
         end
         object TBXItem28: TTBXItem
@@ -295,6 +301,12 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem50: TTBXItem
             Action = NonVisualDataModule.QueueItemExecuteAction
           end
+          object TBXItem196: TTBXItem
+            Action = NonVisualDataModule.QueueItemPauseAction
+          end
+          object TBXItem197: TTBXItem
+            Action = NonVisualDataModule.QueueItemResumeAction
+          end
           object TBXItem51: TTBXItem
             Action = NonVisualDataModule.QueueItemDeleteAction
           end
@@ -306,6 +318,20 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem53: TTBXItem
             Action = NonVisualDataModule.QueueItemDownAction
+          end
+          object TBXSeparatorItem48: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXSubmenuItem13: TTBXSubmenuItem
+            Caption = '&All'
+            HelpKeyword = 'ui_queue#managing_the_queue'
+            Hint = 'Mass queue management commands'
+            object TBXItem198: TTBXItem
+              Action = NonVisualDataModule.QueuePauseAllAction
+            end
+            object TBXItem199: TTBXItem
+              Action = NonVisualDataModule.QueueResumeAllAction
+            end
           end
         end
         object TBXSeparatorItem13: TTBXSeparatorItem
@@ -387,6 +413,12 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem188: TTBXItem
             Action = NonVisualDataModule.CommanderTransferBandAction
+          end
+          object TBXSeparatorItem47: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem191: TTBXItem
+            Action = NonVisualDataModule.LockToolbarsAction
           end
         end
         object TBXSubmenuItem11: TTBXSubmenuItem
@@ -557,6 +589,10 @@ inherited ScpCommanderForm: TScpCommanderForm
             GroupIndex = 1
             RadioItem = True
           end
+          object TBXItem193: TTBXItem
+            Action = NonVisualDataModule.RemoteSortByTypeAction
+            RadioItem = True
+          end
           object TBXItem96: TTBXItem
             Action = NonVisualDataModule.RemoteSortByChangedAction
             GroupIndex = 1
@@ -592,6 +628,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem102: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteSizeColumnAction
+          end
+          object TBXItem192: TTBXItem
+            Action = NonVisualDataModule.ShowHideRemoteTypeColumnAction
           end
           object TBXItem103: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteChangedColumnAction
@@ -676,6 +715,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       object TBXItem135: TTBXItem
         Action = NonVisualDataModule.ClearSelectionAction
       end
+      object TBXItem200: TTBXItem
+        Action = NonVisualDataModule.RestoreSelectionAction
+      end
     end
     object PreferencesToolbar: TTBXToolbar
       Left = 0
@@ -700,12 +742,15 @@ inherited ScpCommanderForm: TScpCommanderForm
         DropdownCombo = True
         object TBXItem128: TTBXItem
           Action = NonVisualDataModule.QueueShowAction
+          RadioItem = True
         end
         object TBXItem129: TTBXItem
           Action = NonVisualDataModule.QueueHideWhenEmptyAction
+          RadioItem = True
         end
         object TBXItem130: TTBXItem
           Action = NonVisualDataModule.QueueHideAction
+          RadioItem = True
         end
       end
     end
@@ -946,6 +991,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       Width = 334
       Height = 3
       Cursor = crVSplit
+      Hint = 
+        'Drag to resize directory tree. Double click to make height of di' +
+        'rectory trees equal.'
       Align = alTop
     end
     inherited RemoteStatusBar: TTBXStatusBar
@@ -960,7 +1008,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 78
       Constraints.MinHeight = 70
       RowSelect = True
-      NortonLike = True
+      NortonLike = nlOn
       PathComboBox = RemotePathComboBox
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
       PathLabel = RemotePathLabel
@@ -1070,7 +1118,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
   end
   inherited QueuePanel: TPanel
-    Top = 496
+    Top = 522
     Width = 652
     Height = 116
     TabOrder = 4
@@ -1111,6 +1159,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       Width = 313
       Height = 3
       Cursor = crVSplit
+      Hint = 
+        'Drag to resize directory tree. Double click to make height of di' +
+        'rectory trees equal.'
       Align = alTop
       AutoSnap = False
       MinSize = 70
@@ -1284,7 +1335,7 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   object BottomDock: TTBXDock
     Left = 0
-    Top = 612
+    Top = 493
     Width = 652
     Height = 26
     FixAlign = True
@@ -1293,6 +1344,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 0
       Caption = 'Commands'
+      DockPos = 0
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = False

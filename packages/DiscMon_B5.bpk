@@ -29,8 +29,7 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <CFLAG1 value="-O2 -H=c:\PROGRA~1\borland\CBUILD~1\lib\vcl60.csm -Hc -Q -w -Vx -Ve -X- 
-      -a8 -b- -k- -vi -c -tWM"/>
+    <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Q -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
     <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>

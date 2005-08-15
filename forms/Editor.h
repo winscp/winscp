@@ -59,8 +59,6 @@ __published:
   TTBXItem *TBXItem12;
   TTBXSeparatorItem *TBXSeparatorItem4;
   TTBXItem *TBXItem13;
-  TFindDialog *FindDialog;
-  TReplaceDialog *ReplaceDialog;
   TTBXPopupMenu *EditorPopup;
   TTBXItem *Undo1;
   TTBXSeparatorItem *N1;
@@ -98,19 +96,22 @@ private:
   TFindDialog * FLastFindDialog;
   TPoint FCaretPos;
   bool FShowWindowButton;
+  TFindDialog * FFindDialog;
+  TReplaceDialog * FReplaceDialog;
+  bool FCloseAnnounced;
   void __fastcall SetFileName(const AnsiString value);
   void __fastcall SetParentForm(TCustomForm * value);
   void __fastcall SetShowWindowButton(bool value);
 public:
   __fastcall TEditorForm(TComponent* Owner);
   virtual __fastcall ~TEditorForm();
+  void __fastcall ApplyConfiguration();
   __property AnsiString FileName = { read = FFileName, write = SetFileName };
   __property TNotifyEvent OnFileChanged = { read = FOnFileChanged, write = FOnFileChanged };
   __property TNotifyEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
   __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
   __property bool ShowWindowButton = { read = FShowWindowButton, write = SetShowWindowButton };
 protected:
-  void __fastcall ApplyConfiguration();
   bool __fastcall CursorInUpperPart();
   void __fastcall Find();
   void __fastcall GoToLine();
@@ -118,6 +119,7 @@ protected:
   void __fastcall PositionFindDialog(bool VerticalOnly);
   void __fastcall StartFind(bool Find);
   void __fastcall UpdateControls();
+  void __fastcall DoWindowClose();
   virtual void __fastcall CreateParams(TCreateParams & Params);
 };
 //---------------------------------------------------------------------------

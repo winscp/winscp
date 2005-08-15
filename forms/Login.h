@@ -280,6 +280,9 @@ __published:
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall FormKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
+  void __fastcall PrivateKeyEditAfterDialog(TObject *Sender,
+          AnsiString &Name, bool &Action);
+  void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
 
 private:
   int NoUpdate;
@@ -329,6 +332,7 @@ protected:
   void __fastcall Init();
   void __fastcall InitControls();
   void __fastcall ShowTabs(bool Show);
+  void __fastcall VerifyKey(AnsiString FileName, bool TypeOnly);
 
   __property TTreeView * NavigationTree = { read=GetNavigationTree };
 

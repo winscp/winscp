@@ -17,24 +17,25 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
   int Line, const AnsiString Message)
 {
   const char * FileName = getenv(TRACEENV);
-  //!!!
   if (FileName == NULL)
   {
     FileName = "C:\\winscptrace.log";
   }
-  //!!!
-  if (FileName != NULL)
+  FILE * File = fopen(FileName, "a");
+  if (File != NULL)
   {
-    FILE * File = fopen(FileName, "a");
-    if (File != NULL)
-    {
-      fprintf(File, "[%s] %s:%d:%s\n  %s\n",
-        Now().TimeString().c_str(),
-        ExtractFileName(SourceFile).c_str(), Line, Func.c_str(), Message.c_str());
+    fprintf(File, "[%s] %s:%d:%s\n  %s\n",
+      Now().TimeString().c_str(),
+      ExtractFileName(SourceFile).c_str(), Line, Func.c_str(), Message.c_str());
 
-      fclose(File);
-    }
+    fclose(File);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall DoAssert(char * Message, char * Filename, int LineNumber)
+{
+  Trace(Filename, "assert", LineNumber, Message);
+  _assert(Message, Filename, LineNumber);
 }
 #endif // ifdef _DEBUG
 //---------------------------------------------------------------------------
@@ -42,21 +43,25 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
 //---------------------------------------------------------------------------
 __fastcall TCriticalSection::TCriticalSection()
 {
+  FAcquired = 0;
   InitializeCriticalSection(&FSection);
 }
 //---------------------------------------------------------------------------
 __fastcall TCriticalSection::~TCriticalSection()
 {
+  assert(FAcquired == 0);
   DeleteCriticalSection(&FSection);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCriticalSection::Enter()
 {
   EnterCriticalSection(&FSection);
+  FAcquired++;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCriticalSection::Leave()
 {
+  FAcquired--;
   LeaveCriticalSection(&FSection);
 }
 //---------------------------------------------------------------------------
@@ -173,6 +178,59 @@ AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim)
     Str = Str.TrimLeft();
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString CutToChars(AnsiString & Str, AnsiString Chs, bool Trim)
+{
+  int P;
+  for (P = 1; P <= Str.Length(); P++)
+  {
+    if (IsDelimiter(Chs, Str, P))
+    {
+      break;
+    }
+  }
+
+  AnsiString Result;
+  if (P <= Str.Length())
+  {
+    Result = Str.SubString(1, P-1);
+    Str.Delete(1, P);
+  }
+  else
+  {
+    Result = Str;
+    Str = "";
+  }
+  if (Trim)
+  {
+    Result = Result.TrimRight();
+    Str = Str.TrimLeft();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString DelimitStr(AnsiString Str, AnsiString Chars)
+{
+  for (int i = 1; i <= Str.Length(); i++)
+  {
+    if (Str.IsDelimiter(Chars, i))
+    {
+      Str.Insert("\\", i);
+      i++;
+    }
+  }
+  return Str;
+}
+//---------------------------------------------------------------------------
+AnsiString ShellDelimitStr(AnsiString Str, char Quote)
+{
+  AnsiString Chars = "$\\";
+  if (Quote == '"')
+  {
+    Chars += "`\"";
+  }
+  return DelimitStr(Str, Chars);
 }
 //---------------------------------------------------------------------------
 AnsiString ExceptionLogString(Exception *E)
@@ -313,12 +371,17 @@ bool __fastcall IsDisplayableStr(const AnsiString Str)
   return Displayable;
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall CharToHex(char Ch)
+{
+  return IntToHex((unsigned char)Ch, 2);
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall StrToHex(const AnsiString Str)
 {
   AnsiString Result;
   for (int i = 1; i <= Str.Length(); i++)
   {
-    Result += IntToHex(Str[i], 2);
+    Result += CharToHex(Str[i]);
   }
   return Result;
 }
@@ -348,7 +411,7 @@ AnsiString __fastcall HexToStr(const AnsiString Hex)
   return Result;
 }
 //---------------------------------------------------------------------------
-unsigned int __fastcall HexToInt(const AnsiString Hex)
+unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars)
 {
   static AnsiString Digits = "0123456789ABCDEF";
   int Result = 0;
@@ -358,6 +421,10 @@ unsigned int __fastcall HexToInt(const AnsiString Hex)
     int A = Digits.Pos(Hex[I]);
     if (A <= 0)
     {
+      if ((MinChars < 0) || (I <= MinChars))
+      {
+        Result = 0;
+      }
       break;
     }
 

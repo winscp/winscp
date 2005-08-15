@@ -30,6 +30,9 @@ AnsiString RootKeyToStr(HKEY RootKey);
 AnsiString BooleanToStr(bool B);
 AnsiString BooleanToEngStr(bool B);
 AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim);
+AnsiString CutToChars(AnsiString &Str, AnsiString Chs, bool Trim);
+AnsiString DelimitStr(AnsiString Str, AnsiString Chars);
+AnsiString ShellDelimitStr(AnsiString Str, char Quote);
 void __fastcall OemToAnsi(AnsiString & Str);
 void __fastcall AnsiToOem(AnsiString & Str);
 AnsiString ExceptionLogString(Exception *E);
@@ -42,9 +45,10 @@ void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
 AnsiString __fastcall ExtractProgram(AnsiString Command);
 AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
 bool __fastcall IsDisplayableStr(const AnsiString Str);
+AnsiString __fastcall CharToHex(char Ch);
 AnsiString __fastcall StrToHex(const AnsiString Str);
 AnsiString __fastcall HexToStr(const AnsiString Hex);
-unsigned int __fastcall HexToInt(const AnsiString Hex);
+unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars = 0);
 AnsiString __fastcall DecodeUrlChars(AnsiString S);
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
 int __fastcall CancelAnswer(int Answers);
@@ -78,8 +82,11 @@ public:
   void __fastcall Enter();
   void __fastcall Leave();
 
+  __property int Acquired = { read = FAcquired };
+
 private:
   TRTLCriticalSection FSection;
+  int FAcquired;
 };
 //---------------------------------------------------------------------------
 class TGuard
@@ -118,10 +125,34 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
   int Line, const AnsiString Message);
 #define TRACE(MESSAGE) Trace(__FILE__, __FUNC__, __LINE__, MESSAGE)
 #define TRACEFMT(MESSAGE, PARAMS) Trace(__FILE__, __FUNC__, __LINE__, FORMAT(MESSAGE, PARAMS))
+class Callstack
+{
+public:
+  inline Callstack(const char * File, const char * Func, unsigned int Line, AnsiString Message) :
+    FFile(File), FFunc(Func), FLine(Line), FMessage(Message)
+  {
+    Trace(FFile, FFunc, FLine, AnsiString("Entry: ") + FMessage);
+  }
+
+  inline ~Callstack()
+  {
+    Trace(FFile, FFunc, FLine, AnsiString("Exit ") + FMessage);
+  }
+
+private:
+  const char * FFile;
+  const char * FFunc;
+  unsigned int FLine;
+  AnsiString FMessage;
+};
+#define CALLSTACKIMPL(X) Callstack X(__FILE__, __FUNC__, __LINE__, "")
 #else // ifdef _DEBUG
 #define TRACE(PARAMS)
 #define TRACEFMT(MESSAGE, PARAMS)
+#define CALLSTACKIMPL(X)
 #endif // ifdef _DEBUG
+#define CALLSTACK CALLSTACKIMPL(__callstack)
+#define CALLSTACK1 CALLSTACKIMPL(__callstack1)
 //---------------------------------------------------------------------------
 #endif
 //---------------------------------------------------------------------------
@@ -131,6 +162,13 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
 #define assert(p)   ((void)0)
 #define CHECK(p) p
 #else
+#ifndef C_ONLY
+#ifndef DESIGN_ONLY
+#undef assert
+void __fastcall DoAssert(char * Message, char * Filename, int LineNumber);
+#define assert(p) ((p) ? (void)0 : DoAssert(#p, __FILE__, __LINE__))
+#endif // ifndef DESIGN_ONLY
+#endif // ifndef C_ONLY
 #define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
 #endif
 #define USEDPARAM(p) ((p) == (p))

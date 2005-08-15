@@ -6,7 +6,8 @@
 #define WM_WINSCP_USER   (WM_USER + 0x2000)
 #define WM_LOCALE_CHANGE (WM_WINSCP_USER + 1)
 // WM_USER_STOP = WM_WINSCP_USER + 2 (in forms/Synchronize.cpp)
-// WM_INTERUPT_IDLE = WM_WINSCP_USER + 3 (in windows/Console.cpp)
+// WM_INTERUPT_IDLE = WM_WINSCP_USER + 3 (in windows/ConsoleRunner.cpp)
+// WM_COMPONENT_HIDE = WM_WINSCP_USER + 4 (forms/CustomScpExplorer.cpp)
 //---------------------------------------------------------------------------
 class TCustomWinConfiguration : public TGUIConfiguration
 {

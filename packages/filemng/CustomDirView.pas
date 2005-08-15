@@ -88,7 +88,7 @@ type
 
   TDirViewExecFileEvent = procedure(Sender: TObject; Item: TListItem; var AllowExec: Boolean) of object;
   TRenameEvent = procedure(Sender: TObject; Item: TListItem; NewName: string) of object;
-  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Masks: string; var Matches: Boolean) of object;
+  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Masks: string; var Matches: Boolean) of object;
   TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
   TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
 
@@ -198,6 +198,7 @@ type
     FSavedSelection: Boolean;
     FSavedSelectionFile: string;
     FSavedSelectionLastFile: string;
+    FSavedNames: TStringList;
     FPendingFocusSomething: Boolean;
     FOnMatchMask: TMatchMaskEvent;
     FOnGetOverlay: TDirViewGetOverlayEvent;
@@ -219,6 +220,7 @@ type
     function GetFilesMarkedSize: Int64;
     function GetForwardCount: Integer;
     function GetHistoryPath(Index: Integer): string;
+    function GetSelectedNamesSaved: Boolean;
 
     function GetTargetPopupMenu: Boolean;
     function GetUseDragImages: Boolean;
@@ -314,7 +316,7 @@ type
     procedure SetDirsOnTop(Value: Boolean);
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); virtual; abstract;
     procedure SetLoadEnabled(Enabled : Boolean); virtual;
-    procedure SetMultiSelect(Value: Boolean); override; //CLEAN virtual
+    procedure SetMultiSelect(Value: Boolean); override;
     function GetPath: string; virtual; abstract;
     function GetValid: Boolean; override;
     procedure InternalEdit(const HItem: TLVItem); virtual; abstract;
@@ -325,6 +327,7 @@ type
     function MinimizePath(Path: string; Len: Integer): string; virtual; abstract;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure PathChanged;
+    procedure PathChanging(Relative: Boolean);
     procedure SetPath(Value: string); virtual; abstract;
     procedure SetSortByExtension(Value: Boolean);
     procedure SetShowHiddenFiles(Value: Boolean); virtual;
@@ -336,7 +339,7 @@ type
     procedure UpdatePathLabel; dynamic;
     procedure UpdateStatusBar; dynamic;
     procedure WndProc(var Message: TMessage); override;
-    function FileNameMatchesMasks(FileName: string; Masks: string): Boolean;
+    function FileNameMatchesMasks(FileName: string; Directory: Boolean; Masks: string): Boolean;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -368,6 +371,8 @@ type
     procedure SaveSelection;
     procedure RestoreSelection;
     procedure DiscardSavedSelection;
+    procedure SaveSelectedNames;
+    procedure RestoreSelectedNames;
     procedure ContinueSession(Continue: Boolean);
     function CanPasteFromClipBoard: Boolean; dynamic;
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract; 
@@ -391,7 +396,6 @@ type
     property FilesCount: Integer read GetFilesCount;
     property FilesMarkedSize: Int64 read GetFilesMarkedSize;
     property HasParentDir: Boolean read FHasParentDir;
-    //CLEANproperty MultiSelect write SetMultiSelect;
     property Path: string read GetPath write SetPath;
     property PathName: string read GetPathName;
     property ReloadTime: TSystemTime read FReloadTime;
@@ -422,6 +426,7 @@ type
     property SmallImages;
     property LargeImages;
     property MaxHistoryCount: Integer read FMaxHistoryCount write SetMaxHistoryCount default DefaultHistoryCount;
+    property SelectedNamesSaved: Boolean read GetSelectedNamesSaved;
 
     property OnContextPopup;
     property OnBeginRename: TRenameEvent read FOnBeginRename write FOnBeginRename;
@@ -876,6 +881,7 @@ begin
   FLastRenameName := '';
   FSavedSelection := False;
   FPendingFocusSomething := False;
+  FSavedNames := TStringList.Create;
 
   FContextMenu := False;
   FUseSystemContextMenu := True;
@@ -1004,7 +1010,12 @@ begin
           end;
         end;
     LVN_ENDLABELEDIT:
-      LoadEnabled := True;
+      // enable loading now only when editing was canceled.
+      // when it was confirmed, it will be enabled only after actual
+      // file renaming is completed. see Edit().
+      with PLVDispInfo(Message.NMHdr)^ do
+        if (item.pszText = nil) or (item.IItem = -1) then
+          LoadEnabled := True;
     LVN_BEGINDRAG:
       if FDragEnabled and (not Loading) then
       begin
@@ -1065,7 +1076,8 @@ begin
   if UpdateStatusBarPending then UpdateStatusBar;
 end;
 
-function TCustomDirView.FileNameMatchesMasks(FileName: string; Masks: string): Boolean;
+function TCustomDirView.FileNameMatchesMasks(FileName: string;
+  Directory: Boolean; Masks: string): Boolean;
 begin
   Result := False;
   // there needs to be atleast one dot,
@@ -1073,7 +1085,7 @@ begin
   if Pos('.', FileName) = 0 then FileName := FileName + '.';
   Result := False;
   if Assigned(OnMatchMask) then
-    OnMatchMask(Self, FileName, Masks, Result)
+    OnMatchMask(Self, FileName, Directory, Masks, Result)
 end;
 
 procedure TCustomDirView.SetAddParentDir(Value: Boolean);
@@ -1245,6 +1257,7 @@ destructor TCustomDirView.Destroy;
 begin
   Assert(not FSavedSelection);
 
+  FreeAndNil(FSavedNames);
   FreeAndNil(FHistoryPaths);
 
   FreeAndNil(FDragDropFilesEx);
@@ -1636,24 +1649,18 @@ end;
 
 procedure TCustomDirView.Reload(CacheIcons: Boolean);
 var
-  OldSelection: TStrings;
+  OldSelection: TStringList;
   OldItemFocused: string;
+  OldFocusedShown: Boolean;
+  OldShownItemOffset: Integer;
   Index: Integer;
   FoundIndex: Integer;
   IconCache: TStringList;
   Item: TListItem;
+  ItemToFocus: TListItem;
   FileName: string;
-
-  function FindInOldSelection(FileName: string): Boolean;
-  var
-    Index: Integer;
-  begin
-    Result := True;
-    for Index := 0 to OldSelection.Count - 1 do
-      if AnsiCompareStr(OldSelection[Index], FileName) = 0 then Exit;
-    Result := False;
-  end;
-
+  R: TRect;
+  P: TPoint;
 begin
   if Path <> '' then
   begin
@@ -1662,12 +1669,15 @@ begin
     Items.BeginUpdate;
     try
       OldSelection := TStringList.Create;
+      OldSelection.CaseSensitive := FCaseSensitive;
       if CacheIcons then
         IconCache := TStringList.Create;
 
       for Index := 0 to Items.Count-1 do
       begin
         Item := Items[Index];
+        // cannot use ItemFileName as for TUnixDirView the file object
+        // is no longer valid
         FileName := Item.Caption;
         if Item.Selected then
           OldSelection.Add(FileName);
@@ -1679,16 +1689,50 @@ begin
       if FSelectFile <> '' then
       begin
         OldItemFocused := FSelectFile;
+        OldFocusedShown := False;
+        OldShownItemOffset := -1;
         FSelectFile := '';
       end
         else
-      if Assigned(ItemFocused) then OldItemFocused := ItemFocused.Caption
-        else OldItemFocused := '';
+      begin
+        if Assigned(ItemFocused) then
+        begin
+          if ViewStyle = vsReport then
+          begin
+            R := ItemFocused.DisplayRect(drBounds);
+            if (R.Top < TopItem.DisplayRect(drBounds).Top) or (R.Top > ClientHeight) then
+            begin
+              OldFocusedShown := False;
+              OldShownItemOffset := TopItem.Index;
+            end
+              else
+            begin
+              OldFocusedShown := True;
+              OldShownItemOffset := ItemFocused.Index - TopItem.Index;
+            end;
+          end
+            else
+          begin
+            // to satisfy compiler, never used
+            OldFocusedShown := False;
+            OldShownItemOffset := -1;
+          end;
+          OldItemFocused := ItemFocused.Caption;
+        end
+          else
+        begin
+          OldItemFocused := '';
+          OldFocusedShown := False;
+          if Assigned(TopItem) then OldShownItemOffset := TopItem.Index
+            else OldShownItemOffset := -1;
+        end;
+      end;
 
       Load;
 
-      TStringList(OldSelection).Sort;
+      OldSelection.Sort;
       if CacheIcons then IconCache.Sort;
+      ItemToFocus := nil;
 
       for Index := 0 to Items.Count - 1 do
       begin
@@ -1696,11 +1740,10 @@ begin
         FileName := ItemFileName(Item);
 
         if FileName = OldItemFocused then
-          ItemFocused := Item;
+          ItemToFocus := Item;
 
-        if ((not FCaseSensitive) and TStringList(OldSelection).Find(FileName, FoundIndex)) or
-           (FCaseSensitive and FindInOldSelection(FileName)) then
-             Item.Selected := True;
+        if OldSelection.Find(FileName, FoundIndex) then
+          Item.Selected := True;
 
         if CacheIcons and (ItemImageIndex(Item, True) < 0) then
         begin
@@ -1710,13 +1753,47 @@ begin
         end;
       end;
 
-      FocusSomething;
-
     finally
       Items.EndUpdate;
       OldSelection.Free;
       if CacheIcons then IconCache.Free;
     end;
+
+    // This is below Items.EndUpdate(), to make Scroll() work properly
+    if Assigned(ItemToFocus) then
+    begin
+      // we have founc item that was previously focused and visible, scroll to it
+      if (ViewStyle = vsReport) and OldFocusedShown and
+         (ItemToFocus.Index > OldShownItemOffset) then
+      begin
+        P := Items[ItemToFocus.Index - OldShownItemOffset].GetPosition;
+        // GetPosition is shifted bit low below actual row top.
+        // Scroll to the GetPosition would scroll one line lower.
+        Scroll(0, P.Y - Items[0].GetPosition.Y);
+      end;
+      FocusItem(ItemToFocus);
+    end;
+
+    // cannot scroll when focus is not visible because
+    // of hack-implementation of FocusItem()
+    {$IF False}
+    // previously focus item was not visible, scroll to the same position
+    // as before
+    if (ViewStyle = vsReport) and (not OldFocusedShown) and
+       (OldShownItemOffset >= 0) and (Items.Count > 0) then
+    begin
+      if OldShownItemOffset < Items.Count - VisibleRowCount then
+        Scroll(0, OldShownItemOffset)
+      else
+        Items.Item[Items.Count - 1].MakeVisible(false);
+    end
+      // do not know where to scroll to, so scroll to focus
+      // (or we have tried to scroll to previously focused and visible item,
+      // now make sute that it is really visible)
+      else {$IFEND}
+    if Assigned(ItemToFocus) then ItemToFocus.MakeVisible(false);
+
+    FocusSomething;
   end;
 end;
 
@@ -2305,7 +2382,7 @@ begin
     UpdateStatusBar;
 end; { EndUpdatingSelection }
 
-procedure TCustomDirView.ExecuteCurrentFile();
+procedure TCustomDirView.ExecuteCurrentFile;
 begin
   Assert(Assigned(ItemFocused));
   Execute(ItemFocused);
@@ -2597,7 +2674,9 @@ procedure TCustomDirView.WndProc(var Message: TMessage);
 begin
   case Message.Msg of
     WM_SETFOCUS, WM_KILLFOCUS:
-      UpdatePathLabel;
+      begin
+        UpdatePathLabel;
+      end;
   end;
   inherited;
 end; { WndProc }
@@ -2711,6 +2790,13 @@ begin
     DoHistoryChange;
   end;
 end; { HistoryGo }
+
+procedure TCustomDirView.PathChanging(Relative: Boolean);
+begin
+  if Relative then FLastPath := PathName
+    else FLastPath := '';
+  FSavedNames.Clear;
+end;
 
 procedure TCustomDirView.PathChanged;
 var
@@ -2915,6 +3001,46 @@ begin
     FPendingFocusSomething := False;
     FocusSomething;
   end;
+end;
+
+procedure TCustomDirView.SaveSelectedNames;
+var
+  Index: Integer;
+  Item: TListItem;
+begin
+  FSavedNames.Clear;
+  FSavedNames.CaseSensitive := FCaseSensitive;
+
+  if SelCount > 0 then // optimalisation
+  begin
+    for Index := 0 to Items.Count-1 do
+    begin
+      Item := Items[Index];
+      if Item.Selected then
+        FSavedNames.Add(ItemFileName(Item));
+    end;
+  end;
+
+  // as optimalisation the list is sorted only when the selection is restored
+end;
+
+procedure TCustomDirView.RestoreSelectedNames;
+var
+  Index, FoundIndex: Integer;
+  Item: TListItem;
+begin
+  FSavedNames.Sort;
+
+  for Index := 0 to Items.Count - 1 do
+  begin
+    Item := Items[Index];
+    Item.Selected := FSavedNames.Find(ItemFileName(Item), FoundIndex);
+  end;
+end;
+
+function TCustomDirView.GetSelectedNamesSaved: Boolean;
+begin
+  Result := (FSavedNames.Count > 0);
 end;
 
 procedure TCustomDirView.ContinueSession(Continue: Boolean);

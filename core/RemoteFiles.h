@@ -40,6 +40,7 @@ private:
   bool FCyclicLink;
   AnsiString FFullFileName;
   int FIsHidden;
+  AnsiString FTypeName;
   int __fastcall GetAttr();
   bool __fastcall GetBrokenLink();
   bool __fastcall GetIsDirectory() const;
@@ -56,6 +57,7 @@ private:
   void __fastcall SetRights(TRights * value);
   AnsiString __fastcall GetFullFileName() const;
   int __fastcall GetIconIndex();
+  AnsiString __fastcall GetTypeName();
   bool __fastcall GetIsHidden();
   void __fastcall SetIsHidden(bool value);
   bool __fastcall GetIsParentDirectory() const;
@@ -63,6 +65,7 @@ private:
   bool __fastcall GetIsInaccesibleDirectory() const;
   AnsiString __fastcall GetExtension();
   AnsiString __fastcall GetUserModificationStr();
+  void __fastcall LoadTypeInfo();
 
 protected:
   void __fastcall FindLinkedFile();
@@ -100,6 +103,7 @@ public:
   __property bool Selected  = { read=FSelected, write=FSelected };
   __property AnsiString FullFileName  = { read = GetFullFileName, write = FFullFileName };
   __property int IconIndex = { read = GetIconIndex };
+  __property AnsiString TypeName = { read = GetTypeName };
   __property bool IsHidden = { read = GetIsHidden, write = SetIsHidden };
   __property bool IsParentDirectory = { read = GetIsParentDirectory };
   __property bool IsThisDirectory = { read = GetIsThisDirectory };
@@ -210,6 +214,7 @@ public:
   void __fastcall AddDirectoryChange(const AnsiString SourceDir,
     const AnsiString Change, const AnsiString TargetDir);
   void __fastcall ClearDirectoryChange(AnsiString SourceDir);
+  void __fastcall ClearDirectoryChangeTarget(AnsiString TargetDir);
   bool __fastcall GetDirectoryChange(const AnsiString SourceDir,
     const AnsiString Change, AnsiString & TargetDir);
   void __fastcall Clear();

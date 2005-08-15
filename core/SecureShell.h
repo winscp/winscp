@@ -31,6 +31,9 @@ typedef void __fastcall (__closure *TQueryUserEvent)
 typedef void __fastcall (__closure *TPromptUserEvent)
   (TSecureShell * SecureShell, AnsiString Prompt, TPromptKind Kind,
    AnsiString & Response, bool & Result, void * Arg);
+typedef void __fastcall (__closure *TDisplayBannerEvent)
+  (TSecureShell * SecureShell, AnsiString SessionName, const AnsiString & Banner,
+   bool & NeverShowAgain);
 typedef void __fastcall (__closure *TExtendedExceptionEvent)
   (TSecureShell * SecureShell, Exception * E, void * Arg);
 //---------------------------------------------------------------------------
@@ -122,6 +125,7 @@ private:
   TDateTime FLastDataSent;
   TQueryUserEvent FOnQueryUser;
   TPromptUserEvent FOnPromptUser;
+  TDisplayBannerEvent FOnDisplayBanner;
   TExtendedExceptionEvent FOnShowExtendedException;
   Backend * FBackend;
   void * FBackendHandle;
@@ -177,9 +181,12 @@ private:
   void __fastcall PoolForData(unsigned int & Result);
   TDateTime __fastcall GetIdleInterval();
   bool __fastcall GetStoredPasswordTried();
+  inline void __fastcall CaptureOutput(TLogLineType Type, const AnsiString & Line);
 
 protected:
   AnsiString StdError;
+  TLogAddLineEvent FOnCaptureOutput;
+
   void __fastcall Error(const AnsiString Error) const;
   virtual void __fastcall UpdateStatus(int Value);
   bool __fastcall SshFallbackCmd() const;
@@ -188,6 +195,7 @@ protected:
   int __fastcall RemainingSendBuffer();
   virtual void __fastcall KeepAlive();
   virtual void __fastcall SetSessionData(TSessionData * value);
+  virtual void __fastcall DoDisplayBanner(const AnsiString & Banner);
 
 public:
   __fastcall TSecureShell();
@@ -216,6 +224,7 @@ public:
   void __fastcall VerifyHostKey(const AnsiString Host, int Port,
     const AnsiString KeyType, const AnsiString KeyStr, const AnsiString Fingerprint);
   void __fastcall AskAlg(const AnsiString AlgType, const AnsiString AlgName);
+  void __fastcall DisplayBanner(const AnsiString & Banner);
   void __fastcall OldKeyfileWarning();
 
   virtual int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
@@ -260,6 +269,7 @@ public:
   __property AnsiString HostKeyFingerprint = { read = FHostKeyFingerprint };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
+  __property TDisplayBannerEvent OnDisplayBanner = { read = FOnDisplayBanner, write = FOnDisplayBanner };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
   __property TNotifyEvent OnUpdateStatus = { read = FOnUpdateStatus, write = FOnUpdateStatus };
   __property TLogAddLineEvent OnStdError = { read = FOnStdError, write = FOnStdError };
