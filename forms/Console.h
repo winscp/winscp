@@ -17,6 +17,10 @@
 #include <PathLabel.hpp>
 
 #include <Terminal.h>
+#include <ImgList.hpp>
+#include <Menus.hpp>
+#include <ActnList.hpp>
+#include <StdActns.hpp>
 //----------------------------------------------------------------------------
 class TConsoleDialog : public TForm
 {
@@ -31,16 +35,30 @@ __published:
   TButton *ExecuteButton;
   TPathLabel *DirectoryLabel;
   TButton *HelpButton;
+  TImageList *Images;
+  TPopupMenu *PopupMenu;
+  TMenuItem *SelectAllItem;
+  TMenuItem *CopyItem;
+  TMenuItem *N1;
+  TMenuItem *AdjustWindowItem;
+  TActionList *ActionList;
+  TEditCopy *EditCopy;
+  TEditSelectAll *EditSelectAll;
+  TAction *AdjustWindow;
   void __fastcall ExecuteButtonClick(TObject *Sender);
   void __fastcall CommandEditChange(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall ActionListExecute(TBasicAction *Action, bool &Handled);
+  void __fastcall ActionListUpdate(TBasicAction *Action, bool &Handled);
+  void __fastcall FormShow(TObject *Sender);
   
 private:
   TTerminal * FTerminal;
   TTerminal * FLastTerminal;
   TNotifyEvent FOldChangeDirectory;
   TNotifyEvent FPrevTerminalClose;
-  
+  TRect FAutoBounds;
+
   void __fastcall DoExecuteCommand();
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
@@ -53,6 +71,7 @@ protected:
     const AnsiString AddedLine);
   void __fastcall UpdateControls();
   virtual void __fastcall CreateParams(TCreateParams & Params);
+  void __fastcall DoAdjustWindow();
 
 public:
   virtual __fastcall ~TConsoleDialog();

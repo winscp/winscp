@@ -32,7 +32,7 @@ typedef Set<TB2Anim__1, tbadLeft, tbadUp>  TTBAnimationDirection;
 static const Word WM_TB2K_STEPANIMATION = 0x955;
 static const Word WM_TB2K_ANIMATIONENDED = 0x956;
 extern PACKAGE void __fastcall TBEndAnimation(const HWND Wnd);
-extern PACKAGE void __fastcall TBStartAnimation(const HWND AWnd, const int ATime, const bool ABlend, const TTBAnimationDirection ADirection);
+extern PACKAGE void __fastcall TBStartAnimation(const HWND AWnd, const bool ABlend, const TTBAnimationDirection ADirection);
 extern PACKAGE void __fastcall TBStepAnimation(const Messages::TMessage &Msg);
 
 }	/* namespace Tb2anim */

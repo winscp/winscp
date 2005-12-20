@@ -50,7 +50,7 @@ public:
 
   void __fastcall Synchronize(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
-    TSynchronizeStats * Stats);
+    TSynchronizeChecklist ** Checklist);
 
   __property TScriptPrintEvent OnPrint = { read = FOnPrint, write = FOnPrint };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
@@ -146,7 +146,7 @@ public:
 
   __property TScriptInputEvent OnInput = { read = FOnInput, write = FOnInput };
   __property TScriptQueryCancelEvent OnQueryCancel = { read = FOnQueryCancel, write = FOnQueryCancel };
-  __property TNotifyEvent OnTerminalUpdateStatus = { read = FOnTerminalUpdateStatus, write = FOnTerminalUpdateStatus };
+  __property TUpdateStatusEvent OnTerminalUpdateStatus = { read = FOnTerminalUpdateStatus, write = FOnTerminalUpdateStatus };
   __property TPromptUserEvent OnTerminalPromptUser = { read = FOnTerminalPromptUser, write = FOnTerminalPromptUser };
   __property TQueryUserEvent OnTerminalQueryUser = { read = FOnTerminalQueryUser, write = FOnTerminalQueryUser };
   __property TScriptPrintProgressEvent OnPrintProgress = { read = FOnPrintProgress, write = FOnPrintProgress };
@@ -155,7 +155,7 @@ public:
 protected:
   TScriptInputEvent FOnInput;
   TScriptQueryCancelEvent FOnQueryCancel;
-  TNotifyEvent FOnTerminalUpdateStatus;
+  TUpdateStatusEvent FOnTerminalUpdateStatus;
   TPromptUserEvent FOnTerminalPromptUser;
   TQueryUserEvent FOnTerminalQueryUser;
   TScriptPrintProgressEvent FOnPrintProgress;
@@ -167,7 +167,6 @@ protected:
   bool FContinue;
 
   virtual void __fastcall ResetTransfer();
-  virtual void __fastcall ConnectTerminal(TTerminal * Terminal);
   void __fastcall Input(const AnsiString Prompt, AnsiString & Str, bool AllowEmpty);
   void __fastcall TerminalOnStdError(TObject * Sender, TLogLineType Type,
     const AnsiString AddedLine);

@@ -2,7 +2,7 @@ unit TB2Common;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2Common;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2Common.pas,v 1.29 2004/05/29 20:33:57 jr Exp $
+  $jrsoftware: tb2k/Source/TB2Common.pas,v 1.31 2005/06/29 20:10:10 jr Exp $
 }
 
 interface
@@ -833,6 +833,7 @@ function CreateRotatedFont(DC: HDC): HFONT;
 { Creates a font based on the DC's current font, but rotated 270 degrees }
 var
   LogFont: TLogFont;
+  TM: TTextMetric;
   VerticalFontName: array[0..LF_FACESIZE-1] of Char;
   VerticalFontExists: Boolean;
 begin
@@ -849,8 +850,23 @@ begin
   { Don't let a random TrueType font be substituted when MS Sans Serif or
     Microsoft Sans Serif are used. Hard-code Arial. }
   if (StrIComp(LogFont.lfFaceName, 'MS Sans Serif') = 0) or
-     (StrIComp(LogFont.lfFaceName, 'Microsoft Sans Serif') = 0) then
+     (StrIComp(LogFont.lfFaceName, 'Microsoft Sans Serif') = 0) then begin
     StrPCopy(LogFont.lfFaceName, 'Arial');
+    { Set lfHeight to the actual height of the current font. This is needed
+      to work around a Windows 98 issue: on a clean install of the OS,
+      SPI_GETNONCLIENTMETRICS returns -5 for lfSmCaptionFont.lfHeight. This is
+      wrong; it should return -11 for an 8 pt font. With normal, unrotated text
+      this actually displays correctly, since MS Sans Serif doesn't support
+      sizes below 8 pt. However, when we change to a TrueType font like Arial,
+      this becomes a problem because it'll actually create a font that small. }
+    if GetTextMetrics(DC, TM) then begin
+      { If the original height was negative, keep it negative }
+      if LogFont.lfHeight <= 0 then
+        LogFont.lfHeight := -(TM.tmHeight - TM.tmInternalLeading)
+      else
+        LogFont.lfHeight := TM.tmHeight;
+    end;
+  end;
 
   { Use a vertical font if available so that Asian characters aren't drawn
     sideways }

@@ -200,7 +200,7 @@ inline void Print(bool FromBeginning, const char * Message)
 {
   if (((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE)))
   {
-    if (FromBeginning)
+    if (FromBeginning && (Message[0] != '\n'))
     {
       strcpy(LastFromBeginning, Message);
     }
@@ -211,7 +211,16 @@ inline void Print(bool FromBeginning, const char * Message)
         printf("%s", LastFromBeginning);
         LastFromBeginning[0] = '\0';
       }
-      printf("%s", Message);
+
+      if (FromBeginning && (Message[0] == '\n'))
+      {
+        printf("\n");
+        strcpy(LastFromBeginning, Message + 1);
+      }
+      else
+      {
+        printf("%s", Message);
+      }
     }
   }
   else

@@ -2,7 +2,7 @@ unit TB2DsgnItemEditor;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2DsgnItemEditor;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2DsgnItemEditor.pas,v 1.52 2004/02/26 07:05:57 jr Exp $
+  $jrsoftware: tb2k/Source/TB2DsgnItemEditor.pas,v 1.55 2005/01/27 06:48:53 jr Exp $
 }
 
 interface
@@ -326,6 +326,9 @@ begin
     EditForm.Caption := 'Editing ' + AParentComponent.Name;
     EditForm.RebuildTree;
     EditForm.RebuildList;
+    {$IFDEF JR_D9}
+    EditForm.PopupMode := pmExplicit;
+    {$ENDIF}
     EditForm.Show;
   except
     EditForm.Free;
@@ -342,7 +345,7 @@ procedure ShowVersion;
 const
   AboutText =
     '%s'#13#10 +
-    'Copyright (C) 1998-2003 by Jordan Russell'#13#10 +
+    'Copyright (C) 1998-2005 by Jordan Russell'#13#10 +
     'For conditions of distribution and use, see LICENSE.TXT.'#13#10 +
     #13#10 +
     'Visit my web site for the latest versions of Toolbar2000:'#13#10 +

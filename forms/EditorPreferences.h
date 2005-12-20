@@ -26,7 +26,6 @@ __published:
   TButton *OkButton;
   TButton *CancelButton;
   TButton *HelpButton;
-  void __fastcall ExternalEditorEditChange(TObject *Sender);
   void __fastcall ExternalEditorEditExit(TObject *Sender);
   void __fastcall ExternalEditorBrowseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);

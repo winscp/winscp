@@ -13,13 +13,13 @@ struct TSynchronizeParamType
 };
 //---------------------------------------------------------------------------
 class TSynchronizeController;
-struct TSynchronizeStats;
 struct TSynchronizeOptions;
+class TSynchronizeChecklist;
 typedef void __fastcall (__closure * TSynchronizeAbortEvent)
   (System::TObject * Sender, bool Close);
 typedef void __fastcall (__closure * TSynchronizeThreadsEvent)
   (TObject* Sender, TThreadMethod Method);
-enum TSynchronizeLogEntry { slScan, slStart, slChange, slUpload, slDelete };
+enum TSynchronizeLogEntry { slScan, slStart, slChange, slUpload, slDelete, slDirChange };
 typedef void __fastcall (__closure * TSynchronizeLog)
   (TSynchronizeController * Controller, TSynchronizeLogEntry Entry, const AnsiString Message);
 typedef void __fastcall (__closure * TSynchronizeStartStopEvent)
@@ -30,7 +30,7 @@ typedef void __fastcall (__closure * TSynchronizeStartStopEvent)
 typedef void __fastcall (__closure * TSynchronizeEvent)
   (TSynchronizeController * Sender, const AnsiString LocalDirectory,
    const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
-   const TSynchronizeParamType & Params, TSynchronizeStats * Stats,
+   const TSynchronizeParamType & Params, TSynchronizeChecklist ** Checklist,
    TSynchronizeOptions * Options, bool Full);
 typedef void __fastcall (__closure * TSynchronizeInvalidEvent)
   (TSynchronizeController * Sender, const AnsiString Directory, const AnsiString ErrorStr);
@@ -80,6 +80,7 @@ private:
   void __fastcall SynchronizeFilter(TObject * Sender, const AnsiString DirectoryName, 
     bool & Add);
   void __fastcall SynchronizeTooManyDirectories(TObject * Sender, int & MaxDirectories);
+  void __fastcall SynchronizeDirectoriesChange(TObject * Sender, int Directories);
 };
 //---------------------------------------------------------------------------
 #endif

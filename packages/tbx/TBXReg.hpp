@@ -11,6 +11,7 @@
 #pragma option push -w-
 #pragma option push -Vx
 #include <TBXStatusBars.hpp>	// Pascal unit
+#include <TBXToolPals.hpp>	// Pascal unit
 #include <TBXLists.hpp>	// Pascal unit
 #include <TBXExtItems.hpp>	// Pascal unit
 #include <TB2DsgnItemEditor.hpp>	// Pascal unit

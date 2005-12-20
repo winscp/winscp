@@ -4,7 +4,6 @@
 
 #include "ScpCommander.h"
 #include "ScpExplorer.h"
-#include <About.h>
 
 #include <ScpMain.h>
 #include <Common.h>
@@ -13,6 +12,7 @@
 #include "TextsWin.h"
 #include "TBXThemes.hpp"
 #include "TBXOfficeXPTheme.hpp"
+#include "TBXOffice2003Theme.hpp"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -83,6 +83,11 @@ void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
         if (E->InheritsFrom(__classid(EFatal)) && (SecureShell != NULL) &&
             (Manager != NULL) && (Manager->ActiveTerminal == SecureShell))
         {
+          if (CloseOnCompletion)
+          {
+            Manager->DisconnectActiveTerminal();
+          }
+
           int Result;
           if (CloseOnCompletion)
           {
@@ -184,24 +189,15 @@ void __fastcall ConfigureInterface()
 }
 //---------------------------------------------------------------------------
 // dummy function to force linking of TBXOfficeXPTheme.pas
-TTBXOfficeXPTheme * CreateTheme()
+void __fastcall CreateThemes()
 {
-  return new TTBXOfficeXPTheme("OfficeXP");
+  new TTBXOfficeXPTheme("OfficeXP");
+  new TTBXOffice2003Theme("Office2003");
 }
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration *Configuration)
 {
-  TAboutDialog *AboutDialog = NULL;
-  try
-  {
-    AboutDialog = new TAboutDialog(Application);
-    AboutDialog->Configuration = Configuration;
-    AboutDialog->ShowModal();
-  }
-  __finally
-  {
-    delete AboutDialog;
-  }
+  DoAboutDialog(Configuration, true, NULL);
 }
 //---------------------------------------------------------------------
 void __fastcall DoProductLicence()

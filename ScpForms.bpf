@@ -3,7 +3,7 @@
 #include <vcl.h>
 #pragma hdrstop
 USEFORM("forms\About.cpp", AboutDialog);
-USEFORM("forms\Banner.cpp", BannerDialog);
+USEFORM("forms\Authenticate.cpp", AuthenticateForm);
 USEFORM("forms\Cleanup.cpp", CleanupDialog);
 USEFORM("forms\ComboInput.cpp", ComboInputDialog);
 USEFORM("forms\Console.cpp", ConsoleDialog);
@@ -11,6 +11,7 @@ USEFORM("forms\Copy.cpp", CopyDialog);
 USEFORM("forms\CopyParams.cpp", CopyParamsFrame); /* TFrame: File Type */
 USEFORM("forms\CopyParamCustom.cpp", CopyParamCustomDialog);
 USEFORM("forms\CopyParamPreset.cpp", CopyParamPresetDialog);
+USEFORM("forms\CreateDirectory.cpp", CreateDirectoryDialog);
 USEFORM("forms\CustomCommand.cpp", CustomCommandDialog);
 USEFORM("forms\Editor.cpp", EditorForm);
 USEFORM("forms\EditorPreferences.cpp", EditorPreferencesDialog);
@@ -26,7 +27,6 @@ USEFORM("forms\Login.cpp", LoginDialog);
 USEFORM("forms\LogSettings.cpp", LoggingFrame); /* TFrame: File Type */
 USEFORM("forms\OpenDirectory.cpp", OpenDirectoryDialog);
 USEFORM("forms\OperationStatus.cpp", OperationStatusForm);
-USEFORM("forms\Password.cpp", PasswordDialog);
 USEFORM("forms\Preferences.cpp", PreferencesDialog);
 USEFORM("forms\Progress.cpp", ProgressForm);
 USEFORM("forms\Properties.cpp", PropertiesDialog);
@@ -35,6 +35,7 @@ USEFORM("forms\RightsExt.cpp", RightsExtFrame); /* TFrame: File Type */
 USEFORM("forms\SelectMask.cpp", SelectMaskDialog);
 USEFORM("forms\Symlink.cpp", SymlinkDialog);
 USEFORM("forms\Synchronize.cpp", SynchronizeDialog);
+USEFORM("forms\SynchronizeChecklist.cpp", SynchronizeChecklistDialog);
 USEFORM("forms\SynchronizeProgress.cpp", SynchronizeProgressForm);
 //---------------------------------------------------------------------------
 #define Library

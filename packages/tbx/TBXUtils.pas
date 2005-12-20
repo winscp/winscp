@@ -4,7 +4,7 @@ unit TBXUtils;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXUtils.pas 11 2004-04-01 07:22:56Z Alex@ZEISS $
+// Id: TBXUtils.pas 11 2004-04-01 07:22:56Z Alex@ZEISS
 
 interface
 
@@ -24,6 +24,9 @@ function StripAccelCharsW(const S: WideString): WideString;
 function StripTrailingPunctuationW(const S: WideString): WideString;
 {$ENDIF}
 
+{$IFNDEF JR_D6}
+function CheckWin32Version(AMajor, AMinor: Integer = 0): Boolean; {vb+}
+{$ENDIF}
 procedure GetRGB(C: TColor; out R, G, B: Integer);
 function  MixColors(C1, C2: TColor; W1: Integer): TColor;
 function  SameColors(C1, C2: TColor): Boolean;
@@ -50,6 +53,8 @@ function  FrameRectEx(DC: HDC; var Rect: TRect; Color: TColor; Adjust: Boolean):
 procedure DrawLineEx(DC: HDC; X1, Y1, X2, Y2: Integer; Color: TColor); {$IFDEF COMPATIBLE_GFX}overload;{$ENDIF}
 function  PolyLineEx(DC: HDC; const Points: array of TPoint; Color: TColor): Boolean;
 procedure PolygonEx(DC: HDC; const Points: array of TPoint; OutlineColor, FillColor: TColor);
+procedure RoundRectEx(DC: HDC; Left, Top, Right, Bottom: Integer; EllipseWidth, EllipseHeight, OutlineColor, FillColor: TColor); overload; {vb+}
+procedure RoundRectEx(DC: HDC; const R: TRect; EllipseWidth, EllipseHeight, OutlineColor, FillColor: TColor); overload; {vb+}
 procedure DitherRect(DC: HDC; const R: TRect; C1, C2: TColor); {$IFDEF COMPATIBLE_GFX}overload;{$ENDIF}
 procedure Frame3D(DC: HDC; var Rect: TRect; TopColor, BottomColor: TColor; Adjust: Boolean); {$IFDEF COMPATIBLE_GFX}overload;{$ENDIF}
 procedure DrawDraggingOutline(DC: HDC; const NewRect, OldRect: TRect);
@@ -396,7 +401,13 @@ end;
 
 {$ENDIF}
 
-
+{$IFNDEF JR_D6}
+function CheckWin32Version(AMajor, AMinor: Integer = 0): Boolean; {vb+}
+begin
+  Result := (Win32MajorVersion > AMajor) or
+    ((Win32MajorVersion = AMajor) and (Win32MinorVersion >= AMinor));
+end;
+{$ENDIF}
 
 type
   PPoints = ^TPoints;
@@ -544,7 +555,7 @@ begin
   Threshold := GetAdjustedThreshold(i2, Threshold);
 
   if i1 > i2 then DoInvert := i2 < 442 - Threshold
-  else DoInvert := i2 < Threshold;  
+  else DoInvert := i2 < Threshold;
 
   x := (ABkgndColor and $FF) * WeightR;
   y := (ABkgndColor shr 8 and $FF) * WeightG;
@@ -731,8 +742,11 @@ begin
     LB.lbStyle := BS_HOLLOW;
     Result := CreateBrushIndirect(LB);
   end
-  else if Color < 0 then Result := GetSysColorBrush(Color and $000000FF)
-  else Result := CreateSolidBrush(Color);
+  {else if Color < 0 then Result := GetSysColorBrush(Color and $000000FF)} {vb-}
+  else begin {vb+}
+    if Color < 0 then Color := GetSysColor(Color and $000000FF);
+    Result := CreateSolidBrush(Color);
+  end;
 end;
 
 function FillRectEx(DC: HDC; const Rect: TRect; Color: TColor): Boolean;
@@ -745,7 +759,8 @@ begin
     if Color < 0 then Brush := GetSysColorBrush(Color and $000000FF)
     else Brush := CreateSolidBrush(Color);
     Windows.FillRect(DC, Rect, Brush);
-    DeleteObject(Brush);
+    {DeleteObject(Brush);} {vb-}
+    if Color >= 0 then DeleteObject(Brush); {vb+}
   end;
 end;
 
@@ -759,7 +774,8 @@ begin
     if Color < 0 then Brush := GetSysColorBrush(Color and $000000FF)
     else Brush := CreateSolidBrush(Color);
     Windows.FrameRect(DC, Rect, Brush);
-    DeleteObject(Brush);
+    {DeleteObject(Brush);} {vb-}
+    if Color >= 0 then DeleteObject(Brush); {vb+}
   end;
   if Adjust then with Rect do
   begin
@@ -811,6 +827,32 @@ begin
   SelectObject(DC, OldPen);
   DeleteObject(Brush);
   DeleteObject(Pen);
+end;
+
+procedure RoundRectEx(DC: HDC; Left, Top, Right, Bottom: Integer;
+  EllipseWidth, EllipseHeight, OutlineColor, FillColor: TColor); {vb+}
+var
+  OldBrush, Brush: HBrush;
+  OldPen, Pen: HPen;
+begin
+  if (OutlineColor = clNone) and (FillColor = clNone) then Exit;
+  Pen := CreatePenEx(OutlineColor);
+  Brush := CreateBrushEx(FillColor);
+  OldPen := SelectObject(DC, Pen);
+  OldBrush := SelectObject(DC, Brush);
+  Windows.RoundRect(DC, Left, Top, Right, Bottom, EllipseWidth, EllipseHeight);
+  SelectObject(DC, OldBrush);
+  SelectObject(DC, OldPen);
+  DeleteObject(Brush);
+  DeleteObject(Pen);
+end;
+
+procedure RoundRectEx(DC: HDC; const R: TRect; EllipseWidth, EllipseHeight,
+  OutlineColor, FillColor: TColor); {vb+}
+begin
+  with R do
+    RoundRectEx(DC, Left, Top, Right, Bottom, EllipseWidth,
+      EllipseHeight, OutlineColor, FillColor);
 end;
 
 function CreateDitheredBrush(C1, C2: TColor): HBrush;
@@ -952,8 +994,8 @@ end;
 
 procedure DrawTBXIcon(Canvas: TCanvas; const R: TRect;
   ImageList: TCustomImageList; ImageIndex: Integer; HiContrast: Boolean);
-const
-  CWeirdColor = $00203241;
+{const
+  CWeirdColor = $00203241;} {vb -}
 var
   ImageWidth, ImageHeight: Integer;
   I, J: Integer;
@@ -965,7 +1007,6 @@ begin
     ImageList.Draw(Canvas, R.Left, R.Top, ImageIndex);
     Exit;
   end;
-
   ImageWidth := R.Right - R.Left;
   ImageHeight := R.Bottom - R.Top;
   with ImageList do
@@ -981,8 +1022,10 @@ begin
 
   BitBlt(StockBitmap1.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
     Canvas.Handle, R.Left, R.Top, SRCCOPY);
-  for J := 0 to ImageHeight - 1 do
-    FillLongWord(StockBitmap2.ScanLine[J]^, ImageWidth, CWeirdColor);
+  {for J := 0 to ImageHeight - 1 do
+    FillLongWord(StockBitmap2.ScanLine[J]^, ImageWidth, CWeirdColor);} {vb -}
+  BitBlt(StockBitmap2.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
+    Canvas.Handle, R.Left, R.Top, SRCCOPY); {vb +}
   ImageList.Draw(StockBitmap2.Canvas, 0, 0, ImageIndex);
 
   for J := 0 to ImageHeight - 1 do
@@ -991,11 +1034,15 @@ begin
     Dst := StockBitmap1.ScanLine[J];
     for I := 0 to ImageWidth - 1 do
     begin
-      S := Src^ and $00FFFFFF;
-      if S <> CWeirdColor then
+      {S := Src^ and $00FFFFFF;} {vb -}
+      S := Src^; {vb +}
+      {if S <> CWeirdColor then} {vb -}
+      if S <> Dst^ then {vb +}
       begin
-        C := (S and $FF0000) shr 16 * 76 + (S and $00FF00) shr 8 * 150 +
-          (S and $0000FF) * 29;
+        {C := (S and $FF0000) shr 16 * 76 + (S and $00FF00) shr 8 * 150 +
+          (S and $0000FF) * 29;} {vb -}
+        C := (S and $00FF0000) shr 16 * 76 + (S and $0000FF00) shr 8 * 150 +
+          (S and $000000FF) * 29; {vb +}
         if C > $FD00 then S := $000000
         else if C < $6400 then S := $FFFFFF;
         Dst^ := Lighten(S, 32);
@@ -1010,8 +1057,8 @@ end;
 
 procedure BlendTBXIcon(Canvas: TCanvas; const R: TRect;
   ImageList: TCustomImageList; ImageIndex: Integer; Opacity: Byte);
-const
-  CWeirdColor = $00203241;
+{const
+  CWeirdColor = $00203241;} {vb -}
 var
   ImageWidth, ImageHeight: Integer;
   I, J: Integer;
@@ -1036,8 +1083,10 @@ begin
 
   BitBlt(StockBitmap1.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
     Canvas.Handle, R.Left, R.Top, SRCCOPY);
+  {BitBlt(StockBitmap2.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
+    StockBitmap1.Canvas.Handle, 0, 0, SRCCOPY);} {vb -}
   BitBlt(StockBitmap2.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
-    StockBitmap1.Canvas.Handle, 0, 0, SRCCOPY);
+    Canvas.Handle, R.Left, R.Top, SRCCOPY); {vb +}
   ImageList.Draw(StockBitmap2.Canvas, 0, 0, ImageIndex, True);
 
   for J := 0 to ImageHeight - 1 do
@@ -1051,7 +1100,10 @@ begin
       begin
         CBRB := (Dst^ and $00FF00FF) * Wt1;
         CBG  := (Dst^ and $0000FF00) * Wt1;
-        C := ((S and $FF00FF) * Wt2 + CBRB) and $FF00FF00 + ((S and $00FF00) * Wt2 + CBG) and $00FF0000;
+        {C := ((S and $FF00FF) * Wt2 + CBRB) and $FF00FF00 +
+          ((S and $00FF00) * Wt2 + CBG) and $00FF0000;} {vb -}
+        C := ((S and $00FF00FF) * Wt2 + CBRB) and $FF00FF00 +
+          ((S and $0000FF00) * Wt2 + CBG) and $00FF0000; {vb +}
         Dst^ := C shr 8;
       end;
       Inc(Src);
@@ -1064,12 +1116,13 @@ end;
 
 procedure HighlightTBXIcon(Canvas: TCanvas; const R: TRect;
   ImageList: TCustomImageList; ImageIndex: Integer; HighlightColor: TColor; Amount: Byte);
-const
-  CWeirdColor = $00203241;
+{const
+  CWeirdColor = $00203241;} {vb -}
 var
   ImageWidth, ImageHeight: Integer;
   I, J: Integer;
-  Src, Dst: PColor;
+  {Src, Dst: PColor;} {vb -}
+  Src, Dst: ^Cardinal; {vb +}
   S, C: Cardinal;
   CBRB, CBG: Cardinal;
   W1, W2: Cardinal;
@@ -1089,8 +1142,10 @@ begin
 
   BitBlt(StockBitmap1.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
     Canvas.Handle, R.Left, R.Top, SRCCOPY);
-  for J := 0 to ImageHeight - 1 do
-    FillLongWord(StockBitmap2.ScanLine[J]^, ImageWidth, CWeirdColor);
+  {for J := 0 to ImageHeight - 1 do
+    FillLongWord(StockBitmap2.ScanLine[J]^, ImageWidth, CWeirdColor);} {vb -}
+  BitBlt(StockBitmap2.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
+    Canvas.Handle, R.Left, R.Top, SRCCOPY); {vb +}
   ImageList.Draw(StockBitmap2.Canvas, 0, 0, ImageIndex);
 
   W2 := Amount;
@@ -1105,10 +1160,15 @@ begin
     Dst := StockBitmap1.ScanLine[J];
     for I := 0 to ImageWidth - 1 do
     begin
-      S := Src^ and $00FFFFFF;
-      if S <> CWeirdColor then
+      {S := Src^ and $00FFFFFF;} {vb -}
+      S := Src^; {vb +}
+      {if S <> CWeirdColor then} {vb -}
+      if S <> Dst^ then {vb +}
       begin
-        C := ((S and $FF00FF) * W2 + CBRB) and $FF00FF00 + ((S and $00FF00) * W2 + CBG) and $00FF0000;
+        {C := ((S and $FF00FF) * W2 + CBRB) and $FF00FF00 +
+          ((S and $00FF00) * W2 + CBG) and $00FF0000;} {vb -}
+        C := ((S and $00FF00FF) * W2 + CBRB) and $FF00FF00 +
+          ((S and $0000FF00) * W2 + CBG) and $00FF0000; {vb +}
         Dst^ := C shr 8;
       end;
       Inc(Src);
@@ -1147,8 +1207,10 @@ begin
 
   BitBlt(StockBitmap1.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
     Canvas.Handle, R.Left, R.Top, SRCCOPY);
+  {BitBlt(StockBitmap2.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
+    StockBitmap1.Canvas.Handle, 0, 0, SRCCOPY);} {vb -}
   BitBlt(StockBitmap2.Canvas.Handle, 0, 0, ImageWidth, ImageHeight,
-    StockBitmap1.Canvas.Handle, 0, 0, SRCCOPY);
+    Canvas.Handle, R.Left, R.Top, SRCCOPY); {vb +}
   ImageList.Draw(StockBitmap2.Canvas, 0, 0, ImageIndex, True);
 
   for J := 0 to ImageHeight - 1 do
@@ -1162,8 +1224,10 @@ begin
       begin
         CBRB := Dst^ and $00FF00FF;
         CBG  := Dst^ and $0000FF00;
-        C := ((S and $FF0000) shr 16 * 29 + (S and $00FF00) shr 8 * 150 +
-          (S and $0000FF) * 76) shr 8;
+        {C := ((S and $FF0000) shr 16 * 29 + (S and $00FF00) shr 8 * 150 +
+          (S and $0000FF) * 76) shr 8;} {vb -}
+        C := ((S and $00FF0000) shr 16 * 29 + (S and $0000FF00) shr 8 * 150 +
+          (S and $000000FF) * 76) shr 8; {vb +}
         C := C div D_DIV[Density] + D_ADD[Density];
         Dst^ := ((CBRB * C and $FF00FF00) or (CBG * C and $00FF0000)) shr 8;
       end;
@@ -1941,7 +2005,7 @@ var
   Brush: HBRUSH;
 begin
   if not RectVisible(DC, ARect) then Exit;
-  
+
   ClrTopLeft := ColorToRGB(ClrTopLeft);
   ClrBottomRight := ColorToRGB(ClrBottomRight);
   if @GradientFill <> nil then
@@ -2088,12 +2152,18 @@ procedure ClearCacheItem(var CacheItem: TThreadCacheItem);
 var
   I: Integer;
 begin
-  for I := NUM_TEMPLATES - 1 downto 0 do
+  with CacheItem do
   begin
-    CacheItem.BaseColor := $FFFFFFFF;
-    CacheItem.Roughness := -1;
-    if CacheItem.Bitmaps[I] <> 0 then DeleteObject(CacheItem.Bitmaps[I]);
-    CacheItem.Bitmaps[I] := 0;
+    BaseColor := $FFFFFFFF;
+    Roughness := -1;
+    for I := NUM_TEMPLATES - 1 downto 0 do
+    begin
+      if Bitmaps[I] <> 0 then
+      begin
+        DeleteObject(Bitmaps[I]);
+        Bitmaps[I] := 0;
+      end;
+    end;
   end;
 end;
 
@@ -2238,26 +2308,22 @@ begin
 end;
 
 var
-  hUser, hMSImg: HModule;
+  hMSImg: HModule;
 
 initialization
-
-hUser := LoadLibrary('user32.dll');
-hMSImg := LoadLibrary('msimg32.dll');
-@UpdateLayeredWindow := GetProcAddress(hUser, 'UpdateLayeredWindow');
-@AlphaBlend := GetProcAddress(hMSImg, 'AlphaBlend');
-@GradientFill := GetProcAddress(hMSImg, 'GradientFill');
-
-InitializeStock;
-InitializeBrushedFill;
-ResetBrushedFillCache;
-
+  @UpdateLayeredWindow := GetProcAddress(
+    GetModuleHandle('user32.dll'), 'UpdateLayeredWindow');
+  hMSImg := LoadLibrary('msimg32.dll');
+  if hMSImg <> 0 then
+  begin
+    @AlphaBlend   := GetProcAddress(hMSImg, 'AlphaBlend');
+    @GradientFill := GetProcAddress(hMSImg, 'GradientFill');
+  end;
+  InitializeStock;
+  InitializeBrushedFill;
+  ResetBrushedFillCache;
 finalization
-
-FinalizeBrushedFill;
-FinalizeStock;
-
-FreeLibrary(hMSImg);
-FreeLibrary(hUser);
-
+  FinalizeBrushedFill;
+  FinalizeStock;
+  if hMSImg <> 0 then FreeLibrary(hMSImg);
 end.

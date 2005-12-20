@@ -25,6 +25,8 @@ public:
 
 private:
   AnsiString FMasks;
+
+  static inline bool __fastcall MatchesFileMask(const AnsiString & Filename, const AnsiString & Mask);
 };
 //---------------------------------------------------------------------------
 AnsiString __fastcall MaskFileName(AnsiString FileName, const AnsiString Mask);

@@ -12,8 +12,8 @@
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES };
 #define CIPHER_COUNT (cipDES+1)
 enum TProtocol { ptRaw, ptTelnet, ptRLogin, ptSSH };
-enum TFSProtocol { fsSCPonly, fsSFTP, fsSFTPonly };
-#define FSPROTOCOL_COUNT (fsSFTPonly+1)
+enum TFSProtocol { fsSCPonly, fsSFTP, fsSFTPonly, fsExternalSSH, fsExternalSFTP };
+#define FSPROTOCOL_COUNT (fsExternalSFTP+1)
 enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet }; // 0.53b and older
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd }; // after 0.53b
 enum TSshProt { ssh1only, ssh1, ssh2, ssh2only };
@@ -112,6 +112,7 @@ private:
   TAddressFamily FAddressFamily;
   AnsiString FRekeyData;
   unsigned int FRekeyTime;
+  int FColor;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -205,6 +206,7 @@ private:
   void __fastcall SetAddressFamily(TAddressFamily value);
   void __fastcall SetRekeyData(AnsiString value);
   void __fastcall SetRekeyTime(unsigned int value);
+  void __fastcall SetColor(int value);
 
 public:
   __fastcall TSessionData(AnsiString aName);
@@ -304,6 +306,7 @@ public:
   __property TAddressFamily AddressFamily = { read = FAddressFamily, write = SetAddressFamily };
   __property AnsiString RekeyData = { read = FRekeyData, write = SetRekeyData };
   __property unsigned int RekeyTime = { read = FRekeyTime, write = SetRekeyTime };
+  __property int Color = { read = FColor, write = SetColor };
   __property AnsiString StorageKey = { read = GetStorageKey };
 };
 //---------------------------------------------------------------------------

@@ -26,6 +26,7 @@
 #include "TBXStatusBars.hpp"
 #include "TB2Item.hpp"
 #include "TB2Toolbar.hpp"
+#include "TBXToolPals.hpp"
 //---------------------------------------------------------------------------
 class TProgressForm;
 class TSynchronizeProgressForm;
@@ -71,6 +72,7 @@ __published:
   TSplitter *RemotePanelSplitter;
   TTBXItem *TBXItem194;
   TTBXItem *TBXItem195;
+  TTBXItem *TBXItem210;
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
     const TPoint &MousePos, bool &Handled);
   void __fastcall RemoteDirViewGetSelectFilter(
@@ -131,6 +133,7 @@ __published:
   void __fastcall AddressToolbarGetBaseSize(TTBCustomToolbar * Toolbar, TPoint & ASize);
   void __fastcall FormConstrainedResize(TObject * Sender, int & MinWidth,
     int  &MinHeight, int  &MaxWidth, int  &MaxHeight);
+  void __fastcall SessionColorPaletteChange(TObject * Sender);
 
 private:
   TTerminal * FTerminal;
@@ -171,9 +174,10 @@ private:
   TList * FDocks;
   TSynchronizeController * FSynchronizeController;
   AnsiString FTransferComboHint;
+  TColor FSessionColor;
 
-  bool __fastcall GetEnableFocusedOperation(TOperationSide Side);
-  bool __fastcall GetEnableSelectedOperation(TOperationSide Side);
+  bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
+  bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall SetQueue(TTerminalQueue * value);
   void __fastcall SessionComboPopup(TTBCustomItem * Sender, bool FromLink);
@@ -206,7 +210,8 @@ protected:
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
-    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm);
+    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
+    bool DragDrop);
   virtual bool __fastcall RemoteTransferDialog(TStrings * FileList,
     AnsiString & Target, AnsiString & FileMask, bool NoConfirmation, bool Move);
   virtual void __fastcall CreateParams(TCreateParams & Params);
@@ -220,6 +225,7 @@ protected:
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall SetComponentVisible(Word Component, bool value);
+  virtual void __fastcall ComponentShowing(Word Component, bool value);
   virtual void __fastcall FixControlsPlacement();
   void __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
   void __fastcall CustomCommand(TStrings * FileList, AnsiString Name,
@@ -252,14 +258,14 @@ protected:
   void __fastcall DoSynchronize(TSynchronizeController * Sender,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
     const TCopyParamType & CopyParam, const TSynchronizeParamType & Params,
-    TSynchronizeStats * Stats, TSynchronizeOptions * Options, bool Full);
+    TSynchronizeChecklist ** Checklist, TSynchronizeOptions * Options, bool Full);
   void __fastcall DoSynchronizeInvalid(TSynchronizeController * Sender,
     const AnsiString Directory, const AnsiString ErrorStr);
   void __fastcall DoSynchronizeTooManyDirectories(TSynchronizeController * Sender,
     int & MaxDirectories);
   void __fastcall Synchronize(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
-    const TCopyParamType & CopyParam, int Params, TSynchronizeStats * Stats,
+    const TCopyParamType & CopyParam, int Params, TSynchronizeChecklist ** Checklist,
     TSynchronizeOptions * Options);
   void __fastcall GetSynchronizeOptions(int Params, TSynchronizeOptions & Options);
   bool __fastcall SynchronizeAllowSelectedOnly();
@@ -276,7 +282,7 @@ protected:
     TStringList * ExportData);
   void __fastcall QueueListUpdate(TTerminalQueue * Queue);
   void __fastcall QueueItemUpdate(TTerminalQueue * Queue, TQueueItem * Item);
-  void __fastcall UpdateQueueStatus();
+  void __fastcall UpdateQueueStatus(bool AppIdle);
   void __fastcall RefreshQueueItems(bool AppIdle);
   virtual int __fastcall GetStaticComponentsHeight();
   void __fastcall FillQueueViewItem(TListItem * Item,
@@ -316,6 +322,7 @@ protected:
     const TStatusFileInfo & FileInfo, int Panel);
   virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
   virtual void __fastcall UpdateControls();
+  void __fastcall UpdateTransferCombo();
   void __fastcall StartUpdates();
   void __fastcall TransferPresetAutoSelect();
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
@@ -324,11 +331,16 @@ protected:
   AnsiString __fastcall GetToolbarsLayoutStr();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall PostComponentHide(unsigned short Component);
+  void __fastcall GetSpaceAvailable(const AnsiString Path,
+    TSpaceAvailable & ASpaceAvailable, bool & Close);
+  void __fastcall UpdateCustomCommandsToolbar();
+  virtual void __fastcall UpdateActions();
+  void __fastcall SetSessionColor(TColor value);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
   void __fastcall AddBookmark(TOperationSide Side);
-  virtual void __fastcall AddEditLink();
+  virtual void __fastcall AddEditLink(bool Add);
   virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed) = 0;
   virtual void __fastcall ConfigurationChanged();
   void __fastcall CreateDirectory(TOperationSide Side);
@@ -358,7 +370,8 @@ public:
   virtual void __fastcall PanelExport(TOperationSide Side, TPanelExport Export,
     TPanelExportDestination Destination, bool OnFocused = false);
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy,
-    const TEditorPreferences * ExternalEditor = NULL);
+    const TEditorPreferences * ExternalEditor = NULL, bool AllSelected = false,
+    bool OnFocused = false);
   void __fastcall EditNew(TOperationSide Side);
   bool __fastcall AllowQueueOperation(TQueueOperation Operation);
   void __fastcall ExecuteQueueOperation(TQueueOperation Operation);
@@ -384,13 +397,18 @@ public:
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
   void __fastcall WhatsThis();
   virtual void __fastcall BeforeAction();
+  void __fastcall FileSystemInfo();
+  void __fastcall SessionColorPick();
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
-  __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation };
-  __property bool EnableSelectedOperation[TOperationSide Side] = { read = GetEnableSelectedOperation };
+  __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };
+  __property bool EnableSelectedOperation[TOperationSide Side] = { read = GetEnableSelectedOperation, index = 0 };
+  __property bool EnableFocusedFileOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 1 };
+  __property bool EnableSelectedFileOperation[TOperationSide Side] = { read = GetEnableSelectedOperation, index = 1 };
   __property bool HasDirView[TOperationSide Side] = { read = GetHasDirView };
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
+  __property TColor SessionColor = { read = FSessionColor, write = SetSessionColor };
 };
 //---------------------------------------------------------------------------
 class TExporerState : public TObject

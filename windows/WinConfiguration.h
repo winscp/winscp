@@ -51,12 +51,13 @@ struct TScpCommanderConfiguration {
   bool CompareBySize;
   bool SwappedPanels;
   int SessionComboWidth;
+  bool FullRowSelect;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(CommandLine)
       C(NortonLikeMode) C(PreserveLocalDirectory)
-      C(CompareBySize) C(CompareByTime) C(SwappedPanels) 
-      C(SessionComboWidth) 0; };
+      C(CompareBySize) C(CompareByTime) C(SwappedPanels)
+      C(SessionComboWidth) C(FullRowSelect) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {
@@ -118,7 +119,7 @@ struct TUpdatesData
     Version = 0;
     Message = "";
     Critical = false;
-  }  
+  }
 };
 //---------------------------------------------------------------------------
 struct TUpdatesConfiguration
@@ -191,11 +192,12 @@ public:
   void __fastcall Change(int Index, TEditorPreferences * Editor);
   void __fastcall Move(int CurIndex, int NewIndex);
   void __fastcall Delete(int Index);
+  void __fastcall Modify();
 
   __property int Count = { read = GetCount };
   __property const TEditorPreferences * Editors[int Index] = { read = GetEditor };
   __property bool Modified = { read = FModified };
-  
+
 private:
   TList * FEditors;
   bool FModified;
@@ -203,7 +205,6 @@ private:
   int __fastcall GetCount() const;
 
   void __fastcall Init();
-  void __fastcall Modify();
   const TEditorPreferences * __fastcall GetEditor(int Index) const;
 };
 //---------------------------------------------------------------------------
@@ -270,6 +271,7 @@ private:
   bool FSessionToolbarAutoShown;
   bool FLockToolbars;
   TEditorList * FEditorList;
+  TEditorPreferences * FLegacyEditor;
   AnsiString FDefaultKeyFile;
   bool FAutoOpenInPutty;
 
@@ -323,8 +325,7 @@ private:
 
 protected:
   virtual TStorage __fastcall GetStorage();
-  bool __fastcall DumpResourceToFile(
-    const AnsiString ResName, const AnsiString FileName);
+  virtual void __fastcall Load();
   virtual void __fastcall SaveSpecial(THierarchicalStorage * Storage);
   virtual void __fastcall LoadSpecial(THierarchicalStorage * Storage);
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
@@ -347,11 +348,8 @@ public:
   __fastcall TWinConfiguration();
   virtual __fastcall ~TWinConfiguration();
   virtual void __fastcall Default();
-  void __fastcall RestoreForm(AnsiString Data, TForm * Form);
-  AnsiString __fastcall StoreForm(TCustomForm * Form);
   void __fastcall ClearTemporaryLoginData();
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
-  static void ReformatFileNameCommand(AnsiString & Command);
   AnsiString __fastcall TemporaryDir(bool Mask = false);
   TStrings * __fastcall FindTemporaryFolders();
   void __fastcall CleanupTemporaryFolders(TStrings * Folders = NULL);

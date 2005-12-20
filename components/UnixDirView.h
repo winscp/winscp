@@ -12,6 +12,7 @@ class TTerminal;
 class TUnixDirView;
 class TCustomUnixDriveView;
 class TRemoteFile;
+class TRemoteProperties;
 //---------------------------------------------------------------------------
 enum TTransferDirection { tdToRemote, tdToLocal };
 enum TTransferType { ttCopy, ttMove };
@@ -72,6 +73,7 @@ protected:
     TDateTimePrecision & Precision);
   DYNAMIC bool __fastcall CanEdit(TListItem* Item);
   void __fastcall SetDriveView(TCustomUnixDriveView * Value);
+  virtual int __fastcall SecondaryColumnHeader(int Index);
 
   __property TCustomUnixDriveView * DriveView = { read = FDriveView, write = SetDriveView };
 
@@ -79,6 +81,7 @@ public:
   __fastcall TUnixDirView(TComponent* Owner);
   virtual __fastcall ~TUnixDirView();
   virtual void __fastcall CreateDirectory(AnsiString DirName);
+  void __fastcall CreateDirectoryEx(AnsiString DirName, const TRemoteProperties * Properties);
   virtual void __fastcall DisplayPropertiesMenu();
   virtual void __fastcall ExecuteHomeDirectory();
   virtual void __fastcall ExecuteParentDirectory();
@@ -88,6 +91,7 @@ public:
   virtual bool __fastcall ItemIsParentDirectory(TListItem * Item);
   virtual AnsiString __fastcall ItemFullFileName(TListItem * Item);
   virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "");
+  void __fastcall UpdateFiles();
 
   __property bool Active = { read = GetActive };
   __property TTerminal *Terminal = { read = FTerminal, write = SetTerminal };

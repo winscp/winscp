@@ -20,7 +20,7 @@ AnsiString __fastcall TProgressForm::OperationName(TFileOperation Operation)
 {
   static const int Captions[] = { PROGRESS_COPY, PROGRESS_MOVE, PROGRESS_DELETE,
     PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
-    PROGRESS_REMOTE_MOVE, PROGRESS_REMOTE_COPY };
+    PROGRESS_REMOTE_MOVE, PROGRESS_REMOTE_COPY, PROGRESS_GETPROPERTIES };
   assert((int)Operation >= 1 && ((int)Operation - 1) < LENOF(Captions));
   return LoadStr(Captions[(int)Operation - 1]);
 }
@@ -57,12 +57,13 @@ __fastcall TProgressForm::~TProgressForm()
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
 {
-  assert((FData.Operation >= foCopy) && (FData.Operation <= foRemoteCopy) &&
+  assert((FData.Operation >= foCopy) && (FData.Operation <= foGetProperties) &&
     FData.Operation != foRename );
 
   CancelButton->Enabled = !FReadOnly;
   DisconnectWhenCompleteCheck->Enabled =
-    !FReadOnly && (FData.Operation != foCalculateSize);
+    !FReadOnly && (FData.Operation != foCalculateSize) &&
+    (FData.Operation != foGetProperties);
 
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
@@ -89,6 +90,7 @@ void __fastcall TProgressForm::UpdateControls()
           break;
 
         case foSetProperties:
+        case foGetProperties:
           ShellModule = SafeLoadLibrary("shell32.dll");
           if (!ShellModule)
           {

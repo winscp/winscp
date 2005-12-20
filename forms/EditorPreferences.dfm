@@ -85,7 +85,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       ItemHeight = 13
       TabOrder = 2
       Text = 'ExternalEditorEdit'
-      OnChange = ExternalEditorEditChange
+      OnChange = ControlChange
       OnExit = ExternalEditorEditExit
     end
     object ExternalEditorBrowseButton: TButton

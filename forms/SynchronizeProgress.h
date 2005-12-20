@@ -28,7 +28,8 @@ __published:
   void __fastcall MinimizeButtonClick(TObject *Sender);
 
 public:
-  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize);
+  __fastcall TSynchronizeProgressForm(TComponent * Owner, bool AllowMinimize,
+    bool CompareOnly);
   virtual __fastcall ~TSynchronizeProgressForm();
 
   void __fastcall Start();
@@ -45,6 +46,7 @@ private:
   bool FCanceled;
   void * FShowAsModalStorage;
   bool FMinimizedByMe;
+  bool FCompareOnly;
 
   void __fastcall UpdateControls();
 };

@@ -48,7 +48,7 @@ public:
   virtual void __fastcall WriteInt64(AnsiString Name, __int64 Value) = 0;
   virtual void __fastcall WriteDateTime(const AnsiString Name, TDateTime Value) = 0;
   virtual void __fastcall WriteFloat(const AnsiString Name, double Value) = 0;
-  virtual void __fastcall WriteBinaryData(const AnsiString Name, void * Buffer, int Size) = 0;
+  virtual void __fastcall WriteBinaryData(const AnsiString Name, const void * Buffer, int Size) = 0;
 
   virtual void __fastcall WriteString(const AnsiString Name, const AnsiString Value);
   void __fastcall WriteBinaryData(const AnsiString Name, const AnsiString Value);
@@ -99,7 +99,7 @@ public:
   virtual void __fastcall WriteDateTime(const AnsiString Name, TDateTime Value);
   virtual void __fastcall WriteFloat(const AnsiString Name, double Value);
   virtual void __fastcall WriteStringRaw(const AnsiString Name, const AnsiString Value);
-  virtual void __fastcall WriteBinaryData(const AnsiString Name, void * Buffer, int Size);
+  virtual void __fastcall WriteBinaryData(const AnsiString Name, const void * Buffer, int Size);
 
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings);
 
@@ -145,7 +145,7 @@ public:
   virtual void __fastcall WriteDateTime(const AnsiString Name, TDateTime Value);
   virtual void __fastcall WriteFloat(const AnsiString Name, double Value);
   virtual void __fastcall WriteStringRaw(const AnsiString Name, const AnsiString Value);
-  virtual void __fastcall WriteBinaryData(const AnsiString Name, void * Buffer, int Size);
+  virtual void __fastcall WriteBinaryData(const AnsiString Name, const void * Buffer, int Size);
 
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings);
 

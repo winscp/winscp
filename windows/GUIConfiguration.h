@@ -150,6 +150,7 @@ private:
   bool FContinueOnError;
   bool FConfirmCommandSession;
   AnsiString FPuttyPath;
+  AnsiString FPSftpPath;
   bool FPuttyPassword;
   AnsiString FPuttySession;
   int FSynchronizeParams;
@@ -164,11 +165,14 @@ private:
   TGUICopyParamType FDefaultCopyParam;
   bool FBeepOnFinish;
   TDateTime FBeepOnFinishAfter;
+  AnsiString FDefaultPuttyPathOnly;
   AnsiString FDefaultPuttyPath;
   bool FSynchronizeBrowsing;
   TCopyParamList * FCopyParamList;
   bool FCopyParamListDefaults;
   AnsiString FCopyParamCurrent;
+  TRemoteProperties FNewDirectoryProperties;
+  int FKeepUpToDateChangeDelay;
 
 protected:
   LCID FLocale;
@@ -195,6 +199,7 @@ protected:
   TGUICopyParamType __fastcall GetCopyParamPreset(AnsiString Name);
   void __fastcall SetCopyParamIndex(int value);
   void __fastcall SetCopyParamCurrent(AnsiString value);
+  void __fastcall SetNewDirectoryProperties(const TRemoteProperties & value);
   virtual void __fastcall ModifyAll();
 
 public:
@@ -220,6 +225,8 @@ public:
   __property LCID LocaleSafe = { read = GetLocale, write = SetLocaleSafe };
   __property TStrings * Locales = { read = GetLocales };
   __property AnsiString PuttyPath = { read = FPuttyPath, write = FPuttyPath };
+  __property AnsiString DefaultPuttyPath = { read = FDefaultPuttyPath };
+  __property AnsiString PSftpPath = { read = FPSftpPath, write = FPSftpPath };
   __property bool PuttyPassword = { read = FPuttyPassword, write = FPuttyPassword };
   __property AnsiString PuttySession = { read = FPuttySession, write = FPuttySession };
   __property TDateTime IgnoreCancelBeforeFinish = { read = FIgnoreCancelBeforeFinish, write = FIgnoreCancelBeforeFinish };
@@ -232,6 +239,8 @@ public:
   __property int CopyParamIndex = { read = GetCopyParamIndex, write = SetCopyParamIndex };
   __property TGUICopyParamType CurrentCopyParam = { read = GetCurrentCopyParam };
   __property TGUICopyParamType CopyParamPreset[AnsiString Name] = { read = GetCopyParamPreset };
+  __property TRemoteProperties NewDirectoryProperties = { read = FNewDirectoryProperties, write = SetNewDirectoryProperties };
+  __property int KeepUpToDateChangeDelay = { read = FKeepUpToDateChangeDelay, write = FKeepUpToDateChangeDelay };
 };
 //---------------------------------------------------------------------------
 #define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))

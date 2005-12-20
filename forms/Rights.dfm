@@ -61,7 +61,10 @@ object RightsFrame: TRightsFrame
     Top = 3
     Width = 34
     Height = 17
+    Hint = 'Read'
     Caption = 'R'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 0
     OnClick = ControlChange
   end
@@ -71,7 +74,10 @@ object RightsFrame: TRightsFrame
     Top = 3
     Width = 34
     Height = 17
+    Hint = 'Write'
     Caption = 'W'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 1
     OnClick = ControlChange
   end
@@ -81,7 +87,10 @@ object RightsFrame: TRightsFrame
     Top = 3
     Width = 31
     Height = 17
+    Hint = 'Execute/Enter'
     Caption = 'X'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 2
     OnClick = ControlChange
   end
@@ -92,6 +101,8 @@ object RightsFrame: TRightsFrame
     Width = 34
     Height = 17
     Caption = 'R'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 3
     OnClick = ControlChange
   end
@@ -102,6 +113,8 @@ object RightsFrame: TRightsFrame
     Width = 33
     Height = 17
     Caption = 'W'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 4
     OnClick = ControlChange
   end
@@ -112,6 +125,8 @@ object RightsFrame: TRightsFrame
     Width = 31
     Height = 17
     Caption = 'X'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 5
     OnClick = ControlChange
   end
@@ -122,6 +137,8 @@ object RightsFrame: TRightsFrame
     Width = 34
     Height = 17
     Caption = 'R'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 6
     OnClick = ControlChange
   end
@@ -132,6 +149,8 @@ object RightsFrame: TRightsFrame
     Width = 33
     Height = 17
     Caption = 'W'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 7
     OnClick = ControlChange
   end
@@ -142,6 +161,8 @@ object RightsFrame: TRightsFrame
     Width = 31
     Height = 17
     Caption = 'X'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 8
     OnClick = ControlChange
   end

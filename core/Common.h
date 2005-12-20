@@ -44,12 +44,16 @@ void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
   AnsiString & Params, AnsiString & Dir);
 AnsiString __fastcall ExtractProgram(AnsiString Command);
 AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
+AnsiString __fastcall ExpandFileNameCommand(const AnsiString Command,
+  const AnsiString FileName);
+void __fastcall ReformatFileNameCommand(AnsiString & Command);
 bool __fastcall IsDisplayableStr(const AnsiString Str);
 AnsiString __fastcall CharToHex(char Ch);
 AnsiString __fastcall StrToHex(const AnsiString Str);
 AnsiString __fastcall HexToStr(const AnsiString Hex);
 unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars = 0);
 AnsiString __fastcall DecodeUrlChars(AnsiString S);
+AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore = "");
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
 int __fastcall CancelAnswer(int Answers);
 int __fastcall AbortAnswer(int Answers);

@@ -8,6 +8,7 @@
 #include <DiscMon.hpp>
 #include <Exceptions.h>
 #include "GUIConfiguration.h"
+#include "ScpMain.h"
 #include "TextsCore.h"
 #include "SynchronizeController.h"
 //---------------------------------------------------------------------------
@@ -75,7 +76,9 @@ void __fastcall TSynchronizeController::StartStop(TObject * Sender,
       }
       FSynchronizeMonitor->Filters = Filters;
       FSynchronizeMonitor->MaxDirectories = 0;
+      FSynchronizeMonitor->ChangeDelay = GUIConfiguration->KeepUpToDateChangeDelay;
       FSynchronizeMonitor->OnTooManyDirectories = SynchronizeTooManyDirectories;
+      FSynchronizeMonitor->OnDirectoriesChange = SynchronizeDirectoriesChange;
       FSynchronizeMonitor->OnFilter = SynchronizeFilter;
       FSynchronizeMonitor->AddDirectory(FSynchronizeParams.LocalDirectory,
         FLAGSET(FSynchronizeParams.Options, soRecurse));
@@ -124,18 +127,48 @@ void __fastcall TSynchronizeController::SynchronizeChange(
 
     if (FOnSynchronize != NULL)
     {
-      TSynchronizeStats Stats;
       // this is completelly wrong as the options structure
       // can contain non-root specific options in future
       TSynchronizeOptions * Options =
         ((LocalDirectory == RootLocalDirectory) ? FOptions : NULL);
+      TSynchronizeChecklist * Checklist = NULL;
       FOnSynchronize(this, LocalDirectory, RemoteDirectory, FCopyParam,
-        FSynchronizeParams, &Stats, Options, false);
-      // note that ObsoleteDirectories may be non-zero even if nothing has changed
-      // so this is sub-optimal
-      SubdirsChanged =
-        (FLAGSET(FSynchronizeParams.Options, soRecurse) &&
-         ((Stats.NewDirectories + Stats.RemovedDirectories + Stats.ObsoleteDirectories) > 0));
+        FSynchronizeParams, &Checklist, Options, false);
+      try
+      {
+        if (FLAGSET(FSynchronizeParams.Options, soRecurse))
+        {
+          SubdirsChanged = false;
+          assert(Checklist != NULL);
+          for (int Index = 0; Index < Checklist->Count; Index++)
+          {
+            const TSynchronizeChecklist::TItem * Item = Checklist->Item[Index];
+            // note that there may be action saDeleteRemote even if nothing has changed
+            // so this is sub-optimal
+            if (Item->IsDirectory)
+            {
+              if ((Item->Action == TSynchronizeChecklist::saUploadNew) ||
+                  (Item->Action == TSynchronizeChecklist::saDeleteRemote))
+              {
+                SubdirsChanged = true;
+                break;
+              }
+              else
+              {
+                assert(false);
+              }
+            }
+          }
+        }
+        else
+        {
+          SubdirsChanged = false;
+        }
+      }
+      __finally
+      {
+        delete Checklist;
+      }
     }
   }
   catch(Exception & E)
@@ -221,4 +254,9 @@ void __fastcall TSynchronizeController::SynchronizeTooManyDirectories(
     FOnTooManyDirectories(this, MaxDirectories);
   }
 }
-
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeController::SynchronizeDirectoriesChange(
+  TObject * /*Sender*/, int Directories)
+{
+  SynchronizeLog(slDirChange, FMTLOAD(SYNCHRONIZE_START, (Directories)));
+}

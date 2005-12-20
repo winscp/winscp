@@ -4,7 +4,7 @@ unit TBXStatusBars;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXStatusBars.pas 15 2004-05-15 04:45:26Z Alex@ZEISS $
+// Id: TBXStatusBars.pas 15 2004-05-15 04:45:26Z Alex@ZEISS
 
 interface
 

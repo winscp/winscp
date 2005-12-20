@@ -55,11 +55,11 @@ void __fastcall ReconfigureEditorForm(TForm * Form)
 class TFindDialogEx : public TFindDialog
 {
 public:
-    __fastcall virtual TFindDialogEx(TComponent * AOwner) : TFindDialog(AOwner)
+  __fastcall virtual TFindDialogEx(TComponent * AOwner) : TFindDialog(AOwner)
   {
     FHelpMsg = RegisterWindowMessage(HELPMSGSTRING);
   }
-  
+
 protected:
   unsigned int FHelpMsg;
 
@@ -84,11 +84,11 @@ protected:
 class TReplaceDialogEx : public TReplaceDialog
 {
 public:
-    __fastcall virtual TReplaceDialogEx(TComponent * AOwner) : TReplaceDialog(AOwner)
+  __fastcall virtual TReplaceDialogEx(TComponent * AOwner) : TReplaceDialog(AOwner)
   {
     FHelpMsg = RegisterWindowMessage(HELPMSGSTRING);
   }
-  
+
 protected:
   unsigned int FHelpMsg;
 
@@ -248,6 +248,7 @@ void __fastcall TEditorForm::FormCloseQuery(TObject * /*Sender*/,
 {
   if (EditorMemo->Modified)
   {
+    SetFocus();
     int Answer = MessageDialog(LoadStr(SAVE_CHANGES), qtConfirmation,
       qaYes | qaNo | qaCancel);
     CanClose = (Answer != qaCancel);

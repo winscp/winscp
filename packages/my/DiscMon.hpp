@@ -32,6 +32,8 @@ typedef void __fastcall (__closure *TDiscMonitorFilter)(System::TObject* Sender,
 
 typedef void __fastcall (__closure *TDiscMonitorTooManyDirectories)(System::TObject* Sender, int &MaxDirectories);
 
+typedef void __fastcall (__closure *TDiscMonitorDirectoriesChange)(System::TObject* Sender, int Directories);
+
 class DELPHICLASS TDiscMonitorThread;
 class PASCALIMPLEMENTATION TDiscMonitorThread : public Compthread::TCompThread 
 {
@@ -42,6 +44,7 @@ private:
 	TDiscMonitorInvalid FOnInvalid;
 	TDiscMonitorSynchronize FOnSynchronize;
 	TDiscMonitorFilter FOnFilter;
+	TDiscMonitorDirectoriesChange FOnDirectoriesChange;
 	Classes::TStrings* FDirectories;
 	unsigned FFilters;
 	unsigned FDestroyEvent;
@@ -51,8 +54,10 @@ private:
 	AnsiString FNotifiedDirectory;
 	bool FSubdirsChanged;
 	AnsiString FInvalidMessage;
+	int FNotifiedDirectories;
 	void __fastcall InformChange(void);
 	void __fastcall InformInvalid(void);
+	void __fastcall InformDirectoriesChange(void);
 	void __fastcall SetDirectories(const Classes::TStrings* Value);
 	void __fastcall SetFilters(unsigned Value);
 	void __fastcall SetSubTree(bool Value);
@@ -72,6 +77,7 @@ public:
 	__property TDiscMonitorInvalid OnInvalid = {read=FOnInvalid, write=FOnInvalid};
 	__property TDiscMonitorSynchronize OnSynchronize = {read=FOnSynchronize, write=FOnSynchronize};
 	__property TDiscMonitorFilter OnFilter = {read=FOnFilter, write=FOnFilter};
+	__property TDiscMonitorDirectoriesChange OnDirectoriesChange = {read=FOnDirectoriesChange, write=FOnDirectoriesChange};
 	__property bool SubTree = {read=FSubTree, write=SetSubTree, nodefault};
 	__property int ChangeDelay = {read=FChangeDelay, write=FChangeDelay, default=500};
 };
@@ -97,6 +103,7 @@ private:
 	TDiscMonitorSynchronize FOnSynchronize;
 	TDiscMonitorFilter FOnFilter;
 	TDiscMonitorTooManyDirectories FOnTooManyDirectories;
+	TDiscMonitorDirectoriesChange FOnDirectoriesChange;
 	bool FShowMsg;
 	bool FPending;
 	int FMaxDirectories;
@@ -113,6 +120,7 @@ protected:
 	void __fastcall Change(System::TObject* Sender, const AnsiString Directory, bool &SubdirsChanged);
 	void __fastcall Invalid(System::TObject* Sender, const AnsiString Directory, const AnsiString ErrorStr);
 	void __fastcall Filter(System::TObject* Sender, const AnsiString DirectoryName, bool &Add);
+	void __fastcall DirectoriesChange(System::TObject* Sender, int Directories);
 	void __fastcall DoSynchronize(System::TObject* Sender, Classes::TThreadMethod Method);
 	
 public:
@@ -133,6 +141,7 @@ __published:
 	__property TDiscMonitorSynchronize OnSynchronize = {read=FOnSynchronize, write=FOnSynchronize};
 	__property TDiscMonitorFilter OnFilter = {read=FOnFilter, write=FOnFilter};
 	__property TDiscMonitorTooManyDirectories OnTooManyDirectories = {read=FOnTooManyDirectories, write=FOnTooManyDirectories};
+	__property TDiscMonitorDirectoriesChange OnDirectoriesChange = {read=FOnDirectoriesChange, write=FOnDirectoriesChange};
 	__property TMonitorFilters Filters = {read=FFilters, write=SetFilters, default=1};
 	__property bool SubTree = {read=GetSubTree, write=SetSubTree, default=1};
 	__property bool Active = {read=FActive, write=SetActive, default=0};

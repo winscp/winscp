@@ -9,6 +9,22 @@
 // WM_INTERUPT_IDLE = WM_WINSCP_USER + 3 (in windows/ConsoleRunner.cpp)
 // WM_COMPONENT_HIDE = WM_WINSCP_USER + 4 (forms/CustomScpExplorer.cpp)
 //---------------------------------------------------------------------------
+#define C(Property) (Property != rhc.Property) ||
+struct TSynchronizeChecklistConfiguration
+{
+  AnsiString WindowParams;
+  AnsiString ListLayout;
+  bool __fastcall operator !=(TSynchronizeChecklistConfiguration & rhc)
+    { return C(WindowParams) C(ListLayout) 0; };
+};
+//---------------------------------------------------------------------------
+struct TConsoleWinConfiguration
+{
+  AnsiString WindowSize;
+  bool __fastcall operator !=(TConsoleWinConfiguration & rhc)
+    { return C(WindowSize) 0; };
+};
+//---------------------------------------------------------------------------
 class TCustomWinConfiguration : public TGUIConfiguration
 {
 static const int MaxHistoryCount = 50;
@@ -18,12 +34,16 @@ private:
   bool FShowAdvancedLoginOptions;
   TStringList * FHistory;
   TStrings * FEmptyHistory;
+  TSynchronizeChecklistConfiguration FSynchronizeChecklist;
+  TConsoleWinConfiguration FConsoleWin;
 
   void __fastcall SetInterface(TInterface value);
   void __fastcall SetLogView(TLogView value);
   void __fastcall SetShowAdvancedLoginOptions(bool value);
   void __fastcall SetHistory(const AnsiString Index, TStrings * value);
   TStrings * __fastcall GetHistory(const AnsiString Index);
+  void __fastcall SetSynchronizeChecklist(TSynchronizeChecklistConfiguration value);
+  void __fastcall SetConsoleWin(TConsoleWinConfiguration value);
 
 protected:
   virtual void __fastcall SaveSpecial(THierarchicalStorage * Storage);
@@ -40,6 +60,8 @@ public:
   __property TInterface Interface = { read = FInterface, write = SetInterface };
   __property bool ShowAdvancedLoginOptions = { read = FShowAdvancedLoginOptions, write = SetShowAdvancedLoginOptions};
   __property TStrings * History[AnsiString Name] = { read = GetHistory, write = SetHistory };
+  __property TSynchronizeChecklistConfiguration SynchronizeChecklist = { read = FSynchronizeChecklist, write = SetSynchronizeChecklist };
+  __property TConsoleWinConfiguration ConsoleWin = { read = FConsoleWin, write = SetConsoleWin };
 };
 //---------------------------------------------------------------------------
 #define CustomWinConfiguration \

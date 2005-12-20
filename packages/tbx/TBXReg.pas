@@ -4,7 +4,7 @@ unit TBXReg;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXReg.pas 16 2004-05-26 02:02:55Z Alex@ZEISS $
+// Id: TBXReg.pas 16 2004-05-26 02:02:55Z Alex@ZEISS
 
 interface
 
@@ -15,7 +15,7 @@ uses
   Windows, Classes, Controls, SysUtils, Graphics, ImgList, Dialogs,
   {$IFDEF JR_D6} DesignIntf, DesignEditors, VCLEditors, {$ELSE} DsgnIntf, {$ENDIF}
   TB2Reg, TB2Toolbar, TB2Item, TBX, {$IFNDEF MPEXCLUDE}TBXMDI, TBXSwitcher,{$ENDIF} TB2DsgnItemEditor,
-  TBXExtItems, TBXLists, {$IFNDEF MPEXCLUDE}TBXDkPanels, TBXToolPals,{$ENDIF} TBXStatusBars;
+  TBXExtItems, TBXLists, {$IFNDEF MPEXCLUDE}TBXDkPanels,{$ENDIF} TBXToolPals, TBXStatusBars;
 
 procedure Register;
 
@@ -419,20 +419,20 @@ procedure Register;
 begin
   RegisterComponents('Toolbar2000', [TTBXDock, {$IFNDEF MPEXCLUDE}TTBXMultiDock,{$ENDIF} TTBXToolbar,
     {$IFNDEF MPEXCLUDE}TTBXToolWindow, TTBXDockablePanel,{$ENDIF} TTBXPopupMenu, {$IFNDEF MPEXCLUDE}TTBXSwitcher, TTBXMRUList,
-    TTBXMDIHandler, TTBXPageScroller, TTBXColorSet, TTBXAlignmentPanel,
+    TTBXMDIHandler, TTBXPageScroller,{$ENDIF} TTBXColorSet, {$IFNDEF MPEXCLUDE}TTBXAlignmentPanel,
     TTBXLabel, TTBXLink, TTBXButton, TTBXCheckBox, TTBXRadioButton,{$ENDIF} TTBXStatusBar]);
   RegisterNoIcon([TTBXItem, TTBXSubMenuItem, TTBXSeparatorItem,
-    {$IFNDEF MPEXCLUDE}TTBXVisibilityToggleItem,{$ENDIF} TTBXLabelItem, {$IFNDEF MPEXCLUDE}TTBXMRUListItem, TTBXColorItem,
-    TTBXMDIWindowItem, TTBXEditItem, TTBXSpinEditItem, TTBXDropDownItem,{$ENDIF}
-    TTBXComboBoxItem, TTBXStringList{$IFNDEF MPEXCLUDE}, TTBXUndoList, TTBXToolPalette, TTBXColorPalette{$ENDIF}]);
+    {$IFNDEF MPEXCLUDE}TTBXVisibilityToggleItem,{$ENDIF} TTBXLabelItem, {$IFNDEF MPEXCLUDE}TTBXMRUListItem,{$ENDIF} TTBXColorItem,
+    {$IFNDEF MPEXCLUDE}TTBXMDIWindowItem, TTBXEditItem, TTBXSpinEditItem,{$ENDIF} TTBXDropDownItem,
+    TTBXComboBoxItem, TTBXStringList{$IFNDEF MPEXCLUDE}, TTBXUndoList, TTBXToolPalette{$ENDIF}, TTBXColorPalette]);
 {$IFDEF COMPATIBLE_CTL}
   RegisterNoIcon([TTBXList, TTBXComboItem, TTBXComboList]);
 {$ENDIF}
 
   RegisterClasses([TTBXItem, TTBXSubMenuItem, TTBXSeparatorItem,
-    {$IFNDEF MPEXCLUDE}TTBXVisibilityToggleItem,{$ENDIF} TTBXLabelItem, {$IFNDEF MPEXCLUDE}TTBXMRUListItem, TTBXColorItem,
-    TTBXMDIWindowItem, TTBXEditItem, TTBXSpinEditItem, TTBXDropDownItem,{$ENDIF}
-    TTBXComboBoxItem, TTBXStringList{$IFNDEF MPEXCLUDE}, TTBXUndoList, TTBXToolPalette, TTBXColorPalette{$ENDIF}]);
+    {$IFNDEF MPEXCLUDE}TTBXVisibilityToggleItem,{$ENDIF} TTBXLabelItem, {$IFNDEF MPEXCLUDE}TTBXMRUListItem,{$ENDIF} TTBXColorItem,
+    {$IFNDEF MPEXCLUDE}TTBXMDIWindowItem, TTBXEditItem, TTBXSpinEditItem,{$ENDIF} TTBXDropDownItem,
+    TTBXComboBoxItem, TTBXStringList{$IFNDEF MPEXCLUDE}, TTBXUndoList, TTBXToolPalette{$ENDIF}, TTBXColorPalette]);
 {$IFDEF COMPATIBLE_CTL}
   RegisterClasses([TTBXList, TTBXComboItem, TTBXComboList]);
 {$ENDIF}
@@ -441,6 +441,7 @@ begin
   RegisterComponentEditor(TTBXToolbar, TTBXItemsEditor);
   RegisterComponentEditor(TTBXPopupMenu, TTBXItemsEditor);
   RegisterPropertyEditor(TypeInfo(string), TTBXCustomItem, 'Caption', TMLStringProperty);
+  RegisterPropertyEditor(TypeInfo(string), TTBXCustomItem, 'Hint', TMLStringProperty);
   RegisterPropertyEditor(TypeInfo(string), TTBXLabelItem, 'Caption', TCaptionProperty);
   RegisterPropertyEditor(TypeInfo(string), TTBToolbar, 'ChevronHint', TMLStringProperty);
   RegisterPropertyEditor(TypeInfo(string), TTBXToolbar, 'ChevronHint', TMLStringProperty);
@@ -469,20 +470,20 @@ begin
   {$IFNDEF MPEXCLUDE}
   TBRegisterItemClass(TTBXMRUListItem, 'New TBX MRU List Item', HInstance);
   {$ENDIF}
-  {$IFNDEF MPEXCLUDE}
   TBRegisterItemClass(TTBXColorItem, 'New TBX Color Item', HInstance);
+  {$IFNDEF MPEXCLUDE}
   TBRegisterItemClass(TTBXMDIWindowItem, 'New TBX MDI Window Item', HInstance);
   TBRegisterItemClass(TTBXEditItem, 'New TBX Edit Item', HInstance);
   TBRegisterItemClass(TTBXSpinEditItem, 'New TBX Spin Edit Item', HInstance);
-  TBRegisterItemClass(TTBXDropDownItem, 'New TBX Drop Down Item', HInstance);
   {$ENDIF}
+  TBRegisterItemClass(TTBXDropDownItem, 'New TBX Drop Down Item', HInstance);
   TBRegisterItemClass(TTBXComboBoxItem, 'New TBX Combo Box Item', HInstance);
   TBRegisterItemClass(TTBXStringList, 'New TBX String List', HInstance);
   {$IFNDEF MPEXCLUDE}
   TBRegisterItemClass(TTBXUndoList, 'New TBX Undo List', HInstance);
   TBRegisterItemClass(TTBXToolPalette, 'New TBX Tool Palette', HInstance);
-  TBRegisterItemClass(TTBXColorPalette, 'New TBX Color Palette', HInstance);
   {$ENDIF}
+  TBRegisterItemClass(TTBXColorPalette, 'New TBX Color Palette', HInstance);
 {$IFDEF COMPATIBLE_CTL}
   TBRegisterItemClass(TTBXComboItem, 'New TBX Combo Item (use TBX DropDown instead)', HInstance);
   TBRegisterItemClass(TTBXList, 'New TBX List (use TBX String List instead)', HInstance);

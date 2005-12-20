@@ -401,6 +401,7 @@ protected:
 	void __fastcall StartFileDeleteThread(void);
 	virtual void __fastcall SetShowHiddenFiles(bool Value);
 	HIDESBASE MESSAGE void __fastcall WMDestroy(Messages::TWMNoParams &Msg);
+	virtual int __fastcall SecondaryColumnHeader(int Index);
 	
 public:
 	__property int DriveType = {read=FDriveType, nodefault};

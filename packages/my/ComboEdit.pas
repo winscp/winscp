@@ -84,6 +84,63 @@ type
     procedure SelectAll;
   end;
 
+type
+  TComboEdit = class(TCustomComboEdit)
+  published
+    property AutoSelect;
+    property ButtonHint;
+    property BorderStyle;
+    property CharCase;
+    property ClickKey;
+    property Color;
+    property Ctl3D;
+    property DirectInput;
+    property DragCursor;
+    property DragMode;
+    property EditMask;
+    property Enabled;
+    property Font;
+    property ButtonWidth;
+    property HideSelection;
+    property Anchors;
+    property BiDiMode;
+    property Constraints;
+    property DragKind;
+    property ParentBiDiMode;
+    property ImeMode;
+    property ImeName;
+    property ParentColor;
+    property ParentCtl3D;
+    property ParentFont;
+    property ParentShowHint;
+    property PopupMenu;
+    property ReadOnly;
+    property ShowHint;
+    property TabOrder;
+    property TabStop;
+    property Text;
+    property Visible;
+    property OnButtonClick;
+    property OnChange;
+    property OnClick;
+    property OnDblClick;
+    property OnDragDrop;
+    property OnDragOver;
+    property OnEndDrag;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+    property OnKeyPress;
+    property OnKeyUp;
+    property OnMouseDown;
+    property OnMouseMove;
+    property OnMouseUp;
+    property OnStartDrag;
+    property OnContextPopup;
+    property OnEndDock;
+    property OnStartDock;
+  end;
+
   { TFileDirEdit }
 { The common parent of TFilenameEdit and TDirectoryEdit          }
 { For internal use only; it's not intended to be used separately }
@@ -323,7 +380,7 @@ uses
 
 procedure Register;
 begin
-  RegisterComponents('Martin', [TFilenameEdit, TDirectoryEdit]);
+  RegisterComponents('Martin', [TComboEdit, TFilenameEdit, TDirectoryEdit]);
 end;
 
 { Utility functions }
@@ -503,12 +560,16 @@ begin
 end;
 
 procedure TCustomComboEdit.KeyPress(var Key: Char);
+var
+  OrigKey: Char;
 begin
-  if (Key = Char(VK_RETURN)) or (Key = Char(VK_ESCAPE)) then
+  if (Key = Char(VK_RETURN)) or (Key = Char(VK_ESCAPE)) or (Key = #10) then
   begin
+    OrigKey := Key;
     { must catch and remove this, since is actually multi-line }
     GetParentForm(Self).Perform(CM_DIALOGKEY, Byte(Key), 0);
-    if Key = Char(VK_RETURN) then begin
+    if Key = OrigKey then 
+    begin
       inherited KeyPress(Key);
       Key := #0;
       Exit;

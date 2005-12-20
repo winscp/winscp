@@ -29,31 +29,37 @@
 #define fcRemoteTree       0x1C
 #define fcTransferCombo    0x1D
 #define fcSessionToolbar   0x1E
+#define fcCustomCommandsBand 0x1F
+#define fcColorMenu        0x20
+#define fcColorPalette     0x21
 
-#define fcExplorerMenuBand        0x21
-#define fcExplorerAddressBand     0x22
-#define fcExplorerToolbarBand     0x23
-#define fcExplorerSelectionBand   0x24
-#define fcExplorerSessionBand     0x25
-#define fcExplorerPreferencesBand 0x26
-#define fcExplorerSortBand        0x27
-#define fcExplorerUpdatesBand     0x28
-#define fcExplorerTransferBand    0x29
+#define fcExplorerMenuBand        0x31
+#define fcExplorerAddressBand     0x32
+#define fcExplorerToolbarBand     0x33
+#define fcExplorerSelectionBand   0x34
+#define fcExplorerSessionBand     0x35
+#define fcExplorerPreferencesBand 0x36
+#define fcExplorerSortBand        0x37
+#define fcExplorerUpdatesBand     0x38
+#define fcExplorerTransferBand    0x39
+#define fcExplorerCustomCommandsBand 0x40
 
-#define fcCommanderMenuBand             0x31
-#define fcCommanderSessionBand          0x32
-#define fcCommanderPreferencesBand      0x33
-#define fcCommanderSelectionBand        0x34
-#define fcCommanderToolbarBand          0x35
-#define fcCommanderSortBand             0x36
-#define fcCommanderCommandsBand         0x37
-#define fcCommanderUpdatesBand          0x38
-#define fcCommanderTransferBand         0x39
+#define fcCommanderMenuBand             0x51
+#define fcCommanderSessionBand          0x52
+#define fcCommanderPreferencesBand      0x53
+#define fcCommanderSelectionBand        0x54
+#define fcCommanderToolbarBand          0x55
+#define fcCommanderSortBand             0x56
+#define fcCommanderCommandsBand         0x57
+#define fcCommanderUpdatesBand          0x58
+#define fcCommanderTransferBand         0x59
+#define fcCommanderUploadDownloadBand   0x60
+#define fcCommanderCustomCommandsBand   0x61
 
-#define fcCommanderLocalHistoryBand     0x41
-#define fcCommanderLocalNavigationBand  0x42
-#define fcCommanderRemoteHistoryBand    0x43
-#define fcCommanderRemoteNavigationBand 0x44
+#define fcCommanderLocalHistoryBand     0x71
+#define fcCommanderLocalNavigationBand  0x72
+#define fcCommanderRemoteHistoryBand    0x73
+#define fcCommanderRemoteNavigationBand 0x74
 //---------------------------------------------------------------------------
 class TNonVisualDataModule : public TDataModule
 {
@@ -228,7 +234,7 @@ __published:    // IDE-managed Components
   TAction *RemoteTreeAction;
   TAction *LocalTreeAction;
   TAction *GoToTreeAction;
-  TAction *EditNewAction;
+  TAction *NewFileAction;
   TAction *RemoteCopyToFocusedAction;
   TAction *RemoteCopyToAction;
   TAction *UrlToClipboardAction;
@@ -319,7 +325,6 @@ __published:    // IDE-managed Components
   TTBXItem *AddToBookmarks4;
   TTBXItem *CopyPathtoClipboard6;
   TTBXSeparatorItem *N79;
-  TTBXItem *CreateDirectory3;
   TTBXPopupMenu *LocalDirViewPopup;
   TTBXSubmenuItem *GoTo5;
   TTBXItem *OpenDirectoryBookmark4;
@@ -433,6 +438,27 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem12;
   TAction *EditorListCustomizeAction;
   TAction *RestoreSelectionAction;
+  TAction *CurrentEditFocusedAction;
+  TAction *NewLinkAction;
+  TAction *NewDirAction;
+  TTBXSubmenuItem *TBXSubmenuItem26;
+  TTBXItem *TBXItem135;
+  TTBXItem *TBXItem136;
+  TTBXItem *TBXItem209;
+  TAction *QueueDisconnectOnceEmptyAction;
+  TTBXItem *TBXItem13;
+  TAction *LocalCopyAction;
+  TAction *RemoteCopyAction;
+  TAction *CommanderUploadDownloadBandAction;
+  TTBXItem *TBXItem14;
+  TAction *ExplorerCustomCommandsBandAction;
+  TAction *CommanderCustomCommandsBandAction;
+  TTBXItem *TBXItem15;
+  TTBXItem *TBXItem16;
+  TAction *CustomCommandsBandAction;
+  TAction *ColorPickAction;
+  TAction *ColorDefaultAction;
+  TAction *ColorMenuAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -449,6 +475,8 @@ private:
 protected:
   void __fastcall CreateSessionListMenu(TAction * Action);
   void __fastcall CreateCustomCommandsMenu(TAction * Action);
+  void __fastcall CreateCustomCommandsMenu(TTBCustomItem * Menu, bool OnFocused,
+    bool Toolbar);
   void __fastcall CreateOpenedSessionListMenu(TAction * Action);
   TCustomDirView * __fastcall DirView(TOperationSide Side) { return ScpExplorer->DirView(Side); }
   void __fastcall SessionItemClick(TObject * Sender);
@@ -459,6 +487,7 @@ protected:
   void __fastcall DoIdle();
   inline void __fastcall ShowUpdatesUpdate();
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
+
 public:
   __fastcall TNonVisualDataModule(TComponent * Owner);
   virtual __fastcall ~TNonVisualDataModule();
@@ -467,6 +496,7 @@ public:
   void __fastcall ExplorerShortcuts();
   TShortCut __fastcall OpenSessionShortCut(int Index);
   void __fastcall UpdateNonVisibleActions();
+  void __fastcall UpdateCustomCommandsToolbar(TTBXToolbar * Toolbar);
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };

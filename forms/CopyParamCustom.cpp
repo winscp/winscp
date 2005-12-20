@@ -6,6 +6,7 @@
 #include <TextsWin.h>
 #include <GUIConfiguration.h>
 #include <GUITools.h>
+#include <Tools.h>
 #include "CopyParamCustom.h"
 #include "VCLCommon.h"
 //---------------------------------------------------------------------------
@@ -14,11 +15,12 @@
 #pragma link "CopyParams"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam, int Options)
+bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam,
+  int CopyParamAttrs)
 {
   bool Result;
   TCopyParamCustomDialog * Dialog = new TCopyParamCustomDialog(
-    Application, Options, 0);
+    Application, CopyParamAttrs, 0);
   try
   {
     Result = Dialog->Execute(CopyParam);
@@ -32,15 +34,12 @@ bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam, int Options)
 //---------------------------------------------------------------------------
 // Dummy parameter distinguishes the constructor from Object Pascals TForm::CreateNew
 __fastcall TCopyParamCustomDialog::TCopyParamCustomDialog(TComponent * Owner,
-  int Options, int /*Dummy*/)
+  int CopyParamAttrs, int /*Dummy*/)
   : TForm(Owner)
 {
   UseSystemSettings(this);
   CopyParamsFrame->Direction = pdAll;
-  if (Options >= 0)
-  {
-    CopyParamsFrame->Options = Options;
-  }
+  CopyParamsFrame->CopyParamAttrs = CopyParamAttrs;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamCustomDialog::Execute(TCopyParamType & CopyParam)
@@ -65,7 +64,7 @@ void __fastcall TCopyParamCustomDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    CopyParamsFrame->Validate();
+    ExitActiveControl(this);
   }
 }
 //---------------------------------------------------------------------------

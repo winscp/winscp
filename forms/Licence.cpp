@@ -8,12 +8,12 @@
 #include <VCLCommon.h>
 #include "WinInterface.h"
 #include "Licence.h"
+#include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-int LicenceStr[2] = { LICENCE, LICENCE_PUTTY };
-int LicenceCount[2] = { 17, 2 };
+AnsiString LicenceStr[2] = { "LICENCE", "LICENCE_PUTTY" };
 //---------------------------------------------------------------------------
 void __fastcall DoLicenceDialog(TLicence Licence)
 {
@@ -58,16 +58,18 @@ void __fastcall TLicenceDialog::SetLicence(TLicence value)
   {
     FLicence = value;
     TStrings * LicenceList = new TStringList();
-    AnsiString ALicence = LoadStr(LicenceStr[FLicence]);
-    for (Integer i = 1; i < LicenceCount[FLicence]; i++)
+    try
     {
-      ALicence += LoadStr(LicenceStr[FLicence] + i);
+      LicenceList->Text = ReadResource(LicenceStr[FLicence]);
+      assert(LicenceList->Count > 0);
+      Caption = FMTLOAD(LICENCE_CAPTION, (LicenceList->Strings[0]));
+      LicenceList->Delete(0);
+      LicenceText = LicenceList->Text;
     }
-    LicenceList->Text = ALicence;
-    assert(LicenceList->Count > 0);
-    Caption = FMTLOAD(LICENCE_CAPTION, (LicenceList->Strings[0]));
-    LicenceList->Delete(0);
-    LicenceText = LicenceList->Text;
+    __finally
+    {
+      delete LicenceList;
+    }
   }
 }
 //---------------------------------------------------------------------------

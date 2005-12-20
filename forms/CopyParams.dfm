@@ -79,13 +79,6 @@ object CopyParamsFrame: TCopyParamsFrame
     Height = 146
     Caption = 'Attributes'
     TabOrder = 2
-    inline RightsFrame: TRightsFrame
-      Left = 7
-      Top = 36
-      Width = 163
-      Height = 87
-      TabOrder = 1
-    end
     object PreserveRightsCheck: TCheckBox
       Left = 12
       Top = 16
@@ -99,13 +92,38 @@ object CopyParamsFrame: TCopyParamsFrame
     end
     object RemotePreserveTimeCheck: TCheckBox
       Left = 12
-      Top = 121
+      Top = 69
       Width = 156
       Height = 17
       Caption = 'Preserve timesta&mp'
       ParentShowHint = False
       ShowHint = True
       TabOrder = 2
+      OnClick = ControlChange
+    end
+    object RightsEdit: TComboEdit
+      Left = 30
+      Top = 36
+      Width = 109
+      Height = 21
+      ButtonHint = 'Configure permissions'
+      ClickKey = 16397
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 1
+      Text = 'RightsEdit'
+      OnButtonClick = RightsEditButtonClick
+      OnExit = RightsEditExit
+    end
+    object IgnorePermErrorsCheck: TCheckBox
+      Left = 12
+      Top = 94
+      Width = 156
+      Height = 17
+      Caption = 'Ign&ore permission errors'
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 3
       OnClick = ControlChange
     end
   end

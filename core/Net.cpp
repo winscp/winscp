@@ -145,10 +145,12 @@ void SSHOldKeyfileWarning(void)
   // no reference to TSecureShell instace available
 }
 //---------------------------------------------------------------------------
-void SSHDisplayBanner(void * frontend, const char * banner, int size)
+void SSHDisplayBanner(void * frontend, const char * banner, int size, int * log)
 {
   assert(frontend);
   AnsiString Banner(banner, size);
-  ((TSecureShell *)frontend)->DisplayBanner(Banner);
+  bool Log = (*log != 0);
+  ((TSecureShell *)frontend)->DisplayBanner(Banner, Log);
+  *log = (Log ? 1 : 0);
 }
 

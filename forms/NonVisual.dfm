@@ -67,7 +67,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = CurrentOpenAction
     end
     object CurrentEditMenuItem: TTBXItem
-      Action = CurrentEditAction
+      Action = CurrentEditFocusedAction
     end
     object CurrentCopyMenuItem: TTBXItem
       Action = CurrentCopyFocusedAction
@@ -238,7 +238,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Toolbar Operation (selected + rename + mkdir + close)'
       Caption = '&Edit'
       HelpKeyword = 'task_edit'
-      Hint = 'Edit|Edit selected file'
+      Hint = 'Edit|Edit selected file(s)'
       ImageIndex = 57
     end
     object HideColumnAction: TAction
@@ -558,6 +558,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show transfer settings toolbar'
     end
+    object ExplorerCustomCommandsBandAction: TAction
+      Tag = 7
+      Category = 'View'
+      Caption = 'Custom Co&mmand Buttons'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Hide/show custom commands toolbar'
+    end
     object ViewLogAction: TAction
       Tag = 15
       Category = 'View'
@@ -737,6 +744,20 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Commands Buttons'
       HelpKeyword = 'ui_toolbars'
       Hint = 'Hide/show commands toolbar'
+    end
+    object CommanderUploadDownloadBandAction: TAction
+      Tag = 11
+      Category = 'View'
+      Caption = 'Upload/&Download Buttons'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Hide/show upload/download toolbar'
+    end
+    object CommanderCustomCommandsBandAction: TAction
+      Tag = 11
+      Category = 'View'
+      Caption = 'Custom Co&mmand Buttons'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Hide/show custom commands toolbar'
     end
     object CommanderLocalHistoryBandAction: TAction
       Tag = 11
@@ -1245,7 +1266,9 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Focused Operation'
       Caption = 'Ed&it (alternative)'
       HelpKeyword = 'task_edit'
-      Hint = 'Edit (alternative)|Edit selected file using alternative editor'
+      Hint = 
+        'Edit (alternative)|Edit selected file(s) using alternative edito' +
+        'r'
     end
     object CurrentOpenAction: TAction
       Tag = 15
@@ -1272,7 +1295,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object AddEditLinkAction: TAction
       Tag = 15
       Category = 'Command'
-      Caption = 'Add/Edit &Link...'
+      Caption = 'Edit &Link...'
       HelpKeyword = 'task_link'
       Hint = 
         'Add/edit link|Add new link/shortcut or edit selected link/shortc' +
@@ -1296,6 +1319,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Select session|Select opened session to activate'
       ImageIndex = 62
     end
+    object NewLinkAction: TAction
+      Tag = 12
+      Category = 'Command'
+      Caption = '&Link...'
+      HelpKeyword = 'task_link'
+      Hint = 'Create link|Create new link/shortcut'
+      ImageIndex = 60
+    end
     object CustomCommandsAction: TAction
       Tag = 14
       Category = 'Command'
@@ -1317,6 +1348,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Enter...'
       HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
       Hint = 'Enter ad hoc custom command'
+      ImageIndex = 90
     end
     object CheckForUpdatesAction: TAction
       Tag = 15
@@ -1485,12 +1517,12 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 75
       ShortCut = 16470
     end
-    object EditNewAction: TAction
+    object NewFileAction: TAction
       Tag = 15
       Category = 'Command'
-      Caption = 'Edit &New File...'
+      Caption = '&File...'
       HelpKeyword = 'task_edit'
-      Hint = 'Edit new file|Create new file and open it in editor'
+      Hint = 'Create file|Create new file and open it in editor'
       ImageIndex = 77
     end
     object EditorListCustomizeAction: TAction
@@ -1540,6 +1572,22 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = '&Transfer Files in Clipboard'
       Hint = 'Transfer files whose names are in clipboard'
     end
+    object RemoteCopyAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Download...'
+      HelpKeyword = 'task_download'
+      Hint = 'Download|Download selected file(s)'
+      ImageIndex = 89
+    end
+    object LocalCopyAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Upload...'
+      HelpKeyword = 'task_upload'
+      Hint = 'Upload|Upload selected file(s)'
+      ImageIndex = 88
+    end
     object DownloadPageAction: TAction
       Tag = 15
       Category = 'Help'
@@ -1580,6 +1628,34 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_toolbars'
       Hint = 'Prevents moving and (un)docking of all toolbars'
     end
+    object CustomCommandsBandAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'Custom Co&mmand Buttons'
+      HelpKeyword = 'ui_toolbars'
+      Hint = 'Hide/show custom commands toolbar'
+    end
+    object ColorMenuAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'C&olor'
+      HelpKeyword = 'task_connections#session_color'
+      Hint = 'Change color of current session'
+    end
+    object ColorDefaultAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&Default'
+      HelpKeyword = 'task_connections#session_color'
+      Hint = 'Reset session (panel) color to system default'
+    end
+    object ColorPickAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = '&More Colors...'
+      HelpKeyword = 'task_connections#session_color'
+      Hint = 'Choose any session (panel) color'
+    end
     object QueueItemPauseAction: TAction
       Tag = 12
       Category = 'Queue'
@@ -1612,6 +1688,15 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Resume all suspended queue items'
       ImageIndex = 85
     end
+    object QueueDisconnectOnceEmptyAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      AutoCheck = True
+      Caption = '&Disconnect Once Empty'
+      HelpKeyword = 'ui_queue'
+      Hint = 'Disconnect the session once the queue is empty'
+      ImageIndex = 87
+    end
     object RestoreSelectionAction: TAction
       Tag = 15
       Category = 'Selection'
@@ -1619,6 +1704,22 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_file_panel#selecting_files'
       Hint = 'Restore previous selection'
       ImageIndex = 86
+    end
+    object CurrentEditFocusedAction: TAction
+      Tag = 15
+      Category = 'Focused Operation'
+      Caption = '&Edit'
+      HelpKeyword = 'task_edit'
+      Hint = 'Edit|Edit selected file(s)'
+      ImageIndex = 57
+    end
+    object NewDirAction: TAction
+      Tag = 12
+      Category = 'Command'
+      Caption = '&Directory...'
+      HelpKeyword = 'task_create_directory'
+      Hint = 'Create directory|Create new directory'
+      ImageIndex = 5
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -1648,6 +1749,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem4: TTBXItem
       Action = ExplorerTransferBandAction
+    end
+    object TBXItem16: TTBXItem
+      Action = ExplorerCustomCommandsBandAction
     end
     object TBXItem7: TTBXItem
       Action = LockToolbarsAction
@@ -1728,6 +1832,12 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object TBXItem5: TTBXItem
       Action = CommanderTransferBandAction
+    end
+    object TBXItem14: TTBXItem
+      Action = CommanderUploadDownloadBandAction
+    end
+    object TBXItem15: TTBXItem
+      Action = CommanderCustomCommandsBandAction
     end
     object TBXItem6: TTBXItem
       Action = LockToolbarsAction
@@ -2055,6 +2165,9 @@ object NonVisualDataModule: TNonVisualDataModule
       object N65: TTBXSeparatorItem
         Hint = 'E'
       end
+      object TBXItem13: TTBXItem
+        Action = QueueDisconnectOnceEmptyAction
+      end
       object Customize3: TTBXItem
         Action = QueuePreferencesAction
       end
@@ -2105,8 +2218,19 @@ object NonVisualDataModule: TNonVisualDataModule
     object N79: TTBXSeparatorItem
       Hint = 'E'
     end
-    object CreateDirectory3: TTBXItem
-      Action = CurrentCreateDirAction
+    object TBXSubmenuItem26: TTBXSubmenuItem
+      Caption = '&New'
+      HelpKeyword = 'task_index'
+      Hint = 'Create object|Create new object'
+      object TBXItem135: TTBXItem
+        Action = NewFileAction
+      end
+      object TBXItem136: TTBXItem
+        Action = NewDirAction
+      end
+      object TBXItem209: TTBXItem
+        Action = NewLinkAction
+      end
     end
   end
   object LocalDirViewPopup: TTBXPopupMenu

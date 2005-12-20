@@ -194,7 +194,7 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID Reserved)
   {
     GLogMutex = CreateMutex(NULL, false, "WinSCPDragExtLogMutex");
 
-    for (int Root = 0; Root < 3; Root++)
+    for (int Root = 0; Root <= 1; Root++)
     {
       HKEY Key;
       if (RegOpenKeyEx(Root == 0 ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER,

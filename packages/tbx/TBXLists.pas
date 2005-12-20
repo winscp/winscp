@@ -4,7 +4,7 @@ unit TBXLists;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXLists.pas 7 2004-02-21 06:07:53Z  $
+// Id: TBXLists.pas 7 2004-02-21 06:07:53Z
 
 interface
 
@@ -191,6 +191,8 @@ type
     procedure Paint(const Canvas: TCanvas; const ClientAreaRect: TRect; IsHoverItem, IsPushed, UseDisabledShadow: Boolean); override;
     procedure UpdateItems;
     property HoverIndex: Integer read FHoverIndex write FHoverIndex;
+    property Offset: Integer read FOffset; {vb+}
+    property VisibleItems: Integer read FVisibleItems; {vb+}
   public
     constructor Create(AView: TTBView; AItem: TTBCustomItem; AGroupLevel: Integer); override;
     destructor Destroy; override;

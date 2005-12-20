@@ -4,7 +4,7 @@ unit TBXThemes;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXThemes.pas 16 2004-05-26 02:02:55Z Alex@ZEISS $
+// Id: TBXThemes.pas 16 2004-05-26 02:02:55Z Alex@ZEISS
 
 interface
 
@@ -103,6 +103,7 @@ const
   IO_COMBO                   = $08;
   IO_DESIGNING               = $10;
   IO_APPACTIVE               = $20;  // True when Application.Active = True
+  IO_RADIO                   = $40;  
 
 { Drag handle styles }
 const
@@ -315,7 +316,6 @@ type
     procedure PaintButton(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
     procedure PaintCaption(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo; const ACaption: string; AFormat: Cardinal; Rotated: Boolean); virtual; abstract;
     procedure PaintCheckMark(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
-    procedure PaintRadioButton(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
     procedure PaintChevron(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); virtual; abstract;
     procedure PaintEditFrame(Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo; const EditInfo: TTBXEditInfo); virtual; abstract;
     procedure PaintEditButton(Canvas: TCanvas; const ARect: TRect; var ItemInfo: TTBXItemInfo; ButtonInfo: TTBXEditBtnInfo); virtual; abstract;

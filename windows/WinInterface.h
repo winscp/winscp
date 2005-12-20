@@ -16,6 +16,9 @@ class TConfiguration;
 class TTerminal;
 class TSecureShell;
 
+extern const int ConnectionStatusStrings[];
+extern const int ConnectionStatusStringsCount;
+
 const int mpNeverAskAgainCheck =   0x01;
 const int mpAllowContinueOnError = 0x02;
 
@@ -31,6 +34,8 @@ struct TMessageParams
   TQueryParamsTimerEvent TimerEvent;
   AnsiString TimerMessage;
   unsigned int TimerAnswers;
+  unsigned int Timeout;
+  unsigned int TimeoutAnswer;
   AnsiString NewerAskAgainTitle;
   int NewerAskAgainAnswer;
 
@@ -92,11 +97,19 @@ bool __fastcall InputDialog(const AnsiString ACaption,
   TStrings * History = NULL, bool PathInput = false);
 
 // forms\About.cpp
+struct TRegistration
+{
+  bool Registered;
+  AnsiString Subject;
+  int Licences;
+  AnsiString ProductId;
+  bool NeverExpires;
+  TDateTime Expiration;
+  bool EduLicense;
+};
+void __fastcall DoAboutDialog(TConfiguration * Configuration,
+  bool AllowLicence, TRegistration * Registration);
 void __fastcall DoAboutDialog(TConfiguration *Configuration);
-
-// forms\Banner.cpp
-void __fastcall DoBannerDialog(AnsiString SessionName,
-  const AnsiString & Banner, bool & NeverShowAgain);
 
 // forms\Cleanup.cpp
 bool __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
@@ -109,22 +122,26 @@ void __fastcall DoConsoleDialog(TTerminal * Terminal,
 // forms\Copy.cpp
 const coTemp                = 0x01;
 const coDisableQueue        = 0x02;
-const coDisableTransferMode = 0x04;
 const coDisableDirectory    = 0x08; // not used anymore
 const coDisableNewerOnly    = 0x10;
 const coDoNotShowAgain      = 0x20;
-const coDisableSaveSettings = 0x40;
+const coDisableSaveSettings = 0x40; // not used anymore
 const coDoNotUsePresets     = 0x80;
 const coAllowRemoteTransfer = 0x100;
 const cooDoNotShowAgain     = 0x01;
-const cooSaveSettings       = cooDoNotShowAgain;
 const cooRemoteTransfer     = 0x02;
+const cooSaveSettings       = 0x04;
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, AnsiString & TargetDirectory,
-  TGUICopyParamType * Params, int Options, int * OutputOptions = NULL);
+  TGUICopyParamType * Params, int Options, int CopyParamAttrs,
+  int * OutputOptions);
 
 // forms\CopyParams.cpp
 enum TParamsForDirection { pdBoth, pdToRemote, pdToLocal, pdAll };
+
+// forms\CreateDirectory.cpp
+bool __fastcall DoCreateDirectoryDialog(AnsiString & Directory,
+  TRemoteProperties * Properties, bool & SaveSettings);
 
 // forms\ImportSessions.cpp
 bool __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList);
@@ -135,6 +152,7 @@ void __fastcall DoLicenceDialog(TLicence Licence);
 void __fastcall DoLicenceDialog(const AnsiString LicenceText);
 
 // forms\Login.cpp
+// these flags are used in navigation tree of login dialog, change with care
 const loLocalDirectory = 0x01;
 const loLanguage       = 0x02;
 const loTools          = 0x04;
@@ -142,11 +160,13 @@ const loLogWindow      = 0x08;
 const loAbout          = 0x10;
 
 const loPreferences    = 0x20;
+const loExternalProtocols = 0x40;
+const loColor          = 0x80;
 
 const loNone           = 0x00;
-const loAddSession     = (loLocalDirectory | loLogWindow);
+const loAddSession     = (loLocalDirectory | loLogWindow | loColor);
 const loStartup        = (loLocalDirectory | loLanguage | loTools |
-  loLogWindow | loPreferences | loAbout);
+  loLogWindow | loPreferences | loAbout | loColor);
 bool __fastcall DoLoginDialog(TStoredSessionList * SessionList,
   TSessionData * Data, int Options);
 
@@ -191,11 +211,7 @@ bool __fastcall DoCopyParamPresetDialog(TCopyParamList * CopyParamList,
 
 // forms\CopyParamCsutom.cpp
 bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam,
-  int Options = -1);
-
-// forms\Password.cpp
-bool __fastcall DoPasswordDialog(const AnsiString Caption, TPromptKind Kind,
-  AnsiString & Password);
+  int CopyParamAttrs);
 
 // forms\Properties.cpp
 class TRemoteProperties;
@@ -226,7 +242,7 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
 const spDelete = 0x01;
 const spNoConfirmation = 0x02;
 const spExistingOnly = 0x04;
-const spPreviewChanges = 0x40;
+const spPreviewChanges = 0x40; // not used by core
 const spTimestamp = 0x100;
 const spNotByTime = 0x200;
 const spBySize = 0x400;
@@ -240,16 +256,25 @@ typedef void __fastcall (__closure *TGetSynchronizeOptionsEvent)
   (int Params, TSynchronizeOptions & Options);
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
-  bool & SaveSettings, int Options, TGetSynchronizeOptionsEvent OnGetOptions);
+  bool & SaveSettings, int Options, int CopyParamAttrs,
+  TGetSynchronizeOptionsEvent OnGetOptions);
 
 // forms\FullSynchronize.cpp
+struct TUsableCopyParamAttrs;
 enum TSynchronizeMode { smRemote, smLocal, smBoth };
 const fsoDisableTimestamp = 0x01;
 const fsoDoNotUsePresets =  0x02;
 const fsoAllowSelectedOnly = 0x04;
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
-  TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options);
+  TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode,
+  int Options, const TUsableCopyParamAttrs & CopyParamAttrs);
+
+// forms\SynchronizeChecklist.cpp
+class TSynchronizeChecklist;
+bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
+  TSynchronizeMode Mode, int Params,
+  const AnsiString LocalDirectory, const AnsiString RemoteDirectory);
 
 // forms\Editor.cpp
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
@@ -261,12 +286,18 @@ bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic);
 
 // forms\FileSystemInfo.cpp
-void __fastcall DoFileSystemInfoDialog(TTerminal * Terminal);
+struct TSpaceAvailable;
+struct TFileSystemInfo;
+typedef void __fastcall (__closure *TGetSpaceAvailable)
+  (const AnsiString Path, TSpaceAvailable & ASpaceAvailable, bool & Close);
+void __fastcall DoFileSystemInfoDialog(const TFileSystemInfo & FileSystemInfo,
+  AnsiString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable);
 
 // forms\MessageDlg.cpp
 TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
-  TQueryButtonAlias * Aliases = NULL, unsigned int AliasesCount = 0);
+  TQueryButtonAlias * Aliases = NULL, unsigned int AliasesCount = 0,
+  TMsgDlgBtn TimeoutResult = mbHelp, TButton ** TimeoutButton = NULL);
 
 // windows\Console.cpp
 int __fastcall Console(TProgramParams * Params, bool Help);
@@ -284,7 +315,7 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
   const TCopyParamType & Param, AnsiString Preset, TNotifyEvent OnClick,
   int Options);
 bool __fastcall CopyParamListPopupClick(TObject * Sender,
-  TCopyParamType & Param, AnsiString & Preset, int CustomizeOptions = -1);
+  TCopyParamType & Param, AnsiString & Preset, int CopyParamAttrs);
 
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand

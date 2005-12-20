@@ -43,6 +43,7 @@ type
     FHeaderHandle: HWND;
     FParentForm: TCustomForm;
     FMask: string;
+    FHeaderCanvas: TCanvas;
 
     FOnHeaderEndDrag: TNotifyEvent;
     FOnHeaderEndTrack: TNotifyEvent;
@@ -52,6 +53,10 @@ type
     FDateTimeDisplay: TDateTimeDisplay;
     FDragImageList: TDragImageList;
     FHeaderImages: TImageList;
+
+    function SecondaryColumnHeaderOffset(Canvas: TCanvas; Index: Integer): Integer;
+    function ColumnHeaderIconWidth: Integer;
+
   protected
     procedure ColPropertiesChange(Sender: TObject); virtual;
 
@@ -65,6 +70,7 @@ type
     procedure HeaderEndDrag(Sender: TObject); virtual;
     procedure SetMask(Value: string); virtual;
     procedure SetHeaderImages(Value: TImageList); virtual;
+    function SecondaryColumnHeader(Index: Integer): Integer; virtual;
 
     procedure CreateWnd; override;
     procedure ColClick(Column: TListColumn); override;
@@ -138,7 +144,7 @@ type
     property ShowHint;
     property TabOrder;
     property TabStop default True;
-    property ViewStyle {CLEAN write SetViewStyle};
+    property ViewStyle;
     property Visible;
     property OnChange;
     property OnChanging;
@@ -177,6 +183,21 @@ var
 
 implementation
 
+const HDM_SETBITMAPMARGIN = (HDM_FIRST + 20);
+const HDM_GETBITMAPMARGIN = (HDM_FIRST + 21);
+const HDF_SORTUP = $400;
+const HDF_SORTDOWN = $200;
+
+procedure Header_SetBitmapMargin(Header: HWnd; Margin: Integer);
+begin
+  SendMessage(Header, HDM_SETBITMAPMARGIN, Margin, 0);
+end;
+
+function Header_GetBitmapMargin(Header: HWnd): Integer;
+begin
+  Result := SendMessage(Header, HDM_GETBITMAPMARGIN, 0, 0);
+end;
+
 { TIEListView }
 
 constructor TIEListView.Create(AOwner: TComponent);
@@ -189,6 +210,7 @@ begin
   FSortColumn := 0;
   FSortAscending := True;
   FMask := '*.*';
+  FHeaderCanvas := TCanvas.Create;
   SetDateTimeFormatString;
 end; {Create}
 
@@ -239,6 +261,10 @@ procedure TIEListView.SetColumnImages;
 var
   HdItem: THdItem;
   Index: Integer;
+  SecondaryColumn: Integer;
+  Margin, MaxMargin: Integer;
+  Caption: string;
+  ShowImage: Boolean;
 begin
   if ShowColumnHeaders and HandleAllocated then
   begin
@@ -247,16 +273,51 @@ begin
       HdItem.Mask := HDI_FORMAT;
       Header_GetItem(GetDlgItem(Self.Handle,0), Index, HdItem);
 
-      if (HeaderImages <> nil) and FShowColumnIcon and (Index = SortColumn) then
+      Caption := TrimRight(Columns[Index].Caption);
+      SecondaryColumn := SecondaryColumnHeader(Index);
+      ShowImage := False;
+      if (HeaderImages <> nil) and FShowColumnIcon then
+      begin
+        if Index = SortColumn then ShowImage := True
+          else
+        if (SecondaryColumn >= 0) and (SecondaryColumn = SortColumn) then
+        begin
+          Margin := ColumnHeaderIconWidth +
+            Canvas.TextWidth(Columns[SecondaryColumn].Caption);
+          MaxMargin := Columns[Index].Width -
+            SecondaryColumnHeaderOffset(Canvas, Index);
+          if Margin <= MaxMargin then
+          begin
+            Caption := Caption +
+              StringOfChar(' ', Margin div Canvas.TextWidth(' '));
+            ShowImage := True;
+          end;
+        end;
+      end;
+
+      if ShowImage then
       begin
         HdItem.Mask := HDI_FORMAT or HDI_IMAGE;
         HdItem.fmt := Hditem.fmt or HDF_IMAGE;
-        if SortAscending then HdItem.iImage := 0
-          else HdItem.iImage := 1;
+        if SortAscending then
+        begin
+          HdItem.iImage := 0;
+          HdItem.fmt := (Hditem.fmt or HDF_SORTUP) and (not HDF_SORTDOWN);
+        end
+          else
+        begin
+          HdItem.iImage := 1;
+          HdItem.fmt := (Hditem.fmt or HDF_SORTDOWN) and (not HDF_SORTUP);
+        end;
         if Columns[Index].Alignment = taLeftJustify then
           HdItem.fmt := HdItem.fmt or HDF_BITMAP_ON_RIGHT;
       end
-        else HdItem.fmt := HdItem.fmt and (not HDF_IMAGE);
+        else
+      begin
+        HdItem.fmt := HdItem.fmt and
+          (not (HDF_IMAGE or HDF_SORTUP or HDF_SORTDOWN));
+      end;
+      Columns[Index].Caption := Caption;
 
       Header_SetItem(GetDlgItem(Self.Handle, 0), Index, HDItem);
     end;
@@ -273,12 +334,48 @@ begin
   end;
 end; {SetShowColumnIcon}
 
-procedure TIEListView.ColClick(Column: TListColumn);
+function TIEListView.SecondaryColumnHeaderOffset(Canvas: TCanvas; Index: Integer): Integer;
 begin
-  if Column.Index = SortColumn then FSortAscending := not FSortAscending
+  Result :=
+    11 +
+    Canvas.TextWidth(TrimRight(Columns[Index].Caption)) +
+    ColumnHeaderIconWidth;
+end;
+
+function TIEListView.ColumnHeaderIconWidth: Integer;
+begin
+  Result := 12;
+  if Assigned(HeaderImages) then
+    Inc(Result, HeaderImages.Width);
+end;
+
+function TIEListView.SecondaryColumnHeader(Index: Integer): Integer;
+begin
+  Result := -1;
+end;
+
+procedure TIEListView.ColClick(Column: TListColumn);
+var
+  Index: Integer;
+  SecondaryColumn: Integer;
+  SecondaryOffset: Integer;
+  R: TRect;
+begin
+  Index := Column.Index;
+  SecondaryColumn := SecondaryColumnHeader(Index);
+  if SecondaryColumn >= 0 then
+  begin
+    Header_GetItemRect(FHeaderHandle, Index, @R);
+    // this doesn't take possible vertical scroll into account!
+    SecondaryOffset := Mouse.CursorPos.x - ClientToScreen(R.TopLeft).x;
+    if SecondaryOffset >= SecondaryColumnHeaderOffset(Canvas, Index) then
+      Index := SecondaryColumn;
+  end;
+
+  if Index = SortColumn then FSortAscending := not FSortAscending
     else
   begin
-    FSortColumn := Column.Index;
+    FSortColumn := Index;
     FSortAscending := True;
   end;
 
@@ -291,13 +388,14 @@ end; {ColClick}
 
 procedure TIEListView.WMPaint(var Msg: TWMPaint);
 begin
-  Inherited;
+  inherited;
   if (ViewStyle = vsReport) and not ColumnIconPainted and
      ShowColumnHeaders then SetColumnImages;
 end; {WMPaint}
 
 procedure TIEListView.WMNotify(var Msg: TWMNotify);
-{Repaint header icons, if columns are resized:}
+var
+  SecondaryColumn: Integer;
 begin
   if (FHeaderHandle <> 0) and (Msg.NMHdr^.hWndFrom = FHeaderHandle) then
     case Msg.NMHdr.code of
@@ -332,6 +430,45 @@ begin
              FOnHeaderEndTrack(Self);
            SetColumnImages;
            FColumnIconPainted := False;
+           Exit;
+         end;
+       NM_CUSTOMDRAW:
+         with PNMCustomDraw(Msg.NMHdr)^ do
+         begin
+           inherited;
+           if dwDrawStage = CDDS_PREPAINT then
+           begin
+             Msg.Result := Msg.Result or CDRF_NOTIFYITEMDRAW;
+           end
+             else
+           if dwDrawStage = CDDS_ITEMPREPAINT then
+           begin
+             if SecondaryColumnHeader(dwItemSpec) >= 0 then
+               Msg.Result := Msg.Result or CDRF_NOTIFYPOSTPAINT;
+           end
+             else
+           if dwDrawStage = CDDS_ITEMPOSTPAINT then
+           begin
+             SecondaryColumn := SecondaryColumnHeader(dwItemSpec);
+             if SecondaryColumn >= 0 then
+             begin
+               FHeaderCanvas.Handle := hdc;
+               FHeaderCanvas.Font := Font;
+               FHeaderCanvas.Brush := Brush;
+               FHeaderCanvas.Brush.Style := bsClear;
+               if (uItemState and CDIS_SELECTED) <> 0 then
+               begin
+                 Inc(rc.top);
+                 Inc(rc.left);
+               end;
+               Inc(rc.left, SecondaryColumnHeaderOffset(FHeaderCanvas, dwItemSpec));
+               Inc(rc.top,
+                 ((rc.bottom - rc.top) -
+                    FHeaderCanvas.TextHeight(Columns[SecondaryColumn].Caption)) div 2);
+               DrawText(FHeaderCanvas.Handle, PChar(Columns[SecondaryColumn].Caption),
+                 Length(Columns[SecondaryColumn].Caption), rc, 0);
+             end;
+           end;
            Exit;
          end;
     end; {Case}
@@ -377,6 +514,7 @@ begin
       GlobalDragImageList := nil;
     FDragImageList.Free;
   end;
+  FHeaderCanvas.Free;
 
   inherited;
 end; {Destroy}

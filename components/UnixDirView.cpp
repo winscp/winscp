@@ -56,15 +56,27 @@ int __stdcall CompareDirectories(TListItem *Item1, TListItem *Item2, TUnixDirVie
   return 0;
 }
 //---------------------------------------------------------------------------
-#define DEFINE_COMPARE_FUNC(Property, CompareFunc) \
-  int __stdcall Compare ## Property(TListItem *Item1, TListItem *Item2, TUnixDirView *DirView) \
-  { int Result = CompareDirectories(Item1, Item2, DirView); \
-    if (!Result) { Result = CompareFunc(RFILE(1)->Property, RFILE(2)->Property); \
-      if (!DirView->UnixColProperties->SortAscending) Result = -Result; }\
-    return Result; }
+#define DEFINE_COMPARE_FUNC_EX(PROPERTY, COMPAREFUNC, FALLBACK) \
+  int __stdcall Compare ## PROPERTY(TListItem *Item1, TListItem *Item2, TUnixDirView *DirView) \
+  { \
+    int Result = CompareDirectories(Item1, Item2, DirView); \
+    if (!Result) \
+    { \
+      Result = COMPAREFUNC(RFILE(1)->PROPERTY, RFILE(2)->PROPERTY); \
+      if (Result == 0) \
+      { \
+        Result = FALLBACK(RFILE(1)->FileName, RFILE(2)->FileName); \
+      } \
+      if (!DirView->UnixColProperties->SortAscending) Result = -Result; \
+    } \
+    return Result; \
+  }
+#define DEFINE_COMPARE_FUNC(PROPERTY, COMPAREFUNC) \
+  DEFINE_COMPARE_FUNC_EX(PROPERTY, COMPAREFUNC, AnsiCompareText)
 #define COMPARE_NUMBER(Num1, Num2) ( Num1 < Num2 ? -1 : ( Num1 > Num2 ? 1 : 0) )
+#define COMPARE_DUMMY(X1, X2) 0
 //---------------------------------------------------------------------------
-DEFINE_COMPARE_FUNC(FileName, AnsiCompareText);
+DEFINE_COMPARE_FUNC_EX(FileName, AnsiCompareText, COMPARE_DUMMY);
 DEFINE_COMPARE_FUNC(Size, COMPARE_NUMBER);
 DEFINE_COMPARE_FUNC(Modification, COMPARE_NUMBER);
 DEFINE_COMPARE_FUNC(RightsStr, AnsiCompareText);
@@ -345,6 +357,8 @@ void __fastcall TUnixDirView::LoadFiles()
         Item->Caption = File->FileName;
         if (FFullLoad)
         {
+          // this is out of date
+          // (missing columns and does not update then file properties are loaded)
           Item->ImageIndex = File->IconIndex;
           Item->SubItems->Add((!File->IsDirectory ? FormatFloat("#,##0", File->Size) : AnsiString()));
           Item->SubItems->Add(File->UserModificationStr);
@@ -749,7 +763,17 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMA & HItem)
 #endif
 }
 //---------------------------------------------------------------------------
+int __fastcall TUnixDirView::SecondaryColumnHeader(int Index)
+{
+  return ((Index == uvName) ? uvExt : -1);
+}
+//---------------------------------------------------------------------------
 void __fastcall TUnixDirView::CreateDirectory(AnsiString DirName)
+{
+  CreateDirectoryEx(DirName, NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TUnixDirView::CreateDirectoryEx(AnsiString DirName, const TRemoteProperties * Properties)
 {
 #ifndef DESIGN_ONLY
   assert(Terminal);
@@ -758,7 +782,7 @@ void __fastcall TUnixDirView::CreateDirectory(AnsiString DirName)
   {
     FSelectFile = DirName;
   }
-  Terminal->CreateDirectory(DirName);
+  Terminal->CreateDirectory(DirName, Properties);
 #endif
 }
 //---------------------------------------------------------------------------

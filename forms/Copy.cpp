@@ -8,6 +8,7 @@
 #include <TextsWin.h>
 #include <VCLCommon.h>
 #include <CustomWinConfiguration.h>
+#include <Tools.h>
 
 #include "Copy.h"
 //---------------------------------------------------------------------------
@@ -20,13 +21,13 @@
 //---------------------------------------------------------------------------
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, AnsiString & TargetDirectory,
-  TGUICopyParamType * Params, int Options, int * OutputOptions)
+  TGUICopyParamType * Params, int Options, int CopyParamAttrs, int * OutputOptions)
 {
   bool Result;
   TCopyDialog *CopyDialog = new TCopyDialog(Application);
   try
   {
-    if ((Options & coDisableTransferMode) != 0)
+    if (FLAGSET(CopyParamAttrs, cpaNoTransferMode))
     {
       // If local and remote EOL types are the same, there is no need
       // for ASCII (or Automatic) mode
@@ -34,6 +35,7 @@ bool __fastcall DoCopyDialog(bool ToRemote,
     }
     CopyDialog->ToRemote = ToRemote;
     CopyDialog->Options = Options;
+    CopyDialog->CopyParamAttrs = CopyParamAttrs;
     if (OutputOptions != NULL)
     {
       CopyDialog->OutputOptions = *OutputOptions;
@@ -163,10 +165,7 @@ void __fastcall TCopyDialog::AdjustTransferControls()
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::AdjustControls()
 {
-  if (FLAGSET(Options, coDoNotShowAgain))
-  {
-    SaveSettingsCheck->Caption = LoadStr(NEVER_SHOW_DIALOG_AGAIN);
-  }
+  NeverShowAgainCheck->Visible = FLAGSET(Options, coDoNotShowAgain);
   RemoteDirectoryEdit->Visible = false;
   LocalDirectoryEdit->Visible = false;
   DirectoryEdit->Visible = FLAGCLEAR(Options, coTemp);
@@ -175,10 +174,6 @@ void __fastcall TCopyDialog::AdjustControls()
   EnableControl(LocalDirectoryBrowseButton, DirectoryEdit->Enabled);
   DirectoryLabel->FocusControl = DirectoryEdit;
   CopyParamsFrame->Direction = !ToRemote ? pdToLocal : pdToRemote;
-  CopyParamsFrame->Options =
-    FLAGMASK(FLAGCLEAR(Options, coDisableTransferMode), cfAllowTransferMode) |
-    FLAGMASK(!Move, cfAllowExcludeMask) |
-    FLAGMASK(!Move && ToRemote, cfAllowClearArchive);
   PresetsButton->Visible = FLAGCLEAR(Options, coDoNotUsePresets);
 
   AdjustTransferControls();
@@ -215,15 +210,27 @@ void __fastcall TCopyDialog::SetOutputOptions(int value)
 {
   if (OutputOptions != value)
   {
-    SaveSettingsCheck->Checked = FLAGSET(FOutputOptions, cooDoNotShowAgain);
-    FOutputOptions = (value & ~cooDoNotShowAgain);
+    SaveSettingsCheck->Checked = FLAGSET(FOutputOptions, cooSaveSettings);
+    NeverShowAgainCheck->Checked = FLAGSET(FOutputOptions, cooDoNotShowAgain);
+    FOutputOptions = (value & ~(cooDoNotShowAgain | cooSaveSettings));
   }
 }
 //---------------------------------------------------------------------------
 int __fastcall TCopyDialog::GetOutputOptions()
 {
   return FOutputOptions |
-    FLAGMASK(SaveSettingsCheck->Checked, cooDoNotShowAgain);
+    FLAGMASK(SaveSettingsCheck->Checked, cooSaveSettings) |
+    FLAGMASK(NeverShowAgainCheck->Checked, cooDoNotShowAgain);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::SetCopyParamAttrs(int value)
+{
+  CopyParamsFrame->CopyParamAttrs = value;
+}
+//---------------------------------------------------------------------------
+int __fastcall TCopyDialog::GetCopyParamAttrs()
+{
+  return CopyParamsFrame->CopyParamAttrs;
 }
 //---------------------------------------------------------------------------
 THistoryComboBox * __fastcall TCopyDialog::GetDirectoryEdit()
@@ -430,7 +437,7 @@ void __fastcall TCopyDialog::FormCloseQuery(TObject * /*Sender*/,
 
     if (CanClose)
     {
-      CopyParamsFrame->Validate();
+      ExitActiveControl(this);
     }
   }
 }
@@ -470,7 +477,7 @@ void __fastcall TCopyDialog::PresetsButtonClick(TObject * /*Sender*/)
 void __fastcall TCopyDialog::CopyParamClick(TObject * Sender)
 {
   TCopyParamType Param = Params;
-  if (CopyParamListPopupClick(Sender, Param, FPreset))
+  if (CopyParamListPopupClick(Sender, Param, FPreset, CopyParamAttrs))
   {
     Params = Param;
   }

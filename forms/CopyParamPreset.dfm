@@ -101,9 +101,6 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       Width = 182
       Height = 126
       Caption = 'Upload options'
-      inherited RemotePreserveTimeCheck: TCheckBox
-        Top = 161
-      end
     end
     inherited ChangeCaseGroup: TXPGroupBox
       Left = 247

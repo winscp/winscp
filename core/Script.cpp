@@ -466,7 +466,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
           AnsiString FileDirectory = UnixExtractFilePath(FileName);
           AnsiString Directory = FileDirectory;
           if (Directory.IsEmpty())
-          {               
+          {
             Directory = UnixIncludeTrailingBackslash(FTerminal->CurrentDirectory);
           }
           TRemoteFileList * FileList = NULL;
@@ -495,7 +495,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
             if (!File->IsThisDirectory && !File->IsParentDirectory &&
                 TFileMasks::SingleMaskMatch(Mask, File->FileName))
             {
-              Result->AddObject(FileDirectory + File->FileName, 
+              Result->AddObject(FileDirectory + File->FileName,
                 FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
             }
           }
@@ -509,6 +509,10 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
             try
             {
               FTerminal->ReadFile(FileName, File);
+              if (!File->HaveFullFileName)
+              {
+                File->FullFileName = FileName;
+              }
             }
             __finally
             {
@@ -535,11 +539,11 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
       }
       delete FileLists;
     }
-  }  
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
-TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameters, 
+TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameters,
   int Start, int End, TFileListType ListType)
 {
   TStrings * Result = new TStringList();
@@ -569,14 +573,14 @@ TStrings * __fastcall TScript::CreateLocalFileList(TScriptProcParams * Parameter
           __finally
           {
             FindClose(SearchRec);
-          }  
+          }
         }
         else
         {
           // not match, let it fail latter however
           Result->Add(FileName);
         }
-      }  
+      }
       else
       {
         Result->Add(FileName);
@@ -607,7 +611,6 @@ void __fastcall TScript::FreeFileList(TStrings * FileList)
 void __fastcall TScript::ConnectTerminal(TTerminal * Terminal)
 {
   Terminal->Open();
-  Terminal->DoStartup();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::Print(const AnsiString Str)
@@ -1191,10 +1194,29 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     TCopyParamType CopyParam = FCopyParam;
     CopyParam.CalculateSize = false;
 
-    FTerminal->Synchronize(LocalDirectory, RemoteDirectory,
-      static_cast<TTerminal::TSynchronizeMode>(FSynchronizeMode),
-      &CopyParam, FSynchronizeParams | TTerminal::spNoConfirmation,
-      OnTerminalSynchronizeDirectory, NULL, NULL);
+    int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation;
+
+    PrintLine(FMTLOAD(SCRIPT_SYNCHRONIZE_COLLECT,
+      (ExcludeTrailingBackslash(LocalDirectory),
+       UnixExcludeTrailingBackslash(RemoteDirectory))));
+
+    TSynchronizeChecklist * Checklist =
+      FTerminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
+        static_cast<TTerminal::TSynchronizeMode>(FSynchronizeMode),
+        &CopyParam, SynchronizeParams, NULL, NULL);
+    try
+    {
+      if (Checklist->Count > 0)
+      {
+        FTerminal->SynchronizeApply(Checklist, LocalDirectory, RemoteDirectory,
+          &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory);
+      }
+    }
+    __finally
+    {
+      delete Checklist;
+    }
+
   }
   __finally
   {
@@ -1204,7 +1226,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 //---------------------------------------------------------------------------
 void __fastcall TScript::Synchronize(const AnsiString LocalDirectory,
   const AnsiString RemoteDirectory, const TCopyParamType & ACopyParam,
-  TSynchronizeStats * /*Stats*/)
+  TSynchronizeChecklist ** Checklist)
 {
   try
   {
@@ -1213,13 +1235,35 @@ void __fastcall TScript::Synchronize(const AnsiString LocalDirectory,
     TCopyParamType CopyParam = ACopyParam;
     CopyParam.CalculateSize = false;
 
-    FTerminal->Synchronize(LocalDirectory, RemoteDirectory, TTerminal::smRemote, &CopyParam,
-      FSynchronizeParams | TTerminal::spNoConfirmation | TTerminal::spNoRecurse |
-      TTerminal::spUseCache | TTerminal::spDelayProgress | TTerminal::spSubDirs,
-      OnTerminalSynchronizeDirectory, NULL, NULL);
+    int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation |
+      TTerminal::spNoRecurse | TTerminal::spUseCache | TTerminal::spDelayProgress |
+      TTerminal::spSubDirs;
 
-    // to break line after the last transfer (if any); 
-    Print("");    
+    TSynchronizeChecklist * AChecklist =
+      FTerminal->SynchronizeCollect(LocalDirectory, RemoteDirectory, TTerminal::smRemote,
+        &CopyParam, SynchronizeParams, NULL, NULL);
+    try
+    {
+      if (AChecklist->Count > 0)
+      {
+        FTerminal->SynchronizeApply(AChecklist, LocalDirectory, RemoteDirectory,
+          &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory);
+      }
+    }
+    __finally
+    {
+      if (Checklist == NULL)
+      {
+        delete AChecklist;
+      }
+      else
+      {
+        *Checklist = AChecklist;
+      }
+    }
+
+    // to break line after the last transfer (if any);
+    Print("");
 
     FKeepingUpToDate = false;
   }
@@ -1277,7 +1321,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
   FCommands->Register("lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0);
   FCommands->Register("lcd", SCRIPT_LCD_DESC, SCRIPT_LCD_HELP, &LCdProc, 1, 1);
   FCommands->Register("lls", SCRIPT_LLS_DESC, SCRIPT_LLS_HELP, &LLsProc, 0, 1);
-}       
+}
 //---------------------------------------------------------------------------
 __fastcall TManagementScript::~TManagementScript()
 {
@@ -1312,7 +1356,7 @@ void __fastcall TManagementScript::FreeTerminal(TTerminal * Terminal)
       }
     }
   }
-  
+
   FTerminalList->FreeTerminal(Terminal);
 }
 //---------------------------------------------------------------------------
@@ -1620,6 +1664,7 @@ void __fastcall TManagementScript::DoConnect(const AnsiString Session)
       Terminal->OnQueryUser = OnTerminalQueryUser;
       Terminal->OnProgress = TerminalOperationProgress;
       Terminal->OnFinished = TerminalOperationFinished;
+      Terminal->OnUpdateStatus = OnTerminalUpdateStatus;
 
       ConnectTerminal(Terminal);
     }
@@ -1637,20 +1682,6 @@ void __fastcall TManagementScript::DoConnect(const AnsiString Session)
   }
 
   PrintActiveSession();
-}
-//---------------------------------------------------------------------------
-void __fastcall TManagementScript::ConnectTerminal(TTerminal * Terminal)
-{
-  Terminal->OnUpdateStatus = OnTerminalUpdateStatus;
-
-  try
-  {
-    TScript::ConnectTerminal(Terminal);
-  }
-  __finally
-  {
-    Terminal->OnUpdateStatus = NULL;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::DoClose(TTerminal * Terminal)
@@ -1673,7 +1704,7 @@ void __fastcall TManagementScript::DoClose(TTerminal * Terminal)
     {
       if (Index < FTerminalList->Count)
       {
-        FTerminal = FTerminalList->Terminals[Index]; 
+        FTerminal = FTerminalList->Terminals[Index];
       }
       else
       {
@@ -1773,7 +1804,7 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
       Mask = "";
     }
   }
-  
+
   if (Directory.IsEmpty())
   {
     Directory = GetCurrentDir();

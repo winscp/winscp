@@ -19,19 +19,25 @@ private:
   int FUpdating;
   TNotifyEvent FOnChange;
   bool FRandomSeedSave;
-  
+
   void * FApplicationInfo;
   bool FLogging;
+  bool FPermanentLogging;
   AnsiString FLogFileName;
+  AnsiString FPermanentLogFileName;
   int FLogWindowLines;
   bool FLogFileAppend;
   int FLogProtocol;
   bool FConfirmOverwriting;
   bool FConfirmResume;
+  int FSessionReopenAuto;
+  int FSessionReopenNoConfirmation;
   AnsiString FIniFileStorageName;
 
   bool FDisablePasswordStoring;
-  int FGSSAPIInstalled; 
+  bool FForceBanners;
+  bool FDisableAcceptingHostKeys;
+  int FGSSAPIInstalled;
 
   AnsiString __fastcall GetOSVersionStr();
   TVSFixedFileInfo *__fastcall GetFixedApplicationInfo();
@@ -70,6 +76,8 @@ private:
   AnsiString __fastcall GetFileInfoString(const AnsiString Key);
   AnsiString __fastcall GetLocalInvalidChars();
   bool __fastcall GetGSSAPIInstalled();
+  void __fastcall SetSessionReopenAuto(int value);
+  void __fastcall SetSessionReopenNoConfirmation(int value);
 
 protected:
   TStorage FStorage;
@@ -100,6 +108,9 @@ protected:
   AnsiString __fastcall GetFileProductName(const AnsiString FileName);
   AnsiString __fastcall GetFileCompanyName(const AnsiString FileName);
 
+  __property bool PermanentLogging  = { read=FPermanentLogging, write=SetLogging };
+  __property AnsiString PermanentLogFileName  = { read=FPermanentLogFileName, write=SetLogFileName };
+
 public:
   __fastcall TConfiguration();
   virtual __fastcall ~TConfiguration();
@@ -113,12 +124,13 @@ public:
   void __fastcall BeginUpdate();
   void __fastcall EndUpdate();
   void __fastcall LoadDirectoryChangesCache(const AnsiString SessionKey,
-    TRemoteDirectoryChangesCache * DirectoryChangesCache);   
+    TRemoteDirectoryChangesCache * DirectoryChangesCache);
   void __fastcall SaveDirectoryChangesCache(const AnsiString SessionKey,
     TRemoteDirectoryChangesCache * DirectoryChangesCache);
   bool __fastcall ShowBanner(const AnsiString SessionKey, const AnsiString & Banner);
   void __fastcall NeverShowBanner(const AnsiString SessionKey, const AnsiString & Banner);
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
+  void __fastcall TemporaryLogging(const AnsiString ALogFileName);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
@@ -150,6 +162,8 @@ public:
   __property bool ConfirmResume = { read = GetConfirmResume, write = SetConfirmResume};
   __property bool RememberPassword = { read = GetRememberPassword };
   __property AnsiString PartialExt = {read=GetPartialExt};
+  __property int SessionReopenAuto = { read = FSessionReopenAuto, write = SetSessionReopenAuto };
+  __property int SessionReopenNoConfirmation = { read = FSessionReopenNoConfirmation, write = SetSessionReopenNoConfirmation };
 
   __property AnsiString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage, write=SetStorage };
@@ -159,6 +173,8 @@ public:
   __property AnsiString LocalInvalidChars = { read = GetLocalInvalidChars };
 
   __property bool DisablePasswordStoring = { read = FDisablePasswordStoring };
+  __property bool ForceBanners = { read = FForceBanners };
+  __property bool DisableAcceptingHostKeys = { read = FDisableAcceptingHostKeys };
   __property bool GSSAPIInstalled = { read = GetGSSAPIInstalled };
 };
 //---------------------------------------------------------------------------

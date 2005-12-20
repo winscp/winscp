@@ -356,6 +356,7 @@ private:
 	
 	Tbxutils::TShadows* FShadows;
 	HIDESBASE MESSAGE void __fastcall CMHintShow(Forms::TCMHintShow &Message);
+	HIDESBASE MESSAGE void __fastcall CMShowingChanged(Messages::TMessage &Message);
 	MESSAGE void __fastcall TBMGetViewType(Messages::TMessage &Message);
 	HIDESBASE MESSAGE void __fastcall WMNCCalcSize(Messages::TWMNCCalcSize &Message);
 	HIDESBASE MESSAGE void __fastcall WMNCPaint(Messages::TMessage &Message);
@@ -371,6 +372,7 @@ protected:
 	DYNAMIC Types::TPoint __fastcall GetNCSize();
 	virtual bool __fastcall GetShowShadow(void);
 	DYNAMIC TMetaClass* __fastcall GetViewClass(void);
+	virtual void __fastcall PaintScrollArrows(void);
 	
 public:
 	__fastcall virtual ~TTBXPopupWindow(void);
@@ -467,6 +469,7 @@ protected:
 	DYNAMIC TMetaClass* __fastcall GetFloatingWindowParentClass(void);
 	virtual void __fastcall GetToolbarInfo(/* out */ Tbxthemes::TTBXToolbarInfo &ToolbarInfo);
 	DYNAMIC TMetaClass* __fastcall GetViewClass(void);
+	virtual void __fastcall Loaded(void);
 	virtual void __fastcall SetParent(Controls::TWinControl* AParent);
 	void __fastcall UpdateEffectiveColor(void);
 	
@@ -635,8 +638,8 @@ protected:
 	virtual Tb2item::TTBPopupWindow* __fastcall CreatePopupEx(bool SelectFirstItem, const Types::TRect &AControlRect, Tb2item::TTBPopupAlignment Alignment);
 	virtual TMetaClass* __fastcall GetPopupWindowClass(void);
 	virtual void __fastcall GetPopupPosition(Tb2item::TTBView* ParentView, Tb2item::TTBPopupWindow* PopupWindow, Tb2item::TTBPopupPositionRec &PopupPositionRec);
-	void __fastcall OpenPopupEx(const bool SelectFirstItem, const bool TrackRightButton, const Types::TRect &ControlRect, const Tb2item::TTBPopupAlignment Alignment);
-	void __fastcall PopupEx(const Types::TRect &ControlRect, bool TrackRightButton, Tb2item::TTBPopupAlignment Alignment = (Tb2item::TTBPopupAlignment)(0x0));
+	Tb2item::TTBCustomItem* __fastcall OpenPopupEx(const bool SelectFirstItem, const bool TrackRightButton, const Types::TRect &ControlRect, const Tb2item::TTBPopupAlignment Alignment, const bool ReturnClickedItemOnly);
+	Tb2item::TTBCustomItem* __fastcall PopupEx(const Types::TRect &ControlRect, bool TrackRightButton, Tb2item::TTBPopupAlignment Alignment = (Tb2item::TTBPopupAlignment)(0x0), bool ReturnClickedItemOnly = false);
 public:
 	#pragma option push -w-inl
 	/* TTBCustomItem.Create */ inline __fastcall virtual TTBXRootItem(Classes::TComponent* AOwner) : Tb2item::TTBRootItem(AOwner) { }
@@ -661,7 +664,7 @@ protected:
 	DYNAMIC TMetaClass* __fastcall GetRootItemClass(void);
 	
 public:
-	void __fastcall PopupEx(const Types::TRect &ControlRect);
+	HIDESBASE Tb2item::TTBCustomItem* __fastcall PopupEx(const Types::TRect &ControlRect, bool ReturnClickedItemOnly = false);
 	__property bool ToolBoxPopup = {read=FToolBoxPopup, write=FToolBoxPopup, default=0};
 public:
 	#pragma option push -w-inl
@@ -754,6 +757,41 @@ public:
 };
 
 
+#pragma option push -b-
+enum TMenuAnimation { maNone, maUnfold, maSlide, maFade };
+#pragma option pop
+
+#pragma option push -b-
+enum TAnimationMode { amNone, amSysDefault, amRandom, amUnfold, amSlide, amFade };
+#pragma option pop
+
+typedef Set<TAnimationMode, amNone, amFade>  TAnimationModes;
+
+class DELPHICLASS TTBXMenuAnimation;
+class PASCALIMPLEMENTATION TTBXMenuAnimation : public System::TObject 
+{
+	typedef System::TObject inherited;
+	
+private:
+	TAnimationMode FAnimationMode;
+	bool __fastcall SysParamEnabled(unsigned Param);
+	TAnimationModes __fastcall GetAvailableModes(void);
+	TMenuAnimation __fastcall GetMenuAnimation(void);
+	void __fastcall SetAnimationMode(TAnimationMode Value);
+	__property TMenuAnimation MenuAnimation = {read=GetMenuAnimation, nodefault};
+	
+public:
+	__fastcall TTBXMenuAnimation(TAnimationMode AAnimationMode);
+	__property TAnimationMode AnimationMode = {read=FAnimationMode, write=SetAnimationMode, nodefault};
+	__property TAnimationModes AvailableModes = {read=GetAvailableModes, nodefault};
+public:
+	#pragma option push -w-inl
+	/* TObject.Destroy */ inline __fastcall virtual ~TTBXMenuAnimation(void) { }
+	#pragma option pop
+	
+};
+
+
 //-- var, const, procedure ---------------------------------------------------
 #define TBXVersion  (2.100000E+00)
 #define TBXVersionString "2.1"
@@ -762,6 +800,7 @@ static const Word TBM_THEMECHANGE = 0x53a;
 static const Word TBM_GETVIEWTYPE = 0x4ed;
 static const Word TBM_GETEFFECTIVECOLOR = 0x4ee;
 extern PACKAGE Tbxthemes::TTBXTheme* CurrentTheme;
+extern PACKAGE TTBXMenuAnimation* TBXMenuAnimation;
 extern PACKAGE void __fastcall AddThemeNotification(System::TObject* AObject);
 extern PACKAGE void __fastcall RemoveThemeNotification(System::TObject* AObject);
 extern PACKAGE Graphics::TColor __fastcall GetEffectiveColor(Controls::TControl* C);

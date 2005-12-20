@@ -448,11 +448,11 @@ void __fastcall TRegistryStorage::WriteInt64(const AnsiString Name, __int64 Valu
 }
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::WriteBinaryData(const AnsiString Name,
-  void * Buffer, int Size)
+  const void * Buffer, int Size)
 {
   try
   {
-    FRegistry->WriteBinaryData(Name, Buffer, Size);
+    FRegistry->WriteBinaryData(Name, const_cast<void *>(Buffer), Size);
   }
   catch(...)
   {
@@ -695,7 +695,7 @@ void __fastcall TIniFileStorage::WriteStringRaw(const AnsiString Name, const Ans
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteBinaryData(const AnsiString Name,
-  void * Buffer, int Size)
+  const void * Buffer, int Size)
 {
-  WriteStringRaw(Name, StrToHex(AnsiString(static_cast<char*>(Buffer), Size)));
+  WriteStringRaw(Name, StrToHex(AnsiString(static_cast<const char*>(Buffer), Size)));
 }

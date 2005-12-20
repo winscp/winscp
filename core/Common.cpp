@@ -6,6 +6,7 @@
 #include "Exceptions.h"
 #include "TextsCore.h"
 #include "Interface.h"
+#include <StrUtils.hpp>
 #include <math.h>
 #include <shellapi.h>
 //---------------------------------------------------------------------------
@@ -126,7 +127,7 @@ AnsiString MakeValidFileName(AnsiString FileName)
   AnsiString IllegalChars = ";,=+<>|\"[] \\/?*";
   for (int Index = 0; Index < IllegalChars.Length(); Index++)
   {
-    ReplaceChar(FileName, IllegalChars[Index+1], '-');
+    FileName = ReplaceChar(FileName, IllegalChars[Index+1], '-');
   }
   return FileName;
 }
@@ -354,6 +355,26 @@ AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params)
   if (!Params.IsEmpty()) Params = " " + Params;
   if (Program.Pos(" ")) Program = "\"" + Program + "\"";
   return Program + Params;
+}
+//---------------------------------------------------------------------------
+const char ShellCommandFileNamePattern[] = "!.!";
+//---------------------------------------------------------------------------
+void __fastcall ReformatFileNameCommand(AnsiString & Command)
+{
+  AnsiString Program, Params, Dir;
+  SplitCommand(Command, Program, Params, Dir);
+  if (Params.Pos(ShellCommandFileNamePattern) == 0)
+  {
+    Params = Params + (Params.IsEmpty() ? "" : " ") + ShellCommandFileNamePattern;
+  }
+  Command = FormatCommand(Program, Params);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall ExpandFileNameCommand(const AnsiString Command,
+  const AnsiString FileName)
+{
+  return AnsiReplaceStr(Command, ShellCommandFileNamePattern,
+    AddPathQuotes(FileName));
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsDisplayableStr(const AnsiString Str)
@@ -639,8 +660,6 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
 
       EncodeDSTMargin(Params->StandardDate, Year, NewCache.StandardDate);
       EncodeDSTMargin(Params->DaylightDate, Year, NewCache.DaylightDate);
-      AnsiString SD = FormatDateTime("dddddd tt", NewCache.StandardDate);
-      AnsiString DD = FormatDateTime("dddddd tt", NewCache.DaylightDate);
       if (DSTCacheCount < LENOF(DSTCache))
       {
         TGuard Guard(&Section);
@@ -993,6 +1012,25 @@ AnsiString __fastcall DecodeUrlChars(AnsiString S)
           S.Delete(i + 1, 2);
         }
         break;
+    }
+    i++;
+  }
+  return S;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore)
+{
+  AnsiString Encode = "/ ";
+  int i = 1;
+  while (i <= S.Length())
+  {
+    if ((Encode.Pos(S[i]) > 0) &&
+        (Ignore.Pos(S[i]) == 0))
+    {
+      AnsiString H = CharToHex(S[i]);
+      S.Insert(H, i + 1);
+      S[i] = '%';
+      i += H.Length();
     }
     i++;
   }

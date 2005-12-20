@@ -155,6 +155,29 @@ public:
 };
 
 
+class DELPHICLASS TTBXDropDownItem;
+class PASCALIMPLEMENTATION TTBXDropDownItem : public TTBXCustomDropDownItem 
+{
+	typedef TTBXCustomDropDownItem inherited;
+	
+__published:
+	__property AlwaysSelectFirst  = {default=1};
+	__property DropDownList  = {default=0};
+	__property LinkSubitems ;
+	__property SubMenuImages ;
+public:
+	#pragma option push -w-inl
+	/* TTBXCustomDropDownItem.Create */ inline __fastcall virtual TTBXDropDownItem(Classes::TComponent* AOwner) : TTBXCustomDropDownItem(AOwner) { }
+	#pragma option pop
+	
+public:
+	#pragma option push -w-inl
+	/* TTBXEditItem.Destroy */ inline __fastcall virtual ~TTBXDropDownItem(void) { }
+	#pragma option pop
+	
+};
+
+
 class DELPHICLASS TTBXDropDownItemViewer;
 class PASCALIMPLEMENTATION TTBXDropDownItemViewer : public TTBXEditItemViewer 
 {
@@ -342,6 +365,73 @@ public:
 	#pragma option pop
 	#pragma option push -w-inl
 	/* TTBItemViewer.Destroy */ inline __fastcall virtual ~TTBXLabelItemViewer(void) { }
+	#pragma option pop
+	
+};
+
+
+class DELPHICLASS TTBXColorItem;
+class PASCALIMPLEMENTATION TTBXColorItem : public Tbx::TTBXCustomItem 
+{
+	typedef Tbx::TTBXCustomItem inherited;
+	
+private:
+	Graphics::TColor FColor;
+	void __fastcall SetColor(Graphics::TColor Value);
+	
+protected:
+	virtual TMetaClass* __fastcall GetItemViewerClass(Tb2item::TTBView* AView);
+	
+public:
+	__fastcall virtual TTBXColorItem(Classes::TComponent* AOwner);
+	
+__published:
+	__property Action ;
+	__property AutoCheck  = {default=0};
+	__property Caption ;
+	__property Checked  = {default=0};
+	__property Graphics::TColor Color = {read=FColor, write=SetColor, default=16777215};
+	__property DisplayMode  = {default=0};
+	__property Enabled  = {default=1};
+	__property FontSettings ;
+	__property GroupIndex  = {default=0};
+	__property HelpContext  = {default=0};
+	__property HelpKeyword ;
+	__property Hint ;
+	__property InheritOptions  = {default=1};
+	__property MaskOptions  = {default=0};
+	__property MinHeight  = {default=0};
+	__property MinWidth  = {default=0};
+	__property Options  = {default=0};
+	__property RadioItem  = {default=0};
+	__property ShortCut  = {default=0};
+	__property Visible  = {default=1};
+	__property OnAdjustFont ;
+	__property OnClick ;
+public:
+	#pragma option push -w-inl
+	/* TTBXCustomItem.Destroy */ inline __fastcall virtual ~TTBXColorItem(void) { }
+	#pragma option pop
+	
+};
+
+
+class DELPHICLASS TTBXColorItemViewer;
+class PASCALIMPLEMENTATION TTBXColorItemViewer : public Tbx::TTBXItemViewer 
+{
+	typedef Tbx::TTBXItemViewer inherited;
+	
+protected:
+	virtual void __fastcall DoPaintCaption(Graphics::TCanvas* Canvas, const Types::TRect &ClientAreaRect, Types::TRect &CaptionRect, bool IsTextRotated, bool &PaintDefault);
+	virtual bool __fastcall GetImageShown(void);
+	DYNAMIC tagSIZE __fastcall GetImageSize();
+	virtual void __fastcall DrawItemImage(Graphics::TCanvas* Canvas, const Types::TRect &ARect, const Tbxthemes::TTBXItemInfo &ItemInfo);
+	
+public:
+	__fastcall virtual TTBXColorItemViewer(Tb2item::TTBView* AView, Tb2item::TTBCustomItem* AItem, int AGroupLevel);
+public:
+	#pragma option push -w-inl
+	/* TTBItemViewer.Destroy */ inline __fastcall virtual ~TTBXColorItemViewer(void) { }
 	#pragma option pop
 	
 };

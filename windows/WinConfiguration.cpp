@@ -8,14 +8,12 @@
 #include "TextsWin.h"
 #include "WinInterface.h"
 #include "GUITools.h"
-#include <stdio.h>
+#include "Tools.h"
 #include <ResourceModule.hpp>
 #include <InitGUID.h>
 #include <DragExt.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-//---------------------------------------------------------------------------
-const char ShellCommandFileNamePattern[] = "!.!";
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TEditorPreferences::TEditorPreferences()
@@ -97,7 +95,7 @@ AnsiString __fastcall TEditorPreferences::GetName() const
     {
       AnsiString Program, Params, Dir;
       AnsiString ExternalEditor = FData.ExternalEditor;
-      TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
+      ReformatFileNameCommand(ExternalEditor);
       SplitCommand(ExternalEditor, Program, Params, Dir);
       FName = ExtractFileName(Program);
       int P = FName.LastDelimiter(".");
@@ -259,7 +257,7 @@ void __fastcall TEditorList::Load(THierarchicalStorage * Storage)
       if (Next)
       {
         try
-        { 
+        {
           Editor = new TEditorPreferences();
           Editor->Load(Storage, false);
         }
@@ -432,7 +430,8 @@ void __fastcall TWinConfiguration::Default()
     "Sort_Visible=0,Sort_DockedTo=TopDock,Sort_LastDock=TopDock,Sort_DockRow=5,Sort_DockPos=0,Sort_FloatLeft=0,Sort_FloatTop=0,Sort_FloatRightX=0,"
     "Address_Visible=1,Address_DockedTo=TopDock,Address_LastDock=TopDock,Address_DockRow=1,Address_DockPos=0,Address_FloatLeft=0,Address_FloatTop=0,Address_FloatRightX=0,"
     "Updates_Visible=1,Updates_DockedTo=TopDock,Updates_LastDock=TopDock,Updates_DockRow=4,Updates_DockPos=302,Updates_FloatLeft=0,Updates_FloatTop=0,Updates_FloatRightX=0,"
-    "Transfer_Visible=1,Transfer_DockedTo=TopDock,Transfer_LastDock=TopDock,Transfer_DockRow=4,Transfer_DockPos=155,Transfer_FloatLeft=0,Transfer_FloatTop=0,Transfer_FloatRightX=0";
+    "Transfer_Visible=1,Transfer_DockedTo=TopDock,Transfer_LastDock=TopDock,Transfer_DockRow=4,Transfer_DockPos=155,Transfer_FloatLeft=0,Transfer_FloatTop=0,Transfer_FloatRightX=0"
+    "CustomCommands_Visible=0,CustomCommands_DockedTo=TopDock,CustomCommands_LastDock=TopDock,CustomCommands_DockRow=7,CustomCommands_DockPos=0,CustomCommands_FloatLeft=0,CustomCommands_FloatTop=0,CustomCommands_FloatRightX=0";
   FScpExplorer.StatusBar = true;
   AnsiString PersonalFolder;
   ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalFolder);
@@ -443,7 +442,7 @@ void __fastcall TWinConfiguration::Default()
   FScpExplorer.DriveViewWidth = 180;
   FScpExplorer.SessionComboWidth = 114;
 
-  FScpCommander.WindowParams = ((Screen->Width > 800) && (Screen->Height > 650)) ? 
+  FScpCommander.WindowParams = ((Screen->Width > 800) && (Screen->Height > 650)) ?
     "-1;-1;750;600;0" : "-1;-1;600;400;0";
   FScpCommander.LocalPanelWidth = 0.5;
   FScpCommander.SwappedPanels = false;
@@ -463,6 +462,8 @@ void __fastcall TWinConfiguration::Default()
     "Menu_Visible=1,Menu_DockedTo=TopDock,Menu_LastDock=TopDock,Menu_DockRow=0,Menu_DockPos=0,Menu_FloatLeft=0,Menu_FloatTop=0,Menu_FloatRightX=0,"
     "Updates_Visible=1,Updates_DockedTo=TopDock,Updates_LastDock=TopDock,Updates_DockRow=1,Updates_DockPos=535,Updates_FloatLeft=0,Updates_FloatTop=0,Updates_FloatRightX=0,"
     "Transfer_Visible=1,Transfer_DockedTo=TopDock,Transfer_LastDock=TopDock,Transfer_DockRow=1,Transfer_DockPos=388,Transfer_FloatLeft=0,Transfer_FloatTop=0,Transfer_FloatRightX=0,"
+    "UploadDownload_Visible=0,UploadDownload_DockedTo=TopDock,UploadDownload_LastDock=TopDock,UploadDownload_DockRow=5,UploadDownload_DockPos=0,UploadDownload_FloatLeft=0,UploadDownload_FloatTop=0,UploadDownload_FloatRightX=0,"
+    "CustomCommands_Visible=0,CustomCommands_DockedTo=TopDock,CustomCommands_LastDock=TopDock,CustomCommands_DockRow=6,CustomCommands_DockPos=0,CustomCommands_FloatLeft=0,CustomCommands_FloatTop=0,CustomCommands_FloatRightX=0"
     "RemotePath_Visible=1,RemotePath_DockedTo=RemoteTopDock,RemotePath_LastDock=RemoteTopDock,RemotePath_DockRow=0,RemotePath_DockPos=0,RemotePath_FloatLeft=0,RemotePath_FloatTop=0,RemotePath_FloatRightX=0,"
     "RemoteHistory_Visible=1,RemoteHistory_DockedTo=RemoteTopDock,RemoteHistory_LastDock=RemoteTopDock,RemoteHistory_DockRow=0,RemoteHistory_DockPos=135,RemoteHistory_FloatLeft=0,RemoteHistory_FloatTop=0,RemoteHistory_FloatRightX=0,"
     "RemoteNavigation_Visible=1,RemoteNavigation_DockedTo=RemoteTopDock,RemoteNavigation_LastDock=RemoteTopDock,RemoteNavigation_DockRow=0,RemoteNavigation_DockPos=215,RemoteNavigation_FloatLeft=0,RemoteNavigation_FloatTop=0,RemoteNavigation_FloatRightX=0,"
@@ -474,6 +475,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
   FScpCommander.SessionComboWidth = 114;
+  FScpCommander.FullRowSelect = true;
   FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0;20,0;150,0;125,0|0;1;8;2;3;4;5;6;7";
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.DriveView = false;
@@ -551,6 +553,7 @@ void __fastcall TWinConfiguration::ModifyAll()
   {
     FCustomCommandsModified = true;
   }
+  FEditorList->Modify();
 }
 //---------------------------------------------------------------------------
 THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
@@ -660,11 +663,12 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,    ScpCommander.StatusBar); \
     KEY(Bool,    ScpCommander.CommandLine); \
     KEY(String,  ScpCommander.WindowParams); \
-    KEYEX(Bool,  ScpCommander.NortonLikeMode, ExplorerStyleSelection); \
+    KEYEX(Integer, ScpCommander.NortonLikeMode, ExplorerStyleSelection); \
     KEY(Bool,    ScpCommander.PreserveLocalDirectory); \
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
     KEY(Integer, ScpCommander.SessionComboWidth); \
+    KEY(Bool,    ScpCommander.FullRowSelect); \
   ); \
   BLOCK("Interface\\Commander\\LocalPanel", CANCREATE, \
     KEY(String,  ScpCommander.LocalPanel.DirViewParams); \
@@ -730,6 +734,64 @@ void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::Load()
+{
+  FLegacyEditor = new TEditorPreferences();
+  try
+  {
+    FLegacyEditor->LegacyDefaults();
+
+    TCustomWinConfiguration::Load();
+
+    int EditorCount = FEditorList->Count;
+    if (EditorCount == 0)
+    {
+      TEditorPreferences * AlternativeEditor = NULL;
+      try
+      {
+        if (FLegacyEditor->Data.Editor == edInternal)
+        {
+          if (!FLegacyEditor->Data.ExternalEditor.IsEmpty())
+          {
+            AlternativeEditor = new TEditorPreferences(*FLegacyEditor);
+            AlternativeEditor->Data.Editor = edExternal;
+            FLegacyEditor->Data.ExternalEditor = "";
+          }
+        }
+        else
+        {
+          if (FLegacyEditor->Data.ExternalEditor.IsEmpty())
+          {
+            FLegacyEditor->Data.Editor = edInternal;
+          }
+          else
+          {
+            AlternativeEditor = new TEditorPreferences(*FLegacyEditor);
+            AlternativeEditor->Data.Editor = edInternal;
+          }
+        }
+      }
+      catch(...)
+      {
+        delete AlternativeEditor;
+        throw;
+      }
+
+      FEditorList->Add(FLegacyEditor);
+      FLegacyEditor = NULL;
+      if (AlternativeEditor != NULL)
+      {
+        FEditorList->Add(AlternativeEditor);
+      }
+    }
+  }
+  __finally
+  {
+    delete FLegacyEditor;
+    FLegacyEditor = NULL;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
 {
   TCustomWinConfiguration::LoadSpecial(Storage);
@@ -783,61 +845,17 @@ void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  int EditorCount = FEditorList->Count;
-  if (EditorCount == 0)
+  // load legacy editor configuration
+  assert(FLegacyEditor != NULL);
+  if (Storage->OpenSubKey("Interface\\Editor", false))
   {
-    // load legacy configuration
-    TEditorPreferences * Editor = new TEditorPreferences();
-    TEditorPreferences * AlternativeEditor = NULL;
     try
     {
-      Editor->LegacyDefaults();
-
-      if (Storage->OpenSubKey("Interface\\Editor", false))
-      {
-        try
-        {
-          Editor->Load(Storage, true);
-        }
-        __finally
-        {
-          Storage->CloseSubKey();
-        }
-      }
-
-      if (Editor->Data.Editor == edInternal)
-      {
-        if (!Editor->Data.ExternalEditor.IsEmpty())
-        {
-          AlternativeEditor = new TEditorPreferences(*Editor);
-          AlternativeEditor->Data.Editor = edExternal;
-          Editor->Data.ExternalEditor = "";
-        }
-      }
-      else
-      {
-        if (Editor->Data.ExternalEditor.IsEmpty())
-        {
-          Editor->Data.Editor = edInternal;
-        }
-        else
-        {
-          AlternativeEditor = new TEditorPreferences(*Editor);
-          AlternativeEditor->Data.Editor = edInternal;
-        }
-      }
+      FLegacyEditor->Load(Storage, true);
     }
-    catch(...)
+    __finally
     {
-      delete Editor;
-      delete AlternativeEditor;
-      throw;
-    }
-
-    FEditorList->Add(Editor);
-    if (AlternativeEditor != NULL)
-    {
-      FEditorList->Add(AlternativeEditor);
+      Storage->CloseSubKey();
     }
   }
 }
@@ -855,92 +873,6 @@ void __fastcall TWinConfiguration::ClearTemporaryLoginData()
     DeleteFile(FTemporaryKeyFile);
     FTemporaryKeyFile = "";
   }
-}
-//---------------------------------------------------------------------------
-bool __fastcall TWinConfiguration::DumpResourceToFile(
-  const AnsiString ResName, const AnsiString FileName)
-{
-  HRSRC Resource;
-  Resource = FindResourceEx(NULL, RT_RCDATA, ResName.c_str(),
-    MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
-  if (Resource)
-  {
-    unsigned long Size = SizeofResource(NULL, Resource);
-    if (!Size)
-    {
-      throw Exception(FORMAT("Cannot get size of resource %s", (ResName)));
-    }
-
-    void * Content = LoadResource(NULL, Resource);
-    if (!Content)
-    {
-      throw Exception(FORMAT("Cannot read resource %s", (ResName)));
-    }
-
-    Content = LockResource(Content);
-    if (!Content)
-    {
-      throw Exception(FORMAT("Cannot lock resource %s", (ResName)));
-    }
-
-    FILE * f = fopen(FileName.c_str(), "wb");
-    if (!f)
-    {
-      throw Exception(FORMAT("Cannot create file %s", (FileName)));
-    }
-    if (fwrite(Content, 1, Size, f) != Size)
-    {
-      throw Exception(FORMAT("Cannot write to file %s", (FileName)));
-    }
-    fclose(f);
-  }
-
-  return (Resource != NULL);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::RestoreForm(AnsiString Data, TForm * Form)
-{
-  assert(Form);
-  if (!Data.IsEmpty())
-  {
-    TRect Bounds = Form->BoundsRect;
-    Bounds.Left = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Left);
-    Bounds.Top = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Top);
-    Bounds.Right = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Right);
-    Bounds.Bottom = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Bottom);
-    TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, ';', true), (int)wsNormal);
-    Form->WindowState = State;
-    if (State == wsNormal)
-    {
-      if (Bounds.Width() > Screen->Width) Bounds.Right -= (Bounds.Width() - Screen->Width);
-      if (Bounds.Height() > Screen->Height) Bounds.Bottom -= (Bounds.Height() - Screen->Height);
-      #define POS_RANGE(x, prop) (x < 0) || (x > Screen->prop)
-      if (POS_RANGE(Bounds.Left, Width - 20) || POS_RANGE(Bounds.Top, Height - 40))
-      {
-        Form->Position = poDefaultPosOnly;
-        Form->Width = Bounds.Width();
-        Form->Height = Bounds.Height();
-     }
-      else
-      {
-        Form->Position = poDesigned;
-        Form->BoundsRect = Bounds;
-      }
-      #undef POS_RANGE
-    }
-  }
-  else if (Form->Position == poDesigned)
-  {
-    Form->Position = poDefaultPosOnly;
-  }
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TWinConfiguration::StoreForm(TCustomForm * Form)
-{
-  assert(Form);
-  return FORMAT("%d;%d;%d;%d;%d", ((int)Form->BoundsRect.Left, (int)Form->BoundsRect.Top,
-    (int)Form->BoundsRect.Right, (int)Form->BoundsRect.Bottom,
-    (int)Form->WindowState));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::GetDDExtInstalled()
@@ -1187,17 +1119,6 @@ TBookmarkList * __fastcall TWinConfiguration::GetBookmarks(AnsiString Key)
   return FBookmarks->Bookmarks[Key];
 }
 //---------------------------------------------------------------------------
-void TWinConfiguration::ReformatFileNameCommand(AnsiString & Command)
-{
-  AnsiString Program, Params, Dir;
-  SplitCommand(Command, Program, Params, Dir);
-  if (Params.Pos(ShellCommandFileNamePattern) == 0)
-  {
-    Params = Params + (Params.IsEmpty() ? "" : " ") + ShellCommandFileNamePattern;
-  }
-  Command = FormatCommand(Program, Params);
-}
-//---------------------------------------------------------------------------
 AnsiString __fastcall TWinConfiguration::GetDefaultKeyFile()
 {
   return (!FDefaultKeyFile.IsEmpty() ? FDefaultKeyFile : FTemporaryKeyFile);
@@ -1253,7 +1174,7 @@ void __fastcall TWinConfiguration::CleanupTemporaryFolders(TStrings * Folders)
   }
   else
   {
-    F = Folders; 
+    F = Folders;
   }
 
   if (F != NULL)
@@ -1522,7 +1443,7 @@ void __fastcall TWinConfiguration::CheckTranslationVersion(const AnsiString File
     {
       LocaleSafe = InternalLocale();
     }
-    
+
     if (TranslationProductName.IsEmpty() || TranslationProductVersion.IsEmpty())
     {
       throw Exception(FMTLOAD(UNKNOWN_TRANSLATION, (FileName)));
@@ -1539,17 +1460,17 @@ void __fastcall TWinConfiguration::CheckDefaultTranslation()
 {
   if (InvalidDefaultTranslation)
   {
-    MoreMessageDialog(FMTLOAD(INVALID_DEFAULT_TRANSLATION, 
+    MoreMessageDialog(FMTLOAD(INVALID_DEFAULT_TRANSLATION,
       (FInvalidDefaultTranslationMessage)), NULL, qtWarning, qaOK, HELP_NONE);
   }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::ConfirmRemoveDefaultTranslation()
 {
-  bool Result = 
+  bool Result =
     InvalidDefaultTranslation &&
-    (MoreMessageDialog(FMTLOAD(REMOVE_DEFAULT_TRANSLATION, 
-      (FInvalidDefaultTranslationMessage)), NULL, qtWarning, 
+    (MoreMessageDialog(FMTLOAD(REMOVE_DEFAULT_TRANSLATION,
+      (FInvalidDefaultTranslationMessage)), NULL, qtWarning,
       qaOK | qaCancel, HELP_NONE) == qaOK);
   return Result;
 }

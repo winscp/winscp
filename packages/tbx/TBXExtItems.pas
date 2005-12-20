@@ -4,7 +4,7 @@ unit TBXExtItems;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXExtItems.pas 16 2004-05-26 02:02:55Z Alex@ZEISS $
+// Id: TBXExtItems.pas 16 2004-05-26 02:02:55Z Alex@ZEISS
 
 interface
 
@@ -250,7 +250,6 @@ type
     property DropDownList: Boolean read FDropDownList write FDropDownList default False;
   end;
 
-  {$IFNDEF MPEXCLUDE}
   TTBXDropDownItem = class(TTBXCustomDropDownItem)
   published
     property AlwaysSelectFirst;
@@ -258,7 +257,6 @@ type
     property LinkSubitems;
     property SubMenuImages;
   end;
-  {$ENDIF}
 
   TTBXDropDownItemViewer = class(TTBXEditItemViewer)
   protected
@@ -405,7 +403,6 @@ type
     function  IsToolbarStyle: Boolean; override;
   end;
 
-  {$IFNDEF MPEXCLUDE}
   { TTBXColorItem }
 
   TTBXColorItem = class(TTBXCustomItem)
@@ -435,6 +432,7 @@ type
     property MinHeight;
     property MinWidth;
     property Options;
+    { MP }
     property RadioItem;
     property ShortCut;
     property Visible;
@@ -452,7 +450,8 @@ type
   public
     constructor Create(AView: TTBView; AItem: TTBCustomItem; AGroupLevel: Integer); override;
   end;
-  
+
+  {$IFNDEF MPEXCLUDE}
   { TTBXMRUList }
 
   TTBXMRUList = class(TTBMRUList)
@@ -494,7 +493,9 @@ const
 type
   TTBViewAccess = class(TTBView);
   TTBItemAccess = class(TTBCustomItem);
-{  TTBMRUListAccess = class(TTBMRUList);}
+  {$IFNDEF MPEXCLUDE}
+  TTBMRUListAccess = class(TTBMRUList);
+  {$ENDIF}
   TCustomEditAccess = class(TCustomEdit);
   TFontSettingsAccess = class(TFontSettings);
 
@@ -659,7 +660,8 @@ begin
         Edit.SelLength := Length(S2) - Length(S);
         S := S2;
       end;
-      if S <> FLastEditChange then
+      {if S <> FLastEditChange then} {vb-}
+      if AnsiCompareText(S, FLastEditChange) <> 0 then {vb+}
       begin
         DoChange(S); // note, Edit.Text may be different from Self.Text
         FLastEditChange := S;
@@ -1136,7 +1138,10 @@ begin
   begin
     if TWMKeyDown(Message).CharCode = VK_F4 then
     begin
-      TTBViewAccess(View).OpenChildPopup(True);
+      {TTBViewAccess(View).OpenChildPopup(True);} {vb-}
+      if (View.OpenViewer = Self) // WasAlreadyOpen {vb+}
+        then View.CloseChildPopups
+        else View.OpenChildPopup(True);
       Result := True;
       Exit;
     end;
@@ -1414,7 +1419,8 @@ begin
     case Message.wParam of
       VK_UP:
         begin
-          ItemIndex := ItemIndex - 1;
+          if ItemIndex > 0 then {vb+}
+            ItemIndex := ItemIndex- 1;
           EditControl.Text := Text;
           EditControl.SelectAll;
           Result := True;
@@ -1422,7 +1428,8 @@ begin
 
       VK_DOWN:
         begin
-          ItemIndex := ItemIndex + 1;
+          if ItemIndex < Strings.Count- 1 then {vb+}
+            ItemIndex := ItemIndex+ 1;
           EditControl.Text := Text;
           EditControl.SelectAll;
           Result := True;
@@ -1644,8 +1651,6 @@ end;
 
 //============================================================================//
 
-{$IFNDEF MPEXCLUDE}
-
 { TTBXColorItem }
 
 constructor TTBXColorItem.Create(AOwner: TComponent);
@@ -1734,6 +1739,8 @@ begin
 end;
 
 //============================================================================//
+
+{$IFNDEF MPEXCLUDE}
 
 { TTBXMRUList }
 

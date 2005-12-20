@@ -13,57 +13,69 @@
 #include <vcl\Buttons.hpp>
 #include <vcl\ExtCtrls.hpp>
 #include <XPThemes.hpp>
+#include <ComCtrls.hpp>
+#include <Menus.hpp>
 //----------------------------------------------------------------------------
-class TTerminal;
+typedef void __fastcall (__closure *TFeedFileSystemData)
+  (TControl * Control, int Label, AnsiString Value);
 //----------------------------------------------------------------------------
 class TFileSystemInfoDialog : public TForm
 {
 __published:
   TButton *CloseButton;
-  TXPGroupBox *ServerGroup;
-  TLabel *Label1;
-  TLabel *Label2;
-  TEdit *SshVersionEdit;
-  TEdit *CipherEdit;
-  TLabel *Label3;
-  TEdit *CompressionEdit;
-  TXPGroupBox *ProtocolGroup;
-  TLabel *Label4;
-  TLabel *Label5;
-  TLabel *Label6;
-  TEdit *ModeChangingEdit;
-  TEdit *OwnerGroupChangingEdit;
-  TEdit *AnyCommandEdit;
-  TLabel *Label7;
-  TEdit *FSProtocolEdit;
-  TLabel *Label8;
-  TEdit *SymbolicHardLinkEdit;
-  TLabel *Label9;
-  TEdit *NativeTextModeEdit;
-  TLabel *Label10;
-  TEdit *UserGroupListingEdit;
-  TMemo *InfoMemo;
-  TEdit *SshImplementationEdit;
-  TLabel *Label11;
-  TLabel *Label12;
-  TEdit *RemoteCopyEdit;
+  TButton *HelpButton;
+  TPageControl *PageControl;
+  TTabSheet *SshSheet;
   TXPGroupBox *HostKeyGroup;
   TEdit *HostKeyFingerprintEdit;
-  TButton *HelpButton;
+  TTabSheet *ProtocolSheet;
+  TXPGroupBox *InfoGroup;
+  TMemo *InfoMemo;
+  TListView *ServerView;
+  TListView *ProtocolView;
+  TButton *ClipboardButton;
+  TPopupMenu *ListViewMenu;
+  TMenuItem *Copy;
+  TTabSheet *SpaceAvailableSheet;
+  TListView *SpaceAvailableView;
+  TLabel *Label1;
+  TEdit *SpaceAvailablePathEdit;
+  TButton *SpaceAvailableButton;
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall ClipboardButtonClick(TObject *Sender);
+  void __fastcall CopyClick(TObject *Sender);
+  void __fastcall FormShow(TObject *Sender);
+  void __fastcall SpaceAvailableButtonClick(TObject *Sender);
+  void __fastcall PageControlChange(TObject *Sender);
+  void __fastcall ControlChange(TObject *Sender);
 public:
-	virtual __fastcall TFileSystemInfoDialog(TComponent* AOwner);
+    virtual __fastcall TFileSystemInfoDialog(TComponent * AOwner,
+    TGetSpaceAvailable OnGetSpaceAvailable);
 
-  __property TTerminal * Terminal = { read=FTerminal, write=SetTerminal };
+  void __fastcall Execute(const TFileSystemInfo & FileSystemInfo,
+    AnsiString SpaceAvailablePath);
 
 private:
-  TTerminal * FTerminal;
+  TControl * FLastFeededControl;
+  AnsiString FClipboard;
+  TGetSpaceAvailable FOnGetSpaceAvailable;
+  bool FSpaceAvailableLoaded;
+  TSpaceAvailable FSpaceAvailable;
+  int FLastListItem;
+  TFileSystemInfo FFileSystemInfo;
 
-  void __fastcall SetTerminal(TTerminal * value);
+  void __fastcall Feed(TFeedFileSystemData AddItem);
   void __fastcall UpdateControls();
   AnsiString __fastcall CapabilityStr(TFSCapability Capability);
   AnsiString __fastcall CapabilityStr(TFSCapability Capability1,
     TFSCapability Capability2);
+  AnsiString __fastcall SpaceStr(__int64 Bytes);
+  void __fastcall ControlsAddItem(TControl * Control, int Label, AnsiString Value);
+  void __fastcall ClipboardAddItem(TControl * Control, int Label, AnsiString Value);
+  void __fastcall CheckSpaceAvailable();
+  void __fastcall NeedSpaceAvailable();
+  bool __fastcall SpaceAvailableSupported();
+  void __fastcall FeedControls();
 };
 //----------------------------------------------------------------------------
 #endif

@@ -153,7 +153,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         end
         item
           Alignment = taRightJustify
-          Caption = 'Transfered'
+          Caption = 'Transferred'
           Width = 80
         end
         item
@@ -228,6 +228,9 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
           Action = NonVisualDataModule.QueueItemDownAction
         end
         object TBXSeparatorItem202: TTBXSeparatorItem
+        end
+        object TBXItem210: TTBXItem
+          Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
         end
         object TBXItem208: TTBXItem
           Action = NonVisualDataModule.QueuePreferencesAction

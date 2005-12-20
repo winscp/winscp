@@ -26,6 +26,7 @@
 
 #include "LogSettings.h"
 #include "GeneralSettings.h"
+#include <ImgList.hpp>
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -238,6 +239,13 @@ __published:
   TComboBox *SFTPBugUtfCombo;
   TComboBox *SFTPBugSignedTSCombo;
   TButton *HelpButton;
+  TRadioButton *ExternalSSHButton;
+  TRadioButton *ExternalSFTPButton;
+  TButton *ColorButton;
+  TPopupMenu *ColorPopupMenu;
+  TMenuItem *ColorDefaultItem;
+  TMenuItem *PickColorItem;
+  TImageList *ColorImageList;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -283,6 +291,9 @@ __published:
   void __fastcall PrivateKeyEditAfterDialog(TObject *Sender,
           AnsiString &Name, bool &Action);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
+  void __fastcall ColorButtonClick(TObject *Sender);
+  void __fastcall ColorDefaultItemClick(TObject *Sender);
+  void __fastcall PickColorItemClick(TObject *Sender);
 
 private:
   int NoUpdate;
@@ -297,7 +308,8 @@ private:
   int FSavedSession;
   bool FLocaleChanging;
   void * FSystemSettings;
-  AnsiString FCurrentSessionName;  
+  AnsiString FCurrentSessionName;
+  TColor FColor;
 
   void __fastcall LoadSession(TSessionData * aSessionData);
   void __fastcall UpdateControls();
@@ -317,8 +329,6 @@ private:
 protected:
   void __fastcall Default();
   void __fastcall LoadConfiguration();
-  void __fastcall LoggingGetDefaultLogFileName(System::TObject* Sender,
-    AnsiString & DefaultLogFileName);
   void __fastcall SaveConfiguration();
   void __fastcall ShowPreferencesDialog();
   void __fastcall ChangePage(TTabSheet * Tab);

@@ -56,6 +56,9 @@ void __fastcall TCustomWinConfiguration::Default()
   FShowAdvancedLoginOptions = false;
   FInterface = ifCommander;
   FLogView = lvNone;
+  FSynchronizeChecklist.WindowParams = "0;-1;-1;600;450;0";
+  FSynchronizeChecklist.ListLayout = "150,100,80,130,25,100,80,130";
+  FConsoleWin.WindowSize = "570,430";
 
   ClearHistory();
 }
@@ -85,7 +88,14 @@ void __fastcall TCustomWinConfiguration::ModifyAll()
   ) \
   BLOCK("Logging", CANCREATE, \
     KEY(Integer, LogView); \
-  );
+  ) \
+  BLOCK("Interface\\SynchronizeChecklist", CANCREATE, \
+    KEY(String,   SynchronizeChecklist.WindowParams); \
+    KEY(String,   SynchronizeChecklist.ListLayout); \
+  ); \
+  BLOCK("Interface\\ConsoleWin", CANCREATE, \
+    KEY(String,   ConsoleWin.WindowSize); \
+  ); \
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SaveSpecial(
   THierarchicalStorage * Storage)
@@ -236,5 +246,15 @@ TStrings * __fastcall TCustomWinConfiguration::GetHistory(const AnsiString Index
 {
   int I = FHistory->IndexOf(Index);
   return I >= 0 ? dynamic_cast<TStrings *>(FHistory->Objects[I]) : FEmptyHistory;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::SetSynchronizeChecklist(TSynchronizeChecklistConfiguration value)
+{
+  SET_CONFIG_PROPERTY(SynchronizeChecklist);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::SetConsoleWin(TConsoleWinConfiguration value)
+{
+  SET_CONFIG_PROPERTY(ConsoleWin);
 }
 

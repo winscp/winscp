@@ -20,6 +20,7 @@ public:
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
+  virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
@@ -52,6 +53,8 @@ public:
     const AnsiString NewName);
   virtual AnsiString __fastcall FileUrl(const AnsiString FileName);
   virtual TStrings * __fastcall GetFixedPaths();
+  virtual void __fastcall SpaceAvailable(const AnsiString Path,
+    TSpaceAvailable & ASpaceAvailable);
 
 protected:
   __property TStrings * Output = { read = FOutput };

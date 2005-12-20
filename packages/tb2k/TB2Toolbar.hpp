@@ -77,7 +77,6 @@ private:
 	TTBChevronPriorityForNewItems FChevronPriorityForNewItems;
 	int FDisableAlignArrange;
 	int FFloatingWidth;
-	bool FHookInstalled;
 	bool FIgnoreMouseLeave;
 	Tb2item::TTBRootItem* FItem;
 	int FLastWrappedLines;

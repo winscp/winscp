@@ -11,7 +11,7 @@ inherited ScpExplorerForm: TScpExplorerForm
   PixelsPerInch = 96
   TextHeight = 13
   inherited QueueSplitter: TSplitter
-    Top = 343
+    Top = 336
     Width = 640
   end
   inherited TopDock: TTBXDock
@@ -31,6 +31,23 @@ inherited ScpExplorerForm: TScpExplorerForm
         Caption = '&File'
         HelpKeyword = 'ui_explorer_menu#file'
         Hint = 'File operations'
+        object TBXSubmenuItem26: TTBXSubmenuItem
+          Caption = '&New'
+          HelpKeyword = 'task_index'
+          Hint = 'Create object|Create new object'
+          object TBXItem135: TTBXItem
+            Action = NonVisualDataModule.NewFileAction
+          end
+          object TBXItem136: TTBXItem
+            Action = NonVisualDataModule.NewDirAction
+          end
+          object TBXItem209: TTBXItem
+            Action = NonVisualDataModule.NewLinkAction
+          end
+        end
+        object TBXSeparatorItem20: TTBXSeparatorItem
+          Hint = 'E'
+        end
         object TBXItem25: TTBXItem
           Action = NonVisualDataModule.CurrentOpenAction
         end
@@ -40,8 +57,8 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXSubmenuItem9: TTBXSubmenuItem
           Action = NonVisualDataModule.CurrentEditAlternativeAction
         end
-        object TBXItem28: TTBXItem
-          Action = NonVisualDataModule.EditNewAction
+        object TBXItem4: TTBXItem
+          Action = NonVisualDataModule.AddEditLinkAction
         end
         object TBXSeparatorItem7: TTBXSeparatorItem
           Hint = 'E'
@@ -107,12 +124,6 @@ inherited ScpExplorerForm: TScpExplorerForm
         Caption = '&Commands'
         HelpKeyword = 'ui_explorer_menu#commands'
         Hint = 'Other commands'
-        object TBXItem3: TTBXItem
-          Action = NonVisualDataModule.CurrentCreateDirAction
-        end
-        object TBXItem4: TTBXItem
-          Action = NonVisualDataModule.AddEditLinkAction
-        end
         object TBXItem43: TTBXItem
           Action = NonVisualDataModule.SynchronizeAction
         end
@@ -286,6 +297,9 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXItem83: TTBXItem
             Action = NonVisualDataModule.ExplorerTransferBandAction
           end
+          object TBXItem28: TTBXItem
+            Action = NonVisualDataModule.ExplorerCustomCommandsBandAction
+          end
           object TBXSeparatorItem19: TTBXSeparatorItem
             Hint = 'E'
           end
@@ -323,6 +337,9 @@ inherited ScpExplorerForm: TScpExplorerForm
           end
           object TBXSeparatorItem22: TTBXSeparatorItem
             Hint = 'E'
+          end
+          object TBXItem3: TTBXItem
+            Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
           end
           object TBXItem81: TTBXItem
             Action = NonVisualDataModule.QueuePreferencesAction
@@ -451,6 +468,29 @@ inherited ScpExplorerForm: TScpExplorerForm
           end
           object TBXItem76: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction
+          end
+        end
+        object TBXSeparatorItem23: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object ColorMenuItem: TTBXColorItem
+          Action = NonVisualDataModule.ColorMenuAction
+          Color = clNone
+          object TBXItem216: TTBXItem
+            Action = NonVisualDataModule.ColorDefaultAction
+          end
+          object TBXSeparatorItem50: TTBXSeparatorItem
+            Blank = True
+          end
+          object SessionColorPalette: TTBXColorPalette
+            PaletteOptions = [tpoCustomImages]
+            OnChange = SessionColorPaletteChange
+          end
+          object TBXSeparatorItem51: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem217: TTBXItem
+            Action = NonVisualDataModule.ColorPickAction
           end
         end
         object TBXSeparatorItem5: TTBXSeparatorItem
@@ -810,7 +850,7 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
     end
     object TransferToolbar: TTBXToolbar
-      Left = 44
+      Left = 46
       Top = 180
       Caption = 'Transfer settings'
       DockPos = 44
@@ -829,23 +869,35 @@ inherited ScpExplorerForm: TScpExplorerForm
         Action = NonVisualDataModule.PresetsPreferencesAction
       end
     end
+    object CustomCommandsToolbar: TTBXToolbar
+      Left = 193
+      Top = 180
+      Caption = 'Custom Commands'
+      DockPos = 193
+      DockRow = 7
+      Images = GlyphsModule.ExplorerImages
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 9
+      Visible = False
+    end
   end
   inherited RemotePanel: TPanel
     Left = 9
     Top = 206
     Width = 622
-    Height = 137
+    Height = 130
     Constraints.MinHeight = 100
     Constraints.MinWidth = 210
     inherited RemotePanelSplitter: TSplitter
-      Height = 106
+      Height = 99
       Hint = 
         'Drag to resize directory tree. Double click to hide directory tr' +
         'ee.'
     end
     inherited RemoteStatusBar: TTBXStatusBar
       Tag = 1
-      Top = 115
+      Top = 108
       Width = 622
       Height = 22
       Images = GlyphsModule.SessionImages
@@ -915,17 +967,17 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     inherited RemoteDirView: TUnixDirView
       Width = 450
-      Height = 106
+      Height = 99
       PathComboBox = UnixPathComboBox
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
     end
     inherited RemoteDriveView: TUnixDriveView
-      Height = 106
+      Height = 99
       Constraints.MinWidth = 40
     end
     object BottomDock: TTBXDock
       Left = 0
-      Top = 106
+      Top = 99
       Width = 622
       Height = 9
       FixAlign = True
@@ -933,7 +985,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
   end
   inherited QueuePanel: TPanel
-    Top = 346
+    Top = 339
     Width = 640
     inherited QueueView: TListView
       Width = 640
@@ -946,14 +998,14 @@ inherited ScpExplorerForm: TScpExplorerForm
     Left = 0
     Top = 206
     Width = 9
-    Height = 137
+    Height = 130
     Position = dpLeft
   end
   object RightDock: TTBXDock
     Left = 631
     Top = 206
     Width = 9
-    Height = 137
+    Height = 130
     Position = dpRight
   end
 end

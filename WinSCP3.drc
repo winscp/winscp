@@ -7,94 +7,95 @@
   produced executable.
 */
 
-#define Consts_SDockedCtlNeedsName 65200
-#define Consts_SDockTreeRemoveError 65201
-#define Consts_SDockZoneNotFound 65202
-#define Consts_SDockZoneHasNoCtl 65203
-#define Consts_SMultiSelectRequired 65204
-#define Consts_SSeparator 65205
-#define Consts_SErrorSettingCount 65206
-#define Consts_SListBoxMustBeVirtual 65207
-#define Consts_SmkcCtrl 65216
-#define Consts_SmkcAlt 65217
-#define Consts_srNone 65218
-#define Consts_SOutOfRange 65219
-#define Consts_sAllFilter 65220
-#define Consts_SInsertLineError 65221
-#define Consts_SInvalidClipFmt 65222
-#define Consts_SIconToClipboard 65223
-#define Consts_SCannotOpenClipboard 65224
-#define Consts_SInvalidMemoSize 65225
-#define Consts_SNoDefaultPrinter 65226
-#define Consts_SDuplicateMenus 65227
-#define Consts_SPictureLabel 65228
-#define Consts_SPictureDesc 65229
-#define Consts_SPreviewLabel 65230
-#define Consts_SCannotOpenAVI 65231
-#define Consts_SmkcBkSp 65232
-#define Consts_SmkcTab 65233
-#define Consts_SmkcEsc 65234
-#define Consts_SmkcEnter 65235
-#define Consts_SmkcSpace 65236
-#define Consts_SmkcPgUp 65237
-#define Consts_SmkcPgDn 65238
-#define Consts_SmkcEnd 65239
-#define Consts_SmkcHome 65240
-#define Consts_SmkcLeft 65241
-#define Consts_SmkcUp 65242
-#define Consts_SmkcRight 65243
-#define Consts_SmkcDown 65244
-#define Consts_SmkcIns 65245
-#define Consts_SmkcDel 65246
-#define Consts_SmkcShift 65247
-#define Consts_SMaskEditErr 65248
-#define Consts_SMsgDlgWarning 65249
-#define Consts_SMsgDlgError 65250
-#define Consts_SMsgDlgInformation 65251
-#define Consts_SMsgDlgConfirm 65252
-#define Consts_SMsgDlgYes 65253
-#define Consts_SMsgDlgNo 65254
-#define Consts_SMsgDlgOK 65255
-#define Consts_SMsgDlgCancel 65256
-#define Consts_SMsgDlgHelp 65257
-#define Consts_SMsgDlgAbort 65258
-#define Consts_SMsgDlgRetry 65259
-#define Consts_SMsgDlgIgnore 65260
-#define Consts_SMsgDlgAll 65261
-#define Consts_SMsgDlgNoToAll 65262
-#define Consts_SMsgDlgYesToAll 65263
-#define Consts_SOKButton 65264
-#define Consts_SCancelButton 65265
-#define Consts_SYesButton 65266
-#define Consts_SNoButton 65267
-#define Consts_SHelpButton 65268
-#define Consts_SCloseButton 65269
-#define Consts_SIgnoreButton 65270
-#define Consts_SRetryButton 65271
-#define Consts_SAbortButton 65272
-#define Consts_SAllButton 65273
-#define Consts_SCannotDragForm 65274
-#define Consts_SVMetafiles 65275
-#define Consts_SVEnhMetafiles 65276
-#define Consts_SVIcons 65277
-#define Consts_SVBitmaps 65278
-#define Consts_SMaskErr 65279
+#define Consts_SCannotOpenAVI 65200
+#define Consts_SDockedCtlNeedsName 65201
+#define Consts_SDockTreeRemoveError 65202
+#define Consts_SDockZoneNotFound 65203
+#define Consts_SDockZoneHasNoCtl 65204
+#define Consts_SMultiSelectRequired 65205
+#define Consts_SSeparator 65206
+#define Consts_SErrorSettingCount 65207
+#define Consts_SListBoxMustBeVirtual 65208
+#define Consts_SmkcShift 65216
+#define Consts_SmkcCtrl 65217
+#define Consts_SmkcAlt 65218
+#define Consts_srNone 65219
+#define Consts_SOutOfRange 65220
+#define Consts_sAllFilter 65221
+#define Consts_SInsertLineError 65222
+#define Consts_SInvalidClipFmt 65223
+#define Consts_SIconToClipboard 65224
+#define Consts_SCannotOpenClipboard 65225
+#define Consts_SInvalidMemoSize 65226
+#define Consts_SNoDefaultPrinter 65227
+#define Consts_SDuplicateMenus 65228
+#define Consts_SPictureLabel 65229
+#define Consts_SPictureDesc 65230
+#define Consts_SPreviewLabel 65231
+#define Consts_SMsgDlgYesToAll 65232
+#define Consts_SmkcBkSp 65233
+#define Consts_SmkcTab 65234
+#define Consts_SmkcEsc 65235
+#define Consts_SmkcEnter 65236
+#define Consts_SmkcSpace 65237
+#define Consts_SmkcPgUp 65238
+#define Consts_SmkcPgDn 65239
+#define Consts_SmkcEnd 65240
+#define Consts_SmkcHome 65241
+#define Consts_SmkcLeft 65242
+#define Consts_SmkcUp 65243
+#define Consts_SmkcRight 65244
+#define Consts_SmkcDown 65245
+#define Consts_SmkcIns 65246
+#define Consts_SmkcDel 65247
+#define Consts_SMaskErr 65248
+#define Consts_SMaskEditErr 65249
+#define Consts_SMsgDlgWarning 65250
+#define Consts_SMsgDlgError 65251
+#define Consts_SMsgDlgInformation 65252
+#define Consts_SMsgDlgConfirm 65253
+#define Consts_SMsgDlgYes 65254
+#define Consts_SMsgDlgNo 65255
+#define Consts_SMsgDlgOK 65256
+#define Consts_SMsgDlgCancel 65257
+#define Consts_SMsgDlgHelp 65258
+#define Consts_SMsgDlgAbort 65259
+#define Consts_SMsgDlgRetry 65260
+#define Consts_SMsgDlgIgnore 65261
+#define Consts_SMsgDlgAll 65262
+#define Consts_SMsgDlgNoToAll 65263
+#define Consts_SControlParentSetToSelf 65264
+#define Consts_SOKButton 65265
+#define Consts_SCancelButton 65266
+#define Consts_SYesButton 65267
+#define Consts_SNoButton 65268
+#define Consts_SHelpButton 65269
+#define Consts_SCloseButton 65270
+#define Consts_SIgnoreButton 65271
+#define Consts_SRetryButton 65272
+#define Consts_SAbortButton 65273
+#define Consts_SAllButton 65274
+#define Consts_SCannotDragForm 65275
+#define Consts_SVMetafiles 65276
+#define Consts_SVEnhMetafiles 65277
+#define Consts_SVIcons 65278
+#define Consts_SVBitmaps 65279
 #define Consts_SParentRequired 65280
-#define Consts_SMDIChildNotVisible 65281
-#define Consts_SVisibleChanged 65282
-#define Consts_SCannotShowModal 65283
-#define Consts_SPropertyOutOfRange 65284
-#define Consts_SMenuIndexError 65285
-#define Consts_SMenuReinserted 65286
-#define Consts_SMenuNotFound 65287
-#define Consts_SNoTimers 65288
-#define Consts_SNotPrinting 65289
-#define Consts_SPrinting 65290
-#define Consts_SInvalidPrinter 65291
-#define Consts_SDeviceOnPort 65292
-#define Consts_SGroupIndexTooLow 65293
-#define Consts_SNoMDIForm 65294
-#define Consts_SControlParentSetToSelf 65295
+#define Consts_SParentGivenNotAParent 65281
+#define Consts_SMDIChildNotVisible 65282
+#define Consts_SVisibleChanged 65283
+#define Consts_SCannotShowModal 65284
+#define Consts_SPropertyOutOfRange 65285
+#define Consts_SMenuIndexError 65286
+#define Consts_SMenuReinserted 65287
+#define Consts_SMenuNotFound 65288
+#define Consts_SNoTimers 65289
+#define Consts_SNotPrinting 65290
+#define Consts_SPrinting 65291
+#define Consts_SInvalidPrinter 65292
+#define Consts_SDeviceOnPort 65293
+#define Consts_SGroupIndexTooLow 65294
+#define Consts_SNoMDIForm 65295
 #define Consts_SInvalidImage 65296
 #define Consts_SScanLine 65297
 #define Consts_SChangeIconSize 65298
@@ -337,6 +338,7 @@
 #define Driveview_coFileOperatorTitle 65535
 STRINGTABLE
 BEGIN
+	Consts_SCannotOpenAVI,	"Cannot open AVI"
 	Consts_SDockedCtlNeedsName,	"Docked control must have a name"
 	Consts_SDockTreeRemoveError,	"Error removing control from dock tree"
 	Consts_SDockZoneNotFound,	" - Dock zone not found"
@@ -345,6 +347,7 @@ BEGIN
 	Consts_SSeparator,	"Separator"
 	Consts_SErrorSettingCount,	"Error setting %s.Count"
 	Consts_SListBoxMustBeVirtual,	"Listbox (%s) style must be virtual in order to set Count"
+	Consts_SmkcShift,	"Shift+"
 	Consts_SmkcCtrl,	"Ctrl+"
 	Consts_SmkcAlt,	"Alt+"
 	Consts_srNone,	"(None)"
@@ -360,7 +363,7 @@ BEGIN
 	Consts_SPictureLabel,	"Picture:"
 	Consts_SPictureDesc,	" (%dx%d)"
 	Consts_SPreviewLabel,	"Preview"
-	Consts_SCannotOpenAVI,	"Cannot open AVI"
+	Consts_SMsgDlgYesToAll,	"Yes to &All"
 	Consts_SmkcBkSp,	"BkSp"
 	Consts_SmkcTab,	"Tab"
 	Consts_SmkcEsc,	"Esc"
@@ -376,7 +379,7 @@ BEGIN
 	Consts_SmkcDown,	"Down"
 	Consts_SmkcIns,	"Ins"
 	Consts_SmkcDel,	"Del"
-	Consts_SmkcShift,	"Shift+"
+	Consts_SMaskErr,	"Invalid input value"
 	Consts_SMaskEditErr,	"Invalid input value.  Use escape key to abandon changes"
 	Consts_SMsgDlgWarning,	"Warning"
 	Consts_SMsgDlgError,	"Error"
@@ -392,7 +395,7 @@ BEGIN
 	Consts_SMsgDlgIgnore,	"&Ignore"
 	Consts_SMsgDlgAll,	"&All"
 	Consts_SMsgDlgNoToAll,	"N&o to All"
-	Consts_SMsgDlgYesToAll,	"Yes to &All"
+	Consts_SControlParentSetToSelf,	"A control cannot have itself as its parent"
 	Consts_SOKButton,	"OK"
 	Consts_SCancelButton,	"Cancel"
 	Consts_SYesButton,	"&Yes"
@@ -408,8 +411,8 @@ BEGIN
 	Consts_SVEnhMetafiles,	"Enhanced Metafiles"
 	Consts_SVIcons,	"Icons"
 	Consts_SVBitmaps,	"Bitmaps"
-	Consts_SMaskErr,	"Invalid input value"
 	Consts_SParentRequired,	"Control '%s' has no parent window"
+	Consts_SParentGivenNotAParent,	"Parent given is not a parent of '%s'"
 	Consts_SMDIChildNotVisible,	"Cannot hide an MDI Child Form"
 	Consts_SVisibleChanged,	"Cannot change Visible in OnShow or OnHide"
 	Consts_SCannotShowModal,	"Cannot make a visible window modal"
@@ -424,7 +427,6 @@ BEGIN
 	Consts_SDeviceOnPort,	"%s on %s"
 	Consts_SGroupIndexTooLow,	"GroupIndex cannot be less than a previous menu item's GroupIndex"
 	Consts_SNoMDIForm,	"Cannot create form. No MDI forms are currently active"
-	Consts_SControlParentSetToSelf,	"A control cannot have itself as its parent"
 	Consts_SInvalidImage,	"Invalid image"
 	Consts_SScanLine,	"Scan line index out of range"
 	Consts_SChangeIconSize,	"Cannot change the size of an icon"

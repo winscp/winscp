@@ -9,6 +9,7 @@ class TRights;
 class TRemoteFile;
 class TRemoteFileList;
 struct TCopyParamType;
+struct TSpaceAvailable;
 class TFileOperationProgressType;
 class TRemoteProperties;
 //---------------------------------------------------------------------------
@@ -35,6 +36,7 @@ public:
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory) = 0;
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties) = 0;
+  virtual bool __fastcall LoadFilesProperties(TStrings * FileList) = 0;
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
@@ -67,6 +69,8 @@ public:
     const AnsiString NewName) = 0;
   virtual AnsiString __fastcall FileUrl(const AnsiString FileName) = 0;
   virtual TStrings * __fastcall GetFixedPaths() = 0;
+  virtual void __fastcall SpaceAvailable(const AnsiString Path,
+    TSpaceAvailable & ASpaceAvailable) = 0;
 
   __property AnsiString CurrentDirectory = { read = GetCurrentDirectory, write = SetCurrentDirectory };
   __property AnsiString ProtocolName = { read = GetProtocolName };

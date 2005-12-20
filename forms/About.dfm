@@ -1,12 +1,12 @@
 object AboutDialog: TAboutDialog
   Left = 373
-  Top = 184
+  Top = 123
   HelpType = htKeyword
   HelpKeyword = 'ui_about'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'About application'
-  ClientHeight = 372
+  ClientHeight = 476
   ClientWidth = 388
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -18,7 +18,7 @@ object AboutDialog: TAboutDialog
   Position = poOwnerFormCenter
   DesignSize = (
     388
-    372)
+    476)
   PixelsPerInch = 96
   TextHeight = 13
   object ApplicationLabel: TLabel
@@ -159,6 +159,22 @@ object AboutDialog: TAboutDialog
       8001FFFF800FFFFF8003FFFF8003FFFFC003FFFFE003FFFFFFFFFFFF}
     Transparent = True
   end
+  object Label3: TLabel
+    Left = 72
+    Top = 295
+    Width = 87
+    Height = 13
+    Anchors = [akLeft, akBottom]
+    Caption = 'Portions copyright:'
+  end
+  object RegistrationLabel: TLabel
+    Left = 72
+    Top = 188
+    Width = 126
+    Height = 13
+    Anchors = [akLeft, akBottom]
+    Caption = 'This product is licensed to:'
+  end
   object HomepageLabel: TStaticText
     Left = 72
     Top = 72
@@ -188,12 +204,12 @@ object AboutDialog: TAboutDialog
   end
   object ThirdPartyBox: TScrollBox
     Left = 72
-    Top = 185
+    Top = 313
     Width = 306
-    Height = 145
+    Height = 121
     HorzScrollBar.Range = 289
     HorzScrollBar.Visible = False
-    VertScrollBar.Range = 309
+    VertScrollBar.Range = 285
     VertScrollBar.Smooth = True
     VertScrollBar.Tracking = True
     Anchors = [akLeft, akRight, akBottom]
@@ -201,17 +217,10 @@ object AboutDialog: TAboutDialog
     TabOrder = 5
     DesignSize = (
       285
-      141)
-    object Label3: TLabel
-      Left = 8
-      Top = 8
-      Width = 87
-      Height = 13
-      Caption = 'Portions copyright:'
-    end
+      117)
     object Label7: TLabel
       Left = 8
-      Top = 32
+      Top = 8
       Width = 272
       Height = 41
       Anchors = [akLeft, akTop, akRight]
@@ -221,58 +230,66 @@ object AboutDialog: TAboutDialog
         't of application license agreement.'
       WordWrap = True
     end
+    object Label4: TLabel
+      Left = 8
+      Top = 24
+      Width = 32
+      Height = 13
+      Caption = 'Label4'
+      Visible = False
+    end
     object PuttyVersionLabel: TLabel
       Left = 8
-      Top = 72
+      Top = 48
       Width = 196
       Height = 13
       Caption = 'SSH and SCP code based on PuTTY xxx'
     end
     object PuttyCopyrightLabel: TLabel
       Left = 8
-      Top = 88
+      Top = 64
       Width = 145
       Height = 13
       Caption = 'Copyright '#169' xxx Simon Tatham'
     end
     object Label8: TLabel
       Left = 8
-      Top = 264
+      Top = 240
       Width = 181
       Height = 13
       Caption = 'Filemanager Toolset library Version 2.6'
     end
     object Label10: TLabel
       Left = 8
-      Top = 280
+      Top = 256
       Width = 137
       Height = 13
       Caption = 'Copyright '#169' 1999 Ingo Eckel'
     end
     object Label1: TLabel
       Left = 8
-      Top = 152
+      Top = 128
       Width = 117
       Height = 13
-      Caption = 'Toolbar2000 library 2.1.5'
+      Caption = 'Toolbar2000 library 2.1.6'
     end
     object Label2: TLabel
       Left = 8
-      Top = 168
+      Top = 144
       Width = 182
       Height = 13
       Caption = 'Copyright '#169' 1998-2005 Jordan Russell'
     end
     object Label5: TLabel
       Left = 8
-      Top = 208
+      Top = 184
       Width = 69
       Height = 13
       Caption = 'TBX library 2.1'
     end
     object Label6: TLabel
       Left = 8
-      Top = 224
+      Top = 200
       Width = 188
       Height = 13
       Caption = 'Copyright '#169' 2001-2005 Alex A. Denisov'
@@ -280,7 +297,7 @@ object AboutDialog: TAboutDialog
     object PuttyLicenceLabel: TStaticText
       Tag = 1
       Left = 8
-      Top = 104
+      Top = 80
       Width = 75
       Height = 17
       Caption = 'Display licence'
@@ -290,7 +307,7 @@ object AboutDialog: TAboutDialog
     end
     object PuttyHomepageLabel: TStaticText
       Left = 8
-      Top = 120
+      Top = 96
       Width = 281
       Height = 17
       Caption = 'http://XXXwww.chiark.greenend.org.uk/~sgtatham/putty/'
@@ -299,7 +316,7 @@ object AboutDialog: TAboutDialog
     end
     object Toolbar2000HomepageLabel: TStaticText
       Left = 8
-      Top = 184
+      Top = 160
       Width = 180
       Height = 17
       Caption = 'http://www.jrsoftware.org/tb2kdl.php'
@@ -308,7 +325,7 @@ object AboutDialog: TAboutDialog
     end
     object TBXHomepageLabel: TStaticText
       Left = 8
-      Top = 240
+      Top = 216
       Width = 122
       Height = 17
       Caption = 'http://www.g32.org/tbx/'
@@ -318,7 +335,7 @@ object AboutDialog: TAboutDialog
   end
   object OKButton: TButton
     Left = 221
-    Top = 339
+    Top = 443
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -330,7 +347,7 @@ object AboutDialog: TAboutDialog
   end
   object LicenceButton: TButton
     Left = 72
-    Top = 339
+    Top = 443
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -340,12 +357,50 @@ object AboutDialog: TAboutDialog
   end
   object HelpButton: TButton
     Left = 303
-    Top = 339
+    Top = 443
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
     TabOrder = 1
     OnClick = HelpButtonClick
+  end
+  object RegistrationBox: TScrollBox
+    Left = 72
+    Top = 206
+    Width = 306
+    Height = 81
+    HorzScrollBar.Visible = False
+    VertScrollBar.Smooth = True
+    VertScrollBar.Tracking = True
+    Anchors = [akLeft, akRight, akBottom]
+    TabOrder = 7
+    DesignSize = (
+      302
+      77)
+    object RegistrationSubjectLabel: TLabel
+      Left = 8
+      Top = 8
+      Width = 289
+      Height = 65
+      Anchors = [akLeft, akTop, akRight]
+      AutoSize = False
+      Caption = 'Someone'#13#10'Somewhere, some city'
+      WordWrap = True
+    end
+    object RegistrationLicencesLabel: TLabel
+      Left = 8
+      Top = 39
+      Width = 108
+      Height = 13
+      Caption = 'Number of Licences: X'
+    end
+    object RegistrationProductIdLabel: TLabel
+      Left = 8
+      Top = 57
+      Width = 128
+      Height = 13
+      Caption = 'Product ID: xxxx-xxxx-xxxxx'
+    end
   end
 end

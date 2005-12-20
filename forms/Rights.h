@@ -52,6 +52,10 @@ __published:
 private:
   bool FAllowAddXToDirectories;
   TNotifyEvent FOnChange;
+  bool FPopup;
+  TWinControl * FPopupParent;
+  TButton * FDefaultButton;
+  TButton * FCancelButton;
 
   void __fastcall CycleRights(int Group);
   bool __fastcall GetAddXToDirectories();
@@ -68,6 +72,9 @@ private:
 public:
   virtual __fastcall ~TRightsFrame();
   __fastcall TRightsFrame(TComponent* Owner);
+  void __fastcall DropDown();
+  void __fastcall CloseUp();
+
   __property bool AddXToDirectories = { read = GetAddXToDirectories, write = SetAddXToDirectories };
   __property bool AllowAddXToDirectories = { read = FAllowAddXToDirectories, write = SetAllowAddXToDirectories };
   __property bool AllowUndef = { read = GetAllowUndef, write = SetAllowUndef };
@@ -75,12 +82,23 @@ public:
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property TRights Rights = { read = GetRights, write = SetRights };
   __property TRights::TState States[TRights::TRight Right] = { read = GetStates, write = SetStates };
+  __property bool Popup = { read = FPopup, write = SetPopup };
+  __property TWinControl * PopupParent = { read = FPopupParent, write = FPopupParent };
 
 protected:
   void __fastcall DoChange();
   virtual void __fastcall UpdateControls();
   virtual void __fastcall SetEnabled(bool Value);
   virtual void __fastcall ForceUpdate();
+  virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall CreateWnd();
+  virtual void __fastcall Dispatch(void * Message);
+  void __fastcall CMCancelMode(TCMCancelMode & Message);
+  void __fastcall CMDialogKey(TCMDialogKey & Message);
+  bool __fastcall IsAncestor(TControl * Control, TControl * Ancestor);
+  DYNAMIC void __fastcall DoExit();
+  virtual void __fastcall SetPopup(bool value);
+  void __fastcall DoCloseUp();
 };
 //---------------------------------------------------------------------------
 #endif

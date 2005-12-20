@@ -52,6 +52,8 @@ struct TQueryParams
   TQueryParamsTimerEvent TimerEvent;
   AnsiString TimerMessage;
   unsigned int TimerAnswers;
+  unsigned int Timeout;
+  unsigned int TimeoutAnswer;
   AnsiString HelpKeyword;
 };
 

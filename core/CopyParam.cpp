@@ -29,6 +29,7 @@ void __fastcall TCopyParamType::Default()
   PreserveTime = true;
   Rights.Number = TRights::rfDefault;
   PreserveRights = false; // Was True until #106
+  IgnorePermErrors = false;
   AsciiFileMask.Masks = "*.*html; *.htm; *.txt; *.php*; *.cgi; *.c; *.cpp; *.h; *.pas; "
     "*.bas; *.tex; *.pl; .htaccess; *.xtml; *.css; *.cfg; *.ini; *.sh; *.xml";
   TransferMode = tmAutomatic;
@@ -49,84 +50,108 @@ AnsiString __fastcall TCopyParamType::GetInfoStr(AnsiString Separator, int Optio
   TCopyParamType Defaults;
   AnsiString Result;
 
-  #define ADD(STR) Result += (Result.IsEmpty() ? AnsiString() : Separator) + (STR)
-  if (FLAGCLEAR(Options, cpiExcludeMaskOnly))
+  bool SomeAttrExcluded = false;
+  #define ADD(STR, EXCEPT) \
+    if (FLAGCLEAR(Options, EXCEPT)) \
+    { \
+      Result += (Result.IsEmpty() ? AnsiString() : Separator) + (STR); \
+    } \
+    else \
+    { \
+      SomeAttrExcluded = true; \
+    }
+
+  if ((TransferMode != Defaults.TransferMode) ||
+      ((TransferMode == tmAutomatic) && !(AsciiFileMask == Defaults.AsciiFileMask)))
   {
-    if ((TransferMode != Defaults.TransferMode) ||
-        ((TransferMode == tmAutomatic) && !(AsciiFileMask == Defaults.AsciiFileMask)))
+    AnsiString S = FORMAT(LoadStrPart(COPY_INFO_TRANSFER_TYPE, 1),
+      (LoadStrPart(COPY_INFO_TRANSFER_TYPE, TransferMode + 2)));
+    if (TransferMode == tmAutomatic)
     {
-      AnsiString S = FORMAT(LoadStrPart(COPY_INFO_TRANSFER_TYPE, 1),
-        (LoadStrPart(COPY_INFO_TRANSFER_TYPE, TransferMode + 2)));
-      if (TransferMode == tmAutomatic)
+      S = FORMAT(S, (AsciiFileMask.Masks));
+    }
+    ADD(S, cpaExcludeMaskOnly | cpaNoTransferMode);
+  }
+
+  if (FileNameCase != Defaults.FileNameCase)
+  {
+    ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
+      (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))),
+      cpaExcludeMaskOnly);
+  }
+
+  if ((InvalidCharsReplacement == NoReplacement) !=
+        (Defaults.InvalidCharsReplacement == NoReplacement))
+  {
+    assert(InvalidCharsReplacement == NoReplacement);
+    if (InvalidCharsReplacement == NoReplacement)
+    {
+      ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS), cpaExcludeMaskOnly);
+    }
+  }
+
+  if ((PreserveRights != Defaults.PreserveRights) ||
+      (PreserveRights &&
+       ((Rights != Defaults.Rights) || (AddXToDirectories != Defaults.AddXToDirectories))))
+  {
+    assert(PreserveRights);
+
+    if (PreserveRights)
+    {
+      AnsiString RightsStr = Rights.Text;
+      if (AddXToDirectories)
       {
-        S = FORMAT(S, (AsciiFileMask.Masks));
+        RightsStr += ", " + LoadStr(COPY_INFO_ADD_X_TO_DIRS);
       }
-      ADD(S);
+      ADD(FORMAT(LoadStr(COPY_INFO_PERMISSIONS), (RightsStr)),
+        cpaExcludeMaskOnly | cpaNoRights);
     }
+  }
 
-    if (FileNameCase != Defaults.FileNameCase)
+  if (PreserveTime != Defaults.PreserveTime)
+  {
+    ADD(LoadStr(PreserveTime ? COPY_INFO_TIMESTAMP : COPY_INFO_DONT_PRESERVE_TIME),
+      cpaExcludeMaskOnly | cpaNoPreserveTime);
+  }
+
+  if ((PreserveRights || PreserveTime) &&
+      (IgnorePermErrors != Defaults.IgnorePermErrors))
+  {
+    assert(IgnorePermErrors);
+
+    if (IgnorePermErrors)
     {
-      ADD(FORMAT(LoadStrPart(COPY_INFO_FILENAME, 1),
-        (LoadStrPart(COPY_INFO_FILENAME, FileNameCase + 2))));
+      ADD(LoadStr(COPY_INFO_IGNORE_PERM_ERRORS),
+        cpaExcludeMaskOnly | cpaNoIgnorePermErrors);
     }
+  }
 
-    if ((InvalidCharsReplacement == NoReplacement) !=
-          (Defaults.InvalidCharsReplacement == NoReplacement))
+  if (PreserveReadOnly != Defaults.PreserveReadOnly)
+  {
+    assert(!PreserveReadOnly);
+    if (!PreserveReadOnly)
     {
-      assert(InvalidCharsReplacement == NoReplacement);
-      if (InvalidCharsReplacement == NoReplacement)
-      {
-        ADD(LoadStr(COPY_INFO_DONT_REPLACE_INV_CHARS));
-      }
+      ADD(LoadStr(COPY_INFO_DONT_PRESERVE_READONLY),
+        cpaExcludeMaskOnly | cpaNoPreserveReadOnly);
     }
+  }
 
-    if ((PreserveRights != Defaults.PreserveRights) ||
-        (PreserveRights && 
-         ((Rights != Defaults.Rights) || (AddXToDirectories != Defaults.AddXToDirectories))))
+  if (CalculateSize != Defaults.CalculateSize)
+  {
+    assert(!CalculateSize);
+    if (!CalculateSize)
     {
-      assert(PreserveRights);
-    
-      if (PreserveRights)
-      {
-        AnsiString RightsStr = Rights.Text;
-        if (AddXToDirectories)
-        {
-          RightsStr += ", " + LoadStr(COPY_INFO_ADD_X_TO_DIRS);
-        }
-        ADD(FORMAT(LoadStr(COPY_INFO_PERMISSIONS), (RightsStr)));
-      }
+      ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE), cpaExcludeMaskOnly);
     }
+  }
 
-    if (PreserveReadOnly != Defaults.PreserveReadOnly)
+  if (ClearArchive != Defaults.ClearArchive)
+  {
+    assert(ClearArchive);
+    if (ClearArchive)
     {
-      assert(!PreserveReadOnly);
-      if (!PreserveReadOnly)
-      {
-        ADD(LoadStr(COPY_INFO_DONT_PRESERVE_READONLY));
-      }
-    }
-
-    if (PreserveTime != Defaults.PreserveTime)
-    {
-      ADD(LoadStr(PreserveTime ? COPY_INFO_TIMESTAMP : COPY_INFO_DONT_PRESERVE_TIME));
-    }
-
-    if (CalculateSize != Defaults.CalculateSize)
-    {
-      assert(!CalculateSize);
-      if (!CalculateSize)
-      {
-        ADD(LoadStr(COPY_INFO_DONT_CALCULATE_SIZE));
-      }
-    }
-
-    if (ClearArchive != Defaults.ClearArchive)
-    {
-      assert(ClearArchive);
-      if (ClearArchive)
-      {
-        ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE));
-      }
+      ADD(LoadStr(COPY_INFO_CLEAR_ARCHIVE),
+        cpaExcludeMaskOnly | cpaNoClearArchive);
     }
   }
 
@@ -134,14 +159,21 @@ AnsiString __fastcall TCopyParamType::GetInfoStr(AnsiString Separator, int Optio
       !(ExcludeFileMask == Defaults.ExcludeFileMask))
   {
     ADD(FORMAT(LoadStr(NegativeExclude ? COPY_INFO_INCLUDE_MASK : COPY_INFO_EXCLUDE_MASK),
-      (ExcludeFileMask.Masks)));
+      (ExcludeFileMask.Masks)),
+      cpaNoExcludeMask);
   }
-  #undef ADD
 
-  if (Result.IsEmpty())
+  if (SomeAttrExcluded)
+  {
+    Result += (Result.IsEmpty() ? AnsiString() : Separator) +
+      FORMAT(LoadStrPart(COPY_INFO_NOT_USABLE, 1),
+        (LoadStrPart(COPY_INFO_NOT_USABLE, (Result.IsEmpty() ? 3 : 2))));
+  }
+  else if (Result.IsEmpty())
   {
     Result = LoadStr(COPY_INFO_DEFAULT);
   }
+  #undef ADD
 
   return Result;
 }
@@ -158,6 +190,7 @@ void __fastcall TCopyParamType::Assign(const TCopyParamType * Source)
   COPY(TransferMode);
   COPY(AddXToDirectories);
   COPY(PreserveRights);
+  COPY(IgnorePermErrors);
   COPY(ResumeSupport);
   COPY(ResumeThreshold);
   COPY(InvalidCharsReplacement);
@@ -321,7 +354,7 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
   char ModeC[] = "BAM";
   char ResumeC[] = "YSN";
   return FORMAT(
-    "  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s; FnCs: %s; RIC: %s; "
+    "  PrTime: %s; PrRO: %s; Rght: %s; PrR: %s (%s); FnCs: %s; RIC: %s; "
       "Resume: %s (%d); CalcS: %s; Mask: %s\n"
     "  TM: %s; ClAr: %s; ExclM(%s): %s\n"
     "  AscM: %s\n",
@@ -329,6 +362,7 @@ AnsiString __fastcall TCopyParamType::GetLogStr() const
      BooleanToEngStr(PreserveReadOnly),
      Rights.Text,
      BooleanToEngStr(PreserveRights),
+     BooleanToEngStr(IgnorePermErrors),
      CaseC[FileNameCase],
      CharToHex(InvalidCharsReplacement),
      ResumeC[ResumeSupport],
@@ -382,6 +416,7 @@ void __fastcall TCopyParamType::Load(THierarchicalStorage * Storage)
   PreserveReadOnly = Storage->ReadBool("PreserveReadOnly", PreserveReadOnly);
   PreserveTime = Storage->ReadBool("PreserveTime", PreserveTime);
   PreserveRights = Storage->ReadBool("PreserveRights", PreserveRights);
+  IgnorePermErrors = Storage->ReadBool("IgnorePermErrors", IgnorePermErrors);
   Rights.Text = Storage->ReadString("Text", Rights.Text);
   TransferMode = (TTransferMode)Storage->ReadInteger("TransferMode", TransferMode);
   ResumeSupport = (TResumeSupport)Storage->ReadInteger("ResumeSupport", ResumeSupport);
@@ -403,6 +438,7 @@ void __fastcall TCopyParamType::Save(THierarchicalStorage * Storage) const
   Storage->WriteBool("PreserveReadOnly", PreserveReadOnly);
   Storage->WriteBool("PreserveTime", PreserveTime);
   Storage->WriteBool("PreserveRights", PreserveRights);
+  Storage->WriteBool("IgnorePermErrors", IgnorePermErrors);
   Storage->WriteString("Text", Rights.Text);
   Storage->WriteInteger("TransferMode", TransferMode);
   Storage->WriteInteger("ResumeSupport", ResumeSupport);
@@ -425,6 +461,7 @@ bool __fastcall TCopyParamType::operator==(const TCopyParamType & rhp) const
     C(PreserveReadOnly) &&
     C(PreserveTime) &&
     C(PreserveRights) &&
+    C(IgnorePermErrors) &&
     C(Rights) &&
     C(TransferMode) &&
     C(ResumeSupport) &&

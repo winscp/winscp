@@ -44,11 +44,11 @@ bool __fastcall FileExistsEx(AnsiString Path)
   return FindFile(Path);
 }
 //---------------------------------------------------------------------------
-void __fastcall OpenSessionInPutty(TSessionData * SessionData, 
-  const AnsiString Password)
+void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
+  TSessionData * SessionData, const AnsiString Password)
 {
   AnsiString Program, Params, Dir;
-  SplitCommand(GUIConfiguration->PuttyPath, Program, Params, Dir);
+  SplitCommand(PuttyPath, Program, Params, Dir);
   if (FindFile(Program))
   {
     AnsiString SessionName;

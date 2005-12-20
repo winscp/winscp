@@ -174,7 +174,7 @@ object SynchronizeDialog: TSynchronizeDialog
       Top = 44
       Width = 166
       Height = 17
-      Caption = 'S&elected files only'
+      Caption = 'Selected files o&nly'
       TabOrder = 3
       OnClick = ControlChange
     end

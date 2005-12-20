@@ -2,7 +2,7 @@ unit TB2DsgnConvertOptions;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2DsgnConvertOptions;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2DsgnConvertOptions.pas,v 1.5 2004/02/26 07:05:57 jr Exp $
+  $jrsoftware: tb2k/Source/TB2DsgnConvertOptions.pas,v 1.6 2005/01/06 03:56:50 jr Exp $
 }
 
 interface

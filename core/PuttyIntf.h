@@ -22,7 +22,7 @@ extern "C"
   void random_save_seed(void);
   int verify_host_key(char * hostname, int port, char * keytype, char * key);
   void store_host_key(char * hostname, int port, char * keytype, char * key);
-  void display_banner(void * frontend, const char * banner, int size);
+  void display_banner(void * frontend, const char * banner, int size, int * log);
   void md5checksum(const char * buffer, int len, unsigned char output[16]);
   void * saferealloc(void * ptr, size_t n, size_t size);
   void * safemalloc(size_t n, size_t size);
@@ -87,7 +87,7 @@ extern "C"
   void SSHFatalError(char * string);
   void SSHAskAlg(void * frontend, const char * AlgType, const char * AlgName);
   void SSHOldKeyfileWarning(void);
-  void SSHDisplayBanner(void * frontend, const char * banner, int size);
+  void SSHDisplayBanner(void * frontend, const char * banner, int size, int * log);
   long RegOpenWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
   long RegCreateWinSCPKey(HKEY hKey, const char * lpSubKey, HKEY * phkResult);
   long RegQueryWinSCPValueEx(HKEY Key, const char * ValueName, unsigned long * Reserved,

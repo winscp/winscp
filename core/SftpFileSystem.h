@@ -16,6 +16,7 @@ friend class TSFTPPacket;
 friend class TSFTPQueue;
 friend class TSFTPUploadQueue;
 friend class TSFTPDownloadQueue;
+friend class TSFTPLoadFilesPropertiesQueue;
 friend class TSFTPBusy;
 public:
   __fastcall TSFTPFileSystem(TTerminal * ATerminal);
@@ -29,6 +30,7 @@ public:
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
+  virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
@@ -61,6 +63,8 @@ public:
     const AnsiString NewName);
   virtual AnsiString __fastcall FileUrl(const AnsiString FileName);
   virtual TStrings * __fastcall GetFixedPaths();
+  virtual void __fastcall SpaceAvailable(const AnsiString Path,
+    TSpaceAvailable & ASpaceAvailable);
 
 protected:
   int FVersion;
@@ -91,7 +95,9 @@ protected:
   bool __fastcall inline IsAbsolutePath(const AnsiString Path);
   bool __fastcall RemoteFileExists(const AnsiString FullPath, TRemoteFile ** File = NULL);
   TRemoteFile * __fastcall LoadFile(TSFTPPacket * Packet,
-    TRemoteFile * ALinkedByFile, const AnsiString FileName);
+    TRemoteFile * ALinkedByFile, const AnsiString FileName,
+    TRemoteFileList * TempFileList = NULL);
+  void __fastcall LoadFile(TRemoteFile * File, TSFTPPacket * Packet);
   AnsiString __fastcall LocalCanonify(const AnsiString & Path);
   AnsiString __fastcall Canonify(AnsiString Path);
   AnsiString __fastcall RealPath(const AnsiString Path);
@@ -111,7 +117,11 @@ protected:
   void __fastcall UnreserveResponse(TSFTPPacket * Response);
   void __fastcall TryOpenDirectory(const AnsiString Directory);
   bool __fastcall SupportsExtension(const AnsiString & Extension) const;
+  void __fastcall ResetConnection();
 
+  void __fastcall SFTPSourceRobust(const AnsiString FileName,
+    const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPSource(const AnsiString FileName,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
@@ -129,6 +139,10 @@ protected:
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
   bool SFTPConfirmResume(const AnsiString DestFileName, bool PartialBiggerThanSource,
     TFileOperationProgressType * OperationProgress);
+  void __fastcall SFTPSinkRobust(const AnsiString FileName,
+    const TRemoteFile * File, const AnsiString TargetDir,
+    const TCopyParamType * CopyParam, int Params,
+    TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPSink(const AnsiString FileName,
     const TRemoteFile * File, const AnsiString TargetDir,
     const TCopyParamType * CopyParam, int Params,

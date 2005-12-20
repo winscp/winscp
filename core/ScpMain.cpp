@@ -66,9 +66,12 @@ TQueryParams::TQueryParams(unsigned int AParams, AnsiString AHelpKeyword)
   Params = AParams;
   Aliases = NULL;
   AliasesCount = 0;
-  Timer = NULL;
+  Timer = 0;
   TimerEvent = NULL;
+  TimerMessage = "";
   TimerAnswers = 0;
+  Timeout = 0;
+  TimeoutAnswer = 0;
   HelpKeyword = AHelpKeyword;
 }
 //---------------------------------------------------------------------------
@@ -137,7 +140,7 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
     }
     // we expect this to be called only from verify_host_key() or store_host_key()
     assert(RegKey == "SshHostKeys");
-    
+
     THierarchicalStorage * Storage = Configuration->CreateScpStorage(false);
     Storage->AccessMode = (CanCreate ? smReadWrite : smRead);
     if (Storage->OpenSubKey(RegKey, CanCreate))

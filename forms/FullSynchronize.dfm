@@ -132,7 +132,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Top = 68
       Width = 123
       Height = 17
-      Caption = 'S&elected files only'
+      Caption = 'Selected files o&nly'
       TabOrder = 4
       OnClick = ControlChange
     end

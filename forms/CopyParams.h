@@ -12,13 +12,9 @@
 
 #include <WinInterface.h>
 
-#include "Rights.h"
-//---------------------------------------------------------------------------
-const int cfAllowTransferMode = 0x01;
-const int cfAllowExcludeMask =  0x02;
-const int cfAllowClearArchive = 0x04;
-const int cfDisablePreserveTime = 0x08;
-const int cfAllowExcludeMaskOnly = 0x10;
+#include "RightsExt.h"
+#include "ComboEdit.hpp"
+#include <Mask.hpp>
 //---------------------------------------------------------------------------
 class TCopyParamsFrame : public TFrame
 {
@@ -30,7 +26,6 @@ __published:
   TRadioButton *TMAutomaticButton;
   THistoryComboBox *AsciiFileMaskCombo;
   TXPGroupBox *RemotePropertiesGroup;
-  TRightsFrame *RightsFrame;
   TCheckBox *RemotePreserveTimeCheck;
   TXPGroupBox *LocalPropertiesGroup;
   TCheckBox *PreserveReadOnlyCheck;
@@ -52,21 +47,29 @@ __published:
   TCheckBox *ClearArchiveCheck;
   TComboBox *NegativeExcludeCombo;
   TStaticText *ExcludeFileMaskHintText;
+  TComboEdit *RightsEdit;
+  TCheckBox *IgnorePermErrorsCheck;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall ValidateMaskComboExit(TObject *Sender);
+  void __fastcall RightsEditButtonClick(TObject *Sender);
+  void __fastcall RightsEditExit(TObject *Sender);
 private:
   TParamsForDirection FDirection;
   AnsiString FOrigMasks;
   TCopyParamType * FParams;
-  int FOptions;
+  int FCopyParamAttrs;
+  TRightsExtFrame * FRightsFrame;
+  AnsiString FAddXToDirectoriesSuffix;
   void __fastcall SetParams(TCopyParamType value);
   TCopyParamType __fastcall GetParams();
   void __fastcall SetDirection(TParamsForDirection value);
   TCheckBox * __fastcall GetPreserveTimeCheck();
-  void __fastcall SetOptions(int value);
+  void __fastcall SetCopyParamAttrs(int value);
+  void __fastcall RightsFrameChange(TObject * Sender);
 protected:
   void __fastcall UpdateControls();
   virtual void __fastcall SetEnabled(Boolean Value);
+  void __fastcall UpdateRightsByStr();
 
   __property TCheckBox * PreserveTimeCheck = { read = GetPreserveTimeCheck };
 public:
@@ -75,9 +78,8 @@ public:
 
   void __fastcall BeforeExecute();
   void __fastcall AfterExecute();
-  void __fastcall Validate();
 
-  __property int Options = { read = FOptions, write = SetOptions }; 
+  __property int CopyParamAttrs = { read = FCopyParamAttrs, write = SetCopyParamAttrs }; 
   __property TParamsForDirection Direction = { read = FDirection, write = SetDirection };
   __property TCopyParamType Params = { read = GetParams, write = SetParams };
 };

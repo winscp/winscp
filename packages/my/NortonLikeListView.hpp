@@ -54,6 +54,7 @@ private:
 	TNortonLikeMode FNortonLike;
 	TSelectByMaskEvent FOnSelectByMask;
 	Comctrls::TListItem* FLastDeletedItem;
+	bool FFocusingItem;
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMRButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMKeyDown(Messages::TWMKey &Message);
@@ -78,6 +79,7 @@ protected:
 	DYNAMIC void __fastcall InsertItem(Comctrls::TListItem* Item);
 	virtual Listviewcolproperties::TCustomListViewColProperties* __fastcall NewColProperties(void);
 	virtual void __fastcall FocusSomething(void);
+	virtual bool __fastcall EnableDragOnClick(void);
 	void __fastcall FocusItem(Comctrls::TListItem* Item);
 	Comctrls::TListItem* __fastcall GetItemFromHItem(const tagLVITEMA &Item);
 	virtual bool __fastcall GetValid(void);

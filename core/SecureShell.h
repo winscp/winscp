@@ -21,6 +21,11 @@
 #define sshOpenDirectory 7
 #define sshReady 8
 //---------------------------------------------------------------------------
+const ropNoConfirmation = 0x01;
+const ropNoReadDirectory = 0x02;
+//---------------------------------------------------------------------------
+const boDisableNeverShowAgain = 0x01;
+//---------------------------------------------------------------------------
 class TSecureShell;
 class TConfiguration;
 enum TCompressionType { ctNone, ctZLib };
@@ -33,9 +38,11 @@ typedef void __fastcall (__closure *TPromptUserEvent)
    AnsiString & Response, bool & Result, void * Arg);
 typedef void __fastcall (__closure *TDisplayBannerEvent)
   (TSecureShell * SecureShell, AnsiString SessionName, const AnsiString & Banner,
-   bool & NeverShowAgain);
+   bool & NeverShowAgain, int Options);
 typedef void __fastcall (__closure *TExtendedExceptionEvent)
   (TSecureShell * SecureShell, Exception * E, void * Arg);
+typedef void __fastcall (__closure *TUpdateStatusEvent)
+  (TSecureShell * SecureShell, bool Active);
 //---------------------------------------------------------------------------
 typedef Set<TLogLineType, llOutput, llException> TLogLineTypes;
 extern const TColor LogLineColors[];
@@ -77,7 +84,7 @@ public:
   void __fastcall AddStartupInfo();
   void __fastcall AddException(Exception * E);
   void __fastcall AddSeparator();
-  void __fastcall AddFromOtherLog(TObject * Sender, TLogLineType aType, 
+  void __fastcall AddFromOtherLog(TObject * Sender, TLogLineType aType,
     const AnsiString AddedLine);
   virtual void __fastcall Clear();
   void __fastcall ReflectSettings();
@@ -145,7 +152,7 @@ private:
   TSessionLog * FLog;
   TConfiguration *FConfiguration;
   TDateTime FLoginTime;
-  TNotifyEvent FOnUpdateStatus;
+  TUpdateStatusEvent FOnUpdateStatus;
   TNotifyEvent FOnClose;
   int FStatus;
   int FReachedStatus;
@@ -181,27 +188,33 @@ private:
   void __fastcall PoolForData(unsigned int & Result);
   TDateTime __fastcall GetIdleInterval();
   bool __fastcall GetStoredPasswordTried();
-  inline void __fastcall CaptureOutput(TLogLineType Type, const AnsiString & Line);
+  inline void __fastcall CaptureOutput(TLogLineType Type,
+    const AnsiString & Line, bool LogOnly);
+  void __fastcall ResetConnection();
 
 protected:
   AnsiString StdError;
   TLogAddLineEvent FOnCaptureOutput;
 
   void __fastcall Error(const AnsiString Error) const;
-  virtual void __fastcall UpdateStatus(int Value);
+  virtual void __fastcall UpdateStatus(int Value, bool Active = true);
   bool __fastcall SshFallbackCmd() const;
   void __fastcall GotHostKey();
   unsigned long __fastcall MaxPacketSize();
   int __fastcall RemainingSendBuffer();
   virtual void __fastcall KeepAlive();
   virtual void __fastcall SetSessionData(TSessionData * value);
-  virtual void __fastcall DoDisplayBanner(const AnsiString & Banner);
+  virtual void __fastcall DoDisplayBanner(const AnsiString & Banner, bool & Log);
+  virtual void __fastcall DoOpen();
+  void __fastcall TranslateAuthenticationMessage(AnsiString & Message);
+  virtual bool __fastcall DoQueryReopen(Exception * E, int Params);
 
 public:
   __fastcall TSecureShell();
   __fastcall ~TSecureShell();
   virtual void __fastcall Open();
   virtual void __fastcall Close();
+  virtual void __fastcall Reopen(int Params);
   bool __fastcall PromptUser(const AnsiString Prompt, AnsiString & Response,
     bool IsPassword);
   int __fastcall Receive(char * Buf, int Len);
@@ -209,8 +222,8 @@ public:
   void __fastcall Send(const char * Buf, int Len);
   void __fastcall SendStr(AnsiString Str);
   void __fastcall SendSpecial(int Code);
-  void __fastcall AddStdError(AnsiString Str);
-  void __fastcall AddStdErrorLine(const AnsiString Str);
+  void __fastcall AddStdError(AnsiString Str, bool LogOnly);
+  void __fastcall AddStdErrorLine(AnsiString Str, bool LogOnly);
   void __fastcall ClearStdError();
   virtual void __fastcall Idle();
   void __fastcall SendEOF();
@@ -224,8 +237,9 @@ public:
   void __fastcall VerifyHostKey(const AnsiString Host, int Port,
     const AnsiString KeyType, const AnsiString KeyStr, const AnsiString Fingerprint);
   void __fastcall AskAlg(const AnsiString AlgType, const AnsiString AlgName);
-  void __fastcall DisplayBanner(const AnsiString & Banner);
+  void __fastcall DisplayBanner(const AnsiString & Banner, bool & Log);
   void __fastcall OldKeyfileWarning();
+  bool __fastcall QueryReopen(Exception * E, int Params);
 
   virtual int __fastcall DoQueryUser(const AnsiString Query, TStrings * MoreMessages,
     int Answers, const TQueryParams * Params, TQueryType Type = qtConfirmation);
@@ -271,7 +285,7 @@ public:
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
   __property TDisplayBannerEvent OnDisplayBanner = { read = FOnDisplayBanner, write = FOnDisplayBanner };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
-  __property TNotifyEvent OnUpdateStatus = { read = FOnUpdateStatus, write = FOnUpdateStatus };
+  __property TUpdateStatusEvent OnUpdateStatus = { read = FOnUpdateStatus, write = FOnUpdateStatus };
   __property TLogAddLineEvent OnStdError = { read = FOnStdError, write = FOnStdError };
   __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
   __property int Status = { read = GetStatus };

@@ -16,17 +16,28 @@
 #pragma link "Rights"
 #pragma link "HistoryComboBox"
 #pragma link "XPThemes"
+#pragma link "ComboEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
         : TFrame(Owner)
 {
+  FAddXToDirectoriesSuffix = "+x";
+
+  FRightsFrame = new TRightsExtFrame(this);
+  FRightsFrame->TabStop = false;
+  FRightsFrame->Parent = this;
+  FRightsFrame->TabOrder = 1000;
+  FRightsFrame->AllowAddXToDirectories = True;
+  FRightsFrame->Popup = true;
+  FRightsFrame->PopupParent = RightsEdit;
+  FRightsFrame->OnChange = RightsFrameChange;
+
   // on start set different value than we want to allow property-setter to proceed
   FDirection = pdToLocal;
   Direction = pdToRemote;
 
-  FOptions = cfAllowTransferMode | cfAllowExcludeMask | cfAllowClearArchive;
-  RightsFrame->AllowAddXToDirectories = True;
+  FCopyParamAttrs = 0;
   FParams = new TCopyParamType();
   TCopyParamType DefParams;
   Params = DefParams;
@@ -65,9 +76,10 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   ReplaceInvalidCharsCheck->Checked =
     (value.InvalidCharsReplacement != TCopyParamType::NoReplacement);
 
-  RightsFrame->AddXToDirectories = value.AddXToDirectories;
-  RightsFrame->Rights = value.Rights;
+  FRightsFrame->AddXToDirectories = value.AddXToDirectories;
+  FRightsFrame->Rights = value.Rights;
   PreserveRightsCheck->Checked = value.PreserveRights;
+  IgnorePermErrorsCheck->Checked = value.IgnorePermErrors;
   PreserveReadOnlyCheck->Checked = value.PreserveReadOnly;
 
   assert(PreserveTimeCheck);
@@ -108,9 +120,10 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
 
   Result.ReplaceInvalidChars = ReplaceInvalidCharsCheck->Checked;
 
-  Result.AddXToDirectories = RightsFrame->AddXToDirectories;
-  Result.Rights = RightsFrame->Rights;
+  Result.AddXToDirectories = FRightsFrame->AddXToDirectories;
+  Result.Rights = FRightsFrame->Rights;
   Result.PreserveRights = PreserveRightsCheck->Checked;
+  Result.IgnorePermErrors = IgnorePermErrorsCheck->Checked;
   Result.PreserveReadOnly = PreserveReadOnlyCheck->Checked;
 
   assert(PreserveTimeCheck);
@@ -138,29 +151,39 @@ TCheckBox * __fastcall TCopyParamsFrame::GetPreserveTimeCheck()
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::UpdateControls()
 {
-  EnableControl(CommonPropertiesGroup, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
-  EnableControl(LocalPropertiesGroup, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
-  EnableControl(RemotePropertiesGroup, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
+  EnableControl(CommonPropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+  EnableControl(LocalPropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+  EnableControl(RemotePropertiesGroup, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
   EnableControl(TransferModeGroup,
-    FLAGSET(Options, cfAllowTransferMode) &&
-    FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
+    FLAGCLEAR(CopyParamAttrs, cpaNoTransferMode) &&
+    FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
   EnableControl(AsciiFileMaskLabel,
     TransferModeGroup->Enabled && TMAutomaticButton->Checked);
   EnableControl(AsciiFileMaskCombo,
     TransferModeGroup->Enabled && TMAutomaticButton->Checked);
-  EnableControl(PreserveRightsCheck, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
-  EnableControl(RightsFrame, PreserveRightsCheck->Checked &&
+  EnableControl(PreserveRightsCheck, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) &&
+    FLAGCLEAR(CopyParamAttrs, cpaNoRights) && Enabled);
+  EnableControl(RightsEdit, PreserveRightsCheck->Checked &&
     PreserveRightsCheck->Enabled);
+  EnableControl(FRightsFrame, RightsEdit->Enabled);
+  EnableControl(PreserveReadOnlyCheck, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) &&
+    FLAGCLEAR(CopyParamAttrs, cpaNoPreserveReadOnly) && Enabled);
   EnableControl(ExcludeFileMaskCombo,
-    (FLAGSET(Options, cfAllowExcludeMask) || FLAGSET(Options, cfAllowExcludeMaskOnly)) &&
+    (FLAGCLEAR(CopyParamAttrs, cpaNoExcludeMask) ||
+     FLAGSET(CopyParamAttrs, cpaExcludeMaskOnly)) &&
     Enabled);
   EnableControl(ExclusionFileMaskLabel, ExcludeFileMaskCombo->Enabled);
   EnableControl(NegativeExcludeCombo, ExcludeFileMaskCombo->Enabled);
-  EnableControl(ClearArchiveCheck, FLAGSET(Options, cfAllowClearArchive) &&
-    FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
-  EnableControl(PreserveTimeCheck, FLAGCLEAR(Options, cfDisablePreserveTime) &&
-    FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
-  EnableControl(ChangeCaseGroup, FLAGCLEAR(Options, cfAllowExcludeMaskOnly) && Enabled);
+  EnableControl(ClearArchiveCheck, FLAGCLEAR(CopyParamAttrs, cpaNoClearArchive) &&
+    FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+  EnableControl(PreserveTimeCheck, FLAGCLEAR(CopyParamAttrs, cpaNoPreserveTime) &&
+    FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+  EnableControl(ChangeCaseGroup, FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly) && Enabled);
+  EnableControl(IgnorePermErrorsCheck,
+    ((PreserveRightsCheck->Enabled && PreserveRightsCheck->Checked) ||
+     (PreserveTimeCheck->Enabled && PreserveTimeCheck->Checked)) &&
+    FLAGCLEAR(CopyParamAttrs, cpaNoIgnorePermErrors) &&
+    FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)
@@ -185,10 +208,12 @@ void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)
     if (Direction == pdBoth || Direction == pdAll)
     {
       CCLowerCaseShortButton->Top = CCFirstUpperCaseButton->Top;
+      IgnorePermErrorsCheck->Top = RemotePreserveTimeCheck->Top;
     }
     else
     {
       CCLowerCaseShortButton->Top = ReplaceInvalidCharsCheck->Top;
+      IgnorePermErrorsCheck->Top = CCFirstUpperCaseButton->Top;
     }
     UpdateControls();
   }
@@ -201,6 +226,8 @@ void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::BeforeExecute()
 {
+  // adding TRightsFrame on run-time corrupts the tab order, fix it
+  TransferModeGroup->TabOrder = 0;
   assert(CustomWinConfiguration);
   AsciiFileMaskCombo->Items = CustomWinConfiguration->History["Mask"];
   ExcludeFileMaskCombo->Items = CustomWinConfiguration->History["ExcludeMask"];
@@ -215,21 +242,9 @@ void __fastcall TCopyParamsFrame::AfterExecute()
   CustomWinConfiguration->History["ExcludeMask"] = ExcludeFileMaskCombo->Items;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyParamsFrame::Validate()
+void __fastcall TCopyParamsFrame::SetCopyParamAttrs(int value)
 {
-  if (AsciiFileMaskCombo->Focused())
-  {
-    ValidateMaskEdit(AsciiFileMaskCombo);
-  }
-  if (ExcludeFileMaskCombo->Focused())
-  {
-    ValidateMaskEdit(ExcludeFileMaskCombo);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TCopyParamsFrame::SetOptions(int value)
-{
-  FOptions = value;
+  FCopyParamAttrs = value;
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -242,6 +257,81 @@ void __fastcall TCopyParamsFrame::SetEnabled(Boolean Value)
 void __fastcall TCopyParamsFrame::ValidateMaskComboExit(TObject * Sender)
 {
   ValidateMaskEdit(dynamic_cast<TComboBox*>(Sender));
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::RightsEditButtonClick(TObject * Sender)
+{
+  if (!FRightsFrame->Visible)
+  {
+    // validate input before showing the popup
+    RightsEditExit(Sender);
+    FRightsFrame->DropDown();
+  }
+  else
+  {
+    FRightsFrame->CloseUp();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::RightsFrameChange(TObject * /*Sender*/)
+{
+  AnsiString RightsStr = FRightsFrame->Rights.Text;
+  if (FRightsFrame->AddXToDirectories)
+  {
+    RightsStr = FORMAT("%s (%s)", (RightsStr, FAddXToDirectoriesSuffix));
+  }
+  RightsEdit->Text = RightsStr;
+  RightsEdit->Modified = false;
+  RightsEdit->SelectAll();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::UpdateRightsByStr()
+{
+  if (!RightsEdit->Text.IsEmpty())
+  {
+    AnsiString RightsStr = RightsEdit->Text;
+
+    int P = RightsStr.LowerCase().Pos(FAddXToDirectoriesSuffix);
+    bool AddXToDirectories = (P > 0);
+    if (AddXToDirectories)
+    {
+      RightsStr.Delete(P, FAddXToDirectoriesSuffix.Length());
+    }
+    RightsStr = DeleteChar(DeleteChar(RightsStr, '('), ')').Trim();
+    TRights R = FRightsFrame->Rights;
+    int Dummy;
+    if (((RightsStr.Length() == 3) || (RightsStr.Length() == 4)) &&
+        TryStrToInt(RightsStr, Dummy))
+    {
+      R.Octal = RightsStr;
+    }
+    else
+    {
+      R.Text = RightsStr;
+    }
+
+    FRightsFrame->Rights = R;
+    FRightsFrame->AddXToDirectories = AddXToDirectories;
+  }
+  UpdateControls();
+  RightsEdit->Modified = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::RightsEditExit(TObject * /*Sender*/)
+{
+  if (RightsEdit->Modified)
+  {
+    try
+    {
+      UpdateRightsByStr();
+    }
+    catch(...)
+    {
+      RightsEdit->SelectAll();
+      RightsEdit->SetFocus();
+      throw;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 

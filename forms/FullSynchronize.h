@@ -10,6 +10,7 @@
 #include <HistoryComboBox.hpp>
 
 #include <WinInterface.h>
+#include <CopyParam.h>
 //---------------------------------------------------------------------------
 class TFullSynchronizeDialog : public TForm
 {
@@ -56,6 +57,7 @@ private:
   bool FSaveMode;
   TSynchronizeMode FOrigMode;
   int FOptions;
+  TUsableCopyParamAttrs FCopyParamAttrs;
   TCopyParamType FCopyParams;
   TPopupMenu * FPresetsMenu;
   AnsiString FPreset;
@@ -74,6 +76,7 @@ private:
   void __fastcall SetCopyParams(const TCopyParamType & value);
   TCopyParamType __fastcall GetCopyParams();
   void __fastcall CopyParamClick(TObject * Sender);
+   int __fastcall ActualCopyParamAttrs();
 
 public:
   __fastcall TFullSynchronizeDialog(TComponent* Owner);
@@ -88,6 +91,7 @@ public:
   __property bool SaveSettings = { read = GetSaveSettings, write = SetSaveSettings };
   __property bool SaveMode = { read = FSaveMode, write = FSaveMode };
   __property int Options = { read = FOptions, write = SetOptions };
+  __property TUsableCopyParamAttrs CopyParamAttrs = { read = FCopyParamAttrs, write = FCopyParamAttrs };
   __property TCopyParamType CopyParams = { read = FCopyParams, write = SetCopyParams };
 
 protected:

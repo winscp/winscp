@@ -59,12 +59,12 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FSavedSession = -1;
   FOptions = loStartup;
   FLocaleChanging = false;
+  FColor = (TColor)0;
   InitControls();
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
 {
-  LoggingFrame->OnGetDefaultLogFileName = NULL;
   // SelectItem event is called after destructor! Why?
   SessionListView->Selected = NULL;
   delete FSystemSettings;
@@ -106,7 +106,6 @@ void __fastcall TLoginDialog::InitControls()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::Init()
 {
-  LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
   UseSystemSettings(this, &FSystemSettings);
   Caption = FORMAT("%s %s", (AppName, Caption));
 
@@ -121,6 +120,14 @@ void __fastcall TLoginDialog::Init()
     LocalDirectoryEdit->Visible = false;
     LocalDirectoryDescLabel->Visible = false;
     DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + 12;
+  }
+
+  if (FLAGCLEAR(Options, loExternalProtocols))
+  {
+    ExternalSSHButton->Visible = false;
+    ExternalSFTPButton->Visible = false;
+    TransferProtocolGroup->Height = TransferProtocolGroup->Height -
+       (ExternalSSHButton->Top - SFTPonlyButton->Top);
   }
 
   ShowTabs(false);
@@ -207,10 +214,13 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     HostNameEdit->Text = aSessionData->HostName;
     PasswordEdit->Text = aSessionData->Password;
     PrivateKeyEdit->Text = aSessionData->PublicKeyFile;
+    FColor = (TColor)aSessionData->Color;
 
     switch (aSessionData->FSProtocol) {
       case fsSCPonly: SCPonlyButton->Checked = true; break;
       case fsSFTP: SFTPButton->Checked = true; break;
+      case fsExternalSFTP: ExternalSFTPButton->Checked = true; break;
+      case fsExternalSSH: ExternalSSHButton->Checked = true; break;
       case fsSFTPonly:
       default: SFTPonlyButton->Checked = true; break;
     }
@@ -405,10 +415,15 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->HostName = HostNameEdit->Text.Trim();
   aSessionData->Password = PasswordEdit->Text;
   aSessionData->PublicKeyFile = PrivateKeyEdit->Text;
+  aSessionData->Color = FColor;
 
   if (SCPonlyButton->Checked) aSessionData->FSProtocol = fsSCPonly;
     else
   if (SFTPButton->Checked) aSessionData->FSProtocol = fsSFTP;
+    else
+  if (ExternalSFTPButton->Checked) aSessionData->FSProtocol = fsExternalSFTP;
+    else
+  if (ExternalSSHButton->Checked) aSessionData->FSProtocol = fsExternalSSH;
     else aSessionData->FSProtocol = fsSFTPonly;
 
   // SSH tab
@@ -559,11 +574,18 @@ void __fastcall TLoginDialog::UpdateControls()
     NoUpdate++;
     try
     {
+      bool ExternalProtocol = ExternalSSHButton->Checked || ExternalSFTPButton->Checked;
+
       #define SHOW_NAVIGATION(TREE, SHOW) if ((TREE)->Visible != (SHOW)) { \
         (TREE)->Visible = (SHOW); PageControlChange(PageControl); }
       SHOW_NAVIGATION(SimpleNavigationTree, !ShowAdvancedLoginOptionsCheck->Checked);
       SHOW_NAVIGATION(AdvancedNavigationTree, ShowAdvancedLoginOptionsCheck->Checked);
       #undef SHOW_NAVIGATION
+
+      EnableControl(ExternalSSHButton,
+        !GUIConfiguration->PuttyPath.Trim().IsEmpty());
+      EnableControl(ExternalSFTPButton,
+        !GUIConfiguration->PSftpPath.Trim().IsEmpty());
 
       EnableControl(ShellIconsButton, SessionListView->Selected);
 
@@ -597,8 +619,9 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(BugPKSessID2Combo, !SshProt1onlyButton->Checked);
       EnableControl(BugRekey2Combo, !SshProt1onlyButton->Checked);
 
-      EnableControl(ShellEdit, ShellEnterButton->Checked);
-      EnableControl(ReturnVarEdit, ReturnVarEnterButton->Checked);
+      EnableControl(ScpSheet, !ExternalProtocol);
+      EnableControl(ShellEdit, ShellEnterButton->Checked && ScpSheet->Enabled);
+      EnableControl(ReturnVarEdit, ReturnVarEnterButton->Checked && ScpSheet->Enabled);
 
       EnableControl(ProxyHostEdit, !ProxyNoneButton->Checked);
       EnableControl(ProxyPortEdit, !ProxyNoneButton->Checked);
@@ -608,18 +631,24 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ProxySettingsGroup, !ProxyNoneButton->Checked);
       EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
 
+      EnableControl(DirectoriesSheet, !ExternalProtocol);
       EnableControl(CacheDirectoryChangesCheck,
-        !SCPonlyButton->Checked || CacheDirectoriesCheck->Checked);
+        (!SCPonlyButton->Checked || CacheDirectoriesCheck->Checked) && DirectoriesSheet->Enabled);
       EnableControl(PreserveDirectoryChangesCheck,
-        CacheDirectoryChangesCheck->Enabled && CacheDirectoryChangesCheck->Checked);
+        CacheDirectoryChangesCheck->Enabled && CacheDirectoryChangesCheck->Checked &&
+        DirectoriesSheet->Enabled);
 
-      EnableControl(OverwrittenToRecycleBinCheck, !SCPonlyButton->Checked);
+      EnableControl(EnvironmentSheet, !ExternalProtocol);
+      EnableControl(OverwrittenToRecycleBinCheck, !SCPonlyButton->Checked &&
+        EnvironmentSheet->Enabled);
       EnableControl(RecycleBinPathEdit,
         (DeleteToRecycleBinCheck->Enabled && DeleteToRecycleBinCheck->Checked) ||
-        (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked));
-      EnableControl(RecycleBinPathLabel, RecycleBinPathEdit->Enabled);
+        (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked) &&
+        EnvironmentSheet->Enabled);
+      EnableControl(RecycleBinPathLabel, RecycleBinPathEdit->Enabled &&
+        EnvironmentSheet->Enabled);
 
-      EnableControl(SftpSheet, !SCPonlyButton->Checked);
+      EnableControl(SftpSheet, !SCPonlyButton->Checked && !ExternalProtocol);
 
       EnableControl(KexSheet, !SshProt1onlyButton->Checked);
 
@@ -812,6 +841,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
   AnsiString SessionName;
   SaveSession(FSessionData);
   if (FSessionData->Password.IsEmpty() ||
+      Configuration->DisablePasswordStoring ||
       (MessageDialog(LoadStr(SAVE_PASSWORD), qtWarning, qaOK | qaCancel,
          HELP_SESSION_SAVE_PASSWORD) == qaOK))
   {
@@ -950,16 +980,10 @@ void __fastcall TLoginDialog::LoadConfiguration()
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::LoggingGetDefaultLogFileName(
-  TObject* /*Sender*/, AnsiString & DefaultLogFileName)
-{
-  assert(FSessionData);
-  DefaultLogFileName = FSessionData->DefaultLogFileName;
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::PreferencesButtonClick(TObject * /*Sender*/)
 {
   ShowPreferencesDialog();
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ShowPreferencesDialog()
@@ -1370,6 +1394,40 @@ void __fastcall TLoginDialog::FormCloseQuery(TObject * /*Sender*/,
   if (ModalResult != mrCancel)
   {
     VerifyKey(SessionData->PublicKeyFile, false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ColorButtonClick(TObject * /*Sender*/)
+{
+  ColorDefaultItem->Checked = (FColor == 0);
+  PickColorItem->Checked = (FColor != 0);
+  PickColorItem->ImageIndex = (FColor != 0 ? 0 : -1);
+  ColorImageList->BkColor = FColor;
+
+  TPoint PopupPoint = ColorButton->ClientToScreen(TPoint(0, ColorButton->Height));
+  ColorPopupMenu->Popup(PopupPoint.x, PopupPoint.y);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ColorDefaultItemClick(TObject * /*Sender*/)
+{
+  FColor = (TColor)0;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::PickColorItemClick(TObject * /*Sender*/)
+{
+  TColorDialog * Dialog = new TColorDialog(this);
+  try
+  {
+    Dialog->Options = Dialog->Options << cdFullOpen;
+    Dialog->Color = (FColor != 0 ? FColor : clSkyBlue);
+    if (Dialog->Execute())
+    {
+      FColor = Dialog->Color;
+    }
+  }
+  __finally
+  {
+    delete Dialog;
   }
 }
 //---------------------------------------------------------------------------

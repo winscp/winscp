@@ -6,7 +6,8 @@
 //---------------------------------------------------------------------------
 enum TQueueOperation { qoNone, qoGoTo, qoPreferences, qoItemUserAction,
   qoItemQuery, qoItemError, qoItemPrompt, qoItemDelete, qoItemExecute,
-  qoItemUp, qoItemDown, qoItemPause, qoItemResume, qoPauseAll, qoResumeAll };
+  qoItemUp, qoItemDown, qoItemPause, qoItemResume, qoPauseAll, qoResumeAll,
+  qoDisconnectOnceEmpty };
 class TCustomListView;
 class TCriticalSection;
 class TQueueItemProxy;
@@ -27,6 +28,7 @@ public:
   static bool __fastcall QueueItemNeedsFrequentRefresh(TQueueItemProxy * QueueItem);
 
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
+  __property bool Empty = { read = GetEmpty };
 
 private:
   TListView * FListView;
@@ -38,6 +40,7 @@ private:
   void __fastcall QueueViewDblClick(TObject * Sender);
   void __fastcall QueueViewKeyDown(TObject * Sender, WORD & Key, TShiftState Shift);
   virtual void __fastcall DoChange();
+  bool __fastcall GetEmpty();
 
   static void __fastcall FillQueueViewItem(TListItem * Item,
     TQueueItemProxy * QueueItem, bool Detail);

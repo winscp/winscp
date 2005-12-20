@@ -49,6 +49,7 @@ object PropertiesDialog: TPropertiesDialog
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabIndex = 0
     TabOrder = 0
+    TabStop = False
     object CommonSheet: TTabSheet
       Caption = 'Common'
       DesignSize = (
@@ -99,9 +100,9 @@ object PropertiesDialog: TPropertiesDialog
         Caption = 'Location:'
       end
       object LocationLabel: TPathLabel
-        Left = 88
+        Left = 85
         Top = 58
-        Width = 240
+        Width = 243
         Height = 13
         UnixPath = True
         IndentHorizontal = 0

@@ -2,7 +2,7 @@ unit TB2Dock;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2Dock;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2Dock.pas,v 1.89 2004/07/10 01:40:48 jr Exp $
+  $jrsoftware: tb2k/Source/TB2Dock.pas,v 1.99 2005/07/15 19:35:03 jr Exp $
 }
 
 interface
@@ -70,9 +70,6 @@ type
     FBackground: TTBBasicBackground;
     {$ENDIF}
     FBkgOnToolbars: Boolean;
-    FDragCanSplit: Boolean;
-    FDragSplitting: Boolean;
-    FDragToolbar: TTBCustomDockableWindow;
     FFixAlign: Boolean;
     FCommitNewPositions: Boolean;
     FLimitToOneRow: Boolean;
@@ -166,9 +163,6 @@ type
       const ExcludeControl: TTBCustomDockableWindow): Integer;
 
     property CommitNewPositions: Boolean read FCommitNewPositions write FCommitNewPositions;
-    property DragCanSplit: Boolean read FDragCanSplit write FDragCanSplit;
-    property DragSplitting: Boolean read FDragSplitting write FDragSplitting;
-    property DragToolbar: TTBCustomDockableWindow read FDragToolbar write FDragToolbar;
     property NonClientWidth: Integer read FNonClientWidth;
     property NonClientHeight: Integer read FNonClientHeight;
     property ToolbarCount: Integer read GetToolbarCount;
@@ -319,6 +313,7 @@ type
     FDockForms: TList;
     FSavedAtRunTime: Boolean;
     //FNonClientWidth, FNonClientHeight: Integer;
+    FDragMode, FDragSplitting, FDragCanSplit: Boolean;
     FSmoothDragging: Boolean;
 
     { When floating. These are not used in design mode }
@@ -358,10 +353,10 @@ type
       const NewDocking, OldDocking: Boolean);
     procedure RedrawNCArea;
     procedure SetCloseButtonState(Pushed: Boolean);
-    procedure SetInactiveCaption(Value: Boolean);
     procedure ShowNCContextMenu(const Pos: TSmallPoint);
     procedure Moved;
     function GetShowingState: Boolean;
+    procedure UpdateCaptionState;
     procedure UpdateTopmostFlag;
     procedure UpdateVisibility;
     procedure ReadSavedAtRunTime(Reader: TReader);
@@ -480,6 +475,8 @@ type
     property CurrentSize: Integer read FCurrentSize write FCurrentSize;
     property DockPos: Integer read FDockPos write SetDockPos default -1;
     property DockRow: Integer read FDockRow write SetDockRow default 0;
+    property DragMode: Boolean read FDragMode;
+    property DragSplitting: Boolean read FDragSplitting;
     property EffectiveDockPos: Integer read FEffectiveDockPos;
     property EffectiveDockRow: Integer read FEffectiveDockRow;
     property Floating: Boolean read FFloating write SetFloating default False;
@@ -618,8 +615,8 @@ const
   rvFloatLeft = 'FloatLeft';
   rvFloatTop = 'FloatTop';
 
-var
-  FloatingToolWindows: TList = nil;
+threadvar
+  FloatingToolWindows: TList;
 
 
 { Misc. functions }
@@ -699,12 +696,14 @@ var
   Form: TTBCustomForm;
 begin
   case Code of
+    hpSendActivate,
     hpSendActivateApp: begin
         if Assigned(FloatingToolWindows) then
           for I := 0 to FloatingToolWindows.Count-1 do
             with TTBCustomDockableWindow(FloatingToolWindows.List[I]) do
-              { Hide or restore toolbars when application is deactivated or activated.
-                UpdateVisibility also sets caption state active/inactive }
+              { Hide or restore toolbars when a form or the application is
+                deactivated or activated, and/or update their caption state
+                (active/inactive) }
               UpdateVisibility;
       end;
     hpSendWindowPosChanged: begin
@@ -779,6 +778,20 @@ begin
   end;
 end;
 
+function IsAncestorOfWindow(const ParentWnd: HWND; Wnd: HWND): Boolean;
+{ Returns True if Wnd is a child of, is owned by, or is the same window as
+  ParentWnd }
+begin
+  while Wnd <> 0 do begin
+    if Wnd = ParentWnd then begin
+      Result := True;
+      Exit;
+    end;
+    Wnd := GetParent(Wnd);
+  end;
+  Result := False;
+end;
+
 procedure RecalcNCArea(const Ctl: TWinControl);
 begin
   if Ctl.HandleAllocated then
@@ -792,7 +805,7 @@ begin
   if Ctl.HandleAllocated then
     RedrawWindow(Ctl.Handle, nil, 0, RDW_FRAME or RDW_INVALIDATE or
       RDW_ERASE or RDW_NOCHILDREN);
-end;                   
+end;
 
 type
   TSetCloseButtonStateProc = procedure(Pushed: Boolean) of object;
@@ -1060,6 +1073,19 @@ var
   NewDockList: TList;
   PosData: PPosDataArray;
 
+  function IndexOfDraggingToolbar(const List: TList): Integer;
+  { Returns index of toolbar in List that's currently being dragged, or -1 }
+  var
+    I: Integer;
+  begin
+    for I := 0 to List.Count-1 do
+      if TTBCustomDockableWindow(List[I]).FDragMode then begin
+        Result := I;
+        Exit;
+      end;
+    Result := -1;
+  end;
+
   function ShiftLeft(const Row, StartIndex, MaxSize: Integer): Integer;
   { Removes PrecSpace pixels from toolbars at or before StartIndex until the
     right edge of the toolbar at StartIndex is <= MaxSize.
@@ -1120,9 +1146,9 @@ var
 
 var
   LeftRight: Boolean;
-  EmptySize, HighestRow, R, CurPos, CurRowPixel, I, J, K, L, M, ClientW,
+  EmptySize, HighestRow, R, CurPos, CurRowPixel, I, J, K, L, ClientW,
     ClientH, MaxSize, TotalSize, PixelsPastMaxSize, Offset, CurRealPos, DragIndex,
-    MinRealPos, DragIndexPos, PushOffset, ToolbarsOnRow, CurRowSize: Integer;
+    MinRealPos, DragIndexPos, ToolbarsOnRow, CurRowSize: Integer;
   P: PPosDataRec;
   T: TTBCustomDockableWindow;
   S: TPoint;
@@ -1189,10 +1215,10 @@ begin
     NewDockList.Count := DockList.Count;
     for I := 0 to NewDockList.Count-1 do
       NewDockList[I] := DockList[I];
-    I := NewDockList.IndexOf(FDragToolbar);
+    I := IndexOfDraggingToolbar(NewDockList);
     ListSortEx(NewDockList, CompareDockRowPos, nil);
-    DragIndex := NewDockList.IndexOf(FDragToolbar);
-    if (I <> -1) and FDragSplitting then begin
+    DragIndex := IndexOfDraggingToolbar(NewDockList);
+    if (I <> -1) and TTBCustomDockableWindow(NewDockList[DragIndex]).FDragSplitting then begin
       { When splitting, don't allow the toolbar being dragged to change
         positions in the dock list }
       NewDockList.Move(DragIndex, I);
@@ -1298,7 +1324,7 @@ begin
           P.MinimumSize := 0;
           T.GetMinShrinkSize(P.MinimumSize);
           if P.MinimumSize > P.FullSize then
-            { don't allow minimum shrink size to be less than full size } 
+            { don't allow minimum shrink size to be less than full size }
             P.MinimumSize := P.FullSize;
           if P.ShrinkMode = tbsmChevron then
             Inc(MinRealPos, P.MinimumSize)
@@ -1330,7 +1356,6 @@ begin
       CurPos := 0;
       CurRealPos := 0;
       MinRealPos := 0;
-      PushOffset := 0;
       for I := 0 to NewDockList.Count-1 do begin
         P := @PosData[I];
         T := NewDockList[I];
@@ -1339,18 +1364,23 @@ begin
             { Force to left }
             J := 0
           else
-            J := T.FDockPos + PushOffset;
+            J := T.FDockPos;
           if I = DragIndex then
             DragIndexPos := J;
+          { Don't let this toolbar overlap preceding toolbars by more than
+            the sum of their minimum sizes }
           if J < MinRealPos then
             J := MinRealPos;
           if J > CurPos then begin
-            K := J - CurPos;
-            if PixelsPastMaxSize <= 0 then
-              P.PrecSpace := K
+            { There's a gap between the left edge or previous toolbar and
+              this toolbar }
+            if PixelsPastMaxSize <= 0 then begin
+              P.PrecSpace := J - CurPos;
+              CurPos := J;
+            end
             else
-              Inc(PushOffset, K);
-            CurPos := J;
+              { Don't allow a gap if exceeding MaxSize }
+              J := CurPos;
           end
           else begin
             if J < CurRealPos then
@@ -1392,8 +1422,9 @@ begin
         for I := 0 to NewDockList.Count-1 do begin
           if PosData[I].Row <> R then
             Continue;
-          if (ToolbarsOnRow > 1) and (NewDockList[I] = FDragToolbar) then
-            FDragCanSplit := True;
+          T := NewDockList[I];
+          if (ToolbarsOnRow > 1) and T.FDragMode then
+            T.FDragCanSplit := True;
           Inc(Offset, PosData[I].Overlap);
           if Offset > PixelsPastMaxSize then
             Offset := PixelsPastMaxSize;
@@ -2558,9 +2589,9 @@ begin
 
   Color := clBtnFace;
 
-  InstallHookProc(ToolbarHookProc,
-    [hpSendActivateApp, hpSendWindowPosChanged, hpPreDestroy],
-    csDesigning in ComponentState);
+  if not(csDesigning in ComponentState) then
+    InstallHookProc(Self, ToolbarHookProc, [hpSendActivate, hpSendActivateApp,
+      hpSendWindowPosChanged, hpPreDestroy]);
   InitTrackMouseEvent;
 end;
 
@@ -2569,7 +2600,7 @@ begin
   inherited;
   FDockForms.Free;  { must be done after 'inherited' because Notification accesses FDockForms }
   FFloatParent.Free;
-  UninstallHookProc(ToolbarHookProc);
+  UninstallHookProc(Self, ToolbarHookProc);
 end;
 
 function TTBCustomDockableWindow.HasParent: Boolean;
@@ -2586,17 +2617,6 @@ begin
     Result := nil
   else
     Result := inherited GetParentComponent;
-end;
-
-procedure TTBCustomDockableWindow.SetInactiveCaption(Value: Boolean);
-begin
-  if csDesigning in ComponentState then
-    Value := False;
-  if FInactiveCaption <> Value then begin
-    FInactiveCaption := Value;
-    if Parent is TTBFloatingWindowParent then
-      TTBFloatingWindowParent(Parent).RedrawNCArea(twrdAll);
-  end;
 end;
 
 procedure TTBCustomDockableWindow.Moved;
@@ -2672,38 +2692,127 @@ begin
     UpdateTopmostFlag;
 end;
 
+procedure TTBCustomDockableWindow.UpdateCaptionState;
+{ Updates the caption active/inactive state of a floating tool window.
+  Called when the tool window is visible or is about to be shown. }
+
+  function IsPopupWindowActive: Boolean;
+  const
+    IID_ITBPopupWindow: TGUID = '{E45CBE74-1ECF-44CB-B064-6D45B1924708}';
+  var
+    Ctl: TWinControl;
+  begin
+    Ctl := FindControl(GetActiveWindow);
+    { Instead of using "is TTBPopupWindow", which would require linking to the
+      TB2Item unit, check if the control implements the ITBPopupWindow
+      interface. This will tell us if it's a TTBPopupWindow or descendant. }
+    Result := Assigned(Ctl) and Assigned(Ctl.GetInterfaceEntry(IID_ITBPopupWindow));
+  end;
+
+  function GetActiveFormWindow: HWND;
+  var
+    Ctl: TWinControl;
+  begin
+    Result := GetActiveWindow;
+    { If the active window is a TTBFloatingWindowParent (i.e. a control on a
+      floating toolbar is focused), return the parent form handle instead }
+    Ctl := FindControl(Result);
+    if Assigned(Ctl) and (Ctl is TTBFloatingWindowParent) then begin
+      Ctl := TTBFloatingWindowParent(Ctl).ParentForm;
+      if Assigned(Ctl) and Ctl.HandleAllocated then
+        Result := Ctl.Handle;
+    end;
+  end;
+
+var
+  Inactive: Boolean;
+  ActiveWnd: HWND;
+begin
+  { Update caption state if floating, but not if a control on a popup window
+    (e.g. a TTBEditItem) is currently focused; we don't want the captions on
+    all floating toolbars to turn gray in that case. (The caption state will
+    get updated when we're called the next time the active window changes,
+    i.e. when the user dismisses the popup window.) }
+  if (Parent is TTBFloatingWindowParent) and Parent.HandleAllocated and
+     not IsPopupWindowActive then begin
+    Inactive := False;
+    if not ApplicationIsActive then
+      Inactive := True
+    else if (FFloatingMode = fmOnTopOfParentForm) and
+       (HWND(GetWindowLong(Parent.Handle, GWL_HWNDPARENT)) <> Application.Handle) then begin
+      { Use inactive caption if the active window doesn't own the float parent
+        (directly or indirectly). Note: For compatibility with browser-embedded
+        TActiveForms, we use IsAncestorOfWindow instead of checking
+        TBGetToolWindowParentForm. }
+      ActiveWnd := GetActiveFormWindow;
+      if (ActiveWnd = 0) or not IsAncestorOfWindow(ActiveWnd, Parent.Handle) then
+        Inactive := True;
+    end;
+    if FInactiveCaption <> Inactive then begin
+      FInactiveCaption := Inactive;
+      TTBFloatingWindowParent(Parent).RedrawNCArea(twrdAll);
+    end;
+  end;
+end;
+
 function TTBCustomDockableWindow.GetShowingState: Boolean;
+
+  function IsWindowVisibleAndNotMinimized(Wnd: HWND): Boolean;
+  begin
+    Result := IsWindowVisible(Wnd);
+    if Result then begin
+      { Wnd may not be a top-level window (e.g. in the case of an MDI child
+        form, or an ActiveForm embedded in a web page), so go up the chain of
+        parent windows and see if any of them are minimized }
+      repeat
+        if IsIconic(Wnd) then begin
+          Result := False;
+          Break;
+        end;
+        { Stop if we're at a top-level window (no need to check owner windows) }
+        if GetWindowLong(Wnd, GWL_STYLE) and WS_CHILD = 0 then
+          Break;
+        Wnd := GetParent(Wnd);
+      until Wnd = 0;
+    end;
+  end;
+
 var
   HideFloatingToolbars: Boolean;
-  ParentForm, MDIParentForm: TTBCustomForm;
+  ParentForm: TTBCustomForm;
 begin
   Result := Showing and (FHidden = 0);
   if Floating and not(csDesigning in ComponentState) then begin
     HideFloatingToolbars := FFloatingMode = fmOnTopOfParentForm;
     if HideFloatingToolbars then begin
       ParentForm := TBGetToolWindowParentForm(Self);
-      MDIParentForm := GetMDIParent(ParentForm);
-      if Assigned(ParentForm) and Assigned(MDIParentForm) then begin
-        HideFloatingToolbars := not ParentForm.HandleAllocated or
-          not MDIParentForm.HandleAllocated;
-        if not HideFloatingToolbars then begin
-          HideFloatingToolbars := IsIconic(Application.Handle) or
-            not IsWindowVisible(ParentForm.Handle) or IsIconic(ParentForm.Handle);
-          if MDIParentForm <> ParentForm then
-            HideFloatingToolbars := HideFloatingToolbars or
-              not IsWindowVisible(MDIParentForm.Handle) or IsIconic(MDIParentForm.Handle);
-        end;
-      end;
+      if Assigned(ParentForm) and ParentForm.HandleAllocated and
+         IsWindowVisibleAndNotMinimized(ParentForm.Handle) then
+        HideFloatingToolbars := False;
     end;
     Result := Result and not (HideFloatingToolbars or (FHideWhenInactive and not ApplicationIsActive));
   end;
 end;
 
 procedure TTBCustomDockableWindow.UpdateVisibility;
+{ Updates the visibility of the tool window, and additionally the caption
+  state if floating and showing }
+var
+  IsVisible: Boolean;
 begin
-  SetInactiveCaption(Floating and (not FHideWhenInactive and not ApplicationIsActive));
-  if HandleAllocated and (IsWindowVisible(Handle) <> GetShowingState) then
-    Perform(CM_SHOWINGCHANGED, 0, 0);
+  if HandleAllocated then begin
+    IsVisible := IsWindowVisible(Handle);
+    if IsVisible <> GetShowingState then begin
+      Perform(CM_SHOWINGCHANGED, 0, 0);
+      { Note: CMShowingChanged will call UpdateCaptionState automatically
+        when floating and showing }
+    end
+    else if IsVisible and Floating then begin
+      { If we're floating and we didn't send the CM_SHOWINGCHANGED message
+        then we have to call UpdateCaptionState manually }
+      UpdateCaptionState;
+    end;
+  end;
 end;
 
 function IsTopmost(const Wnd: HWND): Boolean;
@@ -2795,6 +2904,8 @@ begin
         else begin
           SetWindowLong(Parent.Handle, GWL_HWNDPARENT, Longint(Application.Handle));
         end;
+        { Initialize caption state after setting owner but before showing }
+        UpdateCaptionState;
       end;
       UpdateTopmostFlag;
       { Show/hide the TTBFloatingWindowParent. The following lines had to be
@@ -2964,7 +3075,7 @@ end;
 
 function TTBCustomDockableWindow.CanDockTo(ADock: TTBDock): Boolean;
 begin
-  Result := ADock.Position in DockableTo; 
+  Result := ADock.Position in DockableTo;
 end;
 
 function TTBCustomDockableWindow.IsAutoResized: Boolean;
@@ -3726,7 +3837,7 @@ var
       MoveRectClient := MoveRect;
       OffsetRect(MoveRectClient, -DockedSize.BoundsRect.Left,
         -DockedSize.BoundsRect.Top);
-      if not MouseOverDock.FDragSplitting then begin
+      if not FDragSplitting then begin
         if not(MouseOverDock.Position in PositionLeftOrRight) then
           C := (MoveRectClient.Top+MoveRectClient.Bottom) div 2
         else
@@ -3749,7 +3860,7 @@ var
             C := FirstPos.Y - LastPos.Y;
           if Abs(C) >= 10 then begin
             WatchForSplit := False;
-            MouseOverDock.FDragSplitting := True;
+            FDragSplitting := True;
             SetCursor(LoadCursor(0, SplitCursors[SplitVertical]));
           end;
         end;
@@ -3853,12 +3964,15 @@ var
 
     GetCursorPos(Pos);
 
-    if Assigned(CurrentDock) and CurrentDock.FDragSplitting then
+    if FDragSplitting then
       MouseOverDock := CurrentDock
     else begin
       { Check if it can dock }
       MouseOverDock := nil;
       if StartDocking and not PreventDocking then
+        { MP }
+        { reversal of for cycle proposed by 'rl' is rejected as it suffers a bug:
+        { whenever toolbar is "catched", it is moved to different row }
         for I := 0 to DockList.Count-1 do begin
           Dock := DockList[I];
           if CheckIfCanDockTo(Dock, FindDockedSize(Dock).BoundsRect) then begin
@@ -3918,7 +4032,7 @@ var
       SetCursor(LoadCursor(0, IDC_NO));
     end
     else begin
-      if Assigned(CurrentDock) and CurrentDock.FDragSplitting then
+      if FDragSplitting then
         SetCursor(LoadCursor(0, SplitCursors[SplitVertical]))
       else
         SetCursor(OldCursor);
@@ -3997,237 +4111,240 @@ begin
   OriginalDock := CurrentDock;
   OriginalDockRow := FDockRow;
   OriginalDockPos := FDockPos;
-  if Docked then begin
-    CurrentDock.FDragToolbar := Self;
-    CurrentDock.FDragSplitting := False;
-    CurrentDock.FDragCanSplit := False;
-    CurrentDock.CommitNewPositions := True;
-    CurrentDock.ArrangeToolbars;  { needed for WatchForSplit assignment below }
-    SplitVertical := CurrentDock.Position in PositionLeftOrRight;
-    WatchForSplit := CurrentDock.FDragCanSplit;
-  end;
-  DockList := nil;
-  NewDockedSizes := nil;
   try
-    UseSmoothDrag := FSmoothDrag;
-    FSmoothDragging := UseSmoothDrag;
-
-    NPoint := Point(InitX, InitY);
-    { Adjust for non-client area }
-    if not(Parent is TTBFloatingWindowParent) then begin
-      GetWindowRect(Handle, R);
-      R.BottomRight := ClientToScreen(Point(0, 0));
-      DPoint := Point(Width-1, Height-1);
-    end
-    else begin
-      GetWindowRect(Parent.Handle, R);
-      R.BottomRight := Parent.ClientToScreen(Point(0, 0));
-      DPoint := Point(Parent.Width-1, Parent.Height-1);
+    FDragMode := True;
+    FDragSplitting := False;
+    if Docked then begin
+      FDragCanSplit := False;
+      CurrentDock.CommitNewPositions := True;
+      CurrentDock.ArrangeToolbars;  { needed for WatchForSplit assignment below }
+      SplitVertical := CurrentDock.Position in PositionLeftOrRight;
+      WatchForSplit := FDragCanSplit;
     end;
-    Dec(NPoint.X, R.Left-R.Right);
-    Dec(NPoint.Y, R.Top-R.Bottom);
-
-    PreventDocking := GetKeyState(VK_CONTROL) < 0;
-    PreventFloating := DockMode <> dmCanFloat;
-
-    { Build list of all TTBDock's on the form }
-    DockList := TList.Create;
-    if DockMode <> dmCannotFloatOrChangeDocks then
-      BuildDockList
-    else
-      if Docked then
-        DockList.Add(CurrentDock);
-
-    { Ensure positions of each possible dock are committed }
-    for I := 0 to DockList.Count-1 do
-      TTBDock(DockList[I]).CommitPositions;
-
-    { Set up potential sizes for each dock type }
-    NewDockedSizes := TList.Create;
-    for I := -1 to DockList.Count-1 do begin
-      New(NewDockedSize);
-      NewDockedSize.RowSizes := nil;
-      try
-        with NewDockedSize^ do begin
-          if I = -1 then begin
-            { -1 adds the floating size }
-            Dock := nil;
-            SetRectEmpty(BoundsRect);
-            Size := DoArrange(False, TBGetDockTypeOf(CurrentDock, Floating), True, nil);
-            AddFloatingNCAreaToSize(Size);
-          end
-          else begin
-            Dock := TTBDock(DockList[I]);
-            GetWindowRect(Dock.Handle, BoundsRect);
-            if Dock <> CurrentDock then begin
-              Size := DoArrange(False, TBGetDockTypeOf(CurrentDock, Floating), False, Dock);
-              AddDockedNCAreaToSize(Size, Dock.Position in PositionLeftOrRight);
-            end
-            else
-              Size := Point(Width, Height);
-          end;
-        end;
-        if Assigned(NewDockedSize.Dock) then begin
-          NewDockedSize.RowSizes := TList.Create;
-          for J := 0 to NewDockedSize.Dock.GetHighestRow(True) do begin
-            S := Smallint(NewDockedSize.Dock.GetCurrentRowSize(J, FullSizeRow));
-            if FullSizeRow then
-              S := S or $10000;
-            NewDockedSize.RowSizes.Add(Pointer(S));
-          end;
-        end;
-        NewDockedSizes.Add(NewDockedSize);
-      except
-        NewDockedSize.RowSizes.Free;
-        Dispose(NewDockedSize);
-        raise;
-      end;
-    end;
-
-    { Before locking, make sure all pending paint messages are processed }
-    ProcessPaintMessages;
-
-    { Save the original mouse cursor }
-    OldCursor := GetCursor;
-
-    if not UseSmoothDrag then begin
-      { This uses LockWindowUpdate to suppress all window updating so the
-        dragging outlines doesn't sometimes get garbled. (This is safe, and in
-        fact, is the main purpose of the LockWindowUpdate function)
-        IMPORTANT! While debugging you might want to enable the 'TB2Dock_DisableLock'
-        conditional define (see top of the source code). }
-      {$IFNDEF TB2Dock_DisableLock}
-      LockWindowUpdate(GetDesktopWindow);
-      {$ENDIF}
-      { Get a DC of the entire screen. Works around the window update lock
-        by specifying DCX_LOCKWINDOWUPDATE. }
-      ScreenDC := GetDCEx(GetDesktopWindow, 0,
-        DCX_LOCKWINDOWUPDATE or DCX_CACHE or DCX_WINDOW);
-    end
-    else
-      ScreenDC := 0;
+    DockList := nil;
+    NewDockedSizes := nil;
     try
-      SetCapture(Handle);
+      UseSmoothDrag := FSmoothDrag;
+      FSmoothDragging := UseSmoothDrag;
 
-      { Initialize }
-      StartDocking := Docked;
-      MouseOverDock := nil;
-      SetRectEmpty(MoveRect);
-      GetCursorPos(FirstPos);
-      LastPos := FirstPos;
-      MouseMoved;
-      StartDocking := True;
+      NPoint := Point(InitX, InitY);
+      { Adjust for non-client area }
+      if not(Parent is TTBFloatingWindowParent) then begin
+        GetWindowRect(Handle, R);
+        R.BottomRight := ClientToScreen(Point(0, 0));
+        DPoint := Point(Width-1, Height-1);
+      end
+      else begin
+        GetWindowRect(Parent.Handle, R);
+        R.BottomRight := Parent.ClientToScreen(Point(0, 0));
+        DPoint := Point(Parent.Width-1, Parent.Height-1);
+      end;
+      Dec(NPoint.X, R.Left-R.Right);
+      Dec(NPoint.Y, R.Top-R.Bottom);
 
-      { Stay in message loop until capture is lost. Capture is removed either
-        by this procedure manually doing it, or by an outside influence (like
-        a message box or menu popping up) }
-      while GetCapture = Handle do begin
-        case Integer(GetMessage(Msg, 0, 0, 0)) of
-          -1: Break; { if GetMessage failed }
-          0: begin
-               { Repost WM_QUIT messages }
-               PostQuitMessage(Msg.WParam);
-               Break;
-             end;
-        end;
+      PreventDocking := GetKeyState(VK_CONTROL) < 0;
+      PreventFloating := DockMode <> dmCanFloat;
 
-        case Msg.Message of
-          WM_KEYDOWN, WM_KEYUP:
-            { Ignore all keystrokes while dragging. But process Ctrl and Escape }
-            case Msg.WParam of
-              VK_CONTROL:
-                if PreventDocking <> (Msg.Message = WM_KEYDOWN) then begin
-                  PreventDocking := Msg.Message = WM_KEYDOWN;
-                  MouseMoved;
-                end;
-              VK_ESCAPE:
-                Break;
+      { Build list of all TTBDock's on the form }
+      DockList := TList.Create;
+      if DockMode <> dmCannotFloatOrChangeDocks then
+        BuildDockList
+      else
+        if Docked then
+          DockList.Add(CurrentDock);
+
+      { Ensure positions of each possible dock are committed }
+      for I := 0 to DockList.Count-1 do
+        TTBDock(DockList[I]).CommitPositions;
+
+      { Set up potential sizes for each dock type }
+      NewDockedSizes := TList.Create;
+      for I := -1 to DockList.Count-1 do begin
+        New(NewDockedSize);
+        NewDockedSize.RowSizes := nil;
+        try
+          with NewDockedSize^ do begin
+            if I = -1 then begin
+              { -1 adds the floating size }
+              Dock := nil;
+              SetRectEmpty(BoundsRect);
+              Size := DoArrange(False, TBGetDockTypeOf(CurrentDock, Floating), True, nil);
+              AddFloatingNCAreaToSize(Size);
+            end
+            else begin
+              Dock := TTBDock(DockList[I]);
+              GetWindowRect(Dock.Handle, BoundsRect);
+              if Dock <> CurrentDock then begin
+                Size := DoArrange(False, TBGetDockTypeOf(CurrentDock, Floating), False, Dock);
+                AddDockedNCAreaToSize(Size, Dock.Position in PositionLeftOrRight);
+              end
+              else
+                Size := Point(Width, Height);
             end;
-          WM_MOUSEMOVE: begin
-              { Note to self: WM_MOUSEMOVE messages should never be dispatched
-                here to ensure no hints get shown during the drag process }
-              CurPos := SmallPointToPoint(TSmallPoint(DWORD(GetMessagePos)));
-              if (LastPos.X <> CurPos.X) or (LastPos.Y <> CurPos.Y) then begin
-                MouseMoved;
-                LastPos := CurPos;
-              end;
+          end;
+          if Assigned(NewDockedSize.Dock) then begin
+            NewDockedSize.RowSizes := TList.Create;
+            for J := 0 to NewDockedSize.Dock.GetHighestRow(True) do begin
+              S := Smallint(NewDockedSize.Dock.GetCurrentRowSize(J, FullSizeRow));
+              if FullSizeRow then
+                S := S or $10000;
+              NewDockedSize.RowSizes.Add(Pointer(S));
             end;
-          WM_LBUTTONDOWN, WM_LBUTTONDBLCLK:
-            { Make sure it doesn't begin another loop }
-            Break;
-          WM_LBUTTONUP: begin
-              Accept := True;
-              Break;
-            end;
-          WM_RBUTTONDOWN..WM_MBUTTONDBLCLK:
-            { Ignore all other mouse up/down messages }
-            ;
-        else
-          TranslateMessage(Msg);
-          DispatchMessage(Msg);
+          end;
+          NewDockedSizes.Add(NewDockedSize);
+        except
+          NewDockedSize.RowSizes.Free;
+          Dispose(NewDockedSize);
+          raise;
         end;
       end;
-    finally
-      { Since it sometimes breaks out of the loop without capture being
-        released }
-      if GetCapture = Handle then
-        ReleaseCapture;
+
+      { Before locking, make sure all pending paint messages are processed }
+      ProcessPaintMessages;
+
+      { Save the original mouse cursor }
+      OldCursor := GetCursor;
 
       if not UseSmoothDrag then begin
-        { Hide dragging outline. Since NT will release a window update lock if
-          another thread comes to the foreground, it has to release the DC
-          and get a new one for erasing the dragging outline. Otherwise,
-          the DrawDraggingOutline appears to have no effect when this happens. }
-        ReleaseDC(GetDesktopWindow, ScreenDC);
+        { This uses LockWindowUpdate to suppress all window updating so the
+          dragging outlines doesn't sometimes get garbled. (This is safe, and in
+          fact, is the main purpose of the LockWindowUpdate function)
+          IMPORTANT! While debugging you might want to enable the 'TB2Dock_DisableLock'
+          conditional define (see top of the source code). }
+        {$IFNDEF TB2Dock_DisableLock}
+        LockWindowUpdate(GetDesktopWindow);
+        {$ENDIF}
+        { Get a DC of the entire screen. Works around the window update lock
+          by specifying DCX_LOCKWINDOWUPDATE. }
         ScreenDC := GetDCEx(GetDesktopWindow, 0,
           DCX_LOCKWINDOWUPDATE or DCX_CACHE or DCX_WINDOW);
-        DrawDraggingOutline(ScreenDC, nil, @MoveRect, True, MouseOverDock <> nil);
-        ReleaseDC(GetDesktopWindow, ScreenDC);
+      end
+      else
+        ScreenDC := 0;
+      try
+        SetCapture(Handle);
 
-        { Release window update lock }
-        {$IFNDEF TB2Dock_DisableLock}
-        LockWindowUpdate(0);
-        {$ENDIF}
+        { Initialize }
+        StartDocking := Docked;
+        MouseOverDock := nil;
+        SetRectEmpty(MoveRect);
+        GetCursorPos(FirstPos);
+        LastPos := FirstPos;
+        MouseMoved;
+        StartDocking := True;
+
+        { Stay in message loop until capture is lost. Capture is removed either
+          by this procedure manually doing it, or by an outside influence (like
+          a message box or menu popping up) }
+        while GetCapture = Handle do begin
+          case Integer(GetMessage(Msg, 0, 0, 0)) of
+            -1: Break; { if GetMessage failed }
+            0: begin
+                 { Repost WM_QUIT messages }
+                 PostQuitMessage(Msg.WParam);
+                 Break;
+               end;
+          end;
+
+          case Msg.Message of
+            WM_KEYDOWN, WM_KEYUP:
+              { Ignore all keystrokes while dragging. But process Ctrl and Escape }
+              case Msg.WParam of
+                VK_CONTROL:
+                  if PreventDocking <> (Msg.Message = WM_KEYDOWN) then begin
+                    PreventDocking := Msg.Message = WM_KEYDOWN;
+                    MouseMoved;
+                  end;
+                VK_ESCAPE:
+                  Break;
+              end;
+            WM_MOUSEMOVE: begin
+                { Note to self: WM_MOUSEMOVE messages should never be dispatched
+                  here to ensure no hints get shown during the drag process }
+                CurPos := SmallPointToPoint(TSmallPoint(DWORD(GetMessagePos)));
+                if (LastPos.X <> CurPos.X) or (LastPos.Y <> CurPos.Y) then begin
+                  MouseMoved;
+                  LastPos := CurPos;
+                end;
+              end;
+            WM_LBUTTONDOWN, WM_LBUTTONDBLCLK:
+              { Make sure it doesn't begin another loop }
+              Break;
+            WM_LBUTTONUP: begin
+                Accept := True;
+                Break;
+              end;
+            WM_RBUTTONDOWN..WM_MBUTTONDBLCLK:
+              { Ignore all other mouse up/down messages }
+              ;
+          else
+            TranslateMessage(Msg);
+            DispatchMessage(Msg);
+          end;
+        end;
+      finally
+        { Since it sometimes breaks out of the loop without capture being
+          released }
+        if GetCapture = Handle then
+          ReleaseCapture;
+
+        if not UseSmoothDrag then begin
+          { Hide dragging outline. Since NT will release a window update lock if
+            another thread comes to the foreground, it has to release the DC
+            and get a new one for erasing the dragging outline. Otherwise,
+            the DrawDraggingOutline appears to have no effect when this happens. }
+          ReleaseDC(GetDesktopWindow, ScreenDC);
+          ScreenDC := GetDCEx(GetDesktopWindow, 0,
+            DCX_LOCKWINDOWUPDATE or DCX_CACHE or DCX_WINDOW);
+          DrawDraggingOutline(ScreenDC, nil, @MoveRect, True, MouseOverDock <> nil);
+          ReleaseDC(GetDesktopWindow, ScreenDC);
+
+          { Release window update lock }
+          {$IFNDEF TB2Dock_DisableLock}
+          LockWindowUpdate(0);
+          {$ENDIF}
+        end;
       end;
-    end;
 
-    { Move to new position only if MoveRect isn't empty }
-    FSmoothDragging := False;
-    if Accept and not IsRectEmpty(MoveRect) then
-      { Note: Dropped must be called again after FSmoothDragging is reset to
-        False so that TTBDock.ArrangeToolbars makes the DockPos changes
-        permanent }
-      Dropped;
+      { Move to new position only if MoveRect isn't empty }
+      FSmoothDragging := False;
+      if Accept and not IsRectEmpty(MoveRect) then
+        { Note: Dropped must be called again after FSmoothDragging is reset to
+          False so that TTBDock.ArrangeToolbars makes the DockPos changes
+          permanent }
+        Dropped;
 
-    { LastDock isn't automatically updated while FSmoothDragging=True, so
-      update it now that it's back to False }
-    if FUseLastDock and Assigned(CurrentDock) then
-      LastDock := CurrentDock;
+      { LastDock isn't automatically updated while FSmoothDragging=True, so
+        update it now that it's back to False }
+      if FUseLastDock and Assigned(CurrentDock) then
+        LastDock := CurrentDock;
 
-    { Free FFloatParent if it's no longer the Parent }
-    if Assigned(FFloatParent) and (Parent <> FFloatParent) then begin
-      FFloatParent.Free;
-      FFloatParent := nil;
+      { Free FFloatParent if it's no longer the Parent }
+      if Assigned(FFloatParent) and (Parent <> FFloatParent) then begin
+        FFloatParent.Free;
+        FFloatParent := nil;
+      end;
+    finally
+      FSmoothDragging := False;
+      if not Docked then begin
+        { If we didn't end up docking, restore the original DockRow & DockPos
+          values }
+        FDockRow := OriginalDockRow;
+        FDockPos := OriginalDockPos;
+      end;
+      if Assigned(NewDockedSizes) then begin
+        for I := NewDockedSizes.Count-1 downto 0 do begin
+          NewDockedSize := NewDockedSizes[I];
+          NewDockedSize.RowSizes.Free;
+          Dispose(NewDockedSize);
+        end;
+        NewDockedSizes.Free;
+      end;
+      DockList.Free;
     end;
   finally
-    FSmoothDragging := False;
-    if Docked and (CurrentDock.FDragToolbar = Self) then
-      CurrentDock.FDragToolbar := nil;
-    if not Docked then begin
-      { If we didn't end up docking, restore the original DockRow & DockPos
-        values }
-      FDockRow := OriginalDockRow;
-      FDockPos := OriginalDockPos;
-    end;
-    if Assigned(NewDockedSizes) then begin
-      for I := NewDockedSizes.Count-1 downto 0 do begin
-        NewDockedSize := NewDockedSizes[I];
-        NewDockedSize.RowSizes.Free;
-        Dispose(NewDockedSize);
-      end;
-      NewDockedSizes.Free;
-    end;
-    DockList.Free;
+    FDragMode := False;
+    FDragSplitting := False;
   end;
 end;
 

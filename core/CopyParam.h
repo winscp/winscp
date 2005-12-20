@@ -12,6 +12,21 @@ enum TFileNameCase { ncNoChange, ncUpperCase, ncLowerCase, ncFirstUpperCase, ncL
 enum TTransferMode { tmBinary, tmAscii, tmAutomatic };
 enum TResumeSupport { rsOn, rsSmart, rsOff };
 class THierarchicalStorage;
+const int cpaExcludeMaskOnly = 0x01;
+const int cpaNoTransferMode =  0x02;
+const int cpaNoExcludeMask =   0x04;
+const int cpaNoClearArchive =  0x08;
+const int cpaNoPreserveTime =  0x10;
+const int cpaNoRights =        0x20;
+const int cpaNoPreserveReadOnly = 0x40;
+const int cpaNoIgnorePermErrors = 0x80;
+//---------------------------------------------------------------------------
+struct TUsableCopyParamAttrs
+{
+  int General;
+  int Upload;
+  int Download;
+};
 //---------------------------------------------------------------------------
 class TCopyParamType {
 private:
@@ -23,6 +38,7 @@ private:
   TTransferMode FTransferMode;
   bool FAddXToDirectories;
   bool FPreserveRights;
+  bool FIgnorePermErrors;
   TResumeSupport FResumeSupport;
   __int64 FResumeThreshold;
   AnsiString __fastcall GetLogStr() const;
@@ -62,8 +78,7 @@ public:
 
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage) const;
-  static const int cpiExcludeMaskOnly = 0x01;
-  AnsiString __fastcall GetInfoStr(AnsiString Separator, int Options = 0) const;
+  AnsiString __fastcall GetInfoStr(AnsiString Separator, int Attrs) const;
 
   bool __fastcall operator==(const TCopyParamType & rhp) const;
 
@@ -76,6 +91,7 @@ public:
   __property AnsiString LogStr  = { read=GetLogStr };
   __property bool AddXToDirectories  = { read=FAddXToDirectories, write=FAddXToDirectories };
   __property bool PreserveRights = { read = FPreserveRights, write = FPreserveRights };
+  __property bool IgnorePermErrors = { read = FIgnorePermErrors, write = FIgnorePermErrors };
   __property TResumeSupport ResumeSupport = { read = FResumeSupport, write = FResumeSupport };
   __property __int64 ResumeThreshold = { read = FResumeThreshold, write = FResumeThreshold };
   __property char InvalidCharsReplacement = { read = FInvalidCharsReplacement, write = FInvalidCharsReplacement };

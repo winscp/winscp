@@ -119,9 +119,13 @@ void __fastcall TLoggingFrame::DataChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 AnsiString __fastcall TLoggingFrame::GetDefaultLogFileName()
 {
-  assert(FOnGetDefaultLogFileName);
   AnsiString Result;
-  FOnGetDefaultLogFileName(this, Result);
+  Result = IncludeTrailingBackslash(SystemTemporaryDirectory()) + "&s.log";
+
+  if (FOnGetDefaultLogFileName)
+  {
+    FOnGetDefaultLogFileName(this, Result);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------

@@ -7,7 +7,8 @@
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;
 enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,
-  foRename, foCustomCommand, foCalculateSize, foRemoteMove, foRemoteCopy };
+  foRename, foCustomCommand, foCalculateSize, foRemoteMove, foRemoteCopy,
+  foGetProperties };
 enum TCancelStatus { csContinue = 0, csCancel, csCancelTransfer, csRemoteAbort };
 enum TResumeStatus { rsNotAvailable, rsEnabled, rsDisabled };
 typedef void __fastcall (__closure *TFileOperationProgressEvent)
@@ -52,6 +53,7 @@ public:
   __int64 LocalyUsed;
   __int64 TransferSize;
   __int64 TransferedSize;
+  __int64 SkippedSize;
   TResumeStatus ResumeStatus;
   bool InProgress;
   TCancelStatus Cancel;
@@ -97,6 +99,7 @@ public:
   void __fastcall SetResumeStatus(TResumeStatus AResumeStatus);
   void __fastcall SetTransferSize(__int64 ASize);
   void __fastcall ChangeTransferSize(__int64 ASize);
+  void __fastcall RollbackTransfer();
   void __fastcall SetTotalSize(__int64 ASize);
   void __fastcall Start(TFileOperation AOperation,
     TOperationSide ASide, int ACount, bool ATemp = false,

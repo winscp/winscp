@@ -25,7 +25,6 @@ __published:
   TLabel *ProductSpecificMessageLabel;
   TStaticText *ForumUrlLabel;
   TScrollBox *ThirdPartyBox;
-  TLabel *Label3;
   TLabel *PuttyVersionLabel;
   TLabel *PuttyCopyrightLabel;
   TStaticText *PuttyHomepageLabel;
@@ -45,21 +44,24 @@ __published:
   TButton *HelpButton;
   TImage *Image;
   TStaticText *TranslatorUrlLabel;
+  TLabel *Label3;
+  TLabel *RegistrationLabel;
+  TScrollBox *RegistrationBox;
+  TLabel *RegistrationLicencesLabel;
+  TLabel *RegistrationProductIdLabel;
+  TLabel *RegistrationSubjectLabel;
+  TLabel *Label4;
   void __fastcall DisplayLicence(TObject *Sender);
   void __fastcall LicenceButtonClick(TObject *Sender);
-  bool __fastcall GetAllowLicence();
   void __fastcall HelpButtonClick(TObject *Sender);
 private:
   TConfiguration * FConfiguration;
-  void __fastcall SetConfiguration(TConfiguration * value);
-  void __fastcall SetAllowLicence(bool value);
   void __fastcall FirstScrollingControlEnter(TObject * Sender);
   void __fastcall LastScrollingControlEnter(TObject * Sender);
 public:
-  virtual __fastcall TAboutDialog(TComponent* AOwner);
+  virtual __fastcall TAboutDialog(TComponent * AOwner,
+    TConfiguration * Configuration, bool AllowLicence, TRegistration * Registration);
   void __fastcall LoadData();
-  __property TConfiguration * Configuration  = { read=FConfiguration, write=SetConfiguration };
-  __property bool AllowLicence = { read=GetAllowLicence, write=SetAllowLicence };
 };
 //----------------------------------------------------------------------------
 #endif

@@ -2,7 +2,7 @@ unit TB2Anim;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2Anim;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2Anim.pas,v 1.7 2004/05/29 20:29:26 jr Exp $
+  $jrsoftware: tb2k/Source/TB2Anim.pas,v 1.11 2005/02/16 08:15:58 jr Exp $
 }
 
 interface
@@ -41,8 +41,8 @@ const
 type
   TTBAnimationDirection = set of (tbadLeft, tbadRight, tbadDown, tbadUp);
 
-procedure TBStartAnimation(const AWnd: HWND; const ATime: Integer;
-  const ABlend: Boolean; const ADirection: TTBAnimationDirection);
+procedure TBStartAnimation(const AWnd: HWND; const ABlend: Boolean;
+  const ADirection: TTBAnimationDirection);
 procedure TBStepAnimation(const Msg: TMessage);
 procedure TBEndAnimation(const Wnd: HWND);
 
@@ -66,6 +66,7 @@ const
 type
   PAnimateThreadFuncData = ^TAnimateThreadFuncData;
   TAnimateThreadFuncData = record
+    SequenceID: Integer;
     Wnd: HWND;
     Time: Integer;
     Blending: Boolean;
@@ -82,71 +83,65 @@ type
   end;
 
 var
-  AnimateThreadHandle: THandle;
-  AnimateData: TAnimateThreadFuncData;
-  AnimationSequenceID: Integer;
-  FuncsInited: BOOL;
-  //SetLayoutProc: function(hdc: HDC; dwLayout: DWORD): DWORD; stdcall;
   UpdateLayeredWindowProc: function(Handle: THandle; hdcDest: HDC;
     pptDst: PPoint; _psize: PSize; hdcSrc: HDC; pptSrc: PPoint;
     crKey: COLORREF; pblend: PBLENDFUNCTION; dwFlags: DWORD): BOOL; stdcall;
 
-procedure InitializeFunctions;
-begin
-  if FuncsInited then
-    Exit;
-  //SetLayoutProc := GetProcAddress(GetModuleHandle(gdi32), 'SetLayout');
-  UpdateLayeredWindowProc := GetProcAddress(GetModuleHandle(user32),
-    'UpdateLayeredWindow');
-  InterlockedExchange(Integer(FuncsInited), Ord(True));
-end;
-
 function AnimateThreadFunc(Parameter: Pointer): Integer;
-const
-  BlendStep = 16;  { must be power of 2 }
 var
-  Freq, Start, Cur: Int64;
-  I, ElapsedTime, ElapsedBlend, Diff: Integer;
+  StartTime, FrameStartTime, NextFrameStartTime: DWORD;
+  StartStep, ElapsedTime, I: Integer;
   P: TPoint;
 begin
   Result := 0;
-  QueryPerformanceFrequency(Freq);
-  Freq := Freq div 1000;
-  QueryPerformanceCounter(Start);
-  with AnimateData do begin
+  StartTime := GetTickCount;
+  FrameStartTime := StartTime;
+  with PAnimateThreadFuncData(Parameter)^ do begin
+    StartStep := CurStep;
     while not AnimateThreadAbort do begin
-      QueryPerformanceCounter(Cur);
-      ElapsedTime := (Cur - Start) div Freq;
-      ElapsedBlend := MulDiv(255, ElapsedTime, Time);
-      I := ElapsedBlend and not (BlendStep-1);
-      if (I < 0) or (I >= 255) or (ElapsedTime >= Time) then
+      ElapsedTime := FrameStartTime - StartTime;
+      if (ElapsedTime < 0) or (ElapsedTime >= Time) then
         Break;
+      I := StartStep + ((255 * ElapsedTime) div Time);
+      if (I < 0) or (I >= 255) then
+        Break;
+
       GetCursorPos(P);
       if (P.X <> LastPos.X) or (P.Y <> LastPos.Y) then begin
         if PtInRect(ScreenClientRect, P) then
           Break;
         LastPos := P;
       end;
+
       if I > CurStep then begin
         CurStep := I;
         if InterlockedExchange(Integer(StepMessagePending), 1) = 0 then
-          SendNotifyMessage(Wnd, WM_TB2K_STEPANIMATION, 0, AnimationSequenceID);
-      end
-      else begin
-        Diff := MulDiv((CurStep + BlendStep) - ElapsedBlend, Time, 255);
-        if Diff < 1 then
-          Diff := 1;
-        Sleep(Diff);
+          SendNotifyMessage(Wnd, WM_TB2K_STEPANIMATION, 0, SequenceID);
       end;
+
+      { Wait until the timer has ticked at least 10 msec }
+      NextFrameStartTime := GetTickCount;
+      while NextFrameStartTime - FrameStartTime < 10 do begin
+        { We don't know the rate of the system timer, so check every 5 msec
+          to see if it's incremented }
+        Sleep(5);
+        NextFrameStartTime := GetTickCount;
+      end;
+      FrameStartTime := NextFrameStartTime;
     end;
     AnimationEnded := True;
-    SendNotifyMessage(Wnd, WM_TB2K_STEPANIMATION, 0, AnimationSequenceID);
+    SendNotifyMessage(Wnd, WM_TB2K_STEPANIMATION, 0, SequenceID);
   end;
 end;
 
+threadvar
+  AnimateThreadHandle: THandle;
+  AnimateData: TAnimateThreadFuncData;
+  AnimationSequenceID: Integer;
+
 procedure FinalizeAnimation;
 begin
-  with AnimateData do begin
+  with PAnimateThreadFuncData(@AnimateData)^ do begin
     if Blending then
       SetWindowLong(Wnd, GWL_EXSTYLE,
         GetWindowLong(Wnd, GWL_EXSTYLE) and not WS_EX_LAYERED)
@@ -173,8 +168,8 @@ begin
   end;
 end;
 
-procedure TBStartAnimation(const AWnd: HWND; const ATime: Integer;
-  const ABlend: Boolean; const ADirection: TTBAnimationDirection);
+procedure TBStartAnimation(const AWnd: HWND; const ABlend: Boolean;
+  const ADirection: TTBAnimationDirection);
 var
   ZeroPt: TPoint;
   R: TRect;
@@ -187,12 +182,12 @@ begin
   ZeroPt.X := 0;
   ZeroPt.Y := 0;
 
-  InitializeFunctions;
-
+  Inc(AnimationSequenceID);
   FillChar(AnimateData, SizeOf(AnimateData), 0);
-  with AnimateData do begin
+  { Note: The pointer cast avoids GetTls calls for every field access }
+  with PAnimateThreadFuncData(@AnimateData)^ do begin
+    SequenceID := AnimationSequenceID;
     Wnd := AWnd;
-    Time := ATime;
     Blending := ABlend and Assigned(UpdateLayeredWindowProc);
     Direction := ADirection;
     GetCursorPos(LastPos);
@@ -204,7 +199,7 @@ begin
     Size.Y := R.Bottom - R.Top;
     Bmp := CreateCompatibleBitmap(DC, Size.X, Size.Y {or $01000000 ?});
     BmpDC := CreateCompatibleDC(DC);
-    // AnimateWindow calls SetLayout, but I'm not sure that we need to. 
+    // AnimateWindow calls SetLayout, but I'm not sure that we need to.
     //if Assigned(SetLayoutProc) then
     //  SetLayoutProc(BmpDC, 0);
     SelectObject(BmpDC, Bmp);
@@ -214,7 +209,8 @@ begin
     //GetBoundsRect
     if Blending then begin
       SetWindowLong(Wnd, GWL_EXSTYLE, GetWindowLong(Wnd, GWL_EXSTYLE) or WS_EX_LAYERED);
-      CurStep := 32;
+      Time := 175;  { actually more like ~147 because CurStep starts at 40 }
+      CurStep := 40;
       Longint(Blend) := 0;
       Blend.BlendOp := AC_SRC_OVER;
       Blend.SourceConstantAlpha := CurStep;
@@ -222,6 +218,7 @@ begin
         @Blend, ULW_ALPHA);
     end
     else begin
+      Time := 150;
       CurStep := 0;
       Rgn := CreateRectRgn(0, 0, 0, 0);
       if not BOOL(SetWindowRgn(Wnd, Rgn, False)) then
@@ -236,14 +233,13 @@ begin
       SWP_NOOWNERZORDER or SWP_ASYNCWINDOWPOS);
   end;
 
-  AnimateThreadHandle := BeginThread(nil, 0, AnimateThreadFunc, nil,
+  AnimateThreadHandle := BeginThread(nil, 0, AnimateThreadFunc, @AnimateData,
     CREATE_SUSPENDED, ThreadID);
   if AnimateThreadHandle = 0 then begin
     { just in case... }
     FinalizeAnimation;
     Exit;
   end;
-  Inc(AnimationSequenceID);
   ResumeThread(AnimateThreadHandle);
 end;
 
@@ -256,14 +252,13 @@ begin
   if Msg.LParam <> AnimationSequenceID then
     { ignore messages dangling in the queue from aborted animation sequences }
     Exit;
-  with AnimateData do begin
+  with PAnimateThreadFuncData(@AnimateData)^ do begin
     if not AnimationEnded then begin
       if Blending then begin
-        InitializeFunctions;
         Longint(Blend) := 0;
         Blend.BlendOp := AC_SRC_OVER;
         Blend.SourceConstantAlpha := AnimateData.CurStep;
-        UpdateLayeredWindowProc(Wnd, 0, nil, nil, 0, nil, 0, @Blend, 2);
+        UpdateLayeredWindowProc(Wnd, 0, nil, nil, 0, nil, 0, @Blend, ULW_ALPHA);
       end
       else begin
         if tbadDown in Direction then
@@ -291,6 +286,8 @@ begin
 end;
 
 initialization
+  UpdateLayeredWindowProc := GetProcAddress(GetModuleHandle(user32),
+    'UpdateLayeredWindow');
 finalization
   TBEndAnimation(0);
 end.

@@ -76,6 +76,8 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem5;
   TTBXItem *TBXItem14;
   TAction *HelpAction;
+  TTBXSeparatorItem *TBXSeparatorItem6;
+  TTBXItem *TBXItem15;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);

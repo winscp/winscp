@@ -2,7 +2,7 @@ unit TB2Hook;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2Hook;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2Hook.pas,v 1.10 2004/02/26 07:05:57 jr Exp $
+  $jrsoftware: tb2k/Source/TB2Hook.pas,v 1.15 2005/06/26 18:21:33 jr Exp $
 }
 
 interface
@@ -32,15 +32,14 @@ uses
   Windows;
 
 type
-  THookProcCode = (hpSendActivateApp, hpSendWindowPosChanged, hpPreDestroy,
-    hpGetMessage);
+  THookProcCode = (hpSendActivate, hpSendActivateApp, hpSendWindowPosChanged,
+    hpPreDestroy, hpGetMessage);
   THookProcCodes = set of THookProcCode;
 
   THookProc = procedure(Code: THookProcCode; Wnd: HWND; WParam: WPARAM; LParam: LPARAM);
 
-procedure InstallHookProc(AProc: THookProc; ACodes: THookProcCodes;
-  OnlyIncrementCount: Boolean);
-procedure UninstallHookProc(AProc: THookProc);
+procedure InstallHookProc(AUser: TObject; AProc: THookProc; ACodes: THookProcCodes);
+procedure UninstallHookProc(AUser: TObject; AProc: THookProc);
 
 implementation
 
@@ -48,28 +47,36 @@ uses
   SysUtils, Classes, Messages;
 
 type
-  PHookProcData = ^THookProcData;
-  THookProcData = record
-    Proc: THookProc;
-    RefCount: Longint;
-    Codes: THookProcCodes;
-  end;
   THookType = (htCallWndProc, htCBT, htGetMessage);
   THookTypes = set of THookType;
 
-var
+  PHookUserData = ^THookUserData;
+  THookUserData = record
+    Prev: PHookUserData;
+    User: TObject;
+    InstalledHookTypes: THookTypes;
+  end;
+
+  PHookProcData = ^THookProcData;
+  THookProcData = record
+    Proc: THookProc;
+    Codes: THookProcCodes;
+    LastUserData: PHookUserData;
+  end;
+
+threadvar
   HookHandles: array[THookType] of HHOOK;
-  HookProcList: TList = nil;
+  HookProcList: TList;
   HookCounts: array[THookType] of Longint;
 
 
 function CallWndProcHook(Code: Integer; WParam: WPARAM; LParam: LPARAM): LRESULT;
 stdcall;
 type
-  THookProcCodeMsgs = hpSendActivateApp..hpSendWindowPosChanged;
+  THookProcCodeMsgs = hpSendActivate..hpSendWindowPosChanged;
 const
   MsgMap: array[THookProcCodeMsgs] of UINT =
-    (WM_ACTIVATEAPP, WM_WINDOWPOSCHANGED);
+    (WM_ACTIVATE, WM_ACTIVATEAPP, WM_WINDOWPOSCHANGED);
 var
   J: THookProcCodeMsgs;
   I: Integer;
@@ -126,7 +133,7 @@ end;
 function HookCodesToTypes(Codes: THookProcCodes): THookTypes;
 const
   HookCodeToType: array[THookProcCode] of THookType =
-    (htCallWndProc, htCallWndProc, htCBT, htGetMessage);
+    (htCallWndProc, htCallWndProc, htCallWndProc, htCBT, htGetMessage);
 var
   J: THookProcCode;
 begin
@@ -142,13 +149,24 @@ const
   HookIDs: array[THookType] of Integer =
     (WH_CALLWNDPROC, WH_CBT, WH_GETMESSAGE);
 
-procedure InstallHooks(ATypes: THookTypes);
+procedure InstallHooks(ATypes: THookTypes; var InstalledTypes: THookTypes);
 var
   T: THookType;
 begin
+  { Don't increment reference counts for hook types that were already
+    installed previously } 
+  ATypes := ATypes - InstalledTypes;
+
+  { Increment reference counts first. This should never raise an exception. }
   for T := Low(T) to High(T) do
     if T in ATypes then begin
       Inc(HookCounts[T]);
+      Include(InstalledTypes, T);
+    end;
+
+  { Then install the hooks }
+  for T := Low(T) to High(T) do
+    if T in InstalledTypes then begin
       if HookHandles[T] = 0 then begin
         { On Windows NT platforms, SetWindowsHookExW is used to work around an
           apparent bug in Windows NT/2000/XP: if an 'ANSI' WH_GETMESSAGE hook
@@ -171,10 +189,15 @@ procedure UninstallHooks(const ATypes: THookTypes; const Force: Boolean);
 var
   T: THookType;
 begin
+  { Decrement reference counts first. This should never raise an exception. }
+  if not Force then
+    for T := Low(T) to High(T) do
+      if T in ATypes then
+        Dec(HookCounts[T]);
+
+  { Then uninstall the hooks }
   for T := Low(T) to High(T) do
     if T in ATypes then begin
-      if HookCounts[T] > 0 then
-        Dec(HookCounts[T]);
       if (Force or (HookCounts[T] = 0)) and (HookHandles[T] <> 0) then begin
         UnhookWindowsHookEx(HookHandles[T]);
         HookHandles[T] := 0;
@@ -182,70 +205,107 @@ begin
     end;
 end;
 
-procedure InstallHookProc(AProc: THookProc; ACodes: THookProcCodes;
-  OnlyIncrementCount: Boolean);
+procedure InstallHookProc(AUser: TObject; AProc: THookProc; ACodes: THookProcCodes);
 var
   Found: Boolean;
   I: Integer;
-  Data: PHookProcData;
+  UserData: PHookUserData;
+  ProcData: PHookProcData;
+label 1;
 begin
   if HookProcList = nil then
     HookProcList := TList.Create;
   Found := False;
-  for I := 0 to HookProcList.Count-1 do
-    with PHookProcData(HookProcList[I])^ do
-      if @Proc = @AProc then begin
-        Inc(RefCount);
-        Found := True;
-        Break;
+  UserData := nil;  { avoid warning }
+  for I := 0 to HookProcList.Count-1 do begin
+    ProcData := PHookProcData(HookProcList[I]);
+    if @ProcData.Proc = @AProc then begin
+      UserData := ProcData.LastUserData;
+      while Assigned(UserData) do begin
+        if UserData.User = AUser then begin
+          { InstallHookProc was already called for AUser/AProc. Go ahead and
+            call InstallHooks again just in case the hooks weren't successfully
+            installed last time. }
+          goto 1;
+        end;
+        UserData := UserData.Prev;
       end;
-  if not Found then begin
-    New(Data);
-    with Data^ do begin
-      Proc := AProc;
-      RefCount := 1;
-      Codes := ACodes;
+      New(UserData);
+      UserData.Prev := ProcData.LastUserData;
+      UserData.User := AUser;
+      UserData.InstalledHookTypes := [];
+      ProcData.LastUserData := UserData;
+      Found := True;
+      Break;
     end;
-    HookProcList.Add(Data);
   end;
-  if not OnlyIncrementCount then
-    InstallHooks(HookCodesToTypes(ACodes));
+  if not Found then begin
+    New(UserData);
+    try
+      UserData.Prev := nil;
+      UserData.User := AUser;
+      UserData.InstalledHookTypes := [];
+      HookProcList.Expand;
+      New(ProcData);
+    except
+      Dispose(UserData);
+      raise;
+    end;
+    ProcData.Proc := AProc;
+    ProcData.Codes := ACodes;
+    ProcData.LastUserData := UserData;
+    HookProcList.Add(ProcData);
+  end;
+1:InstallHooks(HookCodesToTypes(ACodes), UserData.InstalledHookTypes);
 end;
 
-procedure UninstallHookProc(AProc: THookProc);
+procedure UninstallHookProc(AUser: TObject; AProc: THookProc);
 var
   I: Integer;
-  Data: PHookProcData;
+  ProcData: PHookProcData;
+  NextUserData, UserData: PHookUserData;
   T: THookTypes;
 begin
   if HookProcList = nil then Exit;
   for I := 0 to HookProcList.Count-1 do begin
-    Data := PHookProcData(HookProcList[I]);
-    if @Data.Proc = @AProc then begin
-      T := HookCodesToTypes(Data.Codes);
-      Dec(Data.RefCount);
-      if Data.RefCount = 0 then begin
-        HookProcList.Delete(I);
-        Dispose(Data);
+    ProcData := PHookProcData(HookProcList[I]);
+    if @ProcData.Proc = @AProc then begin
+      { Locate the UserData record }
+      NextUserData := nil;
+      UserData := ProcData.LastUserData;
+      while Assigned(UserData) and (UserData.User <> AUser) do begin
+        NextUserData := UserData;
+        UserData := UserData.Prev;
       end;
+      if UserData = nil then
+        Exit;
+
+      { Remove record from linked list }
+      if NextUserData = nil then begin
+        { It's the last item in the list }
+        if UserData.Prev = nil then begin
+          { It's the only item in the list, so destroy the ProcData record }
+          HookProcList.Delete(I);
+          Dispose(ProcData);
+        end
+        else
+          ProcData.LastUserData := UserData.Prev;
+      end
+      else
+        NextUserData.Prev := UserData.Prev;
+
+      T := UserData.InstalledHookTypes;
+      Dispose(UserData);
       UninstallHooks(T, False);
       Break;
     end;
   end;
-  if HookProcList.Count = 0 then begin
-    HookProcList.Free;
-    HookProcList := nil;
-  end;
+  if HookProcList.Count = 0 then
+    FreeAndNil(HookProcList);
 end;
 
 
 initialization
 finalization
   UninstallHooks([Low(THookType)..High(THookType)], True);
-  HookProcList.Free;
-  { Following line needed because, under certain circumstances, HookProcList
-    may be referenced after the 'finalization' section is processed. (This
-    can happen if a 'Halt' call is placed in the main form's OnCreate
-    handler, for example.) }
-  HookProcList := nil;
 end.

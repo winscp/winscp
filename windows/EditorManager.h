@@ -34,8 +34,8 @@ public:
 
   bool __fastcall Empty(bool IgnoreClosed);
   bool __fastcall CanAddFile(const AnsiString RemoteDirectory, 
-    const AnsiString OriginalFileName, TObject *& Token,
-    AnsiString & ExistingLocalDirectory);
+    const AnsiString OriginalFileName, const AnsiString SessionName,
+    TObject *& Token,AnsiString & ExistingLocalDirectory);
   bool __fastcall CloseInternalEditors(TNotifyEvent CloseCallback);
   bool __fastcall CloseExternalFilesWithoutProcess();
 

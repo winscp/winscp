@@ -511,7 +511,7 @@ private:
   void __fastcall ScriptPrint(TScript * Script, const AnsiString Str);
   void __fastcall ScriptPrintProgress(TScript * Script, bool First, const AnsiString Str);
   void __fastcall ScriptInput(TScript * Script, const AnsiString Prompt, AnsiString & Str);
-  void __fastcall ScriptTerminalUpdateStatus(TObject * Sender);
+  void __fastcall ScriptTerminalUpdateStatus(TSecureShell * SecureShell, bool Active);
   void __fastcall ScriptTerminalPromptUser(TSecureShell * SecureShell,
     AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg);
   void __fastcall ScriptShowExtendedException(TSecureShell * SecureShell,
@@ -528,7 +528,7 @@ private:
   void __fastcall SynchronizeControllerSynchronize(TSynchronizeController * Sender,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
     const TCopyParamType & CopyParam, const TSynchronizeParamType & Params,
-    TSynchronizeStats * Stats, TSynchronizeOptions * Options, bool Full);
+    TSynchronizeChecklist ** Checklist, TSynchronizeOptions * Options, bool Full);
   void __fastcall SynchronizeControllerSynchronizeInvalid(TSynchronizeController * Sender,
     const AnsiString Directory, const AnsiString ErrorStr);
   void __fastcall SynchronizeControllerTooManyDirectories(TSynchronizeController * Sender,
@@ -635,20 +635,15 @@ void __fastcall TConsoleRunner::ScriptPrintProgress(TScript * /*Script*/,
   FLastProgressLen = Str.Length();
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::ScriptTerminalUpdateStatus(TObject * Sender)
+void __fastcall TConsoleRunner::ScriptTerminalUpdateStatus(
+  TSecureShell * SecureShell, bool Active)
 {
-  // duplicated in forms\OperationStatus.cpp
-  static const int ConnectionStatusStrings[] =
-    { STATUS_CLOSED, STATUS_INITWINSOCK, STATUS_LOOKUPHOST, STATUS_CONNECT,
-      STATUS_AUTHENTICATE, STATUS_AUTHENTICATED, STATUS_STARTUP,
-      STATUS_OPEN_DIRECTORY, STATUS_READY };
-
-  TTerminal * Terminal = dynamic_cast<TTerminal *>(Sender);
-  assert(Terminal != NULL);
-
-  assert((Terminal->Status >= 0) && (Terminal->Status < LENOF(ConnectionStatusStrings)));
-  AnsiString Status = LoadStr(ConnectionStatusStrings[Terminal->Status]);
-  PrintLine(Status);
+  if (Active)
+  {
+    assert((SecureShell->Status >= 0) && (SecureShell->Status < ConnectionStatusStringsCount));
+    AnsiString Status = LoadStr(ConnectionStatusStrings[SecureShell->Status]);
+    PrintLine(Status);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TSecureShell * /*SecureShell*/,
@@ -917,12 +912,12 @@ void __fastcall TConsoleRunner::SynchronizeControllerAbort(TObject * /*Sender*/,
 void __fastcall TConsoleRunner::SynchronizeControllerSynchronize(
   TSynchronizeController * /*Sender*/, const AnsiString LocalDirectory,
   const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
-  const TSynchronizeParamType & /*Params*/, TSynchronizeStats * Stats,
+  const TSynchronizeParamType & /*Params*/, TSynchronizeChecklist ** Checklist,
   TSynchronizeOptions * /*Options*/, bool Full)
 {
   if (!Full)
   {
-    FScript->Synchronize(LocalDirectory, RemoteDirectory, CopyParam, Stats);
+    FScript->Synchronize(LocalDirectory, RemoteDirectory, CopyParam, Checklist);
   }
 }
 //---------------------------------------------------------------------------
@@ -1132,7 +1127,7 @@ int __fastcall Console(TProgramParams * Params, bool Help)
       try
       {
         AnsiString Value;
-        if (Params->FindSwitch("script", Value))
+        if (Params->FindSwitch("script", Value) && !Value.IsEmpty())
         {
           ScriptCommands->LoadFromFile(Value);
         }

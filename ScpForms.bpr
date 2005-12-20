@@ -5,32 +5,33 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpForms.lib"/>
     <OBJFILES value="forms\InputDlg.obj forms\MessageDlg.obj windows\VCLCommon.obj 
-      forms\About.obj forms\Banner.obj forms\Cleanup.obj 
+      forms\About.obj forms\Authenticate.obj forms\Cleanup.obj 
       forms\ComboInput.obj forms\Console.obj forms\Copy.obj 
       forms\CopyParams.obj forms\CopyParamCustom.obj 
-      forms\CopyParamPreset.obj forms\CustomCommand.obj forms\Editor.obj 
-      forms\EditorPreferences.obj forms\FileSystemInfo.obj 
-      forms\FullSynchronize.obj forms\GeneralSettings.obj forms\Glyphs.obj 
-      forms\ImportSessions.obj forms\Licence.obj 
-      forms\LocationProfiles.obj forms\Log.obj forms\Login.obj 
-      forms\LogSettings.obj forms\OpenDirectory.obj 
-      forms\OperationStatus.obj forms\Password.obj forms\Preferences.obj 
-      forms\Progress.obj forms\Properties.obj forms\Rights.obj 
-      forms\RightsExt.obj forms\SelectMask.obj forms\Symlink.obj 
-      forms\Synchronize.obj forms\SynchronizeProgress.obj"/>
+      forms\CopyParamPreset.obj forms\CreateDirectory.obj 
+      forms\CustomCommand.obj forms\Editor.obj forms\EditorPreferences.obj 
+      forms\FileSystemInfo.obj forms\FullSynchronize.obj 
+      forms\GeneralSettings.obj forms\Glyphs.obj forms\ImportSessions.obj 
+      forms\Licence.obj forms\LocationProfiles.obj forms\Log.obj 
+      forms\Login.obj forms\LogSettings.obj forms\OpenDirectory.obj 
+      forms\OperationStatus.obj forms\Preferences.obj forms\Progress.obj 
+      forms\Properties.obj forms\Rights.obj forms\RightsExt.obj 
+      forms\SelectMask.obj forms\Symlink.obj forms\Synchronize.obj 
+      forms\SynchronizeChecklist.obj forms\SynchronizeProgress.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
-    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Banner.dfm forms\Cleanup.dfm 
+    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Authenticate.dfm forms\Cleanup.dfm 
       forms\ComboInput.dfm forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm 
       forms\CopyParamCustom.dfm forms\CopyParamPreset.dfm 
-      forms\CustomCommand.dfm forms\Editor.dfm forms\EditorPreferences.dfm 
-      forms\FileSystemInfo.dfm forms\FullSynchronize.dfm 
-      forms\GeneralSettings.dfm forms\Glyphs.dfm forms\ImportSessions.dfm 
-      forms\Licence.dfm forms\LocationProfiles.dfm forms\Log.dfm forms\Login.dfm 
-      forms\LogSettings.dfm forms\OpenDirectory.dfm forms\OperationStatus.dfm 
-      forms\Password.dfm forms\Preferences.dfm forms\Progress.dfm 
-      forms\Properties.dfm forms\Rights.dfm forms\RightsExt.dfm 
-      forms\SelectMask.dfm forms\Symlink.dfm forms\Synchronize.dfm 
+      forms\CreateDirectory.dfm forms\CustomCommand.dfm forms\Editor.dfm 
+      forms\EditorPreferences.dfm forms\FileSystemInfo.dfm 
+      forms\FullSynchronize.dfm forms\GeneralSettings.dfm forms\Glyphs.dfm 
+      forms\ImportSessions.dfm forms\Licence.dfm forms\LocationProfiles.dfm 
+      forms\Log.dfm forms\Login.dfm forms\LogSettings.dfm 
+      forms\OpenDirectory.dfm forms\OperationStatus.dfm forms\Preferences.dfm 
+      forms\Progress.dfm forms\Properties.dfm forms\Rights.dfm 
+      forms\RightsExt.dfm forms\SelectMask.dfm forms\Symlink.dfm 
+      forms\Synchronize.dfm forms\SynchronizeChecklist.dfm 
       forms\SynchronizeProgress.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
@@ -71,7 +72,7 @@
       <FILE FILENAME="forms\MessageDlg.cpp" FORMNAME="" UNITNAME="MessageDlg" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\VCLCommon.cpp" FORMNAME="" UNITNAME="VCLCommon" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\About.cpp" FORMNAME="AboutDialog" UNITNAME="About" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="forms\Banner.cpp" FORMNAME="BannerDialog" UNITNAME="Banner" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Authenticate.cpp" FORMNAME="AuthenticateForm" UNITNAME="Authenticate" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Cleanup.cpp" FORMNAME="CleanupDialog" UNITNAME="Cleanup" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\ComboInput.cpp" FORMNAME="ComboInputDialog" UNITNAME="ComboInput" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Console.cpp" FORMNAME="ConsoleDialog" UNITNAME="Console" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -79,6 +80,7 @@
       <FILE FILENAME="forms\CopyParams.cpp" FORMNAME="CopyParamsFrame" UNITNAME="CopyParams" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CopyParamCustom.cpp" FORMNAME="CopyParamCustomDialog" UNITNAME="CopyParamCustom" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CopyParamPreset.cpp" FORMNAME="CopyParamPresetDialog" UNITNAME="CopyParamPreset" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\CreateDirectory.cpp" FORMNAME="CreateDirectoryDialog" UNITNAME="CreateDirectory" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CustomCommand.cpp" FORMNAME="CustomCommandDialog" UNITNAME="CustomCommand" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Editor.cpp" FORMNAME="EditorForm" UNITNAME="Editor" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\EditorPreferences.cpp" FORMNAME="EditorPreferencesDialog" UNITNAME="EditorPreferences" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -94,7 +96,6 @@
       <FILE FILENAME="forms\LogSettings.cpp" FORMNAME="LoggingFrame" UNITNAME="LogSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\OpenDirectory.cpp" FORMNAME="OpenDirectoryDialog" UNITNAME="OpenDirectory" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\OperationStatus.cpp" FORMNAME="OperationStatusForm" UNITNAME="OperationStatus" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="forms\Password.cpp" FORMNAME="PasswordDialog" UNITNAME="Password" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Preferences.cpp" FORMNAME="PreferencesDialog" UNITNAME="Preferences" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Progress.cpp" FORMNAME="ProgressForm" UNITNAME="Progress" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Properties.cpp" FORMNAME="PropertiesDialog" UNITNAME="Properties" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -103,6 +104,7 @@
       <FILE FILENAME="forms\SelectMask.cpp" FORMNAME="SelectMaskDialog" UNITNAME="SelectMask" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Symlink.cpp" FORMNAME="SymlinkDialog" UNITNAME="Symlink" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Synchronize.cpp" FORMNAME="SynchronizeDialog" UNITNAME="Synchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\SynchronizeChecklist.cpp" FORMNAME="SynchronizeChecklistDialog" UNITNAME="SynchronizeChecklist" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\SynchronizeProgress.cpp" FORMNAME="SynchronizeProgressForm" UNITNAME="SynchronizeProgress" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>

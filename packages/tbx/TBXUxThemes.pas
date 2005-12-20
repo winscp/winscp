@@ -7,7 +7,7 @@ unit TBXUxThemes;
 // Conversion of original visual styles API tmschema.h and
 // uxtheme.h (Copyright Microsoft Corporation 1991-2000)
 //
-// $Id: TBXUxThemes.pas 7 2004-02-21 06:07:53Z  $
+// Id: TBXUxThemes.pas 7 2004-02-21 06:07:53Z
 
 interface
 

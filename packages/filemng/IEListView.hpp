@@ -50,6 +50,7 @@ private:
 	HWND FHeaderHandle;
 	Forms::TCustomForm* FParentForm;
 	AnsiString FMask;
+	Graphics::TCanvas* FHeaderCanvas;
 	Classes::TNotifyEvent FOnHeaderEndDrag;
 	Classes::TNotifyEvent FOnHeaderEndTrack;
 	AnsiString FDateTimeFormatStr;
@@ -57,6 +58,8 @@ private:
 	TDateTimeDisplay FDateTimeDisplay;
 	Controls::TDragImageList* FDragImageList;
 	Controls::TImageList* FHeaderImages;
+	int __fastcall SecondaryColumnHeaderOffset(Graphics::TCanvas* Canvas, int Index);
+	int __fastcall ColumnHeaderIconWidth(void);
 	
 protected:
 	virtual void __fastcall ColPropertiesChange(System::TObject* Sender);
@@ -70,6 +73,7 @@ protected:
 	virtual void __fastcall HeaderEndDrag(System::TObject* Sender);
 	virtual void __fastcall SetMask(AnsiString Value);
 	virtual void __fastcall SetHeaderImages(Controls::TImageList* Value);
+	virtual int __fastcall SecondaryColumnHeader(int Index);
 	virtual void __fastcall CreateWnd(void);
 	DYNAMIC void __fastcall ColClick(Comctrls::TListColumn* Column);
 	virtual void __fastcall Loaded(void);

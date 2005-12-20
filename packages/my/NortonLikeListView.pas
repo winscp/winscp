@@ -22,6 +22,7 @@ type
     FNortonLike: TNortonLikeMode;
     FOnSelectByMask: TSelectByMaskEvent;
     FLastDeletedItem: TListItem; // aby sme nepocitali smazany item 2x
+    FFocusingItem: Boolean;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
@@ -47,6 +48,7 @@ type
     procedure InsertItem(Item: TListItem); override;
     function NewColProperties: TCustomListViewColProperties; virtual;
     procedure FocusSomething; virtual;
+    function EnableDragOnClick: Boolean; virtual;
     procedure FocusItem(Item: TListItem);
     function GetItemFromHItem(const Item: TLVItem): TListItem;
     function GetValid: Boolean; virtual;
@@ -175,6 +177,7 @@ begin
   FColProperties := NewColProperties;
   FLastDeletedItem := nil;
   FUpdatingSelection := 0;
+  FFocusingItem := False;
 end;
 
 procedure TCustomNortonLikeListView.Delete(Item: TListItem);
@@ -433,6 +436,11 @@ begin
     ItemFocused.MakeVisible(False);
 end;
 
+function TCustomNortonLikeListView.EnableDragOnClick: Boolean;
+begin
+  Result := (not FFocusingItem);
+end;
+
 procedure TCustomNortonLikeListView.FocusItem(Item: TListItem);
 var
   P: TPoint;
@@ -447,9 +455,11 @@ begin
     PDontUnSelectItem := FDontUnSelectItem;
     FDontSelectItem := True;
     FDontUnSelectItem := True;
+    FFocusingItem := True;
     try
       SendMessage(Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(P.X, P.Y));
     finally
+      FFocusingItem := False;
       FDontSelectItem := PDontSelectItem;
       FDontUnSelectItem := PDontUnSelectItem;
     end;

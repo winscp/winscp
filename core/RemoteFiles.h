@@ -15,6 +15,7 @@ enum TModificationFmt { mfMDHM, mfMDY, mfFull };
 class TTerminal;
 class TRights;
 class TRemoteFileList;
+class THierarchicalStorage;
 //---------------------------------------------------------------------------
 class TRemoteFile : public TPersistent
 {
@@ -56,7 +57,8 @@ private:
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall SetRights(TRights * value);
   AnsiString __fastcall GetFullFileName() const;
-  int __fastcall GetIconIndex();
+  bool __fastcall GetHaveFullFileName() const;
+  int __fastcall GetIconIndex() const;
   AnsiString __fastcall GetTypeName();
   bool __fastcall GetIsHidden();
   void __fastcall SetIsHidden(bool value);
@@ -73,7 +75,7 @@ protected:
 public:
   __fastcall TRemoteFile(TRemoteFile * ALinkedByFile = NULL);
   virtual __fastcall ~TRemoteFile();
-  TRemoteFile * __fastcall Duplicate(bool Standalone = true);
+  TRemoteFile * __fastcall Duplicate(bool Standalone = true) const;
 
   void __fastcall ShiftTime(const TDateTime & Difference);
   void __fastcall Complete();
@@ -102,6 +104,7 @@ public:
   __property Char Type = { read = GetType, write = SetType };
   __property bool Selected  = { read=FSelected, write=FSelected };
   __property AnsiString FullFileName  = { read = GetFullFileName, write = FFullFileName };
+  __property bool HaveFullFileName  = { read = GetHaveFullFileName };
   __property int IconIndex = { read = GetIconIndex };
   __property AnsiString TypeName = { read = GetTypeName };
   __property bool IsHidden = { read = GetIsHidden, write = SetIsHidden };
@@ -298,12 +301,14 @@ public:
   __property bool Right[TRight Right] = { read = GetRight, write = SetRight };
   __property TState RightUndef[TRight Right] = { read = GetRightUndef, write = SetRightUndef };
   __property AnsiString Text = { read = GetText, write = SetText };
+  __property bool Unknown = { read = FUnknown };
 
 private:
   bool FAllowUndef;
   unsigned short FSet;
   unsigned short FUnset;
   AnsiString FText;
+  bool FUnknown;
 
   bool __fastcall GetIsUndef() const;
   AnsiString __fastcall GetModeStr() const;
@@ -342,6 +347,9 @@ public:
   __fastcall TRemoteProperties();
   bool __fastcall operator ==(const TRemoteProperties & rhp) const;
   bool __fastcall operator !=(const TRemoteProperties & rhp) const;
+  void __fastcall Default();
+  void __fastcall Load(THierarchicalStorage * Storage);
+  void __fastcall Save(THierarchicalStorage * Storage) const;
 
   static TRemoteProperties __fastcall CommonProperties(TStrings * FileList);
   static TRemoteProperties __fastcall ChangedProperties(
@@ -366,5 +374,9 @@ AnsiString __fastcall MinimizeName(const AnsiString FileName, int MaxLen, bool U
 AnsiString __fastcall MakeFileList(TStrings * FileList);
 void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
   TModificationFmt Precision);
+AnsiString __fastcall UserModificationStr(TDateTime DateTime,
+  TModificationFmt Precision);
+int __fastcall FakeFileImageIndex(AnsiString FileName, unsigned long Attrs = 0,
+  AnsiString * TypeName = NULL);
 //---------------------------------------------------------------------------
 #endif

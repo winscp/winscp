@@ -340,10 +340,11 @@ type
     procedure UpdateStatusBar; dynamic;
     procedure WndProc(var Message: TMessage); override;
     function FileNameMatchesMasks(FileName: string; Directory: Boolean; Masks: string): Boolean;
+    function EnableDragOnClick: Boolean; override;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
-    function AnyFileSelected(OnlyFocused: Boolean): Boolean;
+    function AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean): Boolean;
     constructor Create(AOwner: TComponent); override;
     procedure CreateDirectory(DirName: string); virtual; abstract;
     destructor Destroy; override;
@@ -1080,9 +1081,6 @@ function TCustomDirView.FileNameMatchesMasks(FileName: string;
   Directory: Boolean; Masks: string): Boolean;
 begin
   Result := False;
-  // there needs to be atleast one dot,
-  // otherwise '*.*' mask would not select this file
-  if Pos('.', FileName) = 0 then FileName := FileName + '.';
   Result := False;
   if Assigned(OnMatchMask) then
     OnMatchMask(Self, FileName, Directory, Masks, Result)
@@ -1582,10 +1580,15 @@ begin
   //inherited;
 end;
 
+function TCustomDirView.EnableDragOnClick: Boolean;
+begin
+  Result := (not Loading) and inherited EnableDragOnClick;
+end;
+
 procedure TCustomDirView.WMLButtonDown(var Message: TWMLButtonDown);
 begin
   GetCursorPos(FStartPos);
-  FDragEnabled := (not Loading);
+  FDragEnabled := EnableDragOnClick;
   inherited;
 end;
 
@@ -1603,7 +1606,7 @@ procedure TCustomDirView.WMRButtonDown(var Message: TWMRButtonDown);
 begin
   GetCursorPos(FStartPos);
   if FDragDropFilesEx.DragDetectStatus <> ddsDrag then
-    FDragEnabled := (not Loading);
+    FDragEnabled := EnableDragOnClick;
   FContextMenu := True;
   inherited;
 end;
@@ -2302,19 +2305,21 @@ begin
   end;
 end;
 
-function TCustomDirView.AnyFileSelected(OnlyFocused: Boolean): Boolean;
+function TCustomDirView.AnyFileSelected(OnlyFocused: Boolean; FilesOnly: Boolean): Boolean;
 var
   Item: TListItem;
 begin
   if OnlyFocused or (SelCount = 0) then
-    Result := Assigned(ItemFocused) and ItemIsFile(ItemFocused)
+    Result := Assigned(ItemFocused) and ItemIsFile(ItemFocused) and
+      ((not FilesOnly) or (not ItemIsDirectory(ItemFocused)))
     else
   begin
     Result := True;
     Item := GetNextItem(nil, sdAll, [isSelected]);
     while Assigned(Item) do
     begin
-      if ItemIsFile(Item) then Exit;
+      if ItemIsFile(Item) and
+         ((not FilesOnly) or (not ItemIsDirectory(Item))) then Exit;
       Item := GetNextItem(Item, sdAll, [isSelected]);
     end;
     Result := False;

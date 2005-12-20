@@ -185,8 +185,19 @@ inherited ScpCommanderForm: TScpCommanderForm
         Caption = '&Files'
         HelpKeyword = 'ui_commander_menu#files'
         Hint = 'File operation commands'
-        object TBXItem24: TTBXItem
-          Action = NonVisualDataModule.CurrentCreateDirAction
+        object TBXSubmenuItem26: TTBXSubmenuItem
+          Caption = '&New'
+          HelpKeyword = 'task_index'
+          Hint = 'Create object|Create new object'
+          object TBXItem28: TTBXItem
+            Action = NonVisualDataModule.NewFileAction
+          end
+          object TBXItem24: TTBXItem
+            Action = NonVisualDataModule.NewDirAction
+          end
+          object TBXItem209: TTBXItem
+            Action = NonVisualDataModule.NewLinkAction
+          end
         end
         object TBXSeparatorItem6: TTBXSeparatorItem
           Hint = 'E'
@@ -199,9 +210,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXSubmenuItem25: TTBXSubmenuItem
           Action = NonVisualDataModule.CurrentEditAlternativeAction
-        end
-        object TBXItem28: TTBXItem
-          Action = NonVisualDataModule.EditNewAction
         end
         object TBXItem29: TTBXItem
           Action = NonVisualDataModule.AddEditLinkAction
@@ -414,6 +422,12 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem188: TTBXItem
             Action = NonVisualDataModule.CommanderTransferBandAction
           end
+          object TBXItem214: TTBXItem
+            Action = NonVisualDataModule.CommanderUploadDownloadBandAction
+          end
+          object TBXItem215: TTBXItem
+            Action = NonVisualDataModule.CommanderCustomCommandsBandAction
+          end
           object TBXSeparatorItem47: TTBXSeparatorItem
             Hint = 'E'
           end
@@ -507,11 +521,37 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXSeparatorItem22: TTBXSeparatorItem
             Hint = 'E'
           end
+          object TBXItem211: TTBXItem
+            Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+          end
           object TBXItem81: TTBXItem
             Action = NonVisualDataModule.QueuePreferencesAction
           end
         end
         object TBXSeparatorItem23: TTBXSeparatorItem
+          Hint = 'E'
+        end
+        object ColorMenuItem: TTBXColorItem
+          Action = NonVisualDataModule.ColorMenuAction
+          Color = clNone
+          object TBXItem216: TTBXItem
+            Action = NonVisualDataModule.ColorDefaultAction
+          end
+          object TBXSeparatorItem50: TTBXSeparatorItem
+            Blank = True
+          end
+          object SessionColorPalette: TTBXColorPalette
+            PaletteOptions = [tpoCustomImages]
+            OnChange = SessionColorPaletteChange
+          end
+          object TBXSeparatorItem51: TTBXSeparatorItem
+            Hint = 'E'
+          end
+          object TBXItem217: TTBXItem
+            Action = NonVisualDataModule.ColorPickAction
+          end
+        end
+        object TBXSeparatorItem49: TTBXSeparatorItem
           Hint = 'E'
         end
         object TBXItem82: TTBXItem
@@ -964,6 +1004,36 @@ inherited ScpCommanderForm: TScpCommanderForm
         Action = NonVisualDataModule.PresetsPreferencesAction
       end
     end
+    object UploadDownloadToolbar: TTBXToolbar
+      Left = 193
+      Top = 179
+      Caption = 'Upload/Download'
+      DockPos = 192
+      DockRow = 7
+      Images = GlyphsModule.ExplorerImages
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 9
+      Visible = False
+      object TBXItem213: TTBXItem
+        Action = NonVisualDataModule.RemoteCopyAction
+      end
+      object TBXItem212: TTBXItem
+        Action = NonVisualDataModule.LocalCopyAction
+      end
+    end
+    object CustomCommandsToolbar: TTBXToolbar
+      Left = 249
+      Top = 179
+      Caption = 'Custom Commands'
+      DockPos = 249
+      DockRow = 7
+      Images = GlyphsModule.ExplorerImages
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 10
+      Visible = False
+    end
   end
   inherited RemotePanel: TPanel
     Left = 318
@@ -1007,7 +1077,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Width = 334
       Height = 78
       Constraints.MinHeight = 70
-      RowSelect = True
       NortonLike = nlOn
       PathComboBox = RemotePathComboBox
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
@@ -1188,7 +1257,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       Constraints.MinHeight = 70
       FullDrag = True
       HideSelection = False
-      RowSelect = True
       PopupMenu = NonVisualDataModule.LocalDirViewPopup
       TabOrder = 1
       ViewStyle = vsReport

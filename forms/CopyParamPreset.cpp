@@ -168,8 +168,6 @@ void __fastcall TCopyParamPresetDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    CopyParamsFrame->Validate();
-
     AnsiString Description = DescriptionEdit->Text;
     TCopyParamList::ValidateName(Description);
 

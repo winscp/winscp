@@ -30,6 +30,7 @@
 #include "TBXStatusBars.hpp"
 #include "TBXExtItems.hpp"
 #include "TB2ExtItems.hpp"
+#include "TBXToolPals.hpp"
 //---------------------------------------------------------------------------
 class TScpExplorerForm : public TCustomScpExplorerForm
 {
@@ -45,7 +46,6 @@ __published:
   TTBXSubmenuItem *TBXSubmenuItem5;
   TTBXItem *TBXItem25;
   TTBXItem *TBXItem26;
-  TTBXItem *TBXItem28;
   TTBXSeparatorItem *TBXSeparatorItem7;
   TTBXItem *TBXItem30;
   TTBXItem *TBXItem31;
@@ -139,8 +139,6 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem1;
   TTBXItem *TBXItem1;
   TTBXItem *TBXItem2;
-  TTBXItem *TBXItem3;
-  TTBXItem *TBXItem4;
   TTBXItem *TBXItem5;
   TTBXItem *TBXItem6;
   TTBXSeparatorItem *TBXSeparatorItem2;
@@ -264,6 +262,22 @@ __published:
   TTBXSubmenuItem *TBXSubmenuItem9;
   TTBXItem *TBXItem27;
   TTBXItem *TBXItem134;
+  TTBXSubmenuItem *TBXSubmenuItem26;
+  TTBXItem *TBXItem135;
+  TTBXItem *TBXItem136;
+  TTBXItem *TBXItem209;
+  TTBXSeparatorItem *TBXSeparatorItem20;
+  TTBXItem *TBXItem4;
+  TTBXItem *TBXItem3;
+  TTBXToolbar *CustomCommandsToolbar;
+  TTBXItem *TBXItem28;
+  TTBXColorItem *ColorMenuItem;
+  TTBXItem *TBXItem216;
+  TTBXSeparatorItem *TBXSeparatorItem50;
+  TTBXColorPalette *SessionColorPalette;
+  TTBXSeparatorItem *TBXSeparatorItem51;
+  TTBXItem *TBXItem217;
+  TTBXSeparatorItem *TBXSeparatorItem23;
   void __fastcall RemoteStatusBarDblClick(TObject *Sender);
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
@@ -273,7 +287,8 @@ private:
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
-    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm);
+    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
+    bool DragDrop);
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall ConfigurationChanged();

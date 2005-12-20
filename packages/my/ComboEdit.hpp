@@ -103,6 +103,80 @@ public:
 };
 
 
+class DELPHICLASS TComboEdit;
+class PASCALIMPLEMENTATION TComboEdit : public TCustomComboEdit 
+{
+	typedef TCustomComboEdit inherited;
+	
+__published:
+	__property AutoSelect  = {default=1};
+	__property ButtonHint ;
+	__property BorderStyle  = {default=1};
+	__property CharCase  = {default=0};
+	__property ClickKey  = {default=32808};
+	__property Color  = {default=-2147483643};
+	__property Ctl3D ;
+	__property DirectInput  = {default=1};
+	__property DragCursor  = {default=-12};
+	__property DragMode  = {default=0};
+	__property EditMask ;
+	__property Enabled  = {default=1};
+	__property Font ;
+	__property ButtonWidth ;
+	__property HideSelection  = {default=1};
+	__property Anchors  = {default=3};
+	__property BiDiMode ;
+	__property Constraints ;
+	__property DragKind  = {default=0};
+	__property ParentBiDiMode  = {default=1};
+	__property ImeMode  = {default=3};
+	__property ImeName ;
+	__property ParentColor  = {default=0};
+	__property ParentCtl3D  = {default=1};
+	__property ParentFont  = {default=1};
+	__property ParentShowHint  = {default=1};
+	__property PopupMenu ;
+	__property ReadOnly  = {default=0};
+	__property ShowHint ;
+	__property TabOrder  = {default=-1};
+	__property TabStop  = {default=1};
+	__property Text ;
+	__property Visible  = {default=1};
+	__property OnButtonClick ;
+	__property OnChange ;
+	__property OnClick ;
+	__property OnDblClick ;
+	__property OnDragDrop ;
+	__property OnDragOver ;
+	__property OnEndDrag ;
+	__property OnEnter ;
+	__property OnExit ;
+	__property OnKeyDown ;
+	__property OnKeyPress ;
+	__property OnKeyUp ;
+	__property OnMouseDown ;
+	__property OnMouseMove ;
+	__property OnMouseUp ;
+	__property OnStartDrag ;
+	__property OnContextPopup ;
+	__property OnEndDock ;
+	__property OnStartDock ;
+public:
+	#pragma option push -w-inl
+	/* TCustomComboEdit.Create */ inline __fastcall virtual TComboEdit(Classes::TComponent* AOwner) : TCustomComboEdit(AOwner) { }
+	#pragma option pop
+	#pragma option push -w-inl
+	/* TCustomComboEdit.Destroy */ inline __fastcall virtual ~TComboEdit(void) { }
+	#pragma option pop
+	
+public:
+	#pragma option push -w-inl
+	/* TWinControl.CreateParented */ inline __fastcall TComboEdit(HWND ParentWindow) : TCustomComboEdit(ParentWindow) { }
+	#pragma option pop
+	
+};
+
+
 typedef void __fastcall (__closure *TExecOpenDialogEvent)(System::TObject* Sender, AnsiString &Name, bool &Action);
 
 class DELPHICLASS TFileDirEdit;

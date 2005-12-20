@@ -197,8 +197,14 @@ void __fastcall TPropertiesDialog::LoadInfo()
         {
           TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[Index]);
           assert(File);
-          GroupList->Add(File->Group);
-          OwnerList->Add(File->Owner);
+          if (!File->Group.IsEmpty())
+          {
+            GroupList->Add(File->Group);
+          }
+          if (!File->Owner.IsEmpty())
+          {
+            OwnerList->Add(File->Owner);
+          }
           if (File->IsDirectory)
           {
             Stats.Directories++;

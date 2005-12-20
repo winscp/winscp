@@ -508,7 +508,7 @@ void __fastcall RegisterAsUrlHandler()
                 Registry->OpenKey("open", true) &&
                 Registry->OpenKey("command", true))
             {
-              Registry->WriteString("", FORMAT("\"%s\" %%1", (FileName)));
+              Registry->WriteString("", FORMAT("\"%s\" \"%%1\"", (FileName)));
               Registry->CloseKey();
             }
             else

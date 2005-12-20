@@ -45,6 +45,7 @@
 #pragma link "TBXExtItems"
 #pragma link "TBXLists"
 #pragma link "TBXStatusBars"
+#pragma link "TBXToolPals"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
@@ -114,7 +115,7 @@ void __fastcall TScpCommanderForm::RestoreFormParams()
   CALLSTACK;
   assert(WinConfiguration);
   TCustomScpExplorerForm::RestoreFormParams();
-  WinConfiguration->RestoreForm(WinConfiguration->ScpCommander.WindowParams, this);
+  RestoreForm(WinConfiguration->ScpCommander.WindowParams, this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreParams()
@@ -176,7 +177,7 @@ void __fastcall TScpCommanderForm::StoreParams()
     STORE_PANEL_PARAMS(Remote);
     #undef RESTORE_PANEL_PARAMS
 
-    WinConfiguration->ScpCommander.WindowParams = WinConfiguration->StoreForm(this);;
+    WinConfiguration->ScpCommander.WindowParams = StoreForm(this);;
 
     WinConfiguration->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
 
@@ -245,7 +246,7 @@ bool __fastcall TScpCommanderForm::InternalDDDownload(AnsiString & TargetDirecto
 //---------------------------------------------------------------------------
 bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, bool Temp, TStrings * FileList, AnsiString & TargetDirectory,
-  TGUICopyParamType & CopyParam, bool Confirm)
+  TGUICopyParamType & CopyParam, bool Confirm, bool DragDrop)
 {
   bool Result = false;
   // Temp means d&d here so far, may change in future!
@@ -274,7 +275,7 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
   if (!Result)
   {
     Result = TCustomScpExplorerForm::CopyParamDialog(Direction, Type, Temp,
-      FileList, TargetDirectory, CopyParam, Confirm);
+      FileList, TargetDirectory, CopyParam, Confirm, DragDrop);
   }
   return Result;
 }
@@ -469,6 +470,15 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
 
   LocalDirView->NortonLike = WinConfiguration->ScpCommander.NortonLikeMode;
   RemoteDirView->NortonLike = WinConfiguration->ScpCommander.NortonLikeMode;
+  bool RowSelectChange = (LocalDirView->RowSelect != WinConfiguration->ScpCommander.FullRowSelect);
+  LocalDirView->RowSelect = WinConfiguration->ScpCommander.FullRowSelect;
+  RemoteDirView->RowSelect = WinConfiguration->ScpCommander.FullRowSelect;
+  if (RowSelectChange)
+  {
+    // selection is not redrawn automatically when RowSelect changes
+    LocalDirView->Invalidate();
+    RemoteDirView->Invalidate();
+  }
 
   LocalDirView->DragDropFilesEx->ShellExtensions->DropHandler =
     !WinConfiguration->DDExtEnabled;
@@ -586,6 +596,8 @@ void __fastcall TScpCommanderForm::UpdateControls()
   CommandLineLabel->Caption = DirView(osCurrent)->PathName;
   CommandLinePromptLabel->Caption =
     (FCurrentSide == osRemote) ? "$" : ">";
+  LocalDirView->Color = (SessionColor != 0 ? SessionColor : clWindow);
+  LocalDriveView->Color = LocalDirView->Color;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::ChangePath(TOperationSide Side)
@@ -617,6 +629,9 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcLocalTree: return LocalDriveView;
     case fcTransferCombo: return reinterpret_cast<TControl*>(TransferCombo);
     case fcSessionToolbar: return SessionToolbar;
+    case fcCustomCommandsBand: return CustomCommandsToolbar;
+    case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
+    case fcColorPalette: return reinterpret_cast<TControl*>(SessionColorPalette);
 
     case fcCommanderMenuBand: return MenuToolbar;
     case fcCommanderSessionBand: return SessionToolbar;
@@ -627,6 +642,8 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcCommanderCommandsBand: return CommandsToolbar;
     case fcCommanderUpdatesBand: return UpdatesToolbar;
     case fcCommanderTransferBand: return TransferToolbar;
+    case fcCommanderUploadDownloadBand: return UploadDownloadToolbar;
+    case fcCommanderCustomCommandsBand: return CustomCommandsToolbar;
     case fcCommanderLocalHistoryBand: return LocalHistoryToolbar;
     case fcCommanderLocalNavigationBand: return LocalNavigationToolbar;
     case fcCommanderRemoteHistoryBand: return RemoteHistoryToolbar;
@@ -647,13 +664,13 @@ void __fastcall TScpCommanderForm::FixControlsPlacement()
   SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
 
   TControl * LocalControlsOrder[] =
-    { LocalTopDock, LocalDriveView, LocalPanelSplitter, LocalDirView,
-      LocalBottomDock, LocalStatusBar };
+    { LocalTopDock, LocalPathLabel, LocalDriveView, LocalPanelSplitter,
+      LocalDirView, LocalBottomDock, LocalStatusBar };
   SetVerticalControlsOrder(LocalControlsOrder, LENOF(LocalControlsOrder));
 
   TControl * RemoteControlsOrder[] =
-    { RemoteTopDock, RemoteDriveView, RemotePanelSplitter, RemoteDirView,
-      RemoteBottomDock, RemoteStatusBar };
+    { RemoteTopDock, RemotePathLabel, RemoteDriveView, RemotePanelSplitter,
+      RemoteDirView, RemoteBottomDock, RemoteStatusBar };
   SetVerticalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
 
   if (LocalDirView->ItemFocused != NULL)
@@ -866,7 +883,7 @@ void __fastcall TScpCommanderForm::DoDirViewLoaded(TCustomDirView * ADirView)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::AddEditLink()
+void __fastcall TScpCommanderForm::AddEditLink(bool Add)
 {
   if (FCurrentSide == osLocal)
   {
@@ -880,11 +897,11 @@ void __fastcall TScpCommanderForm::AddEditLink()
       assert(LocalDirView->ItemFocused->Data);
       PFileRec FileRec = (PFileRec)LocalDirView->ItemFocused->Data;
 
-      Edit = UpperCase(FileRec->FileExt) == "LNK";
+      Edit = !Add && (UpperCase(FileRec->FileExt) == "LNK");
       if (Edit)
       {
         AnsiString FullName = LocalDirView->ItemFullFileName(LocalDirView->ItemFocused);
-        FileName = FullName;//FileRec->FileName;
+        FileName = FullName;
         PointTo = ResolveFileShortCut(FullName, false);
         if (PointTo.IsEmpty())
         {
@@ -928,7 +945,7 @@ void __fastcall TScpCommanderForm::AddEditLink()
   }
   else
   {
-    TCustomScpExplorerForm::AddEditLink();
+    TCustomScpExplorerForm::AddEditLink(Add);
   }
 }
 //---------------------------------------------------------------------------
@@ -1059,7 +1076,7 @@ void __fastcall TScpCommanderForm::LocalFileControlDDFileOperation(
         }
         if (CopyParamDialog(tdToLocal, TransferType,
               false, FInternalDDDownloadList, TargetDirectory, CopyParams,
-              WinConfiguration->DDTransferConfirmation))
+              WinConfiguration->DDTransferConfirmation, true))
         {
           int Params =
             (TransferType == ttMove ? cpDelete : 0) |
@@ -1305,7 +1322,7 @@ void __fastcall TScpCommanderForm::Resize()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::StatusBarDblClick(TObject * /*Sender*/)
 {
-  DoFileSystemInfoDialog(Terminal);
+  FileSystemInfo();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalFileControlDDMenuPopup(TObject * /*Sender*/,

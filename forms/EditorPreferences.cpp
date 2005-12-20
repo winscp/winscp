@@ -33,7 +33,7 @@ bool __fastcall DoEditorPreferencesDialog(TEditorPreferences * Editor,
 }
 //---------------------------------------------------------------------------
 __fastcall TEditorPreferencesDialog::TEditorPreferencesDialog(
-  TComponent * Owner, TEditorPreferencesMode Mode) : 
+  TComponent * Owner, TEditorPreferencesMode Mode) :
   TForm(Owner)
 {
   UseSystemSettings(this);
@@ -52,7 +52,7 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorPreferences * Editor)
   AnsiString ExternalEditor = Editor->Data.ExternalEditor;
   if (!ExternalEditor.IsEmpty())
   {
-    TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
+    ReformatFileNameCommand(ExternalEditor);
   }
   ExternalEditorEdit->Text = ExternalEditor;
   ExternalEditorEdit->Items = CustomWinConfiguration->History["ExternalEditor"];
@@ -79,21 +79,6 @@ bool __fastcall TEditorPreferencesDialog::Execute(TEditorPreferences * Editor)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorPreferencesDialog::ExternalEditorEditChange(
-  TObject * Sender)
-{
-  // duplicated in TPreferencesDialog::FilenameEditChange
-  if (FAfterFilenameEditDialog)
-  {
-    FAfterFilenameEditDialog = false;
-    ExternalEditorEditExit(Sender);
-  }
-  else
-  {
-    ControlChange(Sender);
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::ExternalEditorEditExit(
   TObject * Sender)
 {
@@ -104,7 +89,7 @@ void __fastcall TEditorPreferencesDialog::ExternalEditorEditExit(
     AnsiString Filename = FilenameEdit->Text;
     if (!Filename.IsEmpty())
     {
-      TWinConfiguration::ReformatFileNameCommand(Filename);
+      ReformatFileNameCommand(Filename);
       FilenameEdit->Text = Filename;
     }
     ControlChange(Sender);
@@ -120,30 +105,9 @@ void __fastcall TEditorPreferencesDialog::ExternalEditorEditExit(
 void __fastcall TEditorPreferencesDialog::ExternalEditorBrowseButtonClick(
   TObject * /*Sender*/)
 {
-  AnsiString ExternalEditor, Program, Params, Dir;
-  ExternalEditor = ExternalEditorEdit->Text;
-  TWinConfiguration::ReformatFileNameCommand(ExternalEditor);
-  SplitCommand(ExternalEditor, Program, Params, Dir);
-
-  TOpenDialog * FileDialog = new TOpenDialog(this);
-  try
-  {
-    FileDialog->FileName = Program;
-    FileDialog->Filter = LoadStr(PREFERENCES_EXTERNAL_EDITOR_FILTER);
-    FileDialog->Title = LoadStr(PREFERENCES_SELECT_EXTERNAL_EDITOR);
-
-    if (FileDialog->Execute())
-    {
-      FAfterFilenameEditDialog = true;
-      ExternalEditorEdit->Text = FormatCommand(FileDialog->FileName, Params);
-      FAfterFilenameEditDialog = false;
-      ExternalEditorEditExit(ExternalEditorEdit);
-    }
-  }
-  __finally
-  {
-    delete FileDialog;
-  }
+  BrowseForExecutable(ExternalEditorEdit,
+    LoadStr(PREFERENCES_SELECT_EXTERNAL_EDITOR),
+    LoadStr(PREFERENCES_EXTERNAL_EDITOR_FILTER), true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)
@@ -160,9 +124,9 @@ void __fastcall TEditorPreferencesDialog::UpdateControls()
 {
   EnableControl(OkButton,
     EditorInternalButton->Checked || !ExternalEditorEdit->Text.IsEmpty());
-  EnableControl(ExternalEditorEdit, EditorExternalButton->Checked);  
-  EnableControl(ExternalEditorBrowseButton, EditorExternalButton->Checked);  
-  EnableControl(ExternalEditorGroup, EditorExternalButton->Checked);  
+  EnableControl(ExternalEditorEdit, EditorExternalButton->Checked);
+  EnableControl(ExternalEditorBrowseButton, EditorExternalButton->Checked);
+  EnableControl(ExternalEditorGroup, EditorExternalButton->Checked);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,

@@ -122,7 +122,7 @@ bool __fastcall TFileMasks::IsMask(const AnsiString Mask)
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::SingleMaskMatch(const AnsiString Mask, const AnsiString FileName)
 {
-  return MatchesMask(FileName, Mask);
+  return MatchesFileMask(FileName, Mask);
 }
 //---------------------------------------------------------------------------
 __fastcall TFileMasks::TFileMasks()
@@ -138,6 +138,20 @@ __fastcall TFileMasks::TFileMasks(const TFileMasks & Source)
 __fastcall TFileMasks::TFileMasks(const AnsiString AMasks)
 {
   FMasks = AMasks;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileMasks::MatchesFileMask(const AnsiString & Filename, const AnsiString & Mask)
+{
+  bool Result;
+  if (Mask == "*.*")
+  {
+    Result = true;
+  }
+  else
+  {
+    Result = MatchesMask(Filename, Mask);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::Matches(AnsiString FileName, bool Directory,
@@ -169,7 +183,7 @@ bool __fastcall TFileMasks::Matches(AnsiString FileName, bool Directory,
         M = M.SubString(D + 1, M.Length() - D);
       }
 
-      if (PathMatch && MatchesMask(FileName, M)) return true;
+      if (PathMatch && MatchesFileMask(FileName, M)) return true;
     }
   }
   return false;

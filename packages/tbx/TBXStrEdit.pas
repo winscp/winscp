@@ -4,7 +4,7 @@ unit TBXStrEdit;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXStrEdit.pas 7 2004-02-21 06:07:53Z  $
+// Id: TBXStrEdit.pas 7 2004-02-21 06:07:53Z
 
 interface
 
@@ -32,9 +32,9 @@ var
   W, H: Integer;
 begin
   R := ClientRect;
-  InflateRect(R, -16, -16);
+  InflateRect(R, -6, -6);
   B := R;
-  W := 60; H := 23;
+  W := 70; H := 23;
   B.Left := B.Right - W;
   B.Top := B.Bottom - H;
   Cancel.BoundsRect := B;
@@ -49,6 +49,8 @@ constructor TStrEditDlg.Create(AOwner: TComponent);
 begin
   inherited CreateNew(AOwner);
   AutoScroll := False;
+  Constraints.MinHeight := 200;
+  Constraints.MinWidth := 300;
   Scaled := False;
   Position := poScreenCenter;
   Memo := TMemo.Create(Self);
@@ -56,6 +58,7 @@ begin
   begin
     ScrollBars := ssBoth;
     OnKeyDown := MemoKeyDown;
+    Parent := Self;
   end;
   OK := TButton.Create(Self);
   with OK do
@@ -63,6 +66,7 @@ begin
     Caption := 'OK';
     Default := True;
     ModalResult := mrOk;
+    Parent := Self;
   end;
   Cancel := TButton.Create(Self);
   with Cancel do
@@ -70,6 +74,7 @@ begin
     Cancel := True;
     Caption := 'Cancel';
     ModalResult := mrCancel;
+    Parent := Self;
   end;
 end;
 

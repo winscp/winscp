@@ -169,7 +169,7 @@ type
     property Index: Integer read FIndex write SetIndex;
     property MaxIndex: Integer read FMaxIndex write SetMaxIndex;
 
-  public  
+  public
     procedure Terminate; override;
   end;
 {$ENDIF}
@@ -279,7 +279,7 @@ type
     procedure SetPath(Value: string); override;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); override;
     procedure SetCompressedColor(Value: TColor);
-    procedure ChangeDetected(Sender: TObject; const Directory: string; 
+    procedure ChangeDetected(Sender: TObject; const Directory: string;
       var SubdirsChanged: Boolean);
     procedure ChangeInvalid(Sender: TObject; const Directory: string; const ErrorStr: string);
     procedure TimerOnTimer(Sender: TObject);
@@ -315,6 +315,7 @@ type
     {$ENDIF}
     procedure SetShowHiddenFiles(Value: Boolean); override;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
+    function SecondaryColumnHeader(Index: Integer): Integer; override;
 
   public
     {Runtime, readonly properties:}
@@ -462,7 +463,7 @@ type
     property OnDDMenuPopup;
 
     property OnExecFile;
-    property OnMatchMask; 
+    property OnMatchMask;
     property OnGetOverlay;
 
     property CompressedColor: TColor
@@ -827,10 +828,10 @@ begin
         FileIconForName := CurrentFilePath;
         if Assigned(FOwner.FOnFileIconForName) then
         begin
-          FOwner.FOnFileIconForName(FOwner, nil, FileIconForName); 
+          FOwner.FOnFileIconForName(FOwner, nil, FileIconForName);
           ForceByName := (FileIconForName <> CurrentFilePath);
         end;
-        
+
         if not Assigned(CurrentItemData.PIDL) then
         begin
           WStr := CurrentFilePath;
@@ -1125,6 +1126,12 @@ begin
       Result := FileName;
   end; {Case}
 end; {ItemDisplayName}
+
+function TDirView.SecondaryColumnHeader(Index: Integer): Integer;
+begin
+  if Index = Integer(dvName) then Result := Integer(dvExt)
+    else Result := -1;
+end;
 
 function TDirView.AddItem(SRec: SysUtils.TSearchRec): TListItem;
 var
@@ -2119,7 +2126,7 @@ begin
             FileIconForName := FullName;
             if Assigned(OnFileIconForName) then
             begin
-              OnFileIconForName(Self, Item, FileIconForName); 
+              OnFileIconForName(Self, Item, FileIconForName);
               ForceByName := (FileIconForName <> FullName);
             end;
             if (not ForceByName) and Assigned(PIDL) then
@@ -2370,7 +2377,7 @@ begin
       begin
         Result := fLess;
         if AOwner.DirsOnTop then
-        Exit;
+          Exit;
       end
         else
       begin
@@ -2484,149 +2491,170 @@ begin
       if P2.Empty then TDirView(I2.ListView).GetDisplayData(I2, False);
       Result := lstrcmpi(PChar(P1.TypeName + ' ' + P1.FileExt + ' ' + P1.DisplayName),
                          PChar(P2.TypeName + ' ' + P2.FileExt + ' ' + P2.DisplayName));
+      if Result = 0 then
+        Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
     end;
   end;
   if not AOwner.SortAscending then
     Result := -Result;
 end; {CompareFileType}
 
-Function CompareFileExt (I1, I2: TListItem; AOwner : TDirView): Integer; StdCall;
-Var P1, P2 : PFileRec;
-Begin
-  If I1 = I2 then  Result := fEqual    else
-  If I1 = NIL then Result := fLess     else
-  If I2 = NIL then Result := fGreater  else
+function CompareFileExt(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+var
+  P1, P2: PFileRec;
+begin
+  if I1 = I2 then Result := fEqual
+    else
+  if I1 = nil then Result := fLess
+    else
+  if I2 = nil then Result := fGreater
+    else
   begin
     P1 := PFileRec(I1.Data);
     P2 := PFileRec(I2.Data);
-    IF P1.isParentDir Then
-    Begin
+    if P1.isParentDir then
+    begin
       Result := fLess;
       Exit;
-    End
-    Else IF P2.isParentDir Then
-    Begin
+    end
+      else
+    if P2.isParentDir then
+    begin
       Result := fGreater;
       Exit;
-    End;
+    end;
     {Directories allways should appear "grouped":}
-    IF P1.isDirectory <> P2.isDirectory Then
-    Begin
-      IF P1.isDirectory Then
-      Begin
+    if P1.isDirectory <> P2.isDirectory then
+    begin
+      if P1.isDirectory then
+      begin
         Result := fLess;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End
-      Else
-      Begin
+        if AOwner.DirsOnTop then
+          Exit;
+      end
+        else
+      begin
         Result := fGreater;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End;
-    End
-    Else
-      Result := lstrcmpi(PChar(P1.FileExt + ' ' + P1.DisplayName),
-                         PChar(P2.FileExt + ' ' + P2.DisplayName));
-  End;
-  IF Not AOwner.SortAscending Then
-  Result := -Result;
-End; {CompareFileExt}
+        if AOwner.DirsOnTop then
+          Exit;
+      end;
+    end
+      else
+    Result := lstrcmpi(PChar(P1.FileExt + ' ' + P1.DisplayName),
+                       PChar(P2.FileExt + ' ' + P2.DisplayName));
+  end;
+  if not AOwner.SortAscending then
+    Result := -Result;
+end; {CompareFileExt}
 
-Function CompareFileAttr (I1, I2: TListItem; AOwner : TDirView): Integer; StdCall;
-Var P1, P2 : PFileRec;
-Begin
-  if I1 = I2 then  Result := 0  else
-  if I1 = NIL then Result := -1 else
-  if I2 = NIL then Result := 1  else
+function CompareFileAttr(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+var
+  P1, P2: PFileRec;
+begin
+  if I1 = I2 then Result := 0
+    else
+  if I1 = nil then Result := -1
+    else
+  if I2 = nil then Result := 1
+    else
   begin
     P1 := PFileRec(I1.Data);
     P2 := PFileRec(I2.Data);
-    IF P1.isParentDir Then
-    Begin
+    if P1.isParentDir then
+    begin
       Result := fLess;
       Exit;
-    End
-    Else IF P2.isParentDir Then
-    Begin
+    end
+      else
+    if P2.isParentDir then
+    begin
       Result := fGreater;
       Exit;
-    End;
+    end;
     {Directories allways should appear "grouped":}
-    IF P1.isDirectory <> P2.isDirectory Then
-    Begin
-      IF P1.isDirectory Then
-      Begin
+    if P1.isDirectory <> P2.isDirectory then
+    begin
+      if P1.isDirectory then
+      begin
         Result := fLess;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End
-      Else
-      Begin
+        if AOwner.DirsOnTop then
+          Exit;
+      end
+        else
+      begin
         Result := fGreater;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End;
-    End
-    Else
-    Begin
-      IF P1.Attr < P2.Attr Then Result := fLess    Else
-      IF P1.Attr > P2.Attr Then Result := fGreater Else
-                                Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
-    End;
-  End;
-  IF Not AOwner.SortAscending Then
-  Result := -Result;
-End; {CompareFileAttr}
+        if AOwner.DirsOnTop then
+          Exit;
+      end;
+    end
+      else
+    begin
+      if P1.Attr < P2.Attr then Result := fLess
+        else
+      if P1.Attr > P2.Attr then Result := fGreater
+        else
+      Result := lstrcmpi(PChar(P1.DisplayName), PChar(P2.DisplayName));
+    end;
+  end;
+  if not AOwner.SortAscending then
+    Result := -Result;
+end; {CompareFileAttr}
 
-Function CompareFileTime (I1, I2: TListItem; AOwner : TDirView): Integer;  StdCall;
-Var Time1, Time2 : Int64;
-    P1,    P2    : PFileRec;
-Begin
-  If I1 = I2 then  Result := fEqual    else
-  If I1 = NIL then Result := fLess     else
-  If I2 = NIL then Result := fGreater  else
+function CompareFileTime(I1, I2: TListItem; AOwner: TDirView): Integer; stdcall;
+var
+  Time1, Time2: Int64;
+  P1, P2: PFileRec;
+begin
+  if I1 = I2 then Result := fEqual
+    else
+  if I1 = nil then Result := fLess
+    else
+  if I2 = nil then Result := fGreater
+    else
   begin
     P1 := PFileRec(I1.Data);
     P2 := PFileRec(I2.Data);
-    IF P1.isParentDir Then
-    Begin
+    if P1.isParentDir then
+    begin
       Result := fLess;
       Exit;
-    End
-    Else IF P2.isParentDir Then
-    Begin
+    end
+      else
+    if P2.isParentDir then
+    begin
       Result := fGreater;
       Exit;
-    End;
+    end;
     {Directories allways should appear "grouped":}
-    IF P1.isDirectory <> P2.isDirectory Then
-    Begin
-      IF P1.isDirectory Then
-      Begin
+    if P1.isDirectory <> P2.isDirectory then
+    begin
+      if P1.isDirectory then
+      begin
         Result := fLess;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End
-      Else
-      Begin
+        if AOwner.DirsOnTop then
+          Exit;
+      end
+        else
+      begin
         Result := fGreater;
-        IF AOwner.DirsOnTop Then
-        Exit;
-      End;
-    End
-    Else
-    Begin
-      Time1 := Int64(P1.FileTime.dwHighDateTime) Shl 32 + P1.FileTime.dwLowDateTime;
-      Time2 := Int64(P2.FileTime.dwHighDateTime) Shl 32 + P2.FileTime.dwLowDateTime;
-      IF Time1 < Time2 Then Result := fLess    Else
-      IF Time1 > Time2 Then Result := fGreater Else
-                            Result := CompareFileName(I1, I2, AOwner);
-    End;
-  End;
-  IF Not AOwner.SortAscending Then
-  Result := -Result;
-End; {CompareFileTime}
+        if AOwner.DirsOnTop then
+          Exit;
+      end;
+    end
+      else
+    begin
+      Time1 := Int64(P1.FileTime.dwHighDateTime) shl 32 + P1.FileTime.dwLowDateTime;
+      Time2 := Int64(P2.FileTime.dwHighDateTime) shl 32 + P2.FileTime.dwLowDateTime;
+      if Time1 < Time2 then Result := fLess
+        else
+      if Time1 > Time2 then Result := fGreater
+        else
+      Result := CompareFileName(I1, I2, AOwner);
+    end;
+  end;
+  if not AOwner.SortAscending then
+    Result := -Result;
+end; {CompareFileTime}
 
 procedure TDirView.SortItems;
 var
@@ -3250,7 +3278,7 @@ begin
   end
 end; {TimerOnTimer}
 
-procedure TDirView.ChangeDetected(Sender: TObject; const Directory: string; 
+procedure TDirView.ChangeDetected(Sender: TObject; const Directory: string;
   var SubdirsChanged: Boolean);
 begin
   // avoid prolonging the actual update with each change, as if continous change
@@ -3263,7 +3291,7 @@ begin
   end;
 end; {ChangeDetected}
 
-procedure TDirView.ChangeInvalid(Sender: TObject; const Directory: string; 
+procedure TDirView.ChangeInvalid(Sender: TObject; const Directory: string;
   const ErrorStr: string);
 begin
   FDiscMonitor.Close;
@@ -4235,4 +4263,3 @@ initialization
   LastClipBoardOperation := cboNone;
   LastIOResult := 0;
 end.
-

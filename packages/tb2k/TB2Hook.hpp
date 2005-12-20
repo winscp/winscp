@@ -20,16 +20,16 @@ namespace Tb2hook
 {
 //-- type declarations -------------------------------------------------------
 #pragma option push -b-
-enum THookProcCode { hpSendActivateApp, hpSendWindowPosChanged, hpPreDestroy, hpGetMessage };
+enum THookProcCode { hpSendActivate, hpSendActivateApp, hpSendWindowPosChanged, hpPreDestroy, hpGetMessage };
 #pragma option pop
 
-typedef Set<THookProcCode, hpSendActivateApp, hpGetMessage>  THookProcCodes;
+typedef Set<THookProcCode, hpSendActivate, hpGetMessage>  THookProcCodes;
 
 typedef void __fastcall (*THookProc)(THookProcCode Code, HWND Wnd, int WParam, int LParam);
 
 //-- var, const, procedure ---------------------------------------------------
-extern PACKAGE void __fastcall InstallHookProc(THookProc AProc, THookProcCodes ACodes, bool OnlyIncrementCount);
-extern PACKAGE void __fastcall UninstallHookProc(THookProc AProc);
+extern PACKAGE void __fastcall InstallHookProc(System::TObject* AUser, THookProc AProc, THookProcCodes ACodes);
+extern PACKAGE void __fastcall UninstallHookProc(System::TObject* AUser, THookProc AProc);
 
 }	/* namespace Tb2hook */
 using namespace Tb2hook;

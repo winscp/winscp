@@ -303,6 +303,50 @@ void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
     DateTime = EncodeDate(Y, M, D) + EncodeTime(H, N, S, MS);
   }
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall UserModificationStr(TDateTime DateTime,
+  TModificationFmt Precision)
+{
+  switch (Precision)
+  {
+    case mfMDY:
+      return FormatDateTime("ddddd", DateTime);
+    case mfMDHM:
+      return FormatDateTime("ddddd t", DateTime);
+    case mfFull:
+    default:
+      return FormatDateTime("ddddd tt", DateTime);
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall FakeFileImageIndex(AnsiString FileName, unsigned long Attrs,
+  AnsiString * TypeName)
+{
+  Attrs |= FILE_ATTRIBUTE_NORMAL;
+
+  TSHFileInfo SHFileInfo;
+  // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
+  if (FileName == "..")
+  {
+    FileName = "dumb";
+  }
+  // this should be somewhere else, probably in TUnixDirView,
+  // as the "partial" overlay is added there too
+  if (AnsiSameText(UnixExtractFileExt(FileName), PARTIAL_EXT))
+  {
+    static const size_t PartialExtLen = sizeof(PARTIAL_EXT) - 1;
+    FileName.SetLength(FileName.Length() - PartialExtLen);
+  }
+
+  SHGetFileInfo(FileName.c_str(),
+    Attrs, &SHFileInfo, sizeof(SHFileInfo),
+    SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES | SHGFI_TYPENAME);
+  if (TypeName != NULL)
+  {
+    *TypeName = SHFileInfo.szTypeName;
+  }
+  return SHFileInfo.iIcon;
+}
 //- TRemoteFiles ------------------------------------------------------------
 __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   TPersistent()
@@ -324,7 +368,7 @@ __fastcall TRemoteFile::~TRemoteFile()
   delete FLinkedFile;
 }
 //---------------------------------------------------------------------------
-TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone)
+TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone) const
 {
   TRemoteFile * Result;
   Result = new TRemoteFile();
@@ -370,35 +414,21 @@ TRemoteFile * __fastcall TRemoteFile::Duplicate(bool Standalone)
 void __fastcall TRemoteFile::LoadTypeInfo()
 {
   /* TODO : If file is link: Should be attributes taken from linked file? */
-  unsigned long Attrs = FILE_ATTRIBUTE_NORMAL;
+  unsigned long Attrs = 0;
   if (IsDirectory) Attrs |= FILE_ATTRIBUTE_DIRECTORY;
   if (IsHidden) Attrs |= FILE_ATTRIBUTE_HIDDEN;
 
-  TSHFileInfo SHFileInfo;
   AnsiString DumbFileName = (IsSymLink && !LinkTo.IsEmpty() ? LinkTo : FileName);
-  // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
-  if (DumbFileName == "..") DumbFileName = "dumb";
-  // this should be somewhere else, probably in TUnixDirView,
-  // as the "partial" overlay is added there too
-  if (AnsiSameText(UnixExtractFileExt(DumbFileName), PARTIAL_EXT))
-  {
-    static const size_t PartialExtLen = sizeof(PARTIAL_EXT) - 1;
-    DumbFileName.SetLength(DumbFileName.Length() - PartialExtLen);
-  }
 
-  SHGetFileInfo(DumbFileName.c_str(),
-    Attrs, &SHFileInfo, sizeof(SHFileInfo),
-    SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES | SHGFI_TYPENAME);
-  FIconIndex = SHFileInfo.iIcon;
-  FTypeName = SHFileInfo.szTypeName;
+  FIconIndex = FakeFileImageIndex(DumbFileName, Attrs, &FTypeName);
 }
 //---------------------------------------------------------------------------
-Integer __fastcall TRemoteFile::GetIconIndex()
+Integer __fastcall TRemoteFile::GetIconIndex() const
 {
   assert(FIconIndex >= -1);
   if (FIconIndex < 0)
   {
-    LoadTypeInfo();
+    const_cast<TRemoteFile *>(this)->LoadTypeInfo();
   }
   return FIconIndex;
 }
@@ -533,16 +563,7 @@ void __fastcall TRemoteFile::SetModification(const TDateTime & value)
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetUserModificationStr()
 {
-  switch (FModificationFmt)
-  {
-    case mfMDY:
-      return FormatDateTime("ddddd", Modification);
-    case mfMDHM:
-      return FormatDateTime("ddddd t", Modification);
-    case mfFull:
-    default:
-      return FormatDateTime("ddddd tt", Modification);
-  }
+  return ::UserModificationStr(Modification, FModificationFmt);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetModificationStr()
@@ -581,7 +602,7 @@ void __fastcall TRemoteFile::SetRights(TRights * value)
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetRightsStr()
 {
-  return FRights->Text;
+  return FRights->Unknown ? AnsiString() : FRights->Text;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteFile::SetListingStr(AnsiString value)
@@ -908,6 +929,11 @@ AnsiString __fastcall TRemoteFile::GetFullFileName() const
   {
     return FFullFileName;
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteFile::GetHaveFullFileName() const
+{
+  return !FFullFileName.IsEmpty() || (Directory != NULL);
 }
 //---------------------------------------------------------------------------
 Integer __fastcall TRemoteFile::GetAttr()
@@ -1308,11 +1334,17 @@ void __fastcall TRemoteDirectoryChangesCache::ClearDirectoryChange(
 void __fastcall TRemoteDirectoryChangesCache::ClearDirectoryChangeTarget(
   AnsiString TargetDir)
 {
+  AnsiString Key;
+  // hack to clear at least local sym-link change in case symlink is deleted
+  DirectoryChangeKey(UnixExcludeTrailingBackslash(UnixExtractFilePath(TargetDir)),
+    UnixExtractFileName(TargetDir), Key);
+
   for (int Index = 0; Index < Count; Index++)
   {
     AnsiString Name = Names[Index];
     if ((Name.SubString(1, TargetDir.Length()) == TargetDir) ||
-        (Values[Name].SubString(1, TargetDir.Length()) == TargetDir))
+        (Values[Name].SubString(1, TargetDir.Length()) == TargetDir) ||
+        (!Key.IsEmpty() && (Name == Key)))
     {
       Delete(Index);
       Index--;
@@ -1396,6 +1428,7 @@ __fastcall TRights::TRights()
   FSet = 0;
   FUnset = 0;
   Number = 0;
+  FUnknown = true;
 }
 //---------------------------------------------------------------------------
 __fastcall TRights::TRights(unsigned short ANumber)
@@ -1417,6 +1450,7 @@ void __fastcall TRights::Assign(const TRights * Source)
   FSet = Source->FSet;
   FUnset = Source->FUnset;
   FText = Source->FText;
+  FUnknown = Source->FUnknown;
 }
 //---------------------------------------------------------------------------
 TRights::TFlag __fastcall TRights::RightToFlag(TRights::TRight Right)
@@ -1601,6 +1635,7 @@ void __fastcall TRights::SetText(const AnsiString & value)
 
     FText = KeepText ? value : AnsiString();
   }
+  FUnknown = false;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRights::GetText() const
@@ -1688,6 +1723,7 @@ void __fastcall TRights::SetOctal(AnsiString value)
       ((AValue[3] - '0') << 3) +
       ((AValue[4] - '0') << 0));
   }
+  FUnknown = false;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRights::GetOctal() const
@@ -1711,6 +1747,7 @@ void __fastcall TRights::SetNumber(unsigned short value)
     FUnset = static_cast<unsigned short>(rfAllSpecials & ~FSet);
     FText = "";
   }
+  FUnknown = false;
 }
 //---------------------------------------------------------------------------
 unsigned short __fastcall TRights::GetNumber() const
@@ -1760,6 +1797,7 @@ void __fastcall TRights::SetRightUndef(TRight Right, TState value)
 
     FText = "";
   }
+  FUnknown = false;
 }
 //---------------------------------------------------------------------------
 TRights::TState __fastcall TRights::GetRightUndef(TRight Right) const
@@ -1869,6 +1907,7 @@ void __fastcall TRights::AddExecute()
       Right[static_cast<TRight>(rrUserExec + (Group * 3))] = true;
     }
   }
+  FUnknown = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TRights::AllUndef()
@@ -1879,6 +1918,7 @@ void __fastcall TRights::AllUndef()
     FUnset = 0;
     FText = "";
   }
+  FUnknown = false;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRights::GetIsUndef() const
@@ -1898,6 +1938,11 @@ __fastcall TRights::operator unsigned long() const
 //=== TRemoteProperties -------------------------------------------------------
 __fastcall TRemoteProperties::TRemoteProperties()
 {
+  Default();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteProperties::Default()
+{
   Valid.Clear();
   AddXToDirectories = false;
   Rights.AllowUndef = false;
@@ -1905,7 +1950,7 @@ __fastcall TRemoteProperties::TRemoteProperties()
   Group = "";
   Owner = "";
   Recursive = false;
-};
+}
 //---------------------------------------------------------------------------
 bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) const
 {
@@ -2000,5 +2045,34 @@ TRemoteProperties __fastcall TRemoteProperties::ChangedProperties(
     }
   }
   return NewProperties;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteProperties::Load(THierarchicalStorage * Storage)
+{
+  unsigned char Buf[sizeof(Valid)];
+  if (Storage->ReadBinaryData("Valid", &Buf, sizeof(Buf)) == sizeof(Buf))
+  {
+    memcpy(&Valid, Buf, sizeof(Valid));
+  }
+
+  if (Valid.Contains(vpRights))
+  {
+    Rights.Text = Storage->ReadString("Rights", Rights.Text);
+  }
+
+  // TODO
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteProperties::Save(THierarchicalStorage * Storage) const
+{
+  Storage->WriteBinaryData(AnsiString("Valid"),
+    static_cast<const void *>(&Valid), sizeof(Valid));
+  
+  if (Valid.Contains(vpRights))
+  {
+    Storage->WriteString("Rights", Rights.Text);
+  }
+
+  // TODO
 }
 

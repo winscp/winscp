@@ -23,7 +23,7 @@ __fastcall TConfiguration::TConfiguration()
   FRandomSeedSave = true;
   FApplicationInfo = NULL;
   FGSSAPIInstalled = -1;
-  // make sure random generator is initialised, so random_save_seed() 
+  // make sure random generator is initialised, so random_save_seed()
   // in destructor can proceed
   random_ref();
 }
@@ -40,14 +40,20 @@ void __fastcall TConfiguration::Default()
     TReplaceFlags() << rfReplaceAll);
   FConfirmOverwriting = true;
   FConfirmResume = true;
+  FSessionReopenAuto = 5000;
+  FSessionReopenNoConfirmation = 2000;
 
   FLogging = false;
+  FPermanentLogging = false;
   FLogFileName = "";
+  FPermanentLogFileName = "";
   FLogFileAppend = true;
   FLogWindowLines = 100;
   FLogProtocol = 0;
 
   FDisablePasswordStoring = false;
+  FForceBanners = false;
+  FDisableAcceptingHostKeys = false;
 
   Changed();
 }
@@ -77,6 +83,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
   ELEM.SubString(ELEM.LastDelimiter(".>")+1, ELEM.Length() - ELEM.LastDelimiter(".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKey(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+#define KEY(TYPE, VAR) KEYEX(TYPE, VAR, VAR)
 #define REGCONFIG(ACCESS, CANCREATE, ADDON) \
   THierarchicalStorage * Storage = CreateScpStorage(false); \
   try { \
@@ -86,10 +93,12 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
         KEY(String,   RandomSeedFile); \
         KEY(Bool,     ConfirmOverwriting); \
         KEY(Bool,     ConfirmResume); \
+        KEY(Integer,  SessionReopenAuto); \
+        KEY(Integer,  SessionReopenNoConfirmation); \
       ); \
       BLOCK("Logging", CANCREATE, \
-        KEY(Bool,    Logging); \
-        KEY(String,  LogFileName); \
+        KEYEX(Bool,  PermanentLogging, Logging); \
+        KEYEX(String,PermanentLogFileName, LogFileName); \
         KEY(Bool,    LogFileAppend); \
         KEY(Integer, LogWindowLines); \
         KEY(Integer, LogProtocol); \
@@ -110,9 +119,9 @@ void __fastcall TConfiguration::Save()
 
   if (Storage == stRegistry) CleanupIniFile();
 
-  #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
+  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
   REGCONFIG(smReadWrite, true, SaveSpecial);
-  #undef KEY
+  #undef KEYEX
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadSpecial(THierarchicalStorage * /*Storage*/)
@@ -122,17 +131,19 @@ void __fastcall TConfiguration::LoadSpecial(THierarchicalStorage * /*Storage*/)
 void __fastcall TConfiguration::LoadAdmin(THierarchicalStorage * Storage)
 {
   FDisablePasswordStoring = Storage->ReadBool("DisablePasswordStoring", FDisablePasswordStoring);
+  FForceBanners = Storage->ReadBool("ForceBanners", FForceBanners);
+  FDisableAcceptingHostKeys = Storage->ReadBool("DisableAcceptingHostKeys", FDisableAcceptingHostKeys);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Load()
 {
   TGuard Guard(FCriticalSection);
 
-  #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
   #pragma warn -eas
   REGCONFIG(smRead, false, LoadSpecial);
   #pragma warn +eas
-  #undef KEY
+  #undef KEYEX
 
   TRegistryStorage * AdminStorage;
   AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE);
@@ -153,7 +164,7 @@ void __fastcall TConfiguration::Load()
 void __fastcall TConfiguration::LoadDirectoryChangesCache(const AnsiString SessionKey,
   TRemoteDirectoryChangesCache * DirectoryChangesCache)
 {
-  THierarchicalStorage * Storage = CreateScpStorage(false); 
+  THierarchicalStorage * Storage = CreateScpStorage(false);
   try
   {
     Storage->AccessMode = smRead;
@@ -173,7 +184,7 @@ void __fastcall TConfiguration::LoadDirectoryChangesCache(const AnsiString Sessi
 void __fastcall TConfiguration::SaveDirectoryChangesCache(const AnsiString SessionKey,
   TRemoteDirectoryChangesCache * DirectoryChangesCache)
 {
-  THierarchicalStorage * Storage = CreateScpStorage(false); 
+  THierarchicalStorage * Storage = CreateScpStorage(false);
   try
   {
     Storage->AccessMode = smReadWrite;
@@ -509,7 +520,7 @@ AnsiString __fastcall TConfiguration::GetFileFileInfoString(const AnsiString Key
 AnsiString __fastcall TConfiguration::GetFileInfoString(const AnsiString Key)
 {
   return GetFileFileInfoString(Key, "");
-} 
+}
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetRegistryStorageKey()
 {
@@ -518,10 +529,6 @@ AnsiString __fastcall TConfiguration::GetRegistryStorageKey()
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetIniFileStorageName(AnsiString value)
 {
-  if (!value.IsEmpty() && !FileExists(value))
-  {
-    throw Exception(FMTLOAD(FILE_NOT_EXISTS, (value)));
-  }
   FIniFileStorageName = value;
   FStorage = stIniFile;
 }
@@ -549,7 +556,7 @@ AnsiString __fastcall TConfiguration::GetPuttySessionsKey()
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetStoredSessionsSubKey()
-{   
+{
   return "Sessions";
 }
 //---------------------------------------------------------------------------
@@ -623,14 +630,30 @@ TEOLType __fastcall TConfiguration::GetLocalEOLType()
   return eolCRLF;
 }
 //---------------------------------------------------------------------
+void __fastcall TConfiguration::TemporaryLogging(const AnsiString ALogFileName)
+{
+  FLogging = true;
+  FLogFileName = ALogFileName;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogging(bool value)
 {
-  SET_CONFIG_PROPERTY(Logging);
+  if (Logging != value)
+  {
+    FPermanentLogging = value;
+    FLogging = value;
+    Changed();
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogFileName(AnsiString value)
 {
-  SET_CONFIG_PROPERTY(LogFileName);
+  if (LogFileName != value)
+  {
+    FPermanentLogFileName = value;
+    FLogFileName = value;
+    Changed();
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogToFile(bool value)
@@ -729,6 +752,13 @@ bool __fastcall TConfiguration::GetRememberPassword()
 {
   return false;
 }
-
-
-
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetSessionReopenAuto(int value)
+{
+  SET_CONFIG_PROPERTY(SessionReopenAuto);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetSessionReopenNoConfirmation(int value)
+{
+  SET_CONFIG_PROPERTY(SessionReopenNoConfirmation);
+}

@@ -549,14 +549,20 @@ void __fastcall TGUIConfiguration::Default()
   FQueueRememberPassword = false;
   AnsiString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
-  FDefaultPuttyPath = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
-  FPuttyPath = FormatCommand(FDefaultPuttyPath, "");
+  FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
+  FDefaultPuttyPath = FormatCommand(FDefaultPuttyPathOnly, "");
+  FPuttyPath = FDefaultPuttyPath;
+  PSftpPath = FormatCommand(IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\psftp.exe", "");
   FPuttyPassword = false;
   FPuttySession = "WinSCP temporary session";
   FBeepOnFinish = false;
   FBeepOnFinishAfter = TDateTime(0, 0, 30, 0);
   FSynchronizeBrowsing = false;
   FCopyParamCurrent = "";
+  FKeepUpToDateChangeDelay = 500;
+
+  FNewDirectoryProperties.Default();
+  FNewDirectoryProperties.Rights = TRights::rfDefault;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::DefaultLocalized()
@@ -621,6 +627,7 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
     KEY(Bool,     BeepOnFinish); \
     KEY(DateTime, BeepOnFinishAfter); \
     KEY(Bool,     SynchronizeBrowsing); \
+    KEY(Integer,  KeepUpToDateChangeDelay); \
   ); \
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
@@ -647,6 +654,16 @@ void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
       Storage->WriteInteger("CopyParamList", FCopyParamList->Count);
       FCopyParamList->Save(Storage);
     }
+  }
+  __finally
+  {
+    Storage->CloseSubKey();
+  }
+
+  if (Storage->OpenSubKey("Interface\\NewDirectory", true))
+  try
+  {
+    FNewDirectoryProperties.Save(Storage);
   }
   __finally
   {
@@ -698,9 +715,19 @@ void __fastcall TGUIConfiguration::LoadSpecial(THierarchicalStorage * Storage)
   // it should be called only for custom users path, let's expect that the user
   // can take care of it.
   if ((FPuttyPath.SubString(1, 1) != "\"") &&
-      ((FPuttyPath == FDefaultPuttyPath) || FileExists(FPuttyPath)))
+      ((FPuttyPath == FDefaultPuttyPathOnly) || FileExists(FPuttyPath)))
   {
     FPuttyPath = FormatCommand(FPuttyPath, "");
+  }
+
+  if (Storage->OpenSubKey("Interface\\NewDirectory", false))
+  try
+  {
+    FNewDirectoryProperties.Load(Storage);
+  }
+  __finally
+  {
+    Storage->CloseSubKey();
   }
 }
 //---------------------------------------------------------------------------
@@ -1078,4 +1105,11 @@ TGUICopyParamType __fastcall TGUIConfiguration::GetCopyParamPreset(AnsiString Na
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+void __fastcall TGUIConfiguration::SetNewDirectoryProperties(
+  const TRemoteProperties & value)
+{
+  SET_CONFIG_PROPERTY(NewDirectoryProperties);
+}
+//---------------------------------------------------------------------------
 

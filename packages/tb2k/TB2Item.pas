@@ -3,7 +3,7 @@ unit TB2Item;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -24,7 +24,7 @@ unit TB2Item;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2Item.pas,v 1.270 2004/12/06 20:40:20 jr Exp $
+  $jrsoftware: tb2k/Source/TB2Item.pas,v 1.277 2005/06/23 21:55:44 jr Exp $
 }
 
 interface
@@ -177,7 +177,6 @@ type
     function IsCheckedStored: Boolean;
     function IsEnabledStored: Boolean;
     function IsHelpContextStored: Boolean;
-    { MP }
     function IsHintStored: Boolean;
     function IsImageIndexStored: Boolean;
     function IsOnClickStored: Boolean;
@@ -221,8 +220,9 @@ type
     procedure Loaded; override;
     function NeedToRecreateViewer(AViewer: TTBItemViewer): Boolean; virtual;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
-    procedure OpenPopup(const SelectFirstItem, TrackRightButton: Boolean;
-      const PopupPoint: TPoint; const Alignment: TTBPopupAlignment);
+    function OpenPopup(const SelectFirstItem, TrackRightButton: Boolean;
+      const PopupPoint: TPoint; const Alignment: TTBPopupAlignment;
+      const ReturnClickedItemOnly: Boolean): TTBCustomItem;
     procedure RecreateItemViewers;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
     procedure SetName(const NewName: TComponentName); override;
@@ -247,8 +247,9 @@ type
     procedure Insert(NewIndex: Integer; AItem: TTBCustomItem);
     function IsShortCut(var Message: TWMKey): Boolean;
     procedure Move(CurIndex, NewIndex: Integer);
-    procedure Popup(X, Y: Integer; TrackRightButton: Boolean;
-      Alignment: TTBPopupAlignment = tbpaLeft);
+    function Popup(X, Y: Integer; TrackRightButton: Boolean;
+      Alignment: TTBPopupAlignment = tbpaLeft;
+      ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
     procedure PostClick;
     procedure RegisterNotification(ANotify: TTBItemChangedProc);
     procedure Remove(Item: TTBCustomItem);
@@ -312,6 +313,7 @@ type
     procedure SetChecked(Value: Boolean); override;
     procedure SetEnabled(Value: Boolean); override;
     procedure SetHelpContext(Value: THelpContext); override;
+    { MP }
     procedure SetHelpKeyword(const Value: string); override;
     procedure SetHint(const Value: String); override;
     procedure SetImageIndex(Value: Integer); override;
@@ -488,6 +490,8 @@ type
     procedure SetAccelsVisibility(AShowAccels: Boolean);
     procedure SetState(AState: TTBViewState);
     property DoneActionData: TTBDoneActionData read FDoneActionData write FDoneActionData;
+    property ShowDownArrow: Boolean read FShowDownArrow; {vb+}
+    property ShowUpArrow: Boolean read FShowUpArrow; {vb+}
   public
     constructor CreateView(AOwner: TComponent; AParentView: TTBView;
       AParentItem: TTBCustomItem; AWindow: TWinControl;
@@ -578,6 +582,7 @@ type
     property Enabled;
     property GroupIndex;
     property HelpContext;
+    { MP }
     property HelpKeyword;
     property Hint;
     property ImageIndex;
@@ -620,6 +625,7 @@ type
     property Enabled;
     property GroupIndex;
     property HelpContext;
+    { MP }
     property HelpKeyword;
     property Hint;
     property ImageIndex;
@@ -684,7 +690,11 @@ type
     function GetFont: TFont; override;
   end;
 
-  TTBPopupWindow = class(TCustomControl)
+  ITBPopupWindow = interface
+    ['{E45CBE74-1ECF-44CB-B064-6D45B1924708}']
+  end;
+
+  TTBPopupWindow = class(TCustomControl, ITBPopupWindow)
   private
     FAccelsVisibilitySet: Boolean;
     FAnimationDirection: TTBAnimationDirection;
@@ -709,6 +719,7 @@ type
     function GetViewClass: TTBViewClass; dynamic;
     procedure Paint; override;
     procedure PaintScrollArrows; virtual;
+    property AnimationDirection: TTBAnimationDirection read FAnimationDirection;
   public
     constructor CreatePopupWindow(AOwner: TComponent; const AParentView: TTBView;
       const AItem: TTBCustomItem; const ACustomizing: Boolean); virtual;
@@ -764,6 +775,7 @@ type
     destructor Destroy; override;
     function IsShortCut(var Message: TWMKey): Boolean; override;
     procedure Popup(X, Y: Integer); override;
+    function PopupEx(X, Y: Integer; ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
   published
     property Images: TCustomImageList read GetImages write SetImages;
     property Items: TTBRootItem read FItem;
@@ -866,7 +878,8 @@ type
     property Wnd: HWND read FWnd;
   end;
 
-procedure ProcessDoneAction(const DoneActionData: TTBDoneActionData);
+function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
+  const ReturnClickedItemOnly: Boolean): TTBCustomItem;
 
 implementation
 
@@ -962,14 +975,18 @@ begin
           get A's index. }
 end;
 
-procedure ProcessDoneAction(const DoneActionData: TTBDoneActionData);
+function ProcessDoneAction(const DoneActionData: TTBDoneActionData;
+  const ReturnClickedItemOnly: Boolean): TTBCustomItem;
 begin
+  Result := nil;
   case DoneActionData.DoneAction of
     tbdaNone: ;
     tbdaClickItem: begin
         if DoneActionData.Sound and NeedToPlaySound('MenuCommand') then
           PlaySound('MenuCommand', 0, SND_ALIAS or SND_ASYNC or SND_NODEFAULT or SND_NOSTOP);
-        DoneActionData.ClickItem.PostClick;
+        Result := DoneActionData.ClickItem;
+        if not ReturnClickedItemOnly then
+          Result.PostClick;
       end;
     tbdaOpenSystemMenu: begin
         SendMessage(DoneActionData.Wnd, WM_SYSCOMMAND, SC_KEYMENU, DoneActionData.Key);
@@ -1074,6 +1091,7 @@ begin
     (FClient.HelpContext = (Action as TCustomAction).HelpContext);
 end;
 
+{ MP }
 function TTBCustomItemActionLink.IsHelpLinked: Boolean;
 begin
   Result := inherited IsHelpLinked and
@@ -1081,6 +1099,7 @@ begin
     (FClient.HelpKeyword = (Action as TCustomAction).HelpKeyword){ and
     (FClient.HelpType = (Action as TCustomAction).HelpType);} // TODO
 end;
+{ /MP }
 
 function TTBCustomItemActionLink.IsHintLinked: Boolean;
 begin
@@ -1249,6 +1268,7 @@ end;
 
 function TTBCustomItem.IsHelpContextStored: Boolean;
 begin
+  { MP }
   Result := (ActionLink = nil) or not FActionLink.IsHelpLinked;
 end;
 
@@ -1307,8 +1327,10 @@ begin
         Self.Enabled := Enabled;
       if not CheckDefaults or (Self.HelpContext = 0) then
         Self.HelpContext := HelpContext;
+      { MP }
       if not CheckDefaults or (Self.HelpKeyword = '') then
         Self.HelpKeyword := HelpKeyword;
+      { /MP }
       if not CheckDefaults or (Self.Hint = '') then
         Self.Hint := Hint;
       if not CheckDefaults or (Self.ImageIndex = -1) then
@@ -1940,12 +1962,14 @@ begin
       if not IsRectEmpty(ParentView.FMonitorRect) then
         MonitorRect := ParentView.FMonitorRect
       else
-        MonitorRect := GetRectOfMonitorContainingRect(ParentItemRect, False);
+        {MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, False);} {vb-}
+        MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, True); {vb+}
     end
     else begin
       ParentItemRect.TopLeft := APopupPoint;
       ParentItemRect.BottomRight := APopupPoint;
-      MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, False);
+      {MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, False);} {vb-}
+      MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, True); {vb+}
     end;
     Result.View.FMonitorRect := MonitorRect;
 
@@ -2066,8 +2090,9 @@ begin
   end;
 end;
 
-procedure TTBCustomItem.OpenPopup(const SelectFirstItem, TrackRightButton: Boolean;
-  const PopupPoint: TPoint; const Alignment: TTBPopupAlignment);
+function TTBCustomItem.OpenPopup(const SelectFirstItem, TrackRightButton: Boolean;
+  const PopupPoint: TPoint; const Alignment: TTBPopupAlignment;
+  const ReturnClickedItemOnly: Boolean): TTBCustomItem;
 var
   ModalHandler: TTBModalHandler;
   Popup: TTBPopupWindow;
@@ -2092,17 +2117,19 @@ begin
   finally
     ModalHandler.Free;
   end;
-  ProcessDoneAction(DoneActionData);
+  Result := ProcessDoneAction(DoneActionData, ReturnClickedItemOnly);
 end;
 
-procedure TTBCustomItem.Popup(X, Y: Integer; TrackRightButton: Boolean;
-  Alignment: TTBPopupAlignment = tbpaLeft);
+function TTBCustomItem.Popup(X, Y: Integer; TrackRightButton: Boolean;
+  Alignment: TTBPopupAlignment = tbpaLeft;
+  ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
 var
   P: TPoint;
 begin
   P.X := X;
   P.Y := Y;
-  OpenPopup(False, TrackRightButton, P, Alignment);
+  Result := OpenPopup(False, TrackRightButton, P, Alignment,
+    ReturnClickedItemOnly);
 end;
 
 function TTBCustomItem.FindItemWithShortCut(AShortCut: TShortCut;
@@ -2710,6 +2737,7 @@ begin
 end;
 
 function TTBItemViewer.GetHintText: String;
+var P: Integer;
 begin
   Result := GetShortHint(Item.Hint);
   { If there is no short hint, use the caption for the hint. Like Office,
@@ -2727,9 +2755,16 @@ begin
       of DoHint, but we get it right... }
   end;
   { Add shortcut text }
-  if (Result <> '') and Application.HintShortCuts and
-     (Item.ShortCut <> scNone) then
-    Result := Format('%s (%s)', [Result, ShortCutToText(Item.ShortCut)]);
+  if (Result <> '') and Application.HintShortCuts then
+  begin
+    { Custom shortcut }
+    P := Pos(#9, Item.Caption);
+    if (P <> 0) and (P < Length(Item.Caption)) then
+      Result := Format('%s (%s)', [Result, Copy(Item.Caption, P+ 1, MaxInt)])
+    else
+      if (Item.ShortCut <> scNone) then
+        Result := Format('%s (%s)', [Result, ShortCutToText(Item.ShortCut)]);
+  end;
 end;
 
 function TTBItemViewer.CaptionShown: Boolean;
@@ -5457,6 +5492,10 @@ begin
     FState := FState * [vsShowAccels];
     try
       Include(FState, vsModal);
+      { Must ensure that DoneAction is reset to tbdaNone *before* calling
+        NotifyFocusEvent so that the IsModalEnding call it makes won't return
+        True }
+      FDoneActionData.DoneAction := tbdaNone;
       { Now that the vsModal state has been added, send an MSAA focus event }
       if Assigned(Selected) then
         NotifyFocusEvent;
@@ -5478,7 +5517,7 @@ begin
   SetAccelsVisibility(False);
   Selected := nil;
   // caused flicker: FWindow.Update;
-  ProcessDoneAction(FDoneActionData);
+  ProcessDoneAction(FDoneActionData, False);
 end;
 
 procedure TTBView.SetCustomizing(Value: Boolean);
@@ -5542,6 +5581,7 @@ procedure TTBView.KeyDown(var Key: Word; Shift: TShiftState);
   var
     V: TTBView;
     ContextID: Integer;
+    { MP }
     HelpKeyword: string;
   begin
     ContextID := 0;
@@ -5669,6 +5709,7 @@ begin
   RootView.FDoneActionData.DoneAction := tbdaHelpContext;
 end;
 
+{ MP }
 procedure TTBView.EndModalWithHelp(HelpKeyword: string);
 var
   RootView: TTBView;
@@ -5677,6 +5718,7 @@ begin
   RootView.FDoneActionData.HelpKeyword := HelpKeyword;
   RootView.FDoneActionData.DoneAction := tbdaHelpKeyword;
 end;
+{ /MP }
 
 procedure TTBView.EndModalWithSystemMenu(AWnd: HWND; AKey: Cardinal);
 var
@@ -5706,7 +5748,7 @@ begin
   end
   else
     EndModal;
-  Exit; asm db 0,'Toolbar2000 (C) 1998-2003 Jordan Russell',0 end;
+  Exit; asm db 0,'Toolbar2000 (C) 1998-2005 Jordan Russell',0 end;
 end;
 
 procedure TTBView.Scroll(ADown: Boolean);
@@ -5803,7 +5845,6 @@ procedure TTBView.SetState(AState: TTBViewState);
 begin
   FState := AState;
 end;
-
 
 { TTBModalHandler }
 
@@ -6465,7 +6506,7 @@ begin
       if SendMessage(WindowHandle, WM_TB2K_POPUPSHOWING, TPS_ANIMSTART, 0) = 0 then
       begin
         { Start animation only if WM_TB2K_POPUPSHOWING returns zero (or not handled) }
-        TBStartAnimation(WindowHandle, 150, Blend, FAnimationDirection);
+        TBStartAnimation(WindowHandle, Blend, FAnimationDirection);
         Exit;
       end;
     end;
@@ -6657,6 +6698,7 @@ begin
   FItem.SubMenuImages := Value;
 end;
 
+
 { TTBPopupMenu }
 
 constructor TTBPopupMenu.Create(AOwner: TComponent);
@@ -6739,16 +6781,28 @@ end;
 
 procedure TTBPopupMenu.Popup(X, Y: Integer);
 begin
+  PopupEx(X, Y, False);
+end;
+
+function TTBPopupMenu.PopupEx(X, Y: Integer;
+  ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
+begin
   {$IFDEF JR_D5}
+  {$IFDEF JR_D9}
+  SetPopupPoint(Point(X, Y));
+  {$ELSE}
   PPoint(@PopupPoint)^ := Point(X, Y);
   {$ENDIF}
-  FItem.Popup(X, Y, TrackButton = tbRightButton, TTBPopupAlignment(Alignment));
+  {$ENDIF}
+  Result := FItem.Popup(X, Y, TrackButton = tbRightButton,
+    TTBPopupAlignment(Alignment), ReturnClickedItemOnly);
 end;
 
 function TTBPopupMenu.IsShortCut(var Message: TWMKey): Boolean;
 begin
   Result := FItem.IsShortCut(Message);
 end;
+
 
 { TTBImageList }
 

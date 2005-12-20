@@ -2,7 +2,7 @@ unit TB2Toolbar;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2Toolbar;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2Toolbar.pas,v 1.101 2004/07/18 03:04:00 jr Exp $
+  $jrsoftware: tb2k/Source/TB2Toolbar.pas,v 1.108 2005/07/30 18:17:20 jr Exp $
 }
 
 interface
@@ -31,6 +31,7 @@ interface
 {$I TB2Ver.inc}
 
 uses
+  {$IFDEF JR_D9} Types, {$ENDIF}
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, ImgList,
   Menus, ActnList,
   TB2Item, TB2Dock;
@@ -69,7 +70,6 @@ type
     FChevronPriorityForNewItems: TTBChevronPriorityForNewItems;
     FDisableAlignArrange: Integer;
     FFloatingWidth: Integer;
-    FHookInstalled: Boolean;
     FIgnoreMouseLeave: Boolean;
     FItem: TTBRootItem;
     FLastWrappedLines: Integer;
@@ -556,10 +556,7 @@ begin
     needed for Delphi 4 and earlier since Delphi 5 calls Destroying in
     TComponent.BeforeDestruction }
   Destroying;
-  if FHookInstalled then begin
-    UninstallHookProc(HookProc);
-    FHookInstalled := False;
-  end;
+  UninstallHookProc(Self, HookProc);
   UninstallMainWindowHook;
   FreeAndNil(FView);
   FreeAndNil(FChevronItem);
@@ -908,7 +905,7 @@ begin
         Hint := Item.Hint
       else
         Hint := '';
-
+        
       with TTBItemViewerAccess(FView.Find(Item)) do
       begin
         MouseMove(X - BoundsRect.Left, Y - BoundsRect.Top);
@@ -1100,13 +1097,10 @@ begin
       CloseButton := not Value;
       ProcessShortCuts := Value;
     end;
-    if Value <> FHookInstalled then begin
-      if Value then
-        InstallHookProc(HookProc, [hpGetMessage], csDesigning in ComponentState)
-      else
-        UninstallHookProc(HookProc);
-      FHookInstalled := Value;
-    end;
+    if Value and not(csDesigning in ComponentState) then
+      InstallHookProc(Self, HookProc, [hpGetMessage])
+    else
+      UninstallHookProc(Self, HookProc);
     SetMainWindowHook;
   end;
 end;
@@ -1595,6 +1589,25 @@ var
 
 class function TTBCustomToolbar.MainWindowHook(var Message: TMessage): Boolean;
 
+  function GetActiveForm: TCustomForm;
+  var
+    Wnd: HWND;
+    Ctl: TWinControl;
+  begin
+    { Note: We don't use Screen.ActiveCustomForm because when an EXE calls a
+      DLL that shows a modal form, Screen.ActiveCustomForm doesn't change in
+      the EXE; it remains set to the last form that was active in the EXE.
+      Use FindControl(GetActiveWindow) instead to avoid this problem; it will
+      return nil when a form in another module is active. }
+    Result := nil;
+    Wnd := GetActiveWindow;
+    if Wnd <> 0 then begin
+      Ctl := FindControl(Wnd);
+      if Assigned(Ctl) and (Ctl is TCustomForm) then
+        Result := TCustomForm(Ctl);
+    end;
+  end;
+
   function HandleShortCutOnForm(const Form: TCustomForm): Boolean;
   var
     I: Integer;
@@ -1640,23 +1653,43 @@ class function TTBCustomToolbar.MainWindowHook(var Message: TMessage): Boolean;
 
 var
   ActiveForm: TCustomForm;
+  ActiveMDIChild: TForm;
 begin
   Result := False;
   if (Message.Msg = CM_APPKEYDOWN) and Assigned(HookList) then begin
-    { First look for a shortcut on a toolbar on the active form }
-    ActiveForm := Screen.ActiveCustomForm;
+    { Process shortcuts on toolbars. Search forms in this order:
+      1. If the active form is an MDI parent form, the active MDI child form
+         if it has the focus.
+      2. The active form.
+      3. The main form. }
+    ActiveForm := GetActiveForm;
+    if Assigned(ActiveForm) and (ActiveForm is TForm) and
+       (TForm(ActiveForm).FormStyle = fsMDIForm) then begin
+      ActiveMDIChild := TForm(ActiveForm).ActiveMDIChild;
+      { Don't search the child form if a control on the MDI parent form is
+        currently focused (i.e. Screen.ActiveCustomForm <> ActiveMDIChild) }
+      if Assigned(ActiveMDIChild) and
+         (Screen.ActiveCustomForm = ActiveMDIChild) and
+         HandleShortCutOnForm(ActiveMDIChild) then begin
+        Result := True;
+        Exit;
+      end;
+    end;
     if HandleShortCutOnForm(ActiveForm) then
       Result := True
     else begin
-      { If none was found, check the main form }
       if (Application.MainForm <> ActiveForm) and
          HandleShortCutOnForm(Application.MainForm) then
         Result := True;
     end;
   end
   else if Message.Msg = CM_APPSYSCOMMAND then begin
-    ActiveForm := Screen.ActiveCustomForm;
-    if Assigned(ActiveForm) and TraverseControls(ActiveForm) then begin
+    { Handle "Alt or Alt+[key] pressed on secondary form" case. If there's a
+      menu bar on the active form we want the keypress to go to it instead of
+      to the main form (the VCL's default handling). }
+    ActiveForm := GetActiveForm;
+    if Assigned(ActiveForm) and IsWindowEnabled(ActiveForm.Handle) and
+       IsWindowVisible(ActiveForm.Handle) and TraverseControls(ActiveForm) then begin
       Message.Result := 1;
       Result := True;
     end;

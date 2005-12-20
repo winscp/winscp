@@ -8,6 +8,7 @@
 class TCustomScpExplorerForm;
 class TLogMemo;
 class TTerminalQueue;
+class TAuthenticateForm;
 //---------------------------------------------------------------------------
 enum TTerminalPendingAction { tpNull, tpNone, tpReconnect, tpFree };
 //---------------------------------------------------------------------------
@@ -23,13 +24,15 @@ public:
   virtual TTerminal * __fastcall NewTerminal(TSessionData * Data);
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   bool __fastcall ConnectActiveTerminal();
+  void __fastcall DisconnectActiveTerminal();
   void __fastcall ReconnectActiveTerminal();
   void __fastcall FreeActiveTerminal();
   void __fastcall CycleTerminals(bool Forward);
-  static void ConnectTerminal(TTerminal * Terminal);
+  static void ConnectTerminal(TTerminal * Terminal, bool Reopen);
   AnsiString __fastcall UpdateAppTitle();
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
+  bool __fastcall NewSession();
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
@@ -58,8 +61,10 @@ private:
   TList * FQueues;
   AnsiString FProgressTitle;
   TDateTime FDirectoryReadingStart;
+  TAuthenticateForm * FAuthenticateForm;
 
-  bool __fastcall ConnectActiveTerminalImpl();
+  bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
+  TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
   void __fastcall CreateLogMemo();
   void __fastcall FreeLogMemo();
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
@@ -71,17 +76,21 @@ private:
   void __fastcall ApplicationShowHint(AnsiString & HintStr, bool & CanShow,
     THintInfo & HintInfo);
   void __fastcall ConfigurationChange(TObject * Sender);
+  void __fastcall TerminalUpdateStatus(TSecureShell * SecureShell, bool Active);
   void __fastcall TerminalQueryUser(TObject * Sender,
     const AnsiString Query, TStrings * MoreMessages, int Answers,
     const TQueryParams * Params, int & Answer, TQueryType Type, void * Arg);
   void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
-    AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, 
+    AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
     void * Arg);
   void __fastcall TerminalDisplayBanner(TSecureShell * SecureShell,
-    AnsiString SessionName, const AnsiString & Banner, bool & NeverShowAgain);
+    AnsiString SessionName, const AnsiString & Banner, bool & NeverShowAgain,
+    int Options);
   void __fastcall TerminalShowExtendedException(TSecureShell * SecureShell,
     Exception * E, void * Arg);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress);
+  void __fastcall TerminalOnStdError(TObject * Sender, TLogLineType Type,
+    const AnsiString AddedLine);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();

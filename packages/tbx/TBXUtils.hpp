@@ -219,6 +219,8 @@ extern PACKAGE bool __fastcall FrameRectEx(HDC DC, Types::TRect &Rect, Graphics:
 extern PACKAGE void __fastcall DrawLineEx(HDC DC, int X1, int Y1, int X2, int Y2, Graphics::TColor Color);
 extern PACKAGE bool __fastcall PolyLineEx(HDC DC, const Types::TPoint * Points, const int Points_Size, Graphics::TColor Color)/* overload */;
 extern PACKAGE void __fastcall PolygonEx(HDC DC, const Types::TPoint * Points, const int Points_Size, Graphics::TColor OutlineColor, Graphics::TColor FillColor);
+extern PACKAGE void __fastcall RoundRectEx(HDC DC, int Left, int Top, int Right, int Bottom, Graphics::TColor EllipseWidth, Graphics::TColor EllipseHeight, Graphics::TColor OutlineColor, Graphics::TColor FillColor)/* overload */;
+extern PACKAGE void __fastcall RoundRectEx(HDC DC, const Types::TRect &R, Graphics::TColor EllipseWidth, Graphics::TColor EllipseHeight, Graphics::TColor OutlineColor, Graphics::TColor FillColor)/* overload */;
 extern PACKAGE HBRUSH __fastcall CreateDitheredBrush(Graphics::TColor C1, Graphics::TColor C2);
 extern PACKAGE void __fastcall DitherRect(HDC DC, const Types::TRect &R, Graphics::TColor C1, Graphics::TColor C2);
 extern PACKAGE void __fastcall Frame3D(HDC DC, Types::TRect &Rect, Graphics::TColor TopColor, Graphics::TColor BottomColor, bool Adjust);

@@ -958,5 +958,10 @@ object EditorForm: TEditorForm
     object Gotolinenumber1: TTBXItem
       Action = GoToLineAction
     end
+    object TBXSeparatorItem6: TTBXSeparatorItem
+    end
+    object TBXItem15: TTBXItem
+      Action = PreferencesAction
+    end
   end
 end

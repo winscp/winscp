@@ -38,6 +38,7 @@
 #include "TBXExtItems.hpp"
 #include "TBXLists.hpp"
 #include "TBXStatusBars.hpp"
+#include "TBXToolPals.hpp"
 //---------------------------------------------------------------------------
 class TScpCommanderForm : public TCustomScpExplorerForm
 {
@@ -150,11 +151,9 @@ __published:
   TTBXItem *TBXItem111;
   TTBXItem *TBXItem112;
   TTBXSubmenuItem *TBXSubmenuItem5;
-  TTBXItem *TBXItem24;
   TTBXSeparatorItem *TBXSeparatorItem6;
   TTBXItem *TBXItem25;
   TTBXItem *TBXItem26;
-  TTBXItem *TBXItem28;
   TTBXItem *TBXItem29;
   TTBXSeparatorItem *TBXSeparatorItem7;
   TTBXItem *TBXItem30;
@@ -360,6 +359,22 @@ __published:
   TTBXSubmenuItem *TBXSubmenuItem25;
   TTBXItem *TBXItem27;
   TTBXItem *TBXItem200;
+  TTBXSubmenuItem *TBXSubmenuItem26;
+  TTBXItem *TBXItem24;
+  TTBXItem *TBXItem209;
+  TTBXItem *TBXItem28;
+  TTBXItem *TBXItem211;
+  TTBXToolbar *UploadDownloadToolbar;
+  TTBXItem *TBXItem212;
+  TTBXItem *TBXItem213;
+  TTBXItem *TBXItem214;
+  TTBXToolbar *CustomCommandsToolbar;
+  TTBXItem *TBXItem215;
+  TTBXSeparatorItem *TBXSeparatorItem49;
+  TTBXColorItem *ColorMenuItem;
+  TTBXSeparatorItem *TBXSeparatorItem50;
+  TTBXSeparatorItem *TBXSeparatorItem51;
+  TTBXColorPalette *SessionColorPalette;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -428,7 +443,8 @@ private:
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
-    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm);
+    AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
+    bool DragDrop);
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall RestoreFormParams();
@@ -469,7 +485,7 @@ public:
   __fastcall TScpCommanderForm(TComponent* Owner);
   virtual __fastcall ~TScpCommanderForm();
   
-  virtual void __fastcall AddEditLink();
+  virtual void __fastcall AddEditLink(bool Add);
   virtual bool __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall CompareDirectories();

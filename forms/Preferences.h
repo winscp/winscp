@@ -81,7 +81,7 @@ __published:
   TButton *SendToHookButton;
   TXPGroupBox *ExternalAppsGroup;
   TLabel *Label2;
-  TFilenameEdit *PuttyPathEdit;
+  TEdit *PuttyPathEdit;
   TTabSheet *CustomCommandsSheet;
   TXPGroupBox *CustomCommandsGroup;
   TListView *CustomCommandsView;
@@ -197,6 +197,14 @@ __published:
   TComboBox *NortonLikeModeCombo;
   TCheckBox *AutoOpenInPuttyCheck;
   TStaticText *ShellIconsText;
+  TButton *PuttyPathBrowseButton;
+  TButton *PuttyPathResetButton;
+  TCheckBox *FullRowSelectCheck;
+  TXPGroupBox *SessionReopenGroup;
+  TLabel *SessionReopenAutoLabel;
+  TCheckBox *SessionReopenAutoCheck;
+  TLabel *SessionReopenAutoSecLabel;
+  TUpDownEdit *SessionReopenAutoEdit;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -246,6 +254,8 @@ __published:
   void __fastcall EditorListViewKeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
   void __fastcall EditorListViewData(TObject *Sender, TListItem *Item);
+  void __fastcall PuttyPathBrowseButtonClick(TObject *Sender);
+  void __fastcall PuttyPathResetButtonClick(TObject *Sender);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
@@ -266,7 +276,6 @@ public:
   __property TPreferencesMode PreferencesMode = { read = FPreferencesMode, write = SetPreferencesMode };
 protected:
   void __fastcall LoadConfiguration();
-  void __fastcall LoggingGetDefaultLogFileName(System::TObject * Sender, AnsiString & DefaultLogFileName);
   void __fastcall SaveConfiguration();
   void __fastcall UpdateControls();
   void __fastcall UpdateCustomCommandsView();

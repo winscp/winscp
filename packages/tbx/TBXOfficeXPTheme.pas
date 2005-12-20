@@ -4,7 +4,7 @@ unit TBXOfficeXPTheme;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXOfficeXPTheme.pas 16 2004-05-26 02:02:55Z Alex@ZEISS $
+// Id: TBXOfficeXPTheme.pas 16 2004-05-26 02:02:55Z Alex@ZEISS
 
 interface
 
@@ -13,6 +13,8 @@ interface
 
 uses
   Windows, Messages, Graphics, TBXThemes, TBXDefaultTheme, ImgList;
+
+{$DEFINE ALTERNATIVE_DISABLED_STYLE} // remove the asterisk to change appearance of disabled images
 
 type
   TItemPart = (ipBody, ipText, ipFrame);
@@ -71,7 +73,6 @@ type
     procedure PaintButton(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintCaption(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo; const ACaption: string; AFormat: Cardinal; Rotated: Boolean); override;
     procedure PaintCheckMark(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); override;
-    procedure PaintRadioButton(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintChevron(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintDock(Canvas: TCanvas; const ClientRect, DockRect: TRect; DockPosition: Integer); override;
     procedure PaintDockPanelNCArea(Canvas: TCanvas; R: TRect; const DockPanelInfo: TTBXDockPanelInfo); override;
@@ -365,24 +366,23 @@ end;
 
 procedure TTBXOfficeXPTheme.PaintCheckMark(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo);
 var
+  DC: HDC;
   X, Y: Integer;
+  C: TColor;
 begin
-  X := (ARect.Left + ARect.Right) div 2 - 2;
+  DC := Canvas.Handle;
+  X := (ARect.Left + ARect.Right) div 2 - 1;
   Y := (ARect.Top + ARect.Bottom) div 2 + 1;
-  Canvas.Pen.Color := GetBtnColor(ItemInfo, ipText);
-  Canvas.Polyline([Point(X-2, Y-2), Point(X, Y), Point(X+4, Y-4),
-    Point(X+4, Y-3), Point(X, Y+1), Point(X-2, Y-1), Point(X-2, Y-2)]);
-end;
-
-procedure TTBXOfficeXPTheme.PaintRadioButton(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo);
-var
-  X, Y: Integer;
-begin
-  Canvas.Pen.Color := GetBtnColor(ItemInfo, ipText);
-  Canvas.Brush.Color := GetBtnColor(ItemInfo, ipText);
-  X := (ARect.Left + ARect.Right) div 2;
-  Y := (ARect.Top + ARect.Bottom) div 2;
-  Canvas.RoundRect(X-3, Y-3, X+3, Y+3, 2, 2);
+  C := GetBtnColor(ItemInfo, ipText);
+  if ItemInfo.ItemOptions and IO_RADIO > 0 then
+  begin
+    RoundRectEx(DC, X-2, Y-4, X+4, Y+2, 2, 2,
+      MixColors(C, ToolbarColor, 200), clNone);
+    RoundRectEx(DC, X-2, Y-4, X+4, Y+2, 6, 6, C, C);
+  end
+  else
+    PolylineEx(DC, [Point(X-2, Y-2), Point(X, Y), Point(X+4, Y-4),
+      Point(X+4, Y-3), Point(X, Y+1), Point(X-2, Y-1), Point(X-2, Y-2)], C);
 end;
 
 procedure TTBXOfficeXPTheme.PaintChevron(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo);

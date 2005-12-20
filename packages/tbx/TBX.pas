@@ -4,12 +4,16 @@ unit TBX;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBX.pas 21 2004-05-29 22:16:01Z Alex@ZEISS $
+// Id: TBX.pas 21 2004-05-29 22:16:01Z Alex@ZEISS
 
 interface
 
 {$I TB2Ver.inc}
 {$I TBX.inc}
+
+{x$DEFINE TBX_NO_ANIMATION}
+  { Enabling the above define disables all menu animation. For debugging
+    purpose only. } {vb+}
 
 uses
   Windows, Messages, Classes, SysUtils, Controls, Graphics, ImgList, Forms,
@@ -71,7 +75,7 @@ type
     property Color: TColor read FColor write SetColor default clNone;
     property Name: TFontName read FName write SetName;   // default ''
   end;
-  
+
   TTBXPopupPositionInfo = record
     Item: TTBCustomItem;         // this is a tentative type, it will be changed
     ParentView: TTBView;         // or removed in future versions
@@ -315,6 +319,7 @@ type
     FControlRect: TRect;
     FShadows: TShadows;
     procedure CMHintShow(var Message: TCMHintShow); message CM_HINTSHOW;
+    procedure CMShowingChanged(var Message: TMessage); message CM_SHOWINGCHANGED; {vb+}
     procedure TBMGetViewType(var Message: TMessage); message TBM_GETVIEWTYPE;
     procedure WMNCCalcSize(var Message: TWMNCCalcSize); message WM_NCCALCSIZE;
     procedure WMNCPaint(var Message: TMessage); message WM_NCPAINT;
@@ -329,6 +334,7 @@ type
     function  GetNCSize: TPoint; override;
     function  GetShowShadow: Boolean; virtual;
     function  GetViewClass: TTBViewClass; override;
+    procedure PaintScrollArrows; override; {vb+}
   public
     destructor Destroy; override;
     function  GetFillColor: TColor;
@@ -367,6 +373,7 @@ type
     function  GetFloatingWindowParentClass: TTBFloatingWindowParentClass; override;
     procedure GetToolbarInfo(out ToolbarInfo: TTBXToolbarInfo); virtual;
     function  GetViewClass: TTBToolbarViewClass; override;
+    procedure Loaded; override; {vb+}
     procedure SetParent(AParent: TWinControl); override;
     procedure UpdateEffectiveColor;
   public
@@ -476,10 +483,12 @@ type
     function GetPopupWindowClass: TTBPopupWindowClass; override;
     procedure GetPopupPosition(ParentView: TTBView; PopupWindow: TTBPopupWindow;
       var PopupPositionRec: TTBPopupPositionRec); override;
-    procedure OpenPopupEx(const SelectFirstItem, TrackRightButton: Boolean;
-      const ControlRect: TRect; const Alignment: TTBPopupAlignment);
-    procedure PopupEx(const ControlRect: TRect; TrackRightButton: Boolean;
-      Alignment: TTBPopupAlignment = tbpaLeft);
+    function OpenPopupEx(const SelectFirstItem, TrackRightButton: Boolean;
+      const ControlRect: TRect; const Alignment: TTBPopupAlignment;
+      const ReturnClickedItemOnly: Boolean): TTBCustomItem;
+    function PopupEx(const ControlRect: TRect; TrackRightButton: Boolean;
+      Alignment: TTBPopupAlignment = tbpaLeft;
+      ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
   end;
 
   TTBXPopupMenu = class(TTBPopupMenu)
@@ -489,7 +498,8 @@ type
   protected
     function GetRootItemClass: TTBRootItemClass; override;
   public
-    procedure PopupEx(const ControlRect: TRect);
+    function PopupEx(const ControlRect: TRect;
+      ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
     property ToolBoxPopup: Boolean read FToolBoxPopup write FToolBoxPopup default False;
   end;
 
@@ -568,8 +578,29 @@ type
     property UseParentBackground: Boolean read FUseParentBackground write SetUseParentBackground default False;
   end;
 
+  { TTBXMenuAnimation } {vb+}
+
+  TMenuAnimation = (maNone, maUnfold, maSlide, maFade);
+  TAnimationMode = (amNone, amSysDefault, amRandom, amUnfold, amSlide, amFade);
+  TAnimationModes = set of TAnimationMode;
+
+  TTBXMenuAnimation = class
+  private
+    FAnimationMode: TAnimationMode;
+    function SysParamEnabled(Param: Cardinal): Boolean;
+    function GetAvailableModes: TAnimationModes;
+    function GetMenuAnimation: TMenuAnimation;
+    procedure SetAnimationMode(Value: TAnimationMode);
+    property MenuAnimation: TMenuAnimation read GetMenuAnimation;
+  public
+    constructor Create(AAnimationMode: TAnimationMode = amSysDefault);
+    property AnimationMode: TAnimationMode read FAnimationMode write SetAnimationMode;
+    property AvailableModes: TAnimationModes read GetAvailableModes;
+  end;
+
 var
   CurrentTheme: TTBXTheme;
+  TBXMenuAnimation: TTBXMenuAnimation; { vb+ }
 
 {$IFNDEF JR_D6}
 var
@@ -605,7 +636,8 @@ implementation
 
 uses
   TBXExtItems, TBXLists, TB2Common, TBXUxThemes, MultiMon, TBXDefaultTheme,
-  ComCtrls, Menus;
+  {ComCtrls, Menus;} {vb-}
+  ComCtrls, Menus, MMSystem; {vb+}
 
 type
   TTBItemAccess = class(TTBCustomItem);
@@ -620,6 +652,7 @@ type
   TControlAccess = class(TControl);
   TTBXThemeAccess = class(TTBXTheme);
   TDockAccess = class(TTBDock);
+  TTBPopupWindowAccess = class(TTBPopupWindow); {vb+}
 
   { TTBNexus }
   TTBXNexus = class
@@ -689,8 +722,8 @@ begin
     try
       SetWindowOrgEx(DC, Shift.X, Shift.Y, nil);
       Msg.Msg := WM_ERASEBKGND;
-      Msg.WParam := DC;
-      Msg.LParam := DC;
+      Msg.WParam := Integer(DC); {vb+}
+      Msg.LParam := Integer(DC); {vb+}
       Msg.Result := 0;
       Parent.Dispatch(Msg);
     finally
@@ -1335,7 +1368,7 @@ begin
         Inc(AHeight, ImgSize.CY);
         if AWidth < ImgSize.CX + 7 then AWidth := ImgSize.CX + 7;
       end;
-    end;    
+    end;
 
     if tbisSubmenu in TTBItemAccess(Item).ItemStyle then with CurrentTheme do
     begin
@@ -1540,7 +1573,7 @@ begin
     if IsToolbarStyle then W := CurrentTheme.SplitBtnArrowWidth
     else W := GetSystemMetrics(SM_CXMENUCHECK);
     Result := X < (BoundsRect.Right - BoundsRect.Left) - W;
-  end;      
+  end;
 end;
 
 function TTBXItemViewer.IsToolbarSize: Boolean;
@@ -1583,9 +1616,7 @@ var
   View: TTBViewAccess;
   ItemInfo: TTBXItemInfo;
 
-  {$IFNDEF MPEXCLUDE}
-  M: Integer;
-  {$ENDIF}
+  {M: Integer;} {vb-}
   R: TRect;
   ComboRect: TRect;
   CaptionRect: TRect;
@@ -1909,13 +1940,16 @@ begin
       Bottom := Top + CY;
       DrawItemImage(Canvas, ImageRect, ItemInfo);
     end
-    else if not ToolbarStyle and Item.Checked then
-    begin
-      if Item.RadioItem then
-          CurrentTheme.PaintRadioButton(Canvas, ImageRect, ItemInfo)
-        else CurrentTheme.PaintCheckMark(Canvas, ImageRect, ItemInfo);
-    end;
-  end; 
+    {else if not ToolbarStyle and Item.Checked then
+      CurrentTheme.PaintCheckMark(Canvas, ImageRect, ItemInfo);} {vb-}
+    else {vb+}
+      if not ToolbarStyle and Item.Checked then
+      begin
+        if Item.RadioItem then
+          with ItemInfo do ItemOptions := ItemOptions or IO_RADIO;
+        CurrentTheme.PaintCheckMark(Canvas, ImageRect, ItemInfo);
+      end;
+  end;
 end;
 
 
@@ -2119,6 +2153,53 @@ begin
   end;
 end;
 
+procedure TTBXPopupWindow.CMShowingChanged(var Message: TMessage); {vb+}
+const
+  ShowFlags: array[Boolean] of UINT = (
+    SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER or SWP_NOACTIVATE or SWP_HIDEWINDOW,
+    SWP_NOSIZE or SWP_NOMOVE or SWP_NOZORDER or SWP_NOACTIVATE or SWP_SHOWWINDOW);
+var
+  MenuAni: TMenuAnimation;
+  AniDir: TTBAnimationDirection;
+begin
+  { Must override TCustomForm/TForm's CM_SHOWINGCHANGED handler so that the
+    form doesn't get activated when Visible is set to True. }
+
+  { Handle animation. NOTE: I do not recommend trying to enable animation on
+    Windows 95 and NT 4.0 because there's a difference in the way the
+    SetWindowPos works on those versions. See the comment in the
+    TBStartAnimation function of TB2Anim.pas. }
+  {$IFNDEF TBX_NO_ANIMATION}
+  if ((View.ParentView = nil) or not(vsNoAnimation in View.ParentView.State)) and
+     Showing and (View.Selected = nil) and not IsWindowVisible(WindowHandle) and
+     (TBXMenuAnimation.AnimationMode <> amNone) then
+  begin
+    { Start animation only if WM_TB2K_POPUPSHOWING returns zero (or not handled) }
+    if SendMessage(WindowHandle, WM_TB2K_POPUPSHOWING, TPS_ANIMSTART, 0) = 0 then
+    begin
+      MenuAni := TBXMenuAnimation.MenuAnimation;
+      AniDir := TTBPopupWindowAccess(Self).AnimationDirection;
+      if MenuAni = maUnfold then
+        if [tbadDown, tbadUp] * AniDir <> []
+          then Include(AniDir, tbadRight)
+          else Include(AniDir, tbadDown);
+      TBStartAnimation(WindowHandle, MenuAni = maFade, AniDir);
+      Exit;
+    end;
+  end;
+  {$ENDIF}
+
+  { No animation... }
+  if not Showing then begin
+    { Call TBEndAnimation to ensure WS_EX_LAYERED style is removed before
+      hiding, otherwise windows under the popup window aren't repainted
+      properly. }
+    TBEndAnimation(WindowHandle);
+  end;
+  SetWindowPos(WindowHandle, 0, 0, 0, 0, 0, ShowFlags[Showing]);
+  if Showing then SendNotifyMessage(WindowHandle, WM_TB2K_POPUPSHOWING, TPS_NOANIM, 0);
+end;
+
 procedure TTBXPopupWindow.CreateParams(var Params: TCreateParams);
 const
   CS_DROPSHADOW = $00020000;
@@ -2207,6 +2288,55 @@ end;
 function TTBXPopupWindow.GetViewClass: TTBViewClass;
 begin
   Result := TTBXPopupView;
+end;
+
+procedure TTBXPopupWindow.PaintScrollArrows; {vb+}
+
+  function _GetPopupMargin: Integer;
+  begin
+    if View.ParentView <> nil then
+      Result := GetPopupMargin(TTBViewAccess(View.ParentView).OpenViewer)
+    else if View.ViewerCount > 0 then
+      Result := GetPopupMargin(View.Viewers[0])
+    else Result := -1;
+  end;
+
+  procedure DrawArrows;
+  var
+    ItemInfo: TTBXItemInfo;
+    Index: Integer;
+  begin
+    FillChar(ItemInfo, SizeOf(ItemInfo), 0);
+    ItemInfo.ViewType := PVT_POPUPMENU;
+    ItemInfo.Enabled := True;
+    ItemInfo.PopupMargin := _GetPopupMargin;
+    if ItemInfo.PopupMargin > 0 then
+    begin
+      if TTBViewAccess(View).ShowUpArrow then
+        for Index := 0 to View.ViewerCount- 1 do
+          if View.Viewers[Index].Show then
+          begin
+            CurrentTheme.PaintMenuItemFrame(Canvas, Rect(0, 0, ClientWidth,
+              View.Viewers[Index].BoundsRect.Top), ItemInfo);
+            Break;
+          end;
+      if TTBViewAccess(View).ShowDownArrow then
+        for Index := View.ViewerCount- 1 downto 0 do
+          if View.Viewers[Index].Show then
+          begin
+            CurrentTheme.PaintMenuItemFrame(Canvas, Rect(0,
+              View.Viewers[Index].BoundsRect.Bottom, ClientWidth,
+                ClientHeight), ItemInfo);
+            Break;
+          end;
+    end;
+  end;
+
+begin
+  with TTBViewAccess(View) do
+    if ShowUpArrow or ShowDownArrow then
+      DrawArrows;
+  inherited;
 end;
 
 procedure TTBXPopupWindow.TBMGetViewType(var Message: TMessage);
@@ -2493,7 +2623,7 @@ begin
           ACanvas.Brush.Style := bsClear;
         {$ENDIF}
       end
-      else 
+      else
       begin
         ACanvas.Brush.Color := GetEffectiveColor(CurrentDock);
         ACanvas.FillRect(R);
@@ -2562,6 +2692,12 @@ procedure TTBXToolbar.SetItemTransparency(const Value: TTBXItemTransparency);
 begin
   FItemTransparency := Value;
   Invalidate;
+end;
+
+procedure TTBXToolbar.Loaded; {vb+}
+begin
+  inherited;
+  UpdateEffectiveColor;
 end;
 
 procedure TTBXToolbar.SetParent(AParent: TWinControl);
@@ -2842,8 +2978,9 @@ begin
   Result := TTBXPopupWindow;
 end;
 
-procedure TTBXRootItem.OpenPopupEx(const SelectFirstItem, TrackRightButton: Boolean;
-  const ControlRect: TRect; const Alignment: TTBPopupAlignment);
+function TTBXRootItem.OpenPopupEx(const SelectFirstItem, TrackRightButton: Boolean;
+  const ControlRect: TRect; const Alignment: TTBPopupAlignment;
+  const ReturnClickedItemOnly: Boolean): TTBCustomItem;
 var
   ModalHandler: TTBModalHandler;
   Popup: TTBPopupWindow;
@@ -2870,13 +3007,15 @@ begin
   finally
     ModalHandler.Free;
   end;
-  ProcessDoneAction(DoneActionData);
+  Result := ProcessDoneAction(DoneActionData, ReturnClickedItemOnly);
 end;
 
-procedure TTBXRootItem.PopupEx(const ControlRect: TRect;
-  TrackRightButton: Boolean; Alignment: TTBPopupAlignment);
+function TTBXRootItem.PopupEx(const ControlRect: TRect;
+  TrackRightButton: Boolean; Alignment: TTBPopupAlignment = tbpaLeft;
+  ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
 begin
-  OpenPopupEx(False, TrackRightButton, ControlRect, Alignment);
+  Result := OpenPopupEx(False, TrackRightButton, ControlRect,
+    Alignment, ReturnClickedItemOnly);
 end;
 
 
@@ -2889,12 +3028,18 @@ begin
   Result := TTBXRootItem;
 end;
 
-procedure TTBXPopupMenu.PopupEx(const ControlRect: TRect);
+function TTBXPopupMenu.PopupEx(const ControlRect: TRect;
+  ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
 begin
   {$IFDEF JR_D5}
+  {$IFDEF JR_D9}
+  SetPopupPoint(Point(ControlRect.Left, ControlRect.Bottom));
+  {$ELSE}
   PPoint(@PopupPoint)^ := Point(ControlRect.Left, ControlRect.Bottom);
   {$ENDIF}
-  TTBXRootItem(Items).PopupEx(ControlRect, TrackButton = tbRightButton, TTBPopupAlignment(Alignment))
+  {$ENDIF}
+  Result := TTBXRootItem(Items).PopupEx(ControlRect, TrackButton = tbRightButton,
+    TTBPopupAlignment(Alignment), ReturnClickedItemOnly);
 end;
 
 procedure TTBXPopupMenu.TBMGetViewType(var Message: TMessage);
@@ -3447,7 +3592,9 @@ end;
 
 procedure InitAdditionalSysColors;
 begin
+{$IFNDEF JR_D7} {vb+}
   AddTBXColor(clHotLight, 'clHotLight');
+{$ENDIF} {vb+}
 {$IFNDEF JR_D6}
   AddTBXColor(clMoneyGreen, 'clMoneyGreen');
   AddTBXColor(clSkyBlue, 'clSkyBlue');
@@ -3618,14 +3765,108 @@ begin
   FResizing := False;
 end;
 
+{ TTBXMenuAnimation } {vb+}
+
+constructor TTBXMenuAnimation.Create(AAnimationMode: TAnimationMode = amSysDefault);
+begin
+  AnimationMode := AAnimationMode;
+end;
+
+function TTBXMenuAnimation.GetAvailableModes: TAnimationModes;
+var IsWindows2K: Boolean;
+begin
+  Result := [amNone];
+  IsWindows2K := (Win32Platform = VER_PLATFORM_WIN32_NT) and
+    CheckWin32Version(5);
+  if IsWindows2K or ((Win32Platform = VER_PLATFORM_WIN32_WINDOWS) and
+    CheckWin32Version(4, 10){Win98}) then
+      Result := Result+ [amSysDefault, amRandom, amUnfold, amSlide];
+  if IsWindows2K then
+    Include(Result, amFade);
+end;
+
+function TTBXMenuAnimation.GetMenuAnimation: TMenuAnimation;
+
+  function GetSysDefault: TMenuAnimation;
+  const
+    SPI_GETMENUFADE = $1012;
+    SysDefAni: array[Boolean] of TMenuAnimation = (maSlide, maFade);
+  begin
+    if SysParamEnabled(SPI_GETMENUANIMATION)
+      then Result := SysDefAni[SysParamEnabled(SPI_GETMENUFADE)]
+      else Result := maNone;
+  end;
+
+  function GetRandom: TMenuAnimation;
+  var Max: Integer;
+  begin
+    Max := Ord(High(TMenuAnimation));
+    if not (amFade in AvailableModes) then
+      Dec(Max);
+    Result := Succ(TMenuAnimation(Random(Max)));
+  end;
+
+begin
+  case AnimationMode of
+    amSysDefault: Result := GetSysDefault;
+    amRandom: Result := GetRandom;
+    amUnfold: Result := maUnfold;
+    amSlide: Result := maSlide;
+    amFade: Result := maFade;
+  else
+    Result := maNone;
+  end;
+end;
+
+procedure TTBXMenuAnimation.SetAnimationMode(Value: TAnimationMode);
+var AvailModes: TAnimationModes;
+begin
+  AvailModes := AvailableModes;
+  while not (Value in AvailModes) do
+    Value := Pred(Value);
+  FAnimationMode := Value;
+end;
+
+function TTBXMenuAnimation.SysParamEnabled(Param: Cardinal): Boolean;
+var B: BOOL;
+begin
+  Result := SystemParametersInfo(Param, 0, @B, 0) and B;
+end;
+
+{ Work around delayed menu showing in Windows 2000+ } {vb+}
+var
+  FixPlaySoundThreadHandle: Cardinal;
+
+function FixPlaySoundThreadFunc(Param: Pointer): Integer; stdcall;
+begin
+  Sleep(250);
+  PlaySound(nil, 0, 0);
+  CloseHandle(FixPlaySoundThreadHandle); { Harakiri :~| }
+  Result := $4E494150; { :) }
+end;
+
+procedure FixPlaySoundDelay;
+var ThreadId: Cardinal;
+begin
+  if (Win32Platform = VER_PLATFORM_WIN32_NT) and CheckWin32Version(5) and
+    (FixPlaySoundThreadHandle = 0) then
+      FixPlaySoundThreadHandle := CreateThread(nil, $1000,
+        @FixPlaySoundThreadFunc, nil, 0, ThreadId);
+end;
+
 initialization
-  CurrentTheme := nil;
+  FixPlaySoundDelay; {vb+}
+  {CurrentTheme := nil;} {vb-}
   RegisterTBXTheme('Default', TTBXDefaultTheme);
   TBXNexus := TTBXNexus.Create('Default');
+  TBXMenuAnimation := TTBXMenuAnimation.Create; {vb+}
+  {$IFNDEF JR_D7} {vb+}
   InitAdditionalSysColors;
+  {$ENDIF} {vb+}
 
 finalization
   TBXNexus.Free;
+  FreeAndNil(TBXMenuAnimation); {vb+}
   ColorRegistry := nil;
 
 end.

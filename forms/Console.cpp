@@ -38,6 +38,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
 {
   FTerminal = NULL;
   FOldChangeDirectory = NULL;
+  FPrevTerminalClose = NULL;;
   FLastTerminal = NULL;
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
@@ -62,6 +63,8 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
   {
     if (FTerminal)
     {
+      assert(FTerminal->OnClose == TerminalClose);
+      FTerminal->OnClose = FPrevTerminalClose;
       assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
       FTerminal->OnChangeDirectory = FOldChangeDirectory;
       FOldChangeDirectory = NULL;
@@ -76,6 +79,9 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
       // avoid reloading directory after each change of current directory from console
       FTerminal->BeginTransaction();
       FLastTerminal = FTerminal;
+      FPrevTerminalClose = FTerminal->OnClose;
+      // used instead of previous TTerminalManager::OnChangeTerminal
+      FTerminal->OnClose = TerminalClose;
     }
     UpdateControls();
   }
@@ -97,14 +103,6 @@ void __fastcall TConsoleDialog::UpdateControls()
 bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
   const TStrings * Log)
 {
-  FPrevTerminalClose = NULL;;
-  if (FTerminal)
-  {
-    FPrevTerminalClose = FTerminal->OnClose;
-    // used instead of previous TTerminalManager::OnChangeTerminal
-    FTerminal->OnClose = TerminalClose;
-  }
-  
   try
   {
     CommandEdit->Items = CustomWinConfiguration->History["Commands"];
@@ -132,13 +130,19 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
       DoExecuteCommand();
     }
     ShowModal();
+
+    TConsoleWinConfiguration ConsoleWin = CustomWinConfiguration->ConsoleWin;
+    if ((FAutoBounds.Width() != Width) ||
+        (FAutoBounds.Height() != Height))
+    {
+      ConsoleWin.WindowSize = FORMAT("%d,%d", (Width, Height));
+    }
+    CustomWinConfiguration->ConsoleWin = ConsoleWin;
   }
   __finally
   {
     if (FTerminal)
     {
-      assert(FTerminal->OnClose == TerminalClose);
-      FTerminal->OnClose = FPrevTerminalClose;
       CommandEdit->SaveToHistory();
       CustomWinConfiguration->History["Commands"] = CommandEdit->Items;
     }
@@ -220,12 +224,89 @@ void __fastcall TConsoleDialog::AddLine(TLogLineType Type, const AnsiString & Li
 void __fastcall TConsoleDialog::CreateParams(TCreateParams & Params)
 {
   TForm::CreateParams(Params);
-  Params.Style = Params.Style & ~WS_SYSMENU;
+  // we no longer exclude WS_SYSMENU, was there any reason for that, apart from
+  // hidding the window icon?
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::DoAdjustWindow()
+{
+  HFONT OldFont;
+  void * DC;
+  TTextMetric TM;
+  TRect Rect;
+
+  DC = GetDC(OutputMemo->Handle);
+  OldFont = SelectObject(DC, OutputMemo->Font->Handle);
+
+  try
+  {
+    GetTextMetrics(DC, &TM);
+
+    OutputMemo->Perform(EM_GETRECT, 0, ((int)&Rect));
+  }
+  __finally
+  {
+    SelectObject(DC, OldFont);
+    ReleaseDC(OutputMemo->Handle, DC);
+  }
+
+  int Rows = OutputMemo->Lines->Count;
+  int Columns = 0;
+  for (int Index = 0; Index < Rows; Index++)
+  {
+    int Len = OutputMemo->Lines->Strings[Index].Length();
+    if (Columns < Len)
+    {
+      Columns = Len;
+    }
+  }
+
+  // 10 is surplus to cover any borders, etc.
+  int RequiredWidth = (TM.tmAveCharWidth * Columns) + 10;
+  // thre is always one line more
+  int RequiredHeight = (TM.tmHeight + TM.tmExternalLeading) * (Rows + 1) + 10;
+
+  int CurrentWidth = (Rect.Right - Rect.Left);
+  int CurrentHeight = (Rect.Bottom - Rect.Top);
+
+  ResizeForm(this,
+    Width + (RequiredWidth - CurrentWidth),
+    Height + (RequiredHeight - CurrentHeight));
+  FAutoBounds = BoundsRect;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::ActionListExecute(TBasicAction * Action,
+  bool & Handled)
+{
+  if (Action == AdjustWindow)
+  {
+    DoAdjustWindow();
+    Handled = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::ActionListUpdate(TBasicAction * Action,
+  bool & Handled)
+{
+  if (Action == AdjustWindow)
+  {
+    Handled = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleDialog::FormShow(TObject * /*Sender*/)
+{
+  UpdateFormPosition(this, poMainFormCenter);
+  AnsiString WindowSize = CustomWinConfiguration->ConsoleWin.WindowSize;
+  int Width = StrToIntDef(CutToChar(WindowSize, ',', true), Width);
+  int Height = StrToIntDef(CutToChar(WindowSize, ',', true), Height);
+  ResizeForm(this, Width, Height);
+  FAutoBounds = BoundsRect;
 }
 //---------------------------------------------------------------------------
 

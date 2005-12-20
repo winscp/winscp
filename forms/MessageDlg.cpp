@@ -9,6 +9,7 @@
 #include <Common.h>
 #include <VCLCommon.h>
 #include <WinInterface.h>
+#include <TextsWin.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -17,7 +18,8 @@ class TMessageForm : public TForm
 public:
   static TForm * __fastcall Create(const AnsiString & Msg, TStrings * MoreMessages,
     TMsgDlgType DlgType, TMsgDlgButtons Buttons,
-    TQueryButtonAlias * Aliases, unsigned int AliasesCount);
+    TQueryButtonAlias * Aliases, unsigned int AliasesCount,
+    TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton);
 
 protected:
   __fastcall TMessageForm(TComponent * AOwner);
@@ -103,7 +105,7 @@ void __fastcall TMessageForm::CreateParams(TCreateParams & Params)
 void __fastcall TMessageForm::DoShow()
 {
   UseSystemSettingsPost(this);
-  
+
   TForm::DoShow();
 }
 //---------------------------------------------------------------------------
@@ -134,7 +136,8 @@ const int mcMoreMessageHeight = 80;
 //---------------------------------------------------------------------------
 TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
-  TQueryButtonAlias * Aliases, unsigned int AliasesCount)
+  TQueryButtonAlias * Aliases, unsigned int AliasesCount,
+  TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton)
 {
   TRect TextRect;
 
@@ -167,6 +170,11 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   else
   {
     CancelButton = mbOK;
+  }
+
+  if (TimeoutButton != NULL)
+  {
+    *TimeoutButton = NULL;
   }
 
   TMessageForm * Result = new TMessageForm(Application);
@@ -214,8 +222,17 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
         }
       }
 
+      TButton * Button = new TButton(Result);
+
+      AnsiString MeasureCaption = Caption;
+      if ((TimeoutButton != NULL) && (B == TimeoutResult))
+      {
+        MeasureCaption = FMTLOAD(TIMEOUT_BUTTON, (MeasureCaption, 99));
+        *TimeoutButton = Button;
+      }
+
       DrawText(Result->Canvas->Handle,
-        Caption.c_str(), -1,
+        MeasureCaption.c_str(), -1,
         &TextRect, DT_CALCRECT | DT_LEFT | DT_SINGLELINE |
         Result->DrawTextBiDiModeFlagsReadingOnly());
       int CurButtonWidth = TextRect.Right - TextRect.Left + 8;
@@ -224,7 +241,6 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
         ButtonWidth = CurButtonWidth;
       }
 
-      TButton * Button = new TButton(Result);
       Button->Name = ButtonNames[TMsgDlgBtn(B)];
       Button->Parent = Result;
       Button->Caption = Caption;
@@ -369,9 +385,10 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
 //---------------------------------------------------------------------------
 TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
   TStrings * MoreMessages, TMsgDlgType DlgType, TMsgDlgButtons Buttons,
-  TQueryButtonAlias * Aliases, unsigned int AliasesCount)
+  TQueryButtonAlias * Aliases, unsigned int AliasesCount,
+  TMsgDlgBtn TimeoutResult, TButton ** TimeoutButton)
 {
   return TMessageForm::Create(Msg, MoreMessages, DlgType, Buttons,
-    Aliases, AliasesCount);
+    Aliases, AliasesCount, TimeoutResult, TimeoutButton);
 }
 

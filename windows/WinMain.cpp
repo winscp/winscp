@@ -48,9 +48,10 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList)
   TargetDirectory = UnixIncludeTrailingBackslash(Terminal->CurrentDirectory);
 
   int Options = coDisableQueue |
-    (!Terminal->IsCapable[fcNewerOnlyUpload] ? coDisableNewerOnly : 0) |
-    (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0);
-  if (DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options))
+    (!Terminal->IsCapable[fcNewerOnlyUpload] ? coDisableNewerOnly : 0);
+  int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Upload;
+  if (DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
+        CopyParamAttrs, NULL))
   {
     int Params = (CopyParam.NewerOnly ? cpNewerOnly : 0);
     Terminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
@@ -79,9 +80,10 @@ void __fastcall Download(TTerminal * Terminal, const AnsiString FileName)
     }
     TargetDirectory = IncludeTrailingBackslash(LocalDirectory);
 
-    int Options = coDisableQueue |
-      (!Terminal->IsCapable[fcTextMode] ? coDisableTransferMode : 0);
-    if (DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam, Options))
+    int Options = coDisableQueue;
+    int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
+    if (DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam,
+          Options, CopyParamAttrs, NULL))
     {
       Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, 0);
     }
@@ -188,6 +190,12 @@ int __fastcall Execute(TProgramParams * Params)
     WinConfiguration->DefaultKeyFile = KeyFile;
   }
 
+  AnsiString LogFile;
+  if (Params->FindSwitch("Log", LogFile))
+  {
+    Configuration->TemporaryLogging(LogFile);
+  }
+
   bool Help = Params->FindSwitch("help") || Params->FindSwitch("h") || Params->FindSwitch("?");
   if (Help || Params->FindSwitch("Console"))
   {
@@ -217,6 +225,14 @@ int __fastcall Execute(TProgramParams * Params)
     Application->HintHidePause = 3000;
 
     AnsiString Value;
+
+    AnsiString IniFileName = Params->SwitchValue("ini");
+    if (!IniFileName.IsEmpty() && !FileExists(IniFileName))
+    {
+      // this should be displayed rather at the very beginning.
+      // however for simplicity (GUI-only), we do it only here.
+      MessageDialog(FMTLOAD(FILE_NOT_EXISTS, (IniFileName)), qtError, qaOK);
+    }
 
     if (Params->FindSwitch("UninstallCleanup"))
     {
@@ -307,64 +323,86 @@ int __fastcall Execute(TProgramParams * Params)
       // from now flash message boxes on background
       SetOnForeground(false);
 
-      Data = GetLoginData(AutoStartSession, DownloadFile);
-      if (Data)
+      bool Retry;
+      do
       {
-        try
+        Retry = false;
+        Data = GetLoginData(AutoStartSession, DownloadFile);
+        if (Data)
         {
-          assert(!TerminalManager->ActiveTerminal);
-          TerminalManager->NewTerminal(Data);
-        }
-        __finally
-        {
-          delete Data;
-        }
-
-        try
-        {
-          CALLSTACK;
-          if (TerminalManager->ConnectActiveTerminal())
+          if ((Data->FSProtocol == fsExternalSSH) ||
+              (Data->FSProtocol == fsExternalSFTP))
           {
-            CALLSTACK;
-            TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
+            OpenSessionInPutty(
+              ((Data->FSProtocol == fsExternalSSH) ?
+                GUIConfiguration->PuttyPath : GUIConfiguration->PSftpPath),
+              Data, (GUIConfiguration->PuttyPassword ? Data->Password : AnsiString()));
+          }
+          else
+          {
             try
             {
-              // moved inside try .. __finally, because it can fail as well
-              TerminalManager->ScpExplorer = ScpExplorer;
-              if (ParamCommand == pcUpload)
-              {
-                Upload(TerminalManager->ActiveTerminal, CommandParams);
-              }
-              else if (ParamCommand == pcFullSynchronize)
-              {
-                FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
-                  CommandParams);
-              }
-              else if (ParamCommand == pcSynchronize)
-              {
-                Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
-                  CommandParams);
-              }
-              else if (!DownloadFile.IsEmpty())
-              {
-                Download(TerminalManager->ActiveTerminal, DownloadFile);
-              }
-
-              CALLSTACK;
-              Application->Run();
+              assert(!TerminalManager->ActiveTerminal);
+              TerminalManager->NewTerminal(Data);
             }
             __finally
             {
-              TerminalManager->ScpExplorer = NULL;
-              SAFE_DESTROY(ScpExplorer);
+              delete Data;
+            }
+
+            try
+            {
+              CALLSTACK;
+              if (!TerminalManager->ConnectActiveTerminal())
+              {
+                AutoStartSession = "";
+                Retry = true;
+              }
+              else
+              {
+                CALLSTACK;
+                TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
+                try
+                {
+                  // moved inside try .. __finally, because it can fail as well
+                  TerminalManager->ScpExplorer = ScpExplorer;
+                  if (ParamCommand == pcUpload)
+                  {
+                    Upload(TerminalManager->ActiveTerminal, CommandParams);
+                  }
+                  else if (ParamCommand == pcFullSynchronize)
+                  {
+                    FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                      CommandParams);
+                  }
+                  else if (ParamCommand == pcSynchronize)
+                  {
+                    Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                      CommandParams);
+                  }
+                  else if (!DownloadFile.IsEmpty())
+                  {
+                    Download(TerminalManager->ActiveTerminal, DownloadFile);
+                  }
+
+                  CALLSTACK;
+                  Application->Run();
+                }
+                __finally
+                {
+                  TerminalManager->ScpExplorer = NULL;
+                  SAFE_DESTROY(ScpExplorer);
+                }
+              }
+            }
+            catch (Exception &E)
+            {
+              ShowExtendedException(&E);
             }
           }
         }
-        catch (Exception &E)
-        {
-          ShowExtendedException(&E);
-        }
       }
+      while (Retry);
     }
   }
   __finally

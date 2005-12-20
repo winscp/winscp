@@ -4,6 +4,7 @@
 #pragma hdrstop
 
 #include <shlobj.h>
+#include <stdio.h>
 
 #include <Common.h>
 #include <TextsWin.h>
@@ -69,21 +70,84 @@ void __fastcall LoadListViewStr(TListView * ListView, AnsiString LayoutStr)
   {
     ListView->Column[Index]->Width = StrToIntDef(
       CutToChar(LayoutStr, ',', true), ListView->Column[Index]->Width);
-    Index++;  
+    Index++;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall RestoreForm(AnsiString Data, TForm * Form)
+{
+  assert(Form);
+  if (!Data.IsEmpty())
+  {
+    TRect Bounds = Form->BoundsRect;
+    int Left = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Left);
+    int Top = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Top);
+    bool Center = (Left == -1) && (Top == -1);
+    if (!Center)
+    {
+      Bounds.Left = Left;
+      Bounds.Top = Top;
+    }
+    else
+    {
+      Bounds.Left = 0;
+      Bounds.Top = 0;
+    }
+    Bounds.Right = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Right);
+    Bounds.Bottom = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Bottom);
+    TWindowState State = (TWindowState)StrToIntDef(::CutToChar(Data, ';', true), (int)wsNormal);
+    Form->WindowState = State;
+    if (State == wsNormal)
+    {
+      if (Bounds.Width() > Screen->Width) Bounds.Right -= (Bounds.Width() - Screen->Width);
+      if (Bounds.Height() > Screen->Height) Bounds.Bottom -= (Bounds.Height() - Screen->Height);
+      #define POS_RANGE(x, prop) (x < 0) || (x > Screen->prop)
+      if (Center)
+      {
+        Form->Position = poMainFormCenter;
+        Form->Width = Bounds.Width();
+        Form->Height = Bounds.Height();
+      }
+      else if (POS_RANGE(Bounds.Left, Width - 20) ||
+               POS_RANGE(Bounds.Top, Height - 40))
+      {
+        Form->Position = poDefaultPosOnly;
+        Form->Width = Bounds.Width();
+        Form->Height = Bounds.Height();
+      }
+      else
+      {
+        Form->Position = poDesigned;
+        Form->BoundsRect = Bounds;
+      }
+      #undef POS_RANGE
+    }
+  }
+  else if (Form->Position == poDesigned)
+  {
+    Form->Position = poDefaultPosOnly;
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall StoreForm(TCustomForm * Form)
+{
+  assert(Form);
+  return FORMAT("%d;%d;%d;%d;%d", ((int)Form->BoundsRect.Left, (int)Form->BoundsRect.Top,
+    (int)Form->BoundsRect.Right, (int)Form->BoundsRect.Bottom,
+    (int)Form->WindowState));
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params)
 {
-  return ExecuteShellAndWait(Application->Handle, Path, Params, 
+  return ExecuteShellAndWait(Application->Handle, Path, Params,
     &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShellAndWait(const AnsiString Command)
 {
-  return ExecuteShellAndWait(Application->Handle, Command, 
+  return ExecuteShellAndWait(Application->Handle, Command,
     &Application->ProcessMessages);
-} 
+}
 //---------------------------------------------------------------------------
 void __fastcall CreateDesktopShortCut(const AnsiString &Name,
   const AnsiString &File, const AnsiString & Params, const AnsiString & Description,
@@ -246,4 +310,129 @@ bool __fastcall TextFromClipboard(AnsiString & Text)
     }
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+static bool __fastcall GetResource(
+  const AnsiString ResName, void *& Content, unsigned long & Size)
+{
+  HRSRC Resource;
+  Resource = FindResourceEx(NULL, RT_RCDATA, ResName.c_str(),
+    MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+  bool Result = (Resource != NULL);
+  if (Result)
+  {
+    Size = SizeofResource(NULL, Resource);
+    if (!Size)
+    {
+      throw Exception(FORMAT("Cannot get size of resource %s", (ResName)));
+    }
+
+    Content = LoadResource(NULL, Resource);
+    if (!Content)
+    {
+      throw Exception(FORMAT("Cannot read resource %s", (ResName)));
+    }
+
+    Content = LockResource(Content);
+    if (!Content)
+    {
+      throw Exception(FORMAT("Cannot lock resource %s", (ResName)));
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall DumpResourceToFile(const AnsiString ResName,
+  const AnsiString FileName)
+{
+  void * Content;
+  unsigned long Size;
+  bool Result = GetResource(ResName, Content, Size);
+
+  if (Result)
+  {
+    FILE * f = fopen(FileName.c_str(), "wb");
+    if (!f)
+    {
+      throw Exception(FORMAT("Cannot create file %s", (FileName)));
+    }
+    if (fwrite(Content, 1, Size, f) != Size)
+    {
+      throw Exception(FORMAT("Cannot write to file %s", (FileName)));
+    }
+    fclose(f);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall ReadResource(const AnsiString ResName)
+{
+  void * Content;
+  unsigned long Size;
+  AnsiString Result;
+
+  if (GetResource(ResName, Content, Size))
+  {
+    Result = AnsiString(static_cast<char*>(Content), Size);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+template <class T>
+void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
+  AnsiString Filter, bool FileNameCommand)
+{
+  AnsiString Executable, Program, Params, Dir;
+  Executable = Control->Text;
+  if (FileNameCommand)
+  {
+    ReformatFileNameCommand(Executable);
+  }
+  SplitCommand(Executable, Program, Params, Dir);
+
+  TOpenDialog * FileDialog = new TOpenDialog(Application);
+  try
+  {
+    FileDialog->FileName = Program;
+    FileDialog->Filter = Filter;
+    FileDialog->Title = Title;
+
+    if (FileDialog->Execute())
+    {
+      TNotifyEvent PrevOnChange = Control->OnChange;
+      Control->OnChange = NULL;
+      try
+      {
+        Control->Text = FormatCommand(FileDialog->FileName, Params);
+      }
+      __finally
+      {
+        Control->OnChange = PrevOnChange;
+      }
+
+      if (Control->OnExit != NULL)
+      {
+        Control->OnExit(Control);
+      }
+    }
+  }
+  __finally
+  {
+    delete FileDialog;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall BrowseForExecutable(TEdit * Control, AnsiString Title,
+  AnsiString Filter, bool FileNameCommand)
+{
+  BrowseForExecutableT(Control, Title, Filter, FileNameCommand);
+}
+//---------------------------------------------------------------------------
+void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
+  AnsiString Filter, bool FileNameCommand)
+{
+  BrowseForExecutableT(Control, Title, Filter, FileNameCommand);
 }

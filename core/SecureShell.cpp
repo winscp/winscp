@@ -28,11 +28,7 @@ __fastcall TSecureShell::TSecureShell()
 {
   FSessionData = new TSessionData("");
   FActive = False;
-  PendLen = 0;
-  PendSize = 0;
-  FStdErrorTemp = "";
-  FBytesSent = 0;
-  FBytesReceived = 0;
+  ResetConnection();
   FLog = new TSessionLog(this);
   FOnQueryUser = NULL;
   FOnPromptUser = NULL;
@@ -42,14 +38,8 @@ __fastcall TSecureShell::TSecureShell()
   FOnStdError = NULL;
   FOnCaptureOutput = NULL;
   FOnClose = NULL;
-  FCSCipher = cipWarn; // = not detected yet
-  FSCCipher = cipWarn;
-  FReachedStatus = 0;
-  UpdateStatus(sshClosed);
   FConfig = new Config();
   FSocket = new SOCKET;
-  FMaxPacketSize = NULL;
-  FBufSize = 0;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
@@ -65,7 +55,35 @@ __fastcall TSecureShell::~TSecureShell()
   FSocket = NULL;
 }
 //---------------------------------------------------------------------------
+void __fastcall TSecureShell::ResetConnection()
+{
+  PendLen = 0;
+  PendSize = 0;
+  Pending = NULL;
+  FStdErrorTemp = "";
+  FBytesSent = 0;
+  FBytesReceived = 0;
+  FCSCipher = cipWarn; // = not detected yet
+  FSCCipher = cipWarn;
+  FReachedStatus = 0;
+  UpdateStatus(sshClosed);
+  FMaxPacketSize = NULL;
+  FBufSize = 0;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::Open()
+{
+  try
+  {
+    DoOpen();
+  }
+  __finally
+  {
+    UpdateStatus(-1, false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::DoOpen()
 {
   const char * InitError;
   char * RealHost;
@@ -117,6 +135,18 @@ void __fastcall TSecureShell::Open()
 
   Log->AddSeparator();
   UpdateStatus(sshAuthenticated);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::Reopen(int /*Params*/)
+{
+  if (Active)
+  {
+    Close();
+  }
+
+  ResetConnection();
+
+  Open();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Init()
@@ -178,12 +208,12 @@ AnsiString __fastcall TSecureShell::GetSshImplementation()
   {
     Ptr = strchr(Ptr + 1, '-');
   }
-  return (Ptr != NULL) ? AnsiString(Ptr + 1) : AnsiString(); 
+  return (Ptr != NULL) ? AnsiString(Ptr + 1) : AnsiString();
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSecureShell::GetPassword()
 {
-  return (FPassword.IsEmpty() ? AnsiString() : 
+  return (FPassword.IsEmpty() ? AnsiString() :
     DecryptPassword(FPassword, SessionData->SessionName));
 }
 //---------------------------------------------------------------------
@@ -278,7 +308,7 @@ bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
   {
     FPassword = EncryptPassword(Response, SessionData->SessionName);
   }
-  
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -310,7 +340,7 @@ void __fastcall TSecureShell::FromBackend(Boolean IsStdErr, char * Data, Integer
 
   if (IsStdErr)
   {
-    AddStdError(AnsiString(Data, Length));
+    AddStdError(AnsiString(Data, Length), false);
   }
   else
   {
@@ -440,7 +470,7 @@ AnsiString __fastcall TSecureShell::ReceiveLine()
 
   // We don't want end-of-line character
   Line.SetLength(Line.Length()-1);
-  CaptureOutput(llOutput, Line);
+  CaptureOutput(llOutput, Line, false);
   return Line;
 }
 //---------------------------------------------------------------------------
@@ -508,7 +538,58 @@ void __fastcall TSecureShell::SendLine(AnsiString Line)
   Log->Add(llInput, Line);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AddStdError(AnsiString Str)
+void __fastcall TSecureShell::TranslateAuthenticationMessage(AnsiString & Message)
+{
+  struct TMapping
+  {
+    const char * Original;
+    const char * Additional;
+    int Translation;
+  };
+
+  TMapping Mapping[] = {
+    { "Using username \"", NULL, AUTH_TRANSL_USERNAME },
+    { "Using keyboard-interactive authentication.", NULL, AUTH_TRANSL_KEYB_INTER },
+    { "Authenticating with public key \"", "from agent", AUTH_TRANSL_PUBLIC_KEY_AGENT },
+    { "Authenticating with public key \"", NULL, AUTH_TRANSL_PUBLIC_KEY },
+    { "Authenticated using RSA key \"", NULL, AUTH_TRANSL_PUBLIC_KEY_AGENT },
+    { "Wrong passphrase", NULL, AUTH_TRANSL_WRONG_PASSPHRASE },
+    { "Access denied", NULL, AUTH_TRANSL_ACCESS_DENIED },
+    { "Trying public key authentication", NULL, AUTH_TRANSL_TRY_PUBLIC_KEY }
+  };
+
+  for (int Index = 0; Index < LENOF(Mapping); Index++)
+  {
+    const char * Original = Mapping[Index].Original;
+    size_t OriginalLen = strlen(Original);
+    if (strncmp(Message.c_str(), Original, OriginalLen) == 0)
+    {
+      if (Original[OriginalLen - 1] == '"')
+      {
+        AnsiString MessageRest =
+          Message.SubString(OriginalLen + 1, Message.Length() - OriginalLen);
+        int P = MessageRest.Pos("\"");
+        if (P > 0)
+        {
+          const char * Additional = Mapping[Index].Additional;
+          if ((Additional == NULL) || (MessageRest.Pos(Additional) > 0))
+          {
+            MessageRest.SetLength(P - 1);
+            Message = FMTLOAD(Mapping[Index].Translation, (MessageRest));
+            break;
+          }
+        }
+      }
+      else
+      {
+        Message = LoadStr(Mapping[Index].Translation);
+        break;
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::AddStdError(AnsiString Str, bool LogOnly)
 {
   StdError += Str;
 
@@ -523,24 +604,22 @@ void __fastcall TSecureShell::AddStdError(AnsiString Str)
   {
     Line = FStdErrorTemp.SubString(1, P-1);
     FStdErrorTemp.Delete(1, P);
-    AddStdErrorLine(Line);
+    AddStdErrorLine(Line, LogOnly);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AddStdErrorLine(const AnsiString Str)
+void __fastcall TSecureShell::AddStdErrorLine(AnsiString Str, bool LogOnly)
 {
-  if (OnStdError == NULL)
+  if (Status == sshAuthenticate)
   {
-    if (Status == sshAuthenticate)
-    {
-      FAuthenticationLog += (FAuthenticationLog.IsEmpty() ? "" : "\n") + Str;
-    }
+    TranslateAuthenticationMessage(Str);
+    FAuthenticationLog += (FAuthenticationLog.IsEmpty() ? "" : "\n") + Str;
   }
-  else
+  if (!LogOnly && (OnStdError != NULL))
   {
     OnStdError(this, llStdError, Str);
   }
-  CaptureOutput(llStdError, Str);
+  CaptureOutput(llStdError, Str, LogOnly);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::ClearStdError()
@@ -553,16 +632,16 @@ void __fastcall TSecureShell::ClearStdError()
       FAuthenticationLog +=
         (FAuthenticationLog.IsEmpty() ? "" : "\n") + FStdErrorTemp;
     }
-    CaptureOutput(llStdError, FStdErrorTemp);
+    CaptureOutput(llStdError, FStdErrorTemp, false);
     FStdErrorTemp = "";
   }
   StdError = "";
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::CaptureOutput(TLogLineType Type,
-  const AnsiString & Line)
+  const AnsiString & Line, bool LogOnly)
 {
-  if (FOnCaptureOutput != NULL)
+  if (!LogOnly && (FOnCaptureOutput != NULL))
   {
     FOnCaptureOutput(this, Type, Line);
   }
@@ -657,7 +736,7 @@ void __fastcall TSecureShell::Discard()
       OnClose(this);
     }
   }
-  
+
   FStatus = sshClosed;
 }
 //---------------------------------------------------------------------------
@@ -748,8 +827,8 @@ void __fastcall TSecureShell::WaitForData(bool Sending)
     int NewBufSize = FBackend->send(FBackendHandle, "", 0);
     if ((NewBufSize < FBufSize) && Sending)
     {
-      NeedToWait = false;  
-    } 
+      NeedToWait = false;
+    }
     FBufSize = NewBufSize;
     if (Configuration->LogProtocol >= 1)
     {
@@ -961,7 +1040,7 @@ TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher) const
   return Result;
 }
 //---------------------------------------------------------------------------
-TCipher __fastcall TSecureShell::GetCSCipher() 
+TCipher __fastcall TSecureShell::GetCSCipher()
 {
   assert(Active);
 
@@ -1015,7 +1094,7 @@ int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
   TStrings * MoreMessages, int Answers, const TQueryParams * Params, TQueryType Type)
 {
   LogEvent(FORMAT("Asking user:\n%s (%s)", (Query, (MoreMessages ? MoreMessages->CommaText : AnsiString() ))));
-  int Answer = qaCancel;
+  int Answer = AbortAnswer(Answers);
   if (FOnQueryUser)
   {
     FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, Type, NULL);
@@ -1042,7 +1121,7 @@ int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
   int Answers, const TQueryParams * Params, TQueryType Type)
 {
   return DoQueryUser(Query, "", Answers, Params, Type);
-} 
+}
 //---------------------------------------------------------------------------
 int __fastcall TSecureShell::DoQueryUser(const AnsiString Query,
   Exception * E, int Answers, const TQueryParams * Params, TQueryType Type)
@@ -1079,27 +1158,34 @@ void __fastcall TSecureShell::VerifyHostKey(const AnsiString Host, int Port,
 
   // Verify the key against the registry.
   Result = verify_host_key(Host.c_str(), Port, KeyType.c_str(), KeyStr.c_str());
-  
+
   if (Result != 0)
   {
-    TQueryParams Params;
-    Params.HelpKeyword = (Result == 1 ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
-    int R = DoQueryUser(
-      FMTLOAD((Result == 1 ? UNKNOWN_KEY2 : DIFFERENT_KEY2), (KeyType, Fingerprint)),
-      qaYes | qaNo | qaCancel, &Params, qtWarning);
+    if (Configuration->DisableAcceptingHostKeys)
+    {
+      FatalError(LoadStr(KEY_NOT_VERIFIED));
+    }
+    else
+    {
+      TQueryParams Params;
+      Params.HelpKeyword = (Result == 1 ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
+      int R = DoQueryUser(
+        FMTLOAD((Result == 1 ? UNKNOWN_KEY2 : DIFFERENT_KEY2), (KeyType, Fingerprint)),
+        qaYes | qaNo | qaCancel, &Params, qtWarning);
 
-    switch (R) {
-      case qaYes:
-        store_host_key(Host.c_str(), Port, KeyType.c_str(), KeyStr.c_str());
-        break;
+      switch (R) {
+        case qaYes:
+          store_host_key(Host.c_str(), Port, KeyType.c_str(), KeyStr.c_str());
+          break;
 
-      case qaCancel:
-        SSH_FATAL_ERROR(LoadStr(KEY_NOT_VERIFIED));
+        case qaCancel:
+          FatalError(LoadStr(KEY_NOT_VERIFIED));
+      }
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::AskAlg(const AnsiString AlgType, 
+void __fastcall TSecureShell::AskAlg(const AnsiString AlgType,
   const AnsiString AlgName)
 {
   AnsiString Msg;
@@ -1107,7 +1193,7 @@ void __fastcall TSecureShell::AskAlg(const AnsiString AlgType,
   {
     Msg = FMTLOAD(KEX_BELOW_TRESHOLD, (AlgName));
   }
-  else 
+  else
   {
     int CipherType;
     if (AlgType == "cipher")
@@ -1122,7 +1208,7 @@ void __fastcall TSecureShell::AskAlg(const AnsiString AlgType,
     {
       CipherType = CIPHER_TYPE_SC;
     }
-    else 
+    else
     {
       assert(false);
     }
@@ -1136,23 +1222,34 @@ void __fastcall TSecureShell::AskAlg(const AnsiString AlgType,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::DoDisplayBanner(const AnsiString & Banner)
+void __fastcall TSecureShell::DoDisplayBanner(const AnsiString & Banner,
+  bool & Log)
 {
-  if ((OnDisplayBanner != NULL) &&
-      Configuration->ShowBanner(SessionData->SessionKey, Banner))
+  if (OnDisplayBanner != NULL)
   {
-    bool NeverShowAgain = false;
-    OnDisplayBanner(this, SessionData->SessionName, Banner, NeverShowAgain);
-    if (NeverShowAgain)
+    Log = false;
+    AddStdError(Banner, true);
+
+    if (Configuration->ForceBanners ||
+        Configuration->ShowBanner(SessionData->SessionKey, Banner))
     {
-      Configuration->NeverShowBanner(SessionData->SessionKey, Banner);
+      bool NeverShowAgain = false;
+      int Options =
+        FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
+      OnDisplayBanner(this, SessionData->SessionName, Banner,
+        NeverShowAgain, Options);
+      if (!Configuration->ForceBanners && NeverShowAgain)
+      {
+        Configuration->NeverShowBanner(SessionData->SessionKey, Banner);
+      }
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::DisplayBanner(const AnsiString & Banner)
+void __fastcall TSecureShell::DisplayBanner(const AnsiString & Banner,
+  bool & Log)
 {
-  DoDisplayBanner(Banner);
+  DoDisplayBanner(Banner, Log);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::OldKeyfileWarning()
@@ -1160,18 +1257,82 @@ void __fastcall TSecureShell::OldKeyfileWarning()
   DoQueryUser(LoadStr(OLD_KEY), qaOK, NULL, qtWarning);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSecureShell::DoQueryReopen(Exception * E, int Params)
+{
+  bool Result;
+
+  if (FLAGSET(Params, ropNoConfirmation))
+  {
+    Result = true;
+  }
+  else
+  {
+    LogEvent("Connection was lost, asking what to do.");
+
+    TQueryParams Params(qpAllowContinueOnError);
+    Params.Timeout = Configuration->SessionReopenAuto;
+    Params.TimeoutAnswer = qaRetry;
+    TQueryButtonAlias Aliases[1];
+    Aliases[0].Button = qaRetry;
+    Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
+    Params.Aliases = Aliases;
+    Params.AliasesCount = LENOF(Aliases);
+    Result = (DoQueryUser("", E, qaRetry | qaAbort, &Params, qtError) == qaRetry);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::QueryReopen(Exception * E, int Params)
+{
+  bool Result = DoQueryReopen(E, Params);
+
+  if (Result)
+  {
+    do
+    {
+      try
+      {
+        if (FLAGSET(Params, ropNoConfirmation))
+        {
+          Sleep(Configuration->SessionReopenNoConfirmation);
+        }
+        Reopen(Params);
+      }
+      catch(Exception & E)
+      {
+        if (!Active)
+        {
+          Result = DoQueryReopen(&E, Params);
+        }
+        else
+        {
+          throw;
+        }
+      }
+    }
+    while (!Active && Result);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 int __fastcall TSecureShell::GetStatus() const
 {
   return FStatus;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::UpdateStatus(int Value)
+void __fastcall TSecureShell::UpdateStatus(int Value, bool Active)
 {
-  if (FStatus != Value)
+  bool Update = (FStatus != Value) && Active;
+  if (Update)
   {
     FStatus = Value;
     if (FStatus > FReachedStatus) FReachedStatus = FStatus;
-    if (FOnUpdateStatus) FOnUpdateStatus(this);
+  }
+  if ((Update || !Active) && (FOnUpdateStatus != NULL))
+  {
+    FOnUpdateStatus(this, Active);
   }
 }
 //---------------------------------------------------------------------------
@@ -1269,11 +1430,14 @@ void __fastcall TSessionLog::DoAdd(TLogLineType aType, AnsiString aLine)
           if (Configuration->Logging && Configuration->LogToFile)
           {
             if (!FFile) OpenLogFile();
-            if (FFile) 
+            if (FFile)
             {
               AnsiString Timestamp = FormatDateTime(" yyyy-mm-dd hh:nn:ss.zzz ", Now());
-              fprintf((FILE *)FFile, "%s\n",
-                (MarkStr + Timestamp + NewStr).c_str());
+              AnsiString Buf = MarkStr + Timestamp + NewStr;
+              // use fwrite instead of fprintf to make sure that even
+              // non-ascii data (unicode) gets in.
+              fwrite(Buf.c_str(), Buf.Length(), 1, (FILE *)FFile);
+              fputc('\n', (FILE *)FFile);
             }
           }
         }
@@ -1378,9 +1542,54 @@ void TSessionLog::OpenLogFile()
       assert(!FFile);
       assert(Configuration);
       AnsiString NewFileName = LogFileName;
+      TDateTime N = Now();
+      for (int Index = 1; Index < NewFileName.Length(); Index++)
+      {
+        if (NewFileName[Index] == '&')
+        {
+          AnsiString Replacement;
+          switch (tolower(NewFileName[Index + 1]))
+          {
+            case 'y':
+              Replacement = FormatDateTime("yyyy", N);
+              break;
+
+            case 'm':
+              Replacement = FormatDateTime("mm", N);
+              break;
+
+            case 'd':
+              Replacement = FormatDateTime("dd", N);
+              break;
+
+            case 't':
+              Replacement = FormatDateTime("hhnnss", N);
+              break;
+
+            case 'h':
+              Replacement = MakeValidFileName(FOwner->SessionData->HostName);
+              break;
+
+            case 's':
+              Replacement = MakeValidFileName(FOwner->SessionData->SessionName);
+              break;
+
+            case '&':
+              Replacement = "&";
+              break;
+
+            default:
+              Replacement = AnsiString("&") + NewFileName[Index + 1];
+              break;
+          }
+          NewFileName.Delete(Index, 2);
+          NewFileName.Insert(Replacement, Index);
+          Index += Replacement.Length() - 1;
+        }
+      }
       if (Id != 0)
       {
-        NewFileName = FORMAT("%s%s.%.8x%s", (ExtractFilePath(NewFileName), 
+        NewFileName = FORMAT("%s%s.%.8x%s", (ExtractFilePath(NewFileName),
           ExtractFileName(NewFileName), static_cast<int>(FId), ExtractFileExt(NewFileName)));
       }
       FFile = fopen(NewFileName.c_str(), (Configuration->LogFileAppend ? "a" : "w"));
@@ -1521,7 +1730,7 @@ void __fastcall TSessionLog::AddStartupInfo()
          BooleanToEngStr(Data->ResolveSymlinks)));
       ADF("Alias LS: %s, Ign LS warn: %s, Scp1 Comp: %s",
         (BooleanToEngStr(Data->AliasGroupList),
-         BooleanToEngStr(Data->IgnoreLsWarnings), 
+         BooleanToEngStr(Data->IgnoreLsWarnings),
          BooleanToEngStr(Data->Scp1Compatibility)));
 
       AddSeparator();
@@ -1571,8 +1780,3 @@ void __fastcall TSessionLog::Clear()
   FTopIndex += Count;
   TStringList::Clear();
 }
-
-
-
-
-

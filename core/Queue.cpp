@@ -8,9 +8,12 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+class TBackgroundTerminal;
+//---------------------------------------------------------------------------
 class TTerminalItem : public TSignalThread
 {
 friend class TQueueItem;
+friend class TBackgroundTerminal;
 
 public:
   __fastcall TTerminalItem(TTerminalQueue * Queue);
@@ -51,7 +54,7 @@ protected:
   };
 
   TTerminalQueue * FQueue;
-  TTerminal * FTerminal;
+  TBackgroundTerminal * FTerminal;
   TQueueItem * FItem;
   TCriticalSection * FCriticalSection;
   void * FUserActionParams;
@@ -61,6 +64,7 @@ protected:
   virtual void __fastcall ProcessEvent();
   virtual void __fastcall Finished();
   bool __fastcall WaitForUserAction(TQueueItem::TStatus ItemStatus, void * Params);
+  bool __fastcall OverrideItemStatus(TQueueItem::TStatus & ItemStatus);
 
   void __fastcall TerminalClose(TObject * Sender);
   void __fastcall TerminalQueryUser(TObject * Sender,
@@ -756,6 +760,41 @@ bool __fastcall TTerminalQueue::GetIsEmpty()
   return (FItems->Count == 0);
 }
 //---------------------------------------------------------------------------
+// TBackgroundItem
+//---------------------------------------------------------------------------
+class TBackgroundTerminal : public TSecondaryTerminal
+{
+public:
+  __fastcall TBackgroundTerminal(TTerminal * MainTerminal, TTerminalItem * Item);
+
+protected:
+  virtual bool __fastcall DoQueryReopen(Exception * E, int Params);
+  
+private:
+  TTerminalItem * FItem;
+};
+//---------------------------------------------------------------------------
+__fastcall TBackgroundTerminal::TBackgroundTerminal(TTerminal * MainTerminal,
+    TTerminalItem * Item) :
+  TSecondaryTerminal(MainTerminal), FItem(Item)
+{
+}
+//---------------------------------------------------------------------------
+bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * E, int Params)
+{
+  bool Result;
+  if (FItem->FTerminated || FItem->FCancel)
+  {
+    // avoid reconnection if we are closing
+    Result = false;
+  }
+  else
+  {
+    Result = TSecondaryTerminal::DoQueryReopen(E, Params);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 // TTerminalItem
 //---------------------------------------------------------------------------
 __fastcall TTerminalItem::TTerminalItem(TTerminalQueue * Queue) :
@@ -764,7 +803,7 @@ __fastcall TTerminalItem::TTerminalItem(TTerminalQueue * Queue) :
 {
   FCriticalSection = new TCriticalSection();
 
-  FTerminal = new TSecondaryTerminal(FQueue->FTerminal);
+  FTerminal = new TBackgroundTerminal(FQueue->FTerminal, this);
   try
   {
     FTerminal->UseBusyCursor = false;
@@ -829,7 +868,6 @@ void __fastcall TTerminalItem::ProcessEvent()
 
       FTerminal->SessionData->RemoteDirectory = FItem->StartupDirectory();
       FTerminal->Open();
-      FTerminal->DoStartup();
     }
 
     Retry = false;
@@ -843,7 +881,12 @@ void __fastcall TTerminalItem::ProcessEvent()
   }
   catch(Exception & E)
   {
-    FTerminal->DoShowExtendedException(&E);
+    // do not show error messages, if task was canceled anyway
+    // (for example if transfer is cancelled during reconnection attempts)
+    if (!FCancel)
+    {
+      FTerminal->DoShowExtendedException(&E);
+    }
   }
 
   FItem->SetStatus(TQueueItem::qsDone);
@@ -1012,21 +1055,26 @@ void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
   const AnsiString Query, TStrings * MoreMessages, int Answers,
   const TQueryParams * Params, int & Answer, TQueryType Type, void * Arg)
 {
-  USEDPARAM(Arg);
-  assert(Arg == NULL);
-
-  TQueryUserRec QueryUserRec;
-  QueryUserRec.Sender = Sender;
-  QueryUserRec.Query = Query;
-  QueryUserRec.MoreMessages = MoreMessages;
-  QueryUserRec.Answers = Answers;
-  QueryUserRec.Params = Params;
-  QueryUserRec.Answer = Answer;
-  QueryUserRec.Type = Type;
-
-  if (WaitForUserAction(TQueueItem::qsQuery, &QueryUserRec))
+  // so far query without queue item can occur only for key cofirmation
+  // on re-key with non-cached host key. make it fail.
+  if (FItem != NULL)
   {
-    Answer = QueryUserRec.Answer;
+    USEDPARAM(Arg);
+    assert(Arg == NULL);
+
+    TQueryUserRec QueryUserRec;
+    QueryUserRec.Sender = Sender;
+    QueryUserRec.Query = Query;
+    QueryUserRec.MoreMessages = MoreMessages;
+    QueryUserRec.Answers = Answers;
+    QueryUserRec.Params = Params;
+    QueryUserRec.Answer = Answer;
+    QueryUserRec.Type = Type;
+
+    if (WaitForUserAction(TQueueItem::qsQuery, &QueryUserRec))
+    {
+      Answer = QueryUserRec.Answer;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1034,20 +1082,29 @@ void __fastcall TTerminalItem::TerminalPromptUser(TSecureShell * SecureShell,
   AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, 
   void * Arg)
 {
-  USEDPARAM(Arg);
-  assert(Arg == NULL);
-
-  TPromptUserRec PromptUserRec;
-  PromptUserRec.SecureShell = SecureShell;
-  PromptUserRec.Prompt = Prompt;
-  PromptUserRec.Kind = Kind;
-  PromptUserRec.Response = Response.c_str();
-  PromptUserRec.Result = Result;
-
-  if (WaitForUserAction(TQueueItem::qsPrompt, &PromptUserRec))
+  if (FItem == NULL)
   {
-    Response = PromptUserRec.Response.c_str();
-    Result = PromptUserRec.Result;
+    // sanity, should not occur
+    assert(false);
+    Result = false;
+  }
+  else
+  {
+    USEDPARAM(Arg);
+    assert(Arg == NULL);
+
+    TPromptUserRec PromptUserRec;
+    PromptUserRec.SecureShell = SecureShell;
+    PromptUserRec.Prompt = Prompt;
+    PromptUserRec.Kind = Kind;
+    PromptUserRec.Response = Response.c_str();
+    PromptUserRec.Result = Result;
+
+    if (WaitForUserAction(TQueueItem::qsPrompt, &PromptUserRec))
+    {
+      Response = PromptUserRec.Response.c_str();
+      Result = PromptUserRec.Result;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1057,7 +1114,8 @@ void __fastcall TTerminalItem::TerminalShowExtendedException(
   USEDPARAM(Arg);
   assert(Arg == NULL);
 
-  if (!E->Message.IsEmpty() &&
+  if ((FItem != NULL) &&
+      !E->Message.IsEmpty() &&
       (dynamic_cast<EAbort*>(E) == NULL))
   {
     TShowExtendedExceptionRec ShowExtendedExceptionRec;
@@ -1114,6 +1172,17 @@ void __fastcall TTerminalItem::OperationProgress(
 
   assert(FItem != NULL);
   FItem->SetProgress(ProgressData);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminalItem::OverrideItemStatus(TQueueItem::TStatus & ItemStatus)
+{
+  assert(FTerminal != NULL);
+  bool Result = (FTerminal->Status < sshReady) && (ItemStatus == TQueueItem::qsProcessing);
+  if (Result)
+  {
+    ItemStatus = TQueueItem::qsConnecting;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 // TQueueItem
@@ -1192,6 +1261,10 @@ void __fastcall TQueueItem::GetData(TQueueItemProxy * Proxy)
   }
   *Proxy->FInfo = *FInfo;
   Proxy->FStatus = FStatus;
+  if (FTerminalItem != NULL)
+  {
+    FTerminalItem->OverrideItemStatus(Proxy->FStatus);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueItem::Execute(TTerminalItem * TerminalItem)

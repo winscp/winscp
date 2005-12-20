@@ -33,6 +33,7 @@ __published:
   TCheckBox *NewerOnlyCheck;
   TButton *PresetsButton;
   TButton *HelpButton;
+  TCheckBox *NeverShowAgainCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
@@ -61,6 +62,8 @@ private:
   void __fastcall SetOptions(int value);
   void __fastcall SetOutputOptions(int value);
   int __fastcall GetOutputOptions();
+  void __fastcall SetCopyParamAttrs(int value);
+  int __fastcall GetCopyParamAttrs();
   void __fastcall CopyParamClick(TObject * Sender);
 protected:
   void __fastcall UpdateControls();
@@ -79,6 +82,7 @@ public:
   __property TGUICopyParamType Params = { read = GetParams, write = SetParams };
   __property bool Move = { read = FMove, write = SetMove };
   __property int Options = { read = FOptions, write = SetOptions };
+  __property int CopyParamAttrs = { read = GetCopyParamAttrs, write = SetCopyParamAttrs };
   __property int OutputOptions = { read = GetOutputOptions, write = SetOutputOptions };
 };
 //---------------------------------------------------------------------------

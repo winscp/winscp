@@ -2,7 +2,7 @@ unit TB2Acc;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2Acc;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2Acc.pas,v 1.6 2004/05/29 20:26:38 jr Exp $
+  $jrsoftware: tb2k/Source/TB2Acc.pas,v 1.7 2005/01/06 03:56:50 jr Exp $
 
   This unit is used internally to implement the IAccessible interface on
   TTBView and TTBItemViewer for Microsoft Active Accessibility support.

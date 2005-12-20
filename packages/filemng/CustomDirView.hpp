@@ -366,11 +366,12 @@ protected:
 	DYNAMIC void __fastcall UpdateStatusBar(void);
 	virtual void __fastcall WndProc(Messages::TMessage &Message);
 	bool __fastcall FileNameMatchesMasks(AnsiString FileName, bool Directory, AnsiString Masks);
+	virtual bool __fastcall EnableDragOnClick(void);
 	__property Controls::TImageList* ImageList16 = {read=FImageList16};
 	__property Controls::TImageList* ImageList32 = {read=FImageList32};
 	
 public:
-	bool __fastcall AnyFileSelected(bool OnlyFocused);
+	bool __fastcall AnyFileSelected(bool OnlyFocused, bool FilesOnly);
 	__fastcall virtual TCustomDirView(Classes::TComponent* AOwner);
 	virtual void __fastcall CreateDirectory(AnsiString DirName) = 0 ;
 	__fastcall virtual ~TCustomDirView(void);

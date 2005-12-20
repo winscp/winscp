@@ -241,6 +241,8 @@ protected:
 	virtual void __fastcall Paint(const Graphics::TCanvas* Canvas, const Types::TRect &ClientAreaRect, bool IsHoverItem, bool IsPushed, bool UseDisabledShadow);
 	void __fastcall UpdateItems(void);
 	__property int HoverIndex = {read=FHoverIndex, write=FHoverIndex, nodefault};
+	__property int Offset = {read=FOffset, nodefault};
+	__property int VisibleItems = {read=FVisibleItems, nodefault};
 	
 public:
 	__fastcall virtual TTBXCustomListViewer(Tb2item::TTBView* AView, Tb2item::TTBCustomItem* AItem, int AGroupLevel);

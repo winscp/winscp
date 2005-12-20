@@ -10,7 +10,6 @@
 #define HELP_CREATE_ICON             HELP_CREATE_SHORTCUT
 #define HELP_REGISTER_URL            HELP_CREATE_SHORTCUT
 #define HELP_ADD_SEARCH_PATH         HELP_CREATE_SHORTCUT
-#define HELP_CREATE_DIRECTORY        "task_create_directory"
 #define HELP_EDIT_NEW                "task_edit"
 #define HELP_LOCATION_PROFILE_ADD    "ui_locationprofile"
 #define HELP_LOCATION_PROFILE_RENAME HELP_LOCATION_PROFILE_ADD
@@ -38,5 +37,6 @@
 #define HELP_DELETE_SESSION          "ui_login_stored_sessions#session_management"
 #define HELP_TOO_MANY_WATCH_DIRECTORIES "ui_keepuptodate"
 #define HELP_LOGIN_KEY_TYPE          "public_key#private"
+#define HELP_SYNCHRONIZE_NO_DIFFERENCES "task_synchronize_full"
 
 #endif // TextsWin

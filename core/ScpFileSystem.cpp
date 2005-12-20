@@ -104,7 +104,7 @@ const char FullTimeOption[] = "--full-time";
 //---------------------------------------------------------------------------
 #define F false
 #define T true
-// TODO: remove "mf" and "cd", it is implemented in TTerminal already 
+// TODO: remove "mf" and "cd", it is implemented in TTerminal already
 const TCommandType DefaultCommandSet[ShellCommandCount] = {
 //                       min max mf cd ia  command
 /*Null*/                { -1, -1, F, F, F, "" },
@@ -308,11 +308,11 @@ AnsiString __fastcall TSCPFileSystem::AbsolutePath(AnsiString Path)
     {
       int P2 = Result.SubString(1, P-1).LastDelimiter("/");
       assert(P2 > 0);
-      Result.Delete(P2, P - P2 + 3); 
+      Result.Delete(P2, P - P2 + 3);
     }
     while ((P = Result.Pos("/./")) > 0)
     {
-      Result.Delete(P, 2); 
+      Result.Delete(P, 2);
     }
     Result = UnixExcludeTrailingBackslash(Result);
   }
@@ -342,6 +342,9 @@ bool __fastcall TSCPFileSystem::IsCapable(int Capability) const
     case fcNativeTextMode:
     case fcNewerOnlyUpload:
     case fcTimestampChanging:
+    case fcLoadingAdditionalProperties:
+    case fcCheckingSpaceAvailable:
+    case fcIgnorePermErrors:
       return false;
 
     default:
@@ -529,13 +532,13 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params)
       {
         Line = FTerminal->ReceiveLine();
         IsLast = IsLastLine(Line);
-        if (!IsLast || !Line.IsEmpty()) 
+        if (!IsLast || !Line.IsEmpty())
         {
           FOutput->Add(Line);
           if (FLAGSET(Params, coReadProgress))
           {
             Total++;
-          
+
             if (Total % 10 == 0)
             {
               FTerminal->DoReadDirectoryProgress(Total);
@@ -1054,8 +1057,11 @@ void __fastcall TSCPFileSystem::CreateDirectory(const AnsiString DirName,
   const TRemoteProperties * Properties)
 {
   USEDPARAM(Properties);
-  assert(!Properties); // not implemented yet
   ExecCommand(fsCreateDirectory, ARRAYOFCONST((DelimitStr(DirName))));
+  if (Properties != NULL)
+  {
+    ChangeFileProperties(DirName, NULL, Properties);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CreateLink(const AnsiString FileName,
@@ -1074,6 +1080,17 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const AnsiString FileName,
   AnsiString RecursiveStr = Recursive ? "-R" : "";
 
   AnsiString DelimitedName = DelimitStr(FileName);
+  // change group before permissions as chgrp change permissions
+  if (Properties->Valid.Contains(vpGroup))
+  {
+    ExecCommand(fsChangeGroup,
+      ARRAYOFCONST((RecursiveStr, Properties->Group, DelimitedName)));
+  }
+  if (Properties->Valid.Contains(vpOwner))
+  {
+    ExecCommand(fsChangeOwner,
+      ARRAYOFCONST((RecursiveStr, DelimitStr(Properties->Owner), DelimitedName)));
+  }
   if (Properties->Valid.Contains(vpRights))
   {
     TRights Rights = Properties->Rights;
@@ -1095,22 +1112,18 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const AnsiString FileName,
         ARRAYOFCONST(("", Rights.SimplestStr, DelimitedName)));
     }
   }
-  if (Properties->Valid.Contains(vpGroup))
-  {
-    ExecCommand(fsChangeGroup,
-      ARRAYOFCONST((RecursiveStr, Properties->Group, DelimitedName)));
-  }
-  if (Properties->Valid.Contains(vpOwner))
-  {
-    ExecCommand(fsChangeOwner,
-      ARRAYOFCONST((RecursiveStr, DelimitStr(Properties->Owner), DelimitedName)));
-  }
   assert(!Properties->Valid.Contains(vpLastAccess));
   assert(!Properties->Valid.Contains(vpModification));
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSCPFileSystem::LoadFilesProperties(TStrings * /*FileList*/ )
+{
+  assert(false);
+  return false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::CustomCommandOnFile(const AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command, int Params, 
+    const TRemoteFile * File, AnsiString Command, int Params,
     TLogAddLineEvent OutputEvent)
 {
   assert(File);
@@ -1173,13 +1186,19 @@ void __fastcall TSCPFileSystem::AnyCommand(const AnsiString Command,
 AnsiString __fastcall TSCPFileSystem::FileUrl(const AnsiString FileName)
 {
   assert(FileName.Length() > 0);
-  return AnsiString("scp://") + FTerminal->SessionData->SessionName + 
-    (FileName[1] == '/' ? "" : "/") + FileName;
+  return AnsiString("scp://") + EncodeUrlChars(FTerminal->SessionData->SessionName) +
+    (FileName[1] == '/' ? "" : "/") + EncodeUrlChars(FileName, "/");
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TSCPFileSystem::GetFixedPaths()
 {
   return NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::SpaceAvailable(const AnsiString Path,
+  TSpaceAvailable & /*ASpaceAvailable*/)
+{
+  assert(false);
 }
 //---------------------------------------------------------------------------
 // transfer protocol
@@ -1505,7 +1524,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   try
   {
     assert(File);
-    
+
     // File is regular file (not directory)
     FTerminal->LogEvent(FORMAT("Copying \"%s\" to remote directory started.", (FileName)));
 
@@ -1699,7 +1718,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
   /* TODO : Delete also read-only files. */
   /* TODO : Show error message on failure. */
-  if (FLAGSET(Params, cpDelete)) 
+  if (FLAGSET(Params, cpDelete))
   {
     Sysutils::DeleteFile(FileName);
   }
@@ -1796,7 +1815,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
     /* TODO : Show error message on failure. */
     if (!OperationProgress->Cancel)
     {
-      if (FLAGSET(Params, cpDelete)) 
+      if (FLAGSET(Params, cpDelete))
       {
         RemoveDir(DirectoryName);
       }

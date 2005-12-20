@@ -11,6 +11,7 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
+#define Year 2005
 
 #ifexist "winscpsetup.tmp"
   #include "winscpsetup.tmp"
@@ -47,6 +48,7 @@ VersionInfoCompany=Martin Prikryl
 VersionInfoDescription=Setup for WinSCP {#Version} (Freeware SCP/SFTP client for Windows)
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
 VersionInfoTextVersion={#Version}
+VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
 DefaultDirName={pf}\WinSCP3
 DefaultGroupName=WinSCP3
 AllowNoIcons=yes
@@ -121,7 +123,7 @@ Name: transl; Description: {cm:TranslationsComponent}; \
 #endif
 
 [Tasks]
-Name: enableupdates; Description: {cm:EnableUpdates};
+Name: enableupdates; Description: {cm:EnableUpdates}
 ; Windows integration
 Name: desktopicon; Description: {cm:DesktopIconTask}
 Name: desktopicon\user; Description: {cm:DesktopIconUserTask}; \
@@ -262,7 +264,7 @@ Root: HKCU; Subkey: "Software\Classes\SCP"; Flags: dontcreatekey uninsdeletekey;
 ; Updates
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface\Updates"; \
   ValueType: dword; ValueName: "Period"; ValueData: 7; \
-  Tasks: enableupdates
+  Tasks: enableupdates; Check: not UpdatesEnabled
 
 #ifdef INTL
 
@@ -305,10 +307,16 @@ var
   CommanderRadioButton: TRadioButton;
   ExplorerRadioButton: TRadioButton;
   AdvancedTabsCheckbox: TCheckbox;
+  AreUpdatesEnabled: Boolean;
 
 function IsLang(Lang: String): Boolean;
 begin
   Result := (Lang = ActiveLanguage);
+end;
+
+function UpdatesEnabled: Boolean;
+begin
+  Result := AreUpdatesEnabled;
 end;
 
 function UserSettings(Settings: Integer): Boolean;
@@ -351,6 +359,7 @@ procedure InitializeWizard();
 var
   UserInterface: Cardinal;
   AdvancedTabs: Cardinal;
+  UpdatesPeriod: Cardinal;
   InterfacePage: TWizardPage;
   Caption, Caption2: TLabel;
   HelpButton: TButton;
@@ -383,6 +392,11 @@ begin
   InterfacePage := CreateCustomPage(wpSelectTasks,
     ExpandConstant('{cm:UserSettingsTitle}'),
     ExpandConstant('{cm:UserSettingsPrompt}'));
+
+  UpdatesPeriod := 0;
+  RegQueryDWordValue(HKCU, '{#RegistryKey}\Configuration\Interface\Updates',
+    'Period', UpdatesPeriod);
+  AreUpdatesEnabled := (UpdatesPeriod <> 0);
 
   UserInterface := 0; { default is commander }
   RegQueryDWordValue(HKCU, '{#RegistryKey}\Configuration\Interface',

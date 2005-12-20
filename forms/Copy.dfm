@@ -96,10 +96,13 @@ object CopyDialog: TCopyDialog
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 3
+    DesignSize = (
+      511
+      253)
     object SaveSettingsCheck: TCheckBox
       Left = 8
       Top = 235
-      Width = 377
+      Width = 301
       Height = 17
       Caption = 'Use &same settings next time'
       TabOrder = 2
@@ -118,6 +121,16 @@ object CopyDialog: TCopyDialog
       Height = 17
       Caption = 'N&ew and updated file(s) only'
       TabOrder = 1
+    end
+    object NeverShowAgainCheck: TCheckBox
+      Left = 312
+      Top = 235
+      Width = 193
+      Height = 17
+      Anchors = [akLeft, akBottom]
+      Caption = 'Do not show this dialog box again'
+      TabOrder = 3
+      OnClick = ControlChange
     end
   end
   object LocalDirectoryBrowseButton: TButton

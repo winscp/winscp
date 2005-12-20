@@ -33,6 +33,7 @@
 #pragma link "TBXStatusBars"
 #pragma link "TBXExtItems"
 #pragma link "TB2ExtItems"
+#pragma link "TBXToolPals"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
@@ -62,7 +63,7 @@ void __fastcall TScpExplorerForm::RestoreFormParams()
   assert(Configuration);
 
   TCustomScpExplorerForm::RestoreFormParams();
-  WinConfiguration->RestoreForm(WinConfiguration->ScpExplorer.WindowParams, this);
+  RestoreForm(WinConfiguration->ScpExplorer.WindowParams, this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::ConfigurationChanged()
@@ -98,7 +99,7 @@ void __fastcall TScpExplorerForm::StoreParams()
     WinConfiguration->ScpExplorer.SessionComboWidth = SessionCombo->EditWidth;
     WinConfiguration->ScpExplorer.StatusBar = RemoteStatusBar->Visible;
 
-    WinConfiguration->ScpExplorer.WindowParams = WinConfiguration->StoreForm(this);;
+    WinConfiguration->ScpExplorer.WindowParams = StoreForm(this);
     WinConfiguration->ScpExplorer.DirViewParams = RemoteDirView->UnixColProperties->ParamsStr;
     WinConfiguration->ScpExplorer.ViewStyle = RemoteDirView->ViewStyle;
     WinConfiguration->ScpExplorer.DriveView = RemoteDriveView->Visible;
@@ -113,7 +114,8 @@ void __fastcall TScpExplorerForm::StoreParams()
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
   TTransferType Type, Boolean Temp, TStrings * FileList,
-  AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm)
+  AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
+  bool DragDrop)
 {
   // Temp means d&d here so far, may change in future!
   if ((Direction == tdToLocal) && !Temp && TargetDirectory.IsEmpty())
@@ -121,7 +123,7 @@ bool __fastcall TScpExplorerForm::CopyParamDialog(TTransferDirection Direction,
     TargetDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   }
   bool Result = TCustomScpExplorerForm::CopyParamDialog(
-    Direction, Type, Temp, FileList, TargetDirectory, CopyParam, Confirm);
+    Direction, Type, Temp, FileList, TargetDirectory, CopyParam, Confirm, DragDrop);
   if (Result && (Direction == tdToLocal) && !Temp)
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = TargetDirectory;
@@ -154,6 +156,9 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
     case fcSessionCombo: return reinterpret_cast<TControl*>(SessionCombo);
     case fcTransferCombo: return reinterpret_cast<TControl*>(TransferCombo);
     case fcSessionToolbar: return SessionToolbar;
+    case fcCustomCommandsBand: return CustomCommandsToolbar;
+    case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
+    case fcColorPalette: return reinterpret_cast<TControl*>(SessionColorPalette);
 
     case fcExplorerMenuBand: return MenuToolbar;
     case fcExplorerAddressBand: return AddressToolbar;
@@ -164,6 +169,7 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
     case fcExplorerSortBand: return SortToolbar;
     case fcExplorerUpdatesBand: return UpdatesToolbar;
     case fcExplorerTransferBand: return TransferToolbar;
+    case fcExplorerCustomCommandsBand: return CustomCommandsToolbar;
     default: return TCustomScpExplorerForm::GetComponent(Component);
   }
 }
@@ -209,7 +215,7 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RemoteStatusBarDblClick(TObject * /*Sender*/)
 {
-  DoFileSystemInfoDialog(Terminal);
+  FileSystemInfo();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(

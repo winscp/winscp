@@ -82,3 +82,20 @@ void __fastcall TRightsExtFrame::OctalEditExit(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TRightsExtFrame::SetPopup(bool value)
+{
+  if (Popup != value)
+  {
+    TRightsFrame::SetPopup(value);
+    CloseButton->Visible = value;
+    CloseButton->Cancel = value;
+    CloseButton->Default = value;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsExtFrame::CloseButtonClick(TObject * /*Sender*/)
+{
+  CloseUp();
+}
+//---------------------------------------------------------------------------
+

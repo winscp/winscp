@@ -38,7 +38,7 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount)
   {
     RowCount = ListView->Items->Count;
   }
-  
+
   NewWidth = 0;
   CWidth = ListView->ClientWidth;
   if ((ListView->VisibleRowCount < RowCount) &&
@@ -74,7 +74,8 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
     Control->Enabled = Enable;
   }
   if (Control->InheritsFrom(__classid(TCustomEdit)) ||
-            Control->InheritsFrom(__classid(TCustomComboBox)))
+      Control->InheritsFrom(__classid(TCustomComboBox)) ||
+      Control->InheritsFrom(__classid(TCustomListView)))
   {
     if (Enable) ((TEdit*)Control)->Color = clWindow;
       else ((TEdit*)Control)->Color = clBtnFace;
@@ -117,7 +118,7 @@ void __fastcall UseSystemSettingsPost(TCustomForm * Control, void * Settings)
   {
     static_cast<TSavedSystemSettings*>(Settings)->Flipped = Flip;
   }
-  
+
   if (Flip)
   {
     Control->FlipChildren(true);
@@ -385,23 +386,41 @@ static void __fastcall RemoveHiddenControlsFromOrder(TControl ** ControlsOrder, 
   Count -= Shift;
 }
 //---------------------------------------------------------------------------
+void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar)
+{
+  StatusBar->SimplePanel = !StatusBar->SimplePanel;
+  StatusBar->SimplePanel = !StatusBar->SimplePanel;
+}
+//---------------------------------------------------------------------------
 void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count)
 {
   RemoveHiddenControlsFromOrder(ControlsOrder, Count);
 
-  for (int Index = Count - 1; Index > 0; Index--)
+  if (Count > 0)
   {
-    if (ControlsOrder[Index]->Top < ControlsOrder[Index - 1]->Top)
+    TWinControl * CommonParent = ControlsOrder[0]->Parent;
+    CommonParent->DisableAlign();
+    try
     {
-      int NewPosition = ControlsOrder[Index - 1]->Top +
-        ControlsOrder[Index - 1]->Height;
-      // because of empty docks
-      if (ControlsOrder[Index - 1]->Height == 0)
+      int Top = 0;
+      for (int Index = 0; Index < Count; Index++)
       {
-        NewPosition++;
+        assert(ControlsOrder[Index]->Parent == CommonParent);
+        if ((Index == 0) || (Top > ControlsOrder[Index]->Top))
+        {
+          Top = ControlsOrder[Index]->Top;
+        }
       }
-      ControlsOrder[Index]->Top = NewPosition;
-      Index = Count;
+
+      for (int Index = 0; Index < Count; Index++)
+      {
+        ControlsOrder[Index]->Top = Top;
+        Top += ControlsOrder[Index]->Height;
+      }
+    }
+    __finally
+    {
+      CommonParent->EnableAlign();
     }
   }
 }
@@ -410,14 +429,31 @@ void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count)
 {
   RemoveHiddenControlsFromOrder(ControlsOrder, Count);
 
-  for (int Index = Count - 1; Index > 0; Index--)
+  if (Count > 0)
   {
-    if ((ControlsOrder[Index]->Left < ControlsOrder[Index - 1]->Left) &&
-        ControlsOrder[Index - 1]->Visible)
+    TWinControl * CommonParent = ControlsOrder[0]->Parent;
+    CommonParent->DisableAlign();
+    try
     {
-      ControlsOrder[Index]->Left = ControlsOrder[Index - 1]->Left +
-        ControlsOrder[Index - 1]->Width;
-      Index = Count;
+      int Left = 0;
+      for (int Index = 0; Index < Count; Index++)
+      {
+        assert(ControlsOrder[Index]->Parent == CommonParent);
+        if ((Index == 0) || (Left > ControlsOrder[Index]->Left))
+        {
+          Left = ControlsOrder[Index]->Left;
+        }
+      }
+
+      for (int Index = 0; Index < Count; Index++)
+      {
+        ControlsOrder[Index]->Left = Left;
+        Left += ControlsOrder[Index]->Width;
+      }
+    }
+    __finally
+    {
+      CommonParent->EnableAlign();
     }
   }
 }
@@ -457,6 +493,94 @@ void __fastcall CutFormToDesktop(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall UpdateFormPosition(TForm * Form, TPosition Position)
+{
+  if ((Position == poScreenCenter) ||
+      (Position == poOwnerFormCenter) ||
+      (Position == poMainFormCenter))
+  {
+    TCustomForm * CenterForm = NULL;
+    if ((Position == poOwnerFormCenter) ||
+        (Position == poMainFormCenter))
+    {
+      CenterForm = Application->MainForm;
+      if ((Position == poOwnerFormCenter) &&
+          (dynamic_cast<TCustomForm*>(Form->Owner) != NULL))
+      {
+        CenterForm = dynamic_cast<TCustomForm*>(Form->Owner);
+      }
+    }
+
+    int X, Y;
+    if (CenterForm != NULL)
+    {
+      X = ((((TForm *)CenterForm)->Width - Form->Width) / 2) +
+        ((TForm *)CenterForm)->Left;
+      Y = ((((TForm *)CenterForm)->Height - Form->Height) / 2) +
+        ((TForm *)CenterForm)->Top;
+    }
+    else
+    {
+      X = (Screen->Width - Form->Width) / 2;
+      Y = (Screen->Height - Form->Height) / 2;
+    }
+
+    if (X < 0)
+    {
+      X = 0;
+    }
+    if (Y < 0)
+    {
+      Y = 0;
+    }
+
+    Form->SetBounds(X, Y, Form->Width, Form->Height);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall ResizeForm(TForm * Form, int Width, int Height)
+{
+  if (Height > Screen->WorkAreaHeight)
+  {
+    Height = Screen->WorkAreaHeight;
+  }
+  if (Width > Screen->WorkAreaWidth)
+  {
+    Width = Screen->WorkAreaWidth;
+  }
+  if (Height < Form->Constraints->MinHeight)
+  {
+    Height = Form->Constraints->MinHeight;
+  }
+  if (Width < Form->Constraints->MinWidth)
+  {
+    Width = Form->Constraints->MinWidth;
+  }
+  int Top = Form->Top + ((Form->Height - Height) / 2);
+  int Left = Form->Left + ((Form->Width - Width) / 2);
+  if (Top + Height > Screen->WorkAreaTop + Screen->WorkAreaHeight)
+  {
+    Top = Screen->WorkAreaTop + Screen->WorkAreaHeight - Height;
+  }
+  if (Left + Width >= Screen->WorkAreaLeft + Screen->WorkAreaWidth)
+  {
+    Left = Screen->WorkAreaLeft + Screen->WorkAreaWidth - Width;
+  }
+  if (Top < 0)
+  {
+    Top = 0;
+  }
+  if (Left < 0)
+  {
+    Left = 0;
+  }
+  Form->SetBounds(Left, Top, Width, Height);
+  // due to constraints, form can remain larger, make sure it is centered although
+  Left = Form->Left + ((Width - Form->Width) / 2);
+  Top = Form->Top + ((Height - Form->Height) / 2);
+  Form->SetBounds(Left, Top, Width, Height);
+}
+//---------------------------------------------------------------------------
 void __fastcall SetCorrectFormParent(TForm * Form)
 {
   try
@@ -464,7 +588,7 @@ void __fastcall SetCorrectFormParent(TForm * Form)
     // Kind of hack (i do not understand this much).
     // Rationale: for example when the preferences window is opened from login dialog
     // settings Parent to Screen->ActiveForm leads to "cannot focus disabled control",
-    // so we set Parent only when absolutelly necessary 
+    // so we set Parent only when absolutelly necessary
     // (dialog opened from log window or editor)
     // TODO: does not work for dialogs opened from preferences dialog
     if ((Application->MainForm != NULL) &&
@@ -491,13 +615,13 @@ void __fastcall SetCorrectFormParent(TForm * Form)
 //---------------------------------------------------------------------------
 class TPublicControl : public TWinControl
 {
-friend void __fastcall ControlWndProc(TWinControl * Control, TMessage & Message);
+friend TWndMethod __fastcall ControlWndProc(TWinControl * Control);
 };
 //---------------------------------------------------------------------------
-void __fastcall ControlWndProc(TWinControl * Control, TMessage & Message)
+TWndMethod __fastcall ControlWndProc(TWinControl * Control)
 {
   TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
-  PublicControl->WndProc(Message);
+  return &PublicControl->WndProc;
 }
 //---------------------------------------------------------------------------
 static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
@@ -517,14 +641,14 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
       Caption = StripHotkey(Caption);
       AccelChar = (Caption != StaticText->Caption);
     }
-      
+
     TSize TextSize = Canvas->TextExtent(Caption);
     assert(StaticText->BorderStyle == sbsNone); // not taken into account
     if (AccelChar)
     {
       TextSize.cy += 2;
     }
-  
+
     R.Bottom = R.Top + TextSize.cy;
     if (StaticText->Alignment == taRightJustify)
     {
@@ -576,11 +700,11 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
     }
     else
     {
-      ControlWndProc(StaticText, Message);
+      ControlWndProc(StaticText)(Message);
     }
   }
   else if (Message.Msg == CM_DIALOGCHAR)
-  {                                     
+  {
     if (StaticText->Enabled && StaticText->ShowAccelChar &&
         IsAccel(reinterpret_cast<TCMDialogChar &>(Message).CharCode, StaticText->Caption))
     {
@@ -592,19 +716,19 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
     }
     else
     {
-      ControlWndProc(StaticText, Message);
-    }    
+      ControlWndProc(StaticText)(Message);
+    }
   }
   else
   {
-    ControlWndProc(StaticText, Message);
+    ControlWndProc(StaticText)(Message);
   }
 
   if (Message.Msg == WM_PAINT)
   {
     TRect R;
     TControlCanvas * Canvas;
-    FocusableLabelCanvas(StaticText, &Canvas, R); 
+    FocusableLabelCanvas(StaticText, &Canvas, R);
     try
     {
       if (StaticText->Focused())
@@ -663,12 +787,15 @@ void __fastcall ShowPersistentHint(TControl * Control, TPoint HintPos)
   HintInfo.HintData = NULL;
 
   bool CanShow = true;
-  Application->OnShowHint(HintInfo.HintStr, CanShow, HintInfo);
+  if (Application->OnShowHint != NULL)
+  {
+    Application->OnShowHint(HintInfo.HintStr, CanShow, HintInfo);
+  }
 
   if (CanShow)
   {
     PersistentHintControl = Control;
-      
+
     PersistentHintWindow = new THintWindow(Application);
     PersistentHintWindow->BiDiMode = Control->BiDiMode;
     PersistentHintWindow->Color = HintInfo.HintColor;
@@ -690,6 +817,7 @@ void __fastcall ShowPersistentHint(TControl * Control, TPoint HintPos)
 static void __fastcall HintLabelWindowProc(void * Data, TMessage & Message)
 {
   bool Clicked = false;
+  bool Cancel = false;
 
   TStaticText * StaticText = static_cast<TStaticText *>(Data);
   if (Message.Msg == CM_HINTSHOW)
@@ -724,12 +852,24 @@ static void __fastcall HintLabelWindowProc(void * Data, TMessage & Message)
     FocusableLabelWindowProc(Data, Message, Clicked);
   }
 
+  if (Message.Msg == CM_CANCELMODE)
+  {
+    TCMCancelMode & CancelMessage = (TCMCancelMode&)Message;
+    if ((CancelMessage.Sender != StaticText) &&
+        (CancelMessage.Sender != PersistentHintWindow))
+    {
+      Cancel = true;
+    }
+  }
+
   if ((Message.Msg == WM_DESTROY) || (Message.Msg == WM_KILLFOCUS))
   {
-    if (PersistentHintControl == StaticText)
-    {
-      CancelPersistentHint();
-    }
+    Cancel = true;
+  }
+
+  if (Cancel && (PersistentHintControl == StaticText))
+  {
+    CancelPersistentHint();
   }
 
   if (Clicked && (PersistentHintControl != StaticText))
@@ -737,7 +877,7 @@ static void __fastcall HintLabelWindowProc(void * Data, TMessage & Message)
     TRect R;
     TPoint HintPos;
 
-    FocusableLabelCanvas(StaticText, NULL, R); 
+    FocusableLabelCanvas(StaticText, NULL, R);
     HintPos.y = R.Bottom - R.Top;
     HintPos.x = R.Left;
 
@@ -759,6 +899,13 @@ void __fastcall HintLabel(TStaticText * StaticText, AnsiString Hint)
   ((TMethod*)&WindowProc)->Data = StaticText;
   ((TMethod*)&WindowProc)->Code = HintLabelWindowProc;
   StaticText->WindowProc = WindowProc;
+}
+//---------------------------------------------------------------------------
+void __fastcall HintLabelRestore(TStaticText * StaticText)
+{
+  StaticText->WindowProc = ControlWndProc(StaticText);
+  StaticText->ShowHint = false;
+  StaticText->Cursor = crDefault;
 }
 //---------------------------------------------------------------------------
 static void __fastcall LinkLabelClick(TStaticText * StaticText)
@@ -790,7 +937,7 @@ static void __fastcall LinkLabelWindowProc(void * Data, TMessage & Message)
     if ((ContextMenu.Pos.x < 0) && (ContextMenu.Pos.y < 0))
     {
       TRect R;
-      FocusableLabelCanvas(StaticText, NULL, R); 
+      FocusableLabelCanvas(StaticText, NULL, R);
       TPoint P = StaticText->ClientToScreen(TPoint(R.Left, R.Bottom));
       ContextMenu.Pos.x = static_cast<short>(P.x);
       ContextMenu.Pos.y = static_cast<short>(P.y);
@@ -808,7 +955,7 @@ static void __fastcall LinkLabelWindowProc(void * Data, TMessage & Message)
     {
       FocusableLabelWindowProc(Data, Message, Clicked);
     }
-  }  
+  }
 
   FocusableLabelWindowProc(Data, Message, Clicked);
 
@@ -862,7 +1009,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
       TNotifyEvent ContextMenuOnClick;
       ((TMethod*)&ContextMenuOnClick)->Data = StaticText;
       ((TMethod*)&ContextMenuOnClick)->Code = LinkLabelContextMenuClick;
-    
+
       TMenuItem * Item;
 
       Item = new TMenuItem(StaticText->PopupMenu);

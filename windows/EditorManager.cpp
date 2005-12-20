@@ -58,8 +58,8 @@ bool __fastcall TEditorManager::Empty(bool IgnoreClosed)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory, 
-  const AnsiString OriginalFileName, TObject *& Token,
-  AnsiString & ExistingLocalDirectory)
+  const AnsiString OriginalFileName, const AnsiString SessionName,
+  TObject *& Token, AnsiString & ExistingLocalDirectory)
 {
   bool Result = true;
 
@@ -71,7 +71,8 @@ bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
     // include even "closed" (=being uploaded) files as it is nonsense
     // to download file being uploaded
     if ((FileData->Data.RemoteDirectory == RemoteDirectory) &&
-        (FileData->Data.OriginalFileName == OriginalFileName))
+        (FileData->Data.OriginalFileName == OriginalFileName) &&
+        (FileData->Data.SessionName == SessionName))
     {
       if (!FileData->External)
       {

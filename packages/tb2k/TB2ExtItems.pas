@@ -2,7 +2,7 @@ unit TB2ExtItems;
 
 {
   Toolbar2000
-  Copyright (C) 1998-2004 by Jordan Russell
+  Copyright (C) 1998-2005 by Jordan Russell
   All rights reserved.
 
   The contents of this file are subject to the "Toolbar2000 License"; you may
@@ -23,7 +23,7 @@ unit TB2ExtItems;
   GPL. If you do not delete the provisions above, a recipient may use your
   version of this file under either the "Toolbar2000 License" or the GPL.
 
-  $jrsoftware: tb2k/Source/TB2ExtItems.pas,v 1.61 2004/12/06 20:40:20 jr Exp $
+  $jrsoftware: tb2k/Source/TB2ExtItems.pas,v 1.63 2005/07/04 02:49:52 jr Exp $
 }
 
 interface
@@ -788,8 +788,14 @@ function TTBEditItemViewer.EditLoop(const CapHandle: HWND): Boolean;
                 Exit;
               end;
             end;
-          WM_LBUTTONDOWN..WM_MBUTTONDBLCLK,
-          WM_NCLBUTTONDOWN..WM_NCMBUTTONDBLCLK: begin
+          WM_LBUTTONDOWN, WM_LBUTTONDBLCLK,
+          WM_RBUTTONDOWN, WM_RBUTTONDBLCLK,
+          WM_MBUTTONDOWN, WM_MBUTTONDBLCLK,
+          WM_NCLBUTTONDOWN, WM_NCLBUTTONDBLCLK,
+          WM_NCRBUTTONDOWN, WM_NCRBUTTONDBLCLK,
+          WM_NCMBUTTONDOWN, WM_NCMBUTTONDBLCLK: begin
+              { If a mouse click outside the edit control is in the queue,
+                exit and let the upstream message loop deal with it }
               if Msg.hwnd <> FEditControl.Handle then
                 Exit;
             end;

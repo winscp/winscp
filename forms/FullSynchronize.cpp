@@ -22,7 +22,8 @@
 //---------------------------------------------------------------------------
 bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
   AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
-  TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options)
+  TCopyParamType * CopyParams, bool & SaveSettings, bool & SaveMode, int Options,
+  const TUsableCopyParamAttrs & CopyParamAttrs)
 {
   bool Result;
   TFullSynchronizeDialog * Dialog = new TFullSynchronizeDialog(Application);
@@ -36,6 +37,7 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
     Dialog->CopyParams = *CopyParams;
     Dialog->SaveSettings = SaveSettings;
     Dialog->SaveMode = SaveMode;
+    Dialog->CopyParamAttrs = CopyParamAttrs;
     Result = Dialog->Execute();
     if (Result)
     {
@@ -79,10 +81,6 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
   if (SynchronizeTimestampCheck->Checked)
   {
     SynchronizeExistingOnlyCheck->Checked = true;
-    SynchronizePreviewChangesCheck->Checked = false;
-  }
-  if (SynchronizeTimestampCheck->Checked)
-  {
     SynchronizeDeleteCheck->Checked = false;
     SynchronizeByTimeCheck->Checked = true;
   }
@@ -93,24 +91,50 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
   EnableControl(SynchronizeDeleteCheck, !SynchronizeBothButton->Checked && 
     !SynchronizeTimestampCheck->Checked);
   EnableControl(SynchronizeExistingOnlyCheck, !SynchronizeTimestampCheck->Checked);
-  EnableControl(SynchronizePreviewChangesCheck, !SynchronizeTimestampCheck->Checked);
   EnableControl(SynchronizeByTimeCheck, !SynchronizeBothButton->Checked && 
-    !SynchronizeTimestampCheck->Checked);
-  EnableControl(SynchronizeBySizeCheck, !SynchronizeBothButton->Checked && 
     !SynchronizeTimestampCheck->Checked);
   EnableControl(SynchronizeBySizeCheck, !SynchronizeBothButton->Checked);
   EnableControl(SynchronizeSelectedOnlyCheck, FLAGSET(FOptions, fsoAllowSelectedOnly));
   EnableControl(OkButton, !LocalDirectoryEdit->Text.IsEmpty() &&
     !RemoteDirectoryEdit->Text.IsEmpty());
 
-  AnsiString InfoStr = FCopyParams.GetInfoStr("; ",
-    FLAGMASK(SynchronizeTimestampCheck->Checked, TCopyParamType::cpiExcludeMaskOnly));
+  AnsiString InfoStr = FCopyParams.GetInfoStr("; ", ActualCopyParamAttrs());
   CopyParamLabel->Caption = InfoStr;
   CopyParamLabel->Hint = InfoStr;
   CopyParamLabel->ShowHint =
     (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
   SynchronizeBySizeCheck->Caption = SynchronizeTimestampCheck->Checked ?
     LoadStr(SYNCHRONIZE_SAME_SIZE) : FSynchronizeBySizeCaption;
+}
+//---------------------------------------------------------------------------
+int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
+{
+  int Result;
+  if (SynchronizeTimestampCheck->Checked)
+  {
+    Result = cpaExcludeMaskOnly;
+  }
+  else
+  {
+    switch (Mode)
+    {
+      case smRemote:
+        Result = CopyParamAttrs.Upload;
+        break;
+
+      case smLocal:
+        Result = CopyParamAttrs.Download;
+        break;
+
+      default:
+        assert(false);
+        //fallthru
+      case smBoth:
+        Result = CopyParamAttrs.General;
+        break;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -273,7 +297,7 @@ void __fastcall TFullSynchronizeDialog::TransferSettingsButtonClick(
 void __fastcall TFullSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
   assert(FLAGCLEAR(FOptions, fsoDoNotUsePresets));
-  if (CopyParamListPopupClick(Sender, FCopyParams, FPreset))
+  if (CopyParamListPopupClick(Sender, FCopyParams, FPreset, ActualCopyParamAttrs()))
   {
     UpdateControls();
   }
@@ -335,8 +359,7 @@ void __fastcall TFullSynchronizeDialog::CopyParamGroupContextPopup(
 void __fastcall TFullSynchronizeDialog::CopyParamGroupDblClick(
   TObject * /*Sender*/)
 {
-  if (DoCopyParamCustomDialog(FCopyParams,
-       (SynchronizeTimestampCheck->Checked ? cfAllowExcludeMaskOnly : -1)))
+  if (DoCopyParamCustomDialog(FCopyParams, ActualCopyParamAttrs()))
   {
     UpdateControls();
   }

@@ -21,8 +21,10 @@ __published:
   TGrayedCheckBox *SetUidCheck;
   TGrayedCheckBox *SetGIDCheck;
   TGrayedCheckBox *StickyBitCheck;
+  TButton *CloseButton;
   void __fastcall OctalEditChange(TObject *Sender);
   void __fastcall OctalEditExit(TObject *Sender);
+  void __fastcall CloseButtonClick(TObject *Sender);
   
 public:
   __fastcall TRightsExtFrame(TComponent* Owner);
@@ -30,6 +32,7 @@ public:
 protected:
   virtual void __fastcall UpdateControls();
   virtual void __fastcall ForceUpdate();
+  virtual void __fastcall SetPopup(bool value);
 
 private:
   void __fastcall UpdateByOctal();

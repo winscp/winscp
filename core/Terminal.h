@@ -16,9 +16,10 @@ class TCustomFileSystem;
 struct TCalculateSizeParams;
 struct TOverwriteFileParams;
 struct TSynchronizeData;
-struct TSynchronizeStats;
 struct TSynchronizeOptions;
+class TSynchronizeChecklist;
 struct TCalculateSizeStats;
+struct TFileSystemInfo;
 typedef TStringList TUsersGroupsList;
 typedef void __fastcall (__closure *TReadDirectoryEvent)(System::TObject* Sender, Boolean ReloadOnly);
 typedef void __fastcall (__closure *TReadDirectoryProgressEvent)(
@@ -79,7 +80,8 @@ typedef int __fastcall (__closure *TDirectoryModifiedEvent)
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
   fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink,
   fcTextMode, fcRename, fcNativeTextMode, fcNewerOnlyUpload, fcRemoteCopy,
-  fcTimestampChanging, fcRemoteMove };
+  fcTimestampChanging, fcRemoteMove, fcLoadingAdditionalProperties,
+  fcCheckingSpaceAvailable, fcIgnorePermErrors, fcCount };
 enum TCurrentFSProtocol { cfsUnknown, cfsSCP, cfsSFTP };
 //---------------------------------------------------------------------------
 const cpDelete = 0x01;
@@ -104,7 +106,7 @@ public:
   static const spNoRecurse = 0x08;
   static const spUseCache = 0x10; // cannot be combined with spTimestamp
   static const spDelayProgress = 0x20; // cannot be combined with spTimestamp
-  static const spPreviewChanges = 0x40; // has no effect for spTimestamp
+  // 0x40 was spPreviewChanges
   static const spSubDirs = 0x80; // cannot be combined with spTimestamp
   static const spTimestamp = 0x100;
   static const spNotByTime = 0x200; // cannot be combined with spTimestamp and smBoth
@@ -223,31 +225,33 @@ protected:
   int __fastcall ConfirmFileOverwrite(const AnsiString FileName,
     const TOverwriteFileParams * FileParams, int Answers, const TQueryParams * Params,
     TOperationSide Side, TFileOperationProgressType * OperationProgress);
-  void __fastcall DoSynchronizeDirectory(const AnsiString LocalDirectory,
+  void __fastcall DoSynchronizeCollectDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeStats * Stats,
-    TSynchronizeOptions * Options, int Level);
-  void __fastcall SynchronizeFile(const AnsiString FileName,
+    TSynchronizeDirectory OnSynchronizeDirectory,
+    TSynchronizeOptions * Options, int Level, TSynchronizeChecklist * Checklist);
+  void __fastcall SynchronizeCollectFile(const AnsiString FileName,
     const TRemoteFile * File, /*TSynchronizeData*/ void * Param);
   void __fastcall SynchronizeRemoteTimestamp(const AnsiString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall SynchronizeLocalTimestamp(const AnsiString FileName,
-    const TRemoteFile * File, void * Param, int Index);
+    const TRemoteFile * File, void * Param);
   void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data);
   void __fastcall DeleteLocalFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall RecycleFile(AnsiString FileName, const TRemoteFile * File);
   bool __fastcall IsRecycledFile(AnsiString FileName);
   TStrings * __fastcall GetFixedPaths();
+  void __fastcall DoStartup();
+  virtual void __fastcall DoOpen();
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
 public:
   __fastcall TTerminal();
   __fastcall ~TTerminal();
-  virtual void __fastcall Open();
   virtual void __fastcall Close();
+  virtual void __fastcall Reopen(int Params);
   virtual void __fastcall DirectoryModified(const AnsiString Path, bool SubDirs);
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
   virtual void __fastcall Idle();
@@ -277,13 +281,13 @@ public:
   void __fastcall CustomCommandOnFiles(AnsiString Command, int Params,
     TStrings * Files, TLogAddLineEvent OutputEvent);
   void __fastcall ChangeDirectory(const AnsiString Directory);
-  void __fastcall DoStartup();
   void __fastcall EndTransaction();
   void __fastcall HomeDirectory();
   void __fastcall ChangeFileProperties(AnsiString FileName,
     const TRemoteFile * File, /*const TRemoteProperties */ void * Properties);
   void __fastcall ChangeFilesProperties(TStrings * FileList,
     const TRemoteProperties * Properties);
+  bool __fastcall LoadFilesProperties(TStrings * FileList);
   void __fastcall TerminalError(AnsiString Msg);
   void __fastcall TerminalError(Exception * E, AnsiString Msg);
   void __fastcall ReloadDirectory();
@@ -301,11 +305,16 @@ public:
   void __fastcall CalculateFilesSize(TStrings * FileList, __int64 & Size,
     int Params, const TCopyParamType * CopyParam = NULL, TCalculateSizeStats * Stats = NULL);
   void __fastcall ClearCaches();
-  void __fastcall Synchronize(const AnsiString LocalDirectory,
+  TSynchronizeChecklist * __fastcall SynchronizeCollect(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType * CopyParam, int Params,
-    TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeStats * Stats,
-    TSynchronizeOptions * Options);
+    TSynchronizeDirectory OnSynchronizeDirectory, TSynchronizeOptions * Options);
+  void __fastcall SynchronizeApply(TSynchronizeChecklist * Checklist,
+    const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+    const TCopyParamType * CopyParam, int Params,
+    TSynchronizeDirectory OnSynchronizeDirectory);
+  void __fastcall SpaceAvailable(const AnsiString Path, TSpaceAvailable & ASpaceAvailable);
+  void __fastcall FileSystemInfo(TFileSystemInfo & AFileSystemInfo);
   bool __fastcall DirectoryFileList(const AnsiString Path,
     TRemoteFileList *& FileList, bool CanLoad);
   void __fastcall MakeLocalFileList(const AnsiString FileName,
@@ -314,6 +323,9 @@ public:
   bool __fastcall FileOperationLoopQuery(Exception & E,
     TFileOperationProgressType * OperationProgress, const AnsiString Message,
     bool AllowSkip, AnsiString SpecialRetry = "");
+  TUsableCopyParamAttrs __fastcall UsableCopyParamAttrs(int Params);
+  bool __fastcall QueryReopen(Exception * E, int Params,
+    TFileOperationProgressType * OperationProgress);
 
   static bool __fastcall IsAbsolutePath(const AnsiString Path);
   static AnsiString __fastcall ExpandFileName(AnsiString Path,
@@ -424,23 +436,96 @@ struct TMakeLocalFileListParams
   bool Recursive;
 };
 //---------------------------------------------------------------------------
-struct TSynchronizeStats
-{
-  TSynchronizeStats();
-
-  // currently we do not need any other stats
-  // (these are for keep remote directory up to date)
-  int NewDirectories;
-  int RemovedDirectories;
-  int ObsoleteDirectories;
-};
-//---------------------------------------------------------------------------
 struct TSynchronizeOptions
 {
   TSynchronizeOptions();
   ~TSynchronizeOptions();
 
   TStringList * Filter;
+};
+//---------------------------------------------------------------------------
+class TSynchronizeChecklist
+{
+friend class TTerminal;
+
+public:
+  enum TAction { saNone, saUploadNew, saDownloadNew, saUploadUpdate,
+    saDownloadUpdate, saDeleteRemote, saDeleteLocal };
+  static const int ActionCount = saDeleteLocal;
+
+  class TItem
+  {
+  friend class TTerminal;
+
+  public:
+    struct TFileInfo
+    {
+      AnsiString Directory;
+      TDateTime Modification;
+      TModificationFmt ModificationFmt;
+      __int64 Size;
+    };
+
+    TAction Action;
+    AnsiString FileName;
+    bool IsDirectory;
+    TFileInfo Local;
+    TFileInfo Remote;
+    int ImageIndex;
+    bool Checked;
+
+    ~TItem();
+
+  private:
+    TRemoteFile * FRemoteFile;
+    FILETIME FLocalLastWriteTime;
+
+    TItem();
+  };
+
+  ~TSynchronizeChecklist();
+
+  __property int Count = { read = GetCount };
+  __property const TItem * Item[int Index] = { read = GetItem };
+
+protected:
+  TSynchronizeChecklist();
+
+  void Sort();
+  void Add(TItem * Item);
+
+  int GetCount() const;
+  const TItem * GetItem(int Index) const;
+
+private:
+  TList * FList;
+
+  static int __fastcall Compare(void * Item1, void * Item2);
+};
+//---------------------------------------------------------------------------
+struct TSpaceAvailable
+{
+  TSpaceAvailable();
+
+  __int64 BytesOnDevice;
+  __int64 UnusedBytesOnDevice;
+  __int64 BytesAvailableToUser;
+  __int64 UnusedBytesAvailableToUser;
+  unsigned long BytesPerAllocationUnit;
+};
+//---------------------------------------------------------------------------
+struct TFileSystemInfo
+{
+  int SshVersion;
+  AnsiString SshImplementation;
+  TCipher CSCipher;
+  TCipher SCCipher;
+  TCompressionType CSCompression;
+  TCompressionType SCCompression;
+  AnsiString ProtocolName;
+  AnsiString HostKeyFingerprint;
+  AnsiString AdditionalInfo;
+  bool IsCapable[fcCount];
 };
 //---------------------------------------------------------------------------
 #endif

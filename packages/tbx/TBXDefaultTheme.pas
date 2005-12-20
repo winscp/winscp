@@ -4,7 +4,7 @@ unit TBXDefaultTheme;
 // Copyright 2001-2004 Alex A. Denisov. All Rights Reserved
 // See TBX.chm for license and installation instructions
 //
-// $Id: TBXDefaultTheme.pas 16 2004-05-26 02:02:55Z Alex@ZEISS $
+// Id: TBXDefaultTheme.pas 16 2004-05-26 02:02:55Z Alex@ZEISS
 
 interface
 
@@ -47,7 +47,6 @@ type
     procedure PaintButton(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintCaption(Canvas: TCanvas; const ARect: TRect; const ItemInfo: TTBXItemInfo; const ACaption: string; AFormat: Cardinal; Rotated: Boolean); override;
     procedure PaintCheckMark(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); override;
-    procedure PaintRadioButton(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintChevron(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo); override;
     procedure PaintDock(Canvas: TCanvas; const ClientRect, DockRect: TRect; DockPosition: Integer); override;
     procedure PaintDockPanelNCArea(Canvas: TCanvas; R: TRect; const DockPanelInfo: TTBXDockPanelInfo); override;
@@ -392,25 +391,31 @@ end;
 
 procedure TTBXDefaultTheme.PaintCheckMark(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo);
 var
+  DC: HDC;
   X, Y: Integer;
+  C: TColor;
 begin
+  DC := Canvas.Handle;
   X := (ARect.Left + ARect.Right) div 2 - 1;
-  Y := (ARect.Top + ARect.Bottom) div 2 + 2;
-  if ItemInfo.Enabled then Canvas.Pen.Color := clBtnText
-  else Canvas.Pen.Color := clGrayText;
-  Canvas.Polyline([Point(X-2, Y-2), Point(X, Y), Point(X+4, Y-4),
-    Point(X+4, Y-3), Point(X, Y+1), Point(X-2, Y-1), Point(X-2, Y-2)]);
-  if ItemInfo.Enabled then
+  Y := (ARect.Top + ARect.Bottom) div 2 + 1;
+  if ItemInfo.Enabled
+    then C := clBtnText
+    else C := clGrayText;
+  if ItemInfo.ItemOptions and IO_RADIO > 0 then
   begin
-    Canvas.Pen.Color := clBtnHighlight;
-    Canvas.Polyline([Point(X-3, Y-2), Point(X-3, Y-1), Point(X, Y+2),
-      Point(X+5, Y-3), Point(X+5, Y-5)]);
+    RoundRectEx(DC, X-2, Y-4, X+4, Y+2, 2, 2,
+      MixColors(C, clBtnHighlight, 128), clNone);
+    RoundRectEx(DC, X-2, Y-4, X+4, Y+2, 6, 6, C, C);
+    if ItemInfo.Enabled then
+      RoundRectEx(DC, X-3, Y-5, X+5, Y+3, 6, 6, clBtnHighlight, clNone);
+  end
+  else begin
+    PolyLineEx(DC, [Point(X-2, Y-2), Point(X, Y), Point(X+4, Y-4),
+      Point(X+4, Y-3), Point(X, Y+1), Point(X-2, Y-1), Point(X-2, Y-2)], C);
+    if ItemInfo.Enabled then
+      PolyLineEx(DC, [Point(X-3, Y-2), Point(X-3, Y-1), Point(X, Y+2),
+        Point(X+5, Y-3), Point(X+5, Y-5)], clBtnHighlight);
   end;
-end;
-
-procedure TTBXDefaultTheme.PaintRadioButton(Canvas: TCanvas; ARect: TRect; const ItemInfo: TTBXItemInfo);
-begin
-  PaintCheckMark(Canvas, ARect, ItemInfo);
 end;
 
 procedure TTBXDefaultTheme.PaintChevron(Canvas: TCanvas; ARect: TRect;

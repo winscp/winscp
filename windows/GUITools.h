@@ -25,7 +25,8 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path,
   const AnsiString Params, TProcessMessagesEvent ProcessMessages);
 bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Command,
   TProcessMessagesEvent ProcessMessages);
-void __fastcall OpenSessionInPutty(TSessionData * SessionData, const AnsiString Password);
+void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
+  TSessionData * SessionData, const AnsiString Password);
 bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path);
 AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
   const AnsiString MultiItemsFormat, int Count, const AnsiString FirstItem);

@@ -16,7 +16,7 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner,
-  bool AllowMinimize)
+  bool AllowMinimize, bool CompareOnly)
   : TForm(Owner)
 {
   FStarted = false;
@@ -24,6 +24,7 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
   FElapsed = EncodeTime(0, 0, 0, 0);
   FShowAsModalStorage = NULL;
   FMinimizedByMe = false;
+  FCompareOnly = CompareOnly;
   if (!AllowMinimize)
   {
     CancelButton->Left = CancelButton->Left +
@@ -48,6 +49,7 @@ void __fastcall TSynchronizeProgressForm::Start()
   FStartTime = Now();
   UpdateTimer->Enabled = true;
   StartTimeLabel->Caption = FStartTime.TimeString();
+  Caption = LoadStr(FCompareOnly ? SYNCHRONIZE_PROGRESS_COMPARE : SYNCHRONIZE_PROGRESS_SYNCHRONIZE);
   ShowAsModal(this, FShowAsModalStorage);
 }
 //---------------------------------------------------------------------------

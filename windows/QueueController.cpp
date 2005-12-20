@@ -357,7 +357,7 @@ void __fastcall TQueueController::UpdateQueueStatus(
   TTerminalQueueStatus * QueueStatus)
 {
   FQueueStatus = QueueStatus;
-   
+
   if (FQueueStatus != NULL)
   {
     TQueueItemProxy * QueueItem;
@@ -509,4 +509,8 @@ void __fastcall TQueueController::QueueViewKeyDown(TObject * /*Sender*/,
     Key = 0;
   }
 }
-
+//---------------------------------------------------------------------------
+bool __fastcall TQueueController::GetEmpty()
+{
+  return (FQueueStatus == NULL) || (FQueueStatus->Count == 0);
+}

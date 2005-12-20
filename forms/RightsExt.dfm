@@ -72,4 +72,14 @@ inherited RightsExtFrame: TRightsExtFrame
     TabOrder = 11
     OnClick = ControlChange
   end
+  object CloseButton: TButton [21]
+    Left = 160
+    Top = 80
+    Width = 75
+    Height = 25
+    Caption = 'Close'
+    TabOrder = 14
+    Visible = False
+    OnClick = CloseButtonClick
+  end
 end

@@ -2,6 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <StrUtils.hpp>
 #include <Common.h>
 
 #include "Preferences.h"
@@ -51,7 +52,6 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   SetCorrectFormParent(this);
 
   FPreferencesMode = pmDefault;
-  LoggingFrame->OnGetDefaultLogFileName = LoggingGetDefaultLogFileName;
   CopyParamsFrame->Direction = pdAll;
   FEditorFont = new TFont();
   FEditorFont->Color = clWindowText;
@@ -74,7 +74,6 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
 {
-  LoggingFrame->OnGetDefaultLogFileName = NULL;
   delete FEditorFont;
   delete FCustomCommands;
   delete FCopyParamList;
@@ -128,12 +127,6 @@ void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
       i++;
     }
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::LoggingGetDefaultLogFileName(
-  TObject * /*Sender*/, AnsiString & DefaultLogFileName)
-{
-  DefaultLogFileName = "";
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::LoadConfiguration()
@@ -201,8 +194,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
   PreserveLocalDirectoryCheck->Checked =
     WinConfiguration->ScpCommander.PreserveLocalDirectory;
-  SwappedPanelsCheck->Checked = 
+  SwappedPanelsCheck->Checked =
     WinConfiguration->ScpCommander.SwappedPanels;
+  FullRowSelectCheck->Checked = WinConfiguration->ScpCommander.FullRowSelect;
   ShowFullAddressCheck->Checked =
     WinConfiguration->ScpExplorer.ShowFullAddress;
   RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
@@ -227,6 +221,13 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   ResumeSmartButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsSmart;
   ResumeOffButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOff;
   ResumeThresholdEdit->Value = GUIConfiguration->DefaultCopyParam.ResumeThreshold / 1024;
+  SessionReopenAutoCheck->Checked = (Configuration->SessionReopenAuto > 0);
+  SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
+    (Configuration->SessionReopenAuto / 1000): 5);
+
+  EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
+  EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
+  EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
 
   TransferSheet->Enabled = WinConfiguration->ExpertMode;
   GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
@@ -284,19 +285,19 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
   if (int(Updates.Period) <= 0)
   {
-    UpdatesNeverButton->Checked = true; 
+    UpdatesNeverButton->Checked = true;
   }
   else if (int(Updates.Period) <= 1)
   {
-    UpdatesDailyButton->Checked = true; 
+    UpdatesDailyButton->Checked = true;
   }
   else if (int(Updates.Period) <= 7)
   {
-    UpdatesWeeklyButton->Checked = true; 
+    UpdatesWeeklyButton->Checked = true;
   }
   else
   {
-    UpdatesMonthlyButton->Checked = true; 
+    UpdatesMonthlyButton->Checked = true;
   }
 
   UpdatesProxyCheck->Checked = !Updates.ProxyHost.IsEmpty();
@@ -310,7 +311,18 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(CopyParamAutoSelectNotice);
 
   // interface
-  ThemeCombo->ItemIndex = (WinConfiguration->Theme == "OfficeXP" ? 1 : 0);
+  if (WinConfiguration->Theme == "OfficeXP")
+  {
+    ThemeCombo->ItemIndex = 1;
+  }
+  else if (WinConfiguration->Theme == "Office2003")
+  {
+    ThemeCombo->ItemIndex = 2;
+  }
+  else
+  {
+    ThemeCombo->ItemIndex = 0;
+  }
 
   #undef BOOLPROP
 
@@ -385,6 +397,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     }
     ScpCommander.PreserveLocalDirectory = PreserveLocalDirectoryCheck->Checked;
     ScpCommander.SwappedPanels = SwappedPanelsCheck->Checked;
+    ScpCommander.FullRowSelect = FullRowSelectCheck->Checked;
     WinConfiguration->ScpCommander = ScpCommander;
 
     TScpExplorerConfiguration ScpExplorer = WinConfiguration->ScpExplorer;
@@ -409,6 +422,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     if (ResumeSmartButton->Checked) CopyParam.ResumeSupport = rsSmart;
     if (ResumeOffButton->Checked) CopyParam.ResumeSupport = rsOff;
     CopyParam.ResumeThreshold = ResumeThresholdEdit->Value * 1024;
+
+    Configuration->SessionReopenAuto =
+      (SessionReopenAutoCheck->Checked ? (SessionReopenAutoEdit->Value * 1000) : 0);
 
     WinConfiguration->CustomCommands = FCustomCommands;
 
@@ -435,9 +451,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       WinConfiguration->QueueView.Show = qvHide;
     }
-    
+
     GUIConfiguration->DefaultCopyParam = CopyParam;
-    
+
     // panels
     if (PathInCaptionFullButton->Checked)
     {
@@ -482,7 +498,18 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(CopyParamAutoSelectNotice);
 
     // interface
-    WinConfiguration->Theme = (ThemeCombo->ItemIndex == 1 ? "OfficeXP" : "Default");
+    if (ThemeCombo->ItemIndex == 1)
+    {
+      WinConfiguration->Theme = "OfficeXP";
+    }
+    else if (ThemeCombo->ItemIndex == 2)
+    {
+      WinConfiguration->Theme = "Office2003";
+    }
+    else
+    {
+      WinConfiguration->Theme = "Default";
+    }
     #undef BOOLPROP
   }
   __finally
@@ -496,7 +523,7 @@ void __fastcall TPreferencesDialog::SetPreferencesMode(TPreferencesMode value)
   if (PreferencesMode != value)
   {
     FPreferencesMode = value;
-    
+
     GeneralSheet->Enabled = (value != pmLogin);
     LogSheet->Enabled = (value != pmLogin);
   }
@@ -537,6 +564,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
   EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
   EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
   EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
+  EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
+  EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
+  EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
 
   EnableControl(CopyOnDoubleClickConfirmationCheck, (DoubleClickActionCombo->ItemIndex == 1));
 
@@ -565,12 +595,15 @@ void __fastcall TPreferencesDialog::UpdateControls()
   EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
   EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
   EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
-  EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled && 
+  EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
     DDCustomTemporaryDirectoryButton->Checked);
   EnableControl(DDWarnOnMoveCheck, DDExtDisabledButton->Checked &&
     DDAllowMoveInitCheck->Checked);
   EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
     TemporaryDirectoryCleanupCheck->Checked);
+  IniFileStorageButton->Caption =
+    AnsiReplaceStr(IniFileStorageButton->Caption, "winscp3.ini",
+      ExtractFileName(Configuration->IniFileStorageName));
 
   EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
   bool EditorSelected = (EditorListView->Selected != NULL);
@@ -617,7 +650,7 @@ void __fastcall TPreferencesDialog::FilenameEditExit(TObject * Sender)
     AnsiString Filename = FilenameEdit->Text;
     if (!Filename.IsEmpty())
     {
-      TWinConfiguration::ReformatFileNameCommand(Filename);
+      ReformatFileNameCommand(Filename);
       FilenameEdit->Text = Filename;
     }
     ControlChange(Sender);
@@ -650,7 +683,7 @@ void __fastcall TPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    CopyParamsFrame->Validate();
+    ExitActiveControl(this);
   }
 }
 //---------------------------------------------------------------------------
@@ -658,11 +691,11 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 {
   AnsiString IconName, Params;
   int SpecialFolder;
-  
+
   if (Sender == DesktopIconButton)
   {
     IconName = AppNameVersion;
-    int Result = 
+    int Result =
       MessageDialog(LoadStr(CREATE_DESKTOP_ICON), qtConfirmation,
         qaYes | qaNo | qaCancel, HELP_CREATE_ICON);
     switch (Result)
@@ -680,7 +713,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
         break;
     }
   }
-  else 
+  else
   {
     if (MessageDialog(LoadStr(CONFIRM_CREATE_ICON),
           qtConfirmation, qaYes | qaNo, HELP_CREATE_ICON) == qaYes)
@@ -703,7 +736,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
       Abort();
     }
   }
-  
+
   CreateDesktopShortCut(IconName,
     Application->ExeName, Params, "", SpecialFolder);
 }
@@ -805,7 +838,7 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
         Index = FCustomCommands->Add(Record);
       }
     }
-    
+
     FCustomCommands->Params[Description] = Params;
     UpdateCustomCommandsView();
     CustomCommandsView->ItemIndex = Index;
@@ -1057,7 +1090,7 @@ void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
       }
       // ownership of the object lost
       Editor = NULL;
-      
+
       UpdateEditorListView();
       EditorListView->ItemIndex = Index;
       UpdateControls();
@@ -1253,7 +1286,7 @@ void __fastcall TPreferencesDialog::CopyParamListViewInfoTip(
   assert(Index >= 0 && Index <= FCopyParamList->Count);
   const TCopyParamType * CopyParam = FCopyParamList->CopyParams[Index];
   const TCopyParamRule * Rule = FCopyParamList->Rules[Index];
-  InfoTip = CopyParam->GetInfoStr("; ");
+  InfoTip = CopyParam->GetInfoStr("; ", 0);
   if (Rule != NULL)
   {
     InfoTip += "\n-\n" + Rule->GetInfoStr("; ");
@@ -1263,6 +1296,19 @@ void __fastcall TPreferencesDialog::CopyParamListViewInfoTip(
 void __fastcall TPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this, PageControl->ActivePage);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PuttyPathBrowseButtonClick(
+  TObject * /*Sender*/)
+{
+  BrowseForExecutable(PuttyPathEdit, LoadStr(PREFERENCES_SELECT_PUTTY),
+    LoadStr(PREFERENCES_PUTTY_FILTER), false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PuttyPathResetButtonClick(
+  TObject * /*Sender*/)
+{
+  PuttyPathEdit->Text = WinConfiguration->DefaultPuttyPath;
 }
 //---------------------------------------------------------------------------
 

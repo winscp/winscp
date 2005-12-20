@@ -181,7 +181,6 @@ public:
 	virtual void __fastcall PaintButton(Graphics::TCanvas* Canvas, const Types::TRect &ARect, const TTBXItemInfo &ItemInfo) = 0 ;
 	virtual void __fastcall PaintCaption(Graphics::TCanvas* Canvas, const Types::TRect &ARect, const TTBXItemInfo &ItemInfo, const AnsiString ACaption, unsigned AFormat, bool Rotated) = 0 ;
 	virtual void __fastcall PaintCheckMark(Graphics::TCanvas* Canvas, const Types::TRect &ARect, const TTBXItemInfo &ItemInfo) = 0 ;
-	virtual void __fastcall PaintRadioButton(Graphics::TCanvas* Canvas, const Types::TRect &ARect, const TTBXItemInfo &ItemInfo) = 0 ;
 	virtual void __fastcall PaintChevron(Graphics::TCanvas* Canvas, const Types::TRect &ARect, const TTBXItemInfo &ItemInfo) = 0 ;
 	virtual void __fastcall PaintEditFrame(Graphics::TCanvas* Canvas, const Types::TRect &ARect, TTBXItemInfo &ItemInfo, const TTBXEditInfo &EditInfo) = 0 ;
 	virtual void __fastcall PaintEditButton(Graphics::TCanvas* Canvas, const Types::TRect &ARect, TTBXItemInfo &ItemInfo, const TTBXEditBtnInfo &ButtonInfo) = 0 ;
@@ -296,6 +295,7 @@ static const Shortint IO_SUBMENUITEM = 0x4;
 static const Shortint IO_COMBO = 0x8;
 static const Shortint IO_DESIGNING = 0x10;
 static const Shortint IO_APPACTIVE = 0x20;
+static const Shortint IO_RADIO = 0x40;
 static const Shortint DHS_DOUBLE = 0x0;
 static const Shortint DHS_NONE = 0x1;
 static const Shortint DHS_SINGLE = 0x2;

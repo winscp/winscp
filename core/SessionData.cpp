@@ -25,7 +25,7 @@ const TCipher DefaultCipherList[CIPHER_COUNT] =
   { cipAES, cipBlowfish, cip3DES, cipWarn, cipDES };
 const TKex DefaultKexList[KEX_COUNT] =
   { kexDHGEx, kexDHGroup14, kexDHGroup1, kexWarn };
-const char FSProtocolNames[FSPROTOCOL_COUNT][11] = { "SCP", "SFTP (SCP)", "SFTP" };
+const char FSProtocolNames[FSPROTOCOL_COUNT][11] = { "SCP", "SFTP (SCP)", "SFTP", "SSH", "SFTP" };
 //--- TSessionData ----------------------------------------------------
 AnsiString TSessionData::FInvalidChars("/\\[]");
 //---------------------------------------------------------------------
@@ -99,6 +99,7 @@ void __fastcall TSessionData::Default()
   DeleteToRecycleBin = false;
   OverwrittenToRecycleBin = false;
   RecycleBinPath = "/tmp";
+  Color = 0;
 
   // SCP
   ReturnVar = "";
@@ -227,6 +228,8 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
       DUPL(SFTPBug[(TSftpBug)Index]);
     }
 
+    DUPL(Color);
+
     DUPL(CustomParam1);
     DUPL(CustomParam2);
 
@@ -342,12 +345,18 @@ void __fastcall TSessionData::StoreToConfig(void * config)
     if (FSProtocol != fsSFTPonly)
     {
       cfg->ssh_subsys2 = FALSE;
-      if (!Shell.IsEmpty())
+      if (Shell.IsEmpty())
+      {
+        // Following forces Putty to open default shell
+        // see ssh.c: do_ssh2_authconn() and ssh1_protocol()
+        cfg->remote_cmd2[0] = '\0';
+      }
+      else
       {
         ASCOPY(cfg->remote_cmd2, Shell);
-        // Putty reads only "ptr" member for fallback
-        cfg->remote_cmd_ptr2 = cfg->remote_cmd2;
       }
+      // Putty reads only "ptr" member for fallback
+      cfg->remote_cmd_ptr2 = cfg->remote_cmd2;
     }
     else
     {
@@ -367,6 +376,7 @@ void __fastcall TSessionData::StoreToConfig(void * config)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 {
+  bool RewritePassword = false;
   if (Storage->OpenSubKey(StorageKey, False))
   {
     PortNumber = Storage->ReadInteger("PortNumber", PortNumber);
@@ -376,7 +386,15 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 
     if (!Configuration->DisablePasswordStoring)
     {
-      FPassword = Storage->ReadString("Password", FPassword);
+      if (Storage->ValueExists("PasswordPlain"))
+      {
+        Password = Storage->ReadString("PasswordPlain", Password);
+        RewritePassword = true;
+      }
+      else
+      {
+        FPassword = Storage->ReadString("Password", FPassword);
+      }
     }
     // Putty uses PingIntervalSecs
     int PingIntervalSecs = Storage->ReadInteger("PingIntervalSecs", -1);
@@ -510,6 +528,8 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     SFTPMaxVersion = Storage->ReadInteger("SFTPMaxVersion", SFTPMaxVersion);
     SFTPMaxPacketSize = Storage->ReadInteger("SFTPMaxPacketSize", SFTPMaxPacketSize);
 
+    Color = Storage->ReadInteger("Color", Color);
+
     // read only (used only on Import from Putty dialog)
     ProtocolStr = Storage->ReadString("Protocol", ProtocolStr);
 
@@ -518,6 +538,32 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 
     Storage->CloseSubKey();
   };
+
+  if (RewritePassword)
+  {
+    TStorageAccessMode AccessMode = Storage->AccessMode;
+    Storage->AccessMode = smReadWrite;
+
+    try
+    {
+      if (Storage->OpenSubKey(StorageKey, true))
+      {
+        Storage->DeleteValue("PasswordPlain");
+        if (!Password.IsEmpty())
+        {
+          Storage->WriteString("Password", FPassword);
+        }
+        Storage->CloseSubKey();
+      }
+    }
+    catch(...)
+    {
+      // ignore errors (like read-only INI file)
+    }
+
+    Storage->AccessMode = AccessMode;
+  }
+
   FModified = false;
 }
 //---------------------------------------------------------------------
@@ -540,7 +586,6 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
 
     WRITE_DATA(String, HostName);
     WRITE_DATA(Integer, PortNumber);
-    WRITE_DATA(String, UserName);
     if (!Configuration->DisablePasswordStoring && !PuttyExport && !Password.IsEmpty())
     {
       WRITE_DATA_EX(String, "Password", FPassword, );
@@ -549,6 +594,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
     {
       Storage->DeleteValue("Password");
     }
+    Storage->DeleteValue("PasswordPlain");
     WRITE_DATA_EX(Integer, "PingInterval", PingInterval / 60, );
     WRITE_DATA_EX(Integer, "PingIntervalSecs", PingInterval % 60, );
     Storage->DeleteValue("PingIntervalSec"); // obsolete
@@ -573,10 +619,12 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
 
     if (PuttyExport)
     {
+      WRITE_DATA(StringRaw, UserName);
       WRITE_DATA(StringRaw, PublicKeyFile);
     }
     else
     {
+      WRITE_DATA(String, UserName);
       WRITE_DATA(Bool, AuthGSSAPI);
       WRITE_DATA(String, PublicKeyFile);
       WRITE_DATA(Integer, FSProtocol);
@@ -703,6 +751,8 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Integer, SFTPMaxVersion);
       WRITE_DATA(Integer, SFTPMaxPacketSize);
 
+      WRITE_DATA(Integer, Color);
+
       WRITE_DATA(String, CustomParam1);
       WRITE_DATA(String, CustomParam2);
     }
@@ -744,7 +794,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
   AnsiString AConnectInfo;
   AConnectInfo = Url.SubString(1, PSlash - 1);
 
-  int P = AConnectInfo.Pos("@");
+  int P = AConnectInfo.LastDelimiter("@");
   bool Result = (P > 0) || ((Params & puRequireUsername) == 0);
   if (Result)
   {
@@ -776,7 +826,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
 
     if (ConnectInfo != NULL)
     {
-      *ConnectInfo = AConnectInfo;
+      *ConnectInfo = DECODE(AConnectInfo);
     }
 
     AnsiString UserInfo;
@@ -1116,6 +1166,7 @@ void __fastcall TSessionData::SetPublicKeyFile(AnsiString value)
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetDefaultLogFileName()
 {
+  // not used anymore
   return IncludeTrailingBackslash(SystemTemporaryDirectory()) +
     MakeValidFileName(SessionName) + ".log";
 }
@@ -1444,6 +1495,11 @@ TAutoSwitch __fastcall TSessionData::GetSFTPBug(TSftpBug Bug) const
 void __fastcall TSessionData::SetSCPLsFullTime(TAutoSwitch value)
 {
   SET_SESSION_PROPERTY(SCPLsFullTime);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetColor(int value)
+{
+  SET_SESSION_PROPERTY(Color);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetInfoTip()

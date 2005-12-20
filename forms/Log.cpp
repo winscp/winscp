@@ -13,6 +13,7 @@
 #include "Glyphs.h"
 #include "NonVisual.h"
 #include "WinConfiguration.h"
+#include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "LogMemo"
@@ -137,7 +138,7 @@ void __fastcall TLogForm::FormClose(TObject * /*Sender*/, TCloseAction & Action)
     WinConfiguration->LogView = lvNone;
     Action = caFree;
   }
-  WinConfiguration->LogWindowParams = WinConfiguration->StoreForm(this);
+  WinConfiguration->LogWindowParams = StoreForm(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLogForm::SetSessionLog(TSessionLog * value)
@@ -180,7 +181,7 @@ void __fastcall TLogForm::CreateParams(TCreateParams & Params)
   {
     FFormRestored = True;
     assert(Configuration);
-    WinConfiguration->RestoreForm(WinConfiguration->LogWindowParams, this);
+    RestoreForm(WinConfiguration->LogWindowParams, this);
   }
   TForm::CreateParams(Params);
   Params.WndParent = GetDesktopWindow();

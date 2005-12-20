@@ -950,7 +950,7 @@ int askappend(void *frontend, Filename filename,
 	      void (*callback)(void *ctx, int result), void *ctx);
 
 #ifdef MPEXT
-void display_banner(void *frontend, const char* banner, int size);
+void display_banner(void *frontend, const char* banner, int size, int* log);
 #endif
 /*
  * Exports from console.c (that aren't equivalents to things in

@@ -6995,11 +6995,16 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		if (flags & (FLAG_VERBOSE | FLAG_INTERACTIVE)) {
 		    ssh_pkt_getstring(pktin, &banner, &size);
 		    if (banner)
+		    #ifdef MPEXT
+		    {
+		        int log = 1;
+		        display_banner(ssh->frontend, banner, size, &log);
+		        if (log)
+		    #endif
 			c_write_untrusted(ssh, banner, size);
-			#ifdef MPEXT
-			if (banner)
-				display_banner(ssh->frontend, banner, size);
-			#endif
+		    #ifdef MPEXT
+		    }
+		    #endif
 		}
 		crWaitUntilV(pktin);
 	    }

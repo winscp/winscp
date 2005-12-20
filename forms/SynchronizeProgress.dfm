@@ -3,7 +3,7 @@ object SynchronizeProgressForm: TSynchronizeProgressForm
   Top = 260
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
-  Caption = 'Synchronization'
+  Caption = 'Synchronization X'
   ClientHeight = 127
   ClientWidth = 370
   Color = clBtnFace

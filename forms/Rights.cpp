@@ -17,8 +17,20 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
 {
   FOnChange = NULL;
   FAllowAddXToDirectories = true;
+  FPopup = false;
+  FPopupParent = NULL;
+  FDefaultButton = NULL;
+  FCancelButton = NULL;
   // to avoid duplication of reference in forms that uses the frame
   PopupMenu = RightsPopup;
+
+  #define COPY_HINT(R) \
+    Checks[TRights::rrGroup ## R]->Hint = Checks[TRights::rrUser ## R]->Hint; \
+    Checks[TRights::rrOther ## R]->Hint = Checks[TRights::rrUser ## R]->Hint;
+  COPY_HINT(Read);
+  COPY_HINT(Write);
+  COPY_HINT(Exec);
+  #undef COPY_HINT
 }
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()
@@ -145,6 +157,7 @@ void __fastcall TRightsFrame::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::UpdateControls()
 {
+  Color = (FPopup ? clWindow : clBtnFace);
   DirectoriesXCheck->Visible = AllowAddXToDirectories;
   EnableControl(DirectoriesXCheck,
     Enabled && !((Rights.NumberSet & TRights::rfExec) == TRights::rfExec));
@@ -285,6 +298,171 @@ void __fastcall TRightsFrame::RightsActionsUpdate(TBasicAction *Action,
   {
     Handled = false;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::CreateParams(TCreateParams & Params)
+{
+  TFrame::CreateParams(Params);
+  if (FPopup)
+  {
+    Params.Style |= WS_BORDER;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::CreateWnd()
+{
+  if (FPopup)
+  {
+    Width += 2 * GetSystemMetrics(SM_CXBORDER);
+    Height += 2 * GetSystemMetrics(SM_CYBORDER);
+  }
+  TFrame::CreateWnd();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::SetPopup(bool value)
+{
+  if (Popup != value)
+  {
+    FPopup = value;
+    Visible = !FPopup;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::DoCloseUp()
+{
+  Hide();
+
+  if (FDefaultButton != NULL)
+  {
+    FDefaultButton->Default = true;
+    FDefaultButton = NULL;
+  }
+
+  if (FCancelButton != NULL)
+  {
+    FCancelButton->Cancel = true;
+    FCancelButton = NULL;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::DoExit()
+{
+  // this is bit hack to make frame hide when ComboEdit button is pressed while
+  // from is poped-up already.
+  if (FPopup && !IsAncestor(Screen->ActiveControl, FPopupParent))
+  {
+    DoCloseUp();
+  }
+  TFrame::DoExit();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRightsFrame::IsAncestor(TControl * Control, TControl * Ancestor)
+{
+  while ((Control != NULL) &&
+         (Control->Parent != Ancestor))
+  {
+    Control = Control->Parent;
+  }
+  return (Control != NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::CMDialogKey(TCMDialogKey & Message)
+{
+  if (FPopup && Visible &&
+      ((Message.CharCode == VK_RETURN) ||
+       (Message.CharCode == VK_ESCAPE)) &&
+      KeyDataToShiftState(Message.KeyData).Empty())
+  {
+    CloseUp();
+    Message.Result = 1;
+  }
+  else
+  {
+    TFrame::Dispatch(&Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::CMCancelMode(TCMCancelMode & Message)
+{
+  if (FPopup && Visible &&
+      ((Message.Sender == NULL) ||
+       (!IsAncestor(Message.Sender, this) && 
+        !IsAncestor(Message.Sender, FPopupParent) &&
+        (Message.Sender != this))))
+  {
+    CloseUp();
+  }
+  TFrame::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::Dispatch(void * Message)
+{
+  TMessage & AMessage = *static_cast<TMessage *>(Message);
+
+  switch (AMessage.Msg)
+  {
+    case CM_CANCELMODE:
+      CMCancelMode(*(TCMCancelMode *)Message);
+      break;
+
+    case CM_DIALOGKEY:
+      CMDialogKey(*(TCMDialogKey *)Message);
+      break;
+
+    default:
+      TFrame::Dispatch(Message);
+      break;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::DropDown()
+{
+  TCustomForm * Form = GetParentForm(this);
+  // due to lack of better idea, we clear "default" and "cancel" flags of respective
+  // form buttons to prevent them to handle ESC/ENTER keys.
+  for (int Index = 0; Index < Form->ControlCount; Index++)
+  {
+    TButton * Button = dynamic_cast<TButton *>(Form->Controls[Index]);
+    if (Button != NULL)
+    {
+      if (Button->Default)
+      {
+        assert(FDefaultButton == NULL);
+        FDefaultButton = Button;
+        Button->Default = false;
+      }
+
+      if (Button->Cancel)
+      {
+        assert(FCancelButton == NULL);
+        FCancelButton = Button;
+        Button->Cancel = false;
+      }
+    }
+  }
+
+  TPoint Origin(PopupParent->Left, PopupParent->Top + PopupParent->Height);
+  Origin = Parent->ScreenToClient(PopupParent->Parent->ClientToScreen(Origin));
+  if (Origin.x + Width > Parent->ClientWidth)
+  {
+    Origin.x += PopupParent->Width - Width;
+  }
+  Left = Origin.x;
+  Top = Origin.y;
+  Show();
+  SetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::CloseUp()
+{
+  assert(FPopup);
+  assert(Visible);
+  if (!Focused())
+  {
+    // this can happen only if called from on-click handler of drop down button
+    DoCloseUp();
+  }
+  FPopupParent->SetFocus();
 }
 //---------------------------------------------------------------------------
 

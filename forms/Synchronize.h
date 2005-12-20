@@ -62,6 +62,7 @@ private:
   TSynchronizeStartStopEvent FOnStartStop;
   TGetSynchronizeOptionsEvent FOnGetOptions;
   int FOptions;
+  int FCopyParamAttrs;
   bool FSynchronizing;
   bool FMinimizedByMe;
   bool FAbort;
@@ -90,7 +91,7 @@ protected:
   void __fastcall CopyParamClick(TObject * Sender);
   void __fastcall ClearLog();
   void __fastcall CopyLog();
-  static int __fastcall CopyParamCustomDialogOptions();
+  int __fastcall ActualCopyParamAttrs();
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner,
@@ -102,6 +103,7 @@ public:
   __property TSynchronizeParamType Params = { read = GetParams, write = SetParams };
   __property bool SaveSettings = { read = GetSaveSettings, write = SetSaveSettings };
   __property int Options = { read = FOptions, write = SetOptions };
+  __property int CopyParamAttrs = { read = FCopyParamAttrs, write = FCopyParamAttrs };
   __property TCopyParamType CopyParams = { read = GetCopyParams, write = SetCopyParams };
 
 protected:

@@ -27,7 +27,8 @@ const int WM_USER_STOP = WM_WINSCP_USER + 2;
 //---------------------------------------------------------------------------
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
-  bool & SaveSettings, int Options, TGetSynchronizeOptionsEvent OnGetOptions)
+  bool & SaveSettings, int Options, int CopyParamAttrs,
+  TGetSynchronizeOptionsEvent OnGetOptions)
 {
   bool Result;
   TSynchronizeDialog * Dialog = new TSynchronizeDialog(Application,
@@ -35,6 +36,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   try
   {
     Dialog->Options = Options;
+    Dialog->CopyParamAttrs = CopyParamAttrs;
     Dialog->Params = Params;
     Dialog->CopyParams = *CopyParams;
     Dialog->SaveSettings = SaveSettings;
@@ -108,7 +110,7 @@ void __fastcall TSynchronizeDialog::UpdateControls()
   EnableControl(SynchronizeSelectedOnlyCheck,
     OptionsGroup->Enabled && FLAGSET(FOptions, soAllowSelectedOnly));
 
-  AnsiString InfoStr = CopyParams.GetInfoStr("; ");
+  AnsiString InfoStr = CopyParams.GetInfoStr("; ", ActualCopyParamAttrs());
   CopyParamLabel->Caption = InfoStr;
   CopyParamLabel->Hint = InfoStr;
   CopyParamLabel->ShowHint =
@@ -409,17 +411,21 @@ void __fastcall TSynchronizeDialog::SetCopyParams(const TCopyParamType & value)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-int __fastcall TSynchronizeDialog::CopyParamCustomDialogOptions()
+int __fastcall TSynchronizeDialog::ActualCopyParamAttrs()
 {
-  return cfAllowTransferMode | cfAllowExcludeMask | cfAllowClearArchive | cfDisablePreserveTime;
+  return FCopyParamAttrs | cpaNoPreserveTime;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
   assert(FLAGCLEAR(FOptions, soDoNotUsePresets));
-  if (CopyParamListPopupClick(Sender, FCopyParams, FPreset,
-        CopyParamCustomDialogOptions()))
+  // PreserveTime is forced for some settings, but avoid hard-setting it until
+  // use really confirms it on cutom dialog
+  TCopyParamType ACopyParams = CopyParams;
+  if (CopyParamListPopupClick(Sender, ACopyParams, FPreset,
+        ActualCopyParamAttrs()))
   {
+    FCopyParams = ACopyParams;
     UpdateControls();
   }
 }
@@ -429,6 +435,9 @@ void __fastcall TSynchronizeDialog::CopyParamGroupContextPopup(
 {
   if (FLAGCLEAR(FOptions, soDoNotUsePresets))
   {
+    // We pass in FCopyParams, although it may not be the exact copy param
+    // that will be used (because of Preservetime). The reason is to
+    // display checkbox next to user-selected preset
     CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), FPresetsMenu,
       FCopyParams, FPreset, CopyParamClick, cplCustomize | cplCustomizeDefault);
     Handled = true;
@@ -437,8 +446,12 @@ void __fastcall TSynchronizeDialog::CopyParamGroupContextPopup(
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::CopyParamGroupDblClick(TObject * /*Sender*/)
 {
-  if (DoCopyParamCustomDialog(FCopyParams, CopyParamCustomDialogOptions()))
+  // PreserveTime is forced for some settings, but avoid hard-setting it until
+  // use really confirms it on cutom dialog
+  TCopyParamType ACopyParams = CopyParams;
+  if (DoCopyParamCustomDialog(ACopyParams, ActualCopyParamAttrs()))
   {
+    FCopyParams = ACopyParams;
     UpdateControls();
   }
 }

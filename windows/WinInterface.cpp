@@ -8,6 +8,7 @@
 #include <Net.h>
 #include <SecureShell.h>
 #include <ScpMain.h>
+#include <TextsCore.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <Interface.h>
@@ -20,6 +21,12 @@
 #define mrCustom (mrYesToAll + 1)
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+const int ConnectionStatusStrings[] =
+  { STATUS_CLOSED, STATUS_INITWINSOCK, STATUS_LOOKUPHOST, STATUS_CONNECT,
+    STATUS_AUTHENTICATE, STATUS_AUTHENTICATED, STATUS_STARTUP,
+    STATUS_OPEN_DIRECTORY, STATUS_READY };
+extern const int ConnectionStatusStringsCount = LENOF(ConnectionStatusStrings);
 //---------------------------------------------------------------------------
 TMessageParams::TMessageParams(unsigned int AParams)
 {
@@ -39,6 +46,8 @@ TMessageParams::TMessageParams(const TQueryParams * AParams)
     TimerEvent = AParams->TimerEvent;
     TimerMessage = AParams->TimerMessage;
     TimerAnswers = AParams->TimerAnswers;
+    Timeout = AParams->Timeout;
+    TimeoutAnswer = AParams->TimeoutAnswer;
 
     if (FLAGSET(AParams->Params, qpNeverAskAgainCheck))
     {
@@ -56,11 +65,13 @@ inline void TMessageParams::Reset()
   Params = 0;
   Aliases = NULL;
   AliasesCount = 0;
-  Timer = NULL;
+  Timer = 0;
   TimerEvent = NULL;
   TimerMessage = "";
   TimerAnswers = 0;
   NewerAskAgainAnswer = 0;
+  Timeout = 0;
+  TimeoutAnswer = 0;
 }
 //---------------------------------------------------------------------------
 inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
@@ -180,18 +191,9 @@ int MapResult(int Result, unsigned int Answers)
 //---------------------------------------------------------------------------
 TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
   TStrings * MoreMessages, TQueryType Type, int Answers, AnsiString HelpKeyword,
-  const TMessageParams * Params)
+  const TMessageParams * Params, TButton *& TimeoutButton)
 {
-  // Original int HelpContext parameter to message boxes functions 
-  // were replaced with AnsiString HelpKeyword. We need to find all calls
-  // that passed 0
-  // TODO: Eventually remote this all.
-  assert(HelpKeyword != "0");
-  if (HelpKeyword == "0")
-  {
-    HelpKeyword = HELP_NONE;
-  }
-
+  TMsgDlgBtn TimeoutResult = mbHelp;
   TMsgDlgButtons Buttons;
   TMsgDlgType DlgType;
 
@@ -204,7 +206,7 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
   }
 
   int AAnswers = Answers;
-  int Answer = 0x01;
+  unsigned int Answer = 0x01;
   while (AAnswers > 0)
   {
     if ((AAnswers & Answer) != 0)
@@ -213,6 +215,11 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
       if (MapButton(Answer, Button))
       {
         Buttons << Button;
+        if ((Params != NULL) && (Params->Timeout > 0) &&
+            (Params->TimeoutAnswer == Answer))
+        {
+          TimeoutResult = Button;
+        }
       }
       AAnswers &= ~Answer;
     }
@@ -234,7 +241,8 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
 
   if ((Params == NULL) || (Params->Aliases == NULL))
   {
-    Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons);
+    Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons,
+      NULL, 0, TimeoutResult, &TimeoutButton);
   }
   else
   {
@@ -249,7 +257,7 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
         Aliases[i].Alias = Params->Aliases[i].Alias;
       }
       Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons,
-        Aliases, Params->AliasesCount);
+        Aliases, Params->AliasesCount, TimeoutResult, &TimeoutButton);
     }
     __finally
     {
@@ -278,11 +286,11 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
         {
           if (Control->Anchors.Contains(akTop))
           {
-            Control->Height = Control->Height - VertSpace; 
+            Control->Height = Control->Height - VertSpace;
           }
           else
           {
-            Control->Top = Control->Top - VertSpace; 
+            Control->Top = Control->Top - VertSpace;
           }
         }
       }
@@ -347,7 +355,7 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageP
 
     if (NeverAskAgainCheck->Checked)
     {
-      bool PossitiveAnswer = 
+      bool PossitiveAnswer =
         (Params->NewerAskAgainAnswer > 0) ?
           (Answer == Params->NewerAskAgainAnswer) :
           (Answer == qaYes || Answer == qaOK || Answer == qaYesToAll);
@@ -402,36 +410,91 @@ void __fastcall TMessageTimer::DoTimer(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+class TMessageTimeout : public TTimer
+{
+public:
+  __fastcall TMessageTimeout(TComponent * AOwner, unsigned int Timeout,
+    TButton * Button);
+
+protected:
+  unsigned int FTimeout;
+  TButton * FButton;
+  AnsiString FOrigCaption;
+
+  void __fastcall DoTimer(TObject * Sender);
+  void __fastcall UpdateButton();
+};
+//---------------------------------------------------------------------------
+__fastcall TMessageTimeout::TMessageTimeout(TComponent * AOwner,
+  unsigned int Timeout, TButton * Button) :
+  TTimer(AOwner), FTimeout(Timeout), FButton(Button)
+{
+  OnTimer = DoTimer;
+  Interval = 1000;
+  FOrigCaption = FButton->Caption;
+  UpdateButton();
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageTimeout::UpdateButton()
+{
+  assert(FButton != NULL);
+  FButton->Caption = FMTLOAD(TIMEOUT_BUTTON, (FOrigCaption, int(FTimeout / 1000)));
+}
+//---------------------------------------------------------------------------
+void __fastcall TMessageTimeout::DoTimer(TObject * /*Sender*/)
+{
+  if (FTimeout <= 1000)
+  {
+    assert(FButton != NULL);
+    TForm * Dialog = dynamic_cast<TForm *>(FButton->Parent);
+    assert(Dialog != NULL);
+
+    Dialog->ModalResult = FButton->ModalResult;
+  }
+  else
+  {
+    FTimeout -= 1000;
+    UpdateButton();
+  }
+}
+//---------------------------------------------------------------------------
 int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessages,
   TQueryType Type, int Answers, AnsiString HelpKeyword, const TMessageParams * Params)
 {
   int Result;
   TForm * Dialog = NULL;
   TMessageTimer * Timer = NULL;
+  TMessageTimeout * Timeout = NULL;
   try
   {
     AnsiString AMessage = Message;
-    if ((Params != NULL) && (Params->Timer > 0))
-    {
-      Timer = new TMessageTimer(Application);
-      Timer->Interval = Params->Timer;
-      Timer->Event = Params->TimerEvent;
-      if (Params->TimerAnswers > 0)
-      {
-        Answers = Params->TimerAnswers;
-      }
-      if (!Params->TimerMessage.IsEmpty())
-      {
-        AMessage = Params->TimerMessage;
-      }
-    }
 
+    TButton * TimeoutButton = NULL;
     Dialog = CreateMessageDialogEx(AMessage, MoreMessages, Type, Answers,
-      HelpKeyword, Params);
+      HelpKeyword, Params, TimeoutButton);
 
-    if (Timer != NULL)
+    if (Params != NULL)
     {
-      Timer->Dialog = Dialog;
+      if (Params->Timer > 0)
+      {
+        Timer = new TMessageTimer(Application);
+        Timer->Dialog = Dialog;
+        Timer->Interval = Params->Timer;
+        Timer->Event = Params->TimerEvent;
+        if (Params->TimerAnswers > 0)
+        {
+          Answers = Params->TimerAnswers;
+        }
+        if (!Params->TimerMessage.IsEmpty())
+        {
+          AMessage = Params->TimerMessage;
+        }
+      }
+
+      if (Params->Timeout > 0)
+      {
+        Timeout = new TMessageTimeout(Application, Params->Timeout, TimeoutButton);
+      }
     }
 
     Result = ExecuteMessageDialog(Dialog, Answers, Params);
@@ -445,6 +508,7 @@ int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessag
   {
     delete Dialog;
     delete Timer;
+    delete Timeout;
   }
   return Result;
 }
@@ -486,7 +550,7 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
     MoreMessages = EE->MoreMessages;
   }
   AnsiString Message = TranslateExceptionMessage(E);
-  
+
   return MoreMessageDialog(
     FORMAT(MessageFormat.IsEmpty() ? AnsiString("%s") : MessageFormat, (Message)),
     MoreMessages, Type, Answers, HelpKeyword, Params);
@@ -496,7 +560,7 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
   const AnsiString MessageFormat, int Answers, AnsiString HelpKeyword,
   const TMessageParams * Params)
 {
-  assert((Answers & qaRetry) == 0);
+  assert(FLAGCLEAR(Answers, qaRetry));
   Answers |= qaRetry;
 
   TQueryButtonAlias Aliases[1];
@@ -601,7 +665,7 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
     Item->OnClick = OnClick;
     Menu->Items->Add(Item);
   }
-  
+
   Item = new TMenuItem(Menu);
   Item->Caption = "-";
   Menu->Items->Add(Item);
@@ -611,12 +675,12 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
   Item->Tag = -2;
   Item->OnClick = OnClick;
   Menu->Items->Add(Item);
-  
+
   Menu->Popup(P.x, P.y);
 }
 //---------------------------------------------------------------------------
 bool __fastcall CopyParamListPopupClick(TObject * Sender,
-  TCopyParamType & Param, AnsiString & Preset, int CustomizeOptions)
+  TCopyParamType & Param, AnsiString & Preset, int CopyParamAttrs)
 {
   TMenuItem * Item = dynamic_cast<TMenuItem*>(Sender);
   assert(Item != NULL);
@@ -630,7 +694,7 @@ bool __fastcall CopyParamListPopupClick(TObject * Sender,
   }
   else if (Item->Tag == -3)
   {
-    Result = DoCopyParamCustomDialog(Param, CustomizeOptions);
+    Result = DoCopyParamCustomDialog(Param, CopyParamAttrs);
   }
   else
   {

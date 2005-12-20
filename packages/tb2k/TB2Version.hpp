@@ -21,8 +21,8 @@ namespace Tb2version
 typedef AnsiString TToolbar2000Version;
 
 //-- var, const, procedure ---------------------------------------------------
-#define Toolbar2000Version "2.1.5"
-#define Toolbar2000VersionPropText "Toolbar2000 version 2.1.5"
+#define Toolbar2000Version "2.1.6"
+#define Toolbar2000VersionPropText "Toolbar2000 version 2.1.6"
 extern PACKAGE char *Sig;
 
 }	/* namespace Tb2version */

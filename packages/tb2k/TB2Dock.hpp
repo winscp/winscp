@@ -60,9 +60,6 @@ private:
 	bool FAllowDrag;
 	TTBDockBoundLines FBoundLines;
 	bool FBkgOnToolbars;
-	bool FDragCanSplit;
-	bool FDragSplitting;
-	TTBCustomDockableWindow* FDragToolbar;
 	bool FFixAlign;
 	bool FCommitNewPositions;
 	bool FLimitToOneRow;
@@ -123,9 +120,6 @@ public:
 	int __fastcall GetHighestRow(const bool HighestEffective);
 	int __fastcall GetMinRowSize(const int Row, const TTBCustomDockableWindow* ExcludeControl);
 	__property bool CommitNewPositions = {read=FCommitNewPositions, write=FCommitNewPositions, nodefault};
-	__property bool DragCanSplit = {read=FDragCanSplit, write=FDragCanSplit, nodefault};
-	__property bool DragSplitting = {read=FDragSplitting, write=FDragSplitting, nodefault};
-	__property TTBCustomDockableWindow* DragToolbar = {read=FDragToolbar, write=FDragToolbar};
 	__property int NonClientWidth = {read=FNonClientWidth, nodefault};
 	__property int NonClientHeight = {read=FNonClientHeight, nodefault};
 	__property int ToolbarCount = {read=GetToolbarCount, nodefault};
@@ -327,6 +321,9 @@ private:
 	
 	Classes::TList* FDockForms;
 	bool FSavedAtRunTime;
+	bool FDragMode;
+	bool FDragSplitting;
+	bool FDragCanSplit;
 	bool FSmoothDragging;
 	bool FCloseButtonDown;
 	bool FCloseButtonHover;
@@ -357,10 +354,10 @@ private:
 	void __fastcall DrawDraggingOutline(const HDC DC, const Types::PRect NewRect, const Types::PRect OldRect, const bool NewDocking, const bool OldDocking);
 	void __fastcall RedrawNCArea(void);
 	void __fastcall SetCloseButtonState(bool Pushed);
-	void __fastcall SetInactiveCaption(bool Value);
 	void __fastcall ShowNCContextMenu(const Types::TSmallPoint Pos);
 	void __fastcall Moved(void);
 	bool __fastcall GetShowingState(void);
+	void __fastcall UpdateCaptionState(void);
 	void __fastcall UpdateTopmostFlag(void);
 	void __fastcall UpdateVisibility(void);
 	void __fastcall ReadSavedAtRunTime(Classes::TReader* Reader);
@@ -462,6 +459,8 @@ public:
 	__property int CurrentSize = {read=FCurrentSize, write=FCurrentSize, nodefault};
 	__property int DockPos = {read=FDockPos, write=SetDockPos, default=-1};
 	__property int DockRow = {read=FDockRow, write=SetDockRow, default=0};
+	__property bool DragMode = {read=FDragMode, nodefault};
+	__property bool DragSplitting = {read=FDragSplitting, nodefault};
 	__property int EffectiveDockPos = {read=FEffectiveDockPos, nodefault};
 	__property int EffectiveDockRow = {read=FEffectiveDockRow, nodefault};
 	__property bool Floating = {read=FFloating, write=SetFloating, default=0};

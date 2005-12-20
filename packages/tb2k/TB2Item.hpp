@@ -251,7 +251,7 @@ protected:
 	virtual void __fastcall Loaded(void);
 	virtual bool __fastcall NeedToRecreateViewer(TTBItemViewer* AViewer);
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
-	void __fastcall OpenPopup(const bool SelectFirstItem, const bool TrackRightButton, const Types::TPoint &PopupPoint, const TTBPopupAlignment Alignment);
+	TTBCustomItem* __fastcall OpenPopup(const bool SelectFirstItem, const bool TrackRightButton, const Types::TPoint &PopupPoint, const TTBPopupAlignment Alignment, const bool ReturnClickedItemOnly);
 	void __fastcall RecreateItemViewers(void);
 	DYNAMIC void __fastcall SetChildOrder(Classes::TComponent* Child, int Order);
 	virtual void __fastcall SetName(const AnsiString NewName);
@@ -275,7 +275,7 @@ public:
 	HIDESBASE void __fastcall Insert(int NewIndex, TTBCustomItem* AItem);
 	bool __fastcall IsShortCut(Messages::TWMKey &Message);
 	void __fastcall Move(int CurIndex, int NewIndex);
-	void __fastcall Popup(int X, int Y, bool TrackRightButton, TTBPopupAlignment Alignment = (TTBPopupAlignment)(0x0));
+	TTBCustomItem* __fastcall Popup(int X, int Y, bool TrackRightButton, TTBPopupAlignment Alignment = (TTBPopupAlignment)(0x0), bool ReturnClickedItemOnly = false);
 	void __fastcall PostClick(void);
 	void __fastcall RegisterNotification(TTBItemChangedProc ANotify);
 	HIDESBASE void __fastcall Remove(TTBCustomItem* Item);
@@ -621,6 +621,8 @@ protected:
 	void __fastcall SetAccelsVisibility(bool AShowAccels);
 	void __fastcall SetState(TTBViewState AState);
 	__property TTBDoneActionData DoneActionData = {read=FDoneActionData, write=FDoneActionData};
+	__property bool ShowDownArrow = {read=FShowDownArrow, nodefault};
+	__property bool ShowUpArrow = {read=FShowUpArrow, nodefault};
 	
 public:
 	__fastcall virtual TTBView(Classes::TComponent* AOwner, TTBView* AParentView, TTBCustomItem* AParentItem, Controls::TWinControl* AWindow, bool AIsToolbar, bool ACustomizing, bool AUsePriorityList);
@@ -915,6 +917,13 @@ public:
 };
 
 
+__interface ITBPopupWindow;
+typedef System::DelphiInterface<ITBPopupWindow> _di_ITBPopupWindow;
+__interface INTERFACE_UUID("{E45CBE74-1ECF-44CB-B064-6D45B1924708}") ITBPopupWindow  : public IInterface 
+{
+	
+};
+
 class PASCALIMPLEMENTATION TTBPopupWindow : public Controls::TCustomControl 
 {
 	typedef Controls::TCustomControl inherited;
@@ -944,6 +953,7 @@ protected:
 	DYNAMIC TMetaClass* __fastcall GetViewClass(void);
 	virtual void __fastcall Paint(void);
 	virtual void __fastcall PaintScrollArrows(void);
+	__property Tb2anim::TTBAnimationDirection AnimationDirection = {read=FAnimationDirection, nodefault};
 	
 public:
 	__fastcall virtual TTBPopupWindow(Classes::TComponent* AOwner, const TTBView* AParentView, const TTBCustomItem* AItem, const bool ACustomizing);
@@ -959,6 +969,12 @@ public:
 	#pragma option push -w-inl
 	/* TWinControl.CreateParented */ inline __fastcall TTBPopupWindow(HWND ParentWindow) : Controls::TCustomControl(ParentWindow) { }
 	#pragma option pop
+	
+private:
+	void *__ITBPopupWindow;	/* Tb2item::ITBPopupWindow */
+	
+public:
+	operator ITBPopupWindow*(void) { return (ITBPopupWindow*)&__ITBPopupWindow; }
 	
 };
 
@@ -1028,6 +1044,7 @@ public:
 	__fastcall virtual ~TTBPopupMenu(void);
 	DYNAMIC bool __fastcall IsShortCut(Messages::TWMKey &Message);
 	virtual void __fastcall Popup(int X, int Y);
+	TTBCustomItem* __fastcall PopupEx(int X, int Y, bool ReturnClickedItemOnly = false);
 	
 __published:
 	__property Imglist::TCustomImageList* Images = {read=GetImages, write=SetImages};
@@ -1157,7 +1174,7 @@ static const Shortint tbLineSepOffset = 0x1;
 static const Shortint tbDockedLineSepOffset = 0x4;
 static const Word WM_TB2K_CLICKITEM = 0x500;
 extern PACKAGE Graphics::TFont* ToolbarFont;
-extern PACKAGE void __fastcall ProcessDoneAction(const TTBDoneActionData &DoneActionData);
+extern PACKAGE TTBCustomItem* __fastcall ProcessDoneAction(const TTBDoneActionData &DoneActionData, const bool ReturnClickedItemOnly);
 extern PACKAGE void __fastcall TBInitToolbarSystemFont(void);
 
 }	/* namespace Tb2item */
