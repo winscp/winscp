@@ -853,7 +853,15 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
 
     if (PortNumber != NULL)
     {
-      *PortNumber = HostInfo.IsEmpty() ? -1 : StrToIntDef(DECODE(HostInfo), -1);
+      // expanded from ?: operator, as it caused strange "access violation" errors
+      if (HostInfo.IsEmpty())
+      {
+        *PortNumber = -1;
+      }
+      else
+      {
+        *PortNumber = StrToIntDef(DECODE(HostInfo), -1);
+      }
     }
 
     if (UserName != NULL)

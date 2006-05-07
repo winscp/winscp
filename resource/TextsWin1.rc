@@ -103,6 +103,8 @@ BEGIN
         CONFIRM_DELETE_SESSION, "Are you sure you want to delete stored session '%s'?"
         TOO_MANY_WATCH_DIRECTORIES, "More than %d directories and subdirectories found. Watching for changes in large number of directories can significantly degrade performace of the computer.\n \nDo you want to scan for another up to %d directories?"
         TIMEOUT_BUTTON, "%s (%d s)"
+        CONFIRM_RECYCLE_FILE, "Are you sure you want to move file '%s' to recycle bin?"
+        CONFIRM_RECYCLE_FILES, "Are you sure you want to move %d selected files to recycle bin?"
 
         WIN_INFORMATION_STRINGS, "WIN_INFORMATION"
         APP_CAPTION, "%s - %s"
@@ -154,6 +156,10 @@ BEGIN
         PATH_MASK_HINT, "Mask can be extended with path mask.\nExample: */public_html/*.html\nMask ending with slash matches directories only.\nTo match all directories use */"
         CUSTOM_COMMAND_PATTERNS_HINT, "Patterns:\n!! expands to exclamation mark\n! expands to file name\n!& expands to list of selected files (quoted, space-delimited)\n!?prompt[\\]?default! expands to user-entered value with given prompt and default (optional \\ avoids escaping)\n \nLocal command patterns:\n!^! expands to file name from local panel\n \nExample:\ngrep \"!?Pattern:?!\" !&"
         CLOSED_ON_QUEUE_EMPTY, "All background transfers were finished. Connection was closed."
+        DIRECTORY_READING_CANCELLED, "Reading of remote directory was cancelled."
+        SYNC_DIR_BROWSE_TOGGLE, "Synchronized browsing was turned %s.|on|off"
+        SHOW_HIDDEN_FILES_TOGGLE, "Showing of hidden files was turned %s.|on|off"
+        AUTO_READ_DIRECTORY_TOGGLE, "Automatic refresh of remote directory after operation was turned %s.|on|off"
 
         WIN_STATUS_STRINGS, "WIN_STATUS_STRINGS"
         STATUS_CLOSED, "Connection terminated."
@@ -247,8 +253,6 @@ BEGIN
         MOVE_BOOKMARK_PROMPT, "New folder name:"
         SAVE_SESSION_CAPTION, "Save session as"
         SAVE_SESSION_PROMPT, "&Save session as:"
-        RENAME_BOOKMARK_CAPTION, "Rename Location Profile"
-        RENAME_BOOKMARK_PROMPT, "New profile name"
         PROGRESS_CUSTOM_COMAND, "Executing custom command"
         CUSTOM_COMMAND_HINT, "Execute custom command '%s'"
         LOGIN_BUG_ON, "On"
@@ -338,7 +342,7 @@ BEGIN
         AUTHENTICATION_BANNER, "Authentication Banner"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000-2005 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2006 Martin Prikryl"
         HOMEPAGE_URL, "http://winscp.net/"
         HISTORY_URL, "http://winscp.net/eng/docs/history"
         REQUIREMENTS_URL, "http://winscp.net/eng/docs/requirements"

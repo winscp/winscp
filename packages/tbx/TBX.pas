@@ -2178,13 +2178,17 @@ begin
     if SendMessage(WindowHandle, WM_TB2K_POPUPSHOWING, TPS_ANIMSTART, 0) = 0 then
     begin
       MenuAni := TBXMenuAnimation.MenuAnimation;
-      AniDir := TTBPopupWindowAccess(Self).AnimationDirection;
-      if MenuAni = maUnfold then
-        if [tbadDown, tbadUp] * AniDir <> []
-          then Include(AniDir, tbadRight)
-          else Include(AniDir, tbadDown);
-      TBStartAnimation(WindowHandle, MenuAni = maFade, AniDir);
-      Exit;
+      { MP (do not animate if disallowed by system-wide config) }
+      if MenuAni <> maNone then
+      begin
+        AniDir := TTBPopupWindowAccess(Self).AnimationDirection;
+        if MenuAni = maUnfold then
+          if [tbadDown, tbadUp] * AniDir <> []
+            then Include(AniDir, tbadRight)
+            else Include(AniDir, tbadDown);
+        TBStartAnimation(WindowHandle, MenuAni = maFade, AniDir);
+        Exit;
+      end;
     end;
   end;
   {$ENDIF}
@@ -3777,9 +3781,9 @@ var IsWindows2K: Boolean;
 begin
   Result := [amNone];
   IsWindows2K := (Win32Platform = VER_PLATFORM_WIN32_NT) and
-    CheckWin32Version(5);
+    TBXCheckWin32Version(5); { MP }
   if IsWindows2K or ((Win32Platform = VER_PLATFORM_WIN32_WINDOWS) and
-    CheckWin32Version(4, 10){Win98}) then
+    TBXCheckWin32Version(4, 10){Win98}) { MP } then
       Result := Result+ [amSysDefault, amRandom, amUnfold, amSlide];
   if IsWindows2K then
     Include(Result, amFade);

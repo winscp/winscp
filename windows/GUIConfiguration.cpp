@@ -74,6 +74,7 @@ void __fastcall TGUICopyParamType::Load(THierarchicalStorage * Storage)
 
   Queue = Storage->ReadBool("Queue", Queue);
   QueueNoConfirmation = Storage->ReadBool("QueueNoConfirmation", QueueNoConfirmation);
+  NewerOnly = Storage->ReadBool("NewerOnly", NewerOnly);
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage)
@@ -82,6 +83,7 @@ void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage)
 
   Storage->WriteBool("Queue", Queue);
   Storage->WriteBool("QueueNoConfirmation", QueueNoConfirmation);
+  Storage->WriteBool("NewerOnly", NewerOnly);
 }
 //---------------------------------------------------------------------------
 TGUICopyParamType & __fastcall TGUICopyParamType::operator =(const TCopyParamType & rhp)
@@ -587,7 +589,7 @@ void __fastcall TGUIConfiguration::DefaultLocalized()
       FCopyParamList->Add(LoadStr(COPY_PARAM_PRESET_BINARY), CopyParam, NULL);
 
       CopyParam = new TCopyParamType(FDefaultCopyParam);
-      CopyParam->ExcludeFileMask.Masks = "*.bak; *.tmp; ~$*; *.wbk";
+      CopyParam->ExcludeFileMask.Masks = "*.bak; *.tmp; ~$*; *.wbk; *~; #*; .#*";
       CopyParam->NegativeExclude = false; // just for sure
       FCopyParamList->Add(LoadStr(COPY_PARAM_PRESET_EXCLUDE), CopyParam, NULL);
     }

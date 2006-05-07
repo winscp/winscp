@@ -40,7 +40,7 @@ TSessionData * GetLoginData(AnsiString SessionName, AnsiString & DownloadFile)
   return Data;
 }
 //---------------------------------------------------------------------------
-void __fastcall Upload(TTerminal * Terminal, TStrings * FileList)
+void __fastcall Upload(TTerminal * Terminal, TStrings * FileList, bool UseDefaults)
 {
   AnsiString TargetDirectory;
   TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
@@ -50,7 +50,8 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList)
   int Options = coDisableQueue |
     (!Terminal->IsCapable[fcNewerOnlyUpload] ? coDisableNewerOnly : 0);
   int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Upload;
-  if (DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
+  if (UseDefaults ||
+      DoCopyDialog(true, false, FileList, TargetDirectory, &CopyParam, Options,
         CopyParamAttrs, NULL))
   {
     int Params = (CopyParam.NewerOnly ? cpNewerOnly : 0);
@@ -58,7 +59,8 @@ void __fastcall Upload(TTerminal * Terminal, TStrings * FileList)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall Download(TTerminal * Terminal, const AnsiString FileName)
+void __fastcall Download(TTerminal * Terminal, const AnsiString FileName,
+  bool UseDefaults)
 {
   AnsiString TargetDirectory;
   TGUICopyParamType CopyParam = GUIConfiguration->DefaultCopyParam;
@@ -82,7 +84,8 @@ void __fastcall Download(TTerminal * Terminal, const AnsiString FileName)
 
     int Options = coDisableQueue;
     int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).Download;
-    if (DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam,
+    if (UseDefaults ||
+        DoCopyDialog(false, false, FileList, TargetDirectory, &CopyParam,
           Options, CopyParamAttrs, NULL))
     {
       Terminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, 0);
@@ -122,7 +125,7 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
 }
 //---------------------------------------------------------------------------
 void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
-  TStrings * CommandParams)
+  TStrings * CommandParams, bool UseDefaults)
 {
   AnsiString LocalDirectory;
   AnsiString RemoteDirectory;
@@ -133,7 +136,7 @@ void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * S
   // bit ugly
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
   if (ScpExplorer->DoFullSynchronizeDirectories(LocalDirectory,
-        RemoteDirectory, Mode, SaveMode))
+        RemoteDirectory, Mode, SaveMode, UseDefaults))
   {
     if (SaveMode)
     {
@@ -149,14 +152,14 @@ void __fastcall FullSynchronize(TTerminal * Terminal, TCustomScpExplorerForm * S
 }
 //---------------------------------------------------------------------------
 void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpExplorer,
-  TStrings * CommandParams)
+  TStrings * CommandParams, bool UseDefaults)
 {
   AnsiString LocalDirectory;
   AnsiString RemoteDirectory;
 
   SynchronizeDirectories(Terminal, CommandParams, LocalDirectory, RemoteDirectory);
 
-  ScpExplorer->DoSynchronizeDirectories(LocalDirectory, RemoteDirectory);
+  ScpExplorer->DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, UseDefaults);
   Abort();
 }
 //---------------------------------------------------------------------------
@@ -197,7 +200,8 @@ int __fastcall Execute(TProgramParams * Params)
   }
 
   bool Help = Params->FindSwitch("help") || Params->FindSwitch("h") || Params->FindSwitch("?");
-  if (Help || Params->FindSwitch("Console"))
+  if (Help || Params->FindSwitch("Console") || Params->FindSwitch("script") ||
+      Params->FindSwitch("command"))
   {
     return Console(Params, Help);
   }
@@ -269,6 +273,7 @@ int __fastcall Execute(TProgramParams * Params)
       ParamCommand = pcNone;
       AnsiString AutoStartSession;
       AnsiString DownloadFile;
+      bool UseDefaults = false;
 
       // do not check for temp dirs for service tasks (like RegisterAsUrlHandler)
       if (OnlyInstance &&
@@ -281,6 +286,11 @@ int __fastcall Execute(TProgramParams * Params)
 
       if (Params->Count > 0)
       {
+        if (Params->FindSwitch("Defaults"))
+        {
+          UseDefaults = true;
+        }
+
         if (Params->FindSwitch("Upload", CommandParams))
         {
           ParamCommand = pcUpload;
@@ -368,21 +378,22 @@ int __fastcall Execute(TProgramParams * Params)
                   TerminalManager->ScpExplorer = ScpExplorer;
                   if (ParamCommand == pcUpload)
                   {
-                    Upload(TerminalManager->ActiveTerminal, CommandParams);
+                    Upload(TerminalManager->ActiveTerminal, CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcFullSynchronize)
                   {
                     FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
-                      CommandParams);
+                      CommandParams, UseDefaults);
                   }
                   else if (ParamCommand == pcSynchronize)
                   {
                     Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
-                      CommandParams);
+                      CommandParams, UseDefaults);
                   }
                   else if (!DownloadFile.IsEmpty())
                   {
-                    Download(TerminalManager->ActiveTerminal, DownloadFile);
+                    Download(TerminalManager->ActiveTerminal, DownloadFile,
+                      UseDefaults);
                   }
 
                   CALLSTACK;

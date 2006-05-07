@@ -6,12 +6,11 @@
     <PROJECT value="..\lib\DriveDir_B5.bpl"/>
     <OBJFILES value="DriveDir_B5.obj &quot;filemng\DirView.obj&quot; &quot;filemng\DriveView.obj&quot; 
       &quot;filemng\FileOperator.obj&quot; &quot;filemng\IEComboBox.obj&quot; &quot;filemng\BaseUtils.obj&quot; 
-      &quot;filemng\FileChanges.obj&quot; &quot;filemng\MaskSearch.obj&quot; &quot;filemng\IEListView.obj&quot; 
-      &quot;filemng\IEDriveInfo.obj&quot; &quot;filemng\ShellDialogs.obj&quot; 
-      &quot;filemng\DirViewColProperties.obj&quot; &quot;filemng\CustomDirView.obj&quot; 
-      &quot;filemng\CustomUnixDirView.obj&quot; &quot;filemng\UnixDirViewColProperties.obj&quot; 
-      &quot;filemng\CustomPathComboBox.obj&quot; &quot;filemng\IEPathComboBox.obj&quot; 
-      &quot;filemng\ListExt.obj&quot; &quot;filemng\CustomDriveView.obj&quot;"/>
+      &quot;filemng\FileChanges.obj&quot; &quot;filemng\MaskSearch.obj&quot; &quot;filemng\IEDriveInfo.obj&quot; 
+      &quot;filemng\ShellDialogs.obj&quot; &quot;filemng\DirViewColProperties.obj&quot; 
+      &quot;filemng\CustomDirView.obj&quot; &quot;filemng\CustomUnixDirView.obj&quot; 
+      &quot;filemng\UnixDirViewColProperties.obj&quot; &quot;filemng\CustomPathComboBox.obj&quot; 
+      &quot;filemng\IEPathComboBox.obj&quot; &quot;filemng\ListExt.obj&quot; &quot;filemng\CustomDriveView.obj&quot;"/>
     <RESFILES value="DriveDir_B5.res &quot;filemng\DirView.dcr&quot; 
       &quot;filemng\DriveView.dcr&quot; &quot;filemng\FileOperator.dcr&quot; 
       &quot;filemng\IEComboBox.dcr&quot;"/>
@@ -66,7 +65,6 @@
       <FILE FILENAME="filemng\BaseUtils.pas" FORMNAME="" UNITNAME="BaseUtils" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\FileChanges.pas" FORMNAME="" UNITNAME="FileChanges" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\MaskSearch.pas" FORMNAME="" UNITNAME="MaskSearch" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="filemng\IEListView.pas" FORMNAME="" UNITNAME="IEListView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\IEDriveInfo.pas" FORMNAME="" UNITNAME="IEDriveInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\ShellDialogs.pas" FORMNAME="" UNITNAME="ShellDialogs" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\DirViewColProperties.pas" FORMNAME="" UNITNAME="DirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

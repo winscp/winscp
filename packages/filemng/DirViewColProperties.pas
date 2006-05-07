@@ -3,27 +3,17 @@ unit DirViewColProperties;
 interface
 
 uses
-  Classes, ComCtrls, ListViewColProperties;
+  Classes, ComCtrls, IEListView;
 
 type
-  TCustomDirViewColProperties = class(TCustomListViewColProperties)
-  private
-    function GetSortAscending: Boolean;
-    function GetSortByExtension: Boolean;
-    procedure SetSortColumn(Value: Integer);
-    function GetSortColumn: Integer;
-    function GetSortStr: string;
-    procedure SetSortAscending(Value: Boolean);
-    procedure SetSortByExtension(Value: Boolean);
-    procedure SetSortStr(Value: string);
-  public
-    property SortAscending: Boolean read GetSortAscending write SetSortAscending default True;
-    property SortByExtension: Boolean read GetSortByExtension write SetSortByExtension default False;
-    property SortColumn: Integer read GetSortColumn write SetSortColumn;
-    property SortStr: string read GetSortStr write SetSortStr stored False;
+  TCustomDirViewColProperties = class(TIEListViewColProperties)
   protected
-    function GetParamsStr: string; override;
-    procedure SetParamsStr(Value: string); override;
+    function GetSortByExtension: Boolean;
+    procedure SetSortByExtension(Value: Boolean);
+    function GetSortStr: string; override;
+    procedure SetSortStr(Value: string); override;
+  public
+    property SortByExtension: Boolean read GetSortByExtension write SetSortByExtension default False;
   end;
 
 resourcestring
@@ -111,43 +101,13 @@ type
 implementation
 
 uses
-  SysUtils, CommCtrl, IEListView, CustomDirView;
+  SysUtils, CommCtrl, ListViewColProperties, CustomDirView;
 
   { TCustomDirViewColProperties }
-
-procedure TCustomDirViewColProperties.SetParamsStr(Value: string);
-begin
-  SortStr := CutToChar(Value, '|', True);
-  inherited SetParamsStr(Value);
-end;
-
-procedure TCustomDirViewColProperties.SetSortAscending(Value: Boolean);
-begin
-  TIEListView(FListView).SortAscending := Value;
-end;
 
 procedure TCustomDirViewColProperties.SetSortByExtension(Value: Boolean);
 begin
   TCustomDirView(FListView).SortByExtension := Value;
-end;
-
-procedure TCustomDirViewColProperties.SetSortColumn(Value: Integer);
-begin
-  if SortColumn <> Value then
-  begin
-    TIEListView(FListView).SortColumn := Value;
-    Changed;
-  end;
-end;
-
-function TCustomDirViewColProperties.GetParamsStr: string;
-begin
-  Result := Format('%s|%s', [SortStr, inherited GetParamsStr]);
-end;
-
-function TCustomDirViewColProperties.GetSortAscending: Boolean;
-begin
-  Result := TIEListView(FListView).SortAscending;
 end;
 
 function TCustomDirViewColProperties.GetSortByExtension: Boolean;
@@ -155,24 +115,17 @@ begin
   Result := TCustomDirView(FListView).SortByExtension;
 end;
 
-function TCustomDirViewColProperties.GetSortColumn: Integer;
-begin
-  Result := TIEListView(FListView).SortColumn;
-end;
-
 procedure TCustomDirViewColProperties.SetSortStr(Value: string);
-var
-  ASortColumn: Integer;
 begin
-  ASortColumn := StrToIntDef(CutToChar(Value, ';', True), SortColumn);
-  if ASortColumn < Count then SortColumn := ASortColumn;
-  SortAscending := Boolean(StrToIntDef(CutToChar(Value, ';', True), Integer(SortAscending)));
+  inherited;
+  CutToChar(Value, ';', True);
+  CutToChar(Value, ';', True);
   SortByExtension := Boolean(StrToIntDef(CutToChar(Value, ';', True), Integer(SortByExtension)));
 end;
 
 function TCustomDirViewColProperties.GetSortStr: string;
 begin
-  Result := Format('%d;%d;%d', [SortColumn, Integer(SortAscending), Integer(SortByExtension)]);
+  Result := Format('%s;%d', [inherited GetSortStr, Integer(SortByExtension)]);
 end;
 
 { TDirViewColProperties }

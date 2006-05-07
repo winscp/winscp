@@ -512,11 +512,20 @@ void __fastcall TLocationProfilesDialog::FormShow(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::ProfilesViewKeyDown(TObject * /*Sender*/,
-      WORD &Key, TShiftState /*Shift*/)
+  WORD & Key, TShiftState /*Shift*/)
 {
-  if (RemoveBookmarkButton->Enabled && (Key == VK_DELETE))
+  if (!ProfilesView->IsEditing())
   {
-    RemoveBookmarkButtonClick(NULL);
+    if (RemoveBookmarkButton->Enabled && (Key == VK_DELETE))
+    {
+      RemoveBookmarkButtonClick(NULL);
+      Key = 0;
+    }
+    else if (RenameButton->Enabled && (Key == VK_F2))
+    {
+      RenameButtonClick(NULL);
+      Key = 0;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -604,67 +613,12 @@ void __fastcall TLocationProfilesDialog::MoveToButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::RenameButtonClick(TObject * /*Sender*/)
 {
-  assert(ProfilesView->Selected);
-  TTreeNode * Node = ProfilesView->Selected;
-  AnsiString Name = Node->Text;
-  if (InputDialog(LoadStr(RENAME_BOOKMARK_CAPTION), LoadStr(RENAME_BOOKMARK_PROMPT),
-        Name, HELP_LOCATION_PROFILE_RENAME) && (Name != Node->Text))
+  assert(ProfilesView->Selected != NULL);
+  if (ProfilesView->Selected != NULL)
   {
-    if (Node->Data)
-    {
-      if (Name.IsEmpty() || (StrToIntDef(Name, -123) != -123))
-      {
-        throw Exception(FMTLOAD(BOOKMARK_INVALID_NAME, (Name)));
-      }
-      // raises exception in case of duplicate name??
-      ((TBookmark *)Node->Data)->Name = Name;
-      Node->Text = Name;
-    }
-    else
-    {
-      if (Name.IsEmpty() || Name.Pos("\\"))
-      {
-        throw Exception(FMTLOAD(BOOKMARK_FOLDER_INVALID_NAME, (Name)));
-      }
-      if ((FFolders->IndexOf(Name) >= 0) && AnsiCompareText(Name, Node->Text))
-      {
-        throw Exception(FMTLOAD(DUPLICATE_BOOKMARK_FOLDER, (Name)));
-      }
-      assert(Node->Count);
-      FFolders->Delete(FFolders->IndexOf(Node->Text));
-      int I = FFolders->AddObject(Name, Node);
-
-      TTreeNode * NextNode;
-      // duplicated in MoveToButtonClick()
-      if (I < FFolders->Count-1)
-      {
-        NextNode = dynamic_cast<TTreeNode *>(FFolders->Objects[I+1]);
-        assert(NextNode);
-      }
-      else if (FFolders->Count > 1)
-      {
-        NextNode = (dynamic_cast<TTreeNode *>(FFolders->Objects[I-1]))->getNextSibling();
-      }
-      else
-      {
-        assert(ProfilesView->Items->Count);
-        NextNode = ProfilesView->Items->Item[0];
-      }
-
-      if (NextNode != Node)
-      {
-        Node->MoveTo(NextNode, NextNode ? naInsert : naAddChild);
-      }
-
-      Node->Text = Name;
-      for (int i = 0; i < Node->Count; i++)
-      {
-        ((TBookmark *)Node->Item[i]->Data)->Node = Name;
-      }
-      Node->MakeVisible();
-    }
+    ProfilesView->SetFocus();
+    ProfilesView->Selected->EditText();
   }
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::ProfilesViewGetImageIndex(
@@ -714,6 +668,80 @@ void __fastcall TLocationProfilesDialog::ProfilesViewExpanded(
   assert(Node != NULL);
   assert(Node->Data == NULL);
   FBookmarkList->NodeOpened[Node->Text] = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::ProfilesViewEdited(
+  TObject * /*Sender*/, TTreeNode * Node, AnsiString & S)
+{
+  if (Node->Data != NULL)
+  {
+    if (S.IsEmpty() || (StrToIntDef(S, -123) != -123))
+    {
+      throw Exception(FMTLOAD(BOOKMARK_INVALID_NAME, (S)));
+    }
+    // raises exception in case of duplicate name??
+    ((TBookmark *)Node->Data)->Name = S;
+  }
+  else
+  {
+    if (S.IsEmpty() || S.Pos("\\"))
+    {
+      throw Exception(FMTLOAD(BOOKMARK_FOLDER_INVALID_NAME, (S)));
+    }
+    if ((FFolders->IndexOf(S) >= 0) && AnsiCompareText(S, Node->Text))
+    {
+      throw Exception(FMTLOAD(DUPLICATE_BOOKMARK_FOLDER, (S)));
+    }
+    assert(Node->Count);
+    FFolders->Delete(FFolders->IndexOf(Node->Text));
+    int I = FFolders->AddObject(S, Node);
+
+    TTreeNode * NextNode;
+    // duplicated in MoveToButtonClick()
+    if (I < FFolders->Count-1)
+    {
+      NextNode = dynamic_cast<TTreeNode *>(FFolders->Objects[I+1]);
+      assert(NextNode);
+    }
+    else if (FFolders->Count > 1)
+    {
+      NextNode = (dynamic_cast<TTreeNode *>(FFolders->Objects[I-1]))->getNextSibling();
+    }
+    else
+    {
+      assert(ProfilesView->Items->Count);
+      NextNode = ProfilesView->Items->Item[0];
+    }
+
+    if (NextNode != Node)
+    {
+      Node->MoveTo(NextNode, NextNode ? naInsert : naAddChild);
+    }
+
+    for (int i = 0; i < Node->Count; i++)
+    {
+      ((TBookmark *)Node->Item[i]->Data)->Node = S;
+    }
+    Node->MakeVisible();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::ProfilesViewEditing(
+  TObject * /*Sender*/, TTreeNode * /*Node*/, bool & /*AllowEdit*/)
+{
+  OKBtn->Default = false;
+  CancelBtn->Cancel = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::UpdateActions()
+{
+  TForm::UpdateActions();
+
+  if ((!OKBtn->Default || !CancelBtn->Cancel) && !ProfilesView->IsEditing())
+  {
+    OKBtn->Default = true;
+    CancelBtn->Cancel = true;
+  }
 }
 //---------------------------------------------------------------------------
 

@@ -88,7 +88,8 @@ private:
     int Options);
   void __fastcall TerminalShowExtendedException(TSecureShell * SecureShell,
     Exception * E, void * Arg);
-  void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress);
+  void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,
+    bool & Cancel);
   void __fastcall TerminalOnStdError(TObject * Sender, TLogLineType Type,
     const AnsiString AddedLine);
   void __fastcall FreeAll();

@@ -67,6 +67,7 @@ private:
   bool FMinimizedByMe;
   bool FAbort;
   bool FClose;
+  bool FStartImmediatelly;
   TCopyParamType FCopyParams;
   TPopupMenu * FPresetsMenu;
   AnsiString FPreset;
@@ -95,7 +96,8 @@ protected:
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner,
-    TSynchronizeStartStopEvent OnStartStop, TGetSynchronizeOptionsEvent OnGetOptions);
+    TSynchronizeStartStopEvent OnStartStop, TGetSynchronizeOptionsEvent OnGetOptions,
+    bool StartImmediatelly);
   virtual __fastcall ~TSynchronizeDialog();
 
   bool __fastcall Execute();

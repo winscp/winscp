@@ -61,7 +61,11 @@ TSynchronizeChecklist::TItem::TItem() :
   Action(saNone), IsDirectory(false), FRemoteFile(NULL), Checked(true), ImageIndex(-1)
 {
   Local.ModificationFmt = mfFull;
+  Local.Modification = 0;
+  Local.Size = 0;
   Remote.ModificationFmt = mfFull;
+  Remote.Modification = 0;
+  Remote.Size = 0;
 }
 //---------------------------------------------------------------------------
 TSynchronizeChecklist::TItem::~TItem()
@@ -415,7 +419,7 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
     }
   }
     else
-  if (ModifiesFiles && AutoReadDirectory)
+  if (ModifiesFiles && AutoReadDirectory && Configuration->AutoReadDirectoryAfterOp)
   {
     if (!FInTransaction) ReadDirectory(true);
       else FReadDirectoryPending = true;
@@ -728,11 +732,11 @@ void __fastcall TTerminal::DoStartReadDirectory()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoReadDirectoryProgress(int Progress)
+void __fastcall TTerminal::DoReadDirectoryProgress(int Progress, bool & Cancel)
 {
   if (FReadingCurrentDirectory && (FOnReadDirectoryProgress != NULL))
   {
-    FOnReadDirectoryProgress(this, Progress);
+    FOnReadDirectoryProgress(this, Progress, Cancel);
   }
 }
 //---------------------------------------------------------------------------
@@ -1176,7 +1180,8 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
   {
     DoStartReadDirectory();
     FReadingCurrentDirectory = true;
-    DoReadDirectoryProgress(0);
+    bool Cancel = false; // dummy
+    DoReadDirectoryProgress(0, Cancel);
     FFiles->Directory = CurrentDirectory;
 
     try
@@ -1187,7 +1192,7 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
       }
       __finally
       {
-        DoReadDirectoryProgress(-1);
+        DoReadDirectoryProgress(-1, Cancel);
         FReadingCurrentDirectory = false;
         // this must be called before error is displayed, otherwise
         // TUnixDirView would be drawn with invalid data (it keeps reference
@@ -1771,9 +1776,18 @@ void __fastcall TTerminal::CalculateFileSize(AnsiString FileName,
     FileName = File->FileName;
   }
 
-  if ((AParams->CopyParam == NULL) ||
-      AParams->CopyParam->AllowTransfer(UnixExcludeTrailingBackslash(File->FullFileName),
-        osRemote, File->IsDirectory))
+  bool AllowTransfer = (AParams->CopyParam == NULL);
+  if (!AllowTransfer)
+  {
+    TFileMasks::TParams MaskParams;
+    MaskParams.Size = File->Size;
+
+    AllowTransfer = AParams->CopyParam->AllowTransfer(
+      UnixExcludeTrailingBackslash(File->FullFileName), osRemote, File->IsDirectory,
+      MaskParams);
+  }
+
+  if (AllowTransfer)
   {
     if (File->IsDirectory)
     {
@@ -2386,11 +2400,11 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
           if (!GetFileTime(Handle, &CTime, &ATime, &MTime)) EXCEPTION;
           if (ACTime)
           {
-            *ACTime = ConvertTimestampToUnix(CTime, SessionData->ConsiderDST);
+            *ACTime = ConvertTimestampToUnixSafe(CTime, SessionData->ConsiderDST);
           }
           if (AATime)
           {
-            *AATime = ConvertTimestampToUnix(ATime, SessionData->ConsiderDST);
+            *AATime = ConvertTimestampToUnixSafe(ATime, SessionData->ConsiderDST);
           }
           if (AMTime)
           {
@@ -2456,14 +2470,24 @@ void __fastcall TTerminal::CalculateLocalFileSize(const AnsiString FileName,
   TCalculateSizeParams * AParams = static_cast<TCalculateSizeParams*>(Params);
 
   bool Dir = FLAGSET(Rec.Attr, faDirectory);
-  if ((AParams->CopyParam == NULL) ||
-      AParams->CopyParam->AllowTransfer(FileName, osLocal, Dir))
+
+  bool AllowTransfer = (AParams->CopyParam == NULL);
+  __int64 Size =
+    (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
+    Rec.FindData.nFileSizeLow;
+  if (!AllowTransfer)
+  {
+    TFileMasks::TParams MaskParams;
+    MaskParams.Size = Size;
+
+    AllowTransfer = AParams->CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams);
+  }
+
+  if (AllowTransfer)
   {
     if (!Dir)
     {
-      AParams->Size +=
-        (static_cast<__int64>(Rec.FindData.nFileSizeHigh) << 32) +
-        Rec.FindData.nFileSizeLow;
+      AParams->Size += Size;
     }
     else
     {
@@ -2618,9 +2642,14 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const AnsiString LocalD
           // add dirs for recursive mode or when we are interested in newly
           // added subdirs
           int FoundIndex;
+          __int64 Size =
+            (static_cast<__int64>(SearchRec.FindData.nFileSizeHigh) << 32) +
+            SearchRec.FindData.nFileSizeLow;
+          TFileMasks::TParams MaskParams;
+          MaskParams.Size = Size;
           if ((FileName != ".") && (FileName != "..") &&
               CopyParam->AllowTransfer(Data.LocalDirectory + FileName, osLocal,
-                FLAGSET(SearchRec.Attr, faDirectory)) &&
+                FLAGSET(SearchRec.Attr, faDirectory), MaskParams) &&
               (FLAGCLEAR(Flags, sfFirstLevel) ||
                (Options == NULL) || (Options->Filter == NULL) ||
                Options->Filter->Find(FileName, FoundIndex)))
@@ -2636,10 +2665,8 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const AnsiString LocalD
             FileData->Info.Directory = Data.LocalDirectory;
             FileData->Info.Modification = SystemTimeToDateTime(SystemLastWriteTime);
             FileData->Info.ModificationFmt = mfFull;
-            FileData->Info.Size =
-              (static_cast<__int64>(SearchRec.FindData.nFileSizeHigh) << 32) +
-              SearchRec.FindData.nFileSizeLow;
-            FileData->LocalLastWriteTime = LocalLastWriteTime;
+            FileData->Info.Size = Size;
+            FileData->LocalLastWriteTime = SearchRec.FindData.ftLastWriteTime;
             FileData->New = true;
             FileData->Modified = false;
             Data.LocalFileList->AddObject(FileName,
@@ -2756,9 +2783,11 @@ void __fastcall TTerminal::SynchronizeCollectFile(const AnsiString FileName,
   TSynchronizeData * Data = static_cast<TSynchronizeData *>(Param);
 
   int FoundIndex;
+  TFileMasks::TParams MaskParams;
+  MaskParams.Size = File->Size;
   if (Data->CopyParam->AllowTransfer(
         UnixExcludeTrailingBackslash(File->FullFileName), osRemote,
-        File->IsDirectory) &&
+        File->IsDirectory, MaskParams) &&
       (FLAGCLEAR(Data->Flags, sfFirstLevel) ||
        (Data->Options == NULL) || (Data->Options->Filter == NULL) ||
         Data->Options->Filter->Find(File->FileName, FoundIndex)))
@@ -3379,7 +3408,7 @@ bool __fastcall TSecondaryTerminal::DoPromptUser(AnsiString Prompt,
 {
   bool Result = false;
 
-  if (!FMasterPasswordTried)
+  if (!FMasterPasswordTried && (Kind != pkPrompt))
   {
     // let's expect that the main session is already authenticated and its password
     // is not written after, so no locking is necessary
@@ -3481,4 +3510,3 @@ void __fastcall TTerminalList::Idle()
     }
   }
 }
-

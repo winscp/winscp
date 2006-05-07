@@ -48,6 +48,19 @@
 #pragma link "TBXToolPals"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
+class TCommanderState : public TExporerState
+{
+public:
+  TCommanderState();
+
+  bool SynchronizeBrowsing;
+};
+//---------------------------------------------------------------------------
+TCommanderState::TCommanderState()
+{
+  SynchronizeBrowsing = false;
+}
+//---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
 {
@@ -362,17 +375,24 @@ void __fastcall TScpCommanderForm::BatchEnd(void * Storage)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::TerminalChanging()
 {
+  if ((Terminal != NULL) && WinConfiguration->PreservePanelState &&
+      (Terminal->UserObject == NULL))
+  {
+    Terminal->UserObject = new TCommanderState;
+  }
+
   TCustomScpExplorerForm::TerminalChanging();
 
   // ExplorerState should be already created by TCustomScpExplorerForm
   if (WinConfiguration->PreservePanelState &&
       (Terminal != NULL) && (Terminal->UserObject != NULL))
   {
-    TExporerState * ExplorerState = dynamic_cast<TExporerState *>(Terminal->UserObject);
+    TCommanderState * ExplorerState = dynamic_cast<TCommanderState *>(Terminal->UserObject);
     assert(ExplorerState != NULL);
 
     SAFE_DESTROY(ExplorerState->Local);
     ExplorerState->Local = LocalDirView->SaveState();
+    ExplorerState->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
   }
 }
 //---------------------------------------------------------------------------
@@ -429,21 +449,21 @@ void __fastcall TScpCommanderForm::TerminalChanged()
     }
     FFirstTerminal = false;
 
-    if (WasSynchronisingBrowsing &&
-        SameText(ExtractFileName(LocalDirView->PathName),
-          UnixExtractFileName(RemoteDirView->PathName)))
-    {
-      NonVisualDataModule->SynchronizeBrowsingAction->Checked = true;
-    }
-
     if (WinConfiguration->PreservePanelState &&
         (Terminal->UserObject != NULL) &&
         !WinConfiguration->ScpCommander.PreserveLocalDirectory)
     {
-      TExporerState * ExplorerState = dynamic_cast<TExporerState *>(Terminal->UserObject);
+      TCommanderState * ExplorerState = dynamic_cast<TCommanderState *>(Terminal->UserObject);
       assert(ExplorerState != NULL);
 
       LocalDirView->RestoreState(ExplorerState->Local);
+      NonVisualDataModule->SynchronizeBrowsingAction->Checked = ExplorerState->SynchronizeBrowsing;
+    }
+    else if (WasSynchronisingBrowsing &&
+        SameText(ExtractFileName(LocalDirView->PathName),
+          UnixExtractFileName(RemoteDirView->PathName)))
+    {
+      NonVisualDataModule->SynchronizeBrowsingAction->Checked = true;
     }
   }
   else
@@ -627,11 +647,13 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcSessionCombo: return reinterpret_cast<TControl*>(SessionCombo);
     case fcCommandLinePanel: return CommandLinePanel; 
     case fcLocalTree: return LocalDriveView;
-    case fcTransferCombo: return reinterpret_cast<TControl*>(TransferCombo);
     case fcSessionToolbar: return SessionToolbar;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
     case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
     case fcColorPalette: return reinterpret_cast<TControl*>(SessionColorPalette);
+    case fcTransferDropDown: return reinterpret_cast<TControl*>(TransferDropDown);
+    case fcTransferList: return reinterpret_cast<TControl*>(TransferList);
+    case fcTransferLabel: return reinterpret_cast<TControl*>(TransferLabel);
 
     case fcCommanderMenuBand: return MenuToolbar;
     case fcCommanderSessionBand: return SessionToolbar;
@@ -701,7 +723,7 @@ void __fastcall TScpCommanderForm::SynchronizeDirectories()
 {
   AnsiString LocalDirectory = LocalDirView->PathName;
   AnsiString RemoteDirectory = RemoteDirView->PathName;
-  DoSynchronizeDirectories(LocalDirectory, RemoteDirectory);
+  DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
@@ -712,7 +734,8 @@ void __fastcall TScpCommanderForm::FullSynchronizeDirectories()
   TSynchronizeMode Mode =
     (SaveMode ? (TSynchronizeMode)GUIConfiguration->SynchronizeModeAuto :
       ((FCurrentSide == osLocal) ? smRemote : smLocal));
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, SaveMode))
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode,
+        SaveMode, false))
   {
     if (SaveMode)
     {
@@ -1318,11 +1341,6 @@ void __fastcall TScpCommanderForm::Resize()
 
   LeftPanelWidth = FLastLeftPanelWidth;
   UpdateControls();
-}
-//---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::StatusBarDblClick(TObject * /*Sender*/)
-{
-  FileSystemInfo();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalFileControlDDMenuPopup(TObject * /*Sender*/,

@@ -42,6 +42,7 @@ extern "C"
     charset_state *state, void (*emit)(void *ctx, long int output), void *emitctx);
   int key_type(const Filename * filename);
   char * key_type_to_str(int type);
+  unsigned long parse_blocksize(const char *bs);
   // -------------
 
   void ssh_close(void * handle);

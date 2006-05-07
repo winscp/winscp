@@ -40,6 +40,7 @@ void __fastcall TConfiguration::Default()
     TReplaceFlags() << rfReplaceAll);
   FConfirmOverwriting = true;
   FConfirmResume = true;
+  FAutoReadDirectoryAfterOp = true;
   FSessionReopenAuto = 5000;
   FSessionReopenNoConfirmation = 2000;
 
@@ -93,6 +94,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
         KEY(String,   RandomSeedFile); \
         KEY(Bool,     ConfirmOverwriting); \
         KEY(Bool,     ConfirmResume); \
+        KEY(Bool,     AutoReadDirectoryAfterOp); \
         KEY(Integer,  SessionReopenAuto); \
         KEY(Integer,  SessionReopenNoConfirmation); \
       ); \
@@ -726,6 +728,18 @@ bool __fastcall TConfiguration::GetConfirmResume()
 {
   TGuard Guard(FCriticalSection);
   return FConfirmResume;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetAutoReadDirectoryAfterOp(bool value)
+{
+  TGuard Guard(FCriticalSection);
+  SET_CONFIG_PROPERTY(AutoReadDirectoryAfterOp);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TConfiguration::GetAutoReadDirectoryAfterOp()
+{
+  TGuard Guard(FCriticalSection);
+  return FAutoReadDirectoryAfterOp;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetTimeFormat()

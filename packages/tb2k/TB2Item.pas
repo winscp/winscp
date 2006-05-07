@@ -1962,8 +1962,11 @@ begin
       if not IsRectEmpty(ParentView.FMonitorRect) then
         MonitorRect := ParentView.FMonitorRect
       else
+        { MP (display menu on correct monitor) }
+        MonitorRect := GetRectOfMonitorContainingRect(ParentItemRect, True);
         {MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, False);} {vb-}
-        MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, True); {vb+}
+        { MP }
+        {MonitorRect := GetRectOfMonitorContainingPoint(APopupPoint, True);} {vb+}
     end
     else begin
       ParentItemRect.TopLeft := APopupPoint;

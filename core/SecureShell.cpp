@@ -261,6 +261,7 @@ bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
     if (!SessionData->Password.IsEmpty() && !FStoredPasswordTried)
     {
       LogEvent("Using stored password.");
+      AddStdError(LoadStr(AUTH_PASSWORD) + "\n", false);
       Result = true;
       Response = SessionData->Password;
       FStoredPasswordTried = true;
@@ -282,6 +283,7 @@ bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
         SessionData->AuthKIPassword && !FStoredPasswordTriedForKI)
     {
       LogEvent("Responding with stored password.");
+      AddStdError(LoadStr(AUTH_PASSWORD) + "\n", false);
       Result = true;
       Response = SessionData->Password;
       FStoredPasswordTriedForKI = true;

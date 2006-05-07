@@ -28,11 +28,11 @@ const int WM_USER_STOP = WM_WINSCP_USER + 2;
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
   bool & SaveSettings, int Options, int CopyParamAttrs,
-  TGetSynchronizeOptionsEvent OnGetOptions)
+  TGetSynchronizeOptionsEvent OnGetOptions, bool Start)
 {
   bool Result;
   TSynchronizeDialog * Dialog = new TSynchronizeDialog(Application,
-    OnStartStop, OnGetOptions);
+    OnStartStop, OnGetOptions, Start);
   try
   {
     Dialog->Options = Options;
@@ -58,7 +58,8 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
 const TSynchronizeDialog::MaxLogItems = 1000;
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
-  TSynchronizeStartStopEvent OnStartStop, TGetSynchronizeOptionsEvent OnGetOptions)
+  TSynchronizeStartStopEvent OnStartStop, TGetSynchronizeOptionsEvent OnGetOptions,
+  bool StartImmediatelly)
   : TForm(Owner)
 {
   UseSystemSettings(this);
@@ -69,6 +70,7 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
   FOnStartStop = OnStartStop;
   FOnGetOptions = OnGetOptions;
   FSynchronizeOptions = NULL;
+  FStartImmediatelly = StartImmediatelly;
 
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
@@ -301,7 +303,6 @@ void __fastcall TSynchronizeDialog::StartButtonClick(TObject * /*Sender*/)
       case qaNeverAskAgain:
         SynchronizeSynchronizeCheck->State = cbChecked;
         // fall thru
-        break;
 
       case qaYes:
         Synchronize = true;
@@ -387,6 +388,10 @@ void __fastcall TSynchronizeDialog::FormShow(TObject * /*Sender*/)
 {
   ClearLog();
   UpdateControls();
+  if (FStartImmediatelly)
+  {
+    StartButtonClick(NULL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::FormCloseQuery(TObject * /*Sender*/,

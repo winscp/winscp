@@ -17,7 +17,7 @@
 //---------------------------------------------------------------------
 bool __fastcall DoComboInputDialog(
   const AnsiString Caption, const AnsiString Prompt,
-  AnsiString & Text, TStrings * Items, TCloseQueryEvent OnCloseQuery,
+  AnsiString & Text, TStrings * Items, TInputValidateEvent OnInputValidate,
   bool AllowEmpty, const AnsiString HelpKeyword)
 {
   bool Result;
@@ -29,7 +29,7 @@ bool __fastcall DoComboInputDialog(
     ComboInputDialog->Text = Text;
     ComboInputDialog->Items = Items;
     ComboInputDialog->AllowEmpty = AllowEmpty;
-    ComboInputDialog->OnCloseQuery = OnCloseQuery;
+    ComboInputDialog->OnInputValidate = OnInputValidate;
     ComboInputDialog->HelpKeyword = HelpKeyword;
     Result = (ComboInputDialog->ShowModal() == mrOk);
     if (Result)
@@ -44,21 +44,17 @@ bool __fastcall DoComboInputDialog(
   return Result;
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall DoSaveSessionDialog(
-  TStoredSessionList * ASessionList, const AnsiString DefaultName)
+AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName)
 {
-  // SessionList is no longer passed to TComboInputDialog, it uses global variable
-  assert(ASessionList == StoredSessions);
-  
   AnsiString Result;
   TComboInputDialog * SaveSessionDialog = NULL;
   TStrings * Items = NULL;
   try
   {
     Items = new TStringList();
-    for (int Index = 0; Index < ASessionList->Count; Index++)
+    for (int Index = 0; Index < StoredSessions->Count; Index++)
     {
-      TSessionData * Data = ASessionList->Sessions[Index];
+      TSessionData * Data = StoredSessions->Sessions[Index];
       if (!Data->Special)
       {
         Items->Add(Data->Name);
@@ -70,7 +66,7 @@ AnsiString __fastcall DoSaveSessionDialog(
     SaveSessionDialog->Text = DefaultName;
     SaveSessionDialog->Caption = LoadStr(SAVE_SESSION_CAPTION);
     SaveSessionDialog->Prompt = LoadStr(SAVE_SESSION_PROMPT);
-    SaveSessionDialog->OnCloseQuery = SaveSessionDialog->StoredSessionsCloseQuery;
+    SaveSessionDialog->OnInputValidate = SaveSessionInputValidate;
     SaveSessionDialog->HelpKeyword = HELP_SESSION_SAVE;
     if (SaveSessionDialog->ShowModal() == mrOk)
     {
@@ -84,11 +80,32 @@ AnsiString __fastcall DoSaveSessionDialog(
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+void __fastcall SaveSessionInputValidate(const AnsiString & Text)
+{
+  TSessionData::ValidateName(Text);
+
+  assert(StoredSessions);
+  TSessionData * Data = (TSessionData *)StoredSessions->FindByName(Text);
+  if (Data && Data->Special)
+  {
+    MessageDialog(FMTLOAD(CANNOT_OVERWRITE_SPECIAL_SESSION, (Text)),
+      qtError, qaOK, HELP_NONE);
+    Abort();
+  }
+  else if (Data &&
+    MessageDialog(FMTLOAD(CONFIRM_OVERWRITE_SESSION, (Text)),
+      qtConfirmation, qaYes | qaNo, HELP_SESSION_SAVE_OVERWRITE) != qaYes)
+  {
+    Abort();
+  }
+}
 //---------------------------------------------------------------------
 __fastcall TComboInputDialog::TComboInputDialog(TComponent* AOwner)
   : TForm(AOwner)
 {
   FAllowEmpty = false;
+  FOnInputValidate = NULL;
   UseSystemSettings(this);
 }
 //---------------------------------------------------------------------
@@ -134,31 +151,6 @@ void __fastcall TComboInputDialog::UpdateControls()
   EnableControl(OKButton, !Text.IsEmpty() || FAllowEmpty);
 }
 //---------------------------------------------------------------------------
-void __fastcall TComboInputDialog::StoredSessionsCloseQuery(TObject * /*Sender*/,
-      bool & CanClose)
-{
-  CanClose = true;
-  if (ModalResult == mrOk)
-  {
-    TSessionData::ValidateName(Text);
-
-    assert(StoredSessions);
-    TSessionData * Data = (TSessionData *)StoredSessions->FindByName(Text);
-    if (Data && Data->Special)
-    {
-      MessageDialog(FMTLOAD(CANNOT_OVERWRITE_SPECIAL_SESSION, (Text)),
-        qtError, qaOK, HELP_NONE);
-      CanClose = false;
-    }
-    else if (Data &&
-      MessageDialog(FMTLOAD(CONFIRM_OVERWRITE_SESSION, (Text)),
-        qtConfirmation, qaYes | qaNo, HELP_SESSION_SAVE_OVERWRITE) != qaYes)
-    {
-      CanClose = false;
-    }
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TComboInputDialog::FormShow(TObject * /*Sender*/)
 {
   TBorderIcons BI = BorderIcons;
@@ -180,5 +172,14 @@ void __fastcall TComboInputDialog::FormShow(TObject * /*Sender*/)
 void __fastcall TComboInputDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TComboInputDialog::FormCloseQuery(TObject * /*Sender*/,
+  bool & /*CanClose*/)
+{
+  if ((ModalResult == mrOk) && (OnInputValidate != NULL))
+  {
+    OnInputValidate(Text);
+  }
 }
 //---------------------------------------------------------------------------

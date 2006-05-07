@@ -178,6 +178,12 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FUserActionTimer->Interval = 10;
   FUserActionTimer->OnTimer = UserActionTimer;
 
+  FNotes = new TStringList();
+  FNoteTimer = new TTimer(this);
+  FNoteTimer->Enabled = false;
+  FNoteTimer->OnTimer = NoteTimer;
+  FOnNoteClick = NULL;
+
   FOle32Library = LoadLibrary("Ole32.dll");
   FDragMoveCursor = FOle32Library != NULL ?
     LoadCursor(FOle32Library, MAKEINTRESOURCE(2)) : NULL;
@@ -194,12 +200,12 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     SessionCombo->Hint = NonVisualDataModule->OpenedSessionsAction->Hint;
   }
 
-  TTBXComboBoxItem * TransferCombo = dynamic_cast<TTBXComboBoxItem*>(
-    static_cast<TObject*>(GetComponent(fcTransferCombo)));
-  if (TransferCombo != NULL)
-  {
-    TransferCombo->OnChange = TransferComboChange;
-  }
+  TTBXStringList * TransferList = dynamic_cast<TTBXStringList*>(
+    static_cast<TObject*>(GetComponent(fcTransferList)));
+  assert(TransferList != NULL);
+  FTransferListHoverIndex = -1;
+  TransferList->OnChange = TransferListChange;
+  TransferList->OnDrawItem = TransferListDrawItem;
 
   class TTBXPublicItem : public TTBXCustomItem
   {
@@ -253,6 +259,9 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 
   delete FUserActionTimer;
   FUserActionTimer = NULL;
+
+  delete FNoteTimer;
+  delete FNotes;
 
   SAFE_DESTROY(FDocks);
 
@@ -336,7 +345,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged()
     InitStatusBar();
   }
   TerminalListChanged(NULL);
-  UpdateTransferCombo();
+  UpdateTransferList();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::SetQueue(TTerminalQueue * value)
@@ -518,29 +527,38 @@ void __fastcall TCustomScpExplorerForm::RefreshQueueItems(bool AppIdle)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::UpdateTransferCombo()
+void __fastcall TCustomScpExplorerForm::UpdateTransferList()
 {
-  TTBXComboBoxItem * TransferCombo = dynamic_cast<TTBXComboBoxItem*>(
-    static_cast<TComponent*>(GetComponent(fcTransferCombo)));
-  TransferCombo->Strings->BeginUpdate();
+  TTBXStringList * TransferList = dynamic_cast<TTBXStringList*>(
+    static_cast<TComponent*>(GetComponent(fcTransferList)));
+  TTBXDropDownItem * TransferDropDown = dynamic_cast<TTBXDropDownItem*>(
+    static_cast<TComponent*>(GetComponent(fcTransferDropDown)));
+  TransferList->Strings->BeginUpdate();
   try
   {
-    TransferCombo->Strings->Assign(GUIConfiguration->CopyParamList->NameList);
-    TransferCombo->Strings->Insert(0, StripHotkey(LoadStr(COPY_PARAM_DEFAULT)));
-    TransferCombo->ItemIndex = GUIConfiguration->CopyParamIndex + 1;
-    if (FTransferComboHint.IsEmpty())
+    TransferList->Strings->Assign(GUIConfiguration->CopyParamList->NameList);
+    TransferList->Strings->Insert(0, StripHotkey(LoadStr(COPY_PARAM_DEFAULT)));
+    TransferList->ItemIndex = GUIConfiguration->CopyParamIndex + 1;
+    if (FTransferDropDownHint.IsEmpty())
     {
-      FTransferComboHint = TransferCombo->Hint;
+      FTransferDropDownHint = TransferDropDown->Hint;
     }
-    TransferCombo->Hint = FORMAT("%s\n \n%s:\n%s|%s",
-      (FTransferComboHint, TransferCombo->Strings->Strings[TransferCombo->ItemIndex],
+    // this way we get name for "default" settings (COPY_PARAM_DEFAULT)
+    AnsiString Name = TransferList->Strings->Strings[TransferList->ItemIndex];
+    TransferDropDown->Text = Name;
+    TransferDropDown->Hint = FORMAT("%s\n \n%s:\n%s|%s",
+      (FTransferDropDownHint, Name,
        GUIConfiguration->CurrentCopyParam.GetInfoStr("; ",
          FLAGMASK(Terminal != NULL, Terminal->UsableCopyParamAttrs(0).General)),
-       FTransferComboHint));
+       FTransferDropDownHint));
+    // update the label, otherwise when it is updated only on the first draw
+    // of the list, it is drawn "bold" for some reason
+    FTransferListHoverIndex = TransferList->ItemIndex;
+    UpdateTransferLabel();
   }
   __finally
   {
-    TransferCombo->Strings->EndUpdate();
+    TransferList->Strings->EndUpdate();
   }
 }
 //---------------------------------------------------------------------------
@@ -577,7 +595,7 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
 
   SetDockAllowDrag(!WinConfiguration->LockToolbars);
 
-  UpdateTransferCombo();
+  UpdateTransferList();
 
   if (Terminal != NULL)
   {
@@ -1418,7 +1436,19 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
     else if (Operation == foDelete)
     {
       assert(FileList->Count);
-      bool Confirmed = !WinConfiguration->ConfirmDeleting;
+      bool Recycle;
+      if (Side == osLocal)
+      {
+        Recycle = WinConfiguration->DeleteToRecycleBin;
+      }
+      else
+      {
+        Recycle = Terminal->SessionData->DeleteToRecycleBin &&
+          !Terminal->IsRecycledFile(FileList->Strings[0]);
+      }
+
+      bool Confirmed =
+        !(Recycle ? WinConfiguration->ConfirmRecycling : WinConfiguration->ConfirmDeleting);
       if (!Confirmed)
       {
         AnsiString Query;
@@ -1432,11 +1462,13 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
           {
             Query = UnixExtractFileName(FileList->Strings[0]);
           }
-          Query = FMTLOAD(CONFIRM_DELETE_FILE, (Query));
+          Query = FMTLOAD(
+            (Recycle ? CONFIRM_RECYCLE_FILE : CONFIRM_DELETE_FILE), (Query));
         }
         else
         {
-          Query = FMTLOAD(CONFIRM_DELETE_FILES, (FileList->Count));
+          Query = FMTLOAD(
+            (Recycle ? CONFIRM_RECYCLE_FILES : CONFIRM_DELETE_FILES), (FileList->Count));
         }
 
         TMessageParams Params(mpNeverAskAgainCheck);
@@ -1445,7 +1477,14 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
         if (Answer == qaNeverAskAgain)
         {
           Confirmed = true;
-          WinConfiguration->ConfirmDeleting = false;
+          if (Recycle)
+          {
+            WinConfiguration->ConfirmRecycling = false;
+          }
+          else
+          {
+            WinConfiguration->ConfirmDeleting = false;
+          }
         }
         else
         {
@@ -1623,7 +1662,9 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
 
     TExecuteFileBy ExecuteFileBy = efDefaultEditor;
     const TEditorPreferences * ExternalEditor = NULL;
-    ExecuteFileNormalize(ExecuteFileBy, ExternalEditor, TargetFileName, false);
+    TFileMasks::TParams MaskParams; // size not known
+    ExecuteFileNormalize(ExecuteFileBy, ExternalEditor, TargetFileName,
+      false, MaskParams);
 
     CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, TargetFileName,
       ExternalEditor);
@@ -1750,7 +1791,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
     {
       do
       {
-        Application->ProcessMessages();
+        Application->HandleMessage();
       }
       while (!Application->Terminated && !CloseFlag);
     }
@@ -1834,11 +1875,11 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecuteFileNormalize(
   TExecuteFileBy & ExecuteFileBy, const TEditorPreferences *& ExternalEditor,
-  const AnsiString & FileName, bool Local)
+  const AnsiString & FileName, bool Local, const TFileMasks::TParams & MaskParams)
 {
   if (ExecuteFileBy == efDefaultEditor)
   {
-    ExternalEditor = WinConfiguration->DefaultEditorForFile(FileName, Local);
+    ExternalEditor = WinConfiguration->DefaultEditorForFile(FileName, Local, MaskParams);
     if ((ExternalEditor == NULL) || (ExternalEditor->Data.Editor == edInternal))
     {
       ExecuteFileBy = efInternalEditor;
@@ -1895,8 +1936,10 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
           FullFileName = ListFileName;
         }
 
+        TFileMasks::TParams MaskParams;
+        MaskParams.Size = DView->ItemFileSize(Item);
         ExecuteFileNormalize(ExecuteFileBy, ExternalEditor, FullFileName,
-          (Side == osLocal));
+          (Side == osLocal), MaskParams);
 
         if (Side == osRemote)
         {
@@ -1923,12 +1966,12 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
             FileList1->AddObject(ListFileName, FileList->Objects[i]);
             TemporarilyDownloadFiles(FileList1,
               RemoteExecuteForceText(ExecuteFileBy, ExternalEditor), TempDir, true, true);
+            FileName = TempDir + FileList1->Strings[0];
           }
           __finally
           {
             delete FileList1;
           }
-          FileName = TempDir + FileList->Strings[i];
         }
         else
         {
@@ -2261,7 +2304,7 @@ void __fastcall TCustomScpExplorerForm::CreateDirectory(TOperationSide Side)
   TRemoteProperties * AProperties = (Side == osRemote ? &Properties : NULL);
   AnsiString Name = LoadStr(NEW_FOLDER);
   bool SaveSettings = false;
-  
+
   if (DoCreateDirectoryDialog(Name, AProperties, SaveSettings))
   {
     if (Side == osRemote)
@@ -2432,6 +2475,9 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
     SessionStatusBar->Panels->Items[Index + 1]->Caption = FormatBytes(Terminal->BytesSent);
     SessionStatusBar->Panels->Items[Index + 6]->Caption =
       FormatDateTimeSpan(Configuration->TimeFormat, Terminal->Duration);
+    SessionStatusBar->Panels->Items[Index + 7]->Framed = !FNote.IsEmpty();
+    SessionStatusBar->Panels->Items[Index + 7]->Caption = FNote;
+    SessionStatusBar->Panels->Items[Index + 7]->Hint = FNoteHints;
   }
 }
 //---------------------------------------------------------------------------
@@ -2812,7 +2858,7 @@ void __fastcall TCustomScpExplorerForm::SynchronizeDirectories()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
-  AnsiString & LocalDirectory, AnsiString & RemoteDirectory)
+  AnsiString & LocalDirectory, AnsiString & RemoteDirectory, bool UseDefaults)
 {
   TSynchronizeParamType Params;
   Params.LocalDirectory = LocalDirectory;
@@ -2835,7 +2881,7 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
     int Options =
       FLAGMASK(SynchronizeAllowSelectedOnly(), soAllowSelectedOnly);
     Result = DoSynchronizeDialog(Params, &CopyParam, Controller.StartStop,
-      SaveSettings, Options, CopyParamAttrs, GetSynchronizeOptions);
+      SaveSettings, Options, CopyParamAttrs, GetSynchronizeOptions, UseDefaults);
     if (Result)
     {
       if (SaveSettings)
@@ -3005,7 +3051,7 @@ void __fastcall TCustomScpExplorerForm::GetSynchronizeOptions(
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
   AnsiString & LocalDirectory, AnsiString & RemoteDirectory,
-  TSynchronizeMode & Mode, bool & SaveMode)
+  TSynchronizeMode & Mode, bool & SaveMode, bool UseDefaults)
 {
   bool Result;
   int Params = GUIConfiguration->SynchronizeParams;
@@ -3016,8 +3062,9 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
     FLAGMASK(SynchronizeAllowSelectedOnly(), fsoAllowSelectedOnly);
   TCopyParamType CopyParam = GUIConfiguration->CurrentCopyParam;
   TUsableCopyParamAttrs CopyParamAttrs = Terminal->UsableCopyParamAttrs(0);
-  Result = DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
-    &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs);
+  Result = UseDefaults ||
+    DoFullSynchronizeDialog(Mode, Params, LocalDirectory, RemoteDirectory,
+      &CopyParam, SaveSettings, SaveMode, Options, CopyParamAttrs);
   if (Result)
   {
     TSynchronizeOptions SynchronizeOptions;
@@ -3123,7 +3170,7 @@ void __fastcall TCustomScpExplorerForm::SaveCurrentSession()
 {
   AnsiString SessionName;
   SessionName = Terminal->SessionData->SessionName;
-  SessionName = DoSaveSessionDialog(StoredSessions, SessionName);
+  SessionName = DoSaveSessionDialog(SessionName);
   if (!SessionName.IsEmpty())
   {
     TSessionData * SessionData = new TSessionData("");
@@ -3523,7 +3570,6 @@ void __fastcall TCustomScpExplorerForm::SessionComboPopup(TTBCustomItem * Sender
     int MaxWidth = 0, Width;
     for (int i = 0; i < SessionCombo->Strings->Count; i++)
     {
-      // TTBXComboBoxItem has no canvas, so we use Form's canvas
       Width = Canvas->TextExtent(SessionCombo->Strings->Strings[i]).cx;
       TShortCut ShortCut = NonVisualDataModule->OpenSessionShortCut(i);
       if (ShortCut != scNone)
@@ -3609,19 +3655,18 @@ void __fastcall TCustomScpExplorerForm::SessionComboChange(TObject * Sender,
   TTerminalManager::Instance()->ActiveTerminal = Terminal;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::TransferComboChange(TObject * Sender,
-  const AnsiString Text)
+void __fastcall TCustomScpExplorerForm::TransferListChange(TObject * Sender)
 {
-  TTBXComboBoxItem * TransferCombo = dynamic_cast<TTBXComboBoxItem *>(Sender);
-  assert(TransferCombo != NULL);
+  TTBXStringList * TransferList = dynamic_cast<TTBXStringList *>(Sender);
+  assert(TransferList != NULL);
   AnsiString Name;
-  if (TransferCombo->ItemIndex <= 0)
+  if (TransferList->ItemIndex <= 0)
   {
     Name = "";
   }
   else
   {
-    Name = GUIConfiguration->CopyParamList->Names[TransferCombo->ItemIndex - 1];
+    Name = GUIConfiguration->CopyParamList->Names[TransferList->ItemIndex - 1];
   }
   if (FCopyParamAutoSelected.IsEmpty())
   {
@@ -3629,6 +3674,78 @@ void __fastcall TCustomScpExplorerForm::TransferComboChange(TObject * Sender,
     FCopyParamDefault = Name;
   }
   GUIConfiguration->CopyParamCurrent = Name;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateTransferLabel()
+{
+  // sanity check
+  bool ExistingPreset =
+    (FTransferListHoverIndex >= 0) &&
+    (FTransferListHoverIndex < 1 + GUIConfiguration->CopyParamList->Count);
+  assert(ExistingPreset);
+  if (ExistingPreset)
+  {
+    HDC DC = GetDC(0);
+    TCanvas * Canvas = new TCanvas();
+    try
+    {
+      Canvas->Handle = DC;
+      Canvas->Font = ToolbarFont;
+
+      AnsiString Name;
+      if (FTransferListHoverIndex == 0)
+      {
+        Name = "";
+      }
+      else
+      {
+        Name = GUIConfiguration->CopyParamList->Names[FTransferListHoverIndex - 1];
+      }
+
+      TTBXLabelItem * TransferLabel = dynamic_cast<TTBXLabelItem*>(
+        static_cast<TComponent*>(GetComponent(fcTransferLabel)));
+      TTBXStringList * TransferList = dynamic_cast<TTBXStringList*>(
+        static_cast<TObject*>(GetComponent(fcTransferList)));
+
+      AnsiString InfoStr =
+        GUIConfiguration->CopyParamPreset[Name].
+          GetInfoStr("; ",
+            FLAGMASK(Terminal != NULL, Terminal->UsableCopyParamAttrs(0).General));
+      int MaxWidth = TransferList->MinWidth - (2 * TransferLabel->Margin) - 10;
+      if (Canvas->TextExtent(InfoStr).cx > MaxWidth)
+      {
+        AnsiString Ellipsis = "...";
+        while (Canvas->TextExtent(InfoStr + Ellipsis).cx > MaxWidth)
+        {
+          InfoStr.SetLength(InfoStr.Length() - 1);
+        }
+        InfoStr += Ellipsis;
+      }
+
+      // UpdateCaption does not cause invalidation of whole submenu, while
+      // setting Caption property does.
+      // also it probably does not resize the label, even if necessary
+      // (we do not want that anyway)
+      TransferLabel->UpdateCaption(InfoStr);
+    }
+    __finally
+    {
+      Canvas->Handle = NULL;
+      ReleaseDC(0, DC);
+      delete Canvas;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::TransferListDrawItem(
+  TTBXCustomList * /*Sender*/, TCanvas * /*ACanvas*/, const TRect & /*ARect*/,
+  int /*AIndex*/, int AHoverIndex, bool & /*DrawDefault*/)
+{
+  if (FTransferListHoverIndex != AHoverIndex)
+  {
+    FTransferListHoverIndex = AHoverIndex;
+    UpdateTransferLabel();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMAppCommand(TMessage & Message)
@@ -4479,11 +4596,13 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DirViewMatchMask(
-  TObject * /*Sender*/, AnsiString FileName, bool Directory, AnsiString Masks,
-  bool & Matches)
+  TObject * /*Sender*/, AnsiString FileName, bool Directory, __int64 Size,
+  AnsiString Masks,bool & Matches)
 {
+  TFileMasks::TParams MaskParams;
+  MaskParams.Size = Size;
   TFileMasks M(Masks);
-  Matches = M.Matches(FileName, Directory);
+  Matches = M.Matches(FileName, Directory, AnsiString(""), &MaskParams);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewGetOverlay(
@@ -4659,8 +4778,30 @@ void __fastcall TCustomScpExplorerForm::StartUpdates()
   else if ((double(Updates.Period) > 0) &&
            (Now() - Updates.LastCheck >= Updates.Period))
   {
-    StartUpdateThread();
+    StartUpdateThread(UpdatesChecked);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdatesChecked()
+{
+  AnsiString Message;
+  bool New;
+  GetUpdatesMessage(Message, New);
+  if (!Message.IsEmpty())
+  {
+    Message = FORMAT(Message, (""));
+    int P = Message.Pos("\n");
+    if (P > 0)
+    {
+      Message.SetLength(P - 1);
+    }
+    PostNote(Message, (New ? 60 : 5), UpdatesNoteClicked);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdatesNoteClicked(TObject * /*Sender*/)
+{
+  CheckForUpdates(true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::GetTransferPresetAutoSelectData(
@@ -4708,39 +4849,47 @@ void __fastcall TCustomScpExplorerForm::TransferPresetAutoSelect()
       }
     }
 
-    if (WinConfiguration->CopyParamAutoSelectNotice &&
-        (GUIConfiguration->CopyParamCurrent != CopyParamCurrent))
+    if (GUIConfiguration->CopyParamCurrent != CopyParamCurrent)
     {
       int Fmt =
         (CopyParamIndex < 0) ?
           (GUIConfiguration->CopyParamIndex < 0 ? COPY_PARAM_DEFAULT_NORM : COPY_PARAM_DEFAULT_CUSTOM) :
           COPY_PARAM_AUTOSELECTED;
-      TMessageParams Params(mpNeverAskAgainCheck);
-      TStrings * More = new TStringList();
-      try
-      {
-        int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).General;
-        AnsiString Info = GUIConfiguration->CurrentCopyParam.GetInfoStr("\n",
-          CopyParamAttrs);
-        if (CopyParamIndex >= 0)
-        {
-          assert(GUIConfiguration->CopyParamList->Rules[CopyParamIndex] != NULL);
-          Info = FORMAT("%s\n \n%s", (Info,
-            FMTLOAD(COPY_PARAM_RULE,
-              (GUIConfiguration->CopyParamList->Rules[CopyParamIndex]->GetInfoStr("\n")))));
-        }
-        More->Text = Info;
+      AnsiString Message = FMTLOAD(Fmt, (StripHotkey(GUIConfiguration->CopyParamCurrent)));
 
-        if (MoreMessageDialog(FMTLOAD(Fmt, (StripHotkey(GUIConfiguration->CopyParamCurrent))),
-              More, qtInformation, qaOK, HELP_COPY_PARAM_AUTOSELECTED, &Params) ==
-                qaNeverAskAgain)
+      if (WinConfiguration->CopyParamAutoSelectNotice)
+      {
+        TMessageParams Params(mpNeverAskAgainCheck);
+        TStrings * More = new TStringList();
+        try
         {
-          WinConfiguration->CopyParamAutoSelectNotice = false;
+          int CopyParamAttrs = Terminal->UsableCopyParamAttrs(0).General;
+          AnsiString Info = GUIConfiguration->CurrentCopyParam.GetInfoStr("\n",
+            CopyParamAttrs);
+          if (CopyParamIndex >= 0)
+          {
+            assert(GUIConfiguration->CopyParamList->Rules[CopyParamIndex] != NULL);
+            Info = FORMAT("%s\n \n%s", (Info,
+              FMTLOAD(COPY_PARAM_RULE,
+                (GUIConfiguration->CopyParamList->Rules[CopyParamIndex]->GetInfoStr("\n")))));
+          }
+          More->Text = Info;
+
+          if (MoreMessageDialog(Message,
+                More, qtInformation, qaOK, HELP_COPY_PARAM_AUTOSELECTED, &Params) ==
+                  qaNeverAskAgain)
+          {
+            WinConfiguration->CopyParamAutoSelectNotice = false;
+          }
+        }
+        __finally
+        {
+          delete More;
         }
       }
-      __finally
+      else
       {
-        delete More;
+        PostNote(Message, 5, NULL);
       }
     }
   }
@@ -4945,4 +5094,75 @@ void __fastcall TCustomScpExplorerForm::SessionColorPaletteChange(
   SessionColor = (ColorPalette->Color != clNone ? ColorPalette->Color : (TColor)0);
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TCustomScpExplorerForm::NoteTimer(TObject * /*Sender*/)
+{
+  FNoteTimer->Enabled = false;
+  FNote = "";
+  FOnNoteClick = NULL;
+  FNoteHints = FNotes->Text;
+  FNoteHints.Delete(FNoteHints.Length() - 1, 2);
+  UpdateStatusBar();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::PostNote(AnsiString Note,
+  unsigned int Seconds, TNotifyEvent OnNoteClick)
+{
+  FNoteHints = FNotes->Text;
+  FNoteHints.Delete(FNoteHints.Length() - 1, 2);
+  FNote = Note;
+  FOnNoteClick = OnNoteClick;
+  FNotes->Add(FORMAT("[%s] %s",
+    (FormatDateTime(Configuration->TimeFormat, Now()), Note)));
+  while (FNotes->Count > 10)
+  {
+    FNotes->Delete(0);
+  }
+  UpdateStatusBar();
+  FNoteTimer->Enabled = false;
+  FNoteTimer->Interval = Seconds * 1000;
+  FNoteTimer->Enabled = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ReadDirectoryCancelled()
+{
+  PostNote(LoadStr(DIRECTORY_READING_CANCELLED), 5, NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::SynchronizeBrowsingChanged()
+{
+  PostNote(FORMAT(LoadStrPart(SYNC_DIR_BROWSE_TOGGLE, 1),
+    (LoadStrPart(SYNC_DIR_BROWSE_TOGGLE,
+      (NonVisualDataModule->SynchronizeBrowsingAction->Checked ? 2 : 3)))),
+    5, NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ToggleShowHiddenFiles()
+{
+  WinConfiguration->ShowHiddenFiles = !WinConfiguration->ShowHiddenFiles;
+  PostNote(FORMAT(LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE, 1),
+    (LoadStrPart(SHOW_HIDDEN_FILES_TOGGLE,
+      (WinConfiguration->ShowHiddenFiles ? 2 : 3)))), 5, NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ToggleAutoReadDirectoryAfterOp()
+{
+  Configuration->AutoReadDirectoryAfterOp = !Configuration->AutoReadDirectoryAfterOp;
+  PostNote(FORMAT(LoadStrPart(AUTO_READ_DIRECTORY_TOGGLE, 1),
+    (LoadStrPart(AUTO_READ_DIRECTORY_TOGGLE,
+      (Configuration->AutoReadDirectoryAfterOp ? 2 : 3)))), 5, NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::StatusBarPanelDblClick(
+  TTBXCustomStatusBar * Sender, TTBXStatusPanel *Panel)
+{
+  int Index = Sender->Tag;
+  if ((FOnNoteClick != NULL) && (Panel->Index == Index + 7))
+  {
+    FOnNoteClick(NULL);
+  }
+  else
+  {
+    FileSystemInfo();
+  }
+}
+//---------------------------------------------------------------------------

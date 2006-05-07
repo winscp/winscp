@@ -17,6 +17,7 @@
 #include "TextsCore.h"
 #include "CustomWinConfiguration.h"
 #include "SynchronizeController.h"
+#include "GUITools.h"
 enum { RESULT_SUCCESS = 0, RESULT_ANY_ERROR = 1 };
 //---------------------------------------------------------------------------
 #define WM_INTERUPT_IDLE (WM_WINSCP_USER + 3)
@@ -110,7 +111,7 @@ BOOL WINAPI TOwnConsole::HandlerRoutine(DWORD CtrlType)
     FInstance->FPendingAbort = true;
 
     SendMessage(Application->Handle, WM_INTERUPT_IDLE, 0, 0);
-    
+
     return true;
   }
   else
@@ -263,8 +264,8 @@ void __fastcall TOwnConsole::WaitBeforeExit()
         Record.Event.KeyEvent.bKeyDown)
     {
       break;
-    } 
-  } 
+    }
+  }
 }
 //---------------------------------------------------------------------------
 class TExternalConsole : public TConsole
@@ -481,6 +482,55 @@ void __fastcall TExternalConsole::WaitBeforeExit()
   // noop
 }
 //---------------------------------------------------------------------------
+class TNullConsole : public TConsole
+{
+public:
+  __fastcall TNullConsole();
+
+  virtual void __fastcall Print(AnsiString Str, bool FromBeginning = false);
+  virtual bool __fastcall Input(AnsiString & Str, bool Echo);
+  virtual int __fastcall Choice(AnsiString Options, int Cancel, int Break);
+  virtual bool __fastcall PendingAbort();
+  virtual void __fastcall SetTitle(AnsiString Title);
+  virtual void __fastcall WaitBeforeExit();
+};
+//---------------------------------------------------------------------------
+__fastcall TNullConsole::TNullConsole()
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TNullConsole::Print(AnsiString /*Str*/, bool /*FromBeginning*/)
+{
+  // noop
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNullConsole::Input(AnsiString & /*Str*/, bool /*Echo*/)
+{
+  return false;
+}
+//---------------------------------------------------------------------------
+int __fastcall TNullConsole::Choice(AnsiString /*Options*/, int /*Cancel*/,
+  int Break)
+{
+  return Break;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNullConsole::PendingAbort()
+{
+  return false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNullConsole::SetTitle(AnsiString /*Title*/)
+{
+  // noop
+}
+//---------------------------------------------------------------------------
+void __fastcall TNullConsole::WaitBeforeExit()
+{
+  assert(false);
+  // noop
+}
+//---------------------------------------------------------------------------
 class TConsoleRunner
 {
 public:
@@ -523,7 +573,7 @@ private:
   void __fastcall SynchronizeControllerAbort(TObject * Sender, bool Close);
   void __fastcall SynchronizeControllerLog(TSynchronizeController * Controller,
     TSynchronizeLogEntry Entry, const AnsiString Message);
-  void __fastcall ScriptSynchronizeStartStop(TScript * Script, 
+  void __fastcall ScriptSynchronizeStartStop(TScript * Script,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory);
   void __fastcall SynchronizeControllerSynchronize(TSynchronizeController * Sender,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
@@ -647,7 +697,7 @@ void __fastcall TConsoleRunner::ScriptTerminalUpdateStatus(
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TSecureShell * /*SecureShell*/,
-  AnsiString Prompt, TPromptKind /*Kind*/, AnsiString & Response, bool & Result, 
+  AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
   void * /*Arg*/)
 {
   if (!Prompt.IsEmpty() && (Prompt[Prompt.Length()] != ' '))
@@ -656,7 +706,7 @@ void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TSecureShell * /*Secure
   }
   Print(Prompt);
 
-  Result = Input(Response, false);
+  Result = Input(Response, (Kind == pkPrompt));
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptShowExtendedException(
@@ -667,7 +717,7 @@ void __fastcall TConsoleRunner::ScriptShowExtendedException(
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   const AnsiString Query, TStrings * MoreMessages, int Answers,
-  const TQueryParams * Params, int & Answer, TQueryType /*QueryType*/, 
+  const TQueryParams * Params, int & Answer, TQueryType /*QueryType*/,
   void * /*Arg*/)
 {
   PrintMessage(Query);
@@ -762,7 +812,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   for (int Index = 0; Index < ButtonCount; Index++)
   {
     AnsiString & Caption = Captions[Index];
-    
+
     if (Accels[Index + 1] == ' ')
     {
       for (int Index2 = 1; Index2 <= Caption.Length(); Index2++)
@@ -963,7 +1013,7 @@ void __fastcall TConsoleRunner::ShowException(Exception * E)
       (dynamic_cast<EAbort *>(E) == NULL))
   {
     FCommandError = true;
-    PrintMessage(E->Message);
+    PrintMessage(TranslateExceptionMessage(E));
     ExtException * EE = dynamic_cast<ExtException *>(E);
     if ((EE != NULL) && (EE->MoreMessages != NULL))
     {
@@ -994,7 +1044,7 @@ bool __fastcall TConsoleRunner::Input(AnsiString & Str, bool Echo)
 int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCommands)
 {
   bool AnyError = false;
- 
+
   try
   {
     FScript = new TManagementScript(StoredSessions);
@@ -1043,7 +1093,7 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCo
           Print("winscp> ");
           Result = Input(Command, true);
         }
-      
+
         if (Result)
         {
           FCommandError = false;
@@ -1103,14 +1153,18 @@ int __fastcall Console(TProgramParams * Params, bool Help)
     {
       Console = new TExternalConsole(ConsoleInstance);
     }
-    else
+    else if (Params->FindSwitch("Console") || Help)
     {
       Console = TOwnConsole::Instance();
+    }
+    else
+    {
+      Console = new TNullConsole();
     }
 
     if (Help)
     {
-      AnsiString Usage = LoadStr(USAGE2);
+      AnsiString Usage = LoadStr(USAGE3, 10240);
       AnsiString ExeBaseName = ChangeFileExt(ExtractFileName(Application->ExeName), "");
       Usage = StringReplace(Usage, "%APP%", ExeBaseName,
         TReplaceFlags() << rfReplaceAll << rfIgnoreCase);

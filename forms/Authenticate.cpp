@@ -227,7 +227,7 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
         AdjustControls();
         do
         {
-          Application->ProcessMessages();
+          Application->HandleMessage();
         }
         while (!Application->Terminated && (ModalResult == mrNone));
       }

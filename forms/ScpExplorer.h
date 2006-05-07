@@ -31,6 +31,7 @@
 #include "TBXExtItems.hpp"
 #include "TB2ExtItems.hpp"
 #include "TBXToolPals.hpp"
+#include "TBXLists.hpp"
 //---------------------------------------------------------------------------
 class TScpExplorerForm : public TCustomScpExplorerForm
 {
@@ -244,9 +245,7 @@ __published:
   TTBXItem *TBXItem183;
   TTBXItem *TBXItem82;
   TTBXToolbar *TransferToolbar;
-  TTBXComboBoxItem *TransferCombo;
   TTBXItem *TBXItem83;
-  TTBXItem *TBXItem90;
   TTBXItem *TBXItem91;
   TTBXItem *TBXItem92;
   TTBXSeparatorItem *TBXSeparatorItem19;
@@ -278,7 +277,11 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem51;
   TTBXItem *TBXItem217;
   TTBXSeparatorItem *TBXSeparatorItem23;
-  void __fastcall RemoteStatusBarDblClick(TObject *Sender);
+  TTBXDropDownItem *TransferDropDown;
+  TTBXStringList *TransferList;
+  TTBXLabelItem *TransferLabel;
+  TTBXSeparatorItem *TBXSeparatorItem52;
+  TTBXItem *TBXItem189;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
 private:

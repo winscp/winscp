@@ -9,15 +9,14 @@ interface
 {$J+}
 
 uses
-  StdCtrls, Messages, Windows, Classes, Forms;
+  StdCtrls, Messages, Windows, Classes, Forms, ComCtrls;
 
 type
   TXPTheme = class
   public
     constructor Create;
     destructor Destroy; override;
-    
-    function ThemesActive: Boolean;
+
     function XPComCtl: Boolean;
 
     procedure ShowFocus(Form: TCustomForm);
@@ -25,47 +24,67 @@ type
 
   private
     FThemeLib: THandle;
+    FWindowHandle: HWND;
+    FThemesActive: Boolean;
+
     FDrawThemeBackground: function(hTheme: THandle; hdc: HDC; iPartId, iStateId: Integer; const pRect: TRect;
       pClipRect: PRECT): HRESULT; stdcall;
     FOpenThemeData: function(hwnd: HWND; pszClassList: LPCWSTR): THandle; stdcall;
     FCloseThemeData: function(hTheme: THandle): HRESULT; stdcall;
     FDrawThemeText: function(hTheme: THandle; hdc: HDC; iPartId, iStateId: Integer; pszText: LPCWSTR; iCharCount: Integer;
       dwTextFlags, dwTextFlags2: DWORD; const pRect: TRect): HRESULT; stdcall;
+    FGetThemeTextExtent: function(hTheme: THandle; hdc: HDC; iPartId, iStateId: Integer; pszText: LPCWSTR; iCharCount: Integer;
+      dwTextFlags: DWORD; pBoundingRect: PRECT; var pExtentRect: TRect): HRESULT; stdcall;
     FIsThemeBackgroundPartiallyTransparent: function(hTheme: THandle; iPartId, iStateId: Integer): BOOL; stdcall;
     FDrawThemeParentBackground: function(hwnd: HWND; hdc: HDC; prc: PRECT): HRESULT; stdcall;
     FGetThemeAppProperties: function: DWORD; stdcall;
     FIsAppThemed: function: BOOL; stdcall;
     FIsThemeActive: function: BOOL; stdcall;
+
+    procedure WndProc(var Msg: TMessage);
+    procedure UpdateThemesActive;
   end;
 
 type
-	TXPGroupBox = class(TGroupBox)
+  TXPGroupBox = class(TGroupBox)
   private
     FButtonThemeData: THandle;
-    FThemesActive: Boolean;
     function GetButtonThemeData: THandle;
-	protected
-		procedure WndProc(var Message: TMessage); override;
+  protected
+    procedure WndProc(var Message: TMessage); override;
     procedure UpdateAccel(CharCode: Word);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-	end;
+  end;
 
 var
   XPTheme: TXPTheme;
+
+procedure XPPageControl(PageControl: TPageControl);
 
 procedure Register;
 
 implementation
 
 uses
-  Graphics, Types, Controls, ComCtrls, SysUtils;
+  Graphics, Types, Controls, SysUtils;
 
 const
   BP_GROUPBOX = 4;
   STAP_ALLOW_CONTROLS = (1 shl 1);
   WM_THEMECHANGED = $031A;
+
+type
+  // These message records are not declared in Delphi 6 and lower.
+  TWMPrint = packed record
+    Msg: Cardinal;
+    DC: HDC;
+    Flags: Cardinal;
+    Result: Integer;
+  end;
+
+  TWMPrintClient = TWMPrint;
 
   { TXPTheme }
 
@@ -78,18 +97,38 @@ begin
     FOpenThemeData := GetProcAddress(FThemeLib, 'OpenThemeData');
     FCloseThemeData := GetProcAddress(FThemeLib, 'CloseThemeData');
     FDrawThemeText := GetProcAddress(FThemeLib, 'DrawThemeText');
+    FGetThemeTextExtent := GetProcAddress(FThemeLib, 'GetThemeTextExtent');
     FIsThemeBackgroundPartiallyTransparent := GetProcAddress(FThemeLib, 'IsThemeBackgroundPartiallyTransparent');
     FDrawThemeParentBackground := GetProcAddress(FThemeLib, 'DrawThemeParentBackground');
     FGetThemeAppProperties := GetProcAddress(FThemeLib, 'GetThemeAppProperties');
     FIsThemeActive := GetProcAddress(FThemeLib, 'IsThemeActive');
     FIsAppThemed := GetProcAddress(FThemeLib, 'IsAppThemed');
+    FWindowHandle := Classes.AllocateHWnd(WndProc);
+  end
+    else
+  begin
+    FWindowHandle := 0;
   end;
+
+  UpdateThemesActive;
 end;
 
 destructor TXPTheme.Destroy;
 begin
   FreeLibrary(FThemeLib);
   FThemeLib := 0;
+  Classes.DeallocateHWnd(FWindowHandle);
+end;
+
+procedure TXPTheme.WndProc(var Msg: TMessage);
+begin
+  with Msg do
+    if Msg = WM_THEMECHANGED then
+    begin
+      UpdateThemesActive;
+    end
+      else
+    Result := DefWindowProc(FWindowHandle, Msg, wParam, lParam);
 end;
 
 function TXPTheme.XPComCtl: Boolean;
@@ -97,9 +136,9 @@ begin
   Result := (GetComCtlVersion >= $00060000);
 end;
 
-function TXPTheme.ThemesActive: Boolean;
+procedure TXPTheme.UpdateThemesActive;
 begin
-  Result :=
+  FThemesActive :=
     (FThemeLib > 0) and (GetComCtlVersion >= $00060000) and
     FIsAppThemed and FIsThemeActive and
     ((FGetThemeAppProperties and STAP_ALLOW_CONTROLS) <> 0);
@@ -123,14 +162,12 @@ constructor TXPGroupBox.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
 
-  FThemesActive := XPTheme.ThemesActive;
-
   FButtonThemeData := 0;
 end;
 
 destructor TXPGroupBox.Destroy;
 begin
-  if FThemesActive and (FButtonThemeData <> 0) then
+  if XPTheme.FThemesActive and (FButtonThemeData <> 0) then
   begin
     XPTheme.FCloseThemeData(FButtonThemeData);
   end;
@@ -139,7 +176,7 @@ end;
 
 function TXPGroupBox.GetButtonThemeData: THandle;
 begin
-  if FThemesActive and (FButtonThemeData = 0) then
+  if XPTheme.FThemesActive and (FButtonThemeData = 0) then
   begin
     FButtonThemeData := XPTheme.FOpenThemeData(Handle, 'button');
   end;
@@ -153,16 +190,18 @@ procedure TXPGroupBox.WndProc(var Message: TMessage);
     PrevFont: HFONT;
     TextR: TRect;
     R: TRect;
-    Size: TSize;
     WText: WideString;
     StateID: Integer;
   begin
+    if Enabled then StateID := 1
+      else StateID := 2;
     PrevFont := SelectObject(DC, Font.Handle);
     if Text <> '' then
     begin
       SetTextColor(DC, Graphics.ColorToRGB(Font.Color));
-      GetTextExtentPoint32(DC, PChar(Text), Length(Text), Size);
-      TextR := Rect(0, 0, Size.cx, Size.cy);
+      WText := Text;
+      XPTheme.FGetThemeTextExtent(GetButtonThemeData, DC, BP_GROUPBOX, StateID,
+        PWideChar(WText), Length(WText), DT_LEFT, nil, TextR);
       if not UseRightToLeftAlignment then
         OffsetRect(TextR, 8, 0)
       else
@@ -178,14 +217,11 @@ procedure TXPGroupBox.WndProc(var Message: TMessage);
     with TextR do
       ExcludeClipRect(DC, Left, Top, Right, Bottom);
 
-    if Enabled then StateID := 1
-      else StateID := 2;
     XPTheme.FDrawThemeBackground(GetButtonThemeData, DC, BP_GROUPBOX, StateID, R, nil);
 
     SelectClipRgn(DC, 0);
     if Text <> '' then
     begin
-      WText := Text;
       XPTheme.FDrawThemeText(GetButtonThemeData, DC, BP_GROUPBOX, StateID,
         PWideChar(WText), Length(WText), DT_LEFT, 0, TextR);
     end;
@@ -198,12 +234,11 @@ var
 begin
   if Message.Msg = WM_THEMECHANGED then
   begin
-    FThemesActive := XPTheme.ThemesActive;
     Invalidate;
     inherited;
   end
     else
-  if FThemesActive then
+  if XPTheme.FThemesActive then
     case Message.Msg of
       WM_PAINT:
         begin
@@ -255,6 +290,73 @@ begin
       VK_MENU:
         Form.Perform(WM_CHANGEUISTATE, MakeLong(UIS_CLEAR, UISF_HIDEACCEL), 0);
     end;
+end;
+
+type
+  TPublicControl = class(TWinControl)
+  end;
+
+procedure CallControlWndProc(Control: TWinControl; var Message: TMessage);
+begin
+  TPublicControl(Control).WndProc(Message);
+end;
+
+procedure XPTabSheetWindowProc(Data: Pointer; var Message: TMessage);
+var
+  TabSheet: TTabSheet;
+  DrawRect: TRect;
+  DC: HDC;
+begin
+  TabSheet := TTabSheet(Data);
+
+  case Message.Msg of
+    // Paint the border (and erase the background)
+    WM_NCPAINT:
+      with TabSheet do
+      begin
+        DC := GetWindowDC(Handle);
+        try
+          // Exclude the client area from painting. We only want to erase the non-client area.
+          DrawRect := ClientRect;
+          OffsetRect(DrawRect, BorderWidth, BorderWidth);
+          with DrawRect do
+            ExcludeClipRect(DC, Left, Top, Right, Bottom);
+          // The parent paints relative to the control's client area. We have to compensate for this by
+          // shifting the dc's window origin.
+          SetWindowOrgEx(DC, -BorderWidth, -BorderWidth, nil);
+          XPTheme.FDrawThemeParentBackground(TabSheet.Handle, DC, nil);
+        finally
+          ReleaseDC(Handle, DC);
+        end;
+        Message.Result := 0;
+      end;
+    WM_PRINTCLIENT,
+    WM_ERASEBKGND:
+      begin
+        if Message.Msg = WM_PRINTCLIENT then
+          DC := TWMPrintClient(Message).DC
+        else
+          DC := TWMEraseBkGnd(Message).DC;
+        XPTheme.FDrawThemeParentBackground(TabSheet.Handle, DC, nil);
+        Message.Result := 1;
+      end;
+    else
+      CallControlWndProc(TabSheet, Message);
+  end;
+end;
+
+procedure XPPageControl(PageControl: TPageControl);
+var
+  WindowProc: TWndMethod;
+  I: Integer;
+begin
+  TMethod(WindowProc).Code := @XPTabSheetWindowProc;
+
+  for I := 0 to PageControl.PageCount - 1 do
+  begin
+    TMethod(WindowProc).Data := PageControl.Pages[I];
+    PageControl.Pages[I].WindowProc := WindowProc;
+  end;
 end;
 
 procedure Register;

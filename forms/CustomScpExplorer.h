@@ -123,8 +123,8 @@ __published:
           BOOL FEscapePressed, int grfKeyState, HRESULT &Result);
   void __fastcall RemoteDirViewEnter(TObject *Sender);
   void __fastcall RemoteDriveViewEnter(TObject *Sender);
-  void __fastcall DirViewMatchMask(TObject *Sender,
-    AnsiString FileName, bool Directory, AnsiString Masks, bool &Matches);
+  void __fastcall DirViewMatchMask(TObject *Sender, AnsiString FileName,
+    bool Directory, __int64 Size, AnsiString Masks, bool &Matches);
   void __fastcall RemoteDirViewGetOverlay(TObject *Sender, TListItem *Item,
     WORD &Indexes);
   void __fastcall DirViewHistoryChange(TCustomDirView *Sender);
@@ -134,6 +134,8 @@ __published:
   void __fastcall FormConstrainedResize(TObject * Sender, int & MinWidth,
     int  &MinHeight, int  &MaxWidth, int  &MaxHeight);
   void __fastcall SessionColorPaletteChange(TObject * Sender);
+  void __fastcall StatusBarPanelDblClick(TTBXCustomStatusBar * Sender,
+    TTBXStatusPanel * Panel);
 
 private:
   TTerminal * FTerminal;
@@ -173,7 +175,8 @@ private:
   bool FEditingFocusedAdHocCommand;
   TList * FDocks;
   TSynchronizeController * FSynchronizeController;
-  AnsiString FTransferComboHint;
+  AnsiString FTransferDropDownHint;
+  int FTransferListHoverIndex;
   TColor FSessionColor;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
@@ -184,7 +187,9 @@ private:
   void __fastcall SessionComboDrawItem(TTBXCustomList * Sender, TCanvas * ACanvas,
     const TRect & ARect, int AIndex, int AHoverIndex, bool & DrawDefault);
   void __fastcall SessionComboChange(TObject * Sender, const AnsiString Text);
-  void __fastcall TransferComboChange(TObject * Sender, const AnsiString Text);
+  void __fastcall TransferListChange(TObject * Sender);
+  void __fastcall TransferListDrawItem(TTBXCustomList * Sender, TCanvas * ACanvas,
+    const TRect & ARect, int AIndex, int AHoverIndex, bool & DrawDefault);
   void __fastcall CloseInternalEditor(TObject * Sender);
   void __fastcall ForceCloseInternalEditor(TObject * Sender);
   void __fastcall TerminalCaptureLog(TObject* Sender, TLogLineType Type,
@@ -207,6 +212,11 @@ protected:
   TQueueItemProxy * FPendingQueueActionItem;
   TTBXPopupMenu * FHistoryMenu[2][2];
   bool FNoTransferPresetAutoSelect;
+  TStrings * FNotes;
+  TTimer * FNoteTimer;
+  AnsiString FNote;
+  AnsiString FNoteHints;
+  TNotifyEvent FOnNoteClick;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -314,7 +324,7 @@ protected:
     const TEditorPreferences * ExternalEditor);
   void __fastcall ExecuteFileNormalize(TExecuteFileBy & ExecuteFileBy,
     const TEditorPreferences *& ExternalEditor, const AnsiString & FileName,
-    bool Local);
+    bool Local, const TFileMasks::TParams & MaskParams);
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
     AnsiString & TempDir, bool AllFiles, bool GetTargetNames);
   TTBXPopupMenu * __fastcall HistoryMenu(TOperationSide Side, bool Back);
@@ -322,7 +332,8 @@ protected:
     const TStatusFileInfo & FileInfo, int Panel);
   virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
   virtual void __fastcall UpdateControls();
-  void __fastcall UpdateTransferCombo();
+  void __fastcall UpdateTransferList();
+  void __fastcall UpdateTransferLabel();
   void __fastcall StartUpdates();
   void __fastcall TransferPresetAutoSelect();
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
@@ -336,6 +347,11 @@ protected:
   void __fastcall UpdateCustomCommandsToolbar();
   virtual void __fastcall UpdateActions();
   void __fastcall SetSessionColor(TColor value);
+  void __fastcall NoteTimer(TObject * Sender);
+  void __fastcall PostNote(AnsiString Note, unsigned int Seconds,
+    TNotifyEvent OnNoteClick);
+  void __fastcall UpdatesChecked();
+  void __fastcall UpdatesNoteClicked(TObject * Sender);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -386,9 +402,10 @@ public:
     bool Temp, const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   bool __fastcall DoSynchronizeDirectories(AnsiString & LocalDirectory,
-    AnsiString & RemoteDirectory);
+    AnsiString & RemoteDirectory, bool UseDefaults);
   bool __fastcall DoFullSynchronizeDirectories(AnsiString & LocalDirectory,
-    AnsiString & RemoteDirectory, TSynchronizeMode & Mode, bool & SaveMode);
+    AnsiString & RemoteDirectory, TSynchronizeMode & Mode, bool & SaveMode,
+    bool UseDefaults);
   bool __fastcall CanPasteFromClipBoard();
   void __fastcall PasteFromClipBoard();
   void __fastcall ToggleQueueVisibility();
@@ -399,6 +416,10 @@ public:
   virtual void __fastcall BeforeAction();
   void __fastcall FileSystemInfo();
   void __fastcall SessionColorPick();
+  void __fastcall ReadDirectoryCancelled();
+  void __fastcall SynchronizeBrowsingChanged();
+  void __fastcall ToggleShowHiddenFiles();
+  void __fastcall ToggleAutoReadDirectoryAfterOp();
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

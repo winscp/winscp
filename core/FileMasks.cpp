@@ -30,12 +30,12 @@ AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask,
           Masked = true;
           break;
         }
-    
+
       case '*':
         if (!Delim)
         {
           Result += Part.SubString(RestStart, Part.Length() - RestStart + 1);
-          RestStart = Part.Length() + 1; 
+          RestStart = Part.Length() + 1;
           Masked = true;
           break;
         }
@@ -56,7 +56,7 @@ AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask,
         Result += Mask[Index];
         RestStart++;
         Delim = false;
-        break; 
+        break;
     }
   }
   return Result;
@@ -115,6 +115,12 @@ AnsiString __fastcall DelimitFileNameMask(AnsiString Mask)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+TFileMasks::TParams::TParams() :
+  Size(0)
+{
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 bool __fastcall TFileMasks::IsMask(const AnsiString Mask)
 {
   return (Mask.LastDelimiter("?*[") > 0);
@@ -149,48 +155,112 @@ bool __fastcall TFileMasks::MatchesFileMask(const AnsiString & Filename, const A
   }
   else
   {
-    Result = MatchesMask(Filename, Mask);
+    Result = ::MatchesMask(Filename, Mask);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileMasks::MatchesMask(AnsiString FileName, bool Directory,
+  AnsiString Path, const TParams * Params, AnsiString Masks)
+{
+  bool Result = true;
+  char NextDelimiter = '\0';
+  while (Result && !Masks.IsEmpty())
+  {
+    AnsiString M;
+    char Delimiter = NextDelimiter;
+    M = CutToChars(Masks, "<>", true, &NextDelimiter);
+
+    if (Delimiter != '\0')
+    {
+      if (Directory || (Params == NULL))
+      {
+        Result = false;
+      }
+      else
+      {
+        enum { Less, LessEqual, Greater, GreaterEqual } Op;
+        int Offset = 0;
+
+        Op = ((Delimiter == '>') ? Greater : Less);
+
+        if ((M.Length() >= 1) && (M[1] == '='))
+        {
+          Op = ((Op == Less) ? LessEqual : GreaterEqual);
+          Offset++;
+        }
+
+        __int64 Size = ParseSize(M.SubString(Offset + 1, M.Length() - Offset));
+
+        switch (Op)
+        {
+          case Less:
+            Result = (Params->Size < Size);
+            break;
+
+          case LessEqual:
+            Result = (Params->Size <= Size);
+            break;
+
+          case Greater:
+            Result = (Params->Size > Size);
+            break;
+
+          case GreaterEqual:
+            Result = (Params->Size >= Size);
+            break;
+        }
+      }
+    }
+    else if (!M.IsEmpty())
+    {
+      int D = M.LastDelimiter("\\/");
+      bool DirectoryMask = (D > 0) && (D == M.Length());
+
+      // directory masks match only directories,
+      // non-directory masks match anything
+      Result = (!DirectoryMask || Directory);
+      if (Result)
+      {
+        bool PathMatch = true;
+        if (DirectoryMask)
+        {
+          M.SetLength(M.Length() - 1);
+          D = M.LastDelimiter("\\/");
+        }
+        if (D > 0)
+        {
+          AnsiString MP = ToUnixPath(M.SubString(1, D - 1));
+          // 'Path' must already have unix slashes
+          PathMatch = ::MatchesMask(Path, MP);
+          M = M.SubString(D + 1, M.Length() - D);
+        }
+
+        Result = (PathMatch && MatchesFileMask(FileName, M));
+      }
+    }
   }
   return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::Matches(AnsiString FileName, bool Directory,
-  AnsiString Path) const
+  AnsiString Path, const TParams * Params) const
 {
   AnsiString S = Masks;
   while (!S.IsEmpty())
   {
     AnsiString M;
     M = CutToChars(S, ",;", true);
-    int D = M.LastDelimiter("\\/");
-    bool DirectoryMask = (D == M.Length());
-
-    // directory masks match only directories,
-    // non-directory masks match anything
-    if (!DirectoryMask || Directory)
+    if (MatchesMask(FileName, Directory, Path, Params, M))
     {
-      bool PathMatch = true;
-      if (DirectoryMask)
-      {
-        M.SetLength(M.Length() - 1);
-        D = M.LastDelimiter("\\/");
-      }
-      if (D > 0)
-      {
-        AnsiString MP = ToUnixPath(M.SubString(1, D - 1));
-        // 'Path' must already have unix slashes
-        PathMatch = MatchesMask(Path, MP);
-        M = M.SubString(D + 1, M.Length() - D);
-      }
-
-      if (PathMatch && MatchesFileMask(FileName, M)) return true;
+      return true;
     }
   }
   return false;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::Matches(AnsiString FileName, bool Local,
-  bool Directory) const
+  bool Directory, const TParams * Params) const
 {
   AnsiString Path;
   if (Local)
@@ -207,7 +277,7 @@ bool __fastcall TFileMasks::Matches(AnsiString FileName, bool Local,
     Path = UnixExcludeTrailingBackslash(UnixExtractFilePath(FileName));
     FileName = UnixExtractFileName(FileName);
   }
-  return Matches(FileName, Directory, Path);
+  return Matches(FileName, Directory, Path, Params);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::IsValid()
@@ -224,14 +294,14 @@ bool __fastcall TFileMasks::IsValid(int & Start, int & Length)
   while (!S.IsEmpty())
   {
     AnsiString M;
-    int P = S.Pos(';');
-    M = CutToChar(S, ';', False);
+    M = CutToChars(S, ",;", false);
+    int P = M.Length() + 1;
 
     if (!M.IsEmpty())
     {
       try
       {
-        MatchesMask("*.*", Trim(M));
+        MatchesMask("*.*", false, "", NULL, Trim(M));
       }
       catch (Exception &E)
       {
@@ -306,7 +376,7 @@ void __fastcall TCustomCommand::GetToken(
     {
       Len = PatternLen(Index, PatternCmd);
     }
-    
+
     if (Len < 0)
     {
       throw Exception(FMTLOAD(CUSTOM_COMMAND_UNKNOWN, (PatternCmd, Index)));
@@ -520,7 +590,7 @@ bool __fastcall TInteractiveCustomCommand::PatternReplacement(int Index, const A
   }
   else
   {
-    Result = false; 
+    Result = false;
   }
 
   return Result;
@@ -588,9 +658,9 @@ void __fastcall TFileCustomCommand::ValidatePattern(const AnsiString & /*Command
   int Index, int /*Len*/, char PatternCmd, void * Arg)
 {
   int * Found = static_cast<int *>(Arg);
-  
+
   assert(Index > 0);
-  
+
   if (PatternCmd == '&')
   {
     Found[0] = Index;
@@ -611,4 +681,3 @@ bool __fastcall TFileCustomCommand::IsFileCommand(const AnsiString & Command)
   return FindPattern(Command, '!') || FindPattern(Command, '&');
 }
 //---------------------------------------------------------------------------
-

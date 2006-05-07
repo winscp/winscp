@@ -24,9 +24,11 @@ function StripAccelCharsW(const S: WideString): WideString;
 function StripTrailingPunctuationW(const S: WideString): WideString;
 {$ENDIF}
 
-{$IFNDEF JR_D6}
-function CheckWin32Version(AMajor, AMinor: Integer = 0): Boolean; {vb+}
-{$ENDIF}
+{ MP (the function in VCL is buggy even in C++Builder 6) }
+{//$IFNDEF JR_D6}
+{ MP }
+function TBXCheckWin32Version(AMajor: Integer; AMinor: Integer = 0): Boolean; {vb+}
+{//$ENDIF}
 procedure GetRGB(C: TColor; out R, G, B: Integer);
 function  MixColors(C1, C2: TColor; W1: Integer): TColor;
 function  SameColors(C1, C2: TColor): Boolean;
@@ -401,13 +403,15 @@ end;
 
 {$ENDIF}
 
-{$IFNDEF JR_D6}
-function CheckWin32Version(AMajor, AMinor: Integer = 0): Boolean; {vb+}
+{ MP (the function in VCL is buggy even in C++Builder 6) }
+{//$IFNDEF JR_D6}
+{ MP }
+function TBXCheckWin32Version(AMajor: Integer; AMinor: Integer = 0): Boolean; {vb+}
 begin
   Result := (Win32MajorVersion > AMajor) or
     ((Win32MajorVersion = AMajor) and (Win32MinorVersion >= AMinor));
 end;
-{$ENDIF}
+{//$ENDIF}
 
 type
   PPoints = ^TPoints;

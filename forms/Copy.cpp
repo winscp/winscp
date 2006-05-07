@@ -446,16 +446,16 @@ void __fastcall TCopyDialog::LocalDirectoryBrowseButtonClick(
   TObject * /*Sender*/)
 {
   assert(!ToRemote);
-  AnsiString Directory;
+  AnsiString ADirectory;
   // if we are duplicating, we have remote path there
-  if (RemotePaths())
+  if (!RemotePaths())
   {
-    Directory = LocalDirectoryEdit->Text;
+    ADirectory = Directory;
   }
 
-  if (SelectDirectory(Directory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
+  if (SelectDirectory(ADirectory, LoadStr(SELECT_LOCAL_DIRECTORY), true))
   {
-    LocalDirectoryEdit->Text = Directory;
+    Directory = ADirectory;
     UpdateControls();
   }
 }

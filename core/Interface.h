@@ -58,6 +58,6 @@ struct TQueryParams
 };
 
 enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };
-enum TPromptKind { pkPassword, pkPassphrase, pkServerPrompt };
+enum TPromptKind { pkPassword, pkPassphrase, pkServerPrompt, pkPrompt };
 //---------------------------------------------------------------------------
 #endif

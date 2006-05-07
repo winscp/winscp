@@ -299,7 +299,6 @@ type
     function ItemDisplayName(FileName: string): string; virtual;
     function ItemFileExt(Item: TListItem): string;
     function ItemFileNameOnly(Item: TListItem): string;
-    function ItemFileSize(Item: TListItem): Int64; override;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; override;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; override;
     function ItemIsFile(Item: TListItem): Boolean; override;
@@ -315,7 +314,7 @@ type
     {$ENDIF}
     procedure SetShowHiddenFiles(Value: Boolean); override;
     procedure WMDestroy(var Msg: TWMDestroy); message WM_DESTROY;
-    function SecondaryColumnHeader(Index: Integer): Integer; override;
+    function SecondaryColumnHeader(Index: Integer; var AliasOnly: Boolean): Integer; override;
 
   public
     {Runtime, readonly properties:}
@@ -348,6 +347,7 @@ type
     function ItemFullFileName(Item: TListItem): string; override;
     function ItemIsParentDirectory(Item: TListItem): Boolean; override;
     function ItemFileName(Item: TListItem): string; override;
+    function ItemFileSize(Item: TListItem): Int64; override;
 
     {$IFNDEF NO_THREADS}
     {Thread handling: }
@@ -1127,10 +1127,11 @@ begin
   end; {Case}
 end; {ItemDisplayName}
 
-function TDirView.SecondaryColumnHeader(Index: Integer): Integer;
+function TDirView.SecondaryColumnHeader(Index: Integer; var AliasOnly: Boolean): Integer;
 begin
   if Index = Integer(dvName) then Result := Integer(dvExt)
     else Result := -1;
+  AliasOnly := False;
 end;
 
 function TDirView.AddItem(SRec: SysUtils.TSearchRec): TListItem;
@@ -1378,13 +1379,16 @@ begin
   WDir := Dir;
   if Assigned(FDesktopFolder) then
   begin
-    FDesktopFolder.ParseDisplayName(ParentForm.Handle, nil, PWideChar(WDir), Eaten, NewPIDL, Attr);
-    try
-      assert(Assigned(NewPIDL));
-      FDesktopFolder.BindToObject(NewPidl, nil, IID_IShellFolder, Pointer(Result));
-      Assert(Assigned(Result));
-    finally
-      FreePIDL(NewPidl);
+    if Succeeded(FDesktopFolder.ParseDisplayName(
+         ParentForm.Handle, nil, PWideChar(WDir), Eaten, NewPIDL, Attr)) then
+    begin
+      try
+        assert(Assigned(NewPIDL));
+        FDesktopFolder.BindToObject(NewPIDL, nil, IID_IShellFolder, Pointer(Result));
+        Assert(Assigned(Result));
+      finally
+        FreePIDL(NewPIDL);
+      end;
     end;
   end;
 end; {GetShellFolder}
@@ -1437,7 +1441,8 @@ begin
     ((Filter.ModificationFrom = 0) or (Modification >= Filter.ModificationFrom)) and
     ((Filter.ModificationTo = 0) or (Modification <= Filter.ModificationTo)) and
     ((Length(Filter.Masks) = 0) or
-     FileNameMatchesMasks(FileRec^.FileName, FileRec^.IsDirectory, Filter.Masks));
+     FileNameMatchesMasks(FileRec^.FileName, FileRec^.IsDirectory,
+       FileRec^.Size, Filter.Masks));
 end;
 
 function TDirView.ItemOverlayIndexes(Item: TListItem): Word;

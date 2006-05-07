@@ -232,7 +232,8 @@ void __fastcall TSynchronizeController::SynchronizeFilter(TObject * /*Sender*/,
       Add = FOptions->Filter->Find(ExtractFileName(DirectoryName), FoundIndex);
     }
   }
-  Add = Add && FCopyParam.AllowTransfer(DirectoryName, osLocal, true);
+  TFileMasks::TParams MaskParams; // size does not matter for directories
+  Add = Add && FCopyParam.AllowTransfer(DirectoryName, osLocal, true, MaskParams);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeController::SynchronizeInvalid(

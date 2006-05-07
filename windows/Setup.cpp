@@ -604,6 +604,14 @@ int __fastcall CalculateCompoundVersion(int MajorVer,
   return CompoundVer;
 }
 //---------------------------------------------------------------------------
+int __fastcall CurrentCompoundVersion()
+{
+  TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
+  return CalculateCompoundVersion(
+    HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
+    HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
 {
   int MajorVer = Version / (1000*100*100);
@@ -620,9 +628,7 @@ void __fastcall QueryUpdates()
     AnsiString Response;
 
     TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
-    int CurrentCompoundVer = CalculateCompoundVersion(
-      HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
-      HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
+    int CurrentCompoundVer = CurrentCompoundVersion();
     AnsiString CurrentVersionStr =
       FORMAT("%d.%d.%d.%d",
         (HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
@@ -691,6 +697,11 @@ void __fastcall QueryUpdates()
         Changed |= (PrevResults.Critical != NewCritical);
         Updates.Results.Critical = NewCritical;
       }
+      else if (AnsiSameText(Name, "Release"))
+      {
+        Changed |= (PrevResults.Release != Line);
+        Updates.Results.Release = Line;
+      }
     }
 
     if (Changed)
@@ -708,6 +719,33 @@ void __fastcall QueryUpdates()
   if (!VersionFound)
   {
     throw Exception(LoadStr(CHECK_FOR_UPDATES_ERROR));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New)
+{
+  TUpdatesConfiguration Updates = WinConfiguration->Updates;
+  assert(Updates.HaveResults);
+  if (Updates.HaveResults)
+  {
+    New = (Updates.Results.Version > 0);
+    if (New)
+    {
+      AnsiString Version = VersionStrFromCompoundVersion(Updates.Results.Version);
+      if (!Updates.Results.Release.IsEmpty())
+      {
+        Version = FORMAT("%s %s", (Version, Updates.Results.Release));
+      }
+      Message = FMTLOAD(NEW_VERSION2, (Version, "%s"));
+    }
+    else
+    {
+      Message = LoadStr(NO_NEW_VERSION) + "%s";
+    }
+  }
+  else
+  {
+    New = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -733,7 +771,9 @@ void __fastcall CheckForUpdates(bool CachedResults)
     {
       TUpdatesConfiguration Updates = WinConfiguration->Updates;
       bool Cached = !Again && Updates.HaveResults &&
-        (double(Updates.Period) > 0) && CachedResults;
+        (double(Updates.Period) > 0) &&
+        (Updates.Results.ForVersion == CurrentCompoundVersion()) &&
+        CachedResults;
       if (!Cached)
       {
         QueryUpdates();
@@ -750,16 +790,8 @@ void __fastcall CheckForUpdates(bool CachedResults)
       assert(Updates.HaveResults);
 
       AnsiString Message;
-      bool New = (Updates.Results.Version > 0);
-      if (New)
-      {
-        Message = FMTLOAD(NEW_VERSION2,
-          (VersionStrFromCompoundVersion(Updates.Results.Version), "%s"));
-      }
-      else
-      {
-        Message = LoadStr(NO_NEW_VERSION) + "%s";
-      }
+      bool New;
+      GetUpdatesMessage(Message, New);
 
       if (!Updates.Results.Message.IsEmpty())
       {
@@ -821,14 +853,17 @@ void __fastcall CheckForUpdates(bool CachedResults)
 class TUpdateThread : public TCompThread
 {
 public:
-  __fastcall TUpdateThread();
+  __fastcall TUpdateThread(TThreadMethod OnUpdatesChecked);
 protected:
   virtual void __fastcall Execute();
+  TThreadMethod FOnUpdatesChecked;
 };
 //---------------------------------------------------------------------------
 TUpdateThread * UpdateThread = NULL;
 //---------------------------------------------------------------------------
-__fastcall TUpdateThread::TUpdateThread() : TCompThread(false)
+__fastcall TUpdateThread::TUpdateThread(TThreadMethod OnUpdatesChecked) :
+  TCompThread(false),
+  FOnUpdatesChecked(OnUpdatesChecked)
 {
 }
 //---------------------------------------------------------------------------
@@ -837,6 +872,10 @@ void __fastcall TUpdateThread::Execute()
   try
   {
     QueryUpdates();
+    if (FOnUpdatesChecked != NULL)
+    {
+      Synchronize(FOnUpdatesChecked);
+    }
   }
   catch(...)
   {
@@ -844,10 +883,10 @@ void __fastcall TUpdateThread::Execute()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall StartUpdateThread()
+void __fastcall StartUpdateThread(TThreadMethod OnUpdatesChecked)
 {
   assert(UpdateThread == NULL);
-  UpdateThread = new TUpdateThread();
+  UpdateThread = new TUpdateThread(OnUpdatesChecked);
 }
 //---------------------------------------------------------------------------
 void __fastcall StopUpdateThread()

@@ -120,6 +120,7 @@ void __fastcall TLoginDialog::Init()
     LocalDirectoryEdit->Visible = false;
     LocalDirectoryDescLabel->Visible = false;
     DirectoriesGroup->Height = RemoteDirectoryEdit->Top + RemoteDirectoryEdit->Height + 12;
+    DirectoryOptionsGroup->Top = DirectoriesGroup->Top + DirectoriesGroup->Height + 8;
   }
 
   if (FLAGCLEAR(Options, loExternalProtocols))
@@ -632,6 +633,7 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
 
       EnableControl(DirectoriesSheet, !ExternalProtocol);
+      DirectoryOptionsGroup->Visible = ShowAdvancedLoginOptionsCheck->Checked;
       EnableControl(CacheDirectoryChangesCheck,
         (!SCPonlyButton->Checked || CacheDirectoriesCheck->Checked) && DirectoriesSheet->Enabled);
       EnableControl(PreserveDirectoryChangesCheck,
@@ -639,6 +641,7 @@ void __fastcall TLoginDialog::UpdateControls()
         DirectoriesSheet->Enabled);
 
       EnableControl(EnvironmentSheet, !ExternalProtocol);
+      RecycleBinGroup->Visible = ShowAdvancedLoginOptionsCheck->Checked;
       EnableControl(OverwrittenToRecycleBinCheck, !SCPonlyButton->Checked &&
         EnvironmentSheet->Enabled);
       EnableControl(RecycleBinPathEdit,
@@ -822,9 +825,21 @@ void __fastcall TLoginDialog::SessionListViewInfoTip(TObject * /*Sender*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SessionListViewKeyDown(TObject * /*Sender*/,
-      WORD &Key, TShiftState /*Shift*/)
+  WORD & Key, TShiftState /*Shift*/)
 {
-  if (Key == VK_DELETE) DeleteSessionAction->Execute();
+  if (!SessionListView->IsEditing())
+  {
+    if (Key == VK_DELETE)
+    {
+      DeleteSessionAction->Execute();
+      Key = 0;
+    }
+    else if (Key == VK_F2)
+    {
+      RenameSessionAction->Execute();
+      Key = 0;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessionActionExecute(TObject * /*Sender*/)
@@ -845,7 +860,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
       (MessageDialog(LoadStr(SAVE_PASSWORD), qtWarning, qaOK | qaCancel,
          HELP_SESSION_SAVE_PASSWORD) == qaOK))
   {
-    SessionName = DoSaveSessionDialog(StoredSessions, FSessionData->SessionName);
+    SessionName = DoSaveSessionDialog(FSessionData->SessionName);
     if (!SessionName.IsEmpty())
     {
       TListItem * Item;
@@ -924,6 +939,12 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
     DeleteSessionAction->Enabled =
       SessionListView->Selected && Data && !Data->Special;
   }
+  else if (Action == RenameSessionAction)
+  {
+    TSessionData * Data = SessionData;
+    RenameSessionAction->Enabled =
+      SessionListView->Selected && Data && !Data->Special;
+  }
   else if (Action == DesktopIconAction)
   {
     DesktopIconAction->Enabled = SessionListView->Selected;
@@ -942,6 +963,11 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
     SaveSessionAction->Enabled = (PageControl->ActivePage != SessionListSheet);
   }
   Handled = true;
+
+  if (!LoginButton->Default && !SessionListView->IsEditing())
+  {
+    LoginButton->Default = true;
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TLoginDialog::Execute()
@@ -1346,7 +1372,7 @@ void __fastcall TLoginDialog::VerifyKey(AnsiString FileName, bool TypeOnly)
       case ktSSH1:
       case ktSSH2:
         // on file select do not check for SSH version as user may
-        // inted to change it only after he/she selects key file
+        // intend to change it only after he/she selects key file
         if (!TypeOnly)
         {
           TSessionData * Data = SessionData;
@@ -1428,6 +1454,81 @@ void __fastcall TLoginDialog::PickColorItemClick(TObject * /*Sender*/)
   __finally
   {
     delete Dialog;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionListViewEditing(TObject * /*Sender*/,
+  TListItem * Item, bool & AllowEdit)
+{
+  TSessionData * Data = static_cast<TSessionData *>(Item->Data);
+  AllowEdit = !Data->Special;
+  if (AllowEdit)
+  {
+    LoginButton->Default = false;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::RenameSessionActionExecute(TObject * /*Sender*/)
+{
+  if (SessionListView->Selected != NULL)
+  {
+    SessionListView->Selected->EditCaption();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionListViewEdited(TObject * /*Sender*/,
+  TListItem * Item, AnsiString & S)
+{
+  if (Item->Caption != S)
+  {
+    SaveSessionInputValidate(S);
+
+    TSessionData * Session = SelectedSession;
+    // remove from storage
+    Session->Remove();
+
+    int PrevCount = StoredSessions->Count;
+    TSessionData * NewSession = StoredSessions->NewSession(S, Session);
+    StoredSessions->Save();
+    SessionListView->Selected->Data = NewSession;
+    // if we overwrite editing session, remove the original item
+    // (we must preserve the one we are editing)
+    if (PrevCount == StoredSessions->Count)
+    {
+      int Index = StoredSessions->IndexOf(NewSession);
+      TListItem * OldItem = SessionListView->Items->Item[Index];
+      assert(OldItem->Data == NewSession); 
+      OldItem->Delete();
+    }
+    // should always be true as the name have changed
+    if (Session != NewSession)
+    {
+      StoredSessions->Remove(Session);
+    }
+
+    // sort items to the same order as in the container
+    SessionListView->AlphaSort();
+
+    SessionData = NewSession;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionListViewCompare(TObject * /*Sender*/,
+  TListItem * Item1, TListItem * Item2, int /*Data*/, int & Compare)
+{
+  int Index1 = StoredSessions->IndexOf(static_cast<TSessionData*>(Item1->Data));
+  int Index2 = StoredSessions->IndexOf(static_cast<TSessionData*>(Item2->Data));
+  if (Index1 < Index2)
+  {
+    Compare = -1;
+  }
+  else if (Index1 > Index2)
+  {
+    Compare = 1;
+  }
+  else
+  {
+    Compare = 0;
   }
 }
 //---------------------------------------------------------------------------

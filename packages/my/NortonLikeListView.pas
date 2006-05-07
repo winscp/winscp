@@ -376,7 +376,9 @@ begin
   begin
     PDontSelectItem := FDontSelectItem;
     PDontUnSelectItem := FDontUnSelectItem;
-    FDontSelectItem := FDontSelectItem or (NortonLike <> nlOff);
+    FDontSelectItem := FDontSelectItem or
+      ((NortonLike <> nlOff) and
+       ((KeyDataToShiftState(Message.KeyData) * [ssShift]) = []));
     FDontUnSelectItem := FDontUnSelectItem or (NortonLike <> nlOff);
     try
       inherited;

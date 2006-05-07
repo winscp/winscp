@@ -194,6 +194,8 @@
 #define TIMEOUT_STILL_WAITING   321
 #define KEX_BELOW_TRESHOLD      322
 #define RECONNECT_BUTTON        323
+#define RENAME_BUTTON           324
+#define RENAME_PROMPT           325
 
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401
@@ -275,6 +277,7 @@
 #define AUTH_TRANSL_ACCESS_DENIED 477
 #define AUTH_TRANSL_PUBLIC_KEY_AGENT 478
 #define AUTH_TRANSL_TRY_PUBLIC_KEY 479
+#define AUTH_PASSWORD           480
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601

@@ -387,7 +387,6 @@ protected:
 	virtual AnsiString __fastcall ItemDisplayName(AnsiString FileName);
 	AnsiString __fastcall ItemFileExt(Comctrls::TListItem* Item);
 	AnsiString __fastcall ItemFileNameOnly(Comctrls::TListItem* Item);
-	virtual __int64 __fastcall ItemFileSize(Comctrls::TListItem* Item);
 	virtual System::TDateTime __fastcall ItemFileTime(Comctrls::TListItem* Item, Baseutils::TDateTimePrecision &Precision);
 	virtual int __fastcall ItemImageIndex(Comctrls::TListItem* Item, bool Cache);
 	virtual bool __fastcall ItemIsFile(Comctrls::TListItem* Item);
@@ -401,7 +400,7 @@ protected:
 	void __fastcall StartFileDeleteThread(void);
 	virtual void __fastcall SetShowHiddenFiles(bool Value);
 	HIDESBASE MESSAGE void __fastcall WMDestroy(Messages::TWMNoParams &Msg);
-	virtual int __fastcall SecondaryColumnHeader(int Index);
+	virtual int __fastcall SecondaryColumnHeader(int Index, bool &AliasOnly);
 	
 public:
 	__property int DriveType = {read=FDriveType, nodefault};
@@ -424,6 +423,7 @@ public:
 	virtual AnsiString __fastcall ItemFullFileName(Comctrls::TListItem* Item);
 	virtual bool __fastcall ItemIsParentDirectory(Comctrls::TListItem* Item);
 	virtual AnsiString __fastcall ItemFileName(Comctrls::TListItem* Item);
+	virtual __int64 __fastcall ItemFileSize(Comctrls::TListItem* Item);
 	void __fastcall StartWatchThread(void);
 	void __fastcall StopWatchThread(void);
 	bool __fastcall WatchThreadActive(void);

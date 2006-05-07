@@ -994,21 +994,31 @@ inherited ScpCommanderForm: TScpCommanderForm
       ParentShowHint = False
       ShowHint = True
       TabOrder = 8
-      object TransferCombo: TTBXComboBoxItem
+      object TransferDropDown: TTBXDropDownItem
         EditWidth = 114
         Hint = 'Select transfer settings preset'
         DropDownList = True
-        MaxVisibleItems = 15
-      end
-      object TBXItem189: TTBXItem
-        Action = NonVisualDataModule.PresetsPreferencesAction
+        object TransferList: TTBXStringList
+          MaxVisibleItems = 15
+          MinWidth = 350
+        end
+        object TransferLabel: TTBXLabelItem
+          Margin = 4
+          ShowAccelChar = False
+        end
+        object TBXSeparatorItem52: TTBXSeparatorItem
+        end
+        object TBXItem189: TTBXItem
+          Action = NonVisualDataModule.PresetsPreferencesAction
+          DisplayMode = nbdmImageAndText
+        end
       end
     end
     object UploadDownloadToolbar: TTBXToolbar
-      Left = 193
+      Left = 170
       Top = 179
       Caption = 'Upload/Download'
-      DockPos = 192
+      DockPos = 168
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
@@ -1023,10 +1033,10 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
-      Left = 249
+      Left = 226
       Top = 179
       Caption = 'Custom Commands'
-      DockPos = 249
+      DockPos = 225
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
@@ -1469,6 +1479,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       item
         Alignment = taCenter
         MaxSize = 100
+        ViewPriority = 99
         Size = 100
         Tag = 0
         TextTruncation = twEndEllipsis
@@ -1476,7 +1487,16 @@ inherited ScpCommanderForm: TScpCommanderForm
       item
         Alignment = taCenter
         MaxSize = 100
+        ViewPriority = 99
         Size = 100
+        Tag = 0
+        TextTruncation = twEndEllipsis
+      end
+      item
+        Alignment = taCenter
+        MaxSize = 35
+        ViewPriority = 95
+        Size = 35
         Tag = 0
         TextTruncation = twEndEllipsis
       end
@@ -1489,17 +1509,17 @@ inherited ScpCommanderForm: TScpCommanderForm
         TextTruncation = twEndEllipsis
       end
       item
-        Alignment = taCenter
-        MaxSize = 35
+        MaxSize = 100
         ViewPriority = 97
-        Size = 35
+        Size = 100
         Tag = 0
         TextTruncation = twEndEllipsis
       end
       item
-        MaxSize = 100
+        Alignment = taCenter
+        MaxSize = 80
         ViewPriority = 98
-        Size = 100
+        Size = 80
         Tag = 0
         TextTruncation = twEndEllipsis
       end
@@ -1512,9 +1532,8 @@ inherited ScpCommanderForm: TScpCommanderForm
         TextTruncation = twEndEllipsis
       end
       item
-        Alignment = taCenter
-        MaxSize = 80
-        Size = 80
+        Size = 100
+        StretchPriority = 1
         Tag = 0
         TextTruncation = twEndEllipsis
       end>
@@ -1522,7 +1541,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     PopupMenu = NonVisualDataModule.CommanderBarPopup
     ShowHint = True
     UseSystemFont = False
-    OnDblClick = StatusBarDblClick
+    OnPanelDblClick = StatusBarPanelDblClick
   end
   object CommandLinePanel: TPanel
     Left = 0

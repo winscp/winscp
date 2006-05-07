@@ -30,7 +30,8 @@ AnsiString RootKeyToStr(HKEY RootKey);
 AnsiString BooleanToStr(bool B);
 AnsiString BooleanToEngStr(bool B);
 AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim);
-AnsiString CutToChars(AnsiString &Str, AnsiString Chs, bool Trim);
+AnsiString CutToChars(AnsiString &Str, AnsiString Chs, bool Trim,
+  char * Delimiter = NULL);
 AnsiString DelimitStr(AnsiString Str, AnsiString Chars);
 AnsiString ShellDelimitStr(AnsiString Str, char Quote);
 void __fastcall OemToAnsi(AnsiString & Str);
@@ -52,6 +53,7 @@ AnsiString __fastcall CharToHex(char Ch);
 AnsiString __fastcall StrToHex(const AnsiString Str);
 AnsiString __fastcall HexToStr(const AnsiString Hex);
 unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars = 0);
+__int64 __fastcall ParseSize(AnsiString SizeStr);
 AnsiString __fastcall DecodeUrlChars(AnsiString S);
 AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore = "");
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
@@ -73,6 +75,8 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime, bool ConsiderDS
 TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, bool ConsiderDST);
 void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTime2);
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
+  bool ConsiderDST);
+__int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
   bool ConsiderDST);
 AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format);
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);

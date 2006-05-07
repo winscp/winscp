@@ -1656,6 +1656,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_connections#session_color'
       Hint = 'Choose any session (panel) color'
     end
+    object AutoReadDirectoryAfterOpAction: TAction
+      Tag = 15
+      Category = 'View'
+      Caption = 'Auto&matically Reload Directory'
+      Hint = 'Toggle automatic reload of remote directory after operation'
+      ShortCut = 49234
+    end
     object QueueItemPauseAction: TAction
       Tag = 12
       Category = 'Queue'

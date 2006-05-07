@@ -300,7 +300,7 @@ bool __fastcall TUnixDirView::ItemMatchesFilter(TListItem * Item,
     ((!(int)Filter.ModificationFrom) || (File->Modification >= Filter.ModificationFrom)) &&
     ((!(int)Filter.ModificationTo) || (File->Modification <= Filter.ModificationTo)) &&
     ((Filter.Masks.IsEmpty()) ||
-     FileNameMatchesMasks(File->FileName, File->IsDirectory, Filter.Masks));
+     FileNameMatchesMasks(File->FileName, File->IsDirectory, File->Size, Filter.Masks));
 #else
   return false;
 #endif
@@ -763,8 +763,9 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMA & HItem)
 #endif
 }
 //---------------------------------------------------------------------------
-int __fastcall TUnixDirView::SecondaryColumnHeader(int Index)
+int __fastcall TUnixDirView::SecondaryColumnHeader(int Index, bool & AliasOnly)
 {
+  AliasOnly = false;
   return ((Index == uvName) ? uvExt : -1);
 }
 //---------------------------------------------------------------------------

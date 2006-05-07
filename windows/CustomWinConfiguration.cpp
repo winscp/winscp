@@ -57,7 +57,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FInterface = ifCommander;
   FLogView = lvNone;
   FSynchronizeChecklist.WindowParams = "0;-1;-1;600;450;0";
-  FSynchronizeChecklist.ListLayout = "150,100,80,130,25,100,80,130";
+  FSynchronizeChecklist.ListParams = "1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1|0;1;2;3;4;5;6;7";
   FConsoleWin.WindowSize = "570,430";
 
   ClearHistory();
@@ -91,7 +91,7 @@ void __fastcall TCustomWinConfiguration::ModifyAll()
   ) \
   BLOCK("Interface\\SynchronizeChecklist", CANCREATE, \
     KEY(String,   SynchronizeChecklist.WindowParams); \
-    KEY(String,   SynchronizeChecklist.ListLayout); \
+    KEY(String,   SynchronizeChecklist.ListParams); \
   ); \
   BLOCK("Interface\\ConsoleWin", CANCREATE, \
     KEY(String,   ConsoleWin.WindowSize); \

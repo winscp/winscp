@@ -205,6 +205,9 @@ __published:
   TCheckBox *SessionReopenAutoCheck;
   TLabel *SessionReopenAutoSecLabel;
   TUpDownEdit *SessionReopenAutoEdit;
+  TTabSheet *WindowSheet;
+  TCheckBox *AutoReadDirectoryAfterOpCheck;
+  TCheckBox *ConfirmRecyclingCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

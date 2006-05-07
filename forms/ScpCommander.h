@@ -342,9 +342,7 @@ __published:
   TTBXItem *TBXItem186;
   TTBXItem *TBXItem187;
   TTBXToolbar *TransferToolbar;
-  TTBXComboBoxItem *TransferCombo;
   TTBXItem *TBXItem188;
-  TTBXItem *TBXItem189;
   TTBXItem *TBXItem190;
   TTBXSeparatorItem *TBXSeparatorItem47;
   TTBXItem *TBXItem191;
@@ -375,6 +373,11 @@ __published:
   TTBXSeparatorItem *TBXSeparatorItem50;
   TTBXSeparatorItem *TBXSeparatorItem51;
   TTBXColorPalette *SessionColorPalette;
+  TTBXDropDownItem *TransferDropDown;
+  TTBXStringList *TransferList;
+  TTBXLabelItem *TransferLabel;
+  TTBXSeparatorItem *TBXSeparatorItem52;
+  TTBXItem *TBXItem189;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -401,7 +404,6 @@ __published:
   void __fastcall CommandLineComboExit(TObject *Sender);
   void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,
     TListItem *Item, int &Effect, bool &DropHandler);
-  void __fastcall StatusBarDblClick(TObject *Sender);
   void __fastcall LocalFileControlDDMenuPopup(TObject *Sender, HMENU AMenu,
     IDataObject *DataObj, int AMinCustCmd, int grfKeyState, TPoint &pt);
   void __fastcall PathLabelDblClick(TObject *Sender);

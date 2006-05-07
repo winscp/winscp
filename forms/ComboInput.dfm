@@ -10,6 +10,7 @@ object ComboInputDialog: TComboInputDialog
   ParentFont = True
   OldCreateOrder = True
   Position = poOwnerFormCenter
+  OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
     326

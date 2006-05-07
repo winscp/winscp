@@ -6,7 +6,7 @@ object PreferencesDialog: TPreferencesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Preferences'
-  ClientHeight = 444
+  ClientHeight = 469
   ClientWidth = 532
   Color = clBtnFace
   ParentFont = True
@@ -16,12 +16,12 @@ object PreferencesDialog: TPreferencesDialog
   OnShow = FormShow
   DesignSize = (
     532
-    444)
+    469)
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
     Left = 269
-    Top = 413
+    Top = 438
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -32,7 +32,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object CloseButton: TButton
     Left = 357
-    Top = 413
+    Top = 438
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -45,7 +45,7 @@ object PreferencesDialog: TPreferencesDialog
     Left = 0
     Top = 0
     Width = 532
-    Height = 407
+    Height = 432
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
@@ -54,7 +54,7 @@ object PreferencesDialog: TPreferencesDialog
       Left = 151
       Top = 0
       Width = 381
-      Height = 407
+      Height = 432
       ActivePage = PreferencesSheet
       Align = alClient
       MultiLine = True
@@ -72,18 +72,18 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 2
         DesignSize = (
           373
-          352)
+          353)
         object CommonPreferencesGroup: TXPGroupBox
           Left = 8
           Top = 8
           Width = 357
-          Height = 210
+          Height = 233
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             357
-            210)
+            233)
           object ConfirmOverwritingCheck: TCheckBox
             Left = 16
             Top = 21
@@ -106,68 +106,78 @@ object PreferencesDialog: TPreferencesDialog
           end
           object ConfirmClosingSessionCheck: TCheckBox
             Left = 16
-            Top = 90
+            Top = 113
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'E&xiting application'
-            TabOrder = 3
+            TabOrder = 4
             OnClick = ControlChange
           end
           object DDTransferConfirmationCheck: TCheckBox
             Left = 16
-            Top = 136
+            Top = 159
             Width = 333
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'D&rag && drop operations'
-            TabOrder = 5
+            TabOrder = 6
             OnClick = ControlChange
           end
           object ContinueOnErrorCheck: TCheckBox
+            Left = 16
+            Top = 205
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Continue on &error (advanced users)'
+            TabOrder = 8
+            OnClick = ControlChange
+          end
+          object ConfirmExitOnCompletionCheck: TCheckBox
+            Left = 16
+            Top = 136
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Exiting application on o&peration completion'
+            TabOrder = 5
+            OnClick = ControlChange
+          end
+          object ConfirmResumeCheck: TCheckBox
+            Left = 16
+            Top = 90
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Transfer resuming'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object ConfirmCommandSessionCheck: TCheckBox
             Left = 16
             Top = 182
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Continue on &error (advanced users)'
+            Caption = 'Opening separate &shell session'
             TabOrder = 7
             OnClick = ControlChange
           end
-          object ConfirmExitOnCompletionCheck: TCheckBox
-            Left = 16
-            Top = 113
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Exiting application on o&peration completion'
-            TabOrder = 4
-            OnClick = ControlChange
-          end
-          object ConfirmResumeCheck: TCheckBox
+          object ConfirmRecyclingCheck: TCheckBox
             Left = 16
             Top = 67
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Transfer resuming'
+            Caption = '&Moving files to Recycle bin'
             TabOrder = 2
-            OnClick = ControlChange
-          end
-          object ConfirmCommandSessionCheck: TCheckBox
-            Left = 16
-            Top = 159
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Opening separate &shell session'
-            TabOrder = 6
             OnClick = ControlChange
           end
         end
         object NotificationsGroup: TXPGroupBox
           Left = 8
-          Top = 225
+          Top = 248
           Width = 357
           Height = 51
           Anchors = [akLeft, akTop, akRight]
@@ -216,7 +226,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 4
         DesignSize = (
           373
-          352)
+          353)
         inline LoggingFrame: TLoggingFrame
           Left = 5
           Top = 0
@@ -250,7 +260,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 5
         DesignSize = (
           373
-          352)
+          353)
         object Label1: TLabel
           Left = 8
           Top = 218
@@ -322,18 +332,18 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 3
         DesignSize = (
           373
-          352)
+          353)
         object PanelsRemoteDirectoryGroup: TXPGroupBox
           Left = 8
-          Top = 202
+          Top = 208
           Width = 357
-          Height = 49
+          Height = 73
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Remote directory'
           TabOrder = 2
           DesignSize = (
             357
-            49)
+            73)
           object ShowInaccesibleDirectoriesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -344,18 +354,28 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 0
             OnClick = ControlChange
           end
+          object AutoReadDirectoryAfterOpCheck: TCheckBox
+            Left = 16
+            Top = 44
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Auto&matically refresh directory after operation (Ctrl+Alt+R)'
+            TabOrder = 1
+            OnClick = ControlChange
+          end
         end
         object PanelsCommonGroup: TXPGroupBox
           Left = 8
           Top = 8
           Width = 357
-          Height = 115
+          Height = 119
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             357
-            115)
+            119)
           object ShowHiddenFilesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -368,7 +388,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DefaultDirIsHomeCheck: TCheckBox
             Left = 16
-            Top = 65
+            Top = 67
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -378,7 +398,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DeleteToRecycleBinCheck: TCheckBox
             Left = 16
-            Top = 43
+            Top = 44
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -388,7 +408,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object PreservePanelStateCheck: TCheckBox
             Left = 16
-            Top = 87
+            Top = 90
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -397,42 +417,9 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object PathInCaptionGroup: TXPGroupBox
-          Left = 8
-          Top = 255
-          Width = 357
-          Height = 90
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Path in window title'
-          TabOrder = 3
-          object PathInCaptionFullButton: TRadioButton
-            Left = 16
-            Top = 20
-            Width = 337
-            Height = 17
-            Caption = 'Show &full path'
-            TabOrder = 0
-          end
-          object PathInCaptionShortButton: TRadioButton
-            Left = 16
-            Top = 42
-            Width = 337
-            Height = 17
-            Caption = 'Sho&w short path'
-            TabOrder = 1
-          end
-          object PathInCaptionNoneButton: TRadioButton
-            Left = 16
-            Top = 64
-            Width = 337
-            Height = 17
-            Caption = 'Do &not show'
-            TabOrder = 2
-          end
-        end
         object DoubleClickGroup: TXPGroupBox
           Left = 8
-          Top = 126
+          Top = 131
           Width = 357
           Height = 72
           Anchors = [akLeft, akTop, akRight]
@@ -483,7 +470,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 3
         DesignSize = (
           373
-          352)
+          353)
         object Label3: TLabel
           Left = 8
           Top = 8
@@ -625,7 +612,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 5
         DesignSize = (
           373
-          352)
+          353)
         object Label4: TLabel
           Left = 8
           Top = 8
@@ -774,7 +761,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 7
         DesignSize = (
           373
-          352)
+          353)
         object InternalEditorGroup: TXPGroupBox
           Left = 8
           Top = 268
@@ -958,7 +945,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 8
         DesignSize = (
           373
-          352)
+          353)
         object ShellIconsGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1112,23 +1099,23 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 9
         DesignSize = (
           373
-          352)
+          353)
         object CustomCommandsGroup: TXPGroupBox
           Left = 8
           Top = 8
           Width = 357
-          Height = 334
+          Height = 335
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Custom commands'
           TabOrder = 0
           DesignSize = (
             357
-            334)
+            335)
           object CustomCommandsView: TListView
             Left = 16
             Top = 24
             Width = 324
-            Height = 226
+            Height = 227
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
@@ -1167,7 +1154,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object AddCommandButton: TButton
             Left = 10
-            Top = 261
+            Top = 262
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1177,7 +1164,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveCommandButton: TButton
             Left = 10
-            Top = 293
+            Top = 294
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1187,7 +1174,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpCommandButton: TButton
             Left = 258
-            Top = 261
+            Top = 262
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1197,7 +1184,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownCommandButton: TButton
             Left = 258
-            Top = 293
+            Top = 294
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1207,7 +1194,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditCommandButton: TButton
             Left = 106
-            Top = 261
+            Top = 262
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1226,7 +1213,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 10
         DesignSize = (
           373
-          352)
+          353)
         object DragDropDownloadsGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1334,11 +1321,11 @@ object PreferencesDialog: TPreferencesDialog
         Hint = 'Background'
         HelpType = htKeyword
         HelpKeyword = 'ui_pref_background'
-        Caption = 'Queue'
+        Caption = 'Que'
         ImageIndex = 11
         DesignSize = (
           373
-          352)
+          353)
         object QueueGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1442,7 +1429,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 12
         DesignSize = (
           373
-          352)
+          353)
         object StorageGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1586,11 +1573,11 @@ object PreferencesDialog: TPreferencesDialog
         Hint = 'Resume'
         HelpType = htKeyword
         HelpKeyword = 'ui_pref_resume'
-        Caption = 'Resum'
+        Caption = 'Resu'
         ImageIndex = 13
         DesignSize = (
           373
-          352)
+          353)
         object ResumeBox: TXPGroupBox
           Left = 8
           Top = 8
@@ -1703,7 +1690,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 14
         DesignSize = (
           373
-          352)
+          353)
         object UpdatesGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1817,7 +1804,7 @@ object PreferencesDialog: TPreferencesDialog
         ImageIndex = 15
         DesignSize = (
           373
-          352)
+          353)
         object CopyParamListGroup: TXPGroupBox
           Left = 8
           Top = 8
@@ -1929,7 +1916,7 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 292
           Width = 357
-          Height = 50
+          Height = 51
           Anchors = [akLeft, akTop, akRight, akBottom]
           Caption = 'Options'
           TabOrder = 1
@@ -1944,23 +1931,67 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
+      object WindowSheet: TTabSheet
+        Tag = 17
+        Hint = 'Window'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_window'
+        Caption = 'Win'
+        ImageIndex = 16
+        DesignSize = (
+          373
+          353)
+        object PathInCaptionGroup: TXPGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 94
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Path in window title'
+          TabOrder = 0
+          object PathInCaptionFullButton: TRadioButton
+            Left = 16
+            Top = 21
+            Width = 337
+            Height = 17
+            Caption = 'Show &full path'
+            TabOrder = 0
+          end
+          object PathInCaptionShortButton: TRadioButton
+            Left = 16
+            Top = 44
+            Width = 337
+            Height = 17
+            Caption = 'Sho&w short path'
+            TabOrder = 1
+          end
+          object PathInCaptionNoneButton: TRadioButton
+            Left = 16
+            Top = 67
+            Width = 337
+            Height = 17
+            Caption = 'Do &not show'
+            TabOrder = 2
+          end
+        end
+      end
     end
     object LeftPanel: TPanel
       Left = 0
       Top = 0
       Width = 151
-      Height = 407
+      Height = 432
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
         151
-        407)
+        432)
       object NavigationTree: TTreeView
         Left = 8
         Top = 9
         Width = 135
-        Height = 397
+        Height = 422
         Anchors = [akLeft, akTop, akRight, akBottom]
         HideSelection = False
         HotTrack = True
@@ -1969,32 +2000,33 @@ object PreferencesDialog: TPreferencesDialog
         TabOrder = 0
         OnChange = NavigationTreeChange
         Items.Data = {
-          08000000250000000000000001000000FFFFFFFFFFFFFFFF0000000004000000
+          08000000250000000000000001000000FFFFFFFFFFFFFFFF0000000005000000
           0C456E7669726F6E6D656E7458230000000000000003000000FFFFFFFFFFFFFF
-          FF00000000000000000A496E7465726661636558200000000000000004000000
-          FFFFFFFFFFFFFFFF00000000000000000750616E656C73582300000000000000
-          05000000FFFFFFFFFFFFFFFF00000000000000000A436F6D6D616E6465725822
-          0000000000000006000000FFFFFFFFFFFFFFFF0000000000000000094578706C
-          6F72657258200000000000000008000000FFFFFFFFFFFFFFFF00000000000000
-          0007456469746F7258220000000000000007000000FFFFFFFFFFFFFFFF000000
-          0004000000095472616E7366657258210000000000000010000000FFFFFFFFFF
-          FFFFFF000000000000000008507265736574735822000000000000000B000000
-          FFFFFFFFFFFFFFFF0000000000000000094472616744726F7058240000000000
-          00000C000000FFFFFFFFFFFFFFFF00000000000000000B4261636B67726F756E
-          645820000000000000000E000000FFFFFFFFFFFFFFFF00000000000000000752
-          6573756D6558210000000000000002000000FFFFFFFFFFFFFFFF000000000000
-          0000084C6F6767696E6758250000000000000009000000FFFFFFFFFFFFFFFF00
-          000000000000000C496E746567726174696F6E5822000000000000000A000000
-          FFFFFFFFFFFFFFFF000000000000000009436F6D6D616E647358210000000000
-          00000D000000FFFFFFFFFFFFFFFF00000000000000000853746F726167655821
-          000000000000000F000000FFFFFFFFFFFFFFFF00000000000000000855706461
-          74657358}
+          FF00000000000000000A496E7465726661636558200000000000000011000000
+          FFFFFFFFFFFFFFFF00000000000000000757696E646F77582000000000000000
+          04000000FFFFFFFFFFFFFFFF00000000000000000750616E656C735823000000
+          0000000005000000FFFFFFFFFFFFFFFF00000000000000000A436F6D6D616E64
+          657258220000000000000006000000FFFFFFFFFFFFFFFF000000000000000009
+          4578706C6F72657258200000000000000008000000FFFFFFFFFFFFFFFF000000
+          000000000007456469746F7258220000000000000007000000FFFFFFFFFFFFFF
+          FF0000000004000000095472616E7366657258210000000000000010000000FF
+          FFFFFFFFFFFFFF00000000000000000850726573657473582200000000000000
+          0B000000FFFFFFFFFFFFFFFF0000000000000000094472616744726F70582400
+          0000000000000C000000FFFFFFFFFFFFFFFF00000000000000000B4261636B67
+          726F756E645820000000000000000E000000FFFFFFFFFFFFFFFF000000000000
+          000007526573756D6558210000000000000002000000FFFFFFFFFFFFFFFF0000
+          000000000000084C6F6767696E6758250000000000000009000000FFFFFFFFFF
+          FFFFFF00000000000000000C496E746567726174696F6E582200000000000000
+          0A000000FFFFFFFFFFFFFFFF000000000000000009436F6D6D616E6473582100
+          0000000000000D000000FFFFFFFFFFFFFFFF00000000000000000853746F7261
+          67655821000000000000000F000000FFFFFFFFFFFFFFFF000000000000000008
+          5570646174657358}
       end
     end
   end
   object HelpButton: TButton
     Left = 445
-    Top = 413
+    Top = 438
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

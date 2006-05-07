@@ -135,15 +135,17 @@ object LoginDialog: TLoginDialog
             item
             end>
           HideSelection = False
-          ReadOnly = True
           RowSelect = True
           ParentShowHint = False
           ShowColumnHeaders = False
           ShowHint = True
           TabOrder = 0
           ViewStyle = vsReport
+          OnCompare = SessionListViewCompare
           OnCustomDrawItem = SessionListViewCustomDrawItem
           OnDblClick = SessionListViewDblClick
+          OnEdited = SessionListViewEdited
+          OnEditing = SessionListViewEditing
           OnInfoTip = SessionListViewInfoTip
           OnKeyDown = SessionListViewKeyDown
           OnSelectItem = SessionListViewSelectItem
@@ -159,12 +161,12 @@ object LoginDialog: TLoginDialog
         end
         object SetDefaultSessionButton: TButton
           Left = 258
-          Top = 99
+          Top = 131
           Width = 88
           Height = 25
           Action = SetDefaultSessionAction
           Anchors = [akTop, akRight]
-          TabOrder = 4
+          TabOrder = 5
         end
         object ToolsMenuButton: TButton
           Left = 258
@@ -173,18 +175,27 @@ object LoginDialog: TLoginDialog
           Height = 25
           Anchors = [akRight, akBottom]
           Caption = '&Tools...'
-          TabOrder = 6
+          TabOrder = 7
           OnClick = ToolsMenuButtonClick
         end
         object ShellIconsButton: TButton
           Left = 258
-          Top = 131
+          Top = 163
           Width = 88
           Height = 25
           Anchors = [akTop, akRight]
           Caption = 'Shell &icon...'
-          TabOrder = 5
+          TabOrder = 6
           OnClick = ShellIconsButtonClick
+        end
+        object RenameButton: TButton
+          Left = 257
+          Top = 99
+          Width = 88
+          Height = 25
+          Action = RenameSessionAction
+          Anchors = [akTop, akRight]
+          TabOrder = 4
         end
       end
       object BasicSheet: TTabSheet
@@ -647,16 +658,16 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 6
           Width = 345
-          Height = 209
+          Height = 153
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Directories'
           TabOrder = 0
           DesignSize = (
             345
-            209)
+            153)
           object LocalDirectoryLabel: TLabel
             Left = 11
-            Top = 144
+            Top = 85
             Width = 69
             Height = 13
             Caption = '&Local directory'
@@ -664,7 +675,7 @@ object LoginDialog: TLoginDialog
           end
           object RemoteDirectoryLabel: TLabel
             Left = 11
-            Top = 101
+            Top = 42
             Width = 80
             Height = 13
             Caption = '&Remote directory'
@@ -672,32 +683,32 @@ object LoginDialog: TLoginDialog
           end
           object LocalDirectoryDescLabel: TLabel
             Left = 11
-            Top = 186
+            Top = 127
             Width = 251
             Height = 13
             Caption = 'Local directory is not used with explorer-like interface.'
           end
           object LocalDirectoryEdit: TDirectoryEdit
             Left = 11
-            Top = 161
+            Top = 102
             Width = 323
             Height = 21
             AcceptFiles = True
             DialogText = 'Select startup local directory.'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
-            TabOrder = 6
+            TabOrder = 2
             Text = 'LocalDirectoryEdit'
             OnChange = DataChange
           end
           object RemoteDirectoryEdit: TEdit
             Left = 11
-            Top = 118
+            Top = 59
             Width = 323
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 1000
-            TabOrder = 5
+            TabOrder = 1
             Text = 'RemoteDirectoryEdit'
             OnChange = DataChange
           end
@@ -710,43 +721,55 @@ object LoginDialog: TLoginDialog
             Caption = 'Re&member last used directory'
             TabOrder = 0
           end
+        end
+        object DirectoryOptionsGroup: TXPGroupBox
+          Left = 0
+          Top = 167
+          Width = 345
+          Height = 89
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Directory reading options'
+          TabOrder = 1
+          DesignSize = (
+            345
+            89)
           object CacheDirectoriesCheck: TCheckBox
             Left = 11
-            Top = 40
+            Top = 20
             Width = 321
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Cache &visited remote directories'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object CacheDirectoryChangesCheck: TCheckBox
+            Left = 11
+            Top = 40
+            Width = 182
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Cache &directory changes'
             TabOrder = 1
             OnClick = DataChange
           end
           object ResolveSymlinksCheck: TCheckBox
             Left = 11
-            Top = 80
+            Top = 60
             Width = 321
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Resolve symbolic li&nks'
-            TabOrder = 4
-          end
-          object CacheDirectoryChangesCheck: TCheckBox
-            Left = 11
-            Top = 60
-            Width = 182
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Cache &directory changes'
-            TabOrder = 2
-            OnClick = DataChange
+            TabOrder = 3
           end
           object PreserveDirectoryChangesCheck: TCheckBox
             Left = 202
-            Top = 60
+            Top = 40
             Width = 139
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Permanent cache'
-            TabOrder = 3
+            TabOrder = 2
           end
         end
       end
@@ -2050,6 +2073,11 @@ object LoginDialog: TLoginDialog
       Caption = 'Check For &Updates'
       ImageIndex = 63
       OnExecute = CheckForUpdatesActionExecute
+    end
+    object RenameSessionAction: TAction
+      Category = 'Sessions'
+      Caption = '&Rename'
+      OnExecute = RenameSessionActionExecute
     end
   end
   object ToolsPopupMenu: TPopupMenu

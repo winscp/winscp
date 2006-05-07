@@ -86,6 +86,8 @@ protected:
   TStrings * FFixedPaths;
   unsigned long FMaxPacketSize;
 
+  void __fastcall SendCustomReadFile(TSFTPPacket * Packet, TSFTPPacket * Response,
+    const AnsiString FileName, unsigned long Flags);
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, char Type, TRemoteFile * ALinkedByFile = NULL,
     int AllowStatus = -1);
@@ -96,8 +98,9 @@ protected:
   bool __fastcall RemoteFileExists(const AnsiString FullPath, TRemoteFile ** File = NULL);
   TRemoteFile * __fastcall LoadFile(TSFTPPacket * Packet,
     TRemoteFile * ALinkedByFile, const AnsiString FileName,
-    TRemoteFileList * TempFileList = NULL);
-  void __fastcall LoadFile(TRemoteFile * File, TSFTPPacket * Packet);
+    TRemoteFileList * TempFileList = NULL, bool Complete = true);
+  void __fastcall LoadFile(TRemoteFile * File, TSFTPPacket * Packet,
+    bool Complete = true);
   AnsiString __fastcall LocalCanonify(const AnsiString & Path);
   AnsiString __fastcall Canonify(AnsiString Path);
   AnsiString __fastcall RealPath(const AnsiString Path);
@@ -134,7 +137,7 @@ protected:
   void __fastcall SFTPDirectorySource(const AnsiString DirectoryName,
     const AnsiString TargetDir, int /*Attrs*/, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
-  void __fastcall SFTPConfirmOverwrite(const AnsiString FileName,
+  void __fastcall SFTPConfirmOverwrite(AnsiString & FileName,
     bool TargetBiggerThanSource, TFileOperationProgressType * OperationProgress,
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
   bool SFTPConfirmResume(const AnsiString DestFileName, bool PartialBiggerThanSource,

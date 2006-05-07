@@ -49,6 +49,7 @@ private:
 	
 protected:
 	Comctrls::TCustomListView* FListView;
+	bool FListViewManaged;
 	Classes::TAlignment __fastcall GetAlignments(int Index);
 	int __fastcall GetOrder(int Index);
 	virtual AnsiString __fastcall GetParamsStr();
@@ -62,6 +63,7 @@ protected:
 	virtual void __fastcall Changed(void);
 	virtual void __fastcall SetCaptions(int Index, AnsiString Value);
 	virtual void __fastcall SetParamsStr(AnsiString Value);
+	void __fastcall UpdateFromListView(void);
 	__property Comctrls::TListColumns* Columns = {read=GetColumns, stored=false};
 	__property int Count = {read=GetCount, stored=false, nodefault};
 	

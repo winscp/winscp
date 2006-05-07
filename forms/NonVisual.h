@@ -27,11 +27,13 @@
 #define fcQueueToolbar     0x1A
 #define fcLocalTree        0x1B
 #define fcRemoteTree       0x1C
-#define fcTransferCombo    0x1D
 #define fcSessionToolbar   0x1E
 #define fcCustomCommandsBand 0x1F
 #define fcColorMenu        0x20
 #define fcColorPalette     0x21
+#define fcTransferDropDown 0x22
+#define fcTransferList     0x23
+#define fcTransferLabel    0x24
 
 #define fcExplorerMenuBand        0x31
 #define fcExplorerAddressBand     0x32
@@ -459,6 +461,7 @@ __published:    // IDE-managed Components
   TAction *ColorPickAction;
   TAction *ColorDefaultAction;
   TAction *ColorMenuAction;
+  TAction *AutoReadDirectoryAfterOpAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

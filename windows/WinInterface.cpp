@@ -143,7 +143,8 @@ static void __fastcall NeverAskAgainCheckClick(void * /*Data*/, TObject * Sender
   for (int ii = 0; ii < Dialog->ControlCount; ii++)
   {
     TButton * Button = dynamic_cast<TButton *>(Dialog->Controls[ii]);
-    if ((Button != NULL) && (Button->ModalResult != mrNone))
+    if ((Button != NULL) && (Button->ModalResult != mrNone) &&
+        (Button->ModalResult != mrCancel))
     {
       Button->Enabled = !CheckBox->Checked || (Button->ModalResult == PositiveAnswer);
     }
@@ -359,8 +360,6 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageP
         (Params->NewerAskAgainAnswer > 0) ?
           (Answer == Params->NewerAskAgainAnswer) :
           (Answer == qaYes || Answer == qaOK || Answer == qaYesToAll);
-      // now user should now have any other option
-      assert(PossitiveAnswer);
       if (PossitiveAnswer)
       {
         Answer = qaNeverAskAgain;

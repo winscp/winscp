@@ -10,7 +10,7 @@ uses
   Windows, Messages, Classes, Graphics, Controls,
   Forms, ComCtrls, ShellAPI, ComObj, ShlObj, Dialogs,
   ActiveX, CommCtrl, Extctrls, ImgList, Menus,
-  PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo, 
+  PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo,
   IEListView, PathLabel, CustomPathComboBox, SysUtils;
 
 const
@@ -88,7 +88,7 @@ type
 
   TDirViewExecFileEvent = procedure(Sender: TObject; Item: TListItem; var AllowExec: Boolean) of object;
   TRenameEvent = procedure(Sender: TObject; Item: TListItem; NewName: string) of object;
-  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Masks: string; var Matches: Boolean) of object;
+  TMatchMaskEvent = procedure(Sender: TObject; FileName: string; Directory: Boolean; Size: Int64; Masks: string; var Matches: Boolean) of object;
   TDirViewGetOverlayEvent = procedure(Sender: TObject; Item: TListItem; var Indexes: Word) of object;
   TDirViewUpdateStatusBarEvent = procedure(Sender: TObject; const FileInfo: TStatusFileInfo) of object;
 
@@ -125,7 +125,7 @@ type
     function Execute(DataObject: TDataObject): TDragResult;
   end;
 
-  TCustomDirView = class(TIEListView)
+  TCustomDirView = class(TCustomIEListView)
   private
     FAddParentDir: Boolean;
     FDimmHiddenFiles: Boolean;
@@ -202,6 +202,7 @@ type
     FPendingFocusSomething: Boolean;
     FOnMatchMask: TMatchMaskEvent;
     FOnGetOverlay: TDirViewGetOverlayEvent;
+    FMask: string;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
@@ -259,7 +260,7 @@ type
     procedure DDDropHandlerSucceeded(Sender: TObject; grfKeyState: Longint; Point: TPoint; dwEffect: Longint); virtual;
     procedure DDGiveFeedback(dwEffect: Longint; var Result: HResult); virtual;
     procedure DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
-      AMinCustCmd:integer; grfKeyState: Longint; pt: TPoint); 
+      AMinCustCmd:integer; grfKeyState: Longint; pt: TPoint);
     procedure DDMenuDone(Sender: TObject; AMenu: HMenu); virtual;
     procedure DDProcessDropped(Sender: TObject; grfKeyState: Longint;
       Point: TPoint; dwEffect: Longint);
@@ -294,7 +295,6 @@ type
     procedure IconsSetImageList; virtual;
     function ItemCanDrag(Item: TListItem): Boolean; virtual;
     function ItemColor(Item: TListItem): TColor; virtual;
-    function ItemFileSize(Item: TListItem): Int64; virtual; abstract;
     function ItemImageIndex(Item: TListItem; Cache: Boolean): Integer; virtual; abstract;
     function ItemFileTime(Item: TListItem; var Precision: TDateTimePrecision): TDateTime; virtual; abstract;
     // ItemIsDirectory and ItemFullFileName is in public block
@@ -339,8 +339,10 @@ type
     procedure UpdatePathLabel; dynamic;
     procedure UpdateStatusBar; dynamic;
     procedure WndProc(var Message: TMessage); override;
-    function FileNameMatchesMasks(FileName: string; Directory: Boolean; Masks: string): Boolean;
+    function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Masks: string): Boolean;
     function EnableDragOnClick: Boolean; override;
+    procedure SetMask(Value: string); virtual;
+    function NormalizeMask(Mask: string): string; dynamic;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -363,6 +365,7 @@ type
     function ItemIsParentDirectory(Item: TListItem): Boolean; virtual; abstract;
     function ItemFullFileName(Item: TListItem): string; virtual; abstract;
     function ItemFileName(Item: TListItem): string; virtual; abstract;
+    function ItemFileSize(Item: TListItem): Int64; virtual; abstract;
     procedure ReloadDirectory; virtual; abstract;
     procedure DisplayPropertiesMenu; virtual; abstract;
     function CreateChangedFileList(DirView: TCustomDirView; FullPath: Boolean;
@@ -376,7 +379,7 @@ type
     procedure RestoreSelectedNames;
     procedure ContinueSession(Continue: Boolean);
     function CanPasteFromClipBoard: Boolean; dynamic;
-    function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract; 
+    function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract;
     function SaveState: TObject;
     procedure RestoreState(AState: TObject);
 
@@ -428,6 +431,8 @@ type
     property LargeImages;
     property MaxHistoryCount: Integer read FMaxHistoryCount write SetMaxHistoryCount default DefaultHistoryCount;
     property SelectedNamesSaved: Boolean read GetSelectedNamesSaved;
+    {filemask, multiple filters are possible: '*.pas;*.dfm'}
+    property Mask: string read FMask write SetMask;
 
     property OnContextPopup;
     property OnBeginRename: TRenameEvent read FOnBeginRename write FOnBeginRename;
@@ -484,8 +489,8 @@ type
     property OnExecFile: TDirViewExecFileEvent
       read FOnExecFile write FOnExecFile;
     property OnHistoryChange: THistoryChangeEvent read FOnHistoryChange write FOnHistoryChange;
-    property OnMatchMask: TMatchMaskEvent read FOnMatchMask write FOnMatchMask; 
-    property OnGetOverlay: TDirViewGetOverlayEvent read FOnGetOverlay write FOnGetOverlay; 
+    property OnMatchMask: TMatchMaskEvent read FOnMatchMask write FOnMatchMask;
+    property OnGetOverlay: TDirViewGetOverlayEvent read FOnGetOverlay write FOnGetOverlay;
     property PathComboBox: TCustomPathComboBox read FPathComboBox write SetPathComboBox;
     property PathLabel: TCustomPathLabel read FPathLabel write SetPathLabel;
     property ShowHiddenFiles: Boolean read FShowHiddenFiles write SetShowHiddenFiles default True;
@@ -559,7 +564,7 @@ type
   TDirViewState = class(TObject)
   public
     destructor Destroy; override;
-    
+
   private
     HistoryPaths: TStrings;
     BackCount: Integer;
@@ -895,6 +900,7 @@ begin
   FDDLinkOnExeDrag := False;
   FDragDrive := #0;
   FExeDrag := False;
+  FMask := '*.*';
 
   FOnHistoryChange := nil;
   FHistoryPaths := TStringList.Create;
@@ -1078,12 +1084,12 @@ begin
 end;
 
 function TCustomDirView.FileNameMatchesMasks(FileName: string;
-  Directory: Boolean; Masks: string): Boolean;
+  Directory: Boolean; Size: Int64; Masks: string): Boolean;
 begin
   Result := False;
   Result := False;
   if Assigned(OnMatchMask) then
-    OnMatchMask(Self, FileName, Directory, Masks, Result)
+    OnMatchMask(Self, FileName, Directory, Size, Masks, Result)
 end;
 
 procedure TCustomDirView.SetAddParentDir(Value: Boolean);
@@ -2464,7 +2470,7 @@ begin
   if Assigned(FOnDDDragDetect) then
     FOnDDDragDetect(Self, grfKeyState, DetectStart, Point, DragStatus);
 
-  FLastDDResult := drCancelled; 
+  FLastDDResult := drCancelled;
 
   if (DragStatus = ddsDrag) and (not Loading) and (MarkedCount > 0) then
   begin
@@ -2866,16 +2872,16 @@ begin
             begin
               ReduceDateTimePrecision(FileTime, Precision);
               ReduceDateTimePrecision(MirrorFileTime, Precision);
-              if Precision = tpSecond then
-              begin
-                // 1 ms more solves the rounding issues
-                // (see also Common.cpp)
-                MirrorFileTime := MirrorFileTime + EncodeTime(0, 0, 1, 1);
-              end;
+            end;
+            SameTime := (FileTime = MirrorFileTime);
+            if Precision = tpSecond then
+            begin
+              // 1 ms more solves the rounding issues
+              // (see also Common.cpp)
+              MirrorFileTime := MirrorFileTime + EncodeTime(0, 0, 1, 1);
             end;
             Changed :=
               (FileTime > MirrorFileTime);
-            SameTime := (FileTime = MirrorFileTime);
           end
             else
           begin
@@ -3081,7 +3087,7 @@ begin
   Assert(AState is TDirViewState);
   State := AState as TDirViewState;
   Assert(Assigned(State));
-  
+
   FHistoryPaths.Assign(State.HistoryPaths);
   FBackCount := State.BackCount;
   // TCustomDirViewColProperties should not be here
@@ -3098,6 +3104,25 @@ begin
     end;
   end;
 end;
+
+procedure TCustomDirView.SetMask(Value: string);
+begin
+  Value := NormalizeMask(Value);
+  FMask := Value;
+end;{SetMask}
+
+function TCustomDirView.NormalizeMask(Mask: string): string;
+begin
+  Mask := Trim(Mask);
+  if Length(Mask) = 0 then Mask := '*.*';
+
+  StrTranslate(Mask, ' ;,;');
+
+  while Pos(';;', Mask) <> 0 do
+    System.Delete(Mask, Pos(';;', Mask), 1);
+
+  Result := LowerCase(Mask);
+end; {NormalizeMask}
 
 initialization
   HasExtendedCOMCTL32 := COMCTL32OK;

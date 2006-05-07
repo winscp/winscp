@@ -5,6 +5,12 @@
 class TFileMasks
 {
 public:
+  struct TParams
+  {
+    TParams();
+    __int64 Size;
+  };
+
   static bool __fastcall IsMask(const AnsiString Mask);
   static bool __fastcall SingleMaskMatch(const AnsiString Mask, const AnsiString FileName);
 
@@ -16,8 +22,10 @@ public:
   TFileMasks & __fastcall operator =(const AnsiString rhs);
   bool __fastcall operator ==(const TFileMasks & rhm) const;
   bool __fastcall operator ==(const AnsiString rhs) const;
-  bool __fastcall Matches(AnsiString FileName, bool Directory, AnsiString Path = "") const;
-  bool __fastcall Matches(AnsiString FileName, bool Local, bool Directory) const;
+  bool __fastcall Matches(AnsiString FileName, bool Directory,
+    AnsiString Path = "", const TParams * Params = NULL) const;
+  bool __fastcall Matches(AnsiString FileName, bool Local, bool Directory,
+    const TParams * Params = NULL) const;
   bool __fastcall IsValid();
   bool __fastcall IsValid(int & Start, int & Length);
 
@@ -26,6 +34,8 @@ public:
 private:
   AnsiString FMasks;
 
+  static bool __fastcall MatchesMask(AnsiString FileName, bool Directory,
+    AnsiString Path, const TParams * Params, AnsiString M);
   static inline bool __fastcall MatchesFileMask(const AnsiString & Filename, const AnsiString & Mask);
 };
 //---------------------------------------------------------------------------

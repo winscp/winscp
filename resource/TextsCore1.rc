@@ -167,6 +167,8 @@ BEGIN
   TIMEOUT_STILL_WAITING, "Host has not answered for more than %d seconds. Still waiting..."
   KEX_BELOW_TRESHOLD, "The first key-exchange algorithm supported by the server is %s, which is below the configured warning threshold.\n\nDo you want to continue with this connection?"
   RECONNECT_BUTTON, "&Reconnect"
+  RENAME_BUTTON, "New na&me"
+  RENAME_PROMPT, "Transfer under different name|New name:"
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"
@@ -248,6 +250,7 @@ BEGIN
   AUTH_TRANSL_ACCESS_DENIED, "Access denied."
   AUTH_TRANSL_PUBLIC_KEY_AGENT, "Authenticating with public key \"%s\" from agent."
   AUTH_TRANSL_TRY_PUBLIC_KEY, "Trying public key authentication."
+  AUTH_PASSWORD, "Authenticating with pre-entered password."
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

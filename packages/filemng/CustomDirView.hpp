@@ -92,7 +92,7 @@ typedef void __fastcall (__closure *TDirViewExecFileEvent)(System::TObject* Send
 
 typedef void __fastcall (__closure *TRenameEvent)(System::TObject* Sender, Comctrls::TListItem* Item, AnsiString NewName);
 
-typedef void __fastcall (__closure *TMatchMaskEvent)(System::TObject* Sender, AnsiString FileName, bool Directory, AnsiString Masks, bool &Matches);
+typedef void __fastcall (__closure *TMatchMaskEvent)(System::TObject* Sender, AnsiString FileName, bool Directory, __int64 Size, AnsiString Masks, bool &Matches);
 
 typedef void __fastcall (__closure *TDirViewGetOverlayEvent)(System::TObject* Sender, Comctrls::TListItem* Item, Word &Indexes);
 
@@ -158,9 +158,9 @@ public:
 };
 
 
-class PASCALIMPLEMENTATION TCustomDirView : public Ielistview::TIEListView 
+class PASCALIMPLEMENTATION TCustomDirView : public Ielistview::TCustomIEListView 
 {
-	typedef Ielistview::TIEListView inherited;
+	typedef Ielistview::TCustomIEListView inherited;
 	
 private:
 	bool FAddParentDir;
@@ -244,6 +244,7 @@ private:
 	bool FPendingFocusSomething;
 	TMatchMaskEvent FOnMatchMask;
 	TDirViewGetOverlayEvent FOnGetOverlay;
+	AnsiString FMask;
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDblClk(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Message);
@@ -323,7 +324,6 @@ protected:
 	virtual void __fastcall IconsSetImageList(void);
 	virtual bool __fastcall ItemCanDrag(Comctrls::TListItem* Item);
 	virtual Graphics::TColor __fastcall ItemColor(Comctrls::TListItem* Item);
-	virtual __int64 __fastcall ItemFileSize(Comctrls::TListItem* Item) = 0 ;
 	virtual int __fastcall ItemImageIndex(Comctrls::TListItem* Item, bool Cache) = 0 ;
 	virtual System::TDateTime __fastcall ItemFileTime(Comctrls::TListItem* Item, Baseutils::TDateTimePrecision &Precision) = 0 ;
 	virtual bool __fastcall ItemIsRecycleBin(Comctrls::TListItem* Item);
@@ -365,8 +365,10 @@ protected:
 	DYNAMIC void __fastcall UpdatePathLabel(void);
 	DYNAMIC void __fastcall UpdateStatusBar(void);
 	virtual void __fastcall WndProc(Messages::TMessage &Message);
-	bool __fastcall FileNameMatchesMasks(AnsiString FileName, bool Directory, AnsiString Masks);
+	bool __fastcall FileNameMatchesMasks(AnsiString FileName, bool Directory, __int64 Size, AnsiString Masks);
 	virtual bool __fastcall EnableDragOnClick(void);
+	virtual void __fastcall SetMask(AnsiString Value);
+	DYNAMIC AnsiString __fastcall NormalizeMask(AnsiString Mask);
 	__property Controls::TImageList* ImageList16 = {read=FImageList16};
 	__property Controls::TImageList* ImageList32 = {read=FImageList32};
 	
@@ -390,6 +392,7 @@ public:
 	virtual bool __fastcall ItemIsParentDirectory(Comctrls::TListItem* Item) = 0 ;
 	virtual AnsiString __fastcall ItemFullFileName(Comctrls::TListItem* Item) = 0 ;
 	virtual AnsiString __fastcall ItemFileName(Comctrls::TListItem* Item) = 0 ;
+	virtual __int64 __fastcall ItemFileSize(Comctrls::TListItem* Item) = 0 ;
 	virtual void __fastcall ReloadDirectory(void) = 0 ;
 	virtual void __fastcall DisplayPropertiesMenu(void) = 0 ;
 	Classes::TStrings* __fastcall CreateChangedFileList(TCustomDirView* DirView, bool FullPath, bool ExistingOnly, TCompareCriterias Criterias);
@@ -448,6 +451,7 @@ public:
 	__property LargeImages ;
 	__property int MaxHistoryCount = {read=FMaxHistoryCount, write=SetMaxHistoryCount, default=200};
 	__property bool SelectedNamesSaved = {read=GetSelectedNamesSaved, nodefault};
+	__property AnsiString Mask = {read=FMask, write=SetMask};
 	__property OnContextPopup ;
 	__property TRenameEvent OnBeginRename = {read=FOnBeginRename, write=FOnBeginRename};
 	__property TRenameEvent OnEndRename = {read=FOnEndRename, write=FOnEndRename};
@@ -484,7 +488,7 @@ public:
 	__property bool WatchForChanges = {read=FWatchForChanges, write=SetWatchForChanges, default=0};
 public:
 	#pragma option push -w-inl
-	/* TWinControl.CreateParented */ inline __fastcall TCustomDirView(HWND ParentWindow) : Ielistview::TIEListView(ParentWindow) { }
+	/* TWinControl.CreateParented */ inline __fastcall TCustomDirView(HWND ParentWindow) : Ielistview::TCustomIEListView(ParentWindow) { }
 	#pragma option pop
 	
 };

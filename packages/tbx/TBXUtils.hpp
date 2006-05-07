@@ -198,6 +198,7 @@ extern PACKAGE WideString __fastcall EscapeAmpersandsW(const WideString S);
 extern PACKAGE wchar_t __fastcall FindAccelCharW(const WideString S);
 extern PACKAGE WideString __fastcall StripAccelCharsW(const WideString S);
 extern PACKAGE WideString __fastcall StripTrailingPunctuationW(const WideString S);
+extern PACKAGE bool __fastcall TBXCheckWin32Version(int AMajor, int AMinor = 0x0);
 extern PACKAGE void __fastcall GetRGB(Graphics::TColor C, /* out */ int &R, /* out */ int &G, /* out */ int &B);
 extern PACKAGE Graphics::TColor __fastcall MixColors(Graphics::TColor C1, Graphics::TColor C2, int W1);
 extern PACKAGE bool __fastcall SameColors(Graphics::TColor C1, Graphics::TColor C2);

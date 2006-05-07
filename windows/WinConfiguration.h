@@ -111,14 +111,16 @@ struct TUpdatesData
   int Version;
   AnsiString Message;
   bool Critical;
+  AnsiString Release;
   bool __fastcall operator !=(TUpdatesData & rhc)
-    { return C(ForVersion) C(Version) C(Message) C(Critical) 0; };
+    { return C(ForVersion) C(Version) C(Message) C(Critical) C(Release) 0; };
   void Reset()
   {
     ForVersion = 0;
     Version = 0;
     Message = "";
     Critical = false;
+    Release = "";
   }
 };
 //---------------------------------------------------------------------------
@@ -154,7 +156,8 @@ public:
   __fastcall TEditorPreferences();
   __fastcall TEditorPreferences(const TEditorPreferences & Source);
 
-  bool __fastcall Matches(const AnsiString FileName, bool Local) const;
+  bool __fastcall Matches(const AnsiString FileName, bool Local,
+    const TFileMasks::TParams & Params) const;
   void __fastcall Load(THierarchicalStorage * Storage, bool Legacy);
   void __fastcall Save(THierarchicalStorage * Storage) const;
   void __fastcall LegacyDefaults();
@@ -178,7 +181,7 @@ public:
   virtual __fastcall ~TEditorList();
 
   const TEditorPreferences * __fastcall Find(const AnsiString FileName,
-    bool Local) const;
+    bool Local, const TFileMasks::TParams & Params) const;
 
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage) const;
@@ -235,6 +238,7 @@ private:
   bool FShowHiddenFiles;
   bool FShowInaccesibleDirectories;
   bool FConfirmDeleting;
+  bool FConfirmRecycling;
   bool FUseLocationProfiles;
   AnsiString FDDTemporaryDirectory;
   bool FDDWarnLackOfTempSpace;
@@ -290,6 +294,7 @@ private:
   void __fastcall SetShowHiddenFiles(bool value);
   void __fastcall SetShowInaccesibleDirectories(bool value);
   void __fastcall SetConfirmDeleting(bool value);
+  void __fastcall SetConfirmRecycling(bool value);
   void __fastcall SetUseLocationProfiles(bool value);
   void __fastcall SetDDTemporaryDirectory(AnsiString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
@@ -356,7 +361,7 @@ public:
   void __fastcall CheckDefaultTranslation();
   bool __fastcall ConfirmRemoveDefaultTranslation();
   const TEditorPreferences * __fastcall DefaultEditorForFile(
-    const AnsiString FileName, bool Local);
+    const AnsiString FileName, bool Local, const TFileMasks::TParams & MaskParams);
 
   __property TScpCommanderConfiguration ScpCommander = { read = FScpCommander, write = SetScpCommander };
   __property TScpExplorerConfiguration ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
@@ -378,6 +383,7 @@ public:
   __property bool DimmHiddenFiles = { read = FDimmHiddenFiles, write = SetDimmHiddenFiles };
   __property AnsiString LogWindowParams = { read = FLogWindowParams, write = SetLogWindowParams };
   __property bool ConfirmDeleting = { read = FConfirmDeleting, write = SetConfirmDeleting};
+  __property bool ConfirmRecycling = { read = FConfirmRecycling, write = SetConfirmRecycling};
   __property bool UseLocationProfiles = { read = FUseLocationProfiles, write = SetUseLocationProfiles};
   __property AnsiString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };

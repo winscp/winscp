@@ -34,6 +34,7 @@
 #pragma link "TBXExtItems"
 #pragma link "TB2ExtItems"
 #pragma link "TBXToolPals"
+#pragma link "TBXLists"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
@@ -140,6 +141,13 @@ void __fastcall TScpExplorerForm::DoShow()
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
 {
+  if (Allowed == aaUpdate)
+  {
+    if (Action == NonVisualDataModule->FileListToCommandLineAction)
+    {
+      Action->Visible = false;
+    }
+  }
   #define FLAG ((TActionFlag)(Action->Tag))
   return
     // always require Explorer flag
@@ -154,11 +162,13 @@ TControl * __fastcall TScpExplorerForm::GetComponent(Byte Component)
 {
   switch (Component) {
     case fcSessionCombo: return reinterpret_cast<TControl*>(SessionCombo);
-    case fcTransferCombo: return reinterpret_cast<TControl*>(TransferCombo);
     case fcSessionToolbar: return SessionToolbar;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
     case fcColorMenu: return reinterpret_cast<TControl*>(ColorMenuItem);
     case fcColorPalette: return reinterpret_cast<TControl*>(SessionColorPalette);
+    case fcTransferDropDown: return reinterpret_cast<TControl*>(TransferDropDown);
+    case fcTransferList: return reinterpret_cast<TControl*>(TransferList);
+    case fcTransferLabel: return reinterpret_cast<TControl*>(TransferLabel);
 
     case fcExplorerMenuBand: return MenuToolbar;
     case fcExplorerAddressBand: return AddressToolbar;
@@ -178,7 +188,7 @@ void __fastcall TScpExplorerForm::SynchronizeDirectories()
 {
   AnsiString LocalDirectory = WinConfiguration->ScpExplorer.LastLocalTargetDirectory;
   AnsiString RemoteDirectory = RemoteDirView->PathName;
-  if (DoSynchronizeDirectories(LocalDirectory, RemoteDirectory))
+  if (DoSynchronizeDirectories(LocalDirectory, RemoteDirectory, false))
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
   }
@@ -190,7 +200,8 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
   AnsiString RemoteDirectory = RemoteDirView->PathName;
   bool SaveMode = true;
   TSynchronizeMode Mode = (TSynchronizeMode)GUIConfiguration->SynchronizeMode;
-  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode, SaveMode))
+  if (DoFullSynchronizeDirectories(LocalDirectory, RemoteDirectory, Mode,
+        SaveMode, false))
   {
     WinConfiguration->ScpExplorer.LastLocalTargetDirectory = LocalDirectory;
     if (SaveMode)
@@ -211,11 +222,6 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
   TControl * RemoteControlsOrder[] =
     { RemoteDriveView, RemotePanelSplitter, RemoteDirView };
   SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
-}
-//---------------------------------------------------------------------------
-void __fastcall TScpExplorerForm::RemoteStatusBarDblClick(TObject * /*Sender*/)
-{
-  FileSystemInfo();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(

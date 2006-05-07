@@ -637,22 +637,35 @@ void __fastcall TTerminalManager::TerminalPromptUser(
   TSecureShell * SecureShell, AnsiString Prompt, TPromptKind Kind,
   AnsiString & Response, bool & Result, void * /*Arg*/)
 {
-  TAuthenticateForm * AuthenticateForm = FAuthenticateForm;
-  if (AuthenticateForm == NULL)
+  if (Kind == pkPrompt)
   {
-    AuthenticateForm = new TAuthenticateForm(Application,
-      SecureShell->SessionData->SessionName);
-  }
-
-  try
-  {
-    Result = AuthenticateForm->PromptUser(Prompt, Kind, Response);
-  }
-  __finally
-  {
-    if (FAuthenticateForm == NULL)
+    AnsiString Caption = ::CutToChar(Prompt, '|', true);
+    if (Prompt.IsEmpty())
     {
-      delete AuthenticateForm;
+      Prompt = Caption;
+      Caption = "";
+    }
+    Result = InputDialog(Caption, Prompt, Response);
+  }
+  else
+  {
+    TAuthenticateForm * AuthenticateForm = FAuthenticateForm;
+    if (AuthenticateForm == NULL)
+    {
+      AuthenticateForm = new TAuthenticateForm(Application,
+        SecureShell->SessionData->SessionName);
+    }
+
+    try
+    {
+      Result = AuthenticateForm->PromptUser(Prompt, Kind, Response);
+    }
+    __finally
+    {
+      if (FAuthenticateForm == NULL)
+      {
+        delete AuthenticateForm;
+      }
     }
   }
 }
@@ -687,7 +700,7 @@ void __fastcall TTerminalManager::TerminalShowExtendedException(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
-  TObject * /*Sender*/, int Progress)
+  TObject * /*Sender*/, int Progress, bool & Cancel)
 {
   static TDateTime DirectoryReadingProgressDelay(0, 0, 1, 500);
 
@@ -699,16 +712,38 @@ void __fastcall TTerminalManager::TerminalReadDirectoryProgress(
       FProgressTitle = "";
       UpdateAppTitle();
     }
+
+    // Reset "was ESC ever pressed?" state
+    GetAsyncKeyState(VK_ESCAPE);
   }
   else if (Progress < 0)
   {
-    FProgressTitle = "";
-    UpdateAppTitle();
+    if (Progress == -2)
+    {
+      // cancelled
+      if (ScpExplorer != NULL)
+      {
+        ScpExplorer->ReadDirectoryCancelled();
+      }
+    }
+    else
+    {
+      FProgressTitle = "";
+      UpdateAppTitle();
+    }
   }
-  else if ((Now() - FDirectoryReadingStart) >= DirectoryReadingProgressDelay)
+  else
   {
-    FProgressTitle = FMTLOAD(DIRECTORY_READING_PROGRESS, (Progress));
-    UpdateAppTitle();
+    if (GetAsyncKeyState(VK_ESCAPE) != 0)
+    {
+      Cancel = true;
+    }
+
+    if ((Now() - FDirectoryReadingStart) >= DirectoryReadingProgressDelay)
+    {
+      FProgressTitle = FMTLOAD(DIRECTORY_READING_PROGRESS, (Progress));
+      UpdateAppTitle();
+    }
   }
 }
 //---------------------------------------------------------------------------

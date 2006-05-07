@@ -859,14 +859,24 @@ inherited ScpExplorerForm: TScpExplorerForm
       ParentShowHint = False
       ShowHint = True
       TabOrder = 8
-      object TransferCombo: TTBXComboBoxItem
+      object TransferDropDown: TTBXDropDownItem
         EditWidth = 114
         Hint = 'Select transfer settings preset'
         DropDownList = True
-        MaxVisibleItems = 15
-      end
-      object TBXItem90: TTBXItem
-        Action = NonVisualDataModule.PresetsPreferencesAction
+        object TransferList: TTBXStringList
+          MaxVisibleItems = 15
+          MinWidth = 350
+        end
+        object TransferLabel: TTBXLabelItem
+          Margin = 4
+          ShowAccelChar = False
+        end
+        object TBXSeparatorItem52: TTBXSeparatorItem
+        end
+        object TBXItem189: TTBXItem
+          Action = NonVisualDataModule.PresetsPreferencesAction
+          DisplayMode = nbdmImageAndText
+        end
       end
     end
     object CustomCommandsToolbar: TTBXToolbar
@@ -962,8 +972,14 @@ inherited ScpExplorerForm: TScpExplorerForm
           Size = 80
           Tag = 0
           TextTruncation = twEndEllipsis
+        end
+        item
+          Size = 100
+          StretchPriority = 1
+          Tag = 0
+          TextTruncation = twEndEllipsis
         end>
-      OnDblClick = RemoteStatusBarDblClick
+      OnPanelDblClick = StatusBarPanelDblClick
     end
     inherited RemoteDirView: TUnixDirView
       Width = 450

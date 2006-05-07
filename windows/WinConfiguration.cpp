@@ -50,9 +50,10 @@ bool __fastcall TEditorPreferences::operator==(const TEditorPreferences & rhp) c
 }
 #undef C
 //---------------------------------------------------------------------------
-bool __fastcall TEditorPreferences::Matches(const AnsiString FileName, bool Local) const
+bool __fastcall TEditorPreferences::Matches(const AnsiString FileName,
+  bool Local, const TFileMasks::TParams & Params) const
 {
-  return FData.FileMask.Matches(FileName, Local, false);
+  return FData.FileMask.Matches(FileName, Local, false, &Params);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferences::LegacyDefaults()
@@ -226,14 +227,14 @@ void __fastcall TEditorList::Delete(int Index)
 }
 //---------------------------------------------------------------------------
 const TEditorPreferences * __fastcall TEditorList::Find(
-  const AnsiString FileName, bool Local) const
+  const AnsiString FileName, bool Local, const TFileMasks::TParams & Params) const
 {
   const TEditorPreferences * Result = NULL;
   int i = 0;
   while ((i < FEditors->Count) && (Result == NULL))
   {
     Result = Editors[i];
-    if (!Result->Matches(FileName, Local))
+    if (!Result->Matches(FileName, Local, Params))
     {
       Result = NULL;
     }
@@ -367,10 +368,11 @@ void __fastcall TWinConfiguration::Default()
   FShowHiddenFiles = true;
   FShowInaccesibleDirectories = true;
   FConfirmDeleting = true;
+  FConfirmRecycling = true;
   FConfirmClosingSession = true;
   FConfirmExitOnCompletion = true;
   FForceDeleteTempFolder = true;
-  FDoubleClickAction = dcaOpen;
+  FDoubleClickAction = dcaEdit;
   FCopyOnDoubleClickConfirmation = false;
   FDimmHiddenFiles = true;
   FAutoStartSession = "";
@@ -591,6 +593,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     ShowHiddenFiles); \
     KEY(Bool,     ShowInaccesibleDirectories); \
     KEY(Bool,     ConfirmDeleting); \
+    KEY(Bool,     ConfirmRecycling); \
     KEY(Bool,     ConfirmClosingSession); \
     KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(String,   AutoStartSession); \
@@ -642,6 +645,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Integer,  FUpdates.Results.Version); \
     KEY(String,   FUpdates.Results.Message); \
     KEY(Integer,  FUpdates.Results.Critical); \
+    KEY(String,   FUpdates.Results.Release); \
   ); \
   BLOCK("Interface\\Explorer", CANCREATE, \
     KEY(String,  ScpExplorer.ToolbarsLayout); \
@@ -972,7 +976,8 @@ TUpdatesConfiguration __fastcall TWinConfiguration::GetUpdates()
 void __fastcall TWinConfiguration::SetUpdates(TUpdatesConfiguration value)
 {
   TGuard Guard(FCriticalSection);
-  SET_CONFIG_PROPERTY(Updates);
+  // do not use SET_CONFIG_PROPERTY to avoid OnChange handler call (not synchronized)
+  FUpdates = value;
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDeleteToRecycleBin(bool value)
@@ -998,6 +1003,11 @@ void __fastcall TWinConfiguration::SetShowInaccesibleDirectories(bool value)
 void __fastcall TWinConfiguration::SetConfirmDeleting(bool value)
 {
   SET_CONFIG_PROPERTY(ConfirmDeleting);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetConfirmRecycling(bool value)
+{
+  SET_CONFIG_PROPERTY(ConfirmRecycling);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetUseLocationProfiles(bool value)
@@ -1067,8 +1077,7 @@ void __fastcall TWinConfiguration::SetPreservePanelState(bool value)
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetTheme(AnsiString value)
 {
-  SET_CONFIG_PROPERTY(Theme);
-  ConfigureInterface();
+  SET_CONFIG_PROPERTY_EX(Theme, ConfigureInterface());
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetPathInCaption(TPathInCaption value)
@@ -1476,9 +1485,9 @@ bool __fastcall TWinConfiguration::ConfirmRemoveDefaultTranslation()
 }
 //---------------------------------------------------------------------------
 const TEditorPreferences * __fastcall TWinConfiguration::DefaultEditorForFile(
-  const AnsiString FileName, bool Local)
+  const AnsiString FileName, bool Local, const TFileMasks::TParams & MaskParams)
 {
-  return FEditorList->Find(FileName, Local);
+  return FEditorList->Find(FileName, Local, MaskParams);
 }
 //---------------------------------------------------------------------------
 const TEditorList * __fastcall TWinConfiguration::GetEditorList()

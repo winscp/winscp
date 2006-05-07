@@ -15,6 +15,8 @@
 #include <Tools.h>
 #include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------
+#pragma link "IEListView"
+#pragma link "NortonLikeListView"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
@@ -88,11 +90,11 @@ bool __fastcall TSynchronizeChecklistDialog::Execute(TSynchronizeChecklist * Che
   
     TSynchronizeChecklistConfiguration FormConfiguration =
       CustomWinConfiguration->SynchronizeChecklist;
-    FormConfiguration.ListLayout = GetListViewStr(ListView);
+    FormConfiguration.ListParams = ListView->ColProperties->ParamsStr;
 
     AnsiString WindowParams = FormConfiguration.WindowParams;
     // if there is no main window, keep previous "custom pos" indication,
-    bool CustomPos = (StrToIntDef(CutToChar(WindowParams, ';', true), 0) != 0);
+    bool CustomPos = (StrToIntDef(::CutToChar(WindowParams, ';', true), 0) != 0);
     if (Application->MainForm != NULL)
     {
       CustomPos = (Application->MainForm->BoundsRect != BoundsRect);
@@ -143,7 +145,7 @@ void __fastcall TSynchronizeChecklistDialog::CreateParams(TCreateParams & Params
   {
     FFormRestored = True;
     AnsiString WindowParams = CustomWinConfiguration->SynchronizeChecklist.WindowParams;
-    bool CustomPos = (StrToIntDef(CutToChar(WindowParams, ';', true), 0) != 0);
+    bool CustomPos = (StrToIntDef(::CutToChar(WindowParams, ';', true), 0) != 0);
 
     if (!CustomPos && (Application->MainForm != NULL))
     {
@@ -303,12 +305,13 @@ void __fastcall TSynchronizeChecklistDialog::LoadList()
     ListView->Items->EndUpdate();
   }
 
+  ListView->AlphaSort();
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeChecklistDialog::FormShow(TObject * /*Sender*/)
 {
-  LoadListViewStr(ListView, CustomWinConfiguration->SynchronizeChecklist.ListLayout);
+  ListView->ColProperties->ParamsStr = CustomWinConfiguration->SynchronizeChecklist.ListParams;
 
   LoadList();
 }
@@ -584,6 +587,10 @@ TListItem * __fastcall TSynchronizeChecklistDialog::SelectAll(bool Select, int A
     if (Action == 0)
     {
       Item->Selected = Select;
+      if (Result == NULL)
+      {
+        Result = Item;
+      }
     }
     else
     {
@@ -623,7 +630,112 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarMouseDown(
     {
       Item->MakeVisible(false);
       Item->Focused = true;
+      ListView->SetFocus();
     }
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall TSynchronizeChecklistDialog::CompareNumber(__int64 Value1,
+  __int64 Value2)
+{
+  int Result;
+  if (Value1 < Value2)
+  {
+    Result = -1;
+  }
+  else if (Value1 == Value2)
+  {
+    Result = 0;
+  }
+  else
+  {
+    Result = 1;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
+  TObject * /*Sender*/, TListItem * Item1, TListItem * Item2, int /*Data*/,
+  int & Compare)
+{
+  const TSynchronizeChecklist::TItem * ChecklistItem1 = 
+    static_cast<const TSynchronizeChecklist::TItem *>(Item1->Data);
+  const TSynchronizeChecklist::TItem * ChecklistItem2 = 
+    static_cast<const TSynchronizeChecklist::TItem *>(Item2->Data);
+
+  TIEListViewColProperties * ColProperties =
+    dynamic_cast<TIEListViewColProperties *>(ListView->ColProperties);
+
+  switch (ColProperties->SortColumn)
+  {
+    case 0: // name
+      Compare = CompareText(ChecklistItem1->FileName, ChecklistItem2->FileName);
+      break;
+
+    // sorting by local and remote dir is the same  
+    case 1: // local dir
+    case 5: // remote dir
+      Compare = 0; // default sorting
+      break;
+
+    case 2: // local size
+      Compare = CompareNumber(ChecklistItem1->Local.Size, ChecklistItem2->Local.Size);
+      break;
+
+    case 3: // local changed
+      Compare = CompareFileTime(ChecklistItem1->Local.Modification,
+        ChecklistItem2->Local.Modification);
+      break;
+
+    case 4: // action
+      Compare = CompareNumber(ChecklistItem1->Action, ChecklistItem2->Action);
+      break;
+
+    case 6: // remote size
+      Compare = CompareNumber(ChecklistItem1->Remote.Size, ChecklistItem2->Remote.Size);
+      break;
+
+    case 7: // remote changed
+      Compare = CompareFileTime(ChecklistItem1->Remote.Modification,
+        ChecklistItem2->Remote.Modification);
+      break;
+  }
+
+  if (Compare == 0)
+  {
+    if (!ChecklistItem1->Local.Directory.IsEmpty())
+    {
+      Compare = CompareText(ChecklistItem1->Local.Directory, ChecklistItem2->Local.Directory);
+    }
+    else
+    {
+      assert(!ChecklistItem1->Remote.Directory.IsEmpty());
+      Compare = CompareText(ChecklistItem1->Remote.Directory, ChecklistItem2->Remote.Directory);
+    }
+
+    if (Compare == 0)
+    {
+      Compare = CompareText(ChecklistItem1->FileName, ChecklistItem2->FileName);
+    }
+  }
+
+  if (!ColProperties->SortAscending)
+  {
+    Compare = -Compare;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::ListViewSecondaryColumnHeader(
+  TCustomIEListView * /*Sender*/, int Index, int & SecondaryColumn)
+{
+  // "remote dir" column is sorting alias for "local dir" column
+  if (Index == 5)
+  {
+    SecondaryColumn = 1;
+  }
+  else
+  {
+    SecondaryColumn = -1;
   }
 }
 //---------------------------------------------------------------------------

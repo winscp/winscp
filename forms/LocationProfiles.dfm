@@ -76,13 +76,14 @@ object LocationProfilesDialog: TLocationProfilesDialog
       HideSelection = False
       Images = BookmarkImageList
       Indent = 19
-      ReadOnly = True
       TabOrder = 0
       OnChange = ProfilesViewChange
       OnCollapsed = ProfilesViewCollapsed
       OnDblClick = ProfilesViewDblClick
       OnDragDrop = ProfilesViewDragDrop
       OnDragOver = ProfilesViewDragOver
+      OnEdited = ProfilesViewEdited
+      OnEditing = ProfilesViewEditing
       OnExpanded = ProfilesViewExpanded
       OnGetImageIndex = ProfilesViewGetImageIndex
       OnGetSelectedIndex = ProfilesViewGetSelectedIndex
@@ -124,7 +125,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = '&Down'
-      TabOrder = 4
+      TabOrder = 6
       OnClick = BookmarkButtonClick
     end
     object UpBookmarkButton: TButton
@@ -143,7 +144,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
       Width = 83
       Height = 25
       Anchors = [akTop, akRight]
-      Caption = 'Re&name ...'
+      Caption = 'Re&name'
       TabOrder = 3
       OnClick = RenameButtonClick
     end
@@ -154,7 +155,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
       Height = 25
       Anchors = [akTop, akRight]
       Caption = '&Move to ...'
-      TabOrder = 6
+      TabOrder = 4
       OnClick = MoveToButtonClick
     end
   end

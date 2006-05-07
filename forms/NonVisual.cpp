@@ -288,6 +288,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ViewLogAction->Checked = false )
   UPDEX(ShowHiddenFilesAction, true,
     ShowHiddenFilesAction->Checked = WinConfiguration->ShowHiddenFiles, )
+  UPDEX(AutoReadDirectoryAfterOpAction, true,
+    AutoReadDirectoryAfterOpAction->Checked = Configuration->AutoReadDirectoryAfterOp, )
   UPD(PreferencesAction, true)
   UPD(PresetsPreferencesAction, true)
   UPDEX(LockToolbarsAction, true,
@@ -550,7 +552,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     EXE(ViewLogAction, WinConfiguration->LogView =
       (WinConfiguration->LogView == lvNone ? lvWindow : lvNone) )
-    EXE(ShowHiddenFilesAction, WinConfiguration->ShowHiddenFiles = !WinConfiguration->ShowHiddenFiles)
+    EXE(ShowHiddenFilesAction, ScpExplorer->ToggleShowHiddenFiles())
+    EXE(AutoReadDirectoryAfterOpAction, ScpExplorer->ToggleAutoReadDirectoryAfterOp())
     EXE(PreferencesAction, PreferencesDialog(pmDefault) )
     EXE(PresetsPreferencesAction, PreferencesDialog(pmPresets) )
     EXE(LockToolbarsAction, WinConfiguration->LockToolbars = !WinConfiguration->LockToolbars)
@@ -625,7 +628,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(FullSynchronizeAction, ScpExplorer->FullSynchronizeDirectories())
     EXE(ConsoleAction, ScpExplorer->OpenConsole())
     EXE(PuttyAction, TTerminalManager::Instance()->OpenInPutty())
-    EXE(SynchronizeBrowsingAction, )
+    EXE(SynchronizeBrowsingAction, ScpExplorer->SynchronizeBrowsingChanged())
     EXE(CloseApplicationAction, ScpExplorer->Close())
     EXE(FileSystemInfoAction, ScpExplorer->FileSystemInfo())
     EXE(ClearCachesAction, ScpExplorer->Terminal->ClearCaches())
@@ -1156,10 +1159,7 @@ void __fastcall TNonVisualDataModule::ShowUpdatesUpdate()
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
   unsigned short H, M, S, MS;
   DecodeTime(Now(), H, M, S, MS);
-  TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
-  int CurrentCompoundVer = CalculateCompoundVersion(
-    HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
-    HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
+  int CurrentCompoundVer = CurrentCompoundVersion();
   ShowUpdatesAction->ImageIndex =
     ((Updates.HaveResults && (Updates.Results.ForVersion == CurrentCompoundVer) &&
       ((Updates.Results.Critical && !Updates.ShownResults && (MS >= 500)) ||

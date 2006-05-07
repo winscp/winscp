@@ -397,6 +397,7 @@ void *safemalloc(size_t n, size_t size)
 	p = NULL;
     } else {
 	size *= n;
+	if (size == 0) size = 1;
 #ifdef MINEFIELD
 	p = minefield_c_malloc(size);
 #else

@@ -148,6 +148,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   BOOLPROP(ConfirmOverwriting);
   BOOLPROP(ConfirmResume);
   BOOLPROP(ConfirmDeleting);
+  BOOLPROP(ConfirmRecycling);
   BOOLPROP(ConfirmClosingSession);
   BOOLPROP(ConfirmExitOnCompletion);
   BOOLPROP(UseLocationProfiles);
@@ -225,10 +226,6 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
     (Configuration->SessionReopenAuto / 1000): 5);
 
-  EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
-  EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
-  EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
-
   TransferSheet->Enabled = WinConfiguration->ExpertMode;
   GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
   ExplorerSheet->Enabled = WinConfiguration->ExpertMode;
@@ -266,7 +263,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     QueueViewHideButton->Checked = true;
   }
 
-  // panels
+  // window
   if (WinConfiguration->PathInCaption == picFull)
   {
     PathInCaptionFullButton->Checked = true;
@@ -279,7 +276,10 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   {
     PathInCaptionNoneButton->Checked = true;
   }
+
+  // panels
   DoubleClickActionCombo->ItemIndex = WinConfiguration->DoubleClickAction;
+  BOOLPROP(AutoReadDirectoryAfterOp);
 
   // updates
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -353,6 +353,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ConfirmOverwriting);
     BOOLPROP(ConfirmResume);
     BOOLPROP(ConfirmDeleting);
+    BOOLPROP(ConfirmRecycling);
     BOOLPROP(ConfirmClosingSession);
     BOOLPROP(ConfirmExitOnCompletion);
     BOOLPROP(UseLocationProfiles);
@@ -454,7 +455,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     GUIConfiguration->DefaultCopyParam = CopyParam;
 
-    // panels
+    // window
     if (PathInCaptionFullButton->Checked)
     {
        WinConfiguration->PathInCaption = picFull;
@@ -467,7 +468,10 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       WinConfiguration->PathInCaption = picNone;
     }
+
+    // panels
     WinConfiguration->DoubleClickAction = (TDoubleClickAction)DoubleClickActionCombo->ItemIndex;
+    BOOLPROP(AutoReadDirectoryAfterOp);
 
     // updates
     TUpdatesConfiguration Updates = WinConfiguration->Updates;
@@ -538,7 +542,7 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
     PageControl->Pages[Index]->TabVisible = false;
   }
   // change form height by height of hidden tabs
-  ClientHeight -= 50;
+  ClientHeight -= 75;
 
   switch (PreferencesMode) {
     case pmEditor: PageControl->ActivePage = EditorSheet; break;

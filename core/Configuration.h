@@ -6,8 +6,10 @@
 #include "FileBuffer.h"
 #include "HierarchicalStorage.h"
 //---------------------------------------------------------------------------
+#define SET_CONFIG_PROPERTY_EX(PROPERTY, APPLY) \
+  if (PROPERTY != value) { F ## PROPERTY = value; Changed(); APPLY; }
 #define SET_CONFIG_PROPERTY(PROPERTY) \
-  if (PROPERTY != value) { F ## PROPERTY = value; Changed(); }
+  SET_CONFIG_PROPERTY_EX(PROPERTY, )
 //---------------------------------------------------------------------------
 class TCriticalSection;
 //---------------------------------------------------------------------------
@@ -30,6 +32,7 @@ private:
   int FLogProtocol;
   bool FConfirmOverwriting;
   bool FConfirmResume;
+  bool FAutoReadDirectoryAfterOp;
   int FSessionReopenAuto;
   int FSessionReopenNoConfirmation;
   AnsiString FIniFileStorageName;
@@ -97,6 +100,8 @@ protected:
   virtual void __fastcall SetConfirmOverwriting(bool value);
   bool __fastcall GetConfirmResume();
   void __fastcall SetConfirmResume(bool value);
+  bool __fastcall GetAutoReadDirectoryAfterOp();
+  void __fastcall SetAutoReadDirectoryAfterOp(bool value);
   virtual bool __fastcall GetRememberPassword();
 
   virtual AnsiString __fastcall ModuleFileName();
@@ -160,6 +165,7 @@ public:
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property bool ConfirmOverwriting = { read = GetConfirmOverwriting, write = SetConfirmOverwriting};
   __property bool ConfirmResume = { read = GetConfirmResume, write = SetConfirmResume};
+  __property bool AutoReadDirectoryAfterOp = { read = GetAutoReadDirectoryAfterOp, write = SetAutoReadDirectoryAfterOp};
   __property bool RememberPassword = { read = GetRememberPassword };
   __property AnsiString PartialExt = {read=GetPartialExt};
   __property int SessionReopenAuto = { read = FSessionReopenAuto, write = SetSessionReopenAuto };

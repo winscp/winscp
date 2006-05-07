@@ -224,12 +224,14 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     TTerminal * Terminal);
 
 // forms\ComboInput.cpp
+typedef void __fastcall (*TInputValidateEvent)
+  (const AnsiString & Text);
 bool __fastcall DoComboInputDialog(
   const AnsiString Caption, const AnsiString Prompt, AnsiString & Text,
-  TStrings * Items, TCloseQueryEvent OnCloseQuery, bool AllowEmpty,
+  TStrings * Items, TInputValidateEvent OnInputValidate, bool AllowEmpty,
   const AnsiString HelpKeyword = HELP_NONE);
-AnsiString __fastcall DoSaveSessionDialog(
-  TStoredSessionList * SessionList, const AnsiString DefaultName);
+AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName);
+void __fastcall SaveSessionInputValidate(const AnsiString & Text);
 bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
   AnsiString & FileMask, bool Move);
 
@@ -257,7 +259,7 @@ typedef void __fastcall (__closure *TGetSynchronizeOptionsEvent)
 bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
   const TCopyParamType * CopyParams, TSynchronizeStartStopEvent OnStartStop,
   bool & SaveSettings, int Options, int CopyParamAttrs,
-  TGetSynchronizeOptionsEvent OnGetOptions);
+  TGetSynchronizeOptionsEvent OnGetOptions, bool Start);
 
 // forms\FullSynchronize.cpp
 struct TUsableCopyParamAttrs;

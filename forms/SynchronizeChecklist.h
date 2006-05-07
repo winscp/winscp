@@ -19,12 +19,14 @@
 #include <Terminal.h>
 #include <ImgList.hpp>
 #include <Menus.hpp>
+#include "IEListView.hpp"
+#include "NortonLikeListView.hpp"
 //----------------------------------------------------------------------------
 class TSynchronizeChecklistDialog : public TForm
 {
 __published:
   TPanel * Panel;
-  TListView * ListView;
+  TIEListView *ListView;
   TStatusBar *StatusBar;
   TImageList *ActionImages;
   TButton *OkButton;
@@ -40,6 +42,7 @@ __published:
   TMenuItem *SelectAllItem;
   TTimer *UpdateTimer;
   TButton *HelpButton;
+  TImageList *ArrowImages;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall ListViewAdvancedCustomDrawSubItem(
@@ -63,6 +66,10 @@ __published:
   void __fastcall SelectAllItemClick(TObject *Sender);
   void __fastcall StatusBarMouseDown(TObject *Sender, TMouseButton Button,
           TShiftState Shift, int X, int Y);
+  void __fastcall ListViewCompare(TObject *Sender, TListItem *Item1,
+          TListItem *Item2, int Data, int &Compare);
+  void __fastcall ListViewSecondaryColumnHeader(TCustomIEListView *Sender,
+          int Index, int &SecondaryColumn);
   
 public:
   __fastcall TSynchronizeChecklistDialog(TComponent * AOwner,
@@ -98,6 +105,7 @@ protected:
   void __fastcall CheckAll(bool Check);
   TListItem * __fastcall SelectAll(bool Select, int Action = 0,
     bool OnlyTheAction = true);
+  static int __fastcall CompareNumber(__int64 Value1, __int64 Value2);
 };
 //----------------------------------------------------------------------------
 #endif

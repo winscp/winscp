@@ -155,7 +155,7 @@ AnsiString __fastcall TCopyParamType::GetInfoStr(AnsiString Separator, int Optio
     }
   }
 
-  if ((NegativeExclude != Defaults.NegativeExclude) ||
+  if (((NegativeExclude != Defaults.NegativeExclude) && !(ExcludeFileMask == "")) ||
       !(ExcludeFileMask == Defaults.ExcludeFileMask))
   {
     ADD(FORMAT(LoadStr(NegativeExclude ? COPY_INFO_INCLUDE_MASK : COPY_INFO_EXCLUDE_MASK),
@@ -328,12 +328,13 @@ AnsiString __fastcall TCopyParamType::ChangeFileName(AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::UseAsciiTransfer(AnsiString FileName,
-  TOperationSide Side) const
+  TOperationSide Side, const TFileMasks::TParams & Params) const
 {
   switch (TransferMode) {
     case tmBinary: return false;
     case tmAscii: return true;
-    case tmAutomatic: return AsciiFileMask.Matches(FileName, (Side == osLocal), false);
+    case tmAutomatic: return AsciiFileMask.Matches(FileName, (Side == osLocal),
+      false, &Params);
     default: assert(false); return false;
   }
 }
@@ -397,13 +398,13 @@ bool __fastcall TCopyParamType::AllowResume(__int64 Size) const
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::AllowTransfer(AnsiString FileName,
-  TOperationSide Side, bool Directory) const
+  TOperationSide Side, bool Directory, const TFileMasks::TParams & Params) const
 {
   bool Result = true;
   if (!ExcludeFileMask.Masks.IsEmpty())
   {
-    Result = (ExcludeFileMask.Matches(FileName, (Side == osLocal), Directory) ==
-      NegativeExclude);
+    Result = (ExcludeFileMask.Matches(FileName, (Side == osLocal),
+      Directory, &Params) == NegativeExclude);
   }
   return Result;
 }

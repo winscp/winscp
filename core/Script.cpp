@@ -1421,7 +1421,8 @@ void __fastcall TManagementScript::TerminalPromptUser(TSecureShell * SecureShell
   AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
   void * Arg)
 {
-  if (!SecureShell->StoredPasswordTried && (OnTerminalPromptUser != NULL))
+  if ((!SecureShell->StoredPasswordTried || (Kind == pkPrompt)) &&
+      (OnTerminalPromptUser != NULL))
   {
     OnTerminalPromptUser(SecureShell, Prompt, Kind, Response, Result, Arg);
   }
@@ -1864,4 +1865,3 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
-

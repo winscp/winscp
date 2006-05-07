@@ -23,7 +23,7 @@ struct TFileSystemInfo;
 typedef TStringList TUsersGroupsList;
 typedef void __fastcall (__closure *TReadDirectoryEvent)(System::TObject* Sender, Boolean ReloadOnly);
 typedef void __fastcall (__closure *TReadDirectoryProgressEvent)(
-  System::TObject* Sender, int Progress);
+  System::TObject* Sender, int Progress, bool & Cancel);
 typedef void __fastcall (__closure *TProcessFileEvent)
   (const AnsiString FileName, const TRemoteFile * File, void * Param);
 typedef void __fastcall (__closure *TProcessFileEventEx)
@@ -106,7 +106,7 @@ public:
   static const spNoRecurse = 0x08;
   static const spUseCache = 0x10; // cannot be combined with spTimestamp
   static const spDelayProgress = 0x20; // cannot be combined with spTimestamp
-  // 0x40 was spPreviewChanges
+  static const spPreviewChanges = 0x40; // not used by core
   static const spSubDirs = 0x80; // cannot be combined with spTimestamp
   static const spTimestamp = 0x100;
   static const spNotByTime = 0x200; // cannot be combined with spTimestamp and smBoth
@@ -172,7 +172,7 @@ protected:
 
   virtual void __fastcall KeepAlive();
   void __fastcall DoStartReadDirectory();
-  void __fastcall DoReadDirectoryProgress(int Progress);
+  void __fastcall DoReadDirectoryProgress(int Progress, bool & Cancel);
   void __fastcall DoReadDirectory(bool ReloadOnly);
   void __fastcall DoDirectoryModified(const AnsiString Path, bool SubDirs);
   void __fastcall DoCreateDirectory(const AnsiString DirName,
@@ -240,7 +240,6 @@ protected:
   void __fastcall DeleteLocalFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall RecycleFile(AnsiString FileName, const TRemoteFile * File);
-  bool __fastcall IsRecycledFile(AnsiString FileName);
   TStrings * __fastcall GetFixedPaths();
   void __fastcall DoStartup();
   virtual void __fastcall DoOpen();
@@ -276,6 +275,7 @@ public:
     const TRemoteFile * File = NULL, void * Recursive = NULL);
   bool __fastcall DeleteFiles(TStrings * FilesToDelete, bool * Recursive = NULL);
   bool __fastcall DeleteLocalFiles(TStrings * FileList);
+  bool __fastcall IsRecycledFile(AnsiString FileName);
   void __fastcall CustomCommandOnFile(AnsiString FileName,
     const TRemoteFile * File, void * AParams);
   void __fastcall CustomCommandOnFiles(AnsiString Command, int Params,

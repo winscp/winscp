@@ -457,6 +457,8 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 SockAddr sk_nonamelookup(const char *host)
 {
     SockAddr ret = snew(struct SockAddr_tag);
+    // MP
+    memset(ret, 0, sizeof(struct SockAddr_tag));
     ret->error = NULL;
     ret->family = AF_UNSPEC;
 #ifndef NO_IPV6

@@ -13,9 +13,9 @@
 struct TSynchronizeChecklistConfiguration
 {
   AnsiString WindowParams;
-  AnsiString ListLayout;
+  AnsiString ListParams;
   bool __fastcall operator !=(TSynchronizeChecklistConfiguration & rhc)
-    { return C(WindowParams) C(ListLayout) 0; };
+    { return C(WindowParams) C(ListParams) 0; };
 };
 //---------------------------------------------------------------------------
 struct TConsoleWinConfiguration

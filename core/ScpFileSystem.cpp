@@ -541,7 +541,8 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params)
 
             if (Total % 10 == 0)
             {
-              FTerminal->DoReadDirectoryProgress(Total);
+              bool Cancel; //dummy
+              FTerminal->DoReadDirectoryProgress(Total, Cancel);
             }
           }
         }
@@ -1509,8 +1510,11 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
   bool Dir = FLAGSET(Attrs, faDirectory);
 
+  TFileMasks::TParams MaskParams;
+  MaskParams.Size = Size;
+
   if (FLAGCLEAR(Params, cpDelete) &&
-      !CopyParam->AllowTransfer(FileName, osLocal, Dir))
+      !CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams))
   {
     FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;
@@ -1536,7 +1540,8 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
     OperationProgress->TransferingFile = false;
 
     // Will we use ASCII of BINARY file tranfer?
-    OperationProgress->SetAsciiTransfer(CopyParam->UseAsciiTransfer(FileName, osLocal));
+    OperationProgress->SetAsciiTransfer(
+      CopyParam->UseAsciiTransfer(FileName, osLocal, MaskParams));
     FTerminal->LogEvent(
       AnsiString((OperationProgress->AsciiTransfer ? "Ascii" : "Binary")) +
         " transfer mode selected.");
@@ -2103,12 +2108,15 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
             FTerminal->FatalError(FMTLOAD(SCP_INVALID_CONTROL_RECORD, (Ctrl, Line)));
         }
 
+        TFileMasks::TParams MaskParams;
+
         // We reach this point only if control record was 'C' or 'D'
         try
         {
           FileData.RemoteRights.Octal = CutToChar(Line, ' ', True);
           // do not trim leading spaces of the filename
           __int64 TSize = StrToInt64(CutToChar(Line, ' ', False).TrimRight());
+          MaskParams.Size = TSize;
           // Security fix: ensure the file ends up where we asked for it.
           // (accept only filename, not path)
           AnsiString OnlyFileName = UnixExtractFileName(Line);
@@ -2144,7 +2152,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
         bool Dir = (Ctrl == 'D');
         AnsiString SourceFullName = SourceDir + OperationProgress->FileName;
         if (FLAGCLEAR(Params, cpDelete) &&
-            !CopyParam->AllowTransfer(SourceFullName, osRemote, Dir))
+            !CopyParam->AllowTransfer(SourceFullName, osRemote, Dir, MaskParams))
         {
           FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer",
             (ErrorFileName)));
@@ -2263,7 +2271,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
 
             // Will we use ASCII of BINARY file tranfer?
             OperationProgress->SetAsciiTransfer(
-              CopyParam->UseAsciiTransfer(SourceFullName, osRemote));
+              CopyParam->UseAsciiTransfer(SourceFullName, osRemote, MaskParams));
             FTerminal->LogEvent(AnsiString((OperationProgress->AsciiTransfer ? "Ascii" : "Binary")) +
               " transfer mode selected.");
 

@@ -30,6 +30,7 @@ type
     procedure SetOrderStr(Value: string);
   protected
     FListView: TCustomListView;
+    FListViewManaged: Boolean;
     function GetAlignments(Index: Integer): TAlignment;
     function GetOrder(Index: Integer): Integer;
     function GetParamsStr: string; virtual;
@@ -43,6 +44,7 @@ type
     procedure Changed; virtual;
     procedure SetCaptions(Index: Integer; Value: string); virtual;
     procedure SetParamsStr(Value: string); virtual;
+    procedure UpdateFromListView;
 
     property Columns: TListColumns read GetColumns stored False;
     property Count: Integer read GetCount stored False;
@@ -110,6 +112,7 @@ begin
 
   FUpdating := 0;
   FChanged := False;
+  FListViewManaged := (ColCount = 0);
 
   SetLength(FWidths, ColCount);
   SetLength(FVisible, ColCount);
@@ -123,17 +126,18 @@ begin
   if not Assigned(FListView) then
     raise Exception.Create('NIL ListView pointer.');
 
-  with Columns do
-  begin
-    BeginUpdate;
-    try
-      if Count > 0 then Clear;
-      for Index := 0 to ColCount-1 do
-        Add.Width := 50;
-    finally
-      EndUpdate;
+  if ColCount > 0 then
+    with Columns do
+    begin
+      BeginUpdate;
+      try
+        if Count > 0 then Clear;
+        for Index := 0 to ColCount-1 do
+          Add.Width := 50;
+      finally
+        EndUpdate;
+      end;
     end;
-  end;
 
   MaxWidth := DefaultListViewMaxWidth;
   MinWidth := DefaultListViewMinWidth;
@@ -416,9 +420,25 @@ procedure TCustomListViewColProperties.ListViewWndCreated;
 var
   Index: Integer;
 begin
+  if FListViewManaged then UpdateFromListView
+    else
   for Index := 0 to Count-1 do
     if not Visible[Index] then
       Columns[Index].Width := 0;
+end;
+
+procedure TCustomListViewColProperties.UpdateFromListView;
+var
+  Index: Integer;
+begin
+  SetLength(FWidths, Count);
+  SetLength(FVisible, Count);
+
+  for Index := 0 to Count-1 do
+  begin
+    FVisible[Index] := True;
+    FWidths[Index] := Columns[Index].Width;
+  end;
 end;
 
 end.

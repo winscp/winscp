@@ -70,11 +70,12 @@ public:
     TOperationSide Side, bool FirstLevel) const;
   int __fastcall LocalFileAttrs(const TRights & Rights) const;
   TRights __fastcall RemoteFileRights(int Attrs) const;
-  bool __fastcall UseAsciiTransfer(AnsiString FileName, TOperationSide Side) const;
+  bool __fastcall UseAsciiTransfer(AnsiString FileName, TOperationSide Side,
+    const TFileMasks::TParams & Params) const;
   bool __fastcall AllowResume(__int64 Size) const;
   AnsiString __fastcall ValidLocalFileName(AnsiString FileName) const;
   bool __fastcall AllowTransfer(AnsiString FileName, TOperationSide Side,
-    bool Directory) const;
+    bool Directory, const TFileMasks::TParams & Params) const;
 
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage) const;

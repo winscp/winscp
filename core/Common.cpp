@@ -6,6 +6,7 @@
 #include "Exceptions.h"
 #include "TextsCore.h"
 #include "Interface.h"
+#include "PuttyIntf.h"
 #include <StrUtils.hpp>
 #include <math.h>
 #include <shellapi.h>
@@ -181,7 +182,8 @@ AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim)
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString CutToChars(AnsiString & Str, AnsiString Chs, bool Trim)
+AnsiString CutToChars(AnsiString & Str, AnsiString Chs, bool Trim,
+  char * Delimiter)
 {
   int P;
   for (P = 1; P <= Str.Length(); P++)
@@ -195,11 +197,19 @@ AnsiString CutToChars(AnsiString & Str, AnsiString Chs, bool Trim)
   AnsiString Result;
   if (P <= Str.Length())
   {
+    if (Delimiter != NULL)
+    {
+      *Delimiter = Str[P];
+    }
     Result = Str.SubString(1, P-1);
     Str.Delete(1, P);
   }
   else
   {
+    if (Delimiter != NULL)
+    {
+      *Delimiter = '\0';
+    }
     Result = Str;
     Str = "";
   }
@@ -456,6 +466,11 @@ unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars)
   return Result;
 }
 //---------------------------------------------------------------------------
+__int64 __fastcall ParseSize(AnsiString SizeStr)
+{
+  return parse_blocksize(SizeStr.c_str());
+}
+//---------------------------------------------------------------------------
 bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec)
 {
   int FindAttrs = faReadOnly | faHidden | faSysFile | faDirectory | faArchive;
@@ -706,16 +721,19 @@ inline __int64 __fastcall Round(double Number)
 #define TIME_WIN_TO_POSIX(ft, t) ((t) = (__int64) \
     ((*(LONGLONG*)&(ft)) / (LONGLONG) 10000000 - (LONGLONG) 11644473600))
 //---------------------------------------------------------------------------
-FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
-  bool /*ConsiderDST*/)
+static __int64 __fastcall DateTimeToUnix(const TDateTime DateTime)
 {
   TDateTimeParams * Params = GetDateTimeParams();
 
-  __int64 UnixTimeStamp;
-  FILETIME Result;
-
-  UnixTimeStamp = Round(double(DateTime - Params->UnixEpoch) * 86400) +
+  return Round(double(DateTime - Params->UnixEpoch) * 86400) +
     Params->CurrentDifferenceSec;
+}
+//---------------------------------------------------------------------------
+FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
+  bool /*ConsiderDST*/)
+{
+  FILETIME Result;
+  __int64 UnixTimeStamp = DateTimeToUnix(DateTime);
 
   TIME_POSIX_TO_WIN(UnixTimeStamp, Result);
   return Result;
@@ -741,6 +759,22 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
       Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
   }
 
+  return Result;
+}
+//---------------------------------------------------------------------------
+__int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
+  bool ConsiderDST)
+{
+  __int64 Result;
+  if ((FileTime.dwLowDateTime == 0) &&
+      (FileTime.dwHighDateTime == 0))
+  {
+    Result = DateTimeToUnix(Now());
+  }
+  else
+  {
+    Result = ConvertTimestampToUnix(FileTime, ConsiderDST);
+  }
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -848,7 +882,7 @@ AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format)
       {
         Result.Insert(F, Index);
       }
-      
+
       while ((Index <= Result.Length()) && (F == Result[Index]))
       {
         Index++;
@@ -1054,4 +1088,3 @@ void __fastcall AnsiToOem(AnsiString & Str)
     CharToOem(Str.c_str(), Str.c_str());
   }
 }
-

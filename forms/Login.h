@@ -246,6 +246,9 @@ __published:
   TMenuItem *ColorDefaultItem;
   TMenuItem *PickColorItem;
   TImageList *ColorImageList;
+  TButton *RenameButton;
+  TAction *RenameSessionAction;
+  TXPGroupBox *DirectoryOptionsGroup;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -294,6 +297,13 @@ __published:
   void __fastcall ColorButtonClick(TObject *Sender);
   void __fastcall ColorDefaultItemClick(TObject *Sender);
   void __fastcall PickColorItemClick(TObject *Sender);
+  void __fastcall SessionListViewEditing(TObject * Sender, TListItem * Item,
+    bool & AllowEdit);
+  void __fastcall RenameSessionActionExecute(TObject * Sender);
+  void __fastcall SessionListViewEdited(TObject * Sender, TListItem * Item,
+    AnsiString & S);
+  void __fastcall SessionListViewCompare(TObject * Sender, TListItem * Item1,
+    TListItem * Item2, int Data, int & Compare);
 
 private:
   int NoUpdate;

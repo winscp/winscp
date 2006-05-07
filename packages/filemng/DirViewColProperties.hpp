@@ -11,6 +11,7 @@
 #pragma option push -w-
 #pragma option push -Vx
 #include <ListViewColProperties.hpp>	// Pascal unit
+#include <IEListView.hpp>	// Pascal unit
 #include <ComCtrls.hpp>	// Pascal unit
 #include <Classes.hpp>	// Pascal unit
 #include <SysInit.hpp>	// Pascal unit
@@ -22,32 +23,21 @@ namespace Dirviewcolproperties
 {
 //-- type declarations -------------------------------------------------------
 class DELPHICLASS TCustomDirViewColProperties;
-class PASCALIMPLEMENTATION TCustomDirViewColProperties : public Listviewcolproperties::TCustomListViewColProperties 
+class PASCALIMPLEMENTATION TCustomDirViewColProperties : public Ielistview::TIEListViewColProperties 
 {
-	typedef Listviewcolproperties::TCustomListViewColProperties inherited;
-	
-private:
-	bool __fastcall GetSortAscending(void);
-	bool __fastcall GetSortByExtension(void);
-	void __fastcall SetSortColumn(int Value);
-	int __fastcall GetSortColumn(void);
-	AnsiString __fastcall GetSortStr();
-	void __fastcall SetSortAscending(bool Value);
-	void __fastcall SetSortByExtension(bool Value);
-	void __fastcall SetSortStr(AnsiString Value);
-	
-public:
-	__property bool SortAscending = {read=GetSortAscending, write=SetSortAscending, default=1};
-	__property bool SortByExtension = {read=GetSortByExtension, write=SetSortByExtension, default=0};
-	__property int SortColumn = {read=GetSortColumn, write=SetSortColumn, nodefault};
-	__property AnsiString SortStr = {read=GetSortStr, write=SetSortStr, stored=false};
+	typedef Ielistview::TIEListViewColProperties inherited;
 	
 protected:
-	virtual AnsiString __fastcall GetParamsStr();
-	virtual void __fastcall SetParamsStr(AnsiString Value);
+	bool __fastcall GetSortByExtension(void);
+	void __fastcall SetSortByExtension(bool Value);
+	virtual AnsiString __fastcall GetSortStr();
+	virtual void __fastcall SetSortStr(AnsiString Value);
+	
+public:
+	__property bool SortByExtension = {read=GetSortByExtension, write=SetSortByExtension, default=0};
 public:
 	#pragma option push -w-inl
-	/* TCustomListViewColProperties.Create */ inline __fastcall TCustomDirViewColProperties(Comctrls::TCustomListView* ListView, int ColCount) : Listviewcolproperties::TCustomListViewColProperties(ListView, ColCount) { }
+	/* TIEListViewColProperties.Create */ inline __fastcall TCustomDirViewColProperties(Comctrls::TCustomListView* ListView, int ColCount) : Ielistview::TIEListViewColProperties(ListView, ColCount) { }
 	#pragma option pop
 	
 public:

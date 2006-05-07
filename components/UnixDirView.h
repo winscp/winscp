@@ -56,7 +56,6 @@ protected:
   virtual void __fastcall InternalEdit(const tagLVITEMA & HItem);
   virtual TColor __fastcall ItemColor(TListItem * Item);
   virtual AnsiString __fastcall ItemFileName(TListItem * Item);
-  virtual __int64 __fastcall ItemFileSize(TListItem * Item);
   virtual int __fastcall ItemImageIndex(TListItem * Item, bool Cache);
   virtual bool __fastcall ItemIsFile(TListItem * Item);
   virtual bool __fastcall ItemMatchesFilter(TListItem * Item, const TFileFilter &Filter);
@@ -73,7 +72,7 @@ protected:
     TDateTimePrecision & Precision);
   DYNAMIC bool __fastcall CanEdit(TListItem* Item);
   void __fastcall SetDriveView(TCustomUnixDriveView * Value);
-  virtual int __fastcall SecondaryColumnHeader(int Index);
+  virtual int __fastcall SecondaryColumnHeader(int Index, bool & AliasOnly);
 
   __property TCustomUnixDriveView * DriveView = { read = FDriveView, write = SetDriveView };
 
@@ -90,6 +89,7 @@ public:
   virtual bool __fastcall ItemIsDirectory(TListItem * Item);
   virtual bool __fastcall ItemIsParentDirectory(TListItem * Item);
   virtual AnsiString __fastcall ItemFullFileName(TListItem * Item);
+  virtual __int64 __fastcall ItemFileSize(TListItem * Item);
   virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "");
   void __fastcall UpdateFiles();
 

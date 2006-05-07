@@ -72,6 +72,10 @@ __published:
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall ProfilesViewCollapsed(TObject *Sender, TTreeNode *Node);
   void __fastcall ProfilesViewExpanded(TObject *Sender, TTreeNode *Node);
+  void __fastcall ProfilesViewEdited(TObject * Sender, TTreeNode * Node,
+    AnsiString & S);
+  void __fastcall ProfilesViewEditing(TObject * Sender, TTreeNode * Node,
+    bool & AllowEdit);
 
 public:
   __fastcall TLocationProfilesDialog(TComponent* AOwner);
@@ -91,6 +95,7 @@ protected:
   void __fastcall BookmarkMove(TTreeNode * Source, TTreeNode * Dest);
   void __fastcall UpdateControls();
   bool __fastcall AddAsBookmark();
+  virtual void __fastcall UpdateActions();
 
 private:
   TOpenDirectoryMode FMode;
