@@ -991,8 +991,8 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
   enum { Off, On };
   static const char * ToggleNames[] = { "off", "on" };
 
-  assert((BatchOff == 0) && (BatchOn == 1) && (BatchAbort == 2));
-  static const char * BatchModeNames[] = { "off", "on", "abort" };
+  assert((BatchOff == 0) && (BatchOn == 1) && (BatchAbort == 2) && (BatchContinue == 3));
+  static const char * BatchModeNames[] = { "off", "on", "abort", "continue" };
 
   assert((tmBinary == 0) && (tmAscii == 1) && (tmAutomatic == 2));
   static const char * TransferModeNames[] = { "binary", "ascii", "automatic" };
@@ -1531,7 +1531,7 @@ void __fastcall TManagementScript::TerminalOperationFinished(
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalSynchronizeDirectory(
   const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
-  bool & Continue)
+  bool & Continue, bool /*Collect*/)
 {
   int SynchronizeMode = FSynchronizeMode;
   if (FKeepingUpToDate)

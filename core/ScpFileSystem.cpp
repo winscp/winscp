@@ -288,6 +288,11 @@ AnsiString __fastcall TSCPFileSystem::GetProtocolName() const
   return "SCP";
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSCPFileSystem::TemporaryTransferFile(const AnsiString & /*FileName*/)
+{
+  return false;
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall TSCPFileSystem::AbsolutePath(AnsiString Path)
 {
   AnsiString Result;

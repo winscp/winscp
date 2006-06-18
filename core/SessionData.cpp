@@ -1811,7 +1811,8 @@ void __fastcall TStoredSessionList::ImportHostKeys(const AnsiString TargetKey,
 }
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
-  bool & DefaultsOnly, int Params, AnsiString * FileName)
+  bool & DefaultsOnly, int Params, AnsiString * FileName,
+  bool * AProtocolDefined)
 {
   bool ProtocolDefined = false;
   TFSProtocol Protocol;
@@ -1826,6 +1827,11 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
     Protocol = fsSFTPonly;
     Url.Delete(1, 7);
     ProtocolDefined = true;
+  }
+
+  if (AProtocolDefined != NULL)
+  {
+    *AProtocolDefined = ProtocolDefined;
   }
 
   DefaultsOnly = true;

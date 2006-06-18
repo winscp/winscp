@@ -311,7 +311,7 @@ public:
 
   inline void AddUtfString(const AnsiString Value)
   {
-    AddString(TSFTPFileSystem::EncodeUTF(Value));
+    AddString(EncodeUTF(Value));
   }
 
   inline void AddString(const AnsiString Value, bool Utf)
@@ -512,7 +512,7 @@ public:
 
   inline AnsiString GetUtfString()
   {
-    return TSFTPFileSystem::DecodeUTF(GetString());
+    return DecodeUTF(GetString());
   }
 
   inline AnsiString GetString(bool Utf)
@@ -1456,6 +1456,11 @@ __fastcall TSFTPFileSystem::~TSFTPFileSystem()
   delete FPacketReservations;
   delete FExtensions;
   delete FFixedPaths;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSFTPFileSystem::TemporaryTransferFile(const AnsiString & FileName)
+{
+  return AnsiSameText(UnixExtractFileExt(FileName), PARTIAL_EXT);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::ResetConnection()

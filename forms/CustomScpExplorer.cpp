@@ -3151,7 +3151,8 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalSynchronizeDirectory(
-  const AnsiString LocalDirectory, const AnsiString RemoteDirectory, bool & Continue)
+  const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+  bool & Continue, bool /*Collect*/)
 {
   assert(FSynchronizeProgressForm != NULL);
   if (!FSynchronizeProgressForm->Started)

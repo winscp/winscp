@@ -158,7 +158,7 @@ void __fastcall TLogForm::UpdateControls()
     if (SessionLog->LoggingToFile)
     {
       Panel->TextTruncation = twPathEllipsis;
-      Panel->Caption = SessionLog->LogFileName;
+      Panel->Caption = SessionLog->CurrentFileName;
     }
     else
     {

@@ -59,7 +59,6 @@ private:
   TCopyParamType * FParams;
   int FCopyParamAttrs;
   TRightsExtFrame * FRightsFrame;
-  AnsiString FAddXToDirectoriesSuffix;
   void __fastcall SetParams(TCopyParamType value);
   TCopyParamType __fastcall GetParams();
   void __fastcall SetDirection(TParamsForDirection value);

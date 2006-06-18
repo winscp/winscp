@@ -43,6 +43,7 @@ private:
 	TPathLabelGetStatusEvent FOnGetStatus;
 	TPathLabelPathClickEvent FOnPathClick;
 	AnsiString FDisplayPath;
+	AnsiString FDisplayHotTrack;
 	bool FHotTrack;
 	bool FMouseInView;
 	bool FIsActive;

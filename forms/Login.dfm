@@ -378,7 +378,7 @@ object LoginDialog: TLoginDialog
         end
         object ColorButton: TButton
           Left = 271
-          Top = 238
+          Top = 237
           Width = 75
           Height = 25
           Caption = 'Select c&olor'
@@ -1265,7 +1265,7 @@ object LoginDialog: TLoginDialog
           DesignSize = (
             345
             111)
-          object Label6: TLabel
+          object PingIntervalLabel: TLabel
             Left = 12
             Top = 84
             Width = 140
@@ -1380,7 +1380,7 @@ object LoginDialog: TLoginDialog
           DesignSize = (
             345
             136)
-          object Label15: TLabel
+          object ProxyHostLabel: TLabel
             Left = 11
             Top = 41
             Width = 78
@@ -1388,7 +1388,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Pro&xy host name'
             FocusControl = ProxyHostEdit
           end
-          object Label18: TLabel
+          object ProxyPortLabel: TLabel
             Left = 240
             Top = 41
             Width = 57
@@ -1397,7 +1397,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Po&rt number'
             FocusControl = ProxyPortEdit
           end
-          object Label19: TLabel
+          object ProxyUsernameLabel: TLabel
             Left = 11
             Top = 85
             Width = 51
@@ -1405,7 +1405,7 @@ object LoginDialog: TLoginDialog
             Caption = '&User name'
             FocusControl = ProxyUsernameEdit
           end
-          object Label20: TLabel
+          object ProxyPasswordLabel: TLabel
             Left = 163
             Top = 85
             Width = 46
@@ -1513,7 +1513,7 @@ object LoginDialog: TLoginDialog
           DesignSize = (
             345
             108)
-          object Label21: TLabel
+          object ProxyTelnetCommandLabel: TLabel
             Left = 11
             Top = 19
             Width = 79
@@ -1595,7 +1595,7 @@ object LoginDialog: TLoginDialog
           DesignSize = (
             345
             217)
-          object Label22: TLabel
+          object BugIgnore1Label: TLabel
             Left = 12
             Top = 20
             Width = 167
@@ -1603,7 +1603,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Chokes on SSH-1 &ignore messages'
             FocusControl = BugIgnore1Combo
           end
-          object Label23: TLabel
+          object BugPlainPW1Label: TLabel
             Left = 12
             Top = 44
             Width = 192
@@ -1611,7 +1611,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Refuses all SSH-1 pass&word camouflage'
             FocusControl = BugPlainPW1Combo
           end
-          object Label24: TLabel
+          object BugRSA1Label: TLabel
             Left = 12
             Top = 68
             Width = 180
@@ -1619,7 +1619,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Chokes on SSH-1 &RSA authentication'
             FocusControl = BugRSA1Combo
           end
-          object Label25: TLabel
+          object BugHMAC2Label: TLabel
             Left = 12
             Top = 92
             Width = 155
@@ -1627,7 +1627,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Miscomputes SSH-2 H&MAC keys'
             FocusControl = BugHMAC2Combo
           end
-          object Label26: TLabel
+          object BugDeriveKey2Label: TLabel
             Left = 12
             Top = 116
             Width = 173
@@ -1635,7 +1635,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Miscomputes SSH-2 &encryption keys'
             FocusControl = BugDeriveKey2Combo
           end
-          object Label27: TLabel
+          object BugRSAPad2Label: TLabel
             Left = 12
             Top = 140
             Width = 208
@@ -1643,7 +1643,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Requires &padding on SSH-2 RSA signatures'
             FocusControl = BugRSAPad2Combo
           end
-          object Label14: TLabel
+          object BugPKSessID2Label: TLabel
             Left = 12
             Top = 164
             Width = 194
@@ -1651,7 +1651,7 @@ object LoginDialog: TLoginDialog
             Caption = 'Misuses the sessio&n ID in SSH-2 PK auth'
             FocusControl = BugPKSessID2Combo
           end
-          object Label33: TLabel
+          object BugRekey2Label: TLabel
             Left = 12
             Top = 188
             Width = 183

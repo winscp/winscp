@@ -1358,7 +1358,8 @@ __fastcall TSessionLog::TSessionLog(TSecureShell * AOwner): TStringList()
   FFile = NULL;
   FLoggedLines = 0;
   FTopIndex = -1;
-  FFileName = "";
+  FCurrentLogFileName = "";
+  FCurrentFileName = "";
   FId = 0;
 }
 //---------------------------------------------------------------------------
@@ -1406,7 +1407,7 @@ TLogLineType __fastcall TSessionLog::GetType(Integer Index)
 void __fastcall TSessionLog::DoAdd(TLogLineType aType, AnsiString aLine)
 {
   assert(Configuration);
-  if (IsLogging())
+  if (Logging)
   {
     try
     {
@@ -1503,8 +1504,12 @@ void __fastcall TSessionLog::SetConfiguration(TConfiguration * value)
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::ReflectSettings()
 {
+  FLogging = (FConfiguration->Logging || (OnAddLine != NULL));
   // if logging to file was turned off or log file was change -> close current log file
-  if (FFile && (!LogToFile || (FFileName != LogFileName))) CloseLogFile();
+  if (FFile && (!LogToFile() || (FCurrentLogFileName != FConfiguration->LogFileName)))
+  {
+    CloseLogFile();
+  }
   // we used to open log file here, now it is posponed until first call to DoAdd()
   // this allows TSecureShell to change the Id sooner.
   DeleteUnnecessary();
@@ -1519,10 +1524,9 @@ void __fastcall TSessionLog::SetEnabled(bool value)
   }
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall TSessionLog::GetLogToFile()
+bool __fastcall TSessionLog::LogToFile()
 {
-  return Enabled && (Configuration != NULL) && Configuration->Logging &&
-    Configuration->LogToFile;
+  return (FConfiguration != NULL) && FConfiguration->Logging && FConfiguration->LogToFile;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::CloseLogFile()
@@ -1532,18 +1536,20 @@ void __fastcall TSessionLog::CloseLogFile()
     fclose((FILE *)FFile);
     FFile = NULL;
   }
-  FFileName = "";
+  FCurrentLogFileName = "";
+  FCurrentFileName = "";
 }
 //---------------------------------------------------------------------------
 void TSessionLog::OpenLogFile()
 {
-  if (LogToFile)
+  if (LogToFile())
   {
     try
     {
       assert(!FFile);
       assert(Configuration);
-      AnsiString NewFileName = LogFileName;
+      FCurrentLogFileName = FConfiguration->LogFileName;
+      AnsiString NewFileName = StripPathQuotes(FCurrentLogFileName);
       TDateTime N = Now();
       for (int Index = 1; Index < NewFileName.Length(); Index++)
       {
@@ -1598,7 +1604,7 @@ void TSessionLog::OpenLogFile()
       if (FFile)
       {
         setvbuf((FILE *)FFile, NULL, _IONBF, BUFSIZ);
-        FFileName = NewFileName;
+        FCurrentFileName = NewFileName;
       }
       else
       {
@@ -1607,8 +1613,9 @@ void TSessionLog::OpenLogFile()
     }
     catch (Exception &E)
     {
-      // We failed logging to file, turn it of and notify user.
-      FFileName = "";
+      // We failed logging to file, turn it off and notify user.
+      FCurrentLogFileName = "";
+      FCurrentFileName = "";
       Configuration->LogToFile = false;
       try
       {
@@ -1755,20 +1762,13 @@ int __fastcall TSessionLog::GetIndexes(int Index)
 {
   assert((Index >= 0) && (Index < Count));
   int Result = TopIndex + Index;
-  assert((Result >= 0) && (Result < LoggedLines));
+  assert((Result >= 0) && (Result < FLoggedLines));
   return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall TSessionLog::GetBottomIndex()
 {
   return (Count ? Indexes[Count-1] : -1);
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TSessionLog::GetLogFileName()
-{
-  assert(Configuration);
-  AnsiString Result = StripPathQuotes(Configuration->LogFileName);
-  return Result;
 }
 //---------------------------------------------------------------------------
 Boolean __fastcall TSessionLog::GetLoggingToFile()
@@ -1781,4 +1781,13 @@ void __fastcall TSessionLog::Clear()
 {
   FTopIndex += Count;
   TStringList::Clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionLog::SetOnAddLine(TLogAddLineEvent value)
+{
+  if (OnAddLine != value)
+  {
+    FOnAddLine = value;
+    ReflectSettings();
+  }
 }

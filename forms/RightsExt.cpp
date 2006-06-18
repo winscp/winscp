@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include "RightsExt.h"
+#include <Common.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "Rights"
@@ -61,7 +62,15 @@ void __fastcall TRightsExtFrame::OctalEditChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TRightsExtFrame::OctalEditExit(TObject * /*Sender*/)
 {
-  if (OctalEdit->Modified)
+  if (!Visible)
+  {
+    // should happen only if popup is closed by esc key
+    assert(Popup);
+
+    // cancel changes
+    ForceUpdate();
+  }
+  else if (OctalEdit->Modified)
   {
     // Now the text in OctalEdit is almost necessarily invalid, otherwise
     // OctalEditChange would have already cleared Modified flag

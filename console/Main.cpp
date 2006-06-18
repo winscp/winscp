@@ -12,6 +12,7 @@ HANDLE ConsoleInput = NULL;
 HANDLE Child = NULL;
 HANDLE CancelEvent = NULL;
 unsigned int OutputType = FILE_TYPE_UNKNOWN;
+unsigned int InputType = FILE_TYPE_UNKNOWN;
 enum { RESULT_GLOBAL_ERROR = 1, RESULT_INIT_ERROR = 2, RESULT_PROCESSING_ERROR = 3,
   RESULT_UNKNOWN_ERROR = 4 };
 const char * CONSOLE_CHILD_PARAM = "consolechild";
@@ -198,7 +199,7 @@ static char LastFromBeginning[sizeof(TConsoleCommStruct::TPrintEvent)] = "";
 //---------------------------------------------------------------------------
 inline void Print(bool FromBeginning, const char * Message)
 {
-  if (((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE)))
+  if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE))
   {
     if (FromBeginning && (Message[0] != '\n'))
     {
@@ -240,99 +241,132 @@ inline void ProcessPrintEvent(TConsoleCommStruct::TPrintEvent& Event)
 //---------------------------------------------------------------------------
 void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
 {
-  unsigned long PrevMode, NewMode;
-  GetConsoleMode(ConsoleInput, &PrevMode);
-  NewMode = PrevMode | ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT;
-  if (Event.Echo)
+  if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
-    NewMode |= ENABLE_ECHO_INPUT;
+    unsigned long Len = 0;
+    unsigned long Read;
+    char Ch;
+    bool Result;
+    
+    while (((Result = (ReadFile(ConsoleInput, &Ch, 1, &Read, NULL) != 0)) != false) &&
+           (Read > 0) && (Len < sizeof(Event.Str) - 1) && (Ch != '\n'))
+    {
+      if (Ch != '\r')
+      {
+        Event.Str[Len] = Ch;
+        Len++;
+      }
+    }
+    Event.Str[Len] = '\0';
+
+    Print(false, Event.Str);
+    Print(false, "\n");
+
+    Event.Result = ((Result && (Read > 0)) || (Len > 0));
   }
   else
   {
-    NewMode &= ~ENABLE_ECHO_INPUT;
-  }
-  SetConsoleMode(ConsoleInput, NewMode);
-
-  try
-  {
-    unsigned long Read;
-    Event.Result = ReadConsole(ConsoleInput, Event.Str, sizeof(Event.Str) - 1, &Read, NULL);
-    Event.Str[Read] = '\0';
-
-    bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
-    if (PendingCancel || !Event.Echo)
+    unsigned long PrevMode, NewMode;
+    GetConsoleMode(ConsoleInput, &PrevMode);
+    NewMode = PrevMode | ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT;
+    if (Event.Echo)
     {
-      printf("\n");
+      NewMode |= ENABLE_ECHO_INPUT;
     }
-
-    if (PendingCancel || (Read == 0))
+    else
     {
-      Event.Result = false;
+      NewMode &= ~ENABLE_ECHO_INPUT;
     }
+    SetConsoleMode(ConsoleInput, NewMode);
 
-    SetConsoleMode(ConsoleInput, PrevMode);
-  }
-  catch(...)
-  {
-    SetConsoleMode(ConsoleInput, PrevMode);
-    throw;
+    try
+    {
+      unsigned long Read;
+      Event.Result = ReadConsole(ConsoleInput, Event.Str, sizeof(Event.Str) - 1, &Read, NULL);
+      Event.Str[Read] = '\0';
+
+      bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
+      if (PendingCancel || !Event.Echo)
+      {
+        printf("\n");
+      }
+
+      if (PendingCancel || (Read == 0))
+      {
+        Event.Result = false;
+      }
+
+      SetConsoleMode(ConsoleInput, PrevMode);
+    }
+    catch(...)
+    {
+      SetConsoleMode(ConsoleInput, PrevMode);
+      throw;
+    }
   }
 }
 //---------------------------------------------------------------------------
 void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
 {
-  Event.Result = 0;
-
-  unsigned long PrevMode, NewMode;
-  GetConsoleMode(ConsoleInput, &PrevMode);
-  NewMode = (PrevMode | ENABLE_PROCESSED_INPUT) & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
-  SetConsoleMode(ConsoleInput, NewMode);
-
-  try
+  if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
-    do
-    {
-      unsigned long Read;
-      INPUT_RECORD Record;
-      if ((ReadConsoleInput(ConsoleInput, &Record, 1, &Read) != 0) &&
-          (Read == 1))
-      {
-        bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
-        if (PendingCancel)
-        {
-          Event.Result = Event.Break;
-        }
-        else if ((Record.EventType == KEY_EVENT) &&
-                 Record.Event.KeyEvent.bKeyDown)
-        {
-          char CStr[2];
-          CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
-          CStr[1] = '\0';
-          CharUpperBuff(CStr, 1);
-          char C = CStr[0];
-          if (C == 27)
-          {
-            Event.Result = Event.Cancel;
-          }
-          else if ((strchr(Event.Options, C) != NULL) &&
-                   ((Record.Event.KeyEvent.dwControlKeyState &
-                     (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED |
-                     RIGHT_CTRL_PRESSED)) == 0))
+    Event.Result = Event.Cancel;
+  }
+  else
+  {
+    Event.Result = 0;
 
+    unsigned long PrevMode, NewMode;
+    GetConsoleMode(ConsoleInput, &PrevMode);
+    NewMode = (PrevMode | ENABLE_PROCESSED_INPUT) & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    SetConsoleMode(ConsoleInput, NewMode);
+
+    try
+    {
+      do
+      {
+        unsigned long Read;
+        INPUT_RECORD Record;
+        if ((ReadConsoleInput(ConsoleInput, &Record, 1, &Read) != 0) &&
+            (Read == 1))
+        {
+          bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
+          if (PendingCancel)
           {
-            Event.Result = strchr(Event.Options, C) - Event.Options + 1;
+            Event.Result = Event.Break;
+          }
+          else if ((Record.EventType == KEY_EVENT) &&
+                   Record.Event.KeyEvent.bKeyDown)
+          {
+            char CStr[2];
+            CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
+            CStr[1] = '\0';
+            CharUpperBuff(CStr, 1);
+            char C = CStr[0];
+            if (C == 27)
+            {
+              Event.Result = Event.Cancel;
+            }
+            else if ((strchr(Event.Options, C) != NULL) &&
+                     ((Record.Event.KeyEvent.dwControlKeyState &
+                       (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED |
+                       RIGHT_CTRL_PRESSED)) == 0))
+
+            {
+              Event.Result = strchr(Event.Options, C) - Event.Options + 1;
+            }
           }
         }
       }
-    }
-    while (Event.Result == 0);
+      while (Event.Result == 0);
 
-    SetConsoleMode(ConsoleInput, PrevMode);
-  }
-  catch(...)
-  {
-    SetConsoleMode(ConsoleInput, PrevMode);
-    throw;
+      SetConsoleMode(ConsoleInput, PrevMode);
+    }
+    catch(...)
+    {
+      SetConsoleMode(ConsoleInput, PrevMode);
+      throw;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -416,6 +450,7 @@ int main(int argc, char* argv[])
     randomize();
 
     ConsoleInput = GetStdHandle(STD_INPUT_HANDLE);
+    InputType = GetFileType(ConsoleInput);
     SetConsoleCtrlHandler(HandlerRoutine, true);
 
     HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);

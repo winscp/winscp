@@ -264,7 +264,7 @@ protected:
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
   void __fastcall HandleErrorList(TStringList *& ErrorList);
   void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory, bool & Continue);
+    const AnsiString RemoteDirectory, bool & Continue, bool Collect);
   void __fastcall DoSynchronize(TSynchronizeController * Sender,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
     const TCopyParamType & CopyParam, const TSynchronizeParamType & Params,

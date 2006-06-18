@@ -7,6 +7,8 @@
 #include <Common.h>
 
 #include <VCLCommon.h>
+#include <Tools.h>
+#include <GUITools.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "GrayedCheckBox"
@@ -15,6 +17,7 @@
 __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
         : TFrame(Owner)
 {
+  FAddXToDirectoriesSuffix = "+x";
   FOnChange = NULL;
   FAllowAddXToDirectories = true;
   FPopup = false;
@@ -23,6 +26,7 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
   FCancelButton = NULL;
   // to avoid duplication of reference in forms that uses the frame
   PopupMenu = RightsPopup;
+  FPopingContextMenu = false;
 
   #define COPY_HINT(R) \
     Checks[TRights::rrGroup ## R]->Hint = Checks[TRights::rrUser ## R]->Hint; \
@@ -71,14 +75,22 @@ TRights::TState __fastcall TRightsFrame::GetStates(TRights::TRight Right)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetRights(const TRights & value)
 {
+  bool Changed = (AllowUndef != value.AllowUndef);
   AllowUndef = true; // temporarily
   for (int Right = TRights::rrFirst; Right <= TRights::rrLast; Right++)
   {
-    States[static_cast<TRights::TRight>(Right)] =
-      value.RightUndef[static_cast<TRights::TRight>(Right)];
+    TRights::TRight R = static_cast<TRights::TRight>(Right);
+    if (States[R] != value.RightUndef[R])
+    {
+      States[R] = value.RightUndef[R];
+      Changed = true;
+    }
   }
   AllowUndef = value.AllowUndef;
-  UpdateControls();
+  if (Changed)
+  {
+    UpdateControls();
+  }
 }
 //---------------------------------------------------------------------------
 TRights __fastcall TRightsFrame::GetRights()
@@ -155,12 +167,17 @@ void __fastcall TRightsFrame::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+bool __fastcall TRightsFrame::DirectoriesXEffective()
+{
+  return !((Rights.NumberSet & TRights::rfExec) == TRights::rfExec);
+}
+//---------------------------------------------------------------------------
 void __fastcall TRightsFrame::UpdateControls()
 {
   Color = (FPopup ? clWindow : clBtnFace);
   DirectoriesXCheck->Visible = AllowAddXToDirectories;
   EnableControl(DirectoriesXCheck,
-    Enabled && !((Rights.NumberSet & TRights::rfExec) == TRights::rfExec));
+    Enabled && DirectoriesXEffective());
   DoChange();
 }
 //---------------------------------------------------------------------------
@@ -239,35 +256,53 @@ void __fastcall TRightsFrame::ForceUpdate()
 {
 }
 //---------------------------------------------------------------------------
+bool __fastcall TRightsFrame::HasFocus()
+{
+  return
+    (Focused() ||
+    ((Screen->ActiveControl != NULL) && (Screen->ActiveControl->Parent == this))) ||
+    ((PopupParent != NULL) && PopupParent->Focused());
+}
+//---------------------------------------------------------------------------
 void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
   bool & Handled)
 {
-  TRights R = Rights;
-  R.Number = TRights::rfNo;
+  // prevent shortcuts to be avaluated when frame does not have a focus
+  if (HasFocus())
+  {
+    bool Changed = true;
+    TRights R = Rights;
+    R.Number = TRights::rfNo;
 
-  Handled = true;
-  if (Action == NoRightsAction)
-  {
-    R = TRights::rfNo;
+    Handled = true;
+    if (Action == NoRightsAction)
+    {
+      R = TRights::rfNo;
+    }
+    else if (Action == DefaultRightsAction)
+    {
+      R = TRights::rfDefault;
+    }
+    else if (Action == AllRightsAction)
+    {
+      R = TRights::rfAll;
+    }
+    else if (Action == LeaveRightsAsIsAction)
+    {
+      R.AllUndef();
+    }
+    else
+    {
+      Handled = false;
+    }
+
+    if (Changed)
+    {
+      Rights = R;
+      ForceUpdate();
+      DoChange();
+    }
   }
-  else if (Action == DefaultRightsAction)
-  {
-    R = TRights::rfDefault;
-  }
-  else if (Action == AllRightsAction)
-  {
-    R = TRights::rfAll;
-  }
-  else if (Action == LeaveRightsAsIsAction)
-  {
-    R.AllUndef();
-  }
-  else
-  {
-    Handled = false;
-  }
-  Rights = R;
-  ForceUpdate();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::RightsActionsUpdate(TBasicAction *Action,
@@ -278,19 +313,25 @@ void __fastcall TRightsFrame::RightsActionsUpdate(TBasicAction *Action,
   Handled = true;
   if (Action == NoRightsAction)
   {
+    // explicitly enable as action gets disabled, if its shortcut is pressed,
+    // while the form does not have a focus and OnExecute handler denies the execution
+    NoRightsAction->Enabled = true;
     NoRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfNo);
   }
   else if (Action == DefaultRightsAction)
   {
+    DefaultRightsAction->Enabled = true;
     DefaultRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfDefault);
   }
   else if (Action == AllRightsAction)
   {
+    AllRightsAction->Enabled = true;
     AllRightsAction->Checked = !R.IsUndef && (R.NumberSet == TRights::rfAll);
   }
   else if (Action == LeaveRightsAsIsAction)
   {
-    LeaveRightsAsIsAction->Enabled = R.AllowUndef;
+    LeaveRightsAsIsAction->Enabled = true;
+    LeaveRightsAsIsAction->Visible = R.AllowUndef;
     LeaveRightsAsIsAction->Checked = (R.NumberSet == TRights::rfNo) &&
       (R.NumberUnset == TRights::rfNo);
   }
@@ -366,6 +407,19 @@ bool __fastcall TRightsFrame::IsAncestor(TControl * Control, TControl * Ancestor
   return (Control != NULL);
 }
 //---------------------------------------------------------------------------
+void __fastcall TRightsFrame::WMContextMenu(TWMContextMenu & Message)
+{
+  FPopingContextMenu = true;
+  try
+  {
+    TFrame::Dispatch(&Message);
+  }
+  __finally
+  {
+    FPopingContextMenu = false;
+  }  
+}
+//---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CMDialogKey(TCMDialogKey & Message)
 {
   if (FPopup && Visible &&
@@ -384,7 +438,7 @@ void __fastcall TRightsFrame::CMDialogKey(TCMDialogKey & Message)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CMCancelMode(TCMCancelMode & Message)
 {
-  if (FPopup && Visible &&
+  if (FPopup && Visible && !FPopingContextMenu &&
       ((Message.Sender == NULL) ||
        (!IsAncestor(Message.Sender, this) && 
         !IsAncestor(Message.Sender, FPopupParent) &&
@@ -407,6 +461,10 @@ void __fastcall TRightsFrame::Dispatch(void * Message)
 
     case CM_DIALOGKEY:
       CMDialogKey(*(TCMDialogKey *)Message);
+      break;
+
+    case WM_CONTEXTMENU:
+      WMContextMenu(*(TWMContextMenu *)Message);
       break;
 
     default:
@@ -463,6 +521,54 @@ void __fastcall TRightsFrame::CloseUp()
     DoCloseUp();
   }
   FPopupParent->SetFocus();
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TRightsFrame::GetText()
+{
+  AnsiString Result = Rights.Text;
+  if (AllowAddXToDirectories && DirectoriesXEffective() && AddXToDirectories)
+  {
+    Result = FORMAT("%s (%s)", (Result, FAddXToDirectoriesSuffix));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::SetText(AnsiString value)
+{
+  if (Text != value)
+  {
+    AnsiString RightsStr = value;
+
+    int P = RightsStr.LowerCase().Pos(FAddXToDirectoriesSuffix);
+    bool AAddXToDirectories = (P > 0);
+    if (AAddXToDirectories)
+    {
+      RightsStr.Delete(P, FAddXToDirectoriesSuffix.Length());
+    }
+    RightsStr = DeleteChar(DeleteChar(RightsStr, '('), ')').Trim();
+    TRights R = Rights;
+    int Dummy;
+    if (((RightsStr.Length() == 3) || (RightsStr.Length() == 4)) &&
+        TryStrToInt(RightsStr, Dummy))
+    {
+      R.Octal = RightsStr;
+    }
+    else
+    {
+      R.Text = RightsStr;
+    }
+
+    Rights = R;
+    AddXToDirectories = AAddXToDirectories;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRightsFrame::RightsPopupPopup(TObject * /*Sender*/)
+{
+  if (!HasFocus())
+  {
+    SetFocus();
+  }
 }
 //---------------------------------------------------------------------------
 

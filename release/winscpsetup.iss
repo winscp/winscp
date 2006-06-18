@@ -11,7 +11,7 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
-#define Year 2005
+#define Year 2006
 
 #ifexist "winscpsetup.tmp"
   #include "winscpsetup.tmp"
@@ -110,7 +110,7 @@ Name: custom; Description: {cm:CustomInstallation}; Flags: iscustom
 
 [Components]
 Name: main; Description: {cm:ApplicationComponent}; \
-  Types: {#FullLangs} full custom compact; Flags: fixed
+  Types: {#FullLangs} full custom compact
 Name: shellext; Description: {cm:ShellExtComponent}; \
   Types: {#FullLangs} compact full
 Name: pageant; Description: {cm:PageantComponent}; \
@@ -355,6 +355,12 @@ begin
   WizardForm.ActiveControl := TLabel(Sender).FocusControl;
 end;
 
+procedure ComponentsListClickCheck(Sender: TObject);
+begin
+  if not WizardForm.ComponentsList.Checked[0] then
+    WizardForm.ComponentsList.Checked[0] := True;
+end;
+
 procedure InitializeWizard();
 var
   UserInterface: Cardinal;
@@ -374,9 +380,12 @@ begin
   WizardForm.LicenseNotAcceptedRadio.Visible := False;
   WizardForm.LicenseMemo.Top := WizardForm.LicenseLabel1.Top;
   WizardForm.LicenseMemo.Height :=
-    WizardForm.LicenseNotAcceptedRadio.Top + 
+    WizardForm.LicenseNotAcceptedRadio.Top +
     WizardForm.LicenseNotAcceptedRadio.Height -
     WizardForm.LicenseMemo.Top - 5;
+
+  // prevent the main component to be unchecked
+  WizardForm.ComponentsList.OnClickCheck := @ComponentsListClickCheck;
 
   HelpButton := TButton.Create(WizardForm);
   HelpButton.Parent := WizardForm;

@@ -22,6 +22,7 @@ type
     FOnGetStatus: TPathLabelGetStatusEvent;
     FOnPathClick: TPathLabelPathClickEvent;
     FDisplayPath: string;
+    FDisplayHotTrack: string;
     FHotTrack: Boolean;
     FMouseInView: Boolean;
     FIsActive: Boolean;
@@ -243,7 +244,6 @@ procedure TCustomPathLabel.DoDrawText(var Rect: TRect; Flags: Longint);
 var
   i: Integer;
   Path: string;
-  HotPath: string;
   StandardColor: TColor;
 begin
   if (Flags and DT_CALCRECT <> 0) and ((Text = '') or ShowAccelChar and
@@ -278,15 +278,15 @@ begin
   end
     else
   begin
-    HotPath := HotTrackPath(FDisplayPath);
-    if HotPath <> '' then
+    FDisplayHotTrack := HotTrackPath(FDisplayPath);
+    if FDisplayHotTrack <> '' then
     begin
       StandardColor := Canvas.Font.Color;
       Canvas.Font.Color := FColors[4 + Integer(FIsActive)];
-      DrawText(Canvas.Handle, PChar(HotPath), Length(HotPath), Rect, Flags);
+      DrawText(Canvas.Handle, PChar(FDisplayHotTrack), Length(FDisplayHotTrack), Rect, Flags);
       Canvas.Font.Color := StandardColor;
-      Inc(Rect.Left, Canvas.TextWidth(HotPath));
-      Delete(Path, 1, Length(HotPath));
+      Inc(Rect.Left, Canvas.TextWidth(FDisplayHotTrack));
+      Delete(Path, 1, Length(FDisplayHotTrack));
     end;
     DrawText(Canvas.Handle, PChar(Path), Length(Path), Rect, Flags);
   end;
@@ -434,7 +434,10 @@ end; { Notification }
 procedure TCustomPathLabel.MouseMove(Shift: TShiftState; X: Integer; Y: Integer);
 begin
   inherited;
-  if FMouseInView then Invalidate;
+  if FMouseInView and HotTrack and (FDisplayHotTrack <> HotTrackPath(FDisplayPath)) then
+  begin
+    Invalidate;
+  end;
 end;
 
 procedure TCustomPathLabel.DoPathClick(Path: string);

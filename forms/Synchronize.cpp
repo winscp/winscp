@@ -365,6 +365,7 @@ void __fastcall TSynchronizeDialog::Stop()
   {
     FMinimizedByMe = false;
     Application->Restore();
+    Application->BringToFront();
   }
 }
 //---------------------------------------------------------------------------

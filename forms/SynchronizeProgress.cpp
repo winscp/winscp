@@ -38,6 +38,7 @@ __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
   if (IsIconic(Application->Handle) && FMinimizedByMe)
   {
     Application->Restore();
+    Application->BringToFront();
   }
 
   ReleaseAsModal(this, FShowAsModalStorage);

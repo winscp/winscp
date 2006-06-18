@@ -71,6 +71,7 @@ public:
   virtual TStrings * __fastcall GetFixedPaths() = 0;
   virtual void __fastcall SpaceAvailable(const AnsiString Path,
     TSpaceAvailable & ASpaceAvailable) = 0;
+  virtual bool __fastcall TemporaryTransferFile(const AnsiString & FileName) = 0;
 
   __property AnsiString CurrentDirectory = { read = GetCurrentDirectory, write = SetCurrentDirectory };
   __property AnsiString ProtocolName = { read = GetProtocolName };

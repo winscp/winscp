@@ -21,7 +21,7 @@ void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
   const char * FileName = getenv(TRACEENV);
   if (FileName == NULL)
   {
-    FileName = "C:\\winscptrace.log";
+    FileName = "c:\\winscptrace.log";
   }
   FILE * File = fopen(FileName, "a");
   if (File != NULL)
@@ -983,6 +983,33 @@ int __fastcall AbortAnswer(int Answers)
   return Result;
 }
 //---------------------------------------------------------------------------
+int __fastcall ContinueAnswer(int Answers)
+{
+  int Result;
+  if (FLAGSET(Answers, qaSkip))
+  {
+    Result = qaSkip;
+  }
+  else if (FLAGSET(Answers, qaIgnore))
+  {
+    Result = qaIgnore;
+  }
+  else if (FLAGSET(Answers, qaYes))
+  {
+    Result = qaYes;
+  }
+  else if (FLAGSET(Answers, qaOK))
+  {
+    Result = qaOK;
+  }
+  else
+  {
+    assert(false);
+    Result = CancelAnswer(Answers);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TPasLibModule * __fastcall FindModule(void * Instance)
 {
   TPasLibModule * CurModule;
@@ -1086,5 +1113,106 @@ void __fastcall AnsiToOem(AnsiString & Str)
   {
     Str.Unique();
     CharToOem(Str.c_str(), Str.c_str());
+  }
+}
+//---------------------------------------------------------------------------
+struct TUnicodeEmitParams
+{
+  WideString Buffer;
+  int Pos;
+  int Len;
+};
+//---------------------------------------------------------------------------
+extern "C" void UnicodeEmit(void * AParams, long int Output)
+{
+  if (Output == 0xFFFFL) // see Putty's charset\internal.h
+  {
+    throw Exception(LoadStr(DECODE_UTF_ERROR));
+  }
+  TUnicodeEmitParams * Params = (TUnicodeEmitParams *)AParams;
+  if (Params->Pos >= Params->Len)
+  {
+    Params->Len += 50;
+    Params->Buffer.SetLength(Params->Len);
+  }
+  Params->Pos++;
+  Params->Buffer[Params->Pos] = (wchar_t)Output;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall DecodeUTF(const AnsiString UTF)
+{
+  charset_state State;
+  char * Str;
+  TUnicodeEmitParams Params;
+  AnsiString Result;
+
+  State.s0 = 0;
+  Str = UTF.c_str();
+  Params.Pos = 0;
+  Params.Len = UTF.Length();
+  Params.Buffer.SetLength(Params.Len);
+
+  while (*Str)
+  {
+    read_utf8(NULL, (unsigned char)*Str, &State, UnicodeEmit, &Params);
+    Str++;
+  }
+  Params.Buffer.SetLength(Params.Pos);
+
+  return Params.Buffer;
+}
+//---------------------------------------------------------------------------
+struct TUnicodeEmitParams2
+{
+  AnsiString Buffer;
+  int Pos;
+  int Len;
+};
+//---------------------------------------------------------------------------
+extern "C" void UnicodeEmit2(void * AParams, long int Output)
+{
+  if (Output == 0xFFFFL) // see Putty's charset\internal.h
+  {
+    throw Exception(LoadStr(DECODE_UTF_ERROR));
+  }
+  TUnicodeEmitParams2 * Params = (TUnicodeEmitParams2 *)AParams;
+  if (Params->Pos >= Params->Len)
+  {
+    Params->Len += 50;
+    Params->Buffer.SetLength(Params->Len);
+  }
+  Params->Pos++;
+  Params->Buffer[Params->Pos] = (unsigned char)Output;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall EncodeUTF(const WideString Source)
+{
+  // WideString::c_bstr() returns NULL for empty strings
+  // (as opposite to AnsiString::c_str() which returns "")
+  if (Source.IsEmpty())
+  {
+    return "";
+  }
+  else
+  {
+    charset_state State;
+    wchar_t * Str;
+    TUnicodeEmitParams2 Params;
+    AnsiString Result;
+
+    State.s0 = 0;
+    Str = Source.c_bstr();
+    Params.Pos = 0;
+    Params.Len = Source.Length();
+    Params.Buffer.SetLength(Params.Len);
+
+    while (*Str)
+    {
+      write_utf8(NULL, (wchar_t)*Str, &State, UnicodeEmit2, &Params);
+      Str++;
+    }
+    Params.Buffer.SetLength(Params.Pos);
+
+    return Params.Buffer;
   }
 }

@@ -9,7 +9,8 @@
 #define SCOPY(dest, source) \
   strncpy(dest, source, sizeof(dest)); \
   dest[sizeof(dest)-1] = '\0'
-#define SAFE_DESTROY(OBJ) { TObject * PObj = OBJ; OBJ = NULL; delete PObj; }
+#define SAFE_DESTROY_EX(CLASS, OBJ) { CLASS * PObj = OBJ; OBJ = NULL; delete PObj; }
+#define SAFE_DESTROY(OBJ) SAFE_DESTROY_EX(TObject, OBJ)
 #define ASCOPY(dest, source) SCOPY(dest, source.c_str())
 #define FORMAT(S, F) Format(S, ARRAYOFCONST(F))
 #define FMTLOAD(I, F) FmtLoadStr(I, ARRAYOFCONST(F))
@@ -36,6 +37,8 @@ AnsiString DelimitStr(AnsiString Str, AnsiString Chars);
 AnsiString ShellDelimitStr(AnsiString Str, char Quote);
 void __fastcall OemToAnsi(AnsiString & Str);
 void __fastcall AnsiToOem(AnsiString & Str);
+AnsiString __fastcall DecodeUTF(const AnsiString UTF);
+AnsiString __fastcall EncodeUTF(const WideString Source);
 AnsiString ExceptionLogString(Exception *E);
 bool IsDots(const AnsiString Str);
 AnsiString __fastcall SystemTemporaryDirectory();
@@ -59,6 +62,7 @@ AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore = "");
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
 int __fastcall CancelAnswer(int Answers);
 int __fastcall AbortAnswer(int Answers);
+int __fastcall ContinueAnswer(int Answers);
 AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength);
 AnsiString __fastcall LoadStrPart(int Ident, int Part);
 struct TPasLibModule;

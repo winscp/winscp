@@ -53,8 +53,10 @@ private:
   TSecureShell * FOwner;
   TConfiguration * FConfiguration;
   bool FEnabled;
+  bool FLogging;
   void * FFile;
-  AnsiString FFileName;
+  AnsiString FCurrentLogFileName;
+  AnsiString FCurrentFileName;
   Integer FLoggedLines;
   TLogAddLineEvent FOnAddLine;
   Integer FTopIndex;
@@ -71,11 +73,11 @@ private:
   Integer __fastcall GetIndexes(Integer Index);
   AnsiString __fastcall GetLogFileName();
   Boolean __fastcall GetLoggingToFile();
-  Boolean __fastcall GetLogToFile();
   void __fastcall SetEnabled(bool value);
   void __fastcall SetConfiguration(TConfiguration * value);
   AnsiString __fastcall GetSessionName();
   void __fastcall DoAdd(TLogLineType aType, AnsiString aLine);
+  void __fastcall SetOnAddLine(TLogAddLineEvent value);
 
 public:
   __fastcall TSessionLog(TSecureShell * AOwner);
@@ -88,11 +90,8 @@ public:
     const AnsiString AddedLine);
   virtual void __fastcall Clear();
   void __fastcall ReflectSettings();
-  bool __fastcall inline IsLogging()
-  {
-    return Enabled && (Configuration->Logging || (OnAddLine != NULL));
-  }
 
+  __property bool Logging = { read = FLogging };
   __property Integer BottomIndex = { read = GetBottomIndex };
   __property AnsiString Line[Integer Index]  = { read=GetLine, write=SetLine };
   __property TLogLineType Type[Integer Index]  = { read=GetType, write=SetType };
@@ -101,16 +100,17 @@ public:
   __property OnChange;
   __property bool Enabled = { read = FEnabled, write = SetEnabled };
   __property Integer Indexes[Integer Index] = { read = GetIndexes };
-  __property AnsiString LogFileName = { read = GetLogFileName };
-  __property Integer LoggedLines = { read = FLoggedLines };
+  __property AnsiString CurrentFileName = { read = FCurrentFileName };
   __property Boolean LoggingToFile = { read = GetLoggingToFile };
-  __property TLogAddLineEvent OnAddLine = { read = FOnAddLine, write = FOnAddLine };
+  __property TLogAddLineEvent OnAddLine = { read = FOnAddLine, write = SetOnAddLine };
   __property Integer TopIndex = { read = FTopIndex };
   __property AnsiString SessionName = { read = GetSessionName };
   __property unsigned int Id = { read = FId, write = FId };
+  __property Count;
+
 protected:
   void __fastcall CloseLogFile();
-  __property Boolean LogToFile = { read = GetLogToFile };
+  bool __fastcall LogToFile();
 };
 //---------------------------------------------------------------------------
 #ifndef PuttyIntfH
@@ -256,7 +256,7 @@ public:
 
   bool __fastcall inline IsLogging()
   {
-    return Log->IsLogging();
+    return Log->Logging;
   }
   void __fastcall PuttyLogEvent(const AnsiString & Str);
   void __fastcall inline LogEvent(const AnsiString & Str)

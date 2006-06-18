@@ -462,6 +462,18 @@ __published:    // IDE-managed Components
   TAction *ColorDefaultAction;
   TAction *ColorMenuAction;
   TAction *AutoReadDirectoryAfterOpAction;
+  TTBXPopupMenu *RemoteAddressPopup;
+  TTBXSubmenuItem *TBXSubmenuItem2;
+  TTBXItem *TBXItem17;
+  TTBXSeparatorItem *TBXSeparatorItem1;
+  TTBXItem *TBXItem18;
+  TTBXItem *TBXItem19;
+  TTBXItem *TBXItem20;
+  TTBXSeparatorItem *TBXSeparatorItem2;
+  TTBXItem *TBXItem21;
+  TTBXItem *TBXItem22;
+  TTBXItem *TBXItem24;
+  TTBXItem *TBXItem25;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

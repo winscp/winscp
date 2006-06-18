@@ -49,6 +49,7 @@ __published:
   void __fastcall RightsActionsExecute(TBasicAction *Action,
           bool &Handled);
   void __fastcall RightsActionsUpdate(TBasicAction *Action, bool &Handled);
+  void __fastcall RightsPopupPopup(TObject *Sender);
 private:
   bool FAllowAddXToDirectories;
   TNotifyEvent FOnChange;
@@ -56,6 +57,8 @@ private:
   TWinControl * FPopupParent;
   TButton * FDefaultButton;
   TButton * FCancelButton;
+  bool FPopingContextMenu;
+  AnsiString FAddXToDirectoriesSuffix;
 
   void __fastcall CycleRights(int Group);
   bool __fastcall GetAddXToDirectories();
@@ -68,6 +71,8 @@ private:
   void __fastcall SetAllowUndef(bool value);
   void __fastcall SetRights(const TRights & value);
   void __fastcall SetStates(TRights::TRight Right, TRights::TState value);
+  AnsiString __fastcall GetText();
+  void __fastcall SetText(AnsiString value);
 
 public:
   virtual __fastcall ~TRightsFrame();
@@ -81,7 +86,7 @@ public:
   __property TCheckBox * Checks[TRights::TRight Right] = { read = GetChecks };
   __property TNotifyEvent OnChange = { read = FOnChange, write = FOnChange };
   __property TRights Rights = { read = GetRights, write = SetRights };
-  __property TRights::TState States[TRights::TRight Right] = { read = GetStates, write = SetStates };
+  __property AnsiString Text = { read = GetText, write = SetText };
   __property bool Popup = { read = FPopup, write = SetPopup };
   __property TWinControl * PopupParent = { read = FPopupParent, write = FPopupParent };
 
@@ -95,10 +100,15 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall CMCancelMode(TCMCancelMode & Message);
   void __fastcall CMDialogKey(TCMDialogKey & Message);
+  void __fastcall WMContextMenu(TWMContextMenu & Message);
   bool __fastcall IsAncestor(TControl * Control, TControl * Ancestor);
   DYNAMIC void __fastcall DoExit();
   virtual void __fastcall SetPopup(bool value);
   void __fastcall DoCloseUp();
+  bool __fastcall HasFocus();
+  bool __fastcall DirectoriesXEffective();
+
+  __property TRights::TState States[TRights::TRight Right] = { read = GetStates, write = SetStates };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -591,6 +591,7 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ShellIconsButton, SessionListView->Selected);
 
       EnableControl(PingIntervalSecEdit, !PingOffButton->Checked);
+      EnableControl(PingIntervalLabel, PingIntervalSecEdit->Enabled);
 
       EnableControl(SessionListView, SessionListView->Items->Count);
       AdjustListColumnsWidth(SessionListView);
@@ -612,25 +613,38 @@ void __fastcall TLoginDialog::UpdateControls()
         KexListBox->ItemIndex < KexListBox->Items->Count-1);
 
       EnableControl(BugIgnore1Combo, !SshProt2onlyButton->Checked);
+      EnableControl(BugIgnore1Label, BugIgnore1Combo->Enabled);
       EnableControl(BugPlainPW1Combo, !SshProt2onlyButton->Checked);
+      EnableControl(BugPlainPW1Label, BugPlainPW1Combo->Enabled);
       EnableControl(BugRSA1Combo, !SshProt2onlyButton->Checked);
+      EnableControl(BugRSA1Label, BugRSA1Combo->Enabled);
       EnableControl(BugHMAC2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugHMAC2Label, BugHMAC2Combo->Enabled);
       EnableControl(BugDeriveKey2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugDeriveKey2Label, BugDeriveKey2Combo->Enabled);
       EnableControl(BugRSAPad2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugRSAPad2Label, BugRSAPad2Combo->Enabled);
       EnableControl(BugPKSessID2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugPKSessID2Label, BugPKSessID2Combo->Enabled);
       EnableControl(BugRekey2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugRekey2Label, BugRekey2Combo->Enabled);
 
       EnableControl(ScpSheet, !ExternalProtocol);
       EnableControl(ShellEdit, ShellEnterButton->Checked && ScpSheet->Enabled);
       EnableControl(ReturnVarEdit, ReturnVarEnterButton->Checked && ScpSheet->Enabled);
 
       EnableControl(ProxyHostEdit, !ProxyNoneButton->Checked);
+      EnableControl(ProxyHostLabel, ProxyHostEdit->Enabled);
       EnableControl(ProxyPortEdit, !ProxyNoneButton->Checked);
+      EnableControl(ProxyPortLabel, ProxyPortEdit->Enabled);
       EnableControl(ProxyUsernameEdit, !ProxyNoneButton->Checked);
+      EnableControl(ProxyUsernameLabel, ProxyUsernameEdit->Enabled);
       EnableControl(ProxyPasswordEdit, !ProxyNoneButton->Checked &&
         !ProxySocks4Button->Checked);
+      EnableControl(ProxyPasswordLabel, ProxyPasswordEdit->Enabled);
       EnableControl(ProxySettingsGroup, !ProxyNoneButton->Checked);
       EnableControl(ProxyTelnetCommandEdit, ProxyTelnetButton->Checked);
+      EnableControl(ProxyTelnetCommandLabel, ProxyTelnetCommandEdit->Enabled);
 
       EnableControl(DirectoriesSheet, !ExternalProtocol);
       DirectoryOptionsGroup->Visible = ShowAdvancedLoginOptionsCheck->Checked;

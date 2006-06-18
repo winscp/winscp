@@ -50,6 +50,7 @@ __fastcall TProgressForm::~TProgressForm()
   if (IsIconic(Application->Handle) && FMinimizedByMe)
   {
     Application->Restore();
+    Application->BringToFront();
   }
 
   ReleaseAsModal(this, FShowAsModalStorage);

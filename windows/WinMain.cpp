@@ -20,13 +20,14 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TSessionData * GetLoginData(AnsiString SessionName, AnsiString & DownloadFile)
+TSessionData * GetLoginData(AnsiString SessionName, AnsiString & DownloadFile,
+  bool & Url)
 {
   bool DefaultsOnly;
   TSessionData * Data;
 
   Data = StoredSessions->ParseUrl(SessionName, DefaultsOnly,
-    puExtractFileName | puDecodeUrlChars, &DownloadFile);
+    puExtractFileName | puDecodeUrlChars, &DownloadFile, &Url);
   assert(Data != NULL);
 
   if (!Data->CanLogin || DefaultsOnly)
@@ -193,12 +194,6 @@ int __fastcall Execute(TProgramParams * Params)
     WinConfiguration->DefaultKeyFile = KeyFile;
   }
 
-  AnsiString LogFile;
-  if (Params->FindSwitch("Log", LogFile))
-  {
-    Configuration->TemporaryLogging(LogFile);
-  }
-
   bool Help = Params->FindSwitch("help") || Params->FindSwitch("h") || Params->FindSwitch("?");
   if (Help || Params->FindSwitch("Console") || Params->FindSwitch("script") ||
       Params->FindSwitch("command"))
@@ -337,9 +332,25 @@ int __fastcall Execute(TProgramParams * Params)
       do
       {
         Retry = false;
-        Data = GetLoginData(AutoStartSession, DownloadFile);
+        bool Url = false;
+        Data = GetLoginData(AutoStartSession, DownloadFile, Url);
         if (Data)
         {
+          if (Url)
+          {
+            // prevent any automatic action when URL is provided on
+            // command-line
+            UseDefaults = false;
+          }
+          else
+          {
+            AnsiString LogFile;
+            if (Params->FindSwitch("Log", LogFile))
+            {
+              Configuration->TemporaryLogging(LogFile);
+            }
+          }
+
           if ((Data->FSProtocol == fsExternalSSH) ||
               (Data->FSProtocol == fsExternalSFTP))
           {
@@ -428,4 +439,3 @@ int __fastcall Execute(TProgramParams * Params)
 
   return 0;
 }
-

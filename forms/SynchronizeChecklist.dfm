@@ -172,7 +172,6 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
         Caption = 'Changed'
         Width = 80
       end>
-    HeaderImages = ArrowImages
     OnAdvancedCustomDrawSubItem = ListViewAdvancedCustomDrawSubItem
     OnCompare = ListViewCompare
     OnSelectItem = ListViewSelectItem

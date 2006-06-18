@@ -716,6 +716,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   RemoteOpenDirAction->ShortCut = ShortCut('O', CTRL);
   RemoteRefreshAction->ShortCut = ShortCut(VK_F5, NONE);
   RemoteHomeDirAction->ShortCut = ShortCut('H', CTRL);
+  RemotePathToClipboardAction->ShortCut = ShortCut('P', CTRLSHIFT);
   // selected operation
   CurrentCopyAction->ShortCut = CurrentCopyFocusedAction->ShortCut;
   CurrentMoveAction->ShortCut = CurrentMoveFocusedAction->ShortCut;

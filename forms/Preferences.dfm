@@ -1276,17 +1276,17 @@ object PreferencesDialog: TPreferencesDialog
           object DDExtDisabledPanel: TPanel
             Left = 34
             Top = 195
-            Width = 325
+            Width = 315
             Height = 51
             BevelOuter = bvNone
             TabOrder = 3
             DesignSize = (
-              325
+              315
               51)
             object DDWarnLackOfTempSpaceCheck: TCheckBox
               Left = 0
               Top = 5
-              Width = 321
+              Width = 315
               Height = 17
               Anchors = [akLeft, akTop, akRight]
               Caption = '&Warn when there is not enough free space'
@@ -1296,7 +1296,7 @@ object PreferencesDialog: TPreferencesDialog
             object DDWarnOnMoveCheck: TCheckBox
               Left = 0
               Top = 28
-              Width = 321
+              Width = 315
               Height = 17
               Anchors = [akLeft, akTop, akRight]
               Caption = 'Warn when mo&ving via temporary directory'
@@ -1477,7 +1477,6 @@ object PreferencesDialog: TPreferencesDialog
             AutoSize = False
             Caption = 'Specify where to temporarily store edited and downloaded files.'
             WordWrap = True
-            OnClick = DDExtLabelClick
           end
           object DDSystemTemporaryDirectoryButton: TRadioButton
             Left = 16
@@ -1747,7 +1746,7 @@ object PreferencesDialog: TPreferencesDialog
           DesignSize = (
             357
             98)
-          object Label15: TLabel
+          object UpdatesProxyHostLabel: TLabel
             Left = 34
             Top = 46
             Width = 78
@@ -1755,7 +1754,7 @@ object PreferencesDialog: TPreferencesDialog
             Caption = 'Pro&xy host name'
             FocusControl = UpdatesProxyHostEdit
           end
-          object Label18: TLabel
+          object UpdatesProxyPortLabel: TLabel
             Left = 252
             Top = 46
             Width = 57

@@ -808,6 +808,8 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   int CancelIndex;
   int AbortA = AbortAnswer(Answers);
   int AbortIndex;
+  int ContinueA = ContinueAnswer(Answers);
+  int ContinueIndex;
 
   for (int Index = 0; Index < ButtonCount; Index++)
   {
@@ -857,6 +859,10 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       AbortIndex = Index + 1;
     }
+    if (Buttons[Index] == ContinueA)
+    {
+      ContinueIndex = Index + 1;
+    }
   }
 
   assert(Accels.Pos(' ') == 0);
@@ -881,7 +887,11 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   Print(Output);
 
   int AnswerIndex;
-  if (FScript->Batch != TScript::BatchOff)
+  if (FScript->Batch == TScript::BatchContinue)
+  {
+    AnswerIndex = ContinueIndex;
+  }
+  else if (FScript->Batch != TScript::BatchOff)
   {
     AnswerIndex = AbortIndex;
   }
@@ -1140,6 +1150,22 @@ void __fastcall TConsoleRunner::UpdateTitle()
   FConsole->SetTitle(NewTitle);
 }
 //---------------------------------------------------------------------------
+void __fastcall LoadScriptFromFile(AnsiString FileName, TStrings * Lines)
+{
+  AnsiString UTFBOM = "\xEF\xBB\xBF";
+  Lines->LoadFromFile(FileName);
+  if ((Lines->Count > 0) &&
+      (Lines->Strings[0].SubString(1, UTFBOM.Length()) == UTFBOM))
+  {
+    Lines->Strings[0] = Lines->Strings[0].SubString(
+      UTFBOM.Length() + 1, Lines->Strings[0].Length() - UTFBOM.Length());
+    for (int Index = 0; Index < Lines->Count; Index++)
+    {
+      Lines->Strings[Index] = DecodeUTF(Lines->Strings[Index]);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 int __fastcall Console(TProgramParams * Params, bool Help)
 {
   int Result = 0;
@@ -1183,15 +1209,36 @@ int __fastcall Console(TProgramParams * Params, bool Help)
         AnsiString Value;
         if (Params->FindSwitch("script", Value) && !Value.IsEmpty())
         {
-          ScriptCommands->LoadFromFile(Value);
+          LoadScriptFromFile(Value, ScriptCommands);
         }
         Params->FindSwitch("command", ScriptCommands);
 
+        bool Url = false;
         AnsiString Session;
         if (Params->ParamCount >= 1)
         {
           Session = Params->Param[1];
         }
+
+        bool DefaultsOnly;
+        delete StoredSessions->ParseUrl(Session, DefaultsOnly,
+          puDecodeUrlChars, NULL, &Url);
+
+        if (Url)
+        {
+          // prevent any automatic action when URL is provided on
+          // command-line
+          ScriptCommands->Clear();
+        }
+        else
+        {
+          AnsiString LogFile;
+          if (Params->FindSwitch("Log", LogFile))
+          {
+            Configuration->TemporaryLogging(LogFile);
+          }
+        }
+
         Result = Runner->Run(Session,
           (ScriptCommands->Count > 0 ? ScriptCommands : NULL));
       }

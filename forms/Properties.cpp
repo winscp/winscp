@@ -399,10 +399,16 @@ void __fastcall TPropertiesDialog::UpdateControls()
     // when setting properties for one file only, allow undef state
     // only when the input right explicitly requires it or
     // when "recursive" is on (possible for directory only).
-    RightsFrame->AllowUndef =
+    bool AllowUndef =
       (FOrigProperties.Valid.Contains(vpRights) &&
        FOrigProperties.Rights.AllowUndef) ||
       (RecursiveCheck->Checked);
+    if (!AllowUndef)
+    {
+      // when disallowing undef state, make sure, all undef are turned into unset
+      RightsFrame->Rights = TRights(RightsFrame->Rights.NumberSet);
+    }
+    RightsFrame->AllowUndef = AllowUndef;
   }
 }
 //---------------------------------------------------------------------------

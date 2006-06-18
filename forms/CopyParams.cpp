@@ -22,8 +22,6 @@
 __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
         : TFrame(Owner)
 {
-  FAddXToDirectoriesSuffix = "+x";
-
   FRightsFrame = new TRightsExtFrame(this);
   FRightsFrame->TabStop = false;
   FRightsFrame->Parent = this;
@@ -32,6 +30,7 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   FRightsFrame->Popup = true;
   FRightsFrame->PopupParent = RightsEdit;
   FRightsFrame->OnChange = RightsFrameChange;
+  RightsEdit->PopupMenu = FRightsFrame->RightsPopup;
 
   // on start set different value than we want to allow property-setter to proceed
   FDirection = pdToLocal;
@@ -275,12 +274,7 @@ void __fastcall TCopyParamsFrame::RightsEditButtonClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::RightsFrameChange(TObject * /*Sender*/)
 {
-  AnsiString RightsStr = FRightsFrame->Rights.Text;
-  if (FRightsFrame->AddXToDirectories)
-  {
-    RightsStr = FORMAT("%s (%s)", (RightsStr, FAddXToDirectoriesSuffix));
-  }
-  RightsEdit->Text = RightsStr;
+  RightsEdit->Text = FRightsFrame->Text;
   RightsEdit->Modified = false;
   RightsEdit->SelectAll();
 }
@@ -289,29 +283,10 @@ void __fastcall TCopyParamsFrame::UpdateRightsByStr()
 {
   if (!RightsEdit->Text.IsEmpty())
   {
-    AnsiString RightsStr = RightsEdit->Text;
-
-    int P = RightsStr.LowerCase().Pos(FAddXToDirectoriesSuffix);
-    bool AddXToDirectories = (P > 0);
-    if (AddXToDirectories)
-    {
-      RightsStr.Delete(P, FAddXToDirectoriesSuffix.Length());
-    }
-    RightsStr = DeleteChar(DeleteChar(RightsStr, '('), ')').Trim();
-    TRights R = FRightsFrame->Rights;
-    int Dummy;
-    if (((RightsStr.Length() == 3) || (RightsStr.Length() == 4)) &&
-        TryStrToInt(RightsStr, Dummy))
-    {
-      R.Octal = RightsStr;
-    }
-    else
-    {
-      R.Text = RightsStr;
-    }
-
-    FRightsFrame->Rights = R;
-    FRightsFrame->AddXToDirectories = AddXToDirectories;
+    FRightsFrame->Text = RightsEdit->Text;
+    // change handler may not be called if the rights were not actually changed,
+    // but we want to normalize the user-entered information anyway
+    RightsFrameChange(NULL);
   }
   UpdateControls();
   RightsEdit->Modified = false;

@@ -330,7 +330,7 @@ public:
   int __fastcall IndexOf(TSessionData * Data);
   TSessionData * __fastcall NewSession(AnsiString SessionName, TSessionData * Session);
   TSessionData * __fastcall ParseUrl(AnsiString Url, bool & DefaultsOnly,
-    int Params, AnsiString * FileName = NULL);
+    int Params, AnsiString * FileName = NULL, bool * ProtocolDefined = NULL);
   virtual __fastcall ~TStoredSessionList();
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };

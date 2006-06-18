@@ -568,6 +568,7 @@ void __fastcall TPreferencesDialog::UpdateControls()
   EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
   EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
   EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
+  EnableControl(ResumeThresholdUnitLabel, ResumeThresholdEdit->Enabled);
   EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
   EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
   EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
@@ -619,7 +620,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
     (EditorListView->ItemIndex < EditorListView->Items->Count - 1));
 
   EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
+  EnableControl(UpdatesProxyHostLabel, UpdatesProxyHostEdit->Enabled);
   EnableControl(UpdatesProxyPortEdit, UpdatesProxyCheck->Checked);
+  EnableControl(UpdatesProxyPortLabel, UpdatesProxyPortEdit->Enabled);
 
   EnableControl(PuttyPasswordCheck, !PuttyPathEdit->Text.IsEmpty());
   EnableControl(AutoOpenInPuttyCheck, PuttyPasswordCheck->Enabled);

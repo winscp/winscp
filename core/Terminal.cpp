@@ -2615,7 +2615,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const AnsiString LocalD
 
   if (FLAGCLEAR(Params, spDelayProgress))
   {
-    DoSynchronizeProgress(Data);
+    DoSynchronizeProgress(Data, true);
   }
 
   try
@@ -2650,6 +2650,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const AnsiString LocalD
           if ((FileName != ".") && (FileName != "..") &&
               CopyParam->AllowTransfer(Data.LocalDirectory + FileName, osLocal,
                 FLAGSET(SearchRec.Attr, faDirectory), MaskParams) &&
+              !FFileSystem->TemporaryTransferFile(FileName) &&
               (FLAGCLEAR(Flags, sfFirstLevel) ||
                (Options == NULL) || (Options->Filter == NULL) ||
                Options->Filter->Find(FileName, FoundIndex)))
@@ -2690,7 +2691,7 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const AnsiString LocalD
 
       if (!Cached && FLAGSET(Params, spDelayProgress))
       {
-        DoSynchronizeProgress(Data);
+        DoSynchronizeProgress(Data, true);
       }
 
       ProcessDirectory(RemoteDirectory, SynchronizeCollectFile, &Data,
@@ -2788,6 +2789,7 @@ void __fastcall TTerminal::SynchronizeCollectFile(const AnsiString FileName,
   if (Data->CopyParam->AllowTransfer(
         UnixExcludeTrailingBackslash(File->FullFileName), osRemote,
         File->IsDirectory, MaskParams) &&
+      !FFileSystem->TemporaryTransferFile(File->FileName) &&
       (FLAGCLEAR(Data->Flags, sfFirstLevel) ||
        (Data->Options == NULL) || (Data->Options->Filter == NULL) ||
         Data->Options->Filter->Find(File->FileName, FoundIndex)))
@@ -3054,7 +3056,7 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
       {
         Data.LocalDirectory = IncludeTrailingBackslash(CurrentLocalDirectory);
         Data.RemoteDirectory = UnixIncludeTrailingBackslash(CurrentRemoteDirectory);
-        DoSynchronizeProgress(Data);
+        DoSynchronizeProgress(Data, false);
 
         if (FLAGSET(Params, spTimestamp))
         {
@@ -3110,12 +3112,14 @@ void __fastcall TTerminal::SynchronizeApply(TSynchronizeChecklist * Checklist,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoSynchronizeProgress(const TSynchronizeData & Data)
+void __fastcall TTerminal::DoSynchronizeProgress(const TSynchronizeData & Data,
+  bool Collect)
 {
   if (Data.OnSynchronizeDirectory != NULL)
   {
     bool Continue = true;
-    Data.OnSynchronizeDirectory(Data.LocalDirectory, Data.RemoteDirectory, Continue);
+    Data.OnSynchronizeDirectory(Data.LocalDirectory, Data.RemoteDirectory,
+      Continue, Collect);
 
     if (!Continue)
     {
@@ -3408,7 +3412,8 @@ bool __fastcall TSecondaryTerminal::DoPromptUser(AnsiString Prompt,
 {
   bool Result = false;
 
-  if (!FMasterPasswordTried && (Kind != pkPrompt))
+  if (!FMasterPasswordTried &&
+      ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkServerPrompt)))
   {
     // let's expect that the main session is already authenticated and its password
     // is not written after, so no locking is necessary

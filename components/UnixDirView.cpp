@@ -56,8 +56,8 @@ int __stdcall CompareDirectories(TListItem *Item1, TListItem *Item2, TUnixDirVie
   return 0;
 }
 //---------------------------------------------------------------------------
-#define DEFINE_COMPARE_FUNC_EX(PROPERTY, COMPAREFUNC, FALLBACK) \
-  int __stdcall Compare ## PROPERTY(TListItem *Item1, TListItem *Item2, TUnixDirView *DirView) \
+#define DEFINE_COMPARE_FUNC_EX(PROPERTY, NAME, COMPAREFUNC, FALLBACK) \
+  int __stdcall Compare ## NAME(TListItem *Item1, TListItem *Item2, TUnixDirView *DirView) \
   { \
     int Result = CompareDirectories(Item1, Item2, DirView); \
     if (!Result) \
@@ -72,11 +72,11 @@ int __stdcall CompareDirectories(TListItem *Item1, TListItem *Item2, TUnixDirVie
     return Result; \
   }
 #define DEFINE_COMPARE_FUNC(PROPERTY, COMPAREFUNC) \
-  DEFINE_COMPARE_FUNC_EX(PROPERTY, COMPAREFUNC, AnsiCompareText)
+  DEFINE_COMPARE_FUNC_EX(PROPERTY, PROPERTY, COMPAREFUNC, AnsiCompareText)
 #define COMPARE_NUMBER(Num1, Num2) ( Num1 < Num2 ? -1 : ( Num1 > Num2 ? 1 : 0) )
 #define COMPARE_DUMMY(X1, X2) 0
 //---------------------------------------------------------------------------
-DEFINE_COMPARE_FUNC_EX(FileName, AnsiCompareText, COMPARE_DUMMY);
+DEFINE_COMPARE_FUNC_EX(FileName, ItemFileName, AnsiCompareText, COMPARE_DUMMY);
 DEFINE_COMPARE_FUNC(Size, COMPARE_NUMBER);
 DEFINE_COMPARE_FUNC(Modification, COMPARE_NUMBER);
 DEFINE_COMPARE_FUNC(RightsStr, AnsiCompareText);
@@ -627,7 +627,7 @@ void __fastcall TUnixDirView::SortItems()
   {
     PFNLVCOMPARE SortProc;
     switch (SortColumn) {
-      case uvName: SortProc = (PFNLVCOMPARE)CompareFileName; break;
+      case uvName: SortProc = (PFNLVCOMPARE)CompareItemFileName; break;
       case uvSize: SortProc = (PFNLVCOMPARE)CompareSize; break;
       case uvChanged: SortProc = (PFNLVCOMPARE)CompareModification; break;
       case uvRights: SortProc = (PFNLVCOMPARE)CompareRightsStr; break;

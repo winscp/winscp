@@ -215,7 +215,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     Top = 184
     Width = 140
     Height = 97
-    Caption = 'Compare criterions'
+    Caption = 'Compare criteria'
     TabOrder = 3
     object SynchronizeByTimeCheck: TCheckBox
       Left = 11

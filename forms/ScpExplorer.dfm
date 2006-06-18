@@ -804,6 +804,7 @@ inherited ScpExplorerForm: TScpExplorerForm
         Height = 21
         Align = alClient
         Constraints.MinWidth = 50
+        PopupMenu = NonVisualDataModule.RemoteAddressPopup
         TabOrder = 0
       end
     end

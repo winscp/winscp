@@ -163,8 +163,8 @@ __published:
   TRadioButton *UpdatesWeeklyButton;
   TRadioButton *UpdatesMonthlyButton;
   TXPGroupBox *UpdatesProxyGroup;
-  TLabel *Label15;
-  TLabel *Label18;
+  TLabel *UpdatesProxyHostLabel;
+  TLabel *UpdatesProxyPortLabel;
   TUpDownEdit *UpdatesProxyPortEdit;
   TEdit *UpdatesProxyHostEdit;
   TCheckBox *UpdatesProxyCheck;

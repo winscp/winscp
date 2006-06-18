@@ -2292,4 +2292,44 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = CurrentCreateDirAction
     end
   end
+  object RemoteAddressPopup: TTBXPopupMenu
+    Images = GlyphsModule.ExplorerImages
+    Left = 248
+    Top = 400
+    object TBXItem25: TTBXItem
+      Action = RemotePathToClipboardAction
+    end
+    object TBXItem24: TTBXItem
+      Action = RemoteAddBookmarkAction
+    end
+    object TBXSeparatorItem1: TTBXSeparatorItem
+      Hint = 'E'
+    end
+    object TBXItem17: TTBXItem
+      Action = RemoteOpenDirAction
+    end
+    object TBXSubmenuItem2: TTBXSubmenuItem
+      Caption = '&Go To'
+      HelpKeyword = 'task_navigate'
+      Hint = 'Go to directory'
+      object TBXItem18: TTBXItem
+        Action = RemoteParentDirAction
+      end
+      object TBXItem19: TTBXItem
+        Action = RemoteRootDirAction
+      end
+      object TBXItem20: TTBXItem
+        Action = RemoteHomeDirAction
+      end
+      object TBXSeparatorItem2: TTBXSeparatorItem
+        Hint = 'E'
+      end
+      object TBXItem21: TTBXItem
+        Action = RemoteBackAction
+      end
+      object TBXItem22: TTBXItem
+        Action = RemoteForwardAction
+      end
+    end
+  end
 end

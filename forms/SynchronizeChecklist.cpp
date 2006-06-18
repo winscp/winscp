@@ -63,6 +63,10 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
     SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
   FSystemImageList->ShareImages = true;
   ListView->SmallImages = FSystemImageList;
+
+  // header images mut be assigned after the small images, so it cannot
+  // be done via DFM
+  ListView->HeaderImages = ArrowImages;
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
@@ -180,12 +184,12 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
       FLAGMASK(ChecklistItem->IsDirectory, FILE_ATTRIBUTE_DIRECTORY));
   }
 
-  AnsiString FileName = ChecklistItem->FileName;
+  S = ChecklistItem->FileName;
   if (ChecklistItem->IsDirectory)
   {
-    FileName = IncludeTrailingBackslash(FileName);
+    S = IncludeTrailingBackslash(S);
   }
-  Item->Caption = FileName;
+  Item->Caption = S;
 
   if (ChecklistItem->Action == TSynchronizeChecklist::saDeleteRemote)
   {

@@ -31,7 +31,8 @@ typedef void __fastcall (__closure *TProcessFileEventEx)
 typedef int __fastcall (__closure *TFileOperationEvent)
   (void * Param1, void * Param2);
 typedef void __fastcall (__closure *TSynchronizeDirectory)
-  (const AnsiString LocalDirectory, const AnsiString RemoteDirectory, bool & Continue);
+  (const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+   bool & Continue, bool Collect);
 typedef void __fastcall (__closure *TDeleteLocalFileEvent)(const AnsiString FileName);
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
   (TTerminal * Terminal, const AnsiString Directory, bool SubDirs);
@@ -236,7 +237,7 @@ protected:
     const TRemoteFile * File, void * Param);
   void __fastcall SynchronizeLocalTimestamp(const AnsiString FileName,
     const TRemoteFile * File, void * Param);
-  void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data);
+  void __fastcall DoSynchronizeProgress(const TSynchronizeData & Data, bool Collect);
   void __fastcall DeleteLocalFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
   void __fastcall RecycleFile(AnsiString FileName, const TRemoteFile * File);

@@ -40,7 +40,7 @@ private:
 class TScript
 {
 public:
-  enum TBatchMode { BatchOff, BatchOn, BatchAbort };
+  enum TBatchMode { BatchOff, BatchOn, BatchAbort, BatchContinue };
 
   __fastcall TScript();
   __fastcall TScript(TTerminal * Terminal);
@@ -182,7 +182,7 @@ protected:
   void __fastcall PrintProgress(bool First, const AnsiString Str);
   bool __fastcall QueryCancel();
   void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory, bool & Continue);
+    const AnsiString RemoteDirectory, bool & Continue, bool Collect);
   void __fastcall DoConnect(const AnsiString Session);
   void __fastcall DoClose(TTerminal * Terminal);
   virtual bool __fastcall HandleExtendedException(Exception * E,

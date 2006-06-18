@@ -55,6 +55,7 @@ public:
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const AnsiString Path,
     TSpaceAvailable & ASpaceAvailable);
+  virtual bool __fastcall TemporaryTransferFile(const AnsiString & FileName);
 
 protected:
   __property TStrings * Output = { read = FOutput };
