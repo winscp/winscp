@@ -44,12 +44,21 @@ __published:
   TAction *AllRightsAction;
   TAction *LeaveRightsAsIsAction;
   TImageList *RightsImages;
+  TMenuItem *N1;
+  TAction *CopyTextAction;
+  TAction *CopyOctalAction;
+  TAction *PasteAction;
+  TMenuItem *CopyAsText1;
+  TMenuItem *CopyAsOctal1;
+  TMenuItem *Paste1;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall RightsButtonsClick(TObject *Sender);
   void __fastcall RightsActionsExecute(TBasicAction *Action,
           bool &Handled);
   void __fastcall RightsActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall RightsPopupPopup(TObject *Sender);
+  void __fastcall FrameContextPopup(TObject *Sender, TPoint &MousePos,
+          bool &Handled);
 private:
   bool FAllowAddXToDirectories;
   TNotifyEvent FOnChange;
@@ -59,6 +68,7 @@ private:
   TButton * FCancelButton;
   bool FPopingContextMenu;
   AnsiString FAddXToDirectoriesSuffix;
+  bool FInitialized;
 
   void __fastcall CycleRights(int Group);
   bool __fastcall GetAddXToDirectories();

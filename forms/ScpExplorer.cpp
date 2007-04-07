@@ -1,17 +1,18 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
-#pragma hdrstop                     
+#pragma hdrstop
 
 #include "ScpExplorer.h"
 
 #include <Common.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 
 #include "NonVisual.h"
 #include "Glyphs.h"
 #include "Tools.h"
 #include "WinConfiguration.h"
 #include <VCLCommon.h>
+#include <TextsWin.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CustomDirView"
@@ -39,7 +40,7 @@
 //---------------------------------------------------------------------------
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
-{          
+{
   BackButton->LinkSubitems = HistoryMenu(osRemote, true)->Items;
   ForwardButton->LinkSubitems = HistoryMenu(osRemote, false)->Items;
 
@@ -214,7 +215,7 @@ void __fastcall TScpExplorerForm::FullSynchronizeDirectories()
 void __fastcall TScpExplorerForm::FixControlsPlacement()
 {
   TCustomScpExplorerForm::FixControlsPlacement();
-  
+
   TControl * ControlsOrder[] =
     { RemoteDirView, QueueSplitter, QueuePanel, BottomDock, RemoteStatusBar };
   SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
@@ -227,7 +228,12 @@ void __fastcall TScpExplorerForm::FixControlsPlacement()
 void __fastcall TScpExplorerForm::RemoteDirViewUpdateStatusBar(
   TObject * /*Sender*/, const TStatusFileInfo & FileInfo)
 {
-  UpdateFileStatusBar(RemoteStatusBar, FileInfo, 0);
+  FStatusBarFileText = FileStatusBarText(FileInfo);
+  if (!CancelNote())
+  {
+    // if there's no note to cancel, we need to update status bar explicitly
+    UpdateStatusBar();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RemotePanelSplitterDblClick(TObject * /*Sender*/)
@@ -235,4 +241,8 @@ void __fastcall TScpExplorerForm::RemotePanelSplitterDblClick(TObject * /*Sender
   // for some reason PostComponentHide is not necessary here (see queue panel)
   ComponentVisible[fcRemoteTree] = false;
 }
-
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::UpdateStatusPanelText(TTBXStatusPanel * Panel)
+{
+  Panel->Caption = FStatusBarFileText;
+}

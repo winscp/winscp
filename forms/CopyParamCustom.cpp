@@ -11,7 +11,6 @@
 #include "VCLCommon.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPThemes"
 #pragma link "CopyParams"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------

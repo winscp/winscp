@@ -82,4 +82,3 @@ AnsiString __fastcall TLicenceDialog::GetLicenceText()
 {
   return LicenceMemo->Lines->Text;
 }
-

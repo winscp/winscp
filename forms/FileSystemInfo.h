@@ -12,7 +12,6 @@
 #include <vcl\Controls.hpp>
 #include <vcl\Buttons.hpp>
 #include <vcl\ExtCtrls.hpp>
-#include <XPThemes.hpp>
 #include <ComCtrls.hpp>
 #include <Menus.hpp>
 //----------------------------------------------------------------------------
@@ -25,11 +24,11 @@ __published:
   TButton *CloseButton;
   TButton *HelpButton;
   TPageControl *PageControl;
-  TTabSheet *SshSheet;
-  TXPGroupBox *HostKeyGroup;
-  TEdit *HostKeyFingerprintEdit;
   TTabSheet *ProtocolSheet;
-  TXPGroupBox *InfoGroup;
+  TGroupBox *HostKeyGroup;
+  TEdit *HostKeyFingerprintEdit;
+  TTabSheet *CapabilitiesSheet;
+  TGroupBox *InfoGroup;
   TMemo *InfoMemo;
   TListView *ServerView;
   TListView *ProtocolView;
@@ -48,12 +47,16 @@ __published:
   void __fastcall SpaceAvailableButtonClick(TObject *Sender);
   void __fastcall PageControlChange(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
+  void __fastcall SpaceAvailablePathEditEnter(TObject *Sender);
+  void __fastcall SpaceAvailablePathEditExit(TObject *Sender);
+  void __fastcall ControlContextPopup(TObject *Sender, TPoint &MousePos,
+          bool &Handled);
 public:
-    virtual __fastcall TFileSystemInfoDialog(TComponent * AOwner,
+  virtual __fastcall TFileSystemInfoDialog(TComponent * AOwner,
     TGetSpaceAvailable OnGetSpaceAvailable);
 
-  void __fastcall Execute(const TFileSystemInfo & FileSystemInfo,
-    AnsiString SpaceAvailablePath);
+  void __fastcall Execute(const TSessionInfo & SessionInfo,
+    const TFileSystemInfo & FileSystemInfo, AnsiString SpaceAvailablePath);
 
 private:
   TControl * FLastFeededControl;
@@ -62,6 +65,7 @@ private:
   bool FSpaceAvailableLoaded;
   TSpaceAvailable FSpaceAvailable;
   int FLastListItem;
+  TSessionInfo FSessionInfo;
   TFileSystemInfo FFileSystemInfo;
 
   void __fastcall Feed(TFeedFileSystemData AddItem);

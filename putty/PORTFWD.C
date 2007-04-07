@@ -525,10 +525,17 @@ void pfd_close(Socket s)
 
     pr = (struct PFwdPrivate *) sk_get_private_ptr(s);
 
+#ifdef MPEXT
+    // make sude do_select is called before we loose the private members
+    sk_close(s);
+#endif
+    
     sfree(pr->buffer);
     sfree(pr);
 
+#ifndef MPEXT
     sk_close(s);
+#endif
 }
 
 /*

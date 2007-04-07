@@ -64,8 +64,8 @@ protected:
 
   AnsiString __fastcall GetCurrentSubKey();
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
-  AnsiString __fastcall IncludeTrailingBackslash(const AnsiString S) const;
-  AnsiString __fastcall ExcludeTrailingBackslash(const AnsiString S) const;
+  static AnsiString __fastcall IncludeTrailingBackslash(const AnsiString & S);
+  static AnsiString __fastcall ExcludeTrailingBackslash(const AnsiString & S);
 };
 //---------------------------------------------------------------------------
 class TRegistryStorage : public THierarchicalStorage

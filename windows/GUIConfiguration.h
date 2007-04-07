@@ -13,6 +13,7 @@ enum TInterface { ifCommander, ifExplorer };
 extern const ccLocal;
 extern const ccShowResults;
 extern const ccCopyResults;
+extern const ccSet;
 //---------------------------------------------------------------------------
 const soRecurse =        0x01;
 const soSynchronize =    0x02;
@@ -94,7 +95,7 @@ public:
   void __fastcall Load(THierarchicalStorage * Storage, int Count);
   void __fastcall Save(THierarchicalStorage * Storage) const;
 
-  static void __fastcall ValidateName(const AnsiString Name);  
+  static void __fastcall ValidateName(const AnsiString Name);
 
   void __fastcall operator=(const TCopyParamList & rhl);
   bool __fastcall operator==(const TCopyParamList & rhl) const;
@@ -117,7 +118,7 @@ public:
   __property bool Modified = { read = FModified };
   __property TStrings * NameList = { read = GetNameList };
   __property bool AnyRule = { read = GetAnyRule };
-  
+
 private:
   static AnsiString FInvalidChars;
   TList * FRules;
@@ -173,17 +174,19 @@ private:
   AnsiString FCopyParamCurrent;
   TRemoteProperties FNewDirectoryProperties;
   int FKeepUpToDateChangeDelay;
+  AnsiString FChecksumAlg;
 
 protected:
   LCID FLocale;
 
-  virtual void __fastcall SaveSpecial(THierarchicalStorage * Storage);
-  virtual void __fastcall LoadSpecial(THierarchicalStorage * Storage);
+  virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
+  virtual void __fastcall LoadData(THierarchicalStorage * Storage);
   virtual LCID __fastcall GetLocale();
   void __fastcall SetLocale(LCID value);
   void __fastcall SetLocaleSafe(LCID value);
   virtual HANDLE __fastcall LoadNewResourceModule(LCID Locale,
     AnsiString * FileName = NULL);
+  HANDLE __fastcall GetResourceModule();
   virtual void __fastcall SetResourceModule(HANDLE Instance);
   TStrings * __fastcall GetLocales();
   LCID __fastcall InternalLocale();
@@ -200,7 +203,7 @@ protected:
   void __fastcall SetCopyParamIndex(int value);
   void __fastcall SetCopyParamCurrent(AnsiString value);
   void __fastcall SetNewDirectoryProperties(const TRemoteProperties & value);
-  virtual void __fastcall ModifyAll();
+  virtual void __fastcall Saved();
 
 public:
   __fastcall TGUIConfiguration();
@@ -241,6 +244,7 @@ public:
   __property TGUICopyParamType CopyParamPreset[AnsiString Name] = { read = GetCopyParamPreset };
   __property TRemoteProperties NewDirectoryProperties = { read = FNewDirectoryProperties, write = SetNewDirectoryProperties };
   __property int KeepUpToDateChangeDelay = { read = FKeepUpToDateChangeDelay, write = FKeepUpToDateChangeDelay };
+  __property AnsiString ChecksumAlg = { read = FChecksumAlg, write = FChecksumAlg };
 };
 //---------------------------------------------------------------------------
 #define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))

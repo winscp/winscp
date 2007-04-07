@@ -9,14 +9,13 @@
 #include "CopyParams.h"
 #include "VCLCommon.h"
 
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Configuration.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPThemes"
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -77,8 +76,8 @@ __fastcall TFullSynchronizeDialog::~TFullSynchronizeDialog()
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::UpdateControls()
 {
-  EnableControl(SynchronizeTimestampCheck, FLAGCLEAR(Options, fsoDisableTimestamp));
-  if (SynchronizeTimestampCheck->Checked)
+  EnableControl(SynchronizeTimestampsButton, FLAGCLEAR(Options, fsoDisableTimestamp));
+  if (SynchronizeTimestampsButton->Checked)
   {
     SynchronizeExistingOnlyCheck->Checked = true;
     SynchronizeDeleteCheck->Checked = false;
@@ -87,14 +86,24 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
   if (SynchronizeBothButton->Checked)
   {
     SynchronizeBySizeCheck->Checked = false;
+    if (MirrorFilesButton->Checked)
+    {
+      SynchronizeFilesButton->Checked = true;
+    }
   }
-  EnableControl(SynchronizeDeleteCheck, !SynchronizeBothButton->Checked && 
-    !SynchronizeTimestampCheck->Checked);
-  EnableControl(SynchronizeExistingOnlyCheck, !SynchronizeTimestampCheck->Checked);
-  EnableControl(SynchronizeByTimeCheck, !SynchronizeBothButton->Checked && 
-    !SynchronizeTimestampCheck->Checked);
+  if (MirrorFilesButton->Checked)
+  {
+    SynchronizeByTimeCheck->Checked = true;
+  }
+  EnableControl(MirrorFilesButton, !SynchronizeBothButton->Checked);
+  EnableControl(SynchronizeDeleteCheck, !SynchronizeBothButton->Checked &&
+    !SynchronizeTimestampsButton->Checked);
+  EnableControl(SynchronizeExistingOnlyCheck, !SynchronizeTimestampsButton->Checked);
+  EnableControl(SynchronizeByTimeCheck, !SynchronizeBothButton->Checked &&
+    !SynchronizeTimestampsButton->Checked && !MirrorFilesButton->Checked);
   EnableControl(SynchronizeBySizeCheck, !SynchronizeBothButton->Checked);
   EnableControl(SynchronizeSelectedOnlyCheck, FLAGSET(FOptions, fsoAllowSelectedOnly));
+
   EnableControl(OkButton, !LocalDirectoryEdit->Text.IsEmpty() &&
     !RemoteDirectoryEdit->Text.IsEmpty());
 
@@ -103,14 +112,14 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
   CopyParamLabel->Hint = InfoStr;
   CopyParamLabel->ShowHint =
     (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
-  SynchronizeBySizeCheck->Caption = SynchronizeTimestampCheck->Checked ?
+  SynchronizeBySizeCheck->Caption = SynchronizeTimestampsButton->Checked ?
     LoadStr(SYNCHRONIZE_SAME_SIZE) : FSynchronizeBySizeCaption;
 }
 //---------------------------------------------------------------------------
 int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
 {
   int Result;
-  if (SynchronizeTimestampCheck->Checked)
+  if (SynchronizeTimestampsButton->Checked)
   {
     Result = cpaExcludeMaskOnly;
   }
@@ -221,13 +230,23 @@ TSynchronizeMode __fastcall TFullSynchronizeDialog::GetMode()
 void __fastcall TFullSynchronizeDialog::SetParams(int value)
 {
   FParams = value & ~(spDelete | spExistingOnly |
-    spPreviewChanges | spTimestamp | spNotByTime | spBySize | spSelectedOnly);
+    spPreviewChanges | spTimestamp | spNotByTime | spBySize | spSelectedOnly | spMirror);
   SynchronizeDeleteCheck->Checked = FLAGSET(value, spDelete);
   SynchronizeExistingOnlyCheck->Checked = FLAGSET(value, spExistingOnly);
   SynchronizePreviewChangesCheck->Checked = FLAGSET(value, spPreviewChanges);
   SynchronizeSelectedOnlyCheck->Checked = FLAGSET(value, spSelectedOnly);
-  SynchronizeTimestampCheck->Checked = FLAGSET(value, spTimestamp) &&
-    FLAGCLEAR(Options, fsoDisableTimestamp);
+  if (FLAGSET(value, spTimestamp) && FLAGCLEAR(Options, fsoDisableTimestamp))
+  {
+    SynchronizeTimestampsButton->Checked = true;
+  }
+  else if (FLAGSET(value, spMirror))
+  {
+    MirrorFilesButton->Checked = true;
+  }
+  else
+  {
+    SynchronizeFilesButton->Checked = true;
+  }
   SynchronizeByTimeCheck->Checked = FLAGCLEAR(value, spNotByTime);
   SynchronizeBySizeCheck->Checked = FLAGSET(value, spBySize);
   UpdateControls();
@@ -240,8 +259,9 @@ int __fastcall TFullSynchronizeDialog::GetParams()
     FLAGMASK(SynchronizeExistingOnlyCheck->Checked, spExistingOnly) |
     FLAGMASK(SynchronizePreviewChangesCheck->Checked, spPreviewChanges) |
     FLAGMASK(SynchronizeSelectedOnlyCheck->Checked, spSelectedOnly) |
-    FLAGMASK(SynchronizeTimestampCheck->Checked && FLAGCLEAR(Options, fsoDisableTimestamp),
+    FLAGMASK(SynchronizeTimestampsButton->Checked && FLAGCLEAR(Options, fsoDisableTimestamp),
       spTimestamp) |
+    FLAGMASK(MirrorFilesButton->Checked, spMirror) |
     FLAGMASK(!SynchronizeByTimeCheck->Checked, spNotByTime) |
     FLAGMASK(SynchronizeBySizeCheck->Checked, spBySize);
 }
@@ -271,9 +291,10 @@ void __fastcall TFullSynchronizeDialog::SetOptions(int value)
   if (Options != value)
   {
     FOptions = value;
-    if (FLAGSET(Options, fsoDisableTimestamp))
+    if (FLAGSET(Options, fsoDisableTimestamp) &&
+        SynchronizeTimestampsButton->Checked)
     {
-      SynchronizeTimestampCheck->Checked = false;
+      SynchronizeFilesButton->Checked = true;
     }
     UpdateControls();
   }
@@ -370,4 +391,3 @@ void __fastcall TFullSynchronizeDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-

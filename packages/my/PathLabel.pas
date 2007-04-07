@@ -259,7 +259,7 @@ begin
   if FUnixPath then
     for i := 1 to Length(Path) do
       if Path[i] = '\' then Path[i] := '/';
-  ShowHint := 
+  ShowHint :=
     (Path <> Caption) or
     (Canvas.TextWidth(Caption) > Rect.Right - Rect.Left);
   if not ShowHint then Hint := ''

@@ -137,6 +137,7 @@ const
   BufSize = $7F00; // size of the internal standard buffer
   INVALID_IP_ADDRESS= -1; // only invalid as a host ip, maybe OK for broadcast ($FFFFFFFF as longint)
 
+
 function LookupHostname(const Hostname: string): LongInt;
 var
   RemoteHost: PHostEnt; // no, don't free it!
@@ -800,7 +801,7 @@ begin
           FType := Data
         else
       if Field = 'www-authenticate' then
-        FDoAuthor.Add(Data)
+        FDoAuthor.Add(Data);
     end
   until s = '';
 

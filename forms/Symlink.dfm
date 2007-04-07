@@ -22,7 +22,7 @@ object SymlinkDialog: TSymlinkDialog
     183)
   PixelsPerInch = 96
   TextHeight = 13
-  object SymlinkGroup: TXPGroupBox
+  object SymlinkGroup: TGroupBox
     Left = 8
     Top = 6
     Width = 380

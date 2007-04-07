@@ -12,7 +12,7 @@ public:
   virtual __fastcall ~TBookmarks();
 
   void __fastcall Load(THierarchicalStorage * Storage);
-  void __fastcall Save(THierarchicalStorage * Storage);
+  void __fastcall Save(THierarchicalStorage * Storage, bool All);
   void __fastcall ModifyAll(bool Modify);
   void __fastcall Clear();
 

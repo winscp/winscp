@@ -51,24 +51,25 @@ __published:
   void __fastcall ActionListExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ActionListUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall FormShow(TObject *Sender);
-  
+  void __fastcall OutputMemoContextPopup(TObject *Sender, TPoint &MousePos,
+          bool &Handled);
+
 private:
   TTerminal * FTerminal;
   TTerminal * FLastTerminal;
   TNotifyEvent FOldChangeDirectory;
   TNotifyEvent FPrevTerminalClose;
   TRect FAutoBounds;
+  bool FClearExceptionOnFail;
 
   void __fastcall DoExecuteCommand();
   void __fastcall ExecuteCommand();
   void __fastcall SetTerminal(TTerminal * value);
   void __fastcall TerminalClose(TObject * Sender);
-  inline void __fastcall AddLine(TLogLineType Type, const AnsiString & Line);
+  void __fastcall AddLine(const AnsiString & Line, bool StdError);
 
 protected:
   void __fastcall DoChangeDirectory(TObject * Sender);
-  void __fastcall DoLogAddLine(System::TObject* Sender, TLogLineType Type,
-    const AnsiString AddedLine);
   void __fastcall UpdateControls();
   virtual void __fastcall CreateParams(TCreateParams & Params);
   void __fastcall DoAdjustWindow();

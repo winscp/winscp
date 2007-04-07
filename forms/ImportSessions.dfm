@@ -6,7 +6,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Import sessions from PuTTY'
-  ClientHeight = 293
+  ClientHeight = 273
   ClientWidth = 375
   Color = clBtnFace
   ParentFont = True
@@ -16,7 +16,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   OnShow = FormShow
   DesignSize = (
     375
-    293)
+    273)
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
@@ -31,18 +31,9 @@ object ImportSessionsDialog: TImportSessionsDialog
       'ck sessions you want to import and press OK button.'
     WordWrap = True
   end
-  object Label2: TLabel
-    Left = 8
-    Top = 52
-    Width = 314
-    Height = 13
-    Anchors = [akLeft, akTop, akRight]
-    Caption = 'Notice: This application always connects using SSH protocol.'
-    WordWrap = True
-  end
   object OKButton: TButton
     Left = 135
-    Top = 262
+    Top = 242
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -53,7 +44,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   end
   object CancelButton: TButton
     Left = 215
-    Top = 262
+    Top = 242
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -64,7 +55,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   end
   object SessionListView: TListView
     Left = 8
-    Top = 72
+    Top = 52
     Width = 361
     Height = 160
     Anchors = [akLeft, akTop, akRight, akBottom]
@@ -91,7 +82,7 @@ object ImportSessionsDialog: TImportSessionsDialog
   end
   object CheckAllButton: TButton
     Left = 8
-    Top = 262
+    Top = 242
     Width = 89
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -101,15 +92,16 @@ object ImportSessionsDialog: TImportSessionsDialog
   end
   object ImportKeysCheck: TCheckBox
     Left = 16
-    Top = 238
+    Top = 218
     Width = 345
     Height = 17
+    Anchors = [akLeft, akBottom]
     Caption = 'Import cached host &keys for checked sessions'
     TabOrder = 1
   end
   object HelpButton: TButton
     Left = 294
-    Top = 262
+    Top = 242
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

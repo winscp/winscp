@@ -2,7 +2,7 @@
 #ifndef RemoteFilesH
 #define RemoteFilesH
 //---------------------------------------------------------------------------
-enum TModificationFmt { mfMDHM, mfMDY, mfFull };
+enum TModificationFmt { mfNone, mfMDHM, mfMDY, mfFull };
 //---------------------------------------------------------------------------
 #define SYMLINKSTR " -> "
 #define PARENTDIRECTORY ".."
@@ -92,7 +92,7 @@ public:
   __property TDateTime Modification = { read = FModification, write = SetModification };
   __property AnsiString ModificationStr = { read = GetModificationStr };
   __property AnsiString UserModificationStr = { read = GetUserModificationStr };
-  __property TModificationFmt ModificationFmt = { read = FModificationFmt };
+  __property TModificationFmt ModificationFmt = { read = FModificationFmt, write = FModificationFmt };
   __property TDateTime LastAccess = { read = FLastAccess, write = FLastAccess };
   __property bool IsSymLink = { read = FIsSymLink };
   __property bool IsDirectory = { read = GetIsDirectory };
@@ -130,6 +130,7 @@ class TRemoteFileList : public TObjectList
 {
 friend class TSCPFileSystem;
 friend class TSFTPFileSystem;
+friend class TFTPFileSystem;
 protected:
   AnsiString FDirectory;
   TDateTime FTimestamp;
@@ -297,6 +298,7 @@ public:
   __property unsigned short Number = { read = GetNumber, write = SetNumber };
   __property unsigned short NumberSet = { read = FSet };
   __property unsigned short NumberUnset = { read = FUnset };
+  __property unsigned long NumberDecadic = { read = GetNumberDecadic };
   __property bool ReadOnly = { read = GetReadOnly, write = SetReadOnly };
   __property bool Right[TRight Right] = { read = GetRight, write = SetRight };
   __property TState RightUndef[TRight Right] = { read = GetRightUndef, write = SetRightUndef };
@@ -320,6 +322,7 @@ private:
   unsigned short __fastcall GetNumber() const;
   unsigned short __fastcall GetNumberSet() const;
   unsigned short __fastcall GetNumberUnset() const;
+  unsigned long __fastcall GetNumberDecadic() const;
   AnsiString __fastcall GetOctal() const;
   bool __fastcall GetReadOnly();
   bool __fastcall GetRight(TRight Right) const;
@@ -362,12 +365,13 @@ AnsiString __fastcall UnixExtractFileDir(const AnsiString Path);
 AnsiString __fastcall UnixExtractFilePath(const AnsiString Path);
 AnsiString __fastcall UnixExtractFileName(const AnsiString Path);
 AnsiString __fastcall UnixExtractFileExt(const AnsiString Path);
-Boolean __fastcall ComparePaths(const AnsiString Path1, const AnsiString Path2);
 Boolean __fastcall UnixComparePaths(const AnsiString Path1, const AnsiString Path2);
 bool __fastcall ExtractCommonPath(TStrings * Files, AnsiString & Path);
 bool __fastcall UnixExtractCommonPath(TStrings * Files, AnsiString & Path);
+AnsiString __fastcall ExtractFileName(const AnsiString & Path, bool Unix);
 bool __fastcall IsUnixRootPath(const AnsiString Path);
 bool __fastcall IsUnixHiddenFile(const AnsiString Path);
+AnsiString __fastcall AbsolutePath(const AnsiString & Base, const AnsiString & Path);
 AnsiString __fastcall FromUnixPath(const AnsiString Path);
 AnsiString __fastcall ToUnixPath(const AnsiString Path);
 AnsiString __fastcall MinimizeName(const AnsiString FileName, int MaxLen, bool Unix);

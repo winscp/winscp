@@ -8,7 +8,7 @@
 #include <DiscMon.hpp>
 #include <Exceptions.h>
 #include "GUIConfiguration.h"
-#include "ScpMain.h"
+#include "CoreMain.h"
 #include "TextsCore.h"
 #include "SynchronizeController.h"
 //---------------------------------------------------------------------------

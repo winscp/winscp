@@ -474,6 +474,10 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem22;
   TTBXItem *TBXItem24;
   TTBXItem *TBXItem25;
+  TAction *DuplicateSessionAction;
+  TAction *CustomCommandsLastAction;
+  TAction *CustomCommandsLastFocusedAction;
+  TAction *CustomCommandsEnterFocusedAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -502,6 +506,7 @@ protected:
   void __fastcall DoIdle();
   inline void __fastcall ShowUpdatesUpdate();
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
+  void __fastcall CustomCommandsLastUpdate(TAction * Action);
 
 public:
   __fastcall TNonVisualDataModule(TComponent * Owner);

@@ -4,6 +4,7 @@ object RightsFrame: TRightsFrame
   Width = 163
   Height = 87
   TabOrder = 0
+  OnContextPopup = FrameContextPopup
   object OwnerLabel: TLabel
     Left = 4
     Top = 4
@@ -192,6 +193,18 @@ object RightsFrame: TRightsFrame
     object Leaveasis1: TMenuItem
       Action = LeaveRightsAsIsAction
     end
+    object N1: TMenuItem
+      Caption = '-'
+    end
+    object CopyAsText1: TMenuItem
+      Action = CopyTextAction
+    end
+    object CopyAsOctal1: TMenuItem
+      Action = CopyOctalAction
+    end
+    object Paste1: TMenuItem
+      Action = PasteAction
+    end
   end
   object RightsActions: TActionList
     Images = RightsImages
@@ -215,8 +228,23 @@ object RightsFrame: TRightsFrame
       ShortCut = 16449
     end
     object LeaveRightsAsIsAction: TAction
-      Caption = '&Leave As Is'
+      Caption = '&Leave as Is'
       ShortCut = 16460
+    end
+    object CopyTextAction: TAction
+      Caption = '&Copy as Text'
+      ImageIndex = 3
+      ShortCut = 16451
+    end
+    object CopyOctalAction: TAction
+      Caption = 'Copy as &Octal'
+      ImageIndex = 4
+      ShortCut = 16463
+    end
+    object PasteAction: TAction
+      Caption = '&Paste'
+      ImageIndex = 5
+      ShortCut = 16470
     end
   end
   object RightsImages: TImageList

@@ -1,5 +1,5 @@
 //---------------------------------------------------------------------------
-#include <vcl.h>        
+#include <vcl.h>
 #pragma hdrstop
 
 #include <Common.h>
@@ -7,7 +7,7 @@
 #include "WinInterface.h"
 #include "TextsWin.h"
 #include "Tools.h"
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include "VCLCommon.h"
 #include "WinConfiguration.h"
 #include "HelpWin.h"
@@ -22,8 +22,8 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
-  TNotifyEvent OnFileChanged, TNotifyEvent OnClose, const AnsiString Caption,
-  bool ShowWindowButton)
+  TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TNotifyEvent OnClose,
+  const AnsiString Caption, bool ShowWindowButton)
 {
   TEditorForm * Dialog = new TEditorForm(Application);
   try
@@ -33,6 +33,7 @@ TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * Paren
     Dialog->ParentForm = ParentForm;
     Dialog->Caption = Caption.IsEmpty() ? FileName : Caption;
     Dialog->OnFileChanged = OnFileChanged;
+    Dialog->OnFileReload = OnFileReload;
     Dialog->OnWindowClose = OnClose;
     Dialog->Show();
   }
@@ -176,7 +177,7 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   }
   else if (Action == PreferencesAction || Action == CloseAction ||
     Action == FindAction || Action == ReplaceAction || Action == GoToLineAction ||
-    Action == HelpAction)
+    Action == HelpAction || Action == ReloadAction)
   {
     ((TAction *)Action)->Enabled = true;
   }
@@ -208,6 +209,10 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   else if (Action == CloseAction)
   {
     Close();
+  }
+  else if (Action == ReloadAction)
+  {
+    Reload();
   }
   else if (Action == FindAction || Action == ReplaceAction)
   {
@@ -322,7 +327,7 @@ void __fastcall TEditorForm::UpdateControls()
   }
   StatusBar->Panels->Items[3]->Caption =
     (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : AnsiString(""));
-  EditorActions->UpdateAction(SaveAction);  
+  EditorActions->UpdateAction(SaveAction);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::EditorMemoMouseUp(TObject * /*Sender*/,
@@ -533,7 +538,7 @@ void __fastcall TEditorForm::GoToLine()
     }
     else
     {
-      EditorMemo->CaretPos = TPoint(0, Line-1); 
+      EditorMemo->CaretPos = TPoint(0, Line-1);
     }
   }
 }
@@ -585,4 +590,17 @@ void __fastcall TEditorForm::CreateParams(TCreateParams & Params)
   }
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TEditorForm::Reload()
+{
+  if (!EditorMemo->Modified ||
+      (MessageDialog(LoadStr(EDITOR_MODIFIED_RELOAD), qtConfirmation,
+        qaOK | qaCancel) != qaCancel))
+  {
+    if (FOnFileReload)
+    {
+      FOnFileReload(this);
+    }
+    LoadFile();
+  }
+}
+//---------------------------------------------------------------------------

@@ -49,7 +49,7 @@ object PropertiesDialog: TPropertiesDialog
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabIndex = 0
     TabOrder = 0
-    TabStop = False
+    OnChange = PageControlChange
     object CommonSheet: TTabSheet
       Caption = 'Common'
       DesignSize = (
@@ -214,15 +214,6 @@ object PropertiesDialog: TPropertiesDialog
         Width = 244
         Height = 109
         TabOrder = 3
-        inherited SetUidCheck: TGrayedCheckBox
-          Width = 75
-        end
-        inherited SetGIDCheck: TGrayedCheckBox
-          Width = 75
-        end
-        inherited StickyBitCheck: TGrayedCheckBox
-          Width = 75
-        end
       end
       object GroupComboBox: TComboBox
         Left = 85
@@ -267,6 +258,103 @@ object PropertiesDialog: TPropertiesDialog
         OnClick = CalculateSizeButtonClick
       end
     end
+    object ChecksumSheet: TTabSheet
+      Caption = 'Checksum'
+      ImageIndex = 1
+      DesignSize = (
+        338
+        346)
+      object Label6: TLabel
+        Left = 13
+        Top = 13
+        Width = 43
+        Height = 13
+        Caption = '&Algorithm'
+        FocusControl = ChecksumAlgEdit
+      end
+      object ChecksumView: TListView
+        Left = 6
+        Top = 40
+        Width = 326
+        Height = 297
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        Columns = <
+          item
+            Caption = 'File'
+            Width = -2
+            WidthType = (
+              -2)
+          end
+          item
+            Caption = 'Checksum'
+            Width = -2
+            WidthType = (
+              -2)
+          end>
+        ColumnClick = False
+        MultiSelect = True
+        ReadOnly = True
+        RowSelect = True
+        PopupMenu = ListViewMenu
+        TabOrder = 2
+        ViewStyle = vsReport
+        OnContextPopup = ChecksumViewContextPopup
+      end
+      object ChecksumAlgEdit: TComboBox
+        Left = 80
+        Top = 9
+        Width = 121
+        Height = 21
+        Anchors = [akLeft, akTop, akRight]
+        ItemHeight = 13
+        MaxLength = 250
+        TabOrder = 0
+        OnChange = ChecksumAlgEditChange
+        Items.Strings = (
+          'md5'
+          'sha1'
+          'sha224'
+          'sha256'
+          'sha384'
+          'sha512'
+          'crc32')
+      end
+      object ChecksumButton: TButton
+        Left = 208
+        Top = 7
+        Width = 122
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Calculate checksum'
+        TabOrder = 1
+        OnClick = ChecksumButtonClick
+      end
+      object ChecksumGroup: TGroupBox
+        Left = 6
+        Top = 40
+        Width = 326
+        Height = 41
+        Anchors = [akLeft, akRight, akBottom]
+        Caption = 'Checksum'
+        TabOrder = 3
+        DesignSize = (
+          326
+          41)
+        object ChecksumEdit: TEdit
+          Left = 10
+          Top = 18
+          Width = 306
+          Height = 19
+          TabStop = False
+          Anchors = [akLeft, akTop, akRight]
+          BorderStyle = bsNone
+          Color = clBtnFace
+          ReadOnly = True
+          TabOrder = 0
+          Text = 'ChecksumEdit'
+        end
+      end
+    end
   end
   object HelpButton: TButton
     Left = 275
@@ -277,5 +365,13 @@ object PropertiesDialog: TPropertiesDialog
     Caption = '&Help'
     TabOrder = 3
     OnClick = HelpButtonClick
+  end
+  object ListViewMenu: TPopupMenu
+    Left = 16
+    Top = 384
+    object Copy: TMenuItem
+      Caption = '&Copy'
+      OnClick = CopyClick
+    end
   end
 end

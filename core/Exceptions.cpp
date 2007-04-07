@@ -13,6 +13,29 @@ __fastcall ExtException::ExtException(Exception* E, AnsiString Msg):
   AddMoreMessages(E);
 }
 //---------------------------------------------------------------------------
+__fastcall ExtException::ExtException(AnsiString Msg, Exception* E) :
+  Exception("")
+{
+  // "copy exception"
+  AddMoreMessages(E);
+  // and append message to the end to more messages
+  if (!Msg.IsEmpty())
+  {
+    if (Message.IsEmpty())
+    {
+      Message = Msg;
+    }
+    else
+    {
+      if (FMoreMessages == NULL)
+      {
+        FMoreMessages = new TStringList();
+      }
+      FMoreMessages->Append(Msg);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 __fastcall ExtException::ExtException(Exception* E, int Ident):
         Exception(Ident)
 {
@@ -26,6 +49,21 @@ __fastcall ExtException::ExtException(AnsiString Msg, AnsiString MoreMessages) :
   {
     FMoreMessages = new TStringList();
     FMoreMessages->Text = MoreMessages;
+  }
+}
+//---------------------------------------------------------------------------
+__fastcall ExtException::ExtException(AnsiString Msg, TStrings* MoreMessages,
+  bool Own) :
+  Exception(Msg)
+{
+  if (Own)
+  {
+    FMoreMessages = MoreMessages;
+  }
+  else
+  {
+    FMoreMessages = new TStringList();
+    FMoreMessages->Assign(MoreMessages);
   }
 }
 //---------------------------------------------------------------------------
@@ -56,7 +94,7 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
     }
 
     // new exception does not have own message, this is in fact duplication of
-    // the exception data, but the exception class may being changed 
+    // the exception data, but the exception class may being changed
     if (Message.IsEmpty())
     {
       Message = Msg;

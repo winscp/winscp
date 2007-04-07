@@ -1,18 +1,21 @@
 //---------------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
+#include <LanguagesDEPfix.hpp>
 #include "GUIConfiguration.h"
 #include "GUITools.h"
 #include <Common.h>
 #include <FileInfo.h>
 #include <TextsCore.h>
 #include <Terminal.h>
+#include <CoreMain.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const ccLocal = ccUser;
 const ccShowResults = ccUser << 1;
 const ccCopyResults = ccUser << 2;
+const ccSet = 0x80000000;
 //---------------------------------------------------------------------------
 static const unsigned int AdditionaLanguageMask = 0xFFFFFF00;
 static const AnsiString AdditionaLanguagePrefix("XX");
@@ -29,7 +32,7 @@ __fastcall TGUICopyParamType::TGUICopyParamType(const TCopyParamType & Source)
   GUIDefault();
 }
 //---------------------------------------------------------------------------
-__fastcall TGUICopyParamType::TGUICopyParamType(const TGUICopyParamType & Source) 
+__fastcall TGUICopyParamType::TGUICopyParamType(const TGUICopyParamType & Source)
   : TCopyParamType(Source)
 {
   GUIAssign(&Source);
@@ -518,6 +521,7 @@ __fastcall TGUIConfiguration::TGUIConfiguration(): TConfiguration()
   dynamic_cast<TStringList*>(FLocales)->Sorted = true;
   dynamic_cast<TStringList*>(FLocales)->CaseSensitive = false;
   FCopyParamList = new TCopyParamList();
+  CoreSetResourceModule(GetResourceModule());
 }
 //---------------------------------------------------------------------------
 __fastcall TGUIConfiguration::~TGUIConfiguration()
@@ -541,7 +545,7 @@ void __fastcall TGUIConfiguration::Default()
   FErrorDialogExpanded = false;
   FContinueOnError = false;
   FConfirmCommandSession = true;
-  FSynchronizeParams = TTerminal::spNoConfirmation;
+  FSynchronizeParams = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
   FSynchronizeModeAuto = -1;
   FSynchronizeMode = TTerminal::smRemote;
   FMaxWatchDirectories = 500;
@@ -552,9 +556,9 @@ void __fastcall TGUIConfiguration::Default()
   AnsiString ProgramsFolder;
   SpecialFolderLocation(CSIDL_PROGRAM_FILES, ProgramsFolder);
   FDefaultPuttyPathOnly = IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\putty.exe";
-  FDefaultPuttyPath = FormatCommand(FDefaultPuttyPathOnly, "");
+  FDefaultPuttyPath = FormatCommand("%PROGRAMFILES%\\PuTTY\\putty.exe", "");
   FPuttyPath = FDefaultPuttyPath;
-  PSftpPath = FormatCommand(IncludeTrailingBackslash(ProgramsFolder) + "PuTTY\\psftp.exe", "");
+  PSftpPath = FormatCommand("%PROGRAMFILES%\\PuTTY\\psftp.exe", "");
   FPuttyPassword = false;
   FPuttySession = "WinSCP temporary session";
   FBeepOnFinish = false;
@@ -562,6 +566,7 @@ void __fastcall TGUIConfiguration::Default()
   FSynchronizeBrowsing = false;
   FCopyParamCurrent = "";
   FKeepUpToDateChangeDelay = 500;
+  FChecksumAlg = "md5";
 
   FNewDirectoryProperties.Default();
   FNewDirectoryProperties.Rights = TRights::rfDefault;
@@ -630,11 +635,12 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
     KEY(DateTime, BeepOnFinishAfter); \
     KEY(Bool,     SynchronizeBrowsing); \
     KEY(Integer,  KeepUpToDateChangeDelay); \
+    KEY(String,   ChecksumAlg); \
   ); \
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
+void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
 {
-  TConfiguration::SaveSpecial(Storage);
+  TConfiguration::SaveData(Storage, All);
 
   // duplicated from core\configuration.cpp
   #define KEY(TYPE, VAR) Storage->Write ## TYPE(PropertyToKey(#VAR), VAR)
@@ -651,7 +657,7 @@ void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
       assert(!FCopyParamList->Modified);
       Storage->WriteInteger("CopyParamList", -1);
     }
-    else if (FCopyParamList->Modified)
+    else if (All || FCopyParamList->Modified)
     {
       Storage->WriteInteger("CopyParamList", FCopyParamList->Count);
       FCopyParamList->Save(Storage);
@@ -673,9 +679,9 @@ void __fastcall TGUIConfiguration::SaveSpecial(THierarchicalStorage * Storage)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::LoadSpecial(THierarchicalStorage * Storage)
+void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
 {
-  TConfiguration::LoadSpecial(Storage);
+  TConfiguration::LoadData(Storage);
 
   // duplicated from core\configuration.cpp
   #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(PropertyToKey(#VAR), VAR)
@@ -709,15 +715,16 @@ void __fastcall TGUIConfiguration::LoadSpecial(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  // Make it compatible with versions prior to 3.7.1 that have not saved PuttyPath 
-  // with quotes. First check for absence of quotes. 
-  // Add quotes either if the path is set to default putty path (even if it does 
-  // not exists) or when the path points to existing file (so there are no parameters 
+  // Make it compatible with versions prior to 3.7.1 that have not saved PuttyPath
+  // with quotes. First check for absence of quotes.
+  // Add quotes either if the path is set to default putty path (even if it does
+  // not exists) or when the path points to existing file (so there are no parameters
   // yet in the string). Note that FileExists may display error dialog, but as
   // it should be called only for custom users path, let's expect that the user
   // can take care of it.
   if ((FPuttyPath.SubString(1, 1) != "\"") &&
-      ((FPuttyPath == FDefaultPuttyPathOnly) || FileExists(FPuttyPath)))
+      (CompareFileName(ExpandEnvironmentVariables(FPuttyPath), FDefaultPuttyPathOnly) ||
+       FileExists(ExpandEnvironmentVariables(FPuttyPath))))
   {
     FPuttyPath = FormatCommand(FPuttyPath, "");
   }
@@ -733,14 +740,11 @@ void __fastcall TGUIConfiguration::LoadSpecial(THierarchicalStorage * Storage)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::ModifyAll()
+void __fastcall TGUIConfiguration::Saved()
 {
-  TConfiguration::ModifyAll();
+  TConfiguration::Saved();
 
-  if (!FCopyParamListDefaults)
-  {
-    FCopyParamList->Modify();
-  }
+  FCopyParamList->Reset();
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -893,7 +897,13 @@ HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
   TPasLibModule * MainModule = FindModule(HInstance);
   HANDLE Result = MainModule->ResInstance;
   MainModule->ResInstance = Instance;
+  CoreSetResourceModule(Instance);
   return Result;
+}
+//---------------------------------------------------------------------------
+HANDLE __fastcall TGUIConfiguration::GetResourceModule()
+{
+  return FindModule(HInstance)->ResInstance;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SetResourceModule(HANDLE Instance)
@@ -945,7 +955,7 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
       FLastLocalesExts = LocalesExts;
       FLocales->Clear();
 
-      TLanguages * Langs = Languages();
+      TLanguages * Langs = LanguagesDEPF();
       int Ext, Index, Count;
       char LocaleStr[255];
       LCID Locale;
@@ -1000,7 +1010,7 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
       for (int Index = 0; Index < Exts->Count; Index++)
       {
         if ((Exts->Objects[Index] == NULL) &&
-            (Exts->Strings[Index].Length() == 3) && 
+            (Exts->Strings[Index].Length() == 3) &&
             SameText(Exts->Strings[Index].SubString(1, 2), AdditionaLanguagePrefix))
         {
           AnsiString LangName = GetFileFileInfoString("LangName",
@@ -1114,4 +1124,3 @@ void __fastcall TGUIConfiguration::SetNewDirectoryProperties(
   SET_CONFIG_PROPERTY(NewDirectoryProperties);
 }
 //---------------------------------------------------------------------------
-

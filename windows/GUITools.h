@@ -21,7 +21,7 @@ bool __fastcall FileExistsEx(AnsiString Path);
 bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params);
 bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params,
   HANDLE & Handle);
-bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path, 
+bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path,
   const AnsiString Params, TProcessMessagesEvent ProcessMessages);
 bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Command,
   TProcessMessagesEvent ProcessMessages);

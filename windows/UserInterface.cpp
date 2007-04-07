@@ -5,8 +5,10 @@
 #include "ScpCommander.h"
 #include "ScpExplorer.h"
 
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Common.h>
+#include <Exceptions.h>
+#include "ProgParams.h"
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "TextsWin.h"
@@ -17,11 +19,21 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const AnsiString AppName = "WinSCP";
-const AnsiString AppNameVersion = "WinSCP3";
+const AnsiString AppNameVersion = "WinSCP";
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration()
 {
-  return new TWinConfiguration();
+  TConfiguration * Configuration = new TWinConfiguration();
+
+  TProgramParams * Params = TProgramParams::Instance();
+  AnsiString IniFileName = Params->SwitchValue("ini");
+  if (!IniFileName.IsEmpty())
+  {
+    IniFileName = ExpandFileName(ExpandEnvironmentVariables(IniFileName));
+    Configuration->IniFileStorageName = IniFileName;
+  }
+
+  return Configuration;
 }
 //---------------------------------------------------------------------------
 TCustomScpExplorerForm * __fastcall CreateScpExplorer()
@@ -65,7 +77,7 @@ void __fastcall ShowExtendedException(Exception * E)
   ShowExtendedExceptionEx(NULL, E);
 }
 //---------------------------------------------------------------------------
-void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
+void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   Exception * E)
 {
   if (!E->Message.IsEmpty())
@@ -80,8 +92,8 @@ void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell,
         bool CloseOnCompletion = (dynamic_cast<ESshTerminate*>(E) != NULL);
         Type = CloseOnCompletion ? qtInformation : qtError;
 
-        if (E->InheritsFrom(__classid(EFatal)) && (SecureShell != NULL) &&
-            (Manager != NULL) && (Manager->ActiveTerminal == SecureShell))
+        if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+            (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
         {
           if (CloseOnCompletion)
           {
@@ -205,20 +217,6 @@ void __fastcall DoProductLicence()
   DoLicenceDialog(lcWinScp);
 }
 //---------------------------------------------------------------------
-void __fastcall FormHelp(TForm * Form, TControl * Control)
-{
-  AnsiString Keyword;
-  if ((Control != NULL) && !Control->HelpKeyword.IsEmpty())
-  {
-    Keyword = Control->HelpKeyword;
-  }
-  else
-  {
-    Keyword = Form->HelpKeyword;
-  }
-  Application->HelpKeyword(Keyword);
-}
-//---------------------------------------------------------------------
 static inline void __fastcall GetToolbarKey(const AnsiString & ToolbarName,
   const AnsiString & Value, AnsiString & ToolbarKey)
 {
@@ -339,4 +337,64 @@ void __fastcall AddMenuSeparator(TTBCustomItem * Menu)
   Item->Caption = "-";
   Item->Hint = "E";
   Menu->Add(Item);
+}
+//---------------------------------------------------------------------------
+void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
+  TComponent * PopupComponent)
+{
+  TTBXPopupMenu * Menu = reinterpret_cast<TTBXPopupMenu *>(AMenu->Tag);
+  delete Menu;
+
+  Menu = CreateTBXPopupMenu(AMenu->Owner);
+  Menu->OnPopup = AMenu->OnPopup;
+  Menu->Items->SubMenuImages = AMenu->Images;
+  AMenu->Tag = reinterpret_cast<int>(Menu);
+
+  for (int Index = 0; Index < AMenu->Items->Count; Index++)
+  {
+    TMenuItem * AItem = AMenu->Items->Items[Index];
+    TTBCustomItem * Item;
+
+    // recurse not implemented yet
+    assert(AItem->Count == 0);
+
+    // see TB2DsgnConverter.pas DoConvert
+    if (AItem->Caption == "-")
+    {
+      Item = new TTBXSeparatorItem(Menu);
+    }
+    else
+    {
+      Item = new TTBXItem(Menu);
+      Item->Action = AItem->Action;
+      Item->AutoCheck = AItem->AutoCheck;
+      Item->Caption = AItem->Caption;
+      Item->Checked = AItem->Checked;
+      if (AItem->Default)
+      {
+        Item->Options = Item->Options << tboDefault;
+      }
+      Item->Enabled = AItem->Enabled;
+      Item->GroupIndex = AItem->GroupIndex;
+      Item->HelpContext = AItem->HelpContext;
+      Item->ImageIndex = AItem->ImageIndex;
+      Item->RadioItem = AItem->RadioItem;
+      Item->ShortCut = AItem->ShortCut;
+      Item->SubMenuImages = AItem->SubMenuImages;
+      Item->OnClick = AItem->OnClick;
+    }
+    Item->Hint = AItem->Hint;
+    Item->Tag = AItem->Tag;
+    Item->Visible = AItem->Visible;
+
+    Menu->Items->Add(Item);
+  }
+
+  Menu->PopupComponent = PopupComponent;
+  Menu->Popup(Point.x, Point.y);
+}
+//---------------------------------------------------------------------------
+void __fastcall UpgradeSpeedButton(TSpeedButton * /*Button*/)
+{
+  // no-op yet
 }

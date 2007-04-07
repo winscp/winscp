@@ -6,11 +6,10 @@
 
 #include <Common.h>
 #include <Configuration.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPThemes"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 __fastcall TGeneralSettingsFrame::TGeneralSettingsFrame(TComponent* Owner)

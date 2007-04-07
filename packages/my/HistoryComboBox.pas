@@ -14,11 +14,18 @@ const
   DefaultMaxHistorySize = 30;
 
 type
+  THistoryComboBox = class;
+
+  THistoryComboBoxGetData = procedure(Sender: THistoryComboBox; var Data: Pointer) of object;
+  THistoryComboBoxSetData = procedure(Sender: THistoryComboBox; Data: Pointer) of object;
+
   THistoryComboBox = class(TComboBox)
   private
     { Private declarations }
     FSaveOn: THistorySaveOn;
     FMaxHistorySize: Integer;
+    FOnGetData: THistoryComboBoxGetData;
+    FOnSetData: THistoryComboBoxSetData;
 
     procedure SetMaxHistorySize(AMaxHistorySize: Integer);
     function StoreSaveOn: Boolean;
@@ -28,6 +35,7 @@ type
     procedure DoExit; override;
     procedure DropDown; override;
     procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure Change; override;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -36,6 +44,8 @@ type
     { Published declarations }
     property SaveOn: THistorySaveOn read FSaveOn write FSaveOn stored StoreSaveOn;
     property MaxHistorySize: Integer read FMaxHistorySize write SetMaxHistorySize default DefaultMaxHistorySize;
+    property OnGetData: THistoryComboBoxGetData read FOnGetData write FOnGetData;
+    property OnSetData: THistoryComboBoxSetData read FOnSetData write FOnSetData;
   end;
 
 procedure Register;
@@ -54,12 +64,14 @@ begin
   inherited;
   FSaveOn := DefaultHistorySaveOn;
   FMaxHistorySize := DefaultMaxHistorySize;
+  FOnGetData := nil;
+  FOnSetData := nil;
 end;
 
 procedure THistoryComboBox.KeyDown(var Key: Word; Shift: TShiftState);
 begin
   if ((Key = VK_DOWN) or (Key = VK_UP)) and
-     (not (ssAlt in Shift)) then
+     (not (ssAlt in Shift)) and (soDropDown in SaveOn) then
       if Items.IndexOf(Text) < 0 then SaveToHistory;
   inherited;
 end;
@@ -91,15 +103,32 @@ begin
   Self.Perform(CB_SETDROPPEDWIDTH, ItemWidth, 0);
 end;
 
+procedure THistoryComboBox.Change;
+var
+  Index: Integer;
+begin
+  inherited Change;
+  if Assigned(OnSetData) then
+  begin
+    // note that ItemIndex is not reliable
+    Index := Items.IndexOf(Text);
+    if Index >= 0 then OnSetData(Self, Items.Objects[Index]);
+  end;
+end;
+
 procedure THistoryComboBox.SaveToHistory;
 var
   T: AnsiString;
+  Data: Pointer;
 begin
   T := Text;
   if T <> '' then
   begin
     while Items.IndexOf(T) >= 0 do Items.Delete(Items.IndexOf(T));
-    Items.Insert(0, T);
+    Data := nil;
+    if Assigned(OnGetData) then
+      OnGetData(Self, Data);
+    Items.InsertObject(0, T, TObject(Data));
     ItemIndex := 0;
   end;
   while Items.Count > FMaxHistorySize do

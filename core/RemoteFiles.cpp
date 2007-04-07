@@ -34,11 +34,6 @@ AnsiString __fastcall UnixExcludeTrailingBackslash(const AnsiString Path)
     else return Path;
 }
 //---------------------------------------------------------------------------
-Boolean __fastcall ComparePaths(const AnsiString Path1, const AnsiString Path2)
-{
-  return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
-}
-//---------------------------------------------------------------------------
 Boolean __fastcall UnixComparePaths(const AnsiString Path1, const AnsiString Path2)
 {
   return (UnixIncludeTrailingBackslash(Path1) == UnixIncludeTrailingBackslash(Path2));
@@ -77,6 +72,18 @@ AnsiString __fastcall UnixExtractFileExt(const AnsiString Path)
   AnsiString FileName = UnixExtractFileName(Path);
   int Pos = FileName.LastDelimiter(".");
   return (Pos > 0) ? Path.SubString(Pos, Path.Length() - Pos + 1) : AnsiString();
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall ExtractFileName(const AnsiString & Path, bool Unix)
+{
+  if (Unix)
+  {
+    return UnixExtractFileName(Path);
+  }
+  else
+  {
+    return ExtractFileName(Path);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExtractCommonPath(TStrings * Files, AnsiString & Path)
@@ -140,6 +147,37 @@ bool __fastcall IsUnixHiddenFile(const AnsiString FileName)
 {
   return (FileName != ROOTDIRECTORY) && (FileName != PARENTDIRECTORY) &&
     !FileName.IsEmpty() && (FileName[1] == '.');
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall AbsolutePath(const AnsiString & Base, const AnsiString & Path)
+{
+  AnsiString Result;
+  if (Path.IsEmpty())
+  {
+    Result = Base;
+  }
+  else if (Path[1] == '/')
+  {
+    Result = UnixExcludeTrailingBackslash(Path);
+  }
+  else
+  {
+    Result = UnixIncludeTrailingBackslash(
+      UnixIncludeTrailingBackslash(Base) + Path);
+    int P;
+    while ((P = Result.Pos("/../")) > 0)
+    {
+      int P2 = Result.SubString(1, P-1).LastDelimiter("/");
+      assert(P2 > 0);
+      Result.Delete(P2, P - P2 + 3);
+    }
+    while ((P = Result.Pos("/./")) > 0)
+    {
+      Result.Delete(P, 2);
+    }
+    Result = UnixExcludeTrailingBackslash(Result);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall FromUnixPath(const AnsiString Path)
@@ -277,10 +315,14 @@ AnsiString __fastcall MakeFileList(TStrings * FileList)
 void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
   TModificationFmt Precision)
 {
-  if (Precision != mfFull)
+  if (Precision == mfNone)
+  {
+    DateTime = double(0);
+  }
+  else if (Precision != mfFull)
   {
     unsigned short Y, M, D, H, N, S, MS;
-  
+
     DecodeDate(DateTime, Y, M, D);
     DecodeTime(DateTime, H, N, S, MS);
     switch (Precision)
@@ -309,6 +351,8 @@ AnsiString __fastcall UserModificationStr(TDateTime DateTime,
 {
   switch (Precision)
   {
+    case mfNone:
+      return "";
     case mfMDY:
       return FormatDateTime("ddddd", DateTime);
     case mfMDHM:
@@ -573,9 +617,12 @@ AnsiString __fastcall TRemoteFile::GetModificationStr()
   Modification.DecodeTime(&Hour, &Min, &Sec, &MSec);
   switch (FModificationFmt)
   {
+    case mfNone:
+      return "";
+
     case mfMDY:
       return FORMAT("%3s %2d %2d", (EngShortMonthNames[Month-1], Day, Year));
-        
+
     case mfMDHM:
       return FORMAT("%3s %2d %2d:%2.2d",
         (EngShortMonthNames[Month-1], Day, Hour, Min));
@@ -583,9 +630,9 @@ AnsiString __fastcall TRemoteFile::GetModificationStr()
     default:
       assert(false);
       // fall thru
-            
+
     case mfFull:
-      return FORMAT("%3s %2d %2d:%2.2d:%2.2d %4d", 
+      return FORMAT("%3s %2d %2d:%2.2d:%2.2d %4d",
         (EngShortMonthNames[Month-1], Day, Hour, Min, Sec, Year));
   }
 }
@@ -629,6 +676,7 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     #define GETCOL { GETNCOL; Line = TrimLeft(Line); }
 
     // Rights string may contain special permission attributes (S,t, ...)
+    // (TODO: maybe no longer necessary, once we can handle the special permissions)
     Rights->AllowUndef = True;
     // On some system there is no space between permissions and node blocks count columns
     // so we get only first 9 characters and trim all following spaces (if any)
@@ -795,7 +843,7 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
       {
         assert(Terminal != NULL);
         FModification = AdjustDateTimeFromUnix(FModification,
-          Terminal->SessionData->ConsiderDST);
+          Terminal->SessionData->DSTMode);
       }
 
       if (double(FLastAccess) == 0)
@@ -898,7 +946,7 @@ void __fastcall TRemoteFile::FindLinkedFile()
     catch (Exception &E)
     {
       if (E.InheritsFrom(__classid(EFatal))) throw;
-        else Terminal->DoHandleExtendedException(&E);
+        else Terminal->Log->AddException(&E);
     }
   }
 }
@@ -906,10 +954,16 @@ void __fastcall TRemoteFile::FindLinkedFile()
 AnsiString __fastcall TRemoteFile::GetListingStr()
 {
   // note that ModificationStr is longer than 12 for mfFull
+  AnsiString LinkPart;
+  // expanded from ?: to avoid memory leaks
+  if (IsSymLink)
+  {
+    LinkPart = AnsiString(SYMLINKSTR) + LinkTo;
+  }
   return Format("%s%s %3s %-8s %-8s %9s %-12s %s%s", ARRAYOFCONST((
     Type, Rights->Text, IntToStr(INodeBlocks), Owner,
     Group, IntToStr(Size), ModificationStr, FileName,
-    (IsSymLink ? AnsiString(SYMLINKSTR) + LinkTo : AnsiString()))));
+    LinkPart)));
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRemoteFile::GetFullFileName() const
@@ -956,7 +1010,8 @@ void __fastcall TRemoteFile::SetTerminal(TTerminal * value)
 //---------------------------------------------------------------------------
 __fastcall TRemoteDirectoryFile::TRemoteDirectoryFile() : TRemoteFile()
 {
-  Modification = Now();
+  Modification = double(0);
+  ModificationFmt = mfNone;
   LastAccess = Modification;
   Type = 'D';
   Size = 0;
@@ -1241,9 +1296,9 @@ bool __fastcall TRemoteDirectoryCache::GetFileList(const AnsiString Directory,
 void __fastcall TRemoteDirectoryCache::AddFileList(TRemoteFileList * FileList)
 {
   // file list cannot be cached already with only one thread, but it can be
-  // when directory is loaded by secondary terminal   
+  // when directory is loaded by secondary terminal
   ClearFileList(FileList->Directory, false);
-  
+
   assert(FileList);
   TRemoteFileList * Copy = new TRemoteFileList();
   FileList->DuplicateTo(Copy);
@@ -1411,7 +1466,15 @@ bool __fastcall TRemoteDirectoryChangesCache::DirectoryChangeKey(
     Result = !SourceDir.IsEmpty() || Absolute;
     if (Result)
     {
-      Key = Absolute ? Change : SourceDir + "," + Change;
+      // expanded from ?: to avoid memory leaks
+      if (Absolute)
+      {
+        Key = Change;
+      }
+      else
+      {
+        Key = SourceDir + "," + Change;
+      }
     }
   }
   return Result;
@@ -1724,6 +1787,18 @@ void __fastcall TRights::SetOctal(AnsiString value)
       ((AValue[4] - '0') << 0));
   }
   FUnknown = false;
+}
+//---------------------------------------------------------------------------
+unsigned long __fastcall TRights::GetNumberDecadic() const
+{
+  unsigned long N = NumberSet; // used to be "Number"
+  unsigned long Result =
+      ((N & 07000) / 01000 * 1000) +
+      ((N & 00700) /  0100 *  100) +
+      ((N & 00070) /   010 *   10) +
+      ((N & 00007) /    01 *    1);
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRights::GetOctal() const
@@ -2067,7 +2142,7 @@ void __fastcall TRemoteProperties::Save(THierarchicalStorage * Storage) const
 {
   Storage->WriteBinaryData(AnsiString("Valid"),
     static_cast<const void *>(&Valid), sizeof(Valid));
-  
+
   if (Valid.Contains(vpRights))
   {
     Storage->WriteString("Rights", Rights.Text);
@@ -2075,4 +2150,3 @@ void __fastcall TRemoteProperties::Save(THierarchicalStorage * Storage) const
 
   // TODO
 }
-

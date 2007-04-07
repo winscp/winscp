@@ -8,21 +8,20 @@
 #include <WinConfiguration.h>
 #include <WinInterface.h>
 #include <GUITools.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include "CustomCommand.h"
 #include "VCLCommon.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPThemes"
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoCustomCommandDialog(AnsiString & Description,
   AnsiString & Command, int & Params, const TCustomCommands * CustomCommands,
-  TCustomCommandsMode Mode, TCustomCommandValidate OnValidate)
+  TCustomCommandsMode Mode, int Options, TCustomCommandValidate OnValidate)
 {
   bool Result;
-  TCustomCommandDialog * Dialog = new TCustomCommandDialog(Application);
+  TCustomCommandDialog * Dialog = new TCustomCommandDialog(Application, Options);
   try
   {
     Dialog->Description = Description;
@@ -46,13 +45,14 @@ bool __fastcall DoCustomCommandDialog(AnsiString & Description,
   return Result;
 }
 //---------------------------------------------------------------------------
-__fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner)
+__fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner, unsigned int Options)
   : TForm(Owner)
 {
   UseSystemSettings(this);
   FCustomCommands = NULL;
   FMode = ccmEdit;
   FOnValidate = NULL;
+  FOptions = Options;
   InstallPathWordBreakProc(CommandEdit);
   HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT));
 }
@@ -60,6 +60,7 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner)
 void __fastcall TCustomCommandDialog::UpdateControls()
 {
   EnableControl(OkButton, !Command.IsEmpty() && !Description.IsEmpty());
+  EnableControl(RemoteCommandButton, FLAGCLEAR(FOptions, ccoDisableRemote));
 
   bool RemoteCommand = RemoteCommandButton->Checked;
   bool AllowRecursive = true;
@@ -209,7 +210,7 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
     if ((Mode == ccmAdd) || (Mode == ccmEdit))
     {
       AnsiString Desc = Description;
-    
+
       if (Desc.Pos("=") > 0)
       {
         DescriptionEdit->SetFocus();
@@ -227,7 +228,7 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
     try
     {
       bool RemoteCommand = RemoteCommandButton->Checked;
-      
+
       TRemoteCustomCommand RemoteCustomCommand;
       TLocalCustomCommand LocalCustomCommand;
       TFileCustomCommand * FileCustomCommand =
@@ -258,4 +259,19 @@ void __fastcall TCustomCommandDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TCustomCommandDialog::CommandEditGetData(
+  THistoryComboBox * /*Sender*/, Pointer & Data)
+{
+  Data = reinterpret_cast<void *>(ccSet | Params);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandDialog::CommandEditSetData(
+  THistoryComboBox * /*Sender*/, Pointer Data)
+{
+  int IData = reinterpret_cast<int>(Data);
+  if (FLAGSET(IData, ccSet))
+  {
+    Params = (IData & ~ccSet);
+  }
+}
+//---------------------------------------------------------------------------

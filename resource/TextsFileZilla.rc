@@ -1,0 +1,57 @@
+#include "TextsFileZilla.h"
+
+STRINGTABLE
+BEGIN
+  IDS_ERRORMSG_NAMEINUSE, "File already exists"
+  IDS_ERRORMSG_PROXY_AUTHNOLOGON, "Proxy requires authentication"
+  IDS_ERRORMSG_PROXY_AUTHTYPEUNKNOWN, "Required authtype reported by proxy server is unknown or not supported"
+  IDS_ERRORMSG_PROXY_CANTRESOLVEHOST, "Can't resolve host of proxy server"
+  IDS_ERRORMSG_PROXY_NOCONN, "Can't connect to proxy server"
+  IDS_ERRORMSG_PROXY_REQUESTFAILED, "Proxy request failed, can't connect through proxy server"
+END
+
+STRINGTABLE
+BEGIN
+  IDS_ERRORMSG_TIMEOUT, "Timeout detected."
+  IDS_ERRORMSG_UPLOADABORTED, "Upload aborted"
+END
+
+STRINGTABLE
+BEGIN
+  IDS_ERRORMSG_CANTOPENTRANSFERCHANNEL, "Transfer channel can't be opened. Reason: %s"
+  IDS_ERRORMSG_CANTRESOLVEHOST, "Can't resolve host name"
+  IDS_ERRORMSG_CANTRESUME, "Resume command not supported by server, overwriting file."
+  IDS_ERRORMSG_CANTRESUME_FINISH, "Resume command not supported by server, but local and remote filesize are equal."
+  IDS_ERRORMSG_CANTSENDCOMMAND, "Unable to send command. Disconnected."
+  IDS_ERRORMSG_DOWNLOADABORTED, "Download aborted"
+END
+
+STRINGTABLE
+BEGIN
+  IDS_ERRORMSG_CANTCREATEDUETOPORTRANGE, "Could not create socket in the specified port range."
+  IDS_ERRORMSG_CANTGETLIST, "Could not retrieve directory listing"
+END
+
+STRINGTABLE
+BEGIN
+  IDS_STATUSMSG_CONNECTED, "Connected"
+  IDS_STATUSMSG_CONNECTEDWITH, "Connected with %s. Waiting for welcome message..."
+  IDS_STATUSMSG_CONNECTING, "Connecting to %s ..."
+  IDS_STATUSMSG_DIRLISTSUCCESSFUL, "Directory listing successful"
+  IDS_STATUSMSG_DISCONNECTED, "Disconnected from server"
+  IDS_STATUSMSG_DOWNLOADSTART, "Starting download of %s"
+  IDS_STATUSMSG_DOWNLOADSUCCESSFUL, "Download successful"
+  IDS_STATUSMSG_FWCONNECT, "Trying to access %s through ftp proxy..."
+END
+
+STRINGTABLE
+BEGIN
+  IDS_STATUSMSG_RETRIEVINGDIRLIST, "Retrieving directory listing..."
+  IDS_STATUSMSG_UPLOADSTART, "Starting upload of %s"
+  IDS_STATUSMSG_UPLOADSUCCESSFUL, "Upload successful"
+END
+
+STRINGTABLE
+BEGIN
+  IDS_ERRORMSG_SETFILEPOINTER, "Could not set file pointer"
+END

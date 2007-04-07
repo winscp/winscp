@@ -3,7 +3,7 @@
 #pragma hdrstop
 
 #include <Common.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Queue.h>
 #include <TextsWin.h>
 #include <GUITools.h>

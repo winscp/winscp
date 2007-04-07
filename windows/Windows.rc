@@ -1,9 +1,10 @@
+#include "..\\resource\\TextsFileZilla.rc"
 #include "..\\resource\\TextsCore1.rc"
 #include "..\\resource\\TextsCore2.rc"
 #include "..\\resource\\TextsWin1.rc"
 #include "..\\resource\\TextsWin2.rc"
 
-1 24 "WinSCP3.exe.manifest"
+1 24 "WinSCP.exe.manifest"
 
 LICENCE RCDATA "Licence.txt"
 LICENCE_PUTTY RCDATA "LicencePuTTY.txt"

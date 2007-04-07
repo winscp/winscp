@@ -70,7 +70,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     ModalResult = 2
     TabOrder = 6
   end
-  object BookmarksGroup: TXPGroupBox
+  object BookmarksGroup: TGroupBox
     Left = 8
     Top = 56
     Width = 386

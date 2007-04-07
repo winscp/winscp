@@ -2,7 +2,7 @@
 #ifndef QueueH
 #define QueueH
 //---------------------------------------------------------------------------
-#include "SecureShell.h"
+#include "Terminal.h"
 #include "FileOperationProgress.h"
 //---------------------------------------------------------------------------
 class TSimpleThread
@@ -56,6 +56,9 @@ typedef void __fastcall (__closure * TQueueListUpdate)
   (TTerminalQueue * Queue);
 typedef void __fastcall (__closure * TQueueItemUpdateEvent)
   (TTerminalQueue * Queue, TQueueItem * Item);
+enum TQueueEvent { qeEmpty, qePendingUserAction };
+typedef void __fastcall (__closure * TQueueEventEvent)
+  (TTerminalQueue * Queue, TQueueEvent Event);
 //---------------------------------------------------------------------------
 class TTerminalQueue : public TSignalThread
 {
@@ -78,6 +81,7 @@ public:
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
   __property TQueueListUpdate OnListUpdate = { read = FOnListUpdate, write = FOnListUpdate };
   __property TQueueItemUpdateEvent OnQueueItemUpdate = { read = FOnQueueItemUpdate, write = FOnQueueItemUpdate };
+  __property TQueueEventEvent OnEvent = { read = FOnEvent, write = FOnEvent };
 
 protected:
   TQueryUserEvent FOnQueryUser;
@@ -85,6 +89,7 @@ protected:
   TExtendedExceptionEvent FOnShowExtendedException;
   TQueueItemUpdateEvent FOnQueueItemUpdate;
   TQueueListUpdate FOnListUpdate;
+  TQueueEventEvent FOnEvent;
   TTerminal * FTerminal;
   TConfiguration * FConfiguration;
   TSessionData * FSessionData;
@@ -94,6 +99,7 @@ protected:
   int FFreeTerminals;
   TList * FTerminals;
   int FTemporaryTerminals;
+  int FOverallTerminals;
   int FTransfersLimit;
   TDateTime FIdleInterval;
   TDateTime FLastIdle;
@@ -116,12 +122,13 @@ protected:
   void __fastcall DoQueryUser(TObject * Sender, const AnsiString Query,
     TStrings * MoreMessages, int Answers, const TQueryParams * Params, int & Answer,
     TQueryType Type, void * Arg);
-  void __fastcall DoPromptUser(TSecureShell * SecureShell, AnsiString Prompt,
+  void __fastcall DoPromptUser(TTerminal * Terminal, AnsiString Prompt,
     TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg);
-  void __fastcall DoShowExtendedException(TSecureShell * SecureShell,
+  void __fastcall DoShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall DoQueueItemUpdate(TQueueItem * Item);
   void __fastcall DoListUpdate();
+  void __fastcall DoEvent(TQueueEvent Event);
 
   void __fastcall SetTransfersLimit(int value);
   bool __fastcall GetIsEmpty();

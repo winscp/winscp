@@ -6,13 +6,12 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <XPThemes.hpp>
 #include "CopyParam.h"
 //---------------------------------------------------------------------------
 class TSymlinkDialog : public TForm
 {
 __published:
-  TXPGroupBox *SymlinkGroup;
+  TGroupBox *SymlinkGroup;
   TButton *OkButton;
   TButton *CancelButton;
   TLabel *FileNameLabel;

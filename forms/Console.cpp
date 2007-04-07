@@ -9,7 +9,7 @@
 
 #include <TextsWin.h>
 #include <Interface.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 
 #include <VCLCommon.h>
 #include <CustomWinConfiguration.h>
@@ -37,6 +37,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
     : TForm(AOwner)
 {
   FTerminal = NULL;
+  FClearExceptionOnFail = false;
   FOldChangeDirectory = NULL;
   FPrevTerminalClose = NULL;;
   FLastTerminal = NULL;
@@ -63,6 +64,11 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
   {
     if (FTerminal)
     {
+      if (FClearExceptionOnFail)
+      {
+        FTerminal->ExceptionOnFail = false;
+        FClearExceptionOnFail = false;
+      }
       assert(FTerminal->OnClose == TerminalClose);
       FTerminal->OnClose = FPrevTerminalClose;
       assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
@@ -115,7 +121,7 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
         TStrings * ALog = const_cast<TStrings *>(Log);
         for (int i = 0; i < ALog->Count; i++)
         {
-          AddLine(llOutput, ALog->Strings[i]);
+          AddLine(ALog->Strings[i], false);
         }
       }
       __finally
@@ -129,6 +135,7 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
       CommandEdit->Text = Command;
       DoExecuteCommand();
     }
+    UpdateControls();
     ShowModal();
 
     TConsoleWinConfiguration ConsoleWin = CustomWinConfiguration->ConsoleWin;
@@ -169,17 +176,20 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
 {
   CommandEdit->SelectAll();
   FTerminal->ExceptionOnFail = true;
+  FClearExceptionOnFail = true;
   try
   {
     AnsiString Command = CommandEdit->Text;
     OutputMemo->Lines->Add(FORMAT("%s$ %s", (FTerminal->CurrentDirectory, Command)));
-    FTerminal->AnyCommand(Command, DoLogAddLine);
+    FTerminal->AnyCommand(Command, AddLine);
   }
   __finally
   {
     if (FTerminal)
     {
       FTerminal->ExceptionOnFail = false;
+      assert(FClearExceptionOnFail);
+      FClearExceptionOnFail = false;
       if (FTerminal->Active)
       {
         FTerminal->ReadCurrentDirectory();
@@ -197,7 +207,7 @@ void __fastcall TConsoleDialog::ExecuteCommand()
   catch(Exception & E)
   {
     assert(FLastTerminal != NULL);
-    FLastTerminal->DoShowExtendedException(&E);
+    FLastTerminal->ShowExtendedException(&E);
   }
 }
 //---------------------------------------------------------------------------
@@ -206,15 +216,8 @@ void __fastcall TConsoleDialog::CommandEditChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::DoLogAddLine(TObject* /*Sender*/,
-  TLogLineType Type, const AnsiString AddedLine)
+void __fastcall TConsoleDialog::AddLine(const AnsiString & Line, bool /*StdError*/)
 {
-  AddLine(Type, AddedLine);
-}
-//---------------------------------------------------------------------------
-void __fastcall TConsoleDialog::AddLine(TLogLineType Type, const AnsiString & Line)
-{
-  assert((Type == llOutput) || (Type == llStdError));
   if (!Line.IsEmpty())
   {
     OutputMemo->Lines->Add(Line);
@@ -309,4 +312,9 @@ void __fastcall TConsoleDialog::FormShow(TObject * /*Sender*/)
   FAutoBounds = BoundsRect;
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TConsoleDialog::OutputMemoContextPopup(TObject * Sender,
+  TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------

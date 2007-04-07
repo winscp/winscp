@@ -10,7 +10,7 @@
 #include <FileCtrl.hpp>
 
 #ifndef DESIGN_ONLY
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Terminal.h>
 #include <WinConfiguration.h>
 #endif
@@ -389,7 +389,13 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMA &DispI
       AnsiString Value;
       switch (DispInfo.iSubItem) {
         case uvName: Value = File->FileName; break;
-        case uvSize: Value = (!File->IsDirectory ? FormatFloat("#,##0", File->Size) : AnsiString()); break;
+        case uvSize:
+          // expanded from ?: to avoid memory leaks
+          if (!File->IsDirectory)
+          {
+            Value = FormatFloat("#,##0", File->Size);
+          }
+          break;
         case uvChanged: Value = File->UserModificationStr; break;
         case uvRights: Value = File->RightsStr; break;
         case uvOwner: Value = File->Owner; break;
@@ -825,6 +831,10 @@ TDateTime __fastcall TUnixDirView::ItemFileTime(TListItem * Item,
 #ifndef DESIGN_ONLY
   switch (ITEMFILE->ModificationFmt)
   {
+    case mfNone:
+      Precision = tpNone;
+      break;
+
     case mfMDHM:
       Precision = tpMinute;
       break;
@@ -866,5 +876,3 @@ void __fastcall TUnixDirView::AddToDragFileList(TFileList * FileList,
   #endif
   FileList->AddItem(NULL, FileName);
 }
-
-

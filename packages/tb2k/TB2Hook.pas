@@ -154,7 +154,7 @@ var
   T: THookType;
 begin
   { Don't increment reference counts for hook types that were already
-    installed previously } 
+    installed previously }
   ATypes := ATypes - InstalledTypes;
 
   { Increment reference counts first. This should never raise an exception. }

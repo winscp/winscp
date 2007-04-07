@@ -2,7 +2,7 @@
 #define FileInfoH
 
 struct TTranslation {
-	Word Language, CharSet;
+  Word Language, CharSet;
 };
 
 // Return pointer to file version info block
@@ -26,6 +26,6 @@ AnsiString __fastcall GetLanguage(Word Language);
 // Return the value of the specified file version info string using the
 // specified translation
 AnsiString __fastcall GetFileInfoString(void * FileInfo,
-	TTranslation Translation, AnsiString StringName);
+  TTranslation Translation, AnsiString StringName);
 
 #endif // FileInfoH

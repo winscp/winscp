@@ -17,7 +17,6 @@
 #include <ComboEdit.hpp>
 #include <ActnList.hpp>
 #include <UpDownEdit.hpp>
-#include <XPThemes.hpp>
 #include <PasswordEdit.hpp>
 #include <Menus.hpp>
 //----------------------------------------------------------------------------
@@ -35,7 +34,7 @@ __published:
   TButton *CloseButton;
   TButton *AboutButton;
   TActionList *ActionList;
-  TAction *LoadSessionAction;
+  TAction *EditSessionAction;
   TAction *SaveSessionAction;
   TAction *DeleteSessionAction;
   TAction *ImportSessionsAction;
@@ -52,25 +51,19 @@ __published:
   TButton *NewButton;
   TTabSheet *BasicSheet;
   TTabSheet *AdvancedSheet;
-  TXPGroupBox *ProtocolGroup;
+  TGroupBox *ProtocolGroup;
   TLabel *Label7;
   TRadioButton *SshProt1Button;
   TRadioButton *SshProt2Button;
   TCheckBox *CompressionCheck;
   TTabSheet *EnvironmentSheet;
   TTabSheet *ScpSheet;
-  TXPGroupBox *OtherShellOptionsGroup;
+  TGroupBox *OtherShellOptionsGroup;
   TCheckBox *LookupUserGroupsCheck;
   TCheckBox *ClearAliasesCheck;
   TCheckBox *UnsetNationalVarsCheck;
   TCheckBox *Scp1CompatibilityCheck;
-  TXPGroupBox *ReturnVarGroup;
-  TRadioButton *ReturnVarAutodetectButton;
-  TRadioButton *ReturnVarEnterButton;
-  TComboBox *ReturnVarEdit;
-  TXPGroupBox *ShellGroup;
-  TRadioButton *DefaultShellButton;
-  TRadioButton *ShellEnterButton;
+  TGroupBox *ShellGroup;
   TComboBox *ShellEdit;
   TTabSheet *LogSheet;
   TLoggingFrame *LoggingFrame;
@@ -79,27 +72,26 @@ __published:
   TButton *PreferencesButton;
   TGeneralSettingsFrame *GeneralSettingsFrame;
   TPanel *LeftPanel;
-  TTreeView *AdvancedNavigationTree;
+  TTreeView *NavigationTree;
   TCheckBox *ShowAdvancedLoginOptionsCheck;
-  TXPGroupBox *BasicGroup;
+  TGroupBox *BasicGroup;
   TLabel *Label1;
   TLabel *Label2;
   TLabel *Label3;
   TLabel *Label4;
-  TLabel *Label5;
+  TLabel *PrivateKeyLabel;
   TEdit *HostNameEdit;
   TEdit *UserNameEdit;
   TPasswordEdit *PasswordEdit;
   TUpDownEdit *PortNumberEdit;
   TFilenameEdit *PrivateKeyEdit;
-  TTreeView *SimpleNavigationTree;
   TTabSheet *ConnSheet;
-  TXPGroupBox *TimeoutGroup;
+  TGroupBox *TimeoutGroup;
   TLabel *Label11;
   TLabel *Label12;
   TUpDownEdit *TimeoutEdit;
   TTabSheet *ProxySheet;
-  TXPGroupBox *ProxyTypeGroup;
+  TGroupBox *ProxyTypeGroup;
   TRadioButton *ProxyNoneButton;
   TRadioButton *ProxyHTTPButton;
   TRadioButton *ProxySocks4Button;
@@ -112,11 +104,11 @@ __published:
   TLabel *ProxyUsernameLabel;
   TLabel *ProxyPasswordLabel;
   TPasswordEdit *ProxyPasswordEdit;
-  TXPGroupBox *ProxySettingsGroup;
+  TGroupBox *ProxySettingsGroup;
   TLabel *ProxyTelnetCommandLabel;
   TEdit *ProxyTelnetCommandEdit;
   TTabSheet *BugsSheet;
-  TXPGroupBox *BugsGroupBox;
+  TGroupBox *BugsGroupBox;
   TLabel *BugIgnore1Label;
   TComboBox *BugIgnore1Combo;
   TLabel *BugPlainPW1Label;
@@ -132,11 +124,10 @@ __published:
   TRadioButton *SshProt1onlyButton;
   TRadioButton *SshProt2onlyButton;
   TTabSheet *AuthSheet;
-  TXPGroupBox *AuthenticationGroup;
+  TGroupBox *AuthenticationGroup;
   TCheckBox *AuthTISCheck;
-  TCheckBox *AgentFwdCheck;
   TCheckBox *AuthKICheck;
-  TXPGroupBox *EncryptionGroup;
+  TGroupBox *EncryptionGroup;
   TListBox *CipherListBox;
   TLabel *Label8;
   TCheckBox *Ssh2LegacyDESCheck;
@@ -150,13 +141,10 @@ __published:
   TMenuItem *Cleanup1;
   TButton *ShellIconsButton;
   TAction *DesktopIconAction;
-  TXPGroupBox *EOLTypeGroup;
+  TGroupBox *EOLTypeGroup;
   TRadioButton *EOLTypeLFButton;
   TRadioButton *EOLTypeCRLFButton;
-  TXPGroupBox *TransferProtocolGroup;
-  TRadioButton *SFTPButton;
-  TRadioButton *SCPonlyButton;
-  TRadioButton *SFTPonlyButton;
+  TGroupBox *TransferProtocolGroup;
   TPopupMenu *IconsPopupMenu;
   TMenuItem *Desktopicon1;
   TAction *SendToHookAction;
@@ -176,7 +164,7 @@ __published:
   TMenuItem *CheckForUpdates1;
   TButton *SaveButton;
   TButton *LanguagesButton;
-  TXPGroupBox *PingGroup;
+  TGroupBox *PingGroup;
   TLabel *PingIntervalLabel;
   TUpDownEdit *PingIntervalSecEdit;
   TRadioButton *PingOffButton;
@@ -186,7 +174,7 @@ __published:
   TLabel *Label9;
   TCheckBox *AuthKIPasswordCheck;
   TTabSheet *DirectoriesSheet;
-  TXPGroupBox *DirectoriesGroup;
+  TGroupBox *DirectoriesGroup;
   TLabel *LocalDirectoryLabel;
   TLabel *RemoteDirectoryLabel;
   TLabel *LocalDirectoryDescLabel;
@@ -197,50 +185,48 @@ __published:
   TCheckBox *ResolveSymlinksCheck;
   TCheckBox *CacheDirectoryChangesCheck;
   TCheckBox *PreserveDirectoryChangesCheck;
-  TXPGroupBox *ConsiderDSTGroup;
-  TRadioButton *ConsiderDSTOnCheck;
-  TRadioButton *ConsiderDSTOffCheck;
+  TGroupBox *DSTModeGroup;
+  TRadioButton *DSTModeUnixCheck;
+  TRadioButton *DSTModeWinCheck;
   TCheckBox *AuthGSSAPICheck;
-  TXPGroupBox *RecycleBinGroup;
+  TGroupBox *RecycleBinGroup;
   TCheckBox *DeleteToRecycleBinCheck;
   TCheckBox *OverwrittenToRecycleBinCheck;
   TLabel *RecycleBinPathLabel;
   TEdit *RecycleBinPathEdit;
-  TXPGroupBox *ScpLsOptionsGroup;
+  TGroupBox *ScpLsOptionsGroup;
   TCheckBox *IgnoreLsWarningsCheck;
   TCheckBox *AliasGroupListCheck;
   TCheckBox *SCPLsFullTimeAutoCheck;
   TTabSheet *SftpSheet;
-  TXPGroupBox *SFTPBugsGroupBox;
+  TGroupBox *SFTPBugsGroupBox;
   TLabel *Label10;
   TLabel *Label36;
   TComboBox *SFTPBugSymlinkCombo;
   TTabSheet *KexSheet;
-  TXPGroupBox *KexOptionsGroup;
+  TGroupBox *KexOptionsGroup;
   TLabel *Label28;
   TListBox *KexListBox;
   TButton *KexUpButton;
   TButton *KexDownButton;
-  TXPGroupBox *KexReexchangeGroup;
+  TGroupBox *KexReexchangeGroup;
   TLabel *Label31;
   TUpDownEdit *RekeyTimeEdit;
   TLabel *Label32;
   TEdit *RekeyDataEdit;
-  TXPGroupBox *IPvGroup;
+  TGroupBox *IPvGroup;
   TRadioButton *IPAutoButton;
   TRadioButton *IPv4Button;
   TRadioButton *IPv6Button;
   TLabel *BugRekey2Label;
   TComboBox *BugRekey2Combo;
-  TXPGroupBox *SFTPProtocolGroup;
+  TGroupBox *SFTPProtocolGroup;
   TLabel *Label34;
   TLabel *Label35;
   TComboBox *SFTPMaxVersionCombo;
   TComboBox *SFTPBugUtfCombo;
   TComboBox *SFTPBugSignedTSCombo;
   TButton *HelpButton;
-  TRadioButton *ExternalSSHButton;
-  TRadioButton *ExternalSFTPButton;
   TButton *ColorButton;
   TPopupMenu *ColorPopupMenu;
   TMenuItem *ColorDefaultItem;
@@ -248,7 +234,40 @@ __published:
   TImageList *ColorImageList;
   TButton *RenameButton;
   TAction *RenameSessionAction;
-  TXPGroupBox *DirectoryOptionsGroup;
+  TGroupBox *DirectoryOptionsGroup;
+  TTabSheet *TunnelSheet;
+  TGroupBox *TunnelSessionGroup;
+  TLabel *Label6;
+  TLabel *Label14;
+  TLabel *Label15;
+  TLabel *Label16;
+  TLabel *Label18;
+  TEdit *TunnelHostNameEdit;
+  TEdit *TunnelUserNameEdit;
+  TPasswordEdit *TunnelPasswordEdit;
+  TUpDownEdit *TunnelPortNumberEdit;
+  TFilenameEdit *TunnelPrivateKeyEdit;
+  TLabel *Label19;
+  TComboBox *ReturnVarEdit;
+  TLabel *Label20;
+  TGroupBox *AuthenticationParamsGroup;
+  TCheckBox *GSSAPIFwdTGTCheck;
+  TCheckBox *AgentFwdCheck;
+  TLabel *GSSAPIServerRealmLabel;
+  TEdit *GSSAPIServerRealmEdit;
+  TCheckBox *TunnelCheck;
+  TGroupBox *TunnelOptionsGroup;
+  TLabel *Label21;
+  TComboBox *TunnelLocalPortNumberEdit;
+  TRadioButton *DSTModeKeepCheck;
+  TButton *UnixEnvironmentButton;
+  TButton *WindowsEnvironmentButton;
+  TComboBox *TransferProtocolCombo;
+  TLabel *Label22;
+  TCheckBox *AllowScpFallbackCheck;
+  TLabel *InsecureLabel;
+  TGroupBox *ConnectionGroup;
+  TCheckBox *FtpPasvModeCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -258,7 +277,7 @@ __published:
     TListItem *Item, AnsiString &InfoTip);
   void __fastcall SessionListViewKeyDown(TObject *Sender, WORD &Key,
     TShiftState Shift);
-  void __fastcall LoadSessionActionExecute(TObject *Sender);
+  void __fastcall EditSessionActionExecute(TObject *Sender);
   void __fastcall SaveSessionActionExecute(TObject *Sender);
   void __fastcall DeleteSessionActionExecute(TObject *Sender);
   void __fastcall ImportSessionsActionExecute(TObject *Sender);
@@ -304,10 +323,18 @@ __published:
     AnsiString & S);
   void __fastcall SessionListViewCompare(TObject * Sender, TListItem * Item1,
     TListItem * Item2, int Data, int & Compare);
+  void __fastcall UnixEnvironmentButtonClick(TObject *Sender);
+  void __fastcall WindowsEnvironmentButtonClick(TObject *Sender);
+  void __fastcall PathEditBeforeDialog(TObject *Sender, AnsiString &Name,
+          bool &Action);
+  void __fastcall TransferProtocolComboChange(TObject *Sender);
+  void __fastcall NavigationTreeCollapsing(TObject *Sender,
+          TTreeNode *Node, bool &AllowCollapse);
 
 private:
   int NoUpdate;
   TSessionData * FSessionData;
+  TSessionData * FEditingSessionData;
   TStoredSessionList * FStoredSessions;
   int FAlgDragSource, FAlgDragDest;
   int FOptions;
@@ -320,21 +347,25 @@ private:
   void * FSystemSettings;
   AnsiString FCurrentSessionName;
   TColor FColor;
+  AnsiString FBeforeDialogPath;
+  TStringList * FTreeLabels;
 
   void __fastcall LoadSession(TSessionData * aSessionData);
   void __fastcall UpdateControls();
   void __fastcall SetSessionData(TSessionData * value);
   TSessionData * __fastcall GetSessionData();
-  void __fastcall StoreSessions();
   void __fastcall SaveSession(TSessionData * aStoredSession);
   void __fastcall SetStoredSessions(TStoredSessionList * value);
   void __fastcall LoadSessions();
   void __fastcall LoadSessionItem(TListItem * Item);
   void __fastcall SetSelectedSession(TSessionData * value);
   TSessionData * __fastcall GetSelectedSession();
-  TTreeView * __fastcall GetNavigationTree();
   void __fastcall CMDialogKey(TWMKeyDown & Message);
+  void __fastcall WMHelp(TWMHelp & Message);
   void __fastcall InitializeBugsCombo(TComboBox * BugsCombo);
+  int __fastcall FSProtocolToIndex(TFSProtocol FSProtocol, bool & AllowScpFallback);
+  TFSProtocol __fastcall IndexToFSProtocol(int Index, bool AllowScpFallback);
+  void __fastcall UpdateNavigationTree();
 
 protected:
   void __fastcall Default();
@@ -345,7 +376,6 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   bool __fastcall AllowAlgDrag(TListBox * AlgListBox, int X, int Y);
   void __fastcall AlgMove(TListBox * AlgListBox, int Source, int Dest);
-  void __fastcall PrepareNavigationTree(TTreeView * Tree, bool ClearHints);
   void __fastcall SetOptions(int value);
   void __fastcall LocaleClick(TObject * Sender);
   void __fastcall LocaleGetClick(TObject * Sender);
@@ -353,8 +383,6 @@ protected:
   void __fastcall InitControls();
   void __fastcall ShowTabs(bool Show);
   void __fastcall VerifyKey(AnsiString FileName, bool TypeOnly);
-
-  __property TTreeView * NavigationTree = { read=GetNavigationTree };
 
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);

@@ -6,7 +6,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Synchronize'
-  ClientHeight = 399
+  ClientHeight = 429
   ClientWidth = 433
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -20,10 +20,10 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   OnShow = FormShow
   DesignSize = (
     433
-    399)
+    429)
   PixelsPerInch = 96
   TextHeight = 13
-  object DirectoriesGroup: TXPGroupBox
+  object DirectoriesGroup: TGroupBox
     Left = 8
     Top = 6
     Width = 417
@@ -49,7 +49,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Width = 83
       Height = 13
       Anchors = [akLeft, akTop, akRight]
-      Caption = 'Remo&te directory:'
+      Caption = 'R&emote directory:'
       FocusControl = RemoteDirectoryEdit
     end
     object RemoteDirectoryEdit: THistoryComboBox
@@ -91,90 +91,81 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object OkButton: TButton
     Left = 185
-    Top = 366
+    Top = 396
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 7
+    TabOrder = 8
   end
   object CancelButton: TButton
     Left = 267
-    Top = 366
+    Top = 396
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 8
+    TabOrder = 9
   end
-  object OptionsGroup: TXPGroupBox
+  object OptionsGroup: TGroupBox
     Left = 8
-    Top = 184
+    Top = 238
     Width = 268
-    Height = 97
+    Height = 73
     Caption = 'Synchronize options'
-    TabOrder = 2
+    TabOrder = 3
     object SynchronizeDeleteCheck: TCheckBox
       Left = 11
-      Top = 44
+      Top = 20
       Width = 126
       Height = 17
       Caption = '&Delete files'
-      TabOrder = 1
+      TabOrder = 0
       OnClick = ControlChange
     end
     object SynchronizeSelectedOnlyCheck: TCheckBox
       Left = 139
-      Top = 68
+      Top = 44
       Width = 123
       Height = 17
       Caption = 'Selected files o&nly'
-      TabOrder = 4
+      TabOrder = 3
       OnClick = ControlChange
     end
     object SynchronizeExistingOnlyCheck: TCheckBox
       Left = 139
-      Top = 44
+      Top = 20
       Width = 123
       Height = 17
       Caption = '&Existing files only'
-      TabOrder = 2
+      TabOrder = 1
       OnClick = ControlChange
     end
     object SynchronizePreviewChangesCheck: TCheckBox
       Left = 11
-      Top = 68
+      Top = 44
       Width = 126
       Height = 17
       Caption = 'Pre&view changes'
-      TabOrder = 3
-      OnClick = ControlChange
-    end
-    object SynchronizeTimestampCheck: TCheckBox
-      Left = 11
-      Top = 20
-      Width = 246
-      Height = 17
-      Caption = 'Synchronize timestamps &only, not files'
-      TabOrder = 0
+      TabOrder = 2
       OnClick = ControlChange
     end
   end
   object TransferSettingsButton: TButton
     Left = 8
-    Top = 366
+    Top = 396
     Width = 129
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'Transfer settin&gs...'
-    TabOrder = 6
+    TabOrder = 7
     OnClick = TransferSettingsButtonClick
   end
-  object DirectionGroup: TXPGroupBox
+  object DirectionGroup: TGroupBox
     Left = 8
     Top = 130
     Width = 417
@@ -201,28 +192,28 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       OnClick = ControlChange
     end
     object SynchronizeLocalButton: TRadioButton
-      Left = 288
+      Left = 272
       Top = 20
-      Width = 110
+      Width = 137
       Height = 17
       Caption = '&Local'
       TabOrder = 2
       OnClick = ControlChange
     end
   end
-  object CompareCriterionsGroup: TXPGroupBox
+  object CompareCriterionsGroup: TGroupBox
     Left = 285
-    Top = 184
+    Top = 238
     Width = 140
-    Height = 97
-    Caption = 'Compare criteria'
-    TabOrder = 3
+    Height = 73
+    Caption = 'Comparison criteria'
+    TabOrder = 4
     object SynchronizeByTimeCheck: TCheckBox
       Left = 11
       Top = 20
       Width = 121
       Height = 17
-      Caption = '&Modification time'
+      Caption = 'M&odification time'
       TabOrder = 0
       OnClick = SynchronizeByTimeSizeCheckClick
     end
@@ -238,19 +229,19 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object SaveSettingsCheck: TCheckBox
     Left = 19
-    Top = 342
+    Top = 372
     Width = 246
     Height = 17
     Caption = 'Use &same options next time'
-    TabOrder = 5
+    TabOrder = 6
   end
-  object CopyParamGroup: TXPGroupBox
+  object CopyParamGroup: TGroupBox
     Left = 8
-    Top = 286
+    Top = 316
     Width = 417
     Height = 50
     Caption = 'Transfer settings'
-    TabOrder = 4
+    TabOrder = 5
     OnContextPopup = CopyParamGroupContextPopup
     OnDblClick = CopyParamGroupDblClick
     DesignSize = (
@@ -270,12 +261,48 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object HelpButton: TButton
     Left = 349
-    Top = 366
+    Top = 396
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
-    TabOrder = 9
+    TabOrder = 10
     OnClick = HelpButtonClick
+  end
+  object ModeGroup: TGroupBox
+    Left = 8
+    Top = 184
+    Width = 417
+    Height = 49
+    Anchors = [akLeft, akTop, akRight]
+    Caption = 'Mode'
+    TabOrder = 2
+    object SynchronizeFilesButton: TRadioButton
+      Left = 11
+      Top = 20
+      Width = 126
+      Height = 17
+      Caption = 'Synchronize &files'
+      TabOrder = 0
+      OnClick = ControlChange
+    end
+    object MirrorFilesButton: TRadioButton
+      Left = 139
+      Top = 20
+      Width = 131
+      Height = 17
+      Caption = '&Mirror files'
+      TabOrder = 1
+      OnClick = ControlChange
+    end
+    object SynchronizeTimestampsButton: TRadioButton
+      Left = 272
+      Top = 20
+      Width = 139
+      Height = 17
+      Caption = 'Synchronize &timestamps'
+      TabOrder = 2
+      OnClick = ControlChange
+    end
   end
 end

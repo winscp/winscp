@@ -107,4 +107,3 @@ void __fastcall TRightsExtFrame::CloseButtonClick(TObject * /*Sender*/)
   CloseUp();
 }
 //---------------------------------------------------------------------------
-

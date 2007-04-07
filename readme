@@ -9,8 +9,9 @@ Directory structure:
 /            project files of all native libraries and executables
 /components  native WinSCP visual components
 /console     console interface
-/core        core (non-visual) part of WinSCP (SSH, SCP and SFTP code)
+/core        core (non-visual) part of WinSCP (SSH, SFTP, FTP and SCP code)
 /dragext     drag&drop shell extension
+/filezilla   source code of FileZilla FTP client
 /forms       visual part of WinSCP (dialogs and windows)
 /lib         this is where linked libraries are stored during build
 /packages    general visual components (both mine and 3rd party)

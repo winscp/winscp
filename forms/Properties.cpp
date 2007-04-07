@@ -10,6 +10,7 @@
 #include <Terminal.h>
 #include <TextsWin.h>
 #include <GUITools.h>
+#include <CoreMain.h>
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
@@ -17,12 +18,14 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
-	const AnsiString Directory, TStrings * GroupList, TStrings * UserList,
-	TRemoteProperties * Properties, int AllowedChanges,
-  TTerminal * Terminal)
+  const AnsiString Directory, TStrings * GroupList, TStrings * UserList,
+  TRemoteProperties * Properties, int AllowedChanges,
+  TCalculateSizeEvent OnCalculateSize,
+  TCalculateChecksumEvent OnCalculateChecksum)
 {
-	bool Result;
-  TPropertiesDialog * PropertiesDialog = new TPropertiesDialog(Application);
+  bool Result;
+  TPropertiesDialog * PropertiesDialog = new TPropertiesDialog(Application,
+    OnCalculateSize, OnCalculateChecksum);
   try
   {
     PropertiesDialog->AllowedChanges = AllowedChanges;
@@ -31,8 +34,7 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     PropertiesDialog->GroupList = GroupList;
     PropertiesDialog->UserList = UserList;
     PropertiesDialog->FileProperties = *Properties;
-    PropertiesDialog->Terminal = Terminal;
-    
+
     Result = PropertiesDialog->Execute();
     if (Result)
     {
@@ -41,14 +43,18 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
   }
   __finally
   {
-  	delete PropertiesDialog;
+    delete PropertiesDialog;
   }
   return Result;
 }
 //---------------------------------------------------------------------
-__fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner)
-	: TForm(AOwner)
+__fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
+  TCalculateSizeEvent OnCalculateSize,
+  TCalculateChecksumEvent OnCalculateChecksum)
+  : TForm(AOwner)
 {
+  FOnCalculateSize = OnCalculateSize;
+  FOnCalculateChecksum = OnCalculateChecksum;
   RightsFrame->OnChange = ControlChange;
 
   FGroupsSet = False;
@@ -62,6 +68,8 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner)
   FFileList = new TStringList();
   FAllowCalculateStats = false;
   FStatsNotCalculated = false;
+  FChecksumLoaded = false;
+  FMultipleChecksum = false;
 
   UseSystemSettings(this);
 }
@@ -76,47 +84,24 @@ __fastcall TPropertiesDialog::~TPropertiesDialog()
 //---------------------------------------------------------------------
 bool __fastcall TPropertiesDialog::Execute()
 {
-  bool Result;
+  PageControl->ActivePage = CommonSheet;
+  if (AllowedChanges & cpGroup) ActiveControl = GroupComboBox;
+    else
+  if (AllowedChanges & cpOwner) ActiveControl = OwnerComboBox;
+    else
+  if (AllowedChanges & cpMode) ActiveControl = RightsFrame;
+    else ActiveControl = CancelButton;
 
-  FPrevTerminalClose = NULL;;
-  if (FTerminal)
-  {
-    FPrevTerminalClose = FTerminal->OnClose;
-    // used instead of previous TTerminalManager::OnChangeTerminal
-    FTerminal->OnClose = TerminalClose;
-  }
-  
-  try
-  {
-    if (AllowedChanges & cpGroup) ActiveControl = GroupComboBox;
-      else
-    if (AllowedChanges & cpOwner) ActiveControl = OwnerComboBox;
-      else
-    if (AllowedChanges & cpMode) ActiveControl = RightsFrame;
-      else ActiveControl = OkButton;
-    UpdateControls();
-    
-    Result = (ShowModal() == mrOk);
-  }
-  __finally
-  {
-    if (FTerminal)
-    {
-      assert(FTerminal->OnClose == TerminalClose);
-      FTerminal->OnClose = FPrevTerminalClose;
-    }
-  }
+  ChecksumAlgEdit->Text = GUIConfiguration->ChecksumAlg;
+  ResetChecksum();
+
+  UpdateControls();
+
+  bool Result = (ShowModal() == mrOk);
+
+  GUIConfiguration->ChecksumAlg = ChecksumAlgEdit->Text;
+
   return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::TerminalClose(TObject * Sender)
-{
-  Close();
-  Terminal = NULL;
-  if (FPrevTerminalClose)
-  {
-    FPrevTerminalClose(Sender);
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::SetFileList(TStrings * value)
@@ -142,6 +127,7 @@ void __fastcall TPropertiesDialog::LoadInfo()
     TCalculateSizeStats Stats;
 
     RightsFrame->AllowUndef = Multiple;
+    FMultipleChecksum = Multiple;
 
     if (!Multiple)
     {
@@ -168,6 +154,7 @@ void __fastcall TPropertiesDialog::LoadInfo()
       {
         FAllowCalculateStats = true;
         FStatsNotCalculated = true;
+        FMultipleChecksum = true;
       }
 
       RightsFrame->AllowAddXToDirectories = File->IsDirectory;
@@ -250,6 +237,8 @@ void __fastcall TPropertiesDialog::LoadInfo()
 
     FilesIconImage->Visible = Multiple;
     FileIconImage->Visible = !Multiple;
+    ChecksumGroup->Visible = !FMultipleChecksum;
+    ChecksumView->Visible = FMultipleChecksum;
   }
 }
 //---------------------------------------------------------------------------
@@ -268,7 +257,7 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
     AnsiString SizeUnorderedStr = FormatBytes(FilesSize, false);
     if (SizeStr != SizeUnorderedStr)
     {
-      SizeStr = FORMAT("%s (%s)", (SizeStr, SizeUnorderedStr)); 
+      SizeStr = FORMAT("%s (%s)", (SizeStr, SizeUnorderedStr));
     }
   }
 
@@ -326,7 +315,7 @@ void __fastcall TPropertiesDialog::SetFileProperties(TRemoteProperties value)
   FOrigProperties = value;
   FOrigProperties.Valid = Valid;
   FOrigProperties.Recursive = false;
-  
+
   if (value.Valid.Contains(vpRights))
   {
     RightsFrame->Rights = value.Rights;
@@ -392,7 +381,7 @@ void __fastcall TPropertiesDialog::UpdateControls()
   EnableControl(GroupComboBox, FAllowedChanges & cpGroup);
   EnableControl(OwnerComboBox, FAllowedChanges & cpOwner);
   EnableControl(RightsFrame, FAllowedChanges & cpMode);
-  CalculateSizeButton->Visible = Terminal && FAllowCalculateStats;
+  CalculateSizeButton->Visible = FAllowCalculateStats;
 
   if (!Multiple)
   {
@@ -410,6 +399,13 @@ void __fastcall TPropertiesDialog::UpdateControls()
     }
     RightsFrame->AllowUndef = AllowUndef;
   }
+
+  EnableControl(ChecksumSheet, ChecksumSupported());
+  EnableControl(ChecksumButton, ChecksumSheet->Enabled &&
+    !ChecksumAlgEdit->Text.IsEmpty());
+  // hide checksum edit at least if it is disabled to get rid of ugly
+  // visage on XP
+  ChecksumEdit->Visible = ChecksumEdit->Enabled;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TPropertiesDialog::GetMultiple()
@@ -471,12 +467,24 @@ void __fastcall TPropertiesDialog::SetAllowedChanges(int value)
 void __fastcall TPropertiesDialog::CalculateSizeButtonClick(
       TObject * /*Sender*/)
 {
-  assert(Terminal);
-  __int64 Size;
-  TCalculateSizeStats Stats;
-  Terminal->CalculateFilesSize(FileList, Size, 0, NULL, &Stats);
-  FStatsNotCalculated = false;
-  LoadStats(Size, Stats);
+  assert(FOnCalculateSize != NULL);
+
+  bool DoClose = false;
+  try
+  {
+    __int64 Size;
+    TCalculateSizeStats Stats;
+    FOnCalculateSize(FileList, Size, Stats, DoClose);
+    FStatsNotCalculated = false;
+    LoadStats(Size, Stats);
+  }
+  __finally
+  {
+    if (DoClose)
+    {
+      Close();
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::HelpButtonClick(TObject * /*Sender*/)
@@ -484,4 +492,107 @@ void __fastcall TPropertiesDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::ResetChecksum()
+{
+  ChecksumView->Items->Clear();
+  ChecksumEdit->Text = LoadStr(PROPERTIES_CHECKSUM_UNKNOWN);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::CalculateChecksum()
+{
+  assert(FOnCalculateChecksum != NULL);
 
+  ResetChecksum();
+  FChecksumLoaded = true;
+
+  bool DoClose = false;
+  try
+  {
+    FOnCalculateChecksum(ChecksumAlgEdit->Text, FFileList, CalculatedChecksum, DoClose);
+  }
+  __finally
+  {
+    if (DoClose)
+    {
+      Close();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::CalculatedChecksum(
+  const AnsiString & FileName, const AnsiString & /*Alg*/,
+  const AnsiString & Hash)
+{
+  if (FMultipleChecksum)
+  {
+    TListItem * Item = ChecksumView->Items->Add();
+    Item->Caption = FileName;
+    Item->SubItems->Add(Hash);
+  }
+  else
+  {
+    ChecksumEdit->Text = Hash;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::NeedChecksum()
+{
+  if (!FChecksumLoaded && ChecksumSupported())
+  {
+    CalculateChecksum();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TPropertiesDialog::ChecksumSupported()
+{
+  return (FOnCalculateChecksum != NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::ChecksumButtonClick(TObject * /*Sender*/)
+{
+  CalculateChecksum();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::PageControlChange(TObject * /*Sender*/)
+{
+  if (PageControl->ActivePage == ChecksumSheet)
+  {
+    NeedChecksum();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::ChecksumAlgEditChange(TObject * /*Sender*/)
+{
+  ResetChecksum();
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::CopyClick(TObject * /*Sender*/)
+{
+  TListView * ListView = dynamic_cast<TListView *>(ListViewMenu->PopupComponent);
+  assert(ListView != NULL);
+
+  int Count = 0;
+  AnsiString SingleText;
+  AnsiString Text;
+  TListItem * Item = ListView->GetNextItem(NULL, sdAll, TItemStates() << isSelected);
+  while (Item != NULL)
+  {
+    assert(Item->Selected);
+
+    SingleText = Item->SubItems->Strings[0];
+    Text += FORMAT("%s = %s\r\n", (Item->Caption, Item->SubItems->Strings[0]));
+    Count++;
+
+    Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+  }
+
+  CopyToClipboard(Count == 1 ? SingleText : Text);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::ChecksumViewContextPopup(
+  TObject * Sender, TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------

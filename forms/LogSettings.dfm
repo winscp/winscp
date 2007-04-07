@@ -16,7 +16,7 @@ object LoggingFrame: TLoggingFrame
     TabOrder = 0
     OnClick = DataChange
   end
-  object LoggingGroup: TXPGroupBox
+  object LoggingGroup: TGroupBox
     Left = 3
     Top = 32
     Width = 309
@@ -57,6 +57,8 @@ object LoggingFrame: TLoggingFrame
       Width = 255
       Height = 21
       AcceptFiles = True
+      OnBeforeDialog = LogFileNameEditBeforeDialog
+      OnAfterDialog = LogFileNameEditAfterDialog
       DefaultExt = 'log'
       Filter = 'Log files (*.log)|*.log|All files (*.*)|*.*'
       DialogOptions = [ofHideReadOnly, ofPathMustExist]
@@ -73,7 +75,7 @@ object LoggingFrame: TLoggingFrame
       Width = 129
       Height = 17
       Caption = 'Show log &window:'
-      TabOrder = 4
+      TabOrder = 5
       OnClick = DataChange
     end
     object LogWindowCompleteButton: TRadioButton
@@ -82,7 +84,7 @@ object LoggingFrame: TLoggingFrame
       Width = 233
       Height = 17
       Caption = 'Display &complete session'
-      TabOrder = 5
+      TabOrder = 6
       OnClick = DataChange
     end
     object LogWindowLinesButton: TRadioButton
@@ -91,7 +93,7 @@ object LoggingFrame: TLoggingFrame
       Width = 136
       Height = 17
       Caption = 'Display only &last '
-      TabOrder = 6
+      TabOrder = 7
       OnClick = DataChange
     end
     object LogWindowLinesEdit: TUpDownEdit
@@ -103,30 +105,30 @@ object LoggingFrame: TLoggingFrame
       Increment = 50
       MaxValue = 10000
       MinValue = 50
-      TabOrder = 7
+      TabOrder = 8
       OnChange = DataChange
     end
     object LogFilePanel: TPanel
       Left = 40
       Top = 93
-      Width = 255
+      Width = 185
       Height = 25
       Anchors = [akLeft, akTop, akRight]
       BevelOuter = bvNone
-      TabOrder = 3
+      TabOrder = 4
       object LogFileAppendButton: TRadioButton
         Left = 0
         Top = 4
-        Width = 129
+        Width = 97
         Height = 17
         Caption = '&Append'
         TabOrder = 0
         OnClick = DataChange
       end
       object LogFileOverwriteButton: TRadioButton
-        Left = 136
+        Left = 96
         Top = 4
-        Width = 113
+        Width = 89
         Height = 17
         Caption = '&Overwrite'
         TabOrder = 1
@@ -146,6 +148,18 @@ object LoggingFrame: TLoggingFrame
         'Normal'
         'Debug 1'
         'Debug 2')
+    end
+    object LogFileNameHintText: TStaticText
+      Left = 224
+      Top = 91
+      Width = 71
+      Height = 16
+      Alignment = taRightJustify
+      Anchors = [akTop, akRight]
+      AutoSize = False
+      Caption = '&patterns'
+      TabOrder = 3
+      TabStop = True
     end
   end
 end

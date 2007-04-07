@@ -822,6 +822,7 @@ extern PACKAGE Graphics::TColor __fastcall TBXStringToColor(AnsiString S);
 extern PACKAGE void __fastcall TBXGetColorValues(Classes::TGetStrProc Proc);
 extern PACKAGE void __fastcall TBXSetTheme(const AnsiString AThemeName);
 extern PACKAGE AnsiString __fastcall TBXCurrentTheme();
+extern PACKAGE TTBXPopupMenu* __fastcall CreateTBXPopupMenu(Classes::TComponent* Owner);
 
 }	/* namespace Tbx */
 using namespace Tbx;

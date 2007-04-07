@@ -3,7 +3,7 @@
 #pragma hdrstop
 
 #include <Common.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <TextsWin.h>
 #include "WinConfiguration.h"
 #include "EditorManager.h"
@@ -13,6 +13,7 @@
 __fastcall TEditorManager::TEditorManager()
 {
   FOnFileChange = NULL;
+  FOnFileReload = NULL;
   FOnFileEarlyClosed = NULL;
 }
 //---------------------------------------------------------------------------
@@ -21,7 +22,7 @@ __fastcall TEditorManager::~TEditorManager()
   for (unsigned int i = FFiles.size(); i > 0; i--)
   {
     TFileData * FileData = &FFiles[i - 1];
-    
+
     // pending should be only external editors and files being uploaded
     assert(FileData->Closed || FileData->External);
     assert(FileData->CloseFlag == NULL);
@@ -57,7 +58,7 @@ bool __fastcall TEditorManager::Empty(bool IgnoreClosed)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory, 
+bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
   const AnsiString OriginalFileName, const AnsiString SessionName,
   TObject *& Token, AnsiString & ExistingLocalDirectory)
 {
@@ -117,7 +118,7 @@ bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
       throw Exception(LoadStr(TOO_MANY_EDITORS));
     }
   }
-    
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -156,7 +157,7 @@ bool __fastcall TEditorManager::CloseInternalEditors(TNotifyEvent CloseCallback)
   for (unsigned int i = 0; i < FFiles.size(); i++)
   {
     TFileData * FileData = &FFiles[i];
-    
+
     if (!FileData->Closed && (FileData->Token != NULL))
     {
       Result = false;
@@ -290,12 +291,12 @@ bool __fastcall TEditorManager::EarlyClose(int Index)
 {
   TFileData * FileData = &FFiles[Index];
 
-  bool Result = 
+  bool Result =
     (FileData->Process != INVALID_HANDLE_VALUE) &&
-    (Now() - FileData->Opened <= 
+    (Now() - FileData->Opened <=
       TDateTime(0, 0, static_cast<unsigned short>(WinConfiguration->Editor.EarlyClose), 0)) &&
     (FOnFileEarlyClosed != NULL);
-    
+
   if (Result)
   {
     Result = false;
@@ -317,6 +318,17 @@ void __fastcall TEditorManager::FileChanged(TObject * Token)
   assert(!FFiles[Index].External);
 
   CheckFileChange(Index, true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorManager::FileReload(TObject * Token)
+{
+  int Index = FindFile(Token);
+
+  assert(Index >= 0);
+  TFileData * FileData = &FFiles[Index];
+  assert(!FileData->External);
+
+  OnFileReload(FileData->FileName, FileData->Data);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileClosed(TObject * Token)
@@ -531,4 +543,3 @@ int __fastcall TEditorManager::WaitFor(unsigned int Count, const HANDLE * Handle
   return Result;
 }
 //---------------------------------------------------------------------------
-

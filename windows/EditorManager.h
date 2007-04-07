@@ -20,6 +20,8 @@ struct TEditedFileData
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileChangedEvent)
   (const AnsiString FileName, const TEditedFileData & Data, HANDLE CompleteEvent);
+typedef void __fastcall (__closure * TEditedFileReloadEvent)
+  (const AnsiString FileName, const TEditedFileData & Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
   (const TEditedFileData & Data, bool * CloseFlag, bool & KeepOpen);
 //---------------------------------------------------------------------------
@@ -33,7 +35,7 @@ public:
   __fastcall ~TEditorManager();
 
   bool __fastcall Empty(bool IgnoreClosed);
-  bool __fastcall CanAddFile(const AnsiString RemoteDirectory, 
+  bool __fastcall CanAddFile(const AnsiString RemoteDirectory,
     const AnsiString OriginalFileName, const AnsiString SessionName,
     TObject *& Token,AnsiString & ExistingLocalDirectory);
   bool __fastcall CloseInternalEditors(TNotifyEvent CloseCallback);
@@ -47,11 +49,13 @@ public:
   void __fastcall Check();
 
   void __fastcall FileChanged(TObject * Token);
+  void __fastcall FileReload(TObject * Token);
   void __fastcall FileClosed(TObject * Token);
 
   void __fastcall ProcessFiles(TEditedFileProcessEvent Callback, void * Arg);
 
   __property TEditedFileChangedEvent OnFileChange = { read = FOnFileChange, write = FOnFileChange };
+  __property TEditedFileReloadEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
   __property TEditedFileEarlyClosedEvent OnFileEarlyClosed = { read = FOnFileEarlyClosed, write = FOnFileEarlyClosed };
 
 private:
@@ -77,6 +81,7 @@ private:
   std::vector<HANDLE> FProcesses;
   std::vector<HANDLE> FUploadCompleteEvents;
   TEditedFileChangedEvent FOnFileChange;
+  TEditedFileReloadEvent FOnFileReload;
   TEditedFileEarlyClosedEvent FOnFileEarlyClosed;
 
   void __fastcall AddFile(TFileData & FileData);

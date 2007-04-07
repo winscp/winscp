@@ -64,12 +64,12 @@ public:
   __property AnsiString Fingerprint = { read = GetFingerprint };
   __property bool IsSSH2 = { read = GetIsSSH2 };
   __property TKeyGeneratorState State = { read = FState };
-  
+
   __property int KeySize = { read = FKeySize, write = SetKeySize };
   __property TKeyType KeyType = { read = FKeyType, write = SetKeyType };
   __property TKeyGeneratorGenerating OnGenerating = { read = FOnGenerating, write = FOnGenerating };
   __property int PercentGenerated = { read = GetPercentGenerated };
   __property AnsiString PublicKey = { read = GetPublicKey };
-};     
+};
 //---------------------------------------------------------------------------
 #endif

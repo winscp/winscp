@@ -12,11 +12,14 @@
 #include <Tools.h>
 
 #include <FileCtrl.hpp>
-#include <XPThemes.hpp>
+#include <ThemeMgr.hpp>
+#include <PathLabel.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount)
+static TThemeManager * ThemeManager = NULL;
+//---------------------------------------------------------------------------
+void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount, int RightPad)
 {
   int OriginalWidth, NewWidth, i, CWidth, LastResizible;
 
@@ -40,7 +43,7 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount)
   }
 
   NewWidth = 0;
-  CWidth = ListView->ClientWidth;
+  CWidth = ListView->ClientWidth - RightPad;
   if ((ListView->VisibleRowCount < RowCount) &&
       (ListView->Width - ListView->ClientWidth < GetSystemMetrics(SM_CXVSCROLL)))
   {
@@ -61,6 +64,38 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount)
   ListView->Columns->Items[LastResizible]->Width = CWidth-NewWidth;
 }
 //---------------------------------------------------------------------------
+static void __fastcall SetParentColor(TControl * Control)
+{
+  TColor Color;
+  assert(ThemeManager != NULL);
+  if (ThemeManager->ThemesEnabled)
+  {
+    bool OnTabSheet = false;
+    TWinControl * Parent = Control->Parent;
+    while ((Parent != NULL) && !OnTabSheet)
+    {
+      TTabSheet * TabSheet = dynamic_cast<TTabSheet *>(Parent);
+      OnTabSheet = (TabSheet != NULL) && TabSheet->TabVisible;
+      Parent = Parent->Parent;
+    }
+
+    if (OnTabSheet)
+    {
+      Color = ThemeManager->GetColor(teTab, ::TABP_BODY, 0, ::TMT_FILLCOLORHINT);
+    }
+    else
+    {
+      Color = ThemeManager->GetColor(teWindow, ::WP_DIALOG, 0, ::TMT_FILLCOLOR);
+    }
+  }
+  else
+  {
+    Color = clBtnFace;
+  }
+
+  ((TEdit*)Control)->Color = Color;
+}
+//---------------------------------------------------------------------------
 void __fastcall EnableControl(TControl * Control, bool Enable)
 {
   if (Control->Enabled != Enable)
@@ -77,26 +112,145 @@ void __fastcall EnableControl(TControl * Control, bool Enable)
       Control->InheritsFrom(__classid(TCustomComboBox)) ||
       Control->InheritsFrom(__classid(TCustomListView)))
   {
-    if (Enable) ((TEdit*)Control)->Color = clWindow;
-      else ((TEdit*)Control)->Color = clBtnFace;
+    if (Enable)
+    {
+      ((TEdit*)Control)->Color = clWindow;
+    }
+    else
+    {
+      ((TEdit*)Control)->Color = clBtnFace;
+    }
   }
 };
 //---------------------------------------------------------------------------
+void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly)
+{
+  if (Control->InheritsFrom(__classid(TCustomEdit)))
+  {
+    ((TEdit*)Control)->ReadOnly = ReadOnly;
+    if (ReadOnly)
+    {
+      SetParentColor(Control);
+    }
+    else
+    {
+      ((TEdit*)Control)->Color = clWindow;
+    }
+  }
+  else
+  {
+    assert(false);
+  }
+}
+//---------------------------------------------------------------------------
 struct TSavedSystemSettings
 {
+  TCustomForm * Form;
   AnsiString FontName;
   bool Flipped;
+  TWndMethod OldWndProc;
 };
+//---------------------------------------------------------------------------
+static void __fastcall ThemeManagerAllowSubclassing(void * /*Data*/,
+  TThemeManager * /*Sender*/, TControl * Control, bool & Allow)
+{
+  TPathLabel * PathLabel = dynamic_cast<TPathLabel *>(Control);
+  // intent is to only exclude path labels on the main window
+  if ((PathLabel != NULL) && (PathLabel->FocusControl != NULL))
+  {
+    Allow = false;
+  }
+  // tree view on location profiles dialog occasionally does not show,
+  // it is unique in that is is placed on group box (however I'm not sure if
+  // it is the property that makes it not work)
+  if ((dynamic_cast<TTreeView *>(Control) != NULL) &&
+      (dynamic_cast<TCustomGroupBox *>(Control->Parent) != NULL))
+  {
+    Allow = false;
+  }
+}
+//---------------------------------------------------------------------------
+class TPublicControl : public TWinControl
+{
+friend TWndMethod __fastcall ControlWndProc(TWinControl * Control);
+};
+//---------------------------------------------------------------------------
+TWndMethod __fastcall ControlWndProc(TWinControl * Control)
+{
+  TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
+  return &PublicControl->WndProc;
+}
+//---------------------------------------------------------------------------
+inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
+  TMessage & Message)
+{
+  if ((Message.Msg == WM_SYSCOMMAND) &&
+      (Message.WParam == SC_CONTEXTHELP))
+  {
+    InvokeHelp(Form->ActiveControl);
+    Message.Result = 1;
+  }
+  else
+  {
+    WndProc(Message);
+  }
+}
+//---------------------------------------------------------------------------
+static void __fastcall FormWindowProc(void * Data, TMessage & Message)
+{
+  TCustomForm * Form = static_cast<TCustomForm *>(Data);
+  DoFormWindowProc(Form, ControlWndProc(Form), Message);
+}
+//---------------------------------------------------------------------------
+static void __fastcall FormWindowProcEx(void * Data, TMessage & Message)
+{
+  TSavedSystemSettings * SSettings = static_cast<TSavedSystemSettings *>(Data);
+  DoFormWindowProc(SSettings->Form, SSettings->OldWndProc, Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall InitSystemSettings(TComponent * Control)
+{
+  if (ThemeManager == NULL)
+  {
+    assert(Control->FindComponent("ThemeManager") == NULL);
+    ThemeManager = new TThemeManager(Control);
+    ThemeManager->Name = "ThemeManager";
+    // ListView subclassing breaks TDirView
+    ThemeManager->Options = (ThemeManager->Options >> toSubclassListView);
+    // Speed Button subclassing on rights frame does not work somehow
+    // and they are not used elsewhere
+    ThemeManager->Options = (ThemeManager->Options >> toSubclassSpeedButtons);
+    TAllowSubclassingEvent OnAllowSubclassing;
+    ((TMethod*)&OnAllowSubclassing)->Code = ThemeManagerAllowSubclassing;
+    ThemeManager->OnAllowSubclassing = OnAllowSubclassing;
+  }
+}
 //---------------------------------------------------------------------------
 // Settings that must be set as soon as possible.
 void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
 {
+  TWndMethod WindowProc;
+
   if (Settings)
   {
-    TSavedSystemSettings * SSettings = new TSavedSystemSettings();
+    TSavedSystemSettings * SSettings;
+    SSettings = new TSavedSystemSettings();
     *Settings = static_cast<void*>(SSettings);
+    SSettings->Form = Control;
     SSettings->FontName = Control->Font->Name;
+    SSettings->OldWndProc = Control->WindowProc;
+
+    ((TMethod*)&WindowProc)->Data = SSettings;
+    ((TMethod*)&WindowProc)->Code = FormWindowProcEx;
   }
+  else
+  {
+    ((TMethod*)&WindowProc)->Data = Control;
+    ((TMethod*)&WindowProc)->Code = FormWindowProc;
+  }
+
+  Control->WindowProc = WindowProc;
+
   assert(Control && Control->Font);
   Control->Font->Name = "MS Shell Dlg";
 
@@ -104,6 +258,12 @@ void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
   {
     // temporary help keyword to enable F1 key in all forms
     Control->HelpKeyword = "start";
+  }
+
+  // especially on login dialog, we need to reapply themes with language change
+  if (ThemeManager != NULL)
+  {
+    ThemeManager->CollectControls(Control);
   }
 };
 //---------------------------------------------------------------------------
@@ -133,21 +293,29 @@ void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings)
   UseSystemSettingsPost(Control, (Settings != NULL) ? *Settings : NULL);
 };
 //---------------------------------------------------------------------------
-void __fastcall ResetSystemSettings(TCustomForm * Control)
+void __fastcall ResetSystemSettings(TCustomForm * /*Control*/)
 {
-  XPTheme->ShowFocus(Control);
-  XPTheme->ShowAccelerators(Control);
+  // noop
 }
 //---------------------------------------------------------------------------
-void __fastcall RevokeSystemSettings(TCustomForm * Control,
-  void * Settings)
+void __fastcall DeleteSystemSettings(TCustomForm * Control, void * Settings)
 {
   assert(Settings);
-  if (static_cast<TSavedSystemSettings*>(Settings)->Flipped)
+  TSavedSystemSettings * SSettings = static_cast<TSavedSystemSettings *>(Settings);
+
+  Control->WindowProc = SSettings->OldWndProc;
+  delete SSettings;
+}
+//---------------------------------------------------------------------------
+void __fastcall RevokeSystemSettings(TCustomForm * Control, void * Settings)
+{
+  assert(Settings);
+  TSavedSystemSettings* SSettings = static_cast<TSavedSystemSettings*>(Settings);
+  if (SSettings->Flipped)
   {
     Control->FlipChildren(true);
   }
-  delete Settings;
+  DeleteSystemSettings(Control, Settings);
 };
 //---------------------------------------------------------------------------
 class TPublicForm : public TForm
@@ -164,6 +332,7 @@ struct TShowAsModalStorage
 //---------------------------------------------------------------------------
 void __fastcall ShowAsModal(TForm * Form, void *& Storage)
 {
+  SetCorrectFormParent(Form);
   CancelDrag();
   if (GetCapture() != 0) SendMessage(GetCapture(), WM_CANCELMODE, 0, 0);
   ReleaseCapture();
@@ -483,13 +652,15 @@ void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After)
 //---------------------------------------------------------------------------
 void __fastcall CutFormToDesktop(TForm * Form)
 {
-  if (Form->Top + Form->Height > Screen->WorkAreaTop + Screen->WorkAreaHeight)
+  assert(Form->Monitor != NULL);
+  TRect Workarea = Form->Monitor->WorkareaRect;
+  if (Form->Top + Form->Height > Workarea.Bottom)
   {
-    Form->Height = Screen->WorkAreaTop + Screen->WorkAreaHeight - Form->Top;
+    Form->Height = Workarea.Bottom - Form->Top;
   }
-  if (Form->Left + Form->Width >= Screen->WorkAreaLeft + Screen->WorkAreaWidth)
+  if (Form->Left + Form->Width >= Workarea.Right)
   {
-    Form->Width = Screen->WorkAreaLeft + Screen->WorkAreaWidth - Form->Left;
+    Form->Width = Workarea.Right - Form->Left;
   }
 }
 //---------------------------------------------------------------------------
@@ -612,17 +783,21 @@ void __fastcall SetCorrectFormParent(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-class TPublicControl : public TWinControl
+void __fastcall InvokeHelp(TWinControl * Control)
 {
-friend TWndMethod __fastcall ControlWndProc(TWinControl * Control);
-};
-//---------------------------------------------------------------------------
-TWndMethod __fastcall ControlWndProc(TWinControl * Control)
-{
-  TPublicControl * PublicControl = static_cast<TPublicControl *>(Control);
-  return &PublicControl->WndProc;
+  assert(Control != NULL);
+
+  HELPINFO HelpInfo;
+  HelpInfo.cbSize = sizeof(HelpInfo);
+  HelpInfo.iContextType = HELPINFO_WINDOW;
+  HelpInfo.iCtrlId = 0;
+  HelpInfo.hItemHandle = Control->Handle;
+  HelpInfo.dwContextId = 0;
+  HelpInfo.MousePos.x = 0;
+  HelpInfo.MousePos.y = 0;
+  SendMessage(Control->Handle, WM_HELP, NULL, reinterpret_cast<long>(&HelpInfo));
 }
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
   TControlCanvas ** ACanvas, TRect & R)
@@ -705,7 +880,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
   }
   else if (Message.Msg == CM_DIALOGCHAR)
   {
-    if (StaticText->Enabled && StaticText->ShowAccelChar &&
+    if (StaticText->CanFocus() && StaticText->ShowAccelChar &&
         IsAccel(reinterpret_cast<TCMDialogChar &>(Message).CharCode, StaticText->Caption))
     {
       StaticText->SetFocus();
@@ -1039,4 +1214,3 @@ void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
   ((TMethod*)&WindowProc)->Code = LinkLabelWindowProc;
   StaticText->WindowProc = WindowProc;
 }
-

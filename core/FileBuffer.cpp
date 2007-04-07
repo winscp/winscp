@@ -208,7 +208,7 @@ void __fastcall TFileBuffer::WriteToStream(TStream * Stream, const DWORD Len)
   FMemory->Seek(Len, soFromCurrent);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::WriteToFile(const HANDLE File, const DWORD Len) 
+void __fastcall TFileBuffer::WriteToFile(const HANDLE File, const DWORD Len)
 {
   TStream *Stream = NULL;
   try

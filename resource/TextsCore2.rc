@@ -107,7 +107,7 @@ BEGIN
   SCRIPT_LCD_HELP,
     "lcd <directory>\n"
     "  Changes local working directory for all sessions.\n"
-    "examples:\n"
+    "example:\n"
     "  lcd d:\\\n"
   SCRIPT_LLS_HELP,
     "lls [ <directory> ]\\[ <wildcard> ]\n"
@@ -132,7 +132,7 @@ BEGIN
     "rmdir <directory> [ <directory2> ... ]\n"
     "  Removes one or more remote directories. If remote recycle bin is\n"
     "  configured, moves directory to the bin instead of deleting it.\n"
-    "examples:\n"
+    "example:\n"
     "  rmdir public_html\n"
   SCRIPT_MV_HELP,
     "mv <file> [ <file2> ... ] [ <directory>/ ][ <newname> ]\n"
@@ -162,12 +162,12 @@ BEGIN
     "  Creates remote symlink.\n"
     "alias:\n"
     "  symlink\n"
-    "examples:\n"
+    "example:\n"
     "  ln /home/martin/public_html www\n"
   SCRIPT_MKDIR_HELP,
     "mkdir <directory>\n"
     "  Creates remote directory.\n"
-    "examples:\n"
+    "example:\n"
     "  mkdir public_html\n"
   SCRIPT_GET_HELP,
     "get <file> [ [ <file2> ... ] <directory>\\[ <newname> ] ]\n"
@@ -213,7 +213,7 @@ BEGIN
     "  put index.html about.html /home/martin/public_html/\n"
     "  put d:\\www\\index.html about.*\n"
     "  put *.html *.png /home/martin/backup/*.bak\n"
-  SCRIPT_OPTION_HELP2,
+  SCRIPT_OPTION_HELP4,
     "option [ <option> [ <value> ] ]\n"
     "  If no parameters are specified, lists all script options and their\n"
     "  values. When one parameter is specified only, shows value of the option.\n"
@@ -222,11 +222,14 @@ BEGIN
     "  however modifing the options does not change the application\n"
     "  configuration.\n"
     "options are:\n"
-    "  batch       on|off|abort\n"
+    "  echo        on|off\n"
+    "              Toggles echoing of command being executed.\n"
+    "              Commands affected: all\n"
+    "  batch       on|off|abort|continue\n"
     "              Toggles batch mode (all prompts are automatically replied\n"
     "              negatively). When 'on', it is recommended to set 'confirm'\n"
     "              to 'off' to allow overwrites. With 'abort' script is aboted\n"
-    "              when any error occurs.\n"
+    "              when any error occurs. With 'continue' all errors are ignored.\n"
     "              Commands affected: nearly all\n"
     "  confirm     on|off\n"
     "              Toggles confirmations (overwrite, etc.).\n"
@@ -283,8 +286,8 @@ BEGIN
     "  If current session does not allow execution of arbitrary remote command\n"
     "  separate shell session will be automatically opened.\n"
     "  The command must not require user input.\n"
-    "aliases:\n"
+    "alias:\n"
     "  !\n"
-    "examples:\n"
+    "example:\n"
     "  call touch index.html\n"
 END

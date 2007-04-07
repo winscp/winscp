@@ -433,6 +433,7 @@ struct config_tag {
     int try_ki_auth;
 #ifdef GSSAPI
     int try_gssapi_auth;
+    char gssapi_server_realm[128];
     int gssapi_fwd_tgt;
 #endif
     int ssh_subsys;		       /* run a subsystem rather than a command */
@@ -648,7 +649,11 @@ void ldisc_update(void *frontend, int echo, int edit);
  * special commands changes. It does not need to invoke it at session
  * shutdown. */
 void update_specials_menu(void *frontend);
+#ifdef MPEXT
+int from_backend(void *frontend, int is_stderr, const char *data, int len, int type);
+#else
 int from_backend(void *frontend, int is_stderr, const char *data, int len);
+#endif
 void notify_remote_exit(void *frontend);
 #define OPTIMISE_IS_SCROLL 1
 
@@ -800,7 +805,7 @@ extern Backend telnet_backend;
 
 #ifdef MPEXT
 GLOBAL int (*ssh_get_line) (void *frontend, const char *prompt, char *str, int maxlen,
-                            int is_pw);
+			    int is_pw);
 #else
 GLOBAL int (*ssh_get_line) (const char *prompt, char *str, int maxlen,
 			    int is_pw);
@@ -950,7 +955,7 @@ int askappend(void *frontend, Filename filename,
 	      void (*callback)(void *ctx, int result), void *ctx);
 
 #ifdef MPEXT
-void display_banner(void *frontend, const char* banner, int size, int* log);
+void display_banner(void *frontend, const char* banner, int size);
 #endif
 /*
  * Exports from console.c (that aren't equivalents to things in
@@ -1121,5 +1126,20 @@ long schedule_timer(int ticks, timer_fn_t fn, void *ctx);
 void expire_timer_context(void *ctx);
 int run_timers(long now, long *next);
 void timer_change_notify(long next);
+
+/*
+ * Cross-platform dynamic library loading API. Implemented
+ * specially in each platform that needs it.
+ */
+typedef struct _Library *Library;
+typedef void (*generic_fn_t)(void);
+Library *load_dyn_lib(Filename libname, char **error);
+generic_fn_t dyn_lib_symbol(Library *lib, char *name);
+
+/*
+ * Flag exported from the middle of the SSH GSSAPI code, and used
+ * in config.c.
+ */
+extern const int has_gssapi;
 
 #endif

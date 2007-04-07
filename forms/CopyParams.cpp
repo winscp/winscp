@@ -7,7 +7,7 @@
 #include "CopyParams.h"
 
 #include <VCLCommon.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include "CustomWinConfiguration.h"
 #include "TextsWin.h"
 #include "Tools.h"
@@ -15,7 +15,6 @@
 #pragma package(smart_init)
 #pragma link "Rights"
 #pragma link "HistoryComboBox"
-#pragma link "XPThemes"
 #pragma link "ComboEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -309,4 +308,9 @@ void __fastcall TCopyParamsFrame::RightsEditExit(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TCopyParamsFrame::RightsEditContextPopup(TObject * Sender,
+  TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Configuration.h>
 #include <RemoteFiles.h>
 #include <VCLCommon.h>
@@ -14,7 +14,6 @@
 #include "CreateDirectory.h"
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
-#pragma link "XPThemes"
 #pragma link "MoreButton"
 #pragma link "RightsExt"
 #pragma link "Rights"

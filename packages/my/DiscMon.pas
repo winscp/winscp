@@ -151,7 +151,7 @@ type
     function  GetChangeDelay: Integer;
     procedure SetChangeDelay(Value: Integer);
   protected
-    procedure Change(Sender: TObject; const Directory: string; 
+    procedure Change(Sender: TObject; const Directory: string;
       var SubdirsChanged: Boolean);
     procedure Invalid(Sender: TObject; const Directory: string; const ErrorStr: string);
     procedure Filter(Sender: TObject; const DirectoryName: string; var Add: Boolean);
@@ -208,9 +208,9 @@ function FixFindFirstChangeNotification(const lpPathName: PChar;
   external kernel32 name 'FindFirstChangeNotificationA';
 {$ENDIF}
 
-procedure AddDirectory(Dirs: TStrings; Directory: string; 
+procedure AddDirectory(Dirs: TStrings; Directory: string;
   var MaxDirectories: Integer; OnFilter: TDiscMonitorFilter;
-  OnTooManyDirectories: TDiscMonitorTooManyDirectories; Tag: Boolean); 
+  OnTooManyDirectories: TDiscMonitorTooManyDirectories; Tag: Boolean);
 var
   Found: Boolean;
   SearchRec: TSearchRec;
@@ -234,7 +234,7 @@ begin
           FileName := Directory + SearchRec.Name;
           Add := True;
           if Assigned(OnFilter) then OnFilter(nil, FileName, Add);
-          
+
           if Add then
           begin
             if Tag then
@@ -465,7 +465,7 @@ var
     Assert(Directory >= 0);
     Path := ExcludeTrailingBackslash(FDirectories[Directory]);
 
-    while ((Directory + 1 < FDirectories.Count) and 
+    while ((Directory + 1 < FDirectories.Count) and
            SameText(Copy(FDirectories.Strings[Directory + 1], 1, Length(Path)), Path)) do
     begin
       FDirectories.Objects[Directory + 1] := TObject(1);
@@ -504,7 +504,7 @@ var
       begin
         Assert(Directory < NewAlloc);
         NewHandles^[Directory] := StartMonitor(FDirectories[Directory - SysHandles], False);
-        if NewHandles^[Directory] = INVALID_HANDLE_VALUE then 
+        if NewHandles^[Directory] = INVALID_HANDLE_VALUE then
         begin
           // currently we resign on correct resource freeing
           Result := WAIT_FAILED;
@@ -532,7 +532,7 @@ var
       FreeMem(Handles);
       Handles := NewHandles;
       Count := SysHandles + FDirectories.Count;
-      
+
       Assert(Count = Directory);
       Assert(Count <= NewAlloc);
     end;
@@ -543,7 +543,7 @@ var
       DoSynchronize(InformDirectoriesChange);
     end;
   end;
-  
+
   function Notify(Directory: Integer; Handle: THandle): Cardinal;
   begin
     // Notification signalled, so fire the OnChange event and then FindNext..
@@ -560,7 +560,7 @@ var
       Result := WAIT_TIMEOUT;
 
     FindNextChangeNotification(Handle);
-  end;  
+  end;
 
   function CheckAllObjects(Count: Integer; DirHandles: PWOHandleArray): Cardinal;
   const
@@ -571,10 +571,10 @@ var
     Result := WAIT_TIMEOUT;
     Start := 0;
     while Start < Cardinal(Count) do
-    begin 
+    begin
       if Cardinal(Count) - Start > Offset then C := Offset
         else C := Cardinal(Count) - Start;
-      Result := WaitForMultipleObjects(C, @DirHandles[Start], false, 0);      
+      Result := WaitForMultipleObjects(C, @DirHandles[Start], false, 0);
       Directory := Start + Result - WAIT_OBJECT_0;
       // (Result - WAIT_OBJECT_0 >= 0) is always true
       if Result - WAIT_OBJECT_0 < C then
@@ -591,7 +591,7 @@ var
       if Result <> WAIT_TIMEOUT then Break;
     end;
   end;
-  
+
 const
   DestroySlot = 0;
   ChangeSlot = 1;
@@ -623,7 +623,7 @@ begin {Execute}
         Handles^[HierNotifySlot] := StartMonitor(FDirectories[0], True);
         if Handles^[HierNotifySlot] = INVALID_HANDLE_VALUE then Exit;
       end;
-        
+
       for I := SysHandles to Count - 1 do
       begin
         Handles^[I] := StartMonitor(FDirectories[I - SysHandles], False);
@@ -652,7 +652,7 @@ begin {Execute}
           // (Result >= WAIT_OBJECT_0) = always true
           if Result < Cardinal(WAIT_OBJECT_0 + (Count - SysHandles)) then
           begin
-            Result := WAIT_OBJECT_0 + HierNotifySlot; 
+            Result := WAIT_OBJECT_0 + HierNotifySlot;
           end;
         end
           else
@@ -663,10 +663,10 @@ begin {Execute}
             Handles^[Result - WAIT_OBJECT_0]);
           if Result = WAIT_OBJECT_0 then Result := WAIT_TIMEOUT;
         end;
-      // note that WaitCount can be differen here than when 
+      // note that WaitCount can be differen here than when
       // WaitForMultipleObjects  was called, but it should not matter as it is
-      until (Result = WAIT_FAILED) or (Result = WAIT_OBJECT_0 + DestroySlot) or 
-        (Result = WAIT_OBJECT_0 + ChangeSlot) or 
+      until (Result = WAIT_FAILED) or (Result = WAIT_OBJECT_0 + DestroySlot) or
+        (Result = WAIT_OBJECT_0 + ChangeSlot) or
         ((Result >= WAIT_ABANDONED_0) and (Result < WAIT_ABANDONED_0 + WaitCount));
 
       if HierMode then
@@ -721,7 +721,7 @@ end;
 
 // Change notification from the thread has occurred. Call the component's event
 // handler
-procedure TDiscMonitor.Change(Sender: TObject; const Directory: string; 
+procedure TDiscMonitor.Change(Sender: TObject; const Directory: string;
   var SubdirsChanged: Boolean);
 begin
   if Assigned(FOnChange) then
@@ -811,7 +811,7 @@ begin
     try
 
       Dirs.Assign(Directories);
-      
+
       Dirs.Add(Directory);
       if SubDirs then
         DiscMon.AddDirectory(Dirs, Directory, FMaxDirectories, OnFilter,
@@ -890,5 +890,3 @@ begin
 end;
 
 end.
-
-

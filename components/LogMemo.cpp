@@ -8,6 +8,11 @@
 
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+#ifndef DESIGN_ONLY
+const TColor LogLineColors[] =
+  {clGreen, clRed, clMaroon, clBlue, clGray};
+#endif
+//---------------------------------------------------------------------------
 // ValidCtrCheck is used to assure that the components created do not have
 // any pure virtual functions.
 static inline void ValidCtrCheck(TLogMemo *)
@@ -42,6 +47,10 @@ __fastcall TLogMemo::TLogMemo(TComponent* Owner)
 //---------------------------------------------------------------------------
 __fastcall TLogMemo::~TLogMemo()
 {
+#ifndef DESIGN_ONLY
+  // deassociate us from session log change handler
+  SessionLog = NULL;
+#endif
   delete FIndexes;
 }
 //---------------------------------------------------------------------------
@@ -92,9 +101,12 @@ void __fastcall TLogMemo::SessionLogChange(TObject * Sender)
 {
 #ifndef DESIGN_ONLY
   USEDPARAM(Sender);
-  assert(Sender && (Sender == SessionLog));
+  assert(Sender && (Sender == (TObject*)SessionLog));
 #endif
-  UpdateFromLog();
+  if (HandleAllocated())
+  {
+    PostMessage(Handle, WM_LOG_UPDATE, 0, 0);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLogMemo::UpdateFromLog()
@@ -104,6 +116,7 @@ void __fastcall TLogMemo::UpdateFromLog()
   {
     assert(FIndexes->Count == Lines->Count);
     FUpdating = true;
+    SessionLog->Lock();
     try
     {
       ScrollToEnd();
@@ -143,7 +156,7 @@ void __fastcall TLogMemo::UpdateFromLog()
           {
             SelLength = 0;
             SelStart = Lines->Text.Length();
-            if (Parent) SelAttributes->Color = SessionLog->Color[LastIndex];
+            if (Parent) SelAttributes->Color = LogLineColors[SessionLog->Type[LastIndex]];
             FIndexes->Add((void*) LastIndex);
             try
             {
@@ -184,6 +197,7 @@ void __fastcall TLogMemo::UpdateFromLog()
     }
     __finally
     {
+      SessionLog->Unlock();
       FUpdating = false;
     }
   }
@@ -235,6 +249,11 @@ void __fastcall TLogMemo::ScrollToEnd()
   Selection.cpMax = Selection.cpMin;
   Perform(EM_EXSETSEL, 0, ((long)&Selection));
   Perform(EM_SCROLLCARET, 0, 0);
+}
+//---------------------------------------------------------------------------
+void TLogMemo::WMLogUpdate(TMessage & /*Message*/)
+{
+  UpdateFromLog();
 }
 //---------------------------------------------------------------------------
 void TLogMemo::CMVisibleChanged(TMessage & Message)

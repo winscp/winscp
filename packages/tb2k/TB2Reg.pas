@@ -41,7 +41,7 @@ uses
 { TTBImageIndexPropertyEditor }
 
 { Unfortunately TComponentImageIndexPropertyEditor seems to be gone in
-  Delphi 6, so we have to use our own image index property editor class } 
+  Delphi 6, so we have to use our own image index property editor class }
 
 type
   TTBImageIndexPropertyEditor = class(TIntegerProperty

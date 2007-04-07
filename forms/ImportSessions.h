@@ -23,7 +23,6 @@ __published:
   TButton *CancelButton;
   TListView *SessionListView;
   TLabel *Label1;
-  TLabel *Label2;
   TButton *CheckAllButton;
   TCheckBox *ImportKeysCheck;
   TButton *HelpButton;

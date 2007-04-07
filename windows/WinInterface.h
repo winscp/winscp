@@ -3,6 +3,7 @@
 #define WinInterfaceH
 //---------------------------------------------------------------------------
 #include <Classes.hpp>
+#include <Buttons.hpp>
 #include <Interface.h>
 #include <GUIConfiguration.h>
 #include <SynchronizeController.h>
@@ -14,10 +15,6 @@
 class TStoredSessionList;
 class TConfiguration;
 class TTerminal;
-class TSecureShell;
-
-extern const int ConnectionStatusStrings[];
-extern const int ConnectionStatusStringsCount;
 
 const int mpNeverAskAgainCheck =   0x01;
 const int mpAllowContinueOnError = 0x02;
@@ -56,8 +53,8 @@ extern const AnsiString AppNameVersion;
 void __fastcall SetOnForeground(bool OnForeground);
 void __fastcall FlashOnBackground();
 
-void __fastcall ShowExtendedExceptionEx(TSecureShell * SecureShell, Exception * E);
-void __fastcall FormHelp(TForm * Form, TControl * Control = NULL);
+void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal, Exception * E);
+void __fastcall FormHelp(TForm * Form);
 
 AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent);
 void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr);
@@ -66,8 +63,8 @@ namespace Tb2item { class TTBCustomItem; }
 void __fastcall AddMenuSeparator(Tb2item::TTBCustomItem * Menu);
 
 // windows\WinHelp.cpp
-void __fastcall InitializeWebHelp();
-void __fastcall FinalizeWebHelp();
+void __fastcall InitializeWinHelp();
+void __fastcall FinalizeWinHelp();
 
 // windows\WinInterface.cpp
 int __fastcall MessageDialog(const AnsiString Msg, TQueryType Type,
@@ -88,8 +85,7 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
   AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
 
 // windows\WinMain.cpp
-class TProgramParams;
-int __fastcall Execute(TProgramParams * Params);
+int __fastcall Execute();
 
 // forms\InputDlg.cpp
 bool __fastcall InputDialog(const AnsiString ACaption,
@@ -197,11 +193,12 @@ bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
 // forms\CustomCommand.cpp
 class TCustomCommands;
 enum TCustomCommandsMode { ccmAdd, ccmEdit, ccmAdHoc };
+const ccoDisableRemote = 0x01;
 typedef void __fastcall (__closure *TCustomCommandValidate)
   (const AnsiString & Command, int Params);
 bool __fastcall DoCustomCommandDialog(AnsiString & Description,
   AnsiString & Command, int & Params, const TCustomCommands * CustomCommands,
-  TCustomCommandsMode Mode, TCustomCommandValidate OnValidate);
+  TCustomCommandsMode Mode, int Options, TCustomCommandValidate OnValidate);
 
 // forms\CopyParamPreset.cpp
 class TCopyParamList;
@@ -215,23 +212,35 @@ bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam,
 
 // forms\Properties.cpp
 class TRemoteProperties;
+struct TCalculateSizeStats;
 const cpMode =  0x01;
 const cpOwner = 0x02;
 const cpGroup = 0x04;
+typedef void __fastcall (__closure *TCalculateSizeEvent)
+  (TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
+   bool & Close);
+typedef void __fastcall (__closure *TCalculatedChecksumCallbackEvent)(
+  const AnsiString & FileName, const AnsiString & Alg, const AnsiString & Hash);
+typedef void __fastcall (__closure *TCalculateChecksumEvent)
+  (const AnsiString & Alg, TStrings * FileList,
+   TCalculatedChecksumCallbackEvent OnCalculatedChecksum, bool & Close);
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
     const AnsiString Directory, TStrings * GroupList, TStrings * UserList,
     TRemoteProperties * Properties, int AllowedChanges,
-    TTerminal * Terminal);
+    TCalculateSizeEvent OnCalculateSize,
+    TCalculateChecksumEvent OnCalculateChecksum);
 
 // forms\ComboInput.cpp
 typedef void __fastcall (*TInputValidateEvent)
-  (const AnsiString & Text);
+  (TObject * Sender, const AnsiString & Text);
 bool __fastcall DoComboInputDialog(
   const AnsiString Caption, const AnsiString Prompt, AnsiString & Text,
   TStrings * Items, TInputValidateEvent OnInputValidate, bool AllowEmpty,
   const AnsiString HelpKeyword = HELP_NONE);
-AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName);
-void __fastcall SaveSessionInputValidate(const AnsiString & Text);
+AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName,
+  TSessionData * OriginalSession);
+void __fastcall SessionNameValidate(const AnsiString & Text,
+  TSessionData * RenamingSession = NULL);
 bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
   AnsiString & FileMask, bool Move);
 
@@ -249,6 +258,7 @@ const spTimestamp = 0x100;
 const spNotByTime = 0x200;
 const spBySize = 0x400;
 const spSelectedOnly = 0x800;
+const spMirror = 0x1000;
 
 // forms\Synchronize.cpp
 const soDoNotUsePresets =  0x01;
@@ -280,8 +290,8 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
 
 // forms\Editor.cpp
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
-  TNotifyEvent OnFileChanged, TNotifyEvent OnClose, const AnsiString Caption = "",
-  bool ShowWindowButton = false);
+  TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TNotifyEvent OnClose,
+  const AnsiString Caption = "", bool ShowWindowButton = false);
 void __fastcall ReconfigureEditorForm(TForm * Form);
 
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
@@ -290,9 +300,11 @@ bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
 // forms\FileSystemInfo.cpp
 struct TSpaceAvailable;
 struct TFileSystemInfo;
+struct TSessionInfo;
 typedef void __fastcall (__closure *TGetSpaceAvailable)
   (const AnsiString Path, TSpaceAvailable & ASpaceAvailable, bool & Close);
-void __fastcall DoFileSystemInfoDialog(const TFileSystemInfo & FileSystemInfo,
+void __fastcall DoFileSystemInfoDialog(
+  const TSessionInfo & SessionInfo, const TFileSystemInfo & FileSystemInfo,
   AnsiString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable);
 
 // forms\MessageDlg.cpp
@@ -302,7 +314,7 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
   TMsgDlgBtn TimeoutResult = mbHelp, TButton ** TimeoutButton = NULL);
 
 // windows\Console.cpp
-int __fastcall Console(TProgramParams * Params, bool Help);
+int __fastcall Console(bool Help);
 
 // windows\EditorPreferences.cpp
 enum TEditorPreferencesMode { epmAdd, epmEdit };
@@ -319,6 +331,12 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
 bool __fastcall CopyParamListPopupClick(TObject * Sender,
   TCopyParamType & Param, AnsiString & Preset, int CopyParamAttrs);
 
+void __fastcall MenuPopup(TPopupMenu * Menu, TPoint Point, TComponent * PopupComponent);
+void __fastcall MenuPopup(TPopupMenu * Menu, TButtonControl * Button);
+void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Handled);
+
+void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
+
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand
 {
@@ -332,6 +350,39 @@ protected:
 
 private:
   AnsiString FCustomCommandName;
+};
+//---------------------------------------------------------------------------
+struct TNotifyIconData5;
+//---------------------------------------------------------------------------
+class TTrayIcon
+{
+public:
+  __fastcall TTrayIcon(unsigned int Id);
+  __fastcall ~TTrayIcon();
+
+  static bool __fastcall SupportsBalloons();
+
+  void __fastcall PopupBalloon(const AnsiString & Title, const AnsiString & Str,
+    TQueryType QueryType, unsigned int Timeout);
+  void __fastcall CancelBalloon();
+
+  __property bool Visible = { read = FVisible, write = SetVisible };
+  __property TNotifyEvent OnClick = { read = FOnClick, write = FOnClick };
+  __property AnsiString Hint = { read = GetHint, write = SetHint };
+
+protected:
+  void __fastcall Update();
+  bool __fastcall Notify(unsigned int Message);
+
+private:
+  bool FVisible;
+  TNotifyIconData5 * FTrayIcon;
+  TNotifyEvent FOnClick;
+
+  void __fastcall WndProc(TMessage & Message);
+  void __fastcall SetVisible(bool value);
+  AnsiString __fastcall GetHint();
+  void __fastcall SetHint(AnsiString value);
 };
 //---------------------------------------------------------------------------
 #endif // WinInterfaceH

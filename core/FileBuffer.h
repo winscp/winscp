@@ -5,7 +5,7 @@
 #include <classes.hpp>
 //---------------------------------------------------------------------------
 enum TEOLType { eolLF /* \n */, eolCRLF /* \r\n */, eolCR /* \r */ };
-const int cpRemoveCtrlZ = 0x01; 
+const int cpRemoveCtrlZ = 0x01;
 //---------------------------------------------------------------------------
 class TFileBuffer
 {
@@ -31,7 +31,7 @@ public:
 private:
   TMemoryStream * FMemory;
   int FSize;
-  
+
   void __fastcall SetMemory(TMemoryStream * value);
   char * __fastcall GetData() const { return (char *)FMemory->Memory; }
   void __fastcall SetSize(int value);

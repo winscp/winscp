@@ -9,12 +9,15 @@
 #include <StdCtrls.hpp>
 #include <ComCtrls.hpp>
 
+#define WM_WINSCP_USER   (WM_USER + 0x2000)
+#define WM_LOG_UPDATE    (WM_WINSCP_USER + 6)
+
 #ifndef DESIGN_ONLY
-#include <SecureShell.h>
+#include <SessionInfo.h>
 #else
 enum TLogLineType {llOutput, llInput, llStdError, llMessage, llException};
-typedef Set<TLogLineType, llOutput, llException> TLogLineTypes;
 #endif
+typedef Set<TLogLineType, llOutput, llException> TLogLineTypes;
 //---------------------------------------------------------------------------
 #define DEFAULT_LOGMEMO_FONT "Courier New"
 #define DEFAULT_LOGMEMO_SHOWTYPES (TLogLineTypes() << llOutput << llInput << \
@@ -32,6 +35,7 @@ private:
   bool FNeedsRepaint;
   void __fastcall CMShowingChanged(TMessage & Message);
   void CMVisibleChanged(TMessage & Message);
+  void WMLogUpdate(TMessage & Message);
   int __fastcall GetIndexes(int Index);
   int __fastcall GetLinesVisible();
   bool __fastcall IsFontStored();
@@ -64,6 +68,7 @@ protected:
     VCL_MESSAGE_HANDLER(CM_SHOWINGCHANGED, TMessage, CMShowingChanged)
     VCL_MESSAGE_HANDLER(WM_KEYDOWN, TWMKeyDown, WMKeyDown)
     VCL_MESSAGE_HANDLER(WM_PAINT, TWMPaint, WMPaint)
+    VCL_MESSAGE_HANDLER(WM_LOG_UPDATE, TMessage, WMLogUpdate)
   END_MESSAGE_MAP(TCustomRichEdit)
   #pragma warn +inl
 public:
@@ -137,5 +142,3 @@ __published:
 };
 //---------------------------------------------------------------------------
 #endif
-
-

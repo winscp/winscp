@@ -6,40 +6,12 @@
 #include "Exceptions.h"
 #include "TextsCore.h"
 #include "Interface.h"
-#include "PuttyIntf.h"
 #include <StrUtils.hpp>
 #include <math.h>
 #include <shellapi.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-#ifdef _DEBUG
-#include <stdio.h>
-void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
-  int Line, const AnsiString Message)
-{
-  const char * FileName = getenv(TRACEENV);
-  if (FileName == NULL)
-  {
-    FileName = "c:\\winscptrace.log";
-  }
-  FILE * File = fopen(FileName, "a");
-  if (File != NULL)
-  {
-    fprintf(File, "[%s] %s:%d:%s\n  %s\n",
-      Now().TimeString().c_str(),
-      ExtractFileName(SourceFile).c_str(), Line, Func.c_str(), Message.c_str());
-
-    fclose(File);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall DoAssert(char * Message, char * Filename, int LineNumber)
-{
-  Trace(Filename, "assert", LineNumber, Message);
-  _assert(Message, Filename, LineNumber);
-}
-#endif // ifdef _DEBUG
 //---------------------------------------------------------------------------
 // TCriticalSection
 //---------------------------------------------------------------------------
@@ -158,6 +130,18 @@ AnsiString BooleanToEngStr(bool B)
 AnsiString BooleanToStr(bool B)
 {
   return B ? LoadStr(YES_STR) : LoadStr(NO_STR);
+}
+//---------------------------------------------------------------------------
+AnsiString DefaultStr(const AnsiString & Str, const AnsiString & Default)
+{
+  if (!Str.IsEmpty())
+  {
+    return Str;
+  }
+  else
+  {
+    return Default;
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim)
@@ -387,6 +371,38 @@ AnsiString __fastcall ExpandFileNameCommand(const AnsiString Command,
     AddPathQuotes(FileName));
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall ExpandEnvironmentVariables(const AnsiString & Str)
+{
+  AnsiString Buf;
+  unsigned int Size = 1024;
+
+  Buf.SetLength(Size);
+  Buf.Unique();
+  unsigned int Len = ExpandEnvironmentStrings(Str.c_str(), Buf.c_str(), Size);
+
+  if (Len > Size)
+  {
+    Buf.SetLength(Len);
+    Buf.Unique();
+    ExpandEnvironmentStrings(Str.c_str(), Buf.c_str(), Len);
+  }
+
+  PackStr(Buf);
+
+  return Buf;
+}
+//---------------------------------------------------------------------------
+bool __fastcall CompareFileName(const AnsiString & Path1, const AnsiString & Path2)
+{
+  return AnsiSameText(ExtractShortPathName(Path1), ExtractShortPathName(Path2));
+}
+//---------------------------------------------------------------------------
+bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2)
+{
+  // TODO: ExpandUNCFileName
+  return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
+}
+//---------------------------------------------------------------------------
 bool __fastcall IsDisplayableStr(const AnsiString Str)
 {
   bool Displayable = true;
@@ -431,6 +447,7 @@ AnsiString __fastcall HexToStr(const AnsiString Hex)
       P2 = Digits.Pos(Hex[i + 1]);
       if (P1 <= 0 || P2 <= 0)
       {
+        Result = "";
         break;
       }
       else
@@ -464,11 +481,6 @@ unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars)
     I++;
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-__int64 __fastcall ParseSize(AnsiString SizeStr)
-{
-  return parse_blocksize(SizeStr.c_str());
 }
 //---------------------------------------------------------------------------
 bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec)
@@ -693,14 +705,23 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
   return Result;
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, bool ConsiderDST)
+TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
 {
   TDateTimeParams * Params = GetDateTimeParams();
 
   TDateTime Result;
-  Result = Params->UnixEpoch + (double(TimeStamp) / 86400) - Params->CurrentDifference;
+  Result = Params->UnixEpoch + (double(TimeStamp) / 86400);
 
-  if (ConsiderDST)
+  if ((DSTMode == dstmWin) || (DSTMode == dstmUnix))
+  {
+    Result -= Params->CurrentDifference;
+  }
+  else if (DSTMode == dstmKeep)
+  {
+    Result -= Params->BaseDifference;
+  }
+
+  if ((DSTMode == dstmUnix) || (DSTMode == dstmKeep))
   {
     Result -= (IsDateInDST(Result) ?
       Params->DaylightDifference : Params->StandardDifference);
@@ -730,7 +751,7 @@ static __int64 __fastcall DateTimeToUnix(const TDateTime DateTime)
 }
 //---------------------------------------------------------------------------
 FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
-  bool /*ConsiderDST*/)
+  TDSTMode /*DSTMode*/)
 {
   FILETIME Result;
   __int64 UnixTimeStamp = DateTimeToUnix(DateTime);
@@ -740,12 +761,12 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
 }
 //---------------------------------------------------------------------------
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
-  bool ConsiderDST)
+  TDSTMode DSTMode)
 {
   __int64 Result;
   TIME_WIN_TO_POSIX(FileTime, Result);
 
-  if (ConsiderDST)
+  if ((DSTMode == dstmUnix) || (DSTMode == dstmKeep))
   {
     FILETIME LocalFileTime;
     SYSTEMTIME SystemTime;
@@ -757,13 +778,18 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
     TDateTimeParams * Params = GetDateTimeParams();
     Result += (IsDateInDST(DateTime) ?
       Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
+
+    if (DSTMode == dstmKeep)
+    {
+      Result -= Params->CurrentDaylightDifferenceSec;
+    }
   }
 
   return Result;
 }
 //---------------------------------------------------------------------------
 __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
-  bool ConsiderDST)
+  TDSTMode DSTMode)
 {
   __int64 Result;
   if ((FileTime.dwLowDateTime == 0) &&
@@ -773,31 +799,30 @@ __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
   }
   else
   {
-    Result = ConvertTimestampToUnix(FileTime, ConsiderDST);
+    Result = ConvertTimestampToUnix(FileTime, DSTMode);
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, bool ConsiderDST)
+TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode)
 {
   TDateTimeParams * Params = GetDateTimeParams();
 
-  DateTime = DateTime - Params->CurrentDaylightDifference;
-
-  bool IsInDST = IsDateInDST(DateTime);
-  // shift always, even with ConsiderDST == false
-  DateTime = DateTime - (!IsInDST ? Params->DaylightDifference :
-    Params->StandardDifference);
-  if (ConsiderDST)
+  if ((DSTMode == dstmWin) || (DSTMode == dstmUnix))
   {
-    if (IsInDST)
+    DateTime = DateTime - Params->CurrentDaylightDifference;
+  }
+
+  if (!IsDateInDST(DateTime))
+  {
+    if (DSTMode == dstmWin)
     {
-      //DateTime = DateTime - Params->DaylightDifference;
+      DateTime = DateTime - Params->DaylightDifference;
     }
-    else
-    {
-      DateTime = DateTime + Params->DaylightDifference;
-    }
+  }
+  else
+  {
+    DateTime = DateTime - Params->StandardDifference;
   }
 
   return DateTime;
@@ -1002,9 +1027,12 @@ int __fastcall ContinueAnswer(int Answers)
   {
     Result = qaOK;
   }
+  else if (FLAGSET(Answers, qaRetry))
+  {
+    Result = qaOK;
+  }
   else
   {
-    assert(false);
     Result = CancelAnswer(Answers);
   }
   return Result;
@@ -1113,106 +1141,5 @@ void __fastcall AnsiToOem(AnsiString & Str)
   {
     Str.Unique();
     CharToOem(Str.c_str(), Str.c_str());
-  }
-}
-//---------------------------------------------------------------------------
-struct TUnicodeEmitParams
-{
-  WideString Buffer;
-  int Pos;
-  int Len;
-};
-//---------------------------------------------------------------------------
-extern "C" void UnicodeEmit(void * AParams, long int Output)
-{
-  if (Output == 0xFFFFL) // see Putty's charset\internal.h
-  {
-    throw Exception(LoadStr(DECODE_UTF_ERROR));
-  }
-  TUnicodeEmitParams * Params = (TUnicodeEmitParams *)AParams;
-  if (Params->Pos >= Params->Len)
-  {
-    Params->Len += 50;
-    Params->Buffer.SetLength(Params->Len);
-  }
-  Params->Pos++;
-  Params->Buffer[Params->Pos] = (wchar_t)Output;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall DecodeUTF(const AnsiString UTF)
-{
-  charset_state State;
-  char * Str;
-  TUnicodeEmitParams Params;
-  AnsiString Result;
-
-  State.s0 = 0;
-  Str = UTF.c_str();
-  Params.Pos = 0;
-  Params.Len = UTF.Length();
-  Params.Buffer.SetLength(Params.Len);
-
-  while (*Str)
-  {
-    read_utf8(NULL, (unsigned char)*Str, &State, UnicodeEmit, &Params);
-    Str++;
-  }
-  Params.Buffer.SetLength(Params.Pos);
-
-  return Params.Buffer;
-}
-//---------------------------------------------------------------------------
-struct TUnicodeEmitParams2
-{
-  AnsiString Buffer;
-  int Pos;
-  int Len;
-};
-//---------------------------------------------------------------------------
-extern "C" void UnicodeEmit2(void * AParams, long int Output)
-{
-  if (Output == 0xFFFFL) // see Putty's charset\internal.h
-  {
-    throw Exception(LoadStr(DECODE_UTF_ERROR));
-  }
-  TUnicodeEmitParams2 * Params = (TUnicodeEmitParams2 *)AParams;
-  if (Params->Pos >= Params->Len)
-  {
-    Params->Len += 50;
-    Params->Buffer.SetLength(Params->Len);
-  }
-  Params->Pos++;
-  Params->Buffer[Params->Pos] = (unsigned char)Output;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall EncodeUTF(const WideString Source)
-{
-  // WideString::c_bstr() returns NULL for empty strings
-  // (as opposite to AnsiString::c_str() which returns "")
-  if (Source.IsEmpty())
-  {
-    return "";
-  }
-  else
-  {
-    charset_state State;
-    wchar_t * Str;
-    TUnicodeEmitParams2 Params;
-    AnsiString Result;
-
-    State.s0 = 0;
-    Str = Source.c_bstr();
-    Params.Pos = 0;
-    Params.Len = Source.Length();
-    Params.Buffer.SetLength(Params.Len);
-
-    while (*Str)
-    {
-      write_utf8(NULL, (wchar_t)*Str, &State, UnicodeEmit2, &Params);
-      Str++;
-    }
-    Params.Buffer.SetLength(Params.Pos);
-
-    return Params.Buffer;
   }
 }

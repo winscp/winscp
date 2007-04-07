@@ -112,7 +112,7 @@ type
     procedure DDGiveFeedback(Effect: Longint; var Result: HResult);
     procedure DDMenuPopup(Sender: TObject; AMenu: HMenu; DataObj: IDataObject;
       AMinCustCmd: Integer; grfKeyState: Longint; Point: TPoint);
-    procedure DDMenuDone(Sender: TObject; AMenu: HMenu); 
+    procedure DDMenuDone(Sender: TObject; AMenu: HMenu);
     procedure DDProcessDropped(Sender: TObject; KeyState: Longint;
       Point: TPoint; Effect: Longint);
     procedure DDError(Error: TDDError); virtual;
@@ -122,7 +122,7 @@ type
       DragStatus: TDragDetectStatus); virtual;
     procedure PerformDragDropFileOperation(Node: TTreeNode; Effect: Integer); virtual; abstract;
 
-    procedure DDChooseEffect(KeyState: Integer; var Effect: Integer); virtual; 
+    procedure DDChooseEffect(KeyState: Integer; var Effect: Integer); virtual;
     function DragCompleteFileList: Boolean; virtual; abstract;
     function DDExecute: TDragResult; virtual;
     function DDSourceEffects: TDropEffectSet; virtual; abstract;
@@ -834,7 +834,7 @@ begin
       GlobalDragImageList.Clear;
 
       Application.ProcessMessages;
-      
+
     finally
       ClearDragFileList(FDragDropFilesEx.FileList);
 
@@ -859,8 +859,8 @@ begin
   DataObject := nil;
   if Assigned(OnDDCreateDataObject) then
     OnDDCreateDataObject(Self, DataObject);
-    
-  Result := FDragDropFilesEx.Execute(nil);
+
+  Result := FDragDropFilesEx.Execute(DataObject);
 end;
 
 function TCustomDriveView.GetNodeFromHItem(Item: TTVItem): TTreeNode;

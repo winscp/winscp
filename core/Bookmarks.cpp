@@ -66,7 +66,7 @@ void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
             }
             Storage->CloseSubKey();
           }
-        } 
+        }
       }
       __finally
       {
@@ -139,7 +139,7 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TBookmarks::Save(THierarchicalStorage * Storage)
+void __fastcall TBookmarks::Save(THierarchicalStorage * Storage, bool All)
 {
   for (int i = 0; i <= 2; i++)
   {
@@ -148,7 +148,7 @@ void __fastcall TBookmarks::Save(THierarchicalStorage * Storage)
       for (int Index = 0; Index < FBookmarkLists->Count; Index++)
       {
         TBookmarkList * BookmarkList = dynamic_cast<TBookmarkList *>(FBookmarkLists->Objects[Index]);
-        if (BookmarkList->Modified)
+        if (All || BookmarkList->Modified)
         {
           AnsiString Key;
           Key = FBookmarkLists->Strings[Index];
@@ -187,7 +187,10 @@ void __fastcall TBookmarks::Save(THierarchicalStorage * Storage)
     }
   }
 
-  ModifyAll(false);
+  if (!All)
+  {
+    ModifyAll(false);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarks::ModifyAll(bool Modify)
@@ -221,14 +224,14 @@ void __fastcall TBookmarks::SetBookmarks(AnsiString Index, TBookmarkList * value
   int I = FBookmarkLists->IndexOf(Index);
   if (I >= 0)
   {
-    TBookmarkList * BookmarkList; 
+    TBookmarkList * BookmarkList;
     BookmarkList = dynamic_cast<TBookmarkList *>(FBookmarkLists->Objects[I]);
     BookmarkList->Assign(value);
   }
   else
   {
     TBookmarkList * BookmarkList = new TBookmarkList();
-    BookmarkList->Assign(value); 
+    BookmarkList->Assign(value);
     FBookmarkLists->AddObject(Index, BookmarkList);
   }
 }
@@ -502,4 +505,3 @@ AnsiString __fastcall TBookmark::GetKey()
 {
   return BookmarkKey(Node, Name);
 }
-

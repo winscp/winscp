@@ -2,7 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Configuration.h>
 #include <RemoteFiles.h>
 #include <VCLCommon.h>
@@ -13,7 +13,6 @@
 #include "LocationProfiles.h"
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
-#pragma link "XPThemes"
 #pragma link "IEComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
@@ -270,7 +269,7 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark()
       SelectedNode = Selected->Text;
     }
   }
-  
+
   TStrings * PeerBookmarks = new TStringList();
   try
   {
@@ -420,7 +419,7 @@ void __fastcall TLocationProfilesDialog::BookmarkMove(
       Source->MoveTo(Dest, naAdd);
     }
   }
-  
+
   if (PrevFolderNode && !PrevFolderNode->Count)
   {
     assert(FFolders->IndexOfObject(PrevFolderNode) >= 0);
@@ -744,4 +743,3 @@ void __fastcall TLocationProfilesDialog::UpdateActions()
   }
 }
 //---------------------------------------------------------------------------
-

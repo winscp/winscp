@@ -7,7 +7,7 @@ object GeneralSettingsFrame: TGeneralSettingsFrame
   DesignSize = (
     306
     202)
-  object InterfaceGroup: TXPGroupBox
+  object InterfaceGroup: TGroupBox
     Left = 0
     Top = 0
     Width = 306

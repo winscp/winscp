@@ -381,6 +381,11 @@ int verify_host_key(const char *hostname, int port,
 
     RegCloseKey(rkey);
 
+#ifdef MPEXT
+    // make sure it is zero terminated, what it is not, particularly when
+    // RegQueryValueEx fails (the key is unknown)
+    otherstr[len - 1] = '\0';
+#endif
     compare = strcmp(otherstr, key);
 
     sfree(otherstr);
@@ -401,6 +406,17 @@ void store_host_key(const char *hostname, int port,
     char *regname;
     HKEY rkey;
 
+#ifdef MPEXT
+    if (RegCreateKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
+		     &rkey) != ERROR_SUCCESS)
+	return;			       /* key does not exist in registry */
+
+    regname = snewn(3 * (strlen(hostname) + strlen(keytype)) + 15, char);
+    hostkey_regname(regname, hostname, port, keytype);
+    RegSetValueEx(rkey, regname, 0, REG_SZ, key, strlen(key) + 1);
+    // prevent memory leak
+    sfree(regname);
+#else
     regname = snewn(3 * (strlen(hostname) + strlen(keytype)) + 15, char);
 
     hostkey_regname(regname, hostname, port, keytype);
@@ -409,6 +425,7 @@ void store_host_key(const char *hostname, int port,
 		     &rkey) != ERROR_SUCCESS)
 	return;			       /* key does not exist in registry */
     RegSetValueEx(rkey, regname, 0, REG_SZ, key, strlen(key) + 1);
+#endif
     RegCloseKey(rkey);
 }
 

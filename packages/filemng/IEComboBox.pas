@@ -70,7 +70,7 @@ type
     procedure DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState); override;
     function GetItemImage(Index: Integer): Integer; virtual;
     function GetItemIndent(Index: Integer): Integer; virtual;
-    function GetItemText(Index: Integer): string; 
+    function GetItemText(Index: Integer): string;
     function GetItemTextEx(Index: Integer; ForList: Boolean): string; virtual;
     function ImageList: TImageList; virtual;
     procedure CNCommand(var Message: TWMCommand); message CN_COMMAND;
@@ -351,7 +351,7 @@ begin
     Text := GetItemTextEx(Index, InList);
 
     if InList then Rect.Left := Rect.Left + ItemIndent[Index];
-    
+
     if ImageList <> nil then
     begin
       Image := ItemImage[Index];
@@ -429,4 +429,3 @@ begin
 end;
 
 end.
-

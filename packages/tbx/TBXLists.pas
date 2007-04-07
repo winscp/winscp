@@ -1226,7 +1226,7 @@ begin
   end;
 
   DrawItems(Canvas, ClientAreaRect);
-  
+
   if FScrollBarWidth > 0 then
   begin
     if FScrollBar = nil then

@@ -7,7 +7,7 @@ object PreferencesDialog: TPreferencesDialog
   BorderStyle = bsDialog
   Caption = 'Preferences'
   ClientHeight = 469
-  ClientWidth = 532
+  ClientWidth = 513
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
@@ -15,12 +15,12 @@ object PreferencesDialog: TPreferencesDialog
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow
   DesignSize = (
-    532
+    513
     469)
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
-    Left = 269
+    Left = 250
     Top = 438
     Width = 75
     Height = 25
@@ -28,10 +28,10 @@ object PreferencesDialog: TPreferencesDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 1
+    TabOrder = 2
   end
   object CloseButton: TButton
-    Left = 357
+    Left = 338
     Top = 438
     Width = 75
     Height = 25
@@ -39,19 +39,19 @@ object PreferencesDialog: TPreferencesDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 2
+    TabOrder = 3
   end
   object MainPanel: TPanel
     Left = 0
     Top = 0
-    Width = 532
+    Width = 513
     Height = 432
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     TabOrder = 0
     object PageControl: TPageControl
-      Left = 151
+      Left = 132
       Top = 0
       Width = 381
       Height = 432
@@ -73,7 +73,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object CommonPreferencesGroup: TXPGroupBox
+        object CommonPreferencesGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -110,7 +110,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'E&xiting application'
+            Caption = 'Exiting appli&cation'
             TabOrder = 4
             OnClick = ControlChange
           end
@@ -175,17 +175,17 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object NotificationsGroup: TXPGroupBox
+        object NotificationsGroup: TGroupBox
           Left = 8
           Top = 248
           Width = 357
-          Height = 51
+          Height = 73
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Notifications'
           TabOrder = 1
           DesignSize = (
             357
-            51)
+            73)
           object BeepOnFinishAfterText: TLabel
             Left = 344
             Top = 22
@@ -215,6 +215,16 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 1
             OnChange = ControlChange
           end
+          object BalloonNotificationsCheck: TCheckBox
+            Left = 16
+            Top = 46
+            Width = 309
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Show balloon &notifications in taskbar status area (system tray)'
+            TabOrder = 2
+            OnClick = ControlChange
+          end
         end
       end
       object LogSheet: TTabSheet
@@ -237,7 +247,7 @@ object PreferencesDialog: TPreferencesDialog
           DesignSize = (
             372
             241)
-          inherited LoggingGroup: TXPGroupBox
+          inherited LoggingGroup: TGroupBox
             Width = 357
             DesignSize = (
               357
@@ -279,7 +289,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 202
           Anchors = [akLeft, akTop, akRight]
           TabOrder = 0
-          inherited InterfaceGroup: TXPGroupBox
+          inherited InterfaceGroup: TGroupBox
             Width = 362
             inherited CommanderDescriptionLabel2: TLabel
               Width = 223
@@ -289,7 +299,7 @@ object PreferencesDialog: TPreferencesDialog
             end
           end
         end
-        object ThemeGroup: TXPGroupBox
+        object ThemeGroup: TGroupBox
           Left = 8
           Top = 256
           Width = 361
@@ -333,7 +343,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object PanelsRemoteDirectoryGroup: TXPGroupBox
+        object PanelsRemoteDirectoryGroup: TGroupBox
           Left = 8
           Top = 208
           Width = 357
@@ -365,7 +375,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object PanelsCommonGroup: TXPGroupBox
+        object PanelsCommonGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -417,7 +427,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object DoubleClickGroup: TXPGroupBox
+        object DoubleClickGroup: TGroupBox
           Left = 8
           Top = 131
           Width = 357
@@ -483,7 +493,7 @@ object PreferencesDialog: TPreferencesDialog
             'ly.'
           WordWrap = True
         end
-        object PanelsGroup: TXPGroupBox
+        object PanelsGroup: TGroupBox
           Left = 8
           Top = 38
           Width = 357
@@ -548,7 +558,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object CommanderMiscGroup: TXPGroupBox
+        object CommanderMiscGroup: TGroupBox
           Left = 8
           Top = 170
           Width = 357
@@ -570,7 +580,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object CompareCriterionsGroup: TXPGroupBox
+        object CompareCriterionsGroup: TGroupBox
           Left = 8
           Top = 233
           Width = 357
@@ -623,7 +633,7 @@ object PreferencesDialog: TPreferencesDialog
           Caption = 'Preferences on this tab applies to Explorer-like interface only.'
           WordWrap = True
         end
-        object GroupBox2: TXPGroupBox
+        object GroupBox2: TGroupBox
           Left = 8
           Top = 38
           Width = 357
@@ -659,7 +669,7 @@ object PreferencesDialog: TPreferencesDialog
           Width = 529
           Height = 345
           TabOrder = 0
-          inherited CommonPropertiesGroup: TXPGroupBox
+          inherited CommonPropertiesGroup: TGroupBox
             Left = 197
             Top = 209
             Height = 73
@@ -671,7 +681,7 @@ object PreferencesDialog: TPreferencesDialog
               Top = 19
             end
           end
-          inherited LocalPropertiesGroup: TXPGroupBox
+          inherited LocalPropertiesGroup: TGroupBox
             Left = 197
             Top = 156
             Height = 48
@@ -686,14 +696,14 @@ object PreferencesDialog: TPreferencesDialog
               Top = 92
             end
           end
-          inherited RemotePropertiesGroup: TXPGroupBox
+          inherited RemotePropertiesGroup: TGroupBox
             Left = 8
             Top = 156
             Width = 182
             Height = 126
             Caption = 'Upload options'
           end
-          inherited ChangeCaseGroup: TXPGroupBox
+          inherited ChangeCaseGroup: TGroupBox
             Left = 247
             Top = 8
             Width = 123
@@ -716,7 +726,7 @@ object PreferencesDialog: TPreferencesDialog
               Width = 110
             end
           end
-          inherited TransferModeGroup: TXPGroupBox
+          inherited TransferModeGroup: TGroupBox
             Left = 8
             Top = 8
             Width = 231
@@ -736,7 +746,7 @@ object PreferencesDialog: TPreferencesDialog
               Width = 213
             end
           end
-          inherited OtherGroup: TXPGroupBox
+          inherited OtherGroup: TGroupBox
             Left = 8
             Top = 284
             Width = 362
@@ -762,7 +772,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object InternalEditorGroup: TXPGroupBox
+        object InternalEditorGroup: TGroupBox
           Left = 8
           Top = 268
           Width = 357
@@ -806,7 +816,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object SingleEditorGroup: TXPGroupBox
+        object SingleEditorGroup: TGroupBox
           Left = 8
           Top = 191
           Width = 357
@@ -833,7 +843,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object EditorPreferenceGroup: TXPGroupBox
+        object EditorPreferenceGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -946,13 +956,13 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object ShellIconsGroup: TXPGroupBox
+        object ShellIconsGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
           Height = 206
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Shell icons'
+          Caption = 'Windows Shell'
           TabOrder = 0
           DesignSize = (
             357
@@ -993,7 +1003,7 @@ object PreferencesDialog: TPreferencesDialog
             Width = 325
             Height = 25
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Register to &handle scp:// and sftp:// addresses'
+            Caption = 'Register to &handle sftp:// and scp:// addresses'
             TabOrder = 4
             OnClick = RegisterAsUrlHandlerButtonClick
           end
@@ -1023,7 +1033,7 @@ object PreferencesDialog: TPreferencesDialog
             TabStop = True
           end
         end
-        object ExternalAppsGroup: TXPGroupBox
+        object ExternalAppsGroup: TGroupBox
           Left = 8
           Top = 222
           Width = 357
@@ -1100,7 +1110,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object CustomCommandsGroup: TXPGroupBox
+        object CustomCommandsGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -1214,7 +1224,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object DragDropDownloadsGroup: TXPGroupBox
+        object DragDropDownloadsGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -1326,7 +1336,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object QueueGroup: TXPGroupBox
+        object QueueGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -1386,7 +1396,7 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 2
           end
         end
-        object QueueViewGroup: TXPGroupBox
+        object QueueViewGroup: TGroupBox
           Left = 8
           Top = 164
           Width = 357
@@ -1430,7 +1440,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object StorageGroup: TXPGroupBox
+        object StorageGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -1447,17 +1457,17 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 0
             OnClick = ControlChange
           end
-          object IniFileStorageButton: TRadioButton
+          object IniFileStorageButton2: TRadioButton
             Left = 16
             Top = 45
             Width = 289
             Height = 17
-            Caption = '&INI file (winscp3.ini)'
+            Caption = '&INI file (winscp.ini)'
             TabOrder = 1
             OnClick = ControlChange
           end
         end
-        object TemporaryDirectoryGrouo: TXPGroupBox
+        object TemporaryDirectoryGrouo: TGroupBox
           Left = 8
           Top = 88
           Width = 357
@@ -1502,6 +1512,8 @@ object PreferencesDialog: TPreferencesDialog
             Width = 192
             Height = 21
             AcceptFiles = True
+            OnBeforeDialog = PathEditBeforeDialog
+            OnAfterDialog = PathEditAfterDialog
             DialogText = 'Select directory for temporary drag && drop files.'
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
@@ -1530,7 +1542,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object OtherStorageGroup: TXPGroupBox
+        object OtherStorageGroup: TGroupBox
           Left = 8
           Top = 243
           Width = 357
@@ -1555,6 +1567,8 @@ object PreferencesDialog: TPreferencesDialog
             Width = 216
             Height = 21
             AcceptFiles = True
+            OnBeforeDialog = PathEditBeforeDialog
+            OnAfterDialog = PathEditAfterDialog
             DefaultExt = 'log'
             Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
@@ -1577,7 +1591,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object ResumeBox: TXPGroupBox
+        object ResumeBox: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -1632,7 +1646,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object SessionReopenGroup: TXPGroupBox
+        object SessionReopenGroup: TGroupBox
           Left = 8
           Top = 139
           Width = 357
@@ -1690,7 +1704,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object UpdatesGroup: TXPGroupBox
+        object UpdatesGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -1735,7 +1749,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = ControlChange
           end
         end
-        object UpdatesProxyGroup: TXPGroupBox
+        object UpdatesProxyGroup: TGroupBox
           Left = 8
           Top = 139
           Width = 357
@@ -1751,7 +1765,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 46
             Width = 78
             Height = 13
-            Caption = 'Pro&xy host name'
+            Caption = '&Proxy host name'
             FocusControl = UpdatesProxyHostEdit
           end
           object UpdatesProxyPortLabel: TLabel
@@ -1768,6 +1782,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 63
             Width = 94
             Height = 21
+            Alignment = taRightJustify
             MaxValue = 65535
             MinValue = 1
             Anchors = [akTop, akRight]
@@ -1804,7 +1819,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object CopyParamListGroup: TXPGroupBox
+        object CopyParamListGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -1911,7 +1926,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = AddEditCopyParamButtonClick
           end
         end
-        object CopyParamListOptionsGroup: TXPGroupBox
+        object CopyParamListOptionsGroup: TGroupBox
           Left = 8
           Top = 292
           Width = 357
@@ -1940,7 +1955,7 @@ object PreferencesDialog: TPreferencesDialog
         DesignSize = (
           373
           353)
-        object PathInCaptionGroup: TXPGroupBox
+        object PathInCaptionGroup: TGroupBox
           Left = 8
           Top = 8
           Width = 357
@@ -1973,31 +1988,56 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 2
           end
         end
+        object WindowMiscellaneousGroup: TGroupBox
+          Left = 8
+          Top = 108
+          Width = 357
+          Height = 53
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Miscellaneous'
+          TabOrder = 1
+          DesignSize = (
+            357
+            53)
+          object MinimizeToTrayCheck: TCheckBox
+            Left = 16
+            Top = 21
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Minimize main window to taskbar status area (system tray)'
+            TabOrder = 0
+            OnClick = ControlChange
+          end
+        end
       end
     end
     object LeftPanel: TPanel
       Left = 0
       Top = 0
-      Width = 151
+      Width = 132
       Height = 432
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
-        151
+        132
         432)
       object NavigationTree: TTreeView
         Left = 8
         Top = 9
-        Width = 135
+        Width = 116
         Height = 422
         Anchors = [akLeft, akTop, akRight, akBottom]
         HideSelection = False
         HotTrack = True
         Indent = 19
         ReadOnly = True
+        ShowButtons = False
+        ShowRoot = False
         TabOrder = 0
         OnChange = NavigationTreeChange
+        OnCollapsing = NavigationTreeCollapsing
         Items.Data = {
           08000000250000000000000001000000FFFFFFFFFFFFFFFF0000000005000000
           0C456E7669726F6E6D656E7458230000000000000003000000FFFFFFFFFFFFFF
@@ -2024,13 +2064,23 @@ object PreferencesDialog: TPreferencesDialog
     end
   end
   object HelpButton: TButton
-    Left = 445
+    Left = 426
     Top = 438
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'Help'
-    TabOrder = 3
+    TabOrder = 4
     OnClick = HelpButtonClick
+  end
+  object ExportButton: TButton
+    Left = 8
+    Top = 438
+    Width = 75
+    Height = 25
+    Anchors = [akLeft, akBottom]
+    Caption = 'E&xport...'
+    TabOrder = 1
+    OnClick = ExportButtonClick
   end
 end

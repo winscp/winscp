@@ -2,7 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <ScpMain.h>
+#include <CoreMain.h>
 
 #include <Log.h>
 #include <TextsWin.h>
@@ -176,9 +176,10 @@ void __fastcall InvalidDefaultTranslation()
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall Execute(TProgramParams * Params)
+int __fastcall Execute()
 {
   assert(StoredSessions);
+  TProgramParams * Params = TProgramParams::Instance();
   assert(Params);
 
   // do not flash message boxes on startup
@@ -198,7 +199,7 @@ int __fastcall Execute(TProgramParams * Params)
   if (Help || Params->FindSwitch("Console") || Params->FindSwitch("script") ||
       Params->FindSwitch("command"))
   {
-    return Console(Params, Help);
+    return Console(Help);
   }
 
   TTerminalManager * TerminalManager = NULL;
@@ -226,17 +227,25 @@ int __fastcall Execute(TProgramParams * Params)
     AnsiString Value;
 
     AnsiString IniFileName = Params->SwitchValue("ini");
-    if (!IniFileName.IsEmpty() && !FileExists(IniFileName))
+    if (!IniFileName.IsEmpty())
     {
-      // this should be displayed rather at the very beginning.
-      // however for simplicity (GUI-only), we do it only here.
-      MessageDialog(FMTLOAD(FILE_NOT_EXISTS, (IniFileName)), qtError, qaOK);
+      AnsiString IniFileNameExpanded = ExpandEnvironmentVariables(IniFileName);
+      if (!FileExists(IniFileNameExpanded))
+      {
+        // this should be displayed rather at the very beginning.
+        // however for simplicity (GUI-only), we do it only here.
+        MessageDialog(FMTLOAD(FILE_NOT_EXISTS, (IniFileNameExpanded)), qtError, qaOK);
+      }
     }
 
     if (Params->FindSwitch("UninstallCleanup"))
     {
-      if (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
-            qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes)
+      // The innosetup cannot skip UninstallCleanup run task for silent uninstalls,
+      // workaround is that we create mutex in uninstaller, if it runs silent, and
+      // ignore the UninstallCleanup, when the mutex exists.
+      if ((OpenMutex(SYNCHRONIZE, false, "WinSCPSilentUninstall") == NULL) &&
+          (MessageDialog(LoadStr(UNINSTALL_CLEANUP), qtConfirmation,
+            qaYes | qaNo, HELP_UNINSTALL_CLEANUP) == qaYes))
       {
         DoCleanupDialog(StoredSessions, Configuration);
       }
@@ -373,7 +382,6 @@ int __fastcall Execute(TProgramParams * Params)
 
             try
             {
-              CALLSTACK;
               if (!TerminalManager->ConnectActiveTerminal())
               {
                 AutoStartSession = "";
@@ -381,7 +389,6 @@ int __fastcall Execute(TProgramParams * Params)
               }
               else
               {
-                CALLSTACK;
                 TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
                 try
                 {
@@ -407,7 +414,6 @@ int __fastcall Execute(TProgramParams * Params)
                       UseDefaults);
                   }
 
-                  CALLSTACK;
                   Application->Run();
                 }
                 __finally

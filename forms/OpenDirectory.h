@@ -14,7 +14,6 @@
 #include <vcl\ExtCtrls.hpp>
 #include <Mask.hpp>
 #include <ComboEdit.hpp>
-#include <XPThemes.hpp>
 
 #include <FileOperationProgress.h>
 #include <Terminal.h>
@@ -30,7 +29,7 @@ __published:
   TIEComboBox *RemoteDirectoryEdit;
   TIEComboBox *LocalDirectoryEdit;
   TLabel *EditLabel;
-  TXPGroupBox *BookmarksGroup;
+  TGroupBox *BookmarksGroup;
   TListBox *BookmarksList;
   TButton *AddBookmarkButton;
   TButton *RemoveBookmarkButton;

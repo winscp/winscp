@@ -15,7 +15,7 @@ public:
     FModified = false;
   };
 
-  __property bool Modified = { read = FModified, write = FModified }; 
+  __property bool Modified = { read = FModified, write = FModified };
 
 private:
   bool FModified;
@@ -63,9 +63,9 @@ void __fastcall TCustomWinConfiguration::Default()
   ClearHistory();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomWinConfiguration::ModifyAll()
+void __fastcall TCustomWinConfiguration::Saved()
 {
-  TGUIConfiguration::ModifyAll();
+  TGUIConfiguration::Saved();
 
   THistoryStrings * HistoryStrings;
   for (int Index = 0; Index < FHistory->Count; Index++)
@@ -97,53 +97,101 @@ void __fastcall TCustomWinConfiguration::ModifyAll()
     KEY(String,   ConsoleWin.WindowSize); \
   ); \
 //---------------------------------------------------------------------------
-void __fastcall TCustomWinConfiguration::SaveSpecial(
-  THierarchicalStorage * Storage)
+void __fastcall TCustomWinConfiguration::SaveData(
+  THierarchicalStorage * Storage, bool All)
 {
-  TGUIConfiguration::SaveSpecial(Storage);
+  TGUIConfiguration::SaveData(Storage, All);
 
   // duplicated from core\configuration.cpp
   #define KEY(TYPE, VAR) Storage->Write ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
   REGCONFIG(true);
   #undef KEY
 
-  if ((FHistory->Count > 0) && Storage->OpenSubKey("History", true))
+  if (FHistory->Count > 0)
   {
-    try
+    if (Storage->OpenSubKey("History", true))
     {
-      THistoryStrings * HistoryStrings;
-      for (int Index = 0; Index < FHistory->Count; Index++)
+      try
       {
-        HistoryStrings = dynamic_cast<THistoryStrings *>(FHistory->Objects[Index]);
-        assert(HistoryStrings != NULL);
-        if (HistoryStrings->Modified)
+        THistoryStrings * HistoryStrings;
+        for (int Index = 0; Index < FHistory->Count; Index++)
         {
-          if (Storage->OpenSubKey(FHistory->Strings[Index], true))
+          HistoryStrings = dynamic_cast<THistoryStrings *>(FHistory->Objects[Index]);
+          assert(HistoryStrings != NULL);
+          if (All || HistoryStrings->Modified)
           {
-            try
+            if (Storage->OpenSubKey(FHistory->Strings[Index], true))
             {
-              Storage->WriteValues(HistoryStrings);
-              HistoryStrings->Modified = false;
-            }
-            __finally
-            {
-              Storage->CloseSubKey();
+              try
+              {
+                Storage->WriteValues(HistoryStrings);
+              }
+              __finally
+              {
+                Storage->CloseSubKey();
+              }
             }
           }
         }
       }
+      __finally
+      {
+        Storage->CloseSubKey();
+      }
     }
-    __finally
+
+    if (Storage->OpenSubKey("HistoryParams", true))
     {
-      Storage->CloseSubKey();
+      try
+      {
+        THistoryStrings * HistoryStrings;
+        for (int Index = 0; Index < FHistory->Count; Index++)
+        {
+          HistoryStrings = dynamic_cast<THistoryStrings *>(FHistory->Objects[Index]);
+          assert(HistoryStrings != NULL);
+          if (All || HistoryStrings->Modified)
+          {
+            bool HasData = false;
+            for (int VIndex = 0; !HasData && (VIndex < HistoryStrings->Count); VIndex++)
+            {
+              HasData = (HistoryStrings->Objects[VIndex] != NULL);
+            }
+
+            if (!HasData)
+            {
+              Storage->RecursiveDeleteSubKey(FHistory->Strings[Index]);
+            }
+            else if (Storage->OpenSubKey(FHistory->Strings[Index], true))
+            {
+              try
+              {
+                Storage->ClearValues();
+                for (int VIndex = 0; VIndex < HistoryStrings->Count; VIndex++)
+                {
+                  void * Data = HistoryStrings->Objects[VIndex];
+                  Storage->WriteBinaryData(IntToStr(VIndex), &Data, sizeof(Data));
+                }
+              }
+              __finally
+              {
+                Storage->CloseSubKey();
+              }
+            }
+          }
+        }
+      }
+      __finally
+      {
+        Storage->CloseSubKey();
+      }
     }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomWinConfiguration::LoadSpecial(
+void __fastcall TCustomWinConfiguration::LoadData(
   THierarchicalStorage * Storage)
 {
-  TGUIConfiguration::LoadSpecial(Storage);
+  TGUIConfiguration::LoadData(Storage);
 
   // duplicated from core\configuration.cpp
   #define KEY(TYPE, VAR) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#VAR)), VAR)
@@ -153,9 +201,9 @@ void __fastcall TCustomWinConfiguration::LoadSpecial(
   #undef KEY
 
   ClearHistory();
-  TStrings * Names = NULL;
   if (Storage->OpenSubKey("History", false))
   {
+    TStrings * Names = NULL;
     try
     {
       Names = new TStringList();
@@ -185,6 +233,41 @@ void __fastcall TCustomWinConfiguration::LoadSpecial(
     {
       Storage->CloseSubKey();
       delete Names;
+    }
+  }
+
+  if (Storage->OpenSubKey("HistoryParams", false))
+  {
+    try
+    {
+      THistoryStrings * HistoryStrings;
+      for (int Index = 0; Index < FHistory->Count; Index++)
+      {
+        HistoryStrings = dynamic_cast<THistoryStrings *>(FHistory->Objects[Index]);
+        if (Storage->OpenSubKey(FHistory->Strings[Index], false))
+        {
+          try
+          {
+            for (int VIndex = 0; VIndex < HistoryStrings->Count; VIndex++)
+            {
+              void * Data;
+              if (Storage->ReadBinaryData(IntToStr(VIndex), &Data, sizeof(Data)) ==
+                      sizeof(Data))
+              {
+                HistoryStrings->Objects[VIndex] = reinterpret_cast<TObject *>(Data);
+              }
+            }
+          }
+          __finally
+          {
+            Storage->CloseSubKey();
+          }
+        }
+      }
+    }
+    __finally
+    {
+      Storage->CloseSubKey();
     }
   }
 }
@@ -257,4 +340,3 @@ void __fastcall TCustomWinConfiguration::SetConsoleWin(TConsoleWinConfiguration 
 {
   SET_CONFIG_PROPERTY(ConsoleWin);
 }
-

@@ -53,65 +53,112 @@ private:
 class TWinHelpTester : public TInterfacedObject, public IWinHelpTester
 {
 public:
-  bool __fastcall CanShowALink(const AnsiString ALink, const AnsiString FileName);
-  bool __fastcall CanShowTopic(const AnsiString Topic, const AnsiString FileName);
-  bool __fastcall CanShowContext(const int Context, const AnsiString FileName);
-  TStringList * __fastcall GetHelpStrings(const AnsiString ALink);
-  AnsiString __fastcall GetHelpPath();
-  AnsiString __fastcall GetDefaultHelpFile();
+  virtual __fastcall ~TWinHelpTester();
+  virtual bool __fastcall CanShowALink(const AnsiString ALink, const AnsiString FileName);
+  virtual bool __fastcall CanShowTopic(const AnsiString Topic, const AnsiString FileName);
+  virtual bool __fastcall CanShowContext(const int Context, const AnsiString FileName);
+  virtual TStringList * __fastcall GetHelpStrings(const AnsiString ALink);
+  virtual AnsiString __fastcall GetHelpPath();
+  virtual AnsiString __fastcall GetDefaultHelpFile();
 
   IUNKNOWN
 };
 //---------------------------------------------------------------------------
 TWebHelpSystem * WebHelpSystem;
-_di_IHelpManager * HelpManager = NULL;
+_di_IHelpManager * PHelpManager = NULL;
+IUnknown * HelpManagerUnknown = NULL;
+TObjectList * ViewerList = NULL;
+ICustomHelpViewer * WinHelpViewer = NULL;
 //---------------------------------------------------------------------------
-void __fastcall InitializeWebHelp()
+void __fastcall InitializeWinHelp()
 {
-  assert(HelpManager == NULL);
+  assert(PHelpManager == NULL);
 
   // workaround
   // _di_IHelpManager cannot be instantiated due to either bug in compiler or
   // VCL code
-  HelpManager = (_di_IHelpManager*)malloc(sizeof(_di_IHelpManager));
+  PHelpManager = (_di_IHelpManager*)malloc(sizeof(_di_IHelpManager));
   WebHelpSystem = new TWebHelpSystem();
-  RegisterViewer(WebHelpSystem, *HelpManager);
+  // our own reference
+  WebHelpSystem->AddRef();
+  RegisterViewer(WebHelpSystem, *PHelpManager);
+  HelpManagerUnknown = dynamic_cast<IUnknown *>(&**PHelpManager);
 
   // gross hack
   // Due to major bugs in VCL help system, unregister winhelp at all.
-  // To do this we must call RegisterViewer first to get HelpManager. 
+  // To do this we must call RegisterViewer first to get HelpManager.
   // Due to another bug, viewers must be unregistred in order reversed to
   // registration order, so we must unregister WebHelpSystem first and register
   // it again at the end
   WebHelpSystem->InternalShutdown();
-  (**HelpManager).Release(WebHelpSystem->ViewerID() - 1);
-  RegisterViewer(WebHelpSystem, *HelpManager);
+  // 40 is offset from IHelpManager to THelpManager
+  // 16 is offset from THelpManager to THelpManager::FViewerList
+  ViewerList =
+    *reinterpret_cast<TObjectList **>(reinterpret_cast<char *>(&**PHelpManager)
+    - 40 + 16);
+  assert(ViewerList->Count == 1);
+  // 8 is offset from THelpViewerNode to THelpViewerNode::FViewer
+  int WinHelpViewerID =
+    *reinterpret_cast<int *>(reinterpret_cast<char *>(ViewerList->Items[0])
+    + 8);
+  // 4 is offset from THelpViewerNode to THelpViewerNode::FViewer
+  WinHelpViewer =
+    *reinterpret_cast<_di_ICustomHelpViewer *>(reinterpret_cast<char *>(ViewerList->Items[0])
+    + 4);
+  // our reference
+  // we cannot release win help viewer completelly here as finalization code of
+  // WinHelpViewer expect it to exist
+  WinHelpViewer->AddRef();
+  (**PHelpManager).Release(WinHelpViewerID);
+  // remove forgoten 3 references of manager
+  WinHelpViewer->Release();
+  WinHelpViewer->Release();
+  WinHelpViewer->Release();
+  assert(ViewerList->Count == 0);
+  // this clears reference to manager in TWinHelpViewer::FHelpManager,
+  // preventing call to TWinHelpViewer::InternalShutdown from finalization code
+  // of WinHelpViewer
+  WinHelpViewer->ShutDown();
 
-  // now when winhelp is not registered, the tested is not user anyway
+  RegisterViewer(WebHelpSystem, *PHelpManager);
+  // we've got second reference to the same pointer here, release it
+  HelpManagerUnknown->Release();
+  assert(ViewerList->Count == 1);
+
+  // now when winhelp is not registered, the tester is not used anyway
+  // for any real work, but we use it as a hook to be called after
+  // finalization of WinHelpViewer (see its finalization section)
   WinHelpTester = new TWinHelpTester();
 }
 //---------------------------------------------------------------------------
-void __fastcall FinalizeWebHelp()
+void __fastcall FinalizeWinHelp()
 {
   if (WebHelpSystem != NULL)
   {
-    // another workaround.
-    // HelpMananger has bug in destructor, as workaround we must unregister
-    // our viewer sooner 
+    // unregister ourselves to release both references
     WebHelpSystem->InternalShutdown();
-  }
-  
-  if (HelpManager != NULL)
-  {
-    free(HelpManager);
-    HelpManager = NULL;
+    // our own reference
+    WebHelpSystem->Release();
   }
 
-  if (WinHelpTester != NULL)
+  if (PHelpManager != NULL)
   {
-    delete WinHelpTester;
-    WinHelpTester = NULL;
+    assert(ViewerList->Count == 0);
+
+    // our reference
+    HelpManagerUnknown->Release();
+    free(PHelpManager);
+    PHelpManager = NULL;
+    HelpManagerUnknown = NULL;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall CleanUpWinHelp()
+{
+  // WinHelpViewer finalization code should have been called by now already,
+  // so we can safely remove the last reference to destroy it
+  assert(WinHelpViewer != NULL);
+  WinHelpViewer->Release();
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TWebHelpSystem::GetViewerName()
@@ -126,12 +173,16 @@ int __fastcall TWebHelpSystem::ViewerID()
 //---------------------------------------------------------------------------
 void __fastcall TWebHelpSystem::InternalShutdown()
 {
-  assert(HelpManager != NULL);
-  if (HelpManager != NULL)
+  assert(PHelpManager != NULL);
+  if (PHelpManager != NULL)
   {
-    // override conflict of two Release() methods by getting 
+    // override conflict of two Release() methods by getting
     // IHelpManager explicitly using operator *
-    (**HelpManager).Release(FViewerID);
+    (**PHelpManager).Release(FViewerID);
+    // registration to help manager increases refcount by 2, but deregistration
+    // by one only
+    assert(RefCount > 0);
+    Release();
   }
 }
 //---------------------------------------------------------------------------
@@ -177,26 +228,35 @@ void __fastcall TWebHelpSystem::ShutDown()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowALink(const AnsiString ALink, 
+__fastcall TWinHelpTester::~TWinHelpTester()
+{
+  CleanUpWinHelp();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinHelpTester::CanShowALink(const AnsiString ALink,
   const AnsiString FileName)
 {
+  assert(false);
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowTopic(const AnsiString Topic, 
+bool __fastcall TWinHelpTester::CanShowTopic(const AnsiString Topic,
   const AnsiString FileName)
 {
+  assert(false);
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/, 
+bool __fastcall TWinHelpTester::CanShowContext(const int /*Context*/,
   const AnsiString FileName)
 {
+  assert(false);
   return !Application->HelpFile.IsEmpty();
 }
 //---------------------------------------------------------------------------
 TStringList * __fastcall TWinHelpTester::GetHelpStrings(const AnsiString ALink)
 {
+  assert(false);
   TStringList * Result = new TStringList();
   Result->Add(ViewerName + ": " + ALink);
   return Result;
@@ -204,12 +264,13 @@ TStringList * __fastcall TWinHelpTester::GetHelpStrings(const AnsiString ALink)
 //---------------------------------------------------------------------------
 AnsiString __fastcall TWinHelpTester::GetHelpPath()
 {
+  assert(false);
   // never called on windows anyway
   return ExtractFilePath(Application->HelpFile);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TWinHelpTester::GetDefaultHelpFile()
 {
+  assert(false);
   return Application->HelpFile;
 }
-

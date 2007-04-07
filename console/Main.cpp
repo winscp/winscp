@@ -11,6 +11,7 @@ using namespace std;
 HANDLE ConsoleInput = NULL;
 HANDLE Child = NULL;
 HANDLE CancelEvent = NULL;
+HANDLE InputTimerEvent = NULL;
 unsigned int OutputType = FILE_TYPE_UNKNOWN;
 unsigned int InputType = FILE_TYPE_UNKNOWN;
 enum { RESULT_GLOBAL_ERROR = 1, RESULT_INIT_ERROR = 2, RESULT_PROCESSING_ERROR = 3,
@@ -94,7 +95,9 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
 
   TConsoleCommStruct* CommStruct = GetCommStruct(FileMapping);
   CommStruct->Size = sizeof(TConsoleCommStruct);
-  CommStruct->Version = TConsoleCommStruct::CurrentVersion;
+  // if the application keeps version 1, it means that is actually supports
+  // version 0 only, otherwise it is obligated to upgrade version to at least 2
+  CommStruct->Version = TConsoleCommStruct::Version1;
   CommStruct->Event = TConsoleCommStruct::NONE;
   FreeCommStruct(CommStruct);
 }
@@ -239,7 +242,35 @@ inline void ProcessPrintEvent(TConsoleCommStruct::TPrintEvent& Event)
   Print(Event.FromBeginning, Event.Message);
 }
 //---------------------------------------------------------------------------
-void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
+void BreakInput()
+{
+  FlushConsoleInputBuffer(ConsoleInput);
+  INPUT_RECORD InputRecord;
+  memset(&InputRecord, 0, sizeof(InputRecord));
+  InputRecord.EventType = KEY_EVENT;
+  InputRecord.Event.KeyEvent.bKeyDown = true;
+  InputRecord.Event.KeyEvent.wRepeatCount = 1;
+  InputRecord.Event.KeyEvent.uChar.AsciiChar = '\r';
+
+  unsigned long Written;
+  WriteConsoleInput(ConsoleInput, &InputRecord, 1, &Written);
+
+  SetEvent(CancelEvent);
+}
+//---------------------------------------------------------------------------
+DWORD WINAPI InputTimerThreadProc(void * Parameter)
+{
+  unsigned int Timer = reinterpret_cast<unsigned int>(Parameter);
+
+  if (WaitForSingleObject(InputTimerEvent, Timer) == WAIT_TIMEOUT)
+  {
+    BreakInput();
+  }
+
+  return 0;
+}
+//---------------------------------------------------------------------------
+void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event, int Version)
 {
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
@@ -247,7 +278,7 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
     unsigned long Read;
     char Ch;
     bool Result;
-    
+
     while (((Result = (ReadFile(ConsoleInput, &Ch, 1, &Read, NULL) != 0)) != false) &&
            (Read > 0) && (Len < sizeof(Event.Str) - 1) && (Ch != '\n'))
     {
@@ -279,8 +310,19 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
     }
     SetConsoleMode(ConsoleInput, NewMode);
 
+    HANDLE InputTimerThread = NULL;
+    bool SupportTimer = (Version >= TConsoleCommStruct::Version2);
+
     try
     {
+      if (SupportTimer && (Event.Timer > 0))
+      {
+        unsigned long ThreadId;
+        InputTimerEvent = CreateEvent(NULL, false, false, NULL);
+        InputTimerThread = CreateThread(NULL, 0, InputTimerThreadProc,
+          reinterpret_cast<void *>(Event.Timer), 0, &ThreadId);
+      }
+
       unsigned long Read;
       Event.Result = ReadConsole(ConsoleInput, Event.Str, sizeof(Event.Str) - 1, &Read, NULL);
       Event.Str[Read] = '\0';
@@ -295,18 +337,23 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
       {
         Event.Result = false;
       }
-
-      SetConsoleMode(ConsoleInput, PrevMode);
     }
-    catch(...)
+    __finally
     {
+      if (InputTimerThread != NULL)
+      {
+        SetEvent(InputTimerEvent);
+        WaitForSingleObject(InputTimerThread, 100);
+        CloseHandle(InputTimerEvent);
+        InputTimerEvent = NULL;
+        CloseHandle(InputTimerThread);
+      }
       SetConsoleMode(ConsoleInput, PrevMode);
-      throw;
     }
   }
 }
 //---------------------------------------------------------------------------
-void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
+void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event, int Version)
 {
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
@@ -321,39 +368,67 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
     NewMode = (PrevMode | ENABLE_PROCESSED_INPUT) & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
     SetConsoleMode(ConsoleInput, NewMode);
 
+    bool SupportTimer = (Version >= TConsoleCommStruct::Version2);
+    unsigned int ATimer;
+    if (SupportTimer)
+    {
+      ATimer = Event.Timer;
+    }
+
     try
     {
       do
       {
         unsigned long Read;
         INPUT_RECORD Record;
-        if ((ReadConsoleInput(ConsoleInput, &Record, 1, &Read) != 0) &&
+        if ((PeekConsoleInput(ConsoleInput, &Record, 1, &Read) != 0) &&
             (Read == 1))
         {
-          bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
-          if (PendingCancel)
+          if ((ReadConsoleInput(ConsoleInput, &Record, 1, &Read) != 0) &&
+              (Read == 1))
           {
-            Event.Result = Event.Break;
-          }
-          else if ((Record.EventType == KEY_EVENT) &&
-                   Record.Event.KeyEvent.bKeyDown)
-          {
-            char CStr[2];
-            CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
-            CStr[1] = '\0';
-            CharUpperBuff(CStr, 1);
-            char C = CStr[0];
-            if (C == 27)
+            bool PendingCancel = (WaitForSingleObject(CancelEvent, 0) == WAIT_OBJECT_0);
+            if (PendingCancel)
             {
-              Event.Result = Event.Cancel;
+              Event.Result = Event.Break;
             }
-            else if ((strchr(Event.Options, C) != NULL) &&
-                     ((Record.Event.KeyEvent.dwControlKeyState &
-                       (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED |
-                       RIGHT_CTRL_PRESSED)) == 0))
-
+            else if ((Record.EventType == KEY_EVENT) &&
+                     Record.Event.KeyEvent.bKeyDown)
             {
-              Event.Result = strchr(Event.Options, C) - Event.Options + 1;
+              char CStr[2];
+              CStr[0] = Record.Event.KeyEvent.uChar.AsciiChar;
+              CStr[1] = '\0';
+              CharUpperBuff(CStr, 1);
+              char C = CStr[0];
+              if (C == 27)
+              {
+                Event.Result = Event.Cancel;
+              }
+              else if ((strchr(Event.Options, C) != NULL) &&
+                       ((Record.Event.KeyEvent.dwControlKeyState &
+                         (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED | LEFT_ALT_PRESSED |
+                         RIGHT_CTRL_PRESSED)) == 0))
+
+              {
+                Event.Result = strchr(Event.Options, C) - Event.Options + 1;
+              }
+            }
+          }
+        }
+
+        if (Event.Result == 0)
+        {
+          unsigned int TimerSlice = 50;
+          Sleep(TimerSlice);
+          if (SupportTimer && (Event.Timer > 0))
+          {
+            if (ATimer > TimerSlice)
+            {
+              ATimer -= TimerSlice;
+            }
+            else
+            {
+              Event.Result = Event.Timeouted;
             }
           }
         }
@@ -387,11 +462,11 @@ void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
         break;
 
       case TConsoleCommStruct::INPUT:
-        ProcessInputEvent(CommStruct->InputEvent);
+        ProcessInputEvent(CommStruct->InputEvent, CommStruct->Version);
         break;
 
       case TConsoleCommStruct::CHOICE:
-        ProcessChoiceEvent(CommStruct->ChoiceEvent);
+        ProcessChoiceEvent(CommStruct->ChoiceEvent, CommStruct->Version);
         break;
 
       case TConsoleCommStruct::TITLE:
@@ -417,19 +492,7 @@ BOOL WINAPI HandlerRoutine(DWORD CtrlType)
 {
   if ((CtrlType == CTRL_C_EVENT) || (CtrlType == CTRL_BREAK_EVENT))
   {
-    FlushConsoleInputBuffer(ConsoleInput);
-    INPUT_RECORD InputRecord;
-    memset(&InputRecord, 0, sizeof(InputRecord));
-    InputRecord.EventType = KEY_EVENT;
-    InputRecord.Event.KeyEvent.bKeyDown = true;
-    InputRecord.Event.KeyEvent.wRepeatCount = 1;
-    InputRecord.Event.KeyEvent.wVirtualKeyCode = VK_RETURN;
-    InputRecord.Event.KeyEvent.uChar.AsciiChar = '\n';
-
-    unsigned long Written;
-    WriteConsoleInput(ConsoleInput, &InputRecord, 1, &Written);
-
-    SetEvent(CancelEvent);
+    BreakInput();
 
     return true;
   }
@@ -518,7 +581,7 @@ int main(int argc, char* argv[])
       #ifndef CONSOLE_TEST
       FinalizeChild(Child);
       #endif
-      
+
       SetConsoleTitle(SavedTitle);
     }
     catch(const exception& e)

@@ -71,7 +71,7 @@ Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
 }
 //---------------------------------------------------------------------
 __fastcall TCleanupDialog::TCleanupDialog(TComponent* AOwner)
-	: TForm(AOwner)
+  : TForm(AOwner)
 {
   UseSystemSettings(this);
 }
@@ -92,8 +92,8 @@ void __fastcall TCleanupDialog::InitControls()
       case wdConfiguration: Location = Configuration->ConfigurationSubKey; break;
       case wdStoredSessions: Location = Configuration->StoredSessionsSubKey; break;
       case wdHostKeys: Location = Configuration->SshHostKeysSubKey; break;
-      case wdConfigurationIniFile: Location = Configuration->IniFileStorageName; break;
-      case wdRandomSeedFile: Location = Configuration->RandomSeedFile; break;
+      case wdConfigurationIniFile: Location = ExpandEnvironmentVariables(Configuration->IniFileStorageName); break;
+      case wdRandomSeedFile: Location = ExpandEnvironmentVariables(Configuration->RandomSeedFile); break;
       case wdTemporaryFolders: Location = WinConfiguration->TemporaryDir(true); break;
       default: Location = ""; break;
     }

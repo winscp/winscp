@@ -23,7 +23,7 @@ extern "C" void KeyGenerationProgressUpdate(void * Thread,
 //---------------------------------------------------------------------------
 class TKeyGenerationThread : public THREAD_CLASS
 {
-public: 
+public:
   #define PROGRESSRANGE 65535
   #define MAXPHASE 5
   struct
@@ -34,7 +34,7 @@ public:
       bool Exponential;
       unsigned StartPoint, Total;
       unsigned Param, Current, N;   /* if exponential */
-      unsigned Mult;		            /* if linear */
+      unsigned Mult;                    /* if linear */
     } Phases[MAXPHASE];
     unsigned Total, Divisor, Range;
     unsigned Position;
@@ -60,68 +60,68 @@ public:
     int Position;
 
     if (Action < PROGFN_READY && Progress.NPhases < Phase)
-    	Progress.NPhases = Phase;
+        Progress.NPhases = Phase;
 
     switch (Action)
     {
       case PROGFN_INITIALISE:
-	      Progress.NPhases = 0;
+        Progress.NPhases = 0;
         Progress.Complete = kgInProgress;
-      	break;
+        break;
 
       case PROGFN_LIN_PHASE:
-	      Progress.Phases[Phase-1].Exponential = false;
-      	Progress.Phases[Phase-1].Mult = Progress.Phases[Phase].Total / IProgress;
-      	break;
+        Progress.Phases[Phase-1].Exponential = false;
+        Progress.Phases[Phase-1].Mult = Progress.Phases[Phase].Total / IProgress;
+        break;
 
       case PROGFN_EXP_PHASE:
-      	Progress.Phases[Phase-1].Exponential = true;
-      	Progress.Phases[Phase-1].Param = 0x10000 + IProgress;
-      	Progress.Phases[Phase-1].Current = Progress.Phases[Phase-1].Total;
-      	Progress.Phases[Phase-1].N = 0;
-      	break;
+        Progress.Phases[Phase-1].Exponential = true;
+        Progress.Phases[Phase-1].Param = 0x10000 + IProgress;
+        Progress.Phases[Phase-1].Current = Progress.Phases[Phase-1].Total;
+        Progress.Phases[Phase-1].N = 0;
+        break;
 
       case PROGFN_PHASE_EXTENT:
-      	Progress.Phases[Phase-1].Total = IProgress;
-      	break;
+        Progress.Phases[Phase-1].Total = IProgress;
+        break;
 
       case PROGFN_READY:
-      	{
-	        unsigned Total = 0;
-    	    int i;
-    	    for (i = 0; i < Progress.NPhases; i++)
+        {
+          unsigned Total = 0;
+          int i;
+          for (i = 0; i < Progress.NPhases; i++)
           {
-        		Progress.Phases[i].StartPoint = Total;
-        		Total += Progress.Phases[i].Total;
-    	    }
-	        Progress.Total = Total;
-    	    Progress.Divisor = ((Progress.Total + PROGRESSRANGE - 1) / PROGRESSRANGE);
-    	    Progress.Range = Progress.Total / Progress.Divisor;
+            Progress.Phases[i].StartPoint = Total;
+            Total += Progress.Phases[i].Total;
+          }
+          Progress.Total = Total;
+          Progress.Divisor = ((Progress.Total + PROGRESSRANGE - 1) / PROGRESSRANGE);
+          Progress.Range = Progress.Total / Progress.Divisor;
 
           Synchronize(DistributeProgressUpdate);
-      	}
-      	break;
+        }
+        break;
 
       case PROGFN_PROGRESS:
-      	if (Progress.Phases[Phase-1].Exponential)
+        if (Progress.Phases[Phase-1].Exponential)
         {
-    	    while (Progress.Phases[Phase-1].N < IProgress)
+          while (Progress.Phases[Phase-1].N < IProgress)
           {
-        		Progress.Phases[Phase-1].N++;
-        		Progress.Phases[Phase-1].Current *= Progress.Phases[Phase-1].Param;
-        		Progress.Phases[Phase-1].Current /= 0x10000;
-    	    }
-	        Position = (Progress.Phases[Phase-1].StartPoint +
-      			Progress.Phases[Phase-1].Total - Progress.Phases[Phase-1].Current);
-      	}
+            Progress.Phases[Phase-1].N++;
+            Progress.Phases[Phase-1].Current *= Progress.Phases[Phase-1].Param;
+            Progress.Phases[Phase-1].Current /= 0x10000;
+          }
+          Position = (Progress.Phases[Phase-1].StartPoint +
+            Progress.Phases[Phase-1].Total - Progress.Phases[Phase-1].Current);
+        }
         else
         {
-    	    Position = (Progress.Phases[Phase-1].StartPoint +
-      			IProgress * Progress.Phases[Phase-1].Mult);
-      	}
+          Position = (Progress.Phases[Phase-1].StartPoint +
+            IProgress * Progress.Phases[Phase-1].Mult);
+        }
         Progress.Position = Position / Progress.Divisor;
         Synchronize(DistributeProgressUpdate);
-      	break;
+        break;
     }
   }
 
@@ -209,7 +209,7 @@ void __fastcall TKeyGenerator::AddEntropy(TEntropyBit Entropy)
   if (FEntropyGot == FEntropyRequired)
   {
     FState = kgInitialized;
-		random_add_heavynoise(FEntropy, FEntropyRequired * sizeof(TEntropyBit));
+    random_add_heavynoise(FEntropy, FEntropyRequired * sizeof(TEntropyBit));
     delete FEntropy;
     FEntropy = NULL;
   }
@@ -331,10 +331,10 @@ AnsiString __fastcall TKeyGenerator::GetPublicKey()
     i = 0;
     while (i < pub_len)
     {
-    	int n = (pub_len - i < 3 ? pub_len - i : 3);
-	    base64_encode_atom(pub_blob + i, n, p);
-	    i += n;
-	    p += 4;
+      int n = (pub_len - i < 3 ? pub_len - i : 3);
+      base64_encode_atom(pub_blob + i, n, p);
+      i += n;
+      p += 4;
     }
     *p = '\0';
     FPublicKey = buffer;
@@ -392,4 +392,3 @@ void __fastcall TKeyGenerator::SaveKey(const AnsiString FileName,
   if (Result <= 0)
     throw Exception(FMTLOAD(SAVE_KEY_ERROR, (FileName)));
 }
-

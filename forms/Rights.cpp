@@ -27,6 +27,7 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
   // to avoid duplication of reference in forms that uses the frame
   PopupMenu = RightsPopup;
   FPopingContextMenu = false;
+  FInitialized = false;
 
   #define COPY_HINT(R) \
     Checks[TRights::rrGroup ## R]->Hint = Checks[TRights::rrUser ## R]->Hint; \
@@ -35,6 +36,10 @@ __fastcall TRightsFrame::TRightsFrame(TComponent* Owner)
   COPY_HINT(Write);
   COPY_HINT(Exec);
   #undef COPY_HINT
+
+  UpgradeSpeedButton(OwnerButton);
+  UpgradeSpeedButton(GroupButton);
+  UpgradeSpeedButton(OthersButton);
 }
 //---------------------------------------------------------------------------
 __fastcall TRightsFrame::~TRightsFrame()
@@ -87,7 +92,7 @@ void __fastcall TRightsFrame::SetRights(const TRights & value)
     }
   }
   AllowUndef = value.AllowUndef;
-  if (Changed)
+  if (Changed || !FInitialized)
   {
     UpdateControls();
   }
@@ -178,6 +183,7 @@ void __fastcall TRightsFrame::UpdateControls()
   DirectoriesXCheck->Visible = AllowAddXToDirectories;
   EnableControl(DirectoriesXCheck,
     Enabled && DirectoriesXEffective());
+  FInitialized = true;
   DoChange();
 }
 //---------------------------------------------------------------------------
@@ -231,7 +237,7 @@ void __fastcall TRightsFrame::RightsButtonsClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::SetAllowAddXToDirectories(bool value)
 {
-  if (FAllowAddXToDirectories != value)
+  if ((FAllowAddXToDirectories != value) || !FInitialized)
   {
     FAllowAddXToDirectories = value;
     UpdateControls();
@@ -291,6 +297,33 @@ void __fastcall TRightsFrame::RightsActionsExecute(TBasicAction * Action,
     {
       R.AllUndef();
     }
+    else if (Action == CopyTextAction)
+    {
+      CopyToClipboard(Text);
+      Changed = false;
+    }
+    else if (Action == CopyOctalAction)
+    {
+      TRights R = Rights;
+      assert(!R.IsUndef);
+      if (!R.IsUndef)
+      {
+        CopyToClipboard(R.Octal);
+      }
+      Changed = false;
+    }
+    else if (Action == PasteAction)
+    {
+      AnsiString S;
+      if (TextFromClipboard(S))
+      {
+        Text = S;
+      }
+      // trigger on change event, even if no change actually occured to
+      // allow parent form to visualize feedback of an action
+      DoChange();
+      Changed = false;
+    }
     else
     {
       Handled = false;
@@ -334,6 +367,18 @@ void __fastcall TRightsFrame::RightsActionsUpdate(TBasicAction *Action,
     LeaveRightsAsIsAction->Visible = R.AllowUndef;
     LeaveRightsAsIsAction->Checked = (R.NumberSet == TRights::rfNo) &&
       (R.NumberUnset == TRights::rfNo);
+  }
+  else if (Action == CopyTextAction)
+  {
+    CopyTextAction->Enabled = !R.IsUndef;
+  }
+  else if (Action == CopyOctalAction)
+  {
+    CopyOctalAction->Enabled = !R.IsUndef;
+  }
+  else if (Action == PasteAction)
+  {
+    PasteAction->Enabled = IsFormatInClipboard(CF_TEXT);
   }
   else
   {
@@ -417,7 +462,7 @@ void __fastcall TRightsFrame::WMContextMenu(TWMContextMenu & Message)
   __finally
   {
     FPopingContextMenu = false;
-  }  
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRightsFrame::CMDialogKey(TCMDialogKey & Message)
@@ -440,7 +485,7 @@ void __fastcall TRightsFrame::CMCancelMode(TCMCancelMode & Message)
 {
   if (FPopup && Visible && !FPopingContextMenu &&
       ((Message.Sender == NULL) ||
-       (!IsAncestor(Message.Sender, this) && 
+       (!IsAncestor(Message.Sender, this) &&
         !IsAncestor(Message.Sender, FPopupParent) &&
         (Message.Sender != this))))
   {
@@ -571,4 +616,9 @@ void __fastcall TRightsFrame::RightsPopupPopup(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TRightsFrame::FrameContextPopup(TObject * Sender,
+  TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------

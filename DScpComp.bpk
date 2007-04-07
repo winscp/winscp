@@ -33,10 +33,10 @@
   </MACROS>
   <OPTIONS>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
-    <LFLAGS value="-I -D&quot;WinSCP components&quot; -aa -Tpp -Gpd -GD -s -Gn -Gl -Gi -M"/>
+    <LFLAGS value="-D&quot;WinSCP components&quot; -aa -Tpp -Gpd -GD -s -Gn -Gl -Gi -M"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

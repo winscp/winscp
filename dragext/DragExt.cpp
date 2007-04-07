@@ -142,7 +142,7 @@ void LogVersion(HINSTANCE HInstance)
     if (GetModuleFileName(HInstance, FileName, sizeof(FileName)) > 0)
     {
       Debug(FileName);
-      
+
       unsigned long InfoHandle, Size;
       Size = GetFileVersionInfoSize(FileName, &InfoHandle);
       if (Size > 0)
@@ -328,12 +328,12 @@ bool RegisterServer(bool AllUsers)
         unsigned long Value = 1;
         RegSetValueEx(HKey, "Enable", 0, REG_DWORD,
           reinterpret_cast<unsigned char*>(&Value), sizeof(Value));
-        
+
         RegCloseKey(HKey);
-        
+
         Result = true;
       }
-      
+
       SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
     }
   }
@@ -356,7 +356,7 @@ STDAPI DllRegisterServer()
   {
     Result = SELFREG_E_CLASS;
   }
-  
+
   DEBUG("DllRegisterServer leave");
 
   return Result;
@@ -425,7 +425,7 @@ bool UnregisterServer(bool AllUsers)
 
     Result = true;
   }
-  
+
   SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
 
   DEBUG("UnregisterServer leave");

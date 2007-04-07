@@ -3,6 +3,7 @@
 #define TerminalManagerH
 //---------------------------------------------------------------------------
 #include <Terminal.h>
+#include <Queue.h>
 #include <FileOperationProgress.h>
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
@@ -11,6 +12,20 @@ class TTerminalQueue;
 class TAuthenticateForm;
 //---------------------------------------------------------------------------
 enum TTerminalPendingAction { tpNull, tpNone, tpReconnect, tpFree };
+//---------------------------------------------------------------------------
+class TManagedTerminal : public TTerminal
+{
+public:
+  __fastcall TManagedTerminal(TSessionData * SessionData, TConfiguration * Configuration);
+  virtual __fastcall ~TManagedTerminal();
+
+  TColor Color;
+  bool SynchronizeBrowsing;
+  AnsiString LocalDirectory;
+  AnsiString RemoteDirectory;
+  TObject * LocalExplorerState;
+  TObject * RemoteExplorerState;
+};
 //---------------------------------------------------------------------------
 class TTerminalManager : public TTerminalList
 {
@@ -33,6 +48,8 @@ public:
   bool __fastcall CanOpenInPutty();
   void __fastcall OpenInPutty();
   bool __fastcall NewSession();
+  void __fastcall Idle();
+  AnsiString __fastcall TerminalTitle(TTerminal * Terminal);
 
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
   __property TTerminal * ActiveTerminal = { read = FActiveTerminal, write = SetActiveTerminal };
@@ -42,9 +59,10 @@ public:
   __property TStrings * TerminalList = { read = GetTerminalList };
   __property TLogMemo * LogMemo = { read = FLogMemo };
   __property TNotifyEvent OnLastTerminalClosed = { read = FOnLastTerminalClosed, write = FOnLastTerminalClosed };
-  __property TNotifyEvent OnChangeTerminal = { read = FOnChangeTerminal, write = FOnChangeTerminal };
   __property TNotifyEvent OnTerminalListChanged = { read = FOnTerminalListChanged, write = FOnTerminalListChanged };
-  __property TNotifyEvent OnTerminalClosed = { read = FOnTerminalClosed, write = FOnTerminalClosed };
+
+protected:
+  virtual TTerminal * __fastcall CreateTerminal(TSessionData * Data);
 
 private:
   static TTerminalManager * FInstance;
@@ -55,13 +73,15 @@ private:
   TTerminalPendingAction FTerminalPendingAction;
   TNotifyEvent FOnLastTerminalClosed;
   TNotifyEvent FOnTerminalListChanged;
-  TNotifyEvent FOnChangeTerminal;
-  TNotifyEvent FOnTerminalClosed;
   TStrings * FTerminalList;
   TList * FQueues;
+  TStrings * FTerminationMessages;
   AnsiString FProgressTitle;
   TDateTime FDirectoryReadingStart;
   TAuthenticateForm * FAuthenticateForm;
+  TCriticalSection * FQueueSection;
+  TTerminalQueue * FQueueWithEvent;
+  TQueueEvent FQueueEvent;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
@@ -70,28 +90,28 @@ private:
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
   void __fastcall SetActiveTerminal(TTerminal * value);
   void __fastcall SetLogMemo(TLogMemo * value);
-  void __fastcall UpdateTerminal(TTerminal * Terminal);
   void __fastcall UpdateAll();
   void __fastcall ApplicationException(TObject * Sender, Exception * E);
   void __fastcall ApplicationShowHint(AnsiString & HintStr, bool & CanShow,
     THintInfo & HintInfo);
+  void __fastcall ApplicationActivate(TObject * Sender);
   void __fastcall ConfigurationChange(TObject * Sender);
-  void __fastcall TerminalUpdateStatus(TSecureShell * SecureShell, bool Active);
+  void __fastcall TerminalUpdateStatus(TTerminal * Terminal, bool Active);
   void __fastcall TerminalQueryUser(TObject * Sender,
     const AnsiString Query, TStrings * MoreMessages, int Answers,
     const TQueryParams * Params, int & Answer, TQueryType Type, void * Arg);
-  void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
+  void __fastcall TerminalPromptUser(TTerminal * Terminal,
     AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
     void * Arg);
-  void __fastcall TerminalDisplayBanner(TSecureShell * SecureShell,
+  void __fastcall TerminalDisplayBanner(TTerminal * Terminal,
     AnsiString SessionName, const AnsiString & Banner, bool & NeverShowAgain,
     int Options);
-  void __fastcall TerminalShowExtendedException(TSecureShell * SecureShell,
+  void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall TerminalReadDirectoryProgress(TObject * Sender, int Progress,
     bool & Cancel);
-  void __fastcall TerminalOnStdError(TObject * Sender, TLogLineType Type,
-    const AnsiString AddedLine);
+  void __fastcall TerminalInformation(TTerminal * Terminal, const AnsiString & Str,
+    bool Status, bool Active);
   void __fastcall FreeAll();
   void __fastcall TerminalReady();
   TStrings * __fastcall GetTerminalList();
@@ -106,6 +126,7 @@ private:
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
   void __fastcall DeleteLocalFile(const AnsiString FileName);
+  void __fastcall QueueEvent(TTerminalQueue * Queue, TQueueEvent Event);
 };
 //---------------------------------------------------------------------------
 #endif

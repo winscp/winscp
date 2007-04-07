@@ -4,10 +4,10 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\tbx_cb6.bpl"/>
-    <OBJFILES value="tbx_cb6.obj tbx\TBXDefaultTheme.obj 
-      tbx\TBXOfficeXPTheme.obj tbx\TBX.obj tbx\TBXUtils.obj 
-      tbx\TBXExtItems.obj tbx\TBXUxThemes.obj tbx\TBXStatusBars.obj 
-      tbx\TBXThemes.obj tbx\TBXLists.obj tbx\TBXOffice2003Theme.obj 
+    <OBJFILES value="tbx_cb6.obj tbx\TBXDefaultTheme.obj
+      tbx\TBXOfficeXPTheme.obj tbx\TBX.obj tbx\TBXUtils.obj
+      tbx\TBXExtItems.obj tbx\TBXUxThemes.obj tbx\TBXStatusBars.obj
+      tbx\TBXThemes.obj tbx\TBXLists.obj tbx\TBXOffice2003Theme.obj
       tbx\TBXToolPals.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
@@ -15,8 +15,8 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="dclocx.lib"/>
-    <SPARELIBS value="dclocx.lib rtl.lib tb2k_cb6.lib vcl.lib"/>
+    <LIBRARIES value=""/>
+    <SPARELIBS value="rtl.lib tb2k_cb6.lib vcl.lib"/>
     <PACKAGES value="rtl.bpi tb2k_cb6.bpi vcl.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;tbx"/>
@@ -28,20 +28,19 @@
     <USERDEFINES value="MPEXCLUDE"/>
     <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="tbx_cb6.cpp"/>
-    <INCLUDEPATH value="tbx\;tbx;tb2k;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\lib\;tbx\;tbx;tb2k;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="tbx;tb2k;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;tbx;tb2k;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par"/>
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-Itbx\. -Itbx -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG 
+    <IDLCFLAGS value="-Itbx\. -Itbx -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG
       -boa"/>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
-    <AFLAGS value="/mx /w2 /zd"/>
-    <LFLAGS value="-I -D&quot;Toolbar2000 -- TBX Extensions (Alex Denisov)&quot; -aa -Tpp -x -Gn 
-      -Gl -Gi"/>
+    <AFLAGS value="/mx /w2 /zi"/>
+    <LFLAGS value="-D&quot;Toolbar2000 -- TBX Extensions (Alex Denisov)&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

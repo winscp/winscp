@@ -3,7 +3,7 @@ unit ListSort;
 {
   Description
   ===========
-    Contains the classes TSortedList and TBatchWork. You will find more 
+    Contains the classes TSortedList and TBatchWork. You will find more
     details in the help-files.
 
 
@@ -17,8 +17,8 @@ unit ListSort;
 
   Restrictions on Using the Unit / Component
   ==========================================
-    This archive and its contents is copyright 1998,99 by Dieter Steinwedel. 
-    ALL RIGHTS ARE RESERVED BY DIETER STEINWEDEL. You are allowed to use it 
+    This archive and its contents is copyright 1998,99 by Dieter Steinwedel.
+    ALL RIGHTS ARE RESERVED BY DIETER STEINWEDEL. You are allowed to use it
     freely subject to the following restrictions:
 
     • You are not allowed delete or alter the author's name and
@@ -265,12 +265,12 @@ end;
 constructor TBatchControl.Create(AOwner: TComponent);
 begin
      inherited Create(AOwner);
-     FList:=TSortedList.Create;     
+     FList:=TSortedList.Create;
 end;
 
 destructor TBatchControl.Destroy;
 begin
-     FList.free;     
+     FList.free;
      inherited Destroy;
 end;
 

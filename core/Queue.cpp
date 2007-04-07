@@ -16,7 +16,7 @@ friend class TQueueItem;
 friend class TBackgroundTerminal;
 
 public:
-  __fastcall TTerminalItem(TTerminalQueue * Queue);
+  __fastcall TTerminalItem(TTerminalQueue * Queue, int Index);
   __fastcall ~TTerminalItem();
 
   void __fastcall Process(TQueueItem * Item);
@@ -40,7 +40,7 @@ protected:
 
   struct TPromptUserRec
   {
-    TSecureShell * SecureShell;
+    TTerminal * Terminal;
     AnsiString Prompt;
     TPromptKind Kind;
     AnsiString Response;
@@ -49,7 +49,7 @@ protected:
 
   struct TShowExtendedExceptionRec
   {
-    TSecureShell * SecureShell;
+    TTerminal * Terminal;
     Exception * E;
   };
 
@@ -66,13 +66,12 @@ protected:
   bool __fastcall WaitForUserAction(TQueueItem::TStatus ItemStatus, void * Params);
   bool __fastcall OverrideItemStatus(TQueueItem::TStatus & ItemStatus);
 
-  void __fastcall TerminalClose(TObject * Sender);
   void __fastcall TerminalQueryUser(TObject * Sender,
     const AnsiString Query, TStrings * MoreMessages, int Answers,
     const TQueryParams * Params, int & Answer, TQueryType Type, void * Arg);
-  void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
+  void __fastcall TerminalPromptUser(TTerminal * Terminal,
     AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg);
-  void __fastcall TerminalShowExtendedException(TSecureShell * SecureShell,
+  void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const AnsiString FileName, bool Success,
@@ -153,7 +152,7 @@ __fastcall TSignalThread::TSignalThread() :
   FEvent = CreateEvent(NULL, false, false, NULL);
   assert(FEvent != NULL);
 
-  ::SetThreadPriority(FThread, THREAD_PRIORITY_BELOW_NORMAL); 
+  ::SetThreadPriority(FThread, THREAD_PRIORITY_BELOW_NORMAL);
 }
 //---------------------------------------------------------------------------
 __fastcall TSignalThread::~TSignalThread()
@@ -209,13 +208,14 @@ __fastcall TTerminalQueue::TTerminalQueue(TTerminal * Terminal,
   FTerminal(Terminal), FTransfersLimit(2),
   FConfiguration(Configuration), FSessionData(NULL), FItems(NULL),
   FTerminals(NULL), FItemsSection(NULL), FFreeTerminals(0),
-  FItemsInProcess(0), FTemporaryTerminals(0)
+  FItemsInProcess(0), FTemporaryTerminals(0), FOverallTerminals(0)
 {
   FOnQueryUser = NULL;
   FOnPromptUser = NULL;
   FOnShowExtendedException = NULL;
   FOnQueueItemUpdate = NULL;
   FOnListUpdate = NULL;
+  FOnEvent = NULL;
   FLastIdle = Now();
   FIdleInterval = EncodeTime(0, 0, 2, 0);
 
@@ -253,9 +253,11 @@ __fastcall TTerminalQueue::~TTerminalQueue()
     {
       delete GetItem(Index);
     }
+    delete FItems;
   }
 
   delete FItemsSection;
+  delete FSessionData;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalQueue::TerminalFinished(TTerminalItem * TerminalItem)
@@ -293,7 +295,7 @@ void __fastcall TTerminalQueue::TerminalFinished(TTerminalItem * TerminalItem)
 bool __fastcall TTerminalQueue::TerminalFree(TTerminalItem * TerminalItem)
 {
   bool Result = true;
-  
+
   if (!FTerminated)
   {
     {
@@ -359,6 +361,7 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item)
 {
   if (!FTerminated)
   {
+    bool Empty;
     {
       TGuard Guard(FItemsSection);
 
@@ -367,9 +370,14 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item)
       USEDPARAM(Index);
       FItemsInProcess--;
       delete Item;
+      Empty = (FItems->Count == 0);
     }
 
     DoListUpdate();
+    if (Empty)
+    {
+      DoEvent(qeEmpty);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -433,7 +441,7 @@ TTerminalQueueStatus * __fastcall TTerminalQueue::CreateStatus(TTerminalQueueSta
 bool __fastcall TTerminalQueue::ItemGetData(TQueueItem * Item,
   TQueueItemProxy * Proxy)
 {
-  // to prevent deadlocks when closing queue from other thread 
+  // to prevent deadlocks when closing queue from other thread
   bool Result = !FFinished;
   if (Result)
   {
@@ -451,7 +459,7 @@ bool __fastcall TTerminalQueue::ItemGetData(TQueueItem * Item,
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalQueue::ItemProcessUserAction(TQueueItem * Item, void * Arg)
 {
-  // to prevent deadlocks when closing queue from other thread 
+  // to prevent deadlocks when closing queue from other thread
   bool Result = !FFinished;
   if (Result)
   {
@@ -479,7 +487,7 @@ bool __fastcall TTerminalQueue::ItemProcessUserAction(TQueueItem * Item, void * 
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalQueue::ItemMove(TQueueItem * Item, TQueueItem * BeforeItem)
 {
-  // to prevent deadlocks when closing queue from other thread 
+  // to prevent deadlocks when closing queue from other thread
   bool Result = !FFinished;
   if (Result)
   {
@@ -509,7 +517,7 @@ bool __fastcall TTerminalQueue::ItemMove(TQueueItem * Item, TQueueItem * BeforeI
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalQueue::ItemExecuteNow(TQueueItem * Item)
 {
-  // to prevent deadlocks when closing queue from other thread 
+  // to prevent deadlocks when closing queue from other thread
   bool Result = !FFinished;
   if (Result)
   {
@@ -546,7 +554,7 @@ bool __fastcall TTerminalQueue::ItemExecuteNow(TQueueItem * Item)
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalQueue::ItemDelete(TQueueItem * Item)
 {
-  // to prevent deadlocks when closing queue from other thread 
+  // to prevent deadlocks when closing queue from other thread
   bool Result = !FFinished;
   if (Result)
   {
@@ -663,7 +671,8 @@ void __fastcall TTerminalQueue::ProcessEvent()
           ((FTransfersLimit <= 0) ||
            (FTerminals->Count < FTransfersLimit + FTemporaryTerminals)))
       {
-        TerminalItem = new TTerminalItem(this);
+        FOverallTerminals++;
+        TerminalItem = new TTerminalItem(this, FOverallTerminals);
         FTerminals->Add(TerminalItem);
       }
       else if (FFreeTerminals > 0)
@@ -704,6 +713,14 @@ void __fastcall TTerminalQueue::DoListUpdate()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalQueue::DoEvent(TQueueEvent Event)
+{
+  if (OnEvent != NULL)
+  {
+    OnEvent(this, Event);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalQueue::DoQueryUser(TObject * Sender,
   const AnsiString Query, TStrings * MoreMessages, int Answers,
   const TQueryParams * Params, int & Answer, TQueryType Type, void * Arg)
@@ -714,21 +731,21 @@ void __fastcall TTerminalQueue::DoQueryUser(TObject * Sender,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalQueue::DoPromptUser(TSecureShell * SecureShell,
+void __fastcall TTerminalQueue::DoPromptUser(TTerminal * Terminal,
   AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg)
 {
   if (OnPromptUser != NULL)
   {
-    OnPromptUser(SecureShell, Prompt, Kind, Response, Result, Arg);
+    OnPromptUser(Terminal, Prompt, Kind, Response, Result, Arg);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalQueue::DoShowExtendedException(
-  TSecureShell * SecureShell, Exception * E, void * Arg)
+  TTerminal * Terminal, Exception * E, void * Arg)
 {
   if (OnShowExtendedException != NULL)
   {
-    OnShowExtendedException(SecureShell, E, Arg);
+    OnShowExtendedException(Terminal, E, Arg);
   }
 }
 //---------------------------------------------------------------------------
@@ -764,19 +781,23 @@ bool __fastcall TTerminalQueue::GetIsEmpty()
 //---------------------------------------------------------------------------
 class TBackgroundTerminal : public TSecondaryTerminal
 {
+friend class TTerminalItem;
 public:
-  __fastcall TBackgroundTerminal(TTerminal * MainTerminal, TTerminalItem * Item);
+  __fastcall TBackgroundTerminal(TTerminal * MainTerminal,
+    TSessionData * SessionData, TConfiguration * Configuration,
+    TTerminalItem * Item, const AnsiString & Name);
 
 protected:
   virtual bool __fastcall DoQueryReopen(Exception * E, int Params);
-  
+
 private:
   TTerminalItem * FItem;
 };
 //---------------------------------------------------------------------------
 __fastcall TBackgroundTerminal::TBackgroundTerminal(TTerminal * MainTerminal,
-    TTerminalItem * Item) :
-  TSecondaryTerminal(MainTerminal), FItem(Item)
+    TSessionData * SessionData, TConfiguration * Configuration, TTerminalItem * Item,
+    const AnsiString & Name) :
+  TSecondaryTerminal(MainTerminal, SessionData, Configuration, Name), FItem(Item)
 {
 }
 //---------------------------------------------------------------------------
@@ -797,21 +818,18 @@ bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * E, int Params)
 //---------------------------------------------------------------------------
 // TTerminalItem
 //---------------------------------------------------------------------------
-__fastcall TTerminalItem::TTerminalItem(TTerminalQueue * Queue) :
+__fastcall TTerminalItem::TTerminalItem(TTerminalQueue * Queue, int Index) :
   TSignalThread(), FQueue(Queue), FTerminal(NULL), FItem(NULL),
   FCriticalSection(NULL), FUserActionParams(NULL)
 {
   FCriticalSection = new TCriticalSection();
 
-  FTerminal = new TBackgroundTerminal(FQueue->FTerminal, this);
+  FTerminal = new TBackgroundTerminal(FQueue->FTerminal, Queue->FSessionData,
+    FQueue->FConfiguration, this, FORMAT("Background %d", (Index)));
   try
   {
     FTerminal->UseBusyCursor = false;
-    
-    FTerminal->Configuration = Queue->FConfiguration;
-    FTerminal->SessionData = Queue->FSessionData;
 
-    FTerminal->OnClose = TerminalClose;
     FTerminal->OnQueryUser = TerminalQueryUser;
     FTerminal->OnPromptUser = TerminalPromptUser;
     FTerminal->OnShowExtendedException = TerminalShowExtendedException;
@@ -885,12 +903,12 @@ void __fastcall TTerminalItem::ProcessEvent()
     // (for example if transfer is cancelled during reconnection attempts)
     if (!FCancel)
     {
-      FTerminal->DoShowExtendedException(&E);
+      FTerminal->ShowExtendedException(&E);
     }
   }
 
   FItem->SetStatus(TQueueItem::qsDone);
-  
+
   FItem->FTerminalItem = NULL;
 
   TQueueItem * Item = FItem;
@@ -989,7 +1007,7 @@ bool __fastcall TTerminalItem::ProcessUserAction(void * Arg)
       TPromptUserRec * Params;
       Params = reinterpret_cast<TPromptUserRec *>(FUserActionParams);
 
-      FQueue->DoPromptUser(Params->SecureShell, Params->Prompt,
+      FQueue->DoPromptUser(Params->Terminal, Params->Prompt,
         Params->Kind, Params->Response, Params->Result, Arg);
     }
     else if (FItem->GetStatus() == TQueueItem::qsError)
@@ -997,7 +1015,7 @@ bool __fastcall TTerminalItem::ProcessUserAction(void * Arg)
       TShowExtendedExceptionRec * Params;
       Params = reinterpret_cast<TShowExtendedExceptionRec *>(FUserActionParams);
 
-      FQueue->DoShowExtendedException(Params->SecureShell, Params->E, Arg);
+      FQueue->DoShowExtendedException(Params->Terminal, Params->E, Arg);
     }
     else
     {
@@ -1027,6 +1045,7 @@ bool __fastcall TTerminalItem::WaitForUserAction(
     FUserActionParams = Params;
 
     FItem->SetStatus(ItemStatus);
+    FQueue->DoEvent(qePendingUserAction);
 
     Result = !FTerminated && WaitForEvent() && !FCancel;
   }
@@ -1044,11 +1063,6 @@ void __fastcall TTerminalItem::Finished()
   TSignalThread::Finished();
 
   FQueue->TerminalFinished(this);
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminalItem::TerminalClose(TObject * /*Sender*/)
-{
-  // nothing
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
@@ -1078,8 +1092,8 @@ void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalItem::TerminalPromptUser(TSecureShell * SecureShell,
-  AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, 
+void __fastcall TTerminalItem::TerminalPromptUser(TTerminal * Terminal,
+  AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
   void * Arg)
 {
   if (FItem == NULL)
@@ -1094,7 +1108,7 @@ void __fastcall TTerminalItem::TerminalPromptUser(TSecureShell * SecureShell,
     assert(Arg == NULL);
 
     TPromptUserRec PromptUserRec;
-    PromptUserRec.SecureShell = SecureShell;
+    PromptUserRec.Terminal = Terminal;
     PromptUserRec.Prompt = Prompt;
     PromptUserRec.Kind = Kind;
     PromptUserRec.Response = Response.c_str();
@@ -1109,7 +1123,7 @@ void __fastcall TTerminalItem::TerminalPromptUser(TSecureShell * SecureShell,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalItem::TerminalShowExtendedException(
-  TSecureShell * SecureShell, Exception * E, void * Arg)
+  TTerminal * Terminal, Exception * E, void * Arg)
 {
   USEDPARAM(Arg);
   assert(Arg == NULL);
@@ -1119,7 +1133,7 @@ void __fastcall TTerminalItem::TerminalShowExtendedException(
       (dynamic_cast<EAbort*>(E) == NULL))
   {
     TShowExtendedExceptionRec ShowExtendedExceptionRec;
-    ShowExtendedExceptionRec.SecureShell = SecureShell;
+    ShowExtendedExceptionRec.Terminal = Terminal;
     ShowExtendedExceptionRec.E = E;
 
     WaitForUserAction(TQueueItem::qsError, &ShowExtendedExceptionRec);
@@ -1177,7 +1191,7 @@ void __fastcall TTerminalItem::OperationProgress(
 bool __fastcall TTerminalItem::OverrideItemStatus(TQueueItem::TStatus & ItemStatus)
 {
   assert(FTerminal != NULL);
-  bool Result = (FTerminal->Status < sshReady) && (ItemStatus == TQueueItem::qsProcessing);
+  bool Result = (FTerminal->Status < ssOpened) && (ItemStatus == TQueueItem::qsProcessing);
   if (Result)
   {
     ItemStatus = TQueueItem::qsConnecting;
@@ -1310,7 +1324,7 @@ __fastcall TQueueItemProxy::~TQueueItemProxy()
 //---------------------------------------------------------------------------
 TFileOperationProgressType * __fastcall TQueueItemProxy::GetProgressData()
 {
-  return (FProgressData->Operation == foNone) ? NULL : FProgressData; 
+  return (FProgressData->Operation == foNone) ? NULL : FProgressData;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TQueueItemProxy::Update()

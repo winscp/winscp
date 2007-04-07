@@ -5,11 +5,12 @@
 #include <SysUtils.hpp>
 
 #include "Common.h"
+#include "Exceptions.h"
 #include "TextsCore.h"
 #include "Script.h"
 #include "Terminal.h"
 #include "SessionData.h"
-#include "ScpMain.h"
+#include "CoreMain.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -45,6 +46,7 @@ public:
   typedef void __fastcall (__closure *TCommandProc)(TScriptProcParams * Parameters);
 
   __fastcall TScriptCommands();
+  virtual __fastcall ~TScriptCommands();
 
   void __fastcall Execute(TScriptProcParams * Parameters);
   void __fastcall Execute(TStrings * Tokens, AnsiString Params);
@@ -90,6 +92,14 @@ __fastcall TScriptCommands::TScriptCommands()
   FDefaultProc = NULL;
 }
 //---------------------------------------------------------------------------
+__fastcall TScriptCommands::~TScriptCommands()
+{
+  for (int Index = 0; Index < Count; Index++)
+  {
+    delete reinterpret_cast<TScriptCommand *>(Objects[Index]);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScriptCommands::Register(const char * Command,
   const AnsiString Description, const AnsiString Help, TCommandProc Proc,
   int MinParams, int MaxParams, void * Arg)
@@ -109,9 +119,18 @@ void __fastcall TScriptCommands::Register(const char * Command,
   int Description, int Help, TCommandProc Proc,
   int MinParams, int MaxParams, void * Arg)
 {
-  Register(Command,
-    (Description > 0 ? LoadStr(Description) : AnsiString()),
-    (Help > 0 ? LoadStr(Help, 10240) : AnsiString()),
+  AnsiString ADescription;
+  if (Description > 0)
+  {
+    ADescription = LoadStr(Description);
+  }
+  AnsiString AHelp;
+  if (Help > 0)
+  {
+    AHelp = LoadStr(Help, 10240);
+  }
+
+  Register(Command, ADescription, AHelp,
     Proc, MinParams, MaxParams, Arg);
 }
 //---------------------------------------------------------------------------
@@ -307,6 +326,7 @@ void __fastcall TScript::Init()
 {
   FBatch = BatchOff;
   FConfirm = true;
+  FEcho = false;
   FSynchronizeParams = 0;
   FOnPrint = NULL;
   FOnTerminalSynchronizeDirectory = NULL;
@@ -337,9 +357,9 @@ void __fastcall TScript::Init()
   FCommands->Register("recv", 0, SCRIPT_GET_HELP, &GetProc, 1, -1);
   FCommands->Register("put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP, &PutProc, 1, -1);
   FCommands->Register("send", 0, SCRIPT_PUT_HELP, &PutProc, 1, -1);
-  FCommands->Register("option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP2, &OptionProc, -1, 2);
-  FCommands->Register("ascii", 0, SCRIPT_OPTION_HELP2, &AsciiProc, 0, 0);
-  FCommands->Register("binary", 0, SCRIPT_OPTION_HELP2, &BinaryProc, 0, 0);
+  FCommands->Register("option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP4, &OptionProc, -1, 2);
+  FCommands->Register("ascii", 0, SCRIPT_OPTION_HELP4, &AsciiProc, 0, 0);
+  FCommands->Register("binary", 0, SCRIPT_OPTION_HELP4, &BinaryProc, 0, 0);
   FCommands->Register("synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP, &SynchronizeProc, 1, 3);
   FCommands->Register("keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP, &KeepUpToDateProc, 0, 2);
 }
@@ -360,6 +380,10 @@ void __fastcall TScript::Command(const AnsiString Cmd)
 {
   try
   {
+    if (FEcho)
+    {
+      PrintLine(Cmd);
+    }
     TStrings * Tokens = new TStringList();
     try
     {
@@ -744,12 +768,9 @@ void __fastcall TScript::CallProc(TScriptProcParams * Parameters)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::TerminalCaptureLog(TObject* /*Sender*/,
-  TLogLineType Type, const AnsiString AddedLine)
+void __fastcall TScript::TerminalCaptureLog(const AnsiString & AddedLine,
+  bool /*StdError*/)
 {
-  USEDPARAM(Type);
-  assert((Type == llOutput) || (Type == llStdError));
-
   PrintLine(AddedLine);
 }
 //---------------------------------------------------------------------------
@@ -984,9 +1005,9 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
 //---------------------------------------------------------------------------
 void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
 {
-  enum { Batch, Confirm, Transfer, SynchDelete, Exclude, Include };
-  static const char * Names[] = { "batch", "confirm", "transfer", "synchdelete",
-    "exclude", "include" };
+  enum { Echo, Batch, Confirm, Transfer, SynchDelete, Exclude, Include };
+  static const char * Names[] = { "echo", "batch", "confirm", "transfer",
+    "synchdelete", "exclude", "include" };
 
   enum { Off, On };
   static const char * ToggleNames[] = { "off", "on" };
@@ -1014,6 +1035,21 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
   #define OPT(OPT) ((Option < 0) || (Option == OPT))
   const char * ListFormat = "%-12s %-10s";
   bool SetValue = !ValueName.IsEmpty();
+
+  if (OPT(Echo))
+  {
+    if (SetValue)
+    {
+      int Value = TScriptCommands::FindCommand(ToggleNames, LENOF(ToggleNames), ValueName);
+      if (Value < 0)
+      {
+        throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
+      }
+      FEcho = (Value == On);
+    }
+
+    PrintLine(FORMAT(ListFormat, (Names[Echo], ToggleNames[FEcho ? On : Off])));
+  }
 
   if (OPT(Batch))
   {
@@ -1302,7 +1338,6 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 {
   assert(StoredSessions != NULL);
   FOnInput = NULL;
-  FOnTerminalUpdateStatus = NULL;
   FOnTerminalPromptUser = NULL;
   FOnShowExtendedException = NULL;
   FOnTerminalQueryUser = NULL;
@@ -1406,25 +1441,24 @@ bool __fastcall TManagementScript::QueryCancel()
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TManagementScript::TerminalOnStdError(TObject * Sender,
-  TLogLineType /*Type*/, const AnsiString AddedLine)
+void __fastcall TManagementScript::TerminalInformation(TTerminal * Terminal,
+  const AnsiString & Str, bool /*Status*/, bool /*Active*/)
 {
-  TTerminal * Terminal = dynamic_cast<TTerminal*>(Sender);
   assert(Terminal != NULL);
-  if (Terminal->Status == sshAuthenticate)
+  if (Terminal->Status == ssOpening)
   {
-    PrintLine(AddedLine);
+    PrintLine(Str);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TManagementScript::TerminalPromptUser(TSecureShell * SecureShell,
+void __fastcall TManagementScript::TerminalPromptUser(TTerminal * Terminal,
   AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
   void * Arg)
 {
-  if ((!SecureShell->StoredPasswordTried || (Kind == pkPrompt)) &&
+  if ((!Terminal->StoredCredentialsTried || (Kind == pkPrompt)) &&
       (OnTerminalPromptUser != NULL))
   {
-    OnTerminalPromptUser(SecureShell, Prompt, Kind, Response, Result, Arg);
+    OnTerminalPromptUser(Terminal, Prompt, Kind, Response, Result, Arg);
   }
 }
 //---------------------------------------------------------------------------
@@ -1644,13 +1678,6 @@ void __fastcall TManagementScript::DoConnect(const AnsiString Session)
         Data->HostName = Value;
       }
 
-      if (Data->UserName.IsEmpty())
-      {
-        AnsiString Value;
-        Input(LoadStr(SCRIPT_USERNAME_PROMPT), Value, false);
-        Data->UserName = Value;
-      }
-
       assert(Data->CanLogin);
     }
 
@@ -1659,13 +1686,12 @@ void __fastcall TManagementScript::DoConnect(const AnsiString Session)
     {
       Terminal->AutoReadDirectory = false;
 
-      Terminal->OnStdError = TerminalOnStdError;
+      Terminal->OnInformation = TerminalInformation;
       Terminal->OnPromptUser = TerminalPromptUser;
       Terminal->OnShowExtendedException = OnShowExtendedException;
       Terminal->OnQueryUser = OnTerminalQueryUser;
       Terminal->OnProgress = TerminalOperationProgress;
       Terminal->OnFinished = TerminalOperationFinished;
-      Terminal->OnUpdateStatus = OnTerminalUpdateStatus;
 
       ConnectTerminal(Terminal);
     }
@@ -1692,7 +1718,10 @@ void __fastcall TManagementScript::DoClose(TTerminal * Terminal)
 
   try
   {
-    Terminal->Active = false;
+    if (Terminal->Active)
+    {
+      Terminal->Close();
+    }
 
     AnsiString SessionName = Terminal->SessionData->SessionName;
     FreeTerminal(Terminal);

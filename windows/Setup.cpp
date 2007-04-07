@@ -8,9 +8,8 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <Common.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Exceptions.h>
-#include <Net.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <TcpIp.hpp>
@@ -37,10 +36,6 @@
 #endif
 
 /* Command line options. */
-BOOL param_verbose = FALSE;       /* "/verbose" */
-BOOL param_add = TRUE;            /* not "/del" */
-BOOL param_show_result = FALSE;   /* "/result"  */
-BOOL param_always = FALSE;        /* "/always"  */
 AnsiString LastPathError;
 //---------------------------------------------------------------------------
 #define verb_out(msg) ((void)0)
@@ -138,7 +133,7 @@ void path_reg_propagate()
                 _T("other processes. The new value will be ")
                 _T("avaible after a reboot."), GetLastError());
     SimpleErrorDialog(LastPathError);
-    LastPathError = "";            
+    LastPathError = "";
   }
 }
 //---------------------------------------------------------------------------
@@ -169,7 +164,7 @@ BOOL add_path_reg(LPCTSTR path){
         func_ret = FALSE;
     }
     else{
-        if (param_always || !find_reg_str(reg_str, path, NULL)){
+        if (!find_reg_str(reg_str, path, NULL)){
             _tcscat(reg_str, _T(";"));
 #ifdef USE_QUOTES
             _tcscat(reg_str, _T(";\""));
@@ -298,18 +293,14 @@ BOOL add_path_autoexec(LPCTSTR long_path){
     _tcscpy(autoexec_intro, AUTOEXEC_INTRO);
     _tcscat(autoexec_intro, _T("\n"));
 
-    if (!param_always){
-        found = FALSE;
-        while (!found && _fgetts(line, line_size, file)){
-            if (_tcscmp(autoexec_intro, line) == 0){
-                _fgetts(line, line_size, file);
-                if (_tcscmp(out_line, line) == 0)
-                    found = TRUE;
-            }
+    found = FALSE;
+    while (!found && _fgetts(line, line_size, file)){
+        if (_tcscmp(autoexec_intro, line) == 0){
+            _fgetts(line, line_size, file);
+            if (_tcscmp(out_line, line) == 0)
+                found = TRUE;
         }
     }
-    else
-        found = FALSE;
 
     if (!found){
         if (fseek(file, 0, SEEK_END) != 0 ||
@@ -617,12 +608,17 @@ AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
   int MajorVer = Version / (1000*100*100);
   int MinorVer = (Version % (1000*100*100)) / (1000*100);
   int Release = (Version % (1000*100)) / (1000);
-  return FORMAT("%d.%d", (MajorVer, MinorVer)) + (Release ? "."+IntToStr(Release) : AnsiString());
+  AnsiString Result = FORMAT("%d.%d", (MajorVer, MinorVer));
+  if (Release > 0)
+  {
+    Result += IntToStr(Release);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall QueryUpdates()
 {
-  bool VersionFound = false;
+  bool Complete = false;
   try
   {
     AnsiString Response;
@@ -666,7 +662,7 @@ void __fastcall QueryUpdates()
     TUpdatesData PrevResults = Updates.Results;
     Updates.Results.Reset();
     Updates.Results.ForVersion = CurrentCompoundVer;
-      
+
     while (!Response.IsEmpty())
     {
       AnsiString Line = ::CutToChar(Response, '\n', false);
@@ -684,7 +680,7 @@ void __fastcall QueryUpdates()
           NewVersion = 0;
         }
         Updates.Results.Version = NewVersion;
-        VersionFound = true;
+        Complete = true;
       }
       else if (AnsiSameText(Name, "Message"))
       {
@@ -702,6 +698,23 @@ void __fastcall QueryUpdates()
         Changed |= (PrevResults.Release != Line);
         Updates.Results.Release = Line;
       }
+      else if (AnsiSameText(Name, "Disabled"))
+      {
+        bool NewDisabled = (StrToIntDef(Line, 0) != 0);
+        Changed |= (PrevResults.Disabled != NewDisabled);
+        Updates.Results.Disabled = NewDisabled;
+        Complete = true;
+      }
+      else if (AnsiSameText(Name, "Url"))
+      {
+        Changed |= (PrevResults.Url != Line);
+        Updates.Results.Url = Line;
+      }
+      else if (AnsiSameText(Name, "UrlButton"))
+      {
+        Changed |= (PrevResults.UrlButton != Line);
+        Updates.Results.UrlButton = Line;
+      }
     }
 
     if (Changed)
@@ -715,33 +728,56 @@ void __fastcall QueryUpdates()
   {
     throw ExtException(&E, LoadStr(CHECK_FOR_UPDATES_ERROR));
   }
-  
-  if (!VersionFound)
+
+  if (!Complete)
   {
     throw Exception(LoadStr(CHECK_FOR_UPDATES_ERROR));
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New)
+void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New,
+  TQueryType & Type, bool Force)
 {
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
   assert(Updates.HaveResults);
   if (Updates.HaveResults)
   {
-    New = (Updates.Results.Version > 0);
-    if (New)
+    if (Updates.Results.Disabled)
     {
-      AnsiString Version = VersionStrFromCompoundVersion(Updates.Results.Version);
-      if (!Updates.Results.Release.IsEmpty())
+      if (Force)
       {
-        Version = FORMAT("%s %s", (Version, Updates.Results.Release));
+        Message = LoadStr(UPDATE_DISABLED)+"%s";
       }
-      Message = FMTLOAD(NEW_VERSION2, (Version, "%s"));
     }
     else
     {
-      Message = LoadStr(NO_NEW_VERSION) + "%s";
+      New = (Updates.Results.Version > 0);
+      if (New)
+      {
+        AnsiString Version = VersionStrFromCompoundVersion(Updates.Results.Version);
+        if (!Updates.Results.Release.IsEmpty())
+        {
+          Version = FORMAT("%s %s", (Version, Updates.Results.Release));
+        }
+        Message = FMTLOAD(NEW_VERSION3, (Version, "%s"));
+      }
+      else
+      {
+        Message = LoadStr(NO_NEW_VERSION) + "%s";
+      }
     }
+
+    if (!Updates.Results.Message.IsEmpty())
+    {
+      Message = FORMAT(Message,
+        (FMTLOAD(UPDATE_MESSAGE,
+          (StringReplace(Updates.Results.Message, "|", "\n", TReplaceFlags() << rfReplaceAll)))));
+    }
+    else
+    {
+      Message = FORMAT(Message, (""));
+    }
+    Type = (Updates.Results.Critical ? qtWarning : qtInformation);
   }
   else
   {
@@ -759,11 +795,6 @@ void __fastcall CheckForUpdates(bool CachedResults)
     {
       assert(ActiveForm->Enabled);
       ActiveForm->Enabled = false;
-    }
-
-    if (SessionsCount == 0)
-    {
-      NetInitialize();
     }
 
     bool Again = false;
@@ -791,33 +822,37 @@ void __fastcall CheckForUpdates(bool CachedResults)
 
       AnsiString Message;
       bool New;
-      GetUpdatesMessage(Message, New);
-
-      if (!Updates.Results.Message.IsEmpty())
-      {
-        Message = FORMAT(Message,
-          (FMTLOAD(UPDATE_MESSAGE,
-            (StringReplace(Updates.Results.Message, "|", "\n", TReplaceFlags() << rfReplaceAll)))));
-      }
-      else
-      {
-        Message = FORMAT(Message, (""));
-      }
+      TQueryType Type;
+      GetUpdatesMessage(Message, New, Type, true);
 
       // add FLAGMASK(Cached, qaRetry) to enable "check again" button
       // for cached results
       int Answers = qaOK |
-        FLAGMASK(New, qaCancel);
-      TQueryButtonAlias Aliases[2];
+        FLAGMASK(New, qaCancel | qaAll) |
+        FLAGMASK(!Updates.Results.Url.IsEmpty(), qaYes);
+      TQueryButtonAlias Aliases[4];
       Aliases[0].Button = qaRetry;
       Aliases[0].Alias = LoadStr(CHECK_AGAIN_BUTTON);
-      Aliases[1].Button = qaOK;
-      Aliases[1].Alias = LoadStr(DOWNLOAD_BUTTON);
+      Aliases[1].Button = qaYes;
+      if (Updates.Results.UrlButton.IsEmpty())
+      {
+        Aliases[1].Alias = LoadStr(UPDATE_URL_BUTTON);
+      }
+      else
+      {
+        Aliases[1].Alias = Updates.Results.UrlButton;
+      }
+      Aliases[2].Button = qaAll;
+      Aliases[2].Alias = LoadStr(WHATS_NEW_BUTTON);
+      Aliases[3].Button = qaOK;
+      Aliases[3].Alias = LoadStr(DOWNLOAD_BUTTON);
+
       TMessageParams Params;
       Params.Aliases = Aliases;
-      Params.AliasesCount = (New ? 2 : 1);
+      // alias "ok" button to "download" only if we have new version
+      Params.AliasesCount = (New ? 4 : 3);
       int Answer =
-        MessageDialog(Message, (Updates.Results.Critical ? qtWarning : qtInformation),
+        MessageDialog(Message, Type,
           Answers, HELP_UPDATES, &Params);
       switch (Answer)
       {
@@ -826,6 +861,14 @@ void __fastcall CheckForUpdates(bool CachedResults)
           {
             OpenBrowser(LoadStr(DOWNLOAD_URL));
           }
+          break;
+
+        case qaYes:
+          OpenBrowser(Updates.Results.Url);
+          break;
+
+        case qaAll:
+          OpenBrowser(LoadStr(HISTORY_URL));
           break;
 
         case qaRetry:
@@ -837,11 +880,6 @@ void __fastcall CheckForUpdates(bool CachedResults)
   }
   __finally
   {
-    if (SessionsCount == 0)
-    {
-      NetFinalize();
-    }
-
     if (ActiveForm)
     {
       ActiveForm->Enabled = true;

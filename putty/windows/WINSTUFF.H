@@ -148,6 +148,15 @@ GLOBAL void *logctx;
 #define TIMING_SYNC_TICKCOUNT
 
 /*
+ * `Filename' declaration giving the name of the GSSAPI shared
+ * library under Windows. Also GSS_CALLBACK, the function modifier
+ * used for functions imported from this library, is defined to
+ * the Windows CALLBACK keyword.
+ */
+#define GSSAPI_SHLIB { "gssapi32.dll" }
+#define GSS_CALLBACK CALLBACK
+
+/*
  * winnet.c dynamically loads WinSock 2 or WinSock 1 depending on
  * what it can get, which means any WinSock routines used outside
  * that module must be exported from it as function pointers. So

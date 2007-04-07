@@ -171,7 +171,7 @@ type
      property NeedValid: TFileExMustDnDSet read FNeedValid write FNeedValid;
      property CompleteFileList: boolean read FCompleteFileList
        write FCompleteFileList default true;
-     property ShellExtensions:TShellExtension read FShellExtension write FShellExtension; 
+     property ShellExtensions:TShellExtension read FShellExtension write FShellExtension;
      property OnSpecifyDropTarget:TOnSpecifyDropTarget read FOnSpecifyDropTarget
        write FOnSpecifyDropTarget;
      property OnDropHandlerSucceeded;
@@ -613,7 +613,7 @@ begin
      end;
      if FormatEtc.cfFormat=cf_HDrop then
      begin
-          h := GlobalAlloc(GHND	or GMEM_SHARE, HDropStream.Size);
+          h := GlobalAlloc(GHND or GMEM_SHARE, HDropStream.Size);
           if h = 0 then
           begin
                Result:= E_OUTOFMEMORY;
@@ -654,7 +654,7 @@ begin
                pc[0]:=#0;
                FilenameMapStream.Write(pc,1);
           end;
-          h := GlobalAlloc(GHND	or GMEM_SHARE, FilenameMapStream.Size);
+          h := GlobalAlloc(GHND or GMEM_SHARE, FilenameMapStream.Size);
           if h = 0 then
           begin
                Result:= E_OUTOFMEMORY;
@@ -882,7 +882,7 @@ begin
           DataObject:=TDataObjectFilesEx.Create(FFileList, RPidl, RFname);
           if DataObject.IsValid((nvPIDL in FNeedValid),
              (nvFilename in FNeedValid))=false then DataObject._Release
-	  else Result:=DataObject;
+          else Result:=DataObject;
      end;
 end;
 

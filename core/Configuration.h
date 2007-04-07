@@ -16,6 +16,7 @@ class TCriticalSection;
 class TConfiguration : public TObject
 {
 private:
+  bool FInitialized;
   bool FDontSave;
   bool FChanged;
   int FUpdating;
@@ -36,6 +37,11 @@ private:
   int FSessionReopenAuto;
   int FSessionReopenNoConfirmation;
   AnsiString FIniFileStorageName;
+  int FTunnelLocalPortNumberLow;
+  int FTunnelLocalPortNumberHigh;
+  bool FShowFtpWelcomeMessage;
+  AnsiString FDefaultRandomSeedFile;
+  AnsiString FRandomSeedFile;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -55,7 +61,6 @@ private:
   AnsiString __fastcall GetPuttySessionsKey();
   AnsiString __fastcall GetPuttyRegistryStorageKey();
   void __fastcall SetRandomSeedFile(AnsiString value);
-  AnsiString __fastcall GetRandomSeedFile();
   AnsiString __fastcall GetSshHostKeysSubKey();
   AnsiString __fastcall GetRootKeyStr();
   AnsiString __fastcall GetConfigurationSubKey();
@@ -81,6 +86,9 @@ private:
   bool __fastcall GetGSSAPIInstalled();
   void __fastcall SetSessionReopenAuto(int value);
   void __fastcall SetSessionReopenNoConfirmation(int value);
+  void __fastcall SetTunnelLocalPortNumberLow(int value);
+  void __fastcall SetTunnelLocalPortNumberHigh(int value);
+  void __fastcall SetShowFtpWelcomeMessage(bool value);
 
 protected:
   TStorage FStorage;
@@ -88,11 +96,12 @@ protected:
 
   virtual TStorage __fastcall GetStorage();
   virtual void __fastcall Changed();
-  virtual void __fastcall SaveSpecial(THierarchicalStorage * Storage);
-  virtual void __fastcall LoadSpecial(THierarchicalStorage * Storage);
+  virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
+  virtual void __fastcall LoadData(THierarchicalStorage * Storage);
+  virtual void __fastcall CopyData(THierarchicalStorage * Source, THierarchicalStorage * Target);
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual AnsiString __fastcall GetDefaultKeyFile();
-  virtual void __fastcall ModifyAll();
+  virtual void __fastcall Saved();
   void __fastcall CleanupRegistry(AnsiString CleanupSubKey);
   AnsiString __fastcall BannerHash(const AnsiString & Banner);
 
@@ -119,9 +128,11 @@ protected:
 public:
   __fastcall TConfiguration();
   virtual __fastcall ~TConfiguration();
+  void __fastcall Initialize();
   virtual void __fastcall Default();
   virtual void __fastcall Load();
-  virtual void __fastcall Save();
+  virtual void __fastcall Save(bool All = false);
+  void __fastcall Export(const AnsiString FileName);
   void __fastcall CleanupConfiguration();
   void __fastcall CleanupIniFile();
   void __fastcall CleanupHostKeys();
@@ -137,12 +148,13 @@ public:
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
   void __fastcall TemporaryLogging(const AnsiString ALogFileName);
 
+  __property bool Initialized = { read = FInitialized };
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
   __property AnsiString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property AnsiString PuttyRegistryStorageKey  = { read=GetPuttyRegistryStorageKey };
   __property AnsiString PuttySessionsKey  = { read=GetPuttySessionsKey };
-  __property AnsiString RandomSeedFile  = { read=GetRandomSeedFile, write=SetRandomSeedFile };
+  __property AnsiString RandomSeedFile  = { read=FRandomSeedFile, write=SetRandomSeedFile };
   __property AnsiString SshHostKeysSubKey  = { read=GetSshHostKeysSubKey };
   __property AnsiString RootKeyStr  = { read=GetRootKeyStr };
   __property AnsiString ConfigurationSubKey  = { read=GetConfigurationSubKey };
@@ -170,6 +182,9 @@ public:
   __property AnsiString PartialExt = {read=GetPartialExt};
   __property int SessionReopenAuto = { read = FSessionReopenAuto, write = SetSessionReopenAuto };
   __property int SessionReopenNoConfirmation = { read = FSessionReopenNoConfirmation, write = SetSessionReopenNoConfirmation };
+  __property int TunnelLocalPortNumberLow = { read = FTunnelLocalPortNumberLow, write = SetTunnelLocalPortNumberLow };
+  __property int TunnelLocalPortNumberHigh = { read = FTunnelLocalPortNumberHigh, write = SetTunnelLocalPortNumberHigh };
+  __property bool ShowFtpWelcomeMessage = { read = FShowFtpWelcomeMessage, write = SetShowFtpWelcomeMessage };
 
   __property AnsiString TimeFormat = { read = GetTimeFormat };
   __property TStorage Storage  = { read=GetStorage, write=SetStorage };

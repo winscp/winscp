@@ -112,8 +112,12 @@ struct TUpdatesData
   AnsiString Message;
   bool Critical;
   AnsiString Release;
+  bool Disabled;
+  AnsiString Url;
+  AnsiString UrlButton;
   bool __fastcall operator !=(TUpdatesData & rhc)
-    { return C(ForVersion) C(Version) C(Message) C(Critical) C(Release) 0; };
+    { return C(ForVersion) C(Version) C(Message) C(Critical) C(Release)
+             C(Disabled) C(Url) C(UrlButton) 0; };
   void Reset()
   {
     ForVersion = 0;
@@ -121,6 +125,9 @@ struct TUpdatesData
     Message = "";
     Critical = false;
     Release = "";
+    Disabled = false;
+    Url = "";
+    UrlButton = "";
   }
 };
 //---------------------------------------------------------------------------
@@ -195,7 +202,7 @@ public:
   void __fastcall Change(int Index, TEditorPreferences * Editor);
   void __fastcall Move(int CurIndex, int NewIndex);
   void __fastcall Delete(int Index);
-  void __fastcall Modify();
+  void __fastcall Saved();
 
   __property int Count = { read = GetCount };
   __property const TEditorPreferences * Editors[int Index] = { read = GetEditor };
@@ -208,6 +215,7 @@ private:
   int __fastcall GetCount() const;
 
   void __fastcall Init();
+  void __fastcall Modify();
   const TEditorPreferences * __fastcall GetEditor(int Index) const;
 };
 //---------------------------------------------------------------------------
@@ -270,6 +278,10 @@ private:
   bool FPreservePanelState;
   AnsiString FTheme;
   TPathInCaption FPathInCaption;
+  bool FMinimizeToTray;
+  bool FBalloonNotifications;
+  unsigned int FNotificationsTimeout;
+  unsigned int FNotificationsStickTime;
   TUpdatesConfiguration FUpdates;
   bool FCopyParamAutoSelectNotice;
   bool FSessionToolbarAutoShown;
@@ -317,6 +329,10 @@ private:
   void __fastcall SetPreservePanelState(bool value);
   void __fastcall SetTheme(AnsiString value);
   void __fastcall SetPathInCaption(TPathInCaption value);
+  void __fastcall SetMinimizeToTray(bool value);
+  void __fastcall SetBalloonNotifications(bool value);
+  void __fastcall SetNotificationsTimeout(unsigned int value);
+  void __fastcall SetNotificationsStickTime(unsigned int value);
   void __fastcall SetCopyParamAutoSelectNotice(bool value);
   void __fastcall SetSessionToolbarAutoShown(bool value);
   TUpdatesConfiguration __fastcall GetUpdates();
@@ -331,11 +347,11 @@ private:
 protected:
   virtual TStorage __fastcall GetStorage();
   virtual void __fastcall Load();
-  virtual void __fastcall SaveSpecial(THierarchicalStorage * Storage);
-  virtual void __fastcall LoadSpecial(THierarchicalStorage * Storage);
+  virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
+  virtual void __fastcall LoadData(THierarchicalStorage * Storage);
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual AnsiString __fastcall GetDefaultKeyFile();
-  virtual void __fastcall ModifyAll();
+  virtual void __fastcall Saved();
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
   bool __fastcall InternalReloadComponentRes(const AnsiString ResName,
     HANDLE HInst, TComponent * Instance);
@@ -348,6 +364,8 @@ protected:
   void __fastcall CheckTranslationVersion(const AnsiString FileName,
     bool InternalLocaleOnError);
   virtual void __fastcall DefaultLocalized();
+  bool __fastcall DetectRegistryStorage(HKEY RootKey);
+  bool __fastcall CanWriteToStorage();
 
 public:
   __fastcall TWinConfiguration();
@@ -406,6 +424,10 @@ public:
   __property bool PreservePanelState = { read = FPreservePanelState, write = SetPreservePanelState };
   __property AnsiString Theme = { read = FTheme, write = SetTheme };
   __property TPathInCaption PathInCaption = { read = FPathInCaption, write = SetPathInCaption };
+  __property bool MinimizeToTray = { read = FMinimizeToTray, write = SetMinimizeToTray };
+  __property bool BalloonNotifications = { read = FBalloonNotifications, write = SetBalloonNotifications };
+  __property unsigned int NotificationsTimeout = { read = FNotificationsTimeout, write = SetNotificationsTimeout };
+  __property unsigned int NotificationsStickTime = { read = FNotificationsStickTime, write = SetNotificationsStickTime };
   __property bool InvalidDefaultTranslation = { read = FInvalidDefaultTranslation };
   __property AnsiString DefaultTranslationFile = { read = FDefaultTranslationFile };
   __property bool CopyParamAutoSelectNotice = { read = FCopyParamAutoSelectNotice, write = SetCopyParamAutoSelectNotice };

@@ -23,7 +23,7 @@ public:
   virtual __fastcall ~TOperationStatusForm();
   void __fastcall HideAsModal();
   void __fastcall ShowAsModal();
-  
+
   __property AnsiString Status = { read = GetStatus, write = SetStatus };
 };
 //---------------------------------------------------------------------------

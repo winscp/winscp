@@ -3,7 +3,7 @@ unit DragDropText;
   Description
   ===========
     TDragDropText is a component for simple OLE drag-and-drop operations
-    with text. The component is a child-class from TDragDrop. 
+    with text. The component is a child-class from TDragDrop.
 
 
   Disclaimer
@@ -81,7 +81,7 @@ type
   protected
      function CreateDataObject:TDataObject; override;
   public
-     constructor Create(AOwner: TComponent); override; 
+     constructor Create(AOwner: TComponent); override;
      destructor Destroy; override;
      property Lines: TStringList read FLines write FLines;
   end;
@@ -211,7 +211,7 @@ begin
 end;
 
 procedure TDropTargetText.RenderDropped(DataObj: IDataObject; grfKeyState: Longint;
-   pt: TPoint; var dwEffect: longint); 
+   pt: TPoint; var dwEffect: longint);
 var FE: TFormatEtc;
     SM: TStgMedium;
     DataSize: longint;

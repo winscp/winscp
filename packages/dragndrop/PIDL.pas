@@ -106,7 +106,7 @@ function PIDL_Create(Size: UINT): PItemIDList;
 //  PURPOSE:    Creates a new ITEMIDLIST of the specified size.
 //  PARAMETERS:
 //      piMalloc - Pointer to the allocator interface that should allocate memory.
-//	cbSize   - Size of the ITEMIDLIST to create.
+//  cbSize   - Size of the ITEMIDLIST to create.
 //  RETURN VALUE:
 //      Returns a pointer to the new ITEMIDLIST, or NULL if a problem occured.
 begin
@@ -118,11 +118,11 @@ end;
 function PIDL_Concatenate(pidl1, pidl2: PItemIDList): PItemIDList;
 //  PURPOSE:    Creates a new ITEMIDLIST with pidl2 appended to pidl1.
 //  PARAMETERS:
-//	piMalloc - Pointer to the allocator interface that should create the new ITEMIDLIST.
-//      pidl1 	 - Pointer to an ITEMIDLIST that contains the root.
-//	pidl2    - Pointer to an ITEMIDLIST that contains what should be appended to the root.
+//  piMalloc - Pointer to the allocator interface that should create the new ITEMIDLIST.
+//      pidl1- Pointer to an ITEMIDLIST that contains the root.
+//  pidl2    - Pointer to an ITEMIDLIST that contains what should be appended to the root.
 //  RETURN VALUE:
-//  	Returns a new ITEMIDLIST if successful, NULL otherwise.
+//      Returns a new ITEMIDLIST if successful, NULL otherwise.
 var cb1, cb2: UINT;
 begin
      if (pidl1<>nil) then cb1:=PIDL_GetSize(pidl1)-NullTerm else cb1:=0;
@@ -154,15 +154,15 @@ end;
 function PIDL_GetDisplayName(piFolder: IShellFolder; pidl: PItemIDList;
    dwFlags: DWORD; pszName: PChar; cchMax: UINT): boolean;
 //  PURPOSE:    Returns the display name for the item pointed to by pidl.  The
-//		function assumes the pidl is relative to piFolder.  If piFolder
-//		is NULL, the function assumes the item is fully qualified.
+//              function assumes the pidl is relative to piFolder.  If piFolder
+//              is NULL, the function assumes the item is fully qualified.
 //  PARAMETERS:
-//      piFolder - Pointer to the IShellFolder for the folder containing the item.
-//	pidl	 - Pointer to an ITEMIDLIST relative to piFolder that we want
-//		   the display name for.
-//	dwFlags  - Flags to pass to ISF::GetDisplayNameOf().
-//	pszName  - Pointer to the string where the display name is returned.
-//	cchMax   - Maximum number of characters in pszName.
+//  piFolder - Pointer to the IShellFolder for the folder containing the item.
+//  pidl     - Pointer to an ITEMIDLIST relative to piFolder that we want
+//             the display name for.
+//  dwFlags  - Flags to pass to ISF::GetDisplayNameOf().
+//  pszName  - Pointer to the string where the display name is returned.
+//  cchMax   - Maximum number of characters in pszName.
 //  RETURN VALUE:
 //      Returns TRUE if successful, FALSE otherwise.
 var Str: TStrRet;
@@ -195,7 +195,7 @@ function Pidl_GetFullyQualified(const PiParentFolder: IShellFolder;
 //      a fully qualified ITEMIDLIST.
 //  PARAMETERS:
 //      piParentFolder - Pointer to the IShellFolder of the parent folder.
-//	pidl	       - ITEMIDLIST relative to piParentFolder
+//  pidl           - ITEMIDLIST relative to piParentFolder
 //  RETURN VALUE:
 //      Returns a fully qualified ITEMIDLIST or NULL if there is a problem.
 var piDesktopFolder:IShellFolder;
@@ -215,11 +215,11 @@ end;
 
 procedure PIDL_GetRelative(var pidlFQ, ppidlRoot, ppidlItem: PItemIDList);
 //  PURPOSE:    Takes a fully qualified pidl and returns the the relative pidl
-//	and the root part of that pidl.
+//  and the root part of that pidl.
 //  PARAMETERS:
-//	pidlFQ   - Pointer to the fully qualified ITEMIDLIST that needs to be parsed.
-//	pidlRoot - Points to the pidl that will contain the root after parsing.
-//	pidlItem - Points to the item relative to pidlRoot after parsing.
+//  pidlFQ   - Pointer to the fully qualified ITEMIDLIST that needs to be parsed.
+//  pidlRoot - Points to the pidl that will contain the root after parsing.
+//  pidlItem - Points to the item relative to pidlRoot after parsing.
 var pidlTemp, pidlNext: PItemIDList;
 begin
      if pidlFQ=nil then
@@ -247,7 +247,7 @@ end;
 
 function PIDL_GetFromPath(pszFile: PChar): PItemIDList;
 //  PURPOSE:    This routine takes a full path to a file and converts that
-//	to a fully qualified ITEMIDLIST.
+//  to a fully qualified ITEMIDLIST.
 //  PARAMETERS:
 //      pszFile  - Full path to the file.
 //  RETURN VALUE:
@@ -267,9 +267,9 @@ end;
 
 function PIDL_GetFileFolder(pidl: PItemIDList; var piFolder: IShellFolder):boolean;
 //  PURPOSE:    This routine takes a fully qualified pidl for a folder and returns
-//	the IShellFolder pointer for that pidl
+//  the IShellFolder pointer for that pidl
 //  PARAMETERS:
-//	pidl	 - Pointer to a fully qualified ITEMIDLIST for the folder
+//  pidl     - Pointer to a fully qualified ITEMIDLIST for the folder
 //      piParentFolder - Pointer to the IShellFolder of the folder (Return value).
 //  RETURN VALUE:
 //      Returns TRUE if successful, FALSE otherwise.
@@ -286,10 +286,10 @@ end;
 
 function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): PItemIDList;
 //  PURPOSE:    This routine takes a Shell folder for the parent and the FileName in the folder
-//	and converts that to a relative ITEMIDLIST.
+//  and converts that to a relative ITEMIDLIST.
 //  PARAMETERS:
 //      pParentFolder - Pointer to the IShellFolder for the folder containing the
-//	                fileName.
+//                  fileName.
 //      pszFile       - file name in the folder.
 //  RETURN VALUE:
 //      Returns a relative ITEMIDLIST, or NULL if an error occurs.

@@ -14,7 +14,7 @@ __published:
   TImageList *QueueImages;
   TImageList *LogImages;
   TImageList *ArrowImages;
-  
+
 public:
   __fastcall TGlyphsModule(TComponent * Owner);
 };

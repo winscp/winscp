@@ -1,8 +1,6 @@
 //---------------------------------------------------------------------------
 #ifndef CommonH
 #define CommonH
-
-#ifndef C_ONLY
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, "")
 #define THROWIFFALSE(C) if (!(C)) EXCEPTION
@@ -30,6 +28,7 @@ AnsiString MakeValidFileName(AnsiString FileName);
 AnsiString RootKeyToStr(HKEY RootKey);
 AnsiString BooleanToStr(bool B);
 AnsiString BooleanToEngStr(bool B);
+AnsiString DefaultStr(const AnsiString & Str, const AnsiString & Default);
 AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim);
 AnsiString CutToChars(AnsiString &Str, AnsiString Chs, bool Trim,
   char * Delimiter = NULL);
@@ -37,8 +36,6 @@ AnsiString DelimitStr(AnsiString Str, AnsiString Chars);
 AnsiString ShellDelimitStr(AnsiString Str, char Quote);
 void __fastcall OemToAnsi(AnsiString & Str);
 void __fastcall AnsiToOem(AnsiString & Str);
-AnsiString __fastcall DecodeUTF(const AnsiString UTF);
-AnsiString __fastcall EncodeUTF(const WideString Source);
 AnsiString ExceptionLogString(Exception *E);
 bool IsDots(const AnsiString Str);
 AnsiString __fastcall SystemTemporaryDirectory();
@@ -51,12 +48,14 @@ AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
 AnsiString __fastcall ExpandFileNameCommand(const AnsiString Command,
   const AnsiString FileName);
 void __fastcall ReformatFileNameCommand(AnsiString & Command);
+AnsiString __fastcall ExpandEnvironmentVariables(const AnsiString & Str);
+bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2);
+bool __fastcall CompareFileName(const AnsiString & Path1, const AnsiString & Path2);
 bool __fastcall IsDisplayableStr(const AnsiString Str);
 AnsiString __fastcall CharToHex(char Ch);
 AnsiString __fastcall StrToHex(const AnsiString Str);
 AnsiString __fastcall HexToStr(const AnsiString Hex);
 unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars = 0);
-__int64 __fastcall ParseSize(AnsiString SizeStr);
 AnsiString __fastcall DecodeUrlChars(AnsiString S);
 AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore = "");
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
@@ -74,14 +73,20 @@ bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec);
 void __fastcall ProcessLocalDirectory(AnsiString DirName,
   TProcessLocalFileEvent CallBackFunc, void * Param = NULL, int FindAttrs = -1);
 //---------------------------------------------------------------------------
-TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, bool ConsiderDST);
-FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime, bool ConsiderDST);
-TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, bool ConsiderDST);
+enum TDSTMode
+{
+  dstmWin =  0, //
+  dstmUnix = 1, // adjust UTC time to Windows "bug"
+  dstmKeep = 2
+};
+TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode);
+FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime, TDSTMode DSTMode);
+TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode);
 void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTime2);
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
-  bool ConsiderDST);
+  TDSTMode DSTMode);
 __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
-  bool ConsiderDST);
+  TDSTMode DSTMode);
 AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format);
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
 //---------------------------------------------------------------------------
@@ -131,42 +136,6 @@ struct TPasLibModule
   void * ResInstance;
 };
 //---------------------------------------------------------------------------
-#ifdef _DEBUG
-#define TRACEENV "WINSCPTRACE"
-void __fastcall Trace(const AnsiString SourceFile, const AnsiString Func,
-  int Line, const AnsiString Message);
-#define TRACE(MESSAGE) Trace(__FILE__, __FUNC__, __LINE__, MESSAGE)
-#define TRACEFMT(MESSAGE, PARAMS) Trace(__FILE__, __FUNC__, __LINE__, FORMAT(MESSAGE, PARAMS))
-class Callstack
-{
-public:
-  inline Callstack(const char * File, const char * Func, unsigned int Line, AnsiString Message) :
-    FFile(File), FFunc(Func), FLine(Line), FMessage(Message)
-  {
-    Trace(FFile, FFunc, FLine, AnsiString("Entry: ") + FMessage);
-  }
-
-  inline ~Callstack()
-  {
-    Trace(FFile, FFunc, FLine, AnsiString("Exit ") + FMessage);
-  }
-
-private:
-  const char * FFile;
-  const char * FFunc;
-  unsigned int FLine;
-  AnsiString FMessage;
-};
-#define CALLSTACKIMPL(X) Callstack X(__FILE__, __FUNC__, __LINE__, "")
-#else // ifdef _DEBUG
-#define TRACE(PARAMS)
-#define TRACEFMT(MESSAGE, PARAMS)
-#define CALLSTACKIMPL(X)
-#endif // ifdef _DEBUG
-#define CALLSTACK CALLSTACKIMPL(__callstack)
-#define CALLSTACK1 CALLSTACKIMPL(__callstack1)
-//---------------------------------------------------------------------------
-#endif
 //---------------------------------------------------------------------------
 #include <assert.h>
 #ifndef _DEBUG
@@ -174,13 +143,11 @@ private:
 #define assert(p)   ((void)0)
 #define CHECK(p) p
 #else
-#ifndef C_ONLY
 #ifndef DESIGN_ONLY
 #undef assert
 void __fastcall DoAssert(char * Message, char * Filename, int LineNumber);
 #define assert(p) ((p) ? (void)0 : DoAssert(#p, __FILE__, __LINE__))
 #endif // ifndef DESIGN_ONLY
-#endif // ifndef C_ONLY
 #define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
 #endif
 #define USEDPARAM(p) ((p) == (p))

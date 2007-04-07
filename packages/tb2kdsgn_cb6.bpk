@@ -35,12 +35,10 @@
   </MACROS>
   <OPTIONS>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M -LUdclstd 
-      -LUdesignide"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M -LUdclstd -LUdesignide"/>
     <RFLAGS value=""/>
-    <AFLAGS value="/mx /w2 /zd"/>
-    <LFLAGS value="-I -D&quot;Toolbar2000 Design Package (Jordan Russell)&quot; -aa -Tpp -Gpd -x 
-      -Gn -Gl -Gi"/>
+    <AFLAGS value="/mx /w2 /zi"/>
+    <LFLAGS value="-D&quot;Toolbar2000 Design Package (Jordan Russell)&quot; -aa -Tpp -Gpd -x -Gn -Gl -Gi"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

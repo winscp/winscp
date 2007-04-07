@@ -323,7 +323,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteMoveToAction: TAction
       Tag = 14
       Category = 'Selected Operation'
-      Caption = 'Mo&ve to...'
+      Caption = 'Mo&ve To...'
       HelpKeyword = 'task_move_duplicate#moving_remote_files'
       Hint = 'Move|Move selected file(s) to remote directory'
     end
@@ -578,9 +578,13 @@ object NonVisualDataModule: TNonVisualDataModule
       Category = 'Session'
       Caption = '&New Session...'
       HelpKeyword = 'task_connections#opening_additional_connection'
-      Hint = 'New session|Opens new session'
+      Hint = 
+        'New session|Opens new session (hold down Shift to open session i' +
+        'n new window)'
       ImageIndex = 25
       ShortCut = 16462
+      SecondaryShortCuts.Strings = (
+        'Ctrl+Shift+N')
     end
     object CloseSessionAction: TAction
       Tag = 15
@@ -1040,7 +1044,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Help'
       Caption = 'Product &Homepage'
-      Hint = 'Opens web browser and points it to application homepage '
+      Hint = 'Opens web browser and points it to project homepage '
       ImageIndex = 42
     end
     object HistoryPageAction: TAction
@@ -1319,6 +1323,16 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Select session|Select opened session to activate'
       ImageIndex = 62
     end
+    object DuplicateSessionAction: TAction
+      Tag = 15
+      Category = 'Session'
+      Caption = '&Duplicate Session'
+      HelpKeyword = 'task_connections'
+      Hint = 
+        'Duplicate session|Opens the same session again (hold down Shift ' +
+        'to open session in new window)'
+      ImageIndex = 91
+    end
     object NewLinkAction: TAction
       Tag = 12
       Category = 'Command'
@@ -1350,6 +1364,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Enter ad hoc custom command'
       ImageIndex = 90
     end
+    object CustomCommandsEnterFocusedAction: TAction
+      Tag = 12
+      Category = 'Command'
+      Caption = '&Enter...'
+      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+      Hint = 'Enter ad hoc custom command'
+      ImageIndex = 90
+    end
     object CheckForUpdatesAction: TAction
       Tag = 15
       Category = 'Help'
@@ -1362,7 +1384,19 @@ object NonVisualDataModule: TNonVisualDataModule
       Tag = 15
       Category = 'Help'
       Caption = '&Donate'
-      Hint = 'Opens web browser and points it to program donation page'
+      Hint = 'Opens web browser and points it to project donation page'
+    end
+    object CustomCommandsLastAction: TAction
+      Tag = 15
+      Category = 'Command'
+      Caption = 'CustomCommandsLastAction'
+      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
+    end
+    object CustomCommandsLastFocusedAction: TAction
+      Tag = 12
+      Category = 'Command'
+      Caption = 'CustomCommandsLastFocusedAction'
+      HelpKeyword = 'remote_command#executing_and_configuring_custom_commands'
     end
     object FileSystemInfoAction: TAction
       Tag = 15
@@ -1391,7 +1425,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object RemoteMoveToFocusedAction: TAction
       Tag = 14
       Category = 'Focused Operation'
-      Caption = 'Mo&ve to...'
+      Caption = 'Mo&ve To...'
       HelpKeyword = 'task_move_duplicate#moving_remote_files'
       Hint = 'Move|Move selected file(s) to remote directory'
     end

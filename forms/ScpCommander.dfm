@@ -374,6 +374,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
         end
+        object TBXItem218: TTBXItem
+          Action = NonVisualDataModule.DuplicateSessionAction
+        end
         object TBXSubmenuItem20: TTBXSubmenuItem
           Action = NonVisualDataModule.SavedSessionsAction
         end
@@ -807,6 +810,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       object TBXItem123: TTBXItem
         Action = NonVisualDataModule.NewSessionAction
       end
+      object TBXItem219: TTBXItem
+        Action = NonVisualDataModule.DuplicateSessionAction
+      end
       object TBXSeparatorItem34: TTBXSeparatorItem
       end
       object SessionCombo: TTBXComboBoxItem
@@ -1110,10 +1116,10 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 77
       FixAlign = True
       object RemoteHistoryToolbar: TTBXToolbar
-        Left = 2
+        Left = 0
         Top = 25
         Caption = 'Remote history'
-        DockPos = 2
+        DockPos = -6
         DockRow = 1
         Images = GlyphsModule.ExplorerImages
         ParentShowHint = False
@@ -1302,10 +1308,10 @@ inherited ScpCommanderForm: TScpCommanderForm
       Height = 77
       FixAlign = True
       object LocalHistoryToolbar: TTBXToolbar
-        Left = 2
+        Left = 0
         Top = 25
         Caption = 'Local history'
-        DockPos = 2
+        DockPos = -6
         DockRow = 1
         Images = GlyphsModule.ExplorerImages
         ParentShowHint = False
@@ -1477,63 +1483,38 @@ inherited ScpCommanderForm: TScpCommanderForm
     Images = GlyphsModule.SessionImages
     Panels = <
       item
-        Alignment = taCenter
-        MaxSize = 100
-        ViewPriority = 99
-        Size = 100
-        Tag = 0
-        TextTruncation = twEndEllipsis
-      end
-      item
-        Alignment = taCenter
-        MaxSize = 100
-        ViewPriority = 99
-        Size = 100
-        Tag = 0
-        TextTruncation = twEndEllipsis
-      end
-      item
-        Alignment = taCenter
-        MaxSize = 35
-        ViewPriority = 95
-        Size = 35
-        Tag = 0
-        TextTruncation = twEndEllipsis
-      end
-      item
-        Alignment = taCenter
-        MaxSize = 35
-        ViewPriority = 96
-        Size = 35
-        Tag = 0
-        TextTruncation = twEndEllipsis
-      end
-      item
-        MaxSize = 100
-        ViewPriority = 97
-        Size = 100
-        Tag = 0
-        TextTruncation = twEndEllipsis
-      end
-      item
-        Alignment = taCenter
-        MaxSize = 80
-        ViewPriority = 98
-        Size = 80
-        Tag = 0
-        TextTruncation = twEndEllipsis
-      end
-      item
-        Alignment = taCenter
-        MaxSize = 80
-        ViewPriority = 99
-        Size = 80
-        Tag = 0
-        TextTruncation = twEndEllipsis
-      end
-      item
         Size = 100
         StretchPriority = 1
+        Tag = 0
+        TextTruncation = twEndEllipsis
+      end
+      item
+        Alignment = taCenter
+        ImageIndex = 1
+        MaxSize = 35
+        Size = 35
+        Tag = 0
+      end
+      item
+        Alignment = taCenter
+        MaxSize = 70
+        ViewPriority = 98
+        Size = 70
+        Tag = 0
+        TextTruncation = twEndEllipsis
+      end
+      item
+        Alignment = taCenter
+        ImageIndex = 0
+        MaxSize = 35
+        Size = 35
+        Tag = 0
+      end
+      item
+        Alignment = taCenter
+        MaxSize = 80
+        ViewPriority = 99
+        Size = 80
         Tag = 0
         TextTruncation = twEndEllipsis
       end>

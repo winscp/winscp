@@ -10,7 +10,6 @@
 #include <Mask.hpp>
 #include <ComboEdit.hpp>
 #include <UpDownEdit.hpp>
-#include <XPThemes.hpp>
 
 #include <WinInterface.h>
 //---------------------------------------------------------------------------
@@ -18,7 +17,7 @@ class TLoggingFrame : public TFrame
 {
 __published:
   TCheckBox *LoggingCheck;
-  TXPGroupBox *LoggingGroup;
+  TGroupBox *LoggingGroup;
   TLabel *LogWindowLinesText;
   TCheckBox *LogToFileCheck;
   TFilenameEdit *LogFileNameEdit;
@@ -31,11 +30,16 @@ __published:
   TRadioButton *LogFileOverwriteButton;
   TLabel *LogProtocolLabel;
   TComboBox *LogProtocolCombo;
+  TStaticText *LogFileNameHintText;
   void __fastcall LogToFileCheckChange(TObject *Sender);
   void __fastcall DataChange(TObject *Sender);
+  void __fastcall LogFileNameEditBeforeDialog(TObject *Sender,
+          AnsiString &Name, bool &Action);
+  void __fastcall LogFileNameEditAfterDialog(TObject *Sender,
+          AnsiString &Name, bool &Action);
 private:
-  TGetDefaultLogFileName FOnGetDefaultLogFileName;
   bool FEnableLogWindow;
+  AnsiString FBeforeDialogPath;
 
   AnsiString __fastcall GetDefaultLogFileName();
   void __fastcall SetEnableLogWindow(bool value);
@@ -44,7 +48,6 @@ public:
   void __fastcall SaveConfiguration();
   __fastcall TLoggingFrame(TComponent* Owner);
   __property AnsiString DefaultLogFileName = { read = GetDefaultLogFileName };
-  __property TGetDefaultLogFileName OnGetDefaultLogFileName = { read = FOnGetDefaultLogFileName, write = FOnGetDefaultLogFileName };
   __property bool EnableLogWindow = { read = FEnableLogWindow, write = SetEnableLogWindow };
 protected:
   void __fastcall UpdateControls();

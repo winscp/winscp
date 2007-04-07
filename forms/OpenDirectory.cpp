@@ -2,7 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Configuration.h>
 #include <RemoteFiles.h>
 #include <VCLCommon.h>
@@ -12,7 +12,6 @@
 #include "OpenDirectory.h"
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
-#pragma link "XPThemes"
 #pragma link "IEComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
@@ -416,4 +415,3 @@ void __fastcall TOpenDirectoryDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-

@@ -57,6 +57,7 @@ type
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
     function ClosestUnselected(Item: TListItem): TListItem;
     procedure SelectAll(Mode: TSelectMode); reintroduce;
     procedure SelectCurrentItem(FocusNext: Boolean);
@@ -178,6 +179,12 @@ begin
   FLastDeletedItem := nil;
   FUpdatingSelection := 0;
   FFocusingItem := False;
+end;
+
+destructor TCustomNortonLikeListView.Destroy;
+begin
+  FColProperties.Free;
+  inherited;
 end;
 
 procedure TCustomNortonLikeListView.Delete(Item: TListItem);
@@ -363,7 +370,7 @@ begin
     if Items.Count > 0 then
     begin
       // do not focus item directly to make later selecting work
-      if Message.CharCode = VK_LEFT then 
+      if Message.CharCode = VK_LEFT then
         SendMessage(Handle, WM_KEYDOWN, VK_HOME, LongInt(0))
       else
         SendMessage(Handle, WM_KEYDOWN, VK_END, LongInt(0));
@@ -397,7 +404,7 @@ var
 begin
   if Message.CharCode in [Word('+'), Word('-'), Word('*')] then
   begin
-    // ugly fix to avoid Windows beeping when these keys are processed by 
+    // ugly fix to avoid Windows beeping when these keys are processed by
     // WMKeyDown instead of here (WMChar)
     Message.Result := 1;
   end

@@ -378,6 +378,8 @@ __published:
   TTBXLabelItem *TransferLabel;
   TTBXSeparatorItem *TBXSeparatorItem52;
   TTBXItem *TBXItem189;
+  TTBXItem *TBXItem218;
+  TTBXItem *TBXItem219;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -452,7 +454,6 @@ protected:
   virtual void __fastcall RestoreFormParams();
   virtual void __fastcall RestoreParams();
   virtual void __fastcall FixControlsPlacement();
-  virtual void __fastcall TerminalChanging();
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall ConfigurationChanged();
   virtual bool __fastcall GetHasDirView(TOperationSide Side);
@@ -482,16 +483,17 @@ protected:
   virtual bool __fastcall PanelOperation(TOperationSide Side, bool DragDrop);
   virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
+  virtual void __fastcall UpdateSessionData(TSessionData * Data);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
   virtual __fastcall ~TScpCommanderForm();
-  
+
   virtual void __fastcall AddEditLink(bool Add);
   virtual bool __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed);
   virtual void __fastcall ChangePath(TOperationSide Side);
   virtual void __fastcall CompareDirectories();
-  virtual void __fastcall UpdateSessionData(TSessionData * Data = NULL);
+  virtual void __fastcall UpdateTerminal(TTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall StoreParams();

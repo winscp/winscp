@@ -24,7 +24,7 @@
 #define SCRIPT_MKDIR_HELP       20
 #define SCRIPT_GET_HELP         21
 #define SCRIPT_PUT_HELP         22
-#define SCRIPT_OPTION_HELP2     23
+#define SCRIPT_OPTION_HELP4     23
 #define SCRIPT_SYNCHRONIZE_HELP 24
 #define SCRIPT_KEEPUPTODATE_HELP 25
 #define SCRIPT_CALL_HELP        26
@@ -69,7 +69,7 @@
 #define CANT_SET_ATTRS          138
 #define REMOTE_ERROR            139
 #define DELETE_FILE_ERROR       140
-#define LOG_ERROR               141
+#define LOG_GEN_ERROR           141
 #define LOG_OPENERROR           142
 #define RENAME_FILE_ERROR       143
 #define RENAME_CREATE_FILE_EXISTS 144
@@ -173,9 +173,19 @@
 #define SFTP_OVERWRITE_FILE_ERROR 246
 #define SFTP_OVERWRITE_DELETE_BUTTON 247
 #define SPACE_AVAILABLE_ERROR   248
+#define TUNNEL_NO_FREE_PORT     249
+#define EVENT_SELECT_ERROR      250
+#define UNEXPECTED_CLOSE_ERROR  251
+#define TUNNEL_ERROR            252
+#define CHECKSUM_ERROR          253
+#define INTERNAL_ERROR          254
+#define FZ_NOTSUPPORTED         255
+#define FTP_ACCESS_DENIED       256
+#define FTP_CREDENTIAL_PROMPT   257
+#define FTP_PWD_RESPONSE_ERROR  258
 
 #define CORE_CONFIRMATION_STRINGS 300
-#define CONFIRM_PROLONG_TIMEOUT 301
+#define CONFIRM_PROLONG_TIMEOUT2 301
 #define PROMPT_SESSION_PASSWORD 302
 #define PROMPT_KEY_PASSPHRASE   303
 #define FILE_OVERWRITE          304
@@ -196,6 +206,8 @@
 #define RECONNECT_BUTTON        323
 #define RENAME_BUTTON           324
 #define RENAME_PROMPT           325
+#define USERNAME_PROMPT         326
+#define TUNNEL_SESSION_NAME     327
 
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401
@@ -203,12 +215,10 @@
 #define SESSION_INFO_TIP        403
 #define VERSION                 404
 #define CLOSED_ON_COMPLETION    405
-#define SFTP_PROTOCOL_NAME      406
+#define SFTP_PROTOCOL_NAME2     406
 #define FS_RENAME_NOT_SUPPORTED 407
 #define SFTP_NO_EXTENSION_INFO  408
 #define SFTP_EXTENSION_INFO     409
-#define SCP_UNIX_NAME           410
-#define SCP_NO_UNIX_NAME        411
 #define APPEND_BUTTON           412
 #define YES_TO_NEWER_BUTTON     413
 #define SCRIPT_HELP_DESC        414
@@ -234,7 +244,6 @@
 #define SCRIPT_SYNCHRONIZE_DESC 434
 #define SCRIPT_KEEPUPTODATE_DESC 435
 #define SCRIPT_HOST_PROMPT      436
-#define SCRIPT_USERNAME_PROMPT  437
 #define SCRIPT_ACTIVE_SESSION   438
 #define SCRIPT_SESSION_CLOSED   439
 #define SCRIPT_SYNCHRONIZE      440
@@ -278,11 +287,35 @@
 #define AUTH_TRANSL_PUBLIC_KEY_AGENT 478
 #define AUTH_TRANSL_TRY_PUBLIC_KEY 479
 #define AUTH_PASSWORD           480
+#define OPEN_TUNNEL             481
+#define STATUS_CLOSED           482
+#define STATUS_LOOKUPHOST       484
+#define STATUS_CONNECT          485
+#define STATUS_AUTHENTICATE     486
+#define STATUS_AUTHENTICATED    487
+#define STATUS_STARTUP          488
+#define STATUS_OPEN_DIRECTORY   489
+#define STATUS_READY            490
+#define USING_TUNNEL            491
+#define AUTH_TRANSL_KEY_REFUSED 492
+#define PFWD_TRANSL_ADMIN       493
+#define PFWD_TRANSL_CONNECT     494
+#define NET_TRANSL_REFUSED      495
+#define NET_TRANSL_RESET        496
+#define NET_TRANSL_TIMEOUT      497
+#define SESSION_INFO_TIP_NO_SSH 498
+#define RESUME_BUTTON           499
+#define FTP_NO_FEATURE_INFO     500
+#define FTP_FEATURE_INFO        501
 
 #define CORE_VARIABLE_STRINGS   600
 #define PUTTY_BASED_ON          601
 #define PUTTY_VERSION           602
 #define PUTTY_COPYRIGHT         603
 #define PUTTY_URL               604
+#define FILEZILLA_BASED_ON      605
+#define FILEZILLA_VERSION       606
+#define FILEZILLA_COPYRIGHT     607
+#define FILEZILLA_URL           608
 
 #endif // TextsCore

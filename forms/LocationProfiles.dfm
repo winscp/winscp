@@ -56,7 +56,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
     ModalResult = 2
     TabOrder = 6
   end
-  object BookmarksGroup: TXPGroupBox
+  object BookmarksGroup: TGroupBox
     Left = 8
     Top = 104
     Width = 539

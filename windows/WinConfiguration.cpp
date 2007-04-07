@@ -3,6 +3,7 @@
 #pragma hdrstop
 #include "WinConfiguration.h"
 #include "Common.h"
+#include "Exceptions.h"
 #include "Bookmarks.h"
 #include "Terminal.h"
 #include "TextsWin.h"
@@ -10,6 +11,7 @@
 #include "GUITools.h"
 #include "Tools.h"
 #include <ResourceModule.hpp>
+#include <LanguagesDEPfix.hpp>
 #include <InitGUID.h>
 #include <DragExt.h>
 //---------------------------------------------------------------------------
@@ -145,6 +147,11 @@ __fastcall TEditorList::~TEditorList()
 void __fastcall TEditorList::Modify()
 {
   FModified = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorList::Saved()
+{
+  FModified = false;
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorList::operator=(const TEditorList & rhl)
@@ -328,7 +335,7 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
 
   try
   {
-    FDefaultTranslationFile = GetResourceModule(ModuleFileName().c_str());
+    FDefaultTranslationFile = ::GetResourceModule(ModuleFileName().c_str());
     CheckTranslationVersion(FDefaultTranslationFile, true);
   }
   catch(Exception & E)
@@ -385,6 +392,10 @@ void __fastcall TWinConfiguration::Default()
   FPreservePanelState = true;
   FTheme = "OfficeXP";
   FPathInCaption = picShort;
+  FMinimizeToTray = false;
+  FBalloonNotifications = true;
+  FNotificationsTimeout = 10;
+  FNotificationsStickTime = 2;
   FCopyParamAutoSelectNotice = true;
   FSessionToolbarAutoShown = false;
   FLockToolbars = false;
@@ -525,6 +536,52 @@ void __fastcall TWinConfiguration::DefaultLocalized()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::DetectRegistryStorage(HKEY RootKey)
+{
+  bool Result = false;
+  TRegistryStorage * Storage = new TRegistryStorage(RegistryStorageKey, RootKey);
+  try
+  {
+    if (Storage->OpenRootKey(false))
+    {
+      Result = true;
+      Storage->CloseSubKey();
+    }
+  }
+  __finally
+  {
+    delete Storage;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::CanWriteToStorage()
+{
+  bool Result = false;
+  try
+  {
+    THierarchicalStorage * Storage = CreateScpStorage(false);
+    try
+    {
+      Storage->AccessMode = smReadWrite;
+      if (Storage->OpenSubKey(ConfigurationSubKey, true))
+      {
+        Storage->WriteBool("WriteTest", true);
+        Storage->DeleteValue("WriteTest");
+      }
+    }
+    __finally
+    {
+      delete Storage;
+    }
+    Result = true;
+  }
+  catch(...)
+  {
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 TStorage __fastcall TWinConfiguration::GetStorage()
 {
   if (FStorage == stDetect)
@@ -533,29 +590,37 @@ TStorage __fastcall TWinConfiguration::GetStorage()
       MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)))
     {
       FTemporarySessionFile =
-        IncludeTrailingBackslash(SystemTemporaryDirectory()) + "winscp3s.tmp";
+        IncludeTrailingBackslash(SystemTemporaryDirectory()) + "winscps.tmp";
       DumpResourceToFile("WINSCP_SESSION", FTemporarySessionFile);
       FEmbeddedSessions = true;
       FTemporaryKeyFile =
-        IncludeTrailingBackslash(SystemTemporaryDirectory()) + "winscp3k.tmp";
+        IncludeTrailingBackslash(SystemTemporaryDirectory()) + "winscpk.tmp";
       if (!DumpResourceToFile("WINSCP_KEY", FTemporaryKeyFile))
       {
         FTemporaryKeyFile = "";
+      }
+    }
+
+    FStorage = stIniFile;
+    if (!FileExists(IniFileStorageName))
+    {
+      if (DetectRegistryStorage(HKEY_CURRENT_USER) ||
+          DetectRegistryStorage(HKEY_LOCAL_MACHINE) ||
+          !CanWriteToStorage())
+      {
+        FStorage = stRegistry;
       }
     }
   }
   return TCustomWinConfiguration::GetStorage();
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::ModifyAll()
+void __fastcall TWinConfiguration::Saved()
 {
-  TCustomWinConfiguration::ModifyAll();
-  FBookmarks->ModifyAll(true);
-  if (!FCustomCommandsDefaults)
-  {
-    FCustomCommandsModified = true;
-  }
-  FEditorList->Modify();
+  TCustomWinConfiguration::Saved();
+  FBookmarks->ModifyAll(false);
+  FCustomCommandsModified = false;
+  FEditorList->Saved();
 }
 //---------------------------------------------------------------------------
 THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
@@ -608,6 +673,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     PreservePanelState); \
     KEY(String,   Theme); \
     KEY(Integer,  PathInCaption); \
+    KEY(Bool,     MinimizeToTray); \
+    KEY(Bool,     BalloonNotifications); \
+    KEY(Integer,  NotificationsTimeout); \
+    KEY(Integer,  NotificationsStickTime); \
     KEY(Bool,     CopyParamAutoSelectNotice); \
     KEY(Bool,     SessionToolbarAutoShown); \
     KEY(Bool,     LockToolbars); \
@@ -646,6 +715,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,   FUpdates.Results.Message); \
     KEY(Integer,  FUpdates.Results.Critical); \
     KEY(String,   FUpdates.Results.Release); \
+    KEY(Bool,     FUpdates.Results.Disabled); \
+    KEY(String,   FUpdates.Results.Url); \
+    KEY(String,   FUpdates.Results.UrlButton); \
   ); \
   BLOCK("Interface\\Explorer", CANCREATE, \
     KEY(String,  ScpExplorer.ToolbarsLayout); \
@@ -691,9 +763,9 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(String,  LogWindowParams); \
   );
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
+void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
 {
-  TCustomWinConfiguration::SaveSpecial(Storage);
+  TCustomWinConfiguration::SaveData(Storage, All);
 
   // duplicated from core\configuration.cpp
   #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
@@ -702,11 +774,11 @@ void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
 
   if (Storage->OpenSubKey("Bookmarks", true))
   {
-    FBookmarks->Save(Storage);
+    FBookmarks->Save(Storage, All);
 
     Storage->CloseSubKey();
   }
-  if (FCustomCommandsModified)
+  if ((All && !FCustomCommandsDefaults) || FCustomCommandsModified)
   {
     if (Storage->OpenSubKey("CustomCommands", true))
     {
@@ -723,10 +795,9 @@ void __fastcall TWinConfiguration::SaveSpecial(THierarchicalStorage * Storage)
       }
       Storage->CloseSubKey();
     }
-    FCustomCommandsModified = false;
   }
 
-  if (FEditorList->Modified &&
+  if ((All || FEditorList->Modified) &&
       Storage->OpenSubKey("Interface\\Editor", true))
   try
   {
@@ -796,9 +867,9 @@ void __fastcall TWinConfiguration::Load()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::LoadSpecial(THierarchicalStorage * Storage)
+void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
 {
-  TCustomWinConfiguration::LoadSpecial(Storage);
+  TCustomWinConfiguration::LoadData(Storage);
 
   // duplicated from core\configuration.cpp
   #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
@@ -1085,6 +1156,26 @@ void __fastcall TWinConfiguration::SetPathInCaption(TPathInCaption value)
   SET_CONFIG_PROPERTY(PathInCaption);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetMinimizeToTray(bool value)
+{
+  SET_CONFIG_PROPERTY(MinimizeToTray);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetBalloonNotifications(bool value)
+{
+  SET_CONFIG_PROPERTY(BalloonNotifications);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetNotificationsTimeout(unsigned int value)
+{
+  SET_CONFIG_PROPERTY(NotificationsTimeout);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetNotificationsStickTime(unsigned int value)
+{
+  SET_CONFIG_PROPERTY(NotificationsStickTime);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetCopyParamAutoSelectNotice(bool value)
 {
   SET_CONFIG_PROPERTY(CopyParamAutoSelectNotice);
@@ -1135,7 +1226,8 @@ AnsiString __fastcall TWinConfiguration::GetDefaultKeyFile()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TWinConfiguration::TemporaryDir(bool Mask)
 {
-  return UniqTempDir(DDTemporaryDirectory, "scp", Mask);
+  return UniqTempDir(ExpandFileName(ExpandEnvironmentVariables(DDTemporaryDirectory)),
+    "scp", Mask);
 }
 //---------------------------------------------------------------------------
 TStrings * __fastcall TWinConfiguration::FindTemporaryFolders()
@@ -1319,13 +1411,13 @@ LCID __fastcall TWinConfiguration::GetLocale()
 {
   if (!FLocale)
   {
-    AnsiString ResourceModule = GetResourceModule(ModuleFileName().c_str());
+    AnsiString ResourceModule = ::GetResourceModule(ModuleFileName().c_str());
     if (!ResourceModule.IsEmpty())
     {
       AnsiString ResourceExt = ExtractFileExt(ResourceModule).UpperCase();
       ResourceExt.Delete(1, 1);
 
-      TLanguages * Langs = Languages();
+      TLanguages * Langs = LanguagesDEPF();
       int Index, Count;
 
       Count = Langs->Count;

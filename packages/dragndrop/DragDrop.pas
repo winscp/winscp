@@ -129,7 +129,7 @@ type
      function Get(Index: Integer): TFormatEtc;
      procedure Put(Index: Integer; Item: TFormatEtc);
   public
-     constructor Create; 
+     constructor Create;
      destructor Destroy; override;
      function Add(Item: TFormatEtc):integer;
      procedure Clear;
@@ -152,7 +152,7 @@ type
     FFormatEtcList:TFormatEtcList;
     FIndex: integer;
   public
-    constructor Create(FormatEtcList:TFormatEtcList); 
+    constructor Create(FormatEtcList:TFormatEtcList);
     destructor Destroy; override;
     function Next(celt: Longint; out elt;
       pceltFetched: PLongint): HResult; stdcall;
@@ -279,7 +279,7 @@ type
     procedure AssignTo(Dest: TPersistent); override;
     property Control: TDragDrop read FControl;
   public
-    constructor Create(Control: TDragDrop); 
+    constructor Create(Control: TDragDrop);
     destructor Destroy; override;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
   published
@@ -1633,7 +1633,7 @@ begin
             WM_VSCROLL:
               if LOWORD(wParam)<>SB_ENDSCROLL then FTargetScrolling:=FTargetScrolling or 2
               else FTargetScrolling:=FTargetScrolling and not 2;
-	    WM_MOUSEMOVE:
+            WM_MOUSEMOVE:
               if (MouseHookHandle<>0) and (wParam and (MK_LBUTTON or MK_RBUTTON)=0) then
               begin
                    UnHookWindowsHookEx(MouseHookHandle);
@@ -1708,7 +1708,7 @@ begin
      if (AComponent=FDragDropControl) and (Operation=opRemove) then
      begin
           UnregisterTarget;
-	  UnhookMessageHandler(true);
+          UnhookMessageHandler(true);
           FDragDropControl:=nil;
      end;
 end;

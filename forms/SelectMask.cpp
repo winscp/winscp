@@ -4,7 +4,7 @@
 
 #include <Common.h>
 #include <FileMasks.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <TextsWin.h>
 #include <Tools.h>
 #include <VCLCommon.h>
@@ -14,13 +14,12 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
-#pragma link "XPThemes"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
-	TFileFilter * Filter, TConfiguration * Configuration)
+  TFileFilter * Filter, TConfiguration * Configuration)
 {
-	bool Result;
+  bool Result;
   TSelectMaskDialog * Dialog = new TSelectMaskDialog(Application);
   try
   {
@@ -111,4 +110,3 @@ void __fastcall TSelectMaskDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-

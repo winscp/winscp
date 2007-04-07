@@ -170,10 +170,10 @@ object AboutDialog: TAboutDialog
   object RegistrationLabel: TLabel
     Left = 72
     Top = 188
-    Width = 126
+    Width = 127
     Height = 13
     Anchors = [akLeft, akBottom]
-    Caption = 'This product is licensed to:'
+    Caption = 'This product is licenced to:'
   end
   object HomepageLabel: TStaticText
     Left = 72
@@ -209,7 +209,7 @@ object AboutDialog: TAboutDialog
     Height = 121
     HorzScrollBar.Range = 289
     HorzScrollBar.Visible = False
-    VertScrollBar.Range = 285
+    VertScrollBar.Range = 341
     VertScrollBar.Smooth = True
     VertScrollBar.Tracking = True
     Anchors = [akLeft, akRight, akBottom]
@@ -227,7 +227,7 @@ object AboutDialog: TAboutDialog
       AutoSize = False
       Caption = 
         'License agreements of all following programs (libraries) are par' +
-        't of application license agreement.'
+        't of application licence agreement.'
       WordWrap = True
     end
     object Label4: TLabel
@@ -254,45 +254,59 @@ object AboutDialog: TAboutDialog
     end
     object Label8: TLabel
       Left = 8
-      Top = 240
+      Top = 296
       Width = 181
       Height = 13
       Caption = 'Filemanager Toolset library Version 2.6'
     end
     object Label10: TLabel
       Left = 8
-      Top = 256
+      Top = 312
       Width = 137
       Height = 13
       Caption = 'Copyright '#169' 1999 Ingo Eckel'
     end
     object Label1: TLabel
       Left = 8
-      Top = 128
+      Top = 184
       Width = 117
       Height = 13
       Caption = 'Toolbar2000 library 2.1.6'
     end
     object Label2: TLabel
       Left = 8
-      Top = 144
+      Top = 200
       Width = 182
       Height = 13
       Caption = 'Copyright '#169' 1998-2005 Jordan Russell'
     end
     object Label5: TLabel
       Left = 8
-      Top = 184
+      Top = 240
       Width = 69
       Height = 13
       Caption = 'TBX library 2.1'
     end
     object Label6: TLabel
       Left = 8
-      Top = 200
+      Top = 256
       Width = 188
       Height = 13
       Caption = 'Copyright '#169' 2001-2005 Alex A. Denisov'
+    end
+    object FileZillaVersionLabel: TLabel
+      Left = 8
+      Top = 128
+      Width = 148
+      Height = 13
+      Caption = 'FTP code based on Filezilla xxx'
+    end
+    object FileZillaCopyrightLabel: TLabel
+      Left = 8
+      Top = 144
+      Width = 126
+      Height = 13
+      Caption = 'Copyright '#169' xxx Tim Kosse'
     end
     object PuttyLicenceLabel: TStaticText
       Tag = 1
@@ -316,20 +330,29 @@ object AboutDialog: TAboutDialog
     end
     object Toolbar2000HomepageLabel: TStaticText
       Left = 8
-      Top = 160
+      Top = 216
       Width = 180
       Height = 17
       Caption = 'http://www.jrsoftware.org/tb2kdl.php'
-      TabOrder = 2
+      TabOrder = 3
       TabStop = True
     end
     object TBXHomepageLabel: TStaticText
       Left = 8
-      Top = 216
+      Top = 272
       Width = 122
       Height = 17
       Caption = 'http://www.g32.org/tbx/'
-      TabOrder = 3
+      TabOrder = 4
+      TabStop = True
+    end
+    object FileZillaHomepageLabel: TStaticText
+      Left = 8
+      Top = 160
+      Width = 168
+      Height = 17
+      Caption = 'http://XXXfilezilla.sourceforge.net/'
+      TabOrder = 2
       TabStop = True
     end
   end

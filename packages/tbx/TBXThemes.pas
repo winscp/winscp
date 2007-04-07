@@ -44,7 +44,7 @@ const
 { Boolean Metric IDs }
 const
   TMB_OFFICEXPPOPUPALIGNMENT = 1;
-  TMB_EDITMENUFULLSELECT     = 3; // highlights the full edit item 
+  TMB_EDITMENUFULLSELECT     = 3; // highlights the full edit item
   TMB_EDITHEIGHTEVEN         = 4; // forces the height of the edit item to be even number (otherwise it will be odd)
   TMB_PAINTDOCKBACKGROUND    = 5; // docks are painted by the theme instead of having a uniform color
   TMB_SOLIDTOOLBARNCAREA     = 6; // no transparency in NC area of toolbars
@@ -103,7 +103,7 @@ const
   IO_COMBO                   = $08;
   IO_DESIGNING               = $10;
   IO_APPACTIVE               = $20;  // True when Application.Active = True
-  IO_RADIO                   = $40;  
+  IO_RADIO                   = $40;
 
 { Drag handle styles }
 const
@@ -133,7 +133,7 @@ const
 { Edit (ComboBox) button types }
 const
   EBT_DROPDOWN               = 1;
-  EBT_SPIN                   = 2;     
+  EBT_SPIN                   = 2;
 
   { Edit (ComboBox) button states for EBT_DROPDOWN type (bit flags) }
   EBDS_DISABLED              = $1;

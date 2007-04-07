@@ -14,7 +14,6 @@
 #include <vcl\ExtCtrls.hpp>
 #include <Mask.hpp>
 #include <ComboEdit.hpp>
-#include <XPThemes.hpp>
 
 #include <FileOperationProgress.h>
 #include <Terminal.h>
@@ -29,7 +28,7 @@ class TLocationProfilesDialog : public TForm
 __published:
   TButton *OKBtn;
   TButton *CancelBtn;
-  TXPGroupBox *BookmarksGroup;
+  TGroupBox *BookmarksGroup;
   TTreeView *ProfilesView;
   TButton *AddBookmarkButton;
   TButton *RemoveBookmarkButton;

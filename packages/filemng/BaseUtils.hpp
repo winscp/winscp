@@ -26,7 +26,7 @@ namespace Baseutils
 {
 //-- type declarations -------------------------------------------------------
 #pragma option push -b-
-enum TDateTimePrecision { tpDay, tpMinute, tpSecond, tpMillisecond };
+enum TDateTimePrecision { tpNone, tpDay, tpMinute, tpSecond, tpMillisecond };
 #pragma option pop
 
 //-- var, const, procedure ---------------------------------------------------

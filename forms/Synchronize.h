@@ -6,7 +6,6 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <XPThemes.hpp>
 #include <HistoryComboBox.hpp>
 
 #include <WinInterface.h>
@@ -17,14 +16,14 @@
 class TSynchronizeDialog : public TForm
 {
 __published:
-  TXPGroupBox *DirectoriesGroup;
+  TGroupBox *DirectoriesGroup;
   TButton *StopButton;
   TButton *CancelButton;
   TLabel *LocalDirectoryLabel;
   TLabel *RemoteDirectoryLabel;
   THistoryComboBox *RemoteDirectoryEdit;
   THistoryComboBox *LocalDirectoryEdit;
-  TXPGroupBox *OptionsGroup;
+  TGroupBox *OptionsGroup;
   TCheckBox *SynchronizeDeleteCheck;
   TButton *LocalDirectoryBrowseButton;
   TCheckBox *SaveSettingsCheck;
@@ -34,7 +33,7 @@ __published:
   TButton *TransferSettingsButton;
   TCheckBox *SynchronizeRecursiveCheck;
   TGrayedCheckBox *SynchronizeSynchronizeCheck;
-  TXPGroupBox *CopyParamGroup;
+  TGroupBox *CopyParamGroup;
   TLabel *CopyParamLabel;
   TButton *HelpButton;
   TCheckBox *SynchronizeSelectedOnlyCheck;

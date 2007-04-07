@@ -2,6 +2,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
 #include <Windows.hpp>
 #include "FileInfo.h"
 //---------------------------------------------------------------------------

@@ -7,7 +7,7 @@
 #include "ImportSessions.h"
 
 #include <Configuration.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 
 #include <VCLCommon.h>
 #include <WinInterface.h>
@@ -142,4 +142,3 @@ void __fastcall TImportSessionsDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-

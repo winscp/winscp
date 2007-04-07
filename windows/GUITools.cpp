@@ -11,7 +11,7 @@
 #include "GUIConfiguration.h"
 #include <TextsWin.h>
 #include <TextsCore.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <SessionData.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -49,6 +49,7 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
 {
   AnsiString Program, Params, Dir;
   SplitCommand(PuttyPath, Program, Params, Dir);
+  Program = ExpandEnvironmentVariables(Program);
   if (FindFile(Program))
   {
     AnsiString SessionName;
@@ -88,10 +89,10 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
     }
     if (!Password.IsEmpty())
     {
-      Params += FORMAT("-pw \"%s\" ", (Password)); 
+      Params += FORMAT("-pw \"%s\" ", (Password));
     }
-    Params += FORMAT("-load \"%s\"", (SessionName)); 
-    
+    Params += FORMAT("-load \"%s\"", (SessionName));
+
     if (!ExecuteShell(Program, Params))
     {
       throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Program)));
@@ -131,7 +132,7 @@ bool __fastcall ExecuteShell(const AnsiString Path, const AnsiString Params,
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path, 
+bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path,
   const AnsiString Params, TProcessMessagesEvent ProcessMessages)
 {
   bool Result;
@@ -170,13 +171,13 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path,
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Command, 
+bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Command,
   TProcessMessagesEvent ProcessMessages)
 {
   AnsiString Program, Params, Dir;
   SplitCommand(Command, Program, Params, Dir);
   return ExecuteShellAndWait(Handle, Program, Params, ProcessMessages);
-} 
+}
 //---------------------------------------------------------------------------
 bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path)
 {
@@ -444,4 +445,3 @@ bool __fastcall TLocalCustomCommand::IsFileCommand(const AnsiString & Command)
 {
   return TFileCustomCommand::IsFileCommand(Command) || HasLocalFileName(Command);
 }
-

@@ -14,7 +14,3 @@ __fastcall TGlyphsModule::TGlyphsModule(TComponent* Owner)
 {
 }
 //---------------------------------------------------------------------------
-
-
-
-

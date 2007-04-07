@@ -282,9 +282,13 @@ __published:
   TTBXLabelItem *TransferLabel;
   TTBXSeparatorItem *TBXSeparatorItem52;
   TTBXItem *TBXItem189;
+  TTBXItem *TBXItem90;
+  TTBXItem *TBXItem137;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
 private:
+  AnsiString FStatusBarFileText;
+
   void __fastcall RemotePanelSplitterDblClick(TObject * Sender);
 
 protected:
@@ -298,6 +302,7 @@ protected:
   virtual TControl * __fastcall GetComponent(Byte Component);
   virtual void __fastcall FixControlsPlacement();
   DYNAMIC void __fastcall DoShow();
+  virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
 
 public:
   __fastcall TScpExplorerForm(TComponent* Owner);

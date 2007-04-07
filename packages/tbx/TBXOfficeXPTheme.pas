@@ -399,14 +399,14 @@ begin
   if not ItemInfo.IsVertical then
   begin
     Inc(R2.Top, 4);
-    R2.Bottom := R2.Top + 5;  
+    R2.Bottom := R2.Top + 5;
     W := 8;
     H := 5;
   end
   else
   begin
     R2.Left := R2.Right - 9;
-    R2.Right := R2.Left + 5;   
+    R2.Right := R2.Left + 5;
     W := 5;
     H := 8;
   end;
@@ -638,7 +638,7 @@ begin
 
       if not IsDockPanel then Brush.Color := WinFrameColors[WinState, wfpBorder]
       else Brush.Color := PnlFrameColors[WinState, wfpBorder];
-      
+
       SaveIndex := SaveDC(Canvas.Handle);
       Sz := WindowInfo.FloatingBorderSize;
       with R, Sz do ExcludeClipRect(Canvas.Handle, Left + X, Top + Y, Right - X, Bottom - Y);
@@ -1039,7 +1039,7 @@ begin
           FillRect(Rect(Left, Top + 1, Left + 1, Bottom - 1));
           FillRect(Rect(Right - 1, Top + 1, Right, Bottom - 1));
         end;
-        InflateRect(R, -1, -1);     
+        InflateRect(R, -1, -1);
         Brush.Color := SaveColor;
         FillRect(R);
       end;

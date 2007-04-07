@@ -16,7 +16,6 @@
 #include <Comboedit.hpp>
 #include <Mask.hpp>
 #include <ComboEdit.hpp>
-#include <XPThemes.hpp>
 
 #include "CopyParams.h"
 #include "GeneralSettings.h"
@@ -25,6 +24,7 @@
 #include "IEComboBox.hpp"
 #include "HistoryComboBox.hpp"
 #include "PasswordEdit.hpp"
+#include <Dialogs.hpp>
 //----------------------------------------------------------------------------
 class TCustomCommands;
 class TEditorList;
@@ -37,7 +37,7 @@ __published:
   TPanel *MainPanel;
   TPageControl *PageControl;
   TTabSheet *PreferencesSheet;
-  TXPGroupBox *CommonPreferencesGroup;
+  TGroupBox *CommonPreferencesGroup;
   TCheckBox *ConfirmOverwritingCheck;
   TCheckBox *ConfirmDeletingCheck;
   TCheckBox *ConfirmClosingSessionCheck;
@@ -49,41 +49,41 @@ __published:
   TLabel *Label1;
   TGeneralSettingsFrame *GeneralSettingsFrame;
   TTabSheet *PanelsSheet;
-  TXPGroupBox *PanelsRemoteDirectoryGroup;
+  TGroupBox *PanelsRemoteDirectoryGroup;
   TCheckBox *ShowInaccesibleDirectoriesCheck;
-  TXPGroupBox *PanelsCommonGroup;
+  TGroupBox *PanelsCommonGroup;
   TCheckBox *ShowHiddenFilesCheck;
   TCheckBox *DefaultDirIsHomeCheck;
   TTabSheet *CommanderSheet;
   TLabel *Label3;
-  TXPGroupBox *PanelsGroup;
+  TGroupBox *PanelsGroup;
   TCheckBox *PreserveLocalDirectoryCheck;
-  TXPGroupBox *CommanderMiscGroup;
+  TGroupBox *CommanderMiscGroup;
   TCheckBox *UseLocationProfilesCheck;
-  TXPGroupBox *CompareCriterionsGroup;
+  TGroupBox *CompareCriterionsGroup;
   TCheckBox *CompareByTimeCheck;
   TCheckBox *CompareBySizeCheck;
   TTabSheet *ExplorerSheet;
   TLabel *Label4;
-  TXPGroupBox *GroupBox2;
+  TGroupBox *GroupBox2;
   TCheckBox *ShowFullAddressCheck;
   TTabSheet *TransferSheet;
   TCopyParamsFrame *CopyParamsFrame;
   TTabSheet *EditorSheet;
-  TXPGroupBox *EditorPreferenceGroup;
-  TXPGroupBox *InternalEditorGroup;
+  TGroupBox *EditorPreferenceGroup;
+  TGroupBox *InternalEditorGroup;
   TLabel *EditorFontLabel;
   TButton *EditorFontButton;
   TTabSheet *IntegrationSheet;
-  TXPGroupBox *ShellIconsGroup;
+  TGroupBox *ShellIconsGroup;
   TButton *DesktopIconButton;
   TButton *QuickLaunchIconButton;
   TButton *SendToHookButton;
-  TXPGroupBox *ExternalAppsGroup;
+  TGroupBox *ExternalAppsGroup;
   TLabel *Label2;
   TEdit *PuttyPathEdit;
   TTabSheet *CustomCommandsSheet;
-  TXPGroupBox *CustomCommandsGroup;
+  TGroupBox *CustomCommandsGroup;
   TListView *CustomCommandsView;
   TButton *AddCommandButton;
   TButton *RemoveCommandButton;
@@ -95,7 +95,7 @@ __published:
   TCheckBox *DeleteToRecycleBinCheck;
   TButton *RegisterAsUrlHandlerButton;
   TTabSheet *DragDropSheet;
-  TXPGroupBox *DragDropDownloadsGroup;
+  TGroupBox *DragDropDownloadsGroup;
   TLabel *DDExtEnabledLabel;
   TLabel *DDExtDisabledLabel;
   TRadioButton *DDExtEnabledButton;
@@ -105,10 +105,10 @@ __published:
   TCheckBox *DDWarnOnMoveCheck;
   TCheckBox *ConfirmExitOnCompletionCheck;
   TTabSheet *QueueSheet;
-  TXPGroupBox *QueueGroup;
+  TGroupBox *QueueGroup;
   TUpDownEdit *QueueTransferLimitEdit;
   TLabel *Label5;
-  TXPGroupBox *QueueViewGroup;
+  TGroupBox *QueueViewGroup;
   TRadioButton *QueueViewShowButton;
   TRadioButton *QueueViewHideWhenEmptyButton;
   TRadioButton *QueueViewHideButton;
@@ -118,25 +118,25 @@ __published:
   TCheckBox *RememberPasswordCheck;
   TCheckBox *ConfirmResumeCheck;
   TTabSheet *StorageSheet;
-  TXPGroupBox *StorageGroup;
+  TGroupBox *StorageGroup;
   TRadioButton *RegistryStorageButton;
-  TRadioButton *IniFileStorageButton;
-  TXPGroupBox *NotificationsGroup;
+  TRadioButton *IniFileStorageButton2;
+  TGroupBox *NotificationsGroup;
   TCheckBox *BeepOnFinishCheck;
   TUpDownEdit *BeepOnFinishAfterEdit;
   TLabel *BeepOnFinishAfterText;
   TTabSheet *TransferResumeSheet;
-  TXPGroupBox *ResumeBox;
+  TGroupBox *ResumeBox;
   TLabel *ResumeThresholdUnitLabel;
   TRadioButton *ResumeOnButton;
   TRadioButton *ResumeSmartButton;
   TRadioButton *ResumeOffButton;
   TUpDownEdit *ResumeThresholdEdit;
   TCheckBox *ConfirmCommandSessionCheck;
-  TXPGroupBox *SingleEditorGroup;
+  TGroupBox *SingleEditorGroup;
   TRadioButton *EditorSingleEditorOnCheck;
   TRadioButton *EditorSingleEditorOffCheck;
-  TXPGroupBox *TemporaryDirectoryGrouo;
+  TGroupBox *TemporaryDirectoryGrouo;
   TRadioButton *DDSystemTemporaryDirectoryButton;
   TRadioButton *DDCustomTemporaryDirectoryButton;
   TDirectoryEdit *DDTemporaryDirectoryEdit;
@@ -144,7 +144,7 @@ __published:
   TCheckBox *TemporaryDirectoryCleanupCheck;
   TCheckBox *ConfirmTemporaryDirectoryCleanupCheck;
   TCheckBox *PuttyPasswordCheck;
-  TXPGroupBox *OtherStorageGroup;
+  TGroupBox *OtherStorageGroup;
   TLabel *RandomSeedFileLabel;
   TFilenameEdit *RandomSeedFileEdit;
   TCheckBox *SwappedPanelsCheck;
@@ -152,24 +152,24 @@ __published:
   TButton *AddSearchPathButton;
   TCheckBox *QueueNoConfirmationCheck;
   TCheckBox *EditorWordWrapCheck;
-  TXPGroupBox *PathInCaptionGroup;
+  TGroupBox *PathInCaptionGroup;
   TRadioButton *PathInCaptionFullButton;
   TRadioButton *PathInCaptionShortButton;
   TRadioButton *PathInCaptionNoneButton;
   TTabSheet *UpdatesSheet;
-  TXPGroupBox *UpdatesGroup;
+  TGroupBox *UpdatesGroup;
   TRadioButton *UpdatesNeverButton;
   TRadioButton *UpdatesDailyButton;
   TRadioButton *UpdatesWeeklyButton;
   TRadioButton *UpdatesMonthlyButton;
-  TXPGroupBox *UpdatesProxyGroup;
+  TGroupBox *UpdatesProxyGroup;
   TLabel *UpdatesProxyHostLabel;
   TLabel *UpdatesProxyPortLabel;
   TUpDownEdit *UpdatesProxyPortEdit;
   TEdit *UpdatesProxyHostEdit;
   TCheckBox *UpdatesProxyCheck;
   TTabSheet *CopyParamListSheet;
-  TXPGroupBox *CopyParamListGroup;
+  TGroupBox *CopyParamListGroup;
   TListView *CopyParamListView;
   TButton *AddCopyParamButton;
   TButton *RemoveCopyParamButton;
@@ -177,10 +177,10 @@ __published:
   TButton *DownCopyParamButton;
   TButton *EditCopyParamButton;
   TButton *DuplicateCopyParamButton;
-  TXPGroupBox *CopyParamListOptionsGroup;
+  TGroupBox *CopyParamListOptionsGroup;
   TCheckBox *CopyParamAutoSelectNoticeCheck;
   TButton *HelpButton;
-  TXPGroupBox *ThemeGroup;
+  TGroupBox *ThemeGroup;
   TLabel *Label7;
   TComboBox *ThemeCombo;
   TListView *EditorListView;
@@ -189,7 +189,7 @@ __published:
   TButton *UpEditorButton;
   TButton *DownEditorButton;
   TButton *RemoveEditorButton;
-  TXPGroupBox *DoubleClickGroup;
+  TGroupBox *DoubleClickGroup;
   TCheckBox *CopyOnDoubleClickConfirmationCheck;
   TLabel *DoubleClickActionLabel;
   TComboBox *DoubleClickActionCombo;
@@ -200,7 +200,7 @@ __published:
   TButton *PuttyPathBrowseButton;
   TButton *PuttyPathResetButton;
   TCheckBox *FullRowSelectCheck;
-  TXPGroupBox *SessionReopenGroup;
+  TGroupBox *SessionReopenGroup;
   TLabel *SessionReopenAutoLabel;
   TCheckBox *SessionReopenAutoCheck;
   TLabel *SessionReopenAutoSecLabel;
@@ -208,6 +208,10 @@ __published:
   TTabSheet *WindowSheet;
   TCheckBox *AutoReadDirectoryAfterOpCheck;
   TCheckBox *ConfirmRecyclingCheck;
+  TGroupBox *WindowMiscellaneousGroup;
+  TCheckBox *MinimizeToTrayCheck;
+  TCheckBox *BalloonNotificationsCheck;
+  TButton *ExportButton;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -259,6 +263,13 @@ __published:
   void __fastcall EditorListViewData(TObject *Sender, TListItem *Item);
   void __fastcall PuttyPathBrowseButtonClick(TObject *Sender);
   void __fastcall PuttyPathResetButtonClick(TObject *Sender);
+  void __fastcall ExportButtonClick(TObject *Sender);
+  void __fastcall PathEditBeforeDialog(TObject *Sender,
+          AnsiString &Name, bool &Action);
+  void __fastcall PathEditAfterDialog(TObject *Sender,
+          AnsiString &Name, bool &Action);
+  void __fastcall NavigationTreeCollapsing(TObject *Sender,
+          TTreeNode *Node, bool &AllowCollapse);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
@@ -270,8 +281,10 @@ private:
   int FListViewDragSource;
   int FListViewDragDest;
   TPreferencesDialogData * FDialogData;
+  AnsiString FBeforeDialogPath;
   void __fastcall SetPreferencesMode(TPreferencesMode value);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
+  void __fastcall WMHelp(TWMHelp & Message);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);

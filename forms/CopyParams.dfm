@@ -4,7 +4,7 @@ object CopyParamsFrame: TCopyParamsFrame
   Width = 508
   Height = 211
   TabOrder = 0
-  object CommonPropertiesGroup: TXPGroupBox
+  object CommonPropertiesGroup: TGroupBox
     Left = 331
     Top = 0
     Width = 173
@@ -39,7 +39,7 @@ object CopyParamsFrame: TCopyParamsFrame
       OnClick = ControlChange
     end
   end
-  object LocalPropertiesGroup: TXPGroupBox
+  object LocalPropertiesGroup: TGroupBox
     Left = 331
     Top = 0
     Width = 173
@@ -72,7 +72,7 @@ object CopyParamsFrame: TCopyParamsFrame
       TabOrder = 0
     end
   end
-  object RemotePropertiesGroup: TXPGroupBox
+  object RemotePropertiesGroup: TGroupBox
     Left = 331
     Top = 0
     Width = 173
@@ -114,6 +114,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Text = 'RightsEdit'
       OnButtonClick = RightsEditButtonClick
       OnExit = RightsEditExit
+      OnContextPopup = RightsEditContextPopup
     end
     object IgnorePermErrorsCheck: TCheckBox
       Left = 12
@@ -127,7 +128,7 @@ object CopyParamsFrame: TCopyParamsFrame
       OnClick = ControlChange
     end
   end
-  object ChangeCaseGroup: TXPGroupBox
+  object ChangeCaseGroup: TGroupBox
     Left = 206
     Top = 0
     Width = 120
@@ -192,7 +193,7 @@ object CopyParamsFrame: TCopyParamsFrame
       OnClick = ControlChange
     end
   end
-  object TransferModeGroup: TXPGroupBox
+  object TransferModeGroup: TGroupBox
     Left = 3
     Top = 0
     Width = 198
@@ -254,7 +255,7 @@ object CopyParamsFrame: TCopyParamsFrame
       OnExit = ValidateMaskComboExit
     end
   end
-  object OtherGroup: TXPGroupBox
+  object OtherGroup: TGroupBox
     Left = 3
     Top = 148
     Width = 501

@@ -5,7 +5,7 @@
 #include "NonVisual.h"
 
 #include <Common.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <TextsWin.h>
 #include <Tools.h>
 #include <Setup.h>
@@ -15,6 +15,7 @@
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "TBX.hpp"
+#include "VCLCommon.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "TB2Item"
@@ -29,6 +30,7 @@ TNonVisualDataModule *NonVisualDataModule;
   Handled = true; } else
 #define UPD(HandleAction, Condition) if (Action == HandleAction) { \
   ((TCustomAction *)Action)->Enabled = (Condition); Handled = true; } else
+#define UPDFUNC(HandleAction, Function) if (Action == HandleAction) { Function; Handled = true; } else
 #define EXE(HandleAction, Command) if (Action == HandleAction) { \
   Command; Handled = true; } else
 #define UPDACT(HandleAction, Command) \
@@ -76,6 +78,7 @@ TNonVisualDataModule *NonVisualDataModule;
 __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
         : TDataModule(Owner)
 {
+  InitSystemSettings(this);
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
   FIdle = 0;
@@ -122,7 +125,7 @@ void __fastcall TNonVisualDataModule::LogActionsExecute(
     assert(FIdle < 0);
     FIdle++;
   }
-  
+
   DoIdle();
 }
 //---------------------------------------------------------------------------
@@ -148,7 +151,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteMoveToFocusedAction, EnableFocusedOperation &&
     (DirView(osRemote) == DirView(osCurrent)) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
-  UPD(RemoteCopyToFocusedAction, EnableFocusedOperation && (DirView(osRemote) == DirView(osCurrent)))
+  UPD(RemoteCopyToFocusedAction, EnableFocusedOperation &&
+    (DirView(osRemote) == DirView(osCurrent) &&
+    (ScpExplorer->Terminal->IsCapable[fcRemoteCopy] ||
+     ScpExplorer->Terminal->IsCapable[fcSecondaryShell])))
   UPD(CurrentEditFocusedAction, EnableFocusedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
   // file operation
@@ -180,7 +186,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(RemoteMoveToAction, EnableSelectedOperation &&
     (DirView(osRemote) == DirView(osCurrent)) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
-  UPD(RemoteCopyToAction, EnableSelectedOperation && (DirView(osRemote) == DirView(osCurrent)))
+  UPD(RemoteCopyToAction, EnableSelectedOperation &&
+    (DirView(osRemote) == DirView(osCurrent) &&
+    (ScpExplorer->Terminal->IsCapable[fcRemoteCopy] ||
+     ScpExplorer->Terminal->IsCapable[fcSecondaryShell])))
   UPD(FileListToCommandLineAction, EnableSelectedOperation)
   UPD(FileListToClipboardAction, EnableSelectedOperation)
   UPD(FullFileListToClipboardAction, EnableSelectedOperation)
@@ -354,6 +363,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
 
   // SESSION
   UPD(NewSessionAction, true)
+  UPD(DuplicateSessionAction, true)
   UPD(CloseSessionAction, true)
   UPD(SavedSessionsAction, (StoredSessions->Count > 0))
   UPD(OpenedSessionsAction, true)
@@ -375,6 +385,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // CUSTOM COMMANDS
   UPD(CustomCommandsAction, true)
   UPD(CustomCommandsEnterAction, true)
+  UPD(CustomCommandsEnterFocusedAction, true)
+  UPDFUNC(CustomCommandsLastAction, CustomCommandsLastUpdate(CustomCommandsLastAction))
+  UPDFUNC(CustomCommandsLastFocusedAction, CustomCommandsLastUpdate(CustomCommandsLastFocusedAction))
   UPD(CustomCommandsCustomizeAction, true)
 
   // QUEUE
@@ -390,7 +403,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = false)
   UPDQUEUE(ItemDelete)
   UPDEX(QueueItemExecuteAction, ScpExplorer->AllowQueueOperation(qoItemExecute),
-    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible = 
+    ((TAction *)Action)->Visible = true, ((TAction *)Action)->Visible =
       !ScpExplorer->AllowQueueOperation(qoItemPause) &&
       !ScpExplorer->AllowQueueOperation(qoItemResume))
   UPDEX(QueueItemPauseAction, ScpExplorer->AllowQueueOperation(qoItemPause),
@@ -428,7 +441,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     return;
   }
   ScpExplorer->BeforeAction();
-  
+
   FIdle--;
   try
   {
@@ -617,6 +630,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     // SESSION
     EXE(NewSessionAction, ScpExplorer->NewSession())
+    EXE(DuplicateSessionAction, ScpExplorer->DuplicateSession())
     EXE(CloseSessionAction, ScpExplorer->CloseSession())
     EXE(SavedSessionsAction, CreateSessionListMenu(SavedSessionsAction))
     EXE(OpenedSessionsAction, CreateOpenedSessionListMenu(OpenedSessionsAction))
@@ -637,8 +651,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
 
     // CUSTOM COMMANDS
     EXE(CustomCommandsAction, CreateCustomCommandsMenu(CustomCommandsAction))
-    EXE(CustomCommandsEnterAction, ScpExplorer->AdHocCustomCommand(
-      Action->ActionComponent == RemoteDirViewCustomCommandsMenu))
+    EXE(CustomCommandsEnterAction, ScpExplorer->AdHocCustomCommand(false))
+    EXE(CustomCommandsEnterFocusedAction, ScpExplorer->AdHocCustomCommand(true))
+    EXE(CustomCommandsLastAction, ScpExplorer->LastCustomCommand(false))
+    EXE(CustomCommandsLastFocusedAction, ScpExplorer->LastCustomCommand(true))
     EXE(CustomCommandsCustomizeAction, PreferencesDialog(pmCustomCommands))
 
     // QUEUE
@@ -851,7 +867,15 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
 
   TTBCustomItem * Item;
   Item = new TTBXItem(Menu);
-  Item->Action = CustomCommandsEnterAction;
+  Item->Action = OnFocused ? CustomCommandsEnterFocusedAction : CustomCommandsEnterAction;
+  Menu->Add(Item);
+
+  Item = new TTBXItem(Menu);
+  Item->Action = OnFocused ? CustomCommandsLastFocusedAction : CustomCommandsLastAction;
+  if (Toolbar)
+  {
+    Item->Caption = StripHotkey(LoadStr(CUSTOM_COMMAND_LAST_SHORT));
+  }
   Menu->Add(Item);
 
   AddMenuSeparator(Menu);
@@ -894,7 +918,7 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     return;
   }
 
-  int AdditionalCommands = 3;
+  int AdditionalCommands = 4;
   TCustomCommands * CustomCommands = WinConfiguration->CustomCommands;
   bool Changed = (CustomCommands->Count != (Toolbar->Items->Count - AdditionalCommands));
   if (!Changed)
@@ -1050,7 +1074,7 @@ void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action)
       for (int Index = 0; Index < EditorList->Count; Index++)
       {
         const TEditorPreferences * Editor = EditorList->Editors[Index];
-      
+
         if ((Editor->Data.Editor == edExternal) &&
             (UsedEditors->IndexOf(Editor->Data.ExternalEditor) < 0))
         {
@@ -1163,6 +1187,7 @@ void __fastcall TNonVisualDataModule::ShowUpdatesUpdate()
   int CurrentCompoundVer = CurrentCompoundVersion();
   ShowUpdatesAction->ImageIndex =
     ((Updates.HaveResults && (Updates.Results.ForVersion == CurrentCompoundVer) &&
+      !Updates.Results.Disabled &&
       ((Updates.Results.Critical && !Updates.ShownResults && (MS >= 500)) ||
        ((!Updates.Results.Critical || Updates.ShownResults) &&
         ((Updates.Results.Version > CurrentCompoundVer) ||
@@ -1181,4 +1206,24 @@ void __fastcall TNonVisualDataModule::PreferencesDialog(TPreferencesMode APrefer
     DoPreferencesDialog(APreferencesMode);
   }
 }
-
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
+{
+  TCustomCommandParam CustomCommand;
+  int State;
+  bool Defined = ScpExplorer->GetLastCustomCommand(
+    (Action == CustomCommandsLastFocusedAction), CustomCommand, State);
+  Action->Visible = Defined;
+  if (Defined)
+  {
+    AnsiString TitleCommand = CustomCommand.Command;
+    int MaxTitleCommandLen = 20;
+    if (TitleCommand.Length() > MaxTitleCommandLen)
+    {
+      TitleCommand = TitleCommand.SubString(1, MaxTitleCommandLen - 3) + "...";
+    }
+    Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (TitleCommand));
+    Action->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (CustomCommand.Command));
+    Action->Enabled = (State > 0);
+  }
+}

@@ -20,7 +20,7 @@
 //---------------------------------------------------------------------------
 class TLogForm : public TForm
 {
-__published:	// IDE-managed Components
+__published: // IDE-managed Components
   TTBXStatusBar *StatusBar;
   TTBXDock *TopDock;
   TTBXToolbar *Toolbar;

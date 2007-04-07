@@ -4,7 +4,7 @@
 //---------------------------------------------------------------------------
 #include <CopyParam.h>
 //---------------------------------------------------------------------------
-struct TSynchronizeParamType 
+struct TSynchronizeParamType
 {
   AnsiString LocalDirectory;
   AnsiString RemoteDirectory;
@@ -75,9 +75,9 @@ private:
     bool & SubdirsChanged);
   void __fastcall SynchronizeAbort(bool Close);
   void __fastcall SynchronizeLog(TSynchronizeLogEntry Entry, const AnsiString Message);
-  void __fastcall SynchronizeInvalid(TObject * Sender, const AnsiString Directory, 
+  void __fastcall SynchronizeInvalid(TObject * Sender, const AnsiString Directory,
     const AnsiString ErrorStr);
-  void __fastcall SynchronizeFilter(TObject * Sender, const AnsiString DirectoryName, 
+  void __fastcall SynchronizeFilter(TObject * Sender, const AnsiString DirectoryName,
     bool & Add);
   void __fastcall SynchronizeTooManyDirectories(TObject * Sender, int & MaxDirectories);
   void __fastcall SynchronizeDirectoriesChange(TObject * Sender, int Directories);

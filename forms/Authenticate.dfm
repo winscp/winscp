@@ -66,7 +66,7 @@ object AuthenticateForm: TAuthenticateForm
       DesignSize = (
         375
         50)
-      object PasswordLabel: TStaticText
+      object PasswordLabel: TLabel
         Left = 8
         Top = 8
         Width = 360
@@ -75,16 +75,16 @@ object AuthenticateForm: TAuthenticateForm
         AutoSize = False
         Caption = '&PasswordX:'
         FocusControl = PasswordEdit
-        TabOrder = 0
+        WordWrap = True
       end
       object PasswordEdit: TPasswordEdit
         Left = 8
         Top = 24
         Width = 361
         Height = 21
-        Anchors = [akLeft, akTop, akRight]
+        Anchors = [akLeft, akRight, akBottom]
         MaxLength = 250
-        TabOrder = 1
+        TabOrder = 0
       end
     end
     object ServerPromptPanel: TPanel

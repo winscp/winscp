@@ -17,7 +17,7 @@ public:
   __fastcall TCustomUnixDriveView(TComponent * Owner);
   virtual __fastcall ~TCustomUnixDriveView();
 
-	virtual AnsiString __fastcall NodePathName(TTreeNode * Node);
+  virtual AnsiString __fastcall NodePathName(TTreeNode * Node);
   TStrings * __fastcall DragFileList();
   void __fastcall UpdateDropTarget();
   void __fastcall UpdateDropSource();
@@ -48,32 +48,32 @@ protected:
   inline bool __fastcall NodeIsHidden(const TTreeNode * Node);
   inline bool __fastcall NodeCanDelete(TTreeNode * Node);
 
-	virtual TCustomDirView * __fastcall GetCustomDirView();
-	virtual void __fastcall SetCustomDirView(TCustomDirView * Value);
-	void __fastcall SetDirView(TUnixDirView * Value);
+  virtual TCustomDirView * __fastcall GetCustomDirView();
+  virtual void __fastcall SetCustomDirView(TCustomDirView * Value);
+  void __fastcall SetDirView(TUnixDirView * Value);
 
-	virtual void __fastcall PerformDragDropFileOperation(TTreeNode * Node, int Effect);
-	virtual void __fastcall DDChooseEffect(int KeyState, int & Effect);
-	virtual bool __fastcall DragCompleteFileList();
-	virtual TDropEffectSet __fastcall DDSourceEffects();
+  virtual void __fastcall PerformDragDropFileOperation(TTreeNode * Node, int Effect);
+  virtual void __fastcall DDChooseEffect(int KeyState, int & Effect);
+  virtual bool __fastcall DragCompleteFileList();
+  virtual TDropEffectSet __fastcall DDSourceEffects();
 
   TTreeNode * __fastcall FindNodeToPath(AnsiString Path);
-	virtual AnsiString __fastcall NodePath(TTreeNode * Node);
-	virtual bool __fastcall NodeIsRecycleBin(TTreeNode * Node);
-	virtual bool __fastcall NodePathExists(TTreeNode * Node);
-	virtual TColor __fastcall NodeColor(TTreeNode * Node);
-	virtual TTreeNode * __fastcall FindPathNode(AnsiString Path);
+  virtual AnsiString __fastcall NodePath(TTreeNode * Node);
+  virtual bool __fastcall NodeIsRecycleBin(TTreeNode * Node);
+  virtual bool __fastcall NodePathExists(TTreeNode * Node);
+  virtual TColor __fastcall NodeColor(TTreeNode * Node);
+  virtual TTreeNode * __fastcall FindPathNode(AnsiString Path);
   virtual void __fastcall GetImageIndex(TTreeNode * Node);
   virtual Word __fastcall NodeOverlayIndexes(TTreeNode * Node);
   virtual void __fastcall ClearDragFileList(TFileList * FileList);
   virtual void __fastcall AddToDragFileList(TFileList * FileList, TTreeNode * Node);
 
-	virtual void __fastcall ValidateDirectoryEx(TTreeNode * Node,
+  virtual void __fastcall ValidateDirectoryEx(TTreeNode * Node,
     TRecursiveScan Recurse, bool NewDirs);
 
-	virtual void __fastcall RebuildTree();
-	virtual void __fastcall DisplayContextMenu(TTreeNode * Node, const TPoint & ScreenPos);
-	virtual void __fastcall DisplayPropertiesMenu(TTreeNode * Node);
+  virtual void __fastcall RebuildTree();
+  virtual void __fastcall DisplayContextMenu(TTreeNode * Node, const TPoint & ScreenPos);
+  virtual void __fastcall DisplayPropertiesMenu(TTreeNode * Node);
 
   #pragma warn -inl
   BEGIN_MESSAGE_MAP
@@ -107,7 +107,7 @@ __published:
   __property RootName;
   __property OnDDDragFileName;
   __property OnDDEnd;
-  
+
   __property UseDragImages;
 
   __property TargetPopUpMenu;

@@ -70,7 +70,9 @@ __published:
           TListItem *Item2, int Data, int &Compare);
   void __fastcall ListViewSecondaryColumnHeader(TCustomIEListView *Sender,
           int Index, int &SecondaryColumn);
-  
+  void __fastcall ListViewContextPopup(TObject *Sender, TPoint &MousePos,
+          bool &Handled);
+
 public:
   __fastcall TSynchronizeChecklistDialog(TComponent * AOwner,
     TSynchronizeMode Mode, int Params, const AnsiString LocalDirectory,

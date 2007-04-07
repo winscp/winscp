@@ -6,111 +6,9 @@
 #include "putty.h"
 #include "tree234.h"
 #include "ssh.h"
+#include "sshint.h"
+#include "sshgss.h"
 
-#ifndef FALSE
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#define SSH1_MSG_DISCONNECT                       1	/* 0x1 */
-#define SSH1_SMSG_PUBLIC_KEY                      2	/* 0x2 */
-#define SSH1_CMSG_SESSION_KEY                     3	/* 0x3 */
-#define SSH1_CMSG_USER                            4	/* 0x4 */
-#define SSH1_CMSG_AUTH_RSA                        6	/* 0x6 */
-#define SSH1_SMSG_AUTH_RSA_CHALLENGE              7	/* 0x7 */
-#define SSH1_CMSG_AUTH_RSA_RESPONSE               8	/* 0x8 */
-#define SSH1_CMSG_AUTH_PASSWORD                   9	/* 0x9 */
-#define SSH1_CMSG_REQUEST_PTY                     10	/* 0xa */
-#define SSH1_CMSG_WINDOW_SIZE                     11	/* 0xb */
-#define SSH1_CMSG_EXEC_SHELL                      12	/* 0xc */
-#define SSH1_CMSG_EXEC_CMD                        13	/* 0xd */
-#define SSH1_SMSG_SUCCESS                         14	/* 0xe */
-#define SSH1_SMSG_FAILURE                         15	/* 0xf */
-#define SSH1_CMSG_STDIN_DATA                      16	/* 0x10 */
-#define SSH1_SMSG_STDOUT_DATA                     17	/* 0x11 */
-#define SSH1_SMSG_STDERR_DATA                     18	/* 0x12 */
-#define SSH1_CMSG_EOF                             19	/* 0x13 */
-#define SSH1_SMSG_EXIT_STATUS                     20	/* 0x14 */
-#define SSH1_MSG_CHANNEL_OPEN_CONFIRMATION        21	/* 0x15 */
-#define SSH1_MSG_CHANNEL_OPEN_FAILURE             22	/* 0x16 */
-#define SSH1_MSG_CHANNEL_DATA                     23	/* 0x17 */
-#define SSH1_MSG_CHANNEL_CLOSE                    24	/* 0x18 */
-#define SSH1_MSG_CHANNEL_CLOSE_CONFIRMATION       25	/* 0x19 */
-#define SSH1_SMSG_X11_OPEN                        27	/* 0x1b */
-#define SSH1_CMSG_PORT_FORWARD_REQUEST            28	/* 0x1c */
-#define SSH1_MSG_PORT_OPEN                        29	/* 0x1d */
-#define SSH1_CMSG_AGENT_REQUEST_FORWARDING        30	/* 0x1e */
-#define SSH1_SMSG_AGENT_OPEN                      31	/* 0x1f */
-#define SSH1_MSG_IGNORE                           32	/* 0x20 */
-#define SSH1_CMSG_EXIT_CONFIRMATION               33	/* 0x21 */
-#define SSH1_CMSG_X11_REQUEST_FORWARDING          34	/* 0x22 */
-#define SSH1_CMSG_AUTH_RHOSTS_RSA                 35	/* 0x23 */
-#define SSH1_MSG_DEBUG                            36	/* 0x24 */
-#define SSH1_CMSG_REQUEST_COMPRESSION             37	/* 0x25 */
-#define SSH1_CMSG_AUTH_TIS                        39	/* 0x27 */
-#define SSH1_SMSG_AUTH_TIS_CHALLENGE              40	/* 0x28 */
-#define SSH1_CMSG_AUTH_TIS_RESPONSE               41	/* 0x29 */
-#define SSH1_CMSG_AUTH_CCARD                      70	/* 0x46 */
-#define SSH1_SMSG_AUTH_CCARD_CHALLENGE            71	/* 0x47 */
-#define SSH1_CMSG_AUTH_CCARD_RESPONSE             72	/* 0x48 */
-
-#define SSH1_AUTH_TIS                             5	/* 0x5 */
-#define SSH1_AUTH_CCARD                           16	/* 0x10 */
-
-#define SSH1_PROTOFLAG_SCREEN_NUMBER              1	/* 0x1 */
-/* Mask for protoflags we will echo back to server if seen */
-#define SSH1_PROTOFLAGS_SUPPORTED                 0	/* 0x1 */
-
-#define SSH2_MSG_DISCONNECT                       1	/* 0x1 */
-#define SSH2_MSG_IGNORE                           2	/* 0x2 */
-#define SSH2_MSG_UNIMPLEMENTED                    3	/* 0x3 */
-#define SSH2_MSG_DEBUG                            4	/* 0x4 */
-#define SSH2_MSG_SERVICE_REQUEST                  5	/* 0x5 */
-#define SSH2_MSG_SERVICE_ACCEPT                   6	/* 0x6 */
-#define SSH2_MSG_KEXINIT                          20	/* 0x14 */
-#define SSH2_MSG_NEWKEYS                          21	/* 0x15 */
-#define SSH2_MSG_KEXDH_INIT                       30	/* 0x1e */
-#define SSH2_MSG_KEXDH_REPLY                      31	/* 0x1f */
-#define SSH2_MSG_KEX_DH_GEX_REQUEST               30	/* 0x1e */
-#define SSH2_MSG_KEX_DH_GEX_GROUP                 31	/* 0x1f */
-#define SSH2_MSG_KEX_DH_GEX_INIT                  32	/* 0x20 */
-#define SSH2_MSG_KEX_DH_GEX_REPLY                 33	/* 0x21 */
-#define SSH2_MSG_USERAUTH_REQUEST                 50	/* 0x32 */
-#define SSH2_MSG_USERAUTH_FAILURE                 51	/* 0x33 */
-#define SSH2_MSG_USERAUTH_SUCCESS                 52	/* 0x34 */
-#define SSH2_MSG_USERAUTH_BANNER                  53	/* 0x35 */
-#define SSH2_MSG_USERAUTH_PK_OK                   60	/* 0x3c */
-#define SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ        60	/* 0x3c */
-#define SSH2_MSG_USERAUTH_INFO_REQUEST            60	/* 0x3c */
-#define SSH2_MSG_USERAUTH_INFO_RESPONSE           61	/* 0x3d */
-#define SSH2_MSG_GLOBAL_REQUEST                   80	/* 0x50 */
-#define SSH2_MSG_REQUEST_SUCCESS                  81	/* 0x51 */
-#define SSH2_MSG_REQUEST_FAILURE                  82	/* 0x52 */
-#define SSH2_MSG_CHANNEL_OPEN                     90	/* 0x5a */
-#define SSH2_MSG_CHANNEL_OPEN_CONFIRMATION        91	/* 0x5b */
-#define SSH2_MSG_CHANNEL_OPEN_FAILURE             92	/* 0x5c */
-#define SSH2_MSG_CHANNEL_WINDOW_ADJUST            93	/* 0x5d */
-#define SSH2_MSG_CHANNEL_DATA                     94	/* 0x5e */
-#define SSH2_MSG_CHANNEL_EXTENDED_DATA            95	/* 0x5f */
-#define SSH2_MSG_CHANNEL_EOF                      96	/* 0x60 */
-#define SSH2_MSG_CHANNEL_CLOSE                    97	/* 0x61 */
-#define SSH2_MSG_CHANNEL_REQUEST                  98	/* 0x62 */
-#define SSH2_MSG_CHANNEL_SUCCESS                  99	/* 0x63 */
-#define SSH2_MSG_CHANNEL_FAILURE                  100	/* 0x64 */
-
-/* draft-ietf-secsh-gsskeyex-06 */
-#ifdef GSSAPI
-#	define SSH2_MSG_USERAUTH_GSSAPI_RESPONSE			60
-#	define SSH2_MSG_USERAUTH_GSSAPI_TOKEN				61
-#	define SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE	63
-#	define SSH2_MSG_USERAUTH_GSSAPI_ERROR				64
-#	define SSH2_MSG_USERAUTH_GSSAPI_ERRTOK				65
-#	define SSH2_MSG_USERAUTH_GSSAPI_MIC					66
-
-#	define SSH_GSS_OIDTYPE 0x06
-#endif
 
 /*
  * Packet type contexts, so that ssh2_pkt_type can correctly decode
@@ -122,9 +20,6 @@
 #define SSH2_PKTCTX_PUBLICKEY        0x0010
 #define SSH2_PKTCTX_PASSWORD         0x0020
 #define SSH2_PKTCTX_KBDINTER         0x0040
-#ifdef GSSAPI
-#	define SSH2_PKTCTX_GSSAPI        0x0080
-#endif
 #define SSH2_PKTCTX_AUTH_MASK        0x00F0
 
 #define SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT 1	/* 0x1 */
@@ -142,24 +37,6 @@
 #define SSH2_DISCONNECT_AUTH_CANCELLED_BY_USER    13	/* 0xd */
 #define SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE 14	/* 0xe */
 #define SSH2_DISCONNECT_ILLEGAL_USER_NAME         15	/* 0xf */
-
-#ifdef GSSAPI
-
-#include "gssapiw.h"
-
-#ifndef _WINDOWS
-#include <dlfcn.h>
-#endif
-
-typedef struct {
-	OM_uint32		major;   /* both */
-	OM_uint32		minor;   /* both */
-	gss_ctx_id_t	context; /* both */
-	gss_name_t		name;    /* both */
-	gss_OID			oid;     /* client */
-} Gssctxt;
-
-#endif /* GSSAPI */
 
 static const char *const ssh2_disconnect_reasons[] = {
     NULL,
@@ -270,6 +147,12 @@ static char *ssh2_pkt_type(int pkt_ctx, int type)
     translatec(SSH2_MSG_USERAUTH_PASSWD_CHANGEREQ, SSH2_PKTCTX_PASSWORD);
     translatec(SSH2_MSG_USERAUTH_INFO_REQUEST, SSH2_PKTCTX_KBDINTER);
     translatec(SSH2_MSG_USERAUTH_INFO_RESPONSE, SSH2_PKTCTX_KBDINTER);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_ERROR, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, SSH2_PKTCTX_GSSAPI);
+    translatec(SSH2_MSG_USERAUTH_GSSAPI_MIC, SSH2_PKTCTX_GSSAPI);
     translate(SSH2_MSG_GLOBAL_REQUEST);
     translate(SSH2_MSG_REQUEST_SUCCESS);
     translate(SSH2_MSG_REQUEST_FAILURE);
@@ -284,14 +167,6 @@ static char *ssh2_pkt_type(int pkt_ctx, int type)
     translate(SSH2_MSG_CHANNEL_REQUEST);
     translate(SSH2_MSG_CHANNEL_SUCCESS);
     translate(SSH2_MSG_CHANNEL_FAILURE);
-#ifdef GSSAPI
-    translatec(SSH2_MSG_USERAUTH_GSSAPI_RESPONSE, SSH2_PKTCTX_GSSAPI);
-    translatec(SSH2_MSG_USERAUTH_GSSAPI_TOKEN, SSH2_PKTCTX_GSSAPI);
-    translatec(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE, SSH2_PKTCTX_GSSAPI);
-    translatec(SSH2_MSG_USERAUTH_GSSAPI_ERROR, SSH2_PKTCTX_GSSAPI);
-    translatec(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK, SSH2_PKTCTX_GSSAPI);
-    translatec(SSH2_MSG_USERAUTH_GSSAPI_MIC, SSH2_PKTCTX_GSSAPI);
-#endif
     return "unknown";
 }
 #undef translate
@@ -357,21 +232,7 @@ enum {
 #define crWaitUntil(c)	do { crReturn(0); } while (!(c))
 #define crWaitUntilV(c)	do { crReturnV; } while (!(c))
 
-typedef struct ssh_tag *Ssh;
-struct Packet;
-
-static struct Packet *ssh2_pkt_init(int pkt_type);
-static void ssh2_pkt_addbool(struct Packet *, unsigned char value);
-static void ssh2_pkt_adduint32(struct Packet *, unsigned long value);
-static void ssh2_pkt_addstring_start(struct Packet *);
-static void ssh2_pkt_addstring_str(struct Packet *, char *data);
-static void ssh2_pkt_addstring_data(struct Packet *, char *data, int len);
-static void ssh2_pkt_addstring(struct Packet *, char *data);
 static unsigned char *ssh2_mpint_fmt(Bignum b, int *len);
-static void ssh2_pkt_addmp(struct Packet *, Bignum b);
-static int ssh2_pkt_construct(Ssh, struct Packet *);
-static void ssh2_pkt_send(Ssh, struct Packet *);
-static void ssh2_pkt_send_noqueue(Ssh, struct Packet *);
 static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 			 struct Packet *pktin);
 static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
@@ -579,25 +440,6 @@ struct ssh_portfwd {
     ((pf) ? (sfree((pf)->saddr), sfree((pf)->daddr), \
 	     sfree((pf)->sserv), sfree((pf)->dserv)) : (void)0 ), sfree(pf) )
 
-struct Packet {
-    long length;
-    long forcepad; /* Force padding to at least this length */
-    int type;
-    unsigned long sequence;
-    unsigned char *data;
-    unsigned char *body;
-    long savedpos;
-    long maxlen;
-    long encrypted_len;		       /* for SSH-2 total-size counting */
-
-    /*
-     * State associated with packet logging
-     */
-    int logmode;
-    int nblanks;
-    struct logblank_t *blanks;
-};
-
 static void ssh1_protocol(Ssh ssh, void *vin, int inlen,
 			  struct Packet *pktin);
 static void ssh2_protocol(Ssh ssh, void *vin, int inlen,
@@ -611,35 +453,10 @@ static void ssh2_add_channel_data(struct ssh_channel *c, char *buf, int len);
 static void ssh_throttle_all(Ssh ssh, int enable, int bufsize);
 static void ssh2_set_window(struct ssh_channel *c, unsigned newwin);
 static int ssh_sendbuffer(void *handle);
-static int ssh_do_close(Ssh ssh, int notify_exit);
-static unsigned long ssh_pkt_getuint32(struct Packet *pkt);
-static int ssh2_pkt_getbool(struct Packet *pkt);
-static void ssh_pkt_getstring(struct Packet *pkt, char **p, int *length);
 static void ssh2_timer(void *ctx, long now);
 static int do_ssh2_transport(Ssh ssh, void *vin, int inlen,
 			     struct Packet *pktin);
 
-struct rdpkt1_state_tag {
-    long len, pad, biglen, to_read;
-    unsigned long realcrc, gotcrc;
-    unsigned char *p;
-    int i;
-    int chunk;
-    struct Packet *pktin;
-};
-
-struct rdpkt2_state_tag {
-    long len, pad, payload, packetlen, maclen;
-    int i;
-    int cipherblk;
-    unsigned long incoming_sequence;
-    struct Packet *pktin;
-};
-
-typedef void (*handler_fn_t)(Ssh ssh, struct Packet *pktin);
-typedef void (*chandler_fn_t)(Ssh ssh, struct Packet *pktin, void *ctx);
-
-struct queued_handler;
 struct queued_handler {
     int msg1, msg2;
     chandler_fn_t handler;
@@ -647,181 +464,8 @@ struct queued_handler {
     struct queued_handler *next;
 };
 
-struct ssh_tag {
-    const struct plug_function_table *fn;
-    /* the above field _must_ be first in the structure */
-
-    SHA_State exhash, exhashbase;
-
-    Socket s;
-
-    void *ldisc;
-    void *logctx;
-
-    unsigned char session_key[32];
-    int v1_compressing;
-    int v1_remote_protoflags;
-    int v1_local_protoflags;
-    int agentfwd_enabled;
-    int X11_fwd_enabled;
-    int remote_bugs;
-    const struct ssh_cipher *cipher;
-    void *v1_cipher_ctx;
-    void *crcda_ctx;
-    const struct ssh2_cipher *cscipher, *sccipher;
-    void *cs_cipher_ctx, *sc_cipher_ctx;
-    const struct ssh_mac *csmac, *scmac;
-    void *cs_mac_ctx, *sc_mac_ctx;
-    const struct ssh_compress *cscomp, *sccomp;
-    void *cs_comp_ctx, *sc_comp_ctx;
-    const struct ssh_kex *kex;
-    const struct ssh_signkey *hostkey;
-    unsigned char v2_session_id[20];
-    void *kex_ctx;
-
-    char *savedhost;
-    int savedport;
-    int send_ok;
-    int echoing, editing;
-
-    void *frontend;
-
-    int ospeed, ispeed;		       /* temporaries */
-    int term_width, term_height;
-
-    tree234 *channels;		       /* indexed by local id */
-    struct ssh_channel *mainchan;      /* primary session channel */
-    int exitcode;
-    int close_expected;
-
-    tree234 *rportfwds, *portfwds;
-
-    enum {
-	SSH_STATE_PREPACKET,
-	SSH_STATE_BEFORE_SIZE,
-	SSH_STATE_INTERMED,
-	SSH_STATE_SESSION,
-	SSH_STATE_CLOSED
-    } state;
-
-    int size_needed, eof_needed;
-
-    struct Packet **queue;
-    int queuelen, queuesize;
-    int queueing;
-    unsigned char *deferred_send_data;
-    int deferred_len, deferred_size;
-
-    /*
-     * Gross hack: pscp will try to start SFTP but fall back to
-     * scp1 if that fails. This variable is the means by which
-     * scp.c can reach into the SSH code and find out which one it
-     * got.
-     */
-    int fallback_cmd;
-
-    /*
-     * Used for username and password input.
-     */
-    char *userpass_input_buffer;
-    int userpass_input_buflen;
-    int userpass_input_bufpos;
-    int userpass_input_echo;
-
-    int pkt_ctx;
-
-    void *x11auth;
-
-    int version;
-    int v1_throttle_count;
-    int overall_bufsize;
-    int throttled_all;
-    int v1_stdout_throttling;
-    unsigned long v2_outgoing_sequence;
-
-    int ssh1_rdpkt_crstate;
-    int ssh2_rdpkt_crstate;
-    int do_ssh_init_crstate;
-    int ssh_gotdata_crstate;
-    int do_ssh1_login_crstate;
-    int do_ssh1_connection_crstate;
-    int do_ssh2_transport_crstate;
-    int do_ssh2_authconn_crstate;
-
-    void *do_ssh_init_state;
-    void *do_ssh1_login_state;
-    void *do_ssh2_transport_state;
-    void *do_ssh2_authconn_state;
-
-    struct rdpkt1_state_tag rdpkt1_state;
-    struct rdpkt2_state_tag rdpkt2_state;
-
-    /* SSH-1 and SSH-2 use this for different things, but both use it */
-    int protocol_initial_phase_done;
-
-    void (*protocol) (Ssh ssh, void *vin, int inlen,
-		      struct Packet *pkt);
-    struct Packet *(*s_rdpkt) (Ssh ssh, unsigned char **data, int *datalen);
-
-    /*
-     * We maintain a full _copy_ of a Config structure here, not
-     * merely a pointer to it. That way, when we're passed a new
-     * one for reconfiguration, we can check the differences and
-     * potentially reconfigure port forwardings etc in mid-session.
-     */
-    Config cfg;
-
-    /*
-     * Used to transfer data back from async callbacks.
-     */
-    void *agent_response;
-    int agent_response_len;
-    int user_response;
-
-    /*
-     * The SSH connection can be set as `frozen', meaning we are
-     * not currently accepting incoming data from the network. This
-     * is slightly more serious than setting the _socket_ as
-     * frozen, because we may already have had data passed to us
-     * from the network which we need to delay processing until
-     * after the freeze is lifted, so we also need a bufchain to
-     * store that data.
-     */
-    int frozen;
-    bufchain queued_incoming_data;
-
-    /*
-     * Dispatch table for packet types that we may have to deal
-     * with at any time.
-     */
-    handler_fn_t packet_dispatch[256];
-
-    /*
-     * Queues of one-off handler functions for success/failure
-     * indications from a request.
-     */
-    struct queued_handler *qhead, *qtail;
-
-    /*
-     * This module deals with sending keepalives.
-     */
-    Pinger pinger;
-
-    /*
-     * Track incoming and outgoing data sizes and time, for
-     * size-based rekeys.
-     */
-    unsigned long incoming_data_size, outgoing_data_size, deferred_data_size;
-    unsigned long max_data_size;
-    int kex_in_progress;
-    long next_rekey, last_rekey;
-    char *deferred_rekey_reason;    /* points to STATIC string; don't free */
-};
-
-#define logevent(s) logevent(ssh->frontend, s)
-
 /* logevent, only printf-formatted. */
-static void logeventf(Ssh ssh, const char *fmt, ...)
+void logeventf(Ssh ssh, const char *fmt, ...)
 {
     va_list ap;
     char *buf;
@@ -832,15 +476,6 @@ static void logeventf(Ssh ssh, const char *fmt, ...)
     logevent(buf);
     sfree(buf);
 }
-
-#define bombout(msg) \
-    do { \
-        char *text = dupprintf msg; \
-	ssh_do_close(ssh, FALSE); \
-        logevent(text); \
-        connection_fatal(ssh->frontend, "%s", text); \
-        sfree(text); \
-    } while (0)
 
 /* Functions to leave bits out of the SSH packet log file. */
 
@@ -991,7 +626,7 @@ static int alloc_channel_id(Ssh ssh)
     return low + 1 + CHANNEL_NUMBER_OFFSET;
 }
 
-static void c_write(Ssh ssh, const char *buf, int len)
+void c_write(Ssh ssh, const char *buf, int len)
 {
     if ((flags & FLAG_STDERR)) {
 	int i;
@@ -1000,21 +635,33 @@ static void c_write(Ssh ssh, const char *buf, int len)
 		fputc(buf[i], stderr);
 	return;
     }
-    from_backend(ssh->frontend, 1, buf, len);
+    from_backend(ssh->frontend, 1, buf, len
+#ifdef MPEXT
+    , 0
+#endif
+    );
 }
 
-static void c_write_untrusted(Ssh ssh, const char *buf, int len)
+void c_write_untrusted(Ssh ssh, const char *buf, int len)
 {
     int i;
     for (i = 0; i < len; i++) {
 	if (buf[i] == '\n')
+#ifdef MPEXT
+	    from_backend(ssh->frontend, 1, "\r\n", 2, -1);
+#else
 	    c_write(ssh, "\r\n", 2);
+#endif
 	else if ((buf[i] & 0x60) || (buf[i] == '\r'))
+#ifdef MPEXT
+	    from_backend(ssh->frontend, 1, buf + i, 1, -1);
+#else
 	    c_write(ssh, buf + i, 1);
+#endif
     }
 }
 
-static void c_write_str(Ssh ssh, const char *buf)
+void c_write_str(Ssh ssh, const char *buf)
 {
     c_write(ssh, buf, strlen(buf));
 }
@@ -1626,11 +1273,11 @@ static void ssh2_pkt_adddata(struct Packet *pkt, void *data, int len)
     ssh2_pkt_ensure(pkt, pkt->length);
     memcpy(pkt->data + pkt->length - len, data, len);
 }
-static void ssh2_pkt_addbyte(struct Packet *pkt, unsigned char byte)
+void ssh2_pkt_addbyte(struct Packet *pkt, unsigned char byte)
 {
     ssh2_pkt_adddata(pkt, &byte, 1);
 }
-static struct Packet *ssh2_pkt_init(int pkt_type)
+struct Packet *ssh2_pkt_init(int pkt_type)
 {
     struct Packet *pkt = ssh_new_packet();
     pkt->length = 5;
@@ -1638,32 +1285,32 @@ static struct Packet *ssh2_pkt_init(int pkt_type)
     ssh2_pkt_addbyte(pkt, (unsigned char) pkt_type);
     return pkt;
 }
-static void ssh2_pkt_addbool(struct Packet *pkt, unsigned char value)
+void ssh2_pkt_addbool(struct Packet *pkt, unsigned char value)
 {
     ssh2_pkt_adddata(pkt, &value, 1);
 }
-static void ssh2_pkt_adduint32(struct Packet *pkt, unsigned long value)
+void ssh2_pkt_adduint32(struct Packet *pkt, unsigned long value)
 {
     unsigned char x[4];
     PUT_32BIT(x, value);
     ssh2_pkt_adddata(pkt, x, 4);
 }
-static void ssh2_pkt_addstring_start(struct Packet *pkt)
+void ssh2_pkt_addstring_start(struct Packet *pkt)
 {
     ssh2_pkt_adduint32(pkt, 0);
     pkt->savedpos = pkt->length;
 }
-static void ssh2_pkt_addstring_str(struct Packet *pkt, char *data)
+void ssh2_pkt_addstring_str(struct Packet *pkt, char *data)
 {
     ssh2_pkt_adddata(pkt, data, strlen(data));
     PUT_32BIT(pkt->data + pkt->savedpos - 4, pkt->length - pkt->savedpos);
 }
-static void ssh2_pkt_addstring_data(struct Packet *pkt, char *data, int len)
+void ssh2_pkt_addstring_data(struct Packet *pkt, char *data, int len)
 {
     ssh2_pkt_adddata(pkt, data, len);
     PUT_32BIT(pkt->data + pkt->savedpos - 4, pkt->length - pkt->savedpos);
 }
-static void ssh2_pkt_addstring(struct Packet *pkt, char *data)
+void ssh2_pkt_addstring(struct Packet *pkt, char *data)
 {
     ssh2_pkt_addstring_start(pkt);
     ssh2_pkt_addstring_str(pkt, data);
@@ -1685,7 +1332,7 @@ static unsigned char *ssh2_mpint_fmt(Bignum b, int *len)
     *len = n + 1 - i;
     return p;
 }
-static void ssh2_pkt_addmp(struct Packet *pkt, Bignum b)
+void ssh2_pkt_addmp(struct Packet *pkt, Bignum b)
 {
     unsigned char *p;
     int len;
@@ -1796,7 +1443,7 @@ static int ssh2_pkt_construct(Ssh ssh, struct Packet *pkt)
 /*
  * Send an SSH-2 packet immediately, without queuing or deferring.
  */
-static void ssh2_pkt_send_noqueue(Ssh ssh, struct Packet *pkt)
+void ssh2_pkt_send_noqueue(Ssh ssh, struct Packet *pkt)
 {
     int len;
     int backlog;
@@ -1851,7 +1498,7 @@ static void ssh2_pkt_queue(Ssh ssh, struct Packet *pkt)
  * Either queue or send a packet, depending on whether queueing is
  * set.
  */
-static void ssh2_pkt_send(Ssh ssh, struct Packet *pkt)
+void ssh2_pkt_send(Ssh ssh, struct Packet *pkt)
 {
     if (ssh->queueing)
 	ssh2_pkt_queue(ssh, pkt);
@@ -1949,7 +1596,7 @@ static void sha_mpint(SHA_State * s, Bignum b)
 /*
  * Packet decode functions for both SSH-1 and SSH-2.
  */
-static unsigned long ssh_pkt_getuint32(struct Packet *pkt)
+unsigned long ssh_pkt_getuint32(struct Packet *pkt)
 {
     unsigned long value;
     if (pkt->length - pkt->savedpos < 4)
@@ -1958,7 +1605,7 @@ static unsigned long ssh_pkt_getuint32(struct Packet *pkt)
     pkt->savedpos += 4;
     return value;
 }
-static int ssh2_pkt_getbool(struct Packet *pkt)
+int ssh2_pkt_getbool(struct Packet *pkt)
 {
     unsigned long value;
     if (pkt->length - pkt->savedpos < 1)
@@ -1967,7 +1614,7 @@ static int ssh2_pkt_getbool(struct Packet *pkt)
     pkt->savedpos++;
     return value;
 }
-static void ssh_pkt_getstring(struct Packet *pkt, char **p, int *length)
+void ssh_pkt_getstring(struct Packet *pkt, char **p, int *length)
 {
     int len;
     *p = NULL;
@@ -2484,7 +2131,7 @@ static void ssh_gotdata(Ssh ssh, unsigned char *data, int datalen)
     crFinishV;
 }
 
-static int ssh_do_close(Ssh ssh, int notify_exit)
+int ssh_do_close(Ssh ssh, int notify_exit)
 {
     int ret = 0;
     struct ssh_channel *c;
@@ -2532,6 +2179,11 @@ static int ssh_do_close(Ssh ssh, int notify_exit)
 	    del234(ssh->portfwds, pf); /* moving next one to index 0 */
 	    free_portfwd(pf);
 	}
+#ifdef MPEXT
+	// fix memory leak
+	freetree234(ssh->portfwds);
+	ssh->portfwds = NULL;
+#endif
     }
 
     return ret;
@@ -4241,7 +3893,11 @@ static void ssh1_smsg_stdout_stderr_data(Ssh ssh, struct Packet *pktin)
     }
 
     bufsize = from_backend(ssh->frontend, pktin->type == SSH1_SMSG_STDERR_DATA,
-			   string, stringlen);
+			   string, stringlen
+#ifdef MPEXT
+			   , 1
+#endif
+			   );
     if (!ssh->v1_stdout_throttling && bufsize > SSH1_BUFFER_LIMIT) {
 	ssh->v1_stdout_throttling = 1;
 	ssh1_throttle(ssh, +1);
@@ -5825,7 +5481,11 @@ static void ssh2_msg_channel_data(Ssh ssh, struct Packet *pktin)
 	    bufsize =
 		from_backend(ssh->frontend, pktin->type ==
 			     SSH2_MSG_CHANNEL_EXTENDED_DATA,
-			     data, length);
+			     data, length
+#ifdef MPEXT
+			     , 1
+#endif
+           );
 	    break;
 	  case CHAN_X11:
 	    bufsize = x11_send(c->u.x11.s, data, length);
@@ -6322,447 +5982,6 @@ static void ssh2_msg_channel_open(Ssh ssh, struct Packet *pktin)
     }
 }
 
-
-#ifdef GSSAPI
-
-/* Check that the OID in a data stream matches that in the context */
-static int
-ssh_gssapi_check_oid(Gssctxt *ctx, void *data, size_t len)
-{
-	return (ctx != NULL && ctx->oid != GSS_C_NO_OID &&
-	    ctx->oid->length == len &&
-	    memcmp(ctx->oid->elements, data, len) == 0);
-}
-
-/* Set the contexts OID from a data stream */
-static void
-ssh_gssapi_set_oid_data(Gssctxt *ctx, void *data, size_t len)
-{
-	if (ctx->oid != GSS_C_NO_OID) {
-		sfree(ctx->oid->elements);
-		sfree(ctx->oid);
-	}
-	ctx->oid = smalloc(sizeof(gss_OID_desc));
-	ctx->oid->length = len;
-	ctx->oid->elements = smalloc(len);
-	memcpy(ctx->oid->elements, data, len);
-}
-
-/* Set the contexts OID */
-static void
-ssh_gssapi_set_oid(Gssctxt *ctx, gss_OID oid)
-{
-	ssh_gssapi_set_oid_data(ctx, oid->elements, oid->length);
-}
-
-static void
-ssh_gssapi_last_error(Ssh ssh, Gssctxt *ctxt,
-		      OM_uint32 *major_status, OM_uint32 *minor_status)
-{
-	OM_uint32 lmin;
-	gss_buffer_desc msg = GSS_C_EMPTY_BUFFER;
-	OM_uint32 ctx;
-	char *msgbuf;
-
-
-	if (major_status != NULL)
-		*major_status = ctxt->major;
-	if (minor_status != NULL)
-		*minor_status = ctxt->minor;
-
-	ctx = 0;
-	/* The GSSAPI error */
-	do {
-		gss_display_status(&lmin, ctxt->major,
-		    GSS_C_GSS_CODE, GSS_C_NULL_OID, &ctx, &msg);
-		msgbuf = dupprintf("GSSAPI error: %s\r\n", msg.value);
-		logeventf(ssh, msgbuf);
-		c_write_str(ssh, msgbuf);
-		sfree(msgbuf);
-
-		gss_release_buffer(&lmin, &msg);
-	} while (ctx != 0);
-
-	/* The mechanism specific error */
-	do {
-		gss_display_status(&lmin, ctxt->minor,
-		    GSS_C_MECH_CODE, GSS_C_NULL_OID, &ctx, &msg);
-
-		msgbuf = dupprintf("GSSAPI mech specific error: %s\r\n", msg.value);
-		logeventf(ssh, msgbuf);
-		c_write_str(ssh, msgbuf);
-		sfree(msgbuf);
-
-		gss_release_buffer(&lmin, &msg);
-	} while (ctx != 0);
-
-}
-
-/* All this effort to report an error ... */
-static void
-ssh_gssapi_error(Ssh ssh, Gssctxt *ctxt)
-{
-	ssh_gssapi_last_error(ssh, ctxt, NULL, NULL);
-}
-
-/*
- * Initialise our GSSAPI context. We use this opaque structure to contain all
- * of the data which both the client and server need to persist across
- * {accept,init}_sec_context calls, so that when we do it from the userauth
- * stuff life is a little easier
- */
-static void
-ssh_gssapi_build_ctx(Gssctxt **ctx)
-{
-	*ctx = smalloc(sizeof (Gssctxt));
-	(*ctx)->major = 0;
-	(*ctx)->minor = 0;
-	(*ctx)->context = GSS_C_NO_CONTEXT;
-	(*ctx)->name = GSS_C_NO_NAME;
-	(*ctx)->oid = GSS_C_NO_OID;
-}
-
-/* Delete our context, providing it has been built correctly */
-static void
-ssh_gssapi_delete_ctx(Gssctxt **ctx)
-{
-	OM_uint32 ms;
-
-	if ((*ctx) == NULL)
-		return;
-	if ((*ctx)->context != GSS_C_NO_CONTEXT)
-		gss_delete_sec_context(&ms, &(*ctx)->context, GSS_C_NO_BUFFER);
-	if ((*ctx)->name != GSS_C_NO_NAME)
-		gss_release_name(&ms, &(*ctx)->name);
-	if ((*ctx)->oid != GSS_C_NO_OID) {
-		sfree((*ctx)->oid->elements);
-		sfree((*ctx)->oid);
-		(*ctx)->oid = GSS_C_NO_OID;
-	}
-
-	sfree(*ctx);
-	*ctx = NULL;
-}
-
-/*
- * Wrapper to init_sec_context
- * Requires that the context contains:
- * oid
- * server name (from ssh_gssapi_import_name)
- */
-static OM_uint32
-ssh_gssapi_init_ctx(Ssh ssh, Gssctxt *ctx, int deleg_creds, gss_buffer_desc *recv_tok,
-    gss_buffer_desc* send_tok, OM_uint32 *flags)
-{
-	int deleg_flag = 0;
-
-	if (deleg_creds) {
-		deleg_flag = GSS_C_DELEG_FLAG;
-		logevent("GSSAPI: delegating credentials");
-	}
-
-	ctx->major = gss_init_sec_context(&ctx->minor,
-	    GSS_C_NO_CREDENTIAL, &ctx->context, ctx->name, ctx->oid,
-	    GSS_C_MUTUAL_FLAG | GSS_C_INTEG_FLAG | deleg_flag,
-	    0, NULL, recv_tok, NULL, send_tok, flags, NULL);
-
-	if (GSS_ERROR(ctx->major))
-		ssh_gssapi_error(ssh, ctx);
-
-	return (ctx->major);
-}
-
-/* Create a service name for the given host */
-static OM_uint32
-ssh_gssapi_import_name(Ssh ssh, Gssctxt *ctx)
-{
-	gss_buffer_desc gssbuf;
-	const char *host = ssh->savedhost;
-
-	gssbuf.length = sizeof("host@") + strlen(host);
-	gssbuf.value = smalloc(gssbuf.length);
-	sprintf(gssbuf.value, "host@%s", host);
-
-	if ((ctx->major = gss_import_name(&ctx->minor,
-	    &gssbuf, GSS_C_NT_HOSTBASED_SERVICE, &ctx->name)))
-		ssh_gssapi_error(ssh, ctx);
-
-	sfree(gssbuf.value);
-	return (ctx->major);
-}
-
-static OM_uint32
-ssh_gssapi_sign(Ssh ssh, Gssctxt *ctx, gss_buffer_t buffer, gss_buffer_t hash)
-{
-	if ((ctx->major = gss_get_mic(&ctx->minor, ctx->context,
-	    GSS_C_QOP_DEFAULT, buffer, hash)))
-		ssh_gssapi_error(ssh, ctx);
-
-	return (ctx->major);
-}
-
-static OM_uint32
-process_gssapi_token(Ssh ssh, Gssctxt *gssctxt, gss_buffer_t recv_tok, char *username)
-{
-	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
-	gss_buffer_desc gssbuf, mic;
-	OM_uint32 status, ms, gss_flags;
-	int micoffset;
-	struct Packet *pktout;
-
-	logevent("GSSAPI: process_gssapi_token");
-
-	status = ssh_gssapi_init_ctx(ssh, gssctxt, ssh->cfg.gssapi_fwd_tgt,
-	    recv_tok, &send_tok, &gss_flags);
-
-	if (send_tok.length > 0) {
-		if (GSS_ERROR(status))
-			pktout = ssh2_pkt_init(SSH2_MSG_USERAUTH_GSSAPI_ERRTOK);
-		else
-			pktout = ssh2_pkt_init(SSH2_MSG_USERAUTH_GSSAPI_TOKEN);
-
-	    ssh2_pkt_addstring_start(pktout);
-		ssh2_pkt_addstring_data(pktout, send_tok.value, send_tok.length);
-		ssh2_pkt_send(ssh, pktout);
-		gss_release_buffer(&ms, &send_tok);
-	}
-
-	if (status == GSS_S_COMPLETE) {
-		/* send either complete or MIC, depending on mechanism */
-		if (!(gss_flags & GSS_C_INTEG_FLAG)) {
-			pktout = ssh2_pkt_init(SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE);
-			ssh2_pkt_send(ssh, pktout);
-		} else {
-			/* build the mic using the pktout */
-			pktout = ssh2_pkt_init(0); /* no type will not be sent */
-			micoffset = pktout->length; /* save offset of actual start */
-			ssh2_pkt_addstring_start(pktout);
-			ssh2_pkt_addstring_data(pktout, ssh->v2_session_id, 20);
-			ssh2_pkt_addbyte(pktout, SSH2_MSG_USERAUTH_REQUEST);
-			ssh2_pkt_addstring(pktout, username);
-			ssh2_pkt_addstring(pktout, "ssh-connection");
-			ssh2_pkt_addstring(pktout, "gssapi-with-mic");
-
-			gssbuf.value = pktout->data + micoffset;
-			gssbuf.length = pktout->length - micoffset;
-
-			status = ssh_gssapi_sign(ssh, gssctxt, &gssbuf, &mic);
-
-			if (!GSS_ERROR(status)) {
-				pktout = ssh2_pkt_init(SSH2_MSG_USERAUTH_GSSAPI_MIC);
-				ssh2_pkt_addstring_start(pktout);
-				ssh2_pkt_addstring_data(pktout, mic.value, mic.length);
-				ssh2_pkt_send(ssh, pktout);
-			} else
-				ssh_gssapi_error(ssh, gssctxt);
-
-			gss_release_buffer(&ms, &mic);
-		}
-	}
-
-	return status;
-}
-
-static int
-input_gssapi_response(Ssh ssh, struct Packet *pktin, Gssctxt *gssctxt, char *username)
-{
-	int oidlen;
-	char *oidv;
-
-	logevent("GSSAPI: input_gssapi_response");
-	
-	/* Setup our OID */
-	ssh_pkt_getstring(pktin, &oidv, &oidlen);
-	
-	if (oidlen <= 2 ||
-	    oidv[0] != SSH_GSS_OIDTYPE ||
-	    oidv[1] != oidlen - 2) {
-		sfree(oidv);
-		logevent("GSSAPI: Badly encoded mechanism OID received");
-		return TRUE;
-	}
-
-	if (!ssh_gssapi_check_oid(gssctxt, oidv + 2, oidlen - 2))
-		bombout(("GSSAPI: Server returned different OID than expected"));
-
-	sfree(oidv);
-
-	if (GSS_ERROR(process_gssapi_token(ssh, gssctxt, GSS_C_NO_BUFFER, username))) {
-		/* Start again with next method on list */
-		logevent("GSSAPI: Trying to start again");
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static int
-input_gssapi_token(Ssh ssh, struct Packet *pktin, Gssctxt *gssctxt, char *username)
-{
-	gss_buffer_desc recv_tok;
-	OM_uint32 status;
-	char *sval;
-	u_int slen;
-
-	logevent("GSSAPI: input_gssapi_token");
-
-	ssh_pkt_getstring(pktin, &sval, &slen);
-	recv_tok.value = sval;
-	recv_tok.length = slen;
-
-	status = process_gssapi_token(ssh, gssctxt, &recv_tok, username);
-
-	sfree(recv_tok.value);
-
-	if (GSS_ERROR(status)) {
-		/* Start again with the next method in the list */
-		logevent("GSSAPI: Trying to start again");
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static void
-input_gssapi_errtok(Ssh ssh, struct Packet *pktin, Gssctxt *gssctxt)
-{
-	gss_buffer_desc send_tok = GSS_C_EMPTY_BUFFER;
-	gss_buffer_desc recv_tok;
-	OM_uint32 status, ms;
-	char *val;
-	u_int len;
-
-	logevent("GSSAPI: input_gssapi_errtok");
-
-	ssh_pkt_getstring(pktin, &val, &len);
-	recv_tok.value = val;
-	recv_tok.length = len;
-
-	/* Stick it into GSSAPI and see what it says */
-	status = ssh_gssapi_init_ctx(ssh, gssctxt, ssh->cfg.gssapi_fwd_tgt,
-				     &recv_tok, &send_tok, NULL);
-
-	sfree(recv_tok.value);
-	gss_release_buffer(&ms, &send_tok);
-
-	/* Server will be returning a failed packet after this one */
-}
-
-static void
-input_gssapi_error(Ssh ssh, struct Packet *pktin)
-{
-	OM_uint32 maj, min;
-	char *msg;
-	char *lang;
-
-	logevent("GSSAPI: input_gssapi_error");
-
-	maj = ssh_pkt_getuint32(pktin);
-	min = ssh_pkt_getuint32(pktin);
-	ssh_pkt_getstring(pktin, &msg, NULL);
-	ssh_pkt_getstring(pktin, &lang, NULL);
-
-	logeventf(ssh, "GSSAPI Server Error: %s", msg);
-
-	sfree(msg);
-	sfree(lang);
-}
-
-
-/*
- * loading & unloading shared libraries
- */
-static void
-shlibclose(Ssh ssh, void *lib) {
-
-#ifdef _WINDOWS
-	if (FreeLibrary(lib) == 0) {
-		LPVOID message;
-		char *msgbuf;
-
-		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		      FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_IGNORE_INSERTS,
-	    	  NULL, GetLastError(),
-		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		      (LPTSTR)&message, 0, NULL);
-
-		msgbuf = dupprintf("GSSAPI: can't unload Kerberos 5 GSSAPI library (%s.dll): %s",
-					GSSAPISHLIB, (LPCTSTR)message);
-
-		LocalFree(message);
-
-		logevent(msgbuf);
-		if (flags & FLAG_VERBOSE)
-			c_write_str(ssh, msgbuf);
-		sfree(msgbuf);
-	}
-#else
-	if (dlclose(lib) != 0) {
-		char *msgbuf;
-
-		msgbuf = dupprintf("GSSAPI: can't unload Kerberos 5 GSSAPI library (%s): %s\r\n",
-					GSSAPISHLIB, dlerror());
-
-		logevent(msgbuf);
-		if (flags & FLAG_VERBOSE)
-			c_write_str(ssh, msgbuf);
-		sfree(msgbuf);
-	}
-#endif
-}
-
-static void *
-shlibopen(Ssh ssh, char *libname) {
-	void *lib = NULL;
-
-#ifdef _WINDOWS
-	logeventf(ssh, "GSSAPI: loading %s.dll", libname);
-
-	lib = LoadLibrary(libname);
-
-	if (lib == NULL) {
-		LPVOID message;
-		char *msgbuf;
-
-		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-		      FORMAT_MESSAGE_FROM_SYSTEM |
-		      FORMAT_MESSAGE_IGNORE_INSERTS,
-	    	  NULL, GetLastError(),
-		      MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		      (LPTSTR)&message, 0, NULL);
-
-		msgbuf = dupprintf("GSSAPI: can't load Kerberos 5 GSSAPI library (%s.dll): %s",
-				libname, (LPCTSTR)message);
-
-		LocalFree(message);
-
-		logevent(msgbuf);
-		if (flags & FLAG_VERBOSE)
-			c_write_str(ssh, msgbuf);
-		sfree(msgbuf);
-	}
-#else
-	logeventf(ssh, "GSSAPI: loading %s", libname);
-
-	lib = dlopen(libname, RTLD_LAZY);
-	if (lib == NULL) {
-		char *msgbuf;
-
-		msgbuf = dupprintf("GSSAPI: can't load Kerberos 5 GSSAPI library (%s): %s\r\n",
-				libname, dlerror());
-
-		logevent(msgbuf);
-		if (flags & FLAG_VERBOSE)
-			c_write_str(ssh, msgbuf);
-		sfree(msgbuf);
-   	}
-#endif
-	return lib;
-}
-
-#endif /* GSSAPI */
-
 /*
  * Handle the SSH-2 userauth and connection layers.
  */
@@ -6786,14 +6005,9 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET,
 		AUTH_TYPE_GSSAPI
 	} type;
-	int gotit, need_pw, can_pubkey, can_passwd, can_keyb_inter;
-#ifdef GSSAPI
-	int	can_gssapi;
-#endif
-	int tried_pubkey_config, tried_agent;
-#ifdef GSSAPI
-	int tried_gssapi;
-#endif
+	int gotit, need_pw, can_pubkey, can_passwd, can_keyb_inter, can_gssapi;
+	int tried_pubkey_config, tried_agent, tried_gssapi;
+
 	int kbd_inter_running, kbd_inter_refused;
 	int we_are_in;
 	int num_prompts, curr_prompt, echo;
@@ -6813,16 +6027,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 	char *q, *agentreq, *ret;
 	int try_send;
 	int num_env, env_left, env_ok;
-#ifdef GSSAPI
-	Gssctxt *gssctxt;
-	gss_OID_set gss_supported;
-	OM_uint32 minor_status;
-	size_t gss_mech;
-	int gss_repeat_auth;
-	void *gssapiLibH;
-#endif
-
 	struct Packet *pktout;
+	Gssctxt *gssctxt;
     };
     crState(do_ssh2_authconn_state);
 
@@ -6940,15 +6146,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 	s->tried_agent = FALSE;
 	s->kbd_inter_running = FALSE;
 	s->kbd_inter_refused = FALSE;
-
-#ifdef GSSAPI
 	s->gssctxt = NULL;
-	s->gss_supported = NULL;
 	s->tried_gssapi = FALSE;
-	s->gss_mech = 0;
-	s->gss_repeat_auth = FALSE;
-	s->gssapiLibH = NULL;
-#endif
 
 	/* Load the pub half of ssh->cfg.keyfile so we notice if it's in Pageant */
 	if (!filename_is_null(ssh->cfg.keyfile)) {
@@ -6995,16 +6194,14 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		if (flags & (FLAG_VERBOSE | FLAG_INTERACTIVE)) {
 		    ssh_pkt_getstring(pktin, &banner, &size);
 		    if (banner)
-		    #ifdef MPEXT
-		    {
-		        int log = 1;
-		        display_banner(ssh->frontend, banner, size, &log);
-		        if (log)
-		    #endif
+			#ifdef MPEXT
+			{
+				display_banner(ssh->frontend, banner, size);
+			#endif
 			c_write_untrusted(ssh, banner, size);
-		    #ifdef MPEXT
-		    }
-		    #endif
+			#ifdef MPEXT
+			}
+			#endif
 		}
 		crWaitUntilV(pktin);
 	    }
@@ -7079,10 +6276,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 			logevent("Server refused public key");
 		    } else if (s->type==AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET) {
 			/* server declined keyboard-interactive; ignore */
-#ifdef GSSAPI
-			} else if (s->type == AUTH_TYPE_GSSAPI) {
+		    } else if (s->type == AUTH_TYPE_GSSAPI) {
 			/* do nothing */
-#endif
 		    } else {
 			c_write_str(ssh, "Access denied\r\n");
 			logevent("Access denied");
@@ -7099,10 +6294,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		    logevent("Further authentication required");
 		}
 
-#ifdef GSSAPI
-		s->can_gssapi =	ssh->cfg.try_gssapi_auth &&
+		s->can_gssapi = ssh->cfg.try_gssapi_auth &&
 		    in_commasep_string("gssapi-with-mic", methods, methlen);
-#endif
 		s->can_pubkey =
 		    in_commasep_string("publickey", methods, methlen);
 		s->can_passwd =
@@ -7110,10 +6303,6 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		s->can_keyb_inter = ssh->cfg.try_ki_auth &&
 		    in_commasep_string("keyboard-interactive", methods, methlen);
 	    }
-
-#ifdef GSSAPI
-auth_begin:
-#endif
 
 	    s->method = 0;
 	    ssh->pkt_ctx &= ~SSH2_PKTCTX_AUTH_MASK;
@@ -7127,23 +6316,69 @@ auth_begin:
 	     */
 	    s->echo = 0;
 
-#ifdef GSSAPI
 	    if (!s->method && s->can_gssapi && !s->tried_gssapi) {
-			s->tried_gssapi = TRUE;
+		s->tried_gssapi = TRUE;
 
-			if (s->gssapiLibH != NULL)
-				shlibclose(ssh, s->gssapiLibH);
+		logevent("GSSAPI: trying GSSAPI auth");
 
-			s->gssapiLibH = shlibopen(ssh, GSSAPISHLIB);
+		if (ssh_gssapi_init(ssh))
+		{
+		    ssh_gssapi_build_ctx(&s->gssctxt);
 
-			if (s->gssapiLibH != NULL) {
-				if (shlibloadfcs(s->gssapiLibH))
-					s->method = AUTH_GSSAPI;
-				else
-					shlibclose(ssh, s->gssapiLibH);
+		    if (GSS_ERROR(ssh_gssapi_acquire_cred(ssh, &s->gssctxt))) {
+			ssh_gssapi_display_status(ssh, s->gssctxt);
+			ssh_gssapi_delete_ctx(&s->gssctxt);
+		    } else {
+			ssh->pkt_ctx &= ~SSH2_PKTCTX_AUTH_MASK;
+			ssh->pkt_ctx |= SSH2_PKTCTX_GSSAPI;
+
+			s->pktout = ssh2_pkt_init(SSH2_MSG_USERAUTH_REQUEST);
+			ssh2_pkt_addstring(s->pktout, s->username);
+			ssh2_pkt_addstring(s->pktout, "ssh-connection");    /* service requested */
+			ssh2_pkt_addstring(s->pktout, "gssapi-with-mic");   /* method */
+			ssh2_pkt_adduint32(s->pktout, 1);
+
+			ssh2_pkt_adduint32(s->pktout, gss_mech_krb5->length + 2);
+			ssh2_pkt_addbool(s->pktout, (char) SSH_GSS_OIDTYPE);
+			ssh2_pkt_addbool(s->pktout, (char) gss_mech_krb5->length);
+			ssh2_pkt_adddata(s->pktout, gss_mech_krb5->elements, gss_mech_krb5->length);
+
+			ssh2_pkt_send(ssh, s->pktout);
+
+			s->type = AUTH_TYPE_GSSAPI;
+
+			while (1) {
+			    crWaitUntilV(pktin);
+
+			    if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_RESPONSE) {
+				if (input_gssapi_response(ssh, pktin, s->gssctxt, s->username))
+				    break;
+			    } else if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_TOKEN) {
+				if (input_gssapi_token(ssh, pktin, s->gssctxt, s->username))
+				    break;
+			    } else if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_ERROR) {
+				input_gssapi_error(ssh, pktin);
+				break;
+			    } else if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_ERRTOK) {
+				input_gssapi_errtok(ssh, pktin, s->gssctxt);
+				break;
+			    } else if (pktin->type == SSH2_MSG_USERAUTH_SUCCESS) {
+				s->gotit = TRUE;
+				break;
+			    } else if (pktin->type != SSH2_MSG_USERAUTH_FAILURE) {
+				ssh_gssapi_delete_ctx(&s->gssctxt);
+				bombout(("ERROR in GSSAPI authentication protocol"));
+				crStopV;
+			    }
 			}
+
+			ssh_gssapi_delete_ctx(&s->gssctxt);
+
+			if (s->gotit)
+			    continue;
+		    }
+		}
 	    }
-#endif /* GSSAPI */
 
 	    if (!s->method && s->can_pubkey &&
 		agent_exists() && !s->tried_agent) {
@@ -7470,8 +6705,15 @@ auth_begin:
 		s->method = AUTH_PASSWORD;
 		ssh->pkt_ctx &= ~SSH2_PKTCTX_AUTH_MASK;
 		ssh->pkt_ctx |= SSH2_PKTCTX_PASSWORD;
+#ifdef MPEXT
+		// To suppress CodeGuard warning
+		snprintf(s->pwprompt, sizeof(s->pwprompt), "%s@%s's password: ", s->username,
+			ssh->savedhost);
+		s->pwprompt[sizeof(s->pwprompt) - 1] = '\0';
+#else
 		sprintf(s->pwprompt, "%.90s@%.90s's password: ", s->username,
 			ssh->savedhost);
+#endif
 		s->need_pw = TRUE;
 	    }
 
@@ -7519,92 +6761,6 @@ auth_begin:
 		    c_write_str(ssh, "\r\n");
 		}
 	    }
-
-#ifdef GSSAPI
-	    if (s->method == AUTH_GSSAPI) {
-			logevent("GSSAPI: trying GSSAPI auth");
-			do {
-				int ok = FALSE;
-
-				if (s->gss_supported == NULL) {
-					gss_indicate_mechs(&s->minor_status, &s->gss_supported);
-					logeventf(ssh, "GSSAPI: number of OIDs: %d", s->gss_supported->count);
-				}
-
-				/* Check to see if the mechanism is usable before we offer it */
-				while (s->gss_mech < s->gss_supported->count && !ok) {
-					if (s->gssctxt)
-						ssh_gssapi_delete_ctx(&s->gssctxt);
-
-					ssh_gssapi_build_ctx(&s->gssctxt);
-					ssh_gssapi_set_oid(s->gssctxt, &s->gss_supported->elements[s->gss_mech]);
-
-					/* My DER encoding requires length<128 */
-					if (s->gss_supported->elements[s->gss_mech].length < 128 &&
-					    !GSS_ERROR(ssh_gssapi_import_name(ssh, s->gssctxt))) {
-						ok = TRUE; /* Mechanism works */
-					} else {
-						s->gss_mech++;
-					}
-				}
-
-				if (!ok) {
-					logevent("GSSAPI: no mechanisms available");
-					goto auth_begin;
-				}
-
-				logeventf(ssh, "GSSAPI: current OID: %d", s->gss_mech);
-
-				ssh->pkt_ctx &= ~SSH2_PKTCTX_AUTH_MASK;
-				ssh->pkt_ctx |= SSH2_PKTCTX_GSSAPI;
-
-				s->pktout = ssh2_pkt_init(SSH2_MSG_USERAUTH_REQUEST);
-				ssh2_pkt_addstring(s->pktout, s->username);
-				ssh2_pkt_addstring(s->pktout, "ssh-connection");	/* service requested */
-				ssh2_pkt_addstring(s->pktout, "gssapi-with-mic");	/* method */
-				ssh2_pkt_adduint32(s->pktout, 1);
-				ssh2_pkt_adduint32(s->pktout, (s->gss_supported->elements[s->gss_mech].length) + 2);
-				ssh2_pkt_addbool(s->pktout, (char) SSH_GSS_OIDTYPE);
-				ssh2_pkt_addbool(s->pktout, (char) s->gss_supported->elements[s->gss_mech].length);
-				ssh2_pkt_adddata(s->pktout, s->gss_supported->elements[s->gss_mech].elements,
-					s->gss_supported->elements[s->gss_mech].length);
-				ssh2_pkt_send(ssh, s->pktout);
-
-				s->type = AUTH_TYPE_GSSAPI;
-				s->gss_mech++; /* Move along to next candidate */
-
-				do {
-					crWaitUntilV(pktin);
-
-					if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_RESPONSE) {
-						if ((s->gss_repeat_auth = input_gssapi_response(ssh, pktin, s->gssctxt, s->username)))
-							break;
-					}
-					else if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_TOKEN) {
-						if ((s->gss_repeat_auth = input_gssapi_token(ssh, pktin, s->gssctxt, s->username)))
-							break;
-					}
-					else if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_ERROR) {
-						input_gssapi_error(ssh, pktin);
-						break;
-					}
-					else if (pktin->type == SSH2_MSG_USERAUTH_GSSAPI_ERRTOK) {
-						input_gssapi_errtok(ssh, pktin, s->gssctxt);
-						break;
-					}
-					else {
-						break;
-					}
-				} while (1);
-
-			} while (s->gss_repeat_auth);
-
-			shlibclose(ssh, s->gssapiLibH);
-
-			s->gotit = TRUE;
-	    }
-	    else
-#endif /* GSSAPI */
 
 	    if (s->method == AUTH_PUBLICKEY_FILE) {
 		/*
@@ -8218,14 +7374,11 @@ static void ssh2_protocol_setup(Ssh ssh)
     ssh->packet_dispatch[SSH2_MSG_CHANNEL_REQUEST] = NULL;
     ssh->packet_dispatch[SSH2_MSG_CHANNEL_SUCCESS] = NULL;
     ssh->packet_dispatch[SSH2_MSG_CHANNEL_FAILURE] = NULL;
-
-#ifdef GSSAPI
-	/* ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_RESPONSE] = NULL; duplicate */
-	/* ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_TOKEN] = NULL; duplicate */
-	ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE] = NULL;
-	ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_ERROR] = NULL;
-	ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_ERRTOK] = NULL;
-#endif /* GSSAPI */
+    /* ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_RESPONSE] = NULL; duplicate */
+    /* ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_TOKEN] = NULL; duplicate */
+    ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_EXCHANGE_COMPLETE] = NULL;
+    ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_ERROR] = NULL;
+    ssh->packet_dispatch[SSH2_MSG_USERAUTH_GSSAPI_ERRTOK] = NULL;
 
     /*
      * These special message types we install handlers for.
@@ -8948,3 +8101,4 @@ Backend ssh_backend = {
     ssh_cfg_info,
     22
 };
+

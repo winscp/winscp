@@ -6,7 +6,7 @@
 #include "SynchronizeProgress.h"
 #include <Common.h>
 #include <Configuration.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <TextsWin.h>
 #include <VCLCommon.h>
 #include <GUITools.h>
@@ -68,7 +68,7 @@ void __fastcall TSynchronizeProgressForm::SetData(const AnsiString LocalDirector
   LocalDirectoryLabel->Caption = LocalDirectory;
   RemoteDirectoryLabel->Caption = RemoteDirectory;
   Continue = !FCanceled;
-  
+
   UpdateControls();
   Application->ProcessMessages();
 }
@@ -103,4 +103,3 @@ void __fastcall TSynchronizeProgressForm::MinimizeButtonClick(
   FMinimizedByMe = true;
 }
 //---------------------------------------------------------------------------
-

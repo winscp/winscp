@@ -7,20 +7,19 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include "HistoryComboBox.hpp"
-#include "XPThemes.hpp"
 //---------------------------------------------------------------------------
 class TEditorPreferencesDialog : public TForm
 {
 __published:
-  TXPGroupBox *ExternalEditorGroup;
+  TGroupBox *ExternalEditorGroup;
   TCheckBox *ExternalEditorTextCheck;
   TCheckBox *MDIExternalEditorCheck;
-  TXPGroupBox *EditorGroup;
+  TGroupBox *EditorGroup;
   TRadioButton *EditorInternalButton;
   TRadioButton *EditorExternalButton;
   THistoryComboBox *ExternalEditorEdit;
   TButton *ExternalEditorBrowseButton;
-  TXPGroupBox *MaskGroup;
+  TGroupBox *MaskGroup;
   TLabel *Label1;
   THistoryComboBox *MaskEdit;
   TButton *OkButton;
@@ -42,7 +41,7 @@ public:
 private:
   TEditorPreferencesMode FMode;
   bool FAfterFilenameEditDialog;
-  
+
   void __fastcall UpdateControls();
 };
 //---------------------------------------------------------------------------

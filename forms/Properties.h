@@ -17,8 +17,8 @@
 
 #include "Rights.h"
 #include "RightsExt.h"
+#include <Menus.hpp>
 //----------------------------------------------------------------------------
-class TTerminal;
 struct TCalculateSizeStats;
 //----------------------------------------------------------------------------
 class TPropertiesDialog : public TForm
@@ -50,11 +50,26 @@ __published:
   TButton *CalculateSizeButton;
   TRightsExtFrame *RightsFrame;
   TButton *HelpButton;
+  TTabSheet *ChecksumSheet;
+  TListView *ChecksumView;
+  TLabel *Label6;
+  TComboBox *ChecksumAlgEdit;
+  TButton *ChecksumButton;
+  TGroupBox *ChecksumGroup;
+  TEdit *ChecksumEdit;
+  TPopupMenu *ListViewMenu;
+  TMenuItem *Copy;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall CalculateSizeButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
-  
+  void __fastcall ChecksumButtonClick(TObject *Sender);
+  void __fastcall PageControlChange(TObject *Sender);
+  void __fastcall ChecksumAlgEditChange(TObject *Sender);
+  void __fastcall CopyClick(TObject *Sender);
+  void __fastcall ChecksumViewContextPopup(TObject *Sender,
+          TPoint &MousePos, bool &Handled);
+
 private:
   int FAllowedChanges;
   TStrings * FFileList;
@@ -64,8 +79,10 @@ private:
   TImageList * FShellImageList;
   bool FAllowCalculateStats;
   bool FStatsNotCalculated;
-  TTerminal * FTerminal;
-  TNotifyEvent FPrevTerminalClose;
+  TCalculateSizeEvent FOnCalculateSize;
+  TCalculateChecksumEvent FOnCalculateChecksum;
+  bool FChecksumLoaded;
+  bool FMultipleChecksum;
 
   void __fastcall SetDirectory(const AnsiString value);
   AnsiString __fastcall GetDirectory();
@@ -78,7 +95,13 @@ private:
   void __fastcall SetFileProperties(TRemoteProperties value);
   void __fastcall SetGroupList(TStrings * value);
   void __fastcall SetUserList(TStrings * value);
-  void __fastcall TerminalClose(TObject * /*Sender*/);
+
+  void __fastcall CalculateChecksum();
+  void __fastcall NeedChecksum();
+  bool __fastcall ChecksumSupported();
+  void __fastcall ResetChecksum();
+  void __fastcall CalculatedChecksum(
+    const AnsiString & FileName, const AnsiString & Alg, const AnsiString & Hash);
 
 protected:
   void __fastcall LoadInfo();
@@ -90,15 +113,16 @@ protected:
 public:
   virtual __fastcall ~TPropertiesDialog();
   bool __fastcall Execute();
-  virtual __fastcall TPropertiesDialog(TComponent * AOwner);
-  
+  virtual __fastcall TPropertiesDialog(TComponent * AOwner,
+    TCalculateSizeEvent OnCalculateSize,
+    TCalculateChecksumEvent OnCalculateChecksum);
+
   __property int AllowedChanges = { read = FAllowedChanges, write = SetAllowedChanges };
   __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
   __property TStrings * FileList = { read = FFileList, write = SetFileList };
   __property TRemoteProperties FileProperties = { read = GetFileProperties, write = SetFileProperties };
   __property TStrings * GroupList = { read = GetGroupList, write = SetGroupList };
   __property TStrings * UserList = { read = GetUserList, write = SetUserList };
-  __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };
 };
 //----------------------------------------------------------------------------
 #endif

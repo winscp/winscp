@@ -8,7 +8,6 @@
 #include <Forms.hpp>
 #include <HistoryComboBox.hpp>
 #include <CustomDirView.hpp>
-#include <XPThemes.hpp>
 
 #include <WinInterface.h>
 #include <Buttons.hpp>
@@ -18,7 +17,7 @@ class TSelectMaskDialog : public TForm
 __published:
   TButton *OKBtn;
   TButton *CancelBtn;
-  TXPGroupBox *MaskGroup;
+  TGroupBox *MaskGroup;
   TLabel *Label3;
   THistoryComboBox *MaskEdit;
   TCheckBox *IncludingDirectoriesCheck;

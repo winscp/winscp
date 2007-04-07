@@ -3,7 +3,7 @@
 #pragma hdrstop
 
 #include <Common.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <WinInterface.h>
@@ -20,7 +20,8 @@ AnsiString __fastcall TProgressForm::OperationName(TFileOperation Operation)
 {
   static const int Captions[] = { PROGRESS_COPY, PROGRESS_MOVE, PROGRESS_DELETE,
     PROGRESS_SETPROPERTIES, 0, PROGRESS_CUSTOM_COMAND, PROGRESS_CALCULATE_SIZE,
-    PROGRESS_REMOTE_MOVE, PROGRESS_REMOTE_COPY, PROGRESS_GETPROPERTIES };
+    PROGRESS_REMOTE_MOVE, PROGRESS_REMOTE_COPY, PROGRESS_GETPROPERTIES,
+    PROGRESS_CALCULATE_CHECKSUM };
   assert((int)Operation >= 1 && ((int)Operation - 1) < LENOF(Captions));
   return LoadStr(Captions[(int)Operation - 1]);
 }
@@ -58,13 +59,14 @@ __fastcall TProgressForm::~TProgressForm()
 //---------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateControls()
 {
-  assert((FData.Operation >= foCopy) && (FData.Operation <= foGetProperties) &&
+  assert((FData.Operation >= foCopy) && (FData.Operation <= foCalculateChecksum) &&
     FData.Operation != foRename );
 
   CancelButton->Enabled = !FReadOnly;
   DisconnectWhenCompleteCheck->Enabled =
     !FReadOnly && (FData.Operation != foCalculateSize) &&
-    (FData.Operation != foGetProperties);
+    (FData.Operation != foGetProperties) &&
+    (FData.Operation != foCalculateChecksum);
 
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
@@ -108,7 +110,9 @@ void __fastcall TProgressForm::UpdateControls()
           break;
 
         default:
-          assert(FData.Operation == foCustomCommand || FData.Operation == foCalculateSize);
+          assert(FData.Operation == foCustomCommand ||
+            FData.Operation == foCalculateSize ||
+            FData.Operation == foCalculateChecksum);
           Animate->CommonAVI = aviNone;
           AVisible = false;
       }
@@ -156,7 +160,7 @@ void __fastcall TProgressForm::UpdateControls()
     StartTimeLabel->Visible = !FData.TotalSizeSet;
     TimeLeftLabelLabel->Visible = FData.TotalSizeSet;
     TimeLeftLabel->Visible = FData.TotalSizeSet;
-    FLastTotalSizeSet = FData.TotalSizeSet; 
+    FLastTotalSizeSet = FData.TotalSizeSet;
   }
 
   if ((FData.Side == osRemote) || !FData.Temp)
@@ -212,7 +216,7 @@ void __fastcall TProgressForm::UpdateControls()
 void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType &AData)
 {
   bool InstantUpdate = false;
-  
+
   // workaround: to force displaing first file data immediatelly,
   // otherwise form dialog uses to be blank for first second
   // (until UpdateTimerTimer)
@@ -301,7 +305,7 @@ void __fastcall TProgressForm::MinimizeButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::CancelOperation()
 {
-  // partially duplicated in TWinSCPFileSystem::CancelConfiguration (far\WinSCPFileSystem) 
+  // partially duplicated in TWinSCPFileSystem::CancelConfiguration (far\WinSCPFileSystem)
   assert(FDataReceived);
   if (!FData.Suspended)
   {
@@ -382,5 +386,3 @@ void __fastcall TProgressForm::SetReadOnly(bool value)
     UpdateControls();
   }
 }
-
-

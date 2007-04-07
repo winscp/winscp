@@ -7,27 +7,28 @@
 #include <VCLCommon.h>
 #include "WinInterface.h"
 #include "FileSystemInfo.h"
+#include "TextsCore.h"
 #include "TextsWin.h"
 #include "GUITools.h"
 //---------------------------------------------------------------------
-#pragma link "XPThemes"
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
-void __fastcall DoFileSystemInfoDialog(const TFileSystemInfo & FileSystemInfo,
+void __fastcall DoFileSystemInfoDialog(
+  const TSessionInfo & SessionInfo, const TFileSystemInfo & FileSystemInfo,
   AnsiString SpaceAvailablePath, TGetSpaceAvailable OnGetSpaceAvailable)
 {
   TFileSystemInfoDialog * Dialog = new TFileSystemInfoDialog(Application,
     OnGetSpaceAvailable);
   try
   {
-    Dialog->Execute(FileSystemInfo, SpaceAvailablePath);
+    Dialog->Execute(SessionInfo, FileSystemInfo, SpaceAvailablePath);
   }
   __finally
   {
     delete Dialog;
   }
-} 
+}
 //---------------------------------------------------------------------
 __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent * AOwner,
   TGetSpaceAvailable OnGetSpaceAvailable)
@@ -39,11 +40,14 @@ __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent * AOwner,
   FLastListItem = 0;
 
   InstallPathWordBreakProc(SpaceAvailablePathEdit);
+  ReadOnlyControl(HostKeyFingerprintEdit);
+  ReadOnlyControl(InfoMemo);
 }
 //---------------------------------------------------------------------
-void __fastcall TFileSystemInfoDialog::Execute(const TFileSystemInfo & FileSystemInfo,
-  AnsiString SpaceAvailablePath)
+void __fastcall TFileSystemInfoDialog::Execute(const TSessionInfo & SessionInfo,
+  const TFileSystemInfo & FileSystemInfo, AnsiString SpaceAvailablePath)
 {
+  FSessionInfo = SessionInfo;
   FFileSystemInfo = FileSystemInfo;
   SpaceAvailablePathEdit->Text = SpaceAvailablePath;
   UpdateControls();
@@ -82,33 +86,48 @@ AnsiString __fastcall TFileSystemInfoDialog::SpaceStr(__int64 Bytes)
 //---------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
 {
-  AddItem(ServerView, FSINFO_SSH_VERSION, FORMAT("SSH-%d", (FFileSystemInfo.SshVersion)));
-  AddItem(ServerView, FSINFO_SSH_IMPLEMENTATION, FFileSystemInfo.SshImplementation);
+  AddItem(ServerView, FSINFO_REMOTE_SYSTEM, FFileSystemInfo.RemoteSystem);
+  AddItem(ServerView, FSINFO_SESSION_PROTOCOL, FSessionInfo.ProtocolName);
+  AddItem(ServerView, FSINFO_SSH_IMPLEMENTATION, FSessionInfo.SshImplementation);
 
-  AnsiString Str = CipherNames[FFileSystemInfo.CSCipher];
-  if (FFileSystemInfo.CSCipher != FFileSystemInfo.SCCipher)
+  AnsiString Str = FSessionInfo.CSCipher;
+  if (FSessionInfo.CSCipher != FSessionInfo.SCCipher)
   {
-    Str += FORMAT("/%s", (CipherNames[FFileSystemInfo.SCCipher]));
+    Str += FORMAT("/%s", (FSessionInfo.SCCipher));
   }
   AddItem(ServerView, FSINFO_CIPHER, Str);
 
-  Str = BooleanToStr(FFileSystemInfo.CSCompression != ctNone);
-  if (FFileSystemInfo.CSCompression != FFileSystemInfo.SCCompression)
+  Str = DefaultStr(FSessionInfo.CSCompression, LoadStr(NO_STR));
+  if (FSessionInfo.CSCompression != FSessionInfo.SCCompression)
   {
-    Str += FORMAT("/%s", (BooleanToStr(FFileSystemInfo.SCCompression != ctNone)));
+    Str += FORMAT("/%s", (DefaultStr(FSessionInfo.SCCompression, LoadStr(NO_STR))));
   }
   AddItem(ServerView, FSINFO_COMPRESSION, Str);
-  AddItem(ServerView, FSINFO_FS_PROTOCOL, FFileSystemInfo.ProtocolName);
+  if (FSessionInfo.ProtocolName != FFileSystemInfo.ProtocolName)
+  {
+    AddItem(ServerView, FSINFO_FS_PROTOCOL, FFileSystemInfo.ProtocolName);
+  }
 
-  AddItem(HostKeyFingerprintEdit, 0, FFileSystemInfo.HostKeyFingerprint);
+  AddItem(HostKeyFingerprintEdit, 0, FSessionInfo.HostKeyFingerprint);
 
   AddItem(ProtocolView, FSINFO_MODE_CHANGING, CapabilityStr(fcModeChanging));
   AddItem(ProtocolView, FSINFO_OWNER_GROUP_CHANGING, CapabilityStr(fcGroupChanging));
-  AddItem(ProtocolView, FSINFO_ANY_COMMAND, CapabilityStr(fcAnyCommand));
+  AnsiString AnyCommand;
+  if (!FFileSystemInfo.IsCapable[fcShellAnyCommand] &&
+      FFileSystemInfo.IsCapable[fcAnyCommand])
+  {
+    AnyCommand = LoadStr(FSINFO_PROTOCOL_ANY_COMMAND);
+  }
+  else
+  {
+    CapabilityStr(fcAnyCommand);
+  }
+  AddItem(ProtocolView, FSINFO_ANY_COMMAND, AnyCommand);
   AddItem(ProtocolView, FSINFO_SYMBOLIC_HARD_LINK, CapabilityStr(fcSymbolicLink, fcHardLink));
   AddItem(ProtocolView, FSINFO_USER_GROUP_LISTING, CapabilityStr(fcUserGroupListing));
   AddItem(ProtocolView, FSINFO_REMOTE_COPY, CapabilityStr(fcRemoteCopy));
   AddItem(ProtocolView, FSINFO_CHECKING_SPACE_AVAILABLE, CapabilityStr(fcCheckingSpaceAvailable));
+  AddItem(ProtocolView, FSINFO_CALCULATING_CHECKSUM, CapabilityStr(fcCalculatingChecksum));
   AddItem(ProtocolView, FSINFO_NATIVE_TEXT_MODE, CapabilityStr(fcNativeTextMode));
 
   AddItem(InfoMemo, 0, FFileSystemInfo.AdditionalInfo);
@@ -125,41 +144,51 @@ void __fastcall TFileSystemInfoDialog::ControlsAddItem(TControl * Control,
 {
   if (FLastFeededControl != Control)
   {
+    // TODO, we should clear excess list view items here, but it
+    // actually should not happen as of now
     FLastFeededControl = Control;
     FLastListItem = 0;
   }
 
   if (Control == HostKeyFingerprintEdit)
   {
+    EnableControl(HostKeyGroup, !Value.IsEmpty());
+    HostKeyGroup->Visible = !Value.IsEmpty();
     HostKeyFingerprintEdit->Text = Value;
   }
   else if (Control == InfoMemo)
   {
+    EnableControl(InfoGroup, !Value.IsEmpty());
+    InfoGroup->Visible = !Value.IsEmpty();
     InfoMemo->Lines->Text = Value;
   }
   else
   {
     TListView * ListView = dynamic_cast<TListView *>(Control);
     assert(ListView != NULL);
-    TListItem * Item;
-    if (ListView->Items->Count > FLastListItem)
-    {
-      Item = ListView->Items->Item[FLastListItem];
-    }
-    else
-    {
-      Item = ListView->Items->Add();
-    }
-    FLastListItem++;
 
-    Item->Caption = LoadStr(Label);
-    if (Item->SubItems->Count > 0)
+    if (!Value.IsEmpty())
     {
-      Item->SubItems->Strings[0] = Value;
-    }
-    else
-    {
-      Item->SubItems->Add(Value);
+      TListItem * Item;
+      if (ListView->Items->Count > FLastListItem)
+      {
+        Item = ListView->Items->Item[FLastListItem];
+      }
+      else
+      {
+        Item = ListView->Items->Add();
+      }
+      FLastListItem++;
+
+      Item->Caption = LoadStr(Label);
+      if (Item->SubItems->Count > 0)
+      {
+        Item->SubItems->Strings[0] = Value;
+      }
+      else
+      {
+        Item->SubItems->Add(Value);
+      }
     }
   }
 }
@@ -185,7 +214,7 @@ void __fastcall TFileSystemInfoDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
   int Label, AnsiString Value)
 {
-  if (Control->Enabled)
+  if (Control->Enabled && !Value.IsEmpty())
   {
     if (FLastFeededControl != Control)
     {
@@ -198,7 +227,7 @@ void __fastcall TFileSystemInfoDialog::ClipboardAddItem(TControl * Control,
 
     if (dynamic_cast<TListView *>(Control) == NULL)
     {
-      TXPGroupBox * Group = dynamic_cast<TXPGroupBox *>(Control->Parent);
+      TGroupBox * Group = dynamic_cast<TGroupBox *>(Control->Parent);
       assert(Group != NULL);
       if ((Value.Length() >= 2) && (Value.SubString(Value.Length() - 1, 2) == "\r\n"))
       {
@@ -224,9 +253,13 @@ void __fastcall TFileSystemInfoDialog::ClipboardButtonClick(
   CopyToClipboard(FClipboard);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileSystemInfoDialog::CopyClick(TObject * /*Sender*/)
+void __fastcall TFileSystemInfoDialog::CopyClick(TObject * Sender)
 {
-  TListView * ListView = dynamic_cast<TListView *>(ListViewMenu->PopupComponent);
+  TComponent * Item = dynamic_cast<TComponent *>(Sender);
+  assert(Item != NULL);
+  TPopupMenu * PopupMenu = dynamic_cast<TPopupMenu *>(Item->Owner);
+  assert(PopupMenu != NULL);
+  TListView * ListView = dynamic_cast<TListView *>(PopupMenu->PopupComponent);
   assert(ListView != NULL);
 
   AnsiString Text;
@@ -243,7 +276,7 @@ void __fastcall TFileSystemInfoDialog::CopyClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TFileSystemInfoDialog::FormShow(TObject * /*Sender*/)
 {
-  PageControl->ActivePage = SshSheet;
+  PageControl->ActivePage = ProtocolSheet;
   FeedControls();
 }
 //---------------------------------------------------------------------------
@@ -301,4 +334,23 @@ void __fastcall TFileSystemInfoDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TFileSystemInfoDialog::SpaceAvailablePathEditEnter(
+  TObject * /*Sender*/)
+{
+  SpaceAvailableButton->Default = true;
+  CloseButton->Default = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileSystemInfoDialog::SpaceAvailablePathEditExit(
+  TObject * /*Sender*/)
+{
+  SpaceAvailableButton->Default = false;
+  CloseButton->Default = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileSystemInfoDialog::ControlContextPopup(
+  TObject * Sender, TPoint & MousePos, bool & Handled)
+{
+  MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------

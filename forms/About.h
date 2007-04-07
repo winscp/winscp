@@ -51,6 +51,9 @@ __published:
   TLabel *RegistrationProductIdLabel;
   TLabel *RegistrationSubjectLabel;
   TLabel *Label4;
+  TLabel *FileZillaVersionLabel;
+  TLabel *FileZillaCopyrightLabel;
+  TStaticText *FileZillaHomepageLabel;
   void __fastcall DisplayLicence(TObject *Sender);
   void __fastcall LicenceButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);

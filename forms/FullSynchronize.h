@@ -6,7 +6,6 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include <XPThemes.hpp>
 #include <HistoryComboBox.hpp>
 
 #include <WinInterface.h>
@@ -15,32 +14,35 @@
 class TFullSynchronizeDialog : public TForm
 {
 __published:
-  TXPGroupBox *DirectoriesGroup;
+  TGroupBox *DirectoriesGroup;
   TButton *OkButton;
   TButton *CancelButton;
   TLabel *LocalDirectoryLabel;
   TLabel *RemoteDirectoryLabel;
   THistoryComboBox *RemoteDirectoryEdit;
   THistoryComboBox *LocalDirectoryEdit;
-  TXPGroupBox *OptionsGroup;
+  TGroupBox *OptionsGroup;
   TCheckBox *SynchronizeDeleteCheck;
   TCheckBox *SynchronizeSelectedOnlyCheck;
   TButton *LocalDirectoryBrowseButton;
   TCheckBox *SynchronizeExistingOnlyCheck;
   TButton *TransferSettingsButton;
   TCheckBox *SynchronizePreviewChangesCheck;
-  TXPGroupBox *DirectionGroup;
+  TGroupBox *DirectionGroup;
   TRadioButton *SynchronizeBothButton;
   TRadioButton *SynchronizeRemoteButton;
   TRadioButton *SynchronizeLocalButton;
-  TCheckBox *SynchronizeTimestampCheck;
-  TXPGroupBox *CompareCriterionsGroup;
+  TGroupBox *CompareCriterionsGroup;
   TCheckBox *SynchronizeByTimeCheck;
   TCheckBox *SynchronizeBySizeCheck;
   TCheckBox *SaveSettingsCheck;
-  TXPGroupBox *CopyParamGroup;
+  TGroupBox *CopyParamGroup;
   TLabel *CopyParamLabel;
   TButton *HelpButton;
+  TGroupBox *ModeGroup;
+  TRadioButton *SynchronizeFilesButton;
+  TRadioButton *MirrorFilesButton;
+  TRadioButton *SynchronizeTimestampsButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall TransferSettingsButtonClick(TObject *Sender);
@@ -51,7 +53,7 @@ __published:
           TPoint &MousePos, bool &Handled);
   void __fastcall CopyParamGroupDblClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
-  
+
 private:
   int FParams;
   bool FSaveMode;

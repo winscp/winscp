@@ -2,12 +2,24 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Common.h>
 #include "ProgParams.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+TProgramParams * TProgramParams::SInstance = NULL;
+//---------------------------------------------------------------------------
+TProgramParams * __fastcall TProgramParams::Instance()
+{
+  assert(SInstance != NULL);
+  return SInstance;
+}
+//---------------------------------------------------------------------------
 TProgramParams::TProgramParams()
 {
+  assert(SInstance == NULL);
+  SInstance = this;
+
   FParameters = new TStringList();
   for (int i = 0; i <= ::ParamCount(); i++)
   {
@@ -23,6 +35,8 @@ TProgramParams::TProgramParams()
 TProgramParams::~TProgramParams()
 {
   delete FParameters;
+  assert(SInstance == this);
+  SInstance = NULL;
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgramParams::ResetParamCount()
@@ -163,7 +177,7 @@ bool __fastcall TProgramParams::FindSwitch(const AnsiString Switch,
   {
     ParamsStart = 0;
   }
-  
+
   return Found;
 }
 //---------------------------------------------------------------------------
@@ -236,4 +250,3 @@ void __fastcall TProgramParams::ParamsProcessed(int ParamsStart, int ParamsCount
   }
   ResetParamCount();
 }
-

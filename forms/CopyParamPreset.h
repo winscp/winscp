@@ -6,7 +6,6 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include "XPThemes.hpp"
 #include "CopyParams.h"
 //---------------------------------------------------------------------------
 class TCustomCommands;
@@ -19,7 +18,7 @@ __published:
   TLabel *Label1;
   TEdit *DescriptionEdit;
   TCopyParamsFrame *CopyParamsFrame;
-  TXPGroupBox *RuleGroup;
+  TGroupBox *RuleGroup;
   TLabel *Label2;
   TEdit *HostNameEdit;
   TCheckBox *HasRuleCheck;

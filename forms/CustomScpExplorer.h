@@ -17,6 +17,7 @@
 
 #include <WinInterface.h>
 #include <Terminal.h>
+#include <Queue.h>
 #include "QueueController.h"
 #include "UnixDriveView.h"
 #include "CustomDriveView.hpp"
@@ -38,6 +39,7 @@ class TQueueController;
 class TSynchronizeController;
 class TEditorManager;
 class TEditorPreferences;
+class TTransferPresetNoteData;
 struct TEditedFileData;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
@@ -45,6 +47,14 @@ enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 }
 enum TExecuteFileBy { efShell = 1, efInternalEditor = 2, efExternalEditor = 3, efDefaultEditor = 100 };
 enum TPanelExport { pePath, peFileList, peFullFileList, peUrl };
 enum TPanelExportDestination { pedClipboard, pedCommandLine };
+//---------------------------------------------------------------------------
+struct TCustomCommandParam
+{
+  TCustomCommandParam();
+  AnsiString Name;
+  AnsiString Command;
+  int Params;
+};
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
@@ -77,7 +87,7 @@ __published:
     const TPoint &MousePos, bool &Handled);
   void __fastcall RemoteDirViewGetSelectFilter(
     TCustomDirView *Sender, bool Select, TFileFilter &Filter);
-  void __fastcall ApplicationHint(TObject *Sender);
+  void __fastcall ApplicationHint(TObject * Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall RemoteDirViewDisplayProperties(TObject *Sender);
   void __fastcall DirViewColumnRightClick(TObject *Sender,
@@ -178,6 +188,8 @@ private:
   AnsiString FTransferDropDownHint;
   int FTransferListHoverIndex;
   TColor FSessionColor;
+  TTrayIcon * FTrayIcon;
+  TCustomCommandParam FLastCustomCommand;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -192,14 +204,15 @@ private:
     const TRect & ARect, int AIndex, int AHoverIndex, bool & DrawDefault);
   void __fastcall CloseInternalEditor(TObject * Sender);
   void __fastcall ForceCloseInternalEditor(TObject * Sender);
-  void __fastcall TerminalCaptureLog(TObject* Sender, TLogLineType Type,
-    const AnsiString AddedLine);
+  void __fastcall TerminalCaptureLog(const AnsiString & AddedLine, bool StdError);
   void __fastcall HistoryItemClick(System::TObject* Sender);
   void __fastcall UpdateHistoryMenu(TOperationSide Side, bool Back);
   void __fastcall AdHocCustomCommandValidate(const AnsiString & Command,
     int Params);
   void __fastcall SetDockAllowDrag(bool value);
   void __fastcall QueueSplitterDblClick(TObject * Sender);
+  void __fastcall ApplicationMinimize(TObject * Sender);
+  void __fastcall ApplicationRestore(TObject * Sender);
 
 protected:
   TOperationSide FCurrentSide;
@@ -214,9 +227,12 @@ protected:
   bool FNoTransferPresetAutoSelect;
   TStrings * FNotes;
   TTimer * FNoteTimer;
+  TDateTime FNoteShown;
   AnsiString FNote;
+  TObject * FNoteData;
   AnsiString FNoteHints;
   TNotifyEvent FOnNoteClick;
+  unsigned int FLockLevel;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
@@ -245,6 +261,7 @@ protected:
   virtual void __fastcall QueueChanged();
   void __fastcall InitStatusBar();
   void __fastcall UpdateStatusBar();
+  virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
   virtual void __fastcall DoOperationFinished(TFileOperation Operation,
     TOperationSide Side, bool Temp, const AnsiString FileName, bool Success,
     bool & DisconnectWhenFinished);
@@ -254,6 +271,8 @@ protected:
   void __fastcall OperationComplete(const TDateTime & StartTime);
   void __fastcall ExecutedFileChanged(const AnsiString FileName,
     const TEditedFileData & Data, HANDLE UploadCompleteEvent);
+  void __fastcall ExecutedFileReload(const AnsiString FileName,
+    const TEditedFileData & Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData & Data,
     bool * CloseFlag, bool & KeepOpen);
   void __fastcall CMAppSysCommand(TMessage & Message);
@@ -312,6 +331,8 @@ protected:
   void __fastcall RemoteFileControlDDTargetDrop();
   void __fastcall RemoteFileControlFileOperation(TObject * Sender,
     TFileOperation Operation, bool NoConfirmation, void * Param);
+  void __fastcall DDDownload(TStrings * FilesToCopy,
+    const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   void __fastcall FileTerminalClosed(const AnsiString FileName,
     TEditedFileData & Data, TObject * Token, void * Arg);
@@ -328,6 +349,7 @@ protected:
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
     AnsiString & TempDir, bool AllFiles, bool GetTargetNames);
   TTBXPopupMenu * __fastcall HistoryMenu(TOperationSide Side, bool Back);
+  AnsiString __fastcall FileStatusBarText(const TStatusFileInfo & FileInfo);
   void __fastcall UpdateFileStatusBar(TTBXStatusBar * StatusBar,
     const TStatusFileInfo & FileInfo, int Panel);
   virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
@@ -338,20 +360,39 @@ protected:
   void __fastcall TransferPresetAutoSelect();
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
   int __fastcall CustomCommandState(const AnsiString & Command, int Params, bool OnFocused);
+  inline bool __fastcall CustomCommandRemoteAllowed();
   void __fastcall LoadToolbarsLayoutStr(AnsiString LayoutStr);
   AnsiString __fastcall GetToolbarsLayoutStr();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall PostComponentHide(unsigned short Component);
   void __fastcall GetSpaceAvailable(const AnsiString Path,
     TSpaceAvailable & ASpaceAvailable, bool & Close);
+  void __fastcall CalculateSizeEvent(TStrings * FileList, __int64 & Size,
+    TCalculateSizeStats & Stats, bool & Close);
+  void __fastcall CalculateChecksum(const AnsiString & Alg, TStrings * FileList,
+    TCalculatedChecksumEvent OnCalculatedChecksum, bool & Close);
   void __fastcall UpdateCustomCommandsToolbar();
   virtual void __fastcall UpdateActions();
   void __fastcall SetSessionColor(TColor value);
   void __fastcall NoteTimer(TObject * Sender);
+  void __fastcall AddNote(AnsiString Note, bool UpdateNow = true);
   void __fastcall PostNote(AnsiString Note, unsigned int Seconds,
-    TNotifyEvent OnNoteClick);
+    TNotifyEvent OnNoteClick, TObject * NoteData);
+  bool __fastcall CancelNote();
   void __fastcall UpdatesChecked();
   void __fastcall UpdatesNoteClicked(TObject * Sender);
+  void __fastcall TransferPresetNoteClicked(TObject * Sender);
+  void __fastcall TransferPresetNoteMessage(TTransferPresetNoteData * NoteData,
+    bool AllowNeverAskAgain);
+  void __fastcall UpdateTrayIcon();
+  void __fastcall TrayIconClick(TObject * Sender);
+  void __fastcall PopupTrayBalloon(TTerminal * Terminal, const AnsiString & Str,
+    TQueryType Type, Exception * E = NULL, unsigned int Seconds = 0);
+  void __fastcall Notify(TTerminal * Terminal, AnsiString Message,
+    TQueryType Type, bool Important = false, TNotifyEvent OnClick = NULL,
+    Exception * E = NULL);
+  bool __fastcall OpenInNewWindow();
+  virtual void __fastcall UpdateSessionData(TSessionData * Data);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -367,7 +408,14 @@ public:
   virtual void __fastcall ChangePath(TOperationSide Side) = 0;
   virtual void __fastcall StoreParams();
   int __fastcall CustomCommandState(const AnsiString & Description, bool OnFocused);
+  bool __fastcall GetLastCustomCommand(bool OnFocused,
+    TCustomCommandParam & CustomCommand, int & State);
+  void __fastcall LastCustomCommand(bool OnFocused);
+  void __fastcall LockWindow();
+  void __fastcall UnlockWindow();
+
   void __fastcall NewSession();
+  void __fastcall DuplicateSession();
   void __fastcall CloseSession();
   void __fastcall OpenDirectory(TOperationSide Side);
   void __fastcall OpenStoredSession(TSessionData * Data);
@@ -377,7 +425,7 @@ public:
   virtual void __fastcall CompareDirectories();
   void __fastcall ExecuteCurrentFile();
   virtual void __fastcall OpenConsole(AnsiString Command = "");
-  virtual void __fastcall UpdateSessionData(TSessionData * Data = NULL);
+  virtual void __fastcall UpdateTerminal(TTerminal * Terminal);
   virtual void __fastcall SynchronizeDirectories();
   virtual void __fastcall FullSynchronizeDirectories() = 0;
   virtual void __fastcall ExploreLocalDirectory();
@@ -395,12 +443,17 @@ public:
   void __fastcall LastTerminalClosed(TObject * Sender);
   void __fastcall TerminalClosed(TObject * Sender);
   void __fastcall TerminalListChanged(TObject * Sender);
+  void __fastcall ApplicationTitleChanged();
   int __fastcall MoreMessageDialog(const AnsiString Message,
     TStrings * MoreMessages, TQueryType Type, int Answers,
-    AnsiString HelpKeyword, const TMessageParams * Params = NULL);
+    AnsiString HelpKeyword, const TMessageParams * Params = NULL,
+    TTerminal * Terminal = NULL);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
+  void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
+  void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);
+  void __fastcall QueueEvent(TTerminal * Terminal, TTerminalQueue * Queue, TQueueEvent Event);
   bool __fastcall DoSynchronizeDirectories(AnsiString & LocalDirectory,
     AnsiString & RemoteDirectory, bool UseDefaults);
   bool __fastcall DoFullSynchronizeDirectories(AnsiString & LocalDirectory,
@@ -430,23 +483,6 @@ public:
   __property TTerminal * Terminal = { read = FTerminal, write = SetTerminal };
   __property TTerminalQueue * Queue = { read = FQueue, write = SetQueue };
   __property TColor SessionColor = { read = FSessionColor, write = SetSessionColor };
-};
-//---------------------------------------------------------------------------
-class TExporerState : public TObject
-{
-public:
-  __fastcall TExporerState();
-  virtual __fastcall ~TExporerState();
-
-  TObject * Remote;
-  TObject * Local;
-};
-//---------------------------------------------------------------------------
-struct TCustomCommandParam
-{
-  AnsiString Name;
-  AnsiString Command;
-  int Params;
 };
 //---------------------------------------------------------------------------
 #endif

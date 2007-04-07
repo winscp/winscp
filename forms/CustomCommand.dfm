@@ -23,7 +23,7 @@ object CustomCommandDialog: TCustomCommandDialog
     255)
   PixelsPerInch = 96
   TextHeight = 13
-  object Group: TXPGroupBox
+  object Group: TGroupBox
     Left = 8
     Top = 8
     Width = 380
@@ -71,6 +71,8 @@ object CustomCommandDialog: TCustomCommandDialog
       MaxLength = 250
       TabOrder = 1
       OnChange = ControlChange
+      OnGetData = CommandEditGetData
+      OnSetData = CommandEditSetData
     end
     object ApplyToDirectoriesCheck: TCheckBox
       Left = 16

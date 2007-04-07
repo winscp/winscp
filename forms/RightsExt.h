@@ -25,7 +25,7 @@ __published:
   void __fastcall OctalEditChange(TObject *Sender);
   void __fastcall OctalEditExit(TObject *Sender);
   void __fastcall CloseButtonClick(TObject *Sender);
-  
+
 public:
   __fastcall TRightsExtFrame(TComponent* Owner);
 

@@ -71,6 +71,7 @@ protected:
   TCopyParamType FCopyParam;
   TBatchMode FBatch;
   bool FConfirm;
+  bool FEcho;
   int FSynchronizeParams;
   int FSynchronizeMode;
   bool FKeepingUpToDate;
@@ -123,8 +124,7 @@ protected:
     AnsiString & LocalDirectory, AnsiString & RemoteDirectory, int FirstParam);
   virtual bool __fastcall HandleExtendedException(Exception * E,
     TTerminal * Terminal = NULL);
-  void __fastcall TerminalCaptureLog(TObject * Sender, TLogLineType Type,
-    const AnsiString AddedLine);
+  void __fastcall TerminalCaptureLog(const AnsiString & AddedLine, bool StdError);
 
 private:
   void __fastcall Init();
@@ -146,7 +146,6 @@ public:
 
   __property TScriptInputEvent OnInput = { read = FOnInput, write = FOnInput };
   __property TScriptQueryCancelEvent OnQueryCancel = { read = FOnQueryCancel, write = FOnQueryCancel };
-  __property TUpdateStatusEvent OnTerminalUpdateStatus = { read = FOnTerminalUpdateStatus, write = FOnTerminalUpdateStatus };
   __property TPromptUserEvent OnTerminalPromptUser = { read = FOnTerminalPromptUser, write = FOnTerminalPromptUser };
   __property TQueryUserEvent OnTerminalQueryUser = { read = FOnTerminalQueryUser, write = FOnTerminalQueryUser };
   __property TScriptPrintProgressEvent OnPrintProgress = { read = FOnPrintProgress, write = FOnPrintProgress };
@@ -155,7 +154,6 @@ public:
 protected:
   TScriptInputEvent FOnInput;
   TScriptQueryCancelEvent FOnQueryCancel;
-  TUpdateStatusEvent FOnTerminalUpdateStatus;
   TPromptUserEvent FOnTerminalPromptUser;
   TQueryUserEvent FOnTerminalQueryUser;
   TScriptPrintProgressEvent FOnPrintProgress;
@@ -168,8 +166,8 @@ protected:
 
   virtual void __fastcall ResetTransfer();
   void __fastcall Input(const AnsiString Prompt, AnsiString & Str, bool AllowEmpty);
-  void __fastcall TerminalOnStdError(TObject * Sender, TLogLineType Type,
-    const AnsiString AddedLine);
+  void __fastcall TerminalInformation(TTerminal * Terminal, const AnsiString & Str,
+    bool Status, bool Active);
   void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
@@ -187,7 +185,7 @@ protected:
   void __fastcall DoClose(TTerminal * Terminal);
   virtual bool __fastcall HandleExtendedException(Exception * E,
     TTerminal * Terminal = NULL);
-  void __fastcall TerminalPromptUser(TSecureShell * SecureShell,
+  void __fastcall TerminalPromptUser(TTerminal * Terminal,
     AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
     void * Arg);
   inline bool __fastcall Synchronizing();

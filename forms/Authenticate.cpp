@@ -8,7 +8,7 @@
 
 #include <VCLCommon.h>
 #include <TextsWin.h>
-#include <SecureShell.h>
+#include <Terminal.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PasswordEdit"
@@ -21,6 +21,7 @@ __fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner,
   UseSystemSettings(this);
   FShowAsModalStorage = NULL;
   FFocusControl = NULL;
+  ClearLog();
 }
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::~TAuthenticateForm()
@@ -40,7 +41,6 @@ void __fastcall TAuthenticateForm::HideAsModal()
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::FormShow(TObject * /*Sender*/)
 {
-  ClearLog();
   AdjustControls();
 
   if (FFocusControl != NULL)
@@ -64,66 +64,25 @@ void __fastcall TAuthenticateForm::Log(const AnsiString Message)
   LogView->Repaint();
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::ChangeStatus(const AnsiString Status)
-{
-  Log(Status);
-}
-//---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::UpdateControls()
 {
+  PasswordEdit->Password = HideTypingCheck->Checked;
 }
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::AdjustControls()
 {
-  AnsiString PasswordCaption = PasswordLabel->Hint;
-  bool MultiLine = false;
-  int P = PasswordCaption.Pos("\n");
-  if (P > 0)
+  if (PasswordLabel->Caption != FPasswordCaption)
   {
-    MultiLine = true;
-    PasswordCaption.SetLength(P - 1);
-  }
-  P = PasswordCaption.Pos("\r");
-  if (P > 0)
-  {
-    MultiLine = true;
-    PasswordCaption.SetLength(P - 1);
-  }
+    int LabelWidth = PasswordLabel->Width;
+    int LabelHeight = PasswordLabel->Height;
+    PasswordLabel->AutoSize = false;
+    PasswordLabel->Caption = FPasswordCaption;
+    PasswordLabel->AutoSize = true;
+    PasswordLabel->Width = LabelWidth;
 
-  bool NeedTrim;
-  TControlCanvas * PasswordLabelCanvas = new TControlCanvas();
-  try
-  {
-    PasswordLabelCanvas->Control = PasswordLabel;
-
-    NeedTrim = MultiLine ||
-      (PasswordLabelCanvas->TextWidth(PasswordCaption) > PasswordLabel->Width);
-    if (NeedTrim)
-    {
-      static AnsiString Ellipsis(" ...");
-      while (PasswordLabelCanvas->TextWidth(PasswordCaption + Ellipsis) >
-          PasswordLabel->Width)
-      {
-        PasswordCaption.SetLength(PasswordCaption.Length() - 1);
-      }
-      PasswordCaption = PasswordCaption + Ellipsis;
-    }
-  }
-  __finally
-  {
-    delete PasswordLabelCanvas;
-  }
-
-  PasswordLabel->Caption = PasswordCaption;
-  if (NeedTrim)
-  {
-    HintLabel(PasswordLabel, Hint);
-    PasswordLabel->TabStop = true;
-  }
-  else
-  {
-    HintLabelRestore(PasswordLabel);
-    PasswordLabel->TabStop = false;
+    int HeightDiff = (PasswordLabel->Height - LabelHeight);
+    PasswordEditPanel->Height = PasswordEditPanel->Height + HeightDiff;
+    PasswordPanel->Height = PasswordPanel->Height + HeightDiff;
   }
 
   if (FStatus.IsEmpty())
@@ -134,35 +93,63 @@ void __fastcall TAuthenticateForm::AdjustControls()
   {
     Caption = FORMAT("%s - %s", (FStatus, FSessionName));
   }
+
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TAuthenticateForm::PromptUser(AnsiString Caption,
-  TPromptKind Kind, AnsiString &Password)
+  TPromptKind Kind, AnsiString & Response, bool ForceLog)
 {
-  PasswordLabel->Hint = Caption;
+  bool ShowServerPanel;
+  AnsiString Title;
 
-  int Title;
   switch (Kind)
   {
-    case pkPassword: Title = PASSWORD_TITLE; break;
-    case pkPassphrase: Title = PASSPHRASE_TITLE; break;
-    case pkServerPrompt: Title = SERVER_PASSWORD_TITLE; break;
-    default: assert(false);
+    case pkPassword:
+      Title = LoadStr(PASSWORD_TITLE);
+      HideTypingCheck->Checked = true;
+      ShowServerPanel = false;
+      break;
+
+    case pkPassphrase:
+      Title = LoadStr(PASSPHRASE_TITLE);
+      HideTypingCheck->Checked = true;
+      ShowServerPanel = false;
+      break;
+
+    case pkServerPrompt:
+      Title = LoadStr(SERVER_PASSWORD_TITLE);
+      ShowServerPanel = true;
+      break;
+
+    case pkPrompt:
+      Title = CutToChar(Caption, '|', true);
+      if (Caption.IsEmpty())
+      {
+        Caption = Title;
+      }
+      HideTypingCheck->Checked = false;
+      ShowServerPanel = false;
+      break;
+
+    default:
+      assert(false);
   }
 
-  bool ShowServerPanel = (Kind == pkServerPrompt);
+  FPasswordCaption = Caption;
+
   if (ShowServerPanel != ServerPromptPanel->Visible)
   {
     ServerPromptPanel->Visible = ShowServerPanel;
     PasswordPanel->Height += (ShowServerPanel ? 1 : -1) * ServerPromptPanel->Height;
   }
 
-  PasswordEdit->Text = Password;
-  bool Result = Execute(LoadStr(Title), PasswordPanel, PasswordEdit,
-    PasswordOKButton, PasswordCancelButton, true, false);
+  PasswordEdit->Text = Response;
+  bool Result = Execute(Title, PasswordPanel, PasswordEdit,
+    PasswordOKButton, PasswordCancelButton, true, false, ForceLog);
   if (Result)
   {
-    Password = PasswordEdit->Text;
+    Response = PasswordEdit->Text;
   }
 
   return Result;
@@ -175,7 +162,7 @@ void __fastcall TAuthenticateForm::Banner(const AnsiString & Banner,
   NeverShowAgainCheck->Visible = FLAGCLEAR(Options, boDisableNeverShowAgain);
   NeverShowAgainCheck->Checked = NeverShowAgain;
   bool Result = Execute(LoadStr(AUTHENTICATION_BANNER), BannerPanel, BannerCloseButton,
-    BannerCloseButton, BannerCloseButton, false, true);
+    BannerCloseButton, BannerCloseButton, false, true, false);
   if (Result)
   {
     NeverShowAgain = NeverShowAgainCheck->Checked;
@@ -184,7 +171,7 @@ void __fastcall TAuthenticateForm::Banner(const AnsiString & Banner,
 //---------------------------------------------------------------------------
 bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control,
   TWinControl * FocusControl, TButton * DefaultButton, TButton * CancelButton,
-  bool FixHeight, bool Zoom)
+  bool FixHeight, bool Zoom, bool ForceLog)
 {
   TAlign Align = Control->Align;
   try
@@ -199,7 +186,7 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
       Control->Align = alClient;
     }
 
-    if (Visible)
+    if (ForceLog || Visible)
     {
       Control->Show();
       TCursor PrevCursor = Screen->Cursor;
@@ -222,6 +209,13 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
           }
         }
         Screen->Cursor = crDefault;
+
+        if (!Visible)
+        {
+          assert(ForceLog);
+          ShowAsModal();
+        }
+
         FocusControl->SetFocus();
         ModalResult = mrNone;
         AdjustControls();
@@ -297,6 +291,6 @@ void __fastcall TAuthenticateForm::HelpButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::HideTypingCheckClick(TObject * /*Sender*/)
 {
-  PasswordEdit->Password = HideTypingCheck->Checked;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------

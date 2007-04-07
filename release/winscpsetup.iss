@@ -1,23 +1,32 @@
-#define MainFileSource "..\WinSCP3.exe"
-#define ShellExtFileSource "..\DragExt.dll"
-#define ConsoleFileSource "..\Console.com"
+#define AppId "winscp3"
 #define ParentRegistryKey "Software\Martin Prikryl"
 #define RegistryKey ParentRegistryKey+"\WinSCP 2"
 #define PuttySourceDir "c:\Program Files\PuTTY"
-#define TranslationMask "translations\WinSCP3.???"
-#define TranslationDir ".\translations"
 #define DefaultLang "en"
 #define WebRoot "http://winscp.net/"
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
-#define Year 2006
+#define Year 2007
+#define EnglishLang "English"
+#define SetupTypeData "SetupType"
+#define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
+#define InnoSetupAppPathReg "Inno Setup: App Path"
 
-#ifexist "winscpsetup.tmp"
-  #include "winscpsetup.tmp"
+#ifexist "interm\winscpsetup.inc.iss"
+  #include "interm\winscpsetup.inc.iss"
 #else
   #define Status "unofficial"
+  #define SourceDir ".."
+  #define TranslationDirRel "translations"
+  #define TranslationDir "translations"
+  #define OutputDir ""
 #endif
+
+#define TranslationMask TranslationDir + "\WinSCP.???"
+#define MainFileSource SourceDir+"\WinSCP.exe"
+#define ShellExtFileSource SourceDir+"\DragExt.dll"
+#define ConsoleFileSource SourceDir+"\WinSCP.com"
 
 #define Major
 #define Minor
@@ -27,18 +36,16 @@
 #define Version Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")+(Status != "" ? " "+Status : "")
 
 #define SetupExt
-#define FullLangs
 
 #ifdef INTL
   #expr SetupExt="intl"
-  #expr FullLangs="fulllangs"
 #endif
 
 ; Translation support functions/variables
 
 [Setup]
-AppId=winscp3
-AppName=WinSCP3
+AppId={#AppId}
+AppName=WinSCP
 AppMutex=WinSCP
 AppPublisher=Martin Prikryl
 AppPublisherURL={#WebRoot}
@@ -49,23 +56,27 @@ VersionInfoDescription=Setup for WinSCP {#Version} (Freeware SCP/SFTP client for
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
 VersionInfoTextVersion={#Version}
 VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
-DefaultDirName={pf}\WinSCP3
-DefaultGroupName=WinSCP3
+DefaultDirName={pf}\WinSCP
+DefaultGroupName=WinSCP
 AllowNoIcons=yes
-LicenseFile=licence
-UninstallDisplayIcon={app}\WinSCP3.exe
-OutputDir=files\
+LicenseFile=licence.setup
+UninstallDisplayIcon={app}\WinSCP.exe
+OutputDir={#OutputDir}
 DisableStartupPrompt=yes
 AppVersion={#Version}
 AppVerName=WinSCP {#Version}
 OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup{#SetupExt}
 SolidCompression=yes
 ShowTasksTreeLines=yes
+PrivilegesRequired=none
 
-#define MessagesPath(L) TranslationDir + "\" + "WinSCP3." + L + ".isl"
+; Some features of ISCC requires path relative to script,
+; some path relative to CWD
+#define MessagesPathRel(L) TranslationDirRel + "\" + "WinSCP." + L + ".isl"
+#define MessagesPath(L) TranslationDir + "\" + "WinSCP." + L + ".isl"
 
 [Languages]
-Name: {#DefaultLang}; MessagesFile: {#MessagesPath(DefaultLang)}
+Name: {#DefaultLang}; MessagesFile: {#MessagesPathRel(DefaultLang)}
 
 #ifdef INTL
 
@@ -88,7 +99,7 @@ Name: {#DefaultLang}; MessagesFile: {#MessagesPath(DefaultLang)}
     #expr LanguageCount++
 
 [Languages]
-Name: {#Lang}; MessagesFile: {#MessagesPath(Lang)}
+Name: {#Lang}; MessagesFile: {#MessagesPathRel(Lang)}
 
   #endsub /* sub ProcessTranslationFile */
 
@@ -100,26 +111,25 @@ Name: {#Lang}; MessagesFile: {#MessagesPath(Lang)}
 
 #endif /* ifdef INTL */
 
+; Types are not used anymore, they are preserved only to let setup
+; detect previous installation type and decide between typical/custom setup
 [Types]
-Name: full; Description: {cm:FullInstallation}
-#ifdef INTL
-Name: fulllangs; Description: {cm:FullInstallationLangs}
-#endif
-Name: compact; Description: {cm:CompactInstallation}
-Name: custom; Description: {cm:CustomInstallation}; Flags: iscustom
+Name: full; Description: "full"
+Name: compact; Description: "compact"
+Name: custom; Description: "custom"; Flags: iscustom
 
 [Components]
 Name: main; Description: {cm:ApplicationComponent}; \
-  Types: {#FullLangs} full custom compact
+  Types: full custom compact; Flags: fixed
 Name: shellext; Description: {cm:ShellExtComponent}; \
-  Types: {#FullLangs} compact full
+  Types: full compact
 Name: pageant; Description: {cm:PageantComponent}; \
-  Types: {#FullLangs} full
+  Types: full
 Name: puttygen; Description: {cm:PuTTYgenComponent}; \
-  Types: {#FullLangs} full
+  Types: full
 #ifdef INTL
 Name: transl; Description: {cm:TranslationsComponent}; \
-  Types: full fulllangs
+  Types: full
 #endif
 
 [Tasks]
@@ -137,30 +147,16 @@ Name: urlhandler; Description: {cm:RegisterAsUrlHandler}
 Name: searchpath; Description: {cm:AddSearchPath}; \
   Flags: unchecked
 
-[INI]
-Filename: "{app}\{cm:SupportForum}.url"; Section: "InternetShortcut"; \
-  Key: "URL"; String: "{#WebForum}"
-Filename: "{app}\{cm:DocumentationPage}.url"; Section: "InternetShortcut"; \
-  Key: "URL"; String: "{#WebDocumentation}"
-Filename: "{app}\WinSCP.url"; Section: "InternetShortcut"; \
-  Key: "URL"; String: "{#WebRoot}"
-Filename: "{app}\PuTTY\PuTTY.url"; Section: "InternetShortcut"; \
-  Key: "URL"; String: "{#WebPuTTY}"; \
-  Components: pageant puttygen
-
 [Icons]
 ; This is created always (unless user checks Don't create a Start menu folder,
 ; Setup\AllowNoIcons=yes)
-Name: "{group}\WinSCP"; Filename: "{app}\WinSCP3.exe"; Components: main; \
+Name: "{group}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
   Comment: "{cm:ProgramComment}"
-Name: "{group}\{cm:WebSite}"; Filename: "{app}\WinSCP.url"; Components: main; \
-  Comment: "{#WebRoot}"
+Name: "{group}\{cm:WebSite}"; Filename: "{#WebRoot}"; Components: main
 Name: "{group}\{cm:SupportForum}"; \
-  Filename: "{app}\{cm:SupportForum}.url"; Components: main; \
-  Comment: "{#WebForum}"
+  Filename: "{#WebForum}"; Components: main
 Name: "{group}\{cm:DocumentationPage}"; \
-  Filename: "{app}\{cm:DocumentationPage}.url"; Components: main; \
-  Comment: "{#WebDocumentation}"
+  Filename: "{#WebDocumentation}"; Components: main
 ; This is created when pageant/puttygen component is selected (unless user
 ; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes).
 Name: "{group}\{cm:RSAKeyTools}\PuTTYgen"; \
@@ -174,51 +170,64 @@ Name: "{group}\{cm:RSAKeyTools}\{cm:PageantManual}"; \
   Filename: "winhlp32.exe"; Parameters: "-ipageant.general {app}\PuTTY\putty.hlp"; \
   Components: pageant
 Name: "{group}\{cm:RSAKeyTools}\{cm:PuttyWebSite}"; \
-  Filename: "{app}\PuTTY\PuTTY.url"; Components: pageant puttygen; \
-  Comment: "{#WebPuTTY}"
+  Filename: "{#WebPuTTY}"; Components: pageant puttygen
 ; This is created when desktopicon task is selected
-Name: "{userdesktop}\WinSCP3"; Filename: "{app}\WinSCP3.exe"; \
+Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   Tasks: desktopicon\user
-Name: "{commondesktop}\WinSCP3"; Filename: "{app}\WinSCP3.exe"; \
+Name: "{commondesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   Tasks: desktopicon\common
 ; This is created when quicklaunchicon task is selected
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP3"; \
-  Filename: "{app}\WinSCP3.exe"; Tasks: quicklaunchicon
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP"; \
+  Filename: "{app}\WinSCP.exe"; Tasks: quicklaunchicon
 ; This is created when sendtohook task is selected
-Name: "{sendto}\{cm:SendToHook}"; Filename: "{app}\WinSCP3.exe"; \
+Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
 
 [InstallDelete]
 Type: files; Name: "{sendto}\WinSCP3 (upload using SCP).lnk"
-Type: files; Name: "{sendto}\{cm:SendToHook}.lnk"
 Type: files; Name: "{group}\{cm:RSAKeyTools}\{cm:KeysManual}.lnk"
+Type: files; Name: "{app}\{cm:SupportForum}.url"
+Type: files; Name: "{app}\{cm:DocumentationPage}.url"
+Type: files; Name: "{app}\WinSCP.url"
+Type: files; Name: "{app}\PuTTY\PuTTY.url"
+; Remove links to winscp3
+Type: files; Name: "{app}\WinSCP3.exe"
+Type: files; Name: "{app}\WinSCP3.com"
+Type: files; Name: "{group}\WinSCP3.lnk"
+Type: files; Name: "{userdesktop}\WinSCP3.lnk"
+Type: files; Name: "{commondesktop}\WinSCP3.lnk"
+Type: files; Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP3.lnk"
+Type: files; Name: "{sendto}\{cm:SendToHook}.lnk"
 
 [Run]
-Filename: "{app}\WinSCP3.exe"; Description: "{cm:Launch}"; \
+Filename: "{app}\WinSCP.exe"; Description: "{cm:Launch}"; \
   Flags: nowait postinstall skipifsilent
 ; This is called when urlhandler task is selected
-Filename: "{app}\WinSCP3.exe"; Parameters: "/RegisterAsUrlHandler"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterAsUrlHandler"; \
   StatusMsg: {cm:RegisteringAsUrlHandler}; Tasks: urlhandler
-Filename: "{app}\WinSCP3.exe"; Parameters: "/AddSearchPath"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
-Filename: "{app}\WinSCP3.exe"; Parameters: "/InvalidDefaultTranslation"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "/InvalidDefaultTranslation"; \
   StatusMsg: {cm:RemovingInvalidDefaultTranslation}
 
 [UninstallDelete]
-; These additional files are created by installer
-Type: files; Name: "{app}\WinSCP.url"
-Type: files; Name: "{app}\{cm:SupportForum}.url"
-Type: files; Name: "{app}\{cm:DocumentationPage}.url"
-Type: files; Name: "{app}\PuTTY\PuTTY.url"; Components: pageant puttygen
 ; These additional files are created by application
+Type: files; Name: "{app}\WinSCP.ini"
+Type: files; Name: "{app}\WinSCP.cgl"
+; WinSCP3 may remain from previous version, note that we do not delete it on
+; upgrade, only duplicate into WinSCP.ini, see [Files]
 Type: files; Name: "{app}\WinSCP3.ini"
 
 [Files]
 Source: "{#MainFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
-Source: "{#ConsoleFileSource}"; DestName: "WinSCP3.com"; DestDir: "{app}"; \
+; If WinSCP3.ini already exists on target system, copy it into WinSCP.ini
+; (if WinSCP.ini does not exist yet)
+Source: "{app}\WinSCP3.ini"; DestName: "WinSCP.ini"; DestDir: "{app}"; \
+  Components: main; Flags: ignoreversion external skipifsourcedoesntexist onlyifdoesntexist
+Source: "{#ConsoleFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
-Source: "licence"; DestName: "licence"; DestDir: "{app}"; \
+Source: "licence"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
@@ -269,19 +278,19 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface\Updates"; \
 #ifdef INTL
 
 [Components]
-Name: transl\eng; Description: "English"; Types: fulllangs full custom compact; \
+Name: transl\eng; Description: {#EnglishLang}; Types: full custom compact; \
   Flags: fixed
 
   #sub EmitLang
 
 [Components]
 Name: transl\{#Languages[LangI*3]}; Description: {#Languages[LangI*3+1]}; \
-  Types: fulllangs full compact custom; Check: IsLang('{#Languages[LangI*3]}')
+  Types: full compact custom; Check: IsLang('{#Languages[LangI*3]}')
 Name: transl\{#Languages[LangI*3]}; Description: {#Languages[LangI*3+1]}; \
-  Types: fulllangs; Check: not IsLang('{#Languages[LangI*3]}')
+  Check: not IsLang('{#Languages[LangI*3]}')
 
 [Files]
-Source: "{#TranslationDir}\WinSCP3.{#Languages[LangI*3]}"; DestDir: "{app}"; \
+Source: "{#TranslationDirRel}\WinSCP.{#Languages[LangI*3]}"; DestDir: "{app}"; \
   Components: transl\{#Languages[LangI*3]}; Flags: ignoreversion
 
 [Registry]
@@ -297,17 +306,25 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
 #endif /* ifdef INTL */
 
 [UninstallRun]
-Filename: "{app}\WinSCP3.exe"; Parameters: "/UninstallCleanup"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "/UninstallCleanup"; \
   RunOnceId: "UninstallCleanup"
-Filename: "{app}\WinSCP3.exe"; Parameters: "/RemoveSearchPath"; \
+Filename: "{app}\WinSCP.exe"; Parameters: "/RemoveSearchPath"; \
   RunOnceId: "RemoveSearchPath"
 
 [Code]
+const
+  wpSetupType = 100;
+  wpInterface = 101;
+
 var
+  TypicalTypeButton: TRadioButton;
+  CustomTypeButton: TRadioButton;
   CommanderRadioButton: TRadioButton;
   ExplorerRadioButton: TRadioButton;
+  AdditionalOptionsCaption: TLabel;
   AdvancedTabsCheckbox: TCheckbox;
   AreUpdatesEnabled: Boolean;
+  Upgrade: Boolean;
 
 function IsLang(Lang: String): Boolean;
 begin
@@ -327,6 +344,20 @@ begin
     else Result := False;
   end;
 end;
+
+#ifdef INTL
+function LanguageName(Lang: String): String;
+begin
+  #sub EmitLang2
+  if Lang = '{#Languages[LangI*3]}' then Result := '{#Languages[LangI*3+1]}'
+    else
+  #endsub /* sub EmitLang2 */
+
+  #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang2
+
+  Result := 'unknown';
+end;
+#endif /* ifdef INTL */
 
 procedure OpenHelp;
 var
@@ -350,26 +381,26 @@ begin
   end;
 end;
 
-procedure InterfaceCaptionClick(Sender: TObject);
+procedure CaptionClick(Sender: TObject);
 begin
   WizardForm.ActiveControl := TLabel(Sender).FocusControl;
 end;
 
-procedure ComponentsListClickCheck(Sender: TObject);
-begin
-  if not WizardForm.ComponentsList.Checked[0] then
-    WizardForm.ComponentsList.Checked[0] := True;
-end;
-
-procedure InitializeWizard();
+procedure InitializeWizard;
 var
   UserInterface: Cardinal;
   AdvancedTabs: Cardinal;
   UpdatesPeriod: Cardinal;
   InterfacePage: TWizardPage;
-  Caption, Caption2: TLabel;
+  SetupTypePage: TWizardPage;
+  Caption: TLabel;
   HelpButton: TButton;
+  S: String;
 begin
+  Upgrade :=
+    RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
+    RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S)
+
   WizardForm.KeyPreview := True;
   WizardForm.OnKeyDown := @FormKeyDown;
 
@@ -384,9 +415,14 @@ begin
     WizardForm.LicenseNotAcceptedRadio.Height -
     WizardForm.LicenseMemo.Top - 5;
 
-  // prevent the main component to be unchecked
-  WizardForm.ComponentsList.OnClickCheck := @ComponentsListClickCheck;
+  // hide installation types combo
+  WizardForm.TypesCombo.Visible := False;
+  WizardForm.ComponentsList.Height :=
+    WizardForm.ComponentsList.Top + WizardForm.ComponentsList.Height -
+    WizardForm.TypesCombo.Top;
+  WizardForm.ComponentsList.Top := WizardForm.TypesCombo.Top;
 
+  // add help button
   HelpButton := TButton.Create(WizardForm);
   HelpButton.Parent := WizardForm;
   HelpButton.Left :=
@@ -397,6 +433,96 @@ begin
   HelpButton.Height := WizardForm.CancelButton.Height;
   HelpButton.Caption := ExpandConstant('{cm:HelpButton}');
   HelpButton.OnClick := @HelpButtonClick;
+
+  // installation type page
+
+  SetupTypePage := CreateCustomPage(wpLicense,
+    ExpandConstant('{cm:SetupTypeTitle}'),
+    ExpandConstant('{cm:SetupTypePrompt}'));
+
+  TypicalTypeButton := TRadioButton.Create(SetupTypePage);
+  if not Upgrade then
+    S := ExpandConstant('{cm:TypicalType}')
+  else
+    S := ExpandConstant('{cm:TypicalUpgradeType}');
+  TypicalTypeButton.Caption :=
+    FmtMessage(ExpandConstant('{cm:Recommended}'), [S]);
+  // check typical install, if typical install was installed before or
+  // when version without setup type support was installed with
+  // "full" installation or when there were no installation before
+  // ("full" installation is default)
+  TypicalTypeButton.Checked :=
+    ((GetPreviousData('{#SetupTypeData}', '') = 'typical')) or
+    ((GetPreviousData('{#SetupTypeData}', '') = '') and
+     (WizardSetupType(False) = 'full'));
+  TypicalTypeButton.Left := ScaleX(4);
+  TypicalTypeButton.Width := SetupTypePage.SurfaceWidth -
+    TypicalTypeButton.Left;
+  TypicalTypeButton.Parent := SetupTypePage.Surface;
+
+  Caption := TLabel.Create(SetupTypePage);
+  Caption.WordWrap := True;
+  if not Upgrade then
+  begin
+#ifdef INTL
+    if ActiveLanguage = '{#DefaultLang}' then
+      S := ExpandConstant('{cm:TypicalType2Eng}')
+    else
+      S := FmtMessage(ExpandConstant('{cm:TypicalType2Intl}'), [LanguageName(ActiveLanguage)]);
+#else
+    S := ExpandConstant('{cm:TypicalType2}');
+#endif
+    Caption.Caption :=
+        ExpandConstant('{cm:TypicalType1}') + #13#10 +
+        S + #13#10 +
+        ExpandConstant('{cm:TypicalType3}');
+  end
+    else
+  begin
+    Caption.Caption :=
+      ExpandConstant('{cm:TypicalUpgradeType1}');
+  end;
+  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
+  Caption.Top := TypicalTypeButton.Top + TypicalTypeButton.Height + ScaleY(6);
+  Caption.Parent := SetupTypePage.Surface;
+  Caption.FocusControl := TypicalTypeButton;
+  Caption.OnClick := @CaptionClick;
+
+  CustomTypeButton := TRadioButton.Create(SetupTypePage);
+  if not Upgrade then
+    CustomTypeButton.Caption := ExpandConstant('{cm:CustomType}')
+  else
+    CustomTypeButton.Caption := ExpandConstant('{cm:CustomUpgradeType}');
+  CustomTypeButton.Checked := (not TypicalTypeButton.Checked);
+  CustomTypeButton.Left := ScaleX(4);
+  CustomTypeButton.Width := SetupTypePage.SurfaceWidth -
+    CustomTypeButton.Left;
+  CustomTypeButton.Top := Caption.Top + Caption.Height + ScaleY(10);
+  CustomTypeButton.Parent := SetupTypePage.Surface;
+
+  Caption := TLabel.Create(SetupTypePage);
+  Caption.WordWrap := True;
+  if not Upgrade then
+  begin
+    Caption.Caption :=
+      ExpandConstant('{cm:CustomType1}');
+  end
+    else
+  begin
+    Caption.Caption :=
+      ExpandConstant('{cm:CustomUpgradeType1}') + #13#10 +
+      ExpandConstant('{cm:CustomUpgradeType2}');
+  end;
+  Caption.Left := ScaleX(4) + ScaleX(20);
+  Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
+  Caption.Top := CustomTypeButton.Top + CustomTypeButton.Height +
+    ScaleY(6);
+  Caption.Parent := SetupTypePage.Surface;
+  Caption.FocusControl := CustomTypeButton;
+  Caption.OnClick := @CaptionClick;
+
+  // interface page
 
   InterfacePage := CreateCustomPage(wpSelectTasks,
     ExpandConstant('{cm:UserSettingsTitle}'),
@@ -440,7 +566,7 @@ begin
     ScaleY(6);
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := CommanderRadioButton;
-  Caption.OnClick := @InterfaceCaptionClick;
+  Caption.OnClick := @CaptionClick;
 
   ExplorerRadioButton := TRadioButton.Create(InterfacePage);
   ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterface}');
@@ -448,7 +574,7 @@ begin
   ExplorerRadioButton.Left := ScaleX(4);
   ExplorerRadioButton.Width := InterfacePage.SurfaceWidth -
     ExplorerRadioButton.Left;
-  ExplorerRadioButton.Top := Caption.Top + Caption.Height + ScaleY(6);
+  ExplorerRadioButton.Top := Caption.Top + Caption.Height + ScaleY(10);
   ExplorerRadioButton.Parent := InterfacePage.Surface;
 
   Caption := TLabel.Create(InterfacePage);
@@ -463,13 +589,13 @@ begin
     ScaleY(6);
   Caption.Parent := InterfacePage.Surface;
   Caption.FocusControl := ExplorerRadioButton;
-  Caption.OnClick := @InterfaceCaptionClick;
+  Caption.OnClick := @CaptionClick;
 
-  Caption2 := TLabel.Create(InterfacePage);
-  Caption2.Caption := ExpandConstant('{cm:AdditionalOptions}');
-  Caption2.Width := InterfacePage.SurfaceWidth;
-  Caption2.Top := Caption.Top + Caption.Height + ScaleY(10);
-  Caption2.Parent := InterfacePage.Surface;
+  AdditionalOptionsCaption := TLabel.Create(InterfacePage);
+  AdditionalOptionsCaption.Caption := ExpandConstant('{cm:AdditionalOptions}');
+  AdditionalOptionsCaption.Width := InterfacePage.SurfaceWidth;
+  AdditionalOptionsCaption.Top := Caption.Top + Caption.Height + ScaleY(10);
+  AdditionalOptionsCaption.Parent := InterfacePage.Surface;
 
   AdvancedTabsCheckbox := TCheckbox.Create(InterfacePage);
   AdvancedTabsCheckbox.Caption := ExpandConstant('{cm:AdvancedLoginOptions}');
@@ -477,8 +603,39 @@ begin
   AdvancedTabsCheckbox.Left := ScaleX(4);
   AdvancedTabsCheckbox.Width := InterfacePage.SurfaceWidth -
     AdvancedTabsCheckbox.Left;
-  AdvancedTabsCheckbox.Top := Caption2.Top + Caption2.Height + ScaleY(6);
+  AdvancedTabsCheckbox.Top :=
+    AdditionalOptionsCaption.Top + AdditionalOptionsCaption.Height + ScaleY(6);
   AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
+end;
+
+procedure RegisterPreviousData(PreviousDataKey: Integer);
+var
+  S: String;
+begin
+  if TypicalTypeButton.Checked then S := 'typical'
+    else S := 'custom';
+
+  SetPreviousData(PreviousDataKey, '{#SetupTypeData}', S);
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = wpInterface then
+  begin
+    AdditionalOptionsCaption.Visible := not TypicalTypeButton.Checked;
+    AdvancedTabsCheckbox.Visible := not TypicalTypeButton.Checked;
+  end;
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  { Hide most pages during typical installation }
+  Result :=
+    TypicalTypeButton.Checked and
+    ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
+     (PageID = wpSelectProgramGroup) or (PageID = wpSelectTasks) or
+     { Hide Interface page for upgrades only, show for fresch installs }
+     ((PageID = wpInterface) and Upgrade));
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
@@ -491,7 +648,18 @@ begin
 
   S := S + MemoDirInfo + NewLine + NewLine;
 
-  S := S + MemoTypeInfo + NewLine + NewLine;
+  if not Upgrade then
+  begin
+    if TypicalTypeButton.Checked then S2 := ExpandConstant('{cm:TypicalType}')
+      else S2 := ExpandConstant('{cm:CustomType}');
+  end
+    else
+  begin
+    if TypicalTypeButton.Checked then S2 := ExpandConstant('{cm:TypicalUpgradeType}')
+      else S2 := ExpandConstant('{cm:CustomUpgradeType}');
+  end;
+  StringChange(S2, '&', '');
+  S := S + SetupMessage(msgReadyMemoType) + NewLine + Space + S2 + NewLine + NewLine;
 
   S := S + MemoComponentsInfo + NewLine + NewLine;
 
@@ -517,4 +685,13 @@ begin
   end;
 
   Result := S;
+end;
+
+function InitializeUninstall: Boolean;
+begin
+  // let application know that we are running silent uninstall,
+  // this turns UninstallCleanup to noop
+  if UninstallSilent then
+    CreateMutex('WinSCPSilentUninstall');
+  Result := True;
 end;

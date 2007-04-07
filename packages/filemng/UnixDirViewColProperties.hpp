@@ -10,8 +10,8 @@
 #pragma delphiheader begin
 #pragma option push -w-
 #pragma option push -Vx
-#include <IEListView.hpp>	// Pascal unit
 #include <ListViewColProperties.hpp>	// Pascal unit
+#include <IEListView.hpp>	// Pascal unit
 #include <DirViewColProperties.hpp>	// Pascal unit
 #include <ComCtrls.hpp>	// Pascal unit
 #include <Classes.hpp>	// Pascal unit

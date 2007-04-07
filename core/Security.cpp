@@ -73,4 +73,3 @@ AnsiString DecryptPassword(AnsiString Password, AnsiString Key, Integer /* Algor
   return Result;
 }
 //---------------------------------------------------------------------------
-

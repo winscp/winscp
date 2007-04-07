@@ -16,9 +16,8 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="bcb2kaxserver.lib bcbie.lib bcbsmp.lib dclocx.lib"/>
-    <SPARELIBS value="bcb2kaxserver.lib bcbie.lib bcbsmp.lib dclocx.lib
-      rtl.lib vcl.lib"/>
+    <LIBRARIES value=""/>
+    <SPARELIBS value="rtl.lib vcl.lib"/>
     <PACKAGES value="rtl.bpi vcl.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;&quot;dragndrop&quot;"/>
@@ -37,10 +36,10 @@
   </MACROS>
   <OPTIONS>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
-    <LFLAGS value="-I -D&quot;dragndrop&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
+    <LFLAGS value="-D&quot;dragndrop&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

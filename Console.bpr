@@ -11,7 +11,7 @@
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
     <SPARELIBS value=""/>
-    <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi"/>
+    <PACKAGES value="rtl.bpi"/>
     <PATHCPP value=".;console"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
@@ -29,10 +29,10 @@
   </MACROS>
   <OPTIONS>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -tWC -tWM- -c"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zd"/>
-    <LFLAGS value="-I -D&quot;&quot; -ap -Tpe -x -Gn"/>
+    <LFLAGS value="-D&quot;&quot; -ap -Tpe -x -Gn"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -53,10 +53,10 @@
 [Version Info]
 IncludeVerInfo=1
 AutoIncBuild=1
-MajorVer=1
-MinorVer=4
+MajorVer=2
+MinorVer=0
 Release=0
-Build=67
+Build=69
 Debug=0
 PreRelease=0
 Special=0
@@ -68,13 +68,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Console interface for WinSCP
-FileVersion=1.4.0.67
+FileVersion=2.0.0.69
 InternalName=console
-LegalCopyright=(c) 2004-2006 Martin Prikryl
+LegalCopyright=(c) 2004-2007 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp3.com
+OriginalFilename=winscp.com
 ProductName=WinSCP
-ProductVersion=3.8.2.0
+ProductVersion=4.0.0.0
 Comments=
 WWW=http://winscp.net/
 

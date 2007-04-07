@@ -48,7 +48,7 @@ object ConsoleDialog: TConsoleDialog
     Height = 13
     Anchors = [akLeft, akTop, akRight]
     AutoSize = False
-    Caption = 'Warning: Do NOT execute commands that require user-input'
+    Caption = 'Do not execute commands that require user-input or data transfer'
   end
   object DirectoryLabel: TPathLabel
     Left = 120
@@ -74,6 +74,7 @@ object ConsoleDialog: TConsoleDialog
     ScrollBars = ssBoth
     TabOrder = 4
     WantReturns = False
+    OnContextPopup = OutputMemoContextPopup
   end
   object CancelBtn: TButton
     Left = 472

@@ -1,5 +1,5 @@
 To create 'winscpxxxsetup.exe' install package, follow these steps:
-1) build 'WinSCP3.exe', 'Console.com' and 'DragExt.dll' (see ..\readme)
+1) build 'WinSCP.exe', 'Console.com' and 'DragExt.dll' (see ..\readme)
 2) install 'My Inno Setup Extensions'
    http://www.wintax.nl/isx
    Copyright (c) 2000-2005 Martijn Laan

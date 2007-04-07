@@ -663,7 +663,7 @@ var
 begin
   Result := TTBControlItem.CreateControlItem(Owner, Ctl);
   if (csDesigning in ComponentState) and Assigned(Owner) then begin
-    { Needs a name for compatibility with form inheritance } 
+    { Needs a name for compatibility with form inheritance }
     I := 1;
     while True do begin
       S := Format('TBControlItem%d', [I]);
@@ -905,7 +905,7 @@ begin
         Hint := Item.Hint
       else
         Hint := '';
-        
+
       with TTBItemViewerAccess(FView.Find(Item)) do
       begin
         MouseMove(X - BoundsRect.Left, Y - BoundsRect.Top);

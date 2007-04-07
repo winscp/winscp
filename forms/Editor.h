@@ -78,6 +78,8 @@ __published:
   TAction *HelpAction;
   TTBXSeparatorItem *TBXSeparatorItem6;
   TTBXItem *TBXItem15;
+  TAction *ReloadAction;
+  TTBXItem *TBXItem16;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
@@ -93,6 +95,7 @@ __published:
 private:
   AnsiString FFileName;
   TNotifyEvent FOnFileChanged;
+  TNotifyEvent FOnFileReload;
   TNotifyEvent FOnWindowClose;
   TCustomForm * FParentForm;
   TFindDialog * FLastFindDialog;
@@ -110,6 +113,7 @@ public:
   void __fastcall ApplyConfiguration();
   __property AnsiString FileName = { read = FFileName, write = SetFileName };
   __property TNotifyEvent OnFileChanged = { read = FOnFileChanged, write = FOnFileChanged };
+  __property TNotifyEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
   __property TNotifyEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
   __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
   __property bool ShowWindowButton = { read = FShowWindowButton, write = SetShowWindowButton };
@@ -122,6 +126,7 @@ protected:
   void __fastcall StartFind(bool Find);
   void __fastcall UpdateControls();
   void __fastcall DoWindowClose();
+  void __fastcall Reload();
   virtual void __fastcall CreateParams(TCreateParams & Params);
 };
 //---------------------------------------------------------------------------

@@ -391,4 +391,3 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
   return TMessageForm::Create(Msg, MoreMessages, DlgType, Buttons,
     Aliases, AliasesCount, TimeoutResult, TimeoutButton);
 }
-

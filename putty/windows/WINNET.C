@@ -870,18 +870,16 @@ static DWORD try_connect(Actual_Socket sock)
 	a.sin_port = p_htons((short) sock->port);
     }
 
+#ifndef MPEXT
     /* Set up a select mechanism. This could be an AsyncSelect on a
      * window, or an EventSelect on an event object. */
-#ifdef MPEXT
-    errstr = do_select(sock->plug, s, 1);
-#else
     errstr = do_select(s, 1);
-#endif
     if (errstr) {
 	sock->error = errstr;
 	err = 1;
 	goto ret;
     }
+#endif
 
     if ((
 #ifndef NO_IPV6
@@ -911,6 +909,18 @@ static DWORD try_connect(Actual_Socket sock)
 	 */
 	sock->writable = 1;
     }
+
+#ifdef MPEXT
+    // MP: Calling EventSelect only after connect makes sure we receive FD_CLOSE.
+    /* Set up a select mechanism. This could be an AsyncSelect on a
+     * window, or an EventSelect on an event object. */
+    errstr = do_select(sock->plug, s, 1);
+    if (errstr) {
+	sock->error = errstr;
+	err = 1;
+	goto ret;
+    }
+#endif    
 
     add234(sktree, sock);
 

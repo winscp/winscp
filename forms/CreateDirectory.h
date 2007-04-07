@@ -10,7 +10,6 @@
 #include <vcl\Forms.hpp>
 #include <vcl\Controls.hpp>
 #include <vcl\Buttons.hpp>
-#include <XPThemes.hpp>
 #include <ExtCtrls.hpp>
 
 #include <Bookmarks.h>
@@ -28,7 +27,7 @@ __published:
   TButton *HelpButton;
   TMoreButton *MoreButton;
   TPanel *MorePanel;
-  TXPGroupBox *AttributesGroup;
+  TGroupBox *AttributesGroup;
   TRightsExtFrame *RightsFrame;
   TCheckBox *SetRightsCheck;
   TCheckBox *SaveSettingsCheck;

@@ -62,7 +62,7 @@ var
   procedure Log(const S: String);
   begin
     ConverterForm.MessageList.Items.Add(S);
-    ConverterForm.MessageList.TopIndex := ConverterForm.MessageList.Items.Count-1; 
+    ConverterForm.MessageList.TopIndex := ConverterForm.MessageList.Items.Count-1;
     ConverterForm.Update;
   end;
 

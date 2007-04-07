@@ -99,10 +99,9 @@
 #define WINHELP_CTX_ssh_auth_changeuser "ssh.auth.changeuser"
 #define WINHELP_CTX_ssh_auth_tis "ssh.auth.tis"
 #define WINHELP_CTX_ssh_auth_ki "ssh.auth.ki"
-#ifdef GSSAPI
-#	define WINHELP_CTX_ssh_auth_gssapi "ssh.auth.gssapi"
-#	define WINHELP_CTX_ssh_auth_gssapi_fwd_tgt "ssh.auth.gssapifwdtgt"
-#endif
+#define WINHELP_CTX_ssh_auth_gssapi "ssh.auth.gssapi"
+#define WINHELP_CTX_ssh_auth_gssapi_fwd_tgt "ssh.auth.gssapifwdtgt"
+#define WINHELP_CTX_ssh_auth_gssapi_realm "ssh.auth.gssapirealm"
 #define WINHELP_CTX_selection_buttons "selection.buttons"
 #define WINHELP_CTX_selection_shiftdrag "selection.shiftdrag"
 #define WINHELP_CTX_selection_rect "selection.rect"

@@ -20,8 +20,8 @@ interface
 // After installing, use TPngImageList (from PngComponents package) instead of
 // "classic" TImageList
 
-// Comment next string if you use Toolbar2000 version different from 2.1.6 
-{$DEFINE TB2K_VER216} 
+// Comment next string if you use Toolbar2000 version different from 2.1.6
+{$DEFINE TB2K_VER216}
 
 // Uncomment next string if you want to see highlighted icons
 //{$DEFINE HIGHLIGHTTOOLBARICONS}
@@ -38,7 +38,7 @@ type
     bisDisabledHot, bisSelectedHot, bisPopupParent);
   TMenuItemState = (misNormal, misDisabled, misHot, misDisabledHot);
   TWinFramePart = (wfpBorder, wfpCaption, wfpCaptionText);
-  
+
   TOffice2003Scheme = (osBlue, osMetallic, osGreen, osUnknown);
 
   TTBXOffice2003Theme = class(TTBXTheme)
@@ -60,10 +60,10 @@ type
     EmbeddedColor: TColor;
     EmbeddedFrameColor: TColor;
     EmbeddedDisabledColor: TColor;
-    
+
     PopupColor: TColor;
     PopupFrameColor: TColor;
-    
+
     DockPanelColor: TColor;
     WinFrameColors: array[TWinFramePart] of TColor;
     MenuItemColors: array[TMenuItemState, TItemPart] of TColor;
@@ -117,7 +117,7 @@ type
     procedure PaintStatusBar(Canvas: TCanvas; R: TRect; Part: Integer); override;
 
     property MDIAreaColor: TColor read FMDIAreaColor;
-    
+
     property OnSetupColorCache: TNotifyEvent read FOnSetupColorCache write FOnSetupColorCache;
   end;
 
@@ -592,14 +592,14 @@ begin
   if not ItemInfo.IsVertical then
   begin
     Inc(R2.Top, 4);
-    R2.Bottom := R2.Top + 5;  
+    R2.Bottom := R2.Top + 5;
     W := 8;
     H := 5;
   end
   else
   begin
     R2.Left := R2.Right - 9;
-    R2.Right := R2.Left + 5;   
+    R2.Right := R2.Left + 5;
     W := 5;
     H := 8;
   end;
@@ -835,7 +835,7 @@ begin
 
       if not IsDockPanel then Brush.Color := WinFrameColors[wfpBorder]
       else Brush.Color := WinFrameColors[wfpBorder];
-      
+
       SaveIndex := SaveDC(Canvas.Handle);
       Sz := WindowInfo.FloatingBorderSize;
       with R, Sz do ExcludeClipRect(Canvas.Handle, Left + X, Top + Y, Right - X, Bottom - Y);
@@ -1266,7 +1266,7 @@ begin
           FillRect(Rect(Left, Top + 1, Left + 1, Bottom - 1));
           FillRect(Rect(Right - 1, Top + 1, Right, Bottom - 1));
         end;
-        InflateRect(R, -1, -1);     
+        InflateRect(R, -1, -1);
         Brush.Color := ToolbarColor1;
         FillRect(R);
       end;
@@ -1306,7 +1306,7 @@ begin
         Inc(R2.Left);
         Inc(R2.Top);
       end;
-      
+
       if Horz then
       begin
         I := R2.Top + Sz div 2;
@@ -1479,7 +1479,7 @@ const
     ($A7D9D9, $DEF7F4, $91C6B7, $588060, $C0E7E5, $588060, $DEF7F4, $335E51,
      $FFFFFF, $9FD4C5, $7FB9A4, $DEDEDE, $EEF4F4, $5E8D75, $000000, $8D8D8D,
      $385D3F, $5E8674, $8CD5FF, $55ADFF, $4E91FE, $8ED3FF, $CCF4FF, $91D0FF,
-     $D5F0EC, $9FCEC2, $C2EEFF, $7BA097) 
+     $D5F0EC, $9FCEC2, $C2EEFF, $7BA097)
   );
   Office2003IrregularGradientValues: array[TOffice2003Scheme] of Integer = (8, 8, 25, 15);
 
@@ -1744,7 +1744,7 @@ begin
     IrregularGradientValue := Office2003IrregularGradientValues[Scheme];
 
     Undither(DockColor);
-    
+
     Undither(ToolbarColor1);
     Undither(ToolbarColor2);
     Undither(ToolbarFrameColor1);
@@ -1760,13 +1760,13 @@ begin
 
     Undither(PopupColor);
     Undither(PopupFrameColor);
-    
+
     Undither(DockPanelColor);
-    
+
     Undither(WinFrameColors[wfpBorder]);
     Undither(WinFrameColors[wfpCaption]);
     Undither(WinFrameColors[wfpCaptionText]);
-    
+
     Undither(BtnItemColors[bisNormal, ipText]);
     Undither(BtnItemColors[bisNormal, ipFrame]);
     Undither(BtnItemColors[bisDisabled, ipText]);
@@ -1783,7 +1783,7 @@ begin
     Undither(BtnItemColors[bisSelectedHot, ipFrame]);
     Undither(BtnItemColors[bisPopupParent, ipText]);
     Undither(BtnItemColors[bisPopupParent, ipFrame]);
-    
+
     Undither(BtnBodyColors[bisNormal, False]);
     Undither(BtnBodyColors[bisNormal, True]);
     Undither(BtnBodyColors[bisDisabled, False]);
@@ -1800,7 +1800,7 @@ begin
     Undither(BtnBodyColors[bisSelectedHot, True]);
     Undither(BtnBodyColors[bisPopupParent, False]);
     Undither(BtnBodyColors[bisPopupParent, True]);
-    
+
     Undither(MenuItemColors[misNormal, ipBody]);
     Undither(MenuItemColors[misNormal, ipText]);
     Undither(MenuItemColors[misNormal, ipFrame]);
@@ -1817,7 +1817,7 @@ begin
     Undither(StatusPanelFrameColor);
     Undither(FMDIAreaColor);
   end;
-  
+
   if Assigned(FOnSetupColorCache) then FOnSetupColorCache(Self);
 end;
 
@@ -2000,7 +2000,7 @@ procedure TTBXOffice2003Theme.PaintStatusBar(Canvas: TCanvas; R: TRect; Part: In
     Canvas.Brush.Color := DragHandleColor1;
     Canvas.FillRect(Rect(P.X - 3, P.Y - 3, P.X - 1, P.Y - 1));
   end;
-  
+
 begin
   case Part of
     SBP_BODY:
@@ -2013,11 +2013,11 @@ begin
     SBP_GRIPPER:
       begin
         Dec(R.Right);
-        Dec(R.Bottom);        
+        Dec(R.Bottom);
         DrawHandleElement(Point(R.Right, R.Bottom));
         DrawHandleElement(Point(R.Right, R.Bottom - 4));
         DrawHandleElement(Point(R.Right, R.Bottom - 8));
-        
+
         Dec(R.Right, 4);
         DrawHandleElement(Point(R.Right, R.Bottom));
         DrawHandleElement(Point(R.Right, R.Bottom - 4));

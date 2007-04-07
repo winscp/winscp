@@ -6,7 +6,7 @@
 
 #include <VCLCommon.h>
 #include <Common.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <TextsWin.h>
 
 #include "Log.h"

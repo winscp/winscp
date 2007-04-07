@@ -11,7 +11,6 @@
 #include "VCLCommon.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPThemes"
 #pragma link "CopyParams"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -216,4 +215,3 @@ void __fastcall TCopyParamPresetDialog::MaskEditExit(TObject * Sender)
   ValidateMaskEdit(dynamic_cast<TEdit*>(Sender));
 }
 //---------------------------------------------------------------------------
-

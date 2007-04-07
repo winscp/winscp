@@ -630,6 +630,8 @@ procedure DrawParentBackground(Control: TControl; DC: HDC; R: TRect);
 procedure AddToList(var List: TList; Item: Pointer);
 procedure RemoveFromList(var List: TList; Item: Pointer);
 
+function CreateTBXPopupMenu(Owner: TComponent): TTBXPopupMenu;
+
 implementation
 
 {$R tbx_glyphs.res}
@@ -3856,6 +3858,11 @@ begin
     (FixPlaySoundThreadHandle = 0) then
       FixPlaySoundThreadHandle := CreateThread(nil, $1000,
         @FixPlaySoundThreadFunc, nil, 0, ThreadId);
+end;
+
+function CreateTBXPopupMenu(Owner: TComponent): TTBXPopupMenu;
+begin
+  Result := TTBXPopupMenu.Create(Owner);
 end;
 
 initialization

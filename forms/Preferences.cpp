@@ -7,7 +7,7 @@
 
 #include "Preferences.h"
 
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Terminal.h>
 
 #include "VCLCommon.h"
@@ -21,7 +21,6 @@
 //---------------------------------------------------------------------
 #pragma link "GeneralSettings"
 #pragma link "LogSettings"
-#pragma link "XPThemes"
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
 #pragma link "IEComboBox"
@@ -161,6 +160,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
 
   BeepOnFinishAfterEdit->AsInteger =
     static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * (24*60*60);
+  BOOLPROP(BalloonNotifications);
 
   CompareByTimeCheck->Checked = WinConfiguration->ScpCommander.CompareByTime;
   CompareBySizeCheck->Checked = WinConfiguration->ScpCommander.CompareBySize;
@@ -201,7 +201,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   ShowFullAddressCheck->Checked =
     WinConfiguration->ScpExplorer.ShowFullAddress;
   RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
-  IniFileStorageButton->Checked = (Configuration->Storage == stIniFile);
+  IniFileStorageButton2->Checked = (Configuration->Storage == stIniFile);
 
   RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
 
@@ -276,6 +276,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
   {
     PathInCaptionNoneButton->Checked = true;
   }
+  BOOLPROP(MinimizeToTray);
 
   // panels
   DoubleClickActionCombo->ItemIndex = WinConfiguration->DoubleClickAction;
@@ -366,6 +367,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     GUIConfiguration->BeepOnFinishAfter =
       static_cast<double>(BeepOnFinishAfterEdit->Value / (24*60*60));
+    BOOLPROP(BalloonNotifications);
 
     WinConfiguration->ScpCommander.CompareByTime = CompareByTimeCheck->Checked;
     WinConfiguration->ScpCommander.CompareBySize = CompareBySizeCheck->Checked;
@@ -468,6 +470,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     {
       WinConfiguration->PathInCaption = picNone;
     }
+    BOOLPROP(MinimizeToTray);
 
     // panels
     WinConfiguration->DoubleClickAction = (TDoubleClickAction)DoubleClickActionCombo->ItemIndex;
@@ -567,6 +570,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
 {
   EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
   EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
+  EnableControl(BalloonNotificationsCheck, TTrayIcon::SupportsBalloons());
+
   EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
   EnableControl(ResumeThresholdUnitLabel, ResumeThresholdEdit->Enabled);
   EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
@@ -606,9 +611,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
     DDAllowMoveInitCheck->Checked);
   EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
     TemporaryDirectoryCleanupCheck->Checked);
-  IniFileStorageButton->Caption =
-    AnsiReplaceStr(IniFileStorageButton->Caption, "winscp3.ini",
-      ExtractFileName(Configuration->IniFileStorageName));
+  IniFileStorageButton2->Caption =
+    AnsiReplaceStr(IniFileStorageButton2->Caption, "winscp.ini",
+      ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName)));
 
   EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
   bool EditorSelected = (EditorListView->Selected != NULL);
@@ -826,7 +831,7 @@ void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
   }
 
   if (DoCustomCommandDialog(Description, Command, Params, FCustomCommands,
-        (Edit ? ccmEdit : ccmAdd), NULL))
+        (Edit ? ccmEdit : ccmAdd), 0, NULL))
   {
     int Index = CustomCommandsView->ItemIndex;
     AnsiString Record = FORMAT("%s=%s", (Description, Command));
@@ -1222,6 +1227,19 @@ void __fastcall TPreferencesDialog::CMDialogKey(TWMKeyDown & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::WMHelp(TWMHelp & Message)
+{
+  assert(Message.HelpInfo != NULL);
+
+  if (Message.HelpInfo->iContextType == HELPINFO_WINDOW)
+  {
+    // invoke help for active page (not for whole form), regardless of focus
+    // (e.g. even if focus is on control outside pagecontrol)
+    Message.HelpInfo->hItemHandle = PageControl->ActivePage->Handle;
+  }
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::Dispatch(void *Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
@@ -1229,6 +1247,10 @@ void __fastcall TPreferencesDialog::Dispatch(void *Message)
   if (M->Msg == CM_DIALOGKEY)
   {
     CMDialogKey(*((TWMKeyDown *)Message));
+  }
+  else if (M->Msg == WM_HELP)
+  {
+    WMHelp(*((TWMHelp *)Message));
   }
   else
   {
@@ -1302,7 +1324,7 @@ void __fastcall TPreferencesDialog::CopyParamListViewInfoTip(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)
 {
-  FormHelp(this, PageControl->ActivePage);
+  FormHelp(this);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PuttyPathBrowseButtonClick(
@@ -1318,4 +1340,50 @@ void __fastcall TPreferencesDialog::PuttyPathResetButtonClick(
   PuttyPathEdit->Text = WinConfiguration->DefaultPuttyPath;
 }
 //---------------------------------------------------------------------------
-
+void __fastcall TPreferencesDialog::ExportButtonClick(TObject * /*Sender*/)
+{
+  TSaveDialog * Dialog = new TSaveDialog(Application);
+  try
+  {
+    Dialog->DefaultExt = "ini";
+    Dialog->Filter = LoadStr(EXPORT_CONF_FILTER);
+    Dialog->Title = LoadStr(EXPORT_CONF_TITLE);
+    AnsiString PersonalDirectory;
+    ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalDirectory);
+    Dialog->FileName = IncludeTrailingBackslash(PersonalDirectory) +
+      ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName));
+    Dialog->Options = Dialog->Options << ofOverwritePrompt << ofPathMustExist <<
+      ofNoReadOnlyReturn;
+    if (Dialog->Execute())
+    {
+      Configuration->Export(Dialog->FileName);
+    }
+  }
+  __finally
+  {
+    delete Dialog;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PathEditBeforeDialog(
+  TObject * /*Sender*/, AnsiString & Name, bool & /*Action*/)
+{
+  FBeforeDialogPath = Name;
+  Name = ExpandEnvironmentVariables(Name);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::PathEditAfterDialog(
+  TObject * /*Sender*/, AnsiString & Name, bool & /*Action*/)
+{
+  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
+  {
+    Name = FBeforeDialogPath;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::NavigationTreeCollapsing(
+  TObject * /*Sender*/, TTreeNode * /*Node*/, bool & AllowCollapse)
+{
+  AllowCollapse = false;
+}
+//---------------------------------------------------------------------------

@@ -3,7 +3,7 @@ unit DragDropURL;
   Description
   ===========
     TDragDropURL is a component for simple OLE drag-and-drop operations
-    with URLs. The component is a child-class from TDragDrop. 
+    with URLs. The component is a child-class from TDragDrop.
 
 
   Disclaimer
@@ -83,7 +83,7 @@ type
   protected
      function CreateDataObject:TDataObject; override;
   public
-     constructor Create(AOwner: TComponent); override; 
+     constructor Create(AOwner: TComponent); override;
      destructor Destroy; override;
      property URL: String read FURL write FURL;
      property ScrapFileName: string read FScrapFileName write FScrapFileName;
@@ -250,7 +250,7 @@ begin
 end;
 
 procedure TDropTargetURL.RenderDropped(DataObj: IDataObject; grfKeyState: Longint;
-   pt: TPoint; var dwEffect: longint); 
+   pt: TPoint; var dwEffect: longint);
 var FE: TFormatEtc;
     SM: TStgMedium;
     DataPtr: pchar;

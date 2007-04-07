@@ -97,6 +97,5 @@ void __fastcall TNamedObjectList::SetCount(int value)
 //---------------------------------------------------------------------------
 int __fastcall TNamedObjectList::GetCount()
 {
-  return TObjectList::Count - HiddenCount;  
+  return TObjectList::Count - HiddenCount;
 }
-

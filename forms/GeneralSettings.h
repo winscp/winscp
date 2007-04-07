@@ -8,12 +8,11 @@
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
 #include <Graphics.hpp>
-#include <XPThemes.hpp>
 //---------------------------------------------------------------------------
 class TGeneralSettingsFrame : public TFrame
 {
 __published:
-  TXPGroupBox *InterfaceGroup;
+  TGroupBox *InterfaceGroup;
   TLabel *CommanderDescriptionLabel2;
   TLabel *ExplorerDescriptionLabel;
   TImage *CommanderInterfacePicture;

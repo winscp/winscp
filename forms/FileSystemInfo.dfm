@@ -6,7 +6,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Server and protocol information'
-  ClientHeight = 357
+  ClientHeight = 370
   ClientWidth = 371
   Color = clBtnFace
   ParentFont = True
@@ -15,12 +15,12 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   OnShow = FormShow
   DesignSize = (
     371
-    357)
+    370)
   PixelsPerInch = 96
   TextHeight = 13
   object CloseButton: TButton
     Left = 204
-    Top = 323
+    Top = 336
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -32,7 +32,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   end
   object HelpButton: TButton
     Left = 287
-    Top = 323
+    Top = 336
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -44,26 +44,26 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
     Left = 0
     Top = 0
     Width = 371
-    Height = 311
-    ActivePage = SshSheet
+    Height = 324
+    ActivePage = ProtocolSheet
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabIndex = 0
     TabOrder = 0
     OnChange = PageControlChange
-    object SshSheet: TTabSheet
-      Caption = 'SSH'
+    object ProtocolSheet: TTabSheet
+      Caption = 'Protocol'
       DesignSize = (
         363
-        283)
-      object HostKeyGroup: TXPGroupBox
+        296)
+      object HostKeyGroup: TGroupBox
         Left = 6
-        Top = 161
+        Top = 174
         Width = 351
         Height = 41
         Anchors = [akLeft, akRight, akBottom]
         Caption = 'Server host key fingerprint'
-        TabOrder = 0
+        TabOrder = 1
         DesignSize = (
           351
           41)
@@ -85,7 +85,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Left = 6
         Top = 8
         Width = 351
-        Height = 146
+        Height = 159
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -105,24 +105,25 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         ReadOnly = True
         RowSelect = True
         PopupMenu = ListViewMenu
-        TabOrder = 1
+        TabOrder = 0
         ViewStyle = vsReport
+        OnContextPopup = ControlContextPopup
       end
     end
-    object ProtocolSheet: TTabSheet
-      Caption = 'Protocol'
+    object CapabilitiesSheet: TTabSheet
+      Caption = 'Capabilities'
       ImageIndex = 1
       DesignSize = (
         363
-        283)
-      object InfoGroup: TXPGroupBox
+        296)
+      object InfoGroup: TGroupBox
         Left = 6
-        Top = 161
+        Top = 174
         Width = 351
         Height = 114
         Anchors = [akLeft, akRight, akBottom]
-        Caption = 'Additional protocol information'
-        TabOrder = 0
+        Caption = 'Additional information'
+        TabOrder = 1
         DesignSize = (
           351
           114)
@@ -150,7 +151,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Left = 6
         Top = 8
         Width = 351
-        Height = 146
+        Height = 159
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -170,8 +171,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         ReadOnly = True
         RowSelect = True
         PopupMenu = ListViewMenu
-        TabOrder = 1
+        TabOrder = 0
         ViewStyle = vsReport
+        OnContextPopup = ControlContextPopup
       end
     end
     object SpaceAvailableSheet: TTabSheet
@@ -179,7 +181,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       ImageIndex = 2
       DesignSize = (
         363
-        283)
+        296)
       object Label1: TLabel
         Left = 13
         Top = 13
@@ -192,7 +194,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Left = 6
         Top = 40
         Width = 351
-        Height = 113
+        Height = 127
         Anchors = [akLeft, akTop, akRight, akBottom]
         Columns = <
           item
@@ -214,6 +216,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         PopupMenu = ListViewMenu
         TabOrder = 2
         ViewStyle = vsReport
+        OnContextPopup = ControlContextPopup
       end
       object SpaceAvailablePathEdit: TEdit
         Left = 56
@@ -224,6 +227,8 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         MaxLength = 250
         TabOrder = 0
         OnChange = ControlChange
+        OnEnter = SpaceAvailablePathEditEnter
+        OnExit = SpaceAvailablePathEditExit
       end
       object SpaceAvailableButton: TButton
         Left = 256
@@ -232,7 +237,6 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         Height = 25
         Anchors = [akTop, akRight]
         Caption = 'Check &space'
-        Default = True
         TabOrder = 1
         OnClick = SpaceAvailableButtonClick
       end
@@ -240,7 +244,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   end
   object ClipboardButton: TButton
     Left = 8
-    Top = 323
+    Top = 336
     Width = 121
     Height = 25
     Anchors = [akRight, akBottom]
@@ -250,7 +254,7 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
   end
   object ListViewMenu: TPopupMenu
     Left = 144
-    Top = 320
+    Top = 328
     object Copy: TMenuItem
       Caption = '&Copy'
       OnClick = CopyClick

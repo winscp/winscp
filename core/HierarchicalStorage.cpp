@@ -202,7 +202,7 @@ void __fastcall THierarchicalStorage::WriteValues(Classes::TStrings * Strings,
 //---------------------------------------------------------------------------
 AnsiString __fastcall THierarchicalStorage::ReadString(const AnsiString Name, const AnsiString Default)
 {
-  return UnMungeStr(ReadStringRaw(Name, Default));
+  return UnMungeStr(ReadStringRaw(Name, MungeStr(Default)));
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall THierarchicalStorage::ReadBinaryData(const AnsiString Name)
@@ -225,14 +225,30 @@ void __fastcall THierarchicalStorage::WriteBinaryData(const AnsiString Name,
   WriteBinaryData(Name, Value.c_str(), Value.Length());
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall THierarchicalStorage::IncludeTrailingBackslash(const AnsiString S) const
+AnsiString __fastcall THierarchicalStorage::IncludeTrailingBackslash(const AnsiString & S)
 {
-  return S.IsEmpty() ? S : ::IncludeTrailingBackslash(S);
+  // expanded from ?: as it caused memory leaks
+  if (S.IsEmpty())
+  {
+    return S;
+  }
+  else
+  {
+    return ::IncludeTrailingBackslash(S);
+  }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall THierarchicalStorage::ExcludeTrailingBackslash(const AnsiString S) const
+AnsiString __fastcall THierarchicalStorage::ExcludeTrailingBackslash(const AnsiString & S)
 {
-  return S.IsEmpty() ? S : ::ExcludeTrailingBackslash(S);
+  // expanded from ?: as it caused memory leaks
+  if (S.IsEmpty())
+  {
+    return S;
+  }
+  else
+  {
+    return ::ExcludeTrailingBackslash(S);
+  }
 }
 //===========================================================================
 __fastcall TRegistryStorage::TRegistryStorage(const AnsiString AStorage):
@@ -590,7 +606,7 @@ bool __fastcall TIniFileStorage::DeleteValue(const AnsiString Name)
 //---------------------------------------------------------------------------
 int __fastcall TIniFileStorage::BinaryDataSize(const AnsiString Name)
 {
-  return FIniFile->ReadString(CurrentSection, Name, "").Length() / 2;
+  return ReadStringRaw(Name, "").Length() / 2;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::ReadBool(const AnsiString Name, bool Default)
@@ -617,12 +633,64 @@ __int64 __fastcall TIniFileStorage::ReadInt64(const AnsiString Name, __int64 Def
 //---------------------------------------------------------------------------
 TDateTime __fastcall TIniFileStorage::ReadDateTime(const AnsiString Name, TDateTime Default)
 {
-  return FIniFile->ReadDateTime(CurrentSection, Name, Default);
+  TDateTime Result;
+  AnsiString Value = FIniFile->ReadString(CurrentSection, Name, "");
+  if (Value.IsEmpty())
+  {
+    Result = Default;
+  }
+  else
+  {
+    try
+    {
+      AnsiString Raw = HexToStr(Value);
+      if (Raw.Length() == sizeof(Result))
+      {
+        memcpy(&Result, Raw.c_str(), sizeof(Result));
+      }
+      else
+      {
+        Result = StrToDateTime(Value);
+      }
+    }
+    catch(...)
+    {
+      Result = Default;
+    }
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 double __fastcall TIniFileStorage::ReadFloat(const AnsiString Name, double Default)
 {
-  return FIniFile->ReadFloat(CurrentSection, Name, Default);
+  double Result;
+  AnsiString Value = FIniFile->ReadString(CurrentSection, Name, "");
+  if (Value.IsEmpty())
+  {
+    Result = Default;
+  }
+  else
+  {
+    try
+    {
+      AnsiString Raw = HexToStr(Value);
+      if (Raw.Length() == sizeof(Result))
+      {
+        memcpy(&Result, Raw.c_str(), sizeof(Result));
+      }
+      else
+      {
+        Result = StrToFloat(Value);
+      }
+    }
+    catch(...)
+    {
+      Result = Default;
+    }
+  }
+
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::ReadStringRaw(const AnsiString Name, AnsiString Default)
@@ -632,7 +700,7 @@ AnsiString __fastcall TIniFileStorage::ReadStringRaw(const AnsiString Name, Ansi
   Result = FIniFile->ReadString(Section, Name, Default);
   // TIniFile::ReadString has limit of 2 kB.
   // We could straithly use our routine, but call to legacy code is preserved
-  // until ours it proved to work and also to save memory overhead
+  // until ours is proved to work and also to save memory overhead
   if (Result.Length() == 2047)
   {
     char Buffer[10240];
@@ -674,12 +742,12 @@ void __fastcall TIniFileStorage::WriteInt64(const AnsiString Name, __int64 Value
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteDateTime(const AnsiString Name, TDateTime Value)
 {
-  FIniFile->WriteDateTime(CurrentSection, Name, Value);
+  WriteBinaryData(Name, &Value, sizeof(Value));
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteFloat(const AnsiString Name, double Value)
 {
-  FIniFile->WriteFloat(CurrentSection, Name, Value);
+  WriteBinaryData(Name, &Value, sizeof(Value));
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteStringRaw(const AnsiString Name, const AnsiString Value)

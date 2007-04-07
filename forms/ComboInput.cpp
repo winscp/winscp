@@ -9,7 +9,7 @@
 #include <HelpWin.h>
 #include <WinInterface.h>
 #include <VCLCommon.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 
 #include "ComboInput.h"
 //---------------------------------------------------------------------
@@ -44,7 +44,15 @@ bool __fastcall DoComboInputDialog(
   return Result;
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName)
+void __fastcall SaveSessionInputValidate(TObject * Sender, const AnsiString & Text)
+{
+  TSessionData * Data =
+    reinterpret_cast<TSessionData *>(dynamic_cast<TForm *>(Sender)->Tag);
+  SessionNameValidate(Text, Data);
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName,
+  TSessionData * OriginalSession)
 {
   AnsiString Result;
   TComboInputDialog * SaveSessionDialog = NULL;
@@ -67,6 +75,7 @@ AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName)
     SaveSessionDialog->Caption = LoadStr(SAVE_SESSION_CAPTION);
     SaveSessionDialog->Prompt = LoadStr(SAVE_SESSION_PROMPT);
     SaveSessionDialog->OnInputValidate = SaveSessionInputValidate;
+    SaveSessionDialog->Tag = reinterpret_cast<int>(OriginalSession);
     SaveSessionDialog->HelpKeyword = HELP_SESSION_SAVE;
     if (SaveSessionDialog->ShowModal() == mrOk)
     {
@@ -81,7 +90,8 @@ AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall SaveSessionInputValidate(const AnsiString & Text)
+void __fastcall SessionNameValidate(const AnsiString & Text,
+  TSessionData * RenamingSession)
 {
   TSessionData::ValidateName(Text);
 
@@ -93,7 +103,7 @@ void __fastcall SaveSessionInputValidate(const AnsiString & Text)
       qtError, qaOK, HELP_NONE);
     Abort();
   }
-  else if (Data &&
+  else if (Data && (Data != RenamingSession) &&
     MessageDialog(FMTLOAD(CONFIRM_OVERWRITE_SESSION, (Text)),
       qtConfirmation, qaYes | qaNo, HELP_SESSION_SAVE_OVERWRITE) != qaYes)
   {
@@ -179,7 +189,7 @@ void __fastcall TComboInputDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if ((ModalResult == mrOk) && (OnInputValidate != NULL))
   {
-    OnInputValidate(Text);
+    OnInputValidate(this, Text);
   }
 }
 //---------------------------------------------------------------------------

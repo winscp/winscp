@@ -2316,8 +2316,10 @@ var
   Item: TListItem;
 begin
   if OnlyFocused or (SelCount = 0) then
+  begin
     Result := Assigned(ItemFocused) and ItemIsFile(ItemFocused) and
       ((not FilesOnly) or (not ItemIsDirectory(ItemFocused)))
+  end
     else
   begin
     Result := True;

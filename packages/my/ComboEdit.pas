@@ -311,7 +311,7 @@ type
     function GetLongName: string; override;
     function GetShortName: string; override;
   public
-    constructor Create(AOwner: TComponent); override;  
+    constructor Create(AOwner: TComponent); override;
   published
     property DialogText: string read FDialogText write FDialogText;
     property InitialDir: string read FInitialDir write FInitialDir;
@@ -568,7 +568,7 @@ begin
     OrigKey := Key;
     { must catch and remove this, since is actually multi-line }
     GetParentForm(Self).Perform(CM_DIALOGKEY, Byte(Key), 0);
-    if Key = OrigKey then 
+    if Key = OrigKey then
     begin
       inherited KeyPress(Key);
       Key := #0;

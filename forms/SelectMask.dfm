@@ -17,7 +17,7 @@ object SelectMaskDialog: TSelectMaskDialog
     142)
   PixelsPerInch = 96
   TextHeight = 13
-  object MaskGroup: TXPGroupBox
+  object MaskGroup: TGroupBox
     Left = 8
     Top = 6
     Width = 345
@@ -35,6 +35,14 @@ object SelectMaskDialog: TSelectMaskDialog
       Caption = 'File &mask:'
       FocusControl = MaskEdit
     end
+    object IncludingDirectoriesCheck: TCheckBox
+      Left = 16
+      Top = 63
+      Width = 217
+      Height = 17
+      Caption = 'Including &directories'
+      TabOrder = 2
+    end
     object MaskEdit: THistoryComboBox
       Left = 16
       Top = 36
@@ -46,15 +54,6 @@ object SelectMaskDialog: TSelectMaskDialog
       Text = '*.*'
       OnExit = MaskEditExit
     end
-    object IncludingDirectoriesCheck: TCheckBox
-      Left = 16
-      Top = 63
-      Width = 217
-      Height = 17
-      Anchors = [akLeft, akTop, akRight]
-      Caption = 'Including &directories'
-      TabOrder = 1
-    end
     object HintText: TStaticText
       Left = 232
       Top = 64
@@ -64,7 +63,7 @@ object SelectMaskDialog: TSelectMaskDialog
       Anchors = [akTop, akRight]
       AutoSize = False
       Caption = 'mask &hints'
-      TabOrder = 2
+      TabOrder = 1
       TabStop = True
     end
   end

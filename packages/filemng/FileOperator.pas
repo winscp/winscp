@@ -32,18 +32,18 @@ unit FileOperator;
 |         component.                                                           |
 |                                                                              |
 |   Operation:                                                                 |
-|    -foCopy	Copies the files specified by OperandFrom to the location      |
+|    -foCopy    Copies the files specified by OperandFrom to the location      |
 |               specified by OperandTo.                                        |
-|    -foDelete	Deletes the files specified by OperandFrom (OperandTo          |
+|    -foDelete  Deletes the files specified by OperandFrom (OperandTo          |
 |                 ignored).                                                    |
-|    -foMove	Moves the files specified by OperandFrom to the location       |
+|    -foMove    Moves the files specified by OperandFrom to the location       |
 |               specified by OperandTo.                                        |
-|    -foRename	Renames the files specified by OperandFrom.                    |
+|    -foRename  Renames the files specified by OperandFrom.                    |
 |                                                                              |
 |   Options:                                                                   |
-|    -foAllowUndo	  Preserves undo information, if possible.             |
-|    -foConfirmMouse	  Not implemented.                                     |
-|    -foFilesOnly	  Performs the operation only on files if a wildcard   |
+|    -foAllowUndo         Preserves undo information, if possible.             |
+|    -foConfirmMouse      Not implemented.                                     |
+|    -foFilesOnly         Performs the operation only on files if a wildcard   |
 |                         filename (*.*) is specified.                         |
 |    -foMultiDestFiles    Indicates that the OperandTo member specifies multiple|
 |                         destination files (one for each source file) rather  |
@@ -262,8 +262,8 @@ end;
 procedure TFileOperator.SetOperFlag( F :Cardinal; V :Boolean );
 begin
  with FData do
-  if V then 
-  fFlags := fFlags or F 
+  if V then
+  fFlags := fFlags or F
   else fFlags := fFlags and ( not F );
 end;
 

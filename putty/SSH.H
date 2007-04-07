@@ -1,3 +1,6 @@
+#ifndef PUTTY_SSH_H
+#define PUTTY_SSH_H
+
 #include <stdio.h>
 #include <string.h>
 
@@ -473,3 +476,5 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
  * format.
  */
 void old_keyfile_warning(void);
+
+#endif /* PUTTY_SSH_H */

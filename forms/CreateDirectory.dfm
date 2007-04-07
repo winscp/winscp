@@ -48,7 +48,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     DesignSize = (
       337
       169)
-    object AttributesGroup: TXPGroupBox
+    object AttributesGroup: TGroupBox
       Left = 8
       Top = 3
       Width = 322

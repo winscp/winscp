@@ -13,6 +13,7 @@ using namespace Masks;
 #include "Common.h"
 #include "TextsCore.h"
 #include "RemoteFiles.h"
+#include "PuttyTools.h"
 //---------------------------------------------------------------------------
 AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask, bool& Masked)
 {

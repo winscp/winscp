@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------
 #include <vcl.h>
 #pragma hdrstop
-  
+
 #include <SysUtils.hpp>
 //---------------------------------------------------------------------
 #include <VCLCommon.h>
@@ -41,6 +41,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   LinkLabel(ForumUrlLabel, LoadStr(FORUM_URL));
   LinkLabel(PuttyLicenceLabel, "", FirstScrollingControlEnter);
   LinkLabel(PuttyHomepageLabel, LoadStr(PUTTY_URL));
+  LinkLabel(FileZillaHomepageLabel, LoadStr(FILEZILLA_URL));
   LinkLabel(Toolbar2000HomepageLabel);
   LinkLabel(TBXHomepageLabel, "", LastScrollingControlEnter);
   ApplicationLabel->ParentFont = true;
@@ -48,6 +49,8 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   ApplicationLabel->Caption = AppName;
   PuttyVersionLabel->Caption = FMTLOAD(PUTTY_BASED_ON, (LoadStr(PUTTY_VERSION)));
   PuttyCopyrightLabel->Caption = LoadStr(PUTTY_COPYRIGHT);
+  FileZillaVersionLabel->Caption = FMTLOAD(FILEZILLA_BASED_ON, (LoadStr(FILEZILLA_VERSION)));
+  FileZillaCopyrightLabel->Caption = LoadStr(FILEZILLA_COPYRIGHT);
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
   AnsiString Translator = LoadStr(TRANSLATOR_INFO);
 
@@ -142,4 +145,3 @@ void __fastcall TAboutDialog::LastScrollingControlEnter(TObject * /*Sender*/)
     ThirdPartyBox->VertScrollBar->Range - ThirdPartyBox->ClientHeight;
 }
 //---------------------------------------------------------------------------
-

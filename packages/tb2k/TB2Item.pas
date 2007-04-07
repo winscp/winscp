@@ -956,7 +956,7 @@ end;
 procedure RemoveFromClickList(const AItem: TObject);
 { Any class that potentially calls QueueClick needs to call RemoveFromClickList
   before an instance is destroyed to ensure that any references to the
-  instance still in ClickList are removed. }                                                                
+  instance still in ClickList are removed. }
 var
   I: Integer;
 begin
@@ -2192,7 +2192,7 @@ begin
       EventItem := ItemContainingItems(Item);
       if not(csDesigning in ComponentState) then begin
         for I := 0 to EventItem.Count-1 do
-          EventItem.Items[I].InitiateAction; 
+          EventItem.Items[I].InitiateAction;
       end;
       if not(tbisEmbeddedGroup in Item.ItemStyle) then begin
         if EventItem <> Item then begin
@@ -3478,7 +3478,7 @@ end;
 
 function TTBItemViewer.GetAccValue(var Value: WideString): Boolean;
 { Gets the MSAA "value" text of the viewer. Returns True if something was
-  assigned to Value, or False if the viewer does not possess a "value". } 
+  assigned to Value, or False if the viewer does not possess a "value". }
 begin
   Result := False;
 end;

@@ -6,10 +6,7 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include "XPThemes.hpp"
 #include "CopyParams.h"
-//---------------------------------------------------------------------------
-class TCustomCommands;
 //---------------------------------------------------------------------------
 class TCopyParamCustomDialog : public TForm
 {

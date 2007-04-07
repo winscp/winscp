@@ -17,11 +17,10 @@
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
-    <LIBRARIES value="bcb2kaxserver.lib dclocx.lib"/>
-    <SPARELIBS value="DragDrop_B5.lib Moje_B5.lib bcb2kaxserver.lib
-      bcbie.lib bcbsmp.lib dclocx.lib rtl.lib vcl.lib"/>
-    <PACKAGES value="DragDrop_B5.bpi Moje_B5.bpi bcbie.bpi bcbsmp.bpi
-      rtl.bpi vcl.bpi vclx.bpi"/>
+    <LIBRARIES value=""/>
+    <SPARELIBS value="DragDrop_B5.lib Moje_B5.lib rtl.lib vcl.lib"/>
+    <PACKAGES value="DragDrop_B5.bpi Moje_B5.bpi rtl.bpi vcl.bpi
+      vclx.bpi"/>
     <PATHCPP value=".;"/>
     <PATHPAS value=".;&quot;filemng&quot;"/>
     <PATHRC value=".;"/>
@@ -39,10 +38,10 @@
   </MACROS>
   <OPTIONS>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
-    <LFLAGS value="-I -D&quot;filemng&quot; -aa -Tpp -GD -s -Gn -Gl -Gi -M"/>
+    <LFLAGS value="-D&quot;filemng&quot; -aa -Tpp -GD -s -Gn -Gl -Gi -M"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -77,8 +76,6 @@
       <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="bcbsmp.bpi" FORMNAME="" UNITNAME="bcbsmp" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="bcbie.bpi" FORMNAME="" UNITNAME="bcbie" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Moje_B5.bpi" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="DragDrop_B5.bpi" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\CustomDriveView.pas" FORMNAME="" UNITNAME="CustomDriveView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

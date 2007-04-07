@@ -10,6 +10,7 @@
 #include "PuttyIntf.h"
 #include "TextsCore.h"
 #include "Interface.h"
+#include "CoreMain.h"
 #define GSSAPIDLL "gssapi32"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -20,29 +21,33 @@ __fastcall TConfiguration::TConfiguration()
   FUpdating = 0;
   FStorage = stDetect;
   FDontSave = false;
-  FRandomSeedSave = true;
   FApplicationInfo = NULL;
   FGSSAPIInstalled = -1;
-  // make sure random generator is initialised, so random_save_seed()
-  // in destructor can proceed
-  random_ref();
+  FInitialized = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::Initialize()
+{
+  AnsiString ARandomSeedFile = seedpath_ptr();
+  FDefaultRandomSeedFile = StringReplace(ExtractFilePath(ARandomSeedFile) +
+    "winscp" + ExtractFileExt(ARandomSeedFile), "\\\\", "\\",
+    TReplaceFlags() << rfReplaceAll);
+  FInitialized = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Default()
 {
   TGuard Guard(FCriticalSection);
 
-  AnsiString ARandomSeedFile = RandomSeedFile;
-  // This works correct only when Default() is called before first
-  // change to RandomSeedFile property
-  RandomSeedFile = StringReplace(ExtractFilePath(ARandomSeedFile) +
-    "winscp" + ExtractFileExt(ARandomSeedFile), "\\\\", "\\",
-    TReplaceFlags() << rfReplaceAll);
+  RandomSeedFile = FDefaultRandomSeedFile;
   FConfirmOverwriting = true;
   FConfirmResume = true;
   FAutoReadDirectoryAfterOp = true;
   FSessionReopenAuto = 5000;
   FSessionReopenNoConfirmation = 2000;
+  FTunnelLocalPortNumberLow = 6000;
+  FTunnelLocalPortNumberHigh = 6100;
+  FShowFtpWelcomeMessage = false;
 
   FLogging = false;
   FPermanentLogging = false;
@@ -62,8 +67,6 @@ void __fastcall TConfiguration::Default()
 __fastcall TConfiguration::~TConfiguration()
 {
   assert(!FUpdating);
-  if (FRandomSeedSave) random_save_seed();
-  random_unref();
   if (FApplicationInfo) FreeFileInfo(FApplicationInfo);
   delete FCriticalSection;
 }
@@ -85,49 +88,96 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
 #define BLOCK(KEY, CANCREATE, BLOCK) \
   if (Storage->OpenSubKey(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKey(); }
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, VAR)
-#define REGCONFIG(ACCESS, CANCREATE, ADDON) \
-  THierarchicalStorage * Storage = CreateScpStorage(false); \
-  try { \
-    Storage->AccessMode = ACCESS; \
-    if (Storage->OpenSubKey(ConfigurationSubKey, CANCREATE)) { \
-      BLOCK("Interface", CANCREATE, \
-        KEY(String,   RandomSeedFile); \
-        KEY(Bool,     ConfirmOverwriting); \
-        KEY(Bool,     ConfirmResume); \
-        KEY(Bool,     AutoReadDirectoryAfterOp); \
-        KEY(Integer,  SessionReopenAuto); \
-        KEY(Integer,  SessionReopenNoConfirmation); \
-      ); \
-      BLOCK("Logging", CANCREATE, \
-        KEYEX(Bool,  PermanentLogging, Logging); \
-        KEYEX(String,PermanentLogFileName, LogFileName); \
-        KEY(Bool,    LogFileAppend); \
-        KEY(Integer, LogWindowLines); \
-        KEY(Integer, LogProtocol); \
-      ); \
-      ADDON(Storage); \
-    }; \
-  } __finally { \
-    delete Storage; \
-  }
+#define REGCONFIG(CANCREATE) \
+  BLOCK("Interface", CANCREATE, \
+    KEY(String,   RandomSeedFile); \
+    KEY(Bool,     ConfirmOverwriting); \
+    KEY(Bool,     ConfirmResume); \
+    KEY(Bool,     AutoReadDirectoryAfterOp); \
+    KEY(Integer,  SessionReopenAuto); \
+    KEY(Integer,  SessionReopenNoConfirmation); \
+    KEY(Integer,  TunnelLocalPortNumberLow); \
+    KEY(Integer,  TunnelLocalPortNumberHigh); \
+    KEY(Bool,     ShowFtpWelcomeMessage); \
+  ); \
+  BLOCK("Logging", CANCREATE, \
+    KEYEX(Bool,  PermanentLogging, Logging); \
+    KEYEX(String,PermanentLogFileName, LogFileName); \
+    KEY(Bool,    LogFileAppend); \
+    KEY(Integer, LogWindowLines); \
+    KEY(Integer, LogProtocol); \
+  );
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::SaveSpecial(THierarchicalStorage * /*Storage*/)
+void __fastcall TConfiguration::SaveData(THierarchicalStorage * Storage, bool /*All*/)
 {
+  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
+  REGCONFIG(true);
+  #undef KEYEX
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::Save()
+void __fastcall TConfiguration::Save(bool All)
 {
   if (FDontSave) return;
 
   if (Storage == stRegistry) CleanupIniFile();
 
-  #define KEYEX(TYPE, VAR, NAME) Storage->Write ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
-  REGCONFIG(smReadWrite, true, SaveSpecial);
-  #undef KEYEX
+  THierarchicalStorage * Storage = CreateScpStorage(false);
+  try
+  {
+    Storage->AccessMode = smReadWrite;
+    if (Storage->OpenSubKey(ConfigurationSubKey, true))
+    {
+      SaveData(Storage, All);
+    }
+  }
+  __finally
+  {
+    delete Storage;
+  }
+
+  Saved();
+
+  if (All)
+  {
+    StoredSessions->Save(true);
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::LoadSpecial(THierarchicalStorage * /*Storage*/)
+void __fastcall TConfiguration::Export(const AnsiString FileName)
 {
+  THierarchicalStorage * Storage = NULL;
+  THierarchicalStorage * ExportStorage = NULL;
+  try
+  {
+    ExportStorage = new TIniFileStorage(FileName);
+    ExportStorage->AccessMode = smReadWrite;
+
+    Storage = CreateScpStorage(false);
+    Storage->AccessMode = smRead;
+
+    CopyData(Storage, ExportStorage);
+
+    if (ExportStorage->OpenSubKey(ConfigurationSubKey, true))
+    {
+      SaveData(ExportStorage, true);
+    }
+  }
+  __finally
+  {
+    delete ExportStorage;
+    delete Storage;
+  }
+
+  StoredSessions->Export(FileName);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::LoadData(THierarchicalStorage * Storage)
+{
+  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
+  #pragma warn -eas
+  REGCONFIG(false);
+  #pragma warn +eas
+  #undef KEYEX
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::LoadAdmin(THierarchicalStorage * Storage)
@@ -141,11 +191,19 @@ void __fastcall TConfiguration::Load()
 {
   TGuard Guard(FCriticalSection);
 
-  #define KEYEX(TYPE, VAR, NAME) VAR = Storage->Read ## TYPE(LASTELEM(AnsiString(#NAME)), VAR)
-  #pragma warn -eas
-  REGCONFIG(smRead, false, LoadSpecial);
-  #pragma warn +eas
-  #undef KEYEX
+  THierarchicalStorage * Storage = CreateScpStorage(false);
+  try
+  {
+    Storage->AccessMode = smRead;
+    if (Storage->OpenSubKey(ConfigurationSubKey, false))
+    {
+      LoadData(Storage);
+    }
+  }
+  __finally
+  {
+    delete Storage;
+  }
 
   TRegistryStorage * AdminStorage;
   AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE);
@@ -160,6 +218,81 @@ void __fastcall TConfiguration::Load()
   __finally
   {
     delete AdminStorage;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::CopyData(THierarchicalStorage * Source,
+  THierarchicalStorage * Target)
+{
+  TStrings * Names = new TStringList();
+  try
+  {
+    if (Source->OpenSubKey(ConfigurationSubKey, false))
+    {
+      if (Target->OpenSubKey(ConfigurationSubKey, true))
+      {
+        if (Source->OpenSubKey("CDCache", false))
+        {
+          if (Target->OpenSubKey("CDCache", true))
+          {
+            Names->Clear();
+            Source->GetValueNames(Names);
+
+            for (int Index = 0; Index < Names->Count; Index++)
+            {
+              Target->WriteBinaryData(Names->Strings[Index],
+                Source->ReadBinaryData(Names->Strings[Index]));
+            }
+
+            Target->CloseSubKey();
+          }
+          Source->CloseSubKey();
+        }
+
+        if (Source->OpenSubKey("Banners", false))
+        {
+          if (Target->OpenSubKey("Banners", true))
+          {
+            Names->Clear();
+            Source->GetValueNames(Names);
+
+            for (int Index = 0; Index < Names->Count; Index++)
+            {
+              Target->WriteString(Names->Strings[Index],
+                Source->ReadString(Names->Strings[Index], ""));
+            }
+
+            Target->CloseSubKey();
+          }
+          Source->CloseSubKey();
+        }
+
+        Target->CloseSubKey();
+      }
+      Source->CloseSubKey();
+    }
+
+    if (Source->OpenSubKey(SshHostKeysSubKey, false))
+    {
+      if (Target->OpenSubKey(SshHostKeysSubKey, true))
+      {
+        Names->Clear();
+        Source->GetValueNames(Names);
+
+        for (int Index = 0; Index < Names->Count; Index++)
+        {
+          Target->WriteStringRaw(Names->Strings[Index],
+            Source->ReadStringRaw(Names->Strings[Index], ""));
+        }
+
+        Target->CloseSubKey();
+      }
+      Source->CloseSubKey();
+    }
+  }
+  __finally
+  {
+    delete Names;
   }
 }
 //---------------------------------------------------------------------------
@@ -336,10 +469,11 @@ void __fastcall TConfiguration::CleanupRandomSeedFile()
 {
   try
   {
-    FRandomSeedSave = false;
-    if (FileExists(RandomSeedFile))
+    DontSaveRandomSeed();
+    AnsiString ExpandedRandomSeedFile = ExpandEnvironmentVariables(RandomSeedFile);
+    if (FileExists(ExpandedRandomSeedFile))
     {
-      if (!DeleteFile(RandomSeedFile)) Abort();
+      if (!DeleteFile(ExpandedRandomSeedFile)) Abort();
     }
   }
   catch (Exception &E)
@@ -592,13 +726,34 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
 {
   if (FStorage != value)
   {
-    FStorage = value;
-    ModifyAll();
-    Save();
+    THierarchicalStorage * SourceStorage = NULL;
+    THierarchicalStorage * TargetStorage = NULL;
+
+    try
+    {
+      SourceStorage = CreateScpStorage(false);
+      SourceStorage->AccessMode = smRead;
+
+      FStorage = value;
+
+      TargetStorage = CreateScpStorage(false);
+      TargetStorage->AccessMode = smReadWrite;
+
+      // copy before save as it removes the ini file,
+      // when switching from ini to registry
+      CopyData(SourceStorage, TargetStorage);
+
+      Save(true);
+    }
+    __finally
+    {
+      delete SourceStorage;
+      delete TargetStorage;
+    }
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::ModifyAll()
+void __fastcall TConfiguration::Saved()
 {
   // nothing
 }
@@ -614,17 +769,25 @@ TStorage __fastcall TConfiguration::GetStorage()
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetRandomSeedFile(AnsiString value)
 {
-  char *seedpath = seedpath_ptr();
-  if (value.Length() >= seedpath_size())
+  if (RandomSeedFile != value)
   {
-    value.SetLength(seedpath_size() - 1);
+    // never allow empty seed file to avoid Putty trying to reinitialize the path
+    if (value.Trim().IsEmpty())
+    {
+      FRandomSeedFile = FDefaultRandomSeedFile;
+    }
+    else
+    {
+      FRandomSeedFile = value;
+    }
+
+    char *seedpath = seedpath_ptr();
+    if (value.Length() >= seedpath_size())
+    {
+      value.SetLength(seedpath_size() - 1);
+    }
+    strcpy(seedpath, StripPathQuotes(ExpandEnvironmentVariables(FRandomSeedFile)).c_str());
   }
-  strcpy(seedpath, StripPathQuotes(value).c_str());
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TConfiguration::GetRandomSeedFile()
-{
-  return AnsiString(seedpath_ptr());
 }
 //---------------------------------------------------------------------------
 TEOLType __fastcall TConfiguration::GetLocalEOLType()
@@ -775,4 +938,19 @@ void __fastcall TConfiguration::SetSessionReopenAuto(int value)
 void __fastcall TConfiguration::SetSessionReopenNoConfirmation(int value)
 {
   SET_CONFIG_PROPERTY(SessionReopenNoConfirmation);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetTunnelLocalPortNumberLow(int value)
+{
+  SET_CONFIG_PROPERTY(TunnelLocalPortNumberLow);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetTunnelLocalPortNumberHigh(int value)
+{
+  SET_CONFIG_PROPERTY(TunnelLocalPortNumberHigh);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)
+{
+  SET_CONFIG_PROPERTY(ShowFtpWelcomeMessage);
 }

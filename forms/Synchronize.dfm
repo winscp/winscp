@@ -25,7 +25,7 @@ object SynchronizeDialog: TSynchronizeDialog
     421)
   PixelsPerInch = 96
   TextHeight = 13
-  object DirectoriesGroup: TXPGroupBox
+  object DirectoriesGroup: TGroupBox
     Left = 8
     Top = 6
     Width = 381
@@ -110,7 +110,7 @@ object SynchronizeDialog: TSynchronizeDialog
     ModalResult = 2
     TabOrder = 6
   end
-  object OptionsGroup: TXPGroupBox
+  object OptionsGroup: TGroupBox
     Left = 8
     Top = 130
     Width = 381
@@ -210,7 +210,7 @@ object SynchronizeDialog: TSynchronizeDialog
     TabOrder = 2
     OnClick = TransferSettingsButtonClick
   end
-  object CopyParamGroup: TXPGroupBox
+  object CopyParamGroup: TGroupBox
     Left = 8
     Top = 230
     Width = 381

@@ -95,7 +95,7 @@ type
   protected
      function CreateDataObject:TDataObject; override;
   public
-     constructor Create(AOwner: TComponent); override; 
+     constructor Create(AOwner: TComponent); override;
      destructor Destroy; override;
      property FileList: TStringList read FFileList write FFileList;
   end;
@@ -173,7 +173,7 @@ begin
 end;
 
 function TDataObjectFiles.RenderData(FormatEtc:TFormatEtc;
-   var StgMedium: TStgMedium):HResult; 
+   var StgMedium: TStgMedium):HResult;
 var h: HGlobal;
     p:pointer;
 begin

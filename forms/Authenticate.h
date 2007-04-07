@@ -17,7 +17,7 @@ __published:
   TListView *LogView;
   TPanel *PasswordPanel;
   TPanel *PasswordEditPanel;
-  TStaticText *PasswordLabel;
+  TLabel *PasswordLabel;
   TPasswordEdit *PasswordEdit;
   TPanel *ServerPromptPanel;
   TLabel *ServerPromptLabel;
@@ -42,9 +42,8 @@ public:
   void __fastcall ShowAsModal();
   void __fastcall HideAsModal();
   void __fastcall Log(const AnsiString Message);
-  void __fastcall ChangeStatus(const AnsiString Status);
   bool __fastcall PromptUser(AnsiString Caption,
-    TPromptKind Kind, AnsiString &Password);
+    TPromptKind Kind, AnsiString &Response, bool ForceLog);
   void __fastcall Banner(const AnsiString & Banner, bool & NeverShowAgain,
     int Options);
 
@@ -54,13 +53,14 @@ protected:
   void __fastcall UpdateControls();
   bool __fastcall Execute(AnsiString Status, TControl * Control,
     TWinControl * FocusControl, TButton * DefaultButton, TButton * CancelButton,
-    bool FixHeight, bool Zoom);
+    bool FixHeight, bool Zoom, bool ForceLog);
 
 private:
   void * FShowAsModalStorage;
   TWinControl * FFocusControl;
   AnsiString FSessionName;
   AnsiString FStatus;
+  AnsiString FPasswordCaption;
 };
 //---------------------------------------------------------------------------
 #endif

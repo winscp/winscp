@@ -8,7 +8,6 @@
 #include <Forms.hpp>
 #include <ExtCtrls.hpp>
 #include <HistoryComboBox.hpp>
-#include <XPThemes.hpp>
 
 #include <WinInterface.h>
 
@@ -19,28 +18,28 @@
 class TCopyParamsFrame : public TFrame
 {
 __published:
-  TXPGroupBox *TransferModeGroup;
+  TGroupBox *TransferModeGroup;
   TLabel *AsciiFileMaskLabel;
   TRadioButton *TMTextButton;
   TRadioButton *TMBinaryButton;
   TRadioButton *TMAutomaticButton;
   THistoryComboBox *AsciiFileMaskCombo;
-  TXPGroupBox *RemotePropertiesGroup;
+  TGroupBox *RemotePropertiesGroup;
   TCheckBox *RemotePreserveTimeCheck;
-  TXPGroupBox *LocalPropertiesGroup;
+  TGroupBox *LocalPropertiesGroup;
   TCheckBox *PreserveReadOnlyCheck;
   TCheckBox *LocalPreserveTimeCheck;
   TCheckBox *PreserveRightsCheck;
-  TXPGroupBox *ChangeCaseGroup;
+  TGroupBox *ChangeCaseGroup;
   TRadioButton *CCNoChangeButton;
   TRadioButton *CCUpperCaseButton;
   TRadioButton *CCLowerCaseButton;
   TRadioButton *CCFirstUpperCaseButton;
-  TXPGroupBox *CommonPropertiesGroup;
+  TGroupBox *CommonPropertiesGroup;
   TCheckBox *CommonPreserveTimestampCheck;
   TCheckBox *ReplaceInvalidCharsCheck;
   TCheckBox *CommonCalculateSizeCheck;
-  TXPGroupBox *OtherGroup;
+  TGroupBox *OtherGroup;
   TLabel *ExclusionFileMaskLabel;
   THistoryComboBox *ExcludeFileMaskCombo;
   TRadioButton *CCLowerCaseShortButton;
@@ -53,6 +52,8 @@ __published:
   void __fastcall ValidateMaskComboExit(TObject *Sender);
   void __fastcall RightsEditButtonClick(TObject *Sender);
   void __fastcall RightsEditExit(TObject *Sender);
+  void __fastcall RightsEditContextPopup(TObject *Sender, TPoint &MousePos,
+          bool &Handled);
 private:
   TParamsForDirection FDirection;
   AnsiString FOrigMasks;
@@ -78,7 +79,7 @@ public:
   void __fastcall BeforeExecute();
   void __fastcall AfterExecute();
 
-  __property int CopyParamAttrs = { read = FCopyParamAttrs, write = SetCopyParamAttrs }; 
+  __property int CopyParamAttrs = { read = FCopyParamAttrs, write = SetCopyParamAttrs };
   __property TParamsForDirection Direction = { read = FDirection, write = SetDirection };
   __property TCopyParamType Params = { read = GetParams, write = SetParams };
 };

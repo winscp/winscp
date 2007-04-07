@@ -37,8 +37,7 @@
     <LIBRARIES value=""/>
     <SPARELIBS value=""/>
     <PACKAGES value="DragDrop_B5.bpi DriveDir_B5.bpi Moje_B5.bpi
-      bcb2kaxserver.bpi bcbie.bpi bcbsmp.bpi dclocx.bpi rtl.bpi vcl.bpi
-      vclie.bpi vclx.bpi visualclx.bpi"/>
+      rtl.bpi vcl.bpi vclx.bpi"/>
     <PATHCPP value=".;forms;windows"/>
     <PATHPAS value=".;"/>
     <PATHRC value=".;"/>
@@ -47,7 +46,7 @@
     <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpForms.bpf"/>
-    <INCLUDEPATH value="forms;core;components;windows;resource;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="forms;core;components;windows;resource;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\theme;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="windows;forms;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -56,7 +55,7 @@
   </MACROS>
   <OPTIONS>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <AFLAGS value="/mx /w2 /zi"/>
     <LFLAGS value="/P512"/>
     <OTHERFILES value=""/>

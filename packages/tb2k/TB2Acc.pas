@@ -1199,7 +1199,7 @@ begin
   Result := S_FALSE;
 end;
 
-{ Note: This COM initialization code based on code from DBTables } 
+{ Note: This COM initialization code based on code from DBTables }
 var
   SaveInitProc: Pointer;
   NeedToUninitialize: Boolean;

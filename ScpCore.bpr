@@ -5,14 +5,14 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpCore.lib"/>
     <OBJFILES value="core\Bookmarks.obj core\Common.obj core\Configuration.obj 
-      core\CopyParam.obj core\Exceptions.obj core\FileBuffer.obj 
-      core\FileInfo.obj core\FileMasks.obj 
+      core\CopyParam.obj core\CoreMain.obj core\Exceptions.obj 
+      core\FileBuffer.obj core\FileInfo.obj core\FileMasks.obj 
       core\FileOperationProgress.obj core\FileSystems.obj 
-      core\HierarchicalStorage.obj core\NamedObjs.obj core\Net.obj 
-      core\PuttyIntf.obj core\Queue.obj core\RemoteFiles.obj 
-      core\ScpFileSystem.obj core\ScpMain.obj core\Script.obj 
+      core\FtpFileSystem.obj core\HierarchicalStorage.obj 
+      core\NamedObjs.obj core\PuttyIntf.obj core\Queue.obj 
+      core\RemoteFiles.obj core\ScpFileSystem.obj core\Script.obj 
       core\SecureShell.obj core\Security.obj core\SessionData.obj 
-      core\SftpFileSystem.obj core\Terminal.obj"/>
+      core\SessionInfo.obj core\SftpFileSystem.obj core\Terminal.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
@@ -27,8 +27,8 @@
     <USERDEFINES value="USE_COMPATIBLE_THREAD;GSSAPI;_WINDOWS"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpCore.bpf"/>
-    <INCLUDEPATH value="windows;core;putty;putty\windows;resource;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="windows;core;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="windows;core;putty;putty\windows;filezilla;resource;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
+    <LIBPATH value="core;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
     <LISTFILE value=""/>
@@ -36,7 +36,7 @@
   </MACROS>
   <OPTIONS>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
-    <PFLAGS value="  -$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
+    <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <AFLAGS value="/mx /w2 /zi"/>
     <LFLAGS value="/P128"/>
     <OTHERFILES value=""/>
@@ -52,24 +52,25 @@
       <FILE FILENAME="core\Common.cpp" FORMNAME="" UNITNAME="Common.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Configuration.cpp" FORMNAME="" UNITNAME="Configuration.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\CopyParam.cpp" FORMNAME="" UNITNAME="CopyParam.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="core\CoreMain.cpp" FORMNAME="" UNITNAME="CoreMain.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Exceptions.cpp" FORMNAME="" UNITNAME="Exceptions" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\FileBuffer.cpp" FORMNAME="" UNITNAME="FileBuffer.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\FileInfo.cpp" FORMNAME="" UNITNAME="FileInfo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\FileMasks.cpp" FORMNAME="" UNITNAME="FileMasks.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\FileOperationProgress.cpp" FORMNAME="" UNITNAME="FileOperationProgress.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\FileSystems.cpp" FORMNAME="" UNITNAME="FileSystems" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="core\FtpFileSystem.cpp" FORMNAME="" UNITNAME="FtpFileSystem" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\HierarchicalStorage.cpp" FORMNAME="" UNITNAME="HierarchicalStorage.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\NamedObjs.cpp" FORMNAME="" UNITNAME="NamedObjs.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="core\Net.cpp" FORMNAME="" UNITNAME="Net.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="core\PuttyIntf.c" FORMNAME="" UNITNAME="PuttyIntf" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="core\PuttyIntf.cpp" FORMNAME="" UNITNAME="PuttyIntf" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Queue.cpp" FORMNAME="" UNITNAME="Queue" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\RemoteFiles.cpp" FORMNAME="" UNITNAME="RemoteFiles.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\ScpFileSystem.cpp" FORMNAME="" UNITNAME="ScpFileSystem" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="core\ScpMain.cpp" FORMNAME="" UNITNAME="ScpMain.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Script.cpp" FORMNAME="" UNITNAME="Script" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\SecureShell.cpp" FORMNAME="" UNITNAME="SecureShell.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Security.cpp" FORMNAME="" UNITNAME="Security.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\SessionData.cpp" FORMNAME="" UNITNAME="SessionData.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="core\SessionInfo.cpp" FORMNAME="" UNITNAME="SessionInfo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\SftpFileSystem.cpp" FORMNAME="" UNITNAME="SftpFileSystem" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Terminal.cpp" FORMNAME="" UNITNAME="Terminal.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>

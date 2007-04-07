@@ -140,5 +140,9 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     }
     UnmapViewOfFile(p);
     CloseHandle(filemap);
+#ifdef MPEXT
+    // fix memory leak
+    sfree(mapname);
+#endif
     return 1;
 }

@@ -1,10 +1,4 @@
 [CustomMessages]
-; WinSCP
-FullInstallation=Full installation (recommended)
-FullInstallationLangs=Full installation with all languages
-CompactInstallation=Compact installation
-CustomInstallation=Custom installation
-
 ApplicationComponent=WinSCP application
 ShellExtComponent=Drag & drop shell extension (allows direct downloads, may require restart)
 PuTTYgenComponent=PuTTYgen (key generator)
@@ -16,7 +10,7 @@ DesktopIconUserTask=For the current user only
 DesktopIconCommonTask=For all users
 QuickLaunchIconTask=Create a &Quick Launch icon
 SendToHookTask=Add &upload shortcut to Explorer's 'Send to' context menu
-RegisterAsUrlHandler=Register to handle scp:// and sftp:// &addresses
+RegisterAsUrlHandler=Register to handle sftp:// and scp:// &addresses
 AddSearchPath=Add installation directory to &search path (%PATH%)
 EnableUpdates=Enable automatic &check for application updates (recommended)
 
@@ -34,13 +28,30 @@ PageantManual=Pageant Manual
 KeysManual=Using public keys for SSH authentication
 PuttyWebSite=PuTTY Web Site
 SendToHook=WinSCP3 (upload using SFTP or SCP)
+SendToHookNew=WinSCP (for upload)
 Launch=Launch &WinSCP
 DocumentationPage=Documentation
 
 HelpButton=&Help
-ProgramComment=Windows SFTP/SCP client
+ProgramComment=Windows SFTP, FTP and SCP client
 
 ; WinSCP Runtime
+Recommended=%1 (recommended)
+SetupTypeTitle=Setup type
+SetupTypePrompt=What type of setup do you want?
+TypicalType=&Typical installation
+TypicalType1=- installs to default destination
+TypicalType2=- installs all components
+TypicalType2Intl=- installs all components, but only %1 translation
+TypicalType2Eng=- installs all components, but no translations
+TypicalType3=- enables most typical features
+TypicalUpgradeType=&Full upgrade
+TypicalUpgradeType1=- upgrades all previously installed components
+CustomType=&Custom installation
+CustomType1=- allows full selection of destination, components and features
+CustomUpgradeType=&Custom upgrade or new installation
+CustomUpgradeType1=- allows custom upgrade of existing installation or
+CustomUpgradeType2=- new installation to different destination
 UserSettingsTitle=Initial user settings
 UserSettingsPrompt=Please, select your preferred user interface options.
 UserInterfaceStyle=User interface style

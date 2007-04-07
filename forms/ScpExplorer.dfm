@@ -249,6 +249,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem113: TTBXItem
           Action = NonVisualDataModule.NewSessionAction
         end
+        object TBXItem90: TTBXItem
+          Action = NonVisualDataModule.DuplicateSessionAction
+        end
         object TBXSubmenuItem20: TTBXSubmenuItem
           Action = NonVisualDataModule.SavedSessionsAction
         end
@@ -655,6 +658,9 @@ inherited ScpExplorerForm: TScpExplorerForm
       object TBXItem123: TTBXItem
         Action = NonVisualDataModule.NewSessionAction
       end
+      object TBXItem137: TTBXItem
+        Action = NonVisualDataModule.DuplicateSessionAction
+      end
       object TBXSeparatorItem34: TTBXSeparatorItem
       end
       object SessionCombo: TTBXComboBoxItem
@@ -907,25 +913,23 @@ inherited ScpExplorerForm: TScpExplorerForm
         'ee.'
     end
     inherited RemoteStatusBar: TTBXStatusBar
-      Tag = 1
       Top = 108
       Width = 622
       Height = 22
       Images = GlyphsModule.SessionImages
       Panels = <
         item
-          MaxSize = 190
-          Size = 190
+          Size = 100
+          StretchPriority = 1
           Tag = 0
           TextTruncation = twEndEllipsis
         end
         item
           Alignment = taCenter
-          MaxSize = 70
-          ViewPriority = 97
-          Size = 70
+          ImageIndex = 1
+          MaxSize = 35
+          Size = 35
           Tag = 0
-          TextTruncation = twEndEllipsis
         end
         item
           Alignment = taCenter
@@ -937,46 +941,16 @@ inherited ScpExplorerForm: TScpExplorerForm
         end
         item
           Alignment = taCenter
-          MaxSize = 25
-          ViewPriority = 93
-          Size = 25
+          ImageIndex = 0
+          MaxSize = 35
+          Size = 35
           Tag = 0
-          TextTruncation = twEndEllipsis
-        end
-        item
-          Alignment = taCenter
-          MaxSize = 25
-          ViewPriority = 94
-          Size = 25
-          Tag = 0
-          TextTruncation = twEndEllipsis
-        end
-        item
-          MaxSize = 70
-          ViewPriority = 95
-          Size = 70
-          Tag = 0
-          TextTruncation = twEndEllipsis
-        end
-        item
-          Alignment = taCenter
-          MaxSize = 90
-          ViewPriority = 96
-          Size = 90
-          Tag = 0
-          TextTruncation = twEndEllipsis
         end
         item
           Alignment = taCenter
           MaxSize = 80
           ViewPriority = 99
           Size = 80
-          Tag = 0
-          TextTruncation = twEndEllipsis
-        end
-        item
-          Size = 100
-          StretchPriority = 1
           Tag = 0
           TextTruncation = twEndEllipsis
         end>

@@ -906,7 +906,7 @@ begin
          Use standard API...   }
         DrawText(Canvas.Handle, WindowInfo.Caption, -1, R2,
           DT_SINGLELINE or DT_VCENTER or DT_END_ELLIPSIS or DT_HIDEPREFIX);
-      
+
         Canvas.Brush.Style := bsSolid;
       end;
 
@@ -1605,7 +1605,7 @@ begin
             if Boolean(State and (PFS_DISABLED or PFS_PUSHED)) then FillRectEx(DC, R, clBtnFace)
             else if Boolean(State and PFS_MIXED) then DitherRect(DC, R, clWindow, clBtnFace)
             else FillRectEx(DC, R, clWindow);
-          
+
             if Boolean(State and (PFS_CHECKED or PFS_MIXED)) then
             begin
               X := (R.Left + R.Right) div 2 - 1;
@@ -1646,7 +1646,7 @@ begin
             if Boolean(State and (PFS_DISABLED or PFS_PUSHED)) then C := clBtnFace
             else C := clWindow;
             Brush := CreateBrushEx(C);
-            
+
             InflateRect(R, -1, -1); Inc(R.Left); Dec(R.Bottom);
             OldPen := SelectObject(DC, Pen);
             OldBrush := SelectObject(DC, Brush);

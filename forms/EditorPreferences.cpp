@@ -8,11 +8,10 @@
 #include <VCLCommon.h>
 #include <TextsWin.h>
 #include <Tools.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include "EditorPreferences.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPThemes"
 #pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
@@ -143,4 +142,3 @@ void __fastcall TEditorPreferencesDialog::MaskEditExit(TObject * /*Sender*/)
   ValidateMaskEdit(MaskEdit);
 }
 //---------------------------------------------------------------------------
-

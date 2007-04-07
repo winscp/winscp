@@ -246,7 +246,15 @@ TTreeNode * __fastcall TCustomUnixDriveView::LoadPathEasy(TTreeNode * Parent,
   #ifndef DESIGN_ONLY
   assert(Path == UnixExcludeTrailingBackslash(Path));
 
-  AnsiString DirName = IsUnixRootPath(Path) ? RootName : UnixExtractFileName(Path);
+  AnsiString DirName;
+  if (IsUnixRootPath(Path))
+  {
+    DirName = RootName;
+  }
+  else
+  {
+    DirName = UnixExtractFileName(Path);
+  }
   TTreeNode * Node = Items->AddChild(Parent, DirName);
 
   TNodeData * Data = new TNodeData();
@@ -417,9 +425,9 @@ void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
       // directory
       FDirView->ContinueSession(true);
     }
-  
+
     // if previous node is child to newly selected one, do not expand it.
-    // it is either already expanded and it is even being collapsed. 
+    // it is either already expanded and it is even being collapsed.
     bool Expand = (FPrevSelected == NULL) || !FPrevSelected->HasAsParent(Node);
     FDirectoryLoaded = false;
     try
@@ -479,16 +487,20 @@ void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::DDChooseEffect(int KeyState, int & Effect)
 {
-  if (DropTarget != NULL)
+  // if any drop effect is allowed at all (e.g. no drop to self and drop to parent)
+  if (Effect != DROPEFFECT_None)
   {
-    if ((KeyState & (MK_CONTROL | MK_SHIFT)) == 0)
+    if (DropTarget != NULL)
     {
-      Effect = DROPEFFECT_Copy;
+      if ((KeyState & (MK_CONTROL | MK_SHIFT)) == 0)
+      {
+        Effect = DROPEFFECT_Copy;
+      }
     }
-  }
-  else
-  {
-    Effect = DROPEFFECT_None;
+    else
+    {
+      Effect = DROPEFFECT_None;
+    }
   }
 
   TCustomDriveView::DDChooseEffect(KeyState, Effect);
@@ -506,7 +518,7 @@ void __fastcall TCustomUnixDriveView::UpdateDropTarget()
 void __fastcall TCustomUnixDriveView::UpdateDropSource()
 {
   // DragNode may be NULL if its parent directory was reloaded as result
-  // of D&D operation and thus all child nodes are recreated 
+  // of D&D operation and thus all child nodes are recreated
   if ((DragNode != NULL) && (DragNode->Parent != NULL))
   {
     UpdatePath(DragNode->Parent, false, true);
@@ -764,4 +776,3 @@ void __fastcall TCustomUnixDriveView::DisplayPropertiesMenu(TTreeNode * /*Node*/
 {
   // TODO
 }
-

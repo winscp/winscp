@@ -6,7 +6,8 @@
 
 #include "LogSettings.h"
 
-#include <ScpMain.h>
+#include <CoreMain.h>
+#include <TextsWin.h>
 
 #include <VCLCommon.h>
 #include "CustomWinConfiguration.h"
@@ -14,7 +15,6 @@
 #pragma package(smart_init)
 #pragma link "ComboEdit"
 #pragma link "UpDownEdit"
-#pragma link "XPThemes"
 #pragma resource "*.dfm"
 TLoggingFrame *LoggingFrame;
 //---------------------------------------------------------------------------
@@ -47,6 +47,11 @@ void __fastcall TLoggingFrame::LoadConfiguration()
 
   // somehow does not work for this particular frame when called from constructor
   InstallPathWordBreakProc(LogFileNameEdit);
+  HintLabel(LogFileNameHintText, LoadStr(LOG_FILE_HINT));
+
+  // anchors does not apply for some reason to this particular control
+  LogFileNameHintText->Left = LogFileNameEdit->Left + LogFileNameEdit->Width -
+    LogFileNameHintText->Width;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::SaveConfiguration()
@@ -92,6 +97,7 @@ void __fastcall TLoggingFrame::UpdateControls()
     EnableControl(LogProtocolLabel, True);
     EnableControl(LogProtocolCombo, True);
     EnableControl(LogFileNameEdit, LogToFileCheck->Checked);
+    EnableControl(LogFileNameHintText, LogFileNameEdit->Enabled);
     EnableControl(LogFilePanel, LogToFileCheck->Checked);
 
     EnableControl(LogShowWindowCheck, True && EnableLogWindow);
@@ -119,14 +125,7 @@ void __fastcall TLoggingFrame::DataChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 AnsiString __fastcall TLoggingFrame::GetDefaultLogFileName()
 {
-  AnsiString Result;
-  Result = IncludeTrailingBackslash(SystemTemporaryDirectory()) + "&s.log";
-
-  if (FOnGetDefaultLogFileName)
-  {
-    FOnGetDefaultLogFileName(this, Result);
-  }
-  return Result;
+  return IncludeTrailingBackslash(SystemTemporaryDirectory()) + "&s.log";
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::SetEnableLogWindow(bool value)
@@ -138,4 +137,20 @@ void __fastcall TLoggingFrame::SetEnableLogWindow(bool value)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoggingFrame::LogFileNameEditBeforeDialog(TObject * /*Sender*/,
+  AnsiString & Name, bool & /*Action*/)
+{
+  FBeforeDialogPath = Name;
+  Name = ExpandEnvironmentVariables(Name);
+}
+//---------------------------------------------------------------------------
 
+void __fastcall TLoggingFrame::LogFileNameEditAfterDialog(TObject * /*Sender*/,
+  AnsiString & Name, bool & /*Action*/)
+{
+  if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
+  {
+    Name = FBeforeDialogPath;
+  }
+}
+//---------------------------------------------------------------------------

@@ -428,7 +428,7 @@ Begin
       Else
         Result := Succeeded(ContextMenu.InvokeCommand(ICM));
     Except
-      // eat any dammned shell exceptions.    
+      // eat any dammned shell exceptions.
     End;
   End;
 End; {ShellExecuteContextCommand (PIDL)}

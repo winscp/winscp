@@ -68,7 +68,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
     Width = 377
     Height = 345
     TabOrder = 1
-    inherited CommonPropertiesGroup: TXPGroupBox
+    inherited CommonPropertiesGroup: TGroupBox
       Left = 197
       Top = 209
       Height = 73
@@ -80,7 +80,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
         Top = 19
       end
     end
-    inherited LocalPropertiesGroup: TXPGroupBox
+    inherited LocalPropertiesGroup: TGroupBox
       Left = 197
       Top = 156
       Height = 48
@@ -95,14 +95,14 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
         Top = 92
       end
     end
-    inherited RemotePropertiesGroup: TXPGroupBox
+    inherited RemotePropertiesGroup: TGroupBox
       Left = 8
       Top = 156
       Width = 182
       Height = 126
       Caption = 'Upload options'
     end
-    inherited ChangeCaseGroup: TXPGroupBox
+    inherited ChangeCaseGroup: TGroupBox
       Left = 247
       Top = 8
       Width = 123
@@ -125,7 +125,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
         Width = 110
       end
     end
-    inherited TransferModeGroup: TXPGroupBox
+    inherited TransferModeGroup: TGroupBox
       Left = 8
       Top = 8
       Width = 231
@@ -145,7 +145,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
         Width = 213
       end
     end
-    inherited OtherGroup: TXPGroupBox
+    inherited OtherGroup: TGroupBox
       Left = 8
       Top = 284
       Width = 362
@@ -160,7 +160,7 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
       end
     end
   end
-  object RuleGroup: TXPGroupBox
+  object RuleGroup: TGroupBox
     Left = 388
     Top = 91
     Width = 235

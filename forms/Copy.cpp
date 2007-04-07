@@ -4,7 +4,7 @@
 
 #include <Common.h>
 #include <WinInterface.h>
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <TextsWin.h>
 #include <VCLCommon.h>
 #include <CustomWinConfiguration.h>
@@ -245,8 +245,7 @@ bool __fastcall TCopyDialog::RemotePaths()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TCopyDialog::GetFileMask()
 {
-  return RemotePaths() ? UnixExtractFileName(DirectoryEdit->Text) :
-    ExtractFileName(DirectoryEdit->Text);
+  return ExtractFileName(DirectoryEdit->Text, RemotePaths());
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetParams(const TGUICopyParamType & value)

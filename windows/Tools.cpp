@@ -396,7 +396,8 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
   TOpenDialog * FileDialog = new TOpenDialog(Application);
   try
   {
-    FileDialog->FileName = Program;
+    AnsiString ExpandedProgram = ExpandEnvironmentVariables(Program);
+    FileDialog->FileName = ExpandedProgram;
     FileDialog->Filter = Filter;
     FileDialog->Title = Title;
 
@@ -406,7 +407,12 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
       Control->OnChange = NULL;
       try
       {
-        Control->Text = FormatCommand(FileDialog->FileName, Params);
+        // preserve unexpanded file, if the destination has not changed actually
+        if (!CompareFileName(ExpandedProgram, FileDialog->FileName))
+        {
+          Program = FileDialog->FileName;
+        }
+        Control->Text = FormatCommand(Program, Params);
       }
       __finally
       {

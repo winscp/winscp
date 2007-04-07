@@ -22,7 +22,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
     310)
   PixelsPerInch = 96
   TextHeight = 13
-  object ExternalEditorGroup: TXPGroupBox
+  object ExternalEditorGroup: TGroupBox
     Left = 8
     Top = 196
     Width = 388
@@ -47,7 +47,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       TabOrder = 0
     end
   end
-  object EditorGroup: TXPGroupBox
+  object EditorGroup: TGroupBox
     Left = 8
     Top = 8
     Width = 388
@@ -99,7 +99,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       OnClick = ExternalEditorBrowseButtonClick
     end
   end
-  object MaskGroup: TXPGroupBox
+  object MaskGroup: TGroupBox
     Left = 7
     Top = 116
     Width = 388

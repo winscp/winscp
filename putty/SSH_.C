@@ -1,5 +1,7 @@
 #include "ssh.c"
 
+#include "puttyexp.h"
+
 void ssh_close(void * handle)
 {
   ssh_do_close((Ssh)handle, FALSE);
@@ -67,6 +69,11 @@ int get_ssh_state(void * handle)
 int get_ssh_state_closed(void * handle)
 {
   return ((Ssh)handle)->state == SSH_STATE_CLOSED;
+}
+
+int get_ssh_state_session(void * handle)
+{
+  return ((Ssh)handle)->state == SSH_STATE_SESSION;
 }
 
 int get_ssh_exitcode(void * handle)

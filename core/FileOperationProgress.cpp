@@ -156,7 +156,7 @@ int __fastcall TFileOperationProgressType::OverallProgress()
 void __fastcall TFileOperationProgressType::DoProgress()
 {
   if (FOnProgress) FOnProgress(*this, Cancel);
-} 
+}
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Finish(AnsiString FileName,
   bool Success, bool & DisconnectWhenComplete)
@@ -171,7 +171,7 @@ void __fastcall TFileOperationProgressType::Finish(AnsiString FileName,
   }
   FFilesFinished++;
   DoProgress();
-} 
+}
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::SetFile(AnsiString AFileName)
 {
@@ -195,7 +195,7 @@ void __fastcall TFileOperationProgressType::AddLocalyUsed(__int64 ASize)
     LocalSize = LocalyUsed;
   }
   DoProgress();
-} 
+}
 //---------------------------------------------------------------------------
 bool __fastcall TFileOperationProgressType::IsLocalyDone()
 {
@@ -229,7 +229,7 @@ void __fastcall TFileOperationProgressType::ChangeTransferSize(__int64 ASize)
   // on total transfer size
   if (TotalSizeSet)
   {
-    TotalSize += (ASize - TransferSize); 
+    TotalSize += (ASize - TransferSize);
   }
   TransferSize = ASize;
   DoProgress();
@@ -258,7 +258,7 @@ void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize,
     // grows while being downloaded
     if (TotalSizeSet)
     {
-      TotalSize += (TransferedSize - TransferSize); 
+      TotalSize += (TransferedSize - TransferSize);
     }
     TransferSize = TransferedSize;
   }
@@ -310,13 +310,13 @@ void __fastcall TFileOperationProgressType::SetResumeStatus(TResumeStatus AResum
 TDateTime __fastcall TFileOperationProgressType::TimeElapsed()
 {
   return Now() - StartTime;
-} 
+}
 //---------------------------------------------------------------------------
 unsigned int __fastcall TFileOperationProgressType::CPS()
 {
   TDateTime CurTime = Suspended ? FSuspendTime : Now();
   TDateTime RealTime = (CurTime - StartTime) - FStopped;
-  
+
   if ((double)RealTime > 0)
   {
     return TotalTransfered / ((double)RealTime * (24 * 60 * 60));
@@ -325,13 +325,13 @@ unsigned int __fastcall TFileOperationProgressType::CPS()
   {
     return 0;
   }
-} 
+}
 //---------------------------------------------------------------------------
 TDateTime __fastcall TFileOperationProgressType::TimeExpected()
 {
   unsigned int CurCps = CPS();
   if (CurCps) return TDateTime((double)(((double)(TransferSize - TransferedSize)) / CurCps) / (24 * 60 * 60));
-    else return 0; 
+    else return 0;
 }
 //---------------------------------------------------------------------------
 TDateTime __fastcall TFileOperationProgressType::TotalTimeExpected()

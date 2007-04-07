@@ -6,7 +6,6 @@
 #include <Controls.hpp>
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
-#include "XPThemes.hpp"
 #include "HistoryComboBox.hpp"
 //---------------------------------------------------------------------------
 class TCustomCommands;
@@ -14,7 +13,7 @@ class TCustomCommands;
 class TCustomCommandDialog : public TForm
 {
 __published:
-  TXPGroupBox *Group;
+  TGroupBox *Group;
   TButton *OkButton;
   TButton *CancelButton;
   TLabel *DescriptionLabel;
@@ -33,9 +32,14 @@ __published:
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall CommandEditGetData(THistoryComboBox *Sender,
+          Pointer &Data);
+  void __fastcall CommandEditSetData(THistoryComboBox *Sender,
+          Pointer Data);
 
 private:
   TCustomCommandsMode FMode;
+  int FOptions;
   int FParams;
   AnsiString FOrigDescription;
   const TCustomCommands * FCustomCommands;
@@ -52,7 +56,7 @@ protected:
   void __fastcall UpdateControls();
 
 public:
-  __fastcall TCustomCommandDialog(TComponent* Owner);
+  __fastcall TCustomCommandDialog(TComponent* Owner, unsigned int Options);
 
   bool __fastcall Execute();
 

@@ -10,7 +10,6 @@
 #include <WinInterface.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPThemes"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
@@ -130,4 +129,3 @@ void __fastcall TSymlinkDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
-

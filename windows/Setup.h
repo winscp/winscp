@@ -4,7 +4,7 @@
 //---------------------------------------------------------------------------
 void __fastcall AddSearchPath(const AnsiString Path);
 void __fastcall RemoveSearchPath(const AnsiString Path);
-void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New);
+void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New, TQueryType & Type, bool Force);
 void __fastcall CheckForUpdates(bool CachedResults);
 void __fastcall RegisterAsUrlHandler();
 void __fastcall TemporaryDirectoryCleanup();

@@ -127,5 +127,3 @@ void __fastcall TUnixPathComboBox::PathChanged()
   Path = ((TCustomDirView*)DirView)->Path;
 #endif
 }
-
-

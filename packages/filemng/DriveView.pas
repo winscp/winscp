@@ -197,7 +197,7 @@ type
     function CallBackExpandLevel(var Node: TTreeNode; Data: Pointer): Boolean;
 
     {Notification procedures used by component TDiscMonitor:}
-    procedure ChangeDetected(Sender: TObject; const Directory: string; 
+    procedure ChangeDetected(Sender: TObject; const Directory: string;
       var SubdirsChanged: Boolean);
     procedure ChangeInvalid(Sender: TObject; const Directory: string; const ErrorStr: string);
 
@@ -232,7 +232,7 @@ type
 
     procedure ValidateDirectoryEx(Node: TTreeNode; Recurse: TRecursiveScan;
       NewDirs: Boolean); override;
-    procedure ValidateDirectoryEasy(Node: TTreeNode); 
+    procedure ValidateDirectoryEasy(Node: TTreeNode);
     procedure RebuildTree; override;
 
     procedure SetLastPathCut(Path: string);
@@ -2070,7 +2070,7 @@ begin
     DriveStatus[Drive].DiscMonitor.Active;
 end; {NodeWatched}
 
-procedure TDriveView.ChangeInvalid(Sender: TObject; const Directory: string; 
+procedure TDriveView.ChangeInvalid(Sender: TObject; const Directory: string;
   const ErrorStr: string);
 var
   Dir: string;
@@ -2696,7 +2696,7 @@ var
 begin
   TargetPath := NodePathName(Node);
   IsRecycleBin := NodeIsRecycleBin(Node);
-  
+
   if FDragDropFilesEx.FileList.Count = 0 then
     Exit;
 

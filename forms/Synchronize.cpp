@@ -11,14 +11,13 @@
 #include "Terminal.h"
 #include "GUITools.h"
 
-#include <ScpMain.h>
+#include <CoreMain.h>
 #include <Configuration.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <CustomWinConfiguration.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "XPThemes"
 #pragma link "HistoryComboBox"
 #pragma link "GrayedCheckBox"
 #pragma resource "*.dfm"
@@ -43,7 +42,7 @@ bool __fastcall DoSynchronizeDialog(TSynchronizeParamType & Params,
     Result = Dialog->Execute();
     if (Result)
     {
-      SaveSettings = Dialog->SaveSettings; 
+      SaveSettings = Dialog->SaveSettings;
       Params = Dialog->Params;
     }
   }
@@ -510,4 +509,3 @@ void __fastcall TSynchronizeDialog::FormKeyDown(TObject * /*Sender*/, WORD & Key
   }
 }
 //---------------------------------------------------------------------------
-

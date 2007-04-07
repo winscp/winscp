@@ -1,13 +1,4 @@
-#include "winstuff.h"
-
-long reg_open_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
-long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result);
-long reg_query_winscp_value_ex(HKEY Key, const char * ValueName,
-  unsigned long * Reserved, unsigned long * Type, unsigned char * Data,
-  unsigned long * DataSize);
-long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Reserved,
-  unsigned long Type, const unsigned char * Data, unsigned long DataSize);
-long reg_close_winscp_key(HKEY Key);
+#include "puttyexp.h"
 
 #pragma option push -w-dup
 #define RegOpenKey reg_open_winscp_key
@@ -44,4 +35,3 @@ int seedpath_size()
 {
   return sizeof(seedpath);
 }
-

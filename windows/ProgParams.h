@@ -4,9 +4,11 @@
 //---------------------------------------------------------------------------
 enum TParamType {ptParam, ptSwitch};
 //---------------------------------------------------------------------------
-class TProgramParams 
+class TProgramParams
 {
 public:
+  static TProgramParams * __fastcall Instance();
+
   TProgramParams();
   ~TProgramParams();
   bool __fastcall FindSwitch(const AnsiString Switch);
@@ -29,9 +31,11 @@ protected:
   bool __fastcall FindSwitch(const AnsiString Switch,
     AnsiString & Value, int & ParamsStart, int & ParamsCount);
 private:
+  static TProgramParams * SInstance;
+
   AnsiString FSwitchMarks;
   AnsiString FSwitchValueDelimiters;
-  TStrings * FParameters; 
+  TStrings * FParameters;
 
   bool FIgnoreCase;
   Integer FParamCount[2];

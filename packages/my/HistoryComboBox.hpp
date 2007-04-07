@@ -34,6 +34,10 @@ enum HistoryComboBox__1 { soExit, soDropDown };
 typedef Set<HistoryComboBox__1, soExit, soDropDown>  THistorySaveOn;
 
 class DELPHICLASS THistoryComboBox;
+typedef void __fastcall (__closure *THistoryComboBoxGetData)(THistoryComboBox* Sender, void * &Data);
+
+typedef void __fastcall (__closure *THistoryComboBoxSetData)(THistoryComboBox* Sender, void * Data);
+
 class PASCALIMPLEMENTATION THistoryComboBox : public Stdctrls::TComboBox 
 {
 	typedef Stdctrls::TComboBox inherited;
@@ -41,6 +45,8 @@ class PASCALIMPLEMENTATION THistoryComboBox : public Stdctrls::TComboBox
 private:
 	THistorySaveOn FSaveOn;
 	int FMaxHistorySize;
+	THistoryComboBoxGetData FOnGetData;
+	THistoryComboBoxSetData FOnSetData;
 	void __fastcall SetMaxHistorySize(int AMaxHistorySize);
 	bool __fastcall StoreSaveOn(void);
 	int __fastcall GetMaxItemWidth(void);
@@ -49,6 +55,7 @@ protected:
 	DYNAMIC void __fastcall DoExit(void);
 	DYNAMIC void __fastcall DropDown(void);
 	DYNAMIC void __fastcall KeyDown(Word &Key, Classes::TShiftState Shift);
+	DYNAMIC void __fastcall Change(void);
 	
 public:
 	__fastcall virtual THistoryComboBox(Classes::TComponent* AOwner);
@@ -57,6 +64,8 @@ public:
 __published:
 	__property THistorySaveOn SaveOn = {read=FSaveOn, write=FSaveOn, stored=StoreSaveOn, nodefault};
 	__property int MaxHistorySize = {read=FMaxHistorySize, write=SetMaxHistorySize, default=30};
+	__property THistoryComboBoxGetData OnGetData = {read=FOnGetData, write=FOnGetData};
+	__property THistoryComboBoxSetData OnSetData = {read=FOnSetData, write=FOnSetData};
 public:
 	#pragma option push -w-inl
 	/* TCustomComboBox.Destroy */ inline __fastcall virtual ~THistoryComboBox(void) { }

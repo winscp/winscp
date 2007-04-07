@@ -30,7 +30,7 @@ uses
   SysUtils, Windows, Forms, ShlObj, PIDL, Classes, Controls;
 
 type
-  TDateTimePrecision = (tpDay, tpMinute, tpSecond, tpMillisecond);
+  TDateTimePrecision = (tpNone, tpDay, tpMinute, tpSecond, tpMillisecond);
 
 function CheckFileExists(FileName: string): Boolean;
 function DirExists(Dir: string): Boolean; overload;
@@ -53,7 +53,6 @@ function SpecialFolderLocation(Folder: Integer; var Path: string;
   var PIDL: PItemIDList): Boolean; overload;
 function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean; overload;
 function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
-procedure Trace(Msg: string);
 
 resourcestring
   SNoValidPath = 'Can''t find any valid path.';
@@ -293,6 +292,8 @@ procedure ReduceDateTimePrecision(var DateTime: TDateTime;
 var
   Y, M, D, H, N, S, MS: Word;
 begin
+  if Precision = tpNone then DateTime := 0
+    else
   if Precision <> tpMillisecond then
   begin
     DecodeDateTime(DateTime, Y, M, D, H, N, S, MS);
@@ -349,21 +350,6 @@ begin
   Result.ShareImages := True;
 end;
 
-procedure Trace(Msg: string);
-const
-  TRACEENV = 'WINSCPTRACE';
-var
-  FileName: string;
-  F: Text;
-begin
-  FileName := GetEnvironmentVariable(TRACEENV);
-  if FileName = '' then FileName := 'C:\winscptrace.log';
-  AssignFile(F, FileName);
-  Append(F);
-  Write(F, Format('[%s] %s:%d:%s'#13#10'  %s'#13#10,
-    [TimeToStr(Now), 'PAS', 0, 'unk', Msg]));
-  CloseFile(F);
-end;
 
 initialization
   InitDriveSpacePtr;

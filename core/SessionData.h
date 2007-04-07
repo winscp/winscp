@@ -2,6 +2,7 @@
 #ifndef SessionDataH
 #define SessionDataH
 
+#include "Common.h"
 #include "FileBuffer.h"
 #include "NamedObjs.h"
 #include "HierarchicalStorage.h"
@@ -12,8 +13,8 @@
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES };
 #define CIPHER_COUNT (cipDES+1)
 enum TProtocol { ptRaw, ptTelnet, ptRLogin, ptSSH };
-enum TFSProtocol { fsSCPonly, fsSFTP, fsSFTPonly, fsExternalSSH, fsExternalSFTP };
-#define FSPROTOCOL_COUNT (fsExternalSFTP+1)
+enum TFSProtocol { fsSCPonly, fsSFTP, fsSFTPonly, fsExternalSSH, fsExternalSFTP, fsFTP };
+#define FSPROTOCOL_COUNT (fsFTP+1)
 enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet }; // 0.53b and older
 enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd }; // after 0.53b
 enum TSshProt { ssh1only, ssh1, ssh2, ssh2only };
@@ -56,6 +57,8 @@ private:
   bool FAuthKI;
   bool FAuthKIPassword;
   bool FAuthGSSAPI;
+  bool FGSSAPIFwdTGT;
+  AnsiString FGSSAPIServerRealm;
   bool FChangeUsername;
   bool FCompression;
   TSshProt FSshProt;
@@ -103,7 +106,7 @@ private:
   int FSFTPListingQueue;
   int FSFTPMaxVersion;
   unsigned long FSFTPMaxPacketSize;
-  bool FConsiderDST;
+  TDSTMode FDSTMode;
   TAutoSwitch FSFTPBugs[SFTP_BUG_COUNT];
   bool FDeleteToRecycleBin;
   bool FOverwrittenToRecycleBin;
@@ -113,6 +116,16 @@ private:
   AnsiString FRekeyData;
   unsigned int FRekeyTime;
   int FColor;
+  bool FTunnel;
+  AnsiString FTunnelHostName;
+  int FTunnelPortNumber;
+  AnsiString FTunnelUserName;
+  AnsiString FTunnelPassword;
+  AnsiString FTunnelPublicKeyFile;
+  int FTunnelLocalPortNumber;
+  AnsiString FTunnelPortFwd;
+  bool FFtpPasvMode;
+  AnsiString FFtpAccount;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -125,6 +138,8 @@ private:
   void __fastcall SetAuthKI(bool value);
   void __fastcall SetAuthKIPassword(bool value);
   void __fastcall SetAuthGSSAPI(bool value);
+  void __fastcall SetGSSAPIFwdTGT(bool value);
+  void __fastcall SetGSSAPIServerRealm(AnsiString value);
   void __fastcall SetChangeUsername(bool value);
   void __fastcall SetCompression(bool value);
   void __fastcall SetSshProt(TSshProt value);
@@ -171,6 +186,7 @@ private:
   void __fastcall SetIgnoreLsWarnings(bool value);
   void __fastcall SetTcpNoDelay(bool value);
   AnsiString __fastcall GetSshProtStr();
+  bool __fastcall GetUsesSsh();
   void __fastcall SetCipherList(AnsiString value);
   AnsiString __fastcall GetCipherList() const;
   void __fastcall SetKexList(AnsiString value);
@@ -199,7 +215,7 @@ private:
   TAutoSwitch __fastcall GetSFTPBug(TSftpBug Bug) const;
   void __fastcall SetSCPLsFullTime(TAutoSwitch value);
   AnsiString __fastcall GetStorageKey();
-  void __fastcall SetConsiderDST(bool value);
+  void __fastcall SetDSTMode(TDSTMode value);
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetOverwrittenToRecycleBin(bool value);
   void __fastcall SetRecycleBinPath(AnsiString value);
@@ -207,12 +223,24 @@ private:
   void __fastcall SetRekeyData(AnsiString value);
   void __fastcall SetRekeyTime(unsigned int value);
   void __fastcall SetColor(int value);
+  void __fastcall SetTunnel(bool value);
+  void __fastcall SetTunnelHostName(AnsiString value);
+  void __fastcall SetTunnelPortNumber(int value);
+  void __fastcall SetTunnelUserName(AnsiString value);
+  void __fastcall SetTunnelPassword(AnsiString value);
+  AnsiString __fastcall GetTunnelPassword();
+  void __fastcall SetTunnelPublicKeyFile(AnsiString value);
+  void __fastcall SetTunnelPortFwd(AnsiString value);
+  void __fastcall SetTunnelLocalPortNumber(int value);
+  bool __fastcall GetTunnelAutoassignLocalPortNumber();
+  void __fastcall SetFtpPasvMode(bool value);
+  void __fastcall SetFtpAccount(AnsiString value);
+  static AnsiString __fastcall DecodeUrlChars(const AnsiString & S, bool Decode);
 
 public:
   __fastcall TSessionData(AnsiString aName);
   void __fastcall Default();
   void __fastcall NonPersistant();
-  virtual void __fastcall StoreToConfig(void * config);
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);
@@ -236,9 +264,12 @@ public:
   __property bool AuthKI  = { read=FAuthKI, write=SetAuthKI };
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
   __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
+  __property bool GSSAPIFwdTGT = { read=FGSSAPIFwdTGT, write=SetGSSAPIFwdTGT };
+  __property AnsiString GSSAPIServerRealm = { read=FGSSAPIServerRealm, write=SetGSSAPIServerRealm };
   __property bool ChangeUsername  = { read=FChangeUsername, write=SetChangeUsername };
   __property bool Compression  = { read=FCompression, write=SetCompression };
   __property TSshProt SshProt  = { read=FSshProt, write=SetSshProt };
+  __property bool UsesSsh = { read = GetUsesSsh };
   __property bool Ssh2DES  = { read=FSsh2DES, write=SetSsh2DES };
   __property TCipher Cipher[int Index] = { read=GetCipher, write=SetCipher };
   __property TKex Kex[int Index] = { read=GetKex, write=SetKex };
@@ -299,7 +330,7 @@ public:
   __property unsigned long SFTPMaxPacketSize = { read = FSFTPMaxPacketSize, write = SetSFTPMaxPacketSize };
   __property TAutoSwitch SFTPBug[TSftpBug Bug]  = { read=GetSFTPBug, write=SetSFTPBug };
   __property TAutoSwitch SCPLsFullTime = { read = FSCPLsFullTime, write = SetSCPLsFullTime };
-  __property bool ConsiderDST = { read = FConsiderDST, write = SetConsiderDST };
+  __property TDSTMode DSTMode = { read = FDSTMode, write = SetDSTMode };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool OverwrittenToRecycleBin = { read = FOverwrittenToRecycleBin, write = SetOverwrittenToRecycleBin };
   __property AnsiString RecycleBinPath = { read = FRecycleBinPath, write = SetRecycleBinPath };
@@ -307,6 +338,17 @@ public:
   __property AnsiString RekeyData = { read = FRekeyData, write = SetRekeyData };
   __property unsigned int RekeyTime = { read = FRekeyTime, write = SetRekeyTime };
   __property int Color = { read = FColor, write = SetColor };
+  __property bool Tunnel = { read = FTunnel, write = SetTunnel };
+  __property AnsiString TunnelHostName = { read = FTunnelHostName, write = SetTunnelHostName };
+  __property int TunnelPortNumber = { read = FTunnelPortNumber, write = SetTunnelPortNumber };
+  __property AnsiString TunnelUserName = { read = FTunnelUserName, write = SetTunnelUserName };
+  __property AnsiString TunnelPassword = { read = GetTunnelPassword, write = SetTunnelPassword };
+  __property AnsiString TunnelPublicKeyFile = { read = FTunnelPublicKeyFile, write = SetTunnelPublicKeyFile };
+  __property bool TunnelAutoassignLocalPortNumber = { read = GetTunnelAutoassignLocalPortNumber };
+  __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber, write = SetTunnelLocalPortNumber };
+  __property AnsiString TunnelPortFwd = { read = FTunnelPortFwd, write = SetTunnelPortFwd };
+  __property bool FtpPasvMode = { read = FFtpPasvMode, write = SetFtpPasvMode };
+  __property AnsiString FtpAccount = { read = FFtpAccount, write = SetFtpAccount };
   __property AnsiString StorageKey = { read = GetStorageKey };
 };
 //---------------------------------------------------------------------------
@@ -316,11 +358,12 @@ public:
   __fastcall TStoredSessionList(bool aReadOnly = false);
   void __fastcall Load(AnsiString aKey, bool UseDefaults);
   void __fastcall Load();
-  void __fastcall Save(AnsiString aKey);
-  void __fastcall Save();
+  void __fastcall Save(bool All = false);
+  void __fastcall Saved();
+  void __fastcall Export(const AnsiString FileName);
   void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false,
     bool UseDefaults = false);
-  void __fastcall Save(THierarchicalStorage * Storage);
+  void __fastcall Save(THierarchicalStorage * Storage, bool All = false);
   void __fastcall SelectAll(bool Select);
   void __fastcall Import(TStoredSessionList * From, bool OnlySelected);
   TSessionData * __fastcall AtSession(int Index)
@@ -340,7 +383,6 @@ public:
     bool OnlySelected);
 
 private:
-  TStorage LastStorage;
   TSessionData * FDefaultSettings;
   bool FReadOnly;
   void __fastcall SetDefaultSettings(TSessionData * value);

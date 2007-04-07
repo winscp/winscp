@@ -8,6 +8,8 @@
 // WM_USER_STOP = WM_WINSCP_USER + 2 (in forms/Synchronize.cpp)
 // WM_INTERUPT_IDLE = WM_WINSCP_USER + 3 (in windows/ConsoleRunner.cpp)
 // WM_COMPONENT_HIDE = WM_WINSCP_USER + 4 (forms/CustomScpExplorer.cpp)
+// WM_TRAY_ICON = WM_WINSCP_USER + 5 (forms/CustomScpExplorer.cpp)
+// WM_LOG_UPDATE = WM_WINSCP_USER + 6 (components/LogMemo.cpp)
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
 struct TSynchronizeChecklistConfiguration
@@ -46,9 +48,9 @@ private:
   void __fastcall SetConsoleWin(TConsoleWinConfiguration value);
 
 protected:
-  virtual void __fastcall SaveSpecial(THierarchicalStorage * Storage);
-  virtual void __fastcall LoadSpecial(THierarchicalStorage * Storage);
-  virtual void __fastcall ModifyAll();
+  virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
+  virtual void __fastcall LoadData(THierarchicalStorage * Storage);
+  virtual void __fastcall Saved();
   void __fastcall ClearHistory();
 
 public:

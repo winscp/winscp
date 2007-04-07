@@ -88,6 +88,7 @@ protected:
 	
 public:
 	__fastcall virtual TCustomNortonLikeListView(Classes::TComponent* AOwner);
+	__fastcall virtual ~TCustomNortonLikeListView(void);
 	Comctrls::TListItem* __fastcall ClosestUnselected(Comctrls::TListItem* Item);
 	HIDESBASE void __fastcall SelectAll(TSelectMode Mode);
 	void __fastcall SelectCurrentItem(bool FocusNext);
@@ -98,11 +99,6 @@ public:
 	__property int MarkedCount = {read=GetMarkedCount, nodefault};
 	__property Comctrls::TListItem* MarkedFile = {read=GetMarkedFile};
 	__property bool Valid = {read=GetValid, nodefault};
-public:
-	#pragma option push -w-inl
-	/* TCustomListView.Destroy */ inline __fastcall virtual ~TCustomNortonLikeListView(void) { }
-	#pragma option pop
-	
 public:
 	#pragma option push -w-inl
 	/* TWinControl.CreateParented */ inline __fastcall TCustomNortonLikeListView(HWND ParentWindow) : Comctrls::TCustomListView(ParentWindow) { }
@@ -194,10 +190,8 @@ public:
 	#pragma option push -w-inl
 	/* TCustomNortonLikeListView.Create */ inline __fastcall virtual TNortonLikeListView(Classes::TComponent* AOwner) : TCustomNortonLikeListView(AOwner) { }
 	#pragma option pop
-	
-public:
 	#pragma option push -w-inl
-	/* TCustomListView.Destroy */ inline __fastcall virtual ~TNortonLikeListView(void) { }
+	/* TCustomNortonLikeListView.Destroy */ inline __fastcall virtual ~TNortonLikeListView(void) { }
 	#pragma option pop
 	
 public:

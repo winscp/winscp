@@ -12,7 +12,9 @@ struct TConsoleCommStruct
   enum TVersion
   {
     Version0 = 0,
-    CurrentVersion = Version0,
+    Version1 = 1,
+    Version2 = 2,
+    CurrentVersion = Version2,
     MinVersion = Version0,
     MaxVersion = CurrentVersion
   };
@@ -28,6 +30,7 @@ struct TConsoleCommStruct
     bool Echo;
     bool Result;
     char Str[10240];
+    unsigned int Timer; // since Version2
   };
 
   struct TChoiceEvent
@@ -36,6 +39,8 @@ struct TConsoleCommStruct
     int Cancel;
     int Break;
     int Result;
+    int Timeouted; // since Version2
+    unsigned int Timer; // since Version2
   };
 
   struct TTitleEvent

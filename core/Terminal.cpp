@@ -8,15 +8,26 @@
 #include <FileCtrl.hpp>
 
 #include "Common.h"
+#include "PuttyTools.h"
+#include "Exceptions.h"
 #include "FileBuffer.h"
 #include "Interface.h"
 #include "RemoteFiles.h"
+#include "SecureShell.h"
 #include "ScpFileSystem.h"
 #include "SftpFileSystem.h"
+#include "FtpFileSystem.h"
 #include "TextsCore.h"
 #include "HelpCore.h"
+#include "Security.h"
+#include "CoreMain.h"
+#include "Queue.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+#define SSH_ERROR(x) throw ESsh(NULL, x)
+#define SSH_FATAL_ERROR_EXT(E, x) throw ESshFatal(E, x)
+#define SSH_FATAL_ERROR(x) SSH_FATAL_ERROR_EXT(NULL, x)
 //---------------------------------------------------------------------------
 #define COMMAND_ERROR_ARI(MESSAGE, REPEAT) \
   { \
@@ -54,6 +65,14 @@ TSynchronizeOptions::~TSynchronizeOptions()
 TSpaceAvailable::TSpaceAvailable()
 {
   memset(this, 0, sizeof(*this));
+}
+//---------------------------------------------------------------------------
+TOverwriteFileParams::TOverwriteFileParams()
+{
+  SourceSize = 0;
+  DestSize = 0;
+  SourcePrecision = mfFull;
+  DestPrecision = mfFull;
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -133,8 +152,172 @@ const TSynchronizeChecklist::TItem * TSynchronizeChecklist::GetItem(int Index) c
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TTerminal::TTerminal(): TSecureShell()
+class TTunnelThread : public TSimpleThread
 {
+public:
+  __fastcall TTunnelThread(TSecureShell * SecureShell);
+  virtual __fastcall ~TTunnelThread();
+
+  virtual void __fastcall Terminate();
+
+protected:
+  virtual void __fastcall Execute();
+
+private:
+  TSecureShell * FSecureShell;
+  bool FTerminated;
+};
+//---------------------------------------------------------------------------
+__fastcall TTunnelThread::TTunnelThread(TSecureShell * SecureShell) :
+  FSecureShell(SecureShell),
+  FTerminated(false)
+{
+  Start();
+}
+//---------------------------------------------------------------------------
+__fastcall TTunnelThread::~TTunnelThread()
+{
+  // close before the class's virtual functions (Terminate particularly) are lost
+  Close();
+}
+//---------------------------------------------------------------------------
+void __fastcall TTunnelThread::Terminate()
+{
+  FTerminated = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTunnelThread::Execute()
+{
+  try
+  {
+    while (!FTerminated)
+    {
+      FSecureShell->Idle(250);
+    }
+  }
+  catch(...)
+  {
+    if (FSecureShell->Active)
+    {
+      FSecureShell->Close();
+    }
+    throw;
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TTunnelUI : public TSessionUI
+{
+public:
+  __fastcall TTunnelUI(TTerminal * Terminal);
+  virtual void __fastcall Information(const AnsiString & Str, bool Status);
+  virtual int __fastcall QueryUser(const AnsiString Query,
+    TStrings * MoreMessages, int Answers, const TQueryParams * Params,
+    TQueryType QueryType);
+  virtual int __fastcall QueryUserException(const AnsiString Query,
+    Exception * E, int Answers, const TQueryParams * Params,
+    TQueryType QueryType);
+  virtual bool __fastcall PromptUser(TSessionData * Data, AnsiString Prompt,
+    TPromptKind Kind, AnsiString & Response);
+  virtual void __fastcall DisplayBanner(const AnsiString & Banner);
+  virtual void __fastcall ShowExtendedException(Exception * E);
+  virtual void __fastcall Closed();
+
+private:
+  TTerminal * FTerminal;
+  unsigned int FTerminalThread;
+};
+//---------------------------------------------------------------------------
+__fastcall TTunnelUI::TTunnelUI(TTerminal * Terminal)
+{
+  FTerminal = Terminal;
+  FTerminalThread = GetCurrentThreadId();
+}
+//---------------------------------------------------------------------------
+void __fastcall TTunnelUI::Information(const AnsiString & Str, bool Status)
+{
+  if (GetCurrentThreadId() == FTerminalThread)
+  {
+    FTerminal->Information(Str, Status);
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall TTunnelUI::QueryUser(const AnsiString Query,
+  TStrings * MoreMessages, int Answers, const TQueryParams * Params,
+  TQueryType QueryType)
+{
+  int Result;
+  if (GetCurrentThreadId() == FTerminalThread)
+  {
+    Result = FTerminal->QueryUser(Query, MoreMessages, Answers, Params, QueryType);
+  }
+  else
+  {
+    Result = AbortAnswer(Answers);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TTunnelUI::QueryUserException(const AnsiString Query,
+  Exception * E, int Answers, const TQueryParams * Params,
+  TQueryType QueryType)
+{
+  int Result;
+  if (GetCurrentThreadId() == FTerminalThread)
+  {
+    Result = FTerminal->QueryUserException(Query, E, Answers, Params, QueryType);
+  }
+  else
+  {
+    Result = AbortAnswer(Answers);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTunnelUI::PromptUser(TSessionData * Data, AnsiString Prompt,
+  TPromptKind Kind, AnsiString & Response)
+{
+  bool Result;
+  if (GetCurrentThreadId() == FTerminalThread)
+  {
+    Result = FTerminal->PromptUser(Data, Prompt, Kind, Response);
+  }
+  else
+  {
+    Result = false;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTunnelUI::DisplayBanner(const AnsiString & Banner)
+{
+  if (GetCurrentThreadId() == FTerminalThread)
+  {
+    FTerminal->DisplayBanner(Banner);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTunnelUI::ShowExtendedException(Exception * E)
+{
+  if (GetCurrentThreadId() == FTerminalThread)
+  {
+    FTerminal->ShowExtendedException(E);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTunnelUI::Closed()
+{
+  // noop
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TTerminal::TTerminal(TSessionData * SessionData,
+  TConfiguration * Configuration)
+{
+  FConfiguration = Configuration;
+  FSessionData = new TSessionData("");
+  FSessionData->Assign(SessionData);
+  FLog = new TSessionLog(this, FSessionData, Configuration);
   FFiles = new TRemoteDirectory(this);
   FExceptionOnFail = 0;
   FInTransaction = 0;
@@ -143,11 +326,18 @@ __fastcall TTerminal::TTerminal(): TSecureShell()
   FUsersGroupsLookedup = False;
   FGroups = new TUsersGroupsList();
   FUsers = new TUsersGroupsList();
+  FFileSystem = NULL;
   FOnProgress = NULL;
   FOnFinished = NULL;
   FOnDeleteLocalFile = NULL;
   FOnReadDirectoryProgress = NULL;
-  FAdditionalInfo = NULL;
+  FOnQueryUser = NULL;
+  FOnPromptUser = NULL;
+  FOnDisplayBanner = NULL;
+  FOnShowExtendedException = NULL;
+  FOnInformation = NULL;
+  FOnClose = NULL;
+
   FUseBusyCursor = True;
   FLockDirectory = "";
   FDirectoryCache = new TRemoteDirectoryCache();
@@ -156,10 +346,23 @@ __fastcall TTerminal::TTerminal(): TSecureShell()
   FCommandSession = NULL;
   FAutoReadDirectory = true;
   FReadingCurrentDirectory = false;
+  FStatus = ssClosed;
+  FTunnelThread = NULL;
+  FTunnel = NULL;
+  FTunnelData = NULL;
+  FTunnelLog = NULL;
+  FTunnelUI = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
 {
+  if (Active)
+  {
+    Close();
+  }
+
+  assert(FTunnel == NULL);
+
   SAFE_DESTROY(FCommandSession);
 
   if (SessionData->CacheDirectoryChanges && SessionData->PreserveDirectoryChanges &&
@@ -169,18 +372,25 @@ __fastcall TTerminal::~TTerminal()
       FDirectoryChangesCache);
   }
 
-  SAFE_DESTROY(FFileSystem);
+  SAFE_DESTROY_EX(TCustomFileSystem, FFileSystem);
+  SAFE_DESTROY_EX(TSessionLog, FLog);
   delete FFiles;
   delete FGroups;
   delete FUsers;
   delete FDirectoryCache;
   delete FDirectoryChangesCache;
-  delete FAdditionalInfo;
+  SAFE_DESTROY(FSessionData);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Idle()
 {
-  TSecureShell::Idle();
+  if (Configuration->LogProtocol >= 1)
+  {
+    LogEvent("Session upkeep");
+  }
+
+  assert(FFileSystem != NULL);
+  FFileSystem->Idle();
 
   if (CommandSessionOpened)
   {
@@ -196,38 +406,9 @@ void __fastcall TTerminal::Idle()
       // it is displayed, because it can be useful to know.
       if (FCommandSession->Active)
       {
-        FCommandSession->DoShowExtendedException(&E);
+        FCommandSession->ShowExtendedException(&E);
       }
     }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TTerminal::KeepAlive()
-{
-  if (SessionData->PingType == ptDummyCommand)
-  {
-    LogEvent("Executing dummy command to keep session alive.");
-    assert(Active);
-    assert(FFileSystem != NULL);
-    try
-    {
-      FFileSystem->KeepAlive();
-    }
-    catch(Exception & E)
-    {
-      if (Active)
-      {
-        DoHandleExtendedException(&E);
-      }
-      else
-      {
-        throw;
-      }
-    }
-  }
-  else
-  {
-    TSecureShell::KeepAlive();
   }
 }
 //---------------------------------------------------------------------------
@@ -256,16 +437,14 @@ AnsiString __fastcall TTerminal::ExpandFileName(AnsiString Path,
   return Path;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TTerminal::GetProtocolName()
+bool __fastcall TTerminal::GetActive()
 {
-  assert(FFileSystem);
-  return FFileSystem->ProtocolName;
+  return (FFileSystem != NULL) && FFileSystem->GetActive();
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Close()
 {
-  // file system cannot be destoryed here, moved to destructor
-  TSecureShell::Close();
+  FFileSystem->Close();
 
   if (CommandSessionOpened)
   {
@@ -273,37 +452,229 @@ void __fastcall TTerminal::Close()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoOpen()
+void __fastcall TTerminal::ResetConnection()
 {
-  TSecureShell::DoOpen();
-  // fresh connection? (reconnect otherwise)
-  if (FFileSystem == NULL)
+  // used to be called from Reopen(), why?
+  FTunnelError = "";
+
+  if (FDirectoryChangesCache != NULL)
   {
-    if ((SessionData->FSProtocol == fsSCPonly) ||
-        (SessionData->FSProtocol == fsSFTP && SshFallbackCmd()))
+    delete FDirectoryChangesCache;
+    FDirectoryChangesCache = NULL;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::Open()
+{
+  try
+  {
+    try
     {
-      FFSProtocol = cfsSCP;
-      FFileSystem = new TSCPFileSystem(this);
-      LogEvent("Using SCP protocol.");
-    }
-    else
-    {
-      FFSProtocol = cfsSFTP;
-      FFileSystem = new TSFTPFileSystem(this);
-      LogEvent("Using SFTP protocol.");
-    }
-    if (SessionData->CacheDirectoryChanges)
-    {
-      FDirectoryChangesCache = new TRemoteDirectoryChangesCache();
-      if (SessionData->PreserveDirectoryChanges)
+      ResetConnection();
+      FStatus = ssOpening;
+
+      AnsiString OrigHostName = FSessionData->HostName;
+      int OrigPortNumber = FSessionData->PortNumber;
+
+      try
       {
-        Configuration->LoadDirectoryChangesCache(SessionData->SessionKey,
-          FDirectoryChangesCache);
+        if (FFileSystem == NULL)
+        {
+          Log->AddStartupInfo();
+        }
+
+        assert(FTunnel == NULL);
+        if (FSessionData->Tunnel)
+        {
+          DoInformation(LoadStr(OPEN_TUNNEL), true);
+          LogEvent("Opening tunnel.");
+          OpenTunnel();
+          Log->AddSeparator();
+
+          FSessionData->HostName = "127.0.0.1";
+          FSessionData->PortNumber = FTunnelLocalPortNumber;
+          DoInformation(LoadStr(USING_TUNNEL), false);
+          LogEvent(FORMAT("Connecting via tunnel interface %s:%d.",
+            (FSessionData->HostName, FSessionData->PortNumber)));
+        }
+
+        if (FFileSystem == NULL)
+        {
+          if (SessionData->FSProtocol == fsFTP)
+          {
+            FFSProtocol = cfsFTP;
+            FFileSystem = new TFTPFileSystem(this);
+            FFileSystem->Open();
+            Log->AddSeparator();
+            LogEvent("Using FTP protocol.");
+          }
+          else
+          {
+            TSecureShell * SecureShell = NULL;
+            try
+            {
+              SecureShell = new TSecureShell(this, FSessionData, Log, Configuration);
+              try
+              {
+                SecureShell->Open();
+              }
+              catch(Exception & E)
+              {
+                assert(!SecureShell->Active);
+                if (!SecureShell->Active && !FTunnelError.IsEmpty())
+                {
+                  // the only case where we expect this to happen
+                  assert(E.Message == LoadStr(UNEXPECTED_CLOSE_ERROR));
+                  FatalError(&E, FMTLOAD(TUNNEL_ERROR, (FTunnelError)));
+                }
+                else
+                {
+                  throw;
+                }
+              }
+
+              Log->AddSeparator();
+
+              if ((SessionData->FSProtocol == fsSCPonly) ||
+                  (SessionData->FSProtocol == fsSFTP && SecureShell->SshFallbackCmd()))
+              {
+                FFSProtocol = cfsSCP;
+                FFileSystem = new TSCPFileSystem(this, SecureShell);
+                SecureShell = NULL; // ownership passed
+                LogEvent("Using SCP protocol.");
+              }
+              else
+              {
+                FFSProtocol = cfsSFTP;
+                FFileSystem = new TSFTPFileSystem(this, SecureShell);
+                SecureShell = NULL; // ownership passed
+                LogEvent("Using SFTP protocol.");
+              }
+            }
+            __finally
+            {
+              delete SecureShell;
+            }
+          }
+        }
+        else
+        {
+          FFileSystem->Open();
+        }
       }
+      __finally
+      {
+        FSessionData->HostName = OrigHostName;
+        FSessionData->PortNumber = OrigPortNumber;
+      }
+
+      if (SessionData->CacheDirectoryChanges)
+      {
+        assert(FDirectoryChangesCache == NULL);
+        FDirectoryChangesCache = new TRemoteDirectoryChangesCache();
+        if (SessionData->PreserveDirectoryChanges)
+        {
+          Configuration->LoadDirectoryChangesCache(SessionData->SessionKey,
+            FDirectoryChangesCache);
+        }
+      }
+
+      DoStartup();
+
+      DoInformation(LoadStr(STATUS_READY), true);
+      FStatus = ssOpened;
+    }
+    catch(...)
+    {
+      // rollback
+      if (FDirectoryChangesCache != NULL)
+      {
+        delete FDirectoryChangesCache;
+        FDirectoryChangesCache = NULL;
+      }
+      throw;
     }
   }
+  __finally
+  {
+    DoInformation("", true, false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::OpenTunnel()
+{
+  assert(FTunnelData == NULL);
 
-  DoStartup();
+  try
+  {
+    FTunnelLocalPortNumber = FSessionData->TunnelLocalPortNumber;
+    if (FTunnelLocalPortNumber == 0)
+    {
+      FTunnelLocalPortNumber = Configuration->TunnelLocalPortNumberLow;
+      while (!IsListenerFree(FTunnelLocalPortNumber))
+      {
+        FTunnelLocalPortNumber++;
+        if (FTunnelLocalPortNumber > Configuration->TunnelLocalPortNumberHigh)
+        {
+          FatalError(NULL, FMTLOAD(TUNNEL_NO_FREE_PORT,
+            (Configuration->TunnelLocalPortNumberLow, Configuration->TunnelLocalPortNumberHigh)));
+        }
+      }
+      LogEvent(FORMAT("Autoselected tunnel local port number %d", (FTunnelLocalPortNumber)));
+    }
+
+    FTunnelData = new TSessionData("");
+    FTunnelData->Assign(StoredSessions->DefaultSettings);
+    FTunnelData->Name = FMTLOAD(TUNNEL_SESSION_NAME, (FSessionData->SessionName));
+    FTunnelData->Tunnel = false;
+    FTunnelData->HostName = FSessionData->TunnelHostName;
+    FTunnelData->PortNumber = FSessionData->TunnelPortNumber;
+    FTunnelData->UserName = FSessionData->TunnelUserName;
+    FTunnelData->Password = FSessionData->TunnelPassword;
+    FTunnelData->PublicKeyFile = FSessionData->TunnelPublicKeyFile;
+    FTunnelData->TunnelPortFwd = FORMAT("L%d\t%s:%d",
+      (FTunnelLocalPortNumber, FSessionData->HostName, FSessionData->PortNumber));
+
+    FTunnelLog = new TSessionLog(this, FTunnelData, Configuration);
+    FTunnelLog->Parent = FLog;
+    FTunnelLog->Name = "Tunnel";
+    FTunnelUI = new TTunnelUI(this);
+    FTunnel = new TSecureShell(FTunnelUI, FTunnelData, FTunnelLog, Configuration);
+
+    FTunnel->Open();
+
+    FTunnelThread = new TTunnelThread(FTunnel);
+  }
+  catch(...)
+  {
+    CloseTunnel();
+    throw;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::CloseTunnel()
+{
+  SAFE_DESTROY_EX(TTunnelThread, FTunnelThread);
+  FTunnelError = FTunnel->LastTunnelError;
+  SAFE_DESTROY_EX(TSecureShell, FTunnel);
+  SAFE_DESTROY_EX(TTunnelUI, FTunnelUI);
+  SAFE_DESTROY_EX(TSessionLog, FTunnelLog);
+  SAFE_DESTROY(FTunnelData);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::Closed()
+{
+  if (FTunnel != NULL)
+  {
+     CloseTunnel();
+  }
+
+  if (OnClose)
+  {
+    OnClose(this);
+  }
+
+  FStatus = ssClosed;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Reopen(int Params)
@@ -333,7 +704,13 @@ void __fastcall TTerminal::Reopen(int Params)
     {
       SessionData->FSProtocol = (FFSProtocol == cfsSCP ? fsSCPonly : fsSFTPonly);
     }
-    TSecureShell::Reopen(Params);
+
+    if (Active)
+    {
+      Close();
+    }
+
+    Open();
   }
   __finally
   {
@@ -346,22 +723,123 @@ void __fastcall TTerminal::Reopen(int Params)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::PromptUser(TSessionData * Data, AnsiString Prompt,
+  TPromptKind Kind, AnsiString & Response)
+{
+  // If PromptUser is overriden in descendant class, the overriden version
+  // is not called when accessed via TSessionIU interface.
+  // So this is workaround.
+  return DoPromptUser(Data, Prompt, Kind, Response);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, AnsiString Prompt,
+  TPromptKind Kind, AnsiString & Response)
+{
+  bool Result = false;
+
+  if (OnPromptUser != NULL)
+  {
+    OnPromptUser(this, Prompt, Kind, Response, Result, NULL);
+  }
+
+  if ((Configuration->RememberPassword) &&
+      ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkServerPrompt)))
+  {
+    FPassword = EncryptPassword(Response, SessionData->SessionName);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TTerminal::QueryUser(const AnsiString Query,
+  TStrings * MoreMessages, int Answers, const TQueryParams * Params,
+  TQueryType QueryType)
+{
+  LogEvent(FORMAT("Asking user:\n%s (%s)", (Query, (MoreMessages ? MoreMessages->CommaText : AnsiString() ))));
+  int Answer = AbortAnswer(Answers);
+  if (FOnQueryUser)
+  {
+    FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, QueryType, NULL);
+  }
+  return Answer;
+}
+//---------------------------------------------------------------------------
+int __fastcall TTerminal::QueryUserException(const AnsiString Query,
+  Exception * E, int Answers, const TQueryParams * Params,
+  TQueryType QueryType)
+{
+  int Result;
+  TStrings * MoreMessages = new TStringList();
+  try
+  {
+    if (!E->Message.IsEmpty() && !Query.IsEmpty())
+    {
+      MoreMessages->Add(E->Message);
+    }
+
+    ExtException * EE = dynamic_cast<ExtException*>(E);
+    if ((EE != NULL) && (EE->MoreMessages != NULL))
+    {
+      MoreMessages->AddStrings(EE->MoreMessages);
+    }
+    Result = QueryUser(!Query.IsEmpty() ? Query : E->Message,
+      MoreMessages->Count ? MoreMessages : NULL,
+      Answers, Params, QueryType);
+  }
+  __finally
+  {
+    delete MoreMessages;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DisplayBanner(const AnsiString & Banner)
+{
+  if (OnDisplayBanner != NULL)
+  {
+    if (Configuration->ForceBanners ||
+        Configuration->ShowBanner(SessionData->SessionKey, Banner))
+    {
+      bool NeverShowAgain = false;
+      int Options =
+        FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
+      OnDisplayBanner(this, SessionData->SessionName, Banner,
+        NeverShowAgain, Options);
+      if (!Configuration->ForceBanners && NeverShowAgain)
+      {
+        Configuration->NeverShowBanner(SessionData->SessionKey, Banner);
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::ShowExtendedException(Exception * E)
+{
+  Log->AddException(E);
+  if (OnShowExtendedException != NULL)
+  {
+    OnShowExtendedException(this, E, NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoInformation(const AnsiString & Str, bool Status,
+  bool Active)
+{
+  if (OnInformation)
+  {
+    OnInformation(this, Str, Status, Active);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::Information(const AnsiString & Str, bool Status)
+{
+  DoInformation(Str, Status);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::GetIsCapable(TFSCapability Capability) const
 {
   assert(FFileSystem);
   return FFileSystem->IsCapable(Capability);
-}
-//---------------------------------------------------------------------------
-TStrings * __fastcall TTerminal::GetAdditionalInfo()
-{
-  bool Initial = (FAdditionalInfo == NULL);
-  if (Initial)
-  {
-    FAdditionalInfo = new TStringList();
-  }
-  assert(FFileSystem);
-  FFileSystem->AdditionalInfo(FAdditionalInfo, Initial);
-  return FAdditionalInfo;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TTerminal::AbsolutePath(AnsiString Path)
@@ -436,11 +914,69 @@ void __fastcall TTerminal::TerminalError(Exception * E, AnsiString Msg)
   throw ETerminal(E, Msg);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoQueryReopen(Exception * E, int Params)
+{
+  bool Result;
+
+  if (FLAGSET(Params, ropNoConfirmation))
+  {
+    Result = true;
+  }
+  else
+  {
+    LogEvent("Connection was lost, asking what to do.");
+
+    TQueryParams Params(qpAllowContinueOnError);
+    Params.Timeout = Configuration->SessionReopenAuto;
+    Params.TimeoutAnswer = qaRetry;
+    TQueryButtonAlias Aliases[1];
+    Aliases[0].Button = qaRetry;
+    Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
+    Params.Aliases = Aliases;
+    Params.AliasesCount = LENOF(Aliases);
+    Result = (QueryUserException("", E, qaRetry | qaAbort, &Params, qtError) == qaRetry);
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
   TFileOperationProgressType * OperationProgress)
 {
   TSuspendFileOperationProgress Suspend(OperationProgress);
-  bool Result = TSecureShell::QueryReopen(E, Params);
+
+  bool Result = DoQueryReopen(E, Params);
+
+  if (Result)
+  {
+    do
+    {
+      try
+      {
+        // note that ropNoConfirmation is not set for background transfer only,
+        // so it may cause temporary hang (e.g. for downloads to editor,
+        // synchronization, scripting)
+        if (FLAGSET(Params, ropNoConfirmation))
+        {
+          Sleep(Configuration->SessionReopenNoConfirmation);
+        }
+        Reopen(Params);
+      }
+      catch(Exception & E)
+      {
+        if (!Active)
+        {
+          Result = DoQueryReopen(&E, Params);
+        }
+        else
+        {
+          throw;
+        }
+      }
+    }
+    while (!Active && Result);
+  }
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -449,7 +985,7 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
   bool AllowSkip, AnsiString SpecialRetry)
 {
   bool Result = false;
-  DoHandleExtendedException(&E);
+  Log->AddException(&E);
   int Answer;
 
   if (AllowSkip && OperationProgress->SkipToAll)
@@ -485,7 +1021,7 @@ bool __fastcall TTerminal::FileOperationLoopQuery(Exception & E,
     }
 
     SUSPEND_OPERATION (
-      Answer = DoQueryUser(Message, &E, Answers, &Params, qtError);
+      Answer = QueryUserException(Message, &E, Answers, &Params, qtError);
     );
 
     if (Answer == qaAll)
@@ -807,6 +1343,21 @@ bool __fastcall TTerminal::GetExceptionOnFail() const
   return (bool)(FExceptionOnFail > 0);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::FatalError(Exception * E, AnsiString Msg)
+{
+  // the same code is in TSecureShell
+  if (Active)
+  {
+    // We log this instead of exception handler, because Close() would
+    // probably cause exception handler to loose pointer to TShellLog()
+    LogEvent("Attempt to close connection due to fatal exception:");
+    Log->Add(llException, Msg);
+    Log->AddException(E);
+    Close();
+  }
+  SSH_FATAL_ERROR_EXT(E, Msg);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::CommandError(Exception * E, const AnsiString Msg)
 {
   CommandError(E, Msg, 0);
@@ -834,7 +1385,7 @@ int __fastcall TTerminal::CommandError(Exception * E, const AnsiString Msg,
     ECommand * ECmd = new ECommand(E, Msg);
     try
     {
-      DoShowExtendedException(ECmd);
+      ShowExtendedException(ECmd);
     }
     __finally
     {
@@ -861,7 +1412,7 @@ int __fastcall TTerminal::CommandError(Exception * E, const AnsiString Msg,
         Params.AliasesCount = LENOF(Aliases);
         Answers |= qaAll;
       }
-      Result = DoQueryUser(Msg, E, Answers, &Params, qtError);
+      Result = QueryUserException(Msg, E, Answers, &Params, qtError);
       if (Result == qaAll)
       {
         assert(OperationProgress != NULL);
@@ -881,7 +1432,7 @@ bool __fastcall TTerminal::HandleException(Exception * E)
   }
   else
   {
-    DoHandleExtendedException(E);
+    Log->AddException(E);
     return true;
   }
 }
@@ -914,11 +1465,11 @@ int __fastcall TTerminal::ConfirmFileOverwrite(const AnsiString FileName,
     {
       Message = FMTLOAD(FILE_OVERWRITE_DETAILS, (Message,
         IntToStr(FileParams->SourceSize),
-        FormatDateTime("ddddd tt", FileParams->SourceTimestamp),
+        UserModificationStr(FileParams->SourceTimestamp, FileParams->SourcePrecision),
         IntToStr(FileParams->DestSize),
-        FormatDateTime("ddddd tt", FileParams->DestTimestamp)));
+        UserModificationStr(FileParams->DestTimestamp, FileParams->DestPrecision)));
     }
-    Answer = DoQueryUser(Message, Answers, Params);
+    Answer = QueryUser(Message, NULL, Answers, Params);
     switch (Answer)
     {
       case qaNeverAskAgain:
@@ -1071,13 +1622,21 @@ void __fastcall TTerminal::EnsureNonExistence(const AnsiString FileName)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall inline TTerminal::LogEvent(const AnsiString & Str)
+{
+  if (Log->Logging)
+  {
+    Log->Add(llMessage, Str);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::DoStartup()
 {
   LogEvent("Doing startup conversation with host.");
   BeginTransaction();
   try
   {
-    UpdateStatus(sshStartup);
+    DoInformation(LoadStr(STATUS_STARTUP), true);
 
     // Make sure that directory would be loaded at last
     FReadCurrentDirectoryPending = true;
@@ -1090,7 +1649,7 @@ void __fastcall TTerminal::DoStartup()
       LookupUsersGroups();
     }
 
-    UpdateStatus(sshOpenDirectory);
+    DoInformation(LoadStr(STATUS_OPEN_DIRECTORY), true);
     if (!SessionData->RemoteDirectory.IsEmpty())
     {
       ChangeDirectory(SessionData->RemoteDirectory);
@@ -1102,7 +1661,6 @@ void __fastcall TTerminal::DoStartup()
     EndTransaction();
   }
   LogEvent("Startup conversation with host finished.");
-  UpdateStatus(sshReady);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ReadCurrentDirectory()
@@ -1182,21 +1740,21 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
     FReadingCurrentDirectory = true;
     bool Cancel = false; // dummy
     DoReadDirectoryProgress(0, Cancel);
-    FFiles->Directory = CurrentDirectory;
 
     try
     {
+      TRemoteDirectory * Files = new TRemoteDirectory(this);
       try
       {
-        CustomReadDirectory(FFiles);
+        Files->Directory = CurrentDirectory;
+        CustomReadDirectory(Files);
       }
       __finally
       {
         DoReadDirectoryProgress(-1, Cancel);
         FReadingCurrentDirectory = false;
-        // this must be called before error is displayed, otherwise
-        // TUnixDirView would be drawn with invalid data (it keeps reference
-        // to already destoroyed old listing)
+        delete FFiles;
+        FFiles = Files;
         DoReadDirectory(ReloadOnly);
         if (Active)
         {
@@ -1351,6 +1909,11 @@ void __fastcall TTerminal::ReadFile(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::AnnounceFileListOperation()
+{
+  FFileSystem->AnnounceFileListOperation();
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
   TFileOperation Operation, TProcessFileEvent ProcessFile, void * Param,
   TOperationSide Side, bool Ex)
@@ -1470,7 +2033,9 @@ TUsableCopyParamAttrs __fastcall TTerminal::UsableCopyParamAttrs(int Params)
     FLAGMASK(!IsCapable[fcIgnorePermErrors], cpaNoIgnorePermErrors);
   Result.Download = Result.General | cpaNoClearArchive | cpaNoRights |
     cpaNoIgnorePermErrors;
-  Result.Upload = Result.General | cpaNoPreserveReadOnly;
+  Result.Upload = Result.General | cpaNoPreserveReadOnly |
+    FLAGMASK(!IsCapable[fcModeChangingUpload], cpaNoRights) |
+    FLAGMASK(!IsCapable[fcPreservingTimestampUpload], cpaNoPreserveTime);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -1603,13 +2168,14 @@ void __fastcall TTerminal::CustomCommandOnFile(AnsiString FileName,
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
   const TRemoteFile * File, AnsiString Command, int Params,
-  TLogAddLineEvent OutputEvent)
+  TCaptureOutputEvent OutputEvent)
 {
   try
   {
     if (IsCapable[fcAnyCommand])
     {
       assert(FFileSystem);
+      assert(fcShellAnyCommand);
       FFileSystem->CustomCommandOnFile(FileName, File, Command, Params, OutputEvent);
     }
     else
@@ -1617,19 +2183,10 @@ void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
       assert(CommandSessionOpened);
       assert(FCommandSession->FSProtocol == cfsSCP);
       LogEvent("Executing custom command on command session.");
-      assert(FCommandSession->Log->OnAddLine == NULL);
-      FCommandSession->Log->OnAddLine = Log->AddFromOtherLog;
 
-      try
-      {
-        FCommandSession->CurrentDirectory = CurrentDirectory;
-        FCommandSession->FFileSystem->CustomCommandOnFile(FileName, File, Command,
-          Params, OutputEvent);
-      }
-      __finally
-      {
-        FCommandSession->Log->OnAddLine = NULL;
-      }
+      FCommandSession->CurrentDirectory = CurrentDirectory;
+      FCommandSession->FFileSystem->CustomCommandOnFile(FileName, File, Command,
+        Params, OutputEvent);
     }
   }
   catch(Exception & E)
@@ -1643,7 +2200,7 @@ void __fastcall TTerminal::DoCustomCommandOnFile(AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CustomCommandOnFiles(AnsiString Command,
-  int Params, TStrings * Files, TLogAddLineEvent OutputEvent)
+  int Params, TStrings * Files, TCaptureOutputEvent OutputEvent)
 {
   if (!TRemoteCustomCommand().IsFileListCommand(Command))
   {
@@ -1692,7 +2249,7 @@ void __fastcall TTerminal::ChangeFileProperties(AnsiString FileName,
     if (OperationProgress->Cancel != csContinue) Abort();
     OperationProgress->SetFile(FileName);
   }
-  if (IsLogging())
+  if (Log->Logging)
   {
     LogEvent(FORMAT("Changing properties of \"%s\" (%s)",
       (FileName, BooleanToEngStr(RProperties->Recursive))));
@@ -1712,13 +2269,13 @@ void __fastcall TTerminal::ChangeFileProperties(AnsiString FileName,
     {
       LogEvent(FORMAT(" - modification: \"%s\"",
         (FormatDateTime("dddddd tt",
-           UnixToDateTime(RProperties->Modification, SessionData->ConsiderDST)))));
+           UnixToDateTime(RProperties->Modification, SessionData->DSTMode)))));
     }
     if (RProperties->Valid.Contains(vpLastAccess))
     {
       LogEvent(FORMAT(" - last access: \"%s\"",
         (FormatDateTime("dddddd tt",
-           UnixToDateTime(RProperties->LastAccess, SessionData->ConsiderDST)))));
+           UnixToDateTime(RProperties->LastAccess, SessionData->DSTMode)))));
     }
   }
   if (File) FileModified(File, FileName);
@@ -1747,6 +2304,7 @@ void __fastcall TTerminal::DoChangeFileProperties(const AnsiString FileName,
 void __fastcall TTerminal::ChangeFilesProperties(TStrings * FileList,
   const TRemoteProperties * Properties)
 {
+  AnnounceFileListOperation();
   ProcessFiles(FileList, foSetProperties, ChangeFileProperties, (void *)Properties);
 }
 //---------------------------------------------------------------------------
@@ -1863,6 +2421,13 @@ void __fastcall TTerminal::CalculateFilesSize(TStrings * FileList,
   Size = Param.Size;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::CalculateFilesChecksum(const AnsiString & Alg,
+  TStrings * FileList, TStrings * Checksums,
+  TCalculatedChecksumEvent OnCalculatedChecksum)
+{
+  FFileSystem->CalculateFilesChecksum(Alg, FileList, Checksums, OnCalculatedChecksum);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::RenameFile(const AnsiString FileName,
   const AnsiString NewName)
 {
@@ -1889,7 +2454,7 @@ void __fastcall TTerminal::RenameFile(const TRemoteFile * File,
         else QuestionFmt = LoadStr(FILE_OVERWRITE);
       int Result;
       TQueryParams Params(qpNeverAskAgainCheck);
-      Result = DoQueryUser(FORMAT(QuestionFmt, (NewName)),
+      Result = QueryUser(FORMAT(QuestionFmt, (NewName)), NULL,
         qaYes | qaNo, &Params);
       if (Result == qaNeverAskAgain)
       {
@@ -2104,7 +2669,7 @@ void __fastcall TTerminal::ChangeDirectory(const AnsiString Directory)
     assert(!SessionData->CacheDirectoryChanges || (FDirectoryChangesCache != NULL));
     // never use directory change cache during startup, this ensures, we never
     // end-up initially in non-existing directory
-    if ((Status >= sshReady) &&
+    if ((Status == ssOpened) &&
         SessionData->CacheDirectoryChanges &&
         FDirectoryChangesCache->GetDirectoryChange(PeekCurrentDirectory(),
           Directory, CachedDirectory))
@@ -2139,7 +2704,7 @@ void __fastcall TTerminal::LookupUsersGroups()
     FFileSystem->LookupUsersGroups();
     ReactOnCommand(fsLookupUsersGroups);
 
-    if (IsLogging())
+    if (Log->Logging)
     {
       if (FGroups->Count > 0)
       {
@@ -2184,7 +2749,7 @@ bool __fastcall TTerminal::GetCommandSessionOpened()
   // consider secodary terminal open in "ready" state only
   // so we never do keepalives on it until it is completelly initialised
   return (FCommandSession != NULL) &&
-    (FCommandSession->Status == sshReady);
+    (FCommandSession->Status == ssOpened);
 }
 //---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminal::GetCommandSession()
@@ -2202,14 +2767,13 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
 
     try
     {
-      FCommandSession = new TSecondaryTerminal(this);
+      FCommandSession = new TSecondaryTerminal(this, SessionData,
+        Configuration, "Shell");
 
       FCommandSession->AutoReadDirectory = false;
 
-      FCommandSession->Configuration = Configuration;
-      FCommandSession->SessionData = SessionData;
-      FCommandSession->SessionData->RemoteDirectory = CurrentDirectory;
-      FCommandSession->SessionData->FSProtocol = fsSCPonly;
+      FCommandSession->FSessionData->RemoteDirectory = CurrentDirectory;
+      FCommandSession->FSessionData->FSProtocol = fsSCPonly;
 
       FCommandSession->FExceptionOnFail = FExceptionOnFail;
 
@@ -2218,7 +2782,7 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
       FCommandSession->OnShowExtendedException = OnShowExtendedException;
       FCommandSession->OnProgress = OnProgress;
       FCommandSession->OnFinished = OnFinished;
-      FCommandSession->OnUpdateStatus = OnUpdateStatus;
+      FCommandSession->OnInformation = OnInformation;
       // do not copy OnDisplayBanner to avoid it being displayed
     }
     catch(...)
@@ -2232,7 +2796,7 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::AnyCommand(const AnsiString Command,
-  TLogAddLineEvent OutputEvent)
+  TCaptureOutputEvent OutputEvent)
 {
   assert(FFileSystem);
   try
@@ -2248,29 +2812,21 @@ void __fastcall TTerminal::AnyCommand(const AnsiString Command,
       assert(CommandSessionOpened);
       assert(FCommandSession->FSProtocol == cfsSCP);
       LogEvent("Executing user defined command on command session.");
-      assert(FCommandSession->Log->OnAddLine == NULL);
-      FCommandSession->Log->OnAddLine = Log->AddFromOtherLog;
-      try
-      {
-        FCommandSession->CurrentDirectory = CurrentDirectory;
-        FCommandSession->FFileSystem->AnyCommand(Command, OutputEvent);
 
-        FCommandSession->FFileSystem->ReadCurrentDirectory();
+      FCommandSession->CurrentDirectory = CurrentDirectory;
+      FCommandSession->FFileSystem->AnyCommand(Command, OutputEvent);
 
-        // synchronize pwd (by purpose we lose transaction optimalisation here)
-        ChangeDirectory(FCommandSession->CurrentDirectory);
-      }
-      __finally
-      {
-        FCommandSession->Log->OnAddLine = NULL;
-      }
+      FCommandSession->FFileSystem->ReadCurrentDirectory();
+
+      // synchronize pwd (by purpose we lose transaction optimalisation here)
+      ChangeDirectory(FCommandSession->CurrentDirectory);
     }
     ReactOnCommand(fsAnyCommand);
   }
   catch (Exception &E)
   {
     if (ExceptionOnFail || (E.InheritsFrom(__classid(EFatal)))) throw;
-      else DoShowExtendedException(&E);
+      else ShowExtendedException(&E);
   }
 }
 //---------------------------------------------------------------------------
@@ -2306,8 +2862,8 @@ bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
               int Answer;
               SUSPEND_OPERATION
               (
-                Answer = DoQueryUser(
-                  FMTLOAD(READ_ONLY_OVERWRITE, (FileName)),
+                Answer = QueryUser(
+                  FMTLOAD(READ_ONLY_OVERWRITE, (FileName)), NULL,
                   qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll, 0);
               );
               switch (Answer) {
@@ -2400,15 +2956,15 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
           if (!GetFileTime(Handle, &CTime, &ATime, &MTime)) EXCEPTION;
           if (ACTime)
           {
-            *ACTime = ConvertTimestampToUnixSafe(CTime, SessionData->ConsiderDST);
+            *ACTime = ConvertTimestampToUnixSafe(CTime, SessionData->DSTMode);
           }
           if (AATime)
           {
-            *AATime = ConvertTimestampToUnixSafe(ATime, SessionData->ConsiderDST);
+            *AATime = ConvertTimestampToUnixSafe(ATime, SessionData->DSTMode);
           }
           if (AMTime)
           {
-            *AMTime = ConvertTimestampToUnix(MTime, SessionData->ConsiderDST);
+            *AMTime = ConvertTimestampToUnix(MTime, SessionData->DSTMode);
           }
         );
       }
@@ -2440,6 +2996,14 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
 
   if (AAttrs) *AAttrs = Attrs;
   if (AHandle) *AHandle = Handle;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TTerminal::FileUrl(const AnsiString Protocol,
+  const AnsiString FileName)
+{
+  assert(FileName.Length() > 0);
+  return Protocol + "://" + EncodeUrlChars(SessionData->SessionName) +
+    (FileName[1] == '/' ? "" : "/") + EncodeUrlChars(FileName, "/");
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TTerminal::FileUrl(const AnsiString FileName)
@@ -2839,7 +3403,7 @@ void __fastcall TTerminal::SynchronizeCollectFile(const AnsiString FileName,
               (CompareFileTime(ChecklistItem->Local.Modification,
                  ChecklistItem->Remote.Modification) < 0))
           {
-            if (FLAGCLEAR(Data->Params, spTimestamp) ||
+            if ((FLAGCLEAR(Data->Params, spTimestamp) && FLAGCLEAR(Data->Params, spMirror)) ||
                 (Data->Mode == smBoth) || (Data->Mode == smLocal))
             {
               Modified = true;
@@ -2853,7 +3417,7 @@ void __fastcall TTerminal::SynchronizeCollectFile(const AnsiString FileName,
                    (CompareFileTime(ChecklistItem->Local.Modification,
                       ChecklistItem->Remote.Modification) > 0))
           {
-            if (FLAGCLEAR(Data->Params, spTimestamp) ||
+            if ((FLAGCLEAR(Data->Params, spTimestamp) && FLAGCLEAR(Data->Params, spMirror)) ||
                 (Data->Mode == smBoth) || (Data->Mode == smRemote))
             {
               LocalModified = true;
@@ -3143,7 +3707,7 @@ void __fastcall TTerminal::SynchronizeLocalTimestamp(const AnsiString /*FileName
     OpenLocalFile(LocalFile, GENERIC_WRITE, NULL, &Handle,
       NULL, NULL, NULL, NULL);
     FILETIME WrTime = DateTimeToFileTime(ChecklistItem->Remote.Modification,
-      SessionData->ConsiderDST);
+      SessionData->DSTMode);
     bool Result = SetFileTime(Handle, NULL, NULL, &WrTime);
     CloseHandle(Handle);
     if (!Result)
@@ -3162,7 +3726,7 @@ void __fastcall TTerminal::SynchronizeRemoteTimestamp(const AnsiString /*FileNam
   TRemoteProperties Properties;
   Properties.Valid << vpModification;
   Properties.Modification = ConvertTimestampToUnix(ChecklistItem->FLocalLastWriteTime,
-    SessionData->ConsiderDST);
+    SessionData->DSTMode);
 
   ChangeFileProperties(
     UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->FileName,
@@ -3184,21 +3748,25 @@ void __fastcall TTerminal::SpaceAvailable(const AnsiString Path,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::FileSystemInfo(TFileSystemInfo & AFileSystemInfo)
+const TSessionInfo & __fastcall TTerminal::GetSessionInfo()
 {
-  AFileSystemInfo.SshVersion = SshVersion;
-  AFileSystemInfo.SshImplementation = SshImplementation;
-  AFileSystemInfo.CSCipher = CSCipher;
-  AFileSystemInfo.SCCipher = SCCipher;
-  AFileSystemInfo.CSCompression = CSCompression;
-  AFileSystemInfo.SCCompression = SCCompression;
-  AFileSystemInfo.ProtocolName = ProtocolName;
-  AFileSystemInfo.HostKeyFingerprint = HostKeyFingerprint;
-  AFileSystemInfo.AdditionalInfo = AdditionalInfo->Text;
-  for (int Index = 0; Index < fcCount; Index++)
-  {
-    AFileSystemInfo.IsCapable[Index] = IsCapable[(TFSCapability)Index];
-  }
+  return FFileSystem->GetSessionInfo();
+}
+//---------------------------------------------------------------------------
+const TFileSystemInfo & __fastcall TTerminal::GetFileSystemInfo(bool Retrieve)
+{
+  return FFileSystem->GetFileSystemInfo(Retrieve);
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TTerminal::GetPassword()
+{
+  return (FPassword.IsEmpty() ? AnsiString() :
+    DecryptPassword(FPassword, SessionData->SessionName));
+}
+//---------------------------------------------------------------------
+bool __fastcall TTerminal::GetStoredCredentialsTried()
+{
+  return FFileSystem->GetStoredCredentialsTried();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
@@ -3241,7 +3809,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
       BeginTransaction();
       try
       {
-        if (IsLogging())
+        if (Log->Logging)
         {
           LogEvent(FORMAT("Copying %d files/directories to remote directory "
             "\"%s\"", (FilesToCopy->Count, TargetDir)));
@@ -3388,9 +3956,15 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
   return Result;
 }
 //---------------------------------------------------------------------------
-__fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal) :
-  TTerminal(), FMainTerminal(MainTerminal), FMasterPasswordTried(false)
+__fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
+  TSessionData * SessionData, TConfiguration * Configuration, const AnsiString & Name) :
+  TTerminal(SessionData, Configuration),
+  FMainTerminal(MainTerminal), FMasterPasswordTried(false)
 {
+  Log->Parent = FMainTerminal->Log;
+  Log->Name = Name;
+
+  SessionData->NonPersistant();
   assert(FMainTerminal != NULL);
 }
 //---------------------------------------------------------------------------
@@ -3407,8 +3981,8 @@ void __fastcall TSecondaryTerminal::DirectoryModified(const AnsiString Path,
   FMainTerminal->DirectoryModified(Path, SubDirs);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecondaryTerminal::DoPromptUser(AnsiString Prompt,
-  TPromptKind Kind, AnsiString & Response)
+bool __fastcall TSecondaryTerminal::DoPromptUser(TSessionData * Data,
+  AnsiString Prompt, TPromptKind Kind, AnsiString & Response)
 {
   bool Result = false;
 
@@ -3428,17 +4002,10 @@ bool __fastcall TSecondaryTerminal::DoPromptUser(AnsiString Prompt,
 
   if (!Result)
   {
-    Result = TTerminal::DoPromptUser(Prompt, Kind, Response);
+    Result = TTerminal::DoPromptUser(Data, Prompt, Kind, Response);
   }
 
   return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecondaryTerminal::SetSessionData(TSessionData * value)
-{
-  TTerminal::SetSessionData(value);
-
-  SessionData->NonPersistant();
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminalList::TTerminalList(TConfiguration * AConfiguration) :
@@ -3453,20 +4020,15 @@ __fastcall TTerminalList::~TTerminalList()
   assert(Count == 0);
 }
 //---------------------------------------------------------------------------
+TTerminal * __fastcall TTerminalList::CreateTerminal(TSessionData * Data)
+{
+  return new TTerminal(Data, FConfiguration);
+}
+//---------------------------------------------------------------------------
 TTerminal * __fastcall TTerminalList::NewTerminal(TSessionData * Data)
 {
-  TTerminal * Terminal = new TTerminal();
-  try
-  {
-    Terminal->Configuration = FConfiguration;
-    Terminal->SessionData = Data;
-    Add(Terminal);
-  }
-  catch(...)
-  {
-    delete Terminal;
-    throw;
-  }
+  TTerminal * Terminal = CreateTerminal(Data);
+  Add(Terminal);
   return Terminal;
 }
 //---------------------------------------------------------------------------
@@ -3509,7 +4071,7 @@ void __fastcall TTerminalList::Idle()
   for (int i = 0; i < Count; i++)
   {
     Terminal = Terminals[i];
-    if (Terminal->Status == sshReady)
+    if (Terminal->Status == ssOpened)
     {
       Terminal->Idle();
     }

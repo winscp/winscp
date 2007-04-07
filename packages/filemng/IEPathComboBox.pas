@@ -6,7 +6,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, CommCtrl, ShellAPI, ImgList, ShlObj, 
+  StdCtrls, CommCtrl, ShellAPI, ImgList, ShlObj,
   CustomPathComboBox, IEDriveInfo, IEComboBox, DirView;
 
 type
@@ -156,7 +156,7 @@ begin
   for F := Low(FSpecialFolders) to High(FSpecialFolders) do
   begin
     FSpecialFolders[F].Valid := False;
-    FSpecialFolders[F].PIDL := nil; 
+    FSpecialFolders[F].PIDL := nil;
   end;
   SpecialFolderLocation(CSIDL_PERSONAL, FSpecialFolders[sfMyDocuments].Path,
     FSpecialFolders[sfMyDocuments].PIDL);
@@ -430,14 +430,14 @@ begin
       dsRoot:
         FPath := Format('%s:', [FDrive]);
 
-      dsCurrent: 
+      dsCurrent:
         begin
           GetDir(Integer(FDrive) - Integer('A') + 1, FPath);
           FPath := ExcludeTrailingPathDelimiter(FPath);
         end;
 
       dsLast:
-        if FLastPath[FDrive] <> '' then 
+        if FLastPath[FDrive] <> '' then
         begin
           FPath := FLastPath[FDrive];
           if not DirectoryExists(FPath) then

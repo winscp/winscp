@@ -93,6 +93,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       OnClick = CheckAllButtonClick
     end
     object CheckButton: TButton
+      Tag = 1
       Left = 8
       Top = 118
       Width = 85
@@ -174,6 +175,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       end>
     OnAdvancedCustomDrawSubItem = ListViewAdvancedCustomDrawSubItem
     OnCompare = ListViewCompare
+    OnContextPopup = ListViewContextPopup
     OnSelectItem = ListViewSelectItem
     OnSecondaryColumnHeader = ListViewSecondaryColumnHeader
   end
@@ -641,6 +643,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     Left = 616
     Top = 328
     object CheckItem: TMenuItem
+      Tag = 1
       Caption = '&Check'
       OnClick = CheckButtonClick
     end

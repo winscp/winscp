@@ -7,6 +7,7 @@
 class TSFTPPacket;
 class TOverwriteFileParams;
 struct TSFTPSupport;
+class TSecureShell;
 //---------------------------------------------------------------------------
 enum TSFTPOverwriteMode { omOverwrite, omAppend, omResume };
 //---------------------------------------------------------------------------
@@ -14,23 +15,32 @@ class TSFTPFileSystem : public TCustomFileSystem
 {
 friend class TSFTPPacket;
 friend class TSFTPQueue;
+friend class TSFTPAsynchronousQueue;
 friend class TSFTPUploadQueue;
 friend class TSFTPDownloadQueue;
 friend class TSFTPLoadFilesPropertiesQueue;
+friend class TSFTPCalculateFilesChecksumQueue;
 friend class TSFTPBusy;
 public:
-  __fastcall TSFTPFileSystem(TTerminal * ATerminal);
+  __fastcall TSFTPFileSystem(TTerminal * ATerminal, TSecureShell * SecureShell);
   virtual __fastcall ~TSFTPFileSystem();
 
+  virtual void __fastcall Open();
+  virtual void __fastcall Close();
+  virtual bool __fastcall GetActive();
+  virtual void __fastcall Idle();
   virtual AnsiString __fastcall AbsolutePath(AnsiString Path);
-  virtual void __fastcall KeepAlive();
   virtual void __fastcall AnyCommand(const AnsiString Command,
-    TLogAddLineEvent OutputEvent);
+    TCaptureOutputEvent OutputEvent);
   virtual void __fastcall ChangeDirectory(const AnsiString Directory);
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
+  virtual void __fastcall AnnounceFileListOperation();
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
     const TRemoteFile * File, const TRemoteProperties * Properties);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
+  virtual void __fastcall CalculateFilesChecksum(const AnsiString & Alg,
+    TStrings * FileList, TStrings * Checksums,
+    TCalculatedChecksumEvent OnCalculatedChecksum);
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
@@ -45,11 +55,10 @@ public:
   virtual void __fastcall DeleteFile(const AnsiString FileName,
     const TRemoteFile * File = NULL, bool Recursive = false);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
-    const TRemoteFile * File, AnsiString Command, int Params, TLogAddLineEvent OutputEvent);
+    const TRemoteFile * File, AnsiString Command, int Params, TCaptureOutputEvent OutputEvent);
   virtual void __fastcall DoStartup();
   virtual void __fastcall HomeDirectory();
   virtual bool __fastcall IsCapable(int Capability) const;
-  virtual void __fastcall AdditionalInfo(TStrings * AdditionalInfo, bool Initial);
   virtual void __fastcall LookupUsersGroups();
   virtual void __fastcall ReadCurrentDirectory();
   virtual void __fastcall ReadDirectory(TRemoteFileList * FileList);
@@ -65,9 +74,15 @@ public:
   virtual TStrings * __fastcall GetFixedPaths();
   virtual void __fastcall SpaceAvailable(const AnsiString Path,
     TSpaceAvailable & ASpaceAvailable);
+  virtual const TSessionInfo & __fastcall GetSessionInfo();
+  virtual const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve);
   virtual bool __fastcall TemporaryTransferFile(const AnsiString & FileName);
+  virtual bool __fastcall GetStoredCredentialsTried();
 
 protected:
+  TSecureShell * FSecureShell;
+  TFileSystemInfo FFileSystemInfo;
+  bool FFileSystemInfoValid;
   int FVersion;
   AnsiString FCurrentDirectory;
   AnsiString FDirectoryToChangeTo;
@@ -108,10 +123,9 @@ protected:
   AnsiString __fastcall RealPath(const AnsiString Path, const AnsiString BaseDir);
   void __fastcall ReserveResponse(const TSFTPPacket * Packet,
     TSFTPPacket * Response);
-  virtual void __fastcall SetCurrentDirectory(AnsiString value);
-  virtual AnsiString __fastcall GetProtocolName() const;
   int __fastcall ReceivePacket(TSFTPPacket * Packet, int ExpectedType = -1,
     int AllowStatus = -1);
+  bool __fastcall PeekPacket();
   void __fastcall RemoveReservation(int Reservation);
   void __fastcall SendPacket(const TSFTPPacket * Packet);
   int __fastcall ReceiveResponse(const TSFTPPacket * Packet,
@@ -122,6 +136,10 @@ protected:
   void __fastcall TryOpenDirectory(const AnsiString Directory);
   bool __fastcall SupportsExtension(const AnsiString & Extension) const;
   void __fastcall ResetConnection();
+  void __fastcall DoCalculateFilesChecksum(const AnsiString & Alg,
+    TStrings * FileList, TStrings * Checksums,
+    TCalculatedChecksumEvent OnCalculatedChecksum,
+    TFileOperationProgressType * OperationProgress, bool FirstLevel);
 
   void __fastcall SFTPSourceRobust(const AnsiString FileName,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
@@ -131,15 +149,15 @@ protected:
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
   AnsiString __fastcall SFTPOpenRemoteFile(const AnsiString & FileName,
     unsigned int OpenType, __int64 Size = -1);
-  int __fastcall SFTPOpenRemote(void * AOpenParams, void * /*Param2*/);
+  int __fastcall SFTPOpenRemote(void * AOpenParams, void * Param2);
   void __fastcall SFTPCloseRemote(const AnsiString Handle,
     const AnsiString FileName, TFileOperationProgressType * OperationProgress,
     bool TransferFinished, bool Request, TSFTPPacket * Packet);
   void __fastcall SFTPDirectorySource(const AnsiString DirectoryName,
-    const AnsiString TargetDir, int /*Attrs*/, const TCopyParamType * CopyParam,
+    const AnsiString TargetDir, int Attrs, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPConfirmOverwrite(AnsiString & FileName,
-    bool TargetBiggerThanSource, TFileOperationProgressType * OperationProgress,
+    TFileOperationProgressType * OperationProgress,
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
   bool SFTPConfirmResume(const AnsiString DestFileName, bool PartialBiggerThanSource,
     TFileOperationProgressType * OperationProgress);
@@ -153,7 +171,7 @@ protected:
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPSinkFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
-  char * __fastcall GetEOL() const; 
+  char * __fastcall GetEOL() const;
   inline void __fastcall BusyStart();
   inline void __fastcall BusyEnd();
   inline unsigned long __fastcall TransferBlockSize(unsigned long Overhead,
@@ -162,6 +180,7 @@ protected:
     TFileOperationProgressType * OperationProgress);
   inline unsigned long __fastcall DownloadBlockSize(
     TFileOperationProgressType * OperationProgress);
+  inline int __fastcall PacketLength(char * LenBuf, int ExpectedType);
 
   static AnsiString __fastcall DecodeUTF(const AnsiString UTF);
   static AnsiString __fastcall EncodeUTF(const WideString Source);

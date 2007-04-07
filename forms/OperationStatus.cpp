@@ -47,4 +47,3 @@ void __fastcall TOperationStatusForm::HideAsModal()
 {
   ::HideAsModal(this, FShowAsModalStorage);
 }
-
