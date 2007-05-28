@@ -337,6 +337,10 @@ void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Hand
 
 void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 
+void __fastcall SetGlobalMinimizeHandler(TNotifyEvent OnMinimize);
+TNotifyEvent __fastcall GetGlobalMinimizeHandler();
+bool __fastcall IsGlobalMinimizeHandler();
+
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand
 {

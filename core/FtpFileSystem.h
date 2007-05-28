@@ -2,6 +2,8 @@
 #ifndef FtpFileSystemH
 #define FtpFileSystemH
 
+#ifndef NO_FILEZILLA
+//---------------------------------------------------------------------------
 #include <time.h>
 #include <FileSystems.h>
 //---------------------------------------------------------------------------
@@ -73,6 +75,7 @@ public:
   virtual const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve);
   virtual bool __fastcall TemporaryTransferFile(const AnsiString & FileName);
   virtual bool __fastcall GetStoredCredentialsTried();
+  virtual AnsiString __fastcall GetUserName();
 
 protected:
   enum TOverwriteMode { omOverwrite, omResume };
@@ -138,7 +141,7 @@ protected:
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
   bool __fastcall ConfirmOverwrite(AnsiString & FileName,
     TOverwriteMode & OverwriteMode, TFileOperationProgressType * OperationProgress,
-    const TOverwriteFileParams * FileParams, int Params);
+    const TOverwriteFileParams * FileParams, int Params, bool AutoResume);
   void __fastcall CheckFileTransferAbort();
   void __fastcall ReadDirectoryProgress(__int64 Bytes);
   void __fastcall ResetFileTransfer();
@@ -190,7 +193,10 @@ private:
   bool FFileTransferPreserveTime;
   bool FAwaitingProgress;
   TCaptureOutputEvent FOnCaptureOutput;
+  AnsiString FUserName;
   mutable AnsiString FOptionScratch;
 };
+//---------------------------------------------------------------------------
+#endif NO_FILEZILLA
 //---------------------------------------------------------------------------
 #endif // FtpFileSystemH

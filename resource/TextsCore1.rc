@@ -156,6 +156,7 @@ BEGIN
   FTP_ACCESS_DENIED, "Access denied."
   FTP_CREDENTIAL_PROMPT, "Prompting for credentials..."
   FTP_PWD_RESPONSE_ERROR, "Invalid response to PWD command '%s'."
+  FTP_UNSUPPORTED, "This version does not support FTP protocol."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT2, "Host has not answered for %d seconds.\n\nWait for another %0:d seconds?"
@@ -287,7 +288,7 @@ BEGIN
   PUTTY_COPYRIGHT, "Copyright © 1997-2005 Simon Tatham"
   PUTTY_URL, "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
   FILEZILLA_BASED_ON, "FTP code based on FileZilla %s"
-  FILEZILLA_VERSION, "2.2.31"
+  FILEZILLA_VERSION, "2.2.32"
   FILEZILLA_COPYRIGHT, "Copyright © 2001-2007 Tim Kosse"
   FILEZILLA_URL, "http://filezilla.sourceforge.net/"
 END

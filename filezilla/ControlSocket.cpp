@@ -125,8 +125,7 @@ void CControlSocket::ShowStatus(CString status, int type) const
 		for (int i=0;i<len;i++)
 			status+="*";
 	}
-	status.Replace(_T("%"), _T("%%"));
-	LogMessage(type, (LPCTSTR)status);
+	LogMessageRaw(type, (LPCTSTR)status);
 }
 
 
@@ -216,7 +215,7 @@ int CControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 #ifndef MPEXT_NO_GSS
 			else if (iter->pLayer == m_pGssLayer)
 				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("m_pGssLayer changed state from %d to %d"), iter->nParam2, iter->nParam1);
-#endif        
+#endif
 			else
 				LogMessage(__FILE__, __LINE__, this, FZ_LOG_INFO, _T("Layer @ %d changed state from %d to %d"), iter->pLayer, iter->nParam2, iter->nParam1);
 		}
@@ -256,10 +255,10 @@ int CControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 				switch (iter->nParam1)
 				{
 				case GSS_INFO:
-					LogMessage(FZ_LOG_INFO, A2CT(iter->str));
+					LogMessageRaw(FZ_LOG_INFO, A2CT(iter->str));
 					break;
 				case GSS_ERROR:
-					LogMessage(FZ_LOG_APIERROR, A2CT(iter->str));
+					LogMessageRaw(FZ_LOG_APIERROR, A2CT(iter->str));
 					break;
 				case GSS_COMMAND:
 					ShowStatus(A2CT(iter->str), 2);
@@ -269,7 +268,7 @@ int CControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 					break;
 				}
 			}
-#endif      
+#endif
 		}
 
 		delete [] iter->str;
@@ -487,7 +486,7 @@ CString CControlSocket::ConvertDomainName(CString domain)
 
 	char *output = 0;
 #ifdef MPEXT
-  output = strdup(utf8); 
+	output = strdup(utf8);
 #else
 	if (idna_to_ascii_8z(utf8, &output, IDNA_ALLOW_UNASSIGNED))
 	{

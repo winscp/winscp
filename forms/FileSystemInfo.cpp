@@ -120,7 +120,7 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
   }
   else
   {
-    CapabilityStr(fcAnyCommand);
+    AnyCommand = CapabilityStr(fcAnyCommand);
   }
   AddItem(ProtocolView, FSINFO_ANY_COMMAND, AnyCommand);
   AddItem(ProtocolView, FSINFO_SYMBOLIC_HARD_LINK, CapabilityStr(fcSymbolicLink, fcHardLink));

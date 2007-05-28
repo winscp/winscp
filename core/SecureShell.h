@@ -53,6 +53,7 @@ private:
   AnsiString FCWriteTemp;
   AnsiString FAuthenticationLog;
   AnsiString FLastTunnelError;
+  AnsiString FUserName;
 
   static TCipher __fastcall FuncToSsh1Cipher(const void * Cipher);
   static TCipher __fastcall FuncToSsh2Cipher(const void * Cipher);
@@ -135,6 +136,7 @@ public:
   __property TCaptureOutputEvent OnCaptureOutput = { read = FOnCaptureOutput, write = FOnCaptureOutput };
   __property TDateTime LastDataSent = { read = FLastDataSent };
   __property AnsiString LastTunnelError = { read = FLastTunnelError };
+  __property AnsiString UserName = { read = FUserName };
 };
 //---------------------------------------------------------------------------
 #endif

@@ -126,6 +126,12 @@ private:
   AnsiString FTunnelPortFwd;
   bool FFtpPasvMode;
   AnsiString FFtpAccount;
+  int FFtpPingInterval;
+  TPingType FFtpPingType;
+
+  AnsiString FOrigHostName;
+  int FOrigPortNumber;
+  TProxyMethod FOrigProxyMethod;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -235,6 +241,8 @@ private:
   bool __fastcall GetTunnelAutoassignLocalPortNumber();
   void __fastcall SetFtpPasvMode(bool value);
   void __fastcall SetFtpAccount(AnsiString value);
+  void __fastcall SetFtpPingInterval(int value);
+  void __fastcall SetFtpPingType(TPingType value);
   static AnsiString __fastcall DecodeUrlChars(const AnsiString & S, bool Decode);
 
 public:
@@ -247,6 +255,8 @@ public:
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
   bool __fastcall ParseUrl(AnsiString Url, int Params, AnsiString * FileName);
+  void __fastcall ConfigureTunnel(int PortNumber);
+  void __fastcall RollbackTunnel();
   static bool __fastcall ParseUrl(AnsiString Url, int Params,
     AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
     AnsiString * UserName, AnsiString * Password, AnsiString * Path,
@@ -349,6 +359,8 @@ public:
   __property AnsiString TunnelPortFwd = { read = FTunnelPortFwd, write = SetTunnelPortFwd };
   __property bool FtpPasvMode = { read = FFtpPasvMode, write = SetFtpPasvMode };
   __property AnsiString FtpAccount = { read = FFtpAccount, write = SetFtpAccount };
+  __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
+  __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
   __property AnsiString StorageKey = { read = GetStorageKey };
 };
 //---------------------------------------------------------------------------

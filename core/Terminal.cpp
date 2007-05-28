@@ -16,7 +16,9 @@
 #include "SecureShell.h"
 #include "ScpFileSystem.h"
 #include "SftpFileSystem.h"
+#ifndef NO_FILEZILLA
 #include "FtpFileSystem.h"
+#endif
 #include "TextsCore.h"
 #include "HelpCore.h"
 #include "Security.h"
@@ -324,9 +326,11 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FReadCurrentDirectoryPending = false;
   FReadDirectoryPending = false;
   FUsersGroupsLookedup = False;
+  FTunnelLocalPortNumber = 0;
   FGroups = new TUsersGroupsList();
   FUsers = new TUsersGroupsList();
   FFileSystem = NULL;
+  FSecureShell = NULL;
   FOnProgress = NULL;
   FOnFinished = NULL;
   FOnDeleteLocalFile = NULL;
@@ -454,6 +458,7 @@ void __fastcall TTerminal::Close()
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ResetConnection()
 {
+  FAnyInformation = false;
   // used to be called from Reopen(), why?
   FTunnelError = "";
 
@@ -473,9 +478,6 @@ void __fastcall TTerminal::Open()
       ResetConnection();
       FStatus = ssOpening;
 
-      AnsiString OrigHostName = FSessionData->HostName;
-      int OrigPortNumber = FSessionData->PortNumber;
-
       try
       {
         if (FFileSystem == NULL)
@@ -491,37 +493,46 @@ void __fastcall TTerminal::Open()
           OpenTunnel();
           Log->AddSeparator();
 
-          FSessionData->HostName = "127.0.0.1";
-          FSessionData->PortNumber = FTunnelLocalPortNumber;
+          FSessionData->ConfigureTunnel(FTunnelLocalPortNumber);
+
           DoInformation(LoadStr(USING_TUNNEL), false);
           LogEvent(FORMAT("Connecting via tunnel interface %s:%d.",
             (FSessionData->HostName, FSessionData->PortNumber)));
+        }
+        else
+        {
+          FTunnelLocalPortNumber = 0;
         }
 
         if (FFileSystem == NULL)
         {
           if (SessionData->FSProtocol == fsFTP)
           {
+            #ifdef NO_FILEZILLA
+            LogEvent("FTP protocol is not supported by this build.");
+            FatalError(NULL, LoadStr(FTP_UNSUPPORTED));
+            #else
             FFSProtocol = cfsFTP;
             FFileSystem = new TFTPFileSystem(this);
             FFileSystem->Open();
             Log->AddSeparator();
             LogEvent("Using FTP protocol.");
+            #endif
           }
           else
           {
-            TSecureShell * SecureShell = NULL;
+            assert(FSecureShell == NULL);
             try
             {
-              SecureShell = new TSecureShell(this, FSessionData, Log, Configuration);
+              FSecureShell = new TSecureShell(this, FSessionData, Log, Configuration);
               try
               {
-                SecureShell->Open();
+                FSecureShell->Open();
               }
               catch(Exception & E)
               {
-                assert(!SecureShell->Active);
-                if (!SecureShell->Active && !FTunnelError.IsEmpty())
+                assert(!FSecureShell->Active);
+                if (!FSecureShell->Active && !FTunnelError.IsEmpty())
                 {
                   // the only case where we expect this to happen
                   assert(E.Message == LoadStr(UNEXPECTED_CLOSE_ERROR));
@@ -536,24 +547,25 @@ void __fastcall TTerminal::Open()
               Log->AddSeparator();
 
               if ((SessionData->FSProtocol == fsSCPonly) ||
-                  (SessionData->FSProtocol == fsSFTP && SecureShell->SshFallbackCmd()))
+                  (SessionData->FSProtocol == fsSFTP && FSecureShell->SshFallbackCmd()))
               {
                 FFSProtocol = cfsSCP;
-                FFileSystem = new TSCPFileSystem(this, SecureShell);
-                SecureShell = NULL; // ownership passed
+                FFileSystem = new TSCPFileSystem(this, FSecureShell);
+                FSecureShell = NULL; // ownership passed
                 LogEvent("Using SCP protocol.");
               }
               else
               {
                 FFSProtocol = cfsSFTP;
-                FFileSystem = new TSFTPFileSystem(this, SecureShell);
-                SecureShell = NULL; // ownership passed
+                FFileSystem = new TSFTPFileSystem(this, FSecureShell);
+                FSecureShell = NULL; // ownership passed
                 LogEvent("Using SFTP protocol.");
               }
             }
             __finally
             {
-              delete SecureShell;
+              delete FSecureShell;
+              FSecureShell = NULL;
             }
           }
         }
@@ -564,8 +576,10 @@ void __fastcall TTerminal::Open()
       }
       __finally
       {
-        FSessionData->HostName = OrigHostName;
-        FSessionData->PortNumber = OrigPortNumber;
+        if (FSessionData->Tunnel)
+        {
+          FSessionData->RollbackTunnel();
+        }
       }
 
       if (SessionData->CacheDirectoryChanges)
@@ -597,7 +611,12 @@ void __fastcall TTerminal::Open()
   }
   __finally
   {
-    DoInformation("", true, false);
+    // Prevent calling Information with active=false unless there was at least
+    // one call with active=true
+    if (FAnyInformation)
+    {
+      DoInformation("", true, false);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -634,6 +653,14 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->PublicKeyFile = FSessionData->TunnelPublicKeyFile;
     FTunnelData->TunnelPortFwd = FORMAT("L%d\t%s:%d",
       (FTunnelLocalPortNumber, FSessionData->HostName, FSessionData->PortNumber));
+    FTunnelData->ProxyMethod = FSessionData->ProxyMethod;
+    FTunnelData->ProxyHost = FSessionData->ProxyHost;
+    FTunnelData->ProxyPort = FSessionData->ProxyPort;
+    FTunnelData->ProxyUsername = FSessionData->ProxyUsername;
+    FTunnelData->ProxyPassword = FSessionData->ProxyPassword;
+    FTunnelData->ProxyTelnetCommand = FSessionData->ProxyTelnetCommand;
+    FTunnelData->ProxyDNS = FSessionData->ProxyDNS;
+    FTunnelData->ProxyLocalhost = FSessionData->ProxyLocalhost;
 
     FTunnelLog = new TSessionLog(this, FTunnelData, Configuration);
     FTunnelLog->Parent = FLog;
@@ -825,6 +852,11 @@ void __fastcall TTerminal::ShowExtendedException(Exception * E)
 void __fastcall TTerminal::DoInformation(const AnsiString & Str, bool Status,
   bool Active)
 {
+  if (Active)
+  {
+    FAnyInformation = true;
+  }
+
   if (OnInformation)
   {
     OnInformation(this, Str, Status, Active);
@@ -1234,8 +1266,15 @@ TUsersGroupsList * __fastcall TTerminal::GetUsers()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TTerminal::GetUserName() const
 {
-  // in future might be implemented to detect username similar to GetUserGroups
-  return SessionData->UserName;
+  // in future might also be implemented to detect username similar to GetUserGroups
+  assert(FFileSystem != NULL);
+  AnsiString Result = FFileSystem->GetUserName();
+  // Is empty also when stored password was used
+  if (Result.IsEmpty())
+  {
+    Result = SessionData->UserName;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::GetAreCachesEmpty() const
@@ -3760,13 +3799,32 @@ const TFileSystemInfo & __fastcall TTerminal::GetFileSystemInfo(bool Retrieve)
 //---------------------------------------------------------------------
 AnsiString __fastcall TTerminal::GetPassword()
 {
-  return (FPassword.IsEmpty() ? AnsiString() :
-    DecryptPassword(FPassword, SessionData->SessionName));
+  AnsiString Result;
+  // FPassword is empty also when stored password was used
+  if (FPassword.IsEmpty())
+  {
+    Result = SessionData->Password;
+  }
+  else
+  {
+    Result = DecryptPassword(FPassword, SessionData->SessionName);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 bool __fastcall TTerminal::GetStoredCredentialsTried()
 {
-  return FFileSystem->GetStoredCredentialsTried();
+  bool Result;
+  if (FFileSystem != NULL)
+  {
+    Result = FFileSystem->GetStoredCredentialsTried();
+  }
+  else
+  {
+    assert(FSecureShell != NULL);
+    Result = FSecureShell->GetStoredCredentialsTried();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
@@ -3957,8 +4015,8 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
 }
 //---------------------------------------------------------------------------
 __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
-  TSessionData * SessionData, TConfiguration * Configuration, const AnsiString & Name) :
-  TTerminal(SessionData, Configuration),
+  TSessionData * ASessionData, TConfiguration * Configuration, const AnsiString & Name) :
+  TTerminal(ASessionData, Configuration),
   FMainTerminal(MainTerminal), FMasterPasswordTried(false)
 {
   Log->Parent = FMainTerminal->Log;
@@ -3966,6 +4024,10 @@ __fastcall TSecondaryTerminal::TSecondaryTerminal(TTerminal * MainTerminal,
 
   SessionData->NonPersistant();
   assert(FMainTerminal != NULL);
+  if (!FMainTerminal->UserName.IsEmpty())
+  {
+    SessionData->UserName = FMainTerminal->UserName;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecondaryTerminal::DirectoryLoaded(TRemoteFileList * FileList)

@@ -342,56 +342,71 @@ void __fastcall AddMenuSeparator(TTBCustomItem * Menu)
 void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
   TComponent * PopupComponent)
 {
-  TTBXPopupMenu * Menu = reinterpret_cast<TTBXPopupMenu *>(AMenu->Tag);
-  delete Menu;
+  static TComponent * LastPopupComponent = NULL;
+  static TDateTime LastCloseUp;
 
-  Menu = CreateTBXPopupMenu(AMenu->Owner);
-  Menu->OnPopup = AMenu->OnPopup;
-  Menu->Items->SubMenuImages = AMenu->Images;
-  AMenu->Tag = reinterpret_cast<int>(Menu);
-
-  for (int Index = 0; Index < AMenu->Items->Count; Index++)
+  // pressing the same button within 200ms after closing its popup menu
+  // does nothing.
+  // it is to immitate close-by-click behaviour. note that menu closes itself
+  // before onclick handler of button occurs
+  if ((PopupComponent == LastPopupComponent) &&
+      (Now() - LastCloseUp < TDateTime(0, 0, 0, 200)))
   {
-    TMenuItem * AItem = AMenu->Items->Items[Index];
-    TTBCustomItem * Item;
-
-    // recurse not implemented yet
-    assert(AItem->Count == 0);
-
-    // see TB2DsgnConverter.pas DoConvert
-    if (AItem->Caption == "-")
-    {
-      Item = new TTBXSeparatorItem(Menu);
-    }
-    else
-    {
-      Item = new TTBXItem(Menu);
-      Item->Action = AItem->Action;
-      Item->AutoCheck = AItem->AutoCheck;
-      Item->Caption = AItem->Caption;
-      Item->Checked = AItem->Checked;
-      if (AItem->Default)
-      {
-        Item->Options = Item->Options << tboDefault;
-      }
-      Item->Enabled = AItem->Enabled;
-      Item->GroupIndex = AItem->GroupIndex;
-      Item->HelpContext = AItem->HelpContext;
-      Item->ImageIndex = AItem->ImageIndex;
-      Item->RadioItem = AItem->RadioItem;
-      Item->ShortCut = AItem->ShortCut;
-      Item->SubMenuImages = AItem->SubMenuImages;
-      Item->OnClick = AItem->OnClick;
-    }
-    Item->Hint = AItem->Hint;
-    Item->Tag = AItem->Tag;
-    Item->Visible = AItem->Visible;
-
-    Menu->Items->Add(Item);
+    LastPopupComponent = NULL;
   }
+  else
+  {
+    TTBXPopupMenu * Menu = Menu = CreateTBXPopupMenu(AMenu->Owner);
+    Menu->OnPopup = AMenu->OnPopup;
+    Menu->Items->SubMenuImages = AMenu->Images;
 
-  Menu->PopupComponent = PopupComponent;
-  Menu->Popup(Point.x, Point.y);
+    for (int Index = 0; Index < AMenu->Items->Count; Index++)
+    {
+      TMenuItem * AItem = AMenu->Items->Items[Index];
+      TTBCustomItem * Item;
+
+      // recurse not implemented yet
+      assert(AItem->Count == 0);
+
+      // see TB2DsgnConverter.pas DoConvert
+      if (AItem->Caption == "-")
+      {
+        Item = new TTBXSeparatorItem(Menu);
+      }
+      else
+      {
+        Item = new TTBXItem(Menu);
+        Item->Action = AItem->Action;
+        Item->AutoCheck = AItem->AutoCheck;
+        Item->Caption = AItem->Caption;
+        Item->Checked = AItem->Checked;
+        if (AItem->Default)
+        {
+          Item->Options = Item->Options << tboDefault;
+        }
+        Item->Enabled = AItem->Enabled;
+        Item->GroupIndex = AItem->GroupIndex;
+        Item->HelpContext = AItem->HelpContext;
+        Item->ImageIndex = AItem->ImageIndex;
+        Item->RadioItem = AItem->RadioItem;
+        Item->ShortCut = AItem->ShortCut;
+        Item->SubMenuImages = AItem->SubMenuImages;
+        Item->OnClick = AItem->OnClick;
+      }
+      Item->Hint = AItem->Hint;
+      Item->Tag = AItem->Tag;
+      Item->Visible = AItem->Visible;
+
+      Menu->Items->Add(Item);
+    }
+
+    Menu->PopupComponent = PopupComponent;
+    Menu->Popup(Point.x, Point.y);
+    delete Menu;
+
+    LastPopupComponent = PopupComponent;
+    LastCloseUp = Now();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall UpgradeSpeedButton(TSpeedButton * /*Button*/)

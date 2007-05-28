@@ -144,7 +144,6 @@ void __fastcall TLoggingFrame::LogFileNameEditBeforeDialog(TObject * /*Sender*/,
   Name = ExpandEnvironmentVariables(Name);
 }
 //---------------------------------------------------------------------------
-
 void __fastcall TLoggingFrame::LogFileNameEditAfterDialog(TObject * /*Sender*/,
   AnsiString & Name, bool & /*Action*/)
 {

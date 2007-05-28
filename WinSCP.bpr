@@ -95,8 +95,8 @@ IncludeVerInfo=1
 AutoIncBuild=1
 MajorVer=4
 MinorVer=0
-Release=0
-Build=341
+Release=1
+Build=343
 Debug=0
 PreRelease=0
 Special=0
@@ -108,13 +108,13 @@ CodePage=1252
 [Version Info Keys]
 CompanyName=Martin Prikryl
 FileDescription=Windows SFTP, FTP and SCP client
-FileVersion=4.0.0.341
+FileVersion=4.0.1.343
 InternalName=winscp
 LegalCopyright=(c) 2000-2007 Martin Prikryl
 LegalTrademarks=
-OriginalFilename=winscp400.exe
+OriginalFilename=winscp401.exe
 ProductName=WinSCP
-ProductVersion=4.0.0.0
+ProductVersion=4.0.1.0
 WWW=http://winscp.net/
 
 [Compiler]

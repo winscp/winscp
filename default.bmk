@@ -27,15 +27,13 @@ SPARELIBS = %SPARELIBS%
 DEFFILE = %DEFFILE%
 OTHERFILES = %OTHERFILES%
 # ---------------------------------------------------------------------------
-LINKER = %LINKER%
 DEBUGLIBPATH = %DEBUGLIBPATH%
 RELEASELIBPATH = %RELEASELIBPATH%
 USERDEFINES = $(EXTERNALDEFINES)%USERDEFINES%
 SYSDEFINES = %SYSDEFINES%
 INCLUDEPATH = %INCLUDEPATH%
 LIBPATH = %LIBPATH%
-WARNINGS = %WARNINGS%
-LISTFILE = %LISTFILE%
+WARNINGS= %WARNINGS%
 PATHCPP = %PATHCPP%
 PATHASM = %PATHASM%
 PATHPAS = %PATHPAS%
@@ -153,7 +151,7 @@ TASM32 = tasm32
 !endif
 
 !if !$d(LINKER)
-LINKER = TLib
+LINKER = ilink32
 !endif
 
 !if !$d(BRCC32)
@@ -178,18 +176,19 @@ BRCC32 = brcc32
 !if $d(PATHRC)
 .PATH.RC  = $(PATHRC)
 !endif
-# ---------------------------------------------------------------------------
-!if "$(LISTFILE)" ==  ""
-COMMA =
-!else
-COMMA = ,
+
+!if $d(PATHOBJ)
+.PATH.OBJ  = $(PATHOBJ)
 !endif
-
-$(PROJECT):  $(OTHERFILES) $(IDLGENFILES) $(OBJFILES) $(DEFFILE)
-    if exist $@ del $@
-    $(BCB)\BIN\$(LINKER) /a $@ @&&!
-    $(LFLAGS) $? $(COMMA) $(LISTFILE)
-
+# ---------------------------------------------------------------------------
+$(PROJECT): $(OTHERFILES) $(IDLGENFILES) $(OBJFILES) $(RESDEPEN) $(DEFFILE)
+    $(BCB)\BIN\$(LINKER) @&&!
+    $(LFLAGS) -L$(LIBPATH) +
+    $(ALLOBJ), +
+    $(PROJECT),, +
+    $(ALLLIB), +
+    $(DEFFILE), +
+    $(ALLRES)
 !
 # ---------------------------------------------------------------------------
 .pas.hpp:

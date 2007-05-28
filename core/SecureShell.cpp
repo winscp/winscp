@@ -400,6 +400,10 @@ bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
       Result = FUI->PromptUser(FSessionData,
         FMTLOAD(USERNAME_PROMPT, (FSessionData->SessionName)),
         pkPrompt, Response);
+      if (Result)
+      {
+        FUserName = Response;
+      }
     }
   }
   else
@@ -969,7 +973,7 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
     LogEvent(FORMAT("Selecting events %d for socket %d", (int(Events), int(Socket))));
   }
 
-  if (WSAEventSelect(Socket, (unsigned long)Event, Events) == SOCKET_ERROR)
+  if (WSAEventSelect(Socket, (WSAEVENT)Event, Events) == SOCKET_ERROR)
   {
     if (Configuration->LogProtocol >= 2)
     {

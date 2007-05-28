@@ -138,8 +138,11 @@ void __fastcall TSessionData::Default()
   TunnelLocalPortNumber = 0;
   TunnelPortFwd = "";
 
+  // FTP
   FtpPasvMode = false;
   FtpAccount = "";
+  FtpPingInterval = 30;
+  FtpPingType = ptDummyCommand;
 
   CustomParam1 = "";
   CustomParam2 = "";
@@ -257,6 +260,8 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
 
     DUPL(FtpPasvMode);
     DUPL(FtpAccount);
+    DUPL(FtpPingInterval);
+    DUPL(FtpPingType);
 
     DUPL(CustomParam1);
     DUPL(CustomParam2);
@@ -447,6 +452,8 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     // Ftp prefix
     FtpPasvMode = Storage->ReadBool("FtpPasvMode", FtpPasvMode);
     FtpAccount = Storage->ReadString("FtpAccount", FtpAccount);
+    FtpPingInterval = Storage->ReadInteger("FtpPingInterval", FtpPingInterval);
+    FtpPingType = static_cast<TPingType>(Storage->ReadInteger("FtpPingType", FtpPingType));
 
     CustomParam1 = Storage->ReadString("CustomParam1", CustomParam1);
     CustomParam2 = Storage->ReadString("CustomParam2", CustomParam2);
@@ -687,6 +694,8 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
 
       WRITE_DATA(Bool, FtpPasvMode);
       WRITE_DATA(String, FtpAccount);
+      WRITE_DATA(Integer, FtpPingInterval);
+      WRITE_DATA(Integer, FtpPingType);
 
       WRITE_DATA(String, CustomParam1);
       WRITE_DATA(String, CustomParam2);
@@ -851,6 +860,25 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
     RemoteDirectory = ARemoteDirectory;
   }
   return Result;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::ConfigureTunnel(int APortNumber)
+{
+  FOrigHostName = HostName;
+  FOrigPortNumber = PortNumber;
+  FOrigProxyMethod = ProxyMethod;
+
+  HostName = "127.0.0.1";
+  PortNumber = APortNumber;
+  // proxy settings is used for tunnel
+  ProxyMethod = pmNone;
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::RollbackTunnel()
+{
+  HostName = FOrigHostName;
+  PortNumber = FOrigPortNumber;
+  ProxyMethod = FOrigProxyMethod;
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ValidateName(const AnsiString Name)
@@ -1550,6 +1578,16 @@ void __fastcall TSessionData::SetFtpPasvMode(bool value)
 void __fastcall TSessionData::SetFtpAccount(AnsiString value)
 {
   SET_SESSION_PROPERTY(FtpAccount);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetFtpPingInterval(int value)
+{
+  SET_SESSION_PROPERTY(FtpPingInterval);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetFtpPingType(TPingType value)
+{
+  SET_SESSION_PROPERTY(FtpPingType);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetInfoTip()

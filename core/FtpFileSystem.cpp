@@ -2,6 +2,8 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#ifndef NO_FILEZILLA
+//---------------------------------------------------------------------------
 #include <list>
 #include "FtpFileSystem.h"
 #include "FileZillaIntf.h"
@@ -115,9 +117,11 @@ class TMessageQueue : public std::list<std::pair<WPARAM, LPARAM> >
 struct TFileTransferData
 {
   int Params;
+  bool AutoResume;
 };
 //---------------------------------------------------------------------------
-const int tfFirstLevel =   0x01;
+const int tfFirstLevel = 0x01;
+const int tfAutoResume = 0x02;
 //---------------------------------------------------------------------------
 struct TSinkFileParams
 {
@@ -289,6 +293,10 @@ void __fastcall TFTPFileSystem::Open()
             pkPrompt, UserName))
       {
         FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
+      }
+      else
+      {
+        FUserName = UserName;
       }
     }
 
@@ -574,10 +582,15 @@ void __fastcall TFTPFileSystem::CalculateFilesChecksum(const AnsiString & /*Alg*
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::ConfirmOverwrite(AnsiString & FileName,
   TOverwriteMode & OverwriteMode, TFileOperationProgressType * OperationProgress,
-  const TOverwriteFileParams * FileParams, int Params)
+  const TOverwriteFileParams * FileParams, int Params, bool AutoResume)
 {
   bool Result;
-  if (OperationProgress->NoToAll)
+  if (OperationProgress->YesToAll)
+  {
+    OverwriteMode = omOverwrite;
+    Result = true;
+  }
+  else if (OperationProgress->NoToAll)
   {
     FFileTransferAbort = ftaSkip;
     Result = false;
@@ -589,7 +602,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(AnsiString & FileName,
     int Answer;
     if (FLAGSET(Params, cpNoConfirmation))
     {
-      Answer = (CanResume ? qaRetry : qaYes);
+      Answer = (CanResume && AutoResume ? qaRetry : qaYes);
     }
     else
     {
@@ -809,8 +822,9 @@ void __fastcall TFTPFileSystem::SinkRobust(const AnsiString FileName,
       assert(File != NULL);
       if (!File->IsDirectory)
       {
-        // prevent overwrite and resume confirmations
+        // prevent overwrite confirmations
         Params |= cpNoConfirmation;
+        Flags |= tfAutoResume;
       }
     }
   }
@@ -868,7 +882,7 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
       SinkFileParams.Params = Params;
       SinkFileParams.OperationProgress = OperationProgress;
       SinkFileParams.Skipped = false;
-      SinkFileParams.Flags = Flags & ~tfFirstLevel;
+      SinkFileParams.Flags = Flags & ~(tfFirstLevel | tfAutoResume);
 
       FTerminal->ProcessDirectory(FileName, SinkFile, &SinkFileParams);
 
@@ -923,6 +937,7 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
       FFileTransferFileName = DestFileName;
       TFileTransferData UserData;
       UserData.Params = Params;
+      UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
       FFileZillaIntf->FileTransfer(DestFullName.c_str(), OnlyFileName.c_str(),
         FilePath.c_str(), true, File->Size, TransferType, &UserData);
       unsigned int Reply = WaitForReply();
@@ -1075,9 +1090,10 @@ void __fastcall TFTPFileSystem::SourceRobust(const AnsiString FileName,
     if (Retry)
     {
       OperationProgress->RollbackTransfer();
-      // prevent overwrite and resume confirmations
+      // prevent overwrite confirmations
       // (should not be set for directories!)
       Params |= cpNoConfirmation;
+      Flags |= tfAutoResume;
     }
   }
   while (Retry);
@@ -1143,12 +1159,13 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
     FIgnoreFileList = true;
     try
     {
-      // not supports fro uploads anyway
+      // not supports for uploads anyway
       FFileTransferPreserveTime = CopyParam->PreserveTime;
       // not used for uploads
       FFileTransferFileName = DestFileName;
       TFileTransferData UserData;
       UserData.Params = Params;
+      UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
       FFileZillaIntf->FileTransfer(FileName.c_str(), DestFileName.c_str(),
         TargetDir.c_str(), false, Size, TransferType, &UserData);
       unsigned int Reply = WaitForReply();
@@ -1202,7 +1219,7 @@ void __fastcall TFTPFileSystem::DirectorySource(const AnsiString DirectoryName,
       if ((SearchRec.Name != ".") && (SearchRec.Name != ".."))
       {
         SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
-          Flags & ~tfFirstLevel);
+          Flags & ~(tfFirstLevel | tfAutoResume));
       }
     }
     catch (EScpSkipFile &E)
@@ -1590,6 +1607,11 @@ bool __fastcall TFTPFileSystem::GetStoredCredentialsTried()
   return !FTerminal->SessionData->Password.IsEmpty();
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TFTPFileSystem::GetUserName()
+{
+  return FUserName;
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall TFTPFileSystem::GetCurrentDirectory()
 {
   return FCurrentDirectory;
@@ -1722,12 +1744,12 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_KEEPALIVE:
-      Result = ((Data->PingType != ptOff) ? TRUE : FALSE);
+      Result = ((Data->FtpPingType != ptOff) ? TRUE : FALSE);
       break;
 
     case OPTION_INTERVALLOW:
     case OPTION_INTERVALHIGH:
-      Result = Data->PingInterval;
+      Result = Data->FtpPingInterval;
       break;
 
     case OPTION_VMSALLREVISIONS:
@@ -2229,7 +2251,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
     }
 
     if (ConfirmOverwrite(FileName, OverwriteMode, OperationProgress,
-          &FileParams, UserData.Params))
+          &FileParams, UserData.Params, UserData.AutoResume))
     {
       switch (OverwriteMode)
       {
@@ -2530,3 +2552,5 @@ bool __fastcall TFTPFileSystem::Unquote(AnsiString & Str)
 
   return (State == DONE);
 }
+//---------------------------------------------------------------------------
+#endif NO_FILEZILLA

@@ -721,7 +721,6 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   CurrentRenameAction->ShortCut = ShortCut(VK_F2, NONE);
   CurrentEditAction->ShortCut = ShortCut('E', CTRL);
   AddEditLinkAction->ShortCut = ShortCut('L', CTRLALT);
-  NewLinkAction->ShortCut = AddEditLinkAction->ShortCut;
   // Focused operation
   CurrentCopyFocusedAction->ShortCut = ShortCut('C', CTRL);
   CurrentMoveFocusedAction->ShortCut = ShortCut('M', CTRL);
@@ -761,7 +760,6 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   CurrentRenameAction->ShortCut = ShortCut(VK_F2, NONE);
   CurrentEditAction->ShortCut = ShortCut(VK_F4, NONE);
   AddEditLinkAction->ShortCut = ShortCut(VK_F6, ALT);
-  NewLinkAction->ShortCut = AddEditLinkAction->ShortCut;
   // Focused operation
   CurrentCopyFocusedAction->ShortCut = ShortCut(VK_F5, NONE);
   CurrentMoveFocusedAction->ShortCut = ShortCut(VK_F6, NONE);

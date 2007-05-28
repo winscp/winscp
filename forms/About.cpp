@@ -104,6 +104,25 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     TranslatorLabel->Caption = LoadStr(TRANSLATOR_INFO);
     LinkLabel(TranslatorUrlLabel, LoadStr(TRANSLATOR_URL));
   }
+
+  #ifdef NO_FILEZILLA
+  int FileZillaHeight = Label1->Top - FileZillaVersionLabel->Top;
+  FileZillaVersionLabel->Visible = false;
+  FileZillaCopyrightLabel->Visible = false;
+  FileZillaHomepageLabel->Visible = false;
+
+  for (int Index = 0; Index < ThirdPartyBox->ControlCount; Index++)
+  {
+    TControl * Control = ThirdPartyBox->Controls[Index];
+    if (Control->Top > FileZillaHomepageLabel->Top)
+    {
+      Control->Top = Control->Top - FileZillaHeight;
+    }
+  }
+
+  ThirdPartyBox->VertScrollBar->Range = ThirdPartyBox->VertScrollBar->Range - FileZillaHeight;
+  #endif
+
   LicenceButton->Visible = AllowLicence;
   LoadData();
 }

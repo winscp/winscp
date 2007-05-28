@@ -77,6 +77,7 @@ private:
   void __fastcall SetAllowMinimize(bool value);
   bool __fastcall GetAllowMinimize();
   void __fastcall SetReadOnly(bool value);
+  void __fastcall GlobalMinimize(TObject * Sender);
 
 protected:
   void __fastcall CancelOperation();

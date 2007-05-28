@@ -21,10 +21,10 @@
 **
 ** Copyright, 2000, Samuel R. Blackburn
 **
-** $Workfile: CBase64Coding.cpp $
-** $Revision: 1.3 $
-** $Modtime: 5/12/00 3:39p $
-** $Reuse Tracing Code: 1 $
+** Workfile: CBase64Coding.cpp
+** Revision: 1.3
+** Modtime: 5/12/00 3:39p
+** Reuse Tracing Code: 1
 */
 
 //Modified for use with CAsyncProxySocket, removed tracing code
@@ -273,5 +273,3 @@ $Modtime: 5/12/00 3:39p $
 
 </HTML>
 #endif
-
-

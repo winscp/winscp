@@ -154,6 +154,10 @@ bool __fastcall TFileMasks::MatchesFileMask(const AnsiString & Filename, const A
   {
     Result = true;
   }
+  else if ((Mask == "*.") && (Filename.Pos(".") == 0))
+  {
+    Result = true;
+  }
   else
   {
     Result = ::MatchesMask(Filename, Mask);

@@ -70,21 +70,6 @@
   </BUILDTOOLS>
 
   <IDEOPTIONS>
-[Version Info]
-IncludeVerInfo=0
-AutoIncBuild=0
-MajorVer=1
-MinorVer=0
-Release=0
-Build=0
-Debug=0
-PreRelease=0
-Special=0
-Private=0
-DLL=0
-Locale=1033
-CodePage=1252
-
 [Compiler]
 ShowInfoMsgs=0
 LinkDebugVcl=0

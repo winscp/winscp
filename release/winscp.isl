@@ -14,7 +14,7 @@ RegisterAsUrlHandler=Register to handle sftp:// and scp:// &addresses
 AddSearchPath=Add installation directory to &search path (%PATH%)
 EnableUpdates=Enable automatic &check for application updates (recommended)
 
-RegisteringAsUrlHandler=Registering to handle scp:// and sftp:// addresses
+RegisteringAsUrlHandler=Registering to handle sftp:// and scp:// addresses
 AddingSearchPath=Adding installation directory to search path (%PATH%)
 RemovingInvalidDefaultTranslation=Looking for obsolete default translation
 

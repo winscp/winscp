@@ -1441,7 +1441,7 @@ LCID __fastcall TWinConfiguration::GetLocale()
   return TCustomWinConfiguration::GetLocale();
 }
 //---------------------------------------------------------------------------
-HANDLE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
+HINSTANCE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
   AnsiString * FileName)
 {
   AnsiString FileNameStorage;
@@ -1450,7 +1450,7 @@ HANDLE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
     FileName = &FileNameStorage;
   }
 
-  HANDLE Instance = TCustomWinConfiguration::LoadNewResourceModule(ALocale, FileName);
+  HINSTANCE Instance = TCustomWinConfiguration::LoadNewResourceModule(ALocale, FileName);
   if (Instance != NULL)
   {
     try
@@ -1466,7 +1466,7 @@ HANDLE __fastcall TWinConfiguration::LoadNewResourceModule(LCID ALocale,
   return Instance;
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetResourceModule(HANDLE Instance)
+void __fastcall TWinConfiguration::SetResourceModule(HINSTANCE Instance)
 {
   TCustomWinConfiguration::SetResourceModule(Instance);
 

@@ -25,6 +25,7 @@
 //---------------------------------------------------------------------
 // initialize an instance
 TProgramParams ProgramParams;
+TNotifyEvent GlobalOnMinimize = NULL;
 //---------------------------------------------------------------------
 void __fastcall FormHelp(TForm * Form)
 {
@@ -804,6 +805,21 @@ void __fastcall MenuPopup(TObject * Sender, const TPoint & MousePos, bool & Hand
   assert(PopupMenu != NULL);
   MenuPopup(PopupMenu, Point, Control);
   Handled = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall SetGlobalMinimizeHandler(TNotifyEvent OnMinimize)
+{
+  GlobalOnMinimize = OnMinimize;
+}
+//---------------------------------------------------------------------------
+TNotifyEvent __fastcall GetGlobalMinimizeHandler()
+{
+  return GlobalOnMinimize;
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsGlobalMinimizeHandler()
+{
+  return (GlobalOnMinimize != NULL);
 }
 //---------------------------------------------------------------------------
 struct TNotifyIconData5

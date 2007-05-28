@@ -73,10 +73,20 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
 
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
+
+  if (!IsGlobalMinimizeHandler())
+  {
+    SetGlobalMinimizeHandler(GlobalMinimize);
+  };
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeDialog::~TSynchronizeDialog()
 {
+  if (GetGlobalMinimizeHandler() == GlobalMinimize)
+  {
+    SetGlobalMinimizeHandler(NULL);
+  }
+
   delete FSynchronizeOptions;
   delete FPresetsMenu;
 }
@@ -369,6 +379,16 @@ void __fastcall TSynchronizeDialog::Stop()
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::MinimizeButtonClick(TObject * /*Sender*/)
+{
+  MinimizeApp();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::GlobalMinimize(TObject * /*Sender*/)
+{
+  MinimizeApp();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::MinimizeApp()
 {
   Application->Minimize();
   FMinimizedByMe = true;

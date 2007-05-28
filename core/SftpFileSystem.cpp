@@ -1200,13 +1200,13 @@ protected:
   // event handler for incoming data
   void __fastcall ReceiveHandler(TObject * /*Sender*/)
   {
-    while (FFileSystem->PeekPacket())
+    while (FFileSystem->PeekPacket() && ReceivePacketAsynchronously())
     {
-      ReceivePacketAsynchronously();
+      // loop
     }
   }
 
-  virtual void __fastcall ReceivePacketAsynchronously() = 0;
+  virtual bool __fastcall ReceivePacketAsynchronously() = 0;
 
   // sends as many requests as allowed by implementation
   virtual bool SendRequests()
@@ -1355,13 +1355,15 @@ protected:
     OperationProgress->AddTransfered(FLastBlockSize);
   }
 
-  virtual void __fastcall ReceivePacketAsynchronously()
+  virtual bool __fastcall ReceivePacketAsynchronously()
   {
     // do not read response to close request
-    if (FRequests->Count > 0)
+    bool Result = (FRequests->Count > 0);
+    if (Result)
     {
       ReceivePacket(NULL, SSH_FXP_STATUS);
     }
+    return Result;
   }
 
   inline int __fastcall GetBlockSize()
@@ -1515,7 +1517,7 @@ protected:
         Request->AddString(FAlg);
         Request->AddInt64(0); // offset
         Request->AddInt64(0); // length (0 = till end)
-        Request->AddInt64(0); // block size (0 = no blocks or "one block")
+        Request->AddCardinal(0); // block size (0 = no blocks or "one block")
 
         Request->Token = File;
       }
@@ -1702,6 +1704,11 @@ bool __fastcall TSFTPFileSystem::TemporaryTransferFile(const AnsiString & FileNa
 bool __fastcall TSFTPFileSystem::GetStoredCredentialsTried()
 {
   return FSecureShell->GetStoredCredentialsTried();
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TSFTPFileSystem::GetUserName()
+{
+  return FSecureShell->UserName;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::Idle()
@@ -3415,10 +3422,8 @@ void __fastcall TSFTPFileSystem::DoCalculateFilesChecksum(const AnsiString & Alg
           OperationProgress->SetFile(File->FileName);
 
           Alg = Packet.GetString();
-          Checksum = StrToHex(Packet.GetString());
+          Checksum = StrToHex(AnsiString(Packet.GetNextData(Packet.RemainingLength), Packet.RemainingLength));
           OnCalculatedChecksum(File->FileName, Alg, Checksum);
-          //assert(false); // TODO
-          //Checksum = Packet.GetString();
 
           Success = true;
         }
@@ -3806,26 +3811,26 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   FTerminal->OpenLocalFile(FileName, GENERIC_READ, &OpenParams.LocalFileAttrs,
     &File, NULL, &MTime, &ATime, &Size);
 
-  bool Dir = FLAGSET(OpenParams.LocalFileAttrs, faDirectory);
-
-  TFileMasks::TParams MaskParams;
-  MaskParams.Size = Size;
-
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams))
+  try
   {
-    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
-    THROW_SKIP_FILE_NULL;
-  }
+    bool Dir = FLAGSET(OpenParams.LocalFileAttrs, faDirectory);
 
-  if (Dir)
-  {
-    SFTPDirectorySource(IncludeTrailingBackslash(FileName), TargetDir,
-      OpenParams.LocalFileAttrs, CopyParam, Params, OperationProgress, Flags);
-  }
-  else
-  {
-    try
+    TFileMasks::TParams MaskParams;
+    MaskParams.Size = Size;
+
+    if (FLAGCLEAR(Params, cpDelete) &&
+        !CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams))
+    {
+      FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+      THROW_SKIP_FILE_NULL;
+    }
+
+    if (Dir)
+    {
+      SFTPDirectorySource(IncludeTrailingBackslash(FileName), TargetDir,
+        OpenParams.LocalFileAttrs, CopyParam, Params, OperationProgress, Flags);
+    }
+    else
     {
       // File is regular file (not directory)
       assert(File);
@@ -3875,7 +3880,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         if (FLAGCLEAR(Flags, tfNewDirectory))
         {
           FTerminal->LogEvent("Checking existence of file.");
-          TRemoteFile * File = new TRemoteFile();
+          TRemoteFile * File = NULL;
           DestFileExists = RemoteFileExists(DestFullName, &File);
           if (DestFileExists)
           {
@@ -4099,7 +4104,10 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         );
       }
     }
-    __finally
+  }
+  __finally
+  {
+    if (File != NULL)
     {
       CloseHandle(File);
     }

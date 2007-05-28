@@ -83,6 +83,16 @@ void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 	SendLogMessage(nMessageType, text);
 }
 
+void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
+{
+	ASSERT(nMessageType>=0 || nMessageType<=8);
+	ASSERT(m_hTargetWnd || m_pApiLogParent);
+	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
+		return;
+	
+	SendLogMessage(nMessageType, pMsg);
+}
+
 void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
 {
 	ASSERT(nMessageType>=0 || nMessageType<=8);
@@ -132,7 +142,23 @@ BOOL CApiLog::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) con
 {
 	return m_pApiLogParent->PostMessage(hWnd, Msg, wParam, lParam);
 }
-#endif  
+#endif
+
+void CApiLog::LogMessageRaw(CString SourceFile, int nSourceLine, void *pInstance, int nMessageType, LPCTSTR pMsg) const
+{
+	ASSERT(nMessageType>=4 || nMessageType<=8);
+	ASSERT(m_hTargetWnd || m_pApiLogParent);
+	ASSERT(nSourceLine>0);
+
+	int pos=SourceFile.ReverseFind('\\');
+	if (pos!=-1)
+		SourceFile=SourceFile.Mid(pos+1);
+	
+	CString msg;
+	msg.Format(_T("%s(%d): %s   caller=0x%08x"), SourceFile, nSourceLine, pMsg, (int)this);
+	
+	SendLogMessage(nMessageType, msg);
+}
 
 void CApiLog::SendLogMessage(int nMessageType, LPCTSTR pMsg) const
 {

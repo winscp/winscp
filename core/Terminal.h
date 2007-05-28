@@ -166,6 +166,7 @@ private:
   TRemoteDirectoryCache * FDirectoryCache;
   TRemoteDirectoryChangesCache * FDirectoryChangesCache;
   TCustomFileSystem * FFileSystem;
+  TSecureShell * FSecureShell;
   AnsiString FLastDirectoryChange;
   TCurrentFSProtocol FFSProtocol;
   TTerminal * FCommandSession;
@@ -187,6 +188,7 @@ private:
   TExtendedExceptionEvent FOnShowExtendedException;
   TInformationEvent FOnInformation;
   TNotifyEvent FOnClose;
+  bool FAnyInformation;
   void __fastcall CommandError(Exception * E, const AnsiString Msg);
   int __fastcall CommandError(Exception * E, const AnsiString Msg, int Answers);
   AnsiString __fastcall PeekCurrentDirectory();
@@ -435,6 +437,7 @@ public:
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
   __property TInformationEvent OnInformation = { read = FOnInformation, write = FOnInformation };
   __property TNotifyEvent OnClose = { read = FOnClose, write = FOnClose };
+  __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber };
 };
 //---------------------------------------------------------------------------
 class TSecondaryTerminal : public TTerminal

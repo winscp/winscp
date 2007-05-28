@@ -639,8 +639,13 @@ void __fastcall TTerminalManager::ApplicationShowHint(AnsiString & HintStr,
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::ApplicationActivate(TObject * /*Sender*/)
 {
-  // make sure the taskbar button is pressed
-  SetActiveWindow(Application->Handle);
+  // make sure the taskbar button of main window is pressed
+  // (but only if main window is our application focused window,
+  // note that there can also be an editor window)
+  if ((ScpExplorer != NULL) && (Screen->ActiveForm == ScpExplorer))
+  {
+    SetActiveWindow(Application->Handle);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DeleteLocalFile(const AnsiString FileName)
@@ -708,15 +713,6 @@ void __fastcall TTerminalManager::TerminalPromptUser(
     {
       AuthenticateForm = new TAuthenticateForm(Application,
         Terminal->SessionData->SessionName);
-      // when opening session, keep the form opened afterwards
-      // (the form is initiated by prompt for FTP sesiones, where username is not
-      // specified on login dialog)
-      if (Terminal->Status == ssOpening)
-      {
-        FAuthenticateForm = AuthenticateForm;
-        // see TerminalInformation
-        Busy(true);
-      }
     }
 
     try
@@ -1024,9 +1020,23 @@ bool __fastcall TTerminalManager::CanOpenInPutty()
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OpenInPutty()
 {
-  assert(ActiveTerminal != NULL);
-  OpenSessionInPutty(GUIConfiguration->PuttyPath, ActiveTerminal->SessionData,
-    GUIConfiguration->PuttyPassword ? ActiveTerminal->Password : AnsiString());
+  TSessionData * Data = new TSessionData("");
+  try
+  {
+    Data->Assign(ActiveTerminal->SessionData);
+    if (ActiveTerminal->TunnelLocalPortNumber != 0)
+    {
+      Data->ConfigureTunnel(ActiveTerminal->TunnelLocalPortNumber);
+    }
+
+    assert(ActiveTerminal != NULL);
+    OpenSessionInPutty(GUIConfiguration->PuttyPath, Data,
+      GUIConfiguration->PuttyPassword ? ActiveTerminal->Password : AnsiString());
+  }
+  __finally
+  {
+    delete Data;
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalManager::NewSession()

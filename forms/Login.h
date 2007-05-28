@@ -349,6 +349,7 @@ private:
   TColor FColor;
   AnsiString FBeforeDialogPath;
   TStringList * FTreeLabels;
+  TFSProtocol FFSProtocol;
 
   void __fastcall LoadSession(TSessionData * aSessionData);
   void __fastcall UpdateControls();
@@ -366,6 +367,8 @@ private:
   int __fastcall FSProtocolToIndex(TFSProtocol FSProtocol, bool & AllowScpFallback);
   TFSProtocol __fastcall IndexToFSProtocol(int Index, bool AllowScpFallback);
   void __fastcall UpdateNavigationTree();
+  void __fastcall LoadPing(TSessionData * aSessionData);
+  void __fastcall SavePing(TSessionData * aSessionData);
 
 protected:
   void __fastcall Default();
@@ -383,6 +386,7 @@ protected:
   void __fastcall InitControls();
   void __fastcall ShowTabs(bool Show);
   void __fastcall VerifyKey(AnsiString FileName, bool TypeOnly);
+  void __fastcall EditSession();
 
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);

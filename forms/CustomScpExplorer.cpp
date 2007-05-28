@@ -5712,9 +5712,10 @@ void __fastcall TCustomScpExplorerForm::StatusBarPanelDblClick(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::LockWindow()
 {
-  if (FLockLevel == 0)
+  // workaround: for unknown reason, disabling window, while minimized,
+  // prevents it from restoring, even if it was enabled again meanwhile
+  if (!IsIconic(Application->Handle))
   {
-    assert(Enabled);
     Enabled = false;
   }
 
@@ -5723,7 +5724,6 @@ void __fastcall TCustomScpExplorerForm::LockWindow()
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UnlockWindow()
 {
-  assert(!Enabled);
   assert(FLockLevel > 0);
   FLockLevel--;
 

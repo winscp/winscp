@@ -13,7 +13,15 @@ CString COptions::GetInstanceOption(CApiLog * Instance, int OptionID)
 
   const TFileZillaIntf * Intf = Intern->GetOwner();
   ASSERT(Intf != NULL);
-  return Intf->Option(OptionID);
+  CString Result = Intf->Option(OptionID);
+  switch (OptionID)
+  {
+    case OPTION_PROXYPASS:
+    case OPTION_FWPASS:
+      Result = CCrypt::encrypt(Result);
+      break;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 int COptions::GetInstanceOptionVal(CApiLog * Instance, int OptionID)

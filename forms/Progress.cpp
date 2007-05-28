@@ -42,12 +42,22 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FReadOnly = false;
   FShowAsModalStorage = NULL;
   UseSystemSettings(this);
+  if (!IsGlobalMinimizeHandler())
+  {
+    SetGlobalMinimizeHandler(GlobalMinimize);
+  };
 }
 //---------------------------------------------------------------------------
 __fastcall TProgressForm::~TProgressForm()
 {
   // to prevent raising assertion (e.g. IsProgress == True)
   FData.Clear();
+
+  if (GetGlobalMinimizeHandler() == GlobalMinimize)
+  {
+    SetGlobalMinimizeHandler(NULL);
+  }
+
   if (IsIconic(Application->Handle) && FMinimizedByMe)
   {
     Application->Restore();
@@ -300,7 +310,15 @@ void __fastcall TProgressForm::CancelButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::MinimizeButtonClick(TObject * /*Sender*/)
 {
-  MinimizeApp();
+  TNotifyEvent OnMinimize = GetGlobalMinimizeHandler();
+  if (OnMinimize != NULL)
+  {
+    OnMinimize(this);
+  }
+  else
+  {
+    MinimizeApp();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::CancelOperation()
@@ -352,6 +370,11 @@ void __fastcall TProgressForm::MinimizeApp()
 {
   Application->Minimize();
   FMinimizedByMe = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::GlobalMinimize(TObject * /*Sender*/)
+{
+  MinimizeApp();
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::SetDisconnectWhenComplete(bool value)

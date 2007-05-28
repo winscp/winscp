@@ -49,6 +49,8 @@ private:
   bool FCompareOnly;
 
   void __fastcall UpdateControls();
+  void __fastcall GlobalMinimize(TObject * Sender);
+  void __fastcall MinimizeApp();
 };
 //---------------------------------------------------------------------------
 #endif

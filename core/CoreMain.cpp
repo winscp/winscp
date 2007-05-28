@@ -8,7 +8,9 @@
 #include "Interface.h"
 #include "Configuration.h"
 #include "PuttyIntf.h"
+#ifndef NO_FILEZILLA
 #include "FileZillaIntf.h"
+#endif
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -35,7 +37,9 @@ void CoreInitialize()
   Configuration = CreateConfiguration();
 
   PuttyInitialize();
+  #ifndef NO_FILEZILLA
   TFileZillaIntf::Initialize();
+  #endif
 
   // ... but some pieces of configuration can be initialized only afterwards
   Configuration->Initialize();
@@ -79,12 +83,18 @@ void CoreFinalize()
   delete Configuration;
   Configuration = NULL;
 
+  #ifndef NO_FILEZILLA
   TFileZillaIntf::Finalize();
+  #endif
   PuttyFinalize();
 }
 //---------------------------------------------------------------------------
-void CoreSetResourceModule(HINSTANCE ResourceHandle)
+void CoreSetResourceModule(void * ResourceHandle)
 {
+  #ifndef NO_FILEZILLA
   TFileZillaIntf::SetResourceModule(ResourceHandle);
+  #else
+  USEDPARAM(ResourceHandle);
+  #endif
 }
 //---------------------------------------------------------------------------

@@ -370,7 +370,9 @@ int __fastcall FakeFileImageIndex(AnsiString FileName, unsigned long Attrs,
 
   TSHFileInfo SHFileInfo;
   // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
-  if (FileName == "..")
+  if ((FileName == "..") ||
+      ((FileName.Length() == 2) && (FileName[2] == ':') &&
+       (tolower(FileName[1]) >= 'a') && (tolower(FileName[1]) <= 'z')))
   {
     FileName = "dumb";
   }
@@ -382,14 +384,27 @@ int __fastcall FakeFileImageIndex(AnsiString FileName, unsigned long Attrs,
     FileName.SetLength(FileName.Length() - PartialExtLen);
   }
 
-  SHGetFileInfo(FileName.c_str(),
-    Attrs, &SHFileInfo, sizeof(SHFileInfo),
-    SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES | SHGFI_TYPENAME);
-  if (TypeName != NULL)
+  int Icon;
+  if (SHGetFileInfo(FileName.c_str(),
+        Attrs, &SHFileInfo, sizeof(SHFileInfo),
+        SHGFI_SYSICONINDEX | SHGFI_USEFILEATTRIBUTES | SHGFI_TYPENAME) != 0)
   {
-    *TypeName = SHFileInfo.szTypeName;
+    if (TypeName != NULL)
+    {
+      *TypeName = SHFileInfo.szTypeName;
+    }
+    Icon = SHFileInfo.iIcon;
   }
-  return SHFileInfo.iIcon;
+  else
+  {
+    if (TypeName != NULL)
+    {
+      *TypeName = "";
+    }
+    Icon = -1;
+  }
+
+  return Icon;
 }
 //- TRemoteFiles ------------------------------------------------------------
 __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
@@ -469,8 +484,7 @@ void __fastcall TRemoteFile::LoadTypeInfo()
 //---------------------------------------------------------------------------
 Integer __fastcall TRemoteFile::GetIconIndex() const
 {
-  assert(FIconIndex >= -1);
-  if (FIconIndex < 0)
+  if (FIconIndex == -1)
   {
     const_cast<TRemoteFile *>(this)->LoadTypeInfo();
   }

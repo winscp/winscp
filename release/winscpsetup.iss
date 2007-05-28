@@ -184,6 +184,7 @@ Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   Parameters: "/upload"; Tasks: sendtohook
 
 [InstallDelete]
+; Legacy sendto hook (SCP-only), only english link is removed
 Type: files; Name: "{sendto}\WinSCP3 (upload using SCP).lnk"
 Type: files; Name: "{group}\{cm:RSAKeyTools}\{cm:KeysManual}.lnk"
 Type: files; Name: "{app}\{cm:SupportForum}.url"

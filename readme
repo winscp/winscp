@@ -1,9 +1,11 @@
 This is the README file for source code package of WinSCP.
 
+To build full version of WinSCP you need Borland C++ Builder 6 Professional.
+You can build version without FTP support with Borland C++ Builder 6 Personal.
+
 To build WinSCP from source by yourself, type 'make' in root
 folder of source code package (directory where 'makefile' file resides).
-
-To build WinSCP you need Borland C++ Builder 6.
+To build version without FTP support, use 'make -DNO_FILEZILLA'.
 
 Directory structure:
 /            project files of all native libraries and executables

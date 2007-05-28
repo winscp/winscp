@@ -66,6 +66,7 @@ public:
   virtual const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve);
   virtual bool __fastcall TemporaryTransferFile(const AnsiString & FileName);
   virtual bool __fastcall GetStoredCredentialsTried();
+  virtual AnsiString __fastcall GetUserName();
 
 protected:
   __property TStrings * Output = { read = FOutput };

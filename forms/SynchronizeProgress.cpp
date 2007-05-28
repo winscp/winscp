@@ -31,17 +31,29 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
       (MinimizeButton->Left - CancelButton->Left) / 2;
     MinimizeButton->Visible = false;
   }
+  else
+  {
+    if (!IsGlobalMinimizeHandler())
+    {
+      SetGlobalMinimizeHandler(GlobalMinimize);
+    };
+  }
 }
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
 {
+  if (GetGlobalMinimizeHandler() == GlobalMinimize)
+  {
+    SetGlobalMinimizeHandler(NULL);
+  }
+
+  ReleaseAsModal(this, FShowAsModalStorage);
+
   if (IsIconic(Application->Handle) && FMinimizedByMe)
   {
     Application->Restore();
     Application->BringToFront();
   }
-
-  ReleaseAsModal(this, FShowAsModalStorage);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::Start()
@@ -98,6 +110,24 @@ void __fastcall TSynchronizeProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::MinimizeButtonClick(
   TObject * /*Sender*/)
+{
+  TNotifyEvent OnMinimize = GetGlobalMinimizeHandler();
+  if (OnMinimize != NULL)
+  {
+    OnMinimize(this);
+  }
+  else
+  {
+    MinimizeApp();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::GlobalMinimize(TObject * /*Sender*/)
+{
+  MinimizeApp();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeProgressForm::MinimizeApp()
 {
   Application->Minimize();
   FMinimizedByMe = true;

@@ -364,6 +364,11 @@ bool __fastcall TSCPFileSystem::GetStoredCredentialsTried()
   return FSecureShell->GetStoredCredentialsTried();
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TSCPFileSystem::GetUserName()
+{
+  return FSecureShell->UserName;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::Idle()
 {
   // Keep session alive
@@ -1530,221 +1535,226 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   FTerminal->OpenLocalFile(FileName, GENERIC_READ,
     &Attrs, &File, NULL, &MTime, &ATime, &Size);
 
-  bool Dir = FLAGSET(Attrs, faDirectory);
-
-  TFileMasks::TParams MaskParams;
-  MaskParams.Size = Size;
-
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams))
-  {
-    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
-    THROW_SKIP_FILE_NULL;
-  }
-
-  if (Dir)
-  {
-    SCPDirectorySource(FileName, CopyParam, Params, OperationProgress, Level);
-  }
-    else
   try
   {
-    assert(File);
+    bool Dir = FLAGSET(Attrs, faDirectory);
 
-    // File is regular file (not directory)
-    FTerminal->LogEvent(FORMAT("Copying \"%s\" to remote directory started.", (FileName)));
+    TFileMasks::TParams MaskParams;
+    MaskParams.Size = Size;
 
-    OperationProgress->SetLocalSize(Size);
-
-    // Suppose same data size to transfer as to read
-    // (not true with ASCII transfer)
-    OperationProgress->SetTransferSize(OperationProgress->LocalSize);
-    OperationProgress->TransferingFile = false;
-
-    // Will we use ASCII of BINARY file tranfer?
-    OperationProgress->SetAsciiTransfer(
-      CopyParam->UseAsciiTransfer(FileName, osLocal, MaskParams));
-    FTerminal->LogEvent(
-      AnsiString((OperationProgress->AsciiTransfer ? "Ascii" : "Binary")) +
-        " transfer mode selected.");
-
-    try
+    if (FLAGCLEAR(Params, cpDelete) &&
+        !CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams))
     {
-      // During ASCII transfer we will load whole file to this buffer
-      // than convert EOL and send it at once, because before converting EOL
-      // we can't know its size
-      TFileBuffer AsciiBuf;
-      do
+      FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+      THROW_SKIP_FILE_NULL;
+    }
+
+    if (Dir)
+    {
+      SCPDirectorySource(FileName, CopyParam, Params, OperationProgress, Level);
+    }
+    else
+    {
+      assert(File);
+
+      // File is regular file (not directory)
+      FTerminal->LogEvent(FORMAT("Copying \"%s\" to remote directory started.", (FileName)));
+
+      OperationProgress->SetLocalSize(Size);
+
+      // Suppose same data size to transfer as to read
+      // (not true with ASCII transfer)
+      OperationProgress->SetTransferSize(OperationProgress->LocalSize);
+      OperationProgress->TransferingFile = false;
+
+      // Will we use ASCII of BINARY file tranfer?
+      OperationProgress->SetAsciiTransfer(
+        CopyParam->UseAsciiTransfer(FileName, osLocal, MaskParams));
+      FTerminal->LogEvent(
+        AnsiString((OperationProgress->AsciiTransfer ? "Ascii" : "Binary")) +
+          " transfer mode selected.");
+
+      try
       {
-        // Buffer for one block of data
-        TFileBuffer BlockBuf;
-
-        // This is crucial, if it fails during file transfer, it's fatal error
-        FILE_OPERATION_LOOP_EX (!OperationProgress->TransferingFile,
-            FMTLOAD(READ_ERROR, (FileName)),
-          try
-          {
-            BlockBuf.LoadFile(File, OperationProgress->LocalBlockSize(), true);
-          }
-          catch(...)
-          {
-            RaiseLastOSError();
-          }
-        );
-
-        OperationProgress->AddLocalyUsed(BlockBuf.Size);
-
-        // We do ASCII transfer: convert EOL of current block
-        // (we don't convert whole buffer, cause it would produce
-        // huge memory-transfers while inserting/deleting EOL characters)
-        // Than we add current block to file buffer
-        if (OperationProgress->AsciiTransfer)
+        // During ASCII transfer we will load whole file to this buffer
+        // than convert EOL and send it at once, because before converting EOL
+        // we can't know its size
+        TFileBuffer AsciiBuf;
+        do
         {
-          BlockBuf.Convert(FTerminal->Configuration->LocalEOLType,
-            FTerminal->SessionData->EOLType, cpRemoveCtrlZ);
-          BlockBuf.Memory->Seek(0, soFromBeginning);
-          AsciiBuf.ReadStream(BlockBuf.Memory, BlockBuf.Size, true);
-          // We don't need it any more
-          BlockBuf.Memory->Clear();
-          // Calculate total size to sent (assume that ratio between
-          // size of source and size of EOL-transformed data would remain same)
-          // First check if file contains anything (div by zero!)
-          if (OperationProgress->LocalyUsed)
-          {
-            __int64 X = OperationProgress->LocalSize;
-            X *= AsciiBuf.Size;
-            X /= OperationProgress->LocalyUsed;
-            OperationProgress->ChangeTransferSize(X);
-          }
-            else
-          {
-            OperationProgress->ChangeTransferSize(0);
-          }
-        }
+          // Buffer for one block of data
+          TFileBuffer BlockBuf;
 
-        // We send file information on first pass during BINARY transfer
-        // and on last pass during ASCII transfer
-        // BINARY: We succeeded reading first buffer from file, hopefully
-        // we will be able to read whole, so we send file info to remote side
-        // This is done, because when reading fails we can't interrupt sending
-        // (don't know how to tell other side that it failed)
-        if (!OperationProgress->TransferingFile &&
-            (!OperationProgress->AsciiTransfer || OperationProgress->IsLocalyDone()))
-        {
-          AnsiString Buf;
+          // This is crucial, if it fails during file transfer, it's fatal error
+          FILE_OPERATION_LOOP_EX (!OperationProgress->TransferingFile,
+              FMTLOAD(READ_ERROR, (FileName)),
+            try
+            {
+              BlockBuf.LoadFile(File, OperationProgress->LocalBlockSize(), true);
+            }
+            catch(...)
+            {
+              RaiseLastOSError();
+            }
+          );
 
-          if (CopyParam->PreserveTime)
-          {
-            // Send last file access and modification time
-            // TVarRec don't understand 'unsigned int' -> we use sprintf()
-            Buf.sprintf("T%lu 0 %lu 0", static_cast<unsigned long>(MTime),
-              static_cast<unsigned long>(ATime));
-            FSecureShell->SendLine(Buf);
-            SCPResponse();
-          }
+          OperationProgress->AddLocalyUsed(BlockBuf.Size);
 
-          // Send file modes (rights), filesize and file name
-          // TVarRec don't understand 'unsigned int' -> we use sprintf()
-          Buf.sprintf("C%s %Ld %s",
-            CopyParam->RemoteFileRights(Attrs).Octal.data(),
-            (OperationProgress->AsciiTransfer ? (__int64)AsciiBuf.Size :
-              OperationProgress->LocalSize),
-            DestFileName.data());
-          FSecureShell->SendLine(Buf);
-          SCPResponse();
-          // Indicate we started transfering file, we need to finish it
-          // If not, it's fatal error
-          OperationProgress->TransferingFile = true;
-
-          // If we're doing ASCII transfer, this is last pass
-          // so we send whole file
-          /* TODO : We can't send file above 32bit size in ASCII mode! */
+          // We do ASCII transfer: convert EOL of current block
+          // (we don't convert whole buffer, cause it would produce
+          // huge memory-transfers while inserting/deleting EOL characters)
+          // Than we add current block to file buffer
           if (OperationProgress->AsciiTransfer)
           {
-            FTerminal->LogEvent(FORMAT("Sending ASCII data (%u bytes)",
-              (AsciiBuf.Size)));
-            // Should be equal, just in case it's rounded (see above)
-            OperationProgress->ChangeTransferSize(AsciiBuf.Size);
-            while (!OperationProgress->IsTransferDone())
+            BlockBuf.Convert(FTerminal->Configuration->LocalEOLType,
+              FTerminal->SessionData->EOLType, cpRemoveCtrlZ);
+            BlockBuf.Memory->Seek(0, soFromBeginning);
+            AsciiBuf.ReadStream(BlockBuf.Memory, BlockBuf.Size, true);
+            // We don't need it any more
+            BlockBuf.Memory->Clear();
+            // Calculate total size to sent (assume that ratio between
+            // size of source and size of EOL-transformed data would remain same)
+            // First check if file contains anything (div by zero!)
+            if (OperationProgress->LocalyUsed)
             {
-              FSecureShell->Send(
-                AsciiBuf.Data + (unsigned int)OperationProgress->TransferedSize,
-                OperationProgress->TransferBlockSize());
-              OperationProgress->AddTransfered(OperationProgress->TransferBlockSize());
-              if (OperationProgress->Cancel == csCancelTransfer)
+              __int64 X = OperationProgress->LocalSize;
+              X *= AsciiBuf.Size;
+              X /= OperationProgress->LocalyUsed;
+              OperationProgress->ChangeTransferSize(X);
+            }
+              else
+            {
+              OperationProgress->ChangeTransferSize(0);
+            }
+          }
+
+          // We send file information on first pass during BINARY transfer
+          // and on last pass during ASCII transfer
+          // BINARY: We succeeded reading first buffer from file, hopefully
+          // we will be able to read whole, so we send file info to remote side
+          // This is done, because when reading fails we can't interrupt sending
+          // (don't know how to tell other side that it failed)
+          if (!OperationProgress->TransferingFile &&
+              (!OperationProgress->AsciiTransfer || OperationProgress->IsLocalyDone()))
+          {
+            AnsiString Buf;
+
+            if (CopyParam->PreserveTime)
+            {
+              // Send last file access and modification time
+              // TVarRec don't understand 'unsigned int' -> we use sprintf()
+              Buf.sprintf("T%lu 0 %lu 0", static_cast<unsigned long>(MTime),
+                static_cast<unsigned long>(ATime));
+              FSecureShell->SendLine(Buf);
+              SCPResponse();
+            }
+
+            // Send file modes (rights), filesize and file name
+            // TVarRec don't understand 'unsigned int' -> we use sprintf()
+            Buf.sprintf("C%s %Ld %s",
+              CopyParam->RemoteFileRights(Attrs).Octal.data(),
+              (OperationProgress->AsciiTransfer ? (__int64)AsciiBuf.Size :
+                OperationProgress->LocalSize),
+              DestFileName.data());
+            FSecureShell->SendLine(Buf);
+            SCPResponse();
+            // Indicate we started transfering file, we need to finish it
+            // If not, it's fatal error
+            OperationProgress->TransferingFile = true;
+
+            // If we're doing ASCII transfer, this is last pass
+            // so we send whole file
+            /* TODO : We can't send file above 32bit size in ASCII mode! */
+            if (OperationProgress->AsciiTransfer)
+            {
+              FTerminal->LogEvent(FORMAT("Sending ASCII data (%u bytes)",
+                (AsciiBuf.Size)));
+              // Should be equal, just in case it's rounded (see above)
+              OperationProgress->ChangeTransferSize(AsciiBuf.Size);
+              while (!OperationProgress->IsTransferDone())
               {
-                throw Exception(USER_TERMINATED);
+                FSecureShell->Send(
+                  AsciiBuf.Data + (unsigned int)OperationProgress->TransferedSize,
+                  OperationProgress->TransferBlockSize());
+                OperationProgress->AddTransfered(OperationProgress->TransferBlockSize());
+                if (OperationProgress->Cancel == csCancelTransfer)
+                {
+                  throw Exception(USER_TERMINATED);
+                }
               }
             }
           }
-        }
 
-        // At end of BINARY transfer pass, send current block
-        if (!OperationProgress->AsciiTransfer)
-        {
-          if (!OperationProgress->TransferedSize)
+          // At end of BINARY transfer pass, send current block
+          if (!OperationProgress->AsciiTransfer)
           {
-            FTerminal->LogEvent(FORMAT("Sending BINARY data (first block, %u bytes)",
-              (BlockBuf.Size)));
+            if (!OperationProgress->TransferedSize)
+            {
+              FTerminal->LogEvent(FORMAT("Sending BINARY data (first block, %u bytes)",
+                (BlockBuf.Size)));
+            }
+            else if (FTerminal->Configuration->LogProtocol >= 1)
+            {
+              FTerminal->LogEvent(FORMAT("Sending BINARY data (%u bytes)",
+                (BlockBuf.Size)));
+            }
+            FSecureShell->Send(BlockBuf.Data, BlockBuf.Size);
+            OperationProgress->AddTransfered(BlockBuf.Size);
           }
-          else if (FTerminal->Configuration->LogProtocol >= 1)
+
+          if ((OperationProgress->Cancel == csCancelTransfer) ||
+              (OperationProgress->Cancel == csCancel && !OperationProgress->TransferingFile))
           {
-            FTerminal->LogEvent(FORMAT("Sending BINARY data (%u bytes)",
-              (BlockBuf.Size)));
+            throw Exception(USER_TERMINATED);
           }
-          FSecureShell->Send(BlockBuf.Data, BlockBuf.Size);
-          OperationProgress->AddTransfered(BlockBuf.Size);
         }
+        while (!OperationProgress->IsLocalyDone() || !OperationProgress->IsTransferDone());
 
-        if ((OperationProgress->Cancel == csCancelTransfer) ||
-            (OperationProgress->Cancel == csCancel && !OperationProgress->TransferingFile))
+        FSecureShell->SendNull();
+        try
         {
-          throw Exception(USER_TERMINATED);
+          SCPResponse();
+          // If one of two following exceptions occurs, is means, that remote
+          // side already know, that file transfer finished, even if it failed
+          // so we don't have to throw EFatal
         }
-      }
-      while (!OperationProgress->IsLocalyDone() || !OperationProgress->IsTransferDone());
+        catch (EScp &E)
+        {
+          // SCP protocol fatal error
+          OperationProgress->TransferingFile = false;
+          throw;
+        }
+        catch (EScpFileSkipped &E)
+        {
+          // SCP protocol non-fatal error
+          OperationProgress->TransferingFile = false;
+          throw;
+        }
 
-      FSecureShell->SendNull();
-      try
-      {
-        SCPResponse();
-        // If one of two following exceptions occurs, is means, that remote
-        // side already know, that file transfer finished, even if it failed
-        // so we don't have to throw EFatal
-      }
-      catch (EScp &E)
-      {
-        // SCP protocol fatal error
+        // We succeded transfering file, from now we can handle exceptions
+        // normally -> no fatal error
         OperationProgress->TransferingFile = false;
-        throw;
       }
-      catch (EScpFileSkipped &E)
+      catch (Exception &E)
       {
-        // SCP protocol non-fatal error
-        OperationProgress->TransferingFile = false;
-        throw;
-      }
-
-      // We succeded transfering file, from now we can handle exceptions
-      // normally -> no fatal error
-      OperationProgress->TransferingFile = false;
-    }
-    catch (Exception &E)
-    {
-      // Every exception during file transfer is fatal
-      if (OperationProgress->TransferingFile)
-      {
-        FTerminal->FatalError(&E, FMTLOAD(COPY_FATAL, (FileName)));
-      }
-        else
-      {
-        throw;
+        // Every exception during file transfer is fatal
+        if (OperationProgress->TransferingFile)
+        {
+          FTerminal->FatalError(&E, FMTLOAD(COPY_FATAL, (FileName)));
+        }
+          else
+        {
+          throw;
+        }
       }
     }
   }
   __finally
   {
-    CloseHandle(File);
+    if (File != NULL)
+    {
+      CloseHandle(File);
+    }
   }
 
   /* TODO : Delete also read-only files. */

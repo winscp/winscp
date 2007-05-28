@@ -354,12 +354,12 @@ protected:
   virtual void __fastcall Saved();
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
   bool __fastcall InternalReloadComponentRes(const AnsiString ResName,
-    HANDLE HInst, TComponent * Instance);
+    HINSTANCE HInst, TComponent * Instance);
   bool __fastcall InitComponent(TComponent * Instance,
     TClass RootAncestor, TClass ClassType);
-  virtual HANDLE __fastcall LoadNewResourceModule(LCID Locale,
+  virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
     AnsiString * FileName = NULL);
-  virtual void __fastcall SetResourceModule(HANDLE Instance);
+  virtual void __fastcall SetResourceModule(HINSTANCE Instance);
   virtual LCID __fastcall GetLocale();
   void __fastcall CheckTranslationVersion(const AnsiString FileName,
     bool InternalLocaleOnError);

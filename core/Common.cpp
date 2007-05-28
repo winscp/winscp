@@ -394,7 +394,20 @@ AnsiString __fastcall ExpandEnvironmentVariables(const AnsiString & Str)
 //---------------------------------------------------------------------------
 bool __fastcall CompareFileName(const AnsiString & Path1, const AnsiString & Path2)
 {
-  return AnsiSameText(ExtractShortPathName(Path1), ExtractShortPathName(Path2));
+  AnsiString ShortPath1 = ExtractShortPathName(Path1);
+  AnsiString ShortPath2 = ExtractShortPathName(Path2);
+
+  bool Result;
+  // ExtractShortPathName returns empty string if file does not exist
+  if (ShortPath1.IsEmpty() || ShortPath2.IsEmpty())
+  {
+    Result = AnsiSameText(Path1, Path2);
+  }
+  else
+  {
+    Result = AnsiSameText(ExtractShortPathName(Path1), ExtractShortPathName(Path2));
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2)

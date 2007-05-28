@@ -11,6 +11,6 @@ extern TStoredSessionList *StoredSessions;
 //---------------------------------------------------------------------------
 void CoreInitialize();
 void CoreFinalize();
-void CoreSetResourceModule(HINSTANCE ResourceHandle);
+void CoreSetResourceModule(void * ResourceHandle);
 //---------------------------------------------------------------------------
 #endif

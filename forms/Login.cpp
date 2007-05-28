@@ -165,6 +165,12 @@ void __fastcall TLoginDialog::Init()
     TransferProtocolCombo->Items->Delete(TransferProtocolCombo->Items->Count - 1);
   }
 
+  #ifdef NO_FILEZILLA
+  assert(FLAGCLEAR(Options, loExternalProtocols));
+  assert(TransferProtocolCombo->Items->Count == FSPROTOCOL_COUNT - 2 - 1);
+  TransferProtocolCombo->Items->Delete(TransferProtocolCombo->Items->Count - 1);
+  #endif
+
   ShowTabs(false);
 
   if (StoredSessions && StoredSessions->Count &&
@@ -181,8 +187,7 @@ void __fastcall TLoginDialog::Init()
   }
   else
   {
-    ChangePage(BasicSheet);
-    HostNameEdit->SetFocus();
+    EditSession();
   }
 
   UpdateControls();
@@ -249,9 +254,14 @@ void __fastcall TLoginDialog::Default()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
 {
+  // it was always true, and now must be true because of ping/keepalive settings
+  assert(aSessionData == FSessionData);
+
   NoUpdate++;
   try
   {
+    FFSProtocol = aSessionData->FSProtocol;
+
     // Basic tab
     UserNameEdit->Text = aSessionData->UserName;
     PortNumberEdit->AsInteger = aSessionData->PortNumber;
@@ -358,21 +368,8 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
 
     // Connection tab
     FtpPasvModeCheck->Checked = aSessionData->FtpPasvMode;
-    switch (aSessionData->PingType)
-    {
-      case ptNullPacket:
-        PingNullPacketButton->Checked = true;
-        break;
 
-      case ptDummyCommand:
-        PingDummyCommandButton->Checked = true;
-        break;
-
-      default:
-        PingOffButton->Checked = true;
-        break;
-    }
-    PingIntervalSecEdit->AsInteger = aSessionData->PingInterval;
+    LoadPing(aSessionData);
     TimeoutEdit->AsInteger = aSessionData->Timeout;
 
     switch (aSessionData->AddressFamily)
@@ -489,8 +486,31 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
   FCurrentSessionName = aSessionData->Name;
 }
 //---------------------------------------------------------------------
+void __fastcall TLoginDialog::LoadPing(TSessionData * aSessionData)
+{
+  switch (FFSProtocol == fsFTP ? aSessionData->FtpPingType : aSessionData->PingType)
+  {
+    case ptNullPacket:
+      PingNullPacketButton->Checked = true;
+      break;
+
+    case ptDummyCommand:
+      PingDummyCommandButton->Checked = true;
+      break;
+
+    default:
+      PingOffButton->Checked = true;
+      break;
+  }
+  PingIntervalSecEdit->AsInteger =
+    (FFSProtocol == fsFTP ? aSessionData->FtpPingInterval : aSessionData->PingInterval);
+}
+//---------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
 {
+  // it was always true, and now must be true because of ping/keepalive settings
+  assert(aSessionData == FSessionData);
+
   aSessionData->Name = FCurrentSessionName;
   // Basic tab
   aSessionData->UserName = UserNameEdit->Text.Trim();
@@ -541,19 +561,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
 
   // Connection tab
   aSessionData->FtpPasvMode = FtpPasvModeCheck->Checked;
-  if (PingNullPacketButton->Checked)
-  {
-    aSessionData->PingType = ptNullPacket;
-  }
-  else if (PingDummyCommandButton->Checked)
-  {
-    aSessionData->PingType = ptDummyCommand;
-  }
-  else
-  {
-    aSessionData->PingType = ptOff;
-  }
-  aSessionData->PingInterval = PingIntervalSecEdit->AsInteger;
+  SavePing(aSessionData);
   aSessionData->Timeout = TimeoutEdit->AsInteger;
 
   if (IPv4Button->Checked)
@@ -663,6 +671,27 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   {
     aSessionData->TunnelLocalPortNumber = StrToIntDef(TunnelLocalPortNumberEdit->Text, 0);
   }
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::SavePing(TSessionData * aSessionData)
+{
+  TPingType PingType;
+  if (PingNullPacketButton->Checked)
+  {
+    PingType = ptNullPacket;
+  }
+  else if (PingDummyCommandButton->Checked)
+  {
+    PingType = ptDummyCommand;
+  }
+  else
+  {
+    PingType = ptOff;
+  }
+  (FFSProtocol == fsFTP ? aSessionData->FtpPingType : aSessionData->PingType) =
+    PingType;
+  (FFSProtocol == fsFTP ? aSessionData->FtpPingInterval : aSessionData->PingInterval) =
+    PingIntervalSecEdit->AsInteger;
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateNavigationTree()
@@ -1026,10 +1055,7 @@ void __fastcall TLoginDialog::SessionListViewDblClick(TObject * /*Sender*/)
       else
     {
       SessionData = SelectedSession;
-      ChangePage(BasicSheet);
-      if (HostNameEdit->Text.IsEmpty()) HostNameEdit->SetFocus();
-        else
-      assert(false);
+      EditSession();
     }
   }
 }
@@ -1085,12 +1111,18 @@ void __fastcall TLoginDialog::SessionListViewKeyDown(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::EditSession()
+{
+  ChangePage(BasicSheet);
+  HostNameEdit->SetFocus();
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::EditSessionActionExecute(TObject * /*Sender*/)
 {
   if (SelectedSession)
   {
     SessionData = SelectedSession;
-    ChangePage(BasicSheet);
+    EditSession();
   }
 }
 //---------------------------------------------------------------------------
@@ -1110,6 +1142,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
       TSessionData *NewSession =
         StoredSessions->NewSession(SessionName, FSessionData);
       StoredSessions->Save();
+      SaveConfiguration();
       // by now list must contais same number of items or one less
       assert(StoredSessions->Count == SessionListView->Items->Count ||
         StoredSessions->Count == SessionListView->Items->Count+1);
@@ -1267,7 +1300,7 @@ void __fastcall TLoginDialog::ShowPreferencesDialog()
 void __fastcall TLoginDialog::NewSessionActionExecute(TObject * /*Sender*/)
 {
   Default();
-  ChangePage(BasicSheet);
+  EditSession();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::NavigationTreeChange(TObject * /*Sender*/,
@@ -1829,12 +1862,13 @@ int __fastcall TLoginDialog::FSProtocolToIndex(TFSProtocol FSProtocol,
     AllowScpFallback = false;
     for (int Index = 0; Index < LENOF(FSOrder); Index++)
     {
-      if (FSOrder[Index] == FSProtocol)
+      if ((FSOrder[Index] == FSProtocol) &&
+          (Index < TransferProtocolCombo->Items->Count))
       {
         return Index;
       }
     }
-    assert(false);
+    // SFTP is always present
     return FSProtocolToIndex(fsSFTP, AllowScpFallback);
   }
 }
@@ -1860,9 +1894,13 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
 {
   if (!NoUpdate)
   {
-    TFSProtocol FSProtocol = IndexToFSProtocol(
+    SavePing(FSessionData);
+
+    FFSProtocol = IndexToFSProtocol(
       TransferProtocolCombo->ItemIndex, AllowScpFallbackCheck->Checked);
-    if (FSProtocol == fsFTP)
+
+    LoadPing(FSessionData);
+    if (FFSProtocol == fsFTP)
     {
       if (PortNumberEdit->AsInteger == 22)
       {

@@ -92,6 +92,8 @@ protected:
   void __fastcall ClearLog();
   void __fastcall CopyLog();
   int __fastcall ActualCopyParamAttrs();
+  void __fastcall GlobalMinimize(TObject * Sender);
+  void __fastcall MinimizeApp();
 
 public:
   __fastcall TSynchronizeDialog(TComponent * Owner,

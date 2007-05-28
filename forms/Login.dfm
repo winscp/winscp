@@ -1235,7 +1235,7 @@ object LoginDialog: TLoginDialog
             FocusControl = ProxyHostEdit
           end
           object ProxyPortLabel: TLabel
-            Left = 240
+            Left = 252
             Top = 41
             Width = 57
             Height = 13
@@ -1269,9 +1269,9 @@ object LoginDialog: TLoginDialog
             OnClick = DataChange
           end
           object ProxyPortEdit: TUpDownEdit
-            Left = 240
+            Left = 252
             Top = 58
-            Width = 94
+            Width = 82
             Height = 21
             Alignment = taRightJustify
             MaxValue = 65535
@@ -1283,7 +1283,7 @@ object LoginDialog: TLoginDialog
           object ProxyHostEdit: TEdit
             Left = 11
             Top = 58
-            Width = 214
+            Width = 226
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
@@ -1438,7 +1438,7 @@ object LoginDialog: TLoginDialog
           Height = 169
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Host to setup tunnel on'
-          TabOrder = 0
+          TabOrder = 1
           DesignSize = (
             345
             169)
@@ -1550,7 +1550,7 @@ object LoginDialog: TLoginDialog
           Width = 307
           Height = 17
           Caption = '&Connect through SSH tunnel'
-          TabOrder = 1
+          TabOrder = 0
           OnClick = DataChange
         end
         object TunnelOptionsGroup: TGroupBox

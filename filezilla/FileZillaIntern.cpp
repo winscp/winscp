@@ -1,4 +1,3 @@
-//!!!
 //---------------------------------------------------------------------------
 #include "stdafx.h"
 //---------------------------------------------------------------------------
@@ -22,26 +21,13 @@ BOOL TFileZillaIntern::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam,
 
   bool Result;
   unsigned int MessageID = FZ_MSG_ID(wParam);
-  
+
   switch (MessageID)
   {
-    // TODO !!! separated temporarily to ease debugging  
     case FZ_MSG_STATUS:
-      Result = FOwner->PostMessage(wParam, lParam);
-      break;
-
-    case FZ_MSG_ASYNCREQUEST:  
-      Result = FOwner->PostMessage(wParam, lParam);
-      break;
-
+    case FZ_MSG_ASYNCREQUEST:
     case FZ_MSG_LISTDATA:
-      Result = FOwner->PostMessage(wParam, lParam);
-      break;
-
-    case FZ_MSG_TRANSFERSTATUS:  
-      Result = FOwner->PostMessage(wParam, lParam);
-      break;
-
+    case FZ_MSG_TRANSFERSTATUS:
     case FZ_MSG_REPLY:
       Result = FOwner->PostMessage(wParam, lParam);
       break;
@@ -57,7 +43,7 @@ BOOL TFileZillaIntern::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam,
       ASSERT(lParam == 0);
       Result = false;
       break;
-    
+
     // should never get here, call compiled out in filezilla code
     case FZ_MSG_QUITCOMPLETE:
     default:
@@ -65,7 +51,7 @@ BOOL TFileZillaIntern::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam,
       Result = false;
       break;
   }
-      
+
   return (Result ? TRUE : FALSE);
 }
 //---------------------------------------------------------------------------

@@ -78,6 +78,7 @@ public:
   virtual const TFileSystemInfo & __fastcall GetFileSystemInfo(bool Retrieve) = 0;
   virtual bool __fastcall TemporaryTransferFile(const AnsiString & FileName) = 0;
   virtual bool __fastcall GetStoredCredentialsTried() = 0;
+  virtual AnsiString __fastcall GetUserName() = 0;
 
   __property AnsiString CurrentDirectory = { read = GetCurrentDirectory };
 

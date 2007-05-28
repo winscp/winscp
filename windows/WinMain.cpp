@@ -209,7 +209,7 @@ int __fastcall Execute()
   try
   {
     TerminalManager = TTerminalManager::Instance();
-    HANDLE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
+    HINSTANCE ResourceModule = GUIConfiguration->ChangeResourceModule(NULL);
     try
     {
       GlyphsModule = new TGlyphsModule(Application);
@@ -384,8 +384,12 @@ int __fastcall Execute()
             {
               if (!TerminalManager->ConnectActiveTerminal())
               {
-                AutoStartSession = "";
-                Retry = true;
+                // do not prompt with login dialog, if connection of
+                // auto-start session (typically from command line) failed
+                if (AutoStartSession.IsEmpty())
+                {
+                  Retry = true;
+                }
               }
               else
               {

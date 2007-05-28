@@ -371,8 +371,20 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     }
     ADF("Transfer Protocol: %s", (Data->FSProtocolStr));
     char * PingTypes = "-NC";
+    TPingType PingType;
+    int PingInterval;
+    if (Data->FSProtocol == fsFTP)
+    {
+      PingType = Data->FtpPingType;
+      PingInterval = Data->FtpPingInterval;
+    }
+    else
+    {
+      PingType = Data->PingType;
+      PingInterval = Data->PingInterval;
+    }
     ADF("Ping type: %s, Ping interval: %d sec; Timeout: %d sec",
-      (AnsiString(PingTypes[Data->PingType]), Data->PingInterval, Data->Timeout));
+      (AnsiString(PingTypes[PingType]), PingInterval, Data->Timeout));
     ADF("Proxy: %s", (ProxyMethodList[Data->ProxyMethod]));
     if (Data->ProxyMethod != pmNone)
     {
