@@ -356,7 +356,7 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
   }
   else
   {
-    TTBXPopupMenu * Menu = Menu = CreateTBXPopupMenu(AMenu->Owner);
+    TTBXPopupMenu * Menu = CreateTBXPopupMenu(AMenu->Owner);
     Menu->OnPopup = AMenu->OnPopup;
     Menu->Items->SubMenuImages = AMenu->Images;
 
@@ -402,7 +402,6 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
 
     Menu->PopupComponent = PopupComponent;
     Menu->Popup(Point.x, Point.y);
-    delete Menu;
 
     LastPopupComponent = PopupComponent;
     LastCloseUp = Now();
