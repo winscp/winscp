@@ -608,10 +608,14 @@ AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
   int MajorVer = Version / (1000*100*100);
   int MinorVer = (Version % (1000*100*100)) / (1000*100);
   int Release = (Version % (1000*100)) / (1000);
-  AnsiString Result = FORMAT("%d.%d", (MajorVer, MinorVer));
+  AnsiString Result;
   if (Release > 0)
   {
-    Result += IntToStr(Release);
+    Result = FORMAT("%d.%d.%d", (MajorVer, MinorVer, Release));
+  }
+  else
+  {
+    Result = FORMAT("%d.%d", (MajorVer, MinorVer));
   }
   return Result;
 }

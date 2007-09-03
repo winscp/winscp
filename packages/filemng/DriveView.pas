@@ -1185,6 +1185,9 @@ begin
     except
     end;
 
+    if not ContentMask then
+      NodeData.shAttr := NodeData.shAttr or SFGAO_HASSUBFOLDER;
+
     if not Assigned(NodeData.ShellFolder) then
       ParentFolder.BindToObject(NodeData.PIDL, nil, IID_IShellFolder,
         Pointer(NodeData.ShellFolder));
@@ -1327,10 +1330,13 @@ begin
     ((UpperCase(SRec.Name) = 'RECYCLED') or
      (UpperCase(SRec.Name) = 'RECYCLER'));
 
+  { query content attributes ("has subfolder") only if tree view is visible }
+  { to avoid unnecessary scan of subfolders (which may take some time) }
+  { if tree view is not visible anyway }
   if not Assigned(TNodeData(ParentNode.Data).ShellFolder) then
-    GetNodeShellAttr(FWorkPlace, TNodeData(ParentNode.Data), NodePathName(ParentNode));
+    GetNodeShellAttr(FWorkPlace, TNodeData(ParentNode.Data), NodePathName(ParentNode), Visible);
 
-  GetNodeShellAttr(TNodeData(ParentNode.Data).ShellFolder, NodeData, SRec.Name);
+  GetNodeShellAttr(TNodeData(ParentNode.Data).ShellFolder, NodeData, SRec.Name, Visible);
 
   NewNode := Self.Items.AddChildObject(ParentNode, '', NodeData);
   NewNode.Text := GetDisplayName(NewNode);

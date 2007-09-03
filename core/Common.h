@@ -143,11 +143,6 @@ struct TPasLibModule
 #define assert(p)   ((void)0)
 #define CHECK(p) p
 #else
-#ifndef DESIGN_ONLY
-#undef assert
-void __fastcall DoAssert(char * Message, char * Filename, int LineNumber);
-#define assert(p) ((p) ? (void)0 : DoAssert(#p, __FILE__, __LINE__))
-#endif // ifndef DESIGN_ONLY
 #define CHECK(p) { bool __CHECK_RESULT__ = (p); assert(__CHECK_RESULT__); }
 #endif
 #define USEDPARAM(p) ((p) == (p))

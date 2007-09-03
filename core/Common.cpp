@@ -1042,7 +1042,7 @@ int __fastcall ContinueAnswer(int Answers)
   }
   else if (FLAGSET(Answers, qaRetry))
   {
-    Result = qaOK;
+    Result = qaRetry;
   }
   else
   {
