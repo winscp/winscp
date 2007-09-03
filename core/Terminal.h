@@ -3,6 +3,7 @@
 #define TerminalH
 
 #include <Classes.hpp>
+#include <set>
 
 #include "SessionInfo.h"
 #include "Interface.h"
@@ -109,7 +110,6 @@ const ccUser = 0x100;
 //---------------------------------------------------------------------------
 const csIgnoreErrors = 0x01;
 //---------------------------------------------------------------------------
-const ropNoConfirmation = 0x01;
 const ropNoReadDirectory = 0x02;
 //---------------------------------------------------------------------------
 const boDisableNeverShowAgain = 0x01;
@@ -142,6 +142,9 @@ friend class TFTPFileSystem;
 friend class TTunnelUI;
 
 private:
+  typedef std::set<int> Ports;
+  static Ports FTunnelLocalPorts;
+  static TCriticalSection FSection;
   TSessionData * FSessionData;
   TSessionLog * FLog;
   TConfiguration * FConfiguration;
@@ -285,7 +288,7 @@ protected:
   void __fastcall RecycleFile(AnsiString FileName, const TRemoteFile * File);
   TStrings * __fastcall GetFixedPaths();
   void __fastcall DoStartup();
-  virtual bool __fastcall DoQueryReopen(Exception * E, int Params);
+  virtual bool __fastcall DoQueryReopen(Exception * E);
   void __fastcall FatalError(Exception * E, AnsiString Msg);
   void __fastcall ResetConnection();
   virtual bool __fastcall DoPromptUser(TSessionData * Data, AnsiString Prompt,

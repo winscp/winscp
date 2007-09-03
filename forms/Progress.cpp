@@ -327,6 +327,7 @@ void __fastcall TProgressForm::CancelOperation()
   assert(FDataReceived);
   if (!FData.Suspended)
   {
+    // mostly useless, as suspend is called over copy of actual progress data
     FData.Suspend();
     UpdateControls();
     try

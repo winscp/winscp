@@ -345,10 +345,10 @@ int __fastcall Execute()
         Data = GetLoginData(AutoStartSession, DownloadFile, Url);
         if (Data)
         {
-          if (Url)
+          if (Url || Params->FindSwitch("Unsafe"))
           {
             // prevent any automatic action when URL is provided on
-            // command-line
+            // command-line (the check is duplicated in Console())
             UseDefaults = false;
           }
           else

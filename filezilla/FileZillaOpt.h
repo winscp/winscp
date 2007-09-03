@@ -157,5 +157,7 @@
 #define OPTION_LASTSERVERACCOUNT 118
 #define OPTION_LASTSERVERTIMEZONE 119
 #endif
+// MPEXT
+#define OPTION_MPEXT_SHOWHIDDEN 1000
 //---------------------------------------------------------------------------
 #endif // FileZillaOptH

@@ -1256,8 +1256,11 @@ begin
             NodeData.ShortName := Drive + ':\';
 
             {Get the shared attributes:}
-            if (Drive >= FirstFixedDrive) and (DriveType <> DRIVE_REMOVABLE) then
+            if (Drive >= FirstFixedDrive) and (DriveType <> DRIVE_REMOVABLE) and
+               ((DriveType <> DRIVE_REMOTE) or GetNetWorkConnected(Drive)) then
+            begin
               GetNodeShellAttr(FWorkPlace, NodeData, NodeData.DirName);
+            end;
 
             if Assigned(DriveStatus[NextDrive].RootNode) then
               RootNode := Items.InsertObject(DriveStatus[NextDrive].RootNode, '', NodeData)

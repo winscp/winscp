@@ -350,7 +350,6 @@ begin
   Result.ShareImages := True;
 end;
 
-
 initialization
   InitDriveSpacePtr;
 end.

@@ -989,20 +989,32 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
 {
-  assert(value);
-  assert((FActive && (FSocket == value)) || (!FActive && Startup));
-
-  SocketEventSelect(value, FSocketEvent, Startup);
-
-  if (Startup)
+  if (!FActive && !Startup)
   {
-    FSocket = value;
-    FActive = true;
+    // no-op
+    // Remove the branch eventualy:
+    // When TCP connection fails, PuTTY does not release the memory allocate for
+    // socket. As a simple hack we call sk_tcp_close() in ssh.c to release the memory,
+    // until they fix it better. Unfortunately sk_tcp_close calles do_select,
+    // so we must filter that out.
   }
   else
   {
-    FSocket = INVALID_SOCKET;
-    Discard();
+    assert(value);
+    assert((FActive && (FSocket == value)) || (!FActive && Startup));
+
+    SocketEventSelect(value, FSocketEvent, Startup);
+
+    if (Startup)
+    {
+      FSocket = value;
+      FActive = true;
+    }
+    else
+    {
+      FSocket = INVALID_SOCKET;
+      Discard();
+    }
   }
 }
 //---------------------------------------------------------------------------

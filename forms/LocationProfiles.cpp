@@ -69,6 +69,7 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
 __fastcall TLocationProfilesDialog::~TLocationProfilesDialog()
 {
   SAFE_DESTROY(FBookmarkList);
+  SAFE_DESTROY(FFolders);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::SetLocalDirectory(AnsiString value)

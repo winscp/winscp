@@ -85,6 +85,7 @@ type
 function GetShellFileName(const Name: string): string; overload;
 function GetShellFileName(PIDL: PItemIDList): string; overLoad;
 function GetNetWorkName(Drive: Char): string;
+function GetNetWorkConnected(Drive: Char): Boolean;
 
 {Central drive information object instance of TDriveInfo}
 var
@@ -416,6 +417,58 @@ begin
   else
     Result := '';
 end; {GetNetWorkName}
+
+type
+  LPBYTE = ^BYTE;
+  LMSTR = LPWSTR;
+  NET_API_STATUS = DWORD;
+  _USE_INFO_1 = record
+    ui1_local: LMSTR;
+    ui1_remote: LMSTR;
+    ui1_password: LMSTR;
+    ui1_status: DWORD;
+    ui1_asg_type: DWORD;
+    ui1_refcount: DWORD;
+    ui1_usecount: DWORD;
+  end;
+  USE_INFO_1 = _USE_INFO_1;
+  PUSE_INFO_1 = ^USE_INFO_1;
+  LPVOID = Pointer;
+
+const
+  USE_OK       = 0;
+  USE_PAUSED   = 1;
+  USE_SESSLOST = 2;
+  USE_DISCONN  = 2;
+  USE_NETERR   = 3;
+  USE_CONN     = 4;
+  USE_RECONN   = 5;
+
+function NetUseGetInfo(UncServerName: LMSTR; UseName: LMSTR; Level: DWORD;
+  var BufPtr: LPBYTE): NET_API_STATUS; stdcall; external 'netapi32.dll' name 'NetUseGetInfo';
+function NetApiBufferFree(Buffer: LPVOID): NET_API_STATUS; stdcall;
+  external 'netapi32.dll' name 'NetApiBufferFree';
+
+function GetNetWorkConnected(Drive: Char): Boolean;
+var
+  BufPtr: LPBYTE;
+  Use: WideString;
+  NetResult: Integer;
+begin
+  Use := Drive + ':';
+  NetResult := NetUseGetInfo(nil, PWideChar(Use), 1, BufPtr);
+  if NetResult = 0 then
+  begin
+    Result := (PUSE_INFO_1(BufPtr)^.ui1_status = USE_OK);
+    NetApiBufferFree(LPVOID(BufPtr));
+  end
+    else
+  begin
+    // NetUseGetInfo works for DFS shares only, hence when it fails
+    // we suppose different share type and fallback to "connected"
+    Result := True;
+  end;
+end;
 
 initialization
   if not Assigned(DriveInfo) then

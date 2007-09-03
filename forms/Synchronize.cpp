@@ -82,6 +82,14 @@ __fastcall TSynchronizeDialog::TSynchronizeDialog(TComponent * Owner,
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeDialog::~TSynchronizeDialog()
 {
+  // if application is closing OnCloseQuery might not get called
+  // (this particularly happens if last terminal is disconnected while dialog is
+  // open)
+  if (FSynchronizing)
+  {
+    OnlyStop();
+  }
+
   if (GetGlobalMinimizeHandler() == GlobalMinimize)
   {
     SetGlobalMinimizeHandler(NULL);
@@ -364,10 +372,15 @@ void __fastcall TSynchronizeDialog::StopButtonClick(TObject * /*Sender*/)
   Stop();
 }
 //---------------------------------------------------------------------------
-void __fastcall TSynchronizeDialog::Stop()
+void __fastcall TSynchronizeDialog::OnlyStop()
 {
   FSynchronizing = false;
   DoStartStop(false, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeDialog::Stop()
+{
+  OnlyStop();
   UpdateControls();
   Repaint();
   if (IsIconic(Application->Handle) && FMinimizedByMe)

@@ -16,7 +16,7 @@
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner,
   AnsiString SessionName)
-  : TForm(Owner), FSessionName(SessionName)
+  : TForm(Owner), FSessionName(SessionName), FHideTypingOnServerPrompt(true)
 {
   UseSystemSettings(this);
   FShowAsModalStorage = NULL;
@@ -120,6 +120,7 @@ bool __fastcall TAuthenticateForm::PromptUser(AnsiString Caption,
     case pkServerPrompt:
       Title = LoadStr(SERVER_PASSWORD_TITLE);
       ShowServerPanel = true;
+      HideTypingCheck->Checked = FHideTypingOnServerPrompt;
       break;
 
     case pkPrompt:
@@ -150,6 +151,11 @@ bool __fastcall TAuthenticateForm::PromptUser(AnsiString Caption,
   if (Result)
   {
     Response = PasswordEdit->Text;
+  }
+
+  if (Kind == pkServerPrompt)
+  {
+    FHideTypingOnServerPrompt = HideTypingCheck->Checked;
   }
 
   return Result;

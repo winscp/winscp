@@ -788,7 +788,7 @@ public:
     TTerminalItem * Item, const AnsiString & Name);
 
 protected:
-  virtual bool __fastcall DoQueryReopen(Exception * E, int Params);
+  virtual bool __fastcall DoQueryReopen(Exception * E);
 
 private:
   TTerminalItem * FItem;
@@ -801,7 +801,7 @@ __fastcall TBackgroundTerminal::TBackgroundTerminal(TTerminal * MainTerminal,
 {
 }
 //---------------------------------------------------------------------------
-bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * E, int Params)
+bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * /*E*/)
 {
   bool Result;
   if (FItem->FTerminated || FItem->FCancel)
@@ -811,7 +811,8 @@ bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * E, int Params)
   }
   else
   {
-    Result = TSecondaryTerminal::DoQueryReopen(E, Params);
+    Sleep(Configuration->SessionReopenBackground);
+    Result = true;
   }
   return Result;
 }

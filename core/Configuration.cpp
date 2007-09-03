@@ -44,7 +44,7 @@ void __fastcall TConfiguration::Default()
   FConfirmResume = true;
   FAutoReadDirectoryAfterOp = true;
   FSessionReopenAuto = 5000;
-  FSessionReopenNoConfirmation = 2000;
+  FSessionReopenBackground = 2000;
   FTunnelLocalPortNumberLow = 6000;
   FTunnelLocalPortNumberHigh = 6100;
   FShowFtpWelcomeMessage = false;
@@ -95,7 +95,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
     KEY(Bool,     ConfirmResume); \
     KEY(Bool,     AutoReadDirectoryAfterOp); \
     KEY(Integer,  SessionReopenAuto); \
-    KEY(Integer,  SessionReopenNoConfirmation); \
+    KEY(Integer,  SessionReopenBackground); \
     KEY(Integer,  TunnelLocalPortNumberLow); \
     KEY(Integer,  TunnelLocalPortNumberHigh); \
     KEY(Bool,     ShowFtpWelcomeMessage); \
@@ -935,9 +935,9 @@ void __fastcall TConfiguration::SetSessionReopenAuto(int value)
   SET_CONFIG_PROPERTY(SessionReopenAuto);
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::SetSessionReopenNoConfirmation(int value)
+void __fastcall TConfiguration::SetSessionReopenBackground(int value)
 {
-  SET_CONFIG_PROPERTY(SessionReopenNoConfirmation);
+  SET_CONFIG_PROPERTY(SessionReopenBackground);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetTunnelLocalPortNumberLow(int value)

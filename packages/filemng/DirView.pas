@@ -2241,9 +2241,8 @@ function TDirView.DeleteSelectedFiles(AllowUndo: Boolean): Boolean;
 const
   MaxSel = 10;
 var
-  StartIndex: Integer;
   ItemIndex: Integer;
-  Index: Integer;
+  Item, NextItem: TListItem;
   FileOperator: TFileOperator;
   UpdateEnabled: Boolean;
   WatchDir: Boolean;
@@ -2288,33 +2287,31 @@ begin
     Sleep(0);
 
     Updating := False;
-    Index := ListView_GetNextItem(Handle, -1, LVNI_ALL or LVNI_SELECTED);
-    while Index >= 0 do
+    Item := GetNextItem(nil, sdAll, [isSelected]);
+    while Assigned(Item) do
     begin
-      case PFileRec(Items[Index].Data)^.IsDirectory of
+      NextItem := GetNextItem(Item, sdAll, [isSelected]);
+      case PFileRec(Item.Data)^.IsDirectory of
         True:
-          if not DirExists(ItemFullFileName(Items[Index])) then
+          if not DirExists(ItemFullFileName(Item)) then
           begin
             {$IFDEF USE_DRIVEVIEW}
             DirDeleted := True;
             {$ENDIF}
-            Items[Index].Delete;
-            Dec(Index);
+            Item.Delete;
           end;
         False:
-          if not CheckFileExists(ItemFullFileName(Items[Index])) then
+          if not CheckFileExists(ItemFullFileName(Item)) then
           begin
             if (SelCount > 3) and (not Updating) then
             begin
               Items.BeginUpdate;
               Updating := True;
             end;
-            Items[Index].Delete;
-            Dec(Index);
+            Item.Delete;
           end;
       end;
-      StartIndex := Index;
-      Index := ListView_GetNextItem(Handle, StartIndex, LVNI_ALL or LVNI_SELECTED);
+      Item := NextItem;
     end;
     if Updating then
       Items.EndUpdate;
@@ -2819,7 +2816,9 @@ var
   SRec: SysUtils.TSearchRec;
   Item: TListItem;
 begin
-  DirName := Path + '\' + DirName;
+  // keep absolute path as is
+  if Copy(DirName, 2, 1) <> ':' then
+    DirName := Path + '\' + DirName;
 
 {$IFNDEF NO_THREADS}
   if WatchForChanges then StopWatchThread;
@@ -2835,18 +2834,22 @@ begin
     {create the phyical directory:}
     Win32Check(Windows.CreateDirectory(PChar(DirName), nil));
 
-    {Create the TListItem:}
-    if FindFirst(DirName, faAnyFile, SRec) = 0 then
+    if IncludeTrailingBackslash(ExtractFilePath(ExpandFileName(DirName))) =
+         IncludeTrailingBackslash(Path) then
     begin
-      Item := AddItem(SRec);
-      ItemFocused := FindFileItem(GetFileRec(Item.Index)^.FileName);
-      SortItems;
-      if Assigned(ItemFocused) then
-        ItemFocused.MakeVisible(False);
-      if Assigned(OnDirUpdated) then
-        OnDirUpdated(Self);
+      {Create the TListItem:}
+      if FindFirst(DirName, faAnyFile, SRec) = 0 then
+      begin
+        Item := AddItem(SRec);
+        ItemFocused := FindFileItem(GetFileRec(Item.Index)^.FileName);
+        SortItems;
+        if Assigned(ItemFocused) then
+          ItemFocused.MakeVisible(False);
+        if Assigned(OnDirUpdated) then
+          OnDirUpdated(Self);
+      end;
+      FindClose(SRec);
     end;
-    FindClose(SRec);
 
   finally
 {$IFNDEF NO_THREADS}
@@ -2868,13 +2871,13 @@ procedure TDirView.DisplayContextMenu(Where: TPoint);
 var
   FileList : TStringList;
   Index: Integer;
+  Item: TListItem;
   DefDir: string;
   Verb: string;
   PIDLArray: PPIDLArray;
   Count: Integer;
   DiffSelectedPath: Boolean;
   WithEdit: Boolean;
-  StartIndex: Integer;
   PIDLRel: PItemIDList;
   PIDLPath: PItemIDList;
   Handled: Boolean;
@@ -2937,20 +2940,18 @@ begin
       begin
         LastClipBoardOperation := cboCut;
         {Clear items previous marked as cut:}
-        Index := ListView_GetNextItem(Handle, -1, LVNI_ALL or LVNI_CUT);
-        while Index >= 0 do
+        Item := GetNextItem(nil, sdAll, [isCut]);
+        while Assigned(Item) do
         begin
-          Items[Index].Cut := False;
-          StartIndex := Index;
-          Index := ListView_GetNextItem(Handle, StartIndex, LVNI_ALL or LVNI_CUT);
+          Item.Cut := False;
+          Item := GetNextItem(Item, sdAll, [isCut]);
         end;
         {Set property cut to TRUE for all selected items:}
-        Index := ListView_GetNextItem(Handle, -1, LVNI_ALL or LVNI_SELECTED);
-        while Index >= 0 do
+        Item := GetNextItem(nil, sdAll, [isSelected]);
+        while Assigned(Item) do
         begin
-          Items[Index].Cut := True;
-          StartIndex := Index;
-          Index := ListView_GetNextItem(Handle, StartIndex, LVNI_ALL Or LVNI_SELECTED);
+          Item.Cut := True;
+          Item := GetNextItem(Item, sdAll, [isSelected]);
         end;
       end
         else
@@ -2994,12 +2995,11 @@ begin
       begin
         LastClipBoardOperation := cboCut;
 
-        Index := ListView_GetNextItem(Handle, -1, LVNI_ALL or LVNI_CUT);
-        while Index >= 0 do
+        Item := GetNextItem(nil, sdAll, [isCut]);
+        while Assigned(Item) do
         begin
-          Items[Index].Cut := False;
-          StartIndex := Index;
-          Index := ListView_GetNextItem(Handle, StartIndex, LVNI_ALL or LVNI_CUT);
+          Item.Cut := False;
+          Item := GetNextItem(ITem, sdAll, [isCut]);
         end;
         ItemFocused.Cut := True;
       end
@@ -4087,8 +4087,7 @@ end; {UndoCopyMove}
 
 procedure TDirView.EmptyClipboard;
 var
-  Index: Integer;
-  StartIndex: Integer;
+  Item: TListItem;
 begin
   if Windows.OpenClipBoard(0) then
   begin
@@ -4096,12 +4095,11 @@ begin
     Windows.CloseClipBoard;
     if LastClipBoardOperation <> cboNone then
     begin
-      Index := ListView_GetNextItem(Handle, -1, LVNI_ALL or LVNI_CUT);
-      while Index >= 0 do
+      Item := GetNextItem(nil, sdAll, [isCut]);
+      while Assigned(Item) do
       begin
-        Items[Index].Cut := False;
-        StartIndex := Index;
-        Index := ListView_GetNextItem(Handle, StartIndex, LVNI_ALL Or LVNI_CUT);
+        Item.Cut := False;
+        Item := GetNextItem(Item, sdAll, [isCut]);
       end;
     end;
     LastClipBoardOperation := cboNone;
@@ -4114,9 +4112,8 @@ end; {EmptyClipBoard}
 
 function TDirView.CopyToClipBoard : Boolean;
 var
-  Index: Integer;
+  Item: TListItem;
   SaveCursor: TCursor;
-  StartIndex: Integer;
 begin
   SaveCursor := Screen.Cursor;
   Screen.Cursor := crHourGlass;
@@ -4126,12 +4123,11 @@ begin
     DragDropFilesEx.FileList.Clear;
     if SelCount > 0 then
     begin
-      Index := ListView_GetNextItem(Handle, -1, LVNI_ALL or LVNI_SELECTED);
-      while Index >= 0 do
+      Item := GetNextItem(nil, sdAll, [isSelected]);
+      while Assigned(Item) do
       begin
-        DragDropFilesEx.FileList.AddItem(nil, ItemFullFileName(Items[Index]));
-        StartIndex := Index;
-        Index := ListView_GetNextItem(Handle, StartIndex, LVNI_ALL or LVNI_SELECTED);
+        DragDropFilesEx.FileList.AddItem(nil, ItemFullFileName(Item));
+        Item := GetNextItem(Item, sdAll, [isSelected]);
       end;
 
       Result := DragDropFilesEx.CopyToClipBoard;
@@ -4144,21 +4140,19 @@ end; {CopyToClipBoard}
 
 function TDirView.CutToClipBoard : Boolean;
 var
-  Index: Integer;
-  StartIndex: Integer;
+  Item: TListItem;
 begin
   Result := False;
   EmptyClipBoard;
   DragDropFilesEx.FileList.Clear;
   if SelCount > 0 then
   begin
-    Index := ListView_GetNextItem(Handle, -1, LVNI_ALL or LVNI_SELECTED);
-    while Index >= 0 do
+    Item := GetNextItem(nil, sdAll, [isSelected]);
+    while Assigned(Item) do
     begin
-      DragDropFilesEx.FileList.AddItem(nil, ItemFullFileName(Items[Index]));
-      Items[Index].Cut := True;
-      StartIndex := Index;
-      Index := ListView_GetNextItem(Handle, StartIndex, LVNI_ALL or LVNI_SELECTED);
+      DragDropFilesEx.FileList.AddItem(nil, ItemFullFileName(Item));
+      Item.Cut := True;
+      Item := GetNextItem(Item, sdAll, [isSelected]);
     end;
 
     Result := DragDropFilesEx.CopyToClipBoard;

@@ -798,6 +798,12 @@ void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TTerminal * /*Terminal*
   AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
   void * /*Arg*/)
 {
+  AnsiString Caption = CutToChar(Prompt, '|', true);
+  if (Prompt.IsEmpty())
+  {
+    Prompt = Caption;
+  }
+
   if (!Prompt.IsEmpty() && (Prompt[Prompt.Length()] != ' '))
   {
     Prompt += ' ';
@@ -1379,10 +1385,10 @@ int __fastcall Console(bool Help)
         delete StoredSessions->ParseUrl(Session, DefaultsOnly,
           puDecodeUrlChars, NULL, &Url);
 
-        if (Url)
+        if (Url || Params->FindSwitch("Unsafe"))
         {
           // prevent any automatic action when URL is provided on
-          // command-line
+          // command-line (the check is duplicated in Execute())
           ScriptCommands->Clear();
         }
         else

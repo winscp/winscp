@@ -61,6 +61,7 @@ private:
   AnsiString FSessionName;
   AnsiString FStatus;
   AnsiString FPasswordCaption;
+  bool FHideTypingOnServerPrompt;
 };
 //---------------------------------------------------------------------------
 #endif

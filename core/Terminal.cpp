@@ -313,6 +313,9 @@ void __fastcall TTunnelUI::Closed()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+std::set<int> TTerminal::FTunnelLocalPorts;
+TCriticalSection TTerminal::FSection;
+//---------------------------------------------------------------------------
 __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   TConfiguration * Configuration)
 {
@@ -501,7 +504,7 @@ void __fastcall TTerminal::Open()
         }
         else
         {
-          FTunnelLocalPortNumber = 0;
+          assert(FTunnelLocalPortNumber == 0);
         }
 
         if (FFileSystem == NULL)
@@ -624,24 +627,32 @@ void __fastcall TTerminal::OpenTunnel()
 {
   assert(FTunnelData == NULL);
 
+  FTunnelLocalPortNumber = FSessionData->TunnelLocalPortNumber;
+  if (FTunnelLocalPortNumber == 0)
+  {
+    TGuard Guard(&FSection);
+
+    FTunnelLocalPortNumber = Configuration->TunnelLocalPortNumberLow;
+    // override strange bug in STL
+    #pragma warn -8092
+    while ((FTunnelLocalPorts.find(FTunnelLocalPortNumber) != FTunnelLocalPorts.end()) ||
+           !IsListenerFree(FTunnelLocalPortNumber))
+    #pragma warn .8092
+    {
+      FTunnelLocalPortNumber++;
+      if (FTunnelLocalPortNumber > Configuration->TunnelLocalPortNumberHigh)
+      {
+        FTunnelLocalPortNumber = 0;
+        FatalError(NULL, FMTLOAD(TUNNEL_NO_FREE_PORT,
+          (Configuration->TunnelLocalPortNumberLow, Configuration->TunnelLocalPortNumberHigh)));
+      }
+    }
+    FTunnelLocalPorts.insert(FTunnelLocalPortNumber);
+    LogEvent(FORMAT("Autoselected tunnel local port number %d", (FTunnelLocalPortNumber)));
+  }
+
   try
   {
-    FTunnelLocalPortNumber = FSessionData->TunnelLocalPortNumber;
-    if (FTunnelLocalPortNumber == 0)
-    {
-      FTunnelLocalPortNumber = Configuration->TunnelLocalPortNumberLow;
-      while (!IsListenerFree(FTunnelLocalPortNumber))
-      {
-        FTunnelLocalPortNumber++;
-        if (FTunnelLocalPortNumber > Configuration->TunnelLocalPortNumberHigh)
-        {
-          FatalError(NULL, FMTLOAD(TUNNEL_NO_FREE_PORT,
-            (Configuration->TunnelLocalPortNumberLow, Configuration->TunnelLocalPortNumberHigh)));
-        }
-      }
-      LogEvent(FORMAT("Autoselected tunnel local port number %d", (FTunnelLocalPortNumber)));
-    }
-
     FTunnelData = new TSessionData("");
     FTunnelData->Assign(StoredSessions->DefaultSettings);
     FTunnelData->Name = FMTLOAD(TUNNEL_SESSION_NAME, (FSessionData->SessionName));
@@ -687,6 +698,10 @@ void __fastcall TTerminal::CloseTunnel()
   SAFE_DESTROY_EX(TTunnelUI, FTunnelUI);
   SAFE_DESTROY_EX(TSessionLog, FTunnelLog);
   SAFE_DESTROY(FTunnelData);
+
+  TGuard Guard(&FSection);
+  FTunnelLocalPorts.erase(FTunnelLocalPortNumber);
+  FTunnelLocalPortNumber = 0;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Closed()
@@ -946,30 +961,20 @@ void __fastcall TTerminal::TerminalError(Exception * E, AnsiString Msg)
   throw ETerminal(E, Msg);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::DoQueryReopen(Exception * E, int Params)
+bool __fastcall TTerminal::DoQueryReopen(Exception * E)
 {
-  bool Result;
 
-  if (FLAGSET(Params, ropNoConfirmation))
-  {
-    Result = true;
-  }
-  else
-  {
-    LogEvent("Connection was lost, asking what to do.");
+  LogEvent("Connection was lost, asking what to do.");
 
-    TQueryParams Params(qpAllowContinueOnError);
-    Params.Timeout = Configuration->SessionReopenAuto;
-    Params.TimeoutAnswer = qaRetry;
-    TQueryButtonAlias Aliases[1];
-    Aliases[0].Button = qaRetry;
-    Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
-    Params.Aliases = Aliases;
-    Params.AliasesCount = LENOF(Aliases);
-    Result = (QueryUserException("", E, qaRetry | qaAbort, &Params, qtError) == qaRetry);
-  }
-
-  return Result;
+  TQueryParams Params(qpAllowContinueOnError);
+  Params.Timeout = Configuration->SessionReopenAuto;
+  Params.TimeoutAnswer = qaRetry;
+  TQueryButtonAlias Aliases[1];
+  Aliases[0].Button = qaRetry;
+  Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
+  Params.Aliases = Aliases;
+  Params.AliasesCount = LENOF(Aliases);
+  return (QueryUserException("", E, qaRetry | qaAbort, &Params, qtError) == qaRetry);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
@@ -977,7 +982,7 @@ bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
 {
   TSuspendFileOperationProgress Suspend(OperationProgress);
 
-  bool Result = DoQueryReopen(E, Params);
+  bool Result = DoQueryReopen(E);
 
   if (Result)
   {
@@ -985,20 +990,13 @@ bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,
     {
       try
       {
-        // note that ropNoConfirmation is not set for background transfer only,
-        // so it may cause temporary hang (e.g. for downloads to editor,
-        // synchronization, scripting)
-        if (FLAGSET(Params, ropNoConfirmation))
-        {
-          Sleep(Configuration->SessionReopenNoConfirmation);
-        }
         Reopen(Params);
       }
       catch(Exception & E)
       {
         if (!Active)
         {
-          Result = DoQueryReopen(&E, Params);
+          Result = DoQueryReopen(&E);
         }
         else
         {

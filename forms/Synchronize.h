@@ -86,6 +86,7 @@ protected:
   void __fastcall DoAbort(TObject * Sender, bool Close);
   void __fastcall DoLog(TSynchronizeController * Controller, TSynchronizeLogEntry Entry,
     const AnsiString Message);
+  void __fastcall OnlyStop();
   void __fastcall Stop();
   virtual void __fastcall Dispatch(void * Message);
   void __fastcall CopyParamClick(TObject * Sender);

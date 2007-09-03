@@ -2300,6 +2300,10 @@ static const char *connect_to_host(Ssh ssh, char *host, int port,
     ssh->s = new_connection(addr, *realhost, port,
 			    0, 1, nodelay, keepalive, (Plug) ssh, &ssh->cfg);
     if ((err = sk_socket_error(ssh->s)) != NULL) {
+#ifdef MPEXT
+	// prevent memory leak
+	sk_close(ssh->s);
+#endif
 	ssh->s = NULL;
 	notify_remote_exit(ssh->frontend);
 	return err;

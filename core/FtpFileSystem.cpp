@@ -151,7 +151,8 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FWaitingForReply(false),
   FIgnoreFileList(false),
   FOnCaptureOutput(NULL),
-  FFileSystemInfoValid(false)
+  FFileSystemInfoValid(false),
+  FListAll(-1)
 {
   ResetReply();
 
@@ -300,7 +301,7 @@ void __fastcall TFTPFileSystem::Open()
       }
     }
 
-    // ask for username if it was not specified in advance,
+    // ask for password if it was not specified in advance,
     // on retry ask always
     if (Data->Password.IsEmpty() || FPasswordFailed)
     {
@@ -794,10 +795,6 @@ void __fastcall TFTPFileSystem::SinkRobust(const AnsiString FileName,
 {
   // the same in TSFTPFileSystem
   bool Retry;
-  // set in advance as particularly cpNoConfirmation may change
-  int ReopenParams =
-    ropNoReadDirectory |
-    FLAGMASK(FLAGSET(Params, cpNoConfirmation), ropNoConfirmation);
 
   do
   {
@@ -810,7 +807,7 @@ void __fastcall TFTPFileSystem::SinkRobust(const AnsiString FileName,
     {
       Retry = true;
       if (FTerminal->Active ||
-          !FTerminal->QueryReopen(&E, ReopenParams, OperationProgress))
+          !FTerminal->QueryReopen(&E, ropNoReadDirectory, OperationProgress))
       {
         throw;
       }
@@ -1065,10 +1062,6 @@ void __fastcall TFTPFileSystem::SourceRobust(const AnsiString FileName,
 {
   // the same in TSFTPFileSystem
   bool Retry;
-  // set in advance as particularly cpNoConfirmation may change
-  int ReopenParams =
-    ropNoReadDirectory |
-    FLAGMASK(FLAGSET(Params, cpNoConfirmation), ropNoConfirmation);
 
   do
   {
@@ -1081,7 +1074,7 @@ void __fastcall TFTPFileSystem::SourceRobust(const AnsiString FileName,
     {
       Retry = true;
       if (FTerminal->Active ||
-          !FTerminal->QueryReopen(&E, ReopenParams, OperationProgress))
+          !FTerminal->QueryReopen(&E, ropNoReadDirectory, OperationProgress))
       {
         throw;
       }
@@ -1441,7 +1434,7 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
+void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 {
   FileList->Clear();
   // FZAPI does not list parent directory, add it
@@ -1465,6 +1458,40 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
   {
     FFileList = NULL;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
+{
+  bool Repeat = false;
+
+  do
+  {
+    try
+    {
+      DoReadDirectory(FileList);
+
+      if (FListAll < 0)
+      {
+        // reading first directory has succeeded, always use "-a"
+        FListAll = 1;
+      }
+    }
+    catch(...)
+    {
+      // reading the first directory has failed,
+      // further try without "-a" only as the server may not support it
+      if ((FListAll < 0) && FTerminal->Active)
+      {
+        FListAll = 0;
+        Repeat = true;
+      }
+      else
+      {
+        throw;
+      }
+    }
+  }
+  while (Repeat);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadFile(const AnsiString FileName,
@@ -1754,6 +1781,10 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
 
     case OPTION_VMSALLREVISIONS:
       Result = FALSE;
+      break;
+
+    case OPTION_MPEXT_SHOWHIDDEN:
+      Result = ((FListAll != 0) ? TRUE : FALSE);
       break;
 
     default:

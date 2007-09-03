@@ -1906,23 +1906,28 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
 {
   bool ProtocolDefined = false;
   TFSProtocol Protocol;
-  if (Url.SubString(1, 6).LowerCase() == "scp://")
+  if (Url.SubString(1, 4).LowerCase() == "scp:")
   {
     Protocol = fsSCPonly;
-    Url.Delete(1, 6);
+    Url.Delete(1, 4);
     ProtocolDefined = true;
   }
-  else if (Url.SubString(1, 7).LowerCase() == "sftp://")
+  else if (Url.SubString(1, 5).LowerCase() == "sftp:")
   {
     Protocol = fsSFTPonly;
-    Url.Delete(1, 7);
+    Url.Delete(1, 5);
     ProtocolDefined = true;
   }
-  else if (Url.SubString(1, 6).LowerCase() == "ftp://")
+  else if (Url.SubString(1, 4).LowerCase() == "ftp:")
   {
     Protocol = fsFTP;
-    Url.Delete(1, 6);
+    Url.Delete(1, 4);
     ProtocolDefined = true;
+  }
+
+  if (ProtocolDefined && (Url.SubString(1, 2) == "//"))
+  {
+    Url.Delete(1, 2);
   }
 
   if (AProtocolDefined != NULL)

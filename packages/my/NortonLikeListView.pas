@@ -23,6 +23,9 @@ type
     FOnSelectByMask: TSelectByMaskEvent;
     FLastDeletedItem: TListItem; // aby sme nepocitali smazany item 2x
     FFocusingItem: Boolean;
+    FManageSelection: Boolean;
+    FFirstSelected: Integer;
+    FLastSelected: Integer;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
@@ -31,6 +34,8 @@ type
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     function GetMarkedCount: Integer;
     function GetMarkedFile: TListItem;
+    procedure ItemSelected(Item: TListItem; Index: Integer);
+    procedure ItemUnselected(Item: TListItem; Index: Integer);
   protected
     { Protected declarations }
     FClearingItems: Boolean;
@@ -61,9 +66,10 @@ type
     function ClosestUnselected(Item: TListItem): TListItem;
     procedure SelectAll(Mode: TSelectMode); reintroduce;
     procedure SelectCurrentItem(FocusNext: Boolean);
+    function GetNextItem(StartItem: TListItem; Direction: TSearchDirection;
+      States: TItemStates): TListItem;
 
     property ColProperties: TCustomListViewColProperties read FColProperties write FColProperties stored False;
-    //CLEAN property SelCount: Integer read GetSelCount;
 
     property MultiSelect default True;
     property NortonLike: TNortonLikeMode read FNortonLike write FNortonLike default nlOn;
@@ -85,7 +91,6 @@ type
     property BorderWidth;
     property Checkboxes;
     property Color;
-    //property Columns;
     property ColumnClick;
     property Constraints;
     property Ctl3D;
@@ -170,6 +175,8 @@ begin
   inherited Create(AOwner);
 
   FSelCount := 0;
+  FFirstSelected := -1;
+  FLastSelected := -1;
   FClearingItems := False;
   MultiSelect := True;
   FDontSelectItem := False;
@@ -179,6 +186,10 @@ begin
   FLastDeletedItem := nil;
   FUpdatingSelection := 0;
   FFocusingItem := False;
+  // On Windows Vista, native GetNextItem for selection stops working once we
+  // disallow deselecting any item (see ExCanChange).
+  // So we need to manage selection state ourselves
+  FManageSelection := (Win32MajorVersion >= 6);
 end;
 
 destructor TCustomNortonLikeListView.Destroy;
@@ -187,10 +198,64 @@ begin
   inherited;
 end;
 
+procedure TCustomNortonLikeListView.ItemSelected(Item: TListItem; Index: Integer);
+begin
+  Inc(FSelCount);
+  if FManageSelection then
+  begin
+    if Index < 0 then
+      Index := Item.Index;
+
+    if FSelCount = 1 then
+    begin
+      Assert(FFirstSelected < 0);
+      FFirstSelected := Index;
+      Assert(FLastSelected < 0);
+      FLastSelected := Index;
+    end
+      else
+    begin
+      // if reference is not assigned, do not assign it as we
+      // cannot be sure that the item is actually first/last
+      if (FFirstSelected >= 0) and (Index < FFirstSelected) then
+        FFirstSelected := Index;
+      if (FLastSelected >= 0) and (Index > FLastSelected) then
+        FLastSelected := Index;
+    end;
+  end;
+end;
+
+procedure TCustomNortonLikeListView.ItemUnselected(Item: TListItem; Index: Integer);
+begin
+  Dec(FSelCount);
+  if FManageSelection then
+  begin
+    if Index < 0 then
+      Index := Item.Index;
+
+    if FFirstSelected = Index then
+    begin
+      if FSelCount = 1 then
+        FFirstSelected := FLastSelected // may be -1
+      else
+        FFirstSelected := -1;
+    end;
+    if FLastSelected = Index then
+    begin
+      if FSelCount = 1 then
+        FLastSelected := FFirstSelected // may be -1
+      else
+        FLastSelected := -1;
+    end;
+  end;
+end;
+
 procedure TCustomNortonLikeListView.Delete(Item: TListItem);
 begin
   if (FLastDeletedItem <> Item) and Item.Selected then
-    Dec(FSelCount);
+  begin
+    ItemUnselected(Item, -1);
+  end;
   FLastDeletedItem := Item;
   inherited;
   FLastDeletedItem := nil;
@@ -218,8 +283,10 @@ begin
        (FDontUnSelectItem or (not CanChangeSelection(Item, False))))) then
   begin
     if (OldState or LVIS_SELECTED) <> (NewState or LVIS_SELECTED) then
+    begin
       ListView_SetItemState(Handle, Item.Index, NewState,
         (NewState or OldState) - LVIS_SELECTED);
+    end;
     Result := False;
   end;
 end;
@@ -238,6 +305,11 @@ begin
     Items.Clear;
   finally
     FSelCount := 0;
+    if FManageSelection then
+    begin
+      FFirstSelected := -1;
+      FLastSelected := -1;
+    end;
     FClearingItems := False;
     Items.EndUpdate;
   end;
@@ -298,24 +370,41 @@ begin
 end;
 
 procedure TCustomNortonLikeListView.CNNotify(var Message: TWMNotify);
+var
+  Item: TListItem;
 begin
   with Message do
     case NMHdr^.code of
       LVN_ITEMCHANGING:
         with PNMListView(NMHdr)^ do
-          if Valid and (not FClearingItems) and (Items[iItem] <> FLastDeletedItem) and
-             ((not CanChange(Items[iItem], uChanged)) or
-              (not ExCanChange(Items[iItem], uChanged, uNewState, uOldState)))
-              then Result := 1;
+        begin
+          Item := Items[iItem];
+          if Valid and (not FClearingItems) and (Item <> FLastDeletedItem) and
+             ((not CanChange(Item, uChanged)) or
+              (not ExCanChange(Item, uChanged, uNewState, uOldState)))
+              then
+          begin
+            Result := 1;
+          end;
+        end;
       LVN_ITEMCHANGED:
         begin
           with PNMListView(NMHdr)^ do
-          if Valid and (not FClearingItems) and
-             (uChanged = LVIF_STATE) and (Items[iItem] <> FLastDeletedItem) and
-             ((uOldState and LVIS_SELECTED) <> (uNewState and LVIS_SELECTED)) then
           begin
-            if (uOldState and LVIS_SELECTED) <> 0 then Dec(FSelCount)
-              else Inc(FSelCount);
+            Item := Items[iItem];
+            if Valid and (not FClearingItems) and
+               (uChanged = LVIF_STATE) and (Item <> FLastDeletedItem) and
+               ((uOldState and LVIS_SELECTED) <> (uNewState and LVIS_SELECTED)) then
+            begin
+              if (uOldState and LVIS_SELECTED) <> 0 then
+              begin
+                ItemUnselected(Item, iItem);
+              end
+                else
+              begin
+                ItemSelected(Item, iItem);
+              end;
+            end;
           end;
           inherited;
         end;
@@ -543,6 +632,95 @@ begin
     else Result := nil;
 end;
 
+function TCustomNortonLikeListView.GetNextItem(StartItem: TListItem;
+  Direction: TSearchDirection; States: TItemStates): TListItem;
+var
+  Start, Index, First, Last: Integer;
+begin
+  if not FManageSelection then
+  begin
+    Result := inherited GetNextItem(StartItem, Direction, States);
+  end
+    else
+  begin
+    Assert(Direction = sdAll);
+    if States = [isSelected] then
+    begin
+      if FSelCount = 0 then
+      begin
+        Result := nil
+      end
+        else
+      if (not Assigned(StartItem)) and (FFirstSelected >= 0) then
+      begin
+        Result := Items[FFirstSelected]
+      end
+        else
+      begin
+        if Assigned(StartItem) then
+          Start := StartItem.Index
+        else
+          Start := -1;
+
+        if (FFirstSelected >= 0) and (Start < FFirstSelected) then
+          First := FFirstSelected
+        else
+          First := Start + 1;
+
+        if FLastSelected >= 0 then
+          Last := FLastSelected
+        else
+          Last := Items.Count - 1;
+
+        if Start > Last then
+        begin
+          Result := nil;
+        end
+          else
+        begin
+          Index := First;
+          while (Index <= Last) and (not (Items[Index].Selected)) do
+          begin
+            Inc(Index);
+          end;
+
+          if Index > Last then
+          begin
+            Result := nil;
+
+            if Assigned(StartItem) and StartItem.Selected then
+            begin
+              Assert((FLastSelected < 0) or (FLastSelected = Start));
+              FLastSelected := Start;
+            end;
+          end
+            else
+          begin
+            Result := Items[Index];
+            Assert(Result.Selected);
+
+            if not Assigned(StartItem) then
+            begin
+              Assert((FFirstSelected < 0) or (FFirstSelected = Index));
+              FFirstSelected := Index;
+            end;
+          end;
+        end;
+      end;
+    end
+      else
+    if States = [isCut] then
+    begin
+      Result := inherited GetNextItem(StartItem, Direction, States);
+    end
+      else
+    begin
+      Assert(False);
+      Result := nil;
+    end;
+  end;
+end;
+
 function TCustomNortonLikeListView.GetSelCount: Integer;
 begin
   Result := FSelCount;
@@ -551,7 +729,8 @@ end;
 procedure TCustomNortonLikeListView.InsertItem(Item: TListItem);
 begin
   inherited;
-  if Item.Selected then Inc(FSelCount);
+  if Item.Selected then
+    ItemSelected(Item, -1);
 end;
 
 function TCustomNortonLikeListView.NewColProperties: TCustomListViewColProperties;

@@ -35,7 +35,7 @@ private:
   bool FConfirmResume;
   bool FAutoReadDirectoryAfterOp;
   int FSessionReopenAuto;
-  int FSessionReopenNoConfirmation;
+  int FSessionReopenBackground;
   AnsiString FIniFileStorageName;
   int FTunnelLocalPortNumberLow;
   int FTunnelLocalPortNumberHigh;
@@ -85,7 +85,7 @@ private:
   AnsiString __fastcall GetLocalInvalidChars();
   bool __fastcall GetGSSAPIInstalled();
   void __fastcall SetSessionReopenAuto(int value);
-  void __fastcall SetSessionReopenNoConfirmation(int value);
+  void __fastcall SetSessionReopenBackground(int value);
   void __fastcall SetTunnelLocalPortNumberLow(int value);
   void __fastcall SetTunnelLocalPortNumberHigh(int value);
   void __fastcall SetShowFtpWelcomeMessage(bool value);
@@ -181,7 +181,7 @@ public:
   __property bool RememberPassword = { read = GetRememberPassword };
   __property AnsiString PartialExt = {read=GetPartialExt};
   __property int SessionReopenAuto = { read = FSessionReopenAuto, write = SetSessionReopenAuto };
-  __property int SessionReopenNoConfirmation = { read = FSessionReopenNoConfirmation, write = SetSessionReopenNoConfirmation };
+  __property int SessionReopenBackground = { read = FSessionReopenBackground, write = SetSessionReopenBackground };
   __property int TunnelLocalPortNumberLow = { read = FTunnelLocalPortNumberLow, write = SetTunnelLocalPortNumberLow };
   __property int TunnelLocalPortNumberHigh = { read = FTunnelLocalPortNumberHigh, write = SetTunnelLocalPortNumberHigh };
   __property bool ShowFtpWelcomeMessage = { read = FShowFtpWelcomeMessage, write = SetShowFtpWelcomeMessage };

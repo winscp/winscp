@@ -861,7 +861,7 @@ static void __fastcall FocusableLabelWindowProc(void * Data, TMessage & Message,
     Clicked = true;
     Message.Result = 1;
   }
-  if (Message.Msg == WM_RBUTTONDOWN)
+  else if (Message.Msg == WM_RBUTTONDOWN)
   {
     StaticText->SetFocus();
     Message.Result = 1;

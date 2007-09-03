@@ -216,7 +216,7 @@ BOOL CBase64Coding::Encode( const char * source, int len, char * destination_str
 
 <H1>CBase64Coding</H1>
 
-$Revision: 1.3 $<BR><HR>
+Revision: 1.3 <BR><HR>
 
 <H2>Description</H2>
 

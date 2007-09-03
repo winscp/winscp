@@ -148,6 +148,7 @@ protected:
   void __fastcall FileTransferProgress(__int64 TransferSize, __int64 Bytes, int Percent);
   void __fastcall ResetCaches();
   void __fastcall CaptureOutput(const AnsiString & Str);
+  void __fastcall DoReadDirectory(TRemoteFileList * FileList);
 
   static bool __fastcall Unquote(AnsiString & Str);
 
@@ -194,6 +195,7 @@ private:
   bool FAwaitingProgress;
   TCaptureOutputEvent FOnCaptureOutput;
   AnsiString FUserName;
+  int FListAll;
   mutable AnsiString FOptionScratch;
 };
 //---------------------------------------------------------------------------

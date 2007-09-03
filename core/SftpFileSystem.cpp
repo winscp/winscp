@@ -3758,10 +3758,6 @@ void __fastcall TSFTPFileSystem::SFTPSourceRobust(const AnsiString FileName,
 {
   // the same in TFTPFileSystem
   bool Retry;
-  // set in advance as particularly cpNoConfirmation may change
-  int ReopenParams =
-    ropNoReadDirectory |
-    FLAGMASK(FLAGSET(Params, cpNoConfirmation), ropNoConfirmation);
 
   do
   {
@@ -3774,7 +3770,7 @@ void __fastcall TSFTPFileSystem::SFTPSourceRobust(const AnsiString FileName,
     {
       Retry = true;
       if (FTerminal->Active ||
-          !FTerminal->QueryReopen(&E, ReopenParams, OperationProgress))
+          !FTerminal->QueryReopen(&E, ropNoReadDirectory, OperationProgress))
       {
         throw;
       }
@@ -4513,10 +4509,6 @@ void __fastcall TSFTPFileSystem::SFTPSinkRobust(const AnsiString FileName,
 {
   // the same in TFTPFileSystem
   bool Retry;
-  // set in advance as particularly cpNoConfirmation may change
-  int ReopenParams =
-    ropNoReadDirectory |
-    FLAGMASK(FLAGSET(Params, cpNoConfirmation), ropNoConfirmation);
 
   do
   {
@@ -4529,7 +4521,7 @@ void __fastcall TSFTPFileSystem::SFTPSinkRobust(const AnsiString FileName,
     {
       Retry = true;
       if (FTerminal->Active ||
-          !FTerminal->QueryReopen(&E, ReopenParams, OperationProgress))
+          !FTerminal->QueryReopen(&E, ropNoReadDirectory, OperationProgress))
       {
         throw;
       }
