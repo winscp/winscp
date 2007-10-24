@@ -1415,10 +1415,16 @@ TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher)
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::VerifyHostKey(const AnsiString Host, int Port,
-  const AnsiString KeyType, const AnsiString KeyStr, const AnsiString Fingerprint)
+void __fastcall TSecureShell::VerifyHostKey(AnsiString Host, int Port,
+  const AnsiString KeyType, AnsiString KeyStr, const AnsiString Fingerprint)
 {
   GotHostKey();
+
+  if (FSessionData->Tunnel)
+  {
+    Host = FSessionData->OrigHostName;
+    Port = FSessionData->OrigPortNumber;
+  }
 
   int Result;
 

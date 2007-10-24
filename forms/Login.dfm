@@ -186,7 +186,7 @@ object LoginDialog: TLoginDialog
             Top = 85
             Width = 137
             Height = 21
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 1
             Text = 'UserNameEdit'
             OnChange = DataChange
@@ -197,7 +197,7 @@ object LoginDialog: TLoginDialog
             Width = 171
             Height = 21
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
+            MaxLength = 100
             TabOrder = 2
             Text = 'PasswordEdit'
             OnChange = DataChange
@@ -376,10 +376,9 @@ object LoginDialog: TLoginDialog
           Top = 163
           Width = 88
           Height = 25
+          Action = ShellIconSessionAction
           Anchors = [akTop, akRight]
-          Caption = 'Shell &icon...'
           TabOrder = 6
-          OnClick = ShellIconsButtonClick
         end
         object RenameButton: TButton
           Left = 257
@@ -2297,6 +2296,11 @@ object LoginDialog: TLoginDialog
       Category = 'Sessions'
       Caption = '&Rename'
       OnExecute = RenameSessionActionExecute
+    end
+    object ShellIconSessionAction: TAction
+      Category = 'Sessions'
+      Caption = 'Shell &icon...'
+      OnExecute = ShellIconSessionActionExecute
     end
   end
   object ToolsPopupMenu: TPopupMenu

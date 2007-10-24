@@ -4,15 +4,17 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\FileZilla.lib"/>
-    <OBJFILES value="filezilla\ApiLog.obj filezilla\AsyncProxySocketLayer.obj 
-      filezilla\AsyncSocketEx.obj filezilla\AsyncSocketExLayer.obj 
-      filezilla\misc\CBase64Coding.obj filezilla\ControlSocket.obj filezilla\Crypt.obj 
-      filezilla\FzApiStructures.obj filezilla\FileZillaApi.obj 
-      filezilla\FileZillaIntern.obj filezilla\FileZillaIntf.obj 
-      filezilla\FtpControlSocket.obj filezilla\FtpListResult.obj 
-      filezilla\MainThread.obj filezilla\MFC64bitFix.obj filezilla\Options.obj 
-      filezilla\PathFunctions.obj filezilla\ServerPath.obj filezilla\structures.obj 
-      filezilla\TransferSocket.obj filezilla\misc\Fzutf8.obj"/>
+    <OBJFILES value="filezilla\ApiLog.obj
+      filezilla\AsyncProxySocketLayer.obj filezilla\AsyncSocketEx.obj
+      filezilla\AsyncSocketExLayer.obj filezilla\misc\CBase64Coding.obj
+      filezilla\ControlSocket.obj filezilla\Crypt.obj
+      filezilla\FzApiStructures.obj filezilla\FileZillaApi.obj
+      filezilla\FileZillaIntern.obj filezilla\FileZillaIntf.obj
+      filezilla\FtpControlSocket.obj filezilla\FtpListResult.obj
+      filezilla\MainThread.obj filezilla\MFC64bitFix.obj filezilla\Options.obj
+      filezilla\PathFunctions.obj filezilla\ServerPath.obj
+      filezilla\structures.obj filezilla\TransferSocket.obj
+      filezilla\misc\Fzutf8.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>

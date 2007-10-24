@@ -46,7 +46,6 @@ private:
   bool FDisablePasswordStoring;
   bool FForceBanners;
   bool FDisableAcceptingHostKeys;
-  int FGSSAPIInstalled;
 
   AnsiString __fastcall GetOSVersionStr();
   TVSFixedFileInfo *__fastcall GetFixedApplicationInfo();

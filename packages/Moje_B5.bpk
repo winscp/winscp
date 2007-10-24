@@ -4,15 +4,13 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\Moje_B5.bpl"/>
-    <OBJFILES value="Moje_B5.obj &quot;my\HistoryComboBox.obj&quot; 
-      &quot;my\ListViewColProperties.obj&quot; &quot;my\MoreButton.obj&quot; 
-      &quot;my\NortonLikeListView.obj&quot; &quot;my\PathLabel.obj&quot; 
-      &quot;my\UpDownEdit.obj&quot; &quot;my\ComboEdit.obj&quot; &quot;my\PasswordEdit.obj&quot; 
-      &quot;my\ResourceModule.obj&quot; &quot;my\CompThread.obj&quot; &quot;my\DiscMon.obj&quot; 
-      &quot;my\TcpIp.obj&quot; &quot;my\GrayedCheckBox.obj&quot; &quot;my\IEListView.obj&quot; 
-      &quot;my\LanguagesDEPfix.obj&quot;"/>
-    <RESFILES value="Moje_B5.res &quot;my\HistoryComboBox.dcr&quot; 
-      &quot;my\NortonLikeListView.dcr&quot; &quot;my\PathLabel.dcr&quot; &quot;my\DiscMon.dcr&quot;"/>
+    <OBJFILES value="Moje_B5.obj my\HistoryComboBox.obj
+      my\ListViewColProperties.obj my\MoreButton.obj my\NortonLikeListView.obj
+      my\PathLabel.obj my\UpDownEdit.obj my\ComboEdit.obj my\PasswordEdit.obj
+      my\ResourceModule.obj my\CompThread.obj my\DiscMon.obj my\TcpIp.obj
+      my\GrayedCheckBox.obj my\IEListView.obj my\LanguagesDEPfix.obj"/>
+    <RESFILES value="my\HistoryComboBox.dcr my\NortonLikeListView.dcr
+      my\PathLabel.dcr my\DiscMon.dcr"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
@@ -20,7 +18,7 @@
     <SPARELIBS value="rtl.lib vcl.lib"/>
     <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi"/>
     <PATHCPP value=".;"/>
-    <PATHPAS value=".;&quot;my&quot;"/>
+    <PATHPAS value=".;my"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
@@ -29,8 +27,8 @@
     <USERDEFINES value=""/>
     <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="Moje_B5.cpp"/>
-    <INCLUDEPATH value="&quot;my&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\lib\;&quot;my&quot;;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
+    <INCLUDEPATH value="my;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;my;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
     <WARNINGS value="-wuse -w-par"/>
     <OTHERFILES value=""/>
   </MACROS>
@@ -50,7 +48,6 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="Moje_B5.cpp" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="Moje_B5.res" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>

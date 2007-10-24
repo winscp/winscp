@@ -1214,3 +1214,82 @@ void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
   ((TMethod*)&WindowProc)->Code = LinkLabelWindowProc;
   StaticText->WindowProc = WindowProc;
 }
+//---------------------------------------------------------------------------
+int __fastcall SafeShowModal(TForm * Form)
+{
+  // FIX: Due to some bug in Theme Manager, certain forms randomly
+  // fails in call to ShowModal(), hence repeat the call until it succeeds.
+
+  int Result = -1;
+  int Retry = 0;
+
+  do
+  {
+    try
+    {
+      Result = Form->ShowModal();
+    }
+    catch (EOSError & E)
+    {
+      if (E.Message == Sysconst_SUnkOSError)
+      {
+        ++Retry;
+        if (Retry >= 10)
+        {
+          throw;
+        }
+        else
+        {
+          Form->Visible = false;
+        }
+      }
+      else
+      {
+        throw;
+      }
+    }
+  }
+  while (Result < 0);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+static void __fastcall CreateHandles(TWinControl * Control)
+{
+  Control->HandleNeeded();
+
+  for (int Index = 0; Index < Control->ControlCount; Index++)
+  {
+    TWinControl * ChildControl = dynamic_cast<TWinControl *>(Control->Controls[Index]);
+    if (ChildControl != NULL)
+    {
+      CreateHandles(ChildControl);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+TForm * __fastcall _SafeFormValidate(TForm * Form, int & Retry)
+{
+  try
+  {
+    CreateHandles(Form);
+  }
+  catch (EOSError & E)
+  {
+    delete Form;
+    Form = NULL;
+
+    ++Retry;
+    if ((E.Message != Sysconst_SUnkOSError) ||
+        (Retry >= 10))
+    {
+      throw;
+    }
+  }
+  catch(...)
+  {
+    delete Form;
+  }
+
+  return Form;
+}

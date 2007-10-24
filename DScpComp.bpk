@@ -6,7 +6,7 @@
     <PROJECT value="DScpComp.bpl"/>
     <OBJFILES value="DScpComp.obj components\UnixDirView.obj components\UnixPathComboBox.obj 
       components\LogMemo.obj components\UnixDriveView.obj"/>
-    <RESFILES value="DScpComp.res"/>
+    <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
@@ -47,7 +47,6 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="DScpComp.cpp" FORMNAME="" UNITNAME="DScpComp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="DScpComp.res" FORMNAME="" UNITNAME="DScpComp.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="Moje_B5.bpi" FORMNAME="" UNITNAME="Moje_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="DriveDir_B5.bpi" FORMNAME="" UNITNAME="DriveDir_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="DragDrop_B5.bpi" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>

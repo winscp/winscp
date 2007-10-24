@@ -53,8 +53,9 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
   if (FindFile(Program))
   {
     AnsiString SessionName;
-    THierarchicalStorage * Storage = NULL;
+    TRegistryStorage * Storage = NULL;
     TSessionData * ExportData = NULL;
+    TRegistryStorage * SourceStorage = NULL;
     try
     {
       Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
@@ -67,6 +68,14 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
         }
         else
         {
+          SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
+          if (SourceStorage->OpenSubKey(MungeStr(StoredSessions->DefaultSettings->Name), false) &&
+              Storage->OpenSubKey(MungeStr(GUIConfiguration->PuttySession), true))
+          {
+            Storage->Copy(SourceStorage);
+            Storage->CloseSubKey();
+          }
+
           ExportData = new TSessionData("");
           ExportData->Assign(SessionData);
           ExportData->Modified = true;
@@ -81,6 +90,7 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
     {
       delete Storage;
       delete ExportData;
+      delete SourceStorage;
     }
 
     if (!Params.IsEmpty())

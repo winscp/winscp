@@ -7,10 +7,17 @@ ROOT = $(MAKEDIR)\..
 EXTERNALDEFINES = NO_FILEZILLA;
 !endif
 #------------------------------------------------------------------------------
-MAKE = $(ROOT)\bin\make.exe -$(MAKEFLAGS) -DEXTERNALDEFINES=$(EXTERNALDEFINES) -f$&.mak
+MAKEBASE = $(ROOT)\bin\make.exe -$(MAKEFLAGS)
+MAKE = $(MAKEBASE) -DEXTERNALDEFINES=$(EXTERNALDEFINES) -f$&.mak
 BPR2MAK = $(ROOT)\bin\bpr2mak
 #------------------------------------------------------------------------------
-default: WinSCP.exe DragExt.dll WinSCP.com lib\DiscMon_B5.lib
+default: WinSCP.exe
+default: DragExt.dll
+!ifdef WITH_DRAGEXT64
+default: DragExt64.dll
+!endif
+default: WinSCP.com
+default: lib\DiscMon_B5.lib
 
 WinSCP.exe: WinSCP.bpr
 WinSCP.exe: lib\Moje_B5.lib lib\DragDrop_B5.lib lib\DriveDir_B5.lib
@@ -23,6 +30,9 @@ WinSCP.exe: lib\ScpCore.lib lib\RScpComp.lib lib\ScpForms.lib
 DragExt.dll: DragExt.bpr
  $(BPR2MAK) -tdefault.bmk DragExt.bpr
  $(MAKE)
+
+DragExt64.dll:
+ $(MAKEBASE) -fmakefile.dragext64
 
 WinSCP.com: Console.com
  ren Console.com WinSCP.com

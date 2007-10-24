@@ -33,9 +33,9 @@ __published:
   void __fastcall MaskEditExit(TObject *Sender);
 
 public:
-  __fastcall TEditorPreferencesDialog(TComponent * Owner,
-    TEditorPreferencesMode Mode);
+  virtual __fastcall TEditorPreferencesDialog(TComponent * Owner);
 
+  void __fastcall Init(TEditorPreferencesMode Mode);
   bool __fastcall Execute(TEditorPreferences * Editor);
 
 private:

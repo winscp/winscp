@@ -444,10 +444,10 @@ const
   USE_CONN     = 4;
   USE_RECONN   = 5;
 
-function NetUseGetInfo(UncServerName: LMSTR; UseName: LMSTR; Level: DWORD;
-  var BufPtr: LPBYTE): NET_API_STATUS; stdcall; external 'netapi32.dll' name 'NetUseGetInfo';
-function NetApiBufferFree(Buffer: LPVOID): NET_API_STATUS; stdcall;
-  external 'netapi32.dll' name 'NetApiBufferFree';
+var
+  NetUseGetInfo: function(UncServerName: LMSTR; UseName: LMSTR; Level: DWORD;
+    var BufPtr: LPBYTE): NET_API_STATUS; stdcall;
+  NetApiBufferFree: function(Buffer: LPVOID): NET_API_STATUS; stdcall;
 
 function GetNetWorkConnected(Drive: Char): Boolean;
 var
@@ -455,22 +455,45 @@ var
   Use: WideString;
   NetResult: Integer;
 begin
-  Use := Drive + ':';
-  NetResult := NetUseGetInfo(nil, PWideChar(Use), 1, BufPtr);
-  if NetResult = 0 then
+  if Assigned(NetUseGetInfo) then
   begin
-    Result := (PUSE_INFO_1(BufPtr)^.ui1_status = USE_OK);
-    NetApiBufferFree(LPVOID(BufPtr));
+    Use := Drive + ':';
+    NetResult := NetUseGetInfo(nil, PWideChar(Use), 1, BufPtr);
+    if NetResult = 0 then
+    begin
+      Result := (PUSE_INFO_1(BufPtr)^.ui1_status = USE_OK);
+      Assert(Assigned(NetApiBufferFree));
+      NetApiBufferFree(LPVOID(BufPtr));
+    end
+      else
+    begin
+      // NetUseGetInfo works for DFS shares only, hence when it fails
+      // we suppose different share type and fallback to "connected"
+      Result := True;
+    end;
   end
     else
   begin
-    // NetUseGetInfo works for DFS shares only, hence when it fails
-    // we suppose different share type and fallback to "connected"
     Result := True;
   end;
 end;
 
+var
+  NetApiDll: THandle;
+
 initialization
+  NetApiDll := SafeLoadLibrary('netapi32.dll');
+  if NetApiDll <> 0 then
+  begin
+    @NetUseGetInfo := GetProcAddress(NetApiDll, 'NetUseGetInfo');
+    @NetApiBufferFree := GetProcAddress(NetApiDll, 'NetApiBufferFree');
+  end
+    else
+  begin
+    @NetUseGetInfo := nil;
+    @NetApiBufferFree := nil;
+  end;
+
   if not Assigned(DriveInfo) then
     DriveInfo := TDriveInfo.Create;
 
@@ -480,4 +503,6 @@ finalization
     DriveInfo.Free;
     DriveInfo := nil;
   end;
+
+  if NetApiDll <> 0 then FreeLibrary(NetApiDll);
 end.

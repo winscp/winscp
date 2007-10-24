@@ -4,10 +4,9 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\tb2k_cb6.bpl"/>
-    <OBJFILES value="tb2k_cb6.obj tb2k\TB2Common.obj tb2k\TB2Consts.obj 
-      tb2k\TB2Dock.obj tb2k\TB2ExtItems.obj tb2k\TB2Item.obj 
-      tb2k\TB2Toolbar.obj tb2k\TB2Version.obj tb2k\TB2Hook.obj 
-      tb2k\TB2Anim.obj tb2k\TB2Acc.obj"/>
+    <OBJFILES value="tb2k_cb6.obj tb2k\TB2Common.obj tb2k\TB2Consts.obj
+      tb2k\TB2Dock.obj tb2k\TB2ExtItems.obj tb2k\TB2Item.obj tb2k\TB2Toolbar.obj
+      tb2k\TB2Version.obj tb2k\TB2Hook.obj tb2k\TB2Anim.obj tb2k\TB2Acc.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <DEFFILE value=""/>

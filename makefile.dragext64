@@ -1,0 +1,33 @@
+#------------------------------------------------------------------------------
+# DRAGEXT64CL = <path to x64 cl.exe>
+# DRAGEXT64LIBPATH = <path to x64 libraries>
+# DRAGEXT64INCLUDEPATH = <path to x64 includes>
+#------------------------------------------------------------------------------
+!ifndef ROOT
+ROOT = $(MAKEDIR)\..
+!endif
+#------------------------------------------------------------------------------
+!ifndef DRAGEXT64CL
+DRAGEXT64CL = cl.exe
+!endif
+#------------------------------------------------------------------------------
+INCLUDE = /I$(DRAGEXT64INCL)
+LIBPATH = /LIBPATH:$(DRAGEXT64LIB)
+OUTPUT = DragExt64
+
+ALLLIB = version.lib AdvAPI32.Lib Shell32.Lib Ole32.Lib bufferoverflowu.lib
+
+CFLAGS1 = /EHsc /GS- /Zi /LD /DWIN32;NDEBUG;_WINDOWS;_USRDLL /wd4068
+CFLAGS2 = /Fe$(OUTPUT).dll /Fo$(OUTPUT).obj
+CFLAGS = $(CFLAGS1) $(CFLAGS2) $(INCLUDE)
+LFLAGS = $(LIBPATH) /MACHINE:AMD64 /DEF:dragext\$(OUTPUT).def
+
+SOURCES = dragext\DragExt.cpp
+
+$(OUTPUT).dll: $(OUTPUT).res
+ $(DRAGEXT64CL) /nologo $(CFLAGS) $(SOURCES) /link $(LFLAGS) $(ALLLIB) $**
+
+$(OUTPUT).res: $(OUTPUT).rc
+ $(ROOT)\bin\brcc32 -fo$< $**
+
+default: DragExt64.dll

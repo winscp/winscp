@@ -442,3 +442,34 @@ void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
 {
   BrowseForExecutableT(Control, Title, Filter, FileNameCommand);
 }
+//---------------------------------------------------------------------------
+bool __fastcall IsWin64()
+{
+  static int Result = -1;
+  if (Result < 0)
+  {
+    typedef BOOL WINAPI (*IsWow64ProcessType)(HANDLE Process, PBOOL Wow64Process);
+
+    Result = 0;
+
+    HMODULE Kernel = GetModuleHandle(kernel32);
+    if (Kernel != NULL)
+    {
+      IsWow64ProcessType IsWow64Process =
+        (IsWow64ProcessType)GetProcAddress(Kernel, "IsWow64Process");
+      if (IsWow64Process != NULL)
+      {
+        BOOL Wow64Process = FALSE;
+        if (IsWow64Process(GetCurrentProcess(), &Wow64Process))
+        {
+          if (Wow64Process)
+          {
+            Result = 1;
+          }
+        }
+      }
+    }
+  }
+
+  return (Result > 0);
+}

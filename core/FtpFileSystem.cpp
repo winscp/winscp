@@ -116,8 +116,17 @@ class TMessageQueue : public std::list<std::pair<WPARAM, LPARAM> >
 //---------------------------------------------------------------------------
 struct TFileTransferData
 {
+  TFileTransferData()
+  {
+    Params = 0;
+    AutoResume = false;
+    OverwriteResult = -1;
+  }
+
+  AnsiString FileName;
   int Params;
   bool AutoResume;
+  int OverwriteResult;
 };
 //---------------------------------------------------------------------------
 const int tfFirstLevel = 0x01;
@@ -751,6 +760,19 @@ void __fastcall TFTPFileSystem::FileTransferProgress(__int64 TransferSize,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::FileTransfer(const AnsiString & FileName,
+  const AnsiString & LocalFile, const AnsiString & RemoteFile,
+  const AnsiString & RemotePath, bool Get, __int64 Size, int Type,
+  TFileTransferData & UserData, TFileOperationProgressType * OperationProgress)
+{
+  FILE_OPERATION_LOOP(FMTLOAD(TRANSFER_ERROR, (FileName)),
+    FFileZillaIntf->FileTransfer(LocalFile.c_str(), RemoteFile.c_str(),
+      RemotePath.c_str(), Get, Size, Type, &UserData);
+    unsigned int Reply = WaitForReply();
+    GotReply(Reply, FLAGMASK(FFileTransferCancelled, REPLY_ALLOW_CANCEL));
+  );
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
   const AnsiString TargetDir, const TCopyParamType * CopyParam,
   int Params, TFileOperationProgressType * OperationProgress,
@@ -924,6 +946,8 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
 
     ResetFileTransfer();
 
+    TFileTransferData UserData;
+
     AnsiString FilePath = UnixExtractFilePath(FileName);
     unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
     assert(!FIgnoreFileList);
@@ -931,14 +955,11 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
     try
     {
       FFileTransferPreserveTime = CopyParam->PreserveTime;
-      FFileTransferFileName = DestFileName;
-      TFileTransferData UserData;
+      UserData.FileName = DestFileName;
       UserData.Params = Params;
       UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
-      FFileZillaIntf->FileTransfer(DestFullName.c_str(), OnlyFileName.c_str(),
-        FilePath.c_str(), true, File->Size, TransferType, &UserData);
-      unsigned int Reply = WaitForReply();
-      GotReply(Reply, FLAGMASK(FFileTransferCancelled, REPLY_ALLOW_CANCEL));
+      FileTransfer(FileName, DestFullName, OnlyFileName,
+        FilePath, true, File->Size, TransferType, UserData, OperationProgress);
     }
     __finally
     {
@@ -948,9 +969,9 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
     CheckFileTransferAbort();
 
     // in case dest filename is changed from overwrite dialog
-    if (DestFileName != FFileTransferFileName)
+    if (DestFileName != UserData.FileName)
     {
-      DestFullName = TargetDir + FFileTransferFileName;
+      DestFullName = TargetDir + UserData.FileName;
       Attrs = FileGetAttr(DestFullName);
     }
 
@@ -1147,6 +1168,8 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
 
     ResetFileTransfer();
 
+    TFileTransferData UserData;
+
     unsigned int TransferType = (OperationProgress->AsciiTransfer ? 1 : 2);
     assert(!FIgnoreFileList);
     FIgnoreFileList = true;
@@ -1155,14 +1178,11 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
       // not supports for uploads anyway
       FFileTransferPreserveTime = CopyParam->PreserveTime;
       // not used for uploads
-      FFileTransferFileName = DestFileName;
-      TFileTransferData UserData;
+      UserData.FileName = DestFileName;
       UserData.Params = Params;
       UserData.AutoResume = FLAGSET(Flags, tfAutoResume);
-      FFileZillaIntf->FileTransfer(FileName.c_str(), DestFileName.c_str(),
-        TargetDir.c_str(), false, Size, TransferType, &UserData);
-      unsigned int Reply = WaitForReply();
-      GotReply(Reply, FLAGMASK(FFileTransferCancelled, REPLY_ALLOW_CANCEL));
+      FileTransfer(FileName, FileName, DestFileName,
+        TargetDir, false, Size, TransferType, UserData, OperationProgress);
     }
     __finally
     {
@@ -1879,6 +1899,35 @@ unsigned int __fastcall TFTPFileSystem::PoolForReply()
   return Reply;
 }
 //---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int& ReplyToAwait)
+{
+  try
+  {
+    while (ReplyToAwait == 0)
+    {
+      WaitForMessages();
+      // wait for the first reply only,
+      // i.e. in case two replies are posted get the first only.
+      // e.g. when server closes the connection, but posts error message before,
+      // sometime it happens that command (like download) fails because of the error
+      // and does not catch the disconnection. then asynchronous "disconnect reply"
+      // is posted immediately afterwards. leave detection of that to Idle()
+      while (ProcessMessage() && (ReplyToAwait == 0));
+    }
+  }
+  catch(...)
+  {
+    // even if non-fatal error happens, we must process pending message,
+    // so that we "eat" the reply message, so that it gets not mistakenly
+    // associated with future connect
+    if (FTerminal->Active)
+    {
+      DoWaitForReply(ReplyToAwait);
+    }
+    throw;
+  }
+}
+//---------------------------------------------------------------------------
 unsigned int __fastcall TFTPFileSystem::WaitForReply(bool Command)
 {
   assert(FReply == 0);
@@ -1893,17 +1942,7 @@ unsigned int __fastcall TFTPFileSystem::WaitForReply(bool Command)
   try
   {
     unsigned int& ReplyToAwait = (Command ? FCommandReply : FReply);
-    while (ReplyToAwait == 0)
-    {
-      WaitForMessages();
-      // wait for the first reply only,
-      // i.e. in case two replies are posted get the first only.
-      // e.g. when server closes the connection, but posts error message before,
-      // sometime it happens that command (like download) fails because of the error
-      // and does not catch the disconnection. then asynchronous "disconnect reply"
-      // is posted immediately afterwards. leave detection of that to Idle()
-      while (ProcessMessage() && (ReplyToAwait == 0));
-    }
+    DoWaitForReply(ReplyToAwait);
 
     Reply = ReplyToAwait;
   }
@@ -2262,57 +2301,67 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
   else
   {
     TFileTransferData & UserData = *((TFileTransferData *)AUserData);
-    TFileOperationProgressType * OperationProgress = FTerminal->OperationProgress;
-    AnsiString FileName = FileName1;
-    assert(FFileTransferFileName == FileName);
-    TOverwriteMode OverwriteMode = omOverwrite;
-    TOverwriteFileParams FileParams;
-    FileParams.SourceSize = Size2;
-    FileParams.DestSize = Size1;
-    // !!! TODO DST
-    FileParams.SourceTimestamp = UnixToDateTime(Time2, dstmUnix);
-    FileParams.DestTimestamp = UnixToDateTime(Time1, dstmUnix);
-    if ((OperationProgress->Side == osLocal) && !HasTime1)
+    if (UserData.OverwriteResult >= 0)
     {
-      FileParams.DestPrecision = mfMDY;
-    }
-    if ((OperationProgress->Side == osRemote) && !HasTime2)
-    {
-      FileParams.SourcePrecision = mfMDY;
-    }
-
-    if (ConfirmOverwrite(FileName, OverwriteMode, OperationProgress,
-          &FileParams, UserData.Params, UserData.AutoResume))
-    {
-      switch (OverwriteMode)
-      {
-        case omOverwrite:
-          if (FileName != FileName1)
-          {
-            strncpy(FileName1, FileName.c_str(), FileName1Len);
-            FileName1[FileName1Len - 1] = '\0';
-            FFileTransferFileName = FileName1;
-            RequestResult = TFileZillaIntf::FILEEXISTS_RENAME;
-          }
-          else
-          {
-            RequestResult = TFileZillaIntf::FILEEXISTS_OVERWRITE;
-          }
-          break;
-
-        case omResume:
-          RequestResult = TFileZillaIntf::FILEEXISTS_RESUME;
-          break;
-
-        default:
-          assert(false);
-          RequestResult = TFileZillaIntf::FILEEXISTS_OVERWRITE;
-          break;
-      }
+      // on retry, use the same answer as on the first attempt
+      RequestResult = UserData.OverwriteResult;
     }
     else
     {
-      RequestResult = TFileZillaIntf::FILEEXISTS_SKIP;
+      TFileOperationProgressType * OperationProgress = FTerminal->OperationProgress;
+      AnsiString FileName = FileName1;
+      assert(UserData.FileName == FileName);
+      TOverwriteMode OverwriteMode = omOverwrite;
+      TOverwriteFileParams FileParams;
+      FileParams.SourceSize = Size2;
+      FileParams.DestSize = Size1;
+      // !!! TODO DST
+      FileParams.SourceTimestamp = UnixToDateTime(Time2, dstmUnix);
+      FileParams.DestTimestamp = UnixToDateTime(Time1, dstmUnix);
+      if ((OperationProgress->Side == osLocal) && !HasTime1)
+      {
+        FileParams.DestPrecision = mfMDY;
+      }
+      if ((OperationProgress->Side == osRemote) && !HasTime2)
+      {
+        FileParams.SourcePrecision = mfMDY;
+      }
+
+      if (ConfirmOverwrite(FileName, OverwriteMode, OperationProgress,
+            &FileParams, UserData.Params, UserData.AutoResume))
+      {
+        switch (OverwriteMode)
+        {
+          case omOverwrite:
+            if (FileName != FileName1)
+            {
+              strncpy(FileName1, FileName.c_str(), FileName1Len);
+              FileName1[FileName1Len - 1] = '\0';
+              UserData.FileName = FileName1;
+              RequestResult = TFileZillaIntf::FILEEXISTS_RENAME;
+            }
+            else
+            {
+              RequestResult = TFileZillaIntf::FILEEXISTS_OVERWRITE;
+            }
+            break;
+
+          case omResume:
+            RequestResult = TFileZillaIntf::FILEEXISTS_RESUME;
+            break;
+
+          default:
+            assert(false);
+            RequestResult = TFileZillaIntf::FILEEXISTS_OVERWRITE;
+            break;
+        }
+      }
+      else
+      {
+        RequestResult = TFileZillaIntf::FILEEXISTS_SKIP;
+      }
+      // remember the answer for the retries
+      UserData.OverwriteResult = RequestResult;
     }
     return true;
   }
@@ -2348,7 +2397,14 @@ bool __fastcall TFTPFileSystem::HandleListData(const char * Path,
         File->FileName = Entry->Name;
         if (strlen(Entry->Permissions) >= 10)
         {
-          File->Rights->Text = Entry->Permissions + 1;
+          try
+          {
+            File->Rights->Text = Entry->Permissions + 1;
+          }
+          catch(...)
+          {
+            // ignore permissions errors with FTP
+          }
         }
 
         const char * Space = strchr(Entry->OwnerGroup, ' ');
@@ -2413,11 +2469,12 @@ bool __fastcall TFTPFileSystem::HandleListData(const char * Path,
       catch (Exception & E)
       {
         delete File;
-        throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (
+        AnsiString EntryData =
           FORMAT("%s/%s/%s/%s/%d/%d/%d/%d/%d/%d/%d/%d/%d",
             (Entry->Name, Entry->Permissions, Entry->OwnerGroup, IntToStr(Entry->Size),
-             Entry->Dir, Entry->Link, Entry->Year, Entry->Month, Entry->Day,
-             Entry->Hour, Entry->Minute, Entry->HasTime, Entry->HasDate)))));
+             int(Entry->Dir), int(Entry->Link), Entry->Year, Entry->Month, Entry->Day,
+             Entry->Hour, Entry->Minute, int(Entry->HasTime), int(Entry->HasDate)));
+        throw ETerminal(&E, FMTLOAD(LIST_LINE_ERROR, (EntryData)));
       }
 
       FFileList->AddFile(File);

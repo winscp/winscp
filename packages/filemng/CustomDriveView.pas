@@ -86,6 +86,7 @@ type
       Stage: TCustomDrawStage; var PaintImages: Boolean): Boolean; override;
 
     procedure CNNotify(var Msg: TWMNotify); message CN_NOTIFY;
+    procedure CMColorChanged(var Msg: TMessage); message CM_COLORCHANGED;
     procedure WMLButtonDown(var Msg: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMLButtonUp(var Msg: TWMLButtonDown); message WM_LBUTTONUP;
     procedure WMRButtonDown(var Msg: TWMRButtonDown); message WM_RBUTTONDOWN;
@@ -931,6 +932,15 @@ begin
     inherited;
   end;
 end; {CNNotify}
+
+procedure TCustomDriveView.CMColorChanged(var Msg: TMessage);
+begin
+  inherited;
+  if Assigned(Images) then
+    Images.BkColor := Color;
+  if Assigned(StateImages) then
+    StateImages.BkColor := Color;
+end;
 
 procedure TCustomDriveView.WMLButtonDown(var Msg: TWMLButtonDown);
 begin

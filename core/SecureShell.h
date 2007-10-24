@@ -125,8 +125,8 @@ public:
   void __fastcall FromBackend(bool IsStdErr, const char * Data, int Length);
   void __fastcall CWrite(const char * Data, int Length, bool Untrusted);
   const AnsiString & __fastcall GetStdError();
-  void __fastcall VerifyHostKey(const AnsiString Host, int Port,
-    const AnsiString KeyType, const AnsiString KeyStr, const AnsiString Fingerprint);
+  void __fastcall VerifyHostKey(AnsiString Host, int Port,
+    const AnsiString KeyType, AnsiString KeyStr, const AnsiString Fingerprint);
   void __fastcall AskAlg(const AnsiString AlgType, const AnsiString AlgName);
   void __fastcall DisplayBanner(const AnsiString & Banner);
   void __fastcall OldKeyfileWarning();

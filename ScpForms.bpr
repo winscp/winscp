@@ -4,20 +4,20 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpForms.lib"/>
-    <OBJFILES value="forms\InputDlg.obj forms\MessageDlg.obj windows\VCLCommon.obj 
-      forms\About.obj forms\Authenticate.obj forms\Cleanup.obj 
-      forms\ComboInput.obj forms\Console.obj forms\Copy.obj 
-      forms\CopyParams.obj forms\CopyParamCustom.obj 
-      forms\CopyParamPreset.obj forms\CreateDirectory.obj 
-      forms\CustomCommand.obj forms\Editor.obj forms\EditorPreferences.obj 
-      forms\FileSystemInfo.obj forms\FullSynchronize.obj 
-      forms\GeneralSettings.obj forms\Glyphs.obj forms\ImportSessions.obj 
-      forms\Licence.obj forms\LocationProfiles.obj forms\Log.obj 
-      forms\Login.obj forms\LogSettings.obj forms\OpenDirectory.obj 
-      forms\OperationStatus.obj forms\Preferences.obj forms\Progress.obj 
-      forms\Properties.obj forms\Rights.obj forms\RightsExt.obj 
-      forms\SelectMask.obj forms\Symlink.obj forms\Synchronize.obj 
-      forms\SynchronizeChecklist.obj forms\SynchronizeProgress.obj"/>
+    <OBJFILES value="forms\InputDlg.obj forms\MessageDlg.obj
+      windows\VCLCommon.obj forms\About.obj forms\Authenticate.obj
+      forms\Cleanup.obj forms\ComboInput.obj forms\Console.obj forms\Copy.obj
+      forms\CopyParams.obj forms\CopyParamCustom.obj forms\CopyParamPreset.obj
+      forms\CreateDirectory.obj forms\CustomCommand.obj forms\Editor.obj
+      forms\EditorPreferences.obj forms\FileSystemInfo.obj
+      forms\FullSynchronize.obj forms\GeneralSettings.obj forms\Glyphs.obj
+      forms\ImportSessions.obj forms\Licence.obj forms\LocationProfiles.obj
+      forms\Log.obj forms\Login.obj forms\LogSettings.obj
+      forms\OpenDirectory.obj forms\OperationStatus.obj forms\Preferences.obj
+      forms\Progress.obj forms\Properties.obj forms\Rights.obj
+      forms\RightsExt.obj forms\SelectMask.obj forms\Symlink.obj
+      forms\Synchronize.obj forms\SynchronizeChecklist.obj
+      forms\SynchronizeProgress.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Authenticate.dfm forms\Cleanup.dfm 

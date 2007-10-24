@@ -108,6 +108,7 @@ protected:
 	virtual bool __fastcall IsCustomDrawn(Comctrls::TCustomDrawTarget Target, Comctrls::TCustomDrawStage Stage);
 	virtual bool __fastcall CustomDrawItem(Comctrls::TTreeNode* Node, Comctrls::TCustomDrawState State, Comctrls::TCustomDrawStage Stage, bool &PaintImages);
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Msg);
+	HIDESBASE MESSAGE void __fastcall CMColorChanged(Messages::TMessage &Msg);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Msg);
 	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Msg);
 	HIDESBASE MESSAGE void __fastcall WMRButtonDown(Messages::TWMMouse &Msg);

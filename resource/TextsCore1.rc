@@ -157,6 +157,7 @@ BEGIN
   FTP_CREDENTIAL_PROMPT, "Prompting for credentials..."
   FTP_PWD_RESPONSE_ERROR, "Invalid response to PWD command '%s'."
   FTP_UNSUPPORTED, "This version does not support FTP protocol."
+  TRANSFER_ERROR, "Error transferring file '%s'."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT2, "Host has not answered for %d seconds.\n\nWait for another %0:d seconds?"

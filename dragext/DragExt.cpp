@@ -5,7 +5,7 @@
 #define STRICT
 #endif
 //---------------------------------------------------------------------------
-#ifdef MSVC
+#ifdef _MSC_VER
 #include <objbase.h>
 #define snprintf _snprintf
 #endif
@@ -38,7 +38,7 @@ class CShellExtClassFactory : public IClassFactory
 {
 public:
   CShellExtClassFactory();
-  ~CShellExtClassFactory();
+  virtual ~CShellExtClassFactory();
 
   // IUnknown members
   STDMETHODIMP         QueryInterface(REFIID, LPVOID FAR*);
@@ -57,7 +57,7 @@ class CShellExt : public IShellExtInit, ICopyHook
 {
 public:
   CShellExt();
-  ~CShellExt();
+  virtual ~CShellExt();
 
   // IUnknown members
   STDMETHODIMP         QueryInterface(REFIID, LPVOID FAR*);
@@ -294,7 +294,7 @@ bool RegisterServer(bool AllUsers)
     if (RegCreateKey(HKey, ClassID, &HKey) == ERROR_SUCCESS)
     {
       RegSetValueEx(HKey, NULL, 0, REG_SZ,
-        reinterpret_cast<unsigned char*>(DRAG_EXT_NAME), sizeof(DRAG_EXT_NAME));
+        reinterpret_cast<const unsigned char*>(DRAG_EXT_NAME), sizeof(DRAG_EXT_NAME));
 
       if (RegCreateKey(HKey, "InProcServer32", &HKey) == ERROR_SUCCESS)
       {

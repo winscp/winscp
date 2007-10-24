@@ -26,6 +26,7 @@
 #define TranslationMask TranslationDir + "\WinSCP.???"
 #define MainFileSource SourceDir+"\WinSCP.exe"
 #define ShellExtFileSource SourceDir+"\DragExt.dll"
+#define ShellExt64FileSource SourceDir+"\DragExt64.dll"
 #define ConsoleFileSource SourceDir+"\WinSCP.com"
 
 #define Major
@@ -232,7 +233,12 @@ Source: "licence"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
-  Flags: ignoreversion regserver restartreplace restartreplace uninsrestartdelete
+  Flags: ignoreversion regserver restartreplace uninsrestartdelete; \
+  Check: not IsWin64
+Source: "{#ShellExt64FileSource}"; DestDir: "{app}"; \
+  Components: shellext; \
+  Flags: ignoreversion regserver restartreplace uninsrestartdelete; \
+  Check: IsWin64
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
 Source: "{#PuttySourceDir}\putty.hlp"; DestDir: "{app}\PuTTY"; \

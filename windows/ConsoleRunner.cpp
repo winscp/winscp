@@ -645,7 +645,7 @@ public:
 
 protected:
   bool __fastcall Input(AnsiString & Str, bool Echo, unsigned int Timer);
-  inline void __fastcall Print(const AnsiString & Str);
+  inline void __fastcall Print(const AnsiString & Str, bool FromBeginning = false);
   inline void __fastcall PrintLine(const AnsiString & Str);
   inline void __fastcall PrintMessage(const AnsiString & Str);
   void __fastcall UpdateTitle();
@@ -717,16 +717,16 @@ void __fastcall TConsoleRunner::ScriptInput(TScript * /*Script*/,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::Print(const AnsiString & Str)
+void __fastcall TConsoleRunner::Print(const AnsiString & Str, bool FromBeginning)
 {
   if (FLastProgressLen > 0)
   {
-    FConsole->Print("\n" + Str);
+    FConsole->Print("\n" + Str, FromBeginning);
     FLastProgressLen = 0;
   }
   else
   {
-    FConsole->Print(Str);
+    FConsole->Print(Str, FromBeginning);
   }
 }
 //---------------------------------------------------------------------------
@@ -826,12 +826,21 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
 {
   AnsiString AQuery = Query;
   unsigned int Timer = 0;
-  Answer = 0;
+  unsigned int Timeout = 0;
+  int TimeoutA = 0;
 
   if (Params != NULL)
   {
+    if (Params->Timeout > 0)
+    {
+      assert(Params->Timer == 0);
+      Timeout = Params->Timeout;
+      TimeoutA = Params->TimeoutAnswer;
+    }
+
     if (Params->Timer > 0)
     {
+      assert(Params->Timeout == 0);
       Timer = Params->Timer;
       if (Params->TimerAnswers > 0)
       {
@@ -939,6 +948,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   int AbortIndex;
   int ContinueA = ContinueAnswer(Answers);
   int ContinueIndex;
+  int TimeoutIndex = 0;
 
   for (int Index = 0; Index < ButtonCount; Index++)
   {
@@ -992,86 +1002,128 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       ContinueIndex = Index + 1;
     }
+    if (Buttons[Index] == ContinueA)
+    {
+      ContinueIndex = Index + 1;
+    }
+    if (Buttons[Index] == TimeoutA)
+    {
+      TimeoutIndex = Index + 1;
+    }
   }
 
   assert(Accels.Pos(' ') == 0);
 
-  AnsiString Output;
-  for (int i = 0; i < ButtonCount; i++)
-  {
-    if (i > 0)
-    {
-      Output += ", ";
-    }
+  bool Timeouting = (Timeout > 0);
 
-    AnsiString Caption = Captions[i];
-    int P = Caption.Pos('&');
-    assert(P >= 0);
-
-    Caption[P] = '(';
-    Caption.Insert(")", P + 2);
-    Output += Caption;
-  }
-  Output += ": ";
-  Print(Output);
-
-  int AnswerIndex;
-  if (FScript->Batch == TScript::BatchContinue)
+  do
   {
-    AnswerIndex = ContinueIndex;
-  }
-  else if (FScript->Batch != TScript::BatchOff)
-  {
-    AnswerIndex = AbortIndex;
-  }
-  else
-  {
+    Answer = 0;
+    int AnswerIndex;
     bool Retry;
+
     do
     {
       Retry = false;
-      AnswerIndex = FConsole->Choice(Accels, CancelIndex, -1, -2, Timer);
-      if (AnswerIndex == -1)
+
+      AnsiString Output;
+      for (int i = 0; i < ButtonCount; i++)
       {
-        NotifyAbort();
+        if (i > 0)
+        {
+          Output += ", ";
+        }
+
+        AnsiString Caption = Captions[i];
+        int P = Caption.Pos('&');
+        assert(P >= 0);
+
+        Caption[P] = '(';
+        Caption.Insert(")", P + 2);
+
+        if (i + 1 == TimeoutIndex)
+        {
+          assert(Timeouting);
+          Caption = FMTLOAD(TIMEOUT_BUTTON, (Caption, int(Timeout / 1000)));
+        }
+
+        Output += Caption;
+      }
+      Output += ": ";
+
+      // note that length of string may decrease over time due to number of
+      // seconds length, but supposing it decreases by one character at time
+      // at most, we do not mind as the prompt is terminated with space
+      Print(Output, true);
+
+      if (!Timeouting && (FScript->Batch == TScript::BatchContinue))
+      {
+        AnswerIndex = ContinueIndex;
+      }
+      else if (!Timeouting && (FScript->Batch != TScript::BatchOff))
+      {
         AnswerIndex = AbortIndex;
       }
-      else if (AnswerIndex == -2)
+      else if (Timeouting && (Timeout < 1000))
       {
-        assert((Params != NULL) && (Params->TimerEvent != NULL));
-        if ((Params != NULL) && (Params->TimerEvent != NULL))
+        AnswerIndex = TimeoutIndex;
+      }
+      else
+      {
+        AnswerIndex = FConsole->Choice(Accels, CancelIndex, -1, -2,
+          (Timeouting ? 1000 : Timer));
+        if (AnswerIndex == -1)
         {
-          unsigned int AAnswer = 0;
-          Params->TimerEvent(AAnswer);
-          if (AAnswer != 0)
+          NotifyAbort();
+          AnswerIndex = AbortIndex;
+        }
+        else if (AnswerIndex == -2)
+        {
+          if (Timeouting)
           {
-            Answer = AAnswer;
+            assert(Timeout >= 1000);
+            Timeout -= 1000;
+            Retry = true;
           }
           else
           {
-            Retry = true;
+            assert((Params != NULL) && (Params->TimerEvent != NULL));
+            if ((Params != NULL) && (Params->TimerEvent != NULL))
+            {
+              unsigned int AAnswer = 0;
+              Params->TimerEvent(AAnswer);
+              if (AAnswer != 0)
+              {
+                Answer = AAnswer;
+              }
+              else
+              {
+                Retry = true;
+              }
+            }
           }
         }
       }
     }
     while (Retry);
-  }
 
-  if (Answer == 0)
-  {
-    assert((AnswerIndex >= 1) && (AnswerIndex <= Accels.Length()));
-    AnsiString AnswerCaption = Captions[AnswerIndex - 1];
-    int P = AnswerCaption.Pos("&");
-    assert(P >= 0);
-    AnswerCaption.Delete(P, 1);
-    PrintLine(AnswerCaption);
+    if (Answer == 0)
+    {
+      assert((AnswerIndex >= 1) && (AnswerIndex <= Accels.Length()));
+      AnsiString AnswerCaption = Captions[AnswerIndex - 1];
+      int P = AnswerCaption.Pos("&");
+      assert(P >= 0);
+      AnswerCaption.Delete(P, 1);
+      PrintLine(AnswerCaption);
 
-    Answer = Buttons[AnswerIndex - 1];
+      Answer = Buttons[AnswerIndex - 1];
+    }
+    else
+    {
+      PrintLine("");
+    }
   }
-  else
-  {
-    PrintLine("");
-  }
+  while (Answer == 0);
 
   if (Answer == qaAbort)
   {

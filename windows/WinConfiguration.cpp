@@ -508,7 +508,7 @@ void __fastcall TWinConfiguration::DefaultLocalized()
   if (FCustomCommandsDefaults)
   {
     FCustomCommands->Clear();
-    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_EXECUTE)] = "\"!\"";
+    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_EXECUTE)] = "\"./!\"";
     FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_EXECUTE)] = 0;
     FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TOUCH)] = "touch \"!\"";
     FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TOUCH)] = ccApplyToDirectories | ccRecursive;
@@ -954,12 +954,20 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
 {
   if (FDDExtInstalled < 0)
   {
-    void* DragExtRef;
-    bool Result;
-    Result = (CoCreateInstance(CLSID_ShellExtension, NULL,
-      CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IUnknown,
-      &DragExtRef) == S_OK);
-    FDDExtInstalled = (Result ? 1 : 0);
+    if (IsWin64())
+    {
+      // temporarily consider dragext always present of 64-bit system
+      FDDExtInstalled = 1;
+    }
+    else
+    {
+      void* DragExtRef;
+      bool Result;
+      Result = (CoCreateInstance(CLSID_ShellExtension, NULL,
+        CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IUnknown,
+        &DragExtRef) == S_OK);
+      FDDExtInstalled = (Result ? 1 : 0);
+    }
   }
   return (FDDExtInstalled > 0);
 }

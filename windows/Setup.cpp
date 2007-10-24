@@ -569,11 +569,9 @@ void __fastcall TemporaryDirectoryCleanup()
 
     if (Continue)
     {
-      TStrings * F = Folders;
-      Folders = NULL;
       try
       {
-        WinConfiguration->CleanupTemporaryFolders(F);
+        WinConfiguration->CleanupTemporaryFolders(Folders);
       }
       catch (Exception &E)
       {

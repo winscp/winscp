@@ -4,16 +4,16 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\DriveDir_B5.bpl"/>
-    <OBJFILES value="DriveDir_B5.obj &quot;filemng\DirView.obj&quot; &quot;filemng\DriveView.obj&quot; 
-      &quot;filemng\FileOperator.obj&quot; &quot;filemng\IEComboBox.obj&quot; &quot;filemng\BaseUtils.obj&quot; 
-      &quot;filemng\FileChanges.obj&quot; &quot;filemng\MaskSearch.obj&quot; &quot;filemng\IEDriveInfo.obj&quot; 
-      &quot;filemng\ShellDialogs.obj&quot; &quot;filemng\DirViewColProperties.obj&quot; 
-      &quot;filemng\CustomDirView.obj&quot; &quot;filemng\CustomUnixDirView.obj&quot; 
-      &quot;filemng\UnixDirViewColProperties.obj&quot; &quot;filemng\CustomPathComboBox.obj&quot; 
-      &quot;filemng\IEPathComboBox.obj&quot; &quot;filemng\ListExt.obj&quot; &quot;filemng\CustomDriveView.obj&quot;"/>
-    <RESFILES value="DriveDir_B5.res &quot;filemng\DirView.dcr&quot; 
-      &quot;filemng\DriveView.dcr&quot; &quot;filemng\FileOperator.dcr&quot; 
-      &quot;filemng\IEComboBox.dcr&quot;"/>
+    <OBJFILES value="DriveDir_B5.obj filemng\DirView.obj
+      filemng\DriveView.obj filemng\FileOperator.obj filemng\IEComboBox.obj
+      filemng\BaseUtils.obj filemng\FileChanges.obj filemng\MaskSearch.obj
+      filemng\IEDriveInfo.obj filemng\ShellDialogs.obj
+      filemng\DirViewColProperties.obj filemng\CustomDirView.obj
+      filemng\CustomUnixDirView.obj filemng\UnixDirViewColProperties.obj
+      filemng\CustomPathComboBox.obj filemng\IEPathComboBox.obj
+      filemng\ListExt.obj filemng\CustomDriveView.obj"/>
+    <RESFILES value="filemng\DirView.dcr filemng\DriveView.dcr
+      filemng\FileOperator.dcr filemng\IEComboBox.dcr"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
@@ -22,7 +22,7 @@
     <PACKAGES value="DragDrop_B5.bpi Moje_B5.bpi rtl.bpi vcl.bpi
       vclx.bpi"/>
     <PATHCPP value=".;"/>
-    <PATHPAS value=".;&quot;filemng&quot;"/>
+    <PATHPAS value=".;filemng"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
@@ -31,8 +31,8 @@
     <USERDEFINES value="OLD_DND;NORTON_LIKE"/>
     <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="DriveDir_B5.cpp"/>
-    <INCLUDEPATH value="&quot;filemng&quot;;&quot;dragndrop&quot;;&quot;my&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\lib\;&quot;filemng&quot;;&quot;dragndrop&quot;;&quot;my&quot;;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
+    <INCLUDEPATH value="filemng;dragndrop;my;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;filemng;dragndrop;my;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
     <WARNINGS value="-wuse -w-par"/>
     <OTHERFILES value=""/>
   </MACROS>
@@ -41,7 +41,7 @@
     <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
-    <LFLAGS value="-D&quot;filemng&quot; -aa -Tpp -GD -s -Gn -Gl -Gi -M"/>
+    <LFLAGS value="-Dfilemng -aa -Tpp -GD -s -Gn -Gl -Gi -M"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -52,7 +52,6 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="DriveDir_B5.cpp" FORMNAME="" UNITNAME="DriveDir_B5" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="DriveDir_B5.res" FORMNAME="" UNITNAME="DriveDir_B5" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\DirView.pas" FORMNAME="" UNITNAME="DirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\DirView.dcr" FORMNAME="" UNITNAME="DirView" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\DriveView.pas" FORMNAME="" UNITNAME="DriveView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

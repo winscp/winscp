@@ -4,8 +4,8 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\DiscMon_B5.bpl"/>
-    <OBJFILES value="DiscMon_B5.obj &quot;my\CompThread.obj&quot; &quot;my\DiscMon.obj&quot;"/>
-    <RESFILES value="DiscMon_B5.res &quot;my\DiscMon.dcr&quot;"/>
+    <OBJFILES value="DiscMon_B5.obj my\CompThread.obj my\DiscMon.obj"/>
+    <RESFILES value="my\DiscMon.dcr"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
@@ -13,7 +13,7 @@
     <SPARELIBS value="rtl.lib vcl.lib"/>
     <PACKAGES value="rtl.bpi vcl.bpi vclx.bpi"/>
     <PATHCPP value=".;"/>
-    <PATHPAS value=".;&quot;my&quot;"/>
+    <PATHPAS value=".;my"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
@@ -22,8 +22,8 @@
     <USERDEFINES value=""/>
     <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="DiscMon_B5.cpp"/>
-    <INCLUDEPATH value="&quot;my&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\lib\;&quot;my&quot;;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
+    <INCLUDEPATH value="my;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;my;$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\Source\ToolsAPI"/>
     <WARNINGS value="-wuse -w-par"/>
     <OTHERFILES value=""/>
   </MACROS>
@@ -43,7 +43,6 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="DiscMon_B5.cpp" FORMNAME="" UNITNAME="DiscMon_B5" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="DiscMon_B5.res" FORMNAME="" UNITNAME="DiscMon_B5.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>

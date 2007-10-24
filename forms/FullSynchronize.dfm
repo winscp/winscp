@@ -160,7 +160,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
     Top = 396
     Width = 129
     Height = 25
-    Anchors = [akRight, akBottom]
+    Anchors = [akLeft, akBottom]
     Caption = 'Transfer settin&gs...'
     TabOrder = 7
     OnClick = TransferSettingsButtonClick

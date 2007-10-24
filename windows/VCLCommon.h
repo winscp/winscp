@@ -39,5 +39,21 @@ void __fastcall UpdateFormPosition(TForm * Form, TPosition Position);
 void __fastcall ResizeForm(TForm * Form, int Width, int Height);
 void __fastcall SetCorrectFormParent(TForm * Form);
 void __fastcall InvokeHelp(TWinControl * Control);
+TForm * __fastcall _SafeFormValidate(TForm * Form, int & Retry);
+template<class FormType>
+FormType * __fastcall SafeFormCreate(TComponent * Owner)
+{
+  // FIX: Due to some bug in Theme Manager, certain forms randomly
+  // fails in call to ShowModal(), hence repeat the call until it succeeds.
+  int Retry = 0;
+  FormType * Form;
+  do
+  {
+    Form = dynamic_cast<FormType *>(_SafeFormValidate(new FormType(Owner), Retry));
+  }
+  while (Form == NULL);
+
+  return Form;
+}
 //---------------------------------------------------------------------------
 #endif  // VCLCommonH

@@ -58,47 +58,38 @@ void __fastcall TFileBuffer::SetMemory(TMemoryStream * value)
 //---------------------------------------------------------------------------
 DWORD __fastcall TFileBuffer::ReadStream(TStream * Stream, const DWORD Len, bool ForceLen)
 {
-  Size = Position + Len;
-  // C++5
-  // FMemory->SetSize(FMemory->Position + Len);
   DWORD Result;
-  if (ForceLen)
-  {
-    Stream->ReadBuffer(Data + Position, Len);
-    Result = Len;
-  }
-  else
-  {
-    Result = Stream->Read(Data + Position, Len);
-  }
-  if (Result != Len)
-  {
-    Size = Size - Len + Result;
-  }
-  FMemory->Seek(Len, soFromCurrent);
-  return Result;
-}
-//---------------------------------------------------------------------------
-DWORD __fastcall TFileBuffer::ReadFile(const HANDLE File, const DWORD Len, bool ForceLen)
-{
-  DWORD Result;
-  TStream *Stream = NULL;
   try
   {
-    Stream = new THandleStream((THandle)File);
-    Result = ReadStream(Stream, Len, ForceLen);
+    Size = Position + Len;
+    // C++5
+    // FMemory->SetSize(FMemory->Position + Len);
+    if (ForceLen)
+    {
+      Stream->ReadBuffer(Data + Position, Len);
+      Result = Len;
+    }
+    else
+    {
+      Result = Stream->Read(Data + Position, Len);
+    }
+    if (Result != Len)
+    {
+      Size = Size - Len + Result;
+    }
+    FMemory->Seek(Len, soFromCurrent);
   }
-  __finally
+  catch(EReadError &)
   {
-    delete Stream;
+    RaiseLastOSError();
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-DWORD __fastcall TFileBuffer::LoadFile(const HANDLE File, const DWORD Len, bool ForceLen)
+DWORD __fastcall TFileBuffer::LoadStream(TStream * Stream, const DWORD Len, bool ForceLen)
 {
   FMemory->Seek(0, soFromBeginning);
-  return ReadFile(File, Len, ForceLen);
+  return ReadStream(Stream, Len, ForceLen);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
@@ -204,20 +195,39 @@ void __fastcall TFileBuffer::Delete(int Index, int Len)
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::WriteToStream(TStream * Stream, const DWORD Len)
 {
-  Stream->WriteBuffer(Data + Position, Len);
-  FMemory->Seek(Len, soFromCurrent);
-}
-//---------------------------------------------------------------------------
-void __fastcall TFileBuffer::WriteToFile(const HANDLE File, const DWORD Len)
-{
-  TStream *Stream = NULL;
   try
   {
-    Stream = new THandleStream((THandle)File);
-    WriteToStream(Stream, Len);
+    Stream->WriteBuffer(Data + Position, Len);
+    FMemory->Seek(Len, soFromCurrent);
   }
-  __finally
+  catch(EWriteError &)
   {
-    delete Stream;
+    RaiseLastOSError();
   }
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TSafeHandleStream::TSafeHandleStream(int AHandle) :
+  THandleStream(AHandle)
+{
+}
+//---------------------------------------------------------------------------
+int __fastcall TSafeHandleStream::Read(void * Buffer, int Count)
+{
+  int Result = FileRead(FHandle, Buffer, Count);
+  if (Result == -1)
+  {
+    RaiseLastOSError();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TSafeHandleStream::Write(const void * Buffer, int Count)
+{
+  int Result = FileWrite(FHandle, Buffer, Count);
+  if (Result == -1)
+  {
+    RaiseLastOSError();
+  }
+  return Result;
+};

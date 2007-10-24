@@ -3301,7 +3301,11 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 						res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeWrite|CFile::modeCreate|CFile::shareDenyWrite);
 				}
 				else
+#ifdef MPEXT
+					res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyNone);
+#else
 					res = m_pDataFile->Open(pData->transferfile.localfile,CFile::modeRead|CFile::shareDenyWrite);
+#endif
 				if (!res)
 				{
 					//Error opening the file

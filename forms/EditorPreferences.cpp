@@ -19,9 +19,11 @@ bool __fastcall DoEditorPreferencesDialog(TEditorPreferences * Editor,
   TEditorPreferencesMode Mode)
 {
   bool Result;
-  TEditorPreferencesDialog * Dialog = new TEditorPreferencesDialog(Application, Mode);
+
+  TEditorPreferencesDialog * Dialog = SafeFormCreate<TEditorPreferencesDialog>(Application);
   try
   {
+    Dialog->Init(Mode);
     Result = Dialog->Execute(Editor);
   }
   __finally
@@ -32,16 +34,19 @@ bool __fastcall DoEditorPreferencesDialog(TEditorPreferences * Editor,
 }
 //---------------------------------------------------------------------------
 __fastcall TEditorPreferencesDialog::TEditorPreferencesDialog(
-  TComponent * Owner, TEditorPreferencesMode Mode) :
+  TComponent * Owner) :
   TForm(Owner)
 {
   UseSystemSettings(this);
 
+  InstallPathWordBreakProc(ExternalEditorEdit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorPreferencesDialog::Init(TEditorPreferencesMode Mode)
+{
   FMode = Mode;
 
   Caption = LoadStr(Mode == epmEdit ? EDITOR_EDIT : EDITOR_ADD);
-
-  InstallPathWordBreakProc(ExternalEditorEdit);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TEditorPreferencesDialog::Execute(TEditorPreferences * Editor)

@@ -1,0 +1,28 @@
+1 VERSIONINFO
+FILEVERSION 1,1,6,78
+PRODUCTVERSION 1,1,6,78
+FILEOS 0x4
+FILETYPE 0x2
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904E4"
+        {
+            VALUE "CompanyName", "Martin Prikryl\0"
+            VALUE "FileDescription", "Drag&Drop shell extension for WinSCP\0"
+            VALUE "FileVersion", "1.1.6.78\0"
+            VALUE "InternalName", "dragext\0"
+            VALUE "LegalCopyright", "(c) 2000-2007 Martin Prikryl\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "dragext.dll\0"
+            VALUE "ProductName", "WinSCP\0"
+            VALUE "ProductVersion", "4.0.5.0\0"
+            VALUE "WWW", "http://winscp.net/\0"
+        }
+    }
+
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x0409 0x04E4
+    }
+}

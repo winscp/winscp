@@ -697,7 +697,15 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     Rights->Text = Line.SubString(1, 9);
     Line.Delete(1, 9);
     // Rights column maybe followed by '+' sign, we ignore it
-    if (!Line.IsEmpty() && (Line[1] == '+')) Line.Delete(1, 1);
+    // (On MacOS, there may be a space in between)
+    if (!Line.IsEmpty() && (Line[1] == '+'))
+    {
+      Line.Delete(1, 1);
+    }
+    else if ((Line.Length() >= 2) && (Line[1] == ' ') && (Line[2] == '+'))
+    {
+      Line.Delete(1, 2);
+    }
     Line = Line.TrimLeft();
 
     GETCOL;

@@ -165,6 +165,7 @@ static int get_line(void * frontend, const char * prompt, char * str,
 void logevent(void * frontend, const char * string)
 {
   // Frontend maybe NULL here
+  // (one of the examples is indirect call from ssh_gssapi_init from HasGSSAPI)
   if (frontend != NULL)
   {
     ((TSecureShell *)frontend)->PuttyLogEvent(string);
@@ -565,5 +566,15 @@ AnsiString __fastcall EncodeUTF(const WideString Source)
 __int64 __fastcall ParseSize(AnsiString SizeStr)
 {
   return parse_blocksize(SizeStr.c_str());
+}
+//---------------------------------------------------------------------------
+bool __fastcall HasGSSAPI()
+{
+  static int has = -1;
+  if (has < 0)
+  {
+    has = (has_gssapi_ssh() ? 1 : 0);
+  }
+  return (has > 0);
 }
 //---------------------------------------------------------------------------

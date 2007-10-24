@@ -32,7 +32,7 @@
     <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zd"/>
-    <LFLAGS value="-D&quot;&quot; -ap -Tpe -x -Gn"/>
+    <LFLAGS value="-D -ap -Tpe -x -Gn"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -50,34 +50,6 @@
   </BUILDTOOLS>
 
   <IDEOPTIONS>
-[Version Info]
-IncludeVerInfo=1
-AutoIncBuild=1
-MajorVer=2
-MinorVer=0
-Release=0
-Build=76
-Debug=0
-PreRelease=0
-Special=0
-Private=0
-DLL=0
-Locale=1033
-CodePage=1252
-
-[Version Info Keys]
-CompanyName=Martin Prikryl
-FileDescription=Console interface for WinSCP
-FileVersion=2.0.0.76
-InternalName=console
-LegalCopyright=(c) 2004-2007 Martin Prikryl
-LegalTrademarks=
-OriginalFilename=winscp.com
-ProductName=WinSCP
-ProductVersion=4.0.4.0
-Comments=
-WWW=http://winscp.net/
-
 [Compiler]
 ShowInfoMsgs=0
 LinkDebugVcl=0

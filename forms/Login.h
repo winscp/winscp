@@ -268,6 +268,7 @@ __published:
   TLabel *InsecureLabel;
   TGroupBox *ConnectionGroup;
   TCheckBox *FtpPasvModeCheck;
+  TAction *ShellIconSessionAction;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionListViewSelectItem(TObject *Sender,
@@ -301,7 +302,6 @@ __published:
   void __fastcall DesktopIconActionExecute(TObject *Sender);
   void __fastcall SessionListViewCustomDrawItem(TCustomListView *Sender,
           TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
-  void __fastcall ShellIconsButtonClick(TObject *Sender);
   void __fastcall SendToHookActionExecute(TObject *Sender);
   void __fastcall CheckForUpdatesActionExecute(TObject *Sender);
   void __fastcall LanguagesButtonClick(TObject *Sender);
@@ -330,6 +330,7 @@ __published:
   void __fastcall TransferProtocolComboChange(TObject *Sender);
   void __fastcall NavigationTreeCollapsing(TObject *Sender,
           TTreeNode *Node, bool &AllowCollapse);
+  void __fastcall ShellIconSessionActionExecute(TObject *Sender);
 
 private:
   int NoUpdate;

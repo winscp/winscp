@@ -1284,10 +1284,15 @@ public:
   TSFTPUploadQueue(TSFTPFileSystem * AFileSystem) :
     TSFTPAsynchronousQueue(AFileSystem)
   {
-    FFile = NULL;
+    FStream = NULL;
     OperationProgress = NULL;
     FLastBlockSize = 0;
     FEnd = false;
+  }
+
+  virtual __fastcall ~TSFTPUploadQueue()
+  {
+    delete FStream;
   }
 
   bool __fastcall Init(const AnsiString AFileName,
@@ -1295,7 +1300,7 @@ public:
     const AnsiString AHandle, __int64 ATransfered)
   {
     FFileName = AFileName;
-    FFile = AFile;
+    FStream = new TSafeHandleStream((THandle)AFile);
     OperationProgress = AOperationProgress;
     FHandle = AHandle;
     FTransfered = ATransfered;
@@ -1316,7 +1321,7 @@ protected:
     if (Result)
     {
       FILE_OPERATION_LOOP(FMTLOAD(READ_ERROR, (FFileName)),
-        BlockBuf.LoadFile(FFile, BlockSize, false);
+        BlockBuf.LoadStream(FStream, BlockSize, false);
       );
 
       FEnd = (BlockBuf.Size == 0);
@@ -1377,7 +1382,7 @@ protected:
   }
 
 private:
-  HANDLE FFile;
+  TStream * FStream;
   TFileOperationProgressType * OperationProgress;
   AnsiString FFileName;
   unsigned long FLastBlockSize;
@@ -3556,7 +3561,10 @@ void __fastcall TSFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
       catch(EScpSkipFile & E)
       {
         SUSPEND_OPERATION (
-          if (!FTerminal->HandleException(&E)) throw;
+          if (!FTerminal->HandleException(&E))
+          {
+            throw;
+          };
         );
       }
     }
@@ -3858,7 +3866,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         AnsiString((OperationProgress->AsciiTransfer ? "Ascii" : "Binary")) +
           " transfer mode selected.");
 
-      // should we check for interupted transfer?
+      // should we check for interrupted transfer?
       ResumeAllowed = !OperationProgress->AsciiTransfer &&
         CopyParam->AllowResume(OperationProgress->LocalSize) &&
         IsCapable(fcRename);
@@ -3884,55 +3892,74 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
             FileParams.DestSize = OpenParams.DestFileSize;
             FileParams.DestTimestamp = File->Modification;
             DestRights = *File->Rights;
+            // if destination file is symlink, never do resumable transfer,
+            // as it would delete the symlink.
+            // also bit of heuristics to detect symlink on SFTP-3 and older
+            // (which does not indicate symlink in SSH_FXP_ATTRS).
+            // if file has all permissions and is small, then it is likely symlink.
+            // also it is not likely that such a small file (if it is not symlink)
+            // gets overwritten by large file (that would trigger resumable transfer).
+            if (File->IsSymLink ||
+                ((FVersion < 4) &&
+                 ((*File->Rights & TRights::rfAll) == TRights::rfAll) &&
+                 (File->Size < 100)))
+            {
+              ResumeAllowed = false;
+              OperationProgress->SetResumeStatus(rsDisabled);
+            }
+
             delete File;
             File = NULL;
           }
 
-          FTerminal->LogEvent("Checking existence of partially transfered file.");
-          if (RemoteFileExists(DestPartinalFullName, &File))
+          if (ResumeAllowed)
           {
-            ResumeOffset = File->Size;
-            delete File;
-            File = NULL;
+            FTerminal->LogEvent("Checking existence of partially transfered file.");
+            if (RemoteFileExists(DestPartinalFullName, &File))
+            {
+              ResumeOffset = File->Size;
+              delete File;
+              File = NULL;
 
-            bool PartialBiggerThanSource = (ResumeOffset > OperationProgress->LocalSize);
-            if (FLAGCLEAR(Params, cpNoConfirmation))
-            {
-              ResumeTransfer = SFTPConfirmResume(DestFileName,
-                PartialBiggerThanSource, OperationProgress);
-            }
-            else
-            {
-              ResumeTransfer = !PartialBiggerThanSource;
-            }
-
-            if (!ResumeTransfer)
-            {
-              DeleteFile(DestPartinalFullName);
-            }
-            else
-            {
-              FTerminal->LogEvent("Resuming file transfer.");
-            }
-          }
-          else
-          {
-            // partial upload file does not exists, check for full file
-            if (DestFileExists &&
-                (FLAGSET(Params, cpNewerOnly) ||
-                 (FTerminal->Configuration->ConfirmOverwriting &&
-                  !OperationProgress->YesToAll && FLAGCLEAR(Params, cpNoConfirmation))))
-            {
-              AnsiString PrevDestFileName = DestFileName;
-              SFTPConfirmOverwrite(DestFileName,
-                OperationProgress, OpenParams.OverwriteMode, &FileParams);
-              if (PrevDestFileName != DestFileName)
+              bool PartialBiggerThanSource = (ResumeOffset > OperationProgress->LocalSize);
+              if (FLAGCLEAR(Params, cpNoConfirmation))
               {
-                // update paths in case user changes the file name
-                DestFullName = LocalCanonify(TargetDir + DestFileName);
-                DestPartinalFullName = DestFullName + FTerminal->Configuration->PartialExt;
-                FTerminal->LogEvent("Checking existence of new file.");
-                DestFileExists = RemoteFileExists(DestFullName, NULL);
+                ResumeTransfer = SFTPConfirmResume(DestFileName,
+                  PartialBiggerThanSource, OperationProgress);
+              }
+              else
+              {
+                ResumeTransfer = !PartialBiggerThanSource;
+              }
+
+              if (!ResumeTransfer)
+              {
+                DeleteFile(DestPartinalFullName);
+              }
+              else
+              {
+                FTerminal->LogEvent("Resuming file transfer.");
+              }
+            }
+            else
+            {
+              // partial upload file does not exists, check for full file
+              if (DestFileExists &&
+                  (FLAGSET(Params, cpNewerOnly) ||
+                   (FTerminal->Configuration->ConfirmOverwriting &&
+                    !OperationProgress->YesToAll && FLAGCLEAR(Params, cpNoConfirmation))))
+              {
+                AnsiString PrevDestFileName = DestFileName;
+                SFTPConfirmOverwrite(DestFileName,
+                  OperationProgress, OpenParams.OverwriteMode, &FileParams);
+                if (PrevDestFileName != DestFileName)
+                {
+                  // update paths in case user changes the file name
+                  DestFullName = LocalCanonify(TargetDir + DestFileName);
+                  DestPartinalFullName = DestFullName + FTerminal->Configuration->PartialExt;
+                  FTerminal->LogEvent("Checking existence of new file.");
+                  DestFileExists = RemoteFileExists(DestFullName, NULL);
+                }
               }
             }
           }
@@ -4785,7 +4812,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
           SSH_FILEXFER_ATTR_MODIFYTIME);
       }
 
-      FileStream = new THandleStream((THandle)LocalHandle);
+      FileStream = new TSafeHandleStream((THandle)LocalHandle);
 
       // at end of this block queue is disposed
       {
@@ -4901,14 +4928,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
             }
 
             FILE_OPERATION_LOOP (FMTLOAD(WRITE_ERROR, (LocalFileName)),
-              try
-              {
-                BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
-              }
-              catch(...)
-              {
-                RaiseLastOSError();
-              }
+              BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
             );
 
             OperationProgress->AddLocalyUsed(BlockBuf.Size);

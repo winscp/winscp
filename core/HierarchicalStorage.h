@@ -74,6 +74,9 @@ public:
   __fastcall TRegistryStorage(const AnsiString AStorage, HKEY ARootKey);
   __fastcall TRegistryStorage(const AnsiString AStorage);
   virtual __fastcall ~TRegistryStorage();
+
+  bool __fastcall Copy(TRegistryStorage * Storage);
+
   virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate);
   virtual bool __fastcall CreateSubKey(const AnsiString SubKey);
   virtual void __fastcall CloseSubKey();
@@ -150,7 +153,7 @@ public:
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings);
 
 private:
-  TIniFile * FIniFile;
+  TCustomIniFile * FIniFile;
   AnsiString __fastcall GetCurrentSection();
 protected:
   __property AnsiString CurrentSection  = { read=GetCurrentSection };

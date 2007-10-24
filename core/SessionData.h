@@ -362,6 +362,8 @@ public:
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
   __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
   __property AnsiString StorageKey = { read = GetStorageKey };
+  __property AnsiString OrigHostName = { read = FOrigHostName };
+  __property int OrigPortNumber = { read = FOrigPortNumber };
 };
 //---------------------------------------------------------------------------
 class TStoredSessionList : public TNamedObjectList

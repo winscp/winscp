@@ -13,6 +13,7 @@ class TCriticalSection;
 class TMessageQueue;
 class TOverwriteFileParams;
 struct TListDataEntry;
+struct TFileTransferData;
 //---------------------------------------------------------------------------
 class TFTPFileSystem : public TCustomFileSystem
 {
@@ -103,6 +104,7 @@ protected:
     TStrings ** Response = NULL);
   void __fastcall ResetReply();
   void __fastcall HandleReplyStatus(const char * AStatus);
+  void __fastcall DoWaitForReply(unsigned int& ReplyToAwait);
 
   bool __fastcall HandleStatus(const char * Status, int Type);
   bool __fastcall HandleAsynchRequestOverwrite(
@@ -149,6 +151,10 @@ protected:
   void __fastcall ResetCaches();
   void __fastcall CaptureOutput(const AnsiString & Str);
   void __fastcall DoReadDirectory(TRemoteFileList * FileList);
+  void __fastcall FileTransfer(const AnsiString & FileName, const AnsiString & LocalFile,
+    const AnsiString & RemoteFile, const AnsiString & RemotePath, bool Get,
+    __int64 Size, int Type, TFileTransferData & UserData,
+    TFileOperationProgressType * OperationProgress);
 
   static bool __fastcall Unquote(AnsiString & Str);
 
@@ -189,7 +195,6 @@ private:
   enum { ftaNone, ftaSkip, ftaCancel } FFileTransferAbort;
   bool FIgnoreFileList;
   bool FFileTransferCancelled;
-  AnsiString FFileTransferFileName;
   __int64 FFileTransferResumed;
   bool FFileTransferPreserveTime;
   bool FAwaitingProgress;

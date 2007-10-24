@@ -4,15 +4,15 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\ScpCore.lib"/>
-    <OBJFILES value="core\Bookmarks.obj core\Common.obj core\Configuration.obj 
-      core\CopyParam.obj core\CoreMain.obj core\Exceptions.obj 
-      core\FileBuffer.obj core\FileInfo.obj core\FileMasks.obj 
-      core\FileOperationProgress.obj core\FileSystems.obj 
-      core\FtpFileSystem.obj core\HierarchicalStorage.obj 
-      core\NamedObjs.obj core\PuttyIntf.obj core\Queue.obj 
-      core\RemoteFiles.obj core\ScpFileSystem.obj core\Script.obj 
-      core\SecureShell.obj core\Security.obj core\SessionData.obj 
-      core\SessionInfo.obj core\SftpFileSystem.obj core\Terminal.obj"/>
+    <OBJFILES value="core\Bookmarks.obj core\Common.obj
+      core\Configuration.obj core\CopyParam.obj core\CoreMain.obj
+      core\Exceptions.obj core\FileBuffer.obj core\FileInfo.obj
+      core\FileMasks.obj core\FileOperationProgress.obj core\FileSystems.obj
+      core\FtpFileSystem.obj core\HierarchicalStorage.obj core\NamedObjs.obj
+      core\PuttyIntf.obj core\Queue.obj core\RemoteFiles.obj
+      core\ScpFileSystem.obj core\Script.obj core\SecureShell.obj
+      core\Security.obj core\SessionData.obj core\SessionInfo.obj
+      core\SftpFileSystem.obj core\Terminal.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>

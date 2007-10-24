@@ -4,14 +4,14 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="WinSCP.exe"/>
-    <OBJFILES value="WinSCP.obj forms\CustomScpExplorer.obj 
-      windows\CustomWinConfiguration.obj windows\EditorManager.obj 
-      windows\GUIConfiguration.obj windows\GUITools.obj forms\NonVisual.obj 
-      windows\ConsoleRunner.obj windows\ProgParams.obj 
-      windows\QueueController.obj windows\Setup.obj forms\ScpCommander.obj 
-      forms\ScpExplorer.obj windows\SynchronizeController.obj 
-      windows\TerminalManager.obj windows\Tools.obj windows\UserInterface.obj 
-      windows\WinConfiguration.obj windows\WinHelp.obj windows\WinInterface.obj 
+    <OBJFILES value="WinSCP.obj forms\CustomScpExplorer.obj
+      windows\CustomWinConfiguration.obj windows\EditorManager.obj
+      windows\GUIConfiguration.obj windows\GUITools.obj forms\NonVisual.obj
+      windows\ConsoleRunner.obj windows\ProgParams.obj
+      windows\QueueController.obj windows\Setup.obj forms\ScpCommander.obj
+      forms\ScpExplorer.obj windows\SynchronizeController.obj
+      windows\TerminalManager.obj windows\Tools.obj windows\UserInterface.obj
+      windows\WinConfiguration.obj windows\WinHelp.obj windows\WinInterface.obj
       windows\WinMain.obj"/>
     <RESFILES value="windows\Windows.res WinSCP.res"/>
     <DEFFILE value=""/>
@@ -36,7 +36,7 @@
     <USERDEFINES value="OLD_DND"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="WinSCP.cpp"/>
-    <INCLUDEPATH value="core;console;forms;windows;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\theme;$(BCB)\include;$(BCB)\include\vcl"/>
+    <INCLUDEPATH value="core;console;forms;windows;resource;components;dragext;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\theme;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
     <LIBPATH value="lib;windows;forms;packages\filemng;packages\tbx;packages\theme;$(BCB)\lib;$(BCB)\lib\obj;$(BCB)\lib\psdk"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -47,7 +47,7 @@
     <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zi"/>
-    <LFLAGS value="-D&quot;&quot; -S:0x1000000 -aa -Tpe -GD -s -Gn"/>
+    <LFLAGS value="-D -S:0x1000000 -aa -Tpe -GD -s -Gn"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -90,33 +90,6 @@
   </BUILDTOOLS>
 
   <IDEOPTIONS>
-[Version Info]
-IncludeVerInfo=1
-AutoIncBuild=1
-MajorVer=4
-MinorVer=0
-Release=4
-Build=346
-Debug=0
-PreRelease=0
-Special=0
-Private=0
-DLL=0
-Locale=1033
-CodePage=1252
-
-[Version Info Keys]
-CompanyName=Martin Prikryl
-FileDescription=Windows SFTP, FTP and SCP client
-FileVersion=4.0.4.346
-InternalName=winscp
-LegalCopyright=(c) 2000-2007 Martin Prikryl
-LegalTrademarks=
-OriginalFilename=winscp404.exe
-ProductName=WinSCP
-ProductVersion=4.0.4.0
-WWW=http://winscp.net/
-
 [Compiler]
 ShowInfoMsgs=0
 LinkDebugVcl=0

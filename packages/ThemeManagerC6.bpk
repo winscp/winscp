@@ -4,9 +4,9 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\ThemeManagerC6.bpl"/>
-    <OBJFILES value="ThemeManagerC6.obj theme\TmSchema.obj theme\UxTheme.obj 
-      theme\ThemeSrv.obj theme\ThemeMgr.obj"/>
-    <RESFILES value="ThemeManagerC6.res"/>
+    <OBJFILES value="ThemeManagerC6.obj theme\TmSchema.obj
+      theme\UxTheme.obj theme\ThemeSrv.obj theme\ThemeMgr.obj"/>
+    <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
     <DEFFILE value=""/>
@@ -48,7 +48,6 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="ThemeManagerC6.cpp" FORMNAME="" UNITNAME="ThemeManagerC6" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="ThemeManagerC6.res" FORMNAME="" UNITNAME="ThemeManagerC6.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="theme\TmSchema.pas" FORMNAME="" UNITNAME="TmSchema" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="theme\UxTheme.pas" FORMNAME="" UNITNAME="UxTheme" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="theme\ThemeSrv.pas" FORMNAME="" UNITNAME="ThemeSrv" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

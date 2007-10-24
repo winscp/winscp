@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "PuttyIntf.h"
 #include "HierarchicalStorage.h"
+#include <vector>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -276,6 +277,50 @@ __fastcall TRegistryStorage::~TRegistryStorage()
   delete FRegistry;
 };
 //---------------------------------------------------------------------------
+bool __fastcall TRegistryStorage::Copy(TRegistryStorage * Storage)
+{
+  TRegistry * Registry = Storage->FRegistry;
+  bool Result = true;
+  TStrings * Names = new TStringList();
+  try
+  {
+    Registry->GetValueNames(Names);
+    std::vector<unsigned char> Buffer(1024, 0);
+    int Index = 0;
+    while ((Index < Names->Count) && Result)
+    {
+      AnsiString Name = Names->Strings[Index];
+      unsigned long Size = Buffer.size();
+      unsigned long Type;
+      int RegResult;
+      do
+      {
+        RegResult = RegQueryValueEx(Registry->CurrentKey, Name.c_str(), NULL,
+          &Type, &Buffer[0], &Size);
+        if (Result == ERROR_MORE_DATA)
+        {
+          Buffer.resize(Size);
+        }
+      } while (RegResult == ERROR_MORE_DATA);
+
+      Result = (RegResult == ERROR_SUCCESS);
+      if (Result)
+      {
+        RegResult = RegSetValueEx(FRegistry->CurrentKey, Name.c_str(), NULL, Type,
+          &Buffer[0], Size);
+        Result = (RegResult == ERROR_SUCCESS);
+      }
+
+      ++Index;
+    }
+  }
+  __finally
+  {
+    delete Names;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::SetAccessMode(TStorageAccessMode value)
 {
   THierarchicalStorage::SetAccessMode(value);
@@ -486,11 +531,12 @@ int __fastcall TRegistryStorage::GetFailed()
 __fastcall TIniFileStorage::TIniFileStorage(const AnsiString AStorage):
   THierarchicalStorage(AStorage)
 {
-  FIniFile = new TIniFile(Storage);
+  FIniFile = new TMemIniFile(Storage);
 }
 //---------------------------------------------------------------------------
 __fastcall TIniFileStorage::~TIniFileStorage()
 {
+  FIniFile->UpdateFile();
   delete FIniFile;
 }
 //---------------------------------------------------------------------------

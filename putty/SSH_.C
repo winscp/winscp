@@ -98,3 +98,11 @@ void md5checksum(const char * buffer, int len, unsigned char output[16])
   MD5Update(&md5c, buffer, len);
   MD5Final(output, &md5c);
 }
+
+int has_gssapi_ssh()
+{
+  struct ssh_tag ssh;
+  memset(&ssh, 0, sizeof(ssh));
+  ssh.frontend = NULL;
+  return ssh_gssapi_init(&ssh);
+}

@@ -32,7 +32,7 @@
     <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
-    <LFLAGS value="-D&quot;&quot; -aa -Tpd -x -Gn -Gi"/>
+    <LFLAGS value="-D -aa -Tpd -x -Gn -Gi"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -50,34 +50,6 @@
   </BUILDTOOLS>
 
   <IDEOPTIONS>
-[Version Info]
-IncludeVerInfo=1
-AutoIncBuild=1
-MajorVer=1
-MinorVer=1
-Release=5
-Build=75
-Debug=0
-PreRelease=0
-Special=0
-Private=0
-DLL=1
-Locale=1033
-CodePage=1252
-
-[Version Info Keys]
-CompanyName=Martin Prikryl
-FileDescription=Drag&amp;Drop shell extension for WinSCP
-FileVersion=1.1.5.75
-InternalName=dragext
-LegalCopyright=(c) 2004-2007 Martin Prikryl
-LegalTrademarks=
-OriginalFilename=dragext.dll
-ProductName=WinSCP
-ProductVersion=4.0.4.0
-Comments=
-WWW=http://winscp.net/
-
 [Compiler]
 ShowInfoMsgs=0
 LinkDebugVcl=0

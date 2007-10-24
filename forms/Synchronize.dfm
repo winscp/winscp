@@ -205,7 +205,6 @@ object SynchronizeDialog: TSynchronizeDialog
     Top = 288
     Width = 137
     Height = 25
-    Anchors = [akTop, akRight]
     Caption = 'Transfer settin&gs...'
     TabOrder = 2
     OnClick = TransferSettingsButtonClick

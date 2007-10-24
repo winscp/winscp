@@ -30,5 +30,6 @@ void __fastcall BrowseForExecutable(TEdit * Control, AnsiString Title,
   AnsiString Filter, bool FileNameCommand);
 void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
   AnsiString Filter, bool FileNameCommand);
+bool __fastcall IsWin64();
 //---------------------------------------------------------------------------
 #endif

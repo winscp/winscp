@@ -4,9 +4,8 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\tb2kdsgn_cb6.bpl"/>
-    <OBJFILES value="tb2kdsgn_cb6.obj tb2k\TB2DsgnConverter.obj 
-      tb2k\TB2DsgnItemEditor.obj tb2k\TB2DsgnConvertOptions.obj 
-      tb2k\TB2Reg.obj"/>
+    <OBJFILES value="tb2kdsgn_cb6.obj tb2k\TB2DsgnConverter.obj
+      tb2k\TB2DsgnItemEditor.obj tb2k\TB2DsgnConvertOptions.obj tb2k\TB2Reg.obj"/>
     <RESFILES value="tb2k\TB2Reg.dcr"/>
     <IDLFILES value=""/>
     <DEFFILE value=""/>

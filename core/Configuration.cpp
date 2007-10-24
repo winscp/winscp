@@ -11,7 +11,6 @@
 #include "TextsCore.h"
 #include "Interface.h"
 #include "CoreMain.h"
-#define GSSAPIDLL "gssapi32"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -22,7 +21,6 @@ __fastcall TConfiguration::TConfiguration()
   FStorage = stDetect;
   FDontSave = false;
   FApplicationInfo = NULL;
-  FGSSAPIInstalled = -1;
   FInitialized = false;
 }
 //---------------------------------------------------------------------------
@@ -713,13 +711,7 @@ AnsiString __fastcall TConfiguration::GetRootKeyStr()
 //---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetGSSAPIInstalled()
 {
-  if (FGSSAPIInstalled < 0)
-  {
-    HINSTANCE Library = LoadLibrary(GSSAPIDLL);
-    FGSSAPIInstalled = (Library != NULL ? 1 : 0);
-    FreeLibrary(Library);
-  }
-  return (FGSSAPIInstalled > 0);
+  return HasGSSAPI();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetStorage(TStorage value)
@@ -742,14 +734,14 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
       // copy before save as it removes the ini file,
       // when switching from ini to registry
       CopyData(SourceStorage, TargetStorage);
-
-      Save(true);
     }
     __finally
     {
       delete SourceStorage;
       delete TargetStorage;
     }
+
+    Save(true);
   }
 }
 //---------------------------------------------------------------------------

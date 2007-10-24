@@ -4,15 +4,14 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\DragDrop_B5.bpl"/>
-    <OBJFILES value="DragDrop_B5.obj &quot;dragndrop\DragDrop.obj&quot; &quot;dragndrop\DragDropBitmap.obj&quot; 
-      &quot;dragndrop\DragDropFiles.obj&quot; &quot;dragndrop\DragDropFilesEx.obj&quot; 
-      &quot;dragndrop\DragDropText.obj&quot; &quot;dragndrop\DragDropURL.obj&quot; &quot;dragndrop\ListSort.obj&quot; 
-      &quot;dragndrop\PIDL.obj&quot;"/>
-    <RESFILES value="DragDrop_B5.res &quot;dragndrop\DragDrop.dcr&quot; 
-      &quot;dragndrop\DragDropBitmap.dcr&quot; 
-      &quot;dragndrop\DragDropFiles.dcr&quot; 
-      &quot;dragndrop\DragDropFilesEx.dcr&quot; 
-      &quot;dragndrop\DragDropText.dcr&quot; &quot;dragndrop\ListSort.dcr&quot;"/>
+    <OBJFILES value="DragDrop_B5.obj dragndrop\DragDrop.obj
+      dragndrop\DragDropBitmap.obj dragndrop\DragDropFiles.obj
+      dragndrop\DragDropFilesEx.obj dragndrop\DragDropText.obj
+      dragndrop\DragDropURL.obj dragndrop\ListSort.obj dragndrop\PIDL.obj"/>
+    <RESFILES value="dragndrop\DragDrop.dcr
+      dragndrop\DragDropBitmap.dcr dragndrop\DragDropFiles.dcr
+      dragndrop\DragDropFilesEx.dcr dragndrop\DragDropText.dcr
+      dragndrop\ListSort.dcr"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
@@ -20,7 +19,7 @@
     <SPARELIBS value="rtl.lib vcl.lib"/>
     <PACKAGES value="rtl.bpi vcl.bpi"/>
     <PATHCPP value=".;"/>
-    <PATHPAS value=".;&quot;dragndrop&quot;"/>
+    <PATHPAS value=".;dragndrop"/>
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
@@ -29,8 +28,8 @@
     <USERDEFINES value=""/>
     <SYSDEFINES value="NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="DragDrop_B5.cpp"/>
-    <INCLUDEPATH value="&quot;dragndrop&quot;;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\lib\;&quot;dragndrop&quot;;$(BCB)\lib\obj;$(BCB)\lib"/>
+    <INCLUDEPATH value="dragndrop;$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="..\lib\;dragndrop;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par"/>
     <OTHERFILES value=""/>
   </MACROS>
@@ -39,7 +38,7 @@
     <PFLAGS value="-$Y- -$L- -$D- -$C- -$A8 -v -JPHNE -M"/>
     <RFLAGS value=""/>
     <AFLAGS value="/mx /w2 /zn"/>
-    <LFLAGS value="-D&quot;dragndrop&quot; -aa -Tpp -x -Gn -Gl -Gi"/>
+    <LFLAGS value="-Ddragndrop -aa -Tpp -x -Gn -Gl -Gi"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>
@@ -50,7 +49,6 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="DragDrop_B5.cpp" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="DragDrop_B5.res" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dragndrop\DragDrop.pas" FORMNAME="" UNITNAME="DragDrop" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dragndrop\DragDrop.dcr" FORMNAME="" UNITNAME="DragDrop" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dragndrop\DragDropBitmap.pas" FORMNAME="" UNITNAME="DragDropBitmap" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

@@ -845,7 +845,6 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(SessionListView, SessionListView->Items->Count);
       // keep 2 pixels on right free
       AdjustListColumnsWidth(SessionListView, -1, 2);
-      EnableControl(ShellIconsButton, SessionListView->Selected);
 
       // ssh/authentication sheet
       AuthSheet->Enabled = SshProtocol && Advanced;
@@ -1242,6 +1241,10 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   {
     SaveSessionAction->Enabled = (PageControl->ActivePage != SessionListSheet);
   }
+  else if (Action == ShellIconSessionAction)
+  {
+    ShellIconSessionAction->Enabled = SessionListView->Selected;
+  }
   Handled = true;
 
   if (!LoginButton->Default && !SessionListView->IsEditing())
@@ -1515,7 +1518,8 @@ void __fastcall TLoginDialog::ToolsMenuButtonClick(TObject * /*Sender*/)
   MenuPopup(ToolsPopupMenu, ToolsMenuButton);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::ShellIconsButtonClick(TObject * /*Sender*/)
+void __fastcall TLoginDialog::ShellIconSessionActionExecute(
+  TObject * /*Sender*/)
 {
   MenuPopup(IconsPopupMenu, ShellIconsButton);
 }

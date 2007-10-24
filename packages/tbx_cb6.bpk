@@ -5,10 +5,9 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\tbx_cb6.bpl"/>
     <OBJFILES value="tbx_cb6.obj tbx\TBXDefaultTheme.obj
-      tbx\TBXOfficeXPTheme.obj tbx\TBX.obj tbx\TBXUtils.obj
-      tbx\TBXExtItems.obj tbx\TBXUxThemes.obj tbx\TBXStatusBars.obj
-      tbx\TBXThemes.obj tbx\TBXLists.obj tbx\TBXOffice2003Theme.obj
-      tbx\TBXToolPals.obj"/>
+      tbx\TBXOfficeXPTheme.obj tbx\TBX.obj tbx\TBXUtils.obj tbx\TBXExtItems.obj
+      tbx\TBXUxThemes.obj tbx\TBXStatusBars.obj tbx\TBXThemes.obj
+      tbx\TBXLists.obj tbx\TBXOffice2003Theme.obj tbx\TBXToolPals.obj"/>
     <RESFILES value=""/>
     <IDLFILES value=""/>
     <IDLGENFILES value=""/>
@@ -34,7 +33,7 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-Itbx\. -Itbx -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG
+    <IDLCFLAGS value="-Itbx\. -Itbx -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG 
       -boa"/>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
     <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>

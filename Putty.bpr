@@ -4,19 +4,18 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\Putty.lib"/>
-    <OBJFILES value="putty\BE_NONE.obj putty\CPROXY.obj putty\INT64.obj 
-      putty\LOGGING.obj putty\MISC.obj putty\PORTFWD_.obj 
-      putty\PPROXY.obj putty\PROXY.obj putty\SSH_.obj putty\SSHAES.obj 
-      putty\SSHBLOWF.obj putty\SSHBN.obj putty\SSHCRC.obj 
-      putty\SSHCRCDA.obj putty\SSHDES.obj putty\SSHDH.obj 
-      putty\SSHDSS.obj putty\SSHGSS.obj putty\SSHGSSC.obj 
-      putty\SSHMD5.obj putty\SSHPUBK.obj putty\SSHRAND.obj 
-      putty\SSHRSA.obj putty\SSHSH512.obj putty\SSHSHA.obj 
-      putty\SSHZLIB.obj putty\TREE234.obj putty\CHARSET\UTF8.obj 
-      putty\WILDCARD.obj putty\WINDOWS\WINDL.obj putty\WINDOWS\WINGSS.obj 
-      putty\WINDOWS\WINMISC.obj putty\WINDOWS\WINNET.obj putty\WINDOWS\WINNOISE.obj 
-      putty\WINDOWS\WINPGNTC.obj putty\WINDOWS\WINSTORE_.obj putty\WINDOWS\WINTIME.obj 
-      putty\X11FWD.obj"/>
+    <OBJFILES value="putty\BE_NONE.obj putty\CPROXY.obj putty\INT64.obj
+      putty\LOGGING.obj putty\MISC.obj putty\PORTFWD_.obj putty\PPROXY.obj
+      putty\PROXY.obj putty\SSH_.obj putty\SSHAES.obj putty\SSHBLOWF.obj
+      putty\SSHBN.obj putty\SSHCRC.obj putty\SSHCRCDA.obj putty\SSHDES.obj
+      putty\SSHDH.obj putty\SSHDSS.obj putty\SSHGSS.obj putty\SSHGSSC.obj
+      putty\SSHMD5.obj putty\SSHPUBK.obj putty\SSHRAND.obj putty\SSHRSA.obj
+      putty\SSHSH512.obj putty\SSHSHA.obj putty\SSHZLIB.obj putty\TREE234.obj
+      putty\CHARSET\UTF8.obj putty\WILDCARD.obj putty\WINDOWS\WINDL.obj
+      putty\WINDOWS\WINGSS.obj putty\WINDOWS\WINMISC.obj
+      putty\WINDOWS\WINNET.obj putty\WINDOWS\WINNOISE.obj
+      putty\WINDOWS\WINPGNTC.obj putty\WINDOWS\WINSTORE_.obj
+      putty\WINDOWS\WINTIME.obj putty\X11FWD.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>

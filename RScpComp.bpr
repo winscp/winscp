@@ -4,8 +4,8 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\RScpComp.lib"/>
-    <OBJFILES value="components\LogMemo.obj components\UnixDirView.obj components\UnixDriveView.obj 
-      components\UnixPathComboBox.obj"/>
+    <OBJFILES value="components\LogMemo.obj components\UnixDirView.obj
+      components\UnixDriveView.obj components\UnixPathComboBox.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>

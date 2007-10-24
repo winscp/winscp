@@ -1535,6 +1535,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   FTerminal->OpenLocalFile(FileName, GENERIC_READ,
     &Attrs, &File, NULL, &MTime, &ATime, &Size);
 
+  TStream * Stream = new TSafeHandleStream((THandle)File);
   try
   {
     bool Dir = FLAGSET(Attrs, faDirectory);
@@ -1588,14 +1589,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
           // This is crucial, if it fails during file transfer, it's fatal error
           FILE_OPERATION_LOOP_EX (!OperationProgress->TransferingFile,
               FMTLOAD(READ_ERROR, (FileName)),
-            try
-            {
-              BlockBuf.LoadFile(File, OperationProgress->LocalBlockSize(), true);
-            }
-            catch(...)
-            {
-              RaiseLastOSError();
-            }
+            BlockBuf.LoadStream(Stream, OperationProgress->LocalBlockSize(), true);
           );
 
           OperationProgress->AddLocalyUsed(BlockBuf.Size);
@@ -1755,6 +1749,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
     {
       CloseHandle(File);
     }
+    delete Stream;
   }
 
   /* TODO : Delete also read-only files. */
@@ -2287,7 +2282,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                 EXCEPTION;
               }
 
-              FileStream = new THandleStream((THandle)File);
+              FileStream = new TSafeHandleStream((THandle)File);
             }
             catch (Exception &E)
             {
@@ -2335,14 +2330,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
 
                 // This is crucial, if it fails during file transfer, it's fatal error
                 FILE_OPERATION_LOOP_EX (false, FMTLOAD(WRITE_ERROR, (DestFileName)),
-                  try
-                  {
-                    BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
-                  }
-                  catch(...)
-                  {
-                    RaiseLastOSError();
-                  }
+                  BlockBuf.WriteToStream(FileStream, BlockBuf.Size);
                 );
 
                 OperationProgress->AddLocalyUsed(BlockBuf.Size);
