@@ -54,6 +54,9 @@ protected:
   bool __fastcall Execute(AnsiString Status, TControl * Control,
     TWinControl * FocusControl, TButton * DefaultButton, TButton * CancelButton,
     bool FixHeight, bool Zoom, bool ForceLog);
+  virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall Dispatch(void * AMessage);
+  void __fastcall WMNCCreate(TWMNCCreate & Message);
 
 private:
   void * FShowAsModalStorage;

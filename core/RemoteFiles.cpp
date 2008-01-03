@@ -39,6 +39,13 @@ Boolean __fastcall UnixComparePaths(const AnsiString Path1, const AnsiString Pat
   return (UnixIncludeTrailingBackslash(Path1) == UnixIncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
+bool __fastcall UnixIsChildPath(AnsiString Parent, AnsiString Child)
+{
+  Parent = UnixIncludeTrailingBackslash(Parent);
+  Child = UnixIncludeTrailingBackslash(Child);
+  return (Child.SubString(1, Parent.Length()) == Parent);
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall UnixExtractFileDir(const AnsiString Path)
 {
   int Pos = Path.LastDelimiter('/');
@@ -696,13 +703,14 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     // so we get only first 9 characters and trim all following spaces (if any)
     Rights->Text = Line.SubString(1, 9);
     Line.Delete(1, 9);
-    // Rights column maybe followed by '+' sign, we ignore it
+    // Rights column maybe followed by '+' or '@' signs, we ignore them
     // (On MacOS, there may be a space in between)
-    if (!Line.IsEmpty() && (Line[1] == '+'))
+    if (!Line.IsEmpty() && ((Line[1] == '+') || (Line[1] == '@')))
     {
       Line.Delete(1, 1);
     }
-    else if ((Line.Length() >= 2) && (Line[1] == ' ') && (Line[2] == '+'))
+    else if ((Line.Length() >= 2) && (Line[1] == ' ') &&
+             ((Line[2] == '+') || (Line[2] == '@')))
     {
       Line.Delete(1, 2);
     }

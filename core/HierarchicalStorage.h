@@ -56,11 +56,13 @@ public:
   __property AnsiString Storage  = { read=FStorage };
   __property AnsiString CurrentSubKey  = { read=GetCurrentSubKey };
   __property TStorageAccessMode AccessMode  = { read=FAccessMode, write=SetAccessMode };
+  __property bool Explicit = { read = FExplicit, write = FExplicit };
 
 protected:
   AnsiString FStorage;
   TStrings * FKeyHistory;
   TStorageAccessMode FAccessMode;
+  bool FExplicit;
 
   AnsiString __fastcall GetCurrentSubKey();
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
@@ -153,8 +155,10 @@ public:
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings);
 
 private:
-  TCustomIniFile * FIniFile;
+  TMemIniFile * FIniFile;
+  TStrings * FOriginal;
   AnsiString __fastcall GetCurrentSection();
+  void __fastcall ApplyOverrides();
 protected:
   __property AnsiString CurrentSection  = { read=GetCurrentSection };
 };

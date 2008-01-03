@@ -129,6 +129,8 @@ public:
   }
 };
 //---------------------------------------------------------------------------
+static const int OutPos = -32000;
+//---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FFormRestored(False), TForm(Owner)
 {
@@ -234,6 +236,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 //---------------------------------------------------------------------------
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
+  Application->UnhookMainWindow(MainWindowHook);
+
   Application->OnHint = NULL;
   Application->OnMinimize = NULL;
   Application->OnRestore = NULL;
@@ -2748,7 +2752,8 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
     {
       AnsiString SessionName = StoredSessions->HiddenPrefix + "duplicate";
       StoredSessions->NewSession(SessionName, SessionData);
-      StoredSessions->Save();
+      // modified only, explicit
+      StoredSessions->Save(false, true);
       if (!ExecuteShell(Application->ExeName, FORMAT("\"%s\"", (SessionName))))
       {
         throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Application->ExeName)));
@@ -3391,7 +3396,8 @@ void __fastcall TCustomScpExplorerForm::SaveCurrentSession()
       SessionData->Assign(Terminal->SessionData);
       UpdateSessionData(SessionData);
       StoredSessions->NewSession(SessionName, SessionData);
-      StoredSessions->Save();
+      // modified only, explicit
+      StoredSessions->Save(false, true);
     }
     __finally
     {
@@ -4012,15 +4018,33 @@ void __fastcall TCustomScpExplorerForm::CMAppSysCommand(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMSysCommand(TMessage & Message)
 {
+  // The four low-order bits are used internally by Windows
+  unsigned int Cmd = (Message.WParam & 0xFFF0);
   // SC_RESTORE, SC_MAXIMIZE, SC_MINIMIZE - buttons on windows title
   // SC_DEFAULT - double click on windows title (does not work, at least on WinXP)
   // 61730 - restore thru double click - undocumented
   // 61490 - maximize thru double click - undocumented
-  if ((Message.WParam == SC_RESTORE) || (Message.WParam == SC_MAXIMIZE) ||
-      (Message.WParam == SC_MINIMIZE) || (Message.WParam == SC_DEFAULT) ||
-      (Message.WParam == 61730) || (Message.WParam == 61490))
+  if ((Cmd == SC_RESTORE) || (Cmd == SC_MAXIMIZE) ||
+      (Cmd == SC_MINIMIZE) || (Cmd == SC_DEFAULT))
   {
-    SysResizing(Message.WParam);
+    SysResizing(Cmd);
+  }
+  TForm::Dispatch(&Message);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::WMWindowPosChanging(TWMWindowPosMsg & Message)
+{
+  // MSVDM (not sure is it is generic feature) sets size of all windows
+  // to iconic and moves top-level windows (with destop as parent) out
+  // of the screen (-32000:-32000). However other windows (such as
+  // VCL main window with hidden parent) are moved just above
+  // the task bar. Override this.
+  if (FLAGCLEAR(Message.WindowPos->flags, SWP_NOMOVE) &&
+      (Message.WindowPos->cx == GetSystemMetrics(SM_CXMINIMIZED)) &&
+      (Message.WindowPos->cy == GetSystemMetrics(SM_CYMINIMIZED)))
+  {
+    Message.WindowPos->x = OutPos;
+    Message.WindowPos->y = OutPos;
   }
   TForm::Dispatch(&Message);
 }
@@ -5461,6 +5485,10 @@ void __fastcall TCustomScpExplorerForm::Dispatch(void * Message)
       WMSysCommand(*M);
       break;
 
+    case WM_WINDOWPOSCHANGING:
+      WMWindowPosChanging(*reinterpret_cast<TWMWindowPosMsg *>(M));
+      break;
+
     case WM_COMPONENT_HIDE:
       {
         unsigned short Component = static_cast<unsigned short>(M->WParam);
@@ -5734,5 +5762,44 @@ void __fastcall TCustomScpExplorerForm::UnlockWindow()
   {
     Enabled = true;
   }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::MainWindowHook(TMessage & AMessage)
+{
+  // workaround for problem with hidden application window.
+  // "groupped" window arrangement commands send WM_WINDOWPOSCHANGING to
+  // windows associated with taskbar buttons (i.e. the hidden one for VCL).
+  // we forward here the message to the main window.
+  // this does not solve "all windows" arrangement commands,
+  // which calculates size according to number of all visible windows.
+  // hence they count VCL application twice.
+
+  // code is said to be from Issue 4/95 of The Delphi Magazine
+  if (AMessage.Msg == WM_WINDOWPOSCHANGING)
+  {
+    TWMWindowPosMsg & Message = reinterpret_cast<TWMWindowPosMsg &>(AMessage);
+
+    assert(Message.WindowPos->hwnd == Application->Handle);
+    if ((Message.WindowPos->hwnd == Application->Handle) &&
+        !IsIconic(Message.WindowPos->hwnd) &&
+        (Message.WindowPos->cx > 0) &&
+        (Message.WindowPos->cy > 0))
+    {
+      unsigned int LocalFlags = Message.WindowPos->flags | SWP_NOZORDER;
+      if (BorderStyle == bsSizeable)
+      {
+        LocalFlags = LocalFlags & ~SWP_NOSIZE;
+      }
+      else
+      {
+        LocalFlags = LocalFlags | SWP_NOSIZE;
+      }
+
+      SetWindowPos(Handle, 0, Message.WindowPos->x, Message.WindowPos->y,
+        Message.WindowPos->cx, Message.WindowPos->cy, LocalFlags);
+    }
+  }
+
+  return false;
 }
 //---------------------------------------------------------------------------

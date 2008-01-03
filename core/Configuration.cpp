@@ -38,6 +38,7 @@ void __fastcall TConfiguration::Default()
   TGuard Guard(FCriticalSection);
 
   RandomSeedFile = FDefaultRandomSeedFile;
+  PuttyRegistryStorageKey = "Software\\SimonTatham\\PuTTY";
   FConfirmOverwriting = true;
   FConfirmResume = true;
   FAutoReadDirectoryAfterOp = true;
@@ -89,6 +90,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
 #define REGCONFIG(CANCREATE) \
   BLOCK("Interface", CANCREATE, \
     KEY(String,   RandomSeedFile); \
+    KEY(String,   PuttyRegistryStorageKey); \
     KEY(Bool,     ConfirmOverwriting); \
     KEY(Bool,     ConfirmResume); \
     KEY(Bool,     AutoReadDirectoryAfterOp); \
@@ -113,31 +115,36 @@ void __fastcall TConfiguration::SaveData(THierarchicalStorage * Storage, bool /*
   #undef KEYEX
 }
 //---------------------------------------------------------------------------
-void __fastcall TConfiguration::Save(bool All)
+void __fastcall TConfiguration::Save(bool All, bool Explicit)
 {
   if (FDontSave) return;
 
-  if (Storage == stRegistry) CleanupIniFile();
-
-  THierarchicalStorage * Storage = CreateScpStorage(false);
+  THierarchicalStorage * AStorage = CreateScpStorage(false);
   try
   {
-    Storage->AccessMode = smReadWrite;
-    if (Storage->OpenSubKey(ConfigurationSubKey, true))
+    AStorage->AccessMode = smReadWrite;
+    AStorage->Explicit = Explicit;
+    if (AStorage->OpenSubKey(ConfigurationSubKey, true))
     {
-      SaveData(Storage, All);
+      SaveData(AStorage, All);
     }
   }
   __finally
   {
-    delete Storage;
+    delete AStorage;
   }
 
   Saved();
 
   if (All)
   {
-    StoredSessions->Save(true);
+    StoredSessions->Save(true, Explicit);
+  }
+
+  // clean up as last, so that if it fails (read only INI), the saving can proceed
+  if (Storage == stRegistry)
+  {
+    CleanupIniFile();
   }
 }
 //---------------------------------------------------------------------------
@@ -149,6 +156,7 @@ void __fastcall TConfiguration::Export(const AnsiString FileName)
   {
     ExportStorage = new TIniFileStorage(FileName);
     ExportStorage->AccessMode = smReadWrite;
+    ExportStorage->Explicit = true;
 
     Storage = CreateScpStorage(false);
     Storage->AccessMode = smRead;
@@ -679,11 +687,6 @@ AnsiString __fastcall TConfiguration::GetIniFileStorageName()
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TConfiguration::GetPuttyRegistryStorageKey()
-{
-  return PUTTY_REG_POS;
-}
-//---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetPuttySessionsKey()
 {
   return PuttyRegistryStorageKey + "\\Sessions";
@@ -730,6 +733,7 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
 
       TargetStorage = CreateScpStorage(false);
       TargetStorage->AccessMode = smReadWrite;
+      TargetStorage->Explicit = true;
 
       // copy before save as it removes the ini file,
       // when switching from ini to registry
@@ -741,7 +745,8 @@ void __fastcall TConfiguration::SetStorage(TStorage value)
       delete TargetStorage;
     }
 
-    Save(true);
+    // save all and explicit
+    Save(true, true);
   }
 }
 //---------------------------------------------------------------------------
@@ -780,6 +785,11 @@ void __fastcall TConfiguration::SetRandomSeedFile(AnsiString value)
     }
     strcpy(seedpath, StripPathQuotes(ExpandEnvironmentVariables(FRandomSeedFile)).c_str());
   }
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetPuttyRegistryStorageKey(AnsiString value)
+{
+  SET_CONFIG_PROPERTY(PuttyRegistryStorageKey);
 }
 //---------------------------------------------------------------------------
 TEOLType __fastcall TConfiguration::GetLocalEOLType()

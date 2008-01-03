@@ -347,7 +347,7 @@ BEGIN
         FSINFO_SESSION_PROTOCOL, "Session protocol"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000-2007 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2008 Martin Prikryl"
         HOMEPAGE_URL, "http://winscp.net/"
         HISTORY_URL, "http://winscp.net/eng/docs/history"
         REQUIREMENTS_URL, "http://winscp.net/eng/docs/requirements"

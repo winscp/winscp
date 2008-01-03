@@ -570,7 +570,8 @@ void __fastcall TTerminalManager::SaveTerminal(TTerminal * Terminal)
 
       if (Changed)
       {
-        StoredSessions->Save();
+        // modified only, implicit
+        StoredSessions->Save(false, false);
       }
     }
   }

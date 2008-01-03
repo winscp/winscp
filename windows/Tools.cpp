@@ -134,7 +134,10 @@ AnsiString __fastcall StoreForm(TCustomForm * Form)
   assert(Form);
   return FORMAT("%d;%d;%d;%d;%d", ((int)Form->BoundsRect.Left, (int)Form->BoundsRect.Top,
     (int)Form->BoundsRect.Right, (int)Form->BoundsRect.Bottom,
-    (int)Form->WindowState));
+    // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
+    // note that WindowState is wsNormal when window in minimized for some reason.
+    // actually it is wsMinimized only when minimized by MSVDM
+    (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState)));
 }
 //---------------------------------------------------------------------------
 bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params)

@@ -521,7 +521,14 @@ public:
 
   inline AnsiString GetString(bool Utf)
   {
-    return (Utf ? GetUtfString() : GetString());
+    if (Utf)
+    {
+      return GetUtfString();
+    }
+    else
+    {
+      return GetString();
+    }
   }
 
   // now purposeless alias to GetString

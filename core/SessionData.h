@@ -372,7 +372,7 @@ public:
   __fastcall TStoredSessionList(bool aReadOnly = false);
   void __fastcall Load(AnsiString aKey, bool UseDefaults);
   void __fastcall Load();
-  void __fastcall Save(bool All = false);
+  void __fastcall Save(bool All, bool Explicit);
   void __fastcall Saved();
   void __fastcall Export(const AnsiString FileName);
   void __fastcall Load(THierarchicalStorage * Storage, bool AsModified = false,

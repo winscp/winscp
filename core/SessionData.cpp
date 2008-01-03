@@ -26,6 +26,8 @@ const TCipher DefaultCipherList[CIPHER_COUNT] =
 const TKex DefaultKexList[KEX_COUNT] =
   { kexDHGEx, kexDHGroup14, kexDHGroup1, kexWarn };
 const char FSProtocolNames[FSPROTOCOL_COUNT][11] = { "SCP", "SFTP (SCP)", "SFTP", "SSH", "SFTP", "FTP" };
+const int SshPortNumber = 22;
+const int FtpPortNumber = 21;
 //--- TSessionData ----------------------------------------------------
 AnsiString TSessionData::FInvalidChars("/\\[]");
 //---------------------------------------------------------------------
@@ -39,7 +41,7 @@ __fastcall TSessionData::TSessionData(AnsiString aName):
 void __fastcall TSessionData::Default()
 {
   HostName = "";
-  PortNumber = 22;
+  PortNumber = SshPortNumber;
   UserName = "";
   Password = "";
   PingInterval = 30;
@@ -131,7 +133,7 @@ void __fastcall TSessionData::Default()
 
   Tunnel = false;
   TunnelHostName = "";
-  TunnelPortNumber = 22;
+  TunnelPortNumber = SshPortNumber;
   TunnelUserName = "";
   TunnelPassword = "";
   TunnelPublicKeyFile = "";
@@ -710,6 +712,7 @@ void __fastcall TSessionData::Remove()
   THierarchicalStorage * Storage = Configuration->CreateScpStorage(true);
   try
   {
+    Storage->Explicit = true;
     if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, false))
     {
       Storage->RecursiveDeleteSubKey(StorageKey);
@@ -1623,7 +1626,9 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
   bool AsModified, bool UseDefaults)
 {
   TStringList *SubKeys = new TStringList();
-  try {
+  TList * Loaded = new TList;
+  try
+  {
     Storage->GetSubKeyNames(SubKeys);
     for (int Index = 0; Index < SubKeys->Count; Index++)
     {
@@ -1655,6 +1660,7 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
             SessionData->Name = SessionName;
             Add(SessionData);
           }
+          Loaded->Add(SessionData);
           SessionData->Load(Storage);
           if (AsModified)
           {
@@ -1663,8 +1669,23 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
         }
       }
     }
-  } __finally {
+
+    if (!AsModified)
+    {
+      for (int Index = 0; Index < TObjectList::Count; Index++)
+      {
+        if (Loaded->IndexOf(Items[Index]) < 0)
+        {
+          Delete(Index);
+          Index--;
+        }
+      }
+    }
+  }
+  __finally
+  {
     delete SubKeys;
+    delete Loaded;
   }
 }
 //---------------------------------------------------------------------
@@ -1713,11 +1734,12 @@ void __fastcall TStoredSessionList::Save(THierarchicalStorage * Storage, bool Al
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Save(bool All)
+void __fastcall TStoredSessionList::Save(bool All, bool Explicit)
 {
   THierarchicalStorage * Storage = Configuration->CreateScpStorage(true);
   try {
     Storage->AccessMode = smReadWrite;
+    Storage->Explicit = Explicit;
     if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, True))
       Save(Storage, All);
   } __finally {
@@ -1773,7 +1795,8 @@ void __fastcall TStoredSessionList::Import(TStoredSessionList * From,
       Add(Session);
     }
   }
-  Save();
+  // only modified, explicit
+  Save(false, true);
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::SelectSessionsToImport
@@ -1844,7 +1867,8 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
     FDefaultSettings->Name = DefaultSessionName;
     if (!FReadOnly)
     {
-      Save();
+      // only modified, explicit
+      Save(false, true);
     }
   }
 }
@@ -1906,21 +1930,25 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
 {
   bool ProtocolDefined = false;
   TFSProtocol Protocol;
+  int PortNumber;
   if (Url.SubString(1, 4).LowerCase() == "scp:")
   {
     Protocol = fsSCPonly;
+    PortNumber = SshPortNumber;
     Url.Delete(1, 4);
     ProtocolDefined = true;
   }
   else if (Url.SubString(1, 5).LowerCase() == "sftp:")
   {
     Protocol = fsSFTPonly;
+    PortNumber = SshPortNumber;
     Url.Delete(1, 5);
     ProtocolDefined = true;
   }
   else if (Url.SubString(1, 4).LowerCase() == "ftp:")
   {
     Protocol = fsFTP;
+    PortNumber = FtpPortNumber;
     Url.Delete(1, 4);
     ProtocolDefined = true;
   }
@@ -1942,7 +1970,7 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
     if (!Url.IsEmpty())
     {
       TSessionData * AData = NULL;
-      // lookup stored session session even if protocol was defined
+      // lookup stored session even if protocol was defined
       // (this allows setting for example default username for host
       // by creating stored session named by host)
       AnsiString ConnectInfo;
@@ -1956,6 +1984,10 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
       if (AData == NULL)
       {
         Data->Assign(DefaultSettings);
+        if (ProtocolDefined)
+        {
+          Data->PortNumber = PortNumber;
+        }
         if (Data->ParseUrl(Url, Params, FileName))
         {
           Data->Name = "";
@@ -1978,7 +2010,8 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
         {
           AData->Remove();
           Remove(AData);
-          Save();
+          // only modified, implicit
+          Save(false, false);
         }
       }
     }

@@ -12,17 +12,21 @@ struct Backend;
 struct Config;
 #endif
 //---------------------------------------------------------------------------
+struct _WSANETWORKEVENTS;
+typedef struct _WSANETWORKEVENTS WSANETWORKEVENTS;
 typedef UINT_PTR SOCKET;
 typedef std::set<SOCKET> TSockets;
 struct TPuttyTranslation;
 //---------------------------------------------------------------------------
 class TSecureShell
 {
+friend class TPoolForDataEvent;
+
 private:
   SOCKET FSocket;
   HANDLE FSocketEvent;
   TSockets FPortFwdSockets;
-  TSessionUI* FUI;
+  TSessionUI * FUI;
   TSessionData * FSessionData;
   bool FActive;
   TSessionInfo FSessionInfo;
@@ -51,6 +55,7 @@ private:
   AnsiString FStdErrorTemp;
   AnsiString FStdError;
   AnsiString FCWriteTemp;
+  bool FCWriteTempUntrusted;
   AnsiString FAuthenticationLog;
   AnsiString FLastTunnelError;
   AnsiString FUserName;
@@ -64,15 +69,19 @@ private:
   void __fastcall WaitForData();
   void __fastcall Discard();
   void __fastcall FreeBackend();
-  void __fastcall PoolForData(unsigned int & Result);
+  void __fastcall PoolForData(WSANETWORKEVENTS & Events, unsigned int & Result);
   inline void __fastcall CaptureOutput(TLogLineType Type,
     const AnsiString & Line);
   void __fastcall ResetConnection();
   void __fastcall ResetSessionInfo();
   void __fastcall SocketEventSelect(SOCKET Socket, HANDLE Event, bool Startup);
+  bool __fastcall EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events);
+  void __fastcall HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events);
   bool __fastcall ProcessNetworkEvents(SOCKET Socket);
-  bool __fastcall EventSelectLoop(unsigned int MSec, bool ReadEventRequired);
+  bool __fastcall EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
+    WSANETWORKEVENTS * Events);
   void __fastcall UpdateSessionInfo();
+  void __fastcall DumpCWrite();
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;

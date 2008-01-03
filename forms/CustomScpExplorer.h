@@ -213,6 +213,7 @@ private:
   void __fastcall QueueSplitterDblClick(TObject * Sender);
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
+  bool __fastcall MainWindowHook(TMessage & Message);
 
 protected:
   TOperationSide FCurrentSide;
@@ -278,6 +279,7 @@ protected:
   void __fastcall CMAppSysCommand(TMessage & Message);
   void __fastcall WMAppCommand(TMessage & Message);
   void __fastcall WMSysCommand(TMessage & Message);
+  void __fastcall WMWindowPosChanging(TWMWindowPosMsg & Message);
   virtual void __fastcall SysResizing(unsigned int Cmd);
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);

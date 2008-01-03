@@ -120,6 +120,7 @@ protected:
   bool __fastcall HandleReply(int Command, unsigned int Reply);
   bool __fastcall CheckError(int ReturnCode, const char * Context);
   void __fastcall EnsureLocation();
+  AnsiString __fastcall ActualCurrentDirectory();
   void __fastcall Discard();
   void __fastcall DoChangeDirectory(const AnsiString & Directory);
 

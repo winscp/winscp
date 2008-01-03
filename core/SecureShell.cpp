@@ -494,15 +494,8 @@ void __fastcall TSecureShell::GotHostKey()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::CWrite(const char * Data, int Length, bool Untrusted)
+void __fastcall TSecureShell::DumpCWrite()
 {
-  // some messages to stderr may indicate that something has changed with the
-  // session, so reset the session info
-  ResetSessionInfo();
-
-  // We send only whole line at once, so we have to cache incoming data
-  FCWriteTemp += DeleteChar(AnsiString(Data, Length), '\r');
-
   AnsiString Line;
   // Do we have at least one complete line in std error cache?
   while (FCWriteTemp.Pos("\n") > 0)
@@ -514,7 +507,7 @@ void __fastcall TSecureShell::CWrite(const char * Data, int Length, bool Untrust
     if (FAuthenticating)
     {
       // No point trying to translate message coming from server
-      if (!Untrusted)
+      if (!FCWriteTempUntrusted)
       {
         TranslateAuthenticationMessage(Line);
       }
@@ -523,11 +516,32 @@ void __fastcall TSecureShell::CWrite(const char * Data, int Length, bool Untrust
 
     // Untrusted means generally that it comes from the server,
     // do not use such a output as "information" for end user
-    if (!Untrusted)
+    if (!FCWriteTempUntrusted)
     {
       FUI->Information(Line, false);
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::CWrite(const char * Data, int Length, bool Untrusted)
+{
+  // some messages to stderr may indicate that something has changed with the
+  // session, so reset the session info
+  ResetSessionInfo();
+
+  // if data coming from server were not ended with new line,
+  // dump rest of the line, once trusted output arrive
+  if (!FCWriteTemp.IsEmpty() &&
+      (FCWriteTempUntrusted != Untrusted))
+  {
+    FCWriteTemp += '\n';
+    DumpCWrite();
+  }
+
+  // We send only whole line at once, so we have to cache incoming data
+  FCWriteTemp += DeleteChar(AnsiString(Data, Length), '\r');
+  FCWriteTempUntrusted = Untrusted;
+  DumpCWrite();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::RegisterReceiveHandler(TNotifyEvent Handler)
@@ -755,7 +769,7 @@ void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
   }
   FLastDataSent = Now();
   // among other forces receive of pending data to free the servers's send buffer
-  EventSelectLoop(0, false);
+  EventSelectLoop(0, false, NULL);
 
   while (BufSize > MAX_BUFSIZE)
   {
@@ -765,7 +779,7 @@ void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
         "need to send at least another %u bytes",
         (BufSize, BufSize - MAX_BUFSIZE)));
     }
-    EventSelectLoop(100, false);
+    EventSelectLoop(100, false, NULL);
     BufSize = FBackend->sendbuffer(FBackendHandle);
     if (Configuration->LogProtocol >= 1)
     {
@@ -1096,7 +1110,7 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::PoolForData(unsigned int & Result)
+void __fastcall TSecureShell::PoolForData(WSANETWORKEVENTS & Events, unsigned int & Result)
 {
   try
   {
@@ -1105,7 +1119,10 @@ void __fastcall TSecureShell::PoolForData(unsigned int & Result)
       LogEvent("Pooling for data in case they finally arrives");
     }
 
-    if (EventSelectLoop(0, false))
+    // in extreme condition it may happen that send buffer is full, but there
+    // will be no data comming and we may not empty the send buffer because we
+    // do not process FD_WRITE until we receive any FD_READ
+    if (EventSelectLoop(0, false, &Events))
     {
       LogEvent("Data has arrived, closing query to user.");
       Result = qaOK;
@@ -1116,10 +1133,31 @@ void __fastcall TSecureShell::PoolForData(unsigned int & Result)
     // if we let the exception out, it may popup another message dialog
     // in whole event loop, another call to PoolForData from original dialog
     // would be invoked, leading to an infinite loop.
-    // by retrying we hope (that probably fatal) error would repeat in WaitForData
+    // by retrying we hope (that probably fatal) error would repeat in WaitForData.
+    // anyway now once no actual work is done in EventSelectLoop,
+    // hardly any exception can occur actually
     Result = qaRetry;
   }
 }
+//---------------------------------------------------------------------------
+class TPoolForDataEvent
+{
+public:
+  __fastcall TPoolForDataEvent(TSecureShell * SecureShell, WSANETWORKEVENTS & Events) :
+    FSecureShell(SecureShell),
+    FEvents(Events)
+  {
+  }
+
+  void __fastcall PoolForData(unsigned int & Result)
+  {
+    FSecureShell->PoolForData(FEvents, Result);
+  }
+
+private:
+  TSecureShell * FSecureShell;
+  WSANETWORKEVENTS & FEvents;
+};
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::WaitForData()
 {
@@ -1133,13 +1171,17 @@ void __fastcall TSecureShell::WaitForData()
       LogEvent("Looking for incoming data");
     }
 
-    IncomingData = EventSelectLoop(FSessionData->Timeout * 1000, true);
+    IncomingData = EventSelectLoop(FSessionData->Timeout * 1000, true, NULL);
     if (!IncomingData)
     {
+      WSANETWORKEVENTS Events;
+      memset(&Events, 0, sizeof(Events));
+      TPoolForDataEvent Event(this, Events);
+
       LogEvent("Waiting for data timed out, asking user what to do.");
       TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
       Params.Timer = 500;
-      Params.TimerEvent = PoolForData;
+      Params.TimerEvent = Event.PoolForData;
       Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING, (FSessionData->Timeout));
       Params.TimerAnswers = qaAbort;
       int Answer = FUI->QueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT2, (FSessionData->Timeout)),
@@ -1155,6 +1197,7 @@ void __fastcall TSecureShell::WaitForData()
           // make sure we do not try to select it again as it would timeout
           // unless another read event occurs
           IncomingData = true;
+          HandleNetworkEvents(FSocket, Events);
           break;
 
         default:
@@ -1175,63 +1218,33 @@ bool __fastcall TSecureShell::SshFallbackCmd() const
   return ssh_fallback_cmd(FBackendHandle);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::ProcessNetworkEvents(SOCKET Socket)
+bool __fastcall TSecureShell::EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events)
 {
-  bool Result = false;
-
   if (Configuration->LogProtocol >= 2)
   {
     LogEvent(FORMAT("Enumerating network events for socket %d", (int(Socket))));
   }
 
   // see winplink.c
-  WSANETWORKEVENTS Events;
-  if (WSAEnumNetworkEvents(Socket, NULL, &Events) == 0)
+  WSANETWORKEVENTS AEvents;
+  if (WSAEnumNetworkEvents(Socket, NULL, &AEvents) == 0)
   {
-    static const struct { int Bit, Mask; const char * Desc; } EventTypes[] =
-    {
-      { FD_READ_BIT, FD_READ, "read" },
-      { FD_WRITE_BIT, FD_WRITE, "write" },
-      { FD_OOB_BIT, FD_OOB, "oob" },
-      { FD_ACCEPT_BIT, FD_ACCEPT, "accept" },
-      { FD_CONNECT_BIT, FD_CONNECT, "connect" },
-      { FD_CLOSE_BIT, FD_CLOSE, "close" },
-    };
-
     noise_ultralight(Socket);
-    noise_ultralight(Events.lNetworkEvents);
+    noise_ultralight(AEvents.lNetworkEvents);
+
+    Events.lNetworkEvents |= AEvents.lNetworkEvents;
+    for (int Index = 0; Index < FD_MAX_EVENTS; Index++)
+    {
+      if (AEvents.iErrorCode[Index] != 0)
+      {
+        Events.iErrorCode[Index] = AEvents.iErrorCode[Index];
+      }
+    }
 
     if (Configuration->LogProtocol >= 2)
     {
-      LogEvent(FORMAT("Enumerated %d network events for socket %d",
-        (int(Events.lNetworkEvents), int(Socket))));
-    }
-
-    for (int Event = 0; Event < LENOF(EventTypes); Event++)
-    {
-      if (Events.lNetworkEvents & EventTypes[Event].Mask)
-      {
-        if (EventTypes[Event].Mask & FD_READ)
-        {
-          Result = true;
-        }
-
-        int Err = Events.iErrorCode[EventTypes[Event].Bit];
-        if (Configuration->LogProtocol >= 2)
-        {
-          LogEvent(FORMAT("Detected network %s event on socket %d with error %d",
-            (EventTypes[Event].Desc, int(Socket), Err)));
-        }
-        #pragma option push -w-prc
-        LPARAM SelectEvent = WSAMAKESELECTREPLY(EventTypes[Event].Mask, Err);
-        #pragma option pop
-        if (!select_result((WPARAM)Socket, SelectEvent))
-        {
-          // note that connection was closed definitely,
-          // so "check" is actually not required
-          CheckConnection();
-        }
-      }
+      LogEvent(FORMAT("Enumerated %d network events making %d cumulative events for socket %d",
+        (int(AEvents.lNetworkEvents), int(Events.lNetworkEvents), int(Socket))));
     }
   }
   else
@@ -1242,10 +1255,57 @@ bool __fastcall TSecureShell::ProcessNetworkEvents(SOCKET Socket)
     }
   }
 
+  return
+    FLAGSET(Events.lNetworkEvents, FD_READ) ||
+    FLAGSET(Events.lNetworkEvents, FD_CLOSE);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events)
+{
+  static const struct { int Bit, Mask; const char * Desc; } EventTypes[] =
+  {
+    { FD_READ_BIT, FD_READ, "read" },
+    { FD_WRITE_BIT, FD_WRITE, "write" },
+    { FD_OOB_BIT, FD_OOB, "oob" },
+    { FD_ACCEPT_BIT, FD_ACCEPT, "accept" },
+    { FD_CONNECT_BIT, FD_CONNECT, "connect" },
+    { FD_CLOSE_BIT, FD_CLOSE, "close" },
+  };
+
+  for (int Event = 0; Event < LENOF(EventTypes); Event++)
+  {
+    if (FLAGSET(Events.lNetworkEvents, EventTypes[Event].Mask))
+    {
+      int Err = Events.iErrorCode[EventTypes[Event].Bit];
+      if (Configuration->LogProtocol >= 2)
+      {
+        LogEvent(FORMAT("Handling network %s event on socket %d with error %d",
+          (EventTypes[Event].Desc, int(Socket), Err)));
+      }
+      #pragma option push -w-prc
+      LPARAM SelectEvent = WSAMAKESELECTREPLY(EventTypes[Event].Mask, Err);
+      #pragma option pop
+      if (!select_result((WPARAM)Socket, SelectEvent))
+      {
+        // note that connection was closed definitely,
+        // so "check" is actually not required
+        CheckConnection();
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::ProcessNetworkEvents(SOCKET Socket)
+{
+  WSANETWORKEVENTS Events;
+  memset(&Events, 0, sizeof(Events));
+  bool Result = EnumNetworkEvents(Socket, Events);
+  HandleNetworkEvents(Socket, Events);
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventRequired)
+bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
+  WSANETWORKEVENTS * Events)
 {
   CheckConnection();
 
@@ -1268,9 +1328,19 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
           LogEvent("Detected network event");
         }
 
-        if (ProcessNetworkEvents(FSocket))
+        if (Events == NULL)
         {
-          Result = true;
+          if (ProcessNetworkEvents(FSocket))
+          {
+            Result = true;
+          }
+        }
+        else
+        {
+          if (EnumNetworkEvents(FSocket, *Events))
+          {
+            Result = true;
+          }
         }
 
         {
@@ -1328,7 +1398,7 @@ void __fastcall TSecureShell::Idle(unsigned int MSec)
 
   call_ssh_timer(FBackendHandle);
 
-  EventSelectLoop(MSec, false);
+  EventSelectLoop(MSec, false, NULL);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::KeepAlive()

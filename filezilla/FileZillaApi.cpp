@@ -153,7 +153,7 @@ int CFileZillaApi::Connect(const t_server &server)
 	}
 	if (!bUseGSS && server.user == "")
 		return FZ_REPLY_INVALIDPARAM;
-#endif
+#endif    
 		
 	if (!(server.nServerType&FZ_SERVERTYPE_HIGHMASK))
 		return FZ_REPLY_INVALIDPARAM;

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <u3manifest version="1.0">
-  <application uuid="48b341d1-d411-4b5a-a82c-f3b5d65602fc" version="4.0.4">
+  <application uuid="48b341d1-d411-4b5a-a82c-f3b5d65602fc" version="4.0.6">
     <icon>winscp.ico</icon>
     <name>WinSCP</name>
     <description>Freeware SFTP (SSH File Transfer Protocol), FTP (File Transfer Protocol) and SCP (Secure CoPy) client for Windows using SSH (Secure SHell). Its main function is safe copying of files between a local and a remote computer.</description>
@@ -15,6 +15,7 @@
   <actions>
     <hostCleanUp cmd="%U3_HOST_EXEC_PATH%\U3Action.exe">-hostCleanUp</hostCleanUp>
     <appStop cmd="%U3_HOST_EXEC_PATH%\U3Action.exe">-appStop</appStop>
-    <appStart cmd="%U3_HOST_EXEC_PATH%\U3Action.exe">-appStart \"%U3_HOST_EXEC_PATH%\WinSCP3.exe\" /ini="%U3_APP_DATA_PATH%\WinSCP3.ini"</appStart>
+    <appStart cmd="%U3_HOST_EXEC_PATH%\U3Action.exe">-appStart \"%U3_HOST_EXEC_PATH%\WinSCP.exe\" /ini=\"%U3_APP_DATA_PATH%\WinSCP.ini\"</appStart>
+    <deviceInstall cmd="%U3_HOST_EXEC_PATH%\U3Action.exe">-appStart -shell \"%U3_HOST_EXEC_PATH%\install.bat\"</deviceInstall>
   </actions>
 </u3manifest>

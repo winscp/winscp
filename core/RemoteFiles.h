@@ -366,6 +366,7 @@ AnsiString __fastcall UnixExtractFilePath(const AnsiString Path);
 AnsiString __fastcall UnixExtractFileName(const AnsiString Path);
 AnsiString __fastcall UnixExtractFileExt(const AnsiString Path);
 Boolean __fastcall UnixComparePaths(const AnsiString Path1, const AnsiString Path2);
+bool __fastcall UnixIsChildPath(AnsiString Parent, AnsiString Child);
 bool __fastcall ExtractCommonPath(TStrings * Files, AnsiString & Path);
 bool __fastcall UnixExtractCommonPath(TStrings * Files, AnsiString & Path);
 AnsiString __fastcall ExtractFileName(const AnsiString & Path, bool Unix);

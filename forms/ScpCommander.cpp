@@ -1294,12 +1294,12 @@ void __fastcall TScpCommanderForm::SysResizing(unsigned int Cmd)
 {
   TCustomScpExplorerForm::SysResizing(Cmd);
 
-  if ((Cmd == SC_MAXIMIZE) || (Cmd == 61490) ||
+  if ((Cmd == SC_MAXIMIZE) ||
       ((Cmd == SC_DEFAULT) && (WindowState != wsMaximized)))
   {
     FNormalPanelsWidth = LocalPanel->Width + RemotePanel->Width;
   }
-  else if ((Cmd == SC_RESTORE) || (Cmd == 61730) ||
+  else if ((Cmd == SC_RESTORE) ||
     ((Cmd == SC_DEFAULT) && (WindowState == wsMaximized)))
   {
     if (FNormalPanelsWidth >= 0)

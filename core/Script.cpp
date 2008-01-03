@@ -1387,7 +1387,8 @@ void __fastcall TManagementScript::FreeTerminal(TTerminal * Terminal)
 
       if (Changed)
       {
-        StoredSessions->Save();
+        // only modified, implicit
+        StoredSessions->Save(false, false);
       }
     }
   }

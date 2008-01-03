@@ -102,7 +102,15 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   else
   {
     TranslatorLabel->Caption = LoadStr(TRANSLATOR_INFO);
-    LinkLabel(TranslatorUrlLabel, LoadStr(TRANSLATOR_URL));
+    AnsiString TranslatorUrl = LoadStr(TRANSLATOR_URL);
+    if (!TranslatorUrl.IsEmpty())
+    {
+      LinkLabel(TranslatorUrlLabel, TranslatorUrl);
+    }
+    else
+    {
+      TranslatorUrlLabel->Visible = false;
+    }
   }
 
   #ifdef NO_FILEZILLA
@@ -130,7 +138,8 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
 void __fastcall TAboutDialog::LoadData()
 {
   AnsiString Version = FConfiguration->VersionStr;
-  if (FConfiguration->Version != FConfiguration->ProductVersion)
+  if (!FConfiguration->ProductName.IsEmpty() &&
+      (FConfiguration->Version != FConfiguration->ProductVersion))
   {
     Version = FMTLOAD(ABOUT_BASED_ON_PRODUCT,
       (Version, FConfiguration->ProductName, FConfiguration->ProductVersion));

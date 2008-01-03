@@ -422,6 +422,13 @@ AnsiString __fastcall TFTPFileSystem::AbsolutePath(AnsiString Path)
   }
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TFTPFileSystem::ActualCurrentDirectory()
+{
+  char CurrentPath[1024];
+  FFileZillaIntf->GetCurrentPath(CurrentPath, sizeof(CurrentPath));
+  return AnsiString(CurrentPath);
+}
+//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::EnsureLocation()
 {
   // if we do not know what's the current directory, do nothing
@@ -433,9 +440,7 @@ void __fastcall TFTPFileSystem::EnsureLocation()
     // 1) We did cached directory change
     // 2) Listing was requested for non-current directory, which
     // makes FAPI change its current directory (and not restoring it back afterwards)
-    char CurrentPath[1024];
-    FFileZillaIntf->GetCurrentPath(CurrentPath, sizeof(CurrentPath));
-    if (!UnixComparePaths(CurrentPath, FCurrentDirectory))
+    if (!UnixComparePaths(ActualCurrentDirectory(), FCurrentDirectory))
     {
       FTerminal->LogEvent(FORMAT("Synchronizing current directory \"%s\".",
         (FCurrentDirectory)));
@@ -1319,6 +1324,17 @@ void __fastcall TFTPFileSystem::DeleteFile(const AnsiString AFileName,
   {
     if (Dir)
     {
+      // Is current remote directory is in the directory being removed,
+      // some servers may refuse to delete it
+      // This is common as ProcessDirectory above would CWD to
+      // the directory to LIST it.
+      // EnsureLocation should reset actual current directory to user's working directory.
+      // If user's working directory is still below deleted directory, it is
+      // perfectly correct to report an error.
+      if (UnixIsChildPath(ActualCurrentDirectory(), FileName))
+      {
+        EnsureLocation();
+      }
       FFileZillaIntf->RemoveDir(FileNameOnly.c_str(), FilePath.c_str());
     }
     else

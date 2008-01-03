@@ -42,6 +42,7 @@ private:
   bool FShowFtpWelcomeMessage;
   AnsiString FDefaultRandomSeedFile;
   AnsiString FRandomSeedFile;
+  AnsiString FPuttyRegistryStorageKey;
 
   bool FDisablePasswordStoring;
   bool FForceBanners;
@@ -58,8 +59,8 @@ private:
   AnsiString __fastcall TrimVersion(AnsiString Version);
   AnsiString __fastcall GetStoredSessionsSubKey();
   AnsiString __fastcall GetPuttySessionsKey();
-  AnsiString __fastcall GetPuttyRegistryStorageKey();
   void __fastcall SetRandomSeedFile(AnsiString value);
+  void __fastcall SetPuttyRegistryStorageKey(AnsiString value);
   AnsiString __fastcall GetSshHostKeysSubKey();
   AnsiString __fastcall GetRootKeyStr();
   AnsiString __fastcall GetConfigurationSubKey();
@@ -130,7 +131,7 @@ public:
   void __fastcall Initialize();
   virtual void __fastcall Default();
   virtual void __fastcall Load();
-  virtual void __fastcall Save(bool All = false);
+  virtual void __fastcall Save(bool All, bool Explicit);
   void __fastcall Export(const AnsiString FileName);
   void __fastcall CleanupConfiguration();
   void __fastcall CleanupIniFile();
@@ -151,7 +152,7 @@ public:
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
   __property AnsiString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
-  __property AnsiString PuttyRegistryStorageKey  = { read=GetPuttyRegistryStorageKey };
+  __property AnsiString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
   __property AnsiString PuttySessionsKey  = { read=GetPuttySessionsKey };
   __property AnsiString RandomSeedFile  = { read=FRandomSeedFile, write=SetRandomSeedFile };
   __property AnsiString SshHostKeysSubKey  = { read=GetSshHostKeysSubKey };

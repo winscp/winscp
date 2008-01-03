@@ -19,6 +19,8 @@ default: DragExt64.dll
 default: WinSCP.com
 default: lib\DiscMon_B5.lib
 
+core: lib\Putty.lib lib\FileZilla.lib lib\ScpCore.lib lib\DiscMon_B5.lib
+
 WinSCP.exe: WinSCP.bpr
 WinSCP.exe: lib\Moje_B5.lib lib\DragDrop_B5.lib lib\DriveDir_B5.lib
 WinSCP.exe: lib\tb2k_cb6.lib lib\tbx_cb6.lib lib\ThemeManagerC6.lib

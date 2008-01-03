@@ -2315,7 +2315,7 @@ void __fastcall TTerminal::ChangeFileProperties(AnsiString FileName,
            UnixToDateTime(RProperties->LastAccess, SessionData->DSTMode)))));
     }
   }
-  if (File) FileModified(File, FileName);
+  FileModified(File, FileName);
   DoChangeFileProperties(FileName, File, RProperties);
   ReactOnCommand(fsChangeProperties);
 }
@@ -3765,9 +3765,12 @@ void __fastcall TTerminal::SynchronizeRemoteTimestamp(const AnsiString /*FileNam
   Properties.Modification = ConvertTimestampToUnix(ChecklistItem->FLocalLastWriteTime,
     SessionData->DSTMode);
 
+  // unfortunatelly we never have a remote file here
+  assert(ChecklistItem->FRemoteFile == NULL);
+
   ChangeFileProperties(
     UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->FileName,
-    ChecklistItem->FRemoteFile, &Properties);
+    NULL, &Properties);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::SpaceAvailable(const AnsiString Path,

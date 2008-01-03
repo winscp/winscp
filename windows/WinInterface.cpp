@@ -1035,7 +1035,7 @@ void __fastcall TTrayIcon::WndProc(TMessage & Message)
     }
     else
     {
-      DefWindowProc(FTrayIcon->hWnd, Message.Msg, Message.WParam, Message.LParam);
+      Message.Result = DefWindowProc(FTrayIcon->hWnd, Message.Msg, Message.WParam, Message.LParam);
     }
   }
   catch(Exception & E)

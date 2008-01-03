@@ -328,7 +328,18 @@ struct TShowAsModalStorage
 {
   void * FocusWindowList;
   void * FocusActiveWindow;
+  TFocusState FocusState;
 };
+//---------------------------------------------------------------------------
+static TCustomForm ** __fastcall FocusedForm()
+{
+  return reinterpret_cast<TCustomForm **>(reinterpret_cast<char *>(Screen) + 0x78);
+}
+//---------------------------------------------------------------------------
+static TList * __fastcall SaveFocusedList()
+{
+  return *reinterpret_cast<TList **>(reinterpret_cast<char *>(Screen) + 0x7C);
+}
 //---------------------------------------------------------------------------
 void __fastcall ShowAsModal(TForm * Form, void *& Storage)
 {
@@ -341,7 +352,9 @@ void __fastcall ShowAsModal(TForm * Form, void *& Storage)
   TShowAsModalStorage * AStorage = new TShowAsModalStorage;
 
   AStorage->FocusActiveWindow = GetActiveWindow();
-
+  AStorage->FocusState = SaveFocusState();
+  SaveFocusedList()->Insert(0, *FocusedForm());
+  *FocusedForm() = Form;
   AStorage->FocusWindowList = DisableTaskWindows(0);
   Form->Show();
   SendMessage(Form->Handle, CM_ACTIVATE, 0, 0);
@@ -364,10 +377,24 @@ void __fastcall HideAsModal(TForm * Form, void *& Storage)
 
   EnableTaskWindows(AStorage->FocusWindowList);
 
+  TList * ASaveFocusedList = SaveFocusedList();
+  TCustomForm ** AFocusedForm = FocusedForm();
+  if (ASaveFocusedList->Count > 0)
+  {
+    *AFocusedForm = static_cast<TCustomForm *>(ASaveFocusedList->First());
+    ASaveFocusedList->Remove(*AFocusedForm);
+  }
+  else
+  {
+    *AFocusedForm = NULL;
+  }
+
   if (AStorage->FocusActiveWindow != 0)
   {
     SetActiveWindow(AStorage->FocusActiveWindow);
   }
+
+  RestoreFocusState(AStorage->FocusState);
 
   (static_cast<TPublicForm*>(Form))->FFormState >> fsModal;
 

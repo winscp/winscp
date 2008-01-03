@@ -1140,7 +1140,8 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
       TListItem * Item;
       TSessionData *NewSession =
         StoredSessions->NewSession(SessionName, FSessionData);
-      StoredSessions->Save();
+      // modified only, explicit
+      StoredSessions->Save(false, true);
       SaveConfiguration();
       // by now list must contais same number of items or one less
       assert(StoredSessions->Count == SessionListView->Items->Count ||
@@ -1789,7 +1790,8 @@ void __fastcall TLoginDialog::SessionListViewEdited(TObject * /*Sender*/,
 
     int PrevCount = StoredSessions->Count;
     TSessionData * NewSession = StoredSessions->NewSession(S, Session);
-    StoredSessions->Save();
+    // modified only explicit
+    StoredSessions->Save(false, true);
     // the session may be the same, if only letter case has changed
     if (Session != NewSession)
     {

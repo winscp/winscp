@@ -956,17 +956,22 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
   {
     if (IsWin64())
     {
-      // temporarily consider dragext always present of 64-bit system
+      // temporarily consider dragext always present on 64-bit system
       FDDExtInstalled = 1;
     }
     else
     {
-      void* DragExtRef;
+      void * DragExtRef;
       bool Result;
       Result = (CoCreateInstance(CLSID_ShellExtension, NULL,
         CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IUnknown,
         &DragExtRef) == S_OK);
       FDDExtInstalled = (Result ? 1 : 0);
+      if (Result)
+      {
+        reinterpret_cast<IUnknown *>(DragExtRef)->Release();
+        CoFreeUnusedLibraries();
+      }
     }
   }
   return (FDDExtInstalled > 0);

@@ -3,8 +3,8 @@ object AuthenticateForm: TAuthenticateForm
   Top = 113
   HelpType = htKeyword
   HelpKeyword = 'ui_authenticate'
-  AutoScroll = False
   BorderIcons = [biSystemMenu]
+  BorderStyle = bsDialog
   Caption = 'AuthenticateForm'
   ClientHeight = 270
   ClientWidth = 375

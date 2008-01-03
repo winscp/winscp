@@ -3,8 +3,10 @@
 #pragma hdrstop
 
 #include "Common.h"
+#include "Exceptions.h"
 #include "PuttyIntf.h"
 #include "HierarchicalStorage.h"
+#include <TextsCore.h>
 #include <vector>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -52,6 +54,7 @@ __fastcall THierarchicalStorage::THierarchicalStorage(const AnsiString AStorage)
   FStorage = AStorage;
   FKeyHistory = new TStringList();
   AccessMode = smRead;
+  Explicit = false;
 }
 //---------------------------------------------------------------------------
 __fastcall THierarchicalStorage::~THierarchicalStorage()
@@ -532,12 +535,69 @@ __fastcall TIniFileStorage::TIniFileStorage(const AnsiString AStorage):
   THierarchicalStorage(AStorage)
 {
   FIniFile = new TMemIniFile(Storage);
+  FOriginal = new TStringList();
+  FIniFile->GetStrings(FOriginal);
+  ApplyOverrides();
 }
 //---------------------------------------------------------------------------
 __fastcall TIniFileStorage::~TIniFileStorage()
 {
-  FIniFile->UpdateFile();
-  delete FIniFile;
+  TStrings * Strings = new TStringList;
+  try
+  {
+    FIniFile->GetStrings(Strings);
+    if (!Strings->Equals(FOriginal))
+    {
+      int Attr;
+      // preserve attributes (especially hidden)
+      if (FileExists(Storage))
+      {
+        Attr = GetFileAttributes(Storage.c_str());
+      }
+      else
+      {
+        Attr = FILE_ATTRIBUTE_NORMAL;
+      }
+
+      HANDLE Handle = CreateFile(Storage.c_str(), GENERIC_READ | GENERIC_WRITE,
+        0, NULL, CREATE_ALWAYS, Attr, 0);
+
+      if (Handle == INVALID_HANDLE_VALUE)
+      {
+        // "access denied" errors upon implicit saves are ignored
+        if (Explicit || (GetLastError() != ERROR_ACCESS_DENIED))
+        {
+          try
+          {
+            RaiseLastOSError();
+          }
+          catch(Exception & E)
+          {
+            throw ExtException(&E, FMTLOAD(CREATE_FILE_ERROR, (Storage)));
+          }
+        }
+      }
+      else
+      {
+        TStream * Stream = new THandleStream(int(Handle));
+        try
+        {
+          Strings->SaveToStream(Stream);
+        }
+        __finally
+        {
+          CloseHandle(Handle);
+          delete Stream;
+        }
+      }
+    }
+  }
+  __finally
+  {
+    delete FOriginal;
+    delete Strings;
+    delete FIniFile;
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::GetCurrentSection()
@@ -655,6 +715,52 @@ int __fastcall TIniFileStorage::BinaryDataSize(const AnsiString Name)
   return ReadStringRaw(Name, "").Length() / 2;
 }
 //---------------------------------------------------------------------------
+void __fastcall TIniFileStorage::ApplyOverrides()
+{
+  AnsiString OverridesKey = IncludeTrailingBackslash("Override");
+
+  TStrings * Sections = new TStringList();
+  try
+  {
+    Sections->Clear();
+    FIniFile->ReadSections(Sections);
+    for (int i = 0; i < Sections->Count; i++)
+    {
+      AnsiString Section = Sections->Strings[i];
+
+      if (AnsiSameText(OverridesKey,
+            Section.SubString(1, OverridesKey.Length())))
+      {
+        AnsiString SubKey = Section.SubString(OverridesKey.Length() + 1,
+          Section.Length() - OverridesKey.Length());
+
+        TStrings * Names = new TStringList;
+        try
+        {
+          FIniFile->ReadSection(Section, Names);
+
+          for (int ii = 0; ii < Names->Count; ii++)
+          {
+            AnsiString Name = Names->Strings[ii];
+            AnsiString Value = FIniFile->ReadString(Section, Name, "");
+            FIniFile->WriteString(SubKey, Name, Value);
+          }
+        }
+        __finally
+        {
+          delete Names;
+        }
+
+        FIniFile->EraseSection(Section);
+      }
+    }
+  }
+  __finally
+  {
+    delete Sections;
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::ReadBool(const AnsiString Name, bool Default)
 {
   return FIniFile->ReadBool(CurrentSection, Name, Default);
@@ -741,20 +847,7 @@ double __fastcall TIniFileStorage::ReadFloat(const AnsiString Name, double Defau
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::ReadStringRaw(const AnsiString Name, AnsiString Default)
 {
-  AnsiString Section = CurrentSection;
-  AnsiString Result;
-  Result = FIniFile->ReadString(Section, Name, Default);
-  // TIniFile::ReadString has limit of 2 kB.
-  // We could straithly use our routine, but call to legacy code is preserved
-  // until ours is proved to work and also to save memory overhead
-  if (Result.Length() == 2047)
-  {
-    char Buffer[10240];
-    GetPrivateProfileString(Section.c_str(), Name.c_str(), Default.c_str(),
-      Buffer, sizeof(Buffer), FIniFile->FileName.c_str());
-    Result = Buffer;
-  }
-  return Result;
+  return FIniFile->ReadString(CurrentSection, Name, Default);
 }
 //---------------------------------------------------------------------------
 int __fastcall TIniFileStorage::ReadBinaryData(const AnsiString Name,
@@ -798,14 +891,7 @@ void __fastcall TIniFileStorage::WriteFloat(const AnsiString Name, double Value)
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteStringRaw(const AnsiString Name, const AnsiString Value)
 {
-  if ((Value.Length() >= 2) && (Value[1] == '"') && (Value[Value.Length()] == '"'))
-  {
-    FIniFile->WriteString(CurrentSection, Name, "\"" + Value + "\"");
-  }
-  else
-  {
-    FIniFile->WriteString(CurrentSection, Name, Value);
-  }
+  FIniFile->WriteString(CurrentSection, Name, Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteBinaryData(const AnsiString Name,
