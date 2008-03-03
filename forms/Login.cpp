@@ -1248,9 +1248,14 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   }
   Handled = true;
 
-  if (!LoginButton->Default && !SessionListView->IsEditing())
+  if (!SessionListView->IsEditing())
   {
-    LoginButton->Default = true;
+    // default property setter does not have guard for "the same value"
+    if (!LoginButton->Default)
+    {
+      LoginButton->Default = true;
+    }
+    CloseButton->Cancel = true;
   }
 }
 //---------------------------------------------------------------------------
@@ -1765,6 +1770,7 @@ void __fastcall TLoginDialog::SessionListViewEditing(TObject * /*Sender*/,
   if (AllowEdit)
   {
     LoginButton->Default = false;
+    CloseButton->Cancel = false;
   }
 }
 //---------------------------------------------------------------------------

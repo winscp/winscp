@@ -761,6 +761,7 @@ void __fastcall TFTPFileSystem::FileTransferProgress(__int64 TransferSize,
   if (OperationProgress->Cancel == csCancel)
   {
     FFileTransferCancelled = true;
+    FFileTransferAbort = ftaCancel;
     FFileZillaIntf->Cancel();
   }
 }
@@ -1193,6 +1194,8 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
     {
       FIgnoreFileList = false;
     }
+
+    CheckFileTransferAbort();
   }
 
   /* TODO : Delete also read-only files. */
@@ -1229,6 +1232,7 @@ void __fastcall TFTPFileSystem::DirectorySource(const AnsiString DirectoryName,
       FindAttrs, SearchRec) == 0);
   );
 
+  bool CreateDir = true;
   while (FindOK && !OperationProgress->Cancel)
   {
     AnsiString FileName = DirectoryName + SearchRec.Name;
@@ -1236,6 +1240,10 @@ void __fastcall TFTPFileSystem::DirectorySource(const AnsiString DirectoryName,
     {
       if ((SearchRec.Name != ".") && (SearchRec.Name != ".."))
       {
+        // if any file will get uploaded (at least attempted),
+        // do not try to create directory, as it should be already created
+        // by FZAPI during upload
+        CreateDir = false;
         SourceRobust(FileName, DestFullName, CopyParam, Params, OperationProgress,
           Flags & ~(tfFirstLevel | tfAutoResume));
       }
@@ -1257,6 +1265,17 @@ void __fastcall TFTPFileSystem::DirectorySource(const AnsiString DirectoryName,
   };
 
   FindClose(SearchRec);
+
+  if (CreateDir)
+  {
+    TRemoteProperties Properties;
+    if (CopyParam->PreserveRights)
+    {
+      Properties.Valid = TValidProperties() << vpRights;
+      Properties.Rights = CopyParam->RemoteFileRights(Attrs);
+    }
+    FTerminal->CreateDirectory(DestFullName, &Properties);
+  }
 
   /* TODO : Delete also read-only directories. */
   /* TODO : Show error message on failure. */
@@ -2322,6 +2341,10 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
       // on retry, use the same answer as on the first attempt
       RequestResult = UserData.OverwriteResult;
     }
+    else if (!FTerminal->Configuration->ConfirmOverwriting)
+    {
+      RequestResult = TFileZillaIntf::FILEEXISTS_OVERWRITE;
+    }
     else
     {
       TFileOperationProgressType * OperationProgress = FTerminal->OperationProgress;
@@ -2376,9 +2399,11 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
       {
         RequestResult = TFileZillaIntf::FILEEXISTS_SKIP;
       }
-      // remember the answer for the retries
-      UserData.OverwriteResult = RequestResult;
     }
+
+    // remember the answer for the retries
+    UserData.OverwriteResult = RequestResult;
+
     return true;
   }
 }

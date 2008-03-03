@@ -58,6 +58,7 @@ private:
   void __fastcall SetLocalInvalidChars(AnsiString value);
   bool __fastcall GetReplaceInvalidChars() const;
   void __fastcall SetReplaceInvalidChars(bool value);
+  char * __fastcall ReplaceChar(AnsiString & FileName, char * InvalidChar) const;
 
 public:
   __fastcall TCopyParamType();

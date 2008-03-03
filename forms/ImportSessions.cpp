@@ -25,6 +25,12 @@ Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList)
     ImportSessionList->DefaultSettings = SessionList->DefaultSettings;
 
     ImportSessionList->Load(Configuration->PuttySessionsKey, true);
+    TSessionData * PuttySession =
+      (TSessionData *)ImportSessionList->FindByName(GUIConfiguration->PuttySession);
+    if (PuttySession != NULL)
+    {
+      ImportSessionList->Remove(PuttySession);
+    }
     ImportSessionList->SelectSessionsToImport(SessionList, True);
     ImportSessionsDialog->SessionList = ImportSessionList;
 

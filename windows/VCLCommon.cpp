@@ -506,6 +506,8 @@ int CALLBACK PathWordBreakProc(char * Ch, int Current, int Len, int Code)
   {
     ACh = Ch;
   }
+  // it may not be NULL terminated
+  ACh.SetLength(Len);
   if (Code == WB_ISDELIMITER)
   {
     // we return negacy of what WinAPI docs says
@@ -519,7 +521,7 @@ int CALLBACK PathWordBreakProc(char * Ch, int Current, int Len, int Code)
   {
     if (Current == 0)
     {
-      // will be called gain with Current == 1
+      // will be called again with Current == 1
       Result = 0;
     }
     else

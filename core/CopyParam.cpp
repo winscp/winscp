@@ -231,6 +231,30 @@ void __fastcall TCopyParamType::SetReplaceInvalidChars(bool value)
   }
 }
 //---------------------------------------------------------------------------
+char * __fastcall TCopyParamType::ReplaceChar(AnsiString & FileName, char * InvalidChar) const
+{
+  int Index = InvalidChar - FileName.c_str() + 1;
+  if (FileName.ByteType(Index) == mbSingleByte)
+  {
+    if (InvalidCharsReplacement == TokenReplacement)
+    {
+      FileName.Insert(CharToHex(FileName[Index]), Index + 1);
+      FileName[Index] = TokenPrefix;
+      InvalidChar = FileName.c_str() + Index + 2;
+    }
+    else
+    {
+      FileName[Index] = InvalidCharsReplacement;
+      InvalidChar++;
+    }
+  }
+  else
+  {
+    InvalidChar++;
+  }
+  return InvalidChar; 
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall TCopyParamType::ValidLocalFileName(AnsiString FileName) const
 {
   if (InvalidCharsReplacement != NoReplacement)
@@ -241,25 +265,13 @@ AnsiString __fastcall TCopyParamType::ValidLocalFileName(AnsiString FileName) co
     char * InvalidChar = FileName.c_str();
     while ((InvalidChar = strpbrk(InvalidChar, Chars)) != NULL)
     {
-      int Index = InvalidChar - FileName.c_str() + 1;
-      if (FileName.ByteType(Index) == mbSingleByte)
-      {
-        if (ATokenReplacement)
-        {
-          FileName.Insert(CharToHex(FileName[Index]), Index + 1);
-          FileName[Index] = TokenPrefix;
-          InvalidChar = FileName.c_str() + Index + 2;
-        }
-        else
-        {
-          FileName[Index] = InvalidCharsReplacement;
-          InvalidChar++;
-        }
-      }
-      else
-      {
-        InvalidChar++;
-      }
+      InvalidChar = ReplaceChar(FileName, InvalidChar);
+    }
+
+    // Windows trim trailing space, hence we must encode it to preserve it
+    if (!FileName.IsEmpty() && (FileName[FileName.Length()] == ' '))
+    {
+      ReplaceChar(FileName, FileName.c_str() + FileName.Length() - 1);
     }
   }
   return FileName;
@@ -342,8 +354,6 @@ bool __fastcall TCopyParamType::UseAsciiTransfer(AnsiString FileName,
 TRights __fastcall TCopyParamType::RemoteFileRights(Integer Attrs) const
 {
   TRights R = Rights;
-/*  if ((Attrs & faReadOnly) && PreserveReadOnly)
-    R.ReadOnly = True;*/
   if ((Attrs & faDirectory) && AddXToDirectories)
     R.AddExecute();
   return R;

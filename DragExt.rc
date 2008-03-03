@@ -1,6 +1,6 @@
 1 VERSIONINFO
-FILEVERSION 1,1,6,79
-PRODUCTVERSION 1,1,6,79
+FILEVERSION 1,1,6,81
+PRODUCTVERSION 1,1,6,81
 FILEOS 0x4
 FILETYPE 0x2
 {
@@ -10,13 +10,13 @@ FILETYPE 0x2
         {
             VALUE "CompanyName", "Martin Prikryl\0"
             VALUE "FileDescription", "Drag&Drop shell extension for WinSCP\0"
-            VALUE "FileVersion", "1.1.6.79\0"
+            VALUE "FileVersion", "1.1.6.81\0"
             VALUE "InternalName", "dragext\0"
             VALUE "LegalCopyright", "(c) 2000-2008 Martin Prikryl\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "dragext.dll\0"
             VALUE "ProductName", "WinSCP\0"
-            VALUE "ProductVersion", "4.0.6.0\0"
+            VALUE "ProductVersion", "4.0.7.0\0"
             VALUE "WWW", "http://winscp.net/\0"
         }
     }

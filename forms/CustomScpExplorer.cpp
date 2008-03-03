@@ -2720,8 +2720,7 @@ void __fastcall TCustomScpExplorerForm::TrayIconClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::OpenInNewWindow()
 {
-  // VK_SHIFT seems to indicate shift down even when it is not
-  return (GetAsyncKeyState(VK_LSHIFT) != 0) || (GetAsyncKeyState(VK_RSHIFT) != 0);
+  return FLAGSET(GetAsyncKeyState(VK_SHIFT), 0x8000);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::NewSession()

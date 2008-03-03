@@ -5297,7 +5297,11 @@ void CFtpControlSocket::OnTimer()
 			int diff=COptions::GetOptionVal(OPTION_INTERVALHIGH)-low;
 
 			//Choose a new delay
+#ifdef MPEXT
+			int delay=low+(rand()*diff)/RAND_MAX;
+#else
 			static int delay=low+(rand()*diff)/RAND_MAX;
+#endif
 
 			CTimeSpan span=CTime::GetCurrentTime()-m_LastSendTime;
 			if (span.GetTotalSeconds()>=delay)

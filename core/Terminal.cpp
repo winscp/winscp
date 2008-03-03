@@ -478,148 +478,160 @@ void __fastcall TTerminal::Open()
   {
     try
     {
-      ResetConnection();
-      FStatus = ssOpening;
-
       try
       {
-        if (FFileSystem == NULL)
-        {
-          Log->AddStartupInfo();
-        }
+        ResetConnection();
+        FStatus = ssOpening;
 
-        assert(FTunnel == NULL);
-        if (FSessionData->Tunnel)
+        try
         {
-          DoInformation(LoadStr(OPEN_TUNNEL), true);
-          LogEvent("Opening tunnel.");
-          OpenTunnel();
-          Log->AddSeparator();
-
-          FSessionData->ConfigureTunnel(FTunnelLocalPortNumber);
-
-          DoInformation(LoadStr(USING_TUNNEL), false);
-          LogEvent(FORMAT("Connecting via tunnel interface %s:%d.",
-            (FSessionData->HostName, FSessionData->PortNumber)));
-        }
-        else
-        {
-          assert(FTunnelLocalPortNumber == 0);
-        }
-
-        if (FFileSystem == NULL)
-        {
-          if (SessionData->FSProtocol == fsFTP)
+          if (FFileSystem == NULL)
           {
-            #ifdef NO_FILEZILLA
-            LogEvent("FTP protocol is not supported by this build.");
-            FatalError(NULL, LoadStr(FTP_UNSUPPORTED));
-            #else
-            FFSProtocol = cfsFTP;
-            FFileSystem = new TFTPFileSystem(this);
-            FFileSystem->Open();
+            Log->AddStartupInfo();
+          }
+
+          assert(FTunnel == NULL);
+          if (FSessionData->Tunnel)
+          {
+            DoInformation(LoadStr(OPEN_TUNNEL), true);
+            LogEvent("Opening tunnel.");
+            OpenTunnel();
             Log->AddSeparator();
-            LogEvent("Using FTP protocol.");
-            #endif
+
+            FSessionData->ConfigureTunnel(FTunnelLocalPortNumber);
+
+            DoInformation(LoadStr(USING_TUNNEL), false);
+            LogEvent(FORMAT("Connecting via tunnel interface %s:%d.",
+              (FSessionData->HostName, FSessionData->PortNumber)));
           }
           else
           {
-            assert(FSecureShell == NULL);
-            try
+            assert(FTunnelLocalPortNumber == 0);
+          }
+
+          if (FFileSystem == NULL)
+          {
+            if (SessionData->FSProtocol == fsFTP)
             {
-              FSecureShell = new TSecureShell(this, FSessionData, Log, Configuration);
+              #ifdef NO_FILEZILLA
+              LogEvent("FTP protocol is not supported by this build.");
+              FatalError(NULL, LoadStr(FTP_UNSUPPORTED));
+              #else
+              FFSProtocol = cfsFTP;
+              FFileSystem = new TFTPFileSystem(this);
+              FFileSystem->Open();
+              Log->AddSeparator();
+              LogEvent("Using FTP protocol.");
+              #endif
+            }
+            else
+            {
+              assert(FSecureShell == NULL);
               try
               {
-                FSecureShell->Open();
-              }
-              catch(Exception & E)
-              {
-                assert(!FSecureShell->Active);
-                if (!FSecureShell->Active && !FTunnelError.IsEmpty())
+                FSecureShell = new TSecureShell(this, FSessionData, Log, Configuration);
+                try
                 {
-                  // the only case where we expect this to happen
-                  assert(E.Message == LoadStr(UNEXPECTED_CLOSE_ERROR));
-                  FatalError(&E, FMTLOAD(TUNNEL_ERROR, (FTunnelError)));
+                  FSecureShell->Open();
+                }
+                catch(Exception & E)
+                {
+                  assert(!FSecureShell->Active);
+                  if (!FSecureShell->Active && !FTunnelError.IsEmpty())
+                  {
+                    // the only case where we expect this to happen
+                    assert(E.Message == LoadStr(UNEXPECTED_CLOSE_ERROR));
+                    FatalError(&E, FMTLOAD(TUNNEL_ERROR, (FTunnelError)));
+                  }
+                  else
+                  {
+                    throw;
+                  }
+                }
+
+                Log->AddSeparator();
+
+                if ((SessionData->FSProtocol == fsSCPonly) ||
+                    (SessionData->FSProtocol == fsSFTP && FSecureShell->SshFallbackCmd()))
+                {
+                  FFSProtocol = cfsSCP;
+                  FFileSystem = new TSCPFileSystem(this, FSecureShell);
+                  FSecureShell = NULL; // ownership passed
+                  LogEvent("Using SCP protocol.");
                 }
                 else
                 {
-                  throw;
+                  FFSProtocol = cfsSFTP;
+                  FFileSystem = new TSFTPFileSystem(this, FSecureShell);
+                  FSecureShell = NULL; // ownership passed
+                  LogEvent("Using SFTP protocol.");
                 }
               }
-
-              Log->AddSeparator();
-
-              if ((SessionData->FSProtocol == fsSCPonly) ||
-                  (SessionData->FSProtocol == fsSFTP && FSecureShell->SshFallbackCmd()))
+              __finally
               {
-                FFSProtocol = cfsSCP;
-                FFileSystem = new TSCPFileSystem(this, FSecureShell);
-                FSecureShell = NULL; // ownership passed
-                LogEvent("Using SCP protocol.");
+                delete FSecureShell;
+                FSecureShell = NULL;
               }
-              else
-              {
-                FFSProtocol = cfsSFTP;
-                FFileSystem = new TSFTPFileSystem(this, FSecureShell);
-                FSecureShell = NULL; // ownership passed
-                LogEvent("Using SFTP protocol.");
-              }
-            }
-            __finally
-            {
-              delete FSecureShell;
-              FSecureShell = NULL;
             }
           }
+          else
+          {
+            FFileSystem->Open();
+          }
         }
-        else
+        __finally
         {
-          FFileSystem->Open();
+          if (FSessionData->Tunnel)
+          {
+            FSessionData->RollbackTunnel();
+          }
         }
+
+        if (SessionData->CacheDirectoryChanges)
+        {
+          assert(FDirectoryChangesCache == NULL);
+          FDirectoryChangesCache = new TRemoteDirectoryChangesCache();
+          if (SessionData->PreserveDirectoryChanges)
+          {
+            Configuration->LoadDirectoryChangesCache(SessionData->SessionKey,
+              FDirectoryChangesCache);
+          }
+        }
+
+        DoStartup();
+
+        DoInformation(LoadStr(STATUS_READY), true);
+        FStatus = ssOpened;
       }
-      __finally
+      catch(...)
       {
-        if (FSessionData->Tunnel)
+        // rollback
+        if (FDirectoryChangesCache != NULL)
         {
-          FSessionData->RollbackTunnel();
+          delete FDirectoryChangesCache;
+          FDirectoryChangesCache = NULL;
         }
+        throw;
       }
-
-      if (SessionData->CacheDirectoryChanges)
-      {
-        assert(FDirectoryChangesCache == NULL);
-        FDirectoryChangesCache = new TRemoteDirectoryChangesCache();
-        if (SessionData->PreserveDirectoryChanges)
-        {
-          Configuration->LoadDirectoryChangesCache(SessionData->SessionKey,
-            FDirectoryChangesCache);
-        }
-      }
-
-      DoStartup();
-
-      DoInformation(LoadStr(STATUS_READY), true);
-      FStatus = ssOpened;
     }
-    catch(...)
+    __finally
     {
-      // rollback
-      if (FDirectoryChangesCache != NULL)
+      // Prevent calling Information with active=false unless there was at least
+      // one call with active=true
+      if (FAnyInformation)
       {
-        delete FDirectoryChangesCache;
-        FDirectoryChangesCache = NULL;
+        DoInformation("", true, false);
       }
-      throw;
     }
   }
-  __finally
+  catch(EFatal &)
   {
-    // Prevent calling Information with active=false unless there was at least
-    // one call with active=true
-    if (FAnyInformation)
-    {
-      DoInformation("", true, false);
-    }
+    throw;
+  }
+  catch(Exception & E)
+  {
+    // any exception while opening session is fatal
+    FatalError(&E, "");
   }
 }
 //---------------------------------------------------------------------------

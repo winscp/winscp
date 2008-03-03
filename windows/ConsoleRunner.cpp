@@ -92,7 +92,9 @@ __fastcall TOwnConsole::~TOwnConsole()
 {
   TGuard Guard(&FSection);
 
-  SetConsoleCtrlHandler(HandlerRoutine, false);
+  // deliberatelly do not remove ConsoleCtrlHandler as it causes
+  // failures while exiting
+
   FreeConsole();
 
   assert(FInstance == this);
