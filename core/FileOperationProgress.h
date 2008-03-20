@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include "Configuration.h"
 #include "CopyParam.h"
+#include <vector>
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;
 enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,
@@ -20,18 +21,18 @@ typedef void __fastcall (__closure *TFileOperationFinished)
 class TFileOperationProgressType
 {
 private:
-  // how long it was stopped (e.g. while displaying error message)
-  TDateTime FStopped;
   // when it was last time suspended (to calculate suspend time in Resume())
-  TDateTime FSuspendTime;
+  unsigned int FSuspendTime;
   // when current file was started being transfered
   TDateTime FFileStartTime;
-  // how long current file transfer was stopped (e.g. while displaying error message)
-  TDateTime FFileStopped;
   int FFilesFinished;
   TFileOperationProgressEvent FOnProgress;
   TFileOperationFinished FOnFinished;
   bool FReset;
+  unsigned int FLastSecond;
+  unsigned long FRemainingCPS;
+  std::vector<unsigned long> FTicks;
+  std::vector<__int64> FTotalTransferredThen;
 
 protected:
   void __fastcall ClearTransfer();
@@ -69,6 +70,7 @@ public:
   bool NoToAll;
   bool SkipToAll;
   bool AlternateResumeAlways;
+  unsigned long CPSLimit;
 
   bool TotalSizeSet;
 
@@ -91,6 +93,7 @@ public:
   void __fastcall SetFile(AnsiString AFileName);
   int __fastcall OperationProgress();
   unsigned long __fastcall TransferBlockSize();
+  unsigned long __fastcall AdjustToCPSLimit(unsigned long Size);
   static unsigned long __fastcall StaticBlockSize();
   void __fastcall Reset();
   void __fastcall Resume();
@@ -101,9 +104,10 @@ public:
   void __fastcall ChangeTransferSize(__int64 ASize);
   void __fastcall RollbackTransfer();
   void __fastcall SetTotalSize(__int64 ASize);
+  void __fastcall Start(TFileOperation AOperation, TOperationSide ASide, int ACount);
   void __fastcall Start(TFileOperation AOperation,
-    TOperationSide ASide, int ACount, bool ATemp = false,
-    const AnsiString ADirectory = "");
+    TOperationSide ASide, int ACount, bool ATemp, const AnsiString ADirectory,
+    unsigned long ACPSLimit);
   void __fastcall Stop();
   void __fastcall Suspend();
   // whole operation

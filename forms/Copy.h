@@ -21,25 +21,26 @@ __published:
   TLabel *DirectoryLabel;
   THistoryComboBox *LocalDirectoryEdit;
   THistoryComboBox *RemoteDirectoryEdit;
-  TMoreButton *MoreButton;
   TButton *CopyButton;
   TButton *CancelButton;
-  TPanel *MorePanel;
-  TCheckBox *SaveSettingsCheck;
-  TCopyParamsFrame *CopyParamsFrame;
   TButton *LocalDirectoryBrowseButton;
   TCheckBox *QueueCheck;
   TCheckBox *QueueNoConfirmationCheck;
-  TCheckBox *NewerOnlyCheck;
-  TButton *PresetsButton;
   TButton *HelpButton;
+  TCheckBox *NewerOnlyCheck;
   TCheckBox *NeverShowAgainCheck;
+  TButton *TransferSettingsButton;
+  TGroupBox *CopyParamGroup;
+  TLabel *CopyParamLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
-  void __fastcall PresetsButtonClick(TObject *Sender);
+  void __fastcall TransferSettingsButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall CopyParamGroupDblClick(TObject *Sender);
+  void __fastcall CopyParamGroupContextPopup(TObject *Sender,
+          TPoint &MousePos, bool &Handled);
 private:
   bool FDefaultToRemote;
   bool FToRemote;
@@ -50,6 +51,9 @@ private:
   TGUICopyParamType FParams;
   TPopupMenu * FPresetsMenu;
   AnsiString FPreset;
+  TCopyParamType FCopyParams;
+  int FCopyParamAttrs;
+  bool FSaveSettings;
   AnsiString __fastcall GetDirectory();
   void __fastcall SetToRemote(bool value);
   THistoryComboBox * __fastcall GetDirectoryEdit();
@@ -70,6 +74,7 @@ protected:
   void __fastcall AdjustControls();
   void __fastcall AdjustTransferControls();
   bool __fastcall RemotePaths();
+  void __fastcall CopyParamListPopup(TPoint P, int AdditionalOptions);
 public:
   __fastcall TCopyDialog(TComponent* Owner);
   virtual __fastcall ~TCopyDialog();

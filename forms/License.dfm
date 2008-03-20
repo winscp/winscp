@@ -1,16 +1,16 @@
-object LicenceDialog: TLicenceDialog
+object LicenseDialog: TLicenseDialog
   Left = 413
   Top = 230
   ActiveControl = CloseButton
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
-  Caption = 'Licence'
+  Caption = 'License'
   ClientHeight = 320
   ClientWidth = 504
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poOwnerFormCenter
+  Position = poMainFormCenter
   DesignSize = (
     504
     320)
@@ -28,7 +28,7 @@ object LicenceDialog: TLicenceDialog
     ModalResult = 1
     TabOrder = 0
   end
-  object LicenceMemo: TMemo
+  object LicenseMemo: TMemo
     Left = 8
     Top = 8
     Width = 489

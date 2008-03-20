@@ -45,7 +45,7 @@ TCustomScpExplorerForm * __fastcall CreateScpExplorer();
 
 void __fastcall ConfigureInterface();
 
-void __fastcall DoProductLicence();
+void __fastcall DoProductLicense();
 
 extern const AnsiString AppName;
 extern const AnsiString AppNameVersion;
@@ -88,23 +88,31 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
 int __fastcall Execute();
 
 // forms\InputDlg.cpp
+struct TInputDialogData
+{
+  TEdit * Edit;
+};
+typedef void __fastcall (__closure *TInputDialogInitialize)
+  (TObject * Sender, TInputDialogData * Data);
 bool __fastcall InputDialog(const AnsiString ACaption,
   const AnsiString APrompt, AnsiString & Value, AnsiString HelpKeyword = HELP_NONE,
-  TStrings * History = NULL, bool PathInput = false);
+  TStrings * History = NULL, bool PathInput = false,
+  TInputDialogInitialize OnInitialize = NULL);
 
 // forms\About.cpp
 struct TRegistration
 {
   bool Registered;
   AnsiString Subject;
-  int Licences;
+  int Licenses;
   AnsiString ProductId;
   bool NeverExpires;
   TDateTime Expiration;
   bool EduLicense;
+  AnsiString RegistrationLink;
 };
 void __fastcall DoAboutDialog(TConfiguration * Configuration,
-  bool AllowLicence, TRegistration * Registration);
+  bool AllowLicense, TRegistration * Registration);
 void __fastcall DoAboutDialog(TConfiguration *Configuration);
 
 // forms\Cleanup.cpp
@@ -142,10 +150,9 @@ bool __fastcall DoCreateDirectoryDialog(AnsiString & Directory,
 // forms\ImportSessions.cpp
 bool __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList);
 
-// forms\Licence.cpp
-enum TLicence { lcNoLicence = -1, lcWinScp, lcPutty };
-void __fastcall DoLicenceDialog(TLicence Licence);
-void __fastcall DoLicenceDialog(const AnsiString LicenceText);
+// forms\License.cpp
+enum TLicense { lcNoLicense = -1, lcWinScp, lcPutty };
+void __fastcall DoLicenseDialog(TLicense License);
 
 // forms\Login.cpp
 // these flags are used in navigation tree of login dialog, change with care
@@ -231,18 +238,21 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
     TCalculateChecksumEvent OnCalculateChecksum);
 
 // forms\ComboInput.cpp
-typedef void __fastcall (*TInputValidateEvent)
-  (TObject * Sender, const AnsiString & Text);
 bool __fastcall DoComboInputDialog(
   const AnsiString Caption, const AnsiString Prompt, AnsiString & Text,
-  TStrings * Items, TInputValidateEvent OnInputValidate, bool AllowEmpty,
-  const AnsiString HelpKeyword = HELP_NONE);
-AnsiString __fastcall DoSaveSessionDialog(const AnsiString DefaultName,
-  TSessionData * OriginalSession);
+  TStrings * Items, bool AllowEmpty, const AnsiString HelpKeyword);
+
+bool __fastcall DoRemoteMoveDialog(AnsiString & Target, AnsiString & FileMask);
+enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
+bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
+  TDirectRemoteCopy AllowDirectCopy, void *& Session, AnsiString & Target, AnsiString & FileMask,
+  bool & DirectCopy);
+
+// forms\SaveSession.cpp
+bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
+  bool * SavePassword, TSessionData * OriginalSession);
 void __fastcall SessionNameValidate(const AnsiString & Text,
   TSessionData * RenamingSession = NULL);
-bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
-  AnsiString & FileMask, bool Move);
 
 // forms\SelectMask.cpp
 #ifdef CustomDirViewHPP
@@ -291,7 +301,7 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
 // forms\Editor.cpp
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TNotifyEvent OnClose,
-  const AnsiString Caption = "", bool ShowWindowButton = false);
+  const AnsiString Caption = "");
 void __fastcall ReconfigureEditorForm(TForm * Form);
 
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
@@ -325,9 +335,10 @@ bool __fastcall DoEditorPreferencesDialog(TEditorPreferences * Editor,
 const int cplNone =             0x00;
 const int cplCustomize =        0x01;
 const int cplCustomizeDefault = 0x02;
+const int cplSaveSettings =     0x04;
 void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
   const TCopyParamType & Param, AnsiString Preset, TNotifyEvent OnClick,
-  int Options);
+  int Options, bool * SaveSettings = NULL);
 bool __fastcall CopyParamListPopupClick(TObject * Sender,
   TCopyParamType & Param, AnsiString & Preset, int CopyParamAttrs);
 
@@ -340,6 +351,12 @@ void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 void __fastcall SetGlobalMinimizeHandler(TNotifyEvent OnMinimize);
 TNotifyEvent __fastcall GetGlobalMinimizeHandler();
 bool __fastcall IsGlobalMinimizeHandler();
+
+unsigned long __fastcall GetSpeedLimit(const AnsiString & Text);
+AnsiString __fastcall SetSpeedLimit(unsigned long Limit);
+
+void __fastcall ShowNotification(TTerminal * Terminal, const AnsiString & Str,
+  TQueryType Type);
 
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand

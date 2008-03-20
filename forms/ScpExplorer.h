@@ -16,10 +16,6 @@
 #include <ExtCtrls.hpp>
 #include <Menus.hpp>
 #include <ToolWin.hpp>
-#include <CustomPathComboBox.hpp>
-#include <IEComboBox.hpp>
-#include <UnixPathComboBox.h>
-#include <IEPathComboBox.hpp>
 #include <Buttons.hpp>
 #include "CustomDriveView.hpp"
 #include "UnixDriveView.h"
@@ -165,8 +161,6 @@ __published:
   TTBXItem *TBXItem21;
   TTBXToolbar *AddressToolbar;
   TTBXLabelItem *TBXLabelItem1;
-  TTBControlItem *TBControlItem1;
-  TUnixPathComboBox *UnixPathComboBox;
   TTBXItem *TBXItem22;
   TTBXToolbar *ButtonsToolbar;
   TTBXSubmenuItem *BackButton;
@@ -284,8 +278,14 @@ __published:
   TTBXItem *TBXItem189;
   TTBXItem *TBXItem90;
   TTBXItem *TBXItem137;
+  TTBXComboBoxItem *UnixPathComboBox;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
+  void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
+          TTBEditItemViewer *Viewer, TEdit *EditControl);
+  void __fastcall UnixPathComboBoxAcceptText(TObject *Sender,
+          AnsiString &NewText, bool &Accept);
+  void __fastcall RemoteDirViewPathChange(TCustomDirView *Sender);
 private:
   AnsiString FStatusBarFileText;
 
@@ -303,6 +303,10 @@ protected:
   virtual void __fastcall FixControlsPlacement();
   DYNAMIC void __fastcall DoShow();
   virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
+  virtual void __fastcall UpdateRemotePathComboBox(
+    TTBXComboBoxItem * RemotePathComboBox, bool TextOnly);
+  AnsiString __fastcall RemotePathComboBoxText();
+  virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
 
 public:
   __fastcall TScpExplorerForm(TComponent* Owner);

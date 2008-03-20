@@ -136,6 +136,7 @@ static void *add234_internal(tree234 * t, void *e, int index)
 	return orig_e;
     }
 
+    n = NULL; /* placate gcc; will always be set below since t->root != NULL */
     np = &t->root;
     while (*np) {
 	int childnum;

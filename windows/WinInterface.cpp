@@ -260,6 +260,7 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
         CHECK(MapButton(Params->Aliases[i].Button, Button));
         Aliases[i].Button = Button;
         Aliases[i].Alias = Params->Aliases[i].Alias;
+        Aliases[i].OnClick = Params->Aliases[i].OnClick;
       }
       Dialog = CreateMoreMessageDialog(Msg, MoreMessages, DlgType, Buttons,
         Aliases, Params->AliasesCount, TimeoutResult, &TimeoutButton);
@@ -613,18 +614,20 @@ void __fastcall Busy(bool Start)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
-  AnsiString & FileMask, bool Move)
+static void __fastcall CopyParamListSaveSettingsClick(TMenuItem * Item)
 {
-  AnsiString Prompt = FileNameFormatString(
-    LoadStr(Move ? REMOTE_MOVE_FILE : REMOTE_COPY_FILE),
-    LoadStr(Move ? REMOTE_MOVE_FILES : REMOTE_COPY_FILES), FileList, true);
-
+  bool * SaveSettings = reinterpret_cast<bool *>(Item->Tag);
+  *SaveSettings = !*SaveSettings;
+  Item->Checked = *SaveSettings;
+}
+//---------------------------------------------------------------------------
+bool __fastcall DoRemoteMoveDialog(AnsiString & Target, AnsiString & FileMask)
+{
   AnsiString Value = UnixIncludeTrailingBackslash(Target) + FileMask;
   TStrings * History = CustomWinConfiguration->History["RemoteTarget"];
   bool Result = InputDialog(
-    LoadStr(Move ? REMOTE_MOVE_TITLE : REMOTE_COPY_TITLE), Prompt,
-    Value, HELP_REMOTE_TRANSFER, History, true);
+    LoadStr(REMOTE_MOVE_TITLE), LoadStr(REMOTE_MOVE_PROMPT),
+    Value, HELP_REMOTE_MOVE, History, true);
   if (Result)
   {
     CustomWinConfiguration->History["RemoteTarget"] = History;
@@ -636,7 +639,7 @@ bool __fastcall DoRemoteTransferDialog(TStrings * FileList, AnsiString & Target,
 //---------------------------------------------------------------------------
 void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
   const TCopyParamType & Param, AnsiString Preset, TNotifyEvent OnClick,
-  int Options)
+  int Options, bool * SaveSettings)
 {
   Menu->Items->Clear();
 
@@ -672,6 +675,23 @@ void __fastcall CopyParamListPopup(TPoint P, TPopupMenu * Menu,
     Item->Checked = !AnyChecked;
     Item->Default = FLAGSET(Options, cplCustomizeDefault);
     Item->OnClick = OnClick;
+    Menu->Items->Add(Item);
+  }
+
+  if (FLAGSET(Options, cplSaveSettings))
+  {
+    assert(SaveSettings != NULL);
+
+    Item = new TMenuItem(Menu);
+    Item->Caption = LoadStr(COPY_PARAM_SAVE_SETTINGS);
+    Item->Tag = int(SaveSettings);
+    Item->Checked = *SaveSettings;
+
+    TNotifyEvent SaveSettingsOnClick;
+    ((TMethod*)&SaveSettingsOnClick)->Data = Item;
+    ((TMethod*)&SaveSettingsOnClick)->Code = CopyParamListSaveSettingsClick;
+    Item->OnClick = SaveSettingsOnClick;
+
     Menu->Items->Add(Item);
   }
 
@@ -820,6 +840,40 @@ TNotifyEvent __fastcall GetGlobalMinimizeHandler()
 bool __fastcall IsGlobalMinimizeHandler()
 {
   return (GlobalOnMinimize != NULL);
+}
+//---------------------------------------------------------------------------
+unsigned long __fastcall GetSpeedLimit(const AnsiString & Text)
+{
+  unsigned long Speed;
+  if (AnsiSameText(Text, LoadStr(SPEED_UNLIMITED)))
+  {
+    Speed = 0;
+  }
+  else
+  {
+    int SSpeed;
+    if (!TryStrToInt(Text, SSpeed) ||
+        (SSpeed < 0))
+    {
+      throw Exception(FMTLOAD(SPEED_INVALID, (Text)));
+    }
+    Speed = SSpeed;
+  }
+  return Speed * 1024;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall SetSpeedLimit(unsigned long Limit)
+{
+  AnsiString Text;
+  if (Limit == 0)
+  {
+    Text = LoadStr(SPEED_UNLIMITED);
+  }
+  else
+  {
+    Text = IntToStr(Limit / 1024);
+  }
+  return Text;
 }
 //---------------------------------------------------------------------------
 struct TNotifyIconData5

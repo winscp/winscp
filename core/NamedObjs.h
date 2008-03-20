@@ -39,4 +39,6 @@ public:
   __property int HiddenCount = { read = FHiddenCount, write = FHiddenCount };
 };
 //---------------------------------------------------------------------------
+int __fastcall NamedObjectSortProc(void * Item1, void * Item2);
+//---------------------------------------------------------------------------
 #endif

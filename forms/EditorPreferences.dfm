@@ -72,7 +72,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Top = 45
       Width = 145
       Height = 17
-      Caption = '&External editor'
+      Caption = '&External editor:'
       TabOrder = 1
       OnClick = ControlChange
     end
@@ -123,6 +123,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Top = 39
       Width = 367
       Height = 21
+      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
       MaxLength = 1000

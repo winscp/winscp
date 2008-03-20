@@ -1,9 +1,7 @@
 #ifndef HelpWinH
 #define HelpWinH
 
-#define HELP_SESSION_SAVE            "ui_login_save"
-#define HELP_SESSION_SAVE_OVERWRITE  HELP_SESSION_SAVE
-#define HELP_SESSION_SAVE_PASSWORD   HELP_SESSION_SAVE
+#define HELP_SESSION_SAVE_OVERWRITE  "ui_login_save"
 #define HELP_SESSION_SAVE_DEFAULT    "ui_login_stored_sessions#session_management"
 #define HELP_CREATE_SHORTCUT         "integration"
 #define HELP_CREATE_SENDTO           HELP_CREATE_SHORTCUT
@@ -14,7 +12,7 @@
 #define HELP_LOCATION_PROFILE_ADD    "ui_locationprofile"
 #define HELP_LOCATION_PROFILE_MOVE   HELP_LOCATION_PROFILE_ADD
 #define HELP_LOCATION_PROFILE_DELETE HELP_LOCATION_PROFILE_ADD
-#define HELP_REMOTE_TRANSFER         "task_move_duplicate"
+#define HELP_REMOTE_MOVE             "task_move_duplicate"
 #define HELP_CUSTOM_COMMAND_PARAM    "remote_command#custom_commands"
 #define HELP_SYNCHRONIZE_SAVE_MODE   "ui_synchronize"
 #define HELP_PROGRESS_CANCEL         "ui_progress#controlling_the_operation"
@@ -34,6 +32,8 @@
 #define HELP_EDITOR_FIND             "ui_editor_find"
 #define HELP_EDITOR_REPLACE          "ui_editor_replace"
 #define HELP_DELETE_SESSION          "ui_login_stored_sessions#session_management"
+#define HELP_DELETE_SESSION_FOLDER   HELP_DELETE_SESSION
+#define HELP_NEW_SESSION_FOLDER      HELP_DELETE_SESSION
 #define HELP_TOO_MANY_WATCH_DIRECTORIES "ui_keepuptodate"
 #define HELP_LOGIN_KEY_TYPE          "public_key#private"
 #define HELP_SYNCHRONIZE_NO_DIFFERENCES "task_synchronize_full"

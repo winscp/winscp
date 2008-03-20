@@ -251,7 +251,7 @@ protected:
 	virtual void __fastcall Loaded(void);
 	virtual bool __fastcall NeedToRecreateViewer(TTBItemViewer* AViewer);
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
-	TTBCustomItem* __fastcall OpenPopup(const bool SelectFirstItem, const bool TrackRightButton, const Types::TPoint &PopupPoint, const TTBPopupAlignment Alignment, const bool ReturnClickedItemOnly);
+	TTBCustomItem* __fastcall OpenPopup(const bool SelectFirstItem, const bool TrackRightButton, const Types::TPoint &PopupPoint, const TTBPopupAlignment Alignment, const bool ReturnClickedItemOnly, bool PositionAsSubmenu);
 	void __fastcall RecreateItemViewers(void);
 	DYNAMIC void __fastcall SetChildOrder(Classes::TComponent* Child, int Order);
 	virtual void __fastcall SetName(const AnsiString NewName);
@@ -275,7 +275,7 @@ public:
 	HIDESBASE void __fastcall Insert(int NewIndex, TTBCustomItem* AItem);
 	bool __fastcall IsShortCut(Messages::TWMKey &Message);
 	void __fastcall Move(int CurIndex, int NewIndex);
-	TTBCustomItem* __fastcall Popup(int X, int Y, bool TrackRightButton, TTBPopupAlignment Alignment = (TTBPopupAlignment)(0x0), bool ReturnClickedItemOnly = false);
+	TTBCustomItem* __fastcall Popup(int X, int Y, bool TrackRightButton, TTBPopupAlignment Alignment = (TTBPopupAlignment)(0x0), bool ReturnClickedItemOnly = false, bool PositionAsSubmenu = false);
 	void __fastcall PostClick(void);
 	void __fastcall RegisterNotification(TTBItemChangedProc ANotify);
 	HIDESBASE void __fastcall Remove(TTBCustomItem* Item);
@@ -954,6 +954,7 @@ protected:
 	virtual void __fastcall Paint(void);
 	virtual void __fastcall PaintScrollArrows(void);
 	__property Tb2anim::TTBAnimationDirection AnimationDirection = {read=FAnimationDirection, nodefault};
+	DYNAMIC void __fastcall Cancel(void);
 	
 public:
 	__fastcall virtual TTBPopupWindow(Classes::TComponent* AOwner, const TTBView* AParentView, const TTBCustomItem* AItem, const bool ACustomizing);

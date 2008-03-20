@@ -55,7 +55,6 @@ private:
   AnsiString FStdErrorTemp;
   AnsiString FStdError;
   AnsiString FCWriteTemp;
-  bool FCWriteTempUntrusted;
   AnsiString FAuthenticationLog;
   AnsiString FLastTunnelError;
   AnsiString FUserName;
@@ -81,22 +80,22 @@ private:
   bool __fastcall EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
     WSANETWORKEVENTS * Events);
   void __fastcall UpdateSessionInfo();
-  void __fastcall DumpCWrite();
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
 
   void __fastcall GotHostKey();
-  bool __fastcall TranslatePuttyMessage(const TPuttyTranslation * Translation,
+  int __fastcall TranslatePuttyMessage(const TPuttyTranslation * Translation,
     size_t Count, AnsiString & Message);
-  bool __fastcall TranslateAuthenticationMessage(AnsiString & Message);
-  bool __fastcall TranslateErrorMessage(AnsiString & Message);
+  int __fastcall TranslateAuthenticationMessage(AnsiString & Message);
+  int __fastcall TranslateErrorMessage(AnsiString & Message);
   void __fastcall AddStdError(AnsiString Str);
   void __fastcall AddStdErrorLine(const AnsiString & Str);
   void __fastcall FatalError(Exception * E, AnsiString Msg);
   void __fastcall inline LogEvent(const AnsiString & Str);
   void __fastcall FatalError(AnsiString Error);
-  void __fastcall StoreToConfig(TSessionData * Data, Config * cfg);
+  static void __fastcall ClearConfig(Config * cfg);
+  static void __fastcall StoreToConfig(TSessionData * Data, Config * cfg);
 
 public:
   __fastcall TSecureShell(TSessionUI * UI, TSessionData * SessionData,
@@ -129,10 +128,12 @@ public:
   void __fastcall UpdateSocket(SOCKET value, bool Startup);
   void __fastcall UpdatePortFwdSocket(SOCKET value, bool Startup);
   void __fastcall PuttyFatalError(AnsiString Error);
-  bool __fastcall PromptUser(const AnsiString Prompt, AnsiString & Response,
-    bool IsPassword);
+  bool __fastcall PromptUser(bool ToServer,
+    AnsiString AName, bool NameRequired,
+    AnsiString Instructions, bool InstructionsRequired,
+    TStrings * Prompts, TStrings * Results);
   void __fastcall FromBackend(bool IsStdErr, const char * Data, int Length);
-  void __fastcall CWrite(const char * Data, int Length, bool Untrusted);
+  void __fastcall CWrite(const char * Data, int Length);
   const AnsiString & __fastcall GetStdError();
   void __fastcall VerifyHostKey(AnsiString Host, int Port,
     const AnsiString KeyType, AnsiString KeyStr, const AnsiString Fingerprint);

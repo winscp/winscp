@@ -8,8 +8,6 @@
 #include <Forms.hpp>
 #include "CopyParams.h"
 //---------------------------------------------------------------------------
-class TCustomCommands;
-//---------------------------------------------------------------------------
 class TCopyParamPresetDialog : public TForm
 {
 __published:

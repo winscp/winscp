@@ -20,6 +20,8 @@
 #include "TB2Toolbar.hpp"
 #include "TBXStatusBars.hpp"
 //---------------------------------------------------------------------------
+class TRichEdit20;
+//---------------------------------------------------------------------------
 class TEditorForm : public TForm
 {
 __published:
@@ -28,7 +30,6 @@ __published:
   TAction *SaveAction;
   TTBXDock *TopDock;
   TTBXToolbar *ToolBar;
-  TRichEdit *EditorMemo;
   TTBXStatusBar *StatusBar;
   TEditCut *EditCut;
   TEditCopy *EditCopy;
@@ -80,6 +81,9 @@ __published:
   TTBXItem *TBXItem15;
   TAction *ReloadAction;
   TTBXItem *TBXItem16;
+  TAction *EditRedo;
+  TTBXItem *TBXItem17;
+  TTBXItem *TBXItem18;
   void __fastcall EditorActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall EditorActionsExecute(TBasicAction *Action,
           bool &Handled);
@@ -100,13 +104,12 @@ private:
   TCustomForm * FParentForm;
   TFindDialog * FLastFindDialog;
   TPoint FCaretPos;
-  bool FShowWindowButton;
   TFindDialog * FFindDialog;
   TReplaceDialog * FReplaceDialog;
   bool FCloseAnnounced;
+  TRichEdit20 * EditorMemo;
   void __fastcall SetFileName(const AnsiString value);
   void __fastcall SetParentForm(TCustomForm * value);
-  void __fastcall SetShowWindowButton(bool value);
 public:
   __fastcall TEditorForm(TComponent* Owner);
   virtual __fastcall ~TEditorForm();
@@ -116,7 +119,6 @@ public:
   __property TNotifyEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
   __property TNotifyEvent OnWindowClose = { read = FOnWindowClose, write = FOnWindowClose };
   __property TCustomForm * ParentForm = { read = FParentForm, write = SetParentForm };
-  __property bool ShowWindowButton = { read = FShowWindowButton, write = SetShowWindowButton };
 protected:
   bool __fastcall CursorInUpperPart();
   void __fastcall Find();

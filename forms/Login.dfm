@@ -6,7 +6,7 @@ object LoginDialog: TLoginDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Login'
-  ClientHeight = 371
+  ClientHeight = 336
   ClientWidth = 513
   Color = clBtnFace
   ParentFont = True
@@ -14,16 +14,15 @@ object LoginDialog: TLoginDialog
   OldCreateOrder = True
   Position = poMainFormCenter
   OnCloseQuery = FormCloseQuery
-  OnKeyDown = FormKeyDown
   OnShow = FormShow
   DesignSize = (
     513
-    371)
+    336)
   PixelsPerInch = 96
   TextHeight = 13
   object HelpButton: TButton
     Left = 427
-    Top = 340
+    Top = 305
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -34,7 +33,7 @@ object LoginDialog: TLoginDialog
   end
   object SaveButton: TButton
     Left = 339
-    Top = 340
+    Top = 305
     Width = 75
     Height = 25
     HelpKeyword = 'ui_login_save'
@@ -44,7 +43,7 @@ object LoginDialog: TLoginDialog
   end
   object LoginButton: TButton
     Left = 251
-    Top = 340
+    Top = 305
     Width = 75
     Height = 25
     Action = LoginAction
@@ -55,7 +54,7 @@ object LoginDialog: TLoginDialog
   end
   object CloseButton: TButton
     Left = 427
-    Top = 340
+    Top = 305
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -66,7 +65,7 @@ object LoginDialog: TLoginDialog
   end
   object AboutButton: TButton
     Left = 11
-    Top = 340
+    Top = 305
     Width = 82
     Height = 25
     Action = AboutAction
@@ -76,7 +75,7 @@ object LoginDialog: TLoginDialog
   end
   object LanguagesButton: TButton
     Left = 105
-    Top = 340
+    Top = 305
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -88,7 +87,7 @@ object LoginDialog: TLoginDialog
     Left = 0
     Top = 0
     Width = 513
-    Height = 331
+    Height = 296
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
@@ -98,13 +97,12 @@ object LoginDialog: TLoginDialog
       Left = 152
       Top = 0
       Width = 361
-      Height = 331
+      Height = 296
       HelpType = htKeyword
       ActivePage = BasicSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
-      TabIndex = 0
       TabOrder = 1
       TabStop = False
       OnChange = PageControlChange
@@ -115,9 +113,10 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_session'
         Caption = 'Basic'
         ImageIndex = 1
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object BasicGroup: TGroupBox
           Left = 0
           Top = 6
@@ -130,48 +129,48 @@ object LoginDialog: TLoginDialog
             345
             169)
           object Label1: TLabel
-            Left = 11
+            Left = 12
             Top = 18
-            Width = 51
+            Width = 54
             Height = 13
-            Caption = '&Host name'
+            Caption = '&Host name:'
             FocusControl = HostNameEdit
           end
           object Label2: TLabel
-            Left = 252
+            Left = 253
             Top = 18
-            Width = 57
+            Width = 60
             Height = 13
             Anchors = [akTop, akRight]
-            Caption = 'Po&rt number'
+            Caption = 'Po&rt number:'
             FocusControl = PortNumberEdit
           end
           object Label3: TLabel
-            Left = 11
+            Left = 12
             Top = 68
-            Width = 51
+            Width = 54
             Height = 13
-            Caption = '&User name'
+            Caption = '&User name:'
             FocusControl = UserNameEdit
           end
           object Label4: TLabel
-            Left = 163
+            Left = 164
             Top = 68
-            Width = 46
+            Width = 49
             Height = 13
-            Caption = '&Password'
+            Caption = '&Password:'
             FocusControl = PasswordEdit
           end
           object PrivateKeyLabel: TLabel
-            Left = 11
+            Left = 12
             Top = 118
-            Width = 69
+            Width = 72
             Height = 13
-            Caption = 'Private &key file'
+            Caption = 'Private &key file:'
             FocusControl = PrivateKeyEdit
           end
           object HostNameEdit: TEdit
-            Left = 11
+            Left = 12
             Top = 35
             Width = 226
             Height = 21
@@ -182,7 +181,7 @@ object LoginDialog: TLoginDialog
             OnChange = DataChange
           end
           object UserNameEdit: TEdit
-            Left = 11
+            Left = 13
             Top = 85
             Width = 137
             Height = 21
@@ -215,9 +214,9 @@ object LoginDialog: TLoginDialog
             OnChange = DataChange
           end
           object PrivateKeyEdit: TFilenameEdit
-            Left = 11
+            Left = 12
             Top = 135
-            Width = 323
+            Width = 322
             Height = 21
             AcceptFiles = True
             OnBeforeDialog = PathEditBeforeDialog
@@ -241,11 +240,11 @@ object LoginDialog: TLoginDialog
           Caption = 'Protocol'
           TabOrder = 1
           object Label22: TLabel
-            Left = 11
+            Left = 12
             Top = 21
-            Width = 57
+            Width = 60
             Height = 13
-            Caption = '&File protocol'
+            Caption = '&File protocol:'
             FocusControl = TransferProtocolCombo
           end
           object InsecureLabel: TLabel
@@ -297,9 +296,10 @@ object LoginDialog: TLoginDialog
         HelpType = htKeyword
         HelpKeyword = 'ui_login_stored_sessions'
         Caption = 'StSe'
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object LoadButton: TButton
           Left = 258
           Top = 35
@@ -318,30 +318,34 @@ object LoginDialog: TLoginDialog
           Anchors = [akTop, akRight]
           TabOrder = 3
         end
-        object SessionListView: TListView
+        object SessionTree: TTreeView
           Left = 2
           Top = 3
           Width = 247
-          Height = 271
+          Height = 281
           Anchors = [akLeft, akTop, akRight, akBottom]
-          Columns = <
-            item
-            end>
+          DragMode = dmAutomatic
           HideSelection = False
-          RowSelect = True
+          Indent = 19
           ParentShowHint = False
-          ShowColumnHeaders = False
+          RowSelect = True
           ShowHint = True
+          ShowRoot = False
+          SortType = stBoth
+          StateImages = SessionImageList
           TabOrder = 0
-          ViewStyle = vsReport
-          OnCompare = SessionListViewCompare
-          OnCustomDrawItem = SessionListViewCustomDrawItem
-          OnDblClick = SessionListViewDblClick
-          OnEdited = SessionListViewEdited
-          OnEditing = SessionListViewEditing
-          OnInfoTip = SessionListViewInfoTip
-          OnKeyDown = SessionListViewKeyDown
-          OnSelectItem = SessionListViewSelectItem
+          OnChange = SessionTreeChange
+          OnCollapsed = SessionTreeExpandedCollapsed
+          OnCompare = SessionTreeCompare
+          OnCustomDrawItem = SessionTreeCustomDrawItem
+          OnDblClick = SessionTreeDblClick
+          OnDragDrop = SessionTreeDragDrop
+          OnEdited = SessionTreeEdited
+          OnEditing = SessionTreeEditing
+          OnExpanded = SessionTreeExpandedCollapsed
+          OnKeyDown = SessionTreeKeyDown
+          OnMouseMove = SessionTreeMouseMove
+          OnStartDrag = SessionTreeStartDrag
         end
         object NewButton: TButton
           Left = 258
@@ -354,31 +358,31 @@ object LoginDialog: TLoginDialog
         end
         object SetDefaultSessionButton: TButton
           Left = 258
-          Top = 131
+          Top = 163
           Width = 88
           Height = 25
           Action = SetDefaultSessionAction
           Anchors = [akTop, akRight]
-          TabOrder = 5
+          TabOrder = 6
         end
         object ToolsMenuButton: TButton
           Left = 258
-          Top = 249
+          Top = 259
           Width = 88
           Height = 25
           Anchors = [akRight, akBottom]
           Caption = '&Tools...'
-          TabOrder = 7
+          TabOrder = 8
           OnClick = ToolsMenuButtonClick
         end
         object ShellIconsButton: TButton
           Left = 258
-          Top = 163
+          Top = 195
           Width = 88
           Height = 25
           Action = ShellIconSessionAction
           Anchors = [akTop, akRight]
-          TabOrder = 6
+          TabOrder = 7
         end
         object RenameButton: TButton
           Left = 257
@@ -389,6 +393,15 @@ object LoginDialog: TLoginDialog
           Anchors = [akTop, akRight]
           TabOrder = 4
         end
+        object NewFolderButton: TButton
+          Left = 257
+          Top = 131
+          Width = 88
+          Height = 25
+          Action = NewSessionFolderAction
+          Anchors = [akTop, akRight]
+          TabOrder = 5
+        end
       end
       object LogSheet: TTabSheet
         Tag = 2
@@ -397,6 +410,7 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_logging'
         Caption = 'Log'
         ImageIndex = 4
+        TabVisible = False
         inline LoggingFrame: TLoggingFrame
           Left = -3
           Top = 0
@@ -426,7 +440,7 @@ object LoginDialog: TLoginDialog
             inherited LogFilePanel: TPanel
               Width = 291
               inherited LogFileAppendButton: TRadioButton
-                Caption = 'A&ppend'
+                Caption = 'Appe&nd'
               end
               inherited LogFileOverwriteButton: TRadioButton
                 Width = 153
@@ -442,39 +456,131 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_environment'
         Caption = 'Env'
         ImageIndex = 6
+        TabVisible = False
         DesignSize = (
           353
-          276)
-        object EOLTypeGroup: TGroupBox
+          286)
+        object EnvironmentOtherLabel: TLabel
+          Left = 0
+          Top = 244
+          Width = 68
+          Height = 13
+          Caption = 'Other settings:'
+        end
+        object RecycleBinLinkLabel: TStaticText
+          Left = 88
+          Top = 244
+          Width = 60
+          Height = 17
+          Caption = 'Recycle bin'
+          TabOrder = 4
+          TabStop = True
+          OnClick = RecycleBinLinkLabelClick
+        end
+        object EnvironmentGroup: TGroupBox
           Left = 0
           Top = 6
           Width = 345
-          Height = 45
+          Height = 96
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Server end-of-line characters (if not indicated by server)'
+          Caption = 'Server environment'
           TabOrder = 0
-          object EOLTypeLFButton: TRadioButton
+          DesignSize = (
+            345
+            96)
+          object Label5: TLabel
             Left = 12
-            Top = 19
-            Width = 133
-            Height = 17
-            Caption = 'L&F (Unix)'
-            TabOrder = 0
-            OnClick = DataChange
+            Top = 20
+            Width = 230
+            Height = 13
+            Caption = '&End-of-line characters (if not indicated by server):'
           end
-          object EOLTypeCRLFButton: TRadioButton
-            Left = 152
-            Top = 19
-            Width = 185
-            Height = 17
-            Caption = '&CR/LF (Windows)'
+          object UtfLabel: TLabel
+            Left = 12
+            Top = 44
+            Width = 142
+            Height = 13
+            Caption = '&UTF-8 encoding for filenames:'
+            FocusControl = UtfCombo
+          end
+          object TimeDifferenceLabel: TLabel
+            Left = 12
+            Top = 68
+            Width = 78
+            Height = 13
+            Caption = 'Time&zone offset:'
+            FocusControl = TimeDifferenceEdit
+          end
+          object TimeDifferenceHoursLabel: TLabel
+            Left = 194
+            Top = 68
+            Width = 26
+            Height = 13
+            Caption = 'hours'
+            FocusControl = TimeDifferenceEdit
+          end
+          object TimeDifferenceMinutesLabel: TLabel
+            Left = 296
+            Top = 66
+            Width = 36
+            Height = 13
+            Caption = 'minutes'
+            FocusControl = TimeDifferenceMinutesEdit
+          end
+          object EOLTypeCombo: TComboBox
+            Left = 272
+            Top = 15
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 0
+            Items.Strings = (
+              'LF'
+              'CR/LF')
+          end
+          object UtfCombo: TComboBox
+            Left = 272
+            Top = 39
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 0
             TabOrder = 1
-            OnClick = DataChange
+          end
+          object TimeDifferenceEdit: TUpDownEdit
+            Left = 135
+            Top = 63
+            Width = 54
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 13
+            MinValue = -13
+            Value = -13
+            Anchors = [akTop, akRight]
+            TabOrder = 2
+            OnChange = DataChange
+          end
+          object TimeDifferenceMinutesEdit: TUpDownEdit
+            Left = 237
+            Top = 63
+            Width = 54
+            Height = 21
+            Alignment = taRightJustify
+            Increment = 15
+            MaxValue = 45
+            MinValue = -45
+            Value = -13
+            Anchors = [akTop, akRight]
+            TabOrder = 3
+            OnChange = DataChange
           end
         end
         object DSTModeGroup: TGroupBox
           Left = 0
-          Top = 59
+          Top = 110
           Width = 345
           Height = 93
           Anchors = [akLeft, akTop, akRight]
@@ -514,23 +620,183 @@ object LoginDialog: TLoginDialog
             OnClick = DataChange
           end
         end
+        object UnixEnvironmentButton: TButton
+          Left = 0
+          Top = 211
+          Width = 75
+          Height = 25
+          Caption = 'Uni&x'
+          TabOrder = 2
+          OnClick = UnixEnvironmentButtonClick
+        end
+        object WindowsEnvironmentButton: TButton
+          Left = 88
+          Top = 211
+          Width = 75
+          Height = 25
+          Caption = '&Windows'
+          TabOrder = 3
+          OnClick = WindowsEnvironmentButtonClick
+        end
+      end
+      object DirectoriesSheet: TTabSheet
+        Tag = 2
+        Hint = 'Directories'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_directories'
+        Caption = 'Dir'
+        ImageIndex = 11
+        TabVisible = False
+        DesignSize = (
+          353
+          286)
+        object DirectoriesGroup: TGroupBox
+          Left = 0
+          Top = 6
+          Width = 345
+          Height = 152
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Directories'
+          TabOrder = 0
+          DesignSize = (
+            345
+            152)
+          object LocalDirectoryLabel: TLabel
+            Left = 12
+            Top = 84
+            Width = 72
+            Height = 13
+            Caption = '&Local directory:'
+            FocusControl = LocalDirectoryEdit
+          end
+          object RemoteDirectoryLabel: TLabel
+            Left = 12
+            Top = 41
+            Width = 83
+            Height = 13
+            Caption = '&Remote directory:'
+            FocusControl = RemoteDirectoryEdit
+          end
+          object LocalDirectoryDescLabel: TLabel
+            Left = 12
+            Top = 126
+            Width = 251
+            Height = 13
+            Caption = 'Local directory is not used with explorer-like interface.'
+          end
+          object LocalDirectoryEdit: TDirectoryEdit
+            Left = 12
+            Top = 101
+            Width = 323
+            Height = 21
+            AcceptFiles = True
+            DialogText = 'Select startup local directory.'
+            ClickKey = 16397
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 2
+            Text = 'LocalDirectoryEdit'
+            OnChange = DataChange
+          end
+          object RemoteDirectoryEdit: TEdit
+            Left = 12
+            Top = 58
+            Width = 323
+            Height = 21
+            Anchors = [akLeft, akTop, akRight]
+            MaxLength = 1000
+            TabOrder = 1
+            Text = 'RemoteDirectoryEdit'
+            OnChange = DataChange
+          end
+          object UpdateDirectoriesCheck: TCheckBox
+            Left = 12
+            Top = 19
+            Width = 321
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Re&member last used directory'
+            TabOrder = 0
+          end
+        end
+        object DirectoryOptionsGroup: TGroupBox
+          Left = 0
+          Top = 166
+          Width = 345
+          Height = 87
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Directory reading options'
+          TabOrder = 1
+          DesignSize = (
+            345
+            87)
+          object CacheDirectoriesCheck: TCheckBox
+            Left = 12
+            Top = 19
+            Width = 321
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Cache &visited remote directories'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object CacheDirectoryChangesCheck: TCheckBox
+            Left = 12
+            Top = 39
+            Width = 182
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Cache &directory changes'
+            TabOrder = 1
+            OnClick = DataChange
+          end
+          object ResolveSymlinksCheck: TCheckBox
+            Left = 12
+            Top = 59
+            Width = 321
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Resolve symbolic li&nks'
+            TabOrder = 3
+          end
+          object PreserveDirectoryChangesCheck: TCheckBox
+            Left = 203
+            Top = 39
+            Width = 139
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Permanent cache'
+            TabOrder = 2
+          end
+        end
+      end
+      object RecycleBinSheet: TTabSheet
+        Tag = 2
+        Hint = 'Recycle bin'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_recycle_bin'
+        Caption = 'Rec'
+        ImageIndex = 15
+        TabVisible = False
+        DesignSize = (
+          353
+          286)
         object RecycleBinGroup: TGroupBox
           Left = 0
-          Top = 160
+          Top = 6
           Width = 345
           Height = 114
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Recycle bin'
-          TabOrder = 2
+          TabOrder = 0
           DesignSize = (
             345
             114)
           object RecycleBinPathLabel: TLabel
-            Left = 11
+            Left = 12
             Top = 64
-            Width = 91
+            Width = 94
             Height = 13
-            Caption = '&Remote recycle bin'
+            Caption = '&Remote recycle bin:'
             FocusControl = RecycleBinPathEdit
           end
           object DeleteToRecycleBinCheck: TCheckBox
@@ -552,162 +818,15 @@ object LoginDialog: TLoginDialog
             OnClick = DataChange
           end
           object RecycleBinPathEdit: TEdit
-            Left = 11
+            Left = 12
             Top = 81
-            Width = 323
+            Width = 322
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 1000
             TabOrder = 2
             Text = 'RecycleBinPathEdit'
             OnChange = DataChange
-          end
-        end
-        object UnixEnvironmentButton: TButton
-          Left = 0
-          Top = 160
-          Width = 75
-          Height = 25
-          Caption = '&Unix'
-          TabOrder = 3
-          OnClick = UnixEnvironmentButtonClick
-        end
-        object WindowsEnvironmentButton: TButton
-          Left = 88
-          Top = 160
-          Width = 75
-          Height = 25
-          Caption = '&Windows'
-          TabOrder = 4
-          OnClick = WindowsEnvironmentButtonClick
-        end
-      end
-      object DirectoriesSheet: TTabSheet
-        Tag = 2
-        Hint = 'Directories'
-        HelpType = htKeyword
-        HelpKeyword = 'ui_login_directories'
-        Caption = 'Dir'
-        ImageIndex = 11
-        DesignSize = (
-          353
-          276)
-        object DirectoriesGroup: TGroupBox
-          Left = 0
-          Top = 6
-          Width = 345
-          Height = 152
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Directories'
-          TabOrder = 0
-          DesignSize = (
-            345
-            152)
-          object LocalDirectoryLabel: TLabel
-            Left = 11
-            Top = 84
-            Width = 69
-            Height = 13
-            Caption = '&Local directory'
-            FocusControl = LocalDirectoryEdit
-          end
-          object RemoteDirectoryLabel: TLabel
-            Left = 11
-            Top = 41
-            Width = 80
-            Height = 13
-            Caption = '&Remote directory'
-            FocusControl = RemoteDirectoryEdit
-          end
-          object LocalDirectoryDescLabel: TLabel
-            Left = 11
-            Top = 126
-            Width = 251
-            Height = 13
-            Caption = 'Local directory is not used with explorer-like interface.'
-          end
-          object LocalDirectoryEdit: TDirectoryEdit
-            Left = 11
-            Top = 101
-            Width = 323
-            Height = 21
-            AcceptFiles = True
-            DialogText = 'Select startup local directory.'
-            ClickKey = 16397
-            Anchors = [akLeft, akTop, akRight]
-            TabOrder = 2
-            Text = 'LocalDirectoryEdit'
-            OnChange = DataChange
-          end
-          object RemoteDirectoryEdit: TEdit
-            Left = 11
-            Top = 58
-            Width = 323
-            Height = 21
-            Anchors = [akLeft, akTop, akRight]
-            MaxLength = 1000
-            TabOrder = 1
-            Text = 'RemoteDirectoryEdit'
-            OnChange = DataChange
-          end
-          object UpdateDirectoriesCheck: TCheckBox
-            Left = 11
-            Top = 19
-            Width = 321
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Re&member last used directory'
-            TabOrder = 0
-          end
-        end
-        object DirectoryOptionsGroup: TGroupBox
-          Left = 0
-          Top = 166
-          Width = 345
-          Height = 87
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Directory reading options'
-          TabOrder = 1
-          DesignSize = (
-            345
-            87)
-          object CacheDirectoriesCheck: TCheckBox
-            Left = 11
-            Top = 19
-            Width = 321
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Cache &visited remote directories'
-            TabOrder = 0
-            OnClick = DataChange
-          end
-          object CacheDirectoryChangesCheck: TCheckBox
-            Left = 11
-            Top = 39
-            Width = 182
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Cache &directory changes'
-            TabOrder = 1
-            OnClick = DataChange
-          end
-          object ResolveSymlinksCheck: TCheckBox
-            Left = 11
-            Top = 59
-            Width = 321
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Resolve symbolic li&nks'
-            TabOrder = 3
-          end
-          object PreserveDirectoryChangesCheck: TCheckBox
-            Left = 202
-            Top = 39
-            Width = 139
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = '&Permanent cache'
-            TabOrder = 2
           end
         end
       end
@@ -718,9 +837,10 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_sftp'
         Caption = 'Sftp'
         ImageIndex = 12
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object SFTPBugsGroupBox: TGroupBox
           Left = 0
           Top = 84
@@ -735,17 +855,17 @@ object LoginDialog: TLoginDialog
           object Label10: TLabel
             Left = 12
             Top = 20
-            Width = 222
+            Width = 225
             Height = 13
-            Caption = '&Reverses order of symlink command arguments'
+            Caption = '&Reverses order of symlink command arguments:'
             FocusControl = SFTPBugSymlinkCombo
           end
           object Label36: TLabel
             Left = 12
             Top = 44
-            Width = 192
+            Width = 195
             Height = 13
-            Caption = '&Misinterprets file timestamps prior to 1970'
+            Caption = '&Misinterprets file timestamps prior to 1970:'
             FocusControl = SFTPBugSignedTSCombo
           end
           object SFTPBugSymlinkCombo: TComboBox
@@ -755,7 +875,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 0
           end
           object SFTPBugSignedTSCombo: TComboBox
@@ -765,7 +885,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 1
           end
         end
@@ -782,38 +902,21 @@ object LoginDialog: TLoginDialog
             70)
           object Label34: TLabel
             Left = 12
-            Top = 20
-            Width = 151
+            Top = 44
+            Width = 154
             Height = 13
-            Caption = '&Preferred SFTP protocol version'
+            Caption = '&Preferred SFTP protocol version:'
             FocusControl = SFTPMaxVersionCombo
           end
-          object Label35: TLabel
+          object Label23: TLabel
             Left = 12
-            Top = 44
-            Width = 128
+            Top = 20
+            Width = 62
             Height = 13
-            Caption = 'Server does not use &UTF-8'
-            FocusControl = SFTPBugUtfCombo
+            Caption = 'SFTP ser&ver:'
+            FocusControl = SftpServerEdit
           end
           object SFTPMaxVersionCombo: TComboBox
-            Left = 272
-            Top = 15
-            Width = 61
-            Height = 21
-            Style = csDropDownList
-            Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
-            TabOrder = 0
-            Items.Strings = (
-              '0'
-              '1'
-              '2'
-              '3'
-              '4'
-              '5')
-          end
-          object SFTPBugUtfCombo: TComboBox
             Left = 272
             Top = 39
             Width = 61
@@ -822,6 +925,28 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 1
+            Items.Strings = (
+              '0'
+              '1'
+              '2'
+              '3'
+              '4'
+              '5')
+          end
+          object SftpServerEdit: TComboBox
+            Left = 184
+            Top = 15
+            Width = 149
+            Height = 21
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            MaxLength = 50
+            TabOrder = 0
+            Text = 'SftpServerEdit'
+            Items.Strings = (
+              'Default'
+              '/bin/sftp-server'
+              'sudo su -c /bin/sftp-server')
           end
         end
       end
@@ -832,44 +957,18 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_scp'
         Caption = 'Shl'
         ImageIndex = 3
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object OtherShellOptionsGroup: TGroupBox
           Left = 0
           Top = 161
           Width = 345
-          Height = 96
+          Height = 69
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Other options'
           TabOrder = 2
-          DesignSize = (
-            345
-            96)
-          object Label29: TLabel
-            Left = 13
-            Top = 71
-            Width = 105
-            Height = 13
-            Caption = 'Server time&zone offset'
-            FocusControl = TimeDifferenceEdit
-          end
-          object Label30: TLabel
-            Left = 196
-            Top = 71
-            Width = 26
-            Height = 13
-            Caption = 'hours'
-            FocusControl = TimeDifferenceEdit
-          end
-          object Label9: TLabel
-            Left = 298
-            Top = 69
-            Width = 36
-            Height = 13
-            Caption = 'minutes'
-            FocusControl = TimeDifferenceMinutesEdit
-          end
           object LookupUserGroupsCheck: TCheckBox
             Left = 12
             Top = 19
@@ -902,36 +1001,9 @@ object LoginDialog: TLoginDialog
             Top = 42
             Width = 185
             Height = 17
-            Caption = 'Use scp&2 with scp1 compat.'
+            Caption = 'Use scp&2 with scp1 compatibility'
             TabOrder = 3
             OnClick = DataChange
-          end
-          object TimeDifferenceEdit: TUpDownEdit
-            Left = 137
-            Top = 66
-            Width = 54
-            Height = 21
-            Alignment = taRightJustify
-            MaxValue = 13
-            MinValue = -13
-            Value = -13
-            Anchors = [akTop, akRight]
-            TabOrder = 4
-            OnChange = DataChange
-          end
-          object TimeDifferenceMinutesEdit: TUpDownEdit
-            Left = 239
-            Top = 66
-            Width = 54
-            Height = 21
-            Alignment = taRightJustify
-            Increment = 15
-            MaxValue = 45
-            MinValue = -45
-            Value = -13
-            Anchors = [akTop, akRight]
-            TabOrder = 5
-            OnChange = DataChange
           end
         end
         object ShellGroup: TGroupBox
@@ -948,23 +1020,23 @@ object LoginDialog: TLoginDialog
           object Label19: TLabel
             Left = 12
             Top = 20
-            Width = 23
+            Width = 26
             Height = 13
-            Caption = 'S&hell'
+            Caption = 'S&hell:'
             FocusControl = ShellEdit
           end
           object Label20: TLabel
             Left = 12
             Top = 44
-            Width = 99
+            Width = 102
             Height = 13
-            Caption = '&Return code variable'
+            Caption = '&Return code variable:'
             FocusControl = ReturnVarEdit
           end
           object ShellEdit: TComboBox
-            Left = 182
+            Left = 152
             Top = 15
-            Width = 151
+            Width = 181
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
@@ -974,12 +1046,13 @@ object LoginDialog: TLoginDialog
             Items.Strings = (
               'Default'
               '/bin/bash'
-              '/bin/ksh')
+              '/bin/ksh'
+              'sudo su -')
           end
           object ReturnVarEdit: TComboBox
-            Left = 182
+            Left = 152
             Top = 39
-            Width = 151
+            Width = 181
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
@@ -1000,32 +1073,90 @@ object LoginDialog: TLoginDialog
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Directory listing'
           TabOrder = 1
+          DesignSize = (
+            345
+            69)
+          object Label9: TLabel
+            Left = 12
+            Top = 20
+            Width = 82
+            Height = 13
+            Caption = 'Listing &command:'
+            FocusControl = ListingCommandEdit
+          end
           object IgnoreLsWarningsCheck: TCheckBox
             Left = 12
-            Top = 19
+            Top = 42
             Width = 140
             Height = 17
             Caption = 'Ignore LS &warnings'
-            TabOrder = 0
-            OnClick = DataChange
-          end
-          object AliasGroupListCheck: TCheckBox
-            Left = 152
-            Top = 19
-            Width = 185
-            Height = 17
-            Caption = 'Alias LS to display g&roup name'
             TabOrder = 1
             OnClick = DataChange
           end
           object SCPLsFullTimeAutoCheck: TCheckBox
-            Left = 12
+            Left = 152
             Top = 42
-            Width = 325
+            Width = 185
             Height = 17
             Caption = 'Try to get &full timestamp'
             TabOrder = 2
             OnClick = DataChange
+          end
+          object ListingCommandEdit: TComboBox
+            Left = 152
+            Top = 15
+            Width = 181
+            Height = 21
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            MaxLength = 50
+            TabOrder = 0
+            Text = 'ListingCommandEdit'
+            Items.Strings = (
+              'ls -la'
+              'ls -gla')
+          end
+        end
+      end
+      object FtpSheet: TTabSheet
+        Tag = 2
+        Hint = 'FTP'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_login_ftp'
+        Caption = 'FtpSheet'
+        ImageIndex = 16
+        TabVisible = False
+        DesignSize = (
+          353
+          286)
+        object FtpGroup: TGroupBox
+          Left = 0
+          Top = 6
+          Width = 345
+          Height = 104
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Protocol options'
+          TabOrder = 0
+          DesignSize = (
+            345
+            104)
+          object Label25: TLabel
+            Left = 12
+            Top = 19
+            Width = 103
+            Height = 13
+            Caption = 'Post login &commands:'
+            FocusControl = PostLoginCommandsMemo
+          end
+          object PostLoginCommandsMemo: TMemo
+            Left = 12
+            Top = 36
+            Width = 323
+            Height = 53
+            Anchors = [akLeft, akTop, akRight]
+            MaxLength = 50
+            ScrollBars = ssVertical
+            TabOrder = 0
           end
         end
       end
@@ -1036,9 +1167,73 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_connection'
         Caption = 'Conn'
         ImageIndex = 7
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
+        object FtpPingGroup: TGroupBox
+          Left = 0
+          Top = 108
+          Width = 345
+          Height = 117
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Keepalives'
+          TabOrder = 3
+          DesignSize = (
+            345
+            117)
+          object FtpPingIntervalLabel: TLabel
+            Left = 12
+            Top = 90
+            Width = 143
+            Height = 13
+            Caption = 'Seconds &between keepalives:'
+            FocusControl = FtpPingIntervalSecEdit
+          end
+          object FtpPingIntervalSecEdit: TUpDownEdit
+            Left = 208
+            Top = 85
+            Width = 73
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 3600
+            MinValue = 1
+            MaxLength = 4
+            TabOrder = 3
+            OnChange = DataChange
+          end
+          object FtpPingOffButton: TRadioButton
+            Left = 12
+            Top = 19
+            Width = 317
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Off'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object FtpPingNullPacketButton: TRadioButton
+            Left = 12
+            Top = 42
+            Width = 317
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Sending of &null SSH packets'
+            Enabled = False
+            TabOrder = 1
+            OnClick = DataChange
+          end
+          object FtpPingDummyCommandButton: TRadioButton
+            Left = 12
+            Top = 65
+            Width = 317
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Executing &dummy protocol commands'
+            TabOrder = 2
+            OnClick = DataChange
+          end
+        end
         object TimeoutGroup: TGroupBox
           Left = 0
           Top = 57
@@ -1050,9 +1245,9 @@ object LoginDialog: TLoginDialog
           object Label11: TLabel
             Left = 12
             Top = 19
-            Width = 114
+            Width = 117
             Height = 13
-            Caption = 'Server &response timeout'
+            Caption = 'Server &response timeout:'
             FocusControl = TimeoutEdit
           end
           object Label12: TLabel
@@ -1091,9 +1286,9 @@ object LoginDialog: TLoginDialog
           object PingIntervalLabel: TLabel
             Left = 12
             Top = 90
-            Width = 140
+            Width = 143
             Height = 13
-            Caption = 'Seconds &between keepalives'
+            Caption = 'Seconds &between keepalives:'
             FocusControl = PingIntervalSecEdit
           end
           object PingIntervalSecEdit: TUpDownEdit
@@ -1143,13 +1338,13 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 230
           Width = 345
-          Height = 45
+          Height = 46
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Internet protocol version'
-          TabOrder = 3
+          TabOrder = 4
           DesignSize = (
             345
-            45)
+            46)
           object IPAutoButton: TRadioButton
             Left = 12
             Top = 19
@@ -1193,7 +1388,7 @@ object LoginDialog: TLoginDialog
             345
             46)
           object FtpPasvModeCheck: TCheckBox
-            Left = 11
+            Left = 12
             Top = 19
             Width = 321
             Height = 17
@@ -1211,9 +1406,10 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_proxy'
         Caption = 'Proxy'
         ImageIndex = 8
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object ProxyTypeGroup: TGroupBox
           Left = 0
           Top = 6
@@ -1225,47 +1421,63 @@ object LoginDialog: TLoginDialog
           DesignSize = (
             345
             136)
-          object ProxyHostLabel: TLabel
-            Left = 11
-            Top = 41
-            Width = 78
+          object ProxyMethodLabel: TLabel
+            Left = 12
+            Top = 20
+            Width = 52
             Height = 13
-            Caption = 'Pro&xy host name'
+            Caption = 'Proxy &type:'
+            FocusControl = SshProxyMethodCombo
+          end
+          object ProxyHostLabel: TLabel
+            Left = 12
+            Top = 41
+            Width = 81
+            Height = 13
+            Caption = 'Pro&xy host name:'
             FocusControl = ProxyHostEdit
           end
           object ProxyPortLabel: TLabel
             Left = 252
             Top = 41
-            Width = 57
+            Width = 60
             Height = 13
             Anchors = [akTop, akRight]
-            Caption = 'Po&rt number'
+            Caption = 'Po&rt number:'
             FocusControl = ProxyPortEdit
           end
           object ProxyUsernameLabel: TLabel
-            Left = 11
+            Left = 12
             Top = 85
-            Width = 51
+            Width = 54
             Height = 13
-            Caption = '&User name'
+            Caption = '&User name:'
             FocusControl = ProxyUsernameEdit
           end
           object ProxyPasswordLabel: TLabel
             Left = 163
             Top = 85
-            Width = 46
+            Width = 49
             Height = 13
-            Caption = '&Password'
+            Caption = '&Password:'
             FocusControl = ProxyPasswordEdit
           end
-          object ProxyNoneButton: TRadioButton
-            Left = 12
-            Top = 19
-            Width = 77
-            Height = 17
-            Caption = '&None'
+          object SshProxyMethodCombo: TComboBox
+            Left = 128
+            Top = 15
+            Width = 110
+            Height = 21
+            Style = csDropDownList
+            ItemHeight = 13
             TabOrder = 0
-            OnClick = DataChange
+            OnChange = DataChange
+            Items.Strings = (
+              'None'
+              'SOCKS4'
+              'SOCKS5'
+              'HTTP'
+              'Telnet'
+              'Local')
           end
           object ProxyPortEdit: TUpDownEdit
             Left = 252
@@ -1276,27 +1488,27 @@ object LoginDialog: TLoginDialog
             MaxValue = 65535
             MinValue = 1
             Anchors = [akTop, akRight]
-            TabOrder = 6
+            TabOrder = 3
             OnChange = DataChange
           end
           object ProxyHostEdit: TEdit
-            Left = 11
+            Left = 12
             Top = 58
             Width = 226
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
-            TabOrder = 5
+            TabOrder = 2
             Text = 'ProxyHostEdit'
             OnChange = DataChange
           end
           object ProxyUsernameEdit: TEdit
-            Left = 11
+            Left = 12
             Top = 102
             Width = 137
             Height = 21
             MaxLength = 50
-            TabOrder = 7
+            TabOrder = 4
             Text = 'ProxyUsernameEdit'
             OnChange = DataChange
           end
@@ -1307,78 +1519,64 @@ object LoginDialog: TLoginDialog
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
-            TabOrder = 8
+            TabOrder = 5
             Text = 'ProxyPasswordEdit'
             OnChange = DataChange
           end
-          object ProxySocks4Button: TRadioButton
-            Left = 81
-            Top = 19
-            Width = 77
-            Height = 17
-            Caption = 'SOCKS&4'
+          object FtpProxyMethodCombo: TComboBox
+            Left = 128
+            Top = 15
+            Width = 110
+            Height = 21
+            Style = csDropDownList
+            ItemHeight = 13
             TabOrder = 1
-            OnClick = DataChange
-          end
-          object ProxySocks5Button: TRadioButton
-            Left = 148
-            Top = 19
-            Width = 67
-            Height = 17
-            Caption = 'SOCKS&5'
-            TabOrder = 2
-            OnClick = DataChange
-          end
-          object ProxyHTTPButton: TRadioButton
-            Left = 215
-            Top = 19
-            Width = 66
-            Height = 17
-            Caption = '&HTTP'
-            TabOrder = 3
-            OnClick = DataChange
-          end
-          object ProxyTelnetButton: TRadioButton
-            Left = 282
-            Top = 19
-            Width = 61
-            Height = 17
-            Caption = '&Telnet'
-            TabOrder = 4
-            OnClick = DataChange
+            OnChange = DataChange
+            Items.Strings = (
+              'None'
+              'SOCKS4'
+              'SOCKS5'
+              'HTTP')
           end
         end
         object ProxySettingsGroup: TGroupBox
           Left = 0
           Top = 147
           Width = 345
-          Height = 108
+          Height = 128
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Proxy settings'
           TabOrder = 1
           DesignSize = (
             345
-            108)
+            128)
           object ProxyTelnetCommandLabel: TLabel
-            Left = 11
-            Top = 19
-            Width = 79
+            Left = 12
+            Top = 18
+            Width = 82
             Height = 13
-            Caption = 'Telnet co&mmand'
+            Caption = 'Telnet co&mmand:'
             FocusControl = ProxyTelnetCommandEdit
           end
           object Label17: TLabel
-            Left = 11
-            Top = 64
+            Left = 12
+            Top = 99
             Width = 168
             Height = 13
             Caption = 'Do &DNS name lookup at proxy end:'
-            FocusControl = ProxyDNSOffButton
+          end
+          object ProxyLocalCommandLabel: TLabel
+            Left = 12
+            Top = 18
+            Width = 106
+            Height = 13
+            Caption = 'Local proxy co&mmand:'
+            FocusControl = ProxyLocalCommandEdit
           end
           object ProxyTelnetCommandEdit: TEdit
-            Left = 128
-            Top = 14
-            Width = 205
+            Left = 12
+            Top = 35
+            Width = 322
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 255
@@ -1387,36 +1585,70 @@ object LoginDialog: TLoginDialog
             OnChange = DataChange
           end
           object ProxyLocalhostCheck: TCheckBox
-            Left = 13
-            Top = 42
+            Left = 12
+            Top = 77
             Width = 313
             Height = 17
             Caption = 'Co&nsider proxying local host connections'
-            TabOrder = 1
+            TabOrder = 5
           end
-          object ProxyDNSOffButton: TRadioButton
+          object ProxyDNSCombo: TComboBox
+            Left = 252
+            Top = 94
+            Width = 82
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 6
+            Items.Strings = (
+              'Auto'
+              'No'
+              'Yes')
+          end
+          object ProxyLocalCommandEdit: TEdit
             Left = 12
-            Top = 83
-            Width = 85
-            Height = 17
-            Caption = 'No'
+            Top = 35
+            Width = 226
+            Height = 21
+            Anchors = [akLeft, akTop, akRight]
             TabOrder = 2
+            Text = 'ProxyLocalCommandEdit'
+            OnChange = DataChange
           end
-          object ProxyDNSAutoButton: TRadioButton
-            Left = 100
-            Top = 83
-            Width = 85
-            Height = 17
-            Caption = 'Auto'
+          object ProxyLocalCommandBrowseButton: TButton
+            Left = 252
+            Top = 33
+            Width = 82
+            Height = 25
+            Anchors = [akTop, akRight]
+            Caption = '&Browse...'
             TabOrder = 3
+            OnClick = ProxyLocalCommandBrowseButtonClick
           end
-          object ProxyDNSOnButton: TRadioButton
-            Left = 188
-            Top = 83
-            Width = 85
-            Height = 17
-            Caption = 'Yes'
+          object ProxyTelnetCommandHintText: TStaticText
+            Left = 255
+            Top = 58
+            Width = 79
+            Height = 16
+            Alignment = taRightJustify
+            Anchors = [akTop, akRight]
+            AutoSize = False
+            Caption = 'patterns'
+            TabOrder = 1
+            TabStop = True
+          end
+          object ProxyLocalCommandHintText: TStaticText
+            Left = 159
+            Top = 58
+            Width = 79
+            Height = 16
+            Alignment = taRightJustify
+            Anchors = [akTop, akRight]
+            AutoSize = False
+            Caption = 'patterns'
             TabOrder = 4
+            TabStop = True
           end
         end
       end
@@ -1427,9 +1659,10 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_tunnel'
         Caption = 'Tun'
         ImageIndex = 14
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object TunnelSessionGroup: TGroupBox
           Left = 0
           Top = 32
@@ -1442,48 +1675,48 @@ object LoginDialog: TLoginDialog
             345
             169)
           object Label6: TLabel
-            Left = 11
+            Left = 12
             Top = 18
-            Width = 51
+            Width = 54
             Height = 13
-            Caption = '&Host name'
+            Caption = '&Host name:'
             FocusControl = TunnelHostNameEdit
           end
           object Label14: TLabel
             Left = 252
             Top = 18
-            Width = 57
+            Width = 60
             Height = 13
             Anchors = [akTop, akRight]
-            Caption = 'Po&rt number'
+            Caption = 'Po&rt number:'
             FocusControl = TunnelPortNumberEdit
           end
           object Label15: TLabel
-            Left = 11
+            Left = 12
             Top = 68
-            Width = 51
+            Width = 54
             Height = 13
-            Caption = '&User name'
+            Caption = '&User name:'
             FocusControl = TunnelUserNameEdit
           end
           object Label16: TLabel
             Left = 163
             Top = 68
-            Width = 46
+            Width = 49
             Height = 13
-            Caption = '&Password'
+            Caption = '&Password:'
             FocusControl = TunnelPasswordEdit
           end
           object Label18: TLabel
-            Left = 11
+            Left = 12
             Top = 118
-            Width = 69
+            Width = 72
             Height = 13
-            Caption = 'Private &key file'
+            Caption = 'Private &key file:'
             FocusControl = TunnelPrivateKeyEdit
           end
           object TunnelHostNameEdit: TEdit
-            Left = 11
+            Left = 12
             Top = 35
             Width = 226
             Height = 21
@@ -1494,7 +1727,7 @@ object LoginDialog: TLoginDialog
             OnChange = DataChange
           end
           object TunnelUserNameEdit: TEdit
-            Left = 11
+            Left = 12
             Top = 85
             Width = 137
             Height = 21
@@ -1527,9 +1760,9 @@ object LoginDialog: TLoginDialog
             OnChange = DataChange
           end
           object TunnelPrivateKeyEdit: TFilenameEdit
-            Left = 11
+            Left = 12
             Top = 135
-            Width = 323
+            Width = 322
             Height = 21
             AcceptFiles = True
             OnAfterDialog = PrivateKeyEditAfterDialog
@@ -1544,7 +1777,7 @@ object LoginDialog: TLoginDialog
           end
         end
         object TunnelCheck: TCheckBox
-          Left = 14
+          Left = 11
           Top = 8
           Width = 307
           Height = 17
@@ -1566,9 +1799,9 @@ object LoginDialog: TLoginDialog
           object Label21: TLabel
             Left = 12
             Top = 20
-            Width = 79
+            Width = 82
             Height = 13
-            Caption = '&Local tunnel port'
+            Caption = '&Local tunnel port:'
             FocusControl = TunnelLocalPortNumberEdit
           end
           object TunnelLocalPortNumberEdit: TComboBox
@@ -1594,9 +1827,10 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_ssh'
         Caption = 'SSH'
         ImageIndex = 2
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object ProtocolGroup: TGroupBox
           Left = 0
           Top = 6
@@ -1669,13 +1903,13 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 100
           Width = 345
-          Height = 149
+          Height = 163
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Encryption options'
           TabOrder = 1
           DesignSize = (
             345
-            149)
+            163)
           object Label8: TLabel
             Left = 12
             Top = 19
@@ -1685,10 +1919,10 @@ object LoginDialog: TLoginDialog
             FocusControl = CipherListBox
           end
           object CipherListBox: TListBox
-            Left = 11
+            Left = 12
             Top = 36
             Width = 190
-            Height = 77
+            Height = 91
             DragMode = dmAutomatic
             ItemHeight = 13
             TabOrder = 0
@@ -1699,7 +1933,7 @@ object LoginDialog: TLoginDialog
           end
           object Ssh2LegacyDESCheck: TCheckBox
             Left = 16
-            Top = 120
+            Top = 134
             Width = 317
             Height = 17
             Anchors = [akLeft, akTop, akRight]
@@ -1733,14 +1967,15 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_kex'
         Caption = 'KEX'
         ImageIndex = 13
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object KexOptionsGroup: TGroupBox
           Left = 0
           Top = 6
           Width = 345
-          Height = 117
+          Height = 152
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Key exchange algorithm options'
           TabOrder = 0
@@ -1753,10 +1988,10 @@ object LoginDialog: TLoginDialog
             FocusControl = KexListBox
           end
           object KexListBox: TListBox
-            Left = 11
+            Left = 12
             Top = 36
             Width = 190
-            Height = 69
+            Height = 104
             DragMode = dmAutomatic
             ItemHeight = 13
             TabOrder = 0
@@ -1786,7 +2021,7 @@ object LoginDialog: TLoginDialog
         end
         object KexReexchangeGroup: TGroupBox
           Left = 0
-          Top = 130
+          Top = 165
           Width = 345
           Height = 69
           Anchors = [akLeft, akTop, akRight]
@@ -1795,9 +2030,9 @@ object LoginDialog: TLoginDialog
           object Label31: TLabel
             Left = 12
             Top = 20
-            Width = 186
+            Width = 189
             Height = 13
-            Caption = 'Max &minutes before rekey (0 for no limit)'
+            Caption = 'Max &minutes before rekey (0 for no limit):'
             Color = clBtnFace
             FocusControl = RekeyTimeEdit
             ParentColor = False
@@ -1805,9 +2040,9 @@ object LoginDialog: TLoginDialog
           object Label32: TLabel
             Left = 12
             Top = 44
-            Width = 171
+            Width = 174
             Height = 13
-            Caption = 'Ma&x data before rekey (0 for no limit)'
+            Caption = 'Ma&x data before rekey (0 for no limit):'
             Color = clBtnFace
             FocusControl = RekeyDataEdit
             ParentColor = False
@@ -1841,88 +2076,98 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_authentication'
         Caption = 'Auth'
         ImageIndex = 10
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
+        object SshNoUserAuthCheck: TCheckBox
+          Left = 11
+          Top = 8
+          Width = 307
+          Height = 17
+          Caption = '&Bypass authentication entirelly (SSH-2)'
+          TabOrder = 0
+          OnClick = DataChange
+        end
         object AuthenticationGroup: TGroupBox
           Left = 0
-          Top = 6
+          Top = 32
           Width = 345
-          Height = 117
+          Height = 140
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication options'
-          TabOrder = 0
+          TabOrder = 1
           DesignSize = (
             345
-            117)
-          object AuthTISCheck: TCheckBox
+            140)
+          object TryAgentCheck: TCheckBox
             Left = 12
             Top = 19
-            Width = 321
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Attempt authentication using &Pagent'
+            TabOrder = 0
+            OnClick = DataChange
+          end
+          object AuthTISCheck: TCheckBox
+            Left = 12
+            Top = 42
+            Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Atte&mpt TIS or CryptoCard authentication (SSH-1)'
-            TabOrder = 0
+            TabOrder = 1
             OnClick = DataChange
           end
           object AuthKICheck: TCheckBox
             Left = 12
-            Top = 42
+            Top = 65
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Attempt '#39'keyboard-&interactive'#39' authentication (SSH-2)'
-            TabOrder = 1
+            TabOrder = 2
             OnClick = DataChange
           end
           object AuthKIPasswordCheck: TCheckBox
             Left = 32
-            Top = 65
+            Top = 88
             Width = 305
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'Respond with &password to the first prompt'
-            TabOrder = 2
+            TabOrder = 3
             OnClick = DataChange
           end
-          object AuthGSSAPICheck: TCheckBox
+          object AuthGSSAPICheck2: TCheckBox
             Left = 12
-            Top = 88
+            Top = 111
             Width = 325
             Height = 17
-            Caption = 'Attempt Ke&rberos 5 GSSAPI/SSPI authentication (SSH-2)'
-            TabOrder = 3
-            OnClick = AuthGSSAPICheckClick
+            Caption = 'Attempt GSSAPI/SSPI authentication (SSH-2)'
+            TabOrder = 4
+            OnClick = AuthGSSAPICheck2Click
           end
         end
         object AuthenticationParamsGroup: TGroupBox
           Left = 0
-          Top = 128
+          Top = 177
           Width = 345
           Height = 93
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication parameters'
-          TabOrder = 1
+          TabOrder = 2
           DesignSize = (
             345
             93)
-          object GSSAPIServerRealmLabel: TLabel
+          object GSSAPIServerRealmLabel2: TLabel
             Left = 12
-            Top = 67
-            Width = 95
+            Top = 41
+            Width = 187
             Height = 13
-            Caption = 'Ser&ver realm (SSPI):'
+            Caption = 'Ser&vice principal name (GSSAPI/SSPI):'
             FocusControl = GSSAPIServerRealmEdit
-          end
-          object GSSAPIFwdTGTCheck: TCheckBox
-            Left = 12
-            Top = 42
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Allow Kerberos 5 &ticket forwarding in GSSAPI/SSPI (SSH-2)'
-            TabOrder = 1
-            OnClick = DataChange
           end
           object AgentFwdCheck: TCheckBox
             Left = 12
@@ -1935,13 +2180,13 @@ object LoginDialog: TLoginDialog
             OnClick = DataChange
           end
           object GSSAPIServerRealmEdit: TEdit
-            Left = 160
-            Top = 62
-            Width = 173
+            Left = 12
+            Top = 58
+            Width = 323
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 63
-            TabOrder = 2
+            TabOrder = 1
             Text = 'GSSAPIServerRealmEdit'
           end
         end
@@ -1953,9 +2198,10 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_bugs'
         Caption = 'Bugs'
         ImageIndex = 9
+        TabVisible = False
         DesignSize = (
           353
-          276)
+          286)
         object BugsGroupBox: TGroupBox
           Left = 0
           Top = 6
@@ -1970,65 +2216,65 @@ object LoginDialog: TLoginDialog
           object BugIgnore1Label: TLabel
             Left = 12
             Top = 20
-            Width = 167
+            Width = 170
             Height = 13
-            Caption = 'Chokes on SSH-1 &ignore messages'
+            Caption = 'Chokes on SSH-1 &ignore messages:'
             FocusControl = BugIgnore1Combo
           end
           object BugPlainPW1Label: TLabel
             Left = 12
             Top = 44
-            Width = 192
+            Width = 195
             Height = 13
-            Caption = 'Refuses all SSH-1 pass&word camouflage'
+            Caption = 'Refuses all SSH-1 pass&word camouflage:'
             FocusControl = BugPlainPW1Combo
           end
           object BugRSA1Label: TLabel
             Left = 12
             Top = 68
-            Width = 180
+            Width = 183
             Height = 13
-            Caption = 'Chokes on SSH-1 &RSA authentication'
+            Caption = 'Chokes on SSH-1 &RSA authentication:'
             FocusControl = BugRSA1Combo
           end
           object BugHMAC2Label: TLabel
             Left = 12
             Top = 92
-            Width = 155
+            Width = 158
             Height = 13
-            Caption = 'Miscomputes SSH-2 H&MAC keys'
+            Caption = 'Miscomputes SSH-2 H&MAC keys:'
             FocusControl = BugHMAC2Combo
           end
           object BugDeriveKey2Label: TLabel
             Left = 12
             Top = 116
-            Width = 173
+            Width = 176
             Height = 13
-            Caption = 'Miscomputes SSH-2 &encryption keys'
+            Caption = 'Miscomputes SSH-2 &encryption keys:'
             FocusControl = BugDeriveKey2Combo
           end
           object BugRSAPad2Label: TLabel
             Left = 12
             Top = 140
-            Width = 208
+            Width = 211
             Height = 13
-            Caption = 'Requires &padding on SSH-2 RSA signatures'
+            Caption = 'Requires &padding on SSH-2 RSA signatures:'
             FocusControl = BugRSAPad2Combo
           end
           object BugPKSessID2Label: TLabel
             Left = 12
             Top = 164
-            Width = 194
+            Width = 197
             Height = 13
-            Caption = 'Misuses the sessio&n ID in SSH-2 PK auth'
+            Caption = 'Misuses the sessio&n ID in SSH-2 PK auth:'
             FocusControl = BugPKSessID2Combo
           end
           object BugRekey2Label: TLabel
             Left = 12
             Top = 188
-            Width = 183
+            Width = 186
             Height = 13
-            Caption = 'Handles SSH-2 &key re-exchange badly'
+            Caption = 'Handles SSH-2 &key re-exchange badly:'
             FocusControl = BugRekey2Combo
           end
           object BugIgnore1Combo: TComboBox
@@ -2038,7 +2284,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 0
             OnChange = DataChange
           end
@@ -2049,7 +2295,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 1
             OnChange = DataChange
           end
@@ -2060,7 +2306,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 2
             OnChange = DataChange
           end
@@ -2071,7 +2317,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 3
             OnChange = DataChange
           end
@@ -2082,7 +2328,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 4
             OnChange = DataChange
           end
@@ -2093,7 +2339,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 5
             OnChange = DataChange
           end
@@ -2104,7 +2350,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 6
             OnChange = DataChange
           end
@@ -2115,7 +2361,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
+            ItemHeight = 0
             TabOrder = 7
             OnChange = DataChange
           end
@@ -2128,6 +2374,7 @@ object LoginDialog: TLoginDialog
         HelpKeyword = 'ui_login_preferences'
         Caption = 'Int'
         ImageIndex = 5
+        TabVisible = False
         object Label13: TLabel
           Left = 16
           Top = 224
@@ -2172,18 +2419,18 @@ object LoginDialog: TLoginDialog
       Left = 0
       Top = 0
       Width = 152
-      Height = 331
+      Height = 296
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
         152
-        331)
+        296)
       object NavigationTree: TTreeView
         Left = 8
         Top = 9
         Width = 136
-        Height = 295
+        Height = 260
         Anchors = [akLeft, akTop, akRight, akBottom]
         HideSelection = False
         HotTrack = True
@@ -2199,25 +2446,27 @@ object LoginDialog: TLoginDialog
           0853657373696F6E5829000000000000000000000000000000FFFFFFFF000000
           00000000001053746F7265642073657373696F6E735821000000000000000000
           000000000000FFFFFFFF0000000000000000084C6F6767696E67582500000000
-          0000000000000000000000FFFFFFFF00000000030000000C456E7669726F6E6D
+          0000000000000000000000FFFFFFFF00000000050000000C456E7669726F6E6D
           656E745825000000000000000000000000000000FFFFFFFF0000000000000000
-          0C4469726563746F72696573581E000000000000000000000000000000FFFFFF
-          FF00000000000000000553465450581D000000000000000000000000000000FF
-          FFFFFF0000000000000000045343505824000000000000000000000000000000
-          FFFFFFFF00000000020000000B436F6E6E656374696F6E581F00000000000000
-          0000000000000000FFFFFFFF00000000000000000650726F7879582000000000
-          0000000000000000000000FFFFFFFF00000000000000000754756E6E656C581D
-          000000000000000000000000000000FFFFFFFF00000000030000000453534858
-          26000000000000000000000000000000FFFFFFFF00000000000000000D4B6578
-          2065786368616E67655828000000000000000000000000000000FFFFFFFF0000
-          0000000000000F41757468656E7469636174696F6E581E000000000000000000
-          000000000000FFFFFFFF00000000000000000542756773582500000000000000
-          0000000000000000FFFFFFFF00000000000000000C507265666572656E636573
-          58}
+          0C4469726563746F726965735825000000000000000000000000000000FFFFFF
+          FF00000000000000000C52656379636C652062696E581E000000000000000000
+          000000000000FFFFFFFF00000000000000000553465450581D00000000000000
+          0000000000000000FFFFFFFF000000000000000004534350581D000000000000
+          0000000000FFFFFFFFFFFFFFFF00000000000000000446545058240000000000
+          00000000000000000000FFFFFFFF00000000020000000B436F6E6E656374696F
+          6E581F000000000000000000000000000000FFFFFFFF00000000000000000650
+          726F78795820000000000000000000000000000000FFFFFFFF00000000000000
+          000754756E6E656C581D000000000000000000000000000000FFFFFFFF000000
+          0003000000045353485826000000000000000000000000000000FFFFFFFF0000
+          0000000000000D4B65782065786368616E676558280000000000000000000000
+          00000000FFFFFFFF00000000000000000F41757468656E7469636174696F6E58
+          1E000000000000000000000000000000FFFFFFFF000000000000000005427567
+          735825000000000000000000000000000000FFFFFFFF00000000000000000C50
+          7265666572656E63657358}
       end
       object ShowAdvancedLoginOptionsCheck: TCheckBox
         Left = 16
-        Top = 311
+        Top = 276
         Width = 120
         Height = 17
         Anchors = [akLeft, akRight, akBottom]
@@ -2301,6 +2550,11 @@ object LoginDialog: TLoginDialog
       Category = 'Sessions'
       Caption = 'Shell &icon...'
       OnExecute = ShellIconSessionActionExecute
+    end
+    object NewSessionFolderAction: TAction
+      Category = 'Sessions'
+      Caption = 'Ne&w folder...'
+      OnExecute = NewSessionFolderActionExecute
     end
   end
   object ToolsPopupMenu: TPopupMenu
@@ -2483,6 +2737,413 @@ object LoginDialog: TLoginDialog
       FFFF000000000000FFFF000000000000FFFF000000000000FFFF000000000000
       FFFF000000000000FFFF000000000000FFFF000000000000FFFF000000000000
       FFFF000000000000FFFF00000000000000000000000000000000000000000000
+      000000000000}
+  end
+  object SessionImageList: TImageList
+    Left = 48
+    Top = 289
+    Bitmap = {
+      494C010104000900040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      0000000000003600000028000000400000003000000001002000000000000030
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000001821
+      2100182121001821210018212100182121001821210018212100182121001821
+      2100182121001821210018212100000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000006363000063
+      6300006363000063630000636300006363000063630000636300006363000063
+      63000063630018212100182121000000000000000000006363009CFFFF0000CE
+      FF0000CEFF00009CCE0000CEFF00009CCE0000CEFF00009CCE00009CCE00009C
+      CE00639C9C00009CCE0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000006363009CFF
+      FF00009CCE0000CEFF00009CCE0000CEFF00009CCE00009CCE00009CCE00009C
+      CE000063630018212100182121000000000000000000006363009CFFFF0000CE
+      FF0000CEFF0000CEFF00009CCE0000CEFF00009CCE0000CEFF00009CCE00009C
+      CE00009CCE00639C9C0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      00000000000000000000000000000000000000000000006363009CFFFF0000CE
+      FF0000CEFF00009CCE0000CEFF00009CCE0000CEFF00009CCE00009CCE00639C
+      9C001821210000636300182121000000000000000000006363009CFFFF00FFFF
+      FF0000CEFF0000CEFF0000CEFF00009CCE0000CEFF00009CCE0000CEFF00009C
+      CE00009CCE00009CCE0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      00000000000000000000000000000000000000000000006363009CFFFF00FFFF
+      FF0000CEFF0000CEFF0000CEFF0000CEFF00009CCE0000CEFF00009CCE00009C
+      CE001821210000636300182121000000000000000000006363009CFFFF0000CE
+      FF00FFFFFF0000CEFF0000CEFF0000CEFF0000CEFF0000CEFF00009CCE0000CE
+      FF00009CCE00009CCE0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      000000000000000000000000000000000000006363009CFFFF00FFFFFF0000CE
+      FF00FFFFFF0000CEFF00009CCE0000CEFF0000CEFF00009CCE0000CEFF001821
+      210000CEFF0000CEFF00182121000000000000000000006363009CFFFF00FFFF
+      FF0000CEFF00FFFFFF0000CEFF0000CEFF0000CEFF0000CEFF0000CEFF00009C
+      CE0000CEFF00009CCE0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      000000000000000000000000000000000000006363009CFFFF0000CEFF00FFFF
+      FF0000CEFF00FFFFFF0000CEFF0000CEFF00009CCE0000CEFF00009CCE001821
+      210000CEFF0000CEFF00182121000000000000000000006363009CFFFF0000CE
+      FF00FFFFFF0000CEFF00FFFFFF0000CEFF00FFFFFF0000CEFF0000CEFF0000CE
+      FF0000CEFF0000CEFF0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000063630000636300006363000063
+      63000063630000636300006363000063630000636300006363000063630000CE
+      FF0000CEFF0000CEFF00182121000000000000000000006363009CFFFF00FFFF
+      FF0000CEFF00FFFFFF0000CEFF00FFFFFF0000CEFF00FFFFFF0000CEFF0000CE
+      FF0000CEFF00009CCE0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      00000000000000000000000000000000000000000000006363009CFFFF0000CE
+      FF00FFFFFF0000CEFF0000CEFF0000CEFF0000CEFF0000CEFF0000CEFF0000CE
+      FF0000CEFF0000CEFF00182121000000000000000000006363009CFFFF0000CE
+      FF00FFFFFF0000CEFF00FFFFFF0000CEFF00FFFFFF0000CEFF00FFFFFF0000CE
+      FF0000CEFF0000CEFF0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      00000000000000000000000000000000000000000000006363009CFFFF00FFFF
+      FF0000CEFF00FFFFFF0000CEFF0000CEFF0000CEFF0000CEFF009CFFFF009CFF
+      FF009CFFFF009CFFFF00182121000000000000000000006363009CFFFF009CFF
+      FF009CFFFF009CFFFF009CFFFF009CFFFF009CFFFF009CFFFF009CFFFF009CFF
+      FF009CFFFF009CFFFF0000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      00000000000000000000000000000000000000000000006363009CFFFF0000CE
+      FF00FFFFFF0000CEFF00FFFFFF0000CEFF009CFFFF0000636300006363000063
+      6300006363000063630000000000000000000000000000636300006363000063
+      6300006363000063630000636300006363000063630000636300006363000063
+      6300006363000063630000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000006363009CFF
+      FF009CFFFF009CFFFF009CFFFF009CFFFF000063630000000000000000000000
+      0000000000000000000000000000000000000000000000000000006363009CFF
+      FF009CFFFF009CCECE009CCECE00009C9C000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000063
+      6300006363000063630000636300006363000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000063
+      6300006363000063630000636300006363000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      000000000000000000000000000000000000424D3E000000000000003E000000
+      2800000040000000300000000100010000000000800100000000000000000000
+      000000000000000000000000FFFFFF0000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+      FFFFFFFFE0018001FFFFFFFFC0018001FFFFFFFFC0018001FFFFFFFF80018001
+      FFFFFFFF80018001FFFFFFFF00018001FFFFFFFF00018001FFFFFFFF00018001
+      FFFFFFFF80018001FFFFFFFF80018001FFFFFFFF80038001FFFFFFFFC07FC07F
+      FFFFFFFFE0FFE0FFFFFFFFFFFFFFFFFF00000000000000000000000000000000
       000000000000}
   end
 end

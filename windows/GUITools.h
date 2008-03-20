@@ -3,6 +3,7 @@
 #define GUIToolsH
 //---------------------------------------------------------------------------
 // from shlobj.h
+#define CSIDL_DESKTOP                   0x0000        // <desktop>
 #define CSIDL_SENDTO                    0x0009        // <user name>\SendTo
 #define CSIDL_DESKTOPDIRECTORY          0x0010        // <user name>\Desktop
 #define CSIDL_COMMON_DESKTOPDIRECTORY   0x0019        // All Users\Desktop
@@ -26,7 +27,7 @@ bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Path,
 bool __fastcall ExecuteShellAndWait(HWND Handle, const AnsiString Command,
   TProcessMessagesEvent ProcessMessages);
 void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
-  TSessionData * SessionData, const AnsiString Password);
+  TSessionData * SessionData, AnsiString Password);
 bool __fastcall SpecialFolderLocation(int PathID, AnsiString & Path);
 AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
   const AnsiString MultiItemsFormat, int Count, const AnsiString FirstItem);
@@ -35,8 +36,6 @@ AnsiString __fastcall ItemsFormatString(const AnsiString SingleItemFormat,
 AnsiString __fastcall FileNameFormatString(const AnsiString SingleFileFormat,
   const AnsiString MultiFileFormat, TStrings * Files, bool Remote);
 AnsiString __fastcall FormatBytes(__int64 Bytes, bool UseOrders = true);
-void __fastcall CopyToClipboard(AnsiString Text);
-void __fastcall CopyToClipboard(TStrings * Strings);
 AnsiString __fastcall UniqTempDir(const AnsiString BaseDir,
   const AnsiString Identity, bool Mask = false);
 bool __fastcall DeleteDirectory(const AnsiString DirName);
@@ -47,7 +46,9 @@ class TLocalCustomCommand : public TFileCustomCommand
 {
 public:
   TLocalCustomCommand();
-  TLocalCustomCommand(const AnsiString & FileName, const AnsiString & LocalFileName,
+  TLocalCustomCommand(const TCustomCommandData & Data, const AnsiString & Path);
+  TLocalCustomCommand(const TCustomCommandData & Data, const AnsiString & Path,
+    const AnsiString & FileName, const AnsiString & LocalFileName,
     const AnsiString & FileList);
 
   virtual bool __fastcall IsFileCommand(const AnsiString & Command);

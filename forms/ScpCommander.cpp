@@ -7,6 +7,7 @@
 #include <Common.h>
 #include <CoreMain.h>
 #include <Interface.h>
+#include <TextsCore.h>
 #include <TextsWin.h>
 #include <HelpWin.h>
 #include <VCLCommon.h>
@@ -27,11 +28,7 @@
 #pragma link "NortonLikeListView"
 #pragma link "UnixDirView"
 #pragma link "DirView"
-#pragma link "CustomPathComboBox"
-#pragma link "IEComboBox"
-#pragma link "IEPathComboBox"
 #pragma link "PathLabel"
-#pragma link "UnixPathComboBox"
 #pragma link "HistoryComboBox"
 #pragma link "CustomDriveView"
 #pragma link "DriveView"
@@ -56,6 +53,13 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   FSynchronisingBrowse = false;
   FFirstTerminal = true;
   FInternalDDDownloadList = new TStringList();
+  FLocalPathComboBoxPaths = new TStringList();
+
+  RemotePathComboBox->Images = FSystemImageList;
+  RemotePathComboBox->SubMenuImages = FSystemImageList;
+  LocalPathComboBox->Images = FSystemImageList;
+  LocalPathComboBox->SubMenuImages = FSystemImageList;
+  LocalPathComboUpdateDrives();
 
   LocalBackButton->LinkSubitems = HistoryMenu(osLocal, true)->Items;
   LocalForwardButton->LinkSubitems = HistoryMenu(osLocal, false)->Items;
@@ -85,9 +89,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   reinterpret_cast<TLabel*>(Splitter)->OnDblClick = SplitterDblClick;
   reinterpret_cast<TLabel*>(LocalPanelSplitter)->OnDblClick = PanelSplitterDblClick;
   reinterpret_cast<TLabel*>(RemotePanelSplitter)->OnDblClick = PanelSplitterDblClick;
-  RemotePathComboBox->TabStop = False;
 
-  CommandLineLabel->FocusControl = CommandLineCombo;
   CommandLineCombo->Text = "";
   FCommandLineComboPopulated = false;
 
@@ -106,6 +108,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
 __fastcall TScpCommanderForm::~TScpCommanderForm()
 {
   delete FInternalDDDownloadList;
+  delete FLocalPathComboBoxPaths;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreFormParams()
@@ -125,13 +128,8 @@ void __fastcall TScpCommanderForm::RestoreParams()
   TCustomScpExplorerForm::RestoreParams();
   LeftPanelWidth = WinConfiguration->ScpCommander.LocalPanelWidth;
   LoadToolbarsLayoutStr(WinConfiguration->ScpCommander.ToolbarsLayout);
-  SessionCombo->EditWidth = WinConfiguration->ScpCommander.SessionComboWidth;
   StatusBar->Visible = WinConfiguration->ScpCommander.StatusBar;
 
-  CommandLinePanel->Visible = WinConfiguration->ScpCommander.CommandLine;
-
-  FDirViewToSelect = (WinConfiguration->ScpCommander.CurrentPanel == osLocal ?
-    (TCustomDirView *)LocalDirView : (TCustomDirView *)RemoteDirView);
   #define RESTORE_PANEL_PARAMS(PANEL) \
     PANEL ## DirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams; \
     PANEL ## StatusBar->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar; \
@@ -156,11 +154,9 @@ void __fastcall TScpCommanderForm::StoreParams()
   try
   {
     WinConfiguration->ScpCommander.ToolbarsLayout = GetToolbarsLayoutStr();
-    WinConfiguration->ScpCommander.SessionComboWidth = SessionCombo->EditWidth;
     WinConfiguration->ScpCommander.LocalPanelWidth = LeftPanelWidth;
     WinConfiguration->ScpCommander.StatusBar = StatusBar->Visible;
 
-    WinConfiguration->ScpCommander.CommandLine = CommandLinePanel->Visible;
     SaveCommandLine();
 
     WinConfiguration->ScpCommander.CurrentPanel = FCurrentSide;
@@ -174,7 +170,7 @@ void __fastcall TScpCommanderForm::StoreParams()
     STORE_PANEL_PARAMS(Remote);
     #undef RESTORE_PANEL_PARAMS
 
-    WinConfiguration->ScpCommander.WindowParams = StoreForm(this);;
+    WinConfiguration->ScpCommander.WindowParams = StoreForm(this);
 
     WinConfiguration->SynchronizeBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
 
@@ -292,10 +288,10 @@ bool __fastcall TScpCommanderForm::CopyParamDialog(TTransferDirection Direction,
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DoShow()
 {
-  TCustomScpExplorerForm::DoShow();
+  ActiveControl = (WinConfiguration->ScpCommander.CurrentPanel == osLocal ?
+    (TCustomDirView *)LocalDirView : (TCustomDirView *)RemoteDirView);
 
-  assert(FDirViewToSelect);
-  FDirViewToSelect->SetFocus();
+  TCustomScpExplorerForm::DoShow();
 
   UpdateControls();
 }
@@ -511,6 +507,11 @@ TPanel * __fastcall TScpCommanderForm::Panel(bool Left)
     RemotePanel : LocalPanel);
 }
 //---------------------------------------------------------------------------
+TPanel * __fastcall TScpCommanderForm::CurrentPanel()
+{
+  return (FCurrentSide == osLocal ? LocalPanel : RemotePanel);
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SetLeftPanelWidth(float value)
 {
   float Total = LocalPanel->Width + RemotePanel->Width;
@@ -589,10 +590,14 @@ void __fastcall TScpCommanderForm::UpdateControls()
   AnsiString SplitterLongHint = Splitter->Hint;
   SplitterLongHint.Delete(1, SplitterLongHint.Pos("|"));
   Splitter->Hint = FORMAT("%0.0f%%|%s", (LeftPanelWidth*100, SplitterLongHint));
-  CommandLineLabel->UnixPath = (FCurrentSide == osRemote);
-  CommandLineLabel->Caption = DirView(osCurrent)->PathName;
-  CommandLinePromptLabel->Caption =
-    (FCurrentSide == osRemote) ? "$" : ">";
+  AnsiString ACommandLinePromptLabel = LoadStr(COMMAND_LINE_LABEL) + " " +
+    ((FCurrentSide == osRemote) ? "$" : ">");
+  if (CommandLinePromptLabel->Caption != ACommandLinePromptLabel)
+  {
+    CommandLinePromptLabel->Caption = ACommandLinePromptLabel;
+    // command line combo width needs to be updated as caption width has probably changed
+    ToolBarResize(CommandLineToolbar);
+  }
   LocalDirView->Color = (SessionColor != 0 ? SessionColor : clWindow);
   LocalDriveView->Color = LocalDirView->Color;
 }
@@ -600,18 +605,16 @@ void __fastcall TScpCommanderForm::UpdateControls()
 void __fastcall TScpCommanderForm::ChangePath(TOperationSide Side)
 {
   assert((Side == osLocal) || (Side == osRemote));
-  TCustomPathComboBox * PathComboBox;
-  if (Side == osLocal) PathComboBox = LocalPathComboBox;
-    else PathComboBox = RemotePathComboBox;
-  assert(PathComboBox);
-  PathComboBox->SetFocus();
-  PathComboBox->DroppedDown = True;
-}
-//---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::PathComboBoxCloseUp(TObject * /*Sender*/,
-      bool /*Canceled*/)
-{
-  DirView(osCurrent)->SetFocus();
+  TTBXComboBoxItem * PathComboBox;
+  if (Side == osLocal)
+  {
+    PathComboBox = LocalPathComboBox;
+  }
+  else
+  {
+    PathComboBox = RemotePathComboBox;
+  }
+  ClickToolbarItem(PathComboBox, false);
 }
 //---------------------------------------------------------------------------
 TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
@@ -622,7 +625,7 @@ TControl * __fastcall TScpCommanderForm::GetComponent(Byte Component)
     case fcLocalStatusBar: return LocalStatusBar;
     case fcRemoteStatusBar: return RemoteStatusBar;
     case fcSessionCombo: return reinterpret_cast<TControl*>(SessionCombo);
-    case fcCommandLinePanel: return CommandLinePanel;
+    case fcCommandLinePanel: return CommandLineToolbar;
     case fcLocalTree: return LocalDriveView;
     case fcSessionToolbar: return SessionToolbar;
     case fcCustomCommandsBand: return CustomCommandsToolbar;
@@ -658,7 +661,7 @@ void __fastcall TScpCommanderForm::FixControlsPlacement()
   LocalPanelSplitter->Visible = LocalDriveView->Visible;
 
   TControl * ControlsOrder[] =
-    { CommandLinePanel, BottomDock, QueueSplitter, QueuePanel, StatusBar };
+    { BottomDock, QueueSplitter, QueuePanel, StatusBar };
   SetVerticalControlsOrder(ControlsOrder, LENOF(ControlsOrder));
 
   TControl * LocalControlsOrder[] =
@@ -776,110 +779,179 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   TCustomScpExplorerForm::FileOperationProgress(ProgressData, Cancel);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView,
+  AnsiString PrevPath, AnsiString & NewPath, bool Create)
+{
+  if (ADirView == LocalDirView)
+  {
+    Terminal->ExceptionOnFail = true;
+    try
+    {
+      AnsiString FullPrevPath = IncludeTrailingBackslash(PrevPath);
+      if (LocalDirView->Path.SubString(1, FullPrevPath.Length()) == FullPrevPath)
+      {
+        NewPath = UnixIncludeTrailingBackslash(RemoteDirView->Path) +
+          ToUnixPath(LocalDirView->Path.SubString(FullPrevPath.Length() + 1,
+            LocalDirView->Path.Length() - FullPrevPath.Length()));
+      }
+      else if (FullPrevPath.SubString(1, LocalDirView->Path.Length()) == LocalDirView->Path)
+      {
+        NewPath = RemoteDirView->Path;
+        while (!ComparePaths(FullPrevPath, LocalDirView->Path))
+        {
+          if (NewPath == UnixExcludeTrailingBackslash(NewPath))
+          {
+            Abort();
+          }
+          NewPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(NewPath));
+          FullPrevPath = ExtractFilePath(ExcludeTrailingBackslash(FullPrevPath));
+        }
+      }
+      else
+      {
+        Abort();
+      }
+
+      if (Create)
+      {
+        TRemoteProperties Properties = GUIConfiguration->NewDirectoryProperties;
+        RemoteDirView->CreateDirectoryEx(NewPath, &Properties);
+      }
+
+      RemoteDirView->Path = NewPath;
+    }
+    __finally
+    {
+      Terminal->ExceptionOnFail = false;
+    }
+  }
+  else
+  {
+    AnsiString FullPrevPath = UnixIncludeTrailingBackslash(PrevPath);
+    if (RemoteDirView->Path.SubString(1, FullPrevPath.Length()) == FullPrevPath)
+    {
+      NewPath = IncludeTrailingBackslash(LocalDirView->Path) +
+        FromUnixPath(RemoteDirView->Path.SubString(FullPrevPath.Length() + 1,
+          RemoteDirView->Path.Length() - FullPrevPath.Length()));
+    }
+    else if (FullPrevPath.SubString(1, RemoteDirView->Path.Length()) == RemoteDirView->Path)
+    {
+      AnsiString NewLocalPath;
+      NewPath = ExcludeTrailingBackslash(LocalDirView->Path);
+      while (!UnixComparePaths(FullPrevPath, RemoteDirView->Path))
+      {
+        NewLocalPath = ExcludeTrailingBackslash(ExtractFileDir(NewPath));
+        if (NewLocalPath == NewPath)
+        {
+          Abort();
+        }
+        NewPath = NewLocalPath;
+        FullPrevPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(FullPrevPath));
+      }
+    }
+    else
+    {
+      Abort();
+    }
+
+    if (Create)
+    {
+      LocalDirView->CreateDirectory(NewPath);
+    }
+
+    LocalDirView->Path = NewPath;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView)
+{
+  AnsiString PrevPath = FPrevPath[ADirView == LocalDirView];
+  FPrevPath[ADirView == LocalDirView] = ADirView->Path;
+
+  if (!FSynchronisingBrowse && NonVisualDataModule->SynchronizeBrowsingAction->Checked &&
+      !PrevPath.IsEmpty() && PrevPath != ADirView->Path)
+  {
+    bool PrevNoTransferPresetAutoSelect = FNoTransferPresetAutoSelect;
+    FNoTransferPresetAutoSelect = true;
+    FSynchronisingBrowse = true;
+    try
+    {
+      try
+      {
+        AnsiString NewPath;
+        try
+        {
+          SynchronizeBrowsing(ADirView, PrevPath, NewPath, false);
+        }
+        // EAbort means that we do not know how to synchronize browsing
+        // there's no fallback scenario for that
+        catch(EAbort &)
+        {
+          throw;
+        }
+        catch(Exception & E)
+        {
+          // what does this say?
+          if (Application->Terminated)
+          {
+            throw;
+          }
+          else
+          {
+            Terminal->ShowExtendedException(&E);
+            if (MessageDialog(FMTLOAD(SYNC_DIR_BROWSE_CREATE, (NewPath)), qtInformation, qaYes | qaNo,
+                  HELP_SYNC_DIR_BROWSE_ERROR) == qaYes)
+            {
+              try
+              {
+                SynchronizeBrowsing(ADirView, PrevPath, NewPath, true);
+              }
+              catch(Exception & E)
+              {
+                if (!Application->Terminated)
+                {
+                  Terminal->ShowExtendedException(&E);
+                }
+                throw;
+              }
+            }
+            else
+            {
+              NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+            }
+          }
+        }
+      }
+      catch(Exception & E)
+      {
+        NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+        // what does this say?
+        if (Application->Terminated)
+        {
+          throw;
+        }
+        else
+        {
+          MessageDialog(LoadStr(SYNC_DIR_BROWSE_ERROR), qtInformation, qaOK,
+            HELP_SYNC_DIR_BROWSE_ERROR);
+        }
+      }
+    }
+    __finally
+    {
+      FSynchronisingBrowse = false;
+      FNoTransferPresetAutoSelect = PrevNoTransferPresetAutoSelect;
+    }
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DoDirViewLoaded(TCustomDirView * ADirView)
 {
   TCustomScpExplorerForm::DoDirViewLoaded(ADirView);
 
   UpdateControls();
 
-  bool PrevNoTransferPresetAutoSelect = FNoTransferPresetAutoSelect;
-  FNoTransferPresetAutoSelect = true;
-  try
-  {
-    AnsiString PrevPath = FPrevPath[ADirView == LocalDirView];
-    AnsiString FullPrevPath =
-      (ADirView == LocalDirView) ? IncludeTrailingBackslash(PrevPath) :
-        UnixIncludeTrailingBackslash(PrevPath);
-    FPrevPath[ADirView == LocalDirView] = ADirView->Path;
-
-    if (!FSynchronisingBrowse && NonVisualDataModule->SynchronizeBrowsingAction->Checked &&
-        !PrevPath.IsEmpty() && PrevPath != ADirView->Path)
-    {
-      FSynchronisingBrowse = true;
-      if (ADirView == LocalDirView)
-      {
-        Terminal->ExceptionOnFail = true;
-        try
-        {
-          if (LocalDirView->Path.SubString(1, FullPrevPath.Length()) == FullPrevPath)
-          {
-            RemoteDirView->Path = UnixIncludeTrailingBackslash(RemoteDirView->Path) +
-              ToUnixPath(LocalDirView->Path.SubString(FullPrevPath.Length() + 1,
-                LocalDirView->Path.Length() - FullPrevPath.Length()));
-          }
-          else if (FullPrevPath.SubString(1, LocalDirView->Path.Length()) == LocalDirView->Path)
-          {
-            AnsiString RemotePath = RemoteDirView->Path;
-            while (!ComparePaths(FullPrevPath, LocalDirView->Path))
-            {
-              if (RemotePath == UnixExcludeTrailingBackslash(RemotePath))
-              {
-                Abort();
-              }
-              RemotePath = UnixExtractFilePath(UnixExcludeTrailingBackslash(RemotePath));
-              FullPrevPath = ExtractFilePath(ExcludeTrailingBackslash(FullPrevPath));
-            }
-            RemoteDirView->Path = RemotePath;
-          }
-          else
-          {
-            Abort();
-          }
-        }
-        __finally
-        {
-          Terminal->ExceptionOnFail = false;
-        }
-      }
-      else
-      {
-        if (RemoteDirView->Path.SubString(1, FullPrevPath.Length()) == FullPrevPath)
-        {
-          LocalDirView->Path = IncludeTrailingBackslash(LocalDirView->Path) +
-            FromUnixPath(RemoteDirView->Path.SubString(FullPrevPath.Length() + 1,
-              RemoteDirView->Path.Length() - FullPrevPath.Length()));
-        }
-        else if (FullPrevPath.SubString(1, RemoteDirView->Path.Length()) == RemoteDirView->Path)
-        {
-          AnsiString NewLocalPath;
-          AnsiString LocalPath = ExcludeTrailingBackslash(LocalDirView->Path);
-          while (!UnixComparePaths(FullPrevPath, RemoteDirView->Path))
-          {
-            NewLocalPath = ExcludeTrailingBackslash(ExtractFileDir(LocalPath));
-            if (NewLocalPath == LocalPath)
-            {
-              Abort();
-            }
-            LocalPath = NewLocalPath;
-            FullPrevPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(FullPrevPath));
-          }
-          LocalDirView->Path = LocalPath;
-        }
-        else
-        {
-          Abort();
-        }
-      }
-      FSynchronisingBrowse = false;
-    }
-    FNoTransferPresetAutoSelect = PrevNoTransferPresetAutoSelect;
-  }
-  catch(Exception & E)
-  {
-    FNoTransferPresetAutoSelect = PrevNoTransferPresetAutoSelect;
-    FSynchronisingBrowse = false;
-    NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
-    if (!Application->Terminated)
-    {
-      Terminal->ShowExtendedException(&E);
-      MessageDialog(LoadStr(SYNC_DIR_BROWSE_ERROR), qtInformation, qaOK,
-        HELP_SYNC_DIR_BROWSE_ERROR);
-    }
-    else
-    {
-      throw;
-    }
-  }
+  SynchronizeBrowsing(ADirView);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::AddEditLink(bool Add)
@@ -970,21 +1042,30 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
         if (LocationProfilesDialog(Mode, Side, Local, Remote, LocalDirectories,
               RemoteDirectories, Terminal))
         {
-          // make sure that whatever path is valid it is opened first and only
-          // after that an eventual error is reported
+          bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+          NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
           try
           {
-            if (!Local.IsEmpty())
+            // make sure that whatever path is valid it is opened first and only
+            // after that an eventual error is reported
+            try
             {
-              LocalDirView->Path = Local;
+              if (!Local.IsEmpty())
+              {
+                LocalDirView->Path = Local;
+              }
+            }
+            __finally
+            {
+              if (!Remote.IsEmpty())
+              {
+                RemoteDirView->Path = Remote;
+              }
             }
           }
           __finally
           {
-            if (!Remote.IsEmpty())
-            {
-              RemoteDirView->Path = Remote;
-            }
+            NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
           }
         }
       }
@@ -996,7 +1077,16 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
     }
     else
     {
-      TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
+      bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+      NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+      try
+      {
+        TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
+      }
+      __finally
+      {
+        NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
+      }
     }
   }
   while (UseLocationProfiles != WinConfiguration->UseLocationProfiles);
@@ -1116,7 +1206,7 @@ void __fastcall TScpCommanderForm::SideEnter(TOperationSide Side)
 {
   if (FCurrentSide != Side)
   {
-    CommandLineCombo->Items->Clear();
+    CommandLineCombo->Strings->Clear();
     FCommandLineComboPopulated = false;
   }
   TCustomScpExplorerForm::SideEnter(Side);
@@ -1138,45 +1228,28 @@ void __fastcall TScpCommanderForm::OpenConsole(AnsiString Command)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::CommandLineComboKeyDown(TObject * /*Sender*/,
-  WORD & Key, TShiftState /*Shift*/)
-{
-  if (Key == VK_RETURN)
-  {
-    Key = 0;
-    ExecuteCommandLine();
-  }
-  else if ((Key == VK_ESCAPE) && !CommandLineCombo->DroppedDown)
-  {
-    Key = 0;
-    CommandLineCombo->Text = "";
-  }
-  else if ((Key == VK_UP) || (Key == VK_DOWN))
-  {
-    CommandLinePopulate();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SaveCommandLine()
 {
   if (FCommandLineComboPopulated)
   {
     CustomWinConfiguration->History[
       FCurrentSide == osRemote ? "Commands" : "LocalCommands"] =
-        CommandLineCombo->Items;
+        CommandLineCombo->Strings;
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::ExecuteCommandLine()
+bool __fastcall TScpCommanderForm::ExecuteCommandLine()
 {
-  if (!CommandLineCombo->Text.Trim().IsEmpty() &&
+  AnsiString Command = CommandLineCombo->Text;
+  bool Result =
+    !Command.IsEmpty() &&
       ((FCurrentSide != osRemote) ||
-       (Terminal->AllowedAnyCommand(CommandLineCombo->Text) &&
-        EnsureCommandSessionFallback(fcAnyCommand))))
+       (Terminal->AllowedAnyCommand(Command) &&
+        EnsureCommandSessionFallback(fcAnyCommand)));
+  if (Result)
   {
     CommandLinePopulate();
-    CommandLineCombo->SaveToHistory();
-    AnsiString Command = CommandLineCombo->Text;
+    SaveToHistory(CommandLineCombo->Strings, Command);
     CommandLineCombo->Text = "";
     if (FCurrentSide == osRemote)
     {
@@ -1192,12 +1265,7 @@ void __fastcall TScpCommanderForm::ExecuteCommandLine()
       }
     }
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::CommandLineComboDropDown(
-  TObject * /*Sender*/)
-{
-  CommandLinePopulate();
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::CommandLinePopulate()
@@ -1209,11 +1277,11 @@ void __fastcall TScpCommanderForm::CommandLinePopulate()
       FCurrentSide == osRemote ? "Commands" : "LocalCommands"];
     if ((CommandsHistory != NULL) && (CommandsHistory->Count > 0))
     {
-      CommandLineCombo->Items = CommandsHistory;
+      CommandLineCombo->Strings = CommandsHistory;
     }
     else
     {
-      CommandLineCombo->Items->Clear();
+      CommandLineCombo->Strings->Clear();
     }
     FCommandLineComboPopulated = true;
   }
@@ -1224,7 +1292,7 @@ void __fastcall TScpCommanderForm::GoToCommandLine()
   ComponentVisible[fcCommandLinePanel] = true;
   if (CommandLineCombo->Enabled)
   {
-    CommandLineCombo->SetFocus();
+    ClickToolbarItem(CommandLineCombo, true);
   }
 }
 //---------------------------------------------------------------------------
@@ -1241,18 +1309,6 @@ void __fastcall TScpCommanderForm::GoToTree()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::CommandLineComboEnter(TObject * /*Sender*/)
-{
-  KeyPreview = false;
-  TPanel * LastPanel = FCurrentSide == osLocal ? LocalPanel : RemotePanel;
-  MakeNextInTabOrder(LastPanel, CommandLinePanel);
-}
-//---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::CommandLineComboExit(TObject * /*Sender*/)
-{
-  KeyPreview = true;
-}
-//---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::PanelExportStore(TOperationSide Side,
   TPanelExport Export, TPanelExportDestination Destination,
   TStringList * ExportData)
@@ -1267,14 +1323,7 @@ void __fastcall TScpCommanderForm::PanelExportStore(TOperationSide Side,
       Buf += ExportData->Strings[Index] + " ";
     }
 
-    if (CommandLineCombo->Focused())
-    {
-      CommandLineCombo->SelText = Buf;
-    }
-    else
-    {
-      CommandLineCombo->Text = CommandLineCombo->Text + Buf;
-    }
+    CommandLineCombo->Text = CommandLineCombo->Text + Buf;
   }
   else
   {
@@ -1285,7 +1334,6 @@ void __fastcall TScpCommanderForm::PanelExportStore(TOperationSide Side,
 int __fastcall TScpCommanderForm::GetStaticComponentsHeight()
 {
   return TCustomScpExplorerForm::GetStaticComponentsHeight() +
-    (CommandLinePanel->Visible ? CommandLinePanel->Height : 0) +
     (BottomDock->Visible ? BottomDock->Height : 0) +
     (StatusBar->Visible ? StatusBar->Height : 0);
 }
@@ -1470,6 +1518,192 @@ void __fastcall TScpCommanderForm::BeforeAction()
   if (LocalDirView->ItemFocused != NULL)
   {
     LocalDirView->ItemFocused->CancelEdit();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::RemoteDirViewPathChange(TCustomDirView * /*Sender*/)
+{
+  UpdateRemotePathComboBox(RemotePathComboBox, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
+{
+  TStrings* Strings = LocalPathComboBox->Strings;
+  Strings->BeginUpdate();
+  try
+  {
+    Strings->Clear();
+    FLocalPathComboBoxPaths->Clear();
+    Strings->Add(LoadStr(SPECIAL_FOLDER_MY_DOCUMENTS));
+    FLocalPathComboBoxPaths->AddObject(DriveInfo->SpecialFolder[CSIDL_PERSONAL]->Location,
+      (TObject *)DriveInfo->SpecialFolder[CSIDL_PERSONAL]->ImageIndex);
+    Strings->Add(LoadStr(SPECIAL_FOLDER_DESKTOP));
+    FLocalPathComboBoxPaths->AddObject(DriveInfo->SpecialFolder[CSIDL_DESKTOP]->Location,
+      (TObject *)DriveInfo->SpecialFolder[CSIDL_DESKTOP]->ImageIndex);
+
+    for (TDrive Drive = FirstDrive; Drive <= LastDrive; Drive++)
+    {
+      if (DriveInfo->Data[Drive]->Valid)
+      {
+        Strings->Add(AnsiString("&") + DriveInfo->GetPrettyName(Drive));
+        FLocalPathComboBoxPaths->AddObject(AnsiString(Drive) + ":\\",
+          (TObject *)DriveInfo->GetImageIndex(Drive));
+      }
+    }
+  }
+  __finally
+  {
+    Strings->EndUpdate();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathComboUpdate()
+{
+  assert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
+
+  int Index = 0;
+  while ((Index < FLocalPathComboBoxPaths->Count) &&
+         !ComparePaths(FLocalPathComboBoxPaths->Strings[Index],
+           LocalDirView->Path.SubString(1, FLocalPathComboBoxPaths->Strings[Index].Length())))
+  {
+    Index++;
+  }
+
+  assert(Index < FLocalPathComboBoxPaths->Count);
+  if (Index < FLocalPathComboBoxPaths->Count)
+  {
+    LocalPathComboBox->ItemIndex = Index;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalDirViewPathChange(TCustomDirView * /*Sender*/)
+{
+  LocalPathComboUpdate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathComboBoxCancel(TObject * /*Sender*/)
+{
+  LocalPathComboUpdate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathComboBoxAdjustImageIndex(
+  TTBXComboBoxItem * /*Sender*/, const AnsiString AText, int AIndex,
+  int & ImageIndex)
+{
+  assert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
+  assert(AIndex < FLocalPathComboBoxPaths->Count);
+
+  if (AIndex < 0)
+  {
+    AIndex = LocalPathComboBox->ItemIndex;
+  }
+
+  ImageIndex = int(FLocalPathComboBoxPaths->Objects[AIndex]);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalPathComboBoxItemClick(TObject * /*Sender*/)
+{
+  assert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
+  assert((LocalPathComboBox->ItemIndex >= 0) && (LocalPathComboBox->ItemIndex < FLocalPathComboBoxPaths->Count));
+
+  AnsiString Path = FLocalPathComboBoxPaths->Strings[LocalPathComboBox->ItemIndex];
+  if (Path.Length() == 3)
+  {
+    LocalDirView->ExecuteDrive(Path[1]);
+  }
+  else
+  {
+    LocalDirView->Path = FLocalPathComboBoxPaths->Strings[LocalPathComboBox->ItemIndex];
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width)
+{
+  TCustomScpExplorerForm::ToolbarItemResize(Item, Width);
+  if ((Item == LocalPathComboBox) ||
+      (Item == RemotePathComboBox) ||
+      (Item == CommandLineCombo))
+  {
+    dynamic_cast<TTBXComboBoxItem *>(Item)->MinListWidth = Width - 4;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::CommandLineComboPopup(
+  TTBCustomItem * /*Sender*/, bool /*FromLink*/)
+{
+  CommandLinePopulate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::CommandLineComboBeginEdit(
+  TTBEditItem * /*Sender*/, TTBEditItemViewer * /*Viewer*/, TEdit *EditControl)
+{
+  InstallPathWordBreakProc(EditControl);
+  FCommandLineComboEdit = EditControl;
+  FToolbarEditOldWndProc = EditControl->WindowProc;
+  EditControl->WindowProc = CommandLineComboEditWndProc;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::ExitToolbar()
+{
+  CurrentPanel()->SetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::CommandLineComboEditWndProc(TMessage & Message)
+{
+  bool Handled = false;
+  if (Message.Msg == WM_CHAR)
+  {
+    switch (reinterpret_cast<TWMChar &>(Message).CharCode)
+    {
+      case VK_ESCAPE:
+        CommandLineCombo->Text = "";
+        ExitToolbar();
+        Handled = true;
+        break;
+
+      case VK_TAB:
+        CommandLineCombo->Text = FCommandLineComboEdit->Text;
+        ExitToolbar();
+        Handled = true;
+        break;
+
+      case VK_RETURN:
+        CommandLineCombo->Text = FCommandLineComboEdit->Text;
+        ExitToolbar();
+        if (!ExecuteCommandLine())
+        {
+          // re-enter command line
+          // (most probably exited by now as message dialog was shown)
+          GoToCommandLine();
+        }
+        Handled = true;
+        break;
+    }
+  }
+
+  if (!Handled)
+  {
+    FToolbarEditOldWndProc(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * /*Sender*/)
+{
+  LocalPathComboUpdateDrives();
+  LocalPathComboUpdate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::HomeDirectory(TOperationSide Side)
+{
+  bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+  NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+  try
+  {
+    TCustomScpExplorerForm::HomeDirectory(Side);
+  }
+  __finally
+  {
+    NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
   }
 }
 //---------------------------------------------------------------------------

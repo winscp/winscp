@@ -20,18 +20,19 @@ USEFORM("forms\FullSynchronize.cpp", FullSynchronizeDialog);
 USEFORM("forms\GeneralSettings.cpp", GeneralSettingsFrame); /* TFrame: File Type */
 USEFORM("forms\Glyphs.cpp", GlyphsModule); /* TDataModule: File Type */
 USEFORM("forms\ImportSessions.cpp", ImportSessionsDialog);
-USEFORM("forms\Licence.cpp", LicenceDialog);
+USEFORM("forms\License.cpp", LicenseDialog);
 USEFORM("forms\LocationProfiles.cpp", LocationProfilesDialog);
 USEFORM("forms\Log.cpp", LogForm);
 USEFORM("forms\Login.cpp", LoginDialog);
 USEFORM("forms\LogSettings.cpp", LoggingFrame); /* TFrame: File Type */
 USEFORM("forms\OpenDirectory.cpp", OpenDirectoryDialog);
-USEFORM("forms\OperationStatus.cpp", OperationStatusForm);
 USEFORM("forms\Preferences.cpp", PreferencesDialog);
 USEFORM("forms\Progress.cpp", ProgressForm);
 USEFORM("forms\Properties.cpp", PropertiesDialog);
+USEFORM("forms\RemoteTransfer.cpp", RemoteTransferDialog);
 USEFORM("forms\Rights.cpp", RightsFrame); /* TFrame: File Type */
 USEFORM("forms\RightsExt.cpp", RightsExtFrame); /* TFrame: File Type */
+USEFORM("forms\SaveSession.cpp", SaveSessionDialog);
 USEFORM("forms\SelectMask.cpp", SelectMaskDialog);
 USEFORM("forms\Symlink.cpp", SymlinkDialog);
 USEFORM("forms\Synchronize.cpp", SynchronizeDialog);

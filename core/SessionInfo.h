@@ -55,8 +55,9 @@ public:
   virtual int __fastcall QueryUserException(const AnsiString Query,
     Exception * E, int Answers, const TQueryParams * Params,
     TQueryType QueryType = qtConfirmation) = 0;
-  virtual bool __fastcall PromptUser(TSessionData * Data, AnsiString Prompt,
-    TPromptKind Kind, AnsiString & Response) = 0;
+  virtual bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+    TStrings * Results) = 0;
   virtual void __fastcall DisplayBanner(const AnsiString & Banner) = 0;
   virtual void __fastcall ShowExtendedException(Exception * E) = 0;
   virtual void __fastcall Closed() = 0;

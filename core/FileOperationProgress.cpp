@@ -36,7 +36,6 @@ void __fastcall TFileOperationProgressType::Clear()
   Count = 0;
   FFilesFinished = 0;
   StartTime = Now();
-  FStopped = 0;
   Suspended = false;
   FSuspendTime = 0;
   InProgress = false;
@@ -54,6 +53,9 @@ void __fastcall TFileOperationProgressType::Clear()
   AlternateResumeAlways = false;
   // to bypass check in ClearTransfer()
   TransferSize = 0;
+  CPSLimit = 0;
+  FTicks.clear();
+  FTotalTransferredThen.clear();
   ClearTransfer();
 }
 //---------------------------------------------------------------------------
@@ -70,12 +72,18 @@ void __fastcall TFileOperationProgressType::ClearTransfer()
   SkippedSize = 0;
   TransferedSize = 0;
   TransferingFile = false;
-  FFileStopped = 0;
+  FLastSecond = 0;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
+  TOperationSide ASide, int ACount)
+{
+  Start(AOperation, ASide, ACount, false, "", 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
   TOperationSide ASide, int ACount, bool ATemp,
-  const AnsiString ADirectory)
+  const AnsiString ADirectory, unsigned long ACPSLimit)
 {
   Clear();
   Operation = AOperation;
@@ -85,6 +93,7 @@ void __fastcall TFileOperationProgressType::Start(TFileOperation AOperation,
   Cancel = csContinue;
   Directory = ADirectory;
   Temp = ATemp;
+  CPSLimit = ACPSLimit;
   DoProgress();
 }
 //---------------------------------------------------------------------------
@@ -106,7 +115,7 @@ void __fastcall TFileOperationProgressType::Suspend()
 {
   assert(!Suspended);
   Suspended = true;
-  FSuspendTime = Now();
+  FSuspendTime = GetTickCount();
   DoProgress();
 }
 //---------------------------------------------------------------------------
@@ -114,10 +123,17 @@ void __fastcall TFileOperationProgressType::Resume()
 {
   assert(Suspended);
   Suspended = false;
-  TDateTime TimeSuspended = (Now() - FSuspendTime);
-  // see CPS()
-  FStopped += TimeSuspended;
-  FFileStopped += TimeSuspended;
+
+  // shift timestamps for CPS calculation in advance
+  // by the time the progress was suspended
+  unsigned long Stopped = (GetTickCount() - FSuspendTime);
+  size_t i = 0;
+  while (i < FTicks.size())
+  {
+    FTicks[i] += Stopped;
+    ++i;
+  }
+
   DoProgress();
 }
 //---------------------------------------------------------------------------
@@ -203,10 +219,50 @@ bool __fastcall TFileOperationProgressType::IsLocalyDone()
   return (LocalyUsed == LocalSize);
 }
 //---------------------------------------------------------------------------
+unsigned long __fastcall TFileOperationProgressType::AdjustToCPSLimit(
+  unsigned long Size)
+{
+  if (CPSLimit > 0)
+  {
+    // we must not return 0, hence, if we reach zero,
+    // we wait until the next second
+    do
+    {
+      unsigned int Second = (GetTickCount() / 1000);
+
+      if (Second != FLastSecond)
+      {
+        FRemainingCPS = CPSLimit;
+        FLastSecond = Second;
+      }
+
+      if (FRemainingCPS == 0)
+      {
+        SleepEx(100, true);
+        DoProgress();
+      }
+    }
+    while ((CPSLimit > 0) && (FRemainingCPS == 0));
+
+    // CPSLimit may have been dropped in DoProgress
+    if (CPSLimit > 0)
+    {
+      if (FRemainingCPS < Size)
+      {
+        Size = FRemainingCPS;
+      }
+
+      FRemainingCPS -= Size;
+    }
+  }
+  return Size;
+}
+//---------------------------------------------------------------------------
 unsigned long __fastcall TFileOperationProgressType::LocalBlockSize()
 {
   unsigned long Result = TRANSFER_BUF_SIZE;
   if (LocalyUsed + Result > LocalSize) Result = (unsigned long)(LocalSize - LocalyUsed);
+  Result = AdjustToCPSLimit(Result);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -241,6 +297,8 @@ void __fastcall TFileOperationProgressType::RollbackTransfer()
   assert(TransferedSize <= TotalTransfered);
   TotalTransfered -= TransferedSize;
   assert(SkippedSize <= TotalSkipped);
+  FTicks.clear();
+  FTotalTransferredThen.clear();
   TotalSkipped -= SkippedSize;
   SkippedSize = 0;
   TransferedSize = 0;
@@ -265,6 +323,20 @@ void __fastcall TFileOperationProgressType::AddTransfered(__int64 ASize,
   if (AddToTotals)
   {
     TotalTransfered += ASize;
+    unsigned long Ticks = GetTickCount();
+    if (FTicks.empty() ||
+        (FTicks.back() > Ticks) || // ticks wrap after 49.7 days
+        ((Ticks - FTicks.back()) >= 1000))
+    {
+      FTicks.push_back(Ticks);
+      FTotalTransferredThen.push_back(TotalTransfered);
+    }
+
+    if (FTicks.size() > 10)
+    {
+      FTicks.erase(FTicks.begin());
+      FTotalTransferredThen.erase(FTotalTransferredThen.begin());
+    }
   }
   DoProgress();
 }
@@ -281,6 +353,7 @@ unsigned long __fastcall TFileOperationProgressType::TransferBlockSize()
 {
   unsigned long Result = TRANSFER_BUF_SIZE;
   if (TransferedSize + Result > TransferSize) Result = (unsigned long)(TransferSize - TransferedSize);
+  Result = AdjustToCPSLimit(Result);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -314,17 +387,36 @@ TDateTime __fastcall TFileOperationProgressType::TimeElapsed()
 //---------------------------------------------------------------------------
 unsigned int __fastcall TFileOperationProgressType::CPS()
 {
-  TDateTime CurTime = Suspended ? FSuspendTime : Now();
-  TDateTime RealTime = (CurTime - StartTime) - FStopped;
-
-  if ((double)RealTime > 0)
+  unsigned int Result;
+  if (FTicks.empty())
   {
-    return TotalTransfered / ((double)RealTime * (24 * 60 * 60));
+    Result = 0;
   }
   else
   {
-    return 0;
+    unsigned long Ticks = (Suspended ? FSuspendTime : GetTickCount());
+    unsigned long TimeSpan;
+    if (Ticks < FTicks.front())
+    {
+      // clocks has wrapped, guess 10 seconds difference
+      TimeSpan = 10000;
+    }
+    else
+    {
+      TimeSpan = (Ticks - FTicks.front());
+    }
+
+    if (TimeSpan == 0)
+    {
+      Result = 0;
+    }
+    else
+    {
+      __int64 Transferred = (TotalTransfered - FTotalTransferredThen.front());
+      Result = (unsigned int)(Transferred * 1000 / TimeSpan);
+    }
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 TDateTime __fastcall TFileOperationProgressType::TimeExpected()

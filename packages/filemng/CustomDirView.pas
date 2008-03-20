@@ -11,7 +11,7 @@ uses
   Forms, ComCtrls, ShellAPI, ComObj, ShlObj, Dialogs,
   ActiveX, CommCtrl, Extctrls, ImgList, Menus,
   PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo,
-  IEListView, PathLabel, CustomPathComboBox, SysUtils;
+  IEListView, PathLabel, SysUtils;
 
 const
   clDefaultItemColor = -(COLOR_ENDCOLORS + 1);
@@ -106,7 +106,7 @@ type
     ModificationTo: TDateTime;
   end;
   THistoryDirection = (hdBack, hdForward);
-  THistoryChangeEvent = procedure(Sender: TCustomDirView) of object;
+  TDirViewNotifyEvent = procedure(Sender: TCustomDirView) of object;
   TDVGetFilterEvent = procedure(Sender: TCustomDirView; Select: Boolean;
     var Filter: TFileFilter) of object;
   TCompareCriteria = (ccTime, ccSize);
@@ -187,13 +187,12 @@ type
     FImageList32: TImageList;
     FLoadAnimation: Boolean;
     FMaxHistoryCount: Integer;
-    FNeverPainted: Boolean;
-    FPathComboBox: TCustomPathComboBox;
     FPathLabel: TCustomPathLabel;
     FOnUpdateStatusBar: TDirViewUpdateStatusBarEvent;
     FOnBeginRename: TRenameEvent;
     FOnEndRename: TRenameEvent;
-    FOnHistoryChange: THistoryChangeEvent;
+    FOnHistoryChange: TDirViewNotifyEvent;
+    FOnPathChange: TDirViewNotifyEvent;
     FShowHiddenFiles: Boolean;
     FSavedSelection: Boolean;
     FSavedSelectionFile: string;
@@ -226,10 +225,8 @@ type
     function GetTargetPopupMenu: Boolean;
     function GetUseDragImages: Boolean;
     procedure SetMaxHistoryCount(Value: Integer);
-    procedure SetPathComboBox(Value: TCustomPathComboBox);
     procedure SetPathLabel(Value: TCustomPathLabel);
     procedure SetTargetPopupMenu(Value: Boolean);
-    procedure WMPaint(var Message: TWMPaint); message WM_PAINT;
     procedure WMUserRename(var Message: TMessage); message WM_User_Rename;
   protected
     FCaseSensitive: Boolean;
@@ -326,7 +323,7 @@ type
     procedure LimitHistorySize;
     function MinimizePath(Path: string; Len: Integer): string; virtual; abstract;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
-    procedure PathChanged;
+    procedure PathChanged; virtual;
     procedure PathChanging(Relative: Boolean);
     procedure SetPath(Value: string); virtual; abstract;
     procedure SetSortByExtension(Value: Boolean);
@@ -335,7 +332,6 @@ type
     procedure SetViewStyle(Value: TViewStyle); override;
     procedure SetWatchForChanges(Value: Boolean); virtual;
     function TargetHasDropHandler(Item: TListItem; Effect: Integer): Boolean; virtual;
-    procedure UpdatePathComboBox; dynamic;
     procedure UpdatePathLabel; dynamic;
     procedure UpdateStatusBar; dynamic;
     procedure WndProc(var Message: TMessage); override;
@@ -488,10 +484,10 @@ type
     property OnDDMenuPopup: TOnMenuPopup read FOnDDMenuPopup write FOnDDMenuPopup;
     property OnExecFile: TDirViewExecFileEvent
       read FOnExecFile write FOnExecFile;
-    property OnHistoryChange: THistoryChangeEvent read FOnHistoryChange write FOnHistoryChange;
+    property OnHistoryChange: TDirViewNotifyEvent read FOnHistoryChange write FOnHistoryChange;
+    property OnPathChange: TDirViewNotifyEvent read FOnPathChange write FOnPathChange;
     property OnMatchMask: TMatchMaskEvent read FOnMatchMask write FOnMatchMask;
     property OnGetOverlay: TDirViewGetOverlayEvent read FOnGetOverlay write FOnGetOverlay;
-    property PathComboBox: TCustomPathComboBox read FPathComboBox write SetPathComboBox;
     property PathLabel: TCustomPathLabel read FPathLabel write SetPathLabel;
     property ShowHiddenFiles: Boolean read FShowHiddenFiles write SetShowHiddenFiles default True;
     property OnUpdateStatusBar: TDirViewUpdateStatusBarEvent read FOnUpdateStatusBar write FOnUpdateStatusBar;
@@ -855,7 +851,6 @@ begin
   GetVersionEx(WinVer);
 
   FWatchForChanges := False;
-  FNeverPainted := True;
   FFilesSize := 0;
   FFilesSelSize := 0;
   FDimmHiddenFiles := True;
@@ -903,6 +898,7 @@ begin
   FMask := '*.*';
 
   FOnHistoryChange := nil;
+  FOnPathChange := nil;
   FHistoryPaths := TStringList.Create;
   FBackCount := 0;
   FDontRecordPath := False;
@@ -1109,23 +1105,6 @@ begin
     Self.Repaint;
   end;
 end; {SetDimmHiddenFiles}
-
-procedure TCustomDirView.SetPathComboBox(Value: TCustomPathComboBox);
-begin
-  if FPathComboBox <> Value then
-  begin
-    if Assigned(FPathComboBox) and (FPathComboBox.DirView = Self) then
-      FPathComboBox.DirView := nil;
-    FPathComboBox := Value;
-    if Assigned(Value) then
-    begin
-      Value.FreeNotification(Self);
-      if not Assigned(Value.DirView) then
-        Value.DirView := Self;
-      UpdatePathComboBox;
-    end;
-  end;
-end; { SetPathComboBox }
 
 procedure TCustomDirView.SetPathLabel(Value: TCustomPathLabel);
 begin
@@ -1519,12 +1498,6 @@ begin
   end;
 end;
 
-procedure TCustomDirView.UpdatePathComboBox;
-begin
-  if Assigned(PathComboBox) then
-    PathComboBox.Path := Path;
-end; { UpdatePathComboBox }
-
 procedure TCustomDirView.UpdatePathLabel;
 begin
   if Assigned(PathLabel) then
@@ -1596,16 +1569,6 @@ begin
   GetCursorPos(FStartPos);
   FDragEnabled := EnableDragOnClick;
   inherited;
-end;
-
-procedure TCustomDirView.WMPaint(var Message: TWMPaint);
-begin
-  inherited;
-  if FNeverPainted then
-  begin
-    FNeverPainted := False;
-    Invalidate;
-  end;
 end;
 
 procedure TCustomDirView.WMRButtonDown(var Message: TWMRButtonDown);
@@ -1883,7 +1846,10 @@ begin
 
         FocusSomething;
 
-        if Assigned(FOnLoaded) then FOnLoaded(Self);
+        if Assigned(FOnLoaded) then
+        begin
+          FOnLoaded(Self);
+        end;
 
         UpdatePathLabel;
         UpdateStatusBar;
@@ -2641,7 +2607,6 @@ begin
   if Operation = opRemove then
   begin
     if AComponent = PathLabel then FPathLabel := nil;
-    if AComponent = PathComboBox then FPathComboBox := nil;
   end;
 end; { Notification }
 
@@ -2815,7 +2780,8 @@ procedure TCustomDirView.PathChanged;
 var
   Index: Integer;
 begin
-  UpdatePathComboBox;
+  if Assigned(OnPathChange) then
+    OnPathChange(Self);
 
   if (not FDontRecordPath) and (FHistoryPath <> '') and (FHistoryPath <> PathName) then
   begin

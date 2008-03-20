@@ -10,12 +10,6 @@
 #define AGENT_COPYDATA_ID 0x804e50ba   /* random goop */
 #define AGENT_MAX_MSGLEN  8192
 
-#define GET_32BIT(cp) \
-    (((unsigned long)(unsigned char)(cp)[0] << 24) | \
-    ((unsigned long)(unsigned char)(cp)[1] << 16) | \
-    ((unsigned long)(unsigned char)(cp)[2] << 8) | \
-    ((unsigned long)(unsigned char)(cp)[3]))
-
 int agent_exists(void)
 {
     HWND hwnd;
@@ -91,7 +85,7 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     mapname = dupprintf("PageantRequest%08x", (unsigned)GetCurrentThreadId());
     filemap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
 				0, AGENT_MAX_MSGLEN, mapname);
-    if (!filemap)
+    if (filemap == NULL || filemap == INVALID_HANDLE_VALUE)
 	return 1;		       /* *out == NULL, so failure */
     p = MapViewOfFile(filemap, FILE_MAP_WRITE, 0, 0, 0);
     memcpy(p, in, inlen);

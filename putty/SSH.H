@@ -1,6 +1,3 @@
-#ifndef PUTTY_SSH_H
-#define PUTTY_SSH_H
-
 #include <stdio.h>
 #include <string.h>
 
@@ -125,6 +122,16 @@ void SHA_Simple(void *p, int len, unsigned char *output);
 
 void hmac_sha1_simple(void *key, int keylen, void *data, int datalen,
 		      unsigned char *output);
+typedef struct {
+    uint32 h[8];
+    unsigned char block[64];
+    int blkused;
+    uint32 lenhi, lenlo;
+} SHA256_State;
+void SHA256_Init(SHA256_State * s);
+void SHA256_Bytes(SHA256_State * s, const void *p, int len);
+void SHA256_Final(SHA256_State * s, unsigned char *output);
+void SHA256_Simple(const void *p, int len, unsigned char *output);
 
 typedef struct {
     uint64 h[8];
@@ -157,6 +164,8 @@ struct ssh2_cipher {
     char *name;
     int blksize;
     int keylen;
+    unsigned int flags;
+#define SSH_CIPHER_IS_CBC	1
     char *text_name;
 };
 
@@ -176,6 +185,14 @@ struct ssh_mac {
     char *text_name;
 };
 
+struct ssh_hash {
+    void *(*init)(void); /* also allocates context */
+    void (*bytes)(void *, void *, int);
+    void (*final)(void *, unsigned char *); /* also frees context */
+    int hlen; /* output length in bytes */
+    char *text_name;
+};   
+
 struct ssh_kex {
     /*
      * Plugging in another KEX algorithm requires structural chaos,
@@ -187,6 +204,20 @@ struct ssh_kex {
     char *name, *groupname;
     const unsigned char *pdata, *gdata;/* NULL means use group exchange */
     int plen, glen;
+    const struct ssh_hash *hash;
+#ifdef SSPI_MECH
+    int alg;
+#endif
+};
+
+#ifdef SSPI_MECH
+#define SSH_KEX_ALG_DH          0
+#define SSH_KEX_ALG_GSS         1
+#endif
+
+struct ssh_kexes {
+    int nkexes;
+    const struct ssh_kex *const *list;
 };
 
 struct ssh_signkey {
@@ -229,6 +260,9 @@ struct ssh2_userkey {
     char *comment;		       /* the key comment */
 };
 
+/* The maximum length of any hash algorithm used in kex. (bytes) */
+#define SSH2_KEX_MAX_HASH_LEN (32) /* SHA-256 */
+
 extern const struct ssh_cipher ssh_3des;
 extern const struct ssh_cipher ssh_des;
 extern const struct ssh_cipher ssh_blowfish_ssh1;
@@ -236,14 +270,25 @@ extern const struct ssh2_ciphers ssh2_3des;
 extern const struct ssh2_ciphers ssh2_des;
 extern const struct ssh2_ciphers ssh2_aes;
 extern const struct ssh2_ciphers ssh2_blowfish;
-extern const struct ssh_kex ssh_diffiehellman_group1;
-extern const struct ssh_kex ssh_diffiehellman_group14;
-extern const struct ssh_kex ssh_diffiehellman_gex;
+extern const struct ssh2_ciphers ssh2_arcfour;
+extern const struct ssh_hash ssh_sha1;
+extern const struct ssh_hash ssh_sha256;
+extern const struct ssh_kexes ssh_diffiehellman_group1;
+extern const struct ssh_kexes ssh_diffiehellman_group14;
+extern const struct ssh_kexes ssh_diffiehellman_gex;
+#ifdef SSPI_MECH
+extern const struct ssh_kexes ssh_gss_diffiehellman_group1;
+extern const struct ssh_kexes ssh_gss_diffiehellman_group14;
+extern const struct ssh_kexes ssh_gss_diffiehellman_gex;
+#endif
 extern const struct ssh_signkey ssh_dss;
 extern const struct ssh_signkey ssh_rsa;
-extern const struct ssh_mac ssh_md5;
-extern const struct ssh_mac ssh_sha1;
-extern const struct ssh_mac ssh_sha1_buggy;
+extern const struct ssh_mac ssh_hmac_md5;
+extern const struct ssh_mac ssh_hmac_sha1;
+extern const struct ssh_mac ssh_hmac_sha1_buggy;
+extern const struct ssh_mac ssh_hmac_sha1_96;
+extern const struct ssh_mac ssh_hmac_sha1_96_buggy;
+
 
 /*
  * PuTTY version number formatted as an SSH version string. 
@@ -355,7 +400,7 @@ int loadrsakey(const Filename *filename, struct RSAKey *key,
 	       char *passphrase, const char **errorstr);
 int rsakey_encrypted(const Filename *filename, char **comment);
 int rsakey_pubblob(const Filename *filename, void **blob, int *bloblen,
-		   const char **errorstr);
+		   char **commentptr, const char **errorstr);
 
 int saversakey(const Filename *filename, struct RSAKey *key, char *passphrase);
 
@@ -371,8 +416,9 @@ extern struct ssh2_userkey ssh2_wrong_passphrase;
 int ssh2_userkey_encrypted(const Filename *filename, char **comment);
 struct ssh2_userkey *ssh2_load_userkey(const Filename *filename,
 				       char *passphrase, const char **errorstr);
-char *ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
-			   int *pub_blob_len, const char **errorstr);
+unsigned char *ssh2_userkey_loadpub(const Filename *filename, char **algorithm,
+				    int *pub_blob_len, char **commentptr,
+				    const char **errorstr);
 int ssh2_save_userkey(const Filename *filename, struct ssh2_userkey *key,
 		      char *passphrase);
 const struct ssh_signkey *find_pubkey_alg(const char *name);
@@ -476,5 +522,3 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
  * format.
  */
 void old_keyfile_warning(void);
-
-#endif /* PUTTY_SSH_H */

@@ -15,12 +15,12 @@
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration * Configuration,
-  bool AllowLicence, TRegistration * Registration)
+  bool AllowLicense, TRegistration * Registration)
 {
   TAboutDialog * AboutDialog = NULL;
   try
   {
-    AboutDialog = new TAboutDialog(Application, Configuration, AllowLicence,
+    AboutDialog = new TAboutDialog(Application, Configuration, AllowLicense,
       Registration);
     AboutDialog->ShowModal();
   }
@@ -31,7 +31,7 @@ void __fastcall DoAboutDialog(TConfiguration * Configuration,
 }
 //---------------------------------------------------------------------------
 __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
-  TConfiguration * Configuration, bool AllowLicence, TRegistration * Registration)
+  TConfiguration * Configuration, bool AllowLicense, TRegistration * Registration)
   : TForm(AOwner)
 {
   FConfiguration = Configuration;
@@ -39,7 +39,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   UseSystemSettings(this);
   LinkLabel(HomepageLabel, LoadStr(HOMEPAGE_URL));
   LinkLabel(ForumUrlLabel, LoadStr(FORUM_URL));
-  LinkLabel(PuttyLicenceLabel, "", FirstScrollingControlEnter);
+  LinkLabel(PuttyLicenseLabel, "", FirstScrollingControlEnter);
   LinkLabel(PuttyHomepageLabel, LoadStr(PUTTY_URL));
   LinkLabel(FileZillaHomepageLabel, LoadStr(FILEZILLA_URL));
   LinkLabel(Toolbar2000HomepageLabel);
@@ -67,19 +67,19 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     if (Registration->Registered)
     {
       AnsiString Text;
-      Text = FORMAT(LoadStrPart(ABOUT_REGISTRATION_LICENCES, 1),
-        (Registration->Licences >= 0 ? IntToStr(Registration->Licences) :
-          LoadStrPart(ABOUT_REGISTRATION_LICENCES, 2)));
+      Text = FORMAT(LoadStrPart(ABOUT_REGISTRATION_LICENSES, 1),
+        (Registration->Licenses >= 0 ? IntToStr(Registration->Licenses) :
+          LoadStrPart(ABOUT_REGISTRATION_LICENSES, 2)));
       if (!Registration->NeverExpires)
       {
         Text = FMTLOAD(ABOUT_REGISTRATION_EXPIRES,
           (Text, FormatDateTime("ddddd", Registration->Expiration)));
       }
-      RegistrationLicencesLabel->Caption = Text;
+      RegistrationLicensesLabel->Caption = Text;
       Text = FMTLOAD(ABOUT_REGISTRATION_PRODUCTID, (Registration->ProductId));
       if (Registration->EduLicense)
       {
-        Text = FMTLOAD(ABOUT_REGISTRATION_EDULICENCE, (Text));
+        Text = FMTLOAD(ABOUT_REGISTRATION_EDULICENSE, (Text));
       }
       RegistrationProductIdLabel->Caption = Text;
       RegistrationProductIdLabel->Font->Style =
@@ -87,8 +87,10 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     }
     else
     {
-      RegistrationLicencesLabel->Visible = false;
-      RegistrationProductIdLabel->Visible = false;
+      RegistrationLicensesLabel->Visible = false;
+      FRegistrationLink = Registration->RegistrationLink;
+      RegistrationProductIdLabel->Caption = LoadStr(ABOUT_REGISTRATION_LINK);
+      LinkLabel(RegistrationProductIdLabel, "");
     }
   }
 
@@ -131,7 +133,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   ThirdPartyBox->VertScrollBar->Range = ThirdPartyBox->VertScrollBar->Range - FileZillaHeight;
   #endif
 
-  LicenceButton->Visible = AllowLicence;
+  LicenseButton->Visible = AllowLicense;
   LoadData();
 }
 //---------------------------------------------------------------------------
@@ -147,14 +149,14 @@ void __fastcall TAboutDialog::LoadData()
   VersionLabel->Caption = Version;
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::DisplayLicence(TObject * Sender)
+void __fastcall TAboutDialog::DisplayLicense(TObject * Sender)
 {
-  DoLicenceDialog((TLicence)((TComponent*)Sender)->Tag);
+  DoLicenseDialog((TLicense)((TComponent*)Sender)->Tag);
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::LicenceButtonClick(TObject * /*Sender*/)
+void __fastcall TAboutDialog::LicenseButtonClick(TObject * /*Sender*/)
 {
-  DoProductLicence();
+  DoProductLicense();
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::HelpButtonClick(TObject * /*Sender*/)
@@ -171,5 +173,14 @@ void __fastcall TAboutDialog::LastScrollingControlEnter(TObject * /*Sender*/)
 {
   ThirdPartyBox->VertScrollBar->Position =
     ThirdPartyBox->VertScrollBar->Range - ThirdPartyBox->ClientHeight;
+}
+//---------------------------------------------------------------------------
+void __fastcall TAboutDialog::RegistrationProductIdLabelClick(
+  TObject * /*Sender*/)
+{
+  if (!FRegistrationLink.IsEmpty())
+  {
+    OpenBrowser(FRegistrationLink);
+  }
 }
 //---------------------------------------------------------------------------

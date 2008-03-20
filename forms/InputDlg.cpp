@@ -10,15 +10,27 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+struct TInputDialogToken
+{
+  TInputDialogInitialize OnInitialize;
+  TInputDialogData Data;
+};
+//---------------------------------------------------------------------------
 void __fastcall InputDialogHelp(void * /*Data*/, TObject * Sender)
 {
   TControl * Control = dynamic_cast<TControl *>(Sender);
   Application->HelpKeyword(Control->Parent->HelpKeyword);
 }
 //---------------------------------------------------------------------------
+void __fastcall InputDialogShow(void * Data, TObject * Sender)
+{
+  TInputDialogToken & Token = *static_cast<TInputDialogToken *>(Data);
+  Token.OnInitialize(Sender, &Token.Data);
+}
+//---------------------------------------------------------------------------
 bool __fastcall InputDialog(const AnsiString ACaption,
   const AnsiString APrompt, AnsiString & Value, AnsiString HelpKeyword,
-  TStrings * History, bool PathInput)
+  TStrings * History, bool PathInput, TInputDialogInitialize OnInitialize)
 {
   TForm * Form;
   TLabel * Prompt;
@@ -27,11 +39,20 @@ bool __fastcall InputDialog(const AnsiString ACaption,
   TPoint DialogUnits;
   int ButtonTop, ButtonWidth, ButtonHeight;
   bool Result = False;
+  TInputDialogToken Token;
   Form = new TForm(Application, 0); // bypass the VCL streaming (for Salamander)
   try
   {
     SetCorrectFormParent(Form);
     UseSystemSettingsPre(Form);
+    if (OnInitialize != NULL)
+    {
+      Token.OnInitialize = OnInitialize;
+      TNotifyEvent OnShow;
+      ((TMethod *)&OnShow)->Data = &Token;
+      ((TMethod *)&OnShow)->Code = InputDialogShow;
+      Form->OnShow = OnShow;
+    }
     Form->Canvas->Font = Form->Font;
     DialogUnits = GetAveCharSize(Form->Canvas);
     Form->BorderStyle = bsDialog;
@@ -61,6 +82,7 @@ bool __fastcall InputDialog(const AnsiString ACaption,
       Edit->Text = Value;
       Edit->SelectAll();
       Edit->MaxLength = 255;
+      Token.Data.Edit = Edit;
       EditControl = Edit;
     }
     else

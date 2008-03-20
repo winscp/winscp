@@ -32,8 +32,8 @@ __published:
   TLabel *Label8;
   TLabel *Label10;
   TButton *OKButton;
-  TButton *LicenceButton;
-  TStaticText *PuttyLicenceLabel;
+  TButton *LicenseButton;
+  TStaticText *PuttyLicenseLabel;
   TLabel *TranslatorLabel;
   TLabel *Label1;
   TLabel *Label2;
@@ -47,23 +47,25 @@ __published:
   TLabel *Label3;
   TLabel *RegistrationLabel;
   TScrollBox *RegistrationBox;
-  TLabel *RegistrationLicencesLabel;
-  TLabel *RegistrationProductIdLabel;
+  TLabel *RegistrationLicensesLabel;
+  TStaticText *RegistrationProductIdLabel;
   TLabel *RegistrationSubjectLabel;
   TLabel *Label4;
   TLabel *FileZillaVersionLabel;
   TLabel *FileZillaCopyrightLabel;
   TStaticText *FileZillaHomepageLabel;
-  void __fastcall DisplayLicence(TObject *Sender);
-  void __fastcall LicenceButtonClick(TObject *Sender);
+  void __fastcall DisplayLicense(TObject *Sender);
+  void __fastcall LicenseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall RegistrationProductIdLabelClick(TObject *Sender);
 private:
   TConfiguration * FConfiguration;
+  AnsiString FRegistrationLink;
   void __fastcall FirstScrollingControlEnter(TObject * Sender);
   void __fastcall LastScrollingControlEnter(TObject * Sender);
 public:
   virtual __fastcall TAboutDialog(TComponent * AOwner,
-    TConfiguration * Configuration, bool AllowLicence, TRegistration * Registration);
+    TConfiguration * Configuration, bool AllowLicense, TRegistration * Registration);
   void __fastcall LoadData();
 };
 //----------------------------------------------------------------------------

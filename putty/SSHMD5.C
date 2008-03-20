@@ -308,7 +308,7 @@ static int hmacmd5_verify(void *handle, unsigned char *blk, int len,
     return !memcmp(correct, blk + len, 16);
 }
 
-const struct ssh_mac ssh_md5 = {
+const struct ssh_mac ssh_hmac_md5 = {
     hmacmd5_make_context, hmacmd5_free_context, hmacmd5_key_16,
     hmacmd5_generate, hmacmd5_verify,
     "hmac-md5",

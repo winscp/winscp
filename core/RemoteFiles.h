@@ -123,7 +123,7 @@ public:
 class TRemoteParentDirectory : public TRemoteDirectoryFile
 {
 public:
-  __fastcall TRemoteParentDirectory();
+  __fastcall TRemoteParentDirectory(TTerminal * Terminal);
 };
 //---------------------------------------------------------------------------
 class TRemoteFileList : public TObjectList
@@ -213,7 +213,7 @@ private:
 class TRemoteDirectoryChangesCache : private TStringList
 {
 public:
-  __fastcall TRemoteDirectoryChangesCache();
+  __fastcall TRemoteDirectoryChangesCache(int MaxSize);
 
   void __fastcall AddDirectoryChange(const AnsiString SourceDir,
     const AnsiString Change, const AnsiString TargetDir);
@@ -232,6 +232,10 @@ private:
   static bool __fastcall DirectoryChangeKey(const AnsiString SourceDir,
     const AnsiString Change, AnsiString & Key);
   bool __fastcall GetIsEmpty() const;
+  void __fastcall SetValue(const AnsiString & Name, const AnsiString & Value);
+  AnsiString __fastcall GetValue(const AnsiString & Name);
+
+  int FMaxSize;
 };
 //---------------------------------------------------------------------------
 class TRights

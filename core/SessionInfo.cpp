@@ -155,7 +155,7 @@ void __fastcall TSessionLog::Add(TLogLineType Type, const AnsiString & Line)
     }
     catch (Exception &E)
     {
-      // We failed logging, turn it of and notify user.
+      // We failed logging, turn it off and notify user.
       FConfiguration->Logging = false;
       try
       {
@@ -230,9 +230,10 @@ void TSessionLog::OpenLogFile()
     TDateTime N = Now();
     for (int Index = 1; Index < NewFileName.Length(); Index++)
     {
-      if (NewFileName[Index] == '&')
+      if (NewFileName[Index] == '!')
       {
         AnsiString Replacement;
+        // keep consistent with TFileCustomCommand::PatternReplacement
         switch (tolower(NewFileName[Index + 1]))
         {
           case 'y':
@@ -251,7 +252,7 @@ void TSessionLog::OpenLogFile()
             Replacement = FormatDateTime("hhnnss", N);
             break;
 
-          case 'h':
+          case '@':
             Replacement = MakeValidFileName(FSessionData->HostName);
             break;
 
@@ -259,12 +260,12 @@ void TSessionLog::OpenLogFile()
             Replacement = MakeValidFileName(FSessionData->SessionName);
             break;
 
-          case '&':
-            Replacement = "&";
+          case '!':
+            Replacement = "!";
             break;
 
           default:
-            Replacement = AnsiString("&") + NewFileName[Index + 1];
+            Replacement = AnsiString("!") + NewFileName[Index + 1];
             break;
         }
         NewFileName.Delete(Index, 2);
@@ -395,13 +396,19 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       {
         ADF("Telnet command: %s", (Data->ProxyTelnetCommand));
       }
+      if (Data->ProxyMethod == pmCmd)
+      {
+        ADF("Local command: %s", (Data->ProxyLocalCommand));
+      }
     }
     if (Data->UsesSsh)
     {
       ADF("SSH protocol version: %s; Compression: %s",
         (Data->SshProtStr, BooleanToEngStr(Data->Compression)));
-      ADF("Agent forwarding: %s; TIS/CryptoCard: %s; KI: %s; GSSAPI: %s",
-        (BooleanToEngStr(Data->AgentFwd), BooleanToEngStr(Data->AuthTIS),
+      ADF("Bypass authentication: %s",
+       (BooleanToEngStr(Data->SshNoUserAuth)));
+      ADF("Try agent: %s; Agent forwarding: %s; TIS/CryptoCard: %s; KI: %s; GSSAPI: %s",
+        (BooleanToEngStr(Data->TryAgent), BooleanToEngStr(Data->AgentFwd), BooleanToEngStr(Data->AuthTIS),
          BooleanToEngStr(Data->AuthKI), BooleanToEngStr(Data->AuthGSSAPI)));
       if (Data->AuthGSSAPI)
       {
@@ -430,8 +437,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF("Clear aliases: %s, Unset nat.vars: %s, Resolve symlinks: %s",
         (BooleanToEngStr(Data->ClearAliases), BooleanToEngStr(Data->UnsetNationalVars),
          BooleanToEngStr(Data->ResolveSymlinks)));
-      ADF("Alias LS: %s, Ign LS warn: %s, Scp1 Comp: %s",
-        (BooleanToEngStr(Data->AliasGroupList),
+      ADF("LS: %s, Ign LS warn: %s, Scp1 Comp: %s",
+        (Data->ListingCommand,
          BooleanToEngStr(Data->IgnoreLsWarnings),
          BooleanToEngStr(Data->Scp1Compatibility)));
     }

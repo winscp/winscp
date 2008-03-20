@@ -104,6 +104,7 @@ protected:
 	virtual void __fastcall SetHeaderImages(Controls::TImageList* Value);
 	virtual int __fastcall SecondaryColumnHeader(int Index, bool &AliasOnly);
 	virtual Listviewcolproperties::TCustomListViewColProperties* __fastcall NewColProperties(void);
+	virtual bool __fastcall SortAscendingByDefault(int Index);
 	virtual void __fastcall CreateWnd(void);
 	DYNAMIC void __fastcall ColClick(Comctrls::TListColumn* Column);
 	virtual void __fastcall Loaded(void);

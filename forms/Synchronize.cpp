@@ -458,7 +458,7 @@ void __fastcall TSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
   assert(FLAGCLEAR(FOptions, soDoNotUsePresets));
   // PreserveTime is forced for some settings, but avoid hard-setting it until
-  // use really confirms it on cutom dialog
+  // user really confirms it on custom dialog
   TCopyParamType ACopyParams = CopyParams;
   if (CopyParamListPopupClick(Sender, ACopyParams, FPreset,
         ActualCopyParamAttrs()))
@@ -485,7 +485,7 @@ void __fastcall TSynchronizeDialog::CopyParamGroupContextPopup(
 void __fastcall TSynchronizeDialog::CopyParamGroupDblClick(TObject * /*Sender*/)
 {
   // PreserveTime is forced for some settings, but avoid hard-setting it until
-  // use really confirms it on cutom dialog
+  // user really confirms it on cutom dialog
   TCopyParamType ACopyParams = CopyParams;
   if (DoCopyParamCustomDialog(ACopyParams, ActualCopyParamAttrs()))
   {

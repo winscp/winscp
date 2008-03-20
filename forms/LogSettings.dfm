@@ -37,9 +37,9 @@ object LoggingFrame: TLoggingFrame
     object LogProtocolLabel: TLabel
       Left = 16
       Top = 21
-      Width = 63
+      Width = 66
       Height = 13
-      Caption = 'Logging &level'
+      Caption = 'Logging &level:'
       FocusControl = LogProtocolCombo
     end
     object LogToFileCheck: TCheckBox

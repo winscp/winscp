@@ -16,9 +16,7 @@
 
 #define do_proxy_dns(cfg) \
     (cfg->proxy_dns == FORCE_ON || \
-	 (cfg->proxy_dns == AUTO && \
-              cfg->proxy_type != PROXY_SOCKS4 && \
-              cfg->proxy_type != PROXY_SOCKS5))
+	 (cfg->proxy_dns == AUTO && cfg->proxy_type != PROXY_SOCKS4))
 
 /*
  * Call this when proxy negotiation is complete, so that this
@@ -1371,7 +1369,7 @@ char *format_telnet_command(SockAddr addr, int port, const Config *cfg)
 		eo += 4;
 	    }
 	    else if (strnicmp(cfg->proxy_telnet_command + eo,
-			      "proxyhost", 4) == 0) {
+			      "proxyhost", 9) == 0) {
 		int phlen = strlen(cfg->proxy_host);
 		ENSURE(phlen);
 		memcpy(ret+retlen, cfg->proxy_host, phlen);
@@ -1379,11 +1377,11 @@ char *format_telnet_command(SockAddr addr, int port, const Config *cfg)
 		eo += 9;
 	    }
 	    else if (strnicmp(cfg->proxy_telnet_command + eo,
-			      "proxyport", 4) == 0) {
+			      "proxyport", 9) == 0) {
                 char pport[50];
 		int pplen;
                 sprintf(pport, "%d", cfg->proxy_port);
-                pplen = strlen(cfg->proxy_host);
+                pplen = strlen(pport);
 		ENSURE(pplen);
 		memcpy(ret+retlen, pport, pplen);
 		retlen += pplen;

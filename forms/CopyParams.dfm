@@ -84,7 +84,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 16
       Width = 156
       Height = 17
-      Caption = 'Set pe&rmissions'
+      Caption = 'Set pe&rmissions:'
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
@@ -206,10 +206,10 @@ object CopyParamsFrame: TCopyParamsFrame
     object AsciiFileMaskLabel: TLabel
       Left = 10
       Top = 99
-      Width = 164
+      Width = 167
       Height = 13
       Anchors = [akLeft, akTop, akRight]
-      Caption = 'Transfer following &files in text mode'
+      Caption = 'Transfer following &files in text mode:'
       FocusControl = AsciiFileMaskCombo
     end
     object TMTextButton: TRadioButton
@@ -247,6 +247,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 115
       Width = 180
       Height = 21
+      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
       MaxLength = 1000
@@ -268,9 +269,9 @@ object CopyParamsFrame: TCopyParamsFrame
     object ExclusionFileMaskLabel: TLabel
       Left = 90
       Top = 18
-      Width = 25
+      Width = 28
       Height = 13
-      Caption = 'mas&k'
+      Caption = 'mas&k:'
       FocusControl = ExcludeFileMaskCombo
     end
     object ExcludeFileMaskCombo: THistoryComboBox
@@ -278,6 +279,7 @@ object CopyParamsFrame: TCopyParamsFrame
       Top = 14
       Width = 358
       Height = 21
+      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
       MaxLength = 3000

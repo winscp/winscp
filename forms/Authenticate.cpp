@@ -9,18 +9,34 @@
 #include <VCLCommon.h>
 #include <TextsWin.h>
 #include <Terminal.h>
+#include <CoreMain.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------------
-__fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner,
-  AnsiString SessionName)
-  : TForm(Owner), FSessionName(SessionName), FHideTypingOnServerPrompt(true)
+__fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner)
+  : TForm(Owner), FSessionData(NULL)
 {
+}
+//---------------------------------------------------------------------------
+void __fastcall TAuthenticateForm::Init(TSessionData * SessionData)
+{
+  FSessionData = SessionData;
+
   UseSystemSettings(this);
   FShowAsModalStorage = NULL;
   FFocusControl = NULL;
+
+  FPromptParent = InstructionsLabel->Parent;
+  FPromptLeft = InstructionsLabel->Left;
+  FPromptTop = InstructionsLabel->Top;
+  FPromptRight = FPromptParent->ClientWidth - InstructionsLabel->Width - FPromptLeft;
+  FPromptEditGap = PromptEdit1->Top - PromptLabel1->Top - PromptLabel1->Height;
+  FPromptsGap = PromptLabel2->Top - PromptEdit1->Top - PromptEdit1->Height;
+
+  ClientHeight = 270;
+
   ClearLog();
 }
 //---------------------------------------------------------------------------
@@ -41,8 +57,8 @@ void __fastcall TAuthenticateForm::HideAsModal()
 //---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::WMNCCreate(TWMNCCreate & Message)
 {
-  // bypass TForm::WMNCCreate no prevent disabling "resize"
-  // (wish is done for bsDialog, see comments in CreateParams)
+  // bypass TForm::WMNCCreate to prevent disabling "resize"
+  // (which is done for bsDialog, see comments in CreateParams)
   DefaultHandler(&Message);
 }
 //---------------------------------------------------------------------------
@@ -76,7 +92,7 @@ void __fastcall TAuthenticateForm::FormShow(TObject * /*Sender*/)
 
   if (FFocusControl != NULL)
   {
-    FFocusControl->SetFocus();
+    ActiveControl = FFocusControl;
   }
 }
 //---------------------------------------------------------------------------
@@ -95,98 +111,153 @@ void __fastcall TAuthenticateForm::Log(const AnsiString Message)
   LogView->Repaint();
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::UpdateControls()
-{
-  PasswordEdit->Password = HideTypingCheck->Checked;
-}
-//---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::AdjustControls()
 {
-  if (PasswordLabel->Caption != FPasswordCaption)
-  {
-    int LabelWidth = PasswordLabel->Width;
-    int LabelHeight = PasswordLabel->Height;
-    PasswordLabel->AutoSize = false;
-    PasswordLabel->Caption = FPasswordCaption;
-    PasswordLabel->AutoSize = true;
-    PasswordLabel->Width = LabelWidth;
-
-    int HeightDiff = (PasswordLabel->Height - LabelHeight);
-    PasswordEditPanel->Height = PasswordEditPanel->Height + HeightDiff;
-    PasswordPanel->Height = PasswordPanel->Height + HeightDiff;
-  }
-
   if (FStatus.IsEmpty())
   {
-    Caption = FSessionName;
+    Caption = FSessionData->SessionName;
   }
   else
   {
-    Caption = FORMAT("%s - %s", (FStatus, FSessionName));
+    Caption = FORMAT("%s - %s", (FStatus, FSessionData->SessionName));
   }
-
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TAuthenticateForm::PromptUser(AnsiString Caption,
-  TPromptKind Kind, AnsiString & Response, bool ForceLog)
+TLabel * __fastcall TAuthenticateForm::GenerateLabel(int Current, AnsiString Caption)
 {
-  bool ShowServerPanel;
-  AnsiString Title;
+  TLabel * Result = new TLabel(this);
+  Result->Parent = FPromptParent;
 
-  switch (Kind)
+  Result->Anchors = TAnchors() << akLeft << akTop << akRight;
+  Result->WordWrap = true;
+  Result->AutoSize = false;
+
+  Result->Top = Current;
+  Result->Left = FPromptLeft;
+  Result->Caption = Caption;
+  int Width = FPromptParent->ClientWidth - FPromptLeft - FPromptRight;
+  Result->Width = Width;
+  Result->AutoSize = true;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+TCustomEdit * __fastcall TAuthenticateForm::GenerateEdit(int Current, bool Echo, int MaxLen)
+{
+  TCustomEdit * Result = (Echo ? static_cast<TCustomEdit *>(new TEdit(this)) :
+    static_cast<TCustomEdit *>(new TPasswordEdit(this)));
+  Result->Parent = FPromptParent;
+
+  Result->Anchors = TAnchors() << akLeft << akTop << akRight;
+  Result->Top = Current;
+  Result->Left = FPromptLeft;
+  Result->Width = FPromptParent->ClientWidth - FPromptLeft - FPromptRight;
+  ((TEdit *)Result)->MaxLength = MaxLen;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+TList * __fastcall TAuthenticateForm::GeneratePrompt(AnsiString Instructions,
+  TStrings * Prompts, TStrings * Results)
+{
+  while (FPromptParent->ControlCount > 0)
   {
-    case pkPassword:
-      Title = LoadStr(PASSWORD_TITLE);
-      HideTypingCheck->Checked = true;
-      ShowServerPanel = false;
-      break;
+    delete FPromptParent->Controls[0];
+  }
+  TList * Result = new TList;
 
-    case pkPassphrase:
-      Title = LoadStr(PASSPHRASE_TITLE);
-      HideTypingCheck->Checked = true;
-      ShowServerPanel = false;
-      break;
+  int Current = FPromptTop;
 
-    case pkServerPrompt:
-      Title = LoadStr(SERVER_PASSWORD_TITLE);
-      ShowServerPanel = true;
-      HideTypingCheck->Checked = FHideTypingOnServerPrompt;
-      break;
+  if (!Instructions.IsEmpty())
+  {
+    TLabel * Label = GenerateLabel(Current, Instructions);
+    Current += Label->Height + FPromptsGap;
+  }
 
-    case pkPrompt:
-      Title = CutToChar(Caption, '|', true);
-      if (Caption.IsEmpty())
+  assert(Prompts->Count == Results->Count);
+  for (int Index = 0; Index < Prompts->Count; Index++)
+  {
+    if (Index > 0)
+    {
+      Current += FPromptEditGap;
+    }
+
+    TLabel * Label = GenerateLabel(Current, Prompts->Strings[0]);
+    Current += Label->Height + FPromptEditGap;
+
+    TCustomEdit * Edit = GenerateEdit(Current, bool(Prompts->Objects[Index]),
+      int(Results->Objects[Index]));
+    Result->Add(Edit);
+    Label->FocusControl = Edit;
+    Current += Edit->Height;
+  }
+
+  FPromptParent->ClientHeight = Current;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, AnsiString Name,
+  AnsiString Instructions, TStrings * Prompts, TStrings * Results, bool ForceLog,
+  bool StoredCredentialsTried)
+{
+
+  bool Result;
+  TList * Edits = GeneratePrompt(Instructions, Prompts, Results);
+
+  try
+  {
+    bool ShowSavePasswordPanel = false;
+    TSessionData * Data = NULL;
+    if (((Kind == pkPassword) || (Kind == pkTIS) || (Kind == pkCryptoCard) ||
+         (Kind == pkKeybInteractive)) &&
+        (Prompts->Count == 1) && !bool(Prompts->Objects[0]) &&
+        !FSessionData->Name.IsEmpty() &&
+        StoredCredentialsTried)
+    {
+      Data = dynamic_cast<TSessionData *>(StoredSessions->FindByName(FSessionData->Name));
+      ShowSavePasswordPanel = (Data != NULL) && !Data->Password.IsEmpty();
+    }
+
+    SavePasswordCheck->Checked = false;
+    SavePasswordPanel->Visible = ShowSavePasswordPanel;
+
+    if (PasswordPanel->AutoSize)
+    {
+      PasswordPanel->AutoSize = false;
+      PasswordPanel->AutoSize = true;
+    }
+    PasswordPanel->Realign();
+
+    assert(Results->Count == Edits->Count);
+    for (int Index = 0; Index < Edits->Count; Index++)
+    {
+      TCustomEdit * Edit = reinterpret_cast<TCustomEdit *>(Edits->Items[Index]);
+      Edit->Text = Results->Strings[Index];
+    }
+
+    Result = Execute(Name, PasswordPanel, reinterpret_cast<TWinControl *>(Edits->Items[0]),
+      PasswordOKButton, PasswordCancelButton, true, false, ForceLog);
+    if (Result)
+    {
+      for (int Index = 0; Index < Edits->Count; Index++)
       {
-        Caption = Title;
+        TCustomEdit * Edit = reinterpret_cast<TCustomEdit *>(Edits->Items[Index]);
+        Results->Strings[Index] = Edit->Text;
       }
-      HideTypingCheck->Checked = false;
-      ShowServerPanel = false;
-      break;
 
-    default:
-      assert(false);
+      if (SavePasswordCheck->Checked)
+      {
+        assert(Data != NULL);
+        Data->Password = Results->Strings[0];
+        // modified only, explicit
+        StoredSessions->Save(false, true);
+      }
+    }
   }
-
-  FPasswordCaption = Caption;
-
-  if (ShowServerPanel != ServerPromptPanel->Visible)
+  __finally
   {
-    ServerPromptPanel->Visible = ShowServerPanel;
-    PasswordPanel->Height += (ShowServerPanel ? 1 : -1) * ServerPromptPanel->Height;
-  }
-
-  PasswordEdit->Text = Response;
-  bool Result = Execute(Title, PasswordPanel, PasswordEdit,
-    PasswordOKButton, PasswordCancelButton, true, false, ForceLog);
-  if (Result)
-  {
-    Response = PasswordEdit->Text;
-  }
-
-  if (Kind == pkServerPrompt)
-  {
-    FHideTypingOnServerPrompt = HideTypingCheck->Checked;
+    delete Edits;
   }
 
   return Result;
@@ -206,11 +277,11 @@ void __fastcall TAuthenticateForm::Banner(const AnsiString & Banner,
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control,
+bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TPanel * Panel,
   TWinControl * FocusControl, TButton * DefaultButton, TButton * CancelButton,
   bool FixHeight, bool Zoom, bool ForceLog)
 {
-  TAlign Align = Control->Align;
+  TAlign Align = Panel->Align;
   try
   {
     assert(FStatus.IsEmpty());
@@ -220,12 +291,19 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
 
     if (Zoom)
     {
-      Control->Align = alClient;
+      Panel->Align = alClient;
     }
 
     if (ForceLog || Visible)
     {
-      Control->Show();
+      if (ClientHeight < Panel->Height)
+      {
+        ClientHeight = Panel->Height;
+      }
+      // Panel being hidden gets not realigned automatically, even if it
+      // has Align property set
+      Panel->Top = ClientHeight - Panel->Height;
+      Panel->Show();
       TCursor PrevCursor = Screen->Cursor;
       try
       {
@@ -253,7 +331,7 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
           ShowAsModal();
         }
 
-        FocusControl->SetFocus();
+        ActiveControl = FocusControl;
         ModalResult = mrNone;
         AdjustControls();
         do
@@ -264,7 +342,7 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
       }
       __finally
       {
-        Control->Hide();
+        Panel->Hide();
         Screen->Cursor = PrevCursor;
         if (Zoom)
         {
@@ -281,14 +359,14 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
       try
       {
         Constraints->MinHeight = 0;
-        ClientHeight = Control->Height;
+        ClientHeight = Panel->Height;
         if (FixHeight)
         {
           Constraints->MinHeight = Height;
           Constraints->MaxHeight = Height;
         }
         LogView->Hide();
-        Control->Show();
+        Panel->Show();
         FFocusControl = FocusControl;
 
         ShowModal();
@@ -299,14 +377,14 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
         ClientHeight = PrevHeight;
         Constraints->MinHeight = PrevMinHeight;
         Constraints->MaxHeight = PrevMaxHeight;
-        Control->Hide();
+        Panel->Hide();
         LogView->Show();
       }
     }
   }
   __finally
   {
-    Control->Align = Align;
+    Panel->Align = Align;
     DefaultButton->Default = false;
     CancelButton->Cancel = false;
     FStatus = "";
@@ -316,18 +394,8 @@ bool __fastcall TAuthenticateForm::Execute(AnsiString Status, TControl * Control
   return (ModalResult != mrCancel);
 }
 //---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::FormResize(TObject * /*Sender*/)
-{
-  AdjustControls();
-}
-//---------------------------------------------------------------------------
 void __fastcall TAuthenticateForm::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
-}
-//---------------------------------------------------------------------------
-void __fastcall TAuthenticateForm::HideTypingCheckClick(TObject * /*Sender*/)
-{
-  UpdateControls();
 }
 //---------------------------------------------------------------------------

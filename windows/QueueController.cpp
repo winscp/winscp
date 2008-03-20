@@ -91,7 +91,7 @@ TQueueOperation __fastcall TQueueController::DefaultOperation()
 }
 //---------------------------------------------------------------------------
 bool __fastcall TQueueController::AllowOperation(
-  TQueueOperation Operation)
+  TQueueOperation Operation, void ** Param)
 {
   TQueueItemProxy * QueueItem = NULL;
 
@@ -115,8 +115,7 @@ bool __fastcall TQueueController::AllowOperation(
       return (QueueItem != NULL) && (QueueItem->Status == TQueueItem::qsPrompt);
 
     case qoItemDelete:
-      return (QueueItem != NULL) && (QueueItem->Status != TQueueItem::qsDone) &&
-        !TQueueItem::IsUserActionStatus(QueueItem->Status);
+      return (QueueItem != NULL) && (QueueItem->Status != TQueueItem::qsDone);
 
     case qoItemExecute:
       return (QueueItem != NULL) && (QueueItem->Status == TQueueItem::qsPending);
@@ -139,6 +138,17 @@ bool __fastcall TQueueController::AllowOperation(
       return (QueueItem != NULL) &&
         (QueueItem->Status == TQueueItem::qsPaused);
 
+    case qoItemSpeed:
+      {
+        bool Result = (QueueItem != NULL) && (QueueItem->Status != TQueueItem::qsDone);
+        if (Result && (Param != NULL))
+        {
+          *Param = reinterpret_cast<void *>(QueueItem->ProgressData != NULL ?
+            QueueItem->ProgressData->CPSLimit : 0);
+        }
+        return Result;
+      }
+
     case qoPauseAll:
     case qoResumeAll:
       {
@@ -159,7 +169,8 @@ bool __fastcall TQueueController::AllowOperation(
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation)
+void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation,
+  void * Param)
 {
   TQueueItemProxy * QueueItem = NULL;
 
@@ -198,6 +209,10 @@ void __fastcall TQueueController::ExecuteOperation(TQueueOperation Operation)
 
       case qoItemResume:
         QueueItem->Resume();
+        break;
+
+      case qoItemSpeed:
+        QueueItem->SetCPSLimit(reinterpret_cast<unsigned long>(Param));
         break;
 
       case qoPauseAll:
@@ -299,7 +314,16 @@ void __fastcall TQueueController::FillQueueViewItem(TListItem * Item,
       if (ProgressData->Operation == Info->Operation)
       {
         Values[2] = FormatBytes(ProgressData->TotalTransfered);
-        Values[3] = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TimeElapsed());
+
+        if (ProgressData->TotalSizeSet)
+        {
+          Values[3] = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TotalTimeLeft());
+        }
+        else
+        {
+          Values[3] = FormatDateTimeSpan(Configuration->TimeFormat, ProgressData->TimeElapsed());
+        }
+
         if (ProgressStr.IsEmpty())
         {
           ProgressStr = FORMAT("%d%%", (ProgressData->OverallProgress()));

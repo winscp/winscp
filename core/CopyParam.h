@@ -50,6 +50,7 @@ private:
   TFileMasks FExcludeFileMask;
   bool FNegativeExclude;
   bool FClearArchive;
+  unsigned long FCPSLimit;
   static const char TokenPrefix = '%';
   static const char NoReplacement = char(false);
   static const char TokenReplacement = char(true);
@@ -59,6 +60,7 @@ private:
   bool __fastcall GetReplaceInvalidChars() const;
   void __fastcall SetReplaceInvalidChars(bool value);
   char * __fastcall ReplaceChar(AnsiString & FileName, char * InvalidChar) const;
+  AnsiString __fastcall RestoreChars(AnsiString FileName) const;
 
 public:
   __fastcall TCopyParamType();
@@ -75,6 +77,7 @@ public:
     const TFileMasks::TParams & Params) const;
   bool __fastcall AllowResume(__int64 Size) const;
   AnsiString __fastcall ValidLocalFileName(AnsiString FileName) const;
+  AnsiString __fastcall ValidLocalPath(AnsiString Path) const;
   bool __fastcall AllowTransfer(AnsiString FileName, TOperationSide Side,
     bool Directory, const TFileMasks::TParams & Params) const;
 
@@ -104,6 +107,7 @@ public:
   __property TFileMasks ExcludeFileMask = { read = FExcludeFileMask, write = FExcludeFileMask };
   __property bool NegativeExclude = { read = FNegativeExclude, write = FNegativeExclude };
   __property bool ClearArchive = { read = FClearArchive, write = FClearArchive };
+  __property unsigned long CPSLimit = { read = FCPSLimit, write = FCPSLimit };
 };
 //---------------------------------------------------------------------------
 #endif

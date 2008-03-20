@@ -48,6 +48,8 @@ type
     property OnSetData: THistoryComboBoxSetData read FOnSetData write FOnSetData;
   end;
 
+procedure SaveToHistory(Strings: TStrings; T: string; Data: Pointer = nil; MaxHistorySize: Integer = DefaultMaxHistorySize);
+
 procedure Register;
 
 implementation
@@ -55,6 +57,17 @@ implementation
 procedure Register;
 begin
   RegisterComponents('Martin', [THistoryComboBox]);
+end;
+
+procedure SaveToHistory(Strings: TStrings; T: string; Data: Pointer; MaxHistorySize: Integer);
+begin
+  if T <> '' then
+  begin
+    while Strings.IndexOf(T) >= 0 do Strings.Delete(Strings.IndexOf(T));
+    Strings.InsertObject(0, T, TObject(Data));
+  end;
+  while Strings.Count > MaxHistorySize do
+    Strings.Delete(Strings.Count-1);
 end;
 
   { THistoryComboBox }
@@ -118,21 +131,16 @@ end;
 
 procedure THistoryComboBox.SaveToHistory;
 var
-  T: AnsiString;
   Data: Pointer;
 begin
-  T := Text;
-  if T <> '' then
+  if Text <> '' then
   begin
-    while Items.IndexOf(T) >= 0 do Items.Delete(Items.IndexOf(T));
     Data := nil;
     if Assigned(OnGetData) then
       OnGetData(Self, Data);
-    Items.InsertObject(0, T, TObject(Data));
+    HistoryComboBox.SaveToHistory(Items, Text, Data, MaxHistorySize);
     ItemIndex := 0;
   end;
-  while Items.Count > FMaxHistorySize do
-    Items.Delete(Items.Count-1);
 end;
 
 function THistoryComboBox.StoreSaveOn: Boolean;

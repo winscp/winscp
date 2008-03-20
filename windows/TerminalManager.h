@@ -101,8 +101,8 @@ private:
     const AnsiString Query, TStrings * MoreMessages, int Answers,
     const TQueryParams * Params, int & Answer, TQueryType Type, void * Arg);
   void __fastcall TerminalPromptUser(TTerminal * Terminal,
-    AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
-    void * Arg);
+    TPromptKind Kind, AnsiString Name, AnsiString Instructions, TStrings * Prompt,
+    TStrings * Results, bool & Result, void * Arg);
   void __fastcall TerminalDisplayBanner(TTerminal * Terminal,
     AnsiString SessionName, const AnsiString & Banner, bool & NeverShowAgain,
     int Options);
@@ -125,8 +125,9 @@ private:
     bool & DisconnectWhenFinished);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
-  void __fastcall DeleteLocalFile(const AnsiString FileName);
+  void __fastcall DeleteLocalFile(const AnsiString FileName, bool Alternative);
   void __fastcall QueueEvent(TTerminalQueue * Queue, TQueueEvent Event);
+  TAuthenticateForm * __fastcall MakeAuthenticateForm(TSessionData * Data);
 };
 //---------------------------------------------------------------------------
 #endif

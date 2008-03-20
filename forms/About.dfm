@@ -6,7 +6,7 @@ object AboutDialog: TAboutDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'About application'
-  ClientHeight = 476
+  ClientHeight = 484
   ClientWidth = 388
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -15,10 +15,10 @@ object AboutDialog: TAboutDialog
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = True
-  Position = poOwnerFormCenter
+  Position = poMainFormCenter
   DesignSize = (
     388
-    476)
+    484)
   PixelsPerInch = 96
   TextHeight = 13
   object ApplicationLabel: TLabel
@@ -161,7 +161,7 @@ object AboutDialog: TAboutDialog
   end
   object Label3: TLabel
     Left = 72
-    Top = 295
+    Top = 303
     Width = 87
     Height = 13
     Anchors = [akLeft, akBottom]
@@ -170,10 +170,10 @@ object AboutDialog: TAboutDialog
   object RegistrationLabel: TLabel
     Left = 72
     Top = 188
-    Width = 127
+    Width = 126
     Height = 13
     Anchors = [akLeft, akBottom]
-    Caption = 'This product is licenced to:'
+    Caption = 'This product is licensed to:'
   end
   object HomepageLabel: TStaticText
     Left = 72
@@ -204,7 +204,7 @@ object AboutDialog: TAboutDialog
   end
   object ThirdPartyBox: TScrollBox
     Left = 72
-    Top = 313
+    Top = 321
     Width = 306
     Height = 121
     HorzScrollBar.Range = 289
@@ -214,7 +214,7 @@ object AboutDialog: TAboutDialog
     VertScrollBar.Tracking = True
     Anchors = [akLeft, akRight, akBottom]
     AutoScroll = False
-    TabOrder = 5
+    TabOrder = 6
     DesignSize = (
       285
       117)
@@ -227,7 +227,7 @@ object AboutDialog: TAboutDialog
       AutoSize = False
       Caption = 
         'License agreements of all following programs (libraries) are par' +
-        't of application licence agreement.'
+        't of application license agreement.'
       WordWrap = True
     end
     object Label4: TLabel
@@ -308,16 +308,16 @@ object AboutDialog: TAboutDialog
       Height = 13
       Caption = 'Copyright '#169' xxx Tim Kosse'
     end
-    object PuttyLicenceLabel: TStaticText
+    object PuttyLicenseLabel: TStaticText
       Tag = 1
       Left = 8
       Top = 80
-      Width = 75
+      Width = 74
       Height = 17
-      Caption = 'Display licence'
+      Caption = 'Display license'
       TabOrder = 0
       TabStop = True
-      OnClick = DisplayLicence
+      OnClick = DisplayLicense
     end
     object PuttyHomepageLabel: TStaticText
       Left = 8
@@ -358,7 +358,7 @@ object AboutDialog: TAboutDialog
   end
   object OKButton: TButton
     Left = 221
-    Top = 443
+    Top = 451
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -368,19 +368,19 @@ object AboutDialog: TAboutDialog
     ModalResult = 1
     TabOrder = 0
   end
-  object LicenceButton: TButton
+  object LicenseButton: TButton
     Left = 72
-    Top = 443
+    Top = 451
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
-    Caption = '&Licence...'
-    TabOrder = 6
-    OnClick = LicenceButtonClick
+    Caption = '&License...'
+    TabOrder = 7
+    OnClick = LicenseButtonClick
   end
   object HelpButton: TButton
     Left = 303
-    Top = 443
+    Top = 451
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -392,15 +392,15 @@ object AboutDialog: TAboutDialog
     Left = 72
     Top = 206
     Width = 306
-    Height = 81
+    Height = 89
     HorzScrollBar.Visible = False
     VertScrollBar.Smooth = True
     VertScrollBar.Tracking = True
     Anchors = [akLeft, akRight, akBottom]
-    TabOrder = 7
+    TabOrder = 5
     DesignSize = (
       302
-      77)
+      85)
     object RegistrationSubjectLabel: TLabel
       Left = 8
       Top = 8
@@ -411,19 +411,21 @@ object AboutDialog: TAboutDialog
       Caption = 'Someone'#13#10'Somewhere, some city'
       WordWrap = True
     end
-    object RegistrationLicencesLabel: TLabel
+    object RegistrationLicensesLabel: TLabel
       Left = 8
-      Top = 39
-      Width = 108
+      Top = 43
+      Width = 107
       Height = 13
-      Caption = 'Number of Licences: X'
+      Caption = 'Number of Licenses: X'
     end
-    object RegistrationProductIdLabel: TLabel
+    object RegistrationProductIdLabel: TStaticText
       Left = 8
-      Top = 57
-      Width = 128
-      Height = 13
+      Top = 65
+      Width = 132
+      Height = 17
       Caption = 'Product ID: xxxx-xxxx-xxxxx'
+      TabOrder = 0
+      OnClick = RegistrationProductIdLabelClick
     end
   end
 end

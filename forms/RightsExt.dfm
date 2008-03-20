@@ -4,9 +4,9 @@ inherited RightsExtFrame: TRightsExtFrame
   object OctalLabel: TLabel [6]
     Left = 4
     Top = 68
-    Width = 25
+    Width = 28
     Height = 13
-    Caption = 'O&ctal'
+    Caption = 'O&ctal:'
     FocusControl = OctalEdit
   end
   inherited GroupReadCheck: TGrayedCheckBox

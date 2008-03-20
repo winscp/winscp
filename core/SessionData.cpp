@@ -16,20 +16,21 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet }; // 0.53b and older
 const char * DefaultSessionName = "Default Settings";
-const char CipherNames[CIPHER_COUNT][10] = {"WARN", "3des", "blowfish", "aes", "des"};
-const char KexNames[KEX_COUNT][20] = {"WARN", "dh-group1-sha1", "dh-group14-sha1", "dh-gex-sha1" };
+const char CipherNames[CIPHER_COUNT][10] = {"WARN", "3des", "blowfish", "aes", "des", "arcfour"};
+const char KexNames[KEX_COUNT][20] = {"WARN", "dh-group1-sha1", "dh-group14-sha1", "dh-gex-sha1", "gssapi-group1", "gssapi-group14", "gssapi-gex" };
 const char SshProtList[][10] = {"1 only", "1", "2", "2 only"};
 const char ProxyMethodList[][10] = {"none", "SOCKS4", "SOCKS5", "HTTP", "Telnet", "Cmd" };
 const TCipher DefaultCipherList[CIPHER_COUNT] =
-  { cipAES, cipBlowfish, cip3DES, cipWarn, cipDES };
+  { cipAES, cipBlowfish, cip3DES, cipWarn, cipArcfour, cipDES };
 const TKex DefaultKexList[KEX_COUNT] =
-  { kexDHGEx, kexDHGroup14, kexDHGroup1, kexWarn };
+  { kexGSSGEx, kexGSSGroup14, kexGSSGroup1, kexDHGEx, kexDHGroup14, kexDHGroup1, kexWarn };
 const char FSProtocolNames[FSPROTOCOL_COUNT][11] = { "SCP", "SFTP (SCP)", "SFTP", "SSH", "SFTP", "FTP" };
 const int SshPortNumber = 22;
 const int FtpPortNumber = 21;
 //--- TSessionData ----------------------------------------------------
-AnsiString TSessionData::FInvalidChars("/\\[]");
+AnsiString TSessionData::FInvalidChars("\\[]");
 //---------------------------------------------------------------------
 __fastcall TSessionData::TSessionData(AnsiString aName):
   TNamedObject(aName)
@@ -45,8 +46,10 @@ void __fastcall TSessionData::Default()
   UserName = "";
   Password = "";
   PingInterval = 30;
+  // when changing default, update load/save logic
   PingType = ptOff;
   Timeout = 15;
+  TryAgent = true;
   AgentFwd = false;
   AuthTIS = false;
   AuthKI = true;
@@ -54,10 +57,15 @@ void __fastcall TSessionData::Default()
   AuthGSSAPI = false;
   GSSAPIFwdTGT = false;
   GSSAPIServerRealm = "";
+  TryGSSKEX = true;
+  UserNameFromEnvironment = false;
+  GSSAPIServerChoosesUserName = false;
+  GSSAPITrustDNS = false;
   ChangeUsername = false;
   Compression = false;
   SshProt = ssh2;
   Ssh2DES = false;
+  SshNoUserAuth = false;
   for (int Index = 0; Index < CIPHER_COUNT; Index++)
   {
     Cipher[Index] = DefaultCipherList[Index];
@@ -69,6 +77,7 @@ void __fastcall TSessionData::Default()
   PublicKeyFile = "";
   FProtocol = ptSSH;
   TcpNoDelay = true;
+  HostKey = "";
 
   ProxyMethod = pmNone;
   ProxyHost = "proxy";
@@ -76,6 +85,7 @@ void __fastcall TSessionData::Default()
   ProxyUsername = "";
   ProxyPassword = "";
   ProxyTelnetCommand = "connect %host %port\\n";
+  ProxyLocalCommand = "";
   ProxyDNS = asAuto;
   ProxyLocalhost = false;
 
@@ -104,6 +114,7 @@ void __fastcall TSessionData::Default()
   OverwrittenToRecycleBin = false;
   RecycleBinPath = "/tmp";
   Color = 0;
+  PostLoginCommands = "";
 
   // SCP
   ReturnVar = "";
@@ -113,13 +124,15 @@ void __fastcall TSessionData::Default()
   ReturnVar = "";
   ClearAliases = true;
   UnsetNationalVars = true;
-  AliasGroupList = false;
+  ListingCommand = "ls -la";
   IgnoreLsWarnings = true;
   Scp1Compatibility = false;
   TimeDifference = 0;
   SCPLsFullTime = asAuto;
+  Utf = asAuto;
 
   // SFTP
+  SftpServer = "";
   SFTPDownloadQueue = 4;
   SFTPUploadQueue = 4;
   SFTPListingQueue = 2;
@@ -174,18 +187,21 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(PingInterval);
     DUPL(PingType);
     DUPL(Timeout);
+    DUPL(TryAgent);
     DUPL(AgentFwd);
     DUPL(AuthTIS);
     DUPL(ChangeUsername);
     DUPL(Compression);
     DUPL(SshProt);
     DUPL(Ssh2DES);
+    DUPL(SshNoUserAuth);
     DUPL(CipherList);
     DUPL(KexList);
     DUPL(PublicKeyFile);
     DUPL(AddressFamily);
     DUPL(RekeyData);
     DUPL(RekeyTime);
+    DUPL(HostKey);
 
     DUPL(FSProtocol);
     DUPL(LocalDirectory);
@@ -207,7 +223,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(ClearAliases);
     DUPL(Scp1Compatibility);
     DUPL(UnsetNationalVars);
-    DUPL(AliasGroupList);
+    DUPL(ListingCommand);
     DUPL(IgnoreLsWarnings);
     DUPL(SCPLsFullTime);
 
@@ -219,9 +235,15 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(AuthGSSAPI);
     DUPL(GSSAPIFwdTGT);
     DUPL(GSSAPIServerRealm);
+    DUPL(TryGSSKEX);
+    DUPL(UserNameFromEnvironment);
+    DUPL(GSSAPIServerChoosesUserName);
+    DUPL(GSSAPITrustDNS);
     DUPL(DeleteToRecycleBin);
     DUPL(OverwrittenToRecycleBin);
     DUPL(RecycleBinPath);
+    DUPL(Utf);
+    DUPL(PostLoginCommands);
 
     DUPL(ProxyMethod);
     DUPL(ProxyHost);
@@ -229,6 +251,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(ProxyUsername);
     DUPL(ProxyPassword);
     DUPL(ProxyTelnetCommand);
+    DUPL(ProxyLocalCommand);
     DUPL(ProxyDNS);
     DUPL(ProxyLocalhost);
 
@@ -238,6 +261,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     }
 
     // SFTP
+    DUPL(SftpServer);
     DUPL(SFTPDownloadQueue);
     DUPL(SFTPUploadQueue);
     DUPL(SFTPListingQueue);
@@ -308,24 +332,46 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     PingInterval =
       Storage->ReadInteger("PingInterval", PingInterval/60)*60 +
       PingIntervalSecs;
-    PingType = static_cast<TPingType>
-      (Storage->ReadInteger("PingType", PingInterval > 0 ? ptNullPacket : ptOff));
     if (PingInterval == 0)
     {
       PingInterval = 30;
     }
+    // PingType has not existed before 3.5, where PingInterval > 0 meant today's ptNullPacket
+    // Since 3.5, until 4.1 PingType was stored unconditionally.
+    // Since 4.1 PingType is stored when it is not ptOff (default) or
+    // when PingInterval is stored.
+    if (!Storage->ValueExists("PingType"))
+    {
+      if (Storage->ReadInteger("PingInterval", 0) > 0)
+      {
+        PingType = ptNullPacket;
+      }
+    }
+    else
+    {
+      PingType = static_cast<TPingType>(Storage->ReadInteger("PingType", ptOff));
+    }
     Timeout = Storage->ReadInteger("Timeout", Timeout);
+    TryAgent = Storage->ReadBool("TryAgent", TryAgent);
     AgentFwd = Storage->ReadBool("AgentFwd", AgentFwd);
     AuthTIS = Storage->ReadBool("AuthTIS", AuthTIS);
     AuthKI = Storage->ReadBool("AuthKI", AuthKI);
     AuthKIPassword = Storage->ReadBool("AuthKIPassword", AuthKIPassword);
-    AuthGSSAPI = Storage->ReadBool("AuthGSSAPI", AuthGSSAPI);
-    GSSAPIFwdTGT = Storage->ReadBool("GSSAPIFwdTGT", GSSAPIFwdTGT);
-    GSSAPIServerRealm = Storage->ReadString("GSSAPIServerRealm", GSSAPIServerRealm);
+    // continue to use setting keys of previous kerberos implementation (vaclav tomec),
+    // but fallback to keys of new implementation (vintela quest putty),
+    // to allow imports from both putty versions
+    AuthGSSAPI = Storage->ReadBool("AuthGSSAPI", Storage->ReadBool("AuthSSPI", AuthGSSAPI));
+    GSSAPIFwdTGT = Storage->ReadBool("GSSAPIFwdTGT", Storage->ReadBool("SSPIFwdTGT", GSSAPIFwdTGT));
+    GSSAPIServerRealm = Storage->ReadString("GSSAPIServerRealm", Storage->ReadString("KerbPrincipal", GSSAPIServerRealm));
+    TryGSSKEX = Storage->ReadBool("TryGSSKEX", TryGSSKEX);
+    UserNameFromEnvironment = Storage->ReadBool("UserNameFromEnvironment", UserNameFromEnvironment);
+    GSSAPIServerChoosesUserName = Storage->ReadBool("GSSAPIServerChoosesUserName", GSSAPIServerChoosesUserName);
+    GSSAPITrustDNS = Storage->ReadBool("GSSAPITrustDNS", GSSAPITrustDNS);
     ChangeUsername = Storage->ReadBool("ChangeUsername", ChangeUsername);
     Compression = Storage->ReadBool("Compression", Compression);
     SshProt = (TSshProt)Storage->ReadInteger("SshProt", SshProt);
     Ssh2DES = Storage->ReadBool("Ssh2DES", Ssh2DES);
+    SshNoUserAuth = Storage->ReadBool("SshNoUserAuth", SshNoUserAuth);
     CipherList = Storage->ReadString("Cipher", CipherList);
     KexList = Storage->ReadString("KEX", KexList);
     PublicKeyFile = Storage->ReadString("PublicKeyFile", PublicKeyFile);
@@ -349,7 +395,8 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     Shell = Storage->ReadString("Shell", Shell);
     ClearAliases = Storage->ReadBool("ClearAliases", ClearAliases);
     UnsetNationalVars = Storage->ReadBool("UnsetNationalVars", UnsetNationalVars);
-    AliasGroupList = Storage->ReadBool("AliasGroupList", AliasGroupList);
+    ListingCommand = Storage->ReadString("ListingCommand",
+      Storage->ReadBool("AliasGroupList", false) ? AnsiString("ls -gla") : ListingCommand);
     IgnoreLsWarnings = Storage->ReadBool("IgnoreLsWarnings", IgnoreLsWarnings);
     SCPLsFullTime = TAutoSwitch(Storage->ReadInteger("SCPLsFullTime", SCPLsFullTime));
     Scp1Compatibility = Storage->ReadBool("Scp1Compatibility", Scp1Compatibility);
@@ -357,12 +404,13 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     DeleteToRecycleBin = Storage->ReadBool("DeleteToRecycleBin", DeleteToRecycleBin);
     OverwrittenToRecycleBin = Storage->ReadBool("OverwrittenToRecycleBin", OverwrittenToRecycleBin);
     RecycleBinPath = Storage->ReadString("RecycleBinPath", RecycleBinPath);
+    PostLoginCommands = Storage->ReadString("PostLoginCommands", PostLoginCommands);
 
     ReturnVar = Storage->ReadString("ReturnVar", ReturnVar);
     LookupUserGroups = Storage->ReadBool("LookupUserGroups", LookupUserGroups);
     EOLType = (TEOLType)Storage->ReadInteger("EOLType", EOLType);
+    Utf = TAutoSwitch(Storage->ReadInteger("Utf", Storage->ReadInteger("SFTPUtfBug", Utf)));
 
-    // new in 53b
     TcpNoDelay = Storage->ReadBool("TcpNoDelay", TcpNoDelay);
 
     ProxyMethod = (TProxyMethod)Storage->ReadInteger("ProxyMethod", -1);
@@ -400,7 +448,14 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
       // load encrypted password
       FProxyPassword = Storage->ReadString("ProxyPasswordEnc", FProxyPassword);
     }
-    ProxyTelnetCommand = Storage->ReadStringRaw("ProxyTelnetCommand", ProxyTelnetCommand);
+    if (ProxyMethod == pmCmd)
+    {
+      ProxyLocalCommand = Storage->ReadStringRaw("ProxyTelnetCommand", ProxyLocalCommand);
+    }
+    else
+    {
+      ProxyTelnetCommand = Storage->ReadStringRaw("ProxyTelnetCommand", ProxyTelnetCommand);
+    }
     ProxyDNS = TAutoSwitch((Storage->ReadInteger("ProxyDNS", (ProxyDNS + 2) % 3) + 1) % 3);
     ProxyLocalhost = Storage->ReadBool("ProxyLocalhost", ProxyLocalhost);
 
@@ -423,10 +478,10 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
         Bug[sbHMAC2] = asOn;
     }
 
+    SftpServer = Storage->ReadString("SftpServer", SftpServer);
     #define READ_SFTP_BUG(BUG) \
       SFTPBug[sb##BUG] = TAutoSwitch(Storage->ReadInteger("SFTP" #BUG "Bug", SFTPBug[sb##BUG]));
     READ_SFTP_BUG(Symlink);
-    READ_SFTP_BUG(Utf);
     READ_SFTP_BUG(SignedTS);
     #undef READ_SFTP_BUG
 
@@ -435,7 +490,6 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 
     Color = Storage->ReadInteger("Color", Color);
 
-    // read only (used only on Import from Putty dialog)
     ProtocolStr = Storage->ReadString("Protocol", ProtocolStr);
 
     Tunnel = Storage->ReadBool("Tunnel", Tunnel);
@@ -522,20 +576,44 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
     WRITE_DATA_EX(Integer, "PingInterval", PingInterval / 60, );
     WRITE_DATA_EX(Integer, "PingIntervalSecs", PingInterval % 60, );
     Storage->DeleteValue("PingIntervalSec"); // obsolete
-    // store PingType always as it does not have fixed default
-    Storage->WriteInteger("PingType", PingType);
+    // when PingInterval is stored always store PingType not to attempt to
+    // deduce PingType from PingInterval (backward compatibility with pre 3.5)
+    if (((Default != NULL) && (PingType != Default->PingType)) ||
+        Storage->ValueExists("PingInterval"))
+    {
+      Storage->WriteInteger("PingType", PingType);
+    }
+    else
+    {
+      Storage->DeleteValue("PingType");
+    }
     WRITE_DATA(Integer, Timeout);
+    WRITE_DATA(Bool, TryAgent);
     WRITE_DATA(Bool, AgentFwd);
     WRITE_DATA(Bool, AuthTIS);
     WRITE_DATA(Bool, AuthKI);
     WRITE_DATA(Bool, AuthKIPassword);
+
     WRITE_DATA(Bool, AuthGSSAPI);
     WRITE_DATA(Bool, GSSAPIFwdTGT);
     WRITE_DATA(String, GSSAPIServerRealm);
+    WRITE_DATA(Bool, TryGSSKEX);
+    WRITE_DATA(Bool, UserNameFromEnvironment);
+    WRITE_DATA(Bool, GSSAPIServerChoosesUserName);
+    WRITE_DATA(Bool, GSSAPITrustDNS);
+    if (PuttyExport)
+    {
+      // duplicate kerberos setting with keys of the vintela quest putty
+      WRITE_DATA_EX(Bool, "AuthSSPI", AuthGSSAPI, );
+      WRITE_DATA_EX(Bool, "SSPIFwdTGT", GSSAPIFwdTGT, );
+      WRITE_DATA_EX(String, "KerbPrincipal", GSSAPIServerRealm, );
+    }
+
     WRITE_DATA(Bool, ChangeUsername);
     WRITE_DATA(Bool, Compression);
     WRITE_DATA(Integer, SshProt);
     WRITE_DATA(Bool, Ssh2DES);
+    WRITE_DATA(Bool, SshNoUserAuth);
     WRITE_DATA_EX(String, "Cipher", CipherList, );
     WRITE_DATA_EX(String, "KEX", KexList, );
     WRITE_DATA(Integer, AddressFamily);
@@ -571,7 +649,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(String, Shell);
       WRITE_DATA(Bool, ClearAliases);
       WRITE_DATA(Bool, UnsetNationalVars);
-      WRITE_DATA(Bool, AliasGroupList);
+      WRITE_DATA(String, ListingCommand);
       WRITE_DATA(Bool, IgnoreLsWarnings);
       WRITE_DATA(Integer, SCPLsFullTime);
       WRITE_DATA(Bool, Scp1Compatibility);
@@ -579,10 +657,13 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Bool, DeleteToRecycleBin);
       WRITE_DATA(Bool, OverwrittenToRecycleBin);
       WRITE_DATA(String, RecycleBinPath);
+      WRITE_DATA(String, PostLoginCommands);
 
       WRITE_DATA(String, ReturnVar);
       WRITE_DATA(Bool, LookupUserGroups);
       WRITE_DATA(Integer, EOLType);
+      Storage->DeleteValue("SFTPUtfBug");
+      WRITE_DATA(Integer, Utf);
     }
 
     WRITE_DATA(Integer, ProxyMethod);
@@ -640,7 +721,14 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       }
       Storage->DeleteValue("ProxyPassword");
     }
-    WRITE_DATA(StringRaw, ProxyTelnetCommand);
+    if (ProxyMethod == pmCmd)
+    {
+      WRITE_DATA_EX(StringRaw, "ProxyTelnetCommand", ProxyLocalCommand, );
+    }
+    else
+    {
+      WRITE_DATA(StringRaw, ProxyTelnetCommand);
+    }
     #define WRITE_DATA_CONV_FUNC(X) (((X) + 2) % 3)
     WRITE_DATA_CONV(Integer, "ProxyDNS", ProxyDNS);
     #undef WRITE_DATA_CONV_FUNC
@@ -660,6 +748,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
     #undef WRITE_DATA_CONV_FUNC
 
     Storage->DeleteValue("BuggyMAC");
+    Storage->DeleteValue("AliasGroupList");
 
     if (PuttyExport)
     {
@@ -668,9 +757,10 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
 
     if (!PuttyExport)
     {
+      WRITE_DATA(String, SftpServer);
+
       #define WRITE_SFTP_BUG(BUG) WRITE_DATA_EX(Integer, "SFTP" #BUG "Bug", SFTPBug[sb##BUG], );
       WRITE_SFTP_BUG(Symlink);
-      WRITE_SFTP_BUG(Utf);
       WRITE_SFTP_BUG(SignedTS);
       #undef WRITE_SFTP_BUG
 
@@ -865,6 +955,28 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
   return Result;
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::ParseOptions(TOptions * Options)
+{
+  AnsiString Value;
+  if (Options->FindSwitch("privatekey", Value))
+  {
+    PublicKeyFile = Value;
+  }
+  if (Options->FindSwitch("timeout", Value))
+  {
+    Timeout = StrToInt(Value);
+  }
+  if (Options->FindSwitch("hostkey", Value))
+  {
+    HostKey = Value;
+  }
+  if (Options->FindSwitch("passive", Value))
+  {
+    FtpPasvMode = (StrToIntDef(Value, 1) != 0);
+  }
+  return true;
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::ConfigureTunnel(int APortNumber)
 {
   FOrigHostName = HostName;
@@ -884,11 +996,19 @@ void __fastcall TSessionData::RollbackTunnel()
   ProxyMethod = FOrigProxyMethod;
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::ValidatePath(const AnsiString Path)
+{
+  if (Path.LastDelimiter(FInvalidChars) > 0)
+  {
+    throw Exception(FMTLOAD(ITEM_NAME_INVALID, (Path, FInvalidChars)));
+  }
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::ValidateName(const AnsiString Name)
 {
-  if (Name.LastDelimiter(FInvalidChars) > 0)
+  if (Name.LastDelimiter(FInvalidChars + "/") > 0)
   {
-    throw Exception(FMTLOAD(ITEM_NAME_INVALID, (Name, FInvalidChars)));
+    throw Exception(FMTLOAD(ITEM_NAME_INVALID, (Name, FInvalidChars + "/")));
   }
 }
 //---------------------------------------------------------------------
@@ -943,14 +1063,19 @@ void __fastcall TSessionData::SetShell(AnsiString value)
   SET_SESSION_PROPERTY(Shell);
 }
 //---------------------------------------------------------------------------
+void __fastcall TSessionData::SetSftpServer(AnsiString value)
+{
+  SET_SESSION_PROPERTY(SftpServer);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSessionData::SetClearAliases(bool value)
 {
   SET_SESSION_PROPERTY(ClearAliases);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSessionData::SetAliasGroupList(bool value)
+void __fastcall TSessionData::SetListingCommand(AnsiString value)
 {
-  SET_SESSION_PROPERTY(AliasGroupList);
+  SET_SESSION_PROPERTY(ListingCommand);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionData::SetIgnoreLsWarnings(bool value)
@@ -992,6 +1117,11 @@ void __fastcall TSessionData::SetPingInterval(int value)
   SET_SESSION_PROPERTY(PingInterval);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetTryAgent(bool value)
+{
+  SET_SESSION_PROPERTY(TryAgent);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetAgentFwd(bool value)
 {
   SET_SESSION_PROPERTY(AgentFwd);
@@ -1027,6 +1157,26 @@ void __fastcall TSessionData::SetGSSAPIServerRealm(AnsiString value)
   SET_SESSION_PROPERTY(GSSAPIServerRealm);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetTryGSSKEX(bool value)
+{
+  SET_SESSION_PROPERTY(TryGSSKEX);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetUserNameFromEnvironment(bool value)
+{
+  SET_SESSION_PROPERTY(UserNameFromEnvironment);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetGSSAPIServerChoosesUserName(bool value)
+{
+  SET_SESSION_PROPERTY(GSSAPIServerChoosesUserName);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetGSSAPITrustDNS(bool value)
+{
+  SET_SESSION_PROPERTY(GSSAPITrustDNS);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetChangeUsername(bool value)
 {
   SET_SESSION_PROPERTY(ChangeUsername);
@@ -1045,6 +1195,11 @@ void __fastcall TSessionData::SetSshProt(TSshProt value)
 void __fastcall TSessionData::SetSsh2DES(bool value)
 {
   SET_SESSION_PROPERTY(Ssh2DES);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetSshNoUserAuth(bool value)
+{
+  SET_SESSION_PROPERTY(SshNoUserAuth);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetSshProtStr()
@@ -1193,6 +1348,11 @@ void __fastcall TSessionData::SetTimeout(int value)
   SET_SESSION_PROPERTY(Timeout);
 }
 //---------------------------------------------------------------------------
+void __fastcall TSessionData::SetProtocol(TProtocol value)
+{
+  SET_SESSION_PROPERTY(Protocol);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSessionData::SetFSProtocol(TFSProtocol value)
 {
   SET_SESSION_PROPERTY(FSProtocol);
@@ -1295,6 +1455,56 @@ AnsiString __fastcall TSessionData::GetSessionName()
   }
 }
 //---------------------------------------------------------------------
+AnsiString __fastcall TSessionData::GetSessionUrl()
+{
+  AnsiString Url;
+  if (!Name.IsEmpty() && !TNamedObjectList::IsHidden(this) &&
+      (Name != DefaultSessionName))
+  {
+    Url = Name;
+  }
+  else
+  {
+    switch (FSProtocol)
+    {
+      case fsSCPonly:
+        Url = "scp://";
+        break;
+
+      default:
+        assert(false);
+        // fallback
+      case fsSFTP:
+      case fsSFTPonly:
+      case fsExternalSFTP:
+        Url = "sftp://";
+        break;
+
+      case fsExternalSSH:
+        Url = "ssh://";
+        break;
+
+      case fsFTP:
+        Url = "ftp://";
+        break;
+    }
+
+    if (!HostName.IsEmpty() && !UserName.IsEmpty())
+    {
+      Url += FORMAT("%s@%s", (UserName, HostName));
+    }
+    else if (!HostName.IsEmpty())
+    {
+      Url += HostName;
+    }
+    else
+    {
+      Url = "";
+    }
+  }
+  return Url;
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetTimeDifference(TDateTime value)
 {
   SET_SESSION_PROPERTY(TimeDifference);
@@ -1354,6 +1564,11 @@ void __fastcall TSessionData::SetRecycleBinPath(AnsiString value)
 {
   SET_SESSION_PROPERTY(RecycleBinPath);
 }
+//---------------------------------------------------------------------------
+void __fastcall TSessionData::SetPostLoginCommands(AnsiString value)
+{
+  SET_SESSION_PROPERTY(PostLoginCommands);
+}
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetLockInHome(bool value)
 {
@@ -1409,6 +1624,11 @@ AnsiString __fastcall TSessionData::GetProxyPassword() const
 void __fastcall TSessionData::SetProxyTelnetCommand(AnsiString value)
 {
   SET_SESSION_PROPERTY(ProxyTelnetCommand);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetProxyLocalCommand(AnsiString value)
+{
+  SET_SESSION_PROPERTY(ProxyLocalCommand);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetProxyDNS(TAutoSwitch value)
@@ -1588,9 +1808,25 @@ void __fastcall TSessionData::SetFtpPingInterval(int value)
   SET_SESSION_PROPERTY(FtpPingInterval);
 }
 //---------------------------------------------------------------------------
+TDateTime __fastcall TSessionData::GetFtpPingIntervalDT()
+{
+  return TDateTime((unsigned short)(FtpPingInterval/60/60),
+    (unsigned short)(FtpPingInterval/60%60), (unsigned short)(FtpPingInterval%60), 0);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSessionData::SetFtpPingType(TPingType value)
 {
   SET_SESSION_PROPERTY(FtpPingType);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetUtf(TAutoSwitch value)
+{
+  SET_SESSION_PROPERTY(Utf);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetHostKey(AnsiString value)
+{
+  SET_SESSION_PROPERTY(HostKey);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetInfoTip()
@@ -1637,7 +1873,7 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
       bool ValidName = true;
       try
       {
-        TSessionData::ValidateName(SessionName);
+        TSessionData::ValidatePath(SessionName);
       }
       catch(...)
       {
@@ -1925,7 +2161,7 @@ void __fastcall TStoredSessionList::ImportHostKeys(const AnsiString TargetKey,
 }
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
-  bool & DefaultsOnly, int Params, AnsiString * FileName,
+  TOptions * Options, bool & DefaultsOnly, int Params, AnsiString * FileName,
   bool * AProtocolDefined)
 {
   bool ProtocolDefined = false;
@@ -2023,6 +2259,16 @@ TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
     if (ProtocolDefined)
     {
       Data->FSProtocol = Protocol;
+    }
+
+    if (Options != NULL)
+    {
+      // we deliberatelly do set defaultonly to false, in presence of any option,
+      // as the option should not make session "connectable"
+      if (!Data->ParseOptions(Options))
+      {
+        Abort();
+      }
     }
   }
   catch(...)

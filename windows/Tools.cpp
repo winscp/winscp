@@ -3,6 +3,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include <Consts.hpp>
 #include <shlobj.h>
 #include <stdio.h>
 
@@ -10,6 +11,7 @@
 #include <TextsWin.h>
 
 #include "GUITools.h"
+#include "VCLCommon.h"
 #include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -79,11 +81,13 @@ void __fastcall RestoreForm(AnsiString Data, TForm * Form)
   assert(Form);
   if (!Data.IsEmpty())
   {
+    TMonitor * Monitor = FormMonitor(Form);
+
     TRect Bounds = Form->BoundsRect;
     int Left = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Left);
     int Top = StrToIntDef(::CutToChar(Data, ';', true), Bounds.Top);
-    bool Center = (Left == -1) && (Top == -1);
-    if (!Center)
+    bool DefaultPos = (Left == -1) && (Top == -1);
+    if (!DefaultPos)
     {
       Bounds.Left = Left;
       Bounds.Top = Top;
@@ -99,28 +103,62 @@ void __fastcall RestoreForm(AnsiString Data, TForm * Form)
     Form->WindowState = State;
     if (State == wsNormal)
     {
-      if (Bounds.Width() > Screen->Width) Bounds.Right -= (Bounds.Width() - Screen->Width);
-      if (Bounds.Height() > Screen->Height) Bounds.Bottom -= (Bounds.Height() - Screen->Height);
-      #define POS_RANGE(x, prop) (x < 0) || (x > Screen->prop)
-      if (Center)
+      // move to the target monitor
+      OffsetRect(Bounds, Monitor->Left, Monitor->Top);
+
+      // reduce window size to that of monitor size
+      // (this does not cut window into monitor!)
+      if (Bounds.Width() > Monitor->WorkareaRect.Width())
       {
-        Form->Position = poMainFormCenter;
-        Form->Width = Bounds.Width();
-        Form->Height = Bounds.Height();
+        Bounds.Right -= (Bounds.Width() - Monitor->WorkareaRect.Width());
       }
-      else if (POS_RANGE(Bounds.Left, Width - 20) ||
-               POS_RANGE(Bounds.Top, Height - 40))
+      if (Bounds.Height() > Monitor->WorkareaRect.Height())
       {
-        Form->Position = poDefaultPosOnly;
-        Form->Width = Bounds.Width();
-        Form->Height = Bounds.Height();
+        Bounds.Bottom -= (Bounds.Height() - Monitor->WorkareaRect.Height());
+      }
+
+      if (DefaultPos ||
+          ((Bounds.Left < Monitor->Left) ||
+           (Bounds.Left > Monitor->Left + Monitor->WorkareaRect.Width() - 20) ||
+           (Bounds.Top < Monitor->Top) ||
+           (Bounds.Top > Monitor->Top + Monitor->WorkareaRect.Height() - 20)))
+      {
+        if (Monitor->Primary)
+        {
+          if ((Application->MainForm == NULL) || (Application->MainForm == Form))
+          {
+            Form->Position = poDefaultPosOnly;
+          }
+          else
+          {
+            Form->Position = poMainFormCenter;
+          }
+          Form->Width = Bounds.Width();
+          Form->Height = Bounds.Height();
+        }
+        else
+        {
+          // when positioning on non-primary monitor, we need
+          // to handle that ourselves, so place window to center
+          Form->SetBounds(Monitor->Left + ((Monitor->Width - Bounds.Width()) / 2),
+            Monitor->Top + ((Monitor->Height - Bounds.Height()) / 2),
+            Bounds.Width(), Bounds.Height());
+          Form->Position = poDesigned;
+        }
       }
       else
       {
         Form->Position = poDesigned;
         Form->BoundsRect = Bounds;
       }
-      #undef POS_RANGE
+    }
+    else if (State == wsMaximized)
+    {
+      Form->Position = poDesigned;
+
+      Bounds = Form->BoundsRect;
+      OffsetRect(Bounds, Monitor->Left, Monitor->Top);
+      Form->BoundsRect = Bounds;
     }
   }
   else if (Form->Position == poDesigned)
@@ -132,8 +170,10 @@ void __fastcall RestoreForm(AnsiString Data, TForm * Form)
 AnsiString __fastcall StoreForm(TCustomForm * Form)
 {
   assert(Form);
-  return FORMAT("%d;%d;%d;%d;%d", ((int)Form->BoundsRect.Left, (int)Form->BoundsRect.Top,
-    (int)Form->BoundsRect.Right, (int)Form->BoundsRect.Bottom,
+  TRect Bounds = Form->BoundsRect;
+  OffsetRect(Bounds, -Form->Monitor->Left, -Form->Monitor->Top);
+  return FORMAT("%d;%d;%d;%d;%d", ((int)Bounds.Left, (int)Bounds.Top,
+    (int)Bounds.Right, (int)Bounds.Bottom,
     // we do not want WinSCP to start minimized next time (we cannot handle that anyway).
     // note that WindowState is wsNormal when window in minimized for some reason.
     // actually it is wsMinimized only when minimized by MSVDM
@@ -318,19 +358,18 @@ bool __fastcall TextFromClipboard(AnsiString & Text)
 static bool __fastcall GetResource(
   const AnsiString ResName, void *& Content, unsigned long & Size)
 {
-  HRSRC Resource;
-  Resource = FindResourceEx(NULL, RT_RCDATA, ResName.c_str(),
+  HRSRC Resource = FindResourceEx(HInstance, RT_RCDATA, ResName.c_str(),
     MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
   bool Result = (Resource != NULL);
   if (Result)
   {
-    Size = SizeofResource(NULL, Resource);
+    Size = SizeofResource(HInstance, Resource);
     if (!Size)
     {
       throw Exception(FORMAT("Cannot get size of resource %s", (ResName)));
     }
 
-    Content = LoadResource(NULL, Resource);
+    Content = LoadResource(HInstance, Resource);
     if (!Content)
     {
       throw Exception(FORMAT("Cannot read resource %s", (ResName)));
@@ -386,7 +425,7 @@ AnsiString __fastcall ReadResource(const AnsiString ResName)
 //---------------------------------------------------------------------------
 template <class T>
 void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand)
+  AnsiString Filter, bool FileNameCommand, bool Escape)
 {
   AnsiString Executable, Program, Params, Dir;
   Executable = Control->Text;
@@ -399,6 +438,10 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
   TOpenDialog * FileDialog = new TOpenDialog(Application);
   try
   {
+    if (Escape)
+    {
+      Program = StringReplace(Program, "\\\\", "\\", TReplaceFlags() << rfReplaceAll);
+    }
     AnsiString ExpandedProgram = ExpandEnvironmentVariables(Program);
     FileDialog->FileName = ExpandedProgram;
     FileDialog->Filter = Filter;
@@ -414,6 +457,10 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
         if (!CompareFileName(ExpandedProgram, FileDialog->FileName))
         {
           Program = FileDialog->FileName;
+          if (Escape)
+          {
+            Program = StringReplace(Program, "\\", "\\\\", TReplaceFlags() << rfReplaceAll);
+          }
         }
         Control->Text = FormatCommand(Program, Params);
       }
@@ -435,15 +482,71 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
 }
 //---------------------------------------------------------------------------
 void __fastcall BrowseForExecutable(TEdit * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand)
+  AnsiString Filter, bool FileNameCommand, bool Escape)
 {
-  BrowseForExecutableT(Control, Title, Filter, FileNameCommand);
+  BrowseForExecutableT(Control, Title, Filter, FileNameCommand, Escape);
 }
 //---------------------------------------------------------------------------
 void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand)
+  AnsiString Filter, bool FileNameCommand, bool Escape)
 {
-  BrowseForExecutableT(Control, Title, Filter, FileNameCommand);
+  BrowseForExecutableT(Control, Title, Filter, FileNameCommand, Escape);
+}
+//---------------------------------------------------------------------------
+void __fastcall CopyToClipboard(AnsiString Text)
+{
+  HANDLE Data;
+  void * DataPtr;
+
+  if (OpenClipboard(0))
+  {
+    try
+    {
+      Data = GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, Text.Length() + 1);
+      try
+      {
+        DataPtr = GlobalLock(Data);
+        try
+        {
+          memcpy(DataPtr, Text.c_str(), Text.Length() + 1);
+          EmptyClipboard();
+          SetClipboardData(CF_TEXT, Data);
+        }
+        __finally
+        {
+          GlobalUnlock(Data);
+        }
+      }
+      catch(...)
+      {
+        GlobalFree(Data);
+        throw;
+      }
+    }
+    __finally
+    {
+      CloseClipboard();
+    }
+  }
+  else
+  {
+    throw Exception(Consts_SCannotOpenClipboard);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall CopyToClipboard(TStrings * Strings)
+{
+  if (Strings->Count > 0)
+  {
+    if (Strings->Count == 1)
+    {
+      CopyToClipboard(Strings->Strings[0]);
+    }
+    else
+    {
+      CopyToClipboard(Strings->Text);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall IsWin64()
@@ -475,4 +578,136 @@ bool __fastcall IsWin64()
   }
 
   return (Result > 0);
+}
+//---------------------------------------------------------------------------
+// Code from http://gentoo.osuosl.org/distfiles/cl331.zip/io/
+
+// The autoproxy functions were only documented in WinHTTP 5.1, so we have to
+//   provide the necessary defines and structures ourselves
+#ifndef WINHTTP_ACCESS_TYPE_DEFAULT_PROXY
+
+#define HINTERNET HANDLE
+
+typedef struct
+{
+  WORD dwAccessType;
+  LPWSTR lpszProxy;
+  LPWSTR lpszProxyBypass;
+} WINHTTP_PROXY_INFO;
+
+typedef struct {
+  BOOL fAutoDetect;
+  LPWSTR lpszAutoConfigUrl;
+  LPWSTR lpszProxy;
+  LPWSTR lpszProxyBypass;
+} WINHTTP_CURRENT_USER_IE_PROXY_CONFIG;
+
+#endif /* WinHTTP 5.1 defines and structures */
+
+typedef BOOL (*WINHTTPGETDEFAULTPROXYCONFIGURATION)(WINHTTP_PROXY_INFO * pProxyInfo);
+typedef BOOL (*WINHTTPGETIEPROXYCONFIGFORCURRENTUSER)(
+  WINHTTP_CURRENT_USER_IE_PROXY_CONFIG * pProxyConfig);
+//---------------------------------------------------------------------------
+bool __fastcall AutodetectProxyUrl(AnsiString & Proxy)
+{
+  static HMODULE WinHTTP = NULL;
+  static WINHTTPGETDEFAULTPROXYCONFIGURATION WinHttpGetDefaultProxyConfiguration = NULL;
+  static WINHTTPGETIEPROXYCONFIGFORCURRENTUSER WinHttpGetIEProxyConfigForCurrentUser = NULL;
+
+  bool Result = true;
+
+  /* Under Win2K SP3, XP and 2003 (or at least Windows versions with
+     WinHTTP 5.1 installed in some way, it officially shipped with the
+     versions mentioned earlier) we can use WinHTTP AutoProxy support,
+     which implements the Web Proxy Auto-Discovery (WPAD) protocol from
+     an internet draft that expired in May 2001.  Under older versions of
+     Windows we have to use the WinINet InternetGetProxyInfo, however this
+     consists of a ghastly set of kludges that were never meant to be
+     exposed to the outside world (they were only crowbarred out of MS
+     as part of the DoJ consent decree), and user experience with them is
+     that they don't really work except in the one special way in which
+     MS-internal code calls them.  Since we don't know what this is, we
+     use the WinHTTP functions instead */
+  if (WinHTTP == NULL)
+  {
+    if ((WinHTTP = LoadLibrary("WinHTTP.dll")) == NULL)
+    {
+      Result = false;
+    }
+    else
+    {
+      WinHttpGetDefaultProxyConfiguration = (WINHTTPGETDEFAULTPROXYCONFIGURATION)
+        GetProcAddress(WinHTTP, "WinHttpGetDefaultProxyConfiguration");
+      WinHttpGetIEProxyConfigForCurrentUser = (WINHTTPGETIEPROXYCONFIGFORCURRENTUSER)
+        GetProcAddress(WinHTTP, "WinHttpGetIEProxyConfigForCurrentUser");
+      if ((WinHttpGetDefaultProxyConfiguration == NULL) ||
+          (WinHttpGetIEProxyConfigForCurrentUser == NULL))
+      {
+        FreeLibrary(WinHTTP);
+        Result = false;
+      }
+    }
+  }
+
+  if (Result)
+  {
+    Result = false;
+
+    /* Forst we try for proxy info direct from the registry if
+       it's available. */
+    if (!Result)
+    {
+      WINHTTP_PROXY_INFO ProxyInfo;
+      memset(&ProxyInfo, 0, sizeof(ProxyInfo));
+      if ((WinHttpGetDefaultProxyConfiguration != NULL) &&
+          WinHttpGetDefaultProxyConfiguration(&ProxyInfo))
+      {
+        if (ProxyInfo.lpszProxy != NULL)
+        {
+          Proxy = ProxyInfo.lpszProxy;
+          GlobalFree(ProxyInfo.lpszProxy);
+          Result = true;
+        }
+        if (ProxyInfo.lpszProxyBypass != NULL)
+        {
+          GlobalFree(ProxyInfo.lpszProxyBypass);
+        }
+      }
+    }
+
+    /* The next fallback is to get the proxy info from MSIE.  This is also
+       usually much quicker than WinHttpGetProxyForUrl(), although sometimes
+       it seems to fall back to that, based on the longish delay involved.
+       Another issue with this is that it won't work in a service process
+       that isn't impersonating an interactive user (since there isn't a
+       current user), but in that case we just fall back to
+       WinHttpGetProxyForUrl() */
+    if (!Result)
+    {
+      WINHTTP_CURRENT_USER_IE_PROXY_CONFIG IEProxyInfo;
+      memset(&IEProxyInfo, 0, sizeof(IEProxyInfo));
+      if ((WinHttpGetIEProxyConfigForCurrentUser != NULL) &&
+          WinHttpGetIEProxyConfigForCurrentUser(&IEProxyInfo))
+      {
+        if (IEProxyInfo.lpszProxy != NULL)
+        {
+          Proxy = IEProxyInfo.lpszProxy;
+          GlobalFree(IEProxyInfo.lpszProxy);
+          Result = true;
+        }
+        if (IEProxyInfo.lpszAutoConfigUrl != NULL)
+        {
+          GlobalFree(IEProxyInfo.lpszAutoConfigUrl);
+        }
+        if (IEProxyInfo.lpszProxyBypass != NULL)
+        {
+          GlobalFree(IEProxyInfo.lpszProxyBypass);
+        }
+      }
+    }
+
+    // We can also use WinHttpGetProxyForUrl, but it is lengthy
+    // See the source address of the code for example
+  }
+  return Result;
 }

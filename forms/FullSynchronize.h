@@ -94,7 +94,7 @@ public:
   __property bool SaveMode = { read = FSaveMode, write = FSaveMode };
   __property int Options = { read = FOptions, write = SetOptions };
   __property TUsableCopyParamAttrs CopyParamAttrs = { read = FCopyParamAttrs, write = FCopyParamAttrs };
-  __property TCopyParamType CopyParams = { read = FCopyParams, write = SetCopyParams };
+  __property TCopyParamType CopyParams = { read = GetCopyParams, write = SetCopyParams };
 
 protected:
   void __fastcall UpdateControls();

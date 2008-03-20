@@ -39,6 +39,7 @@ void __fastcall AnsiToOem(AnsiString & Str);
 AnsiString ExceptionLogString(Exception *E);
 bool IsDots(const AnsiString Str);
 AnsiString __fastcall SystemTemporaryDirectory();
+AnsiString __fastcall GetShellFolderPath(int CSIdl);
 AnsiString __fastcall StripPathQuotes(const AnsiString Path);
 AnsiString __fastcall AddPathQuotes(AnsiString Path);
 void __fastcall SplitCommand(AnsiString Command, AnsiString &Program,
@@ -56,6 +57,7 @@ AnsiString __fastcall CharToHex(char Ch);
 AnsiString __fastcall StrToHex(const AnsiString Str);
 AnsiString __fastcall HexToStr(const AnsiString Hex);
 unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars = 0);
+char __fastcall HexToChar(const AnsiString Hex);
 AnsiString __fastcall DecodeUrlChars(AnsiString S);
 AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore = "");
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
@@ -64,6 +66,8 @@ int __fastcall AbortAnswer(int Answers);
 int __fastcall ContinueAnswer(int Answers);
 AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength);
 AnsiString __fastcall LoadStrPart(int Ident, int Part);
+AnsiString __fastcall EscapeHotkey(const AnsiString & Caption);
+bool __fastcall CutToken(AnsiString & Str, AnsiString & Token);
 struct TPasLibModule;
 TPasLibModule * __fastcall FindModule(void * Instance);
 //---------------------------------------------------------------------------

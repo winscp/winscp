@@ -11,6 +11,7 @@
 #include "TextsCore.h"
 #include "Interface.h"
 #include "CoreMain.h"
+#include <shfolder.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -21,16 +22,23 @@ __fastcall TConfiguration::TConfiguration()
   FStorage = stDetect;
   FDontSave = false;
   FApplicationInfo = NULL;
-  FInitialized = false;
-}
-//---------------------------------------------------------------------------
-void __fastcall TConfiguration::Initialize()
-{
-  AnsiString ARandomSeedFile = seedpath_ptr();
-  FDefaultRandomSeedFile = StringReplace(ExtractFilePath(ARandomSeedFile) +
-    "winscp" + ExtractFileExt(ARandomSeedFile), "\\\\", "\\",
-    TReplaceFlags() << rfReplaceAll);
-  FInitialized = true;
+
+  char Buf[10];
+  AnsiString RandomSeedPath;
+  if (GetEnvironmentVariable("APPDATA", Buf, sizeof(Buf)) > 0)
+  {
+    RandomSeedPath = "%APPDATA%";
+  }
+  else
+  {
+    RandomSeedPath = GetShellFolderPath(CSIDL_LOCAL_APPDATA);
+    if (RandomSeedPath.IsEmpty())
+    {
+      RandomSeedPath = GetShellFolderPath(CSIDL_APPDATA);
+    }
+  }
+
+  FDefaultRandomSeedFile = IncludeTrailingBackslash(RandomSeedPath) + "winscp.rnd";
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::Default()
@@ -44,8 +52,9 @@ void __fastcall TConfiguration::Default()
   FAutoReadDirectoryAfterOp = true;
   FSessionReopenAuto = 5000;
   FSessionReopenBackground = 2000;
-  FTunnelLocalPortNumberLow = 6000;
-  FTunnelLocalPortNumberHigh = 6100;
+  FTunnelLocalPortNumberLow = 50000;
+  FTunnelLocalPortNumberHigh = 50099;
+  FCacheDirectoryChangesMaxSize = 100;
   FShowFtpWelcomeMessage = false;
 
   FLogging = false;
@@ -98,6 +107,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
     KEY(Integer,  SessionReopenBackground); \
     KEY(Integer,  TunnelLocalPortNumberLow); \
     KEY(Integer,  TunnelLocalPortNumberHigh); \
+    KEY(Integer,  CacheDirectoryChangesMaxSize); \
     KEY(Bool,     ShowFtpWelcomeMessage); \
   ); \
   BLOCK("Logging", CANCREATE, \
@@ -476,10 +486,12 @@ void __fastcall TConfiguration::CleanupRandomSeedFile()
   try
   {
     DontSaveRandomSeed();
-    AnsiString ExpandedRandomSeedFile = ExpandEnvironmentVariables(RandomSeedFile);
-    if (FileExists(ExpandedRandomSeedFile))
+    if (FileExists(RandomSeedFileName))
     {
-      if (!DeleteFile(ExpandedRandomSeedFile)) Abort();
+      if (!DeleteFile(RandomSeedFileName))
+      {
+        RaiseLastOSError();
+      }
     }
   }
   catch (Exception &E)
@@ -494,7 +506,10 @@ void __fastcall TConfiguration::CleanupIniFile()
   {
     if (FileExists(IniFileStorageName))
     {
-      if (!DeleteFile(IniFileStorageName)) Abort();
+      if (!DeleteFile(IniFileStorageName))
+      {
+        RaiseLastOSError();
+      }
     }
     if (Storage == stIniFile)
     {
@@ -599,11 +614,12 @@ AnsiString __fastcall TConfiguration::GetVersionStr()
   TGuard Guard(FCriticalSection);
   try
   {
-    return FmtLoadStr(VERSION, ARRAYOFCONST((
-      HIWORD(FixedApplicationInfo->dwFileVersionMS),
-      LOWORD(FixedApplicationInfo->dwFileVersionMS),
-      HIWORD(FixedApplicationInfo->dwFileVersionLS),
-      LOWORD(FixedApplicationInfo->dwFileVersionLS))));
+    TVSFixedFileInfo * Info = FixedApplicationInfo;
+    return FMTLOAD(VERSION, (
+      HIWORD(Info->dwFileVersionMS),
+      LOWORD(Info->dwFileVersionMS),
+      HIWORD(Info->dwFileVersionLS),
+      LOWORD(Info->dwFileVersionLS)));
   }
   catch (Exception &E)
   {
@@ -616,11 +632,12 @@ AnsiString __fastcall TConfiguration::GetVersion()
   TGuard Guard(FCriticalSection);
   try
   {
+    TVSFixedFileInfo * Info = FixedApplicationInfo;
     AnsiString Result;
     Result = TrimVersion(FORMAT("%d.%d.%d", (
-      HIWORD(FixedApplicationInfo->dwFileVersionMS),
-      LOWORD(FixedApplicationInfo->dwFileVersionMS),
-      HIWORD(FixedApplicationInfo->dwFileVersionLS))));
+      HIWORD(Info->dwFileVersionMS),
+      LOWORD(Info->dwFileVersionMS),
+      HIWORD(Info->dwFileVersionLS))));
     return Result;
   }
   catch (Exception &E)
@@ -768,23 +785,29 @@ void __fastcall TConfiguration::SetRandomSeedFile(AnsiString value)
 {
   if (RandomSeedFile != value)
   {
+    AnsiString PrevRandomSeedFileName = RandomSeedFileName;
+
+    FRandomSeedFile = value;
+
     // never allow empty seed file to avoid Putty trying to reinitialize the path
-    if (value.Trim().IsEmpty())
+    if (RandomSeedFileName.IsEmpty())
     {
       FRandomSeedFile = FDefaultRandomSeedFile;
     }
-    else
-    {
-      FRandomSeedFile = value;
-    }
 
-    char *seedpath = seedpath_ptr();
-    if (value.Length() >= seedpath_size())
+    if (!PrevRandomSeedFileName.IsEmpty() &&
+        (PrevRandomSeedFileName != RandomSeedFileName) &&
+        FileExists(PrevRandomSeedFileName))
     {
-      value.SetLength(seedpath_size() - 1);
+      // ignore any error
+      DeleteFile(PrevRandomSeedFileName);
     }
-    strcpy(seedpath, StripPathQuotes(ExpandEnvironmentVariables(FRandomSeedFile)).c_str());
   }
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::GetRandomSeedFileName()
+{
+  return StripPathQuotes(ExpandEnvironmentVariables(FRandomSeedFile)).Trim();
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetPuttyRegistryStorageKey(AnsiString value)
@@ -950,6 +973,11 @@ void __fastcall TConfiguration::SetTunnelLocalPortNumberLow(int value)
 void __fastcall TConfiguration::SetTunnelLocalPortNumberHigh(int value)
 {
   SET_CONFIG_PROPERTY(TunnelLocalPortNumberHigh);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetCacheDirectoryChangesMaxSize(int value)
+{
+  SET_CONFIG_PROPERTY(CacheDirectoryChangesMaxSize);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)

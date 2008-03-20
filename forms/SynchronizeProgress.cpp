@@ -51,8 +51,7 @@ __fastcall TSynchronizeProgressForm::~TSynchronizeProgressForm()
 
   if (IsIconic(Application->Handle) && FMinimizedByMe)
   {
-    Application->Restore();
-    Application->BringToFront();
+    ShowNotification(NULL, LoadStr(BALLOON_OPERATION_COMPLETE), qtInformation);
   }
 }
 //---------------------------------------------------------------------------
@@ -109,17 +108,9 @@ void __fastcall TSynchronizeProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::MinimizeButtonClick(
-  TObject * /*Sender*/)
+  TObject * Sender)
 {
-  TNotifyEvent OnMinimize = GetGlobalMinimizeHandler();
-  if (OnMinimize != NULL)
-  {
-    OnMinimize(this);
-  }
-  else
-  {
-    MinimizeApp();
-  }
+  GetGlobalMinimizeHandler()(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeProgressForm::GlobalMinimize(TObject * /*Sender*/)

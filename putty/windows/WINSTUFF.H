@@ -13,12 +13,14 @@
 
 #include "tree234.h"
 
+#ifndef MPEXT
 #include "winhelp.h"
+#endif
 
 struct Filename {
     char path[FILENAME_MAX];
 };
-#define f_open(filename, mode) ( fopen((filename).path, (mode)) )
+#define f_open(filename, mode, isprivate) ( fopen((filename).path, (mode)) )
 
 struct FontSpec {
     char name[64];
@@ -27,8 +29,47 @@ struct FontSpec {
     int charset;
 };
 
+#ifndef CLEARTYPE_QUALITY
+#define CLEARTYPE_QUALITY 5
+#endif
+#define FONT_QUALITY(fq) ( \
+    (fq) == FQ_DEFAULT ? DEFAULT_QUALITY : \
+    (fq) == FQ_ANTIALIASED ? ANTIALIASED_QUALITY : \
+    (fq) == FQ_NONANTIALIASED ? NONANTIALIASED_QUALITY : \
+    CLEARTYPE_QUALITY)
+
+/*
+ * Where we can, we use GetWindowLongPtr and friends because they're
+ * more useful on 64-bit platforms, but they're a relatively recent
+ * innovation, missing from VC++ 6 and older MinGW.  Degrade nicely.
+ * (NB that on some systems, some of these things are available but
+ * not others...)
+ */
+
+#ifndef GCLP_HCURSOR
+/* GetClassLongPtr and friends */
+#undef  GetClassLongPtr
+#define GetClassLongPtr GetClassLong
+#undef  SetClassLongPtr
+#define SetClassLongPtr SetClassLong
+#define GCLP_HCURSOR GCL_HCURSOR
+/* GetWindowLongPtr and friends */
+#undef  GetWindowLongPtr
+#define GetWindowLongPtr GetWindowLong
+#undef  SetWindowLongPtr
+#define SetWindowLongPtr SetWindowLong
+#undef  GWLP_USERDATA
+#define GWLP_USERDATA GWL_USERDATA
+#undef  DWLP_MSGRESULT
+#define DWLP_MSGRESULT DWL_MSGRESULT
+/* Since we've clobbered the above functions, we should clobber the
+ * associated type regardless of whether it's defined. */
+#undef LONG_PTR
+#define LONG_PTR LONG
+#endif
+
 #define BOXFLAGS DLGWINDOWEXTRA
-#define BOXRESULT DLGWINDOWEXTRA + 4
+#define BOXRESULT (DLGWINDOWEXTRA + sizeof(LONG_PTR))
 #define DF_END 0x0001
 
 /*
@@ -58,6 +99,7 @@ typedef struct terminal_tag Terminal;
 #define PUTTY_REG_GPARENT_CHILD "SimonTatham"
 
 #define PUTTY_HELP_FILE "putty.hlp"
+#define PUTTY_CHM_FILE "putty.chm"
 #define PUTTY_HELP_CONTENTS "putty.cnt"
 
 #define GETTICKCOUNT GetTickCount
@@ -81,11 +123,13 @@ GLOBAL HWND logbox;
 GLOBAL HINSTANCE hinst;
 
 /*
- * Details of the help file.
+ * Help file stuff in winhelp.c.
  */
-GLOBAL char *help_path;
-GLOBAL int help_has_contents;
-GLOBAL int requested_help;
+void init_help(void);
+void shutdown_help(void);
+int has_help(void);
+void launch_help(HWND hwnd, const char *topic);
+void quit_help(HWND hwnd);
 
 /*
  * The terminal and logging context are notionally local to the
@@ -95,13 +139,7 @@ GLOBAL int requested_help;
 GLOBAL Terminal *term;
 GLOBAL void *logctx;
 
-/*
- * I've just looked in the windows standard headr files for WM_USER, there
- * are hundreds of flags defined using the form WM_USER+123 so I've 
- * renumbered this NETEVENT value and the two in window.c
- */
-#define WM_XUSER     (WM_USER + 0x2000)
-#define WM_NETEVENT  (WM_XUSER + 5)
+#define WM_NETEVENT  (WM_APP + 5)
 
 /*
  * On Windows, we send MA_2CLK as the only event marking the second
@@ -148,15 +186,6 @@ GLOBAL void *logctx;
 #define TIMING_SYNC_TICKCOUNT
 
 /*
- * `Filename' declaration giving the name of the GSSAPI shared
- * library under Windows. Also GSS_CALLBACK, the function modifier
- * used for functions imported from this library, is defined to
- * the Windows CALLBACK keyword.
- */
-#define GSSAPI_SHLIB { "gssapi32.dll" }
-#define GSS_CALLBACK CALLBACK
-
-/*
  * winnet.c dynamically loads WinSock 2 or WinSock 1 depending on
  * what it can get, which means any WinSock routines used outside
  * that module must be exported from it as function pointers. So
@@ -174,6 +203,8 @@ extern int (WINAPI *p_WSAEnumNetworkEvents)
     (SOCKET s, WSAEVENT hEventObject, LPWSANETWORKEVENTS lpNetworkEvents);
 
 extern int socket_writable(SOCKET skt);
+
+extern void socket_reselect_all(void);
 
 /*
  * Exports from winctrls.c.
@@ -240,7 +271,8 @@ HWND doctl(struct ctlpos *cp, RECT r,
 void bartitle(struct ctlpos *cp, char *name, int id);
 void beginbox(struct ctlpos *cp, char *name, int idbox);
 void endbox(struct ctlpos *cp);
-void multiedit(struct ctlpos *cp, int password, ...);
+void editboxfw(struct ctlpos *cp, int password, char *text,
+	       int staticid, int editid);
 void radioline(struct ctlpos *cp, char *text, int id, int nacross, ...);
 void bareradioline(struct ctlpos *cp, int nacross, ...);
 void radiobig(struct ctlpos *cp, char *text, int id, ...);
@@ -348,7 +380,7 @@ void dp_cleanup(struct dlgparam *dp);
  * Exports from wincfg.c.
  */
 void win_setup_config_box(struct controlbox *b, HWND *hwndp, int has_help,
-			  int midsession);
+			  int midsession, int protocol);
 
 /*
  * Exports from windlg.c.
@@ -381,6 +413,27 @@ struct unicode_data;
 void init_ucs(Config *, struct unicode_data *);
 
 /*
+ * Exports from winhandl.c.
+ */
+#define HANDLE_FLAG_OVERLAPPED 1
+#define HANDLE_FLAG_IGNOREEOF 2
+#define HANDLE_FLAG_UNITBUFFER 4
+struct handle;
+typedef int (*handle_inputfn_t)(struct handle *h, void *data, int len);
+typedef void (*handle_outputfn_t)(struct handle *h, int new_backlog);
+struct handle *handle_input_new(HANDLE handle, handle_inputfn_t gotdata,
+				void *privdata, int flags);
+struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
+				 void *privdata, int flags);
+int handle_write(struct handle *h, const void *data, int len);
+HANDLE *handle_get_events(int *nevents);
+void handle_free(struct handle *h);
+void handle_got_event(HANDLE event);
+void handle_unthrottle(struct handle *h, int backlog);
+int handle_backlog(struct handle *h);
+void *handle_get_privdata(struct handle *h);
+
+/*
  * pageantc.c needs to schedule callbacks for asynchronous agent
  * requests. This has to be done differently in GUI and console, so
  * there's an exported function used for the purpose.
@@ -391,5 +444,10 @@ void init_ucs(Config *, struct unicode_data *);
 void agent_schedule_callback(void (*callback)(void *, void *, int),
 			     void *callback_ctx, void *data, int len);
 #define FLAG_SYNCAGENT 0x1000
+
+/*
+ * Exports from winser.c.
+ */
+extern Backend serial_backend;
 
 #endif

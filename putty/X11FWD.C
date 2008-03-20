@@ -11,46 +11,6 @@
 #include "ssh.h"
 #include "tree234.h"
 
-#define GET_32BIT_LSB_FIRST(cp) \
-  (((unsigned long)(unsigned char)(cp)[0]) | \
-  ((unsigned long)(unsigned char)(cp)[1] << 8) | \
-  ((unsigned long)(unsigned char)(cp)[2] << 16) | \
-  ((unsigned long)(unsigned char)(cp)[3] << 24))
-
-#define PUT_32BIT_LSB_FIRST(cp, value) ( \
-  (cp)[0] = (char)(value), \
-  (cp)[1] = (char)((value) >> 8), \
-  (cp)[2] = (char)((value) >> 16), \
-  (cp)[3] = (char)((value) >> 24) )
-
-#define GET_16BIT_LSB_FIRST(cp) \
-  (((unsigned long)(unsigned char)(cp)[0]) | \
-  ((unsigned long)(unsigned char)(cp)[1] << 8))
-
-#define PUT_16BIT_LSB_FIRST(cp, value) ( \
-  (cp)[0] = (char)(value), \
-  (cp)[1] = (char)((value) >> 8) )
-
-#define GET_32BIT_MSB_FIRST(cp) \
-  (((unsigned long)(unsigned char)(cp)[0] << 24) | \
-  ((unsigned long)(unsigned char)(cp)[1] << 16) | \
-  ((unsigned long)(unsigned char)(cp)[2] << 8) | \
-  ((unsigned long)(unsigned char)(cp)[3]))
-
-#define PUT_32BIT_MSB_FIRST(cp, value) ( \
-  (cp)[0] = (char)((value) >> 24), \
-  (cp)[1] = (char)((value) >> 16), \
-  (cp)[2] = (char)((value) >> 8), \
-  (cp)[3] = (char)(value) )
-
-#define GET_16BIT_MSB_FIRST(cp) \
-  (((unsigned long)(unsigned char)(cp)[0] << 8) | \
-  ((unsigned long)(unsigned char)(cp)[1]))
-
-#define PUT_16BIT_MSB_FIRST(cp, value) ( \
-  (cp)[0] = (char)((value) >> 8), \
-  (cp)[1] = (char)(value) )
-
 #define GET_16BIT(endian, cp) \
   (endian=='B' ? GET_16BIT_MSB_FIRST(cp) : GET_16BIT_LSB_FIRST(cp))
 
@@ -285,7 +245,7 @@ char *x11_display(const char *display) {
     char *ret;
     if(!display || !*display) {
 	/* try to find platform-specific local display */
-	if((ret = platform_get_x_display())==0)
+	if((ret = platform_get_x_display())==0 || !*ret)
 	    /* plausible default for all platforms */
 	    ret = dupstr(":0");
     } else
@@ -525,7 +485,7 @@ int x11_send(Socket s, char *data, int len)
             char realauthdata[64];
             int realauthlen = 0;
             int authstrlen = strlen(x11_authnames[pr->auth->realproto]);
-	    int buflen;
+	    int buflen = 0;	       /* initialise to placate optimiser */
             static const char zeroes[4] = { 0,0,0,0 };
 	    void *buf;
 

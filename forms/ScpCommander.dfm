@@ -1,8 +1,8 @@
 inherited ScpCommanderForm: TScpCommanderForm
-  Left = 280
-  Top = 5
-  Width = 660
-  Height = 694
+  Left = 162
+  Top = 0
+  Width = 845
+  Height = 708
   HelpType = htKeyword
   HelpKeyword = 'ui_commander'
   Caption = 'ScpCommanderForm'
@@ -13,7 +13,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     Left = 313
     Top = 205
     Width = 5
-    Height = 267
+    Height = 277
     Cursor = crHSplit
     Hint = 
       '|Drag to change ratio of file panels. Double click to make width' +
@@ -23,11 +23,11 @@ inherited ScpCommanderForm: TScpCommanderForm
     OnMoved = SplitterMoved
   end
   inherited QueueSplitter: TSplitter
-    Top = 519
-    Width = 652
+    Top = 533
+    Width = 837
   end
   inherited TopDock: TTBXDock
-    Width = 652
+    Width = 837
     Height = 205
     object MenuToolbar: TTBXToolbar
       Left = 0
@@ -801,12 +801,16 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 23
       Caption = 'Session'
+      DockMode = dmCannotFloat
       DockPos = 0
       DockRow = 1
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
+      Stretch = True
       TabOrder = 0
+      OnResize = ToolBarResize
+      OnGetBaseSize = ToolbarGetBaseSize
       object TBXItem123: TTBXItem
         Action = NonVisualDataModule.NewSessionAction
       end
@@ -994,12 +998,16 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 46
       Top = 179
       Caption = 'Transfer settings'
+      DockMode = dmCannotFloat
       DockPos = 44
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
+      Stretch = True
       TabOrder = 8
+      OnResize = ToolBarResize
+      OnGetBaseSize = ToolbarGetBaseSize
       object TransferDropDown: TTBXDropDownItem
         EditWidth = 114
         Hint = 'Select transfer settings preset'
@@ -1024,7 +1032,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 170
       Top = 179
       Caption = 'Upload/Download'
-      DockPos = 168
+      DockPos = 170
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
@@ -1054,15 +1062,15 @@ inherited ScpCommanderForm: TScpCommanderForm
   inherited RemotePanel: TPanel
     Left = 318
     Top = 205
-    Width = 334
-    Height = 267
+    Width = 519
+    Height = 277
     Constraints.MinHeight = 220
     Constraints.MinWidth = 185
     TabOrder = 1
     object RemotePathLabel: TPathLabel [0]
       Left = 0
-      Top = 77
-      Width = 334
+      Top = 78
+      Width = 519
       Height = 15
       UnixPath = True
       HotTrack = True
@@ -1073,8 +1081,8 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited RemotePanelSplitter: TSplitter
       Left = 0
-      Top = 158
-      Width = 334
+      Top = 138
+      Width = 519
       Height = 3
       Cursor = crVSplit
       Hint = 
@@ -1083,27 +1091,27 @@ inherited ScpCommanderForm: TScpCommanderForm
       Align = alTop
     end
     inherited RemoteStatusBar: TTBXStatusBar
-      Top = 248
-      Width = 334
+      Top = 258
+      Width = 519
       SimplePanel = True
     end
     inherited RemoteDirView: TUnixDirView
       Left = 0
-      Top = 161
-      Width = 334
-      Height = 78
+      Top = 141
+      Width = 519
+      Height = 108
       Constraints.MinHeight = 70
       NortonLike = nlOn
-      PathComboBox = RemotePathComboBox
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
       PathLabel = RemotePathLabel
       AddParentDir = True
       OnDDFileOperationExecuted = RemoteFileControlDDFileOperationExecuted
+      OnPathChange = RemoteDirViewPathChange
     end
     inherited RemoteDriveView: TUnixDriveView
-      Top = 92
-      Width = 334
-      Height = 66
+      Top = 93
+      Width = 519
+      Height = 45
       Align = alTop
       Constraints.MinHeight = 30
       HideSelection = False
@@ -1112,12 +1120,12 @@ inherited ScpCommanderForm: TScpCommanderForm
     object RemoteTopDock: TTBXDock
       Left = 0
       Top = 0
-      Width = 334
-      Height = 77
+      Width = 519
+      Height = 78
       FixAlign = True
       object RemoteHistoryToolbar: TTBXToolbar
         Left = 0
-        Top = 25
+        Top = 26
         Caption = 'Remote history'
         DockPos = -6
         DockRow = 1
@@ -1136,7 +1144,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       object RemoteNavigationToolbar: TTBXToolbar
         Left = 0
-        Top = 51
+        Top = 52
         Caption = 'Remote navigation'
         DockPos = 0
         DockRow = 2
@@ -1158,9 +1166,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXSeparatorItem44: TTBXSeparatorItem
         end
-        object TBXItem169: TTBXItem
-          Action = NonVisualDataModule.RemoteOpenDirAction
-        end
         object TBXItem170: TTBXItem
           Action = NonVisualDataModule.RemoteTreeAction
         end
@@ -1169,58 +1174,61 @@ inherited ScpCommanderForm: TScpCommanderForm
         Left = 0
         Top = 0
         Caption = 'Remote path'
-        CloseButton = False
         DockableTo = [dpTop, dpBottom]
         DockMode = dmCannotFloat
         DockPos = 0
-        Resizable = False
+        Images = GlyphsModule.ExplorerImages
+        ParentShowHint = False
+        ShowHint = True
         Stretch = True
         TabOrder = 0
         OnResize = ToolBarResize
-        OnGetBaseSize = AddressToolbarGetBaseSize
-        object TBControlItem2: TTBControlItem
-          Control = RemotePathComboBox
+        OnGetBaseSize = ToolbarGetBaseSize
+        object RemotePathComboBox: TTBXComboBoxItem
+          EditWidth = 200
+          ShowImage = True
+          DropDownList = True
+          MaxVisibleItems = 20
+          ShowListImages = True
+          OnAdjustImageIndex = RemotePathComboBoxAdjustImageIndex
+          OnDrawItem = RemotePathComboBoxDrawItem
+          OnItemClick = RemotePathComboBoxItemClick
+          OnMeasureWidth = RemotePathComboBoxMeasureWidth
+          OnCancel = RemotePathComboBoxCancel
         end
-        object RemotePathComboBox: TUnixPathComboBox
-          Left = 0
-          Top = 0
-          Width = 305
-          Height = 21
-          OnCloseUp = PathComboBoxCloseUp
-          Constraints.MinWidth = 50
-          DropDownCount = 20
-          TabOrder = 0
+        object TBXItem169: TTBXItem
+          Action = NonVisualDataModule.RemoteOpenDirAction
         end
       end
     end
     object RemoteBottomDock: TTBXDock
       Left = 0
-      Top = 239
-      Width = 334
+      Top = 249
+      Width = 519
       Height = 9
       FixAlign = True
       Position = dpBottom
     end
   end
   inherited QueuePanel: TPanel
-    Top = 522
-    Width = 652
+    Top = 536
+    Width = 837
     Height = 116
-    TabOrder = 4
-    inherited QueueView: TListView
-      Width = 652
+    TabOrder = 3
+    inherited QueueView2: TListView
+      Width = 837
       Height = 90
       TabStop = False
     end
     inherited QueueDock: TTBXDock
-      Width = 652
+      Width = 837
     end
   end
   object LocalPanel: TPanel
     Left = 0
     Top = 205
     Width = 313
-    Height = 267
+    Height = 277
     Align = alLeft
     BevelOuter = bvNone
     Constraints.MinHeight = 220
@@ -1228,7 +1236,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     TabOrder = 0
     object LocalPathLabel: TPathLabel
       Left = 0
-      Top = 77
+      Top = 78
       Width = 313
       Height = 15
       HotTrack = True
@@ -1240,7 +1248,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalPanelSplitter: TSplitter
       Left = 0
-      Top = 158
+      Top = 138
       Width = 313
       Height = 3
       Cursor = crVSplit
@@ -1254,7 +1262,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalStatusBar: TTBXStatusBar
       Left = 0
-      Top = 248
+      Top = 258
       Width = 313
       Height = 19
       Panels = <>
@@ -1266,9 +1274,9 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDirView: TDirView
       Left = 0
-      Top = 161
+      Top = 141
       Width = 313
-      Height = 78
+      Height = 108
       Align = alClient
       Constraints.MinHeight = 70
       FullDrag = True
@@ -1277,9 +1285,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       TabOrder = 1
       ViewStyle = vsReport
       OnColumnRightClick = DirViewColumnRightClick
+      OnEditing = DirViewEditing
       OnEnter = LocalDirViewEnter
       DirColProperties.ExtVisible = False
-      PathComboBox = LocalPathComboBox
       PathLabel = LocalPathLabel
       OnUpdateStatusBar = LocalDirViewUpdateStatusBar
       OnGetSelectFilter = RemoteDirViewGetSelectFilter
@@ -1300,16 +1308,17 @@ inherited ScpCommanderForm: TScpCommanderForm
       WatchForChanges = True
       OnFileIconForName = LocalDirViewFileIconForName
       OnHistoryChange = DirViewHistoryChange
+      OnPathChange = LocalDirViewPathChange
     end
     object LocalTopDock: TTBXDock
       Left = 0
       Top = 0
       Width = 313
-      Height = 77
+      Height = 78
       FixAlign = True
       object LocalHistoryToolbar: TTBXToolbar
         Left = 0
-        Top = 25
+        Top = 26
         Caption = 'Local history'
         DockPos = -6
         DockRow = 1
@@ -1328,7 +1337,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       object LocalNavigationToolbar: TTBXToolbar
         Left = 0
-        Top = 51
+        Top = 52
         Caption = 'Local navigation'
         DockPos = 0
         DockRow = 2
@@ -1350,9 +1359,6 @@ inherited ScpCommanderForm: TScpCommanderForm
         end
         object TBXSeparatorItem43: TTBXSeparatorItem
         end
-        object TBXItem163: TTBXItem
-          Action = NonVisualDataModule.LocalOpenDirAction
-        end
         object TBXItem164: TTBXItem
           Action = NonVisualDataModule.LocalTreeAction
         end
@@ -1361,39 +1367,39 @@ inherited ScpCommanderForm: TScpCommanderForm
         Left = 0
         Top = 0
         Caption = 'Local path'
-        CloseButton = False
         DockableTo = [dpTop, dpBottom]
         DockMode = dmCannotFloat
         DockPos = 0
-        Resizable = False
+        Images = GlyphsModule.ExplorerImages
+        ParentShowHint = False
+        ShowHint = True
         Stretch = True
         TabOrder = 0
         OnResize = ToolBarResize
-        OnGetBaseSize = AddressToolbarGetBaseSize
-        object TBControlItem1: TTBControlItem
-          Control = LocalPathComboBox
+        OnGetBaseSize = ToolbarGetBaseSize
+        object LocalPathComboBox: TTBXComboBoxItem
+          EditWidth = 200
+          ShowImage = True
+          DropDownList = True
+          MaxVisibleItems = 30
+          ShowListImages = True
+          OnAdjustImageIndex = LocalPathComboBoxAdjustImageIndex
+          OnItemClick = LocalPathComboBoxItemClick
+          OnCancel = LocalPathComboBoxCancel
         end
-        object LocalPathComboBox: TIEPathComboBox
-          Left = 0
-          Top = 0
-          Width = 257
-          Height = 21
-          DirectoryToSelect = dsLast
-          OnCloseUp = PathComboBoxCloseUp
-          Constraints.MinWidth = 50
-          DropDownCount = 30
-          TabOrder = 0
-          TabStop = False
+        object TBXItem163: TTBXItem
+          Action = NonVisualDataModule.LocalOpenDirAction
         end
       end
     end
     object LocalDriveView: TDriveView
       Left = 0
-      Top = 92
+      Top = 93
       Width = 313
-      Height = 66
+      Height = 45
       WatchDirectory = True
       DirView = LocalDirView
+      OnRefreshDrives = LocalDriveViewRefreshDrives
       OnDDDragEnter = LocalFileControlDDDragEnter
       OnDDDragLeave = FileControlDDDragLeave
       OnDDDragOver = LocalFileControlDDDragOver
@@ -1410,7 +1416,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalBottomDock: TTBXDock
       Left = 0
-      Top = 239
+      Top = 249
       Width = 313
       Height = 9
       FixAlign = True
@@ -1419,16 +1425,17 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   object BottomDock: TTBXDock
     Left = 0
-    Top = 493
-    Width = 652
-    Height = 26
+    Top = 482
+    Width = 837
+    Height = 51
     FixAlign = True
     Position = dpBottom
     object ToolbarToolbar: TTBXToolbar
       Left = 0
-      Top = 0
+      Top = 25
       Caption = 'Commands'
       DockPos = 0
+      DockRow = 1
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = False
@@ -1475,11 +1482,31 @@ inherited ScpCommanderForm: TScpCommanderForm
         Stretch = True
       end
     end
+    object CommandLineToolbar: TTBXToolbar
+      Left = 0
+      Top = 0
+      Caption = 'CommandLineToolbar'
+      DockMode = dmCannotFloat
+      Stretch = True
+      TabOrder = 1
+      Visible = False
+      OnResize = ToolBarResize
+      OnGetBaseSize = ToolbarGetBaseSize
+      object CommandLinePromptLabel: TTBXLabelItem
+        Caption = 'CommandX >'
+        Margin = 2
+      end
+      object CommandLineCombo: TTBXComboBoxItem
+        OnBeginEdit = CommandLineComboBeginEdit
+        ExtendedAccept = True
+        OnPopup = CommandLineComboPopup
+      end
+    end
   end
   object StatusBar: TTBXStatusBar
     Left = 0
-    Top = 638
-    Width = 652
+    Top = 652
+    Width = 837
     Images = GlyphsModule.SessionImages
     Panels = <
       item
@@ -1523,54 +1550,5 @@ inherited ScpCommanderForm: TScpCommanderForm
     ShowHint = True
     UseSystemFont = False
     OnPanelDblClick = StatusBarPanelDblClick
-  end
-  object CommandLinePanel: TPanel
-    Left = 0
-    Top = 472
-    Width = 652
-    Height = 21
-    Align = alBottom
-    BevelOuter = bvNone
-    PopupMenu = NonVisualDataModule.CommanderBarPopup
-    TabOrder = 2
-    DesignSize = (
-      652
-      21)
-    object CommandLineLabel: TPathLabel
-      Left = 4
-      Top = 4
-      Width = 159
-      Height = 15
-      IndentHorizontal = 0
-      IndentVertical = 0
-      Align = alNone
-      Alignment = taRightJustify
-      AutoSize = False
-    end
-    object CommandLinePromptLabel: TLabel
-      Left = 164
-      Top = 4
-      Width = 6
-      Height = 13
-      Caption = '>'
-    end
-    object CommandLineCombo: THistoryComboBox
-      Left = 173
-      Top = 0
-      Width = 476
-      Height = 21
-      AutoComplete = False
-      Anchors = [akLeft, akTop, akRight, akBottom]
-      ItemHeight = 13
-      MaxLength = 250
-      TabOrder = 0
-      TabStop = False
-      Text = 'CommandLineCombo'
-      OnDropDown = CommandLineComboDropDown
-      OnEnter = CommandLineComboEnter
-      OnExit = CommandLineComboExit
-      OnKeyDown = CommandLineComboKeyDown
-      SaveOn = []
-    end
   end
 end

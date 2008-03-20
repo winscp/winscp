@@ -8,7 +8,8 @@
       my\ListViewColProperties.obj my\MoreButton.obj my\NortonLikeListView.obj
       my\PathLabel.obj my\UpDownEdit.obj my\ComboEdit.obj my\PasswordEdit.obj
       my\ResourceModule.obj my\CompThread.obj my\DiscMon.obj my\TcpIp.obj
-      my\GrayedCheckBox.obj my\IEListView.obj my\LanguagesDEPfix.obj"/>
+      my\GrayedCheckBox.obj my\IEListView.obj my\LanguagesDEPfix.obj
+      my\PasTools.obj"/>
     <RESFILES value="my\HistoryComboBox.dcr my\NortonLikeListView.dcr
       my\PathLabel.dcr my\DiscMon.dcr"/>
     <DEFFILE value=""/>
@@ -70,6 +71,7 @@
       <FILE FILENAME="my\GrayedCheckBox.pas" FORMNAME="" UNITNAME="GrayedCheckBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\IEListView.pas" FORMNAME="" UNITNAME="IEListView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\LanguagesDEPfix.pas" FORMNAME="" UNITNAME="LanguagesDEPfix" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="my\PasTools.pas" FORMNAME="" UNITNAME="PasTools" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

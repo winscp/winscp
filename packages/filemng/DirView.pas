@@ -73,6 +73,8 @@ type
   EInvalidFileName = class(Exception);
   ERenameFileFailed = class(Exception);
 
+  TDriveLetter = 'A'..'Z';
+
   TClipboardOperation = (cboNone, cboCut, cboCopy);
   TFileNameDisplay = (fndStored, fndCap, fndNoCap, fndNice);
 
@@ -236,6 +238,8 @@ type
     iRecycleFolder: iShellFolder;
     PIDLRecycle: PItemIDList;
 
+    FLastPath: array[TDriveLetter] of string;
+
     {Drag&Drop:}
     function GetDirColProperties: TDirViewColProperties;
     function GetHomeDirectory: string;
@@ -250,6 +254,7 @@ type
 
   protected
     function NewColProperties: TCustomListViewColProperties; override;
+    function SortAscendingByDefault(Index: Integer): Boolean; override;
     procedure SetShowSubDirSize(Value: Boolean); override;
     {$IFDEF USE_DRIVEVIEW}
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
@@ -277,6 +282,7 @@ type
     procedure SetLoadEnabled(Value: Boolean); override;
     function GetPath: string; override;
     procedure SetPath(Value: string); override;
+    procedure PathChanged; override;
     procedure SetItemImageIndex(Item: TListItem; Index: Integer); override;
     procedure SetCompressedColor(Value: TColor);
     procedure ChangeDetected(Sender: TObject; const Directory: string;
@@ -395,6 +401,7 @@ type
     destructor Destroy; override;
     procedure ExecuteHomeDirectory; override;
     procedure ReloadDirectory; override;
+    procedure ExecuteDrive(Drive: TDriveLetter);
     property HomeDirectory: string read GetHomeDirectory write FHomeDirectory;
 
     {Redefined functions: }
@@ -423,7 +430,6 @@ type
 
   published
     property DirColProperties: TDirViewColProperties read GetDirColProperties write SetDirColProperties;
-    property PathComboBox;
     property PathLabel;
     property OnUpdateStatusBar;
     property OnGetSelectFilter;
@@ -521,6 +527,7 @@ type
     property OnBeginRename;
     property OnEndRename;
     property OnHistoryChange;
+    property OnPathChange;
 
     property ColumnClick;
     property MultiSelect;
@@ -924,6 +931,8 @@ end; {TIconUpdateThread.Terminate}
 { TDirView }
 
 constructor TDirView.Create(AOwner: TComponent);
+var
+  D: TDriveLetter;
 begin
   inherited Create(AOwner);
 
@@ -979,6 +988,9 @@ begin
     ShellExtensions.DragDropHandler := True;
     ShellExtensions.DropHandler := True;
   end;
+
+  for D := Low(FLastPath) to High(FLastPath) do
+    FLastPath[D] := '';
 end; {Create}
 
 destructor TDirView.Destroy;
@@ -1034,6 +1046,17 @@ end;
 function TDirView.GetPath: string;
 begin
   Result := FPath;
+end;
+
+procedure TDirView.PathChanged;
+var
+  Expanded: string;
+begin
+  inherited;
+
+  Expanded := ExpandFileName(FPath);
+  Assert(Pos(':', Expanded) = 2);
+  FLastPath[Expanded[1]] := Expanded;
 end;
 
 procedure TDirView.SetPath(Value: string);
@@ -1603,7 +1626,9 @@ begin
                 begin
                   AddItem(SRec);
                   if Length(TempMask) > 0 then
+                  begin
                     FileList.Add(SRec.Name);
+                  end;
                 end;
               end;
             end;
@@ -1613,14 +1638,16 @@ begin
         end; {Length (TempMask) > 0}
 
         if AddParentDir and (Length(FPath) > 2) then
+        begin
           AddParentDirItem;
+        end;
 
         {Search for directories:}
         {$IFDEF USE_DRIVEVIEW}
         DirsCount := 0;
         {$ENDIF}
         if ShowDirectories then
-        Begin
+        begin
           DosError := SysUtils.FindFirst(IncludeTrailingPathDelimiter(FPath) + '*.*',
             DirAttrMask, SRec);
           while (DosError = 0) and (not AbortLoading) do
@@ -2675,7 +2702,7 @@ begin
              else SortProc := @CompareFileExt;
         dvChanged: SortProc := @CompareFileTime;
         dvAttr: SortProc := @CompareFileAttr;
-        dvExt: { !!!!!} SortProc := @CompareFileExt;
+        dvExt: SortProc := @CompareFileExt;
         else SortProc := @CompareFilename;
       end;
       CustomSortItems(Pointer(@SortProc));
@@ -3500,6 +3527,26 @@ begin
   end;
 end;
 
+procedure TDirView.ExecuteDrive(Drive: TDriveLetter);
+var
+  APath: string;
+begin
+  if FLastPath[Drive] <> '' then
+  begin
+    APath := FLastPath[Drive];
+    if not DirectoryExists(APath) then
+      APath := Format('%s:', [Drive]);
+  end
+    else
+  begin
+    GetDir(Integer(Drive) - Integer('A') + 1, APath);
+    APath := ExcludeTrailingPathDelimiter(APath);
+  end;
+
+  if Path <> APath then
+    Path := APath;
+end;
+
 procedure TDirView.ExecuteHomeDirectory;
 begin
   Path := HomeDirectory;
@@ -4243,6 +4290,11 @@ end; { MinimizePath }
 function TDirView.NewColProperties: TCustomListViewColProperties;
 begin
   Result := TDirViewColProperties.Create(Self);
+end;
+
+function TDirView.SortAscendingByDefault(Index: Integer): Boolean;
+begin
+  Result := not (TDirViewCol(Index) in [dvSize, dvChanged]);
 end;
 
 procedure TDirView.SetItemImageIndex(Item: TListItem; Index: Integer);

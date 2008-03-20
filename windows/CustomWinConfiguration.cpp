@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include <Common.h>
+#include <TextsWin.h>
 #include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -49,6 +50,22 @@ void __fastcall TCustomWinConfiguration::ClearHistory()
   FHistory->Clear();
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::DefaultHistory()
+{
+  ClearHistory();
+
+  // defaults for speed limits
+  THistoryStrings * Strings = new THistoryStrings();
+  Strings->Add(LoadStr(SPEED_UNLIMITED));
+  unsigned long Speed = 1024;
+  while (Speed >= 8)
+  {
+    Strings->Add(IntToStr(Speed));
+    Speed = Speed / 2;
+  }
+  FHistory->AddObject("SpeedLimit", Strings);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::Default()
 {
   TGUIConfiguration::Default();
@@ -60,7 +77,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FSynchronizeChecklist.ListParams = "1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1|0;1;2;3;4;5;6;7";
   FConsoleWin.WindowSize = "570,430";
 
-  ClearHistory();
+  DefaultHistory();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::Saved()
@@ -200,7 +217,7 @@ void __fastcall TCustomWinConfiguration::LoadData(
   #pragma warn +eas
   #undef KEY
 
-  ClearHistory();
+  DefaultHistory();
   if (Storage->OpenSubKey("History", false))
   {
     TStrings * Names = NULL;
@@ -208,14 +225,22 @@ void __fastcall TCustomWinConfiguration::LoadData(
     {
       Names = new TStringList();
       Storage->GetSubKeyNames(Names);
-      THistoryStrings * HistoryStrings;
       for (int Index = 0; Index < Names->Count; Index++)
       {
-        HistoryStrings = NULL;
         if (Storage->OpenSubKey(Names->Strings[Index], false))
         {
+          THistoryStrings * HistoryStrings = NULL;
           try
           {
+            // remove defaults, if any
+            int HIndex = FHistory->IndexOf(Names->Strings[Index]);
+            if (HIndex >= 0)
+            {
+              THistoryStrings * DefaultStrings = dynamic_cast<THistoryStrings *>(FHistory->Objects[HIndex]);
+              delete DefaultStrings;
+              FHistory->Delete(HIndex);
+            }
+
             HistoryStrings = new THistoryStrings();
             Storage->ReadValues(HistoryStrings);
             FHistory->AddObject(Names->Strings[Index], HistoryStrings);

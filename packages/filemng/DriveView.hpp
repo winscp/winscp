@@ -289,7 +289,6 @@ private:
 	AnsiString FLastDir;
 	bool FValidateFlag;
 	bool FCreating;
-	bool FReadDrives;
 	bool FForceRename;
 	Comctrls::TTreeNode* FRenameNode;
 	AnsiString FLastRenameName;
@@ -305,6 +304,7 @@ private:
 	TDriveViewDiskChangeEvent FOnChangeDetected;
 	TDriveViewDiskChangeEvent FOnChangeInvalid;
 	Classes::TNotifyEvent FOnDisplayContextMenu;
+	Classes::TNotifyEvent FOnRefreshDrives;
 	Dirview::TDirView* FDirView;
 	Fileoperator::TFileOperator* FFileOperator;
 	unsigned FChangeInterval;
@@ -449,7 +449,6 @@ __published:
 	__property Dirview::TVolumeDisplayStyle VolDisplayStyle = {read=FVolDisplayStyle, write=SetVolDisplayStyle, default=0};
 	__property bool ShowAnimation = {read=FShowAnimation, write=FShowAnimation, default=0};
 	__property AnsiString NoCheckDrives = {read=FNoCheckDrives, write=SetNoCheckDrives};
-	__property bool ReadDrives = {read=FReadDrives, write=FReadDrives, default=1};
 	__property Graphics::TColor CompressedColor = {read=FCompressedColor, write=SetCompressedColor, default=16711680};
 	__property Dirview::TFileNameDisplay FileNameDisplay = {read=FFileNameDisplay, write=SetFileNameDisplay, default=0};
 	__property Classes::TNotifyEvent OnStartScan = {read=FOnStartScan, write=FOnStartScan};
@@ -460,6 +459,7 @@ __published:
 	__property TDriveViewDiskChangeEvent OnChangeDetected = {read=FOnChangeDetected, write=FOnChangeDetected};
 	__property TDriveViewDiskChangeEvent OnChangeInvalid = {read=FOnChangeInvalid, write=FOnChangeInvalid};
 	__property Classes::TNotifyEvent OnDisplayContextMenu = {read=FOnDisplayContextMenu, write=FOnDisplayContextMenu};
+	__property Classes::TNotifyEvent OnRefreshDrives = {read=FOnRefreshDrives, write=FOnRefreshDrives};
 	__property DDLinkOnExeDrag  = {default=1};
 	__property UseDragImages  = {default=1};
 	__property TargetPopUpMenu  = {default=1};

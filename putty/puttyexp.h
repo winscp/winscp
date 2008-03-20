@@ -21,6 +21,8 @@ int get_ssh_exitcode(void * handle);
 const unsigned int * ssh2_remmaxpkt(void * handle);
 const unsigned int * ssh2_remwindow(void * handle);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
+void sspi_init();
+void sspi_cleanup();
 int has_gssapi_ssh();
 
 // from portfwd.c
@@ -46,9 +48,6 @@ long reg_close_winscp_key(HKEY Key);
 
 void putty_mungestr(const char *in, char *out);
 void putty_unmungestr(const char *in, char *out, int outlen);
-void putty_get_seedpath(void);
-char * seedpath_ptr();
-int seedpath_size();
 
 // from winnet.c
 

@@ -43,6 +43,7 @@ private:
 	
 protected:
 	virtual Listviewcolproperties::TCustomListViewColProperties* __fastcall NewColProperties(void);
+	virtual bool __fastcall SortAscendingByDefault(int Index);
 	
 public:
 	__property Items ;

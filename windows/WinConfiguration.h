@@ -19,11 +19,10 @@ struct TScpExplorerConfiguration {
   bool ShowFullAddress;
   bool DriveView;
   int DriveViewWidth;
-  int SessionComboWidth;
   bool __fastcall operator !=(TScpExplorerConfiguration & rhc)
     { return C(WindowParams) C(DirViewParams) C(ToolbarsLayout) C(StatusBar)
         C(LastLocalTargetDirectory) C(ViewStyle) C(ShowFullAddress)
-        C(DriveView) C(DriveViewWidth) C(SessionComboWidth) 0; };
+        C(DriveView) C(DriveViewWidth) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderPanelConfiguration {
@@ -41,7 +40,6 @@ struct TScpCommanderConfiguration {
   float LocalPanelWidth;
   AnsiString ToolbarsLayout;
   bool StatusBar;
-  bool CommandLine;
   TOperationSide CurrentPanel;
   TNortonLikeMode NortonLikeMode;
   bool PreserveLocalDirectory;
@@ -50,14 +48,13 @@ struct TScpCommanderConfiguration {
   bool CompareByTime;
   bool CompareBySize;
   bool SwappedPanels;
-  int SessionComboWidth;
   bool FullRowSelect;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(StatusBar)
-      C(LocalPanel) C(RemotePanel) C(CurrentPanel) C(CommandLine)
+      C(LocalPanel) C(RemotePanel) C(CurrentPanel)
       C(NortonLikeMode) C(PreserveLocalDirectory)
       C(CompareBySize) C(CompareByTime) C(SwappedPanels)
-      C(SessionComboWidth) C(FullRowSelect) 0; };
+      C(FullRowSelect) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {
@@ -84,13 +81,14 @@ struct TEditorConfiguration {
   AnsiString ReplaceText;
   bool FindMatchCase;
   bool FindWholeWord;
-  bool SingleEditor;
+  bool FindDown;
+  unsigned int TabSize;
   unsigned int MaxEditors;
   unsigned int EarlyClose;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
     { return C(FontName) C(FontHeight)
       C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
-      C(FindMatchCase) C(FindWholeWord) C(SingleEditor)
+      C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
       C(MaxEditors) C(EarlyClose) 0; };
 };
 //---------------------------------------------------------------------------
@@ -131,18 +129,21 @@ struct TUpdatesData
   }
 };
 //---------------------------------------------------------------------------
+enum TConnectionType { ctDirect, ctAuto, ctProxy };
+//---------------------------------------------------------------------------
 struct TUpdatesConfiguration
 {
   TDateTime Period;
   TDateTime LastCheck;
+  TConnectionType ConnectionType;
   AnsiString ProxyHost;
   int ProxyPort;
   bool HaveResults;
   bool ShownResults;
   TUpdatesData Results;
   bool __fastcall operator !=(TUpdatesConfiguration & rhc)
-    { return C(Period) C(LastCheck) C(ProxyHost) C(ProxyPort) C(HaveResults)
-        C(ShownResults) C(Results)  0; };
+    { return C(Period) C(LastCheck) C(ConnectionType) C(ProxyHost) C(ProxyPort)
+        C(HaveResults) C(ShownResults) C(Results)  0; };
 };
 //---------------------------------------------------------------------------
 struct TEditorData
@@ -245,6 +246,7 @@ private:
   AnsiString FSelectMask;
   bool FShowHiddenFiles;
   bool FShowInaccesibleDirectories;
+  bool FConfirmTransferring;
   bool FConfirmDeleting;
   bool FConfirmRecycling;
   bool FUseLocationProfiles;
@@ -267,13 +269,11 @@ private:
   bool FEmbeddedSessions;
   bool FExpertMode;
   bool FDisableOpenEdit;
-  bool FForceDeleteTempFolder;
   bool FDefaultDirIsHome;
   int FDDDeleteDelay;
   bool FTemporaryDirectoryCleanup;
   bool FConfirmTemporaryDirectoryCleanup;
   AnsiString FDefaultTranslationFile;
-  bool FInvalidDefaultTranslation;
   AnsiString FInvalidDefaultTranslationMessage;
   bool FPreservePanelState;
   AnsiString FTheme;
@@ -290,6 +290,7 @@ private:
   TEditorPreferences * FLegacyEditor;
   AnsiString FDefaultKeyFile;
   bool FAutoOpenInPutty;
+  bool FTelnetForFtpInPutty;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -305,6 +306,7 @@ private:
   void __fastcall SetSelectDirectories(bool value);
   void __fastcall SetShowHiddenFiles(bool value);
   void __fastcall SetShowInaccesibleDirectories(bool value);
+  void __fastcall SetConfirmTransferring(bool value);
   void __fastcall SetConfirmDeleting(bool value);
   void __fastcall SetConfirmRecycling(bool value);
   void __fastcall SetUseLocationProfiles(bool value);
@@ -314,7 +316,6 @@ private:
   void __fastcall SetDDExtTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
   void __fastcall SetConfirmExitOnCompletion(bool value);
-  void __fastcall SetForceDeleteTempFolder(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
   void __fastcall SetBookmarks(AnsiString Key, TBookmarkList * value);
   TBookmarkList * __fastcall GetBookmarks(AnsiString Key);
@@ -341,6 +342,9 @@ private:
   const TEditorList * __fastcall GetEditorList();
   void __fastcall SetEditorList(const TEditorList * value);
   void __fastcall SetAutoOpenInPutty(bool value);
+  void __fastcall SetTelnetForFtpInPutty(bool value);
+  void __fastcall SetLastMonitor(int value);
+  int __fastcall GetLastMonitor();
 
   bool __fastcall GetDDExtInstalled();
 
@@ -377,7 +381,6 @@ public:
   TStrings * __fastcall FindTemporaryFolders();
   void __fastcall CleanupTemporaryFolders(TStrings * Folders = NULL);
   void __fastcall CheckDefaultTranslation();
-  bool __fastcall ConfirmRemoveDefaultTranslation();
   const TEditorPreferences * __fastcall DefaultEditorForFile(
     const AnsiString FileName, bool Local, const TFileMasks::TParams & MaskParams);
 
@@ -400,6 +403,7 @@ public:
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool DimmHiddenFiles = { read = FDimmHiddenFiles, write = SetDimmHiddenFiles };
   __property AnsiString LogWindowParams = { read = FLogWindowParams, write = SetLogWindowParams };
+  __property bool ConfirmTransferring = { read = FConfirmTransferring, write = SetConfirmTransferring};
   __property bool ConfirmDeleting = { read = FConfirmDeleting, write = SetConfirmDeleting};
   __property bool ConfirmRecycling = { read = FConfirmRecycling, write = SetConfirmRecycling};
   __property bool UseLocationProfiles = { read = FUseLocationProfiles, write = SetUseLocationProfiles};
@@ -410,7 +414,6 @@ public:
   __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
-  __property bool ForceDeleteTempFolder  = { read=FForceDeleteTempFolder, write=SetForceDeleteTempFolder };
   __property double DDWarnLackOfTempSpaceRatio  = { read=FDDWarnLackOfTempSpaceRatio, write=SetDDWarnLackOfTempSpaceRatio };
   __property TBookmarkList * Bookmarks[AnsiString Key] = { read = GetBookmarks, write = SetBookmarks };
   __property bool EmbeddedSessions = { read = FEmbeddedSessions };
@@ -428,12 +431,12 @@ public:
   __property bool BalloonNotifications = { read = FBalloonNotifications, write = SetBalloonNotifications };
   __property unsigned int NotificationsTimeout = { read = FNotificationsTimeout, write = SetNotificationsTimeout };
   __property unsigned int NotificationsStickTime = { read = FNotificationsStickTime, write = SetNotificationsStickTime };
-  __property bool InvalidDefaultTranslation = { read = FInvalidDefaultTranslation };
   __property AnsiString DefaultTranslationFile = { read = FDefaultTranslationFile };
   __property bool CopyParamAutoSelectNotice = { read = FCopyParamAutoSelectNotice, write = SetCopyParamAutoSelectNotice };
   __property bool SessionToolbarAutoShown = { read = FSessionToolbarAutoShown, write = SetSessionToolbarAutoShown };
   __property bool LockToolbars = { read = FLockToolbars, write = SetLockToolbars };
   __property bool AutoOpenInPutty = { read = FAutoOpenInPutty, write = SetAutoOpenInPutty };
+  __property int LastMonitor = { read = GetLastMonitor, write = SetLastMonitor };
   __property const TEditorList * EditorList = { read = GetEditorList, write = SetEditorList };
   __property AnsiString DefaultKeyFile = { read = GetDefaultKeyFile, write = FDefaultKeyFile };
 };

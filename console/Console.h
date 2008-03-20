@@ -11,12 +11,14 @@ struct TConsoleCommStruct
 {
   enum TVersion
   {
-    Version0 = 0,
-    Version1 = 1,
-    Version2 = 2,
-    CurrentVersion = Version2,
-    MinVersion = Version0,
-    MaxVersion = CurrentVersion
+    CurrentVersion =          0x0003,
+    CurrentVersionConfirmed = 0x0103
+  };
+
+  struct TInitEvent
+  {
+    unsigned int InputType;
+    unsigned int OutputType;
   };
 
   struct TPrintEvent
@@ -50,13 +52,14 @@ struct TConsoleCommStruct
 
   size_t Size;
   int Version;
-  enum { NONE, PRINT, INPUT, CHOICE, TITLE } Event;
+  enum { NONE, PRINT, INPUT, CHOICE, TITLE, INIT } Event;
   union
   {
     TPrintEvent PrintEvent;
     TInputEvent InputEvent;
     TChoiceEvent ChoiceEvent;
     TTitleEvent TitleEvent;
+    TInitEvent InitEvent;
   };
 };
 //---------------------------------------------------------------------------

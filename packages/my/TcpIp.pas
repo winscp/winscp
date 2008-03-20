@@ -95,11 +95,13 @@ type
     FType: string;
     FDoAuthor: TStringList;
     FContentPost: string;
+    FRedirect: Boolean;
 
     procedure GetHead;
     procedure GetBody;
     procedure SendRequest(const Method, Version: string);
     procedure GetAnswer;
+    procedure ReportStatusError;
 
   public
     property Stream: TStream read FStream write SetStream;
@@ -129,6 +131,7 @@ procedure Register;
 resourcestring
   SSocketError = 'Error creating socket (%s)';
   SUnknownSockError = 'Unknown error';
+  SHttpError = 'Received response %d %s from %s';
 
 implementation
 
@@ -136,7 +139,6 @@ const
   BackLog = 2; // possible values 1..5
   BufSize = $7F00; // size of the internal standard buffer
   INVALID_IP_ADDRESS= -1; // only invalid as a host ip, maybe OK for broadcast ($FFFFFFFF as longint)
-
 
 function LookupHostname(const Hostname: string): LongInt;
 var
@@ -727,6 +729,7 @@ begin
 
   FContentPost := 'application/x-www-form-urlencoded';
   FDoAuthor := TStringlist.Create;
+  FRedirect := False;
 end;
 
 destructor THttp.Destroy;
@@ -756,6 +759,12 @@ begin
   WriteStr(FSocket, #13#10); // finalize the request
 end;
 
+procedure THttp.ReportStatusError;
+begin
+  raise EProtocolError.Create('HTTP',
+    Format(SHttpError, [FStatusNr, FStatusTxt, FHostName]), FStatusNr);
+end;
+
 procedure THttp.GetAnswer;
 var
   s: string;
@@ -765,6 +774,7 @@ begin
   FDoAuthor.Clear;
   FType := '';
   FSize := 0;
+  FRedirect := False;
 
   repeat
     s := ReadLine(FSocket);
@@ -772,11 +782,13 @@ begin
       if Assigned(FTracer) then
         FTracer(s, tt_proto_get);
 
-    if Copy(s, 1, 8) = 'HTTP/1.0' then
+    // many servers (including ours) obviously return 1.1 response to 1.0 request
+    if (Copy(s, 1, 8) = 'HTTP/1.0') or
+       (Copy(s, 1, 8) = 'HTTP/1.1') then
     begin
       FStatusNr := StrToInt(Copy(s, 10, 3));
       FStatusTxt := Copy(s, 14, Length(s));
-      if FStatusNr >= 400 then Exit; // HTTP error returned
+      if FStatusNr >= 400 then ReportStatusError;
     end
       else
     if Pos(':', s) > 0 then
@@ -792,6 +804,7 @@ begin
           ParseUrl(Data, Proto, User, Pass, FHostname, Port, FPath);
           if Port <> '' then FSocketNumber := StrToInt(Port);
         end;
+        FRedirect := True;
       end
         else
       if Field = 'content-length' then
@@ -804,9 +817,6 @@ begin
         FDoAuthor.Add(Data);
     end
   until s = '';
-
-  if FStatusNr >= 400 then
-    raise EProtocolError.Create('HTTP', FStatusTxt, FStatusNr);
 end;
 
 procedure THttp.Action;
@@ -833,8 +843,12 @@ begin
 
   FHostname := Host;
   FSocketNumber := StrToInt(Port);
-  GetHead; // to process an eventually Location: answer
+  repeat
+    GetHead; // to process an eventually Location: answer
+  until not FRedirect;
+  if FStatusNr <> 200 then ReportStatusError;
   GetBody;
+  if FStatusNr <> 200 then ReportStatusError;
 end;
 
 procedure THttp.GetHead;

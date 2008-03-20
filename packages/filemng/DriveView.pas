@@ -149,7 +149,6 @@ type
     FLastDir: string;
     FValidateFlag: Boolean;
     FCreating: Boolean;
-    FReadDrives: Boolean;
     FForceRename: Boolean;
     FRenameNode: TTreeNode;
     FLastRenameName: string;
@@ -168,6 +167,7 @@ type
     FOnChangeDetected: TDriveViewDiskChangeEvent;
     FOnChangeInvalid: TDriveViewDiskChangeEvent;
     FOnDisplayContextMenu: TNotifyEvent;
+    FOnRefreshDrives: TNotifyEvent;
 
     {used components:}
     FDirView: TDirView;
@@ -379,7 +379,6 @@ type
     property ShowAnimation: Boolean read FShowAnimation write FShowAnimation default False;
     {Don't watch these drives for changes:}
     property NoCheckDrives: string read  FNoCheckDrives write SetNoCheckDrives;
-    property ReadDrives: Boolean read FReadDrives write FReadDrives default True;
     property CompressedColor: TColor read FCompressedColor write SetCompressedColor default clBlue;
     property FileNameDisplay: TFileNameDisplay read FFileNameDisplay write SetFileNameDisplay default fndStored;
     {Additional events:}
@@ -393,8 +392,10 @@ type
       write FOnChangeDetected;
     property OnChangeInvalid: TDriveViewDiskChangeEvent read FOnChangeInvalid
       write FOnChangeInvalid;
-    property OnDisplayContextMenu: TNotifyEvent Read FOnDisplayContextMenu
+    property OnDisplayContextMenu: TNotifyEvent read FOnDisplayContextMenu
       write FOnDisplayContextMenu;
+    property OnRefreshDrives: TNotifyEvent read FOnRefreshDrives
+      write FOnRefreshDrives;
 
     property DDLinkOnExeDrag;
 
@@ -486,9 +487,9 @@ procedure Register;
 implementation
 
 uses
-  IEComboBox, IEPathComboBox;
+  IEComboBox;
 
-resourceString
+resourcestring
    SErrorInvalidDirName = 'New name contains invalid characters %s';
 
 type
@@ -580,7 +581,6 @@ begin
   FShowAnimation := False;
   FDirectory := EmptyStr;
   FFileNameDisplay   := fndStored;
-  FReadDrives := True;
   FForceRename := False;
   FLastRenameName := '';
   FRenameNode := nil;
@@ -632,11 +632,8 @@ begin
       try
         //DriveInfo.Load;
         RefreshRootNodes(False, dsAll);
-        if Assigned(DirView) and Assigned(DirView.PathComboBox) and
-           (DirView.PathComboBox is TIEPathComboBox) then
-        begin
-          (DirView.PathComboBox as TIEPathComboBox).ResetItems;
-        end;
+        if Assigned(OnRefreshDrives) then
+          OnRefreshDrives(Self);
       except
         Application.HandleException(Self);
       end
@@ -1023,7 +1020,7 @@ begin
 
       OldSerial := DriveInfo[Drive].DriveSerial;
       DriveInfo.ReadDriveStatus(Drive, dsSize or dsImageIndex);
-      with DriveInfo[Drive] do
+      with DriveInfo[Drive]^ do
       begin
         if Assigned(FDirView) and (FDirView.Path <> NewDir) then
           FDirView.Path := NewDir;
@@ -1095,7 +1092,7 @@ begin
     NodePath := NodePathName(Node);
     if Node.Level = 0 then
     begin
-      with DriveInfo[NodePath[1]] do
+      with DriveInfo[NodePath[1]]^ do
       begin
         if ImageIndex = 0 then
         begin
@@ -1218,7 +1215,7 @@ begin
 
     for Drive := WFirstDrive to LastDrive do
     begin
-      with DriveInfo[Drive] do
+      with DriveInfo[Drive]^ do
       begin
         WasValid  := Assigned(DriveStatus[Drive].RootNode);
         OldSerial := DriveSerial;
@@ -1227,10 +1224,9 @@ begin
          (Length(DriveInfo[Drive].DisplayName) > 0) then
             dsFlags := dsFlags and (not dsDisplayName);
 
-      if FReadDrives then
-        DriveInfo.ReadDriveStatus(Drive, dsFlags);
+      DriveInfo.ReadDriveStatus(Drive, dsFlags);
 
-      with DriveInfo[Drive], DriveStatus[Drive] do
+      with DriveInfo[Drive]^, DriveStatus[Drive] do
       begin
         if Valid then
         begin
@@ -1286,7 +1282,9 @@ begin
           if (Drive >= FirstFixedDrive) and Scanned then
           begin
             if ScanDirectory and (DriveSerial <> OldSerial) then
+            begin
               ScanDrive(Drive);
+            end;
           end;
 
           if Assigned(RootNode) then
@@ -1304,7 +1302,9 @@ begin
           begin
             Directory := NodePathName(DriveStatus[Drive].RootNode.GetPrevSibling);
             if not Assigned(Selected) then
+            begin
               Directory := NodePathName(DriveStatus[FirstFixedDrive].RootNode);
+            end;
           end;
           Scanned := False;
           Verified := False;

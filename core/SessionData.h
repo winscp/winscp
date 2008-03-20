@@ -3,6 +3,7 @@
 #define SessionDataH
 
 #include "Common.h"
+#include "Option.h"
 #include "FileBuffer.h"
 #include "NamedObjs.h"
 #include "HierarchicalStorage.h"
@@ -10,20 +11,19 @@
 #define SET_SESSION_PROPERTY(Property) \
   if (F##Property != value) { F##Property = value; FModified = true; }
 //---------------------------------------------------------------------------
-enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES };
-#define CIPHER_COUNT (cipDES+1)
+enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour };
+#define CIPHER_COUNT (cipArcfour+1)
 enum TProtocol { ptRaw, ptTelnet, ptRLogin, ptSSH };
 enum TFSProtocol { fsSCPonly, fsSFTP, fsSFTPonly, fsExternalSSH, fsExternalSFTP, fsFTP };
 #define FSPROTOCOL_COUNT (fsFTP+1)
-enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet }; // 0.53b and older
-enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd }; // after 0.53b
+enum TProxyMethod { pmNone, pmSocks4, pmSocks5, pmHTTP, pmTelnet, pmCmd };
 enum TSshProt { ssh1only, ssh1, ssh2, ssh2only };
-enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx };
-#define KEX_COUNT (kexDHGEx+1)
+enum TKex { kexWarn, kexDHGroup1, kexDHGroup14, kexDHGEx, kexGSSGroup1, kexGSSGroup14, kexGSSGEx };
+#define KEX_COUNT (kexGSSGEx+1)
 enum TSshBug { sbIgnore1, sbPlainPW1, sbRSA1, sbHMAC2, sbDeriveKey2, sbRSAPad2,
   sbRekey2, sbPKSessID2 };
 #define BUG_COUNT (sbPKSessID2+1)
-enum TSftpBug { sbSymlink, sbUtf, sbSignedTS };
+enum TSftpBug { sbSymlink, sbSignedTS };
 #define SFTP_BUG_COUNT (sbSignedTS+1)
 enum TAutoSwitch { asOn, asOff, asAuto };
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
@@ -51,18 +51,24 @@ private:
   AnsiString FPassword;
   int FPingInterval;
   TPingType FPingType;
+  bool FTryAgent;
   bool FAgentFwd;
-  bool FAliasGroupList;
+  AnsiString FListingCommand;
   bool FAuthTIS;
   bool FAuthKI;
   bool FAuthKIPassword;
   bool FAuthGSSAPI;
   bool FGSSAPIFwdTGT;
   AnsiString FGSSAPIServerRealm;
+  bool FTryGSSKEX;
+  bool FUserNameFromEnvironment;
+  bool FGSSAPIServerChoosesUserName;
+  bool FGSSAPITrustDNS;
   bool FChangeUsername;
   bool FCompression;
   TSshProt FSshProt;
   bool FSsh2DES;
+  bool FSshNoUserAuth;
   TCipher FCiphers[CIPHER_COUNT];
   TKex FKex[KEX_COUNT];
   bool FClearAliases;
@@ -84,6 +90,7 @@ private:
   AnsiString FReturnVar;
   bool FScp1Compatibility;
   AnsiString FShell;
+  AnsiString FSftpServer;
   int FTimeout;
   bool FUnsetNationalVars;
   bool FIgnoreLsWarnings;
@@ -94,6 +101,7 @@ private:
   AnsiString FProxyUsername;
   AnsiString FProxyPassword;
   AnsiString FProxyTelnetCommand;
+  AnsiString FProxyLocalCommand;
   TAutoSwitch FProxyDNS;
   bool FProxyLocalhost;
   TAutoSwitch FBugs[BUG_COUNT];
@@ -111,6 +119,7 @@ private:
   bool FDeleteToRecycleBin;
   bool FOverwrittenToRecycleBin;
   AnsiString FRecycleBinPath;
+  AnsiString FPostLoginCommands;
   TAutoSwitch FSCPLsFullTime;
   TAddressFamily FAddressFamily;
   AnsiString FRekeyData;
@@ -128,6 +137,8 @@ private:
   AnsiString FFtpAccount;
   int FFtpPingInterval;
   TPingType FFtpPingType;
+  TAutoSwitch FUtf;
+  AnsiString FHostKey;
 
   AnsiString FOrigHostName;
   int FOrigPortNumber;
@@ -139,6 +150,7 @@ private:
   void __fastcall SetPassword(AnsiString value);
   AnsiString __fastcall GetPassword();
   void __fastcall SetPingInterval(int value);
+  void __fastcall SetTryAgent(bool value);
   void __fastcall SetAgentFwd(bool value);
   void __fastcall SetAuthTIS(bool value);
   void __fastcall SetAuthKI(bool value);
@@ -146,10 +158,15 @@ private:
   void __fastcall SetAuthGSSAPI(bool value);
   void __fastcall SetGSSAPIFwdTGT(bool value);
   void __fastcall SetGSSAPIServerRealm(AnsiString value);
+  void __fastcall SetTryGSSKEX(bool value);
+  void __fastcall SetUserNameFromEnvironment(bool value);
+  void __fastcall SetGSSAPIServerChoosesUserName(bool value);
+  void __fastcall SetGSSAPITrustDNS(bool value);
   void __fastcall SetChangeUsername(bool value);
   void __fastcall SetCompression(bool value);
   void __fastcall SetSshProt(TSshProt value);
   void __fastcall SetSsh2DES(bool value);
+  void __fastcall SetSshNoUserAuth(bool value);
   void __fastcall SetCipher(int Index, TCipher value);
   TCipher __fastcall GetCipher(int Index) const;
   void __fastcall SetKex(int Index, TKex value);
@@ -161,9 +178,12 @@ private:
   bool __fastcall GetCanLogin();
   void __fastcall SetPingIntervalDT(TDateTime value);
   TDateTime __fastcall GetPingIntervalDT();
+  TDateTime __fastcall GetFtpPingIntervalDT();
   void __fastcall SetTimeDifference(TDateTime value);
   void __fastcall SetPingType(TPingType value);
   AnsiString __fastcall GetSessionName();
+  AnsiString __fastcall GetSessionUrl();
+  void __fastcall SetProtocol(TProtocol value);
   void __fastcall SetFSProtocol(TFSProtocol value);
   AnsiString __fastcall GetFSProtocolStr();
   void __fastcall SetLocalDirectory(AnsiString value);
@@ -179,7 +199,7 @@ private:
   bool __fastcall GetDefaultShell();
   void __fastcall SetDetectReturnVar(bool value);
   bool __fastcall GetDetectReturnVar();
-  void __fastcall SetAliasGroupList(bool value);
+  void __fastcall SetListingCommand(AnsiString value);
   void __fastcall SetClearAliases(bool value);
   void __fastcall SetDefaultShell(bool value);
   void __fastcall SetEOLType(TEOLType value);
@@ -187,6 +207,7 @@ private:
   void __fastcall SetReturnVar(AnsiString value);
   void __fastcall SetScp1Compatibility(bool value);
   void __fastcall SetShell(AnsiString value);
+  void __fastcall SetSftpServer(AnsiString value);
   void __fastcall SetTimeout(int value);
   void __fastcall SetUnsetNationalVars(bool value);
   void __fastcall SetIgnoreLsWarnings(bool value);
@@ -203,6 +224,7 @@ private:
   void __fastcall SetProxyUsername(AnsiString value);
   void __fastcall SetProxyPassword(AnsiString value);
   void __fastcall SetProxyTelnetCommand(AnsiString value);
+  void __fastcall SetProxyLocalCommand(AnsiString value);
   void __fastcall SetProxyDNS(TAutoSwitch value);
   void __fastcall SetProxyLocalhost(bool value);
   AnsiString __fastcall GetProxyPassword() const;
@@ -225,6 +247,7 @@ private:
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetOverwrittenToRecycleBin(bool value);
   void __fastcall SetRecycleBinPath(AnsiString value);
+  void __fastcall SetPostLoginCommands(AnsiString value);
   void __fastcall SetAddressFamily(TAddressFamily value);
   void __fastcall SetRekeyData(AnsiString value);
   void __fastcall SetRekeyTime(unsigned int value);
@@ -243,6 +266,8 @@ private:
   void __fastcall SetFtpAccount(AnsiString value);
   void __fastcall SetFtpPingInterval(int value);
   void __fastcall SetFtpPingType(TPingType value);
+  void __fastcall SetUtf(TAutoSwitch value);
+  void __fastcall SetHostKey(AnsiString value);
   static AnsiString __fastcall DecodeUrlChars(const AnsiString & S, bool Decode);
 
 public:
@@ -255,12 +280,14 @@ public:
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
   bool __fastcall ParseUrl(AnsiString Url, int Params, AnsiString * FileName);
+  bool __fastcall ParseOptions(TOptions * Options);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
   static bool __fastcall ParseUrl(AnsiString Url, int Params,
     AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
     AnsiString * UserName, AnsiString * Password, AnsiString * Path,
     AnsiString * FileName);
+  static void __fastcall ValidatePath(const AnsiString Path);
   static void __fastcall ValidateName(const AnsiString Name);
 
   __property AnsiString HostName  = { read=FHostName, write=SetHostName };
@@ -268,23 +295,29 @@ public:
   __property AnsiString UserName  = { read=FUserName, write=SetUserName };
   __property AnsiString Password  = { read=GetPassword, write=SetPassword };
   __property int PingInterval  = { read=FPingInterval, write=SetPingInterval };
+  __property bool TryAgent  = { read=FTryAgent, write=SetTryAgent };
   __property bool AgentFwd  = { read=FAgentFwd, write=SetAgentFwd };
-  __property bool AliasGroupList = { read = FAliasGroupList, write = SetAliasGroupList };
+  __property AnsiString ListingCommand = { read = FListingCommand, write = SetListingCommand };
   __property bool AuthTIS  = { read=FAuthTIS, write=SetAuthTIS };
   __property bool AuthKI  = { read=FAuthKI, write=SetAuthKI };
   __property bool AuthKIPassword  = { read=FAuthKIPassword, write=SetAuthKIPassword };
   __property bool AuthGSSAPI  = { read=FAuthGSSAPI, write=SetAuthGSSAPI };
   __property bool GSSAPIFwdTGT = { read=FGSSAPIFwdTGT, write=SetGSSAPIFwdTGT };
   __property AnsiString GSSAPIServerRealm = { read=FGSSAPIServerRealm, write=SetGSSAPIServerRealm };
+  __property bool TryGSSKEX = { read=FTryGSSKEX, write=SetTryGSSKEX };
+  __property bool UserNameFromEnvironment = { read=FUserNameFromEnvironment, write=SetUserNameFromEnvironment };
+  __property bool GSSAPIServerChoosesUserName = { read=FGSSAPIServerChoosesUserName, write=SetGSSAPIServerChoosesUserName };
+  __property bool GSSAPITrustDNS = { read=FGSSAPITrustDNS, write=SetGSSAPITrustDNS };
   __property bool ChangeUsername  = { read=FChangeUsername, write=SetChangeUsername };
   __property bool Compression  = { read=FCompression, write=SetCompression };
   __property TSshProt SshProt  = { read=FSshProt, write=SetSshProt };
   __property bool UsesSsh = { read = GetUsesSsh };
   __property bool Ssh2DES  = { read=FSsh2DES, write=SetSsh2DES };
+  __property bool SshNoUserAuth  = { read=FSshNoUserAuth, write=SetSshNoUserAuth };
   __property TCipher Cipher[int Index] = { read=GetCipher, write=SetCipher };
   __property TKex Kex[int Index] = { read=GetKex, write=SetKex };
   __property AnsiString PublicKeyFile  = { read=FPublicKeyFile, write=SetPublicKeyFile };
-  __property TProtocol Protocol  = { read=FProtocol };
+  __property TProtocol Protocol  = { read=FProtocol, write=SetProtocol };
   __property AnsiString ProtocolStr  = { read=GetProtocolStr, write=SetProtocolStr };
   __property TFSProtocol FSProtocol  = { read=FFSProtocol, write=SetFSProtocol  };
   __property AnsiString FSProtocolStr  = { read=GetFSProtocolStr };
@@ -295,6 +328,7 @@ public:
   __property TDateTime TimeDifference = { read = FTimeDifference, write = SetTimeDifference };
   __property TPingType PingType = { read = FPingType, write = SetPingType };
   __property AnsiString SessionName  = { read=GetSessionName };
+  __property AnsiString SessionUrl  = { read=GetSessionUrl };
   __property AnsiString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
   __property AnsiString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };
   __property bool UpdateDirectories = { read=FUpdateDirectories, write=SetUpdateDirectories };
@@ -313,6 +347,7 @@ public:
   __property AnsiString ReturnVar = { read = FReturnVar, write = SetReturnVar };
   __property bool Scp1Compatibility = { read = FScp1Compatibility, write = SetScp1Compatibility };
   __property AnsiString Shell = { read = FShell, write = SetShell };
+  __property AnsiString SftpServer = { read = FSftpServer, write = SetSftpServer };
   __property int Timeout = { read = FTimeout, write = SetTimeout };
   __property bool UnsetNationalVars = { read = FUnsetNationalVars, write = SetUnsetNationalVars };
   __property bool IgnoreLsWarnings  = { read=FIgnoreLsWarnings, write=SetIgnoreLsWarnings };
@@ -326,6 +361,7 @@ public:
   __property AnsiString ProxyUsername  = { read=FProxyUsername, write=SetProxyUsername };
   __property AnsiString ProxyPassword  = { read=GetProxyPassword, write=SetProxyPassword };
   __property AnsiString ProxyTelnetCommand  = { read=FProxyTelnetCommand, write=SetProxyTelnetCommand };
+  __property AnsiString ProxyLocalCommand  = { read=FProxyLocalCommand, write=SetProxyLocalCommand };
   __property TAutoSwitch ProxyDNS  = { read=FProxyDNS, write=SetProxyDNS };
   __property bool ProxyLocalhost  = { read=FProxyLocalhost, write=SetProxyLocalhost };
   __property TAutoSwitch Bug[TSshBug Bug]  = { read=GetBug, write=SetBug };
@@ -344,6 +380,7 @@ public:
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool OverwrittenToRecycleBin = { read = FOverwrittenToRecycleBin, write = SetOverwrittenToRecycleBin };
   __property AnsiString RecycleBinPath = { read = FRecycleBinPath, write = SetRecycleBinPath };
+  __property AnsiString PostLoginCommands = { read = FPostLoginCommands, write = SetPostLoginCommands };
   __property TAddressFamily AddressFamily = { read = FAddressFamily, write = SetAddressFamily };
   __property AnsiString RekeyData = { read = FRekeyData, write = SetRekeyData };
   __property unsigned int RekeyTime = { read = FRekeyTime, write = SetRekeyTime };
@@ -360,7 +397,10 @@ public:
   __property bool FtpPasvMode = { read = FFtpPasvMode, write = SetFtpPasvMode };
   __property AnsiString FtpAccount = { read = FFtpAccount, write = SetFtpAccount };
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
+  __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };
   __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
+  __property TAutoSwitch Utf = { read = FUtf, write = SetUtf };
+  __property AnsiString HostKey = { read = FHostKey, write = SetHostKey };
   __property AnsiString StorageKey = { read = GetStorageKey };
   __property AnsiString OrigHostName = { read = FOrigHostName };
   __property int OrigPortNumber = { read = FOrigPortNumber };
@@ -386,7 +426,7 @@ public:
   void __fastcall Cleanup();
   int __fastcall IndexOf(TSessionData * Data);
   TSessionData * __fastcall NewSession(AnsiString SessionName, TSessionData * Session);
-  TSessionData * __fastcall ParseUrl(AnsiString Url, bool & DefaultsOnly,
+  TSessionData * __fastcall ParseUrl(AnsiString Url, TOptions * Options, bool & DefaultsOnly,
     int Params, AnsiString * FileName = NULL, bool * ProtocolDefined = NULL);
   virtual __fastcall ~TStoredSessionList();
   __property TSessionData * Sessions[int Index]  = { read=AtSession };

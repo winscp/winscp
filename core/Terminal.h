@@ -32,8 +32,8 @@ typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject * Sender, const AnsiString Query, TStrings * MoreMessages, int Answers,
    const TQueryParams * Params, int & Answer, TQueryType QueryType, void * Arg);
 typedef void __fastcall (__closure *TPromptUserEvent)
-  (TTerminal * Terminal, AnsiString Prompt, TPromptKind Kind,
-   AnsiString & Response, bool & Result, void * Arg);
+  (TTerminal * Terminal, TPromptKind Kind, AnsiString Name, AnsiString Instructions,
+   TStrings * Prompts, TStrings * Results, bool & Result, void * Arg);
 typedef void __fastcall (__closure *TDisplayBannerEvent)
   (TTerminal * Terminal, AnsiString SessionName, const AnsiString & Banner,
    bool & NeverShowAgain, int Options);
@@ -51,7 +51,8 @@ typedef int __fastcall (__closure *TFileOperationEvent)
 typedef void __fastcall (__closure *TSynchronizeDirectory)
   (const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
    bool & Continue, bool Collect);
-typedef void __fastcall (__closure *TDeleteLocalFileEvent)(const AnsiString FileName);
+typedef void __fastcall (__closure *TDeleteLocalFileEvent)(
+  const AnsiString FileName, bool Alternative);
 typedef int __fastcall (__closure *TDirectoryModifiedEvent)
   (TTerminal * Terminal, const AnsiString Directory, bool SubDirs);
 typedef void __fastcall (__closure *TInformationEvent)
@@ -119,7 +120,7 @@ class TTerminal : public TObject, public TSessionUI
 public:
   // TScript::SynchronizeProc relies on the order
   enum TSynchronizeMode { smRemote, smLocal, smBoth };
-  static const spDelete = 0x01; // cannot be combined with spTimestamp and spBySize
+  static const spDelete = 0x01; // cannot be combined with spTimestamp
   static const spNoConfirmation = 0x02; // has no effect for spTimestamp
   static const spExistingOnly = 0x04; // is implicit for spTimestamp
   static const spNoRecurse = 0x08;
@@ -155,7 +156,6 @@ private:
   int FInTransaction;
   TNotifyEvent FOnChangeDirectory;
   TReadDirectoryEvent FOnReadDirectory;
-  TDirectoryModifiedEvent FOnDirectoryModified;
   TNotifyEvent FOnStartReadDirectory;
   TReadDirectoryProgressEvent FOnReadDirectoryProgress;
   TDeleteLocalFileEvent FOnDeleteLocalFile;
@@ -185,6 +185,7 @@ private:
   TTunnelUI * FTunnelUI;
   int FTunnelLocalPortNumber;
   AnsiString FTunnelError;
+  bool FTunnelOpening;
   TQueryUserEvent FOnQueryUser;
   TPromptUserEvent FOnPromptUser;
   TDisplayBannerEvent FOnDisplayBanner;
@@ -220,11 +221,10 @@ protected:
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress, bool & Cancel);
   void __fastcall DoReadDirectory(bool ReloadOnly);
-  void __fastcall DoDirectoryModified(const AnsiString Path, bool SubDirs);
   void __fastcall DoCreateDirectory(const AnsiString DirName,
     const TRemoteProperties * Properties);
-  void __fastcall DoDeleteFile(const AnsiString FileName,
-    const TRemoteFile * File, void * Param);
+  void __fastcall DoDeleteFile(const AnsiString FileName, const TRemoteFile * File,
+    int Params);
   void __fastcall DoCustomCommandOnFile(AnsiString FileName,
     const TRemoteFile * File, AnsiString Command, int Params, TCaptureOutputEvent OutputEvent);
   void __fastcall DoRenameFile(const AnsiString FileName,
@@ -291,12 +291,16 @@ protected:
   virtual bool __fastcall DoQueryReopen(Exception * E);
   void __fastcall FatalError(Exception * E, AnsiString Msg);
   void __fastcall ResetConnection();
-  virtual bool __fastcall DoPromptUser(TSessionData * Data, AnsiString Prompt,
-    TPromptKind Kind, AnsiString & Response);
+  virtual bool __fastcall DoPromptUser(TSessionData * Data, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+    TStrings * Response);
   void __fastcall OpenTunnel();
   void __fastcall CloseTunnel();
   void __fastcall DoInformation(const AnsiString & Str, bool Status, bool Active = true);
   AnsiString __fastcall FileUrl(const AnsiString Protocol, const AnsiString FileName);
+  bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions, AnsiString Prompt, bool Echo,
+    int MaxLen, AnsiString & Result);
 
   virtual void __fastcall Information(const AnsiString & Str, bool Status);
   virtual int __fastcall QueryUser(const AnsiString Query,
@@ -305,8 +309,8 @@ protected:
   virtual int __fastcall QueryUserException(const AnsiString Query,
     Exception * E, int Answers, const TQueryParams * Params,
     TQueryType QueryType = qtConfirmation);
-  virtual bool __fastcall PromptUser(TSessionData * Data, AnsiString Prompt,
-    TPromptKind Kind, AnsiString & Response);
+  virtual bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions, TStrings * Prompts, TStrings * Results);
   virtual void __fastcall DisplayBanner(const AnsiString & Banner);
   virtual void __fastcall Closed();
 
@@ -340,9 +344,9 @@ public:
     const TRemoteProperties * Properties = NULL);
   void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   void __fastcall DeleteFile(AnsiString FileName,
-    const TRemoteFile * File = NULL, void * Recursive = NULL);
-  bool __fastcall DeleteFiles(TStrings * FilesToDelete, bool * Recursive = NULL);
-  bool __fastcall DeleteLocalFiles(TStrings * FileList);
+    const TRemoteFile * File = NULL, void * Params = NULL);
+  bool __fastcall DeleteFiles(TStrings * FilesToDelete, int Params = 0);
+  bool __fastcall DeleteLocalFiles(TStrings * FileList, int Params = 0);
   bool __fastcall IsRecycledFile(AnsiString FileName);
   void __fastcall CustomCommandOnFile(AnsiString FileName,
     const TRemoteFile * File, void * AParams);
@@ -414,7 +418,6 @@ public:
   __property TRemoteDirectory * Files = { read = FFiles };
   __property TNotifyEvent OnChangeDirectory = { read = FOnChangeDirectory, write = FOnChangeDirectory };
   __property TReadDirectoryEvent OnReadDirectory = { read = FOnReadDirectory, write = FOnReadDirectory };
-  __property TDirectoryModifiedEvent OnDirectoryModified = { read = FOnDirectoryModified, write = FOnDirectoryModified };
   __property TNotifyEvent OnStartReadDirectory = { read = FOnStartReadDirectory, write = FOnStartReadDirectory };
   __property TReadDirectoryProgressEvent OnReadDirectoryProgress = { read = FOnReadDirectoryProgress, write = FOnReadDirectoryProgress };
   __property TDeleteLocalFileEvent OnDeleteLocalFile = { read = FOnDeleteLocalFile, write = FOnDeleteLocalFile };
@@ -454,8 +457,8 @@ protected:
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
   virtual void __fastcall DirectoryModified(const AnsiString Path,
     bool SubDirs);
-  virtual bool __fastcall DoPromptUser(TSessionData * Data, AnsiString Prompt,
-    TPromptKind Kind, AnsiString & Response);
+  virtual bool __fastcall DoPromptUser(TSessionData * Data, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions, TStrings * Prompts, TStrings * Results);
 
 private:
   bool FMasterPasswordTried;

@@ -1342,7 +1342,7 @@ protected:
         {
           __int64 PrevBufSize = BlockBuf.Size;
           BlockBuf.Convert(FTerminal->Configuration->LocalEOLType,
-            FFileSystem->GetEOL(), cpRemoveCtrlZ);
+            FFileSystem->GetEOL(), cpRemoveCtrlZ | cpRemoveBOM);
           // update transfer size with difference arised from EOL conversion
           OperationProgress->ChangeTransferSize(OperationProgress->TransferSize -
             PrevBufSize + BlockBuf.Size);
@@ -1899,6 +1899,9 @@ unsigned long __fastcall TSFTPFileSystem::TransferBlockSize(unsigned long Overhe
       }
     }
   }
+
+  Result = OperationProgress->AdjustToCPSLimit(Result);
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -2711,10 +2714,10 @@ void __fastcall TSFTPFileSystem::DoStartup()
   // use UTF when forced or ...
   // when "auto" and version is at least 4 and the server is not know not to use UTF
   FUtfNever = (GetSessionInfo().SshImplementation.Pos("Foxit-WAC-Server") == 1) ||
-    (FTerminal->SessionData->SFTPBug[sbUtf] == asOn);
+    (FTerminal->SessionData->Utf == asOn);
   FUtfStrings =
-    (FTerminal->SessionData->SFTPBug[sbUtf] == asOff) ||
-    ((FTerminal->SessionData->SFTPBug[sbUtf] == asAuto) &&
+    (FTerminal->SessionData->Utf == asOff) ||
+    ((FTerminal->SessionData->Utf == asAuto) &&
       (FVersion >= 4) && !FUtfNever);
 
   if (FUtfStrings)
@@ -2906,7 +2909,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
   {
     if (FTerminal->Active)
     {
-      FileList->AddFile(new TRemoteParentDirectory());
+      FileList->AddFile(new TRemoteParentDirectory(FTerminal));
     }
     throw;
   }
@@ -2926,7 +2929,6 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
     do
     {
       ReceiveResponse(&Packet, &Response);
-
       if (Response.Type == SSH_FXP_NAME)
       {
         TSFTPPacket ListingPacket = Response;
@@ -2952,6 +2954,10 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
           }
           else
           {
+            if (FTerminal->Configuration->LogProtocol >= 1)
+            {
+              FTerminal->LogEvent(FORMAT("Read file '%s' from listing", (File->FileName)));
+            }
             FileList->AddFile(File);
 
             Total++;
@@ -3012,7 +3018,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
       bool Failure = (File == NULL);
       if (Failure)
       {
-        File = new TRemoteParentDirectory();
+        File = new TRemoteParentDirectory(FTerminal);
       }
 
       assert(File && File->IsParentDirectory);
@@ -3160,15 +3166,15 @@ void __fastcall TSFTPFileSystem::CustomReadFile(const AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::DeleteFile(const AnsiString FileName,
-  const TRemoteFile * File, bool Recursive)
+  const TRemoteFile * File, int Params)
 {
   char Type;
   AnsiString RealFileName = LocalCanonify(FileName);
   if (File && File->IsDirectory && !File->IsSymLink)
   {
-    if (Recursive)
+    if (FLAGCLEAR(Params, dfNoRecursive))
     {
-      FTerminal->ProcessDirectory(FileName, FTerminal->DeleteFile, &Recursive);
+      FTerminal->ProcessDirectory(FileName, FTerminal->DeleteFile, &Params);
     }
     Type = SSH_FXP_RMDIR;
   }
@@ -3667,8 +3673,8 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(AnsiString & FileName,
     }
     else if (Answer == qaIgnore)
     {
-      if (FTerminal->PromptUser(FTerminal->SessionData, LoadStr(RENAME_PROMPT),
-            pkPrompt, FileName))
+      if (FTerminal->PromptUser(FTerminal->SessionData, pkPrompt, LoadStr(RENAME_TITLE), "",
+            LoadStr(RENAME_PROMPT2), true, 0, FileName))
       {
         OverwriteMode = omOverwrite;
       }
@@ -3976,15 +3982,6 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       // will the transfer be resumable?
       bool DoResume = (ResumeAllowed && (OpenParams.OverwriteMode == omOverwrite));
 
-      if (DoResume && DestFileExists)
-      {
-        FILE_OPERATION_LOOP(FMTLOAD(DELETE_BEFORE_RESUME_ERROR,
-            (UnixExtractFileName(DestFullName), DestFullName)),
-
-          DeleteFile(DestFullName);
-        );
-      }
-
       OpenParams.RemoteFileName = DoResume ? DestPartinalFullName : DestFullName;
       OpenParams.Resume = DoResume;
       OpenParams.OperationProgress = OperationProgress;
@@ -4099,10 +4096,19 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
         }
       }
 
-      // originally this was before CLOSE (last __finally statement),
-      // on VShell it failed
       if (DoResume)
       {
+        if (DestFileExists)
+        {
+          FILE_OPERATION_LOOP(FMTLOAD(DELETE_ON_RESUME_ERROR,
+              (UnixExtractFileName(DestFullName), DestFullName)),
+
+            DeleteFile(DestFullName);
+          );
+        }
+
+        // originally this was before CLOSE (last __finally statement),
+        // on VShell it failed
         FILE_OPERATION_LOOP(FMTLOAD(RENAME_AFTER_RESUME_ERROR,
             (UnixExtractFileName(OpenParams.RemoteFileName), DestFileName)),
           RenameFile(OpenParams.RemoteFileName, DestFileName);
@@ -4340,8 +4346,8 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
               FMTLOAD(SFTP_OVERWRITE_FILE_ERROR, (OpenParams->RemoteFileName)),
               true, LoadStr(SFTP_OVERWRITE_DELETE_BUTTON)))
         {
-          bool Recursive = false;
-          FTerminal->DeleteFile(OpenParams->RemoteFileName, NULL, &Recursive);
+          int Params = dfNoRecursive;
+          FTerminal->DeleteFile(OpenParams->RemoteFileName, NULL, &Params);
         }
       }
       else
@@ -5044,8 +5050,8 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
     // If file is directory, do not delete it recursively, because it should be
     // empty already. If not, it should not be deleted (some files were
     // skipped or some new files were copied to it, while we were downloading)
-    bool Recursive = false;
-    FTerminal->DeleteFile(FileName, File, &Recursive);
+    int Params = dfNoRecursive;
+    FTerminal->DeleteFile(FileName, File, &Params);
   }
 }
 //---------------------------------------------------------------------------

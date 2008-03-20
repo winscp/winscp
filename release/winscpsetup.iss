@@ -23,7 +23,7 @@
   #define OutputDir ""
 #endif
 
-#define TranslationMask TranslationDir + "\WinSCP.???"
+#define TranslationFileMask "WinSCP.???"
 #define MainFileSource SourceDir+"\WinSCP.exe"
 #define ShellExtFileSource SourceDir+"\DragExt.dll"
 #define ShellExt64FileSource SourceDir+"\DragExt64.dll"
@@ -36,12 +36,6 @@
 #expr ParseVersion(MainFileSource, Major, Minor, Rev, Build)
 #define Version Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")+(Status != "" ? " "+Status : "")
 
-#define SetupExt
-
-#ifdef INTL
-  #expr SetupExt="intl"
-#endif
-
 ; Translation support functions/variables
 
 [Setup]
@@ -53,7 +47,7 @@ AppPublisherURL={#WebRoot}
 AppSupportURL={#WebForum}
 AppUpdatesURL={#WebRoot}eng/download.php
 VersionInfoCompany=Martin Prikryl
-VersionInfoDescription=Setup for WinSCP {#Version} (Freeware SCP/SFTP client for Windows)
+VersionInfoDescription=Setup for WinSCP {#Version} (SFTP, FTP and SCP client)
 VersionInfoVersion={#Major}.{#Minor}.{#Rev}.{#Build}
 VersionInfoTextVersion={#Version}
 VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
@@ -66,7 +60,7 @@ OutputDir={#OutputDir}
 DisableStartupPrompt=yes
 AppVersion={#Version}
 AppVerName=WinSCP {#Version}
-OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup{#SetupExt}
+OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup
 SolidCompression=yes
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
@@ -74,43 +68,65 @@ PrivilegesRequired=none
 ; Some features of ISCC requires path relative to script,
 ; some path relative to CWD
 #define MessagesPathRel(L) TranslationDirRel + "\" + "WinSCP." + L + ".isl"
-#define MessagesPath(L) TranslationDir + "\" + "WinSCP." + L + ".isl"
 
 [Languages]
 Name: {#DefaultLang}; MessagesFile: {#MessagesPathRel(DefaultLang)}
 
-#ifdef INTL
+#define FindHandle
+#dim Languages[200]
+#define LanguageCount 0
+#define AnyLanguageComplete 0
+#define LangI
+#define Complete
+#define DirName
 
-  #define FindHandle
-  #dim Languages[100]
-  #define LanguageCount 0
-  #define LangI
+#sub ProcessTranslationFile
 
-  #sub ProcessTranslationFile
+  #define FileName FindGetFileName(FindHandle)
+  #define Lang Copy(FileName, Pos(".", FileName)+1)
+  #define MessagesPath DirName + "\" + "WinSCP." + Lang + ".isl"
 
-    #define FileName FindGetFileName(FindHandle)
-    #define Lang Copy(FileName, Pos(".", FileName)+1)
+  #define LangNameFull ReadIni(MessagesPath, "LangOptions", "LanguageName")
+  #define Sep Pos(" - ", LangNameFull)
+  #if Sep > 0
+    #define LangName Copy(LangNameFull, 1, Sep - 1)
+  #else
+    #define LangName LangNameFull
+  #endif
+  #define LangID ReadIni(MessagesPath, "LangOptions", "LanguageID")
 
-    #define LangName ReadIni(MessagesPath(Lang), "LangOptions", "LanguageName")
-    #define LangID ReadIni(MessagesPath(Lang), "LangOptions", "LanguageID")
+  #expr Languages[LanguageCount*4] = Lang
+  #expr Languages[LanguageCount*4+1] = LangName
+  #expr Languages[LanguageCount*4+2] = LangID
+  #expr Languages[LanguageCount*4+3] = Complete
+  #expr LanguageCount++
 
-    #expr Languages[LanguageCount*3] = Lang
-    #expr Languages[LanguageCount*3+1] = LangName
-    #expr Languages[LanguageCount*3+2] = LangID
-    #expr LanguageCount++
-
-[Languages]
+#if Complete == 1
 Name: {#Lang}; MessagesFile: {#MessagesPathRel(Lang)}
+  #expr AnyLanguageComplete = 1
+#endif
 
-  #endsub /* sub ProcessTranslationFile */
+#endsub /* sub ProcessTranslationFile */
 
-  #if FindHandle = FindFirst(TranslationMask, 0)
+#sub ProcessTranslationDir
+
+  #if FindHandle = FindFirst(DirName + "\" + TranslationFileMask, 0)
     #define FResult 1
     #for {0; FResult; FResult = FindNext(FindHandle)} ProcessTranslationFile
     #expr FindClose(FindHandle)
   #endif
 
-#endif /* ifdef INTL */
+#endsub /* sub ProcessTranslationDir */
+
+#expr Complete = 1
+#expr DirName = TranslationDir
+#emit ProcessTranslationDir
+
+#ifdef TranslationIncompleteDir
+  #expr Complete = 0
+  #expr DirName = TranslationIncompleteDir
+  #emit ProcessTranslationDir
+#endif
 
 ; Types are not used anymore, they are preserved only to let setup
 ; detect previous installation type and decide between typical/custom setup
@@ -128,7 +144,7 @@ Name: pageant; Description: {cm:PageantComponent}; \
   Types: full
 Name: puttygen; Description: {cm:PuTTYgenComponent}; \
   Types: full
-#ifdef INTL
+#if AnyLanguageComplete == 1
 Name: transl; Description: {cm:TranslationsComponent}; \
   Types: full
 #endif
@@ -209,8 +225,6 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterAsUrlHandler"; \
   StatusMsg: {cm:RegisteringAsUrlHandler}; Tasks: urlhandler
 Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
-Filename: "{app}\WinSCP.exe"; Parameters: "/InvalidDefaultTranslation"; \
-  StatusMsg: {cm:RemovingInvalidDefaultTranslation}
 
 [UninstallDelete]
 ; These additional files are created by application
@@ -282,35 +296,39 @@ Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface\Updates"; \
   ValueType: dword; ValueName: "Period"; ValueData: 7; \
   Tasks: enableupdates; Check: not UpdatesEnabled
 
-#ifdef INTL
+#if AnyLanguageComplete == 1
 
 [Components]
 Name: transl\eng; Description: {#EnglishLang}; Types: full custom compact; \
   Flags: fixed
 
-  #sub EmitLang
+#endif
+
+#sub EmitLang
+
+  #if Languages[LangI*4+3] == 1
 
 [Components]
-Name: transl\{#Languages[LangI*3]}; Description: {#Languages[LangI*3+1]}; \
-  Types: full compact custom; Check: IsLang('{#Languages[LangI*3]}')
-Name: transl\{#Languages[LangI*3]}; Description: {#Languages[LangI*3+1]}; \
-  Check: not IsLang('{#Languages[LangI*3]}')
+Name: transl\{#Languages[LangI*4]}; Description: {#Languages[LangI*4+1]}; \
+  Types: full compact custom; Check: IsLang('{#Languages[LangI*4]}')
+Name: transl\{#Languages[LangI*4]}; Description: {#Languages[LangI*4+1]}; \
+  Check: not IsLang('{#Languages[LangI*4]}')
 
 [Files]
-Source: "{#TranslationDirRel}\WinSCP.{#Languages[LangI*3]}"; DestDir: "{app}"; \
-  Components: transl\{#Languages[LangI*3]}; Flags: ignoreversion
+Source: "{#TranslationDirRel}\WinSCP.{#Languages[LangI*4]}"; DestDir: "{app}"; \
+  Components: transl\{#Languages[LangI*4]}; Flags: ignoreversion
 
 [Registry]
 ; set program default language to setup language, but only if user installs it
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; \
-  ValueType: dword; ValueName: "LocaleSafe"; ValueData: {#Languages[LangI*3+2]}; \
-  Components: transl\{#Languages[LangI*3]}; Languages: {#Languages[LangI*3]}
+  ValueType: dword; ValueName: "LocaleSafe"; ValueData: {#Languages[LangI*4+2]}; \
+  Components: transl\{#Languages[LangI*4]}; Languages: {#Languages[LangI*4]}
 
-  #endsub /* sub EmitLang */
+  #endif
 
-  #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
+#endsub /* sub EmitLang */
 
-#endif /* ifdef INTL */
+#for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang
 
 [UninstallRun]
 Filename: "{app}\WinSCP.exe"; Parameters: "/UninstallCleanup"; \
@@ -332,6 +350,7 @@ var
   AdvancedTabsCheckbox: TCheckbox;
   AreUpdatesEnabled: Boolean;
   Upgrade: Boolean;
+  MissingTranslations: string;
 
 function IsLang(Lang: String): Boolean;
 begin
@@ -352,19 +371,31 @@ begin
   end;
 end;
 
-#ifdef INTL
-function LanguageName(Lang: String): String;
+function LanguageName(Lang: String; Unknown: String): String;
 begin
   #sub EmitLang2
-  if Lang = '{#Languages[LangI*3]}' then Result := '{#Languages[LangI*3+1]}'
+  if Lang = '{#Languages[LangI*4]}' then Result := '{#Languages[LangI*4+1]}'
     else
   #endsub /* sub EmitLang2 */
 
   #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang2
 
-  Result := 'unknown';
+  Result := Unknown;
 end;
-#endif /* ifdef INTL */
+
+function ContainsLanguage(Lang: String): Boolean;
+begin
+  #sub EmitLang3
+    #if Languages[LangI*4+3] == 1
+  if (Lang = '{#Languages[LangI*4]}') then Result := True
+    else
+    #endif
+  #endsub /* sub EmitLang3 */
+
+  #for {LangI = 0; LangI < LanguageCount; LangI++} EmitLang3
+
+  Result := False;
+end;
 
 procedure OpenHelp;
 var
@@ -393,6 +424,56 @@ begin
   WizardForm.ActiveControl := TLabel(Sender).FocusControl;
 end;
 
+type
+  TProcessTranslationEvent = procedure(Lang: string; FileName: string);
+
+procedure CollectNames(Lang: string; FileName: string);
+begin
+  if Length(MissingTranslations) > 0 then
+    MissingTranslations := MissingTranslations + ', ';
+  MissingTranslations := MissingTranslations + LanguageName(Lang, Lang);
+end;
+
+procedure DeleteTranslation(Lang: string; FileName: string);
+begin
+  DeleteFile(FileName);
+end;
+
+procedure ProcessMissingTranslations(OnProcessTranslation: TProcessTranslationEvent);
+var
+  Path: string;
+  FindRec: TFindRec;
+  Ext: string;
+  VersionMS, VersionLS: Cardinal;
+begin
+  Path := AddBackslash(WizardDirValue);
+
+  if FindFirst(ExpandConstant(Path + '{#TranslationFileMask}'), FindRec) then
+  begin
+    try
+      repeat
+        if FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY = 0 then
+        begin
+          Ext := Uppercase(ExtractFileExt(FindRec.Name));
+          // any binary (has version info), which is not EXE or DLL,
+          // is suspected to be a language file
+          if (Pos('.', Ext) = 1) and
+             (Ext <> '.INI') and (Ext <> '.EXE') and (Ext <> '.COM') and
+             (Ext <> '.DLL') and
+             GetVersionNumbers(Path + FindRec.Name, VersionMS, VersionLS) then
+          begin
+            Ext := Lowercase(Copy(Ext, 2, Length(Ext) - 1));
+            if not ContainsLanguage(Ext) then
+              OnProcessTranslation(Ext, Path + FindRec.Name);
+          end;
+        end;
+      until not FindNext(FindRec);
+    finally
+      FindClose(FindRec);
+    end;
+  end;
+end;
+
 procedure InitializeWizard;
 var
   UserInterface: Cardinal;
@@ -407,6 +488,8 @@ begin
   Upgrade :=
     RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
     RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S)
+
+  ProcessMissingTranslations(@CollectNames);
 
   WizardForm.KeyPreview := True;
   WizardForm.OnKeyDown := @FormKeyDown;
@@ -471,23 +554,30 @@ begin
   Caption.WordWrap := True;
   if not Upgrade then
   begin
-#ifdef INTL
     if ActiveLanguage = '{#DefaultLang}' then
       S := ExpandConstant('{cm:TypicalType2Eng}')
     else
-      S := FmtMessage(ExpandConstant('{cm:TypicalType2Intl}'), [LanguageName(ActiveLanguage)]);
-#else
-    S := ExpandConstant('{cm:TypicalType2}');
-#endif
+      S := FmtMessage(ExpandConstant('{cm:TypicalType2Intl}'), [LanguageName(ActiveLanguage, 'Unknown')]);
     Caption.Caption :=
-        ExpandConstant('{cm:TypicalType1}') + #13#10 +
-        S + #13#10 +
-        ExpandConstant('{cm:TypicalType3}');
+      ExpandConstant('{cm:TypicalType1}') + #13#10 +
+      S + #13#10 +
+      ExpandConstant('{cm:TypicalType3}');
   end
     else
   begin
+    if Length(MissingTranslations) > 0 then
+    begin
+      #if AnyLanguageComplete
+        S := FmtMessage(ExpandConstant('{cm:TypicalUpgradeTypeMissingTransl}'), [MissingTranslations]);
+      #else
+        S := ExpandConstant('{cm:TypicalUpgradeTypeNoTransl}');
+      #endif
+      S := #13#10 + S;
+    end
+      else S := '';
+
     Caption.Caption :=
-      ExpandConstant('{cm:TypicalUpgradeType1}');
+      ExpandConstant('{cm:TypicalUpgradeType1}') + S;
   end;
   Caption.Left := ScaleX(4) + ScaleX(20);
   Caption.Width := SetupTypePage.SurfaceWidth - Caption.Left;
@@ -631,6 +721,19 @@ begin
   begin
     AdditionalOptionsCaption.Visible := not TypicalTypeButton.Checked;
     AdvancedTabsCheckbox.Visible := not TypicalTypeButton.Checked;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+  begin
+    if Length(MissingTranslations) > 0 then
+    begin
+      WizardForm.StatusLabel.Caption :=
+        ExpandConstant('{cm:RemovingObsoleteTranslations}');
+      ProcessMissingTranslations(@DeleteTranslation);
+    end;
   end;
 end;
 

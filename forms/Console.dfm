@@ -29,9 +29,9 @@ object ConsoleDialog: TConsoleDialog
   object Label1: TLabel
     Left = 13
     Top = 13
-    Width = 74
+    Width = 77
     Height = 13
-    Caption = 'Enter &command'
+    Caption = 'Enter &command:'
     FocusControl = CommandEdit
   end
   object Label2: TLabel

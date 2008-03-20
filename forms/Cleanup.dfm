@@ -11,7 +11,7 @@ object CleanupDialog: TCleanupDialog
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poOwnerFormCenter
+  Position = poMainFormCenter
   OnShow = FormShow
   DesignSize = (
     489

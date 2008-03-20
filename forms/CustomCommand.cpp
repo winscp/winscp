@@ -54,7 +54,7 @@ __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner, unsigne
   FOnValidate = NULL;
   FOptions = Options;
   InstallPathWordBreakProc(CommandEdit);
-  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT));
+  HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT2));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::UpdateControls()

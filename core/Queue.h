@@ -7,8 +7,6 @@
 //---------------------------------------------------------------------------
 class TSimpleThread
 {
-friend int __fastcall ThreadProc(void * Thread);
-
 public:
   __fastcall TSimpleThread();
   virtual __fastcall ~TSimpleThread();
@@ -24,6 +22,8 @@ protected:
 
   virtual void __fastcall Execute() = 0;
   virtual void __fastcall Finished();
+
+  static int __fastcall ThreadProc(void * Thread);
 };
 //---------------------------------------------------------------------------
 class TSignalThread : public TSimpleThread
@@ -62,7 +62,6 @@ typedef void __fastcall (__closure * TQueueEventEvent)
 //---------------------------------------------------------------------------
 class TTerminalQueue : public TSignalThread
 {
-friend class TTerminalItem;
 friend class TQueueItem;
 friend class TQueueItemProxy;
 
@@ -84,6 +83,11 @@ public:
   __property TQueueEventEvent OnEvent = { read = FOnEvent, write = FOnEvent };
 
 protected:
+  friend class TTerminalItem;
+  friend class TQueryUserAction;
+  friend class TPromptUserAction;
+  friend class TShowExtendedExceptionAction;
+
   TQueryUserEvent FOnQueryUser;
   TPromptUserEvent FOnPromptUser;
   TExtendedExceptionEvent FOnShowExtendedException;
@@ -111,6 +115,7 @@ protected:
   bool __fastcall ItemExecuteNow(TQueueItem * Item);
   bool __fastcall ItemDelete(TQueueItem * Item);
   bool __fastcall ItemPause(TQueueItem * Item, bool Pause);
+  bool __fastcall ItemSetCPSLimit(TQueueItem * Item, unsigned long CPSLimit);
 
   void __fastcall RetryItem(TQueueItem * Item);
   void __fastcall DeleteItem(TQueueItem * Item);
@@ -122,8 +127,9 @@ protected:
   void __fastcall DoQueryUser(TObject * Sender, const AnsiString Query,
     TStrings * MoreMessages, int Answers, const TQueryParams * Params, int & Answer,
     TQueryType Type, void * Arg);
-  void __fastcall DoPromptUser(TTerminal * Terminal, AnsiString Prompt,
-    TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg);
+  void __fastcall DoPromptUser(TTerminal * Terminal, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+    TStrings * Results, bool & Result, void * Arg);
   void __fastcall DoShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall DoQueueItemUpdate(TQueueItem * Item);
@@ -166,6 +172,7 @@ protected:
   TQueueItem::TInfo * FInfo;
   TTerminalQueue * FQueue;
   HANDLE FCompleteEvent;
+  long FCPSLimit;
 
   __fastcall TQueueItem();
   virtual __fastcall ~TQueueItem();
@@ -174,8 +181,9 @@ protected:
   TStatus __fastcall GetStatus();
   void __fastcall Execute(TTerminalItem * TerminalItem);
   virtual void __fastcall DoExecute(TTerminal * Terminal) = 0;
-  void __fastcall SetProgress(const TFileOperationProgressType & ProgressData);
+  void __fastcall SetProgress(TFileOperationProgressType & ProgressData);
   void __fastcall GetData(TQueueItemProxy * Proxy);
+  void __fastcall SetCPSLimit(unsigned long CPSLimit);
   virtual AnsiString __fastcall StartupDirectory() = 0;
 };
 //---------------------------------------------------------------------------
@@ -194,6 +202,7 @@ public:
   bool __fastcall Delete();
   bool __fastcall Pause();
   bool __fastcall Resume();
+  bool __fastcall SetCPSLimit(unsigned long CPSLimit);
 
   __property TFileOperationProgressType * ProgressData = { read = GetProgressData };
   __property TQueueItem::TInfo * Info = { read = FInfo };

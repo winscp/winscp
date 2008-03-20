@@ -24,6 +24,16 @@ __fastcall TLoggingFrame::TLoggingFrame(TComponent* Owner)
   FEnableLogWindow = true;
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoggingFrame::Init()
+{
+  InstallPathWordBreakProc(LogFileNameEdit);
+  HintLabel(LogFileNameHintText, LoadStr(LOG_FILE_HINT2));
+
+  // anchors does not apply for some reason to this particular control
+  LogFileNameHintText->Left = LogFileNameEdit->Left + LogFileNameEdit->Width -
+    LogFileNameHintText->Width;
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::LoadConfiguration()
 {
   //Log tab
@@ -44,14 +54,6 @@ void __fastcall TLoggingFrame::LoadConfiguration()
     LogWindowLinesEdit->AsInteger = Configuration->LogWindowLines;
   else
     LogWindowLinesEdit->AsInteger = 500;
-
-  // somehow does not work for this particular frame when called from constructor
-  InstallPathWordBreakProc(LogFileNameEdit);
-  HintLabel(LogFileNameHintText, LoadStr(LOG_FILE_HINT));
-
-  // anchors does not apply for some reason to this particular control
-  LogFileNameHintText->Left = LogFileNameEdit->Left + LogFileNameEdit->Width -
-    LogFileNameHintText->Width;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::SaveConfiguration()

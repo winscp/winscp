@@ -1,5 +1,5 @@
 PuTTY
-PuTTY is copyright 1997-2005 Simon Tatham.
+PuTTY is copyright 1997-2007 Simon Tatham.
 
 Portions copyright Robert de Bath, Joris van Rantwijk, Delian
 Delchev, Andreas Schultz, Jeroen Massar, Wez Furlong, Nicolas Barry,

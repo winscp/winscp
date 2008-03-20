@@ -35,6 +35,7 @@ object ProgressForm: TProgressForm
     Width = 73
     Height = 25
     Anchors = [akTop, akRight]
+    Cancel = True
     Caption = 'Cancel'
     TabOrder = 0
     OnClick = CancelButtonClick
@@ -153,7 +154,7 @@ object ProgressForm: TProgressForm
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
       AutoSize = False
-      Caption = '0 KB/s'
+      Caption = '0 KiB/s'
     end
     object TimeElapsedLabel: TLabel
       Left = 234
@@ -191,7 +192,7 @@ object ProgressForm: TProgressForm
       Height = 13
       Alignment = taRightJustify
       AutoSize = False
-      Caption = '0 KB'
+      Caption = '0 KiB'
     end
     object Label3: TLabel
       Left = 162
@@ -215,13 +216,13 @@ object ProgressForm: TProgressForm
       Height = 13
       Caption = 'Bytes transferred:'
     end
-    object Label7: TLabel
+    object Label12: TLabel
       Left = 162
       Top = 34
-      Width = 24
+      Width = 34
       Height = 13
       Anchors = [akTop, akRight]
-      Caption = 'CPS:'
+      Caption = 'Speed:'
     end
     object Label10: TLabel
       Left = 0
@@ -257,7 +258,7 @@ object ProgressForm: TProgressForm
     Width = 289
     Height = 17
     Caption = '&Disconnect when operation finishes'
-    TabOrder = 5
+    TabOrder = 6
   end
   object SpeedPanel: TPanel
     Left = 308
@@ -266,49 +267,36 @@ object ProgressForm: TProgressForm
     Height = 73
     Anchors = [akTop, akRight]
     BevelOuter = bvNone
-    TabOrder = 6
-    object SpeedLabel: TLabel
+    TabOrder = 5
+    object SpeedLabel2: TLabel
       Left = 8
       Top = 0
-      Width = 31
+      Width = 66
       Height = 13
-      Caption = '&Speed'
-      FocusControl = SpeedBar
+      Caption = '&Speed (KiB/s)'
     end
-    object SpeedLowLabel: TLabel
-      Left = 7
-      Top = 48
-      Width = 26
-      Height = 13
-      AutoSize = False
-      Caption = '5%'
-    end
-    object SpeedHighLabel: TLabel
-      Left = 46
-      Top = 48
-      Width = 32
-      Height = 13
-      Alignment = taRightJustify
-      AutoSize = False
-      Caption = '100%'
-    end
-    object SpeedBar: TTrackBar
-      Left = 0
-      Top = 15
-      Width = 85
-      Height = 33
-      LineSize = 5
-      Max = 100
-      Min = 5
-      Orientation = trHorizontal
-      PageSize = 25
-      Frequency = 25
-      Position = 100
-      SelEnd = 0
-      SelStart = 0
+    object SpeedCombo: THistoryComboBox
+      Left = 6
+      Top = 16
+      Width = 73
+      Height = 21
+      AutoComplete = False
+      ItemHeight = 13
       TabOrder = 0
-      TickMarks = tmBottomRight
-      TickStyle = tsManual
+      Text = 'SpeedCombo'
+      OnExit = SpeedComboExit
+      OnKeyPress = SpeedComboKeyPress
+      OnSelect = SpeedComboSelect
+      Items.Strings = (
+        'Unlimited'
+        '1024'
+        '512'
+        '256'
+        '128'
+        '64'
+        '32'
+        '16'
+        '8')
     end
   end
   object UpdateTimer: TTimer

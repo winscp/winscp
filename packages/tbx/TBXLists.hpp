@@ -161,7 +161,7 @@ private:
 	
 protected:
 	virtual bool __fastcall DoClearItem(Graphics::TCanvas* ACanvas, const Types::TRect &ARect, int AIndex, int AHoverIndex);
-	virtual bool __fastcall DoDrawItem(Graphics::TCanvas* ACanvas, const Types::TRect &ARect, int AIndex, int AHoverIndex);
+	virtual bool __fastcall DoDrawItem(Graphics::TCanvas* ACanvas, Types::TRect &ARect, int AIndex, int AHoverIndex);
 	virtual void __fastcall DoMeasureHeight(Graphics::TCanvas* ACanvas, int &AHeight);
 	virtual void __fastcall DoMeasureWidth(Graphics::TCanvas* ACanvas, int AIndex, int &AWidth);
 	virtual void __fastcall DrawItem(Graphics::TCanvas* ACanvas, TTBXCustomListViewer* AViewer, const Types::TRect &ARect, int AIndex, int AHoverIndex);

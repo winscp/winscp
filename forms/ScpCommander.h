@@ -17,11 +17,7 @@
 #include <ExtCtrls.hpp>
 #include <ToolWin.hpp>
 #include <DirView.hpp>
-#include <CustomPathComboBox.hpp>
-#include <IEComboBox.hpp>
-#include <IEPathComboBox.hpp>
 #include <PathLabel.hpp>
-#include <UnixPathComboBox.h>
 
 #include <WinInterface.h>
 
@@ -50,10 +46,6 @@ __published:
   TPathLabel *LocalPathLabel;
   TPathLabel *RemotePathLabel;
   TTBXStatusBar *StatusBar;
-  TPanel *CommandLinePanel;
-  THistoryComboBox *CommandLineCombo;
-  TPathLabel *CommandLineLabel;
-  TLabel *CommandLinePromptLabel;
   TDriveView *LocalDriveView;
   TSplitter *LocalPanelSplitter;
   TTBXToolbar *SessionToolbar;
@@ -288,8 +280,6 @@ __published:
   TTBXItem *TBXItem122;
   TTBXDock *LocalTopDock;
   TTBXToolbar *LocalPathToolbar;
-  TTBControlItem *TBControlItem1;
-  TIEPathComboBox *LocalPathComboBox;
   TTBXToolbar *LocalHistoryToolbar;
   TTBXSubmenuItem *LocalBackButton;
   TTBXSubmenuItem *LocalForwardButton;
@@ -299,7 +289,6 @@ __published:
   TTBXItem *TBXItem161;
   TTBXItem *TBXItem162;
   TTBXSeparatorItem *TBXSeparatorItem43;
-  TTBXItem *TBXItem163;
   TTBXItem *TBXItem164;
   TTBXDock *LocalBottomDock;
   TTBXDock *RemoteTopDock;
@@ -313,10 +302,7 @@ __published:
   TTBXItem *TBXItem167;
   TTBXItem *TBXItem168;
   TTBXSeparatorItem *TBXSeparatorItem44;
-  TTBXItem *TBXItem169;
   TTBXItem *TBXItem170;
-  TTBControlItem *TBControlItem2;
-  TUnixPathComboBox *RemotePathComboBox;
   TTBXDock *RemoteBottomDock;
   TTBXDock *BottomDock;
   TTBXToolbar *ToolbarToolbar;
@@ -380,13 +366,18 @@ __published:
   TTBXItem *TBXItem189;
   TTBXItem *TBXItem218;
   TTBXItem *TBXItem219;
+  TTBXComboBoxItem *RemotePathComboBox;
+  TTBXComboBoxItem *LocalPathComboBox;
+  TTBXToolbar *CommandLineToolbar;
+  TTBXComboBoxItem *CommandLineCombo;
+  TTBXLabelItem *CommandLinePromptLabel;
+  TTBXItem *TBXItem163;
+  TTBXItem *TBXItem169;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
   void __fastcall SplitterDblClick(TObject *Sender);
   void __fastcall PanelSplitterDblClick(TObject * Sender);
-  void __fastcall PathComboBoxCloseUp(TObject *Sender,
-    bool Canceled);
   void __fastcall LocalDirViewExecFile(TObject *Sender, TListItem *Item,
     bool &AllowExec);
   void __fastcall LocalFileControlDDDragEnter(TObject *Sender,
@@ -399,11 +390,6 @@ __published:
     bool &DoOperation);
   void __fastcall RemoteFileControlDDFileOperationExecuted(TObject *Sender,
     int dwEffect, AnsiString SourcePath, AnsiString TargetPath);
-  void __fastcall CommandLineComboKeyDown(TObject *Sender, WORD &Key,
-    TShiftState Shift);
-  void __fastcall CommandLineComboDropDown(TObject *Sender);
-  void __fastcall CommandLineComboEnter(TObject *Sender);
-  void __fastcall CommandLineComboExit(TObject *Sender);
   void __fastcall LocalDirViewDDTargetHasDropHandler(TObject *Sender,
     TListItem *Item, int &Effect, bool &DropHandler);
   void __fastcall LocalFileControlDDMenuPopup(TObject *Sender, HMENU AMenu,
@@ -426,9 +412,19 @@ __published:
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall LocalStatusBarClick(TObject *Sender);
+  void __fastcall RemoteDirViewPathChange(TCustomDirView *Sender);
+  void __fastcall LocalDirViewPathChange(TCustomDirView *Sender);
+  void __fastcall LocalPathComboBoxCancel(TObject *Sender);
+  void __fastcall LocalPathComboBoxAdjustImageIndex(
+    TTBXComboBoxItem * Sender, const AnsiString AText, int AIndex, int & ImageIndex);
+  void __fastcall LocalPathComboBoxItemClick(TObject * Sender);
+  void __fastcall CommandLineComboPopup(TTBCustomItem *Sender,
+          bool FromLink);
+  void __fastcall CommandLineComboBeginEdit(TTBEditItem *Sender,
+          TTBEditItemViewer *Viewer, TEdit *EditControl);
+  void __fastcall LocalDriveViewRefreshDrives(TObject *Sender);
 
 private:
-  TCustomDirView * FDirViewToSelect;
   float FLastLeftPanelWidth;
   float FLeftPanelWidth;
   int FNormalPanelsWidth;
@@ -439,10 +435,17 @@ private:
   bool FFirstTerminal;
   AnsiString FDDExtTarget;
   bool FCommandLineComboPopulated;
+  TStrings* FLocalPathComboBoxPaths;
+  unsigned int FSpecialFolders;
+  TEdit * FCommandLineComboEdit;
+  TWndMethod FToolbarEditOldWndProc;
 
   void __fastcall SetLeftPanelWidth(float value);
   float __fastcall GetLeftPanelWidth();
   inline TPanel * __fastcall Panel(bool Left);
+  TPanel * __fastcall CurrentPanel();
+  void __fastcall CommandLineComboEditWndProc(TMessage & Message);
+  void __fastcall ExitToolbar();
 
 protected:
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
@@ -467,7 +470,7 @@ protected:
   virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
   virtual void __fastcall SideEnter(TOperationSide Side);
   void __fastcall SaveCommandLine();
-  void __fastcall ExecuteCommandLine();
+  bool __fastcall ExecuteCommandLine();
   virtual void __fastcall PanelExportStore(TOperationSide Side,
     TPanelExport Export, TPanelExportDestination Destination,
     TStringList * ExportData);
@@ -484,6 +487,12 @@ protected:
   virtual void __fastcall DoDirViewLoaded(TCustomDirView * Sender);
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
   virtual void __fastcall UpdateSessionData(TSessionData * Data);
+  void __fastcall SynchronizeBrowsing(TCustomDirView * ADirView);
+  void __fastcall SynchronizeBrowsing(TCustomDirView * ADirView, AnsiString PrevPath,
+    AnsiString & NewPath, bool Create);
+  void __fastcall LocalPathComboUpdateDrives();
+  void __fastcall LocalPathComboUpdate();
+  virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);
@@ -503,6 +512,7 @@ public:
   virtual void __fastcall OpenConsole(AnsiString Command = "");
   virtual AnsiString __fastcall PathForCaption();
   virtual void __fastcall BeforeAction();
+  virtual void __fastcall HomeDirectory(TOperationSide Side);
 
   __property float LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

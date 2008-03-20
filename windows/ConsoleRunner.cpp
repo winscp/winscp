@@ -36,6 +36,7 @@ public:
     int Timeouted, unsigned int Timer) = 0;
   virtual bool __fastcall PendingAbort() = 0;
   virtual void __fastcall SetTitle(AnsiString Title) = 0;
+  virtual bool __fastcall LimitedOutput() = 0;
   virtual void __fastcall WaitBeforeExit() = 0;
 };
 //---------------------------------------------------------------------------
@@ -50,6 +51,7 @@ public:
     int Timeouted, unsigned int Timer);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
+  virtual bool __fastcall LimitedOutput();
   virtual void __fastcall WaitBeforeExit();
 
 protected:
@@ -336,6 +338,11 @@ void __fastcall TOwnConsole::SetTitle(AnsiString Title)
   SetConsoleTitle(Title.c_str());
 }
 //---------------------------------------------------------------------------
+bool __fastcall TOwnConsole::LimitedOutput()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOwnConsole::WaitBeforeExit()
 {
   unsigned long Read;
@@ -363,6 +370,7 @@ public:
     int Timeouted, unsigned int Timer);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
+  virtual bool __fastcall LimitedOutput();
   virtual void __fastcall WaitBeforeExit();
 
 private:
@@ -371,11 +379,13 @@ private:
   HANDLE FResponseEvent;
   HANDLE FCancelEvent;
   HANDLE FFileMapping;
+  bool FLimitedOutput;
   static const int PrintTimeout = 5000;
 
   inline TConsoleCommStruct * __fastcall GetCommStruct();
   inline void __fastcall FreeCommStruct(TConsoleCommStruct * CommStruct);
   inline void __fastcall SendEvent(int Timeout);
+  void __fastcall Init();
 };
 //---------------------------------------------------------------------------
 __fastcall TExternalConsole::TExternalConsole(const AnsiString Instance)
@@ -396,20 +406,12 @@ __fastcall TExternalConsole::TExternalConsole(const AnsiString Instance)
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
   {
-    if (CommStruct->Version < TConsoleCommStruct::MinVersion)
+    if (CommStruct->Version != TConsoleCommStruct::CurrentVersion)
     {
-      throw Exception(FMTLOAD(EXTERNAL_CONSOLE_INCOMPATIBLE, (CommStruct->Version)));
+      throw Exception(FMTLOAD(EXTERNAL_CONSOLE_INCOMPATIBLE, (CommStruct->CurrentVersion)));
     }
-    else if (CommStruct->Version == TConsoleCommStruct::Version1)
-    {
-      // version upgrade from 1 to the latest version indicates to the
-      // external console that the application supports newer versions than 0.
-      CommStruct->Version = TConsoleCommStruct::CurrentVersion;
-    }
-    else if (CommStruct->Version > TConsoleCommStruct::CurrentVersion)
-    {
-      CommStruct->Version = TConsoleCommStruct::CurrentVersion;
-    }
+
+    CommStruct->Version = TConsoleCommStruct::CurrentVersionConfirmed;
   }
   __finally
   {
@@ -419,6 +421,8 @@ __fastcall TExternalConsole::TExternalConsole(const AnsiString Instance)
   // to break application event loop regularly during "watching for changes"
   // to allow user to abort it
   SetTimer(Application->Handle, 1, 500, NULL);
+
+  Init();
 }
 //---------------------------------------------------------------------------
 __fastcall TExternalConsole::~TExternalConsole()
@@ -487,10 +491,7 @@ bool __fastcall TExternalConsole::Input(AnsiString & Str, bool Echo, unsigned in
     CommStruct->InputEvent.Echo = Echo;
     CommStruct->InputEvent.Result = false;
     CommStruct->InputEvent.Str[0] = '\0';
-    if (CommStruct->Version >= TConsoleCommStruct::Version2)
-    {
-      CommStruct->InputEvent.Timer = Timer;
-    }
+    CommStruct->InputEvent.Timer = Timer;
   }
   __finally
   {
@@ -528,11 +529,8 @@ int __fastcall TExternalConsole::Choice(AnsiString Options, int Cancel, int Brea
     CommStruct->ChoiceEvent.Cancel = Cancel;
     CommStruct->ChoiceEvent.Break = Break;
     CommStruct->ChoiceEvent.Result = Break;
-    if (CommStruct->Version >= TConsoleCommStruct::Version2)
-    {
-      CommStruct->ChoiceEvent.Timeouted = Timeouted;
-      CommStruct->ChoiceEvent.Timer = Timer;
-    }
+    CommStruct->ChoiceEvent.Timeouted = Timeouted;
+    CommStruct->ChoiceEvent.Timer = Timer;
   }
   __finally
   {
@@ -578,7 +576,36 @@ void __fastcall TExternalConsole::SetTitle(AnsiString Title)
     FreeCommStruct(CommStruct);
   }
 
-  SendEvent(PrintTimeout);
+  SendEvent(INFINITE);
+}
+//---------------------------------------------------------------------------
+void __fastcall TExternalConsole::Init()
+{
+  TConsoleCommStruct * CommStruct = GetCommStruct();
+  try
+  {
+    CommStruct->Event = TConsoleCommStruct::INIT;
+  }
+  __finally
+  {
+    FreeCommStruct(CommStruct);
+  }
+  SendEvent(INFINITE);
+
+  CommStruct = GetCommStruct();
+  try
+  {
+    FLimitedOutput = (CommStruct->InitEvent.OutputType == FILE_TYPE_CHAR);
+  }
+  __finally
+  {
+    FreeCommStruct(CommStruct);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TExternalConsole::LimitedOutput()
+{
+  return FLimitedOutput;
 }
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::WaitBeforeExit()
@@ -597,6 +624,7 @@ public:
     int Timeouted, unsigned int Timer);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
+  virtual bool __fastcall LimitedOutput();
   virtual void __fastcall WaitBeforeExit();
 };
 //---------------------------------------------------------------------------
@@ -631,6 +659,11 @@ void __fastcall TNullConsole::SetTitle(AnsiString /*Title*/)
   // noop
 }
 //---------------------------------------------------------------------------
+bool __fastcall TNullConsole::LimitedOutput()
+{
+  return false;
+}
+//---------------------------------------------------------------------------
 void __fastcall TNullConsole::WaitBeforeExit()
 {
   assert(false);
@@ -642,7 +675,8 @@ class TConsoleRunner
 public:
   TConsoleRunner(TConsole * Console);
 
-  int __fastcall Run(const AnsiString Session, TStrings * ScriptCommands);
+  int __fastcall Run(const AnsiString Session, TOptions * Options,
+    TStrings * ScriptCommands);
   void __fastcall ShowException(Exception * E);
 
 protected:
@@ -668,7 +702,8 @@ private:
   void __fastcall ScriptPrintProgress(TScript * Script, bool First, const AnsiString Str);
   void __fastcall ScriptInput(TScript * Script, const AnsiString Prompt, AnsiString & Str);
   void __fastcall ScriptTerminalPromptUser(TTerminal * Terminal,
-    AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg);
+    TPromptKind Kind, AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+    TStrings * Results, bool & Result, void * Arg);
   void __fastcall ScriptShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall ScriptTerminalQueryUser(TObject * Sender, const AnsiString Query,
@@ -679,7 +714,8 @@ private:
   void __fastcall SynchronizeControllerLog(TSynchronizeController * Controller,
     TSynchronizeLogEntry Entry, const AnsiString Message);
   void __fastcall ScriptSynchronizeStartStop(TScript * Script,
-    const AnsiString LocalDirectory, const AnsiString RemoteDirectory);
+    const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+    const TCopyParamType & CopyParam, int SynchronizeParams);
   void __fastcall SynchronizeControllerSynchronize(TSynchronizeController * Sender,
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
     const TCopyParamType & CopyParam, const TSynchronizeParamType & Params,
@@ -790,29 +826,41 @@ void __fastcall TConsoleRunner::ScriptPrintProgress(TScript * /*Script*/,
   }
   else if (S.Length() < FLastProgressLen)
   {
-    S += AnsiString::StringOfChar(' ', FLastProgressLen - S.Length());
+    int Padding = FLastProgressLen - S.Length();
+    S += AnsiString::StringOfChar(' ', Padding) +
+      AnsiString::StringOfChar('\b', Padding);
   }
   FConsole->Print(S, true);
   FLastProgressLen = Str.Length();
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TTerminal * /*Terminal*/,
-  AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
-  void * /*Arg*/)
+  TPromptKind /*Kind*/, AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+  TStrings * Results, bool & Result, void * /*Arg*/)
 {
-  AnsiString Caption = CutToChar(Prompt, '|', true);
-  if (Prompt.IsEmpty())
+  if (!Instructions.IsEmpty())
   {
-    Prompt = Caption;
+    PrintLine(Instructions);
   }
 
-  if (!Prompt.IsEmpty() && (Prompt[Prompt.Length()] != ' '))
+  for (int Index = 0; Index < Prompts->Count; Index++)
   {
-    Prompt += ' ';
-  }
-  Print(Prompt);
+    AnsiString Prompt = Prompts->Strings[Index];
+    if (!Prompt.IsEmpty() && (Prompt[Prompt.Length()] != ' '))
+    {
+      Prompt += ' ';
+    }
+    int P = Prompt.Pos('&');
+    if (P > 0)
+    {
+      Prompt.Delete(P, 1);
+    }
+    Print(Prompt);
 
-  Result = Input(Response, (Kind == pkPrompt), InputTimeout());
+    AnsiString AResult = Results->Strings[Index]; // useless
+    Result = Input(AResult, bool(Prompts->Objects[Index]), InputTimeout());
+    Results->Strings[Index] = AResult;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptShowExtendedException(
@@ -871,6 +919,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   static const int MaxButtonCount = 15;
   int Buttons[MaxButtonCount];
   AnsiString Captions[MaxButtonCount];
+  TNotifyEvent OnClicks[MaxButtonCount];
   int ButtonCount = 0;
 
   #define ADD_BUTTON(TYPE, CAPTION) \
@@ -879,6 +928,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       assert(ButtonCount < MaxButtonCount); \
       Captions[ButtonCount] = CAPTION; \
       Buttons[ButtonCount] = qa ## TYPE; \
+      OnClicks[ButtonCount] = NULL; \
       ButtonCount++; \
       AAnswers -= qa ## TYPE; \
     }
@@ -912,6 +962,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
         if (static_cast<int>(Params->Aliases[ai].Button) == Buttons[bi])
         {
           Captions[bi] = Params->Aliases[ai].Alias;
+          OnClicks[bi] = Params->Aliases[ai].OnClick;
           break;
         }
       }
@@ -1118,7 +1169,14 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       AnswerCaption.Delete(P, 1);
       PrintLine(AnswerCaption);
 
-      Answer = Buttons[AnswerIndex - 1];
+      if (OnClicks[AnswerIndex - 1] != NULL)
+      {
+        OnClicks[AnswerIndex - 1](NULL);
+      }
+      else
+      {
+        Answer = Buttons[AnswerIndex - 1];
+      }
     }
     else
     {
@@ -1142,16 +1200,17 @@ void __fastcall TConsoleRunner::ScriptQueryCancel(TScript * /*Script*/, bool & C
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ScriptSynchronizeStartStop(TScript * /*Script*/,
-  const AnsiString LocalDirectory, const AnsiString RemoteDirectory)
+  const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+  const TCopyParamType & CopyParam, int SynchronizeParams)
 {
   TSynchronizeParamType Params;
   Params.LocalDirectory = LocalDirectory;
   Params.RemoteDirectory = RemoteDirectory;
-  Params.Params = -1; // never used
+  Params.Params = SynchronizeParams;
   Params.Options = soRecurse;
 
   FSynchronizeController.StartStop(Application, true, Params,
-    FScript->CopyParam, NULL, SynchronizeControllerAbort, NULL,
+    CopyParam, NULL, SynchronizeControllerAbort, NULL,
     SynchronizeControllerLog);
 
   try
@@ -1166,7 +1225,7 @@ void __fastcall TConsoleRunner::ScriptSynchronizeStartStop(TScript * /*Script*/,
   __finally
   {
     FSynchronizeController.StartStop(Application, false, Params,
-      FScript->CopyParam, NULL, SynchronizeControllerAbort, NULL,
+      CopyParam, NULL, SynchronizeControllerAbort, NULL,
       SynchronizeControllerLog);
   }
 }
@@ -1187,12 +1246,13 @@ void __fastcall TConsoleRunner::SynchronizeControllerAbort(TObject * /*Sender*/,
 void __fastcall TConsoleRunner::SynchronizeControllerSynchronize(
   TSynchronizeController * /*Sender*/, const AnsiString LocalDirectory,
   const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
-  const TSynchronizeParamType & /*Params*/, TSynchronizeChecklist ** Checklist,
+  const TSynchronizeParamType & Params, TSynchronizeChecklist ** Checklist,
   TSynchronizeOptions * /*Options*/, bool Full)
 {
   if (!Full)
   {
-    FScript->Synchronize(LocalDirectory, RemoteDirectory, CopyParam, Checklist);
+    FScript->Synchronize(LocalDirectory, RemoteDirectory, CopyParam,
+      Params.Params, Checklist);
   }
 }
 //---------------------------------------------------------------------------
@@ -1266,13 +1326,14 @@ bool __fastcall TConsoleRunner::Input(AnsiString & Str, bool Echo, unsigned int 
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCommands)
+int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
+  TStrings * ScriptCommands)
 {
   bool AnyError = false;
 
   try
   {
-    FScript = new TManagementScript(StoredSessions);
+    FScript = new TManagementScript(StoredSessions, FConsole->LimitedOutput());
     try
     {
       FScript->CopyParam = GUIConfiguration->DefaultCopyParam;
@@ -1294,7 +1355,7 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCo
 
       if (!Session.IsEmpty())
       {
-        FScript->Connect(Session);
+        FScript->Connect(Session, Options, false);
       }
 
       int ScriptPos = 0;
@@ -1321,7 +1382,7 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TStrings * ScriptCo
         if (Result)
         {
           FCommandError = false;
-          FScript->Command(Command);
+          FScript->Command(ExpandEnvironmentVariables(Command));
 
           if (FCommandError)
           {
@@ -1405,7 +1466,7 @@ int __fastcall Console(bool Help)
 
     if (Help)
     {
-      AnsiString Usage = LoadStr(USAGE3, 10240);
+      AnsiString Usage = LoadStr(USAGE4, 10240);
       AnsiString ExeBaseName = ChangeFileExt(ExtractFileName(Application->ExeName), "");
       Usage = StringReplace(Usage, "%APP%", ExeBaseName,
         TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
@@ -1436,13 +1497,17 @@ int __fastcall Console(bool Help)
         }
 
         bool DefaultsOnly;
-        delete StoredSessions->ParseUrl(Session, DefaultsOnly,
+        delete StoredSessions->ParseUrl(Session, Params, DefaultsOnly,
           puDecodeUrlChars, NULL, &Url);
 
         if (Url || Params->FindSwitch("Unsafe"))
         {
           // prevent any automatic action when URL is provided on
           // command-line (the check is duplicated in Execute())
+          if ((ScriptCommands->Count > 0) || Params->FindSwitch("Log"))
+          {
+            Console->Print(LoadStr(UNSAFE_ACTIONS_DISABLED) + "\n");
+          }
           ScriptCommands->Clear();
         }
         else
@@ -1454,7 +1519,7 @@ int __fastcall Console(bool Help)
           }
         }
 
-        Result = Runner->Run(Session,
+        Result = Runner->Run(Session, Params,
           (ScriptCommands->Count > 0 ? ScriptCommands : NULL));
       }
       catch(Exception & E)

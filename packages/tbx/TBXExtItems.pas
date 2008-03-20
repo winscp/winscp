@@ -1,3 +1,4 @@
+{MP}
 unit TBXExtItems;
 
 // TBX Package
@@ -100,6 +101,8 @@ type
     procedure NewEditWndProc(var Message: TMessage);
     procedure Paint(const Canvas: TCanvas; const ClientAreaRect: TRect; IsHoverItem, IsPushed, UseDisabledShadow: Boolean); override;
     function  ShowImage: Boolean; virtual;
+    {MP}
+    function  StripTextHotkey: Boolean; virtual;
   public
     function  IsToolbarStyle: Boolean; override;
   end;
@@ -239,15 +242,21 @@ type
   private
     FAlwaysSelectFirst: Boolean;
     FDropDownList: Boolean;
+    {MP}
+    FOnCancel: TNotifyEvent;
   protected
     function CreatePopup(const ParentView: TTBView; const ParentViewer: TTBItemViewer;
       const PositionAsSubmenu, SelectFirstItem, Customizing: Boolean;
       const APopupPoint: TPoint; const Alignment: TTBPopupAlignment): TTBPopupWindow; override;
     function GetItemViewerClass(AView: TTBView): TTBItemViewerClass; override;
+    function GetPopupWindowClass: TTBPopupWindowClass; override;
+    procedure DoCancel;
   public
     constructor Create(AOwner: TComponent); override;
     property AlwaysSelectFirst: Boolean read FAlwaysSelectFirst write FAlwaysSelectFirst default True;
     property DropDownList: Boolean read FDropDownList write FDropDownList default False;
+    {MP}
+    property OnCancel: TNotifyEvent read FOnCancel write FOnCancel;
   end;
 
   TTBXDropDownItem = class(TTBXCustomDropDownItem)
@@ -342,6 +351,8 @@ type
     property OnMeasureHeight: TTBXLMeasureHeight read GetOnMeasureHeight write SetOnMeasureHeight;
     property OnMeasureWidth: TTBXLMeasureWidth read GetOnMeasureWidth write SetOnMeasureWidth;
     property OnPopup;
+    {MP}
+    property OnCancel;
   end;
 
 {$IFDEF COMPATIBLE}
@@ -352,6 +363,8 @@ type
   TTBXComboBoxItemViewer = class(TTBXDropDownItemViewer)
   protected
     function HandleEditMessage(var Message: TMessage): Boolean; override;
+    {MP}
+    function StripTextHotkey: Boolean; override;
   end;
 
   { TTBXLabelItem }
@@ -366,6 +379,8 @@ type
     FMargin: Integer;
     FShowAccelChar: Boolean;
     FOrientation: TTBXLabelOrientation;
+    {MP}
+    FFixedSize: Integer;
     FOnAdjustFont: TAdjustFontEvent;
     procedure FontSettingsChanged(Sender: TObject);
     procedure SetMargin(Value: Integer);
@@ -373,6 +388,8 @@ type
     procedure SetCaption(const Value: TCaption);
     procedure SetFontSettings(Value: TFontSettings);
     procedure SetShowAccelChar(Value: Boolean);
+    {MP}
+    procedure SetFixedSize(Value: Integer);
   protected
     function GetItemViewerClass (AView: TTBView): TTBItemViewerClass; override;
   public
@@ -386,6 +403,8 @@ type
     property Margin: Integer read FMargin write SetMargin default 0;
     property Orientation: TTBXLabelOrientation read FOrientation write SetOrientation default tbxoAuto;
     property ShowAccelChar: Boolean read FShowAccelChar write SetShowAccelChar default True;
+    {MP}
+    property FixedSize: Integer read FFixedSize write SetFixedSize default 0;
     property Visible;
     property OnAdjustFont: TAdjustFontEvent read FOnAdjustFont write FOnAdjustFont;
   end;
@@ -483,7 +502,7 @@ type
 
 implementation
 
-uses TB2Common, TB2Consts, TypInfo, Math, ImgList {$IFNDEF JR_D5}, DsgnIntf{$ENDIF};
+uses TB2Common, TB2Consts, TypInfo, Math, ImgList, {MP}Menus {$IFNDEF JR_D5}, DsgnIntf{$ENDIF};
 
 const
   { Repeat intervals for spin edit items }
@@ -873,6 +892,12 @@ begin
   if Assigned(OldWndProc) and not HandleEditMessage(Message) then OldWndProc(Message);
 end;
 
+{MP}
+function TTBXEditItemViewer.StripTextHotkey: Boolean;
+begin
+  Result := False;
+end;
+
 procedure TTBXEditItemViewer.Paint(const Canvas: TCanvas;
   const ClientAreaRect: TRect; IsHoverItem, IsPushed, UseDisabledShadow: Boolean);
 const
@@ -962,6 +987,7 @@ begin
   if Item.Text <> '' then
   begin
     S := Item.Text;
+    if StripTextHotkey then S := StripHotkey(S);
     if TTBXEditItem(Item).PasswordChar <> #0 then S := StringOfChar(TTBXEditItem(Item).PasswordChar, Length(S));
     Fnt := Item.EditorFontSettings.CreateTransformedFont(TTBViewAccess(View).GetFont.Handle, C);
     OldFnt := SelectObject(DC, Fnt);
@@ -1074,6 +1100,24 @@ end;
 
 //============================================================================//
 
+{MP}
+type
+  TTBXDropDownWindow = class(TTBXPopupWindow)
+  protected
+    procedure Cancel; override;
+  public
+    Owner: TTBXCustomDropDownItem;
+  end;
+
+procedure TTBXDropDownWindow.Cancel;
+begin
+  inherited;
+  Owner.DoCancel;
+end;
+{/MP}
+
+//============================================================================//
+
 { TTBXCustomDropDownItem }
 
 constructor TTBXCustomDropDownItem.Create(AOwner: TComponent);
@@ -1094,6 +1138,15 @@ begin
   else SelectFirst := SelectFirstItem;
   Result := inherited CreatePopup(ParentView, ParentViewer, PositionAsSubmenu,
     SelectFirst, Customizing, APopupPoint, Alignment);
+  {MP}
+  (Result as TTBXDropDownWindow).Owner := Self;
+end;
+
+{MP}
+procedure TTBXCustomDropDownItem.DoCancel;
+begin
+  if Assigned(OnCancel) then
+    OnCancel(Self);
 end;
 
 function TTBXCustomDropDownItem.GetItemViewerClass(AView: TTBView): TTBItemViewerClass;
@@ -1104,6 +1157,11 @@ begin
     Result := TTBXDropDownItemViewer;
 end;
 
+{MP}
+function TTBXCustomDropDownItem.GetPopupWindowClass: TTBPopupWindowClass;
+begin
+  Result := TTBXDropDownWindow;
+end;
 
 //----------------------------------------------------------------------------//
 
@@ -1354,7 +1412,9 @@ begin
       IsChanging := False;
     end;
   end;
-  if not (csDesigning in ComponentState) then Add(FList);
+  { MP Do not re-add on re-load (locale change) }
+  if not Assigned(FList.Parent) then
+    if not (csDesigning in ComponentState) then Add(FList);
 end;
 
 procedure TTBXComboBoxItem.SetItemIndex(Value: Integer);
@@ -1441,6 +1501,11 @@ begin
   else Result := inherited HandleEditMessage(Message);
 end;
 
+{MP}
+function TTBXComboBoxItemViewer.StripTextHotkey: Boolean;
+begin
+  Result := TTBXComboBoxItem(Item).DropDownList;
+end;
 
 //============================================================================//
 
@@ -1506,6 +1571,13 @@ begin
   Change(True);
 end;
 
+{MP}
+procedure TTBXLabelItem.SetFixedSize(Value: Integer);
+begin
+  FFixedSize := Value;
+  Change(True);
+end;
+
 procedure TTBXLabelItem.UpdateCaption(const Value: TCaption);
 begin
   FCaption := Value;
@@ -1552,6 +1624,14 @@ begin
         DeleteObject(RotatedFont);
       end;
     end;
+
+    {MP}
+    with TTBXLabelItem(Item) do
+      if FFixedSize > 0 then
+        if GetIsHoriz then
+          AWidth := FFixedSize
+        else
+          AHeight := FFixedSize
   end
   else
   begin
@@ -1561,6 +1641,11 @@ begin
       AHeight := TextMetrics.tmHeight;
       AWidth := GetTextWidth(DC, S, TTBXLabelItem(Item).ShowAccelChar);
     end;
+
+    {MP}
+    with TTBXLabelItem(Item) do
+      if FFixedSize > 0 then
+        AWidth := FFixedSize
   end;
 
   if AWidth < 6 then AWidth := 6;

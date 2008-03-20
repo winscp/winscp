@@ -142,8 +142,10 @@ protected:
 	static _int64 m_CurrentTransferLimit[2];
 	static CCriticalSection m_SpeedLimitSync;
 	_int64 GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _int64 &curLimit, std::list<t_ActiveList>::iterator &iter, enum transferDirection direction, int nBufSize);
-#ifndef MPEXT_NO_SPEED_LIM
+#ifndef MPEXT_NO_SPEED_LIM_RULES
 	_int64 GetSpeedLimit(CTime &time, int valType, int valValue, SPEEDLIMITSLIST &list);
+#else
+	_int64 GetSpeedLimit(CTime &time, int valType, int valValue);
 #endif
 	//End Speed limit
 	

@@ -1,5 +1,5 @@
 object CustomScpExplorerForm: TCustomScpExplorerForm
-  Left = 304
+  Left = 251
   Top = 166
   Width = 636
   Height = 470
@@ -74,6 +74,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       TabOrder = 1
       ViewStyle = vsReport
       OnColumnRightClick = DirViewColumnRightClick
+      OnEditing = DirViewEditing
       OnEnter = RemoteDirViewEnter
       NortonLike = nlOff
       UnixColProperties.ExtWidth = 20
@@ -132,7 +133,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 1
-    object QueueView: TListView
+    object QueueView2: TListView
       Left = 0
       Top = 26
       Width = 628
@@ -158,7 +159,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         end
         item
           Alignment = taRightJustify
-          Caption = 'Elap./Speed'
+          Caption = 'Time/Speed'
           Width = 80
         end
         item
@@ -175,13 +176,13 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       StateImages = GlyphsModule.QueueImages
       TabOrder = 0
       ViewStyle = vsReport
-      OnContextPopup = QueueViewContextPopup
-      OnDeletion = QueueViewDeletion
-      OnEnter = QueueViewEnter
-      OnDragDrop = QueueViewDragDrop
-      OnDragOver = QueueViewDragOver
-      OnSelectItem = QueueViewSelectItem
-      OnStartDrag = QueueViewStartDrag
+      OnContextPopup = QueueView2ContextPopup
+      OnDeletion = QueueView2Deletion
+      OnEnter = QueueView2Enter
+      OnDragDrop = QueueView2DragDrop
+      OnDragOver = QueueView2DragOver
+      OnSelectItem = QueueView2SelectItem
+      OnStartDrag = QueueView2StartDrag
     end
     object QueueDock: TTBXDock
       Tag = 1

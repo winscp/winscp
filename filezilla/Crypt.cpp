@@ -79,3 +79,4 @@ CString CCrypt::decrypt(CString str)
 	}
 	return ret;
 }
+

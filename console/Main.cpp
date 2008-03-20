@@ -95,9 +95,7 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
 
   TConsoleCommStruct* CommStruct = GetCommStruct(FileMapping);
   CommStruct->Size = sizeof(TConsoleCommStruct);
-  // if the application keeps version 1, it means that is actually supports
-  // version 0 only, otherwise it is obligated to upgrade version to at least 2
-  CommStruct->Version = TConsoleCommStruct::Version1;
+  CommStruct->Version = TConsoleCommStruct::CurrentVersion;
   CommStruct->Event = TConsoleCommStruct::NONE;
   FreeCommStruct(CommStruct);
 }
@@ -270,7 +268,7 @@ DWORD WINAPI InputTimerThreadProc(void * Parameter)
   return 0;
 }
 //---------------------------------------------------------------------------
-void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event, int Version)
+void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
 {
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
@@ -311,11 +309,10 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event, int Version)
     SetConsoleMode(ConsoleInput, NewMode);
 
     HANDLE InputTimerThread = NULL;
-    bool SupportTimer = (Version >= TConsoleCommStruct::Version2);
 
     try
     {
-      if (SupportTimer && (Event.Timer > 0))
+      if (Event.Timer > 0)
       {
         unsigned long ThreadId;
         InputTimerEvent = CreateEvent(NULL, false, false, NULL);
@@ -353,7 +350,7 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event, int Version)
   }
 }
 //---------------------------------------------------------------------------
-void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event, int Version)
+void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
 {
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
@@ -368,12 +365,7 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event, int Version)
     NewMode = (PrevMode | ENABLE_PROCESSED_INPUT) & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
     SetConsoleMode(ConsoleInput, NewMode);
 
-    bool SupportTimer = (Version >= TConsoleCommStruct::Version2);
-    unsigned int ATimer;
-    if (SupportTimer)
-    {
-      ATimer = Event.Timer;
-    }
+    unsigned int ATimer = Event.Timer;
 
     try
     {
@@ -420,7 +412,7 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event, int Version)
         {
           unsigned int TimerSlice = 50;
           Sleep(TimerSlice);
-          if (SupportTimer && (Event.Timer > 0))
+          if (Event.Timer > 0)
           {
             if (ATimer > TimerSlice)
             {
@@ -450,11 +442,22 @@ inline void ProcessTitleEvent(TConsoleCommStruct::TTitleEvent& Event)
   SetConsoleTitle(Event.Title);
 }
 //---------------------------------------------------------------------------
+inline void ProcessInitEvent(TConsoleCommStruct::TInitEvent& Event)
+{
+  Event.InputType = InputType;
+  Event.OutputType = OutputType;
+}
+//---------------------------------------------------------------------------
 void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
 {
   TConsoleCommStruct* CommStruct = GetCommStruct(FileMapping);
   try
   {
+    if (CommStruct->Version != TConsoleCommStruct::CurrentVersionConfirmed)
+    {
+      throw logic_error("Incompatible console protocol version");
+    }
+
     switch (CommStruct->Event)
     {
       case TConsoleCommStruct::PRINT:
@@ -462,15 +465,19 @@ void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
         break;
 
       case TConsoleCommStruct::INPUT:
-        ProcessInputEvent(CommStruct->InputEvent, CommStruct->Version);
+        ProcessInputEvent(CommStruct->InputEvent);
         break;
 
       case TConsoleCommStruct::CHOICE:
-        ProcessChoiceEvent(CommStruct->ChoiceEvent, CommStruct->Version);
+        ProcessChoiceEvent(CommStruct->ChoiceEvent);
         break;
 
       case TConsoleCommStruct::TITLE:
         ProcessTitleEvent(CommStruct->TitleEvent);
+        break;
+
+      case TConsoleCommStruct::INIT:
+        ProcessInitEvent(CommStruct->InitEvent);
         break;
 
       default:

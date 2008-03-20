@@ -25,7 +25,6 @@ __fastcall TEditorManager::~TEditorManager()
 
     // pending should be only external editors and files being uploaded
     assert(FileData->Closed || FileData->External);
-    assert(FileData->CloseFlag == NULL);
 
     if (!FileData->Closed)
     {
@@ -60,7 +59,8 @@ bool __fastcall TEditorManager::Empty(bool IgnoreClosed)
 //---------------------------------------------------------------------------
 bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
   const AnsiString OriginalFileName, const AnsiString SessionName,
-  TObject *& Token, AnsiString & ExistingLocalDirectory)
+  TObject *& Token, AnsiString & ExistingLocalRootDirectory,
+  AnsiString & ExistingLocalDirectory)
 {
   bool Result = true;
 
@@ -95,9 +95,9 @@ bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
           }
           else
           {
-            // get temp directory where the file already is so we download
-            // it there again
-            ExistingLocalDirectory = FileData->LocalDirectory;
+            // get directory where the file already is so we download it there again
+            ExistingLocalRootDirectory = FileData->Data.LocalRootDirectory;
+            ExistingLocalDirectory = ExtractFilePath(FileData->FileName);
             CloseFile(i, false, false); // do not delete file
             Result = true;
           }
@@ -184,14 +184,13 @@ bool __fastcall TEditorManager::CloseExternalFilesWithoutProcess()
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::AddFileInternal(const AnsiString FileName,
-  const TEditedFileData & Data, bool * CloseFlag, TObject * Token)
+  const TEditedFileData & Data, TObject * Token)
 {
   TFileData FileData;
   FileData.FileName = FileName;
   FileData.External = false;
   FileData.Process = INVALID_HANDLE_VALUE;
   FileData.Token = Token;
-  FileData.CloseFlag = CloseFlag;
   FileData.Data = Data;
   FileData.Monitor = INVALID_HANDLE_VALUE;
 
@@ -199,14 +198,13 @@ void __fastcall TEditorManager::AddFileInternal(const AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::AddFileExternal(const AnsiString FileName,
-  const TEditedFileData & Data, bool * CloseFlag, HANDLE Process)
+  const TEditedFileData & Data, HANDLE Process)
 {
   TFileData FileData;
   FileData.FileName = FileName;
   FileData.External = true;
   FileData.Process = Process;
   FileData.Token = NULL;
-  FileData.CloseFlag = CloseFlag;
   FileData.Data = Data;
   FileData.Monitor = FindFirstChangeNotification(
     ExtractFilePath(FileData.FileName).c_str(), false,
@@ -300,7 +298,7 @@ bool __fastcall TEditorManager::EarlyClose(int Index)
   if (Result)
   {
     Result = false;
-    FOnFileEarlyClosed(FileData->Data, FileData->CloseFlag, Result);
+    FOnFileEarlyClosed(FileData->Data, Result);
     if (Result)
     {
       // forget the associated process
@@ -345,7 +343,6 @@ void __fastcall TEditorManager::FileClosed(TObject * Token)
 void __fastcall TEditorManager::AddFile(TFileData & FileData)
 {
   FileData.Timestamp = FileAge(FileData.FileName);
-  FileData.LocalDirectory = ExtractFilePath(FileData.FileName);
   FileData.Closed = false;
   FileData.UploadCompleteEvent = INVALID_HANDLE_VALUE;
   FileData.Opened = Now();
@@ -408,30 +405,16 @@ void __fastcall TEditorManager::CloseFile(int Index, bool IgnoreErrors, bool Del
   else
   {
     AnsiString FileName = FileData->FileName;
-    AnsiString LocalDirectory = FileData->LocalDirectory;
-    if (FileData->CloseFlag != NULL)
-    {
-      *FileData->CloseFlag = true;
-    }
+    AnsiString LocalRootDirectory = FileData->Data.LocalRootDirectory;
 
     FFiles.erase(FFiles.begin() + Index);
 
     if (Delete)
     {
-      bool Deleted;
-
-      if (WinConfiguration->ForceDeleteTempFolder)
+      if (!RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory), false) &&
+          !IgnoreErrors)
       {
-        Deleted = RecursiveDeleteFile(ExcludeTrailingBackslash(LocalDirectory), false);
-      }
-      else
-      {
-        Deleted = DeleteFile(FileName) && RemoveDir(LocalDirectory);
-      }
-
-      if (!Deleted && !IgnoreErrors)
-      {
-        throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (LocalDirectory)));
+        throw Exception(FMTLOAD(DELETE_TEMP_EXECUTE_FILE_ERROR, (LocalRootDirectory)));
       }
     }
   }

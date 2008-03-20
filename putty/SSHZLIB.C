@@ -224,6 +224,7 @@ static void lz77_compress(struct LZ77Context *ctx,
     }
     st->npending -= i;
 
+    defermatch.distance = 0; /* appease compiler */
     defermatch.len = 0;
     deferchr = '\0';
     while (len > 0) {
@@ -698,9 +699,9 @@ int zlib_compress_block(void *handle, unsigned char *block, int len,
 
 	    /*
 	     * Start a Deflate (RFC1951) uncompressed block. We
-	     * transmit a zero bit (BFINAL=0), followed by a zero
-	     * bit and a one bit (BTYPE=00). Of course these are in
-	     * the wrong order (00 0).
+	     * transmit a zero bit (BFINAL=0), followed by two more
+	     * zero bits (BTYPE=00). Of course these are in the
+	     * wrong order (00 0), not that it matters.
 	     */
 	    outbits(out, 0, 3);
 

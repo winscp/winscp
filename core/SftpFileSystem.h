@@ -53,7 +53,7 @@ public:
     const TRemoteProperties * Properties);
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const AnsiString FileName,
-    const TRemoteFile * File = NULL, bool Recursive = false);
+    const TRemoteFile * File = NULL, int Params = dfNoRecursive);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
     const TRemoteFile * File, AnsiString Command, int Params, TCaptureOutputEvent OutputEvent);
   virtual void __fastcall DoStartup();

@@ -104,7 +104,6 @@ __published:
     { read=FShowInaccesibleDirectories, write=SetShowInaccesibleDirectories,
       default=true  };
 
-  __property PathComboBox;
   __property OnUpdateStatusBar;
   __property PathLabel;
   __property LoadAnimation;
@@ -148,6 +147,7 @@ __published:
   __property OnBeginRename;
   __property OnEndRename;
   __property OnHistoryChange;
+  __property OnPathChange;
 
   __property ColumnClick;
   __property MultiSelect;

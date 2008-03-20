@@ -90,11 +90,24 @@ private:
   TCustomCommand * FChildCustomCommand;
 };
 //---------------------------------------------------------------------------
+class TTerminal;
+struct TCustomCommandData
+{
+  __fastcall TCustomCommandData();
+  __fastcall TCustomCommandData(TTerminal * Terminal);
+
+  AnsiString HostName;
+  AnsiString UserName;
+  AnsiString Password;
+};
+//---------------------------------------------------------------------------
 class TFileCustomCommand : public TCustomCommand
 {
 public:
   TFileCustomCommand();
-  TFileCustomCommand(const AnsiString & FileName, const AnsiString & FileList);
+  TFileCustomCommand(const TCustomCommandData & Data, const AnsiString & Path);
+  TFileCustomCommand(const TCustomCommandData & Data, const AnsiString & Path,
+    const AnsiString & FileName, const AnsiString & FileList);
 
   virtual void __fastcall Validate(const AnsiString & Command);
   virtual void __fastcall ValidatePattern(const AnsiString & Command,
@@ -109,6 +122,8 @@ protected:
     AnsiString & Replacement, bool & Delimit);
 
 private:
+  TCustomCommandData FData;
+  AnsiString FPath;
   AnsiString FFileName;
   AnsiString FFileList;
 };

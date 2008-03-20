@@ -32,7 +32,7 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
   TSessionData * Data, int Options)
 {
   assert(Data);
-  TLoginDialog *LoginDialog = new TLoginDialog(Application);
+  TLoginDialog * LoginDialog = SafeFormCreate<TLoginDialog>();
   bool Result;
   try
   {
@@ -62,19 +62,23 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FLanguagesPopupMenu = NULL;
   FInitialized = false;
   FSavedTab = NULL;
-  FSavedSession = -1;
+  FSavedSession = NULL;
   FOptions = loStartup;
   FLocaleChanging = false;
   FColor = (TColor)0;
   FEditingSessionData = NULL;
   FTreeLabels = new TStringList();
+  FRecycleBinSheetVisible = false;
+  FHintNode = NULL;
+
+  // we need to make sure that window procedure is set asap
+  // (so that CM_SHOWINGCHANGED handling is applied)
+  UseSystemSettingsPre(this, &FSystemSettings);
   InitControls();
 }
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
 {
-  // SelectItem event is called after destructor! Why?
-  SessionListView->Selected = NULL;
   assert(FSystemSettings);
   DeleteSystemSettings(this, FSystemSettings);
   FSystemSettings = NULL;
@@ -83,18 +87,12 @@ __fastcall TLoginDialog::~TLoginDialog()
   delete FLanguagesPopupMenu;
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::ShowTabs(bool Show)
-{
-  for (int Index = 0; Index < PageControl->PageCount; Index++)
-  {
-    PageControl->Pages[Index]->TabVisible = Show;
-  }
-  // change form height by height of hidden tabs
-  ClientHeight += (Show ? 1 : -1) * 45;
-}
-//---------------------------------------------------------------------
 void __fastcall TLoginDialog::InitControls()
 {
+  LoggingFrame->Init();
+
+  InitializeBugsCombo(UtfCombo);
+
   InitializeBugsCombo(BugIgnore1Combo);
   InitializeBugsCombo(BugPlainPW1Combo);
   InitializeBugsCombo(BugRSA1Combo);
@@ -105,7 +103,6 @@ void __fastcall TLoginDialog::InitControls()
   InitializeBugsCombo(BugPKSessID2Combo);
 
   InitializeBugsCombo(SFTPBugSymlinkCombo);
-  InitializeBugsCombo(SFTPBugUtfCombo);
   InitializeBugsCombo(SFTPBugSignedTSCombo);
 
   InstallPathWordBreakProc(RemoteDirectoryEdit);
@@ -129,12 +126,31 @@ void __fastcall TLoginDialog::InitControls()
   {
     TunnelLocalPortNumberEdit->Items->EndUpdate();
   }
+
+  HintLabel(ProxyTelnetCommandHintText, LoadStr(LOGIN_PROXY_COMMAND_PATTERNS_HINT));
+  HintLabel(ProxyLocalCommandHintText, LoadStr(LOGIN_PROXY_COMMAND_PATTERNS_HINT));
+
+  if (SessionTree->WindowProc != SessionTreeProc)
+  {
+    FOldSessionTreeProc = SessionTree->WindowProc;
+    SessionTree->WindowProc = SessionTreeProc;
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::Init()
 {
-  UseSystemSettings(this, &FSystemSettings);
+  if (!FInitialized)
+  {
+    UseSystemSettingsPost(this, FSystemSettings);
+  }
+  else
+  {
+    UseSystemSettings(this, &FSystemSettings);
+  }
+  FInitialized = true;
+
   Caption = FORMAT("%s %s", (AppName, Caption));
+  LinkLabel(RecycleBinLinkLabel);
 
   InitControls();
 
@@ -171,18 +187,15 @@ void __fastcall TLoginDialog::Init()
   TransferProtocolCombo->Items->Delete(TransferProtocolCombo->Items->Count - 1);
   #endif
 
-  ShowTabs(false);
-
   if (StoredSessions && StoredSessions->Count &&
       (FSessionData->Name == StoredSessions->DefaultSettings->Name))
   {
     ChangePage(SessionListSheet);
-    SessionListView->SetFocus();
-    assert(SessionListView->Items->Count > 0);
-    if (SessionListView->Items->Count > 0)
+    ActiveControl = SessionTree;
+    assert(SessionTree->Items->Count > 0);
+    if (SessionTree->Items->Count > 0)
     {
-      SessionListView->ItemIndex = 0;
-      SessionListView->ItemFocused = SessionListView->Selected;
+      SessionTree->Selected = SessionTree->Items->GetFirstNode();
     }
   }
   else
@@ -212,29 +225,87 @@ void __fastcall TLoginDialog::InitializeBugsCombo(TComboBox * BugsCombo)
   BugsCombo->ItemIndex = PrevIndex;
 }
 //---------------------------------------------------------------------
+TTreeNode * __fastcall TLoginDialog::AddSessionPath(AnsiString Path)
+{
+  TTreeNode * Parent = NULL;
+  while (!Path.IsEmpty())
+  {
+    AnsiString Folder = CutToChar(Path, '/', false);
+    TTreeNode * Node =
+      ((Parent == NULL) ? SessionTree->Items->GetFirstNode() : Parent->getFirstChild());
+    // note that we allow folder with the same name as existing session
+    // on the same level (see also SessionTreeEdited)
+    while ((Node != NULL) && ((Node->Data != NULL) || !AnsiSameText(Node->Text, Folder)))
+    {
+      Node = Node->getNextSibling();
+    }
+
+    if (Node == NULL)
+    {
+      TTreeNode * AParent = Parent;
+      Parent = SessionTree->Items->AddChild(Parent, Folder);
+      UpdateFolderNode(Parent);
+      // folders seem not to be sorted automatically (not having set the data property)
+      if (AParent == NULL)
+      {
+        SessionTree->Items->AlphaSort();
+      }
+      else
+      {
+        AParent->AlphaSort();
+      }
+    }
+    else
+    {
+      Parent = Node;
+    }
+  }
+  return Parent;
+}
+//---------------------------------------------------------------------
+TTreeNode * __fastcall TLoginDialog::AddSession(TSessionData * Data)
+{
+  TTreeNode * Parent = AddSessionPath(UnixExtractFilePath(Data->Name));
+  TTreeNode * Node = SessionTree->Items->AddChild(Parent, UnixExtractFileName(Data->Name));
+  Node->Data = Data;
+
+  return Node;
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::DestroySession(TSessionData * Data)
+{
+  if (FEditingSessionData == Data)
+  {
+    FEditingSessionData = NULL;
+  }
+  StoredSessions->Remove(Data);
+}
+//---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSessions()
 {
-  SessionListView->Items->BeginUpdate();
+  SessionTree->Items->BeginUpdate();
   try
   {
-    SessionListView->Items->Clear();
-    if (StoredSessions)
+    SessionTree->Items->Clear();
+    assert(StoredSessions != NULL);
+    for (int Index = 0; Index < StoredSessions->Count; Index++)
     {
-      for (int Index = 0; Index < StoredSessions->Count; Index++)
-      {
-        TListItem *Item;
-        Item = SessionListView->Items->Add();
-        LoadSessionItem(Item);
-      }
+      AddSession(StoredSessions->Sessions[Index]);
     }
   }
   __finally
   {
-    SessionListView->Items->EndUpdate();
+    // folders seem not to be sorted automatically (not having set the data property)
+    SessionTree->AlphaSort();
+    SessionTree->Items->EndUpdate();
   }
-  SelectedSession = StoredSessions->Count > 0 ?
-    dynamic_cast<TSessionData*>(StoredSessions->AtObject(0)) : NULL;
+  SessionTree->Selected = SessionTree->Items->GetFirstNode();
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::UpdateFolderNode(TTreeNode * Node)
+{
+  Node->StateIndex = (Node->Expanded ? 2 : 3);
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::Default()
@@ -254,7 +325,7 @@ void __fastcall TLoginDialog::Default()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
 {
-  // it was always true, and now must be true because of ping/keepalive settings
+  // it was always true
   assert(aSessionData == FSessionData);
 
   NoUpdate++;
@@ -302,34 +373,71 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     }
     if (aSessionData->EOLType == eolLF)
     {
-      EOLTypeLFButton->Checked = true;
+      EOLTypeCombo->ItemIndex = 0;
     }
     else
     {
-      EOLTypeCRLFButton->Checked = true;
+      EOLTypeCombo->ItemIndex = 1;
     }
+    switch (aSessionData->Utf)
+    {
+      case asOn:
+        UtfCombo->ItemIndex = 1;
+        break;
+
+      case asOff:
+        UtfCombo->ItemIndex = 2;
+        break;
+
+      default:
+        UtfCombo->ItemIndex = 0;
+        break;
+    }
+    int TimeDifferenceMin = DateTimeToTimeStamp(aSessionData->TimeDifference).Time / 60000;
+    if (double(aSessionData->TimeDifference) < 0)
+    {
+      TimeDifferenceMin = -TimeDifferenceMin;
+    }
+    TimeDifferenceEdit->AsInteger = TimeDifferenceMin / 60;
+    TimeDifferenceMinutesEdit->AsInteger = TimeDifferenceMin % 60;
+
+    // Environment/Recycle bin tab
     DeleteToRecycleBinCheck->Checked = aSessionData->DeleteToRecycleBin;
     OverwrittenToRecycleBinCheck->Checked = aSessionData->OverwrittenToRecycleBin;
     RecycleBinPathEdit->Text = aSessionData->RecycleBinPath;
 
     // SFTP tab
+    if (aSessionData->SftpServer.IsEmpty())
+    {
+      SftpServerEdit->Text = SftpServerEdit->Items->Strings[0];
+    }
+    else
+    {
+      SftpServerEdit->Text = aSessionData->SftpServer;
+    }
+    // hide selection, which is wrongly shown initially even when the box has not focus
+    SftpServerEdit->SelLength = 0;
+
+    SFTPMaxVersionCombo->ItemIndex = aSessionData->SFTPMaxVersion;
+
     #define LOAD_SFTP_BUG_COMBO(BUG) \
       SFTPBug ## BUG ## Combo->ItemIndex = 2 - aSessionData->SFTPBug[sb ## BUG]; \
       if (SFTPBug ## BUG ## Combo->ItemIndex < 0) SFTPBug ## BUG ## Combo->ItemIndex = 0
     LOAD_SFTP_BUG_COMBO(Symlink);
-    LOAD_SFTP_BUG_COMBO(Utf);
     LOAD_SFTP_BUG_COMBO(SignedTS);
     #undef LOAD_SFTP_BUG_COMBO
 
-    SFTPMaxVersionCombo->ItemIndex = aSessionData->SFTPMaxVersion;
+    // FTP tab
+    PostLoginCommandsMemo->Lines->Text = aSessionData->PostLoginCommands;
 
     // Authentication tab
+    SshNoUserAuthCheck->Checked = aSessionData->SshNoUserAuth;
+    TryAgentCheck->Checked = aSessionData->TryAgent;
     AuthTISCheck->Checked = aSessionData->AuthTIS;
     AuthKICheck->Checked = aSessionData->AuthKI;
     AuthKIPasswordCheck->Checked = aSessionData->AuthKIPassword;
-    AuthGSSAPICheck->Checked = aSessionData->AuthGSSAPI;
+    AuthGSSAPICheck2->Checked = aSessionData->AuthGSSAPI;
     AgentFwdCheck->Checked = aSessionData->AgentFwd;
-    GSSAPIFwdTGTCheck->Checked = aSessionData->GSSAPIFwdTGT;
     GSSAPIServerRealmEdit->Text = aSessionData->GSSAPIServerRealm;
 
     // SSH tab
@@ -344,7 +452,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     }
 
     CipherListBox->Items->Clear();
-    assert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_DES);
+    assert(CIPHER_NAME_WARN+CIPHER_COUNT-1 == CIPHER_NAME_ARCFOUR);
     for (int Index = 0; Index < CIPHER_COUNT; Index++)
     {
       CipherListBox->Items->AddObject(
@@ -355,7 +463,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     // KEX tab
 
     KexListBox->Items->Clear();
-    assert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_DHGEX);
+    assert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_GSSGEX);
     for (int Index = 0; Index < KEX_COUNT; Index++)
     {
       KexListBox->Items->AddObject(
@@ -369,7 +477,32 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     // Connection tab
     FtpPasvModeCheck->Checked = aSessionData->FtpPasvMode;
 
-    LoadPing(aSessionData);
+    switch (aSessionData->PingType)
+    {
+      case ptNullPacket:
+        PingNullPacketButton->Checked = true;
+        break;
+
+      case ptDummyCommand:
+        PingDummyCommandButton->Checked = true;
+        break;
+
+      default:
+        PingOffButton->Checked = true;
+        break;
+    }
+    PingIntervalSecEdit->AsInteger = aSessionData->PingInterval;
+    switch (aSessionData->FtpPingType)
+    {
+      case ptDummyCommand:
+        FtpPingDummyCommandButton->Checked = true;
+        break;
+
+      default:
+        FtpPingOffButton->Checked = true;
+        break;
+    }
+    FtpPingIntervalSecEdit->AsInteger = aSessionData->FtpPingInterval;
     TimeoutEdit->AsInteger = aSessionData->Timeout;
 
     switch (aSessionData->AddressFamily)
@@ -410,40 +543,27 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     }
     ReturnVarEdit->SelLength = 0;
 
+    ListingCommandEdit->Text = aSessionData->ListingCommand;
+    ListingCommandEdit->SelLength = 0;
+
     LookupUserGroupsCheck->Checked = aSessionData->LookupUserGroups;
     ClearAliasesCheck->Checked = aSessionData->ClearAliases;
     IgnoreLsWarningsCheck->Checked = aSessionData->IgnoreLsWarnings;
     Scp1CompatibilityCheck->Checked = aSessionData->Scp1Compatibility;
     UnsetNationalVarsCheck->Checked = aSessionData->UnsetNationalVars;
-    AliasGroupListCheck->Checked = aSessionData->AliasGroupList;
     SCPLsFullTimeAutoCheck->Checked = (aSessionData->SCPLsFullTime != asOff);
-    int TimeDifferenceMin = DateTimeToTimeStamp(aSessionData->TimeDifference).Time / 60000;
-    if (double(aSessionData->TimeDifference) < 0)
-    {
-      TimeDifferenceMin = -TimeDifferenceMin;
-    }
-    TimeDifferenceEdit->AsInteger = TimeDifferenceMin / 60;
-    TimeDifferenceMinutesEdit->AsInteger = TimeDifferenceMin % 60;
 
     // Proxy tab
-    switch (aSessionData->ProxyMethod) {
-      case pmHTTP: ProxyHTTPButton->Checked = true; break;
-      case pmSocks4: ProxySocks4Button->Checked = true; break;
-      case pmSocks5: ProxySocks5Button->Checked = true; break;
-      case pmTelnet: ProxyTelnetButton->Checked = true; break;
-      default: ProxyNoneButton->Checked = true; break;
-    }
+    SshProxyMethodCombo->ItemIndex = aSessionData->ProxyMethod;
+    FtpProxyMethodCombo->ItemIndex = aSessionData->ProxyMethod;
     ProxyHostEdit->Text = aSessionData->ProxyHost;
     ProxyPortEdit->AsInteger = aSessionData->ProxyPort;
     ProxyUsernameEdit->Text = aSessionData->ProxyUsername;
     ProxyPasswordEdit->Text = aSessionData->ProxyPassword;
     ProxyTelnetCommandEdit->Text = aSessionData->ProxyTelnetCommand;
+    ProxyLocalCommandEdit->Text = aSessionData->ProxyLocalCommand;
     ProxyLocalhostCheck->Checked = aSessionData->ProxyLocalhost;
-    switch (aSessionData->ProxyDNS) {
-      case asOn: ProxyDNSOnButton->Checked = true; break;
-      case asOff: ProxyDNSOffButton->Checked = true; break;
-      default: ProxyDNSAutoButton->Checked = true; break;
-    }
+    ProxyDNSCombo->ItemIndex = 2 - aSessionData->ProxyDNS;
 
     // Bugs tab
     #define LOAD_BUG_COMBO(BUG) \
@@ -486,29 +606,9 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
   FCurrentSessionName = aSessionData->Name;
 }
 //---------------------------------------------------------------------
-void __fastcall TLoginDialog::LoadPing(TSessionData * aSessionData)
-{
-  switch (FFSProtocol == fsFTP ? aSessionData->FtpPingType : aSessionData->PingType)
-  {
-    case ptNullPacket:
-      PingNullPacketButton->Checked = true;
-      break;
-
-    case ptDummyCommand:
-      PingDummyCommandButton->Checked = true;
-      break;
-
-    default:
-      PingOffButton->Checked = true;
-      break;
-  }
-  PingIntervalSecEdit->AsInteger =
-    (FFSProtocol == fsFTP ? aSessionData->FtpPingInterval : aSessionData->PingInterval);
-}
-//---------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
 {
-  // it was always true, and now must be true because of ping/keepalive settings
+  // it was always true
   assert(aSessionData == FSessionData);
 
   aSessionData->Name = FCurrentSessionName;
@@ -551,17 +651,32 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->RekeyData = RekeyDataEdit->Text;
 
   // Authentication tab
+  aSessionData->SshNoUserAuth = SshNoUserAuthCheck->Checked;
+  aSessionData->TryAgent = TryAgentCheck->Checked;
   aSessionData->AuthTIS = AuthTISCheck->Checked;
   aSessionData->AuthKI = AuthKICheck->Checked;
   aSessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
-  aSessionData->AuthGSSAPI = AuthGSSAPICheck->Checked;
+  aSessionData->AuthGSSAPI = AuthGSSAPICheck2->Checked;
   aSessionData->AgentFwd = AgentFwdCheck->Checked;
-  aSessionData->GSSAPIFwdTGT = GSSAPIFwdTGTCheck->Checked;
   aSessionData->GSSAPIServerRealm = GSSAPIServerRealmEdit->Text;
 
   // Connection tab
   aSessionData->FtpPasvMode = FtpPasvModeCheck->Checked;
-  SavePing(aSessionData);
+  if (PingNullPacketButton->Checked)
+  {
+    aSessionData->PingType = ptNullPacket;
+  }
+  else if (PingDummyCommandButton->Checked)
+  {
+    aSessionData->PingType = ptDummyCommand;
+  }
+  else
+  {
+    aSessionData->PingType = ptOff;
+  }
+  aSessionData->PingInterval = PingIntervalSecEdit->AsInteger;
+  aSessionData->FtpPingType = (FtpPingDummyCommandButton->Checked ? ptDummyCommand : ptOff);
+  aSessionData->FtpPingInterval = FtpPingIntervalSecEdit->AsInteger;
   aSessionData->Timeout = TimeoutEdit->AsInteger;
 
   if (IPv4Button->Checked)
@@ -591,8 +706,27 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
     else
   if (DSTModeKeepCheck->Checked) aSessionData->DSTMode = dstmKeep;
     else aSessionData->DSTMode = dstmWin;
-  if (EOLTypeLFButton->Checked) aSessionData->EOLType = eolLF;
+  if (EOLTypeCombo->ItemIndex == 0) aSessionData->EOLType = eolLF;
     else aSessionData->EOLType = eolCRLF;
+  switch (UtfCombo->ItemIndex)
+  {
+    case 1:
+      aSessionData->Utf = asOn;
+      break;
+
+    case 2:
+      aSessionData->Utf = asOff;
+      break;
+
+    default:
+      aSessionData->Utf = asAuto;
+      break;
+  }
+  aSessionData->TimeDifference =
+    (double(TimeDifferenceEdit->AsInteger) / 24) +
+    (double(TimeDifferenceMinutesEdit->AsInteger) / 24 / 60);
+
+  // Environment/Recycle bin tab
   aSessionData->DeleteToRecycleBin = DeleteToRecycleBinCheck->Checked;
   aSessionData->OverwrittenToRecycleBin = OverwrittenToRecycleBinCheck->Checked;
   aSessionData->RecycleBinPath = RecycleBinPathEdit->Text;
@@ -602,47 +736,38 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->Shell = (aSessionData->DefaultShell ? AnsiString() : ShellEdit->Text);
   aSessionData->DetectReturnVar = (ReturnVarEdit->Text == ReturnVarEdit->Items->Strings[0]);
   aSessionData->ReturnVar = (aSessionData->DetectReturnVar ? AnsiString() : ReturnVarEdit->Text);
+  aSessionData->ListingCommand = ListingCommandEdit->Text;
   aSessionData->LookupUserGroups = LookupUserGroupsCheck->Checked;
   aSessionData->ClearAliases = ClearAliasesCheck->Checked;
   aSessionData->IgnoreLsWarnings = IgnoreLsWarningsCheck->Checked;
   aSessionData->Scp1Compatibility = Scp1CompatibilityCheck->Checked;
   aSessionData->UnsetNationalVars = UnsetNationalVarsCheck->Checked;
-  aSessionData->AliasGroupList = AliasGroupListCheck->Checked;
   aSessionData->SCPLsFullTime = SCPLsFullTimeAutoCheck->Checked ? asAuto : asOff;
-  aSessionData->TimeDifference =
-    (double(TimeDifferenceEdit->AsInteger) / 24) +
-    (double(TimeDifferenceMinutesEdit->AsInteger) / 24 / 60);
 
   // SFTP tab
+  aSessionData->SftpServer =
+    ((SftpServerEdit->Text == SftpServerEdit->Items->Strings[0]) ?
+      AnsiString() : SftpServerEdit->Text);
+  aSessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
+
+  // FTP tab
+  aSessionData->PostLoginCommands = PostLoginCommandsMemo->Lines->Text;
+
   #define SAVE_SFTP_BUG_COMBO(BUG) aSessionData->SFTPBug[sb ## BUG] = (TAutoSwitch)(2 - SFTPBug ## BUG ## Combo->ItemIndex);
   SAVE_SFTP_BUG_COMBO(Symlink);
-  SAVE_SFTP_BUG_COMBO(Utf);
   SAVE_SFTP_BUG_COMBO(SignedTS);
   #undef SAVE_SFTP_BUG_COMBO
 
-  aSessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
-
   // Proxy tab
-  if (ProxyHTTPButton->Checked) aSessionData->ProxyMethod = pmHTTP;
-    else
-  if (ProxySocks4Button->Checked) aSessionData->ProxyMethod = pmSocks4;
-    else
-  if (ProxySocks5Button->Checked) aSessionData->ProxyMethod = pmSocks5;
-    else
-  if (ProxyTelnetButton->Checked) aSessionData->ProxyMethod = pmTelnet;
-    else aSessionData->ProxyMethod = pmNone;
-
+  aSessionData->ProxyMethod = (TProxyMethod)SshProxyMethodCombo->ItemIndex;
   aSessionData->ProxyHost = ProxyHostEdit->Text;
   aSessionData->ProxyPort = ProxyPortEdit->AsInteger;
   aSessionData->ProxyUsername = ProxyUsernameEdit->Text;
   aSessionData->ProxyPassword = ProxyPasswordEdit->Text;
   aSessionData->ProxyTelnetCommand = ProxyTelnetCommandEdit->Text;
+  aSessionData->ProxyLocalCommand = ProxyLocalCommandEdit->Text;
   aSessionData->ProxyLocalhost = ProxyLocalhostCheck->Checked;
-
-  if (ProxyDNSOnButton->Checked) aSessionData->ProxyDNS = asOn;
-    else
-  if (ProxyDNSOffButton->Checked) aSessionData->ProxyDNS = asOff;
-    else aSessionData->ProxyDNS = asAuto;
+  aSessionData->ProxyDNS = (TAutoSwitch)(2 - ProxyDNSCombo->ItemIndex);
 
   // Bugs tab
   #define SAVE_BUG_COMBO(BUG) aSessionData->Bug[sb ## BUG] = (TAutoSwitch)(2 - Bug ## BUG ## Combo->ItemIndex);
@@ -671,27 +796,6 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   {
     aSessionData->TunnelLocalPortNumber = StrToIntDef(TunnelLocalPortNumberEdit->Text, 0);
   }
-}
-//---------------------------------------------------------------------
-void __fastcall TLoginDialog::SavePing(TSessionData * aSessionData)
-{
-  TPingType PingType;
-  if (PingNullPacketButton->Checked)
-  {
-    PingType = ptNullPacket;
-  }
-  else if (PingDummyCommandButton->Checked)
-  {
-    PingType = ptDummyCommand;
-  }
-  else
-  {
-    PingType = ptOff;
-  }
-  (FFSProtocol == fsFTP ? aSessionData->FtpPingType : aSessionData->PingType) =
-    PingType;
-  (FFSProtocol == fsFTP ? aSessionData->FtpPingInterval : aSessionData->PingInterval) =
-    PingIntervalSecEdit->AsInteger;
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateNavigationTree()
@@ -804,7 +908,7 @@ void __fastcall TLoginDialog::UpdateNavigationTree()
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateControls()
 {
-  if (Visible)
+  if (Visible && FInitialized)
   {
     NoUpdate++;
     try
@@ -816,6 +920,7 @@ void __fastcall TLoginDialog::UpdateControls()
         (FSProtocol == fsSFTPonly) || (FSProtocol == fsSFTP) || (FSProtocol == fsSCPonly);
       bool SshProtocol = ExternalProtocol || InternalSshProtocol;
       bool FtpProtocol = (FSProtocol == fsFTP);
+      assert(SshProtocol != FtpProtocol); // xor, some of the code below rely on this
       bool Advanced = ShowAdvancedLoginOptionsCheck->Checked;
 
       // basic/session sheet
@@ -831,34 +936,38 @@ void __fastcall TLoginDialog::UpdateControls()
       // connection sheet
       ConnSheet->Enabled = Advanced;
       EnableControl(FtpPasvModeCheck, FtpProtocol);
-      if (FtpProtocol && !ProxyNoneButton->Checked && !FtpPasvModeCheck->Checked)
+      if (FtpProtocol && (FtpProxyMethodCombo->ItemIndex != pmNone) && !FtpPasvModeCheck->Checked)
       {
         FtpPasvModeCheck->Checked = true;
         MessageDialog(LoadStr(FTP_PASV_MODE_REQUIRED), qtInformation, qaOK);
       }
+      PingGroup->Visible = SshProtocol;
       EnableControl(PingIntervalSecEdit, !PingOffButton->Checked);
       EnableControl(PingIntervalLabel, PingIntervalSecEdit->Enabled);
-      EnableControl(PingNullPacketButton, SshProtocol);
+      FtpPingGroup->Visible = FtpProtocol;
+      EnableControl(FtpPingIntervalSecEdit, !FtpPingOffButton->Checked);
+      EnableControl(FtpPingIntervalLabel, FtpPingIntervalSecEdit->Enabled);
       EnableControl(IPAutoButton, SshProtocol);
 
       // stored sessions sheet
-      EnableControl(SessionListView, SessionListView->Items->Count);
-      // keep 2 pixels on right free
-      AdjustListColumnsWidth(SessionListView, -1, 2);
+      EnableControl(SessionTree, SessionTree->Items->Count > 0);
 
       // ssh/authentication sheet
       AuthSheet->Enabled = SshProtocol && Advanced;
-      EnableControl(AuthTISCheck, !SshProt2onlyButton->Checked);
-      EnableControl(AuthKICheck, !SshProt1onlyButton->Checked);
+      EnableControl(SshNoUserAuthCheck, !SshProt1onlyButton->Checked);
+      EnableControl(AuthenticationGroup,
+        !SshNoUserAuthCheck->Enabled || !SshNoUserAuthCheck->Checked);
+      EnableControl(AuthTISCheck, AuthenticationGroup->Enabled && !SshProt2onlyButton->Checked);
+      EnableControl(AuthKICheck, AuthenticationGroup->Enabled && !SshProt1onlyButton->Checked);
       EnableControl(AuthKIPasswordCheck,
-        (AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
-        (AuthKICheck->Enabled && AuthKICheck->Checked));
-      EnableControl(AuthGSSAPICheck, !SshProt1onlyButton->Checked);
-      EnableControl(GSSAPIFwdTGTCheck,
-        AuthGSSAPICheck->Enabled && AuthGSSAPICheck->Checked);
+        AuthenticationGroup->Enabled &&
+        ((AuthTISCheck->Enabled && AuthTISCheck->Checked) ||
+         (AuthKICheck->Enabled && AuthKICheck->Checked)));
+      EnableControl(AuthGSSAPICheck2,
+        AuthenticationGroup->Enabled && !SshProt1onlyButton->Checked);
       EnableControl(GSSAPIServerRealmEdit,
-        AuthGSSAPICheck->Enabled && AuthGSSAPICheck->Checked);
-      EnableControl(GSSAPIServerRealmLabel, GSSAPIServerRealmEdit->Enabled);
+        AuthGSSAPICheck2->Enabled && AuthGSSAPICheck2->Checked);
+      EnableControl(GSSAPIServerRealmLabel2, GSSAPIServerRealmEdit->Enabled);
 
       // ssh sheet
       AdvancedSheet->Enabled = SshProtocol;
@@ -893,33 +1002,61 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(BugRekey2Combo, !SshProt1onlyButton->Checked);
       EnableControl(BugRekey2Label, BugRekey2Combo->Enabled);
 
-      // environment/scp/shell sheet
-      ScpSheet->Enabled = Advanced && InternalSshProtocol;
-
       // connection/proxy sheet
+      TComboBox * ProxyMethodCombo = (SshProtocol ? SshProxyMethodCombo : FtpProxyMethodCombo);
+      ProxyMethodCombo->Visible = true;
+      ProxyMethodLabel->FocusControl = ProxyMethodCombo;
+      TComboBox * OtherProxyMethodCombo = (!SshProtocol ? SshProxyMethodCombo : FtpProxyMethodCombo);
+      OtherProxyMethodCombo->Visible = false;
+      if (ProxyMethodCombo->ItemIndex >= OtherProxyMethodCombo->Items->Count)
+      {
+        OtherProxyMethodCombo->ItemIndex = pmNone;
+      }
+      else
+      {
+        OtherProxyMethodCombo->ItemIndex = ProxyMethodCombo->ItemIndex;
+      }
+
       ProxySheet->Enabled = Advanced;
-      EnableControl(ProxyTelnetButton, SshProtocol);
-      bool Proxy = !ProxyNoneButton->Checked &&
-        (!ProxyTelnetButton->Checked || ProxyTelnetButton->Enabled);
-      EnableControl(ProxyHostEdit, Proxy);
+      bool Proxy = (ProxyMethodCombo->ItemIndex != pmNone);
+      AnsiString ProxyCommand =
+        ((ProxyMethodCombo->ItemIndex == pmCmd) ?
+          ProxyLocalCommandEdit->Text : ProxyTelnetCommandEdit->Text);
+      EnableControl(ProxyHostEdit, Proxy &&
+        ((ProxyMethodCombo->ItemIndex != pmCmd) ||
+         AnsiContainsText(ProxyCommand, "%proxyhost")));
       EnableControl(ProxyHostLabel, ProxyHostEdit->Enabled);
-      EnableControl(ProxyPortEdit, Proxy);
+      EnableControl(ProxyPortEdit, Proxy &&
+        ((ProxyMethodCombo->ItemIndex != pmCmd) ||
+         AnsiContainsText(ProxyCommand, "%proxyport")));
       EnableControl(ProxyPortLabel, ProxyPortEdit->Enabled);
       EnableControl(ProxyUsernameEdit, Proxy &&
         // FZAPI does not support username for SOCKS4
-        ((ProxySocks4Button->Checked && SshProtocol) ||
-         (ProxySocks5Button->Checked) ||
-         (ProxyHTTPButton->Checked) ||
-         (ProxyTelnetButton->Checked &&
-          AnsiContainsText(ProxyTelnetCommandEdit->Text, "%user"))));
+        (((ProxyMethodCombo->ItemIndex == pmSocks4) && SshProtocol) ||
+         (ProxyMethodCombo->ItemIndex == pmSocks5) ||
+         (ProxyMethodCombo->ItemIndex == pmHTTP) ||
+         (((ProxyMethodCombo->ItemIndex == pmTelnet) ||
+           (ProxyMethodCombo->ItemIndex == pmCmd)) &&
+          AnsiContainsText(ProxyCommand, "%user"))));
       EnableControl(ProxyUsernameLabel, ProxyUsernameEdit->Enabled);
       EnableControl(ProxyPasswordEdit, Proxy &&
-        (!ProxySocks4Button->Checked &&
-        (!ProxyTelnetButton->Checked ||
-          AnsiContainsText(ProxyTelnetCommandEdit->Text, "%pass"))));
+        ((ProxyMethodCombo->ItemIndex == pmSocks5) ||
+         (ProxyMethodCombo->ItemIndex == pmHTTP) ||
+         (((ProxyMethodCombo->ItemIndex == pmTelnet) ||
+           (ProxyMethodCombo->ItemIndex == pmCmd)) &&
+          AnsiContainsText(ProxyCommand, "%pass"))));
       EnableControl(ProxyPasswordLabel, ProxyPasswordEdit->Enabled);
-      EnableControl(ProxySettingsGroup, Proxy && SshProtocol);
-      EnableControl(ProxyTelnetCommandEdit, Proxy && ProxyTelnetButton->Checked);
+      bool ProxySettings = Proxy && SshProtocol;
+      EnableControl(ProxySettingsGroup, ProxySettings);
+      ProxyLocalCommandEdit->Visible = (ProxyMethodCombo->ItemIndex == pmCmd);
+      ProxyLocalCommandLabel->Visible = ProxyLocalCommandEdit->Visible;
+      ProxyLocalCommandBrowseButton->Visible = ProxyLocalCommandEdit->Visible;
+      ProxyLocalCommandHintText->Visible = ProxyLocalCommandEdit->Visible;
+      ProxyTelnetCommandEdit->Visible = !ProxyLocalCommandEdit->Visible;
+      ProxyTelnetCommandLabel->Visible = ProxyTelnetCommandEdit->Visible;
+      ProxyTelnetCommandHintText->Visible = ProxyTelnetCommandEdit->Visible;
+      EnableControl(ProxyTelnetCommandEdit,
+        ProxySettings && (ProxyMethodCombo->ItemIndex == pmTelnet));
       EnableControl(ProxyTelnetCommandLabel, ProxyTelnetCommandEdit->Enabled);
 
       // environment/directories sheet
@@ -935,25 +1072,48 @@ void __fastcall TLoginDialog::UpdateControls()
       // environment sheet
       EnvironmentSheet->Enabled = !ExternalProtocol;
       EnableControl(DSTModeGroup, (FSProtocol != fsFTP) && EnvironmentSheet->Enabled);
-      UnixEnvironmentButton->Visible = !ShowAdvancedLoginOptionsCheck->Checked;
-      WindowsEnvironmentButton->Visible = !ShowAdvancedLoginOptionsCheck->Checked;
-      RecycleBinGroup->Visible = ShowAdvancedLoginOptionsCheck->Checked;
+      EnableControl(UtfCombo, (FSProtocol != fsSCPonly) && EnvironmentSheet->Enabled);
+      EnableControl(UtfLabel, UtfCombo->Enabled);
+      // should be enabled for fsSFTP (SCP fallback) too, but it would cause confusion
+      EnableControl(TimeDifferenceEdit, (((FSProtocol == fsFTP) || (FSProtocol == fsSCPonly)) && EnvironmentSheet->Enabled));
+      EnableControl(TimeDifferenceLabel, TimeDifferenceEdit->Enabled);
+      EnableControl(TimeDifferenceHoursLabel, TimeDifferenceEdit->Enabled);
+      EnableControl(TimeDifferenceMinutesEdit, TimeDifferenceEdit->Enabled);
+      EnableControl(TimeDifferenceMinutesLabel, TimeDifferenceEdit->Enabled);
+      RecycleBinLinkLabel->Visible = ShowAdvancedLoginOptionsCheck->Checked;
+      EnvironmentOtherLabel->Visible = RecycleBinLinkLabel->Visible;
+
+      // environment/recycle bin sheet
+      RecycleBinSheet->Enabled = !ExternalProtocol &&
+        ShowAdvancedLoginOptionsCheck->Checked && FRecycleBinSheetVisible;
       EnableControl(OverwrittenToRecycleBinCheck, (FSProtocol != fsSCPonly) &&
-        (FSProtocol != fsFTP) && EnvironmentSheet->Enabled);
+        (FSProtocol != fsFTP) && RecycleBinSheet->Enabled);
       EnableControl(RecycleBinPathEdit,
         (DeleteToRecycleBinCheck->Enabled && DeleteToRecycleBinCheck->Checked) ||
         (OverwrittenToRecycleBinCheck->Enabled && OverwrittenToRecycleBinCheck->Checked) &&
-        EnvironmentSheet->Enabled);
+        RecycleBinSheet->Enabled);
       EnableControl(RecycleBinPathLabel, RecycleBinPathEdit->Enabled &&
-        EnvironmentSheet->Enabled);
+        RecycleBinSheet->Enabled);
 
       // environment/sftp sheet
       SftpSheet->Enabled = Advanced && ((FSProtocol == fsSFTPonly) || (FSProtocol == fsSFTP));
 
+      // environment/scp/shell
+      ScpSheet->Enabled = Advanced && InternalSshProtocol;
+      // disable also for SFTP with SCP fallback, as if someone wants to configure
+      // these he/she probably intends to use SCP and should explicitly select it.
+      // (note that these are not used for secondary shell session)
+      EnableControl(ScpLsOptionsGroup, (FSProtocol == fsSCPonly));
+      EnableControl(OtherShellOptionsGroup, (FSProtocol == fsSCPonly));
+
+      // environment/ftp
+      FtpSheet->Enabled = FtpProtocol;
+
       // tunnel sheet
       TunnelSheet->Enabled = Advanced && InternalSshProtocol;
+      // probably needless
       EnableControl(TunnelSessionGroup, TunnelCheck->Enabled && TunnelCheck->Checked);
-      EnableControl(TunnelOptionsGroup, TunnelCheck->Enabled && TunnelSessionGroup->Enabled);
+      EnableControl(TunnelOptionsGroup, TunnelSessionGroup->Enabled);
 
       // preferences sheet
       GeneralSheet->Enabled = FLAGSET(Options, loPreferences);
@@ -982,7 +1142,6 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
 {
   if (!FInitialized)
   {
-    FInitialized = true;
     Init();
     TSessionData * Data = GetSessionData();
     if (Data == FSessionData)
@@ -999,13 +1158,14 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
     Init();
     LoadSession(FSessionData);
     ChangePage(FSavedTab);
-    SessionListView->ItemIndex = FSavedSession;
+    SessionTree->Selected = FSavedSession;
+    SessionTree->Selected->MakeVisible();
     LoadConfiguration();
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionListViewSelectItem(TObject * /*Sender*/,
-      TListItem * /*Item*/, bool /*Selected*/)
+void __fastcall TLoginDialog::SessionTreeChange(TObject * /*Sender*/,
+  TTreeNode * /*Node*/)
 {
   UpdateControls();
 }
@@ -1040,18 +1200,16 @@ void __fastcall TLoginDialog::SetStoredSessions(TStoredSessionList * value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::LoadSessionItem(TListItem * Item)
+void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
 {
-  Item->Data = StoredSessions->AtObject(Item->Index);
-  Item->Caption = ((TSessionData*)Item->Data)->Name;
-}
-//---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionListViewDblClick(TObject * /*Sender*/)
-{
-  if (SelectedSession)
+  TPoint P = SessionTree->ScreenToClient(Mouse->CursorPos);
+  if (SelectedSession && (SessionTree->GetNodeAt(P.x, P.y) == SessionTree->Selected))
   {
-    if (SelectedSession->CanLogin) ModalResult = mrOk;
-      else
+    if (SelectedSession->CanLogin)
+    {
+      ModalResult = mrOk;
+    }
+    else
     {
       SessionData = SelectedSession;
       EditSession();
@@ -1059,43 +1217,22 @@ void __fastcall TLoginDialog::SessionListViewDblClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SetSelectedSession(TSessionData * value)
-{
-  if (value)
-  {
-    int Index = StoredSessions->IndexOf(value);
-    if (Index >= 0)
-    {
-      TListItem *Item = SessionListView->Items->Item[Index];
-      Item->Focused = true;
-      Item->Selected = true;
-      Item->MakeVisible(false);
-    }
-  }
-  else
-  {
-    SessionListView->Selected = NULL;
-  }
-}
-//---------------------------------------------------------------------------
 TSessionData * __fastcall TLoginDialog::GetSelectedSession()
 {
-  if (SessionListView->Selected)
-    return (TSessionData *)SessionListView->Selected->Data;
+  if (SessionTree->Selected != NULL)
+  {
+    return (TSessionData *)SessionTree->Selected->Data;
+  }
   else
+  {
     return NULL;
+  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionListViewInfoTip(TObject * /*Sender*/,
-      TListItem * Item, AnsiString & InfoTip)
-{
-  InfoTip = ((TSessionData*)Item->Data)->InfoTip;
-}
-//---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionListViewKeyDown(TObject * /*Sender*/,
+void __fastcall TLoginDialog::SessionTreeKeyDown(TObject * /*Sender*/,
   WORD & Key, TShiftState /*Shift*/)
 {
-  if (!SessionListView->IsEditing())
+  if (!SessionTree->IsEditing())
   {
     if (Key == VK_DELETE)
     {
@@ -1127,60 +1264,136 @@ void __fastcall TLoginDialog::EditSessionActionExecute(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
 {
-  AnsiString SessionName;
   SaveSession(FSessionData);
-  if (FSessionData->Password.IsEmpty() ||
-      Configuration->DisablePasswordStoring ||
-      (MessageDialog(LoadStr(SAVE_PASSWORD), qtWarning, qaOK | qaCancel,
-         HELP_SESSION_SAVE_PASSWORD) == qaOK))
+
+  bool SavePassword;
+  bool * PSavePassword;
+
+  if (Configuration->DisablePasswordStoring ||
+      FSessionData->Password.IsEmpty())
   {
-    SessionName = DoSaveSessionDialog(FSessionData->SessionName, FEditingSessionData);
-    if (!SessionName.IsEmpty())
+    PSavePassword = NULL;
+  }
+  else
+  {
+    PSavePassword = &SavePassword;
+    SavePassword =
+      (FEditingSessionData != NULL) &&
+      (FEditingSessionData->Password == FSessionData->Password);
+  }
+
+  AnsiString SessionName = FSessionData->SessionName;
+  // when saving new session, save by default to current session folder
+  if (FCurrentSessionName.IsEmpty())
+  {
+    SessionName.Insert(
+      UnixIncludeTrailingBackslash(SessionNodePath(CurrentSessionFolderNode())), 1);
+  }
+  if (DoSaveSessionDialog(SessionName, PSavePassword, FEditingSessionData))
+  {
+    if ((PSavePassword != NULL) && !*PSavePassword)
     {
-      TListItem * Item;
-      TSessionData *NewSession =
-        StoredSessions->NewSession(SessionName, FSessionData);
-      // modified only, explicit
-      StoredSessions->Save(false, true);
-      SaveConfiguration();
-      // by now list must contais same number of items or one less
-      assert(StoredSessions->Count == SessionListView->Items->Count ||
-        StoredSessions->Count == SessionListView->Items->Count+1);
-      if (StoredSessions->Count > SessionListView->Items->Count)
-        Item = SessionListView->Items->Insert(StoredSessions->IndexOf(NewSession));
-      else
-        Item = SessionListView->Items->Item[StoredSessions->IndexOf(NewSession)];
+      FSessionData->Password = "";
+    }
 
-      LoadSessionItem(Item);
-      SelectedSession = NewSession;
-      SessionData = NewSession;
+    TSessionData * NewSession =
+      StoredSessions->NewSession(SessionName, FSessionData);
+    // modified only, explicit
+    StoredSessions->Save(false, true);
+    SaveConfiguration();
 
-      ChangePage(SessionListSheet);
-      SessionListView->SetFocus();
+    TTreeNode * Node = SessionTree->Items->GetFirstNode();
+    while ((Node != NULL) && (Node->Data != NewSession))
+    {
+      Node = Node->GetNext();
+    }
+
+    if (Node == NULL)
+    {
+      Node = AddSession(NewSession);
+    }
+
+    SessionTree->Selected = Node;
+    SessionData = NewSession;
+
+    ChangePage(SessionListSheet);
+    SessionTree->SetFocus();
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TLoginDialog::SessionNodePath(TTreeNode * Node)
+{
+  AnsiString Path;
+  if (Node != NULL)
+  {
+    Path = Node->Text;
+    Node = Node->Parent;
+    while (Node != NULL)
+    {
+      Path.Insert(UnixIncludeTrailingBackslash(Node->Text), 1);
+      Node = Node->Parent;
     }
   }
+
+  return Path;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::DeleteSessionActionExecute(TObject * /*Sender*/)
 {
-  if (SelectedSession &&
-      (MessageDialog(FMTLOAD(CONFIRM_DELETE_SESSION, (SelectedSession->SessionName)),
-         qtConfirmation, qaOK | qaCancel, HELP_DELETE_SESSION) == qaOK))
+  assert(SessionTree->Selected != NULL);
+
+  TSessionData * Session = SelectedSession;
+  if (Session != NULL)
   {
-    int PrevSelectedIndex = SessionListView->Selected->Index;
-    if (FEditingSessionData == SelectedSession)
+    if (MessageDialog(FMTLOAD(CONFIRM_DELETE_SESSION, (Session->SessionName)),
+          qtConfirmation, qaOK | qaCancel, HELP_DELETE_SESSION) == qaOK)
     {
-      FEditingSessionData = NULL;
+      Session->Remove();
+      DestroySession(Session);
+      SessionTree->Selected->Delete();
     }
-    SelectedSession->Remove();
-    StoredSessions->Remove(SelectedSession);
-    SessionListView->Selected->Delete();
-    if (SessionListView->Items->Count)
+  }
+  else
+  {
+    TTreeNode * Node = SessionTree->Selected;
+    int Sessions = 0;
+    TTreeNode * ANode = Node->GetNext();
+    while ((ANode != NULL) && ANode->HasAsParent(Node))
     {
-      if (PrevSelectedIndex >= SessionListView->Items->Count)
-        PrevSelectedIndex = SessionListView->Items->Count - 1;
-      SelectedSession =
-        (TSessionData *)StoredSessions->AtObject(PrevSelectedIndex);
+      if (ANode->Data != NULL)
+      {
+        TSessionData * Session = static_cast<TSessionData *>(ANode->Data);
+        if (Session->Special)
+        {
+          SessionTree->Selected = ANode;
+          ANode->MakeVisible();
+          throw Exception(FMTLOAD(LOGIN_DELETE_SPECIAL_SESSION, (Session->SessionName)));
+        }
+        Sessions++;
+      }
+      ANode = ANode->GetNext();
+    }
+
+    AnsiString Path = SessionNodePath(Node);
+
+    if ((Sessions == 0) ||
+        (MessageDialog(FMTLOAD(LOGIN_DELETE_SESSION_FOLDER, (Path, Sessions)),
+          qtConfirmation, qaOK | qaCancel, HELP_DELETE_SESSION_FOLDER) == qaOK))
+    {
+      Node = SessionTree->Selected;
+      TTreeNode * ANode = Node->GetNext();
+      while ((ANode != NULL) && ANode->HasAsParent(Node))
+      {
+        if (ANode->Data != NULL)
+        {
+          TSessionData * Session = static_cast<TSessionData *>(ANode->Data);
+          Session->Remove();
+          DestroySession(Session);
+        }
+        ANode = ANode->GetNext();
+      }
+
+      SessionTree->Selected->Delete();
     }
   }
 }
@@ -1190,8 +1403,10 @@ void __fastcall TLoginDialog::ImportSessionsActionExecute(TObject * /*Sender*/)
   if (DoImportSessionsDialog(StoredSessions))
   {
     LoadSessions();
-    if (SessionListView->Items->Count)
-      SessionListView->Items->Item[0]->MakeVisible(False);
+    if (SessionTree->Items->Count > 0)
+    {
+      SessionTree->Items->GetFirstNode()->MakeVisible();
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1209,29 +1424,33 @@ void __fastcall TLoginDialog::AboutActionExecute(TObject * /*Sender*/)
 void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
       bool &Handled)
 {
+  bool SessionSelected =
+    (SessionTree->Selected != NULL) && (SessionTree->Selected->Data != NULL);
   if (Action == EditSessionAction)
   {
-    EditSessionAction->Enabled = SessionListView->Selected;
+    EditSessionAction->Enabled = SessionSelected;
   }
   else if (Action == DeleteSessionAction)
   {
     TSessionData * Data = SessionData;
     DeleteSessionAction->Enabled =
-      SessionListView->Selected && Data && !Data->Special;
+      (SessionSelected && !Data->Special) ||
+      ((SessionTree->Selected != NULL) && (SessionTree->Selected->Data == NULL));
   }
   else if (Action == RenameSessionAction)
   {
     TSessionData * Data = SessionData;
     RenameSessionAction->Enabled =
-      SessionListView->Selected && Data && !Data->Special;
+      (SessionSelected && !Data->Special) ||
+      ((SessionTree->Selected != NULL) && (SessionTree->Selected->Data == NULL));
   }
   else if (Action == DesktopIconAction)
   {
-    DesktopIconAction->Enabled = SessionListView->Selected;
+    DesktopIconAction->Enabled = SessionSelected;
   }
   else if (Action == SendToHookAction)
   {
-    SendToHookAction->Enabled = SessionListView->Selected;
+    SendToHookAction->Enabled = SessionSelected;
   }
   else if (Action == LoginAction)
   {
@@ -1244,11 +1463,15 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   }
   else if (Action == ShellIconSessionAction)
   {
-    ShellIconSessionAction->Enabled = SessionListView->Selected;
+    ShellIconSessionAction->Enabled = SessionSelected;
+  }
+  else if (Action == NewSessionFolderAction)
+  {
+    NewSessionFolderAction->Enabled = true;
   }
   Handled = true;
 
-  if (!SessionListView->IsEditing())
+  if (!SessionTree->IsEditing())
   {
     // default property setter does not have guard for "the same value"
     if (!LoginButton->Default)
@@ -1402,7 +1625,7 @@ void __fastcall TLoginDialog::WMHelp(TWMHelp & Message)
   TForm::Dispatch(&Message);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::Dispatch(void *Message)
+void __fastcall TLoginDialog::Dispatch(void * Message)
 {
   TMessage * M = reinterpret_cast<TMessage*>(Message);
   assert(M);
@@ -1417,12 +1640,11 @@ void __fastcall TLoginDialog::Dispatch(void *Message)
       SaveConfiguration();
       SaveSession(FSessionData);
       FSavedTab = PageControl->ActivePage;
-      FSavedSession = SessionListView->ItemIndex;
+      FSavedSession = SessionTree->Selected;
 
       assert(FSystemSettings);
       RevokeSystemSettings(this, FSystemSettings);
       FSystemSettings = NULL;
-      ShowTabs(true);
 
       Hide();
     }
@@ -1463,10 +1685,14 @@ void __fastcall TLoginDialog::AlgListBoxDragOver(TObject * Sender,
   {
     Accept = AllowAlgDrag(dynamic_cast<TListBox*>(Sender), X, Y);
   }
+  else
+  {
+    Accept = false;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::AlgListBoxDragDrop(TObject * Sender,
-      TObject *Source, int X, int Y)
+  TObject * Source, int X, int Y)
 {
   if (Source == Sender)
   {
@@ -1555,14 +1781,35 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionListViewCustomDrawItem(
-      TCustomListView *Sender, TListItem *Item, TCustomDrawState /*State*/,
-      bool &DefaultDraw)
+void __fastcall TLoginDialog::SessionTreeCustomDrawItem(
+  TCustomTreeView * Sender, TTreeNode * Node, TCustomDrawState State,
+  bool & DefaultDraw)
 {
-  TSessionData * Data = (TSessionData *)Item->Data;
+  TSessionData * Data = (TSessionData *)Node->Data;
   TFontStyles Styles = Sender->Canvas->Font->Style;
-  if (Data->Special) Styles = Styles /*< fsItalic*/ << fsBold << fsUnderline;
-    else Styles = Styles /*>> fsItalic*/ >> fsBold >> fsUnderline;
+  if ((Data != NULL) && Data->Special)
+  {
+    Styles = Styles << fsBold << fsUnderline;
+  }
+  else
+  {
+    if ((Data == NULL) && State.Empty() && !Node->DropTarget)
+    {
+      bool AnySession = false;
+      TTreeNode * ANode = Node->GetNext();
+      while (!AnySession && (ANode != NULL) && ANode->HasAsParent(Node))
+      {
+        AnySession = (ANode->Data != NULL);
+        ANode = ANode->GetNext();
+      }
+
+      if (!AnySession)
+      {
+        Sender->Canvas->Font->Color = clGrayText;
+      }
+    }
+    Styles = Styles >> fsBold >> fsUnderline;
+  }
   Sender->Canvas->Font->Style = Styles;
   DefaultDraw = true;
 }
@@ -1623,14 +1870,14 @@ void __fastcall TLoginDialog::LocaleGetClick(TObject * /*Sender*/)
   OpenBrowser(LoadStr(LOCALES_URL));
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::AuthGSSAPICheckClick(TObject * /*Sender*/)
+void __fastcall TLoginDialog::AuthGSSAPICheck2Click(TObject * /*Sender*/)
 {
   if (!NoUpdate)
   {
     UpdateControls();
-    if (AuthGSSAPICheck->Checked && !Configuration->GSSAPIInstalled)
+    if (AuthGSSAPICheck2->Checked && !Configuration->GSSAPIInstalled)
     {
-      throw Exception(LoadStr(GSSAPI_NOT_INSTALLED));
+      throw Exception(LoadStr(GSSAPI_NOT_INSTALLED2));
     }
   }
 }
@@ -1638,16 +1885,6 @@ void __fastcall TLoginDialog::AuthGSSAPICheckClick(TObject * /*Sender*/)
 void __fastcall TLoginDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
-}
-//---------------------------------------------------------------------------
-void __fastcall TLoginDialog::FormKeyDown(TObject * /*Sender*/, WORD &Key,
-  TShiftState /*Shift*/)
-{
-  // we don't have "cancel" button, so we must handle "esc" ourselves
-  if (Key == VK_ESCAPE)
-  {
-    ModalResult = mrCancel;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::VerifyKey(AnsiString FileName, bool TypeOnly)
@@ -1762,11 +1999,11 @@ void __fastcall TLoginDialog::PickColorItemClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionListViewEditing(TObject * /*Sender*/,
-  TListItem * Item, bool & AllowEdit)
+void __fastcall TLoginDialog::SessionTreeEditing(TObject * /*Sender*/,
+  TTreeNode * Node, bool & AllowEdit)
 {
-  TSessionData * Data = static_cast<TSessionData *>(Item->Data);
-  AllowEdit = !Data->Special;
+  TSessionData * Data = static_cast<TSessionData *>(Node->Data);
+  AllowEdit = (Data == NULL) || !Data->Special;
   if (AllowEdit)
   {
     LoginButton->Default = false;
@@ -1776,80 +2013,146 @@ void __fastcall TLoginDialog::SessionListViewEditing(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::RenameSessionActionExecute(TObject * /*Sender*/)
 {
-  if (SessionListView->Selected != NULL)
+  if (SessionTree->Selected != NULL)
   {
-    SessionListView->Selected->EditCaption();
+    SessionTree->Selected->EditText();
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionListViewEdited(TObject * /*Sender*/,
-  TListItem * Item, AnsiString & S)
+void __fastcall TLoginDialog::CheckDuplicateFolder(TTreeNode * Parent,
+  AnsiString Text, TTreeNode * Node)
 {
-  if (Item->Caption != S)
+  TTreeNode * ANode =
+    ((Parent == NULL) ? SessionTree->Items->GetFirstNode() :
+     Parent->getFirstChild());
+  // note that we allow folder with the same name as existing session
+  // on the same level (see also AddSession)
+  while ((ANode != NULL) &&
+    ((ANode == Node) || (ANode->Data != NULL) || !AnsiSameText(ANode->Text, Text)))
+  {
+    ANode = ANode->getNextSibling();
+  }
+
+  if (ANode != NULL)
+  {
+    throw Exception(FMTLOAD(LOGIN_DUPLICATE_SESSION_FOLDER, (Text)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionTreeEdited(TObject * /*Sender*/,
+  TTreeNode * Node, AnsiString & S)
+{
+  if (Node->Text != S)
   {
     TSessionData * Session = SelectedSession;
 
-    SessionNameValidate(S, Session);
-
-    // remove from storage
-    Session->Remove();
-
-    int PrevCount = StoredSessions->Count;
-    TSessionData * NewSession = StoredSessions->NewSession(S, Session);
-    // modified only explicit
-    StoredSessions->Save(false, true);
-    // the session may be the same, if only letter case has changed
-    if (Session != NewSession)
+    TSessionData::ValidateName(S);
+    if (Session != NULL)
     {
-      SessionListView->Selected->Data = NewSession;
-      // if we overwrite editing session, remove the original item
-      // (we must preserve the one we are editing)
-      if (PrevCount == StoredSessions->Count)
+      AnsiString Path = UnixExtractFilePath(Session->Name) + S;
+
+      SessionNameValidate(Path, Session);
+
+      // remove from storage
+      Session->Remove();
+
+      TSessionData * NewSession = StoredSessions->NewSession(Path, Session);
+      // modified, only explicit
+      StoredSessions->Save(false, true);
+      // the session may be the same, if only letter case has changed
+      if (Session != NewSession)
       {
-        int Index = StoredSessions->IndexOf(NewSession);
-        TListItem * OldItem = SessionListView->Items->Item[Index];
-        assert(OldItem->Data == NewSession);
-        OldItem->Delete();
+        // if we overwrite existing session, remove the original item
+        // (we must not delete the node we are editing)
+        TTreeNode * ANode =
+          ((Node->Parent == NULL) ? SessionTree->Items->GetFirstNode() :
+           Node->Parent->getFirstChild());
+        while ((ANode != NULL) && (ANode->Data != NewSession))
+        {
+          ANode = ANode->getNextSibling();
+        }
+
+        if (ANode != NULL)
+        {
+          ANode->Delete();
+        }
+
+        Node->Data = NewSession;
+
+        DestroySession(Session);
       }
-      StoredSessions->Remove(Session);
+
+      SessionData = NewSession;
     }
+    else
+    {
+      CheckDuplicateFolder(Node->Parent, S, Node);
 
-    // sort items to the same order as in the container
-    SessionListView->AlphaSort();
+      AnsiString ParentPath = UnixIncludeTrailingBackslash(SessionNodePath(Node->Parent));
+      AnsiString OldRoot = ParentPath + Node->Text;
+      AnsiString NewRoot = ParentPath + S;
 
-    SessionData = NewSession;
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SessionListViewCompare(TObject * /*Sender*/,
-  TListItem * Item1, TListItem * Item2, int /*Data*/, int & Compare)
-{
-  int Index1 = StoredSessions->IndexOf(static_cast<TSessionData*>(Item1->Data));
-  int Index2 = StoredSessions->IndexOf(static_cast<TSessionData*>(Item2->Data));
-  if (Index1 < Index2)
-  {
-    Compare = -1;
-  }
-  else if (Index1 > Index2)
-  {
-    Compare = 1;
-  }
-  else
-  {
-    Compare = 0;
+      bool AnySession = false;
+
+      TSortType PrevSortType = SessionTree->SortType;
+      // temporarily disable automatic sorting, so that nodes are kept in order
+      // while we traverse them. otherwise it may happen that we omit some.
+      SessionTree->SortType = Comctrls::stNone;
+      try
+      {
+        TTreeNode * ANode = Node->GetNext();
+        while ((ANode != NULL) && ANode->HasAsParent(Node))
+        {
+          if (ANode->Data != NULL)
+          {
+            AnySession = true;
+            TSessionData * Session = static_cast<TSessionData *>(ANode->Data);
+
+            // remove from storage
+            Session->Remove();
+
+            AnsiString Path = Session->Name;
+            assert(Path.SubString(1, OldRoot.Length()) == OldRoot);
+            Path.Delete(1, OldRoot.Length());
+            Path.Insert(NewRoot, 1);
+
+            TSessionData * NewSession = StoredSessions->NewSession(Path, Session);
+
+            // the session may be the same, if only letter case has changed
+            if (NewSession != Session)
+            {
+              ANode->Data = NewSession;
+              DestroySession(Session);
+            }
+          }
+
+          ANode = ANode->GetNext();
+        }
+      }
+      __finally
+      {
+        SessionTree->SortType = PrevSortType;
+      }
+
+      if (AnySession)
+      {
+        // modified, only explicit
+        StoredSessions->Save(false, true);
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::UnixEnvironmentButtonClick(TObject * /*Sender*/)
 {
-  EOLTypeLFButton->Checked = true;
+  EOLTypeCombo->ItemIndex = 0;
   DSTModeUnixCheck->Checked = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::WindowsEnvironmentButtonClick(
   TObject * /*Sender*/)
 {
-  EOLTypeCRLFButton->Checked = true;
+  EOLTypeCombo->ItemIndex = 1;
   DSTModeWinCheck->Checked = true;
 }
 //---------------------------------------------------------------------------
@@ -1872,10 +2175,9 @@ int __fastcall TLoginDialog::FSProtocolToIndex(TFSProtocol FSProtocol,
   else
   {
     AllowScpFallback = false;
-    for (int Index = 0; Index < LENOF(FSOrder); Index++)
+    for (int Index = 0; Index < TransferProtocolCombo->Items->Count; Index++)
     {
-      if ((FSOrder[Index] == FSProtocol) &&
-          (Index < TransferProtocolCombo->Items->Count))
+      if (FSOrder[Index] == FSProtocol)
       {
         return Index;
       }
@@ -1906,12 +2208,9 @@ void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
 {
   if (!NoUpdate)
   {
-    SavePing(FSessionData);
-
     FFSProtocol = IndexToFSProtocol(
       TransferProtocolCombo->ItemIndex, AllowScpFallbackCheck->Checked);
 
-    LoadPing(FSessionData);
     if (FFSProtocol == fsFTP)
     {
       if (PortNumberEdit->AsInteger == 22)
@@ -1934,5 +2233,277 @@ void __fastcall TLoginDialog::NavigationTreeCollapsing(
   TObject * /*Sender*/, TTreeNode * /*Node*/, bool & AllowCollapse)
 {
   AllowCollapse = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::RecycleBinLinkLabelClick(TObject * /*Sender*/)
+{
+  FRecycleBinSheetVisible = true;
+  UpdateControls();
+  ChangePage(RecycleBinSheet);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::ProxyLocalCommandBrowseButtonClick(
+  TObject * /*Sender*/)
+{
+  BrowseForExecutable(ProxyLocalCommandEdit,
+    LoadStr(LOGIN_SELECT_LOCAL_PROXY),
+    LoadStr(EXECUTABLE_FILTER), false, true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionTreeExpandedCollapsed(TObject * /*Sender*/,
+  TTreeNode * Node)
+{
+  UpdateFolderNode(Node);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionTreeCompare(TObject * /*Sender*/,
+  TTreeNode * Node1, TTreeNode * Node2, int /*Data*/, int & Compare)
+{
+  if ((Node1->Data == NULL) && (Node2->Data != NULL))
+  {
+    Compare = -1;
+  }
+  else if ((Node1->Data != NULL) && (Node2->Data == NULL))
+  {
+    Compare = 1;
+  }
+  else if (Node1->Data == NULL)
+  {
+    Compare = AnsiCompareText(Node1->Text, Node2->Text);
+  }
+  else
+  {
+    Compare = NamedObjectSortProc(Node1->Data, Node2->Data);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::NewSessionFolderInputDialogInitialize(
+  TObject * /*Sender*/, TInputDialogData * Data)
+{
+  TEdit * Edit = Data->Edit;
+  int P = Edit->Text.LastDelimiter("/");
+  if (P > 0)
+  {
+    Edit->SetFocus();
+    Edit->SelStart = P;
+    Edit->SelLength = Edit->Text.Length() - P;
+  }
+}
+//---------------------------------------------------------------------------
+TTreeNode * __fastcall TLoginDialog::SessionFolderNode(TTreeNode * Node)
+{
+  TTreeNode * Parent;
+  if (Node == NULL)
+  {
+    Parent = NULL;
+  }
+  else if (Node->Data != NULL)
+  {
+    Parent = Node->Parent;
+  }
+  else
+  {
+    Parent = Node;
+  }
+  return Parent;
+}
+//---------------------------------------------------------------------------
+TTreeNode * __fastcall TLoginDialog::CurrentSessionFolderNode()
+{
+  return SessionFolderNode(SessionTree->Selected);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::NewSessionFolderActionExecute(
+  TObject * /*Sender*/)
+{
+  AnsiString Name =
+    UnixIncludeTrailingBackslash(SessionNodePath(CurrentSessionFolderNode())) +
+    LoadStr(NEW_FOLDER);
+  if (InputDialog(LoadStr(LOGIN_NEW_SESSION_FOLDER_CAPTION),
+        LoadStr(LOGIN_NEW_SESSION_FOLDER_PROMPT), Name, HELP_NEW_SESSION_FOLDER,
+        NULL, true, NewSessionFolderInputDialogInitialize))
+  {
+    Name = UnixExcludeTrailingBackslash(Name);
+    if (!Name.IsEmpty())
+    {
+      TTreeNode * Parent = AddSessionPath(UnixExtractFilePath(Name));
+      CheckDuplicateFolder(Parent, UnixExtractFileName(Name), NULL);
+
+      TTreeNode * Node = AddSessionPath(Name);
+      SessionTree->Selected = Node;
+      Node->MakeVisible();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLoginDialog::SessionAllowDrop(TTreeNode * DropTarget)
+{
+  assert(SessionTree->Selected != NULL);
+  return (SessionTree->Selected->Parent != DropTarget);
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionTreeProc(TMessage & AMessage)
+{
+  if (AMessage.Msg == CM_DRAG)
+  {
+    TCMDrag & Message = reinterpret_cast<TCMDrag &>(AMessage);
+    // reimplement dmDragMove to avoid TCustomTreeView.DoDragOver,
+    // which resets DropTarget to pointed-to node
+    // (note that this disables OnDragOver event handler)
+    if ((Message.DragMessage == dmDragMove) ||
+        (Message.DragMessage == dmDragEnter) ||
+        (Message.DragMessage == dmDragLeave))
+    {
+      if (Message.DragMessage != dmDragMove)
+      {
+        // must call it at least for dmDragLeave, because it does some cleanup,
+        // but we need to override result below, as it defaults to "not accepted"
+        FOldSessionTreeProc(AMessage);
+      }
+
+      TDragControlObject * DragObject = dynamic_cast<TDragControlObject *>(Message.DragRec->Source);
+      if ((DragObject != NULL) && (DragObject->Control == SessionTree))
+      {
+        TPoint P = SessionTree->ScreenToClient(Message.DragRec->Pos);
+        TTreeNode * DropTarget = SessionFolderNode(SessionTree->GetNodeAt(P.x, P.y));
+        if (!SessionAllowDrop(DropTarget))
+        {
+          DropTarget = NULL;
+          Message.Result = 0;
+        }
+        else
+        {
+          Message.Result = 1;
+        }
+
+        if (Message.DragMessage == dmDragMove)
+        {
+          SessionTree->DropTarget = DropTarget;
+        }
+      }
+      else
+      {
+        Message.Result = 0;
+      }
+    }
+    else
+    {
+      FOldSessionTreeProc(AMessage);
+    }
+  }
+  else
+  {
+    FOldSessionTreeProc(AMessage);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionTreeStartDrag(TObject * /*Sender*/,
+  TDragObject *& /*DragObject*/)
+{
+  assert(SessionTree->Selected != NULL);
+  // neither session folders not special sessions can be dragged
+  if ((SessionTree->Selected == NULL) ||
+      (SessionTree->Selected->Data == NULL) ||
+      ((SessionTree->Selected->Data != NULL) &&
+       SelectedSession->Special))
+  {
+    Abort();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionTreeDragDrop(TObject * Sender,
+  TObject * Source, int /*X*/, int /*Y*/)
+{
+  if ((Sender == Source) &&
+      (SessionTree->Selected != NULL) &&
+      (SessionTree->Selected->Parent != SessionTree->DropTarget))
+  {
+    TTreeNode * DropTarget = SessionTree->DropTarget;
+    TSessionData * Session = SelectedSession;
+    AnsiString Path =
+      UnixIncludeTrailingBackslash(SessionNodePath(DropTarget)) +
+      UnixExtractFileName(Session->SessionName);
+
+    SessionNameValidate(Path, Session);
+
+    // remove from storage
+    Session->Remove();
+
+    TSessionData * NewSession = StoredSessions->NewSession(Path, Session);
+    // modified, only explicit
+    StoredSessions->Save(false, true);
+    // this should aways be the case
+    if (Session != NewSession)
+    {
+      TTreeNode * Node = SessionTree->Selected;
+
+      // look for overwritten node (if any)
+      TTreeNode * ANode = SessionTree->Items->GetFirstNode();
+      while (ANode != NULL)
+      {
+        if (ANode->Data == NewSession)
+        {
+          ANode->Delete();
+          break;
+        }
+        ANode = ANode->GetNext();
+      }
+
+      Node->MoveTo(DropTarget, naAddChild);
+      Node->Data = NewSession;
+      // try to make both visible
+      if (DropTarget != NULL)
+      {
+        DropTarget->MakeVisible();
+      }
+      Node->MakeVisible();
+
+      DestroySession(Session);
+    }
+    else
+    {
+      assert(false);
+    }
+
+    SessionData = NewSession;
+  }
+  else
+  {
+    assert(false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionTreeMouseMove(TObject * /*Sender*/,
+  TShiftState /*Shift*/, int X, int Y)
+{
+  TTreeNode * Node = SessionTree->GetNodeAt(X, Y);
+  THitTests HitTest = SessionTree->GetHitTestInfoAt(X, Y);
+
+  if (Node != FHintNode)
+  {
+    Application->CancelHint();
+
+    AnsiString Hint;
+    if (HitTest.Contains(htOnItem) || HitTest.Contains(htOnIcon) ||
+        HitTest.Contains(htOnLabel) || HitTest.Contains(htOnStateIcon))
+    {
+      FHintNode = Node;
+      if (Node->Data != NULL)
+      {
+        Hint = static_cast<TSessionData *>(Node->Data)->InfoTip;
+      }
+      else
+      {
+        Hint = "";
+      }
+    }
+    else
+    {
+      FHintNode = NULL;
+      Hint = "";
+    }
+
+    SessionTree->Hint = Hint;
+  }
 }
 //---------------------------------------------------------------------------

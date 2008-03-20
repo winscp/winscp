@@ -1,4 +1,5 @@
 //---------------------------------------------------------------------------
+#define NO_WIN32_LEAN_AND_MEAN
 #include <vcl.h>
 #pragma hdrstop
 
@@ -8,7 +9,7 @@
 #include "Interface.h"
 #include <StrUtils.hpp>
 #include <math.h>
-#include <shellapi.h>
+#include <shfolder.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -268,6 +269,26 @@ AnsiString __fastcall SystemTemporaryDirectory()
   return TempDir;
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall GetShellFolderPath(int CSIdl)
+{
+  AnsiString Result;
+  HMODULE Shell32Lib = LoadLibrary("SHELL32.DLL");
+  if (Shell32Lib != NULL)
+  {
+    PFNSHGETFOLDERPATH SHGetFolderPath = (PFNSHGETFOLDERPATH)
+      GetProcAddress(Shell32Lib, "SHGetFolderPathA");
+    if (SHGetFolderPath != NULL)
+    {
+      char Path[2 * MAX_PATH + 10] = "\0";
+      if (SUCCEEDED(SHGetFolderPath(NULL, CSIdl, NULL, SHGFP_TYPE_CURRENT, Path)))
+      {
+        Result = Path;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall StripPathQuotes(const AnsiString Path)
 {
   if ((Path.Length() >= 2) &&
@@ -456,8 +477,8 @@ AnsiString __fastcall HexToStr(const AnsiString Hex)
   {
     for (int i = 1; i <= Hex.Length(); i += 2)
     {
-      P1 = Digits.Pos(Hex[i]);
-      P2 = Digits.Pos(Hex[i + 1]);
+      P1 = Digits.Pos((char)toupper(Hex[i]));
+      P2 = Digits.Pos((char)toupper(Hex[i + 1]));
       if (P1 <= 0 || P2 <= 0)
       {
         Result = "";
@@ -479,7 +500,7 @@ unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars)
   int I = 1;
   while (I <= Hex.Length())
   {
-    int A = Digits.Pos(Hex[I]);
+    int A = Digits.Pos((char)toupper(Hex[I]));
     if (A <= 0)
     {
       if ((MinChars < 0) || (I <= MinChars))
@@ -494,6 +515,11 @@ unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars)
     I++;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+char __fastcall HexToChar(const AnsiString Hex)
+{
+  return (char)HexToInt(Hex);
 }
 //---------------------------------------------------------------------------
 bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec)
@@ -1155,4 +1181,69 @@ void __fastcall AnsiToOem(AnsiString & Str)
     Str.Unique();
     CharToOem(Str.c_str(), Str.c_str());
   }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall EscapeHotkey(const AnsiString & Caption)
+{
+  return StringReplace(Caption, "&", "&&", TReplaceFlags() << rfReplaceAll);
+}
+//---------------------------------------------------------------------------
+bool __fastcall CutToken(AnsiString & Str, AnsiString & Token)
+{
+  bool Result;
+
+  Token = "";
+
+  // inspired by Putty's sftp_getcmd() from PSFTP.C
+  int Index = 1;
+  while ((Index <= Str.Length()) &&
+    ((Str[Index] == ' ') || (Str[Index] == '\t')))
+  {
+    Index++;
+  }
+
+  if (Index <= Str.Length())
+  {
+    bool Quoting = false;
+
+    while (Index <= Str.Length())
+    {
+      if (!Quoting && ((Str[Index] == ' ') || (Str[Index] == '\t')))
+      {
+        break;
+      }
+      else if ((Str[Index] == '"') && (Index + 1 <= Str.Length()) &&
+        (Str[Index + 1] == '"'))
+      {
+        Index += 2;
+        Token += '"';
+      }
+      else if (Str[Index] == '"')
+      {
+        Index++;
+        Quoting = !Quoting;
+      }
+      else
+      {
+        Token += Str[Index];
+        Index++;
+      }
+    }
+
+    if (Index <= Str.Length())
+    {
+      Index++;
+    }
+
+    Str = Str.SubString(Index, Str.Length());
+
+    Result = true;
+  }
+  else
+  {
+    Result = false;
+    Str = "";
+  }
+
+  return Result;
 }

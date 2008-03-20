@@ -267,9 +267,9 @@ object PropertiesDialog: TPropertiesDialog
       object Label6: TLabel
         Left = 13
         Top = 13
-        Width = 43
+        Width = 46
         Height = 13
-        Caption = '&Algorithm'
+        Caption = '&Algorithm:'
         FocusControl = ChecksumAlgEdit
       end
       object ChecksumView: TListView

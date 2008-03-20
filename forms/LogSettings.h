@@ -44,9 +44,10 @@ private:
   AnsiString __fastcall GetDefaultLogFileName();
   void __fastcall SetEnableLogWindow(bool value);
 public:
+  __fastcall TLoggingFrame(TComponent* Owner);
   void __fastcall LoadConfiguration();
   void __fastcall SaveConfiguration();
-  __fastcall TLoggingFrame(TComponent* Owner);
+  void __fastcall Init();
   __property AnsiString DefaultLogFileName = { read = GetDefaultLogFileName };
   __property bool EnableLogWindow = { read = FEnableLogWindow, write = SetEnableLogWindow };
 protected:

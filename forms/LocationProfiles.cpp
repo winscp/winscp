@@ -284,7 +284,7 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark()
     }
 
     Result = DoComboInputDialog(LoadStr(ADD_BOOKMARK_CAPTION), LoadStr(ADD_BOOKMARK_PROMPT),
-      BookmarkName, PeerBookmarks, NULL, false, HELP_LOCATION_PROFILE_ADD);
+      BookmarkName, PeerBookmarks, false, HELP_LOCATION_PROFILE_ADD);
     if (Result)
     {
       if (BookmarkName.IsEmpty() || (StrToIntDef(BookmarkName, -123) != -123))
@@ -502,11 +502,11 @@ void __fastcall TLocationProfilesDialog::FormShow(TObject * /*Sender*/)
   FindProfile();
   if (OperationSide == osLocal)
   {
-    LocalDirectoryEdit->SetFocus();
+    ActiveControl = LocalDirectoryEdit;
   }
   else
   {
-    RemoteDirectoryEdit->SetFocus();
+    ActiveControl = RemoteDirectoryEdit;
   }
   UpdateControls();
 }
@@ -565,7 +565,7 @@ void __fastcall TLocationProfilesDialog::MoveToButtonClick(TObject * /*Sender*/)
   TBookmark * Bookmark = (TBookmark *)ProfilesView->Selected->Data;
   AnsiString Name = Bookmark->Node;
   if (DoComboInputDialog(LoadStr(MOVE_BOOKMARK_CAPTION), LoadStr(MOVE_BOOKMARK_PROMPT),
-      Name, FFolders, NULL, true, HELP_LOCATION_PROFILE_MOVE) &&
+      Name, FFolders, true, HELP_LOCATION_PROFILE_MOVE) &&
       (Name != Bookmark->Node))
   {
     if (Name.Pos("\\"))

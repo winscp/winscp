@@ -48,6 +48,7 @@ object SelectMaskDialog: TSelectMaskDialog
       Top = 36
       Width = 313
       Height = 21
+      AutoComplete = False
       ItemHeight = 13
       MaxLength = 1000
       TabOrder = 0

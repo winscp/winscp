@@ -63,7 +63,7 @@ __published:
   TTBXStatusBar *RemoteStatusBar;
   TUnixDirView *RemoteDirView;
   TTBXDock *TopDock;
-  TListView *QueueView;
+  TListView *QueueView2;
   TPanel *QueuePanel;
   TSplitter *QueueSplitter;
   TTBXToolbar *QueueToolbar;
@@ -107,17 +107,17 @@ __published:
     int dwEffect, HRESULT &Result);
   void __fastcall QueueSplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
-  void __fastcall QueueViewContextPopup(TObject *Sender, TPoint &MousePos,
+  void __fastcall QueueView2ContextPopup(TObject *Sender, TPoint &MousePos,
     bool &Handled);
-  void __fastcall QueueViewDeletion(TObject *Sender, TListItem *Item);
-  void __fastcall QueueViewStartDrag(TObject *Sender,
+  void __fastcall QueueView2Deletion(TObject *Sender, TListItem *Item);
+  void __fastcall QueueView2StartDrag(TObject *Sender,
     TDragObject *&DragObject);
-  void __fastcall QueueViewDragOver(TObject *Sender, TObject *Source,
+  void __fastcall QueueView2DragOver(TObject *Sender, TObject *Source,
     int X, int Y, TDragState State, bool &Accept);
-  void __fastcall QueueViewDragDrop(TObject *Sender, TObject *Source,
+  void __fastcall QueueView2DragDrop(TObject *Sender, TObject *Source,
     int X, int Y);
-  void __fastcall QueueViewEnter(TObject *Sender);
-  void __fastcall QueueViewSelectItem(TObject *Sender, TListItem *Item,
+  void __fastcall QueueView2Enter(TObject *Sender);
+  void __fastcall QueueView2SelectItem(TObject *Sender, TListItem *Item,
     bool Selected);
   void __fastcall RemoteFileControlDDFileOperation(TObject * Sender,
     int Effect, AnsiString SourcePath, AnsiString TargetPath,
@@ -140,12 +140,24 @@ __published:
   void __fastcall DirViewHistoryChange(TCustomDirView *Sender);
   void __fastcall RemoteStatusBarClick(TObject *Sender);
   void __fastcall DirViewLoaded(TObject *Sender);
-  void __fastcall AddressToolbarGetBaseSize(TTBCustomToolbar * Toolbar, TPoint & ASize);
+  void __fastcall ToolbarGetBaseSize(TTBCustomToolbar * Toolbar, TPoint & ASize);
   void __fastcall FormConstrainedResize(TObject * Sender, int & MinWidth,
     int  &MinHeight, int  &MaxWidth, int  &MaxHeight);
   void __fastcall SessionColorPaletteChange(TObject * Sender);
   void __fastcall StatusBarPanelDblClick(TTBXCustomStatusBar * Sender,
     TTBXStatusPanel * Panel);
+  void __fastcall RemotePathComboBoxAdjustImageIndex(
+    TTBXComboBoxItem * Sender, const AnsiString AText, int AIndex,
+    int & ImageIndex);
+  void __fastcall RemotePathComboBoxDrawItem(TTBXCustomList * Sender,
+    TCanvas * ACanvas, TRect & ARect, int AIndex, int AHoverIndex,
+    bool & DrawDefault);
+  void __fastcall RemotePathComboBoxMeasureWidth(TTBXCustomList * Sender,
+    TCanvas * ACanvas, int AIndex, int & AWidth);
+  void __fastcall RemotePathComboBoxItemClick(TObject * Sender);
+  void __fastcall RemotePathComboBoxCancel(TObject * Sender);
+  void __fastcall DirViewEditing(TObject *Sender, TListItem *Item,
+          bool &AllowEdit);
 
 private:
   TTerminal * FTerminal;
@@ -234,15 +246,18 @@ protected:
   AnsiString FNoteHints;
   TNotifyEvent FOnNoteClick;
   unsigned int FLockLevel;
+  TImageList * FSystemImageList;
+  bool FAlternativeDelete;
 
   virtual bool __fastcall CopyParamDialog(TTransferDirection Direction,
     TTransferType Type, bool Temp, TStrings * FileList,
     AnsiString & TargetDirectory, TGUICopyParamType & CopyParam, bool Confirm,
     bool DragDrop);
-  virtual bool __fastcall RemoteTransferDialog(TStrings * FileList,
-    AnsiString & Target, AnsiString & FileMask, bool NoConfirmation, bool Move);
+  virtual bool __fastcall RemoteTransferDialog(TTerminal *& Session,
+    AnsiString & Target, AnsiString & FileMask, bool & DirectCopy,
+    bool NoConfirmation, bool Move);
   virtual void __fastcall CreateParams(TCreateParams & Params);
-  void __fastcall DeleteFiles(TOperationSide Side, TStrings * FileList);
+  void __fastcall DeleteFiles(TOperationSide Side, TStrings * FileList, bool Alternative);
   void __fastcall RemoteTransferFiles(TStrings * FileList, bool NoConfirmation, bool Move);
   virtual void __fastcall DoDirViewExecFile(TObject * Sender, TListItem * Item, bool & AllowExec);
   virtual TControl * __fastcall GetComponent(Byte Component);
@@ -275,7 +290,7 @@ protected:
   void __fastcall ExecutedFileReload(const AnsiString FileName,
     const TEditedFileData & Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData & Data,
-    bool * CloseFlag, bool & KeepOpen);
+    bool & KeepOpen);
   void __fastcall CMAppSysCommand(TMessage & Message);
   void __fastcall WMAppCommand(TMessage & Message);
   void __fastcall WMSysCommand(TMessage & Message);
@@ -336,20 +351,24 @@ protected:
   void __fastcall DDDownload(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
+  bool __fastcall CommandSessionFallback();
   void __fastcall FileTerminalClosed(const AnsiString FileName,
     TEditedFileData & Data, TObject * Token, void * Arg);
   void __fastcall FileConfigurationChanged(const AnsiString FileName,
     TEditedFileData & Data, TObject * Token, void * Arg);
   void __fastcall CustomExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, AnsiString FileName, AnsiString OriginalFileName,
-    const TEditorPreferences * ExternalEditor);
+    const TEditorPreferences * ExternalEditor, AnsiString LocalRootDirectory);
   bool __fastcall RemoteExecuteForceText(TExecuteFileBy ExecuteFileBy,
     const TEditorPreferences * ExternalEditor);
   void __fastcall ExecuteFileNormalize(TExecuteFileBy & ExecuteFileBy,
     const TEditorPreferences *& ExternalEditor, const AnsiString & FileName,
     bool Local, const TFileMasks::TParams & MaskParams);
+  AnsiString __fastcall TemporaryDirectoryForRemoteFiles(TCopyParamType CopyParam,
+    AnsiString & RootDirectory);
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
-    AnsiString & TempDir, bool AllFiles, bool GetTargetNames);
+    AnsiString & RootTempDir, AnsiString & TempDir, bool AllFiles, bool GetTargetNames,
+    bool AutoOperation);
   TTBXPopupMenu * __fastcall HistoryMenu(TOperationSide Side, bool Back);
   AnsiString __fastcall FileStatusBarText(const TStatusFileInfo & FileInfo);
   void __fastcall UpdateFileStatusBar(TTBXStatusBar * StatusBar,
@@ -388,18 +407,22 @@ protected:
     bool AllowNeverAskAgain);
   void __fastcall UpdateTrayIcon();
   void __fastcall TrayIconClick(TObject * Sender);
-  void __fastcall PopupTrayBalloon(TTerminal * Terminal, const AnsiString & Str,
-    TQueryType Type, Exception * E = NULL, unsigned int Seconds = 0);
   void __fastcall Notify(TTerminal * Terminal, AnsiString Message,
     TQueryType Type, bool Important = false, TNotifyEvent OnClick = NULL,
     Exception * E = NULL);
   bool __fastcall OpenInNewWindow();
   virtual void __fastcall UpdateSessionData(TSessionData * Data);
+  virtual void __fastcall UpdateRemotePathComboBox(
+    TTBXComboBoxItem * RemotePathComboBox, bool TextOnly);
+  virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
+  void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
   void __fastcall AddBookmark(TOperationSide Side);
   virtual void __fastcall AddEditLink(bool Add);
+  bool __fastcall CanAddEditLink();
+  bool __fastcall LinkFocused();
   virtual Boolean __fastcall AllowedAction(TAction * Action, TActionAllowed Allowed) = 0;
   virtual void __fastcall ConfigurationChanged();
   void __fastcall CreateDirectory(TOperationSide Side);
@@ -420,6 +443,7 @@ public:
   void __fastcall DuplicateSession();
   void __fastcall CloseSession();
   void __fastcall OpenDirectory(TOperationSide Side);
+  virtual void __fastcall HomeDirectory(TOperationSide Side);
   void __fastcall OpenStoredSession(TSessionData * Data);
   void __fastcall Idle(bool AppIdle);
   __fastcall TCustomScpExplorerForm(TComponent* Owner);
@@ -439,8 +463,8 @@ public:
     const TEditorPreferences * ExternalEditor = NULL, bool AllSelected = false,
     bool OnFocused = false);
   void __fastcall EditNew(TOperationSide Side);
-  bool __fastcall AllowQueueOperation(TQueueOperation Operation);
-  void __fastcall ExecuteQueueOperation(TQueueOperation Operation);
+  bool __fastcall AllowQueueOperation(TQueueOperation Operation, void ** Param = NULL);
+  void __fastcall ExecuteQueueOperation(TQueueOperation Operation, void * Param = NULL);
   TQueueOperation __fastcall DefaultQueueOperation();
   void __fastcall LastTerminalClosed(TObject * Sender);
   void __fastcall TerminalClosed(TObject * Sender);
@@ -475,6 +499,8 @@ public:
   void __fastcall SynchronizeBrowsingChanged();
   void __fastcall ToggleShowHiddenFiles();
   void __fastcall ToggleAutoReadDirectoryAfterOp();
+  void __fastcall PopupTrayBalloon(TTerminal * Terminal, const AnsiString & Str,
+    TQueryType Type, Exception * E = NULL, unsigned int Seconds = 0);
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

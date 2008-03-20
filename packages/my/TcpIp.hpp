@@ -211,10 +211,12 @@ protected:
 	AnsiString FType;
 	Classes::TStringList* FDoAuthor;
 	AnsiString FContentPost;
+	bool FRedirect;
 	void __fastcall GetHead(void);
 	void __fastcall GetBody(void);
 	void __fastcall SendRequest(const AnsiString Method, const AnsiString Version);
 	void __fastcall GetAnswer(void);
+	void __fastcall ReportStatusError(void);
 	
 public:
 	__property Classes::TStream* Stream = {read=FStream, write=SetStream};
@@ -245,6 +247,8 @@ extern PACKAGE System::ResourceString _SSocketError;
 #define Tcpip_SSocketError System::LoadResourceString(&Tcpip::_SSocketError)
 extern PACKAGE System::ResourceString _SUnknownSockError;
 #define Tcpip_SUnknownSockError System::LoadResourceString(&Tcpip::_SUnknownSockError)
+extern PACKAGE System::ResourceString _SHttpError;
+#define Tcpip_SHttpError System::LoadResourceString(&Tcpip::_SHttpError)
 extern PACKAGE void __fastcall Register(void);
 
 }	/* namespace Tcpip */

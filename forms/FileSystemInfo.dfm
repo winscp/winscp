@@ -185,9 +185,9 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
       object Label1: TLabel
         Left = 13
         Top = 13
-        Width = 22
+        Width = 25
         Height = 13
-        Caption = '&Path'
+        Caption = '&Path:'
         FocusControl = SpaceAvailablePathEdit
       end
       object SpaceAvailableView: TListView

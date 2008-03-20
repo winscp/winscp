@@ -20,13 +20,13 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TSessionData * GetLoginData(AnsiString SessionName, AnsiString & DownloadFile,
-  bool & Url)
+TSessionData * GetLoginData(AnsiString SessionName, TOptions * Options,
+  AnsiString & DownloadFile, bool & Url)
 {
   bool DefaultsOnly;
   TSessionData * Data;
 
-  Data = StoredSessions->ParseUrl(SessionName, DefaultsOnly,
+  Data = StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly,
     puExtractFileName | puDecodeUrlChars, &DownloadFile, &Url);
   assert(Data != NULL);
 
@@ -164,18 +164,6 @@ void __fastcall Synchronize(TTerminal * Terminal, TCustomScpExplorerForm * ScpEx
   Abort();
 }
 //---------------------------------------------------------------------------
-void __fastcall InvalidDefaultTranslation()
-{
-  if (WinConfiguration->ConfirmRemoveDefaultTranslation())
-  {
-    if (!DeleteFile(WinConfiguration->DefaultTranslationFile))
-    {
-      throw Exception(FMTLOAD(DELETE_LOCAL_FILE_ERROR,
-        (WinConfiguration->DefaultTranslationFile)));
-    }
-  }
-}
-//---------------------------------------------------------------------------
 int __fastcall Execute()
 {
   assert(StoredSessions);
@@ -266,10 +254,6 @@ int __fastcall Execute()
     {
       CheckForUpdates(false);
     }
-    else if (Params->FindSwitch("InvalidDefaultTranslation"))
-    {
-      InvalidDefaultTranslation();
-    }
     else
     {
       TSessionData * Data;
@@ -288,7 +272,7 @@ int __fastcall Execute()
 
       WinConfiguration->CheckDefaultTranslation();
 
-      if (Params->Count > 0)
+      if (!Params->Empty)
       {
         if (Params->FindSwitch("Defaults"))
         {
@@ -342,13 +326,17 @@ int __fastcall Execute()
       {
         Retry = false;
         bool Url = false;
-        Data = GetLoginData(AutoStartSession, DownloadFile, Url);
+        Data = GetLoginData(AutoStartSession, Params, DownloadFile, Url);
         if (Data)
         {
           if (Url || Params->FindSwitch("Unsafe"))
           {
             // prevent any automatic action when URL is provided on
             // command-line (the check is duplicated in Console())
+            if (UseDefaults || Params->FindSwitch("Log"))
+            {
+              MessageDialog(LoadStr(UNSAFE_ACTIONS_DISABLED), qtWarning, qaOK);
+            }
             UseDefaults = false;
           }
           else

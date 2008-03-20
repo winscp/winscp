@@ -14,29 +14,21 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-__fastcall TScriptProcParams::TScriptProcParams(TStrings * Params,
-  const AnsiString & ParamsStr)
+__fastcall TScriptProcParams::TScriptProcParams(AnsiString ParamsStr)
 {
-  FParams = Params;
+  int P = FSwitchMarks.Pos("/");
+  assert(P > 0);
+  if (P > 0)
+  {
+    FSwitchMarks.Delete(P, 1);
+  }
+
   FParamsStr = ParamsStr;
-  FSkipParams = 0;
-  FArg = 0;
-}
-//---------------------------------------------------------------------------
-void __fastcall TScriptProcParams::SkipParam()
-{
-  assert(FSkipParams < FParams->Count);
-  FSkipParams++;
-}
-//---------------------------------------------------------------------------
-int __fastcall TScriptProcParams::GetParamCount()
-{
-  return (FSkipParams > FParams->Count ? 0 : FParams->Count - FSkipParams);
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TScriptProcParams::GetParam(int Index)
-{
-  return FParams->Strings[FSkipParams + Index];
+  AnsiString Param;
+  while (CutToken(ParamsStr, Param))
+  {
+    Add(Param);
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -48,17 +40,16 @@ public:
   __fastcall TScriptCommands();
   virtual __fastcall ~TScriptCommands();
 
-  void __fastcall Execute(TScriptProcParams * Parameters);
-  void __fastcall Execute(TStrings * Tokens, AnsiString Params);
+  void __fastcall Execute(const AnsiString & Command, const AnsiString & Params);
 
   void __fastcall Register(const char * Command,
     const AnsiString Description, const AnsiString Help, TCommandProc Proc,
-    int MinParams, int MaxParams, void * Arg = NULL);
+    int MinParams, int MaxParams, bool Switches);
   void __fastcall Register(const char * Command,
     int Description, int Help, TCommandProc Proc,
-    int MinParams, int MaxParams, void * Arg = NULL);
+    int MinParams, int MaxParams, bool Switches);
   void __fastcall Register(const char * Command, TCommandProc Proc,
-    int MinParams, int MaxParams, void * Arg = NULL);
+    int MinParams, int MaxParams, bool Switches);
 
   bool __fastcall Info(const AnsiString Command,
     AnsiString * Description, AnsiString * Help);
@@ -69,11 +60,9 @@ public:
   static int __fastcall FindCommand(const char ** Commands, size_t Count,
     const AnsiString Command, AnsiString * Matches = NULL);
 
-  __property TCommandProc DefaultProc = { read = FDefaultProc, write = FDefaultProc };
+  static void __fastcall CheckParams(TOptions * Parameters, bool Switches);
 
 protected:
-  TCommandProc FDefaultProc;
-
   struct TScriptCommand
   {
     AnsiString Description;
@@ -81,7 +70,7 @@ protected:
     TCommandProc Proc;
     int MinParams;
     int MaxParams;
-    void * Arg;
+    bool Switches;
   };
 };
 //---------------------------------------------------------------------------
@@ -89,7 +78,6 @@ __fastcall TScriptCommands::TScriptCommands()
 {
   Sorted = true;
   CaseSensitive = false;
-  FDefaultProc = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TScriptCommands::~TScriptCommands()
@@ -102,7 +90,7 @@ __fastcall TScriptCommands::~TScriptCommands()
 //---------------------------------------------------------------------------
 void __fastcall TScriptCommands::Register(const char * Command,
   const AnsiString Description, const AnsiString Help, TCommandProc Proc,
-  int MinParams, int MaxParams, void * Arg)
+  int MinParams, int MaxParams, bool Switches)
 {
   TScriptCommand * ScriptCommand = new TScriptCommand;
   ScriptCommand->Description = Description;
@@ -110,14 +98,14 @@ void __fastcall TScriptCommands::Register(const char * Command,
   ScriptCommand->Proc = Proc;
   ScriptCommand->MinParams = MinParams;
   ScriptCommand->MaxParams = MaxParams;
-  ScriptCommand->Arg = Arg;
+  ScriptCommand->Switches = Switches;
 
   AddObject(Command, reinterpret_cast<TObject *>(ScriptCommand));
 }
 //---------------------------------------------------------------------------
 void __fastcall TScriptCommands::Register(const char * Command,
   int Description, int Help, TCommandProc Proc,
-  int MinParams, int MaxParams, void * Arg)
+  int MinParams, int MaxParams, bool Switches)
 {
   AnsiString ADescription;
   if (Description > 0)
@@ -130,14 +118,13 @@ void __fastcall TScriptCommands::Register(const char * Command,
     AHelp = LoadStr(Help, 10240);
   }
 
-  Register(Command, ADescription, AHelp,
-    Proc, MinParams, MaxParams, Arg);
+  Register(Command, ADescription, AHelp, Proc, MinParams, MaxParams, Switches);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScriptCommands::Register(const char * Command, TCommandProc Proc,
-  int MinParams, int MaxParams, void * Arg)
+  int MinParams, int MaxParams, bool Switches)
 {
-  Register(Command, "", "", Proc, MinParams, MaxParams, Arg);
+  Register(Command, "", "", Proc, MinParams, MaxParams, Switches);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScriptCommands::Info(const AnsiString Command,
@@ -252,49 +239,53 @@ int __fastcall TScriptCommands::FindCommand(const char ** Commands, size_t Count
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TScriptCommands::Execute(TScriptProcParams * Parameters)
+void __fastcall TScriptCommands::CheckParams(TOptions * Parameters,
+  bool Switches)
 {
-  assert(Parameters->ParamCount > 0);
-  AnsiString Command = Parameters->Param[0];
-
-  AnsiString Matches;
-  int Index = FindCommand(this, Command, &Matches);
-
-  if (Index == -2)
+  AnsiString Switch;
+  if (!Switches && Parameters->UnusedSwitch(Switch))
   {
-    throw Exception(FMTLOAD(SCRIPT_COMMAND_AMBIGUOUS, (Command, Matches)));
-  }
-  else if (Index < 0)
-  {
-    throw Exception(FMTLOAD(SCRIPT_COMMAND_UNKNOWN, (Command)));
-  }
-
-  TScriptCommand * ScriptCommand = reinterpret_cast<TScriptCommand *>(Objects[Index]);
-  Command = Strings[Index];
-
-  Parameters->SkipParam();
-  Parameters->Arg = ScriptCommand->Arg;
-
-  if (Parameters->ParamCount < ScriptCommand->MinParams)
-  {
-    throw Exception(FMTLOAD(SCRIPT_MISSING_PARAMS, (Command)));
-  }
-  else if ((ScriptCommand->MaxParams >= 0) && (Parameters->ParamCount > ScriptCommand->MaxParams))
-  {
-    throw Exception(FMTLOAD(SCRIPT_TOO_MANY_PARAMS, (Command)));
-  }
-  else
-  {
-    ScriptCommand->Proc(Parameters);
+    throw Exception(FMTLOAD(SCRIPT_UNKNOWN_SWITCH, (Switch)));
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScriptCommands::Execute(TStrings * Tokens, AnsiString Params)
+// parameters are by purpose passed by (constant) reference.
+// because if passed by value (copy), AnsiString reference is not for some reason
+// decreased on exit by exception, leading to memory leak
+void __fastcall TScriptCommands::Execute(const AnsiString & Command, const AnsiString & Params)
 {
-  TScriptProcParams * Parameters = new TScriptProcParams(Tokens, Params);
+  TScriptProcParams * Parameters = new TScriptProcParams(Params);
   try
   {
-    Execute(Parameters);
+    AnsiString Matches;
+    int Index = FindCommand(this, Command, &Matches);
+
+    if (Index == -2)
+    {
+      throw Exception(FMTLOAD(SCRIPT_COMMAND_AMBIGUOUS, (Command, Matches)));
+    }
+    else if (Index < 0)
+    {
+      throw Exception(FMTLOAD(SCRIPT_COMMAND_UNKNOWN, (Command)));
+    }
+
+    TScriptCommand * ScriptCommand = reinterpret_cast<TScriptCommand *>(Objects[Index]);
+    AnsiString FullCommand = Strings[Index];
+
+    if (Parameters->ParamCount < ScriptCommand->MinParams)
+    {
+      throw Exception(FMTLOAD(SCRIPT_MISSING_PARAMS, (FullCommand)));
+    }
+    else if ((ScriptCommand->MaxParams >= 0) && (Parameters->ParamCount > ScriptCommand->MaxParams))
+    {
+      throw Exception(FMTLOAD(SCRIPT_TOO_MANY_PARAMS, (FullCommand)));
+    }
+    else
+    {
+      CheckParams(Parameters, ScriptCommand->Switches);
+
+      ScriptCommand->Proc(Parameters);
+    }
   }
   __finally
   {
@@ -303,8 +294,9 @@ void __fastcall TScriptCommands::Execute(TStrings * Tokens, AnsiString Params)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TScript::TScript()
+__fastcall TScript::TScript(bool LimitedOutput)
 {
+  FLimitedOutput = LimitedOutput;
   FTerminal = NULL;
 
   Init();
@@ -313,13 +305,6 @@ __fastcall TScript::TScript()
 __fastcall TScript::~TScript()
 {
   delete FCommands;
-}
-//---------------------------------------------------------------------------
-__fastcall TScript::TScript(TTerminal * Terminal)
-{
-  FTerminal = Terminal;
-
-  Init();
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::Init()
@@ -335,33 +320,33 @@ void __fastcall TScript::Init()
   FKeepingUpToDate = false;
 
   FCommands = new TScriptCommands;
-  FCommands->Register(";", 0, 0, &DummyProc, 0, -1);
-  FCommands->Register("#", 0, 0, &DummyProc, 0, -1);
-  FCommands->Register("help", SCRIPT_HELP_DESC, SCRIPT_HELP_HELP, &HelpProc, 0, -1);
-  FCommands->Register("man", 0, SCRIPT_HELP_HELP, &HelpProc, 0, -1);
-  FCommands->Register("call", SCRIPT_CALL_DESC, SCRIPT_CALL_HELP, &CallProc, 1, -1);
-  FCommands->Register("!", 0, SCRIPT_CALL_HELP, &CallProc, 1, -1);
-  FCommands->Register("pwd", SCRIPT_PWD_DESC, SCRIPT_PWD_HELP, &PwdProc, 0, 0);
-  FCommands->Register("cd", SCRIPT_CD_DESC, SCRIPT_CD_HELP, &CdProc, 0, 1);
-  FCommands->Register("ls", SCRIPT_LS_DESC, SCRIPT_LS_HELP, &LsProc, 0, 1);
-  FCommands->Register("dir", 0, SCRIPT_LS_HELP, &LsProc, 0, 1);
-  FCommands->Register("rm", SCRIPT_RM_DESC, SCRIPT_RM_HELP, &RmProc, 1, -1);
-  FCommands->Register("rmdir", SCRIPT_RMDIR_DESC, SCRIPT_RMDIR_HELP, &RmDirProc, 1, -1);
-  FCommands->Register("mv", SCRIPT_MV_DESC, SCRIPT_MV_HELP, &MvProc, 2, -1);
-  FCommands->Register("rename", 0, SCRIPT_MV_HELP, &MvProc, 2, -1);
-  FCommands->Register("chmod", SCRIPT_CHMOD_DESC, SCRIPT_CHMOD_HELP, &ChModProc, 2, -1);
-  FCommands->Register("ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2);
-  FCommands->Register("symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2);
-  FCommands->Register("mkdir", SCRIPT_MKDIR_DESC, SCRIPT_MKDIR_HELP, &MkDirProc, 1, 1);
-  FCommands->Register("get", SCRIPT_GET_DESC, SCRIPT_GET_HELP, &GetProc, 1, -1);
-  FCommands->Register("recv", 0, SCRIPT_GET_HELP, &GetProc, 1, -1);
-  FCommands->Register("put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP, &PutProc, 1, -1);
-  FCommands->Register("send", 0, SCRIPT_PUT_HELP, &PutProc, 1, -1);
-  FCommands->Register("option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP4, &OptionProc, -1, 2);
-  FCommands->Register("ascii", 0, SCRIPT_OPTION_HELP4, &AsciiProc, 0, 0);
-  FCommands->Register("binary", 0, SCRIPT_OPTION_HELP4, &BinaryProc, 0, 0);
-  FCommands->Register("synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP, &SynchronizeProc, 1, 3);
-  FCommands->Register("keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP, &KeepUpToDateProc, 0, 2);
+  FCommands->Register(";", 0, 0, &DummyProc, 0, -1, true);
+  FCommands->Register("#", 0, 0, &DummyProc, 0, -1, true);
+  FCommands->Register("help", SCRIPT_HELP_DESC, SCRIPT_HELP_HELP, &HelpProc, 0, -1, false);
+  FCommands->Register("man", 0, SCRIPT_HELP_HELP, &HelpProc, 0, -1, false);
+  FCommands->Register("call", SCRIPT_CALL_DESC2, SCRIPT_CALL_HELP2, &CallProc, 1, -1, false);
+  FCommands->Register("!", 0, SCRIPT_CALL_HELP2, &CallProc, 1, -1, false);
+  FCommands->Register("pwd", SCRIPT_PWD_DESC, SCRIPT_PWD_HELP, &PwdProc, 0, 0, false);
+  FCommands->Register("cd", SCRIPT_CD_DESC, SCRIPT_CD_HELP, &CdProc, 0, 1, false);
+  FCommands->Register("ls", SCRIPT_LS_DESC, SCRIPT_LS_HELP, &LsProc, 0, 1, false);
+  FCommands->Register("dir", 0, SCRIPT_LS_HELP, &LsProc, 0, 1, false);
+  FCommands->Register("rm", SCRIPT_RM_DESC, SCRIPT_RM_HELP, &RmProc, 1, -1, false);
+  FCommands->Register("rmdir", SCRIPT_RMDIR_DESC, SCRIPT_RMDIR_HELP, &RmDirProc, 1, -1, false);
+  FCommands->Register("mv", SCRIPT_MV_DESC, SCRIPT_MV_HELP, &MvProc, 2, -1, false);
+  FCommands->Register("rename", 0, SCRIPT_MV_HELP, &MvProc, 2, -1, false);
+  FCommands->Register("chmod", SCRIPT_CHMOD_DESC, SCRIPT_CHMOD_HELP, &ChModProc, 2, -1, false);
+  FCommands->Register("ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
+  FCommands->Register("symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
+  FCommands->Register("mkdir", SCRIPT_MKDIR_DESC, SCRIPT_MKDIR_HELP, &MkDirProc, 1, 1, false);
+  FCommands->Register("get", SCRIPT_GET_DESC, SCRIPT_GET_HELP2, &GetProc, 1, -1, true);
+  FCommands->Register("recv", 0, SCRIPT_GET_HELP2, &GetProc, 1, -1, false);
+  FCommands->Register("put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP2, &PutProc, 1, -1, true);
+  FCommands->Register("send", 0, SCRIPT_PUT_HELP2, &PutProc, 1, -1, false);
+  FCommands->Register("option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP5, &OptionProc, -1, 2, false);
+  FCommands->Register("ascii", 0, SCRIPT_OPTION_HELP5, &AsciiProc, 0, 0, false);
+  FCommands->Register("binary", 0, SCRIPT_OPTION_HELP5, &BinaryProc, 0, 0, false);
+  FCommands->Register("synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP2, &SynchronizeProc, 1, 3, true);
+  FCommands->Register("keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP2, &KeepUpToDateProc, 0, 2, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::SetCopyParam(const TCopyParamType & value)
@@ -372,11 +357,11 @@ void __fastcall TScript::SetCopyParam(const TCopyParamType & value)
 void __fastcall TScript::SetSynchronizeParams(int value)
 {
   FSynchronizeParams = (value &
-    (TTerminal::spDelete | TTerminal::spExistingOnly | TTerminal::spTimestamp |
+    (TTerminal::spExistingOnly | TTerminal::spTimestamp |
      TTerminal::spNotByTime | TTerminal::spBySize));
 }
 //---------------------------------------------------------------------------
-void __fastcall TScript::Command(const AnsiString Cmd)
+void __fastcall TScript::Command(AnsiString Cmd)
 {
   try
   {
@@ -384,19 +369,11 @@ void __fastcall TScript::Command(const AnsiString Cmd)
     {
       PrintLine(Cmd);
     }
-    TStrings * Tokens = new TStringList();
-    try
+
+    AnsiString Command;
+    if (CutToken(Cmd, Command))
     {
-      AnsiString AllButFirst;
-      Tokenize(Cmd, Tokens, AllButFirst);
-      if (Tokens->Count > 0)
-      {
-        FCommands->Execute(Tokens, AllButFirst);
-      }
-    }
-    __finally
-    {
-      delete Tokens;
+      FCommands->Execute(Command, Cmd);
     }
   }
   catch(Exception & E)
@@ -404,64 +381,6 @@ void __fastcall TScript::Command(const AnsiString Cmd)
     if (!HandleExtendedException(&E))
     {
       throw;
-    }
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TScript::Tokenize(const AnsiString Str, TStrings * Tokens,
-  AnsiString & AllButFirst)
-{
-  assert(Tokens->Count == 0);
-  // inspired by Putty's sftp_getcmd() from PSFTP.C
-  int Index = 1;
-  while (Index <= Str.Length())
-  {
-    while ((Index <= Str.Length()) &&
-      ((Str[Index] == ' ') || (Str[Index] == '\t')))
-    {
-      Index++;
-    }
-
-    if (Tokens->Count == 1)
-    {
-      AllButFirst = Str.SubString(Index, Str.Length() - Index + 1);
-    }
-
-    if (Index <= Str.Length())
-    {
-      bool Quoting = false;
-      AnsiString Token;
-
-      while (Index <= Str.Length())
-      {
-        if (!Quoting && ((Str[Index] == ' ') || (Str[Index] == '\t')))
-        {
-          break;
-        }
-        else if ((Str[Index] == '"') && (Index + 1 <= Str.Length()) &&
-          (Str[Index + 1] == '"'))
-        {
-          Index += 2;
-          Token += '"';
-        }
-        else if (Str[Index] == '"')
-        {
-          Index++;
-          Quoting = !Quoting;
-        }
-        else
-        {
-          Token += Str[Index];
-          Index++;
-        }
-      }
-
-      if (Index <= Str.Length())
-      {
-        Index++;
-      }
-
-      Tokens->Add(Token);
     }
   }
 }
@@ -675,6 +594,58 @@ void __fastcall TScript::CheckSession()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::CheckParams(TScriptProcParams * Parameters)
+{
+  TScriptCommands::CheckParams(Parameters, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProcParams * Parameters)
+{
+  AnsiString Value;
+
+  // total size is not visualized, hence it makes no sense to calculate it
+  CopyParam.CalculateSize = false;
+
+  if (Parameters->FindSwitch("nopreservetime"))
+  {
+    CopyParam.PreserveTime = false;
+  }
+
+  if (Parameters->FindSwitch("preservetime"))
+  {
+    CopyParam.PreserveTime = false;
+  }
+
+  if (Parameters->FindSwitch("nopermissions"))
+  {
+    CopyParam.PreserveRights = false;
+  }
+
+  if (Parameters->FindSwitch("permissions", Value))
+  {
+    CopyParam.PreserveRights = true;
+    CopyParam.Rights.Octal = Value;
+  }
+
+  if (Parameters->FindSwitch("speed", Value))
+  {
+    int CPSLimit;
+    if (Value.IsEmpty())
+    {
+      CPSLimit = 0;
+    }
+    else
+    {
+      CPSLimit = StrToInt(Value) * 1024;
+      if (CPSLimit < 0)
+      {
+        CPSLimit = 0;
+      }
+    }
+    CopyParam.CPSLimit = CPSLimit;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::ResetTransfer()
 {
 }
@@ -698,22 +669,6 @@ bool __fastcall TScript::EnsureCommandSessionFallback(TFSCapability Capability)
     }
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TScript::SecondaryProc(TScriptProcParams * Parameters)
-{
-  TScriptCommands * Commands = static_cast<TScriptCommands *>(Parameters->Arg);
-  assert(Commands != NULL);
-
-  if (Parameters->ParamCount == 0)
-  {
-    assert(Commands->DefaultProc != NULL);
-    Commands->DefaultProc(Parameters);
-  }
-  else
-  {
-    Commands->Execute(Parameters);
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::DummyProc(TScriptProcParams * /*Parameters*/)
@@ -741,7 +696,7 @@ void __fastcall TScript::HelpProc(TScriptProcParams * Parameters)
   }
   else
   {
-    for (int i = 0; i < Parameters->ParamCount; i++)
+    for (int i = 1; i <= Parameters->ParamCount; i++)
     {
       AnsiString Help;
       if (FCommands->Info(Parameters->Param[i], NULL, &Help))
@@ -791,7 +746,7 @@ void __fastcall TScript::CdProc(TScriptProcParams * Parameters)
   }
   else
   {
-    FTerminal->ChangeDirectory(Parameters->Param[0]);
+    FTerminal->ChangeDirectory(Parameters->Param[1]);
   }
 
   PrintLine(FTerminal->CurrentDirectory);
@@ -805,7 +760,7 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
   AnsiString Mask;
   if (Parameters->ParamCount > 0)
   {
-    Directory = Parameters->Param[0];
+    Directory = Parameters->Param[1];
     Mask = UnixExtractFileName(Directory);
     if (TFileMasks::IsMask(Mask))
     {
@@ -844,7 +799,7 @@ void __fastcall TScript::RmProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  TStrings * FileList = CreateFileList(Parameters, 0, Parameters->ParamCount - 1, fltMask);
+  TStrings * FileList = CreateFileList(Parameters, 1, Parameters->ParamCount, fltMask);
   try
   {
     FTerminal->DeleteFiles(FileList);
@@ -859,7 +814,7 @@ void __fastcall TScript::RmDirProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  TStrings * FileList = CreateFileList(Parameters, 0, Parameters->ParamCount - 1, fltDirectories);
+  TStrings * FileList = CreateFileList(Parameters, 1, Parameters->ParamCount, fltDirectories);
   try
   {
     FTerminal->DeleteFiles(FileList);
@@ -874,12 +829,12 @@ void __fastcall TScript::MvProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  TStrings * FileList = CreateFileList(Parameters, 0, Parameters->ParamCount - 2,
+  TStrings * FileList = CreateFileList(Parameters, 1, Parameters->ParamCount - 1,
     fltMask);
   try
   {
     assert(Parameters->ParamCount >= 1);
-    AnsiString Target = Parameters->Param[Parameters->ParamCount - 1];
+    AnsiString Target = Parameters->Param[Parameters->ParamCount];
     AnsiString TargetDirectory = UnixExtractFilePath(Target);
     AnsiString FileMask = UnixExtractFileName(Target);
     FTerminal->MoveFiles(FileList, TargetDirectory, FileMask);
@@ -894,13 +849,13 @@ void __fastcall TScript::ChModProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  TStrings * FileList = CreateFileList(Parameters, 1, Parameters->ParamCount - 1,
+  TStrings * FileList = CreateFileList(Parameters, 2, Parameters->ParamCount,
     fltMask);
   try
   {
     TRemoteProperties Properties;
     Properties.Valid = TValidProperties() << vpRights;
-    Properties.Rights.Octal = Parameters->Param[0];
+    Properties.Rights.Octal = Parameters->Param[1];
 
     FTerminal->ChangeFilesProperties(FileList, &Properties);
   }
@@ -916,14 +871,14 @@ void __fastcall TScript::LnProc(TScriptProcParams * Parameters)
 
   assert(Parameters->ParamCount == 2);
 
-  FTerminal->CreateLink(Parameters->Param[1], Parameters->Param[0], true);
+  FTerminal->CreateLink(Parameters->Param[2], Parameters->Param[1], true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::MkDirProc(TScriptProcParams * Parameters)
 {
   CheckSession();
 
-  FTerminal->CreateDirectory(Parameters->Param[0]);
+  FTerminal->CreateDirectory(Parameters->Param[1]);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
@@ -931,13 +886,12 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
   CheckSession();
   ResetTransfer();
 
-  int LastFileParam = (Parameters->ParamCount == 1 ? 0 : Parameters->ParamCount - 2);
-  TStrings * FileList = CreateFileList(Parameters, 0, LastFileParam,
+  int LastFileParam = (Parameters->ParamCount == 1 ? 1 : Parameters->ParamCount - 1);
+  TStrings * FileList = CreateFileList(Parameters, 1, LastFileParam,
     fltQueryServer | fltMask);
   try
   {
     TCopyParamType CopyParam = FCopyParam;
-    CopyParam.CalculateSize = false;
 
     AnsiString TargetDirectory;
     if (Parameters->ParamCount == 1)
@@ -947,7 +901,7 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     }
     else
     {
-      AnsiString Target = Parameters->Param[Parameters->ParamCount - 1];
+      AnsiString Target = Parameters->Param[Parameters->ParamCount];
       TargetDirectory = ExtractFilePath(Target);
       if (TargetDirectory.IsEmpty())
       {
@@ -957,6 +911,15 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
     }
 
     int Params = FLAGMASK(!FConfirm, cpNoConfirmation);
+
+    if (Parameters->FindSwitch("delete"))
+    {
+      Params |= cpDelete;
+    }
+
+    CopyParamParams(CopyParam, Parameters);
+    CheckParams(Parameters);
+
     FTerminal->CopyToLocal(FileList, TargetDirectory, &CopyParam, Params);
   }
   __finally
@@ -970,12 +933,11 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
   CheckSession();
   ResetTransfer();
 
-  int LastFileParam = (Parameters->ParamCount == 1 ? 0 : Parameters->ParamCount - 2);
-  TStrings * FileList = CreateLocalFileList(Parameters, 0, LastFileParam, fltMask);
+  int LastFileParam = (Parameters->ParamCount == 1 ? 1 : Parameters->ParamCount - 1);
+  TStrings * FileList = CreateLocalFileList(Parameters, 1, LastFileParam, fltMask);
   try
   {
     TCopyParamType CopyParam = FCopyParam;
-    CopyParam.CalculateSize = false;
 
     AnsiString TargetDirectory;
     if (Parameters->ParamCount == 1)
@@ -985,7 +947,7 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
     }
     else
     {
-      AnsiString Target = Parameters->Param[Parameters->ParamCount - 1];
+      AnsiString Target = Parameters->Param[Parameters->ParamCount];
       TargetDirectory = UnixExtractFilePath(Target);
       if (TargetDirectory.IsEmpty())
       {
@@ -995,6 +957,15 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
     }
 
     int Params = FLAGMASK(!FConfirm, cpNoConfirmation);
+
+    if (Parameters->FindSwitch("delete"))
+    {
+      Params |= cpDelete;
+    }
+
+    CopyParamParams(CopyParam, Parameters);
+    CheckParams(Parameters);
+
     FTerminal->CopyToRemote(FileList, TargetDirectory, &CopyParam, Params);
   }
   __finally
@@ -1099,7 +1070,8 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
     PrintLine(FORMAT(ListFormat, (Names[Transfer], Value)));
   }
 
-  if (OPT(SynchDelete))
+  // omit the option in listing
+  if (Option == SynchDelete)
   {
     if (SetValue)
     {
@@ -1161,12 +1133,12 @@ void __fastcall TScript::OptionProc(TScriptProcParams * Parameters)
 
   if (Parameters->ParamCount >= 1)
   {
-    OptionName = Parameters->Param[0];
+    OptionName = Parameters->Param[1];
   }
 
   if (Parameters->ParamCount >= 2)
   {
-    ValueName = Parameters->Param[1];
+    ValueName = Parameters->Param[2];
   }
 
   OptionImpl(OptionName, ValueName);
@@ -1194,7 +1166,7 @@ void __fastcall TScript::SynchronizeDirectories(TScriptProcParams * Parameters,
     LocalDirectory = GetCurrentDir();
   }
 
-  if (Parameters->ParamCount > FirstParam + 1)
+  if (Parameters->ParamCount >= FirstParam + 1)
   {
     RemoteDirectory = Parameters->Param[FirstParam + 1];
   }
@@ -1211,7 +1183,7 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 
   static const char * ModeNames[] = { "remote", "local", "both" };
 
-  AnsiString ModeName = Parameters->Param[0];
+  AnsiString ModeName = Parameters->Param[1];
   assert(FSynchronizeMode < 0);
   FSynchronizeMode = TScriptCommands::FindCommand(ModeNames, LENOF(ModeNames), ModeName);
 
@@ -1225,27 +1197,74 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     AnsiString LocalDirectory;
     AnsiString RemoteDirectory;
 
-    SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 1);
+    SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 2);
 
     TCopyParamType CopyParam = FCopyParam;
-    CopyParam.CalculateSize = false;
+    CopyParamParams(CopyParam, Parameters);
 
     int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation;
 
-    PrintLine(FMTLOAD(SCRIPT_SYNCHRONIZE_COLLECT,
-      (ExcludeTrailingBackslash(LocalDirectory),
-       UnixExcludeTrailingBackslash(RemoteDirectory))));
+    AnsiString Value;
+    if (Parameters->FindSwitch("delete"))
+    {
+      SynchronizeParams |= TTerminal::spDelete;
+    }
+    if (Parameters->FindSwitch("mirror") &&
+        (FSynchronizeMode != TTerminal::smBoth))
+    {
+      SynchronizeParams |= TTerminal::spMirror;
+    }
+    if (Parameters->FindSwitch("criteria", Value))
+    {
+      enum { Time, Size, Both };
+      static const char * CriteriaNames[] = { "time", "size", "both" };
+      int Criteria = TScriptCommands::FindCommand(CriteriaNames, LENOF(CriteriaNames), Value);
+      switch (Criteria)
+      {
+        case Time:
+          SynchronizeParams &= ~(TTerminal::spNotByTime | TTerminal::spBySize);
+          break;
+
+        case Size:
+          SynchronizeParams |= TTerminal::spNotByTime | TTerminal::spBySize;
+          break;
+
+        case Both:
+          SynchronizeParams &= ~TTerminal::spNotByTime;
+          SynchronizeParams |= TTerminal::spBySize;
+          break;
+      }
+    }
+
+    // enforce rules
+    if (FSynchronizeMode == TTerminal::smBoth)
+    {
+      SynchronizeParams &= ~(TTerminal::spNotByTime | TTerminal::spBySize);
+    }
+    if (FLAGSET(SynchronizeParams, TTerminal::spMirror))
+    {
+      SynchronizeParams &= ~TTerminal::spNotByTime;
+    }
+
+    CheckParams(Parameters);
+
+    PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_COLLECTING));
 
     TSynchronizeChecklist * Checklist =
       FTerminal->SynchronizeCollect(LocalDirectory, RemoteDirectory,
         static_cast<TTerminal::TSynchronizeMode>(FSynchronizeMode),
-        &CopyParam, SynchronizeParams, NULL, NULL);
+        &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory, NULL);
     try
     {
       if (Checklist->Count > 0)
       {
+        PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_SYNCHRONIZING));
         FTerminal->SynchronizeApply(Checklist, LocalDirectory, RemoteDirectory,
           &CopyParam, SynchronizeParams, OnTerminalSynchronizeDirectory);
+      }
+      else
+      {
+        PrintLine(LoadStr(SCRIPT_SYNCHRONIZE_NODIFFERENCE));
       }
     }
     __finally
@@ -1261,19 +1280,12 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::Synchronize(const AnsiString LocalDirectory,
-  const AnsiString RemoteDirectory, const TCopyParamType & ACopyParam,
-  TSynchronizeChecklist ** Checklist)
+  const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
+  int SynchronizeParams, TSynchronizeChecklist ** Checklist)
 {
   try
   {
     FKeepingUpToDate = true;
-
-    TCopyParamType CopyParam = ACopyParam;
-    CopyParam.CalculateSize = false;
-
-    int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation |
-      TTerminal::spNoRecurse | TTerminal::spUseCache | TTerminal::spDelayProgress |
-      TTerminal::spSubDirs;
 
     TSynchronizeChecklist * AChecklist =
       FTerminal->SynchronizeCollect(LocalDirectory, RemoteDirectory, TTerminal::smRemote,
@@ -1325,16 +1337,31 @@ void __fastcall TScript::KeepUpToDateProc(TScriptProcParams * Parameters)
   AnsiString LocalDirectory;
   AnsiString RemoteDirectory;
 
-  SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 0);
+  SynchronizeDirectories(Parameters, LocalDirectory, RemoteDirectory, 1);
+
+  int SynchronizeParams = FSynchronizeParams | TTerminal::spNoConfirmation |
+    TTerminal::spNoRecurse | TTerminal::spUseCache | TTerminal::spDelayProgress |
+    TTerminal::spSubDirs;
+
+  if (Parameters->FindSwitch("delete"))
+  {
+    SynchronizeParams |= TTerminal::spDelete;
+  }
+
+  TCopyParamType CopyParam = FCopyParam;
+  CopyParamParams(CopyParam, Parameters);
+
+  CheckParams(Parameters);
 
   PrintLine(LoadStr(SCRIPT_KEEPING_UP_TO_DATE));
 
-  OnSynchronizeStartStop(this, LocalDirectory, RemoteDirectory);
+  OnSynchronizeStartStop(this, LocalDirectory, RemoteDirectory, CopyParam, SynchronizeParams);
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessions) :
-  TScript()
+__fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessions,
+  bool LimitedOutput) :
+  TScript(LimitedOutput)
 {
   assert(StoredSessions != NULL);
   FOnInput = NULL;
@@ -1348,14 +1375,14 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 
   OnTerminalSynchronizeDirectory = TerminalSynchronizeDirectory;
 
-  FCommands->Register("exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0);
-  FCommands->Register("bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0);
-  FCommands->Register("open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP, &OpenProc, 0, 1);
-  FCommands->Register("close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1);
-  FCommands->Register("session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1);
-  FCommands->Register("lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0);
-  FCommands->Register("lcd", SCRIPT_LCD_DESC, SCRIPT_LCD_HELP, &LCdProc, 1, 1);
-  FCommands->Register("lls", SCRIPT_LLS_DESC, SCRIPT_LLS_HELP, &LLsProc, 0, 1);
+  FCommands->Register("exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
+  FCommands->Register("bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
+  FCommands->Register("open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP2, &OpenProc, 0, 1, true);
+  FCommands->Register("close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1, false);
+  FCommands->Register("session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1, false);
+  FCommands->Register("lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0, false);
+  FCommands->Register("lcd", SCRIPT_LCD_DESC, SCRIPT_LCD_HELP, &LCdProc, 1, 1, false);
+  FCommands->Register("lls", SCRIPT_LLS_DESC, SCRIPT_LLS_HELP, &LLsProc, 0, 1, false);
 }
 //---------------------------------------------------------------------------
 __fastcall TManagementScript::~TManagementScript()
@@ -1453,13 +1480,13 @@ void __fastcall TManagementScript::TerminalInformation(TTerminal * Terminal,
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalPromptUser(TTerminal * Terminal,
-  AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
-  void * Arg)
+  TPromptKind Kind, AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+  TStrings * Results, bool & Result, void * Arg)
 {
-  if ((!Terminal->StoredCredentialsTried || (Kind == pkPrompt)) &&
+  if ((!Terminal->StoredCredentialsTried || !IsAuthenticationPrompt(Kind)) &&
       (OnTerminalPromptUser != NULL))
   {
-    OnTerminalPromptUser(Terminal, Prompt, Kind, Response, Result, Arg);
+    OnTerminalPromptUser(Terminal, Kind, Name, Instructions, Prompts, Results, Result, Arg);
   }
 }
 //---------------------------------------------------------------------------
@@ -1513,11 +1540,19 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 
       if (DoPrint)
       {
-        static int MaxFileName = 25;
-        AnsiString FileName = MinimizeName(ProgressFileName, MaxFileName,
-          ProgressData.Side == osRemote);
-        AnsiString ProgressMessage = FORMAT("%-*.*s | %10d kB | %6.1f kB/s | %-6.6s | %3d%%",
-          (MaxFileName, MaxFileName, FileName,
+        static int WidthFileName = 25;
+        AnsiString FileName;
+        if (FLimitedOutput)
+        {
+          FileName = MinimizeName(ProgressFileName, WidthFileName,
+            ProgressData.Side == osRemote);
+        }
+        else
+        {
+          FileName = ProgressFileName;
+        }
+        AnsiString ProgressMessage = FORMAT("%-*s | %10d KiB | %6.1f KiB/s | %-6.6s | %3d%%",
+          (WidthFileName, FileName,
            static_cast<int>(ProgressData.TransferedSize / 1024),
            static_cast<float>(ProgressData.CPS()) / 1024,
            ProgressData.AsciiTransfer ? "ascii" : "binary",
@@ -1548,6 +1583,8 @@ void __fastcall TManagementScript::TerminalOperationFinished(
   bool /*Temp*/, const AnsiString FileName, Boolean Success,
   bool & /*DisconnectWhenComplete*/)
 {
+  assert(Operation != foCalculateSize);
+
   if (Success && (Operation != foCalculateSize) && (Operation != foCopy))
   {
     ShowPendingProgress();
@@ -1566,7 +1603,7 @@ void __fastcall TManagementScript::TerminalOperationFinished(
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalSynchronizeDirectory(
   const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
-  bool & Continue, bool /*Collect*/)
+  bool & Continue, bool Collect)
 {
   int SynchronizeMode = FSynchronizeMode;
   if (FKeepingUpToDate)
@@ -1590,8 +1627,17 @@ void __fastcall TManagementScript::TerminalSynchronizeDirectory(
       break;
   }
 
-  FSynchronizeIntro = FMTLOAD(SCRIPT_SYNCHRONIZE, (ExcludeTrailingBackslash(LocalDirectory),
+  AnsiString Progress = FMTLOAD(SCRIPT_SYNCHRONIZE, (ExcludeTrailingBackslash(LocalDirectory),
     Arrow, UnixExcludeTrailingBackslash(RemoteDirectory)));
+
+  if (Collect)
+  {
+    PrintProgress(false, Progress);
+  }
+  else
+  {
+    FSynchronizeIntro = Progress;
+  }
 
   if (QueryCancel())
   {
@@ -1645,11 +1691,12 @@ bool __fastcall TManagementScript::HandleExtendedException(Exception * E,
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TManagementScript::Connect(const AnsiString Session)
+void __fastcall TManagementScript::Connect(const AnsiString Session,
+  TOptions * Options, bool CheckParams)
 {
   try
   {
-    DoConnect(Session);
+    DoConnect(Session, Options, CheckParams);
   }
   catch(Exception & E)
   {
@@ -1660,14 +1707,20 @@ void __fastcall TManagementScript::Connect(const AnsiString Session)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TManagementScript::DoConnect(const AnsiString Session)
+void __fastcall TManagementScript::DoConnect(const AnsiString & Session,
+  TOptions * Options, bool CheckParams)
 {
   bool DefaultsOnly;
 
-  TSessionData * Data = FStoredSessions->ParseUrl(Session, DefaultsOnly,
+  TSessionData * Data = FStoredSessions->ParseUrl(Session, Options, DefaultsOnly,
     puDecodeUrlChars, NULL);
   try
   {
+    if (CheckParams)
+    {
+      TScriptCommands::CheckParams(Options, false);
+    }
+
     assert(Data != NULL);
 
     if (!Data->CanLogin || DefaultsOnly)
@@ -1758,7 +1811,8 @@ void __fastcall TManagementScript::ExitProc(TScriptProcParams * /*Parameters*/)
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::OpenProc(TScriptProcParams * Parameters)
 {
-  Connect(Parameters->ParamCount > 0 ? Parameters->Param[0] : AnsiString());
+  Connect(Parameters->ParamCount > 0 ? Parameters->Param[1] : AnsiString(),
+    Parameters, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::CloseProc(TScriptProcParams * Parameters)
@@ -1773,7 +1827,7 @@ void __fastcall TManagementScript::CloseProc(TScriptProcParams * Parameters)
   }
   else
   {
-    Terminal = FindSession(Parameters->Param[0]);
+    Terminal = FindSession(Parameters->Param[1]);
   }
 
   DoClose(Terminal);
@@ -1795,7 +1849,7 @@ void __fastcall TManagementScript::SessionProc(TScriptProcParams * Parameters)
   }
   else
   {
-    FTerminal = FindSession(Parameters->Param[0]);
+    FTerminal = FindSession(Parameters->Param[1]);
 
     PrintActiveSession();
   }
@@ -1810,7 +1864,7 @@ void __fastcall TManagementScript::LCdProc(TScriptProcParams * Parameters)
 {
   assert(Parameters->ParamCount == 1);
 
-  AnsiString Directory = Parameters->Param[0];
+  AnsiString Directory = Parameters->Param[1];
   if (!SetCurrentDir(Directory))
   {
     throw Exception(FMTLOAD(CHANGE_DIR_ERROR, (Directory)));
@@ -1824,7 +1878,7 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
   AnsiString Mask;
   if (Parameters->ParamCount > 0)
   {
-    Directory = Parameters->Param[0];
+    Directory = Parameters->Param[1];
     Mask = ExtractFileName(Directory);
     if (TFileMasks::IsMask(Mask))
     {
@@ -1880,11 +1934,17 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
           }
           First = false;
         }
+        AnsiString SizeStr;
+        if (FLAGSET(SearchRec.Attr, faDirectory))
+        {
+          SizeStr = "<DIR>";
+        }
+        else
+        {
+          SizeStr = FORMAT("%14.0n", (double(SearchRec.Size)));
+        }
         PrintLine(FORMAT("%-*s  %-*s    %-14s %s", (
-          DateLen, DateStr, TimeLen, TimeStr,
-          (FLAGSET(SearchRec.Attr, faDirectory) ?
-            AnsiString("<DIR>") : FORMAT("%14.0n", (double(SearchRec.Size)))),
-          SearchRec.Name)));
+          DateLen, DateStr, TimeLen, TimeStr, SizeStr, SearchRec.Name)));
       }
     }
     while (FindNext(SearchRec) == 0);

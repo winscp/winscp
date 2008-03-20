@@ -17,6 +17,11 @@
 TConfiguration * Configuration = NULL;
 TStoredSessionList * StoredSessions = NULL;
 //---------------------------------------------------------------------------
+TQueryButtonAlias::TQueryButtonAlias()
+{
+  OnClick = NULL;
+}
+//---------------------------------------------------------------------------
 TQueryParams::TQueryParams(unsigned int AParams, AnsiString AHelpKeyword)
 {
   Params = AParams;
@@ -31,18 +36,19 @@ TQueryParams::TQueryParams(unsigned int AParams, AnsiString AHelpKeyword)
   HelpKeyword = AHelpKeyword;
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsAuthenticationPrompt(TPromptKind Kind)
+{
+  return
+    (Kind == pkUserName) && (Kind == pkPassphrase) && (Kind == pkTIS) &&
+    (Kind == pkCryptoCard) && (Kind == pkKeybInteractive) &&
+    (Kind == pkPassword) && (Kind == pkNewPassword);
+}
+//---------------------------------------------------------------------------
 void CoreInitialize()
 {
-  // configuration needs to be created before putty is initialized ...
+  // configuration needs to be created and loaded before putty is initialized,
+  // so that random seed path is known
   Configuration = CreateConfiguration();
-
-  PuttyInitialize();
-  #ifndef NO_FILEZILLA
-  TFileZillaIntf::Initialize();
-  #endif
-
-  // ... but some pieces of configuration can be initialized only afterwards
-  Configuration->Initialize();
 
   Randomize();
 
@@ -54,6 +60,11 @@ void CoreInitialize()
   {
     ShowExtendedException(&E);
   }
+
+  PuttyInitialize();
+  #ifndef NO_FILEZILLA
+  TFileZillaIntf::Initialize();
+  #endif
 
   StoredSessions = new TStoredSessionList();
 
@@ -79,15 +90,15 @@ void CoreFinalize()
     ShowExtendedException(&E);
   }
 
-  delete StoredSessions;
-  StoredSessions = NULL;
-  delete Configuration;
-  Configuration = NULL;
-
   #ifndef NO_FILEZILLA
   TFileZillaIntf::Finalize();
   #endif
   PuttyFinalize();
+
+  delete StoredSessions;
+  StoredSessions = NULL;
+  delete Configuration;
+  Configuration = NULL;
 }
 //---------------------------------------------------------------------------
 void CoreSetResourceModule(void * ResourceHandle)

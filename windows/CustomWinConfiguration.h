@@ -52,6 +52,7 @@ protected:
   virtual void __fastcall LoadData(THierarchicalStorage * Storage);
   virtual void __fastcall Saved();
   void __fastcall ClearHistory();
+  void __fastcall DefaultHistory();
 
 public:
   __fastcall TCustomWinConfiguration();

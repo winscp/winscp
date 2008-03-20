@@ -96,7 +96,17 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
 {
   assert(strlen(Source) <= 2);
   assert(strlen(Dest) <= 2);
-  bool RemoveCtrlZ = ((Params & cpRemoveCtrlZ) != 0);
+
+  if (FLAGSET(Params, cpRemoveBOM) && (Size >= 3) &&
+      (memcmp(Data, "\xEF\xBB\xBF", 3) == 0))
+  {
+    Delete(0, 3);
+  }
+
+  if (FLAGSET(Params, cpRemoveCtrlZ) && (Size > 0) && ((*(Data + Size - 1)) == '\x1A'))
+  {
+    Delete(Size-1, 1);
+  }
 
   if (strcmp(Source, Dest) == 0)
   {
@@ -110,7 +120,13 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
   {
     for (int Index = 0; Index < Size; Index++)
     {
-      if (*Ptr == Source[0])
+      // EOL already in wanted format, make sure to pass unmodified
+      if ((Index < Size - 1) && (*Ptr == Dest[0]) && (*(Ptr+1) == Dest[1]))
+      {
+        Index++;
+        Ptr++;
+      }
+      else if (*Ptr == Source[0])
       {
         *Ptr = Dest[0];
         if (Dest[1])
@@ -119,14 +135,6 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
           Index++;
           Ptr = Data + Index;
         }
-      }
-      // this should fix LF -> CR/LF conversion "bug" on CR/FL files,
-      // which led to CR/CR/FL
-      else if (*Ptr == Dest[0] || *Ptr == Dest[1])
-      {
-        Delete(Index, 1);
-        Index--;
-        Ptr = Data + Index;
       }
       Ptr++;
     }
@@ -157,11 +165,6 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
     {
       Delete(Index, 1);
     }
-  }
-
-  if (RemoveCtrlZ && (Size > 0) && ((*(Data + Size - 1)) == '\x1A'))
-  {
-    Delete(Size-1, 1);
   }
 }
 //---------------------------------------------------------------------------

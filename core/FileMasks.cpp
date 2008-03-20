@@ -14,6 +14,7 @@ using namespace Masks;
 #include "TextsCore.h"
 #include "RemoteFiles.h"
 #include "PuttyTools.h"
+#include "Terminal.h"
 //---------------------------------------------------------------------------
 AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask, bool& Masked)
 {
@@ -235,7 +236,8 @@ bool __fastcall TFileMasks::MatchesMask(AnsiString FileName, bool Directory,
         }
         if (D > 0)
         {
-          AnsiString MP = ToUnixPath(M.SubString(1, D - 1));
+          // make sure sole "/" (root dir) is preservedas is
+          AnsiString MP = UnixExcludeTrailingBackslash(ToUnixPath(M.SubString(1, D)));
           // 'Path' must already have unix slashes
           PathMatch = ::MatchesMask(Path, MP);
           M = M.SubString(D + 1, M.Length() - D);
@@ -602,14 +604,36 @@ bool __fastcall TInteractiveCustomCommand::PatternReplacement(int Index, const A
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-TFileCustomCommand::TFileCustomCommand() :
-  TCustomCommand()
+__fastcall TCustomCommandData::TCustomCommandData()
 {
 }
 //---------------------------------------------------------------------------
-TFileCustomCommand::TFileCustomCommand(const AnsiString & FileName, const AnsiString & FileList) :
+__fastcall TCustomCommandData::TCustomCommandData(TTerminal * Terminal)
+{
+  HostName = Terminal->SessionData->HostName;
+  UserName = Terminal->SessionData->UserName;
+  Password = Terminal->Password;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TFileCustomCommand::TFileCustomCommand()
+{
+}
+//---------------------------------------------------------------------------
+TFileCustomCommand::TFileCustomCommand(const TCustomCommandData & Data,
+  const AnsiString & Path)
+{
+  FData = Data;
+  FPath = Path;
+}
+//---------------------------------------------------------------------------
+TFileCustomCommand::TFileCustomCommand(const TCustomCommandData & Data,
+    const AnsiString & Path, const AnsiString & FileName,
+    const AnsiString & FileList) :
   TCustomCommand()
 {
+  FData = Data;
+  FPath = Path;
   FFileName = FileName;
   FFileList = FileList;
 }
@@ -617,8 +641,12 @@ TFileCustomCommand::TFileCustomCommand(const AnsiString & FileName, const AnsiSt
 int __fastcall TFileCustomCommand::PatternLen(int /*Index*/, char PatternCmd)
 {
   int Len;
-  switch (PatternCmd)
+  switch (toupper(PatternCmd))
   {
+    case '@':
+    case 'U':
+    case 'P':
+    case '/':
     case '&':
       Len = 2;
       break;
@@ -633,7 +661,25 @@ int __fastcall TFileCustomCommand::PatternLen(int /*Index*/, char PatternCmd)
 bool __fastcall TFileCustomCommand::PatternReplacement(int /*Index*/,
   const AnsiString & Pattern, AnsiString & Replacement, bool & Delimit)
 {
-  if (Pattern == "!&")
+  // keep consistent with TSessionLog::OpenLogFile
+
+  if (Pattern == "!@")
+  {
+    Replacement = FData.HostName;
+  }
+  else if (AnsiSameText(Pattern, "!u"))
+  {
+    Replacement = FData.UserName;
+  }
+  else if (AnsiSameText(Pattern, "!p"))
+  {
+    Replacement = FData.Password;
+  }
+  else if (Pattern == "!/")
+  {
+    Replacement = UnixIncludeTrailingBackslash(FPath);
+  }
+  else if (Pattern == "!&")
   {
     Replacement = FFileList;
     // already delimited

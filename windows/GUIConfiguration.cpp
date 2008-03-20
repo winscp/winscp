@@ -560,6 +560,7 @@ void __fastcall TGUIConfiguration::Default()
   FPuttyPath = FDefaultPuttyPath;
   PSftpPath = FormatCommand("%PROGRAMFILES%\\PuTTY\\psftp.exe", "");
   FPuttyPassword = false;
+  FTelnetForFtpInPutty = true;
   FPuttySession = "WinSCP temporary session";
   FBeepOnFinish = false;
   FBeepOnFinishAfter = TDateTime(0, 0, 30, 0);
@@ -630,6 +631,7 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
     KEY(String,   PuttySession); \
     KEY(String,   PuttyPath); \
     KEY(Bool,     PuttyPassword); \
+    KEY(Bool,     TelnetForFtpInPutty); \
     KEY(DateTime, IgnoreCancelBeforeFinish); \
     KEY(Bool,     BeepOnFinish); \
     KEY(DateTime, BeepOnFinishAfter); \
@@ -935,7 +937,7 @@ TStrings * __fastcall TGUIConfiguration::GetLocales()
       while (Found)
       {
         Ext = ExtractFileExt(SearchRec.Name).UpperCase();
-        if ((Ext.Length() >= 3) && (Ext != ".EXE") &&
+        if ((Ext.Length() >= 3) && (Ext != ".EXE") && (Ext != ".COM") &&
             (Ext != ".DLL") && (Ext != ".INI"))
         {
           Ext = Ext.SubString(2, Ext.Length() - 1);

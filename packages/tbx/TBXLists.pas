@@ -125,7 +125,7 @@ type
     procedure SetItemIndex(Value: Integer);
   protected
     function  DoClearItem(ACanvas: TCanvas; ARect: TRect; AIndex, AHoverIndex: Integer): Boolean; virtual;
-    function  DoDrawItem(ACanvas: TCanvas; ARect: TRect; AIndex, AHoverIndex: Integer): Boolean; virtual;
+    function  DoDrawItem(ACanvas: TCanvas; {MP} var ARect: TRect; AIndex, AHoverIndex: Integer): Boolean; virtual;
     procedure DoMeasureHeight(ACanvas: TCanvas; var AHeight: Integer); virtual;
     procedure DoMeasureWidth(ACanvas: TCanvas; AIndex: Integer; var AWidth: Integer); virtual;
     procedure DrawItem(ACanvas: TCanvas; AViewer: TTBXCustomListViewer; const ARect: TRect; AIndex, AHoverIndex: Integer); virtual;
@@ -753,7 +753,7 @@ begin
   if Assigned(FOnClearItem) then FOnClearItem(Self, ACanvas, ARect, AIndex, AHoverIndex, Result);
 end;
 
-function TTBXCustomList.DoDrawItem(ACanvas: TCanvas; ARect: TRect; AIndex, AHoverIndex: Integer): Boolean;
+function TTBXCustomList.DoDrawItem(ACanvas: TCanvas; {MP} var ARect: TRect; AIndex, AHoverIndex: Integer): Boolean;
 begin
   Result := True;
   if Assigned(FOnDrawItem) then FOnDrawItem(Self, ACanvas, ARect, AIndex, AHoverIndex, Result);
@@ -783,9 +783,9 @@ begin
   if DoClearItem(ACanvas, ARect, AIndex, AHoverIndex) then ACanvas.FillRect(ARect);
 
   ACanvas.Font.Color := TextColors[AIndex = AHoverIndex];
-  if DoDrawItem(ACanvas, ARect, AIndex, AHoverIndex) then
+  R := ARect; {MP}
+  if DoDrawItem(ACanvas, {MP} R, AIndex, AHoverIndex) then
   begin
-    R := ARect;
     InflateRect(R, -4, 1);
     ImgList := AViewer.GetImageList;
     if ShowImages and (ImgList <> nil) then
@@ -803,7 +803,7 @@ begin
     if Length(S) > 0 then
     begin
       ACanvas.Brush.Style := bsClear;
-      DrawText(ACanvas.Handle, PChar(S), Length(S), R, DT_SINGLELINE or DT_VCENTER or DT_NOPREFIX);
+      DrawText(ACanvas.Handle, PChar(S), Length(S), R, DT_SINGLELINE or DT_VCENTER {MP DEL});
       ACanvas.Brush.Style := bsSolid;
     end;
   end;
@@ -1017,7 +1017,8 @@ end;
 
 procedure TTBXCustomListViewer.KeyDown(var Key: Word; Shift: TShiftState);
 var
-  OldIndex, NewIndex: Integer;
+  OldIndex, NewIndex, Index: Integer;
+  DAD: TTBDoneActionData;
 begin
   OldIndex := FHoverIndex;
   case Key of
@@ -1031,6 +1032,28 @@ begin
       begin
         TTBXCustomList(Item).ItemIndex := FHoverIndex;
         Exit;
+      end;
+    {MP}
+    Word('A')..Word('Z'), Word('a')..Word('z'):
+      begin
+        NewIndex := OldIndex;
+        for Index := FHoverIndex + 1 to FHoverIndex + FItemCount do
+        begin
+          if IsAccel(Key, TTBXStringList(Item).GetItemText(Index mod FItemCount)) then
+          begin
+            NewIndex := Index mod FItemCount;
+
+            // exit modal loop
+            DAD := TTBViewAccess(TTBViewAccess(View).GetRootView).DoneActionData;
+            DAD.ClickItem := Item;
+            DAD.DoneAction := tbdaClickItem;
+            DAD.Sound := True;
+            TTBViewAccess(TTBViewAccess(View).GetRootView).DoneActionData := DAD;
+
+            Break;
+          end;
+        end;
+        Key := 0;
       end;
   else
     Exit;

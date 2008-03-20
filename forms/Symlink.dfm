@@ -37,7 +37,6 @@ object SymlinkDialog: TSymlinkDialog
       Top = 16
       Width = 82
       Height = 13
-      Anchors = [akLeft, akTop, akRight]
       Caption = '&Link/shortcut file:'
       FocusControl = FileNameEdit
     end
@@ -46,7 +45,6 @@ object SymlinkDialog: TSymlinkDialog
       Top = 64
       Width = 101
       Height = 13
-      Anchors = [akLeft, akTop, akRight]
       Caption = '&Point link/shortcut to:'
       FocusControl = PointToEdit
     end

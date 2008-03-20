@@ -10,7 +10,6 @@
       filemng\IEDriveInfo.obj filemng\ShellDialogs.obj
       filemng\DirViewColProperties.obj filemng\CustomDirView.obj
       filemng\CustomUnixDirView.obj filemng\UnixDirViewColProperties.obj
-      filemng\CustomPathComboBox.obj filemng\IEPathComboBox.obj
       filemng\ListExt.obj filemng\CustomDriveView.obj"/>
     <RESFILES value="filemng\DirView.dcr filemng\DriveView.dcr
       filemng\FileOperator.dcr filemng\IEComboBox.dcr"/>
@@ -69,8 +68,6 @@
       <FILE FILENAME="filemng\CustomDirView.pas" FORMNAME="" UNITNAME="CustomDirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\CustomUnixDirView.pas" FORMNAME="" UNITNAME="CustomUnixDirView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\UnixDirViewColProperties.pas" FORMNAME="" UNITNAME="UnixDirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="filemng\CustomPathComboBox.pas" FORMNAME="" UNITNAME="CustomPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="filemng\IEPathComboBox.pas" FORMNAME="" UNITNAME="IEPathComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\ListExt.pas" FORMNAME="" UNITNAME="ListExt" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>

@@ -73,6 +73,7 @@ __fastcall TCopyDialog::TCopyDialog(TComponent* Owner)
   Move = false;
   FOptions = 0;
   FOutputOptions = 0;
+  FCopyParamAttrs = 0;
   FPresetsMenu = new TPopupMenu(this);
 
   UseSystemSettings(this);
@@ -100,14 +101,6 @@ void __fastcall TCopyDialog::AdjustTransferControls()
       else
       {
         Label = FMTLOAD(REMOTE_COPY_FILES, (FFileList->Count));
-      }
-
-      // hack to remove trailing colon used for "duplicate" prompt
-      if (!Label.IsEmpty() &&
-          (Label.ByteType(Label.Length()) == mbSingleByte) &&
-          (Label[Label.Length()] == ':'))
-      {
-        Label.SetLength(Label.Length() - 1);
       }
 
       DirectoryLabel->Caption = Label;
@@ -158,9 +151,8 @@ void __fastcall TCopyDialog::AdjustTransferControls()
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   assert(FLAGSET(Options, coAllowRemoteTransfer) || !RemoteTransfer);
 
-  EnableControl(CopyParamsFrame, !RemoteTransfer);
   EnableControl(NewerOnlyCheck, FLAGCLEAR(Options, coDisableNewerOnly) && !RemoteTransfer);
-  EnableControl(PresetsButton, !RemoteTransfer);
+  EnableControl(TransferSettingsButton, !RemoteTransfer);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::AdjustControls()
@@ -173,8 +165,6 @@ void __fastcall TCopyDialog::AdjustControls()
   EnableControl(DirectoryLabel, DirectoryEdit->Enabled);
   EnableControl(LocalDirectoryBrowseButton, DirectoryEdit->Enabled);
   DirectoryLabel->FocusControl = DirectoryEdit;
-  CopyParamsFrame->Direction = !ToRemote ? pdToLocal : pdToRemote;
-  PresetsButton->Visible = FLAGCLEAR(Options, coDoNotUsePresets);
 
   AdjustTransferControls();
 
@@ -210,7 +200,7 @@ void __fastcall TCopyDialog::SetOutputOptions(int value)
 {
   if (OutputOptions != value)
   {
-    SaveSettingsCheck->Checked = FLAGSET(FOutputOptions, cooSaveSettings);
+    FSaveSettings = FLAGSET(FOutputOptions, cooSaveSettings);
     NeverShowAgainCheck->Checked = FLAGSET(FOutputOptions, cooDoNotShowAgain);
     FOutputOptions = (value & ~(cooDoNotShowAgain | cooSaveSettings));
   }
@@ -219,18 +209,18 @@ void __fastcall TCopyDialog::SetOutputOptions(int value)
 int __fastcall TCopyDialog::GetOutputOptions()
 {
   return FOutputOptions |
-    FLAGMASK(SaveSettingsCheck->Checked, cooSaveSettings) |
+    FLAGMASK(FSaveSettings, cooSaveSettings) |
     FLAGMASK(NeverShowAgainCheck->Checked, cooDoNotShowAgain);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetCopyParamAttrs(int value)
 {
-  CopyParamsFrame->CopyParamAttrs = value;
+  FCopyParamAttrs = value;
 }
 //---------------------------------------------------------------------------
 int __fastcall TCopyDialog::GetCopyParamAttrs()
 {
-  return CopyParamsFrame->CopyParamAttrs;
+  return FCopyParamAttrs;
 }
 //---------------------------------------------------------------------------
 THistoryComboBox * __fastcall TCopyDialog::GetDirectoryEdit()
@@ -251,17 +241,18 @@ AnsiString __fastcall TCopyDialog::GetFileMask()
 void __fastcall TCopyDialog::SetParams(const TGUICopyParamType & value)
 {
   FParams = value;
-  CopyParamsFrame->Params = value;
+  FCopyParams = value;
   DirectoryEdit->Text = Directory + FParams.FileMask;
   QueueCheck->Checked = FParams.Queue;
   QueueNoConfirmationCheck->Checked = FParams.QueueNoConfirmation;
   NewerOnlyCheck->Checked = FLAGCLEAR(Options, coDisableNewerOnly) && FParams.NewerOnly;
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 TGUICopyParamType __fastcall TCopyDialog::GetParams()
 {
-  // overwrites TCopyParamType files only
-  FParams = CopyParamsFrame->Params;
+  // overwrites TCopyParamType fields only
+  FParams = FCopyParams;
   FParams.FileMask = GetFileMask();
   FParams.Queue = QueueCheck->Checked;
   FParams.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
@@ -327,14 +318,17 @@ void __fastcall TCopyDialog::UpdateControls()
     }
   }
 
+  AnsiString InfoStr = FCopyParams.GetInfoStr("; ", CopyParamAttrs);
+  CopyParamLabel->Caption = InfoStr;
+  CopyParamLabel->Hint = InfoStr;
+  CopyParamLabel->ShowHint =
+    (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
+
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   EnableControl(QueueCheck,
     ((Options & (coDisableQueue | coTemp)) == 0) && !RemoteTransfer);
   EnableControl(QueueNoConfirmationCheck,
     (((Options & coTemp) == 0) && QueueCheck->Checked) && !RemoteTransfer);
-  QueueNoConfirmationCheck->Visible = MoreButton->Expanded;
-  EnableControl(SaveSettingsCheck, FLAGCLEAR(Options, coDisableSaveSettings) &&
-    !RemoteTransfer);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetMove(bool value)
@@ -351,16 +345,11 @@ void __fastcall TCopyDialog::FormShow(TObject * /*Sender*/)
   assert(FileList && (FileList->Count > 0));
   if (DirectoryEdit->Enabled && DirectoryEdit->Visible)
   {
-    DirectoryEdit->SetFocus();
-  }
-  else
-  if (MoreButton->Expanded)
-  {
-    MorePanel->SetFocus();
+    ActiveControl = DirectoryEdit;
   }
   else
   {
-    CopyButton->SetFocus();
+    ActiveControl = CopyButton;
   }
   UpdateControls();
 
@@ -374,16 +363,12 @@ bool __fastcall TCopyDialog::Execute()
   FPreset = GUIConfiguration->CopyParamCurrent;
   DirectoryEdit->Items = CustomWinConfiguration->History[
     ToRemote ? "RemoteTarget" : "LocalTarget"];
-  MoreButton->Expanded = GUIConfiguration->CopyParamDialogExpanded;
-  CopyParamsFrame->BeforeExecute();
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
-    CopyParamsFrame->AfterExecute();
     Configuration->BeginUpdate();
     try
     {
-      GUIConfiguration->CopyParamDialogExpanded = MoreButton->Expanded;
       if (FLAGSET(OutputOptions, cooSaveSettings) &&
           FLAGCLEAR(Options, coDisableSaveSettings))
       {
@@ -465,12 +450,18 @@ void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
   ResetSystemSettings(this);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyDialog::PresetsButtonClick(TObject * /*Sender*/)
+void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
-  TCopyParamType Param = Params;
-  CopyParamListPopup(
-    PresetsButton->ClientToScreen(TPoint(0, PresetsButton->Height)),
-    FPresetsMenu, Params, FPreset, CopyParamClick, cplNone);
+  if (FLAGCLEAR(FOptions, FLAGCLEAR(Options, coDoNotUsePresets)))
+  {
+    CopyParamListPopup(
+      TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
+      0);
+  }
+  else
+  {
+    CopyParamGroupDblClick(NULL);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::CopyParamClick(TObject * Sender)
@@ -487,3 +478,32 @@ void __fastcall TCopyDialog::HelpButtonClick(TObject * /*Sender*/)
   FormHelp(this);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCopyDialog::CopyParamGroupDblClick(TObject * /*Sender*/)
+{
+  if (DoCopyParamCustomDialog(FCopyParams, CopyParamAttrs))
+  {
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::CopyParamGroupContextPopup(TObject * /*Sender*/,
+  TPoint & MousePos, bool & Handled)
+{
+  if (FLAGCLEAR(FOptions, FLAGCLEAR(Options, coDoNotUsePresets)))
+  {
+    CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), cplCustomizeDefault);
+    Handled = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyDialog::CopyParamListPopup(TPoint P, int AdditionalOptions)
+{
+  ::CopyParamListPopup(P, FPresetsMenu,
+    FCopyParams, FPreset, CopyParamClick,
+    cplCustomize | AdditionalOptions |
+      FLAGMASK(
+          FLAGCLEAR(Options, coDisableSaveSettings) &&
+          FLAGCLEAR(FOutputOptions, cooRemoteTransfer),
+        cplSaveSettings),
+    &FSaveSettings);
+}

@@ -14,7 +14,7 @@
 #define smalloc(z) (mlog(__FILE__,__LINE__), safemalloc(z,1))
 #define snmalloc(z,s) (mlog(__FILE__,__LINE__), safemalloc(z,s))
 #define srealloc(y,z) (mlog(__FILE__,__LINE__), saferealloc(y,z,1))
-#define snrealloc(y,z) (mlog(__FILE__,__LINE__), saferealloc(y,z,s))
+#define snrealloc(y,z,s) (mlog(__FILE__,__LINE__), saferealloc(y,z,s))
 #define sfree(z) (mlog(__FILE__,__LINE__), safefree(z))
 void mlog(char *, int);
 #else

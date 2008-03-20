@@ -16,7 +16,7 @@ EnableUpdates=Enable automatic &check for application updates (recommended)
 
 RegisteringAsUrlHandler=Registering to handle sftp:// and scp:// addresses
 AddingSearchPath=Adding installation directory to search path (%PATH%)
-RemovingInvalidDefaultTranslation=Looking for obsolete default translation
+RemovingObsoleteTranslations=Removing obsolete translations
 
 SupportForum=Support forum
 WebSite=WinSCP Web Site
@@ -33,7 +33,7 @@ Launch=Launch &WinSCP
 DocumentationPage=Documentation
 
 HelpButton=&Help
-ProgramComment=Windows SFTP, FTP and SCP client
+ProgramComment=SFTP, FTP and SCP client
 
 ; WinSCP Runtime
 Recommended=%1 (recommended)
@@ -41,12 +41,13 @@ SetupTypeTitle=Setup type
 SetupTypePrompt=What type of setup do you want?
 TypicalType=&Typical installation
 TypicalType1=- installs to default destination
-TypicalType2=- installs all components
 TypicalType2Intl=- installs all components, but only %1 translation
 TypicalType2Eng=- installs all components, but no translations
 TypicalType3=- enables most typical features
 TypicalUpgradeType=&Full upgrade
 TypicalUpgradeType1=- upgrades all previously installed components
+TypicalUpgradeTypeNoTransl=- except for all translations, as this release does NOT include any
+TypicalUpgradeTypeMissingTransl=- except for some translations that are NOT included in this release: %1
 CustomType=&Custom installation
 CustomType1=- allows full selection of destination, components and features
 CustomUpgradeType=&Custom upgrade or new installation

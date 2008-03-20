@@ -143,7 +143,7 @@ int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
         break;
     }
   }
-  return Result;
+  return Result | cpaNoPreserveTime;
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -318,8 +318,13 @@ void __fastcall TFullSynchronizeDialog::TransferSettingsButtonClick(
 void __fastcall TFullSynchronizeDialog::CopyParamClick(TObject * Sender)
 {
   assert(FLAGCLEAR(FOptions, fsoDoNotUsePresets));
-  if (CopyParamListPopupClick(Sender, FCopyParams, FPreset, ActualCopyParamAttrs()))
+  // PreserveTime is forced for some settings, but avoid hard-setting it until
+  // user really confirms it on custom dialog
+  TCopyParamType ACopyParams = CopyParams;
+  if (CopyParamListPopupClick(Sender, ACopyParams, FPreset,
+        ActualCopyParamAttrs()))
   {
+    FCopyParams = ACopyParams;
     UpdateControls();
   }
 }
@@ -360,6 +365,13 @@ void __fastcall TFullSynchronizeDialog::SynchronizeByTimeSizeCheckClick(
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+TCopyParamType __fastcall TFullSynchronizeDialog::GetCopyParams()
+{
+  TCopyParamType Result = FCopyParams;
+  Result.PreserveTime = true;
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::SetCopyParams(const TCopyParamType & value)
 {
   FCopyParams = value;
@@ -371,6 +383,9 @@ void __fastcall TFullSynchronizeDialog::CopyParamGroupContextPopup(
 {
   if (FLAGCLEAR(FOptions, fsoDoNotUsePresets))
   {
+    // We pass in FCopyParams, although it may not be the exact copy param
+    // that will be used (because of Preservetime). The reason is to
+    // display checkbox next to user-selected preset
     CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), FPresetsMenu,
       FCopyParams, FPreset, CopyParamClick, cplCustomize | cplCustomizeDefault);
     Handled = true;
@@ -380,8 +395,12 @@ void __fastcall TFullSynchronizeDialog::CopyParamGroupContextPopup(
 void __fastcall TFullSynchronizeDialog::CopyParamGroupDblClick(
   TObject * /*Sender*/)
 {
-  if (DoCopyParamCustomDialog(FCopyParams, ActualCopyParamAttrs()))
+  // PreserveTime is forced for some settings, but avoid hard-setting it until
+  // user really confirms it on cutom dialog
+  TCopyParamType ACopyParams = CopyParams;
+  if (DoCopyParamCustomDialog(ACopyParams, ActualCopyParamAttrs()))
   {
+    FCopyParams = ACopyParams;
     UpdateControls();
   }
 }

@@ -9,6 +9,7 @@
 #include <Common.h>
 #include <Exceptions.h>
 #include "ProgParams.h"
+#include "VCLCommon.h"
 #include "WinConfiguration.h"
 #include "TerminalManager.h"
 #include "TextsWin.h"
@@ -40,9 +41,13 @@ TCustomScpExplorerForm * __fastcall CreateScpExplorer()
 {
   TCustomScpExplorerForm * ScpExplorer;
   if (WinConfiguration->Interface == ifExplorer)
-    Application->CreateForm(__classid(TScpExplorerForm), &ScpExplorer);
+  {
+    ScpExplorer = SafeFormCreate<TScpExplorerForm>();
+  }
   else
-    Application->CreateForm(__classid(TScpCommanderForm), &ScpExplorer);
+  {
+    ScpExplorer = SafeFormCreate<TScpCommanderForm>();
+  }
   ScpExplorer->Icon->Assign(Application->Icon);
   return ScpExplorer;
 }
@@ -170,6 +175,15 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall ShowNotification(TTerminal * Terminal, const AnsiString & Str,
+  TQueryType Type)
+{
+  TTerminalManager * Manager = TTerminalManager::Instance(false);
+  assert(Manager != NULL);
+
+  Manager->ScpExplorer->PopupTrayBalloon(Terminal, Str, Type);
+}
+//---------------------------------------------------------------------------
 void __fastcall ConfigureInterface()
 {
   AnsiString S;
@@ -212,9 +226,9 @@ void __fastcall DoAboutDialog(TConfiguration *Configuration)
   DoAboutDialog(Configuration, true, NULL);
 }
 //---------------------------------------------------------------------
-void __fastcall DoProductLicence()
+void __fastcall DoProductLicense()
 {
-  DoLicenceDialog(lcWinScp);
+  DoLicenseDialog(lcWinScp);
 }
 //---------------------------------------------------------------------
 static inline void __fastcall GetToolbarKey(const AnsiString & ToolbarName,
@@ -411,4 +425,30 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
 void __fastcall UpgradeSpeedButton(TSpeedButton * /*Button*/)
 {
   // no-op yet
+}
+//---------------------------------------------------------------------------
+struct TThreadParam
+{
+  TThreadFunc ThreadFunc;
+  void * Parameter;
+};
+//---------------------------------------------------------------------------
+static int __fastcall ThreadProc(void * AParam)
+{
+  TThreadParam * Param = reinterpret_cast<TThreadParam *>(AParam);
+  unsigned int Result = Param->ThreadFunc(Param->Parameter);
+  delete Param;
+  EndThread(Result);
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
+  TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
+  unsigned & ThreadId)
+{
+  TThreadParam * Param = new TThreadParam;
+  Param->ThreadFunc = ThreadFunc;
+  Param->Parameter = Parameter;
+  return BeginThread(SecurityAttributes, StackSize, ThreadProc, Param,
+    CreationFlags, ThreadId);
 }

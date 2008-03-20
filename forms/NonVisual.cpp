@@ -16,10 +16,13 @@
 #include "TerminalManager.h"
 #include "TBX.hpp"
 #include "VCLCommon.h"
+#include <HistoryComboBox.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "TB2Item"
 #pragma link "TBX"
+#pragma link "TB2ExtItems"
+#pragma link "TBXExtItems"
 #pragma resource "*.dfm"
 TNonVisualDataModule *NonVisualDataModule;
 //---------------------------------------------------------------------------
@@ -28,6 +31,7 @@ TNonVisualDataModule *NonVisualDataModule;
   ((TCustomAction *)Action)->Enabled = (Condition); \
   if (((TCustomAction *)Action)->Enabled) { OtherEnabled; } else { OtherDisabled; }; \
   Handled = true; } else
+#define UPDEX1(HandleAction, Condition, Other) UPDEX(HandleAction, Condition, Other, Other)
 #define UPD(HandleAction, Condition) if (Action == HandleAction) { \
   ((TCustomAction *)Action)->Enabled = (Condition); Handled = true; } else
 #define UPDFUNC(HandleAction, Function) if (Action == HandleAction) { Function; Handled = true; } else
@@ -82,6 +86,9 @@ __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
   FIdle = 0;
+
+  // IDE often looses this link
+  QueueSpeedComboBoxItem->OnAcceptText = QueueSpeedComboBoxItemAcceptText;
 }
 //---------------------------------------------------------------------------
 __fastcall TNonVisualDataModule::~TNonVisualDataModule()
@@ -138,6 +145,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     Handled = true;
     return;
   }
+  void * Param;
   // CURRENT DIRVIEW
   bool EnableSelectedOperation = ScpExplorer->EnableSelectedOperation[osCurrent];
   bool EnableFocusedOperation = ScpExplorer->EnableFocusedOperation[osCurrent];
@@ -152,9 +160,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     (DirView(osRemote) == DirView(osCurrent)) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
   UPD(RemoteCopyToFocusedAction, EnableFocusedOperation &&
-    (DirView(osRemote) == DirView(osCurrent) &&
-    (ScpExplorer->Terminal->IsCapable[fcRemoteCopy] ||
-     ScpExplorer->Terminal->IsCapable[fcSecondaryShell])))
+    DirView(osRemote) == DirView(osCurrent))
   UPD(CurrentEditFocusedAction, EnableFocusedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
   // file operation
@@ -168,28 +174,23 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPD(CurrentOpenAction, EnableFocusedOperation &&
     !WinConfiguration->DisableOpenEdit &&
     !DirView(osCurrent)->ItemIsDirectory(DirView(osCurrent)->ItemFocused))
-  UPD(AddEditLinkAction, ScpExplorer->Terminal &&
-    (DirView(osCurrent) != DirView(osRemote) ||
-     (ScpExplorer->Terminal->ResolvingSymlinks &&
-      ScpExplorer->Terminal->IsCapable[fcSymbolicLink])))
-  UPD(NewLinkAction, ScpExplorer->Terminal &&
-    (DirView(osCurrent) != DirView(osRemote) ||
-     (ScpExplorer->Terminal->ResolvingSymlinks &&
-      ScpExplorer->Terminal->IsCapable[fcSymbolicLink])))
+  UPD(AddEditLinkAction, ScpExplorer->CanAddEditLink())
+  UPDEX1(AddEditLinkContextAction, ScpExplorer->CanAddEditLink(),
+    ((TAction *)Action)->Visible = ScpExplorer->LinkFocused())
+  UPD(NewLinkAction, ScpExplorer->CanAddEditLink())
   // selected operaton
   UPD(CurrentCopyAction, EnableSelectedOperation)
   UPD(RemoteCopyAction, ScpExplorer->EnableSelectedOperation[osRemote])
   UPD(LocalCopyAction, ScpExplorer->HasDirView[osLocal] && ScpExplorer->EnableSelectedOperation[osLocal])
   UPD(CurrentMoveAction, EnableSelectedOperation)
   UPD(CurrentDeleteAction, EnableSelectedOperation)
+  UPD(CurrentDeleteAlternativeAction, EnableSelectedOperation)
   UPD(CurrentPropertiesAction, EnableSelectedOperation)
   UPD(RemoteMoveToAction, EnableSelectedOperation &&
     (DirView(osRemote) == DirView(osCurrent)) &&
     ScpExplorer->Terminal->IsCapable[fcRemoteMove])
   UPD(RemoteCopyToAction, EnableSelectedOperation &&
-    (DirView(osRemote) == DirView(osCurrent) &&
-    (ScpExplorer->Terminal->IsCapable[fcRemoteCopy] ||
-     ScpExplorer->Terminal->IsCapable[fcSecondaryShell])))
+    (DirView(osRemote) == DirView(osCurrent)))
   UPD(FileListToCommandLineAction, EnableSelectedOperation)
   UPD(FileListToClipboardAction, EnableSelectedOperation)
   UPD(FullFileListToClipboardAction, EnableSelectedOperation)
@@ -415,6 +416,9 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDQUEUE(PauseAll)
   UPDQUEUE(ResumeAll)
   #undef UPDQUEUE
+  UPDEX(QueueItemSpeedAction, ScpExplorer->AllowQueueOperation(qoItemSpeed, &Param),
+    QueueItemSpeedAction->Text = SetSpeedLimit(reinterpret_cast<unsigned long>(Param)),
+    QueueItemSpeedAction->Text = "")
   UPDACT(QueueToggleShowAction,
     ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueView])
   #define QUEUEACTION(SHOW) UPDACT(Queue ## SHOW ## Action, \
@@ -427,7 +431,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   UPDCOMP(CommanderPreferencesBand)
   UPDACT(QueueToolbarAction,
     ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
-    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueToolbar]);
+    ((TAction *)Action)->Checked = ScpExplorer->ComponentVisible[fcQueueToolbar])
   ;
 }
 //---------------------------------------------------------------------------
@@ -462,9 +466,11 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentEditAlternativeAction, CreateEditorListMenu(CurrentEditAlternativeAction))
     EXE(CurrentOpenAction, ScpExplorer->ExecuteCurrentFile())
     EXE(AddEditLinkAction, ScpExplorer->AddEditLink(false))
+    EXE(AddEditLinkContextAction, ScpExplorer->AddEditLink(false))
     EXE(NewLinkAction, ScpExplorer->AddEditLink(true))
     EXE(CurrentRenameAction, ScpExplorer->ExecuteFileOperation(foRename, osCurrent, false))
     EXE(CurrentDeleteAction, ScpExplorer->ExecuteFileOperation(foDelete, osCurrent, false))
+    EXE(CurrentDeleteAlternativeAction, ScpExplorer->ExecuteFileOperation(foDelete, osCurrent, false, false, (void*)true))
     EXE(CurrentPropertiesAction, ScpExplorer->ExecuteFileOperation(foSetProperties, osCurrent, false))
     EXE(RemoteMoveToAction, ScpExplorer->ExecuteFileOperation(foRemoteMove, osCurrent, false))
     EXE(RemoteCopyToAction, ScpExplorer->ExecuteFileOperation(foRemoteCopy, osCurrent, false))
@@ -504,7 +510,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(SIDE ## ForwardAction, DirView(os ## SIDE)->HistoryGo(1)) \
       EXE(SIDE ## ParentDirAction, DirView(os ## SIDE)->ExecuteParentDirectory()) \
       EXE(SIDE ## RootDirAction, DirView(os ## SIDE)->ExecuteRootDirectory()) \
-      EXE(SIDE ## HomeDirAction, DirView(os ## SIDE)->ExecuteHomeDirectory()) \
+      EXE(SIDE ## HomeDirAction, ScpExplorer->HomeDirectory(os ## SIDE)) \
       EXE(SIDE ## RefreshAction, DirView(os ## SIDE)->ReloadDirectory()) \
       EXE(SIDE ## OpenDirAction, ScpExplorer->OpenDirectory(os ## SIDE)) \
       EXE(SIDE ## ChangePathAction, ScpExplorer->ChangePath(os ## SIDE)) \
@@ -686,6 +692,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     #undef QUEUEACTION
     EXE(QueueDisconnectOnceEmptyAction, )
     EXECOMP(QueueToolbar);
+    EXE(QueueItemSpeedAction, )
     ;
   }
   __finally
@@ -721,6 +728,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   CurrentRenameAction->ShortCut = ShortCut(VK_F2, NONE);
   CurrentEditAction->ShortCut = ShortCut('E', CTRL);
   AddEditLinkAction->ShortCut = ShortCut('L', CTRLALT);
+  AddEditLinkContextAction->ShortCut = AddEditLinkAction->ShortCut;
   // Focused operation
   CurrentCopyFocusedAction->ShortCut = ShortCut('C', CTRL);
   CurrentMoveFocusedAction->ShortCut = ShortCut('M', CTRL);
@@ -736,6 +744,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   CurrentCopyAction->ShortCut = CurrentCopyFocusedAction->ShortCut;
   CurrentMoveAction->ShortCut = CurrentMoveFocusedAction->ShortCut;
   CurrentDeleteAction->ShortCut = CurrentDeleteFocusedAction->ShortCut;
+  CurrentDeleteAlternativeAction->ShortCut = ShortCut(VK_DELETE, SHIFT);
   CurrentPropertiesAction->ShortCut = CurrentPropertiesFocusedAction->ShortCut;
   RemoteMoveToAction->ShortCut = ShortCut('M', CTRLALT);
   // selection
@@ -760,6 +769,7 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   CurrentRenameAction->ShortCut = ShortCut(VK_F2, NONE);
   CurrentEditAction->ShortCut = ShortCut(VK_F4, NONE);
   AddEditLinkAction->ShortCut = ShortCut(VK_F6, ALT);
+  AddEditLinkContextAction->ShortCut = AddEditLinkAction->ShortCut;
   // Focused operation
   CurrentCopyFocusedAction->ShortCut = ShortCut(VK_F5, NONE);
   CurrentMoveFocusedAction->ShortCut = ShortCut(VK_F6, NONE);
@@ -783,6 +793,9 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   CurrentDeleteAction->ShortCut = CurrentDeleteFocusedAction->ShortCut;
   CurrentDeleteAction->SecondaryShortCuts->Clear();
   CurrentDeleteAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_DELETE, NONE)));
+  CurrentDeleteAlternativeAction->ShortCut = ShortCut(VK_F8, SHIFT);
+  CurrentDeleteAlternativeAction->SecondaryShortCuts->Clear();
+  CurrentDeleteAlternativeAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_DELETE, SHIFT)));
   CurrentPropertiesAction->ShortCut = CurrentPropertiesFocusedAction->ShortCut;
   RemoteMoveToAction->ShortCut = ShortCut(VK_F6, SHIFT);
   RemoteCopyToAction->ShortCut = ShortCut(VK_F5, SHIFT);
@@ -974,23 +987,87 @@ void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionListMenu(TAction * Action)
 {
-  TTBCustomItem * SavedSessionsMenu = dynamic_cast<TTBCustomItem *>(Action->ActionComponent);
-  int PrevCount = SavedSessionsMenu->Count;
   StoredSessions->Load();
-  for (int Index = 0; Index < StoredSessions->Count; Index++)
+  if (StoredSessions->Count == 0)
+  {
+    Abort();
+  }
+  else
+  {
+    CreateSessionListMenuLevel(
+      dynamic_cast<TTBCustomItem *>(Action->ActionComponent), 0, 0);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CreateSessionListMenuLevel(
+  TTBCustomItem * Menu, int Index, int Level)
+{
+  assert(Index < StoredSessions->Count);
+  TSessionData * Data = StoredSessions->Sessions[Index];
+
+  AnsiString Path = Data->Name;
+  AnsiString Root;
+  for (int ALevel = 0; ALevel < Level; ALevel++)
+  {
+    Root.Insert(::CutToChar(Path, '/', false) + '/', Root.Length() + 1);
+  }
+
+  Menu->Clear();
+
+  int FirstSession = 0;
+  AnsiString PrevName;
+  while (Index < StoredSessions->Count)
   {
     TSessionData * Data = StoredSessions->Sessions[Index];
-    TTBCustomItem * Item = new TTBXItem(SavedSessionsMenu);
-    Item->Caption = Data->Name;
-    Item->Tag = Index;
-    Item->Hint = FMTLOAD(SAVEDSESSION_HINT, (Data->Name));
-    Item->OnClick = SessionItemClick;
-    SavedSessionsMenu->Add(Item);
+    if (!AnsiSameText(Data->Name.SubString(1, Root.Length()), Root))
+    {
+      break;
+    }
+    else
+    {
+      AnsiString Name = Data->Name.SubString(Root.Length() + 1, Data->Name.Length() - Root.Length());
+      int P = Name.Pos('/');
+      if (P > 0)
+      {
+        Name.SetLength(P - 1);
+      }
+
+      if (Name != PrevName)
+      {
+        if (P > 0)
+        {
+          TTBCustomItem * Item = new TTBXSubmenuItem(Menu);
+          Item->Caption = Name;
+          Item->Tag = ((Level + 1) << 16) | Index; // MAKELONG
+          Item->Hint = FMTLOAD(SAVEDSESSIONFOLDER_HINT, (Root + Name));
+          Item->ImageIndex = SavedSessionsAction->ImageIndex;
+          Item->OnClick = SessionFolderItemClick;
+
+          Menu->Insert(FirstSession, Item);
+          FirstSession++;
+        }
+        else
+        {
+          TTBCustomItem * Item = new TTBXItem(Menu);
+          Item->Caption = Name;
+          Item->Tag = Index;
+          Item->Hint = FMTLOAD(SAVEDSESSION_HINT, (Data->Name));
+          Item->OnClick = SessionItemClick;
+          Menu->Insert(Menu->Count, Item);
+        }
+
+        PrevName = Name;
+      }
+    }
+    Index++;
   }
-  for (int Index = 0; Index < PrevCount; Index++)
-  {
-    SavedSessionsMenu->Delete(0);
-  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::SessionFolderItemClick(TObject * Sender)
+{
+  TTBCustomItem * Item = dynamic_cast<TTBCustomItem *>(Sender);
+  assert(Item != NULL);
+  CreateSessionListMenuLevel(Item, LOWORD(Item->Tag), HIWORD(Item->Tag));
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::SessionItemClick(TObject * Sender)
@@ -1175,6 +1252,8 @@ void __fastcall TNonVisualDataModule::QueuePopupPopup(TObject * /*Sender*/)
     }
     Item->Options = O;
   }
+
+  QueueSpeedComboBoxItem->Strings = CustomWinConfiguration->History["SpeedLimit"];
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ShowUpdatesUpdate()
@@ -1225,3 +1304,29 @@ void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
     Action->Enabled = (State > 0);
   }
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall TNonVisualDataModule::QueueItemSpeed(const AnsiString & Text)
+{
+  unsigned long Speed = GetSpeedLimit(Text);
+  ScpExplorer->ExecuteQueueOperation(qoItemSpeed, reinterpret_cast<void*>(Speed));
+
+  AnsiString Result = SetSpeedLimit(Speed);
+  SaveToHistory(QueueSpeedComboBoxItem->Strings, Result);
+  CustomWinConfiguration->History["SpeedLimit"] = QueueSpeedComboBoxItem->Strings;
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::QueueSpeedComboBoxItemItemClick(
+  TObject * /*Sender*/)
+{
+  QueueItemSpeedAction->Text = QueueItemSpeed(QueueSpeedComboBoxItem->Text);
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::QueueSpeedComboBoxItemAcceptText(
+  TObject * /*Sender*/, AnsiString & NewText, bool & /*Accept*/)
+{
+  NewText = QueueItemSpeed(NewText);
+  QueueItemSpeedAction->Text = NewText;
+}
+//---------------------------------------------------------------------------

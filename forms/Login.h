@@ -47,7 +47,7 @@ __published:
   TTabSheet *SessionListSheet;
   TButton *LoadButton;
   TButton *DeleteButton;
-  TListView *SessionListView;
+  TTreeView *SessionTree;
   TButton *NewButton;
   TTabSheet *BasicSheet;
   TTabSheet *AdvancedSheet;
@@ -92,10 +92,6 @@ __published:
   TUpDownEdit *TimeoutEdit;
   TTabSheet *ProxySheet;
   TGroupBox *ProxyTypeGroup;
-  TRadioButton *ProxyNoneButton;
-  TRadioButton *ProxyHTTPButton;
-  TRadioButton *ProxySocks4Button;
-  TRadioButton *ProxyTelnetButton;
   TLabel *ProxyHostLabel;
   TLabel *ProxyPortLabel;
   TUpDownEdit *ProxyPortEdit;
@@ -141,9 +137,7 @@ __published:
   TMenuItem *Cleanup1;
   TButton *ShellIconsButton;
   TAction *DesktopIconAction;
-  TGroupBox *EOLTypeGroup;
-  TRadioButton *EOLTypeLFButton;
-  TRadioButton *EOLTypeCRLFButton;
+  TGroupBox *EnvironmentGroup;
   TGroupBox *TransferProtocolGroup;
   TPopupMenu *IconsPopupMenu;
   TMenuItem *Desktopicon1;
@@ -151,15 +145,8 @@ __published:
   TMenuItem *ExplorersSendtoshortcut1;
   TLabel *BugPKSessID2Label;
   TComboBox *BugPKSessID2Combo;
-  TRadioButton *ProxySocks5Button;
   TCheckBox *ProxyLocalhostCheck;
   TLabel *Label17;
-  TRadioButton *ProxyDNSOffButton;
-  TRadioButton *ProxyDNSAutoButton;
-  TRadioButton *ProxyDNSOnButton;
-  TUpDownEdit *TimeDifferenceEdit;
-  TLabel *Label29;
-  TLabel *Label30;
   TAction *CheckForUpdatesAction;
   TMenuItem *CheckForUpdates1;
   TButton *SaveButton;
@@ -170,8 +157,6 @@ __published:
   TRadioButton *PingOffButton;
   TRadioButton *PingNullPacketButton;
   TRadioButton *PingDummyCommandButton;
-  TUpDownEdit *TimeDifferenceMinutesEdit;
-  TLabel *Label9;
   TCheckBox *AuthKIPasswordCheck;
   TTabSheet *DirectoriesSheet;
   TGroupBox *DirectoriesGroup;
@@ -188,15 +173,9 @@ __published:
   TGroupBox *DSTModeGroup;
   TRadioButton *DSTModeUnixCheck;
   TRadioButton *DSTModeWinCheck;
-  TCheckBox *AuthGSSAPICheck;
-  TGroupBox *RecycleBinGroup;
-  TCheckBox *DeleteToRecycleBinCheck;
-  TCheckBox *OverwrittenToRecycleBinCheck;
-  TLabel *RecycleBinPathLabel;
-  TEdit *RecycleBinPathEdit;
+  TCheckBox *AuthGSSAPICheck2;
   TGroupBox *ScpLsOptionsGroup;
   TCheckBox *IgnoreLsWarningsCheck;
-  TCheckBox *AliasGroupListCheck;
   TCheckBox *SCPLsFullTimeAutoCheck;
   TTabSheet *SftpSheet;
   TGroupBox *SFTPBugsGroupBox;
@@ -222,9 +201,7 @@ __published:
   TComboBox *BugRekey2Combo;
   TGroupBox *SFTPProtocolGroup;
   TLabel *Label34;
-  TLabel *Label35;
   TComboBox *SFTPMaxVersionCombo;
-  TComboBox *SFTPBugUtfCombo;
   TComboBox *SFTPBugSignedTSCombo;
   TButton *HelpButton;
   TButton *ColorButton;
@@ -251,9 +228,8 @@ __published:
   TComboBox *ReturnVarEdit;
   TLabel *Label20;
   TGroupBox *AuthenticationParamsGroup;
-  TCheckBox *GSSAPIFwdTGTCheck;
   TCheckBox *AgentFwdCheck;
-  TLabel *GSSAPIServerRealmLabel;
+  TLabel *GSSAPIServerRealmLabel2;
   TEdit *GSSAPIServerRealmEdit;
   TCheckBox *TunnelCheck;
   TGroupBox *TunnelOptionsGroup;
@@ -268,15 +244,56 @@ __published:
   TLabel *InsecureLabel;
   TGroupBox *ConnectionGroup;
   TCheckBox *FtpPasvModeCheck;
+  TTabSheet *RecycleBinSheet;
+  TGroupBox *RecycleBinGroup;
+  TLabel *RecycleBinPathLabel;
+  TCheckBox *DeleteToRecycleBinCheck;
+  TCheckBox *OverwrittenToRecycleBinCheck;
+  TEdit *RecycleBinPathEdit;
+  TStaticText *RecycleBinLinkLabel;
+  TLabel *Label5;
+  TComboBox *EOLTypeCombo;
+  TLabel *UtfLabel;
+  TComboBox *UtfCombo;
+  TLabel *TimeDifferenceLabel;
+  TUpDownEdit *TimeDifferenceEdit;
+  TLabel *TimeDifferenceHoursLabel;
+  TUpDownEdit *TimeDifferenceMinutesEdit;
+  TLabel *TimeDifferenceMinutesLabel;
+  TLabel *EnvironmentOtherLabel;
   TAction *ShellIconSessionAction;
+  TLabel *Label9;
+  TComboBox *ListingCommandEdit;
+  TCheckBox *SshNoUserAuthCheck;
+  TCheckBox *TryAgentCheck;
+  TLabel *ProxyMethodLabel;
+  TComboBox *SshProxyMethodCombo;
+  TComboBox *ProxyDNSCombo;
+  TComboBox *FtpProxyMethodCombo;
+  TLabel *ProxyLocalCommandLabel;
+  TEdit *ProxyLocalCommandEdit;
+  TButton *ProxyLocalCommandBrowseButton;
+  TStaticText *ProxyTelnetCommandHintText;
+  TStaticText *ProxyLocalCommandHintText;
+  TImageList *SessionImageList;
+  TButton *NewFolderButton;
+  TAction *NewSessionFolderAction;
+  TGroupBox *FtpPingGroup;
+  TLabel *FtpPingIntervalLabel;
+  TUpDownEdit *FtpPingIntervalSecEdit;
+  TRadioButton *FtpPingOffButton;
+  TRadioButton *FtpPingNullPacketButton;
+  TRadioButton *FtpPingDummyCommandButton;
+  TLabel *Label23;
+  TComboBox *SftpServerEdit;
+  TTabSheet *FtpSheet;
+  TGroupBox *FtpGroup;
+  TLabel *Label25;
+  TMemo *PostLoginCommandsMemo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
-  void __fastcall SessionListViewSelectItem(TObject *Sender,
-  TListItem *Item, bool Selected);
-  void __fastcall SessionListViewDblClick(TObject *Sender);
-  void __fastcall SessionListViewInfoTip(TObject *Sender,
-    TListItem *Item, AnsiString &InfoTip);
-  void __fastcall SessionListViewKeyDown(TObject *Sender, WORD &Key,
+  void __fastcall SessionTreeDblClick(TObject *Sender);
+  void __fastcall SessionTreeKeyDown(TObject *Sender, WORD &Key,
     TShiftState Shift);
   void __fastcall EditSessionActionExecute(TObject *Sender);
   void __fastcall SaveSessionActionExecute(TObject *Sender);
@@ -291,46 +308,55 @@ __published:
   void __fastcall NavigationTreeChange(TObject *Sender, TTreeNode *Node);
   void __fastcall PageControlChange(TObject *Sender);
   void __fastcall AlgListBoxStartDrag(TObject *Sender,
-          TDragObject *&DragObject);
+    TDragObject *&DragObject);
   void __fastcall AlgListBoxDragOver(TObject *Sender, TObject *Source,
-          int X, int Y, TDragState State, bool &Accept);
+    int X, int Y, TDragState State, bool &Accept);
   void __fastcall AlgListBoxDragDrop(TObject *Sender, TObject *Source,
-          int X, int Y);
+    int X, int Y);
   void __fastcall CipherButtonClick(TObject *Sender);
   void __fastcall SetDefaultSessionActionExecute(TObject *Sender);
   void __fastcall ToolsMenuButtonClick(TObject *Sender);
   void __fastcall DesktopIconActionExecute(TObject *Sender);
-  void __fastcall SessionListViewCustomDrawItem(TCustomListView *Sender,
-          TListItem *Item, TCustomDrawState State, bool &DefaultDraw);
   void __fastcall SendToHookActionExecute(TObject *Sender);
   void __fastcall CheckForUpdatesActionExecute(TObject *Sender);
   void __fastcall LanguagesButtonClick(TObject *Sender);
-  void __fastcall AuthGSSAPICheckClick(TObject *Sender);
+  void __fastcall AuthGSSAPICheck2Click(TObject *Sender);
   void __fastcall KexButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
-  void __fastcall FormKeyDown(TObject *Sender, WORD &Key,
-          TShiftState Shift);
   void __fastcall PrivateKeyEditAfterDialog(TObject *Sender,
-          AnsiString &Name, bool &Action);
+    AnsiString &Name, bool &Action);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall ColorButtonClick(TObject *Sender);
   void __fastcall ColorDefaultItemClick(TObject *Sender);
   void __fastcall PickColorItemClick(TObject *Sender);
-  void __fastcall SessionListViewEditing(TObject * Sender, TListItem * Item,
-    bool & AllowEdit);
   void __fastcall RenameSessionActionExecute(TObject * Sender);
-  void __fastcall SessionListViewEdited(TObject * Sender, TListItem * Item,
-    AnsiString & S);
-  void __fastcall SessionListViewCompare(TObject * Sender, TListItem * Item1,
-    TListItem * Item2, int Data, int & Compare);
   void __fastcall UnixEnvironmentButtonClick(TObject *Sender);
   void __fastcall WindowsEnvironmentButtonClick(TObject *Sender);
   void __fastcall PathEditBeforeDialog(TObject *Sender, AnsiString &Name,
-          bool &Action);
+    bool &Action);
   void __fastcall TransferProtocolComboChange(TObject *Sender);
   void __fastcall NavigationTreeCollapsing(TObject *Sender,
-          TTreeNode *Node, bool &AllowCollapse);
+    TTreeNode *Node, bool &AllowCollapse);
+  void __fastcall RecycleBinLinkLabelClick(TObject *Sender);
   void __fastcall ShellIconSessionActionExecute(TObject *Sender);
+  void __fastcall ProxyLocalCommandBrowseButtonClick(TObject *Sender);
+  void __fastcall SessionTreeChange(TObject *Sender, TTreeNode *Node);
+  void __fastcall SessionTreeEdited(TObject *Sender, TTreeNode *Node,
+    AnsiString &S);
+  void __fastcall SessionTreeEditing(TObject *Sender, TTreeNode *Node,
+    bool &AllowEdit);
+  void __fastcall SessionTreeCustomDrawItem(TCustomTreeView *Sender,
+    TTreeNode *Node, TCustomDrawState State, bool &DefaultDraw);
+  void __fastcall SessionTreeExpandedCollapsed(TObject *Sender, TTreeNode *Node);
+  void __fastcall SessionTreeCompare(TObject *Sender, TTreeNode *Node1,
+          TTreeNode *Node2, int Data, int &Compare);
+  void __fastcall NewSessionFolderActionExecute(TObject *Sender);
+  void __fastcall SessionTreeStartDrag(TObject *Sender,
+          TDragObject *&DragObject);
+  void __fastcall SessionTreeDragDrop(TObject *Sender, TObject *Source,
+          int X, int Y);
+  void __fastcall SessionTreeMouseMove(TObject *Sender, TShiftState Shift,
+          int X, int Y);
 
 private:
   int NoUpdate;
@@ -343,7 +369,7 @@ private:
   AnsiString FOrigCaption;
   bool FInitialized;
   TTabSheet * FSavedTab;
-  int FSavedSession;
+  TTreeNode * FSavedSession;
   bool FLocaleChanging;
   void * FSystemSettings;
   AnsiString FCurrentSessionName;
@@ -351,6 +377,9 @@ private:
   AnsiString FBeforeDialogPath;
   TStringList * FTreeLabels;
   TFSProtocol FFSProtocol;
+  bool FRecycleBinSheetVisible;
+  TWndMethod FOldSessionTreeProc;
+  TTreeNode * FHintNode;
 
   void __fastcall LoadSession(TSessionData * aSessionData);
   void __fastcall UpdateControls();
@@ -359,8 +388,6 @@ private:
   void __fastcall SaveSession(TSessionData * aStoredSession);
   void __fastcall SetStoredSessions(TStoredSessionList * value);
   void __fastcall LoadSessions();
-  void __fastcall LoadSessionItem(TListItem * Item);
-  void __fastcall SetSelectedSession(TSessionData * value);
   TSessionData * __fastcall GetSelectedSession();
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
@@ -368,8 +395,20 @@ private:
   int __fastcall FSProtocolToIndex(TFSProtocol FSProtocol, bool & AllowScpFallback);
   TFSProtocol __fastcall IndexToFSProtocol(int Index, bool AllowScpFallback);
   void __fastcall UpdateNavigationTree();
-  void __fastcall LoadPing(TSessionData * aSessionData);
-  void __fastcall SavePing(TSessionData * aSessionData);
+  void __fastcall UpdateTree(TTreeNode * ANode, bool Recursive);
+  void __fastcall UpdateFolderNode(TTreeNode * Node);
+  TTreeNode * __fastcall AddSession(TSessionData * Data);
+  TTreeNode * __fastcall AddSessionPath(AnsiString Path);
+  void __fastcall DestroySession(TSessionData * Data);
+  void __fastcall CheckDuplicateFolder(TTreeNode * Parent, AnsiString Text,
+    TTreeNode * Node);
+  void __fastcall NewSessionFolderInputDialogInitialize(
+    TObject * Sender, TInputDialogData * Data);
+  AnsiString __fastcall SessionNodePath(TTreeNode * Node);
+  TTreeNode * __fastcall SessionFolderNode(TTreeNode * Node);
+  TTreeNode * __fastcall CurrentSessionFolderNode();
+  void __fastcall SessionTreeProc(TMessage & Message);
+  bool __fastcall SessionAllowDrop(TTreeNode * DropTarget);
 
 protected:
   void __fastcall Default();
@@ -385,10 +424,8 @@ protected:
   void __fastcall LocaleGetClick(TObject * Sender);
   void __fastcall Init();
   void __fastcall InitControls();
-  void __fastcall ShowTabs(bool Show);
   void __fastcall VerifyKey(AnsiString FileName, bool TypeOnly);
   void __fastcall EditSession();
-
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
@@ -396,7 +433,7 @@ public:
 
   __property TSessionData * SessionData  = { read=GetSessionData, write=SetSessionData };
   __property TStoredSessionList * StoredSessions  = { read=FStoredSessions, write=SetStoredSessions };
-  __property TSessionData * SelectedSession  = { read=GetSelectedSession, write=SetSelectedSession };
+  __property TSessionData * SelectedSession  = { read=GetSelectedSession };
   __property int Options = { read=FOptions, write=SetOptions };
 };
 //----------------------------------------------------------------------------

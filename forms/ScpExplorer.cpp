@@ -21,10 +21,7 @@
 #pragma link "IEListView"
 #pragma link "NortonLikeListView"
 #pragma link "UnixDirView"
-#pragma link "CustomPathComboBox"
 #pragma link "IEComboBox"
-#pragma link "UnixPathComboBox"
-#pragma link "IEPathComboBox"
 #pragma link "CustomDriveView"
 #pragma link "UnixDriveView"
 #pragma link "TB2Dock"
@@ -41,6 +38,9 @@
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
 {
+  UnixPathComboBox->Images = FSystemImageList;
+  UnixPathComboBox->SubMenuImages = UnixPathComboBox->Images;
+
   BackButton->LinkSubitems = HistoryMenu(osRemote, true)->Items;
   ForwardButton->LinkSubitems = HistoryMenu(osRemote, false)->Items;
 
@@ -71,7 +71,7 @@ void __fastcall TScpExplorerForm::RestoreFormParams()
 void __fastcall TScpExplorerForm::ConfigurationChanged()
 {
   TCustomScpExplorerForm::ConfigurationChanged();
-  UnixPathComboBox->ShowFullPath = WinConfiguration->ScpExplorer.ShowFullAddress;
+  UpdateRemotePathComboBox(UnixPathComboBox, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RestoreParams()
@@ -84,7 +84,6 @@ void __fastcall TScpExplorerForm::RestoreParams()
   RemoteDirView->UnixColProperties->ExtVisible = false; // just to make sure
   RemoteDirView->ViewStyle = (TViewStyle)WinConfiguration->ScpExplorer.ViewStyle;
   LoadToolbarsLayoutStr(WinConfiguration->ScpExplorer.ToolbarsLayout);
-  SessionCombo->EditWidth = WinConfiguration->ScpExplorer.SessionComboWidth;
   RemoteStatusBar->Visible = WinConfiguration->ScpExplorer.StatusBar;
   RemoteDriveView->Visible = WinConfiguration->ScpExplorer.DriveView;
   RemoteDriveView->Width = WinConfiguration->ScpExplorer.DriveViewWidth;
@@ -98,7 +97,6 @@ void __fastcall TScpExplorerForm::StoreParams()
   try
   {
     WinConfiguration->ScpExplorer.ToolbarsLayout = GetToolbarsLayoutStr();
-    WinConfiguration->ScpExplorer.SessionComboWidth = SessionCombo->EditWidth;
     WinConfiguration->ScpExplorer.StatusBar = RemoteStatusBar->Visible;
 
     WinConfiguration->ScpExplorer.WindowParams = StoreForm(this);
@@ -137,7 +135,7 @@ void __fastcall TScpExplorerForm::DoShow()
 {
   TCustomScpExplorerForm::DoShow();
 
-  RemoteDirView->SetFocus();
+  ActiveControl = RemoteDirView;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TScpExplorerForm::AllowedAction(TAction * Action, TActionAllowed Allowed)
@@ -246,3 +244,59 @@ void __fastcall TScpExplorerForm::UpdateStatusPanelText(TTBXStatusPanel * Panel)
 {
   Panel->Caption = FStatusBarFileText;
 }
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::UnixPathComboBoxBeginEdit(
+  TTBEditItem * /*Sender*/, TTBEditItemViewer * /*Viewer*/, TEdit * EditControl)
+{
+  InstallPathWordBreakProc(EditControl);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TScpExplorerForm::RemotePathComboBoxText()
+{
+  AnsiString Result;
+
+  if (WinConfiguration->ScpExplorer.ShowFullAddress)
+  {
+    Result = UnixExcludeTrailingBackslash(RemoteDirView->Path);
+  }
+  else
+  {
+    Result = UnixPathComboBox->Strings->Strings[UnixPathComboBox->Strings->Count - 1];
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::UnixPathComboBoxAcceptText(
+  TObject * /*Sender*/, AnsiString & NewText, bool & /*Accept*/)
+{
+  if (RemoteDirView->Path != NewText)
+  {
+    RemoteDirView->Path = NewText;
+    NewText = RemotePathComboBoxText();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::UpdateRemotePathComboBox(
+  TTBXComboBoxItem * RemotePathComboBox, bool TextOnly)
+{
+  TCustomScpExplorerForm::UpdateRemotePathComboBox(RemotePathComboBox, TextOnly);
+
+  UnixPathComboBox->Text = RemotePathComboBoxText();
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::RemoteDirViewPathChange(
+  TCustomDirView * /*Sender*/)
+{
+  UpdateRemotePathComboBox(UnixPathComboBox, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width)
+{
+  TCustomScpExplorerForm::ToolbarItemResize(Item, Width);
+  if (Item == UnixPathComboBox)
+  {
+    dynamic_cast<TTBXComboBoxItem *>(Item)->MinListWidth = Width - 4;
+  }
+}
+//---------------------------------------------------------------------------

@@ -20,7 +20,7 @@ bool __fastcall DoEditorPreferencesDialog(TEditorPreferences * Editor,
 {
   bool Result;
 
-  TEditorPreferencesDialog * Dialog = SafeFormCreate<TEditorPreferencesDialog>(Application);
+  TEditorPreferencesDialog * Dialog = SafeFormCreate<TEditorPreferencesDialog>();
   try
   {
     Dialog->Init(Mode);
@@ -111,7 +111,7 @@ void __fastcall TEditorPreferencesDialog::ExternalEditorBrowseButtonClick(
 {
   BrowseForExecutable(ExternalEditorEdit,
     LoadStr(PREFERENCES_SELECT_EXTERNAL_EDITOR),
-    LoadStr(PREFERENCES_EXTERNAL_EDITOR_FILTER), true);
+    LoadStr(EXECUTABLE_FILTER), true, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::HelpButtonClick(TObject * /*Sender*/)

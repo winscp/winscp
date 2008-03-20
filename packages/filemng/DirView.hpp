@@ -11,7 +11,6 @@
 #pragma option push -w-
 #pragma option push -Vx
 #include <PathLabel.hpp>	// Pascal unit
-#include <CustomPathComboBox.hpp>	// Pascal unit
 #include <Controls.hpp>	// Pascal unit
 #include <NortonLikeListView.hpp>	// Pascal unit
 #include <IEListView.hpp>	// Pascal unit
@@ -203,6 +202,8 @@ public:
 };
 
 
+typedef char TDriveLetter;
+
 #pragma option push -b-
 enum TClipboardOperation { cboNone, cboCut, cboCopy };
 #pragma option pop
@@ -290,6 +291,8 @@ public:
 };
 
 
+typedef AnsiString DirView__8[26];
+
 class PASCALIMPLEMENTATION TDirView : public Customdirview::TCustomDirView 
 {
 	typedef Customdirview::TCustomDirView inherited;
@@ -339,6 +342,7 @@ private:
 	Classes::TNotifyEvent FOnChangeInvalid;
 	_di_IShellFolder iRecycleFolder;
 	_ITEMIDLIST *PIDLRecycle;
+	AnsiString FLastPath[26];
 	Dirviewcolproperties::TDirViewColProperties* __fastcall GetDirColProperties(void);
 	AnsiString __fastcall GetHomeDirectory();
 	void __fastcall SignalFileDelete(System::TObject* Sender, Classes::TStringList* Files);
@@ -347,6 +351,7 @@ private:
 	
 protected:
 	virtual Listviewcolproperties::TCustomListViewColProperties* __fastcall NewColProperties(void);
+	virtual bool __fastcall SortAscendingByDefault(int Index);
 	virtual void __fastcall SetShowSubDirSize(bool Value);
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
 	DYNAMIC void __fastcall Delete(Comctrls::TListItem* Item);
@@ -366,6 +371,7 @@ protected:
 	virtual void __fastcall SetLoadEnabled(bool Value);
 	virtual AnsiString __fastcall GetPath();
 	virtual void __fastcall SetPath(AnsiString Value);
+	virtual void __fastcall PathChanged(void);
 	virtual void __fastcall SetItemImageIndex(Comctrls::TListItem* Item, int Index);
 	void __fastcall SetCompressedColor(Graphics::TColor Value);
 	void __fastcall ChangeDetected(System::TObject* Sender, const AnsiString Directory, bool &SubdirsChanged);
@@ -453,6 +459,7 @@ public:
 	__fastcall virtual ~TDirView(void);
 	virtual void __fastcall ExecuteHomeDirectory(void);
 	virtual void __fastcall ReloadDirectory(void);
+	void __fastcall ExecuteDrive(TDriveLetter Drive);
 	__property AnsiString HomeDirectory = {read=GetHomeDirectory, write=FHomeDirectory};
 	__property Customdirview::TSelAttr SelArchive = {read=FSelArchive, write=FSelArchive, default=0};
 	__property Customdirview::TSelAttr SelHidden = {read=FSelHidden, write=FSelHidden, default=0};
@@ -467,7 +474,6 @@ public:
 	
 __published:
 	__property Dirviewcolproperties::TDirViewColProperties* DirColProperties = {read=GetDirColProperties, write=SetDirColProperties};
-	__property PathComboBox ;
 	__property PathLabel ;
 	__property OnUpdateStatusBar ;
 	__property OnGetSelectFilter ;
@@ -528,6 +534,7 @@ __published:
 	__property OnBeginRename ;
 	__property OnEndRename ;
 	__property OnHistoryChange ;
+	__property OnPathChange ;
 	__property ColumnClick  = {default=1};
 	__property MultiSelect  = {default=1};
 	__property ReadOnly  = {default=0};

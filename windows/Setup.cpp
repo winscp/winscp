@@ -547,7 +547,7 @@ void __fastcall TemporaryDirectoryCleanup()
         Params.AliasesCount = LENOF(Aliases);
 
         int Answer = MoreMessageDialog(
-          FMTLOAD(CLEAN_TEMP_CONFIRM, (Folders->Count)), Folders,
+          FMTLOAD(CLEANTEMP_CONFIRM, (Folders->Count)), Folders,
           qtWarning, qaYes | qaNo | qaRetry, HELP_CLEAN_TEMP_CONFIRM, &Params);
 
         if (Answer == qaNeverAskAgain)
@@ -639,10 +639,18 @@ void __fastcall QueryUpdates()
       AnsiString URL = LoadStr(UPDATES_URL) +
         FORMAT("?v=%s&lang=%s", (CurrentVersionStr,
           IntToHex(__int64(GUIConfiguration->Locale), 4)));
-      if (!Updates.ProxyHost.IsEmpty())
+      AnsiString Proxy;
+      switch (Updates.ConnectionType)
       {
-        CheckForUpdatesHTTP->Proxy = FORMAT("%s:%d", (Updates.ProxyHost, Updates.ProxyPort));
+        case ctAuto:
+          AutodetectProxyUrl(Proxy);
+          break;
+
+        case ctProxy:
+          Proxy = FORMAT("%s:%d", (Updates.ProxyHost, Updates.ProxyPort));
+          break;
       }
+      CheckForUpdatesHTTP->Proxy = Proxy;
       CheckForUpdatesHTTP->URL = URL;
       CheckForUpdatesHTTP->Action();
       // sanity check

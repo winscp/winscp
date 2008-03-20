@@ -153,6 +153,7 @@ private:
   AnsiString FPuttyPath;
   AnsiString FPSftpPath;
   bool FPuttyPassword;
+  bool FTelnetForFtpInPutty;
   AnsiString FPuttySession;
   int FSynchronizeParams;
   int FSynchronizeOptions;
@@ -231,6 +232,7 @@ public:
   __property AnsiString DefaultPuttyPath = { read = FDefaultPuttyPath };
   __property AnsiString PSftpPath = { read = FPSftpPath, write = FPSftpPath };
   __property bool PuttyPassword = { read = FPuttyPassword, write = FPuttyPassword };
+  __property bool TelnetForFtpInPutty = { read = FTelnetForFtpInPutty, write = FTelnetForFtpInPutty };
   __property AnsiString PuttySession = { read = FPuttySession, write = FPuttySession };
   __property TDateTime IgnoreCancelBeforeFinish = { read = FIgnoreCancelBeforeFinish, write = FIgnoreCancelBeforeFinish };
   __property TGUICopyParamType DefaultCopyParam = { read = FDefaultCopyParam, write = SetDefaultCopyParam };

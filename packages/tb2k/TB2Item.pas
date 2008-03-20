@@ -222,7 +222,7 @@ type
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     function OpenPopup(const SelectFirstItem, TrackRightButton: Boolean;
       const PopupPoint: TPoint; const Alignment: TTBPopupAlignment;
-      const ReturnClickedItemOnly: Boolean): TTBCustomItem;
+      const ReturnClickedItemOnly: Boolean; PositionAsSubmenu: Boolean): TTBCustomItem;
     procedure RecreateItemViewers;
     procedure SetChildOrder(Child: TComponent; Order: Integer); override;
     procedure SetName(const NewName: TComponentName); override;
@@ -249,7 +249,8 @@ type
     procedure Move(CurIndex, NewIndex: Integer);
     function Popup(X, Y: Integer; TrackRightButton: Boolean;
       Alignment: TTBPopupAlignment = tbpaLeft;
-      ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
+      ReturnClickedItemOnly: Boolean = False;
+      PositionAsSubmenu: Boolean = False): TTBCustomItem;
     procedure PostClick;
     procedure RegisterNotification(ANotify: TTBItemChangedProc);
     procedure Remove(Item: TTBCustomItem);
@@ -720,6 +721,8 @@ type
     procedure Paint; override;
     procedure PaintScrollArrows; virtual;
     property AnimationDirection: TTBAnimationDirection read FAnimationDirection;
+    {MP}
+    procedure Cancel; dynamic;
   public
     constructor CreatePopupWindow(AOwner: TComponent; const AParentView: TTBView;
       const AItem: TTBCustomItem; const ACustomizing: Boolean); virtual;
@@ -2095,7 +2098,7 @@ end;
 
 function TTBCustomItem.OpenPopup(const SelectFirstItem, TrackRightButton: Boolean;
   const PopupPoint: TPoint; const Alignment: TTBPopupAlignment;
-  const ReturnClickedItemOnly: Boolean): TTBCustomItem;
+  const ReturnClickedItemOnly: Boolean; PositionAsSubmenu: Boolean): TTBCustomItem;
 var
   ModalHandler: TTBModalHandler;
   Popup: TTBPopupWindow;
@@ -2103,7 +2106,7 @@ var
 begin
   ModalHandler := TTBModalHandler.Create(0);
   try
-    Popup := CreatePopup(nil, nil, False, SelectFirstItem, False, PopupPoint,
+    Popup := CreatePopup(nil, nil, PositionAsSubmenu, SelectFirstItem, False, PopupPoint,
       Alignment);
     try
       Include(Popup.View.FState, vsIgnoreFirstMouseUp);
@@ -2125,14 +2128,15 @@ end;
 
 function TTBCustomItem.Popup(X, Y: Integer; TrackRightButton: Boolean;
   Alignment: TTBPopupAlignment = tbpaLeft;
-  ReturnClickedItemOnly: Boolean = False): TTBCustomItem;
+  ReturnClickedItemOnly: Boolean = False;
+  PositionAsSubmenu: Boolean = False): TTBCustomItem;
 var
   P: TPoint;
 begin
   P.X := X;
   P.Y := Y;
   Result := OpenPopup(False, TrackRightButton, P, Alignment,
-    ReturnClickedItemOnly);
+    ReturnClickedItemOnly, PositionAsSubmenu);
 end;
 
 function TTBCustomItem.FindItemWithShortCut(AShortCut: TShortCut;
@@ -4067,6 +4071,9 @@ procedure TTBView.CancelChildPopups;
 begin
   if FIsToolbar then
     Exclude(FState, vsDropDownMenus);
+  {MP}
+  if Assigned(FOpenViewerWindow) then
+    FOpenViewerWindow.Cancel;
   CloseChildPopups;
 end;
 
@@ -6405,6 +6412,12 @@ begin
     DestroyWindowHandle;
   FreeAndNil(FView);
   inherited;
+end;
+
+{MP}
+procedure TTBPopupWindow.Cancel;
+begin
+  { noop }
 end;
 
 procedure TTBPopupWindow.BeforeDestruction;

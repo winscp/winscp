@@ -55,6 +55,9 @@ private:
 	TSelectByMaskEvent FOnSelectByMask;
 	Comctrls::TListItem* FLastDeletedItem;
 	bool FFocusingItem;
+	bool FManageSelection;
+	int FFirstSelected;
+	int FLastSelected;
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMRButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMKeyDown(Messages::TWMKey &Message);
@@ -63,6 +66,8 @@ private:
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Message);
 	int __fastcall GetMarkedCount(void);
 	Comctrls::TListItem* __fastcall GetMarkedFile(void);
+	void __fastcall ItemSelected(Comctrls::TListItem* Item, int Index);
+	void __fastcall ItemUnselected(Comctrls::TListItem* Item, int Index);
 	
 protected:
 	bool FClearingItems;
@@ -92,6 +97,7 @@ public:
 	Comctrls::TListItem* __fastcall ClosestUnselected(Comctrls::TListItem* Item);
 	HIDESBASE void __fastcall SelectAll(TSelectMode Mode);
 	void __fastcall SelectCurrentItem(bool FocusNext);
+	HIDESBASE Comctrls::TListItem* __fastcall GetNextItem(Comctrls::TListItem* StartItem, Comctrls::TSearchDirection Direction, Comctrls::TItemStates States);
 	__property Listviewcolproperties::TCustomListViewColProperties* ColProperties = {read=FColProperties, write=FColProperties, stored=false};
 	__property MultiSelect  = {default=1};
 	__property TNortonLikeMode NortonLike = {read=FNortonLike, write=FNortonLike, default=0};

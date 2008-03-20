@@ -9,6 +9,7 @@ class TTerminalQueue;
 //---------------------------------------------------------------------------
 struct TEditedFileData
 {
+  AnsiString LocalRootDirectory;
   AnsiString RemoteDirectory;
   bool ForceText;
   TTerminal * Terminal;
@@ -23,7 +24,7 @@ typedef void __fastcall (__closure * TEditedFileChangedEvent)
 typedef void __fastcall (__closure * TEditedFileReloadEvent)
   (const AnsiString FileName, const TEditedFileData & Data);
 typedef void __fastcall (__closure * TEditedFileEarlyClosedEvent)
-  (const TEditedFileData & Data, bool * CloseFlag, bool & KeepOpen);
+  (const TEditedFileData & Data, bool & KeepOpen);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure * TEditedFileProcessEvent)
   (const AnsiString FileName, TEditedFileData & Data, TObject * Token, void * Arg);
@@ -37,14 +38,15 @@ public:
   bool __fastcall Empty(bool IgnoreClosed);
   bool __fastcall CanAddFile(const AnsiString RemoteDirectory,
     const AnsiString OriginalFileName, const AnsiString SessionName,
-    TObject *& Token,AnsiString & ExistingLocalDirectory);
+    TObject *& Token, AnsiString & ExistingLocalRootDirectory,
+    AnsiString & ExistingLocalDirectory);
   bool __fastcall CloseInternalEditors(TNotifyEvent CloseCallback);
   bool __fastcall CloseExternalFilesWithoutProcess();
 
   void __fastcall AddFileInternal(const AnsiString FileName,
-    const TEditedFileData & Data, bool * CloseFlag, TObject * Token);
+    const TEditedFileData & Data, TObject * Token);
   void __fastcall AddFileExternal(const AnsiString FileName,
-    const TEditedFileData & Data, bool * CloseFlag, HANDLE Process);
+    const TEditedFileData & Data, HANDLE Process);
 
   void __fastcall Check();
 
@@ -62,7 +64,6 @@ private:
   struct TFileData
   {
     AnsiString FileName;
-    AnsiString LocalDirectory;
     HANDLE Monitor;
     bool External;
     HANDLE Process;
@@ -71,7 +72,6 @@ private:
     TEditedFileData Data;
     bool Closed;
     HANDLE UploadCompleteEvent;
-    bool * CloseFlag;
     TDateTime Opened;
     bool Reupload;
   };

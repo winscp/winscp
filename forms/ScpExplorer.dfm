@@ -1,5 +1,5 @@
 inherited ScpExplorerForm: TScpExplorerForm
-  Left = 292
+  Left = 239
   Top = 148
   Width = 648
   Height = 513
@@ -16,7 +16,7 @@ inherited ScpExplorerForm: TScpExplorerForm
   end
   inherited TopDock: TTBXDock
     Width = 640
-    Height = 206
+    Height = 205
     object MenuToolbar: TTBXToolbar
       Left = 0
       Top = 0
@@ -544,7 +544,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object ButtonsToolbar: TTBXToolbar
       Left = 0
-      Top = 50
+      Top = 49
       Caption = 'Commands'
       DockPos = -8
       DockRow = 2
@@ -616,7 +616,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SelectionToolbar: TTBXToolbar
       Left = 0
-      Top = 76
+      Top = 75
       Caption = 'Selection'
       DockPos = -4
       DockRow = 3
@@ -647,14 +647,18 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SessionToolbar: TTBXToolbar
       Left = 0
-      Top = 102
+      Top = 101
       Caption = 'Session'
+      DockMode = dmCannotFloat
       DockPos = -4
       DockRow = 4
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
+      Stretch = True
       TabOrder = 4
+      OnResize = ToolBarResize
+      OnGetBaseSize = ToolbarGetBaseSize
       object TBXItem123: TTBXItem
         Action = NonVisualDataModule.NewSessionAction
       end
@@ -683,7 +687,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object PreferencesToolbar: TTBXToolbar
       Left = 0
-      Top = 128
+      Top = 127
       Caption = 'Preferences'
       DockPos = -4
       DockRow = 5
@@ -737,7 +741,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object SortToolbar: TTBXToolbar
       Left = 0
-      Top = 154
+      Top = 153
       Caption = 'Sort'
       DockPos = 0
       DockRow = 6
@@ -786,37 +790,37 @@ inherited ScpExplorerForm: TScpExplorerForm
       DockRow = 1
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
+      PopupMenu = NonVisualDataModule.RemoteAddressPopup
       Resizable = False
       ShowHint = True
       Stretch = True
       TabOrder = 1
       OnResize = ToolBarResize
-      OnGetBaseSize = AddressToolbarGetBaseSize
+      OnGetBaseSize = ToolbarGetBaseSize
       object TBXLabelItem1: TTBXLabelItem
         Caption = 'Address'
-        Margin = 3
+        Margin = 2
       end
-      object TBControlItem1: TTBControlItem
-        Control = UnixPathComboBox
+      object UnixPathComboBox: TTBXComboBoxItem
+        EditWidth = 200
+        OnAcceptText = UnixPathComboBoxAcceptText
+        OnBeginEdit = UnixPathComboBoxBeginEdit
+        ShowImage = True
+        MaxVisibleItems = 20
+        ShowListImages = True
+        OnAdjustImageIndex = RemotePathComboBoxAdjustImageIndex
+        OnDrawItem = RemotePathComboBoxDrawItem
+        OnItemClick = RemotePathComboBoxItemClick
+        OnMeasureWidth = RemotePathComboBoxMeasureWidth
+        OnCancel = RemotePathComboBoxCancel
       end
       object TBXItem22: TTBXItem
         Action = NonVisualDataModule.RemoteOpenDirAction
       end
-      object UnixPathComboBox: TUnixPathComboBox
-        Tag = 1
-        Left = 49
-        Top = 1
-        Width = 555
-        Height = 21
-        Align = alClient
-        Constraints.MinWidth = 50
-        PopupMenu = NonVisualDataModule.RemoteAddressPopup
-        TabOrder = 0
-      end
     end
     object UpdatesToolbar: TTBXToolbar
       Left = 0
-      Top = 180
+      Top = 179
       Caption = 'Updates'
       DockPos = -7
       DockRow = 7
@@ -858,14 +862,18 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object TransferToolbar: TTBXToolbar
       Left = 46
-      Top = 180
+      Top = 179
       Caption = 'Transfer settings'
+      DockMode = dmCannotFloat
       DockPos = 44
       DockRow = 7
       Images = GlyphsModule.ExplorerImages
       ParentShowHint = False
       ShowHint = True
+      Stretch = True
       TabOrder = 8
+      OnResize = ToolBarResize
+      OnGetBaseSize = ToolbarGetBaseSize
       object TransferDropDown: TTBXDropDownItem
         EditWidth = 114
         Hint = 'Select transfer settings preset'
@@ -888,7 +896,7 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     object CustomCommandsToolbar: TTBXToolbar
       Left = 193
-      Top = 180
+      Top = 179
       Caption = 'Custom Commands'
       DockPos = 193
       DockRow = 7
@@ -901,19 +909,19 @@ inherited ScpExplorerForm: TScpExplorerForm
   end
   inherited RemotePanel: TPanel
     Left = 9
-    Top = 206
+    Top = 205
     Width = 622
-    Height = 130
+    Height = 131
     Constraints.MinHeight = 100
     Constraints.MinWidth = 210
     inherited RemotePanelSplitter: TSplitter
-      Height = 99
+      Height = 100
       Hint = 
         'Drag to resize directory tree. Double click to hide directory tr' +
         'ee.'
     end
     inherited RemoteStatusBar: TTBXStatusBar
-      Top = 108
+      Top = 109
       Width = 622
       Height = 22
       Images = GlyphsModule.SessionImages
@@ -958,17 +966,17 @@ inherited ScpExplorerForm: TScpExplorerForm
     end
     inherited RemoteDirView: TUnixDirView
       Width = 450
-      Height = 99
-      PathComboBox = UnixPathComboBox
+      Height = 100
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
+      OnPathChange = RemoteDirViewPathChange
     end
     inherited RemoteDriveView: TUnixDriveView
-      Height = 99
+      Height = 100
       Constraints.MinWidth = 40
     end
     object BottomDock: TTBXDock
       Left = 0
-      Top = 99
+      Top = 100
       Width = 622
       Height = 9
       FixAlign = True
@@ -978,7 +986,7 @@ inherited ScpExplorerForm: TScpExplorerForm
   inherited QueuePanel: TPanel
     Top = 339
     Width = 640
-    inherited QueueView: TListView
+    inherited QueueView2: TListView
       Width = 640
     end
     inherited QueueDock: TTBXDock
@@ -987,16 +995,16 @@ inherited ScpExplorerForm: TScpExplorerForm
   end
   object LeftDock: TTBXDock
     Left = 0
-    Top = 206
+    Top = 205
     Width = 9
-    Height = 130
+    Height = 131
     Position = dpLeft
   end
   object RightDock: TTBXDock
     Left = 631
-    Top = 206
+    Top = 205
     Width = 9
-    Height = 130
+    Height = 131
     Position = dpRight
   end
 end

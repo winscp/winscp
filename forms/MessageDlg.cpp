@@ -177,12 +177,13 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
     *TimeoutButton = NULL;
   }
 
-  TMessageForm * Result = new TMessageForm(Application);
+  TMessageForm * Result = SafeFormCreate<TMessageForm>();
 
   Result->BiDiMode = Application->BiDiMode;
   Result->BorderStyle = bsDialog;
   Result->Canvas->Font = Result->Font;
   Result->KeyPreview = true;
+  Result->Position = poMainFormCenter;
   TPoint DialogUnits = GetAveCharSize(Result->Canvas);
   int HorzMargin = MulDiv(mcHorzMargin, DialogUnits.x, 4);
   int VertMargin = MulDiv(mcVertMargin, DialogUnits.y, 8);
@@ -210,6 +211,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
         Caption = "Yes to A&ll";
       }
 
+      TNotifyEvent OnClick = NULL;
       if (Aliases != NULL)
       {
         for (unsigned int i = 0; i < AliasesCount; i++)
@@ -217,6 +219,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
           if (B == Aliases[i].Button)
           {
             Caption = Aliases[i].Alias;
+            OnClick = Aliases[i].OnClick;
             break;
           }
         }
@@ -244,9 +247,16 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
       Button->Name = ButtonNames[TMsgDlgBtn(B)];
       Button->Parent = Result;
       Button->Caption = Caption;
-      Button->ModalResult = ModalResults[B];
-      Button->Default = (B == DefaultButton);
-      Button->Cancel = (B == CancelButton);
+      if (OnClick != NULL)
+      {
+        Button->OnClick = OnClick;
+      }
+      else
+      {
+        Button->ModalResult = ModalResults[B];
+        Button->Default = (B == DefaultButton);
+        Button->Cancel = (B == CancelButton);
+      }
       if (MoreMessages != NULL)
       {
         Button->Anchors = TAnchors() << akBottom << akLeft;

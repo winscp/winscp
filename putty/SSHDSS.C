@@ -1,21 +1,13 @@
+/*
+ * Digital Signature Standard implementation for PuTTY.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
 #include "ssh.h"
 #include "misc.h"
-
-#define GET_32BIT(cp) \
-    (((unsigned long)(unsigned char)(cp)[0] << 24) | \
-    ((unsigned long)(unsigned char)(cp)[1] << 16) | \
-    ((unsigned long)(unsigned char)(cp)[2] << 8) | \
-    ((unsigned long)(unsigned char)(cp)[3]))
-
-#define PUT_32BIT(cp, value) { \
-    (cp)[0] = (unsigned char)((value) >> 24); \
-    (cp)[1] = (unsigned char)((value) >> 16); \
-    (cp)[2] = (unsigned char)((value) >> 8); \
-    (cp)[3] = (unsigned char)(value); }
 
 static void sha_mpint(SHA_State * s, Bignum b)
 {

@@ -116,6 +116,7 @@ protected:
 	void __fastcall NewEditWndProc(Messages::TMessage &Message);
 	virtual void __fastcall Paint(const Graphics::TCanvas* Canvas, const Types::TRect &ClientAreaRect, bool IsHoverItem, bool IsPushed, bool UseDisabledShadow);
 	virtual bool __fastcall ShowImage(void);
+	virtual bool __fastcall StripTextHotkey(void);
 	
 public:
 	virtual bool __fastcall IsToolbarStyle(void);
@@ -138,15 +139,19 @@ class PASCALIMPLEMENTATION TTBXCustomDropDownItem : public TTBXEditItem
 private:
 	bool FAlwaysSelectFirst;
 	bool FDropDownList;
+	Classes::TNotifyEvent FOnCancel;
 	
 protected:
 	virtual Tb2item::TTBPopupWindow* __fastcall CreatePopup(const Tb2item::TTBView* ParentView, const Tb2item::TTBItemViewer* ParentViewer, const bool PositionAsSubmenu, const bool SelectFirstItem, const bool Customizing, const Types::TPoint &APopupPoint, const Tb2item::TTBPopupAlignment Alignment);
 	virtual TMetaClass* __fastcall GetItemViewerClass(Tb2item::TTBView* AView);
+	virtual TMetaClass* __fastcall GetPopupWindowClass(void);
+	void __fastcall DoCancel(void);
 	
 public:
 	__fastcall virtual TTBXCustomDropDownItem(Classes::TComponent* AOwner);
 	__property bool AlwaysSelectFirst = {read=FAlwaysSelectFirst, write=FAlwaysSelectFirst, default=1};
 	__property bool DropDownList = {read=FDropDownList, write=FDropDownList, default=0};
+	__property Classes::TNotifyEvent OnCancel = {read=FOnCancel, write=FOnCancel};
 public:
 	#pragma option push -w-inl
 	/* TTBXEditItem.Destroy */ inline __fastcall virtual ~TTBXCustomDropDownItem(void) { }
@@ -273,6 +278,7 @@ __published:
 	__property Tbxlists::TTBXLMeasureHeight OnMeasureHeight = {read=GetOnMeasureHeight, write=SetOnMeasureHeight};
 	__property Tbxlists::TTBXLMeasureWidth OnMeasureWidth = {read=GetOnMeasureWidth, write=SetOnMeasureWidth};
 	__property OnPopup ;
+	__property OnCancel ;
 public:
 	#pragma option push -w-inl
 	/* TTBXEditItem.Destroy */ inline __fastcall virtual ~TTBXComboBoxItem(void) { }
@@ -288,6 +294,7 @@ class PASCALIMPLEMENTATION TTBXComboBoxItemViewer : public TTBXDropDownItemViewe
 	
 protected:
 	virtual bool __fastcall HandleEditMessage(Messages::TMessage &Message);
+	virtual bool __fastcall StripTextHotkey(void);
 public:
 	#pragma option push -w-inl
 	/* TTBItemViewer.Create */ inline __fastcall virtual TTBXComboBoxItemViewer(Tb2item::TTBView* AView, Tb2item::TTBCustomItem* AItem, int AGroupLevel) : TTBXDropDownItemViewer(AView, AItem, AGroupLevel) { }
@@ -316,6 +323,7 @@ private:
 	int FMargin;
 	bool FShowAccelChar;
 	TTBXLabelOrientation FOrientation;
+	int FFixedSize;
 	Tbx::TAdjustFontEvent FOnAdjustFont;
 	void __fastcall FontSettingsChanged(System::TObject* Sender);
 	void __fastcall SetMargin(int Value);
@@ -323,6 +331,7 @@ private:
 	HIDESBASE void __fastcall SetCaption(const AnsiString Value);
 	void __fastcall SetFontSettings(Tbx::TFontSettings* Value);
 	void __fastcall SetShowAccelChar(bool Value);
+	void __fastcall SetFixedSize(int Value);
 	
 protected:
 	virtual TMetaClass* __fastcall GetItemViewerClass(Tb2item::TTBView* AView);
@@ -339,6 +348,7 @@ __published:
 	__property int Margin = {read=FMargin, write=SetMargin, default=0};
 	__property TTBXLabelOrientation Orientation = {read=FOrientation, write=SetOrientation, default=0};
 	__property bool ShowAccelChar = {read=FShowAccelChar, write=SetShowAccelChar, default=1};
+	__property int FixedSize = {read=FFixedSize, write=SetFixedSize, default=0};
 	__property Visible  = {default=1};
 	__property Tbx::TAdjustFontEvent OnAdjustFont = {read=FOnAdjustFont, write=FOnAdjustFont};
 };

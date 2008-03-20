@@ -14,6 +14,7 @@
 #include <FileCtrl.hpp>
 #include <ThemeMgr.hpp>
 #include <PathLabel.hpp>
+#include <PasTools.hpp>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -181,6 +182,8 @@ TWndMethod __fastcall ControlWndProc(TWinControl * Control)
   return &PublicControl->WndProc;
 }
 //---------------------------------------------------------------------------
+static TMonitor * LastMonitor = NULL;
+//---------------------------------------------------------------------------
 inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   TMessage & Message)
 {
@@ -189,6 +192,58 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   {
     InvokeHelp(Form->ActiveControl);
     Message.Result = 1;
+  }
+  else if (Message.Msg == CM_SHOWINGCHANGED)
+  {
+    if ((Application->MainForm == Form) ||
+        // this particularly happens if error occurs while main
+        // window is being shown (e.g. non existent local directory when opening
+        // explorer)
+        ((Application->MainForm != NULL) && !Application->MainForm->Visible))
+    {
+      if (!Form->Showing)
+      {
+        // when closing main form, remember its monitor,
+        // so that the next form is shown on the same one
+        LastMonitor = Form->Monitor;
+      }
+      else if ((LastMonitor != NULL) && (LastMonitor != Form->Monitor) &&
+                Form->Showing)
+      {
+        TForm * AForm = dynamic_cast<TForm *>(Form);
+        assert(AForm != NULL);
+        // would actually always be poScreenCenter, see _SafeFormCreate
+        if ((AForm->Position == poMainFormCenter) ||
+            (AForm->Position == poScreenCenter))
+        {
+          // this would typically be an authentication dialog,
+          // but it may as well be an message box
+
+          // taken from TCustomForm::SetWindowToMonitor
+          AForm->SetBounds(LastMonitor->Left + ((LastMonitor->Width - AForm->Width) / 2),
+            LastMonitor->Top + ((LastMonitor->Height - AForm->Height) / 2),
+             AForm->Width, AForm->Height);
+          AForm->Position = poDesigned;
+        }
+        else if ((AForm->Position != poDesigned) &&
+                 (AForm->Position != poDefaultPosOnly))
+        {
+          // we do not expect any other positioning
+          assert(false);
+        }
+      }
+      else
+      {
+        TForm * AForm = dynamic_cast<TForm *>(Form);
+        assert(AForm != NULL);
+        // otherwise it would not get centered
+        if (AForm->Position == poMainFormCenter)
+        {
+          AForm->Position = poScreenCenter;
+        }
+      }
+    }
+    WndProc(Message);
   }
   else
   {
@@ -1244,6 +1299,54 @@ void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
   StaticText->WindowProc = WindowProc;
 }
 //---------------------------------------------------------------------------
+TMonitor *  __fastcall FormMonitor(TForm * Form)
+{
+  TMonitor * Result;
+  if ((Application->MainForm != NULL) && (Application->MainForm != Form))
+  {
+    Result = Application->MainForm->Monitor;
+  }
+  else if (LastMonitor != NULL)
+  {
+    Result = LastMonitor;
+  }
+  else
+  {
+    int i = 0;
+    while ((i < Screen->MonitorCount) && !Screen->Monitors[i]->Primary)
+    {
+      i++;
+    }
+    assert(Screen->Monitors[i]->Primary);
+    Result = Screen->Monitors[i];
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall GetLastMonitor()
+{
+  if (LastMonitor != NULL)
+  {
+    return LastMonitor->MonitorNum;
+  }
+  else
+  {
+    return -1;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall SetLastMonitor(int MonitorNum)
+{
+  if ((MonitorNum >= 0) && (MonitorNum < Screen->MonitorCount))
+  {
+    LastMonitor = Screen->Monitors[MonitorNum];
+  }
+  else
+  {
+    LastMonitor = NULL;
+  }
+}
+//---------------------------------------------------------------------------
 int __fastcall SafeShowModal(TForm * Form)
 {
   // FIX: Due to some bug in Theme Manager, certain forms randomly
@@ -1297,28 +1400,57 @@ static void __fastcall CreateHandles(TWinControl * Control)
   }
 }
 //---------------------------------------------------------------------------
-TForm * __fastcall _SafeFormValidate(TForm * Form, int & Retry)
+// FIX: Due to some bug in Theme Manager, certain forms randomly
+// fails in call to ShowModal(), hence repeat the call until it succeeds.
+TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
 {
-  try
-  {
-    CreateHandles(Form);
-  }
-  catch (EOSError & E)
-  {
-    delete Form;
-    Form = NULL;
+  // we do ignore owner atm, as we do not know how to set it,
+  // but it should not cause any problems as we always manage memory
+  // destruction ourselves
+  assert(Owner == Application);
+  USEDPARAM(Owner);
 
-    ++Retry;
-    if ((E.Message != Sysconst_SUnkOSError) ||
-        (Retry >= 10))
+  int Retry = 0;
+  TForm * Form;
+  do
+  {
+    // if there is no main form yet, make this one main.
+    // this, among other, makes other forms (dialogs invoked from this one),
+    // be placed on the same monitor (otherwise all new forms get placed
+    // on primary monitor)
+    if (Application->MainForm == NULL)
     {
-      throw;
+      Application->CreateForm(FormClass, &Form);
+      assert(Application->MainForm == Form);
+    }
+    else
+    {
+      Form = dynamic_cast<TForm *>(Construct(FormClass, Application));
+      assert(Form != NULL);
+    }
+
+    try
+    {
+      CreateHandles(Form);
+    }
+    catch (EOSError & E)
+    {
+      delete Form;
+      Form = NULL;
+
+      ++Retry;
+      if ((E.Message != Sysconst_SUnkOSError) ||
+          (Retry >= 10))
+      {
+        throw;
+      }
+    }
+    catch(...)
+    {
+      delete Form;
     }
   }
-  catch(...)
-  {
-    delete Form;
-  }
+  while (Form == NULL);
 
   return Form;
 }

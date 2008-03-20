@@ -42,9 +42,12 @@ const
   FirstDrive          = 'A';
   FirstFixedDrive     = 'C';
   LastDrive           = 'Z';
+  FirstSpecialFolder  = CSIDL_DESKTOP;
+  LastSpecialFolder   = CSIDL_PRINTHOOD;
 
 type
   TDrive    = Char;
+  PDriveInfoRec = ^TDriveInfoRec;
   TDriveInfoRec = record
     PIDL        : PItemIDList; {Fully qualyfied PIDL}
     Init        : Boolean;     {Drivestatus was updated once}
@@ -62,15 +65,28 @@ type
     FileSystemFlags : DWORD;   {Filesystem flags as returned by GetVolumeInformation}
   end;
 
+  TSpecialFolder = FirstSpecialFolder..LastSpecialFolder;
+  PSpecialFolderRec = ^TSpecialFolderRec;
+  TSpecialFolderRec = record
+    Valid: Boolean;
+    Location: string;
+    DisplayName: string;
+    ImageIndex: Integer;
+    PIDL: PItemIDList;
+  end;
+
   TDriveInfo = class(TObject)
   private
     FData: array[FirstDrive..LastDrive] of TDriveInfoRec;
     FNoDrives: DWORD;
     FDesktop: IShellFolder;
-    function GetData(Drive: TDrive): TDriveInfoRec;
+    FFolders: array[TSpecialFolder] of TSpecialFolderRec;
+    function GetData(Drive: TDrive): PDriveInfoRec;
+    function GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
 
   public
-    property Data[Drive: TDrive]: TDriveInfoRec read GetData; default;
+    property Data[Drive: TDrive]: PDriveInfoRec read GetData; default;
+    property SpecialFolder[Folder: TSpecialFolder]: PSpecialFolderRec read GetFolder;
 
     function GetImageIndex(Drive: TDrive): Integer;
     function GetDisplayName(Drive: TDrive): string;
@@ -123,10 +139,46 @@ begin
   inherited;
 end; {TDriveInfo.Destroy}
 
+function TDriveInfo.GetFolder(Folder: TSpecialFolder): PSpecialFolderRec;
+var
+  FileInfo: TShFileInfo;
+  Path: PChar;
+  Flags: Word;
+begin
+  Assert((Folder >= Low(FFolders)) and (Folder <= High(FFolders)));
+
+  with FFolders[Folder] do
+  begin
+    if not Valid then
+    begin
+      SpecialFolderLocation(Folder, Location, PIDL);
+      if Assigned(PIDL) then
+      begin
+        Path := PChar(PIDL);
+        Flags := SHGFI_PIDL;
+      end
+        else
+      begin
+        Path := PChar(Location);
+        Flags := 0;
+      end;
+
+      SHGetFileInfo(Path, 0, FileInfo, SizeOf(FileInfo),
+        SHGFI_DISPLAYNAME or SHGFI_SYSICONINDEX or SHGFI_SMALLICON or Flags);
+      ImageIndex := FileInfo.iIcon;
+      DisplayName := FileInfo.szDisplayName;
+      Valid := True;
+    end;
+  end;
+
+  Result := @FFolders[Folder];
+end;
+
 procedure TDriveInfo.Load;
 var
   Drive: TDrive;
   Reg: TRegistry;
+  Folder: TSpecialFolder;
 begin
   FNoDrives := 0;
   Reg := TRegistry.Create;
@@ -163,6 +215,9 @@ begin
         FileSystemFlags := 0;
         MaxFileNameLength := 0;
       end;
+
+  for Folder := Low(FFolders) to High(FFolders) do
+    FFolders[Folder].Valid := False;
 end;
 
 function TDriveInfo.GetImageIndex(Drive: TDrive): Integer;
@@ -225,12 +280,12 @@ begin
   end;
 end; {TDriveInfo.GetLongPrettyName}
 
-function TDriveInfo.GetData(Drive: TDrive): TDriveInfoRec;
+function TDriveInfo.GetData(Drive: TDrive): PDriveInfoRec;
 begin
   if not (Upcase(Drive) in ['A'..'Z']) then
     raise EConvertError.Create(Format(ErrorInvalidDrive, [Drive]));
 
-  Result := FData[Upcase(Drive)];
+  Result := @FData[Upcase(Drive)];
 end; {TDriveInfo.GetData}
 
 function TDriveInfo.ReadDriveStatus(Drive: TDrive; Flags: Integer): Boolean;

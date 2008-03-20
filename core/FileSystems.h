@@ -17,8 +17,11 @@ enum TFSCommand { fsNull = 0, fsVarValue, fsLastLine, fsFirstLine,
   fsCurrentDirectory, fsChangeDirectory, fsListDirectory, fsListCurrentDirectory,
   fsListFile, fsLookupUsersGroups, fsCopyToRemote, fsCopyToLocal, fsDeleteFile,
   fsRenameFile, fsCreateDirectory, fsChangeMode, fsChangeGroup, fsChangeOwner,
-  fsHomeDirectory, fsUnset, fsUnalias, fsAliasGroupList, fsCreateLink, fsCopyFile,
+  fsHomeDirectory, fsUnset, fsUnalias, fsCreateLink, fsCopyFile,
   fsAnyCommand, fsReadSymlink, fsChangeProperties, fsMoveFile };
+//---------------------------------------------------------------------------
+const dfNoRecursive = 0x01;
+const dfAlternative = 0x02;
 //---------------------------------------------------------------------------
 class TCustomFileSystem
 {
@@ -53,7 +56,7 @@ public:
     const TRemoteProperties * Properties) = 0;
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic) = 0;
   virtual void __fastcall DeleteFile(const AnsiString FileName,
-    const TRemoteFile * File, bool Recursive) = 0;
+    const TRemoteFile * File, int Params) = 0;
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
     const TRemoteFile * File, AnsiString Command, int Params, TCaptureOutputEvent OutputEvent) = 0;
   virtual void __fastcall DoStartup() = 0;

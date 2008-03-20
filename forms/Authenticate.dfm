@@ -6,7 +6,7 @@ object AuthenticateForm: TAuthenticateForm
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
   Caption = 'AuthenticateForm'
-  ClientHeight = 270
+  ClientHeight = 316
   ClientWidth = 375
   Color = clBtnFace
   Constraints.MinHeight = 200
@@ -18,7 +18,6 @@ object AuthenticateForm: TAuthenticateForm
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
-  OnResize = FormResize
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
@@ -26,7 +25,7 @@ object AuthenticateForm: TAuthenticateForm
     Left = 0
     Top = 0
     Width = 375
-    Height = 35
+    Height = 26
     Align = alClient
     Columns = <
       item
@@ -45,117 +44,145 @@ object AuthenticateForm: TAuthenticateForm
   end
   object PasswordPanel: TPanel
     Left = 0
-    Top = 35
+    Top = 26
     Width = 375
-    Height = 153
+    Height = 208
     Align = alBottom
+    AutoSize = True
     BevelOuter = bvNone
     TabOrder = 1
     Visible = False
-    DesignSize = (
-      375
-      153)
-    object PasswordEditPanel: TPanel
+    object PromptEditPanel: TPanel
       Left = 0
       Top = 0
       Width = 375
-      Height = 50
+      Height = 139
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
         375
-        50)
-      object PasswordLabel: TLabel
+        139)
+      object InstructionsLabel: TLabel
         Left = 8
         Top = 8
+        Width = 360
+        Height = 39
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        Caption = 
+          'Instructions for authentication. Please fill in your credentials' +
+          ' carefully. Enter all required information, including your sessi' +
+          'on username and session password.X'
+        FocusControl = PromptEdit1
+        WordWrap = True
+      end
+      object PromptLabel1: TLabel
+        Left = 8
+        Top = 56
+        Width = 360
+        Height = 13
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        Caption = '&UsernameX:'
+        FocusControl = PromptEdit1
+        WordWrap = True
+      end
+      object PromptLabel2: TLabel
+        Left = 8
+        Top = 101
         Width = 360
         Height = 13
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
         Caption = '&PasswordX:'
-        FocusControl = PasswordEdit
+        FocusControl = PromptEdit2
         WordWrap = True
       end
-      object PasswordEdit: TPasswordEdit
+      object PromptEdit1: TPasswordEdit
         Left = 8
-        Top = 24
+        Top = 73
         Width = 361
         Height = 21
-        Anchors = [akLeft, akRight, akBottom]
+        Anchors = [akLeft, akTop, akRight]
         MaxLength = 250
         TabOrder = 0
       end
+      object PromptEdit2: TPasswordEdit
+        Left = 8
+        Top = 118
+        Width = 361
+        Height = 21
+        Anchors = [akLeft, akTop, akRight]
+        MaxLength = 250
+        TabOrder = 1
+      end
     end
-    object ServerPromptPanel: TPanel
+    object SavePasswordPanel: TPanel
       Left = 0
-      Top = 50
+      Top = 139
       Width = 375
-      Height = 69
+      Height = 25
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 1
-      DesignSize = (
-        375
-        69)
-      object ServerPromptLabel: TLabel
-        Left = 8
-        Top = 24
-        Width = 359
-        Height = 44
-        Anchors = [akLeft, akTop, akRight, akBottom]
-        AutoSize = False
-        Caption = 
-          'Note: This prompt is issued by the server. It is part of either ' +
-          'keyboard-interactive, TIS or Cryptocard authentication.'
-        WordWrap = True
-      end
-      object HideTypingCheck: TCheckBox
+      object SavePasswordCheck: TCheckBox
         Left = 14
-        Top = 2
+        Top = 6
         Width = 275
         Height = 17
-        Caption = 'Hide &typing'
+        Caption = '&Change stored password to this one'
         Checked = True
         State = cbChecked
         TabOrder = 0
-        OnClick = HideTypingCheckClick
       end
     end
-    object PasswordOKButton: TButton
-      Left = 118
-      Top = 119
-      Width = 75
-      Height = 25
-      Anchors = [akRight, akBottom]
-      Caption = 'OK'
-      ModalResult = 1
+    object ButtonsPanel: TPanel
+      Left = 0
+      Top = 164
+      Width = 375
+      Height = 44
+      Align = alTop
+      BevelOuter = bvNone
       TabOrder = 2
-    end
-    object PasswordCancelButton: TButton
-      Left = 206
-      Top = 119
-      Width = 75
-      Height = 25
-      Anchors = [akRight, akBottom]
-      Caption = 'Cancel'
-      ModalResult = 2
-      TabOrder = 3
-    end
-    object PasswordHelpButton: TButton
-      Left = 294
-      Top = 119
-      Width = 75
-      Height = 25
-      Anchors = [akRight, akBottom]
-      Caption = '&Help'
-      TabOrder = 4
-      OnClick = HelpButtonClick
+      DesignSize = (
+        375
+        44)
+      object PasswordOKButton: TButton
+        Left = 118
+        Top = 8
+        Width = 75
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'OK'
+        ModalResult = 1
+        TabOrder = 0
+      end
+      object PasswordCancelButton: TButton
+        Left = 206
+        Top = 8
+        Width = 75
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'Cancel'
+        ModalResult = 2
+        TabOrder = 1
+      end
+      object PasswordHelpButton: TButton
+        Left = 294
+        Top = 8
+        Width = 75
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Help'
+        TabOrder = 2
+        OnClick = HelpButtonClick
+      end
     end
   end
   object BannerPanel: TPanel
     Left = 0
-    Top = 188
+    Top = 234
     Width = 375
     Height = 82
     Align = alBottom

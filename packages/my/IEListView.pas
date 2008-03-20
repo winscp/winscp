@@ -94,6 +94,7 @@ type
     procedure SetHeaderImages(Value: TImageList); virtual;
     function SecondaryColumnHeader(Index: Integer; var AliasOnly: Boolean): Integer; virtual;
     function NewColProperties: TCustomListViewColProperties; override;
+    function SortAscendingByDefault(Index: Integer): Boolean; virtual;
 
     procedure CreateWnd; override;
     procedure ColClick(Column: TListColumn); override;
@@ -562,6 +563,11 @@ begin
   Result := TIEListViewColProperties.Create(Self, 0);
 end;
 
+function TCustomIEListView.SortAscendingByDefault(Index: Integer): Boolean;
+begin
+  Result := True;
+end;
+
 procedure TCustomIEListView.ColClick(Column: TListColumn);
 var
   Index: Integer;
@@ -589,7 +595,7 @@ begin
     else
   begin
     FSortColumn := Index;
-    FSortAscending := True;
+    FSortAscending := SortAscendingByDefault(Index);
   end;
 
   if Items.Count > 0 then SortItems;

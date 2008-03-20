@@ -42,12 +42,6 @@ typedef unsigned short uint16;
 
 #define HASH_MINBLOCKS	(7*SSH_BLOCKSIZE)
 
-#define GET_32BIT_MSB_FIRST(cp) \
-  (((unsigned long)(unsigned char)(cp)[0] << 24) | \
-  ((unsigned long)(unsigned char)(cp)[1] << 16) | \
-  ((unsigned long)(unsigned char)(cp)[2] << 8) | \
-  ((unsigned long)(unsigned char)(cp)[3]))
-
 /* Hash function (Input keys are cipher results) */
 #define HASH(x)		GET_32BIT_MSB_FIRST(x)
 

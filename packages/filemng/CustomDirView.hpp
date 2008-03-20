@@ -12,7 +12,6 @@
 #pragma option push -Vx
 #include <NortonLikeListView.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
-#include <CustomPathComboBox.hpp>	// Pascal unit
 #include <PathLabel.hpp>	// Pascal unit
 #include <IEListView.hpp>	// Pascal unit
 #include <IEDriveInfo.hpp>	// Pascal unit
@@ -119,7 +118,7 @@ enum THistoryDirection { hdBack, hdForward };
 #pragma option pop
 
 class DELPHICLASS TCustomDirView;
-typedef void __fastcall (__closure *THistoryChangeEvent)(TCustomDirView* Sender);
+typedef void __fastcall (__closure *TDirViewNotifyEvent)(TCustomDirView* Sender);
 
 typedef void __fastcall (__closure *TDVGetFilterEvent)(TCustomDirView* Sender, bool Select, TFileFilter &Filter);
 
@@ -229,13 +228,12 @@ private:
 	Controls::TImageList* FImageList32;
 	bool FLoadAnimation;
 	int FMaxHistoryCount;
-	bool FNeverPainted;
-	Custompathcombobox::TCustomPathComboBox* FPathComboBox;
 	Pathlabel::TCustomPathLabel* FPathLabel;
 	TDirViewUpdateStatusBarEvent FOnUpdateStatusBar;
 	TRenameEvent FOnBeginRename;
 	TRenameEvent FOnEndRename;
-	THistoryChangeEvent FOnHistoryChange;
+	TDirViewNotifyEvent FOnHistoryChange;
+	TDirViewNotifyEvent FOnPathChange;
 	bool FShowHiddenFiles;
 	bool FSavedSelection;
 	AnsiString FSavedSelectionFile;
@@ -262,10 +260,8 @@ private:
 	bool __fastcall GetTargetPopupMenu(void);
 	bool __fastcall GetUseDragImages(void);
 	void __fastcall SetMaxHistoryCount(int Value);
-	void __fastcall SetPathComboBox(Custompathcombobox::TCustomPathComboBox* Value);
 	void __fastcall SetPathLabel(Pathlabel::TCustomPathLabel* Value);
 	void __fastcall SetTargetPopupMenu(bool Value);
-	HIDESBASE MESSAGE void __fastcall WMPaint(Messages::TWMPaint &Message);
 	MESSAGE void __fastcall WMUserRename(Messages::TMessage &Message);
 	
 protected:
@@ -352,7 +348,7 @@ protected:
 	void __fastcall LimitHistorySize(void);
 	virtual AnsiString __fastcall MinimizePath(AnsiString Path, int Len) = 0 ;
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
-	void __fastcall PathChanged(void);
+	virtual void __fastcall PathChanged(void);
 	void __fastcall PathChanging(bool Relative);
 	virtual void __fastcall SetPath(AnsiString Value) = 0 ;
 	void __fastcall SetSortByExtension(bool Value);
@@ -361,7 +357,6 @@ protected:
 	virtual void __fastcall SetViewStyle(Comctrls::TViewStyle Value);
 	virtual void __fastcall SetWatchForChanges(bool Value);
 	virtual bool __fastcall TargetHasDropHandler(Comctrls::TListItem* Item, int Effect);
-	DYNAMIC void __fastcall UpdatePathComboBox(void);
 	DYNAMIC void __fastcall UpdatePathLabel(void);
 	DYNAMIC void __fastcall UpdateStatusBar(void);
 	virtual void __fastcall WndProc(Messages::TMessage &Message);
@@ -478,10 +473,10 @@ public:
 	__property TDDFileOperationExecutedEvent OnDDFileOperationExecuted = {read=FOnDDFileOperationExecuted, write=FOnDDFileOperationExecuted};
 	__property Dragdrop::TOnMenuPopup OnDDMenuPopup = {read=FOnDDMenuPopup, write=FOnDDMenuPopup};
 	__property TDirViewExecFileEvent OnExecFile = {read=FOnExecFile, write=FOnExecFile};
-	__property THistoryChangeEvent OnHistoryChange = {read=FOnHistoryChange, write=FOnHistoryChange};
+	__property TDirViewNotifyEvent OnHistoryChange = {read=FOnHistoryChange, write=FOnHistoryChange};
+	__property TDirViewNotifyEvent OnPathChange = {read=FOnPathChange, write=FOnPathChange};
 	__property TMatchMaskEvent OnMatchMask = {read=FOnMatchMask, write=FOnMatchMask};
 	__property TDirViewGetOverlayEvent OnGetOverlay = {read=FOnGetOverlay, write=FOnGetOverlay};
-	__property Custompathcombobox::TCustomPathComboBox* PathComboBox = {read=FPathComboBox, write=SetPathComboBox};
 	__property Pathlabel::TCustomPathLabel* PathLabel = {read=FPathLabel, write=SetPathLabel};
 	__property bool ShowHiddenFiles = {read=FShowHiddenFiles, write=SetShowHiddenFiles, default=1};
 	__property TDirViewUpdateStatusBarEvent OnUpdateStatusBar = {read=FOnUpdateStatusBar, write=FOnUpdateStatusBar};

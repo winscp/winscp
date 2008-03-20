@@ -44,6 +44,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FOnCaptureOutput = NULL;
   FOnReceive = NULL;
   FConfig = new Config();
+  memset(FConfig, 0, sizeof(*FConfig));
   FSocket = INVALID_SOCKET;
   FSocketEvent = CreateEvent(NULL, false, false, NULL);
   FFrozen = false;
@@ -54,6 +55,7 @@ __fastcall TSecureShell::~TSecureShell()
   Active = false;
   ResetConnection();
   CloseHandle(FSocketEvent);
+  ClearConfig(FConfig);
   delete FConfig;
   FConfig = NULL;
 }
@@ -119,10 +121,17 @@ const TSessionInfo & __fastcall TSecureShell::GetSessionInfo()
   return FSessionInfo;
 }
 //---------------------------------------------------------------------
+void __fastcall TSecureShell::ClearConfig(Config * cfg)
+{
+  StrDispose(cfg->remote_cmd_ptr);
+  StrDispose(cfg->remote_cmd_ptr2);
+  // clear all
+  memset(cfg, 0, sizeof(*cfg));
+}
+//---------------------------------------------------------------------
 void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
 {
-  // clear all (parameters not set below)
-  memset(cfg, 0, sizeof(*cfg));
+  ClearConfig(cfg);
 
   // user-configurable settings
   ASCOPY(cfg->host, Data->HostName);
@@ -133,6 +142,7 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
   // multi-threaded issues in putty timer list
   cfg->ping_interval = 0;
   cfg->compression = Data->Compression;
+  cfg->tryagent = Data->TryAgent;
   cfg->agentfwd = Data->AgentFwd;
   cfg->addressfamily = Data->AddressFamily;
   ASCOPY(cfg->ssh_rekey_data, Data->RekeyData);
@@ -147,6 +157,7 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
       case cipBlowfish: pcipher = CIPHER_BLOWFISH; break;
       case cipAES: pcipher = CIPHER_AES; break;
       case cipDES: pcipher = CIPHER_DES; break;
+      case cipArcfour: pcipher = CIPHER_ARCFOUR; break;
       default: assert(false);
     }
     cfg->ssh_cipherlist[c] = pcipher;
@@ -160,6 +171,9 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
       case kexDHGroup1: pkex = KEX_DHGROUP1; break;
       case kexDHGroup14: pkex = KEX_DHGROUP14; break;
       case kexDHGEx: pkex = KEX_DHGEX; break;
+      case kexGSSGroup1: pkex = KEX_GSSGROUP1; break;
+      case kexGSSGroup14: pkex = KEX_GSSGROUP14; break;
+      case kexGSSGEx: pkex = KEX_GSSGEX; break;
       default: assert(false);
     }
     cfg->ssh_kexlist[k] = pkex;
@@ -171,11 +185,16 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
   ASCOPY(cfg->keyfile.path, SPublicKeyFile);
   cfg->sshprot = Data->SshProt;
   cfg->ssh2_des_cbc = Data->Ssh2DES;
+  cfg->ssh_no_userauth = Data->SshNoUserAuth;
   cfg->try_tis_auth = Data->AuthTIS;
   cfg->try_ki_auth = Data->AuthKI;
-  cfg->try_gssapi_auth = Data->AuthGSSAPI;
-  cfg->gssapi_fwd_tgt = Data->GSSAPIFwdTGT;
-  ASCOPY(cfg->gssapi_server_realm, Data->GSSAPIServerRealm);
+  cfg->try_sspi_auth = Data->AuthGSSAPI;
+  cfg->sspi_fwd_ticket = Data->GSSAPIFwdTGT;
+  ASCOPY(cfg->service_principal_name, Data->GSSAPIServerRealm);
+  cfg->try_gsskex = Data->TryGSSKEX;
+  cfg->username_from_env = Data->UserNameFromEnvironment;
+  cfg->sspi_no_username = Data->GSSAPIServerChoosesUserName;
+  cfg->sspi_trust_dns = Data->GSSAPITrustDNS;
   cfg->change_username = Data->ChangeUsername;
 
   cfg->proxy_type = Data->ProxyMethod;
@@ -183,7 +202,14 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
   cfg->proxy_port = Data->ProxyPort;
   ASCOPY(cfg->proxy_username, Data->ProxyUsername);
   ASCOPY(cfg->proxy_password, Data->ProxyPassword);
-  ASCOPY(cfg->proxy_telnet_command, Data->ProxyTelnetCommand);
+  if (Data->ProxyMethod == pmCmd)
+  {
+    ASCOPY(cfg->proxy_telnet_command, Data->ProxyLocalCommand);
+  }
+  else
+  {
+    ASCOPY(cfg->proxy_telnet_command, Data->ProxyTelnetCommand);
+  }
   cfg->proxy_dns = Data->ProxyDNS;
   cfg->even_proxy_localhost = Data->ProxyLocalhost;
 
@@ -220,13 +246,21 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
       }
       else
       {
-        ASCOPY(cfg->remote_cmd, Data->Shell);
+        cfg->remote_cmd_ptr = StrNew(Data->Shell.c_str());
       }
     }
     else
     {
-      cfg->ssh_subsys = TRUE;
-      strcpy(cfg->remote_cmd, "sftp");
+      if (Data->SftpServer.IsEmpty())
+      {
+        cfg->ssh_subsys = TRUE;
+        strcpy(cfg->remote_cmd, "sftp");
+      }
+      else
+      {
+        cfg->ssh_subsys = FALSE;
+        cfg->remote_cmd_ptr = StrNew(Data->SftpServer.c_str());
+      }
 
       if (Data->FSProtocol != fsSFTPonly)
       {
@@ -235,23 +269,22 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
         {
           // Following forces Putty to open default shell
           // see ssh.c: do_ssh2_authconn() and ssh1_protocol()
-          cfg->remote_cmd2[0] = '\0';
+          cfg->remote_cmd_ptr2 = StrNew("\0");
         }
         else
         {
-          ASCOPY(cfg->remote_cmd2, Data->Shell);
+          cfg->remote_cmd_ptr2 = StrNew(Data->Shell.c_str());
         }
-        // Putty reads only "ptr" member for fallback
-        cfg->remote_cmd_ptr2 = cfg->remote_cmd2;
       }
-      else
+
+      if ((Data->FSProtocol == fsSFTPonly) && Data->SftpServer.IsEmpty())
       {
         // see psftp_connect() from psftp.c
         cfg->ssh_subsys2 = FALSE;
-        cfg->remote_cmd_ptr2 =
+        cfg->remote_cmd_ptr2 = StrNew(
           "test -x /usr/lib/sftp-server && exec /usr/lib/sftp-server\n"
           "test -x /usr/local/lib/sftp-server && exec /usr/local/lib/sftp-server\n"
-          "exec sftp-server";
+          "exec sftp-server");
       }
     }
   }
@@ -286,8 +319,6 @@ void __fastcall TSecureShell::Open()
     PuttyFatalError(InitError);
   }
   FUI->Information(LoadStr(STATUS_CONNECT), true);
-  /*FLoggingContext = log_init(this, (void *)FConfig);
-  FBackend->provide_logctx(FBackendHandle, FLoggingContext);*/
   Init();
 
   CheckConnection(CONNECTION_FAILED);
@@ -378,107 +409,185 @@ void __fastcall TSecureShell::PuttyLogEvent(const AnsiString & Str)
   LogEvent(Str);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::PromptUser(const AnsiString Prompt,
-  AnsiString & Response, bool IsPassword)
+bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
+  AnsiString AName, bool /*NameRequired*/,
+  AnsiString Instructions, bool /*InstructionsRequired*/,
+  TStrings * Prompts, TStrings * Results)
 {
-  bool Result;
-  if (!IsPassword)
-  {
-    assert(Prompt == "login as: ");
-    LogEvent(FORMAT("Username prompt (%s)", (Prompt)));
+  assert(Prompts->Count > 0);
+  assert(Results->Count == Prompts->Count);
 
+  TPromptKind PromptKind;
+  // beware of changing order
+  static const TPuttyTranslation NameTranslation[] = {
+    { "SSH login name", USERNAME_TITLE },
+    { "SSH key passphrase", PASSPHRASE_TITLE },
+    { "SSH TIS authentication", SERVER_PROMPT_TITLE },
+    { "SSH CryptoCard authentication", SERVER_PROMPT_TITLE },
+    { "SSH server: %", SERVER_PROMPT_TITLE2 },
+    { "SSH server authentication", SERVER_PROMPT_TITLE },
+    { "SSH password", PASSWORD_TITLE },
+    { "New SSH password", NEW_PASSWORD_TITLE },
+  };
+
+  AnsiString Name = AName;
+  int Index = TranslatePuttyMessage(NameTranslation, LENOF(NameTranslation), Name);
+
+  const TPuttyTranslation * InstructionTranslation = NULL;
+  const TPuttyTranslation * PromptTranslation = NULL;
+  size_t PromptTranslationCount = 1;
+
+  if (Index == 0) // username
+  {
+    static const TPuttyTranslation UsernamePromptTranslation[] = {
+      { "login as: ", USERNAME_PROMPT2 },
+    };
+
+    PromptTranslation = UsernamePromptTranslation;
+    PromptKind = pkUserName;
+  }
+  else if (Index == 1) // passhrase
+  {
+    static const TPuttyTranslation PassphrasePromptTranslation[] = {
+      { "Passphrase for key \"%s\": ", PROMPT_KEY_PASSPHRASE },
+    };
+
+    PromptTranslation = PassphrasePromptTranslation;
+    PromptKind = pkPassphrase;
+  }
+  else if (Index == 2) // TIS
+  {
+    static const TPuttyTranslation TISInstructionTranslation[] = {
+      { "Using TIS authentication.%", TIS_INSTRUCTION },
+    };
+    static const TPuttyTranslation TISPromptTranslation[] = {
+      { "Response: ", PROMPT_PROMPT },
+    };
+
+    InstructionTranslation = TISInstructionTranslation;
+    PromptTranslation = TISPromptTranslation;
+    PromptKind = pkTIS;
+  }
+  else if (Index == 3) // CryptoCard
+  {
+    static const TPuttyTranslation CryptoCardInstructionTranslation[] = {
+      { "Using CryptoCard authentication.%", CRYPTOCARD_INSTRUCTION },
+    };
+    static const TPuttyTranslation CryptoCardPromptTranslation[] = {
+      { "Response: ", PROMPT_PROMPT },
+    };
+
+    InstructionTranslation = CryptoCardInstructionTranslation;
+    PromptTranslation = CryptoCardPromptTranslation;
+    PromptKind = pkCryptoCard;
+  }
+  else if ((Index == 4) || (Index == 5))
+  {
+    static const TPuttyTranslation KeybInteractiveInstructionTranslation[] = {
+      { "Using keyboard-interactive authentication.%", KEYBINTER_INSTRUCTION },
+    };
+
+    InstructionTranslation = KeybInteractiveInstructionTranslation;
+    PromptKind = pkKeybInteractive;
+  }
+  else if (Index == 6)
+  {
+    assert(Prompts->Count == 1);
+    Prompts->Strings[0] = LoadStr(PASSWORD_PROMPT);
+    PromptKind = pkPassword;
+  }
+  else if (Index == 7)
+  {
+    static const TPuttyTranslation NewPasswordPromptTranslation[] = {
+      { "Current password (blank for previously entered password): ", NEW_PASSWORD_CURRENT_PROMPT },
+      { "Enter new password: ", NEW_PASSWORD_NEW_PROMPT },
+      { "Confirm new password: ", NEW_PASSWORD_CONFIRM_PROMPT },
+    };
+    PromptTranslation = NewPasswordPromptTranslation;
+    PromptTranslationCount = LENOF(NewPasswordPromptTranslation);
+    PromptKind = pkNewPassword;
+  }
+  else
+  {
+    PromptKind = pkPrompt;
+    assert(false);
+  }
+
+  LogEvent(FORMAT("Prompt (%d, %s, %s, %s)", (PromptKind, AName, Instructions, Prompts->Strings[0])));
+
+  Name = Name.Trim();
+
+  if (InstructionTranslation != NULL)
+  {
+    TranslatePuttyMessage(InstructionTranslation, 1, Instructions);
+  }
+
+  // some servers add leading blank line to make the prompt look prettier
+  // on terminal console
+  Instructions = Instructions.Trim();
+
+  for (int Index = 0; Index < Prompts->Count; Index++)
+  {
+    AnsiString Prompt = Prompts->Strings[Index];
+    if (PromptTranslation != NULL)
+    {
+      TranslatePuttyMessage(PromptTranslation, PromptTranslationCount, Prompt);
+    }
+    // some servers add leading blank line to make the prompt look prettier
+    // on terminal console
+    Prompts->Strings[Index] = Prompt.Trim();
+  }
+
+  bool Result = false;
+  if (PromptKind == pkUserName)
+  {
     if (FSessionData->AuthGSSAPI)
     {
       // use empty username if no username was filled on login dialog
       // and GSSAPI auth is enabled, hence there's chance that the server can
-      //  deduce the username otherwise
-      Response = "";
+      // deduce the username otherwise
+      Results->Strings[0] = "";
       Result = true;
     }
-    else
+  }
+  else if ((PromptKind == pkTIS) || (PromptKind == pkCryptoCard) ||
+      (PromptKind == pkKeybInteractive))
+  {
+    if (FSessionData->AuthKIPassword && !FSessionData->Password.IsEmpty() &&
+        !FStoredPasswordTriedForKI && (Prompts->Count == 1) &&
+        !bool(Prompts->Objects[0]))
     {
-      Result = FUI->PromptUser(FSessionData,
-        FMTLOAD(USERNAME_PROMPT, (FSessionData->SessionName)),
-        pkPrompt, Response);
-      if (Result)
-      {
-        FUserName = Response;
-      }
+      LogEvent("Using stored password.");
+      FUI->Information(LoadStr(AUTH_PASSWORD), false);
+      Result = true;
+      Results->Strings[0] = FSessionData->Password;
+      FStoredPasswordTriedForKI = true;
     }
   }
-  else
+  else if (PromptKind == pkPassword)
   {
-    if (Prompt.Pos("Passphrase for key ") == 1)
+    if (!FSessionData->Password.IsEmpty() && !FStoredPasswordTried)
     {
-      AnsiString Key(Prompt);
-      int P = Prompt.Pos("\"");
-      if (P > 0)
-      {
-        Key.Delete(1, P);
-        P = Key.LastDelimiter("\"");
-        if (P > 0)
-        {
-          Key.SetLength(P - 1);
-        }
-      }
-
-      LogEvent(FORMAT("Passphrase prompt (%s)", (Prompt)));
-
-      Result = FUI->PromptUser(FSessionData, FMTLOAD(PROMPT_KEY_PASSPHRASE, (Key)),
-        pkPassphrase, Response);
+      LogEvent("Using stored password.");
+      FUI->Information(LoadStr(AUTH_PASSWORD), false);
+      Result = true;
+      Results->Strings[0] = FSessionData->Password;
+      FStoredPasswordTried = true;
     }
-    else if (Prompt.Pos("'s password: "))
-    {
-      LogEvent(FORMAT("Session password prompt (%s)", (Prompt)));
+  }
 
-      if (!FSessionData->Password.IsEmpty() && !FStoredPasswordTried)
+  if (!Result)
+  {
+    Result = FUI->PromptUser(FSessionData,
+      PromptKind, Name, Instructions, Prompts, Results);
+
+    if (Result)
+    {
+      if ((PromptKind == pkUserName) && (Prompts->Count == 1))
       {
-        LogEvent("Using stored password.");
-        FUI->Information(LoadStr(AUTH_PASSWORD), false);
-        Result = true;
-        Response = FSessionData->Password;
-        FStoredPasswordTried = true;
-      }
-      else
-      {
-        Result = FUI->PromptUser(FSessionData,
-          FMTLOAD(PROMPT_SESSION_PASSWORD, (FSessionData->SessionName)),
-          pkPassword, Response);
+        FUserName = Results->Strings[0];
       }
     }
-    else
-    {
-      // in other cases we assume TIS/Cryptocard/keyboard-interactive authentification prompt
-      LogEvent(FORMAT("%s prompt from server", (Prompt)));
-
-      if (FSessionData->AuthKIPassword && !FSessionData->Password.IsEmpty() &&
-          !FStoredPasswordTriedForKI)
-      {
-        LogEvent("Using stored password.");
-        FUI->Information(LoadStr(AUTH_PASSWORD), false);
-        Result = true;
-        Response = FSessionData->Password;
-        FStoredPasswordTriedForKI = true;
-      }
-      else
-      {
-        static const AnsiString ResponseSuffix("\r\nResponse: ");
-
-        // Strip Cryptocard/TIS "Response" suffix
-        AnsiString UserPrompt = Prompt;
-        if (UserPrompt.SubString(UserPrompt.Length() - ResponseSuffix.Length() + 1,
-              ResponseSuffix.Length()) == ResponseSuffix)
-        {
-          UserPrompt.SetLength(UserPrompt.Length() - ResponseSuffix.Length());
-        }
-
-        // some servers add leading blank line to make the prompt look prettier
-        // on terminal console
-        UserPrompt = UserPrompt.Trim();
-
-        Result = FUI->PromptUser(FSessionData, UserPrompt, pkServerPrompt, Response);
-      }
-    };
   }
 
   return Result;
@@ -494,8 +603,15 @@ void __fastcall TSecureShell::GotHostKey()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::DumpCWrite()
+void __fastcall TSecureShell::CWrite(const char * Data, int Length)
 {
+  // some messages to stderr may indicate that something has changed with the
+  // session, so reset the session info
+  ResetSessionInfo();
+
+  // We send only whole line at once, so we have to cache incoming data
+  FCWriteTemp += DeleteChar(AnsiString(Data, Length), '\r');
+
   AnsiString Line;
   // Do we have at least one complete line in std error cache?
   while (FCWriteTemp.Pos("\n") > 0)
@@ -506,42 +622,12 @@ void __fastcall TSecureShell::DumpCWrite()
 
     if (FAuthenticating)
     {
-      // No point trying to translate message coming from server
-      if (!FCWriteTempUntrusted)
-      {
-        TranslateAuthenticationMessage(Line);
-      }
+      TranslateAuthenticationMessage(Line);
       FAuthenticationLog += (FAuthenticationLog.IsEmpty() ? "" : "\n") + Line;
     }
 
-    // Untrusted means generally that it comes from the server,
-    // do not use such a output as "information" for end user
-    if (!FCWriteTempUntrusted)
-    {
-      FUI->Information(Line, false);
-    }
+    FUI->Information(Line, false);
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TSecureShell::CWrite(const char * Data, int Length, bool Untrusted)
-{
-  // some messages to stderr may indicate that something has changed with the
-  // session, so reset the session info
-  ResetSessionInfo();
-
-  // if data coming from server were not ended with new line,
-  // dump rest of the line, once trusted output arrive
-  if (!FCWriteTemp.IsEmpty() &&
-      (FCWriteTempUntrusted != Untrusted))
-  {
-    FCWriteTemp += '\n';
-    DumpCWrite();
-  }
-
-  // We send only whole line at once, so we have to cache incoming data
-  FCWriteTemp += DeleteChar(AnsiString(Data, Length), '\r');
-  FCWriteTempUntrusted = Untrusted;
-  DumpCWrite();
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::RegisterReceiveHandler(TNotifyEvent Handler)
@@ -808,10 +894,10 @@ void __fastcall TSecureShell::SendLine(AnsiString Line)
   FLog->Add(llInput, Line);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::TranslatePuttyMessage(
+int __fastcall TSecureShell::TranslatePuttyMessage(
   const TPuttyTranslation * Translation, size_t Count, AnsiString & Message)
 {
-  bool Result = false;
+  int Result = -1;
   for (unsigned int Index = 0; Index < Count; Index++)
   {
     const char * Original = Translation[Index].Original;
@@ -821,7 +907,7 @@ bool __fastcall TSecureShell::TranslatePuttyMessage(
       if (strcmp(Message.c_str(), Original) == 0)
       {
         Message = LoadStr(Translation[Index].Translation);
-        Result = true;
+        Result = int(Index);
         break;
       }
     }
@@ -836,7 +922,7 @@ bool __fastcall TSecureShell::TranslatePuttyMessage(
       {
         Message = FMTLOAD(Translation[Index].Translation,
           (Message.SubString(PrefixLen + 1, Message.Length() - PrefixLen - SuffixLen).TrimRight()));
-        Result = true;
+        Result = int(Index);
         break;
       }
     }
@@ -844,11 +930,11 @@ bool __fastcall TSecureShell::TranslatePuttyMessage(
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::TranslateAuthenticationMessage(AnsiString & Message)
+int __fastcall TSecureShell::TranslateAuthenticationMessage(AnsiString & Message)
 {
   static const TPuttyTranslation Translation[] = {
     { "Using username \"%\".", AUTH_TRANSL_USERNAME },
-    { "Using keyboard-interactive authentication.", AUTH_TRANSL_KEYB_INTER },
+    { "Using keyboard-interactive authentication.", AUTH_TRANSL_KEYB_INTER }, // not used anymore
     { "Authenticating with public key \"%\" from agent", AUTH_TRANSL_PUBLIC_KEY_AGENT },
     { "Authenticating with public key \"%\"", AUTH_TRANSL_PUBLIC_KEY },
     { "Authenticated using RSA key \"%\" from agent", AUTH_TRANSL_PUBLIC_KEY_AGENT },
@@ -937,7 +1023,7 @@ void __fastcall TSecureShell::FatalError(Exception * E, AnsiString Msg)
   SSH_FATAL_ERROR_EXT(E, Msg);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TSecureShell::TranslateErrorMessage(AnsiString & Message)
+int __fastcall TSecureShell::TranslateErrorMessage(AnsiString & Message)
 {
   static const TPuttyTranslation Translation[] = {
     { "Server unexpectedly closed network connection", UNEXPECTED_CLOSE_ERROR },
@@ -1465,8 +1551,8 @@ TCipher __fastcall TSecureShell::FuncToSsh1Cipher(const void * Cipher)
 TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher)
 {
   const ssh2_ciphers *CipherFuncs[] =
-    {&ssh2_3des, &ssh2_des, &ssh2_aes, &ssh2_blowfish};
-  const TCipher TCiphers[] = {cip3DES, cipDES, cipAES, cipBlowfish};
+    {&ssh2_3des, &ssh2_des, &ssh2_aes, &ssh2_blowfish, &ssh2_arcfour};
+  const TCipher TCiphers[] = {cip3DES, cipDES, cipAES, cipBlowfish, cipArcfour};
   assert(LENOF(CipherFuncs) == LENOF(TCiphers));
   TCipher Result = cipWarn;
 
@@ -1485,10 +1571,23 @@ TCipher __fastcall TSecureShell::FuncToSsh2Cipher(const void * Cipher)
   return Result;
 }
 //---------------------------------------------------------------------------
+struct TClipboardHandler
+{
+  AnsiString Text;
+
+  void __fastcall Copy(TObject * /*Sender*/)
+  {
+    CopyToClipboard(Text);
+  }
+};
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::VerifyHostKey(AnsiString Host, int Port,
   const AnsiString KeyType, AnsiString KeyStr, const AnsiString Fingerprint)
 {
   GotHostKey();
+
+  char Delimiter = ';';
+  assert(KeyStr.Pos(Delimiter) == 0);
 
   if (FSessionData->Tunnel)
   {
@@ -1496,14 +1595,45 @@ void __fastcall TSecureShell::VerifyHostKey(AnsiString Host, int Port,
     Port = FSessionData->OrigPortNumber;
   }
 
-  int Result;
-
   FSessionInfo.HostKeyFingerprint = Fingerprint;
 
-  // Verify the key against the registry.
-  Result = verify_host_key(Host.c_str(), Port, KeyType.c_str(), KeyStr.c_str());
+  bool Result = false;
 
-  if (Result != 0)
+  AnsiString Buf = FSessionData->HostKey;
+  while (!Result && !Buf.IsEmpty())
+  {
+    AnsiString ExpectedKey = CutToChar(Buf, Delimiter, false);
+    if (ExpectedKey == Fingerprint)
+    {
+      Result = true;
+    }
+  }
+
+  AnsiString StoredKeys;
+  if (!Result)
+  {
+    StoredKeys.SetLength(10240);
+    if (retrieve_host_key(Host.c_str(), Port, KeyType.c_str(),
+          StoredKeys.c_str(), StoredKeys.Length()) == 0)
+    {
+      PackStr(StoredKeys);
+      AnsiString Buf = StoredKeys;
+      while (!Result && !Buf.IsEmpty())
+      {
+        AnsiString StoredKey = CutToChar(Buf, Delimiter, false);
+        if (StoredKey == KeyStr)
+        {
+          Result = true;
+        }
+      }
+    }
+    else
+    {
+      StoredKeys = "";
+    }
+  }
+
+  if (!Result)
   {
     if (Configuration->DisableAcceptingHostKeys)
     {
@@ -1511,13 +1641,46 @@ void __fastcall TSecureShell::VerifyHostKey(AnsiString Host, int Port,
     }
     else
     {
+      TClipboardHandler ClipboardHandler;
+      ClipboardHandler.Text = Fingerprint;
+
+      bool Unknown = StoredKeys.IsEmpty();
+
+      int Answers;
+      int AliasesCount;
+      TQueryButtonAlias Aliases[3];
+      Aliases[0].Button = qaRetry;
+      Aliases[0].Alias = LoadStr(COPY_KEY_BUTTON);
+      Aliases[0].OnClick = &ClipboardHandler.Copy;
+      Answers = qaYes | qaCancel | qaRetry;
+      AliasesCount = 1;
+      if (!Unknown)
+      {
+        Aliases[1].Button = qaYes;
+        Aliases[1].Alias = LoadStr(UPDATE_KEY_BUTTON);
+        Aliases[2].Button = qaOK;
+        Aliases[2].Alias = LoadStr(ADD_KEY_BUTTON);
+        AliasesCount += 2;
+        Answers |= qaSkip | qaOK;
+      }
+      else
+      {
+        Answers |= qaNo;
+      }
+
       TQueryParams Params;
-      Params.HelpKeyword = (Result == 1 ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
+      Params.HelpKeyword = (Unknown ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
+      Params.Aliases = Aliases;
+      Params.AliasesCount = AliasesCount;
       int R = FUI->QueryUser(
-        FMTLOAD((Result == 1 ? UNKNOWN_KEY2 : DIFFERENT_KEY2), (KeyType, Fingerprint)),
-        NULL, qaYes | qaNo | qaCancel, &Params, qtWarning);
+        FMTLOAD((Unknown ? UNKNOWN_KEY2 : DIFFERENT_KEY3), (KeyType, Fingerprint)),
+        NULL, Answers, &Params, qtWarning);
 
       switch (R) {
+        case qaOK:
+          assert(!Unknown);
+          KeyStr = (StoredKeys + Delimiter + KeyStr);
+          // fall thru
         case qaYes:
           store_host_key(Host.c_str(), Port, KeyType.c_str(), KeyStr.c_str());
           break;

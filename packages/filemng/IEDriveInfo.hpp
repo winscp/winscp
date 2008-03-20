@@ -30,6 +30,9 @@ namespace Iedriveinfo
 //-- type declarations -------------------------------------------------------
 typedef char TDrive;
 
+struct TDriveInfoRec;
+typedef TDriveInfoRec *PDriveInfoRec;
+
 struct TDriveInfoRec
 {
 	_ITEMIDLIST *PIDL;
@@ -48,7 +51,25 @@ struct TDriveInfoRec
 	unsigned FileSystemFlags;
 } ;
 
+typedef Shortint TSpecialFolder;
+
+struct TSpecialFolderRec;
+typedef TSpecialFolderRec *PSpecialFolderRec;
+
+#pragma pack(push, 4)
+struct TSpecialFolderRec
+{
+	bool Valid;
+	AnsiString Location;
+	AnsiString DisplayName;
+	int ImageIndex;
+	_ITEMIDLIST *PIDL;
+} ;
+#pragma pack(pop)
+
 typedef TDriveInfoRec IEDriveInfo__2[26];
+
+typedef TSpecialFolderRec IEDriveInfo__3[28];
 
 class DELPHICLASS TDriveInfo;
 class PASCALIMPLEMENTATION TDriveInfo : public System::TObject 
@@ -56,16 +77,19 @@ class PASCALIMPLEMENTATION TDriveInfo : public System::TObject
 	typedef System::TObject inherited;
 	
 public:
-	TDriveInfoRec operator[](char Drive) { return Data[Drive]; }
+	PDriveInfoRec operator[](char Drive) { return Data[Drive]; }
 	
 private:
 	TDriveInfoRec FData[26];
 	unsigned FNoDrives;
 	_di_IShellFolder FDesktop;
-	TDriveInfoRec __fastcall GetData(char Drive);
+	TSpecialFolderRec FFolders[28];
+	PDriveInfoRec __fastcall GetData(char Drive);
+	PSpecialFolderRec __fastcall GetFolder(TSpecialFolder Folder);
 	
 public:
-	__property TDriveInfoRec Data[char Drive] = {read=GetData/*, default*/};
+	__property PDriveInfoRec Data[char Drive] = {read=GetData/*, default*/};
+	__property PSpecialFolderRec SpecialFolder[TSpecialFolder Folder] = {read=GetFolder};
 	int __fastcall GetImageIndex(char Drive);
 	AnsiString __fastcall GetDisplayName(char Drive);
 	AnsiString __fastcall GetPrettyName(char Drive);
@@ -86,12 +110,15 @@ static const Shortint dsAll = 0x7;
 static const char FirstDrive = '\x41';
 static const char FirstFixedDrive = '\x43';
 static const char LastDrive = '\x5a';
+static const Shortint FirstSpecialFolder = 0x0;
+static const Shortint LastSpecialFolder = 0x1b;
 extern PACKAGE TDriveInfo* DriveInfo;
 extern PACKAGE System::ResourceString _ErrorInvalidDrive;
 #define Iedriveinfo_ErrorInvalidDrive System::LoadResourceString(&Iedriveinfo::_ErrorInvalidDrive)
 extern PACKAGE AnsiString __fastcall GetShellFileName(const AnsiString Name)/* overload */;
 extern PACKAGE AnsiString __fastcall GetShellFileName(Shlobj::PItemIDList PIDL)/* overload */;
 extern PACKAGE AnsiString __fastcall GetNetWorkName(char Drive);
+extern PACKAGE bool __fastcall GetNetWorkConnected(char Drive);
 
 }	/* namespace Iedriveinfo */
 using namespace Iedriveinfo;

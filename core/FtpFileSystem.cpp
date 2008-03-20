@@ -213,6 +213,8 @@ void __fastcall TFTPFileSystem::Open()
   FSessionInfo.ProtocolBaseName = "FTP";
   FSessionInfo.ProtocolName = FSessionInfo.ProtocolBaseName;
 
+  FLastDataSent = Now();
+
   FMultineResponse = false;
 
   // initialize FZAPI on the first connect only
@@ -260,7 +262,7 @@ void __fastcall TFTPFileSystem::Open()
   int Pasv = (Data->FtpPasvMode ? 1 : 2);
   int TimeZoneOffset = int(double(Data->TimeDifference) * 24 * 60);
   int UTF8 = 0;
-  switch (Data->SFTPBug[sbUtf])
+  switch (Data->Utf)
   {
     case asOn:
       UTF8 = 1;
@@ -298,9 +300,8 @@ void __fastcall TFTPFileSystem::Open()
         PromptedForCredentials = true;
       }
 
-      if (!FTerminal->PromptUser(Data,
-            FMTLOAD(USERNAME_PROMPT, (Data->SessionName)),
-            pkPrompt, UserName))
+      if (!FTerminal->PromptUser(Data, pkUserName, LoadStr(USERNAME_TITLE), "",
+            LoadStr(USERNAME_PROMPT2), true, 0, UserName))
       {
         FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
       }
@@ -324,9 +325,8 @@ void __fastcall TFTPFileSystem::Open()
 
       // on retry ask for new password
       Password = "";
-      if (!FTerminal->PromptUser(Data,
-            FMTLOAD(PROMPT_SESSION_PASSWORD, (Data->SessionName)),
-            pkPassword, Password))
+      if (!FTerminal->PromptUser(Data, pkPassword, LoadStr(PASSWORD_TITLE), "",
+            LoadStr(PASSWORD_PROMPT), false, 0, Password))
       {
         FTerminal->FatalError(NULL, LoadStr(AUTHENTICATION_FAILED));
       }
@@ -387,13 +387,45 @@ bool __fastcall TFTPFileSystem::GetActive()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Idle()
 {
-  if (FActive && !FWaitingForReply)
+  if (FActive)
   {
-    unsigned int Reply = PoolForReply();
-    if (Reply != 0)
+    if (!FWaitingForReply)
     {
-      assert(FLAGSET(Reply, TFileZillaIntf::REPLY_DISCONNECTED));
-      GotReply(Reply);
+      unsigned int Reply = PoolForReply();
+      if (Reply != 0)
+      {
+        assert(FLAGSET(Reply, TFileZillaIntf::REPLY_DISCONNECTED));
+        GotReply(Reply);
+      }
+    }
+
+    // Keep session alive
+    if ((FTerminal->SessionData->FtpPingType != ptOff) &&
+        (Now() - FLastDataSent > FTerminal->SessionData->FtpPingIntervalDT))
+    {
+      FLastDataSent = Now();
+
+      char* Commands[] = { "PWD", "REST 0", "TYPE A", "TYPE I" };
+      int Choice = random(LENOF(Commands) + 1);
+      if (Choice == 0)
+      {
+        TRemoteDirectory * Files = new TRemoteDirectory(FTerminal);
+        try
+        {
+          Files->Directory = CurrentDirectory;
+          DoReadDirectory(Files);
+        }
+        __finally
+        {
+          delete Files;
+        }
+      }
+      else
+      {
+        FFileZillaIntf->CustomCommand(Commands[Choice - 1]);
+
+        GotReply(WaitForReply(), 0);
+      }
     }
   }
 }
@@ -619,6 +651,10 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(AnsiString & FileName,
     {
       Answer = (CanResume && AutoResume ? qaRetry : qaYes);
     }
+    else if (!FTerminal->Configuration->ConfirmOverwriting)
+    {
+      Answer = qaYes;
+    }
     else
     {
       // retry = "resume"
@@ -660,8 +696,8 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(AnsiString & FileName,
 
       // rename
       case qaIgnore:
-        if (FTerminal->PromptUser(FTerminal->SessionData, LoadStr(RENAME_PROMPT),
-              pkPrompt, FileName))
+        if (FTerminal->PromptUser(FTerminal->SessionData, pkPrompt,
+              LoadStr(RENAME_TITLE), "", LoadStr(RENAME_PROMPT2), true, 0, FileName))
         {
           OverwriteMode = omOverwrite;
         }
@@ -764,6 +800,11 @@ void __fastcall TFTPFileSystem::FileTransferProgress(__int64 TransferSize,
     FFileTransferAbort = ftaCancel;
     FFileZillaIntf->Cancel();
   }
+
+  if (FFileTransferCPSLimit != OperationProgress->CPSLimit)
+  {
+    FFileTransferCPSLimit = OperationProgress->CPSLimit;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::FileTransfer(const AnsiString & FileName,
@@ -800,6 +841,7 @@ void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
         SinkRobust(AbsolutePath(FileName), File, FullTargetDir, CopyParam, Params,
           OperationProgress, tfFirstLevel);
         Success = true;
+        FLastDataSent = Now();
       }
       catch(EScpSkipFile & E)
       {
@@ -960,6 +1002,7 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
     FIgnoreFileList = true;
     try
     {
+      FFileTransferCPSLimit = OperationProgress->CPSLimit;
       FFileTransferPreserveTime = CopyParam->PreserveTime;
       UserData.FileName = DestFileName;
       UserData.Params = Params;
@@ -999,8 +1042,8 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
     // If file is directory, do not delete it recursively, because it should be
     // empty already. If not, it should not be deleted (some files were
     // skipped or some new files were copied to it, while we were downloading)
-    bool Recursive = false;
-    FTerminal->DeleteFile(FileName, File, &Recursive);
+    int Params = dfNoRecursive;
+    FTerminal->DeleteFile(FileName, File, &Params);
   }
 }
 //---------------------------------------------------------------------------
@@ -1067,6 +1110,7 @@ void __fastcall TFTPFileSystem::CopyToRemote(TStrings * FilesToCopy,
         SourceRobust(FileName, FullTargetDir, CopyParam, Params, OperationProgress,
           tfFirstLevel);
         Success = true;
+        FLastDataSent = Now();
       }
       catch(EScpSkipFile & E)
       {
@@ -1181,6 +1225,7 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
     FIgnoreFileList = true;
     try
     {
+      FFileTransferCPSLimit = OperationProgress->CPSLimit;
       // not supports for uploads anyway
       FFileTransferPreserveTime = CopyParam->PreserveTime;
       // not used for uploads
@@ -1324,7 +1369,7 @@ void __fastcall TFTPFileSystem::CreateLink(const AnsiString /*FileName*/,
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DeleteFile(const AnsiString AFileName,
-  const TRemoteFile * File, bool Recursive)
+  const TRemoteFile * File, int Params)
 {
   AnsiString FileName = AbsolutePath(AFileName);
   AnsiString FileNameOnly = UnixExtractFileName(FileName);
@@ -1332,9 +1377,9 @@ void __fastcall TFTPFileSystem::DeleteFile(const AnsiString AFileName,
 
   bool Dir = (File != NULL) && File->IsDirectory && !File->IsSymLink;
 
-  if (Dir && Recursive)
+  if (Dir && FLAGCLEAR(Params, dfNoRecursive))
   {
-    FTerminal->ProcessDirectory(FileName, FTerminal->DeleteFile, &Recursive);
+    FTerminal->ProcessDirectory(FileName, FTerminal->DeleteFile, &Params);
   }
 
   assert(!FIgnoreFileList);
@@ -1372,13 +1417,33 @@ void __fastcall TFTPFileSystem::CustomCommandOnFile(const AnsiString /*FileName*
   const TRemoteFile * /*File*/, AnsiString /*Command*/, int /*Params*/,
   TCaptureOutputEvent /*OutputEvent*/)
 {
-  // if ever implemeneted, do not forget to add EnsureLocation,
+  // if ever implemented, do not forget to add EnsureLocation,
   // see AnyCommand for a reason why
   assert(false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoStartup()
 {
+  TStrings * PostLoginCommands = new TStringList();
+  try
+  {
+    PostLoginCommands->Text = FTerminal->SessionData->PostLoginCommands;
+    for (int Index = 0; Index < PostLoginCommands->Count; Index++)
+    {
+      AnsiString Command = PostLoginCommands->Strings[Index];
+      if (!Command.IsEmpty())
+      {
+        FFileZillaIntf->CustomCommand(Command.c_str());
+
+        GotReply(WaitForReply(), REPLY_2XX_CODE);
+      }
+    }
+  }
+  __finally
+  {
+    delete PostLoginCommands;
+  }
+
   // retrieve initialize working directory to save it as home directory
   ReadCurrentDirectory();
   FHomeDirectory = FCurrentDirectory;
@@ -1493,7 +1558,7 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 {
   FileList->Clear();
   // FZAPI does not list parent directory, add it
-  FileList->Add(new TRemoteParentDirectory());
+  FileList->AddFile(new TRemoteParentDirectory(FTerminal));
 
   FLastReadDirectoryProgress = 0;
 
@@ -1508,6 +1573,8 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
     FFileZillaIntf->List(Directory.c_str());
 
     GotReply(WaitForReply(), REPLY_2XX_CODE | REPLY_ALLOW_CANCEL);
+
+    FLastDataSent = Now();
   }
   __finally
   {
@@ -1766,6 +1833,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
           break;
 
         case pmTelnet:
+        case pmCmd:
         default:
           assert(false);
           Result = 0; // PROXYTYPE_NOPROXY;
@@ -1826,16 +1894,28 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_KEEPALIVE:
-      Result = ((Data->FtpPingType != ptOff) ? TRUE : FALSE);
+      Result = FALSE;
       break;
 
     case OPTION_INTERVALLOW:
     case OPTION_INTERVALHIGH:
-      Result = Data->FtpPingInterval;
+      // should never get here OPTION_KEEPALIVE being FALSE
+      assert(false);
+      Result = 60;
       break;
 
     case OPTION_VMSALLREVISIONS:
       Result = FALSE;
+      break;
+
+    case OPTION_SPEEDLIMIT_DOWNLOAD_TYPE:
+    case OPTION_SPEEDLIMIT_UPLOAD_TYPE:
+      Result = (FFileTransferCPSLimit == 0 ? 0 : 1);
+      break;
+
+    case OPTION_SPEEDLIMIT_DOWNLOAD_VALUE:
+    case OPTION_SPEEDLIMIT_UPLOAD_VALUE:
+      Result = (FFileTransferCPSLimit / 1024); // FZAPI expects KiB/s
       break;
 
     case OPTION_MPEXT_SHOWHIDDEN:
@@ -2340,10 +2420,6 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
     {
       // on retry, use the same answer as on the first attempt
       RequestResult = UserData.OverwriteResult;
-    }
-    else if (!FTerminal->Configuration->ConfirmOverwriting)
-    {
-      RequestResult = TFileZillaIntf::FILEEXISTS_OVERWRITE;
     }
     else
     {

@@ -6,7 +6,7 @@ object PreferencesDialog: TPreferencesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Preferences'
-  ClientHeight = 469
+  ClientHeight = 400
   ClientWidth = 513
   Color = clBtnFace
   ParentFont = True
@@ -16,12 +16,12 @@ object PreferencesDialog: TPreferencesDialog
   OnShow = FormShow
   DesignSize = (
     513
-    469)
+    400)
   PixelsPerInch = 96
   TextHeight = 13
   object OKButton: TButton
     Left = 250
-    Top = 438
+    Top = 369
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -32,7 +32,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object CloseButton: TButton
     Left = 338
-    Top = 438
+    Top = 369
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -45,7 +45,7 @@ object PreferencesDialog: TPreferencesDialog
     Left = 0
     Top = 0
     Width = 513
-    Height = 432
+    Height = 363
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
@@ -54,12 +54,11 @@ object PreferencesDialog: TPreferencesDialog
       Left = 132
       Top = 0
       Width = 381
-      Height = 432
+      Height = 363
       ActivePage = PreferencesSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
-      TabIndex = 0
       TabOrder = 1
       TabStop = False
       OnChange = PageControlChange
@@ -70,6 +69,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_environment'
         Caption = 'Gen'
         ImageIndex = 2
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -77,107 +77,117 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 357
-          Height = 233
+          Height = 256
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Confirmations'
           TabOrder = 0
           DesignSize = (
             357
-            233)
+            256)
           object ConfirmOverwritingCheck: TCheckBox
-            Left = 16
-            Top = 21
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = '&Overwriting of files'
-            TabOrder = 0
-            OnClick = ControlChange
-          end
-          object ConfirmDeletingCheck: TCheckBox
             Left = 16
             Top = 44
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Deleting of files (recommended)'
+            Caption = '&Overwriting of files'
             TabOrder = 1
             OnClick = ControlChange
           end
-          object ConfirmClosingSessionCheck: TCheckBox
-            Left = 16
-            Top = 113
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Exiting appli&cation'
-            TabOrder = 4
-            OnClick = ControlChange
-          end
-          object DDTransferConfirmationCheck: TCheckBox
-            Left = 16
-            Top = 159
-            Width = 333
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'D&rag && drop operations'
-            TabOrder = 6
-            OnClick = ControlChange
-          end
-          object ContinueOnErrorCheck: TCheckBox
-            Left = 16
-            Top = 205
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Continue on &error (advanced users)'
-            TabOrder = 8
-            OnClick = ControlChange
-          end
-          object ConfirmExitOnCompletionCheck: TCheckBox
-            Left = 16
-            Top = 136
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Exiting application on o&peration completion'
-            TabOrder = 5
-            OnClick = ControlChange
-          end
-          object ConfirmResumeCheck: TCheckBox
-            Left = 16
-            Top = 90
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = '&Transfer resuming'
-            TabOrder = 3
-            OnClick = ControlChange
-          end
-          object ConfirmCommandSessionCheck: TCheckBox
-            Left = 16
-            Top = 182
-            Width = 325
-            Height = 17
-            Anchors = [akLeft, akTop, akRight]
-            Caption = 'Opening separate &shell session'
-            TabOrder = 7
-            OnClick = ControlChange
-          end
-          object ConfirmRecyclingCheck: TCheckBox
+          object ConfirmDeletingCheck: TCheckBox
             Left = 16
             Top = 67
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = '&Moving files to Recycle bin'
+            Caption = '&Deleting of files (recommended)'
             TabOrder = 2
+            OnClick = ControlChange
+          end
+          object ConfirmClosingSessionCheck: TCheckBox
+            Left = 16
+            Top = 136
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Exiting appli&cation'
+            TabOrder = 5
+            OnClick = ControlChange
+          end
+          object DDTransferConfirmationCheck: TCheckBox
+            Left = 16
+            Top = 182
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'D&rag && drop operations'
+            TabOrder = 7
+            OnClick = ControlChange
+          end
+          object ContinueOnErrorCheck: TCheckBox
+            Left = 16
+            Top = 228
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Continue on &error (advanced users)'
+            TabOrder = 9
+            OnClick = ControlChange
+          end
+          object ConfirmExitOnCompletionCheck: TCheckBox
+            Left = 16
+            Top = 159
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Exiting application on o&peration completion'
+            TabOrder = 6
+            OnClick = ControlChange
+          end
+          object ConfirmResumeCheck: TCheckBox
+            Left = 16
+            Top = 113
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Trans&fer resuming'
+            TabOrder = 4
+            OnClick = ControlChange
+          end
+          object ConfirmCommandSessionCheck: TCheckBox
+            Left = 16
+            Top = 205
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Opening separate &shell session'
+            TabOrder = 8
+            OnClick = ControlChange
+          end
+          object ConfirmRecyclingCheck: TCheckBox
+            Left = 16
+            Top = 90
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Moving files to Recycle bin'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object ConfirmTransferringCheck: TCheckBox
+            Left = 16
+            Top = 21
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Transferring of files'
+            TabOrder = 0
             OnClick = ControlChange
           end
         end
         object NotificationsGroup: TGroupBox
           Left = 8
-          Top = 248
+          Top = 271
           Width = 357
           Height = 73
           Anchors = [akLeft, akTop, akRight]
@@ -234,6 +244,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_logging'
         Caption = 'Log'
         ImageIndex = 4
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -268,6 +279,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_interface'
         Caption = 'Int'
         ImageIndex = 5
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -312,9 +324,9 @@ object PreferencesDialog: TPreferencesDialog
           object Label7: TLabel
             Left = 16
             Top = 23
-            Width = 74
+            Width = 77
             Height = 13
-            Caption = 'Interface &theme'
+            Caption = 'Interface &theme:'
             FocusControl = ThemeCombo
           end
           object ThemeCombo: TComboBox
@@ -340,6 +352,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_panels'
         Caption = 'Pan'
         ImageIndex = 3
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -441,9 +454,9 @@ object PreferencesDialog: TPreferencesDialog
           object DoubleClickActionLabel: TLabel
             Left = 16
             Top = 21
-            Width = 171
+            Width = 174
             Height = 13
-            Caption = '&Operation to perform on double-click'
+            Caption = '&Operation to perform on double-click:'
             FocusControl = DoubleClickActionCombo
           end
           object CopyOnDoubleClickConfirmationCheck: TCheckBox
@@ -478,6 +491,7 @@ object PreferencesDialog: TPreferencesDialog
         Hint = 'Commander'
         Caption = 'Cmd'
         ImageIndex = 3
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -507,9 +521,9 @@ object PreferencesDialog: TPreferencesDialog
           object Label8: TLabel
             Left = 16
             Top = 21
-            Width = 107
+            Width = 110
             Height = 13
-            Caption = '&Explorer-style selection'
+            Caption = '&Explorer-style selection:'
             FocusControl = NortonLikeModeCombo
           end
           object PreserveLocalDirectoryCheck: TCheckBox
@@ -620,6 +634,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_explorer'
         Caption = 'Exp'
         ImageIndex = 5
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -663,6 +678,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_transfer'
         Caption = 'Tran'
         ImageIndex = 6
+        TabVisible = False
         inline CopyParamsFrame: TCopyParamsFrame
           Left = 0
           Top = 0
@@ -769,25 +785,26 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_editor'
         Caption = 'Edit'
         ImageIndex = 7
+        TabVisible = False
         DesignSize = (
           373
           353)
         object InternalEditorGroup: TGroupBox
           Left = 8
-          Top = 268
+          Top = 191
           Width = 357
-          Height = 79
+          Height = 130
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Internal editor options'
-          TabOrder = 2
+          TabOrder = 1
           DesignSize = (
             357
-            79)
+            130)
           object EditorFontLabel: TLabel
             Left = 149
             Top = 19
             Width = 199
-            Height = 50
+            Height = 98
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
             Caption = 'EditorFontLabel'
@@ -795,8 +812,16 @@ object PreferencesDialog: TPreferencesDialog
             ParentColor = False
             OnDblClick = EditorFontLabelDblClick
           end
+          object Label9: TLabel
+            Left = 16
+            Top = 79
+            Width = 69
+            Height = 13
+            Caption = '&Tabelator size:'
+            FocusControl = EditorTabSizeEdit
+          end
           object EditorFontButton: TButton
-            Left = 11
+            Left = 16
             Top = 18
             Width = 105
             Height = 25
@@ -815,32 +840,17 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 1
             OnClick = ControlChange
           end
-        end
-        object SingleEditorGroup: TGroupBox
-          Left = 8
-          Top = 191
-          Width = 357
-          Height = 73
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'Allow multiple remote opened files (editors)'
-          TabOrder = 1
-          object EditorSingleEditorOnCheck: TRadioButton
+          object EditorTabSizeEdit: TUpDownEdit
             Left = 16
-            Top = 21
-            Width = 329
-            Height = 17
-            Caption = '&One file only, use main session to upload changed files'
-            TabOrder = 0
-            OnClick = ControlChange
-          end
-          object EditorSingleEditorOffCheck: TRadioButton
-            Left = 16
-            Top = 45
-            Width = 337
-            Height = 17
-            Caption = '&Multiple files, use background transfer to upload changed files'
-            TabOrder = 1
-            OnClick = ControlChange
+            Top = 96
+            Width = 89
+            Height = 21
+            Alignment = taRightJustify
+            MaxValue = 99
+            MinValue = 1
+            MaxLength = 2
+            TabOrder = 2
+            OnChange = ControlChange
           end
         end
         object EditorPreferenceGroup: TGroupBox
@@ -895,7 +905,7 @@ object PreferencesDialog: TPreferencesDialog
             OnStartDrag = ListViewStartDrag
           end
           object AddEditorButton: TButton
-            Left = 10
+            Left = 16
             Top = 111
             Width = 83
             Height = 25
@@ -905,7 +915,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = AddEditEditorButtonClick
           end
           object EditEditorButton: TButton
-            Left = 106
+            Left = 112
             Top = 111
             Width = 83
             Height = 25
@@ -935,7 +945,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = UpDownEditorButtonClick
           end
           object RemoveEditorButton: TButton
-            Left = 10
+            Left = 16
             Top = 142
             Width = 83
             Height = 25
@@ -953,6 +963,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_integration'
         Caption = 'Integ'
         ImageIndex = 8
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -1033,72 +1044,6 @@ object PreferencesDialog: TPreferencesDialog
             TabStop = True
           end
         end
-        object ExternalAppsGroup: TGroupBox
-          Left = 8
-          Top = 222
-          Width = 357
-          Height = 119
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'External applications'
-          TabOrder = 1
-          DesignSize = (
-            357
-            119)
-          object Label2: TLabel
-            Left = 16
-            Top = 21
-            Width = 61
-            Height = 13
-            Caption = '&PuTTY path:'
-            FocusControl = PuttyPathEdit
-          end
-          object PuttyPathEdit: TEdit
-            Left = 16
-            Top = 38
-            Width = 179
-            Height = 21
-            Anchors = [akLeft, akTop, akRight]
-            TabOrder = 0
-            Text = 'PuttyPathEdit'
-            OnChange = ControlChange
-          end
-          object PuttyPasswordCheck: TCheckBox
-            Left = 24
-            Top = 65
-            Width = 329
-            Height = 17
-            Caption = 'Re&member session password and pass it to PuTTY'
-            TabOrder = 3
-          end
-          object AutoOpenInPuttyCheck: TCheckBox
-            Left = 24
-            Top = 90
-            Width = 314
-            Height = 17
-            Caption = 'Automatically &open new sessions in PuTTY'
-            TabOrder = 4
-          end
-          object PuttyPathBrowseButton: TButton
-            Left = 201
-            Top = 36
-            Width = 75
-            Height = 25
-            Anchors = [akTop, akRight]
-            Caption = 'B&rowse...'
-            TabOrder = 1
-            OnClick = PuttyPathBrowseButtonClick
-          end
-          object PuttyPathResetButton: TButton
-            Left = 282
-            Top = 36
-            Width = 65
-            Height = 25
-            Anchors = [akTop, akRight]
-            Caption = 'R&eset'
-            TabOrder = 2
-            OnClick = PuttyPathResetButtonClick
-          end
-        end
       end
       object CustomCommandsSheet: TTabSheet
         Tag = 10
@@ -1107,6 +1052,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_commands'
         Caption = 'Cmds'
         ImageIndex = 9
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -1163,7 +1109,7 @@ object PreferencesDialog: TPreferencesDialog
             OnStartDrag = ListViewStartDrag
           end
           object AddCommandButton: TButton
-            Left = 10
+            Left = 16
             Top = 262
             Width = 83
             Height = 25
@@ -1173,7 +1119,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = AddEditCommandButtonClick
           end
           object RemoveCommandButton: TButton
-            Left = 10
+            Left = 16
             Top = 294
             Width = 83
             Height = 25
@@ -1203,7 +1149,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = UpDownCommandButtonClick
           end
           object EditCommandButton: TButton
-            Left = 106
+            Left = 112
             Top = 262
             Width = 83
             Height = 25
@@ -1221,6 +1167,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_dragdrop'
         Caption = 'DragDrop'
         ImageIndex = 10
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -1333,6 +1280,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_background'
         Caption = 'Que'
         ImageIndex = 11
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -1347,9 +1295,9 @@ object PreferencesDialog: TPreferencesDialog
           object Label5: TLabel
             Left = 16
             Top = 25
-            Width = 211
+            Width = 214
             Height = 13
-            Caption = '&Maximal number of transfers at the same time'
+            Caption = '&Maximal number of transfers at the same time:'
             FocusControl = QueueTransferLimitEdit
           end
           object QueueTransferLimitEdit: TUpDownEdit
@@ -1437,6 +1385,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_storage'
         Caption = 'Stor'
         ImageIndex = 12
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -1556,9 +1505,9 @@ object PreferencesDialog: TPreferencesDialog
           object RandomSeedFileLabel: TLabel
             Left = 16
             Top = 24
-            Width = 82
+            Width = 85
             Height = 13
-            Caption = '&Random seed file'
+            Caption = '&Random seed file:'
             FocusControl = RandomSeedFileEdit
           end
           object RandomSeedFileEdit: TFilenameEdit
@@ -1581,13 +1530,14 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
-      object TransferResumeSheet: TTabSheet
+      object TransferEnduranceSheet: TTabSheet
         Tag = 14
-        Hint = 'Resume'
+        Hint = 'Endurance'
         HelpType = htKeyword
         HelpKeyword = 'ui_pref_resume'
-        Caption = 'Resu'
+        Caption = 'Endur'
         ImageIndex = 13
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -1597,14 +1547,14 @@ object PreferencesDialog: TPreferencesDialog
           Width = 357
           Height = 123
           Anchors = [akLeft, akTop, akRight]
-          Caption = 'Enable transfer resume for'
+          Caption = 'Enable transfer resume/transfer to temporary filename for'
           TabOrder = 0
           object ResumeThresholdUnitLabel: TLabel
             Left = 136
             Top = 71
-            Width = 13
+            Width = 16
             Height = 13
-            Caption = 'kB'
+            Caption = 'KiB'
             FocusControl = ResumeThresholdEdit
           end
           object ResumeOnButton: TRadioButton
@@ -1612,7 +1562,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 21
             Width = 329
             Height = 17
-            Caption = 'A&ll files (not recommended)'
+            Caption = 'A&ll files'
             TabOrder = 0
             OnClick = ControlChange
           end
@@ -1621,7 +1571,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 45
             Width = 156
             Height = 17
-            Caption = 'Files abo&ve'
+            Caption = 'Files abo&ve:'
             TabOrder = 1
             OnClick = ControlChange
           end
@@ -1650,13 +1600,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 139
           Width = 357
-          Height = 82
+          Height = 77
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Automatic reconnect'
           TabOrder = 1
           object SessionReopenAutoLabel: TLabel
             Left = 34
-            Top = 53
+            Top = 48
             Width = 77
             Height = 13
             Caption = '&Reconnect after'
@@ -1664,7 +1614,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoSecLabel: TLabel
             Left = 246
-            Top = 53
+            Top = 48
             Width = 40
             Height = 13
             Caption = 'seconds'
@@ -1672,7 +1622,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoCheck: TCheckBox
             Left = 16
-            Top = 26
+            Top = 21
             Width = 337
             Height = 17
             Caption = '&Automatically reconnect session, if it breaks during transfer'
@@ -1681,7 +1631,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoEdit: TUpDownEdit
             Left = 168
-            Top = 48
+            Top = 43
             Width = 73
             Height = 21
             Alignment = taRightJustify
@@ -1701,6 +1651,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_updates'
         Caption = 'Upd'
         ImageIndex = 14
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -1753,58 +1704,76 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 139
           Width = 357
-          Height = 98
+          Height = 142
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Connection'
           TabOrder = 1
           DesignSize = (
             357
-            98)
+            142)
           object UpdatesProxyHostLabel: TLabel
             Left = 34
-            Top = 46
-            Width = 78
+            Top = 91
+            Width = 81
             Height = 13
-            Caption = '&Proxy host name'
+            Caption = 'Proxy &host name:'
             FocusControl = UpdatesProxyHostEdit
           end
           object UpdatesProxyPortLabel: TLabel
             Left = 252
-            Top = 46
-            Width = 57
+            Top = 91
+            Width = 60
             Height = 13
             Anchors = [akTop, akRight]
-            Caption = 'Po&rt number'
+            Caption = 'Po&rt number:'
             FocusControl = UpdatesProxyPortEdit
           end
           object UpdatesProxyPortEdit: TUpDownEdit
             Left = 252
-            Top = 63
+            Top = 108
             Width = 94
             Height = 21
             Alignment = taRightJustify
             MaxValue = 65535
             MinValue = 1
             Anchors = [akTop, akRight]
-            TabOrder = 2
+            TabOrder = 4
           end
           object UpdatesProxyHostEdit: TEdit
             Left = 34
-            Top = 63
+            Top = 108
             Width = 205
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
-            TabOrder = 1
+            TabOrder = 3
             Text = 'UpdatesProxyHostEdit'
           end
-          object UpdatesProxyCheck: TCheckBox
+          object UpdatesProxyCheck: TRadioButton
             Left = 16
-            Top = 24
+            Top = 69
             Width = 333
             Height = 17
             Caption = '&Use proxy server'
+            TabOrder = 2
+            OnClick = ControlChange
+          end
+          object UpdatesDirectCheck: TRadioButton
+            Left = 16
+            Top = 21
+            Width = 333
+            Height = 17
+            Caption = 'No &proxy'
             TabOrder = 0
+            OnClick = ControlChange
+          end
+          object UpdatesAutoCheck: TRadioButton
+            Left = 16
+            Top = 45
+            Width = 333
+            Height = 17
+            Caption = '&Automatically detect proxy settings'
+            TabOrder = 1
             OnClick = ControlChange
           end
         end
@@ -1816,6 +1785,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_presets'
         Caption = 'Pres'
         ImageIndex = 15
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -1866,7 +1836,7 @@ object PreferencesDialog: TPreferencesDialog
             OnStartDrag = ListViewStartDrag
           end
           object AddCopyParamButton: TButton
-            Left = 10
+            Left = 16
             Top = 204
             Width = 83
             Height = 25
@@ -1876,7 +1846,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = AddEditCopyParamButtonClick
           end
           object RemoveCopyParamButton: TButton
-            Left = 10
+            Left = 16
             Top = 236
             Width = 83
             Height = 25
@@ -1906,7 +1876,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = UpDownCopyParamButtonClick
           end
           object EditCopyParamButton: TButton
-            Left = 106
+            Left = 112
             Top = 204
             Width = 83
             Height = 25
@@ -1916,7 +1886,7 @@ object PreferencesDialog: TPreferencesDialog
             OnClick = AddEditCopyParamButtonClick
           end
           object DuplicateCopyParamButton: TButton
-            Left = 106
+            Left = 112
             Top = 236
             Width = 83
             Height = 25
@@ -1935,9 +1905,9 @@ object PreferencesDialog: TPreferencesDialog
           Caption = 'Options'
           TabOrder = 1
           object CopyParamAutoSelectNoticeCheck: TCheckBox
-            Left = 12
-            Top = 19
-            Width = 341
+            Left = 16
+            Top = 21
+            Width = 337
             Height = 17
             Caption = '&Show announcement when transfer settings preset is autoselected'
             TabOrder = 0
@@ -1952,6 +1922,7 @@ object PreferencesDialog: TPreferencesDialog
         HelpKeyword = 'ui_pref_window'
         Caption = 'Win'
         ImageIndex = 16
+        TabVisible = False
         DesignSize = (
           373
           353)
@@ -2011,23 +1982,109 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
+      object IntegrationAppSheet: TTabSheet
+        Tag = 18
+        Hint = 'Applications'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_integration_app'
+        Caption = 'IntgApp'
+        ImageIndex = 17
+        TabVisible = False
+        DesignSize = (
+          373
+          353)
+        object ExternalAppsGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 177
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'External applications'
+          TabOrder = 0
+          DesignSize = (
+            357
+            177)
+          object Label2: TLabel
+            Left = 16
+            Top = 21
+            Width = 61
+            Height = 13
+            Caption = '&PuTTY path:'
+            FocusControl = PuttyPathEdit
+          end
+          object PuttyPathEdit: TEdit
+            Left = 16
+            Top = 38
+            Width = 330
+            Height = 21
+            Anchors = [akLeft, akTop, akRight]
+            TabOrder = 0
+            Text = 'PuttyPathEdit'
+            OnChange = ControlChange
+          end
+          object PuttyPasswordCheck2: TCheckBox
+            Left = 24
+            Top = 97
+            Width = 321
+            Height = 17
+            Caption = '&Remember session password and pass it to PuTTY (SSH)'
+            TabOrder = 3
+          end
+          object AutoOpenInPuttyCheck: TCheckBox
+            Left = 24
+            Top = 147
+            Width = 321
+            Height = 17
+            Caption = 'Automatically &open new sessions in PuTTY'
+            TabOrder = 5
+          end
+          object PuttyPathBrowseButton: TButton
+            Left = 200
+            Top = 65
+            Width = 75
+            Height = 25
+            Anchors = [akTop, akRight]
+            Caption = 'B&rowse...'
+            TabOrder = 1
+            OnClick = PuttyPathBrowseButtonClick
+          end
+          object PuttyPathResetButton: TButton
+            Left = 281
+            Top = 65
+            Width = 65
+            Height = 25
+            Anchors = [akTop, akRight]
+            Caption = 'R&eset'
+            TabOrder = 2
+            OnClick = PuttyPathResetButtonClick
+          end
+          object TelnetForFtpInPuttyCheck: TCheckBox
+            Left = 24
+            Top = 122
+            Width = 321
+            Height = 17
+            Caption = 'Open &Telnet sessions in PuTTY for FTP sessions'
+            TabOrder = 4
+          end
+        end
+      end
     end
     object LeftPanel: TPanel
       Left = 0
       Top = 0
       Width = 132
-      Height = 432
+      Height = 363
       Align = alLeft
       BevelOuter = bvNone
       TabOrder = 0
       DesignSize = (
         132
-        432)
+        363)
       object NavigationTree: TTreeView
         Left = 8
         Top = 9
         Width = 116
-        Height = 422
+        Height = 353
         Anchors = [akLeft, akTop, akRight, akBottom]
         HideSelection = False
         HotTrack = True
@@ -2055,17 +2112,18 @@ object PreferencesDialog: TPreferencesDialog
           726F756E645820000000000000000E000000FFFFFFFFFFFFFFFF000000000000
           000007526573756D6558210000000000000002000000FFFFFFFFFFFFFFFF0000
           000000000000084C6F6767696E6758250000000000000009000000FFFFFFFFFF
-          FFFFFF00000000000000000C496E746567726174696F6E582200000000000000
-          0A000000FFFFFFFFFFFFFFFF000000000000000009436F6D6D616E6473582100
-          0000000000000D000000FFFFFFFFFFFFFFFF00000000000000000853746F7261
-          67655821000000000000000F000000FFFFFFFFFFFFFFFF000000000000000008
-          5570646174657358}
+          FFFFFF00000000010000000C496E746567726174696F6E582600000000000000
+          12000000FFFFFFFFFFFFFFFF00000000000000000D4170706C69636174696F6E
+          735822000000000000000A000000FFFFFFFFFFFFFFFF00000000000000000943
+          6F6D6D616E64735821000000000000000D000000FFFFFFFFFFFFFFFF00000000
+          000000000853746F726167655821000000000000000F000000FFFFFFFFFFFFFF
+          FF0000000000000000085570646174657358}
       end
     end
   end
   object HelpButton: TButton
     Left = 426
-    Top = 438
+    Top = 369
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -2075,7 +2133,7 @@ object PreferencesDialog: TPreferencesDialog
   end
   object ExportButton: TButton
     Left = 8
-    Top = 438
+    Top = 369
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]

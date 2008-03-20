@@ -15,6 +15,7 @@
 #include <TextsWin.h>
 #include <Progress.h>
 #include <Exceptions.h>
+#include <VCLCommon.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -645,13 +646,16 @@ void __fastcall TTerminalManager::ApplicationActivate(TObject * /*Sender*/)
   // note that there can also be an editor window)
   if ((ScpExplorer != NULL) && (Screen->ActiveForm == ScpExplorer))
   {
+    // unfortunatelly this causes the main window to redraw (flicker).
+    // also the same problem happens for any top-level window (login, authentication),
+    // not only to main explorer, so the solution should be generalized
     SetActiveWindow(Application->Handle);
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminalManager::DeleteLocalFile(const AnsiString FileName)
+void __fastcall TTerminalManager::DeleteLocalFile(const AnsiString FileName, bool Alternative)
 {
-  if (!RecursiveDeleteFile(FileName, WinConfiguration->DeleteToRecycleBin))
+  if (!RecursiveDeleteFile(FileName, (WinConfiguration->DeleteToRecycleBin != Alternative)))
   {
     throw Exception(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
   }
@@ -692,34 +696,43 @@ void __fastcall TTerminalManager::TerminalQueryUser(TObject * Sender,
   }
 }
 //---------------------------------------------------------------------------
+TAuthenticateForm * __fastcall TTerminalManager::MakeAuthenticateForm(
+  TSessionData * Data)
+{
+  TAuthenticateForm * Dialog = SafeFormCreate<TAuthenticateForm>();
+  Dialog->Init(Data);
+  return Dialog;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalPromptUser(
-  TTerminal * Terminal, AnsiString Prompt, TPromptKind Kind,
-  AnsiString & Response, bool & Result, void * /*Arg*/)
+  TTerminal * Terminal, TPromptKind Kind, AnsiString Name, AnsiString Instructions,
+  TStrings * Prompts, TStrings * Results, bool & Result, void * /*Arg*/)
 {
   if ((Kind == pkPrompt) && (FAuthenticateForm == NULL) &&
       (Terminal->Status != ssOpening))
   {
-    AnsiString Caption = ::CutToChar(Prompt, '|', true);
-    if (Prompt.IsEmpty())
+    assert(Instructions.IsEmpty());
+    assert(Prompts->Count == 1);
+    assert(bool(Prompts->Objects[0]));
+    AnsiString AResult = Results->Strings[0];
+    Result = InputDialog(Name, Prompts->Strings[0], AResult);
+    if (Result)
     {
-      Prompt = Caption;
-      Caption = "";
+      Results->Strings[0] = AResult;
     }
-    Result = InputDialog(Caption, Prompt, Response);
   }
   else
   {
     TAuthenticateForm * AuthenticateForm = FAuthenticateForm;
     if (AuthenticateForm == NULL)
     {
-      AuthenticateForm = new TAuthenticateForm(Application,
-        Terminal->SessionData->SessionName);
+      AuthenticateForm = MakeAuthenticateForm(Terminal->SessionData);
     }
 
     try
     {
-      Result = AuthenticateForm->PromptUser(Prompt, Kind, Response,
-        (FAuthenticateForm != NULL));
+      Result = AuthenticateForm->PromptUser(Kind, Name, Instructions, Prompts, Results,
+        (FAuthenticateForm != NULL), Terminal->StoredCredentialsTried);
     }
     __finally
     {
@@ -732,14 +745,14 @@ void __fastcall TTerminalManager::TerminalPromptUser(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalDisplayBanner(
-  TTerminal * /*Terminal*/, AnsiString SessionName,
+  TTerminal * Terminal, AnsiString SessionName,
   const AnsiString & Banner, bool & NeverShowAgain, int Options)
 {
   assert(FAuthenticateForm != NULL);
   TAuthenticateForm * AuthenticateForm = FAuthenticateForm;
   if (AuthenticateForm == NULL)
   {
-    AuthenticateForm = new TAuthenticateForm(Application, SessionName);
+    AuthenticateForm = MakeAuthenticateForm(Terminal->SessionData);
   }
 
   try
@@ -838,8 +851,7 @@ void __fastcall TTerminalManager::TerminalInformation(
       bool ShowPending = false;
       if (FAuthenticateForm == NULL)
       {
-        FAuthenticateForm = new TAuthenticateForm(Application,
-          Terminal->SessionData->SessionName);
+        FAuthenticateForm = MakeAuthenticateForm(Terminal->SessionData);
         ShowPending = true;
         Busy(true);
       }

@@ -3,13 +3,11 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include <Consts.hpp>
 #include <shlobj.h>
 #include <Common.h>
 
 #include "GUITools.h"
 #include "GUIConfiguration.h"
-#include <TextsWin.h>
 #include <TextsCore.h>
 #include <CoreMain.h>
 #include <SessionData.h>
@@ -45,7 +43,7 @@ bool __fastcall FileExistsEx(AnsiString Path)
 }
 //---------------------------------------------------------------------------
 void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
-  TSessionData * SessionData, const AnsiString Password)
+  TSessionData * SessionData, AnsiString Password)
 {
   AnsiString Program, Params, Dir;
   SplitCommand(PuttyPath, Program, Params, Dir);
@@ -81,6 +79,23 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
           ExportData->Modified = true;
           ExportData->Name = GUIConfiguration->PuttySession;
           ExportData->Password = "";
+
+          if (SessionData->FSProtocol == fsFTP)
+          {
+            if (GUIConfiguration->TelnetForFtpInPutty)
+            {
+              ExportData->Protocol = ptTelnet;
+              ExportData->PortNumber = 23;
+              // PuTTY  does not allow -pw for telnet
+              Password = "";
+            }
+            else
+            {
+              ExportData->Protocol = ptSSH;
+              ExportData->PortNumber = 22;
+            }
+          }
+
           ExportData->Save(Storage, true);
           SessionName = GUIConfiguration->PuttySession;
         }
@@ -248,69 +263,13 @@ AnsiString __fastcall FormatBytes(__int64 Bytes, bool UseOrders)
   }
   else if (Bytes < __int64(100*1024*1024))
   {
-    Result = FormatFloat("#,##0 \"KB\"", Bytes / 1024);
+    Result = FormatFloat("#,##0 \"KiB\"", Bytes / 1024);
   }
   else
   {
-    Result = FormatFloat("#,##0 \"MB\"", Bytes / (1024*1024));
+    Result = FormatFloat("#,##0 \"MiB\"", Bytes / (1024*1024));
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall CopyToClipboard(AnsiString Text)
-{
-  HANDLE Data;
-  void * DataPtr;
-
-  if (OpenClipboard(0))
-  {
-    try
-    {
-      Data = GlobalAlloc(GMEM_MOVEABLE + GMEM_DDESHARE, Text.Length() + 1);
-      try
-      {
-        DataPtr = GlobalLock(Data);
-        try
-        {
-          memcpy(DataPtr, Text.c_str(), Text.Length() + 1);
-          EmptyClipboard();
-          SetClipboardData(CF_TEXT, Data);
-        }
-        __finally
-        {
-          GlobalUnlock(Data);
-        }
-      }
-      catch(...)
-      {
-        GlobalFree(Data);
-        throw;
-      }
-    }
-    __finally
-    {
-      CloseClipboard();
-    }
-  }
-  else
-  {
-    throw Exception(Consts_SCannotOpenClipboard);
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall CopyToClipboard(TStrings * Strings)
-{
-  if (Strings->Count > 0)
-  {
-    if (Strings->Count == 1)
-    {
-      CopyToClipboard(Strings->Strings[0]);
-    }
-    else
-    {
-      CopyToClipboard(Strings->Text);
-    }
-  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall UniqTempDir(const AnsiString BaseDir, const AnsiString Identity,
@@ -393,8 +352,8 @@ AnsiString __fastcall FormatDateTimeSpan(const AnsiString TimeFormat, TDateTime 
   {
     Result = IntToStr(int(DateTime)) + ", ";
   }
-  // days are decremented, because when there is to many of them,
-  // "integer overflow" error occures
+  // days are decremented, because when there are to many of them,
+  // "integer overflow" error occurs
   Result += FormatDateTime(TimeFormat, DateTime - int(DateTime));
   return Result;
 }
@@ -403,9 +362,16 @@ TLocalCustomCommand::TLocalCustomCommand()
 {
 }
 //---------------------------------------------------------------------------
-TLocalCustomCommand::TLocalCustomCommand(const AnsiString & FileName,
+TLocalCustomCommand::TLocalCustomCommand(const TCustomCommandData & Data,
+    const AnsiString & Path) :
+  TFileCustomCommand(Data, Path)
+{
+}
+//---------------------------------------------------------------------------
+TLocalCustomCommand::TLocalCustomCommand(const TCustomCommandData & Data,
+  const AnsiString & Path, const AnsiString & FileName,
   const AnsiString & LocalFileName, const AnsiString & FileList) :
-  TFileCustomCommand(FileName, FileList)
+  TFileCustomCommand(Data, Path, FileName, FileList)
 {
   FLocalFileName = LocalFileName;
 }

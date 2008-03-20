@@ -191,7 +191,7 @@ begin
 
   ResetItemHeight;
   RecreateWnd;
-end; {TIEPathComboBox.CMFontChanged}
+end; {CMFontChanged}
 
 procedure TIECustomComboBox.DoCloseUp(Canceled: Boolean);
 begin

@@ -10,6 +10,69 @@
 //---------------------------------------------------------------------------
 class TBackgroundTerminal;
 //---------------------------------------------------------------------------
+class TUserAction
+{
+public:
+  virtual __fastcall ~TUserAction() {}
+  virtual void __fastcall Execute(TTerminalQueue * Queue, void * Arg) = 0;
+};
+//---------------------------------------------------------------------------
+class TQueryUserAction : public TUserAction
+{
+public:
+  virtual void __fastcall Execute(TTerminalQueue * Queue, void * Arg)
+  {
+    Queue->DoQueryUser(Sender, Query, MoreMessages, Answers, Params, Answer, Type, Arg);
+  }
+
+  TObject * Sender;
+  AnsiString Query;
+  TStrings * MoreMessages;
+  int Answers;
+  const TQueryParams * Params;
+  int Answer;
+  TQueryType Type;
+};
+//---------------------------------------------------------------------------
+class TPromptUserAction : public TUserAction
+{
+public:
+  __fastcall TPromptUserAction() :
+    Results(new TStringList())
+  {
+  }
+
+  virtual __fastcall ~TPromptUserAction()
+  {
+    delete Results;
+  }
+
+  virtual void __fastcall Execute(TTerminalQueue * Queue, void * Arg)
+  {
+    Queue->DoPromptUser(Terminal, Kind, Name, Instructions, Prompts, Results, Result, Arg);
+  }
+
+  TTerminal * Terminal;
+  TPromptKind Kind;
+  AnsiString Name;
+  AnsiString Instructions;
+  TStrings * Prompts;
+  TStrings * Results;
+  bool Result;
+};
+//---------------------------------------------------------------------------
+class TShowExtendedExceptionAction : public TUserAction
+{
+public:
+  virtual void __fastcall Execute(TTerminalQueue * Queue, void * Arg)
+  {
+    Queue->DoShowExtendedException(Terminal, E, Arg);
+  }
+
+  TTerminal * Terminal;
+  Exception * E;
+};
+//---------------------------------------------------------------------------
 class TTerminalItem : public TSignalThread
 {
 friend class TQueueItem;
@@ -27,50 +90,25 @@ public:
   bool __fastcall Resume();
 
 protected:
-  struct TQueryUserRec
-  {
-    TObject * Sender;
-    AnsiString Query;
-    TStrings * MoreMessages;
-    int Answers;
-    const TQueryParams * Params;
-    int Answer;
-    TQueryType Type;
-  };
-
-  struct TPromptUserRec
-  {
-    TTerminal * Terminal;
-    AnsiString Prompt;
-    TPromptKind Kind;
-    AnsiString Response;
-    bool Result;
-  };
-
-  struct TShowExtendedExceptionRec
-  {
-    TTerminal * Terminal;
-    Exception * E;
-  };
-
   TTerminalQueue * FQueue;
   TBackgroundTerminal * FTerminal;
   TQueueItem * FItem;
   TCriticalSection * FCriticalSection;
-  void * FUserActionParams;
+  TUserAction * FUserAction;
   bool FCancel;
   bool FPause;
 
   virtual void __fastcall ProcessEvent();
   virtual void __fastcall Finished();
-  bool __fastcall WaitForUserAction(TQueueItem::TStatus ItemStatus, void * Params);
+  bool __fastcall WaitForUserAction(TQueueItem::TStatus ItemStatus, TUserAction * UserAction);
   bool __fastcall OverrideItemStatus(TQueueItem::TStatus & ItemStatus);
 
   void __fastcall TerminalQueryUser(TObject * Sender,
     const AnsiString Query, TStrings * MoreMessages, int Answers,
     const TQueryParams * Params, int & Answer, TQueryType Type, void * Arg);
-  void __fastcall TerminalPromptUser(TTerminal * Terminal,
-    AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg);
+  void __fastcall TerminalPromptUser(TTerminal * Terminal, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions,
+    TStrings * Prompts, TStrings * Results, bool & Result, void * Arg);
   void __fastcall TerminalShowExtendedException(TTerminal * Terminal,
     Exception * E, void * Arg);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
@@ -82,7 +120,7 @@ protected:
 //---------------------------------------------------------------------------
 // TSignalThread
 //---------------------------------------------------------------------------
-int __fastcall ThreadProc(void * Thread)
+int __fastcall TSimpleThread::ThreadProc(void * Thread)
 {
   TSimpleThread * SimpleThread = reinterpret_cast<TSimpleThread*>(Thread);
   assert(SimpleThread != NULL);
@@ -94,7 +132,6 @@ int __fastcall ThreadProc(void * Thread)
   {
     SimpleThread->FFinished = true;
     SimpleThread->Finished();
-    EndThread(0);
   }
   return 0;
 }
@@ -104,7 +141,7 @@ __fastcall TSimpleThread::TSimpleThread() :
 {
   unsigned ThreadID;
   FThread = reinterpret_cast<HANDLE>(
-    BeginThread(NULL, 0, ThreadProc, this, CREATE_SUSPENDED, ThreadID));
+    StartThread(NULL, 0, ThreadProc, this, CREATE_SUSPENDED, ThreadID));
 }
 //---------------------------------------------------------------------------
 __fastcall TSimpleThread::~TSimpleThread()
@@ -362,19 +399,31 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item)
   if (!FTerminated)
   {
     bool Empty;
+    bool Monitored;
     {
       TGuard Guard(FItemsSection);
 
+      // does this need to be within guard?
+      Monitored = (Item->CompleteEvent != INVALID_HANDLE_VALUE);
       int Index = FItems->Remove(Item);
       assert(Index < FItemsInProcess);
       USEDPARAM(Index);
       FItemsInProcess--;
       delete Item;
-      Empty = (FItems->Count == 0);
+
+      Empty = true;
+      Index = 0;
+      while (Empty && (Index < FItems->Count))
+      {
+        Empty = (GetItem(Index) != INVALID_HANDLE_VALUE);
+        Index++;
+      }
     }
 
     DoListUpdate();
-    if (Empty)
+    // report empty, if queue is empty or only monitored items are pending.
+    // do not report if current item was the last, but was monitored.
+    if (!Monitored && Empty)
     {
       DoEvent(qeEmpty);
     }
@@ -625,6 +674,24 @@ bool __fastcall TTerminalQueue::ItemPause(TQueueItem * Item, bool Pause)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminalQueue::ItemSetCPSLimit(TQueueItem * Item, unsigned long CPSLimit)
+{
+  // to prevent deadlocks when closing queue from other thread
+  bool Result = !FFinished;
+  if (Result)
+  {
+    TGuard Guard(FItemsSection);
+
+    Result = (FItems->IndexOf(Item) >= 0);
+    if (Result)
+    {
+      Item->SetCPSLimit(CPSLimit);
+    }
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalQueue::Idle()
 {
   if (Now() - FLastIdle > FIdleInterval)
@@ -732,11 +799,12 @@ void __fastcall TTerminalQueue::DoQueryUser(TObject * Sender,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalQueue::DoPromptUser(TTerminal * Terminal,
-  AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result, void * Arg)
+  TPromptKind Kind, AnsiString Name, AnsiString Instructions,
+  TStrings * Prompts, TStrings * Results, bool & Result, void * Arg)
 {
   if (OnPromptUser != NULL)
   {
-    OnPromptUser(Terminal, Prompt, Kind, Response, Result, Arg);
+    OnPromptUser(Terminal, Kind, Name, Instructions, Prompts, Results, Result, Arg);
   }
 }
 //---------------------------------------------------------------------------
@@ -821,7 +889,7 @@ bool __fastcall TBackgroundTerminal::DoQueryReopen(Exception * /*E*/)
 //---------------------------------------------------------------------------
 __fastcall TTerminalItem::TTerminalItem(TTerminalQueue * Queue, int Index) :
   TSignalThread(), FQueue(Queue), FTerminal(NULL), FItem(NULL),
-  FCriticalSection(NULL), FUserActionParams(NULL)
+  FCriticalSection(NULL), FUserAction(NULL)
 {
   FCriticalSection = new TCriticalSection();
 
@@ -902,9 +970,10 @@ void __fastcall TTerminalItem::ProcessEvent()
   {
     // do not show error messages, if task was canceled anyway
     // (for example if transfer is cancelled during reconnection attempts)
-    if (!FCancel)
+    if (!FCancel &&
+        (FTerminal->QueryUserException("", &E, qaOK | qaCancel, NULL, qtError) == qaCancel))
     {
-      FTerminal->ShowExtendedException(&E);
+      FCancel = true;
     }
   }
 
@@ -955,7 +1024,8 @@ void __fastcall TTerminalItem::Idle()
 void __fastcall TTerminalItem::Cancel()
 {
   FCancel = true;
-  if (FItem->GetStatus() == TQueueItem::qsPaused)
+  if ((FItem->GetStatus() == TQueueItem::qsPaused) ||
+      TQueueItem::IsUserActionStatus(FItem->GetStatus()))
   {
     TriggerEvent();
   }
@@ -990,40 +1060,13 @@ bool __fastcall TTerminalItem::ProcessUserAction(void * Arg)
   // the second (user-action) change occurs. Thus it responds it.
   // Then as reaction to the second (user-action) change there will not be
   // any outstanding user-action.
-  bool Result = (FUserActionParams != NULL);
+  bool Result = (FUserAction != NULL);
   if (Result)
   {
     assert(FItem != NULL);
 
-    if (FItem->GetStatus() == TQueueItem::qsQuery)
-    {
-      TQueryUserRec * Params;
-      Params = reinterpret_cast<TQueryUserRec *>(FUserActionParams);
-
-      FQueue->DoQueryUser(Params->Sender, Params->Query, Params->MoreMessages,
-        Params->Answers, Params->Params, Params->Answer, Params->Type, Arg);
-    }
-    else if (FItem->GetStatus() == TQueueItem::qsPrompt)
-    {
-      TPromptUserRec * Params;
-      Params = reinterpret_cast<TPromptUserRec *>(FUserActionParams);
-
-      FQueue->DoPromptUser(Params->Terminal, Params->Prompt,
-        Params->Kind, Params->Response, Params->Result, Arg);
-    }
-    else if (FItem->GetStatus() == TQueueItem::qsError)
-    {
-      TShowExtendedExceptionRec * Params;
-      Params = reinterpret_cast<TShowExtendedExceptionRec *>(FUserActionParams);
-
-      FQueue->DoShowExtendedException(Params->Terminal, Params->E, Arg);
-    }
-    else
-    {
-      assert(false);
-    }
-
-    FUserActionParams = NULL;
+    FUserAction->Execute(FQueue, Arg);
+    FUserAction = NULL;
 
     TriggerEvent();
   }
@@ -1031,7 +1074,7 @@ bool __fastcall TTerminalItem::ProcessUserAction(void * Arg)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminalItem::WaitForUserAction(
-  TQueueItem::TStatus ItemStatus, void * Params)
+  TQueueItem::TStatus ItemStatus, TUserAction * UserAction)
 {
   assert(FItem != NULL);
   assert((FItem->GetStatus() == TQueueItem::qsProcessing) ||
@@ -1043,7 +1086,7 @@ bool __fastcall TTerminalItem::WaitForUserAction(
 
   try
   {
-    FUserActionParams = Params;
+    FUserAction = UserAction;
 
     FItem->SetStatus(ItemStatus);
     FQueue->DoEvent(qePendingUserAction);
@@ -1052,7 +1095,7 @@ bool __fastcall TTerminalItem::WaitForUserAction(
   }
   __finally
   {
-    FUserActionParams = NULL;
+    FUserAction = NULL;
     FItem->SetStatus(PrevStatus);
   }
 
@@ -1077,25 +1120,31 @@ void __fastcall TTerminalItem::TerminalQueryUser(TObject * Sender,
     USEDPARAM(Arg);
     assert(Arg == NULL);
 
-    TQueryUserRec QueryUserRec;
-    QueryUserRec.Sender = Sender;
-    QueryUserRec.Query = Query;
-    QueryUserRec.MoreMessages = MoreMessages;
-    QueryUserRec.Answers = Answers;
-    QueryUserRec.Params = Params;
-    QueryUserRec.Answer = Answer;
-    QueryUserRec.Type = Type;
+    TQueryUserAction Action;
+    Action.Sender = Sender;
+    Action.Query = Query;
+    Action.MoreMessages = MoreMessages;
+    Action.Answers = Answers;
+    Action.Params = Params;
+    Action.Answer = Answer;
+    Action.Type = Type;
 
-    if (WaitForUserAction(TQueueItem::qsQuery, &QueryUserRec))
+    // if the query is "error", present it as an "error" state in UI,
+    // however it is still handled as query by the action.
+
+    TQueueItem::TStatus ItemStatus =
+      (Action.Type == qtError ? TQueueItem::qsError : TQueueItem::qsQuery);
+
+    if (WaitForUserAction(ItemStatus, &Action))
     {
-      Answer = QueryUserRec.Answer;
+      Answer = Action.Answer;
     }
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalItem::TerminalPromptUser(TTerminal * Terminal,
-  AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
-  void * Arg)
+  TPromptKind Kind, AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+  TStrings * Results, bool & Result, void * Arg)
 {
   if (FItem == NULL)
   {
@@ -1108,17 +1157,19 @@ void __fastcall TTerminalItem::TerminalPromptUser(TTerminal * Terminal,
     USEDPARAM(Arg);
     assert(Arg == NULL);
 
-    TPromptUserRec PromptUserRec;
-    PromptUserRec.Terminal = Terminal;
-    PromptUserRec.Prompt = Prompt;
-    PromptUserRec.Kind = Kind;
-    PromptUserRec.Response = Response.c_str();
-    PromptUserRec.Result = Result;
+    TPromptUserAction Action;
+    Action.Terminal = Terminal;
+    Action.Kind = Kind;
+    Action.Name = Name;
+    Action.Instructions = Instructions;
+    Action.Prompts = Prompts;
+    Action.Results->AddStrings(Results);
 
-    if (WaitForUserAction(TQueueItem::qsPrompt, &PromptUserRec))
+    if (WaitForUserAction(TQueueItem::qsPrompt, &Action))
     {
-      Response = PromptUserRec.Response.c_str();
-      Result = PromptUserRec.Result;
+      Results->Clear();
+      Results->AddStrings(Action.Results);
+      Result = Action.Result;
     }
   }
 }
@@ -1133,11 +1184,11 @@ void __fastcall TTerminalItem::TerminalShowExtendedException(
       !E->Message.IsEmpty() &&
       (dynamic_cast<EAbort*>(E) == NULL))
   {
-    TShowExtendedExceptionRec ShowExtendedExceptionRec;
-    ShowExtendedExceptionRec.Terminal = Terminal;
-    ShowExtendedExceptionRec.E = E;
+    TShowExtendedExceptionAction Action;
+    Action.Terminal = Terminal;
+    Action.E = E;
 
-    WaitForUserAction(TQueueItem::qsError, &ShowExtendedExceptionRec);
+    WaitForUserAction(TQueueItem::qsError, &Action);
   }
 }
 //---------------------------------------------------------------------------
@@ -1204,7 +1255,8 @@ bool __fastcall TTerminalItem::OverrideItemStatus(TQueueItem::TStatus & ItemStat
 //---------------------------------------------------------------------------
 __fastcall TQueueItem::TQueueItem() :
   FStatus(qsPending), FTerminalItem(NULL), FSection(NULL), FProgressData(NULL),
-  FQueue(NULL), FInfo(NULL), FCompleteEvent(INVALID_HANDLE_VALUE)
+  FQueue(NULL), FInfo(NULL), FCompleteEvent(INVALID_HANDLE_VALUE),
+  FCPSLimit(-1)
 {
   FSection = new TCriticalSection();
   FInfo = new TInfo();
@@ -1249,7 +1301,7 @@ void __fastcall TQueueItem::SetStatus(TStatus Status)
 }
 //---------------------------------------------------------------------------
 void __fastcall TQueueItem::SetProgress(
-  const TFileOperationProgressType & ProgressData)
+  TFileOperationProgressType & ProgressData)
 {
   {
     TGuard Guard(FSection);
@@ -1257,6 +1309,12 @@ void __fastcall TQueueItem::SetProgress(
     assert(FProgressData != NULL);
     *FProgressData = ProgressData;
     FProgressData->Reset();
+
+    if (FCPSLimit >= 0)
+    {
+      ProgressData.CPSLimit = static_cast<unsigned long>(FCPSLimit);
+      FCPSLimit = -1;
+    }
   }
   FQueue->DoQueueItemUpdate(this);
 }
@@ -1301,6 +1359,11 @@ void __fastcall TQueueItem::Execute(TTerminalItem * TerminalItem)
       FProgressData = NULL;
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TQueueItem::SetCPSLimit(unsigned long CPSLimit)
+{
+  FCPSLimit = static_cast<long>(CPSLimit);
 }
 //---------------------------------------------------------------------------
 // TQueueItemProxy
@@ -1405,6 +1468,11 @@ bool __fastcall TQueueItemProxy::ProcessUserAction(void * Arg)
     FProcessingUserAction = false;
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TQueueItemProxy::SetCPSLimit(unsigned long CPSLimit)
+{
+  return FQueue->ItemSetCPSLimit(FQueueItem, CPSLimit);
 }
 //---------------------------------------------------------------------------
 int __fastcall TQueueItemProxy::GetIndex()

@@ -45,12 +45,13 @@ bool __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Si
 __fastcall TOpenDirectoryDialog::TOpenDirectoryDialog(TComponent * AOwner):
   TForm(AOwner)
 {
+  UseSystemSettings(this);
+
   FOperationSide = osCurrent;
   OperationSide = osLocal;
   FBookmarkDragDest = -1;
   FTerminal = NULL;
   FBookmarkList = new TBookmarkList();
-  UseSystemSettings(this);
 
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
@@ -377,11 +378,11 @@ void __fastcall TOpenDirectoryDialog::FormShow(TObject * /*Sender*/)
   UpdateControls(true);
   if (Mode == odBrowse)
   {
-    CurrentEdit->SetFocus();
+    ActiveControl = CurrentEdit;
   }
   else
   {
-    BookmarksList->SetFocus();
+    ActiveControl = BookmarksList;
   }
 }
 //---------------------------------------------------------------------------

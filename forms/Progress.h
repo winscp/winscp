@@ -16,6 +16,7 @@
 #include <PathLabel.hpp>
 
 #include <FileOperationProgress.h>
+#include "HistoryComboBox.hpp"
 //----------------------------------------------------------------------------
 class TProgressForm : public TForm
 {
@@ -36,7 +37,7 @@ __published:
   TLabel *StartTimeLabel;
   TLabel *Label4;
   TLabel *BytesTransferedLabel;
-  TLabel *Label7;
+  TLabel *Label12;
   TLabel *CPSLabel;
   TProgressBar *FileProgress;
   TTimer *UpdateTimer;
@@ -46,17 +47,18 @@ __published:
   TLabel *Label11;
   TLabel *ResumeLabel;
   TPanel *SpeedPanel;
-  TLabel *SpeedLabel;
-  TTrackBar *SpeedBar;
-  TLabel *SpeedLowLabel;
-  TLabel *SpeedHighLabel;
+  TLabel *SpeedLabel2;
   TLabel *TimeLeftLabelLabel;
   TLabel *TimeLeftLabel;
+  THistoryComboBox *SpeedCombo;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormHide(TObject *Sender);
   void __fastcall CancelButtonClick(TObject *Sender);
   void __fastcall MinimizeButtonClick(TObject *Sender);
+  void __fastcall SpeedComboExit(TObject *Sender);
+  void __fastcall SpeedComboSelect(TObject *Sender);
+  void __fastcall SpeedComboKeyPress(TObject *Sender, char &Key);
 private:
   TCancelStatus FCancel;
   TFileOperationProgressType FData;
@@ -71,6 +73,7 @@ private:
   TDateTime FLastUpdate;
   bool FDeleteToRecycleBin;
   bool FReadOnly;
+  unsigned long FCPSLimit;
 
   void __fastcall SetDisconnectWhenComplete(bool value);
   bool __fastcall GetDisconnectWhenComplete();
@@ -83,12 +86,13 @@ protected:
   void __fastcall CancelOperation();
   void __fastcall MinimizeApp();
   void __fastcall UpdateControls();
+  void __fastcall ApplyCPSLimit();
 
 public:
   static AnsiString __fastcall OperationName(TFileOperation Operation);
 
   virtual __fastcall ~TProgressForm();
-  void __fastcall SetProgressData(const TFileOperationProgressType & AData);
+  void __fastcall SetProgressData(TFileOperationProgressType & AData);
   virtual __fastcall TProgressForm(TComponent * AOwner);
   __property TCancelStatus Cancel = { read = FCancel };
   __property bool DisconnectWhenComplete = { read=GetDisconnectWhenComplete, write=SetDisconnectWhenComplete };

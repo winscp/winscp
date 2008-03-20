@@ -16,12 +16,10 @@ class TCriticalSection;
 class TConfiguration : public TObject
 {
 private:
-  bool FInitialized;
   bool FDontSave;
   bool FChanged;
   int FUpdating;
   TNotifyEvent FOnChange;
-  bool FRandomSeedSave;
 
   void * FApplicationInfo;
   bool FLogging;
@@ -39,6 +37,7 @@ private:
   AnsiString FIniFileStorageName;
   int FTunnelLocalPortNumberLow;
   int FTunnelLocalPortNumberHigh;
+  int FCacheDirectoryChangesMaxSize;
   bool FShowFtpWelcomeMessage;
   AnsiString FDefaultRandomSeedFile;
   AnsiString FRandomSeedFile;
@@ -60,6 +59,7 @@ private:
   AnsiString __fastcall GetStoredSessionsSubKey();
   AnsiString __fastcall GetPuttySessionsKey();
   void __fastcall SetRandomSeedFile(AnsiString value);
+  AnsiString __fastcall GetRandomSeedFileName();
   void __fastcall SetPuttyRegistryStorageKey(AnsiString value);
   AnsiString __fastcall GetSshHostKeysSubKey();
   AnsiString __fastcall GetRootKeyStr();
@@ -88,6 +88,7 @@ private:
   void __fastcall SetSessionReopenBackground(int value);
   void __fastcall SetTunnelLocalPortNumberLow(int value);
   void __fastcall SetTunnelLocalPortNumberHigh(int value);
+  void __fastcall SetCacheDirectoryChangesMaxSize(int value);
   void __fastcall SetShowFtpWelcomeMessage(bool value);
 
 protected:
@@ -128,7 +129,6 @@ protected:
 public:
   __fastcall TConfiguration();
   virtual __fastcall ~TConfiguration();
-  void __fastcall Initialize();
   virtual void __fastcall Default();
   virtual void __fastcall Load();
   virtual void __fastcall Save(bool All, bool Explicit);
@@ -148,13 +148,13 @@ public:
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
   void __fastcall TemporaryLogging(const AnsiString ALogFileName);
 
-  __property bool Initialized = { read = FInitialized };
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };
   __property AnsiString StoredSessionsSubKey = {read=GetStoredSessionsSubKey};
   __property AnsiString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
   __property AnsiString PuttySessionsKey  = { read=GetPuttySessionsKey };
   __property AnsiString RandomSeedFile  = { read=FRandomSeedFile, write=SetRandomSeedFile };
+  __property AnsiString RandomSeedFileName  = { read=GetRandomSeedFileName };
   __property AnsiString SshHostKeysSubKey  = { read=GetSshHostKeysSubKey };
   __property AnsiString RootKeyStr  = { read=GetRootKeyStr };
   __property AnsiString ConfigurationSubKey  = { read=GetConfigurationSubKey };
@@ -184,6 +184,7 @@ public:
   __property int SessionReopenBackground = { read = FSessionReopenBackground, write = SetSessionReopenBackground };
   __property int TunnelLocalPortNumberLow = { read = FTunnelLocalPortNumberLow, write = SetTunnelLocalPortNumberLow };
   __property int TunnelLocalPortNumberHigh = { read = FTunnelLocalPortNumberHigh, write = SetTunnelLocalPortNumberHigh };
+  __property int CacheDirectoryChangesMaxSize = { read = FCacheDirectoryChangesMaxSize, write = SetCacheDirectoryChangesMaxSize };
   __property bool ShowFtpWelcomeMessage = { read = FShowFtpWelcomeMessage, write = SetShowFtpWelcomeMessage };
 
   __property AnsiString TimeFormat = { read = GetTimeFormat };

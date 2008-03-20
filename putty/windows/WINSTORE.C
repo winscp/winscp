@@ -9,11 +9,23 @@
 #include "putty.h"
 #include "storage.h"
 
+#include <shlobj.h>
+#ifndef CSIDL_APPDATA
+#define CSIDL_APPDATA 0x001a
+#endif
+#ifndef CSIDL_LOCAL_APPDATA
+#define CSIDL_LOCAL_APPDATA 0x001c
+#endif
+
 static const char *const puttystr = PUTTY_REG_POS "\\Sessions";
 
-static char seedpath[2 * MAX_PATH + 10] = "\0";
-
 static const char hex[16] = "0123456789ABCDEF";
+
+static int tried_shgetfolderpath = FALSE;
+static HMODULE shell32_module = NULL;
+typedef HRESULT (WINAPI *p_SHGetFolderPath_t)
+    (HWND, int, HANDLE, DWORD, LPTSTR);
+static p_SHGetFolderPath_t p_SHGetFolderPath = NULL;
 
 static void mungestr(const char *in, char *out)
 {
@@ -289,8 +301,13 @@ static void hostkey_regname(char *buffer, const char *hostname,
     mungestr(hostname, buffer + strlen(buffer));
 }
 
+#ifdef MPEXT
+int retrieve_host_key(const char *hostname, int port,
+		    const char *keytype, char *key, int maxlen)
+#else
 int verify_host_key(const char *hostname, int port,
 		    const char *keytype, const char *key)
+#endif
 {
     char *otherstr, *regname;
     int len;
@@ -299,7 +316,11 @@ int verify_host_key(const char *hostname, int port,
     DWORD type;
     int ret, compare;
 
+#ifdef MPEXT
+    len = maxlen;
+#else
     len = 1 + strlen(key);
+#endif
 
     /*
      * Now read a saved key in from the registry and see what it
@@ -386,15 +407,23 @@ int verify_host_key(const char *hostname, int port,
     // RegQueryValueEx fails (the key is unknown)
     otherstr[len - 1] = '\0';
 #endif
+#ifdef MPEXT
+    strncpy(key, otherstr, maxlen);
+    key[maxlen - 1] = '\0';
+#else
     compare = strcmp(otherstr, key);
+#endif
 
     sfree(otherstr);
     sfree(regname);
 
+#ifndef MPEXT
     if (ret == ERROR_MORE_DATA ||
 	(ret == ERROR_SUCCESS && type == REG_SZ && compare))
 	return 2;		       /* key is different in registry */
-    else if (ret != ERROR_SUCCESS || type != REG_SZ)
+    else
+#endif
+    if (ret != ERROR_SUCCESS || type != REG_SZ)
 	return 1;		       /* key does not exist in registry */
     else
 	return 0;		       /* key matched OK in registry */
@@ -406,39 +435,66 @@ void store_host_key(const char *hostname, int port,
     char *regname;
     HKEY rkey;
 
-#ifdef MPEXT
-    if (RegCreateKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
-		     &rkey) != ERROR_SUCCESS)
-	return;			       /* key does not exist in registry */
-
     regname = snewn(3 * (strlen(hostname) + strlen(keytype)) + 15, char);
+
     hostkey_regname(regname, hostname, port, keytype);
-    RegSetValueEx(rkey, regname, 0, REG_SZ, key, strlen(key) + 1);
-    // prevent memory leak
+
+    if (RegCreateKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
+		     &rkey) == ERROR_SUCCESS) {
+	RegSetValueEx(rkey, regname, 0, REG_SZ, key, strlen(key) + 1);
+	RegCloseKey(rkey);
+    } /* else key does not exist in registry */
+
     sfree(regname);
-#else
-    regname = snewn(3 * (strlen(hostname) + strlen(keytype)) + 15, char);
-
-    hostkey_regname(regname, hostname, port, keytype);
-
-    if (RegCreateKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
-		     &rkey) != ERROR_SUCCESS)
-	return;			       /* key does not exist in registry */
-    RegSetValueEx(rkey, regname, 0, REG_SZ, key, strlen(key) + 1);
-#endif
-    RegCloseKey(rkey);
 }
 
 /*
- * Find the random seed file path and store it in `seedpath'.
+ * Open (or delete) the random seed file.
  */
-static void get_seedpath(void)
+enum { DEL, OPEN_R, OPEN_W };
+static int try_random_seed(char const *path, int action, HANDLE *ret)
+{
+    if (action == DEL) {
+	remove(path);
+	*ret = INVALID_HANDLE_VALUE;
+	return FALSE;		       /* so we'll do the next ones too */
+    }
+
+    *ret = CreateFile(path,
+		      action == OPEN_W ? GENERIC_WRITE : GENERIC_READ,
+		      action == OPEN_W ? 0 : (FILE_SHARE_READ |
+					      FILE_SHARE_WRITE),
+		      NULL,
+		      action == OPEN_W ? CREATE_ALWAYS : OPEN_EXISTING,
+		      action == OPEN_W ? FILE_ATTRIBUTE_NORMAL : 0,
+		      NULL);
+
+    return (*ret != INVALID_HANDLE_VALUE);
+}
+
+static HANDLE access_random_seed(int action)
 {
     HKEY rkey;
     DWORD type, size;
+    HANDLE rethandle;
+    char seedpath[2 * MAX_PATH + 10] = "\0";
 
+    /*
+     * Iterate over a selection of possible random seed paths until
+     * we find one that works.
+     * 
+     * We do this iteration separately for reading and writing,
+     * meaning that we will automatically migrate random seed files
+     * if a better location becomes available (by reading from the
+     * best location in which we actually find one, and then
+     * writing to the best location in which we can _create_ one).
+     */
+
+    /*
+     * First, try the location specified by the user in the
+     * Registry, if any.
+     */
     size = sizeof(seedpath);
-
     if (RegOpenKey(HKEY_CURRENT_USER, PUTTY_REG_POS, &rkey) ==
 	ERROR_SUCCESS) {
 	int ret = RegQueryValueEx(rkey, "RandSeedFile",
@@ -446,10 +502,51 @@ static void get_seedpath(void)
 	if (ret != ERROR_SUCCESS || type != REG_SZ)
 	    seedpath[0] = '\0';
 	RegCloseKey(rkey);
-    } else
-	seedpath[0] = '\0';
 
-    if (!seedpath[0]) {
+	if (*seedpath && try_random_seed(seedpath, action, &rethandle))
+	    return rethandle;
+    }
+
+    /*
+     * Next, try the user's local Application Data directory,
+     * followed by their non-local one. This is found using the
+     * SHGetFolderPath function, which won't be present on all
+     * versions of Windows.
+     */
+    if (!tried_shgetfolderpath) {
+	/* This is likely only to bear fruit on systems with IE5+
+	 * installed, or WinMe/2K+. There is some faffing with
+	 * SHFOLDER.DLL we could do to try to find an equivalent
+	 * on older versions of Windows if we cared enough.
+	 * However, the invocation below requires IE5+ anyway,
+	 * so stuff that. */
+	shell32_module = LoadLibrary("SHELL32.DLL");
+	if (shell32_module) {
+	    p_SHGetFolderPath = (p_SHGetFolderPath_t)
+		GetProcAddress(shell32_module, "SHGetFolderPathA");
+	}
+    }
+    if (p_SHGetFolderPath) {
+	if (SUCCEEDED(p_SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA,
+					NULL, SHGFP_TYPE_CURRENT, seedpath))) {
+	    strcat(seedpath, "\\PUTTY.RND");
+	    if (try_random_seed(seedpath, action, &rethandle))
+		return rethandle;
+	}
+
+	if (SUCCEEDED(p_SHGetFolderPath(NULL, CSIDL_APPDATA,
+					NULL, SHGFP_TYPE_CURRENT, seedpath))) {
+	    strcat(seedpath, "\\PUTTY.RND");
+	    if (try_random_seed(seedpath, action, &rethandle))
+		return rethandle;
+	}
+    }
+
+    /*
+     * Failing that, try %HOMEDRIVE%%HOMEPATH% as a guess at the
+     * user's home directory.
+     */
+    {
 	int len, ret;
 
 	len =
@@ -458,25 +555,30 @@ static void get_seedpath(void)
 	ret =
 	    GetEnvironmentVariable("HOMEPATH", seedpath + len,
 				   sizeof(seedpath) - len);
-	if (ret == 0) {		       /* probably win95; store in \WINDOWS */
-	    GetWindowsDirectory(seedpath, sizeof(seedpath));
-	    len = strlen(seedpath);
-	} else
-	    len += ret;
-	strcpy(seedpath + len, "\\PUTTY.RND");
+	if (ret != 0) {
+	    strcat(seedpath, "\\PUTTY.RND");
+	    if (try_random_seed(seedpath, action, &rethandle))
+		return rethandle;
+	}
     }
+
+    /*
+     * And finally, fall back to C:\WINDOWS.
+     */
+    GetWindowsDirectory(seedpath, sizeof(seedpath));
+    strcat(seedpath, "\\PUTTY.RND");
+    if (try_random_seed(seedpath, action, &rethandle))
+	return rethandle;
+
+    /*
+     * If even that failed, give up.
+     */
+    return INVALID_HANDLE_VALUE;
 }
 
 void read_random_seed(noise_consumer_t consumer)
 {
-    HANDLE seedf;
-
-    if (!seedpath[0])
-	get_seedpath();
-
-    seedf = CreateFile(seedpath, GENERIC_READ,
-		       FILE_SHARE_READ | FILE_SHARE_WRITE,
-		       NULL, OPEN_EXISTING, 0, NULL);
+    HANDLE seedf = access_random_seed(OPEN_R);
 
     if (seedf != INVALID_HANDLE_VALUE) {
 	while (1) {
@@ -494,13 +596,7 @@ void read_random_seed(noise_consumer_t consumer)
 
 void write_random_seed(void *data, int len)
 {
-    HANDLE seedf;
-
-    if (!seedpath[0])
-	get_seedpath();
-
-    seedf = CreateFile(seedpath, GENERIC_WRITE, 0,
-		       NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    HANDLE seedf = access_random_seed(OPEN_W);
 
     if (seedf != INVALID_HANDLE_VALUE) {
 	DWORD lenwritten;
@@ -536,11 +632,10 @@ void cleanup_all(void)
     char name[MAX_PATH + 1];
 
     /* ------------------------------------------------------------
-     * Wipe out the random seed file.
+     * Wipe out the random seed file, in all of its possible
+     * locations.
      */
-    if (!seedpath[0])
-	get_seedpath();
-    remove(seedpath);
+    access_random_seed(DEL);
 
     /* ------------------------------------------------------------
      * Destroy all registry information associated with PuTTY.

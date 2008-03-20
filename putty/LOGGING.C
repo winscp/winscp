@@ -1,3 +1,7 @@
+/*
+ * Session logging.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -81,7 +85,7 @@ static void logfopen_callback(void *handle, int mode)
 	ctx->state = L_ERROR;	       /* disable logging */
     } else {
 	fmode = (mode == 1 ? "ab" : "wb");
-	ctx->lgfp = f_open(ctx->currlogfilename, fmode);
+	ctx->lgfp = f_open(ctx->currlogfilename, fmode, TRUE);
 	if (ctx->lgfp)
 	    ctx->state = L_OPEN;
 	else
@@ -102,6 +106,7 @@ static void logfopen_callback(void *handle, int mode)
 		      (ctx->cfg.logtype == LGTYP_ASCII ? "ASCII" :
 		       ctx->cfg.logtype == LGTYP_DEBUG ? "raw" :
 		       ctx->cfg.logtype == LGTYP_PACKETS ? "SSH packets" :
+		       ctx->cfg.logtype == LGTYP_SSHRAW ? "SSH raw data" :
 		       "unknown"),
 		      filename_to_str(&ctx->currlogfilename));
     logevent(ctx->frontend, event);
@@ -144,7 +149,7 @@ void logfopen(void *handle)
     /* substitute special codes in file name */
     xlatlognam(&ctx->currlogfilename, ctx->cfg.logfilename,ctx->cfg.host, &tm);
 
-    ctx->lgfp = f_open(ctx->currlogfilename, "r");  /* file already present? */
+    ctx->lgfp = f_open(ctx->currlogfilename, "r", FALSE);  /* file already present? */
     if (ctx->lgfp) {
 	fclose(ctx->lgfp);
 	if (ctx->cfg.logxfovr != LGXF_ASK) {
@@ -199,9 +204,14 @@ void log_eventlog(void *handle, const char *event)
 	fprintf(stderr, "%s\n", event);
 	fflush(stderr);
     }
-    if (ctx->cfg.logtype != LGTYP_PACKETS)
+    /* If we don't have a context yet (eg winnet.c init) then skip entirely */
+    if (!ctx)
+	return;
+    if (ctx->cfg.logtype != LGTYP_PACKETS &&
+	ctx->cfg.logtype != LGTYP_SSHRAW)
 	return;
     logprintf(ctx, "Event Log: %s\r\n", event);
+    logflush(ctx);
 }
 
 /*
@@ -218,13 +228,18 @@ void log_packet(void *handle, int direction, int type,
     int p = 0, b = 0, omitted = 0;
     int output_pos = 0; /* NZ if pending output in dumpdata */
 
-    if (ctx->cfg.logtype != LGTYP_PACKETS)
+    if (!(ctx->cfg.logtype == LGTYP_SSHRAW ||
+          (ctx->cfg.logtype == LGTYP_PACKETS && texttype)))
 	return;
 
     /* Packet header. */
-    logprintf(ctx, "%s packet type %d / 0x%02x (%s)\r\n",
-	      direction == PKT_INCOMING ? "Incoming" : "Outgoing",
-	      type, type, texttype);
+    if (texttype)
+        logprintf(ctx, "%s packet type %d / 0x%02x (%s)\r\n",
+                  direction == PKT_INCOMING ? "Incoming" : "Outgoing",
+                  type, type, texttype);
+    else
+        logprintf(ctx, "%s raw data\r\n",
+                  direction == PKT_INCOMING ? "Incoming" : "Outgoing");
 
     /*
      * Output a hex/ASCII dump of the packet body, blanking/omitting
@@ -340,7 +355,7 @@ void log_reconfig(void *handle, Config *cfg)
  * translate format codes into time/date strings
  * and insert them into log file name
  *
- * "&Y":YYYY   "&m":MM   "&d":DD   "&T":hhmm   "&h":<hostname>   "&&":&
+ * "&Y":YYYY   "&m":MM   "&d":DD   "&T":hhmmss   "&h":<hostname>   "&&":&
  */
 static void xlatlognam(Filename *dest, Filename src,
 		       char *hostname, struct tm *tm) {

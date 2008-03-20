@@ -4,7 +4,7 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="DScpComp.bpl"/>
-    <OBJFILES value="DScpComp.obj components\UnixDirView.obj components\UnixPathComboBox.obj 
+    <OBJFILES value="DScpComp.obj components\UnixDirView.obj
       components\LogMemo.obj components\UnixDriveView.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
@@ -51,7 +51,6 @@
       <FILE FILENAME="DriveDir_B5.bpi" FORMNAME="" UNITNAME="DriveDir_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="DragDrop_B5.bpi" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="components\UnixDirView.cpp" FORMNAME="" UNITNAME="UnixDirView" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="components\UnixPathComboBox.cpp" FORMNAME="" UNITNAME="UnixPathComboBox" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vclx.bpi" FORMNAME="" UNITNAME="vclx" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>

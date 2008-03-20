@@ -14,8 +14,6 @@ char sshver[50];
 CRITICAL_SECTION noise_section;
 bool SaveRandomSeed;
 //---------------------------------------------------------------------------
-int get_line(void * frontend, const char * prompt, char * str, int maxlen, int is_pw);
-//---------------------------------------------------------------------------
 void __fastcall PuttyInitialize()
 {
   SaveRandomSeed = true;
@@ -26,13 +24,11 @@ void __fastcall PuttyInitialize()
   // in destructor can proceed
   random_ref();
 
-  // initialize default seed path value same way as putty does (only change filename)
-  putty_get_seedpath();
   flags = FLAG_VERBOSE | FLAG_SYNCAGENT; // verbose log
 
-  ssh_get_line = get_line;
-  ssh_getline_pw_only = FALSE;
   sk_init();
+
+  sspi_init();
 
   AnsiString VersionString = SshVersionString();
   assert(!VersionString.IsEmpty() && (VersionString.Length() < sizeof(sshver)));
@@ -47,6 +43,7 @@ void __fastcall PuttyFinalize()
   }
   random_unref();
 
+  sspi_cleanup();
   sk_cleanup();
   DeleteCriticalSection(&noise_section);
 }
@@ -131,41 +128,82 @@ extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
   return NULL;
 }
 //---------------------------------------------------------------------------
-int from_backend(void * frontend, int is_stderr, const char * data, int datalen, int type)
+int from_backend(void * frontend, int is_stderr, const char * data, int datalen)
 {
   assert(frontend);
-  if (type > 0)
+  if (is_stderr >= 0)
   {
+    assert((is_stderr == 0) || (is_stderr == 1));
     ((TSecureShell *)frontend)->FromBackend((is_stderr == 1), data, datalen);
   }
   else
   {
-    assert(is_stderr == 1);
-    ((TSecureShell *)frontend)->CWrite(data, datalen, type < 0);
+    assert(is_stderr == -1);
+    ((TSecureShell *)frontend)->CWrite(data, datalen);
   }
   return 0;
 }
 //---------------------------------------------------------------------------
-static int get_line(void * frontend, const char * prompt, char * str,
-  int maxlen, int is_pw)
+int from_backend_untrusted(void * /*frontend*/, const char * /*data*/, int /*len*/)
 {
-  assert(frontend != NULL);
+  // currently used with authentication banner only,
+  // for which we have own interface display_banner
+  return 0;
+}
+//---------------------------------------------------------------------------
+int get_userpass_input(prompts_t * p, unsigned char * /*in*/, int /*inlen*/)
+{
+  assert(p != NULL);
+  TSecureShell * SecureShell = reinterpret_cast<TSecureShell *>(p->frontend);
+  assert(SecureShell != NULL);
 
-  TSecureShell * SecureShell = reinterpret_cast<TSecureShell*>(frontend);
-  AnsiString Response;
-  bool Result = SecureShell->PromptUser(prompt, Response, is_pw);
-  if (Result)
+  int Result;
+  TStrings * Prompts = new TStringList();
+  TStrings * Results = new TStringList();
+  try
   {
-    strcpy(str, Response.SubString(1, maxlen - 1).c_str());
+    for (int Index = 0; Index < int(p->n_prompts); Index++)
+    {
+      prompt_t * Prompt = p->prompts[Index];
+      Prompts->AddObject(Prompt->prompt, (TObject *)Prompt->echo);
+      Results->AddObject("", (TObject *)Prompt->result_len);
+    }
+
+    if (SecureShell->PromptUser(p->to_server, p->name, p->name_reqd,
+          p->instruction, p->instr_reqd, Prompts, Results))
+    {
+      for (int Index = 0; Index < int(p->n_prompts); Index++)
+      {
+        prompt_t * Prompt = p->prompts[Index];
+        strncpy(Prompt->result, Results->Strings[Index].c_str(), Prompt->result_len);
+        Prompt->result[Prompt->result_len - 1] = '\0';
+      }
+      Result = 1;
+    }
+    else
+    {
+      Result = 0;
+    }
+  }
+  __finally
+  {
+    delete Prompts;
+    delete Results;
   }
 
-  return Result ? 1 : 0;
+  return Result;
+}
+//---------------------------------------------------------------------------
+char * get_ttymode(void * /*frontend*/, const char * /*mode*/)
+{
+  // should never happen when Config.nopty == TRUE
+  assert(false);
+  return NULL;
 }
 //---------------------------------------------------------------------------
 void logevent(void * frontend, const char * string)
 {
   // Frontend maybe NULL here
-  // (one of the examples is indirect call from ssh_gssapi_init from HasGSSAPI)
   if (frontend != NULL)
   {
     ((TSecureShell *)frontend)->PuttyLogEvent(string);
@@ -318,24 +356,29 @@ void set_busy_status(void * /*frontend*/, int /*status*/)
 //---------------------------------------------------------------------------
 static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool CanCreate)
 {
-  // This is called once during initialization
-  // from get_seedpath() (winstore.c).
-  // In that case we want it to really look into Putty regkey.
   long R;
   assert(Configuration != NULL);
-  if (Configuration->Initialized)
-  {
-    assert(Key == HKEY_CURRENT_USER);
 
-    AnsiString RegKey = SubKey;
-    int PuttyKeyLen = Configuration->PuttyRegistryStorageKey.Length();
-    assert(RegKey.SubString(1, PuttyKeyLen) == Configuration->PuttyRegistryStorageKey);
-    RegKey = RegKey.SubString(PuttyKeyLen + 1, RegKey.Length() - PuttyKeyLen);
-    if (!RegKey.IsEmpty())
-    {
-      assert(RegKey[1] == '\\');
-      RegKey.Delete(1, 1);
-    }
+  assert(Key == HKEY_CURRENT_USER);
+  USEDPARAM(Key);
+
+  AnsiString RegKey = SubKey;
+  int PuttyKeyLen = Configuration->PuttyRegistryStorageKey.Length();
+  assert(RegKey.SubString(1, PuttyKeyLen) == Configuration->PuttyRegistryStorageKey);
+  RegKey = RegKey.SubString(PuttyKeyLen + 1, RegKey.Length() - PuttyKeyLen);
+  if (!RegKey.IsEmpty())
+  {
+    assert(RegKey[1] == '\\');
+    RegKey.Delete(1, 1);
+  }
+
+  if (RegKey.IsEmpty())
+  {
+    *Result = static_cast<HKEY>(NULL);
+    R = ERROR_SUCCESS;
+  }
+  else
+  {
     // we expect this to be called only from verify_host_key() or store_host_key()
     assert(RegKey == "SshHostKeys");
 
@@ -352,19 +395,7 @@ static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool Can
       R = ERROR_CANTOPEN;
     }
   }
-  else
-  {
-    assert(Configuration->PuttyRegistryStorageKey == SubKey);
 
-    if (CanCreate)
-    {
-      R = RegCreateKey(Key, SubKey, Result);
-    }
-    else
-    {
-      R = RegOpenKey(Key, SubKey, Result);
-    }
-  }
   return R;
 }
 //---------------------------------------------------------------------------
@@ -378,24 +409,32 @@ long reg_create_winscp_key(HKEY Key, const char * SubKey, HKEY * Result)
   return OpenWinSCPKey(Key, SubKey, Result, true);
 }
 //---------------------------------------------------------------------------
-long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long * Reserved,
+long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long * /*Reserved*/,
   unsigned long * Type, unsigned char * Data, unsigned long * DataSize)
 {
   long R;
   assert(Configuration != NULL);
-  if (Configuration->Initialized)
+
+  THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
+  AnsiString Value;
+  if (Storage == NULL)
   {
-    THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
+    if (AnsiString(ValueName) == "RandSeedFile")
+    {
+      Value = Configuration->RandomSeedFileName;
+      R = ERROR_SUCCESS;
+    }
+    else
+    {
+      assert(false);
+      R = ERROR_READ_FAULT;
+    }
+  }
+  else
+  {
     if (Storage->ValueExists(ValueName))
     {
-      AnsiString Value;
       Value = Storage->ReadStringRaw(ValueName, "");
-      assert(Type != NULL);
-      *Type = REG_SZ;
-      char * DataStr = reinterpret_cast<char *>(Data);
-      strncpy(DataStr, Value.c_str(), *DataSize);
-      DataStr[*DataSize - 1] = '\0';
-      *DataSize = strlen(DataStr);
       R = ERROR_SUCCESS;
     }
     else
@@ -403,48 +442,49 @@ long reg_query_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long *
       R = ERROR_READ_FAULT;
     }
   }
-  else
+
+  if (R == ERROR_SUCCESS)
   {
-    R = RegQueryValueEx(Key, ValueName, Reserved, Type, Data, DataSize);
+    assert(Type != NULL);
+    *Type = REG_SZ;
+    char * DataStr = reinterpret_cast<char *>(Data);
+    strncpy(DataStr, Value.c_str(), *DataSize);
+    DataStr[*DataSize - 1] = '\0';
+    *DataSize = strlen(DataStr);
   }
+
   return R;
 }
 //---------------------------------------------------------------------------
-long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long Reserved,
+long reg_set_winscp_value_ex(HKEY Key, const char * ValueName, unsigned long /*Reserved*/,
   unsigned long Type, const unsigned char * Data, unsigned long DataSize)
 {
-  long R;
   assert(Configuration != NULL);
-  if (Configuration->Initialized)
+
+  assert(Type == REG_SZ);
+  USEDPARAM(Type);
+  THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
+  assert(Storage != NULL);
+  if (Storage != NULL)
   {
-    assert(Type == REG_SZ);
-    THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
     AnsiString Value(reinterpret_cast<const char*>(Data), DataSize - 1);
     Storage->WriteStringRaw(ValueName, Value);
-    R = ERROR_SUCCESS;
   }
-  else
-  {
-    R = RegSetValueEx(Key, ValueName, Reserved, Type, Data, DataSize);
-  }
-  return R;
+
+  return ERROR_SUCCESS;
 }
 //---------------------------------------------------------------------------
 long reg_close_winscp_key(HKEY Key)
 {
-  long R;
   assert(Configuration != NULL);
-  if (Configuration->Initialized)
+
+  THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
+  if (Storage != NULL)
   {
-    THierarchicalStorage * Storage = static_cast<THierarchicalStorage *>(Key);
     delete Storage;
-    R = ERROR_SUCCESS;
   }
-  else
-  {
-    R = RegCloseKey(Key);
-  }
-  return R;
+
+  return ERROR_SUCCESS;
 }
 //---------------------------------------------------------------------------
 TKeyType KeyType(AnsiString FileName)

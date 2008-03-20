@@ -39,19 +39,19 @@ object SynchronizeDialog: TSynchronizeDialog
     object LocalDirectoryLabel: TLabel
       Left = 11
       Top = 19
-      Width = 200
+      Width = 191
       Height = 13
       Anchors = [akLeft, akTop, akRight]
-      Caption = '&Watch for changes in the local directory ...'
+      Caption = '&Watch for changes in the local directory:'
       FocusControl = LocalDirectoryEdit
     end
     object RemoteDirectoryLabel: TLabel
       Left = 11
       Top = 68
-      Width = 263
+      Width = 266
       Height = 13
       Anchors = [akLeft, akTop, akRight]
-      Caption = '... &and automatically reflect them on the remote directory'
+      Caption = '... &and automatically reflect them on the remote directory:'
       FocusControl = RemoteDirectoryEdit
     end
     object RemoteDirectoryEdit: THistoryComboBox

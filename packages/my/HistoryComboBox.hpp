@@ -83,6 +83,7 @@ public:
 #define DefaultHistorySaveOn (System::Set<HistoryComboBox__1, soExit, soDropDown> () << HistoryComboBox__1(0) << HistoryComboBox__1(1) )
 static const Shortint DefaultMaxHistorySize = 0x1e;
 extern PACKAGE void __fastcall Register(void);
+extern PACKAGE void __fastcall SaveToHistory(Classes::TStrings* Strings, AnsiString T, void * Data = (void *)(0x0), int MaxHistorySize = 0x1e);
 
 }	/* namespace Historycombobox */
 using namespace Historycombobox;

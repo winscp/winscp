@@ -15,6 +15,8 @@
 #include "CustomScpExplorer.h"
 #include "TB2Item.hpp"
 #include "TBX.hpp"
+#include "TB2ExtItems.hpp"
+#include "TBXExtItems.hpp"
 //---------------------------------------------------------------------------
 #define fcStatusBar        0x01
 #define fcToolBar          0x02
@@ -478,12 +480,20 @@ __published:    // IDE-managed Components
   TAction *CustomCommandsLastAction;
   TAction *CustomCommandsLastFocusedAction;
   TAction *CustomCommandsEnterFocusedAction;
+  TAction *AddEditLinkContextAction;
+  TTBXItem *TBXItem23;
+  TTBEditAction *QueueItemSpeedAction;
+  TTBXComboBoxItem *QueueSpeedComboBoxItem;
+  TAction *CurrentDeleteAlternativeAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
   void __fastcall QueuePopupPopup(TObject *Sender);
+  void __fastcall QueueSpeedComboBoxItemItemClick(TObject *Sender);
+  void __fastcall QueueSpeedComboBoxItemAcceptText(TObject *Sender,
+          AnsiString &NewText, bool &Accept);
 private:
   TListColumn * FListColumn;
   TCustomScpExplorerForm * FScpExplorer;
@@ -493,12 +503,14 @@ private:
   void __fastcall SetScpExplorer(TCustomScpExplorerForm * value);
 protected:
   void __fastcall CreateSessionListMenu(TAction * Action);
+  void __fastcall CreateSessionListMenuLevel(TTBCustomItem * Menu, int Index, int Level);
   void __fastcall CreateCustomCommandsMenu(TAction * Action);
   void __fastcall CreateCustomCommandsMenu(TTBCustomItem * Menu, bool OnFocused,
     bool Toolbar);
   void __fastcall CreateOpenedSessionListMenu(TAction * Action);
   TCustomDirView * __fastcall DirView(TOperationSide Side) { return ScpExplorer->DirView(Side); }
   void __fastcall SessionItemClick(TObject * Sender);
+  void __fastcall SessionFolderItemClick(TObject * Sender);
   void __fastcall OpenedSessionItemClick(TObject * Sender);
   void __fastcall CustomCommandClick(TObject * Sender);
   void __fastcall CreateEditorListMenu(TAction * Action);
@@ -507,6 +519,7 @@ protected:
   inline void __fastcall ShowUpdatesUpdate();
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
   void __fastcall CustomCommandsLastUpdate(TAction * Action);
+  AnsiString __fastcall QueueItemSpeed(const AnsiString & Text);
 
 public:
   __fastcall TNonVisualDataModule(TComponent * Owner);

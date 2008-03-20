@@ -30,7 +30,7 @@
 #ifndef MPEXT_NO_GSS
 #include "AsyncGssSocketLayer.h"
 #endif
-#ifndef MPEXT_NO_SPEED_LIM
+#ifndef MPEXT_NO_SPEED_LIM_RULES
 #include "SpeedLimit.h"
 #endif
 #ifndef MPEXT
@@ -277,14 +277,18 @@ int CControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 	return 1;
 }
 
-#ifndef MPEXT_NO_SPEED_LIM
+#ifndef MPEXT_NO_SPEED_LIM_RULES
 _int64 CControlSocket::GetSpeedLimit(CTime &time, int valType, int valValue, SPEEDLIMITSLIST &list)
+#else
+_int64 CControlSocket::GetSpeedLimit(CTime &time, int valType, int valValue)
+#endif
 {
 	int type = COptions::GetOptionVal(valType);
 
 	if ( type == 1)
 		return ( _int64)COptions::GetOptionVal(valValue) * 1024;
 
+#ifndef MPEXT_NO_SPEED_LIM_RULES
 	if ( type == 2)
 	{
 		CSingleLock lock(&COptions::m_Sync, TRUE);
@@ -294,21 +298,26 @@ _int64 CControlSocket::GetSpeedLimit(CTime &time, int valType, int valValue, SPE
 				return list[ i]->m_Speed * 1024;
 		}
 	}
+#endif
 
 	return ( _int64)1000000000000;	//I hope that when there will be something with 1000GB/s then I'll change it :)
 }
-#endif
 
 _int64 CControlSocket::GetSpeedLimit(enum transferDirection direction, CTime &time)
 {
-#ifndef MPEXT_NO_SPEED_LIM
 	if (direction == download)
+#ifndef MPEXT_NO_SPEED_LIM_RULES
 		return GetSpeedLimit(time, OPTION_SPEEDLIMIT_DOWNLOAD_TYPE, OPTION_SPEEDLIMIT_DOWNLOAD_VALUE, COptions::m_DownloadSpeedLimits);
+#else
+		return GetSpeedLimit(time, OPTION_SPEEDLIMIT_DOWNLOAD_TYPE, OPTION_SPEEDLIMIT_DOWNLOAD_VALUE);
+#endif
 	else
+#ifndef MPEXT_NO_SPEED_LIM_RULES
 		return GetSpeedLimit( time, OPTION_SPEEDLIMIT_UPLOAD_TYPE, OPTION_SPEEDLIMIT_UPLOAD_VALUE, COptions::m_UploadSpeedLimits);
 #else
-	return ( _int64)1000000000000;
+		return GetSpeedLimit( time, OPTION_SPEEDLIMIT_UPLOAD_TYPE, OPTION_SPEEDLIMIT_UPLOAD_VALUE);
 #endif
+	return ( _int64)1000000000000;
 }
 
 _int64 CControlSocket::GetAbleToUDSize( bool &beenWaiting, CTime &curTime, _int64 &curLimit, std::list<CControlSocket::t_ActiveList>::iterator &iter, enum transferDirection direction, int nBufSize)

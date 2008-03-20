@@ -13,6 +13,10 @@ void __fastcall ShowExtendedException(Exception * E);
 AnsiString __fastcall GetRegistryKey();
 void __fastcall Busy(bool Start);
 AnsiString __fastcall SshVersionString();
+void __fastcall CopyToClipboard(AnsiString Text);
+int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
+  TThreadFunc ThreadFunc, void * Parameter, unsigned CreationFlags,
+  unsigned & ThreadId);
 
 const unsigned int qaYes =      0x00000001;
 const unsigned int qaNo =       0x00000002;
@@ -35,8 +39,11 @@ const int qpAllowContinueOnError = 0x04;
 
 struct TQueryButtonAlias
 {
+  TQueryButtonAlias();
+
   unsigned int Button;
   AnsiString Alias;
+  TNotifyEvent OnClick;
 };
 
 typedef void __fastcall (__closure *TQueryParamsTimerEvent)(unsigned int & Result);
@@ -58,6 +65,19 @@ struct TQueryParams
 };
 
 enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };
-enum TPromptKind { pkPassword, pkPassphrase, pkServerPrompt, pkPrompt };
+
+enum TPromptKind
+{
+  pkPrompt,
+  pkUserName,
+  pkPassphrase,
+  pkTIS,
+  pkCryptoCard,
+  pkKeybInteractive,
+  pkPassword,
+  pkNewPassword
+};
+
+bool __fastcall IsAuthenticationPrompt(TPromptKind Kind);
 //---------------------------------------------------------------------------
 #endif

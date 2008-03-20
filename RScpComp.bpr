@@ -5,7 +5,7 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\RScpComp.lib"/>
     <OBJFILES value="components\LogMemo.obj components\UnixDirView.obj
-      components\UnixDriveView.obj components\UnixPathComboBox.obj"/>
+      components\UnixDriveView.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
@@ -45,7 +45,6 @@
       <FILE FILENAME="components\LogMemo.cpp" FORMNAME="" UNITNAME="LogMemo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="components\UnixDirView.cpp" FORMNAME="" UNITNAME="UnixDirView" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="components\UnixDriveView.cpp" FORMNAME="" UNITNAME="UnixDriveView" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="components\UnixPathComboBox.cpp" FORMNAME="" UNITNAME="UnixPathComboBox" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

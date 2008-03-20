@@ -219,8 +219,9 @@ public:
   virtual int __fastcall QueryUserException(const AnsiString Query,
     Exception * E, int Answers, const TQueryParams * Params,
     TQueryType QueryType);
-  virtual bool __fastcall PromptUser(TSessionData * Data, AnsiString Prompt,
-    TPromptKind Kind, AnsiString & Response);
+  virtual bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+    TStrings * Results);
   virtual void __fastcall DisplayBanner(const AnsiString & Banner);
   virtual void __fastcall ShowExtendedException(Exception * E);
   virtual void __fastcall Closed();
@@ -276,13 +277,20 @@ int __fastcall TTunnelUI::QueryUserException(const AnsiString Query,
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTunnelUI::PromptUser(TSessionData * Data, AnsiString Prompt,
-  TPromptKind Kind, AnsiString & Response)
+bool __fastcall TTunnelUI::PromptUser(TSessionData * Data, TPromptKind Kind,
+  AnsiString Name, AnsiString Instructions, TStrings * Prompts, TStrings * Results)
 {
   bool Result;
   if (GetCurrentThreadId() == FTerminalThread)
   {
-    Result = FTerminal->PromptUser(Data, Prompt, Kind, Response);
+    if (IsAuthenticationPrompt(Kind))
+    {
+      Instructions = LoadStr(TUNNEL_INSTRUCTION) +
+        (Instructions.IsEmpty() ? "" : "\n") +
+        Instructions;
+    }
+
+    Result = FTerminal->PromptUser(Data, Kind, Name, Instructions, Prompts, Results);
   }
   else
   {
@@ -359,6 +367,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FTunnelData = NULL;
   FTunnelLog = NULL;
   FTunnelUI = NULL;
+  FTunnelOpening = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -590,7 +599,8 @@ void __fastcall TTerminal::Open()
         if (SessionData->CacheDirectoryChanges)
         {
           assert(FDirectoryChangesCache == NULL);
-          FDirectoryChangesCache = new TRemoteDirectoryChangesCache();
+          FDirectoryChangesCache = new TRemoteDirectoryChangesCache(
+            Configuration->CacheDirectoryChangesMaxSize);
           if (SessionData->PreserveDirectoryChanges)
           {
             Configuration->LoadDirectoryChangesCache(SessionData->SessionKey,
@@ -682,6 +692,7 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelData->ProxyUsername = FSessionData->ProxyUsername;
     FTunnelData->ProxyPassword = FSessionData->ProxyPassword;
     FTunnelData->ProxyTelnetCommand = FSessionData->ProxyTelnetCommand;
+    FTunnelData->ProxyLocalCommand = FSessionData->ProxyLocalCommand;
     FTunnelData->ProxyDNS = FSessionData->ProxyDNS;
     FTunnelData->ProxyLocalhost = FSessionData->ProxyLocalhost;
 
@@ -691,7 +702,15 @@ void __fastcall TTerminal::OpenTunnel()
     FTunnelUI = new TTunnelUI(this);
     FTunnel = new TSecureShell(FTunnelUI, FTunnelData, FTunnelLog, Configuration);
 
-    FTunnel->Open();
+    FTunnelOpening = true;
+    try
+    {
+      FTunnel->Open();
+    }
+    __finally
+    {
+      FTunnelOpening = false;
+    }
 
     FTunnelThread = new TTunnelThread(FTunnel);
   }
@@ -777,32 +796,58 @@ void __fastcall TTerminal::Reopen(int Params)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::PromptUser(TSessionData * Data, AnsiString Prompt,
-  TPromptKind Kind, AnsiString & Response)
+bool __fastcall TTerminal::PromptUser(TSessionData * Data, TPromptKind Kind,
+  AnsiString Name, AnsiString Instructions, AnsiString Prompt, bool Echo, int MaxLen, AnsiString & Result)
+{
+  bool AResult;
+  TStrings * Prompts = new TStringList;
+  TStrings * Results = new TStringList;
+  try
+  {
+    Prompts->AddObject(Prompt, (TObject *)Echo);
+    Results->AddObject(Result, (TObject *)MaxLen);
+
+    AResult = PromptUser(Data, Kind, Name, Instructions, Prompts, Results);
+
+    Result = Results->Strings[0];
+  }
+  __finally
+  {
+    delete Prompts;
+    delete Results;
+  }
+
+  return AResult;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::PromptUser(TSessionData * Data, TPromptKind Kind,
+  AnsiString Name, AnsiString Instructions, TStrings * Prompts, TStrings * Results)
 {
   // If PromptUser is overriden in descendant class, the overriden version
   // is not called when accessed via TSessionIU interface.
   // So this is workaround.
-  return DoPromptUser(Data, Prompt, Kind, Response);
+  return DoPromptUser(Data, Kind, Name, Instructions, Prompts, Results);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, AnsiString Prompt,
-  TPromptKind Kind, AnsiString & Response)
+bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kind,
+  AnsiString Name, AnsiString Instructions, TStrings * Prompts, TStrings * Results)
 {
-  bool Result = false;
+  bool AResult = false;
 
   if (OnPromptUser != NULL)
   {
-    OnPromptUser(this, Prompt, Kind, Response, Result, NULL);
+    OnPromptUser(this, Kind, Name, Instructions, Prompts, Results, AResult, NULL);
   }
 
-  if ((Configuration->RememberPassword) &&
-      ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkServerPrompt)))
+  if (AResult && (Configuration->RememberPassword) &&
+      (Prompts->Count == 1) && !bool(Prompts->Objects[0]) &&
+      ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
+       (Kind == pkTIS) || (Kind == pkCryptoCard)))
   {
-    FPassword = EncryptPassword(Response, SessionData->SessionName);
+    FPassword = EncryptPassword(Results->Strings[0], SessionData->SessionName);
   }
 
-  return Result;
+  return AResult;
 }
 //---------------------------------------------------------------------------
 int __fastcall TTerminal::QueryUser(const AnsiString Query,
@@ -1599,14 +1644,6 @@ void __fastcall TTerminal::FileModified(const TRemoteFile * File,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TTerminal::DoDirectoryModified(const AnsiString Path, bool SubDirs)
-{
-  if (OnDirectoryModified != NULL)
-  {
-    OnDirectoryModified(this, Path, SubDirs);
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TTerminal::DirectoryModified(const AnsiString Path, bool SubDirs)
 {
   if (Path.IsEmpty())
@@ -1617,7 +1654,6 @@ void __fastcall TTerminal::DirectoryModified(const AnsiString Path, bool SubDirs
   {
     ClearCachedFileList(Path, SubDirs);
   }
-  DoDirectoryModified(Path, SubDirs);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DirectoryLoaded(TRemoteFileList * FileList)
@@ -2121,7 +2157,7 @@ void __fastcall TTerminal::RecycleFile(AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DeleteFile(AnsiString FileName,
-  const TRemoteFile * File, void * Recursive)
+  const TRemoteFile * File, void * AParams)
 {
   if (FileName.IsEmpty() && File)
   {
@@ -2132,7 +2168,9 @@ void __fastcall TTerminal::DeleteFile(AnsiString FileName,
     if (OperationProgress->Cancel != csContinue) Abort();
     OperationProgress->SetFile(FileName);
   }
-  if (SessionData->DeleteToRecycleBin && !IsRecycledFile(FileName))
+  int Params = *((int*)AParams);
+  bool Recycle = (SessionData->DeleteToRecycleBin != FLAGSET(Params, dfAlternative));
+  if (Recycle && !IsRecycledFile(FileName))
   {
     RecycleFile(FileName, File);
   }
@@ -2140,41 +2178,40 @@ void __fastcall TTerminal::DeleteFile(AnsiString FileName,
   {
     LogEvent(FORMAT("Deleting file \"%s\".", (FileName)));
     if (File) FileModified(File, FileName, true);
-    DoDeleteFile(FileName, File, Recursive);
+    DoDeleteFile(FileName, File, Params);
     ReactOnCommand(fsDeleteFile);
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoDeleteFile(const AnsiString FileName,
-  const TRemoteFile * File, void * Recursive)
+  const TRemoteFile * File, int Params)
 {
   try
   {
     assert(FFileSystem);
     // 'File' parameter: SFTPFileSystem needs to know if file is file or directory
-    FFileSystem->DeleteFile(FileName, File,
-      Recursive ? *((bool*)Recursive) : true);
+    FFileSystem->DeleteFile(FileName, File, Params);
   }
   catch(Exception & E)
   {
     COMMAND_ERROR_ARI
     (
       FMTLOAD(DELETE_FILE_ERROR, (FileName)),
-      DoDeleteFile(FileName, File, Recursive)
+      DoDeleteFile(FileName, File, Params)
     );
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, bool * Recursive)
+bool __fastcall TTerminal::DeleteFiles(TStrings * FilesToDelete, int Params)
 {
   // TODO: avoid resolving symlinks while reading subdirectories.
   // Resolving does not work anyway for relative symlinks in subdirectories
   // (at least for SFTP).
-  return ProcessFiles(FilesToDelete, foDelete, DeleteFile, Recursive);
+  return ProcessFiles(FilesToDelete, foDelete, DeleteFile, &Params);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DeleteLocalFile(AnsiString FileName,
-  const TRemoteFile * /*File*/, void * /*Param*/)
+  const TRemoteFile * /*File*/, void * Params)
 {
   if (OnDeleteLocalFile == NULL)
   {
@@ -2185,13 +2222,13 @@ void __fastcall TTerminal::DeleteLocalFile(AnsiString FileName,
   }
   else
   {
-    OnDeleteLocalFile(FileName);
+    OnDeleteLocalFile(FileName, FLAGSET(*((int*)Params), dfAlternative));
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::DeleteLocalFiles(TStrings * FileList)
+bool __fastcall TTerminal::DeleteLocalFiles(TStrings * FileList, int Params)
 {
-  return ProcessFiles(FileList, foDelete, DeleteLocalFile, NULL, osLocal);
+  return ProcessFiles(FileList, foDelete, DeleteLocalFile, &Params, osLocal);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CustomCommandOnFile(AnsiString FileName,
@@ -2278,7 +2315,10 @@ void __fastcall TTerminal::CustomCommandOnFiles(AnsiString Command,
       }
     }
 
-    AnsiString Cmd = TRemoteCustomCommand("", FileList).Complete(Command, true);
+    TCustomCommandData Data(this);
+    AnsiString Cmd =
+      TRemoteCustomCommand(Data, CurrentDirectory, "", FileList).
+        Complete(Command, true);
     AnyCommand(Cmd, OutputEvent);
   }
 }
@@ -2821,8 +2861,12 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
 
       FCommandSession->AutoReadDirectory = false;
 
-      FCommandSession->FSessionData->RemoteDirectory = CurrentDirectory;
-      FCommandSession->FSessionData->FSProtocol = fsSCPonly;
+      TSessionData * CommandSessionData = FCommandSession->FSessionData;
+      CommandSessionData->RemoteDirectory = CurrentDirectory;
+      CommandSessionData->FSProtocol = fsSCPonly;
+      CommandSessionData->ClearAliases = false;
+      CommandSessionData->UnsetNationalVars = false;
+      CommandSessionData->LookupUserGroups = false;
 
       FCommandSession->FExceptionOnFail = FExceptionOnFail;
 
@@ -3832,10 +3876,14 @@ bool __fastcall TTerminal::GetStoredCredentialsTried()
   {
     Result = FFileSystem->GetStoredCredentialsTried();
   }
+  else if (FSecureShell != NULL)
+  {
+    Result = FSecureShell->GetStoredCredentialsTried();
+  }
   else
   {
-    assert(FSecureShell != NULL);
-    Result = FSecureShell->GetStoredCredentialsTried();
+    assert(FTunnelOpening);
+    Result = false;
   }
   return Result;
 }
@@ -3864,7 +3912,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
 
     TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
-      FilesToCopy->Count, Params & cpTemporary, TargetDir);
+      FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
 
     OperationProgress.YesToNewer = FLAGSET(Params, cpNewerOnly);
 
@@ -3964,7 +4012,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
       }
 
       OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osRemote,
-        FilesToCopy->Count, Params & cpTemporary, TargetDir);
+        FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
 
       OperationProgress.YesToNewer = FLAGSET(Params, cpNewerOnly);
 
@@ -4057,30 +4105,32 @@ void __fastcall TSecondaryTerminal::DirectoryModified(const AnsiString Path,
 }
 //---------------------------------------------------------------------------
 bool __fastcall TSecondaryTerminal::DoPromptUser(TSessionData * Data,
-  AnsiString Prompt, TPromptKind Kind, AnsiString & Response)
+  TPromptKind Kind, AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+  TStrings * Results)
 {
-  bool Result = false;
+  bool AResult = false;
 
-  if (!FMasterPasswordTried &&
-      ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkServerPrompt)))
+  if (!FMasterPasswordTried && (Prompts->Count == 1) && !bool(Prompts->Objects[0]) &&
+      ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
+       (Kind == pkTIS) || (Kind == pkCryptoCard)))
   {
     // let's expect that the main session is already authenticated and its password
     // is not written after, so no locking is necessary
     // (no longer true, once the main session can be reconnected)
-    Response = FMainTerminal->Password;
-    if (!Response.IsEmpty())
+    Results->Strings[0] = FMainTerminal->Password;
+    if (!Results->Strings[0].IsEmpty())
     {
-      Result = true;
+      AResult = true;
     }
     FMasterPasswordTried = true;
   }
 
-  if (!Result)
+  if (!AResult)
   {
-    Result = TTerminal::DoPromptUser(Data, Prompt, Kind, Response);
+    AResult = TTerminal::DoPromptUser(Data, Kind, Name, Instructions, Prompts, Results);
   }
 
-  return Result;
+  return AResult;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminalList::TTerminalList(TConfiguration * AConfiguration) :

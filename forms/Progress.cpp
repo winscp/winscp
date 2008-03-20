@@ -8,12 +8,13 @@
 #include <HelpWin.h>
 #include <WinInterface.h>
 #include <VCLCommon.h>
-#include <GUIConfiguration.h>
+#include <CustomWinConfiguration.h>
 #include <GUITools.h>
 
 #include "Progress.h"
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
+#pragma link "HistoryComboBox"
 #pragma resource "*.dfm"
 //---------------------------------------------------------------------
 AnsiString __fastcall TProgressForm::OperationName(TFileOperation Operation)
@@ -60,8 +61,7 @@ __fastcall TProgressForm::~TProgressForm()
 
   if (IsIconic(Application->Handle) && FMinimizedByMe)
   {
-    Application->Restore();
-    Application->BringToFront();
+    ShowNotification(NULL, LoadStr(BALLOON_OPERATION_COMPLETE), qtInformation);
   }
 
   ReleaseAsModal(this, FShowAsModalStorage);
@@ -223,7 +223,7 @@ void __fastcall TProgressForm::UpdateControls()
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType &AData)
+void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & AData)
 {
   bool InstantUpdate = false;
 
@@ -233,6 +233,7 @@ void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType 
   if (FileLabel->Caption.IsEmpty() && !AData.FileName.IsEmpty())
   {
     InstantUpdate = true;
+    FCPSLimit = AData.CPSLimit;
   }
 
   if (!FAsciiTransferChanged && FData.AsciiTransfer != AData.AsciiTransfer)
@@ -251,6 +252,7 @@ void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType 
   if (!FDataReceived)
   {
     FDataReceived = true;
+    SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
     ShowAsModal(this, FShowAsModalStorage);
   }
 
@@ -260,20 +262,6 @@ void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType 
     Application->ProcessMessages();
   }
   TDateTime N = Now();
-  if ((double)FLastUpdate && SpeedPanel->Visible && SpeedBar->Position < 100)
-  {
-    assert(SpeedBar->Position > 0);
-    __int64 MilliSecondsTr = (double(N) - double(FLastUpdate)) * MSecsPerDay;
-    int MilliSecondsWait = int(double(MilliSecondsTr > 100000 ? 100000 : MilliSecondsTr) *
-      (double(100)/double(SpeedBar->Position) - 1));
-    MilliSecondsWait = (MilliSecondsWait > 2000) ? 2000 : MilliSecondsWait;
-    while (MilliSecondsWait > 0 && FCancel == csContinue)
-    {
-      SleepEx(MilliSecondsWait > 300 ? 300 : MilliSecondsWait, true);
-      MilliSecondsWait -= 300;
-      Application->ProcessMessages();
-    }
-  }
   static double UpdateInterval = double(1)/(24*60*60*5);  // 1/5 sec
   if ((FUpdateCounter % 5 == 0) ||
       (double(N) - double(FLastUpdate) > UpdateInterval))
@@ -283,6 +271,8 @@ void __fastcall TProgressForm::SetProgressData(const TFileOperationProgressType 
     Application->ProcessMessages();
   }
   FUpdateCounter++;
+
+  AData.CPSLimit = FCPSLimit;
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
@@ -293,13 +283,14 @@ void __fastcall TProgressForm::UpdateTimerTimer(TObject * /*Sender*/)
 void __fastcall TProgressForm::FormShow(TObject * /*Sender*/)
 {
   UpdateTimer->Enabled = true;
+  SpeedCombo->Items = CustomWinConfiguration->History["SpeedLimit"];
   if (FDataReceived) UpdateControls();
-  SpeedBar->Position = 100;
   FLastUpdate = 0;
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::FormHide(TObject * /*Sender*/)
 {
+  CustomWinConfiguration->History["SpeedLimit"] = SpeedCombo->Items;
   UpdateTimer->Enabled = false;
 }
 //---------------------------------------------------------------------------
@@ -308,17 +299,9 @@ void __fastcall TProgressForm::CancelButtonClick(TObject * /*Sender*/)
   CancelOperation();
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::MinimizeButtonClick(TObject * /*Sender*/)
+void __fastcall TProgressForm::MinimizeButtonClick(TObject * Sender)
 {
-  TNotifyEvent OnMinimize = GetGlobalMinimizeHandler();
-  if (OnMinimize != NULL)
-  {
-    OnMinimize(this);
-  }
-  else
-  {
-    MinimizeApp();
-  }
+  GetGlobalMinimizeHandler()(Sender);
 }
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::CancelOperation()
@@ -410,3 +393,44 @@ void __fastcall TProgressForm::SetReadOnly(bool value)
     UpdateControls();
   }
 }
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::ApplyCPSLimit()
+{
+  try
+  {
+    FCPSLimit = GetSpeedLimit(SpeedCombo->Text);
+  }
+  catch(...)
+  {
+    SpeedCombo->SetFocus();
+    throw;
+  }
+
+  SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
+  // visualize application
+  SpeedCombo->SelectAll();
+  CancelButton->SetFocus();
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SpeedComboExit(TObject * /*Sender*/)
+{
+  SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SpeedComboSelect(TObject * /*Sender*/)
+{
+  ApplyCPSLimit();
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::SpeedComboKeyPress(TObject * /*Sender*/,
+  char & Key)
+{
+  // using OnKeyPress instead of OnKeyDown to catch "enter" prevents
+  // system beep for unhandled key
+  if (Key == '\r')
+  {
+    Key = '\0';
+    ApplyCPSLimit();
+  }
+}
+//---------------------------------------------------------------------------

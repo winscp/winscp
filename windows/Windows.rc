@@ -8,8 +8,8 @@
 
 1 24 "WinSCP.exe.manifest"
 
-LICENCE RCDATA "Licence.txt"
-LICENCE_PUTTY RCDATA "LicencePuTTY.txt"
+LICENSE RCDATA "License.txt"
+LICENSE_PUTTY RCDATA "LicensePuTTY.txt"
 
 #ifndef IDE
 MAINICON ICON

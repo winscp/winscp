@@ -3,14 +3,13 @@ object ComboInputDialog: TComboInputDialog
   Top = 281
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
-  Caption = 'Save session as'
+  Caption = 'Save session asX'
   ClientHeight = 86
   ClientWidth = 326
   Color = clBtnFace
   ParentFont = True
   OldCreateOrder = True
-  Position = poOwnerFormCenter
-  OnCloseQuery = FormCloseQuery
+  Position = poMainFormCenter
   OnShow = FormShow
   DesignSize = (
     326
@@ -20,9 +19,9 @@ object ComboInputDialog: TComboInputDialog
   object InputLabel: TLabel
     Left = 8
     Top = 8
-    Width = 80
+    Width = 87
     Height = 13
-    Caption = '&Save session as:'
+    Caption = '&Save session as:X'
     FocusControl = InputCombo
   end
   object OKButton: TButton

@@ -41,7 +41,7 @@ public:
     const TRemoteProperties * Properties);
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const AnsiString FileName,
-    const TRemoteFile * File, bool Recursive);
+    const TRemoteFile * File, int Params);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
     const TRemoteFile * File, AnsiString Command, int Params, TCaptureOutputEvent OutputEvent);
   virtual void __fastcall DoStartup();
@@ -86,7 +86,6 @@ private:
   int FLsFullTime;
   TCaptureOutputEvent FOnCaptureOutput;
 
-  void __fastcall AliasGroupList();
   void __fastcall ClearAliases();
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);

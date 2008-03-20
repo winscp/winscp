@@ -116,9 +116,9 @@ const TCommandType DefaultCommandSet[ShellCommandCount] = {
 /*CurrentDirectory*/    {  1,  1, F, F, F, "pwd" },
 /*ChangeDirectory*/     {  0,  0, F, T, F, "cd %s" /* directory */ },
 // list directory can be empty on permission denied, this is handled in ReadDirectory
-/*ListDirectory*/       { -1, -1, F, F, F, "ls -la %s \"%s\"" /* directory */ },
-/*ListCurrentDirectory*/{ -1, -1, F, F, F, "ls -la %s" },
-/*ListFile*/            {  1,  1, F, F, F, "ls -lad %s \"%s\"" /* file/directory */ },
+/*ListDirectory*/       { -1, -1, F, F, F, "%s %s \"%s\"" /* listing command, options, directory */ },
+/*ListCurrentDirectory*/{ -1, -1, F, F, F, "%s %s" /* listing command, options */ },
+/*ListFile*/            {  1,  1, F, F, F, "%s -d %s \"%s\"" /* listing command, options, file/directory */ },
 /*LookupUserGroups*/    {  0,  1, F, F, F, "groups" },
 /*CopyToRemote*/        { -1, -1, T, F, T, "scp -r %s -d -t \"%s\"" /* options, directory */ },
 /*CopyToLocal*/         { -1, -1, F, F, T, "scp -r %s -d -f \"%s\"" /* options, file */ },
@@ -131,7 +131,6 @@ const TCommandType DefaultCommandSet[ShellCommandCount] = {
 /*HomeDirectory*/       {  0,  0, F, T, F, "cd" },
 /*Unset*/               {  0,  0, F, F, F, "unset \"%s\"" /* variable */ },
 /*Unalias*/             {  0,  0, F, F, F, "unalias \"%s\"" /* alias */ },
-/*AliasGroupList*/      {  0,  0, F, F, F, "alias ls=\"ls -g\"" },
 /*CreateLink*/          {  0,  0, T, F, F, "ln %s \"%s\" \"%s\"" /*symbolic (-s), filename, point to*/},
 /*CopyFile*/            {  0,  0, T, F, F, "cp -p -r -f \"%s\" \"%s\"" /* file/directory, target name*/},
 /*AnyCommand*/          {  0, -1, T, T, F, "%s" }
@@ -678,7 +677,6 @@ void __fastcall TSCPFileSystem::DoStartup()
   #define COND_OPER(OPER) if (FTerminal->SessionData->OPER) OPER()
   COND_OPER(ClearAliases);
   COND_OPER(UnsetNationalVars);
-  COND_OPER(AliasGroupList);
   #undef COND_OPER
 }
 //---------------------------------------------------------------------------
@@ -801,19 +799,6 @@ void __fastcall TSCPFileSystem::ClearAliases()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSCPFileSystem::AliasGroupList()
-{
-  try
-  {
-    FTerminal->LogEvent("Aliasing LS to display file group.");
-    ExecCommand(fsAliasGroupList);
-  }
-  catch (Exception &E)
-  {
-    FTerminal->CommandError(&E, LoadStr(ALIAS_GROUPLIST_ERROR));
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::UnsetNationalVars()
 {
   try
@@ -877,47 +862,49 @@ void __fastcall TSCPFileSystem::CachedChangeDirectory(const AnsiString Directory
 void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 {
   assert(FileList);
-  TStringList * OutputCopy = NULL;
-  try
+  // emtying file list moved before command execution
+  FileList->Clear();
+
+  bool Again;
+
+  do
   {
-    // emtying file list moved before command execution
-    FileList->Clear();
-
-    bool Again;
-
-    do
+    Again = false;
+    try
     {
-      Again = false;
-      try
+      int Params = ecDefault | ecReadProgress |
+        FLAGMASK(FTerminal->SessionData->IgnoreLsWarnings, ecIgnoreWarnings);
+      const char * Options =
+        ((FLsFullTime == asAuto) || (FLsFullTime == asOn)) ? FullTimeOption : "";
+      bool ListCurrentDirectory = (FileList->Directory == FTerminal->CurrentDirectory);
+      if (ListCurrentDirectory)
       {
-        int Params = ecDefault | ecReadProgress |
-          FLAGMASK(FTerminal->SessionData->IgnoreLsWarnings, ecIgnoreWarnings);
-        const char * Options =
-          ((FLsFullTime == asAuto) || (FLsFullTime == asOn)) ? FullTimeOption : "";
-        bool ListCurrentDirectory = (FileList->Directory == FTerminal->CurrentDirectory);
-        if (ListCurrentDirectory)
-        {
-          FTerminal->LogEvent("Listing current directory.");
-          ExecCommand(fsListCurrentDirectory, ARRAYOFCONST((Options)), Params);
-        }
-          else
-        {
-          FTerminal->LogEvent(FORMAT("Listing directory \"%s\".",
-            (FileList->Directory)));
-          ExecCommand(fsListDirectory, ARRAYOFCONST((Options, DelimitStr(FileList->Directory))),
-            Params);
-        }
+        FTerminal->LogEvent("Listing current directory.");
+        ExecCommand(fsListCurrentDirectory,
+          ARRAYOFCONST((FTerminal->SessionData->ListingCommand, Options)), Params);
+      }
+        else
+      {
+        FTerminal->LogEvent(FORMAT("Listing directory \"%s\".",
+          (FileList->Directory)));
+        ExecCommand(fsListDirectory,
+          ARRAYOFCONST((FTerminal->SessionData->ListingCommand, Options,
+            DelimitStr(FileList->Directory))),
+          Params);
+      }
 
-        TRemoteFile * File;
+      TRemoteFile * File;
 
-        // If output is not empty, we have succesfully got file listing,
-        // otherwise there was an error, in case it was "permission denied"
-        // we try to get at least parent directory (see "else" statement below)
-        if (FOutput->Count > 0)
+      // If output is not empty, we have succesfully got file listing,
+      // otherwise there was an error, in case it was "permission denied"
+      // we try to get at least parent directory (see "else" statement below)
+      if (FOutput->Count > 0)
+      {
+        // Copy LS command output, because eventual symlink analysis would
+        // modify FTerminal->Output
+        TStringList * OutputCopy = new TStringList();
+        try
         {
-          // Copy LS command output, because eventual symlink analysis would
-          // modify FTerminal->Output
-          OutputCopy = new TStringList();
           OutputCopy->Assign(FOutput);
 
           // delete leading "total xxx" line
@@ -934,73 +921,73 @@ void __fastcall TSCPFileSystem::ReadDirectory(TRemoteFileList * FileList)
             FileList->AddFile(File);
           }
         }
-          else
+        __finally
         {
-          bool Empty;
-          if (ListCurrentDirectory)
-          {
-            // Empty file list -> probably "permision denied", we
-            // at least get link to parent directory ("..")
-            FTerminal->ReadFile(
-              UnixIncludeTrailingBackslash(FTerminal->FFiles->Directory) +
-                PARENTDIRECTORY, File);
-            Empty = (File == NULL);
-            if (!Empty)
-            {
-              assert(File->IsParentDirectory);
-              FileList->AddFile(File);
-            }
-          }
-          else
-          {
-            Empty = true;
-          }
-
-          if (Empty)
-          {
-            throw Exception(FMTLOAD(EMPTY_DIRECTORY, (FileList->Directory)));
-          }
-        }
-
-        if (FLsFullTime == asAuto)
-        {
-            FTerminal->LogEvent(
-              FORMAT("Directory listing with %s succeed, next time all errors during "
-                "directory listing will be displayed immediatelly.",
-                (FullTimeOption)));
-            FLsFullTime = asOn;
+          delete OutputCopy;
         }
       }
-      catch(Exception & E)
+      else
       {
-        if (FTerminal->Active)
+        bool Empty;
+        if (ListCurrentDirectory)
         {
-          if (FLsFullTime == asAuto)
+          // Empty file list -> probably "permision denied", we
+          // at least get link to parent directory ("..")
+          FTerminal->ReadFile(
+            UnixIncludeTrailingBackslash(FTerminal->FFiles->Directory) +
+              PARENTDIRECTORY, File);
+          Empty = (File == NULL);
+          if (!Empty)
           {
-            FTerminal->FLog->AddException(&E);
-            FLsFullTime = asOff;
-            Again = true;
-            FTerminal->LogEvent(
-              FORMAT("Directory listing with %s failed, try again regular listing.",
+            assert(File->IsParentDirectory);
+            FileList->AddFile(File);
+          }
+        }
+        else
+        {
+          Empty = true;
+        }
+
+        if (Empty)
+        {
+          throw Exception(FMTLOAD(EMPTY_DIRECTORY, (FileList->Directory)));
+        }
+      }
+
+      if (FLsFullTime == asAuto)
+      {
+          FTerminal->LogEvent(
+            FORMAT("Directory listing with %s succeed, next time all errors during "
+              "directory listing will be displayed immediatelly.",
               (FullTimeOption)));
-          }
-          else
-          {
-            throw;
-          }
+          FLsFullTime = asOn;
+      }
+    }
+    catch(Exception & E)
+    {
+      if (FTerminal->Active)
+      {
+        if (FLsFullTime == asAuto)
+        {
+          FTerminal->FLog->AddException(&E);
+          FLsFullTime = asOff;
+          Again = true;
+          FTerminal->LogEvent(
+            FORMAT("Directory listing with %s failed, try again regular listing.",
+            (FullTimeOption)));
         }
         else
         {
           throw;
         }
       }
+      else
+      {
+        throw;
+      }
     }
-    while (Again);
   }
-  __finally
-  {
-    delete OutputCopy;
-  }
+  while (Again);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
@@ -1044,7 +1031,9 @@ void __fastcall TSCPFileSystem::CustomReadFile(const AnsiString FileName,
   // the auto-detection of --full-time support is not implemented for fsListFile,
   // so we use it only if we already know that it is supported (asOn).
   const char * Options = (FLsFullTime == asOn) ? FullTimeOption : "";
-  ExecCommand(fsListFile, ARRAYOFCONST((Options, DelimitStr(FileName))), Params);
+  ExecCommand(fsListFile,
+    ARRAYOFCONST((FTerminal->SessionData->ListingCommand, Options, DelimitStr(FileName))),
+    Params);
   if (FOutput->Count)
   {
     int LineIndex = 0;
@@ -1058,11 +1047,11 @@ void __fastcall TSCPFileSystem::CustomReadFile(const AnsiString FileName,
 }
 //---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::DeleteFile(const AnsiString FileName,
-  const TRemoteFile * File, bool Recursive)
+  const TRemoteFile * File, int Params)
 {
-  USEDPARAM(Recursive);
   USEDPARAM(File);
-  assert(Recursive || (File && File->IsSymLink));
+  USEDPARAM(Params);
+  assert(FLAGCLEAR(Params, dfNoRecursive) || (File && File->IsSymLink));
   ExecCommand(fsDeleteFile, ARRAYOFCONST((DelimitStr(FileName))));
 }
 //---------------------------------------------------------------------------
@@ -1172,7 +1161,10 @@ void __fastcall TSCPFileSystem::CustomCommandOnFile(const AnsiString FileName,
 
   if (!Dir || (Params & ccApplyToDirectories))
   {
-    AnsiString Cmd = TRemoteCustomCommand(FileName, "").Complete(Command, true);
+    TCustomCommandData Data(FTerminal);
+    AnsiString Cmd = TRemoteCustomCommand(
+      Data, FTerminal->CurrentDirectory, FileName, "").
+      Complete(Command, true);
 
     AnyCommand(Cmd, OutputEvent);
   }
@@ -1601,7 +1593,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
           if (OperationProgress->AsciiTransfer)
           {
             BlockBuf.Convert(FTerminal->Configuration->LocalEOLType,
-              FTerminal->SessionData->EOLType, cpRemoveCtrlZ);
+              FTerminal->SessionData->EOLType, cpRemoveCtrlZ | cpRemoveBOM);
             BlockBuf.Memory->Seek(0, soFromBeginning);
             AsciiBuf.ReadStream(BlockBuf.Memory, BlockBuf.Size, true);
             // We don't need it any more
@@ -1667,10 +1659,11 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
               OperationProgress->ChangeTransferSize(AsciiBuf.Size);
               while (!OperationProgress->IsTransferDone())
               {
+                unsigned long BlockSize = OperationProgress->TransferBlockSize();
                 FSecureShell->Send(
                   AsciiBuf.Data + (unsigned int)OperationProgress->TransferedSize,
-                  OperationProgress->TransferBlockSize());
-                OperationProgress->AddTransfered(OperationProgress->TransferBlockSize());
+                  BlockSize);
+                OperationProgress->AddTransfered(BlockSize);
                 if (OperationProgress->Cancel == csCancelTransfer)
                 {
                   throw Exception(USER_TERMINATED);

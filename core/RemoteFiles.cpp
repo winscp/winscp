@@ -71,7 +71,16 @@ AnsiString __fastcall UnixExtractFilePath(const AnsiString Path)
 AnsiString __fastcall UnixExtractFileName(const AnsiString Path)
 {
   int Pos = Path.LastDelimiter('/');
-  return (Pos > 0) ? Path.SubString(Pos + 1, Path.Length() - Pos) : Path;
+  AnsiString Result;
+  if (Pos > 0)
+  {
+    Result = Path.SubString(Pos + 1, Path.Length() - Pos);
+  }
+  else
+  {
+    Result = Path;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall UnixExtractFileExt(const AnsiString Path)
@@ -1048,9 +1057,11 @@ __fastcall TRemoteDirectoryFile::TRemoteDirectoryFile() : TRemoteFile()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TRemoteParentDirectory::TRemoteParentDirectory() : TRemoteDirectoryFile()
+__fastcall TRemoteParentDirectory::TRemoteParentDirectory(TTerminal * ATerminal)
+  : TRemoteDirectoryFile()
 {
   FileName = PARENTDIRECTORY;
+  Terminal = ATerminal;
 }
 //=== TRemoteFileList ------------------------------------------------------
 __fastcall TRemoteFileList::TRemoteFileList():
@@ -1372,8 +1383,9 @@ void __fastcall TRemoteDirectoryCache::Delete(int Index)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-__fastcall TRemoteDirectoryChangesCache::TRemoteDirectoryChangesCache() :
-  TStringList()
+__fastcall TRemoteDirectoryChangesCache::TRemoteDirectoryChangesCache(int MaxSize) :
+  TStringList(),
+  FMaxSize(MaxSize)
 {
 }
 //---------------------------------------------------------------------------
@@ -1387,18 +1399,36 @@ bool __fastcall TRemoteDirectoryChangesCache::GetIsEmpty() const
   return (const_cast<TRemoteDirectoryChangesCache*>(this)->Count == 0);
 }
 //---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryChangesCache::SetValue(const AnsiString & Name,
+  const AnsiString & Value)
+{
+  int Index = IndexOfName(Name);
+  if (Index > 0)
+  {
+    Delete(Index);
+  }
+  Values[Name] = Value;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TRemoteDirectoryChangesCache::GetValue(const AnsiString & Name)
+{
+  AnsiString Value = Values[Name];
+  SetValue(Name, Value);
+  return Value;
+}
+//---------------------------------------------------------------------------
 void __fastcall TRemoteDirectoryChangesCache::AddDirectoryChange(
   const AnsiString SourceDir, const AnsiString Change,
   const AnsiString TargetDir)
 {
   assert(!TargetDir.IsEmpty());
-  Values[TargetDir] = "//";
+  SetValue(TargetDir, "//");
   if (TTerminal::ExpandFileName(Change, SourceDir) != TargetDir)
   {
     AnsiString Key;
     if (DirectoryChangeKey(SourceDir, Change, Key))
     {
-      Values[Key] = TargetDir;
+      SetValue(Key, TargetDir);
     }
   }
 }
@@ -1446,7 +1476,7 @@ bool __fastcall TRemoteDirectoryChangesCache::GetDirectoryChange(
   Result = (IndexOfName(Key) >= 0);
   if (Result)
   {
-    TargetDir = Values[Key];
+    TargetDir = GetValue(Key);
     // TargetDir is not "//" here only when Change is full path to symbolic link
     if (TargetDir == "//")
     {
@@ -1458,7 +1488,7 @@ bool __fastcall TRemoteDirectoryChangesCache::GetDirectoryChange(
     Result = DirectoryChangeKey(SourceDir, Change, Key);
     if (Result)
     {
-      AnsiString Directory = Values[Key];
+      AnsiString Directory = GetValue(Key);
       Result = !Directory.IsEmpty();
       if (Result)
       {
@@ -1471,7 +1501,30 @@ bool __fastcall TRemoteDirectoryChangesCache::GetDirectoryChange(
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectoryChangesCache::Serialize(AnsiString & Data)
 {
-  Data = "A" + Text;
+  Data = "A";
+  int ACount = Count;
+  if (ACount > FMaxSize)
+  {
+    TStrings * Limited = new TStringList();
+    try
+    {
+      int Index = ACount - FMaxSize;
+      while (Index < ACount)
+      {
+        Limited->Add(Strings[Index]);
+        Index++;
+      }
+      Data += Limited->Text;
+    }
+    __finally
+    {
+      delete Limited;
+    }
+  }
+  else
+  {
+    Data += Text;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectoryChangesCache::Deserialize(const AnsiString Data)

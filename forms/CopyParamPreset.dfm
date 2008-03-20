@@ -26,9 +26,9 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
   object Label1: TLabel
     Left = 11
     Top = 13
-    Width = 84
+    Width = 87
     Height = 13
-    Caption = 'Preset &description'
+    Caption = 'Preset &description:'
     FocusControl = DescriptionEdit
   end
   object OkButton: TButton
@@ -174,33 +174,33 @@ object CopyParamPresetDialog: TCopyParamPresetDialog
     object Label2: TLabel
       Left = 10
       Top = 20
-      Width = 76
+      Width = 79
       Height = 13
-      Caption = 'Hostna&me mask'
+      Caption = 'Hostna&me mask:'
       FocusControl = HostNameEdit
     end
     object Label3: TLabel
       Left = 10
       Top = 68
-      Width = 76
+      Width = 79
       Height = 13
-      Caption = 'Us&ername mask'
+      Caption = 'Us&ername mask:'
       FocusControl = UserNameEdit
     end
     object Label4: TLabel
       Left = 10
       Top = 116
-      Width = 108
+      Width = 111
       Height = 13
-      Caption = 'Remote director&y mask'
+      Caption = 'Remote director&y mask:'
       FocusControl = RemoteDirectoryEdit
     end
     object Label5: TLabel
       Left = 10
       Top = 164
-      Width = 97
+      Width = 100
       Height = 13
-      Caption = '&Local directory mask'
+      Caption = '&Local directory mask:'
       FocusControl = LocalDirectoryEdit
     end
     object HostNameEdit: TEdit

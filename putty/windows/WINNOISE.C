@@ -23,6 +23,7 @@ void noise_get_heavy(void (*func) (void *, int))
 {
     HANDLE srch;
     WIN32_FIND_DATA finddata;
+    DWORD pid;
     char winpath[MAX_PATH + 3];
 
     GetWindowsDirectory(winpath, sizeof(winpath));
@@ -34,6 +35,9 @@ void noise_get_heavy(void (*func) (void *, int))
 	} while (FindNextFile(srch, &finddata));
 	FindClose(srch);
     }
+
+    pid = GetCurrentProcessId();
+    func(&pid, sizeof(pid));
 
     read_random_seed(func);
     /* Update the seed immediately, in case another instance uses it. */
@@ -55,7 +59,7 @@ void random_save_seed(void)
 /*
  * This function is called every time the random pool needs
  * stirring, and will acquire the system time in all available
- * forms and the battery status.
+ * forms.
  */
 void noise_get_light(void (*func) (void *, int))
 {

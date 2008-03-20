@@ -23,12 +23,11 @@
 //---------------------------------------------------------------------------
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TNotifyEvent OnClose,
-  const AnsiString Caption, bool ShowWindowButton)
+  const AnsiString Caption)
 {
   TEditorForm * Dialog = new TEditorForm(Application);
   try
   {
-    Dialog->ShowWindowButton = ShowWindowButton;
     Dialog->FileName = FileName;
     Dialog->ParentForm = ParentForm;
     Dialog->Caption = Caption.IsEmpty() ? FileName : Caption;
@@ -53,6 +52,210 @@ void __fastcall ReconfigureEditorForm(TForm * Form)
   Editor->ApplyConfiguration();
 }
 //---------------------------------------------------------------------------
+class TRichEdit20 : public TRichEdit
+{
+public:
+  virtual __fastcall TRichEdit20(TComponent * AOwner);
+
+  void __fastcall SetFormat(AnsiString FontName, int FontHeight,
+    TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
+    bool AWordWrap);
+  int __fastcall FindText(const AnsiString SearchStr, int StartPos, int Length,
+    TSearchTypes Options, bool Down);
+  void __fastcall Redo();
+
+  __property bool SupportsUpSearch = { read = FVersion20 };
+  __property bool CanRedo = { read = GetCanRedo };
+
+protected:
+  virtual void __fastcall CreateWnd(void);
+  virtual void __fastcall CreateParams(TCreateParams & Params);
+  virtual void __fastcall DestroyWnd();
+  bool __fastcall GetCanRedo();
+  void __fastcall ApplyTabSize();
+
+private:
+  HINSTANCE FLibrary;
+  bool FVersion20;
+  bool FWordWrap;
+  unsigned int FTabSize;
+};
+//---------------------------------------------------------------------------
+__fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
+  TRichEdit(AOwner),
+  FLibrary(0),
+  FVersion20(false),
+  FTabSize(0),
+  FWordWrap(true)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::SetFormat(AnsiString FontName, int FontHeight,
+  TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
+  bool AWordWrap)
+{
+  bool RecalculateTabs = (Font->Name != FontName) || (Font->Height != FontHeight) ||
+    (TabSize != FTabSize);
+
+  LockWindowUpdate(Handle);
+
+  Font->Name = FontName;
+  Font->Height = FontHeight;
+  Font->Charset = FontCharset;
+  Font->Style = FontStyles;
+  DefAttributes->Assign(Font);
+  FTabSize = TabSize;
+
+  if (RecalculateTabs && HandleAllocated())
+  {
+    ApplyTabSize();
+  }
+
+  if (FWordWrap != AWordWrap)
+  {
+    if (Visible)
+    {
+      // Undocumented usage of EM_SETTARGETDEVICE.
+      // But note that it is used by MFC in CRichEditView::WrapChanged()
+      SendMessage(Handle, EM_SETTARGETDEVICE, 0, (AWordWrap ? 0 : 1));
+    }
+    else
+    {
+      WordWrap = AWordWrap;
+    }
+    FWordWrap = AWordWrap;
+  }
+
+  LockWindowUpdate(NULL);
+}
+//---------------------------------------------------------------------------
+int __fastcall TRichEdit20::FindText(const AnsiString SearchStr, int StartPos,
+  int /*Length*/, TSearchTypes Options, bool Down)
+{
+  int Result;
+  if (FVersion20)
+  {
+    ::FINDTEXTEX Find;
+    memset(&Find, 0, sizeof(Find));
+    Find.chrg.cpMin = StartPos;
+    Find.chrg.cpMax = -1;
+    Find.lpstrText = SearchStr.c_str();
+
+    unsigned int Flags =
+      FLAGMASK(Options.Contains(stWholeWord), FT_WHOLEWORD) |
+      FLAGMASK(Options.Contains(stMatchCase), FT_MATCHCASE) |
+      FLAGMASK(Down, FR_DOWN);
+    Result = SendMessage(Handle, EM_FINDTEXTEX, Flags, (LPARAM)&Find);
+  }
+  else
+  {
+    assert(Down);
+    Result = TRichEdit::FindText(SearchStr, StartPos, Text.Length(), Options);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::Redo()
+{
+  assert(FVersion20);
+  SendMessage(Handle, EM_REDO, 0, 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::CreateWnd(void)
+{
+  TRichEdit::CreateWnd();
+
+  ApplyTabSize();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::CreateParams(TCreateParams & Params)
+{
+  const char RichEditModuleName[] = "RICHED20.DLL";
+  long int OldError;
+
+  OldError = SetErrorMode(SEM_NOOPENFILEERRORBOX);
+  FLibrary = LoadLibrary(RichEditModuleName);
+  SetErrorMode(OldError);
+
+  FVersion20 = (FLibrary != 0);
+  if (!FVersion20)
+  {
+    // fallback to richedit 1.0
+    TRichEdit::CreateParams(Params);
+  }
+  else
+  {
+    TCustomMemo::CreateParams(Params);
+    CreateSubClass(Params, RICHEDIT_CLASS);
+    Params.Style = Params.Style |
+      (HideScrollBars ? 0 : ES_DISABLENOSCROLL) |
+      (HideSelection ? 0 : ES_NOHIDESEL);
+    Params.WindowClass.style = Params.WindowClass.style &
+      ~(CS_HREDRAW | CS_VREDRAW);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::DestroyWnd()
+{
+  TRichEdit::DestroyWnd();
+
+  if (FLibrary != 0)
+  {
+    FreeLibrary(FLibrary);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRichEdit20::GetCanRedo()
+{
+  return FVersion20 && (SendMessage(Handle, EM_CANREDO, 0, 0) != 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::ApplyTabSize()
+{
+  if (FTabSize > 0)
+  {
+    HDC DC = GetDC(Handle);
+    SaveDC(DC);
+    SetMapMode(DC, MM_TEXT);
+    SelectObject(DC, Font->Handle);
+
+    int LogPixelsX = GetDeviceCaps(DC, LOGPIXELSX);
+
+    SIZE Size;
+    GetTextExtentPoint(DC, AnsiString::StringOfChar('X', FTabSize).c_str(),
+      FTabSize, &Size);
+
+    RestoreDC(DC, -1);
+    ReleaseDC(Handle, DC);
+
+    unsigned int TabTwips = MulDiv(Size.cx, 1440, LogPixelsX);
+
+    // save selection
+    CHARRANGE CharRange;
+    SendMessage(Handle, EM_EXGETSEL, 0, (LPARAM)&CharRange);
+
+    CHARRANGE CharRangeAll;
+    CharRangeAll.cpMin = 0;
+    CharRangeAll.cpMax = -1;
+    SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRangeAll);
+
+    PARAFORMAT2 ParaFormat;
+    ParaFormat.cbSize = sizeof(ParaFormat);
+    ParaFormat.dwMask = PFM_TABSTOPS;
+    ParaFormat.cTabCount = MAX_TAB_STOPS;
+
+    for (int i = 0; i < ParaFormat.cTabCount; i++)
+    {
+      ParaFormat.rgxTabs[i] = (i + 1) * TabTwips;
+    }
+
+    SendMessage(Handle, EM_SETPARAFORMAT, 0, (LPARAM)&ParaFormat);
+
+    // restore selection
+    SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRange);
+  }
+}
+//---------------------------------------------------------------------------
 class TFindDialogEx : public TFindDialog
 {
 public:
@@ -64,7 +267,7 @@ public:
 protected:
   unsigned int FHelpMsg;
 
-    virtual bool __fastcall MessageHook(TMessage & Msg)
+  virtual bool __fastcall MessageHook(TMessage & Msg)
   {
     bool Result = false;
     if (Msg.Msg == FHelpMsg)
@@ -93,7 +296,7 @@ public:
 protected:
   unsigned int FHelpMsg;
 
-    virtual bool __fastcall MessageHook(TMessage & Msg)
+  virtual bool __fastcall MessageHook(TMessage & Msg)
   {
     bool Result = false;
     if (Msg.Msg == FHelpMsg)
@@ -114,11 +317,22 @@ protected:
 __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   : TForm(Owner)
 {
+  EditorMemo = new TRichEdit20(this);
+  EditorMemo->Parent = this;
+  EditorMemo->Align = alClient;
+  EditorMemo->HideSelection = false;
+  EditorMemo->PlainText = true;
+  EditorMemo->PopupMenu = EditorPopup;
+  EditorMemo->ScrollBars = ssBoth;
+  EditorMemo->WantTabs = true;
+  EditorMemo->OnChange = EditorMemoChange;
+  EditorMemo->OnKeyUp = EditorMemoKeyUp;
+  EditorMemo->OnMouseUp = EditorMemoMouseUp;
+
   FParentForm = NULL;
   FCaretPos.x = -1;
   FCaretPos.y = -1;
   FLastFindDialog = NULL;
-  FShowWindowButton = false;
   FCloseAnnounced = false;
   ApplyConfiguration();
   FFindDialog = new TFindDialogEx(this);
@@ -157,7 +371,8 @@ void __fastcall TEditorForm::SetParentForm(TCustomForm * value)
     FParentForm = value;
     if (value)
     {
-      BoundsRect = value->BoundsRect;
+      Width = value->BoundsRect.Width();
+      Height = value->BoundsRect.Height();
     }
   }
 }
@@ -174,6 +389,10 @@ void __fastcall TEditorForm::EditorActionsUpdate(TBasicAction *Action,
   {
     FindNextAction->Enabled =
       FLastFindDialog != NULL || !FFindDialog->FindText.IsEmpty();
+  }
+  else if (Action == EditRedo)
+  {
+    EditRedo->Enabled = EditorMemo->CanRedo;
   }
   else if (Action == PreferencesAction || Action == CloseAction ||
     Action == FindAction || Action == ReplaceAction || Action == GoToLineAction ||
@@ -230,6 +449,10 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   {
     GoToLine();
   }
+  else if (Action == EditRedo)
+  {
+    EditorMemo->Redo();
+  }
   else if (Action == EditPaste)
   {
     // original source: http://home.att.net/~robertdunn/FAQs/Faqs.html
@@ -268,34 +491,10 @@ void __fastcall TEditorForm::ApplyConfiguration()
 {
   bool PrevModified = EditorMemo->Modified;
   assert(Configuration);
-  EditorMemo->Font->Name = WinConfiguration->Editor.FontName;
-  EditorMemo->Font->Height = WinConfiguration->Editor.FontHeight;
-  EditorMemo->Font->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
-  EditorMemo->Font->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
-  EditorMemo->DefAttributes->Assign(EditorMemo->Font);
-  if (EditorMemo->WordWrap != WinConfiguration->Editor.WordWrap)
-  {
-    if (Visible)
-    {
-      TStrings * Content = new TStringList();
-      try
-      {
-        EditorMemo->WordWrap = False;
-        Content->Assign(EditorMemo->Lines);
-        EditorMemo->WordWrap = WinConfiguration->Editor.WordWrap;
-        EditorMemo->Lines = Content;
-        EditorMemo->CaretPos = TPoint(0, 0);
-      }
-      __finally
-      {
-        delete Content;
-      }
-    }
-    else
-    {
-      EditorMemo->WordWrap = WinConfiguration->Editor.WordWrap;
-    }
-  }
+  EditorMemo->SetFormat(WinConfiguration->Editor.FontName,
+    WinConfiguration->Editor.FontHeight, (TFontCharset)WinConfiguration->Editor.FontCharset,
+    IntToFontStyles(WinConfiguration->Editor.FontStyle), WinConfiguration->Editor.TabSize,
+    WinConfiguration->Editor.WordWrap);
   EditorMemo->Modified = PrevModified;
   EditorMemo->ClearUndo();
   UpdateControls();
@@ -319,7 +518,7 @@ void __fastcall TEditorForm::UpdateControls()
       AnsiString Line = EditorMemo->Lines->Strings[FCaretPos.y];
       if (FCaretPos.x+1 <= Line.Length())
       {
-        Character = FMTLOAD(EDITOR_CHARACTER_STATUS,
+        Character = FMTLOAD(EDITOR_CHARACTER_STATUS2,
           (int((unsigned char)Line[FCaretPos.x+1]), int((unsigned char)Line[FCaretPos.x+1])));
       }
     }
@@ -380,6 +579,7 @@ void __fastcall TEditorForm::Find()
     EditorConfiguration.ReplaceText = FReplaceDialog->ReplaceText;
     EditorConfiguration.FindMatchCase = FLastFindDialog->Options.Contains(frMatchCase);
     EditorConfiguration.FindWholeWord = FLastFindDialog->Options.Contains(frWholeWord);
+    EditorConfiguration.FindDown = FLastFindDialog->Options.Contains(frDown);
     WinConfiguration->Editor = EditorConfiguration;
 
     if (EditorConfiguration.FindMatchCase)
@@ -393,7 +593,7 @@ void __fastcall TEditorForm::Find()
 
     NewPos = EditorMemo->FindText(EditorConfiguration.FindText,
       EditorMemo->SelLength ? EditorMemo->SelStart+1 : EditorMemo->SelStart,
-      EditorMemo->Text.Length(), SearchTypes);
+      EditorMemo->Text.Length(), SearchTypes, EditorConfiguration.FindDown);
 
     if (NewPos >= 0)
     {
@@ -493,7 +693,6 @@ void __fastcall TEditorForm::StartFind(bool Find)
 {
   AnsiString Text = EditorMemo->SelText;
   TFindOptions Options;
-  Options << frHideUpDown; // not implemented
   Options << frShowHelp;
   if (Text.IsEmpty())
   {
@@ -517,6 +716,18 @@ void __fastcall TEditorForm::StartFind(bool Find)
   if (WinConfiguration->Editor.FindWholeWord)
   {
     Options << frWholeWord;
+  }
+  if (EditorMemo->SupportsUpSearch)
+  {
+    if (WinConfiguration->Editor.FindDown)
+    {
+      Options << frDown;
+    }
+  }
+  else
+  {
+    Options << frHideUpDown; // not implemented
+    Options << frDown;
   }
   FLastFindDialog->Options = Options;
   if (!FLastFindDialog->Handle)
@@ -572,22 +783,10 @@ void __fastcall TEditorForm::DoWindowClose()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorForm::SetShowWindowButton(bool value)
-{
-  if (value != ShowWindowButton)
-  {
-    FShowWindowButton = value;
-    RecreateWnd();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TEditorForm::CreateParams(TCreateParams & Params)
 {
   TForm::CreateParams(Params);
-  if (ShowWindowButton)
-  {
-    Params.WndParent = GetDesktopWindow();
-  }
+  Params.WndParent = GetDesktopWindow();
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::Reload()

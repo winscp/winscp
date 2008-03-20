@@ -79,9 +79,6 @@ __published:
   TButton *DesktopIconButton;
   TButton *QuickLaunchIconButton;
   TButton *SendToHookButton;
-  TGroupBox *ExternalAppsGroup;
-  TLabel *Label2;
-  TEdit *PuttyPathEdit;
   TTabSheet *CustomCommandsSheet;
   TGroupBox *CustomCommandsGroup;
   TListView *CustomCommandsView;
@@ -125,7 +122,7 @@ __published:
   TCheckBox *BeepOnFinishCheck;
   TUpDownEdit *BeepOnFinishAfterEdit;
   TLabel *BeepOnFinishAfterText;
-  TTabSheet *TransferResumeSheet;
+  TTabSheet *TransferEnduranceSheet;
   TGroupBox *ResumeBox;
   TLabel *ResumeThresholdUnitLabel;
   TRadioButton *ResumeOnButton;
@@ -133,9 +130,6 @@ __published:
   TRadioButton *ResumeOffButton;
   TUpDownEdit *ResumeThresholdEdit;
   TCheckBox *ConfirmCommandSessionCheck;
-  TGroupBox *SingleEditorGroup;
-  TRadioButton *EditorSingleEditorOnCheck;
-  TRadioButton *EditorSingleEditorOffCheck;
   TGroupBox *TemporaryDirectoryGrouo;
   TRadioButton *DDSystemTemporaryDirectoryButton;
   TRadioButton *DDCustomTemporaryDirectoryButton;
@@ -143,7 +137,6 @@ __published:
   TLabel *Label6;
   TCheckBox *TemporaryDirectoryCleanupCheck;
   TCheckBox *ConfirmTemporaryDirectoryCleanupCheck;
-  TCheckBox *PuttyPasswordCheck;
   TGroupBox *OtherStorageGroup;
   TLabel *RandomSeedFileLabel;
   TFilenameEdit *RandomSeedFileEdit;
@@ -167,7 +160,7 @@ __published:
   TLabel *UpdatesProxyPortLabel;
   TUpDownEdit *UpdatesProxyPortEdit;
   TEdit *UpdatesProxyHostEdit;
-  TCheckBox *UpdatesProxyCheck;
+  TRadioButton *UpdatesProxyCheck;
   TTabSheet *CopyParamListSheet;
   TGroupBox *CopyParamListGroup;
   TListView *CopyParamListView;
@@ -195,10 +188,7 @@ __published:
   TComboBox *DoubleClickActionCombo;
   TLabel *Label8;
   TComboBox *NortonLikeModeCombo;
-  TCheckBox *AutoOpenInPuttyCheck;
   TStaticText *ShellIconsText;
-  TButton *PuttyPathBrowseButton;
-  TButton *PuttyPathResetButton;
   TCheckBox *FullRowSelectCheck;
   TGroupBox *SessionReopenGroup;
   TLabel *SessionReopenAutoLabel;
@@ -212,6 +202,20 @@ __published:
   TCheckBox *MinimizeToTrayCheck;
   TCheckBox *BalloonNotificationsCheck;
   TButton *ExportButton;
+  TTabSheet *IntegrationAppSheet;
+  TGroupBox *ExternalAppsGroup;
+  TLabel *Label2;
+  TEdit *PuttyPathEdit;
+  TCheckBox *PuttyPasswordCheck2;
+  TCheckBox *AutoOpenInPuttyCheck;
+  TButton *PuttyPathBrowseButton;
+  TButton *PuttyPathResetButton;
+  TCheckBox *TelnetForFtpInPuttyCheck;
+  TRadioButton *UpdatesDirectCheck;
+  TRadioButton *UpdatesAutoCheck;
+  TLabel *Label9;
+  TUpDownEdit *EditorTabSizeEdit;
+  TCheckBox *ConfirmTransferringCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -282,9 +286,11 @@ private:
   int FListViewDragDest;
   TPreferencesDialogData * FDialogData;
   AnsiString FBeforeDialogPath;
+  bool FNoUpdate;
   void __fastcall SetPreferencesMode(TPreferencesMode value);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
+  AnsiString __fastcall TabSample(AnsiString Values);
 public:
   virtual __fastcall ~TPreferencesDialog();
   bool __fastcall Execute(TPreferencesDialogData * DialogData);

@@ -27,9 +27,12 @@ AnsiString __fastcall ReadResource(const AnsiString ResName);
 bool __fastcall DumpResourceToFile(const AnsiString ResName,
   const AnsiString FileName);
 void __fastcall BrowseForExecutable(TEdit * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand);
+  AnsiString Filter, bool FileNameCommand, bool Escape);
 void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
-  AnsiString Filter, bool FileNameCommand);
+  AnsiString Filter, bool FileNameCommand, bool Escape);
+bool __fastcall AutodetectProxyUrl(AnsiString & Proxy);
 bool __fastcall IsWin64();
+void __fastcall CopyToClipboard(AnsiString Text);
+void __fastcall CopyToClipboard(TStrings * Strings);
 //---------------------------------------------------------------------------
 #endif

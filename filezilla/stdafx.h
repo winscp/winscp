@@ -12,7 +12,7 @@
 #define MPEXT_NO_SFTP
 #define MPEXT_NO_IDENT
 #define MPEXT_NO_CACHE
-#define MPEXT_NO_SPEED_LIM
+#define MPEXT_NO_SPEED_LIM_RULES
 #define _AFX_NOFORCE_LIBS
 //---------------------------------------------------------------------------
 #define GetOption(OPTION) GetInstanceOption(this->m_pApiLogParent, OPTION)
@@ -80,12 +80,36 @@ typedef struct
 //---------------------------------------------------------------------------
 #undef CFile
 //---------------------------------------------------------------------------
-// MFC allocates CObject (ancestor of CFile) with new, but deallocates with free,
-// what codeguard dislikes, this is fix, not sure if it is necessary for
-// release version, but probably causes no harm
-class CFileFix: public CFile
+class CFileFix : public CFile
 {
 public:
+  // MFC CFile::Read does not include file name into error message
+  UINT Read(void * lpBuf, UINT nCount)
+  {
+    ASSERT_VALID(this);
+    ASSERT(m_hFile != (UINT)hFileNull);
+
+    if (nCount == 0)
+    {
+      return 0;   // avoid Win32 "null-read"
+    }
+
+    ASSERT(lpBuf != NULL);
+    ASSERT(AfxIsValidAddress(lpBuf, nCount));
+
+    DWORD dwRead;
+    if (!::ReadFile((HANDLE)m_hFile, lpBuf, nCount, &dwRead, NULL))
+    {
+      // The only change from MFC CFile::Read is m_strFileName
+      CFileException::ThrowOsError((LONG)::GetLastError(), m_strFileName);
+    }
+
+    return (UINT)dwRead;
+  }
+
+  // MFC allocates CObject (ancestor of CFile) with new, but deallocates with free,
+  // what codeguard dislikes, this is fix, not sure if it is necessary for
+  // release version, but probably causes no harm
   void PASCAL operator delete(void* p)
   {
     delete p;

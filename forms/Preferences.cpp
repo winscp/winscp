@@ -50,6 +50,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
 {
   SetCorrectFormParent(this);
 
+  FNoUpdate = 0;
   FPreferencesMode = pmDefault;
   CopyParamsFrame->Direction = pdAll;
   FEditorFont = new TFont();
@@ -65,6 +66,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   FEditorList = new TEditorList();
   UseSystemSettings(this);
 
+  LoggingFrame->Init();
   InstallPathWordBreakProc(RandomSeedFileEdit);
   InstallPathWordBreakProc(DDTemporaryDirectoryEdit);
   InstallPathWordBreakProc(PuttyPathEdit);
@@ -130,202 +132,224 @@ void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::LoadConfiguration()
 {
-  if (FPreferencesMode != pmLogin)
+  FNoUpdate++;
+  try
   {
-    LoggingFrame->LoadConfiguration();
-    GeneralSettingsFrame->LoadConfiguration();
+    if (FPreferencesMode != pmLogin)
+    {
+      LoggingFrame->LoadConfiguration();
+      GeneralSettingsFrame->LoadConfiguration();
+    }
+    #define BOOLPROP(PROP) PROP ## Check->Checked = WinConfiguration->PROP;
+    BOOLPROP(DefaultDirIsHome);
+    BOOLPROP(PreservePanelState);
+    BOOLPROP(DeleteToRecycleBin);
+    BOOLPROP(DDTransferConfirmation);
+    BOOLPROP(DDWarnLackOfTempSpace);
+    BOOLPROP(ShowHiddenFiles);
+    BOOLPROP(ShowInaccesibleDirectories);
+    BOOLPROP(CopyOnDoubleClickConfirmation);
+    BOOLPROP(ConfirmTransferring);
+    BOOLPROP(ConfirmOverwriting);
+    BOOLPROP(ConfirmResume);
+    BOOLPROP(ConfirmDeleting);
+    BOOLPROP(ConfirmRecycling);
+    BOOLPROP(ConfirmClosingSession);
+    BOOLPROP(ConfirmExitOnCompletion);
+    BOOLPROP(UseLocationProfiles);
+    BOOLPROP(ConfirmCommandSession);
+    BOOLPROP(ContinueOnError);
+    BOOLPROP(DDAllowMoveInit);
+    BOOLPROP(BeepOnFinish);
+    BOOLPROP(TemporaryDirectoryCleanup);
+    BOOLPROP(ConfirmTemporaryDirectoryCleanup);
+
+    BeepOnFinishAfterEdit->AsInteger =
+      static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * (24*60*60);
+    BOOLPROP(BalloonNotifications);
+
+    CompareByTimeCheck->Checked = WinConfiguration->ScpCommander.CompareByTime;
+    CompareBySizeCheck->Checked = WinConfiguration->ScpCommander.CompareBySize;
+
+    DDExtEnabledButton->Checked = WinConfiguration->DDExtEnabled;
+    DDExtDisabledButton->Checked = !DDExtEnabledButton->Checked;
+    DDWarnOnMoveCheck->Checked = !WinConfiguration->DDAllowMove;
+
+    if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
+    {
+      DDSystemTemporaryDirectoryButton->Checked = true;
+      DDTemporaryDirectoryEdit->Text = SystemTemporaryDirectory();
+    }
+    else
+    {
+      DDCustomTemporaryDirectoryButton->Checked = true;
+      DDTemporaryDirectoryEdit->Text = WinConfiguration->DDTemporaryDirectory;
+    }
+
+    if (WinConfiguration->ScpCommander.NortonLikeMode == nlOff)
+    {
+      NortonLikeModeCombo->ItemIndex = 2;
+    }
+    else if (WinConfiguration->ScpCommander.NortonLikeMode == nlKeyboard)
+    {
+      NortonLikeModeCombo->ItemIndex = 1;
+    }
+    else
+    {
+      NortonLikeModeCombo->ItemIndex = 0;
+    }
+
+    PreserveLocalDirectoryCheck->Checked =
+      WinConfiguration->ScpCommander.PreserveLocalDirectory;
+    SwappedPanelsCheck->Checked =
+      WinConfiguration->ScpCommander.SwappedPanels;
+    FullRowSelectCheck->Checked = WinConfiguration->ScpCommander.FullRowSelect;
+    ShowFullAddressCheck->Checked =
+      WinConfiguration->ScpExplorer.ShowFullAddress;
+    RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
+    IniFileStorageButton2->Checked = (Configuration->Storage == stIniFile);
+
+    RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
+
+    // editor
+    EditorWordWrapCheck->Checked = WinConfiguration->Editor.WordWrap;
+    EditorTabSizeEdit->AsInteger = WinConfiguration->Editor.TabSize;
+    FEditorFont->Name = WinConfiguration->Editor.FontName;
+    FEditorFont->Height = WinConfiguration->Editor.FontHeight;
+    FEditorFont->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
+    FEditorFont->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
+    (*FEditorList) = *WinConfiguration->EditorList;
+    UpdateEditorListView();
+
+    CopyParamsFrame->Params = GUIConfiguration->DefaultCopyParam;
+    ResumeOnButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOn;
+    ResumeSmartButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsSmart;
+    ResumeOffButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOff;
+    ResumeThresholdEdit->Value = GUIConfiguration->DefaultCopyParam.ResumeThreshold / 1024;
+    SessionReopenAutoCheck->Checked = (Configuration->SessionReopenAuto > 0);
+    SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
+      (Configuration->SessionReopenAuto / 1000): 5);
+
+    TransferSheet->Enabled = WinConfiguration->ExpertMode;
+    GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
+    ExplorerSheet->Enabled = WinConfiguration->ExpertMode;
+    CommanderSheet->Enabled = WinConfiguration->ExpertMode;
+    GeneralSheet->Enabled = (PreferencesMode != pmLogin);
+    EditorSheet->Enabled = WinConfiguration->ExpertMode && !WinConfiguration->DisableOpenEdit;
+
+    StorageGroup->Visible = WinConfiguration->ExpertMode;
+    RandomSeedFileLabel->Visible = WinConfiguration->ExpertMode;
+    RandomSeedFileEdit->Visible = WinConfiguration->ExpertMode;
+
+    FCustomCommands->Assign(WinConfiguration->CustomCommands);
+    UpdateCustomCommandsView();
+
+    PuttyPathEdit->Text = GUIConfiguration->PuttyPath;
+    PuttyPasswordCheck2->Checked = GUIConfiguration->PuttyPassword;
+    AutoOpenInPuttyCheck->Checked = WinConfiguration->AutoOpenInPutty;
+    TelnetForFtpInPuttyCheck->Checked = WinConfiguration->TelnetForFtpInPutty;
+
+    // Queue
+    QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
+    QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
+    QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
+    QueueNoConfirmationCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueNoConfirmation;
+    RememberPasswordCheck->Checked = GUIConfiguration->QueueRememberPassword;
+    if (WinConfiguration->QueueView.Show == qvShow)
+    {
+      QueueViewShowButton->Checked = true;
+    }
+    else if (WinConfiguration->QueueView.Show == qvHideWhenEmpty)
+    {
+      QueueViewHideWhenEmptyButton->Checked = true;
+    }
+    else
+    {
+      QueueViewHideButton->Checked = true;
+    }
+
+    // window
+    if (WinConfiguration->PathInCaption == picFull)
+    {
+      PathInCaptionFullButton->Checked = true;
+    }
+    else if (WinConfiguration->PathInCaption == picShort)
+    {
+      PathInCaptionShortButton->Checked = true;
+    }
+    else
+    {
+      PathInCaptionNoneButton->Checked = true;
+    }
+    BOOLPROP(MinimizeToTray);
+
+    // panels
+    DoubleClickActionCombo->ItemIndex = WinConfiguration->DoubleClickAction;
+    BOOLPROP(AutoReadDirectoryAfterOp);
+
+    // updates
+    TUpdatesConfiguration Updates = WinConfiguration->Updates;
+    if (int(Updates.Period) <= 0)
+    {
+      UpdatesNeverButton->Checked = true;
+    }
+    else if (int(Updates.Period) <= 1)
+    {
+      UpdatesDailyButton->Checked = true;
+    }
+    else if (int(Updates.Period) <= 7)
+    {
+      UpdatesWeeklyButton->Checked = true;
+    }
+    else
+    {
+      UpdatesMonthlyButton->Checked = true;
+    }
+
+    switch (Updates.ConnectionType)
+    {
+      case ctDirect:
+      default:
+        UpdatesDirectCheck->Checked = true;
+        break;
+
+      case ctAuto:
+        UpdatesAutoCheck->Checked = true;
+        break;
+
+      case ctProxy:
+        UpdatesProxyCheck->Checked = true;
+        break;
+    }
+
+    UpdatesProxyHostEdit->Text = Updates.ProxyHost;
+    UpdatesProxyPortEdit->AsInteger = Updates.ProxyPort;
+
+    // presets
+    (*FCopyParamList) = *WinConfiguration->CopyParamList;
+    UpdateCopyParamListView();
+    BOOLPROP(CopyParamAutoSelectNotice);
+
+    // interface
+    if (WinConfiguration->Theme == "OfficeXP")
+    {
+      ThemeCombo->ItemIndex = 1;
+    }
+    else if (WinConfiguration->Theme == "Office2003")
+    {
+      ThemeCombo->ItemIndex = 2;
+    }
+    else
+    {
+      ThemeCombo->ItemIndex = 0;
+    }
+
+    #undef BOOLPROP
   }
-  #define BOOLPROP(PROP) PROP ## Check->Checked = WinConfiguration->PROP;
-  BOOLPROP(DefaultDirIsHome);
-  BOOLPROP(PreservePanelState);
-  BOOLPROP(DeleteToRecycleBin);
-  BOOLPROP(DDTransferConfirmation);
-  BOOLPROP(DDWarnLackOfTempSpace);
-  BOOLPROP(ShowHiddenFiles);
-  BOOLPROP(ShowInaccesibleDirectories);
-  BOOLPROP(CopyOnDoubleClickConfirmation);
-  BOOLPROP(ConfirmOverwriting);
-  BOOLPROP(ConfirmResume);
-  BOOLPROP(ConfirmDeleting);
-  BOOLPROP(ConfirmRecycling);
-  BOOLPROP(ConfirmClosingSession);
-  BOOLPROP(ConfirmExitOnCompletion);
-  BOOLPROP(UseLocationProfiles);
-  BOOLPROP(ConfirmCommandSession);
-  BOOLPROP(ContinueOnError);
-  BOOLPROP(DDAllowMoveInit);
-  BOOLPROP(BeepOnFinish);
-  BOOLPROP(TemporaryDirectoryCleanup);
-  BOOLPROP(ConfirmTemporaryDirectoryCleanup);
-
-  BeepOnFinishAfterEdit->AsInteger =
-    static_cast<double>(GUIConfiguration->BeepOnFinishAfter) * (24*60*60);
-  BOOLPROP(BalloonNotifications);
-
-  CompareByTimeCheck->Checked = WinConfiguration->ScpCommander.CompareByTime;
-  CompareBySizeCheck->Checked = WinConfiguration->ScpCommander.CompareBySize;
-
-  DDExtEnabledButton->Checked = WinConfiguration->DDExtEnabled;
-  DDExtDisabledButton->Checked = !DDExtEnabledButton->Checked;
-  DDWarnOnMoveCheck->Checked = !WinConfiguration->DDAllowMove;
-
-  if (WinConfiguration->DDTemporaryDirectory.IsEmpty())
+  __finally
   {
-    DDSystemTemporaryDirectoryButton->Checked = true;
-    DDTemporaryDirectoryEdit->Text = SystemTemporaryDirectory();
+    FNoUpdate--;
   }
-  else
-  {
-    DDCustomTemporaryDirectoryButton->Checked = true;
-    DDTemporaryDirectoryEdit->Text = WinConfiguration->DDTemporaryDirectory;
-  }
-
-  if (WinConfiguration->ScpCommander.NortonLikeMode == nlOff)
-  {
-    NortonLikeModeCombo->ItemIndex = 2;
-  }
-  else if (WinConfiguration->ScpCommander.NortonLikeMode == nlKeyboard)
-  {
-    NortonLikeModeCombo->ItemIndex = 1;
-  }
-  else
-  {
-    NortonLikeModeCombo->ItemIndex = 0;
-  }
-
-  PreserveLocalDirectoryCheck->Checked =
-    WinConfiguration->ScpCommander.PreserveLocalDirectory;
-  SwappedPanelsCheck->Checked =
-    WinConfiguration->ScpCommander.SwappedPanels;
-  FullRowSelectCheck->Checked = WinConfiguration->ScpCommander.FullRowSelect;
-  ShowFullAddressCheck->Checked =
-    WinConfiguration->ScpExplorer.ShowFullAddress;
-  RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
-  IniFileStorageButton2->Checked = (Configuration->Storage == stIniFile);
-
-  RandomSeedFileEdit->Text = Configuration->RandomSeedFile;
-
-  // editor
-  EditorSingleEditorOnCheck->Checked = WinConfiguration->Editor.SingleEditor;
-  EditorSingleEditorOffCheck->Checked = !WinConfiguration->Editor.SingleEditor;
-
-  EditorWordWrapCheck->Checked = WinConfiguration->Editor.WordWrap;
-  FEditorFont->Name = WinConfiguration->Editor.FontName;
-  FEditorFont->Height = WinConfiguration->Editor.FontHeight;
-  FEditorFont->Charset = (TFontCharset)WinConfiguration->Editor.FontCharset;
-  FEditorFont->Style = IntToFontStyles(WinConfiguration->Editor.FontStyle);
-  (*FEditorList) = *WinConfiguration->EditorList;
-  UpdateEditorListView();
-
-  CopyParamsFrame->Params = GUIConfiguration->DefaultCopyParam;
-  ResumeOnButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOn;
-  ResumeSmartButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsSmart;
-  ResumeOffButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOff;
-  ResumeThresholdEdit->Value = GUIConfiguration->DefaultCopyParam.ResumeThreshold / 1024;
-  SessionReopenAutoCheck->Checked = (Configuration->SessionReopenAuto > 0);
-  SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
-    (Configuration->SessionReopenAuto / 1000): 5);
-
-  TransferSheet->Enabled = WinConfiguration->ExpertMode;
-  GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
-  ExplorerSheet->Enabled = WinConfiguration->ExpertMode;
-  CommanderSheet->Enabled = WinConfiguration->ExpertMode;
-  GeneralSheet->Enabled = (PreferencesMode != pmLogin);
-  EditorSheet->Enabled = WinConfiguration->ExpertMode && !WinConfiguration->DisableOpenEdit;
-
-  StorageGroup->Visible = WinConfiguration->ExpertMode;
-  RandomSeedFileLabel->Visible = WinConfiguration->ExpertMode;
-  RandomSeedFileEdit->Visible = WinConfiguration->ExpertMode;
-
-  FCustomCommands->Assign(WinConfiguration->CustomCommands);
-  UpdateCustomCommandsView();
-
-  PuttyPathEdit->Text = GUIConfiguration->PuttyPath;
-  PuttyPasswordCheck->Checked = GUIConfiguration->PuttyPassword;
-  AutoOpenInPuttyCheck->Checked = WinConfiguration->AutoOpenInPutty;
-
-  // Queue
-  QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
-  QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
-  QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
-  QueueNoConfirmationCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueNoConfirmation;
-  RememberPasswordCheck->Checked = GUIConfiguration->QueueRememberPassword;
-  if (WinConfiguration->QueueView.Show == qvShow)
-  {
-    QueueViewShowButton->Checked = true;
-  }
-  else if (WinConfiguration->QueueView.Show == qvHideWhenEmpty)
-  {
-    QueueViewHideWhenEmptyButton->Checked = true;
-  }
-  else
-  {
-    QueueViewHideButton->Checked = true;
-  }
-
-  // window
-  if (WinConfiguration->PathInCaption == picFull)
-  {
-    PathInCaptionFullButton->Checked = true;
-  }
-  else if (WinConfiguration->PathInCaption == picShort)
-  {
-    PathInCaptionShortButton->Checked = true;
-  }
-  else
-  {
-    PathInCaptionNoneButton->Checked = true;
-  }
-  BOOLPROP(MinimizeToTray);
-
-  // panels
-  DoubleClickActionCombo->ItemIndex = WinConfiguration->DoubleClickAction;
-  BOOLPROP(AutoReadDirectoryAfterOp);
-
-  // updates
-  TUpdatesConfiguration Updates = WinConfiguration->Updates;
-  if (int(Updates.Period) <= 0)
-  {
-    UpdatesNeverButton->Checked = true;
-  }
-  else if (int(Updates.Period) <= 1)
-  {
-    UpdatesDailyButton->Checked = true;
-  }
-  else if (int(Updates.Period) <= 7)
-  {
-    UpdatesWeeklyButton->Checked = true;
-  }
-  else
-  {
-    UpdatesMonthlyButton->Checked = true;
-  }
-
-  UpdatesProxyCheck->Checked = !Updates.ProxyHost.IsEmpty();
-  UpdatesProxyHostEdit->Text =
-    Updates.ProxyHost.IsEmpty() ? AnsiString("proxy") : Updates.ProxyHost;
-  UpdatesProxyPortEdit->AsInteger = Updates.ProxyPort;
-
-  // presets
-  (*FCopyParamList) = *WinConfiguration->CopyParamList;
-  UpdateCopyParamListView();
-  BOOLPROP(CopyParamAutoSelectNotice);
-
-  // interface
-  if (WinConfiguration->Theme == "OfficeXP")
-  {
-    ThemeCombo->ItemIndex = 1;
-  }
-  else if (WinConfiguration->Theme == "Office2003")
-  {
-    ThemeCombo->ItemIndex = 2;
-  }
-  else
-  {
-    ThemeCombo->ItemIndex = 0;
-  }
-
-  #undef BOOLPROP
 
   UpdateControls();
 }
@@ -351,6 +375,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ShowHiddenFiles);
     BOOLPROP(ShowInaccesibleDirectories);
     BOOLPROP(CopyOnDoubleClickConfirmation);
+    BOOLPROP(ConfirmTransferring);
     BOOLPROP(ConfirmOverwriting);
     BOOLPROP(ConfirmResume);
     BOOLPROP(ConfirmDeleting);
@@ -410,9 +435,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     Configuration->RandomSeedFile = RandomSeedFileEdit->Text;
 
     // editor
-    WinConfiguration->Editor.SingleEditor = EditorSingleEditorOnCheck->Checked;
-
     WinConfiguration->Editor.WordWrap = EditorWordWrapCheck->Checked;
+    WinConfiguration->Editor.TabSize = EditorTabSizeEdit->AsInteger;
     WinConfiguration->Editor.FontName = FEditorFont->Name;
     WinConfiguration->Editor.FontHeight = FEditorFont->Height;
     WinConfiguration->Editor.FontCharset = FEditorFont->Charset;
@@ -432,8 +456,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     WinConfiguration->CustomCommands = FCustomCommands;
 
     GUIConfiguration->PuttyPath = PuttyPathEdit->Text;
-    GUIConfiguration->PuttyPassword = PuttyPasswordCheck->Checked;
+    GUIConfiguration->PuttyPassword = PuttyPasswordCheck2->Checked;
     WinConfiguration->AutoOpenInPutty = AutoOpenInPuttyCheck->Checked;
+    WinConfiguration->TelnetForFtpInPutty = TelnetForFtpInPuttyCheck->Checked;
 
     // Queue
     GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
@@ -495,7 +520,26 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       Updates.Period = 30;
     }
 
-    Updates.ProxyHost = UpdatesProxyCheck->Checked ? UpdatesProxyHostEdit->Text : AnsiString();
+    if (UpdatesDirectCheck->Checked)
+    {
+      Updates.ConnectionType = ctDirect;
+    }
+    else if (UpdatesAutoCheck->Checked)
+    {
+      Updates.ConnectionType = ctAuto;
+    }
+    else if (UpdatesProxyCheck->Checked)
+    {
+      if (!UpdatesProxyHostEdit->Text.IsEmpty())
+      {
+        Updates.ConnectionType = ctProxy;
+      }
+      else
+      {
+        Updates.ConnectionType = ctDirect;
+      }
+    }
+    Updates.ProxyHost = UpdatesProxyHostEdit->Text;
     Updates.ProxyPort = UpdatesProxyPortEdit->AsInteger;
 
     WinConfiguration->Updates = Updates;
@@ -540,13 +584,6 @@ void __fastcall TPreferencesDialog::FormShow(TObject * /*Sender*/)
 {
   PrepareNavigationTree(NavigationTree);
 
-  for (int Index = 0; Index < PageControl->PageCount; Index++)
-  {
-    PageControl->Pages[Index]->TabVisible = false;
-  }
-  // change form height by height of hidden tabs
-  ClientHeight -= 75;
-
   switch (PreferencesMode) {
     case pmEditor: PageControl->ActivePage = EditorSheet; break;
     case pmCustomCommands: PageControl->ActivePage = CustomCommandsSheet; break;
@@ -566,71 +603,99 @@ void __fastcall TPreferencesDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TPreferencesDialog::TabSample(AnsiString Values)
+{
+  AnsiString Result;
+  for (int Index = 1; Index <= Values.Length(); Index++)
+  {
+    if (Index > 1)
+    {
+      Result += ' ';
+      if (EditorTabSizeEdit->AsInteger > 2)
+      {
+        Result += AnsiString::StringOfChar(' ', EditorTabSizeEdit->AsInteger - 2);
+      }
+    }
+
+    Result += Values[Index];
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateControls()
 {
-  EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
-  EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
-  EnableControl(BalloonNotificationsCheck, TTrayIcon::SupportsBalloons());
+  if (FNoUpdate == 0)
+  {
+    EnableControl(BeepOnFinishAfterEdit, BeepOnFinishCheck->Checked);
+    EnableControl(BeepOnFinishAfterText, BeepOnFinishCheck->Checked);
+    EnableControl(BalloonNotificationsCheck, TTrayIcon::SupportsBalloons());
 
-  EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
-  EnableControl(ResumeThresholdUnitLabel, ResumeThresholdEdit->Enabled);
-  EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
-  EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
-  EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
+    EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
+    EnableControl(ResumeThresholdUnitLabel, ResumeThresholdEdit->Enabled);
+    EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
+    EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
+    EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
 
-  EnableControl(CopyOnDoubleClickConfirmationCheck, (DoubleClickActionCombo->ItemIndex == 1));
+    EnableControl(CopyOnDoubleClickConfirmationCheck,
+      (DoubleClickActionCombo->ItemIndex == 1) && ConfirmTransferringCheck->Checked);
 
-  EditorFontLabel->Caption = FMTLOAD(EDITOR_FONT_FMT,
-    (FEditorFont->Name, FEditorFont->Size));
-  EditorFontLabel->Font = FEditorFont;
+    AnsiString EditorFontLabelText;
+    EditorFontLabelText = FMTLOAD(EDITOR_FONT_FMT,
+      (FEditorFont->Name, FEditorFont->Size)) + "\n\n";
+    EditorFontLabelText += TabSample("ABCD") + "\n";
+    EditorFontLabelText += TabSample("1234");
+    EditorFontLabel->Caption = EditorFontLabelText;
+    EditorFontLabel->Font = FEditorFont;
 
-  bool CommandSelected = (CustomCommandsView->Selected != NULL);
-  EnableControl(EditCommandButton, CommandSelected);
-  EnableControl(RemoveCommandButton, CommandSelected);
-  EnableControl(UpCommandButton, CommandSelected &&
-    CustomCommandsView->ItemIndex > 0);
-  EnableControl(DownCommandButton, CommandSelected &&
-    (CustomCommandsView->ItemIndex < CustomCommandsView->Items->Count - 1));
+    bool CommandSelected = (CustomCommandsView->Selected != NULL);
+    EnableControl(EditCommandButton, CommandSelected);
+    EnableControl(RemoveCommandButton, CommandSelected);
+    EnableControl(UpCommandButton, CommandSelected &&
+      CustomCommandsView->ItemIndex > 0);
+    EnableControl(DownCommandButton, CommandSelected &&
+      (CustomCommandsView->ItemIndex < CustomCommandsView->Items->Count - 1));
 
-  bool CopyParamSelected = (CopyParamListView->Selected != NULL);
-  EnableControl(EditCopyParamButton, CopyParamSelected);
-  EnableControl(DuplicateCopyParamButton, CopyParamSelected);
-  EnableControl(RemoveCopyParamButton, CopyParamSelected);
-  EnableControl(UpCopyParamButton, CopyParamSelected &&
-    (CopyParamListView->ItemIndex > 0));
-  EnableControl(DownCopyParamButton, CopyParamSelected &&
-    (CopyParamListView->ItemIndex < CopyParamListView->Items->Count - 1));
-  EnableControl(CopyParamAutoSelectNoticeCheck, FCopyParamList->AnyRule);
+    bool CopyParamSelected = (CopyParamListView->Selected != NULL);
+    EnableControl(EditCopyParamButton, CopyParamSelected);
+    EnableControl(DuplicateCopyParamButton, CopyParamSelected);
+    EnableControl(RemoveCopyParamButton, CopyParamSelected);
+    EnableControl(UpCopyParamButton, CopyParamSelected &&
+      (CopyParamListView->ItemIndex > 0));
+    EnableControl(DownCopyParamButton, CopyParamSelected &&
+      (CopyParamListView->ItemIndex < CopyParamListView->Items->Count - 1));
+    EnableControl(CopyParamAutoSelectNoticeCheck, FCopyParamList->AnyRule);
 
-  EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
-  EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
-  EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
-  EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
-    DDCustomTemporaryDirectoryButton->Checked);
-  EnableControl(DDWarnOnMoveCheck, DDExtDisabledButton->Checked &&
-    DDAllowMoveInitCheck->Checked);
-  EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
-    TemporaryDirectoryCleanupCheck->Checked);
-  IniFileStorageButton2->Caption =
-    AnsiReplaceStr(IniFileStorageButton2->Caption, "winscp.ini",
-      ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName)));
+    EnableControl(DDExtEnabledButton, WinConfiguration->DDExtInstalled);
+    EnableControl(DDExtEnabledLabel, WinConfiguration->DDExtInstalled);
+    EnableControl(DDExtDisabledPanel, DDExtDisabledButton->Checked);
+    EnableControl(DDTemporaryDirectoryEdit, DDCustomTemporaryDirectoryButton->Enabled &&
+      DDCustomTemporaryDirectoryButton->Checked);
+    EnableControl(DDWarnOnMoveCheck, DDExtDisabledButton->Checked &&
+      DDAllowMoveInitCheck->Checked);
+    EnableControl(ConfirmTemporaryDirectoryCleanupCheck,
+      TemporaryDirectoryCleanupCheck->Checked);
+    IniFileStorageButton2->Caption =
+      AnsiReplaceStr(IniFileStorageButton2->Caption, "winscp.ini",
+        ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName)));
 
-  EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
-  bool EditorSelected = (EditorListView->Selected != NULL);
-  EnableControl(EditEditorButton, EditorSelected);
-  EnableControl(RemoveEditorButton, EditorSelected);
-  EnableControl(UpEditorButton, EditorSelected &&
-    (EditorListView->ItemIndex > 0));
-  EnableControl(DownEditorButton, EditorSelected &&
-    (EditorListView->ItemIndex < EditorListView->Items->Count - 1));
+    EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
+    bool EditorSelected = (EditorListView->Selected != NULL);
+    EnableControl(EditEditorButton, EditorSelected);
+    EnableControl(RemoveEditorButton, EditorSelected);
+    EnableControl(UpEditorButton, EditorSelected &&
+      (EditorListView->ItemIndex > 0));
+    EnableControl(DownEditorButton, EditorSelected &&
+      (EditorListView->ItemIndex < EditorListView->Items->Count - 1));
 
-  EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
-  EnableControl(UpdatesProxyHostLabel, UpdatesProxyHostEdit->Enabled);
-  EnableControl(UpdatesProxyPortEdit, UpdatesProxyCheck->Checked);
-  EnableControl(UpdatesProxyPortLabel, UpdatesProxyPortEdit->Enabled);
+    EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
+    EnableControl(UpdatesProxyHostLabel, UpdatesProxyHostEdit->Enabled);
+    EnableControl(UpdatesProxyPortEdit, UpdatesProxyCheck->Checked);
+    EnableControl(UpdatesProxyPortLabel, UpdatesProxyPortEdit->Enabled);
 
-  EnableControl(PuttyPasswordCheck, !PuttyPathEdit->Text.IsEmpty());
-  EnableControl(AutoOpenInPuttyCheck, PuttyPasswordCheck->Enabled);
+    EnableControl(PuttyPasswordCheck2, !PuttyPathEdit->Text.IsEmpty());
+    EnableControl(AutoOpenInPuttyCheck, PuttyPasswordCheck2->Enabled);
+    EnableControl(TelnetForFtpInPuttyCheck, PuttyPasswordCheck2->Enabled);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
@@ -1331,7 +1396,7 @@ void __fastcall TPreferencesDialog::PuttyPathBrowseButtonClick(
   TObject * /*Sender*/)
 {
   BrowseForExecutable(PuttyPathEdit, LoadStr(PREFERENCES_SELECT_PUTTY),
-    LoadStr(PREFERENCES_PUTTY_FILTER), false);
+    LoadStr(PREFERENCES_PUTTY_FILTER), false, false);
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::PuttyPathResetButtonClick(

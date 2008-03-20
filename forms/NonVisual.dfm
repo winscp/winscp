@@ -1,6 +1,6 @@
 object NonVisualDataModule: TNonVisualDataModule
   OldCreateOrder = False
-  Left = 316
+  Left = 263
   Top = 156
   Height = 502
   Width = 624
@@ -63,6 +63,9 @@ object NonVisualDataModule: TNonVisualDataModule
     Images = GlyphsModule.ExplorerImages
     Left = 424
     Top = 336
+    object TBXItem23: TTBXItem
+      Action = AddEditLinkContextAction
+    end
     object CurrentOpenMenuItem: TTBXItem
       Action = CurrentOpenAction
     end
@@ -188,7 +191,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Go to Comma&nd Line'
       HelpKeyword = 'ui_commander#command_line'
       Hint = 'Go to command line'
-      ShortCut = 49230
+      ShortCut = 24654
     end
     object QueueItemDeleteAction: TAction
       Tag = 12
@@ -397,7 +400,7 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Comma&nd Line'
       HelpKeyword = 'ui_commander#command_line'
       Hint = 'Hide/show command line'
-      ShortCut = 49230
+      ShortCut = 24654
     end
     object RemoteParentDirAction: TAction
       Tag = 12
@@ -1241,8 +1244,8 @@ object NonVisualDataModule: TNonVisualDataModule
       Caption = 'Open &Terminal'
       HelpKeyword = 'ui_console'
       Hint = 
-        'Open teminal|Open terminal window that allow executing arbitrary' +
-        ' command (with exception of commands that require user input)'
+        'Open terminal|Open terminal window that allow executing arbitrar' +
+        'y command (with exception of commands that require user input)'
       ImageIndex = 55
       ShortCut = 16468
     end
@@ -1304,6 +1307,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 
         'Add/edit link|Add new link/shortcut or edit selected link/shortc' +
         'ut'
+      ImageIndex = 60
+    end
+    object AddEditLinkContextAction: TAction
+      Tag = 15
+      Category = 'Command'
+      Caption = 'Edit &Link...'
+      HelpKeyword = 'task_link'
+      Hint = 'Edit link|Edit selected link/shortcut'
       ImageIndex = 60
     end
     object CloseApplicationAction: TAction
@@ -1622,6 +1633,14 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Upload|Upload selected file(s)'
       ImageIndex = 88
     end
+    object CurrentDeleteAlternativeAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = '&Delete'
+      HelpKeyword = 'task_delete'
+      Hint = 'Delete|Delete selected file(s)'
+      ImageIndex = 2
+    end
     object DownloadPageAction: TAction
       Tag = 15
       Category = 'Help'
@@ -1761,6 +1780,13 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_create_directory'
       Hint = 'Create directory|Create new directory'
       ImageIndex = 5
+    end
+    object QueueItemSpeedAction: TTBEditAction
+      Tag = 12
+      Category = 'Queue'
+      HelpKeyword = 'ui_queue#managing_the_queue'
+      Hint = 'Change speed limit of selected queue item'
+      EditCaption = '&Speed'
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -2157,6 +2183,10 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object Delete4: TTBXItem
       Action = QueueItemDeleteAction
+    end
+    object QueueSpeedComboBoxItem: TTBXComboBoxItem
+      Action = QueueItemSpeedAction
+      OnItemClick = QueueSpeedComboBoxItemItemClick
     end
     object N54: TTBXSeparatorItem
       Hint = 'E'

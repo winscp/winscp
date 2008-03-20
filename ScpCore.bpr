@@ -9,7 +9,7 @@
       core\Exceptions.obj core\FileBuffer.obj core\FileInfo.obj
       core\FileMasks.obj core\FileOperationProgress.obj core\FileSystems.obj
       core\FtpFileSystem.obj core\HierarchicalStorage.obj core\NamedObjs.obj
-      core\PuttyIntf.obj core\Queue.obj core\RemoteFiles.obj
+      core\Option.obj core\PuttyIntf.obj core\Queue.obj core\RemoteFiles.obj
       core\ScpFileSystem.obj core\Script.obj core\SecureShell.obj
       core\Security.obj core\SessionData.obj core\SessionInfo.obj
       core\SftpFileSystem.obj core\Terminal.obj"/>
@@ -24,7 +24,7 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="USE_COMPATIBLE_THREAD;GSSAPI;_WINDOWS"/>
+    <USERDEFINES value="USE_COMPATIBLE_THREAD;SSPI_MECH;_WINDOWS"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpCore.bpf"/>
     <INCLUDEPATH value="windows;core;putty;putty\windows;filezilla;resource;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
@@ -62,6 +62,7 @@
       <FILE FILENAME="core\FtpFileSystem.cpp" FORMNAME="" UNITNAME="FtpFileSystem" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\HierarchicalStorage.cpp" FORMNAME="" UNITNAME="HierarchicalStorage.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\NamedObjs.cpp" FORMNAME="" UNITNAME="NamedObjs.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="core\Option.cpp" FORMNAME="" UNITNAME="Option" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\PuttyIntf.cpp" FORMNAME="" UNITNAME="PuttyIntf" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\Queue.cpp" FORMNAME="" UNITNAME="Queue" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="core\RemoteFiles.cpp" FORMNAME="" UNITNAME="RemoteFiles.cpp" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

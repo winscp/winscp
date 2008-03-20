@@ -3,6 +3,7 @@
 #define ScriptH
 //---------------------------------------------------------------------------
 #include <time.h>
+#include "Option.h"
 #include "Terminal.h"
 #include "FileOperationProgress.h"
 //---------------------------------------------------------------------------
@@ -14,27 +15,18 @@ class TTerminalList;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TScriptPrintEvent)(TScript * Script, const AnsiString Str);
 typedef void __fastcall (__closure *TScriptSynchronizeStartStop)(TScript * Script,
-  const AnsiString LocalDirectory, const AnsiString RemoteDirectory);
+  const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+  const TCopyParamType & CopyParam, int SynchronizeParams);
 //---------------------------------------------------------------------------
-class TScriptProcParams
+class TScriptProcParams : public TOptions
 {
 public:
-  __fastcall TScriptProcParams(TStrings * Params, const AnsiString & ParamsStr);
-  void __fastcall SkipParam();
+  __fastcall TScriptProcParams(AnsiString ParamsStr);
 
-  __property AnsiString Param[int Index] = { read = GetParam };
-  __property int ParamCount = { read = GetParamCount };
-  __property void * Arg = { read = FArg, write = FArg };
   __property AnsiString ParamsStr = { read = FParamsStr };
 
 private:
-  TStrings * FParams;
-  int FSkipParams;
-  void * FArg;
   AnsiString FParamsStr;
-
-  AnsiString __fastcall GetParam(int Index);
-  int __fastcall GetParamCount();
 };
 //---------------------------------------------------------------------------
 class TScript
@@ -42,15 +34,14 @@ class TScript
 public:
   enum TBatchMode { BatchOff, BatchOn, BatchAbort, BatchContinue };
 
-  __fastcall TScript();
-  __fastcall TScript(TTerminal * Terminal);
+  __fastcall TScript(bool LimitedOutput);
   virtual __fastcall ~TScript();
 
-  void __fastcall Command(const AnsiString Cmd);
+  void __fastcall Command(AnsiString Cmd);
 
   void __fastcall Synchronize(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,
-    TSynchronizeChecklist ** Checklist);
+    int SynchronizeParams, TSynchronizeChecklist ** Checklist);
 
   __property TScriptPrintEvent OnPrint = { read = FOnPrint, write = FOnPrint };
   __property TExtendedExceptionEvent OnShowExtendedException = { read = FOnShowExtendedException, write = FOnShowExtendedException };
@@ -76,15 +67,16 @@ protected:
   int FSynchronizeMode;
   bool FKeepingUpToDate;
   AnsiString FSynchronizeIntro;
+  bool FLimitedOutput;
 
   virtual void __fastcall ResetTransfer();
   virtual void __fastcall ConnectTerminal(TTerminal * Terminal);
   bool __fastcall EnsureCommandSessionFallback(TFSCapability Capability);
   void __fastcall Print(const AnsiString Str);
   void __fastcall PrintLine(const AnsiString Str);
-  void __fastcall Tokenize(const AnsiString Str, TStrings * Tokens,
-    AnsiString & AllButFirst);
   void __fastcall CheckSession();
+  void __fastcall CheckParams(TScriptProcParams * Parameters);
+  void __fastcall CopyParamParams(TCopyParamType & CopyParam, TScriptProcParams * Parameters);
   enum TFileListType
   {
     fltDefault =     0x00,
@@ -98,7 +90,6 @@ protected:
     int Start, int End, TFileListType ListType);
   void __fastcall FreeFileList(TStrings * FileList);
 
-  void __fastcall SecondaryProc(TScriptProcParams * Parameters);
   void __fastcall DummyProc(TScriptProcParams * Parameters);
   void __fastcall HelpProc(TScriptProcParams * Parameters);
   void __fastcall CallProc(TScriptProcParams * Parameters);
@@ -139,10 +130,10 @@ typedef void __fastcall (__closure *TScriptPrintProgressEvent)(TScript * Script,
 class TManagementScript : public TScript
 {
 public:
-  __fastcall TManagementScript(TStoredSessionList * StoredSessions);
+  __fastcall TManagementScript(TStoredSessionList * StoredSessions, bool LimitedOutput);
   virtual __fastcall ~TManagementScript();
 
-  void __fastcall Connect(const AnsiString Session);
+  void __fastcall Connect(const AnsiString Session, TOptions * Options, bool CheckParams);
 
   __property TScriptInputEvent OnInput = { read = FOnInput, write = FOnInput };
   __property TScriptQueryCancelEvent OnQueryCancel = { read = FOnQueryCancel, write = FOnQueryCancel };
@@ -181,13 +172,14 @@ protected:
   bool __fastcall QueryCancel();
   void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, bool & Continue, bool Collect);
-  void __fastcall DoConnect(const AnsiString Session);
+  void __fastcall DoConnect(const AnsiString & Session, TOptions * Options,
+    bool CheckParams);
   void __fastcall DoClose(TTerminal * Terminal);
   virtual bool __fastcall HandleExtendedException(Exception * E,
     TTerminal * Terminal = NULL);
-  void __fastcall TerminalPromptUser(TTerminal * Terminal,
-    AnsiString Prompt, TPromptKind Kind, AnsiString & Response, bool & Result,
-    void * Arg);
+  void __fastcall TerminalPromptUser(TTerminal * Terminal, TPromptKind Kind,
+    AnsiString Name, AnsiString Instructions, TStrings * Prompts,
+    TStrings * Results, bool & Result, void * Arg);
   inline bool __fastcall Synchronizing();
   inline void __fastcall ShowPendingProgress();
 
