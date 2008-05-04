@@ -27,6 +27,7 @@ object EditorForm: TEditorForm
   KeyPreview = True
   OldCreateOrder = False
   Position = poDefaultPosOnly
+  OnActivate = FormActivate
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnShow = FormShow

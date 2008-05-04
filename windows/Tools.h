@@ -4,6 +4,8 @@
 
 #include <comctrls.hpp>
 #include <WinInterface.h>
+#include <HelpIntfs.hpp>
+#include <WinHelpViewer.hpp>
 //---------------------------------------------------------------------------
 void __fastcall CenterFormOn(TForm * Form, TControl * CenterOn);
 bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params);
@@ -34,5 +36,24 @@ bool __fastcall AutodetectProxyUrl(AnsiString & Proxy);
 bool __fastcall IsWin64();
 void __fastcall CopyToClipboard(AnsiString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
+//---------------------------------------------------------------------------
+#define IUNKNOWN \
+  virtual HRESULT __stdcall QueryInterface(const GUID& IID, void **Obj) \
+  { \
+    return TInterfacedObject::QueryInterface(IID, (void *)Obj); \
+  } \
+  \
+  virtual ULONG __stdcall AddRef() \
+  { \
+    return TInterfacedObject::_AddRef(); \
+  } \
+  \
+  virtual ULONG __stdcall Release() \
+  { \
+    return TInterfacedObject::_Release(); \
+  }
+//---------------------------------------------------------------------------
+void __fastcall InitializeCustomHelp(ICustomHelpViewer * HelpViewer);
+void __fastcall FinalizeCustomHelp();
 //---------------------------------------------------------------------------
 #endif

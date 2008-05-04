@@ -15,12 +15,13 @@
 #include <ComCtrls.hpp>
 #include <HistoryComboBox.hpp>
 #include <PathLabel.hpp>
-
-#include <Terminal.h>
 #include <ImgList.hpp>
 #include <Menus.hpp>
 #include <ActnList.hpp>
 #include <StdActns.hpp>
+//----------------------------------------------------------------------------
+#include "WinInterface.h"
+#include <Terminal.h>
 //----------------------------------------------------------------------------
 class TConsoleDialog : public TForm
 {

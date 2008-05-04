@@ -713,6 +713,7 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND Hwnd, UINT Func, UINT Flags,
                 if (CommStruct->Dragging)
                 {
                   DEBUG("CShellExt::CopyCallback dragging");
+                  DEBUG(CommStruct->DropDest);
                   if (strcmp(CommStruct->DropDest, SrcFile) == 0)
                   {
                     CommStruct->Dragging = false;

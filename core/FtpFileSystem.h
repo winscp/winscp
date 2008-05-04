@@ -191,6 +191,7 @@ private:
   AnsiString FHomeDirectory;
   TRemoteFileList * FFileList;
   TRemoteFileList * FFileListCache;
+  AnsiString FFileListCachePath;
   bool FActive;
   bool FWaitingForReply;
   enum { ftaNone, ftaSkip, ftaCancel } FFileTransferAbort;

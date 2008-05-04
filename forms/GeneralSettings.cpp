@@ -10,7 +10,9 @@
 #include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 __fastcall TGeneralSettingsFrame::TGeneralSettingsFrame(TComponent* Owner)
         : TFrame(Owner)

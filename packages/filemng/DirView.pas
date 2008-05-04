@@ -2231,9 +2231,13 @@ begin
     if not IsRecycleBin then
     begin
       if PFileRec(Item.Data)^.IsParentDir then
-        Result := ExcludeTrailingBackslash(ExtractFilePath(FPath))
-      else
+      begin
+        Result := ExcludeTrailingBackslash(ExtractFilePath(FPath));
+      end
+        else
+      begin
         Result := FPath + '\' + PFileRec(Item.Data)^.FileName;
+      end;
     end
       else
     Result := PFileRec(Item.Data)^.FileName;

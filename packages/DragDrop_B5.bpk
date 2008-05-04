@@ -5,13 +5,9 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\DragDrop_B5.bpl"/>
     <OBJFILES value="DragDrop_B5.obj dragndrop\DragDrop.obj
-      dragndrop\DragDropBitmap.obj dragndrop\DragDropFiles.obj
-      dragndrop\DragDropFilesEx.obj dragndrop\DragDropText.obj
-      dragndrop\DragDropURL.obj dragndrop\ListSort.obj dragndrop\PIDL.obj"/>
+      dragndrop\DragDropFilesEx.obj dragndrop\PIDL.obj"/>
     <RESFILES value="dragndrop\DragDrop.dcr
-      dragndrop\DragDropBitmap.dcr dragndrop\DragDropFiles.dcr
-      dragndrop\DragDropFilesEx.dcr dragndrop\DragDropText.dcr
-      dragndrop\ListSort.dcr"/>
+      dragndrop\DragDropFilesEx.dcr"/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES)"/>
     <LIBFILES value=""/>
@@ -51,17 +47,8 @@
       <FILE FILENAME="DragDrop_B5.cpp" FORMNAME="" UNITNAME="DragDrop_B5" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dragndrop\DragDrop.pas" FORMNAME="" UNITNAME="DragDrop" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dragndrop\DragDrop.dcr" FORMNAME="" UNITNAME="DragDrop" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\DragDropBitmap.pas" FORMNAME="" UNITNAME="DragDropBitmap" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\DragDropBitmap.dcr" FORMNAME="" UNITNAME="DragDropBitmap" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\DragDropFiles.pas" FORMNAME="" UNITNAME="DragDropFiles" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\DragDropFiles.dcr" FORMNAME="" UNITNAME="DragDropFiles" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dragndrop\DragDropFilesEx.pas" FORMNAME="" UNITNAME="DragDropFilesEx" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dragndrop\DragDropFilesEx.dcr" FORMNAME="" UNITNAME="DragDropFilesEx" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\DragDropText.pas" FORMNAME="" UNITNAME="DragDropText" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\DragDropText.dcr" FORMNAME="" UNITNAME="DragDropText" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\DragDropURL.pas" FORMNAME="" UNITNAME="DragDropURL" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\ListSort.pas" FORMNAME="" UNITNAME="ListSort" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="dragndrop\ListSort.dcr" FORMNAME="" UNITNAME="ListSort" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="dragndrop\PIDL.pas" FORMNAME="" UNITNAME="PIDL" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="rtl.bpi" FORMNAME="" UNITNAME="rtl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="vcl.bpi" FORMNAME="" UNITNAME="vcl" CONTAINERID="BPITool" DESIGNCLASS="" LOCALCOMMAND=""/>

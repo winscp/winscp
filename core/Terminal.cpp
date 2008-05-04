@@ -203,7 +203,7 @@ void __fastcall TTunnelThread::Execute()
     {
       FSecureShell->Close();
     }
-    throw;
+    // do not pass exception out of thread's proc
   }
 }
 //---------------------------------------------------------------------------
@@ -2168,7 +2168,7 @@ void __fastcall TTerminal::DeleteFile(AnsiString FileName,
     if (OperationProgress->Cancel != csContinue) Abort();
     OperationProgress->SetFile(FileName);
   }
-  int Params = *((int*)AParams);
+  int Params = (AParams != NULL) ? *((int*)AParams) : 0;
   bool Recycle = (SessionData->DeleteToRecycleBin != FLAGSET(Params, dfAlternative));
   if (Recycle && !IsRecycledFile(FileName))
   {

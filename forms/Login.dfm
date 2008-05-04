@@ -488,12 +488,13 @@ object LoginDialog: TLoginDialog
           DesignSize = (
             345
             96)
-          object Label5: TLabel
+          object EOLTypeLabel: TLabel
             Left = 12
             Top = 20
             Width = 230
             Height = 13
             Caption = '&End-of-line characters (if not indicated by server):'
+            FocusControl = EOLTypeCombo
           end
           object UtfLabel: TLabel
             Left = 12
@@ -547,7 +548,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 1
           end
           object TimeDifferenceEdit: TUpDownEdit
@@ -2085,7 +2086,7 @@ object LoginDialog: TLoginDialog
           Top = 8
           Width = 307
           Height = 17
-          Caption = '&Bypass authentication entirelly (SSH-2)'
+          Caption = '&Bypass authentication entirely (SSH-2)'
           TabOrder = 0
           OnClick = DataChange
         end

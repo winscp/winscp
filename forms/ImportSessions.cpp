@@ -12,7 +12,9 @@
 #include <VCLCommon.h>
 #include <WinInterface.h>
 //---------------------------------------------------------------------
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------
 Boolean __fastcall DoImportSessionsDialog(TStoredSessionList *SessionList)
 {

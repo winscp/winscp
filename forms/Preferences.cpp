@@ -26,7 +26,9 @@
 #pragma link "IEComboBox"
 #pragma link "HistoryComboBox"
 #pragma link "PasswordEdit"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------
 bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData)

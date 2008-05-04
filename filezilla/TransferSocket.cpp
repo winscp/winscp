@@ -1393,8 +1393,11 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 {
 	TRY
 	{
+#ifndef MPEXT
 		if (!m_transferdata.bType)
+#endif
 			return m_pFile->Read(buffer, len);
+#ifndef MPEXT
 		else
 		{   //Read the file as ASCII file with CRLF line end
 			if (!m_ReadBuffer)
@@ -1427,6 +1430,7 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 			ASSERT(numread <= len);
 			return numread;
 		}
+#endif
 	}
 	CATCH_ALL(e)
 	{

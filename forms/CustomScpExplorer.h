@@ -158,6 +158,7 @@ __published:
   void __fastcall RemotePathComboBoxCancel(TObject * Sender);
   void __fastcall DirViewEditing(TObject *Sender, TListItem *Item,
           bool &AllowEdit);
+  void __fastcall FormActivate(TObject *Sender);
 
 private:
   TTerminal * FTerminal;
@@ -388,7 +389,7 @@ protected:
   void __fastcall PostComponentHide(unsigned short Component);
   void __fastcall GetSpaceAvailable(const AnsiString Path,
     TSpaceAvailable & ASpaceAvailable, bool & Close);
-  void __fastcall CalculateSizeEvent(TStrings * FileList, __int64 & Size,
+  void __fastcall CalculateSize(TStrings * FileList, __int64 & Size,
     TCalculateSizeStats & Stats, bool & Close);
   void __fastcall CalculateChecksum(const AnsiString & Alg, TStrings * FileList,
     TCalculatedChecksumEvent OnCalculatedChecksum, bool & Close);

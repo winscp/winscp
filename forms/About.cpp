@@ -12,7 +12,9 @@
 #include "TextsCore.h"
 #include "TextsWin.h"
 //---------------------------------------------------------------------
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 void __fastcall DoAboutDialog(TConfiguration * Configuration,
   bool AllowLicense, TRegistration * Registration)

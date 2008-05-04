@@ -193,6 +193,7 @@ type PByte=^byte;
 procedure CopyHDropToFilelist(var List:TFileList; HDropPtr:PChar; HDropSize:longint);
 var s:string;
     DropFiles: PDropFiles;
+    ws: WideString;
 // List must be empty, before calling ...
 begin
      if (HDropPtr<>nil) and (HDropSize>0) then
@@ -203,9 +204,9 @@ begin
           begin
                while HDropPtr^<>#0 do
                begin
-                    s:=WideCharToString(PWideChar(HDropPtr));
-                    inc(HDropPtr,(Length(s)+1)*2);
-                    List.AddItem(nil,s);
+                    ws := PWideChar(HDropPtr);
+                    inc(HDropPtr,(Length(ws)+1)*2);
+                    List.AddItem(nil,ws);
                end;
           end
           else
@@ -224,6 +225,7 @@ procedure CopyFilenameMapToFilelist(var List:TFileList; FilenameMapPtr:PChar;
    FilenameMapSize:longint; IsWideChar:boolean);
 var s:string;
     idx:longint;
+    ws:WideString;
 // should be only called after "CopyHDropToFilelist" ...
 begin
      if (FilenameMapPtr<>nil) and (FilenameMapSize>0) then
@@ -233,9 +235,9 @@ begin
           begin
                while FilenameMapPtr^<>#0 do
                begin
-                    s:=WideCharToString(PWideChar(FilenameMapPtr));
-                    inc(FilenameMapPtr,(Length(s)+1)*2);
-                    if Idx>=0 then List.Items[Idx]^.MappedName:=s
+                    ws:=WideCharToString(PWideChar(FilenameMapPtr));
+                    inc(FilenameMapPtr,(Length(ws)+1)*2);
+                    if Idx>=0 then List.Items[Idx]^.MappedName:=ws
                     else raise Exception.Create('A non-existing filename is mapped');
                     inc(Idx);
                end;
@@ -639,7 +641,7 @@ begin
                for i:=0 to FilenameMapList.count-1 do
                begin
                     StringToWideChar(FilenameMapList[i],PWideChar(@pc),sizeof(pc));
-                    FilenameMapStream.Write(pc,length(FilenameMapList[i])*2+2);
+                    FilenameMapStream.Write(pc,Length(WideString(PWideChar(@pc)))*2+2);
                end;
                pc[0]:=#0; pc[1]:=#0;
                FilenameMapStream.Write(pc,2);

@@ -8,7 +8,9 @@
 #include <TextsWin.h>
 #include "Cleanup.h"
 //---------------------------------------------------------------------
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------
 Boolean __fastcall DoCleanupDialog(TStoredSessionList *SessionList,
   TConfiguration *Configuration)

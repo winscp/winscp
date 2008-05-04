@@ -13,7 +13,9 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PasswordEdit"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 __fastcall TAuthenticateForm::TAuthenticateForm(TComponent * Owner)
   : TForm(Owner), FSessionData(NULL)
@@ -182,7 +184,7 @@ TList * __fastcall TAuthenticateForm::GeneratePrompt(AnsiString Instructions,
       Current += FPromptEditGap;
     }
 
-    TLabel * Label = GenerateLabel(Current, Prompts->Strings[0]);
+    TLabel * Label = GenerateLabel(Current, Prompts->Strings[Index]);
     Current += Label->Height + FPromptEditGap;
 
     TCustomEdit * Edit = GenerateEdit(Current, bool(Prompts->Objects[Index]),

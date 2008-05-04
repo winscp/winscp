@@ -9,6 +9,7 @@ USEFORM("forms\ScpExplorer.cpp", ScpExplorerForm);
 #include <CoreMain.h>
 #include <WinInterface.h>
 #include <ProgParams.h>
+#include <VCLCommon.h>
 //---------------------------------------------------------------------------
 WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
@@ -18,6 +19,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     Application->Initialize();
     CoreInitialize();
     InitializeWinHelp();
+    InitializeSystemSettings();
 
     try
     {
@@ -28,8 +30,9 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
     }
     __finally
     {
-      CoreFinalize();
+      FinalizeSystemSettings();
       FinalizeWinHelp();
+      CoreFinalize();
     }
   }
   catch (Exception &E)

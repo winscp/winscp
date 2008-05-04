@@ -263,12 +263,11 @@ static void __fastcall FormWindowProcEx(void * Data, TMessage & Message)
   DoFormWindowProc(SSettings->Form, SSettings->OldWndProc, Message);
 }
 //---------------------------------------------------------------------------
-void __fastcall InitSystemSettings(TComponent * Control)
+void __fastcall InitializeSystemSettings()
 {
   if (ThemeManager == NULL)
   {
-    assert(Control->FindComponent("ThemeManager") == NULL);
-    ThemeManager = new TThemeManager(Control);
+    ThemeManager = new TThemeManager(Application);
     ThemeManager->Name = "ThemeManager";
     // ListView subclassing breaks TDirView
     ThemeManager->Options = (ThemeManager->Options >> toSubclassListView);
@@ -281,9 +280,19 @@ void __fastcall InitSystemSettings(TComponent * Control)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall FinalizeSystemSettings()
+{
+  if (ThemeManager != NULL)
+  {
+    SAFE_DESTROY(ThemeManager);
+  }
+}
+//---------------------------------------------------------------------------
 // Settings that must be set as soon as possible.
 void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
 {
+  LocalSystemSettings(Control);
+
   TWndMethod WindowProc;
 
   if (Settings)
@@ -318,7 +327,7 @@ void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
   // especially on login dialog, we need to reapply themes with language change
   if (ThemeManager != NULL)
   {
-    ThemeManager->CollectControls(Control);
+    ThemeManager->CollectForms(Control);
   }
 };
 //---------------------------------------------------------------------------
@@ -748,7 +757,7 @@ void __fastcall CutFormToDesktop(TForm * Form)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall UpdateFormPosition(TForm * Form, TPosition Position)
+void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position)
 {
   if ((Position == poScreenCenter) ||
       (Position == poOwnerFormCenter) ||
@@ -766,18 +775,19 @@ void __fastcall UpdateFormPosition(TForm * Form, TPosition Position)
       }
     }
 
+    TRect Bounds = Form->BoundsRect;
     int X, Y;
     if (CenterForm != NULL)
     {
-      X = ((((TForm *)CenterForm)->Width - Form->Width) / 2) +
+      X = ((((TForm *)CenterForm)->Width - Bounds.Width()) / 2) +
         ((TForm *)CenterForm)->Left;
-      Y = ((((TForm *)CenterForm)->Height - Form->Height) / 2) +
+      Y = ((((TForm *)CenterForm)->Height - Bounds.Height()) / 2) +
         ((TForm *)CenterForm)->Top;
     }
     else
     {
-      X = (Screen->Width - Form->Width) / 2;
-      Y = (Screen->Height - Form->Height) / 2;
+      X = (Screen->Width - Bounds.Width()) / 2;
+      Y = (Screen->Height - Bounds.Height()) / 2;
     }
 
     if (X < 0)
@@ -789,11 +799,11 @@ void __fastcall UpdateFormPosition(TForm * Form, TPosition Position)
       Y = 0;
     }
 
-    Form->SetBounds(X, Y, Form->Width, Form->Height);
+    Form->SetBounds(X, Y, Bounds.Width(), Bounds.Height());
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ResizeForm(TForm * Form, int Width, int Height)
+void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height)
 {
   if (Height > Screen->WorkAreaHeight)
   {
@@ -811,8 +821,9 @@ void __fastcall ResizeForm(TForm * Form, int Width, int Height)
   {
     Width = Form->Constraints->MinWidth;
   }
-  int Top = Form->Top + ((Form->Height - Height) / 2);
-  int Left = Form->Left + ((Form->Width - Width) / 2);
+  TRect Bounds = Form->BoundsRect;
+  int Top = Bounds.Top + ((Bounds.Height() - Height) / 2);
+  int Left = Bounds.Left + ((Bounds.Width() - Width) / 2);
   if (Top + Height > Screen->WorkAreaTop + Screen->WorkAreaHeight)
   {
     Top = Screen->WorkAreaTop + Screen->WorkAreaHeight - Height;
@@ -830,9 +841,10 @@ void __fastcall ResizeForm(TForm * Form, int Width, int Height)
     Left = 0;
   }
   Form->SetBounds(Left, Top, Width, Height);
+  Bounds = Form->BoundsRect;
   // due to constraints, form can remain larger, make sure it is centered although
-  Left = Form->Left + ((Width - Form->Width) / 2);
-  Top = Form->Top + ((Height - Form->Height) / 2);
+  Left = Bounds.Left + ((Width - Bounds.Width()) / 2);
+  Top = Bounds.Top + ((Height - Bounds.Height()) / 2);
   Form->SetBounds(Left, Top, Width, Height);
 }
 //---------------------------------------------------------------------------
@@ -1299,7 +1311,7 @@ void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url,
   StaticText->WindowProc = WindowProc;
 }
 //---------------------------------------------------------------------------
-TMonitor *  __fastcall FormMonitor(TForm * Form)
+TMonitor *  __fastcall FormMonitor(TCustomForm * Form)
 {
   TMonitor * Result;
   if ((Application->MainForm != NULL) && (Application->MainForm != Form))

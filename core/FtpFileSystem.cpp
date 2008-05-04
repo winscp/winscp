@@ -387,44 +387,30 @@ bool __fastcall TFTPFileSystem::GetActive()
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::Idle()
 {
-  if (FActive)
+  if (FActive && !FWaitingForReply)
   {
-    if (!FWaitingForReply)
+    unsigned int Reply = PoolForReply();
+    if (Reply != 0)
     {
-      unsigned int Reply = PoolForReply();
-      if (Reply != 0)
-      {
-        assert(FLAGSET(Reply, TFileZillaIntf::REPLY_DISCONNECTED));
-        GotReply(Reply);
-      }
+      assert(FLAGSET(Reply, TFileZillaIntf::REPLY_DISCONNECTED));
+      GotReply(Reply);
     }
 
     // Keep session alive
     if ((FTerminal->SessionData->FtpPingType != ptOff) &&
-        (Now() - FLastDataSent > FTerminal->SessionData->FtpPingIntervalDT))
+        (double(Now() - FLastDataSent) > double(FTerminal->SessionData->FtpPingIntervalDT) * 4))
     {
       FLastDataSent = Now();
 
-      char* Commands[] = { "PWD", "REST 0", "TYPE A", "TYPE I" };
-      int Choice = random(LENOF(Commands) + 1);
-      if (Choice == 0)
+      TRemoteDirectory * Files = new TRemoteDirectory(FTerminal);
+      try
       {
-        TRemoteDirectory * Files = new TRemoteDirectory(FTerminal);
-        try
-        {
-          Files->Directory = CurrentDirectory;
-          DoReadDirectory(Files);
-        }
-        __finally
-        {
-          delete Files;
-        }
+        Files->Directory = CurrentDirectory;
+        DoReadDirectory(Files);
       }
-      else
+      __finally
       {
-        FFileZillaIntf->CustomCommand(Commands[Choice - 1]);
-
-        GotReply(WaitForReply(), 0);
+        delete Files;
       }
     }
   }
@@ -1625,25 +1611,35 @@ void __fastcall TFTPFileSystem::ReadFile(const AnsiString FileName,
   // FZAPI does not have efficient way to read properties of one file.
   // If case we need properties of set of files from the same directory,
   // cache the file list for future
-  if ((FFileListCache == NULL) ||
-      !UnixComparePaths(Path, FFileListCache->Directory))
+  TRemoteFile * AFile = NULL;
+  if ((FFileListCache != NULL) &&
+      UnixComparePaths(Path, FFileListCache->Directory) &&
+      (TTerminal::IsAbsolutePath(FFileListCache->Directory) ||
+       (FFileListCachePath == CurrentDirectory)))
+  {
+    AFile = FFileListCache->FindFile(NameOnly);
+  }
+
+  // if cache is invalid or file is not in cache, (re)read the dirctory
+  if (AFile == NULL)
   {
     delete FFileListCache;
     FFileListCache = NULL;
     FFileListCache = new TRemoteFileList();
     FFileListCache->Directory = Path;
     ReadDirectory(FFileListCache);
+    FFileListCachePath = CurrentDirectory;
+
+    AFile = FFileListCache->FindFile(NameOnly);
+    if (AFile == NULL)
+    {
+      File = NULL;
+      throw Exception(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
+    }
   }
 
-  TRemoteFile * AFile = FFileListCache->FindFile(NameOnly);
-  if (AFile != NULL)
-  {
-    File = AFile->Duplicate();
-  }
-  else
-  {
-    File = NULL;
-  }
+  assert(AFile != NULL);
+  File = AFile->Duplicate();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadSymlink(TRemoteFile * SymlinkFile,
@@ -1894,14 +1890,12 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_KEEPALIVE:
-      Result = FALSE;
+      Result = ((Data->FtpPingType != ptOff) ? TRUE : FALSE);
       break;
 
     case OPTION_INTERVALLOW:
     case OPTION_INTERVALHIGH:
-      // should never get here OPTION_KEEPALIVE being FALSE
-      assert(false);
-      Result = 60;
+      Result = Data->FtpPingInterval;
       break;
 
     case OPTION_VMSALLREVISIONS:
@@ -2665,7 +2659,7 @@ bool __fastcall TFTPFileSystem::CheckError(int ReturnCode, const char * Context)
   // in such case reply without associated command is posted,
   // which we are going to wait for unless we are already waiting
   // on higher level (this typically happens if connection is lost while
-  // waiting for user interaction and is detected with call to
+  // waiting for user interaction and is detected within call to
   // SetAsyncRequestResult)
   if (FLAGSET(ReturnCode, TFileZillaIntf::REPLY_NOTCONNECTED))
   {

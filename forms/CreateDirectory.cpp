@@ -17,7 +17,9 @@
 #pragma link "MoreButton"
 #pragma link "RightsExt"
 #pragma link "Rights"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------
 bool __fastcall DoCreateDirectoryDialog(AnsiString & Directory,
   TRemoteProperties * Properties, bool & SaveSettings)

@@ -14,7 +14,9 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
   TFileFilter * Filter, TConfiguration * Configuration)

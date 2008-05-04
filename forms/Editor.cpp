@@ -19,7 +19,9 @@
 #pragma link "TB2Item"
 #pragma link "TB2Toolbar"
 #pragma link "TBXStatusBars"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,
   TNotifyEvent OnFileChanged, TNotifyEvent OnFileReload, TNotifyEvent OnClose,
@@ -330,10 +332,10 @@ __fastcall TEditorForm::TEditorForm(TComponent* Owner)
   EditorMemo->OnMouseUp = EditorMemoMouseUp;
 
   FParentForm = NULL;
-  FCaretPos.x = -1;
-  FCaretPos.y = -1;
+  FCaretPos = TPoint(-1, -1);
   FLastFindDialog = NULL;
   FCloseAnnounced = false;
+  FShowStatusBarHint = false;
   ApplyConfiguration();
   FFindDialog = new TFindDialogEx(this);
   FFindDialog->OnFind = FindDialogFind;
@@ -502,30 +504,41 @@ void __fastcall TEditorForm::ApplyConfiguration()
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::UpdateControls()
 {
-  TPoint ACaretPos = EditorMemo->CaretPos;
-
-  if (ACaretPos.x != FCaretPos.x || ACaretPos.y != FCaretPos.y)
+  if (FShowStatusBarHint)
   {
-    FCaretPos = ACaretPos;
-    int Count = EditorMemo->Lines->Count;
-    StatusBar->Panels->Items[0]->Caption = FMTLOAD(EDITOR_LINE_STATUS,
-      ((int)FCaretPos.y+1, Count));
-    StatusBar->Panels->Items[1]->Caption = FMTLOAD(EDITOR_COLUMN_STATUS,
-      ((int)FCaretPos.x+1));
-    AnsiString Character;
-    if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
-    {
-      AnsiString Line = EditorMemo->Lines->Strings[FCaretPos.y];
-      if (FCaretPos.x+1 <= Line.Length())
-      {
-        Character = FMTLOAD(EDITOR_CHARACTER_STATUS2,
-          (int((unsigned char)Line[FCaretPos.x+1]), int((unsigned char)Line[FCaretPos.x+1])));
-      }
-    }
-    StatusBar->Panels->Items[2]->Caption = Character;
+    StatusBar->SimplePanel = true;
+    StatusBar->SimpleText = FStatusBarHint;
+    FCaretPos = TPoint(-1, -1);
   }
-  StatusBar->Panels->Items[3]->Caption =
-    (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : AnsiString(""));
+  else
+  {
+    TPoint ACaretPos = EditorMemo->CaretPos;
+
+    if (ACaretPos.x != FCaretPos.x || ACaretPos.y != FCaretPos.y)
+    {
+      FCaretPos = ACaretPos;
+      int Count = EditorMemo->Lines->Count;
+      StatusBar->Panels->Items[0]->Caption = FMTLOAD(EDITOR_LINE_STATUS,
+        ((int)FCaretPos.y+1, Count));
+      StatusBar->Panels->Items[1]->Caption = FMTLOAD(EDITOR_COLUMN_STATUS,
+        ((int)FCaretPos.x+1));
+      AnsiString Character;
+      if (FCaretPos.y >= 0 && FCaretPos.y < EditorMemo->Lines->Count)
+      {
+        AnsiString Line = EditorMemo->Lines->Strings[FCaretPos.y];
+        if (FCaretPos.x+1 <= Line.Length())
+        {
+          Character = FMTLOAD(EDITOR_CHARACTER_STATUS2,
+            (int((unsigned char)Line[FCaretPos.x+1]), int((unsigned char)Line[FCaretPos.x+1])));
+        }
+      }
+      StatusBar->Panels->Items[2]->Caption = Character;
+    }
+    StatusBar->Panels->Items[3]->Caption =
+      (EditorMemo->Modified ? LoadStr(EDITOR_MODIFIED) : AnsiString(""));
+    StatusBar->SimplePanel = false;
+  }
+
   EditorActions->UpdateAction(SaveAction);
 }
 //---------------------------------------------------------------------------
@@ -801,5 +814,26 @@ void __fastcall TEditorForm::Reload()
     }
     LoadFile();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::ApplicationHint(TObject * /*Sender*/)
+{
+  assert(Application);
+  AnsiString AHint = GetLongHint(Application->Hint);
+  FShowStatusBarHint = Active && !AHint.IsEmpty();
+  if (FShowStatusBarHint)
+  {
+    FStatusBarHint = AHint != "E" ? AHint : AnsiString("");
+  }
+  else
+  {
+    FStatusBarHint = "";
+  }
+  UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TEditorForm::FormActivate(TObject * /*Sender*/)
+{
+  Application->OnHint = ApplicationHint;
 }
 //---------------------------------------------------------------------------

@@ -164,7 +164,7 @@ BEGIN
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT2, "Host has not answered for %d seconds.\n\nWait for another %0:d seconds?"
-  PROMPT_KEY_PASSPHRASE, "Passphrase for key '%s':"
+  PROMPT_KEY_PASSPHRASE, "&Passphrase for key '%s':"
   FILE_OVERWRITE, "File '%s' already exists. Overwrite?"
   DIRECTORY_OVERWRITE, "Directory '%s' already exists. Overwrite?"
   CIPHER_BELOW_TRESHOLD, "The first %scipher supported by the server is %s, which is below the configured warning threshold.\n\nDo you want to continue with this connection?"

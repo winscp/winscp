@@ -23,7 +23,9 @@
 #pragma link "TBX"
 #pragma link "TB2ExtItems"
 #pragma link "TBXExtItems"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 TNonVisualDataModule *NonVisualDataModule;
 //---------------------------------------------------------------------------
 #define SCPCOMMANDER ((TScpCommanderForm *)ScpExplorer)
@@ -82,13 +84,12 @@ TNonVisualDataModule *NonVisualDataModule;
 __fastcall TNonVisualDataModule::TNonVisualDataModule(TComponent* Owner)
         : TDataModule(Owner)
 {
-  InitSystemSettings(this);
   FListColumn = NULL;
   FSessionIdleTimerExecuting = false;
   FIdle = 0;
 
-  // IDE often looses this link
-  QueueSpeedComboBoxItem->OnAcceptText = QueueSpeedComboBoxItemAcceptText;
+  QueueSpeedComboBoxItem(QueuePopupSpeedComboBoxItem);
+  InitMenus(this);
 }
 //---------------------------------------------------------------------------
 __fastcall TNonVisualDataModule::~TNonVisualDataModule()
@@ -1253,7 +1254,7 @@ void __fastcall TNonVisualDataModule::QueuePopupPopup(TObject * /*Sender*/)
     Item->Options = O;
   }
 
-  QueueSpeedComboBoxItem->Strings = CustomWinConfiguration->History["SpeedLimit"];
+  QueueSpeedComboBoxItemUpdate(QueuePopupSpeedComboBoxItem);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::ShowUpdatesUpdate()
@@ -1305,28 +1306,81 @@ void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TNonVisualDataModule::QueueItemSpeed(const AnsiString & Text)
+AnsiString __fastcall TNonVisualDataModule::QueueItemSpeed(const AnsiString & Text,
+  TTBXComboBoxItem * Item)
 {
   unsigned long Speed = GetSpeedLimit(Text);
   ScpExplorer->ExecuteQueueOperation(qoItemSpeed, reinterpret_cast<void*>(Speed));
 
   AnsiString Result = SetSpeedLimit(Speed);
-  SaveToHistory(QueueSpeedComboBoxItem->Strings, Result);
-  CustomWinConfiguration->History["SpeedLimit"] = QueueSpeedComboBoxItem->Strings;
+  SaveToHistory(Item->Strings, Result);
+  CustomWinConfiguration->History["SpeedLimit"] = Item->Strings;
 
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TNonVisualDataModule::QueueSpeedComboBoxItemItemClick(
-  TObject * /*Sender*/)
+void __fastcall TNonVisualDataModule::QueuePopupSpeedComboBoxItemItemClick(
+  TObject * Sender)
 {
-  QueueItemSpeedAction->Text = QueueItemSpeed(QueueSpeedComboBoxItem->Text);
+  TTBXComboBoxItem * Item = dynamic_cast<TTBXComboBoxItem *>(Sender);
+  QueueItemSpeedAction->Text = QueueItemSpeed(Item->Text, Item);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::QueueSpeedComboBoxItemAcceptText(
-  TObject * /*Sender*/, AnsiString & NewText, bool & /*Accept*/)
+  TObject * Sender, AnsiString & NewText, bool & /*Accept*/)
 {
-  NewText = QueueItemSpeed(NewText);
+  TTBXComboBoxItem * Item = dynamic_cast<TTBXComboBoxItem *>(Sender);
+  NewText = QueueItemSpeed(NewText, Item);
   QueueItemSpeedAction->Text = NewText;
 }
 //---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::QueueSpeedComboBoxItem(TTBXComboBoxItem * Item)
+{
+  // IDE often looses this link
+  Item->OnAcceptText = QueueSpeedComboBoxItemAcceptText;
+  Item->OnItemClick = QueuePopupSpeedComboBoxItemItemClick;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::QueueSpeedComboBoxItemUpdate(TTBXComboBoxItem * Item)
+{
+  Item->Strings = CustomWinConfiguration->History["SpeedLimit"];
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::InitMenuItem(TTBCustomItem * Item)
+{
+  TTBSeparatorItem * Separator = dynamic_cast<TTBSeparatorItem *>(Item);
+  if (Separator != NULL)
+  {
+    Separator->Hint = "E";
+  }
+
+  for (int Index = 0; Index < Item->Count; Index++)
+  {
+    InitMenuItem(Item->Items[Index]);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::InitMenus(TComponent * Component)
+{
+  TTBPopupMenu * Popup = dynamic_cast<TTBPopupMenu *>(Component);
+  TTBCustomToolbar * Toolbar = dynamic_cast<TTBCustomToolbar *>(Component);
+
+  if (Popup != NULL)
+  {
+    InitMenuItem(Popup->Items);
+  }
+  else if (Toolbar != NULL)
+  {
+    InitMenuItem(Toolbar->Items);
+  }
+  else
+  {
+    // do not try to descend below from toolbar/popup, as there should not be any
+    // other menu component and we save some time
+
+    for (int Index = 0; Index < Component->ComponentCount; Index++)
+    {
+      InitMenus(Component->Components[Index]);
+    }
+  }
+}

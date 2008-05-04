@@ -817,7 +817,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 79
             Width = 69
             Height = 13
-            Caption = '&Tabelator size:'
+            Caption = '&Tabulator size:'
             FocusControl = EditorTabSizeEdit
           end
           object EditorFontButton: TButton

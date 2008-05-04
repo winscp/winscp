@@ -10,7 +10,9 @@
 
 #include "ComboInput.h"
 //---------------------------------------------------------------------
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------
 bool __fastcall DoComboInputDialog(
   const AnsiString Caption, const AnsiString Prompt,

@@ -16,8 +16,12 @@
 #include "TBXThemes.hpp"
 #include "TBXOfficeXPTheme.hpp"
 #include "TBXOffice2003Theme.hpp"
+#include "ProgParams.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+// initialize an instance
+TProgramParams ProgramParams;
 //---------------------------------------------------------------------------
 const AnsiString AppName = "WinSCP";
 const AnsiString AppNameVersion = "WinSCP";
@@ -75,6 +79,11 @@ void __fastcall FlashOnBackground()
   {
     FlashWindow(Application->Handle, true);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall LocalSystemSettings(TCustomForm * /*Control*/)
+{
+  // noop
 }
 //---------------------------------------------------------------------------
 void __fastcall ShowExtendedException(Exception * E)

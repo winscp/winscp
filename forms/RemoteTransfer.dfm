@@ -42,7 +42,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
       Top = 64
       Width = 112
       Height = 13
-      Caption = '&Target remote &directory:'
+      Caption = 'Target remote &directory:'
       FocusControl = DirectoryEdit
     end
     object SessionCombo: TComboBox

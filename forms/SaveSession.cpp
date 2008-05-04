@@ -13,7 +13,9 @@
 
 #include "SaveSession.h"
 //---------------------------------------------------------------------
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
   bool * SavePassword, TSessionData * OriginalSession)

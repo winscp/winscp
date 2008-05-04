@@ -23,7 +23,9 @@
 #pragma link "GeneralSettings"
 #pragma link "UpDownEdit"
 #pragma link "PasswordEdit"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 // Sheet tag:
 // 01 top, 02 indented
@@ -62,7 +64,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FLanguagesPopupMenu = NULL;
   FInitialized = false;
   FSavedTab = NULL;
-  FSavedSession = NULL;
+  FSavedSession = -1;
   FOptions = loStartup;
   FLocaleChanging = false;
   FColor = (TColor)0;
@@ -1048,6 +1050,10 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ProxyPasswordLabel, ProxyPasswordEdit->Enabled);
       bool ProxySettings = Proxy && SshProtocol;
       EnableControl(ProxySettingsGroup, ProxySettings);
+      EnableControl(ProxyTelnetCommandEdit,
+        ProxySettings && (ProxyMethodCombo->ItemIndex == pmTelnet));
+      EnableControl(ProxyTelnetCommandLabel, ProxyTelnetCommandEdit->Enabled);
+      EnableControl(ProxyTelnetCommandHintText, ProxyTelnetCommandEdit->Enabled);
       ProxyLocalCommandEdit->Visible = (ProxyMethodCombo->ItemIndex == pmCmd);
       ProxyLocalCommandLabel->Visible = ProxyLocalCommandEdit->Visible;
       ProxyLocalCommandBrowseButton->Visible = ProxyLocalCommandEdit->Visible;
@@ -1055,9 +1061,6 @@ void __fastcall TLoginDialog::UpdateControls()
       ProxyTelnetCommandEdit->Visible = !ProxyLocalCommandEdit->Visible;
       ProxyTelnetCommandLabel->Visible = ProxyTelnetCommandEdit->Visible;
       ProxyTelnetCommandHintText->Visible = ProxyTelnetCommandEdit->Visible;
-      EnableControl(ProxyTelnetCommandEdit,
-        ProxySettings && (ProxyMethodCombo->ItemIndex == pmTelnet));
-      EnableControl(ProxyTelnetCommandLabel, ProxyTelnetCommandEdit->Enabled);
 
       // environment/directories sheet
       DirectoriesSheet->Enabled = !ExternalProtocol;
@@ -1071,6 +1074,8 @@ void __fastcall TLoginDialog::UpdateControls()
 
       // environment sheet
       EnvironmentSheet->Enabled = !ExternalProtocol;
+      EnableControl(EOLTypeCombo, (FSProtocol != fsFTP) && EnvironmentSheet->Enabled);
+      EnableControl(EOLTypeLabel, EOLTypeCombo->Enabled);
       EnableControl(DSTModeGroup, (FSProtocol != fsFTP) && EnvironmentSheet->Enabled);
       EnableControl(UtfCombo, (FSProtocol != fsSCPonly) && EnvironmentSheet->Enabled);
       EnableControl(UtfLabel, UtfCombo->Enabled);
@@ -1107,7 +1112,7 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(OtherShellOptionsGroup, (FSProtocol == fsSCPonly));
 
       // environment/ftp
-      FtpSheet->Enabled = FtpProtocol;
+      FtpSheet->Enabled = Advanced && FtpProtocol;
 
       // tunnel sheet
       TunnelSheet->Enabled = Advanced && InternalSshProtocol;
@@ -1123,6 +1128,7 @@ void __fastcall TLoginDialog::UpdateControls()
       ShellIconsButton->Visible = (Options & loTools);
       ToolsMenuButton->Visible = (Options & loTools);
       LoggingFrame->EnableLogWindow = (Options & loLogWindow);
+      ColorButton->Visible = (Options & loColor);
 
       UpdateNavigationTree();
     }
@@ -1158,8 +1164,11 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
     Init();
     LoadSession(FSessionData);
     ChangePage(FSavedTab);
-    SessionTree->Selected = FSavedSession;
-    SessionTree->Selected->MakeVisible();
+    if (FSavedSession >= 0)
+    {
+      SessionTree->Selected = SessionTree->Items->Item[FSavedSession];
+      SessionTree->Selected->MakeVisible();
+    }
     LoadConfiguration();
   }
 }
@@ -1640,7 +1649,8 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
       SaveConfiguration();
       SaveSession(FSessionData);
       FSavedTab = PageControl->ActivePage;
-      FSavedSession = SessionTree->Selected;
+      FSavedSession = ((SessionTree->Selected != NULL) ?
+        SessionTree->Selected->AbsoluteIndex : -1);
 
       assert(FSystemSettings);
       RevokeSystemSettings(this, FSystemSettings);

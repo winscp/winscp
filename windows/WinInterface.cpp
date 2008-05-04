@@ -17,14 +17,11 @@
 #include "WinInterface.h"
 #include "CustomWinConfiguration.h"
 #include "GUITools.h"
-#include "ProgParams.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 #define WM_TRAY_ICON (WM_WINSCP_USER + 5)
 //---------------------------------------------------------------------
-// initialize an instance
-TProgramParams ProgramParams;
 TNotifyEvent GlobalOnMinimize = NULL;
 //---------------------------------------------------------------------
 void __fastcall FormHelp(TForm * Form)
@@ -329,8 +326,6 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
     }
 
     Dialog->HelpKeyword = HelpKeyword;
-    Dialog->Position = poMainFormCenter;
-    // must be called after setting Position
     ResetSystemSettings(Dialog);
   }
   catch(...)
@@ -490,6 +485,11 @@ int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessag
       }
     }
 
+    if (HelpKeyword.IsEmpty() && (Type == qtError))
+    {
+      HelpKeyword = HELP_ERROR;
+    }
+
     TButton * TimeoutButton = NULL;
     Dialog = CreateMessageDialogEx(AMessage, MoreMessages, Type, Answers,
       HelpKeyword, Params, TimeoutButton);
@@ -626,7 +626,7 @@ bool __fastcall DoRemoteMoveDialog(AnsiString & Target, AnsiString & FileMask)
   AnsiString Value = UnixIncludeTrailingBackslash(Target) + FileMask;
   TStrings * History = CustomWinConfiguration->History["RemoteTarget"];
   bool Result = InputDialog(
-    LoadStr(REMOTE_MOVE_TITLE), LoadStr(REMOTE_MOVE_PROMPT),
+    LoadStr(REMOTE_MOVE_TITLE), LoadStr(REMOTE_TRANSFER_PROMPT),
     Value, HELP_REMOTE_MOVE, History, true);
   if (Result)
   {

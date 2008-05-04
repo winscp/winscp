@@ -91,7 +91,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = CurrentRenameAction
     end
     object N45: TTBXSeparatorItem
-      Hint = 'E'
     end
     object RemoteDirViewCustomCommandsMenu: TTBXSubmenuItem
       Action = CustomCommandsAction
@@ -116,7 +115,6 @@ object NonVisualDataModule: TNonVisualDataModule
       end
     end
     object N1: TTBXSeparatorItem
-      Hint = 'E'
     end
     object Properties1: TTBXItem
       Action = CurrentPropertiesFocusedAction
@@ -1824,13 +1822,11 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LockToolbarsAction
     end
     object N5: TTBXSeparatorItem
-      Hint = 'E'
     end
     object StatusBar2: TTBXItem
       Action = StatusBarAction
     end
     object N72: TTBXSeparatorItem
-      Hint = 'E'
     end
     object Queue7: TTBXSubmenuItem
       Caption = '&Queue'
@@ -1849,13 +1845,11 @@ object NonVisualDataModule: TNonVisualDataModule
         RadioItem = True
       end
       object N71: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Toolbar5: TTBXItem
         Action = QueueToolbarAction
       end
       object N70: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Customize5: TTBXItem
         Action = QueuePreferencesAction
@@ -1910,7 +1904,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LockToolbarsAction
     end
     object N26: TTBXSeparatorItem
-      Hint = 'E'
     end
     object CommandLine2: TTBXItem
       Action = CommandLinePanelAction
@@ -1922,7 +1915,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = StatusBarAction
     end
     object N27: TTBXSeparatorItem
-      Hint = 'E'
     end
     object LocalPanel1: TTBXSubmenuItem
       Caption = '&Local Panel'
@@ -1935,13 +1927,11 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = CommanderLocalNavigationBandAction
       end
       object N23: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Tree7: TTBXItem
         Action = LocalTreeAction
       end
       object N77: TTBXSeparatorItem
-        Hint = 'E'
       end
       object StatusBar6: TTBXItem
         Action = LocalStatusBarAction
@@ -1958,13 +1948,11 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = CommanderRemoteNavigationBandAction
       end
       object N25: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Tree8: TTBXItem
         Action = RemoteTreeAction
       end
       object N78: TTBXSeparatorItem
-        Hint = 'E'
       end
       object StatusBar7: TTBXItem
         Action = RemoteStatusBarAction
@@ -1987,13 +1975,11 @@ object NonVisualDataModule: TNonVisualDataModule
         RadioItem = True
       end
       object N69: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Toolbar4: TTBXItem
         Action = QueueToolbarAction
       end
       object N68: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Customize4: TTBXItem
         Action = QueuePreferencesAction
@@ -2011,7 +1997,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = RemoteOpenDirAction
     end
     object N51: TTBXSeparatorItem
-      Hint = 'E'
     end
     object HistoryButtons5: TTBXItem
       Action = CommanderRemoteHistoryBandAction
@@ -2020,13 +2005,11 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = CommanderRemoteNavigationBandAction
     end
     object N28: TTBXSeparatorItem
-      Hint = 'E'
     end
     object Tree5: TTBXItem
       Action = RemoteTreeAction
     end
     object N75: TTBXSeparatorItem
-      Hint = 'E'
     end
     object StatusBar9: TTBXItem
       Action = RemoteStatusBarAction
@@ -2043,7 +2026,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LocalOpenDirAction
     end
     object N52: TTBXSeparatorItem
-      Hint = 'E'
     end
     object HistoryButtons6: TTBXItem
       Action = CommanderLocalHistoryBandAction
@@ -2052,13 +2034,11 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = CommanderLocalNavigationBandAction
     end
     object N29: TTBXSeparatorItem
-      Hint = 'E'
     end
     object Tree6: TTBXItem
       Action = LocalTreeAction
     end
     object N76: TTBXSeparatorItem
-      Hint = 'E'
     end
     object StatusBar10: TTBXItem
       Action = LocalStatusBarAction
@@ -2081,7 +2061,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = HideColumnAction
     end
     object N37: TTBXSeparatorItem
-      Hint = 'E'
     end
     object Showcolumns3: TTBXSubmenuItem
       Caption = 'Show &Columns'
@@ -2123,7 +2102,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = HideColumnAction
     end
     object N38: TTBXSeparatorItem
-      Hint = 'E'
     end
     object Showcolumns4: TTBXSubmenuItem
       Caption = 'Show &Columns'
@@ -2170,7 +2148,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = QueueItemPromptAction
     end
     object N53: TTBXSeparatorItem
-      Hint = 'E'
     end
     object ExecuteNow1: TTBXItem
       Action = QueueItemExecuteAction
@@ -2184,12 +2161,10 @@ object NonVisualDataModule: TNonVisualDataModule
     object Delete4: TTBXItem
       Action = QueueItemDeleteAction
     end
-    object QueueSpeedComboBoxItem: TTBXComboBoxItem
+    object QueuePopupSpeedComboBoxItem: TTBXComboBoxItem
       Action = QueueItemSpeedAction
-      OnItemClick = QueueSpeedComboBoxItemItemClick
     end
     object N54: TTBXSeparatorItem
-      Hint = 'E'
     end
     object MoveUp1: TTBXItem
       Action = QueueItemUpAction
@@ -2198,7 +2173,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = QueueItemDownAction
     end
     object N67: TTBXSeparatorItem
-      Hint = 'E'
     end
     object TBXSubmenuItem1: TTBXSubmenuItem
       Caption = '&All'
@@ -2228,13 +2202,11 @@ object NonVisualDataModule: TNonVisualDataModule
         RadioItem = True
       end
       object N66: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Toolbar3: TTBXItem
         Action = QueueToolbarAction
       end
       object N65: TTBXSeparatorItem
-        Hint = 'E'
       end
       object TBXItem13: TTBXItem
         Action = QueueDisconnectOnceEmptyAction
@@ -2256,7 +2228,6 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = RemoteOpenDirAction
       end
       object N81: TTBXSeparatorItem
-        Hint = 'E'
       end
       object ParentDirectory4: TTBXItem
         Action = RemoteParentDirAction
@@ -2268,7 +2239,6 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = RemoteHomeDirAction
       end
       object N80: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Back4: TTBXItem
         Action = RemoteBackAction
@@ -2287,7 +2257,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = RemotePathToClipboardAction
     end
     object N79: TTBXSeparatorItem
-      Hint = 'E'
     end
     object TBXSubmenuItem26: TTBXSubmenuItem
       Caption = '&New'
@@ -2319,7 +2288,6 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = LocalExploreDirectoryAction
       end
       object N84: TTBXSeparatorItem
-        Hint = 'E'
       end
       object ParentDirectory5: TTBXItem
         Action = LocalParentDirAction
@@ -2331,7 +2299,6 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = LocalHomeDirAction
       end
       object N83: TTBXSeparatorItem
-        Hint = 'E'
       end
       object Back5: TTBXItem
         Action = LocalBackAction
@@ -2350,7 +2317,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = LocalPathToClipboardAction
     end
     object N82: TTBXSeparatorItem
-      Hint = 'E'
     end
     object CreateDirectory4: TTBXItem
       Action = CurrentCreateDirAction
@@ -2367,7 +2333,6 @@ object NonVisualDataModule: TNonVisualDataModule
       Action = RemoteAddBookmarkAction
     end
     object TBXSeparatorItem1: TTBXSeparatorItem
-      Hint = 'E'
     end
     object TBXItem17: TTBXItem
       Action = RemoteOpenDirAction
@@ -2386,7 +2351,6 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = RemoteHomeDirAction
       end
       object TBXSeparatorItem2: TTBXSeparatorItem
-        Hint = 'E'
       end
       object TBXItem21: TTBXItem
         Action = RemoteBackAction

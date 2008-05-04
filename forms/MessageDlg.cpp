@@ -46,6 +46,7 @@ __fastcall TMessageForm::TMessageForm(TComponent * AOwner) : TForm(AOwner, 0)
   {
     Font->Handle = CreateFontIndirect(&NonClientMetrics.lfMessageFont);
   }
+  Position = poMainFormCenter;
   UseSystemSettingsPre(this);
 }
 //---------------------------------------------------------------------------
@@ -183,7 +184,6 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   Result->BorderStyle = bsDialog;
   Result->Canvas->Font = Result->Font;
   Result->KeyPreview = true;
-  Result->Position = poMainFormCenter;
   TPoint DialogUnits = GetAveCharSize(Result->Canvas);
   int HorzMargin = MulDiv(mcHorzMargin, DialogUnits.x, 4);
   int VertMargin = MulDiv(mcVertMargin, DialogUnits.y, 8);

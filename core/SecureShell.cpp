@@ -449,7 +449,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   else if (Index == 1) // passhrase
   {
     static const TPuttyTranslation PassphrasePromptTranslation[] = {
-      { "Passphrase for key \"%s\": ", PROMPT_KEY_PASSPHRASE },
+      { "Passphrase for key \"%\": ", PROMPT_KEY_PASSPHRASE },
     };
 
     PromptTranslation = PassphrasePromptTranslation;

@@ -1185,7 +1185,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   }
   while (Answer == 0);
 
-  if (Answer == qaAbort)
+  if (Answer == AbortA)
   {
     FCommandError = true;
   }

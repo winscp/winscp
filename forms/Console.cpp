@@ -3,20 +3,19 @@
 #pragma hdrstop
 
 #include <Common.h>
-
-#include "WinInterface.h"
-#include "Console.h"
-
 #include <TextsWin.h>
 #include <Interface.h>
 #include <CoreMain.h>
-
 #include <VCLCommon.h>
 #include <CustomWinConfiguration.h>
+
+#include "Console.h"
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------
 void __fastcall DoConsoleDialog(TTerminal * Terminal, const AnsiString Command,
   const TStrings * Log)

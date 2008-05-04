@@ -15,7 +15,9 @@
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "HistoryComboBox"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------
 AnsiString __fastcall TProgressForm::OperationName(TFileOperation Operation)
 {

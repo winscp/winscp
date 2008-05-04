@@ -22,7 +22,9 @@
 #pragma link "TB2Toolbar"
 #pragma link "TBX"
 #pragma link "TBXStatusBars"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 TLogForm *LogForm = NULL;
 //---------------------------------------------------------------------------
 TLogForm * __fastcall CreateLogForm(TLogMemo *ALogMemo)

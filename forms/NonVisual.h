@@ -483,7 +483,7 @@ __published:    // IDE-managed Components
   TAction *AddEditLinkContextAction;
   TTBXItem *TBXItem23;
   TTBEditAction *QueueItemSpeedAction;
-  TTBXComboBoxItem *QueueSpeedComboBoxItem;
+  TTBXComboBoxItem *QueuePopupSpeedComboBoxItem;
   TAction *CurrentDeleteAlternativeAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
@@ -491,7 +491,7 @@ __published:    // IDE-managed Components
   void __fastcall ExplorerActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall SessionIdleTimerTimer(TObject *Sender);
   void __fastcall QueuePopupPopup(TObject *Sender);
-  void __fastcall QueueSpeedComboBoxItemItemClick(TObject *Sender);
+  void __fastcall QueuePopupSpeedComboBoxItemItemClick(TObject *Sender);
   void __fastcall QueueSpeedComboBoxItemAcceptText(TObject *Sender,
           AnsiString &NewText, bool &Accept);
 private:
@@ -519,7 +519,9 @@ protected:
   inline void __fastcall ShowUpdatesUpdate();
   void __fastcall PreferencesDialog(TPreferencesMode APreferencesMode);
   void __fastcall CustomCommandsLastUpdate(TAction * Action);
-  AnsiString __fastcall QueueItemSpeed(const AnsiString & Text);
+  AnsiString __fastcall QueueItemSpeed(const AnsiString & Text,
+    TTBXComboBoxItem * Item);
+  void __fastcall InitMenuItem(TTBCustomItem * Item);
 
 public:
   __fastcall TNonVisualDataModule(TComponent * Owner);
@@ -530,6 +532,9 @@ public:
   TShortCut __fastcall OpenSessionShortCut(int Index);
   void __fastcall UpdateNonVisibleActions();
   void __fastcall UpdateCustomCommandsToolbar(TTBXToolbar * Toolbar);
+  void __fastcall QueueSpeedComboBoxItem(TTBXComboBoxItem * Item);
+  void __fastcall QueueSpeedComboBoxItemUpdate(TTBXComboBoxItem * Item);
+  void __fastcall InitMenus(TComponent * Component);
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };

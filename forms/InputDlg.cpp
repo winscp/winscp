@@ -43,6 +43,8 @@ bool __fastcall InputDialog(const AnsiString ACaption,
   Form = new TForm(Application, 0); // bypass the VCL streaming (for Salamander)
   try
   {
+    // salam needs to override this in UseSystemSettings
+    Form->Position = poMainFormCenter;
     SetCorrectFormParent(Form);
     UseSystemSettingsPre(Form);
     if (OnInitialize != NULL)
@@ -59,7 +61,6 @@ bool __fastcall InputDialog(const AnsiString ACaption,
     Form->Caption = ACaption;
     Form->ClientWidth = MulDiv(220, DialogUnits.x, 4);
     Form->ClientHeight = MulDiv(63, DialogUnits.y, 8);
-    Form->Position = poMainFormCenter;
     if (!HelpKeyword.IsEmpty())
     {
       Form->HelpKeyword = HelpKeyword;

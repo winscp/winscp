@@ -284,10 +284,11 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem45: TTBXItem
           Action = NonVisualDataModule.SynchronizeBrowsingAction
         end
-        object TBXSubmenuItem8: TTBXSubmenuItem
+        object QueueSubmenuItem: TTBXSubmenuItem
           Caption = '&Queue'
           HelpKeyword = 'ui_queue#managing_the_queue'
           Hint = 'Queue list commands'
+          OnPopup = QueueSubmenuItemPopup
           object TBXItem46: TTBXItem
             Action = NonVisualDataModule.QueueGoToAction
           end
@@ -317,6 +318,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           end
           object TBXItem51: TTBXItem
             Action = NonVisualDataModule.QueueItemDeleteAction
+          end
+          object QueueSpeedComboBoxItem: TTBXComboBoxItem
+            Action = NonVisualDataModule.QueueItemSpeedAction
           end
           object TBXSeparatorItem12: TTBXSeparatorItem
             Hint = 'E'

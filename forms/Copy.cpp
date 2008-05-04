@@ -17,7 +17,9 @@
 #pragma link "Rights"
 #pragma link "CopyParams"
 #pragma link "HistoryComboBox"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, AnsiString & TargetDirectory,
@@ -452,7 +454,7 @@ void __fastcall TCopyDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::TransferSettingsButtonClick(TObject * /*Sender*/)
 {
-  if (FLAGCLEAR(FOptions, FLAGCLEAR(Options, coDoNotUsePresets)))
+  if (FLAGCLEAR(Options, coDoNotUsePresets))
   {
     CopyParamListPopup(
       TransferSettingsButton->ClientToScreen(TPoint(0, TransferSettingsButton->Height)),
@@ -489,7 +491,7 @@ void __fastcall TCopyDialog::CopyParamGroupDblClick(TObject * /*Sender*/)
 void __fastcall TCopyDialog::CopyParamGroupContextPopup(TObject * /*Sender*/,
   TPoint & MousePos, bool & Handled)
 {
-  if (FLAGCLEAR(FOptions, FLAGCLEAR(Options, coDoNotUsePresets)))
+  if (FLAGCLEAR(Options, coDoNotUsePresets))
   {
     CopyParamListPopup(CopyParamGroup->ClientToScreen(MousePos), cplCustomizeDefault);
     Handled = true;

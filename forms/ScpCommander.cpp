@@ -42,7 +42,9 @@
 #pragma link "TBXLists"
 #pragma link "TBXStatusBars"
 #pragma link "TBXToolPals"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
@@ -103,6 +105,9 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
   }
 
   LocalDirView->Font = Screen->IconFont;
+
+  NonVisualDataModule->InitMenus(this);
+  NonVisualDataModule->QueueSpeedComboBoxItem(QueueSpeedComboBoxItem);
 }
 //---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::~TScpCommanderForm()
@@ -1590,15 +1595,23 @@ void __fastcall TScpCommanderForm::LocalPathComboBoxAdjustImageIndex(
   TTBXComboBoxItem * /*Sender*/, const AnsiString AText, int AIndex,
   int & ImageIndex)
 {
-  assert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
-  assert(AIndex < FLocalPathComboBoxPaths->Count);
-
-  if (AIndex < 0)
+  // this may get called even before constructor starts
+  // (e.g. from FixControlsPlacement)
+  if (FLocalPathComboBoxPaths != NULL)
   {
-    AIndex = LocalPathComboBox->ItemIndex;
-  }
+    assert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
+    assert(AIndex < FLocalPathComboBoxPaths->Count);
 
-  ImageIndex = int(FLocalPathComboBoxPaths->Objects[AIndex]);
+    if (AIndex < 0)
+    {
+      AIndex = LocalPathComboBox->ItemIndex;
+    }
+
+    if (AIndex >= 0)
+    {
+      ImageIndex = int(FLocalPathComboBoxPaths->Objects[AIndex]);
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboBoxItemClick(TObject * /*Sender*/)
@@ -1705,5 +1718,11 @@ void __fastcall TScpCommanderForm::HomeDirectory(TOperationSide Side)
   {
     NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::QueueSubmenuItemPopup(
+  TTBCustomItem * /*Sender*/, bool /*FromLink*/)
+{
+  NonVisualDataModule->QueueSpeedComboBoxItemUpdate(QueueSpeedComboBoxItem);
 }
 //---------------------------------------------------------------------------

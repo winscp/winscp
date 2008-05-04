@@ -1843,6 +1843,7 @@ begin
                    if (DataObject<>nil) and (DragDropControl<>nil) and
                       (DoDragDrop(IDataObject(DataObject), DropSource,
                        FSourceEffects, dwEffect)=DRAGDROP_S_DROP) then
+                   begin
                        case dwEffect and ((DropEffect_Copy or
                          DropEffect_Move or DropEffect_Link)) of
                             DropEffect_Copy: Result:=drCopy;
@@ -1858,8 +1859,12 @@ begin
                                  {if WIN32Platform = VER_PLATFORM_WIN32_NT then Result:=drMove
                                  else} Result:=drCancelled;
                             end;
-                       end
-                   else Result:=drCancelled;
+                       end;
+                   end
+                   else
+                   begin
+                     Result:=drCancelled;
+                   end;
                 finally
                    DropSource._Release;
                 end;

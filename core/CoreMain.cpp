@@ -39,9 +39,9 @@ TQueryParams::TQueryParams(unsigned int AParams, AnsiString AHelpKeyword)
 bool __fastcall IsAuthenticationPrompt(TPromptKind Kind)
 {
   return
-    (Kind == pkUserName) && (Kind == pkPassphrase) && (Kind == pkTIS) &&
-    (Kind == pkCryptoCard) && (Kind == pkKeybInteractive) &&
-    (Kind == pkPassword) && (Kind == pkNewPassword);
+    (Kind == pkUserName) || (Kind == pkPassphrase) || (Kind == pkTIS) ||
+    (Kind == pkCryptoCard) || (Kind == pkKeybInteractive) ||
+    (Kind == pkPassword) || (Kind == pkNewPassword);
 }
 //---------------------------------------------------------------------------
 void CoreInitialize()

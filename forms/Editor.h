@@ -96,6 +96,7 @@ __published:
   void __fastcall FindDialogFind(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormClose(TObject *Sender, TCloseAction &Action);
+  void __fastcall FormActivate(TObject *Sender);
 private:
   AnsiString FFileName;
   TNotifyEvent FOnFileChanged;
@@ -108,8 +109,11 @@ private:
   TReplaceDialog * FReplaceDialog;
   bool FCloseAnnounced;
   TRichEdit20 * EditorMemo;
+  bool FShowStatusBarHint;
+  AnsiString FStatusBarHint;
   void __fastcall SetFileName(const AnsiString value);
   void __fastcall SetParentForm(TCustomForm * value);
+  void __fastcall ApplicationHint(TObject * Sender);
 public:
   __fastcall TEditorForm(TComponent* Owner);
   virtual __fastcall ~TEditorForm();

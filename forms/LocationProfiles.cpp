@@ -14,7 +14,9 @@
 #include "WinConfiguration.h"
 //---------------------------------------------------------------------
 #pragma link "IEComboBox"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------
 bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   TOperationSide Side, AnsiString & LocalDirectory, AnsiString & RemoteDirectory,

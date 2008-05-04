@@ -13,7 +13,9 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "PathLabel"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner,
   bool AllowMinimize, bool CompareOnly)
@@ -25,6 +27,7 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
   FShowAsModalStorage = NULL;
   FMinimizedByMe = false;
   FCompareOnly = CompareOnly;
+  UseSystemSettings(this);
   if (!AllowMinimize)
   {
     CancelButton->Left = CancelButton->Left +

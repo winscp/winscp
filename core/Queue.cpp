@@ -128,11 +128,13 @@ int __fastcall TSimpleThread::ThreadProc(void * Thread)
   {
     SimpleThread->Execute();
   }
-  __finally
+  catch(...)
   {
-    SimpleThread->FFinished = true;
-    SimpleThread->Finished();
+    // we do not expect thread to be terminated with exception
+    assert(false);
   }
+  SimpleThread->FFinished = true;
+  SimpleThread->Finished();
   return 0;
 }
 //---------------------------------------------------------------------------

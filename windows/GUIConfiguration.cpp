@@ -750,11 +750,11 @@ void __fastcall TGUIConfiguration::Saved()
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-HINSTANCE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
+HANDLE __fastcall TGUIConfiguration::LoadNewResourceModule(LCID ALocale,
   AnsiString * FileName)
 {
   AnsiString LibraryFileName;
-  HINSTANCE NewInstance = 0;
+  HANDLE NewInstance = 0;
   bool Internal = (ALocale == InternalLocale());
   if (!Internal)
   {
@@ -844,7 +844,7 @@ void __fastcall TGUIConfiguration::SetLocale(LCID value)
 {
   if (Locale != value)
   {
-    HINSTANCE Module = LoadNewResourceModule(value);
+    HANDLE Module = LoadNewResourceModule(value);
     if (Module != NULL)
     {
       FLocale = value;
@@ -861,7 +861,7 @@ void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
 {
   if (Locale != value)
   {
-    HINSTANCE Module;
+    HANDLE Module;
 
     try
     {
@@ -881,36 +881,36 @@ void __fastcall TGUIConfiguration::SetLocaleSafe(LCID value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::FreeResourceModule(HINSTANCE Instance)
+void __fastcall TGUIConfiguration::FreeResourceModule(HANDLE Instance)
 {
   TPasLibModule * MainModule = FindModule(HInstance);
   if (Instance != MainModule->Instance)
   {
-    FreeLibrary(Instance);
+    FreeLibrary(static_cast<HMODULE>(Instance));
   }
 }
 //---------------------------------------------------------------------------
-HINSTANCE __fastcall TGUIConfiguration::ChangeResourceModule(HINSTANCE Instance)
+HANDLE __fastcall TGUIConfiguration::ChangeResourceModule(HANDLE Instance)
 {
   if (Instance == NULL)
   {
     Instance = HInstance;
   }
   TPasLibModule * MainModule = FindModule(HInstance);
-  HINSTANCE Result = static_cast<HINSTANCE>(MainModule->ResInstance);
+  HANDLE Result = MainModule->ResInstance;
   MainModule->ResInstance = Instance;
   CoreSetResourceModule(Instance);
   return Result;
 }
 //---------------------------------------------------------------------------
-HINSTANCE __fastcall TGUIConfiguration::GetResourceModule()
+HANDLE __fastcall TGUIConfiguration::GetResourceModule()
 {
-  return static_cast<HINSTANCE>(FindModule(HInstance)->ResInstance);
+  return FindModule(HInstance)->ResInstance;
 }
 //---------------------------------------------------------------------------
-void __fastcall TGUIConfiguration::SetResourceModule(HINSTANCE Instance)
+void __fastcall TGUIConfiguration::SetResourceModule(HANDLE Instance)
 {
-  HINSTANCE PrevHandle = ChangeResourceModule(Instance);
+  HANDLE PrevHandle = ChangeResourceModule(Instance);
   FreeResourceModule(PrevHandle);
 
   DefaultLocalized();

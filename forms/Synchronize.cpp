@@ -20,7 +20,9 @@
 #pragma package(smart_init)
 #pragma link "HistoryComboBox"
 #pragma link "GrayedCheckBox"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 const int WM_USER_STOP = WM_WINSCP_USER + 2;
 //---------------------------------------------------------------------------

@@ -129,7 +129,8 @@ type
 procedure Register;
 
 resourcestring
-  SSocketError = 'Error creating socket (%s)';
+  SSocketError2 = 'Socket error (%s)';
+  STimeout = 'Timeout';
   SUnknownSockError = 'Unknown error';
   SHttpError = 'Received response %d %s from %s';
 
@@ -276,7 +277,7 @@ var
 begin
   if Number = UnknownSuccessError then SysError := SUnknownSockError
     else SysError := SysErrorMessage(Number);
-  inherited Create(Format(SSocketError, [SysError]));
+  inherited Create(Format(SSocketError2, [SysError]));
   ErrorNumber := Number;
 end;
 
@@ -619,6 +620,8 @@ procedure TTcpIp.ReadVar(Socket: TSocket; var Buf; Size: Integer;
 var
   TempBuf: Pointer;
   Error: Integer;
+  ReadSet: TFDSet;
+  Timeout: TTimeVal;
 begin
   TempBuf := nil;
   try
@@ -628,6 +631,15 @@ begin
       TempBuf := @Buf;
 
     repeat
+      FD_ZERO(ReadSet);
+      FD_SET(Socket, ReadSet);
+      Timeout.tv_sec := 5;
+      Timeout.tv_usec := 0;
+      Ok := Winsock.Select(1, @ReadSet, nil, nil, @Timeout);
+      if Ok = 0 then
+        raise ETcpIpError.Create(Format(SSocketError2, [STimeout]))
+      else if Ok = SOCKET_ERROR then
+        raise ESocketError.Create(WSAGetLastError);
       Ok := Winsock.Recv(Socket, TempBuf^, Size, 0);
       if Ok <= 0 then
       begin
@@ -843,11 +855,14 @@ begin
 
   FHostname := Host;
   FSocketNumber := StrToInt(Port);
+  // loop until we get answer without Location header
   repeat
-    GetHead; // to process an eventually Location: answer
+    // do directly GetBody, instead of GetHead first.
+    // currently we use this for updates only and the potentional overhead
+    // of GetBody on redirect answer is smaller then two requests per each check
+    // (especially for the server itself)
+    GetBody;
   until not FRedirect;
-  if FStatusNr <> 200 then ReportStatusError;
-  GetBody;
   if FStatusNr <> 200 then ReportStatusError;
 end;
 

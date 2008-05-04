@@ -185,13 +185,13 @@ protected:
   virtual LCID __fastcall GetLocale();
   void __fastcall SetLocale(LCID value);
   void __fastcall SetLocaleSafe(LCID value);
-  virtual HINSTANCE __fastcall LoadNewResourceModule(LCID Locale,
+  virtual HANDLE __fastcall LoadNewResourceModule(LCID Locale,
     AnsiString * FileName = NULL);
-  HINSTANCE __fastcall GetResourceModule();
-  virtual void __fastcall SetResourceModule(HINSTANCE Instance);
+  HANDLE __fastcall GetResourceModule();
+  virtual void __fastcall SetResourceModule(HANDLE Instance);
   TStrings * __fastcall GetLocales();
   LCID __fastcall InternalLocale();
-  void __fastcall FreeResourceModule(HINSTANCE Instance);
+  void __fastcall FreeResourceModule(HANDLE Instance);
   void __fastcall SetDefaultCopyParam(const TGUICopyParamType & value);
   virtual bool __fastcall GetRememberPassword();
   const TCopyParamList * __fastcall GetCopyParamList();
@@ -211,7 +211,7 @@ public:
   virtual __fastcall ~TGUIConfiguration();
   virtual void __fastcall Default();
 
-  HINSTANCE __fastcall ChangeResourceModule(HINSTANCE Instance);
+  HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
 
   __property bool CopyParamDialogExpanded = { read = FCopyParamDialogExpanded, write = FCopyParamDialogExpanded };
   __property bool ErrorDialogExpanded = { read = FErrorDialogExpanded, write = FErrorDialogExpanded };

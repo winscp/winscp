@@ -16,7 +16,9 @@
 #pragma link "Rights"
 #pragma link "HistoryComboBox"
 #pragma link "ComboEdit"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
         : TFrame(Owner)

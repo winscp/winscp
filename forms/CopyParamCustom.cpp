@@ -12,7 +12,9 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma link "CopyParams"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam,
   int CopyParamAttrs)

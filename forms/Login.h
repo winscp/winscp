@@ -19,13 +19,13 @@
 #include <UpDownEdit.hpp>
 #include <PasswordEdit.hpp>
 #include <Menus.hpp>
+#include <ImgList.hpp>
 //----------------------------------------------------------------------------
 #include <Configuration.h>
 #include <SessionData.h>
 
 #include "LogSettings.h"
 #include "GeneralSettings.h"
-#include <ImgList.hpp>
 //----------------------------------------------------------------------------
 class TLoginDialog : public TForm
 {
@@ -251,7 +251,7 @@ __published:
   TCheckBox *OverwrittenToRecycleBinCheck;
   TEdit *RecycleBinPathEdit;
   TStaticText *RecycleBinLinkLabel;
-  TLabel *Label5;
+  TLabel *EOLTypeLabel;
   TComboBox *EOLTypeCombo;
   TLabel *UtfLabel;
   TComboBox *UtfCombo;
@@ -369,7 +369,7 @@ private:
   AnsiString FOrigCaption;
   bool FInitialized;
   TTabSheet * FSavedTab;
-  TTreeNode * FSavedSession;
+  int FSavedSession;
   bool FLocaleChanging;
   void * FSystemSettings;
   AnsiString FCurrentSessionName;

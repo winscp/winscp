@@ -10,7 +10,9 @@
 #include <WinInterface.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 bool __fastcall DoSymlinkDialog(AnsiString & FileName, AnsiString & PointTo,
   TOperationSide Side, bool & SymbolicLink, bool Edit, bool AllowSymbolic)

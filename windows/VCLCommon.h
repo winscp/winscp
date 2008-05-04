@@ -8,7 +8,9 @@ void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount = -1,
   int RightPad = 0);
 void __fastcall EnableControl(TControl* Control, bool Enable);
 void __fastcall ReadOnlyControl(TControl * Control, bool ReadOnly = true);
-void __fastcall InitSystemSettings(TComponent * Control);
+void __fastcall InitializeSystemSettings();
+void __fastcall FinalizeSystemSettings();
+void __fastcall LocalSystemSettings(TCustomForm * Control);
 void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings = NULL);
 void __fastcall UseSystemSettingsPost(TCustomForm * Control, void * Settings = NULL);
 void __fastcall UseSystemSettings(TCustomForm * Control, void ** Settings = NULL);
@@ -35,11 +37,11 @@ void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count)
 TPoint __fastcall GetAveCharSize(TCanvas * Canvas);
 void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After);
 void __fastcall CutFormToDesktop(TForm * Form);
-void __fastcall UpdateFormPosition(TForm * Form, TPosition Position);
-void __fastcall ResizeForm(TForm * Form, int Width, int Height);
+void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position);
+void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height);
 void __fastcall SetCorrectFormParent(TForm * Form);
 void __fastcall InvokeHelp(TWinControl * Control);
-TMonitor *  __fastcall FormMonitor(TForm * Form);
+TMonitor *  __fastcall FormMonitor(TCustomForm * Form);
 int __fastcall GetLastMonitor();
 void __fastcall SetLastMonitor(int MonitorNum);
 TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner);

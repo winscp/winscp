@@ -1,6 +1,7 @@
 #ifndef HelpWinH
 #define HelpWinH
 
+#define HELP_ERROR                   "messages"
 #define HELP_SESSION_SAVE_OVERWRITE  "ui_login_save"
 #define HELP_SESSION_SAVE_DEFAULT    "ui_login_stored_sessions#session_management"
 #define HELP_CREATE_SHORTCUT         "integration"
@@ -27,7 +28,7 @@
 #define HELP_CLEAN_TEMP_CONFIRM      "temp_folders"
 #define HELP_UPDATES                 "updates"
 #define HELP_COMPARE_NO_DIFFERENCES  "task_compare_directories"
-#define HELP_SYNC_DIR_BROWSE_ERROR   "task_navigate#synchronize_browsing"
+#define HELP_SYNC_DIR_BROWSE_ERROR   "task_navigate#synchronized_browsing"
 #define HELP_UNINSTALL_CLEANUP       "ui_cleanup"
 #define HELP_EDITOR_FIND             "ui_editor_find"
 #define HELP_EDITOR_REPLACE          "ui_editor_replace"

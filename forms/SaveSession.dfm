@@ -1,6 +1,8 @@
 object SaveSessionDialog: TSaveSessionDialog
   Left = 403
   Top = 281
+  HelpType = htKeyword
+  HelpKeyword = 'ui_login_save'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Save session as'

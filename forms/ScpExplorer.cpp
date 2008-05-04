@@ -33,7 +33,9 @@
 #pragma link "TB2ExtItems"
 #pragma link "TBXToolPals"
 #pragma link "TBXLists"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
@@ -58,6 +60,8 @@ __fastcall TScpExplorerForm::TScpExplorerForm(TComponent* Owner)
 
   // set common explorer shorcuts to our actions
   NonVisualDataModule->ExplorerShortcuts();
+
+  NonVisualDataModule->QueueSpeedComboBoxItem(QueueSpeedComboBoxItem);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpExplorerForm::RestoreFormParams()
@@ -298,5 +302,11 @@ void __fastcall TScpExplorerForm::ToolbarItemResize(TTBXCustomDropDownItem * Ite
   {
     dynamic_cast<TTBXComboBoxItem *>(Item)->MinListWidth = Width - 4;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::QueueSubmenuItemPopup(
+  TTBCustomItem * /*Sender*/, bool /*FromLink*/)
+{
+  NonVisualDataModule->QueueSpeedComboBoxItemUpdate(QueueSpeedComboBoxItem);
 }
 //---------------------------------------------------------------------------

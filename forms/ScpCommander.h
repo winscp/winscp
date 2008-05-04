@@ -169,7 +169,7 @@ __published:
   TTBXItem *TBXItem43;
   TTBXItem *TBXItem44;
   TTBXItem *TBXItem45;
-  TTBXSubmenuItem *TBXSubmenuItem8;
+  TTBXSubmenuItem *QueueSubmenuItem;
   TTBXItem *TBXItem46;
   TTBXSeparatorItem *TBXSeparatorItem10;
   TTBXItem *TBXItem47;
@@ -373,6 +373,7 @@ __published:
   TTBXLabelItem *CommandLinePromptLabel;
   TTBXItem *TBXItem163;
   TTBXItem *TBXItem169;
+  TTBXComboBoxItem *QueueSpeedComboBoxItem;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -423,6 +424,8 @@ __published:
   void __fastcall CommandLineComboBeginEdit(TTBEditItem *Sender,
           TTBEditItemViewer *Viewer, TEdit *EditControl);
   void __fastcall LocalDriveViewRefreshDrives(TObject *Sender);
+  void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
+          bool FromLink);
 
 private:
   float FLastLeftPanelWidth;

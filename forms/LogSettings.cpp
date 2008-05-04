@@ -15,7 +15,9 @@
 #pragma package(smart_init)
 #pragma link "ComboEdit"
 #pragma link "UpDownEdit"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 TLoggingFrame *LoggingFrame;
 //---------------------------------------------------------------------------
 __fastcall TLoggingFrame::TLoggingFrame(TComponent* Owner)
@@ -127,7 +129,7 @@ void __fastcall TLoggingFrame::DataChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 AnsiString __fastcall TLoggingFrame::GetDefaultLogFileName()
 {
-  return IncludeTrailingBackslash(SystemTemporaryDirectory()) + "&s.log";
+  return IncludeTrailingBackslash(SystemTemporaryDirectory()) + "!s.log";
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::SetEnableLogWindow(bool value)

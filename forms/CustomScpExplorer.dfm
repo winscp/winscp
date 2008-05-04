@@ -9,6 +9,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   KeyPreview = True
   OldCreateOrder = False
   Position = poDefaultPosOnly
+  OnActivate = FormActivate
   OnCloseQuery = FormCloseQuery
   OnConstrainedResize = FormConstrainedResize
   PixelsPerInch = 96

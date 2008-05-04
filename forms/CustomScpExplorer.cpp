@@ -44,7 +44,9 @@
 #pragma link "TBXStatusBars"
 #pragma link "TB2Item"
 #pragma link "TB2Toolbar"
+#ifndef NO_RESOURCES
 #pragma resource "*.dfm"
+#endif
 //---------------------------------------------------------------------------
 #define SAVE_SELECTION(DIRVIEW) \
   AnsiString FocusFile = ""; \
@@ -140,7 +142,6 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   RemoteDirView->Invalidate();
   assert(NonVisualDataModule && !NonVisualDataModule->ScpExplorer);
   NonVisualDataModule->ScpExplorer = this;
-  Application->OnHint = ApplicationHint;
   Application->OnMinimize = ApplicationMinimize;
   Application->OnRestore = ApplicationRestore;
   FAutoOperation = false;
@@ -2491,7 +2492,7 @@ void __fastcall TCustomScpExplorerForm::RemoteDirViewGetSelectFilter(
   if (!DoSelectMaskDialog(Sender, Select, &Filter, Configuration)) Abort();
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::CalculateSizeEvent(
+void __fastcall TCustomScpExplorerForm::CalculateSize(
   TStrings * FileList, __int64 & Size, TCalculateSizeStats & Stats,
   bool & Close)
 {
@@ -2561,7 +2562,7 @@ void __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
     TRemoteProperties NewProperties = CurrentProperties;
     if (DoPropertiesDialog(FileList, RemoteDirView->PathName,
         Terminal->Groups, Terminal->Users, &NewProperties, Flags,
-        CalculateSizeEvent, CalculateChecksumEvent))
+        CalculateSize, CalculateChecksumEvent))
     {
       NewProperties = TRemoteProperties::ChangedProperties(CurrentProperties, NewProperties);
       Terminal->ChangeFilesProperties(FileList, &NewProperties);
@@ -2765,7 +2766,7 @@ void __fastcall TCustomScpExplorerForm::ApplicationHint(TObject * /*Sender*/)
 {
   assert(Application);
   AnsiString AHint = GetLongHint(Application->Hint);
-  FShowStatusBarHint = Active && !AHint.IsEmpty() && (AHint != "X");
+  FShowStatusBarHint = Active && !AHint.IsEmpty();
   if (FShowStatusBarHint)
   {
     FStatusBarHint = AHint != "E" ? AHint : AnsiString("");
@@ -4134,7 +4135,7 @@ void __fastcall TCustomScpExplorerForm::WMSysCommand(TMessage & Message)
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::WMWindowPosChanging(TWMWindowPosMsg & Message)
 {
-  // MSVDM (not sure is it is generic feature) sets size of all windows
+  // MSVDM (not sure if it is generic feature) sets size of all windows
   // to iconic and moves top-level windows (with destop as parent) out
   // of the screen (-32000:-32000). However other windows (such as
   // VCL main window with hidden parent) are moved just above
@@ -5986,23 +5987,21 @@ bool __fastcall TCustomScpExplorerForm::MainWindowHook(TMessage & AMessage)
     TWMWindowPosMsg & Message = reinterpret_cast<TWMWindowPosMsg &>(AMessage);
 
     assert(Message.WindowPos->hwnd == Application->Handle);
+    // With WindowBlinds, we get [cx = Width, cy = 0]
+    // on restore from taskbar into maximization
     if ((Message.WindowPos->hwnd == Application->Handle) &&
         !IsIconic(Message.WindowPos->hwnd) &&
-        (Message.WindowPos->cx > 0) &&
-        (Message.WindowPos->cy > 0))
+        ((Message.WindowPos->cx > 0) ||
+         (Message.WindowPos->cy > 0)))
     {
-      unsigned int LocalFlags = Message.WindowPos->flags | SWP_NOZORDER;
-      if (BorderStyle == bsSizeable)
-      {
-        LocalFlags = LocalFlags & ~SWP_NOSIZE;
-      }
-      else
-      {
-        LocalFlags = LocalFlags | SWP_NOSIZE;
-      }
+      assert(BorderStyle == bsSizeable);
+      unsigned int LocalFlags =
+        (Message.WindowPos->flags | SWP_NOZORDER) & ~SWP_NOSIZE;
+      int AWidth = (Message.WindowPos->cx > 0) ? Message.WindowPos->cx : Width;
+      int AHeight = (Message.WindowPos->cy > 0) ? Message.WindowPos->cy : Height;
 
       SetWindowPos(Handle, 0, Message.WindowPos->x, Message.WindowPos->y,
-        Message.WindowPos->cx, Message.WindowPos->cy, LocalFlags);
+        AWidth, AHeight, LocalFlags);
     }
   }
 
@@ -6030,5 +6029,10 @@ void __fastcall TCustomScpExplorerForm::DirViewEditing(
       PostMessage(Edit, EM_SETSEL, 0, P - 1);
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FormActivate(TObject * /*Sender*/)
+{
+  Application->OnHint = ApplicationHint;
 }
 //---------------------------------------------------------------------------

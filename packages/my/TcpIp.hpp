@@ -243,8 +243,10 @@ __published:
 
 
 //-- var, const, procedure ---------------------------------------------------
-extern PACKAGE System::ResourceString _SSocketError;
-#define Tcpip_SSocketError System::LoadResourceString(&Tcpip::_SSocketError)
+extern PACKAGE System::ResourceString _SSocketError2;
+#define Tcpip_SSocketError2 System::LoadResourceString(&Tcpip::_SSocketError2)
+extern PACKAGE System::ResourceString _STimeout;
+#define Tcpip_STimeout System::LoadResourceString(&Tcpip::_STimeout)
 extern PACKAGE System::ResourceString _SUnknownSockError;
 #define Tcpip_SUnknownSockError System::LoadResourceString(&Tcpip::_SUnknownSockError)
 extern PACKAGE System::ResourceString _SHttpError;
