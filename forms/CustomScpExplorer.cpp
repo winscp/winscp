@@ -3216,21 +3216,24 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
   const TSynchronizeParamType & Params, TSynchronizeChecklist ** Checklist,
   TSynchronizeOptions * Options, bool Full)
 {
-  try
+  if (Terminal->Status == ssOpened)
   {
-    int PParams = Params.Params;
-    if (!Full)
+    try
     {
-      PParams |= TTerminal::spNoRecurse | TTerminal::spUseCache |
-        TTerminal::spDelayProgress | TTerminal::spSubDirs;
+      int PParams = Params.Params;
+      if (!Full)
+      {
+        PParams |= TTerminal::spNoRecurse | TTerminal::spUseCache |
+          TTerminal::spDelayProgress | TTerminal::spSubDirs;
+      }
+      Synchronize(LocalDirectory, RemoteDirectory, smRemote, CopyParam,
+        PParams, Checklist, Options);
     }
-    Synchronize(LocalDirectory, RemoteDirectory, smRemote, CopyParam,
-      PParams, Checklist, Options);
-  }
-  catch(Exception & E)
-  {
-    ShowExtendedExceptionEx(Terminal, &E);
-    throw;
+    catch(Exception & E)
+    {
+      ShowExtendedExceptionEx(Terminal, &E);
+      throw;
+    }
   }
 }
 //---------------------------------------------------------------------------

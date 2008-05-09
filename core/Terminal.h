@@ -3,7 +3,6 @@
 #define TerminalH
 
 #include <Classes.hpp>
-#include <set>
 
 #include "SessionInfo.h"
 #include "Interface.h"
@@ -143,9 +142,6 @@ friend class TFTPFileSystem;
 friend class TTunnelUI;
 
 private:
-  typedef std::set<int> Ports;
-  static Ports FTunnelLocalPorts;
-  static TCriticalSection FSection;
   TSessionData * FSessionData;
   TSessionLog * FLog;
   TConfiguration * FConfiguration;
@@ -313,6 +309,7 @@ protected:
     AnsiString Name, AnsiString Instructions, TStrings * Prompts, TStrings * Results);
   virtual void __fastcall DisplayBanner(const AnsiString & Banner);
   virtual void __fastcall Closed();
+  bool __fastcall IsListenerFree(unsigned int PortNumber);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 

@@ -674,6 +674,7 @@ class TConsoleRunner
 {
 public:
   TConsoleRunner(TConsole * Console);
+  ~TConsoleRunner();
 
   int __fastcall Run(const AnsiString Session, TOptions * Options,
     TStrings * ScriptCommands);
@@ -697,6 +698,7 @@ private:
   bool FCommandError;
   bool FBatchScript;
   bool FAborted;
+  TTimer * Timer;
 
   void __fastcall ScriptPrint(TScript * Script, const AnsiString Str);
   void __fastcall ScriptPrintProgress(TScript * Script, bool First, const AnsiString Str);
@@ -725,6 +727,7 @@ private:
   void __fastcall SynchronizeControllerTooManyDirectories(TSynchronizeController * Sender,
     int & MaxDirectories);
   unsigned int InputTimeout();
+  void __fastcall TimerTimer(TObject * Sender);
 };
 //---------------------------------------------------------------------------
 TConsoleRunner::TConsoleRunner(TConsole * Console) :
@@ -737,6 +740,21 @@ TConsoleRunner::TConsoleRunner(TConsole * Console) :
   FScript = NULL;
   FAborted = false;
   FBatchScript = false;
+  Timer = new TTimer(Application);
+  Timer->OnTimer = TimerTimer;
+  Timer->Interval = 1000;
+  Timer->Enabled = true;
+}
+//---------------------------------------------------------------------------
+TConsoleRunner::~TConsoleRunner()
+{
+  delete Timer;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleRunner::TimerTimer(TObject * /*Sender*/)
+{
+  // sole presence of timer causes message to be dispatched,
+  // hence breaks the loops
 }
 //---------------------------------------------------------------------------
 unsigned int TConsoleRunner::InputTimeout()
@@ -1220,6 +1238,7 @@ void __fastcall TConsoleRunner::ScriptSynchronizeStartStop(TScript * /*Script*/,
     while (!FSynchronizeAborted && !Aborted(false))
     {
       Application->HandleMessage();
+      FScript->Terminal->Idle();
     }
   }
   __finally
@@ -1391,6 +1410,11 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
             {
               Result = false;
             }
+          }
+
+          if (FScript->Terminal != NULL)
+          {
+            FScript->Terminal->Idle();
           }
         }
       }

@@ -134,40 +134,43 @@ void __fastcall TSynchronizeController::SynchronizeChange(
       TSynchronizeChecklist * Checklist = NULL;
       FOnSynchronize(this, LocalDirectory, RemoteDirectory, FCopyParam,
         FSynchronizeParams, &Checklist, Options, false);
-      try
+      if (Checklist != NULL)
       {
-        if (FLAGSET(FSynchronizeParams.Options, soRecurse))
+        try
         {
-          SubdirsChanged = false;
-          assert(Checklist != NULL);
-          for (int Index = 0; Index < Checklist->Count; Index++)
+          if (FLAGSET(FSynchronizeParams.Options, soRecurse))
           {
-            const TSynchronizeChecklist::TItem * Item = Checklist->Item[Index];
-            // note that there may be action saDeleteRemote even if nothing has changed
-            // so this is sub-optimal
-            if (Item->IsDirectory)
+            SubdirsChanged = false;
+            assert(Checklist != NULL);
+            for (int Index = 0; Index < Checklist->Count; Index++)
             {
-              if ((Item->Action == TSynchronizeChecklist::saUploadNew) ||
-                  (Item->Action == TSynchronizeChecklist::saDeleteRemote))
+              const TSynchronizeChecklist::TItem * Item = Checklist->Item[Index];
+              // note that there may be action saDeleteRemote even if nothing has changed
+              // so this is sub-optimal
+              if (Item->IsDirectory)
               {
-                SubdirsChanged = true;
-                break;
-              }
-              else
-              {
-                assert(false);
+                if ((Item->Action == TSynchronizeChecklist::saUploadNew) ||
+                    (Item->Action == TSynchronizeChecklist::saDeleteRemote))
+                {
+                  SubdirsChanged = true;
+                  break;
+                }
+                else
+                {
+                  assert(false);
+                }
               }
             }
           }
+          else
+          {
+            SubdirsChanged = false;
+          }
         }
-        else
+        __finally
         {
-          SubdirsChanged = false;
+          delete Checklist;
         }
-      }
-      __finally
-      {
-        delete Checklist;
       }
     }
   }

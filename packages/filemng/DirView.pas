@@ -1737,6 +1737,7 @@ var
   PSrec: ^SysUtils.TSearchRec;
   Dummy: Integer;
   ItemIndex: Integer;
+  AnyUpdate: Boolean;
   PUpdate: Boolean;
   PEFile: PEFileRec;
   SaveCursor: TCursor;
@@ -1748,6 +1749,8 @@ var
   AttrExcludeMask: Integer;
   FileSel: Boolean;
   FSize: Int64;
+  FocusedIsVisible: Boolean;
+  R: TRect;
 
   procedure AddToMasks(Attr: TSelAttr; Mask: Word);
   begin
@@ -1771,6 +1774,28 @@ begin
       end
         else
       begin
+        if Assigned(ItemFocused) then
+        begin
+          R := ItemFocused.DisplayRect(drBounds);
+          // btw, we use vsReport only, nothing else was tested
+          Assert(ViewStyle = vsReport);
+          case ViewStyle of
+            vsReport:
+              FocusedIsVisible := (TopItem.Index <= ItemFocused.Index) and
+                (ItemFocused.Index < TopItem.Index + VisibleRowCount);
+
+            vsList:
+              // do not know how to implement that
+              FocusedIsVisible := False;
+
+            else // vsIcon and vsSmallIcon
+              FocusedIsVisible :=
+                IntersectRect(R,
+                  Rect(ViewOrigin, Point(ViewOrigin.X + ClientWidth, ViewOrigin.Y + ClientHeight)),
+                  ItemFocused.DisplayRect(drBounds));
+          end;
+        end;
+
         SaveCursor := Screen.Cursor;
         Screen.Cursor := crHourGlass;
         FChangeTimer.Enabled  := False;
@@ -1781,6 +1806,7 @@ begin
         NewItems := TStringlist.Create;
 
         PUpdate := False;
+        AnyUpdate := False;
         TempMask := Mask;
 
         AttrIncludeMask := 0;
@@ -1873,11 +1899,10 @@ begin
                       if (iSize <> FSize) and Assigned(OnFileSizeChanged) then
                         OnFileSizeChanged(Self, Items[iIndex]);
                     end;
-                    if not PUpdate then
-                    begin
-                      PUpdate := True;
-                      Items.BeginUpdate;
-                    end;
+                    // alternative to TListItem.Update (which causes flicker)
+                    R := Items[iIndex].DisplayRect(drBounds);
+                    InvalidateRect(Handle, @R, True);
+                    AnyUpdate := True;
                   end;
                 end;
               end;
@@ -1933,6 +1958,7 @@ begin
                 PUpdate := True;
                 Items.BeginUpdate;
               end;
+              AnyUpdate := True;
               Items[Index].Delete;
             end;
           end;
@@ -1950,6 +1976,7 @@ begin
                 PUpdate := True;
                 Items.BeginUpdate;
               end;
+              AnyUpdate := True;
               PSrec := Pointer(NewItems.Objects[Index]);
               {$IFNDEF NO_THREADS}
               NewItem :=
@@ -1962,12 +1989,16 @@ begin
               Dispose(PSrec);
             end;
             NewItems.Free;
-            if PUpdate then
+            // if we are sorted by name and there were only updates to existing
+            // items, there is no need for sorting
+            if SortAfterUpdate and
+               (PUpdate or
+                (AnyUpdate and (DirColProperties.SortDirColumn <> dvName))) then
             begin
-              if SortAfterUpdate then
-                SortItems;
-              Items.EndUpdate;
+              SortItems;
             end;
+            if PUpdate then
+              Items.EndUpdate;
           finally
             FDirOK := True;
             FDirty := false;
@@ -1976,9 +2007,10 @@ begin
               StartIconUpdateThread;
             StartWatchThread;
 {$ENDIF}
-            if Assigned(ItemFocused) then
+            // make focused item visible, only if it was before
+            if FocusedIsVisible and Assigned(ItemFocused) then
               ItemFocused.MakeVisible(False);
-            if PUpdate and Assigned(OnDirUpdated) then
+            if AnyUpdate and Assigned(OnDirUpdated) then
               OnDirUpdated(Self);
 
             Screen.Cursor := SaveCursor;

@@ -24,6 +24,10 @@
 #include "Security.h"
 #include "CoreMain.h"
 #include "Queue.h"
+
+#ifndef AUTO_WINSOCK
+#include <winsock2.h>
+#endif
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -320,9 +324,6 @@ void __fastcall TTunnelUI::Closed()
   // noop
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-std::set<int> TTerminal::FTunnelLocalPorts;
-TCriticalSection TTerminal::FSection;
 //---------------------------------------------------------------------------
 __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   TConfiguration * Configuration)
@@ -645,6 +646,24 @@ void __fastcall TTerminal::Open()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::IsListenerFree(unsigned int PortNumber)
+{
+  SOCKET Socket = socket(AF_INET, SOCK_STREAM, 0);
+  bool Result = (Socket != INVALID_SOCKET);
+  if (Result)
+  {
+    SOCKADDR_IN Address;
+
+    memset(&Address, 0, sizeof(Address));
+    Address.sin_family = AF_INET;
+    Address.sin_port = htons(static_cast<short>(PortNumber));
+    Address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    Result = (bind(Socket, reinterpret_cast<sockaddr *>(&Address), sizeof(Address)) == 0);
+    closesocket(Socket);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::OpenTunnel()
 {
   assert(FTunnelData == NULL);
@@ -652,14 +671,8 @@ void __fastcall TTerminal::OpenTunnel()
   FTunnelLocalPortNumber = FSessionData->TunnelLocalPortNumber;
   if (FTunnelLocalPortNumber == 0)
   {
-    TGuard Guard(&FSection);
-
     FTunnelLocalPortNumber = Configuration->TunnelLocalPortNumberLow;
-    // override strange bug in STL
-    #pragma warn -8092
-    while ((FTunnelLocalPorts.find(FTunnelLocalPortNumber) != FTunnelLocalPorts.end()) ||
-           !IsListenerFree(FTunnelLocalPortNumber))
-    #pragma warn .8092
+    while (!IsListenerFree(FTunnelLocalPortNumber))
     {
       FTunnelLocalPortNumber++;
       if (FTunnelLocalPortNumber > Configuration->TunnelLocalPortNumberHigh)
@@ -669,7 +682,6 @@ void __fastcall TTerminal::OpenTunnel()
           (Configuration->TunnelLocalPortNumberLow, Configuration->TunnelLocalPortNumberHigh)));
       }
     }
-    FTunnelLocalPorts.insert(FTunnelLocalPortNumber);
     LogEvent(FORMAT("Autoselected tunnel local port number %d", (FTunnelLocalPortNumber)));
   }
 
@@ -730,8 +742,6 @@ void __fastcall TTerminal::CloseTunnel()
   SAFE_DESTROY_EX(TSessionLog, FTunnelLog);
   SAFE_DESTROY(FTunnelData);
 
-  TGuard Guard(&FSection);
-  FTunnelLocalPorts.erase(FTunnelLocalPortNumber);
   FTunnelLocalPortNumber = 0;
 }
 //---------------------------------------------------------------------------

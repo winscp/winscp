@@ -876,7 +876,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 0
           end
           object SFTPBugSignedTSCombo: TComboBox
@@ -886,7 +886,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 1
           end
         end
@@ -2285,7 +2285,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 0
             OnChange = DataChange
           end
@@ -2296,7 +2296,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 1
             OnChange = DataChange
           end
@@ -2307,7 +2307,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 2
             OnChange = DataChange
           end
@@ -2318,7 +2318,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 3
             OnChange = DataChange
           end
@@ -2329,7 +2329,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 4
             OnChange = DataChange
           end
@@ -2340,7 +2340,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 5
             OnChange = DataChange
           end
@@ -2351,7 +2351,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 6
             OnChange = DataChange
           end
@@ -2362,7 +2362,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 0
+            ItemHeight = 13
             TabOrder = 7
             OnChange = DataChange
           end

@@ -53,15 +53,6 @@ void __fastcall DontSaveRandomSeed()
   SaveRandomSeed = false;
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsListenerFree(unsigned int PortNumber)
-{
-  Socket socket =
-    sk_newlistener(NULL, PortNumber, NULL, true, ADDRTYPE_IPV4);
-  bool Result = (sk_socket_error(socket) == NULL);
-  sk_close(socket);
-  return Result;
-}
-//---------------------------------------------------------------------------
 int __fastcall ProtocolByName(const AnsiString & Name)
 {
   int Protocol = 0; // raw

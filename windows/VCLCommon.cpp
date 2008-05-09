@@ -282,10 +282,7 @@ void __fastcall InitializeSystemSettings()
 //---------------------------------------------------------------------------
 void __fastcall FinalizeSystemSettings()
 {
-  if (ThemeManager != NULL)
-  {
-    SAFE_DESTROY(ThemeManager);
-  }
+  // deliberately do not destroy ThemeManager to avoid faults [[bug>226]]
 }
 //---------------------------------------------------------------------------
 // Settings that must be set as soon as possible.

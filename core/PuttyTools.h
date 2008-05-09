@@ -11,8 +11,6 @@ AnsiString __fastcall EncodeUTF(const WideString Source);
 //---------------------------------------------------------------------------
 __int64 __fastcall ParseSize(AnsiString SizeStr);
 //---------------------------------------------------------------------------
-bool __fastcall IsListenerFree(unsigned int PortNumber);
-//---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI();
 //---------------------------------------------------------------------------
 #endif
