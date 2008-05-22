@@ -1157,7 +1157,7 @@ void __fastcall TScript::BinaryProc(TScriptProcParams * /*Parameters*/)
 void __fastcall TScript::SynchronizeDirectories(TScriptProcParams * Parameters,
   AnsiString & LocalDirectory, AnsiString & RemoteDirectory, int FirstParam)
 {
-  if (Parameters->ParamCount > FirstParam)
+  if (Parameters->ParamCount >= FirstParam)
   {
     LocalDirectory = Parameters->Param[FirstParam];
   }

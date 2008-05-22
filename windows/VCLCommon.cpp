@@ -282,7 +282,10 @@ void __fastcall InitializeSystemSettings()
 //---------------------------------------------------------------------------
 void __fastcall FinalizeSystemSettings()
 {
-  // deliberately do not destroy ThemeManager to avoid faults [[bug>226]]
+  if (ThemeManager != NULL)
+  {
+    SAFE_DESTROY(ThemeManager);
+  }
 }
 //---------------------------------------------------------------------------
 // Settings that must be set as soon as possible.
@@ -322,7 +325,7 @@ void __fastcall UseSystemSettingsPre(TCustomForm * Control, void ** Settings)
   }
 
   // especially on login dialog, we need to reapply themes with language change
-  if (ThemeManager != NULL)
+  if ((ThemeManager != NULL) && ThemeManager->ThemesEnabled)
   {
     ThemeManager->CollectForms(Control);
   }
