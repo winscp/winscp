@@ -925,7 +925,7 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
       FILE_OPERATION_LOOP (FMTLOAD(CREATE_DIR_ERROR, (DestFullName)),
         if (!ForceDirectories(DestFullName))
         {
-          EXCEPTION;
+          RaiseLastOSError();
         }
       );
 
@@ -1018,7 +1018,7 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
     if ((NewAttrs & Attrs) != NewAttrs)
     {
       FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DestFullName)),
-        THROWIFFALSE(FileSetAttr(DestFullName, Attrs | NewAttrs) == 0);
+        THROWOSIFFALSE(FileSetAttr(DestFullName, Attrs | NewAttrs) == 0);
       );
     }
   }
@@ -1238,7 +1238,7 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
   else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
   {
     FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
-      THROWIFFALSE(FileSetAttr(FileName, Attrs & ~faArchive) == 0);
+      THROWOSIFFALSE(FileSetAttr(FileName, Attrs & ~faArchive) == 0);
     )
   }
 }
@@ -1319,7 +1319,7 @@ void __fastcall TFTPFileSystem::DirectorySource(const AnsiString DirectoryName,
     else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
     {
       FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DirectoryName)),
-        THROWIFFALSE(FileSetAttr(DirectoryName, Attrs & ~faArchive) == 0);
+        THROWOSIFFALSE(FileSetAttr(DirectoryName, Attrs & ~faArchive) == 0);
       )
     }
   }

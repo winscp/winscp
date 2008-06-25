@@ -171,7 +171,7 @@ int __fastcall TFileOperationProgressType::OverallProgress()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::DoProgress()
 {
-  if (FOnProgress) FOnProgress(*this, Cancel);
+  FOnProgress(*this, Cancel);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Finish(AnsiString FileName,
@@ -179,12 +179,9 @@ void __fastcall TFileOperationProgressType::Finish(AnsiString FileName,
 {
   assert(InProgress);
 
-  if (FOnFinished)
-  {
-    FOnFinished(Operation, Side, Temp, FileName,
-      /* TODO : There wasn't 'Success' condition, was it by mistake or by purpose? */
-      Success && (Cancel == csContinue), DisconnectWhenComplete);
-  }
+  FOnFinished(Operation, Side, Temp, FileName,
+    /* TODO : There wasn't 'Success' condition, was it by mistake or by purpose? */
+    Success && (Cancel == csContinue), DisconnectWhenComplete);
   FFilesFinished++;
   DoProgress();
 }

@@ -100,6 +100,7 @@ protected:
   bool FUtfStrings;
   bool FUtfNever;
   bool FSignedTS;
+  bool FOpenSSH;
   TStrings * FFixedPaths;
   unsigned long FMaxPacketSize;
 

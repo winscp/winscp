@@ -6,6 +6,7 @@
 #define CONSOLE_EVENT_REQUEST "WinSCPConsoleEventRequest"
 #define CONSOLE_EVENT_RESPONSE "WinSCPConsoleEventResponse"
 #define CONSOLE_EVENT_CANCEL "WinSCPConsoleEventCancel"
+#define CONSOLE_JOB "WinSCPConsoleJob"
 //---------------------------------------------------------------------------
 struct TConsoleCommStruct
 {

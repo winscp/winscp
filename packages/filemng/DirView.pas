@@ -1794,7 +1794,8 @@ begin
                   Rect(ViewOrigin, Point(ViewOrigin.X + ClientWidth, ViewOrigin.Y + ClientHeight)),
                   ItemFocused.DisplayRect(drBounds));
           end;
-        end;
+        end
+          else FocusedIsVisible := False; // shut up
 
         SaveCursor := Screen.Cursor;
         Screen.Cursor := crHourGlass;
@@ -3701,7 +3702,7 @@ begin
         Info := SErrorRenameFile + HItem.pszText;
 
       MessageBeep(MB_ICONHAND);
-      if MessageDlg(Info, mtError, [mbOK, mbAbort], 0) = mrOK then
+      if MessageDlg(FormatLastOSError(Info), mtError, [mbOK, mbAbort], 0) = mrOK then
         RetryRename(HItem.pszText);
     end;
   finally

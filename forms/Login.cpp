@@ -72,6 +72,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
   FTreeLabels = new TStringList();
   FRecycleBinSheetVisible = false;
   FHintNode = NULL;
+  FScrollOnDragOver = new TTreeViewScrollOnDragOver(SessionTree, true);
 
   // we need to make sure that window procedure is set asap
   // (so that CM_SHOWINGCHANGED handling is applied)
@@ -81,6 +82,7 @@ __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::~TLoginDialog()
 {
+  delete FScrollOnDragOver;
   assert(FSystemSettings);
   DeleteSystemSettings(this, FSystemSettings);
   FSystemSettings = NULL;
@@ -2390,6 +2392,7 @@ void __fastcall TLoginDialog::SessionTreeProc(TMessage & AMessage)
         {
           SessionTree->DropTarget = DropTarget;
         }
+        FScrollOnDragOver->DragOver(P);
       }
       else
       {
@@ -2419,6 +2422,8 @@ void __fastcall TLoginDialog::SessionTreeStartDrag(TObject * /*Sender*/,
   {
     Abort();
   }
+
+  FScrollOnDragOver->StartDrag();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SessionTreeDragDrop(TObject * Sender,
@@ -2515,5 +2520,11 @@ void __fastcall TLoginDialog::SessionTreeMouseMove(TObject * /*Sender*/,
 
     SessionTree->Hint = Hint;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SessionTreeEndDrag(TObject * /*Sender*/,
+  TObject * /*Target*/, int /*X*/, int /*Y*/)
+{
+  FScrollOnDragOver->EndDrag();
 }
 //---------------------------------------------------------------------------

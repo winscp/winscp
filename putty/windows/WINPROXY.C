@@ -15,6 +15,10 @@
 
 typedef struct Socket_localproxy_tag *Local_Proxy_Socket;
 
+#ifdef MPEXT
+extern char *do_select(Plug plug, SOCKET skt, int startup);
+#endif
+
 struct Socket_localproxy_tag {
     const struct socket_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
@@ -62,6 +66,11 @@ static Plug sk_localproxy_plug (Socket s, Plug p)
 static void sk_localproxy_close (Socket s)
 {
     Local_Proxy_Socket ps = (Local_Proxy_Socket) s;
+
+    #ifdef MPEXT
+    // WinSCP core uses do_select as signalization of connection up/down
+    do_select(ps->plug, INVALID_SOCKET, 0);
+    #endif
 
     handle_free(ps->to_cmd_h);
     handle_free(ps->from_cmd_h);
@@ -198,6 +207,9 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
     CreateProcess(NULL, cmd, NULL, NULL, TRUE,
 		  CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,
 		  NULL, NULL, &si, &pi);
+    #ifdef MPEXT
+    sfree(cmd);
+    #endif  
 
     CloseHandle(cmd_from_us);
     CloseHandle(cmd_to_us);
@@ -212,6 +224,11 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
 
     /* We are responsible for this and don't need it any more */
     sk_addr_free(addr);
+
+    #ifdef MPEXT
+    // WinSCP core uses do_select as signalization of connection up/down
+    do_select(plug, INVALID_SOCKET, 1);
+    #endif
 
     return (Socket) ret;
 }

@@ -38,6 +38,8 @@ private:
   TStrings * FEmptyHistory;
   TSynchronizeChecklistConfiguration FSynchronizeChecklist;
   TConsoleWinConfiguration FConsoleWin;
+  TInterface FDefaultInterface;
+  bool FDefaultShowAdvancedLoginOptions;
 
   void __fastcall SetInterface(TInterface value);
   void __fastcall SetLogView(TLogView value);
@@ -50,6 +52,7 @@ private:
 protected:
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
   virtual void __fastcall LoadData(THierarchicalStorage * Storage);
+  virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual void __fastcall Saved();
   void __fastcall ClearHistory();
   void __fastcall DefaultHistory();

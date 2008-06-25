@@ -51,7 +51,7 @@ void err_out(LPCTSTR err_msg)
 // identified by "sys_err".
 void err_out_sys(LPCTSTR base_err_msg, LONG sys_err)
 {
-  LastPathError = FORMAT("%s%s", (base_err_msg, SysErrorMessage(sys_err)));
+  LastPathError = FORMAT("%s %s", (base_err_msg, SysErrorMessage(sys_err)));
 }
 //---------------------------------------------------------------------------
 // Works as "strcmp" but the comparison is not case sensitive.

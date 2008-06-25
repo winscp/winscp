@@ -16,7 +16,7 @@ typedef void __fastcall (__closure *TFileOperationProgressEvent)
   (TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
 typedef void __fastcall (__closure *TFileOperationFinished)
   (TFileOperation Operation, TOperationSide Side, bool Temp,
-    const AnsiString FileName, bool Success, bool & DisconnectWhenComplete);
+    const AnsiString & FileName, bool Success, bool & DisconnectWhenComplete);
 //---------------------------------------------------------------------------
 class TFileOperationProgressType
 {
@@ -36,7 +36,7 @@ private:
 
 protected:
   void __fastcall ClearTransfer();
-  void __fastcall DoProgress();
+  inline void __fastcall DoProgress();
 
 public:
   // common data

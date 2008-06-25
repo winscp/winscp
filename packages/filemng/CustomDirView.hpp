@@ -11,6 +11,7 @@
 #pragma option push -w-
 #pragma option push -Vx
 #include <NortonLikeListView.hpp>	// Pascal unit
+#include <PasTools.hpp>	// Pascal unit
 #include <SysUtils.hpp>	// Pascal unit
 #include <PathLabel.hpp>	// Pascal unit
 #include <IEListView.hpp>	// Pascal unit
@@ -203,8 +204,6 @@ private:
 	bool FForceRename;
 	Dragdrop::TDragResult FLastDDResult;
 	AnsiString FLastRenameName;
-	_FILETIME FLastVScrollTime;
-	int FVScrollCount;
 	bool FContextMenu;
 	bool FDragEnabled;
 	#pragma pack(push, 1)
@@ -243,6 +242,7 @@ private:
 	TMatchMaskEvent FOnMatchMask;
 	TDirViewGetOverlayEvent FOnGetOverlay;
 	AnsiString FMask;
+	Pastools::TListViewScrollOnDragOver* FScrollOnDragOver;
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDblClk(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Message);
@@ -364,6 +364,8 @@ protected:
 	virtual bool __fastcall EnableDragOnClick(void);
 	virtual void __fastcall SetMask(AnsiString Value);
 	DYNAMIC AnsiString __fastcall NormalizeMask(AnsiString Mask);
+	void __fastcall ScrollOnDragOverBeforeUpdate(System::TObject* ObjectToValidate);
+	void __fastcall ScrollOnDragOverAfterUpdate(void);
 	__property Controls::TImageList* ImageList16 = {read=FImageList16};
 	__property Controls::TImageList* ImageList32 = {read=FImageList32};
 	

@@ -11,7 +11,7 @@ uses
   Forms, ComCtrls, ShellAPI, ComObj, ShlObj, Dialogs,
   ActiveX, CommCtrl, Extctrls, ImgList, Menus,
   PIDL, BaseUtils, DragDrop, DragDropFilesEx, IEDriveInfo,
-  IEListView, PathLabel, SysUtils;
+  IEListView, PathLabel, SysUtils, PasTools;
 
 const
   clDefaultItemColor = -(COLOR_ENDCOLORS + 1);
@@ -168,8 +168,6 @@ type
     FForceRename: Boolean;
     FLastDDResult: TDragResult;
     FLastRenameName: string;
-    FLastVScrollTime: TFileTime;
-    FVScrollCount: Integer;
     FContextMenu: Boolean;
     FDragEnabled: Boolean;
     FDragPos: TPoint;
@@ -202,6 +200,7 @@ type
     FOnMatchMask: TMatchMaskEvent;
     FOnGetOverlay: TDirViewGetOverlayEvent;
     FMask: string;
+    FScrollOnDragOver: TListViewScrollOnDragOver;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
@@ -339,6 +338,8 @@ type
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
     function NormalizeMask(Mask: string): string; dynamic;
+    procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
+    procedure ScrollOnDragOverAfterUpdate;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -944,6 +945,10 @@ begin
     OnProcessDropped := DDProcessDropped;
     OnDragDetect := DDDragDetect;
   end;
+
+  FScrollOnDragOver := TListViewScrollOnDragOver.Create(Self, False);
+  FScrollOnDragOver.OnBeforeUpdate := ScrollOnDragOverBeforeUpdate;
+  FScrollOnDragOver.OnAfterUpdate := ScrollOnDragOverAfterUpdate;
 end;
 
 procedure TCustomDirView.ClearItems;
@@ -1240,6 +1245,7 @@ destructor TCustomDirView.Destroy;
 begin
   Assert(not FSavedSelection);
 
+  FreeAndNil(FScrollOnDragOver);
   FreeAndNil(FSavedNames);
   FreeAndNil(FHistoryPaths);
 
@@ -1922,6 +1928,16 @@ begin
   Reload(CacheIcons);
 end;
 
+procedure TCustomDirView.ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
+begin
+  GlobalDragImageList.HideDragImage;
+end;
+
+procedure TCustomDirView.ScrollOnDragOverAfterUpdate;
+begin
+  GlobalDragImageList.ShowDragImage;
+end;
+
 procedure TCustomDirView.DDDragEnter(DataObj: IDataObject; grfKeyState: Longint;
   Point: TPoint; var dwEffect: longint; var Accept: Boolean);
 var
@@ -1953,8 +1969,7 @@ begin
     Accept := False;
   end;
 
-  GetSystemTimeAsFileTime(FLastVScrollTime);
-  FVScrollCount := 0;
+  FScrollOnDragOver.StartDrag;
 
   if Assigned(FOnDDDragEnter) then
     FOnDDDragEnter(Self, DataObj, grfKeyState, Point, dwEffect, Accept);
@@ -1979,11 +1994,8 @@ procedure TCustomDirView.DDDragOver(grfKeyState: Integer; Point: TPoint;
   var dwEffect: Integer);
 var
   DropItem: TListItem;
-  KnowTime: TFileTime;
-  NbPixels: Integer;
   CanDrop: Boolean;
   HasDropHandler: Boolean;
-  WParam: LongInt;
 begin
   FDDOwnerIsSource := DragDropFilesEx.OwnerIsSource;
 
@@ -2018,37 +2030,8 @@ begin
     end;
   end;
 
-  GetSystemTimeAsFileTime(KnowTime);
-  NbPixels := Abs((Font.Height));
-  {Vertical scrolling, if viewstyle = vsReport:}
-  if (ViewStyle = vsReport) and (not Loading) and Assigned(TopItem) and
-     (((Int64(KnowTime) - Int64(FLastVScrollTime)) > DDVScrollDelay) or
-      ((FVScrollCount > DDMaxSlowCount) and
-        ((Int64(KnowTime) - Int64(FLastVScrollTime)) > (DDVScrollDelay div 4)))) then
-  begin
-    if ((DropItem = TopItem) or (Point.Y - 3 * nbPixels <= 0)) and
-       (TopItem.Index > 0) then WParam := SB_LINEUP
-      else
-    if (Point.Y + 3 * nbPixels > Height) then WParam := SB_LINEDOWN
-      else WParam := -1;
-    if WParam >= 0 then
-    begin
-      if GlobalDragImageList.Dragging then
-        GlobalDragImageList.HideDragImage;
-      Perform(WM_VSCROLL, WParam, 0);
-      if FVScrollCount > DDMaxSlowCount then
-          Perform(WM_VSCROLL, WParam, 0);
-      if FVScrollCount > DDMaxSlowCount * 3 then
-        Perform(WM_VSCROLL, WParam, 0);
-      Update;
-      if GlobalDragImageList.Dragging then
-        GlobalDragImageList.ShowDragImage;
-
-      GetSystemTimeAsFileTime(FLastVScrollTime);
-      Inc(FVScrollCount);
-    end
-      else FVScrollCount := 0;
-  end; {VScrollDelay}
+  if not Loading then
+    FScrollOnDragOver.DragOver(Point);
 
   {Set dropeffect:}
   if (not HasDropHandler) and (not Loading) then
@@ -2284,7 +2267,7 @@ begin
   if OnlyFocused or (SelCount = 0) then
   begin
     Result := Assigned(ItemFocused) and ItemIsFile(ItemFocused) and
-      ((not FilesOnly) or (not ItemIsDirectory(ItemFocused)))
+      ((not FilesOnly) or (not ItemIsDirectory(ItemFocused)));
   end
     else
   begin

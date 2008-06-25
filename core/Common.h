@@ -3,7 +3,7 @@
 #define CommonH
 //---------------------------------------------------------------------------
 #define EXCEPTION throw ExtException(NULL, "")
-#define THROWIFFALSE(C) if (!(C)) EXCEPTION
+#define THROWOSIFFALSE(C) if (!(C)) RaiseLastOSError();
 #define SCOPY(dest, source) \
   strncpy(dest, source, sizeof(dest)); \
   dest[sizeof(dest)-1] = '\0'

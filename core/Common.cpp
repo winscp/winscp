@@ -960,19 +960,21 @@ AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format)
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2)
 {
   // "FAT" time precision
-  // 1 ms more solves the rounding issues (see also CustomDirView.pas)
-  static TDateTime Second(0, 0, 1, 1);
+  // (when one time is seconds-precision and other is millisecond-precision,
+  // we may have times like 12:00:00.000 and 12:00:01.999, which should
+  // be treated the same)
+  static TDateTime TwoSeconds(0, 0, 2, 0);
   int Result;
   if (T1 == T2)
   {
     // just optimalisation
     Result = 0;
   }
-  else if ((T1 < T2) && (T2 - T1 > Second))
+  else if ((T1 < T2) && (T2 - T1 >= TwoSeconds))
   {
     Result = -1;
   }
-  else if ((T1 > T2) && (T1 - T2 > Second))
+  else if ((T1 > T2) && (T1 - T2 >= TwoSeconds))
   {
     Result = 1;
   }
@@ -1002,8 +1004,21 @@ bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin
   {
     Data.fFlags |= FOF_ALLOWUNDO;
   }
-  int Result = SHFileOperation(&Data);
-  return (Result == 0);
+  int ErrorCode = SHFileOperation(&Data);
+  bool Result = (ErrorCode == 0);
+  if (!Result)
+  {
+    // according to MSDN, SHFileOperation may return following non-Win32
+    // error codes
+    if (((ErrorCode >= 0x71) && (ErrorCode <= 0x88)) ||
+        (ErrorCode == 0xB7) || (ErrorCode == 0x402) || (ErrorCode == 0x10000) ||
+        (ErrorCode == 0x10074))
+    {
+      ErrorCode = 0;
+    }
+    SetLastError(ErrorCode);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall CancelAnswer(int Answers)

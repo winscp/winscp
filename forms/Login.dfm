@@ -342,6 +342,7 @@ object LoginDialog: TLoginDialog
           OnDragDrop = SessionTreeDragDrop
           OnEdited = SessionTreeEdited
           OnEditing = SessionTreeEditing
+          OnEndDrag = SessionTreeEndDrag
           OnExpanded = SessionTreeExpandedCollapsed
           OnKeyDown = SessionTreeKeyDown
           OnMouseMove = SessionTreeMouseMove

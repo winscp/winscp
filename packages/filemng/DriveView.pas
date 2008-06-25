@@ -56,12 +56,6 @@ const
 {$ENDIF}
   CInvalidSize = $FFFFFFFF;
 
-  DDMaxSlowCount = 3;
-
-  DDVScrollDelay   = 2000000;
-  DDHScrollDelay   = 2000000;
-  DDDragStartDelay = 500000;
-
   ErrorNodeNA = '%s: Node not assigned';
 
   {Flags used by TDriveView.RefreshRootNodes:}
@@ -826,7 +820,7 @@ begin
           Info := SErrorRenameFile + Item.pszText;
 
         MessageBeep(MB_ICONHAND);
-        if MessageDlg(Info, mtError, [mbOK, mbAbort], 0) = mrOK then
+        if MessageDlg(FormatLastOSError(Info), mtError, [mbOK, mbAbort], 0) = mrOK then
         begin
           FLastRenameName := Item.pszText;
           FRenameNode := Node;

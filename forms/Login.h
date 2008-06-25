@@ -23,6 +23,7 @@
 //----------------------------------------------------------------------------
 #include <Configuration.h>
 #include <SessionData.h>
+#include <PasTools.hpp>
 
 #include "LogSettings.h"
 #include "GeneralSettings.h"
@@ -357,6 +358,8 @@ __published:
           int X, int Y);
   void __fastcall SessionTreeMouseMove(TObject *Sender, TShiftState Shift,
           int X, int Y);
+  void __fastcall SessionTreeEndDrag(TObject *Sender, TObject *Target,
+          int X, int Y);
 
 private:
   int NoUpdate;
@@ -380,6 +383,7 @@ private:
   bool FRecycleBinSheetVisible;
   TWndMethod FOldSessionTreeProc;
   TTreeNode * FHintNode;
+  TTreeViewScrollOnDragOver * FScrollOnDragOver;
 
   void __fastcall LoadSession(TSessionData * aSessionData);
   void __fastcall UpdateControls();

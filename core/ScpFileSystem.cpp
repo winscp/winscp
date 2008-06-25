@@ -374,7 +374,8 @@ void __fastcall TSCPFileSystem::Idle()
   if ((FTerminal->SessionData->PingType != ptOff) &&
       (Now() - FSecureShell->LastDataSent > FTerminal->SessionData->PingIntervalDT))
   {
-    if (FTerminal->SessionData->PingType == ptDummyCommand)
+    if ((FTerminal->SessionData->PingType == ptDummyCommand) &&
+        FSecureShell->Ready)
     {
       if (!FProcessingCommand)
       {
@@ -1754,7 +1755,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
   {
     FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
-      THROWIFFALSE(FileSetAttr(FileName, Attrs & ~faArchive) == 0);
+      THROWOSIFFALSE(FileSetAttr(FileName, Attrs & ~faArchive) == 0);
     )
   }
 
@@ -1776,7 +1777,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
   // Get directory attributes
   FILE_OPERATION_LOOP (FMTLOAD(CANT_GET_ATTRS, (DirectoryName)),
     Attrs = FileGetAttr(DirectoryName);
-    if (Attrs == -1) EXCEPTION;
+    if (Attrs == -1) RaiseLastOSError();
   )
 
   AnsiString Buf;
@@ -1851,7 +1852,7 @@ void __fastcall TSCPFileSystem::SCPDirectorySource(const AnsiString DirectoryNam
       else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
       {
         FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DirectoryName)),
-          THROWIFFALSE(FileSetAttr(DirectoryName, Attrs & ~faArchive) == 0);
+          THROWOSIFFALSE(FileSetAttr(DirectoryName, Attrs & ~faArchive) == 0);
         )
       }
     }
@@ -2202,7 +2203,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           if (!FileData.Exists)
           {
             FILE_OPERATION_LOOP (FMTLOAD(CREATE_DIR_ERROR, (DestFileName)),
-              if (!ForceDirectories(DestFileName)) EXCEPTION;
+              if (!ForceDirectories(DestFileName)) RaiseLastOSError();
             );
             /* SCP: can we set the timestamp for directories ? */
           }
@@ -2380,7 +2381,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
           if ((NewAttrs & FileData.Attrs) != NewAttrs)
           {
             FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DestFileName)),
-              THROWIFFALSE(FileSetAttr(DestFileName, FileData.Attrs | NewAttrs) == 0);
+              THROWOSIFFALSE(FileSetAttr(DestFileName, FileData.Attrs | NewAttrs) == 0);
             );
           }
         }

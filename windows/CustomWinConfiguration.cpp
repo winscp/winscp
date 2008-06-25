@@ -27,6 +27,8 @@ __fastcall TCustomWinConfiguration::TCustomWinConfiguration():
 {
   FHistory = new TStringList();
   FEmptyHistory = new TStringList();
+  FDefaultInterface = ifCommander;
+  FDefaultShowAdvancedLoginOptions = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomWinConfiguration::~TCustomWinConfiguration()
@@ -70,8 +72,8 @@ void __fastcall TCustomWinConfiguration::Default()
 {
   TGUIConfiguration::Default();
 
-  FShowAdvancedLoginOptions = false;
-  FInterface = ifCommander;
+  FShowAdvancedLoginOptions = FDefaultShowAdvancedLoginOptions;
+  FInterface = FDefaultInterface;
   FLogView = lvNone;
   FSynchronizeChecklist.WindowParams = "0;-1;-1;600;450;0";
   FSynchronizeChecklist.ListParams = "1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1|0;1;2;3;4;5;6;7";
@@ -295,6 +297,13 @@ void __fastcall TCustomWinConfiguration::LoadData(
       Storage->CloseSubKey();
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::LoadAdmin(THierarchicalStorage * Storage)
+{
+  TGUIConfiguration::LoadAdmin(Storage);
+  FDefaultInterface = TInterface(Storage->ReadInteger("DefaultInterfaceInterface", FDefaultInterface));
+  FDefaultShowAdvancedLoginOptions = Storage->ReadBool("DefaultInterfaceShowAdvancedLoginOptions", FDefaultShowAdvancedLoginOptions);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SetShowAdvancedLoginOptions(bool value)

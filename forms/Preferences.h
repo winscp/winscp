@@ -25,6 +25,7 @@
 #include "HistoryComboBox.hpp"
 #include "PasswordEdit.hpp"
 #include <Dialogs.hpp>
+#include <PasTools.hpp>
 //----------------------------------------------------------------------------
 class TCustomCommands;
 class TEditorList;
@@ -274,6 +275,8 @@ __published:
           AnsiString &Name, bool &Action);
   void __fastcall NavigationTreeCollapsing(TObject *Sender,
           TTreeNode *Node, bool &AllowCollapse);
+  void __fastcall ListViewEndDrag(TObject *Sender,
+          TObject *Target, int X, int Y);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
@@ -286,6 +289,8 @@ private:
   int FListViewDragDest;
   TPreferencesDialogData * FDialogData;
   AnsiString FBeforeDialogPath;
+  TListViewScrollOnDragOver * FCustomCommandsScrollOnDragOver;
+  TListViewScrollOnDragOver * FCopyParamScrollOnDragOver;
   bool FNoUpdate;
   void __fastcall SetPreferencesMode(TPreferencesMode value);
   void __fastcall CMDialogKey(TWMKeyDown & Message);
@@ -309,6 +314,7 @@ protected:
   bool __fastcall AllowListViewDrag(TObject * Sender, int X, int Y);
   void __fastcall PrepareNavigationTree(TTreeView * Tree);
   virtual void __fastcall Dispatch(void * Message);
+  TListViewScrollOnDragOver * __fastcall ScrollOnDragOver(TObject * ListView);
 };
 //----------------------------------------------------------------------------
 #endif

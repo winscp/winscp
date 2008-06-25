@@ -248,7 +248,17 @@ int __fastcall Execute()
     }
     else if (Params->FindSwitch("RemoveSearchPath"))
     {
-      RemoveSearchPath(ExtractFilePath(Application->ExeName));
+      try
+      {
+        RemoveSearchPath(ExtractFilePath(Application->ExeName));
+      }
+      catch(...)
+      {
+        // ignore errors
+        // (RemoveSearchPath is called always on uninstallation,
+        // even if AddSearchPath was not used, so we would get the error
+        // always for non-priviledged user)
+      }
     }
     else if (Params->FindSwitch("Update"))
     {

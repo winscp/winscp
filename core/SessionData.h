@@ -268,6 +268,7 @@ private:
   void __fastcall SetFtpPingType(TPingType value);
   void __fastcall SetUtf(TAutoSwitch value);
   void __fastcall SetHostKey(AnsiString value);
+  TDateTime __fastcall GetTimeoutDT();
   static AnsiString __fastcall DecodeUrlChars(const AnsiString & S, bool Decode);
 
 public:
@@ -349,6 +350,7 @@ public:
   __property AnsiString Shell = { read = FShell, write = SetShell };
   __property AnsiString SftpServer = { read = FSftpServer, write = SetSftpServer };
   __property int Timeout = { read = FTimeout, write = SetTimeout };
+  __property TDateTime TimeoutDT = { read = GetTimeoutDT };
   __property bool UnsetNationalVars = { read = FUnsetNationalVars, write = SetUnsetNationalVars };
   __property bool IgnoreLsWarnings  = { read=FIgnoreLsWarnings, write=SetIgnoreLsWarnings };
   __property bool TcpNoDelay  = { read=FTcpNoDelay, write=SetTcpNoDelay };

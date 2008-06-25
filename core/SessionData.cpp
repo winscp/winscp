@@ -29,6 +29,12 @@ const TKex DefaultKexList[KEX_COUNT] =
 const char FSProtocolNames[FSPROTOCOL_COUNT][11] = { "SCP", "SFTP (SCP)", "SFTP", "SSH", "SFTP", "FTP" };
 const int SshPortNumber = 22;
 const int FtpPortNumber = 21;
+//---------------------------------------------------------------------
+TDateTime __fastcall SecToDateTime(int Sec)
+{
+  return TDateTime((unsigned short)(Sec/60/60),
+    (unsigned short)(Sec/60%60), (unsigned short)(Sec%60), 0);
+}
 //--- TSessionData ----------------------------------------------------
 AnsiString TSessionData::FInvalidChars("\\[]");
 //---------------------------------------------------------------------
@@ -1343,6 +1349,11 @@ void __fastcall TSessionData::SetEOLType(TEOLType value)
   SET_SESSION_PROPERTY(EOLType);
 }
 //---------------------------------------------------------------------------
+TDateTime __fastcall TSessionData::GetTimeoutDT()
+{
+  return SecToDateTime(Timeout);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSessionData::SetTimeout(int value)
 {
   SET_SESSION_PROPERTY(Timeout);
@@ -1410,8 +1421,7 @@ void __fastcall TSessionData::SetPingIntervalDT(TDateTime value)
 //---------------------------------------------------------------------------
 TDateTime __fastcall TSessionData::GetPingIntervalDT()
 {
-  return TDateTime((unsigned short)(PingInterval/60/60),
-    (unsigned short)(PingInterval/60%60), (unsigned short)(PingInterval%60), 0);
+  return SecToDateTime(PingInterval);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionData::SetPingType(TPingType value)
@@ -1810,8 +1820,7 @@ void __fastcall TSessionData::SetFtpPingInterval(int value)
 //---------------------------------------------------------------------------
 TDateTime __fastcall TSessionData::GetFtpPingIntervalDT()
 {
-  return TDateTime((unsigned short)(FtpPingInterval/60/60),
-    (unsigned short)(FtpPingInterval/60%60), (unsigned short)(FtpPingInterval%60), 0);
+  return SecToDateTime(FtpPingInterval);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSessionData::SetFtpPingType(TPingType value)

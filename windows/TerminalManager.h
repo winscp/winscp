@@ -121,7 +121,7 @@ private:
   void __fastcall SaveTerminal(TTerminal * Terminal);
   void __fastcall SetActiveTerminalIndex(int value);
   void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,
-    bool Temp, const AnsiString FileName, bool Success,
+    bool Temp, const AnsiString & FileName, bool Success,
     bool & DisconnectWhenFinished);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);

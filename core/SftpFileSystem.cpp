@@ -1729,7 +1729,8 @@ void __fastcall TSFTPFileSystem::Idle()
   if ((FTerminal->SessionData->PingType != ptOff) &&
       (Now() - FSecureShell->LastDataSent > FTerminal->SessionData->PingIntervalDT))
   {
-    if (FTerminal->SessionData->PingType == ptDummyCommand)
+    if ((FTerminal->SessionData->PingType == ptDummyCommand) &&
+        FSecureShell->Ready)
     {
       TSFTPPacket Packet(SSH_FXP_REALPATH);
       Packet.AddPathString("/", FUtfStrings);
@@ -2733,11 +2734,15 @@ void __fastcall TSFTPFileSystem::DoStartup()
     FTerminal->LogEvent("We will use UTF-8 strings for status messages only");
   }
 
+  FOpenSSH =
+    // Sun SSH is based on OpenSSH (suffers the same bugs)
+    (GetSessionInfo().SshImplementation.Pos("OpenSSH") == 1) ||
+    (GetSessionInfo().SshImplementation.Pos("Sun_SSH") == 1);
+
   FMaxPacketSize = FTerminal->SessionData->SFTPMaxPacketSize;
   if (FMaxPacketSize == 0)
   {
-    if ((GetSessionInfo().SshImplementation.Pos("OpenSSH") == 1) &&
-        (FVersion == 3) && !FSupport->Loaded)
+    if (FOpenSSH && (FVersion == 3) && !FSupport->Loaded)
     {
       FMaxPacketSize = 4 + (256 * 1024); // len + 256kB payload
       FTerminal->LogEvent(FORMAT("Limiting packet size to OpenSSH sftp-server limit of %d bytes",
@@ -3258,8 +3263,7 @@ void __fastcall TSFTPFileSystem::CreateLink(const AnsiString FileName,
   TSFTPPacket Packet(SSH_FXP_SYMLINK);
 
   bool Buggy = (FTerminal->SessionData->SFTPBug[sbSymlink] == asOn) ||
-    ((FTerminal->SessionData->SFTPBug[sbSymlink] == asAuto) &&
-      (GetSessionInfo().SshImplementation.Pos("OpenSSH") == 1));
+    ((FTerminal->SessionData->SFTPBug[sbSymlink] == asAuto) && FOpenSSH);
 
   if (!Buggy)
   {
@@ -3312,7 +3316,7 @@ bool __fastcall TSFTPFileSystem::LoadFilesProperties(TStrings * FileList)
   // without knowledge of server's capabilities, this all make no sense
   if (FSupport->Loaded)
   {
-    TFileOperationProgressType Progress(FTerminal->FOnProgress, FTerminal->FOnFinished);
+    TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
     Progress.Start(foGetProperties, osRemote, FileList->Count);
 
     FTerminal->FOperationProgress = &Progress;
@@ -3479,7 +3483,7 @@ void __fastcall TSFTPFileSystem::CalculateFilesChecksum(const AnsiString & Alg,
   TStrings * FileList, TStrings * Checksums,
   TCalculatedChecksumEvent OnCalculatedChecksum)
 {
-  TFileOperationProgressType Progress(FTerminal->FOnProgress, FTerminal->FOnFinished);
+  TFileOperationProgressType Progress(&FTerminal->DoProgress, &FTerminal->DoFinished);
   Progress.Start(foCalculateChecksum, osRemote, FileList->Count);
 
   FTerminal->FOperationProgress = &Progress;
@@ -4158,7 +4162,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   else if (CopyParam->ClearArchive && FLAGSET(OpenParams.LocalFileAttrs, faArchive))
   {
     FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
-      THROWIFFALSE(FileSetAttr(FileName, OpenParams.LocalFileAttrs & ~faArchive) == 0);
+      THROWOSIFFALSE(FileSetAttr(FileName, OpenParams.LocalFileAttrs & ~faArchive) == 0);
     )
   }
 }
@@ -4486,7 +4490,7 @@ void __fastcall TSFTPFileSystem::SFTPDirectorySource(const AnsiString DirectoryN
     else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
     {
       FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DirectoryName)),
-        THROWIFFALSE(FileSetAttr(DirectoryName, Attrs & ~faArchive) == 0);
+        THROWOSIFFALSE(FileSetAttr(DirectoryName, Attrs & ~faArchive) == 0);
       )
     }
   }
@@ -4617,7 +4621,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
       );
 
       FILE_OPERATION_LOOP (FMTLOAD(CREATE_DIR_ERROR, (DestFullName)),
-        if (!ForceDirectories(DestFullName)) EXCEPTION;
+        if (!ForceDirectories(DestFullName)) RaiseLastOSError();
       );
 
       TSinkFileParams SinkFileParams;
@@ -5001,11 +5005,11 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
 
           if (FileExists(DestFullName))
           {
-            if (!Sysutils::DeleteFile(DestFullName)) EXCEPTION;
+            if (!Sysutils::DeleteFile(DestFullName)) RaiseLastOSError();
           }
           if (!Sysutils::RenameFile(DestPartinalFullName, DestFullName))
           {
-            EXCEPTION;
+            RaiseLastOSError();
           }
         );
       }
@@ -5020,7 +5024,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
       if ((NewAttrs & Attrs) != NewAttrs)
       {
         FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (DestFullName)),
-          THROWIFFALSE(FileSetAttr(DestFullName, Attrs | NewAttrs) == 0);
+          THROWOSIFFALSE(FileSetAttr(DestFullName, Attrs | NewAttrs) == 0);
         );
       }
 

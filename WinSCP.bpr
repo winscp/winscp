@@ -58,6 +58,7 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="WinSCP.cpp" FORMNAME="" UNITNAME="WinSCP" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="windows\Windows.rc" FORMNAME="" UNITNAME="Windows.rc" CONTAINERID="RCCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CustomScpExplorer.cpp" FORMNAME="CustomScpExplorerForm" UNITNAME="CustomScpExplorer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\CustomWinConfiguration.cpp" FORMNAME="" UNITNAME="CustomWinConfiguration" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="windows\EditorManager.cpp" FORMNAME="" UNITNAME="EditorManager" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -83,7 +84,6 @@
       <FILE FILENAME="lib\RScpComp.lib" FORMNAME="" UNITNAME="RScpComp.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="lib\ScpCore.lib" FORMNAME="" UNITNAME="ScpCore.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="lib\ScpForms.lib" FORMNAME="" UNITNAME="ScpForms.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="windows\Windows.rc" FORMNAME="" UNITNAME="Windows.rc" CONTAINERID="RCCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="WinSCP.res" FORMNAME="" UNITNAME="WinSCP.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>

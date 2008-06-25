@@ -82,38 +82,33 @@ AnsiString __fastcall ProtocolName(int Protocol)
 //---------------------------------------------------------------------------
 extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
 {
-  // is NULL, when sk_newlistener is used to check for free port from
-  // TTerminal::OpenTunnel()
-  if (plug != NULL)
+  void * frontend;
+
+  if (!is_ssh(plug) && !is_pfwd(plug))
   {
-    void * frontend;
+    // If it is not SSH/PFwd plug, them it must be Proxy plug.
+    // Get SSH/PFwd plug which it wraps.
+    Proxy_Socket ProxySocket = ((Proxy_Plug)plug)->proxy_socket;
+    plug = ProxySocket->plug;
+  }
 
-    if (!is_ssh(plug) && !is_pfwd(plug))
-    {
-      // If it is not SSH/PFwd plug, them it must be Proxy plug.
-      // Get SSH/PFwd plug which it wraps.
-      Proxy_Socket ProxySocket = ((Proxy_Plug)plug)->proxy_socket;
-      plug = ProxySocket->plug;
-    }
+  bool pfwd = is_pfwd(plug);
+  if (pfwd)
+  {
+    plug = (Plug)get_pfwd_backend(plug);
+  }
 
-    bool pfwd = is_pfwd(plug);
-    if (pfwd)
-    {
-      plug = (Plug)get_pfwd_backend(plug);
-    }
+  frontend = get_ssh_frontend(plug);
+  assert(frontend);
 
-    frontend = get_ssh_frontend(plug);
-    assert(frontend);
-
-    TSecureShell * SecureShell = reinterpret_cast<TSecureShell*>(frontend);
-    if (!pfwd)
-    {
-      SecureShell->UpdateSocket(skt, startup);
-    }
-    else
-    {
-      SecureShell->UpdatePortFwdSocket(skt, startup);
-    }
+  TSecureShell * SecureShell = reinterpret_cast<TSecureShell*>(frontend);
+  if (!pfwd)
+  {
+    SecureShell->UpdateSocket(skt, startup);
+  }
+  else
+  {
+    SecureShell->UpdatePortFwdSocket(skt, startup);
   }
 
   return NULL;

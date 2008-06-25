@@ -331,6 +331,7 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FBookmarks = new TBookmarks();
   FCustomCommands = new TCustomCommands();
   FEditorList = new TEditorList();
+  FDefaultUpdatesPeriod = 0;
   Default();
 
   try
@@ -419,7 +420,7 @@ void __fastcall TWinConfiguration::Default()
   FQueueView.LastHideShow = qvHideWhenEmpty;
   FQueueView.ToolBar = false;
 
-  FUpdates.Period = 0;
+  FUpdates.Period = FDefaultUpdatesPeriod;
   FUpdates.LastCheck = 0;
   FUpdates.HaveResults = false;
   FUpdates.ShownResults = false;
@@ -941,8 +942,9 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadAdmin(THierarchicalStorage * Storage)
 {
-  TConfiguration::LoadAdmin(Storage);
+  TCustomWinConfiguration::LoadAdmin(Storage);
   FDisableOpenEdit = Storage->ReadBool("DisableOpenEdit", FDisableOpenEdit);
+  FDefaultUpdatesPeriod = Storage->ReadInteger("DefaultUpdatesPeriod", FDefaultUpdatesPeriod);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::ClearTemporaryLoginData()

@@ -62,6 +62,8 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
   FFolders->Sorted = true;
   FFolders->Duplicates = dupIgnore;
 
+  FScrollOnDragOver = new TTreeViewScrollOnDragOver(ProfilesView, true);
+
   UseSystemSettings(this);
 
   InstallPathWordBreakProc(LocalDirectoryEdit);
@@ -70,6 +72,7 @@ __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner)
 //---------------------------------------------------------------------
 __fastcall TLocationProfilesDialog::~TLocationProfilesDialog()
 {
+  SAFE_DESTROY(FScrollOnDragOver);
   SAFE_DESTROY(FBookmarkList);
   SAFE_DESTROY(FFolders);
 }
@@ -455,23 +458,25 @@ void __fastcall TLocationProfilesDialog::BookmarkButtonClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::ProfilesViewStartDrag(
-      TObject * /*Sender*/ , TDragObject *& /*DragObject*/)
+  TObject * /*Sender*/, TDragObject *& /*DragObject*/)
 {
   if (!ProfilesView->Selected->Data)
   {
     Abort();
   }
   FBookmarkDragSource = ProfilesView->Selected;
+  FScrollOnDragOver->StartDrag();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::ProfilesViewDragOver(
-    TObject */*Sender*/, TObject *Source, int /*X*/, int /*Y*/,
-    TDragState /*State*/, bool &Accept)
+  TObject * /*Sender*/, TObject * Source, int X, int Y,
+  TDragState /*State*/, bool & Accept)
 {
   if (Source == ProfilesView)
   {
     Accept = (ProfilesView->DropTarget != NULL) &&
       (FBookmarkDragSource != ProfilesView->DropTarget);
+    FScrollOnDragOver->DragOver(TPoint(X, Y));
   }
 }
 //---------------------------------------------------------------------------
@@ -744,5 +749,11 @@ void __fastcall TLocationProfilesDialog::UpdateActions()
     OKBtn->Default = true;
     CancelBtn->Cancel = true;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::ProfilesViewEndDrag(
+  TObject * /*Sender*/, TObject * /*Target*/, int /*X*/, int /*Y*/)
+{
+  FScrollOnDragOver->EndDrag();
 }
 //---------------------------------------------------------------------------

@@ -555,10 +555,6 @@ extern PACKAGE System::ResourceString _Space;
 #define Driveview_Space System::LoadResourceString(&Driveview::_Space)
 static const Shortint msThreadChangeDelay = 0x32;
 static const unsigned CInvalidSize = 0xffffffff;
-static const Shortint DDMaxSlowCount = 0x3;
-static const int DDVScrollDelay = 0x1e8480;
-static const int DDHScrollDelay = 0x1e8480;
-static const int DDDragStartDelay = 0x7a120;
 #define ErrorNodeNA "%s: Node not assigned"
 static const Shortint dvdsFloppy = 0x8;
 static const Shortint dvdsRereadAllways = 0x10;

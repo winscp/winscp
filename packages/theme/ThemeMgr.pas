@@ -1402,6 +1402,12 @@ var
 begin
   Result := False;
 
+  // workaround for so far unknown bug on vista (bug 140)
+  if Message.Msg = WM_GETICON then
+  begin
+    Exit;
+  end;
+
   // If the main manager was destroyed then it posted this message to the application so all still existing
   // theme managers know a new election is due. Well, it is not purely democratic. The earlier a manager was created
   // the higher is the probability to get this message first and become the new main manager.
@@ -2297,7 +2303,7 @@ function TThemeManager.DoAllowSubclassing(Control: TControl): Boolean;
 begin
   Result := True;
   if Assigned(FOnAllowSubclassing) then
-    FOnAllowSubclassing(Self,Control,Result)
+    FOnAllowSubclassing(Self,Control,Result);
 end;
 
 //----------------------------------------------------------------------------------------------------------------------

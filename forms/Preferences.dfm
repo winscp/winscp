@@ -1102,6 +1102,7 @@ object PreferencesDialog: TPreferencesDialog
             ViewStyle = vsReport
             OnData = CustomCommandsViewData
             OnDblClick = CustomCommandsViewDblClick
+            OnEndDrag = ListViewEndDrag
             OnDragDrop = CustomCommandsViewDragDrop
             OnDragOver = ListViewDragOver
             OnKeyDown = CustomCommandsViewKeyDown
@@ -1828,6 +1829,7 @@ object PreferencesDialog: TPreferencesDialog
             ViewStyle = vsReport
             OnData = CopyParamListViewData
             OnDblClick = CopyParamListViewDblClick
+            OnEndDrag = ListViewEndDrag
             OnDragDrop = CopyParamListViewDragDrop
             OnDragOver = ListViewDragOver
             OnInfoTip = CopyParamListViewInfoTip

@@ -657,7 +657,7 @@ void __fastcall TTerminalManager::DeleteLocalFile(const AnsiString FileName, boo
 {
   if (!RecursiveDeleteFile(FileName, (WinConfiguration->DeleteToRecycleBin != Alternative)))
   {
-    throw Exception(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
+    throw EOSExtException(FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)));
   }
 }
 //---------------------------------------------------------------------------
@@ -870,7 +870,7 @@ void __fastcall TTerminalManager::TerminalInformation(
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
-  TOperationSide Side, bool Temp, const AnsiString FileName, bool Success,
+  TOperationSide Side, bool Temp, const AnsiString & FileName, bool Success,
   bool & DisconnectWhenFinished)
 {
   assert(ScpExplorer);
@@ -1109,12 +1109,14 @@ void __fastcall TTerminalManager::Idle()
     {
       if (Terminal == ActiveTerminal)
       {
-        Terminal->ShowExtendedException(&E);
+        // throw further, so that the exception is handled in proper place
+        // (particularly in broken-transfer reconnect handler, bug 72)
+        throw;
       }
       else
       {
         // we may not have inactive terminal, unless there is a explorer,
-        // also Idle is calls frome explorer anyway
+        // also Idle is called from explorer anyway
         assert(ScpExplorer != NULL);
         if (ScpExplorer != NULL)
         {

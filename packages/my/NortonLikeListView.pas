@@ -163,6 +163,9 @@ procedure Register;
 
 implementation
 
+uses
+  PasTools;
+
 procedure Register;
 begin
   RegisterComponents('Martin', [TNortonLikeListView]);
@@ -189,7 +192,9 @@ begin
   // On Windows Vista, native GetNextItem for selection stops working once we
   // disallow deselecting any item (see ExCanChange).
   // So we need to manage selection state ourselves
-  FManageSelection := (Win32MajorVersion >= 6);
+  // cannot use Win32MajorVersion as it is affected by compatibility mode and
+  // the bug is present even in compatibility mode
+  FManageSelection := IsVista;
 end;
 
 destructor TCustomNortonLikeListView.Destroy;

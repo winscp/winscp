@@ -25,7 +25,7 @@ inline TConsoleCommStruct* GetCommStruct(HANDLE FileMapping)
     FILE_MAP_ALL_ACCESS, 0, 0, 0));
   if (Result == NULL)
   {
-    throw logic_error("Cannot open mapping object.");
+    throw runtime_error("Cannot open mapping object.");
   }
   return Result;
 }
@@ -36,7 +36,7 @@ inline void FreeCommStruct(TConsoleCommStruct* CommStruct)
 }
 //---------------------------------------------------------------------------
 void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& ResponseEvent,
-  HANDLE& CancelEvent, HANDLE& FileMapping)
+  HANDLE& CancelEvent, HANDLE& FileMapping, HANDLE& Job)
 {
   int Attempts = 0;
   char Name[MAX_PATH];
@@ -46,7 +46,7 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
   {
     if (Attempts > MAX_ATTEMPTS)
     {
-      throw logic_error("Cannot find unique name for event object.");
+      throw runtime_error("Cannot find unique name for event object.");
     }
 
     #ifdef CONSOLE_TEST
@@ -68,21 +68,21 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
   RequestEvent = CreateEvent(NULL, false, false, Name);
   if (RequestEvent == NULL)
   {
-    throw logic_error("Cannot create request event object.");
+    throw runtime_error("Cannot create request event object.");
   }
 
   sprintf(Name, "%s%d", CONSOLE_EVENT_RESPONSE, InstanceNumber);
   ResponseEvent = CreateEvent(NULL, false, false, Name);
   if (ResponseEvent == NULL)
   {
-    throw logic_error("Cannot create response event object.");
+    throw runtime_error("Cannot create response event object.");
   }
 
   sprintf(Name, "%s%d", CONSOLE_EVENT_CANCEL, InstanceNumber);
   CancelEvent = CreateEvent(NULL, false, false, Name);
   if (CancelEvent == NULL)
   {
-    throw logic_error("Cannot create cancel event object.");
+    throw runtime_error("Cannot create cancel event object.");
   }
 
   sprintf(Name, "%s%d", CONSOLE_MAPPING, InstanceNumber);
@@ -90,7 +90,41 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
     0, sizeof(TConsoleCommStruct), Name);
   if (FileMapping == NULL)
   {
-    throw logic_error("Cannot create mapping object.");
+    throw runtime_error("Cannot create mapping object.");
+  }
+
+  typedef HANDLE (* TCreateJobObject)(LPSECURITY_ATTRIBUTES JobAttributes, LPCTSTR Name);
+  typedef HANDLE (* TSetInformationJobObject)(HANDLE Job, JOBOBJECTINFOCLASS JobObjectInformationClass,
+    LPVOID JobObjectInformation, DWORD JobObjectInformationLength);
+
+  HANDLE Kernel32 = GetModuleHandle("kernel32");
+  TCreateJobObject CreateJobObject =
+    (TCreateJobObject)GetProcAddress(Kernel32, "CreateJobObjectA");
+  TSetInformationJobObject SetInformationJobObject =
+    (TSetInformationJobObject)GetProcAddress(Kernel32, "SetInformationJobObject");
+  if ((CreateJobObject != NULL) && (SetInformationJobObject != NULL))
+  {
+    sprintf(Name, "%s%d", CONSOLE_JOB, InstanceNumber);
+    Job = CreateJobObject(NULL, Name);
+    if (Job == NULL)
+    {
+      throw runtime_error("Cannot create job object.");
+    }
+
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION ExtendedLimitInformation;
+    memset(&ExtendedLimitInformation, 0, sizeof(ExtendedLimitInformation));
+    ExtendedLimitInformation.BasicLimitInformation.LimitFlags =
+      JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    if (SetInformationJobObject(Job, JobObjectExtendedLimitInformation,
+          &ExtendedLimitInformation, sizeof(ExtendedLimitInformation)) == 0)
+    {
+      CloseHandle(Job);
+      Job = NULL;
+    }
+  }
+  else
+  {
+    Job = NULL;
   }
 
   TConsoleCommStruct* CommStruct = GetCommStruct(FileMapping);
@@ -174,7 +208,7 @@ void InitializeChild(int argc, char* argv[], int InstanceNumber, HANDLE& Child)
   }
   else
   {
-    throw logic_error("Cannot start WinSCP application.");
+    throw runtime_error("Cannot start WinSCP application.");
   }
 }
 //---------------------------------------------------------------------------
@@ -188,12 +222,13 @@ void FinalizeChild(HANDLE Child)
 }
 //---------------------------------------------------------------------------
 void FinalizeConsole(int /*InstanceNumber*/, HANDLE RequestEvent,
-  HANDLE ResponseEvent, HANDLE CancelEvent, HANDLE FileMapping)
+  HANDLE ResponseEvent, HANDLE CancelEvent, HANDLE FileMapping, HANDLE Job)
 {
   CloseHandle(RequestEvent);
   CloseHandle(ResponseEvent);
   CloseHandle(CancelEvent);
   CloseHandle(FileMapping);
+  CloseHandle(Job);
 }
 //---------------------------------------------------------------------------
 static char LastFromBeginning[sizeof(TConsoleCommStruct::TPrintEvent)] = "";
@@ -481,7 +516,7 @@ void ProcessEvent(HANDLE ResponseEvent, HANDLE FileMapping)
         break;
 
       default:
-        throw logic_error("Unknown event");
+        throw runtime_error("Unknown event");
     }
 
     FreeCommStruct(CommStruct);
@@ -527,9 +562,9 @@ int main(int argc, char* argv[])
     OutputType = GetFileType(ConsoleOutput);
 
     int InstanceNumber;
-    HANDLE RequestEvent, ResponseEvent, FileMapping;
+    HANDLE RequestEvent, ResponseEvent, FileMapping, Job;
     InitializeConsole(InstanceNumber, RequestEvent, ResponseEvent,
-      CancelEvent, FileMapping);
+      CancelEvent, FileMapping, Job);
 
     char SavedTitle[512];
     GetConsoleTitle(SavedTitle, sizeof(SavedTitle));
@@ -571,7 +606,7 @@ int main(int argc, char* argv[])
               break;
 
             default:
-              throw logic_error("Error waiting for communication from child process.");
+              throw runtime_error("Error waiting for communication from child process.");
           }
         }
         while (Continue);
@@ -598,7 +633,7 @@ int main(int argc, char* argv[])
     }
 
     FinalizeConsole(InstanceNumber, RequestEvent, ResponseEvent,
-      CancelEvent, FileMapping);
+      CancelEvent, FileMapping, Job);
   }
   catch(const exception& e)
   {

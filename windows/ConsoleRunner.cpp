@@ -398,9 +398,31 @@ __fastcall TExternalConsole::TExternalConsole(const AnsiString Instance)
     FORMAT("%s%s", (CONSOLE_EVENT_CANCEL, (Instance))).c_str());
   FFileMapping = OpenFileMapping(FILE_MAP_ALL_ACCESS, false,
     FORMAT("%s%s", (CONSOLE_MAPPING, (Instance))).c_str());
+
   if ((FRequestEvent == NULL) || (FResponseEvent == NULL) || (FFileMapping == NULL))
   {
     throw Exception(LoadStr(EXTERNAL_CONSOLE_INIT_ERROR));
+  }
+
+  HANDLE Kernel32 = GetModuleHandle(kernel32);
+  typedef HANDLE (* TOpenJobObject)(DWORD DesiredAccess, BOOL InheritHandles, LPCTSTR Name);
+  typedef HANDLE (* TAssignProcessToJobObject)(HANDLE Job, HANDLE Process);
+  TOpenJobObject OpenJobObject =
+    (TOpenJobObject)GetProcAddress(Kernel32, "OpenJobObjectA");
+  TAssignProcessToJobObject AssignProcessToJobObject =
+    (TAssignProcessToJobObject)GetProcAddress(Kernel32, "AssignProcessToJobObject");
+  if ((OpenJobObject != NULL) && (AssignProcessToJobObject != NULL))
+  {
+    HANDLE Job = OpenJobObject(JOB_OBJECT_ASSIGN_PROCESS, FALSE,
+      FORMAT("%s%s", (CONSOLE_JOB, Instance)).c_str());
+    if (Job != NULL)
+    {
+      AssignProcessToJobObject(Job, GetCurrentProcess());
+      // winscp.com keeps the only reference to the job.
+      // once it gets closed (because winscp.com if forcefully terminated),
+      // we get terminated as well
+      CloseHandle(Job);
+    }
   }
 
   TConsoleCommStruct * CommStruct = GetCommStruct();

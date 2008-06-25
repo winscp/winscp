@@ -10,6 +10,7 @@
 class ExtException : public Sysutils::Exception
 {
 public:
+  __fastcall ExtException(Exception* E);
   __fastcall ExtException(Exception* E, AnsiString Msg);
   // "copy the exception", just append message to the end
   __fastcall ExtException(AnsiString Msg, Exception* E);
@@ -54,6 +55,13 @@ DERIVE_EXT_EXCEPTION(ECommand, ExtException);
 DERIVE_EXT_EXCEPTION(EScp, ExtException); // SCP protocol fatal error (non-fatal in application context)
 DERIVE_EXT_EXCEPTION(EScpSkipFile, ExtException);
 DERIVE_EXT_EXCEPTION(EScpFileSkipped, EScpSkipFile);
+//---------------------------------------------------------------------------
+class EOSExtException : public ExtException
+{
+public:
+  __fastcall EOSExtException();
+  __fastcall EOSExtException(AnsiString Msg);
+};
 //---------------------------------------------------------------------------
 class EFatal : public ExtException
 {

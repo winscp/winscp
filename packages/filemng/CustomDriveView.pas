@@ -5,7 +5,7 @@ interface
 uses
   Classes, ComCtrls, CommCtrl, Windows, Controls, Forms, ShlObj, Messages,
     Graphics,
-  DragDrop, CustomDirView, IEDriveInfo, DragDropFilesEx;
+  DragDrop, CustomDirView, IEDriveInfo, DragDropFilesEx, PasTools;
 
 type
   {Types uses by the function IterateSubTree:}
@@ -32,10 +32,6 @@ type
     FDragDrive: TDrive;
     FExeDrag: Boolean;
     FDDLinkOnExeDrag: Boolean;
-    FDragOverTime: FILETIME;
-    FLastVScrollTime: FILETIME;
-    FLastHScrollTime: FILETIME;
-    FVScrollCount: Integer;
     FDragNode: TTreeNode;
     FDragStartTime: FILETIME;
     FDragPos: TPoint;
@@ -47,6 +43,7 @@ type
     FShowHiddenDirs: Boolean;
     FContinue: Boolean;
     FImageList: TImageList;
+    FScrollOnDragOver: TTreeViewScrollOnDragOver;
 
     FOnDDDragEnter: TDDOnDragEnter;
     FOnDDDragLeave: TDDOnDragLeave;
@@ -147,6 +144,9 @@ type
     procedure DisplayContextMenu(Node: TTreeNode; ScreenPos: TPoint); virtual; abstract;
     procedure DisplayPropertiesMenu(Node: TTreeNode); virtual; abstract;
 
+    procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
+    procedure ScrollOnDragOverAfterUpdate;
+
     property ImageList: TImageList read FImageList;
 
   public
@@ -227,9 +227,6 @@ uses
   SysUtils, ShellApi, ImgList,
   IEListView, BaseUtils;
 
-const
-  DDExpandDelay = 25000000;
-
 constructor TCustomDriveView.Create(AOwner: TComponent);
 var
   WinVer: TOSVersionInfo;
@@ -282,10 +279,15 @@ begin
   end;
 
   OnCustomDrawItem := InternalOnDrawItem;
+
+  FScrollOnDragOver := TTreeViewScrollOnDragOver.Create(Self, False);
+  FScrollOnDragOver.OnBeforeUpdate := ScrollOnDragOverBeforeUpdate;
+  FScrollOnDragOver.OnAfterUpdate := ScrollOnDragOverAfterUpdate;
 end;
 
 destructor TCustomDriveView.Destroy;
 begin
+  FreeAndNil(FScrollOnDragOver);
   FreeAndNil(FImageList);
 
   if Assigned(Images) then
@@ -362,10 +364,27 @@ begin
   end;
 end; {InternalOnDrawItem}
 
+procedure TCustomDriveView.ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
+var
+  NodeToValidate: TTreeNode;
+begin
+  GlobalDragImageList.HideDragImage;
+  if Assigned(ObjectToValidate) then
+  begin
+    NodeToValidate := (ObjectToValidate as TTreeNode);
+    if not NodeToValidate.HasChildren then
+      ValidateDirectory(NodeToValidate);
+  end;
+end;
+
+procedure TCustomDriveView.ScrollOnDragOverAfterUpdate;
+begin
+  GlobalDragImageList.ShowDragImage;
+end;
+
 procedure TCustomDriveView.DDDragEnter(DataObj: IDataObject; KeyState: Longint;
   Point: TPoint; var Effect: Longint; var Accept: Boolean);
 var
-  KeyBoardState : TKeyBoardState;
   i: Integer;
 begin
   if (FDragDropFilesEx.FileList.Count > 0) and
@@ -388,16 +407,7 @@ begin
     FDragDrive := #0;
   end;
 
-  GetSystemTimeAsFileTime(FDragOverTime);
-  GetSystemTimeAsFileTime(FLastHScrollTime);
-  GetSystemTimeAsFileTime(FLastVScrollTime);
-  FVScrollCount := 0;
-
-  if (GetKeyState(VK_SPACE) <> 0) And GetKeyboardState(KeyBoardState) then
-  begin
-    KeyBoardState[VK_SPACE] := 0;
-    SetKeyBoardState(KeyBoardState);
-  end;
+  FScrollOnDragOver.StartDrag;
 
   if Assigned(FOnDDDragEnter) then
     FOnDDDragEnter(Self, DataObj, KeyState, Point, Effect, Accept);
@@ -420,11 +430,6 @@ end; {DragLeave}
 procedure TCustomDriveView.DDDragOver(KeyState: Longint; Point: TPoint; var Effect: Longint);
 var
   Node: TTreeNode;
-  KnowTime: FILETIME;
-  TempTopItem: TTreeNode;
-  NbPixels: Integer;
-  ScrollInfo: TScrollInfo;
-  KeyBoardState: TKeyBoardState;
   Rect1: TRect;
   UpdateImage: Boolean;
   LastDragNode: TTreeNode;
@@ -475,117 +480,7 @@ begin
          ((Node = FDragNode) or Node.HasAsParent(FDragNode) or (FDragNode.Parent = Node)) then
          Effect := DropEffect_None;
 
-      GetSystemTimeAsFileTime(KnowTime);
-
-      if GetKeyState(VK_SPACE) = 0 then
-      begin
-        {Expand node after 2.5 seconds: }
-        if not Assigned(LastDragNode) or (LastDragNode <> Node) then
-            GetSystemTimeAsFileTime(FDragOverTime)     {not previous droptarget: start timer}
-          else
-        begin
-          if ((Int64(KnowTime) - Int64(FDragOverTime)) > DDExpandDelay) then
-          begin
-            TempTopItem := TopItem;
-            GlobalDragImageList.HideDragImage;
-            Node.Expand(False);
-            TopItem := TempTopItem;
-            Update;
-            GlobalDragImageList.ShowDragImage;
-            FDragOverTime := KnowTime;
-          end;
-        end;
-      end
-        else
-      begin
-        {restart timer}
-        GetSystemTimeAsFileTime(FDragOverTime);
-        if GetKeyboardState(KeyBoardState) then
-        begin
-          KeyBoardState[VK_Space] := 0;
-          SetKeyBoardState(KeyBoardState);
-        end;
-
-        TempTopItem := TopItem;
-        GlobalDragImageList.HideDragImage;
-        if not Node.HasChildren then
-          ValidateDirectory(Node);
-        if Node.Expanded then
-        begin
-          if not Selected.HasAsParent(Node) then
-            Node.Collapse(False);
-        end
-          else Node.Expand(False);
-        TopItem := TempTopItem;
-        Update;
-        GlobalDragImageList.ShowDragImage;
-      end;
-
-      NbPixels := Abs((Font.Height));
-
-      {Vertical treescrolling:}
-      if ((Int64(KnowTime) - Int64(FLastVScrollTime)) > DDVScrollDelay) or
-         ((FVScrollCount > 3) and
-          ((Int64(KnowTime) - Int64(FLastVScrollTime)) > (DDVScrollDelay Div 4))) then
-      begin
-        {Scroll tree up, if droptarget is topitem:}
-        if Node = TopItem then
-        begin
-          GlobalDragImageList.HideDragImage;
-          Perform(WM_VSCROLL, SB_LINEUP, 0);
-          GlobalDragImageList.ShowDragImage;
-          GetSystemTimeAsFileTime(FLastVScrollTime);
-          Inc(FVScrollCount);
-        end
-          else
-        {Scroll tree down, if next visible item of droptarget is not visible:}
-        begin
-          if Point.Y + 3 * nbPixels > Height then
-          begin
-            GlobalDragImageList.HideDragImage;
-            Perform(WM_VSCROLL, SB_LINEDOWN, 0);
-            GlobalDragImageList.ShowDragImage;
-            GetSystemTimeAsFileTime(FLastVScrollTime);
-            Inc(FVScrollCount);
-          end
-            else
-          begin
-            FVScrollCount := 0;
-          end;
-        end;
-      end; {VScrollDelay}
-
-      {Horizontal treescrolling:}
-      {Scroll tree Left}
-      if ((Int64(KnowTime) - Int64(FLastHScrollTime)) > DDHScrollDelay) then
-      begin
-        GetSystemTimeAsFileTime(FLastHScrollTime);
-        ScrollInfo.cbSize := SizeOf(ScrollInfo);
-        ScrollInfo.FMask := SIF_ALL;
-        GetScrollInfo(Handle, SB_HORZ, ScrollInfo);
-        if ScrollInfo.nMin <> ScrollInfo.nMax then
-        begin
-          if Point.X < 50 then
-          begin
-            if Node.DisplayRect(True).Right + 50 < Width then
-            begin
-              GlobalDragImageList.HideDragImage;
-              Perform(WM_HSCROLL, SB_LINELEFT, 0);
-              GlobalDragImageList.ShowDragImage;
-            end;
-          end
-            else
-          if Point.X > (Width - 50) then
-          begin
-            if Node.DisplayRect(True).Left > 50 then
-            begin
-              GlobalDragImageList.HideDragImage;
-              Perform(WM_HSCROLL, SB_LINERIGHT, 0);
-              GlobalDragImageList.ShowDragImage;
-            end;
-          end;
-        end;
-      end;
+      FScrollOnDragOver.DragOver(Point);
     end {Assigned(Node)}
       else
     begin

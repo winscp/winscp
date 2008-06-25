@@ -90,7 +90,6 @@ protected:
     int Start, int End, TFileListType ListType);
   void __fastcall FreeFileList(TStrings * FileList);
 
-  void __fastcall DummyProc(TScriptProcParams * Parameters);
   void __fastcall HelpProc(TScriptProcParams * Parameters);
   void __fastcall CallProc(TScriptProcParams * Parameters);
   void __fastcall PwdProc(TScriptProcParams * Parameters);
@@ -162,7 +161,7 @@ protected:
   void __fastcall TerminalOperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const AnsiString FileName, Boolean Success,
+    bool Temp, const AnsiString & FileName, Boolean Success,
     bool & DisconnectWhenComplete);
 
   void __fastcall PrintActiveSession();

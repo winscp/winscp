@@ -20,6 +20,7 @@
 #include <WinInterface.h>
 #include <Bookmarks.h>
 #include "IEComboBox.hpp"
+#include <PasTools.hpp>
 //----------------------------------------------------------------------------
 class TOpenDirectoryDialog : public TForm
 {
@@ -58,6 +59,8 @@ __published:
   void __fastcall LocalDirectoryBrowseButtonClick(TObject *Sender);
   void __fastcall SwitchButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall BookmarksListEndDrag(TObject *Sender, TObject *Target,
+          int X, int Y);
 
 public:
   __fastcall TOpenDirectoryDialog(TComponent* AOwner);
@@ -87,6 +90,7 @@ private:
   TOpenDirectoryMode FMode;
   TBookmarkList * FBookmarkList;
   bool FAllowSwitch;
+  TListBoxScrollOnDragOver * FScrollOnDragOver;
 
   void __fastcall SetDirectory(AnsiString value);
   AnsiString __fastcall GetDirectory();

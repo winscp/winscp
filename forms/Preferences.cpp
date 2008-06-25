@@ -68,6 +68,9 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   FEditorList = new TEditorList();
   UseSystemSettings(this);
 
+  FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
+  FCopyParamScrollOnDragOver = new TListViewScrollOnDragOver(CopyParamListView, true);
+
   LoggingFrame->Init();
   InstallPathWordBreakProc(RandomSeedFileEdit);
   InstallPathWordBreakProc(DDTemporaryDirectoryEdit);
@@ -77,6 +80,8 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
 {
+  SAFE_DESTROY(FCopyParamScrollOnDragOver);
+  SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
   delete FEditorFont;
   delete FCustomCommands;
   delete FCopyParamList;
@@ -956,11 +961,29 @@ void __fastcall TPreferencesDialog::UpDownCommandButtonClick(TObject * Sender)
     CustomCommandsView->ItemIndex + (Sender == UpCommandButton ? -1 : 1));
 }
 //---------------------------------------------------------------------------
+TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObject * ListView)
+{
+  if (ListView == CopyParamListView)
+  {
+    return FCopyParamScrollOnDragOver;
+  }
+  else if (ListView == CustomCommandsView)
+  {
+    return FCustomCommandsScrollOnDragOver;
+  }
+  else
+  {
+    assert(false);
+    return NULL;
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ListViewStartDrag(
       TObject * Sender, TDragObject *& /*DragObject*/)
 {
   FListViewDragSource = dynamic_cast<TListView*>(Sender)->ItemIndex;
   FListViewDragDest = -1;
+  ScrollOnDragOver(Sender)->StartDrag();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TPreferencesDialog::AllowListViewDrag(TObject * Sender, int X, int Y)
@@ -983,8 +1006,8 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDragDrop(
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ListViewDragOver(
-      TObject * Sender, TObject * Source, int /*X*/, int /*Y*/,
-      TDragState /*State*/, bool & Accept)
+  TObject * Sender, TObject * Source, int X, int Y,
+  TDragState /*State*/, bool & Accept)
 {
   if (Source == Sender)
   {
@@ -992,6 +1015,8 @@ void __fastcall TPreferencesDialog::ListViewDragOver(
     // (when dropped on item itself, when it was dragged over another item before,
     // that another item remains highlighted forever)
     Accept = true;
+
+    ScrollOnDragOver(Source)->DragOver(TPoint(X, Y));
   }
 }
 //---------------------------------------------------------------------------
@@ -1452,5 +1477,11 @@ void __fastcall TPreferencesDialog::NavigationTreeCollapsing(
   TObject * /*Sender*/, TTreeNode * /*Node*/, bool & AllowCollapse)
 {
   AllowCollapse = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::ListViewEndDrag(
+  TObject * Sender, TObject * /*Target*/, int /*X*/, int /*Y*/)
+{
+  ScrollOnDragOver(Sender)->EndDrag();
 }
 //---------------------------------------------------------------------------

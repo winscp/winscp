@@ -2,10 +2,17 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Common.h"
 #include "Exceptions.h"
 #include "TextsCore.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+__fastcall ExtException::ExtException(Exception * E) :
+  Exception("")
+{
+  AddMoreMessages(E);
+}
 //---------------------------------------------------------------------------
 __fastcall ExtException::ExtException(Exception* E, AnsiString Msg):
         Exception(Msg)
@@ -115,4 +122,20 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
 __fastcall ExtException::~ExtException()
 {
   delete FMoreMessages;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall LastSysErrorMessage()
+{
+  int LastError = GetLastError();
+  AnsiString Result;
+  if (LastError != 0)
+  {
+    Result = FORMAT(Sysconst_SOSError, (LastError, SysErrorMessage(LastError)));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+__fastcall EOSExtException::EOSExtException(AnsiString Msg) :
+  ExtException(Msg, LastSysErrorMessage())
+{
 }

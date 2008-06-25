@@ -162,7 +162,7 @@ Name: quicklaunchicon; Description: {cm:QuickLaunchIconTask}; \
 Name: sendtohook; Description: {cm:SendToHookTask}
 Name: urlhandler; Description: {cm:RegisterAsUrlHandler}
 Name: searchpath; Description: {cm:AddSearchPath}; \
-  Flags: unchecked
+  Flags: unchecked; Check: IsAdminLoggedOn
 
 [Icons]
 ; This is created always (unless user checks Don't create a Start menu folder,
@@ -268,14 +268,26 @@ Root: HKCU; Subkey: "{#RegistryKey}"; Flags: uninsdeletekeyifempty
 ; Norton Commander interface
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "Interface"; ValueData: 0; Check: UserSettings(1)
+Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
+  ValueName: "DefaultInterfaceInterface"; ValueData: 0; \
+  Check: UserSettings(1); Flags: noerror
 ; Explorer-like interface
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "Interface"; ValueData: 1; Check: not UserSettings(1)
+Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
+  ValueName: "DefaultInterfaceInterface"; ValueData: 1; \
+  Check: not UserSettings(1); Flags: noerror
 ; Advanced tab on login dialog
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "ShowAdvancedLoginOptions"; ValueData: 0; Check: not UserSettings(2)
+Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
+  ValueName: "DefaultInterfaceShowAdvancedLoginOptions"; ValueData: 0; \
+  Check: not UserSettings(2); Flags: noerror
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
   ValueName: "ShowAdvancedLoginOptions"; ValueData: 1; Check: UserSettings(2)
+Root: HKLM; SubKey: "{#RegistryKey}"; ValueType: dword; \
+  ValueName: "DefaultInterfaceShowAdvancedLoginOptions"; ValueData: 1; \
+  Check: UserSettings(2); Flags: noerror
 ; If installer enabled ddext, let it reset the settings on uninstall,
 ; so the default is used on the next run
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface"; ValueType: dword; \
@@ -295,6 +307,9 @@ Root: HKCU; Subkey: "Software\Classes\SCP"; Flags: dontcreatekey uninsdeletekey;
 Root: HKCU; SubKey: "{#RegistryKey}\Configuration\Interface\Updates"; \
   ValueType: dword; ValueName: "Period"; ValueData: 7; \
   Tasks: enableupdates; Check: not UpdatesEnabled
+Root: HKLM; SubKey: "{#RegistryKey}"; \
+  ValueType: dword; ValueName: "DefaultUpdatesPeriod"; ValueData: 7; \
+  Tasks: enableupdates; Flags: noerror
 
 #if AnyLanguageComplete == 1
 

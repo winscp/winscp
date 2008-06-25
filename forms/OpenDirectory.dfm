@@ -102,6 +102,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
       OnDblClick = BookmarksListDblClick
       OnDragDrop = BookmarksListDragDrop
       OnDragOver = BookmarksListDragOver
+      OnEndDrag = BookmarksListEndDrag
       OnKeyDown = BookmarksListKeyDown
       OnStartDrag = BookmarksListStartDrag
     end

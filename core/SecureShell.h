@@ -42,6 +42,8 @@ private:
   bool FStoredPasswordTried;
   bool FStoredPasswordTriedForKI;
   int FSshVersion;
+  bool FOpened;
+  int FWaiting;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -80,6 +82,10 @@ private:
   bool __fastcall EventSelectLoop(unsigned int MSec, bool ReadEventRequired,
     WSANETWORKEVENTS * Events);
   void __fastcall UpdateSessionInfo();
+  bool __fastcall GetReady();
+  void __fastcall DispatchSendBuffer(int BufSize);
+  void __fastcall SendBuffer(unsigned int & Result);
+  int __fastcall TimeoutPrompt(TQueryParamsTimerEvent PoolEvent);
 
 protected:
   TCaptureOutputEvent FOnCaptureOutput;
@@ -143,6 +149,7 @@ public:
   void __fastcall PuttyLogEvent(const AnsiString & Str);
 
   __property bool Active = { read = FActive, write = SetActive };
+  __property bool Ready = { read = GetReady };
   __property TCaptureOutputEvent OnCaptureOutput = { read = FOnCaptureOutput, write = FOnCaptureOutput };
   __property TDateTime LastDataSent = { read = FLastDataSent };
   __property AnsiString LastTunnelError = { read = FLastTunnelError };

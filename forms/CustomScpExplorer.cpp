@@ -886,7 +886,7 @@ bool __fastcall TCustomScpExplorerForm::PanelOperation(TOperationSide /*Side*/,
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DoOperationFinished(
   TFileOperation Operation, TOperationSide Side,
-  bool /*Temp*/, const AnsiString FileName, bool Success,
+  bool /*Temp*/, const AnsiString & FileName, bool Success,
   bool & DisconnectWhenComplete)
 {
   if (!FAutoOperation)
@@ -939,7 +939,7 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OperationFinished(
   TFileOperation Operation, TOperationSide Side,
-  bool Temp, const AnsiString FileName, Boolean Success,
+  bool Temp, const AnsiString & FileName, Boolean Success,
   bool & DisconnectWhenComplete)
 {
   DoOperationFinished(Operation, Side, Temp, FileName, Success,
@@ -5632,8 +5632,8 @@ void __fastcall TCustomScpExplorerForm::FormConstrainedResize(
   {
     MinWidth = 0;
     MinHeight = 0;
-    MaxWidth = 0;
-    MaxHeight = 0;
+    MaxWidth = 32000;
+    MaxHeight = 32000;
   }
 }
 //---------------------------------------------------------------------------

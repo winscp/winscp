@@ -54,6 +54,7 @@ __fastcall TOpenDirectoryDialog::TOpenDirectoryDialog(TComponent * AOwner):
   FBookmarkDragDest = -1;
   FTerminal = NULL;
   FBookmarkList = new TBookmarkList();
+  FScrollOnDragOver = new TListBoxScrollOnDragOver(BookmarksList, true);
 
   InstallPathWordBreakProc(LocalDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
@@ -61,6 +62,7 @@ __fastcall TOpenDirectoryDialog::TOpenDirectoryDialog(TComponent * AOwner):
 //---------------------------------------------------------------------
 __fastcall TOpenDirectoryDialog::~TOpenDirectoryDialog()
 {
+  SAFE_DESTROY(FScrollOnDragOver);
   SAFE_DESTROY(FBookmarkList);
 }
 //---------------------------------------------------------------------
@@ -338,13 +340,18 @@ void __fastcall TOpenDirectoryDialog::BookmarksListStartDrag(
 {
   FBookmarkDragSource = BookmarksList->ItemIndex;
   FBookmarkDragDest = -1;
+  FScrollOnDragOver->StartDrag();
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::BookmarksListDragOver(
       TObject */*Sender*/, TObject *Source, int X, int Y, TDragState /*State*/,
       bool &Accept)
 {
-  if (Source == BookmarksList) Accept = AllowBookmarkDrag(X, Y);
+  if (Source == BookmarksList)
+  {
+    Accept = AllowBookmarkDrag(X, Y);
+    FScrollOnDragOver->DragOver(TPoint(X, Y));
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::BookmarksListDragDrop(
@@ -416,5 +423,11 @@ void __fastcall TOpenDirectoryDialog::SwitchButtonClick(TObject * /*Sender*/)
 void __fastcall TOpenDirectoryDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TOpenDirectoryDialog::BookmarksListEndDrag(TObject * /*Sender*/,
+  TObject * /*Target*/, int /*X*/, int /*Y*/)
+{
+  FScrollOnDragOver->EndDrag();
 }
 //---------------------------------------------------------------------------

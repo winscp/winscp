@@ -320,11 +320,10 @@ void __fastcall TScript::Init()
   FKeepingUpToDate = false;
 
   FCommands = new TScriptCommands;
-  FCommands->Register(";", 0, 0, &DummyProc, 0, -1, true);
-  FCommands->Register("#", 0, 0, &DummyProc, 0, -1, true);
   FCommands->Register("help", SCRIPT_HELP_DESC, SCRIPT_HELP_HELP, &HelpProc, 0, -1, false);
   FCommands->Register("man", 0, SCRIPT_HELP_HELP, &HelpProc, 0, -1, false);
-  FCommands->Register("call", SCRIPT_CALL_DESC2, SCRIPT_CALL_HELP2, &CallProc, 1, -1, false);
+  // the call command does not have switches itself, but the commands may have
+  FCommands->Register("call", SCRIPT_CALL_DESC2, SCRIPT_CALL_HELP2, &CallProc, 1, -1, true);
   FCommands->Register("!", 0, SCRIPT_CALL_HELP2, &CallProc, 1, -1, false);
   FCommands->Register("pwd", SCRIPT_PWD_DESC, SCRIPT_PWD_HELP, &PwdProc, 0, 0, false);
   FCommands->Register("cd", SCRIPT_CD_DESC, SCRIPT_CD_HELP, &CdProc, 0, 1, false);
@@ -365,15 +364,18 @@ void __fastcall TScript::Command(AnsiString Cmd)
 {
   try
   {
-    if (FEcho)
+    if (!Cmd.Trim().IsEmpty() && (Cmd[1] != ';') && (Cmd[1] != '#'))
     {
-      PrintLine(Cmd);
-    }
+      if (FEcho)
+      {
+        PrintLine(Cmd);
+      }
 
-    AnsiString Command;
-    if (CutToken(Cmd, Command))
-    {
-      FCommands->Execute(Command, Cmd);
+      AnsiString Command;
+      if (CutToken(Cmd, Command))
+      {
+        FCommands->Execute(Command, Cmd);
+      }
     }
   }
   catch(Exception & E)
@@ -669,11 +671,6 @@ bool __fastcall TScript::EnsureCommandSessionFallback(TFSCapability Capability)
     }
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TScript::DummyProc(TScriptProcParams * /*Parameters*/)
-{
-  // noop
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::HelpProc(TScriptProcParams * Parameters)
@@ -1580,7 +1577,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalOperationFinished(
   TFileOperation Operation, TOperationSide /*Side*/,
-  bool /*Temp*/, const AnsiString FileName, Boolean Success,
+  bool /*Temp*/, const AnsiString & FileName, Boolean Success,
   bool & /*DisconnectWhenComplete*/)
 {
   assert(Operation != foCalculateSize);

@@ -10,6 +10,7 @@
 #pragma delphiheader begin
 #pragma option push -w-
 #pragma option push -Vx
+#include <PasTools.hpp>	// Pascal unit
 #include <DragDropFilesEx.hpp>	// Pascal unit
 #include <IEDriveInfo.hpp>	// Pascal unit
 #include <CustomDirView.hpp>	// Pascal unit
@@ -55,10 +56,6 @@ protected:
 	char FDragDrive;
 	bool FExeDrag;
 	bool FDDLinkOnExeDrag;
-	_FILETIME FDragOverTime;
-	_FILETIME FLastVScrollTime;
-	_FILETIME FLastHScrollTime;
-	int FVScrollCount;
 	Comctrls::TTreeNode* FDragNode;
 	_FILETIME FDragStartTime;
 	#pragma pack(push, 1)
@@ -76,6 +73,7 @@ protected:
 	bool FShowHiddenDirs;
 	bool FContinue;
 	Controls::TImageList* FImageList;
+	Pastools::TTreeViewScrollOnDragOver* FScrollOnDragOver;
 	Customdirview::TDDOnDragEnter FOnDDDragEnter;
 	Customdirview::TDDOnDragLeave FOnDDDragLeave;
 	Customdirview::TDDOnDragOver FOnDDDragOver;
@@ -151,6 +149,8 @@ protected:
 	virtual void __fastcall RebuildTree(void) = 0 ;
 	virtual void __fastcall DisplayContextMenu(Comctrls::TTreeNode* Node, const Types::TPoint &ScreenPos) = 0 ;
 	virtual void __fastcall DisplayPropertiesMenu(Comctrls::TTreeNode* Node) = 0 ;
+	void __fastcall ScrollOnDragOverBeforeUpdate(System::TObject* ObjectToValidate);
+	void __fastcall ScrollOnDragOverAfterUpdate(void);
 	__property Controls::TImageList* ImageList = {read=FImageList};
 	
 public:

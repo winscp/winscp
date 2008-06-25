@@ -714,17 +714,56 @@ STDMETHODIMP_(UINT) CShellExt::CopyCallback(HWND Hwnd, UINT Func, UINT Flags,
                 {
                   DEBUG("CShellExt::CopyCallback dragging");
                   DEBUG(CommStruct->DropDest);
-                  if (strcmp(CommStruct->DropDest, SrcFile) == 0)
+                  bool IsDropDest;
+                  if (stricmp(CommStruct->DropDest, SrcFile) == 0)
+                  {
+                    IsDropDest = true;
+                    DEBUG("CShellExt::CopyCallback dragged file match as is");
+                  }
+                  else
+                  {
+                    char DropDestShort[MAX_PATH];
+                    char SrcFileShort[MAX_PATH];
+                    size_t DropDestSize = GetShortPathName(CommStruct->DropDest,
+                      DropDestShort, sizeof(DropDestShort));
+                    size_t SrcFileSize = GetShortPathName(SrcFile,
+                      SrcFileShort, sizeof(SrcFileShort));
+                    if ((DropDestSize == 0) || (SrcFileSize == 0))
+                    {
+                      DEBUG("CShellExt::CopyCallback cannot convert paths to short form");
+                      IsDropDest = false;
+                    }
+                    else if ((DropDestSize >= sizeof(DropDestShort)) ||
+                        (SrcFileSize >= sizeof(SrcFileShort)))
+                    {
+                      DEBUG("CShellExt::CopyCallback short paths too long");
+                      IsDropDest = false;
+                    }
+                    else
+                    {
+                      DEBUG(DropDestShort);
+                      DEBUG(SrcFileShort);
+
+                      if (stricmp(DropDestShort, SrcFileShort) == 0)
+                      {
+                        DEBUG("CShellExt::CopyCallback dragged file match after converted to short form");
+                        IsDropDest = true;
+                      }
+                      else
+                      {
+                        DEBUG("CShellExt::CopyCallback dragged file does NOT match");
+                        IsDropDest = false;
+                      }
+                    }
+                  }
+
+                  if (IsDropDest)
                   {
                     CommStruct->Dragging = false;
                     strncpy(CommStruct->DropDest, DestFile, sizeof(CommStruct->DropDest));
                     CommStruct->DropDest[sizeof(CommStruct->DropDest)-1] = '\0';
                     Result = IDNO;
                     DEBUG("CShellExt::CopyCallback dragging refused");
-                  }
-                  else
-                  {
-                    DEBUG("CShellExt::CopyCallback dragged file does NOT match");
                   }
                 }
                 else

@@ -26,6 +26,7 @@ struct TFileSystemInfo;
 struct TSpaceAvailable;
 typedef TStringList TUsersGroupsList;
 class TTunnelUI;
+class TCallbackGuard;
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TQueryUserEvent)
   (TObject * Sender, const AnsiString Query, TStrings * MoreMessages, int Answers,
@@ -140,6 +141,7 @@ friend class TSCPFileSystem;
 friend class TSFTPFileSystem;
 friend class TFTPFileSystem;
 friend class TTunnelUI;
+friend class TCallbackGuard;
 
 private:
   TSessionData * FSessionData;
@@ -189,6 +191,8 @@ private:
   TInformationEvent FOnInformation;
   TNotifyEvent FOnClose;
   bool FAnyInformation;
+  TCallbackGuard * FCallbackGuard;
+
   void __fastcall CommandError(Exception * E, const AnsiString Msg);
   int __fastcall CommandError(Exception * E, const AnsiString Msg, int Answers);
   AnsiString __fastcall PeekCurrentDirectory();
@@ -285,7 +289,7 @@ protected:
   TStrings * __fastcall GetFixedPaths();
   void __fastcall DoStartup();
   virtual bool __fastcall DoQueryReopen(Exception * E);
-  void __fastcall FatalError(Exception * E, AnsiString Msg);
+  virtual void __fastcall FatalError(Exception * E, AnsiString Msg);
   void __fastcall ResetConnection();
   virtual bool __fastcall DoPromptUser(TSessionData * Data, TPromptKind Kind,
     AnsiString Name, AnsiString Instructions, TStrings * Prompts,
@@ -310,6 +314,9 @@ protected:
   virtual void __fastcall DisplayBanner(const AnsiString & Banner);
   virtual void __fastcall Closed();
   bool __fastcall IsListenerFree(unsigned int PortNumber);
+  void __fastcall DoProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
+  void __fastcall DoFinished(TFileOperation Operation, TOperationSide Side, bool Temp,
+    const AnsiString & FileName, bool Success, bool & DisconnectWhenComplete);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 

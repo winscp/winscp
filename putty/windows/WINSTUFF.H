@@ -428,7 +428,11 @@ struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
 int handle_write(struct handle *h, const void *data, int len);
 HANDLE *handle_get_events(int *nevents);
 void handle_free(struct handle *h);
+#ifdef MPEXT
+int handle_got_event(HANDLE event);
+#else
 void handle_got_event(HANDLE event);
+#endif
 void handle_unthrottle(struct handle *h, int backlog);
 int handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);

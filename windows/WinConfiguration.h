@@ -291,6 +291,7 @@ private:
   AnsiString FDefaultKeyFile;
   bool FAutoOpenInPutty;
   bool FTelnetForFtpInPutty;
+  TDateTime FDefaultUpdatesPeriod;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);

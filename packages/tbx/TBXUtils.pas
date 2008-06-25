@@ -214,7 +214,6 @@ implementation
 
 uses TB2Common, Math;
 
-
 {$IFDEF TBX_UNICODE}
 
 function GetTextHeightW(DC: HDC): Integer;

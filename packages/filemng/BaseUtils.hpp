@@ -52,6 +52,7 @@ extern PACKAGE void __fastcall ReduceDateTimePrecision(System::TDateTime &DateTi
 extern PACKAGE bool __fastcall SpecialFolderLocation(int Folder, AnsiString &Path, Shlobj::PItemIDList &PIDL)/* overload */;
 extern PACKAGE bool __fastcall SpecialFolderLocation(int Folder, AnsiString &Path)/* overload */;
 extern PACKAGE Controls::TImageList* __fastcall ShellImageList(Classes::TComponent* Owner, unsigned Flags);
+extern PACKAGE AnsiString __fastcall FormatLastOSError(AnsiString Message);
 
 }	/* namespace Baseutils */
 using namespace Baseutils;

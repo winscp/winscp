@@ -54,6 +54,8 @@ function SpecialFolderLocation(Folder: Integer; var Path: string;
 function SpecialFolderLocation(Folder: Integer; var Path: string): Boolean; overload;
 function ShellImageList(Owner: TComponent; Flags: UINT): TImageList;
 
+function FormatLastOSError(Message: string): string;
+
 resourcestring
   SNoValidPath = 'Can''t find any valid path.';
   SUcpPathsNotSupported = 'UNC paths are not supported.';
@@ -61,7 +63,7 @@ resourcestring
 implementation
 
 uses
-  IEDriveInfo, DateUtils, ShellApi;
+  IEDriveInfo, DateUtils, ShellApi, SysConst;
 
 var
   GetDiskFreeSpaceEx: function (Directory: PChar;
@@ -348,6 +350,16 @@ begin
   Result.Handle := SHGetFileInfo('', 0, FileInfo, SizeOf(FileInfo),
       SHGFI_SYSICONINDEX or Flags);
   Result.ShareImages := True;
+end;
+
+function FormatLastOSError(Message: string): string;
+var
+  LastError: Integer;
+begin
+  Result := Message;
+  LastError := GetLastError;
+  if LastError <> 0 then
+    Result := Result + #13#10 + #13#10 + Format(SOSError, [LastError, SysErrorMessage(LastError)]);
 end;
 
 initialization

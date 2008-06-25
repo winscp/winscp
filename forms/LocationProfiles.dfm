@@ -84,6 +84,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
       OnDragOver = ProfilesViewDragOver
       OnEdited = ProfilesViewEdited
       OnEditing = ProfilesViewEditing
+      OnEndDrag = ProfilesViewEndDrag
       OnExpanded = ProfilesViewExpanded
       OnGetImageIndex = ProfilesViewGetImageIndex
       OnGetSelectedIndex = ProfilesViewGetSelectedIndex

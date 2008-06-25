@@ -22,6 +22,7 @@
 #include "IEComboBox.hpp"
 #include <ComCtrls.hpp>
 #include <ImgList.hpp>
+#include <PasTools.hpp>
 //----------------------------------------------------------------------------
 class TLocationProfilesDialog : public TForm
 {
@@ -75,6 +76,8 @@ __published:
     AnsiString & S);
   void __fastcall ProfilesViewEditing(TObject * Sender, TTreeNode * Node,
     bool & AllowEdit);
+  void __fastcall ProfilesViewEndDrag(TObject *Sender, TObject *Target,
+          int X, int Y);
 
 public:
   __fastcall TLocationProfilesDialog(TComponent* AOwner);
@@ -106,6 +109,7 @@ private:
   TBookmarkList * FBookmarkList;
   AnsiString FLocalDirectory;
   AnsiString FRemoteDirectory;
+  TTreeViewScrollOnDragOver * FScrollOnDragOver;
 
   void __fastcall SetLocalDirectory(AnsiString value);
   AnsiString __fastcall GetLocalDirectory();

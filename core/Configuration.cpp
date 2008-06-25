@@ -45,6 +45,21 @@ void __fastcall TConfiguration::Default()
 {
   TGuard Guard(FCriticalSection);
 
+  TRegistryStorage * AdminStorage;
+  AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE);
+  try
+  {
+    if (AdminStorage->OpenRootKey(false))
+    {
+      LoadAdmin(AdminStorage);
+      AdminStorage->CloseSubKey();
+    }
+  }
+  __finally
+  {
+    delete AdminStorage;
+  }
+
   RandomSeedFile = FDefaultRandomSeedFile;
   PuttyRegistryStorageKey = "Software\\SimonTatham\\PuTTY";
   FConfirmOverwriting = true;
@@ -219,21 +234,6 @@ void __fastcall TConfiguration::Load()
   __finally
   {
     delete Storage;
-  }
-
-  TRegistryStorage * AdminStorage;
-  AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE);
-  try
-  {
-    if (AdminStorage->OpenRootKey(false))
-    {
-      LoadAdmin(AdminStorage);
-      AdminStorage->CloseSubKey();
-    }
-  }
-  __finally
-  {
-    delete AdminStorage;
   }
 }
 //---------------------------------------------------------------------------

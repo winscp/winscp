@@ -280,7 +280,7 @@ protected:
   void __fastcall UpdateStatusBar();
   virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
   virtual void __fastcall DoOperationFinished(TFileOperation Operation,
-    TOperationSide Side, bool Temp, const AnsiString FileName, bool Success,
+    TOperationSide Side, bool Temp, const AnsiString & FileName, bool Success,
     bool & DisconnectWhenFinished);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
   virtual void __fastcall FileOperationProgress(
@@ -292,10 +292,10 @@ protected:
     const TEditedFileData & Data);
   void __fastcall ExecutedFileEarlyClosed(const TEditedFileData & Data,
     bool & KeepOpen);
-  void __fastcall CMAppSysCommand(TMessage & Message);
-  void __fastcall WMAppCommand(TMessage & Message);
-  void __fastcall WMSysCommand(TMessage & Message);
-  void __fastcall WMWindowPosChanging(TWMWindowPosMsg & Message);
+  inline void __fastcall CMAppSysCommand(TMessage & Message);
+  inline void __fastcall WMAppCommand(TMessage & Message);
+  inline void __fastcall WMSysCommand(TMessage & Message);
+  inline void __fastcall WMWindowPosChanging(TWMWindowPosMsg & Message);
   virtual void __fastcall SysResizing(unsigned int Cmd);
   DYNAMIC void __fastcall DoShow();
   TStrings * __fastcall CreateVisitedDirectories(TOperationSide Side);
@@ -476,7 +476,7 @@ public:
     AnsiString HelpKeyword, const TMessageParams * Params = NULL,
     TTerminal * Terminal = NULL);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const AnsiString FileName, bool Success, bool & DisconnectWhenFinished);
+    bool Temp, const AnsiString & FileName, bool Success, bool & DisconnectWhenFinished);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
   void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);

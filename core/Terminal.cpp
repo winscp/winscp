@@ -31,10 +31,6 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-#define SSH_ERROR(x) throw ESsh(NULL, x)
-#define SSH_FATAL_ERROR_EXT(E, x) throw ESshFatal(E, x)
-#define SSH_FATAL_ERROR(x) SSH_FATAL_ERROR_EXT(NULL, x)
-//---------------------------------------------------------------------------
 #define COMMAND_ERROR_ARI(MESSAGE, REPEAT) \
   { \
     int Result = CommandError(&E, MESSAGE, qaRetry | qaSkip | qaAbort); \
@@ -227,6 +223,7 @@ public:
     AnsiString Name, AnsiString Instructions, TStrings * Prompts,
     TStrings * Results);
   virtual void __fastcall DisplayBanner(const AnsiString & Banner);
+  virtual void __fastcall FatalError(Exception * E, AnsiString Msg);
   virtual void __fastcall ShowExtendedException(Exception * E);
   virtual void __fastcall Closed();
 
@@ -311,6 +308,11 @@ void __fastcall TTunnelUI::DisplayBanner(const AnsiString & Banner)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTunnelUI::FatalError(Exception * E, AnsiString Msg)
+{
+  throw ESshFatal(E, Msg);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTunnelUI::ShowExtendedException(Exception * E)
 {
   if (GetCurrentThreadId() == FTerminalThread)
@@ -322,6 +324,80 @@ void __fastcall TTunnelUI::ShowExtendedException(Exception * E)
 void __fastcall TTunnelUI::Closed()
 {
   // noop
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TCallbackGuard
+{
+public:
+  inline __fastcall TCallbackGuard(TTerminal * FTerminal);
+  inline __fastcall ~TCallbackGuard();
+
+  void __fastcall FatalError(Exception * E, const AnsiString & Msg);
+  inline void __fastcall Verify();
+  void __fastcall Dismiss();
+
+private:
+  ExtException * FFatalError;
+  TTerminal * FTerminal;
+  bool FGuarding;
+};
+//---------------------------------------------------------------------------
+__fastcall TCallbackGuard::TCallbackGuard(TTerminal * Terminal) :
+  FTerminal(Terminal),
+  FFatalError(NULL),
+  FGuarding(FTerminal->FCallbackGuard == NULL)
+{
+  if (FGuarding)
+  {
+    FTerminal->FCallbackGuard = this;
+  }
+}
+//---------------------------------------------------------------------------
+__fastcall TCallbackGuard::~TCallbackGuard()
+{
+  if (FGuarding)
+  {
+    assert((FTerminal->FCallbackGuard == this) || (FTerminal->FCallbackGuard == NULL));
+    FTerminal->FCallbackGuard = NULL;
+  }
+
+  delete FFatalError;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCallbackGuard::FatalError(Exception * E, const AnsiString & Msg)
+{
+  assert(FGuarding);
+  assert(FFatalError == NULL);
+
+  FFatalError = new ExtException(E, Msg);
+
+  // silently abort what we are doing.
+  // non-silent exception would be catched probably by default application
+  // exception handler, which may not do an appropriate action
+  // (particularly it will not resume broken transfer).
+  Abort();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCallbackGuard::Dismiss()
+{
+  assert(FFatalError == NULL);
+  FGuarding = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCallbackGuard::Verify()
+{
+  if (FGuarding)
+  {
+    FGuarding = false;
+    assert(FTerminal->FCallbackGuard == this);
+    FTerminal->FCallbackGuard = NULL;
+
+    if (FFatalError != NULL)
+    {
+      throw ESshFatal(FFatalError, "");
+    }
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
@@ -369,6 +445,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FTunnelLog = NULL;
   FTunnelUI = NULL;
   FTunnelOpening = false;
+  FCallbackGuard = NULL;
 }
 //---------------------------------------------------------------------------
 __fastcall TTerminal::~TTerminal()
@@ -378,6 +455,11 @@ __fastcall TTerminal::~TTerminal()
     Close();
   }
 
+  if (FCallbackGuard != NULL)
+  {
+    // see TTerminal::ShowExtendedException
+    FCallbackGuard->Dismiss();
+  }
   assert(FTunnel == NULL);
 
   SAFE_DESTROY(FCommandSession);
@@ -401,29 +483,34 @@ __fastcall TTerminal::~TTerminal()
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Idle()
 {
-  if (Configuration->LogProtocol >= 1)
+  // once we disconnect, do nothing, until reconnect handler
+  // "receives the information"
+  if (Active)
   {
-    LogEvent("Session upkeep");
-  }
-
-  assert(FFileSystem != NULL);
-  FFileSystem->Idle();
-
-  if (CommandSessionOpened)
-  {
-    try
+    if (Configuration->LogProtocol >= 1)
     {
-      FCommandSession->Idle();
+      LogEvent("Session upkeep");
     }
-    catch(Exception & E)
+
+    assert(FFileSystem != NULL);
+    FFileSystem->Idle();
+
+    if (CommandSessionOpened)
     {
-      // If the secondary session is dropped, ignore the error and let
-      // it be reconnected when needed.
-      // BTW, non-fatal error can hardly happen here, that's why
-      // it is displayed, because it can be useful to know.
-      if (FCommandSession->Active)
+      try
       {
-        FCommandSession->ShowExtendedException(&E);
+        FCommandSession->Idle();
+      }
+      catch(Exception & E)
+      {
+        // If the secondary session is dropped, ignore the error and let
+        // it be reconnected when needed.
+        // BTW, non-fatal error can hardly happen here, that's why
+        // it is displayed, because it can be useful to know.
+        if (FCommandSession->Active)
+        {
+          FCommandSession->ShowExtendedException(&E);
+        }
       }
     }
   }
@@ -754,7 +841,9 @@ void __fastcall TTerminal::Closed()
 
   if (OnClose)
   {
+    TCallbackGuard Guard(this);
     OnClose(this);
+    Guard.Verify();
   }
 
   FStatus = ssClosed;
@@ -846,7 +935,9 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
 
   if (OnPromptUser != NULL)
   {
+    TCallbackGuard Guard(this);
     OnPromptUser(this, Kind, Name, Instructions, Prompts, Results, AResult, NULL);
+    Guard.Verify();
   }
 
   if (AResult && (Configuration->RememberPassword) &&
@@ -868,7 +959,9 @@ int __fastcall TTerminal::QueryUser(const AnsiString Query,
   int Answer = AbortAnswer(Answers);
   if (FOnQueryUser)
   {
+    TCallbackGuard Guard(this);
     FOnQueryUser(this, Query, MoreMessages, Answers, Params, Answer, QueryType, NULL);
+    Guard.Verify();
   }
   return Answer;
 }
@@ -912,8 +1005,10 @@ void __fastcall TTerminal::DisplayBanner(const AnsiString & Banner)
       bool NeverShowAgain = false;
       int Options =
         FLAGMASK(Configuration->ForceBanners, boDisableNeverShowAgain);
+      TCallbackGuard Guard(this);
       OnDisplayBanner(this, SessionData->SessionName, Banner,
         NeverShowAgain, Options);
+      Guard.Verify();
       if (!Configuration->ForceBanners && NeverShowAgain)
       {
         Configuration->NeverShowBanner(SessionData->SessionKey, Banner);
@@ -927,7 +1022,11 @@ void __fastcall TTerminal::ShowExtendedException(Exception * E)
   Log->AddException(E);
   if (OnShowExtendedException != NULL)
   {
+    TCallbackGuard Guard(this);
+    // the event handler may destroy 'this' ...
     OnShowExtendedException(this, E, NULL);
+    // .. hence guard is dismissed from destructor, to make following call no-op
+    Guard.Verify();
   }
 }
 //---------------------------------------------------------------------------
@@ -941,13 +1040,37 @@ void __fastcall TTerminal::DoInformation(const AnsiString & Str, bool Status,
 
   if (OnInformation)
   {
+    TCallbackGuard Guard(this);
     OnInformation(this, Str, Status, Active);
+    Guard.Verify();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Information(const AnsiString & Str, bool Status)
 {
   DoInformation(Str, Status);
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoProgress(TFileOperationProgressType & ProgressData,
+  TCancelStatus & Cancel)
+{
+  if (OnProgress != NULL)
+  {
+    TCallbackGuard Guard(this);
+    OnProgress(ProgressData, Cancel);
+    Guard.Verify();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoFinished(TFileOperation Operation, TOperationSide Side, bool Temp,
+  const AnsiString & FileName, bool Success, bool & DisconnectWhenComplete)
+{
+  if (OnFinished != NULL)
+  {
+    TCallbackGuard Guard(this);
+    OnFinished(Operation, Side, Temp, FileName, Success, DisconnectWhenComplete);
+    Guard.Verify();
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::GetIsCapable(TFSCapability Capability) const
@@ -1352,7 +1475,9 @@ void __fastcall TTerminal::DoChangeDirectory()
 {
   if (FOnChangeDirectory)
   {
+    TCallbackGuard Guard(this);
     FOnChangeDirectory(this);
+    Guard.Verify();
   }
 }
 //---------------------------------------------------------------------------
@@ -1360,7 +1485,9 @@ void __fastcall TTerminal::DoReadDirectory(bool ReloadOnly)
 {
   if (FOnReadDirectory)
   {
+    TCallbackGuard Guard(this);
     FOnReadDirectory(this, ReloadOnly);
+    Guard.Verify();
   }
 }
 //---------------------------------------------------------------------------
@@ -1368,7 +1495,9 @@ void __fastcall TTerminal::DoStartReadDirectory()
 {
   if (FOnStartReadDirectory)
   {
+    TCallbackGuard Guard(this);
     FOnStartReadDirectory(this);
+    Guard.Verify();
   }
 }
 //---------------------------------------------------------------------------
@@ -1376,7 +1505,9 @@ void __fastcall TTerminal::DoReadDirectoryProgress(int Progress, bool & Cancel)
 {
   if (FReadingCurrentDirectory && (FOnReadDirectoryProgress != NULL))
   {
+    TCallbackGuard Guard(this);
     FOnReadDirectoryProgress(this, Progress, Cancel);
+    Guard.Verify();
   }
 }
 //---------------------------------------------------------------------------
@@ -1449,7 +1580,6 @@ bool __fastcall TTerminal::GetExceptionOnFail() const
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::FatalError(Exception * E, AnsiString Msg)
 {
-  // the same code is in TSecureShell
   if (Active)
   {
     // We log this instead of exception handler, because Close() would
@@ -1459,17 +1589,27 @@ void __fastcall TTerminal::FatalError(Exception * E, AnsiString Msg)
     Log->AddException(E);
     Close();
   }
-  SSH_FATAL_ERROR_EXT(E, Msg);
+
+  if (FCallbackGuard != NULL)
+  {
+    FCallbackGuard->FatalError(E, Msg);
+  }
+  else
+  {
+    throw ESshFatal(E, Msg);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::CommandError(Exception * E, const AnsiString Msg)
 {
+  assert(FCallbackGuard == NULL);
   CommandError(E, Msg, 0);
 }
 //---------------------------------------------------------------------------
 int __fastcall TTerminal::CommandError(Exception * E, const AnsiString Msg,
   int Answers)
 {
+  assert(FCallbackGuard == NULL);
   int Result = 0;
   if (E && E->InheritsFrom(__classid(EFatal)))
   {
@@ -2021,7 +2161,7 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
 
   try
   {
-    TFileOperationProgressType Progress(FOnProgress, FOnFinished);
+    TFileOperationProgressType Progress(&DoProgress, &DoFinished);
     Progress.Start(Operation, Side, FileList->Count);
 
     FOperationProgress = &Progress;
@@ -2992,7 +3132,7 @@ bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
             FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
               if (FileSetAttr(FileName, FileAttr & ~(faReadOnly | faHidden)) != 0)
               {
-                EXCEPTION;
+                RaiseLastOSError();
               }
             );
           }
@@ -3003,7 +3143,7 @@ bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
         }
         else
         {
-          EXCEPTION;
+          RaiseLastOSError();
         }
       }
     }
@@ -3023,7 +3163,7 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
 
   FILE_OPERATION_LOOP (FMTLOAD(FILE_NOT_EXISTS, (FileName)),
     Attrs = FileGetAttr(FileName);
-    if (Attrs == -1) EXCEPTION;
+    if (Attrs == -1) RaiseLastOSError();
   )
 
   if ((Attrs & faDirectory) == 0)
@@ -3043,7 +3183,7 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
       if (Handle == INVALID_HANDLE_VALUE)
       {
         Handle = 0;
-        EXCEPTION;
+        RaiseLastOSError();
       }
     );
 
@@ -3056,7 +3196,7 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
           FILETIME ATime;
           FILETIME MTime;
           FILETIME CTime;
-          if (!GetFileTime(Handle, &CTime, &ATime, &MTime)) EXCEPTION;
+          if (!GetFileTime(Handle, &CTime, &ATime, &MTime)) RaiseLastOSError();
           if (ACTime)
           {
             *ACTime = ConvertTimestampToUnixSafe(CTime, SessionData->DSTMode);
@@ -3079,7 +3219,7 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
           unsigned long LSize;
           unsigned long HSize;
           LSize = GetFileSize(Handle, &HSize);
-          if ((LSize == 0xFFFFFFFF) && (GetLastError() != NO_ERROR)) EXCEPTION;
+          if ((LSize == 0xFFFFFFFF) && (GetLastError() != NO_ERROR)) RaiseLastOSError();
           *ASize = (__int64(HSize) << 32) + LSize;
         );
       }
@@ -3172,7 +3312,7 @@ void __fastcall TTerminal::CalculateLocalFileSize(const AnsiString FileName,
 void __fastcall TTerminal::CalculateLocalFilesSize(TStrings * FileList,
   __int64 & Size, const TCopyParamType * CopyParam)
 {
-  TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
+  TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
   bool DisconnectWhenComplete = false;
   OperationProgress.Start(foCalculateSize, osLocal, FileList->Count);
   try
@@ -3497,11 +3637,19 @@ void __fastcall TTerminal::SynchronizeCollectFile(const AnsiString FileName,
           bool LocalModified = false;
           // for spTimestamp+spBySize require that the file sizes are the same
           // before comparing file time
-          bool TimeCompare =
-            FLAGCLEAR(Data->Params, spNotByTime) &&
-            (FLAGCLEAR(Data->Params, spTimestamp) ||
-             FLAGCLEAR(Data->Params, spBySize) ||
-             (ChecklistItem->Local.Size == ChecklistItem->Remote.Size));
+          int TimeCompare;
+          if (FLAGCLEAR(Data->Params, spNotByTime) &&
+              (FLAGCLEAR(Data->Params, spTimestamp) ||
+               FLAGCLEAR(Data->Params, spBySize) ||
+               (ChecklistItem->Local.Size == ChecklistItem->Remote.Size)))
+          {
+            TimeCompare = CompareFileTime(ChecklistItem->Local.Modification,
+                 ChecklistItem->Remote.Modification);
+          }
+          else
+          {
+            TimeCompare = 0;
+          }
           if (TimeCompare &&
               (CompareFileTime(ChecklistItem->Local.Modification,
                  ChecklistItem->Remote.Modification) < 0))
@@ -3920,7 +4068,7 @@ bool __fastcall TTerminal::CopyToRemote(TStrings * FilesToCopy,
         (FLAGCLEAR(Params, cpDelete) ? CopyParam : NULL));
     }
 
-    TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
+    TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
     OperationProgress.Start((Params & cpDelete ? foMove : foCopy), osLocal,
       FilesToCopy->Count, Params & cpTemporary, TargetDir, CopyParam->CPSLimit);
 
@@ -4003,7 +4151,7 @@ bool __fastcall TTerminal::CopyToLocal(TStrings * FilesToCopy,
     {
       __int64 TotalSize;
       bool TotalSizeKnown = false;
-      TFileOperationProgressType OperationProgress(FOnProgress, FOnFinished);
+      TFileOperationProgressType OperationProgress(&DoProgress, &DoFinished);
 
       if (CopyParam->CalculateSize)
       {

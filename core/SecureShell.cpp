@@ -15,10 +15,6 @@
 #include <winsock2.h>
 #endif
 //---------------------------------------------------------------------------
-#define SSH_ERROR(x) throw ESsh(NULL, x)
-#define SSH_FATAL_ERROR_EXT(E, x) throw ESshFatal(E, x)
-#define SSH_FATAL_ERROR(x) SSH_FATAL_ERROR_EXT(NULL, x)
-//---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 #define MAX_BUFSIZE 32768
@@ -37,6 +33,8 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FLog = Log;
   FConfiguration = Configuration;
   FActive = false;
+  FWaiting = 0;
+  FOpened = false;
   OutPtr = NULL;
   Pending = NULL;
   FBackendHandle = NULL;
@@ -52,6 +50,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
 {
+  assert(FWaiting == 0);
   Active = false;
   ResetConnection();
   CloseHandle(FSocketEvent);
@@ -333,6 +332,7 @@ void __fastcall TSecureShell::Open()
   ResetSessionInfo();
 
   assert(!FSessionInfo.SshImplementation.IsEmpty());
+  FOpened = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Init()
@@ -357,7 +357,7 @@ void __fastcall TSecureShell::Init()
     {
       if (FAuthenticating && !FAuthenticationLog.IsEmpty())
       {
-        FatalError(&E, FMTLOAD(AUTHENTICATION_LOG, (FAuthenticationLog)));
+        FUI->FatalError(&E, FMTLOAD(AUTHENTICATION_LOG, (FAuthenticationLog)));
       }
       else
       {
@@ -369,7 +369,7 @@ void __fastcall TSecureShell::Init()
   {
     if (FAuthenticating)
     {
-      FatalError(&E, LoadStr(AUTHENTICATION_FAILED));
+      FUI->FatalError(&E, LoadStr(AUTHENTICATION_FAILED));
     }
     else
     {
@@ -844,6 +844,97 @@ void __fastcall TSecureShell::SendEOF()
   SendSpecial(TS_EOF);
 }
 //---------------------------------------------------------------------------
+int __fastcall TSecureShell::TimeoutPrompt(TQueryParamsTimerEvent PoolEvent)
+{
+  FWaiting++;
+
+  int Answer;
+  try
+  {
+    TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
+    Params.Timer = 500;
+    Params.TimerEvent = PoolEvent;
+    Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING, (FSessionData->Timeout));
+    Params.TimerAnswers = qaAbort;
+    Answer = FUI->QueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT2, (FSessionData->Timeout)),
+      NULL, qaRetry | qaAbort, &Params);
+  }
+  __finally
+  {
+    FWaiting--;
+  }
+  return Answer;
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::SendBuffer(unsigned int & Result)
+{
+  // for comments see PoolForData
+  if (!Active)
+  {
+    Result = qaRetry;
+  }
+  else
+  {
+    try
+    {
+      if (FBackend->sendbuffer(FBackendHandle) <= MAX_BUFSIZE)
+      {
+        Result = qaOK;
+      }
+    }
+    catch(...)
+    {
+      Result = qaRetry;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
+{
+  TDateTime Start = Now();
+  do
+  {
+    CheckConnection();
+    if (Configuration->LogProtocol >= 1)
+    {
+      LogEvent(FORMAT("There are %u bytes remaining in the send buffer, "
+        "need to send at least another %u bytes",
+        (BufSize, BufSize - MAX_BUFSIZE)));
+    }
+    EventSelectLoop(100, false, NULL);
+    BufSize = FBackend->sendbuffer(FBackendHandle);
+    if (Configuration->LogProtocol >= 1)
+    {
+      LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (BufSize)));
+    }
+
+    if (Now() - Start > FSessionData->TimeoutDT)
+    {
+      LogEvent("Waiting for dispatching send buffer timed out, asking user what to do.");
+      int Answer = TimeoutPrompt(SendBuffer);
+      switch (Answer)
+      {
+        case qaRetry:
+          Start = Now();
+          break;
+
+        case qaOK:
+          BufSize = 0;
+          break;
+
+        default:
+          assert(false);
+          // fallthru
+
+        case qaAbort:
+          FatalError(LoadStr(USER_TERMINATED));
+          break;
+      }
+    }
+  }
+  while (BufSize > MAX_BUFSIZE);
+}
+//---------------------------------------------------------------------------
 void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
 {
   CheckConnection();
@@ -857,20 +948,9 @@ void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
   // among other forces receive of pending data to free the servers's send buffer
   EventSelectLoop(0, false, NULL);
 
-  while (BufSize > MAX_BUFSIZE)
+  if (BufSize > MAX_BUFSIZE)
   {
-    if (Configuration->LogProtocol >= 1)
-    {
-      LogEvent(FORMAT("There are %u bytes remaining in the send buffer, "
-        "need to send at least another %u bytes",
-        (BufSize, BufSize - MAX_BUFSIZE)));
-    }
-    EventSelectLoop(100, false, NULL);
-    BufSize = FBackend->sendbuffer(FBackendHandle);
-    if (Configuration->LogProtocol >= 1)
-    {
-      LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (BufSize)));
-    }
+    DispatchSendBuffer(BufSize);
   }
   CheckConnection();
 }
@@ -1008,21 +1088,6 @@ void __fastcall TSecureShell::CaptureOutput(TLogLineType Type,
   FLog->Add(Type, Line);
 }
 //---------------------------------------------------------------------------
-void __fastcall TSecureShell::FatalError(Exception * E, AnsiString Msg)
-{
-  // the same code is in TTerminal
-  if (FActive)
-  {
-    // We log this instead of exception handler, because Close() would
-    // probably cause exception handler to loose pointer to TShellLog()
-    LogEvent("Attempt to close connection due to fatal exception:");
-    FLog->Add(llException, Msg);
-    FLog->AddException(E);
-    Close();
-  }
-  SSH_FATAL_ERROR_EXT(E, Msg);
-}
-//---------------------------------------------------------------------------
 int __fastcall TSecureShell::TranslateErrorMessage(AnsiString & Message)
 {
   static const TPuttyTranslation Translation[] = {
@@ -1044,7 +1109,7 @@ void __fastcall TSecureShell::PuttyFatalError(AnsiString Error)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::FatalError(AnsiString Error)
 {
-  FatalError(NULL, Error);
+  FUI->FatalError(NULL, Error);
 }
 //---------------------------------------------------------------------------
 void __fastcall inline TSecureShell::LogEvent(const AnsiString & Str)
@@ -1095,7 +1160,7 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
     // Remove the branch eventualy:
     // When TCP connection fails, PuTTY does not release the memory allocate for
     // socket. As a simple hack we call sk_tcp_close() in ssh.c to release the memory,
-    // until they fix it better. Unfortunately sk_tcp_close calles do_select,
+    // until they fix it better. Unfortunately sk_tcp_close calls do_select,
     // so we must filter that out.
   }
   else
@@ -1103,7 +1168,15 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
     assert(value);
     assert((FActive && (FSocket == value)) || (!FActive && Startup));
 
-    SocketEventSelect(value, FSocketEvent, Startup);
+    // filter our "local proxy" connection, which have no socket
+    if (value != INVALID_SOCKET)
+    {
+      SocketEventSelect(value, FSocketEvent, Startup);
+    }
+    else
+    {
+      assert(FSessionData->ProxyMethod == pmCmd);
+    }
 
     if (Startup)
     {
@@ -1165,6 +1238,7 @@ void __fastcall TSecureShell::Discard()
 {
   bool WasActive = FActive;
   FActive = false;
+  FOpened = false;
 
   if (WasActive)
   {
@@ -1176,6 +1250,10 @@ void __fastcall TSecureShell::Close()
 {
   LogEvent("Closing connection.");
   assert(FActive);
+
+  // this is particularly necessary when using local proxy command
+  // (e.g. plink), otherwise it hangs in sk_localproxy_close
+  SendEOF();
 
   FreeBackend();
 
@@ -1198,31 +1276,39 @@ void inline __fastcall TSecureShell::CheckConnection(int Message)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::PoolForData(WSANETWORKEVENTS & Events, unsigned int & Result)
 {
-  try
+  if (!Active)
   {
-    if (Configuration->LogProtocol >= 2)
-    {
-      LogEvent("Pooling for data in case they finally arrives");
-    }
-
-    // in extreme condition it may happen that send buffer is full, but there
-    // will be no data comming and we may not empty the send buffer because we
-    // do not process FD_WRITE until we receive any FD_READ
-    if (EventSelectLoop(0, false, &Events))
-    {
-      LogEvent("Data has arrived, closing query to user.");
-      Result = qaOK;
-    }
-  }
-  catch(...)
-  {
-    // if we let the exception out, it may popup another message dialog
-    // in whole event loop, another call to PoolForData from original dialog
-    // would be invoked, leading to an infinite loop.
-    // by retrying we hope (that probably fatal) error would repeat in WaitForData.
-    // anyway now once no actual work is done in EventSelectLoop,
-    // hardly any exception can occur actually
+    // see comment below
     Result = qaRetry;
+  }
+  else
+  {
+    try
+    {
+      if (Configuration->LogProtocol >= 2)
+      {
+        LogEvent("Pooling for data in case they finally arrives");
+      }
+
+      // in extreme condition it may happen that send buffer is full, but there
+      // will be no data comming and we may not empty the send buffer because we
+      // do not process FD_WRITE until we receive any FD_READ
+      if (EventSelectLoop(0, false, &Events))
+      {
+        LogEvent("Data has arrived, closing query to user.");
+        Result = qaOK;
+      }
+    }
+    catch(...)
+    {
+      // if we let the exception out, it may popup another message dialog
+      // in whole event loop, another call to PoolForData from original dialog
+      // would be invoked, leading to an infinite loop.
+      // by retrying we hope (that probably fatal) error would repeat in WaitForData.
+      // anyway now once no actual work is done in EventSelectLoop,
+      // hardly any exception can occur actually
+      Result = qaRetry;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1265,13 +1351,7 @@ void __fastcall TSecureShell::WaitForData()
       TPoolForDataEvent Event(this, Events);
 
       LogEvent("Waiting for data timed out, asking user what to do.");
-      TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
-      Params.Timer = 500;
-      Params.TimerEvent = Event.PoolForData;
-      Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING, (FSessionData->Timeout));
-      Params.TimerAnswers = qaAbort;
-      int Answer = FUI->QueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT2, (FSessionData->Timeout)),
-        NULL, qaRetry | qaAbort, &Params);
+      int Answer = TimeoutPrompt(Event.PoolForData);
       switch (Answer)
       {
         case qaRetry:
@@ -1403,12 +1483,24 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
     {
       LogEvent("Looking for network events");
     }
-
     unsigned int TicksBefore = GetTickCount();
-    int WaitResult = WaitForSingleObject(FSocketEvent, MSec);
-    switch (WaitResult)
+    int HandleCount;
+    // note that this returns all handles, not only the session-related handles
+    HANDLE * Handles = handle_get_events(&HandleCount);
+    try
     {
-      case WAIT_OBJECT_0:
+      Handles = sresize(Handles, HandleCount + 1, HANDLE);
+      Handles[HandleCount] = FSocketEvent;
+      unsigned int WaitResult = WaitForMultipleObjects(HandleCount + 1, Handles, FALSE, MSec);
+      if (WaitResult < WAIT_OBJECT_0 + HandleCount)
+      {
+        if (handle_got_event(Handles[WaitResult - WAIT_OBJECT_0]))
+        {
+          Result = true;
+        }
+      }
+      else if (WaitResult == WAIT_OBJECT_0 + HandleCount)
+      {
         if (Configuration->LogProtocol >= 1)
         {
           LogEvent("Detected network event");
@@ -1437,25 +1529,29 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
             i++;
           }
         }
-        break;
-
-      case WAIT_TIMEOUT:
+      }
+      else if (WaitResult == WAIT_TIMEOUT)
+      {
         if (Configuration->LogProtocol >= 2)
         {
           LogEvent("Timeout waiting for network events");
         }
 
         MSec = 0;
-        break;
-
-      default:
+      }
+      else
+      {
         if (Configuration->LogProtocol >= 2)
         {
-          LogEvent(FORMAT("Unknown waiting result %d", (WaitResult)));
+          LogEvent(FORMAT("Unknown waiting result %d", (int(WaitResult))));
         }
 
         MSec = 0;
-        break;
+      }
+    }
+    __finally
+    {
+      sfree(Handles);
     }
 
     unsigned int TicksAfter = GetTickCount();
@@ -1489,8 +1585,16 @@ void __fastcall TSecureShell::Idle(unsigned int MSec)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::KeepAlive()
 {
-  LogEvent("Sending null packet to keep session alive.");
-  SendSpecial(TS_PING);
+  if (FActive && (FWaiting == 0))
+  {
+    LogEvent("Sending null packet to keep session alive.");
+    SendSpecial(TS_PING);
+  }
+  else
+  {
+    // defer next keepalive attempt
+    FLastDataSent = Now();
+  }
 }
 //---------------------------------------------------------------------------
 unsigned long __fastcall TSecureShell::MaxPacketSize()
@@ -1743,4 +1847,9 @@ void __fastcall TSecureShell::OldKeyfileWarning()
 bool __fastcall TSecureShell::GetStoredCredentialsTried()
 {
   return FStoredPasswordTried || FStoredPasswordTriedForKI;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSecureShell::GetReady()
+{
+  return FOpened && (FWaiting == 0);
 }
