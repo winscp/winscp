@@ -1125,17 +1125,20 @@ void __fastcall TScpCommanderForm::LocalFileControlDDDragOver(TObject * /*Sender
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::DDGetTarget(AnsiString & Directory)
+bool __fastcall TScpCommanderForm::DDGetTarget(AnsiString & Directory)
 {
+  bool Result;
   if (!FDDExtTarget.IsEmpty())
   {
     Directory = FDDExtTarget;
     FDDExtTarget = "";
+    Result = true;
   }
   else
   {
-    TCustomScpExplorerForm::DDGetTarget(Directory);
+    Result = TCustomScpExplorerForm::DDGetTarget(Directory);
   }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DDExtInitDrag(TFileList * FileList,

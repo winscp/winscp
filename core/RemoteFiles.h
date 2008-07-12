@@ -176,7 +176,7 @@ private:
 protected:
   virtual void __fastcall Clear();
 public:
-  __fastcall TRemoteDirectory(TTerminal * aTerminal);
+  __fastcall TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template = NULL);
   virtual void __fastcall AddFile(TRemoteFile * File);
   virtual void __fastcall DuplicateTo(TRemoteFileList * Copy);
   __property TTerminal * Terminal = { read = FTerminal, write = FTerminal };

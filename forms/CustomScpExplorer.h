@@ -320,7 +320,7 @@ protected:
   virtual void __fastcall BatchEnd(void * Storage);
   void __fastcall ExecuteFileOperation(TFileOperation Operation, TOperationSide Side,
     TStrings * FileList, bool NoConfirmation, void * Param);
-  virtual void __fastcall DDGetTarget(AnsiString & Directory);
+  virtual bool __fastcall DDGetTarget(AnsiString & Directory);
   virtual void __fastcall DDExtInitDrag(TFileList * FileList, bool & Created);
   virtual void __fastcall SideEnter(TOperationSide Side);
   virtual TOperationSide __fastcall GetSide(TOperationSide Side);

@@ -161,7 +161,8 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FIgnoreFileList(false),
   FOnCaptureOutput(NULL),
   FFileSystemInfoValid(false),
-  FListAll(-1)
+  FListAll(-1),
+  FDoListAll(false)
 {
   ResetReply();
 
@@ -1576,6 +1577,7 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
   {
     try
     {
+      FDoListAll = (FListAll != 0);
       DoReadDirectory(FileList);
 
       if (FListAll < 0)
@@ -1583,9 +1585,13 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         // reading first directory has succeeded, always use "-a"
         FListAll = 1;
       }
+      // use "-a" even for implicit directory reading by FZAPI?
+      // (e.g. before file transfer)
+      FDoListAll = (FListAll > 0);
     }
     catch(...)
     {
+      FDoListAll = false;
       // reading the first directory has failed,
       // further try without "-a" only as the server may not support it
       if ((FListAll < 0) && FTerminal->Active)
@@ -1913,7 +1919,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_MPEXT_SHOWHIDDEN:
-      Result = ((FListAll != 0) ? TRUE : FALSE);
+      Result = (FDoListAll ? TRUE : FALSE);
       break;
 
     default:

@@ -2886,7 +2886,8 @@ void __fastcall TCustomScpExplorerForm::OpenStoredSession(TSessionData * Data)
 {
   if (OpenInNewWindow())
   {
-    if (!ExecuteShell(Application->ExeName, FORMAT("\"%s\"", (Data->Name))))
+    // encode session name because of slashes in hierarchical sessions
+    if (!ExecuteShell(Application->ExeName, FORMAT("\"%s\"", (EncodeUrlChars(Data->Name)))))
     {
       throw Exception(FMTLOAD(EXECUTE_APP_ERROR, (Application->ExeName)));
     }
@@ -4453,12 +4454,14 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
       TDragResult DDResult = (Sender == RemoteDirView) ?
         RemoteDirView->LastDDResult : RemoteDriveView->LastDDResult;
 
-      if ((DDResult == drCopy) || (DDResult == drMove))
+      // note that we seem to never get drMove here, see also comment below
+      if ((DDResult == drCopy) || (DDResult == drMove) || (DDResult == drInvalid))
       {
         AnsiString TargetDirectory;
         TFileOperation Operation;
 
-        Operation = (DDResult == drMove) ? foMove : foCopy;
+        // drInvalid may mean drMove, see comment below
+        Operation = (DDResult == drCopy) ? foCopy : foMove;
 
         if (FDDMoveSlipped)
         {
@@ -4466,13 +4469,26 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
         }
 
         TTransferOperationParam Param;
-        DDGetTarget(Param.TargetDirectory);
-        // download using ddext
-        Param.Temp = false;
-        Param.DragDrop = true;
+        if (!DDGetTarget(Param.TargetDirectory))
+        {
+          // we get drInvalid both if move-d&d was intercepted by ddext,
+          // and when users drops on no-drop location.
+          // we tell the difference by existence of response from ddext,
+          // so we ignore absence of response in this case
+          if (DDResult != drInvalid)
+          {
+            throw Exception(LoadStr(DRAGEXT_TARGET_UNKNOWN));
+          }
+        }
+        else
+        {
+          // download using ddext
+          Param.Temp = false;
+          Param.DragDrop = true;
 
-        RemoteFileControlFileOperation(Sender, Operation,
-          !WinConfiguration->DDTransferConfirmation, &Param);
+          RemoteFileControlFileOperation(Sender, Operation,
+            !WinConfiguration->DDTransferConfirmation, &Param);
+        }
       }
     }
     __finally
@@ -4511,7 +4527,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDGiveFeedback(
   FLastDropEffect = dwEffect;
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomScpExplorerForm::DDGetTarget(AnsiString & Directory)
+bool __fastcall TCustomScpExplorerForm::DDGetTarget(AnsiString & Directory)
 {
   bool Result = false;
 
@@ -4547,10 +4563,7 @@ void __fastcall TCustomScpExplorerForm::DDGetTarget(AnsiString & Directory)
     Enabled = true;
   }
 
-  if (!Result)
-  {
-    throw Exception(LoadStr(DRAGEXT_TARGET_UNKNOWN));
-  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AddDelayedDirectoryDeletion(

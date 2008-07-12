@@ -1851,18 +1851,15 @@ begin
                             DropEffect_Link: Result:=drLink;
                             else
                             begin
-                                 {MP}
-                                 {with ddext we actually need to know that
-                                  drag operation ended on no-drop location,
-                                  so we do not issue "cannot detect destination"
-                                  error}
-                                 {if WIN32Platform = VER_PLATFORM_WIN32_NT then Result:=drMove
-                                 else} Result:=drCancelled;
+                                 {MP dropped on no-drop location or }
+                                 {cancelled by ddext after drop with move-effect}
+                                 Result:=drInvalid;
                             end;
                        end;
                    end
                    else
                    begin
+                     {MP cancelled by user }
                      Result:=drCancelled;
                    end;
                 finally

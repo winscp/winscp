@@ -1134,14 +1134,22 @@ TRemoteFile * __fastcall TRemoteFileList::FindFile(const AnsiString &FileName)
   return NULL;
 }
 //=== TRemoteDirectory ------------------------------------------------------
-__fastcall TRemoteDirectory::TRemoteDirectory(TTerminal * aTerminal):
+__fastcall TRemoteDirectory::TRemoteDirectory(TTerminal * aTerminal, TRemoteDirectory * Template) :
   TRemoteFileList(), FTerminal(aTerminal)
 {
   FSelectedFiles = NULL;
   FThisDirectory = NULL;
   FParentDirectory = NULL;
-  FIncludeThisDirectory = false;
-  FIncludeParentDirectory = true;
+  if (Template == NULL)
+  {
+    FIncludeThisDirectory = false;
+    FIncludeParentDirectory = true;
+  }
+  else
+  {
+    FIncludeThisDirectory = Template->FIncludeThisDirectory;
+    FIncludeParentDirectory = Template->FIncludeParentDirectory;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectory::Clear()

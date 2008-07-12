@@ -93,8 +93,8 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
     throw runtime_error("Cannot create mapping object.");
   }
 
-  typedef HANDLE (* TCreateJobObject)(LPSECURITY_ATTRIBUTES JobAttributes, LPCTSTR Name);
-  typedef HANDLE (* TSetInformationJobObject)(HANDLE Job, JOBOBJECTINFOCLASS JobObjectInformationClass,
+  typedef HANDLE WINAPI (*TCreateJobObject)(LPSECURITY_ATTRIBUTES JobAttributes, LPCTSTR Name);
+  typedef HANDLE WINAPI (*TSetInformationJobObject)(HANDLE Job, JOBOBJECTINFOCLASS JobObjectInformationClass,
     LPVOID JobObjectInformation, DWORD JobObjectInformationLength);
 
   HANDLE Kernel32 = GetModuleHandle("kernel32");

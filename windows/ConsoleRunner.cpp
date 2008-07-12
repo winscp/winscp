@@ -405,8 +405,8 @@ __fastcall TExternalConsole::TExternalConsole(const AnsiString Instance)
   }
 
   HANDLE Kernel32 = GetModuleHandle(kernel32);
-  typedef HANDLE (* TOpenJobObject)(DWORD DesiredAccess, BOOL InheritHandles, LPCTSTR Name);
-  typedef HANDLE (* TAssignProcessToJobObject)(HANDLE Job, HANDLE Process);
+  typedef HANDLE WINAPI (* TOpenJobObject)(DWORD DesiredAccess, BOOL InheritHandles, LPCTSTR Name);
+  typedef HANDLE WINAPI (* TAssignProcessToJobObject)(HANDLE Job, HANDLE Process);
   TOpenJobObject OpenJobObject =
     (TOpenJobObject)GetProcAddress(Kernel32, "OpenJobObjectA");
   TAssignProcessToJobObject AssignProcessToJobObject =

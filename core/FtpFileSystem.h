@@ -204,6 +204,7 @@ private:
   TCaptureOutputEvent FOnCaptureOutput;
   AnsiString FUserName;
   int FListAll;
+  bool FDoListAll;
   TDateTime FLastDataSent;
   mutable AnsiString FOptionScratch;
 };

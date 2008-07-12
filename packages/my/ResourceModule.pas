@@ -6,6 +6,9 @@ function GetResourceModule(ModuleName: PChar): string;
 
 implementation
 
+uses
+  SysUtils;
+
 const
   advapi32 = 'advapi32.dll';
   kernel = 'kernel32.dll';
@@ -167,7 +170,7 @@ begin
     RegCloseKey(Key);
   end;
   lstrcpyn(FileName, ModuleName, sizeof(FileName));
-  GetLocaleInfo(GetThreadLocale, LOCALE_SABBREVLANGNAME, LocaleName, sizeof(LocaleName));
+  GetLocaleInfo(SysLocale.DefaultLCID, LOCALE_SABBREVLANGNAME, LocaleName, sizeof(LocaleName));
   R := 0;
   if (FileName[0] <> #0) and ((LocaleName[0] <> #0) or (LocaleOverride[0] <> #0)) then
   begin

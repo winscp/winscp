@@ -1978,7 +1978,7 @@ void __fastcall TTerminal::ReadDirectory(bool ReloadOnly, bool ForceCache)
 
     try
     {
-      TRemoteDirectory * Files = new TRemoteDirectory(this);
+      TRemoteDirectory * Files = new TRemoteDirectory(this, FFiles);
       try
       {
         Files->Directory = CurrentDirectory;
