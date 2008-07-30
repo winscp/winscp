@@ -3232,24 +3232,30 @@ void __fastcall TSFTPFileSystem::CreateDirectory(const AnsiString DirName,
   Packet.AddProperties(NULL, 0, true, FVersion, FUtfStrings);
   SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
 
-  // explicitly set permissions after directory creation,
-  // permissions specified in SSH_FXP_MKDIR are ignored at least by OpenSSH
-  try
+  // Explicitly set permissions after directory creation,
+  // permissions specified in SSH_FXP_MKDIR are ignored at least by OpenSSH.
+  // But do nothing unless there was any properties change really required
+  // (saves bandwidth, and some servers does not allow SSH_FXP_SETSTAT on dirs,
+  // e.g. Serv-u)
+  if (!Properties->Valid.Empty())
   {
-    Packet.ChangeType(SSH_FXP_SETSTAT);
-    Packet.AddPathString(CanonifiedName, FUtfStrings);
-    Packet.AddProperties(Properties, 0, true, FVersion, FUtfStrings);
-    SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
-  }
-  catch(Exception & E)
-  {
-    if (FTerminal->Active)
+    try
     {
-      throw ECommand(&E, FMTLOAD(CHANGE_PROPERTIES_ERROR, (DirName)));
+      Packet.ChangeType(SSH_FXP_SETSTAT);
+      Packet.AddPathString(CanonifiedName, FUtfStrings);
+      Packet.AddProperties(Properties, 0, true, FVersion, FUtfStrings);
+      SendPacketAndReceiveResponse(&Packet, &Packet, SSH_FXP_STATUS);
     }
-    else
+    catch(Exception & E)
     {
-      throw;
+      if (FTerminal->Active)
+      {
+        throw ECommand(&E, FMTLOAD(CHANGE_PROPERTIES_ERROR, (DirName)));
+      }
+      else
+      {
+        throw;
+      }
     }
   }
 }
@@ -3598,8 +3604,8 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(AnsiString & FileName,
   TFileOperationProgressType * OperationProgress,
   TSFTPOverwriteMode & OverwriteMode, const TOverwriteFileParams * FileParams)
 {
-  bool TargetBiggerThanSource = (FileParams->DestSize > FileParams->SourceSize);
-  bool CanAlternateResume = !TargetBiggerThanSource && !OperationProgress->AsciiTransfer;
+  bool TargetSmallerThanSource = (FileParams->DestSize < FileParams->SourceSize);
+  bool CanAlternateResume = TargetSmallerThanSource && !OperationProgress->AsciiTransfer;
   if (OperationProgress->NoToAll)
   {
     THROW_SKIP_FILE_NULL;
@@ -4107,7 +4113,14 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
           FILE_OPERATION_LOOP(FMTLOAD(DELETE_ON_RESUME_ERROR,
               (UnixExtractFileName(DestFullName), DestFullName)),
 
-            DeleteFile(DestFullName);
+            if (FTerminal->SessionData->OverwrittenToRecycleBin)
+            {
+              FTerminal->RecycleFile(DestFullName, NULL);
+            }
+            else
+            {
+              DeleteFile(DestFullName);
+            }
           );
         }
 
@@ -4225,15 +4238,21 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
 
   int OpenType;
   bool Success = false;
+  bool ConfirmOverwriting;
 
   do
   {
     try
     {
+      ConfirmOverwriting =
+        FTerminal->Configuration->ConfirmOverwriting &&
+        !OpenParams->Confirmed && !OperationProgress->YesToAll && !OpenParams->Resume &&
+        !(OpenParams->Params & cpNoConfirmation);
       OpenType = SSH_FXF_WRITE | SSH_FXF_CREAT;
-      if (FTerminal->Configuration->ConfirmOverwriting &&
-          !OpenParams->Confirmed && !OperationProgress->YesToAll && !OpenParams->Resume &&
-          !(OpenParams->Params & cpNoConfirmation) &&
+      // when we want to preserve overwritten files, we need to find out that
+      // they exist first... even if overwrite confirmation is disabled.
+      // but not when we already know we are not going to overwrite (but e.g. to append)
+      if ((ConfirmOverwriting || FTerminal->SessionData->OverwrittenToRecycleBin) &&
           (OpenParams->OverwriteMode == omOverwrite))
       {
         OpenType |= SSH_FXF_EXCL;
@@ -4293,18 +4312,28 @@ int __fastcall TSFTPFileSystem::SFTPOpenRemote(void * AOpenParams, void * /*Para
           throw;
         }
 
-        // confirmation duplicated in SFTPSource for resumable file transfers.
-        AnsiString RemoteFileNameOnly = UnixExtractFileName(OpenParams->RemoteFileName);
-        SFTPConfirmOverwrite(RemoteFileNameOnly,
-          OperationProgress, OpenParams->OverwriteMode, OpenParams->FileParams);
-        if (RemoteFileNameOnly != UnixExtractFileName(OpenParams->RemoteFileName))
+        // we may get here even if confirmation is disabled,
+        // when we have preserving of overwritten files enabled
+        if (ConfirmOverwriting)
         {
-          OpenParams->RemoteFileName =
-            UnixExtractFilePath(OpenParams->RemoteFileName) + RemoteFileNameOnly;
+          // confirmation duplicated in SFTPSource for resumable file transfers.
+          AnsiString RemoteFileNameOnly = UnixExtractFileName(OpenParams->RemoteFileName);
+          SFTPConfirmOverwrite(RemoteFileNameOnly,
+            OperationProgress, OpenParams->OverwriteMode, OpenParams->FileParams);
+          if (RemoteFileNameOnly != UnixExtractFileName(OpenParams->RemoteFileName))
+          {
+            OpenParams->RemoteFileName =
+              UnixExtractFilePath(OpenParams->RemoteFileName) + RemoteFileNameOnly;
+          }
+          OpenParams->Confirmed = true;
         }
-        OpenParams->Confirmed = true;
+        else
+        {
+          assert(FTerminal->SessionData->OverwrittenToRecycleBin);
+        }
 
-        if (FTerminal->SessionData->OverwrittenToRecycleBin)
+        if ((OpenParams->OverwriteMode == omOverwrite) &&
+            FTerminal->SessionData->OverwrittenToRecycleBin)
         {
           FTerminal->RecycleFile(OpenParams->RemoteFileName, NULL);
         }

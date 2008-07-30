@@ -775,20 +775,24 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
   }
 
   TRemoteFileList * FileList = FTerminal->ReadDirectoryListing(Directory, false);
-  try
+  // on error user may select "skip", then we get NULL
+  if (FileList != NULL)
   {
-    for (int i = 0; i < FileList->Count; i++)
+    try
     {
-      TRemoteFile * File = FileList->Files[i];
-      if (Mask.IsEmpty() || TFileMasks::SingleMaskMatch(Mask, File->FileName))
+      for (int i = 0; i < FileList->Count; i++)
       {
-        PrintLine(FileList->Files[i]->ListingStr);
+        TRemoteFile * File = FileList->Files[i];
+        if (Mask.IsEmpty() || TFileMasks::SingleMaskMatch(Mask, File->FileName))
+        {
+          PrintLine(FileList->Files[i]->ListingStr);
+        }
       }
     }
-  }
-  __finally
-  {
-    delete FileList;
+    __finally
+    {
+      delete FileList;
+    }
   }
 }
 //---------------------------------------------------------------------------

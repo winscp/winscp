@@ -31,8 +31,8 @@
     <MAINSOURCE value="FileZilla.bpf"/>
     <INCLUDEPATH value="filezilla;filezilla\misc;resource;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
     <LIBPATH value="filezilla;filezilla\misc;$(BCB)\lib\obj;$(BCB)\lib"/>
-    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wucp -w-sus -wstu -w-rch -w-pia -w-par 
-      -wnod -wnak -w-hid -w-dup -w-csu -w-com -wcln -w-ccc -wbbf -w-aus -wasm 
+    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wucp -w-sus -wstu -w-rch -w-pia -w-par
+      -wnod -wnak -w-hid -w-dup -w-csu -w-com -wcln -w-ccc -wbbf -w-aus -wasm
       -wamp -wamb"/>
     <LISTFILE value=""/>
     <OTHERFILES value=""/>

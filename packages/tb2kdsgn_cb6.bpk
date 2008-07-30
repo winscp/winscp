@@ -9,7 +9,7 @@
     <RESFILES value="tb2k\TB2Reg.dcr"/>
     <IDLFILES value=""/>
     <DEFFILE value=""/>
-    <RESDEPEN value="$(RESFILES) tb2k\TB2DsgnConverter.dfm tb2k\TB2DsgnItemEditor.dfm 
+    <RESDEPEN value="$(RESFILES) tb2k\TB2DsgnConverter.dfm tb2k\TB2DsgnItemEditor.dfm
       tb2k\TB2DsgnConvertOptions.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>

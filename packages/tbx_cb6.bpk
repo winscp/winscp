@@ -33,7 +33,7 @@
     <OTHERFILES value=""/>
   </MACROS>
   <OPTIONS>
-    <IDLCFLAGS value="-Itbx\. -Itbx -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG 
+    <IDLCFLAGS value="-Itbx\. -Itbx -I$(BCB)\include -I$(BCB)\include\vcl -src_suffix cpp -D_DEBUG
       -boa"/>
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -Vx -Ve -X- -a8 -b- -k- -vi -c -tWM"/>
     <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>

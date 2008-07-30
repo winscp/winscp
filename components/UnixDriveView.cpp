@@ -156,22 +156,22 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     TStringList * ChildrenDirs = new TStringList();
     try
     {
-      ChildrenDirs->Sorted = true;
       ChildrenDirs->Duplicates = dupAccept;
       ChildrenDirs->CaseSensitive = true;
 
-      bool HadChildren = (Node->Count > 0);
-      if (HadChildren)
+      TTreeNode * ChildNode = Node->getFirstChild();
+      while (ChildNode != NULL)
       {
-        for (int i = 0; i < Node->Count; i++)
-        {
-          TTreeNode * ChildNode = Node->Item[i];
-          TNodeData * ChildData = NodeData(ChildNode);
-          ChildData->File = NULL;
-          ChildrenDirs->AddObject(UnixExtractFileName(ChildData->Directory),
-            ChildNode);
-        }
+        TNodeData * ChildData = NodeData(ChildNode);
+        ChildData->File = NULL;
+        ChildrenDirs->AddObject(UnixExtractFileName(ChildData->Directory),
+          ChildNode);
+        ChildNode = Node->GetNextChild(ChildNode);
       }
+
+      // sort only after adding all items.
+      // should be faster then keeping the list sorted since beginning
+      ChildrenDirs->Sorted = true;
 
       for (int i = 0; i < Data->FileList->Count; i++)
       {
@@ -199,16 +199,13 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
         }
       }
 
-      if (HadChildren)
+      for (int i = 0; i < ChildrenDirs->Count; i++)
       {
-        for (int i = 0; i < ChildrenDirs->Count; i++)
+        TTreeNode * ChildNode = dynamic_cast<TTreeNode *>(ChildrenDirs->Objects[i]);
+        TNodeData * ChildData = NodeData(ChildNode);
+        if ((ChildData->File == NULL) && NodeCanDelete(ChildNode))
         {
-          TTreeNode * ChildNode = dynamic_cast<TTreeNode *>(ChildrenDirs->Objects[i]);
-          TNodeData * ChildData = NodeData(ChildNode);
-          if ((ChildData->File == NULL) && NodeCanDelete(ChildNode))
-          {
-            ChildNode->Delete();
-          }
+          ChildNode->Delete();
         }
       }
 
@@ -221,9 +218,10 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
   }
   else if (Force)
   {
-    for (int i = Node->Count - 1; i >= 0; i--)
+    TTreeNode * ChildNode = Node->GetLastChild();
+    while (ChildNode != NULL)
     {
-      TTreeNode * ChildNode = Node->Item[i];
+      TTreeNode * PrevChildNode = Node->GetPrevChild(ChildNode);
       TRemoteFile * File = NodeFile(ChildNode);
       if (!NodeCanDelete(ChildNode) ||
           ((ShowHiddenDirs || !NodeIsHidden(ChildNode)) &&
@@ -235,6 +233,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
       {
         ChildNode->Delete();
       }
+      ChildNode = PrevChildNode;
     }
   }
   #endif
@@ -656,10 +655,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(AnsiString Path)
   #ifndef DESIGN_ONLY
   if (IsUnixRootPath(Path))
   {
-    if (Items->Count > 0)
-    {
-      Result = Items->Item[0];
-    }
+    Result = Items->GetFirstNode();
   }
   else
   {
@@ -671,7 +667,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(AnsiString Path)
       Parent = FindNodeToPath(UnixExtractFileDir(Path));
     }
 
-    if ((Parent != NULL) && (Parent->Count > 0))
+    if ((Parent != NULL) && (Parent->getFirstChild() != NULL))
     {
       AnsiString DirName = UnixExtractFileName(Path);
       int StartIndex = 0;
@@ -716,7 +712,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindPathNode(AnsiString Path)
   TTreeNode * Result = NULL;
 
   #ifndef DESIGN_ONLY
-  if (Items->Count > 0)
+  if (Items->GetFirstNode() != NULL)
   {
     do
     {
@@ -742,9 +738,10 @@ void __fastcall TCustomUnixDriveView::ValidateDirectoryEx(TTreeNode * /*Node*/,
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::RebuildTree()
 {
-  if (Items->Count > 0)
+  TTreeNode * First = Items->GetFirstNode();
+  if (First != NULL)
   {
-    UpdatePath(Items->Item[0], true);
+    UpdatePath(First, true);
   }
 }
 //---------------------------------------------------------------------------

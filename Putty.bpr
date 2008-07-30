@@ -32,8 +32,8 @@
     <MAINSOURCE value="Putty.bpf"/>
     <INCLUDEPATH value="putty;putty\CHARSET;putty\WINDOWS;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="putty;putty\CHARSET;putty\WINDOWS;$(BCB)\lib\obj;$(BCB)\lib"/>
-    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -w-sus -wstv -wstu -w-rvl -w-rch -w-pia 
-      -w-pck -w-pch -w-par -wnod -wnak -w-8027 -w-eff -w-csu -wcln -w-ccc -wbbf 
+    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -w-sus -wstv -wstu -w-rvl -w-rch -w-pia
+      -w-pck -w-pch -w-par -wnod -wnak -w-8027 -w-eff -w-csu -wcln -w-ccc -wbbf
       -w-aus -wasm -wamp -wamb"/>
     <LISTFILE value=""/>
     <OTHERFILES value=""/>

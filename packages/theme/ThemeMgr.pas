@@ -1398,15 +1398,9 @@ function TThemeManager.MainWindowHook(var Message: TMessage): Boolean;
 
 var
   Form: TCustomForm;
-
+  I: Integer;
 begin
   Result := False;
-
-  // workaround for so far unknown bug on vista (bug 140)
-  if Message.Msg = WM_GETICON then
-  begin
-    Exit;
-  end;
 
   // If the main manager was destroyed then it posted this message to the application so all still existing
   // theme managers know a new election is due. Well, it is not purely democratic. The earlier a manager was created
@@ -1428,19 +1422,26 @@ begin
   end;
 
   // Check first if there are still forms to subclass.
-  while FPendingFormsList.Count > 0 do
+  I := 0;
+  while I < FPendingFormsList.Count do
   begin
-    Form := TCustomForm(FPendingFormsList[0]);
-    FPendingFormsList.Delete(0);
-    FFormList.Add(Form);
-    // Since we don't know how many controls on this form already have been created we better collect everything
-    // which is already there. The window proc lists will take care not to add a control twice.
-    if MainManager = Self then
-      CollectControls(Form);
-    if [toResetMouseCapture, toSetTransparency] * FOptions <> [] then
-      FixControls(Form);
-    // Sometimes not all controls are visually updated. Force it to be correct.
-    RedrawWindow(Form.Handle, nil, 0, RDW_INVALIDATE or RDW_UPDATENOW or RDW_ALLCHILDREN or RDW_VALIDATE);
+    Form := TCustomForm(FPendingFormsList[I]);
+    // workaround for so far unknown bug on vista (bug 140)
+    // solves similar problem on WinXP
+    if not Form.HandleAllocated then Inc(I)
+      else
+    begin
+      FPendingFormsList.Delete(I);
+      FFormList.Add(Form);
+      // Since we don't know how many controls on this form already have been created we better collect everything
+      // which is already there. The window proc lists will take care not to add a control twice.
+      if MainManager = Self then
+        CollectControls(Form);
+      if [toResetMouseCapture, toSetTransparency] * FOptions <> [] then
+        FixControls(Form);
+      // Sometimes not all controls are visually updated. Force it to be correct.
+      RedrawWindow(Form.Handle, nil, 0, RDW_INVALIDATE or RDW_UPDATENOW or RDW_ALLCHILDREN or RDW_VALIDATE);
+    end;
   end;
 
   while FPendingRecreationList.Count > 0 do

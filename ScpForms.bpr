@@ -20,18 +20,18 @@
       forms\SynchronizeProgress.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
-    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Authenticate.dfm forms\Cleanup.dfm 
-      forms\ComboInput.dfm forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm 
-      forms\CopyParamCustom.dfm forms\CopyParamPreset.dfm 
-      forms\CreateDirectory.dfm forms\CustomCommand.dfm forms\Editor.dfm 
-      forms\EditorPreferences.dfm forms\FileSystemInfo.dfm 
-      forms\FullSynchronize.dfm forms\GeneralSettings.dfm forms\Glyphs.dfm 
-      forms\ImportSessions.dfm forms\License.dfm forms\LocationProfiles.dfm 
-      forms\Log.dfm forms\Login.dfm forms\LogSettings.dfm 
-      forms\OpenDirectory.dfm forms\Preferences.dfm forms\Progress.dfm 
-      forms\Properties.dfm forms\RemoteTransfer.dfm forms\Rights.dfm 
-      forms\RightsExt.dfm forms\SaveSession.dfm forms\SelectMask.dfm 
-      forms\Symlink.dfm forms\Synchronize.dfm forms\SynchronizeChecklist.dfm 
+    <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Authenticate.dfm forms\Cleanup.dfm
+      forms\ComboInput.dfm forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm
+      forms\CopyParamCustom.dfm forms\CopyParamPreset.dfm
+      forms\CreateDirectory.dfm forms\CustomCommand.dfm forms\Editor.dfm
+      forms\EditorPreferences.dfm forms\FileSystemInfo.dfm
+      forms\FullSynchronize.dfm forms\GeneralSettings.dfm forms\Glyphs.dfm
+      forms\ImportSessions.dfm forms\License.dfm forms\LocationProfiles.dfm
+      forms\Log.dfm forms\Login.dfm forms\LogSettings.dfm
+      forms\OpenDirectory.dfm forms\Preferences.dfm forms\Progress.dfm
+      forms\Properties.dfm forms\RemoteTransfer.dfm forms\Rights.dfm
+      forms\RightsExt.dfm forms\SaveSession.dfm forms\SelectMask.dfm
+      forms\Symlink.dfm forms\Synchronize.dfm forms\SynchronizeChecklist.dfm
       forms\SynchronizeProgress.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
@@ -48,7 +48,7 @@
     <MAINSOURCE value="ScpForms.bpf"/>
     <INCLUDEPATH value="forms;core;components;windows;resource;packages\filemng;packages\dragndrop;packages\my;packages\tb2k;packages\tbx;packages\theme;$(BCB)\include;$(BCB)\include\vcl"/>
     <LIBPATH value="windows;forms;$(BCB)\lib\obj;$(BCB)\lib"/>
-    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
+    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
     <LISTFILE value=""/>
     <OTHERFILES value=""/>

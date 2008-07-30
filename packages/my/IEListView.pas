@@ -489,7 +489,9 @@ begin
         end;
       end;
 
-      if ShowImage then
+      // for hidden columns, do not show the icon
+      // as on some systems it is still drawn, but on neighboring columns
+      if ShowImage and (Columns[Index].Width > 0) then
       begin
         HdItem.Mask := HDI_FORMAT or HDI_IMAGE;
         HdItem.fmt := Hditem.fmt or HDF_IMAGE;

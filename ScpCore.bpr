@@ -29,7 +29,7 @@
     <MAINSOURCE value="ScpCore.bpf"/>
     <INCLUDEPATH value="windows;core;putty;putty\windows;filezilla;resource;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
     <LIBPATH value="core;$(BCB)\lib\obj;$(BCB)\lib"/>
-    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig 
+    <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
     <LISTFILE value=""/>
     <OTHERFILES value=""/>
