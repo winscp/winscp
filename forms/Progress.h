@@ -42,10 +42,6 @@ __published:
   TProgressBar *FileProgress;
   TTimer *UpdateTimer;
   TCheckBox *DisconnectWhenCompleteCheck;
-  TLabel *Label10;
-  TLabel *TransferModeLabel;
-  TLabel *Label11;
-  TLabel *ResumeLabel;
   TPanel *SpeedPanel;
   TLabel *SpeedLabel2;
   TLabel *TimeLeftLabelLabel;

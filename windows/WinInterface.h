@@ -352,9 +352,6 @@ void __fastcall SetGlobalMinimizeHandler(TNotifyEvent OnMinimize);
 TNotifyEvent __fastcall GetGlobalMinimizeHandler();
 bool __fastcall IsGlobalMinimizeHandler();
 
-unsigned long __fastcall GetSpeedLimit(const AnsiString & Text);
-AnsiString __fastcall SetSpeedLimit(unsigned long Limit);
-
 void __fastcall ShowNotification(TTerminal * Terminal, const AnsiString & Str,
   TQueryType Type);
 

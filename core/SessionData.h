@@ -28,10 +28,6 @@ enum TSftpBug { sbSymlink, sbSignedTS };
 enum TAutoSwitch { asOn, asOff, asAuto };
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
-const puRequireUsername =     0x01;
-const puExcludeLeadingSlash = 0x02;
-const puExtractFileName =     0x04;
-const puDecodeUrlChars =      0x08;
 //---------------------------------------------------------------------------
 extern const char CipherNames[CIPHER_COUNT][10];
 extern const char KexNames[KEX_COUNT][20];
@@ -41,10 +37,11 @@ extern const TCipher DefaultCipherList[CIPHER_COUNT];
 extern const TKex DefaultKexList[KEX_COUNT];
 extern const char FSProtocolNames[FSPROTOCOL_COUNT][11];
 //---------------------------------------------------------------------------
+class TStoredSessionList;
+//---------------------------------------------------------------------------
 class TSessionData : public TNamedObject
 {
 private:
-  static AnsiString FInvalidChars;
   AnsiString FHostName;
   int FPortNumber;
   AnsiString FUserName;
@@ -269,7 +266,6 @@ private:
   void __fastcall SetUtf(TAutoSwitch value);
   void __fastcall SetHostKey(AnsiString value);
   TDateTime __fastcall GetTimeoutDT();
-  static AnsiString __fastcall DecodeUrlChars(const AnsiString & S, bool Decode);
 
 public:
   __fastcall TSessionData(AnsiString aName);
@@ -280,14 +276,12 @@ public:
     const TSessionData * Default = NULL);
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
-  bool __fastcall ParseUrl(AnsiString Url, int Params, AnsiString * FileName);
+  bool __fastcall ParseUrl(AnsiString Url, TOptions * Options,
+    TStoredSessionList * StoredSessions, bool & DefaultsOnly,
+    AnsiString * FileName, bool * AProtocolDefined);
   bool __fastcall ParseOptions(TOptions * Options);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
-  static bool __fastcall ParseUrl(AnsiString Url, int Params,
-    AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
-    AnsiString * UserName, AnsiString * Password, AnsiString * Path,
-    AnsiString * FileName);
   static void __fastcall ValidatePath(const AnsiString Path);
   static void __fastcall ValidateName(const AnsiString Name);
 
@@ -429,7 +423,7 @@ public:
   int __fastcall IndexOf(TSessionData * Data);
   TSessionData * __fastcall NewSession(AnsiString SessionName, TSessionData * Session);
   TSessionData * __fastcall ParseUrl(AnsiString Url, TOptions * Options, bool & DefaultsOnly,
-    int Params, AnsiString * FileName = NULL, bool * ProtocolDefined = NULL);
+    AnsiString * FileName = NULL, bool * ProtocolDefined = NULL);
   virtual __fastcall ~TStoredSessionList();
   __property TSessionData * Sessions[int Index]  = { read=AtSession };
   __property TSessionData * DefaultSettings  = { read=FDefaultSettings, write=SetDefaultSettings };

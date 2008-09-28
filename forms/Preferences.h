@@ -277,6 +277,8 @@ __published:
           TTreeNode *Node, bool &AllowCollapse);
   void __fastcall ListViewEndDrag(TObject *Sender,
           TObject *Target, int X, int Y);
+  void __fastcall RandomSeedFileEditCreateEditDialog(TObject *Sender,
+          TFileDialogKind DialogKind, TOpenDialog *&Dialog);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
@@ -291,6 +293,7 @@ private:
   AnsiString FBeforeDialogPath;
   TListViewScrollOnDragOver * FCustomCommandsScrollOnDragOver;
   TListViewScrollOnDragOver * FCopyParamScrollOnDragOver;
+  TListViewScrollOnDragOver * FEditorScrollOnDragOver;
   bool FNoUpdate;
   void __fastcall SetPreferencesMode(TPreferencesMode value);
   void __fastcall CMDialogKey(TWMKeyDown & Message);

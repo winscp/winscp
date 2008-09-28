@@ -1180,8 +1180,10 @@ begin
       NodeData.shAttr := NodeData.shAttr or SFGAO_HASSUBFOLDER;
 
     if not Assigned(NodeData.ShellFolder) then
+    begin
       ParentFolder.BindToObject(NodeData.PIDL, nil, IID_IShellFolder,
         Pointer(NodeData.ShellFolder));
+    end;
   end;
 end; {GetNodeAttr}
 

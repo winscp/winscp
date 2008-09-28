@@ -13,8 +13,7 @@ public:
   __fastcall THierarchicalStorage(const AnsiString AStorage);
   virtual __fastcall ~THierarchicalStorage();
   bool __fastcall OpenRootKey(bool CanCreate);
-  virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate);
-  virtual bool __fastcall CreateSubKey(const AnsiString SubKey);
+  virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate, bool Path = false);
   virtual void __fastcall CloseSubKey();
   virtual bool __fastcall DeleteSubKey(const AnsiString SubKey) = 0;
   virtual void __fastcall GetSubKeyNames(Classes::TStrings* Strings) = 0;
@@ -65,9 +64,11 @@ protected:
   bool FExplicit;
 
   AnsiString __fastcall GetCurrentSubKey();
+  AnsiString __fastcall GetCurrentSubKeyMunged();
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
   static AnsiString __fastcall IncludeTrailingBackslash(const AnsiString & S);
   static AnsiString __fastcall ExcludeTrailingBackslash(const AnsiString & S);
+  AnsiString __fastcall MungeSubKey(AnsiString Key, bool Path);
 };
 //---------------------------------------------------------------------------
 class TRegistryStorage : public THierarchicalStorage
@@ -79,8 +80,7 @@ public:
 
   bool __fastcall Copy(TRegistryStorage * Storage);
 
-  virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate);
-  virtual bool __fastcall CreateSubKey(const AnsiString SubKey);
+  virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate, bool Path = false);
   virtual void __fastcall CloseSubKey();
   virtual bool __fastcall DeleteSubKey(const AnsiString SubKey);
   virtual bool __fastcall DeleteValue(const AnsiString Name);
@@ -127,7 +127,7 @@ public:
   __fastcall TIniFileStorage(const AnsiString FileName);
   virtual __fastcall ~TIniFileStorage();
 
-  virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate);
+  virtual bool __fastcall OpenSubKey(const AnsiString SubKey, bool CanCreate, bool Path = false);
   virtual bool __fastcall DeleteSubKey(const AnsiString SubKey);
   virtual bool __fastcall DeleteValue(const AnsiString Name);
   virtual void __fastcall GetSubKeyNames(Classes::TStrings* Strings);
@@ -163,8 +163,6 @@ protected:
   __property AnsiString CurrentSection  = { read=GetCurrentSection };
 };
 //---------------------------------------------------------------------------
-AnsiString __fastcall MungeStr(const AnsiString Str);
-AnsiString __fastcall UnMungeStr(const AnsiString Str);
-AnsiString __fastcall SimpleMungeStr(const AnsiString Str);
+AnsiString __fastcall PuttyMungeStr(const AnsiString Str);
 //---------------------------------------------------------------------------
 #endif

@@ -233,6 +233,14 @@ void FinalizeConsole(int /*InstanceNumber*/, HANDLE RequestEvent,
 //---------------------------------------------------------------------------
 static char LastFromBeginning[sizeof(TConsoleCommStruct::TPrintEvent)] = "";
 //---------------------------------------------------------------------------
+inline void Flush()
+{
+  if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE))
+  {
+    fflush(stdout);
+  }
+}
+//---------------------------------------------------------------------------
 inline void Print(bool FromBeginning, const char * Message)
 {
   if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE))
@@ -258,6 +266,7 @@ inline void Print(bool FromBeginning, const char * Message)
       {
         printf("%s", Message);
       }
+      Flush();
     }
   }
   else
@@ -363,6 +372,7 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
       if (PendingCancel || !Event.Echo)
       {
         printf("\n");
+        Flush();
       }
 
       if (PendingCancel || (Read == 0))
@@ -387,6 +397,7 @@ void ProcessInputEvent(TConsoleCommStruct::TInputEvent& Event)
 //---------------------------------------------------------------------------
 void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
 {
+  // note that if output is redirected to file, input is still FILE_TYPE_CHAR
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
     Event.Result = Event.Cancel;

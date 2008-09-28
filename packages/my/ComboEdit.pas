@@ -194,10 +194,14 @@ type
   TFileDialogKind = (dkOpen, dkSave , dkOpenPicture,
     dkSavePicture);
 
+  TCreateEditDialogEvent = procedure(Sender: TObject; DialogKind: TFileDialogKind;
+    var Dialog: TOpenDialog) of object;
+
   TFilenameEdit = class(TFileDirEdit)
   private
     FDialog: TOpenDialog;
     FDialogKind: TFileDialogKind;
+    FOnCreateEditDialog: TCreateEditDialogEvent;
     procedure CreateEditDialog;
     function GetFileName: string;
     function GetDefaultExt: TFileExt;
@@ -219,6 +223,7 @@ type
     procedure SetHistoryList(Value: TStrings);
     procedure SetOptions(Value: TOpenOptions);
     procedure SetDialogTitle(const Value: string);
+    procedure SetOnCreateEditDialog(Value: TCreateEditDialogEvent);
     function IsCustomTitle: Boolean;
     function IsCustomFilter: Boolean;
   protected
@@ -246,6 +251,8 @@ type
       default [ofHideReadOnly];
     property DialogTitle: string read GetDialogTitle write SetDialogTitle
       stored IsCustomTitle;
+    property OnCreateEditDialog: TCreateEditDialogEvent read FOnCreateEditDialog
+      write SetOnCreateEditDialog;
     property AutoSelect;
     property ButtonHint;
     property BorderStyle;
@@ -1010,12 +1017,18 @@ procedure TFilenameEdit.CreateEditDialog;
 var
   NewDialog: TOpenDialog;
 begin
-  case FDialogKind of
-    dkOpen: NewDialog := TOpenDialog.Create(Self);
-    dkOpenPicture: NewDialog := TOpenPictureDialog.Create(Self);
-    dkSavePicture: NewDialog := TSavePictureDialog.Create(Self);
-    else {dkSave} NewDialog := TSaveDialog.Create(Self);
-  end;
+  NewDialog := nil;
+  if Assigned(FOnCreateEditDialog) then
+    FOnCreateEditDialog(Self, FDialogKind, NewDialog);
+
+  if not Assigned(NewDialog) then
+    case FDialogKind of
+      dkOpen: NewDialog := TOpenDialog.Create(Self);
+      dkOpenPicture: NewDialog := TOpenPictureDialog.Create(Self);
+      dkSavePicture: NewDialog := TSavePictureDialog.Create(Self);
+      else {dkSave} NewDialog := TSaveDialog.Create(Self);
+    end;
+
   try
     if FDialog <> nil then begin
       with NewDialog do begin
@@ -1177,6 +1190,17 @@ procedure TFilenameEdit.SetDialogKind(Value: TFileDialogKind);
 begin
   if FDialogKind <> Value then begin
     FDialogKind := Value;
+    CreateEditDialog;
+  end;
+end;
+
+procedure TFilenameEdit.SetOnCreateEditDialog(Value: TCreateEditDialogEvent);
+begin
+  if @FOnCreateEditDialog <> @Value then
+  begin
+    FOnCreateEditDialog := Value;
+    // to recreate a dialog with every change is stupid way,
+    // but its done only once, so it is acceptable
     CreateEditDialog;
   end;
 end;

@@ -36,8 +36,6 @@ TDateTime __fastcall SecToDateTime(int Sec)
     (unsigned short)(Sec/60%60), (unsigned short)(Sec%60), 0);
 }
 //--- TSessionData ----------------------------------------------------
-AnsiString TSessionData::FInvalidChars("\\[]");
-//---------------------------------------------------------------------
 __fastcall TSessionData::TSessionData(AnsiString aName):
   TNamedObject(aName)
 {
@@ -820,166 +818,180 @@ void __fastcall TSessionData::Remove()
   }
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall TSessionData::DecodeUrlChars(const AnsiString & S, bool Decode)
+bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
+  TStoredSessionList * StoredSessions, bool & DefaultsOnly, AnsiString * FileName,
+  bool * AProtocolDefined)
 {
-  if (Decode)
+  bool ProtocolDefined = false;
+  TFSProtocol AFSProtocol;
+  int APortNumber;
+  if (Url.SubString(1, 4).LowerCase() == "scp:")
   {
-    return ::DecodeUrlChars(S);
+    AFSProtocol = fsSCPonly;
+    APortNumber = SshPortNumber;
+    Url.Delete(1, 4);
+    ProtocolDefined = true;
   }
-  else
+  else if (Url.SubString(1, 5).LowerCase() == "sftp:")
   {
-    return S;
+    AFSProtocol = fsSFTPonly;
+    APortNumber = SshPortNumber;
+    Url.Delete(1, 5);
+    ProtocolDefined = true;
   }
-}
-//---------------------------------------------------------------------
-bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
-  AnsiString * ConnectInfo, AnsiString * HostName, int * PortNumber,
-  AnsiString * UserName, AnsiString * Password, AnsiString * Path,
-  AnsiString * FileName)
-{
-  #define DECODE(S) DecodeUrlChars(S, FLAGSET(Params, puDecodeUrlChars))
-
-  int PSlash = Url.Pos("/");
-  if (PSlash == 0)
+  else if (Url.SubString(1, 4).LowerCase() == "ftp:")
   {
-    PSlash = Url.Length() + 1;
+    AFSProtocol = fsFTP;
+    APortNumber = FtpPortNumber;
+    Url.Delete(1, 4);
+    ProtocolDefined = true;
   }
 
-  AnsiString AConnectInfo;
-  AConnectInfo = Url.SubString(1, PSlash - 1);
-
-  int P = AConnectInfo.LastDelimiter("@");
-  bool Result = (P > 0) || ((Params & puRequireUsername) == 0);
-  if (Result)
+  if (ProtocolDefined && (Url.SubString(1, 2) == "//"))
   {
-    if ((Path != NULL) || (FileName != NULL))
+    Url.Delete(1, 2);
+  }
+
+  if (AProtocolDefined != NULL)
+  {
+    *AProtocolDefined = ProtocolDefined;
+  }
+
+  if (!Url.IsEmpty())
+  {
+    AnsiString DecodedUrl = DecodeUrlChars(Url);
+    // lookup stored session even if protocol was defined
+    // (this allows setting for example default username for host
+    // by creating stored session named by host)
+    TSessionData * Data = NULL;
+    for (Integer Index = 0; Index < StoredSessions->Count; Index++)
     {
-      bool ExcludeLeadingSlash = (Params & puExcludeLeadingSlash) != 0;
-      int Delta = ExcludeLeadingSlash ? 1 : 0;
-      AnsiString APath = Url.SubString(PSlash + Delta,
-        Url.Length() - PSlash - Delta + 1);
-      if (ExcludeLeadingSlash || (APath != "/"))
+      AnsiString Name = StoredSessions->Sessions[Index]->Name;
+      if (AnsiSameText(Name, DecodedUrl) ||
+          AnsiSameText(Name + "/", DecodedUrl.SubString(1, Name.Length() + 1)))
       {
-        if ((APath.Length() > 0) && (APath[APath.Length()] != '/'))
-        {
-          if (FileName != NULL)
-          {
-            *FileName = DECODE(UnixExtractFileName(APath));
-          }
-          if (FLAGSET(Params, puExtractFileName))
-          {
-            APath = UnixExtractFilePath(APath);
-          }
-        }
-        if (Path != NULL)
-        {
-          *Path = DECODE(APath);
-        }
+        Data = StoredSessions->Sessions[Index];
+        break;
       }
     }
 
-    if (ConnectInfo != NULL)
-    {
-      *ConnectInfo = DECODE(AConnectInfo);
-    }
+    AnsiString ARemoteDirectory;
 
-    AnsiString UserInfo;
-    AnsiString HostInfo;
-
-    if (P > 0)
+    if (Data != NULL)
     {
-      UserInfo = AConnectInfo.SubString(1, P - 1);
-      HostInfo = AConnectInfo.SubString(P + 1, AConnectInfo.Length() - P);
-    }
-    else
-    {
-      HostInfo = AConnectInfo;
-    }
-
-    if (HostName != NULL)
-    {
-      *HostName = DECODE(CutToChar(HostInfo, ':', true));
-    }
-    else
-    {
-      CutToChar(HostInfo, ':', true);
-    }
-
-    if (PortNumber != NULL)
-    {
-      // expanded from ?: operator, as it caused strange "access violation" errors
-      if (HostInfo.IsEmpty())
+      DefaultsOnly = false;
+      Assign(Data);
+      if (StoredSessions->IsHidden(Data))
       {
-        *PortNumber = -1;
+        Data->Remove();
+        StoredSessions->Remove(Data);
+        // only modified, implicit
+        StoredSessions->Save(false, false);
+      }
+
+      int P = 1;
+      while (!AnsiSameText(DecodeUrlChars(Url.SubString(1, P)), Data->Name))
+      {
+        P++;
+        assert(P <= Url.Length());
+      }
+      ARemoteDirectory = Url.SubString(P + 1, Url.Length() - P);
+    }
+    else
+    {
+      Assign(StoredSessions->DefaultSettings);
+      Name = "";
+
+      int PSlash = Url.Pos("/");
+      if (PSlash == 0)
+      {
+        PSlash = Url.Length() + 1;
+      }
+
+      AnsiString ConnectInfo = Url.SubString(1, PSlash - 1);
+
+      int P = ConnectInfo.LastDelimiter("@");
+
+      AnsiString UserInfo;
+      AnsiString HostInfo;
+
+      if (P > 0)
+      {
+        UserInfo = ConnectInfo.SubString(1, P - 1);
+        HostInfo = ConnectInfo.SubString(P + 1, ConnectInfo.Length() - P);
       }
       else
       {
-        *PortNumber = StrToIntDef(DECODE(HostInfo), -1);
+        HostInfo = ConnectInfo;
       }
+
+      HostName = DecodeUrlChars(CutToChar(HostInfo, ':', true));
+
+      // expanded from ?: operator, as it caused strange "access violation" errors
+      if (!HostInfo.IsEmpty())
+      {
+        PortNumber = StrToIntDef(DecodeUrlChars(HostInfo), -1);
+      }
+      else if (ProtocolDefined)
+      {
+        PortNumber = APortNumber;
+      }
+
+      UserName = DecodeUrlChars(CutToChar(UserInfo, ':', false));
+      Password = DecodeUrlChars(UserInfo);
+
+      ARemoteDirectory = Url.SubString(PSlash, Url.Length() - PSlash + 1);
     }
 
-    if (UserName != NULL)
+    if (!ARemoteDirectory.IsEmpty() && (ARemoteDirectory != "/"))
     {
-      *UserName = DECODE(CutToChar(UserInfo, ':', false));
-    }
-    else
-    {
-      CutToChar(UserInfo, ':', false);
+      if ((ARemoteDirectory[ARemoteDirectory.Length()] != '/') &&
+          (FileName != NULL))
+      {
+        *FileName = DecodeUrlChars(UnixExtractFileName(ARemoteDirectory));
+        ARemoteDirectory = UnixExtractFilePath(ARemoteDirectory);
+      }
+      RemoteDirectory = DecodeUrlChars(ARemoteDirectory);
     }
 
-    if (Password != NULL)
-    {
-      *Password = DECODE(UserInfo);
-    }
+    DefaultsOnly = false;
   }
-  return Result;
-  #undef DECODE
-}
-//---------------------------------------------------------------------
-bool __fastcall TSessionData::ParseUrl(AnsiString Url, int Params,
-  AnsiString * FileName)
-{
-  AnsiString AHostName = HostName;
-  int APortNumber = PortNumber;
-  AnsiString AUserName = UserName;
-  AnsiString APassword = Password;
-  AnsiString ARemoteDirectory = RemoteDirectory;
+  else
+  {
+    Assign(StoredSessions->DefaultSettings);
 
-  bool Result = ParseUrl(Url, Params, NULL, &AHostName, &APortNumber,
-    &AUserName, &APassword, &ARemoteDirectory, FileName);
-  if (Result)
+    DefaultsOnly = true;
+  }
+
+  if (ProtocolDefined)
   {
-    HostName = AHostName;
-    if (APortNumber >= 0)
+    FSProtocol = AFSProtocol;
+  }
+
+  if (Options != NULL)
+  {
+    // we deliberatelly do keep defaultonly to false, in presence of any option,
+    // as the option should not make session "connectable"
+
+    AnsiString Value;
+    if (Options->FindSwitch("privatekey", Value))
     {
-      PortNumber = APortNumber;
+      PublicKeyFile = Value;
     }
-    UserName = AUserName;
-    Password = APassword;
-    RemoteDirectory = ARemoteDirectory;
+    if (Options->FindSwitch("timeout", Value))
+    {
+      Timeout = StrToInt(Value);
+    }
+    if (Options->FindSwitch("hostkey", Value))
+    {
+      HostKey = Value;
+    }
+    if (Options->FindSwitch("passive", Value))
+    {
+      FtpPasvMode = (StrToIntDef(Value, 1) != 0);
+    }
   }
-  return Result;
-}
-//---------------------------------------------------------------------
-bool __fastcall TSessionData::ParseOptions(TOptions * Options)
-{
-  AnsiString Value;
-  if (Options->FindSwitch("privatekey", Value))
-  {
-    PublicKeyFile = Value;
-  }
-  if (Options->FindSwitch("timeout", Value))
-  {
-    Timeout = StrToInt(Value);
-  }
-  if (Options->FindSwitch("hostkey", Value))
-  {
-    HostKey = Value;
-  }
-  if (Options->FindSwitch("passive", Value))
-  {
-    FtpPasvMode = (StrToIntDef(Value, 1) != 0);
-  }
+
   return true;
 }
 //---------------------------------------------------------------------
@@ -1004,17 +1016,14 @@ void __fastcall TSessionData::RollbackTunnel()
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ValidatePath(const AnsiString Path)
 {
-  if (Path.LastDelimiter(FInvalidChars) > 0)
-  {
-    throw Exception(FMTLOAD(ITEM_NAME_INVALID, (Path, FInvalidChars)));
-  }
+  // noop
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::ValidateName(const AnsiString Name)
 {
-  if (Name.LastDelimiter(FInvalidChars + "/") > 0)
+  if (Name.LastDelimiter("/") > 0)
   {
-    throw Exception(FMTLOAD(ITEM_NAME_INVALID, (Name, FInvalidChars + "/")));
+    throw Exception(FMTLOAD(ITEM_NAME_INVALID, (Name, "/")));
   }
 }
 //---------------------------------------------------------------------
@@ -1031,7 +1040,14 @@ AnsiString __fastcall TSessionData::GetSessionKey()
 AnsiString __fastcall TSessionData::GetStorageKey()
 {
   // particularly OpenSessionInPutty expect that StorageKey always returns something
-  return MungeStr(Name.IsEmpty() ? SessionKey : Name);
+  if (Name.IsEmpty())
+  {
+    return SessionKey;
+  }
+  else
+  {
+    return Name;
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetHostName(AnsiString value)
@@ -1878,7 +1894,7 @@ void __fastcall TStoredSessionList::Load(THierarchicalStorage * Storage,
     for (int Index = 0; Index < SubKeys->Count; Index++)
     {
       TSessionData *SessionData;
-      AnsiString SessionName = UnMungeStr(SubKeys->Strings[Index]);
+      AnsiString SessionName = SubKeys->Strings[Index];
       bool ValidName = true;
       try
       {
@@ -2145,7 +2161,7 @@ void __fastcall TStoredSessionList::ImportHostKeys(const AnsiString TargetKey,
         Session = Sessions->Sessions[Index];
         if (!OnlySelected || Session->Selected)
         {
-          HostKeyName = MungeStr(FORMAT("@%d:%s", (Session->PortNumber, Session->HostName)));
+          HostKeyName = PuttyMungeStr(FORMAT("@%d:%s", (Session->PortNumber, Session->HostName)));
           AnsiString KeyName;
           for (int KeyIndex = 0; KeyIndex < KeyList->Count; KeyIndex++)
           {
@@ -2170,115 +2186,13 @@ void __fastcall TStoredSessionList::ImportHostKeys(const AnsiString TargetKey,
 }
 //---------------------------------------------------------------------------
 TSessionData * __fastcall TStoredSessionList::ParseUrl(AnsiString Url,
-  TOptions * Options, bool & DefaultsOnly, int Params, AnsiString * FileName,
+  TOptions * Options, bool & DefaultsOnly, AnsiString * FileName,
   bool * AProtocolDefined)
 {
-  bool ProtocolDefined = false;
-  TFSProtocol Protocol;
-  int PortNumber;
-  if (Url.SubString(1, 4).LowerCase() == "scp:")
-  {
-    Protocol = fsSCPonly;
-    PortNumber = SshPortNumber;
-    Url.Delete(1, 4);
-    ProtocolDefined = true;
-  }
-  else if (Url.SubString(1, 5).LowerCase() == "sftp:")
-  {
-    Protocol = fsSFTPonly;
-    PortNumber = SshPortNumber;
-    Url.Delete(1, 5);
-    ProtocolDefined = true;
-  }
-  else if (Url.SubString(1, 4).LowerCase() == "ftp:")
-  {
-    Protocol = fsFTP;
-    PortNumber = FtpPortNumber;
-    Url.Delete(1, 4);
-    ProtocolDefined = true;
-  }
-
-  if (ProtocolDefined && (Url.SubString(1, 2) == "//"))
-  {
-    Url.Delete(1, 2);
-  }
-
-  if (AProtocolDefined != NULL)
-  {
-    *AProtocolDefined = ProtocolDefined;
-  }
-
-  DefaultsOnly = true;
   TSessionData * Data = new TSessionData("");
   try
   {
-    if (!Url.IsEmpty())
-    {
-      TSessionData * AData = NULL;
-      // lookup stored session even if protocol was defined
-      // (this allows setting for example default username for host
-      // by creating stored session named by host)
-      AnsiString ConnectInfo;
-      AnsiString RemoteDirectory;
-      if (TSessionData::ParseUrl(Url, Params, &ConnectInfo, NULL, NULL, NULL,
-            NULL, &RemoteDirectory, FileName))
-      {
-        AData = dynamic_cast<TSessionData *>(FindByName(ConnectInfo, false));
-      }
-
-      if (AData == NULL)
-      {
-        Data->Assign(DefaultSettings);
-        if (ProtocolDefined)
-        {
-          Data->PortNumber = PortNumber;
-        }
-        if (Data->ParseUrl(Url, Params, FileName))
-        {
-          Data->Name = "";
-          DefaultsOnly = false;
-        }
-        else
-        {
-          throw Exception(FMTLOAD(SESSION_NOT_EXISTS_ERROR, (Url)));
-        }
-      }
-      else
-      {
-        DefaultsOnly = false;
-        Data->Assign(AData);
-        if (!RemoteDirectory.IsEmpty())
-        {
-          Data->RemoteDirectory = RemoteDirectory;
-        }
-        if (IsHidden(AData))
-        {
-          AData->Remove();
-          Remove(AData);
-          // only modified, implicit
-          Save(false, false);
-        }
-      }
-    }
-    else
-    {
-      Data->Assign(DefaultSettings);
-    }
-
-    if (ProtocolDefined)
-    {
-      Data->FSProtocol = Protocol;
-    }
-
-    if (Options != NULL)
-    {
-      // we deliberatelly do set defaultonly to false, in presence of any option,
-      // as the option should not make session "connectable"
-      if (!Data->ParseOptions(Options))
-      {
-        Abort();
-      }
-    }
+    Data->ParseUrl(Url, Options, this, DefaultsOnly, FileName, AProtocolDefined);
   }
   catch(...)
   {

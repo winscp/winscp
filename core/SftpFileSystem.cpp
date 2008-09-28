@@ -3237,7 +3237,7 @@ void __fastcall TSFTPFileSystem::CreateDirectory(const AnsiString DirName,
   // But do nothing unless there was any properties change really required
   // (saves bandwidth, and some servers does not allow SSH_FXP_SETSTAT on dirs,
   // e.g. Serv-u)
-  if (!Properties->Valid.Empty())
+  if ((Properties != NULL) && !Properties->Valid.Empty())
   {
     try
     {

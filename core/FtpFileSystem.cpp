@@ -733,19 +733,6 @@ void __fastcall TFTPFileSystem::ResetFileTransfer()
   FFileTransferResumed = 0;
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::CheckFileTransferAbort()
-{
-  switch (FFileTransferAbort)
-  {
-    case ftaSkip:
-      THROW_SKIP_FILE_NULL;
-
-    case ftaCancel:
-      Abort();
-      break;
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadDirectoryProgress(__int64 Bytes)
 {
   // with FTP we do not know exactly how many entries we have received,
@@ -766,7 +753,7 @@ void __fastcall TFTPFileSystem::ReadDirectoryProgress(__int64 Bytes)
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::FileTransferProgress(__int64 TransferSize,
-  __int64 Bytes, int /*Percent*/)
+  __int64 Bytes)
 {
   TFileOperationProgressType * OperationProgress = FTerminal->OperationProgress;
 
@@ -805,6 +792,22 @@ void __fastcall TFTPFileSystem::FileTransfer(const AnsiString & FileName,
     unsigned int Reply = WaitForReply();
     GotReply(Reply, FLAGMASK(FFileTransferCancelled, REPLY_ALLOW_CANCEL));
   );
+
+  switch (FFileTransferAbort)
+  {
+    case ftaSkip:
+      THROW_SKIP_FILE_NULL;
+
+    case ftaCancel:
+      Abort();
+      break;
+  }
+
+  if (!FFileTransferCancelled)
+  {
+    // show completion of transfer
+    FileTransferProgress(OperationProgress->TransferSize, OperationProgress->TransferSize);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::CopyToLocal(TStrings * FilesToCopy,
@@ -1001,8 +1004,6 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
     {
       FIgnoreFileList = false;
     }
-
-    CheckFileTransferAbort();
 
     // in case dest filename is changed from overwrite dialog
     if (DestFileName != UserData.FileName)
@@ -1226,8 +1227,6 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
     {
       FIgnoreFileList = false;
     }
-
-    CheckFileTransferAbort();
   }
 
   /* TODO : Delete also read-only files. */
@@ -2601,7 +2600,7 @@ bool __fastcall TFTPFileSystem::HandleListData(const char * Path,
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::HandleTransferStatus(bool Valid, __int64 TransferSize,
-  __int64 Bytes, int Percent, int /*TimeElapsed*/, int /*TimeLeft*/, int /*TransferRate*/,
+  __int64 Bytes, int /*Percent*/, int /*TimeElapsed*/, int /*TimeLeft*/, int /*TransferRate*/,
   bool FileTransfer)
 {
   if (!FActive)
@@ -2613,11 +2612,10 @@ bool __fastcall TFTPFileSystem::HandleTransferStatus(bool Valid, __int64 Transfe
   }
   else if (FileTransfer)
   {
-    FileTransferProgress(TransferSize, Bytes, Percent);
+    FileTransferProgress(TransferSize, Bytes);
   }
   else
   {
-    assert(Percent == -1);
     ReadDirectoryProgress(Bytes);
   }
   return true;

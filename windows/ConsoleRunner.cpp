@@ -16,7 +16,7 @@
 #include "ProgParams.h"
 #include "TextsWin.h"
 #include "TextsCore.h"
-#include "CustomWinConfiguration.h"
+#include "WinConfiguration.h"
 #include "SynchronizeController.h"
 #include "GUITools.h"
 enum { RESULT_SUCCESS = 0, RESULT_ANY_ERROR = 1 };
@@ -37,6 +37,7 @@ public:
   virtual bool __fastcall PendingAbort() = 0;
   virtual void __fastcall SetTitle(AnsiString Title) = 0;
   virtual bool __fastcall LimitedOutput() = 0;
+  virtual bool __fastcall LiveOutput() = 0;
   virtual void __fastcall WaitBeforeExit() = 0;
 };
 //---------------------------------------------------------------------------
@@ -52,6 +53,7 @@ public:
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
   virtual bool __fastcall LimitedOutput();
+  virtual bool __fastcall LiveOutput();
   virtual void __fastcall WaitBeforeExit();
 
 protected:
@@ -343,6 +345,11 @@ bool __fastcall TOwnConsole::LimitedOutput()
   return true;
 }
 //---------------------------------------------------------------------------
+bool __fastcall TOwnConsole::LiveOutput()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
 void __fastcall TOwnConsole::WaitBeforeExit()
 {
   unsigned long Read;
@@ -371,6 +378,7 @@ public:
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
   virtual bool __fastcall LimitedOutput();
+  virtual bool __fastcall LiveOutput();
   virtual void __fastcall WaitBeforeExit();
 
 private:
@@ -380,6 +388,7 @@ private:
   HANDLE FCancelEvent;
   HANDLE FFileMapping;
   bool FLimitedOutput;
+  bool FLiveOutput;
   static const int PrintTimeout = 5000;
 
   inline TConsoleCommStruct * __fastcall GetCommStruct();
@@ -476,7 +485,8 @@ void __fastcall TExternalConsole::FreeCommStruct(TConsoleCommStruct * CommStruct
 void __fastcall TExternalConsole::SendEvent(int Timeout)
 {
   SetEvent(FRequestEvent);
-  if (WaitForSingleObject(FResponseEvent, Timeout) != WAIT_OBJECT_0)
+  unsigned int Result = WaitForSingleObject(FResponseEvent, Timeout);
+  if (Result != WAIT_OBJECT_0)
   {
     throw Exception(LoadStr(CONSOLE_SEND_TIMEOUT));
   }
@@ -618,6 +628,9 @@ void __fastcall TExternalConsole::Init()
   try
   {
     FLimitedOutput = (CommStruct->InitEvent.OutputType == FILE_TYPE_CHAR);
+    FLiveOutput =
+      (CommStruct->InitEvent.OutputType != FILE_TYPE_DISK) &&
+      (CommStruct->InitEvent.OutputType != FILE_TYPE_PIPE);
   }
   __finally
   {
@@ -628,6 +641,11 @@ void __fastcall TExternalConsole::Init()
 bool __fastcall TExternalConsole::LimitedOutput()
 {
   return FLimitedOutput;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TExternalConsole::LiveOutput()
+{
+  return FLiveOutput;
 }
 //---------------------------------------------------------------------------
 void __fastcall TExternalConsole::WaitBeforeExit()
@@ -647,6 +665,7 @@ public:
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
   virtual bool __fastcall LimitedOutput();
+  virtual bool __fastcall LiveOutput();
   virtual void __fastcall WaitBeforeExit();
 };
 //---------------------------------------------------------------------------
@@ -682,6 +701,11 @@ void __fastcall TNullConsole::SetTitle(AnsiString /*Title*/)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TNullConsole::LimitedOutput()
+{
+  return false;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TNullConsole::LiveOutput()
 {
   return false;
 }
@@ -1108,6 +1132,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   assert(Accels.Pos(' ') == 0);
 
   bool Timeouting = (Timeout > 0);
+  bool FirstOutput = true;
 
   do
   {
@@ -1119,35 +1144,43 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       Retry = false;
 
-      AnsiString Output;
-      for (int i = 0; i < ButtonCount; i++)
+      if (FirstOutput || FConsole->LiveOutput())
       {
-        if (i > 0)
+        AnsiString Output;
+        for (int i = 0; i < ButtonCount; i++)
         {
-          Output += ", ";
+          if (i > 0)
+          {
+            Output += ", ";
+          }
+
+          AnsiString Caption = Captions[i];
+          int P = Caption.Pos('&');
+          assert(P >= 0);
+
+          Caption[P] = '(';
+          Caption.Insert(")", P + 2);
+
+          if (i + 1 == TimeoutIndex)
+          {
+            assert(Timeouting);
+            Caption = FMTLOAD(TIMEOUT_BUTTON, (Caption, int(Timeout / 1000)));
+          }
+
+          Output += Caption;
         }
+        Output += ": ";
 
-        AnsiString Caption = Captions[i];
-        int P = Caption.Pos('&');
-        assert(P >= 0);
+        // note that length of string may decrease over time due to number of
+        // seconds length, but supposing it decreases by one character at time
+        // at most, we do not mind as the prompt is terminated with space
 
-        Caption[P] = '(';
-        Caption.Insert(")", P + 2);
-
-        if (i + 1 == TimeoutIndex)
-        {
-          assert(Timeouting);
-          Caption = FMTLOAD(TIMEOUT_BUTTON, (Caption, int(Timeout / 1000)));
-        }
-
-        Output += Caption;
+        // If output is not live (file or pipe), do no use 'from beginning'
+        // as it means that the output is not actually stored until new line
+        // is sent (and we will not [because we cannot] rewrite the output anyway)
+        Print(Output, !FirstOutput);
+        FirstOutput = false;
       }
-      Output += ": ";
-
-      // note that length of string may decrease over time due to number of
-      // seconds length, but supposing it decreases by one character at time
-      // at most, we do not mind as the prompt is terminated with space
-      Print(Output, true);
 
       if (!Timeouting && (FScript->Batch == TScript::BatchContinue))
       {
@@ -1208,6 +1241,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       assert(P >= 0);
       AnswerCaption.Delete(P, 1);
       PrintLine(AnswerCaption);
+      FirstOutput = true;
 
       if (OnClicks[AnswerIndex - 1] != NULL)
       {
@@ -1544,7 +1578,7 @@ int __fastcall Console(bool Help)
 
         bool DefaultsOnly;
         delete StoredSessions->ParseUrl(Session, Params, DefaultsOnly,
-          puDecodeUrlChars, NULL, &Url);
+          NULL, &Url);
 
         if (Url || Params->FindSwitch("Unsafe"))
         {

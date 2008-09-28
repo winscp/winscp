@@ -45,6 +45,10 @@ void __fastcall TConfiguration::Default()
 {
   TGuard Guard(FCriticalSection);
 
+  FDisablePasswordStoring = false;
+  FForceBanners = false;
+  FDisableAcceptingHostKeys = false;
+
   TRegistryStorage * AdminStorage;
   AdminStorage = new TRegistryStorage(RegistryStorageKey, HKEY_LOCAL_MACHINE);
   try
@@ -80,10 +84,6 @@ void __fastcall TConfiguration::Default()
   FLogWindowLines = 100;
   FLogProtocol = 0;
 
-  FDisablePasswordStoring = false;
-  FForceBanners = false;
-  FDisableAcceptingHostKeys = false;
-
   Changed();
 }
 //---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
 #define LASTELEM(ELEM) \
   ELEM.SubString(ELEM.LastDelimiter(".>")+1, ELEM.Length() - ELEM.LastDelimiter(".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, VAR)
 #define REGCONFIG(CANCREATE) \
   BLOCK("Interface", CANCREATE, \

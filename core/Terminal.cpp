@@ -1580,14 +1580,27 @@ bool __fastcall TTerminal::GetExceptionOnFail() const
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::FatalError(Exception * E, AnsiString Msg)
 {
-  if (Active)
+  bool SecureShellActive = (FSecureShell != NULL) && FSecureShell->Active;
+  if (Active || SecureShellActive)
   {
     // We log this instead of exception handler, because Close() would
     // probably cause exception handler to loose pointer to TShellLog()
     LogEvent("Attempt to close connection due to fatal exception:");
     Log->Add(llException, Msg);
     Log->AddException(E);
-    Close();
+
+    if (Active)
+    {
+      Close();
+    }
+
+    // this may happen if failure of authentication of SSH, owned by terminal yet
+    // (because the protocol was not decided yet), is detected by us (not by putty).
+    // e.g. not verified host key
+    if (SecureShellActive)
+    {
+      FSecureShell->Close();
+    }
   }
 
   if (FCallbackGuard != NULL)

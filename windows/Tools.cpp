@@ -328,29 +328,42 @@ bool __fastcall IsFormatInClipboard(unsigned int Format)
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TextFromClipboard(AnsiString & Text)
+HANDLE __fastcall OpenTextFromClipboard(const char *& Text)
 {
-  bool Result = OpenClipboard(0);
-  if (Result)
+  HANDLE Result = NULL;
+  if (OpenClipboard(0))
   {
-    HANDLE Handle = NULL;
-    try
+    Result = GetClipboardData(CF_TEXT);
+    if (Result != NULL)
     {
-      Handle = GetClipboardData(CF_TEXT);
-      Result = (Handle != NULL);
-      if (Result)
-      {
-        Text = static_cast<const char*>(GlobalLock(Handle));
-      }
+      Text = static_cast<const char*>(GlobalLock(Result));
     }
-    __finally
+    else
     {
-      if (Handle != NULL)
-      {
-        GlobalUnlock(Handle);
-      }
       CloseClipboard();
     }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall CloseTextFromClipboard(HANDLE Handle)
+{
+  if (Handle != NULL)
+  {
+    GlobalUnlock(Handle);
+  }
+  CloseClipboard();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TextFromClipboard(AnsiString & Text)
+{
+  const char * AText = NULL;
+  HANDLE Handle = OpenTextFromClipboard(AText);
+  bool Result = (Handle != NULL);
+  if (Result)
+  {
+    Text = AText;
+    CloseTextFromClipboard(Handle);
   }
   return Result;
 }
@@ -424,6 +437,56 @@ AnsiString __fastcall ReadResource(const AnsiString ResName)
 }
 //---------------------------------------------------------------------------
 template <class T>
+class TChildCommonDialog : public T
+{
+public:
+  __fastcall TChildCommonDialog(TComponent * AOwner) :
+    T(AOwner)
+  {
+  }
+
+protected:
+  // all common-dialog structures we use (save, open, font) start like this:
+  typedef struct
+  {
+      DWORD        lStructSize;
+      HWND         hwndOwner;
+  } COMMONDLG;
+
+  virtual BOOL __fastcall TaskModalDialog(void * DialogFunc, void * DialogData)
+  {
+    COMMONDLG * CommonDlg = static_cast<COMMONDLG *>(DialogData);
+    HWND Parent = GetCorrectFormParent();
+    if (Parent != NULL)
+    {
+      CommonDlg->hwndOwner = Parent;
+    }
+
+    return T::TaskModalDialog(DialogFunc, DialogData);
+  }
+};
+//---------------------------------------------------------------------------
+// without this intermediate class, failure occurs during construction in release version
+#define CHILDCOMMONDIALOG(DIALOG) \
+  class TChild ## DIALOG ## Dialog : public TChildCommonDialog<T ## DIALOG ## Dialog> \
+  { \
+    public: \
+      __fastcall TChild ## DIALOG ## Dialog(TComponent * AOwner) : \
+        TChildCommonDialog<T ## DIALOG ## Dialog>(AOwner) \
+      { \
+      } \
+  }
+//---------------------------------------------------------------------------
+CHILDCOMMONDIALOG(Open);
+CHILDCOMMONDIALOG(Save);
+CHILDCOMMONDIALOG(Font);
+//---------------------------------------------------------------------------
+TOpenDialog * __fastcall CreateOpenDialog(TComponent * AOwner)
+{
+  return new TChildOpenDialog(AOwner);
+}
+//---------------------------------------------------------------------------
+template <class T>
 void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
   AnsiString Filter, bool FileNameCommand, bool Escape)
 {
@@ -435,7 +498,7 @@ void __fastcall BrowseForExecutableT(T * Control, AnsiString Title,
   }
   SplitCommand(Executable, Program, Params, Dir);
 
-  TOpenDialog * FileDialog = new TOpenDialog(Application);
+  TOpenDialog * FileDialog = CreateOpenDialog(Application);
   try
   {
     if (Escape)
@@ -491,6 +554,54 @@ void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
   AnsiString Filter, bool FileNameCommand, bool Escape)
 {
   BrowseForExecutableT(Control, Title, Filter, FileNameCommand, Escape);
+}
+//---------------------------------------------------------------------------
+bool __fastcall FontDialog(TFont * Font)
+{
+  bool Result;
+  TFontDialog * Dialog = new TChildFontDialog(Application);
+  try
+  {
+    Dialog->Device = fdScreen;
+    Dialog->Options = TFontDialogOptions() << fdForceFontExist;
+    Dialog->Font = Font;
+    Result = Dialog->Execute();
+    if (Result)
+    {
+      Font->Assign(Dialog->Font);
+    }
+  }
+  __finally
+  {
+    delete Dialog;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall SaveDialog(AnsiString Title, AnsiString Filter,
+  AnsiString DefaultExt, AnsiString & FileName)
+{
+  bool Result;
+  TSaveDialog * Dialog = new TChildSaveDialog(Application);
+  try
+  {
+    Dialog->Title = Title;
+    Dialog->Filter = Filter;
+    Dialog->DefaultExt = DefaultExt;
+    Dialog->FileName = FileName;
+    Dialog->Options = Dialog->Options << ofOverwritePrompt << ofPathMustExist <<
+      ofNoReadOnlyReturn;
+    Result = Dialog->Execute();
+    if (Result)
+    {
+      FileName = Dialog->FileName;
+    }
+  }
+  __finally
+  {
+    delete Dialog;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall CopyToClipboard(AnsiString Text)

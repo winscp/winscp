@@ -67,8 +67,8 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
         else
         {
           SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
-          if (SourceStorage->OpenSubKey(MungeStr(StoredSessions->DefaultSettings->Name), false) &&
-              Storage->OpenSubKey(MungeStr(GUIConfiguration->PuttySession), true))
+          if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
+              Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
           {
             Storage->Copy(SourceStorage);
             Storage->CloseSubKey();

@@ -301,7 +301,7 @@ object LoginDialog: TLoginDialog
           353
           286)
         object LoadButton: TButton
-          Left = 258
+          Left = 259
           Top = 35
           Width = 88
           Height = 25
@@ -310,7 +310,7 @@ object LoginDialog: TLoginDialog
           TabOrder = 2
         end
         object DeleteButton: TButton
-          Left = 258
+          Left = 259
           Top = 67
           Width = 88
           Height = 25
@@ -349,7 +349,7 @@ object LoginDialog: TLoginDialog
           OnStartDrag = SessionTreeStartDrag
         end
         object NewButton: TButton
-          Left = 258
+          Left = 259
           Top = 3
           Width = 88
           Height = 25
@@ -386,7 +386,7 @@ object LoginDialog: TLoginDialog
           TabOrder = 7
         end
         object RenameButton: TButton
-          Left = 257
+          Left = 258
           Top = 99
           Width = 88
           Height = 25
@@ -395,7 +395,7 @@ object LoginDialog: TLoginDialog
           TabOrder = 4
         end
         object NewFolderButton: TButton
-          Left = 257
+          Left = 258
           Top = 131
           Width = 88
           Height = 25
@@ -2138,7 +2138,7 @@ object LoginDialog: TLoginDialog
             Width = 305
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Respond with &password to the first prompt'
+            Caption = 'Respond with pass&word to the first prompt'
             TabOrder = 3
             OnClick = DataChange
           end
@@ -2147,7 +2147,7 @@ object LoginDialog: TLoginDialog
             Top = 111
             Width = 325
             Height = 17
-            Caption = 'Attempt GSSAPI/SSPI authentication (SSH-2)'
+            Caption = 'Attempt &GSSAPI/SSPI authentication (SSH-2)'
             TabOrder = 4
             OnClick = AuthGSSAPICheck2Click
           end

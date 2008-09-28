@@ -62,6 +62,7 @@ public:
   void __fastcall SetFormat(AnsiString FontName, int FontHeight,
     TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
     bool AWordWrap);
+  void __fastcall ResetFormat();
   int __fastcall FindText(const AnsiString SearchStr, int StartPos, int Length,
     TSearchTypes Options, bool Down);
   void __fastcall Redo();
@@ -70,17 +71,19 @@ public:
   __property bool CanRedo = { read = GetCanRedo };
 
 protected:
-  virtual void __fastcall CreateWnd(void);
   virtual void __fastcall CreateParams(TCreateParams & Params);
   virtual void __fastcall DestroyWnd();
+  void __fastcall Dispatch(void * Message);
   bool __fastcall GetCanRedo();
-  void __fastcall ApplyTabSize();
+  void __fastcall SetTabSize(unsigned int TabSize);
+  void __fastcall WMPaste();
 
 private:
   HINSTANCE FLibrary;
   bool FVersion20;
   bool FWordWrap;
   unsigned int FTabSize;
+  bool FInitialized;
 };
 //---------------------------------------------------------------------------
 __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
@@ -88,7 +91,8 @@ __fastcall TRichEdit20::TRichEdit20(TComponent * AOwner) :
   FLibrary(0),
   FVersion20(false),
   FTabSize(0),
-  FWordWrap(true)
+  FWordWrap(true),
+  FInitialized(false)
 {
 }
 //---------------------------------------------------------------------------
@@ -96,39 +100,62 @@ void __fastcall TRichEdit20::SetFormat(AnsiString FontName, int FontHeight,
   TFontCharset FontCharset, TFontStyles FontStyles, unsigned int TabSize,
   bool AWordWrap)
 {
-  bool RecalculateTabs = (Font->Name != FontName) || (Font->Height != FontHeight) ||
-    (TabSize != FTabSize);
+
+  if (!FInitialized)
+  {
+    // for efficiency we should be creating handle here
+    assert(!HandleAllocated());
+  }
+
+  // setting DefAttributes is noop if we do not have a handle
+  // (btw code below would create one anyway)
+  HandleNeeded();
 
   LockWindowUpdate(Handle);
 
-  Font->Name = FontName;
-  Font->Height = FontHeight;
-  Font->Charset = FontCharset;
-  Font->Style = FontStyles;
-  DefAttributes->Assign(Font);
-  FTabSize = TabSize;
-
-  if (RecalculateTabs && HandleAllocated())
+  // setting DefAttributes may take quite time, even if the font attributes
+  // do not change, so avoid that if not necessary
+  if (!FInitialized ||
+      (Font->Name != FontName) ||
+      (Font->Height != FontHeight) ||
+      (Font->Charset != FontCharset) ||
+      (Font->Style != FontStyles))
   {
-    ApplyTabSize();
+    Font->Name = FontName;
+    Font->Height = FontHeight;
+    Font->Charset = FontCharset;
+    Font->Style = FontStyles;
+    DefAttributes->Assign(Font);
   }
 
-  if (FWordWrap != AWordWrap)
+  if (!FInitialized ||
+      (FTabSize != TabSize))
   {
-    if (Visible)
-    {
-      // Undocumented usage of EM_SETTARGETDEVICE.
-      // But note that it is used by MFC in CRichEditView::WrapChanged()
-      SendMessage(Handle, EM_SETTARGETDEVICE, 0, (AWordWrap ? 0 : 1));
-    }
-    else
-    {
-      WordWrap = AWordWrap;
-    }
+    SetTabSize(TabSize);
+    FTabSize = TabSize;
+  }
+
+  if (!FInitialized ||
+      (FWordWrap != AWordWrap))
+  {
+    assert(HandleAllocated());
+    // Undocumented usage of EM_SETTARGETDEVICE.
+    // But note that it is used by MFC in CRichEditView::WrapChanged()
+    SendMessage(Handle, EM_SETTARGETDEVICE, 0, (AWordWrap ? 0 : 1));
     FWordWrap = AWordWrap;
   }
 
   LockWindowUpdate(NULL);
+
+  FInitialized = true;
+
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::ResetFormat()
+{
+  // tabs are paragraph attributes, which default values cannot be set,
+  // so we need to reapply them after loading file
+  SetTabSize(FTabSize);
 }
 //---------------------------------------------------------------------------
 int __fastcall TRichEdit20::FindText(const AnsiString SearchStr, int StartPos,
@@ -161,13 +188,6 @@ void __fastcall TRichEdit20::Redo()
 {
   assert(FVersion20);
   SendMessage(Handle, EM_REDO, 0, 0);
-}
-//---------------------------------------------------------------------------
-void __fastcall TRichEdit20::CreateWnd(void)
-{
-  TRichEdit::CreateWnd();
-
-  ApplyTabSize();
 }
 //---------------------------------------------------------------------------
 void __fastcall TRichEdit20::CreateParams(TCreateParams & Params)
@@ -207,55 +227,89 @@ void __fastcall TRichEdit20::DestroyWnd()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TRichEdit20::WMPaste()
+{
+  // override default pasting to prevent inserting formatted text (RTF).
+  const char * Text = NULL;
+  HANDLE Handle = OpenTextFromClipboard(Text);
+  if (Handle != NULL)
+  {
+    try
+    {
+      // replacement for EM_PASTESPECIAL,
+      // which ignores trailing line end for some rea
+      SetSelTextBuf(const_cast<char *>(Text));
+    }
+    __finally
+    {
+      CloseTextFromClipboard(Handle);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRichEdit20::Dispatch(void * Message)
+{
+  TMessage * M = static_cast<TMessage *>(Message);
+  switch (M->Msg)
+  {
+    case WM_PASTE:
+      WMPaste();
+      break;
+
+    default:
+      TRichEdit::Dispatch(Message);
+      break;
+  }
+}
+//---------------------------------------------------------------------------
 bool __fastcall TRichEdit20::GetCanRedo()
 {
   return FVersion20 && (SendMessage(Handle, EM_CANREDO, 0, 0) != 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall TRichEdit20::ApplyTabSize()
+void __fastcall TRichEdit20::SetTabSize(unsigned int TabSize)
 {
-  if (FTabSize > 0)
+  assert(TabSize > 0);
+
+  HDC DC = GetDC(Handle);
+  SaveDC(DC);
+  SetMapMode(DC, MM_TEXT);
+  SelectObject(DC, Font->Handle);
+
+  int LogPixelsX = GetDeviceCaps(DC, LOGPIXELSX);
+
+  SIZE Size;
+  GetTextExtentPoint(DC, AnsiString::StringOfChar('X', TabSize).c_str(),
+    TabSize, &Size);
+
+  RestoreDC(DC, -1);
+  ReleaseDC(Handle, DC);
+
+  unsigned int TabTwips = MulDiv(Size.cx, 1440, LogPixelsX);
+
+  // save selection
+  CHARRANGE CharRange;
+  SendMessage(Handle, EM_EXGETSEL, 0, (LPARAM)&CharRange);
+
+  CHARRANGE CharRangeAll;
+  CharRangeAll.cpMin = 0;
+  CharRangeAll.cpMax = -1;
+  SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRangeAll);
+
+  PARAFORMAT2 ParaFormat;
+  ParaFormat.cbSize = sizeof(ParaFormat);
+  ParaFormat.dwMask = PFM_TABSTOPS;
+  ParaFormat.cTabCount = MAX_TAB_STOPS;
+
+  for (int i = 0; i < ParaFormat.cTabCount; i++)
   {
-    HDC DC = GetDC(Handle);
-    SaveDC(DC);
-    SetMapMode(DC, MM_TEXT);
-    SelectObject(DC, Font->Handle);
-
-    int LogPixelsX = GetDeviceCaps(DC, LOGPIXELSX);
-
-    SIZE Size;
-    GetTextExtentPoint(DC, AnsiString::StringOfChar('X', FTabSize).c_str(),
-      FTabSize, &Size);
-
-    RestoreDC(DC, -1);
-    ReleaseDC(Handle, DC);
-
-    unsigned int TabTwips = MulDiv(Size.cx, 1440, LogPixelsX);
-
-    // save selection
-    CHARRANGE CharRange;
-    SendMessage(Handle, EM_EXGETSEL, 0, (LPARAM)&CharRange);
-
-    CHARRANGE CharRangeAll;
-    CharRangeAll.cpMin = 0;
-    CharRangeAll.cpMax = -1;
-    SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRangeAll);
-
-    PARAFORMAT2 ParaFormat;
-    ParaFormat.cbSize = sizeof(ParaFormat);
-    ParaFormat.dwMask = PFM_TABSTOPS;
-    ParaFormat.cTabCount = MAX_TAB_STOPS;
-
-    for (int i = 0; i < ParaFormat.cTabCount; i++)
-    {
-      ParaFormat.rgxTabs[i] = (i + 1) * TabTwips;
-    }
-
-    SendMessage(Handle, EM_SETPARAFORMAT, 0, (LPARAM)&ParaFormat);
-
-    // restore selection
-    SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRange);
+    ParaFormat.rgxTabs[i] = (i + 1) * TabTwips;
   }
+
+  SendMessage(Handle, EM_SETPARAFORMAT, 0, (LPARAM)&ParaFormat);
+
+  // restore selection
+  SendMessage(Handle, EM_EXSETSEL, 0, (LPARAM)&CharRange);
 }
 //---------------------------------------------------------------------------
 class TFindDialogEx : public TFindDialog
@@ -455,14 +509,6 @@ void __fastcall TEditorForm::EditorActionsExecute(TBasicAction *Action,
   {
     EditorMemo->Redo();
   }
-  else if (Action == EditPaste)
-  {
-    // original source: http://home.att.net/~robertdunn/FAQs/Faqs.html
-    // tell the Rich Edit control to insert unformatted text (CF_TEXT)
-    REPASTESPECIAL RepasteSpecial = { 0, 0 };
-    SendMessage(EditorMemo->Handle, EM_PASTESPECIAL, CF_TEXT,
-      (LPARAM)&RepasteSpecial);
-  }
   else if (Action == HelpAction)
   {
     FormHelp(this);
@@ -657,9 +703,11 @@ void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
 void __fastcall TEditorForm::LoadFile()
 {
   EditorMemo->Lines->LoadFromFile(FFileName);
+  EditorMemo->ResetFormat();
   EditorMemo->Modified = false;
   FCaretPos.x = -1;
-  ApplyConfiguration();
+  // this is important particularly after reload
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 bool __fastcall TEditorForm::CursorInUpperPart()

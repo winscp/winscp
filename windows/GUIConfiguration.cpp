@@ -613,7 +613,7 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
 //---------------------------------------------------------------------------
 // duplicated from core\configuration.cpp
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
 #define REGCONFIG(CANCREATE) \
   BLOCK("Interface", CANCREATE, \
     KEY(Bool,     CopyParamDialogExpanded); \
@@ -649,7 +649,7 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
   REGCONFIG(true);
   #undef KEY
 
-  if (Storage->OpenSubKey("Interface\\CopyParam", true))
+  if (Storage->OpenSubKey("Interface\\CopyParam", true, true))
   try
   {
     FDefaultCopyParam.Save(Storage);
@@ -670,7 +670,7 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
     Storage->CloseSubKey();
   }
 
-  if (Storage->OpenSubKey("Interface\\NewDirectory", true))
+  if (Storage->OpenSubKey("Interface\\NewDirectory", true, true))
   try
   {
     FNewDirectoryProperties.Save(Storage);
@@ -692,7 +692,7 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
   #pragma warn +eas
   #undef KEY
 
-  if (Storage->OpenSubKey("Interface\\CopyParam", false))
+  if (Storage->OpenSubKey("Interface\\CopyParam", false, true))
   try
   {
     // must be loaded before eventual setting defaults for CopyParamList
@@ -731,7 +731,7 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
     FPuttyPath = FormatCommand(FPuttyPath, "");
   }
 
-  if (Storage->OpenSubKey("Interface\\NewDirectory", false))
+  if (Storage->OpenSubKey("Interface\\NewDirectory", false, true))
   try
   {
     FNewDirectoryProperties.Load(Storage);

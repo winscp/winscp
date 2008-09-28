@@ -1080,6 +1080,20 @@ void CFtpControlSocket::OnConnect(int nErrorCode)
 	{
 		if (nErrorCode == WSAHOST_NOT_FOUND)
 			ShowStatus(IDS_ERRORMSG_CANTRESOLVEHOST, 1);
+#ifdef MPEXT
+		else
+		{
+			char Buffer[255];
+			int Len = FormatMessage(
+				FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ARGUMENT_ARRAY,
+				NULL, nErrorCode, 0, Buffer, sizeof(Buffer), NULL);
+			while ((Len > 0) && ((Buffer[Len - 1] >= 0) && (Buffer[Len - 1] <= 32)))
+			{
+				--Len;
+			}
+			ShowStatus(CString(Buffer, Len), 1);
+		}
+#endif
 		DoClose();
 	}
 }

@@ -161,6 +161,7 @@ BEGIN
   EXECUTE_APP_ERROR, "Cannot execute '%s'."
   FILE_NOT_FOUND, "File '%s' not found."
   DOCUMENT_WAIT_ERROR, "Error waiting for document to close."
+  SPEED_INVALID, "'%s' is not a valid speed limit."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT2, "Host has not answered for %d seconds.\n\nWait for another %0:d seconds?"
@@ -306,6 +307,7 @@ BEGIN
   SCRIPT_SYNCHRONIZE_COLLECTING, "Comparing..."
   SCRIPT_SYNCHRONIZE_SYNCHRONIZING, "Synchronizing..."
   SCRIPT_SYNCHRONIZE_NODIFFERENCE, "Nothing to synchronize."
+  SPEED_UNLIMITED, "Unlimited"
 
   CORE_VARIABLE_STRINGS, "CORE_VARIABLE"
   PUTTY_BASED_ON, "SSH and SCP code based on PuTTY %s"

@@ -6,7 +6,7 @@ object ProgressForm: TProgressForm
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Operation'
-  ClientHeight = 240
+  ClientHeight = 224
   ClientWidth = 394
   Color = clBtnFace
   ParentFont = True
@@ -16,7 +16,7 @@ object ProgressForm: TProgressForm
   OnShow = FormShow
   DesignSize = (
     394
-    240)
+    224)
   PixelsPerInch = 96
   TextHeight = 13
   object Animate: TAnimate
@@ -114,13 +114,13 @@ object ProgressForm: TProgressForm
     Left = 8
     Top = 133
     Width = 299
-    Height = 79
+    Height = 63
     Anchors = [akLeft, akTop, akRight]
     BevelOuter = bvNone
     TabOrder = 4
     DesignSize = (
       299
-      79)
+      63)
     object StartTimeLabel: TLabel
       Left = 88
       Top = 18
@@ -132,7 +132,7 @@ object ProgressForm: TProgressForm
     end
     object TimeLeftLabel: TLabel
       Left = 88
-      Top = 18
+      Top = 2
       Width = 65
       Height = 13
       Alignment = taRightJustify
@@ -141,14 +141,14 @@ object ProgressForm: TProgressForm
     end
     object TimeLeftLabelLabel: TLabel
       Left = 0
-      Top = 18
+      Top = 2
       Width = 43
       Height = 13
       Caption = 'Time left:'
     end
     object CPSLabel: TLabel
       Left = 234
-      Top = 34
+      Top = 18
       Width = 65
       Height = 13
       Alignment = taRightJustify
@@ -158,7 +158,7 @@ object ProgressForm: TProgressForm
     end
     object TimeElapsedLabel: TLabel
       Left = 234
-      Top = 18
+      Top = 2
       Width = 65
       Height = 13
       Alignment = taRightJustify
@@ -166,28 +166,9 @@ object ProgressForm: TProgressForm
       AutoSize = False
       Caption = '00:00:00'
     end
-    object ResumeLabel: TLabel
-      Left = 234
-      Top = 2
-      Width = 65
-      Height = 13
-      Alignment = taRightJustify
-      Anchors = [akTop, akRight]
-      AutoSize = False
-      Caption = 'Enabled'
-    end
-    object TransferModeLabel: TLabel
-      Left = 88
-      Top = 2
-      Width = 65
-      Height = 13
-      Alignment = taRightJustify
-      AutoSize = False
-      Caption = 'Binary'
-    end
     object BytesTransferedLabel: TLabel
       Left = 88
-      Top = 34
+      Top = 18
       Width = 65
       Height = 13
       Alignment = taRightJustify
@@ -196,7 +177,7 @@ object ProgressForm: TProgressForm
     end
     object Label3: TLabel
       Left = 162
-      Top = 18
+      Top = 2
       Width = 66
       Height = 13
       Anchors = [akTop, akRight]
@@ -204,44 +185,29 @@ object ProgressForm: TProgressForm
     end
     object StartTimeLabelLabel: TLabel
       Left = 0
-      Top = 18
+      Top = 2
       Width = 47
       Height = 13
       Caption = 'Start time:'
     end
     object Label4: TLabel
       Left = 0
-      Top = 34
+      Top = 18
       Width = 82
       Height = 13
       Caption = 'Bytes transferred:'
     end
     object Label12: TLabel
       Left = 162
-      Top = 34
+      Top = 18
       Width = 34
       Height = 13
       Anchors = [akTop, akRight]
       Caption = 'Speed:'
     end
-    object Label10: TLabel
-      Left = 0
-      Top = 2
-      Width = 71
-      Height = 13
-      Caption = 'Transfer mode:'
-    end
-    object Label11: TLabel
-      Left = 162
-      Top = 2
-      Width = 42
-      Height = 13
-      Anchors = [akTop, akRight]
-      Caption = 'Resume:'
-    end
     object FileProgress: TProgressBar
       Left = 0
-      Top = 53
+      Top = 37
       Width = 299
       Height = 16
       Anchors = [akLeft, akTop, akRight]
@@ -254,7 +220,7 @@ object ProgressForm: TProgressForm
   end
   object DisconnectWhenCompleteCheck: TCheckBox
     Left = 16
-    Top = 214
+    Top = 198
     Width = 289
     Height = 17
     Caption = '&Disconnect when operation finishes'

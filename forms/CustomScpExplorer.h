@@ -191,6 +191,7 @@ private:
   int FLastDropEffect;
   bool FPendingTempSpaceWarn;
   TEditorManager * FEditorManager;
+  TList * FLocalEditors;
   TStrings * FCapturedLog;
   bool FDragDropOperation;
   AnsiString FCopyParamDefault;
@@ -370,6 +371,7 @@ protected:
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
     AnsiString & RootTempDir, AnsiString & TempDir, bool AllFiles, bool GetTargetNames,
     bool AutoOperation);
+  void __fastcall LocalEditorClosed(TObject * Sender);
   TTBXPopupMenu * __fastcall HistoryMenu(TOperationSide Side, bool Back);
   AnsiString __fastcall FileStatusBarText(const TStatusFileInfo & FileInfo);
   void __fastcall UpdateFileStatusBar(TTBXStatusBar * StatusBar,

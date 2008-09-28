@@ -116,7 +116,6 @@ public:
 
 
 //-- var, const, procedure ---------------------------------------------------
-extern PACKAGE unsigned __fastcall GetTraceFile(void);
 extern PACKAGE Classes::TComponent* __fastcall Construct(TMetaClass* ComponentClass, Classes::TComponent* Owner);
 extern PACKAGE bool __fastcall IsVista(void);
 

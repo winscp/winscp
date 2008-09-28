@@ -639,7 +639,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
 #define LASTELEM(ELEM) \
   ELEM.SubString(ELEM.LastDelimiter(".>")+1, ELEM.Length() - ELEM.LastDelimiter(".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
 #define KEY(TYPE, VAR) KEYEX(TYPE, VAR, VAR)
 #define REGCONFIG(CANCREATE) \
   BLOCK("Interface", CANCREATE, \
@@ -798,7 +798,7 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
   }
 
   if ((All || FEditorList->Modified) &&
-      Storage->OpenSubKey("Interface\\Editor", true))
+      Storage->OpenSubKey("Interface\\Editor", true, true))
   try
   {
     FEditorList->Save(Storage);
@@ -914,7 +914,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
   }
   FCustomCommandsModified = false;
 
-  if (Storage->OpenSubKey("Interface\\Editor", false))
+  if (Storage->OpenSubKey("Interface\\Editor", false, true))
   try
   {
     FEditorList->Clear();
@@ -927,7 +927,7 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
 
   // load legacy editor configuration
   assert(FLegacyEditor != NULL);
-  if (Storage->OpenSubKey("Interface\\Editor", false))
+  if (Storage->OpenSubKey("Interface\\Editor", false, true))
   {
     try
     {

@@ -63,6 +63,7 @@ object LoggingFrame: TLoggingFrame
       Filter = 'Log files (*.log)|*.log|All files (*.*)|*.*'
       DialogOptions = [ofHideReadOnly, ofPathMustExist]
       DialogTitle = 'Select file for session log.'
+      OnCreateEditDialog = LogFileNameEditCreateEditDialog
       ClickKey = 16397
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 2

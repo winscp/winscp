@@ -70,6 +70,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
   FCopyParamScrollOnDragOver = new TListViewScrollOnDragOver(CopyParamListView, true);
+  FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView, true);
 
   LoggingFrame->Init();
   InstallPathWordBreakProc(RandomSeedFileEdit);
@@ -80,6 +81,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
 //---------------------------------------------------------------------------
 __fastcall TPreferencesDialog::~TPreferencesDialog()
 {
+  SAFE_DESTROY(FEditorScrollOnDragOver);
   SAFE_DESTROY(FCopyParamScrollOnDragOver);
   SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
   delete FEditorFont;
@@ -707,21 +709,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::EditorFontButtonClick(TObject * /*Sender*/)
 {
-  TFontDialog * Dialog = new TFontDialog(Application);
-  try
+  if (FontDialog(FEditorFont))
   {
-    Dialog->Device = fdScreen;
-    Dialog->Options = TFontDialogOptions() << fdForceFontExist;
-    Dialog->Font = FEditorFont;
-    if (Dialog->Execute())
-    {
-      FEditorFont->Assign(Dialog->Font);
-      UpdateControls();
-    }
-  }
-  __finally
-  {
-    delete Dialog;
+    UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
@@ -970,6 +960,10 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   else if (ListView == CustomCommandsView)
   {
     return FCustomCommandsScrollOnDragOver;
+  }
+  else if (ListView == EditorListView)
+  {
+    return FEditorScrollOnDragOver;
   }
   else
   {
@@ -1434,26 +1428,13 @@ void __fastcall TPreferencesDialog::PuttyPathResetButtonClick(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::ExportButtonClick(TObject * /*Sender*/)
 {
-  TSaveDialog * Dialog = new TSaveDialog(Application);
-  try
+  AnsiString PersonalDirectory;
+  ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalDirectory);
+  AnsiString FileName = IncludeTrailingBackslash(PersonalDirectory) +
+    ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName));
+  if (SaveDialog(LoadStr(EXPORT_CONF_TITLE), LoadStr(EXPORT_CONF_FILTER), "ini", FileName))
   {
-    Dialog->DefaultExt = "ini";
-    Dialog->Filter = LoadStr(EXPORT_CONF_FILTER);
-    Dialog->Title = LoadStr(EXPORT_CONF_TITLE);
-    AnsiString PersonalDirectory;
-    ::SpecialFolderLocation(CSIDL_PERSONAL, PersonalDirectory);
-    Dialog->FileName = IncludeTrailingBackslash(PersonalDirectory) +
-      ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName));
-    Dialog->Options = Dialog->Options << ofOverwritePrompt << ofPathMustExist <<
-      ofNoReadOnlyReturn;
-    if (Dialog->Execute())
-    {
-      Configuration->Export(Dialog->FileName);
-    }
-  }
-  __finally
-  {
-    delete Dialog;
+    Configuration->Export(FileName);
   }
 }
 //---------------------------------------------------------------------------
@@ -1483,5 +1464,13 @@ void __fastcall TPreferencesDialog::ListViewEndDrag(
   TObject * Sender, TObject * /*Target*/, int /*X*/, int /*Y*/)
 {
   ScrollOnDragOver(Sender)->EndDrag();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::RandomSeedFileEditCreateEditDialog(
+  TObject * Sender, TFileDialogKind DialogKind, TOpenDialog *& Dialog)
+{
+  USEDPARAM(DialogKind);
+  assert(DialogKind == dkOpen);
+  Dialog = CreateOpenDialog(dynamic_cast<TComponent *>(Sender));
 }
 //---------------------------------------------------------------------------

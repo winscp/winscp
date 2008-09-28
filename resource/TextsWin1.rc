@@ -62,7 +62,6 @@ BEGIN
         CUSTOM_COMMAND_IMPOSSIBLE, "Custom command '%s' cannot be executed right now. Please select files for the command first."
         CUSTOM_COMMAND_AD_HOC_NAME, "Ad Hoc"
         EDIT_SESSION_CLOSED_RELOAD, "Cannot reload file '%s', the session '%s' has been already closed."
-        SPEED_INVALID, "'%s' is not a valid speed limit."
         UNSAFE_ACTIONS_DISABLED, "Automatic actions are disabled when URL address is provided on command-line."
 
         WIN_CONFIRMATION_STRINGS, "WIN_CONFIRMATION"
@@ -168,7 +167,6 @@ BEGIN
         UPDATE_DISABLED, "Check for application updates is temporarily disabled. Please try again later."
         UPDATE_URL_BUTTON, "&Go To"
         WHATS_NEW_BUTTON, "What's New"
-        SPEED_UNLIMITED, "Unlimited"
         BALLOON_OPERATION_COMPLETE, "Operation was completed."
         CUSTOM_COMMAND_PRINT, "&Print"
 
@@ -217,11 +215,6 @@ BEGIN
         SET_DEFAULT_SESSION_SETTINGS, "Set current session settings as default?"
         OPEN_DIRECTORY_BROWSE_CAPTION, "Open directory"
         OPEN_DIRECTORY_ADD_BOOMARK_ACTION, "Manage bookmarks"
-        RESUME_ENABLED, "Enabled"
-        RESUME_DISABLED, "Disabled"
-        RESUME_NOT_AVAILABLE, "N/A"
-        TRANSFER_ASCII, "Text"
-        TRANSFER_BINARY, "Binary"
         EDITOR_LINE_STATUS, "Line: %d/%d"
         EDITOR_COLUMN_STATUS, "Column: %d"
         EDITOR_CHARACTER_STATUS2, "Character: %d (0x%.2x)"

@@ -3,7 +3,7 @@
 #pragma hdrstop
 
 #include <Common.h>
-#include <TextsWin.h>
+#include <TextsCore.h>
 #include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -99,7 +99,7 @@ void __fastcall TCustomWinConfiguration::Saved()
 #define LASTELEM(ELEM) \
   ELEM.SubString(ELEM.LastDelimiter(".>")+1, ELEM.Length() - ELEM.LastDelimiter(".>"))
 #define BLOCK(KEY, CANCREATE, BLOCK) \
-  if (Storage->OpenSubKey(KEY, CANCREATE)) try { BLOCK } __finally { Storage->CloseSubKey(); }
+  if (Storage->OpenSubKey(KEY, CANCREATE, true)) try { BLOCK } __finally { Storage->CloseSubKey(); }
 #define REGCONFIG(CANCREATE) \
   BLOCK("Interface", CANCREATE, \
     KEY(Integer,  Interface); \

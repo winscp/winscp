@@ -87,6 +87,7 @@ private:
   TCaptureOutputEvent FOnCaptureOutput;
 
   void __fastcall ClearAliases();
+  void __fastcall ClearAlias(AnsiString Alias);
   void __fastcall CustomReadFile(const AnsiString FileName,
     TRemoteFile *& File, TRemoteFile * ALinkedByFile);
   static AnsiString __fastcall DelimitStr(AnsiString Str);

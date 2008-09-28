@@ -651,7 +651,7 @@ void __fastcall TCustomUnixDriveView::GetImageIndex(TTreeNode * Node)
 //---------------------------------------------------------------------------
 TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(AnsiString Path)
 {
-  TTreeNode * Result = NULL;
+  TTreeNode * Result;
   #ifndef DESIGN_ONLY
   if (IsUnixRootPath(Path))
   {
@@ -703,6 +703,8 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(AnsiString Path)
       }
     }
   }
+  #else
+  Result = NULL
   #endif
   return Result;
 }

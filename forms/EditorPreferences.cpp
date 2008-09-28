@@ -39,6 +39,7 @@ __fastcall TEditorPreferencesDialog::TEditorPreferencesDialog(
   TComponent * Owner) :
   TForm(Owner)
 {
+  SetCorrectFormParent(this);
   UseSystemSettings(this);
 
   InstallPathWordBreakProc(ExternalEditorEdit);

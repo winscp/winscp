@@ -36,6 +36,7 @@ __fastcall TCopyParamPresetDialog::TCopyParamPresetDialog(TComponent * Owner,
   TCopyParamPresetMode Mode, TCopyParamRuleData * CurrentRuleData)
   : TForm(Owner)
 {
+  SetCorrectFormParent(this);
   UseSystemSettings(this);
   CopyParamsFrame->Direction = pdAll;
   FMode = Mode;

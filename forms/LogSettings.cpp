@@ -10,6 +10,7 @@
 #include <TextsWin.h>
 
 #include <VCLCommon.h>
+#include <Tools.h>
 #include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -155,5 +156,13 @@ void __fastcall TLoggingFrame::LogFileNameEditAfterDialog(TObject * /*Sender*/,
   {
     Name = FBeforeDialogPath;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoggingFrame::LogFileNameEditCreateEditDialog(
+  TObject * Sender, TFileDialogKind DialogKind, TOpenDialog *& Dialog)
+{
+  USEDPARAM(DialogKind);
+  assert(DialogKind == dkOpen);
+  Dialog = CreateOpenDialog(dynamic_cast<TComponent *>(Sender));
 }
 //---------------------------------------------------------------------------

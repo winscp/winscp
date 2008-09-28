@@ -842,40 +842,6 @@ bool __fastcall IsGlobalMinimizeHandler()
   return (GlobalOnMinimize != NULL);
 }
 //---------------------------------------------------------------------------
-unsigned long __fastcall GetSpeedLimit(const AnsiString & Text)
-{
-  unsigned long Speed;
-  if (AnsiSameText(Text, LoadStr(SPEED_UNLIMITED)))
-  {
-    Speed = 0;
-  }
-  else
-  {
-    int SSpeed;
-    if (!TryStrToInt(Text, SSpeed) ||
-        (SSpeed < 0))
-    {
-      throw Exception(FMTLOAD(SPEED_INVALID, (Text)));
-    }
-    Speed = SSpeed;
-  }
-  return Speed * 1024;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall SetSpeedLimit(unsigned long Limit)
-{
-  AnsiString Text;
-  if (Limit == 0)
-  {
-    Text = LoadStr(SPEED_UNLIMITED);
-  }
-  else
-  {
-    Text = IntToStr(Limit / 1024);
-  }
-  return Text;
-}
-//---------------------------------------------------------------------------
 struct TNotifyIconData5
 {
   DWORD cbSize;

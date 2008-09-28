@@ -86,6 +86,7 @@ public:
   AnsiString __fastcall Command(TFSCommand Cmd, const TVarRec * args, int size);
   TStrings * __fastcall CreateCommandList();
   AnsiString __fastcall FullCommand(TFSCommand Cmd, const TVarRec * args, int size);
+  static AnsiString __fastcall ExtractCommand(AnsiString Command);
   __property int MaxLines[TFSCommand Cmd]  = { read=GetMaxLines};
   __property int MinLines[TFSCommand Cmd]  = { read=GetMinLines };
   __property bool ModifiesFiles[TFSCommand Cmd]  = { read=GetModifiesFiles };
@@ -251,6 +252,16 @@ AnsiString __fastcall TCommandSet::GetReturnVar()
     else return AnsiString('$') + SessionData->ReturnVar;
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TCommandSet::ExtractCommand(AnsiString Command)
+{
+  int P = Command.Pos(" ");
+  if (P > 0)
+  {
+    Command.SetLength(P-1);
+  }
+  return Command;
+}
+//---------------------------------------------------------------------------
 TStrings * __fastcall TCommandSet::CreateCommandList()
 {
   TStrings * CommandList = new TStringList();
@@ -259,8 +270,7 @@ TStrings * __fastcall TCommandSet::CreateCommandList()
     AnsiString Cmd = Commands[(TFSCommand)Index];
     if (!Cmd.IsEmpty())
     {
-      Integer P = Cmd.Pos(" ");
-      if (P) Cmd.SetLength(P-1);
+      Cmd = ExtractCommand(Cmd);
       if ((Cmd != "%s") && (CommandList->IndexOf(Cmd) < 0))
         CommandList->Add(Cmd);
     }
@@ -774,19 +784,28 @@ void __fastcall TSCPFileSystem::DetectReturnVar()
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TSCPFileSystem::ClearAlias(AnsiString Alias)
+{
+  if (!Alias.IsEmpty())
+  {
+    // this command usually fails, because there will never be
+    // aliases on all commands -> see last False parametr
+    ExecCommand(fsUnalias, ARRAYOFCONST((Alias)), false);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TSCPFileSystem::ClearAliases()
 {
   try
   {
     FTerminal->LogEvent("Clearing all aliases.");
+    ClearAlias(TCommandSet::ExtractCommand(FTerminal->SessionData->ListingCommand));
     TStrings * CommandList = FCommandSet->CreateCommandList();
     try
     {
       for (int Index = 0; Index < CommandList->Count; Index++)
       {
-        // this command usually fails, becouse there will never be
-        // aliases on all commands -> see last False parametr
-        ExecCommand(fsUnalias, ARRAYOFCONST((CommandList->Strings[Index])), false);
+        ClearAlias(CommandList->Strings[Index]);
       }
     }
     __finally

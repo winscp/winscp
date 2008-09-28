@@ -27,7 +27,7 @@ TSessionData * GetLoginData(AnsiString SessionName, TOptions * Options,
   TSessionData * Data;
 
   Data = StoredSessions->ParseUrl(SessionName, Options, DefaultsOnly,
-    puExtractFileName | puDecodeUrlChars, &DownloadFile, &Url);
+    &DownloadFile, &Url);
   assert(Data != NULL);
 
   if (!Data->CanLogin || DefaultsOnly)

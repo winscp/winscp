@@ -50,6 +50,7 @@ bool __fastcall DoCustomCommandDialog(AnsiString & Description,
 __fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner, unsigned int Options)
   : TForm(Owner)
 {
+  SetCorrectFormParent(this);
   UseSystemSettings(this);
   FCustomCommands = NULL;
   FMode = ccmEdit;

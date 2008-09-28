@@ -179,6 +179,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
   FEditorManager->OnFileReload = ExecutedFileReload;
   FEditorManager->OnFileEarlyClosed = ExecutedFileEarlyClosed;
 
+  FLocalEditors = new TList();
+
   FQueueStatus = NULL;
   FQueueStatusSection = new TCriticalSection();
   FQueueStatusInvalidated = false;
@@ -263,6 +265,9 @@ __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 
   FEditorManager->CloseInternalEditors(ForceCloseInternalEditor);
   delete FEditorManager;
+
+  assert(FLocalEditors->Count == 0);
+  delete FLocalEditors;
 
   if (FDelayedDeletionTimer)
   {
@@ -626,10 +631,18 @@ void __fastcall TCustomScpExplorerForm::ConfigurationChanged()
   UpdateControls();
 
   // this can be called even before constuctor finishes.
-  // can we be sure that the FEditorManager is NULL then?
   if (FEditorManager != NULL)
   {
     FEditorManager->ProcessFiles(FileConfigurationChanged, NULL);
+  }
+
+  // this can be called even before constuctor finishes.
+  if (FLocalEditors != NULL)
+  {
+    for (int Index = 0; Index < FLocalEditors->Count; Index++)
+    {
+      ReconfigureEditorForm(static_cast<TForm *>(FLocalEditors->Items[Index]));
+    }
   }
 
   if (ComponentVisible[fcCustomCommandsBand])
@@ -1773,7 +1786,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
     }
     else
     {
-      ShowEditorForm(FileName, this, NULL, NULL, NULL, "");
+      FLocalEditors->Add(ShowEditorForm(FileName, this, NULL, NULL, LocalEditorClosed, ""));
     }
   }
   else
@@ -1825,6 +1838,11 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       FEditorManager->AddFileExternal(FileName, Data, Process);
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::LocalEditorClosed(TObject * Sender)
+{
+  CHECK(FLocalEditors->Extract(Sender) >= 0);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
@@ -2084,12 +2102,12 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
       (ExtractFileName(FileName), Data.SessionName)));
   }
 
+  TRemoteFile * File = NULL;
   TStrings * FileList = new TStringList();
   try
   {
     AnsiString RemoteFileName =
       UnixIncludeTrailingBackslash(Data.RemoteDirectory) + Data.OriginalFileName;
-    TRemoteFile * File = NULL;
     FTerminal->ExceptionOnFail = true;
     try
     {
@@ -2115,6 +2133,7 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
   }
   __finally
   {
+    delete File;
     delete FileList;
   }
 }
@@ -2934,11 +2953,27 @@ void __fastcall TCustomScpExplorerForm::FormCloseQuery(TObject * /*Sender*/,
 
   if (CanClose)
   {
-    CanClose = FEditorManager->CloseInternalEditors(CloseInternalEditor) &&
-      FEditorManager->CloseExternalFilesWithoutProcess() &&
-      (FEditorManager->Empty(true) ||
-       (MessageDialog(LoadStr(PENDING_EDITORS), qtWarning, qaIgnore | qaCancel,
-          HELP_NONE) == qaIgnore));
+    CanClose =
+      FEditorManager->CloseInternalEditors(CloseInternalEditor) &&
+      FEditorManager->CloseExternalFilesWithoutProcess();
+
+    if (CanClose)
+    {
+      while (CanClose && (FLocalEditors->Count > 0))
+      {
+        int PrevCount = FLocalEditors->Count;
+        static_cast<TForm *>(FLocalEditors->Items[0])->Close();
+        CanClose = (FLocalEditors->Count < PrevCount);
+      }
+
+      if (CanClose)
+      {
+        CanClose =
+          FEditorManager->Empty(true) ||
+          (MessageDialog(LoadStr(PENDING_EDITORS), qtWarning, qaIgnore | qaCancel,
+            HELP_NONE) == qaIgnore);
+      }
+    }
   }
 }
 //---------------------------------------------------------------------------

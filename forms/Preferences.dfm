@@ -1523,6 +1523,7 @@ object PreferencesDialog: TPreferencesDialog
             Filter = 'Random seed files (*.rnd)|*.rnd|All files (*.*)|*.*'
             DialogOptions = [ofHideReadOnly, ofPathMustExist]
             DialogTitle = 'Select file for random seed'
+            OnCreateEditDialog = RandomSeedFileEditCreateEditDialog
             ClickKey = 16397
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 0

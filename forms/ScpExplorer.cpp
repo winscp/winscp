@@ -265,7 +265,11 @@ AnsiString __fastcall TScpExplorerForm::RemotePathComboBoxText()
   }
   else
   {
-    Result = UnixPathComboBox->Strings->Strings[UnixPathComboBox->Strings->Count - 1];
+    // this is called couple of times before the combo box is populated
+    if (UnixPathComboBox->Strings->Count > 0)
+    {
+      Result = UnixPathComboBox->Strings->Strings[UnixPathComboBox->Strings->Count - 1];
+    }
   }
 
   return Result;

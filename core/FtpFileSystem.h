@@ -145,10 +145,9 @@ protected:
   bool __fastcall ConfirmOverwrite(AnsiString & FileName,
     TOverwriteMode & OverwriteMode, TFileOperationProgressType * OperationProgress,
     const TOverwriteFileParams * FileParams, int Params, bool AutoResume);
-  void __fastcall CheckFileTransferAbort();
   void __fastcall ReadDirectoryProgress(__int64 Bytes);
   void __fastcall ResetFileTransfer();
-  void __fastcall FileTransferProgress(__int64 TransferSize, __int64 Bytes, int Percent);
+  void __fastcall FileTransferProgress(__int64 TransferSize, __int64 Bytes);
   void __fastcall ResetCaches();
   void __fastcall CaptureOutput(const AnsiString & Str);
   void __fastcall DoReadDirectory(TRemoteFileList * FileList);

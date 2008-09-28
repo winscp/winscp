@@ -848,26 +848,45 @@ void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height)
   Form->SetBounds(Left, Top, Width, Height);
 }
 //---------------------------------------------------------------------------
+HWND __fastcall GetCorrectFormParent()
+{
+  HWND Result = NULL;
+  // Kind of hack (i do not understand this much).
+  // Rationale: for example when the preferences window is opened from login dialog
+  // settings Parent to Screen->ActiveForm leads to "cannot focus disabled control",
+  // so we set Parent only when absolutelly necessary
+  // (dialog opened from log window or editor)
+  // TODO: does not work for dialogs opened from preferences dialog
+  if ((Application->MainForm != NULL) &&
+      (Application->MainForm != Screen->ActiveForm))
+  {
+    AnsiString C = Screen->ActiveForm->Caption;
+    if (Screen->ActiveForm != NULL)
+    {
+      // the case when we are invoking dialog from (e.g. prefences) dialog
+      // invokend form non modal window (e.g. editor)
+      if (Screen->ActiveForm->ParentWindow != NULL)
+      {
+        Result = Screen->ActiveForm->Handle;
+      }
+      // this should better be check for modal form
+      else if (Screen->ActiveForm->BorderStyle != bsDialog)
+      {
+        Result = Screen->ActiveForm->Handle;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall SetCorrectFormParent(TForm * Form)
 {
   try
   {
-    // Kind of hack (i do not understand this much).
-    // Rationale: for example when the preferences window is opened from login dialog
-    // settings Parent to Screen->ActiveForm leads to "cannot focus disabled control",
-    // so we set Parent only when absolutelly necessary
-    // (dialog opened from log window or editor)
-    // TODO: does not work for dialogs opened from preferences dialog
-    if ((Application->MainForm != NULL) &&
-        (Application->MainForm != Screen->ActiveForm))
+    HWND Parent = GetCorrectFormParent();
+    if (Parent != NULL)
     {
-      // this should better be check for modal form
-      AnsiString C = Screen->ActiveForm->Caption;
-      if ((Screen->ActiveForm != NULL) &&
-          (Screen->ActiveForm->BorderStyle != bsDialog))
-      {
-        Form->ParentWindow = Screen->ActiveForm->Handle;
-      }
+      Form->ParentWindow = Parent;
     }
   }
   catch(...)

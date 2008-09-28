@@ -110,4 +110,7 @@ public:
   __property unsigned long CPSLimit = { read = FCPSLimit, write = FCPSLimit };
 };
 //---------------------------------------------------------------------------
+unsigned long __fastcall GetSpeedLimit(const AnsiString & Text);
+AnsiString __fastcall SetSpeedLimit(unsigned long Limit);
+//---------------------------------------------------------------------------
 #endif

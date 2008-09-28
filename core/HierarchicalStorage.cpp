@@ -36,17 +36,9 @@ AnsiString __fastcall UnMungeStr(const AnsiString Str)
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall SimpleMungeStr(const AnsiString Str)
+AnsiString __fastcall PuttyMungeStr(const AnsiString Str)
 {
-  AnsiString Result = Str;
-  for (int i = 1; i < Result.Length(); i++)
-  {
-    if ((Result[i] == '\\') || (Result[i] == '[') || (Result[i] == ']'))
-    {
-      Result[i] = '_';
-    }
-  }
-  return Result;
+  return MungeStr(Str);
 }
 //===========================================================================
 __fastcall THierarchicalStorage::THierarchicalStorage(const AnsiString AStorage)
@@ -67,10 +59,15 @@ void __fastcall THierarchicalStorage::SetAccessMode(TStorageAccessMode value)
   FAccessMode = value;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall THierarchicalStorage::GetCurrentSubKey()
+AnsiString __fastcall THierarchicalStorage::GetCurrentSubKeyMunged()
 {
   if (FKeyHistory->Count) return FKeyHistory->Strings[FKeyHistory->Count-1];
     else return "";
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall THierarchicalStorage::GetCurrentSubKey()
+{
+  return UnMungeStr(GetCurrentSubKeyMunged());
 }
 //---------------------------------------------------------------------------
 bool __fastcall THierarchicalStorage::OpenRootKey(bool CanCreate)
@@ -78,15 +75,31 @@ bool __fastcall THierarchicalStorage::OpenRootKey(bool CanCreate)
   return OpenSubKey("", CanCreate);
 }
 //---------------------------------------------------------------------------
-bool __fastcall THierarchicalStorage::OpenSubKey(const AnsiString SubKey, bool )
+AnsiString __fastcall THierarchicalStorage::MungeSubKey(AnsiString Key, bool Path)
 {
-  FKeyHistory->Add(IncludeTrailingBackslash(CurrentSubKey+SubKey));
-  return true;
+  AnsiString Result;
+  if (Path)
+  {
+    assert(Key.IsEmpty() || (Key[Key.Length()] != '\\'));
+    while (!Key.IsEmpty())
+    {
+      if (!Result.IsEmpty())
+      {
+        Result += '\\';
+      }
+      Result += MungeStr(CutToChar(Key, '\\', false));
+    }
+  }
+  else
+  {
+    Result = MungeStr(Key);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall THierarchicalStorage::CreateSubKey(const AnsiString SubKey)
+bool __fastcall THierarchicalStorage::OpenSubKey(const AnsiString SubKey, bool /*CanCreate*/, bool Path)
 {
-  FKeyHistory->Add(IncludeTrailingBackslash(CurrentSubKey+SubKey));
+  FKeyHistory->Add(IncludeTrailingBackslash(CurrentSubKey+MungeSubKey(SubKey, Path)));
   return true;
 }
 //---------------------------------------------------------------------------
@@ -292,7 +305,7 @@ bool __fastcall TRegistryStorage::Copy(TRegistryStorage * Storage)
     int Index = 0;
     while ((Index < Names->Count) && Result)
     {
-      AnsiString Name = Names->Strings[Index];
+      AnsiString Name = MungeStr(Names->Strings[Index]);
       unsigned long Size = Buffer.size();
       unsigned long Type;
       int RegResult;
@@ -342,22 +355,13 @@ void __fastcall TRegistryStorage::SetAccessMode(TStorageAccessMode value)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TRegistryStorage::OpenSubKey(const AnsiString SubKey, bool CanCreate)
+bool __fastcall TRegistryStorage::OpenSubKey(const AnsiString SubKey, bool CanCreate, bool Path)
 {
   bool Result;
   if (FKeyHistory->Count > 0) FRegistry->CloseKey();
   Result = FRegistry->OpenKey(
-    ExcludeTrailingBackslash(Storage + CurrentSubKey + SubKey), CanCreate);
-  if (Result) Result = THierarchicalStorage::OpenSubKey(SubKey, CanCreate);
-  return Result;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TRegistryStorage::CreateSubKey(const AnsiString SubKey)
-{
-  bool Result;
-  if (FKeyHistory->Count) FRegistry->CloseKey();
-  Result = FRegistry->CreateKey(ExcludeTrailingBackslash(Storage + CurrentSubKey + SubKey));
-  if (Result) Result = THierarchicalStorage::CreateSubKey(CurrentSubKey + SubKey);
+    ExcludeTrailingBackslash(Storage + CurrentSubKey + MungeSubKey(SubKey, Path)), CanCreate);
+  if (Result) Result = THierarchicalStorage::OpenSubKey(SubKey, CanCreate, Path);
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -375,13 +379,17 @@ bool __fastcall TRegistryStorage::DeleteSubKey(const AnsiString SubKey)
 {
   AnsiString K;
   if (FKeyHistory->Count == 0) K = Storage + CurrentSubKey;
-  K += SubKey;
+  K += MungeStr(SubKey);
   return FRegistry->DeleteKey(K);
 }
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::GetSubKeyNames(Classes::TStrings* Strings)
 {
   FRegistry->GetKeyNames(Strings);
+  for (int Index = 0; Index < Strings->Count; Index++)
+  {
+    Strings->Strings[Index] = UnMungeStr(Strings->Strings[Index]);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::GetValueNames(Classes::TStrings* Strings)
@@ -396,7 +404,7 @@ bool __fastcall TRegistryStorage::DeleteValue(const AnsiString Name)
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::KeyExists(const AnsiString SubKey)
 {
-  return FRegistry->KeyExists(SubKey);
+  return FRegistry->KeyExists(MungeStr(SubKey));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::ValueExists(const AnsiString Value)
@@ -602,10 +610,10 @@ __fastcall TIniFileStorage::~TIniFileStorage()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::GetCurrentSection()
 {
-  return ExcludeTrailingBackslash(CurrentSubKey);
+  return ExcludeTrailingBackslash(GetCurrentSubKeyMunged());
 }
 //---------------------------------------------------------------------------
-bool __fastcall TIniFileStorage::OpenSubKey(const AnsiString SubKey, bool CanCreate)
+bool __fastcall TIniFileStorage::OpenSubKey(const AnsiString SubKey, bool CanCreate, bool Path)
 {
   bool Result = CanCreate;
 
@@ -616,7 +624,7 @@ bool __fastcall TIniFileStorage::OpenSubKey(const AnsiString SubKey, bool CanCre
     {
       Sections->Sorted = true;
       FIniFile->ReadSections(Sections);
-      AnsiString NewKey = ExcludeTrailingBackslash(CurrentSubKey+SubKey);
+      AnsiString NewKey = ExcludeTrailingBackslash(CurrentSubKey+MungeSubKey(SubKey, Path));
       int Index = -1;
       if (Sections->Count)
       {
@@ -636,7 +644,7 @@ bool __fastcall TIniFileStorage::OpenSubKey(const AnsiString SubKey, bool CanCre
 
   if (Result)
   {
-    Result = THierarchicalStorage::OpenSubKey(SubKey, CanCreate);
+    Result = THierarchicalStorage::OpenSubKey(SubKey, CanCreate, Path);
   }
   return Result;
 }
@@ -646,7 +654,7 @@ bool __fastcall TIniFileStorage::DeleteSubKey(const AnsiString SubKey)
   bool Result;
   try
   {
-    FIniFile->EraseSection(CurrentSubKey + SubKey);
+    FIniFile->EraseSection(CurrentSubKey + MungeStr(SubKey));
     Result = true;
   }
   catch (...)
@@ -678,7 +686,7 @@ void __fastcall TIniFileStorage::GetSubKeyNames(Classes::TStrings* Strings)
         }
         if (Strings->IndexOf(SubSection) < 0)
         {
-          Strings->Add(SubSection);
+          Strings->Add(UnMungeStr(SubSection));
         }
       }
     }
@@ -696,7 +704,7 @@ void __fastcall TIniFileStorage::GetValueNames(Classes::TStrings* Strings)
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::KeyExists(const AnsiString SubKey)
 {
-  return FIniFile->SectionExists(CurrentSubKey + SubKey);
+  return FIniFile->SectionExists(CurrentSubKey + MungeStr(SubKey));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::ValueExists(const AnsiString Value)

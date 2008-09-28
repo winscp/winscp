@@ -754,13 +754,13 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
       AnsiString() : SftpServerEdit->Text);
   aSessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
 
-  // FTP tab
-  aSessionData->PostLoginCommands = PostLoginCommandsMemo->Lines->Text;
-
   #define SAVE_SFTP_BUG_COMBO(BUG) aSessionData->SFTPBug[sb ## BUG] = (TAutoSwitch)(2 - SFTPBug ## BUG ## Combo->ItemIndex);
   SAVE_SFTP_BUG_COMBO(Symlink);
   SAVE_SFTP_BUG_COMBO(SignedTS);
   #undef SAVE_SFTP_BUG_COMBO
+
+  // FTP tab
+  aSessionData->PostLoginCommands = PostLoginCommandsMemo->Lines->Text;
 
   // Proxy tab
   aSessionData->ProxyMethod = (TProxyMethod)SshProxyMethodCombo->ItemIndex;

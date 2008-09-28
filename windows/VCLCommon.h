@@ -39,6 +39,7 @@ void __fastcall MakeNextInTabOrder(TWinControl * Control, TWinControl * After);
 void __fastcall CutFormToDesktop(TForm * Form);
 void __fastcall UpdateFormPosition(TCustomForm * Form, TPosition Position);
 void __fastcall ResizeForm(TCustomForm * Form, int Width, int Height);
+HWND __fastcall GetCorrectFormParent();
 void __fastcall SetCorrectFormParent(TForm * Form);
 void __fastcall InvokeHelp(TWinControl * Control);
 TMonitor *  __fastcall FormMonitor(TCustomForm * Form);

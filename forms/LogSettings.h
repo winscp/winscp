@@ -37,6 +37,8 @@ __published:
           AnsiString &Name, bool &Action);
   void __fastcall LogFileNameEditAfterDialog(TObject *Sender,
           AnsiString &Name, bool &Action);
+  void __fastcall LogFileNameEditCreateEditDialog(TObject *Sender,
+          TFileDialogKind DialogKind, TOpenDialog *&Dialog);
 private:
   bool FEnableLogWindow;
   AnsiString FBeforeDialogPath;

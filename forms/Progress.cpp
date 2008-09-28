@@ -210,18 +210,6 @@ void __fastcall TProgressForm::UpdateControls()
     CPSLabel->Caption = FORMAT("%s/s", (FormatBytes(FData.CPS())));
     FileProgress->Position = FData.TransferProgress();
     FileProgress->Hint = FORMAT("%d%%", (FileProgress->Position));
-
-    TransferModeLabel->Caption =
-      LoadStr(FData.AsciiTransfer ? TRANSFER_ASCII : TRANSFER_BINARY);
-
-    AnsiString ResumeStatusStr;
-    switch (FData.ResumeStatus) {
-      case rsEnabled: ResumeStatusStr = LoadStr(RESUME_ENABLED); break;
-      case rsDisabled: ResumeStatusStr = LoadStr(RESUME_DISABLED); break;
-      case rsNotAvailable: ResumeStatusStr = LoadStr(RESUME_NOT_AVAILABLE); break;
-      default:  assert(false);
-    }
-    ResumeLabel->Caption = ResumeStatusStr;
   }
 }
 //---------------------------------------------------------------------

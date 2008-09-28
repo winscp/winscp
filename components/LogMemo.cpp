@@ -36,6 +36,7 @@ __fastcall TLogMemo::TLogMemo(TComponent* Owner)
   FWantScrollToEnd = false;
   FUpdating = false;
   FNeedsRepaint = false;
+  FLastUpdate = 0;
 
   FShowTypes = DEFAULT_LOGMEMO_SHOWTYPES;
   ReadOnly = true;
@@ -105,7 +106,17 @@ void __fastcall TLogMemo::SessionLogChange(TObject * Sender)
 #endif
   if (HandleAllocated())
   {
-    PostMessage(Handle, WM_LOG_UPDATE, 0, 0);
+    unsigned int Ticks = GetTickCount();
+    if ((FLastUpdate == 0) || (Ticks < FLastUpdate) || (Ticks - FLastUpdate > 200))
+    {
+      // forced update
+      UpdateFromLog();
+    }
+    else
+    {
+      // update later, once idle
+      PostMessage(Handle, WM_LOG_UPDATE, 0, 0);
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -177,6 +188,13 @@ void __fastcall TLogMemo::UpdateFromLog()
             }
             catch(...)
             {
+              if (Lines->Count < FIndexes->Count)
+              {
+                FIndexes->Delete(FIndexes->Count - 1);
+              }
+              assert(FIndexes->Count == Lines->Count);
+              // LastIndex is strangely reset to 0 when exception is caught
+              LastIndex = Indexes[Lines->Count-1];
             }
           }
           LastIndex++;
@@ -194,6 +212,8 @@ void __fastcall TLogMemo::UpdateFromLog()
       }
 
       assert(!Parent || FIndexes->Count == Lines->Count);
+
+      FLastUpdate = GetTickCount();
     }
     __finally
     {
@@ -336,7 +356,6 @@ void __fastcall TLogMemo::WMPaint(TWMPaint & Message)
       SelLength = 0;
       SelStart = Lines->Text.Length();
       SendMessage(Handle, EM_LINESCROLL, 0, Lines->Count);
-      //SendMessage(Handle, EM_LINESCROLL, 0, -LinesVisible+1);
     }
     HideCaret(Handle);
   }
@@ -371,16 +390,6 @@ void __fastcall TLogMemo::SetParent(TWinControl * AParent)
 {
   TCustomRichEdit::SetParent(AParent);
   if (AParent) UpdateFromLog();
-}
-//---------------------------------------------------------------------------
-void __fastcall TLogMemo::InitiateAction()
-{
-  TCustomRichEdit::InitiateAction();
-  /*if (FNeedsRepaint)
-  {
-    FNeedsRepaint = false;
-    Refresh();
-  } */
 }
 //---------------------------------------------------------------------------
 void __fastcall TLogMemo::Change()

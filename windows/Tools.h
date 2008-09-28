@@ -24,14 +24,20 @@ void __fastcall ValidateMaskEdit(TEdit * Edit);
 void __fastcall OpenBrowser(AnsiString URL);
 bool __fastcall IsFormatInClipboard(unsigned int Format);
 bool __fastcall TextFromClipboard(AnsiString & Text);
+HANDLE __fastcall OpenTextFromClipboard(const char *& Text);
+void __fastcall CloseTextFromClipboard(HANDLE Handle);
 void __fastcall ExitActiveControl(TForm * Form);
 AnsiString __fastcall ReadResource(const AnsiString ResName);
 bool __fastcall DumpResourceToFile(const AnsiString ResName,
   const AnsiString FileName);
+TOpenDialog * __fastcall CreateOpenDialog(TComponent * AOwner);
 void __fastcall BrowseForExecutable(TEdit * Control, AnsiString Title,
   AnsiString Filter, bool FileNameCommand, bool Escape);
 void __fastcall BrowseForExecutable(TComboBox * Control, AnsiString Title,
   AnsiString Filter, bool FileNameCommand, bool Escape);
+bool __fastcall FontDialog(TFont * Font);
+bool __fastcall SaveDialog(AnsiString Title, AnsiString Filter,
+  AnsiString DefaultExt, AnsiString & FileName);
 bool __fastcall AutodetectProxyUrl(AnsiString & Proxy);
 bool __fastcall IsWin64();
 void __fastcall CopyToClipboard(AnsiString Text);

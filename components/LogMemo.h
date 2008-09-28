@@ -33,6 +33,8 @@ private:
   bool FUpdating;
   bool FWantScrollToEnd;
   bool FNeedsRepaint;
+  unsigned int FLastUpdate;
+
   void __fastcall CMShowingChanged(TMessage & Message);
   void CMVisibleChanged(TMessage & Message);
   void WMLogUpdate(TMessage & Message);
@@ -48,7 +50,6 @@ private:
   MESSAGE void __fastcall WMSetFocus(TWMSetFocus & Message);
 protected:
   DYNAMIC void __fastcall Change();
-  virtual void __fastcall InitiateAction();
   DYNAMIC void __fastcall KeyDown(Word & Key, TShiftState Shift);
   DYNAMIC void __fastcall MouseDown(TMouseButton Button, TShiftState Shift, int X, int Y);
   void __fastcall ReloadFromLog();

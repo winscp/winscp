@@ -236,6 +236,8 @@ public:
 enum TFileDialogKind { dkOpen, dkSave, dkOpenPicture, dkSavePicture };
 #pragma option pop
 
+typedef void __fastcall (__closure *TCreateEditDialogEvent)(System::TObject* Sender, TFileDialogKind DialogKind, Dialogs::TOpenDialog* &Dialog);
+
 class DELPHICLASS TFilenameEdit;
 class PASCALIMPLEMENTATION TFilenameEdit : public TFileDirEdit 
 {
@@ -244,6 +246,7 @@ class PASCALIMPLEMENTATION TFilenameEdit : public TFileDirEdit
 private:
 	Dialogs::TOpenDialog* FDialog;
 	TFileDialogKind FDialogKind;
+	TCreateEditDialogEvent FOnCreateEditDialog;
 	void __fastcall CreateEditDialog(void);
 	AnsiString __fastcall GetFileName();
 	AnsiString __fastcall GetDefaultExt();
@@ -265,6 +268,7 @@ private:
 	void __fastcall SetHistoryList(Classes::TStrings* Value);
 	void __fastcall SetOptions(Dialogs::TOpenOptions Value);
 	void __fastcall SetDialogTitle(const AnsiString Value);
+	void __fastcall SetOnCreateEditDialog(TCreateEditDialogEvent Value);
 	bool __fastcall IsCustomTitle(void);
 	bool __fastcall IsCustomFilter(void);
 	
@@ -291,6 +295,7 @@ __published:
 	__property Classes::TStrings* HistoryList = {read=GetHistoryList, write=SetHistoryList};
 	__property Dialogs::TOpenOptions DialogOptions = {read=GetOptions, write=SetOptions, default=4};
 	__property AnsiString DialogTitle = {read=GetDialogTitle, write=SetDialogTitle, stored=IsCustomTitle};
+	__property TCreateEditDialogEvent OnCreateEditDialog = {read=FOnCreateEditDialog, write=SetOnCreateEditDialog};
 	__property AutoSelect  = {default=1};
 	__property ButtonHint ;
 	__property BorderStyle  = {default=1};

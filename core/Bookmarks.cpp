@@ -206,7 +206,6 @@ void __fastcall TBookmarks::ModifyAll(bool Modify)
 //---------------------------------------------------------------------------
 TBookmarkList * __fastcall TBookmarks::GetBookmarks(AnsiString Index)
 {
-  Index = SimpleMungeStr(Index);
   int I = FBookmarkLists->IndexOf(Index);
   if (I >= 0)
   {
@@ -220,7 +219,6 @@ TBookmarkList * __fastcall TBookmarks::GetBookmarks(AnsiString Index)
 //---------------------------------------------------------------------------
 void __fastcall TBookmarks::SetBookmarks(AnsiString Index, TBookmarkList * value)
 {
-  Index = SimpleMungeStr(Index);
   int I = FBookmarkLists->IndexOf(Index);
   if (I >= 0)
   {
