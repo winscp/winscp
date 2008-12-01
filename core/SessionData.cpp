@@ -864,13 +864,13 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
     // (this allows setting for example default username for host
     // by creating stored session named by host)
     TSessionData * Data = NULL;
-    for (Integer Index = 0; Index < StoredSessions->Count; Index++)
+    for (Integer Index = 0; Index < StoredSessions->Count + StoredSessions->HiddenCount; Index++)
     {
-      AnsiString Name = StoredSessions->Sessions[Index]->Name;
-      if (AnsiSameText(Name, DecodedUrl) ||
-          AnsiSameText(Name + "/", DecodedUrl.SubString(1, Name.Length() + 1)))
+      TSessionData * AData = (TSessionData *)StoredSessions->Items[Index];
+      if (AnsiSameText(AData->Name, DecodedUrl) ||
+          AnsiSameText(AData->Name + "/", DecodedUrl.SubString(1, AData->Name.Length() + 1)))
       {
-        Data = StoredSessions->Sessions[Index];
+        Data = AData;
         break;
       }
     }
@@ -881,14 +881,6 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
     {
       DefaultsOnly = false;
       Assign(Data);
-      if (StoredSessions->IsHidden(Data))
-      {
-        Data->Remove();
-        StoredSessions->Remove(Data);
-        // only modified, implicit
-        StoredSessions->Save(false, false);
-      }
-
       int P = 1;
       while (!AnsiSameText(DecodeUrlChars(Url.SubString(1, P)), Data->Name))
       {
@@ -896,6 +888,14 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
         assert(P <= Url.Length());
       }
       ARemoteDirectory = Url.SubString(P + 1, Url.Length() - P);
+
+      if (StoredSessions->IsHidden(Data))
+      {
+        Data->Remove();
+        StoredSessions->Remove(Data);
+        // only modified, implicit
+        StoredSessions->Save(false, false);
+      }
     }
     else
     {

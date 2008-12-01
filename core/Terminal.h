@@ -339,6 +339,7 @@ public:
   void __fastcall ReadDirectory(bool ReloadOnly, bool ForceCache = false);
   TRemoteFileList * ReadDirectoryListing(AnsiString Directory, bool UseCache);
   void __fastcall ReadFile(const AnsiString FileName, TRemoteFile *& File);
+  bool __fastcall FileExists(const AnsiString FileName);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params);

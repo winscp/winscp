@@ -1056,7 +1056,7 @@ begin
 
   Expanded := ExpandFileName(FPath);
   Assert(Pos(':', Expanded) = 2);
-  FLastPath[Expanded[1]] := Expanded;
+  FLastPath[UpCase(Expanded[1])] := Expanded;
 end;
 
 procedure TDirView.SetPath(Value: string);
@@ -1960,6 +1960,14 @@ begin
                 Items.BeginUpdate;
               end;
               AnyUpdate := True;
+
+              with PFileRec(Items[Index].Data)^ do
+              begin
+                Dec(FFilesSize, Size);
+                if Items[Index].Selected then
+                  Dec(FFilesSelSize, Size);
+              end;
+
               Items[Index].Delete;
             end;
           end;
@@ -2013,6 +2021,8 @@ begin
               ItemFocused.MakeVisible(False);
             if AnyUpdate and Assigned(OnDirUpdated) then
               OnDirUpdated(Self);
+
+            UpdateStatusBar;
 
             Screen.Cursor := SaveCursor;
           end;

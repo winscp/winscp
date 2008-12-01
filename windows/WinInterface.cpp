@@ -3,7 +3,6 @@
 #pragma hdrstop
 
 #include <shlwapi.h>
-#include <MoreButton.hpp>
 
 #include <Common.h>
 #include <Exceptions.h>
@@ -338,15 +337,6 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
 //---------------------------------------------------------------------------
 int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageParams * Params)
 {
-  TMoreButton * MoreButton = dynamic_cast<TMoreButton *>(Dialog->FindComponent("MoreButton"));
-  if (MoreButton != NULL)
-  {
-    // WinConfiguration may be destroyed already, if called from
-    // try ... catch statement of main()
-    MoreButton->Expanded = (GUIConfiguration != NULL) &&
-      GUIConfiguration->ErrorDialogExpanded;
-  }
-
   FlashOnBackground();
   int Answer = MapResult(Dialog->ShowModal(), Answers);
 
@@ -367,12 +357,6 @@ int __fastcall ExecuteMessageDialog(TForm * Dialog, int Answers, const TMessageP
         Answer = qaNeverAskAgain;
       }
     }
-  }
-
-  if ((MoreButton != NULL) && (GUIConfiguration != NULL))
-  {
-    // store state even when user selects 'Cancel'?
-    GUIConfiguration->ErrorDialogExpanded = MoreButton->Expanded;
   }
 
   return Answer;

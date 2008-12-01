@@ -49,6 +49,7 @@ __fastcall TCustomUnixDriveView::TCustomUnixDriveView(TComponent* Owner) :
   DDAllowMove = false;
   FShowInaccesibleDirectories = true;
   FDummyDragFile = NULL;
+  FPendingDelete = new TList();
 }
 //---------------------------------------------------------------------------
 __fastcall TCustomUnixDriveView::~TCustomUnixDriveView()
@@ -60,6 +61,7 @@ __fastcall TCustomUnixDriveView::~TCustomUnixDriveView()
     SAFE_DESTROY(FDummyDragFile);
     #endif
   }
+  SAFE_DESTROY(FPendingDelete);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::CreateWnd()
@@ -137,10 +139,16 @@ bool __fastcall TCustomUnixDriveView::NodeIsHidden(const TTreeNode * Node)
   #endif
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomUnixDriveView::NodeCanDelete(TTreeNode * Node)
+bool __fastcall TCustomUnixDriveView::NodeCanDelete(TTreeNode * Node, bool RememberIfNot)
 {
-  return (Selected == NULL) ||
+  bool Result =
+    (Selected == NULL) ||
     ((Selected != Node) && !Selected->HasAsParent(Node));
+  if (!Result && RememberIfNot)
+  {
+    FPendingDelete->Add(Node);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
@@ -203,7 +211,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
       {
         TTreeNode * ChildNode = dynamic_cast<TTreeNode *>(ChildrenDirs->Objects[i]);
         TNodeData * ChildData = NodeData(ChildNode);
-        if ((ChildData->File == NULL) && NodeCanDelete(ChildNode))
+        if ((ChildData->File == NULL) && NodeCanDelete(ChildNode, true))
         {
           ChildNode->Delete();
         }
@@ -223,7 +231,7 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     {
       TTreeNode * PrevChildNode = Node->GetPrevChild(ChildNode);
       TRemoteFile * File = NodeFile(ChildNode);
-      if (!NodeCanDelete(ChildNode) ||
+      if (!NodeCanDelete(ChildNode, true) ||
           ((ShowHiddenDirs || !NodeIsHidden(ChildNode)) &&
            (ShowInaccesibleDirectories || (File == NULL) || !File->IsInaccesibleDirectory)))
       {
@@ -391,6 +399,15 @@ void __fastcall TCustomUnixDriveView::Delete(TTreeNode * Node)
   {
     FPrevSelected = NULL;
   }
+  // optimization check
+  if (FPendingDelete->Count > 0)
+  {
+    int I = FPendingDelete->IndexOf(Node);
+    if (I >= 0)
+    {
+      FPendingDelete->Delete(I);
+    }
+  }
   TNodeData * Data = NULL;
   if (Node != NULL)
   {
@@ -410,58 +427,83 @@ void __fastcall TCustomUnixDriveView::Delete(TTreeNode * Node)
 void __fastcall TCustomUnixDriveView::Change(TTreeNode * Node)
 {
   #ifndef DESIGN_ONLY
-  // During D&D Selected is set to NULL and then back to previous selection,
-  // prevent actually changing directory in such case
-  if (FIgnoreChange || (Node == NULL) || (Node == FPrevSelected))
+  try
   {
-    TCustomDriveView::Change(Node);
-  }
-  else
-  {
-    if (FDirView != NULL)
+    // During D&D Selected is set to NULL and then back to previous selection,
+    // prevent actually changing directory in such case
+    if (FIgnoreChange || (Node == NULL) || (Node == FPrevSelected))
     {
-      // remember current directory, so it gets selected if we move to parent
-      // directory
-      FDirView->ContinueSession(true);
-    }
-
-    // if previous node is child to newly selected one, do not expand it.
-    // it is either already expanded and it is even being collapsed.
-    bool Expand = (FPrevSelected == NULL) || !FPrevSelected->HasAsParent(Node);
-    FDirectoryLoaded = false;
-    try
-    {
-      Terminal->ChangeDirectory(NodePathName(Node));
       TCustomDriveView::Change(Node);
     }
-    __finally
+    else
     {
-      if (FDirectoryLoaded)
+      if (FDirView != NULL)
       {
-        FPrevSelected = Selected;
-        if (Expand)
-        {
-          Selected->Expand(false);
-        }
+        // remember current directory, so it gets selected if we move to parent
+        // directory
+        FDirView->ContinueSession(true);
       }
-      else
+
+      // if previous node is child to newly selected one, do not expand it.
+      // it is either already expanded and it is even being collapsed.
+      bool Expand = (FPrevSelected == NULL) || !FPrevSelected->HasAsParent(Node);
+      FDirectoryLoaded = false;
+      try
       {
-        assert(!FIgnoreChange);
-        FIgnoreChange = true;
-        try
+        Terminal->ChangeDirectory(NodePathName(Node));
+        TCustomDriveView::Change(Node);
+      }
+      __finally
+      {
+        if (FDirectoryLoaded)
         {
-          Selected = FPrevSelected;
+          FPrevSelected = Selected;
+          if (Expand)
+          {
+            Selected->Expand(false);
+          }
         }
-        __finally
+        else
         {
-          FIgnoreChange = false;
+          assert(!FIgnoreChange);
+          FIgnoreChange = true;
+          try
+          {
+            Selected = FPrevSelected;
+          }
+          __finally
+          {
+            FIgnoreChange = false;
+          }
         }
       }
     }
+  }
+  __finally
+  {
+    CheckPendingDeletes();
   }
   #else
   TCustomDriveView::Change(Node);
   #endif
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomUnixDriveView::CheckPendingDeletes()
+{
+  int Index = 0;
+  while (Index < FPendingDelete->Count)
+  {
+    TTreeNode * Node = static_cast<TTreeNode *>(FPendingDelete->Items[Index]);
+    if (NodeCanDelete(Node, false))
+    {
+      // this as well deletes node from FPendingDelete
+      Node->Delete();
+    }
+    else
+    {
+      Index++;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomUnixDriveView::PerformDragDropFileOperation(
@@ -704,7 +746,7 @@ TTreeNode * __fastcall TCustomUnixDriveView::FindNodeToPath(AnsiString Path)
     }
   }
   #else
-  Result = NULL
+  Result = NULL;
   #endif
   return Result;
 }

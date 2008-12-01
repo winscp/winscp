@@ -624,6 +624,7 @@ var
   L, H,
   I, C: Integer;
   Dummy: TWindowProcEntry;
+  NeedSort: Boolean;
 
 begin
   // First try the cached data to speed up retrieval.
@@ -634,7 +635,8 @@ begin
   end
   else
   begin
-    if FDirty and (Count > 1) then
+    NeedSort := FDirty and (Count > 1);
+    if NeedSort then
     begin
       Sort(Compare);
       FDirty := False;
@@ -665,6 +667,15 @@ begin
     begin
       FLastControl := Control;
       FLastIndex := L;
+    end
+      else
+    begin
+      // even if lookup failed, we need to clear cache as we were forced to resort
+      if NeedSort then
+      begin
+        FLastControl := nil;
+        FLastIndex := -1;
+      end;
     end;
   end;
 end;

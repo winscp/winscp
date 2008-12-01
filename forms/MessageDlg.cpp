@@ -3,7 +3,6 @@
 #pragma hdrstop
 
 #include <Consts.hpp>
-#include <MoreButton.hpp>
 #include <GUITools.h>
 
 #include <Common.h>
@@ -70,8 +69,7 @@ AnsiString __fastcall TMessageForm::GetFormText()
   DividerLine = AnsiString::StringOfChar('-', 27) + sLineBreak;
   for (int i = 0; i < ComponentCount - 1; i++)
   {
-    if ((dynamic_cast<TButton*>(Components[i]) != NULL) &&
-        (dynamic_cast<TMoreButton*>(Components[i]) == NULL))
+    if (dynamic_cast<TButton*>(Components[i]) != NULL)
     {
       ButtonCaptions += dynamic_cast<TButton*>(Components[i])->Caption +
         AnsiString::StringOfChar(' ', 3);
@@ -301,17 +299,6 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
     MessageMemo->Lines->Text = MoreMessages->Text;
 
     Result->MessageMemo = MessageMemo;
-
-    TMoreButton * MoreButton = new TMoreButton(Result);
-    MoreButton->Parent = Result;
-    MoreButton->Panel = MessageMemo;
-    MoreButton->RepositionForm = true;
-    MoreButton->Name = "MoreButton";
-
-    MessageMemo->TabOrder = static_cast<short>(MoreButton->TabOrder + 1);
-
-    ButtonControls[ButtonControlsCount] = MoreButton;
-    ButtonControlsCount++;
   }
 
   int ButtonGroupWidth = 0;
@@ -324,7 +311,7 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   int MoreMessageWidth = (MoreMessages != NULL ?
     MulDiv(mcMoreMessageWidth, DialogUnits.x, 4) : 0);
   int MoreMessageHeight = (MoreMessages != NULL ?
-    MulDiv(mcMoreMessageHeight, DialogUnits.y, 8) : 0);
+    MulDiv(mcMoreMessageHeight, DialogUnits.y, 12) : 0);
 
   int AClientWidth =
     (IconTextWidth > ButtonGroupWidth ? IconTextWidth : ButtonGroupWidth) +

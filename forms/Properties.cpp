@@ -135,7 +135,26 @@ void __fastcall TPropertiesDialog::LoadInfo()
     {
       TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
       assert(File && FShellImageList);
-      FShellImageList->GetIcon(File->IconIndex, FileIconImage->Picture->Icon);
+
+      // shell image list does not have fixed large icon size
+      // (it is probably 32x32 min, but can be larged, on xp it is 48x48 if
+      // large icons are enabled, on vista, can be even larger).
+      // so we stretch (shrink) the icon to 32x32 here to be sure.
+      Graphics::TBitmap * Bitmap = new Graphics::TBitmap;
+      try
+      {
+        FShellImageList->GetBitmap(File->IconIndex, Bitmap);
+        FileIconImage->Picture->Bitmap->Width = FileIconImage->Width;
+        FileIconImage->Picture->Bitmap->Height = FileIconImage->Height;
+        FileIconImage->Picture->Bitmap->Canvas->StretchDraw(
+          TRect(0, 0, FileIconImage->Width, FileIconImage->Height),
+          Bitmap);
+      }
+      __finally
+      {
+        delete Bitmap;
+      }
+
       if (!FUsersSet)
       {
         OwnerComboBox->Items->Text = File->Owner;

@@ -542,7 +542,6 @@ void __fastcall TGUIConfiguration::Default()
 
   FIgnoreCancelBeforeFinish = TDateTime(0, 0, 3, 0);
   FCopyParamDialogExpanded = false;
-  FErrorDialogExpanded = false;
   FContinueOnError = false;
   FConfirmCommandSession = true;
   FSynchronizeParams = TTerminal::spNoConfirmation | TTerminal::spPreviewChanges;
@@ -617,7 +616,6 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
 #define REGCONFIG(CANCREATE) \
   BLOCK("Interface", CANCREATE, \
     KEY(Bool,     CopyParamDialogExpanded); \
-    KEY(Bool,     ErrorDialogExpanded); \
     KEY(Bool,     ContinueOnError); \
     KEY(Bool,     ConfirmCommandSession); \
     KEY(Integer,  SynchronizeParams); \

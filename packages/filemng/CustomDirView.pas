@@ -210,6 +210,7 @@ type
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMXButtonUp(var Message: TWMXMouse); message _WM_XBUTTONUP;
     procedure WMAppCommand(var Message: TMessage); message _WM_APPCOMMAND;
+    procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
 
     procedure DumbCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
@@ -2629,6 +2630,16 @@ begin
       else inherited;
   end
     else inherited;
+end;
+
+procedure TCustomDirView.CMColorChanged(var Message: TMessage);
+begin
+  inherited;
+  // particularly when changing color back to default (clWindow),
+  // non-client area (border line) is not redrawn,
+  // keeping previous color. force redraw here
+  if HandleAllocated then
+    RedrawWindow(Handle, nil, 0, RDW_INVALIDATE or RDW_FRAME);
 end;
 
 procedure TCustomDirView.WndProc(var Message: TMessage);

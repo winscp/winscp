@@ -898,6 +898,7 @@ object PreferencesDialog: TPreferencesDialog
             ViewStyle = vsReport
             OnData = EditorListViewData
             OnDblClick = EditorListViewDblClick
+            OnEndDrag = ListViewEndDrag
             OnDragDrop = EditorListViewDragDrop
             OnDragOver = ListViewDragOver
             OnKeyDown = EditorListViewKeyDown

@@ -145,7 +145,6 @@ class TGUIConfiguration : public TConfiguration
 {
 private:
   bool FCopyParamDialogExpanded;
-  bool FErrorDialogExpanded;
   TStrings * FLocales;
   AnsiString FLastLocalesExts;
   bool FContinueOnError;
@@ -214,7 +213,6 @@ public:
   HANDLE __fastcall ChangeResourceModule(HANDLE Instance);
 
   __property bool CopyParamDialogExpanded = { read = FCopyParamDialogExpanded, write = FCopyParamDialogExpanded };
-  __property bool ErrorDialogExpanded = { read = FErrorDialogExpanded, write = FErrorDialogExpanded };
   __property bool ContinueOnError = { read = FContinueOnError, write = FContinueOnError };
   __property bool ConfirmCommandSession = { read = FConfirmCommandSession, write = FConfirmCommandSession };
   __property int SynchronizeParams = { read = FSynchronizeParams, write = FSynchronizeParams };

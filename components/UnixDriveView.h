@@ -38,6 +38,7 @@ protected:
   TTreeNode * __fastcall LoadPathEasy(TTreeNode * Parent,
     AnsiString Path, TRemoteFile * File);
   void __fastcall UpdatePath(TTreeNode * Node, bool Force, bool CanLoad = false);
+  void __fastcall CheckPendingDeletes();
 
   void __fastcall SetTerminal(TTerminal * value);
 
@@ -46,7 +47,7 @@ protected:
   inline TRemoteFile * __fastcall NodeFile(const TTreeNode * Node);
   inline TRemoteFile * __fastcall NodeFileForce(TTreeNode * Node);
   inline bool __fastcall NodeIsHidden(const TTreeNode * Node);
-  inline bool __fastcall NodeCanDelete(TTreeNode * Node);
+  inline bool __fastcall NodeCanDelete(TTreeNode * Node, bool RememberIfNot);
 
   virtual TCustomDirView * __fastcall GetCustomDirView();
   virtual void __fastcall SetCustomDirView(TCustomDirView * Value);
@@ -94,6 +95,7 @@ private:
   TDDDragFileName FOnDDDragFileName;
   bool FShowInaccesibleDirectories;
   TRemoteFile * FDummyDragFile;
+  TList * FPendingDelete;
 
   bool __fastcall IsRootNameStored();
   void __fastcall SetShowInaccesibleDirectories(bool value);

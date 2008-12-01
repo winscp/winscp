@@ -2157,6 +2157,38 @@ void __fastcall TTerminal::ReadFile(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::FileExists(const AnsiString FileName)
+{
+  bool Result;
+  TRemoteFile * File = NULL;
+  try
+  {
+    ExceptionOnFail = true;
+    try
+    {
+      ReadFile(FileName, File);
+    }
+    __finally
+    {
+      ExceptionOnFail = false;
+    }
+    delete File;
+    Result = true;
+  }
+  catch(...)
+  {
+    if (Active)
+    {
+      Result = false;
+    }
+    else
+    {
+      throw;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::AnnounceFileListOperation()
 {
   FFileSystem->AnnounceFileListOperation();
@@ -2773,7 +2805,53 @@ bool __fastcall TTerminal::MoveFiles(TStrings * FileList, const AnsiString Targe
   Params.Target = Target;
   Params.FileMask = FileMask;
   DirectoryModified(Target, true);
-  return ProcessFiles(FileList, foRemoteMove, MoveFile, &Params);
+  bool Result;
+  BeginTransaction();
+  try
+  {
+    Result = ProcessFiles(FileList, foRemoteMove, MoveFile, &Params);
+  }
+  __finally
+  {
+    if (Active)
+    {
+      AnsiString WithTrailing = UnixIncludeTrailingBackslash(CurrentDirectory);
+      bool PossiblyMoved = false;
+      // check if we was moving current directory.
+      // this is just optimization to avoid checking existence of current
+      // directory after each move operation.
+      for (int Index = 0; !PossiblyMoved && (Index < FileList->Count); Index++)
+      {
+        const TRemoteFile * File =
+          dynamic_cast<const TRemoteFile *>(FileList->Objects[Index]);
+        // File can be NULL, and filename may not be full path,
+        // but currently this is the only way we can move (at least in GUI)
+        // current directory
+        if ((File != NULL) &&
+            File->IsDirectory &&
+            ((CurrentDirectory.SubString(1, FileList->Strings[Index].Length()) == FileList->Strings[Index]) &&
+             ((FileList->Strings[Index].Length() == CurrentDirectory.Length()) ||
+              (CurrentDirectory[FileList->Strings[Index].Length() + 1] == '/'))))
+        {
+          PossiblyMoved = true;
+        }
+      }
+
+      if (PossiblyMoved && !FileExists(CurrentDirectory))
+      {
+        AnsiString NearestExisting = CurrentDirectory;
+        do
+        {
+          NearestExisting = UnixExtractFileDir(NearestExisting);
+        }
+        while (!IsUnixRootPath(NearestExisting) && !FileExists(NearestExisting));
+
+        ChangeDirectory(NearestExisting);
+      }
+    }
+    EndTransaction();
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::DoCopyFile(const AnsiString FileName,
