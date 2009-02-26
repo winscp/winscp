@@ -367,7 +367,7 @@ var
   Upgrade: Boolean;
   MissingTranslations: string;
 
-function IsLang(Lang: String): Boolean;
+function IsLang(Lang: string): Boolean;
 begin
   Result := (Lang = ActiveLanguage);
 end;
@@ -386,7 +386,7 @@ begin
   end;
 end;
 
-function LanguageName(Lang: String; Unknown: String): String;
+function LanguageName(Lang: string; Unknown: string): string;
 begin
   #sub EmitLang2
   if Lang = '{#Languages[LangI*4]}' then Result := '{#Languages[LangI*4+1]}'
@@ -398,7 +398,7 @@ begin
   Result := Unknown;
 end;
 
-function ContainsLanguage(Lang: String): Boolean;
+function ContainsLanguage(Lang: string): Boolean;
 begin
   #sub EmitLang3
     #if Languages[LangI*4+3] == 1
@@ -491,6 +491,7 @@ end;
 
 procedure InitializeWizard;
 var
+  DefaultLang: Boolean;
   UserInterface: Cardinal;
   AdvancedTabs: Cardinal;
   UpdatesPeriod: Cardinal;
@@ -498,8 +499,10 @@ var
   SetupTypePage: TWizardPage;
   Caption: TLabel;
   HelpButton: TButton;
-  S: String;
+  S: string;
 begin
+  DefaultLang := (ActiveLanguage = '{#DefaultLang}');
+
   Upgrade :=
     RegQueryStringValue(HKLM, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S) or
     RegQueryStringValue(HKCU, '{#InnoSetupReg}', '{#InnoSetupAppPathReg}', S)
@@ -569,7 +572,7 @@ begin
   Caption.WordWrap := True;
   if not Upgrade then
   begin
-    if ActiveLanguage = '{#DefaultLang}' then
+    if DefaultLang then
       S := ExpandConstant('{cm:TypicalType2Eng}')
     else
       S := FmtMessage(ExpandConstant('{cm:TypicalType2Intl}'), [LanguageName(ActiveLanguage, 'Unknown')]);
@@ -658,7 +661,7 @@ begin
   Caption.Parent := InterfacePage.Surface;
 
   CommanderRadioButton := TRadioButton.Create(InterfacePage);
-  CommanderRadioButton.Caption := ExpandConstant('{cm:NortonCommanderInterface}');
+  CommanderRadioButton.Caption := ExpandConstant('{cm:NortonCommanderInterfaceB}');
   CommanderRadioButton.Checked := (UserInterface = 0);
   CommanderRadioButton.Left := ScaleX(4);
   CommanderRadioButton.Width := InterfacePage.SurfaceWidth -
@@ -681,7 +684,7 @@ begin
   Caption.OnClick := @CaptionClick;
 
   ExplorerRadioButton := TRadioButton.Create(InterfacePage);
-  ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterface}');
+  ExplorerRadioButton.Caption := ExpandConstant('{cm:ExplorerInterfaceB}');
   ExplorerRadioButton.Checked := (UserInterface <> 0);
   ExplorerRadioButton.Left := ScaleX(4);
   ExplorerRadioButton.Width := InterfacePage.SurfaceWidth -
@@ -722,7 +725,7 @@ end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
 var
-  S: String;
+  S: string;
 begin
   if TypicalTypeButton.Checked then S := 'typical'
     else S := 'custom';
@@ -764,10 +767,10 @@ begin
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,
-  MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: String): String;
+  MemoTypeInfo, MemoComponentsInfo, MemoGroupInfo, MemoTasksInfo: string): string;
 var
-  S: String;
-  S2: String;
+  S: string;
+  S2: string;
 begin
   S := '';
 

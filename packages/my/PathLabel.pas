@@ -23,9 +23,11 @@ type
     FOnPathClick: TPathLabelPathClickEvent;
     FDisplayPath: string;
     FDisplayHotTrack: string;
+    FDisplayMask: string;
     FHotTrack: Boolean;
     FMouseInView: Boolean;
     FIsActive: Boolean;
+    FMask: string;
     procedure CMHintShow(var Message: TMessage); message CM_HINTSHOW;
     procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
     procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
@@ -34,6 +36,7 @@ type
     procedure SetIndentHorizontal(AIndent: Integer);
     procedure SetIndentVertical(AIndent: Integer);
     procedure SetUnixPath(AUnixPath: Boolean);
+    procedure SetMask(Value: string);
   protected
     procedure AdjustBounds; override;
     procedure Click; override;
@@ -70,6 +73,7 @@ type
     property OnGetStatus: TPathLabelGetStatusEvent read FOnGetStatus write FOnGetStatus;
     property OnPathClick: TPathLabelPathClickEvent read FOnPathClick write FOnPathClick;
     property HotTrack: Boolean read FHotTrack write FHotTrack default False;
+    property Mask: string read FMask write SetMask;
 
     property FocusControl;
     property Caption;
@@ -181,7 +185,6 @@ begin
       RemainingPath := Copy(FDisplayPath, Length(HotPath) + 1,
         Length(FDisplayPath) - Length(HotPath));
 
-
       if RemainingPath = Copy(Caption, Length(Caption) - Length(RemainingPath) + 1,
            Length(RemainingPath)) then
       begin
@@ -205,6 +208,16 @@ begin
   if FUnixPath <> AUnixPath then
   begin
     FUnixPath := AUnixPath;
+    AdjustBounds;
+    Invalidate;
+  end;
+end;
+
+procedure TCustomPathLabel.SetMask(Value: string);
+begin
+  if FMask <> Value then
+  begin
+    FMask := Value;
     AdjustBounds;
     Invalidate;
   end;
@@ -243,38 +256,91 @@ end;
 procedure TCustomPathLabel.DoDrawText(var Rect: TRect; Flags: Longint);
 var
   i: Integer;
-  Path: string;
   StandardColor: TColor;
+  Width: Integer;
+  WidthMask: Integer;
+  WidthPath: Integer;
+  Separator: string;
+  Str: string;
 begin
   if (Flags and DT_CALCRECT <> 0) and ((Text = '') or ShowAccelChar and
     (Text[1] = '&') and (Text[2] = #0)) then Text := Text + ' ';
   if not ShowAccelChar then Flags := Flags or DT_NOPREFIX;
   Flags := DrawTextBiDiModeFlags(Flags);
   Canvas.Font := Font;
-  Path := Caption;
-  if FUnixPath then
-    for i := 1 to Length(Path) do
-      if Path[i] = '/' then Path[i] := '\';
-  Path := MinimizeName(Path, Canvas, Rect.Right - Rect.Left);
-  if FUnixPath then
-    for i := 1 to Length(Path) do
-      if Path[i] = '\' then Path[i] := '/';
-  ShowHint :=
-    (Path <> Caption) or
-    (Canvas.TextWidth(Caption) > Rect.Right - Rect.Left);
-  if not ShowHint then Hint := ''
-    else
-  if Hint <> Caption then Hint := Caption;
 
-  FDisplayPath := Path;
+  Width := (Rect.Right - Rect.Left);
+
+  FDisplayPath := Caption;
+  FDisplayMask := Mask;
+  Separator := '';
+
+  if FDisplayMask <> '' then
+  begin
+    if FUnixPath then
+    begin
+      if (Length(FDisplayPath) > 0) and (FDisplayPath[Length(FDisplayPath)] <> '/') then
+        Separator := '/';
+    end
+      else
+    begin
+      if (Length(FDisplayPath) > 0) and (FDisplayPath[Length(FDisplayPath)] <> '\') then
+        Separator := '\';
+    end;
+
+    FDisplayPath := FDisplayPath + Separator;
+
+    WidthMask := Canvas.TextWidth(FDisplayMask);
+    if WidthMask > Width div 3 then
+      WidthPath := Width - (Width div 3)
+    else
+      WidthPath := Width - WidthMask;
+  end
+    else
+  begin
+    WidthMask := 0;
+    WidthPath := Width;
+  end;
+
+  if FUnixPath then
+    for i := 1 to Length(FDisplayPath) do
+      if FDisplayPath[i] = '/' then FDisplayPath[i] := '\';
+  FDisplayPath := MinimizeName(FDisplayPath, Canvas, WidthPath);
+  if FUnixPath then
+    for i := 1 to Length(FDisplayPath) do
+      if FDisplayPath[i] = '\' then FDisplayPath[i] := '/';
+
+  WidthPath := Canvas.TextWidth(FDisplayPath);
+
+  if FDisplayMask <> '' then
+  begin
+    if WidthMask > Width - WidthPath then
+    begin
+      FDisplayMask := FDisplayMask + '...';
+      repeat
+        Delete(FDisplayMask, Length(FDisplayMask) - 3, 1);
+        WidthMask := Canvas.TextWidth(FDisplayMask);
+      until (WidthMask <= Width - WidthPath) or (Length(FDisplayMask) = 3);
+    end;
+  end;
+
+  ShowHint :=
+    (FDisplayPath <> Caption) or
+    (FDisplayMask <> Mask) or
+    (WidthPath + WidthMask > Width);
+
+  if not ShowHint then Hint := ''
+    else Hint := Caption + Separator + Mask;
+
+  Str := FDisplayPath + FDisplayMask;
   if not Enabled then
   begin
     OffsetRect(Rect, 1, 1);
     Canvas.Font.Color := clBtnHighlight;
-    DrawText(Canvas.Handle, PChar(Path), Length(Path), Rect, Flags);
+    DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
     OffsetRect(Rect, -1, -1);
     Canvas.Font.Color := clBtnShadow;
-    DrawText(Canvas.Handle, PChar(Path), Length(Path), Rect, Flags);
+    DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
   end
     else
   begin
@@ -286,9 +352,9 @@ begin
       DrawText(Canvas.Handle, PChar(FDisplayHotTrack), Length(FDisplayHotTrack), Rect, Flags);
       Canvas.Font.Color := StandardColor;
       Inc(Rect.Left, Canvas.TextWidth(FDisplayHotTrack));
-      Delete(Path, 1, Length(FDisplayHotTrack));
+      Delete(Str, 1, Length(FDisplayHotTrack));
     end;
-    DrawText(Canvas.Handle, PChar(Path), Length(Path), Rect, Flags);
+    DrawText(Canvas.Handle, PChar(Str), Length(Str), Rect, Flags);
   end;
 end;
 
@@ -414,7 +480,7 @@ procedure TCustomPathLabel.UpdateStatus;
 begin
   FIsActive := IsActive;
   Color := FColors[Integer(FIsActive)];
-  // We don't want to stote Font properties in DFM
+  // We don't want to store Font properties in DFM
   // which would be if Font.Color is set to something else than clWindowText
   if not (csDesigning in ComponentState) then
     Font.Color := FColors[2 + Integer(FIsActive)];

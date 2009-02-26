@@ -13,6 +13,7 @@ object PropertiesDialog: TPropertiesDialog
   OldCreateOrder = True
   Position = poMainFormCenter
   OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
   DesignSize = (
     357
     416)
@@ -225,6 +226,7 @@ object PropertiesDialog: TPropertiesDialog
         TabOrder = 1
         Text = 'GroupComboBox'
         OnChange = ControlChange
+        OnExit = GroupComboBoxExit
       end
       object OwnerComboBox: TComboBox
         Left = 85
@@ -236,6 +238,7 @@ object PropertiesDialog: TPropertiesDialog
         TabOrder = 2
         Text = 'OwnerComboBox'
         OnChange = ControlChange
+        OnExit = OwnerComboBoxExit
       end
       object RecursiveCheck: TCheckBox
         Left = 12

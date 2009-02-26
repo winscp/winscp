@@ -69,9 +69,29 @@ inline void TMessageParams::Reset()
   TimerEvent = NULL;
   TimerMessage = "";
   TimerAnswers = 0;
-  NewerAskAgainAnswer = 0;
   Timeout = 0;
   TimeoutAnswer = 0;
+  NewerAskAgainTitle = "";
+  NewerAskAgainAnswer = 0;
+  NewerAskAgainCheckedInitially = false;
+  AllowHelp = true;
+}
+//---------------------------------------------------------------------------
+TDialogParams::TDialogParams()
+{
+  Token = NULL;
+
+  ComboItems = NULL;
+  ComboEmptyValid = true;
+
+  OnShow = NULL;
+  OnChange = NULL;
+  OnValidate = NULL;
+}
+//---------------------------------------------------------------------------
+TDialogData::TDialogData()
+{
+  Check = false;
 }
 //---------------------------------------------------------------------------
 inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
@@ -229,7 +249,7 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
 
   assert(!Buttons.Empty());
 
-  if (!HelpKeyword.IsEmpty())
+  if ((Params == NULL) || Params->AllowHelp)
   {
     Buttons << mbHelp;
   }
@@ -303,14 +323,14 @@ TForm * __fastcall CreateMessageDialogEx(const AnsiString Msg,
       NeverAskAgainCheck->BoundsRect =  TRect(60, Dialog->ClientHeight - 27,
         Dialog->ClientWidth - 10, Dialog->ClientHeight - 5);
       NeverAskAgainCheck->Caption =
-        ((Params != NULL) && !Params->NewerAskAgainTitle.IsEmpty()) ?
+        !Params->NewerAskAgainTitle.IsEmpty() ?
           Params->NewerAskAgainTitle :
           // qaOK | qaIgnore is used, when custom "non-answer" button is required
           LoadStr(((Answers == qaOK) || (Answers == (qaOK | qaIgnore))) ?
             NEVER_SHOW_AGAIN : NEVER_ASK_AGAIN);
-      NeverAskAgainCheck->Checked = false;
+      NeverAskAgainCheck->Checked = Params->NewerAskAgainCheckedInitially;
       NeverAskAgainCheck->Anchors = TAnchors() << akBottom << akLeft;
-      if ((Params != NULL) && (Params->NewerAskAgainAnswer > 0))
+      if (Params->NewerAskAgainAnswer > 0)
       {
         TMsgDlgBtn Button;
         if (MapButton(Params->NewerAskAgainAnswer, Button))
@@ -469,11 +489,6 @@ int __fastcall MoreMessageDialog(const AnsiString Message, TStrings * MoreMessag
       }
     }
 
-    if (HelpKeyword.IsEmpty() && (Type == qtError))
-    {
-      HelpKeyword = HELP_ERROR;
-    }
-
     TButton * TimeoutButton = NULL;
     Dialog = CreateMessageDialogEx(AMessage, MoreMessages, Type, Answers,
       HelpKeyword, Params, TimeoutButton);
@@ -542,8 +557,17 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   if (EE != NULL)
   {
     MoreMessages = EE->MoreMessages;
+    if (!EE->HelpKeyword.IsEmpty())
+    {
+      // we have to yet decide what to do now
+      assert(HelpKeyword.IsEmpty());
+      HelpKeyword = EE->HelpKeyword;
+    }
   }
-  AnsiString Message = TranslateExceptionMessage(E);
+  AnsiString Message;
+  // this is always called form within ExceptionMessage check,
+  // so it should never fail here
+  CHECK(ExceptionMessage(E, Message));
 
   return MoreMessageDialog(
     FORMAT(MessageFormat.IsEmpty() ? AnsiString("%s") : MessageFormat, (Message)),

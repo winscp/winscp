@@ -5,7 +5,7 @@ object SelectMaskDialog: TSelectMaskDialog
   HelpKeyword = 'ui_select'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
-  Caption = 'Select'
+  Caption = 'SelectX'
   ClientHeight = 142
   ClientWidth = 361
   Color = clBtnFace
@@ -77,7 +77,7 @@ object SelectMaskDialog: TSelectMaskDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 1
+    TabOrder = 2
   end
   object CancelBtn: TButton
     Left = 194
@@ -88,7 +88,7 @@ object SelectMaskDialog: TSelectMaskDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 2
+    TabOrder = 3
   end
   object HelpButton: TButton
     Left = 277
@@ -97,7 +97,18 @@ object SelectMaskDialog: TSelectMaskDialog
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
-    TabOrder = 3
+    TabOrder = 4
     OnClick = HelpButtonClick
+  end
+  object ClearButton: TButton
+    Left = 24
+    Top = 109
+    Width = 75
+    Height = 25
+    Anchors = [akTop, akRight]
+    Caption = '&Clear'
+    ModalResult = 1
+    TabOrder = 1
+    OnClick = ClearButtonClick
   end
 end

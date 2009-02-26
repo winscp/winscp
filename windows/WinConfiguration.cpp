@@ -10,6 +10,7 @@
 #include "WinInterface.h"
 #include "GUITools.h"
 #include "Tools.h"
+#include "Setup.h"
 #include <VCLCommon.h>
 #include <ResourceModule.hpp>
 #include <LanguagesDEPfix.hpp>
@@ -18,37 +19,52 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-__fastcall TEditorPreferences::TEditorPreferences()
+__fastcall TEditorData::TEditorData() :
+  FileMask("*.*"),
+  Editor(edInternal),
+  ExternalEditor(""),
+  ExternalEditorText(true),
+  SDIExternalEditor(false),
+  DetectMDIExternalEditor(false)
 {
-  FData.FileMask = "*.*";
-  FData.Editor = edInternal;
-  FData.ExternalEditor = "";
-  FData.ExternalEditorText = true;
-  FData.MDIExternalEditor = false;
-  FData.DetectMDIExternalEditor = true;
 }
 //---------------------------------------------------------------------------
-__fastcall TEditorPreferences::TEditorPreferences(const TEditorPreferences & Source)
+__fastcall TEditorData::TEditorData(const TEditorData & Source) :
+  FileMask(Source.FileMask),
+  Editor(Source.Editor),
+  ExternalEditor(Source.ExternalEditor),
+  ExternalEditorText(Source.ExternalEditorText),
+  SDIExternalEditor(Source.SDIExternalEditor),
+  DetectMDIExternalEditor(Source.DetectMDIExternalEditor)
 {
-  FData.FileMask = Source.FData.FileMask;
-  FData.Editor = Source.FData.Editor;
-  FData.ExternalEditor = Source.FData.ExternalEditor;
-  FData.ExternalEditorText = Source.FData.ExternalEditorText;
-  FData.MDIExternalEditor = Source.FData.MDIExternalEditor;
-  FData.DetectMDIExternalEditor = Source.FData.DetectMDIExternalEditor;
 }
 //---------------------------------------------------------------------------
-#define C(Property) (Property == rhp.Property)
-bool __fastcall TEditorPreferences::operator==(const TEditorPreferences & rhp) const
+#define C(Property) (Property == rhd.Property)
+bool __fastcall TEditorData::operator==(const TEditorData & rhd) const
 {
   return
-    C(FData.FileMask) &&
-    C(FData.Editor) &&
-    C(FData.ExternalEditor) &&
-    C(FData.ExternalEditorText) &&
-    C(FData.MDIExternalEditor) &&
-    C(FData.DetectMDIExternalEditor) &&
+    C(FileMask) &&
+    C(Editor) &&
+    C(ExternalEditor) &&
+    C(ExternalEditorText) &&
+    C(SDIExternalEditor) &&
+    C(DetectMDIExternalEditor) &&
     true;
+}
+#undef C
+//---------------------------------------------------------------------------
+__fastcall TEditorPreferences::TEditorPreferences()
+{
+}
+//---------------------------------------------------------------------------
+__fastcall TEditorPreferences::TEditorPreferences(const TEditorData & Data) :
+  FData(Data)
+{
+}
+//---------------------------------------------------------------------------
+bool __fastcall TEditorPreferences::operator==(const TEditorPreferences & rhp) const
+{
+  return (FData == rhp.FData);
 }
 #undef C
 //---------------------------------------------------------------------------
@@ -72,7 +88,7 @@ void __fastcall TEditorPreferences::Load(THierarchicalStorage * Storage, bool Le
   FData.Editor = (TEditor)Storage->ReadInteger("Editor", FData.Editor);
   FData.ExternalEditor = Storage->ReadString("ExternalEditor", FData.ExternalEditor);
   FData.ExternalEditorText = Storage->ReadBool("ExternalEditorText", FData.ExternalEditorText);
-  FData.MDIExternalEditor = Storage->ReadBool("MDIExternalEditor", FData.MDIExternalEditor);
+  FData.SDIExternalEditor = Storage->ReadBool("SDIExternalEditor", FData.SDIExternalEditor);
   FData.DetectMDIExternalEditor = Storage->ReadBool("DetectMDIExternalEditor", FData.DetectMDIExternalEditor);
 }
 //---------------------------------------------------------------------------
@@ -82,9 +98,16 @@ void __fastcall TEditorPreferences::Save(THierarchicalStorage * Storage) const
   Storage->WriteInteger("Editor", FData.Editor);
   Storage->WriteString("ExternalEditor", FData.ExternalEditor);
   Storage->WriteBool("ExternalEditorText", FData.ExternalEditorText);
-  Storage->WriteBool("MDIExternalEditor", FData.MDIExternalEditor);
+  Storage->WriteBool("SDIExternalEditor", FData.SDIExternalEditor);
   Storage->WriteBool("DetectMDIExternalEditor", FData.DetectMDIExternalEditor);
 }
+//---------------------------------------------------------------------------
+TEditorData * __fastcall TEditorPreferences::GetData()
+{
+  // returning non-const data, possible data change, invalidate cached name
+  FName = "";
+  return &FData;
+};
 //---------------------------------------------------------------------------
 AnsiString __fastcall TEditorPreferences::GetName() const
 {
@@ -93,6 +116,10 @@ AnsiString __fastcall TEditorPreferences::GetName() const
     if (FData.Editor == edInternal)
     {
       FName = StripHotkey(LoadStr(INTERNAL_EDITOR_NAME));
+    }
+    else if (FData.Editor == edOpen)
+    {
+      FName = StripHotkey(LoadStr(OPEN_EDITOR_NAME));
     }
     else
     {
@@ -162,7 +189,7 @@ void __fastcall TEditorList::operator=(const TEditorList & rhl)
   {
     Add(new TEditorPreferences(*rhl.Editors[Index]));
   }
-  // there should be comparison of with the assigned list, be we rely on caller
+  // there should be comparison of with the assigned list, but we rely on caller
   // to do it instead (TWinConfiguration::SetEditorList)
   Modify();
 }
@@ -384,6 +411,7 @@ void __fastcall TWinConfiguration::Default()
   FAutoStartSession = "";
   FExpertMode = true;
   FUseLocationProfiles = false;
+  FUseSharedBookmarks = false;
   FDefaultDirIsHome = true;
   FDDDeleteDelay = 120;
   FTemporaryDirectoryCleanup = true;
@@ -399,6 +427,8 @@ void __fastcall TWinConfiguration::Default()
   FSessionToolbarAutoShown = false;
   FLockToolbars = false;
   FAutoOpenInPutty = false;
+  FVersionHistory = "";
+  AddVersionToHistory(FVersionHistory);
 
   FEditor.FontName = "Courier New";
   FEditor.FontHeight = -12;
@@ -413,6 +443,8 @@ void __fastcall TWinConfiguration::Default()
   FEditor.TabSize = 7;
   FEditor.MaxEditors = 500;
   FEditor.EarlyClose = 2; // seconds
+  FEditor.SDIShellEditor = false;
+  FEditor.WindowParams = "";
 
   FQueueView.Height = 100;
   FQueueView.Layout = "70,160,160,80,80,80";
@@ -424,6 +456,7 @@ void __fastcall TWinConfiguration::Default()
   FUpdates.LastCheck = 0;
   FUpdates.HaveResults = false;
   FUpdates.ShownResults = false;
+  FUpdates.BetaVersions = asAuto;
   // for backward compatibility the default is decided based on value of ProxyHost
   FUpdates.ConnectionType = (TConnectionType)-1;
   FUpdates.ProxyHost = ""; // keep empty (see above)
@@ -664,6 +697,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(String,   AutoStartSession); \
     KEY(Bool,     UseLocationProfiles); \
+    KEY(Bool,     UseSharedBookmarks); \
     KEY(Integer,  LocaleSafe); \
     KEY(Bool,     DDExtEnabled); \
     KEY(Integer,  DDExtTimeout); \
@@ -682,6 +716,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     LockToolbars); \
     KEY(Bool,     AutoOpenInPutty); \
     KEY(Integer,  LastMonitor); \
+    KEY(String,   VersionHistory); \
   ); \
   BLOCK("Interface\\Editor", CANCREATE, \
     KEY(String,   Editor.FontName); \
@@ -697,6 +732,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Integer,  Editor.TabSize); \
     KEY(Integer,  Editor.MaxEditors); \
     KEY(Integer,  Editor.EarlyClose); \
+    KEY(Bool,     Editor.SDIShellEditor); \
+    KEY(String,   Editor.WindowParams); \
   ); \
   BLOCK("Interface\\QueueView", CANCREATE, \
     KEY(Integer,  QueueView.Height); \
@@ -710,6 +747,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(DateTime, FUpdates.LastCheck); \
     KEY(Integer,  FUpdates.HaveResults); \
     KEY(Integer,  FUpdates.ShownResults); \
+    KEY(Integer,  FUpdates.BetaVersions); \
     KEY(Integer,  FUpdates.ConnectionType); \
     KEY(String,   FUpdates.ProxyHost); \
     KEY(Integer,  FUpdates.ProxyPort); \
@@ -824,25 +862,25 @@ void __fastcall TWinConfiguration::Load()
       TEditorPreferences * AlternativeEditor = NULL;
       try
       {
-        if (FLegacyEditor->Data.Editor == edInternal)
+        if (FLegacyEditor->Data->Editor == edInternal)
         {
-          if (!FLegacyEditor->Data.ExternalEditor.IsEmpty())
+          if (!FLegacyEditor->Data->ExternalEditor.IsEmpty())
           {
             AlternativeEditor = new TEditorPreferences(*FLegacyEditor);
-            AlternativeEditor->Data.Editor = edExternal;
-            FLegacyEditor->Data.ExternalEditor = "";
+            AlternativeEditor->GetData()->Editor = edExternal;
+            FLegacyEditor->GetData()->ExternalEditor = "";
           }
         }
         else
         {
-          if (FLegacyEditor->Data.ExternalEditor.IsEmpty())
+          if (FLegacyEditor->Data->ExternalEditor.IsEmpty())
           {
-            FLegacyEditor->Data.Editor = edInternal;
+            FLegacyEditor->GetData()->Editor = edInternal;
           }
           else
           {
             AlternativeEditor = new TEditorPreferences(*FLegacyEditor);
-            AlternativeEditor->Data.Editor = edInternal;
+            AlternativeEditor->GetData()->Editor = edInternal;
           }
         }
       }
@@ -870,6 +908,7 @@ void __fastcall TWinConfiguration::Load()
   {
     FUpdates.ConnectionType = (FUpdates.ProxyHost.IsEmpty() ? ctAuto : ctProxy);
   }
+  AddVersionToHistory(FVersionHistory);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
@@ -954,6 +993,51 @@ void __fastcall TWinConfiguration::ClearTemporaryLoginData()
     DeleteFile(FTemporaryKeyFile);
     FTemporaryKeyFile = "";
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::AddVersionToHistory(AnsiString & VersionHistory)
+{
+  int CurrentVersion = CompoundVersion;
+
+  int From = 1;
+  bool CurrentVersionPresent = false;
+  while (!CurrentVersionPresent && (From < VersionHistory.Length()))
+  {
+    AnsiString VersionInfo = CopyToChars(VersionHistory, From, ";", true);
+    AnsiString VersionStr = ::CutToChar(VersionInfo, ',', true);
+    int Version;
+
+    if (TryStrToInt(VersionStr, Version) &&
+        (Version == CurrentVersion))
+    {
+      CurrentVersionPresent = true;
+    }
+  }
+
+  if (!CurrentVersionPresent)
+  {
+    AnsiString CurrentVersionInfo =
+      IntToStr(CurrentVersion) + "," + FileInfoString["ReleaseType"];
+    AddToList(VersionHistory, CurrentVersionInfo, ';');
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetAnyBetaInVersionHistory()
+{
+  int From = 1;
+  bool AnyBeta = false;
+  while (!AnyBeta && (From < VersionHistory.Length()))
+  {
+    AnsiString VersionInfo = CopyToChars(VersionHistory, From, ";", true);
+    ::CutToChar(VersionInfo, ',', true);
+    AnsiString ReleaseType = ::CutToChar(VersionInfo, ',', true);
+
+    if (AnsiSameText(ReleaseType, "beta"))
+    {
+      AnyBeta = true;
+    }
+  }
+  return AnyBeta;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TWinConfiguration::GetDDExtInstalled()
@@ -1070,6 +1154,11 @@ void __fastcall TWinConfiguration::SetUpdates(TUpdatesConfiguration value)
   FUpdates = value;
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetVersionHistory(AnsiString value)
+{
+  SET_CONFIG_PROPERTY(VersionHistory);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDeleteToRecycleBin(bool value)
 {
   SET_CONFIG_PROPERTY(DeleteToRecycleBin);
@@ -1108,6 +1197,11 @@ void __fastcall TWinConfiguration::SetConfirmRecycling(bool value)
 void __fastcall TWinConfiguration::SetUseLocationProfiles(bool value)
 {
   SET_CONFIG_PROPERTY(UseLocationProfiles);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetUseSharedBookmarks(bool value)
+{
+  SET_CONFIG_PROPERTY(UseSharedBookmarks);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetConfirmClosingSession(bool value)
@@ -1236,6 +1330,17 @@ void __fastcall TWinConfiguration::SetBookmarks(AnsiString Key,
 TBookmarkList * __fastcall TWinConfiguration::GetBookmarks(AnsiString Key)
 {
   return FBookmarks->Bookmarks[Key];
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetSharedBookmarks(TBookmarkList * value)
+{
+  FBookmarks->SharedBookmarks = value;
+  Changed();
+}
+//---------------------------------------------------------------------------
+TBookmarkList * __fastcall TWinConfiguration::GetSharedBookmarks()
+{
+  return FBookmarks->SharedBookmarks;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TWinConfiguration::GetDefaultKeyFile()

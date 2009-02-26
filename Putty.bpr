@@ -4,14 +4,14 @@
   <MACROS>
     <VERSION value="BCB.06.00"/>
     <PROJECT value="lib\Putty.lib"/>
-    <OBJFILES value="putty\BE_NONE.obj putty\CPROXY.obj putty\INT64.obj
-      putty\LOGGING.obj putty\MISC.obj putty\PORTFWD_.obj putty\PROXY.obj
-      putty\SSH_.obj putty\SSHAES.obj putty\SSHARCF.obj putty\SSHBLOWF.obj
-      putty\SSHBN.obj putty\SSHCRC.obj putty\SSHCRCDA.obj putty\SSHDES.obj
-      putty\SSHDH.obj putty\SSHDSS.obj putty\SSHMD5.obj putty\SSHPUBK.obj
-      putty\SSHRAND.obj putty\SSHRSA.obj putty\SSHSH256.obj putty\SSHSH512.obj
-      putty\SSHSHA.obj putty\SSHZLIB.obj putty\TREE234.obj
-      putty\CHARSET\UTF8.obj putty\WILDCARD.obj putty\WINDOWS\WINHANDL.obj
+    <OBJFILES value="putty\CPROXY.obj putty\INT64.obj putty\LOGGING.obj
+      putty\MISC.obj putty\PORTFWD_.obj putty\PROXY.obj putty\SSH_.obj
+      putty\SSHAES.obj putty\SSHARCF.obj putty\SSHBLOWF.obj putty\SSHBN.obj
+      putty\SSHCRC.obj putty\SSHCRCDA.obj putty\SSHDES.obj putty\SSHDH.obj
+      putty\SSHDSS.obj putty\SSHMD5.obj putty\SSHPUBK.obj putty\SSHRAND.obj
+      putty\SSHRSA.obj putty\SSHSH256.obj putty\SSHSH512.obj putty\SSHSHA.obj
+      putty\SSHZLIB.obj putty\TREE234.obj putty\CHARSET\UTF8.obj
+      putty\WILDCARD.obj putty\WINDOWS\WINGSS.obj putty\WINDOWS\WINHANDL.obj
       putty\WINDOWS\WINMISC.obj putty\WINDOWS\WINNET.obj
       putty\WINDOWS\WINNOISE.obj putty\WINDOWS\WINPGNTC.obj
       putty\WINDOWS\WINPROXY.obj putty\WINDOWS\WINSTORE_.obj
@@ -52,7 +52,6 @@
   </LINKER>
   <FILELIST>
       <FILE FILENAME="Putty.bpf" FORMNAME="" UNITNAME="Putty" CONTAINERID="BPF" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="putty\BE_NONE.C" FORMNAME="" UNITNAME="BE_NONE.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\CPROXY.C" FORMNAME="" UNITNAME="CPROXY.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\INT64.C" FORMNAME="" UNITNAME="INT64.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\LOGGING.C" FORMNAME="" UNITNAME="LOGGING.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -80,6 +79,7 @@
       <FILE FILENAME="putty\TREE234.C" FORMNAME="" UNITNAME="TREE234.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\CHARSET\UTF8.C" FORMNAME="" UNITNAME="UTF8.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\WILDCARD.C" FORMNAME="" UNITNAME="WILDCARD.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="putty\WINDOWS\WINGSS.C" FORMNAME="" UNITNAME="WINGSS.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\WINDOWS\WINHANDL.C" FORMNAME="" UNITNAME="WINHANDL.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\WINDOWS\WINMISC.C" FORMNAME="" UNITNAME="WINMISC.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="putty\WINDOWS\WINNET.C" FORMNAME="" UNITNAME="WINNET.C" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

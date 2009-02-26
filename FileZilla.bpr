@@ -6,12 +6,13 @@
     <PROJECT value="lib\FileZilla.lib"/>
     <OBJFILES value="filezilla\ApiLog.obj
       filezilla\AsyncProxySocketLayer.obj filezilla\AsyncSocketEx.obj
-      filezilla\AsyncSocketExLayer.obj filezilla\misc\CBase64Coding.obj
-      filezilla\ControlSocket.obj filezilla\Crypt.obj
-      filezilla\FzApiStructures.obj filezilla\FileZillaApi.obj
-      filezilla\FileZillaIntern.obj filezilla\FileZillaIntf.obj
-      filezilla\FtpControlSocket.obj filezilla\FtpListResult.obj
-      filezilla\MainThread.obj filezilla\MFC64bitFix.obj filezilla\Options.obj
+      filezilla\AsyncSocketExLayer.obj filezilla\AsyncSslSocketLayer.obj
+      filezilla\misc\CBase64Coding.obj filezilla\ControlSocket.obj
+      filezilla\Crypt.obj filezilla\FzApiStructures.obj
+      filezilla\FileZillaApi.obj filezilla\FileZillaIntern.obj
+      filezilla\FileZillaIntf.obj filezilla\FtpControlSocket.obj
+      filezilla\FtpListResult.obj filezilla\MainThread.obj
+      filezilla\MFC64bitFix.obj filezilla\Options.obj
       filezilla\PathFunctions.obj filezilla\ServerPath.obj
       filezilla\structures.obj filezilla\TransferSocket.obj
       filezilla\misc\Fzutf8.obj"/>
@@ -29,7 +30,7 @@
     <USERDEFINES value="_WIN32"/>
     <SYSDEFINES value="_RTLDLL;NO_STRICT"/>
     <MAINSOURCE value="FileZilla.bpf"/>
-    <INCLUDEPATH value="filezilla;filezilla\misc;resource;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
+    <INCLUDEPATH value="filezilla;filezilla\misc;openssl;resource;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
     <LIBPATH value="filezilla;filezilla\misc;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wucp -w-sus -wstu -w-rch -w-pia -w-par
       -wnod -wnak -w-hid -w-dup -w-csu -w-com -wcln -w-ccc -wbbf -w-aus -wasm
@@ -55,6 +56,7 @@
       <FILE FILENAME="filezilla\AsyncProxySocketLayer.cpp" FORMNAME="" UNITNAME="AsyncProxySocketLayer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filezilla\AsyncSocketEx.cpp" FORMNAME="" UNITNAME="AsyncSocketEx" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filezilla\AsyncSocketExLayer.cpp" FORMNAME="" UNITNAME="AsyncSocketExLayer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="filezilla\AsyncSslSocketLayer.cpp" FORMNAME="" UNITNAME="AsyncSslSocketLayer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filezilla\misc\CBase64Coding.cpp" FORMNAME="" UNITNAME="CBase64Coding" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filezilla\ControlSocket.cpp" FORMNAME="" UNITNAME="ControlSocket" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filezilla\Crypt.cpp" FORMNAME="" UNITNAME="Crypt" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

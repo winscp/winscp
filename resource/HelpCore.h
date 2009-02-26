@@ -7,5 +7,6 @@
 #define HELP_APPEND_OR_RESUME             "resume#alternate_usage"
 #define HELP_PARTIAL_BIGGER_THAN_SOURCE   HELP_RESUME_TRANSFER
 #define HELP_SYNCHRONIZE                  "task_synchronize_full"
+#define HELP_VERIFY_CERTIFICATE           "ftps"
 
 #endif // HelpCoreH

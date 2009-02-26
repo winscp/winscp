@@ -29,21 +29,23 @@ __fastcall TLoggingFrame::TLoggingFrame(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::Init()
 {
-  InstallPathWordBreakProc(LogFileNameEdit);
+  InstallPathWordBreakProc(LogFileNameEdit2);
   HintLabel(LogFileNameHintText, LoadStr(LOG_FILE_HINT2));
 
   // anchors does not apply for some reason to this particular control
-  LogFileNameHintText->Left = LogFileNameEdit->Left + LogFileNameEdit->Width -
+  LogFileNameHintText->Left = LogFileNameEdit2->Left + LogFileNameEdit2->Width -
     LogFileNameHintText->Width;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::LoadConfiguration()
 {
   //Log tab
-  LoggingCheck->Checked = Configuration->Logging;
+  LoggingOffButton->Checked = !Configuration->Logging;
+  LoggingOnButton->Checked = Configuration->Logging && !Configuration->LogActions;
+  LoggingActionsButton->Checked = Configuration->Logging && Configuration->LogActions;
   LogProtocolCombo->ItemIndex = Configuration->LogProtocol;
   LogToFileCheck->Checked = Configuration->LogToFile;
-  LogFileNameEdit->Text = Configuration->LogFileName;
+  LogFileNameEdit2->Text = Configuration->LogFileName;
   if (Configuration->LogFileAppend)
     LogFileAppendButton->Checked = True;
   else
@@ -64,12 +66,13 @@ void __fastcall TLoggingFrame::SaveConfiguration()
   Configuration->BeginUpdate();
   try
   {
-    Configuration->Logging = LoggingCheck->Checked;
+    Configuration->Logging = LoggingOnButton->Checked || LoggingActionsButton->Checked;
+    Configuration->LogActions = LoggingActionsButton->Checked;
     Configuration->LogProtocol = LogProtocolCombo->ItemIndex;
     Configuration->LogToFile = LogToFileCheck->Checked;
     if (LogToFileCheck->Checked)
     {
-      Configuration->LogFileName = LogFileNameEdit->Text;
+      Configuration->LogFileName = LogFileNameEdit2->Text;
     }
     Configuration->LogFileAppend = LogFileAppendButton->Checked;
     if (EnableLogWindow)
@@ -90,7 +93,7 @@ void __fastcall TLoggingFrame::SaveConfiguration()
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::UpdateControls()
 {
-  if (!LoggingCheck->Checked)
+  if (!LoggingOnButton->Checked && !LoggingActionsButton->Checked)
   {
     EnableControl(LoggingGroup, False);
   }
@@ -98,11 +101,11 @@ void __fastcall TLoggingFrame::UpdateControls()
   {
     LoggingGroup->Enabled = True;
 
+    EnableControl(LogProtocolCombo, LoggingOnButton->Checked);
+    EnableControl(LogProtocolLabel, LogProtocolCombo->Enabled);
     EnableControl(LogToFileCheck, True);
-    EnableControl(LogProtocolLabel, True);
-    EnableControl(LogProtocolCombo, True);
-    EnableControl(LogFileNameEdit, LogToFileCheck->Checked);
-    EnableControl(LogFileNameHintText, LogFileNameEdit->Enabled);
+    EnableControl(LogFileNameEdit2, LogToFileCheck->Checked);
+    EnableControl(LogFileNameHintText, LogFileNameEdit2->Enabled);
     EnableControl(LogFilePanel, LogToFileCheck->Checked);
 
     EnableControl(LogShowWindowCheck, True && EnableLogWindow);
@@ -114,13 +117,14 @@ void __fastcall TLoggingFrame::UpdateControls()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoggingFrame::LogToFileCheckChange(TObject *Sender)
+void __fastcall TLoggingFrame::LogToFileCheckChange(TObject * /*Sender*/)
 {
-  if (LogToFileCheck->Checked && LogFileNameEdit->Text.IsEmpty())
+  if (LogToFileCheck->Checked && LogFileNameEdit2->Text.IsEmpty())
   {
-    LogFileNameEdit->Text = DefaultLogFileName;
+    LogFileNameEdit2->Text =
+      IncludeTrailingBackslash(SystemTemporaryDirectory()) + "!s." + GetLogFileExt();
   }
-  DataChange(Sender);
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::DataChange(TObject * /*Sender*/)
@@ -128,9 +132,9 @@ void __fastcall TLoggingFrame::DataChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TLoggingFrame::GetDefaultLogFileName()
+AnsiString __fastcall TLoggingFrame::GetLogFileExt()
 {
-  return IncludeTrailingBackslash(SystemTemporaryDirectory()) + "!s.log";
+  return (LoggingOnButton->Checked ? "log" : "xml");
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoggingFrame::SetEnableLogWindow(bool value)
@@ -142,14 +146,15 @@ void __fastcall TLoggingFrame::SetEnableLogWindow(bool value)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoggingFrame::LogFileNameEditBeforeDialog(TObject * /*Sender*/,
+void __fastcall TLoggingFrame::LogFileNameEdit2BeforeDialog(TObject * /*Sender*/,
   AnsiString & Name, bool & /*Action*/)
 {
   FBeforeDialogPath = Name;
   Name = ExpandEnvironmentVariables(Name);
+  LogFileNameEdit2->DefaultExt = GetLogFileExt();
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoggingFrame::LogFileNameEditAfterDialog(TObject * /*Sender*/,
+void __fastcall TLoggingFrame::LogFileNameEdit2AfterDialog(TObject * /*Sender*/,
   AnsiString & Name, bool & /*Action*/)
 {
   if (CompareFileName(Name, ExpandEnvironmentVariables(FBeforeDialogPath)))
@@ -158,11 +163,28 @@ void __fastcall TLoggingFrame::LogFileNameEditAfterDialog(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoggingFrame::LogFileNameEditCreateEditDialog(
+void __fastcall TLoggingFrame::LogFileNameEdit2CreateEditDialog(
   TObject * Sender, TFileDialogKind DialogKind, TOpenDialog *& Dialog)
 {
   USEDPARAM(DialogKind);
   assert(DialogKind == dkOpen);
   Dialog = CreateOpenDialog(dynamic_cast<TComponent *>(Sender));
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoggingFrame::LoggingButtonClick(TObject * /*Sender*/)
+{
+  if (LoggingOnButton->Checked || LoggingActionsButton->Checked)
+  {
+    AnsiString Ext = ExtractFileExt(LogFileNameEdit2->Text);
+    if (AnsiSameText(Ext, ".log") || AnsiSameText(Ext, ".xml"))
+    {
+      AnsiString NewExt = AnsiString(".") + GetLogFileExt();
+      if (!AnsiSameText(Ext, NewExt))
+      {
+        LogFileNameEdit2->Text = ChangeFileExt(LogFileNameEdit2->Text, NewExt);
+      }
+    }
+  }
+  UpdateControls();
 }
 //---------------------------------------------------------------------------

@@ -8,6 +8,28 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
+bool __fastcall ExceptionMessage(Exception * E, AnsiString & Message)
+{
+  bool Result = true;
+  if (dynamic_cast<EAbort *>(E) != NULL)
+  {
+    Result = false;
+  }
+  else if (dynamic_cast<EAccessViolation*>(E) != NULL)
+  {
+    Message = LoadStr(ACCESS_VIOLATION_ERROR);
+  }
+  else if (E->Message.IsEmpty())
+  {
+    Result = false;
+  }
+  else
+  {
+    Message = E->Message;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 __fastcall ExtException::ExtException(Exception * E) :
   Exception("")
 {
@@ -15,7 +37,7 @@ __fastcall ExtException::ExtException(Exception * E) :
 }
 //---------------------------------------------------------------------------
 __fastcall ExtException::ExtException(Exception* E, AnsiString Msg):
-        Exception(Msg)
+  Exception(Msg)
 {
   AddMoreMessages(E);
 }
@@ -43,14 +65,10 @@ __fastcall ExtException::ExtException(AnsiString Msg, Exception* E) :
   }
 }
 //---------------------------------------------------------------------------
-__fastcall ExtException::ExtException(Exception* E, int Ident):
-        Exception(Ident)
-{
-  AddMoreMessages(E);
-}
-//---------------------------------------------------------------------------
-__fastcall ExtException::ExtException(AnsiString Msg, AnsiString MoreMessages) :
-  Exception(Msg)
+__fastcall ExtException::ExtException(AnsiString Msg, AnsiString MoreMessages,
+    AnsiString HelpKeyword) :
+  Exception(Msg),
+  FHelpKeyword(HelpKeyword)
 {
   if (!MoreMessages.IsEmpty())
   {
@@ -84,21 +102,24 @@ void __fastcall ExtException::AddMoreMessages(Exception* E)
     }
 
     ExtException * ExtE = dynamic_cast<ExtException *>(E);
-    if ((ExtE != NULL) &&
-        (ExtE->MoreMessages != NULL))
+    if (ExtE != NULL)
     {
-      FMoreMessages->Assign(ExtE->MoreMessages);
+      if (!ExtE->HelpKeyword.IsEmpty())
+      {
+        // we have to yet decide what to do now
+        assert(HelpKeyword.IsEmpty());
+
+        FHelpKeyword = ExtE->HelpKeyword;
+      }
+
+      if (ExtE->MoreMessages != NULL)
+      {
+        FMoreMessages->Assign(ExtE->MoreMessages);
+      }
     }
 
     AnsiString Msg;
-    if (dynamic_cast<EAccessViolation*>(E) != NULL)
-    {
-      Msg = LoadStr(ACCESS_VIOLATION_ERROR);
-    }
-    else if (!E->Message.IsEmpty() && (dynamic_cast<EAbort *>(E) == NULL))
-    {
-      Msg = E->Message;
-    }
+    ExceptionMessage(E, Msg);
 
     // new exception does not have own message, this is in fact duplication of
     // the exception data, but the exception class may being changed

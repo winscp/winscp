@@ -230,8 +230,6 @@ __published:
   TLabel *Label20;
   TGroupBox *AuthenticationParamsGroup;
   TCheckBox *AgentFwdCheck;
-  TLabel *GSSAPIServerRealmLabel2;
-  TEdit *GSSAPIServerRealmEdit;
   TCheckBox *TunnelCheck;
   TGroupBox *TunnelOptionsGroup;
   TLabel *Label21;
@@ -242,7 +240,6 @@ __published:
   TComboBox *TransferProtocolCombo;
   TLabel *Label22;
   TCheckBox *AllowScpFallbackCheck;
-  TLabel *InsecureLabel;
   TGroupBox *ConnectionGroup;
   TCheckBox *FtpPasvModeCheck;
   TTabSheet *RecycleBinSheet;
@@ -291,6 +288,11 @@ __published:
   TGroupBox *FtpGroup;
   TLabel *Label25;
   TMemo *PostLoginCommandsMemo;
+  TLabel *BugMaxPkt2Label;
+  TComboBox *BugMaxPkt2Combo;
+  TComboBox *FtpsCombo;
+  TLabel *Label5;
+  TComboBox *FtpListAllCombo;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -379,11 +381,11 @@ private:
   TColor FColor;
   AnsiString FBeforeDialogPath;
   TStringList * FTreeLabels;
-  TFSProtocol FFSProtocol;
   bool FRecycleBinSheetVisible;
   TWndMethod FOldSessionTreeProc;
   TTreeNode * FHintNode;
   TTreeViewScrollOnDragOver * FScrollOnDragOver;
+  int FDefaultPort;
 
   void __fastcall LoadSession(TSessionData * aSessionData);
   void __fastcall UpdateControls();
@@ -395,7 +397,6 @@ private:
   TSessionData * __fastcall GetSelectedSession();
   void __fastcall CMDialogKey(TWMKeyDown & Message);
   void __fastcall WMHelp(TWMHelp & Message);
-  void __fastcall InitializeBugsCombo(TComboBox * BugsCombo);
   int __fastcall FSProtocolToIndex(TFSProtocol FSProtocol, bool & AllowScpFallback);
   TFSProtocol __fastcall IndexToFSProtocol(int Index, bool AllowScpFallback);
   void __fastcall UpdateNavigationTree();
@@ -413,6 +414,7 @@ private:
   TTreeNode * __fastcall CurrentSessionFolderNode();
   void __fastcall SessionTreeProc(TMessage & Message);
   bool __fastcall SessionAllowDrop(TTreeNode * DropTarget);
+  int __fastcall DefaultPort();
 
 protected:
   void __fastcall Default();

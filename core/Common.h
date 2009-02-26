@@ -30,7 +30,7 @@ AnsiString BooleanToStr(bool B);
 AnsiString BooleanToEngStr(bool B);
 AnsiString DefaultStr(const AnsiString & Str, const AnsiString & Default);
 AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim);
-AnsiString CutToChars(AnsiString &Str, AnsiString Chs, bool Trim,
+AnsiString CopyToChars(const AnsiString & Str, int & From, AnsiString Chs, bool Trim,
   char * Delimiter = NULL);
 AnsiString DelimitStr(AnsiString Str, AnsiString Chars);
 AnsiString ShellDelimitStr(AnsiString Str, char Quote);
@@ -38,6 +38,7 @@ void __fastcall OemToAnsi(AnsiString & Str);
 void __fastcall AnsiToOem(AnsiString & Str);
 AnsiString ExceptionLogString(Exception *E);
 bool IsDots(const AnsiString Str);
+bool IsNumber(const AnsiString Str);
 AnsiString __fastcall SystemTemporaryDirectory();
 AnsiString __fastcall GetShellFolderPath(int CSIdl);
 AnsiString __fastcall StripPathQuotes(const AnsiString Path);
@@ -52,14 +53,15 @@ void __fastcall ReformatFileNameCommand(AnsiString & Command);
 AnsiString __fastcall ExpandEnvironmentVariables(const AnsiString & Str);
 bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2);
 bool __fastcall CompareFileName(const AnsiString & Path1, const AnsiString & Path2);
-bool __fastcall IsDisplayableStr(const AnsiString Str);
-AnsiString __fastcall CharToHex(char Ch);
-AnsiString __fastcall StrToHex(const AnsiString Str);
+AnsiString __fastcall DisplayableStr(const AnsiString Str);
+AnsiString __fastcall CharToHex(char Ch, bool UpperCase = true);
+AnsiString __fastcall StrToHex(const AnsiString Str, bool UpperCase = true, char Separator = '\0');
 AnsiString __fastcall HexToStr(const AnsiString Hex);
 unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars = 0);
 char __fastcall HexToChar(const AnsiString Hex);
 AnsiString __fastcall DecodeUrlChars(AnsiString S);
 AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore = "");
+AnsiString __fastcall EncodeUrlString(AnsiString S);
 bool __fastcall RecursiveDeleteFile(const AnsiString FileName, bool ToRecycleBin);
 int __fastcall CancelAnswer(int Answers);
 int __fastcall AbortAnswer(int Answers);
@@ -68,6 +70,7 @@ AnsiString __fastcall LoadStr(int Ident, unsigned int MaxLength);
 AnsiString __fastcall LoadStrPart(int Ident, int Part);
 AnsiString __fastcall EscapeHotkey(const AnsiString & Caption);
 bool __fastcall CutToken(AnsiString & Str, AnsiString & Token);
+void __fastcall AddToList(AnsiString & List, const AnsiString & Value, char Delimiter);
 struct TPasLibModule;
 TPasLibModule * __fastcall FindModule(void * Instance);
 //---------------------------------------------------------------------------
@@ -89,10 +92,24 @@ TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode
 void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTime2);
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   TDSTMode DSTMode);
+TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime);
 __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
   TDSTMode DSTMode);
 AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format);
 int __fastcall CompareFileTime(TDateTime T1, TDateTime T2);
+//---------------------------------------------------------------------------
+template<class MethodT>
+void __fastcall MakeMethod(void * Data, void * Code, MethodT & Method)
+{
+  ((TMethod*)&Method)->Data = Data;
+  ((TMethod*)&Method)->Code = Code;
+}
+//---------------------------------------------------------------------------
+TMethod __fastcall MakeMethod(void * Data, void * Code)
+{
+  TMethod Method = { Data, Code };
+  return Method;
+}
 //---------------------------------------------------------------------------
 class TCriticalSection
 {

@@ -12,9 +12,7 @@
 #include <Tools.h>
 
 #include "CreateDirectory.h"
-#include "WinConfiguration.h"
 //---------------------------------------------------------------------
-#pragma link "MoreButton"
 #pragma link "RightsExt"
 #pragma link "Rights"
 #ifndef NO_RESOURCES
@@ -73,12 +71,6 @@ bool __fastcall TCreateDirectoryDialog::Execute(AnsiString & Directory,
     SetRightsCheck->Checked = SetRights;
     // expect sensible value even if rights are not set valid
     RightsFrame->Rights = Properties->Rights;
-    MoreButton->Expanded = GUIConfiguration->CopyParamDialogExpanded;
-  }
-  else
-  {
-    MoreButton->Expanded = false;
-    MoreButton->Visible = false;
   }
 
   bool Result = (ShowModal() != mrCancel);
@@ -97,7 +89,6 @@ bool __fastcall TCreateDirectoryDialog::Execute(AnsiString & Directory,
       {
         Properties->Valid = Properties->Valid >> vpRights;
       }
-      GUIConfiguration->CopyParamDialogExpanded = MoreButton->Expanded;
     }
   }
   return Result;

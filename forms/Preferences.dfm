@@ -250,14 +250,14 @@ object PreferencesDialog: TPreferencesDialog
           353)
         inline LoggingFrame: TLoggingFrame
           Left = 5
-          Top = 0
+          Top = 5
           Width = 372
-          Height = 241
+          Height = 273
           Anchors = [akLeft, akTop, akRight]
           TabOrder = 0
           DesignSize = (
             372
-            241)
+            273)
           inherited LoggingGroup: TGroupBox
             Width = 357
             DesignSize = (
@@ -269,6 +269,9 @@ object PreferencesDialog: TPreferencesDialog
             inherited LogFilePanel: TPanel
               Width = 305
             end
+          end
+          inherited LogGroup: TGroupBox
+            Width = 357
           end
         end
       end
@@ -502,9 +505,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 
-            'Preferences on this tab applies to Norton Commander interface on' +
-            'ly.'
+          Caption = 'Preferences on this tab applies to Commander interface only.'
           WordWrap = True
         end
         object PanelsGroup: TGroupBox
@@ -645,7 +646,7 @@ object PreferencesDialog: TPreferencesDialog
           Height = 29
           Anchors = [akLeft, akTop, akRight]
           AutoSize = False
-          Caption = 'Preferences on this tab applies to Explorer-like interface only.'
+          Caption = 'Preferences on this tab applies to Explorer interface only.'
           WordWrap = True
         end
         object GroupBox2: TGroupBox
@@ -791,7 +792,7 @@ object PreferencesDialog: TPreferencesDialog
           353)
         object InternalEditorGroup: TGroupBox
           Left = 8
-          Top = 191
+          Top = 205
           Width = 357
           Height = 130
           Anchors = [akLeft, akTop, akRight]
@@ -857,31 +858,27 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 357
-          Height = 178
+          Height = 192
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Editor preference'
           TabOrder = 0
           DesignSize = (
             357
-            178)
-          object EditorListView: TListView
+            192)
+          object EditorListView2: TListView
             Left = 16
             Top = 24
             Width = 324
-            Height = 80
+            Height = 94
             Anchors = [akLeft, akTop, akRight, akBottom]
             Columns = <
               item
                 Caption = 'Mask'
+                Width = 70
               end
               item
                 Caption = 'Editor'
-                Width = 175
-              end
-              item
-                Caption = 'MDI'
-                Tag = 1
-                Width = 45
+                Width = 190
               end
               item
                 Caption = 'Text'
@@ -896,18 +893,18 @@ object PreferencesDialog: TPreferencesDialog
             RowSelect = True
             TabOrder = 0
             ViewStyle = vsReport
-            OnData = EditorListViewData
-            OnDblClick = EditorListViewDblClick
+            OnData = EditorListView2Data
+            OnDblClick = EditorListView2DblClick
             OnEndDrag = ListViewEndDrag
-            OnDragDrop = EditorListViewDragDrop
+            OnDragDrop = EditorListView2DragDrop
             OnDragOver = ListViewDragOver
-            OnKeyDown = EditorListViewKeyDown
+            OnKeyDown = EditorListView2KeyDown
             OnSelectItem = ListViewSelectItem
             OnStartDrag = ListViewStartDrag
           end
           object AddEditorButton: TButton
             Left = 16
-            Top = 111
+            Top = 125
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -917,7 +914,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object EditEditorButton: TButton
             Left = 112
-            Top = 111
+            Top = 125
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -927,7 +924,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object UpEditorButton: TButton
             Left = 258
-            Top = 111
+            Top = 125
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -937,7 +934,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object DownEditorButton: TButton
             Left = 258
-            Top = 142
+            Top = 156
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -947,7 +944,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RemoveEditorButton: TButton
             Left = 16
-            Top = 142
+            Top = 156
             Width = 83
             Height = 25
             Anchors = [akRight, akBottom]
@@ -1705,12 +1702,12 @@ object PreferencesDialog: TPreferencesDialog
         end
         object UpdatesProxyGroup: TGroupBox
           Left = 8
-          Top = 139
+          Top = 198
           Width = 357
           Height = 142
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Connection'
-          TabOrder = 1
+          TabOrder = 2
           DesignSize = (
             357
             142)
@@ -1778,6 +1775,36 @@ object PreferencesDialog: TPreferencesDialog
             Caption = '&Automatically detect proxy settings'
             TabOrder = 1
             OnClick = ControlChange
+          end
+        end
+        object UpdatesOptionsGroup: TGroupBox
+          Left = 8
+          Top = 139
+          Width = 357
+          Height = 51
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Options'
+          TabOrder = 1
+          DesignSize = (
+            357
+            51)
+          object Label10: TLabel
+            Left = 18
+            Top = 22
+            Width = 115
+            Height = 13
+            Caption = 'Check for &beta versions:'
+            FocusControl = UpdatesBetaVersionsCombo
+          end
+          object UpdatesBetaVersionsCombo: TComboBox
+            Left = 285
+            Top = 17
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 0
           end
         end
       end

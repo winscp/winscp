@@ -54,13 +54,16 @@ __published:
   TLabel *FileZillaVersionLabel;
   TLabel *FileZillaCopyrightLabel;
   TStaticText *FileZillaHomepageLabel;
+  TLabel *OpenSSLVersionLabel;
+  TStaticText *OpenSSLHomepageLabel;
+  TLabel *OpenSSLCopyrightLabel;
   void __fastcall DisplayLicense(TObject *Sender);
   void __fastcall LicenseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall RegistrationProductIdLabelClick(TObject *Sender);
 private:
   TConfiguration * FConfiguration;
-  AnsiString FRegistrationLink;
+  TNotifyEvent FOnRegistrationLink;
   void __fastcall FirstScrollingControlEnter(TObject * Sender);
   void __fastcall LastScrollingControlEnter(TObject * Sender);
 public:

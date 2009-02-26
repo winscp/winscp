@@ -7,7 +7,6 @@
 #include <StdCtrls.hpp>
 #include <Forms.hpp>
 #include <Mask.hpp>
-#include <MoreButton.hpp>
 #include <ExtCtrls.hpp>
 #include <HistoryComboBox.hpp>
 

@@ -147,6 +147,9 @@ protected:
 	bool m_bUTF8;
 	bool m_bAnnouncesUTF8;
 	bool m_hasClntCmd;
+#ifdef MPEXT
+	bool m_hasMfmtCmd;
+#endif
 	bool m_isFileZilla;
 
 	bool m_awaitsReply;

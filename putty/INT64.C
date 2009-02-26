@@ -12,7 +12,7 @@
 uint64 uint64_div10(uint64 x, int *remainder)
 {
     uint64 y;
-    int rem, r2;
+    unsigned int rem, r2;
     y.hi = x.hi / 10;
     y.lo = x.lo / 10;
     rem = x.lo % 10;
@@ -20,8 +20,8 @@ uint64 uint64_div10(uint64 x, int *remainder)
      * Now we have to add in the remainder left over from x.hi.
      */
     r2 = x.hi % 10;
-    y.lo += r2 * 2 * (0x80000000 / 10);
-    rem += r2 * 2 * (0x80000000 % 10);
+    y.lo += r2 * 429496729;
+    rem += r2 * 6;
     y.lo += rem / 10;
     rem %= 10;
 
@@ -49,14 +49,14 @@ void uint64_decimal(uint64 x, char *buffer)
 uint64 uint64_make(unsigned long hi, unsigned long lo)
 {
     uint64 y;
-    y.hi = hi;
-    y.lo = lo;
+    y.hi = hi & 0xFFFFFFFFU;
+    y.lo = lo & 0xFFFFFFFFU;
     return y;
 }
 
 uint64 uint64_add(uint64 x, uint64 y)
 {
-    x.lo += y.lo;
+    x.lo = (x.lo + y.lo) & 0xFFFFFFFFU;
     x.hi += y.hi + (x.lo < y.lo ? 1 : 0);
     return x;
 }
@@ -80,8 +80,8 @@ int uint64_compare(uint64 x, uint64 y)
 
 uint64 uint64_subtract(uint64 x, uint64 y)
 {
-    x.lo -= y.lo;
-    x.hi -= y.hi + (x.lo > ~y.lo ? 1 : 0);
+    x.lo = (x.lo - y.lo) & 0xFFFFFFFFU;
+    x.hi = (x.hi - y.hi - (x.lo > (y.lo ^ 0xFFFFFFFFU) ? 1 : 0)) & 0xFFFFFFFFU;
     return x;
 }
 
@@ -94,7 +94,7 @@ uint64 uint64_shift_right(uint64 x, int shift)
 {
     if (shift < 32) {
 	x.lo >>= shift;
-	x.lo |= (x.hi << (32-shift));
+	x.lo |= (x.hi << (32-shift)) & 0xFFFFFFFFU;
 	x.hi >>= shift;
     } else {
 	x.lo = x.hi >> (shift-32);
@@ -106,11 +106,11 @@ uint64 uint64_shift_right(uint64 x, int shift)
 uint64 uint64_shift_left(uint64 x, int shift)
 {
     if (shift < 32) {
-	x.hi <<= shift;
+	x.hi = (x.hi << shift) & 0xFFFFFFFFU;
 	x.hi |= (x.lo >> (32-shift));
-	x.lo <<= shift;
+	x.lo = (x.lo << shift) & 0xFFFFFFFFU;
     } else {
-	x.hi = x.lo << (shift-32);
+	x.hi = (x.lo << (shift-32)) & 0xFFFFFFFFU;
 	x.lo = 0;
     }
     return x;
@@ -128,3 +128,48 @@ uint64 uint64_from_decimal(char *str)
     }
     return ret;
 }
+
+#ifdef TESTMODE
+
+#include <stdio.h>
+
+int main(void)
+{
+    uint64 x, y, z;
+    char buf[80];
+
+    x = uint64_make(0x3456789AUL, 0xDEF01234UL);
+    printf("%08lx.%08lx\n", x.hi, x.lo);
+    uint64_decimal(x, buf);
+    printf("%s\n", buf);
+
+    y = uint64_add32(x, 0xFFFFFFFFU);
+    printf("%08lx.%08lx\n", y.hi, y.lo);
+    uint64_decimal(y, buf);
+    printf("%s\n", buf);
+
+    z = uint64_subtract(y, x);
+    printf("%08lx.%08lx\n", z.hi, z.lo);
+    uint64_decimal(z, buf);
+    printf("%s\n", buf);
+
+    z = uint64_subtract(x, y);
+    printf("%08lx.%08lx\n", z.hi, z.lo);
+    uint64_decimal(z, buf);
+    printf("%s\n", buf);
+
+    y = uint64_shift_right(x, 4);
+    printf("%08lx.%08lx\n", y.hi, y.lo);
+
+    y = uint64_shift_right(x, 36);
+    printf("%08lx.%08lx\n", y.hi, y.lo);
+
+    y = uint64_shift_left(x, 4);
+    printf("%08lx.%08lx\n", x.hi, x.lo);
+
+    y = uint64_shift_left(x, 36);
+    printf("%08lx.%08lx\n", x.hi, x.lo);
+
+    return 0;
+}
+#endif

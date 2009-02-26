@@ -70,7 +70,9 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
 
   FCustomCommandsScrollOnDragOver = new TListViewScrollOnDragOver(CustomCommandsView, true);
   FCopyParamScrollOnDragOver = new TListViewScrollOnDragOver(CopyParamListView, true);
-  FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView, true);
+  FEditorScrollOnDragOver = new TListViewScrollOnDragOver(EditorListView2, true);
+
+  ComboAutoSwitchInitialize(UpdatesBetaVersionsCombo);
 
   LoggingFrame->Init();
   InstallPathWordBreakProc(RandomSeedFileEdit);
@@ -315,6 +317,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
       UpdatesMonthlyButton->Checked = true;
     }
 
+    ComboAutoSwitchLoad(UpdatesBetaVersionsCombo, Updates.BetaVersions);
+
     switch (Updates.ConnectionType)
     {
       case ctDirect:
@@ -529,6 +533,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       Updates.Period = 30;
     }
 
+    Updates.BetaVersions = ComboAutoSwitchSave(UpdatesBetaVersionsCombo);
+
     if (UpdatesDirectCheck->Checked)
     {
       Updates.ConnectionType = ctDirect;
@@ -688,13 +694,13 @@ void __fastcall TPreferencesDialog::UpdateControls()
         ExtractFileName(ExpandEnvironmentVariables(Configuration->IniFileStorageName)));
 
     EditorFontLabel->WordWrap = EditorWordWrapCheck->Checked;
-    bool EditorSelected = (EditorListView->Selected != NULL);
+    bool EditorSelected = (EditorListView2->Selected != NULL);
     EnableControl(EditEditorButton, EditorSelected);
     EnableControl(RemoveEditorButton, EditorSelected);
     EnableControl(UpEditorButton, EditorSelected &&
-      (EditorListView->ItemIndex > 0));
+      (EditorListView2->ItemIndex > 0));
     EnableControl(DownEditorButton, EditorSelected &&
-      (EditorListView->ItemIndex < EditorListView->Items->Count - 1));
+      (EditorListView2->ItemIndex < EditorListView2->Items->Count - 1));
 
     EnableControl(UpdatesProxyHostEdit, UpdatesProxyCheck->Checked);
     EnableControl(UpdatesProxyHostLabel, UpdatesProxyHostEdit->Enabled);
@@ -961,7 +967,7 @@ TListViewScrollOnDragOver * __fastcall TPreferencesDialog::ScrollOnDragOver(TObj
   {
     return FCustomCommandsScrollOnDragOver;
   }
-  else if (ListView == EditorListView)
+  else if (ListView == EditorListView2)
   {
     return FEditorScrollOnDragOver;
   }
@@ -1116,18 +1122,18 @@ void __fastcall TPreferencesDialog::EditorMove(int Source, int Dest)
   {
     FEditorList->Move(Source, Dest);
     // workaround for bug in VCL
-    EditorListView->ItemIndex = -1;
-    EditorListView->ItemFocused = EditorListView->Selected;
-    EditorListView->ItemIndex = Dest;
+    EditorListView2->ItemIndex = -1;
+    EditorListView2->ItemFocused = EditorListView2->Selected;
+    EditorListView2->ItemIndex = Dest;
     UpdateEditorListView();
     UpdateControls();
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::EditorListViewDragDrop(TObject * Sender,
+void __fastcall TPreferencesDialog::EditorListView2DragDrop(TObject * Sender,
   TObject * Source, int X, int Y)
 {
-  if (Source == EditorListView)
+  if (Source == EditorListView2)
   {
     if (AllowListViewDrag(Sender, X, Y))
     {
@@ -1138,16 +1144,16 @@ void __fastcall TPreferencesDialog::EditorListViewDragDrop(TObject * Sender,
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpDownEditorButtonClick(TObject *Sender)
 {
-  EditorMove(EditorListView->ItemIndex,
-    EditorListView->ItemIndex + (Sender == UpEditorButton ? -1 : 1));
+  EditorMove(EditorListView2->ItemIndex,
+    EditorListView2->ItemIndex + (Sender == UpEditorButton ? -1 : 1));
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::RemoveEditorButtonClick(
   TObject * /*Sender*/)
 {
-  assert(EditorListView->ItemIndex >= 0 &&
-    EditorListView->ItemIndex < FEditorList->Count);
-  FEditorList->Delete(EditorListView->ItemIndex);
+  assert(EditorListView2->ItemIndex >= 0 &&
+    EditorListView2->ItemIndex < FEditorList->Count);
+  FEditorList->Delete(EditorListView2->ItemIndex);
   UpdateEditorListView();
   UpdateControls();
 }
@@ -1155,7 +1161,7 @@ void __fastcall TPreferencesDialog::RemoveEditorButtonClick(
 void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
 {
   TEditorPreferencesMode Mode = (Sender == EditEditorButton ? epmEdit : epmAdd);
-  int Index = EditorListView->ItemIndex;
+  int Index = EditorListView2->ItemIndex;
   TEditorPreferences * Editor;
   if (Mode == epmEdit)
   {
@@ -1168,7 +1174,8 @@ void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
 
   try
   {
-    if (DoEditorPreferencesDialog(Editor, Mode))
+    bool DummyRemember = false;
+    if (DoEditorPreferencesDialog(Editor->GetData(), DummyRemember, Mode, true))
     {
       if (Mode == epmEdit)
       {
@@ -1190,7 +1197,7 @@ void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
       Editor = NULL;
 
       UpdateEditorListView();
-      EditorListView->ItemIndex = Index;
+      EditorListView2->ItemIndex = Index;
       UpdateControls();
     }
   }
@@ -1200,7 +1207,7 @@ void __fastcall TPreferencesDialog::AddEditEditorButtonClick(TObject * Sender)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::EditorListViewDblClick(TObject * /*Sender*/)
+void __fastcall TPreferencesDialog::EditorListView2DblClick(TObject * /*Sender*/)
 {
   if (EditEditorButton->Enabled)
   {
@@ -1208,7 +1215,7 @@ void __fastcall TPreferencesDialog::EditorListViewDblClick(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::EditorListViewKeyDown(TObject * /*Sender*/,
+void __fastcall TPreferencesDialog::EditorListView2KeyDown(TObject * /*Sender*/,
   WORD & Key, TShiftState /*Shift*/)
 {
   if (RemoveEditorButton->Enabled && (Key == VK_DELETE))
@@ -1224,23 +1231,22 @@ void __fastcall TPreferencesDialog::EditorListViewKeyDown(TObject * /*Sender*/,
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateEditorListView()
 {
-  EditorListView->Items->Count = FEditorList->Count;
-  AdjustListColumnsWidth(EditorListView, FEditorList->Count);
-  EditorListView->Invalidate();
+  EditorListView2->Items->Count = FEditorList->Count;
+  AdjustListColumnsWidth(EditorListView2, FEditorList->Count);
+  EditorListView2->Invalidate();
 }
 //---------------------------------------------------------------------------
-void __fastcall TPreferencesDialog::EditorListViewData(TObject * /*Sender*/,
+void __fastcall TPreferencesDialog::EditorListView2Data(TObject * /*Sender*/,
   TListItem * Item)
 {
   int Index = Item->Index;
   assert(Index >= 0 && Index <= FEditorList->Count);
   const TEditorPreferences * Editor = FEditorList->Editors[Index];
-  Item->Caption = Editor->Data.FileMask.Masks;
+  Item->Caption = Editor->Data->FileMask.Masks;
   Item->SubItems->Add(Editor->Name);
-  if (Editor->Data.Editor == edExternal)
+  if (Editor->Data->Editor == edExternal)
   {
-    Item->SubItems->Add(BooleanToStr(Editor->Data.MDIExternalEditor));
-    Item->SubItems->Add(BooleanToStr(Editor->Data.ExternalEditorText));
+    Item->SubItems->Add(BooleanToStr(Editor->Data->ExternalEditorText));
   }
 }
 //---------------------------------------------------------------------------

@@ -13,18 +13,20 @@ class TEditorPreferencesDialog : public TForm
 __published:
   TGroupBox *ExternalEditorGroup;
   TCheckBox *ExternalEditorTextCheck;
-  TCheckBox *MDIExternalEditorCheck;
-  TGroupBox *EditorGroup;
+  TCheckBox *SDIExternalEditorCheck;
+  TGroupBox *EditorGroup2;
   TRadioButton *EditorInternalButton;
   TRadioButton *EditorExternalButton;
   THistoryComboBox *ExternalEditorEdit;
   TButton *ExternalEditorBrowseButton;
   TGroupBox *MaskGroup;
-  TLabel *Label1;
+  TLabel *MaskLabel;
   THistoryComboBox *MaskEdit;
   TButton *OkButton;
   TButton *CancelButton;
   TButton *HelpButton;
+  TCheckBox *RememberCheck;
+  TRadioButton *EditorOpenButton;
   void __fastcall ExternalEditorEditExit(TObject *Sender);
   void __fastcall ExternalEditorBrowseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
@@ -35,14 +37,13 @@ __published:
 public:
   virtual __fastcall TEditorPreferencesDialog(TComponent * Owner);
 
-  void __fastcall Init(TEditorPreferencesMode Mode);
-  bool __fastcall Execute(TEditorPreferences * Editor);
+  void __fastcall Init(TEditorPreferencesMode Mode, bool MayRemote);
+  bool __fastcall Execute(TEditorData * Editor, bool & Remember);
 
 private:
-  TEditorPreferencesMode FMode;
-  bool FAfterFilenameEditDialog;
-
   void __fastcall UpdateControls();
+
+  bool FMayRemote;
 };
 //---------------------------------------------------------------------------
 #endif

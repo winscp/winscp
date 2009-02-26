@@ -445,9 +445,12 @@ void CTransferSocket::OnAccept(int nErrorCode)
 		{
 			AddLayer(m_pSslLayer);
 			int res = m_pSslLayer->InitSSLConnection(true);
+#ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
-			else if (res == SSL_FAILURE_INITSSL)
+			else
+#endif
+			if (res == SSL_FAILURE_INITSSL)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
 					
 			if (res)
@@ -523,9 +526,12 @@ void CTransferSocket::OnConnect(int nErrorCode)
 		{
 			AddLayer(m_pSslLayer);
 			int res = m_pSslLayer->InitSSLConnection(true);
+#ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
-			else if (res == SSL_FAILURE_INITSSL)
+			else
+#endif
+			if (res == SSL_FAILURE_INITSSL)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
 					
 			if (res)
@@ -1256,9 +1262,11 @@ int CTransferSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 					case SSL_FAILURE_ESTABLISH:
 						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, 1);
 						break;
+#ifndef MPEXT_NO_SSLDLL
 					case SSL_FAILURE_LOADDLLS:
 						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
 						break;
+#endif
 					case SSL_FAILURE_INITSSL:
 						m_pOwner->ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
 						break;

@@ -17,16 +17,16 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-bool __fastcall DoEditorPreferencesDialog(TEditorPreferences * Editor,
-  TEditorPreferencesMode Mode)
+bool __fastcall DoEditorPreferencesDialog(TEditorData * Editor,
+  bool & Remember, TEditorPreferencesMode Mode, bool MayRemote)
 {
   bool Result;
 
   TEditorPreferencesDialog * Dialog = SafeFormCreate<TEditorPreferencesDialog>();
   try
   {
-    Dialog->Init(Mode);
-    Result = Dialog->Execute(Editor);
+    Dialog->Init(Mode, MayRemote);
+    Result = Dialog->Execute(Editor, Remember);
   }
   __finally
   {
@@ -45,42 +45,104 @@ __fastcall TEditorPreferencesDialog::TEditorPreferencesDialog(
   InstallPathWordBreakProc(ExternalEditorEdit);
 }
 //---------------------------------------------------------------------------
-void __fastcall TEditorPreferencesDialog::Init(TEditorPreferencesMode Mode)
+void __fastcall TEditorPreferencesDialog::Init(TEditorPreferencesMode Mode, bool MayRemote)
 {
-  FMode = Mode;
+  int CaptionId;
+  switch (Mode)
+  {
+    case epmEdit:
+      CaptionId = EDITOR_EDIT;
+      break;
 
-  Caption = LoadStr(Mode == epmEdit ? EDITOR_EDIT : EDITOR_ADD);
+    case epmAdd:
+      CaptionId = EDITOR_ADD;
+      break;
+
+    case epmAdHoc:
+      CaptionId = EDITOR_AD_HOC;
+      break;
+  }
+
+  Caption = LoadStr(CaptionId);
+
+  if (Mode == epmAdHoc)
+  {
+    int Shift = ExternalEditorEdit->Left - MaskEdit->Left;
+    ExternalEditorEdit->Left = MaskEdit->Left;
+    ExternalEditorEdit->Width = ExternalEditorEdit->Width + Shift;
+    Shift = ExternalEditorEdit->Top - MaskEdit->Top;
+    ExternalEditorEdit->Top = MaskEdit->Top;
+    ExternalEditorBrowseButton->Top = ExternalEditorBrowseButton->Top - Shift;
+    EditorGroup2->Height =
+      EditorGroup2->Height - Shift - (EditorExternalButton->Top - EditorInternalButton->Top);
+    TLabel * ExternalEditorLabel = new TLabel(this);
+    ExternalEditorLabel->Caption = EditorExternalButton->Caption;
+    ExternalEditorLabel->Parent = EditorGroup2;
+    ExternalEditorLabel->Top = MaskLabel->Top;
+    ExternalEditorLabel->Left = MaskLabel->Left;
+    ExternalEditorLabel->FocusControl = ExternalEditorEdit;
+    EditorInternalButton->Visible = false;
+    EditorExternalButton->Visible = false;
+    EditorOpenButton->Visible = false;
+    Shift += ExternalEditorGroup->Top - MaskGroup->Top;
+    MaskGroup->Visible = false;
+    ExternalEditorGroup->Top = ExternalEditorGroup->Top - Shift;
+    Height = Height - Shift;
+  }
+  else
+  {
+    int Shift = OkButton->Top - RememberCheck->Top;
+    RememberCheck->Visible = false;
+    Height = Height - Shift;
+  }
+
+  FMayRemote = MayRemote;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TEditorPreferencesDialog::Execute(TEditorPreferences * Editor)
+bool __fastcall TEditorPreferencesDialog::Execute(TEditorData * Editor, bool & Remember)
 {
-  EditorInternalButton->Checked = (Editor->Data.Editor == edInternal);
-  EditorExternalButton->Checked = (Editor->Data.Editor == edExternal);
-  AnsiString ExternalEditor = Editor->Data.ExternalEditor;
+  EditorInternalButton->Checked = (Editor->Editor == edInternal);
+  EditorExternalButton->Checked = (Editor->Editor == edExternal);
+  EditorOpenButton->Checked = (Editor->Editor == edOpen);
+  AnsiString ExternalEditor = Editor->ExternalEditor;
   if (!ExternalEditor.IsEmpty())
   {
     ReformatFileNameCommand(ExternalEditor);
   }
   ExternalEditorEdit->Text = ExternalEditor;
   ExternalEditorEdit->Items = CustomWinConfiguration->History["ExternalEditor"];
-  MaskEdit->Text = Editor->Data.FileMask.Masks;
+  MaskEdit->Text = Editor->FileMask.Masks;
   MaskEdit->Items = CustomWinConfiguration->History["Mask"];
-  ExternalEditorTextCheck->Checked = Editor->Data.ExternalEditorText;
-  MDIExternalEditorCheck->Checked = Editor->Data.MDIExternalEditor;
+  ExternalEditorTextCheck->Checked = Editor->ExternalEditorText;
+  SDIExternalEditorCheck->Checked = Editor->SDIExternalEditor;
+  RememberCheck->Checked = Remember;
+  UpdateControls();
 
   bool Result = (ShowModal() == mrOk);
 
   if (Result)
   {
-    Editor->Data.Editor = (EditorInternalButton->Checked ? edInternal : edExternal);
-    Editor->Data.ExternalEditor = ExternalEditorEdit->Text;
+    if (EditorExternalButton->Checked)
+    {
+      Editor->Editor = edExternal;
+    }
+    else if (EditorOpenButton->Checked)
+    {
+      Editor->Editor = edOpen;
+    }
+    else
+    {
+      Editor->Editor = edInternal;
+    }
+    Editor->ExternalEditor = ExternalEditorEdit->Text;
     ExternalEditorEdit->SaveToHistory();
     CustomWinConfiguration->History["ExternalEditor"] = ExternalEditorEdit->Items;
-    Editor->Data.FileMask = MaskEdit->Text;
+    Editor->FileMask = MaskEdit->Text;
     MaskEdit->SaveToHistory();
     CustomWinConfiguration->History["Mask"] = MaskEdit->Items;
-    Editor->Data.ExternalEditorText = ExternalEditorTextCheck->Checked;
-    Editor->Data.MDIExternalEditor = MDIExternalEditorCheck->Checked;
+    Editor->ExternalEditorText = ExternalEditorTextCheck->Checked;
+    Editor->SDIExternalEditor = SDIExternalEditorCheck->Checked;
+    Remember = RememberCheck->Checked;
   }
 
   return Result;
@@ -130,10 +192,11 @@ void __fastcall TEditorPreferencesDialog::ControlChange(TObject * /*Sender*/)
 void __fastcall TEditorPreferencesDialog::UpdateControls()
 {
   EnableControl(OkButton,
-    EditorInternalButton->Checked || !ExternalEditorEdit->Text.IsEmpty());
+    EditorInternalButton->Checked || EditorOpenButton->Checked ||
+    !ExternalEditorEdit->Text.IsEmpty());
   EnableControl(ExternalEditorEdit, EditorExternalButton->Checked);
   EnableControl(ExternalEditorBrowseButton, EditorExternalButton->Checked);
-  EnableControl(ExternalEditorGroup, EditorExternalButton->Checked);
+  EnableControl(ExternalEditorGroup, EditorExternalButton->Checked && FMayRemote);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorPreferencesDialog::FormCloseQuery(TObject * /*Sender*/,

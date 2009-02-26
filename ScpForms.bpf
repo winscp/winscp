@@ -5,7 +5,6 @@
 USEFORM("forms\About.cpp", AboutDialog);
 USEFORM("forms\Authenticate.cpp", AuthenticateForm);
 USEFORM("forms\Cleanup.cpp", CleanupDialog);
-USEFORM("forms\ComboInput.cpp", ComboInputDialog);
 USEFORM("forms\Console.cpp", ConsoleDialog);
 USEFORM("forms\Copy.cpp", CopyDialog);
 USEFORM("forms\CopyParams.cpp", CopyParamsFrame); /* TFrame: File Type */
@@ -13,6 +12,7 @@ USEFORM("forms\CopyParamCustom.cpp", CopyParamCustomDialog);
 USEFORM("forms\CopyParamPreset.cpp", CopyParamPresetDialog);
 USEFORM("forms\CreateDirectory.cpp", CreateDirectoryDialog);
 USEFORM("forms\CustomCommand.cpp", CustomCommandDialog);
+USEFORM("forms\Custom.cpp", CustomDialog);
 USEFORM("forms\Editor.cpp", EditorForm);
 USEFORM("forms\EditorPreferences.cpp", EditorPreferencesDialog);
 USEFORM("forms\FileSystemInfo.cpp", FileSystemInfoDialog);
@@ -32,7 +32,6 @@ USEFORM("forms\Properties.cpp", PropertiesDialog);
 USEFORM("forms\RemoteTransfer.cpp", RemoteTransferDialog);
 USEFORM("forms\Rights.cpp", RightsFrame); /* TFrame: File Type */
 USEFORM("forms\RightsExt.cpp", RightsExtFrame); /* TFrame: File Type */
-USEFORM("forms\SaveSession.cpp", SaveSessionDialog);
 USEFORM("forms\SelectMask.cpp", SelectMaskDialog);
 USEFORM("forms\Symlink.cpp", SymlinkDialog);
 USEFORM("forms\Synchronize.cpp", SynchronizeDialog);

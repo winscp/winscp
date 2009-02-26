@@ -241,7 +241,7 @@ inline void Flush()
   }
 }
 //---------------------------------------------------------------------------
-inline void Print(bool FromBeginning, const char * Message)
+void Print(bool FromBeginning, const char * Message)
 {
   if ((OutputType == FILE_TYPE_DISK) || (OutputType == FILE_TYPE_PIPE))
   {

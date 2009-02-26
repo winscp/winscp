@@ -27,6 +27,8 @@ private:
   bool FDirLoadedAfterChangeDir;
   TNotifyEvent FOnDisplayProperties;
   bool FFullLoad;
+  int FHiddenCount;
+  int FFilteredCount;
   TTerminal *FTerminal;
   bool FShowInaccesibleDirectories;
   TDDDragFileName FOnDDDragFileName;
@@ -73,6 +75,8 @@ protected:
   DYNAMIC bool __fastcall CanEdit(TListItem* Item);
   void __fastcall SetDriveView(TCustomUnixDriveView * Value);
   virtual int __fastcall SecondaryColumnHeader(int Index, bool & AliasOnly);
+  virtual int __fastcall HiddenCount();
+  virtual int __fastcall FilteredCount();
 
   __property TCustomUnixDriveView * DriveView = { read = FDriveView, write = SetDriveView };
 

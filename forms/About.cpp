@@ -44,6 +44,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   LinkLabel(PuttyLicenseLabel, "", FirstScrollingControlEnter);
   LinkLabel(PuttyHomepageLabel, LoadStr(PUTTY_URL));
   LinkLabel(FileZillaHomepageLabel, LoadStr(FILEZILLA_URL));
+  LinkLabel(OpenSSLHomepageLabel, LoadStr(OPENSSL_URL));
   LinkLabel(Toolbar2000HomepageLabel);
   LinkLabel(TBXHomepageLabel, "", LastScrollingControlEnter);
   ApplicationLabel->ParentFont = true;
@@ -53,6 +54,8 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   PuttyCopyrightLabel->Caption = LoadStr(PUTTY_COPYRIGHT);
   FileZillaVersionLabel->Caption = FMTLOAD(FILEZILLA_BASED_ON, (LoadStr(FILEZILLA_VERSION)));
   FileZillaCopyrightLabel->Caption = LoadStr(FILEZILLA_COPYRIGHT);
+  OpenSSLVersionLabel->Caption = FMTLOAD(OPENSSL_BASED_ON, (LoadStr(OPENSSL_VERSION)));
+  OpenSSLCopyrightLabel->Caption = LoadStr(OPENSSL_COPYRIGHT);
   WinSCPCopyrightLabel->Caption = LoadStr(WINSCP_COPYRIGHT);
   AnsiString Translator = LoadStr(TRANSLATOR_INFO);
 
@@ -90,7 +93,7 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
     else
     {
       RegistrationLicensesLabel->Visible = false;
-      FRegistrationLink = Registration->RegistrationLink;
+      FOnRegistrationLink = Registration->OnRegistrationLink;
       RegistrationProductIdLabel->Caption = LoadStr(ABOUT_REGISTRATION_LINK);
       LinkLabel(RegistrationProductIdLabel, "");
     }
@@ -122,6 +125,9 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   FileZillaVersionLabel->Visible = false;
   FileZillaCopyrightLabel->Visible = false;
   FileZillaHomepageLabel->Visible = false;
+  OpenSSLVersionLabel->Visible = false;
+  OpenSSLCopyrightLabel->Visible = false;
+  OpenSSLHomepageLabel->Visible = false;
 
   for (int Index = 0; Index < ThirdPartyBox->ControlCount; Index++)
   {
@@ -180,9 +186,9 @@ void __fastcall TAboutDialog::LastScrollingControlEnter(TObject * /*Sender*/)
 void __fastcall TAboutDialog::RegistrationProductIdLabelClick(
   TObject * /*Sender*/)
 {
-  if (!FRegistrationLink.IsEmpty())
+  if (FOnRegistrationLink != NULL)
   {
-    OpenBrowser(FRegistrationLink);
+    FOnRegistrationLink(this);
   }
 }
 //---------------------------------------------------------------------------

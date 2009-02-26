@@ -13,7 +13,6 @@
 #include <ExtCtrls.hpp>
 
 #include <Bookmarks.h>
-#include "MoreButton.hpp"
 #include "RightsExt.h"
 #include "Rights.h"
 //----------------------------------------------------------------------------
@@ -25,7 +24,6 @@ __published:
   TEdit *DirectoryEdit;
   TLabel *EditLabel;
   TButton *HelpButton;
-  TMoreButton *MoreButton;
   TPanel *MorePanel;
   TGroupBox *AttributesGroup;
   TRightsExtFrame *RightsFrame;

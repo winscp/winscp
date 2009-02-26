@@ -177,7 +177,7 @@ __published:
   TGroupBox *ThemeGroup;
   TLabel *Label7;
   TComboBox *ThemeCombo;
-  TListView *EditorListView;
+  TListView *EditorListView2;
   TButton *AddEditorButton;
   TButton *EditEditorButton;
   TButton *UpEditorButton;
@@ -217,6 +217,9 @@ __published:
   TLabel *Label9;
   TUpDownEdit *EditorTabSizeEdit;
   TCheckBox *ConfirmTransferringCheck;
+  TGroupBox *UpdatesOptionsGroup;
+  TLabel *Label10;
+  TComboBox *UpdatesBetaVersionsCombo;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -257,15 +260,15 @@ __published:
   void __fastcall AddEditCopyParamButtonClick(TObject *Sender);
   void __fastcall CopyParamListViewDblClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
-  void __fastcall EditorListViewDragDrop(TObject *Sender, TObject *Source,
+  void __fastcall EditorListView2DragDrop(TObject *Sender, TObject *Source,
           int X, int Y);
   void __fastcall UpDownEditorButtonClick(TObject *Sender);
   void __fastcall RemoveEditorButtonClick(TObject *Sender);
   void __fastcall AddEditEditorButtonClick(TObject *Sender);
-  void __fastcall EditorListViewDblClick(TObject *Sender);
-  void __fastcall EditorListViewKeyDown(TObject *Sender, WORD &Key,
+  void __fastcall EditorListView2DblClick(TObject *Sender);
+  void __fastcall EditorListView2KeyDown(TObject *Sender, WORD &Key,
           TShiftState Shift);
-  void __fastcall EditorListViewData(TObject *Sender, TListItem *Item);
+  void __fastcall EditorListView2Data(TObject *Sender, TListItem *Item);
   void __fastcall PuttyPathBrowseButtonClick(TObject *Sender);
   void __fastcall PuttyPathResetButtonClick(TObject *Sender);
   void __fastcall ExportButtonClick(TObject *Sender);

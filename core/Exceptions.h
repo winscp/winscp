@@ -7,6 +7,8 @@
 #include <SysInit.hpp>
 #include <System.hpp>
 //---------------------------------------------------------------------------
+bool __fastcall ExceptionMessage(Exception * E, AnsiString & Message);
+//---------------------------------------------------------------------------
 class ExtException : public Sysutils::Exception
 {
 public:
@@ -14,11 +16,11 @@ public:
   __fastcall ExtException(Exception* E, AnsiString Msg);
   // "copy the exception", just append message to the end
   __fastcall ExtException(AnsiString Msg, Exception* E);
-  __fastcall ExtException(AnsiString Msg, AnsiString MoreMessages);
+  __fastcall ExtException(AnsiString Msg, AnsiString MoreMessages, AnsiString HelpKeyword = "");
   __fastcall ExtException(AnsiString Msg, TStrings* MoreMessages, bool Own);
-  __fastcall ExtException(Exception* E, int Ident);
   __fastcall virtual ~ExtException(void);
   __property TStrings* MoreMessages = {read=FMoreMessages};
+  __property AnsiString HelpKeyword = {read=FHelpKeyword};
 
   inline __fastcall ExtException(const AnsiString Msg, const TVarRec * Args, const int Args_Size) : Sysutils::Exception(Msg, Args, Args_Size) { }
   inline __fastcall ExtException(int Ident, const TVarRec * Args, const int Args_Size)/* overload */ : Sysutils::Exception(Ident, Args, Args_Size) { }
@@ -32,6 +34,7 @@ protected:
 
 private:
   Classes::TStrings* FMoreMessages;
+  AnsiString FHelpKeyword;
 };
 //---------------------------------------------------------------------------
 #define DERIVE_EXT_EXCEPTION(NAME, BASE) \

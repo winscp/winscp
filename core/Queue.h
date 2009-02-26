@@ -12,9 +12,10 @@ public:
   virtual __fastcall ~TSimpleThread();
 
   virtual void __fastcall Start();
-  void __fastcall WaitFor();
+  void __fastcall WaitFor(unsigned int Milliseconds = INFINITE);
   virtual void __fastcall Terminate() = 0;
   void __fastcall Close();
+  bool __fastcall IsFinished();
 
 protected:
   HANDLE FThread;

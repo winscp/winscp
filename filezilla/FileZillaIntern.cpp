@@ -29,6 +29,7 @@ BOOL TFileZillaIntern::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam,
     case FZ_MSG_LISTDATA:
     case FZ_MSG_TRANSFERSTATUS:
     case FZ_MSG_REPLY:
+    case FZ_MSG_CAPABILITIES:
       Result = FOwner->PostMessage(wParam, lParam);
       break;
 
@@ -37,9 +38,11 @@ BOOL TFileZillaIntern::PostMessage(HWND hWnd, UINT Msg, WPARAM wParam,
       Result = false;
       break;
 
-    // should never get here, no GSS/SSL support, only on close the secure-off is reported
+    // ignore
+    // not useful. although FTP allows switching between secure and unsecure
+    // connection during session, filezilla does not support it,
+    // so we are either secure or not for whole session
     case FZ_MSG_SECURESERVER:
-      ASSERT(FZ_MSG_PARAM(wParam) == FALSE);
       ASSERT(lParam == 0);
       Result = false;
       break;

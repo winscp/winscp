@@ -495,15 +495,13 @@ static char *read_body(FILE * fp)
 
     while (1) {
 	c = fgetc(fp);
-	if (c == '\r' || c == '\n') {
-	    c = fgetc(fp);
-	    if (c != '\r' && c != '\n' && c != EOF)
-		ungetc(c, fp);
+	if (c == '\r' || c == '\n' || c == EOF) {
+	    if (c != EOF) {
+		c = fgetc(fp);
+		if (c != '\r' && c != '\n')
+		    ungetc(c, fp);
+	    }
 	    return text;
-	}
-	if (c == EOF) {
-	    sfree(text);
-	    return NULL;
 	}
 	if (len + 1 >= size) {
 	    size += 128;

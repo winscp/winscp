@@ -35,9 +35,53 @@ struct TMessageParams
   unsigned int TimeoutAnswer;
   AnsiString NewerAskAgainTitle;
   int NewerAskAgainAnswer;
+  bool NewerAskAgainCheckedInitially;
+  bool AllowHelp;
 
 private:
   inline void Reset();
+};
+
+struct TDialogControls
+{
+  void * Token;
+  TForm * Form;
+  TComboBox * Combo;
+  TCheckBox * Check;
+};
+
+struct TDialogData
+{
+  TDialogData();
+
+  AnsiString Combo;
+  bool Check;
+};
+
+typedef void __fastcall (__closure * TShowDialogEvent)
+  (const TDialogControls & Controls);
+typedef void __fastcall (__closure * TChangeDialogEvent)
+  (const TDialogControls & Controls, bool & Valid);
+typedef void __fastcall (__closure * TValidateDialogEvent)
+  (const TDialogData & Data);
+
+struct TDialogParams
+{
+  TDialogParams();
+
+  void * Token;
+
+  AnsiString Caption;
+  AnsiString HelpKeyword;
+
+  AnsiString ComboLabel;
+  TStrings * ComboItems;
+  bool ComboEmptyValid;
+  AnsiString CheckLabel;
+
+  TShowDialogEvent OnShow;
+  TChangeDialogEvent OnChange;
+  TValidateDialogEvent OnValidate;
 };
 
 class TCustomScpExplorerForm;
@@ -55,6 +99,7 @@ void __fastcall FlashOnBackground();
 
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal, Exception * E);
 void __fastcall FormHelp(TForm * Form);
+void __fastcall SearchHelp(const AnsiString & Message);
 
 AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent);
 void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr);
@@ -84,6 +129,8 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
   const AnsiString MessageFormat = "", int Answers = qaOK,
   AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
 
+bool __fastcall DoCustomDialog(const TDialogParams & Params, TDialogData & Data);
+
 // windows\WinMain.cpp
 int __fastcall Execute();
 
@@ -109,7 +156,7 @@ struct TRegistration
   bool NeverExpires;
   TDateTime Expiration;
   bool EduLicense;
-  AnsiString RegistrationLink;
+  TNotifyEvent OnRegistrationLink;
 };
 void __fastcall DoAboutDialog(TConfiguration * Configuration,
   bool AllowLicense, TRegistration * Registration);
@@ -163,7 +210,6 @@ const loLogWindow      = 0x08;
 const loAbout          = 0x10;
 
 const loPreferences    = 0x20;
-const loExternalProtocols = 0x40;
 const loColor          = 0x80;
 
 const loNone           = 0x00;
@@ -187,8 +233,6 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
 // forms\Preferences.cpp
 enum TPreferencesMode { pmDefault, pmLogin, pmEditor, pmCustomCommands,
     pmQueue, pmTransfer, pmLogging, pmUpdates, pmPresets, pmEditors };
-typedef void __fastcall (__closure *TGetDefaultLogFileName)
-  (System::TObject* Sender, AnsiString &DefaultLogFileName);
 class TCopyParamRuleData;
 struct TPreferencesDialogData
 {
@@ -219,6 +263,7 @@ bool __fastcall DoCopyParamCustomDialog(TCopyParamType & CopyParam,
 
 // forms\Properties.cpp
 class TRemoteProperties;
+class TRemoteTokenList;
 struct TCalculateSizeStats;
 const cpMode =  0x01;
 const cpOwner = 0x02;
@@ -232,15 +277,10 @@ typedef void __fastcall (__closure *TCalculateChecksumEvent)
   (const AnsiString & Alg, TStrings * FileList,
    TCalculatedChecksumCallbackEvent OnCalculatedChecksum, bool & Close);
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
-    const AnsiString Directory, TStrings * GroupList, TStrings * UserList,
-    TRemoteProperties * Properties, int AllowedChanges,
-    TCalculateSizeEvent OnCalculateSize,
+    const AnsiString Directory, const TRemoteTokenList * GroupList,
+    const TRemoteTokenList * UserList, TRemoteProperties * Properties,
+    int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
-
-// forms\ComboInput.cpp
-bool __fastcall DoComboInputDialog(
-  const AnsiString Caption, const AnsiString Prompt, AnsiString & Text,
-  TStrings * Items, bool AllowEmpty, const AnsiString HelpKeyword);
 
 bool __fastcall DoRemoteMoveDialog(AnsiString & Target, AnsiString & FileMask);
 enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
@@ -258,6 +298,8 @@ void __fastcall SessionNameValidate(const AnsiString & Text,
 #ifdef CustomDirViewHPP
 bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
     TFileFilter * Filter, TConfiguration * Configuration);
+bool __fastcall DoFilterMaskDialog(TCustomDirView * Parent,
+  TFileFilter * Filter);
 #endif
 
 const spDelete = 0x01;
@@ -327,10 +369,10 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
 int __fastcall Console(bool Help);
 
 // windows\EditorPreferences.cpp
-enum TEditorPreferencesMode { epmAdd, epmEdit };
-class TEditorPreferences;
-bool __fastcall DoEditorPreferencesDialog(TEditorPreferences * Editor,
-  TEditorPreferencesMode Mode);
+enum TEditorPreferencesMode { epmAdd, epmEdit, epmAdHoc };
+class TEditorData;
+bool __fastcall DoEditorPreferencesDialog(TEditorData * Editor,
+  bool & Remember, TEditorPreferencesMode Mode, bool MayRemote);
 
 const int cplNone =             0x00;
 const int cplCustomize =        0x01;

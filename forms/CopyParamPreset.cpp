@@ -46,7 +46,7 @@ __fastcall TCopyParamPresetDialog::TCopyParamPresetDialog(TComponent * Owner,
   InstallPathWordBreakProc(UserNameEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
-  HintLabel(RuleMaskHintText, LoadStr(MASK_HINT));
+  HintLabel(RuleMaskHintText, LoadStr(MASK_HINT2));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamPresetDialog::UpdateControls()

@@ -26,7 +26,7 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
   try
   {
     CenterFormOn(Dialog, Parent);
-    Dialog->Select = Select;
+    Dialog->Init(Select ? TSelectMaskDialog::smSelect : TSelectMaskDialog::smDeselect);
     DefaultFileFilter(*Filter);
     Filter->Masks = WinConfiguration->SelectMask;
     Filter->Directories = WinConfiguration->SelectDirectories;
@@ -46,6 +46,29 @@ bool __fastcall DoSelectMaskDialog(TCustomDirView * Parent, bool Select,
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall DoFilterMaskDialog(TCustomDirView * Parent,
+  TFileFilter * Filter)
+{
+  bool Result;
+  TSelectMaskDialog * Dialog = new TSelectMaskDialog(Application);
+  try
+  {
+    CenterFormOn(Dialog, Parent);
+    Dialog->Init(TSelectMaskDialog::smFilter);
+    Dialog->FileFilter = *Filter;
+    Result = Dialog->Execute();
+    if (Result)
+    {
+      *Filter = Dialog->FileFilter;
+    }
+  }
+  __finally
+  {
+    delete Dialog;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
         : TForm(Owner)
 {
@@ -53,7 +76,31 @@ __fastcall TSelectMaskDialog::TSelectMaskDialog(TComponent* Owner)
   SetFileFilter(FFileFilter);
   UseSystemSettings(this);
   InstallPathWordBreakProc(MaskEdit);
-  HintLabel(HintText, LoadStr(MASK_HINT));
+  HintLabel(HintText, LoadStr(MASK_HINT2));
+}
+//---------------------------------------------------------------------------
+void __fastcall TSelectMaskDialog::Init(TMode Mode)
+{
+  int CaptionStr;
+  switch (Mode)
+  {
+    case smSelect:
+      CaptionStr = SELECT_MASK_SELECT_CAPTION;
+      ClearButton->Hide();
+      break;
+
+    case smDeselect:
+      CaptionStr = SELECT_MASK_DESELECT_CAPTION;
+      ClearButton->Hide();
+      break;
+
+    case smFilter:
+      CaptionStr = FILTER_MASK_CAPTION;
+      IncludingDirectoriesCheck->Hide();
+      HelpKeyword = "ui_filter";
+      break;
+  }
+  Caption = LoadStr(CaptionStr);
 }
 //---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -81,12 +128,6 @@ bool __fastcall TSelectMaskDialog::Execute()
   return Result;
 } /* TSelectMaskDialog::Execute */
 //---------------------------------------------------------------------------
-void __fastcall TSelectMaskDialog::SetSelect(Boolean value)
-{
-  FSelect = value;
-  Caption = LoadStr(Select ? SELECT_MASK_SELECT_CAPTION : SELECT_MASK_DESELECT_CAPTION);
-} /* TSelectMaskDialog::SetSelect */
-//---------------------------------------------------------------------------
 void __fastcall TSelectMaskDialog::SetFileFilter(TFileFilter value)
 {
   FFileFilter = value;
@@ -110,5 +151,10 @@ void __fastcall TSelectMaskDialog::MaskEditExit(TObject * /*Sender*/)
 void __fastcall TSelectMaskDialog::HelpButtonClick(TObject * /*Sender*/)
 {
   FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSelectMaskDialog::ClearButtonClick(TObject * /*Sender*/)
+{
+  MaskEdit->Text = "";
 }
 //---------------------------------------------------------------------------

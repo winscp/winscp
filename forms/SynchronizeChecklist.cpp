@@ -182,11 +182,11 @@ void __fastcall TSynchronizeChecklistDialog::LoadItem(TListItem * Item)
   }
   else
   {
-    Item->ImageIndex = FakeFileImageIndex(ChecklistItem->FileName,
+    Item->ImageIndex = FakeFileImageIndex(ChecklistItem->GetFileName(),
       FLAGMASK(ChecklistItem->IsDirectory, FILE_ATTRIBUTE_DIRECTORY));
   }
 
-  S = ChecklistItem->FileName;
+  S = ChecklistItem->GetFileName();
   if (ChecklistItem->IsDirectory)
   {
     S = IncludeTrailingBackslash(S);
@@ -677,7 +677,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
   switch (ColProperties->SortColumn)
   {
     case 0: // name
-      Compare = CompareText(ChecklistItem1->FileName, ChecklistItem2->FileName);
+      Compare = CompareText(ChecklistItem1->GetFileName(), ChecklistItem2->GetFileName());
       break;
 
     // sorting by local and remote dir is the same
@@ -723,7 +723,7 @@ void __fastcall TSynchronizeChecklistDialog::ListViewCompare(
 
     if (Compare == 0)
     {
-      Compare = CompareText(ChecklistItem1->FileName, ChecklistItem2->FileName);
+      Compare = CompareText(ChecklistItem1->GetFileName(), ChecklistItem2->GetFileName());
     }
   }
 

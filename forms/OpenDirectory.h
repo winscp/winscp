@@ -21,6 +21,7 @@
 #include <Bookmarks.h>
 #include "IEComboBox.hpp"
 #include <PasTools.hpp>
+#include <ComCtrls.hpp>
 //----------------------------------------------------------------------------
 class TOpenDirectoryDialog : public TForm
 {
@@ -30,16 +31,22 @@ __published:
   TIEComboBox *RemoteDirectoryEdit;
   TIEComboBox *LocalDirectoryEdit;
   TLabel *EditLabel;
-  TGroupBox *BookmarksGroup;
-  TListBox *BookmarksList;
-  TButton *AddBookmarkButton;
-  TButton *RemoveBookmarkButton;
-  TButton *DownBookmarkButton;
-  TButton *UpBookmarkButton;
-  TLabel *Label1;
+  TPageControl *PageControl;
   TButton *LocalDirectoryBrowseButton;
   TButton *SwitchButton;
   TButton *HelpButton;
+  TTabSheet *SessionBookmarksSheet;
+  TListBox *SessionBookmarksList;
+  TButton *AddSessionBookmarkButton;
+  TButton *RemoveSessionBookmarkButton;
+  TButton *UpSessionBookmarkButton;
+  TButton *DownSessionBookmarkButton;
+  TListBox *SharedBookmarksList;
+  TButton *AddSharedBookmarkButton;
+  TButton *RemoveSharedBookmarkButton;
+  TButton *UpSharedBookmarkButton;
+  TButton *DownSharedBookmarkButton;
+  TTabSheet *SharedBookmarksSheet;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);
@@ -76,11 +83,12 @@ public:
   __property bool AllowSwitch = { read = FAllowSwitch, write = FAllowSwitch };
 
 protected:
-  bool __fastcall AllowBookmarkDrag(int X, int Y);
-  void __fastcall BookmarkMove(int Source, int Dest);
-  Integer __fastcall FindBookmark(const AnsiString Bookmark);
+  bool __fastcall AllowBookmarkDrag(TObject * Sender, int X, int Y);
+  void __fastcall BookmarkMove(TObject * Sender, int Source, int Dest);
+  Integer __fastcall FindBookmark(TListBox * BookmarksList, const AnsiString Bookmark);
   void __fastcall UpdateControls(bool ListBoxUpdate = false);
-  void __fastcall AddAsBookmark();
+  void __fastcall AddAsBookmark(TObject * Sender);
+  void __fastcall RemoveBookmark(TObject * Sender);
   __property TWinControl * CurrentEdit = { read = GetCurrentEdit };
 
 private:
@@ -88,9 +96,11 @@ private:
   TTerminal * FTerminal;
   int FBookmarkDragSource, FBookmarkDragDest;
   TOpenDirectoryMode FMode;
-  TBookmarkList * FBookmarkList;
+  TBookmarkList * FSessionBookmarkList;
+  TBookmarkList * FSharedBookmarkList;
   bool FAllowSwitch;
-  TListBoxScrollOnDragOver * FScrollOnDragOver;
+  TListBoxScrollOnDragOver * FSessionScrollOnDragOver;
+  TListBoxScrollOnDragOver * FSharedScrollOnDragOver;
 
   void __fastcall SetDirectory(AnsiString value);
   AnsiString __fastcall GetDirectory();
@@ -99,7 +109,17 @@ private:
   void __fastcall SetDirectories(TStrings * value);
   TStrings * __fastcall GetDirectories();
   void __fastcall SetMode(TOpenDirectoryMode value);
-  void __fastcall LoadBookmarks();
+  void __fastcall LoadBookmarks(TListBox * ListBox,
+    TBookmarkList * BookmarkList, TBookmarkList * Source);
+  TListBox * GetBookmarksList(TObject * Sender);
+  TBookmarkList * GetBookmarkList(TObject * Sender);
+  TListBoxScrollOnDragOver * GetScrollOnDragOver(TObject * Sender);
+  void __fastcall SelectBookmark(TListBox * BookmarksList);
+  void __fastcall UpdateBookmarkControls(
+    TButton * AddBookmarkButton, TButton * RemoveBookmarkButton,
+    TButton * UpBookmarkButton, TButton * DownBookmarkButton,
+    TListBox * BookmarksList, bool ListBoxUpdate);
+  void __fastcall BookmarkSelected(TObject * Sender);
 };
 //----------------------------------------------------------------------------
 #endif

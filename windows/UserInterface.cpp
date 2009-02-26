@@ -20,9 +20,6 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-// initialize an instance
-TProgramParams ProgramParams;
-//---------------------------------------------------------------------------
 const AnsiString AppName = "WinSCP";
 const AnsiString AppNameVersion = "WinSCP";
 //---------------------------------------------------------------------------
@@ -94,92 +91,82 @@ void __fastcall ShowExtendedException(Exception * E)
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
   Exception * E)
 {
-  if (!E->Message.IsEmpty())
+  AnsiString Message; // not used
+  if (ExceptionMessage(E, Message))
   {
-    if (E->InheritsFrom(__classid(Exception)))
+    TTerminalManager * Manager = TTerminalManager::Instance(false);
+
+    TQueryType Type;
+    bool CloseOnCompletion = (dynamic_cast<ESshTerminate*>(E) != NULL);
+    Type = CloseOnCompletion ? qtInformation : qtError;
+
+    if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
+        (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
     {
-      if (!E->InheritsFrom(__classid(EAbort)))
+      if (CloseOnCompletion)
       {
-        TTerminalManager * Manager = TTerminalManager::Instance(false);
+        Manager->DisconnectActiveTerminal();
+      }
 
-        TQueryType Type;
-        bool CloseOnCompletion = (dynamic_cast<ESshTerminate*>(E) != NULL);
-        Type = CloseOnCompletion ? qtInformation : qtError;
-
-        if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
-            (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
+      int Result;
+      if (CloseOnCompletion)
+      {
+        if (WinConfiguration->ConfirmExitOnCompletion)
         {
-          if (CloseOnCompletion)
-          {
-            Manager->DisconnectActiveTerminal();
-          }
+          TMessageParams Params(mpNeverAskAgainCheck);
+          Result = FatalExceptionMessageDialog(E, Type,
+            Manager->Count > 1 ?
+              FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
+              LoadStr(EXIT_ON_COMPLETION),
+            qaYes | qaNo, HELP_NONE, &Params);
 
-          int Result;
-          if (CloseOnCompletion)
+          if (Result == qaNeverAskAgain)
           {
-            if (WinConfiguration->ConfirmExitOnCompletion)
-            {
-              TMessageParams Params(mpNeverAskAgainCheck);
-              Result = FatalExceptionMessageDialog(E, Type,
-                Manager->Count > 1 ?
-                  FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
-                  LoadStr(EXIT_ON_COMPLETION),
-                qaYes | qaNo, HELP_NONE, &Params);
-
-              if (Result == qaNeverAskAgain)
-              {
-                Result = qaYes;
-                WinConfiguration->ConfirmExitOnCompletion = false;
-              }
-            }
-            else
-            {
-              Result = qaYes;
-            }
-          }
-          else
-          {
-            Result = FatalExceptionMessageDialog(E, Type);
-          }
-
-          if (Result == qaYes)
-          {
-            Application->Terminate();
-          }
-          else if (Result == qaRetry)
-          {
-            Manager->ReconnectActiveTerminal();
-          }
-          else
-          {
-            Manager->FreeActiveTerminal();
+            Result = qaYes;
+            WinConfiguration->ConfirmExitOnCompletion = false;
           }
         }
         else
         {
-          if (CloseOnCompletion)
-          {
-            if (WinConfiguration->ConfirmExitOnCompletion)
-            {
-              TMessageParams Params(mpNeverAskAgainCheck);
-              if (ExceptionMessageDialog(E, Type, "", qaOK, HELP_NONE, &Params) ==
-                    qaNeverAskAgain)
-              {
-                WinConfiguration->ConfirmExitOnCompletion = false;
-              }
-            }
-          }
-          else
-          {
-            ExceptionMessageDialog(E, Type);
-          }
+          Result = qaYes;
         }
+      }
+      else
+      {
+        Result = FatalExceptionMessageDialog(E, Type);
+      }
+
+      if (Result == qaYes)
+      {
+        Application->Terminate();
+      }
+      else if (Result == qaRetry)
+      {
+        Manager->ReconnectActiveTerminal();
+      }
+      else
+      {
+        Manager->FreeActiveTerminal();
       }
     }
     else
     {
-      FlashOnBackground();
-      ShowException(ExceptObject(), ExceptAddr());
+      if (CloseOnCompletion)
+      {
+        if (WinConfiguration->ConfirmExitOnCompletion)
+        {
+          TMessageParams Params(mpNeverAskAgainCheck);
+          if (ExceptionMessageDialog(E, Type, "", qaOK, HELP_NONE, &Params) ==
+                qaNeverAskAgain)
+          {
+            WinConfiguration->ConfirmExitOnCompletion = false;
+          }
+        }
+      }
+      else
+      {
+        ExceptionMessageDialog(E, Type);
+      }
     }
   }
 }

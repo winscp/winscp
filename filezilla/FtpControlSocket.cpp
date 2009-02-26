@@ -163,6 +163,9 @@ CFtpControlSocket::CFtpControlSocket(CMainThread *pMainThread) : CControlSocket(
 
 	m_bUTF8 = true;
 	m_hasClntCmd = false;
+#ifdef MPEXT
+	m_hasMfmtCmd = false;
+#endif
 
 	m_awaitsReply = false;
 	m_skipReply = false;
@@ -223,6 +226,9 @@ bool CFtpControlSocket::InitConnect()
 	// Reset detected capabilities
 	m_bAnnouncesUTF8 = false;
 	m_hasClntCmd = false;
+#ifdef MPEXT
+	m_hasMfmtCmd = false;
+#endif
 	m_isFileZilla = false;
 
 	if (m_CurrentServer.nUTF8 == 2)
@@ -395,9 +401,12 @@ void CFtpControlSocket::Connect(t_server &server)
 			return;
 		}
 		int res = m_pSslLayer->InitSSLConnection(true);
+#ifndef MPEXT_NO_SSLDLL
 		if (res == SSL_FAILURE_LOADDLLS)
 			ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
-		else if (res == SSL_FAILURE_INITSSL)
+		else
+#endif
+		if (res == SSL_FAILURE_INITSSL)
 			ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
 		if (!res)
 			PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_SECURESERVER, 1), 0);
@@ -518,9 +527,12 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 				return;
 			}
 			int res = m_pSslLayer->InitSSLConnection(true);
+#ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
 				ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
-			else if (res == SSL_FAILURE_INITSSL)
+			else
+#endif
+			if (res == SSL_FAILURE_INITSSL)
 				ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
 			if (res)
 			{
@@ -572,6 +584,10 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 #endif
 	else if (m_Operation.nOpState == CONNECT_FEAT)
 	{
+		#ifdef MPEXT
+		int capabilities = (m_hasMfmtCmd ? FZ_CAPABILITIES_MFMT : 0);
+		PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_CAPABILITIES, 0), (LPARAM)capabilities);
+		#endif
 		if (!m_bAnnouncesUTF8 && !m_CurrentServer.nUTF8)
 			m_bUTF8 = false;
 		if (m_bUTF8 && m_hasClntCmd && !m_isFileZilla)
@@ -1233,6 +1249,9 @@ void CFtpControlSocket::DoClose(int nError /*=0*/)
 
 	m_bUTF8 = false;
 	m_hasClntCmd = false;
+#ifdef MPEXT
+	m_hasMfmtCmd = false;
+#endif
 
 	m_awaitsReply = false;
 	m_skipReply = false;
@@ -2146,6 +2165,9 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 
 	#define FILETRANSFER_WAIT			20
 
+#ifdef MPEXT
+	#define FILETRANSFER_MFMT			21
+#endif
 
 	//Partial flowchart of FileTransfer
 	//
@@ -3577,11 +3599,41 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 								SetFileTime((HANDLE)m_pDataFile->m_hFile, &ftime, &ftime, &ftime);
 					}
 				}
+#ifdef MPEXT
+				if (!pData->transferfile.get &&
+						COptions::GetOptionVal(OPTION_MPEXT_PRESERVEUPLOADFILETIME) && m_pDataFile &&
+						m_hasMfmtCmd)
+				{
+					CString filename =
+						pData->transferfile.remotepath.FormatFilename(pData->transferfile.remotefile, !pData->bUseAbsolutePaths);
+					CFileStatus64 status;
+					if (GetStatus64(pData->transferfile.localfile, status) &&
+							status.m_has_mtime)
+					{
+						struct tm tm;
+						status.m_mtime.GetGmtTm(&tm);
+						CString timestr;
+						timestr.Format("%02d%02d%02d%02d%02d%02d",
+							1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+						if (Send( _T("MFMT ") + timestr + _T(" ") + filename))
+						{
+							m_Operation.nOpState = FILETRANSFER_MFMT;
+							return;
+						}
+					}
+				}
+#endif
 				//Transfer successful
 				ResetOperation(FZ_REPLY_OK);
 				return;
 			}
 			break;
+#ifdef MPEXT
+		case FILETRANSFER_MFMT:
+			//Transfer successful
+			ResetOperation(FZ_REPLY_OK);
+			break;
+#endif
 		}
 		if (nReplyError)
 		{ //Error transferring the file
@@ -5464,9 +5516,11 @@ int CFtpControlSocket::OnLayerCallback(std::list<t_callbackMsg>& callbacks)
 					case SSL_FAILURE_ESTABLISH:
 						ShowStatus(IDS_ERRORMSG_CANTESTABLISHSSLCONNECTION, 1);
 						break;
+#ifndef MPEXT_NO_SSLDLL
 					case SSL_FAILURE_LOADDLLS:
 						ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
 						break;
+#endif
 					case SSL_FAILURE_INITSSL:
 						ShowStatus(IDS_ERRORMSG_CANTINITSSL, 1);
 						break;
@@ -5596,6 +5650,10 @@ void CFtpControlSocket::DiscardLine(CStringA line)
 			m_bAnnouncesUTF8 = true;
 		else if (line == _T(" CLNT") || line.Left(6) == _T(" CLNT "))
 			m_hasClntCmd = true;
+#ifdef MPEXT
+		else if (line == _T(" MFMT"))
+			m_hasMfmtCmd = true;
+#endif
 	}
 }
 

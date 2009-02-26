@@ -19,12 +19,13 @@ default: DragExt64.dll
 default: WinSCP.com
 default: lib\DiscMon_B5.lib
 
-core: lib\Putty.lib lib\FileZilla.lib lib\ScpCore.lib lib\DiscMon_B5.lib
+core: lib\Putty.lib lib\libeay32.lib lib\ssleay32.lib lib\FileZilla.lib
+core: lib\ScpCore.lib lib\DiscMon_B5.lib
 
 WinSCP.exe: WinSCP.bpr
 WinSCP.exe: lib\Moje_B5.lib lib\DragDrop_B5.lib lib\DriveDir_B5.lib
 WinSCP.exe: lib\tb2k_cb6.lib lib\tbx_cb6.lib lib\ThemeManagerC6.lib
-WinSCP.exe: lib\Putty.lib lib\FileZilla.lib
+WinSCP.exe: lib\Putty.lib lib\libeay32.lib lib\ssleay32.lib lib\FileZilla.lib
 WinSCP.exe: lib\ScpCore.lib lib\RScpComp.lib lib\ScpForms.lib
  $(BPR2MAK) -tdefault.bmk WinSCP.bpr
  $(MAKE)
@@ -54,6 +55,26 @@ lib\FileZilla.lib:
  echo. > Fake.cpp
  $(ROOT)\bin\bcc32 -c Fake.cpp
  $(ROOT)\bin\tlib lib\FileZilla.lib +Fake.o
+
+lib\libeay32.lib:
+ echo. > Fake.cpp
+ $(ROOT)\bin\bcc32 -c Fake.cpp
+ $(ROOT)\bin\tlib lib\libeay32.lib +Fake.o
+
+lib\ssleay32.lib:
+ echo. > Fake.cpp
+ $(ROOT)\bin\bcc32 -c Fake.cpp
+ $(ROOT)\bin\tlib lib\ssleay32.lib +Fake.o
+!else
+lib\libeay32.lib:
+ cd openssl
+ $(MAKEBASE)
+ cd ..
+
+lib\ssleay32.lib:
+ cd openssl
+ $(MAKEBASE)
+ cd ..
 !endif
 
 {}.bpk{lib}.lib:

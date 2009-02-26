@@ -26,6 +26,43 @@ struct TListDataEntry
   const char * LinkTarget;
 };
 //---------------------------------------------------------------------------
+struct TFtpsCertificateData
+{
+  struct TContact
+  {
+    const char * Organization;
+    const char * Unit;
+    const char * CommonName;
+    const char * Mail;
+    const char * Country;
+    const char * StateProvince;
+    const char * Town;
+    const char * Other;
+  };
+
+  TContact Subject;
+  TContact Issuer;
+
+  struct TValidityTime
+  {
+    int Year;
+    int Month;
+    int Day;
+    int Hour;
+    int Min;
+    int Sec;
+  };
+
+  TValidityTime ValidFrom;
+  TValidityTime ValidUntil;
+
+  const unsigned char * Hash;
+  static const size_t HashLen = 20;
+
+  int VerificationResult;
+  int VerificationDepth;
+};
+//---------------------------------------------------------------------------
 class t_server;
 //---------------------------------------------------------------------------
 class TFileZillaIntf
@@ -44,6 +81,12 @@ public:
     LOG_WARNING = 6,
     LOG_INFO = 7,
     LOG_DEBUG = 8
+  };
+
+  enum TMessageType
+  {
+    MSG_OTHER = 0,
+    MSG_TRANSFERSTATUS = 1
   };
 
   enum
@@ -73,6 +116,14 @@ public:
     REPLY_CRITICALERROR = 0x2000, // Used for FileTransfers only
     REPLY_ABORTED = 0x4000, // Used for FileTransfers only
     REPLY_NOTSUPPORTED = 0x8000 // Command is not supported for the current server
+  };
+
+  enum
+  {
+    SERVER_FTP =              0x1000,
+    SERVER_FTP_SSL_IMPLICIT = 0x1100,
+    SERVER_FTP_SSL_EXPLICIT = 0x1200,
+    SERVER_FTP_TLS_EXPLICIT = 0x1400
   };
 
   static void __fastcall Initialize();
@@ -118,7 +169,7 @@ public:
 
 protected:
   bool __fastcall PostMessage(WPARAM wParam, LPARAM lParam);
-  virtual bool __fastcall DoPostMessage(WPARAM wParam, LPARAM lParam) = 0;
+  virtual bool __fastcall DoPostMessage(TMessageType Type, WPARAM wParam, LPARAM lParam) = 0;
 
   virtual bool __fastcall HandleStatus(const char * Status, int Type) = 0;
   virtual bool __fastcall HandleAsynchRequestOverwrite(
@@ -126,12 +177,15 @@ protected:
     const char * Path1, const char * Path2,
     __int64 Size1, __int64 Size2, time_t Time1, time_t Time2,
     bool HasTime1, bool HasTime2, void * UserData, int & RequestResult) = 0;
+  virtual bool __fastcall HandleAsynchRequestVerifyCertificate(
+    const TFtpsCertificateData & Data, int & RequestResult) = 0;
   virtual bool __fastcall HandleListData(const char * Path, const TListDataEntry * Entries,
     unsigned int Count) = 0;
   virtual bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
     __int64 Bytes, int Percent, int TimeElapsed, int TimeLeft, int TransferRate,
     bool FileTransfer) = 0;
   virtual bool __fastcall HandleReply(int Command, unsigned int Reply) = 0;
+  virtual bool __fastcall HandleCapabilities(bool Mfmt) = 0;
   virtual bool __fastcall CheckError(int ReturnCode, const char * Context);
 
   inline bool __fastcall Check(int ReturnCode, const char * Context, int Expected = -1);

@@ -6,7 +6,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Location profiles'
-  ClientHeight = 424
+  ClientHeight = 435
   ClientWidth = 557
   Color = clBtnFace
   ParentFont = True
@@ -15,7 +15,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
   OnShow = FormShow
   DesignSize = (
     557
-    424)
+    435)
   PixelsPerInch = 96
   TextHeight = 13
   object LocalDirectoryLabel: TLabel
@@ -36,7 +36,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
   end
   object OKBtn: TButton
     Left = 303
-    Top = 390
+    Top = 401
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -47,7 +47,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
   end
   object CancelBtn: TButton
     Left = 387
-    Top = 390
+    Top = 401
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -56,108 +56,229 @@ object LocationProfilesDialog: TLocationProfilesDialog
     ModalResult = 2
     TabOrder = 6
   end
-  object BookmarksGroup: TGroupBox
+  object PageControl: TPageControl
     Left = 8
     Top = 104
     Width = 539
-    Height = 277
+    Height = 288
+    ActivePage = SessionProfilesSheet
     Anchors = [akLeft, akTop, akRight, akBottom]
+    TabIndex = 0
     TabOrder = 3
-    DesignSize = (
-      539
-      277)
-    object ProfilesView: TTreeView
-      Left = 16
-      Top = 22
-      Width = 419
-      Height = 239
-      Anchors = [akLeft, akTop, akRight, akBottom]
-      DragMode = dmAutomatic
-      HideSelection = False
-      Images = BookmarkImageList
-      Indent = 19
-      TabOrder = 0
-      OnChange = ProfilesViewChange
-      OnCollapsed = ProfilesViewCollapsed
-      OnDblClick = ProfilesViewDblClick
-      OnDragDrop = ProfilesViewDragDrop
-      OnDragOver = ProfilesViewDragOver
-      OnEdited = ProfilesViewEdited
-      OnEditing = ProfilesViewEditing
-      OnEndDrag = ProfilesViewEndDrag
-      OnExpanded = ProfilesViewExpanded
-      OnGetImageIndex = ProfilesViewGetImageIndex
-      OnGetSelectedIndex = ProfilesViewGetSelectedIndex
-      OnKeyDown = ProfilesViewKeyDown
-      OnStartDrag = ProfilesViewStartDrag
-      Items.Data = {
-        050000001A0000000100000000000000FFFFFFFFFFFFFFFF0000000001000000
-        01311B0000000000000000000000FFFFFFFFFFFFFFFF00000000000000000231
-        311A0000000000000000000000FFFFFFFFFFFFFFFF000000000000000001321A
-        0000000000000000000000FFFFFFFFFFFFFFFF000000000000000001331A0000
-        000100000000000000FFFFFFFFFFFFFFFF000000000100000001341B00000000
-        00000000000000FFFFFFFFFFFFFFFF00000000000000000234311A0000000000
-        000000000000FFFFFFFFFFFFFFFF00000000000000000135}
+    object SessionProfilesSheet: TTabSheet
+      Tag = 1
+      Caption = 'Session Location profiles'
+      DesignSize = (
+        531
+        260)
+      object SessionProfilesView: TTreeView
+        Tag = 1
+        Left = 10
+        Top = 9
+        Width = 421
+        Height = 240
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        DragMode = dmAutomatic
+        HideSelection = False
+        Images = BookmarkImageList
+        Indent = 19
+        TabOrder = 0
+        OnChange = ProfilesViewChange
+        OnCollapsed = ProfilesViewCollapsed
+        OnDblClick = ProfilesViewDblClick
+        OnDragDrop = ProfilesViewDragDrop
+        OnDragOver = ProfilesViewDragOver
+        OnEdited = ProfilesViewEdited
+        OnEditing = ProfilesViewEditing
+        OnEndDrag = ProfilesViewEndDrag
+        OnExpanded = ProfilesViewExpanded
+        OnGetImageIndex = ProfilesViewGetImageIndex
+        OnGetSelectedIndex = ProfilesViewGetSelectedIndex
+        OnKeyDown = ProfilesViewKeyDown
+        OnStartDrag = ProfilesViewStartDrag
+        Items.Data = {
+          050000001A0000000100000000000000FFFFFFFFFFFFFFFF0000000001000000
+          01311B0000000000000000000000FFFFFFFFFFFFFFFF00000000000000000231
+          311A0000000000000000000000FFFFFFFFFFFFFFFF000000000000000001321A
+          0000000000000000000000FFFFFFFFFFFFFFFF000000000000000001331A0000
+          000100000000000000FFFFFFFFFFFFFFFF000000000100000001341B00000000
+          00000000000000FFFFFFFFFFFFFFFF00000000000000000234311A0000000000
+          000000000000FFFFFFFFFFFFFFFF00000000000000000135}
+      end
+      object AddSessionBookmarkButton: TButton
+        Tag = 1
+        Left = 438
+        Top = 9
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Add ...'
+        TabOrder = 1
+        OnClick = AddBookmarkButtonClick
+      end
+      object RemoveSessionBookmarkButton: TButton
+        Tag = 1
+        Left = 438
+        Top = 41
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'Remo&ve'
+        TabOrder = 2
+        OnClick = RemoveBookmarkButtonClick
+      end
+      object DownSessionBookmarkButton: TButton
+        Tag = 1
+        Left = 438
+        Top = 224
+        Width = 83
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Down'
+        TabOrder = 6
+        OnClick = BookmarkButtonClick
+      end
+      object UpSessionBookmarkButton: TButton
+        Tag = -1
+        Left = 438
+        Top = 192
+        Width = 83
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Up'
+        TabOrder = 5
+        OnClick = BookmarkButtonClick
+      end
+      object RenameSessionBookmarkButton: TButton
+        Tag = 1
+        Left = 438
+        Top = 73
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'Re&name'
+        TabOrder = 3
+        OnClick = RenameBookmarkButtonClick
+      end
+      object SessionBookmarkMoveToButton: TButton
+        Tag = 1
+        Left = 438
+        Top = 105
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Move to ...'
+        TabOrder = 4
+        OnClick = BookmarkMoveToButtonClick
+      end
     end
-    object AddBookmarkButton: TButton
-      Left = 442
-      Top = 22
-      Width = 83
-      Height = 25
-      Anchors = [akTop, akRight]
-      Caption = '&Add ...'
-      TabOrder = 1
-      OnClick = AddBookmarkButtonClick
-    end
-    object RemoveBookmarkButton: TButton
-      Left = 442
-      Top = 54
-      Width = 83
-      Height = 25
-      Anchors = [akTop, akRight]
-      Caption = 'Remo&ve'
-      TabOrder = 2
-      OnClick = RemoveBookmarkButtonClick
-    end
-    object DownBookmarkButton: TButton
-      Left = 442
-      Top = 236
-      Width = 83
-      Height = 25
-      Anchors = [akRight, akBottom]
-      Caption = '&Down'
-      TabOrder = 6
-      OnClick = BookmarkButtonClick
-    end
-    object UpBookmarkButton: TButton
-      Left = 442
-      Top = 204
-      Width = 83
-      Height = 25
-      Anchors = [akRight, akBottom]
-      Caption = '&Up'
-      TabOrder = 5
-      OnClick = BookmarkButtonClick
-    end
-    object RenameButton: TButton
-      Left = 442
-      Top = 86
-      Width = 83
-      Height = 25
-      Anchors = [akTop, akRight]
-      Caption = 'Re&name'
-      TabOrder = 3
-      OnClick = RenameButtonClick
-    end
-    object MoveToButton: TButton
-      Left = 442
-      Top = 118
-      Width = 83
-      Height = 25
-      Anchors = [akTop, akRight]
-      Caption = '&Move to ...'
-      TabOrder = 4
-      OnClick = MoveToButtonClick
+    object SharedProfilesSheet: TTabSheet
+      Tag = 2
+      Caption = 'Shared Location profiles'
+      ImageIndex = 1
+      DesignSize = (
+        531
+        260)
+      object SharedProfilesView: TTreeView
+        Tag = 2
+        Left = 10
+        Top = 9
+        Width = 421
+        Height = 240
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        DragMode = dmAutomatic
+        HideSelection = False
+        Images = BookmarkImageList
+        Indent = 19
+        TabOrder = 0
+        OnChange = ProfilesViewChange
+        OnCollapsed = ProfilesViewCollapsed
+        OnDblClick = ProfilesViewDblClick
+        OnDragDrop = ProfilesViewDragDrop
+        OnDragOver = ProfilesViewDragOver
+        OnEdited = ProfilesViewEdited
+        OnEditing = ProfilesViewEditing
+        OnEndDrag = ProfilesViewEndDrag
+        OnExpanded = ProfilesViewExpanded
+        OnGetImageIndex = ProfilesViewGetImageIndex
+        OnGetSelectedIndex = ProfilesViewGetSelectedIndex
+        OnKeyDown = ProfilesViewKeyDown
+        OnStartDrag = ProfilesViewStartDrag
+        Items.Data = {
+          050000001A0000000100000000000000FFFFFFFFFFFFFFFF0000000001000000
+          01311B0000000000000000000000FFFFFFFFFFFFFFFF00000000000000000231
+          311A0000000000000000000000FFFFFFFFFFFFFFFF000000000000000001321A
+          0000000000000000000000FFFFFFFFFFFFFFFF000000000000000001331A0000
+          000100000000000000FFFFFFFFFFFFFFFF000000000100000001341B00000000
+          00000000000000FFFFFFFFFFFFFFFF00000000000000000234311A0000000000
+          000000000000FFFFFFFFFFFFFFFF00000000000000000135}
+      end
+      object AddSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 438
+        Top = 9
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Add ...'
+        TabOrder = 1
+        OnClick = AddBookmarkButtonClick
+      end
+      object RemoveSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 438
+        Top = 41
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'Remo&ve'
+        TabOrder = 2
+        OnClick = RemoveBookmarkButtonClick
+      end
+      object RenameSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 438
+        Top = 73
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'Re&name'
+        TabOrder = 3
+        OnClick = RenameBookmarkButtonClick
+      end
+      object SharedBookmarkMoveToButton: TButton
+        Tag = 2
+        Left = 438
+        Top = 105
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Move to ...'
+        TabOrder = 4
+        OnClick = BookmarkMoveToButtonClick
+      end
+      object UpSharedBookmarkButton: TButton
+        Tag = -2
+        Left = 438
+        Top = 192
+        Width = 83
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Up'
+        TabOrder = 5
+        OnClick = BookmarkButtonClick
+      end
+      object DownSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 438
+        Top = 224
+        Width = 83
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Down'
+        TabOrder = 6
+        OnClick = BookmarkButtonClick
+      end
     end
   end
   object LocalDirectoryEdit: TIEComboBox
@@ -195,7 +316,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
   end
   object SwitchButton: TButton
     Left = 8
-    Top = 390
+    Top = 401
     Width = 97
     Height = 25
     Anchors = [akRight, akBottom]
@@ -206,7 +327,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
   end
   object HelpButton: TButton
     Left = 471
-    Top = 390
+    Top = 401
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -216,7 +337,7 @@ object LocationProfilesDialog: TLocationProfilesDialog
   end
   object BookmarkImageList: TImageList
     Left = 232
-    Top = 384
+    Top = 400
     Bitmap = {
       494C010103000400040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010

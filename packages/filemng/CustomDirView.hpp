@@ -50,6 +50,8 @@ struct TStatusFileInfo
 	int SelectedCount;
 	__int64 FilesSize;
 	__int64 SelectedSize;
+	int HiddenCount;
+	int FilteredCount;
 } ;
 
 #pragma option push -b-
@@ -243,6 +245,7 @@ private:
 	TDirViewGetOverlayEvent FOnGetOverlay;
 	AnsiString FMask;
 	Pastools::TListViewScrollOnDragOver* FScrollOnDragOver;
+	TStatusFileInfo FStatusFileInfo;
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonDblClk(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Message);
@@ -251,6 +254,7 @@ private:
 	HIDESBASE MESSAGE void __fastcall WMRButtonDown(Messages::TWMMouse &Message);
 	MESSAGE void __fastcall WMXButtonUp(TWMXMouse &Message);
 	MESSAGE void __fastcall WMAppCommand(Messages::TMessage &Message);
+	HIDESBASE MESSAGE void __fastcall CMColorChanged(Messages::TMessage &Message);
 	void __fastcall DumbCustomDrawItem(Comctrls::TCustomListView* Sender, Comctrls::TListItem* Item, Comctrls::TCustomDrawState State, bool &DefaultDraw);
 	void __fastcall DumbCustomDrawSubItem(Comctrls::TCustomListView* Sender, Comctrls::TListItem* Item, int SubItem, Comctrls::TCustomDrawState State, bool &DefaultDraw);
 	__int64 __fastcall GetFilesMarkedSize(void);
@@ -363,9 +367,10 @@ protected:
 	bool __fastcall FileNameMatchesMasks(AnsiString FileName, bool Directory, __int64 Size, AnsiString Masks);
 	virtual bool __fastcall EnableDragOnClick(void);
 	virtual void __fastcall SetMask(AnsiString Value);
-	DYNAMIC AnsiString __fastcall NormalizeMask(AnsiString Mask);
 	void __fastcall ScrollOnDragOverBeforeUpdate(System::TObject* ObjectToValidate);
 	void __fastcall ScrollOnDragOverAfterUpdate(void);
+	virtual int __fastcall HiddenCount(void) = 0 ;
+	virtual int __fastcall FilteredCount(void) = 0 ;
 	__property Controls::TImageList* ImageList16 = {read=FImageList16};
 	__property Controls::TImageList* ImageList32 = {read=FImageList32};
 	

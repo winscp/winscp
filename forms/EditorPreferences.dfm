@@ -6,7 +6,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'EditorPreferencesDialog'
-  ClientHeight = 310
+  ClientHeight = 359
   ClientWidth = 403
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -19,12 +19,12 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     403
-    310)
+    359)
   PixelsPerInch = 96
   TextHeight = 13
   object ExternalEditorGroup: TGroupBox
     Left = 8
-    Top = 196
+    Top = 220
     Width = 388
     Height = 73
     Anchors = [akLeft, akTop, akRight]
@@ -38,26 +38,26 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Caption = 'Force &text transfer mode for files edited in external editor'
       TabOrder = 1
     end
-    object MDIExternalEditorCheck: TCheckBox
+    object SDIExternalEditorCheck: TCheckBox
       Left = 16
       Top = 21
       Width = 337
       Height = 17
-      Caption = 'E&xternal editor opens multiple files in one window (process)'
+      Caption = 'E&xternal editor opens each file in separate window (process)'
       TabOrder = 0
     end
   end
-  object EditorGroup: TGroupBox
+  object EditorGroup2: TGroupBox
     Left = 8
     Top = 8
     Width = 388
-    Height = 101
+    Height = 125
     Anchors = [akLeft, akTop, akRight]
-    Caption = 'Editor type'
+    Caption = 'Editor'
     TabOrder = 0
     DesignSize = (
       388
-      101)
+      125)
     object EditorInternalButton: TRadioButton
       Left = 16
       Top = 21
@@ -93,15 +93,23 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Top = 67
       Width = 75
       Height = 25
-      Anchors = [akTop, akRight]
       Caption = 'B&rowse...'
       TabOrder = 3
       OnClick = ExternalEditorBrowseButtonClick
     end
+    object EditorOpenButton: TRadioButton
+      Left = 16
+      Top = 97
+      Width = 145
+      Height = 17
+      Caption = '&Associated application'
+      TabOrder = 4
+      OnClick = ControlChange
+    end
   end
   object MaskGroup: TGroupBox
     Left = 7
-    Top = 116
+    Top = 140
     Width = 388
     Height = 73
     Anchors = [akLeft, akTop, akRight]
@@ -110,7 +118,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
     DesignSize = (
       388
       73)
-    object Label1: TLabel
+    object MaskLabel: TLabel
       Left = 11
       Top = 20
       Width = 150
@@ -134,34 +142,43 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
   end
   object OkButton: TButton
     Left = 151
-    Top = 277
+    Top = 326
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 3
+    TabOrder = 4
   end
   object CancelButton: TButton
     Left = 235
-    Top = 277
+    Top = 326
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 4
+    TabOrder = 5
   end
   object HelpButton: TButton
     Left = 319
-    Top = 277
+    Top = 326
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
-    TabOrder = 5
+    TabOrder = 6
     OnClick = HelpButtonClick
+  end
+  object RememberCheck: TCheckBox
+    Left = 24
+    Top = 302
+    Width = 337
+    Height = 17
+    Anchors = [akLeft, akBottom]
+    Caption = '&Remember this editor'
+    TabOrder = 3
   end
 end

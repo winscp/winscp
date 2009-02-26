@@ -8,9 +8,6 @@ void __fastcall GetUpdatesMessage(AnsiString & Message, bool & New, TQueryType &
 void __fastcall CheckForUpdates(bool CachedResults);
 void __fastcall RegisterAsUrlHandler();
 void __fastcall TemporaryDirectoryCleanup();
-int __fastcall CalculateCompoundVersion(int MajorVer,
-  int MinorVer, int Release, int Build);
-int __fastcall CurrentCompoundVersion();
 void __fastcall StartUpdateThread(TThreadMethod OnUpdatesChecked);
 void __fastcall StopUpdateThread();
 //---------------------------------------------------------------------------

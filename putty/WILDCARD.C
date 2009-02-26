@@ -10,7 +10,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* MPEXT: This makes compilation from command-line hang */
+#ifndef MPEXT
 #include "putty.h"
+#endif
 
 /*
  * Definition of wildcard syntax:

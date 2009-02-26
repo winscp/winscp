@@ -422,7 +422,280 @@ int __fastcall FakeFileImageIndex(AnsiString FileName, unsigned long Attrs,
 
   return Icon;
 }
-//- TRemoteFiles ------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TRemoteToken::TRemoteToken() :
+  FID(0),
+  FIDValid(false)
+{
+}
+//---------------------------------------------------------------------------
+__fastcall TRemoteToken::TRemoteToken(const AnsiString & Name) :
+  FName(Name),
+  FID(0),
+  FIDValid(false)
+{
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteToken::Clear()
+{
+  FID = 0;
+  FIDValid = false;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteToken::operator ==(const TRemoteToken & rht) const
+{
+  return
+    (FName == rht.FName) &&
+    (FIDValid == rht.FIDValid) &&
+    (!FIDValid || (FID == rht.FID));
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteToken::operator !=(const TRemoteToken & rht) const
+{
+  return !(*this == rht);
+}
+//---------------------------------------------------------------------------
+TRemoteToken & __fastcall TRemoteToken::operator =(const TRemoteToken & rht)
+{
+  if (this != &rht)
+  {
+    FName = rht.FName;
+    FIDValid = rht.FIDValid;
+    FID = rht.FID;
+  }
+  return *this;
+}
+//---------------------------------------------------------------------------
+int __fastcall TRemoteToken::Compare(const TRemoteToken & rht) const
+{
+  bool Result;
+  if (!FName.IsEmpty())
+  {
+    if (!rht.FName.IsEmpty())
+    {
+      Result = AnsiCompareText(FName, rht.FName);
+    }
+    else
+    {
+      Result = -1;
+    }
+  }
+  else
+  {
+    if (!rht.FName.IsEmpty())
+    {
+      Result = 1;
+    }
+    else
+    {
+      if (FIDValid)
+      {
+        if (rht.FIDValid)
+        {
+          Result = (FID < rht.FID) ? -1 : ((FID > rht.FID) ? 1 : 0);
+        }
+        else
+        {
+          Result = -1;
+        }
+      }
+      else
+      {
+        if (rht.FIDValid)
+        {
+          Result = 1;
+        }
+        else
+        {
+          Result = 0;
+        }
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteToken::SetID(unsigned int value)
+{
+  FID = value;
+  FIDValid = true;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteToken::GetNameValid() const
+{
+  return !FName.IsEmpty();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteToken::GetIsSet() const
+{
+  return !FName.IsEmpty() || FIDValid;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TRemoteToken::GetDisplayText() const
+{
+  if (!FName.IsEmpty())
+  {
+    return FName;
+  }
+  else if (FIDValid)
+  {
+    return IntToStr(FID);
+  }
+  else
+  {
+    return AnsiString();
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TRemoteToken::GetLogText() const
+{
+  return FORMAT("\"%s\" [%d]", (FName, int(FID)));
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+TRemoteTokenList * __fastcall TRemoteTokenList::Duplicate() const
+{
+  TRemoteTokenList * Result = new TRemoteTokenList();
+  try
+  {
+    TTokens::const_iterator I = FTokens.begin();
+    while (I != FTokens.end())
+    {
+      Result->Add(*I);
+      ++I;
+    }
+  }
+  catch(...)
+  {
+    delete Result;
+    throw;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteTokenList::Clear()
+{
+  FTokens.clear();
+  FNameMap.clear();
+  FIDMap.clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteTokenList::Add(const TRemoteToken & Token)
+{
+  FTokens.push_back(Token);
+  if (Token.IDValid)
+  {
+    std::pair<TIDMap::iterator, bool> Position =
+      FIDMap.insert(TIDMap::value_type(Token.ID, FTokens.size() - 1));
+    // can indeed happen in real life,
+    // but in our test evironment, we want to know about it
+    assert(Position.second);
+  }
+  if (Token.NameValid)
+  {
+    std::pair<TNameMap::iterator, bool> Position =
+      FNameMap.insert(TNameMap::value_type(Token.Name, FTokens.size() - 1));
+    // dtto
+    assert(Position.second);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteTokenList::AddUnique(const TRemoteToken & Token)
+{
+  if (Token.IDValid)
+  {
+    TIDMap::const_iterator I = FIDMap.find(Token.ID);
+    if (I != FIDMap.end())
+    {
+      // is present already.
+      // may have different name (should not),
+      // but what can we do about it anyway?
+    }
+    else
+    {
+      Add(Token);
+    }
+  }
+  else if (Token.NameValid)
+  {
+    TNameMap::const_iterator I = FNameMap.find(Token.Name);
+    if (I != FNameMap.end())
+    {
+      // is present already.
+    }
+    else
+    {
+      Add(Token);
+    }
+  }
+  else
+  {
+    assert(false);
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TRemoteTokenList::Exists(const AnsiString & Name) const
+{
+  return (FNameMap.find(Name) != FNameMap.end());
+}
+//---------------------------------------------------------------------------
+const TRemoteToken * TRemoteTokenList::Find(unsigned int ID) const
+{
+  TIDMap::const_iterator I = FIDMap.find(ID);
+  const TRemoteToken * Result;
+  if (I != FIDMap.end())
+  {
+    Result = &FTokens[(*I).second];
+  }
+  else
+  {
+    Result = NULL;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+const TRemoteToken * TRemoteTokenList::Find(const AnsiString & Name) const
+{
+  TNameMap::const_iterator I = FNameMap.find(Name);
+  const TRemoteToken * Result;
+  if (I != FNameMap.end())
+  {
+    Result = &FTokens[(*I).second];
+  }
+  else
+  {
+    Result = NULL;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteTokenList::Log(TTerminal * Terminal, const char * Title)
+{
+  if (!FTokens.empty())
+  {
+    Terminal->LogEvent(FORMAT("Following %s found:", (Title)));
+    for (size_t Index = 0; Index < FTokens.size(); Index++)
+    {
+      Terminal->LogEvent(AnsiString("  ") + FTokens[Index].LogText);
+    }
+  }
+  else
+  {
+    Terminal->LogEvent(FORMAT("No %s found.", (Title)));
+  }
+}
+//---------------------------------------------------------------------------
+int __fastcall TRemoteTokenList::Count() const
+{
+  return (int)FTokens.size();
+}
+//---------------------------------------------------------------------------
+const TRemoteToken * __fastcall TRemoteTokenList::Token(int Index) const
+{
+  return &FTokens[Index];
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 __fastcall TRemoteFile::TRemoteFile(TRemoteFile * ALinkedByFile):
   TPersistent()
 {
@@ -567,9 +840,9 @@ Boolean __fastcall TRemoteFile::GetIsInaccesibleDirectory() const
     Result = !
        (((Rights->RightUndef[TRights::rrOtherExec] != TRights::rsNo)) ||
         ((Rights->Right[TRights::rrGroupExec] != TRights::rsNo) &&
-         (Terminal->Groups->IndexOf(Group) >= 0)) ||
+         Terminal->Membership->Exists(Group.Name)) ||
         ((Rights->Right[TRights::rrUserExec] != TRights::rsNo) &&
-         (AnsiCompareText(Terminal->UserName, Owner) == 0)));
+         (AnsiCompareText(Terminal->UserName, Owner.Name) == 0)));
   }
     else Result = False;
   return Result;
@@ -729,15 +1002,15 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     FINodeBlocks = StrToInt(Col);
 
     GETCOL;
-    FOwner = Col;
+    FOwner.Name = Col;
 
     // #60 17.10.01: group name can contain space
-    FGroup = "";
+    FGroup.Name = "";
     GETCOL;
     __int64 ASize;
     do
     {
-      FGroup += Col;
+      FGroup.Name = FGroup.Name + Col;
       GETCOL;
       assert(!Col.IsEmpty());
       // for devices etc.. there is additional column ending by comma, we ignore it
@@ -1000,8 +1273,8 @@ AnsiString __fastcall TRemoteFile::GetListingStr()
     LinkPart = AnsiString(SYMLINKSTR) + LinkTo;
   }
   return Format("%s%s %3s %-8s %-8s %9s %-12s %s%s", ARRAYOFCONST((
-    Type, Rights->Text, IntToStr(INodeBlocks), Owner,
-    Group, IntToStr(Size), ModificationStr, FileName,
+    Type, Rights->Text, IntToStr(INodeBlocks), Owner.Name,
+    Group.Name, IntToStr(Size), ModificationStr, FileName,
     LinkPart)));
 }
 //---------------------------------------------------------------------------
@@ -2000,7 +2273,14 @@ bool  __fastcall TRights::GetReadOnly()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRights::GetSimplestStr() const
 {
-  return IsUndef ? ModeStr : Octal;
+  if (IsUndef)
+  {
+    return ModeStr;
+  }
+  else
+  {
+    return Octal;
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TRights::GetModeStr() const
@@ -2107,14 +2387,26 @@ __fastcall TRemoteProperties::TRemoteProperties()
   Default();
 }
 //---------------------------------------------------------------------------
+__fastcall TRemoteProperties::TRemoteProperties(const TRemoteProperties & rhp) :
+  Valid(rhp.Valid),
+  Recursive(rhp.Recursive),
+  Rights(rhp.Rights),
+  AddXToDirectories(rhp.AddXToDirectories),
+  Group(rhp.Group),
+  Owner(rhp.Owner),
+  Modification(rhp.Modification),
+  LastAccess(rhp.Modification)
+{
+}
+//---------------------------------------------------------------------------
 void __fastcall TRemoteProperties::Default()
 {
   Valid.Clear();
   AddXToDirectories = false;
   Rights.AllowUndef = false;
   Rights.Number = 0;
-  Group = "";
-  Owner = "";
+  Group.Clear();
+  Owner.Clear();
   Recursive = false;
 }
 //---------------------------------------------------------------------------
@@ -2126,8 +2418,8 @@ bool __fastcall TRemoteProperties::operator ==(const TRemoteProperties & rhp) co
   {
     if ((Valid.Contains(vpRights) &&
           (Rights != rhp.Rights || AddXToDirectories != rhp.AddXToDirectories)) ||
-        (Valid.Contains(vpOwner) && Owner != rhp.Owner) ||
-        (Valid.Contains(vpGroup) && Group != rhp.Group) ||
+        (Valid.Contains(vpOwner) && (Owner != rhp.Owner)) ||
+        (Valid.Contains(vpGroup) && (Group != rhp.Group)) ||
         (Valid.Contains(vpModification) && (Modification != rhp.Modification)) ||
         (Valid.Contains(vpLastAccess) && (LastAccess != rhp.LastAccess)))
     {
@@ -2158,12 +2450,12 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
       // with "recursive" option
       CommonProperties.Rights.AllowUndef = File->Rights->IsUndef;
       CommonProperties.Valid << vpRights;
-      if (!File->Owner.IsEmpty())
+      if (File->Owner.IsSet)
       {
         CommonProperties.Owner = File->Owner;
         CommonProperties.Valid << vpOwner;
       }
-      if (!File->Group.IsEmpty())
+      if (File->Group.IsSet)
       {
         CommonProperties.Group = File->Group;
         CommonProperties.Valid << vpGroup;
@@ -2175,12 +2467,12 @@ TRemoteProperties __fastcall TRemoteProperties::CommonProperties(TStrings * File
       CommonProperties.Rights &= *File->Rights;
       if (CommonProperties.Owner != File->Owner)
       {
-        CommonProperties.Owner = "";
+        CommonProperties.Owner.Clear();
         CommonProperties.Valid >> vpOwner;
       };
       if (CommonProperties.Group != File->Group)
       {
-        CommonProperties.Group = "";
+        CommonProperties.Group.Clear();
         CommonProperties.Valid >> vpGroup;
       };
     }

@@ -23,20 +23,21 @@ __published:
   TCheckBox *IncludingDirectoriesCheck;
   TButton *HelpButton;
   TStaticText *HintText;
+  TButton *ClearButton;
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall MaskEditExit(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
+  void __fastcall ClearButtonClick(TObject *Sender);
 private:
   TFileFilter FFileFilter;
-  bool FSelect;
   void __fastcall SetFileFilter(TFileFilter value);
   TFileFilter __fastcall GetFileFilter();
-  void __fastcall SetSelect(bool value);
 public:
-  bool __fastcall Execute();
+  enum TMode { smSelect, smDeselect, smFilter };
   __fastcall TSelectMaskDialog(TComponent* Owner);
+  void __fastcall Init(TMode Mode);
+  bool __fastcall Execute();
   __property TFileFilter FileFilter = { read = GetFileFilter, write = SetFileFilter };
-  __property bool Select = { read = FSelect, write = SetSelect };
 };
 //---------------------------------------------------------------------------
 #endif

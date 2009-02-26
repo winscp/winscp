@@ -247,17 +247,10 @@ object LoginDialog: TLoginDialog
             Caption = '&File protocol:'
             FocusControl = TransferProtocolCombo
           end
-          object InsecureLabel: TLabel
-            Left = 193
-            Top = 20
-            Width = 41
-            Height = 13
-            Caption = 'Insecure'
-          end
           object TransferProtocolCombo: TComboBox
-            Left = 111
+            Left = 108
             Top = 16
-            Width = 74
+            Width = 59
             Height = 21
             Style = csDropDownList
             ItemHeight = 13
@@ -266,18 +259,31 @@ object LoginDialog: TLoginDialog
             Items.Strings = (
               'SFTP'
               'SCP'
-              'FTP'
-              'SSH Terminal'
-              'SFTP Terminal')
+              'FTP')
           end
           object AllowScpFallbackCheck: TCheckBox
-            Left = 193
+            Left = 175
             Top = 18
             Width = 121
             Height = 17
             Caption = 'Allow SCP &fallback'
             TabOrder = 1
             OnClick = DataChange
+          end
+          object FtpsCombo: TComboBox
+            Left = 175
+            Top = 16
+            Width = 159
+            Height = 21
+            Style = csDropDownList
+            ItemHeight = 13
+            TabOrder = 2
+            OnChange = TransferProtocolComboChange
+            Items.Strings = (
+              'No encryption'
+              'SSL/TLS Implicit encryptionX'
+              'SSL Explicit encryptionX'
+              'TLS Explicit encryptionX')
           end
         end
         object ColorButton: TButton
@@ -330,6 +336,7 @@ object LoginDialog: TLoginDialog
           ParentShowHint = False
           RowSelect = True
           ShowHint = True
+          ShowLines = False
           ShowRoot = False
           SortType = stBoth
           StateImages = SessionImageList
@@ -416,20 +423,17 @@ object LoginDialog: TLoginDialog
           Left = -3
           Top = 0
           Width = 356
-          Height = 241
+          Height = 273
           TabOrder = 0
           DesignSize = (
             356
-            241)
-          inherited LoggingCheck: TCheckBox
-            Width = 307
-          end
+            273)
           inherited LoggingGroup: TGroupBox
             Width = 345
             inherited LogToFileCheck: TCheckBox
               Width = 313
             end
-            inherited LogFileNameEdit: TFilenameEdit
+            inherited LogFileNameEdit2: TFilenameEdit
               Width = 291
             end
             inherited LogShowWindowCheck: TCheckBox
@@ -447,6 +451,12 @@ object LoginDialog: TLoginDialog
                 Width = 153
               end
             end
+            inherited LogFileNameHintText: TStaticText
+              Left = 256
+            end
+          end
+          inherited LogGroup: TGroupBox
+            Width = 345
           end
         end
       end
@@ -1135,30 +1145,48 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 6
           Width = 345
-          Height = 104
+          Height = 129
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             345
-            104)
+            129)
           object Label25: TLabel
             Left = 12
-            Top = 19
+            Top = 20
             Width = 103
             Height = 13
             Caption = 'Post login &commands:'
             FocusControl = PostLoginCommandsMemo
           end
+          object Label5: TLabel
+            Left = 12
+            Top = 102
+            Width = 149
+            Height = 13
+            Caption = '&Support for listing of hidden files'
+            FocusControl = FtpListAllCombo
+          end
           object PostLoginCommandsMemo: TMemo
             Left = 12
-            Top = 36
-            Width = 323
+            Top = 37
+            Width = 321
             Height = 53
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 50
             ScrollBars = ssVertical
             TabOrder = 0
+          end
+          object FtpListAllCombo: TComboBox
+            Left = 272
+            Top = 97
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 1
           end
         end
       end
@@ -1977,7 +2005,7 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 6
           Width = 345
-          Height = 152
+          Height = 137
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Key exchange algorithm options'
           TabOrder = 0
@@ -1993,7 +2021,7 @@ object LoginDialog: TLoginDialog
             Left = 12
             Top = 36
             Width = 190
-            Height = 104
+            Height = 89
             DragMode = dmAutomatic
             ItemHeight = 13
             TabOrder = 0
@@ -2023,7 +2051,7 @@ object LoginDialog: TLoginDialog
         end
         object KexReexchangeGroup: TGroupBox
           Left = 0
-          Top = 165
+          Top = 150
           Width = 345
           Height = 69
           Anchors = [akLeft, akTop, akRight]
@@ -2156,21 +2184,13 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 177
           Width = 345
-          Height = 93
+          Height = 48
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Authentication parameters'
           TabOrder = 2
           DesignSize = (
             345
-            93)
-          object GSSAPIServerRealmLabel2: TLabel
-            Left = 12
-            Top = 41
-            Width = 187
-            Height = 13
-            Caption = 'Ser&vice principal name (GSSAPI/SSPI):'
-            FocusControl = GSSAPIServerRealmEdit
-          end
+            48)
           object AgentFwdCheck: TCheckBox
             Left = 12
             Top = 19
@@ -2180,16 +2200,6 @@ object LoginDialog: TLoginDialog
             Caption = 'Allow agent &forwarding'
             TabOrder = 0
             OnClick = DataChange
-          end
-          object GSSAPIServerRealmEdit: TEdit
-            Left = 12
-            Top = 58
-            Width = 323
-            Height = 21
-            Anchors = [akLeft, akTop, akRight]
-            MaxLength = 63
-            TabOrder = 1
-            Text = 'GSSAPIServerRealmEdit'
           end
         end
       end
@@ -2208,13 +2218,13 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 6
           Width = 345
-          Height = 217
+          Height = 241
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Detection of known bugs in SSH servers'
           TabOrder = 0
           DesignSize = (
             345
-            217)
+            241)
           object BugIgnore1Label: TLabel
             Left = 12
             Top = 20
@@ -2278,6 +2288,14 @@ object LoginDialog: TLoginDialog
             Height = 13
             Caption = 'Handles SSH-2 &key re-exchange badly:'
             FocusControl = BugRekey2Combo
+          end
+          object BugMaxPkt2Label: TLabel
+            Left = 12
+            Top = 212
+            Width = 175
+            Height = 13
+            Caption = 'Ignores SSH-2 ma&ximum packet size:'
+            FocusControl = BugMaxPkt2Combo
           end
           object BugIgnore1Combo: TComboBox
             Left = 272
@@ -2365,6 +2383,17 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 7
+            OnChange = DataChange
+          end
+          object BugMaxPkt2Combo: TComboBox
+            Left = 272
+            Top = 207
+            Width = 61
+            Height = 21
+            Style = csDropDownList
+            Anchors = [akLeft, akTop, akRight]
+            ItemHeight = 13
+            TabOrder = 8
             OnChange = DataChange
           end
         end

@@ -75,13 +75,14 @@ int __stdcall CompareDirectories(TListItem *Item1, TListItem *Item2, TUnixDirVie
   DEFINE_COMPARE_FUNC_EX(PROPERTY, PROPERTY, COMPAREFUNC, AnsiCompareText)
 #define COMPARE_NUMBER(Num1, Num2) ( Num1 < Num2 ? -1 : ( Num1 > Num2 ? 1 : 0) )
 #define COMPARE_DUMMY(X1, X2) 0
+#define COMPARE_TOKEN(Token1, Token2) Token1.Compare(Token2)
 //---------------------------------------------------------------------------
 DEFINE_COMPARE_FUNC_EX(FileName, ItemFileName, AnsiCompareText, COMPARE_DUMMY);
 DEFINE_COMPARE_FUNC(Size, COMPARE_NUMBER);
 DEFINE_COMPARE_FUNC(Modification, COMPARE_NUMBER);
 DEFINE_COMPARE_FUNC(RightsStr, AnsiCompareText);
-DEFINE_COMPARE_FUNC(Owner, AnsiCompareText);
-DEFINE_COMPARE_FUNC(Group, AnsiCompareText);
+DEFINE_COMPARE_FUNC(Owner, COMPARE_TOKEN);
+DEFINE_COMPARE_FUNC(Group, COMPARE_TOKEN);
 DEFINE_COMPARE_FUNC(Extension, AnsiCompareText);
 DEFINE_COMPARE_FUNC(LinkTo, AnsiCompareText);
 DEFINE_COMPARE_FUNC(TypeName, AnsiCompareText);
@@ -339,13 +340,25 @@ void __fastcall TUnixDirView::LoadFiles()
     FFilesSize = 0;
     FHasParentDir = false;
     int VisibleFiles = 0;
+    FHiddenCount = 0;
+    FFilteredCount = 0;
     for (int Index = 0; Index < Terminal->Files->Count; Index++)
     {
       TRemoteFile *File = Terminal->Files->Files[Index];
       assert(File);
       TListItem *Item;
-      if ((ShowHiddenFiles || !File->IsHidden) &&
-          (ShowInaccesibleDirectories || !File->IsInaccesibleDirectory))
+      if ((!ShowHiddenFiles && File->IsHidden) ||
+          (!ShowInaccesibleDirectories && File->IsInaccesibleDirectory))
+      {
+        FHiddenCount++;
+      }
+      else if (!Mask.IsEmpty() &&
+               !File->IsDirectory &&
+               !FileNameMatchesMasks(File->FileName, false, File->Size, Mask))
+      {
+        FFilteredCount++;
+      }
+      else
       {
         VisibleFiles++;
 
@@ -363,8 +376,8 @@ void __fastcall TUnixDirView::LoadFiles()
           Item->SubItems->Add((!File->IsDirectory ? FormatFloat("#,##0", File->Size) : AnsiString()));
           Item->SubItems->Add(File->UserModificationStr);
           Item->SubItems->Add(File->RightsStr);
-          Item->SubItems->Add(File->Owner);
-          Item->SubItems->Add(File->Group);
+          Item->SubItems->Add(File->Owner.DisplayText);
+          Item->SubItems->Add(File->Group.DisplayText);
           Item->SubItems->Add(File->Extension);
         }
       }
@@ -398,8 +411,8 @@ void __fastcall TUnixDirView::GetDisplayInfo(TListItem * Item, tagLVITEMA &DispI
           break;
         case uvChanged: Value = File->UserModificationStr; break;
         case uvRights: Value = File->RightsStr; break;
-        case uvOwner: Value = File->Owner; break;
-        case uvGroup: Value = File->Group; break;
+        case uvOwner: Value = File->Owner.DisplayText; break;
+        case uvGroup: Value = File->Group.DisplayText; break;
         case uvExt: Value = File->Extension; break;
         case uvLinkTarget: Value = File->LinkTo; break;
         case uvType: Value = File->TypeName; break;
@@ -773,6 +786,16 @@ int __fastcall TUnixDirView::SecondaryColumnHeader(int Index, bool & AliasOnly)
 {
   AliasOnly = false;
   return ((Index == uvName) ? uvExt : -1);
+}
+//---------------------------------------------------------------------------
+int __fastcall TUnixDirView::HiddenCount()
+{
+  return FHiddenCount;
+}
+//---------------------------------------------------------------------------
+int __fastcall TUnixDirView::FilteredCount()
+{
+  return FFilteredCount;
 }
 //---------------------------------------------------------------------------
 void __fastcall TUnixDirView::CreateDirectory(AnsiString DirName)

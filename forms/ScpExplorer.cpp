@@ -314,3 +314,8 @@ void __fastcall TScpExplorerForm::QueueSubmenuItemPopup(
   NonVisualDataModule->QueueSpeedComboBoxItemUpdate(QueueSpeedComboBoxItem);
 }
 //---------------------------------------------------------------------------
+void __fastcall TScpExplorerForm::ChangePath(TOperationSide /*Side*/)
+{
+  assert(false);
+}
+//---------------------------------------------------------------------------

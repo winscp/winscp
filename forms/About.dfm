@@ -209,7 +209,7 @@ object AboutDialog: TAboutDialog
     Height = 121
     HorzScrollBar.Range = 289
     HorzScrollBar.Visible = False
-    VertScrollBar.Range = 341
+    VertScrollBar.Range = 410
     VertScrollBar.Smooth = True
     VertScrollBar.Tracking = True
     Anchors = [akLeft, akRight, akBottom]
@@ -254,42 +254,42 @@ object AboutDialog: TAboutDialog
     end
     object Label8: TLabel
       Left = 8
-      Top = 296
+      Top = 365
       Width = 181
       Height = 13
       Caption = 'Filemanager Toolset library Version 2.6'
     end
     object Label10: TLabel
       Left = 8
-      Top = 312
+      Top = 381
       Width = 137
       Height = 13
       Caption = 'Copyright '#169' 1999 Ingo Eckel'
     end
     object Label1: TLabel
       Left = 8
-      Top = 184
+      Top = 253
       Width = 117
       Height = 13
       Caption = 'Toolbar2000 library 2.1.6'
     end
     object Label2: TLabel
       Left = 8
-      Top = 200
+      Top = 269
       Width = 182
       Height = 13
       Caption = 'Copyright '#169' 1998-2005 Jordan Russell'
     end
     object Label5: TLabel
       Left = 8
-      Top = 240
+      Top = 309
       Width = 69
       Height = 13
       Caption = 'TBX library 2.1'
     end
     object Label6: TLabel
       Left = 8
-      Top = 256
+      Top = 325
       Width = 188
       Height = 13
       Caption = 'Copyright '#169' 2001-2005 Alex A. Denisov'
@@ -307,6 +307,24 @@ object AboutDialog: TAboutDialog
       Width = 126
       Height = 13
       Caption = 'Copyright '#169' xxx Tim Kosse'
+    end
+    object OpenSSLVersionLabel: TLabel
+      Left = 8
+      Top = 184
+      Width = 273
+      Height = 29
+      AutoSize = False
+      Caption = 
+        'This product includes software developed by the OpenSSL Project ' +
+        'for use in the OpenSSL Toolkit xxx.'
+      WordWrap = True
+    end
+    object OpenSSLCopyrightLabel: TLabel
+      Left = 8
+      Top = 213
+      Width = 186
+      Height = 13
+      Caption = 'Copyright '#169' xxxx The OpenSSL Project'
     end
     object PuttyLicenseLabel: TStaticText
       Tag = 1
@@ -330,20 +348,20 @@ object AboutDialog: TAboutDialog
     end
     object Toolbar2000HomepageLabel: TStaticText
       Left = 8
-      Top = 216
+      Top = 285
       Width = 180
       Height = 17
       Caption = 'http://www.jrsoftware.org/tb2kdl.php'
-      TabOrder = 3
+      TabOrder = 4
       TabStop = True
     end
     object TBXHomepageLabel: TStaticText
       Left = 8
-      Top = 272
+      Top = 341
       Width = 122
       Height = 17
       Caption = 'http://www.g32.org/tbx/'
-      TabOrder = 4
+      TabOrder = 5
       TabStop = True
     end
     object FileZillaHomepageLabel: TStaticText
@@ -353,6 +371,15 @@ object AboutDialog: TAboutDialog
       Height = 17
       Caption = 'http://XXXfilezilla.sourceforge.net/'
       TabOrder = 2
+      TabStop = True
+    end
+    object OpenSSLHomepageLabel: TStaticText
+      Left = 8
+      Top = 229
+      Width = 118
+      Height = 17
+      Caption = 'http://XXX.openssl.org/'
+      TabOrder = 3
       TabStop = True
     end
   end

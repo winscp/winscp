@@ -154,6 +154,9 @@ inherited ScpCommanderForm: TScpCommanderForm
             Action = NonVisualDataModule.ShowHideLocalAttrColumnAction
           end
         end
+        object TBXItem221: TTBXItem
+          Action = NonVisualDataModule.LocalFilterAction
+        end
       end
       object TBXSubmenuItem18: TTBXSubmenuItem
         Caption = '&Mark'
@@ -694,6 +697,9 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXItem179: TTBXItem
             Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction
           end
+        end
+        object TBXItem220: TTBXItem
+          Action = NonVisualDataModule.RemoteFilterAction
         end
       end
       object TBXSubmenuItem22: TTBXSubmenuItem

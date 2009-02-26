@@ -605,7 +605,7 @@ void debug_memdump(void *buf, int len, int L)
     if (L) {
 	int delta;
 	debug_printf("\t%d (0x%x) bytes:\n", len, len);
-	delta = 15 & (int) p;
+	delta = 15 & (unsigned long int) p;
 	p -= delta;
 	len += delta;
     }

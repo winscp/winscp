@@ -45,7 +45,7 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   InstallPathWordBreakProc(AsciiFileMaskCombo);
   InstallPathWordBreakProc(ExcludeFileMaskCombo);
   HintLabel(ExcludeFileMaskHintText,
-    FORMAT("%s\n \n%s",(LoadStr(MASK_HINT), LoadStr(PATH_MASK_HINT))));
+    FORMAT("%s\n \n%s",(LoadStr(MASK_HINT2), LoadStr(PATH_MASK_HINT))));
 }
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::~TCopyParamsFrame()
@@ -107,7 +107,6 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
     else Result.TransferMode = tmAutomatic;
 
   Result.AsciiFileMask.Masks = AsciiFileMaskCombo->Text;
-  if (!Result.AsciiFileMask.IsValid()) Result.AsciiFileMask.Masks = FOrigMasks;
 
   if (CCLowerCaseButton->Checked) Result.FileNameCase = ncLowerCase;
     else

@@ -29,14 +29,15 @@ public:
   virtual void __fastcall Close();
   virtual bool __fastcall GetActive();
   virtual void __fastcall Idle();
-  virtual AnsiString __fastcall AbsolutePath(AnsiString Path);
+  virtual AnsiString __fastcall AbsolutePath(AnsiString Path, bool Local);
   virtual void __fastcall AnyCommand(const AnsiString Command,
     TCaptureOutputEvent OutputEvent);
   virtual void __fastcall ChangeDirectory(const AnsiString Directory);
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
   virtual void __fastcall AnnounceFileListOperation();
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
-    const TRemoteFile * File, const TRemoteProperties * Properties);
+    const TRemoteFile * File, const TRemoteProperties * Properties,
+    TChmodSessionAction & Action);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
   virtual void __fastcall CalculateFilesChecksum(const AnsiString & Alg,
     TStrings * FileList, TStrings * Checksums,
@@ -49,11 +50,10 @@ public:
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
     bool & DisconnectWhenComplete);
-  virtual void __fastcall CreateDirectory(const AnsiString DirName,
-    const TRemoteProperties * Properties);
+  virtual void __fastcall CreateDirectory(const AnsiString DirName);
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const AnsiString FileName,
-    const TRemoteFile * File = NULL, int Params = dfNoRecursive);
+    const TRemoteFile * File, int Params, TRmSessionAction & Action);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
     const TRemoteFile * File, AnsiString Command, int Params, TCaptureOutputEvent OutputEvent);
   virtual void __fastcall DoStartup();
@@ -142,13 +142,15 @@ protected:
     TStrings * FileList, TStrings * Checksums,
     TCalculatedChecksumEvent OnCalculatedChecksum,
     TFileOperationProgressType * OperationProgress, bool FirstLevel);
+  void __fastcall DoDeleteFile(const AnsiString FileName, char Type);
 
   void __fastcall SFTPSourceRobust(const AnsiString FileName,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPSource(const AnsiString FileName,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
+    TFileOperationProgressType * OperationProgress, unsigned int Flags,
+    TUploadSessionAction & Action, bool & ChildError);
   AnsiString __fastcall SFTPOpenRemoteFile(const AnsiString & FileName,
     unsigned int OpenType, __int64 Size = -1);
   int __fastcall SFTPOpenRemote(void * AOpenParams, void * Param2);
@@ -170,7 +172,8 @@ protected:
   void __fastcall SFTPSink(const AnsiString FileName,
     const TRemoteFile * File, const AnsiString TargetDir,
     const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
+    TFileOperationProgressType * OperationProgress, unsigned int Flags,
+    TDownloadSessionAction & Action, bool & ChildError);
   void __fastcall SFTPSinkFile(AnsiString FileName,
     const TRemoteFile * File, void * Param);
   char * __fastcall GetEOL() const;

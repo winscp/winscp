@@ -1266,15 +1266,6 @@ object NonVisualDataModule: TNonVisualDataModule
       ImageIndex = 56
       ShortCut = 49221
     end
-    object CurrentEditAlternativeAction: TAction
-      Tag = 15
-      Category = 'Focused Operation'
-      Caption = 'Ed&it (alternative)'
-      HelpKeyword = 'task_edit'
-      Hint = 
-        'Edit (alternative)|Edit selected file(s) using alternative edito' +
-        'r'
-    end
     object CurrentOpenAction: TAction
       Tag = 15
       Category = 'Focused Operation'
@@ -1639,6 +1630,22 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Delete|Delete selected file(s)'
       ImageIndex = 2
     end
+    object CurrentEditAlternativeAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = 'Ed&it (alternative)'
+      HelpKeyword = 'task_edit'
+      Hint = 
+        'Edit (alternative)|Edit selected file(s) using alternative edito' +
+        'r'
+    end
+    object CurrentEditWithAction: TAction
+      Tag = 15
+      Category = 'Selected Operation'
+      Caption = 'Edit &With...'
+      HelpKeyword = 'task_edit'
+      Hint = 'Edit With|Edit selected file(s) using editor of your choice'
+    end
     object DownloadPageAction: TAction
       Tag = 15
       Category = 'Help'
@@ -1785,6 +1792,22 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'ui_queue#managing_the_queue'
       Hint = 'Change speed limit of selected queue item'
       EditCaption = '&Speed'
+    end
+    object LocalFilterAction: TAction
+      Tag = 9
+      Category = 'Local Directory'
+      Caption = '&Filter...'
+      HelpKeyword = 'ui_file_panel#filter'
+      Hint = 'Filter|Filter displayed files'
+      ImageIndex = 92
+    end
+    object RemoteFilterAction: TAction
+      Tag = 14
+      Category = 'Remote Directory'
+      Caption = '&Filter...'
+      HelpKeyword = 'ui_file_panel#filter'
+      Hint = 'Filter|Filter displayed files'
+      ImageIndex = 92
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu
@@ -1996,6 +2019,9 @@ object NonVisualDataModule: TNonVisualDataModule
     object OpenDirectoryBookmark1: TTBXItem
       Action = RemoteOpenDirAction
     end
+    object TBXItem26: TTBXItem
+      Action = RemoteFilterAction
+    end
     object N51: TTBXSeparatorItem
     end
     object HistoryButtons5: TTBXItem
@@ -2024,6 +2050,9 @@ object NonVisualDataModule: TNonVisualDataModule
     end
     object OpenDirectoryBookmark2: TTBXItem
       Action = LocalOpenDirAction
+    end
+    object TBXItem27: TTBXItem
+      Action = LocalFilterAction
     end
     object N52: TTBXSeparatorItem
     end

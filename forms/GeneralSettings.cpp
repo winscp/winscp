@@ -21,18 +21,18 @@ __fastcall TGeneralSettingsFrame::TGeneralSettingsFrame(TComponent* Owner)
 //---------------------------------------------------------------------------
 void __fastcall TGeneralSettingsFrame::CommanderClick(TObject * /*Sender*/)
 {
-  CommanderInterfaceButton->SetFocus();
+  CommanderInterfaceButton2->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TGeneralSettingsFrame::ExplorerClick(TObject * /*Sender*/)
 {
-  ExplorerInterfaceButton->SetFocus();
+  ExplorerInterfaceButton2->SetFocus();
 }
 //---------------------------------------------------------------------------
 void __fastcall TGeneralSettingsFrame::SaveConfiguration()
 {
   assert(CustomWinConfiguration);
-  CustomWinConfiguration->Interface = CommanderInterfaceButton->Checked ?
+  CustomWinConfiguration->Interface = CommanderInterfaceButton2->Checked ?
     ifCommander : ifExplorer;
 }
 //---------------------------------------------------------------------------
@@ -40,8 +40,8 @@ void __fastcall TGeneralSettingsFrame::LoadConfiguration()
 {
   assert(CustomWinConfiguration);
   switch (CustomWinConfiguration->Interface) {
-    case ifCommander: CommanderInterfaceButton->Checked = True; break;
-    case ifExplorer: ExplorerInterfaceButton->Checked = True; break;
+    case ifCommander: CommanderInterfaceButton2->Checked = True; break;
+    case ifExplorer: ExplorerInterfaceButton2->Checked = True; break;
     default: assert(false); break;
   }
 }

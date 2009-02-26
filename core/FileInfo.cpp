@@ -102,3 +102,11 @@ AnsiString __fastcall GetFileInfoString(void * FileInfo,
   // c_str() makes sure that returned string has only necessary bytes allocated
   return AnsiString(P, Len).c_str();
 };
+//---------------------------------------------------------------------------
+int __fastcall CalculateCompoundVersion(int MajorVer,
+  int MinorVer, int Release, int Build)
+{
+  int CompoundVer = Build + 1000 * (Release + 100 * (MinorVer +
+    100 * MajorVer));
+  return CompoundVer;
+}

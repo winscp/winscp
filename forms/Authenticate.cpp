@@ -238,7 +238,10 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, AnsiString Name,
       Edit->Text = Results->Strings[Index];
     }
 
-    Result = Execute(Name, PasswordPanel, reinterpret_cast<TWinControl *>(Edits->Items[0]),
+    Result = Execute(Name, PasswordPanel,
+      ((Edits->Count > 0) ?
+         reinterpret_cast<TWinControl *>(Edits->Items[0]) :
+         static_cast<TWinControl *>(PasswordOKButton)),
       PasswordOKButton, PasswordCancelButton, true, false, ForceLog);
     if (Result)
     {
@@ -251,6 +254,7 @@ bool __fastcall TAuthenticateForm::PromptUser(TPromptKind Kind, AnsiString Name,
       if (SavePasswordCheck->Checked)
       {
         assert(Data != NULL);
+        assert(Results->Count >= 1);
         Data->Password = Results->Strings[0];
         // modified only, explicit
         StoredSessions->Save(false, true);

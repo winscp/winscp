@@ -7,27 +7,44 @@
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-TProgramParams * TProgramParams::SInstance = NULL;
+// auto_ptr-like class
+class TProgramParamsOwner
+{
+public:
+  TProgramParamsOwner() :
+    FProgramParams(NULL)
+  {
+  }
+
+  ~TProgramParamsOwner()
+  {
+    delete FProgramParams;
+  }
+
+  TProgramParams * Get()
+  {
+    if (FProgramParams == NULL)
+    {
+      FProgramParams = new TProgramParams();
+    }
+    return FProgramParams;
+  }
+
+private:
+  TProgramParams * FProgramParams;
+};
+//---------------------------------------------------------------------------
+TProgramParamsOwner ProgramParamsOwner;
 //---------------------------------------------------------------------------
 TProgramParams * __fastcall TProgramParams::Instance()
 {
-  assert(SInstance != NULL);
-  return SInstance;
+  return ProgramParamsOwner.Get();
 }
 //---------------------------------------------------------------------------
 TProgramParams::TProgramParams()
 {
-  assert(SInstance == NULL);
-  SInstance = this;
-
   for (int i = 1; i <= ::ParamCount(); i++)
   {
     Add(ParamStr(i));
   }
-}
-//---------------------------------------------------------------------------
-TProgramParams::~TProgramParams()
-{
-  assert(SInstance == this);
-  SInstance = NULL;
 }

@@ -38,6 +38,7 @@ private:
   TSessionLog * FSessionLog;
   void __fastcall SetLogMemo(TLogMemo * value);
   void __fastcall SetSessionLog(TSessionLog * value);
+  void __fastcall SessionLogStateChange(TObject * Sender);
 protected:
   virtual void __fastcall CreateParams(TCreateParams & Params);
   void __fastcall LogMemoChange(TObject * Sender);

@@ -12,6 +12,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   OnActivate = FormActivate
   OnCloseQuery = FormCloseQuery
   OnConstrainedResize = FormConstrainedResize
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object QueueSplitter: TSplitter

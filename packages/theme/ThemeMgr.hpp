@@ -89,8 +89,6 @@ private:
 	TWindowProcList* FWinControlList;
 	TWindowProcList* FGroupBoxList;
 	TWindowProcList* FButtonControlList;
-	TWindowProcList* FCheckBoxList;
-	TWindowProcList* FButtonList;
 	TWindowProcList* FSpeedButtonList;
 	TWindowProcList* FSplitterList;
 	TWindowProcList* FTrackBarList;
@@ -107,7 +105,7 @@ private:
 	TControlMessageEvent FOnControlMessage;
 	TAllowSubclassingEvent FOnAllowSubclassing;
 	void __fastcall AnimateWindowProc(Controls::TControl* Control, Messages::TMessage &Message);
-	void __fastcall ButtonControlWindowProc(Controls::TControl* Control, Messages::TMessage &Message, TWindowProcList* List);
+	void __fastcall ButtonControlWindowProc(Controls::TControl* Control, Messages::TMessage &Message);
 	void __fastcall CheckListBoxWindowProc(Controls::TControl* Control, Messages::TMessage &Message);
 	void __fastcall FormWindowProc(Controls::TControl* Control, Messages::TMessage &Message);
 	void __fastcall FrameWindowProc(Controls::TControl* Control, Messages::TMessage &Message);
@@ -125,8 +123,6 @@ private:
 	void __fastcall WinControlWindowProc(Controls::TControl* Control, Messages::TMessage &Message);
 	void __fastcall PreAnimateWindowProc(Messages::TMessage &Message);
 	void __fastcall PreButtonControlWindowProc(Messages::TMessage &Message);
-	void __fastcall PreCheckBoxWindowProc(Messages::TMessage &Message);
-	void __fastcall PreButtonWindowProc(Messages::TMessage &Message);
 	void __fastcall PreCheckListBoxWindowProc(Messages::TMessage &Message);
 	void __fastcall PreFormWindowProc(Messages::TMessage &Message);
 	void __fastcall PreFrameWindowProc(Messages::TMessage &Message);

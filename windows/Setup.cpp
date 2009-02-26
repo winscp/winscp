@@ -14,6 +14,7 @@
 #include <HelpWin.h>
 #include <TcpIp.hpp>
 #include <CompThread.hpp>
+#include <FileInfo.h>
 #include "WinConfiguration.h"
 #include "WinInterface.h"
 #include "Tools.h"
@@ -585,22 +586,6 @@ void __fastcall TemporaryDirectoryCleanup()
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall CalculateCompoundVersion(int MajorVer,
-  int MinorVer, int Release, int Build)
-{
-  int CompoundVer = Build + 1000 * (Release + 100 * (MinorVer +
-    100 * MajorVer));
-  return CompoundVer;
-}
-//---------------------------------------------------------------------------
-int __fastcall CurrentCompoundVersion()
-{
-  TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
-  return CalculateCompoundVersion(
-    HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
-    HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
-}
-//---------------------------------------------------------------------------
 AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
 {
   int MajorVer = Version / (1000*100*100);
@@ -626,7 +611,7 @@ void __fastcall QueryUpdates()
     AnsiString Response;
 
     TVSFixedFileInfo * FileInfo = Configuration->FixedApplicationInfo;
-    int CurrentCompoundVer = CurrentCompoundVersion();
+    int CurrentCompoundVer = Configuration->CompoundVersion;
     AnsiString CurrentVersionStr =
       FORMAT("%d.%d.%d.%d",
         (HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
@@ -639,6 +624,25 @@ void __fastcall QueryUpdates()
       AnsiString URL = LoadStr(UPDATES_URL) +
         FORMAT("?v=%s&lang=%s", (CurrentVersionStr,
           IntToHex(__int64(GUIConfiguration->Locale), 4)));
+      bool Beta;
+      switch (Updates.BetaVersions)
+      {
+        case asAuto:
+          Beta = WinConfiguration->AnyBetaInVersionHistory;
+          break;
+
+        case asOn:
+          Beta = true;
+          break;
+
+        default:
+          Beta = false;
+          break;
+      }
+      if (Beta)
+      {
+        URL += "&beta=1";
+      }
       AnsiString Proxy;
       switch (Updates.ConnectionType)
       {
@@ -813,7 +817,7 @@ void __fastcall CheckForUpdates(bool CachedResults)
       TUpdatesConfiguration Updates = WinConfiguration->Updates;
       bool Cached = !Again && Updates.HaveResults &&
         (double(Updates.Period) > 0) &&
-        (Updates.Results.ForVersion == CurrentCompoundVersion()) &&
+        (Updates.Results.ForVersion == Configuration->CompoundVersion) &&
         CachedResults;
       if (!Cached)
       {

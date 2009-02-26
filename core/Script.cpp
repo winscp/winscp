@@ -425,7 +425,7 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
           }
           if (FileList == NULL)
           {
-            FileList = FTerminal->ReadDirectoryListing(Directory, false);
+            FileList = FTerminal->CustomReadDirectoryListing(Directory, false);
             if (FileLists == NULL)
             {
               FileLists = new TStringList();
@@ -433,12 +433,13 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
             FileLists->AddObject(Directory, FileList);
           }
 
-          AnsiString Mask = UnixExtractFileName(FileName);
+          TFileMasks Mask;
+          Mask.SetMask(UnixExtractFileName(FileName));
           for (int i = 0; i < FileList->Count; i++)
           {
             TRemoteFile * File = FileList->Files[i];
             if (!File->IsThisDirectory && !File->IsParentDirectory &&
-                TFileMasks::SingleMaskMatch(Mask, File->FileName))
+                Mask.Matches(File->FileName))
             {
               Result->AddObject(FileDirectory + File->FileName,
                 FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
@@ -615,7 +616,7 @@ void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProc
 
   if (Parameters->FindSwitch("preservetime"))
   {
-    CopyParam.PreserveTime = false;
+    CopyParam.PreserveTime = true;
   }
 
   if (Parameters->FindSwitch("nopermissions"))
@@ -754,18 +755,15 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
   CheckSession();
 
   AnsiString Directory;
-  AnsiString Mask;
+  TFileMasks Mask;
   if (Parameters->ParamCount > 0)
   {
     Directory = Parameters->Param[1];
-    Mask = UnixExtractFileName(Directory);
-    if (TFileMasks::IsMask(Mask))
+    AnsiString MaskStr = UnixExtractFileName(Directory);
+    if (TFileMasks::IsMask(MaskStr))
     {
+      Mask.SetMask(MaskStr);
       Directory = UnixExtractFilePath(Directory);
-    }
-    else
-    {
-      Mask = "";
     }
   }
 
@@ -774,7 +772,7 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
     Directory = FTerminal->CurrentDirectory;
   }
 
-  TRemoteFileList * FileList = FTerminal->ReadDirectoryListing(Directory, false);
+  TRemoteFileList * FileList = FTerminal->ReadDirectoryListing(Directory, Mask);
   // on error user may select "skip", then we get NULL
   if (FileList != NULL)
   {
@@ -782,11 +780,7 @@ void __fastcall TScript::LsProc(TScriptProcParams * Parameters)
     {
       for (int i = 0; i < FileList->Count; i++)
       {
-        TRemoteFile * File = FileList->Files[i];
-        if (Mask.IsEmpty() || TFileMasks::SingleMaskMatch(Mask, File->FileName))
-        {
-          PrintLine(FileList->Files[i]->ListingStr);
-        }
+        PrintLine(FileList->Files[i]->ListingStr);
       }
     }
     __finally

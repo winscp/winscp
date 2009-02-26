@@ -111,6 +111,11 @@ private:
   TRichEdit20 * EditorMemo;
   bool FShowStatusBarHint;
   AnsiString FStatusBarHint;
+  bool FFormRestored;
+  AnsiString FWindowParams;
+  unsigned int FInstance;
+
+  static unsigned int FInstances;
   void __fastcall SetFileName(const AnsiString value);
   void __fastcall SetParentForm(TCustomForm * value);
   void __fastcall ApplicationHint(TObject * Sender);

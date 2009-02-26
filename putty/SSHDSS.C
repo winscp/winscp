@@ -231,14 +231,14 @@ static int dss_verifysig(void *key, char *sig, int siglen,
 #endif
     /*
      * Commercial SSH (2.0.13) and OpenSSH disagree over the format
-     * of a DSA signature. OpenSSH is in line with the IETF drafts:
+     * of a DSA signature. OpenSSH is in line with RFC 4253:
      * it uses a string "ssh-dss", followed by a 40-byte string
      * containing two 160-bit integers end-to-end. Commercial SSH
      * can't be bothered with the header bit, and considers a DSA
      * signature blob to be _just_ the 40-byte string containing
      * the two 160-bit integers. We tell them apart by measuring
      * the length: length 40 means the commercial-SSH bug, anything
-     * else is assumed to be IETF-compliant.
+     * else is assumed to be RFC-compliant.
      */
     if (siglen != 40) {		       /* bug not present; read admin fields */
 	getstring(&sig, &siglen, &p, &slen);

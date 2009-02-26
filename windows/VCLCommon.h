@@ -2,6 +2,7 @@
 #ifndef VCLCommonH
 #define VCLCommonH
 //---------------------------------------------------------------------------
+#include "Configuration.h"
 #include <ComCtrls.hpp>
 //---------------------------------------------------------------------------
 void __fastcall AdjustListColumnsWidth(TListView* ListView, int RowCount = -1,
@@ -30,6 +31,9 @@ enum TListViewCheckAll { caCheck, caUncheck, caToggle };
 bool __fastcall ListViewAnyChecked(TListView * ListView, bool Checked = true);
 void __fastcall ListViewCheckAll(TListView * ListView,
   TListViewCheckAll CheckAll);
+void __fastcall ComboAutoSwitchInitialize(TComboBox * ComboBox);
+void __fastcall ComboAutoSwitchLoad(TComboBox * ComboBox, TAutoSwitch Value);
+TAutoSwitch __fastcall ComboAutoSwitchSave(TComboBox * ComboBox);
 void __fastcall InstallPathWordBreakProc(TWinControl * Control);
 void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar);
 void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count);

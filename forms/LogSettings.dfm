@@ -2,28 +2,19 @@ object LoggingFrame: TLoggingFrame
   Left = 0
   Top = 0
   Width = 314
-  Height = 233
+  Height = 259
   TabOrder = 0
   DesignSize = (
     314
-    233)
-  object LoggingCheck: TCheckBox
-    Left = 14
-    Top = 8
-    Width = 203
-    Height = 17
-    Caption = '&Enable logging'
-    TabOrder = 0
-    OnClick = DataChange
-  end
+    259)
   object LoggingGroup: TGroupBox
     Left = 3
-    Top = 32
+    Top = 59
     Width = 309
     Height = 198
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Logging options'
-    TabOrder = 1
+    TabOrder = 0
     DesignSize = (
       309
       198)
@@ -51,23 +42,23 @@ object LoggingFrame: TLoggingFrame
       TabOrder = 1
       OnClick = LogToFileCheckChange
     end
-    object LogFileNameEdit: TFilenameEdit
+    object LogFileNameEdit2: TFilenameEdit
       Left = 40
       Top = 68
       Width = 255
       Height = 21
       AcceptFiles = True
-      OnBeforeDialog = LogFileNameEditBeforeDialog
-      OnAfterDialog = LogFileNameEditAfterDialog
+      OnBeforeDialog = LogFileNameEdit2BeforeDialog
+      OnAfterDialog = LogFileNameEdit2AfterDialog
       DefaultExt = 'log'
-      Filter = 'Log files (*.log)|*.log|All files (*.*)|*.*'
+      Filter = 'Log files (*.log; *.xml)|*.log;*.xml|All files (*.*)|*.*'
       DialogOptions = [ofHideReadOnly, ofPathMustExist]
       DialogTitle = 'Select file for session log.'
-      OnCreateEditDialog = LogFileNameEditCreateEditDialog
+      OnCreateEditDialog = LogFileNameEdit2CreateEditDialog
       ClickKey = 16397
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 2
-      Text = 'LogFileNameEdit'
+      Text = 'LogFileNameEdit2'
       OnChange = DataChange
     end
     object LogShowWindowCheck: TCheckBox
@@ -122,7 +113,7 @@ object LoggingFrame: TLoggingFrame
         Top = 4
         Width = 97
         Height = 17
-        Caption = '&Append'
+        Caption = 'Appen&d'
         TabOrder = 0
         OnClick = DataChange
       end
@@ -161,6 +152,49 @@ object LoggingFrame: TLoggingFrame
       Caption = '&patterns'
       TabOrder = 3
       TabStop = True
+    end
+  end
+  object LogGroup: TGroupBox
+    Left = 3
+    Top = 3
+    Width = 309
+    Height = 51
+    Anchors = [akLeft, akTop, akRight]
+    Caption = 'Log'
+    TabOrder = 1
+    object Label1: TLabel
+      Left = 256
+      Top = 166
+      Width = 21
+      Height = 13
+      Caption = 'lines'
+    end
+    object LoggingOffButton: TRadioButton
+      Left = 16
+      Top = 21
+      Width = 89
+      Height = 17
+      Caption = '&No log'
+      TabOrder = 0
+      OnClick = LoggingButtonClick
+    end
+    object LoggingOnButton: TRadioButton
+      Left = 112
+      Top = 21
+      Width = 89
+      Height = 17
+      Caption = '&Text log'
+      TabOrder = 1
+      OnClick = LoggingButtonClick
+    end
+    object LoggingActionsButton: TRadioButton
+      Left = 208
+      Top = 21
+      Width = 89
+      Height = 17
+      Caption = '&XML log'
+      TabOrder = 2
+      OnClick = LoggingButtonClick
     end
   end
 end

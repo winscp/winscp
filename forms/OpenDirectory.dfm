@@ -1,12 +1,12 @@
 object OpenDirectoryDialog: TOpenDirectoryDialog
-  Left = 408
-  Top = 195
+  Left = 511
+  Top = 239
   HelpType = htKeyword
   HelpKeyword = 'ui_opendir'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Open directory'
-  ClientHeight = 308
+  ClientHeight = 334
   ClientWidth = 405
   Color = clBtnFace
   ParentFont = True
@@ -15,7 +15,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   OnShow = FormShow
   DesignSize = (
     405
-    308)
+    334)
   PixelsPerInch = 96
   TextHeight = 13
   object EditLabel: TLabel
@@ -50,7 +50,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   end
   object OKBtn: TButton
     Left = 159
-    Top = 274
+    Top = 300
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -61,7 +61,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   end
   object CancelBtn: TButton
     Left = 239
-    Top = 274
+    Top = 300
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -70,81 +70,153 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     ModalResult = 2
     TabOrder = 6
   end
-  object BookmarksGroup: TGroupBox
+  object PageControl: TPageControl
     Left = 8
     Top = 56
     Width = 386
-    Height = 209
+    Height = 235
+    ActivePage = SessionBookmarksSheet
     Anchors = [akLeft, akTop, akRight, akBottom]
-    Caption = 'Bookmarks'
+    TabIndex = 0
     TabOrder = 3
-    DesignSize = (
-      386
-      209)
-    object Label1: TLabel
-      Left = 16
-      Top = 22
-      Width = 83
-      Height = 13
-      Caption = 'Select &bookmark:'
-      FocusControl = BookmarksList
+    object SessionBookmarksSheet: TTabSheet
+      Tag = 1
+      Caption = 'Session bookmarks'
+      DesignSize = (
+        378
+        207)
+      object SessionBookmarksList: TListBox
+        Tag = 1
+        Left = 10
+        Top = 9
+        Width = 268
+        Height = 187
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        DragMode = dmAutomatic
+        ItemHeight = 13
+        TabOrder = 0
+        OnClick = BookmarksListClick
+        OnDblClick = BookmarksListDblClick
+        OnDragDrop = BookmarksListDragDrop
+        OnDragOver = BookmarksListDragOver
+        OnEndDrag = BookmarksListEndDrag
+        OnKeyDown = BookmarksListKeyDown
+        OnStartDrag = BookmarksListStartDrag
+      end
+      object AddSessionBookmarkButton: TButton
+        Tag = 1
+        Left = 285
+        Top = 9
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Add'
+        TabOrder = 1
+        OnClick = AddBookmarkButtonClick
+      end
+      object RemoveSessionBookmarkButton: TButton
+        Tag = 1
+        Left = 285
+        Top = 41
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Remove'
+        TabOrder = 2
+        OnClick = RemoveBookmarkButtonClick
+      end
+      object UpSessionBookmarkButton: TButton
+        Tag = -1
+        Left = 285
+        Top = 139
+        Width = 83
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Up'
+        TabOrder = 3
+        OnClick = BookmarkButtonClick
+      end
+      object DownSessionBookmarkButton: TButton
+        Tag = 1
+        Left = 285
+        Top = 171
+        Width = 83
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Down'
+        TabOrder = 4
+        OnClick = BookmarkButtonClick
+      end
     end
-    object BookmarksList: TListBox
-      Left = 16
-      Top = 38
-      Width = 266
-      Height = 155
-      Anchors = [akLeft, akTop, akRight, akBottom]
-      DragMode = dmAutomatic
-      ItemHeight = 13
-      TabOrder = 0
-      OnClick = BookmarksListClick
-      OnDblClick = BookmarksListDblClick
-      OnDragDrop = BookmarksListDragDrop
-      OnDragOver = BookmarksListDragOver
-      OnEndDrag = BookmarksListEndDrag
-      OnKeyDown = BookmarksListKeyDown
-      OnStartDrag = BookmarksListStartDrag
-    end
-    object AddBookmarkButton: TButton
-      Left = 289
-      Top = 38
-      Width = 83
-      Height = 25
-      Anchors = [akTop, akRight]
-      Caption = '&Add'
-      TabOrder = 1
-      OnClick = AddBookmarkButtonClick
-    end
-    object RemoveBookmarkButton: TButton
-      Left = 289
-      Top = 70
-      Width = 83
-      Height = 25
-      Anchors = [akTop, akRight]
-      Caption = '&Remove'
-      TabOrder = 2
-      OnClick = RemoveBookmarkButtonClick
-    end
-    object DownBookmarkButton: TButton
-      Left = 289
-      Top = 168
-      Width = 83
-      Height = 25
-      Anchors = [akRight, akBottom]
-      Caption = '&Down'
-      TabOrder = 3
-      OnClick = BookmarkButtonClick
-    end
-    object UpBookmarkButton: TButton
-      Left = 289
-      Top = 136
-      Width = 83
-      Height = 25
-      Anchors = [akRight, akBottom]
-      Caption = '&Up'
-      TabOrder = 4
-      OnClick = BookmarkButtonClick
+    object SharedBookmarksSheet: TTabSheet
+      Tag = 2
+      Caption = 'Shared bookmarks'
+      ImageIndex = 1
+      DesignSize = (
+        378
+        207)
+      object SharedBookmarksList: TListBox
+        Tag = 2
+        Left = 10
+        Top = 9
+        Width = 268
+        Height = 187
+        Anchors = [akLeft, akTop, akRight, akBottom]
+        DragMode = dmAutomatic
+        ItemHeight = 13
+        TabOrder = 0
+        OnClick = BookmarksListClick
+        OnDblClick = BookmarksListDblClick
+        OnDragDrop = BookmarksListDragDrop
+        OnDragOver = BookmarksListDragOver
+        OnEndDrag = BookmarksListEndDrag
+        OnKeyDown = BookmarksListKeyDown
+        OnStartDrag = BookmarksListStartDrag
+      end
+      object AddSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 285
+        Top = 9
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Add'
+        TabOrder = 1
+        OnClick = AddBookmarkButtonClick
+      end
+      object RemoveSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 285
+        Top = 41
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Remove'
+        TabOrder = 2
+        OnClick = RemoveBookmarkButtonClick
+      end
+      object UpSharedBookmarkButton: TButton
+        Tag = -2
+        Left = 285
+        Top = 139
+        Width = 83
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Up'
+        TabOrder = 3
+        OnClick = BookmarkButtonClick
+      end
+      object DownSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 285
+        Top = 171
+        Width = 83
+        Height = 25
+        Anchors = [akRight, akBottom]
+        Caption = '&Down'
+        TabOrder = 4
+        OnClick = BookmarkButtonClick
+      end
     end
   end
   object LocalDirectoryBrowseButton: TButton
@@ -159,7 +231,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   end
   object SwitchButton: TButton
     Left = 8
-    Top = 274
+    Top = 300
     Width = 121
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -170,7 +242,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
   end
   object HelpButton: TButton
     Left = 320
-    Top = 274
+    Top = 300
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

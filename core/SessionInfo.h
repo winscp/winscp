@@ -27,7 +27,8 @@ struct TSessionInfo
 };
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,
-  fcOwnerChanging, fcAnyCommand, fcHardLink, fcSymbolicLink, fcResolveSymlink,
+  fcOwnerChanging, fcGroupOwnerChangingByID, fcAnyCommand, fcHardLink,
+  fcSymbolicLink, fcResolveSymlink,
   fcTextMode, fcRename, fcNativeTextMode, fcNewerOnlyUpload, fcRemoteCopy,
   fcTimestampChanging, fcRemoteMove, fcLoadingAdditionalProperties,
   fcCheckingSpaceAvailable, fcIgnorePermErrors, fcCalculatingChecksum,
@@ -65,7 +66,8 @@ public:
 };
 //---------------------------------------------------------------------------
 // Duplicated in LogMemo.h for design-time-only purposes
-enum TLogLineType { llOutput, llInput, llStdError, llMessage, llException };
+enum TLogLineType { llOutput, llInput, llStdError, llMessage, llException, llAction };
+enum TLogAction { laUpload, laDownload, laTouch, laChmod, laMkdir, laRm, laMv, laCall, laLs };
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure *TCaptureOutputEvent)(
   const AnsiString & Str, bool StdError);
@@ -73,9 +75,117 @@ typedef void __fastcall (__closure *TCalculatedChecksumEvent)(
   const AnsiString & FileName, const AnsiString & Alg, const AnsiString & Hash);
 //---------------------------------------------------------------------------
 class TCriticalSection;
+class TSessionActionRecord;
+class TSessionLog;
+//---------------------------------------------------------------------------
+class TSessionAction
+{
+public:
+  __fastcall TSessionAction(TSessionLog * Log, TLogAction Action);
+  __fastcall ~TSessionAction();
+
+  void __fastcall Restart();
+
+  void __fastcall Commit();
+  void __fastcall Rollback(Exception * E = NULL);
+  void __fastcall Cancel();
+
+protected:
+  TSessionActionRecord * FRecord;
+};
+//---------------------------------------------------------------------------
+class TFileSessionAction : public TSessionAction
+{
+public:
+  __fastcall TFileSessionAction(TSessionLog * Log, TLogAction Action);
+  __fastcall TFileSessionAction(TSessionLog * Log, TLogAction Action, const AnsiString & FileName);
+
+  void __fastcall FileName(const AnsiString & FileName);
+};
+//---------------------------------------------------------------------------
+class TFileLocationSessionAction : public TFileSessionAction
+{
+public:
+  __fastcall TFileLocationSessionAction(TSessionLog * Log, TLogAction Action);
+  __fastcall TFileLocationSessionAction(TSessionLog * Log, TLogAction Action, const AnsiString & FileName);
+
+  void __fastcall Destination(const AnsiString & Destination);
+};
+//---------------------------------------------------------------------------
+class TUploadSessionAction : public TFileLocationSessionAction
+{
+public:
+  __fastcall TUploadSessionAction(TSessionLog * Log);
+};
+//---------------------------------------------------------------------------
+class TDownloadSessionAction : public TFileLocationSessionAction
+{
+public:
+  __fastcall TDownloadSessionAction(TSessionLog * Log);
+};
+//---------------------------------------------------------------------------
+class TRights;
+//---------------------------------------------------------------------------
+class TChmodSessionAction : public TFileSessionAction
+{
+public:
+  __fastcall TChmodSessionAction(TSessionLog * Log, const AnsiString & FileName);
+  __fastcall TChmodSessionAction(TSessionLog * Log, const AnsiString & FileName,
+    const TRights & Rights);
+
+  void __fastcall Rights(const TRights & Rights);
+  void __fastcall Recursive();
+};
+//---------------------------------------------------------------------------
+class TTouchSessionAction : public TFileSessionAction
+{
+public:
+  __fastcall TTouchSessionAction(TSessionLog * Log, const AnsiString & FileName,
+    const TDateTime & Modification);
+};
+//---------------------------------------------------------------------------
+class TMkdirSessionAction : public TFileSessionAction
+{
+public:
+  __fastcall TMkdirSessionAction(TSessionLog * Log, const AnsiString & FileName);
+};
+//---------------------------------------------------------------------------
+class TRmSessionAction : public TFileSessionAction
+{
+public:
+  __fastcall TRmSessionAction(TSessionLog * Log, const AnsiString & FileName);
+
+  void __fastcall Recursive();
+};
+//---------------------------------------------------------------------------
+class TMvSessionAction : public TFileLocationSessionAction
+{
+public:
+  __fastcall TMvSessionAction(TSessionLog * Log, const AnsiString & FileName,
+    const AnsiString & Destination);
+};
+//---------------------------------------------------------------------------
+class TCallSessionAction : public TSessionAction
+{
+public:
+  __fastcall TCallSessionAction(TSessionLog * Log, const AnsiString & Command,
+    const AnsiString & Destination);
+
+  void __fastcall AddOutput(const AnsiString & Output, bool StdError);
+};
+//---------------------------------------------------------------------------
+class TLsSessionAction : public TSessionAction
+{
+public:
+  __fastcall TLsSessionAction(TSessionLog * Log, const AnsiString & Destination);
+
+  void __fastcall FileList(TRemoteFileList * FileList);
+};
 //---------------------------------------------------------------------------
 class TSessionLog : protected TStringList
 {
+friend class TSessionAction;
+friend class TSessionActionRecord;
 public:
   __fastcall TSessionLog(TSessionUI* UI, TSessionData * SessionData,
     TConfiguration * Configuration);
@@ -84,17 +194,19 @@ public:
   void __fastcall AddStartupInfo();
   void __fastcall AddException(Exception * E);
   void __fastcall AddSeparator();
+
   virtual void __fastcall Clear();
   void __fastcall ReflectSettings();
   void __fastcall Lock();
   void __fastcall Unlock();
 
-  __property TSessionLog * Parent = { read = FParent, write = SetParent };
+  __property TSessionLog * Parent = { read = FParent, write = FParent };
   __property bool Logging = { read = FLogging };
   __property int BottomIndex = { read = GetBottomIndex };
   __property AnsiString Line[int Index]  = { read=GetLine };
   __property TLogLineType Type[int Index]  = { read=GetType };
   __property OnChange;
+  __property TNotifyEvent OnStateChange = { read = FOnStateChange, write = FOnStateChange };
   __property AnsiString CurrentFileName = { read = FCurrentFileName };
   __property bool LoggingToFile = { read = GetLoggingToFile };
   __property int TopIndex = { read = FTopIndex };
@@ -105,6 +217,8 @@ public:
 protected:
   void __fastcall CloseLogFile();
   bool __fastcall LogToFile();
+  inline void __fastcall AddPendingAction(TSessionActionRecord * Action);
+  void __fastcall RecordPendingActions();
 
 private:
   TConfiguration * FConfiguration;
@@ -119,15 +233,19 @@ private:
   TSessionUI * FUI;
   TSessionData * FSessionData;
   AnsiString FName;
+  bool FLoggingActions;
+  bool FClosed;
+  TList * FPendingActions;
+  TNotifyEvent FOnStateChange;
 
   AnsiString __fastcall GetLine(int Index);
   TLogLineType __fastcall GetType(int Index);
   void DeleteUnnecessary();
+  void StateChange();
   void OpenLogFile();
   int __fastcall GetBottomIndex();
   AnsiString __fastcall GetLogFileName();
   bool __fastcall GetLoggingToFile();
-  void __fastcall SetParent(TSessionLog * value);
   AnsiString __fastcall GetSessionName();
   void __fastcall DoAdd(TLogLineType Type, AnsiString Line,
     void __fastcall (__closure *f)(TLogLineType Type, const AnsiString & Line));

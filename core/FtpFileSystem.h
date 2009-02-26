@@ -14,10 +14,12 @@ class TMessageQueue;
 class TOverwriteFileParams;
 struct TListDataEntry;
 struct TFileTransferData;
+struct TFtpsCertificateData;
 //---------------------------------------------------------------------------
 class TFTPFileSystem : public TCustomFileSystem
 {
 friend class TFileZillaImpl;
+friend class TFileListHelper;
 
 public:
   __fastcall TFTPFileSystem(TTerminal * ATerminal);
@@ -27,14 +29,15 @@ public:
   virtual void __fastcall Close();
   virtual bool __fastcall GetActive();
   virtual void __fastcall Idle();
-  virtual AnsiString __fastcall AbsolutePath(AnsiString Path);
+  virtual AnsiString __fastcall AbsolutePath(AnsiString Path, bool Local);
   virtual void __fastcall AnyCommand(const AnsiString Command,
     TCaptureOutputEvent OutputEvent);
   virtual void __fastcall ChangeDirectory(const AnsiString Directory);
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory);
   virtual void __fastcall AnnounceFileListOperation();
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
-    const TRemoteFile * File, const TRemoteProperties * Properties);
+    const TRemoteFile * File, const TRemoteProperties * Properties,
+    TChmodSessionAction & Action);
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList);
   virtual void __fastcall CalculateFilesChecksum(const AnsiString & Alg,
     TStrings * FileList, TStrings * Checksums,
@@ -47,11 +50,10 @@ public:
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
     bool & DisconnectWhenComplete);
-  virtual void __fastcall CreateDirectory(const AnsiString DirName,
-    const TRemoteProperties * Properties);
+  virtual void __fastcall CreateDirectory(const AnsiString DirName);
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const AnsiString FileName,
-    const TRemoteFile * File = NULL, int Params = dfNoRecursive);
+    const TRemoteFile * File, int Params, TRmSessionAction & Action);
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
     const TRemoteFile * File, AnsiString Command, int Params, TCaptureOutputEvent OutputEvent);
   virtual void __fastcall DoStartup();
@@ -93,7 +95,7 @@ protected:
     REPLY_ALLOW_CANCEL = 0x04
   };
 
-  bool __fastcall PostMessage(WPARAM wParam, LPARAM lParam);
+  bool __fastcall PostMessage(unsigned int Type, WPARAM wParam, LPARAM lParam);
   bool __fastcall ProcessMessage();
   void __fastcall DiscardMessages();
   void __fastcall WaitForMessages();
@@ -112,12 +114,15 @@ protected:
     const char * Path1, const char * Path2,
     __int64 Size1, __int64 Size2, time_t Time1, time_t Time2,
     bool HasTime1, bool HasTime2, void * UserData, int & RequestResult);
+  bool __fastcall HandleAsynchRequestVerifyCertificate(
+    const TFtpsCertificateData & Data, int & RequestResult);
   bool __fastcall HandleListData(const char * Path, const TListDataEntry * Entries,
     unsigned int Count);
   bool __fastcall HandleTransferStatus(bool Valid, __int64 TransferSize,
     __int64 Bytes, int Percent, int TimeElapsed, int TimeLeft, int TransferRate,
     bool FileTransfer);
   bool __fastcall HandleReply(int Command, unsigned int Reply);
+  bool __fastcall HandleCapabilities(bool Mfmt);
   bool __fastcall CheckError(int ReturnCode, const char * Context);
   void __fastcall EnsureLocation();
   AnsiString __fastcall ActualCurrentDirectory();
@@ -127,7 +132,8 @@ protected:
   void __fastcall Sink(const AnsiString FileName,
     const TRemoteFile * File, const AnsiString TargetDir,
     const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
+    TFileOperationProgressType * OperationProgress, unsigned int Flags,
+    TDownloadSessionAction & Action);
   void __fastcall SinkRobust(const AnsiString FileName,
     const TRemoteFile * File, const AnsiString TargetDir,
     const TCopyParamType * CopyParam, int Params,
@@ -138,7 +144,8 @@ protected:
     TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall Source(const AnsiString FileName,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params,
-    TFileOperationProgressType * OperationProgress, unsigned int Flags);
+    TFileOperationProgressType * OperationProgress, unsigned int Flags,
+    TUploadSessionAction & Action);
   void __fastcall DirectorySource(const AnsiString DirectoryName,
     const AnsiString TargetDir, int Attrs, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
@@ -147,6 +154,7 @@ protected:
     const TOverwriteFileParams * FileParams, int Params, bool AutoResume);
   void __fastcall ReadDirectoryProgress(__int64 Bytes);
   void __fastcall ResetFileTransfer();
+  void __fastcall DoFileTransferProgress(__int64 TransferSize, __int64 Bytes);
   void __fastcall FileTransferProgress(__int64 TransferSize, __int64 Bytes);
   void __fastcall ResetCaches();
   void __fastcall CaptureOutput(const AnsiString & Str);
@@ -169,6 +177,7 @@ private:
 
   TFileZillaIntf * FFileZillaIntf;
   TCriticalSection * FQueueCriticalSection;
+  TCriticalSection * FTransferStatusCriticalSection;
   TMessageQueue * FQueue;
   HANDLE FQueueEvent;
   TSessionInfo FSessionInfo;
@@ -202,8 +211,9 @@ private:
   bool FAwaitingProgress;
   TCaptureOutputEvent FOnCaptureOutput;
   AnsiString FUserName;
-  int FListAll;
+  TAutoSwitch FListAll;
   bool FDoListAll;
+  bool FMfmt;
   TDateTime FLastDataSent;
   mutable AnsiString FOptionScratch;
 };

@@ -167,11 +167,11 @@ AnsiString CutToChar(AnsiString &Str, Char Ch, bool Trim)
   return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString CutToChars(AnsiString & Str, AnsiString Chs, bool Trim,
+AnsiString CopyToChars(const AnsiString & Str, int & From, AnsiString Chs, bool Trim,
   char * Delimiter)
 {
   int P;
-  for (P = 1; P <= Str.Length(); P++)
+  for (P = From; P <= Str.Length(); P++)
   {
     if (IsDelimiter(Chs, Str, P))
     {
@@ -186,8 +186,8 @@ AnsiString CutToChars(AnsiString & Str, AnsiString Chs, bool Trim,
     {
       *Delimiter = Str[P];
     }
-    Result = Str.SubString(1, P-1);
-    Str.Delete(1, P);
+    Result = Str.SubString(From, P-From);
+    From = P+1;
   }
   else
   {
@@ -195,13 +195,16 @@ AnsiString CutToChars(AnsiString & Str, AnsiString Chs, bool Trim,
     {
       *Delimiter = '\0';
     }
-    Result = Str;
-    Str = "";
+    Result = Str.SubString(From, Str.Length() - From + 1);
+    From = P;
   }
   if (Trim)
   {
     Result = Result.TrimRight();
-    Str = Str.TrimLeft();
+    while ((P <= Str.Length()) && (Str[P] == ' '))
+    {
+      P++;
+    }
   }
   return Result;
 }
@@ -259,6 +262,12 @@ bool IsDots(const AnsiString Str)
 {
   char * str = Str.c_str();
   return (str[strspn(str, ".")] == '\0');
+}
+//---------------------------------------------------------------------------
+bool IsNumber(const AnsiString Str)
+{
+  int Value;
+  return TryStrToInt(Str, Value);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall SystemTemporaryDirectory()
@@ -437,32 +446,89 @@ bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2)
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsDisplayableStr(const AnsiString Str)
+AnsiString __fastcall DisplayableStr(const AnsiString Str)
 {
   bool Displayable = true;
   int Index = 1;
   while ((Index <= Str.Length()) && Displayable)
   {
-    if (Str[Index] < '\32')
+    if ((Str[Index] < '\32') &&
+        (Str[Index] != '\n') && (Str[Index] != '\r') && (Str[Index] != '\t') && (Str[Index] != '\b'))
     {
       Displayable = false;
     }
     Index++;
   }
-  return Displayable;
+
+  AnsiString Result;
+  if (Displayable)
+  {
+    Result = "\"";
+    for (int Index = 1; Index <= Str.Length(); Index++)
+    {
+      switch (Str[Index])
+      {
+        case '\n':
+          Result += "\\n";
+          break;
+
+        case '\r':
+          Result += "\\r";
+          break;
+
+        case '\t':
+          Result += "\\t";
+          break;
+
+        case '\b':
+          Result += "\\b";
+          break;
+
+        case '\\':
+          Result += "\\\\";
+          break;
+
+        case '"':
+          Result += "\\\"";
+          break;
+
+        default:
+          Result += Str[Index];
+          break;
+      }
+    }
+    Result += "\"";
+  }
+  else
+  {
+    Result = "0x" + StrToHex(Str);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall CharToHex(char Ch)
+AnsiString __fastcall CharToHex(char Ch, bool UpperCase)
 {
-  return IntToHex((unsigned char)Ch, 2);
+  static char UpperDigits[] = "0123456789ABCDEF";
+  static char LowerDigits[] = "0123456789abcdef";
+
+  const char * Digits = (UpperCase ? UpperDigits : LowerDigits);
+  AnsiString Result;
+  Result.SetLength(2);
+  Result[1] = Digits[((unsigned char)Ch & 0xF0) >> 4];
+  Result[2] = Digits[ (unsigned char)Ch & 0x0F];
+  return Result;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall StrToHex(const AnsiString Str)
+AnsiString __fastcall StrToHex(const AnsiString Str, bool UpperCase, char Separator)
 {
   AnsiString Result;
   for (int i = 1; i <= Str.Length(); i++)
   {
-    Result += CharToHex(Str[i]);
+    Result += CharToHex(Str[i], UpperCase);
+    if ((Separator != '\0') && (i < Str.Length()))
+    {
+      Result += Separator;
+    }
   }
   return Result;
 }
@@ -827,6 +893,18 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   return Result;
 }
 //---------------------------------------------------------------------------
+TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
+{
+
+  TDateTimeParams * Params = GetDateTimeParams();
+  DateTime += Params->CurrentDifference;
+  DateTime +=
+    (IsDateInDST(DateTime) ?
+      Params->DaylightDifference : Params->StandardDifference);
+
+  return DateTime;
+}
+//---------------------------------------------------------------------------
 __int64 __fastcall ConvertTimestampToUnixSafe(const FILETIME & FileTime,
   TDSTMode DSTMode)
 {
@@ -1151,8 +1229,12 @@ AnsiString __fastcall DecodeUrlChars(AnsiString S)
       case '%':
         if (i <= S.Length() - 2)
         {
-          S[i] = HexToStr(S.SubString(i + 1, 2))[1];
-          S.Delete(i + 1, 2);
+          AnsiString C = HexToStr(S.SubString(i + 1, 2));
+          if (C.Length() == 1)
+          {
+            S[i] = C[1];
+            S.Delete(i + 1, 2);
+          }
         }
         break;
     }
@@ -1161,14 +1243,12 @@ AnsiString __fastcall DecodeUrlChars(AnsiString S)
   return S;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore)
+AnsiString __fastcall DoEncodeUrl(AnsiString S, AnsiString Chars)
 {
-  AnsiString Encode = "/ ";
   int i = 1;
   while (i <= S.Length())
   {
-    if ((Encode.Pos(S[i]) > 0) &&
-        (Ignore.Pos(S[i]) == 0))
+    if (Chars.Pos(S[i]) > 0)
     {
       AnsiString H = CharToHex(S[i]);
       S.Insert(H, i + 1);
@@ -1178,6 +1258,46 @@ AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore)
     i++;
   }
   return S;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall EncodeUrlChars(AnsiString S, AnsiString Ignore)
+{
+  AnsiString Chars;
+  if (Ignore.Pos(' ') == 0)
+  {
+    Chars += ' ';
+  }
+  if (Ignore.Pos('/') == 0)
+  {
+    Chars += '/';
+  }
+  return DoEncodeUrl(S, Chars);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall NonUrlChars()
+{
+  AnsiString S;
+  for (unsigned int I = 0; I <= 255; I++)
+  {
+    char C = static_cast<char>(I);
+    if (((C >= 'a') && (C <= 'z')) ||
+        ((C >= 'A') && (C <= 'Z')) ||
+        ((C >= '0') && (C <= '9')) ||
+        (C == '_') || (C == '-') || (C == '.'))
+    {
+      // noop
+    }
+    else
+    {
+      S += C;
+    }
+  }
+  return S;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall EncodeUrlString(AnsiString S)
+{
+  return DoEncodeUrl(S, NonUrlChars());
 }
 //---------------------------------------------------------------------------
 void __fastcall OemToAnsi(AnsiString & Str)
@@ -1261,4 +1381,13 @@ bool __fastcall CutToken(AnsiString & Str, AnsiString & Token)
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall AddToList(AnsiString & List, const AnsiString & Value, char Delimiter)
+{
+  if (!List.IsEmpty() && (List[List.Length()] != Delimiter))
+  {
+    List += Delimiter;
+  }
+  List += Value;
 }

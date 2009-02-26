@@ -120,6 +120,17 @@ int sk_address_is_local(SockAddr addr);
 int sk_addrtype(SockAddr addr);
 void sk_addrcopy(SockAddr addr, char *buf);
 void sk_addr_free(SockAddr addr);
+/* sk_addr_dup generates another SockAddr which contains the same data
+ * as the original one and can be freed independently. May not actually
+ * physically _duplicate_ it: incrementing a reference count so that
+ * one more free is required before it disappears is an acceptable
+ * implementation. */
+SockAddr sk_addr_dup(SockAddr addr);
+
+#ifdef MPEXT
+// Resolve ambiguity with OpenSSL
+#define sk_new putty_sk_new
+#endif
 
 /* NB, control of 'addr' is passed via sk_new, which takes responsibility
  * for freeing it, as for new_connection() */

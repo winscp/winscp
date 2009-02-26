@@ -38,7 +38,7 @@ class TQueueItemProxy;
 class TQueueController;
 class TSynchronizeController;
 class TEditorManager;
-class TEditorPreferences;
+class TEditorData;
 class TTransferPresetNoteData;
 struct TEditedFileData;
 //---------------------------------------------------------------------------
@@ -159,6 +159,7 @@ __published:
   void __fastcall DirViewEditing(TObject *Sender, TListItem *Item,
           bool &AllowEdit);
   void __fastcall FormActivate(TObject *Sender);
+  void __fastcall FormShow(TObject *Sender);
 
 private:
   TTerminal * FTerminal;
@@ -204,6 +205,7 @@ private:
   TColor FSessionColor;
   TTrayIcon * FTrayIcon;
   TCustomCommandParam FLastCustomCommand;
+  TFileMasks FDirViewMatchMask;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -360,11 +362,11 @@ protected:
     TEditedFileData & Data, TObject * Token, void * Arg);
   void __fastcall CustomExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, AnsiString FileName, AnsiString OriginalFileName,
-    const TEditorPreferences * ExternalEditor, AnsiString LocalRootDirectory);
+    const TEditorData * ExternalEditor, AnsiString LocalRootDirectory);
   bool __fastcall RemoteExecuteForceText(TExecuteFileBy ExecuteFileBy,
-    const TEditorPreferences * ExternalEditor);
+    const TEditorData * ExternalEditor);
   void __fastcall ExecuteFileNormalize(TExecuteFileBy & ExecuteFileBy,
-    const TEditorPreferences *& ExternalEditor, const AnsiString & FileName,
+    const TEditorData *& ExternalEditor, const AnsiString & FileName,
     bool Local, const TFileMasks::TParams & MaskParams);
   AnsiString __fastcall TemporaryDirectoryForRemoteFiles(TCopyParamType CopyParam,
     AnsiString & RootDirectory);
@@ -462,9 +464,11 @@ public:
   virtual void __fastcall GoToTree();
   virtual void __fastcall PanelExport(TOperationSide Side, TPanelExport Export,
     TPanelExportDestination Destination, bool OnFocused = false);
+  void __fastcall Filter(TOperationSide Side);
   void __fastcall ExecuteFile(TOperationSide Side, TExecuteFileBy ExecuteFileBy,
-    const TEditorPreferences * ExternalEditor = NULL, bool AllSelected = false,
+    const TEditorData * ExternalEditor = NULL, bool AllSelected = false,
     bool OnFocused = false);
+  void __fastcall ExecuteCurrentFileWith();
   void __fastcall EditNew(TOperationSide Side);
   bool __fastcall AllowQueueOperation(TQueueOperation Operation, void ** Param = NULL);
   void __fastcall ExecuteQueueOperation(TQueueOperation Operation, void * Param = NULL);

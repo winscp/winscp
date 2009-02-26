@@ -6,32 +6,32 @@
     <PROJECT value="lib\ScpForms.lib"/>
     <OBJFILES value="forms\InputDlg.obj forms\MessageDlg.obj
       windows\VCLCommon.obj forms\About.obj forms\Authenticate.obj
-      forms\Cleanup.obj forms\ComboInput.obj forms\Console.obj forms\Copy.obj
-      forms\CopyParams.obj forms\CopyParamCustom.obj forms\CopyParamPreset.obj
-      forms\CreateDirectory.obj forms\CustomCommand.obj forms\Editor.obj
-      forms\EditorPreferences.obj forms\FileSystemInfo.obj
+      forms\Cleanup.obj forms\Console.obj forms\Copy.obj forms\CopyParams.obj
+      forms\CopyParamCustom.obj forms\CopyParamPreset.obj
+      forms\CreateDirectory.obj forms\CustomCommand.obj forms\Custom.obj
+      forms\Editor.obj forms\EditorPreferences.obj forms\FileSystemInfo.obj
       forms\FullSynchronize.obj forms\GeneralSettings.obj forms\Glyphs.obj
       forms\ImportSessions.obj forms\License.obj forms\LocationProfiles.obj
       forms\Log.obj forms\Login.obj forms\LogSettings.obj
       forms\OpenDirectory.obj forms\Preferences.obj forms\Progress.obj
       forms\Properties.obj forms\RemoteTransfer.obj forms\Rights.obj
-      forms\RightsExt.obj forms\SaveSession.obj forms\SelectMask.obj
-      forms\Symlink.obj forms\Synchronize.obj forms\SynchronizeChecklist.obj
+      forms\RightsExt.obj forms\SelectMask.obj forms\Symlink.obj
+      forms\Synchronize.obj forms\SynchronizeChecklist.obj
       forms\SynchronizeProgress.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
     <RESDEPEN value="$(RESFILES) forms\About.dfm forms\Authenticate.dfm forms\Cleanup.dfm
-      forms\ComboInput.dfm forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm
+      forms\Console.dfm forms\Copy.dfm forms\CopyParams.dfm
       forms\CopyParamCustom.dfm forms\CopyParamPreset.dfm
-      forms\CreateDirectory.dfm forms\CustomCommand.dfm forms\Editor.dfm
-      forms\EditorPreferences.dfm forms\FileSystemInfo.dfm
+      forms\CreateDirectory.dfm forms\CustomCommand.dfm forms\Custom.dfm
+      forms\Editor.dfm forms\EditorPreferences.dfm forms\FileSystemInfo.dfm
       forms\FullSynchronize.dfm forms\GeneralSettings.dfm forms\Glyphs.dfm
       forms\ImportSessions.dfm forms\License.dfm forms\LocationProfiles.dfm
       forms\Log.dfm forms\Login.dfm forms\LogSettings.dfm
       forms\OpenDirectory.dfm forms\Preferences.dfm forms\Progress.dfm
       forms\Properties.dfm forms\RemoteTransfer.dfm forms\Rights.dfm
-      forms\RightsExt.dfm forms\SaveSession.dfm forms\SelectMask.dfm
-      forms\Symlink.dfm forms\Synchronize.dfm forms\SynchronizeChecklist.dfm
+      forms\RightsExt.dfm forms\SelectMask.dfm forms\Symlink.dfm
+      forms\Synchronize.dfm forms\SynchronizeChecklist.dfm
       forms\SynchronizeProgress.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
@@ -73,7 +73,6 @@
       <FILE FILENAME="forms\About.cpp" FORMNAME="AboutDialog" UNITNAME="About" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Authenticate.cpp" FORMNAME="AuthenticateForm" UNITNAME="Authenticate" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Cleanup.cpp" FORMNAME="CleanupDialog" UNITNAME="Cleanup" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="forms\ComboInput.cpp" FORMNAME="ComboInputDialog" UNITNAME="ComboInput" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Console.cpp" FORMNAME="ConsoleDialog" UNITNAME="Console" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Copy.cpp" FORMNAME="CopyDialog" UNITNAME="Copy" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CopyParams.cpp" FORMNAME="CopyParamsFrame" UNITNAME="CopyParams" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
@@ -81,6 +80,7 @@
       <FILE FILENAME="forms\CopyParamPreset.cpp" FORMNAME="CopyParamPresetDialog" UNITNAME="CopyParamPreset" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CreateDirectory.cpp" FORMNAME="CreateDirectoryDialog" UNITNAME="CreateDirectory" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\CustomCommand.cpp" FORMNAME="CustomCommandDialog" UNITNAME="CustomCommand" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\Custom.cpp" FORMNAME="CustomDialog" UNITNAME="Custom" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Editor.cpp" FORMNAME="EditorForm" UNITNAME="Editor" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\EditorPreferences.cpp" FORMNAME="EditorPreferencesDialog" UNITNAME="EditorPreferences" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FileSystemInfo.cpp" FORMNAME="FileSystemInfoDialog" UNITNAME="FileSystemInfo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
@@ -100,7 +100,6 @@
       <FILE FILENAME="forms\RemoteTransfer.cpp" FORMNAME="RemoteTransferDialog" UNITNAME="RemoteTransfer" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Rights.cpp" FORMNAME="RightsFrame" UNITNAME="Rights" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\RightsExt.cpp" FORMNAME="RightsExtFrame" UNITNAME="RightsExt" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
-      <FILE FILENAME="forms\SaveSession.cpp" FORMNAME="SaveSessionDialog" UNITNAME="SaveSession" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\SelectMask.cpp" FORMNAME="SelectMaskDialog" UNITNAME="SelectMask" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Symlink.cpp" FORMNAME="SymlinkDialog" UNITNAME="Symlink" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Synchronize.cpp" FORMNAME="SynchronizeDialog" UNITNAME="Synchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

@@ -44,6 +44,7 @@ private:
   int FSshVersion;
   bool FOpened;
   int FWaiting;
+  bool FSimple;
 
   unsigned PendLen;
   unsigned PendSize;
@@ -101,7 +102,7 @@ protected:
   void __fastcall inline LogEvent(const AnsiString & Str);
   void __fastcall FatalError(AnsiString Error);
   static void __fastcall ClearConfig(Config * cfg);
-  static void __fastcall StoreToConfig(TSessionData * Data, Config * cfg);
+  static void __fastcall StoreToConfig(TSessionData * Data, Config * cfg, bool Simple);
 
 public:
   __fastcall TSecureShell(TSessionUI * UI, TSessionData * SessionData,
@@ -154,6 +155,7 @@ public:
   __property TDateTime LastDataSent = { read = FLastDataSent };
   __property AnsiString LastTunnelError = { read = FLastTunnelError };
   __property AnsiString UserName = { read = FUserName };
+  __property bool Simple = { read = FSimple, write = FSimple };
 };
 //---------------------------------------------------------------------------
 #endif

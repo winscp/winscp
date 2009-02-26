@@ -69,14 +69,19 @@ __published:
   void __fastcall CopyClick(TObject *Sender);
   void __fastcall ChecksumViewContextPopup(TObject *Sender,
           TPoint &MousePos, bool &Handled);
+  void __fastcall GroupComboBoxExit(TObject *Sender);
+  void __fastcall OwnerComboBoxExit(TObject *Sender);
+  void __fastcall FormShow(TObject *Sender);
 
 private:
   int FAllowedChanges;
+  bool FUserGroupByID;
   TStrings * FFileList;
+  const TRemoteTokenList * FGroupList;
+  const TRemoteTokenList * FUserList;
   TRemoteProperties FOrigProperties;
-  bool FGroupsSet;
-  bool FUsersSet;
   TImageList * FShellImageList;
+  bool FMultiple;
   bool FAllowCalculateStats;
   bool FStatsNotCalculated;
   TCalculateSizeEvent FOnCalculateSize;
@@ -84,45 +89,43 @@ private:
   bool FChecksumLoaded;
   bool FMultipleChecksum;
 
-  void __fastcall SetDirectory(const AnsiString value);
-  AnsiString __fastcall GetDirectory();
-  TRemoteProperties __fastcall GetFileProperties();
-  TStrings * __fastcall GetGroupList();
-  TStrings * __fastcall GetUserList();
-  bool __fastcall GetMultiple();
-  void __fastcall SetAllowedChanges(int value);
-  void __fastcall SetFileList(TStrings * value);
-  void __fastcall SetFileProperties(TRemoteProperties value);
-  void __fastcall SetGroupList(TStrings * value);
-  void __fastcall SetUserList(TStrings * value);
-
   void __fastcall CalculateChecksum();
   void __fastcall NeedChecksum();
   bool __fastcall ChecksumSupported();
   void __fastcall ResetChecksum();
   void __fastcall CalculatedChecksum(
     const AnsiString & FileName, const AnsiString & Alg, const AnsiString & Hash);
+  void __fastcall SetFileProperties(const TRemoteProperties & value);
+  TRemoteProperties __fastcall GetFileProperties();
 
 protected:
   void __fastcall LoadInfo();
+  void __fastcall LoadRemoteTokens(TComboBox * ComboBox, const TRemoteTokenList * List);
+  AnsiString __fastcall LoadRemoteToken(const TRemoteToken & Token);
+  void __fastcall LoadRemoteToken(TComboBox * ComboBox, bool Valid, const TRemoteToken & Token);
+  TRemoteToken __fastcall StoreRemoteToken(const TRemoteToken & Orig,
+    AnsiString Text, int Message, const TRemoteTokenList * List);
+  void __fastcall StoreRemoteToken(TComboBox * ComboBox,
+    int ChangeFlag, TValidProperty PropertyFlag, const TRemoteToken & Orig,
+    TRemoteToken & Token, int Message, const TRemoteTokenList * List,
+    TRemoteProperties & Properties);
+  void __fastcall StoreRemoteToken(unsigned int ID, const AnsiString & Text,
+    const TRemoteTokenList * List, TRemoteToken & Result);
+  void __fastcall ResolveRemoteToken(
+    const TRemoteToken & Orig, int Message, TComboBox * ComboBox,
+    const TRemoteTokenList * List);
   void __fastcall UpdateControls();
   void __fastcall LoadStats(__int64 FilesSize, const TCalculateSizeStats & Stats);
 
-  __property bool Multiple = { read = GetMultiple };
-
 public:
-  virtual __fastcall ~TPropertiesDialog();
-  bool __fastcall Execute();
   virtual __fastcall TPropertiesDialog(TComponent * AOwner,
-    TCalculateSizeEvent OnCalculateSize,
+    TStrings * FileList, const AnsiString Directory,
+    const TRemoteTokenList * GroupList, const TRemoteTokenList * UserList,
+    int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
     TCalculateChecksumEvent OnCalculateChecksum);
 
-  __property int AllowedChanges = { read = FAllowedChanges, write = SetAllowedChanges };
-  __property AnsiString Directory = { read = GetDirectory, write = SetDirectory };
-  __property TStrings * FileList = { read = FFileList, write = SetFileList };
-  __property TRemoteProperties FileProperties = { read = GetFileProperties, write = SetFileProperties };
-  __property TStrings * GroupList = { read = GetGroupList, write = SetGroupList };
-  __property TStrings * UserList = { read = GetUserList, write = SetUserList };
+  virtual __fastcall ~TPropertiesDialog();
+  bool __fastcall Execute(TRemoteProperties & Properties);
 };
 //----------------------------------------------------------------------------
 #endif

@@ -280,6 +280,7 @@ __published:
   TTBXItem *TBXItem137;
   TTBXComboBoxItem *UnixPathComboBox;
   TTBXComboBoxItem *QueueSpeedComboBoxItem;
+  TTBXItem *TBXItem138;
   void __fastcall RemoteDirViewUpdateStatusBar(TObject *Sender,
           const TStatusFileInfo &FileInfo);
   void __fastcall UnixPathComboBoxBeginEdit(TTBEditItem *Sender,
@@ -317,6 +318,7 @@ public:
   virtual void __fastcall StoreParams();
   virtual void __fastcall FullSynchronizeDirectories();
   virtual void __fastcall SynchronizeDirectories();
+  virtual void __fastcall ChangePath(TOperationSide Side);
 };
 //---------------------------------------------------------------------------
 #endif

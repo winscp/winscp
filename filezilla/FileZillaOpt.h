@@ -159,5 +159,6 @@
 #endif
 // MPEXT
 #define OPTION_MPEXT_SHOWHIDDEN 1000
+#define OPTION_MPEXT_PRESERVEUPLOADFILETIME 1001
 //---------------------------------------------------------------------------
 #endif // FileZillaOptH

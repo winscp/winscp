@@ -485,6 +485,11 @@ __published:    // IDE-managed Components
   TTBEditAction *QueueItemSpeedAction;
   TTBXComboBoxItem *QueuePopupSpeedComboBoxItem;
   TAction *CurrentDeleteAlternativeAction;
+  TAction *CurrentEditWithAction;
+  TAction *LocalFilterAction;
+  TAction *RemoteFilterAction;
+  TTBXItem *TBXItem26;
+  TTBXItem *TBXItem27;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

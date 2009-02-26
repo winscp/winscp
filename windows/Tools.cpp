@@ -270,34 +270,33 @@ void __fastcall CreateDesktopShortCut(const AnsiString &Name,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall ValidateMaskEdit(TComboBox * Edit)
+template<class TEditControl>
+void __fastcall ValidateMaskEditT(TEditControl * Edit)
 {
   assert(Edit != NULL);
-  TFileMasks Masks = Edit->Text;
-  int Start, Length;
-  if (!Masks.IsValid(Start, Length))
+  TFileMasks Masks;
+  try
   {
-    SimpleErrorDialog(FMTLOAD(MASK_ERROR, (Masks.Masks.SubString(Start + 1, Length))));
+    Masks = Edit->Text;
+  }
+  catch(EFileMasksException & E)
+  {
+    ShowExtendedException(&E);
     Edit->SetFocus();
-    Edit->SelStart = Start;
-    Edit->SelLength = Length;
+    Edit->SelStart = E.ErrorStart - 1;
+    Edit->SelLength = E.ErrorLen;
     Abort();
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall ValidateMaskEdit(TComboBox * Edit)
+{
+  ValidateMaskEditT(Edit);
+}
+//---------------------------------------------------------------------------
 void __fastcall ValidateMaskEdit(TEdit * Edit)
 {
-  assert(Edit != NULL);
-  TFileMasks Masks = Edit->Text;
-  int Start, Length;
-  if (!Masks.IsValid(Start, Length))
-  {
-    SimpleErrorDialog(FMTLOAD(MASK_ERROR, (Masks.Masks.SubString(Start + 1, Length))));
-    Edit->SetFocus();
-    Edit->SelStart = Start;
-    Edit->SelLength = Length;
-    Abort();
-  }
+  ValidateMaskEditT(Edit);
 }
 //---------------------------------------------------------------------------
 void __fastcall ExitActiveControl(TForm * Form)
@@ -892,7 +891,7 @@ void __fastcall InitializeCustomHelp(ICustomHelpViewer * HelpViewer)
   // Due to major bugs in VCL help system, unregister winhelp at all.
   // To do this we must call RegisterViewer first to get HelpManager.
   // Due to another bug, viewers must be unregistred in order reversed to
-  // registration order, so we must unregister out help viewer first
+  // registration order, so we must unregister our help viewer first
   // and register it again at the end
   InternalShutdown(1);
   assert(ViewerList->Count == 1);

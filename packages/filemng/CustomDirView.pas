@@ -62,6 +62,8 @@ type
     SelectedCount: Integer;
     FilesSize: Int64;
     SelectedSize: Int64;
+    HiddenCount: Integer;
+    FilteredCount: Integer;
   end;
 
 type
@@ -201,6 +203,7 @@ type
     FOnGetOverlay: TDirViewGetOverlayEvent;
     FMask: string;
     FScrollOnDragOver: TListViewScrollOnDragOver;
+    FStatusFileInfo: TStatusFileInfo;
 
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure WMLButtonDblClk(var Message: TWMLButtonDblClk); message WM_LBUTTONDBLCLK;
@@ -338,9 +341,10 @@ type
     function FileNameMatchesMasks(FileName: string; Directory: Boolean; Size: Int64; Masks: string): Boolean;
     function EnableDragOnClick: Boolean; override;
     procedure SetMask(Value: string); virtual;
-    function NormalizeMask(Mask: string): string; dynamic;
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
+    function HiddenCount: Integer; virtual; abstract;
+    function FilteredCount: Integer; virtual; abstract;
     property ImageList16: TImageList read FImageList16;
     property ImageList32: TImageList read FImageList32;
   public
@@ -567,6 +571,7 @@ type
     HistoryPaths: TStrings;
     BackCount: Integer;
     SortStr: string;
+    Mask: string;
     FocusedItem: string;
   end;
 
@@ -897,7 +902,7 @@ begin
   FDDLinkOnExeDrag := False;
   FDragDrive := #0;
   FExeDrag := False;
-  FMask := '*.*';
+  FMask := '';
 
   FOnHistoryChange := nil;
   FOnPathChange := nil;
@@ -905,6 +910,7 @@ begin
   FBackCount := 0;
   FDontRecordPath := False;
   FMaxHistoryCount := DefaultHistoryCount;
+  FStatusFileInfo.FilesCount := -1;
 
   OnCustomDrawItem := DumbCustomDrawItem;
   OnCustomDrawSubItem := DumbCustomDrawSubItem;
@@ -1088,7 +1094,6 @@ end;
 function TCustomDirView.FileNameMatchesMasks(FileName: string;
   Directory: Boolean; Size: Int64; Masks: string): Boolean;
 begin
-  Result := False;
   Result := False;
   if Assigned(OnMatchMask) then
     OnMatchMask(Self, FileName, Directory, Size, Masks, Result)
@@ -1513,6 +1518,7 @@ begin
       PathLabel.Caption := PathLabel.Name
     else
       PathLabel.Caption := PathName;
+    PathLabel.Mask := Mask;
     PathLabel.UpdateStatus;
   end;
 end; { UpdatePathLabel }
@@ -1529,8 +1535,15 @@ begin
       FilesSize := Self.FilesSize;
       SelectedCount := SelCount;
       FilesCount := Self.FilesCount;
+      HiddenCount := Self.HiddenCount;
+      FilteredCount := Self.FilteredCount;
     end;
-    OnUpdateStatusBar(Self, StatusFileInfo);
+
+    if not CompareMem(@StatusFileInfo, @FStatusFileInfo, SizeOf(StatusFileInfo)) then
+    begin
+      FStatusFileInfo := StatusFileInfo;
+      OnUpdateStatusBar(Self, FStatusFileInfo);
+    end;
   end;
 end; { UpdateStatusBar }
 
@@ -3035,6 +3048,7 @@ begin
   DirColProperties := ColProperties as TCustomDirViewColProperties;
   Assert(Assigned(DirColProperties));
   State.SortStr := DirColProperties.SortStr;
+  State.Mask := Mask;
   if Assigned(ItemFocused) then State.FocusedItem := ItemFocused.Caption
     else State.FocusedItem := '';
   Result := State;
@@ -3056,6 +3070,7 @@ begin
   DirColProperties := ColProperties as TCustomDirViewColProperties;
   Assert(Assigned(DirColProperties));
   DirColProperties.SortStr := State.SortStr;
+  Mask := State.Mask;
   if State.FocusedItem <> '' then
   begin
     ListItem := FindFileItem(State.FocusedItem);
@@ -3069,22 +3084,13 @@ end;
 
 procedure TCustomDirView.SetMask(Value: string);
 begin
-  Value := NormalizeMask(Value);
-  FMask := Value;
+  if Mask <> Value then
+  begin
+    FMask := Value;
+    UpdatePathLabel;
+    if DirOK then Reload(False);
+  end;
 end;{SetMask}
-
-function TCustomDirView.NormalizeMask(Mask: string): string;
-begin
-  Mask := Trim(Mask);
-  if Length(Mask) = 0 then Mask := '*.*';
-
-  StrTranslate(Mask, ' ;,;');
-
-  while Pos(';;', Mask) <> 0 do
-    System.Delete(Mask, Pos(';;', Mask), 1);
-
-  Result := LowerCase(Mask);
-end; {NormalizeMask}
 
 initialization
   HasExtendedCOMCTL32 := COMCTL32OK;

@@ -5,7 +5,7 @@
 #include "CustomWinConfiguration.h"
 #include "CustomDirView.hpp"
 //---------------------------------------------------------------------------
-enum TEditor { edInternal, edExternal };
+enum TEditor { edInternal, edExternal, edOpen };
 extern const char ShellCommandFileNamePattern[];
 //---------------------------------------------------------------------------
 #define C(Property) (Property != rhc.Property) ||
@@ -85,11 +85,13 @@ struct TEditorConfiguration {
   unsigned int TabSize;
   unsigned int MaxEditors;
   unsigned int EarlyClose;
+  bool SDIShellEditor;
+  AnsiString WindowParams;
   bool __fastcall operator !=(TEditorConfiguration & rhc)
     { return C(FontName) C(FontHeight)
       C(FontCharset) C(FontStyle) C(WordWrap) C(FindText) C(ReplaceText)
       C(FindMatchCase) C(FindWholeWord) C(FindDown) C(TabSize)
-      C(MaxEditors) C(EarlyClose) 0; };
+      C(MaxEditors) C(EarlyClose) C(SDIShellEditor) C(WindowParams) 0; };
 };
 //---------------------------------------------------------------------------
 enum TQueueViewShow { qvShow, qvHideWhenEmpty, qvHide };
@@ -138,22 +140,28 @@ struct TUpdatesConfiguration
   TConnectionType ConnectionType;
   AnsiString ProxyHost;
   int ProxyPort;
+  TAutoSwitch BetaVersions;
   bool HaveResults;
   bool ShownResults;
   TUpdatesData Results;
   bool __fastcall operator !=(TUpdatesConfiguration & rhc)
     { return C(Period) C(LastCheck) C(ConnectionType) C(ProxyHost) C(ProxyPort)
-        C(HaveResults) C(ShownResults) C(Results)  0; };
+        C(BetaVersions) C(HaveResults) C(ShownResults) C(Results)  0; };
 };
 //---------------------------------------------------------------------------
 struct TEditorData
 {
+  __fastcall TEditorData();
+  __fastcall TEditorData(const TEditorData & Source);
+
   TFileMasks FileMask;
   TEditor Editor;
   AnsiString ExternalEditor;
   bool ExternalEditorText;
-  bool MDIExternalEditor;
+  bool SDIExternalEditor;
   bool DetectMDIExternalEditor;
+
+  bool __fastcall operator ==(const TEditorData & rhd) const;
 };
 //---------------------------------------------------------------------------
 #undef C
@@ -162,8 +170,7 @@ class TEditorPreferences
 {
 public:
   __fastcall TEditorPreferences();
-  __fastcall TEditorPreferences(const TEditorPreferences & Source);
-
+  __fastcall TEditorPreferences(const TEditorData & Data);
   bool __fastcall Matches(const AnsiString FileName, bool Local,
     const TFileMasks::TParams & Params) const;
   void __fastcall Load(THierarchicalStorage * Storage, bool Legacy);
@@ -172,14 +179,17 @@ public:
 
   bool __fastcall operator ==(const TEditorPreferences & rhp) const;
 
-  __property TEditorData Data = { read = FData, write = FData };
+  __property const TEditorData * Data = { read = GetConstData };
   __property AnsiString Name = { read = GetName };
+
+  TEditorData * __fastcall GetData();
 
 private:
   TEditorData FData;
   mutable AnsiString FName;
 
   AnsiString __fastcall GetName() const;
+  const TEditorData * __fastcall GetConstData() const { return &FData; };
 };
 //---------------------------------------------------------------------------
 class TEditorList
@@ -250,6 +260,7 @@ private:
   bool FConfirmDeleting;
   bool FConfirmRecycling;
   bool FUseLocationProfiles;
+  bool FUseSharedBookmarks;
   AnsiString FDDTemporaryDirectory;
   bool FDDWarnLackOfTempSpace;
   bool FDDExtEnabled;
@@ -283,6 +294,7 @@ private:
   unsigned int FNotificationsTimeout;
   unsigned int FNotificationsStickTime;
   TUpdatesConfiguration FUpdates;
+  AnsiString FVersionHistory;
   bool FCopyParamAutoSelectNotice;
   bool FSessionToolbarAutoShown;
   bool FLockToolbars;
@@ -311,6 +323,7 @@ private:
   void __fastcall SetConfirmDeleting(bool value);
   void __fastcall SetConfirmRecycling(bool value);
   void __fastcall SetUseLocationProfiles(bool value);
+  void __fastcall SetUseSharedBookmarks(bool value);
   void __fastcall SetDDTemporaryDirectory(AnsiString value);
   void __fastcall SetDDWarnLackOfTempSpace(bool value);
   void __fastcall SetDDExtEnabled(bool value);
@@ -320,6 +333,8 @@ private:
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
   void __fastcall SetBookmarks(AnsiString Key, TBookmarkList * value);
   TBookmarkList * __fastcall GetBookmarks(AnsiString Key);
+  void __fastcall SetSharedBookmarks(TBookmarkList * value);
+  TBookmarkList * __fastcall GetSharedBookmarks();
   void __fastcall SetAutoStartSession(AnsiString value);
   void __fastcall SetExpertMode(bool value);
   void __fastcall SetDefaultDirIsHome(bool value);
@@ -339,6 +354,7 @@ private:
   void __fastcall SetSessionToolbarAutoShown(bool value);
   TUpdatesConfiguration __fastcall GetUpdates();
   void __fastcall SetUpdates(TUpdatesConfiguration value);
+  void __fastcall SetVersionHistory(AnsiString value);
   void __fastcall SetLockToolbars(bool value);
   const TEditorList * __fastcall GetEditorList();
   void __fastcall SetEditorList(const TEditorList * value);
@@ -348,6 +364,8 @@ private:
   int __fastcall GetLastMonitor();
 
   bool __fastcall GetDDExtInstalled();
+  void __fastcall AddVersionToHistory(AnsiString & VersionHistory);
+  bool __fastcall GetAnyBetaInVersionHistory();
 
 protected:
   virtual TStorage __fastcall GetStorage();
@@ -394,6 +412,8 @@ public:
   __property TEditorConfiguration Editor = { read = FEditor, write = SetEditor };
   __property TQueueViewConfiguration QueueView = { read = FQueueView, write = SetQueueView };
   __property TUpdatesConfiguration Updates = { read = GetUpdates, write = SetUpdates };
+  __property AnsiString VersionHistory = { read = FVersionHistory, write = SetVersionHistory };
+  __property bool AnyBetaInVersionHistory = { read = GetAnyBetaInVersionHistory };
   __property AnsiString AutoStartSession = { read = FAutoStartSession, write = SetAutoStartSession };
   __property TDoubleClickAction DoubleClickAction = { read = FDoubleClickAction, write = SetDoubleClickAction };
   __property bool CopyOnDoubleClickConfirmation = { read = FCopyOnDoubleClickConfirmation, write = SetCopyOnDoubleClickConfirmation };
@@ -408,6 +428,7 @@ public:
   __property bool ConfirmDeleting = { read = FConfirmDeleting, write = SetConfirmDeleting};
   __property bool ConfirmRecycling = { read = FConfirmRecycling, write = SetConfirmRecycling};
   __property bool UseLocationProfiles = { read = FUseLocationProfiles, write = SetUseLocationProfiles};
+  __property bool UseSharedBookmarks = { read = FUseSharedBookmarks, write = SetUseSharedBookmarks};
   __property AnsiString DDTemporaryDirectory  = { read=FDDTemporaryDirectory, write=SetDDTemporaryDirectory };
   __property bool DDWarnLackOfTempSpace  = { read=FDDWarnLackOfTempSpace, write=SetDDWarnLackOfTempSpace };
   __property bool DDExtEnabled = { read=FDDExtEnabled, write=SetDDExtEnabled };
@@ -417,6 +438,7 @@ public:
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
   __property double DDWarnLackOfTempSpaceRatio  = { read=FDDWarnLackOfTempSpaceRatio, write=SetDDWarnLackOfTempSpaceRatio };
   __property TBookmarkList * Bookmarks[AnsiString Key] = { read = GetBookmarks, write = SetBookmarks };
+  __property TBookmarkList * SharedBookmarks = { read = GetSharedBookmarks, write = SetSharedBookmarks };
   __property bool EmbeddedSessions = { read = FEmbeddedSessions };
   __property bool ExpertMode = { read = FExpertMode, write = SetExpertMode };
   __property bool DefaultDirIsHome = { read = FDefaultDirIsHome, write = SetDefaultDirIsHome };

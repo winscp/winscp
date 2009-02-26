@@ -172,6 +172,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     !WinConfiguration->DisableOpenEdit)
   UPD(CurrentEditAlternativeAction, EnableSelectedFileOperation &&
     !WinConfiguration->DisableOpenEdit)
+  UPD(CurrentEditWithAction, EnableSelectedFileOperation &&
+    !WinConfiguration->DisableOpenEdit)
   UPD(CurrentOpenAction, EnableFocusedOperation &&
     !WinConfiguration->DisableOpenEdit &&
     !DirView(osCurrent)->ItemIsDirectory(DirView(osCurrent)->ItemFocused))
@@ -240,7 +242,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
     UPD(SIDE ## OpenDirAction, true) \
     UPD(SIDE ## ChangePathAction, true) \
     UPD(SIDE ## AddBookmarkAction, true) \
-    UPD(SIDE ## PathToClipboardAction, true)
+    UPD(SIDE ## PathToClipboardAction, true) \
+    UPDEX1(SIDE ## FilterAction, true, ((TAction *)Action)->Checked = !DirView(os ## SIDE)->Mask.IsEmpty())
   PANEL_ACTIONS(Local)
   PANEL_ACTIONS(Remote)
   #undef PANEL_ACTIONS
@@ -465,6 +468,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     EXE(CurrentMoveAction, ScpExplorer->ExecuteFileOperation(foMove, osCurrent, false))
     EXE(CurrentEditAction, ScpExplorer->ExecuteFile(osCurrent, efDefaultEditor, NULL, true, false))
     EXE(CurrentEditAlternativeAction, CreateEditorListMenu(CurrentEditAlternativeAction))
+    EXE(CurrentEditWithAction, ScpExplorer->ExecuteCurrentFileWith())
     EXE(CurrentOpenAction, ScpExplorer->ExecuteCurrentFile())
     EXE(AddEditLinkAction, ScpExplorer->AddEditLink(false))
     EXE(AddEditLinkContextAction, ScpExplorer->AddEditLink(false))
@@ -516,7 +520,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
       EXE(SIDE ## OpenDirAction, ScpExplorer->OpenDirectory(os ## SIDE)) \
       EXE(SIDE ## ChangePathAction, ScpExplorer->ChangePath(os ## SIDE)) \
       EXE(SIDE ## AddBookmarkAction, ScpExplorer->AddBookmark(os ## SIDE)) \
-      EXE(SIDE ## PathToClipboardAction, ScpExplorer->PanelExport(os ## SIDE, pePath, pedClipboard))
+      EXE(SIDE ## PathToClipboardAction, ScpExplorer->PanelExport(os ## SIDE, pePath, pedClipboard)) \
+      EXE(SIDE ## FilterAction, ScpExplorer->Filter(os ## SIDE))
     PANEL_ACTIONS(Local)
     PANEL_ACTIONS(Remote)
     #undef PANEL_ACTIONS
@@ -1145,16 +1150,15 @@ void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action)
       UsedEditors->CaseSensitive = false;
       UsedEditors->Sorted = true;
 
-      bool AnyExternal = false;
       const TEditorList * EditorList = WinConfiguration->EditorList;
       for (int Index = 0; Index < EditorList->Count; Index++)
       {
         const TEditorPreferences * Editor = EditorList->Editors[Index];
 
-        if ((Editor->Data.Editor == edExternal) &&
-            (UsedEditors->IndexOf(Editor->Data.ExternalEditor) < 0))
+        if ((Editor->Data->Editor == edExternal) &&
+            (UsedEditors->IndexOf(Editor->Data->ExternalEditor) < 0))
         {
-          UsedEditors->Add(Editor->Data.ExternalEditor);
+          UsedEditors->Add(Editor->Data->ExternalEditor);
 
           TTBCustomItem * Item = new TTBXItem(Menu);
           Item->Caption = Editor->Name;
@@ -1162,15 +1166,14 @@ void __fastcall TNonVisualDataModule::CreateEditorListMenu(TAction * Action)
           Item->Hint = FMTLOAD(EXTERNAL_EDITOR_HINT, (Editor->Name));
           Item->OnClick = EditorItemClick;
           Menu->Add(Item);
-
-          AnyExternal = true;
         }
       }
 
-      if (AnyExternal)
-      {
-        AddMenuSeparator(Menu);
-      }
+      Item = new TTBXItem(Menu);
+      Item->Action = CurrentEditWithAction;
+      Menu->Add(Item);
+
+      AddMenuSeparator(Menu);
 
       Item = new TTBXItem(Menu);
       Item->Action = EditorListCustomizeAction;
@@ -1201,7 +1204,7 @@ void __fastcall TNonVisualDataModule::EditorItemClick(TObject * Sender)
     // sanity check
     if (Tag < EditorList->Count)
     {
-      ScpExplorer->ExecuteFile(osCurrent, efExternalEditor, EditorList->Editors[Tag],
+      ScpExplorer->ExecuteFile(osCurrent, efExternalEditor, EditorList->Editors[Tag]->Data,
         true, false);
     }
   }
@@ -1262,7 +1265,7 @@ void __fastcall TNonVisualDataModule::ShowUpdatesUpdate()
   TUpdatesConfiguration Updates = WinConfiguration->Updates;
   unsigned short H, M, S, MS;
   DecodeTime(Now(), H, M, S, MS);
-  int CurrentCompoundVer = CurrentCompoundVersion();
+  int CurrentCompoundVer = Configuration->CompoundVersion;
   ShowUpdatesAction->ImageIndex =
     ((Updates.HaveResults && (Updates.Results.ForVersion == CurrentCompoundVer) &&
       !Updates.Results.Disabled &&

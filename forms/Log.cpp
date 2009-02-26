@@ -68,7 +68,7 @@ void __fastcall FreeLogForm()
 }
 //---------------------------------------------------------------------------
 __fastcall TLogForm::TLogForm(TComponent* Owner)
-        : FFormRestored(False), TForm(Owner)
+        : TForm(Owner)
 {
   FLogMemo = NULL;
   FSessionLog = NULL;
@@ -78,6 +78,8 @@ __fastcall TLogForm::TLogForm(TComponent* Owner)
 //---------------------------------------------------------------------------
 __fastcall TLogForm::~TLogForm()
 {
+  // deassociate us from session log state change handler
+  SessionLog = NULL;
   LogForm = NULL;
   LogMemo = NULL;
 }
@@ -147,9 +149,24 @@ void __fastcall TLogForm::SetSessionLog(TSessionLog * value)
 {
   if (FSessionLog != value)
   {
+    if (SessionLog)
+    {
+      assert(SessionLog->OnStateChange == SessionLogStateChange);
+      SessionLog->OnStateChange = NULL;
+    }
     FSessionLog = value;
+    if (SessionLog)
+    {
+      assert(SessionLog->OnStateChange == NULL);
+      SessionLog->OnStateChange = SessionLogStateChange;
+    }
     UpdateControls();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TLogForm::SessionLogStateChange(TObject * /*Sender*/)
+{
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TLogForm::UpdateControls()

@@ -263,22 +263,22 @@ object GeneralSettingsFrame: TGeneralSettingsFrame
       Transparent = True
       OnClick = ExplorerClick
     end
-    object CommanderInterfaceButton: TRadioButton
+    object CommanderInterfaceButton2: TRadioButton
       Left = 16
       Top = 19
       Width = 117
       Height = 17
-      Caption = '&Norton Commander'
+      Caption = '&Commander'
       Checked = True
       TabOrder = 0
       TabStop = True
     end
-    object ExplorerInterfaceButton: TRadioButton
+    object ExplorerInterfaceButton2: TRadioButton
       Left = 16
       Top = 133
       Width = 111
       Height = 17
-      Caption = '&Explorer-like'
+      Caption = '&Explorer'
       TabOrder = 1
     end
   end

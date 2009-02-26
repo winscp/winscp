@@ -28,4 +28,7 @@ AnsiString __fastcall GetLanguage(Word Language);
 AnsiString __fastcall GetFileInfoString(void * FileInfo,
   TTranslation Translation, AnsiString StringName);
 
+int __fastcall CalculateCompoundVersion(int MajorVer,
+  int MinorVer, int Release, int Build);
+
 #endif // FileInfoH

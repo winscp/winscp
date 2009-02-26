@@ -359,8 +359,8 @@ bool __fastcall TRegistryStorage::OpenSubKey(const AnsiString SubKey, bool CanCr
 {
   bool Result;
   if (FKeyHistory->Count > 0) FRegistry->CloseKey();
-  Result = FRegistry->OpenKey(
-    ExcludeTrailingBackslash(Storage + CurrentSubKey + MungeSubKey(SubKey, Path)), CanCreate);
+  AnsiString K = ExcludeTrailingBackslash(Storage + CurrentSubKey + MungeSubKey(SubKey, Path));
+  Result = FRegistry->OpenKey(K, CanCreate);
   if (Result) Result = THierarchicalStorage::OpenSubKey(SubKey, CanCreate, Path);
   return Result;
 }
@@ -404,17 +404,21 @@ bool __fastcall TRegistryStorage::DeleteValue(const AnsiString Name)
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::KeyExists(const AnsiString SubKey)
 {
-  return FRegistry->KeyExists(MungeStr(SubKey));
+  AnsiString K = MungeStr(SubKey);
+  bool Result = FRegistry->KeyExists(K);
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::ValueExists(const AnsiString Value)
 {
-  return FRegistry->ValueExists(Value);
+  bool Result = FRegistry->ValueExists(Value);
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall TRegistryStorage::BinaryDataSize(const AnsiString Name)
 {
-  return FRegistry->GetDataSize(Name);
+  int Result = FRegistry->GetDataSize(Name);
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TRegistryStorage::ReadBool(const AnsiString Name, bool Default)

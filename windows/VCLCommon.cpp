@@ -161,14 +161,6 @@ static void __fastcall ThemeManagerAllowSubclassing(void * /*Data*/,
   {
     Allow = false;
   }
-  // tree view on location profiles dialog occasionally does not show,
-  // it is unique in that is is placed on group box (however I'm not sure if
-  // it is the property that makes it not work)
-  if ((dynamic_cast<TTreeView *>(Control) != NULL) &&
-      (dynamic_cast<TCustomGroupBox *>(Control->Parent) != NULL))
-  {
-    Allow = false;
-  }
 }
 //---------------------------------------------------------------------------
 class TPublicControl : public TWinControl
@@ -543,6 +535,39 @@ void __fastcall ListViewCheckAll(TListView * ListView,
   {
     ListView->Items->Item[Index]->Checked = Check;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall ComboAutoSwitchInitialize(TComboBox * ComboBox)
+{
+  int PrevIndex = ComboBox->ItemIndex;
+  ComboBox->Items->BeginUpdate();
+  try
+  {
+    ComboBox->Clear();
+    ComboBox->Items->Add(LoadStr(AUTO_SWITCH_AUTO));
+    ComboBox->Items->Add(LoadStr(AUTO_SWITCH_OFF));
+    ComboBox->Items->Add(LoadStr(AUTO_SWITCH_ON));
+  }
+  __finally
+  {
+    ComboBox->Items->EndUpdate();
+  }
+  assert(PrevIndex < ComboBox->Items->Count);
+  ComboBox->ItemIndex = PrevIndex;
+}
+//---------------------------------------------------------------------------
+void __fastcall ComboAutoSwitchLoad(TComboBox * ComboBox, TAutoSwitch Value)
+{
+  ComboBox->ItemIndex = 2 - Value;
+  if (ComboBox->ItemIndex < 0)
+  {
+    ComboBox->ItemIndex = 0;
+  }
+}
+//---------------------------------------------------------------------------
+TAutoSwitch __fastcall ComboAutoSwitchSave(TComboBox * ComboBox)
+{
+  return (TAutoSwitch)(2 - ComboBox->ItemIndex);
 }
 //---------------------------------------------------------------------------
 // Windows algorithm is as follows (tested on W2k):
@@ -1378,61 +1403,6 @@ void __fastcall SetLastMonitor(int MonitorNum)
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall SafeShowModal(TForm * Form)
-{
-  // FIX: Due to some bug in Theme Manager, certain forms randomly
-  // fails in call to ShowModal(), hence repeat the call until it succeeds.
-
-  int Result = -1;
-  int Retry = 0;
-
-  do
-  {
-    try
-    {
-      Result = Form->ShowModal();
-    }
-    catch (EOSError & E)
-    {
-      if (E.Message == Sysconst_SUnkOSError)
-      {
-        ++Retry;
-        if (Retry >= 10)
-        {
-          throw;
-        }
-        else
-        {
-          Form->Visible = false;
-        }
-      }
-      else
-      {
-        throw;
-      }
-    }
-  }
-  while (Result < 0);
-
-  return Result;
-}
-//---------------------------------------------------------------------------
-static void __fastcall CreateHandles(TWinControl * Control)
-{
-  Control->HandleNeeded();
-
-  for (int Index = 0; Index < Control->ControlCount; Index++)
-  {
-    TWinControl * ChildControl = dynamic_cast<TWinControl *>(Control->Controls[Index]);
-    if (ChildControl != NULL)
-    {
-      CreateHandles(ChildControl);
-    }
-  }
-}
-//---------------------------------------------------------------------------
-// FIX: Due to some bug in Theme Manager, certain forms randomly
-// fails in call to ShowModal(), hence repeat the call until it succeeds.
 TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
 {
   // we do ignore owner atm, as we do not know how to set it,
@@ -1441,47 +1411,22 @@ TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
   assert(Owner == Application);
   USEDPARAM(Owner);
 
-  int Retry = 0;
   TForm * Form;
-  do
+
+  // if there is no main form yet, make this one main.
+  // this, among other, makes other forms (dialogs invoked from this one),
+  // be placed on the same monitor (otherwise all new forms get placed
+  // on primary monitor)
+  if (Application->MainForm == NULL)
   {
-    // if there is no main form yet, make this one main.
-    // this, among other, makes other forms (dialogs invoked from this one),
-    // be placed on the same monitor (otherwise all new forms get placed
-    // on primary monitor)
-    if (Application->MainForm == NULL)
-    {
-      Application->CreateForm(FormClass, &Form);
-      assert(Application->MainForm == Form);
-    }
-    else
-    {
-      Form = dynamic_cast<TForm *>(Construct(FormClass, Application));
-      assert(Form != NULL);
-    }
-
-    try
-    {
-      CreateHandles(Form);
-    }
-    catch (EOSError & E)
-    {
-      delete Form;
-      Form = NULL;
-
-      ++Retry;
-      if ((E.Message != Sysconst_SUnkOSError) ||
-          (Retry >= 10))
-      {
-        throw;
-      }
-    }
-    catch(...)
-    {
-      delete Form;
-    }
+    Application->CreateForm(FormClass, &Form);
+    assert(Application->MainForm == Form);
   }
-  while (Form == NULL);
+  else
+  {
+    Form = dynamic_cast<TForm *>(Construct(FormClass, Application));
+    assert(Form != NULL);
+  }
 
   return Form;
 }

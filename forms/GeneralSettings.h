@@ -17,8 +17,8 @@ __published:
   TLabel *ExplorerDescriptionLabel;
   TImage *CommanderInterfacePicture;
   TImage *ExplorerInterfacePicture;
-  TRadioButton *CommanderInterfaceButton;
-  TRadioButton *ExplorerInterfaceButton;
+  TRadioButton *CommanderInterfaceButton2;
+  TRadioButton *ExplorerInterfaceButton2;
   void __fastcall CommanderClick(TObject *Sender);
   void __fastcall ExplorerClick(TObject *Sender);
 public:

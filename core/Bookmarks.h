@@ -17,13 +17,17 @@ public:
   void __fastcall Clear();
 
   __property TBookmarkList * Bookmarks[AnsiString Index] = { read = GetBookmarks, write = SetBookmarks };
+  __property TBookmarkList * SharedBookmarks = { read = GetSharedBookmarks, write = SetSharedBookmarks };
 
 private:
   TStringList * FBookmarkLists;
+  AnsiString FSharedKey;
   static AnsiString Keys[];
 
   TBookmarkList * __fastcall GetBookmarks(AnsiString Index);
   void __fastcall SetBookmarks(AnsiString Index, TBookmarkList * value);
+  TBookmarkList * __fastcall GetSharedBookmarks();
+  void __fastcall SetSharedBookmarks(TBookmarkList * value);
   void __fastcall LoadLevel(THierarchicalStorage * Storage, const AnsiString Key,
     bool Local, TBookmarkList * BookmarkList);
 };

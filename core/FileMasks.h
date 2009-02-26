@@ -2,6 +2,17 @@
 #ifndef FileMasksH
 #define FileMasksH
 //---------------------------------------------------------------------------
+#include <vector>
+#include <Masks.hpp>
+//---------------------------------------------------------------------------
+class EFileMasksException : public Exception
+{
+public:
+  __fastcall EFileMasksException(AnsiString Message, int ErrorStart, int ErrorLen);
+  int ErrorStart;
+  int ErrorLen;
+};
+//---------------------------------------------------------------------------
 class TFileMasks
 {
 public:
@@ -9,34 +20,71 @@ public:
   {
     TParams();
     __int64 Size;
+
+    AnsiString ToString() const;
   };
 
   static bool __fastcall IsMask(const AnsiString Mask);
-  static bool __fastcall SingleMaskMatch(const AnsiString Mask, const AnsiString FileName);
+  static AnsiString __fastcall NormalizeMask(const AnsiString & Mask, const AnsiString & AnyMask = "");
 
   __fastcall TFileMasks();
   __fastcall TFileMasks(const TFileMasks & Source);
-  __fastcall TFileMasks(const AnsiString AMasks);
+  __fastcall TFileMasks(const AnsiString & AMasks);
+  __fastcall ~TFileMasks();
   TFileMasks & __fastcall operator =(const TFileMasks & rhm);
-  TFileMasks & __fastcall operator =(const char * rhs);
-  TFileMasks & __fastcall operator =(const AnsiString rhs);
+  TFileMasks & __fastcall operator =(const AnsiString & rhs);
   bool __fastcall operator ==(const TFileMasks & rhm) const;
-  bool __fastcall operator ==(const AnsiString rhs) const;
-  bool __fastcall Matches(AnsiString FileName, bool Directory,
-    AnsiString Path = "", const TParams * Params = NULL) const;
-  bool __fastcall Matches(AnsiString FileName, bool Local, bool Directory,
-    const TParams * Params = NULL) const;
-  bool __fastcall IsValid();
-  bool __fastcall IsValid(int & Start, int & Length);
+  bool __fastcall operator ==(const AnsiString & rhs) const;
 
-  __property AnsiString Masks = { read = FMasks, write = FMasks };
+  void __fastcall SetMask(const AnsiString & Mask);
+  void __fastcall Negate();
+
+  bool __fastcall Matches(const AnsiString FileName, bool Directory = false,
+    const AnsiString Path = "", const TParams * Params = NULL) const;
+  bool __fastcall Matches(const AnsiString FileName, bool Local, bool Directory,
+    const TParams * Params = NULL) const;
+
+  __property AnsiString Masks = { read = FStr, write = SetMasks };
 
 private:
-  AnsiString FMasks;
+  AnsiString FStr;
 
-  static bool __fastcall MatchesMask(AnsiString FileName, bool Directory,
-    AnsiString Path, const TParams * Params, AnsiString M);
-  static inline bool __fastcall MatchesFileMask(const AnsiString & Filename, const AnsiString & Mask);
+  struct TMaskMask
+  {
+    enum { Any, NoExt, Regular } Kind;
+    TMask * Mask;
+  };
+
+  struct TMask
+  {
+    bool DirectoryOnly;
+    TMaskMask FileNameMask;
+    TMaskMask DirectoryMask;
+    enum TSizeMask { None, Open, Close };
+    TSizeMask HighSizeMask;
+    __int64 HighSize;
+    TSizeMask LowSizeMask;
+    __int64 LowSize;
+    AnsiString Str;
+  };
+
+  typedef std::vector<TMask> TMasks;
+  TMasks FIncludeMasks;
+  TMasks FExcludeMasks;
+
+  void __fastcall SetStr(const AnsiString value, bool SingleMask);
+  void __fastcall SetMasks(const AnsiString value);
+  void __fastcall CreateMaskMask(const AnsiString & Mask, int Start, int End, bool Ex,
+    TMaskMask & MaskMask);
+  static inline void __fastcall ReleaseMaskMask(TMaskMask & MaskMask);
+  inline void __fastcall Clear();
+  static void __fastcall Clear(TMasks & Masks);
+  static void __fastcall TrimEx(AnsiString & Str, int & Start, int & End);
+  static bool __fastcall MatchesMasks(const AnsiString FileName, bool Directory,
+    const AnsiString Path, const TParams * Params, const TMasks & Masks);
+  static inline bool __fastcall MatchesMaskMask(const TMaskMask & MaskMask, const AnsiString & Str);
+  static inline bool __fastcall IsAnyMask(const AnsiString & Mask);
+  void __fastcall ThrowError(int Start, int End);
 };
 //---------------------------------------------------------------------------
 AnsiString __fastcall MaskFileName(AnsiString FileName, const AnsiString Mask);

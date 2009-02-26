@@ -54,7 +54,7 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
   return Result;
 }
 //---------------------------------------------------------------------
-static const TFSProtocol FSOrder[] = { fsSFTPonly, fsSCPonly, fsFTP, fsExternalSSH, fsExternalSFTP };
+static const TFSProtocol FSOrder[] = { fsSFTPonly, fsSCPonly, fsFTP };
 //---------------------------------------------------------------------
 __fastcall TLoginDialog::TLoginDialog(TComponent* AOwner)
         : TForm(AOwner)
@@ -95,19 +95,22 @@ void __fastcall TLoginDialog::InitControls()
 {
   LoggingFrame->Init();
 
-  InitializeBugsCombo(UtfCombo);
+  ComboAutoSwitchInitialize(UtfCombo);
 
-  InitializeBugsCombo(BugIgnore1Combo);
-  InitializeBugsCombo(BugPlainPW1Combo);
-  InitializeBugsCombo(BugRSA1Combo);
-  InitializeBugsCombo(BugHMAC2Combo);
-  InitializeBugsCombo(BugDeriveKey2Combo);
-  InitializeBugsCombo(BugRSAPad2Combo);
-  InitializeBugsCombo(BugRekey2Combo);
-  InitializeBugsCombo(BugPKSessID2Combo);
+  ComboAutoSwitchInitialize(BugIgnore1Combo);
+  ComboAutoSwitchInitialize(BugPlainPW1Combo);
+  ComboAutoSwitchInitialize(BugRSA1Combo);
+  ComboAutoSwitchInitialize(BugHMAC2Combo);
+  ComboAutoSwitchInitialize(BugDeriveKey2Combo);
+  ComboAutoSwitchInitialize(BugRSAPad2Combo);
+  ComboAutoSwitchInitialize(BugRekey2Combo);
+  ComboAutoSwitchInitialize(BugPKSessID2Combo);
+  ComboAutoSwitchInitialize(BugMaxPkt2Combo);
 
-  InitializeBugsCombo(SFTPBugSymlinkCombo);
-  InitializeBugsCombo(SFTPBugSignedTSCombo);
+  ComboAutoSwitchInitialize(SFTPBugSymlinkCombo);
+  ComboAutoSwitchInitialize(SFTPBugSignedTSCombo);
+
+  ComboAutoSwitchInitialize(FtpListAllCombo);
 
   InstallPathWordBreakProc(RemoteDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
@@ -139,6 +142,10 @@ void __fastcall TLoginDialog::InitControls()
     FOldSessionTreeProc = SessionTree->WindowProc;
     SessionTree->WindowProc = SessionTreeProc;
   }
+
+  FtpsCombo->Items->Strings[1] = LoadStr(FTPS_IMPLICIT);
+  FtpsCombo->Items->Strings[2] = LoadStr(FTPS_EXPLICIT_SSL);
+  FtpsCombo->Items->Strings[3] = LoadStr(FTPS_EXPLICIT_TLS);
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::Init()
@@ -178,15 +185,7 @@ void __fastcall TLoginDialog::Init()
     DirectoryOptionsGroup->Top = DirectoriesGroup->Top + DirectoriesGroup->Height + 8;
   }
 
-  if (FLAGCLEAR(Options, loExternalProtocols))
-  {
-    assert(TransferProtocolCombo->Items->Count == FSPROTOCOL_COUNT - 1);
-    TransferProtocolCombo->Items->Delete(TransferProtocolCombo->Items->Count - 2);
-    TransferProtocolCombo->Items->Delete(TransferProtocolCombo->Items->Count - 1);
-  }
-
   #ifdef NO_FILEZILLA
-  assert(FLAGCLEAR(Options, loExternalProtocols));
   assert(TransferProtocolCombo->Items->Count == FSPROTOCOL_COUNT - 2 - 1);
   TransferProtocolCombo->Items->Delete(TransferProtocolCombo->Items->Count - 1);
   #endif
@@ -208,25 +207,6 @@ void __fastcall TLoginDialog::Init()
   }
 
   UpdateControls();
-}
-//---------------------------------------------------------------------
-void __fastcall TLoginDialog::InitializeBugsCombo(TComboBox * BugsCombo)
-{
-  int PrevIndex = BugsCombo->ItemIndex;
-  BugsCombo->Items->BeginUpdate();
-  try
-  {
-    BugsCombo->Clear();
-    BugsCombo->Items->Add(LoadStr(LOGIN_BUG_AUTO));
-    BugsCombo->Items->Add(LoadStr(LOGIN_BUG_OFF));
-    BugsCombo->Items->Add(LoadStr(LOGIN_BUG_ON));
-  }
-  __finally
-  {
-    BugsCombo->Items->EndUpdate();
-  }
-  assert(PrevIndex < BugsCombo->Items->Count);
-  BugsCombo->ItemIndex = PrevIndex;
 }
 //---------------------------------------------------------------------
 TTreeNode * __fastcall TLoginDialog::AddSessionPath(AnsiString Path)
@@ -335,20 +315,21 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
   NoUpdate++;
   try
   {
-    FFSProtocol = aSessionData->FSProtocol;
-
     // Basic tab
     UserNameEdit->Text = aSessionData->UserName;
     PortNumberEdit->AsInteger = aSessionData->PortNumber;
     HostNameEdit->Text = aSessionData->HostName;
     PasswordEdit->Text = aSessionData->Password;
     PrivateKeyEdit->Text = aSessionData->PublicKeyFile;
+    FtpsCombo->ItemIndex = aSessionData->Ftps;
     FColor = (TColor)aSessionData->Color;
 
     bool AllowScpFallback;
     TransferProtocolCombo->ItemIndex =
       FSProtocolToIndex(aSessionData->FSProtocol, AllowScpFallback);
     AllowScpFallbackCheck->Checked = AllowScpFallback;
+
+    FDefaultPort = DefaultPort();
 
     // Directories tab
     LocalDirectoryEdit->Text = aSessionData->LocalDirectory;
@@ -425,14 +406,14 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     SFTPMaxVersionCombo->ItemIndex = aSessionData->SFTPMaxVersion;
 
     #define LOAD_SFTP_BUG_COMBO(BUG) \
-      SFTPBug ## BUG ## Combo->ItemIndex = 2 - aSessionData->SFTPBug[sb ## BUG]; \
-      if (SFTPBug ## BUG ## Combo->ItemIndex < 0) SFTPBug ## BUG ## Combo->ItemIndex = 0
+      ComboAutoSwitchLoad(SFTPBug ## BUG ## Combo, aSessionData->SFTPBug[sb ## BUG])
     LOAD_SFTP_BUG_COMBO(Symlink);
     LOAD_SFTP_BUG_COMBO(SignedTS);
     #undef LOAD_SFTP_BUG_COMBO
 
     // FTP tab
     PostLoginCommandsMemo->Lines->Text = aSessionData->PostLoginCommands;
+    ComboAutoSwitchLoad(FtpListAllCombo, aSessionData->FtpListAll);
 
     // Authentication tab
     SshNoUserAuthCheck->Checked = aSessionData->SshNoUserAuth;
@@ -442,7 +423,6 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     AuthKIPasswordCheck->Checked = aSessionData->AuthKIPassword;
     AuthGSSAPICheck2->Checked = aSessionData->AuthGSSAPI;
     AgentFwdCheck->Checked = aSessionData->AgentFwd;
-    GSSAPIServerRealmEdit->Text = aSessionData->GSSAPIServerRealm;
 
     // SSH tab
     Ssh2LegacyDESCheck->Checked = aSessionData->Ssh2DES;
@@ -467,7 +447,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     // KEX tab
 
     KexListBox->Items->Clear();
-    assert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_GSSGEX);
+    assert(KEX_NAME_WARN+KEX_COUNT-1 == KEX_NAME_RSA);
     for (int Index = 0; Index < KEX_COUNT; Index++)
     {
       KexListBox->Items->AddObject(
@@ -571,8 +551,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
 
     // Bugs tab
     #define LOAD_BUG_COMBO(BUG) \
-      Bug ## BUG ## Combo->ItemIndex = 2 - aSessionData->Bug[sb ## BUG]; \
-      if (Bug ## BUG ## Combo->ItemIndex < 0) Bug ## BUG ## Combo->ItemIndex = 0
+      ComboAutoSwitchLoad(Bug ## BUG ## Combo, aSessionData->Bug[sb ## BUG])
     LOAD_BUG_COMBO(Ignore1);
     LOAD_BUG_COMBO(PlainPW1);
     LOAD_BUG_COMBO(RSA1);
@@ -581,6 +560,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     LOAD_BUG_COMBO(RSAPad2);
     LOAD_BUG_COMBO(Rekey2);
     LOAD_BUG_COMBO(PKSessID2);
+    LOAD_BUG_COMBO(MaxPkt2);
     #undef LOAD_BUG_COMBO
 
     // Tunnel tab
@@ -623,6 +603,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->HostName = HostNameEdit->Text.Trim();
   aSessionData->Password = PasswordEdit->Text;
   aSessionData->PublicKeyFile = PrivateKeyEdit->Text;
+  aSessionData->Ftps = (TFtps)FtpsCombo->ItemIndex;
   aSessionData->Color = FColor;
 
   aSessionData->FSProtocol = IndexToFSProtocol(
@@ -662,7 +643,6 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->AuthKIPassword = AuthKIPasswordCheck->Checked;
   aSessionData->AuthGSSAPI = AuthGSSAPICheck2->Checked;
   aSessionData->AgentFwd = AgentFwdCheck->Checked;
-  aSessionData->GSSAPIServerRealm = GSSAPIServerRealmEdit->Text;
 
   // Connection tab
   aSessionData->FtpPasvMode = FtpPasvModeCheck->Checked;
@@ -754,13 +734,14 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
       AnsiString() : SftpServerEdit->Text);
   aSessionData->SFTPMaxVersion = SFTPMaxVersionCombo->ItemIndex;
 
-  #define SAVE_SFTP_BUG_COMBO(BUG) aSessionData->SFTPBug[sb ## BUG] = (TAutoSwitch)(2 - SFTPBug ## BUG ## Combo->ItemIndex);
+  #define SAVE_SFTP_BUG_COMBO(BUG) aSessionData->SFTPBug[sb ## BUG] = ComboAutoSwitchSave(SFTPBug ## BUG ## Combo);
   SAVE_SFTP_BUG_COMBO(Symlink);
   SAVE_SFTP_BUG_COMBO(SignedTS);
   #undef SAVE_SFTP_BUG_COMBO
 
   // FTP tab
   aSessionData->PostLoginCommands = PostLoginCommandsMemo->Lines->Text;
+  aSessionData->FtpListAll = ComboAutoSwitchSave(FtpListAllCombo);
 
   // Proxy tab
   aSessionData->ProxyMethod = (TProxyMethod)SshProxyMethodCombo->ItemIndex;
@@ -774,7 +755,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   aSessionData->ProxyDNS = (TAutoSwitch)(2 - ProxyDNSCombo->ItemIndex);
 
   // Bugs tab
-  #define SAVE_BUG_COMBO(BUG) aSessionData->Bug[sb ## BUG] = (TAutoSwitch)(2 - Bug ## BUG ## Combo->ItemIndex);
+  #define SAVE_BUG_COMBO(BUG) aSessionData->Bug[sb ## BUG] = ComboAutoSwitchSave(Bug ## BUG ## Combo)
   SAVE_BUG_COMBO(Ignore1);
   SAVE_BUG_COMBO(PlainPW1);
   SAVE_BUG_COMBO(RSA1);
@@ -783,6 +764,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   SAVE_BUG_COMBO(RSAPad2);
   SAVE_BUG_COMBO(Rekey2);
   SAVE_BUG_COMBO(PKSessID2);
+  SAVE_BUG_COMBO(MaxPkt2);
   #undef SAVE_BUG_COMBO
 
   // Tunnel tab
@@ -919,10 +901,8 @@ void __fastcall TLoginDialog::UpdateControls()
     {
       TFSProtocol FSProtocol = IndexToFSProtocol(
         TransferProtocolCombo->ItemIndex, AllowScpFallbackCheck->Checked);
-      bool ExternalProtocol = (FSProtocol == fsExternalSSH) || (FSProtocol == fsExternalSFTP);
-      bool InternalSshProtocol =
+      bool SshProtocol =
         (FSProtocol == fsSFTPonly) || (FSProtocol == fsSFTP) || (FSProtocol == fsSCPonly);
-      bool SshProtocol = ExternalProtocol || InternalSshProtocol;
       bool FtpProtocol = (FSProtocol == fsFTP);
       assert(SshProtocol != FtpProtocol); // xor, some of the code below rely on this
       bool Advanced = ShowAdvancedLoginOptionsCheck->Checked;
@@ -930,7 +910,7 @@ void __fastcall TLoginDialog::UpdateControls()
       // basic/session sheet
       AllowScpFallbackCheck->Visible =
         (IndexToFSProtocol(TransferProtocolCombo->ItemIndex, false) == fsSFTPonly);
-      InsecureLabel->Visible = !SshProtocol;
+      FtpsCombo->Visible = (FSProtocol == fsFTP);
       EnableControl(PrivateKeyEdit, SshProtocol);
       EnableControl(PrivateKeyLabel, PrivateKeyEdit->Enabled);
 
@@ -969,9 +949,6 @@ void __fastcall TLoginDialog::UpdateControls()
          (AuthKICheck->Enabled && AuthKICheck->Checked)));
       EnableControl(AuthGSSAPICheck2,
         AuthenticationGroup->Enabled && !SshProt1onlyButton->Checked);
-      EnableControl(GSSAPIServerRealmEdit,
-        AuthGSSAPICheck2->Enabled && AuthGSSAPICheck2->Checked);
-      EnableControl(GSSAPIServerRealmLabel2, GSSAPIServerRealmEdit->Enabled);
 
       // ssh sheet
       AdvancedSheet->Enabled = SshProtocol;
@@ -1005,6 +982,8 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(BugPKSessID2Label, BugPKSessID2Combo->Enabled);
       EnableControl(BugRekey2Combo, !SshProt1onlyButton->Checked);
       EnableControl(BugRekey2Label, BugRekey2Combo->Enabled);
+      EnableControl(BugMaxPkt2Combo, !SshProt1onlyButton->Checked);
+      EnableControl(BugMaxPkt2Label, BugMaxPkt2Combo->Enabled);
 
       // connection/proxy sheet
       TComboBox * ProxyMethodCombo = (SshProtocol ? SshProxyMethodCombo : FtpProxyMethodCombo);
@@ -1065,7 +1044,6 @@ void __fastcall TLoginDialog::UpdateControls()
       ProxyTelnetCommandHintText->Visible = ProxyTelnetCommandEdit->Visible;
 
       // environment/directories sheet
-      DirectoriesSheet->Enabled = !ExternalProtocol;
       DirectoryOptionsGroup->Visible = Advanced;
       EnableControl(CacheDirectoryChangesCheck,
         ((FSProtocol != fsSCPonly) || CacheDirectoriesCheck->Checked) && DirectoriesSheet->Enabled);
@@ -1075,7 +1053,6 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(ResolveSymlinksCheck, (FSProtocol != fsFTP) && DirectoriesSheet->Enabled);
 
       // environment sheet
-      EnvironmentSheet->Enabled = !ExternalProtocol;
       EnableControl(EOLTypeCombo, (FSProtocol != fsFTP) && EnvironmentSheet->Enabled);
       EnableControl(EOLTypeLabel, EOLTypeCombo->Enabled);
       EnableControl(DSTModeGroup, (FSProtocol != fsFTP) && EnvironmentSheet->Enabled);
@@ -1091,7 +1068,7 @@ void __fastcall TLoginDialog::UpdateControls()
       EnvironmentOtherLabel->Visible = RecycleBinLinkLabel->Visible;
 
       // environment/recycle bin sheet
-      RecycleBinSheet->Enabled = !ExternalProtocol &&
+      RecycleBinSheet->Enabled =
         ShowAdvancedLoginOptionsCheck->Checked && FRecycleBinSheetVisible;
       EnableControl(OverwrittenToRecycleBinCheck, (FSProtocol != fsSCPonly) &&
         (FSProtocol != fsFTP) && RecycleBinSheet->Enabled);
@@ -1106,7 +1083,7 @@ void __fastcall TLoginDialog::UpdateControls()
       SftpSheet->Enabled = Advanced && ((FSProtocol == fsSFTPonly) || (FSProtocol == fsSFTP));
 
       // environment/scp/shell
-      ScpSheet->Enabled = Advanced && InternalSshProtocol;
+      ScpSheet->Enabled = Advanced && SshProtocol;
       // disable also for SFTP with SCP fallback, as if someone wants to configure
       // these he/she probably intends to use SCP and should explicitly select it.
       // (note that these are not used for secondary shell session)
@@ -1117,7 +1094,7 @@ void __fastcall TLoginDialog::UpdateControls()
       FtpSheet->Enabled = Advanced && FtpProtocol;
 
       // tunnel sheet
-      TunnelSheet->Enabled = Advanced && InternalSshProtocol;
+      TunnelSheet->Enabled = Advanced && SshProtocol;
       // probably needless
       EnableControl(TunnelSessionGroup, TunnelCheck->Enabled && TunnelCheck->Checked);
       EnableControl(TunnelOptionsGroup, TunnelSessionGroup->Enabled);
@@ -2216,28 +2193,50 @@ TFSProtocol __fastcall TLoginDialog::IndexToFSProtocol(int Index, bool AllowScpF
   return Result;
 }
 //---------------------------------------------------------------------------
+int __fastcall TLoginDialog::DefaultPort()
+{
+  TFSProtocol FSProtocol = IndexToFSProtocol(
+    TransferProtocolCombo->ItemIndex, AllowScpFallbackCheck->Checked);
+
+  int Result;
+  switch (FSProtocol)
+  {
+    case fsSCPonly:
+    case fsSFTP:
+    case fsSFTPonly:
+      Result = 22;
+      break;
+
+    case fsFTP:
+      if (FtpsCombo->ItemIndex == ftpsImplicit)
+      {
+        Result = 990;
+      }
+      else
+      {
+        Result = 21;
+      }
+      break;
+
+    default:
+      assert(false);
+      Result = -1;
+      break;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::TransferProtocolComboChange(TObject * Sender)
 {
+  int ADefaultPort = DefaultPort();
   if (!NoUpdate)
   {
-    FFSProtocol = IndexToFSProtocol(
-      TransferProtocolCombo->ItemIndex, AllowScpFallbackCheck->Checked);
-
-    if (FFSProtocol == fsFTP)
+    if (PortNumberEdit->AsInteger == FDefaultPort)
     {
-      if (PortNumberEdit->AsInteger == 22)
-      {
-        PortNumberEdit->AsInteger = 21;
-      }
-    }
-    else
-    {
-      if (PortNumberEdit->AsInteger == 21)
-      {
-        PortNumberEdit->AsInteger = 22;
-      }
+      PortNumberEdit->AsInteger = ADefaultPort;
     }
   }
+  FDefaultPort = ADefaultPort;
   DataChange(Sender);
 }
 //---------------------------------------------------------------------------

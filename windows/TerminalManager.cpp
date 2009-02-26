@@ -1061,23 +1061,11 @@ bool __fastcall TTerminalManager::NewSession()
     Data->Assign(StoredSessions->DefaultSettings);
     if (DoLoginDialog(StoredSessions, Data, loAddSession))
     {
-      if ((Data->FSProtocol == fsExternalSSH) ||
-          (Data->FSProtocol == fsExternalSFTP))
-      {
-        OpenSessionInPutty(
-          ((Data->FSProtocol == fsExternalSSH) ?
-            GUIConfiguration->PuttyPath : GUIConfiguration->PSftpPath),
-          Data, (GUIConfiguration->PuttyPassword ? Data->Password : AnsiString()));
-        Result = false;
-      }
-      else
-      {
-        assert(Data->CanLogin);
-        TTerminalManager * Manager = TTerminalManager::Instance();
-        TTerminal * Terminal = Manager->NewTerminal(Data);
-        Manager->ActiveTerminal = Terminal;
-        Result = Manager->ConnectActiveTerminal();
-      }
+      assert(Data->CanLogin);
+      TTerminalManager * Manager = TTerminalManager::Instance();
+      TTerminal * Terminal = Manager->NewTerminal(Data);
+      Manager->ActiveTerminal = Terminal;
+      Result = Manager->ConnectActiveTerminal();
     }
   }
   __finally

@@ -262,12 +262,15 @@ static DWORD WINAPI handle_output_threadfunc(void *param)
 {
     struct handle_output *ctx = (struct handle_output *) param;
     OVERLAPPED ovl, *povl;
+    HANDLE oev;
     int writeret;
 
-    if (ctx->flags & HANDLE_FLAG_OVERLAPPED)
+    if (ctx->flags & HANDLE_FLAG_OVERLAPPED) {
 	povl = &ovl;
-    else
+	oev = CreateEvent(NULL, TRUE, FALSE, NULL);
+    } else {
 	povl = NULL;
+    }
 
     while (1) {
 	WaitForSingleObject(ctx->ev_from_main, INFINITE);
@@ -275,8 +278,11 @@ static DWORD WINAPI handle_output_threadfunc(void *param)
 	    SetEvent(ctx->ev_to_main);
 	    break;
 	}
-	if (povl)
+	if (povl) {
 	    memset(povl, 0, sizeof(OVERLAPPED));
+	    povl->hEvent = oev;
+	}
+
 	writeret = WriteFile(ctx->h, ctx->buffer, ctx->len,
 			     &ctx->lenwritten, povl);
 	if (!writeret)
@@ -296,6 +302,9 @@ static DWORD WINAPI handle_output_threadfunc(void *param)
 	if (!writeret)
 	    break;
     }
+
+    if (povl)
+	CloseHandle(oev);
 
     return 0;
 }
@@ -407,7 +416,7 @@ struct handle *handle_output_new(HANDLE handle, handle_outputfn_t sentdata,
     add234(handles_by_evtomain, h);
 
     CreateThread(NULL, 0, handle_output_threadfunc,
-		 &h->u.i, 0, &out_threadid);
+		 &h->u.o, 0, &out_threadid);
 
     return h;
 }

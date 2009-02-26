@@ -110,6 +110,19 @@ typedef struct terminal_tag Terminal;
 
 typedef HDC Context;
 
+#ifndef NO_GSSAPI
+/*
+ * GSS-API stuff
+ */
+typedef struct Ssh_gss_buf {
+    int length;
+    char *value;
+} Ssh_gss_buf;
+
+#define SSH_GSS_EMPTY_BUF (Ssh_gss_buf) {0,NULL}
+typedef void *Ssh_gss_name;
+#endif
+
 /*
  * Window handles for the windows that can be running during a
  * PuTTY session.

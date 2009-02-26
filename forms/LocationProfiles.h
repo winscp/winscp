@@ -29,22 +29,31 @@ class TLocationProfilesDialog : public TForm
 __published:
   TButton *OKBtn;
   TButton *CancelBtn;
-  TGroupBox *BookmarksGroup;
-  TTreeView *ProfilesView;
-  TButton *AddBookmarkButton;
-  TButton *RemoveBookmarkButton;
-  TButton *DownBookmarkButton;
-  TButton *UpBookmarkButton;
+  TPageControl *PageControl;
+  TTreeView *SessionProfilesView;
+  TButton *AddSessionBookmarkButton;
+  TButton *RemoveSessionBookmarkButton;
+  TButton *DownSessionBookmarkButton;
+  TButton *UpSessionBookmarkButton;
   TLabel *LocalDirectoryLabel;
   TIEComboBox *RemoteDirectoryEdit;
-  TButton *RenameButton;
+  TButton *RenameSessionBookmarkButton;
   TLabel *RemoteDirectoryLabel;
-  TButton *MoveToButton;
+  TButton *SessionBookmarkMoveToButton;
   TImageList *BookmarkImageList;
   TIEComboBox *LocalDirectoryEdit;
   TButton *LocalDirectoryBrowseButton;
   TButton *SwitchButton;
   TButton *HelpButton;
+  TTabSheet *SessionProfilesSheet;
+  TTabSheet *SharedProfilesSheet;
+  TTreeView *SharedProfilesView;
+  TButton *AddSharedBookmarkButton;
+  TButton *RemoveSharedBookmarkButton;
+  TButton *RenameSharedBookmarkButton;
+  TButton *SharedBookmarkMoveToButton;
+  TButton *UpSharedBookmarkButton;
+  TButton *DownSharedBookmarkButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);
@@ -61,8 +70,8 @@ __published:
           TShiftState Shift);
   void __fastcall DirectoryEditChange(TObject *Sender);
   void __fastcall ProfilesViewChange(TObject *Sender, TTreeNode *Node);
-  void __fastcall MoveToButtonClick(TObject *Sender);
-  void __fastcall RenameButtonClick(TObject *Sender);
+  void __fastcall BookmarkMoveToButtonClick(TObject *Sender);
+  void __fastcall RenameBookmarkButtonClick(TObject *Sender);
   void __fastcall ProfilesViewGetImageIndex(TObject *Sender,
           TTreeNode *Node);
   void __fastcall ProfilesViewGetSelectedIndex(TObject *Sender,
@@ -94,34 +103,57 @@ public:
   __property TOpenDirectoryMode Mode = { read = FMode, write = FMode };
 
 protected:
-  void __fastcall BookmarkMove(TTreeNode * Source, TTreeNode * Dest);
+  void __fastcall BookmarkMove(TObject * Sender, TTreeNode * Source, TTreeNode * Dest);
   void __fastcall UpdateControls();
-  bool __fastcall AddAsBookmark();
+  bool __fastcall AddAsBookmark(TObject * Sender, bool Initial);
   virtual void __fastcall UpdateActions();
 
 private:
   TOpenDirectoryMode FMode;
   TTerminal * FTerminal;
   TOperationSide FOperationSide;
-  TStringList * FFolders;
+  TStringList * FSessionFolders;
+  TStringList * FSharedFolders;
   bool FChanging;
   TTreeNode * FBookmarkDragSource;
-  TBookmarkList * FBookmarkList;
+  TBookmarkList * FSessionBookmarkList;
+  TBookmarkList * FSharedBookmarkList;
   AnsiString FLocalDirectory;
   AnsiString FRemoteDirectory;
-  TTreeViewScrollOnDragOver * FScrollOnDragOver;
+  TTreeViewScrollOnDragOver * FSessionScrollOnDragOver;
+  TTreeViewScrollOnDragOver * FSharedScrollOnDragOver;
 
   void __fastcall SetLocalDirectory(AnsiString value);
   AnsiString __fastcall GetLocalDirectory();
   void __fastcall SetRemoteDirectory(AnsiString value);
   AnsiString __fastcall GetRemoteDirectory();
   void __fastcall SetOperationSide(TOperationSide value);
-  void __fastcall LoadBookmarks();
   void __fastcall FindProfile();
   void __fastcall SetRemoteDirectories(TStrings * value);
   TStrings * __fastcall GetRemoteDirectories();
   void __fastcall SetLocalDirectories(TStrings * value);
   TStrings * __fastcall GetLocalDirectories();
+  void __fastcall FindProfile(TTreeView * ProfilesView);
+  void __fastcall UpdateProfilesControls(
+    TTreeView * ProfilesView,
+    TButton * AddBookmarkButton, TButton * RemoveBookmarkButton,
+    TButton * RenameBookmarkButton,  TButton * BookmarkMoveToButton,
+    TButton * UpBookmarkButton, TButton * DownBookmarkButton);
+  TBookmarkList * GetBookmarkList(TObject * Sender);
+  TStringList * GetFolders(TObject * Sender);
+  TTreeView * GetProfilesView(TObject * Sender);
+  TTreeViewScrollOnDragOver * GetScrollOnDragOver(TObject * Sender);
+  void __fastcall RenameBookmark(TObject * Sender);
+  void __fastcall RemoveBookmark(TObject * Sender);
+  TTabSheet * GetProfilesSheet();
+  void __fastcall LoadBookmarks(
+    TTreeView * ProfilesView, TStringList * Folders, TBookmarkList * BookmarkList,
+    TBookmarkList * Source);
+  void __fastcall BookmarkNameValidate(const TDialogData & Data);
+  void __fastcall BookmarkNameValidateName(const AnsiString Name);
+  void __fastcall BookmarkFolderValidate(const TDialogData & Data);
+  void __fastcall BookmarkFolderValidateName(const AnsiString Name, bool AllowEmpty);
+  bool __fastcall ProfileMatch(TTreeNode * Node);
 };
 //----------------------------------------------------------------------------
 #endif

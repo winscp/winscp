@@ -98,6 +98,13 @@ typedef struct
 #define FZ_MSG_STATUS			6
 #define FZ_MSG_TRANSFERSTATUS	7
 #define FZ_MSG_QUITCOMPLETE		8
+#ifdef MPEXT
+#define FZ_MSG_CAPABILITIES		9
+#endif
+
+#ifdef MPEXT
+#define FZ_CAPABILITIES_MFMT 0x01
+#endif
 
 #define FZ_ASYNCREQUEST_OVERWRITE 1
 #ifndef MPEXT_NO_SSL

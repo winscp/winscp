@@ -320,6 +320,8 @@ private:
 	bool FDrawLinkOverlay;
 	bool SelectNewFiles;
 	bool FSelfDropDuplicates;
+	int FHiddenCount;
+	int FFilteredCount;
 	Customdirview::TSelAttr FSelArchive;
 	Customdirview::TSelAttr FSelHidden;
 	Customdirview::TSelAttr FSelSysFile;
@@ -355,7 +357,6 @@ protected:
 	virtual void __fastcall SetShowSubDirSize(bool Value);
 	virtual void __fastcall Notification(Classes::TComponent* AComponent, Classes::TOperation Operation);
 	DYNAMIC void __fastcall Delete(Comctrls::TListItem* Item);
-	virtual void __fastcall SetMask(AnsiString Value);
 	void __fastcall DDError(Customdirview::TDDError ErrorNo);
 	virtual bool __fastcall GetCanUndoCopyMove(void);
 	_di_IShellFolder __fastcall GetShellFolder(AnsiString Dir);
@@ -407,6 +408,8 @@ protected:
 	virtual void __fastcall SetShowHiddenFiles(bool Value);
 	HIDESBASE MESSAGE void __fastcall WMDestroy(Messages::TWMNoParams &Msg);
 	virtual int __fastcall SecondaryColumnHeader(int Index, bool &AliasOnly);
+	virtual int __fastcall HiddenCount(void);
+	virtual int __fastcall FilteredCount(void);
 	
 public:
 	__property int DriveType = {read=FDriveType, nodefault};

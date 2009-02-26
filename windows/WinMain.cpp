@@ -358,77 +358,66 @@ int __fastcall Execute()
             }
           }
 
-          if ((Data->FSProtocol == fsExternalSSH) ||
-              (Data->FSProtocol == fsExternalSFTP))
+          try
           {
-            OpenSessionInPutty(
-              ((Data->FSProtocol == fsExternalSSH) ?
-                GUIConfiguration->PuttyPath : GUIConfiguration->PSftpPath),
-              Data, (GUIConfiguration->PuttyPassword ? Data->Password : AnsiString()));
+            assert(!TerminalManager->ActiveTerminal);
+            TerminalManager->NewTerminal(Data);
           }
-          else
+          __finally
           {
-            try
-            {
-              assert(!TerminalManager->ActiveTerminal);
-              TerminalManager->NewTerminal(Data);
-            }
-            __finally
-            {
-              delete Data;
-            }
+            delete Data;
+          }
 
-            try
+          try
+          {
+            if (!TerminalManager->ConnectActiveTerminal())
             {
-              if (!TerminalManager->ConnectActiveTerminal())
+              // do not prompt with login dialog, if connection of
+              // auto-start session (typically from command line) failed
+              if (AutoStartSession.IsEmpty())
               {
-                // do not prompt with login dialog, if connection of
-                // auto-start session (typically from command line) failed
-                if (AutoStartSession.IsEmpty())
-                {
-                  Retry = true;
-                }
-              }
-              else
-              {
-                TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
-                try
-                {
-                  // moved inside try .. __finally, because it can fail as well
-                  TerminalManager->ScpExplorer = ScpExplorer;
-                  if (ParamCommand == pcUpload)
-                  {
-                    Upload(TerminalManager->ActiveTerminal, CommandParams, UseDefaults);
-                  }
-                  else if (ParamCommand == pcFullSynchronize)
-                  {
-                    FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
-                      CommandParams, UseDefaults);
-                  }
-                  else if (ParamCommand == pcSynchronize)
-                  {
-                    Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
-                      CommandParams, UseDefaults);
-                  }
-                  else if (!DownloadFile.IsEmpty())
-                  {
-                    Download(TerminalManager->ActiveTerminal, DownloadFile,
-                      UseDefaults);
-                  }
-
-                  Application->Run();
-                }
-                __finally
-                {
-                  TerminalManager->ScpExplorer = NULL;
-                  SAFE_DESTROY(ScpExplorer);
-                }
+                Retry = true;
               }
             }
-            catch (Exception &E)
+            else
             {
-              ShowExtendedException(&E);
+              TCustomScpExplorerForm * ScpExplorer = CreateScpExplorer();
+              try
+              {
+                // moved inside try .. __finally, because it can fail as well
+                TerminalManager->ScpExplorer = ScpExplorer;
+                if (ParamCommand == pcUpload)
+                {
+                  Upload(TerminalManager->ActiveTerminal, CommandParams, UseDefaults);
+                }
+                else if (ParamCommand == pcFullSynchronize)
+                {
+                  FullSynchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                    CommandParams, UseDefaults);
+                }
+                else if (ParamCommand == pcSynchronize)
+                {
+                  Synchronize(TerminalManager->ActiveTerminal, ScpExplorer,
+                    CommandParams, UseDefaults);
+                }
+                else if (!DownloadFile.IsEmpty())
+                {
+                  Download(TerminalManager->ActiveTerminal, DownloadFile,
+                    UseDefaults);
+                }
+
+                Application->Run();
+              }
+              __finally
+              {
+                TerminalManager->ScpExplorer = NULL;
+                SAFE_DESTROY(ScpExplorer);
+              }
             }
+          }
+          catch (Exception &E)
+          {
+            ShowExtendedException(&E);
           }
         }
       }

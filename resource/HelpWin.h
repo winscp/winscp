@@ -2,7 +2,8 @@
 #define HelpWinH
 
 #define HELP_ERROR                   "messages"
-#define HELP_SESSION_SAVE_OVERWRITE  "ui_login_save"
+#define HELP_SESSION_SAVE            "ui_login_save"
+#define HELP_SESSION_SAVE_OVERWRITE  HELP_SESSION_SAVE
 #define HELP_SESSION_SAVE_DEFAULT    "ui_login_stored_sessions#session_management"
 #define HELP_CREATE_SHORTCUT         "integration"
 #define HELP_CREATE_SENDTO           HELP_CREATE_SHORTCUT
@@ -21,7 +22,8 @@
 #define HELP_DND_DOWNLOAD_MOVE_WARNING "ui_pref_dragdrop#temporary_folder_mode"
 #define HELP_DD_WARN_LACK_OF_TEMP_SPACE HELP_DND_DOWNLOAD_MOVE_WARNING
 #define HELP_EDITOR_EARLY_CLOSED     "task_edit#problems_with_some_external_editors"
-#define HELP_APP_EARLY_CLOSED        "task_edit#problems_with_some_external_editors"
+#define HELP_APP_EARLY_CLOSED        HELP_EDITOR_EARLY_CLOSED
+#define HELP_OPEN_FILE_NO_PROCESS    HELP_EDITOR_EARLY_CLOSED
 #define HELP_ADD_BOOKMARK_CONFIRM    "task_navigate#bookmarks"
 #define HELP_PERFORM_ON_COMMAND_SESSION "shell_session"
 #define HELP_COPY_PARAM_AUTOSELECTED "transfer_settings#transfer_settings_presets"

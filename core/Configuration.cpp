@@ -83,6 +83,8 @@ void __fastcall TConfiguration::Default()
   FLogFileAppend = true;
   FLogWindowLines = 100;
   FLogProtocol = 0;
+  FLogActions = false;
+  FPermanentLogActions = false;
 
   Changed();
 }
@@ -131,6 +133,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
     KEY(Bool,    LogFileAppend); \
     KEY(Integer, LogWindowLines); \
     KEY(Integer, LogProtocol); \
+    KEYEX(Bool,  PermanentLogActions, LogActions); \
   );
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SaveData(THierarchicalStorage * Storage, bool /*All*/)
@@ -541,6 +544,14 @@ TVSFixedFileInfo *__fastcall TConfiguration::GetFixedApplicationInfo()
   return GetFixedFileInfo(ApplicationInfo);
 }
 //---------------------------------------------------------------------------
+int __fastcall TConfiguration::GetCompoundVersion()
+{
+  TVSFixedFileInfo * FileInfo = FixedApplicationInfo;
+  return CalculateCompoundVersion(
+    HIWORD(FileInfo->dwFileVersionMS), LOWORD(FileInfo->dwFileVersionMS),
+    HIWORD(FileInfo->dwFileVersionLS), LOWORD(FileInfo->dwFileVersionLS));
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::ModuleFileName()
 {
   return ParamStr(0);
@@ -824,6 +835,7 @@ void __fastcall TConfiguration::TemporaryLogging(const AnsiString ALogFileName)
 {
   FLogging = true;
   FLogFileName = ALogFileName;
+  FLogActions = SameText(ExtractFileExt(FLogFileName), ".xml");
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogging(bool value)
@@ -863,6 +875,16 @@ bool __fastcall TConfiguration::GetLogToFile()
 void __fastcall TConfiguration::SetLogProtocol(int value)
 {
   SET_CONFIG_PROPERTY(LogProtocol);
+}
+//---------------------------------------------------------------------
+void __fastcall TConfiguration::SetLogActions(bool value)
+{
+  if (LogActions != value)
+  {
+    FPermanentLogActions = value;
+    FLogActions = value;
+    Changed();
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogFileAppend(bool value)

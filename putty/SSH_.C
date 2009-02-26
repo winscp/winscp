@@ -1,77 +1,6 @@
-#ifdef SSPI_MECH
-
-#define SECURITY_WIN32
-#include "putty.h"
-#include <security.h>
-
-static SecurityFunctionTable SecurityFunctions;
-static HMODULE SecurityLibrary = NULL;
-
-static SECURITY_STATUS SEC_ENTRY DummyAcquireCredentialsHandleA(
-  SEC_CHAR SEC_FAR * pszPrincipal, SEC_CHAR SEC_FAR * pszPackage,
-  unsigned long fCredentialUse, void SEC_FAR * pvLogonId, void SEC_FAR * pAuthData,
-  SEC_GET_KEY_FN pGetKeyFn, void SEC_FAR * pvGetKeyArgument,
-  PCredHandle phCredential, PTimeStamp ptsExpiry)
-{
-  return ERROR_NOT_SUPPORTED;
-}
-
-#undef AcquireCredentialsHandle
-#define AcquireCredentialsHandle \
-  ((SecurityFunctions.AcquireCredentialsHandleA != NULL) ? \
-    SecurityFunctions.AcquireCredentialsHandleA : \
-    DummyAcquireCredentialsHandleA)
-#undef QueryCredentialsAttributes
-#define QueryCredentialsAttributes SecurityFunctions.QueryCredentialsAttributesA
-#undef FreeCredentialsHandle
-#define FreeCredentialsHandle SecurityFunctions.FreeCredentialsHandle
-#undef QueryContextAttributes
-#define QueryContextAttributes SecurityFunctions.QueryContextAttributesA
-#undef MakeSignature
-#define MakeSignature SecurityFunctions.MakeSignature
-#undef VerifySignature
-#define VerifySignature SecurityFunctions.VerifySignature
-#undef InitializeSecurityContext
-#define InitializeSecurityContext SecurityFunctions.InitializeSecurityContextA
-#undef DeleteSecurityContext
-#define DeleteSecurityContext SecurityFunctions.DeleteSecurityContext
-#undef FreeContextBuffer
-#define FreeContextBuffer SecurityFunctions.FreeContextBuffer
-
-#endif
-
 #include "ssh.c"
 
 #include "puttyexp.h"
-
-void sspi_init()
-{
-  memset(&SecurityFunctions, 0, sizeof(SecurityFunctions));
-  SecurityLibrary = LoadLibrary("secur32.dll");
-  if (SecurityLibrary != NULL)
-  {
-    INIT_SECURITY_INTERFACE_A AInitSecurityInterfaceA =
-      (INIT_SECURITY_INTERFACE_A)GetProcAddress(SecurityLibrary, "InitSecurityInterfaceA");
-    if (AInitSecurityInterfaceA != NULL)
-    {
-      PSecurityFunctionTableA ASecurityFunctions =  AInitSecurityInterfaceA();
-      if (ASecurityFunctions != NULL)
-      {
-        memcpy(&SecurityFunctions, ASecurityFunctions, sizeof(SecurityFunctions));
-      }
-    }
-  }
-}
-
-void sspi_cleanup()
-{
-  if (SecurityLibrary != NULL)
-  {
-    FreeLibrary(SecurityLibrary);
-    SecurityLibrary = NULL;
-    memset(&SecurityFunctions, 0, sizeof(SecurityFunctions));
-  }
-}
 
 void ssh_close(void * handle)
 {
@@ -170,28 +99,3 @@ void md5checksum(const char * buffer, int len, unsigned char output[16])
   MD5Final(output, &md5c);
 }
 
-int has_gssapi_ssh()
-{
-  int Result;
-  if (SecurityFunctions.AcquireCredentialsHandleA == NULL)
-  {
-    Result = FALSE;
-  }
-  else
-  {
-    CredHandle Credentials;
-    TimeStamp Expiry;
-    if (AcquireCredentialsHandle(NULL, "Kerberos",
-          SECPKG_CRED_OUTBOUND, NULL, NULL, NULL, NULL, &Credentials,
-          &Expiry) == SEC_E_OK)
-    {
-      FreeCredentialsHandle(&Credentials);
-      Result = TRUE;
-    }
-    else
-    {
-      Result = FALSE;
-    }
-  }
-  return Result;
-}

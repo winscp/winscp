@@ -18,7 +18,7 @@
     <RESDEPEN value="$(RESFILES) forms\CustomScpExplorer.dfm forms\NonVisual.dfm
       forms\ScpCommander.dfm forms\ScpExplorer.dfm"/>
     <LIBFILES value="lib\FileZilla.lib lib\Putty.lib lib\RScpComp.lib lib\ScpCore.lib
-      lib\ScpForms.lib"/>
+      lib\ScpForms.lib lib\ssleay32.lib lib\libeay32.lib"/>
     <LIBRARIES value="DragDrop_B5.lib DriveDir_B5.lib Moje_B5.lib
       ThemeManagerC6.lib rtl.lib tb2k_cb6.lib tbx_cb6.lib vcl.lib vclx.lib
       ws2_32.lib"/>
@@ -85,6 +85,8 @@
       <FILE FILENAME="lib\ScpCore.lib" FORMNAME="" UNITNAME="ScpCore.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="lib\ScpForms.lib" FORMNAME="" UNITNAME="ScpForms.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="WinSCP.res" FORMNAME="" UNITNAME="WinSCP.res" CONTAINERID="ResTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="lib\ssleay32.lib" FORMNAME="" UNITNAME="ssleay32.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="lib\libeay32.lib" FORMNAME="" UNITNAME="libeay32.lib" CONTAINERID="LibTool" DESIGNCLASS="" LOCALCOMMAND=""/>
   </FILELIST>
   <BUILDTOOLS>
   </BUILDTOOLS>

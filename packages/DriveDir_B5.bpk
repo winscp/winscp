@@ -6,11 +6,11 @@
     <PROJECT value="..\lib\DriveDir_B5.bpl"/>
     <OBJFILES value="DriveDir_B5.obj filemng\DirView.obj
       filemng\DriveView.obj filemng\FileOperator.obj filemng\IEComboBox.obj
-      filemng\BaseUtils.obj filemng\FileChanges.obj filemng\MaskSearch.obj
-      filemng\IEDriveInfo.obj filemng\ShellDialogs.obj
-      filemng\DirViewColProperties.obj filemng\CustomDirView.obj
-      filemng\CustomUnixDirView.obj filemng\UnixDirViewColProperties.obj
-      filemng\ListExt.obj filemng\CustomDriveView.obj"/>
+      filemng\BaseUtils.obj filemng\FileChanges.obj filemng\IEDriveInfo.obj
+      filemng\ShellDialogs.obj filemng\DirViewColProperties.obj
+      filemng\CustomDirView.obj filemng\CustomUnixDirView.obj
+      filemng\UnixDirViewColProperties.obj filemng\ListExt.obj
+      filemng\CustomDriveView.obj"/>
     <RESFILES value="filemng\DirView.dcr filemng\DriveView.dcr
       filemng\FileOperator.dcr filemng\IEComboBox.dcr"/>
     <DEFFILE value=""/>
@@ -61,7 +61,6 @@
       <FILE FILENAME="filemng\IEComboBox.dcr" FORMNAME="" UNITNAME="IEComboBox" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\BaseUtils.pas" FORMNAME="" UNITNAME="BaseUtils" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\FileChanges.pas" FORMNAME="" UNITNAME="FileChanges" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="filemng\MaskSearch.pas" FORMNAME="" UNITNAME="MaskSearch" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\IEDriveInfo.pas" FORMNAME="" UNITNAME="IEDriveInfo" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\ShellDialogs.pas" FORMNAME="" UNITNAME="ShellDialogs" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="filemng\DirViewColProperties.pas" FORMNAME="" UNITNAME="DirViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

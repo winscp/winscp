@@ -26,18 +26,11 @@ struct XDMSeen {
     unsigned char clientid[6];
 };
 
-struct X11Auth {
-    unsigned char fakedata[64], realdata[64];
-    int fakeproto, realproto;
-    int fakelen, reallen;
-    tree234 *xdmseen;
-};
-
 struct X11Private {
     const struct plug_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
     unsigned char firstpkt[12];	       /* first X data packet */
-    struct X11Auth *auth;
+    struct X11Display *disp;
     char *auth_protocol;
     unsigned char *auth_data;
     int data_read, auth_plen, auth_psize, auth_dlen, auth_dsize;
@@ -57,86 +50,199 @@ static int xdmseen_cmp(void *a, void *b)
            memcmp(sa->clientid, sb->clientid, sizeof(sa->clientid));
 }
 
-void *x11_invent_auth(char *proto, int protomaxlen,
-		      char *data, int datamaxlen, int proto_id)
+struct X11Display *x11_setup_display(char *display, int authtype,
+				     const Config *cfg)
 {
-    struct X11Auth *auth = snew(struct X11Auth);
-    char ourdata[64];
+    struct X11Display *disp = snew(struct X11Display);
+    char *localcopy;
     int i;
 
-    if (proto_id == X11_MIT) {
-	auth->fakeproto = X11_MIT;
+    if (!display || !*display) {
+	localcopy = platform_get_x_display();
+	if (!localcopy || !*localcopy) {
+	    sfree(localcopy);
+	    localcopy = dupstr(":0");  /* plausible default for any platform */
+	}
+    } else
+	localcopy = dupstr(display);
+
+    /*
+     * Parse the display name.
+     *
+     * We expect this to have one of the following forms:
+     * 
+     *  - the standard X format which looks like
+     *    [ [ protocol '/' ] host ] ':' displaynumber [ '.' screennumber ]
+     *    (X11 also permits a double colon to indicate DECnet, but
+     *    that's not our problem, thankfully!)
+     *
+     * 	- only seen in the wild on MacOS (so far): a pathname to a
+     * 	  Unix-domain socket, which will typically and confusingly
+     * 	  end in ":0", and which I'm currently distinguishing from
+     * 	  the standard scheme by noting that it starts with '/'.
+     */
+    if (localcopy[0] == '/') {
+	disp->unixsocketpath = localcopy;
+	disp->unixdomain = TRUE;
+	disp->hostname = NULL;
+	disp->displaynum = -1;
+	disp->screennum = 0;
+    } else {
+	char *colon, *dot, *slash;
+	char *protocol, *hostname;
+
+	colon = strrchr(localcopy, ':');
+	if (!colon) {
+	    sfree(disp);
+	    sfree(localcopy);
+	    return NULL;	       /* FIXME: report a specific error? */
+	}
+
+	*colon++ = '\0';
+	dot = strchr(colon, '.');
+	if (dot)
+	    *dot++ = '\0';
+
+	disp->displaynum = atoi(colon);
+	if (dot)
+	    disp->screennum = atoi(dot);
+	else
+	    disp->screennum = 0;
+
+	protocol = NULL;
+	hostname = localcopy;
+	if (colon > localcopy) {
+	    slash = strchr(localcopy, '/');
+	    if (slash) {
+		*slash++ = '\0';
+		protocol = localcopy;
+		hostname = slash;
+	    }
+	}
+
+	disp->hostname = *hostname ? dupstr(hostname) : NULL;
+
+	if (protocol)
+	    disp->unixdomain = (!strcmp(protocol, "local") ||
+				!strcmp(protocol, "unix"));
+	else if (!*hostname || !strcmp(hostname, "unix"))
+	    disp->unixdomain = platform_uses_x11_unix_by_default;
+	else
+	    disp->unixdomain = FALSE;
+
+	if (!disp->hostname && !disp->unixdomain)
+	    disp->hostname = dupstr("localhost");
+
+	disp->unixsocketpath = NULL;
+
+	sfree(localcopy);
+    }
+
+    /*
+     * Look up the display hostname, if we need to.
+     */
+    if (disp->unixdomain) {
+	disp->addr = platform_get_x11_unix_address(disp->unixsocketpath,
+						   disp->displaynum);
+	if (disp->unixsocketpath)
+	    disp->realhost = dupstr(disp->unixsocketpath);
+	else
+	    disp->realhost = dupprintf("unix:%d", disp->displaynum);
+	disp->port = 0;
+    } else {
+	const char *err;
+
+	disp->port = 6000 + disp->displaynum;
+	disp->addr = name_lookup(disp->hostname, disp->port,
+				 &disp->realhost, cfg, ADDRTYPE_UNSPEC);
+    
+	if ((err = sk_addr_error(disp->addr)) != NULL) {
+	    sk_addr_free(disp->addr);
+	    sfree(disp->hostname);
+	    sfree(disp->unixsocketpath);
+	    return NULL;	       /* FIXME: report an error */
+	}
+    }
+
+    /*
+     * Invent the remote authorisation details.
+     */
+    if (authtype == X11_MIT) {
+	disp->remoteauthproto = X11_MIT;
 
 	/* MIT-MAGIC-COOKIE-1. Cookie size is 128 bits (16 bytes). */
-	auth->fakelen = 16;
+	disp->remoteauthdata = snewn(16, unsigned char);
 	for (i = 0; i < 16; i++)
-	    auth->fakedata[i] = random_byte();
-	auth->xdmseen = NULL;
+	    disp->remoteauthdata[i] = random_byte();
+	disp->remoteauthdatalen = 16;
+
+	disp->xdmseen = NULL;
     } else {
-	assert(proto_id == X11_XDM);
-	auth->fakeproto = X11_XDM;
+	assert(authtype == X11_XDM);
+	disp->remoteauthproto = X11_XDM;
 
 	/* XDM-AUTHORIZATION-1. Cookie size is 16 bytes; byte 8 is zero. */
-	auth->fakelen = 16;
+	disp->remoteauthdata = snewn(16, unsigned char);
 	for (i = 0; i < 16; i++)
-	    auth->fakedata[i] = (i == 8 ? 0 : random_byte());
-	auth->xdmseen = newtree234(xdmseen_cmp);
+	    disp->remoteauthdata[i] = (i == 8 ? 0 : random_byte());
+	disp->remoteauthdatalen = 16;
+
+	disp->xdmseen = newtree234(xdmseen_cmp);
     }
+    disp->remoteauthprotoname = dupstr(x11_authnames[disp->remoteauthproto]);
+    disp->remoteauthdatastring = snewn(disp->remoteauthdatalen * 2 + 1, char);
+    for (i = 0; i < disp->remoteauthdatalen; i++)
+	sprintf(disp->remoteauthdatastring + i*2, "%02x",
+		disp->remoteauthdata[i]);
 
-    /* Now format for the recipient. */
-    strncpy(proto, x11_authnames[auth->fakeproto], protomaxlen);
-    ourdata[0] = '\0';
-    for (i = 0; i < auth->fakelen; i++)
-	sprintf(ourdata + strlen(ourdata), "%02x", auth->fakedata[i]);
-    strncpy(data, ourdata, datamaxlen);
+    /*
+     * Fetch the local authorisation details.
+     */
+    disp->localauthproto = X11_NO_AUTH;
+    disp->localauthdata = NULL;
+    disp->localauthdatalen = 0;
+    platform_get_x11_auth(disp, cfg);
 
-    return auth;
+    return disp;
 }
 
-void x11_free_auth(void *authv)
+void x11_free_display(struct X11Display *disp)
 {
-    struct X11Auth *auth = (struct X11Auth *)authv;
-    struct XDMSeen *seen;
-
-    if (auth->xdmseen != NULL) {
-	while ((seen = delpos234(auth->xdmseen, 0)) != NULL)
+    if (disp->xdmseen != NULL) {
+	struct XDMSeen *seen;
+	while ((seen = delpos234(disp->xdmseen, 0)) != NULL)
 	    sfree(seen);
-	freetree234(auth->xdmseen);
+	freetree234(disp->xdmseen);
     }
-    sfree(auth);
-}
-
-/*
- * Fetch the real auth data for a given display string, and store
- * it in an X11Auth structure. Returns NULL on success, or an error
- * string.
- */
-void x11_get_real_auth(void *authv, char *display)
-{
-    struct X11Auth *auth = (struct X11Auth *)authv;
-
-    auth->realproto = X11_NO_AUTH;     /* in case next call does nothing */
-
-    auth->reallen = sizeof(auth->realdata);
-    platform_get_x11_auth(display, &auth->realproto,
-                          auth->realdata, &auth->reallen);
+    sfree(disp->hostname);
+    sfree(disp->unixsocketpath);
+    if (disp->localauthdata)
+	memset(disp->localauthdata, 0, disp->localauthdatalen);
+    sfree(disp->localauthdata);
+    if (disp->remoteauthdata)
+	memset(disp->remoteauthdata, 0, disp->remoteauthdatalen);
+    sfree(disp->remoteauthdata);
+    sfree(disp->remoteauthprotoname);
+    sfree(disp->remoteauthdatastring);
+    sk_addr_free(disp->addr);
+    sfree(disp);
 }
 
 #define XDM_MAXSKEW 20*60      /* 20 minute clock skew should be OK */
 
 static char *x11_verify(unsigned long peer_ip, int peer_port,
-			struct X11Auth *auth, char *proto,
+			struct X11Display *disp, char *proto,
 			unsigned char *data, int dlen)
 {
-    if (strcmp(proto, x11_authnames[auth->fakeproto]) != 0)
-	return "wrong authentication protocol attempted";
-    if (auth->fakeproto == X11_MIT) {
-        if (dlen != auth->fakelen)
+    if (strcmp(proto, x11_authnames[disp->remoteauthproto]) != 0)
+	return "wrong authorisation protocol attempted";
+    if (disp->remoteauthproto == X11_MIT) {
+        if (dlen != disp->remoteauthdatalen)
             return "MIT-MAGIC-COOKIE-1 data was wrong length";
-        if (memcmp(auth->fakedata, data, dlen) != 0)
+        if (memcmp(disp->remoteauthdata, data, dlen) != 0)
             return "MIT-MAGIC-COOKIE-1 data did not match";
     }
-    if (auth->fakeproto == X11_XDM) {
+    if (disp->remoteauthproto == X11_XDM) {
 	unsigned long t;
 	time_t tim;
 	int i;
@@ -146,8 +252,8 @@ static char *x11_verify(unsigned long peer_ip, int peer_port,
             return "XDM-AUTHORIZATION-1 data was wrong length";
 	if (peer_port == -1)
             return "cannot do XDM-AUTHORIZATION-1 without remote address data";
-	des_decrypt_xdmauth(auth->fakedata+9, data, 24);
-        if (memcmp(auth->fakedata, data, 8) != 0)
+	des_decrypt_xdmauth(disp->remoteauthdata+9, data, 24);
+        if (memcmp(disp->remoteauthdata, data, 8) != 0)
             return "XDM-AUTHORIZATION-1 data failed check"; /* cookie wrong */
 	if (GET_32BIT_MSB_FIRST(data+8) != peer_ip)
             return "XDM-AUTHORIZATION-1 data failed check";   /* IP wrong */
@@ -163,23 +269,142 @@ static char *x11_verify(unsigned long peer_ip, int peer_port,
 	seen = snew(struct XDMSeen);
 	seen->time = t;
 	memcpy(seen->clientid, data+8, 6);
-	assert(auth->xdmseen != NULL);
-	ret = add234(auth->xdmseen, seen);
+	assert(disp->xdmseen != NULL);
+	ret = add234(disp->xdmseen, seen);
 	if (ret != seen) {
 	    sfree(seen);
 	    return "XDM-AUTHORIZATION-1 data replayed";
 	}
 	/* While we're here, purge entries too old to be replayed. */
 	for (;;) {
-	    seen = index234(auth->xdmseen, 0);
+	    seen = index234(disp->xdmseen, 0);
 	    assert(seen != NULL);
 	    if (t - seen->time <= XDM_MAXSKEW)
 		break;
-	    sfree(delpos234(auth->xdmseen, 0));
+	    sfree(delpos234(disp->xdmseen, 0));
 	}
     }
     /* implement other protocols here if ever required */
     return NULL;
+}
+
+void x11_get_auth_from_authfile(struct X11Display *disp,
+				const char *authfilename)
+{
+    FILE *authfp;
+    char *buf, *ptr, *str[4];
+    int len[4];
+    int family, protocol;
+
+    authfp = fopen(authfilename, "rb");
+    if (!authfp)
+	return;
+
+    /* Records in .Xauthority contain four strings of up to 64K each */
+    buf = snewn(65537 * 4, char);
+
+    while (1) {
+	int c, i, j;
+	
+#define GET do { c = fgetc(authfp); if (c == EOF) goto done; c = (unsigned char)c; } while (0)
+	/* Expect a big-endian 2-byte number giving address family */
+	GET; family = c;
+	GET; family = (family << 8) | c;
+	/* Then expect four strings, each composed of a big-endian 2-byte
+	 * length field followed by that many bytes of data */
+	ptr = buf;
+	for (i = 0; i < 4; i++) {
+	    GET; len[i] = c;
+	    GET; len[i] = (len[i] << 8) | c;
+	    str[i] = ptr;
+	    for (j = 0; j < len[i]; j++) {
+		GET; *ptr++ = c;
+	    }
+	    *ptr++ = '\0';
+	}
+#undef GET
+
+	/*
+	 * Now we have a full X authority record in memory. See
+	 * whether it matches the display we're trying to
+	 * authenticate to.
+	 *
+	 * The details we've just read should be interpreted as
+	 * follows:
+	 * 
+	 *  - 'family' is the network address family used to
+	 *    connect to the display. 0 means IPv4; 6 means IPv6;
+	 *    256 means Unix-domain sockets.
+	 * 
+	 *  - str[0] is the network address itself. For IPv4 and
+	 *    IPv6, this is a string of binary data of the
+	 *    appropriate length (respectively 4 and 16 bytes)
+	 *    representing the address in big-endian format, e.g.
+	 *    7F 00 00 01 means IPv4 localhost. For Unix-domain
+	 *    sockets, this is the host name of the machine on
+	 *    which the Unix-domain display resides (so that an
+	 *    .Xauthority file on a shared file system can contain
+	 *    authority entries for Unix-domain displays on
+	 *    several machines without them clashing).
+	 * 
+	 *  - str[1] is the display number. I've no idea why
+	 *    .Xauthority stores this as a string when it has a
+	 *    perfectly good integer format, but there we go.
+	 * 
+	 *  - str[2] is the authorisation method, encoded as its
+	 *    canonical string name (i.e. "MIT-MAGIC-COOKIE-1",
+	 *    "XDM-AUTHORIZATION-1" or something we don't
+	 *    recognise).
+	 * 
+	 *  - str[3] is the actual authorisation data, stored in
+	 *    binary form.
+	 */
+
+	if (disp->displaynum < 0 || disp->displaynum != atoi(str[1]))
+	    continue;		       /* not the one */
+
+	for (protocol = 1; protocol < lenof(x11_authnames); protocol++)
+	    if (!strcmp(str[2], x11_authnames[protocol]))
+		break;
+	if (protocol == lenof(x11_authnames))
+	    continue;  /* don't recognise this protocol, look for another */
+
+	switch (family) {
+	  case 0:
+	    if (!disp->unixdomain &&
+		sk_addrtype(disp->addr) == ADDRTYPE_IPV4) {
+		char buf[4];
+		sk_addrcopy(disp->addr, buf);
+		if (len[0] == 4 && !memcmp(str[0], buf, 4))
+		    goto found;
+	    }
+	    break;
+	  case 6:
+	    if (!disp->unixdomain &&
+		sk_addrtype(disp->addr) == ADDRTYPE_IPV6) {
+		char buf[16];
+		sk_addrcopy(disp->addr, buf);
+		if (len[0] == 16 && !memcmp(str[0], buf, 16))
+		    goto found;
+	    }
+	    break;
+	  case 256:
+	    if (disp->unixdomain && !strcmp(disp->hostname, str[0]))
+		goto found;
+	    break;
+	}
+    }
+
+    found:
+    disp->localauthproto = protocol;
+    disp->localauthdata = snewn(len[3], unsigned char);
+    memcpy(disp->localauthdata, str[3], len[3]);
+    disp->localauthdatalen = len[3];
+
+    done:
+    fclose(authfp);
+    memset(buf, 0, 65537 * 4);
+    sfree(buf);
 }
 
 static void x11_log(Plug p, int type, SockAddr addr, int port,
@@ -240,33 +465,15 @@ int x11_get_screen_number(char *display)
     return atoi(display + n + 1);
 }
 
-/* Find the right display, returns an allocated string */
-char *x11_display(const char *display) {
-    char *ret;
-    if(!display || !*display) {
-	/* try to find platform-specific local display */
-	if((ret = platform_get_x_display())==0 || !*ret)
-	    /* plausible default for all platforms */
-	    ret = dupstr(":0");
-    } else
-	ret = dupstr(display);
-    if(ret[0] == ':') {
-	/* no transport specified, use whatever we think is best */
-	char *s = dupcat(platform_x11_best_transport, ret, (char *)0);
-	sfree(ret);
-	return s;
-    } else
-	return ret;
-}
-
 /*
  * Called to set up the raw connection.
  * 
  * Returns an error message, or NULL on success.
  * also, fills the SocketsStructure
  */
-const char *x11_init(Socket * s, char *display, void *c, void *auth,
-		     const char *peeraddr, int peerport, const Config *cfg)
+extern const char *x11_init(Socket *s, struct X11Display *disp, void *c,
+			    const char *peeraddr, int peerport,
+			    const Config *cfg)
 {
     static const struct plug_function_table fn_table = {
 	x11_log,
@@ -276,48 +483,8 @@ const char *x11_init(Socket * s, char *display, void *c, void *auth,
 	NULL
     };
 
-    SockAddr addr;
-    int port;
     const char *err;
-    char *dummy_realhost;
-    char host[128];
-    int n, displaynum;
     struct X11Private *pr;
-
-    /* default display */
-    display = x11_display(display);
-    /*
-     * Split up display name into host and display-number parts.
-     */
-    n = strcspn(display, ":");
-    assert(n != 0);		/* x11_display() promises this */
-    if (display[n])
-	displaynum = atoi(display + n + 1);
-    else
-	displaynum = 0;		       /* sensible default */
-    if (n > sizeof(host) - 1)
-	n = sizeof(host) - 1;
-    strncpy(host, display, n);
-    host[n] = '\0';
-    sfree(display);
-    
-    if(!strcmp(host, "unix")) {
-	/* use AF_UNIX sockets (doesn't make sense on all platforms) */
-	addr = platform_get_x11_unix_address(displaynum,
-					     &dummy_realhost);
-	port = 0;		/* to show we are not confused */
-    } else {
-	port = 6000 + displaynum;
-	
-	/*
-	 * Try to find host.
-	 */
-	addr = name_lookup(host, port, &dummy_realhost, cfg, ADDRTYPE_UNSPEC);
-	if ((err = sk_addr_error(addr)) != NULL) {
-	    sk_addr_free(addr);
-	    return err;
-	}
-    }
 
     /*
      * Open socket.
@@ -325,13 +492,14 @@ const char *x11_init(Socket * s, char *display, void *c, void *auth,
     pr = snew(struct X11Private);
     pr->fn = &fn_table;
     pr->auth_protocol = NULL;
-    pr->auth = (struct X11Auth *)auth;
+    pr->disp = disp;
     pr->verified = 0;
     pr->data_read = 0;
     pr->throttled = pr->throttle_override = 0;
     pr->c = c;
 
-    pr->s = *s = new_connection(addr, dummy_realhost, port,
+    pr->s = *s = new_connection(sk_addr_dup(disp->addr),
+				disp->realhost, disp->port,
 				0, 1, 0, 0, (Plug) pr, cfg);
     if ((err = sk_socket_error(*s)) != NULL) {
 	sfree(pr);
@@ -439,18 +607,18 @@ int x11_send(Socket s, char *data, int len)
 	return 0;
 
     /*
-     * If we haven't verified the authentication, do so now.
+     * If we haven't verified the authorisation, do so now.
      */
     if (!pr->verified) {
 	char *err;
 
 	pr->auth_protocol[pr->auth_plen] = '\0';	/* ASCIZ */
 	err = x11_verify(pr->peer_ip, pr->peer_port,
-			 pr->auth, pr->auth_protocol,
+			 pr->disp, pr->auth_protocol,
 			 pr->auth_data, pr->auth_dlen);
 
 	/*
-	 * If authentication failed, construct and send an error
+	 * If authorisation failed, construct and send an error
 	 * packet, then terminate the connection.
 	 */
 	if (err) {
@@ -484,27 +652,27 @@ int x11_send(Socket s, char *data, int len)
         {
             char realauthdata[64];
             int realauthlen = 0;
-            int authstrlen = strlen(x11_authnames[pr->auth->realproto]);
+            int authstrlen = strlen(x11_authnames[pr->disp->localauthproto]);
 	    int buflen = 0;	       /* initialise to placate optimiser */
             static const char zeroes[4] = { 0,0,0,0 };
 	    void *buf;
 
-            if (pr->auth->realproto == X11_MIT) {
-                assert(pr->auth->reallen <= lenof(realauthdata));
-                realauthlen = pr->auth->reallen;
-                memcpy(realauthdata, pr->auth->realdata, realauthlen);
-            } else if (pr->auth->realproto == X11_XDM &&
-		       pr->auth->reallen == 16 &&
+            if (pr->disp->localauthproto == X11_MIT) {
+                assert(pr->disp->localauthdatalen <= lenof(realauthdata));
+                realauthlen = pr->disp->localauthdatalen;
+                memcpy(realauthdata, pr->disp->localauthdata, realauthlen);
+            } else if (pr->disp->localauthproto == X11_XDM &&
+		       pr->disp->localauthdatalen == 16 &&
 		       ((buf = sk_getxdmdata(s, &buflen))!=0)) {
 		time_t t;
                 realauthlen = (buflen+12+7) & ~7;
 		assert(realauthlen <= lenof(realauthdata));
 		memset(realauthdata, 0, realauthlen);
-		memcpy(realauthdata, pr->auth->realdata, 8);
+		memcpy(realauthdata, pr->disp->localauthdata, 8);
 		memcpy(realauthdata+8, buf, buflen);
 		t = time(NULL);
 		PUT_32BIT_MSB_FIRST(realauthdata+8+buflen, t);
-		des_encrypt_xdmauth(pr->auth->realdata+9,
+		des_encrypt_xdmauth(pr->disp->localauthdata+9,
 				    (unsigned char *)realauthdata,
 				    realauthlen);
 		sfree(buf);
@@ -517,7 +685,8 @@ int x11_send(Socket s, char *data, int len)
             sk_write(s, (char *)pr->firstpkt, 12);
 
             if (authstrlen) {
-                sk_write(s, x11_authnames[pr->auth->realproto], authstrlen);
+                sk_write(s, x11_authnames[pr->disp->localauthproto],
+			 authstrlen);
                 sk_write(s, zeroes, 3 & (-authstrlen));
             }
             if (realauthlen) {

@@ -10,10 +10,6 @@ public:
   static TProgramParams * __fastcall Instance();
 
   TProgramParams();
-  ~TProgramParams();
-
-private:
-  static TProgramParams * SInstance;
 };
 //---------------------------------------------------------------------------
 #endif

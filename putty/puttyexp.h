@@ -21,9 +21,12 @@ int get_ssh_exitcode(void * handle);
 const unsigned int * ssh2_remmaxpkt(void * handle);
 const unsigned int * ssh2_remwindow(void * handle);
 void md5checksum(const char * buffer, int len, unsigned char output[16]);
-void sspi_init();
-void sspi_cleanup();
-int has_gssapi_ssh();
+
+// from wingss.c
+
+#ifndef SSH2_GSS_OIDTYPE
+#include "sshgss.h"
+#endif
 
 // from portfwd.c
 

@@ -594,9 +594,8 @@ void __fastcall TRightsFrame::SetText(AnsiString value)
     }
     RightsStr = DeleteChar(DeleteChar(RightsStr, '('), ')').Trim();
     TRights R = Rights;
-    int Dummy;
     if (((RightsStr.Length() == 3) || (RightsStr.Length() == 4)) &&
-        TryStrToInt(RightsStr, Dummy))
+        IsNumber(RightsStr))
     {
       R.Octal = RightsStr;
     }

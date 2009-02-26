@@ -44,9 +44,11 @@ private:
 	TPathLabelPathClickEvent FOnPathClick;
 	AnsiString FDisplayPath;
 	AnsiString FDisplayHotTrack;
+	AnsiString FDisplayMask;
 	bool FHotTrack;
 	bool FMouseInView;
 	bool FIsActive;
+	AnsiString FMask;
 	HIDESBASE MESSAGE void __fastcall CMHintShow(Messages::TMessage &Message);
 	HIDESBASE MESSAGE void __fastcall CMMouseEnter(Messages::TMessage &Message);
 	HIDESBASE MESSAGE void __fastcall CMMouseLeave(Messages::TMessage &Message);
@@ -55,6 +57,7 @@ private:
 	void __fastcall SetIndentHorizontal(int AIndent);
 	void __fastcall SetIndentVertical(int AIndent);
 	void __fastcall SetUnixPath(bool AUnixPath);
+	void __fastcall SetMask(AnsiString Value);
 	
 protected:
 	DYNAMIC void __fastcall AdjustBounds(void);
@@ -82,6 +85,7 @@ public:
 	__property TPathLabelGetStatusEvent OnGetStatus = {read=FOnGetStatus, write=FOnGetStatus};
 	__property TPathLabelPathClickEvent OnPathClick = {read=FOnPathClick, write=FOnPathClick};
 	__property bool HotTrack = {read=FHotTrack, write=FHotTrack, default=0};
+	__property AnsiString Mask = {read=FMask, write=SetMask};
 	__property FocusControl ;
 	__property Caption ;
 	__property Hint  = {stored=false};

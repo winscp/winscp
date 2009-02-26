@@ -333,18 +333,6 @@ bool __fastcall DeleteDirectory(const AnsiString DirName)
   return retval;
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TranslateExceptionMessage(const Exception * E)
-{
-  if (dynamic_cast<const EAccessViolation*>(E) != NULL)
-  {
-    return LoadStr(ACCESS_VIOLATION_ERROR);
-  }
-  else
-  {
-    return E->Message;
-  }
-}
-//---------------------------------------------------------------------------
 AnsiString __fastcall FormatDateTimeSpan(const AnsiString TimeFormat, TDateTime DateTime)
 {
   AnsiString Result;

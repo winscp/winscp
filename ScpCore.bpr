@@ -27,7 +27,7 @@
     <USERDEFINES value="USE_COMPATIBLE_THREAD;SSPI_MECH;_WINDOWS"/>
     <SYSDEFINES value="NO_STRICT"/>
     <MAINSOURCE value="ScpCore.bpf"/>
-    <INCLUDEPATH value="windows;core;putty;putty\windows;filezilla;resource;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
+    <INCLUDEPATH value="windows;core;putty;putty\windows;filezilla;openssl;resource;$(BCB)\include;$(BCB)\include\vcl;$(BCB)\include\mfc"/>
     <LIBPATH value="core;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w8092 -w8091 -w8090 -w8089 -w8087 -wprc -wuse -wucp -wstv -wstu -wsig
       -wpin -wnod -wnak -wdef -wcln -wbbf -wasm -wamp -wamb"/>
@@ -38,7 +38,7 @@
     <CFLAG1 value="-O2 -H=$(BCB)\lib\vcl60.csm -Hc -w -Vx -Ve -X- -a8 -b- -k- -vi -c -tW -tWM"/>
     <PFLAGS value="-$Y- -$L- -$D- -$A8 -v -JPHNE -M"/>
     <AFLAGS value="/mx /w2 /zi"/>
-    <LFLAGS value="/P128"/>
+    <LFLAGS value="/P256"/>
     <OTHERFILES value=""/>
   </OPTIONS>
   <LINKER>

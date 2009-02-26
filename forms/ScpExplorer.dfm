@@ -477,6 +477,9 @@ inherited ScpExplorerForm: TScpExplorerForm
             Action = NonVisualDataModule.ShowHideRemoteLinkTargetColumnAction
           end
         end
+        object TBXItem138: TTBXItem
+          Action = NonVisualDataModule.RemoteFilterAction
+        end
         object TBXSeparatorItem23: TTBXSeparatorItem
           Hint = 'E'
         end

@@ -959,7 +959,7 @@ static const struct ssh2_cipher ssh_3des_ssh2_ctr = {
 
 /*
  * Single DES in SSH-2. "des-cbc" is marked as HISTORIC in
- * draft-ietf-secsh-assignednumbers-04.txt, referring to
+ * RFC 4250, referring to
  * FIPS-46-3.  ("Single DES (i.e., DES) will be permitted 
  * for legacy systems only.") , but ssh.com support it and 
  * apparently aren't the only people to do so, so we sigh 

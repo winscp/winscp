@@ -46,6 +46,7 @@ __fastcall TSecureShell::TSecureShell(TSessionUI* UI,
   FSocket = INVALID_SOCKET;
   FSocketEvent = CreateEvent(NULL, false, false, NULL);
   FFrozen = false;
+  FSimple = false;
 }
 //---------------------------------------------------------------------------
 __fastcall TSecureShell::~TSecureShell()
@@ -128,7 +129,7 @@ void __fastcall TSecureShell::ClearConfig(Config * cfg)
   memset(cfg, 0, sizeof(*cfg));
 }
 //---------------------------------------------------------------------
-void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
+void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg, bool Simple)
 {
   ClearConfig(cfg);
 
@@ -170,9 +171,7 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
       case kexDHGroup1: pkex = KEX_DHGROUP1; break;
       case kexDHGroup14: pkex = KEX_DHGROUP14; break;
       case kexDHGEx: pkex = KEX_DHGEX; break;
-      case kexGSSGroup1: pkex = KEX_GSSGROUP1; break;
-      case kexGSSGroup14: pkex = KEX_GSSGROUP14; break;
-      case kexGSSGEx: pkex = KEX_GSSGEX; break;
+      case kexRSA: pkex = KEX_RSA; break;
       default: assert(false);
     }
     cfg->ssh_kexlist[k] = pkex;
@@ -187,13 +186,8 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
   cfg->ssh_no_userauth = Data->SshNoUserAuth;
   cfg->try_tis_auth = Data->AuthTIS;
   cfg->try_ki_auth = Data->AuthKI;
-  cfg->try_sspi_auth = Data->AuthGSSAPI;
-  cfg->sspi_fwd_ticket = Data->GSSAPIFwdTGT;
-  ASCOPY(cfg->service_principal_name, Data->GSSAPIServerRealm);
-  cfg->try_gsskex = Data->TryGSSKEX;
-  cfg->username_from_env = Data->UserNameFromEnvironment;
-  cfg->sspi_no_username = Data->GSSAPIServerChoosesUserName;
-  cfg->sspi_trust_dns = Data->GSSAPITrustDNS;
+  cfg->try_gssapi_auth = Data->AuthGSSAPI;
+  cfg->gssapifwd = Data->GSSAPIFwdTGT;
   cfg->change_username = Data->ChangeUsername;
 
   cfg->proxy_type = Data->ProxyMethod;
@@ -224,16 +218,21 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg)
   cfg->sshbug_rekey2 = Data->Bug[sbRekey2];
   // new after 0.53b
   cfg->sshbug_pksessid2 = Data->Bug[sbPKSessID2];
+  cfg->sshbug_maxpkt2 = Data->Bug[sbMaxPkt2];
   #pragma option pop
 
   if (!Data->TunnelPortFwd.IsEmpty())
   {
+    assert(!Simple);
     ASCOPY(cfg->portfwd, Data->TunnelPortFwd);
     // when setting up a tunnel, do not open shell/sftp
     cfg->ssh_no_shell = TRUE;
   }
   else
   {
+    assert(Simple);
+    cfg->ssh_simple = Simple;
+
     if (Data->FSProtocol == fsSCPonly)
     {
       cfg->ssh_subsys = FALSE;
@@ -305,7 +304,7 @@ void __fastcall TSecureShell::Open()
 
   FAuthenticationLog = "";
   FUI->Information(LoadStr(STATUS_LOOKUPHOST), true);
-  StoreToConfig(FSessionData, FConfig);
+  StoreToConfig(FSessionData, FConfig, Simple);
 
   char * RealHost;
   FreeBackend(); // in case we are reconnecting
@@ -341,6 +340,10 @@ void __fastcall TSecureShell::Init()
   {
     try
     {
+      // Recent pscp checks FBackend->exitcode(FBackendHandle) in the loop
+      // (see comment in putty revision 8110)
+      // It seems that we do not need to do it.
+
       while (!get_ssh_state_session(FBackendHandle))
       {
         if (Configuration->LogProtocol >= 1)
@@ -414,7 +417,8 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   AnsiString Instructions, bool /*InstructionsRequired*/,
   TStrings * Prompts, TStrings * Results)
 {
-  assert(Prompts->Count > 0);
+  // there can be zero prompts!
+
   assert(Results->Count == Prompts->Count);
 
   TPromptKind PromptKind;
@@ -513,7 +517,7 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
     assert(false);
   }
 
-  LogEvent(FORMAT("Prompt (%d, %s, %s, %s)", (PromptKind, AName, Instructions, Prompts->Strings[0])));
+  LogEvent(FORMAT("Prompt (%d, %s, %s, %s)", (PromptKind, AName, Instructions, (Prompts->Count > 0 ? Prompts->Strings[0] : AnsiString("<no prompt>")))));
 
   Name = Name.Trim();
 
@@ -854,9 +858,9 @@ int __fastcall TSecureShell::TimeoutPrompt(TQueryParamsTimerEvent PoolEvent)
     TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
     Params.Timer = 500;
     Params.TimerEvent = PoolEvent;
-    Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING, (FSessionData->Timeout));
+    Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING2, (FSessionData->Timeout));
     Params.TimerAnswers = qaAbort;
-    Answer = FUI->QueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT2, (FSessionData->Timeout)),
+    Answer = FUI->QueryUser(FMTLOAD(CONFIRM_PROLONG_TIMEOUT3, (FSessionData->Timeout)),
       NULL, qaRetry | qaAbort, &Params);
   }
   __finally

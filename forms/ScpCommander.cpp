@@ -1093,6 +1093,9 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
         NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
       }
     }
+
+    // for second and further rounds, always do browse only
+    Mode = odBrowse;
   }
   while (UseLocationProfiles != WinConfiguration->UseLocationProfiles);
 }
@@ -1212,15 +1215,19 @@ void __fastcall TScpCommanderForm::LocalDriveViewEnter(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::SideEnter(TOperationSide Side)
 {
-  if (FCurrentSide != Side)
+  if (Visible && (FCurrentSide != Side))
   {
+    // this may get called yet before controls are initialized
     CommandLineCombo->Strings->Clear();
     FCommandLineComboPopulated = false;
   }
   TCustomScpExplorerForm::SideEnter(Side);
-  UpdateControls();
-  LocalPathLabel->UpdateStatus();
-  RemotePathLabel->UpdateStatus();
+  if (Visible)
+  {
+    UpdateControls();
+    LocalPathLabel->UpdateStatus();
+    RemotePathLabel->UpdateStatus();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::OpenConsole(AnsiString Command)

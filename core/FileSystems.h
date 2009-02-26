@@ -22,6 +22,7 @@ enum TFSCommand { fsNull = 0, fsVarValue, fsLastLine, fsFirstLine,
 //---------------------------------------------------------------------------
 const dfNoRecursive = 0x01;
 const dfAlternative = 0x02;
+const dfForceDelete = 0x04;
 //---------------------------------------------------------------------------
 class TCustomFileSystem
 {
@@ -32,14 +33,15 @@ public:
   virtual void __fastcall Close() = 0;
   virtual bool __fastcall GetActive() = 0;
   virtual void __fastcall Idle() = 0;
-  virtual AnsiString __fastcall AbsolutePath(AnsiString Path) = 0;
+  virtual AnsiString __fastcall AbsolutePath(AnsiString Path, bool Local) = 0;
   virtual void __fastcall AnyCommand(const AnsiString Command,
     TCaptureOutputEvent OutputEvent) = 0;
   virtual void __fastcall ChangeDirectory(const AnsiString Directory) = 0;
   virtual void __fastcall CachedChangeDirectory(const AnsiString Directory) = 0;
   virtual void __fastcall AnnounceFileListOperation() = 0;
   virtual void __fastcall ChangeFileProperties(const AnsiString FileName,
-    const TRemoteFile * File, const TRemoteProperties * Properties) = 0;
+    const TRemoteFile * File, const TRemoteProperties * Properties,
+    TChmodSessionAction & Action) = 0;
   virtual bool __fastcall LoadFilesProperties(TStrings * FileList) = 0;
   virtual void __fastcall CalculateFilesChecksum(const AnsiString & Alg,
     TStrings * FileList, TStrings * Checksums,
@@ -52,11 +54,11 @@ public:
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
     bool & DisconnectWhenComplete) = 0;
-  virtual void __fastcall CreateDirectory(const AnsiString DirName,
-    const TRemoteProperties * Properties) = 0;
+  virtual void __fastcall CreateDirectory(const AnsiString DirName) = 0;
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic) = 0;
   virtual void __fastcall DeleteFile(const AnsiString FileName,
-    const TRemoteFile * File, int Params) = 0;
+    const TRemoteFile * File, int Params,
+    TRmSessionAction & Action) = 0;
   virtual void __fastcall CustomCommandOnFile(const AnsiString FileName,
     const TRemoteFile * File, AnsiString Command, int Params, TCaptureOutputEvent OutputEvent) = 0;
   virtual void __fastcall DoStartup() = 0;

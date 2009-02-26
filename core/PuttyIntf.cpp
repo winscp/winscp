@@ -11,6 +11,7 @@
 #include "TextsCore.h"
 //---------------------------------------------------------------------------
 char sshver[50];
+const int platform_uses_x11_unix_by_default = TRUE;
 CRITICAL_SECTION noise_section;
 bool SaveRandomSeed;
 //---------------------------------------------------------------------------
@@ -28,8 +29,6 @@ void __fastcall PuttyInitialize()
 
   sk_init();
 
-  sspi_init();
-
   AnsiString VersionString = SshVersionString();
   assert(!VersionString.IsEmpty() && (VersionString.Length() < sizeof(sshver)));
   strcpy(sshver, VersionString.c_str());
@@ -43,7 +42,6 @@ void __fastcall PuttyFinalize()
   }
   random_unref();
 
-  sspi_cleanup();
   sk_cleanup();
   DeleteCriticalSection(&noise_section);
 }
@@ -51,33 +49,6 @@ void __fastcall PuttyFinalize()
 void __fastcall DontSaveRandomSeed()
 {
   SaveRandomSeed = false;
-}
-//---------------------------------------------------------------------------
-int __fastcall ProtocolByName(const AnsiString & Name)
-{
-  int Protocol = 0; // raw
-  for (int Index = 0; backends[Index].name != NULL; Index++)
-  {
-    if (!Name.AnsiCompareIC(backends[Index].name))
-    {
-      Protocol = (TProtocol)backends[Index].protocol;
-      break;
-    }
-  }
-
-  return Protocol;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall ProtocolName(int Protocol)
-{
-  for (int Index = 0; backends[Index].name != NULL; Index++)
-  {
-    if ((TProtocol)backends[Index].protocol == Protocol)
-    {
-      return backends[Index].name;
-    }
-  }
-  return "raw";
 }
 //---------------------------------------------------------------------------
 extern "C" char * do_select(Plug plug, SOCKET skt, int startup)
@@ -340,6 +311,25 @@ void set_busy_status(void * /*frontend*/, int /*status*/)
   // nothing
 }
 //---------------------------------------------------------------------------
+void platform_get_x11_auth(struct X11Display * /*display*/, const Config * /*cfg*/)
+{
+  // nothing, therefore no auth.
+}
+//---------------------------------------------------------------------------
+int get_remote_username(Config * cfg, char *user, size_t len)
+{
+  if (*cfg->username)
+  {
+    strncpy(user, cfg->username, len);
+    user[len-1] = '\0';
+  }
+  else
+  {
+    *user = '\0';
+  }
+  return (*user != '\0');
+}
+//---------------------------------------------------------------------------
 static long OpenWinSCPKey(HKEY Key, const char * SubKey, HKEY * Result, bool CanCreate)
 {
   long R;
@@ -599,7 +589,12 @@ bool __fastcall HasGSSAPI()
   static int has = -1;
   if (has < 0)
   {
-    has = (has_gssapi_ssh() ? 1 : 0);
+    Ssh_gss_ctx ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    has =
+      ((ssh_gss_init() == 1) &&
+       (ssh_gss_acquire_cred(&ctx) == SSH_GSS_OK) &&
+       (ssh_gss_release_cred(&ctx) == SSH_GSS_OK)) ? 1 : 0;
   }
   return (has > 0);
 }

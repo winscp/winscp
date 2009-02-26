@@ -43,7 +43,7 @@ static char THIS_FILE[]=__FILE__;
 #define new DEBUG_NEW
 #endif
 
-#ifndef MPEXT_NO_SSL
+#ifndef MPEXT
 std::list<CControlSocket::t_ActiveList> CControlSocket::m_InstanceList[2];
 #else
 // explicit initialization prevents an assertion in borland's compiler

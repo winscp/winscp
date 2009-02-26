@@ -4,17 +4,19 @@
 
 #include "FileMasks.h"
 
-namespace Masks
-{
-bool __fastcall MatchesMask(const AnsiString Filename, const AnsiString Mask);
-}
-using namespace Masks;
-
 #include "Common.h"
 #include "TextsCore.h"
 #include "RemoteFiles.h"
 #include "PuttyTools.h"
 #include "Terminal.h"
+//---------------------------------------------------------------------------
+__fastcall EFileMasksException::EFileMasksException(
+    AnsiString Message, int AErrorStart, int AErrorLen) :
+  Exception(Message)
+{
+  ErrorStart = AErrorStart;
+  ErrorLen = AErrorLen;
+}
 //---------------------------------------------------------------------------
 AnsiString __fastcall MaskFilePart(const AnsiString Part, const AnsiString Mask, bool& Masked)
 {
@@ -122,210 +124,163 @@ TFileMasks::TParams::TParams() :
 {
 }
 //---------------------------------------------------------------------------
+AnsiString TFileMasks::TParams::ToString() const
+{
+  return AnsiString("[") + IntToStr(Size) + "]";
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::IsMask(const AnsiString Mask)
 {
   return (Mask.LastDelimiter("?*[") > 0);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::SingleMaskMatch(const AnsiString Mask, const AnsiString FileName)
+bool __fastcall TFileMasks::IsAnyMask(const AnsiString & Mask)
 {
-  return MatchesFileMask(FileName, Mask);
+  return Mask.IsEmpty() || (Mask == "*.*") || (Mask == "*");
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TFileMasks::NormalizeMask(const AnsiString & Mask, const AnsiString & AnyMask)
+{
+  if (IsAnyMask(Mask))
+  {
+    return AnyMask;
+  }
+  else
+  {
+    return Mask;
+  }
 }
 //---------------------------------------------------------------------------
 __fastcall TFileMasks::TFileMasks()
 {
-  FMasks = "";
 }
 //---------------------------------------------------------------------------
 __fastcall TFileMasks::TFileMasks(const TFileMasks & Source)
 {
-  Masks = Source.Masks;
+  SetStr(Source.Masks, false);
 }
 //---------------------------------------------------------------------------
-__fastcall TFileMasks::TFileMasks(const AnsiString AMasks)
+__fastcall TFileMasks::TFileMasks(const AnsiString & AMasks)
 {
-  FMasks = AMasks;
+  SetStr(AMasks, false);
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::MatchesFileMask(const AnsiString & Filename, const AnsiString & Mask)
+__fastcall TFileMasks::~TFileMasks()
 {
-  bool Result;
-  if (Mask == "*.*")
-  {
-    Result = true;
-  }
-  else if ((Mask == "*.") && (Filename.Pos(".") == 0))
-  {
-    Result = true;
-  }
-  else
-  {
-    Result = ::MatchesMask(Filename, Mask);
-  }
-  return Result;
+  Clear();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::MatchesMask(AnsiString FileName, bool Directory,
-  AnsiString Path, const TParams * Params, AnsiString Masks)
+void __fastcall TFileMasks::Clear()
 {
-  bool Result = true;
-  char NextDelimiter = '\0';
-  while (Result && !Masks.IsEmpty())
+  Clear(FIncludeMasks);
+  Clear(FExcludeMasks);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileMasks::Clear(TMasks & Masks)
+{
+  TMasks::iterator I = Masks.begin();
+  while (I != Masks.end())
   {
-    AnsiString M;
-    char Delimiter = NextDelimiter;
-    M = CutToChars(Masks, "<>", true, &NextDelimiter);
+    ReleaseMaskMask((*I).FileNameMask);
+    ReleaseMaskMask((*I).DirectoryMask);
+    I++;
+  }
+  Masks.clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileMasks::Negate()
+{
+  FStr = "";
+  FIncludeMasks.swap(FExcludeMasks);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileMasks::MatchesMasks(const AnsiString FileName, bool Directory,
+  const AnsiString Path, const TParams * Params, const TMasks & Masks)
+{
+  bool Result = false;
 
-    if (Delimiter != '\0')
+  TMasks::const_iterator I = Masks.begin();
+  while (!Result && (I != Masks.end()))
+  {
+    const TMask & Mask = *I;
+    Result =
+      (!Mask.DirectoryOnly || Directory) &&
+      MatchesMaskMask(Mask.DirectoryMask, Path) &&
+      MatchesMaskMask(Mask.FileNameMask, FileName);
+
+    if (Result)
     {
-      if (Directory || (Params == NULL))
+      bool HasSize = !Directory && (Params != NULL);
+
+      switch (Mask.HighSizeMask)
       {
-        Result = false;
+        case TMask::None:
+          Result = true;
+          break;
+
+        case TMask::Open:
+          Result = HasSize && (Params->Size < Mask.HighSize);
+          break;
+
+        case TMask::Close:
+          Result = HasSize && (Params->Size <= Mask.HighSize);
+          break;
       }
-      else
-      {
-        enum { Less, LessEqual, Greater, GreaterEqual } Op;
-        int Offset = 0;
 
-        Op = ((Delimiter == '>') ? Greater : Less);
-
-        if ((M.Length() >= 1) && (M[1] == '='))
-        {
-          Op = ((Op == Less) ? LessEqual : GreaterEqual);
-          Offset++;
-        }
-
-        __int64 Size = ParseSize(M.SubString(Offset + 1, M.Length() - Offset));
-
-        switch (Op)
-        {
-          case Less:
-            Result = (Params->Size < Size);
-            break;
-
-          case LessEqual:
-            Result = (Params->Size <= Size);
-            break;
-
-          case Greater:
-            Result = (Params->Size > Size);
-            break;
-
-          case GreaterEqual:
-            Result = (Params->Size >= Size);
-            break;
-        }
-      }
-    }
-    else if (!M.IsEmpty())
-    {
-      int D = M.LastDelimiter("\\/");
-      bool DirectoryMask = (D > 0) && (D == M.Length());
-
-      // directory masks match only directories,
-      // non-directory masks match anything
-      Result = (!DirectoryMask || Directory);
       if (Result)
       {
-        bool PathMatch = true;
-        if (DirectoryMask)
+        switch (Mask.LowSizeMask)
         {
-          M.SetLength(M.Length() - 1);
-          D = M.LastDelimiter("\\/");
-        }
-        if (D > 0)
-        {
-          // make sure sole "/" (root dir) is preservedas is
-          AnsiString MP = UnixExcludeTrailingBackslash(ToUnixPath(M.SubString(1, D)));
-          // 'Path' must already have unix slashes
-          PathMatch = ::MatchesMask(Path, MP);
-          M = M.SubString(D + 1, M.Length() - D);
-        }
+          case TMask::None:
+            Result = true;
+            break;
 
-        Result = (PathMatch && MatchesFileMask(FileName, M));
+          case TMask::Open:
+            Result = HasSize && (Params->Size > Mask.LowSize);
+            break;
+
+          case TMask::Close:
+            Result = HasSize && (Params->Size >= Mask.LowSize);
+            break;
+        }
       }
     }
+
+    I++;
   }
+
   return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::Matches(AnsiString FileName, bool Directory,
-  AnsiString Path, const TParams * Params) const
+bool __fastcall TFileMasks::Matches(const AnsiString FileName, bool Directory,
+  const AnsiString Path, const TParams * Params) const
 {
-  AnsiString S = Masks;
-  while (!S.IsEmpty())
-  {
-    AnsiString M;
-    M = CutToChars(S, ",;", true);
-    if (MatchesMask(FileName, Directory, Path, Params, M))
-    {
-      return true;
-    }
-  }
-  return false;
+  bool Result =
+    (FIncludeMasks.empty() || MatchesMasks(FileName, Directory, Path, Params, FIncludeMasks)) &&
+    !MatchesMasks(FileName, Directory, Path, Params, FExcludeMasks);
+  return Result;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::Matches(AnsiString FileName, bool Local,
+bool __fastcall TFileMasks::Matches(const AnsiString FileName, bool Local,
   bool Directory, const TParams * Params) const
 {
-  AnsiString Path;
+  bool Result;
   if (Local)
   {
-    Path = ExtractFilePath(FileName);
+    AnsiString Path = ExtractFilePath(FileName);
     if (!Path.IsEmpty())
     {
       Path = ToUnixPath(ExcludeTrailingBackslash(Path));
     }
-    FileName = ExtractFileName(FileName);
+    Result = Matches(ExtractFileName(FileName), Directory, Path, Params);
   }
   else
   {
-    Path = UnixExcludeTrailingBackslash(UnixExtractFilePath(FileName));
-    FileName = UnixExtractFileName(FileName);
+    Result = Matches(UnixExtractFileName(FileName), Directory,
+      UnixExcludeTrailingBackslash(UnixExtractFilePath(FileName)), Params);
   }
-  return Matches(FileName, Directory, Path, Params);
-}
-//---------------------------------------------------------------------------
-bool __fastcall TFileMasks::IsValid()
-{
-  int Start, Length;
-  return IsValid(Start, Length);
-}
-//---------------------------------------------------------------------------
-bool __fastcall TFileMasks::IsValid(int & Start, int & Length)
-{
-  AnsiString S = Masks;
-  int IStart = 1;
-
-  while (!S.IsEmpty())
-  {
-    AnsiString M;
-    M = CutToChars(S, ",;", false);
-    int P = M.Length() + 1;
-
-    if (!M.IsEmpty())
-    {
-      try
-      {
-        MatchesMask("*.*", false, "", NULL, Trim(M));
-      }
-      catch (Exception &E)
-      {
-        // Ignore leading/trainling spaces
-        while (!M.IsEmpty() && (M[1] == ' '))
-        {
-          IStart++;
-          M.Delete(1, 1);
-        }
-        Start = IStart-1;
-        Length = M.Trim().Length();
-        return False;
-      }
-    }
-    if (P) IStart += P;
-  }
-  return true;
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileMasks::operator ==(const TFileMasks & rhm) const
@@ -333,7 +288,7 @@ bool __fastcall TFileMasks::operator ==(const TFileMasks & rhm) const
   return (Masks == rhm.Masks);
 }
 //---------------------------------------------------------------------------
-TFileMasks & __fastcall TFileMasks::operator =(const AnsiString rhs)
+TFileMasks & __fastcall TFileMasks::operator =(const AnsiString & rhs)
 {
   Masks = rhs;
   return *this;
@@ -345,15 +300,222 @@ TFileMasks & __fastcall TFileMasks::operator =(const TFileMasks & rhm)
   return *this;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TFileMasks::operator ==(const AnsiString rhs) const
+bool __fastcall TFileMasks::operator ==(const AnsiString & rhs) const
 {
   return (Masks == rhs);
 }
 //---------------------------------------------------------------------------
-TFileMasks & __fastcall TFileMasks::operator =(const char * rhs)
+void __fastcall TFileMasks::ThrowError(int Start, int End)
 {
-  Masks = rhs;
-  return *this;
+  throw EFileMasksException(
+    FMTLOAD(MASK_ERROR, (Masks.SubString(Start, End - Start + 1))),
+    Start, End - Start + 1);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileMasks::CreateMaskMask(const AnsiString & Mask, int Start, int End,
+  bool Ex, TMaskMask & MaskMask)
+{
+  try
+  {
+    if (Ex && IsAnyMask(Mask))
+    {
+      MaskMask.Kind = TMaskMask::Any;
+      MaskMask.Mask = NULL;
+      assert(MaskMask.Mask == NULL);
+    }
+    else
+    {
+      MaskMask.Kind = (Ex && (Mask == "*.")) ? TMaskMask::NoExt : TMaskMask::Regular;
+      MaskMask.Mask = new Masks::TMask(Mask);
+    }
+  }
+  catch(...)
+  {
+    ThrowError(Start, End);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileMasks::ReleaseMaskMask(TMaskMask & MaskMask)
+{
+  delete MaskMask.Mask;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileMasks::TrimEx(AnsiString & Str, int & Start, int & End)
+{
+  AnsiString Buf = TrimLeft(Str);
+  Start += Str.Length() - Buf.Length();
+  Str = TrimRight(Buf);
+  End -= Buf.Length() - Str.Length();
+}
+//---------------------------------------------------------------------------
+bool __fastcall TFileMasks::MatchesMaskMask(const TMaskMask & MaskMask, const AnsiString & Str)
+{
+  bool Result;
+  if (MaskMask.Kind == TMaskMask::Any)
+  {
+    Result = true;
+  }
+  else if ((MaskMask.Kind == TMaskMask::NoExt) && (Str.Pos(".") == 0))
+  {
+    Result = true;
+  }
+  else
+  {
+    Result = MaskMask.Mask->Matches(Str);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileMasks::SetMasks(const AnsiString value)
+{
+  if (FStr != value)
+  {
+    SetStr(value, false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileMasks::SetMask(const AnsiString & Mask)
+{
+  SetStr(Mask, true);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileMasks::SetStr(const AnsiString Str, bool SingleMask)
+{
+  AnsiString Backup = FStr;
+  try
+  {
+    FStr = Str;
+    Clear();
+
+    int NextMaskFrom = 1;
+    bool Include = true;
+    while (NextMaskFrom <= Str.Length())
+    {
+      int MaskStart = NextMaskFrom;
+      char NextMaskDelimiter;
+      AnsiString MaskStr;
+      if (SingleMask)
+      {
+        MaskStr = Str;
+        NextMaskFrom = Str.Length() + 1;
+        NextMaskDelimiter = '\0';
+      }
+      else
+      {
+        MaskStr = CopyToChars(Str, NextMaskFrom, ";,|", false, &NextMaskDelimiter);
+      }
+      int MaskEnd = NextMaskFrom - 1;
+
+      TrimEx(MaskStr, MaskStart, MaskEnd);
+
+      if (!MaskStr.IsEmpty())
+      {
+        TMask Mask;
+        Mask.Str = MaskStr;
+        Mask.DirectoryOnly = false;
+        Mask.FileNameMask.Kind = TMaskMask::Any;
+        Mask.FileNameMask.Mask = NULL;
+        Mask.DirectoryMask.Kind = TMaskMask::Any;
+        Mask.DirectoryMask.Mask = NULL;
+        Mask.HighSizeMask = TMask::None;
+        Mask.LowSizeMask = TMask::None;
+
+        char NextPartDelimiter = '\0';
+        int NextPartFrom = 1;
+        while (NextPartFrom <= MaskStr.Length())
+        {
+          char PartDelimiter = NextPartDelimiter;
+          int PartFrom = NextPartFrom;
+          AnsiString PartStr = CopyToChars(MaskStr, NextPartFrom, "<>", false, &NextPartDelimiter);
+
+          int PartStart = MaskStart + PartFrom - 1;
+          int PartEnd = MaskStart + NextPartFrom - 2;
+
+          TrimEx(PartStr, PartStart, PartEnd);
+
+          if (PartDelimiter != '\0')
+          {
+            bool Low = (PartDelimiter == '>');
+            TMask::TSizeMask & SizeMask = (Low ? Mask.LowSizeMask : Mask.HighSizeMask);
+            __int64 & Size = (Low ? Mask.LowSize : Mask.HighSize);
+
+            bool Result = (SizeMask == TMask::None);
+
+            if (!Result)
+            {
+              // include delimiter into size part
+              ThrowError(PartStart - 1, PartEnd);
+            }
+            else
+            {
+              if ((PartStr.Length() >= 1) && (PartStr[1] == '='))
+              {
+                SizeMask = TMask::Close;
+                PartStr.Delete(1, 1);
+              }
+              else
+              {
+                SizeMask = TMask::Open;
+              }
+
+              Size = ParseSize(PartStr);
+            }
+          }
+          else if (!PartStr.IsEmpty())
+          {
+            int D = PartStr.LastDelimiter("\\/");
+
+            Mask.DirectoryOnly = (D > 0) && (D == PartStr.Length());
+
+            if (Mask.DirectoryOnly)
+            {
+              PartStr.SetLength(PartStr.Length() - 1);
+              D = PartStr.LastDelimiter("\\/");
+            }
+
+            if (D > 0)
+            {
+              // make sure sole "/" (root dir) is preserved as is
+              CreateMaskMask(
+                UnixExcludeTrailingBackslash(ToUnixPath(PartStr.SubString(1, D))),
+                PartStart, PartStart + D - 1, false,
+                Mask.DirectoryMask);
+              CreateMaskMask(
+                PartStr.SubString(D + 1, PartStr.Length() - D),
+                PartStart + D, PartEnd, true,
+                Mask.FileNameMask);
+            }
+            else
+            {
+              CreateMaskMask(PartStr, PartStart, PartEnd, true, Mask.FileNameMask);
+            }
+          }
+        }
+
+        (Include ? FIncludeMasks : FExcludeMasks).push_back(Mask);
+      }
+
+      if (NextMaskDelimiter == '|')
+      {
+        if (Include)
+        {
+          Include = false;
+        }
+        else
+        {
+          ThrowError(NextMaskFrom - 1, Str.Length());
+        }
+      }
+    }
+  }
+  catch(...)
+  {
+    // this does not work correctly if previous mask was set using SetMask.
+    // this should not fail (the mask was validated before),
+    // otherwise we end in an infinite loop
+    SetStr(Backup, false);
+    throw;
+  }
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------

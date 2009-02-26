@@ -87,17 +87,6 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
       end
     end
   end
-  object MoreButton: TMoreButton
-    Left = 11
-    Top = 219
-    Width = 75
-    Height = 25
-    Anchors = [akRight, akBottom]
-    Caption = '<< &Less'
-    TabOrder = 2
-    Panel = AttributesGroup
-    RepositionForm = True
-  end
   object OKBtn: TButton
     Left = 91
     Top = 219
@@ -107,7 +96,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     Caption = 'OK'
     Default = True
     ModalResult = 1
-    TabOrder = 3
+    TabOrder = 2
   end
   object CancelBtn: TButton
     Left = 171
@@ -118,7 +107,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     Cancel = True
     Caption = 'Cancel'
     ModalResult = 2
-    TabOrder = 4
+    TabOrder = 3
   end
   object HelpButton: TButton
     Left = 252
@@ -127,7 +116,7 @@ object CreateDirectoryDialog: TCreateDirectoryDialog
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Help'
-    TabOrder = 5
+    TabOrder = 4
     OnClick = HelpButtonClick
   end
 end

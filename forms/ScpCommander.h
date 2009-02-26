@@ -374,6 +374,8 @@ __published:
   TTBXItem *TBXItem163;
   TTBXItem *TBXItem169;
   TTBXComboBoxItem *QueueSpeedComboBoxItem;
+  TTBXItem *TBXItem220;
+  TTBXItem *TBXItem221;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);

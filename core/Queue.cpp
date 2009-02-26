@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "Terminal.h"
 #include "Queue.h"
+#include "Exceptions.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -156,6 +157,11 @@ __fastcall TSimpleThread::~TSimpleThread()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TSimpleThread::IsFinished()
+{
+  return FFinished;
+}
+//---------------------------------------------------------------------------
 void __fastcall TSimpleThread::Start()
 {
   if (ResumeThread(FThread) == 1)
@@ -177,9 +183,9 @@ void __fastcall TSimpleThread::Close()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TSimpleThread::WaitFor()
+void __fastcall TSimpleThread::WaitFor(unsigned int Milliseconds)
 {
-  WaitForSingleObject(FThread, INFINITE);
+  WaitForSingleObject(FThread, Milliseconds);
 }
 //---------------------------------------------------------------------------
 // TSignalThread
@@ -1182,9 +1188,9 @@ void __fastcall TTerminalItem::TerminalShowExtendedException(
   USEDPARAM(Arg);
   assert(Arg == NULL);
 
+  AnsiString Message; // not used
   if ((FItem != NULL) &&
-      !E->Message.IsEmpty() &&
-      (dynamic_cast<EAbort*>(E) == NULL))
+      ExceptionMessage(E, Message))
   {
     TShowExtendedExceptionAction Action;
     Action.Terminal = Terminal;
@@ -1613,6 +1619,10 @@ __fastcall TTransferQueueItem::TTransferQueueItem(TTerminal * Terminal,
 //---------------------------------------------------------------------------
 __fastcall TTransferQueueItem::~TTransferQueueItem()
 {
+  for (int Index = 0; Index < FFilesToCopy->Count; Index++)
+  {
+    delete FFilesToCopy->Objects[Index];
+  }
   delete FFilesToCopy;
   delete FCopyParam;
 }

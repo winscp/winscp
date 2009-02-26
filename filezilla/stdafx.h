@@ -8,11 +8,11 @@
 #define MPEXT
 #define MPEXT_NO_ZLIB
 #define MPEXT_NO_GSS
-#define MPEXT_NO_SSL
 #define MPEXT_NO_SFTP
 #define MPEXT_NO_IDENT
 #define MPEXT_NO_CACHE
 #define MPEXT_NO_SPEED_LIM_RULES
+#define MPEXT_NO_SSLDLL
 #define _AFX_NOFORCE_LIBS
 //---------------------------------------------------------------------------
 #define GetOption(OPTION) GetInstanceOption(this->m_pApiLogParent, OPTION)

@@ -5,8 +5,8 @@
     <VERSION value="BCB.06.00"/>
     <PROJECT value="..\lib\Moje_B5.bpl"/>
     <OBJFILES value="Moje_B5.obj my\HistoryComboBox.obj
-      my\ListViewColProperties.obj my\MoreButton.obj my\NortonLikeListView.obj
-      my\PathLabel.obj my\UpDownEdit.obj my\ComboEdit.obj my\PasswordEdit.obj
+      my\ListViewColProperties.obj my\NortonLikeListView.obj my\PathLabel.obj
+      my\UpDownEdit.obj my\ComboEdit.obj my\PasswordEdit.obj
       my\ResourceModule.obj my\CompThread.obj my\DiscMon.obj my\TcpIp.obj
       my\GrayedCheckBox.obj my\IEListView.obj my\LanguagesDEPfix.obj
       my\PasTools.obj"/>
@@ -55,7 +55,6 @@
       <FILE FILENAME="my\HistoryComboBox.pas" FORMNAME="" UNITNAME="HistoryComboBox" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\HistoryComboBox.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\ListViewColProperties.pas" FORMNAME="" UNITNAME="ListViewColProperties" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
-      <FILE FILENAME="my\MoreButton.pas" FORMNAME="" UNITNAME="MoreButton" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\NortonLikeListView.pas" FORMNAME="" UNITNAME="NortonLikeListView" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\NortonLikeListView.dcr" FORMNAME="" UNITNAME="" CONTAINERID="DcrTool" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="my\PathLabel.pas" FORMNAME="" UNITNAME="PathLabel" CONTAINERID="PascalCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>

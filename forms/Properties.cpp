@@ -11,6 +11,7 @@
 #include <TextsWin.h>
 #include <GUITools.h>
 #include <CoreMain.h>
+#include <Tools.h>
 //---------------------------------------------------------------------
 #pragma link "PathLabel"
 #pragma link "Rights"
@@ -20,28 +21,18 @@
 #endif
 //---------------------------------------------------------------------
 bool __fastcall DoPropertiesDialog(TStrings * FileList,
-  const AnsiString Directory, TStrings * GroupList, TStrings * UserList,
-  TRemoteProperties * Properties, int AllowedChanges,
-  TCalculateSizeEvent OnCalculateSize,
+  const AnsiString Directory, const TRemoteTokenList * GroupList,
+  const TRemoteTokenList * UserList, TRemoteProperties * Properties,
+  int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
   TCalculateChecksumEvent OnCalculateChecksum)
 {
   bool Result;
   TPropertiesDialog * PropertiesDialog = new TPropertiesDialog(Application,
+    FileList, Directory, GroupList, UserList, AllowedChanges, UserGroupByID,
     OnCalculateSize, OnCalculateChecksum);
   try
   {
-    PropertiesDialog->AllowedChanges = AllowedChanges;
-    PropertiesDialog->Directory = Directory;
-    PropertiesDialog->FileList = FileList;
-    PropertiesDialog->GroupList = GroupList;
-    PropertiesDialog->UserList = UserList;
-    PropertiesDialog->FileProperties = *Properties;
-
-    Result = PropertiesDialog->Execute();
-    if (Result)
-    {
-      *Properties = PropertiesDialog->FileProperties;
-    }
+    Result = PropertiesDialog->Execute(*Properties);
   }
   __finally
   {
@@ -51,15 +42,15 @@ bool __fastcall DoPropertiesDialog(TStrings * FileList,
 }
 //---------------------------------------------------------------------
 __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
-  TCalculateSizeEvent OnCalculateSize,
+  TStrings * FileList,const AnsiString Directory,
+  const TRemoteTokenList * GroupList, const TRemoteTokenList * UserList,
+  int AllowedChanges, bool UserGroupByID, TCalculateSizeEvent OnCalculateSize,
   TCalculateChecksumEvent OnCalculateChecksum)
   : TForm(AOwner)
 {
   FOnCalculateSize = OnCalculateSize;
   FOnCalculateChecksum = OnCalculateChecksum;
   RightsFrame->OnChange = ControlChange;
-
-  FGroupsSet = False;
 
   TSHFileInfo FileInfo;
   FShellImageList = new TImageList(this);
@@ -68,10 +59,21 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   FShellImageList->ShareImages = True;
 
   FFileList = new TStringList();
+  FFileList->Assign(FileList);
+  FAllowedChanges = AllowedChanges;
+  FUserGroupByID = UserGroupByID;
+
   FAllowCalculateStats = false;
   FStatsNotCalculated = false;
   FChecksumLoaded = false;
   FMultipleChecksum = false;
+
+  LocationLabel->Caption = Directory;
+
+  FGroupList = GroupList;
+  FUserList = UserList;
+
+  LoadInfo();
 
   UseSystemSettings(this);
 }
@@ -84,14 +86,16 @@ __fastcall TPropertiesDialog::~TPropertiesDialog()
   FShellImageList = NULL;
 }
 //---------------------------------------------------------------------
-bool __fastcall TPropertiesDialog::Execute()
+bool __fastcall TPropertiesDialog::Execute(TRemoteProperties & Properties)
 {
+  SetFileProperties(Properties);
+
   PageControl->ActivePage = CommonSheet;
-  if (AllowedChanges & cpGroup) ActiveControl = GroupComboBox;
+  if (FAllowedChanges & cpGroup) ActiveControl = GroupComboBox;
     else
-  if (AllowedChanges & cpOwner) ActiveControl = OwnerComboBox;
+  if (FAllowedChanges & cpOwner) ActiveControl = OwnerComboBox;
     else
-  if (AllowedChanges & cpMode) ActiveControl = RightsFrame;
+  if (FAllowedChanges & cpMode) ActiveControl = RightsFrame;
     else ActiveControl = CancelButton;
 
   ChecksumAlgEdit->Text = GUIConfiguration->ChecksumAlg;
@@ -101,166 +105,180 @@ bool __fastcall TPropertiesDialog::Execute()
 
   bool Result = (ShowModal() == mrOk);
 
+  if (Result)
+  {
+    Properties = GetFileProperties();
+  }
+
   GUIConfiguration->ChecksumAlg = ChecksumAlgEdit->Text;
 
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::SetFileList(TStrings * value)
+AnsiString __fastcall TPropertiesDialog::LoadRemoteToken(
+  const TRemoteToken & Token)
 {
-  if (FFileList != value)
+  AnsiString Result;
+  if (FUserGroupByID)
   {
-    FFileList->Assign(value);
-    LoadInfo();
-    FGroupsSet = false;
-    FUsersSet = false;
+    if (Token.IDValid)
+    {
+      if (Token.NameValid)
+      {
+        Result = FORMAT("%s [%d]", (Token.Name, int(Token.ID)));
+      }
+      else
+      {
+        Result = FORMAT("[%d]", (int(Token.ID)));
+      }
+    }
+    else
+    {
+      // be it valid or not
+      Result = Token.Name;
+    }
+  }
+  else
+  {
+    // what if name is not filled in?
+    Result = Token.Name;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::LoadRemoteToken(
+  TComboBox * ComboBox, bool Valid, const TRemoteToken & Token)
+{
+  if (Valid)
+  {
+    ComboBox->Text = LoadRemoteToken(Token);
+  }
+  else
+  {
+    ComboBox->Text = "";
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::LoadRemoteTokens(TComboBox * ComboBox,
+  const TRemoteTokenList * List)
+{
+  TStrings * Items = ComboBox->Items;
+  Items->BeginUpdate();
+  try
+  {
+    Items->Clear();
+    if (List != NULL)
+    {
+      int Count = List->Count();
+      for (int Index = 0; Index < Count; Index++)
+      {
+        Items->Add(LoadRemoteToken(*List->Token(Index)));
+      }
+    }
+  }
+  __finally
+  {
+    Items->EndUpdate();
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::LoadInfo()
 {
-  if (FFileList)
+  assert(FFileList->Count > 0);
+  FMultiple = FFileList->Count > 1;
+  FMultipleChecksum = FMultiple;
+
+  FAllowCalculateStats = false;
+  FStatsNotCalculated = false;
+
+  __int64 FilesSize = 0;
+  TCalculateSizeStats Stats;
+
+  for (int Index = 0; Index < FFileList->Count; Index++)
   {
-    assert(FFileList->Count > 0);
-    FAllowCalculateStats = false;
-    FStatsNotCalculated = false;
-    FileIconImage->Picture->Bitmap = NULL;
-    __int64 FilesSize;
-    TCalculateSizeStats Stats;
-
-    RightsFrame->AllowUndef = Multiple;
-    FMultipleChecksum = Multiple;
-
-    if (!Multiple)
+    TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[Index]);
+    if (File->IsDirectory)
     {
-      TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
-      assert(File && FShellImageList);
-
-      // shell image list does not have fixed large icon size
-      // (it is probably 32x32 min, but can be larged, on xp it is 48x48 if
-      // large icons are enabled, on vista, can be even larger).
-      // so we stretch (shrink) the icon to 32x32 here to be sure.
-      Graphics::TBitmap * Bitmap = new Graphics::TBitmap;
-      try
-      {
-        FShellImageList->GetBitmap(File->IconIndex, Bitmap);
-        FileIconImage->Picture->Bitmap->Width = FileIconImage->Width;
-        FileIconImage->Picture->Bitmap->Height = FileIconImage->Height;
-        FileIconImage->Picture->Bitmap->Canvas->StretchDraw(
-          TRect(0, 0, FileIconImage->Width, FileIconImage->Height),
-          Bitmap);
-      }
-      __finally
-      {
-        delete Bitmap;
-      }
-
-      if (!FUsersSet)
-      {
-        OwnerComboBox->Items->Text = File->Owner;
-      }
-      if (!FGroupsSet)
-      {
-        GroupComboBox->Items->Text = File->Group;
-      }
-      FilesSize = File->Size;
-
-      LinksToLabelLabel->Visible = File->IsSymLink;
-      LinksToLabel->Visible = File->IsSymLink;
-      if (File->IsSymLink)
-      {
-        LinksToLabel->Caption = File->LinkTo;
-      }
-      if (File->IsDirectory && !File->IsSymLink)
+      Stats.Directories++;
+      if (!File->IsSymLink)
       {
         FAllowCalculateStats = true;
         FStatsNotCalculated = true;
         FMultipleChecksum = true;
       }
-
-      RightsFrame->AllowAddXToDirectories = File->IsDirectory;
-      Caption = FMTLOAD(PROPERTIES_FILE_CAPTION, (File->FileName));
-      RecursiveCheck->Visible = File->IsDirectory;
-      RecursiveBevel->Visible = File->IsDirectory;
     }
     else
     {
-      Caption = FFileList->Count ?
-        FMTLOAD(PROPERTIES_FILES_CAPTION, (FFileList->Strings[0])) : AnsiString();
-      LinksToLabelLabel->Hide();
-      LinksToLabel->Hide();
-
-      TStrings *GroupList = new TStringList();
-      ((TStringList*)GroupList)->Duplicates = dupIgnore;
-      ((TStringList*)GroupList)->Sorted = True;
-      TStrings *OwnerList = new TStringList();
-      ((TStringList*)OwnerList)->Duplicates = dupIgnore;
-      ((TStringList*)OwnerList)->Sorted = True;
-
-      try
-      {
-        FilesSize = 0;
-
-        for (int Index = 0; Index < FFileList->Count; Index++)
-        {
-          TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[Index]);
-          assert(File);
-          if (!File->Group.IsEmpty())
-          {
-            GroupList->Add(File->Group);
-          }
-          if (!File->Owner.IsEmpty())
-          {
-            OwnerList->Add(File->Owner);
-          }
-          if (File->IsDirectory)
-          {
-            Stats.Directories++;
-            if (!File->IsSymLink)
-            {
-              FAllowCalculateStats = true;
-              FStatsNotCalculated = true;
-            }
-          }
-          else
-          {
-            Stats.Files++;
-          }
-
-          if (File->IsSymLink)
-          {
-            Stats.SymLinks++;
-          }
-          FilesSize += File->Size;
-        }
-
-        if (!FUsersSet)
-        {
-          OwnerComboBox->Items = OwnerList;
-        }
-        if (!FGroupsSet)
-        {
-          GroupComboBox->Items = GroupList;
-        }
-        RightsFrame->AllowAddXToDirectories = (Stats.Directories > 0);
-        RecursiveCheck->Visible = (Stats.Directories > 0);
-        RecursiveBevel->Visible = (Stats.Directories > 0);
-
-      }
-      __finally
-      {
-        delete GroupList;
-        delete OwnerList;
-      }
+      Stats.Files++;
     }
 
-    LoadStats(FilesSize, Stats);
-
-    FilesIconImage->Visible = Multiple;
-    FileIconImage->Visible = !Multiple;
-    ChecksumGroup->Visible = !FMultipleChecksum;
-    ChecksumView->Visible = FMultipleChecksum;
+    if (File->IsSymLink)
+    {
+      Stats.SymLinks++;
+    }
+    FilesSize += File->Size;
   }
+
+  LoadRemoteTokens(GroupComboBox, FGroupList);
+  LoadRemoteTokens(OwnerComboBox, FUserList);
+
+  RightsFrame->AllowAddXToDirectories = (Stats.Directories > 0);
+  RecursiveCheck->Visible = (Stats.Directories > 0);
+  RecursiveBevel->Visible = (Stats.Directories > 0);
+
+  LoadStats(FilesSize, Stats);
+
+  FileIconImage->Picture->Bitmap = NULL;
+
+  RightsFrame->AllowUndef = FMultiple;
+
+  if (!FMultiple)
+  {
+    TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
+    assert(File && FShellImageList);
+
+    // shell image list does not have fixed large icon size
+    // (it is probably 32x32 min, but can be larged, on xp it is 48x48 if
+    // large icons are enabled, on vista can be even larger).
+    // so we stretch (shrink) the icon to 32x32 here to be sure.
+    Graphics::TBitmap * Bitmap = new Graphics::TBitmap;
+    try
+    {
+      FShellImageList->GetBitmap(File->IconIndex, Bitmap);
+      FileIconImage->Picture->Bitmap->Width = FileIconImage->Width;
+      FileIconImage->Picture->Bitmap->Height = FileIconImage->Height;
+      FileIconImage->Picture->Bitmap->Canvas->StretchDraw(
+        TRect(0, 0, FileIconImage->Width, FileIconImage->Height),
+        Bitmap);
+    }
+    __finally
+    {
+      delete Bitmap;
+    }
+
+    LinksToLabelLabel->Visible = File->IsSymLink;
+    LinksToLabel->Visible = File->IsSymLink;
+    if (File->IsSymLink)
+    {
+      LinksToLabel->Caption = File->LinkTo;
+    }
+
+    RightsFrame->AllowAddXToDirectories = File->IsDirectory;
+    Caption = FMTLOAD(PROPERTIES_FILE_CAPTION, (File->FileName));
+    RecursiveCheck->Visible = File->IsDirectory;
+    RecursiveBevel->Visible = File->IsDirectory;
+  }
+  else
+  {
+    Caption = FMTLOAD(PROPERTIES_FILES_CAPTION, (FFileList->Strings[0]));
+    LinksToLabelLabel->Hide();
+    LinksToLabel->Hide();
+  }
+
+  FilesIconImage->Visible = FMultiple;
+  FileIconImage->Visible = !FMultiple;
+  ChecksumGroup->Visible = !FMultipleChecksum;
+  ChecksumView->Visible = FMultipleChecksum;
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
@@ -282,7 +300,7 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
     }
   }
 
-  if (((Stats.Files + Stats.Directories) == 0) && !Multiple)
+  if (((Stats.Files + Stats.Directories) == 0) && !FMultiple)
   {
     TRemoteFile * File = (TRemoteFile *)(FFileList->Objects[0]);
     assert(File != NULL);
@@ -317,17 +335,7 @@ void __fastcall TPropertiesDialog::LoadStats(__int64 FilesSize,
   FileLabel->Caption = FilesStr;
 }
 //---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::SetDirectory(AnsiString value)
-{
-  LocationLabel->Caption = value;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TPropertiesDialog::GetDirectory()
-{
-  return LocationLabel->Caption;
-}
-//---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::SetFileProperties(TRemoteProperties value)
+void __fastcall TPropertiesDialog::SetFileProperties(const TRemoteProperties & value)
 {
   TValidProperties Valid;
   if (value.Valid.Contains(vpRights) && FAllowedChanges & cpMode) Valid << vpRights;
@@ -347,33 +355,118 @@ void __fastcall TPropertiesDialog::SetFileProperties(TRemoteProperties value)
     RightsFrame->Rights = TRights();
     RightsFrame->AddXToDirectories = false;
   }
-  GroupComboBox->Text = value.Valid.Contains(vpGroup) ? value.Group : AnsiString();
-  OwnerComboBox->Text = value.Valid.Contains(vpOwner) ? value.Owner : AnsiString();
+  LoadRemoteToken(GroupComboBox, value.Valid.Contains(vpGroup), value.Group);
+  LoadRemoteToken(OwnerComboBox, value.Valid.Contains(vpOwner), value.Owner);
   RecursiveCheck->Checked = value.Recursive;
   UpdateControls();
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::StoreRemoteToken(unsigned int ID,
+  const AnsiString & Text, const TRemoteTokenList * List, TRemoteToken & Result)
+{
+  assert(List != NULL);
+  const TRemoteToken * Token = List->Find(ID);
+  if (Token == NULL)
+  {
+    Result.ID = ID;
+    Result.Name = Text;
+  }
+  else
+  {
+    Result = *Token;
+  }
+}
+//---------------------------------------------------------------------------
+TRemoteToken __fastcall TPropertiesDialog::StoreRemoteToken(const TRemoteToken & Orig,
+  AnsiString Text, int Message, const TRemoteTokenList * List)
+{
+  TRemoteToken Result;
+  Text = Text.Trim();
+  if (!Text.IsEmpty())
+  {
+    if (FUserGroupByID)
+    {
+      assert(List != NULL);
+      int IDStart = Text.LastDelimiter("[");
+      if (!Text.IsEmpty() && (IDStart >= 0) && (Text[Text.Length()] == ']'))
+      {
+        int ID;
+        AnsiString IDStr = Text.SubString(IDStart + 1, Text.Length() - IDStart - 1);
+        if (!TryStrToInt(IDStr, ID))
+        {
+          throw Exception(Message);
+        }
+        else
+        {
+          StoreRemoteToken(ID, Text.SubString(0, IDStart).Trim(), List, Result);
+        }
+      }
+      else
+      {
+        const TRemoteToken * Token = List->Find(Text);
+        if (Token == NULL)
+        {
+          int ID;
+          if (TryStrToInt(Text, ID))
+          {
+            StoreRemoteToken(ID, Text, List, Result);
+          }
+          else
+          {
+            throw Exception(FMTLOAD(PROPERTIES_UNKNOWN_TOKEN, (Text)));
+          }
+        }
+        else
+        {
+          Result = *Token;
+        }
+      }
+    }
+    else
+    {
+      Result.Name = Text;
+    }
+  }
+
+  if (LoadRemoteToken(Result) == LoadRemoteToken(Orig))
+  {
+    Result = Orig;
+  }
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::StoreRemoteToken(TComboBox * ComboBox,
+  int ChangeFlag, TValidProperty PropertyFlag, const TRemoteToken & Orig,
+  TRemoteToken & Token, int Message, const TRemoteTokenList * List,
+  TRemoteProperties & Properties)
+{
+  AnsiString Text = ComboBox->Text.Trim();
+  if (FLAGSET(FAllowedChanges, ChangeFlag))
+  {
+    Token = StoreRemoteToken(Orig, Text, Message, List);
+    if (Token.IsSet)
+    {
+      Properties.Valid << PropertyFlag;
+    }
+  }
 }
 //---------------------------------------------------------------------------
 TRemoteProperties __fastcall TPropertiesDialog::GetFileProperties()
 {
   TRemoteProperties Result;
 
-  if (AllowedChanges & cpMode)
+  if (FAllowedChanges & cpMode)
   {
     Result.Valid << vpRights;
     Result.Rights = RightsFrame->Rights;
     Result.AddXToDirectories = RightsFrame->AddXToDirectories;
   }
 
-  #define STORE_NAME(PROPERTY) \
-    if (!PROPERTY ## ComboBox->Text.Trim().IsEmpty() && \
-        AllowedChanges & cp ## PROPERTY) \
-    { \
-      Result.Valid << vp ## PROPERTY; \
-      Result.PROPERTY = PROPERTY ## ComboBox->Text.Trim(); \
-    }
-  STORE_NAME(Group);
-  STORE_NAME(Owner);
-  #undef STORE_NAME
+  StoreRemoteToken(GroupComboBox, cpGroup, vpGroup, FOrigProperties.Group,
+    Result.Group, PROPERTIES_INVALID_GROUP, FGroupList, Result);
+  StoreRemoteToken(OwnerComboBox, cpOwner, vpOwner, FOrigProperties.Owner,
+    Result.Owner, PROPERTIES_INVALID_OWNER, FUserList, Result);
 
   Result.Recursive = RecursiveCheck->Checked;
 
@@ -382,29 +475,37 @@ TRemoteProperties __fastcall TPropertiesDialog::GetFileProperties()
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::ControlChange(TObject * /*Sender*/)
 {
-  UpdateControls();
+  if (Visible)
+  {
+    UpdateControls();
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::UpdateControls()
 {
-  EnableControl(OkButton,
-    // group name is specified or we set multiple-file properties and
-    // no valid group was specified (there are at least two different groups)
-    (!GroupComboBox->Text.Trim().IsEmpty() ||
-     (Multiple && !FOrigProperties.Valid.Contains(vpGroup)) ||
-     (FOrigProperties.Group == GroupComboBox->Text)) &&
-    // same but with owner
-    (!OwnerComboBox->Text.Trim().IsEmpty() ||
-     (Multiple && !FOrigProperties.Valid.Contains(vpOwner)) ||
-     (FOrigProperties.Owner == OwnerComboBox->Text)) &&
-    ((FileProperties != FOrigProperties) || RecursiveCheck->Checked)
-  );
+  bool Allow;
+  try
+  {
+    Allow =
+      !TRemoteProperties::ChangedProperties(FOrigProperties, GetFileProperties()).Valid.Empty() ||
+      RecursiveCheck->Checked;
+  }
+  catch(...)
+  {
+    // when properties are invalid allow submitting the form,
+    // because that reveals the cause to the user, otherwise he/she
+    // may not be able to tell what is wrong
+
+    Allow = true;
+  }
+  EnableControl(OkButton, Allow);
+
   EnableControl(GroupComboBox, FAllowedChanges & cpGroup);
   EnableControl(OwnerComboBox, FAllowedChanges & cpOwner);
   EnableControl(RightsFrame, FAllowedChanges & cpMode);
   CalculateSizeButton->Visible = FAllowCalculateStats;
 
-  if (!Multiple)
+  if (!FMultiple)
   {
     // when setting properties for one file only, allow undef state
     // only when the input right explicitly requires it or
@@ -429,59 +530,12 @@ void __fastcall TPropertiesDialog::UpdateControls()
   ChecksumEdit->Visible = ChecksumEdit->Enabled;
 }
 //---------------------------------------------------------------------------
-bool __fastcall TPropertiesDialog::GetMultiple()
-{
-  return (FFileList->Count != 1);
-}
-//---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::SetGroupList(TStrings * value)
-{
-  if (FGroupsSet || ((value != NULL) && (value->Count > 0)))
-  {
-    GroupComboBox->Items = value;
-    FGroupsSet = true;
-  }
-}
-//---------------------------------------------------------------------------
-TStrings * __fastcall TPropertiesDialog::GetGroupList()
-{
-  return GroupComboBox->Items;
-}
-//---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::SetUserList(TStrings * value)
-{
-  if (FUsersSet || ((value != NULL) && (value->Count > 0)))
-  {
-    OwnerComboBox->Items = value;
-    FUsersSet = true;
-  }
-}
-//---------------------------------------------------------------------------
-TStrings * __fastcall TPropertiesDialog::GetUserList()
-{
-  return OwnerComboBox->Items;
-}
-//---------------------------------------------------------------------------
 void __fastcall TPropertiesDialog::FormCloseQuery(TObject * /*Sender*/,
       bool & /*CanClose*/)
 {
   if (ModalResult == mrOk)
   {
-    #define CHECK_VALID_NAME(Property, Message) \
-      if (FOrigProperties.Valid.Contains(vp ## Property) && Property ## ComboBox->Text.Trim().IsEmpty()) { \
-        Property ## ComboBox->SetFocus(); throw Exception(Message); }
-    CHECK_VALID_NAME(Group, PROPERTIES_INVALID_GROUP);
-    CHECK_VALID_NAME(Owner, PROPERTIES_INVALID_OWNER);
-    #undef CHECK_VALID_NAME
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TPropertiesDialog::SetAllowedChanges(int value)
-{
-  if (FAllowedChanges != value)
-  {
-    FAllowedChanges = value;
-    UpdateControls();
+    ExitActiveControl(this);
   }
 }
 //---------------------------------------------------------------------------
@@ -495,7 +549,7 @@ void __fastcall TPropertiesDialog::CalculateSizeButtonClick(
   {
     __int64 Size;
     TCalculateSizeStats Stats;
-    FOnCalculateSize(FileList, Size, Stats, DoClose);
+    FOnCalculateSize(FFileList, Size, Stats, DoClose);
     FStatsNotCalculated = false;
     LoadStats(Size, Stats);
   }
@@ -615,5 +669,38 @@ void __fastcall TPropertiesDialog::ChecksumViewContextPopup(
   TObject * Sender, TPoint & MousePos, bool & Handled)
 {
   MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::ResolveRemoteToken(
+  const TRemoteToken & Orig, int Message, TComboBox * ComboBox,
+  const TRemoteTokenList * List)
+{
+  try
+  {
+    ComboBox->Text =
+      LoadRemoteToken(StoreRemoteToken(Orig, ComboBox->Text, Message, List));
+  }
+  catch(...)
+  {
+    ComboBox->SetFocus();
+    throw;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::GroupComboBoxExit(TObject * Sender)
+{
+  ResolveRemoteToken(FOrigProperties.Group, PROPERTIES_INVALID_GROUP,
+    dynamic_cast<TComboBox *>(Sender), FGroupList);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::OwnerComboBoxExit(TObject * Sender)
+{
+  ResolveRemoteToken(FOrigProperties.Owner, PROPERTIES_INVALID_OWNER,
+    dynamic_cast<TComboBox *>(Sender), FUserList);
+}
+//---------------------------------------------------------------------------
+void __fastcall TPropertiesDialog::FormShow(TObject * /*Sender*/)
+{
+  UpdateControls();
 }
 //---------------------------------------------------------------------------

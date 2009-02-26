@@ -13,7 +13,6 @@
 #include "Copy.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-#pragma link "MoreButton"
 #pragma link "Rights"
 #pragma link "CopyParams"
 #pragma link "HistoryComboBox"

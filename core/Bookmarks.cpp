@@ -2,16 +2,16 @@
 #include <vcl.h>
 #pragma hdrstop
 #include <Common.h>
+#include "NamedObjs.h"
 #include "Bookmarks.h"
 #include "HierarchicalStorage.h"
 #include "TextsCore.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-#define IS_NUMBER(STR) (StrToIntDef(STR, -123) != -123)
-//---------------------------------------------------------------------------
 __fastcall TBookmarks::TBookmarks(): TObject()
 {
+  FSharedKey = TNamedObjectList::HiddenPrefix + "shared";
   FBookmarkLists = new TStringList();
   FBookmarkLists->Sorted = true;
   FBookmarkLists->CaseSensitive = false;
@@ -92,7 +92,7 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
       Name = Names->Strings[i];
       Directory = Storage->ReadString(Name, "");
       TBookmark * Bookmark;
-      if (IS_NUMBER(Name))
+      if (IsNumber(Name))
       {
         Name = Directory;
       }
@@ -234,6 +234,16 @@ void __fastcall TBookmarks::SetBookmarks(AnsiString Index, TBookmarkList * value
   }
 }
 //---------------------------------------------------------------------------
+TBookmarkList * __fastcall TBookmarks::GetSharedBookmarks()
+{
+  return GetBookmarks(FSharedKey);
+}
+//---------------------------------------------------------------------------
+void __fastcall TBookmarks::SetSharedBookmarks(TBookmarkList * value)
+{
+  SetBookmarks(FSharedKey, value);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TBookmarkList::TBookmarkList(): TPersistent()
 {
@@ -351,6 +361,7 @@ void __fastcall TBookmarkList::Delete(TBookmark * Bookmark)
   FModified = true;
   Bookmark->FOwner = NULL;
   FBookmarks->Delete(I);
+  delete Bookmark;
 }
 //---------------------------------------------------------------------------
 int __fastcall TBookmarkList::IndexOf(TBookmark * Bookmark)

@@ -12,6 +12,7 @@
   SET_CONFIG_PROPERTY_EX(PROPERTY, )
 //---------------------------------------------------------------------------
 class TCriticalSection;
+enum TAutoSwitch { asOn, asOff, asAuto };
 //---------------------------------------------------------------------------
 class TConfiguration : public TObject
 {
@@ -29,6 +30,8 @@ private:
   int FLogWindowLines;
   bool FLogFileAppend;
   int FLogProtocol;
+  bool FLogActions;
+  bool FPermanentLogActions;
   bool FConfirmOverwriting;
   bool FConfirmResume;
   bool FAutoReadDirectoryAfterOp;
@@ -74,6 +77,7 @@ private:
   bool __fastcall GetLogWindowComplete();
   void __fastcall SetLogFileAppend(bool value);
   void __fastcall SetLogProtocol(int value);
+  void __fastcall SetLogActions(bool value);
   AnsiString __fastcall GetDefaultLogFileName();
   AnsiString __fastcall GetTimeFormat();
   void __fastcall SetStorage(TStorage value);
@@ -90,6 +94,7 @@ private:
   void __fastcall SetTunnelLocalPortNumberHigh(int value);
   void __fastcall SetCacheDirectoryChangesMaxSize(int value);
   void __fastcall SetShowFtpWelcomeMessage(bool value);
+  int __fastcall GetCompoundVersion();
 
 protected:
   TStorage FStorage;
@@ -125,6 +130,7 @@ protected:
 
   __property bool PermanentLogging  = { read=FPermanentLogging, write=SetLogging };
   __property AnsiString PermanentLogFileName  = { read=FPermanentLogFileName, write=SetLogFileName };
+  __property bool PermanentLogActions  = { read=FPermanentLogActions, write=SetLogActions };
 
 public:
   __fastcall TConfiguration();
@@ -161,6 +167,7 @@ public:
   __property TEOLType LocalEOLType = { read = GetLocalEOLType };
   __property AnsiString VersionStr = { read=GetVersionStr };
   __property AnsiString Version = { read=GetVersion };
+  __property int CompoundVersion = { read=GetCompoundVersion };
   __property AnsiString ProductVersion = { read=GetProductVersion };
   __property AnsiString ProductName = { read=GetProductName };
   __property AnsiString CompanyName = { read=GetCompanyName };
@@ -171,6 +178,7 @@ public:
   __property bool LogToFile  = { read=GetLogToFile, write=SetLogToFile };
   __property bool LogFileAppend  = { read=FLogFileAppend, write=SetLogFileAppend };
   __property int LogProtocol  = { read=FLogProtocol, write=SetLogProtocol };
+  __property bool LogActions  = { read=FLogActions, write=SetLogActions };
   __property int LogWindowLines  = { read=FLogWindowLines, write=SetLogWindowLines };
   __property bool LogWindowComplete  = { read=GetLogWindowComplete, write=SetLogWindowComplete };
   __property AnsiString DefaultLogFileName  = { read=GetDefaultLogFileName };

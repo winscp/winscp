@@ -8,6 +8,7 @@
 #include <CoreMain.h>
 #include <Terminal.h>
 #include <PuttyTools.h>
+#include <Queue.h>
 
 #include <Consts.hpp>
 
@@ -58,18 +59,24 @@ public:
 
 protected:
   static TOwnConsole * FInstance;
+  friend class TConsoleInputThread;
 
   __fastcall TOwnConsole();
   virtual __fastcall ~TOwnConsole();
 
   void __fastcall BreakInput();
   static BOOL WINAPI HandlerRoutine(DWORD CtrlType);
-  static int __fastcall InputTimerThreadProc(void * Parameter);
+  void __fastcall WindowStateTimer(TObject * Sender);
+  void __fastcall ProcessMessages();
+  void __fastcall TrayIconClick(TObject * Sender);
 
 private:
   HANDLE FInput;
   HANDLE FOutput;
-  HANDLE FInputTimerEvent;
+  HWND FConsoleWindow;
+  TTimer * FWindowStateTimer;
+  bool FMinimized;
+  TTrayIcon * FTrayIcon;
   static TCriticalSection FSection;
 
   bool FPendingAbort;
@@ -88,13 +95,44 @@ __fastcall TOwnConsole::TOwnConsole()
 
   FInput = GetStdHandle(STD_INPUT_HANDLE);
   FOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-  FInputTimerEvent = NULL;
   FPendingAbort = false;
+  FConsoleWindow = NULL;
+  FWindowStateTimer = NULL;
+  FMinimized = false;
+  FTrayIcon = new TTrayIcon(0);
+  FTrayIcon->OnClick = TrayIconClick;
+
+  if (WinConfiguration->MinimizeToTray)
+  {
+    HANDLE Kernel32 = GetModuleHandle(kernel32);
+
+    typedef HWND WINAPI (* TGetConsoleWindow)();
+    TGetConsoleWindow GetConsoleWindow =
+      (TGetConsoleWindow)GetProcAddress(Kernel32, "GetConsoleWindow");
+    if (GetConsoleWindow != NULL)
+    {
+      FConsoleWindow = GetConsoleWindow();
+      if (FConsoleWindow != NULL)
+      {
+        FWindowStateTimer = new TTimer(Application);
+        FWindowStateTimer->OnTimer = WindowStateTimer;
+        FWindowStateTimer->Interval = 250;
+        FWindowStateTimer->Enabled = true;
+      }
+      else
+      {
+        assert(false);
+      }
+    }
+  }
 }
 //---------------------------------------------------------------------------
 __fastcall TOwnConsole::~TOwnConsole()
 {
   TGuard Guard(&FSection);
+
+  delete FTrayIcon;
+  delete FWindowStateTimer;
 
   // deliberatelly do not remove ConsoleCtrlHandler as it causes
   // failures while exiting
@@ -108,6 +146,56 @@ __fastcall TOwnConsole::~TOwnConsole()
 TOwnConsole * __fastcall TOwnConsole::Instance()
 {
   return new TOwnConsole();
+}
+//---------------------------------------------------------------------------
+void __fastcall TOwnConsole::WindowStateTimer(TObject * /*Sender*/)
+{
+  assert(FConsoleWindow != NULL);
+  WINDOWPLACEMENT Placement;
+  memset(&Placement, 0, sizeof(Placement));
+  Placement.length = sizeof(Placement);
+  if (GetWindowPlacement(FConsoleWindow, &Placement))
+  {
+    bool Minimized = (Placement.showCmd == SW_SHOWMINIMIZED);
+    if (FMinimized != Minimized)
+    {
+      FMinimized = Minimized;
+
+      if (FMinimized && WinConfiguration->MinimizeToTray)
+      {
+        FTrayIcon->Visible = true;
+        ShowWindow(FConsoleWindow, SW_HIDE);
+      }
+      else
+      {
+        FTrayIcon->Visible = false;
+        ShowWindow(FConsoleWindow, SW_SHOW);
+      }
+    }
+  }
+  else
+  {
+    assert(false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TOwnConsole::ProcessMessages()
+{
+  // as of now, there's no point doing this unless we have icon tray
+  // (i.e. we need to monitor window state and eventually process tray icon messages)
+  if (FWindowStateTimer != NULL)
+  {
+    assert(WinConfiguration->MinimizeToTray);
+
+    Application->ProcessMessages();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TOwnConsole::TrayIconClick(TObject * /*Sender*/)
+{
+  assert(FConsoleWindow != NULL);
+  SetForegroundWindow(FConsoleWindow);
+  ShowWindow(FConsoleWindow, SW_RESTORE);
 }
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::BreakInput()
@@ -152,19 +240,6 @@ BOOL WINAPI TOwnConsole::HandlerRoutine(DWORD CtrlType)
   }
 }
 //---------------------------------------------------------------------------
-int __fastcall TOwnConsole::InputTimerThreadProc(void * Parameter)
-{
-  assert(FInstance != NULL);
-  unsigned int Timer = reinterpret_cast<unsigned int>(Parameter);
-
-  if (WaitForSingleObject(FInstance->FInputTimerEvent, Timer) == WAIT_TIMEOUT)
-  {
-    FInstance->BreakInput();
-  }
-
-  return 0;
-}
-//---------------------------------------------------------------------------
 bool __fastcall TOwnConsole::PendingAbort()
 {
   if (FPendingAbort)
@@ -193,7 +268,44 @@ void __fastcall TOwnConsole::Print(AnsiString Str, bool FromBeginning)
   assert(Result);
   USEDPARAM(Result);
   assert(Str.Length() == static_cast<long>(Written));
+  ProcessMessages();
 }
+//---------------------------------------------------------------------------
+class TConsoleInputThread : public TSimpleThread
+{
+public:
+  __fastcall TConsoleInputThread(HANDLE Input, AnsiString & Str, bool & Result) :
+    FInput(Input),
+    FStr(Str),
+    FResult(Result)
+  {
+  }
+
+  virtual __fastcall ~TConsoleInputThread()
+  {
+    Close();
+  }
+
+protected:
+  virtual void __fastcall Execute()
+  {
+    unsigned long Read;
+    FStr.SetLength(10240);
+    FResult = ReadConsole(FInput, FStr.c_str(), FStr.Length(), &Read, NULL);
+    assert(FResult);
+    FStr.SetLength(Read);
+  }
+
+  virtual void __fastcall Terminate()
+  {
+    TOwnConsole::FInstance->BreakInput();
+  }
+
+private:
+  HANDLE FInput;
+  AnsiString & FStr;
+  bool & FResult;
+};
 //---------------------------------------------------------------------------
 bool __fastcall TOwnConsole::Input(AnsiString & Str, bool Echo, unsigned int Timer)
 {
@@ -210,26 +322,25 @@ bool __fastcall TOwnConsole::Input(AnsiString & Str, bool Echo, unsigned int Tim
   }
   SetConsoleMode(FInput, NewMode);
 
-  HANDLE InputTimerThread = NULL;
-
   bool Result;
 
   try
   {
-    if (Timer > 0)
     {
-      unsigned int ThreadId;
-      assert(FInputTimerEvent == NULL);
-      FInputTimerEvent = CreateEvent(NULL, false, false, NULL);
-      InputTimerThread = (HANDLE)BeginThread(NULL, 0, InputTimerThreadProc,
-        reinterpret_cast<void *>(Timer), 0, ThreadId);
+      TConsoleInputThread InputThread(FInput, Str, Result);
+
+      InputThread.Start();
+
+      double Start = Now();
+      double End = Start + double(Timer)/(24*60*60*1000);
+      while (!InputThread.IsFinished() &&
+             ((Timer == 0) || (double(Now()) < End)))
+      {
+        ProcessMessages();
+        InputThread.WaitFor(50);
+      }
     }
 
-    unsigned long Read;
-    Str.SetLength(10240);
-    Result = ReadConsole(FInput, Str.c_str(), Str.Length(), &Read, NULL);
-    assert(Result);
-    Str.SetLength(Read);
     OemToAnsi(Str);
 
     if (FPendingAbort || !Echo)
@@ -237,7 +348,7 @@ bool __fastcall TOwnConsole::Input(AnsiString & Str, bool Echo, unsigned int Tim
       Print("\n");
     }
 
-    if (FPendingAbort || (Read == 0))
+    if (FPendingAbort || (Str.Length() == 0))
     {
       Result = false;
       FPendingAbort = false;
@@ -245,14 +356,6 @@ bool __fastcall TOwnConsole::Input(AnsiString & Str, bool Echo, unsigned int Tim
   }
   __finally
   {
-    if (InputTimerThread != NULL)
-    {
-      SetEvent(FInputTimerEvent);
-      WaitForSingleObject(InputTimerThread, 100);
-      CloseHandle(FInputTimerEvent);
-      FInputTimerEvent = NULL;
-      CloseHandle(InputTimerThread);
-    }
     SetConsoleMode(FInput, PrevMode);
   }
 
@@ -323,6 +426,8 @@ int __fastcall TOwnConsole::Choice(AnsiString Options, int Cancel, int Break,
           }
         }
       }
+
+      ProcessMessages();
     }
     while (Result == 0);
   }
@@ -336,6 +441,7 @@ int __fastcall TOwnConsole::Choice(AnsiString Options, int Cancel, int Break,
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::SetTitle(AnsiString Title)
 {
+  FTrayIcon->Hint = Title;
   AnsiToOem(Title);
   SetConsoleTitle(Title.c_str());
 }
@@ -354,14 +460,18 @@ void __fastcall TOwnConsole::WaitBeforeExit()
 {
   unsigned long Read;
   INPUT_RECORD Record;
-  while (ReadConsoleInput(FInput, &Record, 1, &Read))
+  while (true)
   {
-    if ((Read == 1) && (Record.EventType == KEY_EVENT) &&
+    if (PeekConsoleInput(FInput, &Record, 1, &Read) && (Read == 1) &&
+        ReadConsoleInput(FInput, &Record, 1, &Read) &&
+        (Read == 1) && (Record.EventType == KEY_EVENT) &&
         (Record.Event.KeyEvent.uChar.AsciiChar != 0) &&
         Record.Event.KeyEvent.bKeyDown)
     {
       break;
     }
+    Sleep(50);
+    ProcessMessages();
   }
 }
 //---------------------------------------------------------------------------
@@ -1369,11 +1479,11 @@ void __fastcall TConsoleRunner::SynchronizeControllerTooManyDirectories(
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::ShowException(Exception * E)
 {
-  if (!E->Message.IsEmpty() &&
-      (dynamic_cast<EAbort *>(E) == NULL))
+  AnsiString Message;
+  if (ExceptionMessage(E, Message))
   {
     FCommandError = true;
-    PrintMessage(TranslateExceptionMessage(E));
+    PrintMessage(Message);
     ExtException * EE = dynamic_cast<ExtException *>(E);
     if ((EE != NULL) && (EE->MoreMessages != NULL))
     {
