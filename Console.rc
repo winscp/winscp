@@ -1,6 +1,6 @@
 1 VERSIONINFO
-FILEVERSION 2,2,0,102
-PRODUCTVERSION 2,2,0,102
+FILEVERSION 2,2,0,103
+PRODUCTVERSION 2,2,0,103
 FILEOS 0x4
 FILETYPE 0x1
 {
@@ -10,13 +10,13 @@ FILETYPE 0x1
         {
             VALUE "CompanyName", "Martin Prikryl\0"
             VALUE "FileDescription", "Console interface for WinSCP\0"
-            VALUE "FileVersion", "2.2.0.102\0"
+            VALUE "FileVersion", "2.2.0.103\0"
             VALUE "InternalName", "console\0"
             VALUE "LegalCopyright", "(c) 2000-2009 Martin Prikryl\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "winscp.com\0"
             VALUE "ProductName", "WinSCP\0"
-            VALUE "ProductVersion", "4.2.0.0\0"
+            VALUE "ProductVersion", "4.2.1.0\0"
             VALUE "ReleaseType", "beta\0"
             VALUE "WWW", "http://winscp.net/\0"
         }

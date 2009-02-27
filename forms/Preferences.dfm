@@ -263,7 +263,7 @@ object PreferencesDialog: TPreferencesDialog
             DesignSize = (
               357
               198)
-            inherited LogFileNameEdit: TFilenameEdit
+            inherited LogFileNameEdit2: TFilenameEdit
               Width = 303
             end
             inherited LogFilePanel: TPanel

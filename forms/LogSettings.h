@@ -31,7 +31,6 @@ __published:
   TComboBox *LogProtocolCombo;
   TStaticText *LogFileNameHintText;
   TGroupBox *LogGroup;
-  TLabel *Label1;
   TRadioButton *LoggingOffButton;
   TRadioButton *LoggingOnButton;
   TRadioButton *LoggingActionsButton;

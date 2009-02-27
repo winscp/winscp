@@ -1163,9 +1163,9 @@ object LoginDialog: TLoginDialog
           object Label5: TLabel
             Left = 12
             Top = 102
-            Width = 149
+            Width = 152
             Height = 13
-            Caption = '&Support for listing of hidden files'
+            Caption = '&Support for listing of hidden files:'
             FocusControl = FtpListAllCombo
           end
           object PostLoginCommandsMemo: TMemo

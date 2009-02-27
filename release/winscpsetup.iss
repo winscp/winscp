@@ -799,8 +799,8 @@ begin
 
   S := S + ExpandConstant('{cm:UserSettingsOverview}') + NewLine;
   S := S + Space;
-  if CommanderRadioButton.Checked then S2 := ExpandConstant('{cm:NortonCommanderInterface}')
-    else S2 := ExpandConstant('{cm:ExplorerInterface}');
+  if CommanderRadioButton.Checked then S2 := ExpandConstant('{cm:NortonCommanderInterfaceB}')
+    else S2 := ExpandConstant('{cm:ExplorerInterfaceB}');
   StringChange(S2, '&', '');
   S := S + S2;
   S := S + NewLine;

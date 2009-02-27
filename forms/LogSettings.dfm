@@ -162,13 +162,6 @@ object LoggingFrame: TLoggingFrame
     Anchors = [akLeft, akTop, akRight]
     Caption = 'Log'
     TabOrder = 1
-    object Label1: TLabel
-      Left = 256
-      Top = 166
-      Width = 21
-      Height = 13
-      Caption = 'lines'
-    end
     object LoggingOffButton: TRadioButton
       Left = 16
       Top = 21
