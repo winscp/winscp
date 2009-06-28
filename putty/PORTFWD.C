@@ -278,6 +278,12 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 	 */
 	connect:
 
+	/*
+	 * Freeze the socket until the SSH server confirms the
+	 * connection.
+	 */
+	sk_set_frozen(pr->s, 1);
+
 	pr->c = new_sock_channel(pr->backhandle, pr->s);
 	if (pr->c == NULL) {
 	    pfd_close(pr->s);
@@ -288,11 +294,6 @@ static int pfd_receive(Plug plug, int urgent, char *data, int len)
 	}
 	pr->dynamic = 0;
 
-	/*
-	 * Now freeze the socket until the SSH server confirms the
-	 * connection.
-	 */
-	sk_set_frozen(pr->s, 1);
 	/*
 	 * If there's any data remaining in our current buffer,
 	 * save it to be sent on pfd_confirm().

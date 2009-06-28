@@ -220,6 +220,10 @@ __published:
   TGroupBox *UpdatesOptionsGroup;
   TLabel *Label10;
   TComboBox *UpdatesBetaVersionsCombo;
+  TCheckBox *QueueIndividuallyCheck;
+  TCheckBox *SessionReopenAutoIdleCheck;
+  TCheckBox *RenameWholeNameCheck;
+  TCheckBox *TreeOnLeftCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);

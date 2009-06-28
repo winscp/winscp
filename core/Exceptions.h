@@ -8,6 +8,7 @@
 #include <System.hpp>
 //---------------------------------------------------------------------------
 bool __fastcall ExceptionMessage(Exception * E, AnsiString & Message);
+enum TOnceDoneOperation { odoIdle, odoDisconnect, odoShutDown };
 //---------------------------------------------------------------------------
 class ExtException : public Sysutils::Exception
 {
@@ -81,6 +82,20 @@ public:
   };
 //---------------------------------------------------------------------------
 DERIVE_FATAL_EXCEPTION(ESshFatal, EFatal);
-DERIVE_FATAL_EXCEPTION(ESshTerminate, EFatal); // exception that closes application, but displayes info message (not error message) = close on completion
+//---------------------------------------------------------------------------
+// exception that closes application, but displayes info message (not error message)
+// = close on completionclass ESshTerminate : public EFatal
+class ESshTerminate : public EFatal
+{
+public:
+  inline __fastcall ESshTerminate(Exception* E, AnsiString Msg, TOnceDoneOperation AOperation) :
+    EFatal(E, Msg),
+    Operation(AOperation)
+  { }
+
+  TOnceDoneOperation Operation;
+};
+//---------------------------------------------------------------------------
+AnsiString __fastcall LastSysErrorMessage();
 //---------------------------------------------------------------------------
 #endif  // Exceptions

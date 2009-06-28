@@ -23,11 +23,11 @@
 //---------------------------------------------------------------------
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params, const AnsiString LocalDirectory,
-  const AnsiString RemoteDirectory)
+  const AnsiString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu)
 {
   bool Result;
   TSynchronizeChecklistDialog * Dialog = new TSynchronizeChecklistDialog(
-    Application, Mode, Params, LocalDirectory, RemoteDirectory);
+    Application, Mode, Params, LocalDirectory, RemoteDirectory, OnCustomCommandMenu);
   try
   {
     Result = Dialog->Execute(Checklist);
@@ -41,7 +41,8 @@ bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   TComponent * AOwner, TSynchronizeMode Mode, int Params,
-  const AnsiString LocalDirectory, const AnsiString RemoteDirectory)
+  const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+  TCustomCommandMenuEvent OnCustomCommandMenu)
   : TForm(AOwner)
 {
   FFormRestored = false;
@@ -49,6 +50,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FParams = Params;
   FLocalDirectory = ExcludeTrailingBackslash(LocalDirectory);
   FRemoteDirectory = UnixExcludeTrailingBackslash(RemoteDirectory);
+  FOnCustomCommandMenu = OnCustomCommandMenu;
   UseSystemSettings(this);
   FChecklist = NULL;
   FChangingItem = NULL;
@@ -69,6 +71,8 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   // header images mut be assigned after the small images, so it cannot
   // be done via DFM
   ListView->HeaderImages = ArrowImages;
+
+  CustomCommandsButton->Visible = (FOnCustomCommandMenu != NULL);
 }
 //---------------------------------------------------------------------
 __fastcall TSynchronizeChecklistDialog::~TSynchronizeChecklistDialog()
@@ -120,9 +124,23 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
 
   bool AllChecked = true;
   bool AllUnchecked = true;
+  bool AnyBoth = false;
+  bool AnyNonBoth = false;
   TListItem * Item = ListView->Selected;
   while (Item != NULL)
   {
+    const TSynchronizeChecklist::TItem * ChecklistItem =
+      static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
+    if ((ChecklistItem->Action == TSynchronizeChecklist::saUploadUpdate) ||
+        (ChecklistItem->Action == TSynchronizeChecklist::saDownloadUpdate))
+    {
+      AnyBoth = true;
+    }
+    else
+    {
+      AnyNonBoth = true;
+    }
+
     if (Item->Checked)
     {
       AllUnchecked = false;
@@ -139,6 +157,8 @@ void __fastcall TSynchronizeChecklistDialog::UpdateControls()
   EnableControl(UncheckButton, !AllUnchecked);
   EnableControl(CheckAllButton, (FChecked[0] < FTotals[0]));
   EnableControl(UncheckAllButton, (FChecked[0] > 0));
+  EnableControl(UncheckAllButton, (FChecked[0] > 0));
+  EnableControl(CustomCommandsButton, AnyBoth && !AnyNonBoth);
 
   CheckItem->Enabled = CheckButton->Enabled;
   UncheckItem->Enabled = UncheckButton->Enabled;
@@ -394,11 +414,15 @@ void __fastcall TSynchronizeChecklistDialog::StatusBarDrawPanel(
       break;
 
     case TSynchronizeChecklist::saUploadUpdate:
-      Possible = ((FMode == smRemote) || (FMode == smBoth));
+      Possible =
+        ((FMode == smRemote) || (FMode == smBoth)) &&
+        (FLAGCLEAR(FParams, spNotByTime) || FLAGSET(FParams, spBySize));
       break;
 
     case TSynchronizeChecklist::saDownloadUpdate:
-      Possible = ((FMode == smLocal) || (FMode == smBoth));
+      Possible =
+        ((FMode == smLocal) || (FMode == smBoth)) &&
+        (FLAGCLEAR(FParams, spNotByTime) || FLAGSET(FParams, spBySize));
       break;
 
     case TSynchronizeChecklist::saDeleteRemote:
@@ -753,5 +777,52 @@ void __fastcall TSynchronizeChecklistDialog::ListViewContextPopup(
   // to update source popup menu before TBX menu is created
   UpdateControls();
   MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TSynchronizeChecklistDialog::CustomCommandsButtonClick(
+  TObject * /*Sender*/)
+{
+  TStrings * LocalFileList = new TStringList();
+  TStrings * RemoteFileList = new TStringList();
+  try
+  {
+    TListItem * Item = ListView->Selected;
+    assert(Item != NULL);
+
+    while (Item != NULL)
+    {
+      const TSynchronizeChecklist::TItem * ChecklistItem =
+        static_cast<const TSynchronizeChecklist::TItem *>(Item->Data);
+
+      assert((ChecklistItem->Action == TSynchronizeChecklist::saUploadUpdate) ||
+             (ChecklistItem->Action == TSynchronizeChecklist::saDownloadUpdate));
+      assert(ChecklistItem->RemoteFile != NULL);
+
+      AnsiString LocalPath =
+        IncludeTrailingBackslash(ChecklistItem->Local.Directory) +
+        ChecklistItem->Local.FileName;
+
+      LocalFileList->Add(LocalPath);
+
+      AnsiString RemotePath =
+        IncludeTrailingBackslash(ChecklistItem->Remote.Directory) +
+        ChecklistItem->Remote.FileName;
+
+      RemoteFileList->AddObject(RemotePath, ChecklistItem->RemoteFile);
+
+      Item = ListView->GetNextItem(Item, sdAll, TItemStates() << isSelected);
+    }
+  }
+  catch(...)
+  {
+    delete LocalFileList;
+    delete RemoteFileList;
+    throw;
+  }
+
+  assert(FOnCustomCommandMenu != NULL);
+  FOnCustomCommandMenu(CustomCommandsButton,
+    CustomCommandsButton->ClientToScreen(TPoint(0, CustomCommandsButton->Height)),
+    LocalFileList, RemoteFileList);
 }
 //---------------------------------------------------------------------------

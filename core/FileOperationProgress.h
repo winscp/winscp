@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include "Configuration.h"
 #include "CopyParam.h"
+#include "Exceptions.h"
 #include <vector>
 //---------------------------------------------------------------------------
 class TFileOperationProgressType;
@@ -12,11 +13,12 @@ enum TFileOperation { foNone, foCopy, foMove, foDelete, foSetProperties,
   foGetProperties, foCalculateChecksum };
 enum TCancelStatus { csContinue = 0, csCancel, csCancelTransfer, csRemoteAbort };
 enum TResumeStatus { rsNotAvailable, rsEnabled, rsDisabled };
+enum TBatchOverwrite { boNo, boAll, boNone, boOlder, boAlternateResume, boAppend, boResume };
 typedef void __fastcall (__closure *TFileOperationProgressEvent)
   (TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
 typedef void __fastcall (__closure *TFileOperationFinished)
   (TFileOperation Operation, TOperationSide Side, bool Temp,
-    const AnsiString & FileName, bool Success, bool & DisconnectWhenComplete);
+    const AnsiString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
 //---------------------------------------------------------------------------
 class TFileOperationProgressType
 {
@@ -65,11 +67,9 @@ public:
   __int64 TotalTransfered;
   __int64 TotalSkipped;
   __int64 TotalSize;
-  bool YesToAll;
-  bool YesToNewer;
-  bool NoToAll;
+
+  TBatchOverwrite BatchOverwrite;
   bool SkipToAll;
-  bool AlternateResumeAlways;
   unsigned long CPSLimit;
 
   bool TotalSizeSet;
@@ -86,7 +86,7 @@ public:
   void __fastcall Clear();
   unsigned int __fastcall CPS();
   void __fastcall Finish(AnsiString FileName, bool Success,
-    bool & DisconnectWhenComplete);
+    TOnceDoneOperation & OnceDoneOperation);
   unsigned long __fastcall LocalBlockSize();
   bool __fastcall IsLocalyDone();
   bool __fastcall IsTransferDone();

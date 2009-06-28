@@ -490,6 +490,12 @@ __published:    // IDE-managed Components
   TAction *RemoteFilterAction;
   TTBXItem *TBXItem26;
   TTBXItem *TBXItem27;
+  TAction *QueueShutDownOnceEmptyAction;
+  TAction *QueueIdleOnceEmptyAction;
+  TTBXSubmenuItem *TBXSubmenuItem3;
+  TTBXItem *TBXItem28;
+  TTBXItem *TBXItem29;
+  TAction *QueueCycleOnceEmptyAction;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);
@@ -510,8 +516,6 @@ protected:
   void __fastcall CreateSessionListMenu(TAction * Action);
   void __fastcall CreateSessionListMenuLevel(TTBCustomItem * Menu, int Index, int Level);
   void __fastcall CreateCustomCommandsMenu(TAction * Action);
-  void __fastcall CreateCustomCommandsMenu(TTBCustomItem * Menu, bool OnFocused,
-    bool Toolbar);
   void __fastcall CreateOpenedSessionListMenu(TAction * Action);
   TCustomDirView * __fastcall DirView(TOperationSide Side) { return ScpExplorer->DirView(Side); }
   void __fastcall SessionItemClick(TObject * Sender);
@@ -527,6 +531,9 @@ protected:
   AnsiString __fastcall QueueItemSpeed(const AnsiString & Text,
     TTBXComboBoxItem * Item);
   void __fastcall InitMenuItem(TTBCustomItem * Item);
+  void __fastcall CycleQueueOnceEmptyAction();
+  void __fastcall SetQueueOnceEmptyAction(TAction * Action);
+  TAction * __fastcall CurrentQueueOnceEmptyAction();
 
 public:
   __fastcall TNonVisualDataModule(TComponent * Owner);
@@ -539,7 +546,11 @@ public:
   void __fastcall UpdateCustomCommandsToolbar(TTBXToolbar * Toolbar);
   void __fastcall QueueSpeedComboBoxItem(TTBXComboBoxItem * Item);
   void __fastcall QueueSpeedComboBoxItemUpdate(TTBXComboBoxItem * Item);
+  void __fastcall CreateCustomCommandsMenu(TTBCustomItem * Menu, bool OnFocused,
+    bool Toolbar, bool Both);
   void __fastcall InitMenus(TComponent * Component);
+  TOnceDoneOperation __fastcall CurrentQueueOnceEmptyOperation();
+  void __fastcall ResetQueueOnceEmptyOperation();
 
   __property TListColumn * ListColumn = { read = FListColumn, write = FListColumn };
   __property TCustomScpExplorerForm * ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };

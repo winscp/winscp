@@ -61,6 +61,7 @@ struct TQueryParams
   unsigned int TimerAnswers;
   unsigned int Timeout;
   unsigned int TimeoutAnswer;
+  unsigned int NoBatchAnswers;
   AnsiString HelpKeyword;
 };
 

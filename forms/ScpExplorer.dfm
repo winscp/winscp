@@ -345,8 +345,21 @@ inherited ScpExplorerForm: TScpExplorerForm
           object TBXSeparatorItem22: TTBXSeparatorItem
             Hint = 'E'
           end
-          object TBXItem3: TTBXItem
-            Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+          object TBXSubmenuItem8: TTBXSubmenuItem
+            Action = NonVisualDataModule.QueueCycleOnceEmptyAction
+            DropdownCombo = True
+            object TBXItem222: TTBXItem
+              Action = NonVisualDataModule.QueueIdleOnceEmptyAction
+              RadioItem = True
+            end
+            object TBXItem223: TTBXItem
+              Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+              RadioItem = True
+            end
+            object TBXItem224: TTBXItem
+              Action = NonVisualDataModule.QueueShutDownOnceEmptyAction
+              RadioItem = True
+            end
           end
           object TBXItem81: TTBXItem
             Action = NonVisualDataModule.QueuePreferencesAction

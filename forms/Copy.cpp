@@ -167,6 +167,13 @@ void __fastcall TCopyDialog::AdjustControls()
   EnableControl(LocalDirectoryBrowseButton, DirectoryEdit->Enabled);
   DirectoryLabel->FocusControl = DirectoryEdit;
 
+  AnsiString QueueLabel = LoadStr(COPY_BACKGROUND);
+  if (FLAGCLEAR(Options, coNoQueue))
+  {
+    QueueLabel = FMTLOAD(COPY_QUEUE, (QueueLabel));
+  }
+  QueueCheck->Caption = QueueLabel;
+
   AdjustTransferControls();
 
   LocalDirectoryBrowseButton->Visible = !ToRemote &&
@@ -245,7 +252,7 @@ void __fastcall TCopyDialog::SetParams(const TGUICopyParamType & value)
   FCopyParams = value;
   DirectoryEdit->Text = Directory + FParams.FileMask;
   QueueCheck->Checked = FParams.Queue;
-  QueueNoConfirmationCheck->Checked = FParams.QueueNoConfirmation;
+  QueueIndividuallyCheck->Checked = FParams.QueueIndividually;
   NewerOnlyCheck->Checked = FLAGCLEAR(Options, coDisableNewerOnly) && FParams.NewerOnly;
   UpdateControls();
 }
@@ -256,7 +263,7 @@ TGUICopyParamType __fastcall TCopyDialog::GetParams()
   FParams = FCopyParams;
   FParams.FileMask = GetFileMask();
   FParams.Queue = QueueCheck->Checked;
-  FParams.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
+  FParams.QueueIndividually = QueueIndividuallyCheck->Checked;
   FParams.NewerOnly = FLAGCLEAR(Options, coDisableNewerOnly) && NewerOnlyCheck->Checked;
   return FParams;
 }
@@ -328,8 +335,9 @@ void __fastcall TCopyDialog::UpdateControls()
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
   EnableControl(QueueCheck,
     ((Options & (coDisableQueue | coTemp)) == 0) && !RemoteTransfer);
-  EnableControl(QueueNoConfirmationCheck,
-    (((Options & coTemp) == 0) && QueueCheck->Checked) && !RemoteTransfer);
+  EnableControl(QueueIndividuallyCheck,
+    QueueCheck->Enabled && QueueCheck->Checked &&
+    FileList && (FileList->Count > 1));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::SetMove(bool value)

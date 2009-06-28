@@ -171,6 +171,7 @@ DECL_WINSOCK_FUNCTION(static, u_long, ntohl, (u_long));
 DECL_WINSOCK_FUNCTION(static, u_long, htonl, (u_long));
 DECL_WINSOCK_FUNCTION(static, u_short, htons, (u_short));
 DECL_WINSOCK_FUNCTION(static, u_short, ntohs, (u_short));
+DECL_WINSOCK_FUNCTION(static, int, gethostname, (char *, int));
 DECL_WINSOCK_FUNCTION(static, struct hostent FAR *, gethostbyname,
 		      (const char FAR *));
 DECL_WINSOCK_FUNCTION(static, struct servent FAR *, getservbyname,
@@ -299,6 +300,7 @@ void sk_init(void)
     GET_WINSOCK_FUNCTION(winsock_module, htonl);
     GET_WINSOCK_FUNCTION(winsock_module, htons);
     GET_WINSOCK_FUNCTION(winsock_module, ntohs);
+    GET_WINSOCK_FUNCTION(winsock_module, gethostname);
     GET_WINSOCK_FUNCTION(winsock_module, gethostbyname);
     GET_WINSOCK_FUNCTION(winsock_module, getservbyname);
     GET_WINSOCK_FUNCTION(winsock_module, inet_addr);
@@ -1732,6 +1734,22 @@ int net_service_lookup(char *service)
 	return p_ntohs(se->s_port);
     else
 	return 0;
+}
+
+char *get_hostname(void)
+{
+    int len = 128;
+    char *hostname = NULL;
+    do {
+	len *= 2;
+	hostname = sresize(hostname, len, char);
+	if (p_gethostname(hostname, len) < 0) {
+	    sfree(hostname);
+	    hostname = NULL;
+	    break;
+	}
+    } while (strlen(hostname) >= len-1);
+    return hostname;
 }
 
 SockAddr platform_get_x11_unix_address(const char *display, int displaynum,

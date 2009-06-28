@@ -1777,6 +1777,7 @@ void __fastcall TSecureShell::VerifyHostKey(AnsiString Host, int Port,
       }
 
       TQueryParams Params;
+      Params.NoBatchAnswers = qaYes | qaRetry | qaSkip | qaOK;
       Params.HelpKeyword = (Unknown ? HELP_UNKNOWN_KEY : HELP_DIFFERENT_KEY);
       Params.Aliases = Aliases;
       Params.AliasesCount = AliasesCount;

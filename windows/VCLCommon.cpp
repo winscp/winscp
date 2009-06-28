@@ -187,6 +187,8 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
   }
   else if (Message.Msg == CM_SHOWINGCHANGED)
   {
+    TForm * AForm = dynamic_cast<TForm *>(Form);
+    assert(AForm != NULL);
     if ((Application->MainForm == Form) ||
         // this particularly happens if error occurs while main
         // window is being shown (e.g. non existent local directory when opening
@@ -202,8 +204,6 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
       else if ((LastMonitor != NULL) && (LastMonitor != Form->Monitor) &&
                 Form->Showing)
       {
-        TForm * AForm = dynamic_cast<TForm *>(Form);
-        assert(AForm != NULL);
         // would actually always be poScreenCenter, see _SafeFormCreate
         if ((AForm->Position == poMainFormCenter) ||
             (AForm->Position == poScreenCenter))
@@ -235,7 +235,38 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
         }
       }
     }
+    bool WasMainFormCenter = (AForm->Position == poMainFormCenter);
     WndProc(Message);
+    if (Form->Showing && WasMainFormCenter && (AForm->Position == poDesigned))
+    {
+      int Left = Form->Left;
+      int Top = Form->Top;
+      TRect WorkArea = AForm->Monitor->WorkareaRect;
+
+      if (Left + AForm->Width > WorkArea.Right)
+      {
+        Left = WorkArea.Right - AForm->Width;
+      }
+      if (Left < WorkArea.Left)
+      {
+        Left = WorkArea.Left;
+      }
+      if (Top + AForm->Height > WorkArea.Bottom)
+      {
+        Top = WorkArea.Bottom - AForm->Height;
+      }
+      if (Top < WorkArea.Top)
+      {
+        Top = WorkArea.Top;
+      }
+      // check in case the SetBounds have any unexpected side effect
+      // when passing the same values
+      if ((Left != Form->Left) ||
+          (Top != Form->Top))
+      {
+        Form->SetBounds(Left, Top, AForm->Width, AForm->Height);
+      }
+    }
   }
   else
   {
@@ -701,8 +732,13 @@ void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count)
 
       for (int Index = 0; Index < Count; Index++)
       {
-        ControlsOrder[Index]->Top = Top;
-        Top += ControlsOrder[Index]->Height;
+        TControl * Control = ControlsOrder[Index];
+        Control->Top = Top;
+        if (((Control->Align == alTop) || (Control->Align == alBottom)) ||
+            ((Index == Count - 1) || (ControlsOrder[Index + 1]->Align == alBottom)))
+        {
+          Top += Control->Height;
+        }
       }
     }
     __finally
@@ -734,8 +770,21 @@ void __fastcall SetHorizontalControlsOrder(TControl ** ControlsOrder, int Count)
 
       for (int Index = 0; Index < Count; Index++)
       {
-        ControlsOrder[Index]->Left = Left;
-        Left += ControlsOrder[Index]->Width;
+        TControl * Control = ControlsOrder[Index];
+        Control->Left = Left;
+        if (((Control->Align == alLeft) || (Control->Align == alRight)) ||
+            ((Index == Count - 1) || (ControlsOrder[Index + 1]->Align == alRight)))
+        {
+          Left += Control->Width;
+        }
+        // vertical alignment has priority, so alBottom-aligned controls start
+        // at the very left, even if there are any alLeft/alRight controls.
+        // for the reason this code is not necessary in SetVerticalControlsOrder.
+        // we could exit the loop as well here.
+        if ((Index == Count - 1) || (ControlsOrder[Index + 1]->Align == alBottom))
+        {
+          Left = 0;
+        }
       }
     }
     __finally
@@ -965,13 +1014,23 @@ static void __fastcall FocusableLabelCanvas(TStaticText * StaticText,
     }
 
     R.Bottom = R.Top + TextSize.cy;
-    if (StaticText->Alignment == taRightJustify)
+    switch (StaticText->Alignment)
     {
-      R.Left = R.Right - TextSize.cx;
-    }
-    else
-    {
-      R.Right = R.Left + TextSize.cx;
+      case taLeftJustify:
+        R.Right = R.Left + TextSize.cx;
+        break;
+
+      case taRightJustify:
+        R.Left = R.Right - TextSize.cx;
+        break;
+
+      case taCenter:
+        {
+          int Diff = R.Width() - TextSize.cx;
+          R.Left += Diff / 2;
+          R.Right -= Diff - (Diff / 2);
+        }
+        break;
     }
   }
   __finally

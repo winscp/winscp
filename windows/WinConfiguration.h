@@ -30,9 +30,10 @@ struct TScpCommanderPanelConfiguration {
   bool StatusBar;
   bool DriveView;
   int DriveViewHeight;
+  int DriveViewWidth;
   bool __fastcall operator !=(TScpCommanderPanelConfiguration & rhc)
     { return C(DirViewParams) C(StatusBar)
-        C(DriveView) C(DriveViewHeight) 0; };
+        C(DriveView) C(DriveViewHeight) C(DriveViewWidth) 0; };
 };
 //---------------------------------------------------------------------------
 struct TScpCommanderConfiguration {
@@ -49,12 +50,13 @@ struct TScpCommanderConfiguration {
   bool CompareBySize;
   bool SwappedPanels;
   bool FullRowSelect;
+  bool TreeOnLeft;
   bool __fastcall operator !=(TScpCommanderConfiguration & rhc)
     { return C(WindowParams) C(LocalPanelWidth) C(ToolbarsLayout) C(StatusBar)
       C(LocalPanel) C(RemotePanel) C(CurrentPanel)
       C(NortonLikeMode) C(PreserveLocalDirectory)
       C(CompareBySize) C(CompareByTime) C(SwappedPanels)
-      C(FullRowSelect) 0; };
+      C(FullRowSelect) C(TreeOnLeft) 0; };
 
   TCompareCriterias __fastcall CompareCriterias()
   {
@@ -248,6 +250,7 @@ private:
   bool FDDTransferConfirmation;
   bool FDeleteToRecycleBin;
   bool FDimmHiddenFiles;
+  bool FRenameWholeName;
   bool FLogWindowOnStartup;
   AnsiString FLogWindowParams;
   TScpCommanderConfiguration FScpCommander;
@@ -312,6 +315,7 @@ private:
   void __fastcall SetDDTransferConfirmation(bool value);
   void __fastcall SetDeleteToRecycleBin(bool value);
   void __fastcall SetDimmHiddenFiles(bool value);
+  void __fastcall SetRenameWholeName(bool value);
   void __fastcall SetLogWindowOnStartup(bool value);
   void __fastcall SetLogWindowParams(AnsiString value);
   void __fastcall SetScpCommander(TScpCommanderConfiguration value);
@@ -423,6 +427,7 @@ public:
   __property bool LogWindowOnStartup = { read = FLogWindowOnStartup, write = SetLogWindowOnStartup };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool DimmHiddenFiles = { read = FDimmHiddenFiles, write = SetDimmHiddenFiles };
+  __property bool RenameWholeName = { read = FRenameWholeName, write = SetRenameWholeName };
   __property AnsiString LogWindowParams = { read = FLogWindowParams, write = SetLogWindowParams };
   __property bool ConfirmTransferring = { read = FConfirmTransferring, write = SetConfirmTransferring};
   __property bool ConfirmDeleting = { read = FConfirmDeleting, write = SetConfirmDeleting};

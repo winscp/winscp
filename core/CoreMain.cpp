@@ -33,6 +33,7 @@ TQueryParams::TQueryParams(unsigned int AParams, AnsiString AHelpKeyword)
   TimerAnswers = 0;
   Timeout = 0;
   TimeoutAnswer = 0;
+  NoBatchAnswers = 0;
   HelpKeyword = AHelpKeyword;
 }
 //---------------------------------------------------------------------------

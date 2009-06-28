@@ -215,7 +215,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Height = 17
       Caption = 'M&odification time'
       TabOrder = 0
-      OnClick = SynchronizeByTimeSizeCheckClick
+      OnClick = ControlChange
     end
     object SynchronizeBySizeCheck: TCheckBox
       Left = 11
@@ -224,7 +224,7 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
       Height = 17
       Caption = 'File si&ze'
       TabOrder = 1
-      OnClick = SynchronizeByTimeSizeCheckClick
+      OnClick = ControlChange
     end
   end
   object SaveSettingsCheck: TCheckBox

@@ -212,8 +212,6 @@ enum TClipboardOperation { cboNone, cboCut, cboCopy };
 enum TFileNameDisplay { fndStored, fndCap, fndNoCap, fndNice };
 #pragma option pop
 
-typedef SmallString<4>  TExtStr;
-
 struct TFileRec;
 typedef TFileRec *PFileRec;
 
@@ -226,7 +224,7 @@ struct TFileRec
 	bool IsParentDir;
 	AnsiString FileName;
 	AnsiString Displayname;
-	TExtStr FileExt;
+	AnsiString FileExt;
 	AnsiString TypeName;
 	int ImageIndex;
 	__int64 Size;
@@ -241,7 +239,7 @@ typedef TInfoCache *PInfoCache;
 #pragma pack(push, 4)
 struct TInfoCache
 {
-	TExtStr FileExt;
+	AnsiString FileExt;
 	System::ShortString TypeName;
 	int ImageIndex;
 } ;
@@ -582,7 +580,6 @@ extern PACKAGE System::ResourceString _Space;
 static const Shortint msThreadChangeDelay = 0xa;
 static const Shortint MaxWaitTimeOut = 0xa;
 static const Shortint FileAttr = 0x37;
-static const Shortint ExtLen = 0x4;
 #define SpecialExtensions "EXE,LNK,ICO,ANI,CUR,PIF,JOB,CPL"
 #define ExeExtension "EXE"
 static const Shortint MinDate = 0x21;
@@ -592,7 +589,7 @@ static const Word MaxTime = 0xc000;
 extern PACKAGE TClipboardOperation LastClipBoardOperation;
 extern PACKAGE unsigned LastIOResult;
 extern PACKAGE void __fastcall Register(void);
-extern PACKAGE bool __fastcall MatchesFileExt( TExtStr &Ext, const AnsiString FileExtList);
+extern PACKAGE bool __fastcall MatchesFileExt(AnsiString Ext, const AnsiString FileExtList);
 
 }	/* namespace Dirview */
 using namespace Dirview;

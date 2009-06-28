@@ -90,16 +90,16 @@ object CopyDialog: TCopyDialog
     Top = 135
     Width = 301
     Height = 17
-    Caption = 'Transfer on background (add to transfer &queue)'
+    Caption = 'Transfer on background (add to transfer &queue) X'
     TabOrder = 6
     OnClick = ControlChange
   end
-  object QueueNoConfirmationCheck: TCheckBox
+  object QueueIndividuallyCheck: TCheckBox
     Left = 312
     Top = 135
     Width = 193
     Height = 17
-    Caption = 'No &confirmations'
+    Caption = '&Enqueue each file individually'
     TabOrder = 7
     OnClick = ControlChange
   end

@@ -113,7 +113,7 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
 __fastcall TScpCommanderForm::~TScpCommanderForm()
 {
   delete FInternalDDDownloadList;
-  delete FLocalPathComboBoxPaths;
+  SAFE_DESTROY(FLocalPathComboBoxPaths);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::RestoreFormParams()
@@ -139,10 +139,14 @@ void __fastcall TScpCommanderForm::RestoreParams()
     PANEL ## DirView->ColProperties->ParamsStr = WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams; \
     PANEL ## StatusBar->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar; \
     PANEL ## DriveView->Visible = WinConfiguration->ScpCommander.PANEL ## Panel.DriveView; \
-    PANEL ## DriveView->Height = WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight
+    if (PANEL ## DriveView->Align == alTop) \
+      PANEL ## DriveView->Height = WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight; \
+    else \
+      PANEL ## DriveView->Width = WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth
   RESTORE_PANEL_PARAMS(Local);
   RESTORE_PANEL_PARAMS(Remote);
   #undef RESTORE_PANEL_PARAMS
+  FPanelsRestored = true;
 
   // just to make sure
   LocalDirView->DirColProperties->ExtVisible = false;
@@ -170,7 +174,10 @@ void __fastcall TScpCommanderForm::StoreParams()
       WinConfiguration->ScpCommander.PANEL ## Panel.DirViewParams = PANEL ## DirView->ColProperties->ParamsStr; \
       WinConfiguration->ScpCommander.PANEL ## Panel.StatusBar = PANEL ## StatusBar->Visible; \
       WinConfiguration->ScpCommander.PANEL ## Panel.DriveView = PANEL ## DriveView->Visible; \
-      WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight = PANEL ## DriveView->Height
+      if (PANEL ## DriveView->Align == alTop) \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewHeight = PANEL ## DriveView->Height; \
+      else \
+        WinConfiguration->ScpCommander.PANEL ## Panel.DriveViewWidth = PANEL ## DriveView->Width
     STORE_PANEL_PARAMS(Local);
     STORE_PANEL_PARAMS(Remote);
     #undef RESTORE_PANEL_PARAMS
@@ -465,6 +472,8 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   LocalDriveView->DimmHiddenDirs = WinConfiguration->DimmHiddenFiles;
   LocalDirView->ShowHiddenFiles = WinConfiguration->ShowHiddenFiles;
   LocalDriveView->ShowHiddenDirs = WinConfiguration->ShowHiddenFiles;
+  LocalDirView->ConfirmOverwrite = WinConfiguration->ConfirmOverwriting;
+  LocalDriveView->ConfirmOverwrite = WinConfiguration->ConfirmOverwriting;
 
   LocalDirView->NortonLike = WinConfiguration->ScpCommander.NortonLikeMode;
   RemoteDirView->NortonLike = WinConfiguration->ScpCommander.NortonLikeMode;
@@ -503,6 +512,53 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
     MenuToolbar->Items->Move(RemoteIndex, LocalIndex);
     SWAP(TShortCut, NonVisualDataModule->LocalChangePathAction->ShortCut,
       NonVisualDataModule->RemoteChangePathAction->ShortCut);
+  }
+
+  if ((RemoteDriveView->Align == alLeft) != WinConfiguration->ScpCommander.TreeOnLeft)
+  {
+    TScpCommanderPanelConfiguration LocalPanel = WinConfiguration->ScpCommander.LocalPanel;
+    TScpCommanderPanelConfiguration RemotePanel = WinConfiguration->ScpCommander.RemotePanel;
+
+    bool TreeOnLeft = WinConfiguration->ScpCommander.TreeOnLeft;
+
+    // save value only is it was set yet
+    if (FPanelsRestored)
+    {
+      if (TreeOnLeft)
+      {
+        // want to be on left, so it is on top, saving height
+        LocalPanel.DriveViewHeight = LocalDriveView->Height;
+        RemotePanel.DriveViewHeight = RemoteDriveView->Height;
+      }
+      else
+      {
+        LocalPanel.DriveViewWidth = LocalDriveView->Width;
+        RemotePanel.DriveViewWidth = RemoteDriveView->Width;
+      }
+    }
+
+    TAlign NonClientAlign = (TreeOnLeft ? alLeft : alTop);
+    LocalDriveView->Align = NonClientAlign;
+    LocalPanelSplitter->Align = NonClientAlign;
+    RemoteDriveView->Align = NonClientAlign;
+    RemotePanelSplitter->Align = NonClientAlign;
+    FixControlsPlacement();
+
+    if (TreeOnLeft)
+    {
+      LocalDriveView->Width = LocalPanel.DriveViewWidth;
+      RemoteDriveView->Width = RemotePanel.DriveViewWidth;
+    }
+    else
+    {
+      LocalDriveView->Height = LocalPanel.DriveViewHeight;
+      RemoteDriveView->Height = RemotePanel.DriveViewHeight;
+    }
+
+    // in case it trigges config-changed event (does not),
+    // make sure it does only after we apply the TreeOnLeft change to avoid endless recursion
+    WinConfiguration->ScpCommander.LocalPanel = LocalPanel;
+    WinConfiguration->ScpCommander.RemotePanel = RemotePanel;
   }
 }
 //---------------------------------------------------------------------------
@@ -574,14 +630,29 @@ void __fastcall TScpCommanderForm::PanelSplitterDblClick(TObject * Sender)
     OtherDriveView = LocalDriveView;
   }
 
+  bool TreeOnLeft = WinConfiguration->ScpCommander.TreeOnLeft;
   assert(DriveView->Visible);
   if (OtherDriveView->Visible)
   {
-    DriveView->Height = OtherDriveView->Height;
+    if (TreeOnLeft)
+    {
+      DriveView->Width = OtherDriveView->Width;
+    }
+    else
+    {
+      DriveView->Height = OtherDriveView->Height;
+    }
   }
   else
   {
-    OtherDriveView->Height = DriveView->Height;
+    if (TreeOnLeft)
+    {
+      OtherDriveView->Width = DriveView->Width;
+    }
+    else
+    {
+      OtherDriveView->Height = DriveView->Height;
+    }
     OtherDriveView->Visible = true;
   }
 
@@ -673,11 +744,13 @@ void __fastcall TScpCommanderForm::FixControlsPlacement()
     { LocalTopDock, LocalPathLabel, LocalDriveView, LocalPanelSplitter,
       LocalDirView, LocalBottomDock, LocalStatusBar };
   SetVerticalControlsOrder(LocalControlsOrder, LENOF(LocalControlsOrder));
+  SetHorizontalControlsOrder(LocalControlsOrder, LENOF(LocalControlsOrder));
 
   TControl * RemoteControlsOrder[] =
     { RemoteTopDock, RemotePathLabel, RemoteDriveView, RemotePanelSplitter,
       RemoteDirView, RemoteBottomDock, RemoteStatusBar };
   SetVerticalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
+  SetHorizontalControlsOrder(RemoteControlsOrder, LENOF(RemoteControlsOrder));
 
   if (LocalDirView->ItemFocused != NULL)
   {
@@ -1574,20 +1647,25 @@ void __fastcall TScpCommanderForm::LocalPathComboUpdateDrives()
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalPathComboUpdate()
 {
-  assert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
-
-  int Index = 0;
-  while ((Index < FLocalPathComboBoxPaths->Count) &&
-         !ComparePaths(FLocalPathComboBoxPaths->Strings[Index],
-           LocalDirView->Path.SubString(1, FLocalPathComboBoxPaths->Strings[Index].Length())))
+  // this may get called even after destructor finishes
+  // (e.g. from SetDockAllowDrag invoked [indirectly] from StoreParams)
+  if (FLocalPathComboBoxPaths != NULL)
   {
-    Index++;
-  }
+    assert(FLocalPathComboBoxPaths->Count == LocalPathComboBox->Strings->Count);
 
-  assert(Index < FLocalPathComboBoxPaths->Count);
-  if (Index < FLocalPathComboBoxPaths->Count)
-  {
-    LocalPathComboBox->ItemIndex = Index;
+    int Index = 0;
+    while ((Index < FLocalPathComboBoxPaths->Count) &&
+           !ComparePaths(FLocalPathComboBoxPaths->Strings[Index],
+             LocalDirView->Path.SubString(1, FLocalPathComboBoxPaths->Strings[Index].Length())))
+    {
+      Index++;
+    }
+
+    assert(Index < FLocalPathComboBoxPaths->Count);
+    if (Index < FLocalPathComboBoxPaths->Count)
+    {
+      LocalPathComboBox->ItemIndex = Index;
+    }
   }
 }
 //---------------------------------------------------------------------------

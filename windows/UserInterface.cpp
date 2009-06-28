@@ -17,6 +17,7 @@
 #include "TBXOfficeXPTheme.hpp"
 #include "TBXOffice2003Theme.hpp"
 #include "ProgParams.h"
+#include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -97,7 +98,8 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     TTerminalManager * Manager = TTerminalManager::Instance(false);
 
     TQueryType Type;
-    bool CloseOnCompletion = (dynamic_cast<ESshTerminate*>(E) != NULL);
+    ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
+    bool CloseOnCompletion = (Terminate != NULL);
     Type = CloseOnCompletion ? qtInformation : qtError;
 
     if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
@@ -138,7 +140,22 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
 
       if (Result == qaYes)
       {
+        assert(Terminate != NULL);
+        assert(Terminate->Operation != odoIdle);
         Application->Terminate();
+
+        switch (Terminate->Operation)
+        {
+          case odoDisconnect:
+            break;
+
+          case odoShutDown:
+            ShutDownWindows();
+            break;
+
+          default:
+            assert(false);
+        }
       }
       else if (Result == qaRetry)
       {
@@ -366,48 +383,52 @@ void __fastcall MenuPopup(TPopupMenu * AMenu, TPoint Point,
   }
   else
   {
-    TTBXPopupMenu * Menu = CreateTBXPopupMenu(AMenu->Owner);
-    Menu->OnPopup = AMenu->OnPopup;
-    Menu->Items->SubMenuImages = AMenu->Images;
-
-    for (int Index = 0; Index < AMenu->Items->Count; Index++)
+    TTBXPopupMenu * Menu = dynamic_cast<TTBXPopupMenu *>(AMenu);
+    if (Menu == NULL)
     {
-      TMenuItem * AItem = AMenu->Items->Items[Index];
-      TTBCustomItem * Item;
+      Menu = CreateTBXPopupMenu(AMenu->Owner);
+      Menu->OnPopup = AMenu->OnPopup;
+      Menu->Items->SubMenuImages = AMenu->Images;
 
-      // recurse not implemented yet
-      assert(AItem->Count == 0);
+      for (int Index = 0; Index < AMenu->Items->Count; Index++)
+      {
+        TMenuItem * AItem = AMenu->Items->Items[Index];
+        TTBCustomItem * Item;
 
-      // see TB2DsgnConverter.pas DoConvert
-      if (AItem->Caption == "-")
-      {
-        Item = new TTBXSeparatorItem(Menu);
-      }
-      else
-      {
-        Item = new TTBXItem(Menu);
-        Item->Action = AItem->Action;
-        Item->AutoCheck = AItem->AutoCheck;
-        Item->Caption = AItem->Caption;
-        Item->Checked = AItem->Checked;
-        if (AItem->Default)
+        // recurse not implemented yet
+        assert(AItem->Count == 0);
+
+        // see TB2DsgnConverter.pas DoConvert
+        if (AItem->Caption == "-")
         {
-          Item->Options = Item->Options << tboDefault;
+          Item = new TTBXSeparatorItem(Menu);
         }
-        Item->Enabled = AItem->Enabled;
-        Item->GroupIndex = AItem->GroupIndex;
-        Item->HelpContext = AItem->HelpContext;
-        Item->ImageIndex = AItem->ImageIndex;
-        Item->RadioItem = AItem->RadioItem;
-        Item->ShortCut = AItem->ShortCut;
-        Item->SubMenuImages = AItem->SubMenuImages;
-        Item->OnClick = AItem->OnClick;
-      }
-      Item->Hint = AItem->Hint;
-      Item->Tag = AItem->Tag;
-      Item->Visible = AItem->Visible;
+        else
+        {
+          Item = new TTBXItem(Menu);
+          Item->Action = AItem->Action;
+          Item->AutoCheck = AItem->AutoCheck;
+          Item->Caption = AItem->Caption;
+          Item->Checked = AItem->Checked;
+          if (AItem->Default)
+          {
+            Item->Options = Item->Options << tboDefault;
+          }
+          Item->Enabled = AItem->Enabled;
+          Item->GroupIndex = AItem->GroupIndex;
+          Item->HelpContext = AItem->HelpContext;
+          Item->ImageIndex = AItem->ImageIndex;
+          Item->RadioItem = AItem->RadioItem;
+          Item->ShortCut = AItem->ShortCut;
+          Item->SubMenuImages = AItem->SubMenuImages;
+          Item->OnClick = AItem->OnClick;
+        }
+        Item->Hint = AItem->Hint;
+        Item->Tag = AItem->Tag;
+        Item->Visible = AItem->Visible;
 
-      Menu->Items->Add(Item);
+        Menu->Items->Add(Item);
+      }
     }
 
     Menu->PopupComponent = PopupComponent;

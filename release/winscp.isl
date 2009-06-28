@@ -1,4 +1,6 @@
 [CustomMessages]
+LanguageISOCode=en
+
 ApplicationComponent=WinSCP application
 ShellExtComponent=Drag & drop shell extension (allows direct downloads, may require restart)
 PuTTYgenComponent=PuTTYgen (key generator)

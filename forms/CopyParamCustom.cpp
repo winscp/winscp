@@ -39,7 +39,6 @@ __fastcall TCopyParamCustomDialog::TCopyParamCustomDialog(TComponent * Owner,
   : TForm(Owner)
 {
   UseSystemSettings(this);
-  CopyParamsFrame->Direction = pdAll;
   CopyParamsFrame->CopyParamAttrs = CopyParamAttrs;
 }
 //---------------------------------------------------------------------------

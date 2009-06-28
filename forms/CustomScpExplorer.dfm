@@ -232,8 +232,21 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
         end
         object TBXSeparatorItem202: TTBXSeparatorItem
         end
-        object TBXItem210: TTBXItem
-          Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+        object TBXSubmenuItem27: TTBXSubmenuItem
+          Action = NonVisualDataModule.QueueCycleOnceEmptyAction
+          DropdownCombo = True
+          object TBXItem211: TTBXItem
+            Action = NonVisualDataModule.QueueIdleOnceEmptyAction
+            RadioItem = True
+          end
+          object TBXItem225: TTBXItem
+            Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+            RadioItem = True
+          end
+          object TBXItem226: TTBXItem
+            Action = NonVisualDataModule.QueueShutDownOnceEmptyAction
+            RadioItem = True
+          end
         end
         object TBXItem208: TTBXItem
           Action = NonVisualDataModule.QueuePreferencesAction

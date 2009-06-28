@@ -238,6 +238,15 @@ void __fastcall CreateDesktopShortCut(const AnsiString &Name,
           pLink->SetArguments(Params.c_str());
           pLink->SetShowCmd(SW_SHOW);
 
+          // if there's .ico file with the same name as the .exe,
+          // use it for shortcut (so ours 128px icons is used, when available,
+          // instead of the 32px embedded one)
+          AnsiString IconFile = ChangeFileExt(File, ".ico");
+          if (FileExists(IconFile))
+          {
+            pLink->SetIconLocation(IconFile.c_str(), 0);
+          }
+
           if (SUCCEEDED(pLink->QueryInterface(IID_IPersistFile, (void **)&pPersistFile)))
           {
             try
@@ -688,6 +697,28 @@ bool __fastcall IsWin64()
   }
 
   return (Result > 0);
+}
+//---------------------------------------------------------------------------
+void __fastcall ShutDownWindows()
+{
+  HANDLE Token;
+  TOKEN_PRIVILEGES Priv;
+
+  // Get a token for this process.
+  Win32Check(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &Token));
+
+  // Get the LUID for the shutdown privilege.
+  Win32Check(LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &Priv.Privileges[0].Luid));
+
+  Priv.PrivilegeCount = 1;  // one privilege to set
+  Priv.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+  // Get the shutdown privilege for this process.
+  Win32Check(AdjustTokenPrivileges(Token, FALSE, &Priv, 0, (PTOKEN_PRIVILEGES)NULL, 0));
+
+  // Shut down the system and force all applications to close.
+  Win32Check(ExitWindowsEx(EWX_SHUTDOWN | EWX_POWEROFF,
+    SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER | SHTDN_REASON_FLAG_PLANNED));
 }
 //---------------------------------------------------------------------------
 // Code from http://gentoo.osuosl.org/distfiles/cl331.zip/io/

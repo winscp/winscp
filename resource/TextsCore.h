@@ -22,10 +22,10 @@
 #define SCRIPT_CHMOD_HELP       18
 #define SCRIPT_LN_HELP          19
 #define SCRIPT_MKDIR_HELP       20
-#define SCRIPT_GET_HELP2        21
-#define SCRIPT_PUT_HELP2        22
-#define SCRIPT_OPTION_HELP5     23
-#define SCRIPT_SYNCHRONIZE_HELP2 24
+#define SCRIPT_GET_HELP3        21
+#define SCRIPT_PUT_HELP3        22
+#define SCRIPT_OPTION_HELP6     23
+#define SCRIPT_SYNCHRONIZE_HELP3 24
 #define SCRIPT_KEEPUPTODATE_HELP2 25
 #define SCRIPT_CALL_HELP2       26
 
@@ -212,6 +212,7 @@
 #define CERT_ERRDEPTH           286
 #define CERT_OK                 287
 #define MASK_ERROR              288
+#define FTP_CANNOT_OPEN_ACTIVE_CONNECTION 289
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT3 301

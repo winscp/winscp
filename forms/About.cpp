@@ -141,6 +141,26 @@ __fastcall TAboutDialog::TAboutDialog(TComponent * AOwner,
   ThirdPartyBox->VertScrollBar->Range = ThirdPartyBox->VertScrollBar->Range - FileZillaHeight;
   #endif
 
+  #ifdef NO_COMPONENTS
+  int ComponentsHeight = ThirdPartyBox->VertScrollBar->Range - Label1->Top;
+  Label1->Visible = false;
+  Label2->Visible = false;
+  Toolbar2000HomepageLabel->Visible = false;
+  Label5->Visible = false;
+  Label6->Visible = false;
+  TBXHomepageLabel->Visible = false;
+  Label8->Visible = false;
+  Label10->Visible = false;
+
+  ThirdPartyBox->VertScrollBar->Range = ThirdPartyBox->VertScrollBar->Range - ComponentsHeight;
+  #endif
+
+  #ifdef NO_FILEZILLA
+  #ifdef NO_COMPONENTS
+  ThirdPartyBox->VertScrollBar->Range = ThirdPartyBox->ClientHeight;
+  #endif
+  #endif
+
   LicenseButton->Visible = AllowLicense;
   LoadData();
 }

@@ -328,7 +328,7 @@ AnsiString __fastcall MakeFileList(TStrings * FileList)
 }
 //---------------------------------------------------------------------------
 // copy from BaseUtils.pas
-void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
+TDateTime __fastcall ReduceDateTimePrecision(TDateTime DateTime,
   TModificationFmt Precision)
 {
   if (Precision == mfNone)
@@ -353,6 +353,7 @@ void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
         N = 0;
         S = 0;
         MS = 0;
+        break;
 
       default:
         assert(false);
@@ -360,6 +361,13 @@ void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
 
     DateTime = EncodeDate(Y, M, D) + EncodeTime(H, N, S, MS);
   }
+  return DateTime;
+}
+//---------------------------------------------------------------------------
+TModificationFmt __fastcall LessDateTimePrecision(
+  TModificationFmt Precision1, TModificationFmt Precision2)
+{
+  return (Precision1 < Precision2) ? Precision1 : Precision2;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall UserModificationStr(TDateTime DateTime,
@@ -985,14 +993,14 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
     // so we get only first 9 characters and trim all following spaces (if any)
     Rights->Text = Line.SubString(1, 9);
     Line.Delete(1, 9);
-    // Rights column maybe followed by '+' or '@' signs, we ignore them
+    // Rights column maybe followed by '+', '@' or '.' signs, we ignore them
     // (On MacOS, there may be a space in between)
-    if (!Line.IsEmpty() && ((Line[1] == '+') || (Line[1] == '@')))
+    if (!Line.IsEmpty() && ((Line[1] == '+') || (Line[1] == '@') || (Line[1] == '.')))
     {
       Line.Delete(1, 1);
     }
     else if ((Line.Length() >= 2) && (Line[1] == ' ') &&
-             ((Line[2] == '+') || (Line[2] == '@')))
+             ((Line[2] == '+') || (Line[2] == '@') || (Line[2] == '.')))
     {
       Line.Delete(1, 2);
     }

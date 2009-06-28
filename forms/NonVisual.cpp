@@ -431,7 +431,12 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   QUEUEACTION(HideWhenEmpty)
   QUEUEACTION(Hide)
   #undef QUEUEACTION
-  UPD(QueueDisconnectOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoDisconnectOnceEmpty))
+  UPDACT(QueueCycleOnceEmptyAction,
+    QueueCycleOnceEmptyAction->ImageIndex = CurrentQueueOnceEmptyAction()->ImageIndex;
+    QueueCycleOnceEmptyAction->Checked = !QueueIdleOnceEmptyAction->Checked)
+  UPD(QueueIdleOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
+  UPD(QueueDisconnectOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
+  UPD(QueueShutDownOnceEmptyAction, ScpExplorer->AllowQueueOperation(qoOnceEmpty))
   UPDCOMP(CommanderPreferencesBand)
   UPDACT(QueueToolbarAction,
     ((TAction *)Action)->Enabled = ScpExplorer->ComponentVisible[fcQueueView];
@@ -696,7 +701,10 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     QUEUEACTION(HideWhenEmpty)
     QUEUEACTION(Hide)
     #undef QUEUEACTION
-    EXE(QueueDisconnectOnceEmptyAction, )
+    EXE(QueueCycleOnceEmptyAction, CycleQueueOnceEmptyAction());
+    EXE(QueueIdleOnceEmptyAction, SetQueueOnceEmptyAction(QueueIdleOnceEmptyAction))
+    EXE(QueueDisconnectOnceEmptyAction, SetQueueOnceEmptyAction(QueueDisconnectOnceEmptyAction))
+    EXE(QueueShutDownOnceEmptyAction, SetQueueOnceEmptyAction(QueueShutDownOnceEmptyAction))
     EXECOMP(QueueToolbar);
     EXE(QueueItemSpeedAction, )
     ;
@@ -854,12 +862,21 @@ void __fastcall TNonVisualDataModule::DoIdle()
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
-  TTBCustomItem * Menu, bool OnFocused, bool Toolbar)
+  TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both)
 {
   for (int Index = 0; Index < WinConfiguration->CustomCommands->Count; Index++)
   {
     AnsiString Description = WinConfiguration->CustomCommands->Names[Index];
-    int State = ScpExplorer->CustomCommandState(Description, OnFocused);
+    int State;
+
+    if (!Both)
+    {
+      State = ScpExplorer->CustomCommandState(Description, OnFocused);
+    }
+    else
+    {
+      State = ScpExplorer->BothCustomCommandState(Description);
+    }
 
     if (State >= 0)
     {
@@ -875,6 +892,10 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
       {
         Item->Tag = Item->Tag | 0x0100;
       }
+      if (Both)
+      {
+        Item->Tag = Item->Tag | 0x0200;
+      }
       Item->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (StripHotkey(Description)));
       Item->OnClick = CustomCommandClick;
 
@@ -883,21 +904,25 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   }
 
   TTBCustomItem * Item;
-  Item = new TTBXItem(Menu);
-  Item->Action = OnFocused ? CustomCommandsEnterFocusedAction : CustomCommandsEnterAction;
-  Menu->Add(Item);
 
-  Item = new TTBXItem(Menu);
-  Item->Action = OnFocused ? CustomCommandsLastFocusedAction : CustomCommandsLastAction;
-  if (Toolbar)
+  if (!Both)
   {
-    Item->Caption = StripHotkey(LoadStr(CUSTOM_COMMAND_LAST_SHORT));
+    Item = new TTBXItem(Menu);
+    Item->Action = OnFocused ? CustomCommandsEnterFocusedAction : CustomCommandsEnterAction;
+    Menu->Add(Item);
+
+    Item = new TTBXItem(Menu);
+    Item->Action = OnFocused ? CustomCommandsLastFocusedAction : CustomCommandsLastAction;
+    if (Toolbar)
+    {
+      Item->Caption = StripHotkey(LoadStr(CUSTOM_COMMAND_LAST_SHORT));
+    }
+    Menu->Add(Item);
   }
-  Menu->Add(Item);
 
   AddMenuSeparator(Menu);
 
-  if (!Toolbar)
+  if (!Toolbar && !Both)
   {
     Item = new TTBXItem(Menu);
     Item->Action = CustomCommandsBandAction;
@@ -918,7 +943,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(TAction * Action)
     int PrevCount = Menu->Count;
     bool OnFocused = (Menu == RemoteDirViewCustomCommandsMenu);
 
-    CreateCustomCommandsMenu(Menu, OnFocused, false);
+    CreateCustomCommandsMenu(Menu, OnFocused, false, false);
 
     for (int Index = 0; Index < PrevCount; Index++)
     {
@@ -956,7 +981,7 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     try
     {
       Toolbar->Items->Clear();
-      CreateCustomCommandsMenu(Toolbar->Items, false, true);
+      CreateCustomCommandsMenu(Toolbar->Items, false, true, false);
       assert(CustomCommands->Count == (Toolbar->Items->Count - AdditionalCommands));
     }
     __finally
@@ -987,8 +1012,15 @@ void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
   Param.Name = WinConfiguration->CustomCommands->Names[Item->Tag & 0x00FF];
   Param.Command = WinConfiguration->CustomCommands->Values[Param.Name];
   Param.Params = WinConfiguration->CustomCommands->Params[Param.Name];
-  ScpExplorer->ExecuteFileOperation(foCustomCommand, osRemote,
-    (Item->Tag & 0xFF00) != 0, false, &Param);
+  if (FLAGCLEAR(Item->Tag, 0x0200))
+  {
+    ScpExplorer->ExecuteFileOperation(foCustomCommand, osRemote,
+      FLAGSET(Item->Tag, 0x0100), false, &Param);
+  }
+  else
+  {
+    ScpExplorer->BothCustomCommand(Param.Name, Param.Command, Param.Params);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CreateSessionListMenu(TAction * Action)
@@ -1347,6 +1379,88 @@ void __fastcall TNonVisualDataModule::QueueSpeedComboBoxItem(TTBXComboBoxItem * 
 void __fastcall TNonVisualDataModule::QueueSpeedComboBoxItemUpdate(TTBXComboBoxItem * Item)
 {
   Item->Strings = CustomWinConfiguration->History["SpeedLimit"];
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::SetQueueOnceEmptyAction(TAction * Action)
+{
+  TAction * Current = CurrentQueueOnceEmptyAction();
+  if (Current != Action)
+  {
+    Current->Checked = false;
+    Action->Checked = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::CycleQueueOnceEmptyAction()
+{
+  TAction * Current = CurrentQueueOnceEmptyAction();
+  Current->Checked = false;
+  if (Current == QueueIdleOnceEmptyAction)
+  {
+    QueueDisconnectOnceEmptyAction->Checked = true;
+  }
+  else if (Current == QueueDisconnectOnceEmptyAction)
+  {
+    QueueShutDownOnceEmptyAction->Checked = true;
+  }
+  else if (Current == QueueShutDownOnceEmptyAction)
+  {
+    QueueIdleOnceEmptyAction->Checked = true;
+  }
+  else
+  {
+    assert(false);
+  }
+}
+//---------------------------------------------------------------------------
+TAction * __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyAction()
+{
+  TAction * Result;
+  if (QueueIdleOnceEmptyAction->Checked)
+  {
+    Result = QueueIdleOnceEmptyAction;
+  }
+  else if (QueueDisconnectOnceEmptyAction->Checked)
+  {
+    Result = QueueDisconnectOnceEmptyAction;
+  }
+  else if (QueueShutDownOnceEmptyAction->Checked)
+  {
+    Result = QueueShutDownOnceEmptyAction;
+  }
+  else
+  {
+    assert(false);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+TOnceDoneOperation __fastcall TNonVisualDataModule::CurrentQueueOnceEmptyOperation()
+{
+  TOnceDoneOperation Result;
+  TBasicAction * Current = CurrentQueueOnceEmptyAction();
+  if (Current == QueueIdleOnceEmptyAction)
+  {
+    Result = odoIdle;
+  }
+  else if (Current == QueueDisconnectOnceEmptyAction)
+  {
+    Result = odoDisconnect;
+  }
+  else if (Current == QueueShutDownOnceEmptyAction)
+  {
+    Result = odoShutDown;
+  }
+  else
+  {
+    assert(false);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNonVisualDataModule::ResetQueueOnceEmptyOperation()
+{
+  SetQueueOnceEmptyAction(QueueIdleOnceEmptyAction);
 }
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::InitMenuItem(TTBCustomItem * Item)

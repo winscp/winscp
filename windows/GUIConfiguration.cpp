@@ -54,6 +54,7 @@ void __fastcall TGUICopyParamType::GUIAssign(const TGUICopyParamType * Source)
 {
   Queue = Source->Queue;
   QueueNoConfirmation = Source->QueueNoConfirmation;
+  QueueIndividually = Source->QueueIndividually;
   NewerOnly = Source->NewerOnly;
 }
 //---------------------------------------------------------------------------
@@ -68,6 +69,7 @@ void __fastcall TGUICopyParamType::GUIDefault()
 {
   Queue = false;
   QueueNoConfirmation = true;
+  QueueIndividually = false;
   NewerOnly = false;
 }
 //---------------------------------------------------------------------------
@@ -77,6 +79,7 @@ void __fastcall TGUICopyParamType::Load(THierarchicalStorage * Storage)
 
   Queue = Storage->ReadBool("Queue", Queue);
   QueueNoConfirmation = Storage->ReadBool("QueueNoConfirmation", QueueNoConfirmation);
+  QueueIndividually = Storage->ReadBool("QueueIndividually", QueueIndividually);
   NewerOnly = Storage->ReadBool("NewerOnly", NewerOnly);
 }
 //---------------------------------------------------------------------------
@@ -86,6 +89,7 @@ void __fastcall TGUICopyParamType::Save(THierarchicalStorage * Storage)
 
   Storage->WriteBool("Queue", Queue);
   Storage->WriteBool("QueueNoConfirmation", QueueNoConfirmation);
+  Storage->WriteBool("QueueIndividually", QueueIndividually);
   Storage->WriteBool("NewerOnly", NewerOnly);
 }
 //---------------------------------------------------------------------------
@@ -566,6 +570,7 @@ void __fastcall TGUIConfiguration::Default()
   FCopyParamCurrent = "";
   FKeepUpToDateChangeDelay = 500;
   FChecksumAlg = "md5";
+  FSessionReopenAutoIdle = 5000;
 
   FNewDirectoryProperties.Default();
   FNewDirectoryProperties.Rights = TRights::rfDefault;
@@ -634,6 +639,7 @@ AnsiString __fastcall TGUIConfiguration::PropertyToKey(const AnsiString Property
     KEY(Bool,     SynchronizeBrowsing); \
     KEY(Integer,  KeepUpToDateChangeDelay); \
     KEY(String,   ChecksumAlg); \
+    KEY(Integer,  SessionReopenAutoIdle); \
   ); \
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool All)

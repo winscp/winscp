@@ -106,6 +106,8 @@ void __fastcall TLoggingFrame::UpdateControls()
     EnableControl(LogToFileCheck, True);
     EnableControl(LogFileNameEdit2, LogToFileCheck->Checked);
     EnableControl(LogFileNameHintText, LogFileNameEdit2->Enabled);
+    EnableControl(LogFileAppendButton, LogFileNameEdit2->Enabled && LoggingOnButton->Checked);
+    EnableControl(LogFileOverwriteButton, LogFileNameEdit2->Enabled && LoggingOnButton->Checked);
     EnableControl(LogFilePanel, LogToFileCheck->Checked);
 
     EnableControl(LogShowWindowCheck, True && EnableLogWindow);

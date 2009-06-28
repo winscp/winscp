@@ -324,6 +324,14 @@ void CMainThread::SetConnected(BOOL bConnected /*=TRUE*/)
 {
 	ECS;
 	m_bConnected=bConnected;
+#ifdef MPEXT
+	if (!bConnected)
+	{
+		// when we loose connection
+		// reset pending commands as we cannot fulfill them anyway
+		m_pPostKeepAliveCommand = 0;
+	}
+#endif
 	LCS;
 }
 

@@ -25,7 +25,8 @@ __fastcall TFileOperationProgressType::TFileOperationProgressType(
 //---------------------------------------------------------------------------
 __fastcall TFileOperationProgressType::~TFileOperationProgressType()
 {
-  assert((!InProgress && !Suspended) || FReset);
+  assert(!InProgress || FReset);
+  assert(!Suspended || FReset);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Clear()
@@ -46,11 +47,8 @@ void __fastcall TFileOperationProgressType::Clear()
   TotalSizeSet = false;
   Operation = foNone;
   Temp = false;
-  YesToAll = false;
-  YesToNewer = false;
-  NoToAll = false;
   SkipToAll = false;
-  AlternateResumeAlways = false;
+  BatchOverwrite = boNo;
   // to bypass check in ClearTransfer()
   TransferSize = 0;
   CPSLimit = 0;
@@ -140,13 +138,16 @@ void __fastcall TFileOperationProgressType::Resume()
 int __fastcall TFileOperationProgressType::OperationProgress()
 {
   assert(Count);
-  return (FFilesFinished * 100)/Count;
+  int Result = (FFilesFinished * 100)/Count;
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall TFileOperationProgressType::TransferProgress()
 {
-  if (TransferSize) return (int)((TransferedSize * 100)/TransferSize);
-    else return 0;
+  int Result;
+  if (TransferSize) Result = (int)((TransferedSize * 100)/TransferSize);
+    else Result = 0;
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall TFileOperationProgressType::TotalTransferProgress()
@@ -175,13 +176,13 @@ void __fastcall TFileOperationProgressType::DoProgress()
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::Finish(AnsiString FileName,
-  bool Success, bool & DisconnectWhenComplete)
+  bool Success, TOnceDoneOperation & OnceDoneOperation)
 {
   assert(InProgress);
 
   FOnFinished(Operation, Side, Temp, FileName,
     /* TODO : There wasn't 'Success' condition, was it by mistake or by purpose? */
-    Success && (Cancel == csContinue), DisconnectWhenComplete);
+    Success && (Cancel == csContinue), OnceDoneOperation);
   FFilesFinished++;
   DoProgress();
 }

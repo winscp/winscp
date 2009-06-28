@@ -272,13 +272,36 @@ AnsiString __fastcall TCopyParamType::ValidLocalFileName(AnsiString FileName) co
     char * InvalidChar = FileName.c_str();
     while ((InvalidChar = strpbrk(InvalidChar, Chars)) != NULL)
     {
-      InvalidChar = ReplaceChar(FileName, InvalidChar);
+      int Pos = (InvalidChar - FileName.c_str() + 1);
+      char Char;
+      if ((InvalidCharsReplacement == TokenReplacement) &&
+          (*InvalidChar == TokenPrefix) &&
+          (((FileName.Length() - Pos) <= 1) ||
+           (((Char = HexToChar(FileName.SubString(Pos + 1, 2))) == '\0') ||
+            (FTokenizibleChars.Pos(Char) == 0))))
+      {
+        InvalidChar++;
+      }
+      else
+      {
+        InvalidChar = ReplaceChar(FileName, InvalidChar);
+      }
     }
 
     // Windows trim trailing space, hence we must encode it to preserve it
     if (!FileName.IsEmpty() && (FileName[FileName.Length()] == ' '))
     {
       ReplaceChar(FileName, FileName.c_str() + FileName.Length() - 1);
+    }
+
+    if (IsReservedName(FileName))
+    {
+      int P = FileName.Pos(".");
+      if (P == 0)
+      {
+        P = FileName.Length() + 1;
+      }
+      FileName.Insert("%00", P);
     }
   }
   return FileName;
@@ -297,7 +320,8 @@ AnsiString __fastcall TCopyParamType::RestoreChars(AnsiString FileName) const
           (FileName.ByteType(Index + 1) == mbSingleByte) &&
           (FileName.ByteType(Index + 2) == mbSingleByte))
       {
-        char Char = HexToChar(FileName.SubString(Index + 1, 2));
+        AnsiString Hex = FileName.SubString(Index + 1, 2);
+        char Char = HexToChar(Hex);
         if ((Char != '\0') &&
             ((FTokenizibleChars.Pos(Char) > 0) ||
              ((Char == ' ') && (Index == FileName.Length() - 2))))
@@ -305,6 +329,13 @@ AnsiString __fastcall TCopyParamType::RestoreChars(AnsiString FileName) const
           FileName[Index] = Char;
           FileName.Delete(Index + 1, 2);
           InvalidChar = FileName.c_str() + Index;
+        }
+        else if ((Hex == "00") &&
+                 ((Index == FileName.Length() - 2) || (FileName[Index + 3] == '.')) &&
+                 IsReservedName(FileName.SubString(1, Index - 1) + FileName.SubString(Index + 3, FileName.Length() - Index - 3 + 1)))
+        {
+          FileName.Delete(Index, 3);
+          InvalidChar = FileName.c_str() + Index - 1;
         }
         else
         {

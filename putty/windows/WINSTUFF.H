@@ -38,6 +38,9 @@ struct FontSpec {
     (fq) == FQ_NONANTIALIASED ? NONANTIALIASED_QUALITY : \
     CLEARTYPE_QUALITY)
 
+#define PLATFORM_IS_UTF16 /* enable UTF-16 processing when exchanging
+			   * wchar_t strings with environment */
+
 /*
  * Where we can, we use GetWindowLongPtr and friends because they're
  * more useful on 64-bit platforms, but they're a relatively recent

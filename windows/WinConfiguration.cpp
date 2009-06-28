@@ -408,6 +408,7 @@ void __fastcall TWinConfiguration::Default()
   FDoubleClickAction = dcaEdit;
   FCopyOnDoubleClickConfirmation = false;
   FDimmHiddenFiles = true;
+  FRenameWholeName = false;
   FAutoStartSession = "";
   FExpertMode = true;
   FUseLocationProfiles = false;
@@ -522,14 +523,17 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
   FScpCommander.FullRowSelect = true;
+  FScpCommander.TreeOnLeft = false;
   FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0;20,0;150,0;125,0|0;1;8;2;3;4;5;6;7";
   FScpCommander.RemotePanel.StatusBar = true;
   FScpCommander.RemotePanel.DriveView = false;
   FScpCommander.RemotePanel.DriveViewHeight = 100;
+  FScpCommander.RemotePanel.DriveViewWidth = 100;
   FScpCommander.LocalPanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0|0;1;2;3;4;5";
   FScpCommander.LocalPanel.StatusBar = true;
   FScpCommander.LocalPanel.DriveView = false;
   FScpCommander.LocalPanel.DriveViewHeight = 100;
+  FScpCommander.LocalPanel.DriveViewWidth = 100;
 
   FBookmarks->Clear();
 }
@@ -686,6 +690,7 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Float,    DDWarnLackOfTempSpaceRatio); \
     KEY(Bool,     DeleteToRecycleBin); \
     KEY(Bool,     DimmHiddenFiles); \
+    KEY(Bool,     RenameWholeName); \
     KEY(Bool,     SelectDirectories); \
     KEY(String,   SelectMask); \
     KEY(Bool,     ShowHiddenFiles); \
@@ -783,18 +788,21 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,    ScpCommander.CompareByTime); \
     KEY(Bool,    ScpCommander.CompareBySize); \
     KEY(Bool,    ScpCommander.FullRowSelect); \
+    KEY(Bool,    ScpCommander.TreeOnLeft); \
   ); \
   BLOCK("Interface\\Commander\\LocalPanel", CANCREATE, \
     KEY(String,  ScpCommander.LocalPanel.DirViewParams); \
     KEY(Bool,    ScpCommander.LocalPanel.StatusBar); \
     KEY(Bool,    ScpCommander.LocalPanel.DriveView); \
     KEY(Integer, ScpCommander.LocalPanel.DriveViewHeight); \
+    KEY(Integer, ScpCommander.LocalPanel.DriveViewWidth); \
   ); \
   BLOCK("Interface\\Commander\\RemotePanel", CANCREATE, \
     KEY(String,  ScpCommander.RemotePanel.DirViewParams); \
     KEY(Bool,    ScpCommander.RemotePanel.StatusBar); \
     KEY(Bool,    ScpCommander.RemotePanel.DriveView); \
     KEY(Integer, ScpCommander.RemotePanel.DriveViewHeight); \
+    KEY(Integer, ScpCommander.RemotePanel.DriveViewWidth); \
   ); \
   BLOCK("Logging", CANCREATE, \
     KEY(Bool,    LogWindowOnStartup); \
@@ -1227,6 +1235,11 @@ void __fastcall TWinConfiguration::SetCopyOnDoubleClickConfirmation(bool value)
 void __fastcall TWinConfiguration::SetDimmHiddenFiles(bool value)
 {
   SET_CONFIG_PROPERTY(DimmHiddenFiles);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetRenameWholeName(bool value)
+{
+  SET_CONFIG_PROPERTY(RenameWholeName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetAutoStartSession(AnsiString value)

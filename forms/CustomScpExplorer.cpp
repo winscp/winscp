@@ -116,6 +116,7 @@ TTransferOperationParam::TTransferOperationParam()
 TCustomCommandParam::TCustomCommandParam()
 {
   Params = 0;
+  Both = false;
 }
 //---------------------------------------------------------------------------
 class TTransferPresetNoteData : public TObject
@@ -245,6 +246,10 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
     FSystemImageList->DrawingStyle = dsTransparent;
   }
 
+  FCustomCommandMenu = CreateTBXPopupMenu(this);
+  FCustomCommandLocalFileList = NULL;
+  FCustomCommandRemoteFileList = NULL;
+
   Application->HookMainWindow(MainWindowHook);
 
   StartUpdates();
@@ -253,6 +258,10 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 __fastcall TCustomScpExplorerForm::~TCustomScpExplorerForm()
 {
   Application->UnhookMainWindow(MainWindowHook);
+
+  delete FCustomCommandLocalFileList;
+  delete FCustomCommandRemoteFileList;
+  delete FCustomCommandMenu;
 
   delete FSystemImageList;
   FSystemImageList = NULL;
@@ -359,7 +368,7 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged()
 {
   RemoteDirView->Terminal = Terminal;
   Caption = Application->Title;
-  NonVisualDataModule->QueueDisconnectOnceEmptyAction->Checked = false;
+  NonVisualDataModule->ResetQueueOnceEmptyOperation();
   if (Terminal)
   {
     if (Terminal->Active)
@@ -444,13 +453,15 @@ void __fastcall TCustomScpExplorerForm::UpdateQueueStatus(bool AppIdle)
 
   bool IsEmpty = (FQueueStatus == NULL) || (FQueueStatus->Count == 0);
 
-  if (NonVisualDataModule->QueueDisconnectOnceEmptyAction->Checked &&
-      IsEmpty && (Terminal != NULL))
+  if (IsEmpty && (Terminal != NULL))
   {
-    NonVisualDataModule->QueueDisconnectOnceEmptyAction->Checked = false;
-    if (AppIdle)
+    TOnceDoneOperation OnceDoneOperation =
+      NonVisualDataModule->CurrentQueueOnceEmptyOperation();
+    NonVisualDataModule->ResetQueueOnceEmptyOperation();
+
+    if ((OnceDoneOperation != odoIdle) && AppIdle)
     {
-      Terminal->CloseOnCompletion(LoadStr(CLOSED_ON_QUEUE_EMPTY));
+      Terminal->CloseOnCompletion(OnceDoneOperation, LoadStr(CLOSED_ON_QUEUE_EMPTY));
     }
   }
 }
@@ -729,24 +740,32 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
 
   if (Result && CopyParam.Queue && !ToTemp)
   {
-    assert(Queue != NULL);
 
     // these parameter are known only after transfer dialog
     Params |=
       (CopyParam.QueueNoConfirmation ? cpNoConfirmation : 0) |
       (CopyParam.NewerOnly ? cpNewerOnly : 0);
-    TQueueItem * QueueItem;
-    if (Direction == tdToRemote)
+
+    if (CopyParam.QueueIndividually)
     {
-      QueueItem = new TUploadQueueItem(Terminal, FileList, TargetDirectory,
-        &CopyParam, Params);
+      for (int Index = 0; Index < FileList->Count; Index++)
+      {
+        TStrings * FileList1 = new TStringList();
+        try
+        {
+          FileList1->AddObject(FileList->Strings[Index], FileList->Objects[Index]);
+          AddQueueItem(Direction, FileList1, TargetDirectory, CopyParam, Params);
+        }
+        __finally
+        {
+          delete FileList1;
+        }
+      }
     }
     else
     {
-      QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
-        &CopyParam, Params);
+      AddQueueItem(Direction, FileList, TargetDirectory, CopyParam, Params);
     }
-    Queue->AddItem(QueueItem);
     Result = false;
 
     TOperationSide Side = ((Direction == tdToRemote) ? osLocal : osRemote);
@@ -757,6 +776,27 @@ bool __fastcall TCustomScpExplorerForm::CopyParamDialog(
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::AddQueueItem(
+  TTransferDirection Direction, TStrings * FileList,
+  const AnsiString TargetDirectory, const TCopyParamType & CopyParam,
+  int Params)
+{
+  assert(Queue != NULL);
+
+  TQueueItem * QueueItem;
+  if (Direction == tdToRemote)
+  {
+    QueueItem = new TUploadQueueItem(Terminal, FileList, TargetDirectory,
+      &CopyParam, Params);
+  }
+  else
+  {
+    QueueItem = new TDownloadQueueItem(Terminal, FileList, TargetDirectory,
+      &CopyParam, Params);
+  }
+  Queue->AddItem(QueueItem);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RestoreFormParams()
@@ -855,7 +895,7 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
         (ProgressData.Operation != foCalculateChecksum) &&
         (FSynchronizeProgressForm == NULL))
     {
-      FProgressForm->DisconnectWhenComplete = true;
+      FProgressForm->OnceDoneOperation = odoDisconnect;
     }
   }
   // operation is finished (or terminated), so we hide progress form
@@ -907,7 +947,7 @@ bool __fastcall TCustomScpExplorerForm::PanelOperation(TOperationSide /*Side*/,
 void __fastcall TCustomScpExplorerForm::DoOperationFinished(
   TFileOperation Operation, TOperationSide Side,
   bool /*Temp*/, const AnsiString & FileName, bool Success,
-  bool & DisconnectWhenComplete)
+  TOnceDoneOperation & OnceDoneOperation)
 {
   if (!FAutoOperation)
   {
@@ -953,17 +993,17 @@ void __fastcall TCustomScpExplorerForm::DoOperationFinished(
 
   if (FProgressForm)
   {
-    DisconnectWhenComplete = FProgressForm->DisconnectWhenComplete;
+    OnceDoneOperation = FProgressForm->OnceDoneOperation;
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::OperationFinished(
   TFileOperation Operation, TOperationSide Side,
   bool Temp, const AnsiString & FileName, Boolean Success,
-  bool & DisconnectWhenComplete)
+  TOnceDoneOperation & OnceDoneOperation)
 {
   DoOperationFinished(Operation, Side, Temp, FileName, Success,
-    DisconnectWhenComplete);
+    OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
 TCustomDirView * __fastcall TCustomScpExplorerForm::DirView(TOperationSide Side)
@@ -1037,7 +1077,7 @@ TTBXPopupMenu * __fastcall TCustomScpExplorerForm::HistoryMenu(
   {
     // In Pascal the size of TTBXPopupMenu is 132, in C++ 136,
     // operator new allocates memory in Pascal code, but calls inline
-    // contructor in C++, leading in problems, the funtion does
+    // contructor in C++, leading in problems, the function does
     // both in Pascal code
     FHistoryMenu[Side == osLocal][Back] = CreateTBXPopupMenu(this);
     UpdateHistoryMenu(Side, Back);
@@ -1058,6 +1098,25 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
   // remote custom commands can be executed only if the server supports shell commands
   // or have secondary shell
   return (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomScpExplorerForm::BothCustomCommandState(const AnsiString & Description)
+{
+  AnsiString Command = WinConfiguration->CustomCommands->Values[Description];
+  int Params = WinConfiguration->CustomCommands->Params[Description];
+
+  bool Result = FLAGSET(Params, ccLocal);
+  if (Result)
+  {
+    TLocalCustomCommand LocalCustomCommand;
+    TInteractiveCustomCommand InteractiveCustomCommand(&LocalCustomCommand);
+    AnsiString Cmd = InteractiveCustomCommand.Complete(Command, false);
+
+    Result =
+      LocalCustomCommand.IsFileCommand(Cmd) &&
+      LocalCustomCommand.HasLocalFileName(Cmd);
+  }
+  return Result ? 1 : -1;
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
@@ -1125,7 +1184,7 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
-  AnsiString Name, AnsiString Command, int Params)
+  AnsiString Name, AnsiString Command, int Params, TStrings * ALocalFileList)
 {
   if (FLAGCLEAR(Params, ccLocal))
   {
@@ -1202,10 +1261,16 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
         if (LocalFileCommand)
         {
-          assert(HasDirView[osLocal]);
-          assert(EnableSelectedOperation[osLocal]);
-
-          LocalFileList = DirView(osLocal)->CreateFileList(false, true, NULL);
+          if (ALocalFileList == NULL)
+          {
+            assert(HasDirView[osLocal]);
+            assert(EnableSelectedOperation[osLocal]);
+            LocalFileList = DirView(osLocal)->CreateFileList(false, true, NULL);
+          }
+          else
+          {
+            LocalFileList = ALocalFileList;
+          }
 
           if (FileListCommand)
           {
@@ -1337,10 +1402,62 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
       __finally
       {
         delete RemoteFileList;
-        delete LocalFileList;
+        if (LocalFileList != ALocalFileList)
+        {
+          delete LocalFileList;
+        }
       }
     }
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::BothCustomCommand(
+  AnsiString Name, AnsiString Command, int Params)
+{
+  assert(FCustomCommandLocalFileList != NULL);
+  assert(FCustomCommandRemoteFileList != NULL);
+  assert(FCustomCommandLocalFileList->Count == FCustomCommandRemoteFileList->Count);
+
+  TStrings * LocalFileList = new TStringList();
+  TStrings * RemoteFileList = new TStringList();
+  try
+  {
+    for (int Index = 0; Index < FCustomCommandLocalFileList->Count; Index++)
+    {
+      LocalFileList->Clear();
+      LocalFileList->AddObject(
+        FCustomCommandLocalFileList->Strings[Index],
+        FCustomCommandLocalFileList->Objects[Index]);
+      RemoteFileList->Clear();
+      RemoteFileList->AddObject(
+        FCustomCommandRemoteFileList->Strings[Index],
+        FCustomCommandRemoteFileList->Objects[Index]);
+
+      CustomCommand(RemoteFileList, Name, Command, Params, LocalFileList);
+    }
+  }
+  __finally
+  {
+    delete LocalFileList;
+    delete RemoteFileList;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::CustomCommandMenu(
+  TObject * Sender, const TPoint & MousePos,
+  TStrings * LocalFileList, TStrings * RemoteFileList)
+{
+  FCustomCommandMenu->Items->Clear();
+  delete FCustomCommandLocalFileList;
+  delete FCustomCommandRemoteFileList;
+  // takeover ownership,
+  // the lists must survive the MenuPopup as OnClick occurs only after it exits
+  FCustomCommandLocalFileList = LocalFileList;
+  FCustomCommandRemoteFileList = RemoteFileList;
+
+  NonVisualDataModule->CreateCustomCommandsMenu(FCustomCommandMenu->Items, false, false, true);
+
+  MenuPopup(FCustomCommandMenu, MousePos, dynamic_cast<TComponent *>(Sender));
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TerminalCaptureLog(
@@ -1581,7 +1698,7 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
 
       RemoteDirView->SaveSelectedNames();
       TCustomCommandParam * AParam = static_cast<TCustomCommandParam*>(Param);
-      CustomCommand(FileList, AParam->Name, AParam->Command, AParam->Params);
+      CustomCommand(FileList, AParam->Name, AParam->Command, AParam->Params, NULL);
     }
     else if ((Operation == foRemoteMove) || (Operation == foRemoteCopy))
     {
@@ -1883,7 +2000,6 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
   // do not forget to add additional options to ExecutedFileChanged, FAR and SS
   CopyParam.FileNameCase = ncNoChange;
   CopyParam.PreserveReadOnly = false;
-  CopyParam.ResumeSupport = rsOff;
   CopyParam.ReplaceInvalidChars = true;
   CopyParam.FileMask = "";
   if (AllFiles)
@@ -2081,7 +2197,6 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileChanged(const AnsiString Fil
     // do not forget to add additional options to TemporarilyDownloadFiles, FAR and SS
     CopyParam.FileNameCase = ncNoChange;
     CopyParam.PreserveRights = false;
-    CopyParam.ResumeSupport = rsOff;
     // so i do not need to worry if masking algorithm works in all cases
     // ("" means "copy file name", no masking is actually done)
     if (ExtractFileName(FileName) == Data.OriginalFileName)
@@ -2620,8 +2735,8 @@ void __fastcall TCustomScpExplorerForm::SetProperties(TOperationSide Side, TStri
           }
         }
 
-        // if we haven't collected tokens for all file sin current directory,
-        // make sure we collect all at elast for all selected files.
+        // if we haven't collected tokens for all files in current directory,
+        // make sure we collect them at least for all selected files.
         // (note that so far the files in FileList has to be from current direcotry)
         if (Count < Files->Count)
         {
@@ -3344,6 +3459,15 @@ void __fastcall TCustomScpExplorerForm::DoSynchronize(
         PParams |= TTerminal::spNoRecurse | TTerminal::spUseCache |
           TTerminal::spDelayProgress | TTerminal::spSubDirs;
       }
+      else
+      {
+        // if keepuptodate is non-recursive,
+        // full sync before has to be non-recursive as well
+        if (FLAGCLEAR(Params.Options, soRecurse))
+        {
+          PParams |= TTerminal::spNoRecurse;
+        }
+      }
       Synchronize(LocalDirectory, RemoteDirectory, smRemote, CopyParam,
         PParams, Checklist, Options);
     }
@@ -3541,7 +3665,7 @@ bool __fastcall TCustomScpExplorerForm::DoFullSynchronizeDirectories(
       }
       else if (FLAGCLEAR(Params, spPreviewChanges) ||
                DoSynchronizeChecklistDialog(Checklist, Mode, Params,
-                 LocalDirectory, RemoteDirectory))
+                 LocalDirectory, RemoteDirectory, CustomCommandMenu))
       {
         assert(!FAutoOperation);
         void * BatchStorage;
@@ -4680,7 +4804,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDEnd(TObject * Sender)
 
   if (!FDragDropSshTerminate.IsEmpty())
   {
-    throw ESshTerminate(NULL, FDragDropSshTerminate);
+    throw ESshTerminate(NULL, FDragDropSshTerminate, FDragDropOnceDoneOperation);
   }
 }
 //---------------------------------------------------------------------------
@@ -5027,7 +5151,7 @@ bool __fastcall TCustomScpExplorerForm::AllowQueueOperation(
     case qoGoTo:
       return ComponentVisible[fcQueueView];
 
-    case qoDisconnectOnceEmpty:
+    case qoOnceEmpty:
       return !FQueueController->Empty;
 
     default:
@@ -5300,6 +5424,7 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDDragDetect(
   FDragTempDir = WinConfiguration->TemporaryDir();
   FDDTotalSize = 0;
   FDragDropSshTerminate = "";
+  FDragDropOnceDoneOperation = odoIdle;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
@@ -5320,11 +5445,12 @@ void __fastcall TCustomScpExplorerForm::RemoteFileControlDDQueryContinueDrag(
         assert(E.MoreMessages == NULL); // not supported
         assert(!E.Message.IsEmpty());
         FDragDropSshTerminate = E.Message;
+        FDragDropOnceDoneOperation = E.Operation;
       }
     }
     catch (Exception &E)
     {
-      // If downloading fails we need to cancel drag&drop, othwerwise
+      // If downloading fails we need to cancel drag&drop, otherwise
       // Explorer shows error
       // But by the way exception probably never reach this point as
       // it's catched on way
@@ -6240,22 +6366,25 @@ bool __fastcall TCustomScpExplorerForm::MainWindowHook(TMessage & AMessage)
 void __fastcall TCustomScpExplorerForm::DirViewEditing(
   TObject * Sender, TListItem * /*Item*/, bool & /*AllowEdit*/)
 {
-  TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
-  assert(DirView != NULL);
-  HWND Edit = ListView_GetEditControl(DirView->Handle);
-  // OnEditing is called also from TCustomListView::CanEdit
-  if (Edit != NULL)
+  if (!WinConfiguration->RenameWholeName)
   {
-    AnsiString Text;
-    Text.SetLength(GetWindowTextLength(Edit) + 1);
-    GetWindowText(Edit, Text.c_str(), Text.Length());
-
-    int P = Text.LastDelimiter(".");
-    if (P > 0)
+    TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
+    assert(DirView != NULL);
+    HWND Edit = ListView_GetEditControl(DirView->Handle);
+    // OnEditing is called also from TCustomListView::CanEdit
+    if (Edit != NULL)
     {
-      // SendMessage does not work, edit control is probably not fully
-      // initialized yet atm
-      PostMessage(Edit, EM_SETSEL, 0, P - 1);
+      AnsiString Text;
+      Text.SetLength(GetWindowTextLength(Edit) + 1);
+      GetWindowText(Edit, Text.c_str(), Text.Length());
+
+      int P = Text.LastDelimiter(".");
+      if (P > 0)
+      {
+        // SendMessage does not work, edit control is probably not fully
+        // initialized yet atm
+        PostMessage(Edit, EM_SETSEL, 0, P - 1);
+      }
     }
   }
 }

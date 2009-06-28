@@ -54,6 +54,7 @@ struct TCustomCommandParam
   AnsiString Name;
   AnsiString Command;
   int Params;
+  bool Both;
 };
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
@@ -82,7 +83,10 @@ __published:
   TSplitter *RemotePanelSplitter;
   TTBXItem *TBXItem194;
   TTBXItem *TBXItem195;
-  TTBXItem *TBXItem210;
+  TTBXSubmenuItem *TBXSubmenuItem27;
+  TTBXItem *TBXItem211;
+  TTBXItem *TBXItem225;
+  TTBXItem *TBXItem226;
   void __fastcall RemoteDirViewContextPopup(TObject *Sender,
     const TPoint &MousePos, bool &Handled);
   void __fastcall RemoteDirViewGetSelectFilter(
@@ -182,6 +186,7 @@ private:
   TStrings * FDDFileList;
   __int64 FDDTotalSize;
   AnsiString FDragDropSshTerminate;
+  TOnceDoneOperation FDragDropOnceDoneOperation;
   HINSTANCE FOle32Library;
   HCURSOR FDragMoveCursor;
   AnsiString FDragTempDir;
@@ -206,6 +211,9 @@ private:
   TTrayIcon * FTrayIcon;
   TCustomCommandParam FLastCustomCommand;
   TFileMasks FDirViewMatchMask;
+  TTBXPopupMenu * FCustomCommandMenu;
+  TStrings * FCustomCommandLocalFileList;
+  TStrings * FCustomCommandRemoteFileList;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -230,6 +238,9 @@ private:
   void __fastcall ApplicationMinimize(TObject * Sender);
   void __fastcall ApplicationRestore(TObject * Sender);
   bool __fastcall MainWindowHook(TMessage & Message);
+  void __fastcall AddQueueItem(TTransferDirection Direction,
+    TStrings * FileList, const AnsiString TargetDirectory,
+    const TCopyParamType & CopyParam, int Params);
 
 protected:
   TOperationSide FCurrentSide;
@@ -275,7 +286,7 @@ protected:
   virtual void __fastcall FixControlsPlacement();
   void __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
   void __fastcall CustomCommand(TStrings * FileList, AnsiString Name,
-    AnsiString Command, int Params);
+    AnsiString Command, int Params, TStrings * ALocalFileList);
   virtual void __fastcall TerminalChanging();
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall QueueChanged();
@@ -284,7 +295,7 @@ protected:
   virtual void __fastcall UpdateStatusPanelText(TTBXStatusPanel * Panel);
   virtual void __fastcall DoOperationFinished(TFileOperation Operation,
     TOperationSide Side, bool Temp, const AnsiString & FileName, bool Success,
-    bool & DisconnectWhenFinished);
+    TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall DoOpenDirectoryDialog(TOpenDirectoryMode Mode, TOperationSide Side);
   virtual void __fastcall FileOperationProgress(
     TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
@@ -387,6 +398,8 @@ protected:
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
   int __fastcall CustomCommandState(const AnsiString & Command, int Params, bool OnFocused);
   inline bool __fastcall CustomCommandRemoteAllowed();
+  void __fastcall CustomCommandMenu(TObject * Sender, const TPoint & MousePos,
+    TStrings * LocalFileList, TStrings * RemoteFileList);
   void __fastcall LoadToolbarsLayoutStr(AnsiString LayoutStr);
   AnsiString __fastcall GetToolbarsLayoutStr();
   virtual void __fastcall Dispatch(void * Message);
@@ -438,9 +451,11 @@ public:
   virtual void __fastcall ChangePath(TOperationSide Side) = 0;
   virtual void __fastcall StoreParams();
   int __fastcall CustomCommandState(const AnsiString & Description, bool OnFocused);
+  int __fastcall BothCustomCommandState(const AnsiString & Description);
   bool __fastcall GetLastCustomCommand(bool OnFocused,
     TCustomCommandParam & CustomCommand, int & State);
   void __fastcall LastCustomCommand(bool OnFocused);
+  void __fastcall BothCustomCommand(AnsiString Name, AnsiString Command, int Params);
   void __fastcall LockWindow();
   void __fastcall UnlockWindow();
 
@@ -482,7 +497,7 @@ public:
     AnsiString HelpKeyword, const TMessageParams * Params = NULL,
     TTerminal * Terminal = NULL);
   void __fastcall OperationFinished(TFileOperation Operation, TOperationSide Side,
-    bool Temp, const AnsiString & FileName, bool Success, bool & DisconnectWhenFinished);
+    bool Temp, const AnsiString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   void __fastcall ShowExtendedException(TTerminal * Terminal, Exception * E);
   void __fastcall InactiveTerminalException(TTerminal * Terminal, Exception * E);

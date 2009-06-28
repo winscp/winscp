@@ -298,6 +298,7 @@ __fastcall TScript::TScript(bool LimitedOutput)
 {
   FLimitedOutput = LimitedOutput;
   FTerminal = NULL;
+  FSessionReopenTimeout = Configuration->SessionReopenTimeout;
 
   Init();
 }
@@ -337,14 +338,14 @@ void __fastcall TScript::Init()
   FCommands->Register("ln", SCRIPT_LN_DESC, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register("symlink", 0, SCRIPT_LN_HELP, &LnProc, 2, 2, false);
   FCommands->Register("mkdir", SCRIPT_MKDIR_DESC, SCRIPT_MKDIR_HELP, &MkDirProc, 1, 1, false);
-  FCommands->Register("get", SCRIPT_GET_DESC, SCRIPT_GET_HELP2, &GetProc, 1, -1, true);
-  FCommands->Register("recv", 0, SCRIPT_GET_HELP2, &GetProc, 1, -1, false);
-  FCommands->Register("put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP2, &PutProc, 1, -1, true);
-  FCommands->Register("send", 0, SCRIPT_PUT_HELP2, &PutProc, 1, -1, false);
-  FCommands->Register("option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP5, &OptionProc, -1, 2, false);
-  FCommands->Register("ascii", 0, SCRIPT_OPTION_HELP5, &AsciiProc, 0, 0, false);
-  FCommands->Register("binary", 0, SCRIPT_OPTION_HELP5, &BinaryProc, 0, 0, false);
-  FCommands->Register("synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP2, &SynchronizeProc, 1, 3, true);
+  FCommands->Register("get", SCRIPT_GET_DESC, SCRIPT_GET_HELP3, &GetProc, 1, -1, true);
+  FCommands->Register("recv", 0, SCRIPT_GET_HELP3, &GetProc, 1, -1, false);
+  FCommands->Register("put", SCRIPT_PUT_DESC, SCRIPT_PUT_HELP3, &PutProc, 1, -1, true);
+  FCommands->Register("send", 0, SCRIPT_PUT_HELP3, &PutProc, 1, -1, false);
+  FCommands->Register("option", SCRIPT_OPTION_DESC, SCRIPT_OPTION_HELP6, &OptionProc, -1, 2, false);
+  FCommands->Register("ascii", 0, SCRIPT_OPTION_HELP6, &AsciiProc, 0, 0, false);
+  FCommands->Register("binary", 0, SCRIPT_OPTION_HELP6, &BinaryProc, 0, 0, false);
+  FCommands->Register("synchronize", SCRIPT_SYNCHRONIZE_DESC, SCRIPT_SYNCHRONIZE_HELP3, &SynchronizeProc, 1, 3, true);
   FCommands->Register("keepuptodate", SCRIPT_KEEPUPTODATE_DESC, SCRIPT_KEEPUPTODATE_HELP2, &KeepUpToDateProc, 0, 2, true);
 }
 //---------------------------------------------------------------------------
@@ -374,7 +375,16 @@ void __fastcall TScript::Command(AnsiString Cmd)
       AnsiString Command;
       if (CutToken(Cmd, Command))
       {
-        FCommands->Execute(Command, Cmd);
+        int ASessionReopenTimeout = Configuration->SessionReopenTimeout;
+        try
+        {
+          Configuration->SessionReopenTimeout = FSessionReopenTimeout;
+          FCommands->Execute(Command, Cmd);
+        }
+        __finally
+        {
+          Configuration->SessionReopenTimeout = ASessionReopenTimeout;
+        }
       }
     }
   }
@@ -600,6 +610,25 @@ void __fastcall TScript::CheckSession()
 void __fastcall TScript::CheckParams(TScriptProcParams * Parameters)
 {
   TScriptCommands::CheckParams(Parameters, false);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScript::TransferParamParams(int & Params, TScriptProcParams * Parameters)
+{
+  Params |= FLAGMASK(!FConfirm, cpNoConfirmation);
+
+  if (Parameters->FindSwitch("delete"))
+  {
+    Params |= cpDelete;
+  }
+
+  if (Parameters->FindSwitch("resume"))
+  {
+    Params |= cpResume;
+  }
+  else if (Parameters->FindSwitch("append"))
+  {
+    Params |= cpAppend;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TScript::CopyParamParams(TCopyParamType & CopyParam, TScriptProcParams * Parameters)
@@ -905,13 +934,8 @@ void __fastcall TScript::GetProc(TScriptProcParams * Parameters)
       CopyParam.FileMask = ExtractFileName(Target);
     }
 
-    int Params = FLAGMASK(!FConfirm, cpNoConfirmation);
-
-    if (Parameters->FindSwitch("delete"))
-    {
-      Params |= cpDelete;
-    }
-
+    int Params = 0;
+    TransferParamParams(Params, Parameters);
     CopyParamParams(CopyParam, Parameters);
     CheckParams(Parameters);
 
@@ -951,13 +975,8 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
       CopyParam.FileMask = UnixExtractFileName(Target);
     }
 
-    int Params = FLAGMASK(!FConfirm, cpNoConfirmation);
-
-    if (Parameters->FindSwitch("delete"))
-    {
-      Params |= cpDelete;
-    }
-
+    int Params = 0;
+    TransferParamParams(Params, Parameters);
     CopyParamParams(CopyParam, Parameters);
     CheckParams(Parameters);
 
@@ -971,9 +990,9 @@ void __fastcall TScript::PutProc(TScriptProcParams * Parameters)
 //---------------------------------------------------------------------------
 void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
 {
-  enum { Echo, Batch, Confirm, Transfer, SynchDelete, Exclude, Include };
+  enum { Echo, Batch, Confirm, Transfer, SynchDelete, Exclude, Include, ReconnectTime };
   static const char * Names[] = { "echo", "batch", "confirm", "transfer",
-    "synchdelete", "exclude", "include" };
+    "synchdelete", "exclude", "include", "reconnecttime" };
 
   enum { Off, On };
   static const char * ToggleNames[] = { "off", "on" };
@@ -999,7 +1018,7 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
   }
 
   #define OPT(OPT) ((Option < 0) || (Option == OPT))
-  const char * ListFormat = "%-12s %-10s";
+  const char * ListFormat = "%-15s %-10s";
   bool SetValue = !ValueName.IsEmpty();
 
   if (OPT(Echo))
@@ -1118,6 +1137,37 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
     }
   }
 
+  if (OPT(ReconnectTime))
+  {
+    if (SetValue)
+    {
+      int Value;
+      if (ValueName == ToggleNames[Off])
+      {
+        Value = 0;
+      }
+      else
+      {
+        Value = StrToInt(ValueName) * 1000;
+      }
+      if (Value < 0)
+      {
+        throw Exception(FMTLOAD(SCRIPT_VALUE_UNKNOWN, (ValueName, OptionName)));
+      }
+      FSessionReopenTimeout = Value;
+    }
+
+    if (FSessionReopenTimeout == 0)
+    {
+      ValueName = ToggleNames[Off];
+    }
+    else
+    {
+      ValueName = IntToStr(FSessionReopenTimeout / 1000);
+    }
+    PrintLine(FORMAT(ListFormat, (Names[ReconnectTime], ValueName)));
+  }
+
   #undef OPT
 }
 //---------------------------------------------------------------------------
@@ -1211,11 +1261,16 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     }
     if (Parameters->FindSwitch("criteria", Value))
     {
-      enum { Time, Size, Both };
-      static const char * CriteriaNames[] = { "time", "size", "both" };
+      enum { None, Time, Size, Both };
+      static const char * CriteriaNames[] = { "none", "time", "size", "both" };
       int Criteria = TScriptCommands::FindCommand(CriteriaNames, LENOF(CriteriaNames), Value);
       switch (Criteria)
       {
+        case None:
+          SynchronizeParams |= TTerminal::spNotByTime;
+          SynchronizeParams &= ~TTerminal::spBySize;
+          break;
+
         case Time:
           SynchronizeParams &= ~(TTerminal::spNotByTime | TTerminal::spBySize);
           break;
@@ -1232,13 +1287,9 @@ void __fastcall TScript::SynchronizeProc(TScriptProcParams * Parameters)
     }
 
     // enforce rules
-    if (FSynchronizeMode == TTerminal::smBoth)
+    if (FSynchronizeMode  == TTerminal::smBoth)
     {
       SynchronizeParams &= ~(TTerminal::spNotByTime | TTerminal::spBySize);
-    }
-    if (FLAGSET(SynchronizeParams, TTerminal::spMirror))
-    {
-      SynchronizeParams &= ~TTerminal::spNotByTime;
     }
 
     CheckParams(Parameters);
@@ -1465,10 +1516,10 @@ bool __fastcall TManagementScript::QueryCancel()
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::TerminalInformation(TTerminal * Terminal,
-  const AnsiString & Str, bool /*Status*/, bool /*Active*/)
+  const AnsiString & Str, bool /*Status*/, bool Active)
 {
   assert(Terminal != NULL);
-  if (Terminal->Status == ssOpening)
+  if (Active && (Terminal->Status == ssOpening))
   {
     PrintLine(Str);
   }
@@ -1576,7 +1627,7 @@ void __fastcall TManagementScript::TerminalOperationProgress(
 void __fastcall TManagementScript::TerminalOperationFinished(
   TFileOperation Operation, TOperationSide /*Side*/,
   bool /*Temp*/, const AnsiString & FileName, Boolean Success,
-  bool & /*DisconnectWhenComplete*/)
+  TOnceDoneOperation & /*OnceDoneOperation*/)
 {
   assert(Operation != foCalculateSize);
 

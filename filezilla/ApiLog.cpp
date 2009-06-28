@@ -80,6 +80,10 @@ void CApiLog::LogMessage(int nMessageType, LPCTSTR pMsgFormat, ...) const
 	text.FormatV(pMsgFormat, ap);
 	va_end(ap);
 	
+#ifdef MPEXT
+	if (nMessageType>=FZ_LOG_DEBUG)
+		return;
+#endif
 	SendLogMessage(nMessageType, text);
 }
 
@@ -90,6 +94,10 @@ void CApiLog::LogMessageRaw(int nMessageType, LPCTSTR pMsg) const
 	if (nMessageType>=FZ_LOG_APIERROR && (nMessageType-FZ_LOG_APIERROR)>=m_pApiLogParent->m_nDebugLevel)
 		return;
 	
+#ifdef MPEXT
+	if (nMessageType>=FZ_LOG_DEBUG)
+		return;
+#endif
 	SendLogMessage(nMessageType, pMsg);
 }
 
@@ -110,6 +118,10 @@ void CApiLog::LogMessage(int nMessageType, UINT nFormatID, ...) const
 	text.FormatV(str, ap);
 	va_end(ap);
 	
+#ifdef MPEXT
+	if (nMessageType>=FZ_LOG_DEBUG)
+		return;
+#endif
 	SendLogMessage(nMessageType, text);
 }
 
@@ -130,6 +142,11 @@ void CApiLog::LogMessage(CString SourceFile, int nSourceLine, void *pInstance, i
 	CString text;
 	text.FormatV(pMsgFormat, ap);
 	va_end(ap);
+
+#ifdef MPEXT
+	if (nMessageType>=FZ_LOG_DEBUG)
+		return;
+#endif
 
 	CString msg;
 	msg.Format(_T("%s(%d): %s   caller=0x%08x"), SourceFile, nSourceLine, text, (int)this);
@@ -154,6 +171,11 @@ void CApiLog::LogMessageRaw(CString SourceFile, int nSourceLine, void *pInstance
 	if (pos!=-1)
 		SourceFile=SourceFile.Mid(pos+1);
 	
+#ifdef MPEXT
+	if (nMessageType>=FZ_LOG_DEBUG)
+		return;
+#endif
+
 	CString msg;
 	msg.Format(_T("%s(%d): %s   caller=0x%08x"), SourceFile, nSourceLine, pMsg, (int)this);
 	

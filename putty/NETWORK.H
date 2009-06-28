@@ -207,6 +207,12 @@ void net_pending_errors(void);
  */
 int net_service_lookup(char *service);
 
+/*
+ * Look up the local hostname; return value needs freeing.
+ * May return NULL.
+ */
+char *get_hostname(void);
+
 /********** SSL stuff **********/
 
 /*

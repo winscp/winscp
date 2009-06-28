@@ -61,7 +61,7 @@ public:
     TStrings * Results) = 0;
   virtual void __fastcall DisplayBanner(const AnsiString & Banner) = 0;
   virtual void __fastcall FatalError(Exception * E, AnsiString Msg) = 0;
-  virtual void __fastcall ShowExtendedException(Exception * E) = 0;
+  virtual void __fastcall HandleExtendedException(Exception * E) = 0;
   virtual void __fastcall Closed() = 0;
 };
 //---------------------------------------------------------------------------

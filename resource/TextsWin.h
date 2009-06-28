@@ -2,7 +2,7 @@
 #define TextsWinH
 
 #define DND_DOWNLOAD_MOVE_WARNING 1050
-#define USAGE4          1051
+#define USAGE5                  1051
 
 #define WIN_ERROR_STRINGS       1100
 #define WARN_FATAL_ERROR        1102
@@ -357,6 +357,8 @@
 #define FILE_INFO_FILTERED      1821
 #define FILTER_MASK_CAPTION     1822
 #define PROPERTIES_UNKNOWN_TOKEN 1823
+#define COPY_BACKGROUND         1824
+#define COPY_QUEUE              1825
 
 #define WIN_VARIABLE_STRINGS    1900
 #define WINSCP_COPYRIGHT        1901

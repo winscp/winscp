@@ -45,11 +45,11 @@ public:
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
-    bool & DisconnectWhenComplete);
+    TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall CopyToRemote(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
-    bool & DisconnectWhenComplete);
+    TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall CreateDirectory(const AnsiString DirName);
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const AnsiString FileName,
@@ -99,13 +99,16 @@ protected:
   bool __fastcall ProcessMessage();
   void __fastcall DiscardMessages();
   void __fastcall WaitForMessages();
-  unsigned int __fastcall WaitForReply(bool Command = true);
-  unsigned int __fastcall PoolForReply();
+  unsigned int __fastcall WaitForReply(bool Command);
+  unsigned int __fastcall WaitForCommandReply();
+  void __fastcall WaitForFatalNonCommandReply();
+  void __fastcall PoolForFatalNonCommandReply();
+  void __fastcall GotNonCommandReply(unsigned int Reply);
   void __fastcall GotReply(unsigned int Reply, unsigned int Flags = 0,
     AnsiString Error = "", unsigned int * Code = NULL,
     TStrings ** Response = NULL);
   void __fastcall ResetReply();
-  void __fastcall HandleReplyStatus(const char * AStatus);
+  void __fastcall HandleReplyStatus(AnsiString Response);
   void __fastcall DoWaitForReply(unsigned int& ReplyToAwait);
 
   bool __fastcall HandleStatus(const char * Status, int Type);
@@ -163,8 +166,11 @@ protected:
     const AnsiString & RemoteFile, const AnsiString & RemotePath, bool Get,
     __int64 Size, int Type, TFileTransferData & UserData,
     TFileOperationProgressType * OperationProgress);
+  TDateTime __fastcall ConvertLocalTimestamp(time_t Time);
+  TDateTime __fastcall ConvertRemoteTimestamp(time_t Time, bool HasTime);
 
   static bool __fastcall Unquote(AnsiString & Str);
+  static AnsiString __fastcall ExtractStatusMessage(AnsiString Status);
 
 private:
   enum TCommand

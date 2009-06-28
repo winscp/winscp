@@ -56,7 +56,6 @@ const
   MaxWaitTimeOut = 10; {TFileDeleteThread: wait nn seconds for deleting files or directories}
 {$ENDIF}
   FileAttr = SysUtils.faAnyFile and (not SysUtils.faVolumeID);
-  ExtLen = 4;      {Length of extension including '.' => '.EXE'}
   SpecialExtensions = 'EXE,LNK,ICO,ANI,CUR,PIF,JOB,CPL';
   ExeExtension = 'EXE';
   MinDate = $21;    {01.01.1980}
@@ -78,8 +77,6 @@ type
   TClipboardOperation = (cboNone, cboCut, cboCopy);
   TFileNameDisplay = (fndStored, fndCap, fndNoCap, fndNice);
 
-  TExtStr = string[ExtLen];
-
   {Record for each file item:}
   PFileRec = ^TFileRec;
   TFileRec = record
@@ -90,7 +87,7 @@ type
     IsParentDir: Boolean;
     FileName: string;
     Displayname: string;
-    FileExt: TExtStr;
+    FileExt: string;
     TypeName: string;
     ImageIndex: Integer;
     Size: Int64;
@@ -102,7 +99,7 @@ type
   {Record for fileinfo caching:}
   PInfoCache = ^TInfoCache;
   TInfoCache = record
-    FileExt: TExtStr;
+    FileExt: string;
     TypeName: ShortString;
     ImageIndex: Integer;
   end;
@@ -540,7 +537,7 @@ type
 procedure Register;
 
 {Returns True, if the specified extension matches one of the extensions in ExtList:}
-function MatchesFileExt(Ext: TExtStr; const FileExtList: string): Boolean;
+function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
 
 var
   LastClipBoardOperation: TClipBoardOperation;
@@ -571,9 +568,9 @@ begin
     else Result := fEqual;
 end; {CompareInfoCacheItems}
 
-function MatchesFileExt(Ext: TExtStr; const FileExtList: string): Boolean;
+function MatchesFileExt(Ext: string; const FileExtList: string): Boolean;
 begin
-  Result := (Length(Ext) >= Pred(ExtLen)) and (Pos(Ext, FileExtList) <> 0);
+  Result := (Length(Ext) = 3) and (Pos(Ext, FileExtList) <> 0);
 end; {MatchesFileExt}
 
 function FileTimeToDateTime(FileTime: TFileTime): TDateTime;
@@ -1159,7 +1156,8 @@ begin
     Item.Data := PItem;
 
     FileName := SRec.Name;
-    FileExt := UpperCase(Copy(ExtractFileExt(Srec.Name), 2, Pred(ExtLen)));
+    FileExt := UpperCase(ExtractFileExt(Srec.Name));
+    FileExt := Copy(FileExt, 2, Length(FileExt) - 1);
     DisplayName := ItemDisplayName(FileName);
 {$WARNINGS OFF}
     Attr := SRec.FindData.dwFileAttributes;
@@ -3684,7 +3682,8 @@ begin
         IconEmpty := True;
         FileName := NewCaption;
         DisplayName := FileName;
-        FileExt := UpperCase(Copy(ExtractFileExt(HItem.pszText), 2, Pred(ExtLen)));
+        FileExt := UpperCase(ExtractFileExt(HItem.pszText));
+        FileExt := Copy(FileExt, 2, Length(FileExt) - 1);
         TypeName := EmptyStr;
         if Assigned(PIDL) then
           FreePIDL(PIDL);
@@ -3760,7 +3759,7 @@ begin
     end
       else
     begin
-      if (not Cache) or (Pos(PFileRec(Item.Data)^.FileExt, SpecialExtensions) <> 0) then
+      if (not Cache) or MatchesFileExt(PFileRec(Item.Data)^.FileExt, SpecialExtensions) then
         Result := PFileRec(Item.Data)^.ImageIndex
       else
         Result := -1

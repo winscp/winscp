@@ -40,6 +40,7 @@ public:
   virtual bool __fastcall LimitedOutput() = 0;
   virtual bool __fastcall LiveOutput() = 0;
   virtual void __fastcall WaitBeforeExit() = 0;
+  virtual bool __fastcall CommandLineOnly() = 0;
 };
 //---------------------------------------------------------------------------
 class TOwnConsole : public TConsole
@@ -56,6 +57,7 @@ public:
   virtual bool __fastcall LimitedOutput();
   virtual bool __fastcall LiveOutput();
   virtual void __fastcall WaitBeforeExit();
+  virtual bool __fastcall CommandLineOnly();
 
 protected:
   static TOwnConsole * FInstance;
@@ -475,6 +477,11 @@ void __fastcall TOwnConsole::WaitBeforeExit()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TOwnConsole::CommandLineOnly()
+{
+  return false;
+}
+//---------------------------------------------------------------------------
 class TExternalConsole : public TConsole
 {
 public:
@@ -490,6 +497,7 @@ public:
   virtual bool __fastcall LimitedOutput();
   virtual bool __fastcall LiveOutput();
   virtual void __fastcall WaitBeforeExit();
+  virtual bool __fastcall CommandLineOnly();
 
 private:
   bool FPendingAbort;
@@ -763,6 +771,11 @@ void __fastcall TExternalConsole::WaitBeforeExit()
   // noop
 }
 //---------------------------------------------------------------------------
+bool __fastcall TExternalConsole::CommandLineOnly()
+{
+  return true;
+}
+//---------------------------------------------------------------------------
 class TNullConsole : public TConsole
 {
 public:
@@ -777,6 +790,7 @@ public:
   virtual bool __fastcall LimitedOutput();
   virtual bool __fastcall LiveOutput();
   virtual void __fastcall WaitBeforeExit();
+  virtual bool __fastcall CommandLineOnly();
 };
 //---------------------------------------------------------------------------
 __fastcall TNullConsole::TNullConsole()
@@ -826,6 +840,12 @@ void __fastcall TNullConsole::WaitBeforeExit()
   // noop
 }
 //---------------------------------------------------------------------------
+bool __fastcall TNullConsole::CommandLineOnly()
+{
+  assert(false);
+  return false;
+}
+//---------------------------------------------------------------------------
 class TConsoleRunner
 {
 public:
@@ -833,7 +853,7 @@ public:
   ~TConsoleRunner();
 
   int __fastcall Run(const AnsiString Session, TOptions * Options,
-    TStrings * ScriptCommands);
+    TStrings * ScriptCommands, TStrings * ScriptParameters);
   void __fastcall ShowException(Exception * E);
 
 protected:
@@ -884,6 +904,7 @@ private:
     int & MaxDirectories);
   unsigned int InputTimeout();
   void __fastcall TimerTimer(TObject * Sender);
+  AnsiString ExpandCommand(AnsiString Command, TStrings * ScriptParameters);
 };
 //---------------------------------------------------------------------------
 TConsoleRunner::TConsoleRunner(TConsole * Console) :
@@ -1052,6 +1073,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   unsigned int Timer = 0;
   unsigned int Timeout = 0;
   int TimeoutA = 0;
+  int NoBatchA = 0;
 
   if (Params != NULL)
   {
@@ -1080,6 +1102,8 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     {
       AQuery = FMTLOAD(WARN_FATAL_ERROR, (AQuery));
     }
+
+    NoBatchA = Params->NoBatchAnswers;
   }
 
   int AAnswers = Answers;
@@ -1171,9 +1195,9 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
   int NumberAccel = 0;
   int CancelA = CancelAnswer(Answers);
   int CancelIndex;
-  int AbortA = AbortAnswer(Answers);
+  int AbortA = AbortAnswer(Answers & ~NoBatchA);
   int AbortIndex;
-  int ContinueA = ContinueAnswer(Answers);
+  int ContinueA = ContinueAnswer(Answers & ~NoBatchA);
   int ContinueIndex;
   int TimeoutIndex = 0;
 
@@ -1224,10 +1248,6 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
     if (Buttons[Index] == AbortA)
     {
       AbortIndex = Index + 1;
-    }
-    if (Buttons[Index] == ContinueA)
-    {
-      ContinueIndex = Index + 1;
     }
     if (Buttons[Index] == ContinueA)
     {
@@ -1511,8 +1531,20 @@ bool __fastcall TConsoleRunner::Input(AnsiString & Str, bool Echo, unsigned int 
   return Result;
 }
 //---------------------------------------------------------------------------
+AnsiString TConsoleRunner::ExpandCommand(AnsiString Command, TStrings * ScriptParameters)
+{
+  assert(ScriptParameters != NULL);
+  for (int Index = 0; Index < ScriptParameters->Count; Index++)
+  {
+    Command = StringReplace(Command, FORMAT("%%%d%%", (Index+1)),
+      ScriptParameters->Strings[Index], TReplaceFlags() << rfReplaceAll);
+  }
+  Command = ExpandEnvironmentVariables(Command);
+  return Command;
+}
+//---------------------------------------------------------------------------
 int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
-  TStrings * ScriptCommands)
+  TStrings * ScriptCommands, TStrings * ScriptParameters)
 {
   bool AnyError = false;
 
@@ -1567,7 +1599,7 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
         if (Result)
         {
           FCommandError = false;
-          FScript->Command(ExpandEnvironmentVariables(Command));
+          FScript->Command(ExpandCommand(Command, ScriptParameters));
 
           if (FCommandError)
           {
@@ -1631,6 +1663,59 @@ void __fastcall LoadScriptFromFile(AnsiString FileName, TStrings * Lines)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall Usage(TConsole * Console)
+{
+  AnsiString Usage = LoadStr(USAGE5, 10240);
+  AnsiString ExeBaseName = ChangeFileExt(ExtractFileName(Application->ExeName), "");
+  Usage = StringReplace(Usage, "%APP%", ExeBaseName,
+    TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
+  AnsiString Copyright = StringReplace(LoadStr(WINSCP_COPYRIGHT), "©", "(c)",
+    TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
+  Usage = FORMAT(Usage, (Configuration->VersionStr, Copyright));
+  TStrings * Lines = new TStringList();
+  try
+  {
+    Lines->Text = Usage;
+    for (int Index = 0; Index < Lines->Count; Index++)
+    {
+      bool Print = true;
+      AnsiString Line = Lines->Strings[Index];
+      if ((Line.Length() >= 2) && (Line[2] == ':'))
+      {
+        switch (Line[1])
+        {
+          case 'G':
+            Print = !Console->CommandLineOnly();
+            break;
+
+          case 'C':
+            Print = Console->CommandLineOnly();
+            break;
+
+          case 'B':
+            Print = true;
+            break;
+
+          default:
+            assert(false);
+            break;
+        }
+        Line.Delete(1, 2);
+      }
+
+      if (Print)
+      {
+        Console->Print(Line + "\n");
+      }
+    }
+  }
+  __finally
+  {
+    delete Lines;
+  }
+  Console->WaitBeforeExit();
+}
+//---------------------------------------------------------------------------
 int __fastcall Console(bool Help)
 {
   TProgramParams * Params = TProgramParams::Instance();
@@ -1638,6 +1723,7 @@ int __fastcall Console(bool Help)
   TConsole * Console = NULL;
   TConsoleRunner * Runner = NULL;
   TStrings * ScriptCommands = new TStringList();
+  TStrings * ScriptParameters = new TStringList();
   try
   {
     AnsiString ConsoleInstance;
@@ -1656,15 +1742,7 @@ int __fastcall Console(bool Help)
 
     if (Help)
     {
-      AnsiString Usage = LoadStr(USAGE4, 10240);
-      AnsiString ExeBaseName = ChangeFileExt(ExtractFileName(Application->ExeName), "");
-      Usage = StringReplace(Usage, "%APP%", ExeBaseName,
-        TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
-      AnsiString Copyright = StringReplace(LoadStr(WINSCP_COPYRIGHT), "©", "(c)",
-        TReplaceFlags() << rfReplaceAll << rfIgnoreCase);
-      Usage = FORMAT(Usage, (Configuration->VersionStr, Copyright));
-      Console->Print(Usage);
-      Console->WaitBeforeExit();
+      Usage(Console);
     }
     else
     {
@@ -1678,6 +1756,7 @@ int __fastcall Console(bool Help)
           LoadScriptFromFile(Value, ScriptCommands);
         }
         Params->FindSwitch("command", ScriptCommands);
+        Params->FindSwitch("parameter", ScriptParameters);
 
         bool Url = false;
         AnsiString Session;
@@ -1710,7 +1789,8 @@ int __fastcall Console(bool Help)
         }
 
         Result = Runner->Run(Session, Params,
-          (ScriptCommands->Count > 0 ? ScriptCommands : NULL));
+          (ScriptCommands->Count > 0 ? ScriptCommands : NULL),
+          ScriptParameters);
       }
       catch(Exception & E)
       {
@@ -1724,6 +1804,7 @@ int __fastcall Console(bool Help)
     delete Runner;
     delete Console;
     delete ScriptCommands;
+    delete ScriptParameters;
   }
 
   return Result;

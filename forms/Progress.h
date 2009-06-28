@@ -41,12 +41,13 @@ __published:
   TLabel *CPSLabel;
   TProgressBar *FileProgress;
   TTimer *UpdateTimer;
-  TCheckBox *DisconnectWhenCompleteCheck;
   TPanel *SpeedPanel;
   TLabel *SpeedLabel2;
   TLabel *TimeLeftLabelLabel;
   TLabel *TimeLeftLabel;
   THistoryComboBox *SpeedCombo;
+  TLabel *OnceDoneOperationLabel;
+  TComboBox *OnceDoneOperationCombo;
   void __fastcall UpdateTimerTimer(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall FormHide(TObject *Sender);
@@ -55,6 +56,8 @@ __published:
   void __fastcall SpeedComboExit(TObject *Sender);
   void __fastcall SpeedComboSelect(TObject *Sender);
   void __fastcall SpeedComboKeyPress(TObject *Sender, char &Key);
+  void __fastcall OnceDoneOperationComboSelect(TObject *Sender);
+  void __fastcall OnceDoneOperationComboCloseUp(TObject *Sender);
 private:
   TCancelStatus FCancel;
   TFileOperationProgressType FData;
@@ -70,9 +73,9 @@ private:
   bool FDeleteToRecycleBin;
   bool FReadOnly;
   unsigned long FCPSLimit;
+  TOnceDoneOperation FOnceDoneOperation;
 
-  void __fastcall SetDisconnectWhenComplete(bool value);
-  bool __fastcall GetDisconnectWhenComplete();
+  void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   void __fastcall SetAllowMinimize(bool value);
   bool __fastcall GetAllowMinimize();
   void __fastcall SetReadOnly(bool value);
@@ -83,6 +86,7 @@ protected:
   void __fastcall MinimizeApp();
   void __fastcall UpdateControls();
   void __fastcall ApplyCPSLimit();
+  void __fastcall ResetOnceDoneOperation();
 
 public:
   static AnsiString __fastcall OperationName(TFileOperation Operation);
@@ -91,7 +95,7 @@ public:
   void __fastcall SetProgressData(TFileOperationProgressType & AData);
   virtual __fastcall TProgressForm(TComponent * AOwner);
   __property TCancelStatus Cancel = { read = FCancel };
-  __property bool DisconnectWhenComplete = { read=GetDisconnectWhenComplete, write=SetDisconnectWhenComplete };
+  __property TOnceDoneOperation OnceDoneOperation = { read=FOnceDoneOperation, write=SetOnceDoneOperation };
   __property bool AllowMinimize = { read=GetAllowMinimize, write=SetAllowMinimize };
   __property bool DeleteToRecycleBin = { read=FDeleteToRecycleBin, write=FDeleteToRecycleBin };
   __property bool ReadOnly = { read=FReadOnly, write=SetReadOnly };

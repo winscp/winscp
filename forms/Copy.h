@@ -24,7 +24,7 @@ __published:
   TButton *CancelButton;
   TButton *LocalDirectoryBrowseButton;
   TCheckBox *QueueCheck;
-  TCheckBox *QueueNoConfirmationCheck;
+  TCheckBox *QueueIndividuallyCheck;
   TButton *HelpButton;
   TCheckBox *NewerOnlyCheck;
   TCheckBox *NeverShowAgainCheck;

@@ -122,7 +122,7 @@ private:
   void __fastcall SetActiveTerminalIndex(int value);
   void __fastcall OperationFinished(::TFileOperation Operation, TOperationSide Side,
     bool Temp, const AnsiString & FileName, bool Success,
-    bool & DisconnectWhenFinished);
+    TOnceDoneOperation & OnceDoneOperation);
   void __fastcall OperationProgress(TFileOperationProgressType & ProgressData,
     TCancelStatus & Cancel);
   void __fastcall DeleteLocalFile(const AnsiString FileName, bool Alternative);

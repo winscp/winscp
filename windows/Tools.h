@@ -42,6 +42,7 @@ bool __fastcall AutodetectProxyUrl(AnsiString & Proxy);
 bool __fastcall IsWin64();
 void __fastcall CopyToClipboard(AnsiString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
+void __fastcall ShutDownWindows();
 //---------------------------------------------------------------------------
 #define IUNKNOWN \
   virtual HRESULT __stdcall QueryInterface(const GUID& IID, void **Obj) \

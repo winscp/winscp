@@ -8115,23 +8115,6 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		    ssh_pkt_getstring(pktin, &lang, &lang_len);
 		    s->cur_prompt = new_prompts(ssh->frontend);
 		    s->cur_prompt->to_server = TRUE;
-		    if (name_len) {
-			/* FIXME: better prefix to distinguish from
-			 * local prompts? */
-			s->cur_prompt->name =
-			    dupprintf("SSH server: %.*s", name_len, name);
-			s->cur_prompt->name_reqd = TRUE;
-		    } else {
-			s->cur_prompt->name =
-			    dupstr("SSH server authentication");
-			s->cur_prompt->name_reqd = FALSE;
-		    }
-		    /* FIXME: ugly to print "Using..." in prompt _every_
-		     * time round. Can this be done more subtly? */
-		    s->cur_prompt->instruction =
-			dupprintf("Using keyboard-interactive authentication.%s%.*s",
-				  inst_len ? "\n" : "", inst_len, inst);
-		    s->cur_prompt->instr_reqd = TRUE;
 
 		    /*
 		     * Get any prompt(s) from the packet.
@@ -8153,6 +8136,33 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 			add_prompt(s->cur_prompt,
 				   dupprintf("%.*s", prompt_len, prompt),
 				   echo, SSH_MAX_PASSWORD_LEN);
+		    }
+
+		    if (name_len) {
+			/* FIXME: better prefix to distinguish from
+			 * local prompts? */
+			s->cur_prompt->name =
+			    dupprintf("SSH server: %.*s", name_len, name);
+			s->cur_prompt->name_reqd = TRUE;
+		    } else {
+			s->cur_prompt->name =
+			    dupstr("SSH server authentication");
+			s->cur_prompt->name_reqd = FALSE;
+		    }
+		    /* We add a prefix to try to make it clear that a prompt
+		     * has come from the server.
+		     * FIXME: ugly to print "Using..." in prompt _every_
+		     * time round. Can this be done more subtly? */
+		    /* Special case: for reasons best known to themselves,
+		     * some servers send k-i requests with no prompts and
+		     * nothing to display. Keep quiet in this case. */
+		    if (s->num_prompts || name_len || inst_len) {
+			s->cur_prompt->instruction =
+			    dupprintf("Using keyboard-interactive authentication.%s%.*s",
+				      inst_len ? "\n" : "", inst_len, inst);
+			s->cur_prompt->instr_reqd = TRUE;
+		    } else {
+			s->cur_prompt->instr_reqd = FALSE;
 		    }
 
 		    /*
@@ -8577,7 +8587,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
     ssh->packet_dispatch[SSH2_MSG_CHANNEL_OPEN] =
 	ssh2_msg_channel_open;
 
-    if (ssh->cfg.ssh_simple) {
+    if (ssh->mainchan && ssh->cfg.ssh_simple) {
 	/*
 	 * This message indicates to the server that we promise
 	 * not to try to run any other channel in parallel with

@@ -8,6 +8,7 @@
 #include "Interface.h"
 #include "FileOperationProgress.h"
 #include "FileMasks.h"
+#include "Exceptions.h"
 //---------------------------------------------------------------------------
 class TCopyParamType;
 class TFileOperationProgressType;
@@ -103,6 +104,8 @@ const cpDelete = 0x01;
 const cpTemporary = 0x04;
 const cpNoConfirmation = 0x08;
 const cpNewerOnly = 0x10;
+const cpAppend = 0x20;
+const cpResume = 0x40;
 //---------------------------------------------------------------------------
 const ccApplyToDirectories = 0x01;
 const ccRecursive = 0x02;
@@ -176,6 +179,7 @@ private:
   bool * FClosedOnCompletion;
   TSessionStatus FStatus;
   AnsiString FPassword;
+  AnsiString FTunnelPassword;
   TTunnelThread * FTunnelThread;
   TSecureShell * FTunnel;
   TSessionData * FTunnelData;
@@ -183,7 +187,6 @@ private:
   TTunnelUI * FTunnelUI;
   int FTunnelLocalPortNumber;
   AnsiString FTunnelError;
-  bool FTunnelOpening;
   TQueryUserEvent FOnQueryUser;
   TPromptUserEvent FOnPromptUser;
   TDisplayBannerEvent FOnDisplayBanner;
@@ -213,11 +216,13 @@ private:
   bool __fastcall GetResolvingSymlinks();
   bool __fastcall GetActive();
   AnsiString __fastcall GetPassword();
+  AnsiString __fastcall GetTunnelPassword();
   bool __fastcall GetStoredCredentialsTried();
 
 protected:
   bool FReadCurrentDirectoryPending;
   bool FReadDirectoryPending;
+  bool FTunnelOpening;
 
   void __fastcall DoStartReadDirectory();
   void __fastcall DoReadDirectoryProgress(int Progress, bool & Cancel);
@@ -268,9 +273,13 @@ protected:
     const TSearchRec Rec, /*__int64*/ void * Size);
   void __fastcall CalculateLocalFilesSize(TStrings * FileList, __int64 & Size,
     const TCopyParamType * CopyParam = NULL);
+  TBatchOverwrite __fastcall EffectiveBatchOverwrite(
+    int Params, TFileOperationProgressType * OperationProgress, bool Special);
+  bool __fastcall CheckRemoteFile(int Params, TFileOperationProgressType * OperationProgress);
   int __fastcall ConfirmFileOverwrite(const AnsiString FileName,
-    const TOverwriteFileParams * FileParams, int Answers, const TQueryParams * Params,
-    TOperationSide Side, TFileOperationProgressType * OperationProgress);
+    const TOverwriteFileParams * FileParams, int Answers, const TQueryParams * QueryParams,
+    TOperationSide Side, int Params, TFileOperationProgressType * OperationProgress,
+    AnsiString Message = "");
   void __fastcall DoSynchronizeCollectDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, TSynchronizeMode Mode,
     const TCopyParamType * CopyParam, int Params,
@@ -313,10 +322,11 @@ protected:
     AnsiString Name, AnsiString Instructions, TStrings * Prompts, TStrings * Results);
   virtual void __fastcall DisplayBanner(const AnsiString & Banner);
   virtual void __fastcall Closed();
+  virtual void __fastcall HandleExtendedException(Exception * E);
   bool __fastcall IsListenerFree(unsigned int PortNumber);
   void __fastcall DoProgress(TFileOperationProgressType & ProgressData, TCancelStatus & Cancel);
   void __fastcall DoFinished(TFileOperation Operation, TOperationSide Side, bool Temp,
-    const AnsiString & FileName, bool Success, bool & DisconnectWhenComplete);
+    const AnsiString & FileName, bool Success, TOnceDoneOperation & OnceDoneOperation);
   void __fastcall RollbackAction(TSessionAction & Action,
     TFileOperationProgressType * OperationProgress, Exception * E = NULL);
   void __fastcall DoAnyCommand(const AnsiString Command, TCaptureOutputEvent OutputEvent,
@@ -333,11 +343,11 @@ public:
   void __fastcall Reopen(int Params);
   virtual void __fastcall DirectoryModified(const AnsiString Path, bool SubDirs);
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
-  virtual void __fastcall ShowExtendedException(Exception * E);
+  void __fastcall ShowExtendedException(Exception * E);
   void __fastcall Idle();
   bool __fastcall AllowedAnyCommand(const AnsiString Command);
   void __fastcall AnyCommand(const AnsiString Command, TCaptureOutputEvent OutputEvent);
-  void __fastcall CloseOnCompletion(const AnsiString Message = "");
+  void __fastcall CloseOnCompletion(TOnceDoneOperation Operation = odoDisconnect, const AnsiString Message = "");
   AnsiString __fastcall AbsolutePath(AnsiString Path, bool Local);
   void __fastcall BeginTransaction();
   void __fastcall ReadCurrentDirectory();
@@ -448,6 +458,7 @@ public:
   __property TStrings * FixedPaths = { read = GetFixedPaths };
   __property bool ResolvingSymlinks = { read = GetResolvingSymlinks };
   __property AnsiString Password = { read = GetPassword };
+  __property AnsiString TunnelPassword = { read = GetTunnelPassword };
   __property bool StoredCredentialsTried = { read = GetStoredCredentialsTried };
   __property TQueryUserEvent OnQueryUser = { read = FOnQueryUser, write = FOnQueryUser };
   __property TPromptUserEvent OnPromptUser = { read = FOnPromptUser, write = FOnPromptUser };
@@ -474,6 +485,7 @@ protected:
 
 private:
   bool FMasterPasswordTried;
+  bool FMasterTunnelPasswordTried;
   TTerminal * FMainTerminal;
 };
 //---------------------------------------------------------------------------
@@ -581,13 +593,13 @@ public:
     TFileInfo Remote;
     int ImageIndex;
     bool Checked;
+    TRemoteFile * RemoteFile;
 
     const AnsiString& GetFileName() const;
 
     ~TItem();
 
   private:
-    TRemoteFile * FRemoteFile;
     FILETIME FLocalLastWriteTime;
 
     TItem();

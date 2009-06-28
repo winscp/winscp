@@ -50,6 +50,7 @@ private:
   int FPortNumber;
   AnsiString FUserName;
   AnsiString FPassword;
+  bool FPasswordless;
   int FPingInterval;
   TPingType FPingType;
   bool FTryAgent;
@@ -148,6 +149,7 @@ private:
   void __fastcall SetUserName(AnsiString value);
   void __fastcall SetPassword(AnsiString value);
   AnsiString __fastcall GetPassword();
+  void __fastcall SetPasswordless(bool value);
   void __fastcall SetPingInterval(int value);
   void __fastcall SetTryAgent(bool value);
   void __fastcall SetAgentFwd(bool value);
@@ -291,6 +293,7 @@ public:
   __property int PortNumber  = { read=FPortNumber, write=SetPortNumber };
   __property AnsiString UserName  = { read=FUserName, write=SetUserName };
   __property AnsiString Password  = { read=GetPassword, write=SetPassword };
+  __property bool Passwordless = { read=FPasswordless, write=SetPasswordless };
   __property int PingInterval  = { read=FPingInterval, write=SetPingInterval };
   __property bool TryAgent  = { read=FTryAgent, write=SetTryAgent };
   __property bool AgentFwd  = { read=FAgentFwd, write=SetAgentFwd };

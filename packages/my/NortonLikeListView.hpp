@@ -77,6 +77,7 @@ protected:
 	virtual void __fastcall EndSelectionUpdate(void);
 	virtual bool __fastcall CanChangeSelection(Comctrls::TListItem* Item, bool Select);
 	virtual void __fastcall ClearItems(void);
+	void __fastcall ItemsReordered(void);
 	DYNAMIC void __fastcall ColRightClick(Comctrls::TListColumn* Column, const Types::TPoint &Point);
 	DYNAMIC void __fastcall Delete(Comctrls::TListItem* Item);
 	virtual bool __fastcall DoSelectByMask(bool Select);

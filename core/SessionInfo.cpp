@@ -682,7 +682,7 @@ void __fastcall TSessionLog::Add(TLogLineType Type, const AnsiString & Line)
       catch (Exception &E)
       {
         AddException(&E);
-        FUI->ShowExtendedException(&E);
+        FUI->HandleExtendedException(&E);
       }
     }
   }
@@ -729,8 +729,9 @@ void __fastcall TSessionLog::ReflectSettings()
   }
 
   // if logging to file was turned off or log file was change -> close current log file
+  // but disallow changing logfilename for xml logging
   if ((FFile != NULL) &&
-      (!LogToFile() || (FCurrentLogFileName != FConfiguration->LogFileName)))
+      ((!LogToFile() || (FCurrentLogFileName != FConfiguration->LogFileName)) && !FLoggingActions))
   {
     CloseLogFile();
   }
@@ -809,7 +810,8 @@ void TSessionLog::OpenLogFile()
         Index += Replacement.Length() - 1;
       }
     }
-    FFile = fopen(NewFileName.c_str(), (FConfiguration->LogFileAppend ? "a" : "w"));
+    FFile = fopen(NewFileName.c_str(),
+      (FConfiguration->LogFileAppend && !FLoggingActions ? "a" : "w"));
     if (FFile)
     {
       setvbuf((FILE *)FFile, NULL, _IONBF, BUFSIZ);
@@ -833,7 +835,7 @@ void TSessionLog::OpenLogFile()
     catch (Exception & E)
     {
       AddException(&E);
-      FUI->ShowExtendedException(&E);
+      FUI->HandleExtendedException(&E);
     }
   }
   StateChange();

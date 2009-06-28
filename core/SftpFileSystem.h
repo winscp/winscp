@@ -45,11 +45,11 @@ public:
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
-    bool & DisconnectWhenComplete);
+    TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall CopyToRemote(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
-    bool & DisconnectWhenComplete);
+    TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall CreateDirectory(const AnsiString DirName);
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const AnsiString FileName,
@@ -161,7 +161,7 @@ protected:
     const AnsiString TargetDir, int Attrs, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress, unsigned int Flags);
   void __fastcall SFTPConfirmOverwrite(AnsiString & FileName,
-    TFileOperationProgressType * OperationProgress,
+    int Params, TFileOperationProgressType * OperationProgress,
     TSFTPOverwriteMode & Mode, const TOverwriteFileParams * FileParams);
   bool SFTPConfirmResume(const AnsiString DestFileName, bool PartialBiggerThanSource,
     TFileOperationProgressType * OperationProgress);

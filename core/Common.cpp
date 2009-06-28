@@ -446,6 +446,27 @@ bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2)
   return AnsiSameText(IncludeTrailingBackslash(Path1), IncludeTrailingBackslash(Path2));
 }
 //---------------------------------------------------------------------------
+bool __fastcall IsReservedName(AnsiString FileName)
+{
+  int P = FileName.Pos(".");
+  if (P > 0)
+  {
+    FileName.SetLength(P - 1);
+  }
+  static AnsiString Reserved[] = {
+    "CON", "PRN", "AUX", "NUL",
+    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" };
+  for (int Index = 0; Index < LENOF(Reserved); Index++)
+  {
+    if (SameText(FileName, Reserved[Index]))
+    {
+      return true;
+    }
+  }
+  return false;
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall DisplayableStr(const AnsiString Str)
 {
   bool Displayable = true;
@@ -583,9 +604,9 @@ unsigned int __fastcall HexToInt(const AnsiString Hex, int MinChars)
   return Result;
 }
 //---------------------------------------------------------------------------
-char __fastcall HexToChar(const AnsiString Hex)
+char __fastcall HexToChar(const AnsiString Hex, int MinChars)
 {
-  return (char)HexToInt(Hex);
+  return (char)HexToInt(Hex, MinChars);
 }
 //---------------------------------------------------------------------------
 bool __fastcall FileSearchRec(const AnsiString FileName, TSearchRec & Rec)

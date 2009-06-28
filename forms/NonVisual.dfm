@@ -1756,8 +1756,7 @@ object NonVisualDataModule: TNonVisualDataModule
     object QueueDisconnectOnceEmptyAction: TAction
       Tag = 12
       Category = 'Queue'
-      AutoCheck = True
-      Caption = '&Disconnect Once Empty'
+      Caption = '&Disconnect'
       HelpKeyword = 'ui_queue'
       Hint = 'Disconnect the session once the queue is empty'
       ImageIndex = 87
@@ -1785,6 +1784,31 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_create_directory'
       Hint = 'Create directory|Create new directory'
       ImageIndex = 5
+    end
+    object QueueShutDownOnceEmptyAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Shut Down'
+      HelpKeyword = 'ui_queue'
+      Hint = 'Shut down the computer once the queue is empty'
+      ImageIndex = 93
+    end
+    object QueueIdleOnceEmptyAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = '&Stay Idle'
+      Checked = True
+      HelpKeyword = 'ui_queue'
+      Hint = 'Stay idle once the queue is empty'
+      ImageIndex = 94
+    end
+    object QueueCycleOnceEmptyAction: TAction
+      Tag = 12
+      Category = 'Queue'
+      Caption = 'Once &Empty'
+      HelpKeyword = 'ui_queue'
+      Hint = 'Toggle action to perform once the queue list is empty'
+      ImageIndex = 94
     end
     object QueueItemSpeedAction: TTBEditAction
       Tag = 12
@@ -2214,6 +2238,22 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = QueueResumeAllAction
       end
     end
+    object TBXSubmenuItem3: TTBXSubmenuItem
+      Action = QueueCycleOnceEmptyAction
+      DropdownCombo = True
+      object TBXItem28: TTBXItem
+        Action = QueueIdleOnceEmptyAction
+        RadioItem = True
+      end
+      object TBXItem13: TTBXItem
+        Action = QueueDisconnectOnceEmptyAction
+        RadioItem = True
+      end
+      object TBXItem29: TTBXItem
+        Action = QueueShutDownOnceEmptyAction
+        RadioItem = True
+      end
+    end
     object Queue2: TTBXSubmenuItem
       Caption = '&Options'
       HelpKeyword = 'ui_queue'
@@ -2236,9 +2276,6 @@ object NonVisualDataModule: TNonVisualDataModule
         Action = QueueToolbarAction
       end
       object N65: TTBXSeparatorItem
-      end
-      object TBXItem13: TTBXItem
-        Action = QueueDisconnectOnceEmptyAction
       end
       object Customize3: TTBXItem
         Action = QueuePreferencesAction

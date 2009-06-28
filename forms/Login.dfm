@@ -99,7 +99,7 @@ object LoginDialog: TLoginDialog
       Width = 361
       Height = 296
       HelpType = htKeyword
-      ActivePage = BasicSheet
+      ActivePage = DirectoriesSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
@@ -692,9 +692,9 @@ object LoginDialog: TLoginDialog
           object LocalDirectoryDescLabel: TLabel
             Left = 12
             Top = 126
-            Width = 251
+            Width = 233
             Height = 13
-            Caption = 'Local directory is not used with explorer-like interface.'
+            Caption = 'Local directory is not used with Explorer interface.'
           end
           object LocalDirectoryEdit: TDirectoryEdit
             Left = 12

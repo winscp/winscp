@@ -1754,7 +1754,7 @@ begin
     // This is below Items.EndUpdate(), to make Scroll() work properly
     if Assigned(ItemToFocus) then
     begin
-      // we have founc item that was previously focused and visible, scroll to it
+      // we have found item that was previously focused and visible, scroll to it
       if (ViewStyle = vsReport) and OldFocusedShown and
          (ItemToFocus.Index > OldShownItemOffset) then
       begin
@@ -1931,6 +1931,7 @@ begin
       Screen.Cursor := SavedCursor;
       FNotifyEnabled := SavedNotifyEnabled;
       Items.EndUpdate;
+      ItemsReordered;
     end;
   end;
 end;

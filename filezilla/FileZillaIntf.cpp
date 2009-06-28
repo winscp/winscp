@@ -76,7 +76,7 @@ void __fastcall TFileZillaIntf::Destroying()
 bool __fastcall TFileZillaIntf::SetCurrentPath(const char * APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, FServer->nServerType);
   return Check(FFileZillaApi->SetCurrentPath(Path), "setcurrentpath");
 }
 //---------------------------------------------------------------------------
@@ -159,7 +159,7 @@ bool __fastcall TFileZillaIntf::CustomCommand(const char * Command)
 bool __fastcall TFileZillaIntf::MakeDir(const char* APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, FServer->nServerType);
   return Check(FFileZillaApi->MakeDir(Path), "makedir");
 }
 //---------------------------------------------------------------------------
@@ -167,21 +167,21 @@ bool __fastcall TFileZillaIntf::Chmod(int Value, const char* FileName,
   const char* APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, FServer->nServerType);
   return Check(FFileZillaApi->Chmod(Value, FileName, Path), "chmod");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::Delete(const char* FileName, const char* APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, FServer->nServerType);
   return Check(FFileZillaApi->Delete(FileName, Path), "delete");
 }
 //---------------------------------------------------------------------------
 bool __fastcall TFileZillaIntf::RemoveDir(const char* FileName, const char* APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, FServer->nServerType);
   return Check(FFileZillaApi->RemoveDir(FileName, Path), "removedir");
 }
 //---------------------------------------------------------------------------
@@ -189,8 +189,8 @@ bool __fastcall TFileZillaIntf::Rename(const char* OldName,
   const char* NewName, const char* APath, const char* ANewPath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath);
-  CServerPath NewPath(ANewPath);
+  CServerPath Path(APath, FServer->nServerType);
+  CServerPath NewPath(ANewPath, FServer->nServerType);
   return Check(FFileZillaApi->Rename(OldName, NewName, Path, NewPath), "rename");
 }
 //---------------------------------------------------------------------------
@@ -203,7 +203,7 @@ bool __fastcall TFileZillaIntf::List()
 bool __fastcall TFileZillaIntf::List(const char * APath)
 {
   ASSERT(FFileZillaApi != NULL);
-  CServerPath Path(APath);
+  CServerPath Path(APath, FServer->nServerType);
   return Check(FFileZillaApi->List(Path), "list");
 }
 //---------------------------------------------------------------------------
@@ -215,7 +215,7 @@ bool __fastcall TFileZillaIntf::FileTransfer(const char * LocalFile,
 
   Transfer.localfile = LocalFile;
   Transfer.remotefile = RemoteFile;
-  Transfer.remotepath = CServerPath(RemotePath);
+  Transfer.remotepath = CServerPath(RemotePath, FServer->nServerType);
   Transfer.get = Get;
   Transfer.size = Size;
   Transfer.server = *FServer;
@@ -294,18 +294,29 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
     case FZ_MSG_ASYNCREQUEST:
       if (FZ_MSG_PARAM(wParam) == FZ_ASYNCREQUEST_OVERWRITE)
       {
-        COverwriteRequestData * Data = (COverwriteRequestData *)lParam;
-        ASSERT(Data != NULL);
         int RequestResult;
         char FileName1[MAX_PATH];
-        strncpy(FileName1, Data->FileName1, sizeof(FileName1));
-        FileName1[sizeof(FileName1) - 1] = '\0';
-        Result = HandleAsynchRequestOverwrite(
-          FileName1, sizeof(FileName1), Data->FileName2, Data->path1, Data->path2,
-          Data->size1, Data->size2, Data->time1->GetTime(), Data->time2->GetTime(),
-          (Data->time1->GetHour() != 0) || (Data->time1->GetMinute() != 0),
-          (Data->time2->GetHour() != 0) || (Data->time2->GetMinute() != 0),
-          reinterpret_cast<void*>(Data->pTransferFile->nUserData), RequestResult);
+        COverwriteRequestData * Data = (COverwriteRequestData *)lParam;
+        try
+        {
+          ASSERT(Data != NULL);
+          strncpy(FileName1, Data->FileName1, sizeof(FileName1));
+          FileName1[sizeof(FileName1) - 1] = '\0';
+          Result = HandleAsynchRequestOverwrite(
+            FileName1, sizeof(FileName1), Data->FileName2, Data->path1, Data->path2,
+            Data->size1, Data->size2,
+            (Data->time1 != NULL) ? Data->time1->GetTime() : 0,
+            (Data->time2 != NULL) ? Data->time2->GetTime() : 0,
+            (Data->time1 != NULL) && ((Data->time1->GetHour() != 0) || (Data->time1->GetMinute() != 0)),
+            (Data->time2 != NULL) && ((Data->time2->GetHour() != 0) || (Data->time2->GetMinute() != 0)),
+            reinterpret_cast<void*>(Data->pTransferFile->nUserData), RequestResult);
+        }
+        catch(...)
+        {
+          FFileZillaApi->SetAsyncRequestResult(FILEEXISTS_SKIP, Data);
+          throw;
+        }
+
         if (Result)
         {
           Data->FileName1 = FileName1;
@@ -315,19 +326,28 @@ bool __fastcall TFileZillaIntf::HandleMessage(WPARAM wParam, LPARAM lParam)
       }
       else if (FZ_MSG_PARAM(wParam) == FZ_ASYNCREQUEST_VERIFYCERT)
       {
-        CVerifyCertRequestData * AData = (CVerifyCertRequestData *)lParam;
-        ASSERT(AData != NULL);
         int RequestResult;
-        TFtpsCertificateData Data;
-        CopyContact(Data.Subject, AData->pCertData->subject);
-        CopyContact(Data.Issuer, AData->pCertData->issuer);
-        CopyValidityTime(Data.ValidFrom, AData->pCertData->validFrom);
-        CopyValidityTime(Data.ValidUntil, AData->pCertData->validUntil);
-        Data.Hash = AData->pCertData->hash;
-        Data.VerificationResult = AData->pCertData->verificationResult;
-        Data.VerificationDepth = AData->pCertData->verificationDepth;
-        
-        Result = HandleAsynchRequestVerifyCertificate(Data, RequestResult);
+        CVerifyCertRequestData * AData = (CVerifyCertRequestData *)lParam;
+        try
+        {
+          ASSERT(AData != NULL);
+          TFtpsCertificateData Data;
+          CopyContact(Data.Subject, AData->pCertData->subject);
+          CopyContact(Data.Issuer, AData->pCertData->issuer);
+          CopyValidityTime(Data.ValidFrom, AData->pCertData->validFrom);
+          CopyValidityTime(Data.ValidUntil, AData->pCertData->validUntil);
+          Data.Hash = AData->pCertData->hash;
+          Data.VerificationResult = AData->pCertData->verificationResult;
+          Data.VerificationDepth = AData->pCertData->verificationDepth;
+
+          Result = HandleAsynchRequestVerifyCertificate(Data, RequestResult);
+        }
+        catch(...)
+        {
+          FFileZillaApi->SetAsyncRequestResult(0, AData);
+          throw;
+        }
+
         if (Result)
         {
           Result = Check(FFileZillaApi->SetAsyncRequestResult(RequestResult, AData),

@@ -361,7 +361,7 @@ object PreferencesDialog: TPreferencesDialog
           353)
         object PanelsRemoteDirectoryGroup: TGroupBox
           Left = 8
-          Top = 208
+          Top = 231
           Width = 357
           Height = 73
           Anchors = [akLeft, akTop, akRight]
@@ -395,13 +395,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 357
-          Height = 119
+          Height = 142
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Common'
           TabOrder = 0
           DesignSize = (
             357
-            119)
+            142)
           object ShowHiddenFilesCheck: TCheckBox
             Left = 16
             Top = 21
@@ -442,10 +442,20 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 3
             OnClick = ControlChange
           end
+          object RenameWholeNameCheck: TCheckBox
+            Left = 16
+            Top = 113
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Select &whole name when renaming file'
+            TabOrder = 4
+            OnClick = ControlChange
+          end
         end
         object DoubleClickGroup: TGroupBox
           Left = 8
-          Top = 131
+          Top = 154
           Width = 357
           Height = 72
           Anchors = [akLeft, akTop, akRight]
@@ -492,6 +502,8 @@ object PreferencesDialog: TPreferencesDialog
       object CommanderSheet: TTabSheet
         Tag = 5
         Hint = 'Commander'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_commander'
         Caption = 'Cmd'
         ImageIndex = 3
         TabVisible = False
@@ -512,13 +524,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 38
           Width = 357
-          Height = 123
+          Height = 147
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Panels'
           TabOrder = 0
           DesignSize = (
             357
-            123)
+            147)
           object Label8: TLabel
             Left = 16
             Top = 21
@@ -572,10 +584,20 @@ object PreferencesDialog: TPreferencesDialog
             TabOrder = 3
             OnClick = ControlChange
           end
+          object TreeOnLeftCheck: TCheckBox
+            Left = 16
+            Top = 117
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Show &directory tree left of file list'
+            TabOrder = 4
+            OnClick = ControlChange
+          end
         end
         object CommanderMiscGroup: TGroupBox
           Left = 8
-          Top = 170
+          Top = 194
           Width = 357
           Height = 53
           Anchors = [akLeft, akTop, akRight]
@@ -597,7 +619,7 @@ object PreferencesDialog: TPreferencesDialog
         end
         object CompareCriterionsGroup: TGroupBox
           Left = 8
-          Top = 233
+          Top = 257
           Width = 357
           Height = 74
           Anchors = [akLeft, akTop, akRight]
@@ -684,99 +706,9 @@ object PreferencesDialog: TPreferencesDialog
           Left = 0
           Top = 0
           Width = 529
-          Height = 345
+          Height = 353
+          HelpType = htKeyword
           TabOrder = 0
-          inherited CommonPropertiesGroup: TGroupBox
-            Left = 197
-            Top = 209
-            Height = 73
-            Caption = 'Common options'
-            DesignSize = (
-              173
-              73)
-            inherited CommonPreserveTimestampCheck: TCheckBox
-              Top = 19
-            end
-          end
-          inherited LocalPropertiesGroup: TGroupBox
-            Left = 197
-            Top = 156
-            Height = 48
-            Caption = 'Download options'
-            DesignSize = (
-              173
-              48)
-            inherited PreserveReadOnlyCheck: TCheckBox
-              Top = 20
-            end
-            inherited LocalPreserveTimeCheck: TCheckBox
-              Top = 92
-            end
-          end
-          inherited RemotePropertiesGroup: TGroupBox
-            Left = 8
-            Top = 156
-            Width = 182
-            Height = 126
-            Caption = 'Upload options'
-          end
-          inherited ChangeCaseGroup: TGroupBox
-            Left = 247
-            Top = 8
-            Width = 123
-            DesignSize = (
-              123
-              146)
-            inherited CCLowerCaseShortButton: TRadioButton
-              Width = 110
-            end
-            inherited CCNoChangeButton: TRadioButton
-              Width = 110
-            end
-            inherited CCUpperCaseButton: TRadioButton
-              Width = 110
-            end
-            inherited CCLowerCaseButton: TRadioButton
-              Width = 110
-            end
-            inherited CCFirstUpperCaseButton: TRadioButton
-              Width = 110
-            end
-          end
-          inherited TransferModeGroup: TGroupBox
-            Left = 8
-            Top = 8
-            Width = 231
-            DesignSize = (
-              231
-              146)
-            inherited TMTextButton: TRadioButton
-              Width = 219
-            end
-            inherited TMBinaryButton: TRadioButton
-              Width = 219
-            end
-            inherited TMAutomaticButton: TRadioButton
-              Width = 219
-            end
-            inherited AsciiFileMaskCombo: THistoryComboBox
-              Width = 213
-            end
-          end
-          inherited OtherGroup: TGroupBox
-            Left = 8
-            Top = 284
-            Width = 362
-            DesignSize = (
-              362
-              61)
-            inherited ExcludeFileMaskCombo: THistoryComboBox
-              Width = 217
-            end
-            inherited ExcludeFileMaskHintText: TStaticText
-              Left = 256
-            end
-          end
         end
       end
       object EditorSheet: TTabSheet
@@ -1287,7 +1219,7 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 8
           Width = 357
-          Height = 150
+          Height = 174
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Background transfers'
           TabOrder = 0
@@ -1312,11 +1244,11 @@ object PreferencesDialog: TPreferencesDialog
           end
           object QueueAutoPopupCheck: TCheckBox
             Left = 16
-            Top = 98
+            Top = 122
             Width = 337
             Height = 17
             Caption = '&Automatically popup prompts of background transfers when idle'
-            TabOrder = 3
+            TabOrder = 4
           end
           object QueueCheck: TCheckBox
             Left = 16
@@ -1328,24 +1260,32 @@ object PreferencesDialog: TPreferencesDialog
           end
           object RememberPasswordCheck: TCheckBox
             Left = 16
-            Top = 122
+            Top = 146
             Width = 337
             Height = 17
             Caption = 'Remember &password of main session for background transfers'
-            TabOrder = 4
+            TabOrder = 5
           end
           object QueueNoConfirmationCheck: TCheckBox
+            Left = 16
+            Top = 98
+            Width = 337
+            Height = 17
+            Caption = '&No confirmations for background transfers'
+            TabOrder = 3
+          end
+          object QueueIndividuallyCheck: TCheckBox
             Left = 16
             Top = 74
             Width = 337
             Height = 17
-            Caption = '&No confirmations for background transfers'
+            Caption = '&Enqueue each file individually by default'
             TabOrder = 2
           end
         end
         object QueueViewGroup: TGroupBox
           Left = 8
-          Top = 164
+          Top = 188
           Width = 357
           Height = 99
           Anchors = [akLeft, akTop, akRight]
@@ -1364,7 +1304,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 45
             Width = 337
             Height = 17
-            Caption = 'Hide when &empty'
+            Caption = 'Hide &when empty'
             TabOrder = 1
           end
           object QueueViewHideButton: TRadioButton
@@ -1600,13 +1540,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 139
           Width = 357
-          Height = 77
+          Height = 101
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Automatic reconnect'
           TabOrder = 1
           object SessionReopenAutoLabel: TLabel
             Left = 34
-            Top = 48
+            Top = 72
             Width = 77
             Height = 13
             Caption = '&Reconnect after'
@@ -1614,7 +1554,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoSecLabel: TLabel
             Left = 246
-            Top = 48
+            Top = 72
             Width = 40
             Height = 13
             Caption = 'seconds'
@@ -1631,7 +1571,7 @@ object PreferencesDialog: TPreferencesDialog
           end
           object SessionReopenAutoEdit: TUpDownEdit
             Left = 168
-            Top = 43
+            Top = 67
             Width = 73
             Height = 21
             Alignment = taRightJustify
@@ -1640,7 +1580,16 @@ object PreferencesDialog: TPreferencesDialog
             MinValue = 1
             Value = 5
             MaxLength = 3
+            TabOrder = 2
+          end
+          object SessionReopenAutoIdleCheck: TCheckBox
+            Left = 16
+            Top = 45
+            Width = 337
+            Height = 17
+            Caption = '&Automatically reconnect session, if it breaks while idle'
             TabOrder = 1
+            OnClick = ControlChange
           end
         end
       end

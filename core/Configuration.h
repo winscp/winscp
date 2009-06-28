@@ -37,6 +37,7 @@ private:
   bool FAutoReadDirectoryAfterOp;
   int FSessionReopenAuto;
   int FSessionReopenBackground;
+  int FSessionReopenTimeout;
   AnsiString FIniFileStorageName;
   int FTunnelLocalPortNumberLow;
   int FTunnelLocalPortNumberHigh;
@@ -90,6 +91,7 @@ private:
   bool __fastcall GetGSSAPIInstalled();
   void __fastcall SetSessionReopenAuto(int value);
   void __fastcall SetSessionReopenBackground(int value);
+  void __fastcall SetSessionReopenTimeout(int value);
   void __fastcall SetTunnelLocalPortNumberLow(int value);
   void __fastcall SetTunnelLocalPortNumberHigh(int value);
   void __fastcall SetCacheDirectoryChangesMaxSize(int value);
@@ -190,6 +192,7 @@ public:
   __property AnsiString PartialExt = {read=GetPartialExt};
   __property int SessionReopenAuto = { read = FSessionReopenAuto, write = SetSessionReopenAuto };
   __property int SessionReopenBackground = { read = FSessionReopenBackground, write = SetSessionReopenBackground };
+  __property int SessionReopenTimeout = { read = FSessionReopenTimeout, write = SetSessionReopenTimeout };
   __property int TunnelLocalPortNumberLow = { read = FTunnelLocalPortNumberLow, write = SetTunnelLocalPortNumberLow };
   __property int TunnelLocalPortNumberHigh = { read = FTunnelLocalPortNumberHigh, write = SetTunnelLocalPortNumberHigh };
   __property int CacheDirectoryChangesMaxSize = { read = FCacheDirectoryChangesMaxSize, write = SetCacheDirectoryChangesMaxSize };

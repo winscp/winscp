@@ -47,9 +47,9 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   PixelsPerInch = 96
   TextHeight = 13
   object Panel: TPanel
-    Left = 602
+    Left = 587
     Top = 0
-    Width = 101
+    Width = 116
     Height = 407
     Align = alRight
     BevelOuter = bvNone
@@ -57,7 +57,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object OkButton: TButton
       Left = 8
       Top = 8
-      Width = 85
+      Width = 100
       Height = 25
       Caption = 'OK'
       Default = True
@@ -67,7 +67,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object CancelButton: TButton
       Left = 8
       Top = 40
-      Width = 85
+      Width = 100
       Height = 25
       Cancel = True
       Caption = 'Cancel'
@@ -77,7 +77,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object CheckAllButton: TButton
       Left = 8
       Top = 182
-      Width = 85
+      Width = 100
       Height = 25
       Caption = 'Check &all'
       TabOrder = 5
@@ -86,7 +86,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object UncheckAllButton: TButton
       Left = 8
       Top = 214
-      Width = 85
+      Width = 100
       Height = 25
       Caption = 'Uncheck a&ll'
       TabOrder = 6
@@ -96,7 +96,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       Tag = 1
       Left = 8
       Top = 118
-      Width = 85
+      Width = 100
       Height = 25
       Caption = '&Check'
       TabOrder = 3
@@ -105,7 +105,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object UncheckButton: TButton
       Left = 8
       Top = 150
-      Width = 85
+      Width = 100
       Height = 25
       Caption = '&Uncheck'
       TabOrder = 4
@@ -114,17 +114,27 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
     object HelpButton: TButton
       Left = 8
       Top = 72
-      Width = 85
+      Width = 100
       Height = 25
       Caption = '&Help'
       TabOrder = 2
       OnClick = HelpButtonClick
     end
+    object CustomCommandsButton: TButton
+      Tag = 1
+      Left = 8
+      Top = 260
+      Width = 100
+      Height = 25
+      Caption = 'Custom co&mmands'
+      TabOrder = 7
+      OnClick = CustomCommandsButtonClick
+    end
   end
   object ListView: TIEListView
     Left = 0
     Top = 0
-    Width = 602
+    Width = 587
     Height = 407
     Align = alClient
     Checkboxes = True
@@ -149,7 +159,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       item
         Alignment = taRightJustify
         Caption = 'Size'
-        Width = 80
+        Width = 70
       end
       item
         Caption = 'Changed'
@@ -167,7 +177,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
       item
         Alignment = taRightJustify
         Caption = 'Size'
-        Width = 80
+        Width = 70
       end
       item
         Caption = 'Changed'

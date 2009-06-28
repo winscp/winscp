@@ -33,10 +33,6 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   FRightsFrame->OnChange = RightsFrameChange;
   RightsEdit->PopupMenu = FRightsFrame->RightsPopup;
 
-  // on start set different value than we want to allow property-setter to proceed
-  FDirection = pdToLocal;
-  Direction = pdToRemote;
-
   FCopyParamAttrs = 0;
   FParams = new TCopyParamType();
   TCopyParamType DefParams;
@@ -46,6 +42,9 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   InstallPathWordBreakProc(ExcludeFileMaskCombo);
   HintLabel(ExcludeFileMaskHintText,
     FORMAT("%s\n \n%s",(LoadStr(MASK_HINT2), LoadStr(PATH_MASK_HINT))));
+  TPoint P(ExcludeFileMaskCombo->Width, 0);
+  P = ExcludeFileMaskHintText->ScreenToClient(ExcludeFileMaskCombo->ClientToScreen(P));
+  ExcludeFileMaskHintText->Left = ExcludeFileMaskHintText->Left + P.x - ExcludeFileMaskHintText->Width;
 }
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::~TCopyParamsFrame()
@@ -69,7 +68,7 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
     case ncNoChange: CCNoChangeButton->Checked = True; break;
     case ncLowerCase: CCLowerCaseButton->Checked = True; break;
     case ncUpperCase: CCUpperCaseButton->Checked = True; break;
-    case ncFirstUpperCase: CCFirstUpperCaseButton->Checked = True; break;
+    case ncFirstUpperCase: CCNoChangeButton->Checked = True; break; // unsupported
     case ncLowerCaseShort: CCLowerCaseShortButton->Checked = True; break;
   }
 
@@ -82,7 +81,6 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   IgnorePermErrorsCheck->Checked = value.IgnorePermErrors;
   PreserveReadOnlyCheck->Checked = value.PreserveReadOnly;
 
-  assert(PreserveTimeCheck);
   PreserveTimeCheck->Checked = value.PreserveTime;
 
   CommonCalculateSizeCheck->Checked = value.CalculateSize;
@@ -90,6 +88,8 @@ void __fastcall TCopyParamsFrame::SetParams(TCopyParamType value)
   NegativeExcludeCombo->ItemIndex = (value.NegativeExclude ? 1 : 0);
   ExcludeFileMaskCombo->Text = value.ExcludeFileMask.Masks;
   ClearArchiveCheck->Checked = value.ClearArchive;
+
+  SpeedCombo->Text = SetSpeedLimit(value.CPSLimit);
 
   *FParams = value;
 
@@ -112,8 +112,6 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
     else
   if (CCUpperCaseButton->Checked) Result.FileNameCase = ncUpperCase;
     else
-  if (CCFirstUpperCaseButton->Checked) Result.FileNameCase = ncFirstUpperCase;
-    else
   if (CCLowerCaseShortButton->Checked) Result.FileNameCase = ncLowerCaseShort;
     else Result.FileNameCase = ncNoChange;
 
@@ -125,7 +123,6 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
   Result.IgnorePermErrors = IgnorePermErrorsCheck->Checked;
   Result.PreserveReadOnly = PreserveReadOnlyCheck->Checked;
 
-  assert(PreserveTimeCheck);
   Result.PreserveTime = PreserveTimeCheck->Checked;
 
   Result.CalculateSize = CommonCalculateSizeCheck->Checked;
@@ -135,17 +132,9 @@ TCopyParamType __fastcall TCopyParamsFrame::GetParams()
 
   Result.ClearArchive = ClearArchiveCheck->Checked;
 
+  Result.CPSLimit = GetSpeedLimit(SpeedCombo->Text);
+
   return Result;
-}
-//---------------------------------------------------------------------------
-TCheckBox * __fastcall TCopyParamsFrame::GetPreserveTimeCheck()
-{
-  switch (Direction) {
-    case pdToRemote: return RemotePreserveTimeCheck;
-    case pdToLocal: return LocalPreserveTimeCheck;
-    case pdBoth:
-    default: return CommonPreserveTimestampCheck;
-  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::UpdateControls()
@@ -185,39 +174,6 @@ void __fastcall TCopyParamsFrame::UpdateControls()
     FLAGCLEAR(CopyParamAttrs, cpaExcludeMaskOnly));
 }
 //---------------------------------------------------------------------------
-void __fastcall TCopyParamsFrame::SetDirection(TParamsForDirection value)
-{
-  if (Direction != value)
-  {
-    Boolean APreserveTime = PreserveTimeCheck->Checked;
-    FDirection = value;
-    PreserveTimeCheck->Checked = APreserveTime;
-
-    LocalPropertiesGroup->Visible = (Direction == pdToLocal || Direction == pdAll );
-    RemotePropertiesGroup->Visible = (Direction == pdToRemote || Direction == pdAll );
-    CommonPropertiesGroup->Visible = (Direction == pdBoth || Direction == pdAll );
-    LocalPreserveTimeCheck->Visible = (Direction != pdAll);
-    RemotePreserveTimeCheck->Visible = (Direction != pdAll);
-    ReplaceInvalidCharsCheck->Visible =
-      (Direction == pdToLocal || Direction == pdBoth || Direction == pdAll);
-    CCFirstUpperCaseButton->Visible =
-      (Direction == pdToLocal || Direction == pdToRemote);
-    CCLowerCaseShortButton->Visible =
-      (Direction == pdToRemote || Direction == pdBoth || Direction == pdAll);
-    if (Direction == pdBoth || Direction == pdAll)
-    {
-      CCLowerCaseShortButton->Top = CCFirstUpperCaseButton->Top;
-      IgnorePermErrorsCheck->Top = RemotePreserveTimeCheck->Top;
-    }
-    else
-    {
-      CCLowerCaseShortButton->Top = ReplaceInvalidCharsCheck->Top;
-      IgnorePermErrorsCheck->Top = CCFirstUpperCaseButton->Top;
-    }
-    UpdateControls();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)
 {
   UpdateControls();
@@ -230,6 +186,7 @@ void __fastcall TCopyParamsFrame::BeforeExecute()
   assert(CustomWinConfiguration);
   AsciiFileMaskCombo->Items = CustomWinConfiguration->History["Mask"];
   ExcludeFileMaskCombo->Items = CustomWinConfiguration->History["ExcludeMask"];
+  SpeedCombo->Items = CustomWinConfiguration->History["SpeedLimit"];
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::AfterExecute()
@@ -239,6 +196,8 @@ void __fastcall TCopyParamsFrame::AfterExecute()
   CustomWinConfiguration->History["Mask"] = AsciiFileMaskCombo->Items;
   ExcludeFileMaskCombo->SaveToHistory();
   CustomWinConfiguration->History["ExcludeMask"] = ExcludeFileMaskCombo->Items;
+  SpeedCombo->SaveToHistory();
+  CustomWinConfiguration->History["SpeedLimit"] = SpeedCombo->Items;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::SetCopyParamAttrs(int value)
@@ -313,5 +272,20 @@ void __fastcall TCopyParamsFrame::RightsEditContextPopup(TObject * Sender,
   TPoint & MousePos, bool & Handled)
 {
   MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCopyParamsFrame::SpeedComboExit(TObject * /*Sender*/)
+{
+  try
+  {
+    SpeedCombo->Text = SetSpeedLimit(GetSpeedLimit(SpeedCombo->Text));
+  }
+  catch (Exception & E)
+  {
+    ShowExtendedException(&E);
+    SpeedCombo->SetFocus();
+    SpeedCombo->SelectAll();
+    Abort();
+  }
 }
 //---------------------------------------------------------------------------

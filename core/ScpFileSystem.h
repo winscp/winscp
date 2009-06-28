@@ -33,11 +33,11 @@ public:
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
-    bool & DisconnectWhenComplete);
+    TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall CopyToRemote(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
-    bool & DisconnectWhenComplete);
+    TOnceDoneOperation & OnceDoneOperation);
   virtual void __fastcall CreateDirectory(const AnsiString DirName);
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic);
   virtual void __fastcall DeleteFile(const AnsiString FileName,

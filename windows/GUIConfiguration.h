@@ -36,6 +36,7 @@ public:
 
   __property bool Queue = { read = FQueue, write = FQueue };
   __property bool QueueNoConfirmation = { read = FQueueNoConfirmation, write = FQueueNoConfirmation };
+  __property bool QueueIndividually = { read = FQueueIndividually, write = FQueueIndividually };
   __property bool NewerOnly = { read = FNewerOnly, write = FNewerOnly };
 
 protected:
@@ -45,6 +46,7 @@ protected:
 private:
   bool FQueue;
   bool FQueueNoConfirmation;
+  bool FQueueIndividually;
   bool FNewerOnly;
 };
 //---------------------------------------------------------------------------
@@ -174,6 +176,7 @@ private:
   TRemoteProperties FNewDirectoryProperties;
   int FKeepUpToDateChangeDelay;
   AnsiString FChecksumAlg;
+  int FSessionReopenAutoIdle;
 
 protected:
   LCID FLocale;
@@ -243,6 +246,7 @@ public:
   __property TRemoteProperties NewDirectoryProperties = { read = FNewDirectoryProperties, write = SetNewDirectoryProperties };
   __property int KeepUpToDateChangeDelay = { read = FKeepUpToDateChangeDelay, write = FKeepUpToDateChangeDelay };
   __property AnsiString ChecksumAlg = { read = FChecksumAlg, write = FChecksumAlg };
+  __property int SessionReopenAutoIdle = { read = FSessionReopenAutoIdle, write = FSessionReopenAutoIdle };
 };
 //---------------------------------------------------------------------------
 #define GUIConfiguration (dynamic_cast<TGUIConfiguration *>(Configuration))

@@ -54,7 +54,6 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
 
   FNoUpdate = 0;
   FPreferencesMode = pmDefault;
-  CopyParamsFrame->Direction = pdAll;
   FEditorFont = new TFont();
   FEditorFont->Color = clWindowText;
   // color tends to reset in object inspector
@@ -158,6 +157,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
+    BOOLPROP(RenameWholeName);
     BOOLPROP(ShowInaccesibleDirectories);
     BOOLPROP(CopyOnDoubleClickConfirmation);
     BOOLPROP(ConfirmTransferring);
@@ -215,6 +215,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     SwappedPanelsCheck->Checked =
       WinConfiguration->ScpCommander.SwappedPanels;
     FullRowSelectCheck->Checked = WinConfiguration->ScpCommander.FullRowSelect;
+    TreeOnLeftCheck->Checked = WinConfiguration->ScpCommander.TreeOnLeft;
     ShowFullAddressCheck->Checked =
       WinConfiguration->ScpExplorer.ShowFullAddress;
     RegistryStorageButton->Checked = (Configuration->Storage == stRegistry);
@@ -238,6 +239,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     ResumeOffButton->Checked = GUIConfiguration->DefaultCopyParam.ResumeSupport == rsOff;
     ResumeThresholdEdit->Value = GUIConfiguration->DefaultCopyParam.ResumeThreshold / 1024;
     SessionReopenAutoCheck->Checked = (Configuration->SessionReopenAuto > 0);
+    SessionReopenAutoIdleCheck->Checked = (GUIConfiguration->SessionReopenAutoIdle > 0);
     SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
       (Configuration->SessionReopenAuto / 1000): 5);
 
@@ -264,6 +266,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     QueueTransferLimitEdit->AsInteger = GUIConfiguration->QueueTransfersLimit;
     QueueAutoPopupCheck->Checked = GUIConfiguration->QueueAutoPopup;
     QueueCheck->Checked = GUIConfiguration->DefaultCopyParam.Queue;
+    QueueIndividuallyCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueIndividually;
     QueueNoConfirmationCheck->Checked = GUIConfiguration->DefaultCopyParam.QueueNoConfirmation;
     RememberPasswordCheck->Checked = GUIConfiguration->QueueRememberPassword;
     if (WinConfiguration->QueueView.Show == qvShow)
@@ -386,6 +389,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(DDTransferConfirmation);
     BOOLPROP(DDWarnLackOfTempSpace);
     BOOLPROP(ShowHiddenFiles);
+    BOOLPROP(RenameWholeName);
     BOOLPROP(ShowInaccesibleDirectories);
     BOOLPROP(CopyOnDoubleClickConfirmation);
     BOOLPROP(ConfirmTransferring);
@@ -439,6 +443,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     ScpCommander.PreserveLocalDirectory = PreserveLocalDirectoryCheck->Checked;
     ScpCommander.SwappedPanels = SwappedPanelsCheck->Checked;
     ScpCommander.FullRowSelect = FullRowSelectCheck->Checked;
+    ScpCommander.TreeOnLeft = TreeOnLeftCheck->Checked;
     WinConfiguration->ScpCommander = ScpCommander;
 
     TScpExplorerConfiguration ScpExplorer = WinConfiguration->ScpExplorer;
@@ -465,6 +470,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
 
     Configuration->SessionReopenAuto =
       (SessionReopenAutoCheck->Checked ? (SessionReopenAutoEdit->Value * 1000) : 0);
+    GUIConfiguration->SessionReopenAutoIdle =
+      (SessionReopenAutoIdleCheck->Checked ? (SessionReopenAutoEdit->Value * 1000) : 0);
 
     WinConfiguration->CustomCommands = FCustomCommands;
 
@@ -477,6 +484,7 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     GUIConfiguration->QueueTransfersLimit = QueueTransferLimitEdit->AsInteger;
     GUIConfiguration->QueueAutoPopup = QueueAutoPopupCheck->Checked;
     CopyParam.Queue = QueueCheck->Checked;
+    CopyParam.QueueIndividually = QueueIndividuallyCheck->Checked;
     CopyParam.QueueNoConfirmation = QueueNoConfirmationCheck->Checked;
     GUIConfiguration->QueueRememberPassword = RememberPasswordCheck->Checked;
 
@@ -647,7 +655,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
 
     EnableControl(ResumeThresholdEdit, ResumeSmartButton->Checked);
     EnableControl(ResumeThresholdUnitLabel, ResumeThresholdEdit->Enabled);
-    EnableControl(SessionReopenAutoEdit, SessionReopenAutoCheck->Checked);
+    EnableControl(SessionReopenAutoEdit,
+      SessionReopenAutoCheck->Checked || SessionReopenAutoIdleCheck->Checked);
     EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
     EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
 

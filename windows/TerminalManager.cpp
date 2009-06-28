@@ -871,11 +871,11 @@ void __fastcall TTerminalManager::TerminalInformation(
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationFinished(::TFileOperation Operation,
   TOperationSide Side, bool Temp, const AnsiString & FileName, bool Success,
-  bool & DisconnectWhenFinished)
+  TOnceDoneOperation & OnceDoneOperation)
 {
   assert(ScpExplorer);
   ScpExplorer->OperationFinished(Operation, Side, Temp, FileName, Success,
-    DisconnectWhenFinished);
+    OnceDoneOperation);
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminalManager::OperationProgress(

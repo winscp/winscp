@@ -531,8 +531,21 @@ inherited ScpCommanderForm: TScpCommanderForm
           object TBXSeparatorItem22: TTBXSeparatorItem
             Hint = 'E'
           end
-          object TBXItem211: TTBXItem
-            Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+          object TBXSubmenuItem8: TTBXSubmenuItem
+            Action = NonVisualDataModule.QueueCycleOnceEmptyAction
+            DropdownCombo = True
+            object TBXItem222: TTBXItem
+              Action = NonVisualDataModule.QueueIdleOnceEmptyAction
+              RadioItem = True
+            end
+            object TBXItem223: TTBXItem
+              Action = NonVisualDataModule.QueueDisconnectOnceEmptyAction
+              RadioItem = True
+            end
+            object TBXItem224: TTBXItem
+              Action = NonVisualDataModule.QueueShutDownOnceEmptyAction
+              RadioItem = True
+            end
           end
           object TBXItem81: TTBXItem
             Action = NonVisualDataModule.QueuePreferencesAction
@@ -1314,7 +1327,6 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnMatchMask = DirViewMatchMask
       OnGetOverlay = RemoteDirViewGetOverlay
       ConfirmDelete = False
-      ConfirmOverwrite = False
       WatchForChanges = True
       OnFileIconForName = LocalDirViewFileIconForName
       OnHistoryChange = DirViewHistoryChange

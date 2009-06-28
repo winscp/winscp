@@ -251,6 +251,8 @@ extern PACKAGE System::ResourceString _SUnknownSockError;
 #define Tcpip_SUnknownSockError System::LoadResourceString(&Tcpip::_SUnknownSockError)
 extern PACKAGE System::ResourceString _SHttpError;
 #define Tcpip_SHttpError System::LoadResourceString(&Tcpip::_SHttpError)
+extern PACKAGE System::ResourceString _SRedirectLimitError;
+#define Tcpip_SRedirectLimitError System::LoadResourceString(&Tcpip::_SRedirectLimitError)
 extern PACKAGE void __fastcall Register(void);
 
 }	/* namespace Tcpip */

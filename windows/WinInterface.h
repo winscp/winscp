@@ -171,14 +171,15 @@ void __fastcall DoConsoleDialog(TTerminal * Terminal,
     const AnsiString Command = "", const TStrings * Log = NULL);
 
 // forms\Copy.cpp
-const coTemp                = 0x01;
-const coDisableQueue        = 0x02;
-const coDisableDirectory    = 0x08; // not used anymore
-const coDisableNewerOnly    = 0x10;
-const coDoNotShowAgain      = 0x20;
-const coDisableSaveSettings = 0x40; // not used anymore
-const coDoNotUsePresets     = 0x80;
+const coTemp                = 0x001;
+const coDisableQueue        = 0x002;
+const coDisableDirectory    = 0x008; // not used anymore
+const coDisableNewerOnly    = 0x010;
+const coDoNotShowAgain      = 0x020;
+const coDisableSaveSettings = 0x040; // not used anymore
+const coDoNotUsePresets     = 0x080;
 const coAllowRemoteTransfer = 0x100;
+const coNoQueue             = 0x200;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
@@ -186,9 +187,6 @@ bool __fastcall DoCopyDialog(bool ToRemote,
   bool Move, TStrings * FileList, AnsiString & TargetDirectory,
   TGUICopyParamType * Params, int Options, int CopyParamAttrs,
   int * OutputOptions);
-
-// forms\CopyParams.cpp
-enum TParamsForDirection { pdBoth, pdToRemote, pdToLocal, pdAll };
 
 // forms\CreateDirectory.cpp
 bool __fastcall DoCreateDirectoryDialog(AnsiString & Directory,
@@ -336,9 +334,12 @@ bool __fastcall DoFullSynchronizeDialog(TSynchronizeMode & Mode, int & Params,
 
 // forms\SynchronizeChecklist.cpp
 class TSynchronizeChecklist;
+typedef void __fastcall (__closure *TCustomCommandMenuEvent)
+  (TObject * Sender, const TPoint & MousePos, TStrings * LocalFileList, TStrings * RemoteFileList);
 bool __fastcall DoSynchronizeChecklistDialog(TSynchronizeChecklist * Checklist,
   TSynchronizeMode Mode, int Params,
-  const AnsiString LocalDirectory, const AnsiString RemoteDirectory);
+  const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
+  TCustomCommandMenuEvent OnCustomCommandMenu);
 
 // forms\Editor.cpp
 TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * ParentForm,

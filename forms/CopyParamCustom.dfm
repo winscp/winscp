@@ -1,12 +1,12 @@
 object CopyParamCustomDialog: TCopyParamCustomDialog
-  Left = 264
-  Top = 122
+  Left = 374
+  Top = 167
   HelpType = htKeyword
   HelpKeyword = 'ui_transfer_custom'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'Transfer settings'
-  ClientHeight = 387
+  ClientHeight = 391
   ClientWidth = 377
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -19,12 +19,12 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
   OnCloseQuery = FormCloseQuery
   DesignSize = (
     377
-    387)
+    391)
   PixelsPerInch = 96
   TextHeight = 13
   object OkButton: TButton
     Left = 125
-    Top = 354
+    Top = 358
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -35,7 +35,7 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
   end
   object CancelButton: TButton
     Left = 209
-    Top = 354
+    Top = 358
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -48,104 +48,13 @@ object CopyParamCustomDialog: TCopyParamCustomDialog
     Left = 0
     Top = 0
     Width = 377
-    Height = 345
+    Height = 355
     HelpType = htKeyword
     TabOrder = 0
-    inherited CommonPropertiesGroup: TGroupBox
-      Left = 197
-      Top = 209
-      Height = 73
-      Caption = 'Common options'
-      DesignSize = (
-        173
-        73)
-      inherited CommonPreserveTimestampCheck: TCheckBox
-        Top = 19
-      end
-    end
-    inherited LocalPropertiesGroup: TGroupBox
-      Left = 197
-      Top = 156
-      Height = 48
-      Caption = 'Download options'
-      DesignSize = (
-        173
-        48)
-      inherited PreserveReadOnlyCheck: TCheckBox
-        Top = 20
-      end
-      inherited LocalPreserveTimeCheck: TCheckBox
-        Top = 92
-      end
-    end
-    inherited RemotePropertiesGroup: TGroupBox
-      Left = 8
-      Top = 156
-      Width = 182
-      Height = 126
-      Caption = 'Upload options'
-    end
-    inherited ChangeCaseGroup: TGroupBox
-      Left = 247
-      Top = 8
-      Width = 123
-      DesignSize = (
-        123
-        146)
-      inherited CCLowerCaseShortButton: TRadioButton
-        Width = 110
-      end
-      inherited CCNoChangeButton: TRadioButton
-        Width = 110
-      end
-      inherited CCUpperCaseButton: TRadioButton
-        Width = 110
-      end
-      inherited CCLowerCaseButton: TRadioButton
-        Width = 110
-      end
-      inherited CCFirstUpperCaseButton: TRadioButton
-        Width = 110
-      end
-    end
-    inherited TransferModeGroup: TGroupBox
-      Left = 8
-      Top = 8
-      Width = 231
-      DesignSize = (
-        231
-        146)
-      inherited TMTextButton: TRadioButton
-        Width = 219
-      end
-      inherited TMBinaryButton: TRadioButton
-        Width = 219
-      end
-      inherited TMAutomaticButton: TRadioButton
-        Width = 219
-      end
-      inherited AsciiFileMaskCombo: THistoryComboBox
-        Width = 213
-      end
-    end
-    inherited OtherGroup: TGroupBox
-      Left = 8
-      Top = 284
-      Width = 362
-      DesignSize = (
-        362
-        61)
-      inherited ExcludeFileMaskCombo: THistoryComboBox
-        Width = 217
-      end
-      inherited ExcludeFileMaskHintText: TStaticText
-        Left = 256
-      end
-    end
   end
   object HelpButton: TButton
     Left = 293
-    Top = 354
+    Top = 358
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

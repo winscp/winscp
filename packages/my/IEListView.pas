@@ -757,15 +757,23 @@ var
 begin
   ShortDate := UpperCase(ShortDateFormat);
   {Create DateTime format string:}
-  if Pos('YYYY', UpperCase(ShortDate)) = 0 then
+  if (Pos('YYYY', UpperCase(ShortDate)) = 0) and
+     (Pos('YY', UpperCase(ShortDate)) <> 0) then
   begin
     if Copy(UpperCase(ShortDate), Length(ShortDate) - 1, 2) = 'YY' then
-        FDateTimeFormatStr := ShortDateFormat + 'yy'
+    begin
+      FDateTimeFormatStr := ShortDateFormat + 'yy'
+    end
       else
     if Copy(UpperCase(ShortDate), 1, 2) = 'YY' then
+    begin
       FDateTimeFormatStr := 'yy' + ShortDateFormat;
+    end
   end
-    else FDateTimeFormatStr := ShortDateFormat;
+    else
+  begin
+    FDateTimeFormatStr := ShortDateFormat;
+  end;
 
   FDateFormatStr := FDateTimeFormatStr;
 
@@ -779,6 +787,7 @@ end; {SetDateTimeFormatString}
 procedure TCustomIEListView.SortItems;
 begin
   AlphaSort;
+  ItemsReordered;
 end;
 
 end.

@@ -71,6 +71,7 @@ void __fastcall TConfiguration::Default()
   FAutoReadDirectoryAfterOp = true;
   FSessionReopenAuto = 5000;
   FSessionReopenBackground = 2000;
+  FSessionReopenTimeout = 0;
   FTunnelLocalPortNumberLow = 50000;
   FTunnelLocalPortNumberHigh = 50099;
   FCacheDirectoryChangesMaxSize = 100;
@@ -122,6 +123,7 @@ THierarchicalStorage * TConfiguration::CreateScpStorage(bool /*SessionList*/)
     KEY(Bool,     AutoReadDirectoryAfterOp); \
     KEY(Integer,  SessionReopenAuto); \
     KEY(Integer,  SessionReopenBackground); \
+    KEY(Integer,  SessionReopenTimeout); \
     KEY(Integer,  TunnelLocalPortNumberLow); \
     KEY(Integer,  TunnelLocalPortNumberHigh); \
     KEY(Integer,  CacheDirectoryChangesMaxSize); \
@@ -985,6 +987,11 @@ void __fastcall TConfiguration::SetSessionReopenAuto(int value)
 void __fastcall TConfiguration::SetSessionReopenBackground(int value)
 {
   SET_CONFIG_PROPERTY(SessionReopenBackground);
+}
+//---------------------------------------------------------------------------
+void __fastcall TConfiguration::SetSessionReopenTimeout(int value)
+{
+  SET_CONFIG_PROPERTY(SessionReopenTimeout);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConfiguration::SetTunnelLocalPortNumberLow(int value)

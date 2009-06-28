@@ -2295,6 +2295,10 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 			else if (nError&CSMODE_TRANSFERTIMEOUT)
 				DoClose();
 			else
+				// MPEXT: we may get here when connection was closed, when the closure
+				// was first detected while reading/writing,
+				// when we abort file transfer with regular error,
+				// possibly preventing automatic reconnect
 				ResetOperation(FZ_REPLY_ERROR);
 			return;
 		}
@@ -2789,7 +2793,17 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 
 				if (m_pOwner->GetCurrentPath() != pData->transferfile.remotepath)
 				{
-					LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Real path and requested remote path do not match: \"%s\"  \"%s\""), m_pOwner->GetCurrentPath().GetSafePath(), pData->transferfile.remotepath.GetSafePath());
+#ifdef MPEXT
+					// More user-friendly message when the actual paths differ
+					if (m_pOwner->GetCurrentPath().GetPath() != pData->transferfile.remotepath.GetPath())
+					{
+						LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Real path and requested remote path do not match: \"%s\"  \"%s\""), m_pOwner->GetCurrentPath().GetPath(), pData->transferfile.remotepath.GetPath());
+					}
+					else
+#endif
+					{
+						LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Real path and requested remote path do not match: \"%s\"  \"%s\""), m_pOwner->GetCurrentPath().GetSafePath(), pData->transferfile.remotepath.GetSafePath());
+					}
 					nReplyError = FZ_REPLY_CRITICALERROR;
 				}
 				else
@@ -4399,6 +4413,17 @@ void CFtpControlSocket::ResetOperation(int nSuccessful /*=FALSE*/)
 	}
 	else
 	{
+#ifdef MPEXT
+		// When control socket is waiting for reply
+		// to keepalive (!IsReady), while new command comes,
+		// its execution is postponed
+		// (CMainThread::m_pPostKeepAliveCommand),
+		// but the main thread
+		// is set to busy state already (CMainThread::Command).
+		// if connection is closed before without receiving reply,
+		// main thread would stay busy forever.
+		m_pOwner->SetBusy(FALSE);
+#endif
 		//No operation in progress
 		nSuccessful&=FZ_REPLY_DISCONNECTED|FZ_REPLY_CANCEL;
 		if (!nSuccessful)

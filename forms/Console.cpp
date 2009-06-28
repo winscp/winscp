@@ -217,10 +217,7 @@ void __fastcall TConsoleDialog::CommandEditChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::AddLine(const AnsiString & Line, bool /*StdError*/)
 {
-  if (!Line.IsEmpty())
-  {
-    OutputMemo->Lines->Add(Line);
-  }
+  OutputMemo->Lines->Add(Line);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleDialog::CreateParams(TCreateParams & Params)

@@ -68,6 +68,7 @@ protected:
   bool FKeepingUpToDate;
   AnsiString FSynchronizeIntro;
   bool FLimitedOutput;
+  int FSessionReopenTimeout;
 
   virtual void __fastcall ResetTransfer();
   virtual void __fastcall ConnectTerminal(TTerminal * Terminal);
@@ -77,6 +78,7 @@ protected:
   void __fastcall CheckSession();
   void __fastcall CheckParams(TScriptProcParams * Parameters);
   void __fastcall CopyParamParams(TCopyParamType & CopyParam, TScriptProcParams * Parameters);
+  void __fastcall TransferParamParams(int & Params, TScriptProcParams * Parameters);
   enum TFileListType
   {
     fltDefault =     0x00,
@@ -162,7 +164,7 @@ protected:
     TCancelStatus & Cancel);
   void __fastcall TerminalOperationFinished(TFileOperation Operation, TOperationSide Side,
     bool Temp, const AnsiString & FileName, Boolean Success,
-    bool & DisconnectWhenComplete);
+    TOnceDoneOperation & OnceDoneOperation);
 
   void __fastcall PrintActiveSession();
   TTerminal * __fastcall FindSession(const AnsiString Index);

@@ -3,6 +3,7 @@
 #define FileSystemsH
 
 #include <SessionInfo.h>
+#include "Exceptions.h"
 //---------------------------------------------------------------------------
 class TTerminal;
 class TRights;
@@ -49,11 +50,11 @@ public:
   virtual void __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
-    bool & DisconnectWhenComplete) = 0;
+    TOnceDoneOperation & OnceDoneOperation) = 0;
   virtual void __fastcall CopyToRemote(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam,
     int Params, TFileOperationProgressType * OperationProgress,
-    bool & DisconnectWhenComplete) = 0;
+    TOnceDoneOperation & OnceDoneOperation) = 0;
   virtual void __fastcall CreateDirectory(const AnsiString DirName) = 0;
   virtual void __fastcall CreateLink(const AnsiString FileName, const AnsiString PointTo, bool Symbolic) = 0;
   virtual void __fastcall DeleteFile(const AnsiString FileName,

@@ -7,7 +7,7 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
-#define Year 2008
+#define Year 2009
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
@@ -28,6 +28,7 @@
 #define ShellExtFileSource SourceDir+"\DragExt.dll"
 #define ShellExt64FileSource SourceDir+"\DragExt64.dll"
 #define ConsoleFileSource SourceDir+"\WinSCP.com"
+#define IconFileSource SourceDir+"\resource\Icon128.ico"
 
 #define Major
 #define Minor
@@ -36,7 +37,11 @@
 #expr ParseVersion(MainFileSource, Major, Minor, Rev, Build)
 #define Version Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")+(Status != "" ? " "+Status : "")
 
-; Translation support functions/variables
+#ifdef OpenCandy
+#include "opencandy\OCSetupHlp.iss"
+#define OCDLL "..\opencandy\OCSetupHlp.dll"
+#define OCID "c8223ec7b782bba155ed4a5f24e87c75"
+#endif
 
 [Setup]
 AppId={#AppId}
@@ -168,7 +173,7 @@ Name: searchpath; Description: {cm:AddSearchPath}; \
 ; This is created always (unless user checks Don't create a Start menu folder,
 ; Setup\AllowNoIcons=yes)
 Name: "{group}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
-  Comment: "{cm:ProgramComment}"
+  IconFilename: "{app}\WinSCP.ico"; Comment: "{cm:ProgramComment}"
 Name: "{group}\{cm:WebSite}"; Filename: "{#WebRoot}"; Components: main
 Name: "{group}\{cm:SupportForum}"; \
   Filename: "{#WebForum}"; Components: main
@@ -190,15 +195,16 @@ Name: "{group}\{cm:RSAKeyTools}\{cm:PuttyWebSite}"; \
   Filename: "{#WebPuTTY}"; Components: pageant puttygen
 ; This is created when desktopicon task is selected
 Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
-  Tasks: desktopicon\user
+  IconFilename: "{app}\WinSCP.ico"; Tasks: desktopicon\user
 Name: "{commondesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
-  Tasks: desktopicon\common
+  IconFilename: "{app}\WinSCP.ico"; Tasks: desktopicon\common
 ; This is created when quicklaunchicon task is selected
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\WinSCP"; \
-  Filename: "{app}\WinSCP.exe"; Tasks: quicklaunchicon
+  IconFilename: "{app}\WinSCP.ico"; Filename: "{app}\WinSCP.exe"; \
+  Tasks: quicklaunchicon
 ; This is created when sendtohook task is selected
 Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
-  Parameters: "/upload"; Tasks: sendtohook
+  IconFilename: "{app}\WinSCP.ico"; Parameters: "/upload"; Tasks: sendtohook
 
 [InstallDelete]
 ; Legacy sendto hook (SCP-only), only english link is removed
@@ -243,6 +249,8 @@ Source: "{app}\WinSCP3.ini"; DestName: "WinSCP.ini"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion external skipifsourcedoesntexist onlyifdoesntexist
 Source: "{#ConsoleFileSource}"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
+Source: "{#IconFileSource}"; DestName: "WinSCP.ico"; DestDir: "{app}"; \
+  Components: main; Flags: ignoreversion
 Source: "licence"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
@@ -261,6 +269,11 @@ Source: "{#PuttySourceDir}\pageant.exe"; DestDir: "{app}\PuTTY"; \
   Components: pageant; Flags: ignoreversion
 Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
   Components: puttygen; Flags: ignoreversion
+#ifdef OpenCandy
+Source: {#OCDLL}; DestDir: {app}\OpenCandy; \
+  Components: main; Flags: overwritereadonly ignoreversion; \
+  AfterInstall: OpenCandyProcessEmbedded
+#endif
 
 [Registry]
 Root: HKCU; Subkey: "{#ParentRegistryKey}"; Flags: uninsdeletekeyifempty
@@ -350,6 +363,9 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/UninstallCleanup"; \
   RunOnceId: "UninstallCleanup"
 Filename: "{app}\WinSCP.exe"; Parameters: "/RemoveSearchPath"; \
   RunOnceId: "RemoveSearchPath"
+#ifdef OpenCandy
+Filename: rundll32.exe; Parameters: "{code:OCSetupHlpString|\OpenCandy\OCSetupHlp.dll} /U{#OCID}"
+#endif
 
 [Code]
 const
@@ -474,7 +490,7 @@ begin
           // is suspected to be a language file
           if (Pos('.', Ext) = 1) and
              (Ext <> '.INI') and (Ext <> '.EXE') and (Ext <> '.COM') and
-             (Ext <> '.DLL') and
+             (Ext <> '.DLL') and (Ext <> '.ICO') and
              GetVersionNumbers(Path + FindRec.Name, VersionMS, VersionLS) then
           begin
             Ext := Lowercase(Copy(Ext, 2, Length(Ext) - 1));
@@ -721,6 +737,11 @@ begin
   AdvancedTabsCheckbox.Top :=
     AdditionalOptionsCaption.Top + AdditionalOptionsCaption.Height + ScaleY(6);
   AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
+
+#ifdef OpenCandy
+  OpenCandyInit('WinSCP', '{#OCID}', '3d0f240d63cf2239f9e45c3562d8bdbc',
+    ExpandConstant('{cm:LanguageISOCode}'), '{#RegistryKey}\OpenCandy');
+#endif
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
@@ -735,12 +756,42 @@ end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
+#ifdef OpenCandy
+  OpenCandyCurPageChanged(CurPageID);
+#endif
+
   if CurPageID = wpInterface then
   begin
     AdditionalOptionsCaption.Visible := not TypicalTypeButton.Checked;
     AdvancedTabsCheckbox.Visible := not TypicalTypeButton.Checked;
   end;
 end;
+
+#ifdef OpenCandy
+function BackButtonClick(CurPageID: Integer): Boolean;
+var
+  OCMsg: string;
+begin
+  if Assigned(OCOfferPage) and (CurPageID = OCOfferPage.ID) then
+  begin
+    OCRestorePage(OCOfferPage.Surface.Handle);
+    Result := True;
+  end
+    else Result := True;
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := OpenCandyNextButtonClick(CurPageID);
+end;
+#endif
+
+#ifdef OpenCandy
+procedure DeinitializeSetup;
+begin
+  OpenCandyDeinitializeSetup();
+end;
+#endif
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
@@ -753,6 +804,10 @@ begin
       ProcessMissingTranslations(@DeleteTranslation);
     end;
   end;
+
+#ifdef OpenCandy
+  OpenCandyCurStepChanged(CurStep);
+#endif
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;

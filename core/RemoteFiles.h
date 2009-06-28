@@ -443,8 +443,10 @@ AnsiString __fastcall FromUnixPath(const AnsiString Path);
 AnsiString __fastcall ToUnixPath(const AnsiString Path);
 AnsiString __fastcall MinimizeName(const AnsiString FileName, int MaxLen, bool Unix);
 AnsiString __fastcall MakeFileList(TStrings * FileList);
-void __fastcall ReduceDateTimePrecision(TDateTime & DateTime,
+TDateTime __fastcall ReduceDateTimePrecision(TDateTime DateTime,
   TModificationFmt Precision);
+TModificationFmt __fastcall LessDateTimePrecision(
+  TModificationFmt Precision1, TModificationFmt Precision2);
 AnsiString __fastcall UserModificationStr(TDateTime DateTime,
   TModificationFmt Precision);
 int __fastcall FakeFileImageIndex(AnsiString FileName, unsigned long Attrs = 0,

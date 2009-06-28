@@ -45,6 +45,7 @@ type
     procedure EndSelectionUpdate; virtual;
     function CanChangeSelection(Item: TListItem; Select: Boolean): Boolean; virtual;
     procedure ClearItems; virtual;
+    procedure ItemsReordered;
     procedure ColRightClick(Column: TListColumn; Point: TPoint); override;
     procedure Delete(Item: TListItem); override;
     function DoSelectByMask(Select: Boolean): Boolean; virtual;
@@ -320,6 +321,15 @@ begin
   end;
 end; { ClearItems }
 
+procedure TCustomNortonLikeListView.ItemsReordered;
+begin
+  if FManageSelection then
+  begin
+    FFirstSelected := -1;
+    FLastSelected := -1;
+  end;
+end;
+
 procedure TCustomNortonLikeListView.ColRightClick(Column: TListColumn; Point: TPoint);
 var
   HitInfo: TLVHitTestInfo;
@@ -549,6 +559,7 @@ var
   P: TPoint;
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
+  AParent: TWinControl;
 begin
   Item.MakeVisible(False);
   if Focused then
@@ -560,7 +571,13 @@ begin
     FDontUnSelectItem := True;
     FFocusingItem := True;
     try
-      SendMessage(Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(P.X, P.Y));
+      AParent := Parent;
+      P := ClientToScreen(P);
+      while AParent.Parent <> nil do
+        AParent := AParent.Parent;
+      P := AParent.ScreenToClient(P);
+      SendMessage(AParent.Handle, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(P.X, P.Y));
+      SendMessage(AParent.Handle, WM_LBUTTONUP, MK_LBUTTON, MAKELPARAM(P.X, P.Y));
     finally
       FFocusingItem := False;
       FDontSelectItem := PDontSelectItem;

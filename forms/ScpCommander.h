@@ -347,7 +347,6 @@ __published:
   TTBXItem *TBXItem24;
   TTBXItem *TBXItem209;
   TTBXItem *TBXItem28;
-  TTBXItem *TBXItem211;
   TTBXToolbar *UploadDownloadToolbar;
   TTBXItem *TBXItem212;
   TTBXItem *TBXItem213;
@@ -376,6 +375,10 @@ __published:
   TTBXComboBoxItem *QueueSpeedComboBoxItem;
   TTBXItem *TBXItem220;
   TTBXItem *TBXItem221;
+  TTBXSubmenuItem *TBXSubmenuItem8;
+  TTBXItem *TBXItem222;
+  TTBXItem *TBXItem223;
+  TTBXItem *TBXItem224;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -444,6 +447,7 @@ private:
   unsigned int FSpecialFolders;
   TEdit * FCommandLineComboEdit;
   TWndMethod FToolbarEditOldWndProc;
+  bool FPanelsRestored;
 
   void __fastcall SetLeftPanelWidth(float value);
   float __fastcall GetLeftPanelWidth();

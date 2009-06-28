@@ -133,12 +133,14 @@ resourcestring
   STimeout = 'Timeout';
   SUnknownSockError = 'Unknown error';
   SHttpError = 'Received response %d %s from %s';
+  SRedirectLimitError = 'Exceeded maximal redirect limie %d';
 
 implementation
 
 const
   BackLog = 2; // possible values 1..5
   BufSize = $7F00; // size of the internal standard buffer
+  MaxRedirects = 4;
   INVALID_IP_ADDRESS= -1; // only invalid as a host ip, maybe OK for broadcast ($FFFFFFFF as longint)
 
 function LookupHostname(const Hostname: string): LongInt;
@@ -834,6 +836,7 @@ end;
 procedure THttp.Action;
 var
   Proto, User, Pass, Host, Port, Path: string;
+  Redirects: Integer;
 begin
   // parse url and proxy to FHostname, FPath and FSocketNumber
   if FProxy <> '' then
@@ -855,8 +858,12 @@ begin
 
   FHostname := Host;
   FSocketNumber := StrToInt(Port);
+  Redirects := 0;
   // loop until we get answer without Location header
   repeat
+    Inc(Redirects);
+    if Redirects > MaxRedirects then
+      raise ETcpIpError.Create(Format(SRedirectLimitError, [MaxRedirects]));
     // do directly GetBody, instead of GetHead first.
     // currently we use this for updates only and the potentional overhead
     // of GetBody on redirect answer is smaller then two requests per each check

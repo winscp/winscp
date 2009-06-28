@@ -87,22 +87,19 @@ void __fastcall TFullSynchronizeDialog::UpdateControls()
   }
   if (SynchronizeBothButton->Checked)
   {
+    SynchronizeByTimeCheck->Checked = true;
     SynchronizeBySizeCheck->Checked = false;
     if (MirrorFilesButton->Checked)
     {
       SynchronizeFilesButton->Checked = true;
     }
   }
-  if (MirrorFilesButton->Checked)
-  {
-    SynchronizeByTimeCheck->Checked = true;
-  }
   EnableControl(MirrorFilesButton, !SynchronizeBothButton->Checked);
   EnableControl(SynchronizeDeleteCheck, !SynchronizeBothButton->Checked &&
     !SynchronizeTimestampsButton->Checked);
   EnableControl(SynchronizeExistingOnlyCheck, !SynchronizeTimestampsButton->Checked);
   EnableControl(SynchronizeByTimeCheck, !SynchronizeBothButton->Checked &&
-    !SynchronizeTimestampsButton->Checked && !MirrorFilesButton->Checked);
+    !SynchronizeTimestampsButton->Checked);
   EnableControl(SynchronizeBySizeCheck, !SynchronizeBothButton->Checked);
   EnableControl(SynchronizeSelectedOnlyCheck, FLAGSET(FOptions, fsoAllowSelectedOnly));
 
@@ -145,7 +142,9 @@ int __fastcall TFullSynchronizeDialog::ActualCopyParamAttrs()
         break;
     }
   }
-  return Result | cpaNoPreserveTime;
+  return
+    Result |
+    FLAGMASK(SynchronizeByTimeCheck->Checked, cpaNoPreserveTime);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFullSynchronizeDialog::ControlChange(TObject * /*Sender*/)
@@ -356,21 +355,15 @@ void __fastcall TFullSynchronizeDialog::FormCloseQuery(TObject * /*Sender*/,
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFullSynchronizeDialog::SynchronizeByTimeSizeCheckClick(
-  TObject * Sender)
-{
-  if (!dynamic_cast<TCheckBox*>(Sender)->Checked)
-  {
-    (Sender == SynchronizeByTimeCheck ? SynchronizeBySizeCheck : SynchronizeByTimeCheck)->
-      Checked = true;
-  }
-  UpdateControls();
-}
-//---------------------------------------------------------------------------
 TCopyParamType __fastcall TFullSynchronizeDialog::GetCopyParams()
 {
   TCopyParamType Result = FCopyParams;
-  Result.PreserveTime = true;
+  // when synchronizing by time, we force preserving time,
+  // otherwise it does not make any sense
+  if (FLAGCLEAR(Params, spNotByTime))
+  {
+    Result.PreserveTime = true;
+  }
   return Result;
 }
 //---------------------------------------------------------------------------

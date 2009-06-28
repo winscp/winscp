@@ -38,7 +38,6 @@ __fastcall TCopyParamPresetDialog::TCopyParamPresetDialog(TComponent * Owner,
 {
   SetCorrectFormParent(this);
   UseSystemSettings(this);
-  CopyParamsFrame->Direction = pdAll;
   FMode = Mode;
   FCurrentRuleData = CurrentRuleData;
   Caption = LoadStr(Mode == cpmEdit ? COPY_PARAM_EDIT : COPY_PARAM_ADD);

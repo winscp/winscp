@@ -43,6 +43,7 @@ __published:
   TTimer *UpdateTimer;
   TButton *HelpButton;
   TImageList *ArrowImages;
+  TButton *CustomCommandsButton;
   void __fastcall HelpButtonClick(TObject * Sender);
   void __fastcall FormShow(TObject * Sender);
   void __fastcall ListViewAdvancedCustomDrawSubItem(
@@ -72,11 +73,12 @@ __published:
           int Index, int &SecondaryColumn);
   void __fastcall ListViewContextPopup(TObject *Sender, TPoint &MousePos,
           bool &Handled);
+  void __fastcall CustomCommandsButtonClick(TObject *Sender);
 
 public:
   __fastcall TSynchronizeChecklistDialog(TComponent * AOwner,
     TSynchronizeMode Mode, int Params, const AnsiString LocalDirectory,
-    const AnsiString RemoteDirectory);
+    const AnsiString RemoteDirectory, TCustomCommandMenuEvent OnCustomCommandMenu);
   virtual __fastcall ~TSynchronizeChecklistDialog();
 
   bool __fastcall Execute(TSynchronizeChecklist * Checklist);
@@ -97,6 +99,7 @@ protected:
   bool FChangingItemIgnore;
   bool FChangingItemMass;
   AnsiString FGeneralHint;
+  TCustomCommandMenuEvent FOnCustomCommandMenu;
 
   void __fastcall UpdateControls();
   virtual void __fastcall CreateParams(TCreateParams & Params);

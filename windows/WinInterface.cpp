@@ -588,9 +588,16 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
   TMessageParams AParams;
   if (Params != NULL)
   {
-    assert(Params->Aliases == NULL);
     AParams = *Params;
   }
+  assert(AParams.Timeout == 0);
+  // the condition is de facto excess
+  if (GUIConfiguration->SessionReopenAutoIdle > 0)
+  {
+    AParams.Timeout = GUIConfiguration->SessionReopenAutoIdle;
+    AParams.TimeoutAnswer = qaRetry;
+  }
+  assert(AParams.Aliases == NULL);
   AParams.Aliases = Aliases;
   AParams.AliasesCount = LENOF(Aliases);
 

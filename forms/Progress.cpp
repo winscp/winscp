@@ -45,6 +45,8 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   FReadOnly = false;
   FShowAsModalStorage = NULL;
   UseSystemSettings(this);
+  ResetOnceDoneOperation();
+
   if (!IsGlobalMinimizeHandler())
   {
     SetGlobalMinimizeHandler(GlobalMinimize);
@@ -75,10 +77,11 @@ void __fastcall TProgressForm::UpdateControls()
     FData.Operation != foRename );
 
   CancelButton->Enabled = !FReadOnly;
-  DisconnectWhenCompleteCheck->Enabled =
+  OnceDoneOperationCombo->Enabled =
     !FReadOnly && (FData.Operation != foCalculateSize) &&
     (FData.Operation != foGetProperties) &&
     (FData.Operation != foCalculateChecksum);
+  OnceDoneOperationLabel->Enabled = OnceDoneOperationCombo->Enabled;
 
   bool TransferOperation =
     ((FData.Operation == foCopy) || (FData.Operation == foMove));
@@ -152,7 +155,6 @@ void __fastcall TProgressForm::UpdateControls()
     SpeedPanel->Visible = TransferOperation;
 
     ClientHeight = ClientHeight + Delta;
-    DisconnectWhenCompleteCheck->Top = DisconnectWhenCompleteCheck->Top + Delta;
 
     Caption = OperationName(FData.Operation);
 
@@ -223,7 +225,6 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   if (FileLabel->Caption.IsEmpty() && !AData.FileName.IsEmpty())
   {
     InstantUpdate = true;
-    FCPSLimit = AData.CPSLimit;
   }
 
   if (!FAsciiTransferChanged && FData.AsciiTransfer != AData.AsciiTransfer)
@@ -242,6 +243,8 @@ void __fastcall TProgressForm::SetProgressData(TFileOperationProgressType & ADat
   if (!FDataReceived)
   {
     FDataReceived = true;
+    // CPS limit is set set only once from TFileOperationProgressType::Start
+    FCPSLimit = AData.CPSLimit;
     SpeedCombo->Text = SetSpeedLimit(FCPSLimit);
     ShowAsModal(this, FShowAsModalStorage);
   }
@@ -351,14 +354,28 @@ void __fastcall TProgressForm::GlobalMinimize(TObject * /*Sender*/)
   MinimizeApp();
 }
 //---------------------------------------------------------------------------
-void __fastcall TProgressForm::SetDisconnectWhenComplete(bool value)
+void __fastcall TProgressForm::SetOnceDoneOperation(TOnceDoneOperation value)
 {
-  DisconnectWhenCompleteCheck->Checked = value;
-}
-//---------------------------------------------------------------------------
-bool __fastcall TProgressForm::GetDisconnectWhenComplete()
-{
-  return DisconnectWhenCompleteCheck->Checked;
+  int Index = 0;
+  switch (value)
+  {
+    case odoIdle:
+      Index = 0;
+      break;
+
+    case odoDisconnect:
+      Index = 1;
+      break;
+
+    case odoShutDown:
+      Index = 2;
+      break;
+
+    default:
+      assert(false);
+  }
+  OnceDoneOperationCombo->ItemIndex = Index;
+  OnceDoneOperationComboSelect(NULL);
 }
 //---------------------------------------------------------------------------
 bool __fastcall TProgressForm::GetAllowMinimize()
@@ -378,7 +395,7 @@ void __fastcall TProgressForm::SetReadOnly(bool value)
     FReadOnly = value;
     if (!value)
     {
-      DisconnectWhenCompleteCheck->Checked = false;
+      ResetOnceDoneOperation();
     }
     UpdateControls();
   }
@@ -422,5 +439,37 @@ void __fastcall TProgressForm::SpeedComboKeyPress(TObject * /*Sender*/,
     Key = '\0';
     ApplyCPSLimit();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::ResetOnceDoneOperation()
+{
+  OnceDoneOperationCombo->ItemIndex = 0;
+  OnceDoneOperationComboSelect(NULL);
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::OnceDoneOperationComboSelect(TObject * /*Sender*/)
+{
+  switch (OnceDoneOperationCombo->ItemIndex)
+  {
+    case 0:
+      FOnceDoneOperation = odoIdle;
+      break;
+
+    case 1:
+      FOnceDoneOperation = odoDisconnect;
+      break;
+
+    case 2:
+      FOnceDoneOperation = odoShutDown;
+      break;
+
+    default:
+      assert(false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TProgressForm::OnceDoneOperationComboCloseUp(TObject * /*Sender*/)
+{
+  CancelButton->SetFocus();
 }
 //---------------------------------------------------------------------------

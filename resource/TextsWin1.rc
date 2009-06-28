@@ -355,9 +355,11 @@ BEGIN
         EDITOR_AD_HOC, "Editor"
         FILE_INFO_FORMAT_EX, "%s (%s)"
         FILE_INFO_HIDDEN, "%d hidden"
-        FILE_INFO_FILTERED "%d filtered"
+        FILE_INFO_FILTERED, "%d filtered"
         FILTER_MASK_CAPTION, "Filter"
         PROPERTIES_UNKNOWN_TOKEN, "Current session allows changing ownership by UID only. It was not possible to resolve UID from account name \"%s\". Specify UID explicitly instead."
+        COPY_BACKGROUND, "Transfer on &background"
+        COPY_QUEUE, "%s (add to transfer queue)"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
         WINSCP_COPYRIGHT, "Copyright © 2000-2009 Martin Prikryl"

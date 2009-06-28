@@ -29,6 +29,7 @@ const TKex DefaultKexList[KEX_COUNT] =
 const char FSProtocolNames[FSPROTOCOL_COUNT][11] = { "SCP", "SFTP (SCP)", "SFTP", "", "", "FTP" };
 const int SshPortNumber = 22;
 const int FtpPortNumber = 21;
+const int FtpsImplicitPortNumber = 990;
 //---------------------------------------------------------------------
 TDateTime __fastcall SecToDateTime(int Sec)
 {
@@ -49,6 +50,7 @@ void __fastcall TSessionData::Default()
   PortNumber = SshPortNumber;
   UserName = "";
   Password = "";
+  Passwordless = false;
   PingInterval = 30;
   // when changing default, update load/save logic
   PingType = ptOff;
@@ -186,6 +188,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(PortNumber);
     DUPL(UserName);
     DUPL(Password);
+    DUPL(Passwordless);
     DUPL(PingInterval);
     DUPL(PingType);
     DUPL(Timeout);
@@ -323,6 +326,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
         FPassword = Storage->ReadString("Password", FPassword);
       }
     }
+    Passwordless = Storage->ReadBool("Passwordless", Passwordless);
     // Putty uses PingIntervalSecs
     int PingIntervalSecs = Storage->ReadInteger("PingIntervalSecs", -1);
     if (PingIntervalSecs < 0)
@@ -573,6 +577,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       Storage->DeleteValue("Password");
     }
     Storage->DeleteValue("PasswordPlain");
+    WRITE_DATA(Bool, Passwordless);
     WRITE_DATA_EX(Integer, "PingInterval", PingInterval / 60, );
     WRITE_DATA_EX(Integer, "PingIntervalSecs", PingInterval % 60, );
     Storage->DeleteValue("PingIntervalSec"); // obsolete
@@ -824,8 +829,10 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
   bool * AProtocolDefined)
 {
   bool ProtocolDefined = false;
+  bool PortNumberDefined = false;
   TFSProtocol AFSProtocol;
   int APortNumber;
+  TFtps AFtps = ftpsNone;
   if (Url.SubString(1, 4).LowerCase() == "scp:")
   {
     AFSProtocol = fsSCPonly;
@@ -843,8 +850,25 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
   else if (Url.SubString(1, 4).LowerCase() == "ftp:")
   {
     AFSProtocol = fsFTP;
+    Ftps = ftpsNone;
     APortNumber = FtpPortNumber;
     Url.Delete(1, 4);
+    ProtocolDefined = true;
+  }
+  else if (Url.SubString(1, 5).LowerCase() == "ftps:")
+  {
+    AFSProtocol = fsFTP;
+    AFtps = ftpsImplicit;
+    // adjust default port number to default Ftps mode
+    if (AFtps == ftpsImplicit)
+    {
+      APortNumber = FtpsImplicitPortNumber;
+    }
+    else
+    {
+      APortNumber = FtpPortNumber;
+    }
+    Url.Delete(1, 5);
     ProtocolDefined = true;
   }
 
@@ -932,14 +956,18 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
       if (!HostInfo.IsEmpty())
       {
         PortNumber = StrToIntDef(DecodeUrlChars(HostInfo), -1);
+        PortNumberDefined = true;
       }
       else if (ProtocolDefined)
       {
         PortNumber = APortNumber;
+        Ftps = AFtps;
       }
 
+      bool PasswordSeparator = (UserInfo.Pos(':') != 0);
       UserName = DecodeUrlChars(CutToChar(UserInfo, ':', false));
       Password = DecodeUrlChars(UserInfo);
+      Passwordless = Password.IsEmpty() && PasswordSeparator;
 
       ARemoteDirectory = Url.SubString(PSlash, Url.Length() - PSlash + 1);
     }
@@ -983,13 +1011,41 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
     {
       Timeout = StrToInt(Value);
     }
-    if (Options->FindSwitch("hostkey", Value))
+    if (Options->FindSwitch("hostkey", Value) ||
+        Options->FindSwitch("certificate", Value))
     {
       HostKey = Value;
     }
     if (Options->FindSwitch("passive", Value))
     {
       FtpPasvMode = (StrToIntDef(Value, 1) != 0);
+    }
+    if (Options->FindSwitch("implicit", Value))
+    {
+      bool Enabled = (StrToIntDef(Value, 1) != 0);
+      Ftps = Enabled ? ftpsImplicit : ftpsNone;
+      if (!PortNumberDefined && Enabled)
+      {
+        PortNumber = FtpsImplicitPortNumber;
+      }
+    }
+    if (Options->FindSwitch("explicitssl", Value))
+    {
+      bool Enabled = (StrToIntDef(Value, 1) != 0);
+      Ftps = Enabled ? ftpsExplicitSsl : ftpsNone;
+      if (!PortNumberDefined && Enabled)
+      {
+        PortNumber = FtpPortNumber;
+      }
+    }
+    if (Options->FindSwitch("explicittls", Value))
+    {
+      bool Enabled = (StrToIntDef(Value, 1) != 0);
+      Ftps = Enabled ? ftpsExplicitTls : ftpsNone;
+      if (!PortNumberDefined && Enabled)
+      {
+        PortNumber = FtpPortNumber;
+      }
     }
   }
 
@@ -1130,6 +1186,10 @@ void __fastcall TSessionData::SetUserName(AnsiString value)
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPassword(AnsiString value)
 {
+  if (!value.IsEmpty())
+  {
+    Passwordless = false;
+  }
   value = EncryptPassword(value, UserName+HostName);
   SET_SESSION_PROPERTY(Password);
 }
@@ -1137,6 +1197,11 @@ void __fastcall TSessionData::SetPassword(AnsiString value)
 AnsiString __fastcall TSessionData::GetPassword()
 {
   return DecryptPassword(FPassword, UserName+HostName);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetPasswordless(bool value)
+{
+  SET_SESSION_PROPERTY(Passwordless);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetPingInterval(int value)

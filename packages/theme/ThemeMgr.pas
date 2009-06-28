@@ -2899,17 +2899,17 @@ var
 
   //--------------- Local functions --------------------------------------------
 
-  procedure InvalidateStaticText(Control: TWinControl);
+  procedure InvalidateBuggyControls(Control: TWinControl);
 
   var
     I: Integer;
 
   begin
-    if Control is TCustomStaticText then
+    if (Control is TCustomStaticText) or (Control is TButtonControl) then
       Control.Invalidate;
     for I := 0 to Control.ControlCount - 1 do
       if Control.Controls[I] is TWinControl then
-        InvalidateStaticText(Control.Controls[I] as TWinControl);
+        InvalidateBuggyControls(Control.Controls[I] as TWinControl);
   end;
 
   //--------------- End local functions ----------------------------------------
@@ -2927,7 +2927,8 @@ begin
 
           // For no appearent reason does TCustomStaticText not correctly redraw when the accelerator underline
           // is enabled. So we have manually invalide all instances of TCustomStaticText.
-          InvalidateStaticText(Form);
+          // The same for TButtonControls on Windows Vista.
+          InvalidateBuggyControls(Form);
         end;
     end;
 end;
