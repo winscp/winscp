@@ -43,7 +43,10 @@ static void logwrite(struct LogContext *ctx, void *data, int len)
 	bufchain_add(&ctx->queue, data, len);
     } else if (ctx->state == L_OPEN) {
 	assert(ctx->lgfp);
-	fwrite(data, 1, len, ctx->lgfp);
+	if (fwrite(data, 1, len, ctx->lgfp) < len) {
+	    logfclose(ctx);
+	    ctx->state = L_ERROR;
+	}
     }				       /* else L_ERROR, so ignore the write */
 }
 

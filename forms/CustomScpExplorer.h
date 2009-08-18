@@ -16,6 +16,7 @@
 #include <ToolWin.hpp>
 
 #include <WinInterface.h>
+#include <WinConfiguration.h>
 #include <Terminal.h>
 #include <Queue.h>
 #include "QueueController.h"
@@ -47,15 +48,6 @@ enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 }
 enum TExecuteFileBy { efShell = 1, efInternalEditor = 2, efExternalEditor = 3, efDefaultEditor = 100 };
 enum TPanelExport { pePath, peFileList, peFullFileList, peUrl };
 enum TPanelExportDestination { pedClipboard, pedCommandLine };
-//---------------------------------------------------------------------------
-struct TCustomCommandParam
-{
-  TCustomCommandParam();
-  AnsiString Name;
-  AnsiString Command;
-  int Params;
-  bool Both;
-};
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm : public TForm
 {
@@ -209,7 +201,7 @@ private:
   int FTransferListHoverIndex;
   TColor FSessionColor;
   TTrayIcon * FTrayIcon;
-  TCustomCommandParam FLastCustomCommand;
+  TCustomCommandType FLastCustomCommand;
   TFileMasks FDirViewMatchMask;
   TTBXPopupMenu * FCustomCommandMenu;
   TStrings * FCustomCommandLocalFileList;
@@ -231,8 +223,7 @@ private:
   void __fastcall TerminalCaptureLog(const AnsiString & AddedLine, bool StdError);
   void __fastcall HistoryItemClick(System::TObject* Sender);
   void __fastcall UpdateHistoryMenu(TOperationSide Side, bool Back);
-  void __fastcall AdHocCustomCommandValidate(const AnsiString & Command,
-    int Params);
+  void __fastcall AdHocCustomCommandValidate(const TCustomCommandType & Command);
   void __fastcall SetDockAllowDrag(bool value);
   void __fastcall QueueSplitterDblClick(TObject * Sender);
   void __fastcall ApplicationMinimize(TObject * Sender);
@@ -285,8 +276,8 @@ protected:
   virtual void __fastcall ComponentShowing(Word Component, bool value);
   virtual void __fastcall FixControlsPlacement();
   void __fastcall SetProperties(TOperationSide Side, TStrings * FileList);
-  void __fastcall CustomCommand(TStrings * FileList, AnsiString Name,
-    AnsiString Command, int Params, TStrings * ALocalFileList);
+  void __fastcall CustomCommand(TStrings * FileList,
+    const TCustomCommandType & Command, TStrings * ALocalFileList);
   virtual void __fastcall TerminalChanging();
   virtual void __fastcall TerminalChanged();
   virtual void __fastcall QueueChanged();
@@ -373,14 +364,20 @@ protected:
     TEditedFileData & Data, TObject * Token, void * Arg);
   void __fastcall CustomExecuteFile(TOperationSide Side,
     TExecuteFileBy ExecuteFileBy, AnsiString FileName, AnsiString OriginalFileName,
-    const TEditorData * ExternalEditor, AnsiString LocalRootDirectory);
+    const TEditorData * ExternalEditor, AnsiString LocalRootDirectory,
+    AnsiString RemoteDirectory);
+  void __fastcall ExecuteFile(TOperationSide Side,
+    TExecuteFileBy ExecuteFileBy, const TEditorData * ExternalEditor,
+    AnsiString FullFileName, TObject * Object,
+    const TFileMasks::TParams & MaskParams);
   bool __fastcall RemoteExecuteForceText(TExecuteFileBy ExecuteFileBy,
     const TEditorData * ExternalEditor);
   void __fastcall ExecuteFileNormalize(TExecuteFileBy & ExecuteFileBy,
     const TEditorData *& ExternalEditor, const AnsiString & FileName,
     bool Local, const TFileMasks::TParams & MaskParams);
-  AnsiString __fastcall TemporaryDirectoryForRemoteFiles(TCopyParamType CopyParam,
-    AnsiString & RootDirectory);
+  void __fastcall TemporaryDirectoryForRemoteFiles(
+    AnsiString RemoteDirectory, TCopyParamType CopyParam,
+    AnsiString & Result, AnsiString & RootDirectory);
   void __fastcall TemporarilyDownloadFiles(TStrings * FileList, bool ForceText,
     AnsiString & RootTempDir, AnsiString & TempDir, bool AllFiles, bool GetTargetNames,
     bool AutoOperation);
@@ -396,7 +393,6 @@ protected:
   void __fastcall StartUpdates();
   void __fastcall TransferPresetAutoSelect();
   virtual void __fastcall GetTransferPresetAutoSelectData(TCopyParamRuleData & Data);
-  int __fastcall CustomCommandState(const AnsiString & Command, int Params, bool OnFocused);
   inline bool __fastcall CustomCommandRemoteAllowed();
   void __fastcall CustomCommandMenu(TObject * Sender, const TPoint & MousePos,
     TStrings * LocalFileList, TStrings * RemoteFileList);
@@ -434,6 +430,7 @@ protected:
     TTBXComboBoxItem * RemotePathComboBox, bool TextOnly);
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor);
+  virtual bool __fastcall OpenBookmark(AnsiString Local, AnsiString Remote);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -450,12 +447,12 @@ public:
   virtual TCustomDirView * __fastcall DirView(TOperationSide Side);
   virtual void __fastcall ChangePath(TOperationSide Side) = 0;
   virtual void __fastcall StoreParams();
-  int __fastcall CustomCommandState(const AnsiString & Description, bool OnFocused);
-  int __fastcall BothCustomCommandState(const AnsiString & Description);
+  int __fastcall CustomCommandState(const TCustomCommandType & Command, bool OnFocused);
+  int __fastcall BothCustomCommandState(const TCustomCommandType & Command);
   bool __fastcall GetLastCustomCommand(bool OnFocused,
-    TCustomCommandParam & CustomCommand, int & State);
+    TCustomCommandType & CustomCommand, int & State);
   void __fastcall LastCustomCommand(bool OnFocused);
-  void __fastcall BothCustomCommand(AnsiString Name, AnsiString Command, int Params);
+  void __fastcall BothCustomCommand(const TCustomCommandType & Command);
   void __fastcall LockWindow();
   void __fastcall UnlockWindow();
 

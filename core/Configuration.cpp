@@ -1013,3 +1013,14 @@ void __fastcall TConfiguration::SetShowFtpWelcomeMessage(bool value)
 {
   SET_CONFIG_PROPERTY(ShowFtpWelcomeMessage);
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+void __fastcall TShortCuts::Add(TShortCut ShortCut)
+{
+  FShortCuts.insert(ShortCut);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TShortCuts::Has(TShortCut ShortCut) const
+{
+  return (FShortCuts.count(ShortCut) != 0);
+}

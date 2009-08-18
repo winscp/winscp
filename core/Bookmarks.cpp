@@ -4,6 +4,7 @@
 #include <Common.h>
 #include "NamedObjs.h"
 #include "Bookmarks.h"
+#include "Configuration.h"
 #include "HierarchicalStorage.h"
 #include "TextsCore.h"
 //---------------------------------------------------------------------------
@@ -33,11 +34,11 @@ void __fastcall TBookmarks::Clear()
   FBookmarkLists->Clear();
 }
 //---------------------------------------------------------------------------
-AnsiString TBookmarks::Keys[] = { "Local", "Remote", "Options" };
+AnsiString TBookmarks::Keys[] = { "Local", "Remote", "ShortCuts", "Options" };
 //---------------------------------------------------------------------------
 void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
 {
-  for (int i = 0; i <= 2; i++)
+  for (int i = 0; i <= 3; i++)
   {
     if (Storage->OpenSubKey(Keys[i], false))
     {
@@ -56,9 +57,9 @@ void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
               BookmarkList = new TBookmarkList();
               FBookmarkLists->AddObject(Key, BookmarkList);
             }
-            if (i < 2)
+            if (i < 3)
             {
-              LoadLevel(Storage, "", (i == 0), BookmarkList);
+              LoadLevel(Storage, "", i, BookmarkList);
             }
             else
             {
@@ -80,20 +81,32 @@ void __fastcall TBookmarks::Load(THierarchicalStorage * Storage)
 }
 //---------------------------------------------------------------------------
 void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const AnsiString Key,
-  bool Local, TBookmarkList * BookmarkList)
+  int Index, TBookmarkList * BookmarkList)
 {
   TStrings * Names = new TStringList();
   try
   {
     Storage->GetValueNames(Names);
-    AnsiString Name, Directory;
+    AnsiString Name;
+    AnsiString Directory;
+    TShortCut ShortCut;
     for (int i = 0; i < Names->Count; i++)
     {
       Name = Names->Strings[i];
-      Directory = Storage->ReadString(Name, "");
+      bool IsDirectory = (Index == 0) || (Index == 1);
+      if (IsDirectory)
+      {
+        Directory = Storage->ReadString(Name, "");
+      }
+      else
+      {
+        Directory = ""; // use only in cased of malformed config
+        ShortCut = (TShortCut)Storage->ReadInteger(Name, 0);
+      }
       TBookmark * Bookmark;
       if (IsNumber(Name))
       {
+        assert(IsDirectory); // unless malformed
         Name = Directory;
       }
       if (!Name.IsEmpty())
@@ -107,13 +120,19 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
           Bookmark->Node = Key;
           Bookmark->Name = Name;
         }
-        if (Local)
+        switch (Index)
         {
-          Bookmark->Local = Directory;
-        }
-        else
-        {
-          Bookmark->Remote = Directory;
+          case 0:
+            Bookmark->Local = Directory;
+            break;
+
+          case 1:
+            Bookmark->Remote = Directory;
+            break;
+
+          case 2:
+            Bookmark->ShortCut = ShortCut;
+            break;
         }
         if (New)
         {
@@ -128,7 +147,7 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
       Name = Names->Strings[i];
       if (Storage->OpenSubKey(Name, false))
       {
-        LoadLevel(Storage, Key + (Key.IsEmpty() ? "" : "/") + Name, Local, BookmarkList);
+        LoadLevel(Storage, Key + (Key.IsEmpty() ? "" : "/") + Name, Index, BookmarkList);
         Storage->CloseSubKey();
       }
     }
@@ -141,7 +160,7 @@ void __fastcall TBookmarks::LoadLevel(THierarchicalStorage * Storage, const Ansi
 //---------------------------------------------------------------------------
 void __fastcall TBookmarks::Save(THierarchicalStorage * Storage, bool All)
 {
-  for (int i = 0; i <= 2; i++)
+  for (int i = 0; i <= 3; i++)
   {
     if (Storage->OpenSubKey(Keys[i], true))
     {
@@ -155,23 +174,39 @@ void __fastcall TBookmarks::Save(THierarchicalStorage * Storage, bool All)
           Storage->RecursiveDeleteSubKey(Key);
           if (Storage->OpenSubKey(Key, true))
           {
-            if (i < 2)
+            if (i < 3)
             {
               for (int IndexB = 0; IndexB < BookmarkList->Count; IndexB++)
               {
                 TBookmark * Bookmark = BookmarkList->Bookmarks[IndexB];
-                AnsiString Directory = (i == 0) ? Bookmark->Local : Bookmark->Remote;
-                if (!Bookmark->Node.IsEmpty())
+                // avoid creating empty subfolder if there's no shortcut
+                if ((i == 0) || (i == 1) ||
+                    ((i == 2) && (Bookmark->ShortCut != 0)))
                 {
-                  if (Storage->OpenSubKey(Bookmark->Node, true))
+                  bool HasNode = !Bookmark->Node.IsEmpty();
+                  if (!HasNode || Storage->OpenSubKey(Bookmark->Node, true))
                   {
-                    Storage->WriteString(Bookmark->Name, Directory);
-                    Storage->CloseSubKey();
+                    switch (i)
+                    {
+                      case 0:
+                        Storage->WriteString(Bookmark->Name, Bookmark->Local);
+                        break;
+
+                      case 1:
+                        Storage->WriteString(Bookmark->Name, Bookmark->Remote);
+                        break;
+
+                      case 2:
+                        assert(Bookmark->ShortCut != 0);
+                        Storage->WriteInteger(Bookmark->Name, Bookmark->ShortCut);
+                        break;
+                    }
+
+                    if (HasNode)
+                    {
+                      Storage->CloseSubKey();
+                    }
                   }
-                }
-                else
-                {
-                  Storage->WriteString(Bookmark->Name, Directory);
                 }
               }
             }
@@ -389,6 +424,18 @@ TBookmark * __fastcall TBookmarkList::FindByName(const AnsiString Node, const An
   return Bookmark;
 }
 //---------------------------------------------------------------------------
+TBookmark * __fastcall TBookmarkList::FindByShortCut(TShortCut ShortCut)
+{
+  for (int Index = 0; Index < FBookmarks->Count; Index++)
+  {
+    if (Bookmarks[Index]->ShortCut == ShortCut)
+    {
+      return Bookmarks[Index];
+    }
+  }
+  return NULL;
+}
+//---------------------------------------------------------------------------
 int __fastcall TBookmarkList::GetCount()
 {
   return FBookmarks->Count;
@@ -423,6 +470,18 @@ void __fastcall TBookmarkList::SetNodeOpened(AnsiString Index, bool value)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TBookmarkList::ShortCuts(TShortCuts & ShortCuts)
+{
+  for (int Index = 0; Index < Count; Index++)
+  {
+    TBookmark * Bookmark = Bookmarks[Index];
+    if (Bookmark->ShortCut != 0)
+    {
+      ShortCuts.Add(Bookmark->ShortCut);
+    }
+  }
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 __fastcall TBookmark::TBookmark()
 {
@@ -439,6 +498,7 @@ void __fastcall TBookmark::Assign(TPersistent * Source)
     Local = SourceBookmark->Local;
     Remote = SourceBookmark->Remote;
     Node = SourceBookmark->Node;
+    ShortCut = SourceBookmark->ShortCut;
   }
   else
   {
@@ -490,6 +550,15 @@ void __fastcall TBookmark::SetNode(const AnsiString value)
     int OldIndex = FOwner ? FOwner->IndexOf(this) : -1;
     FNode = value;
     Modify(OldIndex);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TBookmark::SetShortCut(TShortCut value)
+{
+  if (ShortCut != value)
+  {
+    FShortCut = value;
+    Modify(-1);
   }
 }
 //---------------------------------------------------------------------------

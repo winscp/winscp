@@ -40,6 +40,9 @@ __published:
   TLabel *Label1;
   TEdit *SpaceAvailablePathEdit;
   TButton *SpaceAvailableButton;
+  TGroupBox *CertificateGroup;
+  TEdit *CertificateFingerprintEdit;
+  TButton *CertificateViewButton;
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall ClipboardButtonClick(TObject *Sender);
   void __fastcall CopyClick(TObject *Sender);
@@ -51,6 +54,7 @@ __published:
   void __fastcall SpaceAvailablePathEditExit(TObject *Sender);
   void __fastcall ControlContextPopup(TObject *Sender, TPoint &MousePos,
           bool &Handled);
+  void __fastcall CertificateViewButtonClick(TObject *Sender);
 public:
   virtual __fastcall TFileSystemInfoDialog(TComponent * AOwner,
     TGetSpaceAvailable OnGetSpaceAvailable);

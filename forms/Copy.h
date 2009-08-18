@@ -23,7 +23,7 @@ __published:
   TButton *CopyButton;
   TButton *CancelButton;
   TButton *LocalDirectoryBrowseButton;
-  TCheckBox *QueueCheck;
+  TCheckBox *QueueCheck2;
   TCheckBox *QueueIndividuallyCheck;
   TButton *HelpButton;
   TCheckBox *NewerOnlyCheck;

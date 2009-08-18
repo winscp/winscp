@@ -120,6 +120,62 @@ void __fastcall SessionNameValidate(const AnsiString & Text,
     Abort();
   }
 }
+//---------------------------------------------------------------------------
+struct TShortCutData
+{
+  TShortCut ShortCut;
+  const TShortCuts * ShortCuts;
+};
+//---------------------------------------------------------------------------
+TShortCutData & __fastcall ShortCutData(const TDialogControls & Controls)
+{
+  return *reinterpret_cast<TShortCutData *>(Controls.Token);
+}
+//---------------------------------------------------------------------------
+void __fastcall ShortCutDialogInit(void *, const TDialogControls & Controls)
+{
+  InitializeShortCutCombo(Controls.Combo, *ShortCutData(Controls).ShortCuts);
+}
+//---------------------------------------------------------------------------
+void __fastcall ShortCutDialogLoad(void *, const TDialogData & /*Data*/,
+  TDialogControls & Controls)
+{
+  SetShortCutCombo(Controls.Combo, ShortCutData(Controls).ShortCut);
+}
+//---------------------------------------------------------------------------
+void __fastcall ShortCutDialogSave(void *, const TDialogControls & Controls,
+  TDialogData & /*Data*/)
+{
+  ShortCutData(Controls).ShortCut = GetShortCutCombo(Controls.Combo);
+}
+//---------------------------------------------------------------------------
+bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
+  const TShortCuts & ShortCuts, AnsiString HelpKeyword)
+{
+  TShortCutData Token;
+  Token.ShortCut = ShortCut;
+  Token.ShortCuts = &ShortCuts;
+
+  TDialogParams Params;
+  Params.Token = &Token;
+  Params.Caption = LoadStr(SHORTCUT_CAPTION);
+  Params.HelpKeyword = HelpKeyword;
+  Params.ComboLabel = LoadStr(SHORTCUT_LABEL);
+  MakeMethod(NULL, ShortCutDialogInit, Params.OnInit);
+  MakeMethod(NULL, ShortCutDialogLoad, Params.OnLoad);
+  MakeMethod(NULL, ShortCutDialogSave, Params.OnSave);
+
+  TDialogData Data;
+
+  bool Result = DoCustomDialog(Params, Data);
+
+  if (Result)
+  {
+    ShortCut = Token.ShortCut;
+  }
+
+  return Result;
+}
 //---------------------------------------------------------------------
 __fastcall TCustomDialog::TCustomDialog(TComponent * AOwner, const TDialogParams & Params)
   : TForm(AOwner),
@@ -135,7 +191,10 @@ __fastcall TCustomDialog::TCustomDialog(TComponent * AOwner, const TDialogParams
   Caption = Params.Caption;
   HelpKeyword = Params.HelpKeyword;
   ComboLabel->Caption = Params.ComboLabel;
-  Combo->Items = Params.ComboItems;
+  if (Params.ComboItems != NULL)
+  {
+    Combo->Items = Params.ComboItems;
+  }
   Check->Caption = Params.CheckLabel;
   if (Params.CheckLabel.IsEmpty())
   {
@@ -158,6 +217,11 @@ __fastcall TCustomDialog::TCustomDialog(TComponent * AOwner, const TDialogParams
   }
   BorderIcons = BI;
 
+  if (FParams.OnInit != NULL)
+  {
+    FParams.OnInit(FControls);
+  }
+
   DoChange();
 }
 //---------------------------------------------------------------------
@@ -165,6 +229,10 @@ bool __fastcall TCustomDialog::Execute(TDialogData & Data)
 {
   Combo->Text = Data.Combo;
   Check->Checked = Data.Check;
+  if (FParams.OnLoad != NULL)
+  {
+    FParams.OnLoad(Data, FControls);
+  }
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
@@ -177,6 +245,10 @@ void __fastcall TCustomDialog::SaveData(TDialogData & Data)
 {
   Data.Combo = Combo->Text;
   Data.Check = Check->Checked;
+  if (FParams.OnSave != NULL)
+  {
+    FParams.OnSave(FControls, Data);
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TCustomDialog::DoChange()

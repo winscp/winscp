@@ -414,7 +414,7 @@ void __fastcall TSecureShell::PuttyLogEvent(const AnsiString & Str)
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
   AnsiString AName, bool /*NameRequired*/,
-  AnsiString Instructions, bool /*InstructionsRequired*/,
+  AnsiString Instructions, bool InstructionsRequired,
   TStrings * Prompts, TStrings * Results)
 {
   // there can be zero prompts!
@@ -566,6 +566,11 @@ bool __fastcall TSecureShell::PromptUser(bool /*ToServer*/,
       Result = true;
       Results->Strings[0] = FSessionData->Password;
       FStoredPasswordTriedForKI = true;
+    }
+    else if (Instructions.IsEmpty() && !InstructionsRequired && (Prompts->Count == 0))
+    {
+      LogEvent("Ignoring empty SSH server authentication request");
+      Result = true;
     }
   }
   else if (PromptKind == pkPassword)

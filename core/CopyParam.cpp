@@ -288,8 +288,10 @@ AnsiString __fastcall TCopyParamType::ValidLocalFileName(AnsiString FileName) co
       }
     }
 
-    // Windows trim trailing space, hence we must encode it to preserve it
-    if (!FileName.IsEmpty() && (FileName[FileName.Length()] == ' '))
+    // Windows trim trailing space or dot, hence we must encode it to preserve it
+    if (!FileName.IsEmpty() &&
+        ((FileName[FileName.Length()] == ' ')/* ||
+         (FileName[FileName.Length()] == '.')*/))
     {
       ReplaceChar(FileName, FileName.c_str() + FileName.Length() - 1);
     }
@@ -324,7 +326,7 @@ AnsiString __fastcall TCopyParamType::RestoreChars(AnsiString FileName) const
         char Char = HexToChar(Hex);
         if ((Char != '\0') &&
             ((FTokenizibleChars.Pos(Char) > 0) ||
-             ((Char == ' ') && (Index == FileName.Length() - 2))))
+             (((Char == ' ') || (Char == '.')) && (Index == FileName.Length() - 2))))
         {
           FileName[Index] = Char;
           FileName.Delete(Index + 1, 2);

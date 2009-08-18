@@ -712,7 +712,7 @@ int x11_send(Socket s, char *data, int len)
 	    int msglen, msgsize;
 	    unsigned char *reply;
 
-	    message = dupprintf("PuTTY X11 proxy: %s", err);
+	    message = dupprintf("%s X11 proxy: %s", appname, err);
 	    msglen = strlen(message);
 	    reply = snewn(8 + msglen+1 + 4, unsigned char); /* include zero */
 	    msgsize = (msglen + 3) & ~3;

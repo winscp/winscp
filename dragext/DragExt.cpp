@@ -188,56 +188,61 @@ DllMain(HINSTANCE HInstance, DWORD Reason, LPVOID Reserved)
   if (Reason == DLL_PROCESS_ATTACH)
   {
     GInstance = HInstance;
-  }
 
-  if (GRefThisDll == 0)
-  {
-    GLogMutex = CreateMutex(NULL, false, "WinSCPDragExtLogMutex");
-
-    for (int Root = 0; Root <= 1; Root++)
+    if (GRefThisDll == 0)
     {
-      HKEY Key;
-      if (RegOpenKeyEx(Root == 0 ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER,
-            DRAG_EXT_REG_KEY, 0,
-            STANDARD_RIGHTS_READ | KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS,
-            &Key) == ERROR_SUCCESS)
+      GLogMutex = CreateMutex(NULL, false, "WinSCPDragExtLogMutex");
+
+      for (int Root = 0; Root <= 1; Root++)
       {
-        unsigned long Type;
-        unsigned long Value;
-        unsigned long Size;
-        char Buf[MAX_PATH];
-
-        Size = sizeof(Value);
-        if ((RegQueryValueEx(Key, "Enable", NULL, &Type,
-               reinterpret_cast<unsigned char*>(&Value), &Size) == ERROR_SUCCESS) &&
-            (Type == REG_DWORD))
+        HKEY Key;
+        if (RegOpenKeyEx(Root == 0 ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER,
+              DRAG_EXT_REG_KEY, 0,
+              STANDARD_RIGHTS_READ | KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS,
+              &Key) == ERROR_SUCCESS)
         {
-          GEnabled = (Value != 0);
-        }
+          unsigned long Type;
+          unsigned long Value;
+          unsigned long Size;
+          char Buf[MAX_PATH];
 
-        Size = sizeof(Buf);
-        if ((RegQueryValueEx(Key, "LogFile", NULL, &Type,
-               reinterpret_cast<unsigned char*>(&Buf), &Size) == ERROR_SUCCESS) &&
-            (Type == REG_SZ))
-        {
-          strncpy(GLogFile, Buf, sizeof(GLogFile));
-          GLogFile[sizeof(GLogFile) - 1] = '\0';
-          GLogOn = true;
-        }
+          Size = sizeof(Value);
+          if ((RegQueryValueEx(Key, "Enable", NULL, &Type,
+                 reinterpret_cast<unsigned char*>(&Value), &Size) == ERROR_SUCCESS) &&
+              (Type == REG_DWORD))
+          {
+            GEnabled = (Value != 0);
+          }
 
-        RegCloseKey(Key);
+          Size = sizeof(Buf);
+          if ((RegQueryValueEx(Key, "LogFile", NULL, &Type,
+                 reinterpret_cast<unsigned char*>(&Buf), &Size) == ERROR_SUCCESS) &&
+              (Type == REG_SZ))
+          {
+            strncpy(GLogFile, Buf, sizeof(GLogFile));
+            GLogFile[sizeof(GLogFile) - 1] = '\0';
+            GLogOn = true;
+          }
+
+          RegCloseKey(Key);
+        }
       }
+      DEBUG("DllMain loaded settings");
+      DEBUG(GEnabled ? "DllMain enabled" : "DllMain disabled");
+      LogVersion(HInstance);
     }
-    DEBUG("DllMain loaded settings");
-    DEBUG(GEnabled ? "DllMain enabled" : "DllMain disabled");
-    LogVersion(HInstance);
-  }
-  else
-  {
-    DEBUG("DllMain settings already loaded");
-  }
+    else
+    {
+      DEBUG("DllMain settings already loaded");
+    }
 
-  DEBUG("DllMain leave");
+    DEBUG("DllMain attach leave");
+  }
+  else if (Reason == DLL_PROCESS_DETACH)
+  {
+    DEBUG("DllMain detach enter");
+    CloseHandle(GLogMutex);
+  }
 
   return 1;   // ok
 }

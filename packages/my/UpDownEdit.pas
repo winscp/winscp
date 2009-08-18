@@ -11,6 +11,11 @@ uses
 type
   TValueType = (vtInt, vtFloat, vtHex);
 
+  TUpDownEditGetValue = procedure(Sender: TObject; Text: string;
+    var Value: Extended; var Handled: Boolean) of object;
+  TUpDownEditSetValue = procedure(Sender: TObject; Value: Extended;
+    var Text: string; var Handled: Boolean) of object;
+
   TUpDownEdit = class(TCustomEdit)
   private
     FAlignment: TAlignment;
@@ -25,6 +30,8 @@ type
     FOnTopClick: TNotifyEvent;
     FOnBottomClick: TNotifyEvent;
     FUpDown: TCustomUpDown;
+    FOnGetValue: TUpDownEditGetValue;
+    FOnSetValue: TUpDownEditSetValue;
     procedure UpDownClick(Sender: TObject; Button: TUDBtnType);
     function GetMinHeight: Integer;
     procedure GetTextHeight(var SysHeight, Height: Integer);
@@ -108,6 +115,8 @@ type
     property Visible;
     property OnBottomClick: TNotifyEvent read FOnBottomClick write FOnBottomClick;
     property OnTopClick: TNotifyEvent read FOnTopClick write FOnTopClick;
+    property OnGetValue: TUpDownEditGetValue read FOnGetValue write FOnGetValue;
+    property OnSetValue: TUpDownEditSetValue read FOnSetValue write FOnSetValue;
     property OnChange;
     property OnClick;
     property OnDblClick;
@@ -355,6 +364,7 @@ procedure TUpDownEdit.CreateWnd;
 begin
   inherited CreateWnd;
   SetEditRect;
+  SetValue(Value);
 end;
 
 procedure TUpDownEdit.SetEditRect;
@@ -431,7 +441,8 @@ begin
     finally
       FChanging := False;
     end;
-    if CompareText(inherited Text, OldText) <> 0 then begin
+    if CompareText(inherited Text, OldText) <> 0 then
+    begin
       Modified := True;
       Change;
     end;
@@ -452,7 +463,8 @@ begin
     finally
       FChanging := False;
     end;
-    if CompareText(inherited Text, OldText) <> 0 then begin
+    if CompareText(inherited Text, OldText) <> 0 then
+    begin
       Modified := True;
       Change;
     end;
@@ -506,7 +518,7 @@ end;
 procedure TUpDownEdit.CMExit(var Message: TCMExit);
 begin
   inherited;
-  if CheckValue(Value) <> Value then SetValue(Value);
+  SetValue(Value);
 end;
 
 procedure TUpDownEdit.CMEnter(var Message: TMessage);
@@ -516,25 +528,49 @@ begin
 end;
 
 function TUpDownEdit.GetValue: Extended;
+var
+  Handled: Boolean;
 begin
-  try
-    if ValueType = vtFloat then Result := StrToFloat(Text)
-    else if ValueType = vtHex then Result := StrToInt('$' + Text)
-    else Result := StrToInt(Text);
-  except
-    if ValueType = vtFloat then Result := FMinValue
-    else Result := Trunc(FMinValue);
+  Handled := False;
+  if Assigned(FOnGetValue) then FOnGetValue(Self, Text, Result, Handled);
+
+  if not Handled then
+  begin
+    try
+      if ValueType = vtFloat then Result := StrToFloat(Text)
+      else if ValueType = vtHex then Result := StrToInt('$' + Text)
+      else Result := StrToInt(Text);
+    except
+      if ValueType = vtFloat then Result := FMinValue
+      else Result := Trunc(FMinValue);
+    end;
   end;
 end;
 
 procedure TUpDownEdit.SetValue(NewValue: Extended);
+var
+  Handled: Boolean;
+  AText: string;
 begin
-  if ValueType = vtFloat then
-    Text := FloatToStrF(CheckValue(NewValue), ffFixed, 15, FDecimal)
-  else if ValueType = vtHex then
-    Text := IntToHex(Round(CheckValue(NewValue)), 1)
-  else
-    Text := IntToStr(Round(CheckValue(NewValue)));
+  NewValue := CheckValue(NewValue);
+
+  Handled := False;
+  if Assigned(FOnSetValue) then
+  begin
+    AText := Text;
+    FOnSetValue(Self, NewValue, AText, Handled);
+    if Handled then Text := AText;
+  end;
+
+  if not Handled then
+  begin
+    if ValueType = vtFloat then
+      Text := FloatToStrF(NewValue, ffFixed, 15, FDecimal)
+    else if ValueType = vtHex then
+      Text := IntToHex(Round(NewValue), 1)
+    else
+      Text := IntToStr(Round(NewValue));
+  end;
 end;
 
 function TUpDownEdit.GetAsInteger: Longint;

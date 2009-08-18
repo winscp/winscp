@@ -109,6 +109,40 @@ object FileSystemInfoDialog: TFileSystemInfoDialog
         ViewStyle = vsReport
         OnContextPopup = ControlContextPopup
       end
+      object CertificateGroup: TGroupBox
+        Left = 6
+        Top = 218
+        Width = 351
+        Height = 72
+        Anchors = [akLeft, akRight, akBottom]
+        Caption = 'Certificate fingerprint'
+        TabOrder = 2
+        DesignSize = (
+          351
+          72)
+        object CertificateFingerprintEdit: TEdit
+          Left = 10
+          Top = 18
+          Width = 334
+          Height = 17
+          TabStop = False
+          Anchors = [akLeft, akTop, akRight]
+          BorderStyle = bsNone
+          Color = clBtnFace
+          ReadOnly = True
+          TabOrder = 0
+          Text = 'CertificateFingerprintEdit'
+        end
+        object CertificateViewButton: TButton
+          Left = 10
+          Top = 37
+          Width = 121
+          Height = 25
+          Caption = '&Full certificate'
+          TabOrder = 1
+          OnClick = CertificateViewButtonClick
+        end
+      end
     end
     object CapabilitiesSheet: TTabSheet
       Caption = 'Capabilities'

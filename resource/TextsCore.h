@@ -7,7 +7,7 @@
 
 #define SCRIPT_HELP_HELP        4
 #define SCRIPT_EXIT_HELP        5
-#define SCRIPT_OPEN_HELP2       6
+#define SCRIPT_OPEN_HELP3       6
 #define SCRIPT_CLOSE_HELP       7
 #define SCRIPT_SESSION_HELP     8
 #define SCRIPT_PWD_HELP         9
@@ -79,7 +79,6 @@
 #define UNSET_NATIONAL_ERROR    149
 #define FIRST_LINE_EXPECTED     150
 #define CLEANUP_INIFILE_ERROR   151
-#define ATTEMPT_TO_WRITE_TO_PARENT_DIR  152
 #define AUTHENTICATION_LOG      153
 #define AUTHENTICATION_FAILED   154
 #define NOT_CONNECTED           155
@@ -213,6 +212,7 @@
 #define CERT_OK                 287
 #define MASK_ERROR              288
 #define FTP_CANNOT_OPEN_ACTIVE_CONNECTION 289
+#define DELETE_LOCAL_FILE_ERROR 290
 
 #define CORE_CONFIRMATION_STRINGS 300
 #define CONFIRM_PROLONG_TIMEOUT3 301
@@ -253,9 +253,10 @@
 #define TUNNEL_INSTRUCTION      343
 #define RENAME_TITLE            344
 #define RENAME_PROMPT2          345
-#define VERIFY_CERT_PROMPT      346
+#define VERIFY_CERT_PROMPT2     346
 #define VERIFY_CERT_CONTACT     347
 #define VERIFY_CERT_CONTACT_LIST 348
+#define CERT_TEXT               349
 
 #define CORE_INFORMATION_STRINGS 400
 #define YES_STR                 401

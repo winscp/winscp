@@ -33,6 +33,10 @@ namespace Updownedit
 enum TValueType { vtInt, vtFloat, vtHex };
 #pragma option pop
 
+typedef void __fastcall (__closure *TUpDownEditGetValue)(System::TObject* Sender, AnsiString Text, Extended &Value, bool &Handled);
+
+typedef void __fastcall (__closure *TUpDownEditSetValue)(System::TObject* Sender, Extended Value, AnsiString &Text, bool &Handled);
+
 class DELPHICLASS TUpDownEdit;
 class PASCALIMPLEMENTATION TUpDownEdit : public Stdctrls::TCustomEdit 
 {
@@ -51,6 +55,8 @@ private:
 	Classes::TNotifyEvent FOnTopClick;
 	Classes::TNotifyEvent FOnBottomClick;
 	Comctrls::TCustomUpDown* FUpDown;
+	TUpDownEditGetValue FOnGetValue;
+	TUpDownEditSetValue FOnSetValue;
 	void __fastcall UpDownClick(System::TObject* Sender, Comctrls::TUDBtnType Button);
 	int __fastcall GetMinHeight(void);
 	void __fastcall GetTextHeight(int &SysHeight, int &Height);
@@ -136,6 +142,8 @@ __published:
 	__property Visible  = {default=1};
 	__property Classes::TNotifyEvent OnBottomClick = {read=FOnBottomClick, write=FOnBottomClick};
 	__property Classes::TNotifyEvent OnTopClick = {read=FOnTopClick, write=FOnTopClick};
+	__property TUpDownEditGetValue OnGetValue = {read=FOnGetValue, write=FOnGetValue};
+	__property TUpDownEditSetValue OnSetValue = {read=FOnSetValue, write=FOnSetValue};
 	__property OnChange ;
 	__property OnClick ;
 	__property OnDblClick ;

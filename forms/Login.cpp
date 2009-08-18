@@ -364,7 +364,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     {
       EOLTypeCombo->ItemIndex = 1;
     }
-    switch (aSessionData->Utf)
+    switch (aSessionData->NotUtf)
     {
       case asOn:
         UtfCombo->ItemIndex = 1;
@@ -414,6 +414,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     // FTP tab
     PostLoginCommandsMemo->Lines->Text = aSessionData->PostLoginCommands;
     ComboAutoSwitchLoad(FtpListAllCombo, aSessionData->FtpListAll);
+    FtpForcePasvIpCheck->Checked = aSessionData->FtpForcePasvIp;
 
     // Authentication tab
     SshNoUserAuthCheck->Checked = aSessionData->SshNoUserAuth;
@@ -539,7 +540,18 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
 
     // Proxy tab
     SshProxyMethodCombo->ItemIndex = aSessionData->ProxyMethod;
-    FtpProxyMethodCombo->ItemIndex = aSessionData->ProxyMethod;
+    if (SupportedFtpProxyMethod(aSessionData->ProxyMethod))
+    {
+      FtpProxyMethodCombo->ItemIndex = aSessionData->ProxyMethod;
+    }
+    else
+    {
+      FtpProxyMethodCombo->ItemIndex = pmNone;
+    }
+    if (aSessionData->FtpProxyLogonType != 0)
+    {
+      FtpProxyMethodCombo->ItemIndex = LastSupportedFtpProxyMethod() + aSessionData->FtpProxyLogonType;
+    }
     ProxyHostEdit->Text = aSessionData->ProxyHost;
     ProxyPortEdit->AsInteger = aSessionData->ProxyPort;
     ProxyUsernameEdit->Text = aSessionData->ProxyUsername;
@@ -695,15 +707,15 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   switch (UtfCombo->ItemIndex)
   {
     case 1:
-      aSessionData->Utf = asOn;
+      aSessionData->NotUtf = asOn;
       break;
 
     case 2:
-      aSessionData->Utf = asOff;
+      aSessionData->NotUtf = asOff;
       break;
 
     default:
-      aSessionData->Utf = asAuto;
+      aSessionData->NotUtf = asAuto;
       break;
   }
   aSessionData->TimeDifference =
@@ -742,9 +754,11 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   // FTP tab
   aSessionData->PostLoginCommands = PostLoginCommandsMemo->Lines->Text;
   aSessionData->FtpListAll = ComboAutoSwitchSave(FtpListAllCombo);
+  aSessionData->FtpForcePasvIp = FtpForcePasvIpCheck->Checked;
 
   // Proxy tab
-  aSessionData->ProxyMethod = (TProxyMethod)SshProxyMethodCombo->ItemIndex;
+  aSessionData->ProxyMethod = GetProxyMethod();
+  aSessionData->FtpProxyLogonType = GetFtpProxyLogonType();
   aSessionData->ProxyHost = ProxyHostEdit->Text;
   aSessionData->ProxyPort = ProxyPortEdit->AsInteger;
   aSessionData->ProxyUsername = ProxyUsernameEdit->Text;
@@ -920,7 +934,10 @@ void __fastcall TLoginDialog::UpdateControls()
       // connection sheet
       ConnSheet->Enabled = Advanced;
       EnableControl(FtpPasvModeCheck, FtpProtocol);
-      if (FtpProtocol && (FtpProxyMethodCombo->ItemIndex != pmNone) && !FtpPasvModeCheck->Checked)
+      if (FtpProtocol &&
+          (FtpProxyMethodCombo->ItemIndex != pmNone) &&
+          SupportedFtpProxyMethod(FtpProxyMethodCombo->ItemIndex) &&
+          !FtpPasvModeCheck->Checked)
       {
         FtpPasvModeCheck->Checked = true;
         MessageDialog(LoadStr(FTP_PASV_MODE_REQUIRED), qtInformation, qaOK);
@@ -991,51 +1008,62 @@ void __fastcall TLoginDialog::UpdateControls()
       ProxyMethodLabel->FocusControl = ProxyMethodCombo;
       TComboBox * OtherProxyMethodCombo = (!SshProtocol ? SshProxyMethodCombo : FtpProxyMethodCombo);
       OtherProxyMethodCombo->Visible = false;
-      if (ProxyMethodCombo->ItemIndex >= OtherProxyMethodCombo->Items->Count)
-      {
-        OtherProxyMethodCombo->ItemIndex = pmNone;
-      }
-      else
+      if (SupportedFtpProxyMethod(ProxyMethodCombo->ItemIndex))
       {
         OtherProxyMethodCombo->ItemIndex = ProxyMethodCombo->ItemIndex;
       }
+      else
+      {
+        OtherProxyMethodCombo->ItemIndex = pmNone;
+      }
 
       ProxySheet->Enabled = Advanced;
-      bool Proxy = (ProxyMethodCombo->ItemIndex != pmNone);
+      TProxyMethod ProxyMethod = GetProxyMethod();
+      int FtpProxyLogonType = GetFtpProxyLogonType();
       AnsiString ProxyCommand =
-        ((ProxyMethodCombo->ItemIndex == pmCmd) ?
+        ((ProxyMethod == pmCmd) ?
           ProxyLocalCommandEdit->Text : ProxyTelnetCommandEdit->Text);
-      EnableControl(ProxyHostEdit, Proxy &&
-        ((ProxyMethodCombo->ItemIndex != pmCmd) ||
-         AnsiContainsText(ProxyCommand, "%proxyhost")));
+      EnableControl(ProxyHostEdit,
+        (ProxyMethod == pmSocks4) ||
+        (ProxyMethod == pmSocks5) ||
+        (ProxyMethod == pmHTTP) ||
+        (ProxyMethod == pmTelnet) ||
+        ((ProxyMethod == pmCmd) && AnsiContainsText(ProxyCommand, "%proxyhost")) ||
+        (FtpProxyLogonType > 0));
       EnableControl(ProxyHostLabel, ProxyHostEdit->Enabled);
-      EnableControl(ProxyPortEdit, Proxy &&
-        ((ProxyMethodCombo->ItemIndex != pmCmd) ||
-         AnsiContainsText(ProxyCommand, "%proxyport")));
+      EnableControl(ProxyPortEdit,
+        (ProxyMethod == pmSocks4) ||
+        (ProxyMethod == pmSocks5) ||
+        (ProxyMethod == pmHTTP) ||
+        (ProxyMethod == pmTelnet) ||
+        ((ProxyMethod == pmCmd) && AnsiContainsText(ProxyCommand, "%proxyport")) ||
+        (FtpProxyLogonType > 0));
       EnableControl(ProxyPortLabel, ProxyPortEdit->Enabled);
-      EnableControl(ProxyUsernameEdit, Proxy &&
+      EnableControl(ProxyUsernameEdit,
         // FZAPI does not support username for SOCKS4
-        (((ProxyMethodCombo->ItemIndex == pmSocks4) && SshProtocol) ||
-         (ProxyMethodCombo->ItemIndex == pmSocks5) ||
-         (ProxyMethodCombo->ItemIndex == pmHTTP) ||
-         (((ProxyMethodCombo->ItemIndex == pmTelnet) ||
-           (ProxyMethodCombo->ItemIndex == pmCmd)) &&
-          AnsiContainsText(ProxyCommand, "%user"))));
+        ((ProxyMethod == pmSocks4) && SshProtocol) ||
+        (ProxyMethod == pmSocks5) ||
+        (ProxyMethod == pmHTTP) ||
+        (((ProxyMethod == pmTelnet) ||
+          (ProxyMethod == pmCmd)) &&
+         AnsiContainsText(ProxyCommand, "%user")) ||
+        ((FtpProxyLogonType > 0) && (FtpProxyLogonType != 3) && (FtpProxyLogonType != 5)));
       EnableControl(ProxyUsernameLabel, ProxyUsernameEdit->Enabled);
-      EnableControl(ProxyPasswordEdit, Proxy &&
-        ((ProxyMethodCombo->ItemIndex == pmSocks5) ||
-         (ProxyMethodCombo->ItemIndex == pmHTTP) ||
-         (((ProxyMethodCombo->ItemIndex == pmTelnet) ||
-           (ProxyMethodCombo->ItemIndex == pmCmd)) &&
-          AnsiContainsText(ProxyCommand, "%pass"))));
+      EnableControl(ProxyPasswordEdit,
+        (ProxyMethod == pmSocks5) ||
+        (ProxyMethod == pmHTTP) ||
+        (((ProxyMethod == pmTelnet) ||
+          (ProxyMethod == pmCmd)) &&
+         AnsiContainsText(ProxyCommand, "%pass")) ||
+        ((FtpProxyLogonType > 0) && (FtpProxyLogonType != 3) && (FtpProxyLogonType != 5)));
       EnableControl(ProxyPasswordLabel, ProxyPasswordEdit->Enabled);
-      bool ProxySettings = Proxy && SshProtocol;
+      bool ProxySettings = (ProxyMethod != pmNone) && SshProtocol;
       EnableControl(ProxySettingsGroup, ProxySettings);
       EnableControl(ProxyTelnetCommandEdit,
-        ProxySettings && (ProxyMethodCombo->ItemIndex == pmTelnet));
+        ProxySettings && (ProxyMethod == pmTelnet));
       EnableControl(ProxyTelnetCommandLabel, ProxyTelnetCommandEdit->Enabled);
       EnableControl(ProxyTelnetCommandHintText, ProxyTelnetCommandEdit->Enabled);
-      ProxyLocalCommandEdit->Visible = (ProxyMethodCombo->ItemIndex == pmCmd);
+      ProxyLocalCommandEdit->Visible = (ProxyMethod == pmCmd);
       ProxyLocalCommandLabel->Visible = ProxyLocalCommandEdit->Visible;
       ProxyLocalCommandBrowseButton->Visible = ProxyLocalCommandEdit->Visible;
       ProxyLocalCommandHintText->Visible = ProxyLocalCommandEdit->Visible;
@@ -1092,6 +1120,9 @@ void __fastcall TLoginDialog::UpdateControls()
 
       // environment/ftp
       FtpSheet->Enabled = Advanced && FtpProtocol;
+      EnableControl(FtpForcePasvIpCheck,
+        FtpPasvModeCheck->Checked &&
+        (IPAutoButton->Checked || IPv4Button->Checked));
 
       // tunnel sheet
       TunnelSheet->Enabled = Advanced && SshProtocol;
@@ -1101,6 +1132,13 @@ void __fastcall TLoginDialog::UpdateControls()
 
       // preferences sheet
       GeneralSheet->Enabled = FLAGSET(Options, loPreferences);
+
+      TSessionData * Data = SessionData;
+      bool CanLogin = (Data != NULL) && Data->CanLogin;
+      bool SessionSelected =
+        (SessionTree->Selected != NULL) && (SessionTree->Selected->Data != NULL);
+      LoginButton->Default = CanLogin || !SessionSelected;
+      LoadButton->Default = !LoginButton->Default;
 
       AboutButton->Visible = (Options & loAbout);
       LanguagesButton->Visible = (Options & loLanguage);
@@ -2188,6 +2226,58 @@ TFSProtocol __fastcall TLoginDialog::IndexToFSProtocol(int Index, bool AllowScpF
     if ((Result == fsSFTPonly) && AllowScpFallback)
     {
       Result = fsSFTP;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TLoginDialog::LastSupportedFtpProxyMethod()
+{
+  return pmHTTP;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TLoginDialog::SupportedFtpProxyMethod(int Method)
+{
+  return (Method >= 0) && (Method <= LastSupportedFtpProxyMethod());
+}
+//---------------------------------------------------------------------------
+TProxyMethod __fastcall TLoginDialog::GetProxyMethod()
+{
+  TProxyMethod Result;
+  if (IndexToFSProtocol(TransferProtocolCombo->ItemIndex, AllowScpFallbackCheck->Checked) != fsFTP)
+  {
+    Result = (TProxyMethod)SshProxyMethodCombo->ItemIndex;
+  }
+  else
+  {
+    if (SupportedFtpProxyMethod(FtpProxyMethodCombo->ItemIndex))
+    {
+      Result = (TProxyMethod)FtpProxyMethodCombo->ItemIndex;
+    }
+    else
+    {
+      Result = pmNone;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+int __fastcall TLoginDialog::GetFtpProxyLogonType()
+{
+  int Result;
+  if (IndexToFSProtocol(TransferProtocolCombo->ItemIndex, AllowScpFallbackCheck->Checked) != fsFTP)
+  {
+    Result = 0;
+  }
+  else
+  {
+    if (SupportedFtpProxyMethod(FtpProxyMethodCombo->ItemIndex))
+    {
+      Result = 0;
+    }
+    else
+    {
+      Result = FtpProxyMethodCombo->ItemIndex - LastSupportedFtpProxyMethod();
     }
   }
   return Result;

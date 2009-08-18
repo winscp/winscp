@@ -2,6 +2,7 @@
 #ifndef ConfigurationH
 #define ConfigurationH
 
+#include <set>
 #include "RemoteFiles.h"
 #include "FileBuffer.h"
 #include "HierarchicalStorage.h"
@@ -209,6 +210,16 @@ public:
   __property bool ForceBanners = { read = FForceBanners };
   __property bool DisableAcceptingHostKeys = { read = FDisableAcceptingHostKeys };
   __property bool GSSAPIInstalled = { read = GetGSSAPIInstalled };
+};
+//---------------------------------------------------------------------------
+class TShortCuts
+{
+public:
+  void __fastcall Add(TShortCut ShortCut);
+  bool __fastcall Has(TShortCut ShortCut) const;
+
+private:
+  std::set<TShortCut> FShortCuts;
 };
 //---------------------------------------------------------------------------
 #endif

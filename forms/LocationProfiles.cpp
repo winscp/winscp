@@ -192,6 +192,7 @@ void __fastcall TLocationProfilesDialog::UpdateProfilesControls(
   TTreeView * ProfilesView,
   TButton * AddBookmarkButton, TButton * RemoveBookmarkButton,
   TButton * RenameBookmarkButton,  TButton * BookmarkMoveToButton,
+  TButton * ShortCutBookmarkButton,
   TButton * UpBookmarkButton, TButton * DownBookmarkButton)
 {
   EnableControl(AddBookmarkButton,
@@ -199,6 +200,10 @@ void __fastcall TLocationProfilesDialog::UpdateProfilesControls(
   EnableControl(RemoveBookmarkButton, ProfilesView->Selected);
   EnableControl(RenameBookmarkButton, ProfilesView->Selected);
   EnableControl(BookmarkMoveToButton, ProfilesView->Selected && ProfilesView->Selected->Data);
+  if (ShortCutBookmarkButton != NULL)
+  {
+    EnableControl(ShortCutBookmarkButton, ProfilesView->Selected && ProfilesView->Selected->Data);
+  }
   EnableControl(UpBookmarkButton, ProfilesView->Selected &&
     ProfilesView->Selected->Data && ProfilesView->Selected->getPrevSibling() &&
     ProfilesView->Selected->getPrevSibling()->Data);
@@ -212,11 +217,12 @@ void __fastcall TLocationProfilesDialog::UpdateControls()
   EnableControl(OKBtn, !LocalDirectory.IsEmpty() || !RemoteDirectory.IsEmpty());
   UpdateProfilesControls(SessionProfilesView,
     AddSessionBookmarkButton, RemoveSessionBookmarkButton,
-    RenameSessionBookmarkButton,  SessionBookmarkMoveToButton,
+    RenameSessionBookmarkButton,  SessionBookmarkMoveToButton, NULL,
     UpSessionBookmarkButton, DownSessionBookmarkButton);
   UpdateProfilesControls(SharedProfilesView,
     AddSharedBookmarkButton, RemoveSharedBookmarkButton,
-    RenameSharedBookmarkButton,  SharedBookmarkMoveToButton,
+    RenameSharedBookmarkButton, SharedBookmarkMoveToButton,
+    ShortCutSharedBookmarkButton,
     UpSharedBookmarkButton, DownSharedBookmarkButton);
 }
 //---------------------------------------------------------------------------
@@ -261,7 +267,7 @@ void __fastcall TLocationProfilesDialog::LoadBookmarks(
       assert(Folders->IndexOf(Bookmark->Node) >= 0);
       Parent = dynamic_cast<TTreeNode *>(Folders->Objects[Folders->IndexOf(Bookmark->Node)]);
     }
-    ProfilesView->Items->AddChildObject(Parent, Bookmark->Name, Bookmark);
+    ProfilesView->Items->AddChildObject(Parent, BookmarkText(Bookmark), Bookmark);
     if ((Parent != NULL) && (Parent->Count == 1))
     {
       // only now, when folder node has its first child, we can eventually expand it
@@ -449,7 +455,7 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
         {
           Bookmark->Node = SelectedBookmark->Node;
           BookmarkList->InsertBefore(SelectedBookmark, Bookmark);
-          Selected = ProfilesView->Items->InsertObject(Selected, Bookmark->Name, Bookmark);
+          Selected = ProfilesView->Items->InsertObject(Selected, BookmarkText(Bookmark), Bookmark);
         }
         else if ((Selected != NULL) && (SelectedBookmark == NULL))
         {
@@ -457,12 +463,12 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
           assert(!Selected->Parent); // more than one level of folders is not supported
           Bookmark->Node = Selected->Text;
           BookmarkList->Add(Bookmark);
-          Selected = ProfilesView->Items->AddChildObject(Selected, Bookmark->Name, Bookmark);
+          Selected = ProfilesView->Items->AddChildObject(Selected, BookmarkText(Bookmark), Bookmark);
         }
         else
         {
           BookmarkList->Add(Bookmark);
-          Selected = ProfilesView->Items->AddObject(NULL, Bookmark->Name, Bookmark);
+          Selected = ProfilesView->Items->AddObject(NULL, BookmarkText(Bookmark), Bookmark);
         }
       }
       ProfilesView->Selected = Selected;
@@ -935,5 +941,39 @@ void __fastcall TLocationProfilesDialog::ProfilesViewEndDrag(
   TObject * Sender, TObject * /*Target*/, int /*X*/, int /*Y*/)
 {
   GetScrollOnDragOver(Sender)->EndDrag();
+}
+//---------------------------------------------------------------------------
+void __fastcall TLocationProfilesDialog::ShortCutBookmarkButtonClick(
+  TObject * Sender)
+{
+  TBookmarkList * BookmarkList = GetBookmarkList(Sender);
+  TTreeView * ProfilesView = GetProfilesView(Sender);
+
+  assert(ProfilesView->Selected != NULL);
+  TTreeNode * Node = ProfilesView->Selected;
+  assert(Node->Data != NULL);
+
+  TBookmark * Bookmark = static_cast<TBookmark *>(Node->Data);
+
+  TShortCuts ShortCuts;
+  WinConfiguration->CustomCommandList->ShortCuts(ShortCuts);
+  BookmarkList->ShortCuts(ShortCuts);
+  TShortCut ShortCut = Bookmark->ShortCut;
+  if (DoShortCutDialog(ShortCut, ShortCuts, HelpKeyword))
+  {
+    Bookmark->ShortCut = ShortCut;
+    Node->Text = BookmarkText(Bookmark);
+    UpdateControls();
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TLocationProfilesDialog::BookmarkText(TBookmark * Bookmark)
+{
+  AnsiString Result = Bookmark->Name;
+  if (!Result.IsEmpty() && (Bookmark->ShortCut != 0))
+  {
+    Result = FORMAT("%s (%s)", (Result, ShortCutToText(Bookmark->ShortCut)));
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------

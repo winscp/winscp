@@ -8,7 +8,7 @@ object SynchronizeChecklistDialog: TSynchronizeChecklistDialog
   BorderIcons = [biSystemMenu, biMaximize, biHelp]
   Caption = 'Synchronization checklist'
   Color = clBtnFace
-  Constraints.MinHeight = 300
+  Constraints.MinHeight = 350
   Constraints.MinWidth = 380
   ParentFont = True
   Icon.Data = {

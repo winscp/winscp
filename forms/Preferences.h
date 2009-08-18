@@ -27,7 +27,7 @@
 #include <Dialogs.hpp>
 #include <PasTools.hpp>
 //----------------------------------------------------------------------------
-class TCustomCommands;
+class TCustomCommandList;
 class TEditorList;
 //----------------------------------------------------------------------------
 class TPreferencesDialog : public TForm
@@ -224,6 +224,11 @@ __published:
   TCheckBox *SessionReopenAutoIdleCheck;
   TCheckBox *RenameWholeNameCheck;
   TCheckBox *TreeOnLeftCheck;
+  TCheckBox *TemporaryDirectoryAppendSessionCheck;
+  TCheckBox *TemporaryDirectoryAppendPathCheck;
+  TLabel *SessionReopenTimeoutLabel;
+  TUpDownEdit *SessionReopenTimeoutEdit;
+  TLabel *SessionReopenTimeoutSecLabel;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -286,10 +291,14 @@ __published:
           TObject *Target, int X, int Y);
   void __fastcall RandomSeedFileEditCreateEditDialog(TObject *Sender,
           TFileDialogKind DialogKind, TOpenDialog *&Dialog);
+  void __fastcall SessionReopenTimeoutEditSetValue(TObject *Sender,
+          Extended Value, AnsiString &Text, bool &Handed);
+  void __fastcall SessionReopenTimeoutEditGetValue(TObject *Sender,
+          AnsiString Text, Extended &Value, bool &Handed);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;
-  TCustomCommands * FCustomCommands;
+  TCustomCommandList * FCustomCommandList;
   TCopyParamList * FCopyParamList;
   TEditorList * FEditorList;
   bool FCustomCommandChanging;

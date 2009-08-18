@@ -2761,10 +2761,10 @@ void __fastcall TSFTPFileSystem::DoStartup()
   // use UTF when forced or ...
   // when "auto" and version is at least 4 and the server is not know not to use UTF
   FUtfNever = (GetSessionInfo().SshImplementation.Pos("Foxit-WAC-Server") == 1) ||
-    (FTerminal->SessionData->Utf == asOn);
+    (FTerminal->SessionData->NotUtf == asOn);
   FUtfStrings =
-    (FTerminal->SessionData->Utf == asOff) ||
-    ((FTerminal->SessionData->Utf == asAuto) &&
+    (FTerminal->SessionData->NotUtf == asOff) ||
+    ((FTerminal->SessionData->NotUtf == asAuto) &&
       (FVersion >= 4) && !FUtfNever);
 
   if (FUtfStrings)
@@ -2792,6 +2792,14 @@ void __fastcall TSFTPFileSystem::DoStartup()
     {
       FMaxPacketSize = 4 + (256 * 1024); // len + 256kB payload
       FTerminal->LogEvent(FORMAT("Limiting packet size to OpenSSH sftp-server limit of %d bytes",
+        (int(FMaxPacketSize))));
+    }
+    // full string is "1.77 sshlib: Momentum SSH Server",
+    // possibly it is sshlib-related
+    else if (GetSessionInfo().SshImplementation.Pos("Momentum SSH Server") != 0)
+    {
+      FMaxPacketSize = 4 + (32 * 1024);
+      FTerminal->LogEvent(FORMAT("Limiting packet size to Momentum sftp-server limit of %d bytes",
         (int(FMaxPacketSize))));
     }
   }
@@ -2990,26 +2998,11 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         for (unsigned long Index = 0; !isEOF && (Index < Count); Index++)
         {
           File = LoadFile(&ListingPacket, NULL, "", FileList);
-          // security fix
-          // (LastDelimiter works for MBCS)
-          if (((File->FileName.Length() > 2) && IsDots(File->FileName)) ||
-              (File->FileName.LastDelimiter("/\\") > 0))
+          if (FTerminal->Configuration->LogProtocol >= 1)
           {
-            FTerminal->LogEvent(FORMAT("Ignored suspicious file '%s'", (File->FileName)));
-            delete File;
+            FTerminal->LogEvent(FORMAT("Read file '%s' from listing", (File->FileName)));
           }
-          else
-          {
-            if (FTerminal->Configuration->LogProtocol >= 1)
-            {
-              FTerminal->LogEvent(FORMAT("Read file '%s' from listing", (File->FileName)));
-            }
-            FileList->AddFile(File);
-          }
-
-          // Even if all files are ignored, do not treat listing as empty.
-          // Also, if the first file is ignored, we would call DoReadDirectoryProgress
-          // twice with 0, what may confuse handler, which uses 0 as indication of start.
+          FileList->AddFile(File);
           Total++;
 
           if (Total % 10 == 0)
@@ -3909,7 +3902,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
   Action.FileName(ExpandUNCFileName(FileName));
 
-  OperationProgress->SetFile(FileName);
+  OperationProgress->SetFile(FileName, false);
 
   TOpenRemoteFileParams OpenParams;
   OpenParams.OverwriteMode = omOverwrite;
@@ -3934,6 +3927,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
       THROW_SKIP_FILE_NULL;
     }
+
+    OperationProgress->SetFileInProgress();
 
     if (Dir)
     {
@@ -4051,17 +4046,20 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
             }
             else
             {
-              // partial upload file does not exists, full file does, confirm overwrite
-              AnsiString PrevDestFileName = DestFileName;
-              SFTPConfirmOverwrite(DestFileName,
-                Params, OperationProgress, OpenParams.OverwriteMode, &FileParams);
-              if (PrevDestFileName != DestFileName)
+              // partial upload file does not exists, check for full file
+              if (DestFileExists)
               {
-                // update paths in case user changes the file name
-                DestFullName = LocalCanonify(TargetDir + DestFileName);
-                DestPartinalFullName = DestFullName + FTerminal->Configuration->PartialExt;
-                FTerminal->LogEvent("Checking existence of new file.");
-                DestFileExists = RemoteFileExists(DestFullName, NULL);
+                AnsiString PrevDestFileName = DestFileName;
+                SFTPConfirmOverwrite(DestFileName,
+                  Params, OperationProgress, OpenParams.OverwriteMode, &FileParams);
+                if (PrevDestFileName != DestFileName)
+                {
+                  // update paths in case user changes the file name
+                  DestFullName = LocalCanonify(TargetDir + DestFileName);
+                  DestPartinalFullName = DestFullName + FTerminal->Configuration->PartialExt;
+                  FTerminal->LogEvent("Checking existence of new file.");
+                  DestFileExists = RemoteFileExists(DestFullName, NULL);
+                }
               }
             }
           }
@@ -4299,10 +4297,11 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   }
 
   /* TODO : Delete also read-only files. */
-  /* TODO : Show error message on failure. */
   if (FLAGSET(Params, cpDelete))
   {
-    Sysutils::DeleteFile(FileName);
+    FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
+      THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
+    )
   }
   else if (CopyParam->ClearArchive && FLAGSET(OpenParams.LocalFileAttrs, faArchive))
   {
@@ -4900,7 +4899,9 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
           {
             CloseHandle(LocalHandle);
             LocalHandle = NULL;
-            Sysutils::DeleteFile(DestPartinalFullName);
+            FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestPartinalFullName)),
+              THROWOSIFFALSE(Sysutils::DeleteFile(DestPartinalFullName));
+            )
           }
           else
           {
@@ -4935,7 +4936,9 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
           {
             if (FileExists(DestPartinalFullName))
             {
-              Sysutils::DeleteFile(DestPartinalFullName);
+              FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (DestPartinalFullName)),
+                THROWOSIFFALSE(Sysutils::DeleteFile(DestPartinalFullName));
+              )
             }
             LocalFileName = DestPartinalFullName;
           }
@@ -5194,7 +5197,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
 
           if (FileExists(DestFullName))
           {
-            if (!Sysutils::DeleteFile(DestFullName)) RaiseLastOSError();
+            THROWOSIFFALSE(Sysutils::DeleteFile(DestFullName));
           }
           if (!Sysutils::RenameFile(DestPartinalFullName, DestFullName))
           {
@@ -5225,7 +5228,9 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
       if (DeleteLocalFile && (!ResumeAllowed || OperationProgress->LocalyUsed == 0) &&
           (OverwriteMode == omOverwrite))
       {
-        Sysutils::DeleteFile(LocalFileName);
+        FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (LocalFileName)),
+          THROWOSIFFALSE(Sysutils::DeleteFile(LocalFileName));
+        )
       }
 
       // if the transfer was finished, the file is closed already

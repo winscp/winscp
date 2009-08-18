@@ -12,6 +12,7 @@ void __fastcall ShowExtendedException(Exception * E);
 
 AnsiString __fastcall GetRegistryKey();
 void __fastcall Busy(bool Start);
+AnsiString __fastcall AppNameString();
 AnsiString __fastcall SshVersionString();
 void __fastcall CopyToClipboard(AnsiString Text);
 int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,

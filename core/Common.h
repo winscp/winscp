@@ -37,7 +37,6 @@ AnsiString ShellDelimitStr(AnsiString Str, char Quote);
 void __fastcall OemToAnsi(AnsiString & Str);
 void __fastcall AnsiToOem(AnsiString & Str);
 AnsiString ExceptionLogString(Exception *E);
-bool IsDots(const AnsiString Str);
 bool IsNumber(const AnsiString Str);
 AnsiString __fastcall SystemTemporaryDirectory();
 AnsiString __fastcall GetShellFolderPath(int CSIdl);

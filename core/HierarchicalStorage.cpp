@@ -152,6 +152,16 @@ bool __fastcall THierarchicalStorage::HasSubKeys()
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall THierarchicalStorage::HasSubKey(const AnsiString SubKey)
+{
+  bool Result = OpenSubKey(SubKey, false);
+  if (Result)
+  {
+    CloseSubKey();
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::ReadValues(Classes::TStrings* Strings,
   bool MaintainKeys)
 {

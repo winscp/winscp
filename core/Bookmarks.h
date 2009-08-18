@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 class THierarchicalStorage;
 class TBookmarkList;
+class TShortCuts;
 //---------------------------------------------------------------------------
 class TBookmarks : public TObject
 {
@@ -29,7 +30,7 @@ private:
   TBookmarkList * __fastcall GetSharedBookmarks();
   void __fastcall SetSharedBookmarks(TBookmarkList * value);
   void __fastcall LoadLevel(THierarchicalStorage * Storage, const AnsiString Key,
-    bool Local, TBookmarkList * BookmarkList);
+    int Index, TBookmarkList * BookmarkList);
 };
 //---------------------------------------------------------------------------
 class TBookmarkList : public TPersistent
@@ -47,9 +48,11 @@ public:
   void __fastcall MoveTo(TBookmark * ToBookmark, TBookmark * Bookmark, bool Before);
   void __fastcall Delete(TBookmark * Bookmark);
   TBookmark * __fastcall FindByName(const AnsiString Node, const AnsiString Name);
+  TBookmark * __fastcall FindByShortCut(TShortCut ShortCut);
   virtual void __fastcall Assign(TPersistent * Source);
   void __fastcall LoadOptions(THierarchicalStorage * Storage);
   void __fastcall SaveOptions(THierarchicalStorage * Storage);
+  void __fastcall ShortCuts(TShortCuts & ShortCuts);
 
   __property int Count = { read = GetCount };
   __property TBookmark * Bookmarks[int Index] = { read = GetBookmarks };
@@ -84,6 +87,7 @@ public:
   __property AnsiString Local = { read = FLocal, write = SetLocal };
   __property AnsiString Remote = { read = FRemote, write = SetRemote };
   __property AnsiString Node = { read = FNode, write = SetNode };
+  __property TShortCut ShortCut = { read = FShortCut, write = SetShortCut };
 
 protected:
   TBookmarkList * FOwner;
@@ -96,11 +100,13 @@ private:
   AnsiString FLocal;
   AnsiString FRemote;
   AnsiString FNode;
+  TShortCut FShortCut;
 
   void __fastcall SetName(const AnsiString value);
   void __fastcall SetLocal(const AnsiString value);
   void __fastcall SetRemote(const AnsiString value);
   void __fastcall SetNode(const AnsiString value);
+  void __fastcall SetShortCut(TShortCut value);
   AnsiString __fastcall GetKey();
   void __fastcall Modify(int OldIndex);
 };

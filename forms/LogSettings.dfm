@@ -97,6 +97,7 @@ object LoggingFrame: TLoggingFrame
       Increment = 50
       MaxValue = 10000
       MinValue = 50
+      Value = 50
       TabOrder = 8
       OnChange = DataChange
     end

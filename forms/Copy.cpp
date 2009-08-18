@@ -172,7 +172,7 @@ void __fastcall TCopyDialog::AdjustControls()
   {
     QueueLabel = FMTLOAD(COPY_QUEUE, (QueueLabel));
   }
-  QueueCheck->Caption = QueueLabel;
+  QueueCheck2->Caption = QueueLabel;
 
   AdjustTransferControls();
 
@@ -251,7 +251,7 @@ void __fastcall TCopyDialog::SetParams(const TGUICopyParamType & value)
   FParams = value;
   FCopyParams = value;
   DirectoryEdit->Text = Directory + FParams.FileMask;
-  QueueCheck->Checked = FParams.Queue;
+  QueueCheck2->Checked = FParams.Queue;
   QueueIndividuallyCheck->Checked = FParams.QueueIndividually;
   NewerOnlyCheck->Checked = FLAGCLEAR(Options, coDisableNewerOnly) && FParams.NewerOnly;
   UpdateControls();
@@ -262,7 +262,7 @@ TGUICopyParamType __fastcall TCopyDialog::GetParams()
   // overwrites TCopyParamType fields only
   FParams = FCopyParams;
   FParams.FileMask = GetFileMask();
-  FParams.Queue = QueueCheck->Checked;
+  FParams.Queue = QueueCheck2->Checked;
   FParams.QueueIndividually = QueueIndividuallyCheck->Checked;
   FParams.NewerOnly = FLAGCLEAR(Options, coDisableNewerOnly) && NewerOnlyCheck->Checked;
   return FParams;
@@ -333,10 +333,10 @@ void __fastcall TCopyDialog::UpdateControls()
     (CopyParamLabel->Canvas->TextWidth(InfoStr) > (CopyParamLabel->Width * 3 / 2));
 
   bool RemoteTransfer = FLAGSET(FOutputOptions, cooRemoteTransfer);
-  EnableControl(QueueCheck,
+  EnableControl(QueueCheck2,
     ((Options & (coDisableQueue | coTemp)) == 0) && !RemoteTransfer);
   EnableControl(QueueIndividuallyCheck,
-    QueueCheck->Enabled && QueueCheck->Checked &&
+    QueueCheck2->Enabled && QueueCheck2->Checked &&
     FileList && (FileList->Count > 1));
 }
 //---------------------------------------------------------------------------

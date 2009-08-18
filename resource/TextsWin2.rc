@@ -13,7 +13,7 @@ BEGIN
 "Hint: To copy files hold down Ctrl key while dragging.\n"
 "\n"
 "Do you still want to move the files?"
-  USAGE5,
+  USAGE6,
 "WinSCP, %s\n"
 "%s\n"
 "\n"
@@ -23,7 +23,8 @@ BEGIN
 "G:%APP% [session] /synchronize [local_dir] [remote_dir] [/defaults]\n"
 "G:%APP% [session] /keepuptodate [local_dir] [remote_dir] [/defaults]\n"
 "G:%APP% [session] /privatekey=<key> /hostkey=<fingerprint>\n"
-"G:%APP% [session] /timeout=<sec> /passive\n"
+"G:%APP% [session] /certificate=<fingerprint> /implicit|explicitssl|explicittls\n"
+"G:%APP% [session] /passive /timeout=<sec>\n"
 "G:%APP% [/console] [/script=file] [/command command1...] [/parameter param1...]\n"
 "C:%APP% [/script=file] [/command command1...] [/parameter param1...]\n"
 "B:%APP% /ini=<inifile> /log=<logfile>\n"
@@ -46,6 +47,10 @@ BEGIN
 "G: /timeout=     Server response timeout.\n"
 "G: /hostkey=     Fingerprint of server hostkey.\n"
 "G: /passive      Passive mode (FTP protocol only).\n"
+"G: /certificate= Fingerprint of SSL/TLS sertificate.\n"
+"G: /implicit     Implicit TLS/SSL (FTPS protocol only).\n"
+"G: /explicitssl  Explicit SSL (FTPS protocol only).\n"
+"G: /explicittls  Explicit TLS (FTPS protocol only).\n"
 "G: /update       Queries application homepage for updates.\n"
 "B: /help         Prints this usage.\n"
 END

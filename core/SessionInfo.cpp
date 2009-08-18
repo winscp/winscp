@@ -1011,7 +1011,9 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
           Ftps = "None";
           break;
       }
-      ADF("FTP: FTPS: %s; Passive: %s", (Ftps, BooleanToEngStr(Data->FtpPasvMode)));
+      ADF("FTP: FTPS: %s; Passive: %s [Force IP: %s]",
+        (Ftps, BooleanToEngStr(Data->FtpPasvMode),
+         BooleanToEngStr(Data->FtpForcePasvIp)));
     }
     ADF("Local directory: %s, Remote directory: %s, Update: %s, Cache: %s",
       ((Data->LocalDirectory.IsEmpty() ? AnsiString("default") : Data->LocalDirectory),

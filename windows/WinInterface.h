@@ -58,12 +58,18 @@ struct TDialogData
   bool Check;
 };
 
+typedef void __fastcall (__closure * TInitDialogEvent)
+  (const TDialogControls & Controls);
 typedef void __fastcall (__closure * TShowDialogEvent)
   (const TDialogControls & Controls);
 typedef void __fastcall (__closure * TChangeDialogEvent)
   (const TDialogControls & Controls, bool & Valid);
 typedef void __fastcall (__closure * TValidateDialogEvent)
   (const TDialogData & Data);
+typedef void __fastcall (__closure * TLoadDialogEvent)
+  (const TDialogData & Data, TDialogControls & Controls);
+typedef void __fastcall (__closure * TSaveDialogEvent)
+  (const TDialogControls & Controls, TDialogData & Data);
 
 struct TDialogParams
 {
@@ -79,9 +85,12 @@ struct TDialogParams
   bool ComboEmptyValid;
   AnsiString CheckLabel;
 
+  TInitDialogEvent OnInit;
   TShowDialogEvent OnShow;
   TChangeDialogEvent OnChange;
   TValidateDialogEvent OnValidate;
+  TLoadDialogEvent OnLoad;
+  TSaveDialogEvent OnSave;
 };
 
 class TCustomScpExplorerForm;
@@ -92,7 +101,6 @@ void __fastcall ConfigureInterface();
 void __fastcall DoProductLicense();
 
 extern const AnsiString AppName;
-extern const AnsiString AppNameVersion;
 
 void __fastcall SetOnForeground(bool OnForeground);
 void __fastcall FlashOnBackground();
@@ -126,10 +134,18 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
   const AnsiString MessageFormat = "", int Answers = qaOK,
   AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
 int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  const AnsiString MessageFormat = "", int Answers = qaOK,
+  int SessionReopenTimeout, const AnsiString MessageFormat = "", int Answers = qaOK,
   AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
 
+// forms\Custom.cpp
 bool __fastcall DoCustomDialog(const TDialogParams & Params, TDialogData & Data);
+bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
+  bool * SavePassword, TSessionData * OriginalSession);
+void __fastcall SessionNameValidate(const AnsiString & Text,
+  TSessionData * RenamingSession = NULL);
+class TShortCuts;
+bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
+  const TShortCuts & ShortCuts, AnsiString HelpKeyword);
 
 // windows\WinMain.cpp
 int __fastcall Execute();
@@ -240,14 +256,17 @@ bool __fastcall DoPreferencesDialog(TPreferencesMode APreferencesMode,
   TPreferencesDialogData * DialogData = NULL);
 
 // forms\CustomCommand.cpp
-class TCustomCommands;
+class TCustomCommandList;
+class TCustomCommandType;
+class TShortCuts;
 enum TCustomCommandsMode { ccmAdd, ccmEdit, ccmAdHoc };
 const ccoDisableRemote = 0x01;
 typedef void __fastcall (__closure *TCustomCommandValidate)
-  (const AnsiString & Command, int Params);
-bool __fastcall DoCustomCommandDialog(AnsiString & Description,
-  AnsiString & Command, int & Params, const TCustomCommands * CustomCommands,
-  TCustomCommandsMode Mode, int Options, TCustomCommandValidate OnValidate);
+  (const TCustomCommandType & Command);
+bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,
+  const TCustomCommandList * CustomCommandList,
+  TCustomCommandsMode Mode, int Options, TCustomCommandValidate OnValidate,
+  const TShortCuts * ShortCuts);
 
 // forms\CopyParamPreset.cpp
 class TCopyParamList;
@@ -285,12 +304,6 @@ enum TDirectRemoteCopy { drcDisallow, drcAllow, drcConfirmCommandSession };
 bool __fastcall DoRemoteCopyDialog(TStrings * Sessions, TStrings * Directories,
   TDirectRemoteCopy AllowDirectCopy, void *& Session, AnsiString & Target, AnsiString & FileMask,
   bool & DirectCopy);
-
-// forms\SaveSession.cpp
-bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
-  bool * SavePassword, TSessionData * OriginalSession);
-void __fastcall SessionNameValidate(const AnsiString & Text,
-  TSessionData * RenamingSession = NULL);
 
 // forms\SelectMask.cpp
 #ifdef CustomDirViewHPP
@@ -398,6 +411,11 @@ bool __fastcall IsGlobalMinimizeHandler();
 void __fastcall ShowNotification(TTerminal * Terminal, const AnsiString & Str,
   TQueryType Type);
 
+void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
+  const TShortCuts & ShortCuts);
+void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value);
+TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox);
+bool __fastcall IsCustomShortCut(TShortCut ShortCut);
 //---------------------------------------------------------------------------
 class TWinInteractiveCustomCommand : public TInteractiveCustomCommand
 {

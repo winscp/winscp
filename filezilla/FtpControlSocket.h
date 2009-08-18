@@ -116,7 +116,7 @@ protected:
 	int GetReplyCode();
 	CString GetReply();
 	void LogOnToServer(BOOL bSkipReply = FALSE);
-	BOOL Send(CString str);
+	BOOL Send(CString str, BOOL bUpdateRecvTime = TRUE);
 	
 	BOOL ParsePwdReply(CString& rawpwd);
 
@@ -125,6 +125,10 @@ protected:
 	bool NeedOptsCommand();
 
 	bool InitConnect();
+
+#ifdef MPEXT
+	bool CheckForcePasvIp(CString & host);
+#endif
 
 	CFile *m_pDataFile;
 	CTransferSocket *m_pTransferSocket;

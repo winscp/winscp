@@ -219,8 +219,7 @@ object EditorForm: TEditorForm
       ImageIndex = 10
       ShortCut = 16456
       SecondaryShortCuts.Strings = (
-        'Ctrl+F7'
-        'Ctrl+R')
+        'Ctrl+F7')
     end
     object FindNextAction: TAction
       Caption = 'Find &Next'

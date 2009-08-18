@@ -258,12 +258,6 @@ AnsiString ExceptionLogString(Exception *E)
   }
 }
 //---------------------------------------------------------------------------
-bool IsDots(const AnsiString Str)
-{
-  char * str = Str.c_str();
-  return (str[strspn(str, ".")] == '\0');
-}
-//---------------------------------------------------------------------------
 bool IsNumber(const AnsiString Str)
 {
   int Value;

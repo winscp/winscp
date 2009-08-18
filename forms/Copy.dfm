@@ -85,7 +85,7 @@ object CopyDialog: TCopyDialog
     TabOrder = 1
     OnClick = LocalDirectoryBrowseButtonClick
   end
-  object QueueCheck: TCheckBox
+  object QueueCheck2: TCheckBox
     Left = 8
     Top = 135
     Width = 301
@@ -99,7 +99,7 @@ object CopyDialog: TCopyDialog
     Top = 135
     Width = 193
     Height = 17
-    Caption = '&Enqueue each file individually'
+    Caption = '&Transfer each file individually'
     TabOrder = 7
     OnClick = ControlChange
   end

@@ -40,6 +40,7 @@ void __fastcall TFileOperationProgressType::Clear()
   Suspended = false;
   FSuspendTime = 0;
   InProgress = false;
+  FileInProgress = false;
   TotalTransfered = 0;
   TotalSkipped = 0;
   TotalSize = 0;
@@ -172,6 +173,7 @@ int __fastcall TFileOperationProgressType::OverallProgress()
 //---------------------------------------------------------------------------
 void __fastcall TFileOperationProgressType::DoProgress()
 {
+  SetThreadExecutionState(ES_SYSTEM_REQUIRED);
   FOnProgress(*this, Cancel);
 }
 //---------------------------------------------------------------------------
@@ -187,11 +189,19 @@ void __fastcall TFileOperationProgressType::Finish(AnsiString FileName,
   DoProgress();
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileOperationProgressType::SetFile(AnsiString AFileName)
+void __fastcall TFileOperationProgressType::SetFile(AnsiString AFileName, bool AFileInProgress)
 {
   FileName = AFileName;
+  FileInProgress = AFileInProgress;
   ClearTransfer();
   FFileStartTime = Now();
+  DoProgress();
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileOperationProgressType::SetFileInProgress()
+{
+  assert(!FileInProgress);
+  FileInProgress = true;
   DoProgress();
 }
 //---------------------------------------------------------------------------

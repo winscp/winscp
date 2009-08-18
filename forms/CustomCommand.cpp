@@ -18,27 +18,17 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
-bool __fastcall DoCustomCommandDialog(AnsiString & Description,
-  AnsiString & Command, int & Params, const TCustomCommands * CustomCommands,
-  TCustomCommandsMode Mode, int Options, TCustomCommandValidate OnValidate)
+bool __fastcall DoCustomCommandDialog(TCustomCommandType & Command,
+  const TCustomCommandList * CustomCommandList,
+  TCustomCommandsMode Mode, int Options, TCustomCommandValidate OnValidate,
+  const TShortCuts * ShortCuts)
 {
   bool Result;
-  TCustomCommandDialog * Dialog = new TCustomCommandDialog(Application, Options);
+  TCustomCommandDialog * Dialog = new TCustomCommandDialog(
+    Application, CustomCommandList, Mode, Options, OnValidate, ShortCuts);
   try
   {
-    Dialog->Description = Description;
-    Dialog->Command = Command;
-    Dialog->Params = Params;
-    Dialog->CustomCommands = CustomCommands;
-    Dialog->Mode = Mode;
-    Dialog->OnValidate = OnValidate;
-    Result = Dialog->Execute();
-    if (Result)
-    {
-      Description = Dialog->Description;
-      Command = Dialog->Command;
-      Params = Dialog->Params;
-    }
+    Result = Dialog->Execute(Command);
   }
   __finally
   {
@@ -47,23 +37,74 @@ bool __fastcall DoCustomCommandDialog(AnsiString & Description,
   return Result;
 }
 //---------------------------------------------------------------------------
-__fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner, unsigned int Options)
+__fastcall TCustomCommandDialog::TCustomCommandDialog(TComponent* Owner,
+  const TCustomCommandList * CustomCommandList, TCustomCommandsMode Mode,
+  int Options, TCustomCommandValidate OnValidate, const TShortCuts * ShortCuts)
   : TForm(Owner)
 {
   SetCorrectFormParent(this);
   UseSystemSettings(this);
-  FCustomCommands = NULL;
-  FMode = ccmEdit;
-  FOnValidate = NULL;
-  FOptions = Options;
+  FCustomCommandList = CustomCommandList;
+  FMode = Mode;
+  FOnValidate = OnValidate;
   InstallPathWordBreakProc(CommandEdit);
   HintLabel(HintText, LoadStr(CUSTOM_COMMAND_PATTERNS_HINT2));
+
+  int CaptionRes;
+  switch (FMode)
+  {
+    case ccmAdd:
+      CaptionRes = CUSTOM_COMMAND_ADD;
+      break;
+    case ccmEdit:
+      CaptionRes = CUSTOM_COMMAND_EDIT;
+      break;
+    case ccmAdHoc:
+    default:
+      CaptionRes = CUSTOM_COMMAND_AD_HOC;
+      break;
+  }
+  Caption = LoadStr(CaptionRes);
+
+  if (FMode == ccmAdHoc)
+  {
+    int Shift = CommandEdit->Top - DescriptionEdit->Top;
+    int Shift2 = Group->Height - ShortCutLabel->Top;
+
+    DescriptionLabel->Visible = false;
+    DescriptionEdit->Visible = false;
+    for (int i = 0; i < Group->ControlCount; i++)
+    {
+      TControl * Control = Group->Controls[i];
+      if (Control->Visible)
+      {
+        if (Control->Top > DescriptionLabel->Top)
+        {
+          Control->Top = Control->Top - Shift;
+        }
+      }
+    }
+
+    ShortCutLabel->Visible = false;
+    ShortCutCombo->Visible = false;
+
+    ClientHeight = ClientHeight - Shift - Shift2;
+  }
+  else
+  {
+    assert(ShortCuts != NULL);
+    InitializeShortCutCombo(ShortCutCombo, *ShortCuts);
+  }
+
+  EnableControl(RemoteCommandButton, FLAGCLEAR(Options, ccoDisableRemote));
+
+  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::UpdateControls()
 {
-  EnableControl(OkButton, !Command.IsEmpty() && !Description.IsEmpty());
-  EnableControl(RemoteCommandButton, FLAGCLEAR(FOptions, ccoDisableRemote));
+  AnsiString Command = CommandEdit->Text;
+  EnableControl(OkButton, !Command.IsEmpty() && !DescriptionEdit->Text.IsEmpty());
 
   bool RemoteCommand = RemoteCommandButton->Checked;
   bool AllowRecursive = true;
@@ -95,27 +136,6 @@ void __fastcall TCustomCommandDialog::UpdateControls()
   EnableControl(CopyResultsCheck, RemoteCommand);
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomCommandDialog::SetCommand(AnsiString value)
-{
-  CommandEdit->Text = value;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TCustomCommandDialog::GetCommand()
-{
-  return CommandEdit->Text;
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomCommandDialog::SetDescription(AnsiString value)
-{
-  FOrigDescription = value;
-  DescriptionEdit->Text = value;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall TCustomCommandDialog::GetDescription()
-{
-  return DescriptionEdit->Text;
-}
-//---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::SetParams(int value)
 {
   FParams = value;
@@ -143,66 +163,32 @@ void __fastcall TCustomCommandDialog::ControlChange(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomCommandDialog::Execute()
+bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
 {
   CommandEdit->Items = CustomWinConfiguration->History["CustomCommand"];
   if (CommandEdit->Items->Count == 0)
   {
-    TCustomCommands * CustomCommands = const_cast<TCustomCommands*>(FCustomCommands);
-    for (int i = 0; i < CustomCommands->Count; i++)
+    for (int i = 0; i < FCustomCommandList->Count; i++)
     {
-      CommandEdit->Items->Add(CustomCommands->Values[CustomCommands->Names[i]]);
+      CommandEdit->Items->Add(FCustomCommandList->Commands[i]->Name);
     }
   }
+
+  DescriptionEdit->Text = Command.Name;
+  FOrigDescription = Command.Name;
+  CommandEdit->Text = Command.Command;
+  SetParams(Command.Params);
+  SetShortCutCombo(ShortCutCombo, Command.ShortCut);
+
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
+    GetCommand(Command);
+
     CommandEdit->SaveToHistory();
     CustomWinConfiguration->History["CustomCommand"] = CommandEdit->Items;
   }
   return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomCommandDialog::FormShow(TObject * /*Sender*/)
-{
-  int CaptionRes;
-  switch (Mode)
-  {
-    case ccmAdd:
-      CaptionRes = CUSTOM_COMMAND_ADD;
-      break;
-    case ccmEdit:
-      CaptionRes = CUSTOM_COMMAND_EDIT;
-      break;
-    case ccmAdHoc:
-    default:
-      CaptionRes = CUSTOM_COMMAND_AD_HOC;
-      break;
-  }
-  Caption = LoadStr(CaptionRes);
-
-  if (Mode == ccmAdHoc)
-  {
-    int Shift = CommandEdit->Top - DescriptionEdit->Top;
-
-    DescriptionLabel->Visible = false;
-    DescriptionEdit->Visible = false;
-    for (int i = 0; i < Group->ControlCount; i++)
-    {
-      TControl * Control = Group->Controls[i];
-      if (Control->Visible)
-      {
-        if (Control->Top > DescriptionLabel->Top)
-        {
-          Control->Top = Control->Top - Shift;
-        }
-      }
-    }
-
-    ClientHeight = ClientHeight - Shift;
-  }
-
-  UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
@@ -210,9 +196,9 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    if ((Mode == ccmAdd) || (Mode == ccmEdit))
+    if ((FMode == ccmAdd) || (FMode == ccmEdit))
     {
-      AnsiString Desc = Description;
+      AnsiString Desc = DescriptionEdit->Text;
 
       if (Desc.Pos("=") > 0)
       {
@@ -220,8 +206,8 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
         throw Exception(FMTLOAD(CUSTOM_COMMAND_INVALID, ("=")));
       }
 
-      if (((Mode == ccmAdd) || ((Mode == ccmEdit) && (Desc != FOrigDescription))) &&
-          (const_cast<TCustomCommands*>(FCustomCommands)->IndexOfName(Desc) >= 0))
+      if (((FMode == ccmAdd) || ((FMode == ccmEdit) && (Desc != FOrigDescription))) &&
+          (FCustomCommandList->Find(Desc) != 0))
       {
         DescriptionEdit->SetFocus();
         throw Exception(FMTLOAD(CUSTOM_COMMAND_DUPLICATE, (Desc)));
@@ -239,10 +225,10 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
 
       TInteractiveCustomCommand InteractiveCustomCommand(FileCustomCommand);
 
-      AnsiString Cmd = Command;
-      InteractiveCustomCommand.Validate(Cmd);
-      Cmd = InteractiveCustomCommand.Complete(Cmd, false);
-      FileCustomCommand->Validate(Cmd);
+      AnsiString Command = CommandEdit->Text;
+      InteractiveCustomCommand.Validate(Command);
+      Command = InteractiveCustomCommand.Complete(Command, false);
+      FileCustomCommand->Validate(Command);
     }
     catch(...)
     {
@@ -252,7 +238,9 @@ void __fastcall TCustomCommandDialog::FormCloseQuery(TObject * /*Sender*/,
 
     if (FOnValidate)
     {
-      FOnValidate(Command, Params);
+      TCustomCommandType Command;
+      GetCommand(Command);
+      FOnValidate(Command);
     }
   }
 }
@@ -265,7 +253,7 @@ void __fastcall TCustomCommandDialog::HelpButtonClick(TObject * /*Sender*/)
 void __fastcall TCustomCommandDialog::CommandEditGetData(
   THistoryComboBox * /*Sender*/, Pointer & Data)
 {
-  Data = reinterpret_cast<void *>(ccSet | Params);
+  Data = reinterpret_cast<void *>(ccSet | GetParams());
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomCommandDialog::CommandEditSetData(
@@ -274,7 +262,15 @@ void __fastcall TCustomCommandDialog::CommandEditSetData(
   int IData = reinterpret_cast<int>(Data);
   if (FLAGSET(IData, ccSet))
   {
-    Params = (IData & ~ccSet);
+    SetParams(IData & ~ccSet);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandDialog::GetCommand(TCustomCommandType & Command)
+{
+  Command.Name = DescriptionEdit->Text;
+  Command.Command = CommandEdit->Text;
+  Command.Params = GetParams();
+  Command.ShortCut = GetShortCutCombo(ShortCutCombo);
 }
 //---------------------------------------------------------------------------

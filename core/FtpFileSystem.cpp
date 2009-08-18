@@ -12,6 +12,7 @@
 #include "Exceptions.h"
 #include "Terminal.h"
 #include "TextsCore.h"
+#include "TextsFileZilla.h"
 #include "HelpCore.h"
 #include <openssl/x509_vfy.h>
 //---------------------------------------------------------------------------
@@ -19,6 +20,9 @@
 //---------------------------------------------------------------------------
 #define FILE_OPERATION_LOOP_EX(ALLOW_SKIP, MESSAGE, OPERATION) \
   FILE_OPERATION_LOOP_CUSTOM(FTerminal, ALLOW_SKIP, MESSAGE, OPERATION)
+//---------------------------------------------------------------------------
+const int DummyCodeClass = 8;
+const int DummyTimeoutCode = 801;
 //---------------------------------------------------------------------------
 class TFileZillaImpl : public TFileZillaIntf
 {
@@ -214,6 +218,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FListAll = FTerminal->SessionData->FtpListAll;
   FFileSystemInfo.ProtocolBaseName = "FTP";
   FFileSystemInfo.ProtocolName = FFileSystemInfo.ProtocolBaseName;
+  FTimeoutStatus = LoadStr(IDS_ERRORMSG_TIMEOUT);
 }
 //---------------------------------------------------------------------------
 __fastcall TFTPFileSystem::~TFTPFileSystem()
@@ -338,14 +343,14 @@ void __fastcall TFTPFileSystem::Open()
   int Pasv = (Data->FtpPasvMode ? 1 : 2);
   int TimeZoneOffset = int(double(Data->TimeDifference) * 24 * 60);
   int UTF8 = 0;
-  switch (Data->Utf)
+  switch (Data->NotUtf)
   {
     case asOn:
-      UTF8 = 1;
+      UTF8 = 2;
       break;
 
     case asOff:
-      UTF8 = 2;
+      UTF8 = 1;
       break;
 
     case asAuto:
@@ -411,7 +416,7 @@ void __fastcall TFTPFileSystem::Open()
     FActive = FFileZillaIntf->Connect(
       HostName.c_str(), Data->PortNumber, UserName.c_str(),
       Password.c_str(), Account.c_str(), false, Path.c_str(),
-      ServerType, Pasv, TimeZoneOffset, UTF8);
+      ServerType, Pasv, TimeZoneOffset, UTF8, Data->FtpForcePasvIp);
 
     assert(FActive);
 
@@ -419,7 +424,8 @@ void __fastcall TFTPFileSystem::Open()
 
     try
     {
-      GotReply(WaitForCommandReply(), REPLY_CONNECT, LoadStr(CONNECTION_FAILED));
+      // do not wait for FTP response code as Connect is complex operation
+      GotReply(WaitForCommandReply(false), REPLY_CONNECT, LoadStr(CONNECTION_FAILED));
 
       // we have passed, even if we got 530 on the way (if it is possible at all),
       // ignore it
@@ -448,7 +454,7 @@ void __fastcall TFTPFileSystem::Close()
   assert(FActive);
   if (FFileZillaIntf->Close())
   {
-    CHECK(FLAGSET(WaitForCommandReply(), TFileZillaIntf::REPLY_DISCONNECTED));
+    CHECK(FLAGSET(WaitForCommandReply(false), TFileZillaIntf::REPLY_DISCONNECTED));
     assert(FActive);
     Discard();
     FTerminal->Closed();
@@ -1276,7 +1282,7 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
 
   Action.FileName(ExpandUNCFileName(FileName));
 
-  OperationProgress->SetFile(FileName);
+  OperationProgress->SetFile(FileName, false);
 
   __int64 Size;
   int Attrs;
@@ -1295,6 +1301,8 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
     FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;
   }
+
+  OperationProgress->SetFileInProgress();
 
   if (Dir)
   {
@@ -1368,10 +1376,11 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
   }
 
   /* TODO : Delete also read-only files. */
-  /* TODO : Show error message on failure. */
   if (FLAGSET(Params, cpDelete))
   {
-    Sysutils::DeleteFile(FileName);
+    FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
+      THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
+    )
   }
   else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
   {
@@ -1450,7 +1459,33 @@ void __fastcall TFTPFileSystem::DirectorySource(const AnsiString DirectoryName,
       Properties.Valid = TValidProperties() << vpRights;
       Properties.Rights = CopyParam->RemoteFileRights(Attrs);
     }
-    FTerminal->CreateDirectory(DestFullName, &Properties);
+
+    try
+    {
+      FTerminal->ExceptionOnFail = true;
+      try
+      {
+        FTerminal->CreateDirectory(DestFullName, &Properties);
+      }
+      __finally
+      {
+        FTerminal->ExceptionOnFail = false;
+      }
+    }
+    catch(...)
+    {
+      TRemoteFile * File = NULL;
+      // ignore non-fatal error when the directory already exists
+      bool Rethrow =
+        !FTerminal->Active ||
+        !FTerminal->FileExists(UnixExcludeTrailingBackslash(DestFullName), &File) ||
+        !File->IsDirectory;
+      delete File;
+      if (Rethrow)
+      {
+        throw;
+      }
+    }
   }
 
   /* TODO : Delete also read-only directories. */
@@ -1762,7 +1797,7 @@ void __fastcall TFTPFileSystem::ReadFile(const AnsiString FileName,
     AFile = FFileListCache->FindFile(NameOnly);
   }
 
-  // if cache is invalid or file is not in cache, (re)read the dirctory
+  // if cache is invalid or file is not in cache, (re)read the directory
   if (AFile == NULL)
   {
     delete FFileListCache;
@@ -1913,28 +1948,23 @@ const char * __fastcall TFTPFileSystem::GetOption(int OptionID) const
   switch (OptionID)
   {
     case OPTION_PROXYHOST:
+    case OPTION_FWHOST:
       FOptionScratch = Data->ProxyHost;
       break;
 
     case OPTION_PROXYUSER:
+    case OPTION_FWUSER:
       FOptionScratch = Data->ProxyUsername;
       break;
 
     case OPTION_PROXYPASS:
+    case OPTION_FWPASS:
       FOptionScratch = Data->ProxyPassword;
       break;
 
     case OPTION_ANONPWD:
     case OPTION_TRANSFERIP:
     case OPTION_TRANSFERIP6:
-      FOptionScratch = "";
-      break;
-
-    case OPTION_FWHOST:
-    case OPTION_FWUSER:
-    case OPTION_FWPASS:
-      // should never get here OPTION_LOGONTYPE being 0
-      assert(false);
       FOptionScratch = "";
       break;
 
@@ -1982,6 +2012,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_PROXYPORT:
+    case OPTION_FWPORT:
       Result = Data->ProxyPort;
       break;
 
@@ -1990,13 +2021,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
       break;
 
     case OPTION_LOGONTYPE:
-      Result = 0; // no FTP proxy
-      break;
-
-    case OPTION_FWPORT:
-      // should never get here OPTION_LOGONTYPE being 0
-      assert(false);
-      Result = 0;
+      Result = Data->FtpProxyLogonType;
       break;
 
     case OPTION_TIMEOUTLENGTH:
@@ -2166,11 +2191,23 @@ void __fastcall TFTPFileSystem::PoolForFatalNonCommandReply()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int& ReplyToAwait)
+bool __fastcall TFTPFileSystem::KeepWaitingForReply(unsigned int & ReplyToAwait, bool WantLastCode)
+{
+  // to keep waiting,
+  // non-command reply must be unset,
+  // the reply we wait for must be unset or
+  // last code must be unset (if we wait for it)
+  return
+     (FReply == 0) &&
+     ((ReplyToAwait == 0) ||
+      (WantLastCode && ((FLastCodeClass == 0) || (FLastCodeClass == 1))));
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int & ReplyToAwait, bool WantLastCode)
 {
   try
   {
-    while ((ReplyToAwait == 0) && (FReply == 0))
+    while (KeepWaitingForReply(ReplyToAwait, WantLastCode))
     {
       WaitForMessages();
       // wait for the first reply only,
@@ -2179,7 +2216,7 @@ void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int& ReplyToAwait)
       // sometime it happens that command (like download) fails because of the error
       // and does not catch the disconnection. then asynchronous "disconnect reply"
       // is posted immediately afterwards. leave detection of that to Idle()
-      while (ProcessMessage() && (ReplyToAwait == 0) && (FReply == 0));
+      while (ProcessMessage() && KeepWaitingForReply(ReplyToAwait, WantLastCode));
     }
 
     if (FReply != 0)
@@ -2195,13 +2232,13 @@ void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int& ReplyToAwait)
     // associated with future connect
     if (FTerminal->Active)
     {
-      DoWaitForReply(ReplyToAwait);
+      DoWaitForReply(ReplyToAwait, WantLastCode);
     }
     throw;
   }
 }
 //---------------------------------------------------------------------------
-unsigned int __fastcall TFTPFileSystem::WaitForReply(bool Command)
+unsigned int __fastcall TFTPFileSystem::WaitForReply(bool Command, bool WantLastCode)
 {
   assert(FReply == 0);
   assert(FCommandReply == 0);
@@ -2216,7 +2253,7 @@ unsigned int __fastcall TFTPFileSystem::WaitForReply(bool Command)
   try
   {
     unsigned int & ReplyToAwait = (Command ? FCommandReply : FReply);
-    DoWaitForReply(ReplyToAwait);
+    DoWaitForReply(ReplyToAwait, WantLastCode);
 
     Reply = ReplyToAwait;
   }
@@ -2231,14 +2268,14 @@ unsigned int __fastcall TFTPFileSystem::WaitForReply(bool Command)
   return Reply;
 }
 //---------------------------------------------------------------------------
-unsigned int __fastcall TFTPFileSystem::WaitForCommandReply()
+unsigned int __fastcall TFTPFileSystem::WaitForCommandReply(bool WantLastCode)
 {
-  return WaitForReply(true);
+  return WaitForReply(true, WantLastCode);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::WaitForFatalNonCommandReply()
 {
-  WaitForReply(false);
+  WaitForReply(false, false);
   assert(false);
 }
 //---------------------------------------------------------------------------
@@ -2349,7 +2386,11 @@ void __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
 
         if (FLastCode == 425)
         {
-          MoreMessages->Add(LoadStr(FTP_CANNOT_OPEN_ACTIVE_CONNECTION));
+          assert(FTerminal->SessionData->FtpPasvMode);
+          if (FTerminal->SessionData->FtpPasvMode)
+          {
+            MoreMessages->Add(LoadStr(FTP_CANNOT_OPEN_ACTIVE_CONNECTION));
+          }
         }
 
         MoreMessages->AddStrings(FLastError);
@@ -2401,7 +2442,7 @@ void __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
       }
     }
 
-    if (Code != NULL)
+    if ((Code != NULL) && (FLastCodeClass != DummyCodeClass))
     {
       *Code = FLastCode;
     }
@@ -2416,6 +2457,12 @@ void __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
   {
     ResetReply();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TFTPFileSystem::SetLastCode(int Code)
+{
+  FLastCode = Code;
+  FLastCodeClass = (Code / 100);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::HandleReplyStatus(AnsiString Response)
@@ -2459,8 +2506,7 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(AnsiString Response)
     {
       FLastResponse->Add(Response.SubString(5, Response.Length() - 4));
     }
-    FLastCode = Code;
-    FLastCodeClass = (Code / 100);
+    SetLastCode(Code);
   }
   else
   {
@@ -2511,6 +2557,13 @@ void __fastcall TFTPFileSystem::HandleReplyStatus(AnsiString Response)
       if (FLastCode == 215)
       {
         FSystem = FLastResponse->Text.TrimRight();
+        // full name is "Personal FTP Server PRO K6.0"
+        if ((FListAll == asAuto) &&
+            (FSystem.Pos("Personal FTP Server") > 0))
+        {
+          FTerminal->LogEvent("Server is known not to support LIST -a");
+          FListAll = asOff;
+        }
       }
       else
       {
@@ -2590,6 +2643,16 @@ bool __fastcall TFTPFileSystem::HandleStatus(const char * AStatus, int Type)
     case TFileZillaIntf::LOG_ERROR:
     case TFileZillaIntf::LOG_APIERROR:
     case TFileZillaIntf::LOG_WARNING:
+      // when timeout message occurs, break loop waiting for response code
+      // by setting dummy one
+      if ((Type == TFileZillaIntf::LOG_ERROR) &&
+          (Status == FTimeoutStatus))
+      {
+        if (FLastCode == 0)
+        {
+          SetLastCode(DummyTimeoutCode);
+        }
+      }
       // there can be multiple error messages associated with single failure
       // (such as "cannot open local file..." followed by "download failed"
       Status = ExtractStatusMessage(Status);
@@ -2837,8 +2900,91 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
   }
   else
   {
-    AnsiString Fingerprint =
+    FSessionInfo.CertificateFingerprint =
       StrToHex(AnsiString((const char*)Data.Hash, Data.HashLen), false, ':');
+
+    int VerificationResultStr;
+    switch (Data.VerificationResult)
+    {
+      case X509_V_OK:
+        VerificationResultStr = CERT_OK;
+        break;
+      case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
+        VerificationResultStr = CERT_ERR_UNABLE_TO_GET_ISSUER_CERT;
+        break;
+      case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
+        VerificationResultStr = CERT_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE;
+        break;
+      case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
+        VerificationResultStr = CERT_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY;
+        break;
+      case X509_V_ERR_CERT_SIGNATURE_FAILURE:
+        VerificationResultStr = CERT_ERR_CERT_SIGNATURE_FAILURE;
+        break;
+      case X509_V_ERR_CERT_NOT_YET_VALID:
+        VerificationResultStr = CERT_ERR_CERT_NOT_YET_VALID;
+        break;
+      case X509_V_ERR_CERT_HAS_EXPIRED:
+        VerificationResultStr = CERT_ERR_CERT_HAS_EXPIRED;
+        break;
+      case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
+        VerificationResultStr = CERT_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD;
+        break;
+      case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
+        VerificationResultStr = CERT_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD;
+        break;
+      case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
+        VerificationResultStr = CERT_ERR_DEPTH_ZERO_SELF_SIGNED_CERT;
+        break;
+      case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
+        VerificationResultStr = CERT_ERR_SELF_SIGNED_CERT_IN_CHAIN;
+        break;
+      case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
+        VerificationResultStr = CERT_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY;
+        break;
+      case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
+        VerificationResultStr = CERT_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE;
+        break;
+      case X509_V_ERR_INVALID_CA:
+        VerificationResultStr = CERT_ERR_INVALID_CA;
+        break;
+      case X509_V_ERR_PATH_LENGTH_EXCEEDED:
+        VerificationResultStr = CERT_ERR_PATH_LENGTH_EXCEEDED;
+        break;
+      case X509_V_ERR_INVALID_PURPOSE:
+        VerificationResultStr = CERT_ERR_INVALID_PURPOSE;
+        break;
+      case X509_V_ERR_CERT_UNTRUSTED:
+        VerificationResultStr = CERT_ERR_CERT_UNTRUSTED;
+        break;
+      case X509_V_ERR_CERT_REJECTED:
+        VerificationResultStr = CERT_ERR_CERT_REJECTED;
+        break;
+      case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
+        VerificationResultStr = CERT_ERR_KEYUSAGE_NO_CERTSIGN;
+        break;
+      case X509_V_ERR_CERT_CHAIN_TOO_LONG:
+        VerificationResultStr = CERT_ERR_CERT_CHAIN_TOO_LONG;
+        break;
+      default:
+        VerificationResultStr = CERT_ERR_UNKNOWN;
+        break;
+    }
+
+    AnsiString Summary = LoadStr(VerificationResultStr);
+    if (Data.VerificationResult != X509_V_OK)
+    {
+      Summary += " " + FMTLOAD(CERT_ERRDEPTH, (Data.VerificationDepth + 1));
+    }
+
+    FSessionInfo.Certificate =
+      FMTLOAD(CERT_TEXT, (
+        FormatContact(Data.Subject),
+        FormatContact(Data.Issuer),
+        FormatValidityTime(Data.ValidFrom),
+        FormatValidityTime(Data.ValidUntil),
+        FSessionInfo.CertificateFingerprint,
+        Summary));
 
     RequestResult = 0;
 
@@ -2849,7 +2995,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       Storage->AccessMode = smRead;
 
       if (Storage->OpenSubKey(CertificateStorageKey, false) &&
-          Storage->ValueExists(Fingerprint))
+          Storage->ValueExists(FSessionInfo.CertificateFingerprint))
       {
         RequestResult = 1;
       }
@@ -2865,7 +3011,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       while ((RequestResult == 0) && !Buf.IsEmpty())
       {
         AnsiString ExpectedKey = CutToChar(Buf, ';', false);
-        if (ExpectedKey == Fingerprint)
+        if (ExpectedKey == FSessionInfo.CertificateFingerprint)
         {
           RequestResult = 1;
         }
@@ -2874,91 +3020,8 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
     if (RequestResult == 0)
     {
-      int VerificationResultStr;
-      switch (Data.VerificationResult)
-      {
-        case X509_V_OK:
-          VerificationResultStr = CERT_OK;
-          break;
-        case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT:
-          VerificationResultStr = CERT_ERR_UNABLE_TO_GET_ISSUER_CERT;
-          break;
-        case X509_V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE:
-          VerificationResultStr = CERT_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE;
-          break;
-        case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
-          VerificationResultStr = CERT_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY;
-          break;
-        case X509_V_ERR_CERT_SIGNATURE_FAILURE:
-          VerificationResultStr = CERT_ERR_CERT_SIGNATURE_FAILURE;
-          break;
-        case X509_V_ERR_CERT_NOT_YET_VALID:
-          VerificationResultStr = CERT_ERR_CERT_NOT_YET_VALID;
-          break;
-        case X509_V_ERR_CERT_HAS_EXPIRED:
-          VerificationResultStr = CERT_ERR_CERT_HAS_EXPIRED;
-          break;
-        case X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD:
-          VerificationResultStr = CERT_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD;
-          break;
-        case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
-          VerificationResultStr = CERT_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD;
-          break;
-        case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
-          VerificationResultStr = CERT_ERR_DEPTH_ZERO_SELF_SIGNED_CERT;
-          break;
-        case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
-          VerificationResultStr = CERT_ERR_SELF_SIGNED_CERT_IN_CHAIN;
-          break;
-        case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-          VerificationResultStr = CERT_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY;
-          break;
-        case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE:
-          VerificationResultStr = CERT_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE;
-          break;
-        case X509_V_ERR_INVALID_CA:
-          VerificationResultStr = CERT_ERR_INVALID_CA;
-          break;
-        case X509_V_ERR_PATH_LENGTH_EXCEEDED:
-          VerificationResultStr = CERT_ERR_PATH_LENGTH_EXCEEDED;
-          break;
-        case X509_V_ERR_INVALID_PURPOSE:
-          VerificationResultStr = CERT_ERR_INVALID_PURPOSE;
-          break;
-        case X509_V_ERR_CERT_UNTRUSTED:
-          VerificationResultStr = CERT_ERR_CERT_UNTRUSTED;
-          break;
-        case X509_V_ERR_CERT_REJECTED:
-          VerificationResultStr = CERT_ERR_CERT_REJECTED;
-          break;
-        case X509_V_ERR_KEYUSAGE_NO_CERTSIGN:
-          VerificationResultStr = CERT_ERR_KEYUSAGE_NO_CERTSIGN;
-          break;
-        case X509_V_ERR_CERT_CHAIN_TOO_LONG:
-          VerificationResultStr = CERT_ERR_CERT_CHAIN_TOO_LONG;
-          break;
-        default:
-          VerificationResultStr = CERT_ERR_UNKNOWN;
-          break;
-      }
-
-      AnsiString Summary = LoadStr(VerificationResultStr);
-      if (Data.VerificationResult != X509_V_OK)
-      {
-        Summary += " " + FMTLOAD(CERT_ERRDEPTH, (Data.VerificationDepth + 1));
-      }
-
       TClipboardHandler ClipboardHandler;
-      ClipboardHandler.Text = Fingerprint;
-
-      AnsiString Message =
-        FMTLOAD(VERIFY_CERT_PROMPT, (
-          FormatContact(Data.Subject),
-          FormatContact(Data.Issuer),
-          FormatValidityTime(Data.ValidFrom),
-          FormatValidityTime(Data.ValidUntil),
-          Fingerprint,
-          Summary));
+      ClipboardHandler.Text = FSessionInfo.CertificateFingerprint;
 
       TQueryButtonAlias Aliases[1];
       Aliases[0].Button = qaRetry;
@@ -2971,7 +3034,8 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
       Params.Aliases = Aliases;
       Params.AliasesCount = LENOF(Aliases);
       int Answer = FTerminal->QueryUser(
-        Message, NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
+        FMTLOAD(VERIFY_CERT_PROMPT2, (FSessionInfo.Certificate)),
+        NULL, qaYes | qaNo | qaCancel | qaRetry, &Params, qtWarning);
 
       switch (Answer)
       {
@@ -3005,7 +3069,7 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestVerifyCertificate(
 
           if (Storage->OpenSubKey(CertificateStorageKey, true))
           {
-            Storage->WriteString(Fingerprint, "");
+            Storage->WriteString(FSessionInfo.CertificateFingerprint, "");
           }
         }
         __finally

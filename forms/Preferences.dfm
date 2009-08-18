@@ -708,6 +708,7 @@ object PreferencesDialog: TPreferencesDialog
           Width = 529
           Height = 353
           HelpType = htKeyword
+          AutoScroll = False
           TabOrder = 0
         end
       end
@@ -1239,6 +1240,7 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 9
             MinValue = 1
+            Value = 1
             MaxLength = 1
             TabOrder = 0
           end
@@ -1279,7 +1281,7 @@ object PreferencesDialog: TPreferencesDialog
             Top = 74
             Width = 337
             Height = 17
-            Caption = '&Enqueue each file individually by default'
+            Caption = '&Transfer each file individually on background by default'
             TabOrder = 2
           end
         end
@@ -1359,13 +1361,13 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 88
           Width = 357
-          Height = 148
+          Height = 198
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Temporary directory'
           TabOrder = 1
           DesignSize = (
             357
-            148)
+            198)
           object Label6: TLabel
             Left = 16
             Top = 22
@@ -1411,28 +1413,48 @@ object PreferencesDialog: TPreferencesDialog
           end
           object TemporaryDirectoryCleanupCheck: TCheckBox
             Left = 16
-            Top = 94
+            Top = 144
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Cleanup obsolete temporary directories on startup'
-            TabOrder = 3
+            TabOrder = 5
             OnClick = ControlChange
           end
           object ConfirmTemporaryDirectoryCleanupCheck: TCheckBox
             Left = 32
-            Top = 119
+            Top = 169
             Width = 309
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = '&Ask before cleanup'
+            TabOrder = 6
+            OnClick = ControlChange
+          end
+          object TemporaryDirectoryAppendSessionCheck: TCheckBox
+            Left = 16
+            Top = 94
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Append &session name to temporary path'
+            TabOrder = 3
+            OnClick = ControlChange
+          end
+          object TemporaryDirectoryAppendPathCheck: TCheckBox
+            Left = 16
+            Top = 119
+            Width = 325
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'Append remote &path to temporary path'
             TabOrder = 4
             OnClick = ControlChange
           end
         end
         object OtherStorageGroup: TGroupBox
           Left = 8
-          Top = 243
+          Top = 293
           Width = 357
           Height = 53
           Anchors = [akLeft, akTop, akRight]
@@ -1540,25 +1562,41 @@ object PreferencesDialog: TPreferencesDialog
           Left = 8
           Top = 139
           Width = 357
-          Height = 101
+          Height = 128
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Automatic reconnect'
           TabOrder = 1
           object SessionReopenAutoLabel: TLabel
             Left = 34
             Top = 72
-            Width = 77
+            Width = 80
             Height = 13
-            Caption = '&Reconnect after'
+            Caption = '&Reconnect after:'
             FocusControl = SessionReopenAutoEdit
           end
           object SessionReopenAutoSecLabel: TLabel
-            Left = 246
+            Left = 254
             Top = 72
             Width = 40
             Height = 13
             Caption = 'seconds'
             FocusControl = SessionReopenAutoEdit
+          end
+          object SessionReopenTimeoutLabel: TLabel
+            Left = 34
+            Top = 100
+            Width = 108
+            Height = 13
+            Caption = '&Keep reconnecting for:'
+            FocusControl = SessionReopenTimeoutEdit
+          end
+          object SessionReopenTimeoutSecLabel: TLabel
+            Left = 254
+            Top = 100
+            Width = 40
+            Height = 13
+            Caption = 'seconds'
+            FocusControl = SessionReopenTimeoutEdit
           end
           object SessionReopenAutoCheck: TCheckBox
             Left = 16
@@ -1572,7 +1610,7 @@ object PreferencesDialog: TPreferencesDialog
           object SessionReopenAutoEdit: TUpDownEdit
             Left = 168
             Top = 67
-            Width = 73
+            Width = 81
             Height = 21
             Alignment = taRightJustify
             Increment = 5
@@ -1587,9 +1625,22 @@ object PreferencesDialog: TPreferencesDialog
             Top = 45
             Width = 337
             Height = 17
-            Caption = '&Automatically reconnect session, if it breaks while idle'
+            Caption = 'Automatically reconnect session, if it breaks &while idle'
             TabOrder = 1
             OnClick = ControlChange
+          end
+          object SessionReopenTimeoutEdit: TUpDownEdit
+            Left = 168
+            Top = 95
+            Width = 81
+            Height = 21
+            Alignment = taRightJustify
+            Increment = 30
+            MaxValue = 86400
+            MaxLength = 5
+            TabOrder = 3
+            OnGetValue = SessionReopenTimeoutEditGetValue
+            OnSetValue = SessionReopenTimeoutEditSetValue
           end
         end
       end

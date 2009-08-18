@@ -1423,7 +1423,7 @@ __fastcall TManagementScript::TManagementScript(TStoredSessionList * StoredSessi
 
   FCommands->Register("exit", SCRIPT_EXIT_DESC, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
   FCommands->Register("bye", 0, SCRIPT_EXIT_HELP, &ExitProc, 0, 0, false);
-  FCommands->Register("open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP2, &OpenProc, 0, 1, true);
+  FCommands->Register("open", SCRIPT_OPEN_DESC, SCRIPT_OPEN_HELP3, &OpenProc, 0, 1, true);
   FCommands->Register("close", SCRIPT_CLOSE_DESC, SCRIPT_CLOSE_HELP, &CloseProc, 0, 1, false);
   FCommands->Register("session", SCRIPT_SESSION_DESC, SCRIPT_SESSION_HELP, &SessionProc, 0, 1, false);
   FCommands->Register("lpwd", SCRIPT_LPWD_DESC, SCRIPT_LPWD_HELP, &LPwdProc, 0, 0, false);
@@ -1556,9 +1556,11 @@ void __fastcall TManagementScript::ShowPendingProgress()
 void __fastcall TManagementScript::TerminalOperationProgress(
   TFileOperationProgressType & ProgressData, TCancelStatus & Cancel)
 {
-  if (ProgressData.Operation == foCopy)
+  if ((ProgressData.Operation == foCopy) ||
+      (ProgressData.Operation == foMove))
   {
-    if (ProgressData.InProgress  && !ProgressData.FileName.IsEmpty())
+    if (ProgressData.InProgress  && ProgressData.FileInProgress &&
+        !ProgressData.FileName.IsEmpty())
     {
       bool DoPrint = false;
       bool First = false;
@@ -1631,10 +1633,10 @@ void __fastcall TManagementScript::TerminalOperationFinished(
 {
   assert(Operation != foCalculateSize);
 
-  if (Success && (Operation != foCalculateSize) && (Operation != foCopy))
+  if (Success && (Operation != foCalculateSize) && (Operation != foCopy) && (Operation != foMove))
   {
     ShowPendingProgress();
-    // For FKeepingUpToDate we should send events to synchronize controller eventuelly.
+    // For FKeepingUpToDate we should send events to synchronize controller eventually.
     if (Synchronizing() && (Operation == foDelete))
     {
       // Note that this is duplicated with "keep up to date" log.

@@ -47,6 +47,7 @@ __published:
   TButton *UpSharedBookmarkButton;
   TButton *DownSharedBookmarkButton;
   TTabSheet *SharedBookmarksSheet;
+  TButton *ShortCutSharedBookmarkButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);
@@ -68,6 +69,7 @@ __published:
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall BookmarksListEndDrag(TObject *Sender, TObject *Target,
           int X, int Y);
+  void __fastcall ShortCutBookmarkButtonClick(TObject *Sender);
 
 public:
   __fastcall TOpenDirectoryDialog(TComponent* AOwner);
@@ -117,9 +119,13 @@ private:
   void __fastcall SelectBookmark(TListBox * BookmarksList);
   void __fastcall UpdateBookmarkControls(
     TButton * AddBookmarkButton, TButton * RemoveBookmarkButton,
+    TButton * ShortCutBookmarkButton,
     TButton * UpBookmarkButton, TButton * DownBookmarkButton,
     TListBox * BookmarksList, bool ListBoxUpdate);
   void __fastcall BookmarkSelected(TObject * Sender);
+  inline AnsiString __fastcall BookmarkDirectory(TBookmark * Bookmark);
+  AnsiString __fastcall BookmarkText(TBookmark * Bookmark);
+  inline TBookmark * __fastcall GetBookmark(TListBox * BookmarksList, int Index);
 };
 //----------------------------------------------------------------------------
 #endif

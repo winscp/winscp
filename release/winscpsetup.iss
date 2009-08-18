@@ -28,7 +28,7 @@
 #define ShellExtFileSource SourceDir+"\DragExt.dll"
 #define ShellExt64FileSource SourceDir+"\DragExt64.dll"
 #define ConsoleFileSource SourceDir+"\WinSCP.com"
-#define IconFileSource SourceDir+"\resource\Icon128.ico"
+#define IconFileSource SourceDir+"\resource\Icon256.ico"
 
 #define Major
 #define Minor
@@ -39,8 +39,6 @@
 
 #ifdef OpenCandy
 #include "opencandy\OCSetupHlp.iss"
-#define OCDLL "..\opencandy\OCSetupHlp.dll"
-#define OCID "c8223ec7b782bba155ed4a5f24e87c75"
 #endif
 
 [Setup]
@@ -270,9 +268,11 @@ Source: "{#PuttySourceDir}\pageant.exe"; DestDir: "{app}\PuTTY"; \
 Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
   Components: puttygen; Flags: ignoreversion
 #ifdef OpenCandy
-Source: {#OCDLL}; DestDir: {app}\OpenCandy; \
-  Components: main; Flags: overwritereadonly ignoreversion; \
-  AfterInstall: OpenCandyProcessEmbedded
+Source: "..\opencandy\{#OCREADME}"; DestDir: {app}\OpenCandy; \
+  Flags: overwritereadonly ignoreversion; Check: OpenCandyCheckInstallReadme
+Source: "..\opencandy\{#OCDLL}"; DestDir: {app}\OpenCandy; \
+  Flags: overwritereadonly ignoreversion; \
+  Check: OpenCandyCheckInstallDLL; AfterInstall: OpenCandyProcessEmbedded
 #endif
 
 [Registry]
@@ -363,9 +363,6 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/UninstallCleanup"; \
   RunOnceId: "UninstallCleanup"
 Filename: "{app}\WinSCP.exe"; Parameters: "/RemoveSearchPath"; \
   RunOnceId: "RemoveSearchPath"
-#ifdef OpenCandy
-Filename: rundll32.exe; Parameters: "{code:OCSetupHlpString|\OpenCandy\OCSetupHlp.dll} /U{#OCID}"
-#endif
 
 [Code]
 const
@@ -739,7 +736,7 @@ begin
   AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
 
 #ifdef OpenCandy
-  OpenCandyInit('WinSCP', '{#OCID}', '3d0f240d63cf2239f9e45c3562d8bdbc',
+  OpenCandyInit('WinSCP', '{#OpenCandyKey}', '3d0f240d63cf2239f9e45c3562d8bdbc',
     ExpandConstant('{cm:LanguageISOCode}'), '{#RegistryKey}\OpenCandy');
 #endif
 end;
@@ -769,15 +766,8 @@ end;
 
 #ifdef OpenCandy
 function BackButtonClick(CurPageID: Integer): Boolean;
-var
-  OCMsg: string;
 begin
-  if Assigned(OCOfferPage) and (CurPageID = OCOfferPage.ID) then
-  begin
-    OCRestorePage(OCOfferPage.Surface.Handle);
-    Result := True;
-  end
-    else Result := True;
+  Result := OpenCandyBackButtonClick(CurPageID);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;

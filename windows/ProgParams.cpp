@@ -43,8 +43,12 @@ TProgramParams * __fastcall TProgramParams::Instance()
 //---------------------------------------------------------------------------
 TProgramParams::TProgramParams()
 {
-  for (int i = 1; i <= ::ParamCount(); i++)
+  AnsiString CommandLine = CmdLine;
+
+  AnsiString Param;
+  CutToken(CommandLine, Param);
+  while (CutToken(CommandLine, Param))
   {
-    Add(ParamStr(i));
+    Add(Param);
   }
 }

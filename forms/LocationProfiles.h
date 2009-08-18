@@ -54,6 +54,7 @@ __published:
   TButton *SharedBookmarkMoveToButton;
   TButton *UpSharedBookmarkButton;
   TButton *DownSharedBookmarkButton;
+  TButton *ShortCutSharedBookmarkButton;
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall AddBookmarkButtonClick(TObject *Sender);
   void __fastcall RemoveBookmarkButtonClick(TObject *Sender);
@@ -87,6 +88,7 @@ __published:
     bool & AllowEdit);
   void __fastcall ProfilesViewEndDrag(TObject *Sender, TObject *Target,
           int X, int Y);
+  void __fastcall ShortCutBookmarkButtonClick(TObject *Sender);
 
 public:
   __fastcall TLocationProfilesDialog(TComponent* AOwner);
@@ -138,6 +140,7 @@ private:
     TTreeView * ProfilesView,
     TButton * AddBookmarkButton, TButton * RemoveBookmarkButton,
     TButton * RenameBookmarkButton,  TButton * BookmarkMoveToButton,
+    TButton * ShortCutBookmarkButton,
     TButton * UpBookmarkButton, TButton * DownBookmarkButton);
   TBookmarkList * GetBookmarkList(TObject * Sender);
   TStringList * GetFolders(TObject * Sender);
@@ -154,6 +157,7 @@ private:
   void __fastcall BookmarkFolderValidate(const TDialogData & Data);
   void __fastcall BookmarkFolderValidateName(const AnsiString Name, bool AllowEmpty);
   bool __fastcall ProfileMatch(TTreeNode * Node);
+  AnsiString __fastcall BookmarkText(TBookmark * Bookmark);
 };
 //----------------------------------------------------------------------------
 #endif

@@ -24,6 +24,9 @@ struct TSessionInfo
   AnsiString SshVersionString;
   AnsiString SshImplementation;
   AnsiString HostKeyFingerprint;
+
+  AnsiString CertificateFingerprint;
+  AnsiString Certificate;
 };
 //---------------------------------------------------------------------------
 enum TFSCapability { fcUserGroupListing, fcModeChanging, fcGroupChanging,

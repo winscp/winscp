@@ -28,44 +28,36 @@ __published:
   TButton *HelpButton;
   TCheckBox *CopyResultsCheck;
   TStaticText *HintText;
+  TLabel *ShortCutLabel;
+  TComboBox *ShortCutCombo;
   void __fastcall ControlChange(TObject *Sender);
-  void __fastcall FormShow(TObject *Sender);
   void __fastcall FormCloseQuery(TObject *Sender, bool &CanClose);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall CommandEditGetData(THistoryComboBox *Sender,
-          Pointer &Data);
+    Pointer & Data);
   void __fastcall CommandEditSetData(THistoryComboBox *Sender,
-          Pointer Data);
+    Pointer Data);
 
 private:
   TCustomCommandsMode FMode;
-  int FOptions;
   int FParams;
   AnsiString FOrigDescription;
-  const TCustomCommands * FCustomCommands;
+  const TCustomCommandList * FCustomCommandList;
   TCustomCommandValidate FOnValidate;
 
-  void __fastcall SetCommand(AnsiString value);
-  AnsiString __fastcall GetCommand();
-  void __fastcall SetDescription(AnsiString value);
-  AnsiString __fastcall GetDescription();
   void __fastcall SetParams(int value);
   int __fastcall GetParams();
+  void __fastcall GetCommand(TCustomCommandType & Command);
 
 protected:
   void __fastcall UpdateControls();
 
 public:
-  __fastcall TCustomCommandDialog(TComponent* Owner, unsigned int Options);
+  __fastcall TCustomCommandDialog(TComponent* Owner,
+    const TCustomCommandList * CustomCommandList, TCustomCommandsMode Mode,
+    int Options, TCustomCommandValidate OnValidate, const TShortCuts * ShortCuts);
 
-  bool __fastcall Execute();
-
-  __property AnsiString Command = { read = GetCommand, write = SetCommand };
-  __property AnsiString Description = { read = GetDescription, write = SetDescription };
-  __property int Params = { read = GetParams, write = SetParams };
-  __property TCustomCommandsMode Mode = { read = FMode, write = FMode };
-  __property const TCustomCommands * CustomCommands = { read = FCustomCommands, write = FCustomCommands };
-  __property TCustomCommandValidate OnValidate = { read = FOnValidate, write = FOnValidate };
+  bool __fastcall Execute(TCustomCommandType & Command);
 };
 //---------------------------------------------------------------------------
 #endif

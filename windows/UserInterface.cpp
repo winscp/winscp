@@ -22,7 +22,6 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 const AnsiString AppName = "WinSCP";
-const AnsiString AppNameVersion = "WinSCP";
 //---------------------------------------------------------------------------
 TConfiguration * __fastcall CreateConfiguration()
 {
@@ -57,6 +56,11 @@ TCustomScpExplorerForm * __fastcall CreateScpExplorer()
 AnsiString __fastcall SshVersionString()
 {
   return FORMAT("WinSCP-release-%s", (Configuration->Version));
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall AppNameString()
+{
+  return "WinSCP";
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall GetRegistryKey()
@@ -110,13 +114,23 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
         Manager->DisconnectActiveTerminal();
       }
 
+      int SessionReopenTimeout = 0;
+      TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
+      if ((ManagedTerminal != NULL) &&
+          ((Configuration->SessionReopenTimeout == 0) ||
+           ((double)ManagedTerminal->ReopenStart == 0) ||
+           (int(double(Now() - ManagedTerminal->ReopenStart) * 24*60*60*1000) < Configuration->SessionReopenTimeout)))
+      {
+        SessionReopenTimeout = GUIConfiguration->SessionReopenAutoIdle;
+      }
+
       int Result;
       if (CloseOnCompletion)
       {
         if (WinConfiguration->ConfirmExitOnCompletion)
         {
           TMessageParams Params(mpNeverAskAgainCheck);
-          Result = FatalExceptionMessageDialog(E, Type,
+          Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout,
             Manager->Count > 1 ?
               FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
               LoadStr(EXIT_ON_COMPLETION),
@@ -135,7 +149,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       }
       else
       {
-        Result = FatalExceptionMessageDialog(E, Type);
+        Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout);
       }
 
       if (Result == qaYes)
@@ -468,4 +482,78 @@ int __fastcall StartThread(void * SecurityAttributes, unsigned StackSize,
   Param->Parameter = Parameter;
   return BeginThread(SecurityAttributes, StackSize, ThreadProc, Param,
     CreationFlags, ThreadId);
+}
+//---------------------------------------------------------------------------
+static TShortCut FirstCtrlNumberShortCut = ShortCut('0', TShiftState() << ssCtrl);
+static TShortCut LastCtrlNumberShortCut = ShortCut('9', TShiftState() << ssCtrl);
+static TShortCut FirstShiftCtrlAltLetterShortCut = ShortCut('A', TShiftState() << ssShift << ssCtrl << ssAlt);
+static TShortCut LastShiftCtrlAltLetterShortCut = ShortCut('Z', TShiftState() << ssShift << ssCtrl << ssAlt);
+//---------------------------------------------------------------------------
+void __fastcall InitializeShortCutCombo(TComboBox * ComboBox,
+  const TShortCuts & ShortCuts)
+{
+  ComboBox->Items->BeginUpdate();
+  try
+  {
+    ComboBox->Items->Clear();
+
+    ComboBox->Items->AddObject(LoadStr(SHORTCUT_NONE), reinterpret_cast<TObject* >(0));
+
+    for (TShortCut AShortCut = FirstCtrlNumberShortCut; AShortCut <= LastCtrlNumberShortCut; AShortCut++)
+    {
+      if (!ShortCuts.Has(AShortCut))
+      {
+        ComboBox->Items->AddObject(ShortCutToText(AShortCut), reinterpret_cast<TObject* >(AShortCut));
+      }
+    }
+
+    for (TShortCut AShortCut = FirstShiftCtrlAltLetterShortCut; AShortCut <= LastShiftCtrlAltLetterShortCut; AShortCut++)
+    {
+      if (!ShortCuts.Has(AShortCut))
+      {
+        ComboBox->Items->AddObject(ShortCutToText(AShortCut), reinterpret_cast<TObject* >(AShortCut));
+      }
+    }
+  }
+  __finally
+  {
+    ComboBox->Items->EndUpdate();
+  }
+
+  ComboBox->Style = csDropDownList;
+  ComboBox->DropDownCount = 16;
+}
+//---------------------------------------------------------------------------
+void __fastcall SetShortCutCombo(TComboBox * ComboBox, TShortCut Value)
+{
+  for (int Index = ComboBox->Items->Count - 1; Index >= 0; Index--)
+  {
+    TShortCut AShortCut = TShortCut(ComboBox->Items->Objects[Index]);
+    if (AShortCut == Value)
+    {
+      ComboBox->ItemIndex = Index;
+      break;
+    }
+    else if (AShortCut < Value)
+    {
+      assert(Value != 0);
+      ComboBox->Items->InsertObject(Index + 1, ShortCutToText(Value),
+        reinterpret_cast<TObject* >(Value));
+      ComboBox->ItemIndex = Index + 1;
+      break;
+    }
+    assert(Index > 0);
+  }
+}
+//---------------------------------------------------------------------------
+TShortCut __fastcall GetShortCutCombo(TComboBox * ComboBox)
+{
+  return TShortCut(ComboBox->Items->Objects[ComboBox->ItemIndex]);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsCustomShortCut(TShortCut ShortCut)
+{
+  return
+    ((FirstCtrlNumberShortCut <= ShortCut) && (ShortCut <= LastCtrlNumberShortCut)) ||
+    ((FirstShiftCtrlAltLetterShortCut <= ShortCut) && (ShortCut <= LastShiftCtrlAltLetterShortCut));
 }

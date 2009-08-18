@@ -37,7 +37,7 @@ unit PIDL;
 }
 interface
 
-uses ShlObj, Windows,ActiveX;
+uses ShlObj, Windows, ActiveX;
 
 function PIDL_GetNextItem(PIDL: PItemIDList):PItemIDList;
 function PIDL_GetSize(pidl: PITEMIDLIST): integer;
@@ -228,6 +228,7 @@ begin
           ppidlItem:=nil;
           exit;
      end;
+     ppidlItem:=nil;
      ppidlRoot:=PIDL_Copy(pidlFQ);
      pidlTemp:=ppidlRoot;
      while pidlTemp^.mkid.cb>0 do
@@ -295,10 +296,18 @@ function PIDL_GetFromParentFolder(pParentFolder: IShellFolder; pszFile: PChar): 
 //      Returns a relative ITEMIDLIST, or NULL if an error occurs.
 var olePath: array[1..Max_Path] of TOleChar;
     chEaten, dwAttributes: ULONG;
+    NotResult: Boolean;
+    ErrorMode: Word;
 begin
      MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, pszFile, -1, @olePath, sizeOf(olePath));
-     if Failed(pParentFolder.ParseDisplayName(0, nil, @olePath, chEaten, Result,
-        dwAttributes)) then Result:=nil;
+     ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
+     try
+       NotResult := Failed(pParentFolder.ParseDisplayName(0, nil, @olePath, chEaten, Result,
+          dwAttributes));
+     finally
+       SetErrorMode(ErrorMode);
+     end;
+     if NotResult then Result:=nil;
 end;
 
 procedure PIDL_Free(PIDL:PItemIDList);

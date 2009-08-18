@@ -234,7 +234,7 @@ private:
 //---------------------------------------------------------------------------
 class TBookmarks;
 class TBookmarkList;
-class TCustomCommands;
+class TCustomCommandList;
 enum TPathInCaption { picShort, picFull, picNone };
 // constants must be compatible with legacy CopyOnDoubleClick
 enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
@@ -275,8 +275,7 @@ private:
   AnsiString FTemporarySessionFile;
   AnsiString FTemporaryKeyFile;
   TBookmarks * FBookmarks;
-  TCustomCommands * FCustomCommands;
-  bool FCustomCommandsModified;
+  TCustomCommandList * FCustomCommandList;
   bool FCustomCommandsDefaults;
   TEditorConfiguration FEditor;
   TQueueViewConfiguration FQueueView;
@@ -285,6 +284,8 @@ private:
   bool FDisableOpenEdit;
   bool FDefaultDirIsHome;
   int FDDDeleteDelay;
+  bool FTemporaryDirectoryAppendSession;
+  bool FTemporaryDirectoryAppendPath;
   bool FTemporaryDirectoryCleanup;
   bool FConfirmTemporaryDirectoryCleanup;
   AnsiString FDefaultTranslationFile;
@@ -344,7 +345,9 @@ private:
   void __fastcall SetDefaultDirIsHome(bool value);
   void __fastcall SetEditor(TEditorConfiguration value);
   void __fastcall SetQueueView(TQueueViewConfiguration value);
-  void __fastcall SetCustomCommands(TCustomCommands * value);
+  void __fastcall SetCustomCommandList(TCustomCommandList * value);
+  void __fastcall SetTemporaryDirectoryAppendSession(bool value);
+  void __fastcall SetTemporaryDirectoryAppendPath(bool value);
   void __fastcall SetTemporaryDirectoryCleanup(bool value);
   void __fastcall SetConfirmTemporaryDirectoryCleanup(bool value);
   void __fastcall SetPreservePanelState(bool value);
@@ -448,8 +451,10 @@ public:
   __property bool ExpertMode = { read = FExpertMode, write = SetExpertMode };
   __property bool DefaultDirIsHome = { read = FDefaultDirIsHome, write = SetDefaultDirIsHome };
   __property bool DisableOpenEdit = { read = FDisableOpenEdit };
-  __property TCustomCommands * CustomCommands = { read = FCustomCommands, write = SetCustomCommands };
+  __property TCustomCommandList * CustomCommandList = { read = FCustomCommandList, write = SetCustomCommandList };
   __property int DDDeleteDelay = { read = FDDDeleteDelay };
+  __property bool TemporaryDirectoryAppendSession = { read = FTemporaryDirectoryAppendSession, write = SetTemporaryDirectoryAppendSession };
+  __property bool TemporaryDirectoryAppendPath = { read = FTemporaryDirectoryAppendPath, write = SetTemporaryDirectoryAppendPath };
   __property bool TemporaryDirectoryCleanup = { read = FTemporaryDirectoryCleanup, write = SetTemporaryDirectoryCleanup };
   __property bool ConfirmTemporaryDirectoryCleanup = { read = FConfirmTemporaryDirectoryCleanup, write = SetConfirmTemporaryDirectoryCleanup };
   __property bool PreservePanelState = { read = FPreservePanelState, write = SetPreservePanelState };
@@ -469,16 +474,64 @@ public:
   __property AnsiString DefaultKeyFile = { read = GetDefaultKeyFile, write = FDefaultKeyFile };
 };
 //---------------------------------------------------------------------------
-class TCustomCommands : public TStringList
+class TCustomCommandType
 {
 public:
-  __property int Params[AnsiString Name] = {read=GetParam, write=SetParam};
+  __fastcall TCustomCommandType();
+  __fastcall TCustomCommandType(const TCustomCommandType & Other);
 
-  bool __fastcall Equals(TCustomCommands * Commands);
+  TCustomCommandType & operator=(const TCustomCommandType & Other);
+  bool __fastcall Equals(const TCustomCommandType * Other) const;
+
+  __property AnsiString Name = { read = FName, write = FName };
+  __property AnsiString Command = { read = FCommand, write = FCommand };
+  __property int Params = { read = FParams, write = FParams };
+  __property TShortCut ShortCut = { read = FShortCut, write = FShortCut };
 
 private:
-  int __fastcall GetParam(const AnsiString & Name);
-  void __fastcall SetParam(const AnsiString & Name, int value);
+  AnsiString FName;
+  AnsiString FCommand;
+  int FParams;
+  TShortCut FShortCut;
+};
+//---------------------------------------------------------------------------
+class TCustomCommandList
+{
+public:
+  __fastcall TCustomCommandList();
+  __fastcall ~TCustomCommandList();
+
+  void __fastcall Load(THierarchicalStorage * Storage);
+  void __fastcall Save(THierarchicalStorage * Storage);
+  void __fastcall Reset();
+  void __fastcall Modify();
+
+  void __fastcall Clear();
+  void __fastcall Add(const AnsiString Name, const AnsiString Command, int Params);
+  void __fastcall Add(TCustomCommandType * Command);
+  void __fastcall Insert(int Index, TCustomCommandType * Command);
+  void __fastcall Change(int Index, TCustomCommandType * Command);
+  void __fastcall Move(int CurIndex, int NewIndex);
+  void __fastcall Delete(int Index);
+
+  const TCustomCommandType * Find(const AnsiString Name) const;
+  const TCustomCommandType * Find(TShortCut ShortCut) const;
+
+  bool __fastcall Equals(const TCustomCommandList * Other) const;
+  void __fastcall Assign(const TCustomCommandList * Other);
+
+  void __fastcall ShortCuts(TShortCuts & ShortCuts) const;
+
+  __property bool Modified = { read = FModified };
+  __property int Count = { read = GetCount };
+  __property const TCustomCommandType * Commands[int Index] = { read = GetConstCommand };
+
+private:
+  bool FModified;
+  TList * FCommands;
+  int __fastcall GetCount() const;
+  const TCustomCommandType * __fastcall GetConstCommand(int Index) const;
+  TCustomCommandType * __fastcall GetCommand(int Index);
 };
 //---------------------------------------------------------------------------
 #define WinConfiguration (dynamic_cast<TWinConfiguration *>(Configuration))

@@ -14,6 +14,8 @@ char sshver[50];
 const int platform_uses_x11_unix_by_default = TRUE;
 CRITICAL_SECTION noise_section;
 bool SaveRandomSeed;
+char appname_[50];
+const char *const appname = appname_;
 //---------------------------------------------------------------------------
 void __fastcall PuttyInitialize()
 {
@@ -32,6 +34,9 @@ void __fastcall PuttyInitialize()
   AnsiString VersionString = SshVersionString();
   assert(!VersionString.IsEmpty() && (VersionString.Length() < sizeof(sshver)));
   strcpy(sshver, VersionString.c_str());
+  AnsiString AppName = AppNameString();
+  assert(!AppName.IsEmpty() && (AppName.Length() < sizeof(appname_)));
+  strcpy(appname_, AppName.c_str());
 }
 //---------------------------------------------------------------------------
 void __fastcall PuttyFinalize()

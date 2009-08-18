@@ -1665,7 +1665,7 @@ void __fastcall LoadScriptFromFile(AnsiString FileName, TStrings * Lines)
 //---------------------------------------------------------------------------
 void __fastcall Usage(TConsole * Console)
 {
-  AnsiString Usage = LoadStr(USAGE5, 10240);
+  AnsiString Usage = LoadStr(USAGE6, 10240);
   AnsiString ExeBaseName = ChangeFileExt(ExtractFileName(Application->ExeName), "");
   Usage = StringReplace(Usage, "%APP%", ExeBaseName,
     TReplaceFlags() << rfReplaceAll << rfIgnoreCase);

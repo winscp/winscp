@@ -131,7 +131,7 @@ object ProgressForm: TProgressForm
       63)
     object StartTimeLabel: TLabel
       Left = 88
-      Top = 18
+      Top = 2
       Width = 65
       Height = 13
       Alignment = taRightJustify

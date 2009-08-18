@@ -50,6 +50,10 @@ const bool operator == (const t_server &a,const t_server &b)
 		return false;
 	if (a.nUTF8 != b.nUTF8)
 		return false;
+#ifdef MPEXT
+	if (a.bForcePasvIp != b.bForcePasvIp)
+		return false;
+#endif
 	return true;
 }
 
@@ -78,6 +82,10 @@ bool t_server::operator<(const t_server &op) const
 		return true;
 	if (nUTF8 < op.nUTF8)
 		return true;
+#ifdef MPEXT
+	if (bForcePasvIp < op.bForcePasvIp)
+		return true;
+#endif
 
 	return false;
 }

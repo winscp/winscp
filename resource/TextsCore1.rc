@@ -52,7 +52,6 @@ BEGIN
   UNSET_NATIONAL_ERROR, "Error clearing national user variables."
   FIRST_LINE_EXPECTED, "Unexpected input from server: %s"
   CLEANUP_INIFILE_ERROR, "Error cleaning up INI file."
-  ATTEMPT_TO_WRITE_TO_PARENT_DIR, "Security violation: remote host attempted to write to a '.' or '..' path!"
   AUTHENTICATION_LOG, "Authentication log (see session log for details):\n%s\n"
   AUTHENTICATION_FAILED, "Authentication failed."
   NOT_CONNECTED, "Connection has been unexpectedly closed."
@@ -180,6 +179,7 @@ BEGIN
   CERT_OK, "The certificate seems to be valid."
   MASK_ERROR, "Mask is invalid near '%s'."
   FTP_CANNOT_OPEN_ACTIVE_CONNECTION, "The server cannot open connection in active mode. If the problem persists, consider switching to passive mode."
+  DELETE_LOCAL_FILE_ERROR, "Error deleting file '%s'."
 
   CORE_CONFIRMATION_STRINGS, "CORE_CONFIRMATION"
   CONFIRM_PROLONG_TIMEOUT3, "Host is not communicating for %d seconds.\n\nWait for another %0:d seconds?"
@@ -220,9 +220,10 @@ BEGIN
   TUNNEL_INSTRUCTION, "Tunnel session authentication"
   RENAME_TITLE, "Transfer under different name"
   RENAME_PROMPT2, "&New name:"
-  VERIFY_CERT_PROMPT, "The server's certificate is not known. You have no guarantee that the server is the computer you think it is. Server's certificate details follow:\n\nIssuer:\n%s\nSubject:\n%s\nValid: %s - %s\n\nFingerprint (SHA1): %s\n\nSummary: %s\n\nIf you trust this certificate, press Yes. To connect without storing certificate, press No. To abandon the connection press Cancel.\n\nContinue connecting and store the certificate?"
+  VERIFY_CERT_PROMPT2, "The server's certificate is not known. You have no guarantee that the server is the computer you think it is. Server's certificate details follow:\n\n%s\n\nIf you trust this certificate, press Yes. To connect without storing certificate, press No. To abandon the connection press Cancel.\n\nContinue connecting and store the certificate?"
   VERIFY_CERT_CONTACT, "- Organization: %s\n|- Location: %s\n|- Other: %s\n"
   VERIFY_CERT_CONTACT_LIST, "%s, %s"
+  CERT_TEXT, "Issuer:\n%s\nSubject:\n%s\nValid: %s - %s\n\nFingerprint (SHA1): %s\n\nSummary: %s"
 
   CORE_INFORMATION_STRINGS, "CORE_INFORMATION"
   YES_STR, "Yes"

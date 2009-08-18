@@ -6,7 +6,7 @@ object CustomCommandDialog: TCustomCommandDialog
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]
   BorderStyle = bsDialog
   Caption = 'CustomCommandDialog'
-  ClientHeight = 255
+  ClientHeight = 282
   ClientWidth = 396
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,22 +17,21 @@ object CustomCommandDialog: TCustomCommandDialog
   OldCreateOrder = False
   Position = poMainFormCenter
   OnCloseQuery = FormCloseQuery
-  OnShow = FormShow
   DesignSize = (
     396
-    255)
+    282)
   PixelsPerInch = 96
   TextHeight = 13
   object Group: TGroupBox
     Left = 8
     Top = 8
     Width = 380
-    Height = 205
+    Height = 232
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     DesignSize = (
       380
-      205)
+      232)
     object DescriptionLabel: TLabel
       Left = 11
       Top = 16
@@ -50,6 +49,14 @@ object CustomCommandDialog: TCustomCommandDialog
       Anchors = [akLeft, akTop, akRight]
       Caption = '&Custom command:'
       FocusControl = CommandEdit
+    end
+    object ShortCutLabel: TLabel
+      Left = 16
+      Top = 205
+      Width = 89
+      Height = 13
+      Caption = '&Keyboard shortcut:'
+      FocusControl = ShortCutCombo
     end
     object DescriptionEdit: TEdit
       Left = 11
@@ -140,10 +147,18 @@ object CustomCommandDialog: TCustomCommandDialog
       TabOrder = 2
       TabStop = True
     end
+    object ShortCutCombo: TComboBox
+      Left = 184
+      Top = 200
+      Width = 184
+      Height = 21
+      ItemHeight = 13
+      TabOrder = 9
+    end
   end
   object OkButton: TButton
     Left = 144
-    Top = 222
+    Top = 249
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -154,7 +169,7 @@ object CustomCommandDialog: TCustomCommandDialog
   end
   object CancelButton: TButton
     Left = 228
-    Top = 222
+    Top = 249
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -165,7 +180,7 @@ object CustomCommandDialog: TCustomCommandDialog
   end
   object HelpButton: TButton
     Left = 312
-    Top = 222
+    Top = 249
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]

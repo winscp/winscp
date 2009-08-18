@@ -13,6 +13,7 @@
 #include <CoreMain.h>
 #include <GUITools.h>
 #include <TextsWin.h>
+#include <TextsCore.h>
 #include <Progress.h>
 #include <Exceptions.h>
 #include <VCLCommon.h>
@@ -27,7 +28,8 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   Color((TColor)SessionData->Color), SynchronizeBrowsing(false),
   LocalDirectory(SessionData->LocalDirectory),
   RemoteDirectory(SessionData->RemoteDirectory),
-  LocalExplorerState(NULL), RemoteExplorerState(NULL)
+  LocalExplorerState(NULL), RemoteExplorerState(NULL),
+  ReopenStart(0)
 {
 }
 //---------------------------------------------------------------------------
@@ -194,6 +196,11 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
       Terminal->SessionData->RemoteDirectory = ManagedTerminal->RemoteDirectory;
     }
 
+    if ((double)ManagedTerminal->ReopenStart == 0)
+    {
+      ManagedTerminal->ReopenStart = Now();
+    }
+
     if (Reopen)
     {
       Terminal->Reopen(0);
@@ -206,6 +213,10 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
   __finally
   {
     Terminal->SessionData->RemoteDirectory = OrigRemoteDirectory;
+    if (Terminal->Active)
+    {
+      ManagedTerminal->ReopenStart = 0;
+    }
   }
 }
 //---------------------------------------------------------------------------

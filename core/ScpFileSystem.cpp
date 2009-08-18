@@ -1548,7 +1548,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
   FTerminal->LogEvent(FORMAT("File: \"%s\"", (FileName)));
 
-  OperationProgress->SetFile(FileName);
+  OperationProgress->SetFile(FileName, false);
 
   HANDLE File;
   int Attrs;
@@ -1572,6 +1572,8 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
       FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
       THROW_SKIP_FILE_NULL;
     }
+
+    OperationProgress->SetFileInProgress();
 
     if (Dir)
     {
@@ -1811,10 +1813,11 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   }
 
   /* TODO : Delete also read-only files. */
-  /* TODO : Show error message on failure. */
   if (FLAGSET(Params, cpDelete))
   {
-    Sysutils::DeleteFile(FileName);
+    FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
+      THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
+    )
   }
   else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
   {
@@ -2238,12 +2241,6 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
         if (OperationProgress->Cancel)
         {
           THROW_SKIP_FILE(NULL, LoadStr(USER_TERMINATED));
-        }
-
-        // Security fix
-        if (IsDots(OperationProgress->FileName))
-        {
-          FTerminal->FatalError(NULL, LoadStr(ATTEMPT_TO_WRITE_TO_PARENT_DIR));
         }
 
         bool Dir = (Ctrl == 'D');

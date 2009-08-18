@@ -41,8 +41,11 @@ __fastcall TFileSystemInfoDialog::TFileSystemInfoDialog(TComponent * AOwner,
   FSpaceAvailableLoaded = false;
   FLastListItem = 0;
 
+  CertificateGroup->Top = HostKeyGroup->Top;
+
   InstallPathWordBreakProc(SpaceAvailablePathEdit);
   ReadOnlyControl(HostKeyFingerprintEdit);
+  ReadOnlyControl(CertificateFingerprintEdit);
   ReadOnlyControl(InfoMemo);
 }
 //---------------------------------------------------------------------
@@ -111,6 +114,7 @@ void __fastcall TFileSystemInfoDialog::Feed(TFeedFileSystemData AddItem)
   }
 
   AddItem(HostKeyFingerprintEdit, 0, FSessionInfo.HostKeyFingerprint);
+  AddItem(CertificateFingerprintEdit, 0, FSessionInfo.CertificateFingerprint);
 
   AddItem(ProtocolView, FSINFO_MODE_CHANGING, CapabilityStr(fcModeChanging));
   AddItem(ProtocolView, FSINFO_OWNER_GROUP_CHANGING, CapabilityStr(fcGroupChanging));
@@ -157,6 +161,12 @@ void __fastcall TFileSystemInfoDialog::ControlsAddItem(TControl * Control,
     EnableControl(HostKeyGroup, !Value.IsEmpty());
     HostKeyGroup->Visible = !Value.IsEmpty();
     HostKeyFingerprintEdit->Text = Value;
+  }
+  else if (Control == CertificateFingerprintEdit)
+  {
+    EnableControl(CertificateGroup, !Value.IsEmpty());
+    CertificateGroup->Visible = !Value.IsEmpty();
+    CertificateFingerprintEdit->Text = Value;
   }
   else if (Control == InfoMemo)
   {
@@ -354,5 +364,11 @@ void __fastcall TFileSystemInfoDialog::ControlContextPopup(
   TObject * Sender, TPoint & MousePos, bool & Handled)
 {
   MenuPopup(Sender, MousePos, Handled);
+}
+//---------------------------------------------------------------------------
+void __fastcall TFileSystemInfoDialog::CertificateViewButtonClick(
+  TObject * /*Sender*/)
+{
+  MessageDialog(FSessionInfo.Certificate, qtInformation, qaOK);
 }
 //---------------------------------------------------------------------------

@@ -99,8 +99,8 @@ protected:
   bool __fastcall ProcessMessage();
   void __fastcall DiscardMessages();
   void __fastcall WaitForMessages();
-  unsigned int __fastcall WaitForReply(bool Command);
-  unsigned int __fastcall WaitForCommandReply();
+  unsigned int __fastcall WaitForReply(bool Command, bool WantLastCode);
+  unsigned int __fastcall WaitForCommandReply(bool WantLastCode = true);
   void __fastcall WaitForFatalNonCommandReply();
   void __fastcall PoolForFatalNonCommandReply();
   void __fastcall GotNonCommandReply(unsigned int Reply);
@@ -109,7 +109,8 @@ protected:
     TStrings ** Response = NULL);
   void __fastcall ResetReply();
   void __fastcall HandleReplyStatus(AnsiString Response);
-  void __fastcall DoWaitForReply(unsigned int& ReplyToAwait);
+  void __fastcall DoWaitForReply(unsigned int& ReplyToAwait, bool WantLastCode);
+  bool __fastcall KeepWaitingForReply(unsigned int& ReplyToAwait, bool WantLastCode);
 
   bool __fastcall HandleStatus(const char * Status, int Type);
   bool __fastcall HandleAsynchRequestOverwrite(
@@ -168,6 +169,7 @@ protected:
     TFileOperationProgressType * OperationProgress);
   TDateTime __fastcall ConvertLocalTimestamp(time_t Time);
   TDateTime __fastcall ConvertRemoteTimestamp(time_t Time, bool HasTime);
+  void __fastcall SetLastCode(int Code);
 
   static bool __fastcall Unquote(AnsiString & Str);
   static AnsiString __fastcall ExtractStatusMessage(AnsiString Status);
@@ -197,6 +199,7 @@ private:
   int FLastCode;
   int FLastCodeClass;
   int FLastReadDirectoryProgress;
+  AnsiString FTimeoutStatus;
   TStrings * FLastResponse;
   TStrings * FLastError;
   AnsiString FSystem;

@@ -99,7 +99,7 @@ object LoginDialog: TLoginDialog
       Width = 361
       Height = 296
       HelpType = htKeyword
-      ActivePage = DirectoriesSheet
+      ActivePage = BasicSheet
       Align = alClient
       MultiLine = True
       Style = tsButtons
@@ -209,6 +209,7 @@ object LoginDialog: TLoginDialog
             Alignment = taRightJustify
             MaxValue = 65535
             MinValue = 1
+            Value = 1
             Anchors = [akTop, akRight]
             TabOrder = 3
             OnChange = DataChange
@@ -1145,13 +1146,13 @@ object LoginDialog: TLoginDialog
           Left = 0
           Top = 6
           Width = 345
-          Height = 129
+          Height = 154
           Anchors = [akLeft, akTop, akRight]
           Caption = 'Protocol options'
           TabOrder = 0
           DesignSize = (
             345
-            129)
+            154)
           object Label25: TLabel
             Left = 12
             Top = 20
@@ -1187,6 +1188,15 @@ object LoginDialog: TLoginDialog
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 1
+          end
+          object FtpForcePasvIpCheck: TCheckBox
+            Left = 12
+            Top = 125
+            Width = 317
+            Height = 17
+            Caption = '&Force IP address for passive mode connections'
+            TabOrder = 2
+            OnClick = DataChange
           end
         end
       end
@@ -1517,6 +1527,7 @@ object LoginDialog: TLoginDialog
             Alignment = taRightJustify
             MaxValue = 65535
             MinValue = 1
+            Value = 1
             Anchors = [akTop, akRight]
             TabOrder = 3
             OnChange = DataChange
@@ -1556,9 +1567,10 @@ object LoginDialog: TLoginDialog
           object FtpProxyMethodCombo: TComboBox
             Left = 128
             Top = 15
-            Width = 110
+            Width = 206
             Height = 21
             Style = csDropDownList
+            DropDownCount = 12
             ItemHeight = 13
             TabOrder = 1
             OnChange = DataChange
@@ -1566,7 +1578,15 @@ object LoginDialog: TLoginDialog
               'None'
               'SOCKS4'
               'SOCKS5'
-              'HTTP')
+              'HTTP'
+              'SITE %host'
+              'USER %proxyuser, USER %user@%host'
+              'OPEN %host'
+              'USER %proxyuser, USER %user'
+              'USER %user@%host'
+              'USER %proxyuser@%host'
+              'USER %user@%host %proxyuser'
+              'USER %user@%proxyuser@%host')
           end
         end
         object ProxySettingsGroup: TGroupBox
@@ -1785,6 +1805,7 @@ object LoginDialog: TLoginDialog
             Alignment = taRightJustify
             MaxValue = 65535
             MinValue = 1
+            Value = 1
             Anchors = [akTop, akRight]
             TabOrder = 3
             OnChange = DataChange

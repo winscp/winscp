@@ -131,7 +131,7 @@ void __fastcall TSessionData::Default()
   Scp1Compatibility = false;
   TimeDifference = 0;
   SCPLsFullTime = asAuto;
-  Utf = asAuto;
+  NotUtf = asAuto;
   FtpListAll = asAuto;
 
   // SFTP
@@ -158,10 +158,13 @@ void __fastcall TSessionData::Default()
 
   // FTP
   FtpPasvMode = false;
+  FtpForcePasvIp = false;
   FtpAccount = "";
   FtpPingInterval = 30;
   FtpPingType = ptDummyCommand;
   Ftps = ftpsNone;
+
+  FtpProxyLogonType = 0; // none
 
   CustomParam1 = "";
   CustomParam2 = "";
@@ -244,7 +247,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(DeleteToRecycleBin);
     DUPL(OverwrittenToRecycleBin);
     DUPL(RecycleBinPath);
-    DUPL(Utf);
+    DUPL(NotUtf);
     DUPL(PostLoginCommands);
 
     DUPL(ProxyMethod);
@@ -287,10 +290,13 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(TunnelPortFwd);
 
     DUPL(FtpPasvMode);
+    DUPL(FtpForcePasvIp);
     DUPL(FtpAccount);
     DUPL(FtpPingInterval);
     DUPL(FtpPingType);
     DUPL(Ftps);
+
+    DUPL(FtpProxyLogonType);
 
     DUPL(CustomParam1);
     DUPL(CustomParam2);
@@ -411,7 +417,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     ReturnVar = Storage->ReadString("ReturnVar", ReturnVar);
     LookupUserGroups = Storage->ReadBool("LookupUserGroups", LookupUserGroups);
     EOLType = (TEOLType)Storage->ReadInteger("EOLType", EOLType);
-    Utf = TAutoSwitch(Storage->ReadInteger("Utf", Storage->ReadInteger("SFTPUtfBug", Utf)));
+    NotUtf = TAutoSwitch(Storage->ReadInteger("Utf", Storage->ReadInteger("SFTPUtfBug", NotUtf)));
 
     TcpNoDelay = Storage->ReadBool("TcpNoDelay", TcpNoDelay);
 
@@ -510,10 +516,13 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 
     // Ftp prefix
     FtpPasvMode = Storage->ReadBool("FtpPasvMode", FtpPasvMode);
+    FtpForcePasvIp = Storage->ReadBool("FtpForcePasvIp", FtpForcePasvIp);
     FtpAccount = Storage->ReadString("FtpAccount", FtpAccount);
     FtpPingInterval = Storage->ReadInteger("FtpPingInterval", FtpPingInterval);
     FtpPingType = static_cast<TPingType>(Storage->ReadInteger("FtpPingType", FtpPingType));
     Ftps = static_cast<TFtps>(Storage->ReadInteger("Ftps", Ftps));
+
+    FtpProxyLogonType = Storage->ReadInteger("FtpProxyLogonType", FtpProxyLogonType);
 
     CustomParam1 = Storage->ReadString("CustomParam1", CustomParam1);
     CustomParam2 = Storage->ReadString("CustomParam2", CustomParam2);
@@ -671,7 +680,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Bool, LookupUserGroups);
       WRITE_DATA(Integer, EOLType);
       Storage->DeleteValue("SFTPUtfBug");
-      WRITE_DATA(Integer, Utf);
+      WRITE_DATA_EX(Integer, "Utf", NotUtf, );
     }
 
     WRITE_DATA(Integer, ProxyMethod);
@@ -794,10 +803,13 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Integer, TunnelLocalPortNumber);
 
       WRITE_DATA(Bool, FtpPasvMode);
+      WRITE_DATA(Bool, FtpForcePasvIp);
       WRITE_DATA(String, FtpAccount);
       WRITE_DATA(Integer, FtpPingInterval);
       WRITE_DATA(Integer, FtpPingType);
       WRITE_DATA(Integer, Ftps);
+
+      WRITE_DATA(Integer, FtpProxyLogonType);
 
       WRITE_DATA(String, CustomParam1);
       WRITE_DATA(String, CustomParam2);
@@ -1713,6 +1725,11 @@ void __fastcall TSessionData::SetProxyLocalhost(bool value)
   SET_SESSION_PROPERTY(ProxyLocalhost);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetFtpProxyLogonType(int value)
+{
+  SET_SESSION_PROPERTY(FtpProxyLogonType);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetBug(TSshBug Bug, TAutoSwitch value)
 {
   assert(Bug >= 0 && Bug < LENOF(FBugs));
@@ -1875,6 +1892,11 @@ void __fastcall TSessionData::SetFtpPasvMode(bool value)
   SET_SESSION_PROPERTY(FtpPasvMode);
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::SetFtpForcePasvIp(bool value)
+{
+  SET_SESSION_PROPERTY(FtpForcePasvIp);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SetFtpAccount(AnsiString value)
 {
   SET_SESSION_PROPERTY(FtpAccount);
@@ -1900,9 +1922,9 @@ void __fastcall TSessionData::SetFtps(TFtps value)
   SET_SESSION_PROPERTY(Ftps);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetUtf(TAutoSwitch value)
+void __fastcall TSessionData::SetNotUtf(TAutoSwitch value)
 {
-  SET_SESSION_PROPERTY(Utf);
+  SET_SESSION_PROPERTY(NotUtf);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetHostKey(AnsiString value)

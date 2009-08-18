@@ -1157,6 +1157,9 @@ end; {GetValidDriveStr}
 
 procedure TDriveView.GetNodeShellAttr(ParentFolder: iShellFolder;
   NodeData: TNodeData; Path: string; ContentMask: Boolean = True);
+var
+  NotResult: Boolean;
+  ErrorMode: Word;
 begin
   if (not Assigned(ParentFolder)) or (not Assigned(NodeData)) then
     Exit;
@@ -1170,9 +1173,14 @@ begin
     else
       NodeData.shAttr := SFGAO_DISPLAYATTRMASK;
 
+    ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
     try
-      if not Succeeded(ParentFolder.GetAttributesOf(1, NodeData.PIDL, NodeData.shAttr)) then
-        NodeData.shAttr := 0;
+      try
+        NotResult := not Succeeded(ParentFolder.GetAttributesOf(1, NodeData.PIDL, NodeData.shAttr));
+      finally
+        SetErrorMode(ErrorMode);
+      end;
+      if NotResult then NodeData.shAttr := 0;
     except
     end;
 

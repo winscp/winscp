@@ -6,6 +6,7 @@
 
 #include "CustomScpExplorer.h"
 
+#include <Bookmarks.h>
 #include <Interface.h>
 #include <Exceptions.h>
 #include <CoreMain.h>
@@ -111,12 +112,6 @@ TTransferOperationParam::TTransferOperationParam()
 {
   Temp = false;
   DragDrop = false;
-}
-//---------------------------------------------------------------------------
-TCustomCommandParam::TCustomCommandParam()
-{
-  Params = 0;
-  Both = false;
 }
 //---------------------------------------------------------------------------
 class TTransferPresetNoteData : public TObject
@@ -1097,20 +1092,17 @@ bool __fastcall TCustomScpExplorerForm::CustomCommandRemoteAllowed()
 {
   // remote custom commands can be executed only if the server supports shell commands
   // or have secondary shell
-  return (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
+  return (FTerminal != NULL) && (FTerminal->IsCapable[fcSecondaryShell] || FTerminal->IsCapable[fcShellAnyCommand]);
 }
 //---------------------------------------------------------------------------
-int __fastcall TCustomScpExplorerForm::BothCustomCommandState(const AnsiString & Description)
+int __fastcall TCustomScpExplorerForm::BothCustomCommandState(const TCustomCommandType & Command)
 {
-  AnsiString Command = WinConfiguration->CustomCommands->Values[Description];
-  int Params = WinConfiguration->CustomCommands->Params[Description];
-
-  bool Result = FLAGSET(Params, ccLocal);
+  bool Result = FLAGSET(Command.Params, ccLocal);
   if (Result)
   {
     TLocalCustomCommand LocalCustomCommand;
     TInteractiveCustomCommand InteractiveCustomCommand(&LocalCustomCommand);
-    AnsiString Cmd = InteractiveCustomCommand.Complete(Command, false);
+    AnsiString Cmd = InteractiveCustomCommand.Complete(Command.Command, false);
 
     Result =
       LocalCustomCommand.IsFileCommand(Cmd) &&
@@ -1120,18 +1112,18 @@ int __fastcall TCustomScpExplorerForm::BothCustomCommandState(const AnsiString &
 }
 //---------------------------------------------------------------------------
 int __fastcall TCustomScpExplorerForm::CustomCommandState(
-  const AnsiString & Command, int Params, bool OnFocused)
+  const TCustomCommandType & Command, bool OnFocused)
 {
   int Result;
 
   TFileCustomCommand RemoteCustomCommand;
   TLocalCustomCommand LocalCustomCommand;
   TFileCustomCommand * NonInteractiveCustomCommand =
-    FLAGCLEAR(Params, ccLocal) ? &RemoteCustomCommand : &LocalCustomCommand;
+    FLAGCLEAR(Command.Params, ccLocal) ? &RemoteCustomCommand : &LocalCustomCommand;
   TInteractiveCustomCommand InteractiveCustomCommand(NonInteractiveCustomCommand);
-  AnsiString Cmd = InteractiveCustomCommand.Complete(Command, false);
+  AnsiString Cmd = InteractiveCustomCommand.Complete(Command.Command, false);
 
-  if (FLAGCLEAR(Params, ccLocal))
+  if (FLAGCLEAR(Command.Params, ccLocal))
   {
     Result = CustomCommandRemoteAllowed();
     if (Result)
@@ -1174,29 +1166,20 @@ int __fastcall TCustomScpExplorerForm::CustomCommandState(
   return Result;
 }
 //---------------------------------------------------------------------------
-int __fastcall TCustomScpExplorerForm::CustomCommandState(
-  const AnsiString & Description, bool OnFocused)
-{
-  AnsiString Command = WinConfiguration->CustomCommands->Values[Description];
-  int Params = WinConfiguration->CustomCommands->Params[Description];
-
-  return CustomCommandState(Command, Params, OnFocused);
-}
-//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
-  AnsiString Name, AnsiString Command, int Params, TStrings * ALocalFileList)
+  const TCustomCommandType & ACommand, TStrings * ALocalFileList)
 {
-  if (FLAGCLEAR(Params, ccLocal))
+  if (FLAGCLEAR(ACommand.Params, ccLocal))
   {
     if (EnsureCommandSessionFallback(fcShellAnyCommand))
     {
       TCustomCommandData Data(Terminal);
       TRemoteCustomCommand RemoteCustomCommand(Data, Terminal->CurrentDirectory);
       TWinInteractiveCustomCommand InteractiveCustomCommand(
-        &RemoteCustomCommand, Name);
+        &RemoteCustomCommand, ACommand.Name);
 
-      Command = InteractiveCustomCommand.Complete(Command, false);
-      bool Capture = FLAGSET(Params, ccShowResults) || FLAGSET(Params, ccCopyResults);
+      AnsiString Command = InteractiveCustomCommand.Complete(ACommand.Command, false);
+      bool Capture = FLAGSET(ACommand.Params, ccShowResults) || FLAGSET(ACommand.Params, ccCopyResults);
       TCaptureOutputEvent OutputEvent = NULL;
 
       assert(FCapturedLog == NULL);
@@ -1215,17 +1198,17 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
         }
         else
         {
-          Terminal->CustomCommandOnFiles(Command, Params, FileList, OutputEvent);
+          Terminal->CustomCommandOnFiles(Command, ACommand.Params, FileList, OutputEvent);
         }
 
         if ((FCapturedLog != NULL) && (FCapturedLog->Count > 0))
         {
-          if (FLAGSET(Params, ccCopyResults))
+          if (FLAGSET(ACommand.Params, ccCopyResults))
           {
             CopyToClipboard(FCapturedLog);
           }
 
-          if (FLAGSET(Params, ccShowResults))
+          if (FLAGSET(ACommand.Params, ccShowResults))
           {
             DoConsoleDialog(Terminal, "", FCapturedLog);
           }
@@ -1242,9 +1225,9 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
     TCustomCommandData Data(Terminal);
     TLocalCustomCommand LocalCustomCommand(Data, Terminal->CurrentDirectory);
     TWinInteractiveCustomCommand InteractiveCustomCommand(
-      &LocalCustomCommand, Name);
+      &LocalCustomCommand, ACommand.Name);
 
-    Command = InteractiveCustomCommand.Complete(Command, false);
+    AnsiString Command = InteractiveCustomCommand.Complete(ACommand.Command, false);
 
     if (!LocalCustomCommand.IsFileCommand(Command))
     {
@@ -1301,9 +1284,9 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 
           TMakeLocalFileListParams MakeFileListParam;
           MakeFileListParam.FileList = RemoteFileList;
-          MakeFileListParam.IncludeDirs = FLAGSET(Params, ccApplyToDirectories);
+          MakeFileListParam.IncludeDirs = FLAGSET(ACommand.Params, ccApplyToDirectories);
           MakeFileListParam.Recursive =
-            FLAGSET(Params, ccRecursive) && !FileListCommand;
+            FLAGSET(ACommand.Params, ccRecursive) && !FileListCommand;
 
           ProcessLocalDirectory(TempDir, Terminal->MakeLocalFileList, &MakeFileListParam);
 
@@ -1412,7 +1395,7 @@ void __fastcall TCustomScpExplorerForm::CustomCommand(TStrings * FileList,
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::BothCustomCommand(
-  AnsiString Name, AnsiString Command, int Params)
+  const TCustomCommandType & Command)
 {
   assert(FCustomCommandLocalFileList != NULL);
   assert(FCustomCommandRemoteFileList != NULL);
@@ -1433,7 +1416,7 @@ void __fastcall TCustomScpExplorerForm::BothCustomCommand(
         FCustomCommandRemoteFileList->Strings[Index],
         FCustomCommandRemoteFileList->Objects[Index]);
 
-      CustomCommand(RemoteFileList, Name, Command, Params, LocalFileList);
+      CustomCommand(RemoteFileList, Command, LocalFileList);
     }
   }
   __finally
@@ -1697,8 +1680,8 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileOperation(TFileOperation Oper
       assert(Side == osRemote);
 
       RemoteDirView->SaveSelectedNames();
-      TCustomCommandParam * AParam = static_cast<TCustomCommandParam*>(Param);
-      CustomCommand(FileList, AParam->Name, AParam->Command, AParam->Params, NULL);
+      const TCustomCommandType * Command = static_cast<const TCustomCommandType*>(Param);
+      CustomCommand(FileList, *Command, NULL);
     }
     else if ((Operation == foRemoteMove) || (Operation == foRemoteCopy))
     {
@@ -1803,17 +1786,45 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
   Side = GetSide(Side);
 
   AnsiString Name = LoadStr(NEW_FILE);
-  if (InputDialog(LoadStr(NEW_FILE_CAPTION), LoadStr(NEW_FILE_PROMPT), Name,
-        HELP_EDIT_NEW))
+  TStrings * History = CustomWinConfiguration->History["EditFile"];
+  if (InputDialog(LoadStr(EDIT_FILE_CAPTION), LoadStr(EDIT_FILE_PROMPT), Name,
+        HELP_EDIT_NEW, History, true))
   {
+    CustomWinConfiguration->History["EditFile"] = History;
     AnsiString TargetFileName;
     AnsiString LocalFileName;
     AnsiString RootTempDir;
     AnsiString TempDir;
+    AnsiString RemoteDirectory;
     if (Side == osRemote)
     {
-      TempDir = TemporaryDirectoryForRemoteFiles(
-        GUIConfiguration->CurrentCopyParam, RootTempDir);
+      Name = AbsolutePath(FTerminal->CurrentDirectory, Name);
+
+      TRemoteFile * File = NULL;
+      if (FTerminal->FileExists(Name, &File))
+      {
+        try
+        {
+          // needed for checking filemasks, as there's no directory object
+          // associated with the file object
+          File->FullFileName = Name;
+
+          TFileMasks::TParams MaskParams;
+          MaskParams.Size = File->Size;
+
+          ExecuteFile(Side, efDefaultEditor, NULL, Name, File, MaskParams);
+
+          return;
+        }
+        __finally
+        {
+          delete File;
+        }
+      }
+
+      RemoteDirectory = UnixExtractFilePath(Name);
+      TemporaryDirectoryForRemoteFiles(
+        RemoteDirectory, GUIConfiguration->CurrentCopyParam, TempDir, RootTempDir);
 
       TargetFileName = UnixExtractFileName(Name);
       LocalFileName = TempDir +
@@ -1857,7 +1868,7 @@ void __fastcall TCustomScpExplorerForm::EditNew(TOperationSide Side)
       false, MaskParams);
 
     CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, TargetFileName,
-      ExternalEditor, RootTempDir);
+      ExternalEditor, RootTempDir, RemoteDirectory);
   }
 }
 //---------------------------------------------------------------------------
@@ -1875,7 +1886,8 @@ bool __fastcall TCustomScpExplorerForm::RemoteExecuteForceText(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
   TExecuteFileBy ExecuteFileBy, AnsiString FileName, AnsiString OriginalFileName,
-  const TEditorData * ExternalEditor, AnsiString LocalRootDirectory)
+  const TEditorData * ExternalEditor, AnsiString LocalRootDirectory,
+  AnsiString RemoteDirectory)
 {
   assert(!WinConfiguration->DisableOpenEdit);
   assert((ExecuteFileBy == efExternalEditor) ==
@@ -1890,7 +1902,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
     Data.Terminal = Terminal;
     Data.Queue = Queue;
     Data.ForceText = RemoteExecuteForceText(ExecuteFileBy, ExternalEditor);
-    Data.RemoteDirectory = RemoteDirView->PathName;
+    Data.RemoteDirectory = RemoteDirectory;
     Data.SessionName = Terminal->SessionData->SessionName;
     Data.LocalRootDirectory = LocalRootDirectory;
     Data.OriginalFileName = OriginalFileName;
@@ -1901,7 +1913,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
   {
     if (Side == osRemote)
     {
-      AnsiString Caption = RemoteDirView->Path + OriginalFileName +
+      AnsiString Caption = UnixIncludeTrailingBackslash(RemoteDirectory) + OriginalFileName +
         " - " + Terminal->SessionData->SessionName;
       TForm * Editor = ShowEditorForm(FileName, this, FEditorManager->FileChanged,
         FEditorManager->FileReload, FEditorManager->FileClosed, Caption);
@@ -1971,21 +1983,31 @@ void __fastcall TCustomScpExplorerForm::LocalEditorClosed(TObject * Sender)
   CHECK(FLocalEditors->Extract(Sender) >= 0);
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
-  TCopyParamType CopyParam, AnsiString & RootDirectory)
+void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
+  AnsiString RemoteDirectory, TCopyParamType CopyParam,
+  AnsiString & Result, AnsiString & RootDirectory)
 {
   RootDirectory = IncludeTrailingBackslash(WinConfiguration->TemporaryDir());
-  AnsiString Result = FTerminal->CurrentDirectory;
-  if (!Result.IsEmpty() && (Result[1] == '/'))
+  Result = RootDirectory;
+
+  if (WinConfiguration->TemporaryDirectoryAppendSession)
   {
-    Result.Delete(1, 1);
+    Result += IncludeTrailingBackslash(CopyParam.ValidLocalPath(Terminal->SessionData->SessionName));
   }
-  Result = IncludeTrailingBackslash(RootDirectory + CopyParam.ValidLocalPath(FromUnixPath(Result)));
+
+  if (WinConfiguration->TemporaryDirectoryAppendPath)
+  {
+    if (!RemoteDirectory.IsEmpty() && (RemoteDirectory[1] == '/'))
+    {
+      RemoteDirectory.Delete(1, 1);
+    }
+    Result += IncludeTrailingBackslash(CopyParam.ValidLocalPath(FromUnixPath(RemoteDirectory)));
+  }
+
   if (!ForceDirectories(Result))
   {
-    throw Exception(FMTLOAD(CREATE_TEMP_DIR_ERROR, (Result)));
+    throw EOSExtException(FMTLOAD(CREATE_TEMP_DIR_ERROR, (Result)));
   }
-  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
@@ -2009,7 +2031,7 @@ void __fastcall TCustomScpExplorerForm::TemporarilyDownloadFiles(
 
   if (RootTempDir.IsEmpty())
   {
-    TempDir = TemporaryDirectoryForRemoteFiles(CopyParam, RootTempDir);
+    TemporaryDirectoryForRemoteFiles(FTerminal->CurrentDirectory, CopyParam, TempDir, RootTempDir);
   }
 
   assert(!FAutoOperation);
@@ -2080,6 +2102,64 @@ void __fastcall TCustomScpExplorerForm::ExecuteFileNormalize(
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
   TExecuteFileBy ExecuteFileBy, const TEditorData * ExternalEditor,
+  AnsiString FullFileName, TObject * Object, const TFileMasks::TParams & MaskParams)
+{
+
+  AnsiString OriginalFileName;
+  AnsiString LocalRootDirectory;
+  AnsiString RemoteDirectory;
+  ExecuteFileNormalize(ExecuteFileBy, ExternalEditor, FullFileName,
+    (Side == osLocal), MaskParams);
+
+  AnsiString LocalFileName;
+  if (Side == osRemote)
+  {
+    OriginalFileName = UnixExtractFileName(FullFileName);
+    RemoteDirectory = UnixExtractFilePath(FullFileName);
+    TObject * Token = NULL;
+    AnsiString LocalDirectory;
+    if (!FEditorManager->CanAddFile(RemoteDirectory, OriginalFileName,
+           Terminal->SessionData->SessionName, Token, LocalRootDirectory,
+           LocalDirectory))
+    {
+      if (Token != NULL)
+      {
+        TForm * Form = dynamic_cast<TForm *>(Token);
+        Form->SetFocus();
+        Abort();
+      }
+      else
+      {
+        throw Exception(FMTLOAD(ALREADY_EDITED_EXTERNALLY_OR_UPLOADED, (OriginalFileName)));
+      }
+    }
+
+    TStringList * FileList1 = new TStringList();
+    try
+    {
+      FileList1->AddObject(FullFileName, Object);
+      TemporarilyDownloadFiles(FileList1,
+        RemoteExecuteForceText(ExecuteFileBy, ExternalEditor),
+        LocalRootDirectory, LocalDirectory, true, true, true);
+      LocalFileName = LocalDirectory + FileList1->Strings[0];
+    }
+    __finally
+    {
+      delete FileList1;
+    }
+  }
+  else
+  {
+    LocalFileName = FullFileName;
+    OriginalFileName = ExtractFileName(FullFileName);
+  }
+
+  CustomExecuteFile(Side, ExecuteFileBy, LocalFileName, OriginalFileName,
+    ExternalEditor, LocalRootDirectory, RemoteDirectory);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
+  TExecuteFileBy ExecuteFileBy, const TEditorData * ExternalEditor,
   bool AllSelected, bool OnFocused)
 {
   assert(!WinConfiguration->DisableOpenEdit);
@@ -2103,68 +2183,21 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
       TListItem * Item = DView->FindFileItem(FileNameOnly);
       if (!DView->ItemIsDirectory(Item))
       {
-        AnsiString OriginalFileName;
         AnsiString FullFileName;
-        AnsiString FileName;
-
         if (Side == osRemote)
         {
-          OriginalFileName = ListFileName;
           FullFileName = RemoteDirView->Path + ListFileName;
         }
         else
         {
-          OriginalFileName = ExtractFileName(ListFileName);
           FullFileName = ListFileName;
         }
 
-        AnsiString LocalDirectory;
-        AnsiString LocalRootDirectory;
         TFileMasks::TParams MaskParams;
         MaskParams.Size = DView->ItemFileSize(Item);
-        ExecuteFileNormalize(ExecuteFileBy, ExternalEditor, FullFileName,
-          (Side == osLocal), MaskParams);
 
-        if (Side == osRemote)
-        {
-          TObject * Token = NULL;
-          if (!FEditorManager->CanAddFile(RemoteDirView->PathName, OriginalFileName,
-                 Terminal->SessionData->SessionName, Token, LocalRootDirectory,
-                 LocalDirectory))
-          {
-            if (Token != NULL)
-            {
-              TForm * Form = dynamic_cast<TForm *>(Token);
-              Form->SetFocus();
-              Abort();
-            }
-            else
-            {
-              throw Exception(FMTLOAD(ALREADY_EDITED_EXTERNALLY, (OriginalFileName)));
-            }
-          }
-
-          TStringList * FileList1 = new TStringList();
-          try
-          {
-            FileList1->AddObject(ListFileName, FileList->Objects[i]);
-            TemporarilyDownloadFiles(FileList1,
-              RemoteExecuteForceText(ExecuteFileBy, ExternalEditor),
-              LocalRootDirectory, LocalDirectory, true, true, true);
-            FileName = LocalDirectory + FileList1->Strings[0];
-          }
-          __finally
-          {
-            delete FileList1;
-          }
-        }
-        else
-        {
-          FileName = FileList->Strings[i];
-        }
-
-        CustomExecuteFile(Side, ExecuteFileBy, FileName, OriginalFileName,
-          ExternalEditor, LocalRootDirectory);
+        ExecuteFile(Side, ExecuteFileBy, ExternalEditor, FullFileName,
+          FileList->Objects[i], MaskParams);
       }
     }
   }
@@ -2637,6 +2670,26 @@ void __fastcall TCustomScpExplorerForm::OpenDirectory(TOperationSide Side)
   DoOpenDirectoryDialog(odBrowse, Side);
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCustomScpExplorerForm::OpenBookmark(AnsiString Local, AnsiString Remote)
+{
+  AnsiString Path;
+  if (FCurrentSide == osRemote)
+  {
+    Path = Remote;
+  }
+  else
+  {
+    Path = Local;
+  }
+
+  bool Result = !Path.IsEmpty();
+  if (Result)
+  {
+    DirView(FCurrentSide)->Path = Path;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::RemoteDirViewGetSelectFilter(
       TCustomDirView *Sender, bool Select, TFileFilter &Filter)
 {
@@ -2825,6 +2878,30 @@ void __fastcall TCustomScpExplorerForm::KeyDown(Word & Key, Classes::TShiftState
     {
       TTerminalManager::Instance()->CycleTerminals(!Shift.Contains(ssShift));
       Key = 0;
+    }
+
+    if (IsCustomShortCut(KeyShortCut))
+    {
+      const TCustomCommandType * Command = WinConfiguration->CustomCommandList->Find(KeyShortCut);
+      if (Command != NULL)
+      {
+        if (CustomCommandState(*Command, false) > 0)
+        {
+          ExecuteFileOperation(foCustomCommand, osRemote,
+            false, false, const_cast<TCustomCommandType *>(Command));
+        }
+        Key = 0;
+      }
+
+      if (WinConfiguration->SharedBookmarks != NULL)
+      {
+        TBookmark * Bookmark = WinConfiguration->SharedBookmarks->FindByShortCut(KeyShortCut);
+        if ((Bookmark != NULL) &&
+            OpenBookmark(Bookmark->Local, Bookmark->Remote))
+        {
+          Key = 0;
+        }
+      }
     }
   }
 
@@ -5833,37 +5910,36 @@ void __fastcall TCustomScpExplorerForm::PreferencesDialog(
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AdHocCustomCommandValidate(
-  const AnsiString & Command, int Params)
+  const TCustomCommandType & Command)
 {
-  if (CustomCommandState(Command, Params, FEditingFocusedAdHocCommand) <= 0)
+  if (CustomCommandState(Command, FEditingFocusedAdHocCommand) <= 0)
   {
-    throw Exception(FMTLOAD(CUSTOM_COMMAND_IMPOSSIBLE, (Command)));
+    throw Exception(FMTLOAD(CUSTOM_COMMAND_IMPOSSIBLE, (Command.Command)));
   }
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::AdHocCustomCommand(bool OnFocused)
 {
   bool RemoteAllowed = CustomCommandRemoteAllowed();
-  TCustomCommandParam Param;
+  TCustomCommandType Command;
   // make sure we use local custom command when remote are not supported
   if (RemoteAllowed || FLAGSET(FLastCustomCommand.Params, ccLocal))
   {
-    Param = FLastCustomCommand;
+    Command = FLastCustomCommand;
   }
   else
   {
-    Param.Params |= ccLocal;
+    Command.Params = Command.Params | ccLocal;
   }
-  Param.Name = LoadStr(CUSTOM_COMMAND_AD_HOC_NAME);
+  Command.Name = LoadStr(CUSTOM_COMMAND_AD_HOC_NAME);
   FEditingFocusedAdHocCommand = OnFocused;
   int Options = FLAGMASK(!RemoteAllowed, ccoDisableRemote);
-  if (DoCustomCommandDialog(Param.Name, Param.Command, Param.Params,
-       WinConfiguration->CustomCommands, ccmAdHoc, Options,
-       AdHocCustomCommandValidate))
+  if (DoCustomCommandDialog(Command, WinConfiguration->CustomCommandList,
+       ccmAdHoc, Options, AdHocCustomCommandValidate, NULL))
   {
-    FLastCustomCommand = Param;
+    FLastCustomCommand = Command;
     UpdateCustomCommandsToolbar();
-    ExecuteFileOperation(foCustomCommand, osRemote, OnFocused, false, &Param);
+    ExecuteFileOperation(foCustomCommand, osRemote, OnFocused, false, &Command);
   }
 }
 //---------------------------------------------------------------------------
@@ -5871,8 +5947,7 @@ void __fastcall TCustomScpExplorerForm::LastCustomCommand(bool OnFocused)
 {
   assert(!FLastCustomCommand.Command.IsEmpty());
 
-  int State = CustomCommandState(FLastCustomCommand.Command,
-    FLastCustomCommand.Params, OnFocused);
+  int State = CustomCommandState(FLastCustomCommand, OnFocused);
   assert(State > 0);
   if (State <= 0)
   {
@@ -5883,16 +5958,15 @@ void __fastcall TCustomScpExplorerForm::LastCustomCommand(bool OnFocused)
 }
 //---------------------------------------------------------------------------
 bool __fastcall TCustomScpExplorerForm::GetLastCustomCommand(bool OnFocused,
-  TCustomCommandParam & CustomCommand, int & State)
+  TCustomCommandType & Command, int & State)
 {
   bool Result = !FLastCustomCommand.Command.IsEmpty();
 
   if (Result)
   {
-    CustomCommand = FLastCustomCommand;
+    Command = FLastCustomCommand;
 
-    State = CustomCommandState(FLastCustomCommand.Command,
-      FLastCustomCommand.Params, OnFocused);
+    State = CustomCommandState(FLastCustomCommand, OnFocused);
   }
 
   return Result;

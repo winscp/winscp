@@ -864,24 +864,24 @@ void __fastcall TNonVisualDataModule::DoIdle()
 void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
   TTBCustomItem * Menu, bool OnFocused, bool Toolbar, bool Both)
 {
-  for (int Index = 0; Index < WinConfiguration->CustomCommands->Count; Index++)
+  for (int Index = 0; Index < WinConfiguration->CustomCommandList->Count; Index++)
   {
-    AnsiString Description = WinConfiguration->CustomCommands->Names[Index];
+    const TCustomCommandType * Command = WinConfiguration->CustomCommandList->Commands[Index];
     int State;
 
     if (!Both)
     {
-      State = ScpExplorer->CustomCommandState(Description, OnFocused);
+      State = ScpExplorer->CustomCommandState(*Command, OnFocused);
     }
     else
     {
-      State = ScpExplorer->BothCustomCommandState(Description);
+      State = ScpExplorer->BothCustomCommandState(*Command);
     }
 
     if (State >= 0)
     {
       TTBCustomItem * Item = new TTBXItem(Owner);
-      Item->Caption = Description;
+      Item->Caption = Command->Name;
       if (Toolbar)
       {
         Item->Caption = StripHotkey(Item->Caption);
@@ -896,7 +896,11 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
       {
         Item->Tag = Item->Tag | 0x0200;
       }
-      Item->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (StripHotkey(Description)));
+      Item->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (StripHotkey(Command->Name)));
+      if (!Both)
+      {
+        Item->ShortCut = Command->ShortCut;
+      }
       Item->OnClick = CustomCommandClick;
 
       Menu->Add(Item);
@@ -961,16 +965,16 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
   }
 
   int AdditionalCommands = 4;
-  TCustomCommands * CustomCommands = WinConfiguration->CustomCommands;
-  bool Changed = (CustomCommands->Count != (Toolbar->Items->Count - AdditionalCommands));
+  TCustomCommandList * CustomCommandList = WinConfiguration->CustomCommandList;
+  bool Changed = (CustomCommandList->Count != (Toolbar->Items->Count - AdditionalCommands));
   if (!Changed)
   {
     int Index = 0;
-    while (!Changed && (Index < CustomCommands->Count))
+    while (!Changed && (Index < CustomCommandList->Count))
     {
       Changed =
         (Toolbar->Items->Items[Index]->Caption !=
-          StripHotkey(CustomCommands->Names[Index]));
+          StripHotkey(CustomCommandList->Commands[Index]->Name));
       Index++;
     }
   }
@@ -982,7 +986,7 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     {
       Toolbar->Items->Clear();
       CreateCustomCommandsMenu(Toolbar->Items, false, true, false);
-      assert(CustomCommands->Count == (Toolbar->Items->Count - AdditionalCommands));
+      assert(CustomCommandList->Count == (Toolbar->Items->Count - AdditionalCommands));
     }
     __finally
     {
@@ -996,8 +1000,8 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
       TTBCustomItem * Item = Toolbar->Items->Items[Index];
       int CommandIndex = (Item->Tag & 0x00FF);
       assert(CommandIndex == Index);
-      AnsiString Description = WinConfiguration->CustomCommands->Names[CommandIndex];
-      int State = ScpExplorer->CustomCommandState(Description, false);
+      int State = ScpExplorer->CustomCommandState(
+        *CustomCommandList->Commands[CommandIndex], false);
       assert(State >= 0);
       Item->Enabled = (State > 0);
     }
@@ -1008,18 +1012,15 @@ void __fastcall TNonVisualDataModule::CustomCommandClick(TObject * Sender)
 {
   TTBCustomItem * Item = dynamic_cast<TTBCustomItem *>(Sender);
   assert(Item);
-  TCustomCommandParam Param;
-  Param.Name = WinConfiguration->CustomCommands->Names[Item->Tag & 0x00FF];
-  Param.Command = WinConfiguration->CustomCommands->Values[Param.Name];
-  Param.Params = WinConfiguration->CustomCommands->Params[Param.Name];
+  const TCustomCommandType * Command = WinConfiguration->CustomCommandList->Commands[Item->Tag & 0x00FF];
   if (FLAGCLEAR(Item->Tag, 0x0200))
   {
     ScpExplorer->ExecuteFileOperation(foCustomCommand, osRemote,
-      FLAGSET(Item->Tag, 0x0100), false, &Param);
+      FLAGSET(Item->Tag, 0x0100), false, const_cast<TCustomCommandType *>(Command));
   }
   else
   {
-    ScpExplorer->BothCustomCommand(Param.Name, Param.Command, Param.Params);
+    ScpExplorer->BothCustomCommand(*Command);
   }
 }
 //---------------------------------------------------------------------------
@@ -1322,21 +1323,21 @@ void __fastcall TNonVisualDataModule::PreferencesDialog(TPreferencesMode APrefer
 //---------------------------------------------------------------------------
 void __fastcall TNonVisualDataModule::CustomCommandsLastUpdate(TAction * Action)
 {
-  TCustomCommandParam CustomCommand;
+  TCustomCommandType Command;
   int State;
   bool Defined = ScpExplorer->GetLastCustomCommand(
-    (Action == CustomCommandsLastFocusedAction), CustomCommand, State);
+    (Action == CustomCommandsLastFocusedAction), Command, State);
   Action->Visible = Defined;
   if (Defined)
   {
-    AnsiString TitleCommand = CustomCommand.Command;
+    AnsiString TitleCommand = Command.Command;
     int MaxTitleCommandLen = 20;
     if (TitleCommand.Length() > MaxTitleCommandLen)
     {
       TitleCommand = TitleCommand.SubString(1, MaxTitleCommandLen - 3) + "...";
     }
     Action->Caption = FMTLOAD(CUSTOM_COMMAND_LAST, (TitleCommand));
-    Action->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (CustomCommand.Command));
+    Action->Hint = FMTLOAD(CUSTOM_COMMAND_HINT, (Command.Command));
     Action->Enabled = (State > 0);
   }
 }

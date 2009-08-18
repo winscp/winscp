@@ -42,9 +42,6 @@ __fastcall TCopyParamsFrame::TCopyParamsFrame(TComponent* Owner)
   InstallPathWordBreakProc(ExcludeFileMaskCombo);
   HintLabel(ExcludeFileMaskHintText,
     FORMAT("%s\n \n%s",(LoadStr(MASK_HINT2), LoadStr(PATH_MASK_HINT))));
-  TPoint P(ExcludeFileMaskCombo->Width, 0);
-  P = ExcludeFileMaskHintText->ScreenToClient(ExcludeFileMaskCombo->ClientToScreen(P));
-  ExcludeFileMaskHintText->Left = ExcludeFileMaskHintText->Left + P.x - ExcludeFileMaskHintText->Width;
 }
 //---------------------------------------------------------------------------
 __fastcall TCopyParamsFrame::~TCopyParamsFrame()
@@ -181,6 +178,12 @@ void __fastcall TCopyParamsFrame::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyParamsFrame::BeforeExecute()
 {
+  // only now is ExcludeFileMaskHintText->Width updated to match actual caption
+  // (localised one)
+  TPoint P(ExcludeFileMaskCombo->Width, 0);
+  P = ExcludeFileMaskHintText->ScreenToClient(ExcludeFileMaskCombo->ClientToScreen(P));
+  ExcludeFileMaskHintText->Left = ExcludeFileMaskHintText->Left + P.x - ExcludeFileMaskHintText->Width;
+
   // adding TRightsFrame on run-time corrupts the tab order, fix it
   TransferModeGroup->TabOrder = 0;
   assert(CustomWinConfiguration);

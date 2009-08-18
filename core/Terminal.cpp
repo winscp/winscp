@@ -2403,7 +2403,7 @@ void __fastcall TTerminal::ReadFile(const AnsiString FileName,
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TTerminal::FileExists(const AnsiString FileName)
+bool __fastcall TTerminal::FileExists(const AnsiString FileName, TRemoteFile ** AFile)
 {
   bool Result;
   TRemoteFile * File = NULL;
@@ -2418,7 +2418,15 @@ bool __fastcall TTerminal::FileExists(const AnsiString FileName)
     {
       ExceptionOnFail = false;
     }
-    delete File;
+
+    if (AFile != NULL)
+    {
+      *AFile = File;
+    }
+    else
+    {
+      delete File;
+    }
     Result = true;
   }
   catch(...)
@@ -4368,7 +4376,7 @@ void __fastcall TTerminal::SynchronizeRemoteTimestamp(const AnsiString /*FileNam
     SessionData->DSTMode);
 
   // unfortunatelly we never have a remote file here
-  assert(ChecklistItem->FRemoteFile == NULL);
+  assert(ChecklistItem->RemoteFile == NULL);
 
   ChangeFileProperties(
     UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,

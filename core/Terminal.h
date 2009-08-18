@@ -355,7 +355,7 @@ public:
   TRemoteFileList * ReadDirectoryListing(AnsiString Directory, const TFileMasks & Mask);
   TRemoteFileList * CustomReadDirectoryListing(AnsiString Directory, bool UseCache);
   void __fastcall ReadFile(const AnsiString FileName, TRemoteFile *& File);
-  bool __fastcall FileExists(const AnsiString FileName);
+  bool __fastcall FileExists(const AnsiString FileName, TRemoteFile ** File = NULL);
   void __fastcall ReadSymlink(TRemoteFile * SymlinkFile, TRemoteFile *& File);
   bool __fastcall CopyToLocal(TStrings * FilesToCopy,
     const AnsiString TargetDir, const TCopyParamType * CopyParam, int Params);

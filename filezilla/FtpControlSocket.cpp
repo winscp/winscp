@@ -1114,7 +1114,7 @@ void CFtpControlSocket::OnConnect(int nErrorCode)
 	}
 }
 
-BOOL CFtpControlSocket::Send(CString str)
+BOOL CFtpControlSocket::Send(CString str, BOOL bUpdateRecvTime)
 {
 	USES_CONVERSION;
 
@@ -1208,6 +1208,13 @@ BOOL CFtpControlSocket::Send(CString str)
 	{
 		m_awaitsReply = true;
 		m_LastSendTime = CTime::GetCurrentTime();
+		if (bUpdateRecvTime)
+		{
+			// Count timeout since the last request, not only since the last received data
+			// otherwise we may happen to timeout immediatelly after sending request if
+			// CheckForTimeout occurs in between and we haven't received any data for a while
+			m_LastRecvTime = m_LastSendTime;
+		}
 		PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_SOCKETSTATUS, FZ_SOCKETSTATUS_SEND), 0);
 	}
 	return TRUE;
@@ -1660,9 +1667,14 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 					break;
 				}
 
+#ifdef MPEXT
+				temp = retmsg.Mid(i+1,(j-i)-1);
+#endif
 				if (GetFamily() == AF_INET)
 				{
+#ifndef MPEXT
 					temp = retmsg.Mid(i+1,(j-i)-1);
+#endif
 					i=temp.ReverseFind(',');
 					pData->port=atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); //get ls byte of server socket
 					temp=temp.Left(i);
@@ -1670,6 +1682,13 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 					pData->port+=256*atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); // add ms byte to server socket
 					pData->host = temp.Left(i);
 					pData->host.Replace(',', '.');
+#ifdef MPEXT
+					if (!CheckForcePasvIp(pData->host))
+					{
+						error = TRUE;
+						break;
+					}
+#endif
 				}
 				else if (GetFamily() == AF_INET6)
 				{
@@ -2100,7 +2119,7 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 
 void CFtpControlSocket::TransferEnd(int nMode)
 {
-	LogMessage(__FILE__, __LINE__, this,FZ_LOG_DEBUG, _T("TransferEnd(%d)  OpMode=%d OpState=%d"), nMode, m_Operation.nOpMode, m_Operation.nOpState);
+	LogMessage(__FILE__, __LINE__, this,FZ_LOG_DEBUG, _T("TransferEnd(%d/%x)  OpMode=%d OpState=%d"), nMode, nMode, m_Operation.nOpMode, m_Operation.nOpState);
 	if (!m_Operation.nOpMode)
 	{
 		LogMessage(__FILE__, __LINE__, this,FZ_LOG_INFO, _T("Ignoring old TransferEnd message"));
@@ -2950,6 +2969,13 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 					i=temp.ReverseFind('.');
 					pData->port+=256*atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); // add ms byte to server socket
 					pData->host=temp.Left(i);
+#ifdef MPEXT
+					if (!CheckForcePasvIp(pData->host))
+					{
+						nReplyError = FZ_REPLY_ERROR;
+						break;
+					}
+#endif
 				}
 				else if (GetFamily() == AF_INET6)
 				{
@@ -3280,6 +3306,13 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 						i=temp.ReverseFind('.');
 						pData->port+=256*atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); // add ms byte to server socket
 						pData->host=temp.Left(i);
+#ifdef MPEXT
+						if (!CheckForcePasvIp(pData->host))
+						{
+							nReplyError = FZ_REPLY_ERROR;
+							break;
+						}
+#endif
 					}
 					else if (GetFamily() == AF_INET6)
 					{
@@ -4942,7 +4975,7 @@ void CFtpControlSocket::SendKeepAliveCommand()
 	//Choose a random command from the list
 	char commands[4][7]={"PWD","REST 0","TYPE A","TYPE I"};
 	int choice=(rand()*4)/(RAND_MAX+1);
-	Send(commands[choice]);
+	Send(commands[choice], FALSE);
 }
 
 void CFtpControlSocket::MakeDir(const CServerPath &path)
@@ -5814,3 +5847,26 @@ bool CFtpControlSocket::IsMisleadingListResponse()
 
 	return false;
 }
+
+#ifdef MPEXT
+bool CFtpControlSocket::CheckForcePasvIp(CString & host)
+{
+	bool result = true;
+	if (m_CurrentServer.bForcePasvIp)
+	{
+		unsigned int tmpPort;
+		CString ahost;
+		if (!GetPeerName(ahost, tmpPort))
+		{
+			LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("GetPeerName failed"));
+			result = false;
+		}
+		else if (ahost != host)
+		{
+			LogMessage(__FILE__, __LINE__, this, FZ_LOG_WARNING, _T("Using host address %s instead of the one suggested by the server: %s"), ahost, host);
+			host = ahost;
+		}
+	}
+	return result;
+}
+#endif

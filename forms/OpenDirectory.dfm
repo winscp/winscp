@@ -203,7 +203,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Up'
-        TabOrder = 3
+        TabOrder = 4
         OnClick = BookmarkButtonClick
       end
       object DownSharedBookmarkButton: TButton
@@ -214,8 +214,19 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
         Height = 25
         Anchors = [akRight, akBottom]
         Caption = '&Down'
-        TabOrder = 4
+        TabOrder = 5
         OnClick = BookmarkButtonClick
+      end
+      object ShortCutSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 285
+        Top = 73
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Shortcut...'
+        TabOrder = 3
+        OnClick = ShortCutBookmarkButtonClick
       end
     end
   end

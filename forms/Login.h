@@ -293,6 +293,7 @@ __published:
   TComboBox *FtpsCombo;
   TLabel *Label5;
   TComboBox *FtpListAllCombo;
+  TCheckBox *FtpForcePasvIpCheck;
   void __fastcall DataChange(TObject *Sender);
   void __fastcall FormShow(TObject *Sender);
   void __fastcall SessionTreeDblClick(TObject *Sender);
@@ -399,6 +400,10 @@ private:
   void __fastcall WMHelp(TWMHelp & Message);
   int __fastcall FSProtocolToIndex(TFSProtocol FSProtocol, bool & AllowScpFallback);
   TFSProtocol __fastcall IndexToFSProtocol(int Index, bool AllowScpFallback);
+  int __fastcall LastSupportedFtpProxyMethod();
+  bool __fastcall SupportedFtpProxyMethod(int Method);
+  TProxyMethod __fastcall GetProxyMethod();
+  int __fastcall GetFtpProxyLogonType();
   void __fastcall UpdateNavigationTree();
   void __fastcall UpdateTree(TTreeNode * ANode, bool Recursive);
   void __fastcall UpdateFolderNode(TTreeNode * Node);

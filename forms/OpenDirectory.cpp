@@ -119,12 +119,17 @@ void __fastcall TOpenDirectoryDialog::ControlChange(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::UpdateBookmarkControls(
   TButton * AddBookmarkButton, TButton * RemoveBookmarkButton,
+  TButton * ShortCutBookmarkButton,
   TButton * UpBookmarkButton, TButton * DownBookmarkButton,
   TListBox * BookmarksList, bool ListBoxUpdate)
 {
   EnableControl(AddBookmarkButton,
     !Directory.IsEmpty() && (FindBookmark(BookmarksList, Directory) < 0));
   EnableControl(RemoveBookmarkButton, BookmarksList->ItemIndex >= 0);
+  if (ShortCutBookmarkButton != NULL)
+  {
+    EnableControl(ShortCutBookmarkButton, BookmarksList->ItemIndex >= 0);
+  }
   EnableControl(UpBookmarkButton, BookmarksList->ItemIndex > 0);
   EnableControl(DownBookmarkButton, BookmarksList->ItemIndex >= 0 &&
     BookmarksList->ItemIndex < BookmarksList->Items->Count-1);
@@ -161,10 +166,10 @@ void __fastcall TOpenDirectoryDialog::UpdateControls(bool ListBoxUpdate)
   SwitchButton->Visible = AllowSwitch;
 
   UpdateBookmarkControls(AddSessionBookmarkButton, RemoveSessionBookmarkButton,
-    UpSessionBookmarkButton, DownSessionBookmarkButton,
+    NULL, UpSessionBookmarkButton, DownSessionBookmarkButton,
     SessionBookmarksList, ListBoxUpdate);
   UpdateBookmarkControls(AddSharedBookmarkButton, RemoveSharedBookmarkButton,
-    UpSharedBookmarkButton, DownSharedBookmarkButton,
+    ShortCutSharedBookmarkButton, UpSharedBookmarkButton, DownSharedBookmarkButton,
     SharedBookmarksList, ListBoxUpdate);
 }
 //---------------------------------------------------------------------------
@@ -176,6 +181,26 @@ void __fastcall TOpenDirectoryDialog::SetDirectories(TStrings * value)
 TStrings * __fastcall TOpenDirectoryDialog::GetDirectories()
 {
   return RemoteDirectoryEdit->Items;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TOpenDirectoryDialog::BookmarkDirectory(TBookmark * Bookmark)
+{
+  return OperationSide == osLocal ? Bookmark->Local : Bookmark->Remote;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TOpenDirectoryDialog::BookmarkText(TBookmark * Bookmark)
+{
+  AnsiString Result = BookmarkDirectory(Bookmark);
+  if (!Result.IsEmpty() && (Bookmark->ShortCut != 0))
+  {
+    Result = FORMAT("%s (%s)", (Result, ShortCutToText(Bookmark->ShortCut)));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+TBookmark * __fastcall TOpenDirectoryDialog::GetBookmark(TListBox * BookmarksList, int Index)
+{
+  return dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[Index]);
 }
 //---------------------------------------------------------------------------
 void __fastcall TOpenDirectoryDialog::LoadBookmarks(TListBox * ListBox,
@@ -194,10 +219,11 @@ void __fastcall TOpenDirectoryDialog::LoadBookmarks(TListBox * ListBox,
   for (int i = 0; i < BookmarkList->Count; i++)
   {
     TBookmark * Bookmark = BookmarkList->Bookmarks[i];
-    AnsiString Directory = OperationSide == osLocal ? Bookmark->Local : Bookmark->Remote;
-    if (!Directory.IsEmpty() && (ListBox->Items->IndexOf(Directory) < 0))
+    AnsiString Directory = BookmarkDirectory(Bookmark);
+    if (!Directory.IsEmpty() && (FindBookmark(ListBox, Directory) < 0))
     {
-      ListBox->Items->AddObject(Directory, Bookmark);
+      AnsiString Text = BookmarkText(Bookmark);
+      ListBox->Items->AddObject(Text, Bookmark);
     }
   }
 }
@@ -282,19 +308,22 @@ void __fastcall TOpenDirectoryDialog::AddAsBookmark(TObject * Sender)
   }
   Bookmark->Name = Directory;
 
+  // would alway be equal to Directory atm,
+  // as only difference can be a shorcut, which is not set
+  AnsiString Text = BookmarkText(Bookmark);
+
   if (BookmarksList->ItemIndex >= 0)
   {
     int PrevItemIndex = BookmarksList->ItemIndex;
     BookmarkList->InsertBefore(
-      dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[BookmarksList->ItemIndex]),
-      Bookmark);
-    BookmarksList->Items->InsertObject(BookmarksList->ItemIndex, Directory, Bookmark);
+      GetBookmark(BookmarksList, BookmarksList->ItemIndex), Bookmark);
+    BookmarksList->Items->InsertObject(BookmarksList->ItemIndex, Text, Bookmark);
     BookmarksList->ItemIndex = PrevItemIndex;
   }
   else
   {
     BookmarkList->Add(Bookmark);
-    BookmarksList->Items->AddObject(Directory, Bookmark);
+    BookmarksList->Items->AddObject(Text, Bookmark);
     BookmarksList->ItemIndex = BookmarksList->Items->Count-1;
   }
 
@@ -312,9 +341,8 @@ void __fastcall TOpenDirectoryDialog::RemoveBookmark(TObject * Sender)
   TListBox * BookmarksList = GetBookmarksList(Sender);
 
   int PrevItemIndex = BookmarksList->ItemIndex;
-  TBookmark * Bookmark;
-  Bookmark = dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[PrevItemIndex]);
-  assert(Bookmark);
+  TBookmark * Bookmark = GetBookmark(BookmarksList, PrevItemIndex);
+  assert(Bookmark != NULL);
   BookmarkList->Delete(Bookmark);
   BookmarksList->Items->Delete(PrevItemIndex);
   if (PrevItemIndex < BookmarksList->Items->Count)
@@ -340,7 +368,8 @@ Integer __fastcall TOpenDirectoryDialog::FindBookmark(TListBox * BookmarksList, 
   {
     for (int Index = 0; Index < BookmarksList->Items->Count; Index++)
     {
-      if (AnsiCompareStr(BookmarksList->Items->Strings[Index], Bookmark) == 0)
+      TBookmark * ABookmark = GetBookmark(BookmarksList, Index);
+      if (AnsiCompareStr(BookmarkDirectory(ABookmark), Bookmark) == 0)
       {
         return Index;
       }
@@ -350,7 +379,8 @@ Integer __fastcall TOpenDirectoryDialog::FindBookmark(TListBox * BookmarksList, 
   {
     for (int Index = 0; Index < BookmarksList->Items->Count; Index++)
     {
-      if (AnsiCompareText(BookmarksList->Items->Strings[Index], Bookmark) == 0)
+      TBookmark * ABookmark = GetBookmark(BookmarksList, Index);
+      if (AnsiCompareText(BookmarkDirectory(ABookmark), Bookmark) == 0)
       {
         return Index;
       }
@@ -364,7 +394,7 @@ void __fastcall TOpenDirectoryDialog::BookmarkSelected(TObject * Sender)
   TListBox * BookmarksList = GetBookmarksList(Sender);
   if (BookmarksList->ItemIndex >= 0)
   {
-    Directory = BookmarksList->Items->Strings[BookmarksList->ItemIndex];
+    Directory = BookmarkDirectory(GetBookmark(BookmarksList, BookmarksList->ItemIndex));
   }
   UpdateControls();
 }
@@ -384,8 +414,8 @@ void __fastcall TOpenDirectoryDialog::BookmarkMove(TObject * Sender,
       Dest >= 0 && Dest < BookmarksList->Items->Count)
   {
     BookmarkList->MoveTo(
-      dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[Dest]),
-      dynamic_cast<TBookmark *>(BookmarksList->Items->Objects[Source]),
+      GetBookmark(BookmarksList, Dest),
+      GetBookmark(BookmarksList, Source),
       Source > Dest);
     BookmarksList->Items->Move(Source, Dest);
     BookmarksList->ItemIndex = Dest;
@@ -518,5 +548,27 @@ void __fastcall TOpenDirectoryDialog::BookmarksListEndDrag(TObject * Sender,
   TObject * /*Target*/, int /*X*/, int /*Y*/)
 {
   GetScrollOnDragOver(Sender)->EndDrag();
+}
+//---------------------------------------------------------------------------
+void __fastcall TOpenDirectoryDialog::ShortCutBookmarkButtonClick(
+  TObject * Sender)
+{
+  TBookmarkList * BookmarkList = GetBookmarkList(Sender);
+  TListBox * BookmarksList = GetBookmarksList(Sender);
+
+  int Index = BookmarksList->ItemIndex;
+  TBookmark * Bookmark = GetBookmark(BookmarksList, Index);
+  assert(Bookmark != NULL);
+
+  TShortCuts ShortCuts;
+  WinConfiguration->CustomCommandList->ShortCuts(ShortCuts);
+  BookmarkList->ShortCuts(ShortCuts);
+  TShortCut ShortCut = Bookmark->ShortCut;
+  if (DoShortCutDialog(ShortCut, ShortCuts, HelpKeyword))
+  {
+    Bookmark->ShortCut = ShortCut;
+    BookmarksList->Items->Strings[Index] = BookmarkText(Bookmark);
+    UpdateControls(true);
+  }
 }
 //---------------------------------------------------------------------------

@@ -356,7 +356,7 @@ __fastcall TWinConfiguration::TWinConfiguration(): TCustomWinConfiguration()
   FInvalidDefaultTranslationMessage = "";
   FDDExtInstalled = -1;
   FBookmarks = new TBookmarks();
-  FCustomCommands = new TCustomCommands();
+  FCustomCommandList = new TCustomCommandList();
   FEditorList = new TEditorList();
   FDefaultUpdatesPeriod = 0;
   Default();
@@ -377,7 +377,7 @@ __fastcall TWinConfiguration::~TWinConfiguration()
   ClearTemporaryLoginData();
 
   delete FBookmarks;
-  delete FCustomCommands;
+  delete FCustomCommandList;
   delete FEditorList;
 }
 //---------------------------------------------------------------------------
@@ -415,6 +415,8 @@ void __fastcall TWinConfiguration::Default()
   FUseSharedBookmarks = false;
   FDefaultDirIsHome = true;
   FDDDeleteDelay = 120;
+  FTemporaryDirectoryAppendSession = false;
+  FTemporaryDirectoryAppendPath = true;
   FTemporaryDirectoryCleanup = true;
   FConfirmTemporaryDirectoryCleanup = true;
   FPreservePanelState = true;
@@ -544,32 +546,26 @@ void __fastcall TWinConfiguration::DefaultLocalized()
 
   if (FCustomCommandsDefaults)
   {
-    FCustomCommands->Clear();
-    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_EXECUTE)] = "\"./!\"";
-    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_EXECUTE)] = 0;
-    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TOUCH)] = "touch \"!\"";
-    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TOUCH)] = ccApplyToDirectories | ccRecursive;
-    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_TAR)] =
+    FCustomCommandList->Clear();
+    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_EXECUTE), "\"./!\"", 0);
+    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_TOUCH), "touch \"!\"", ccApplyToDirectories | ccRecursive);
+    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_TAR),
       FORMAT("tar -cz  -f \"!?%s?archive.tgz!\" !&",
-        (LoadStr(CUSTOM_COMMAND_TAR_ARCHIVE)));
-    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_TAR)] = ccApplyToDirectories;
-    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_UNTAR)] =
+        (LoadStr(CUSTOM_COMMAND_TAR_ARCHIVE))), ccApplyToDirectories);
+    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_UNTAR),
       FORMAT("tar -xz --directory=\"!?%s?.!\" -f \"!\"",
-        (LoadStr(CUSTOM_COMMAND_UNTAR_DIRECTORY)));
-    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_UNTAR)] = 0;
-    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_GREP)] =
-      FORMAT("grep \"!?%s?!\" !&", (LoadStr(CUSTOM_COMMAND_GREP_PATTERN)));
-    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_GREP)] = ccShowResults;
+        (LoadStr(CUSTOM_COMMAND_UNTAR_DIRECTORY))), 0);
+    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_GREP),
+      FORMAT("grep \"!?%s?!\" !&", (LoadStr(CUSTOM_COMMAND_GREP_PATTERN))),
+      ccShowResults);
     if (Win32Platform == VER_PLATFORM_WIN32_NT)
     {
-      FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_FC)] =
-        "cmd /c fc \"!\" \"\!^!\" | more && pause";
-      FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_FC)] = ccLocal;
+      FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_FC),
+        "cmd /c fc \"!\" \"\!^!\" | more && pause", ccLocal);
     }
-    FCustomCommands->Values[LoadStr(CUSTOM_COMMAND_PRINT)] = "notepad.exe /p \"!\"";
-    FCustomCommands->Params[LoadStr(CUSTOM_COMMAND_PRINT)] = ccLocal;
+    FCustomCommandList->Add(LoadStr(CUSTOM_COMMAND_PRINT), "notepad.exe /p \"!\"", ccLocal);
+    FCustomCommandList->Reset();
     FCustomCommandsDefaults = true;
-    FCustomCommandsModified = false;
   }
 }
 //---------------------------------------------------------------------------
@@ -656,7 +652,7 @@ void __fastcall TWinConfiguration::Saved()
 {
   TCustomWinConfiguration::Saved();
   FBookmarks->ModifyAll(false);
-  FCustomCommandsModified = false;
+  FCustomCommandList->Reset();
   FEditorList->Saved();
 }
 //---------------------------------------------------------------------------
@@ -707,6 +703,8 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     DDExtEnabled); \
     KEY(Integer,  DDExtTimeout); \
     KEY(Bool,     DefaultDirIsHome); \
+    KEY(Bool,     TemporaryDirectoryAppendSession); \
+    KEY(Bool,     TemporaryDirectoryAppendPath); \
     KEY(Bool,     TemporaryDirectoryCleanup); \
     KEY(Bool,     ConfirmTemporaryDirectoryCleanup); \
     KEY(Bool,     PreservePanelState); \
@@ -824,23 +822,9 @@ void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool
 
     Storage->CloseSubKey();
   }
-  if ((All && !FCustomCommandsDefaults) || FCustomCommandsModified)
+  if ((All && !FCustomCommandsDefaults) || FCustomCommandList->Modified)
   {
-    if (Storage->OpenSubKey("CustomCommands", true))
-    {
-      Storage->WriteValues(FCustomCommands, true);
-      Storage->CloseSubKey();
-    }
-    if (Storage->OpenSubKey("CustomCommandsParams", true))
-    {
-      Storage->ClearValues();
-      for (int Index = 0; Index < FCustomCommands->Count; Index++)
-      {
-        Storage->WriteInteger(FCustomCommands->Names[Index],
-          FCustomCommands->Params[FCustomCommands->Names[Index]]);
-      }
-      Storage->CloseSubKey();
-    }
+    FCustomCommandList->Save(Storage);
   }
 
   if ((All || FEditorList->Modified) &&
@@ -936,30 +920,20 @@ void __fastcall TWinConfiguration::LoadData(THierarchicalStorage * Storage)
     Storage->CloseSubKey();
   }
 
-  if (Storage->OpenSubKey("CustomCommands", false))
+  if (Storage->HasSubKey("CustomCommands"))
   {
-    FCustomCommands->Clear();
-    Storage->ReadValues(FCustomCommands, true);
-    Storage->CloseSubKey();
-
-    if (Storage->OpenSubKey("CustomCommandsParams", false))
-    {
-      for (int Index = 0; Index < FCustomCommands->Count; Index++)
-      {
-        AnsiString Name = FCustomCommands->Names[Index];
-        FCustomCommands->Params[Name] =
-          Storage->ReadInteger(Name, FCustomCommands->Params[Name]);
-      }
-      Storage->CloseSubKey();
-    }
+    FCustomCommandList->Load(Storage);
     FCustomCommandsDefaults = false;
   }
-  else if (FCustomCommandsModified)
+  else if (FCustomCommandList->Modified)
   {
-    FCustomCommands->Clear();
+    // can this (=reloading of configuration) even happen?
+    // if it does, shouldn't we reset default commands?
+    assert(false);
+    FCustomCommandList->Clear();
     FCustomCommandsDefaults = false;
   }
-  FCustomCommandsModified = false;
+  FCustomCommandList->Reset();
 
   if (Storage->OpenSubKey("Interface\\Editor", false, true))
   try
@@ -1257,6 +1231,16 @@ void __fastcall TWinConfiguration::SetDefaultDirIsHome(bool value)
   SET_CONFIG_PROPERTY(DefaultDirIsHome);
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTemporaryDirectoryAppendSession(bool value)
+{
+  SET_CONFIG_PROPERTY(TemporaryDirectoryAppendSession);
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetTemporaryDirectoryAppendPath(bool value)
+{
+  SET_CONFIG_PROPERTY(TemporaryDirectoryAppendPath);
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetTemporaryDirectoryCleanup(bool value)
 {
   SET_CONFIG_PROPERTY(TemporaryDirectoryCleanup);
@@ -1322,13 +1306,12 @@ void __fastcall TWinConfiguration::SetAutoOpenInPutty(bool value)
   SET_CONFIG_PROPERTY(AutoOpenInPutty);
 }
 //---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetCustomCommands(TCustomCommands * value)
+void __fastcall TWinConfiguration::SetCustomCommandList(TCustomCommandList * value)
 {
-  assert(FCustomCommands);
-  if (!FCustomCommands->Equals(value))
+  assert(FCustomCommandList);
+  if (!FCustomCommandList->Equals(value))
   {
-    FCustomCommands->Assign(value);
-    FCustomCommandsModified = true;
+    FCustomCommandList->Assign(value);
     FCustomCommandsDefaults = false;
   }
 }
@@ -1734,49 +1717,275 @@ void __fastcall TWinConfiguration::SetEditorList(const TEditorList * value)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-int __fastcall TCustomCommands::GetParam(const AnsiString & Name)
+__fastcall TCustomCommandType::TCustomCommandType() :
+  FParams(0), FShortCut(0)
 {
-  int Index = IndexOfName(Name);
-  if (Index >= 0)
-  {
-    return int(Objects[Index]);
-  }
-  else
-  {
-    return 0;
-  }
 }
 //---------------------------------------------------------------------------
-void __fastcall TCustomCommands::SetParam(const AnsiString & Name, int value)
+__fastcall TCustomCommandType::TCustomCommandType(const TCustomCommandType & Other) :
+  FName(Other.FName),
+  FCommand(Other.FCommand),
+  FParams(Other.FParams),
+  FShortCut(Other.FShortCut)
 {
-  int Index = IndexOfName(Name);
-  if (Index >= 0)
-  {
-    Objects[Index] = (TObject *)value;
-  }
-  else
-  {
-    Values[Name] = "";
-    Index = IndexOfName(Name);
-    assert(Index >= 0);
-    Objects[Index] = (TObject *)value;
-  }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomCommands::Equals(TCustomCommands * Commands)
+TCustomCommandType & TCustomCommandType::operator=(const TCustomCommandType & Other)
 {
-  bool Result = TStringList::Equals(Commands);
-  if (Result)
+  FName = Other.FName;
+  FCommand = Other.FCommand;
+  FParams = Other.FParams;
+  FShortCut = Other.FShortCut;
+  return *this;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandType::Equals(const TCustomCommandType * Other) const
+{
+  return
+    (FName == Other->FName) &&
+    (FCommand == Other->FCommand) &&
+    (FParams == Other->FParams) &&
+    (FShortCut == Other->FShortCut);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+__fastcall TCustomCommandList::TCustomCommandList()
+{
+  FCommands = new TList();
+  FModified = false;
+}
+//---------------------------------------------------------------------------
+__fastcall TCustomCommandList::~TCustomCommandList()
+{
+  Clear();
+  delete FCommands;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Reset()
+{
+  FModified = false;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Modify()
+{
+  FModified = true;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Load(THierarchicalStorage * Storage)
+{
+  Clear();
+
+  if (Storage->OpenSubKey("CustomCommands", false))
   {
-    int Index = 0;
-    while ((Index < Count) && Result)
+    TStrings * Names = new TStringList();
+    try
     {
-      if (Objects[Index] != Commands->Objects[Index])
+      Storage->ReadValues(Names, true);
+      for (int Index = 0; Index < Names->Count; Index++)
       {
-        Result = false;
+        TCustomCommandType * Command = new TCustomCommandType();
+        Command->Name = Names->Names[Index];
+        Command->Command = Names->Values[Names->Names[Index]];
+        FCommands->Add(Command);
       }
-      Index++;
+      Storage->CloseSubKey();
+    }
+    __finally
+    {
+      delete Names;
     }
   }
+
+  if (Storage->OpenSubKey("CustomCommandsParams", false))
+  {
+    for (int Index = 0; Index < FCommands->Count; Index++)
+    {
+      TCustomCommandType * Command = GetCommand(Index);
+      Command->Params = Storage->ReadInteger(Command->Name, Command->Params);
+    }
+    Storage->CloseSubKey();
+  }
+
+  if (Storage->OpenSubKey("CustomCommandsShortCuts", false))
+  {
+    for (int Index = 0; Index < FCommands->Count; Index++)
+    {
+      TCustomCommandType * Command = GetCommand(Index);
+      Command->ShortCut = (Word)Storage->ReadInteger(Command->Name, Command->ShortCut);
+    }
+    Storage->CloseSubKey();
+  }
+  Reset();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Save(THierarchicalStorage * Storage)
+{
+  if (Storage->OpenSubKey("CustomCommands", true))
+  {
+    Storage->ClearValues();
+    for (int Index = 0; Index < FCommands->Count; Index++)
+    {
+      const TCustomCommandType * Command = Commands[Index];
+      Storage->WriteString(Command->Name, Command->Command);
+    }
+    Storage->CloseSubKey();
+  }
+  if (Storage->OpenSubKey("CustomCommandsParams", true))
+  {
+    Storage->ClearValues();
+    for (int Index = 0; Index < FCommands->Count; Index++)
+    {
+      const TCustomCommandType * Command = Commands[Index];
+      Storage->WriteInteger(Command->Name, Command->Params);
+    }
+    Storage->CloseSubKey();
+  }
+  if (Storage->OpenSubKey("CustomCommandsShortCuts", true))
+  {
+    Storage->ClearValues();
+    for (int Index = 0; Index < FCommands->Count; Index++)
+    {
+      const TCustomCommandType * Command = Commands[Index];
+      if (Command->ShortCut != 0)
+      {
+        Storage->WriteInteger(Command->Name, Command->ShortCut);
+      }
+    }
+    Storage->CloseSubKey();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Clear()
+{
+  for (int Index = 0; Index < FCommands->Count; Index++)
+  {
+    delete Commands[Index];
+  }
+  FCommands->Clear();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Add(const AnsiString Name,
+  const AnsiString ACommand, int Params)
+{
+  TCustomCommandType * Command = new TCustomCommandType();
+  Command->Name = Name;
+  Command->Command = ACommand;
+  Command->Params = Params;
+  Add(Command);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Add(TCustomCommandType * Command)
+{
+  Insert(Count, Command);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Insert(int Index, TCustomCommandType * Command)
+{
+  FCommands->Insert(Index, Command);
+  Modify();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Change(int Index, TCustomCommandType * ACommand)
+{
+  TCustomCommandType * Command = GetCommand(Index);
+  if (!Command->Equals(ACommand))
+  {
+    delete Command;
+    FCommands->Items[Index] = ACommand;
+    Modify();
+  }
+  else
+  {
+    delete ACommand;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Move(int CurIndex, int NewIndex)
+{
+  if (CurIndex != NewIndex)
+  {
+    FCommands->Move(CurIndex, NewIndex);
+    Modify();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Delete(int Index)
+{
+  assert((Index >= 0) && (Index < Count));
+  delete GetCommand(Index);
+  FCommands->Delete(Index);
+  Modify();
+}
+//---------------------------------------------------------------------------
+int __fastcall TCustomCommandList::GetCount() const
+{
+  return FCommands->Count;
+}
+//---------------------------------------------------------------------------
+const TCustomCommandType * __fastcall TCustomCommandList::GetConstCommand(int Index) const
+{
+  return static_cast<TCustomCommandType *>(FCommands->Items[Index]);
+}
+//---------------------------------------------------------------------------
+TCustomCommandType * __fastcall TCustomCommandList::GetCommand(int Index)
+{
+  return static_cast<TCustomCommandType *>(FCommands->Items[Index]);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomCommandList::Equals(const TCustomCommandList * Other) const
+{
+  bool Result = (Count == Other->Count);
+  for (int Index = 0; Result && (Index < Count); Index++)
+  {
+    Result = Commands[Index]->Equals(Other->Commands[Index]);
+  }
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::Assign(const TCustomCommandList * Other)
+{
+  Clear();
+  for (int Index = 0; Index < Other->Count; Index++)
+  {
+    Add(new TCustomCommandType(*Other->Commands[Index]));
+  }
+  // there should be comparison of with the assigned list, be we rely on caller
+  // to do it instead (TGUIConfiguration::SetCopyParamList)
+  Modify();
+}
+//---------------------------------------------------------------------------
+const TCustomCommandType * TCustomCommandList::Find(const AnsiString Name) const
+{
+  for (int Index = 0; Index < FCommands->Count; Index++)
+  {
+    if (Commands[Index]->Name == Name)
+    {
+      return Commands[Index];
+    }
+  }
+  return NULL;
+}
+//---------------------------------------------------------------------------
+const TCustomCommandType * TCustomCommandList::Find(TShortCut ShortCut) const
+{
+  for (int Index = 0; Index < FCommands->Count; Index++)
+  {
+    if (Commands[Index]->ShortCut == ShortCut)
+    {
+      return Commands[Index];
+    }
+  }
+  return NULL;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomCommandList::ShortCuts(TShortCuts & ShortCuts) const
+{
+  for (int Index = 0; Index < FCommands->Count; Index++)
+  {
+    const TCustomCommandType * Command = Commands[Index];
+    if (Command->ShortCut != 0)
+    {
+      ShortCuts.Add(Command->ShortCut);
+    }
+  }
 }

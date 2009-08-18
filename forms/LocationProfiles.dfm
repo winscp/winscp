@@ -279,6 +279,17 @@ object LocationProfilesDialog: TLocationProfilesDialog
         TabOrder = 6
         OnClick = BookmarkButtonClick
       end
+      object ShortCutSharedBookmarkButton: TButton
+        Tag = 2
+        Left = 438
+        Top = 137
+        Width = 83
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = '&Shortcut...'
+        TabOrder = 7
+        OnClick = ShortCutBookmarkButtonClick
+      end
     end
   end
   object LocalDirectoryEdit: TIEComboBox

@@ -25,6 +25,7 @@ public:
   AnsiString RemoteDirectory;
   TObject * LocalExplorerState;
   TObject * RemoteExplorerState;
+  TDateTime ReopenStart;
 };
 //---------------------------------------------------------------------------
 class TTerminalManager : public TTerminalList

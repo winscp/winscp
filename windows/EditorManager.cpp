@@ -78,7 +78,7 @@ bool __fastcall TEditorManager::CanAddFile(const AnsiString RemoteDirectory,
       if (!FileData->External)
       {
         Result = false;
-        if (FileData->Token != NULL)
+        if (!FileData->Closed && (FileData->Token != NULL))
         {
           Token = FileData->Token;
         }
@@ -127,7 +127,8 @@ void __fastcall TEditorManager::ProcessFiles(TEditedFileProcessEvent Callback, v
   for (unsigned int i = 0; i < FFiles.size(); i++)
   {
     TFileData * FileData = &FFiles[i];
-    Callback(FileData->FileName, FileData->Data, FileData->Token, Arg);
+    Callback(FileData->FileName, FileData->Data,
+      (FileData->Closed ? NULL : FileData->Token), Arg);
   }
 }
 //---------------------------------------------------------------------------
@@ -460,7 +461,7 @@ int __fastcall TEditorManager::FindFile(const TObject * Token)
   int Index = -1;
   for (unsigned int i = 0; i < FFiles.size(); i++)
   {
-    if (FFiles[i].Token == Token)
+    if (!FFiles[i].Closed && (FFiles[i].Token == Token))
     {
       Index = i;
       break;

@@ -102,6 +102,7 @@ private:
   AnsiString FProxyLocalCommand;
   TAutoSwitch FProxyDNS;
   bool FProxyLocalhost;
+  int FFtpProxyLogonType;
   TAutoSwitch FBugs[BUG_COUNT];
   AnsiString FCustomParam1;
   AnsiString FCustomParam2;
@@ -133,11 +134,12 @@ private:
   int FTunnelLocalPortNumber;
   AnsiString FTunnelPortFwd;
   bool FFtpPasvMode;
+  bool FFtpForcePasvIp;
   AnsiString FFtpAccount;
   int FFtpPingInterval;
   TPingType FFtpPingType;
   TFtps FFtps;
-  TAutoSwitch FUtf;
+  TAutoSwitch FNotUtf;
   AnsiString FHostKey;
 
   AnsiString FOrigHostName;
@@ -224,6 +226,7 @@ private:
   void __fastcall SetProxyDNS(TAutoSwitch value);
   void __fastcall SetProxyLocalhost(bool value);
   AnsiString __fastcall GetProxyPassword() const;
+  void __fastcall SetFtpProxyLogonType(int value);
   void __fastcall SetBug(TSshBug Bug, TAutoSwitch value);
   TAutoSwitch __fastcall GetBug(TSshBug Bug) const;
   AnsiString __fastcall GetSessionKey();
@@ -261,11 +264,12 @@ private:
   void __fastcall SetTunnelLocalPortNumber(int value);
   bool __fastcall GetTunnelAutoassignLocalPortNumber();
   void __fastcall SetFtpPasvMode(bool value);
+  void __fastcall SetFtpForcePasvIp(bool value);
   void __fastcall SetFtpAccount(AnsiString value);
   void __fastcall SetFtpPingInterval(int value);
   void __fastcall SetFtpPingType(TPingType value);
   void __fastcall SetFtps(TFtps value);
-  void __fastcall SetUtf(TAutoSwitch value);
+  void __fastcall SetNotUtf(TAutoSwitch value);
   void __fastcall SetHostKey(AnsiString value);
   TDateTime __fastcall GetTimeoutDT();
 
@@ -360,6 +364,7 @@ public:
   __property AnsiString ProxyLocalCommand  = { read=FProxyLocalCommand, write=SetProxyLocalCommand };
   __property TAutoSwitch ProxyDNS  = { read=FProxyDNS, write=SetProxyDNS };
   __property bool ProxyLocalhost  = { read=FProxyLocalhost, write=SetProxyLocalhost };
+  __property int FtpProxyLogonType  = { read=FFtpProxyLogonType, write=SetFtpProxyLogonType };
   __property TAutoSwitch Bug[TSshBug Bug]  = { read=GetBug, write=SetBug };
   __property AnsiString CustomParam1 = { read = FCustomParam1, write = SetCustomParam1 };
   __property AnsiString CustomParam2 = { read = FCustomParam2, write = SetCustomParam2 };
@@ -392,12 +397,13 @@ public:
   __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber, write = SetTunnelLocalPortNumber };
   __property AnsiString TunnelPortFwd = { read = FTunnelPortFwd, write = SetTunnelPortFwd };
   __property bool FtpPasvMode = { read = FFtpPasvMode, write = SetFtpPasvMode };
+  __property bool FtpForcePasvIp = { read = FFtpForcePasvIp, write = SetFtpForcePasvIp };
   __property AnsiString FtpAccount = { read = FFtpAccount, write = SetFtpAccount };
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
   __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };
   __property TPingType FtpPingType = { read = FFtpPingType, write = SetFtpPingType };
   __property TFtps Ftps = { read = FFtps, write = SetFtps };
-  __property TAutoSwitch Utf = { read = FUtf, write = SetUtf };
+  __property TAutoSwitch NotUtf = { read = FNotUtf, write = SetNotUtf };
   __property AnsiString HostKey = { read = FHostKey, write = SetHostKey };
   __property AnsiString StorageKey = { read = GetStorageKey };
   __property AnsiString OrigHostName = { read = FOrigHostName };

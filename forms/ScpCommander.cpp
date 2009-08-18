@@ -1120,31 +1120,7 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
         if (LocationProfilesDialog(Mode, Side, Local, Remote, LocalDirectories,
               RemoteDirectories, Terminal))
         {
-          bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
-          NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
-          try
-          {
-            // make sure that whatever path is valid it is opened first and only
-            // after that an eventual error is reported
-            try
-            {
-              if (!Local.IsEmpty())
-              {
-                LocalDirView->Path = Local;
-              }
-            }
-            __finally
-            {
-              if (!Remote.IsEmpty())
-              {
-                RemoteDirView->Path = Remote;
-              }
-            }
-          }
-          __finally
-          {
-            NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
-          }
+          DoOpenBookmark(Local, Remote);
         }
       }
       __finally
@@ -1171,6 +1147,50 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
     Mode = odBrowse;
   }
   while (UseLocationProfiles != WinConfiguration->UseLocationProfiles);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DoOpenBookmark(AnsiString Local, AnsiString Remote)
+{
+  bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+  NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+  try
+  {
+    // make sure that whatever path is valid it is opened first and only
+    // after that an eventual error is reported
+    try
+    {
+      if (!Local.IsEmpty())
+      {
+        LocalDirView->Path = Local;
+      }
+    }
+    __finally
+    {
+      if (!Remote.IsEmpty())
+      {
+        RemoteDirView->Path = Remote;
+      }
+    }
+  }
+  __finally
+  {
+    NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TScpCommanderForm::OpenBookmark(AnsiString Local, AnsiString Remote)
+{
+  bool Result;
+  if (WinConfiguration->UseLocationProfiles)
+  {
+    DoOpenBookmark(Local, Remote);
+    Result = true;
+  }
+  else
+  {
+    Result = TCustomScpExplorerForm::OpenBookmark(Local, Remote);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::LocalDirViewDDTargetHasDropHandler(

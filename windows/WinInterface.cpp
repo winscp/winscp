@@ -84,9 +84,12 @@ TDialogParams::TDialogParams()
   ComboItems = NULL;
   ComboEmptyValid = true;
 
+  OnInit = NULL;
   OnShow = NULL;
   OnChange = NULL;
   OnValidate = NULL;
+  OnSave = NULL;
+  OnLoad = NULL;
 }
 //---------------------------------------------------------------------------
 TDialogData::TDialogData()
@@ -575,8 +578,8 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
 }
 //---------------------------------------------------------------------------
 int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
-  const AnsiString MessageFormat, int Answers, AnsiString HelpKeyword,
-  const TMessageParams * Params)
+  int SessionReopenTimeout, const AnsiString MessageFormat, int Answers,
+  AnsiString HelpKeyword, const TMessageParams * Params)
 {
   assert(FLAGCLEAR(Answers, qaRetry));
   Answers |= qaRetry;
@@ -592,9 +595,9 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
   }
   assert(AParams.Timeout == 0);
   // the condition is de facto excess
-  if (GUIConfiguration->SessionReopenAutoIdle > 0)
+  if (SessionReopenTimeout > 0)
   {
-    AParams.Timeout = GUIConfiguration->SessionReopenAutoIdle;
+    AParams.Timeout = SessionReopenTimeout;
     AParams.TimeoutAnswer = qaRetry;
   }
   assert(AParams.Aliases == NULL);

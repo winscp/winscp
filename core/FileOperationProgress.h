@@ -59,6 +59,7 @@ public:
   __int64 SkippedSize;
   TResumeStatus ResumeStatus;
   bool InProgress;
+  bool FileInProgress;
   TCancelStatus Cancel;
   int Count;
   // when operation started
@@ -90,7 +91,8 @@ public:
   unsigned long __fastcall LocalBlockSize();
   bool __fastcall IsLocalyDone();
   bool __fastcall IsTransferDone();
-  void __fastcall SetFile(AnsiString AFileName);
+  void __fastcall SetFile(AnsiString AFileName, bool AFileInProgress = true);
+  void __fastcall SetFileInProgress();
   int __fastcall OperationProgress();
   unsigned long __fastcall TransferBlockSize();
   unsigned long __fastcall AdjustToCPSLimit(unsigned long Size);

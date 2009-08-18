@@ -502,6 +502,8 @@ protected:
   void __fastcall LocalPathComboUpdateDrives();
   void __fastcall LocalPathComboUpdate();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
+  void __fastcall DoOpenBookmark(AnsiString Local, AnsiString Remote);
+  virtual bool __fastcall OpenBookmark(AnsiString Local, AnsiString Remote);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

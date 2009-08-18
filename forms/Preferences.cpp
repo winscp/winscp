@@ -9,6 +9,7 @@
 
 #include <CoreMain.h>
 #include <Terminal.h>
+#include <Bookmarks.h>
 
 #include "VCLCommon.h"
 #include "GUITools.h"
@@ -60,7 +61,7 @@ __fastcall TPreferencesDialog::TPreferencesDialog(TComponent* AOwner)
   EditorFontLabel->Color = clWindow;
   // currently useless
   FAfterFilenameEditDialog = false;
-  FCustomCommands = new TCustomCommands();
+  FCustomCommandList = new TCustomCommandList();
   FCustomCommandChanging = false;
   FListViewDragDest = -1;
   FCopyParamList = new TCopyParamList();
@@ -86,7 +87,7 @@ __fastcall TPreferencesDialog::~TPreferencesDialog()
   SAFE_DESTROY(FCopyParamScrollOnDragOver);
   SAFE_DESTROY(FCustomCommandsScrollOnDragOver);
   delete FEditorFont;
-  delete FCustomCommands;
+  delete FCustomCommandList;
   delete FCopyParamList;
   delete FEditorList;
 }
@@ -172,6 +173,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     BOOLPROP(ContinueOnError);
     BOOLPROP(DDAllowMoveInit);
     BOOLPROP(BeepOnFinish);
+    BOOLPROP(TemporaryDirectoryAppendSession);
+    BOOLPROP(TemporaryDirectoryAppendPath);
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
 
@@ -241,7 +244,8 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     SessionReopenAutoCheck->Checked = (Configuration->SessionReopenAuto > 0);
     SessionReopenAutoIdleCheck->Checked = (GUIConfiguration->SessionReopenAutoIdle > 0);
     SessionReopenAutoEdit->Value = (Configuration->SessionReopenAuto > 0 ?
-      (Configuration->SessionReopenAuto / 1000): 5);
+      (Configuration->SessionReopenAuto / 1000) : 5);
+    SessionReopenTimeoutEdit->Value = (Configuration->SessionReopenTimeout / 1000);
 
     TransferSheet->Enabled = WinConfiguration->ExpertMode;
     GeneralSheet->Enabled = (PreferencesMode != pmLogin) && WinConfiguration->ExpertMode;
@@ -254,7 +258,7 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     RandomSeedFileLabel->Visible = WinConfiguration->ExpertMode;
     RandomSeedFileEdit->Visible = WinConfiguration->ExpertMode;
 
-    FCustomCommands->Assign(WinConfiguration->CustomCommands);
+    FCustomCommandList->Assign(WinConfiguration->CustomCommandList);
     UpdateCustomCommandsView();
 
     PuttyPathEdit->Text = GUIConfiguration->PuttyPath;
@@ -404,6 +408,8 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
     BOOLPROP(ContinueOnError);
     BOOLPROP(DDAllowMoveInit);
     BOOLPROP(BeepOnFinish);
+    BOOLPROP(TemporaryDirectoryAppendSession);
+    BOOLPROP(TemporaryDirectoryAppendPath);
     BOOLPROP(TemporaryDirectoryCleanup);
     BOOLPROP(ConfirmTemporaryDirectoryCleanup);
 
@@ -472,8 +478,9 @@ void __fastcall TPreferencesDialog::SaveConfiguration()
       (SessionReopenAutoCheck->Checked ? (SessionReopenAutoEdit->Value * 1000) : 0);
     GUIConfiguration->SessionReopenAutoIdle =
       (SessionReopenAutoIdleCheck->Checked ? (SessionReopenAutoEdit->Value * 1000) : 0);
+    Configuration->SessionReopenTimeout = (SessionReopenTimeoutEdit->Value * 1000);
 
-    WinConfiguration->CustomCommands = FCustomCommands;
+    WinConfiguration->CustomCommandList = FCustomCommandList;
 
     GUIConfiguration->PuttyPath = PuttyPathEdit->Text;
     GUIConfiguration->PuttyPassword = PuttyPasswordCheck2->Checked;
@@ -659,6 +666,9 @@ void __fastcall TPreferencesDialog::UpdateControls()
       SessionReopenAutoCheck->Checked || SessionReopenAutoIdleCheck->Checked);
     EnableControl(SessionReopenAutoLabel, SessionReopenAutoEdit->Enabled);
     EnableControl(SessionReopenAutoSecLabel, SessionReopenAutoEdit->Enabled);
+    EnableControl(SessionReopenTimeoutEdit, SessionReopenAutoEdit->Enabled);
+    EnableControl(SessionReopenTimeoutLabel, SessionReopenAutoEdit->Enabled);
+    EnableControl(SessionReopenTimeoutSecLabel, SessionReopenAutoEdit->Enabled);
 
     EnableControl(CopyOnDoubleClickConfirmationCheck,
       (DoubleClickActionCombo->ItemIndex == 1) && ConfirmTransferringCheck->Checked);
@@ -783,7 +793,7 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 
   if (Sender == DesktopIconButton)
   {
-    IconName = AppNameVersion;
+    IconName = AppName;
     int Result =
       MessageDialog(LoadStr(CREATE_DESKTOP_ICON), qtConfirmation,
         qaYes | qaNo | qaCancel, HELP_CREATE_ICON);
@@ -809,14 +819,14 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
     {
       if (Sender == SendToHookButton)
       {
-        IconName = FMTLOAD(SENDTO_HOOK_NAME, (AppNameVersion));
+        IconName = FMTLOAD(SENDTO_HOOK_NAME, (AppName));
         SpecialFolder = CSIDL_SENDTO;
         Params = "/upload";
       }
       else if (Sender == QuickLaunchIconButton)
       {
         IconName = "Microsoft\\Internet Explorer\\Quick Launch\\" +
-          AppNameVersion;
+          AppName;
         SpecialFolder = CSIDL_APPDATA;
       }
     }
@@ -833,15 +843,19 @@ void __fastcall TPreferencesDialog::IconButtonClick(TObject *Sender)
 void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
       TListItem * Item)
 {
-  assert(FCustomCommands);
+  assert(FCustomCommandList != NULL);
   int Index = Item->Index;
-  assert(Index >= 0 && Index <= FCustomCommands->Count);
-  Item->Caption = StringReplace(FCustomCommands->Names[Index], "&", "",
-    TReplaceFlags() << rfReplaceAll);
+  assert(Index >= 0 && Index <= FCustomCommandList->Count);
+  const TCustomCommandType * Command = FCustomCommandList->Commands[Index];
+  AnsiString Caption = StringReplace(Command->Name, "&", "", TReplaceFlags() << rfReplaceAll);
+  if (Command->ShortCut != 0)
+  {
+    Caption = FORMAT("%s (%s)", (Caption, ShortCutToText(Command->ShortCut)));
+  }
+  Item->Caption = Caption;
   assert(!Item->SubItems->Count);
-  AnsiString Name = FCustomCommands->Names[Index];
-  Item->SubItems->Add(FCustomCommands->Values[Name]);
-  int Params = FCustomCommands->Params[Name];
+  Item->SubItems->Add(Command->Command);
+  int Params = Command->Params;
   Item->SubItems->Add(LoadStr(
     FLAGSET(Params, ccLocal) ? CUSTOM_COMMAND_LOCAL : CUSTOM_COMMAND_REMOTE));
   AnsiString ParamsStr;
@@ -862,8 +876,8 @@ void __fastcall TPreferencesDialog::ListViewSelectItem(
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::UpdateCustomCommandsView()
 {
-  CustomCommandsView->Items->Count = FCustomCommands->Count;
-  AdjustListColumnsWidth(CustomCommandsView, FCustomCommands->Count);
+  CustomCommandsView->Items->Count = FCustomCommandList->Count;
+  AdjustListColumnsWidth(CustomCommandsView, FCustomCommandList->Count);
   CustomCommandsView->Invalidate();
 }
 //---------------------------------------------------------------------------
@@ -893,42 +907,45 @@ void __fastcall TPreferencesDialog::CustomCommandsViewDblClick(
 void __fastcall TPreferencesDialog::AddEditCommandButtonClick(TObject * Sender)
 {
   bool Edit = (Sender == EditCommandButton);
-  AnsiString Description;
-  AnsiString Command;
-  int Params = 0;
+  TCustomCommandType Command;
 
   if (Edit)
   {
     int Index = CustomCommandsView->ItemIndex;
-    assert(Index >= 0 && Index <= FCustomCommands->Count);
+    assert(Index >= 0 && Index <= FCustomCommandList->Count);
 
-    Description = FCustomCommands->Names[Index];
-    Command = FCustomCommands->Values[Description];
-    Params = FCustomCommands->Params[Description];
+    Command = *FCustomCommandList->Commands[Index];
   }
 
-  if (DoCustomCommandDialog(Description, Command, Params, FCustomCommands,
-        (Edit ? ccmEdit : ccmAdd), 0, NULL))
+  TShortCuts ShortCuts;
+  if (WinConfiguration->SharedBookmarks != NULL)
+  {
+    WinConfiguration->SharedBookmarks->ShortCuts(ShortCuts);
+  }
+  FCustomCommandList->ShortCuts(ShortCuts);
+
+  if (DoCustomCommandDialog(Command, FCustomCommandList,
+        (Edit ? ccmEdit : ccmAdd), 0, NULL, &ShortCuts))
   {
     int Index = CustomCommandsView->ItemIndex;
-    AnsiString Record = FORMAT("%s=%s", (Description, Command));
+    TCustomCommandType * ACommand = new TCustomCommandType(Command);
     if (Edit)
     {
-      FCustomCommands->Strings[Index] = Record;
+      FCustomCommandList->Change(Index, ACommand);
     }
     else
     {
       if (Index >= 0)
       {
-        FCustomCommands->Insert(Index, Record);
+        FCustomCommandList->Insert(Index, ACommand);
       }
       else
       {
-        Index = FCustomCommands->Add(Record);
+        FCustomCommandList->Add(ACommand);
+        Index = FCustomCommandList->Count - 1;
       }
     }
 
-    FCustomCommands->Params[Description] = Params;
     UpdateCustomCommandsView();
     CustomCommandsView->ItemIndex = Index;
     UpdateControls();
@@ -939,18 +956,18 @@ void __fastcall TPreferencesDialog::RemoveCommandButtonClick(
       TObject * /*Sender*/)
 {
   assert(CustomCommandsView->ItemIndex >= 0 &&
-    CustomCommandsView->ItemIndex < FCustomCommands->Count);
-  FCustomCommands->Delete(CustomCommandsView->ItemIndex);
+    CustomCommandsView->ItemIndex < FCustomCommandList->Count);
+  FCustomCommandList->Delete(CustomCommandsView->ItemIndex);
   UpdateCustomCommandsView();
   UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TPreferencesDialog::CustomCommandMove(int Source, int Dest)
 {
-  if (Source >= 0 && Source < FCustomCommands->Count &&
-      Dest >= 0 && Dest < FCustomCommands->Count)
+  if (Source >= 0 && Source < FCustomCommandList->Count &&
+      Dest >= 0 && Dest < FCustomCommandList->Count)
   {
-    FCustomCommands->Move(Source, Dest);
+    FCustomCommandList->Move(Source, Dest);
     // workaround for bug in VCL
     CustomCommandsView->ItemIndex = -1;
     CustomCommandsView->ItemFocused = CustomCommandsView->Selected;
@@ -1487,5 +1504,25 @@ void __fastcall TPreferencesDialog::RandomSeedFileEditCreateEditDialog(
   USEDPARAM(DialogKind);
   assert(DialogKind == dkOpen);
   Dialog = CreateOpenDialog(dynamic_cast<TComponent *>(Sender));
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SessionReopenTimeoutEditSetValue(
+  TObject * /*Sender*/, Extended Value, AnsiString & Text, bool & Handled)
+{
+  if (Value == 0)
+  {
+    Text = LoadStr(PREFERENCES_RECONNECT_TIMEOUT_UNLIMITED);
+    Handled = true;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SessionReopenTimeoutEditGetValue(
+  TObject * /*Sender*/, AnsiString Text, Extended & Value, bool & Handled)
+{
+  if (AnsiSameText(Text, LoadStr(PREFERENCES_RECONNECT_TIMEOUT_UNLIMITED)))
+  {
+    Value = 0;
+    Handled = true;
+  }
 }
 //---------------------------------------------------------------------------
