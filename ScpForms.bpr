@@ -10,13 +10,13 @@
       forms\CopyParamCustom.obj forms\CopyParamPreset.obj
       forms\CreateDirectory.obj forms\CustomCommand.obj forms\Custom.obj
       forms\Editor.obj forms\EditorPreferences.obj forms\FileSystemInfo.obj
-      forms\FullSynchronize.obj forms\GeneralSettings.obj forms\Glyphs.obj
-      forms\ImportSessions.obj forms\License.obj forms\LocationProfiles.obj
-      forms\Log.obj forms\Login.obj forms\LogSettings.obj
-      forms\OpenDirectory.obj forms\Preferences.obj forms\Progress.obj
-      forms\Properties.obj forms\RemoteTransfer.obj forms\Rights.obj
-      forms\RightsExt.obj forms\SelectMask.obj forms\Symlink.obj
-      forms\Synchronize.obj forms\SynchronizeChecklist.obj
+      forms\FileFind.obj forms\FullSynchronize.obj forms\GeneralSettings.obj
+      forms\Glyphs.obj forms\ImportSessions.obj forms\License.obj
+      forms\LocationProfiles.obj forms\Log.obj forms\Login.obj
+      forms\LogSettings.obj forms\OpenDirectory.obj forms\Preferences.obj
+      forms\Progress.obj forms\Properties.obj forms\RemoteTransfer.obj
+      forms\Rights.obj forms\RightsExt.obj forms\SelectMask.obj
+      forms\Symlink.obj forms\Synchronize.obj forms\SynchronizeChecklist.obj
       forms\SynchronizeProgress.obj"/>
     <RESFILES value=""/>
     <DEFFILE value=""/>
@@ -25,13 +25,13 @@
       forms\CopyParamCustom.dfm forms\CopyParamPreset.dfm
       forms\CreateDirectory.dfm forms\CustomCommand.dfm forms\Custom.dfm
       forms\Editor.dfm forms\EditorPreferences.dfm forms\FileSystemInfo.dfm
-      forms\FullSynchronize.dfm forms\GeneralSettings.dfm forms\Glyphs.dfm
-      forms\ImportSessions.dfm forms\License.dfm forms\LocationProfiles.dfm
-      forms\Log.dfm forms\Login.dfm forms\LogSettings.dfm
-      forms\OpenDirectory.dfm forms\Preferences.dfm forms\Progress.dfm
-      forms\Properties.dfm forms\RemoteTransfer.dfm forms\Rights.dfm
-      forms\RightsExt.dfm forms\SelectMask.dfm forms\Symlink.dfm
-      forms\Synchronize.dfm forms\SynchronizeChecklist.dfm
+      forms\FileFind.dfm forms\FullSynchronize.dfm forms\GeneralSettings.dfm
+      forms\Glyphs.dfm forms\ImportSessions.dfm forms\License.dfm
+      forms\LocationProfiles.dfm forms\Log.dfm forms\Login.dfm
+      forms\LogSettings.dfm forms\OpenDirectory.dfm forms\Preferences.dfm
+      forms\Progress.dfm forms\Properties.dfm forms\RemoteTransfer.dfm
+      forms\Rights.dfm forms\RightsExt.dfm forms\SelectMask.dfm
+      forms\Symlink.dfm forms\Synchronize.dfm forms\SynchronizeChecklist.dfm
       forms\SynchronizeProgress.dfm"/>
     <LIBFILES value=""/>
     <LIBRARIES value=""/>
@@ -84,6 +84,7 @@
       <FILE FILENAME="forms\Editor.cpp" FORMNAME="EditorForm" UNITNAME="Editor" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\EditorPreferences.cpp" FORMNAME="EditorPreferencesDialog" UNITNAME="EditorPreferences" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FileSystemInfo.cpp" FORMNAME="FileSystemInfoDialog" UNITNAME="FileSystemInfo" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
+      <FILE FILENAME="forms\FileFind.cpp" FORMNAME="FileFindDialog" UNITNAME="FileFind" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\FullSynchronize.cpp" FORMNAME="FullSynchronizeDialog" UNITNAME="FullSynchronize" CONTAINERID="CCompiler" DESIGNCLASS="" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\GeneralSettings.cpp" FORMNAME="GeneralSettingsFrame" UNITNAME="GeneralSettings" CONTAINERID="CCompiler" DESIGNCLASS="TFrame" LOCALCOMMAND=""/>
       <FILE FILENAME="forms\Glyphs.cpp" FORMNAME="GlyphsModule" UNITNAME="Glyphs" CONTAINERID="CCompiler" DESIGNCLASS="TDataModule" LOCALCOMMAND=""/>

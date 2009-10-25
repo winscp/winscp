@@ -1282,6 +1282,43 @@ void __fastcall HintLabelRestore(TStaticText * StaticText)
   StaticText->Cursor = crDefault;
 }
 //---------------------------------------------------------------------------
+static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
+{
+  TComboBox * ComboBox = static_cast<TComboBox *>(Data);
+  if (Message.Msg == WM_SIZE)
+  {
+    AnsiString Text = ComboBox->Text;
+    try
+    {
+      ControlWndProc(ComboBox)(Message);
+    }
+    __finally
+    {
+      // workaround for bug in combo box, that causes it to change text to any
+      // item from drop down list which starts with current text,
+      // after control is resized (unless the text is in drop down list as well)
+      ComboBox->Text = Text;
+      // hide selection, which is wrongly shown when form is resized, even when the box has not focus
+      if (!ComboBox->Focused())
+      {
+        ComboBox->SelLength = 0;
+      }
+    }
+  }
+  else
+  {
+    ControlWndProc(ComboBox)(Message);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall FixComboBoxResizeBug(TComboBox * ComboBox)
+{
+  TWndMethod WindowProc;
+  ((TMethod*)&WindowProc)->Data = ComboBox;
+  ((TMethod*)&WindowProc)->Code = ComboBoxFixWindowProc;
+  ComboBox->WindowProc = WindowProc;
+}
+//---------------------------------------------------------------------------
 static void __fastcall LinkLabelClick(TStaticText * StaticText)
 {
   if (StaticText->OnClick != NULL)
@@ -1488,4 +1525,18 @@ TForm * __fastcall _SafeFormCreate(TMetaClass * FormClass, TComponent * Owner)
   }
 
   return Form;
+}
+//---------------------------------------------------------------------------
+TImageList * __fastcall SharedSystemImageList(bool Large)
+{
+  TSHFileInfo FileInfo;
+  TImageList * Result = new TImageList(Application);
+  int ImageListHandle = SHGetFileInfo("", 0, &FileInfo, sizeof(FileInfo),
+    SHGFI_SYSICONINDEX | (Large ? SHGFI_LARGEICON : SHGFI_SMALLICON));
+  if (ImageListHandle != 0)
+  {
+    Result->ShareImages = true;
+    Result->Handle = ImageListHandle;
+  }
+  return Result;
 }

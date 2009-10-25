@@ -431,6 +431,9 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall ClickToolbarItem(TTBCustomItem * Item, bool PositionCursor);
   virtual bool __fastcall OpenBookmark(AnsiString Local, AnsiString Remote);
+  void __fastcall DoFindFiles(AnsiString Directory, const TFileMasks & FileMask,
+    TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
+  virtual void __fastcall DoFocusRemotePath(AnsiString Path);
 
 public:
   virtual __fastcall ~TCustomScpExplorerForm();
@@ -520,6 +523,7 @@ public:
   void __fastcall ToggleAutoReadDirectoryAfterOp();
   void __fastcall PopupTrayBalloon(TTerminal * Terminal, const AnsiString & Str,
     TQueryType Type, Exception * E = NULL, unsigned int Seconds = 0);
+  void __fastcall FindFiles();
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

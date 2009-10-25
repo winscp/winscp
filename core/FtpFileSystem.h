@@ -111,6 +111,7 @@ protected:
   void __fastcall HandleReplyStatus(AnsiString Response);
   void __fastcall DoWaitForReply(unsigned int& ReplyToAwait, bool WantLastCode);
   bool __fastcall KeepWaitingForReply(unsigned int& ReplyToAwait, bool WantLastCode);
+  inline bool __fastcall NoFinalLastCode();
 
   bool __fastcall HandleStatus(const char * Status, int Type);
   bool __fastcall HandleAsynchRequestOverwrite(
@@ -200,6 +201,7 @@ private:
   int FLastCodeClass;
   int FLastReadDirectoryProgress;
   AnsiString FTimeoutStatus;
+  AnsiString FDisconnectStatus;
   TStrings * FLastResponse;
   TStrings * FLastError;
   AnsiString FSystem;

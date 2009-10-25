@@ -152,10 +152,6 @@ private:
   void __fastcall LoadBookmarks(
     TTreeView * ProfilesView, TStringList * Folders, TBookmarkList * BookmarkList,
     TBookmarkList * Source);
-  void __fastcall BookmarkNameValidate(const TDialogData & Data);
-  void __fastcall BookmarkNameValidateName(const AnsiString Name);
-  void __fastcall BookmarkFolderValidate(const TDialogData & Data);
-  void __fastcall BookmarkFolderValidateName(const AnsiString Name, bool AllowEmpty);
   bool __fastcall ProfileMatch(TTreeNode * Node);
   AnsiString __fastcall BookmarkText(TBookmark * Bookmark);
 };

@@ -11,6 +11,7 @@
 #include "TextsCore.h"
 #include "Interface.h"
 #include "CoreMain.h"
+#include "Security.h"
 #include <shfolder.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -525,6 +526,21 @@ void __fastcall TConfiguration::CleanupIniFile()
   {
     throw ExtException(&E, CLEANUP_INIFILE_ERROR);
   }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::EncryptPassword(AnsiString Password, AnsiString Key)
+{
+  return ::EncryptPassword(Password, Key);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::DecryptPassword(AnsiString Password, AnsiString Key)
+{
+  return ::DecryptPassword(Password, Key);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TConfiguration::StronglyRecryptPassword(AnsiString Password, AnsiString /*Key*/)
+{
+  return Password;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::GetOSVersionStr()

@@ -57,18 +57,12 @@ void __fastcall TMessageForm::HelpButtonClick(TObject * /*Sender*/)
   }
   else
   {
-    TMessageParams Params;
-    Params.AllowHelp = false; // to avoid recursion
-    if (MessageDialog(LoadStr(HELP_SEND_MESSAGE), qtConfirmation,
-          qaOK | qaCancel, HELP_NONE, &Params) == qaOK)
+    AnsiString Text = Message->Caption;
+    if (MessageMemo != NULL)
     {
-      AnsiString Text = Message->Caption;
-      if (MessageMemo != NULL)
-      {
-        Text += "\n" + MessageMemo->Text;
-      }
-      SearchHelp(Text);
+      Text += "\n" + MessageMemo->Text;
     }
+    MessageWithNoHelp(Text);
   }
 }
 //---------------------------------------------------------------------------

@@ -480,9 +480,6 @@ procedure Register;
 
 implementation
 
-uses
-  IEComboBox;
-
 resourcestring
    SErrorInvalidDirName = 'New name contains invalid characters %s';
 

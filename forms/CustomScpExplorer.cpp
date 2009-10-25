@@ -230,16 +230,8 @@ __fastcall TCustomScpExplorerForm::TCustomScpExplorerForm(TComponent* Owner):
 
   reinterpret_cast<TLabel*>(QueueSplitter)->OnDblClick = QueueSplitterDblClick;
 
-  TSHFileInfo FileInfo;
-  FSystemImageList = new TImageList(this);
-  int ImageListHandle = SHGetFileInfo("", 0, &FileInfo, sizeof(FileInfo),
-    SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
-  if (ImageListHandle != 0)
-  {
-    FSystemImageList->ShareImages = true;
-    FSystemImageList->Handle = ImageListHandle;
-    FSystemImageList->DrawingStyle = dsTransparent;
-  }
+  FSystemImageList = SharedSystemImageList(false);
+  FSystemImageList->DrawingStyle = dsTransparent;
 
   FCustomCommandMenu = CreateTBXPopupMenu(this);
   FCustomCommandLocalFileList = NULL;
@@ -5429,7 +5421,9 @@ void __fastcall TCustomScpExplorerForm::RemoteFileContolDDChooseEffect(
       if (dwEffect == DROPEFFECT_Copy)
       {
         bool MoveCapable = FTerminal->IsCapable[fcRemoteMove];
-        bool CopyCapable = FTerminal->IsCapable[fcRemoteCopy] || FTerminal->IsCapable[fcSecondaryShell];
+        // currently we support copying always (at least via temporary directory);
+        // remove associated checks once this all proves stable andworking
+        bool CopyCapable = true;
         // if we do not support neither of operations, there's no discussion
         if (!MoveCapable && !CopyCapable)
         {
@@ -6410,8 +6404,9 @@ bool __fastcall TCustomScpExplorerForm::MainWindowHook(TMessage & AMessage)
   // which calculates size according to number of all visible windows.
   // hence they count VCL application twice.
 
-  // code is said to be from Issue 4/95 of The Delphi Magazine
-  if (AMessage.Msg == WM_WINDOWPOSCHANGING)
+  // code is said to be from Issue 4/95 of The Delphi Magazine;
+  // ignore this all if main window is hidden (e.g. /upload)
+  if ((AMessage.Msg == WM_WINDOWPOSCHANGING) && Visible)
   {
     TWMWindowPosMsg & Message = reinterpret_cast<TWMWindowPosMsg &>(AMessage);
 
@@ -6473,3 +6468,29 @@ void __fastcall TCustomScpExplorerForm::FormShow(TObject * /*Sender*/)
   SideEnter(FCurrentSide);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoFindFiles(
+  AnsiString Directory, const TFileMasks & FileMask,
+  TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile)
+{
+  FTerminal->FilesFind(Directory, FileMask, OnFileFound, OnFindingFile);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::DoFocusRemotePath(AnsiString Path)
+{
+  RemoteDirView->Path = UnixExtractFilePath(Path);
+  TListItem * Item = RemoteDirView->FindFileItem(UnixExtractFileName(Path));
+  if (Item != NULL)
+  {
+    RemoteDirView->ItemFocused = Item;
+    RemoteDirView->ItemFocused->MakeVisible(false);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::FindFiles()
+{
+  AnsiString Path;
+  if (DoFileFindDialog(RemoteDirView->Path, DoFindFiles, Path))
+  {
+    DoFocusRemotePath(Path);
+  }
+}

@@ -125,12 +125,26 @@ AnsiString RootKeyToStr(HKEY RootKey)
 //---------------------------------------------------------------------------
 AnsiString BooleanToEngStr(bool B)
 {
-  return B ? "Yes" : "No";
+  if (B)
+  {
+    return "Yes";
+  }
+  else
+  {
+    return "No";
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString BooleanToStr(bool B)
 {
-  return B ? LoadStr(YES_STR) : LoadStr(NO_STR);
+  if (B)
+  {
+    return LoadStr(YES_STR);
+  }
+  else
+  {
+    return LoadStr(NO_STR);
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString DefaultStr(const AnsiString & Str, const AnsiString & Default)
@@ -443,19 +457,23 @@ bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2)
 bool __fastcall IsReservedName(AnsiString FileName)
 {
   int P = FileName.Pos(".");
-  if (P > 0)
+  int Len = (P > 0) ? P - 1 : FileName.Length();
+  if ((Len == 3) || (Len == 4))
   {
-    FileName.SetLength(P - 1);
-  }
-  static AnsiString Reserved[] = {
-    "CON", "PRN", "AUX", "NUL",
-    "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-    "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" };
-  for (int Index = 0; Index < LENOF(Reserved); Index++)
-  {
-    if (SameText(FileName, Reserved[Index]))
+    if (P > 0)
     {
-      return true;
+      FileName.SetLength(P - 1);
+    }
+    static AnsiString Reserved[] = {
+      "CON", "PRN", "AUX", "NUL",
+      "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+      "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" };
+    for (int Index = 0; Index < LENOF(Reserved); Index++)
+    {
+      if (SameText(FileName, Reserved[Index]))
+      {
+        return true;
+      }
     }
   }
   return false;
@@ -1338,6 +1356,7 @@ AnsiString __fastcall EscapeHotkey(const AnsiString & Caption)
   return StringReplace(Caption, "&", "&&", TReplaceFlags() << rfReplaceAll);
 }
 //---------------------------------------------------------------------------
+// duplicated in console's Main.cpp
 bool __fastcall CutToken(AnsiString & Str, AnsiString & Token)
 {
   bool Result;

@@ -2,9 +2,13 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Common.h"
 #include "Security.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
+//---------------------------------------------------------------------------
+#define PWALG_SIMPLE_INTERNAL 0x00
+#define PWALG_SIMPLE_EXTERNAL 0x01
 //---------------------------------------------------------------------------
 AnsiString SimpleEncryptChar(unsigned char Ch)
 {
@@ -37,7 +41,7 @@ AnsiString EncryptPassword(AnsiString Password, AnsiString Key, Integer /* Algor
   Shift = (Password.Length() < PWALG_SIMPLE_MAXLEN) ?
     (unsigned char)random(PWALG_SIMPLE_MAXLEN - Password.Length()) : 0;
   Result += SimpleEncryptChar((Char)PWALG_SIMPLE_FLAG); // Flag
-  Result += SimpleEncryptChar((Char)0); // Dummy
+  Result += SimpleEncryptChar((Char)PWALG_SIMPLE_INTERNAL); // Dummy
   Result += SimpleEncryptChar((Char)Password.Length());
   Result += SimpleEncryptChar((Char)Shift);
   for (Index = 0; Index < Shift; Index++)
@@ -69,6 +73,27 @@ AnsiString DecryptPassword(AnsiString Password, AnsiString Key, Integer /* Algor
   {
     if (Result.SubString(1, Key.Length()) != Key) Result = "";
       else Result.Delete(1, Key.Length());
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString SetExternalEncryptedPassword(AnsiString Password)
+{
+  AnsiString Result;
+  Result += SimpleEncryptChar((Char)PWALG_SIMPLE_FLAG);
+  Result += SimpleEncryptChar((Char)PWALG_SIMPLE_EXTERNAL);
+  Result += StrToHex(Password);
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool GetExternalEncryptedPassword(AnsiString Encrypted, AnsiString & Password)
+{
+  bool Result =
+    (SimpleDecryptNextChar(Encrypted) == PWALG_SIMPLE_FLAG) &&
+    (SimpleDecryptNextChar(Encrypted) == PWALG_SIMPLE_EXTERNAL);
+  if (Result)
+  {
+    Password = HexToStr(Encrypted);
   }
   return Result;
 }

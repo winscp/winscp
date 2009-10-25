@@ -5,6 +5,7 @@
 #include <Dialogs.hpp>
 //---------------------------------------------------------------------
 #include <Common.h>
+#include <CustomWinConfiguration.h>
 #include <WinInterface.h>
 #include <VCLCommon.h>
 #include <TextsWin.h>
@@ -14,88 +15,287 @@
 #include "Custom.h"
 //---------------------------------------------------------------------
 #ifndef NO_RESOURCES
+#pragma link "PasswordEdit"
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------
-bool __fastcall DoCustomDialog(const TDialogParams & Params, TDialogData & Data)
+__fastcall TCustomDialog::TCustomDialog(AnsiString AHelpKeyword)
+  : TForm(Application)
 {
-  bool Result;
-  TCustomDialog * CustomDialog = new TCustomDialog(Application, Params);
+  UseSystemSettings(this);
+
+  FPos = 8;
+
+  HelpKeyword = AHelpKeyword;
+
+  TBorderIcons BI = BorderIcons;
+  if (HelpKeyword.IsEmpty())
+  {
+    BI >> biHelp;
+
+    OKButton->Left = CancelButton->Left;
+    CancelButton->Left = HelpButton->Left;
+    HelpButton->Visible = false;
+  }
+  else
+  {
+    BI << biHelp;
+  }
+  BorderIcons = BI;
+}
+//---------------------------------------------------------------------
+bool __fastcall TCustomDialog::Execute()
+{
+  Changed();
+  return (ShowModal() == mrOk);
+}
+//---------------------------------------------------------------------
+void __fastcall TCustomDialog::DoChange(bool & /*CanSubmit*/)
+{
+  // noop
+}
+//---------------------------------------------------------------------
+void __fastcall TCustomDialog::Changed()
+{
+  bool CanSubmit = true;
+  DoChange(CanSubmit);
+  EnableControl(OKButton, CanSubmit);
+}
+//---------------------------------------------------------------------
+void __fastcall TCustomDialog::Change(TObject * /*Sender*/)
+{
+  Changed();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::HelpButtonClick(TObject * /*Sender*/)
+{
+  FormHelp(this);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::DoShow()
+{
+  OKButton->TabOrder = FCount;
+  CancelButton->TabOrder = static_cast<short>(FCount + 1);
+  HelpButton->TabOrder = static_cast<short>(FCount + 2);
+  Changed();
+  TForm::DoShow();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::DoValidate()
+{
+  // noop
+}
+//---------------------------------------------------------------------------
+bool __fastcall TCustomDialog::CloseQuery()
+{
+  if (ModalResult == mrOk)
+  {
+    DoValidate();
+  }
+  return TForm::CloseQuery();
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddWinControl(TWinControl * Control)
+{
+  Control->TabOrder = FCount;
+  FCount++;
+}
+//---------------------------------------------------------------------------
+TLabel * __fastcall TCustomDialog::CreateLabel(AnsiString Label)
+{
+  TLabel * Result = new TLabel(this);
+  Result->Caption = Label;
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddEditLikeControl(TWinControl * Edit, TLabel * Label)
+{
+  int PrePos = FPos;
+  Label->Parent = this;
+  Label->Left = 8;
+  Label->Top = FPos;
+  FPos += 16;
+
+  Edit->Parent = this;
+  Edit->Left = 8;
+  Edit->Top = FPos;
+  Edit->Width = ClientWidth - (Edit->Left * 2);
+  // this updates Height property to real value
+  Edit->HandleNeeded();
+  FPos += Edit->Height + 8;
+
+  if (Label->FocusControl == NULL)
+  {
+    Label->FocusControl = Edit;
+  }
+  else
+  {
+    assert(Label->FocusControl == Edit);
+  }
+
+  ClientHeight = ClientHeight + (FPos - PrePos);
+
+  AddWinControl(Edit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddEdit(TCustomEdit * Edit, TLabel * Label)
+{
+  AddEditLikeControl(Edit, Label);
+
+  TEdit * PublicEdit = reinterpret_cast<TEdit *>(Edit);
+  if (PublicEdit->OnChange == NULL)
+  {
+    PublicEdit->OnChange = Change;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddComboBox(TCustomCombo * Combo, TLabel * Label)
+{
+  AddEditLikeControl(Combo, Label);
+
+  TComboBox * PublicCombo = reinterpret_cast<TComboBox *>(Combo);
+  if (PublicCombo->OnChange == NULL)
+  {
+    PublicCombo->OnChange = Change;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomDialog::AddButtonControl(TButtonControl * Control)
+{
+  int PrePos = FPos;
+  Control->Parent = this;
+  Control->Left = 14;
+  Control->Top = FPos;
+  Control->Width = ClientWidth - Control->Left - 8;
+  // this updates Height property to real value
+  Control->HandleNeeded();
+  FPos += Control->Height + 8;
+
+  ClientHeight = ClientHeight + (FPos - PrePos);
+
+  AddWinControl(Control);
+
+  TCheckBox * PublicControl = reinterpret_cast<TCheckBox *>(Control);
+  if (PublicControl->OnClick == NULL)
+  {
+    PublicControl->OnClick = Change;
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TSaveSessionDialog : public TCustomDialog
+{
+public:
+  __fastcall TSaveSessionDialog(TSessionData * OriginalSession, bool CanSavePassword);
+
+  bool __fastcall Execute(AnsiString & SessionName, bool & SavePassword);
+
+protected:
+  DYNAMIC void __fastcall DoShow();
+  virtual void __fastcall DoValidate();
+  virtual void __fastcall DoChange(bool & CanSubmit);
+
+private:
+  TSessionData * FOriginalSession;
+  TComboBox * SessionNameCombo;
+  TCheckBox * SavePasswordCheck;
+};
+//---------------------------------------------------------------------------
+__fastcall TSaveSessionDialog::TSaveSessionDialog(
+    TSessionData * OriginalSession, bool CanSavePassword) :
+  TCustomDialog(HELP_SESSION_SAVE),
+  FOriginalSession(OriginalSession)
+{
+  Caption = LoadStr(SAVE_SESSION_CAPTION);
+
+  SessionNameCombo = new TComboBox(this);
+  AddComboBox(SessionNameCombo, CreateLabel(LoadStr(SAVE_SESSION_PROMPT)));
+  // parent has to be set before following
+  InstallPathWordBreakProc(SessionNameCombo);
+  SessionNameCombo->Items->BeginUpdate();
   try
   {
-    Result = CustomDialog->Execute(Data);
+    for (int Index = 0; Index < StoredSessions->Count; Index++)
+    {
+      TSessionData * Data = StoredSessions->Sessions[Index];
+      if (!Data->Special)
+      {
+        SessionNameCombo->Items->Add(Data->Name);
+      }
+    }
   }
   __finally
   {
-    delete CustomDialog;
+    SessionNameCombo->Items->EndUpdate();
+  }
+
+  SavePasswordCheck = new TCheckBox(this);
+  SavePasswordCheck->Caption = LoadStr(
+    CustomWinConfiguration->UseMasterPassword ? SAVE_SESSION_PASSWORD_MASTER : SAVE_SESSION_PASSWORD);
+  AddButtonControl(SavePasswordCheck);
+
+  EnableControl(SavePasswordCheck, CanSavePassword);
+}
+//---------------------------------------------------------------------------
+bool __fastcall TSaveSessionDialog::Execute(AnsiString & SessionName, bool & SavePassword)
+{
+  SessionNameCombo->Text = SessionName;
+  SavePasswordCheck->Checked = SavePassword;
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    SessionName = SessionNameCombo->Text;
+    SavePassword = SavePasswordCheck->Checked;
   }
   return Result;
 }
 //---------------------------------------------------------------------------
-void __fastcall SaveSessionDialogShow(void *, const TDialogControls & Controls)
+void __fastcall TSaveSessionDialog::DoShow()
 {
-  InstallPathWordBreakProc(Controls.Combo);
-  int P = Controls.Combo->Text.LastDelimiter("/");
+  int P = SessionNameCombo->Text.LastDelimiter("/");
   if (P > 0)
   {
-    Controls.Combo->SetFocus();
-    Controls.Combo->SelStart = P;
-    Controls.Combo->SelLength = Controls.Combo->Text.Length() - P;
+    SessionNameCombo->SetFocus();
+    SessionNameCombo->SelStart = P;
+    SessionNameCombo->SelLength = SessionNameCombo->Text.Length() - P;
   }
-
-  EnableControl(Controls.Check, bool(Controls.Token));
+  TCustomDialog::DoShow();
 }
 //---------------------------------------------------------------------------
-void __fastcall SaveSessionDialogValidate(void * OriginalSession, const TDialogData & Data)
+void __fastcall TSaveSessionDialog::DoValidate()
 {
-  SessionNameValidate(Data.Combo, static_cast<TSessionData *>(OriginalSession));
+  SessionNameValidate(SessionNameCombo->Text, FOriginalSession);
+  TCustomDialog::DoValidate();
+}
+//---------------------------------------------------------------------------
+void __fastcall TSaveSessionDialog::DoChange(bool & CanSubmit)
+{
+  CanSubmit = !SessionNameCombo->Text.IsEmpty();
+  TCustomDialog::DoChange(CanSubmit);
 }
 //---------------------------------------------------------------------------
 bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
   bool * SavePassword, TSessionData * OriginalSession)
 {
   bool Result;
-  TDialogParams Params;
+  TSaveSessionDialog * Dialog = new TSaveSessionDialog(
+    OriginalSession, (SavePassword != NULL));
   try
   {
-    Params.Caption = LoadStr(SAVE_SESSION_CAPTION);
-    Params.HelpKeyword = HELP_SESSION_SAVE;
-    Params.ComboLabel = LoadStr(SAVE_SESSION_PROMPT);
-    Params.ComboEmptyValid = false;
-    Params.CheckLabel = LoadStr(SAVE_SESSION_PASSWORD);
-    bool CanSavePassword = (SavePassword != NULL);
-    Params.Token = (void *)(CanSavePassword);
-    MakeMethod(NULL, SaveSessionDialogShow, Params.OnShow);
-    MakeMethod(OriginalSession, SaveSessionDialogValidate, Params.OnValidate);
-
-    Params.ComboItems = new TStringList();
-    for (int Index = 0; Index < StoredSessions->Count; Index++)
+    bool Dummy = false;
+    if (SavePassword == NULL)
     {
-      TSessionData * Data = StoredSessions->Sessions[Index];
-      if (!Data->Special)
-      {
-        Params.ComboItems->Add(Data->Name);
-      }
+      SavePassword = &Dummy;
     }
-
-    TDialogData Data;
-    Data.Combo = SessionName;
-    Data.Check = CanSavePassword ? *SavePassword : false;
-
-    Result = DoCustomDialog(Params, Data);
-
-    if (Result)
+    Result = Dialog->Execute(SessionName, *SavePassword);
+    if (Result && (SavePassword != NULL) && *SavePassword)
     {
-      SessionName = Data.Combo;
-      if (CanSavePassword)
-      {
-        *SavePassword = Data.Check;
-      }
+      CustomWinConfiguration->AskForMasterPasswordIfNotSet();
     }
   }
   __finally
   {
-    delete Params.ComboItems;
+    delete Dialog;
   }
   return Result;
 }
@@ -121,176 +321,51 @@ void __fastcall SessionNameValidate(const AnsiString & Text,
   }
 }
 //---------------------------------------------------------------------------
-struct TShortCutData
+//---------------------------------------------------------------------------
+class TShortCutDialog : public TCustomDialog
 {
-  TShortCut ShortCut;
-  const TShortCuts * ShortCuts;
+public:
+  __fastcall TShortCutDialog(const TShortCuts & ShortCuts, AnsiString HelpKeyword);
+
+  bool __fastcall Execute(TShortCut & ShortCut);
+
+private:
+  TComboBox * ShortCutCombo;
 };
 //---------------------------------------------------------------------------
-TShortCutData & __fastcall ShortCutData(const TDialogControls & Controls)
+__fastcall TShortCutDialog::TShortCutDialog(const TShortCuts & ShortCuts, AnsiString HelpKeyword) :
+  TCustomDialog(HelpKeyword)
 {
-  return *reinterpret_cast<TShortCutData *>(Controls.Token);
+  Caption = LoadStr(SHORTCUT_CAPTION);
+
+  ShortCutCombo = new TComboBox(this);
+  AddComboBox(ShortCutCombo, CreateLabel(LoadStr(SHORTCUT_LABEL)));
+  InitializeShortCutCombo(ShortCutCombo, ShortCuts);
 }
 //---------------------------------------------------------------------------
-void __fastcall ShortCutDialogInit(void *, const TDialogControls & Controls)
+bool __fastcall TShortCutDialog::Execute(TShortCut & ShortCut)
 {
-  InitializeShortCutCombo(Controls.Combo, *ShortCutData(Controls).ShortCuts);
-}
-//---------------------------------------------------------------------------
-void __fastcall ShortCutDialogLoad(void *, const TDialogData & /*Data*/,
-  TDialogControls & Controls)
-{
-  SetShortCutCombo(Controls.Combo, ShortCutData(Controls).ShortCut);
-}
-//---------------------------------------------------------------------------
-void __fastcall ShortCutDialogSave(void *, const TDialogControls & Controls,
-  TDialogData & /*Data*/)
-{
-  ShortCutData(Controls).ShortCut = GetShortCutCombo(Controls.Combo);
+  SetShortCutCombo(ShortCutCombo, ShortCut);
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    ShortCut = GetShortCutCombo(ShortCutCombo);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
   const TShortCuts & ShortCuts, AnsiString HelpKeyword)
 {
-  TShortCutData Token;
-  Token.ShortCut = ShortCut;
-  Token.ShortCuts = &ShortCuts;
-
-  TDialogParams Params;
-  Params.Token = &Token;
-  Params.Caption = LoadStr(SHORTCUT_CAPTION);
-  Params.HelpKeyword = HelpKeyword;
-  Params.ComboLabel = LoadStr(SHORTCUT_LABEL);
-  MakeMethod(NULL, ShortCutDialogInit, Params.OnInit);
-  MakeMethod(NULL, ShortCutDialogLoad, Params.OnLoad);
-  MakeMethod(NULL, ShortCutDialogSave, Params.OnSave);
-
-  TDialogData Data;
-
-  bool Result = DoCustomDialog(Params, Data);
-
-  if (Result)
+  bool Result;
+  TShortCutDialog * Dialog = new TShortCutDialog(ShortCuts, HelpKeyword);
+  try
   {
-    ShortCut = Token.ShortCut;
+    Result = Dialog->Execute(ShortCut);
   }
-
-  return Result;
-}
-//---------------------------------------------------------------------
-__fastcall TCustomDialog::TCustomDialog(TComponent * AOwner, const TDialogParams & Params)
-  : TForm(AOwner),
-  FParams(Params)
-{
-  UseSystemSettings(this);
-
-  FControls.Token = Params.Token;
-  FControls.Form = this;
-  FControls.Combo = Combo;
-  FControls.Check = Check;
-
-  Caption = Params.Caption;
-  HelpKeyword = Params.HelpKeyword;
-  ComboLabel->Caption = Params.ComboLabel;
-  if (Params.ComboItems != NULL)
+  __finally
   {
-    Combo->Items = Params.ComboItems;
-  }
-  Check->Caption = Params.CheckLabel;
-  if (Params.CheckLabel.IsEmpty())
-  {
-    ClientHeight -= (Check->Top + Check->Height) - (Combo->Top + Combo->Height);
-    Check->Visible = false;
-  }
-
-  TBorderIcons BI = BorderIcons;
-  if (HelpKeyword.IsEmpty())
-  {
-    BI >> biHelp;
-
-    OKButton->Left = CancelButton->Left;
-    CancelButton->Left = HelpButton->Left;
-    HelpButton->Visible = false;
-  }
-  else
-  {
-    BI << biHelp;
-  }
-  BorderIcons = BI;
-
-  if (FParams.OnInit != NULL)
-  {
-    FParams.OnInit(FControls);
-  }
-
-  DoChange();
-}
-//---------------------------------------------------------------------
-bool __fastcall TCustomDialog::Execute(TDialogData & Data)
-{
-  Combo->Text = Data.Combo;
-  Check->Checked = Data.Check;
-  if (FParams.OnLoad != NULL)
-  {
-    FParams.OnLoad(Data, FControls);
-  }
-  bool Result = (ShowModal() == mrOk);
-  if (Result)
-  {
-    SaveData(Data);
+    delete Dialog;
   }
   return Result;
 }
-//---------------------------------------------------------------------
-void __fastcall TCustomDialog::SaveData(TDialogData & Data)
-{
-  Data.Combo = Combo->Text;
-  Data.Check = Check->Checked;
-  if (FParams.OnSave != NULL)
-  {
-    FParams.OnSave(FControls, Data);
-  }
-}
-//---------------------------------------------------------------------
-void __fastcall TCustomDialog::DoChange()
-{
-  bool Valid = !Combo->Text.IsEmpty() || FParams.ComboEmptyValid;
-  if (FParams.OnChange != NULL)
-  {
-    FParams.OnChange(FControls, Valid);
-  }
-  EnableControl(OKButton, Valid);
-}
-//---------------------------------------------------------------------
-void __fastcall TCustomDialog::Change(TObject * /*Sender*/)
-{
-  DoChange();
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::HelpButtonClick(TObject * /*Sender*/)
-{
-  FormHelp(this);
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::FormShow(TObject * /*Sender*/)
-{
-  if (FParams.OnShow != NULL)
-  {
-    FParams.OnShow(FControls);
-  }
-  DoChange();
-}
-//---------------------------------------------------------------------------
-void __fastcall TCustomDialog::FormCloseQuery(TObject * /*Sender*/,
-  bool & /*CanClose*/)
-{
-  if (ModalResult == mrOk)
-  {
-    if (FParams.OnValidate != NULL)
-    {
-      TDialogData Data;
-      SaveData(Data);
-      FParams.OnValidate(Data);
-    }
-  }
-}
-//---------------------------------------------------------------------------

@@ -782,6 +782,7 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 99
             MinValue = 1
+            Value = 1
             MaxLength = 2
             TabOrder = 2
             OnChange = ControlChange
@@ -1736,6 +1737,7 @@ object PreferencesDialog: TPreferencesDialog
             Alignment = taRightJustify
             MaxValue = 65535
             MinValue = 1
+            Value = 1
             Anchors = [akTop, akRight]
             TabOrder = 4
           end
@@ -2013,6 +2015,48 @@ object PreferencesDialog: TPreferencesDialog
           end
         end
       end
+      object SecuritySheet: TTabSheet
+        Tag = 19
+        Hint = 'Security'
+        Caption = 'Security'
+        ImageIndex = 18
+        TabVisible = False
+        DesignSize = (
+          373
+          353)
+        object MasterPasswordGroup: TGroupBox
+          Left = 8
+          Top = 8
+          Width = 357
+          Height = 92
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'Master password'
+          TabOrder = 0
+          DesignSize = (
+            357
+            92)
+          object SetMasterPasswordButton: TButton
+            Left = 16
+            Top = 51
+            Width = 325
+            Height = 25
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Change master password...'
+            TabOrder = 1
+            OnClick = SetMasterPasswordButtonClick
+          end
+          object UseMasterPasswordCheck: TCheckBox
+            Left = 17
+            Top = 24
+            Width = 331
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = '&Use master password'
+            TabOrder = 0
+            OnClick = UseMasterPasswordCheckClick
+          end
+        end
+      end
       object IntegrationAppSheet: TTabSheet
         Tag = 18
         Hint = 'Applications'
@@ -2127,7 +2171,7 @@ object PreferencesDialog: TPreferencesDialog
         OnChange = NavigationTreeChange
         OnCollapsing = NavigationTreeCollapsing
         Items.Data = {
-          08000000250000000000000001000000FFFFFFFFFFFFFFFF0000000005000000
+          09000000250000000000000001000000FFFFFFFFFFFFFFFF0000000005000000
           0C456E7669726F6E6D656E7458230000000000000003000000FFFFFFFFFFFFFF
           FF00000000000000000A496E7465726661636558200000000000000011000000
           FFFFFFFFFFFFFFFF00000000000000000757696E646F77582000000000000000
@@ -2141,14 +2185,15 @@ object PreferencesDialog: TPreferencesDialog
           0B000000FFFFFFFFFFFFFFFF0000000000000000094472616744726F70582400
           0000000000000C000000FFFFFFFFFFFFFFFF00000000000000000B4261636B67
           726F756E645820000000000000000E000000FFFFFFFFFFFFFFFF000000000000
-          000007526573756D6558210000000000000002000000FFFFFFFFFFFFFFFF0000
-          000000000000084C6F6767696E6758250000000000000009000000FFFFFFFFFF
-          FFFFFF00000000010000000C496E746567726174696F6E582600000000000000
-          12000000FFFFFFFFFFFFFFFF00000000000000000D4170706C69636174696F6E
-          735822000000000000000A000000FFFFFFFFFFFFFFFF00000000000000000943
-          6F6D6D616E64735821000000000000000D000000FFFFFFFFFFFFFFFF00000000
-          000000000853746F726167655821000000000000000F000000FFFFFFFFFFFFFF
-          FF0000000000000000085570646174657358}
+          000007526573756D6558220000000000000013000000FFFFFFFFFFFFFFFF0000
+          00000000000009536563757269747958210000000000000002000000FFFFFFFF
+          FFFFFFFF0000000000000000084C6F6767696E67582500000000000000090000
+          00FFFFFFFFFFFFFFFF00000000010000000C496E746567726174696F6E582600
+          00000000000012000000FFFFFFFFFFFFFFFF00000000000000000D4170706C69
+          636174696F6E735822000000000000000A000000FFFFFFFFFFFFFFFF00000000
+          0000000009436F6D6D616E64735821000000000000000D000000FFFFFFFFFFFF
+          FFFF00000000000000000853746F726167655821000000000000000F000000FF
+          FFFFFFFFFFFFFF0000000000000000085570646174657358}
       end
     end
   end

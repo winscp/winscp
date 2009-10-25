@@ -11,8 +11,8 @@
 #include <HelpWin.h>
 #include <VCLCommon.h>
 
-#include "Login.h"
 #include "WinInterface.h"
+#include "Login.h"
 #include "GUITools.h"
 #include "Tools.h"
 #include "Setup.h"
@@ -1296,7 +1296,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
   bool * PSavePassword;
 
   if (Configuration->DisablePasswordStoring ||
-      FSessionData->Password.IsEmpty())
+      !FSessionData->HasAnyPassword())
   {
     PSavePassword = NULL;
   }
@@ -1304,8 +1304,9 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
   {
     PSavePassword = &SavePassword;
     SavePassword =
-      (FEditingSessionData != NULL) &&
-      (FEditingSessionData->Password == FSessionData->Password);
+      ((FEditingSessionData != NULL) &&
+       (FEditingSessionData->Password == FSessionData->Password)) ||
+      CustomWinConfiguration->UseMasterPassword;
   }
 
   AnsiString SessionName = FSessionData->SessionName;
@@ -1550,9 +1551,24 @@ void __fastcall TLoginDialog::PreferencesButtonClick(TObject * /*Sender*/)
   UpdateControls();
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::MasterPasswordRecrypt(TObject * /*Sender*/)
+{
+  FSessionData->RecryptPasswords();
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::ShowPreferencesDialog()
 {
-  DoPreferencesDialog(pmLogin);
+  assert(CustomWinConfiguration->OnMasterPasswordRecrypt == NULL);
+  CustomWinConfiguration->OnMasterPasswordRecrypt = MasterPasswordRecrypt;
+  try
+  {
+    DoPreferencesDialog(pmLogin);
+  }
+  __finally
+  {
+    assert(CustomWinConfiguration->OnMasterPasswordRecrypt == MasterPasswordRecrypt);
+    CustomWinConfiguration->OnMasterPasswordRecrypt = NULL;
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::NewSessionActionExecute(TObject * /*Sender*/)

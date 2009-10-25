@@ -20,7 +20,6 @@
 #endif
 #include "TextsCore.h"
 #include "HelpCore.h"
-#include "Security.h"
 #include "CoreMain.h"
 #include "Queue.h"
 
@@ -67,6 +66,14 @@ struct TMoveFileParams
 {
   AnsiString Target;
   AnsiString FileMask;
+};
+//---------------------------------------------------------------------------
+struct TFilesFindParams
+{
+  TFileMasks FileMask;
+  TFileFoundEvent OnFileFound;
+  TFindingFileEvent OnFindingFile;
+  bool Cancel;
 };
 //---------------------------------------------------------------------------
 TCalculateSizeStats::TCalculateSizeStats()
@@ -475,6 +482,7 @@ __fastcall TTerminal::TTerminal(TSessionData * SessionData,
   FOnShowExtendedException = NULL;
   FOnInformation = NULL;
   FOnClose = NULL;
+  FOnFindingFile = NULL;
 
   FUseBusyCursor = True;
   FLockDirectory = "";
@@ -558,6 +566,42 @@ void __fastcall TTerminal::Idle()
       }
     }
   }
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TTerminal::EncryptPassword(const AnsiString & Password)
+{
+  if (Password.IsEmpty())
+  {
+    return AnsiString();
+  }
+  else
+  {
+    return Configuration->EncryptPassword(Password, SessionData->SessionName);
+  }
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TTerminal::DecryptPassword(const AnsiString & Password)
+{
+  AnsiString Result;
+  if (!Password.IsEmpty())
+  {
+    try
+    {
+      Result = Configuration->DecryptPassword(Password, SessionData->SessionName);
+    }
+    catch(EAbort &)
+    {
+      // silently ignore aborted prompts for master password and return empty password
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::RecryptPasswords()
+{
+  FSessionData->RecryptPasswords();
+  FPassword = EncryptPassword(DecryptPassword(FPassword));
+  FTunnelPassword = EncryptPassword(DecryptPassword(FTunnelPassword));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::IsAbsolutePath(const AnsiString Path)
@@ -997,8 +1041,7 @@ bool __fastcall TTerminal::DoPromptUser(TSessionData * /*Data*/, TPromptKind Kin
       ((Kind == pkPassword) || (Kind == pkPassphrase) || (Kind == pkKeybInteractive) ||
        (Kind == pkTIS) || (Kind == pkCryptoCard)))
   {
-    AnsiString EncryptedPassword =
-      EncryptPassword(Results->Strings[0], SessionData->SessionName);
+    AnsiString EncryptedPassword = EncryptPassword(Results->Strings[0]);
     if (FTunnelOpening)
     {
       FTunnelPassword = EncryptedPassword;
@@ -1580,6 +1623,12 @@ void __fastcall TTerminal::DoReadDirectoryProgress(int Progress, bool & Cancel)
   {
     TCallbackGuard Guard(this);
     FOnReadDirectoryProgress(this, Progress, Cancel);
+    Guard.Verify();
+  }
+  if (FOnFindingFile != NULL)
+  {
+    TCallbackGuard Guard(this);
+    FOnFindingFile(this, "", Cancel);
     Guard.Verify();
   }
 }
@@ -2328,9 +2377,35 @@ TRemoteFileList * TTerminal::DoReadDirectoryListing(AnsiString Directory, bool U
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::ProcessDirectory(const AnsiString DirName,
-  TProcessFileEvent CallBackFunc, void * Param, bool UseCache)
+  TProcessFileEvent CallBackFunc, void * Param, bool UseCache, bool IgnoreErrors)
 {
-  TRemoteFileList * FileList = CustomReadDirectoryListing(DirName, UseCache);
+  TRemoteFileList * FileList = NULL;
+  if (IgnoreErrors)
+  {
+    ExceptionOnFail = true;
+    try
+    {
+      try
+      {
+        FileList = CustomReadDirectoryListing(DirName, UseCache);
+      }
+      catch(...)
+      {
+        if (!Active)
+        {
+          throw;
+        }
+      }
+    }
+    __finally
+    {
+      ExceptionOnFail = false;
+    }
+  }
+  else
+  {
+    FileList = CustomReadDirectoryListing(DirName, UseCache);
+  }
 
   // skip if directory listing fails and user selects "skip"
   if (FileList)
@@ -4383,6 +4458,72 @@ void __fastcall TTerminal::SynchronizeRemoteTimestamp(const AnsiString /*FileNam
     NULL, &Properties);
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminal::FileFind(AnsiString FileName,
+  const TRemoteFile * File, /*TFilesFindParams*/ void * Param)
+{
+  // see DoFilesFind
+  FOnFindingFile = NULL;
+
+  assert(Param);
+  assert(File);
+  TFilesFindParams * AParams = static_cast<TFilesFindParams*>(Param);
+
+  if (!AParams->Cancel)
+  {
+    if (FileName.IsEmpty())
+    {
+      FileName = File->FileName;
+    }
+
+    TFileMasks::TParams MaskParams;
+    MaskParams.Size = File->Size;
+
+    AnsiString FullFileName = UnixExcludeTrailingBackslash(File->FullFileName);
+    if (AParams->FileMask.Matches(FullFileName, false,
+         File->IsDirectory, &MaskParams))
+    {
+      AParams->OnFileFound(this, FileName, File, AParams->Cancel);
+    }
+
+    if (File->IsDirectory)
+    {
+      DoFilesFind(FullFileName, *AParams);
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::DoFilesFind(AnsiString Directory, TFilesFindParams & Params)
+{
+  Params.OnFindingFile(this, Directory, Params.Cancel);
+  if (!Params.Cancel)
+  {
+    assert(FOnFindingFile == NULL);
+    // ideally we should set the handler only around actually reading
+    // of the directory listing, so we at least reset the handler in
+    // FileFind
+    FOnFindingFile = Params.OnFindingFile;
+    try
+    {
+      ProcessDirectory(Directory, FileFind, &Params, false, true);
+    }
+    __finally
+    {
+      FOnFindingFile = NULL;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminal::FilesFind(AnsiString Directory, const TFileMasks & FileMask,
+  TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile)
+{
+  TFilesFindParams Params;
+  Params.FileMask = FileMask;
+  Params.OnFileFound = OnFileFound;
+  Params.OnFindingFile = OnFindingFile;
+  Params.Cancel = false;
+  DoFilesFind(Directory, Params);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::SpaceAvailable(const AnsiString Path,
   TSpaceAvailable & ASpaceAvailable)
 {
@@ -4418,7 +4559,7 @@ AnsiString __fastcall TTerminal::GetPassword()
   }
   else
   {
-    Result = DecryptPassword(FPassword, SessionData->SessionName);
+    Result = DecryptPassword(FPassword);
   }
   return Result;
 }
@@ -4433,7 +4574,7 @@ AnsiString __fastcall TTerminal::GetTunnelPassword()
   }
   else
   {
-    Result = DecryptPassword(FTunnelPassword, SessionData->SessionName);
+    Result = DecryptPassword(FTunnelPassword);
   }
   return Result;
 }
@@ -4785,5 +4926,13 @@ void __fastcall TTerminalList::Idle()
     {
       Terminal->Idle();
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalList::RecryptPasswords()
+{
+  for (int Index = 0; Index < Count; Index++)
+  {
+    Terminals[Index]->RecryptPasswords();
   }
 }

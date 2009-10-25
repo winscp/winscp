@@ -10,6 +10,7 @@
 #include <CustomWinConfiguration.h>
 
 #include "Console.h"
+#include <Tools.h>
 //---------------------------------------------------------------------
 #pragma link "HistoryComboBox"
 #pragma link "PathLabel"
@@ -141,7 +142,7 @@ bool __fastcall TConsoleDialog::Execute(const AnsiString Command,
     if ((FAutoBounds.Width() != Width) ||
         (FAutoBounds.Height() != Height))
     {
-      ConsoleWin.WindowSize = FORMAT("%d,%d", (Width, Height));
+      ConsoleWin.WindowSize = StoreFormSize(this);
     }
     CustomWinConfiguration->ConsoleWin = ConsoleWin;
   }
@@ -301,10 +302,7 @@ void __fastcall TConsoleDialog::ActionListUpdate(TBasicAction * Action,
 void __fastcall TConsoleDialog::FormShow(TObject * /*Sender*/)
 {
   UpdateFormPosition(this, poMainFormCenter);
-  AnsiString WindowSize = CustomWinConfiguration->ConsoleWin.WindowSize;
-  int Width = StrToIntDef(CutToChar(WindowSize, ',', true), Width);
-  int Height = StrToIntDef(CutToChar(WindowSize, ',', true), Height);
-  ResizeForm(this, Width, Height);
+  RestoreFormSize(CustomWinConfiguration->ConsoleWin.WindowSize, this);
   FAutoBounds = BoundsRect;
 }
 //---------------------------------------------------------------------------

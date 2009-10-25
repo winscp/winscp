@@ -77,26 +77,6 @@ inline void TMessageParams::Reset()
   AllowHelp = true;
 }
 //---------------------------------------------------------------------------
-TDialogParams::TDialogParams()
-{
-  Token = NULL;
-
-  ComboItems = NULL;
-  ComboEmptyValid = true;
-
-  OnInit = NULL;
-  OnShow = NULL;
-  OnChange = NULL;
-  OnValidate = NULL;
-  OnSave = NULL;
-  OnLoad = NULL;
-}
-//---------------------------------------------------------------------------
-TDialogData::TDialogData()
-{
-  Check = false;
-}
-//---------------------------------------------------------------------------
 inline bool MapButton(unsigned int Answer, TMsgDlgBtn & Button)
 {
   bool Result = true;

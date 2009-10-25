@@ -134,38 +134,109 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
   FreeCommStruct(CommStruct);
 }
 //---------------------------------------------------------------------------
-void InitializeChild(int argc, char* argv[], int InstanceNumber, HANDLE& Child)
+// duplicated in Common.cpp
+bool __fastcall CutToken(const char *& Str, char * Token)
+{
+  bool Result;
+
+  // inspired by Putty's sftp_getcmd() from PSFTP.C
+  int Length = strlen(Str);
+  int Index = 0;
+  while ((Index < Length) &&
+    ((Str[Index] == ' ') || (Str[Index] == '\t')))
+  {
+    Index++;
+  }
+
+  if (Index < Length)
+  {
+    bool Quoting = false;
+
+    while (Index < Length)
+    {
+      if (!Quoting && ((Str[Index] == ' ') || (Str[Index] == '\t')))
+      {
+        break;
+      }
+      else if ((Str[Index] == '"') && (Index + 1 < Length) &&
+        (Str[Index + 1] == '"'))
+      {
+        Index += 2;
+        *Token = '"';
+        Token++;
+      }
+      else if (Str[Index] == '"')
+      {
+        Index++;
+        Quoting = !Quoting;
+      }
+      else
+      {
+        *Token = Str[Index];
+        Token++;
+        Index++;
+      }
+    }
+
+    if (Index < Length)
+    {
+      Index++;
+    }
+
+    Str += Index;
+
+    Result = true;
+  }
+  else
+  {
+    Result = false;
+    Str += Length;
+  }
+
+  *Token = '\0';
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void InitializeChild(const char* CommandLine, int InstanceNumber, HANDLE& Child)
 {
   int SkipParam = 0;
   char ChildPath[MAX_PATH] = "";
 
-  for (int i = 1; i < argc; i++)
+  size_t CommandLineLen = strlen(CommandLine);
+  char* Buffer = new char[CommandLineLen + 1];
+
+  int Count = 0;
+  const char * P = CommandLine;
+  while (CutToken(P, Buffer))
   {
-    if ((strchr("-/", argv[i][0]) != NULL) &&
-        (strncmpi(argv[i] + 1, CONSOLE_CHILD_PARAM, strlen(CONSOLE_CHILD_PARAM)) == 0) &&
-        (argv[i][strlen(CONSOLE_CHILD_PARAM) + 1] == '='))
+    if ((strchr("-/", Buffer[0]) != NULL) &&
+        (strncmpi(Buffer + 1, CONSOLE_CHILD_PARAM, strlen(CONSOLE_CHILD_PARAM)) == 0) &&
+        (Buffer[strlen(CONSOLE_CHILD_PARAM) + 1] == '='))
     {
-      SkipParam = i;
-      strcpy(ChildPath, argv[i] + 1 + strlen(CONSOLE_CHILD_PARAM) + 1);
-      break;
+      SkipParam = Count;
+      strcpy(ChildPath, Buffer + 1 + strlen(CONSOLE_CHILD_PARAM) + 1);
     }
+    ++Count;
   }
 
   if (strlen(ChildPath) == 0)
   {
-    const char* AppPath = argv[0];
-    const char* LastDelimiter = strrchr(AppPath, '\\');
+    P = CommandLine;
+    // skip executable path
+    CutToken(P, Buffer);
+    const char* LastDelimiter = strrchr(Buffer, '\\');
     const char* AppFileName;
     if (LastDelimiter != NULL)
     {
-      strncpy(ChildPath, AppPath, LastDelimiter - AppPath + 1);
-      ChildPath[LastDelimiter - AppPath + 1] = '\0';
+      strncpy(ChildPath, Buffer, LastDelimiter - Buffer + 1);
+      ChildPath[LastDelimiter - Buffer + 1] = '\0';
       AppFileName = LastDelimiter + 1;
     }
     else
     {
       ChildPath[0] = '\0';
-      AppFileName = AppPath;
+      AppFileName = Buffer;
     }
 
     const char* ExtensionStart = strrchr(AppFileName, '.');
@@ -182,27 +253,49 @@ void InitializeChild(int argc, char* argv[], int InstanceNumber, HANDLE& Child)
     strcat(ChildPath, ".exe");
   }
 
-  char Parameters[10240];
+  char* Parameters = new char[(CommandLineLen * 2) + 100 + (Count * 3) + 1];
   sprintf(Parameters, "\"%s\" /console /consoleinstance=%d ", ChildPath, InstanceNumber);
-  for (int i = 1; i < argc; i++)
+  P = CommandLine;
+  // skip executable path
+  CutToken(P, Buffer);
+  int i = 1;
+  while (CutToken(P, Buffer))
   {
     if (i != SkipParam)
     {
-      if (strlen(Parameters) + strlen(argv[i]) + 4 > sizeof(Parameters))
-      {
-        throw length_error("Too many parameters");
-      }
       strcat(Parameters, "\"");
-      strcat(Parameters, argv[i]);
+      char* P2 = Parameters + strlen(Parameters);
+      const char* P3 = Buffer;
+      const char* BufferEnd = Buffer + strlen(Buffer) + 1;
+      while (P3 != BufferEnd)
+      {
+        *P2 = *P3;
+        ++P2;
+        if (*P3 == '"')
+        {
+          *P2 = '"';
+          ++P2;
+        }
+        ++P3;
+      }
+
       strcat(Parameters, "\" ");
     }
+    ++i;
   }
+
+  delete[] Buffer;
 
   STARTUPINFO StartupInfo = { sizeof(STARTUPINFO) };
   PROCESS_INFORMATION ProcessInfomation;
 
-  if (CreateProcess(ChildPath, Parameters, NULL, NULL, false, 0, NULL, NULL,
-        &StartupInfo, &ProcessInfomation) != 0)
+  BOOL Result =
+    CreateProcess(ChildPath, Parameters, NULL, NULL, false, 0, NULL, NULL,
+      &StartupInfo, &ProcessInfomation);
+
+  delete[] Parameters;
+
+  if (Result)
   {
     Child = ProcessInfomation.hProcess;
   }
@@ -286,17 +379,6 @@ inline void ProcessPrintEvent(TConsoleCommStruct::TPrintEvent& Event)
 //---------------------------------------------------------------------------
 void BreakInput()
 {
-  FlushConsoleInputBuffer(ConsoleInput);
-  INPUT_RECORD InputRecord;
-  memset(&InputRecord, 0, sizeof(InputRecord));
-  InputRecord.EventType = KEY_EVENT;
-  InputRecord.Event.KeyEvent.bKeyDown = true;
-  InputRecord.Event.KeyEvent.wRepeatCount = 1;
-  InputRecord.Event.KeyEvent.uChar.AsciiChar = '\r';
-
-  unsigned long Written;
-  WriteConsoleInput(ConsoleInput, &InputRecord, 1, &Written);
-
   SetEvent(CancelEvent);
 }
 //---------------------------------------------------------------------------
@@ -557,7 +639,7 @@ BOOL WINAPI HandlerRoutine(DWORD CtrlType)
 }
 //---------------------------------------------------------------------------
 #pragma argsused
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
   unsigned long Result = RESULT_UNKNOWN_ERROR;
 
@@ -583,7 +665,7 @@ int main(int argc, char* argv[])
     try
     {
       #ifndef CONSOLE_TEST
-      InitializeChild(argc, argv, InstanceNumber, Child);
+      InitializeChild(GetCommandLine(), InstanceNumber, Child);
       #endif
 
       try

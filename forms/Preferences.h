@@ -21,9 +21,6 @@
 #include "GeneralSettings.h"
 #include "LogSettings.h"
 #include "UpDownEdit.hpp"
-#include "IEComboBox.hpp"
-#include "HistoryComboBox.hpp"
-#include "PasswordEdit.hpp"
 #include <Dialogs.hpp>
 #include <PasTools.hpp>
 //----------------------------------------------------------------------------
@@ -229,6 +226,10 @@ __published:
   TLabel *SessionReopenTimeoutLabel;
   TUpDownEdit *SessionReopenTimeoutEdit;
   TLabel *SessionReopenTimeoutSecLabel;
+  TTabSheet *SecuritySheet;
+  TGroupBox *MasterPasswordGroup;
+  TButton *SetMasterPasswordButton;
+  TCheckBox *UseMasterPasswordCheck;
   void __fastcall FormShow(TObject *Sender);
   void __fastcall ControlChange(TObject *Sender);
   void __fastcall EditorFontButtonClick(TObject *Sender);
@@ -295,6 +296,8 @@ __published:
           Extended Value, AnsiString &Text, bool &Handed);
   void __fastcall SessionReopenTimeoutEditGetValue(TObject *Sender,
           AnsiString Text, Extended &Value, bool &Handed);
+  void __fastcall UseMasterPasswordCheckClick(TObject *Sender);
+  void __fastcall SetMasterPasswordButtonClick(TObject *Sender);
 private:
   TPreferencesMode FPreferencesMode;
   TFont * FEditorFont;

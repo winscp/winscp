@@ -25,7 +25,7 @@
     <SYSDEFINES value="_RTLDLL;NO_STRICT;USEPACKAGES"/>
     <MAINSOURCE value="ThemeManagerC6D.cpp"/>
     <INCLUDEPATH value="theme;theme;$(BCB)\include;$(BCB)\include\vcl"/>
-    <LIBPATH value="..\lib\;theme;theme;$(BCB)\lib\obj;$(BCB)\lib;c:\temp"/>
+    <LIBPATH value="..\lib\;theme;theme;$(BCB)\lib\obj;$(BCB)\lib"/>
     <WARNINGS value="-w-par"/>
     <OTHERFILES value=""/>
   </MACROS>

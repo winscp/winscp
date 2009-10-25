@@ -70,4 +70,16 @@ void write_utf8(charset_spec const *, long int,
 
 extern const struct ssh_compress ssh_zlib;
 
+// from sshaes.c
+
+void * call_aes_make_context();
+void call_aes_free_context(void * handle);
+void call_aes_setup(void * ctx, int blocklen, unsigned char * key, int keylen);
+void call_aes_encrypt(void * ctx, unsigned int * block);
+void call_aes_decrypt(void * ctx, unsigned int * block);
+
+// from sshsha.c
+
+void call_sha1_key_internal(void * handle, unsigned char * key, int len);
+
 #endif

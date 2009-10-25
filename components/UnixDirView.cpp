@@ -627,8 +627,7 @@ AnsiString __fastcall TUnixDirView::GetPath()
 void __fastcall TUnixDirView::SetPath(AnsiString Value)
 {
 #ifndef DESIGN_ONLY
-  Value = UnixExcludeTrailingBackslash(
-    StringReplace(Value, '\\', '/', TReplaceFlags() << rfReplaceAll));
+  Value = UnixExcludeTrailingBackslash(Value);
 
   if (Active && (Terminal->CurrentDirectory != Value))
   {

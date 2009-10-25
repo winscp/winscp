@@ -40,5 +40,9 @@
 #define HELP_TOO_MANY_WATCH_DIRECTORIES "ui_keepuptodate"
 #define HELP_LOGIN_KEY_TYPE          "public_key#private"
 #define HELP_SYNCHRONIZE_NO_DIFFERENCES "task_synchronize_full"
+#define HELP_MASTER_PASSWORD_CURRENT "ui_master_password"
+#define HELP_MASTER_PASSWORD_CHANGE  "ui_master_password_change"
+#define HELP_MASTER_PASSWORD         "master_password"
+#define HELP_MASTER_PASSWORD_SIMPLE  HELP_MASTER_PASSWORD
 
 #endif // TextsWin

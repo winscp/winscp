@@ -61,11 +61,7 @@ __fastcall TSynchronizeChecklistDialog::TSynchronizeChecklistDialog(
   FOrigListViewWindowProc = ListView->WindowProc;
   ListView->WindowProc = ListViewWindowProc;
 
-  FSystemImageList = new TImageList(this);
-  SHFILEINFO FileInfo;
-  FSystemImageList->Handle = SHGetFileInfo(NULL, 0, &FileInfo, sizeof(FileInfo),
-    SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
-  FSystemImageList->ShareImages = true;
+  FSystemImageList = SharedSystemImageList(false);
   ListView->SmallImages = FSystemImageList;
 
   // header images mut be assigned after the small images, so it cannot
@@ -805,7 +801,7 @@ void __fastcall TSynchronizeChecklistDialog::CustomCommandsButtonClick(
       LocalFileList->Add(LocalPath);
 
       AnsiString RemotePath =
-        IncludeTrailingBackslash(ChecklistItem->Remote.Directory) +
+        UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) +
         ChecklistItem->Remote.FileName;
 
       RemoteFileList->AddObject(RemotePath, ChecklistItem->RemoteFile);

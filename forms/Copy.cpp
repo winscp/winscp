@@ -173,6 +173,7 @@ void __fastcall TCopyDialog::AdjustControls()
     QueueLabel = FMTLOAD(COPY_QUEUE, (QueueLabel));
   }
   QueueCheck2->Caption = QueueLabel;
+  QueueIndividuallyCheck->Visible = FLAGCLEAR(Options, coNoQueueIndividually);
 
   AdjustTransferControls();
 

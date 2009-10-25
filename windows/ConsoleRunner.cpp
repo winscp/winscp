@@ -202,19 +202,6 @@ void __fastcall TOwnConsole::TrayIconClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::BreakInput()
 {
-  FlushConsoleInputBuffer(FInput);
-  INPUT_RECORD InputRecord;
-  memset(&InputRecord, 0, sizeof(InputRecord));
-  InputRecord.EventType = KEY_EVENT;
-  InputRecord.Event.KeyEvent.bKeyDown = true;
-  InputRecord.Event.KeyEvent.wRepeatCount = 1;
-  InputRecord.Event.KeyEvent.uChar.AsciiChar = '\r';
-
-  unsigned long Written;
-  // this assertion occasionally fails (when console is being exited)
-  CHECK(WriteConsoleInput(FInput, &InputRecord, 1, &Written));
-  assert(Written == 1);
-
   FPendingAbort = true;
 
   PostMessage(Application->Handle, WM_INTERUPT_IDLE, 0, 0);
@@ -857,13 +844,15 @@ public:
   void __fastcall ShowException(Exception * E);
 
 protected:
-  bool __fastcall Input(AnsiString & Str, bool Echo, unsigned int Timer);
+  bool __fastcall DoInput(AnsiString & Str, bool Echo, unsigned int Timer);
+  void __fastcall Input(const AnsiString Prompt, AnsiString & Str, bool Echo);
   inline void __fastcall Print(const AnsiString & Str, bool FromBeginning = false);
   inline void __fastcall PrintLine(const AnsiString & Str);
   inline void __fastcall PrintMessage(const AnsiString & Str);
   void __fastcall UpdateTitle();
   inline void __fastcall NotifyAbort();
   inline bool __fastcall Aborted(bool AllowCompleteAbort = true);
+  void __fastcall MasterPasswordPrompt();
 
 private:
   TManagementScript * FScript;
@@ -921,10 +910,14 @@ TConsoleRunner::TConsoleRunner(TConsole * Console) :
   Timer->OnTimer = TimerTimer;
   Timer->Interval = 1000;
   Timer->Enabled = true;
+  assert(WinConfiguration->OnMasterPasswordPrompt == NULL);
+  WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
 }
 //---------------------------------------------------------------------------
 TConsoleRunner::~TConsoleRunner()
 {
+  assert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
+  WinConfiguration->OnMasterPasswordPrompt = NULL;
   delete Timer;
 }
 //---------------------------------------------------------------------------
@@ -939,15 +932,20 @@ unsigned int TConsoleRunner::InputTimeout()
   return (FScript->Batch != TScript::BatchOff ? BATCH_INPUT_TIMEOUT : 0);
 }
 //---------------------------------------------------------------------------
-void __fastcall TConsoleRunner::ScriptInput(TScript * /*Script*/,
-  const AnsiString Prompt, AnsiString & Str)
+void __fastcall TConsoleRunner::Input(const AnsiString Prompt, AnsiString & Str, bool Echo)
 {
   Print(Prompt);
 
-  if (!Input(Str, true, InputTimeout()))
+  if (!DoInput(Str, Echo, InputTimeout()))
   {
     Abort();
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleRunner::ScriptInput(TScript * /*Script*/,
+  const AnsiString Prompt, AnsiString & Str)
+{
+  Input(Prompt, Str, true);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::Print(const AnsiString & Str, bool FromBeginning)
@@ -1053,7 +1051,7 @@ void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TTerminal * /*Terminal*
     Print(Prompt);
 
     AnsiString AResult = Results->Strings[Index]; // useless
-    Result = Input(AResult, bool(Prompts->Objects[Index]), InputTimeout());
+    Result = DoInput(AResult, bool(Prompts->Objects[Index]), InputTimeout());
     Results->Strings[Index] = AResult;
   }
 }
@@ -1512,7 +1510,7 @@ void __fastcall TConsoleRunner::ShowException(Exception * E)
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TConsoleRunner::Input(AnsiString & Str, bool Echo, unsigned int Timeout)
+bool __fastcall TConsoleRunner::DoInput(AnsiString & Str, bool Echo, unsigned int Timeout)
 {
   bool Result = FConsole->Input(Str, Echo, Timeout);
   if (Result)
@@ -1529,6 +1527,13 @@ bool __fastcall TConsoleRunner::Input(AnsiString & Str, bool Echo, unsigned int 
   }
 
   return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TConsoleRunner::MasterPasswordPrompt()
+{
+  AnsiString Password;
+  Input(LoadStr(CONSOLE_MASTER_PASSWORD_PROMPT), Password, false);
+  WinConfiguration->SetMasterPassword(Password);
 }
 //---------------------------------------------------------------------------
 AnsiString TConsoleRunner::ExpandCommand(AnsiString Command, TStrings * ScriptParameters)
@@ -1593,7 +1598,7 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
           // no longer batch
           FBatchScript = false;
           Print("winscp> ");
-          Result = Input(Command, true, 0);
+          Result = DoInput(Command, true, 0);
         }
 
         if (Result)

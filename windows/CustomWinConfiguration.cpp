@@ -4,6 +4,9 @@
 
 #include <Common.h>
 #include <TextsCore.h>
+#include <SessionData.h>
+#include <CoreMain.h>
+#include <Interface.h>
 #include "CustomWinConfiguration.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -77,7 +80,10 @@ void __fastcall TCustomWinConfiguration::Default()
   FLogView = lvNone;
   FSynchronizeChecklist.WindowParams = "0;-1;-1;600;450;0";
   FSynchronizeChecklist.ListParams = "1;1|150,1;100,1;80,1;130,1;25,1;100,1;80,1;130,1|0;1;2;3;4;5;6;7";
+  FFindFile.WindowParams = "646,481";
+  FFindFile.ListParams = "3;1|125,1;181,1;80,1;122,1|0;1;2;3";
   FConsoleWin.WindowSize = "570,430";
+  FConfirmExitOnCompletion = true;
 
   DefaultHistory();
 }
@@ -104,6 +110,7 @@ void __fastcall TCustomWinConfiguration::Saved()
   BLOCK("Interface", CANCREATE, \
     KEY(Integer,  Interface); \
     KEY(Bool,     ShowAdvancedLoginOptions); \
+    KEY(Bool,     ConfirmExitOnCompletion); \
   ) \
   BLOCK("Logging", CANCREATE, \
     KEY(Integer, LogView); \
@@ -111,6 +118,10 @@ void __fastcall TCustomWinConfiguration::Saved()
   BLOCK("Interface\\SynchronizeChecklist", CANCREATE, \
     KEY(String,   SynchronizeChecklist.WindowParams); \
     KEY(String,   SynchronizeChecklist.ListParams); \
+  ); \
+  BLOCK("Interface\\FindFile", CANCREATE, \
+    KEY(String,   FindFile.WindowParams); \
+    KEY(String,   FindFile.ListParams); \
   ); \
   BLOCK("Interface\\ConsoleWin", CANCREATE, \
     KEY(String,   ConsoleWin.WindowSize); \
@@ -306,6 +317,23 @@ void __fastcall TCustomWinConfiguration::LoadAdmin(THierarchicalStorage * Storag
   FDefaultShowAdvancedLoginOptions = Storage->ReadBool("DefaultInterfaceShowAdvancedLoginOptions", FDefaultShowAdvancedLoginOptions);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::RecryptPasswords()
+{
+  Busy(true);
+  try
+  {
+    StoredSessions->RecryptPasswords();
+    if (OnMasterPasswordRecrypt != NULL)
+    {
+      OnMasterPasswordRecrypt(NULL);
+    }
+  }
+  __finally
+  {
+    Busy(false);
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SetShowAdvancedLoginOptions(bool value)
 {
   SET_CONFIG_PROPERTY(ShowAdvancedLoginOptions);
@@ -370,7 +398,17 @@ void __fastcall TCustomWinConfiguration::SetSynchronizeChecklist(TSynchronizeChe
   SET_CONFIG_PROPERTY(SynchronizeChecklist);
 }
 //---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::SetFindFile(TFindFileConfiguration value)
+{
+  SET_CONFIG_PROPERTY(FindFile);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomWinConfiguration::SetConsoleWin(TConsoleWinConfiguration value)
 {
   SET_CONFIG_PROPERTY(ConsoleWin);
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomWinConfiguration::SetConfirmExitOnCompletion(bool value)
+{
+  SET_CONFIG_PROPERTY(ConfirmExitOnCompletion);
 }

@@ -11,6 +11,9 @@
 #include "GUITools.h"
 #include "Tools.h"
 #include "Setup.h"
+#include "Security.h"
+#include "TerminalManager.h"
+#include "Cryptography.h"
 #include <VCLCommon.h>
 #include <ResourceModule.hpp>
 #include <LanguagesDEPfix.hpp>
@@ -404,7 +407,6 @@ void __fastcall TWinConfiguration::Default()
   FConfirmDeleting = true;
   FConfirmRecycling = true;
   FConfirmClosingSession = true;
-  FConfirmExitOnCompletion = true;
   FDoubleClickAction = dcaEdit;
   FCopyOnDoubleClickConfirmation = false;
   FDimmHiddenFiles = true;
@@ -432,6 +434,10 @@ void __fastcall TWinConfiguration::Default()
   FAutoOpenInPutty = false;
   FVersionHistory = "";
   AddVersionToHistory(FVersionHistory);
+  FUseMasterPassword = false;
+  FPlainMasterPasswordEncrypt = "";
+  FPlainMasterPasswordDecrypt = "";
+  FMasterPasswordVerifier = "";
 
   FEditor.FontName = "Courier New";
   FEditor.FontHeight = -12;
@@ -656,6 +662,22 @@ void __fastcall TWinConfiguration::Saved()
   FEditorList->Saved();
 }
 //---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::RecryptPasswords()
+{
+  TCustomWinConfiguration::RecryptPasswords();
+  TTerminalManager * Manager = TTerminalManager::Instance(false);
+  assert(Manager != NULL);
+  if (Manager != NULL)
+  {
+    Manager->RecryptPasswords();
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::GetUseMasterPassword()
+{
+  return FUseMasterPassword;
+}
+//---------------------------------------------------------------------------
 THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
 {
   if (SessionList && !FTemporarySessionFile.IsEmpty())
@@ -695,7 +717,6 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
     KEY(Bool,     ConfirmDeleting); \
     KEY(Bool,     ConfirmRecycling); \
     KEY(Bool,     ConfirmClosingSession); \
-    KEY(Bool,     ConfirmExitOnCompletion); \
     KEY(String,   AutoStartSession); \
     KEY(Bool,     UseLocationProfiles); \
     KEY(Bool,     UseSharedBookmarks); \
@@ -805,6 +826,10 @@ THierarchicalStorage * TWinConfiguration::CreateScpStorage(bool SessionList)
   BLOCK("Logging", CANCREATE, \
     KEY(Bool,    LogWindowOnStartup); \
     KEY(String,  LogWindowParams); \
+  ); \
+  BLOCK("Security", CANCREATE, \
+    KEYEX(Bool,  FUseMasterPassword, UseMasterPassword); \
+    KEYEX(String,FMasterPasswordVerifier, MasterPasswordVerifier); \
   );
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SaveData(THierarchicalStorage * Storage, bool All)
@@ -1049,6 +1074,116 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
   return (FDDExtInstalled > 0);
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TWinConfiguration::StronglyRecryptPassword(AnsiString Password, AnsiString Key)
+{
+  AnsiString Dummy;
+  AnsiString Result;
+  if (GetExternalEncryptedPassword(Password, Dummy) ||
+      !FUseMasterPassword)
+  {
+    // already-strongly encrypted
+    // or no master password set, so we cannot strongly-encrypt it
+    Result = Password;
+  }
+  else
+  {
+    Password = TCustomWinConfiguration::DecryptPassword(Password, Key);
+    assert(!FPlainMasterPasswordEncrypt.IsEmpty());
+    ScramblePassword(Password);
+    AES256EncyptWithMAC(Password, FPlainMasterPasswordEncrypt, Result);
+    Result = SetExternalEncryptedPassword(Result);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TWinConfiguration::DecryptPassword(AnsiString Password, AnsiString Key)
+{
+  AnsiString Result;
+  if (GetExternalEncryptedPassword(Password, Result))
+  {
+    if (FPlainMasterPasswordDecrypt.IsEmpty())
+    {
+      assert(FOnMasterPasswordPrompt != NULL);
+      FOnMasterPasswordPrompt();
+    }
+    if (!AES256DecryptWithMAC(Result, FPlainMasterPasswordDecrypt, Result) ||
+        !UnscramblePassword(Result))
+    {
+      throw Exception(LoadStr(DECRYPT_PASSWORD_ERROR));
+    }
+  }
+  else
+  {
+    Result = TCustomWinConfiguration::DecryptPassword(Password, Key);
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::SetMasterPassword(AnsiString value)
+{
+  if (FUseMasterPassword && ValidateMasterPassword(value))
+  {
+    // just store the plain-text version of the password
+    FPlainMasterPasswordEncrypt = value;
+    FPlainMasterPasswordDecrypt = value;
+  }
+  else
+  {
+    AnsiString Verifier;
+    AES256CreateVerifier(value, Verifier);
+    FMasterPasswordVerifier = StrToHex(Verifier);
+    FPlainMasterPasswordEncrypt = value;
+    FUseMasterPassword = true;
+    try
+    {
+      RecryptPasswords();
+    }
+    __finally
+    {
+      FPlainMasterPasswordDecrypt = value;
+    }
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TWinConfiguration::ValidateMasterPassword(AnsiString value)
+{
+  assert(UseMasterPassword);
+  assert(!FMasterPasswordVerifier.IsEmpty());
+  return AES256Verify(value, HexToStr(FMasterPasswordVerifier));
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::PurgePassword(AnsiString & Password)
+{
+  Password.Unique();
+  memset(Password.c_str(), 0, Password.Length());
+  Password = "";
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::ClearMasterPassword()
+{
+  FMasterPasswordVerifier = "";
+  FUseMasterPassword = false;
+  PurgePassword(FPlainMasterPasswordEncrypt);
+  try
+  {
+    RecryptPasswords();
+  }
+  __finally
+  {
+    PurgePassword(FPlainMasterPasswordDecrypt);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TWinConfiguration::AskForMasterPasswordIfNotSet()
+{
+  if (FUseMasterPassword && FPlainMasterPasswordEncrypt.IsEmpty())
+  {
+    assert(FOnMasterPasswordPrompt != NULL);
+    FOnMasterPasswordPrompt();
+    assert(!FPlainMasterPasswordDecrypt.IsEmpty());
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetLogWindowOnStartup(bool value)
 {
   SET_CONFIG_PROPERTY(LogWindowOnStartup);
@@ -1189,11 +1324,6 @@ void __fastcall TWinConfiguration::SetUseSharedBookmarks(bool value)
 void __fastcall TWinConfiguration::SetConfirmClosingSession(bool value)
 {
   SET_CONFIG_PROPERTY(ConfirmClosingSession);
-}
-//---------------------------------------------------------------------------
-void __fastcall TWinConfiguration::SetConfirmExitOnCompletion(bool value)
-{
-  SET_CONFIG_PROPERTY(ConfirmExitOnCompletion);
 }
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::SetDoubleClickAction(TDoubleClickAction value)

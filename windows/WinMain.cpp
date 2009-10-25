@@ -76,7 +76,7 @@ void __fastcall Download(TTerminal * Terminal, const AnsiString FileName,
       throw Exception(FMTLOAD(FILE_NOT_EXISTS, (FileName)));
     }
     FileList->AddObject(FileName, File);
-    AnsiString LocalDirectory = Terminal->SessionData->LocalDirectory;
+    AnsiString LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
     if (LocalDirectory.IsEmpty())
     {
       ::SpecialFolderLocation(CSIDL_PERSONAL, LocalDirectory);
@@ -108,7 +108,7 @@ void __fastcall SynchronizeDirectories(TTerminal * Terminal,
   }
   else if (!Terminal->SessionData->LocalDirectory.IsEmpty())
   {
-    LocalDirectory = Terminal->SessionData->LocalDirectory;
+    LocalDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
   }
   else
   {

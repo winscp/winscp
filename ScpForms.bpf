@@ -16,6 +16,7 @@ USEFORM("forms\Custom.cpp", CustomDialog);
 USEFORM("forms\Editor.cpp", EditorForm);
 USEFORM("forms\EditorPreferences.cpp", EditorPreferencesDialog);
 USEFORM("forms\FileSystemInfo.cpp", FileSystemInfoDialog);
+USEFORM("forms\FileFind.cpp", FileFindDialog);
 USEFORM("forms\FullSynchronize.cpp", FullSynchronizeDialog);
 USEFORM("forms\GeneralSettings.cpp", GeneralSettingsFrame); /* TFrame: File Type */
 USEFORM("forms\Glyphs.cpp", GlyphsModule); /* TDataModule: File Type */

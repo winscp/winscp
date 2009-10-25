@@ -180,6 +180,18 @@ AnsiString __fastcall StoreForm(TCustomForm * Form)
     (int)(Form->WindowState == wsMinimized ? wsNormal : Form->WindowState)));
 }
 //---------------------------------------------------------------------------
+void __fastcall RestoreFormSize(AnsiString Data, TForm * Form)
+{
+  int Width = StrToIntDef(CutToChar(Data, ',', true), Form->Width);
+  int Height = StrToIntDef(CutToChar(Data, ',', true), Form->Height);
+  ResizeForm(Form, Width, Height);
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall StoreFormSize(TForm * Form)
+{
+  return FORMAT("%d,%d", (Form->Width, Form->Height));
+}
+//---------------------------------------------------------------------------
 bool __fastcall ExecuteShellAndWait(const AnsiString Path, const AnsiString Params)
 {
   return ExecuteShellAndWait(Application->Handle, Path, Params,

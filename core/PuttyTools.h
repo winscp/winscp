@@ -13,4 +13,7 @@ __int64 __fastcall ParseSize(AnsiString SizeStr);
 //---------------------------------------------------------------------------
 bool __fastcall HasGSSAPI();
 //---------------------------------------------------------------------------
+void __fastcall AES256EncodeWithMAC(char * Data, size_t Len, const char * Password,
+  size_t PasswordLen, const char * Salt);
+//---------------------------------------------------------------------------
 #endif

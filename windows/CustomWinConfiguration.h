@@ -19,6 +19,7 @@ struct TSynchronizeChecklistConfiguration
   bool __fastcall operator !=(TSynchronizeChecklistConfiguration & rhc)
     { return C(WindowParams) C(ListParams) 0; };
 };
+typedef TSynchronizeChecklistConfiguration TFindFileConfiguration;
 //---------------------------------------------------------------------------
 struct TConsoleWinConfiguration
 {
@@ -37,9 +38,12 @@ private:
   TStringList * FHistory;
   TStrings * FEmptyHistory;
   TSynchronizeChecklistConfiguration FSynchronizeChecklist;
+  TFindFileConfiguration FFindFile;
   TConsoleWinConfiguration FConsoleWin;
   TInterface FDefaultInterface;
   bool FDefaultShowAdvancedLoginOptions;
+  bool FConfirmExitOnCompletion;
+  TNotifyEvent FOnMasterPasswordRecrypt;
 
   void __fastcall SetInterface(TInterface value);
   void __fastcall SetLogView(TLogView value);
@@ -47,7 +51,9 @@ private:
   void __fastcall SetHistory(const AnsiString Index, TStrings * value);
   TStrings * __fastcall GetHistory(const AnsiString Index);
   void __fastcall SetSynchronizeChecklist(TSynchronizeChecklistConfiguration value);
+  void __fastcall SetFindFile(TFindFileConfiguration value);
   void __fastcall SetConsoleWin(TConsoleWinConfiguration value);
+  void __fastcall SetConfirmExitOnCompletion(bool value);
 
 protected:
   virtual void __fastcall SaveData(THierarchicalStorage * Storage, bool All);
@@ -56,18 +62,25 @@ protected:
   virtual void __fastcall Saved();
   void __fastcall ClearHistory();
   void __fastcall DefaultHistory();
+  void __fastcall RecryptPasswords();
+  virtual bool __fastcall GetUseMasterPassword() = 0;
 
 public:
   __fastcall TCustomWinConfiguration();
   virtual __fastcall ~TCustomWinConfiguration();
   virtual void __fastcall Default();
+  virtual void __fastcall AskForMasterPasswordIfNotSet() = 0;
 
   __property TLogView LogView = { read = FLogView, write = SetLogView };
   __property TInterface Interface = { read = FInterface, write = SetInterface };
   __property bool ShowAdvancedLoginOptions = { read = FShowAdvancedLoginOptions, write = SetShowAdvancedLoginOptions};
   __property TStrings * History[AnsiString Name] = { read = GetHistory, write = SetHistory };
   __property TSynchronizeChecklistConfiguration SynchronizeChecklist = { read = FSynchronizeChecklist, write = SetSynchronizeChecklist };
+  __property TFindFileConfiguration FindFile = { read = FFindFile, write = SetFindFile };
   __property TConsoleWinConfiguration ConsoleWin = { read = FConsoleWin, write = SetConsoleWin };
+  __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
+  __property bool UseMasterPassword = { read = GetUseMasterPassword };
+  __property TNotifyEvent OnMasterPasswordRecrypt = { read = FOnMasterPasswordRecrypt, write = FOnMasterPasswordRecrypt };
 };
 //---------------------------------------------------------------------------
 #define CustomWinConfiguration \

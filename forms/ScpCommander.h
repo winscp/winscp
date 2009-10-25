@@ -379,6 +379,8 @@ __published:
   TTBXItem *TBXItem222;
   TTBXItem *TBXItem223;
   TTBXItem *TBXItem224;
+  TTBXItem *TBXItem210;
+  TTBXItem *TBXItem227;
   void __fastcall SplitterMoved(TObject *Sender);
   void __fastcall SplitterCanResize(TObject *Sender, int &NewSize,
     bool &Accept);
@@ -504,6 +506,7 @@ protected:
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(AnsiString Local, AnsiString Remote);
   virtual bool __fastcall OpenBookmark(AnsiString Local, AnsiString Remote);
+  virtual void __fastcall DoFocusRemotePath(AnsiString Path);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

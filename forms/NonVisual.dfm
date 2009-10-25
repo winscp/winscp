@@ -1833,6 +1833,15 @@ object NonVisualDataModule: TNonVisualDataModule
       Hint = 'Filter|Filter displayed files'
       ImageIndex = 92
     end
+    object FindFilesAction: TAction
+      Tag = 14
+      Category = 'Command'
+      Caption = '&Find Files...'
+      HelpKeyword = 'task_find'
+      Hint = 'Find files|Find files and directories'
+      ImageIndex = 95
+      ShortCut = 32886
+    end
   end
   object ExplorerBarPopup: TTBXPopupMenu
     Images = GlyphsModule.ExplorerImages

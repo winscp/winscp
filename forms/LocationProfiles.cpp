@@ -12,6 +12,7 @@
 
 #include "LocationProfiles.h"
 #include "WinConfiguration.h"
+#include "Custom.h"
 //---------------------------------------------------------------------
 #pragma link "IEComboBox"
 #ifndef NO_RESOURCES
@@ -47,6 +48,133 @@ bool __fastcall LocationProfilesDialog(TOpenDirectoryMode Mode,
   }
   return Result;
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+void __fastcall BookmarkNameValidateName(const AnsiString Name)
+{
+  if (Name.IsEmpty() || IsNumber(Name))
+  {
+    throw Exception(FMTLOAD(BOOKMARK_INVALID_NAME, (Name)));
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall BookmarkFolderValidateName(const AnsiString Name,
+  bool AllowEmpty)
+{
+  if ((!AllowEmpty && Name.IsEmpty()) || Name.Pos("\\"))
+  {
+    throw Exception(FMTLOAD(BOOKMARK_FOLDER_INVALID_NAME, (Name)));
+  }
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TBookmarkNameDialog : public TCustomDialog
+{
+public:
+  __fastcall TBookmarkNameDialog(TStrings * PeerBookmarks, bool AllowShared);
+
+  bool __fastcall Execute(AnsiString & Name, bool & Shared);
+
+protected:
+  virtual void __fastcall DoValidate();
+
+private:
+  TComboBox * NameCombo;
+  TCheckBox * SharedCheck;
+};
+//---------------------------------------------------------------------
+__fastcall TBookmarkNameDialog::TBookmarkNameDialog(TStrings * PeerBookmarks,
+    bool AllowShared) :
+  TCustomDialog(HELP_LOCATION_PROFILE_ADD)
+{
+  Caption = LoadStr(ADD_BOOKMARK_CAPTION);
+
+  NameCombo = new TComboBox(this);
+  AddComboBox(NameCombo, CreateLabel(LoadStr(ADD_BOOKMARK_PROMPT)));
+  NameCombo->Items = PeerBookmarks;
+
+  if (AllowShared)
+  {
+    SharedCheck = new TCheckBox(this);
+    SharedCheck->Caption = LoadStr(ADD_BOOKMARK_SHARED);
+    AddButtonControl(SharedCheck);
+  }
+  else
+  {
+    SharedCheck = NULL;
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TBookmarkNameDialog::DoValidate()
+{
+  if (NameCombo->Text.IsEmpty() || IsNumber(NameCombo->Text))
+  {
+    throw Exception(FMTLOAD(BOOKMARK_INVALID_NAME, (NameCombo->Text)));
+  }
+  TCustomDialog::DoValidate();
+}
+//---------------------------------------------------------------------
+bool __fastcall TBookmarkNameDialog::Execute(AnsiString & Name, bool & Shared)
+{
+  NameCombo->Text = Name;
+  if (SharedCheck != NULL)
+  {
+    SharedCheck->Checked = Shared;
+  }
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    Name = NameCombo->Text;
+    if (SharedCheck != NULL)
+    {
+      Shared = SharedCheck->Checked;
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TBookmarkFolderDialog : public TCustomDialog
+{
+public:
+  __fastcall TBookmarkFolderDialog(TStrings * Folders);
+
+  bool __fastcall Execute(AnsiString & Name);
+
+protected:
+  virtual void __fastcall DoValidate();
+
+private:
+  TComboBox * NameCombo;
+};
+//---------------------------------------------------------------------
+__fastcall TBookmarkFolderDialog::TBookmarkFolderDialog(TStrings * Folders) :
+  TCustomDialog(HELP_LOCATION_PROFILE_MOVE)
+{
+  Caption = LoadStr(MOVE_BOOKMARK_CAPTION);
+
+  NameCombo = new TComboBox(this);
+  AddComboBox(NameCombo, CreateLabel(LoadStr(MOVE_BOOKMARK_PROMPT)));
+  NameCombo->Items = Folders;
+}
+//---------------------------------------------------------------------
+void __fastcall TBookmarkFolderDialog::DoValidate()
+{
+  BookmarkFolderValidateName(NameCombo->Text, true);
+  TCustomDialog::DoValidate();
+}
+//---------------------------------------------------------------------
+bool __fastcall TBookmarkFolderDialog::Execute(AnsiString & Name)
+{
+  NameCombo->Text = Name;
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    Name = NameCombo->Text;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------
 //---------------------------------------------------------------------
 __fastcall TLocationProfilesDialog::TLocationProfilesDialog(TComponent * AOwner):
   TForm(AOwner)
@@ -340,19 +468,6 @@ TTreeViewScrollOnDragOver * TLocationProfilesDialog::GetScrollOnDragOver(TObject
   return GetProfilesObject(Sender, FSessionScrollOnDragOver, FSharedScrollOnDragOver);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::BookmarkNameValidateName(const AnsiString Name)
-{
-  if (Name.IsEmpty() || IsNumber(Name))
-  {
-    throw Exception(FMTLOAD(BOOKMARK_INVALID_NAME, (Name)));
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::BookmarkNameValidate(const TDialogData & Data)
-{
-  BookmarkNameValidateName(Data.Combo);
-}
-//---------------------------------------------------------------------------
 bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool Initial)
 {
   TBookmarkList * BookmarkList = GetBookmarkList(Sender);
@@ -401,77 +516,68 @@ bool __fastcall TLocationProfilesDialog::AddAsBookmark(TObject * Sender, bool In
       }
     }
 
-    TDialogParams Params;
-    Params.Caption = LoadStr(ADD_BOOKMARK_CAPTION);
-    Params.HelpKeyword = HELP_LOCATION_PROFILE_ADD;
-    Params.ComboLabel = LoadStr(ADD_BOOKMARK_PROMPT);
-    Params.ComboItems = PeerBookmarks;
-    Params.ComboEmptyValid = false;
-    if (Initial)
+    TBookmarkNameDialog * Dialog = new TBookmarkNameDialog(PeerBookmarks, Initial);
+    try
     {
-      Params.CheckLabel = LoadStr(ADD_BOOKMARK_SHARED);
-    }
-    Params.OnValidate = BookmarkNameValidate;
-    TDialogData Data;
-    Data.Combo = BookmarkName;
-    if (Initial)
-    {
-      Data.Check = WinConfiguration->UseSharedBookmarks;
-    }
-    Result = DoCustomDialog(Params, Data);
-    if (Result)
-    {
-      BookmarkName = Data.Combo;
-      if (Initial)
+      bool Shared = WinConfiguration->UseSharedBookmarks;
+      Result = Dialog->Execute(BookmarkName, Shared);
+      if (Result)
       {
-        WinConfiguration->UseSharedBookmarks = Data.Check;
-        BookmarkList = GetBookmarkList(GetProfilesSheet());
-        ProfilesView = GetProfilesView(GetProfilesSheet());
-      }
-
-      TBookmark * Bookmark = BookmarkList->FindByName(SelectedNode, BookmarkName);
-      if (Bookmark != NULL)
-      {
-        Bookmark->Local = LocalDirectory;
-        Bookmark->Remote = RemoteDirectory;
-
-        for (int Index = 0; Index < ProfilesView->Items->Count; Index++)
+        if (Initial)
         {
-          TTreeNode * Node = ProfilesView->Items->Item[Index];
-          if (Node->Data == Bookmark)
+          WinConfiguration->UseSharedBookmarks = Shared;
+          BookmarkList = GetBookmarkList(GetProfilesSheet());
+          ProfilesView = GetProfilesView(GetProfilesSheet());
+        }
+
+        TBookmark * Bookmark = BookmarkList->FindByName(SelectedNode, BookmarkName);
+        if (Bookmark != NULL)
+        {
+          Bookmark->Local = LocalDirectory;
+          Bookmark->Remote = RemoteDirectory;
+
+          for (int Index = 0; Index < ProfilesView->Items->Count; Index++)
           {
-            Selected = Node;
-            break;
+            TTreeNode * Node = ProfilesView->Items->Item[Index];
+            if (Node->Data == Bookmark)
+            {
+              Selected = Node;
+              break;
+            }
           }
-        }
-      }
-      else
-      {
-        Bookmark = new TBookmark();
-        Bookmark->Name = BookmarkName;
-        Bookmark->Local = LocalDirectory;
-        Bookmark->Remote = RemoteDirectory;
-        if (SelectedBookmark != NULL)
-        {
-          Bookmark->Node = SelectedBookmark->Node;
-          BookmarkList->InsertBefore(SelectedBookmark, Bookmark);
-          Selected = ProfilesView->Items->InsertObject(Selected, BookmarkText(Bookmark), Bookmark);
-        }
-        else if ((Selected != NULL) && (SelectedBookmark == NULL))
-        {
-          // must be a folder
-          assert(!Selected->Parent); // more than one level of folders is not supported
-          Bookmark->Node = Selected->Text;
-          BookmarkList->Add(Bookmark);
-          Selected = ProfilesView->Items->AddChildObject(Selected, BookmarkText(Bookmark), Bookmark);
         }
         else
         {
-          BookmarkList->Add(Bookmark);
-          Selected = ProfilesView->Items->AddObject(NULL, BookmarkText(Bookmark), Bookmark);
+          Bookmark = new TBookmark();
+          Bookmark->Name = BookmarkName;
+          Bookmark->Local = LocalDirectory;
+          Bookmark->Remote = RemoteDirectory;
+          if (SelectedBookmark != NULL)
+          {
+            Bookmark->Node = SelectedBookmark->Node;
+            BookmarkList->InsertBefore(SelectedBookmark, Bookmark);
+            Selected = ProfilesView->Items->InsertObject(Selected, BookmarkText(Bookmark), Bookmark);
+          }
+          else if ((Selected != NULL) && (SelectedBookmark == NULL))
+          {
+            // must be a folder
+            assert(!Selected->Parent); // more than one level of folders is not supported
+            Bookmark->Node = Selected->Text;
+            BookmarkList->Add(Bookmark);
+            Selected = ProfilesView->Items->AddChildObject(Selected, BookmarkText(Bookmark), Bookmark);
+          }
+          else
+          {
+            BookmarkList->Add(Bookmark);
+            Selected = ProfilesView->Items->AddObject(NULL, BookmarkText(Bookmark), Bookmark);
+          }
         }
+        ProfilesView->Selected = Selected;
       }
-      ProfilesView->Selected = Selected;
+    }
+    __finally
+    {
+      delete Dialog;
     }
   }
   __finally
@@ -722,20 +828,6 @@ void __fastcall TLocationProfilesDialog::ProfilesViewChange(
   UpdateControls();
 }
 //---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::BookmarkFolderValidateName(const AnsiString Name,
-  bool AllowEmpty)
-{
-  if ((!AllowEmpty && Name.IsEmpty()) || Name.Pos("\\"))
-  {
-    throw Exception(FMTLOAD(BOOKMARK_FOLDER_INVALID_NAME, (Name)));
-  }
-}
-//---------------------------------------------------------------------------
-void __fastcall TLocationProfilesDialog::BookmarkFolderValidate(const TDialogData & Data)
-{
-  BookmarkFolderValidateName(Data.Combo, true);
-}
-//---------------------------------------------------------------------------
 void __fastcall TLocationProfilesDialog::BookmarkMoveToButtonClick(TObject * Sender)
 {
   TTreeView * ProfilesView = GetProfilesView(Sender);
@@ -744,54 +836,54 @@ void __fastcall TLocationProfilesDialog::BookmarkMoveToButtonClick(TObject * Sen
   assert(ProfilesView->Selected->Data);
   TBookmark * Bookmark = (TBookmark *)ProfilesView->Selected->Data;
 
-  TDialogParams Params;
-  Params.Caption = LoadStr(MOVE_BOOKMARK_CAPTION);
-  Params.HelpKeyword = HELP_LOCATION_PROFILE_MOVE;
-  Params.ComboLabel = LoadStr(MOVE_BOOKMARK_PROMPT);
-  Params.ComboItems = Folders;
-  Params.ComboEmptyValid = true;
-  Params.OnValidate = BookmarkFolderValidate;
-  TDialogData Data;
-  Data.Combo = Bookmark->Node;
-  if (DoCustomDialog(Params, Data) &&
-      (Data.Combo != Bookmark->Node))
+  TBookmarkFolderDialog * Dialog = new TBookmarkFolderDialog(Folders);
+  try
   {
-    TTreeNode * FolderNode;
-    int I = Folders->IndexOf(Data.Combo);
-    if (Data.Combo.IsEmpty())
+    AnsiString NodeName = Bookmark->Node;
+    if (Dialog->Execute(NodeName) &&
+        (NodeName != Bookmark->Node))
     {
-      FolderNode = NULL;
-    }
-    else if (I >= 0)
-    {
-      FolderNode = dynamic_cast<TTreeNode *>(Folders->Objects[I]);
-      assert(FolderNode);
-    }
-    else
-    {
-      I = Folders->Add(Data.Combo);
-      TTreeNode * NextNode;
-      // duplicated in RenameButtonClick()
-      if (I < Folders->Count-1)
+      TTreeNode * FolderNode;
+      int I = Folders->IndexOf(NodeName);
+      if (NodeName.IsEmpty())
       {
-        NextNode = dynamic_cast<TTreeNode *>(Folders->Objects[I+1]);
-        assert(NextNode);
+        FolderNode = NULL;
       }
-      else if (Folders->Count > 1)
+      else if (I >= 0)
       {
-        NextNode = (dynamic_cast<TTreeNode *>(Folders->Objects[I-1]))->getNextSibling();
+        FolderNode = dynamic_cast<TTreeNode *>(Folders->Objects[I]);
+        assert(FolderNode);
       }
       else
       {
-        assert(ProfilesView->Items->Count);
-        NextNode = ProfilesView->Items->Item[0];
+        I = Folders->Add(NodeName);
+        TTreeNode * NextNode;
+        // duplicated in RenameButtonClick()
+        if (I < Folders->Count-1)
+        {
+          NextNode = dynamic_cast<TTreeNode *>(Folders->Objects[I+1]);
+          assert(NextNode);
+        }
+        else if (Folders->Count > 1)
+        {
+          NextNode = (dynamic_cast<TTreeNode *>(Folders->Objects[I-1]))->getNextSibling();
+        }
+        else
+        {
+          assert(ProfilesView->Items->Count);
+          NextNode = ProfilesView->Items->Item[0];
+        }
+        FolderNode = ProfilesView->Items->Insert(NextNode, NodeName);
+        assert(FolderNode);
+        Folders->Objects[I] = FolderNode;
       }
-      FolderNode = ProfilesView->Items->Insert(NextNode, Data.Combo);
-      assert(FolderNode);
-      Folders->Objects[I] = FolderNode;
-    }
 
-    BookmarkMove(Sender, ProfilesView->Selected, FolderNode);
+      BookmarkMove(Sender, ProfilesView->Selected, FolderNode);
+    }
+  }
+  __finally
+  {
+    delete Dialog;
   }
 }
 //---------------------------------------------------------------------------

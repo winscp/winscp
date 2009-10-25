@@ -2096,7 +2096,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     }
     if (FTerminal->Log->Logging)
     {
-      FTerminal->Log->Add(llOutput, FORMAT("Status/error code: %d, Message: %d, Server: %s, Language: %s ",
+      FTerminal->Log->Add(llOutput, FORMAT("Status code: %d, Message: %d, Server: %s, Language: %s ",
         (int(Code), (int)Packet->MessageNumber, ServerMessage, LanguageTag)));
     }
     if (!LanguageTag.IsEmpty())
@@ -2112,7 +2112,7 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
   {
     if (!FNotLoggedPackets || Code)
     {
-      FTerminal->Log->Add(llOutput, FORMAT("Status/error code: %d", ((int)Code)));
+      FTerminal->Log->Add(llOutput, FORMAT("Status code: %d", ((int)Code)));
     }
     return Code;
   }

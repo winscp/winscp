@@ -156,6 +156,9 @@ public:
   void __fastcall NeverShowBanner(const AnsiString SessionKey, const AnsiString & Banner);
   virtual THierarchicalStorage * CreateScpStorage(bool SessionList);
   void __fastcall TemporaryLogging(const AnsiString ALogFileName);
+  virtual AnsiString __fastcall EncryptPassword(AnsiString Password, AnsiString Key);
+  virtual AnsiString __fastcall DecryptPassword(AnsiString Password, AnsiString Key);
+  virtual AnsiString __fastcall StronglyRecryptPassword(AnsiString Password, AnsiString Key);
 
   __property TVSFixedFileInfo *FixedApplicationInfo  = { read=GetFixedApplicationInfo };
   __property void * ApplicationInfo  = { read=GetApplicationInfo };

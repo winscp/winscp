@@ -129,6 +129,7 @@ private:
   void __fastcall DeleteLocalFile(const AnsiString FileName, bool Alternative);
   void __fastcall QueueEvent(TTerminalQueue * Queue, TQueueEvent Event);
   TAuthenticateForm * __fastcall MakeAuthenticateForm(TSessionData * Data);
+  void __fastcall MasterPasswordPrompt();
 };
 //---------------------------------------------------------------------------
 #endif

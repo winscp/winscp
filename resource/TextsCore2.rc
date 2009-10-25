@@ -18,7 +18,7 @@ BEGIN
     "WARNING - POTENTIAL SECURITY BREACH!\n"
     "\n"
     "The server's host key does not match the one WinSCP has "
-    "is cache. This means that either the "
+    "in cache. This means that either the "
     "server administrator has changed the host key, "
     "the server presents different key under certain circumstance, "
     "or you have actually connected to another computer pretending "

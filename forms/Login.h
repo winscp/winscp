@@ -420,6 +420,7 @@ private:
   void __fastcall SessionTreeProc(TMessage & Message);
   bool __fastcall SessionAllowDrop(TTreeNode * DropTarget);
   int __fastcall DefaultPort();
+  void __fastcall MasterPasswordRecrypt(TObject * Sender);
 
 protected:
   void __fastcall Default();

@@ -953,7 +953,7 @@ object LoginDialog: TLoginDialog
             Height = 21
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
-            MaxLength = 50
+            MaxLength = 255
             TabOrder = 0
             Text = 'SftpServerEdit'
             Items.Strings = (

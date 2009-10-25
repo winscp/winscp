@@ -568,20 +568,23 @@ void CAsyncSslSocketLayer::OnReceive(int nErrorCode)
 			}
 		}
 
-		if (!m_nShutDown && pSSL_get_shutdown(m_ssl) && pBIO_ctrl_pending(m_sslbio) <= 0)
+		if (!m_nShutDown && pSSL_get_shutdown(m_ssl))
 		{
-			if (ShutDown() || GetLastError() != WSAEWOULDBLOCK)
+			if (pBIO_ctrl_pending(m_sslbio) <= 0)
 			{
-				if (ShutDownComplete())
-					TriggerEvent(FD_CLOSE, 0, TRUE);
+				if (ShutDown() || GetLastError() != WSAEWOULDBLOCK)
+				{
+					if (ShutDownComplete())
+						TriggerEvent(FD_CLOSE, 0, TRUE);
+				}
+				else
+				{
+					m_nNetworkError = WSAECONNABORTED;
+					WSASetLastError(WSAECONNABORTED);
+					TriggerEvent(FD_CLOSE, WSAECONNABORTED, TRUE);
+				}
+				return;
 			}
-			else
-			{
-				m_nNetworkError = WSAECONNABORTED;
-				WSASetLastError(WSAECONNABORTED);
-				TriggerEvent(FD_CLOSE, WSAECONNABORTED, TRUE);
-			}
-			return;
 		}
 
 		if (ShutDownComplete() && m_nShutDown == 1)
@@ -862,25 +865,28 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 				SetLastError(m_nNetworkError);
 				return SOCKET_ERROR;
 			}
-			else if (pSSL_get_shutdown(m_ssl))
+			else
 			{
-				if (ShutDown() || GetLastError() == WSAEWOULDBLOCK)
+				if (pSSL_get_shutdown(m_ssl))
 				{
-					if (ShutDownComplete())
+					if (ShutDown() || GetLastError() == WSAEWOULDBLOCK)
 					{
-						TriggerEvent(FD_CLOSE, 0, TRUE);
-						return 0;
+						if (ShutDownComplete())
+						{
+							TriggerEvent(FD_CLOSE, 0, TRUE);
+							return 0;
+						}
+						else
+							WSASetLastError(WSAEWOULDBLOCK);
 					}
 					else
-						WSASetLastError(WSAEWOULDBLOCK);
+					{
+						m_nNetworkError = WSAECONNABORTED;
+						WSASetLastError(WSAECONNABORTED);
+						TriggerEvent(FD_CLOSE, WSAECONNABORTED, TRUE);
+					}
+					return SOCKET_ERROR;
 				}
-				else
-				{
-					m_nNetworkError = WSAECONNABORTED;
-					WSASetLastError(WSAECONNABORTED);
-					TriggerEvent(FD_CLOSE, WSAECONNABORTED, TRUE);
-				}
-				return SOCKET_ERROR;
 			}
 			m_mayTriggerReadUp = true;
 			TriggerEvents();
@@ -1073,9 +1079,13 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode, void* pSslContext /
 	//Init SSL connection
 	pSSL_set_session(m_ssl, NULL);
 	if (clientMode)
+	{
 		pSSL_set_connect_state(m_ssl);
+	}
 	else
+	{
 		pSSL_set_accept_state(m_ssl);
+	}
 	pSSL_set_bio(m_ssl, m_ibio, m_ibio);
 	pBIO_ctrl(m_sslbio, BIO_C_SET_SSL, BIO_NOCLOSE, m_ssl);
 	pBIO_read(m_sslbio, (void *)1, 0);
@@ -1112,13 +1122,21 @@ void CAsyncSslSocketLayer::ResetSslSession()
 
 	m_bSslEstablished = FALSE;
 	if (m_sslbio)
+	{
 		pBIO_free(m_sslbio);
+	}
 	if (m_ssl)
+	{
 		pSSL_set_session(m_ssl,NULL);
+	}
 	if (m_nbio)
+	{
 		pBIO_free(m_nbio);
+	}
 	if (m_ibio)
+	{
 		pBIO_free(m_ibio);
+	}
 
 	m_nNetworkSendBufferLen = 0;
 
@@ -1127,7 +1145,9 @@ void CAsyncSslSocketLayer::ResetSslSession()
 	m_sslbio = 0;
 
 	if (m_ssl)
+	{
 		pSSL_free(m_ssl);
+	}
 
 	m_sCriticalSection.Lock();
 
@@ -1218,7 +1238,9 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
 		if (res != -1)
 		{
 			if (!res)
+			{
 				pSSL_shutdown(m_ssl);
+			}
 			if (ShutDownComplete())
 				return ShutDownNext();
 			else
@@ -1920,9 +1942,13 @@ BOOL CAsyncSslSocketLayer::SetCertStorage(CString file)
 void CAsyncSslSocketLayer::OnClose(int nErrorCode)
 {
 	m_onCloseCalled = true;
-	if (m_bUseSSL && pBIO_ctrl && pBIO_ctrl(m_sslbio, BIO_CTRL_PENDING, 0, NULL) > 0)
+	if (m_bUseSSL && pBIO_ctrl)
 	{
-		TriggerEvents();
+		if (pBIO_ctrl(m_sslbio, BIO_CTRL_PENDING, 0, NULL) > 0)
+		{
+			TriggerEvents();
+		}
+		else TriggerEvent(FD_CLOSE, nErrorCode, TRUE);
 	}
 	else
 		TriggerEvent(FD_CLOSE, nErrorCode, TRUE);
@@ -2178,10 +2204,13 @@ void CAsyncSslSocketLayer::TriggerEvents()
 			TriggerEvent(FD_WRITE, 0);
 		}
 	}
-	else if (!m_nNetworkSendBufferLen && m_bSslEstablished && !m_pRetrySendBuffer && pBIO_ctrl_get_write_guarantee(m_sslbio) > 0 && m_mayTriggerWriteUp)
+	else if (!m_nNetworkSendBufferLen && m_bSslEstablished && !m_pRetrySendBuffer)
 	{
-		m_mayTriggerWriteUp = false;
-		TriggerEvent(FD_WRITE, 0, TRUE);
+		if (pBIO_ctrl_get_write_guarantee(m_sslbio) > 0 && m_mayTriggerWriteUp)
+		{
+			m_mayTriggerWriteUp = false;
+			TriggerEvent(FD_WRITE, 0, TRUE);
+		}
 	}
 
 	if (m_bSslEstablished && pBIO_ctrl_pending(m_sslbio) > 0)
@@ -2192,14 +2221,20 @@ void CAsyncSslSocketLayer::TriggerEvents()
 			TriggerEvent(FD_READ, 0, TRUE);
 		}
 	}
-	else if (pBIO_ctrl_get_write_guarantee(m_nbio) > 0 && m_mayTriggerRead)
+	else
 	{
-		m_mayTriggerRead = false;
-		TriggerEvent(FD_READ, 0);
+		if (pBIO_ctrl_get_write_guarantee(m_nbio) > 0 && m_mayTriggerRead)
+		{
+			m_mayTriggerRead = false;
+			TriggerEvent(FD_READ, 0);
+		}
 	}
 
-	if (m_onCloseCalled && m_bSslEstablished && pBIO_ctrl_pending(m_sslbio) <= 0)
-		TriggerEvent(FD_CLOSE, 0, TRUE);
+	if (m_onCloseCalled && m_bSslEstablished)
+	{
+		if (pBIO_ctrl_pending(m_sslbio) <= 0)
+			TriggerEvent(FD_CLOSE, 0, TRUE);
+	}
 }
 
 int CAsyncSslSocketLayer::pem_passwd_cb(char *buf, int size, int rwflag, void *userdata)

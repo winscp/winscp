@@ -202,6 +202,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsUpdate(
   // directory
   UPD(CurrentCreateDirAction, true)
   UPD(NewDirAction, true)
+  UPD(FindFilesAction, (DirView(osRemote) == DirView(osCurrent)))
   // selection
   UPD(SelectOneAction, DirView(osCurrent)->FilesCount)
   UPD(SelectAction, DirView(osCurrent)->FilesCount)
@@ -492,6 +493,7 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     // directory
     EXE(CurrentCreateDirAction, ScpExplorer->CreateDirectory(osCurrent))
     EXE(NewDirAction, ScpExplorer->CreateDirectory(osCurrent))
+    EXE(FindFilesAction, ScpExplorer->FindFiles())
     //selection
     EXE(SelectOneAction, DirView(osCurrent)->SelectCurrentItem(DirView(osCurrent)->NortonLike))
     EXE(SelectAction, DirView(osCurrent)->DoSelectByMask(true))

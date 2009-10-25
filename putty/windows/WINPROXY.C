@@ -209,7 +209,7 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
 		  NULL, NULL, &si, &pi);
     #ifdef MPEXT
     sfree(cmd);
-    #endif  
+    #endif
 
     CloseHandle(cmd_from_us);
     CloseHandle(cmd_to_us);

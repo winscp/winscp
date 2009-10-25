@@ -290,8 +290,8 @@ AnsiString __fastcall TCopyParamType::ValidLocalFileName(AnsiString FileName) co
 
     // Windows trim trailing space or dot, hence we must encode it to preserve it
     if (!FileName.IsEmpty() &&
-        ((FileName[FileName.Length()] == ' ')/* ||
-         (FileName[FileName.Length()] == '.')*/))
+        ((FileName[FileName.Length()] == ' ') ||
+         (FileName[FileName.Length()] == '.')))
     {
       ReplaceChar(FileName, FileName.c_str() + FileName.Length() - 1);
     }

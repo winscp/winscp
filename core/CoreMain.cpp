@@ -8,6 +8,7 @@
 #include "Interface.h"
 #include "Configuration.h"
 #include "PuttyIntf.h"
+#include "Cryptography.h"
 #ifndef NO_FILEZILLA
 #include "FileZillaIntf.h"
 #endif
@@ -47,11 +48,12 @@ bool __fastcall IsAuthenticationPrompt(TPromptKind Kind)
 //---------------------------------------------------------------------------
 void CoreInitialize()
 {
+  Randomize();
+  CryptographyInitialize();
+
   // configuration needs to be created and loaded before putty is initialized,
   // so that random seed path is known
   Configuration = CreateConfiguration();
-
-  Randomize();
 
   try
   {
@@ -100,6 +102,8 @@ void CoreFinalize()
   StoredSessions = NULL;
   delete Configuration;
   Configuration = NULL;
+
+  CryptographyFinalize();
 }
 //---------------------------------------------------------------------------
 void CoreSetResourceModule(void * ResourceHandle)

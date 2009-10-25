@@ -26,7 +26,7 @@ __fastcall TManagedTerminal::TManagedTerminal(TSessionData * SessionData,
   TConfiguration * Configuration) :
   TTerminal(SessionData, Configuration),
   Color((TColor)SessionData->Color), SynchronizeBrowsing(false),
-  LocalDirectory(SessionData->LocalDirectory),
+  LocalDirectory(::ExpandFileName(SessionData->LocalDirectory)),
   RemoteDirectory(SessionData->RemoteDirectory),
   LocalExplorerState(NULL), RemoteExplorerState(NULL),
   ReopenStart(0)
@@ -74,6 +74,8 @@ __fastcall TTerminalManager::TTerminalManager() :
   Application->OnShowHint = ApplicationShowHint;
   assert(Application->OnActivate == NULL);
   Application->OnActivate = ApplicationActivate;
+  assert(WinConfiguration->OnMasterPasswordPrompt == NULL);
+  WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
 
   assert(Configuration && !Configuration->OnChange);
   Configuration->OnChange = ConfigurationChange;
@@ -100,6 +102,8 @@ __fastcall TTerminalManager::~TTerminalManager()
   Application->OnShowHint = ApplicationShowHint;
   assert(Application->OnActivate == ApplicationActivate);
   Application->OnActivate = NULL;
+  assert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
+  WinConfiguration->OnMasterPasswordPrompt = NULL;
 
   delete FQueues;
   delete FTerminationMessages;
@@ -194,11 +198,11 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
     if (ManagedTerminal != NULL)
     {
       Terminal->SessionData->RemoteDirectory = ManagedTerminal->RemoteDirectory;
-    }
 
-    if ((double)ManagedTerminal->ReopenStart == 0)
-    {
-      ManagedTerminal->ReopenStart = Now();
+      if ((double)ManagedTerminal->ReopenStart == 0)
+      {
+        ManagedTerminal->ReopenStart = Now();
+      }
     }
 
     if (Reopen)
@@ -213,7 +217,7 @@ void TTerminalManager::ConnectTerminal(TTerminal * Terminal, bool Reopen)
   __finally
   {
     Terminal->SessionData->RemoteDirectory = OrigRemoteDirectory;
-    if (Terminal->Active)
+    if (Terminal->Active && (ManagedTerminal != NULL))
     {
       ManagedTerminal->ReopenStart = 0;
     }
@@ -1156,5 +1160,23 @@ void __fastcall TTerminalManager::Idle()
         ScpExplorer->QueueEvent(Terminal, QueueWithEvent, QueueEvent);
       }
     }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::MasterPasswordPrompt()
+{
+  if (GetCurrentThreadId() == MainThreadID)
+  {
+    if (!DoMasterPasswordDialog())
+    {
+      Abort();
+    }
+  }
+  else
+  {
+    // this can happen only when we keep cancelling all master password prompts
+    // as long as the sessing finally connects (session password has to be
+    // explictly typed in), and background transfer is started
+    Abort();
   }
 }

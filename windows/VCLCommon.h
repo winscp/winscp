@@ -22,9 +22,11 @@ void __fastcall LinkLabel(TStaticText * StaticText, AnsiString Url = "",
   TNotifyEvent OnEnter = NULL);
 void __fastcall HintLabel(TStaticText * StaticText, AnsiString Hint = "");
 void __fastcall HintLabelRestore(TStaticText * StaticText);
+void __fastcall FixComboBoxResizeBug(TComboBox * ComboBox);
 void __fastcall ShowAsModal(TForm * Form, void *& Storage);
 void __fastcall HideAsModal(TForm * Form, void *& Storage);
 void __fastcall ReleaseAsModal(TForm * Form, void *& Storage);
+TImageList * __fastcall SharedSystemImageList(bool Large);
 bool __fastcall SelectDirectory(AnsiString & Path, const AnsiString Prompt,
   bool PreserveFileName);
 enum TListViewCheckAll { caCheck, caUncheck, caToggle };

@@ -45,6 +45,8 @@ class TStoredSessionList;
 //---------------------------------------------------------------------------
 class TSessionData : public TNamedObject
 {
+friend class TStoredSessionList;
+
 private:
   AnsiString FHostName;
   int FPortNumber;
@@ -272,6 +274,10 @@ private:
   void __fastcall SetNotUtf(TAutoSwitch value);
   void __fastcall SetHostKey(AnsiString value);
   TDateTime __fastcall GetTimeoutDT();
+  void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport);
+  static AnsiString __fastcall EncryptPassword(const AnsiString & Password, AnsiString Key);
+  static AnsiString __fastcall DecryptPassword(const AnsiString & Password, AnsiString Key);
+  static AnsiString __fastcall StronglyRecryptPassword(const AnsiString & Password, AnsiString Key);
 
   __property AnsiString InternalStorageKey = { read = GetInternalStorageKey };
 
@@ -282,6 +288,9 @@ public:
   void __fastcall Load(THierarchicalStorage * Storage);
   void __fastcall Save(THierarchicalStorage * Storage, bool PuttyExport,
     const TSessionData * Default = NULL);
+  void __fastcall SaveRecryptedPasswords(THierarchicalStorage * Storage);
+  void __fastcall RecryptPasswords();
+  bool __fastcall HasAnyPassword();
   void __fastcall Remove();
   virtual void __fastcall Assign(TPersistent * Source);
   bool __fastcall ParseUrl(AnsiString Url, TOptions * Options,
@@ -424,6 +433,7 @@ public:
   void __fastcall Save(THierarchicalStorage * Storage, bool All = false);
   void __fastcall SelectAll(bool Select);
   void __fastcall Import(TStoredSessionList * From, bool OnlySelected);
+  void __fastcall RecryptPasswords();
   TSessionData * __fastcall AtSession(int Index)
     { return (TSessionData*)AtObject(Index); }
   void __fastcall SelectSessionsToImport(TStoredSessionList * Dest, bool SSHOnly);
@@ -444,6 +454,8 @@ private:
   TSessionData * FDefaultSettings;
   bool FReadOnly;
   void __fastcall SetDefaultSettings(TSessionData * value);
+  void __fastcall DoSave(THierarchicalStorage * Storage, bool All, bool RecryptPasswordOnly);
+  void __fastcall DoSave(bool All, bool Explicit, bool RecryptPasswordOnly);
 };
 //---------------------------------------------------------------------------
 #endif

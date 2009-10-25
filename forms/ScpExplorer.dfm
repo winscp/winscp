@@ -130,6 +130,9 @@ inherited ScpExplorerForm: TScpExplorerForm
         object TBXItem44: TTBXItem
           Action = NonVisualDataModule.FullSynchronizeAction
         end
+        object TBXItem3: TTBXItem
+          Action = NonVisualDataModule.FindFilesAction
+        end
         object QueueSubmenuItem: TTBXSubmenuItem
           Caption = '&Queue'
           HelpKeyword = 'ui_queue#managing_the_queue'
@@ -632,6 +635,9 @@ inherited ScpExplorerForm: TScpExplorerForm
       end
       object TBXItem65: TTBXItem
         Action = NonVisualDataModule.FullSynchronizeAction
+      end
+      object TBXItem139: TTBXItem
+        Action = NonVisualDataModule.FindFilesAction
       end
     end
     object SelectionToolbar: TTBXToolbar

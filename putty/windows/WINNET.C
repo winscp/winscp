@@ -208,7 +208,7 @@ DECL_WINSOCK_FUNCTION(static, int, getnameinfo,
 DECL_WINSOCK_FUNCTION(static, char *, gai_strerror, (int ecode));
 DECL_WINSOCK_FUNCTION(static, int, WSAAddressToStringA,
 		      (LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO,
-		       LPTSTR, LPDWORD));
+		       LPSTR, LPDWORD));
 #endif
 
 static HMODULE winsock_module = NULL;
@@ -339,7 +339,8 @@ void sk_cleanup(void)
 	sktree = NULL;
     }
 
-    p_WSACleanup();
+    if (p_WSACleanup)
+	p_WSACleanup();
     if (winsock_module)
 	FreeLibrary(winsock_module);
 #ifndef NO_IPV6
@@ -432,10 +433,8 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 {
     SockAddr ret = snew(struct SockAddr_tag);
     unsigned long a;
-    struct hostent *h = NULL;
     char realhost[8192];
     int hint_family;
-    int err;
 
     /* Default to IPv4. */
     hint_family = (address_family == ADDRTYPE_IPV4 ? AF_INET :
@@ -455,6 +454,8 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
     *realhost = '\0';
 
     if ((a = p_inet_addr(host)) == (unsigned long) INADDR_NONE) {
+	struct hostent *h = NULL;
+	int err;
 #ifndef NO_IPV6
 	/*
 	 * Use getaddrinfo when it's available
@@ -588,8 +589,10 @@ void sk_getaddr(SockAddr addr, char *buf, int buflen)
 #ifndef NO_IPV6
     if (step.ai) {
 	if (p_WSAAddressToStringA) {
+	    DWORD dwbuflen;
 	    p_WSAAddressToStringA(step.ai->ai_addr, step.ai->ai_addrlen,
-				  NULL, buf, &buflen);
+				  NULL, buf, &dwbuflen);
+	    buflen = dwbuflen;
 	} else
 	    strncpy(buf, "IPv6", buflen);
     } else

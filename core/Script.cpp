@@ -1142,7 +1142,7 @@ void __fastcall TScript::OptionImpl(AnsiString OptionName, AnsiString ValueName)
     if (SetValue)
     {
       int Value;
-      if (ValueName == ToggleNames[Off])
+      if (SameText(ValueName, ToggleNames[Off]))
       {
         Value = 0;
       }
@@ -1744,7 +1744,84 @@ void __fastcall TManagementScript::Connect(const AnsiString Session,
 {
   try
   {
-    DoConnect(Session, Options, CheckParams);
+    bool DefaultsOnly;
+
+    TSessionData * Data = FStoredSessions->ParseUrl(Session, Options, DefaultsOnly);
+    try
+    {
+      if (CheckParams)
+      {
+        TScriptCommands::CheckParams(Options, false);
+      }
+
+      assert(Data != NULL);
+
+      if (!Data->CanLogin || DefaultsOnly)
+      {
+        if (Data->HostName.IsEmpty())
+        {
+          AnsiString Value;
+          Input(LoadStr(SCRIPT_HOST_PROMPT), Value, false);
+          Data->HostName = Value;
+        }
+
+        assert(Data->CanLogin);
+      }
+
+      TTerminal * Terminal = FTerminalList->NewTerminal(Data);
+      try
+      {
+        Terminal->AutoReadDirectory = false;
+
+        Terminal->OnInformation = TerminalInformation;
+        Terminal->OnPromptUser = TerminalPromptUser;
+        Terminal->OnShowExtendedException = OnShowExtendedException;
+        Terminal->OnQueryUser = OnTerminalQueryUser;
+        Terminal->OnProgress = TerminalOperationProgress;
+        Terminal->OnFinished = TerminalOperationFinished;
+
+        ConnectTerminal(Terminal);
+      }
+      catch(Exception & E)
+      {
+        // make sure errors (mainly fatal ones) are associated
+        // with this terminal, not the last active one
+        bool Handled = HandleExtendedException(&E, Terminal);
+        FTerminalList->FreeTerminal(Terminal);
+        Terminal = NULL;
+        if (!Handled)
+        {
+          throw;
+        }
+      }
+
+      if (Terminal != NULL)
+      {
+        FTerminal = Terminal;
+
+        if (!Data->LocalDirectory.IsEmpty())
+        {
+          try
+          {
+            DoChangeLocalDirectory(ExpandFileName(Data->LocalDirectory));
+          }
+          catch(Exception & E)
+          {
+            if (!HandleExtendedException(&E))
+            {
+              throw;
+            }
+          }
+        }
+
+        PrintActiveSession();
+      }
+    }
+    __finally
+    {
+      delete Data;
+    }
+
   }
   catch(Exception & E)
   {
@@ -1753,78 +1830,6 @@ void __fastcall TManagementScript::Connect(const AnsiString Session,
       throw;
     }
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TManagementScript::DoConnect(const AnsiString & Session,
-  TOptions * Options, bool CheckParams)
-{
-  bool DefaultsOnly;
-
-  TSessionData * Data = FStoredSessions->ParseUrl(Session, Options, DefaultsOnly);
-  try
-  {
-    if (CheckParams)
-    {
-      TScriptCommands::CheckParams(Options, false);
-    }
-
-    assert(Data != NULL);
-
-    if (!Data->CanLogin || DefaultsOnly)
-    {
-      if (Data->HostName.IsEmpty())
-      {
-        AnsiString Value;
-        Input(LoadStr(SCRIPT_HOST_PROMPT), Value, false);
-        Data->HostName = Value;
-      }
-
-      assert(Data->CanLogin);
-    }
-
-    TTerminal * Terminal = FTerminalList->NewTerminal(Data);
-    try
-    {
-      Terminal->AutoReadDirectory = false;
-
-      Terminal->OnInformation = TerminalInformation;
-      Terminal->OnPromptUser = TerminalPromptUser;
-      Terminal->OnShowExtendedException = OnShowExtendedException;
-      Terminal->OnQueryUser = OnTerminalQueryUser;
-      Terminal->OnProgress = TerminalOperationProgress;
-      Terminal->OnFinished = TerminalOperationFinished;
-
-      ConnectTerminal(Terminal);
-    }
-    catch(...)
-    {
-      FTerminalList->FreeTerminal(Terminal);
-      throw;
-    }
-
-    FTerminal = Terminal;
-
-    if (!Data->LocalDirectory.IsEmpty())
-    {
-      try
-      {
-        DoChangeLocalDirectory(Data->LocalDirectory);
-      }
-      catch(Exception & E)
-      {
-        if (!HandleExtendedException(&E))
-        {
-          throw;
-        }
-      }
-    }
-  }
-  __finally
-  {
-    delete Data;
-  }
-
-  PrintActiveSession();
 }
 //---------------------------------------------------------------------------
 void __fastcall TManagementScript::DoClose(TTerminal * Terminal)

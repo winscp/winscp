@@ -25,6 +25,7 @@ class TSynchronizeChecklist;
 struct TCalculateSizeStats;
 struct TFileSystemInfo;
 struct TSpaceAvailable;
+struct TFilesFindParams;
 class TTunnelUI;
 class TCallbackGuard;
 //---------------------------------------------------------------------------
@@ -195,6 +196,7 @@ private:
   TNotifyEvent FOnClose;
   bool FAnyInformation;
   TCallbackGuard * FCallbackGuard;
+  TFindingFileEvent FOnFindingFile;
 
   void __fastcall CommandError(Exception * E, const AnsiString Msg);
   int __fastcall CommandError(Exception * E, const AnsiString Msg, int Answers);
@@ -252,7 +254,8 @@ protected:
   bool __fastcall ProcessFilesEx(TStrings * FileList, TFileOperation Operation,
     TProcessFileEventEx ProcessFile, void * Param = NULL, TOperationSide Side = osRemote);
   void __fastcall ProcessDirectory(const AnsiString DirName,
-    TProcessFileEvent CallBackFunc, void * Param = NULL, bool UseCache = false);
+    TProcessFileEvent CallBackFunc, void * Param = NULL, bool UseCache = false,
+    bool IgnoreErrors = false);
   void __fastcall AnnounceFileListOperation();
   AnsiString __fastcall TranslateLockedPath(AnsiString Path, bool Lock);
   void __fastcall ReadDirectory(TRemoteFileList * FileList);
@@ -310,6 +313,8 @@ protected:
   bool __fastcall PromptUser(TSessionData * Data, TPromptKind Kind,
     AnsiString Name, AnsiString Instructions, AnsiString Prompt, bool Echo,
     int MaxLen, AnsiString & Result);
+  void __fastcall FileFind(AnsiString FileName, const TRemoteFile * File, void * Param);
+  void __fastcall DoFilesFind(AnsiString Directory, TFilesFindParams & Params);
 
   virtual void __fastcall Information(const AnsiString & Str, bool Status);
   virtual int __fastcall QueryUser(const AnsiString Query,
@@ -332,6 +337,8 @@ protected:
   void __fastcall DoAnyCommand(const AnsiString Command, TCaptureOutputEvent OutputEvent,
     TCallSessionAction * Action);
   TRemoteFileList * DoReadDirectoryListing(AnsiString Directory, bool UseCache);
+  AnsiString __fastcall EncryptPassword(const AnsiString & Password);
+  AnsiString __fastcall DecryptPassword(const AnsiString & Password);
 
   __property TFileOperationProgressType * OperationProgress = { read=FOperationProgress };
 
@@ -345,6 +352,7 @@ public:
   virtual void __fastcall DirectoryLoaded(TRemoteFileList * FileList);
   void __fastcall ShowExtendedException(Exception * E);
   void __fastcall Idle();
+  void __fastcall RecryptPasswords();
   bool __fastcall AllowedAnyCommand(const AnsiString Command);
   void __fastcall AnyCommand(const AnsiString Command, TCaptureOutputEvent OutputEvent);
   void __fastcall CloseOnCompletion(TOnceDoneOperation Operation = odoDisconnect, const AnsiString Message = "");
@@ -408,6 +416,8 @@ public:
     const AnsiString LocalDirectory, const AnsiString RemoteDirectory,
     const TCopyParamType * CopyParam, int Params,
     TSynchronizeDirectory OnSynchronizeDirectory);
+  void __fastcall FilesFind(AnsiString Directory, const TFileMasks & FileMask,
+    TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
   void __fastcall SpaceAvailable(const AnsiString Path, TSpaceAvailable & ASpaceAvailable);
   bool __fastcall DirectoryFileList(const AnsiString Path,
     TRemoteFileList *& FileList, bool CanLoad);
@@ -499,6 +509,7 @@ public:
   virtual void __fastcall FreeTerminal(TTerminal * Terminal);
   void __fastcall FreeAndNullTerminal(TTerminal * & Terminal);
   virtual void __fastcall Idle();
+  void __fastcall RecryptPasswords();
 
   __property TTerminal * Terminals[int Index]  = { read=GetTerminal };
   __property int ActiveCount = { read = GetActiveCount };

@@ -287,6 +287,9 @@ inherited ScpCommanderForm: TScpCommanderForm
         object TBXItem45: TTBXItem
           Action = NonVisualDataModule.SynchronizeBrowsingAction
         end
+        object TBXItem210: TTBXItem
+          Action = NonVisualDataModule.FindFilesAction
+        end
         object QueueSubmenuItem: TTBXSubmenuItem
           Caption = '&Queue'
           HelpKeyword = 'ui_queue#managing_the_queue'
@@ -973,6 +976,9 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       object TBXItem158: TTBXItem
         Action = NonVisualDataModule.SynchronizeBrowsingAction
+      end
+      object TBXItem227: TTBXItem
+        Action = NonVisualDataModule.FindFilesAction
       end
     end
     object UpdatesToolbar: TTBXToolbar

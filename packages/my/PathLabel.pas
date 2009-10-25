@@ -304,11 +304,21 @@ begin
 
   if FUnixPath then
     for i := 1 to Length(FDisplayPath) do
-      if FDisplayPath[i] = '/' then FDisplayPath[i] := '\';
+    begin
+      case FDisplayPath[i] of
+        '/': FDisplayPath[i] := '\';
+        '\': FDisplayPath[i] := '/';
+      end;
+    end;
   FDisplayPath := MinimizeName(FDisplayPath, Canvas, WidthPath);
   if FUnixPath then
     for i := 1 to Length(FDisplayPath) do
-      if FDisplayPath[i] = '\' then FDisplayPath[i] := '/';
+    begin
+      case FDisplayPath[i] of
+        '\': FDisplayPath[i] := '/';
+        '/': FDisplayPath[i] := '\';
+      end;
+    end;
 
   WidthPath := Canvas.TextWidth(FDisplayPath);
 

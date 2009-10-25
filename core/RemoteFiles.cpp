@@ -396,7 +396,8 @@ int __fastcall FakeFileImageIndex(AnsiString FileName, unsigned long Attrs,
   // On Win2k we get icon of "ZIP drive" for ".." (parent directory)
   if ((FileName == "..") ||
       ((FileName.Length() == 2) && (FileName[2] == ':') &&
-       (tolower(FileName[1]) >= 'a') && (tolower(FileName[1]) <= 'z')))
+       (tolower(FileName[1]) >= 'a') && (tolower(FileName[1]) <= 'z')) ||
+      IsReservedName(FileName))
   {
     FileName = "dumb";
   }

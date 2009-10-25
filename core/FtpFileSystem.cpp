@@ -23,6 +23,8 @@
 //---------------------------------------------------------------------------
 const int DummyCodeClass = 8;
 const int DummyTimeoutCode = 801;
+const int DummyCancelCode = 802;
+const int DummyDisconnectCode = 803;
 //---------------------------------------------------------------------------
 class TFileZillaImpl : public TFileZillaIntf
 {
@@ -219,6 +221,7 @@ __fastcall TFTPFileSystem::TFTPFileSystem(TTerminal * ATerminal):
   FFileSystemInfo.ProtocolBaseName = "FTP";
   FFileSystemInfo.ProtocolName = FFileSystemInfo.ProtocolBaseName;
   FTimeoutStatus = LoadStr(IDS_ERRORMSG_TIMEOUT);
+  FDisconnectStatus = LoadStr(IDS_STATUSMSG_DISCONNECTED);
 }
 //---------------------------------------------------------------------------
 __fastcall TFTPFileSystem::~TFTPFileSystem()
@@ -724,12 +727,18 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(AnsiString & FileName,
   const TOverwriteFileParams * FileParams, int Params, bool AutoResume)
 {
   bool Result;
+  bool CanAutoResume = FLAGSET(Params, cpNoConfirmation) && AutoResume;
+  // when resuming transfer after interrupted connection,
+  // do nothing (dummy resume) when the files has the same size.
+  // this is workaround for servers that strangely fails just after successful
+  // upload.
   bool CanResume =
     (FileParams != NULL) &&
-    (FileParams->DestSize < FileParams->SourceSize);
+    (((FileParams->DestSize < FileParams->SourceSize)) ||
+     ((FileParams->DestSize == FileParams->SourceSize) && CanAutoResume));
 
   int Answer;
-  if (FLAGSET(Params, cpNoConfirmation) && CanResume && AutoResume)
+  if (CanAutoResume && CanResume)
   {
     Answer = qaRetry;
   }
@@ -893,6 +902,8 @@ void __fastcall TFTPFileSystem::FileTransfer(const AnsiString & FileName,
   FILE_OPERATION_LOOP(FMTLOAD(TRANSFER_ERROR, (FileName)),
     FFileZillaIntf->FileTransfer(LocalFile.c_str(), RemoteFile.c_str(),
       RemotePath.c_str(), Get, Size, Type, &UserData);
+    // we may actually catch reponse code of the listing
+    // command (when checking for existence of the remote file)
     unsigned int Reply = WaitForCommandReply();
     GotReply(Reply, FLAGMASK(FFileTransferCancelled, REPLY_ALLOW_CANCEL));
   );
@@ -2191,6 +2202,11 @@ void __fastcall TFTPFileSystem::PoolForFatalNonCommandReply()
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TFTPFileSystem::NoFinalLastCode()
+{
+  return (FLastCodeClass == 0) || (FLastCodeClass == 1);
+}
+//---------------------------------------------------------------------------
 bool __fastcall TFTPFileSystem::KeepWaitingForReply(unsigned int & ReplyToAwait, bool WantLastCode)
 {
   // to keep waiting,
@@ -2200,7 +2216,7 @@ bool __fastcall TFTPFileSystem::KeepWaitingForReply(unsigned int & ReplyToAwait,
   return
      (FReply == 0) &&
      ((ReplyToAwait == 0) ||
-      (WantLastCode && ((FLastCodeClass == 0) || (FLastCodeClass == 1))));
+      (WantLastCode && NoFinalLastCode()));
 }
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::DoWaitForReply(unsigned int & ReplyToAwait, bool WantLastCode)
@@ -2386,8 +2402,7 @@ void __fastcall TFTPFileSystem::GotReply(unsigned int Reply, unsigned int Flags,
 
         if (FLastCode == 425)
         {
-          assert(FTerminal->SessionData->FtpPasvMode);
-          if (FTerminal->SessionData->FtpPasvMode)
+          if (!FTerminal->SessionData->FtpPasvMode)
           {
             MoreMessages->Add(LoadStr(FTP_CANNOT_OPEN_ACTIVE_CONNECTION));
           }
@@ -2645,12 +2660,21 @@ bool __fastcall TFTPFileSystem::HandleStatus(const char * AStatus, int Type)
     case TFileZillaIntf::LOG_WARNING:
       // when timeout message occurs, break loop waiting for response code
       // by setting dummy one
-      if ((Type == TFileZillaIntf::LOG_ERROR) &&
-          (Status == FTimeoutStatus))
+      if (Type == TFileZillaIntf::LOG_ERROR)
       {
-        if (FLastCode == 0)
+        if (Status == FTimeoutStatus)
         {
-          SetLastCode(DummyTimeoutCode);
+          if (NoFinalLastCode())
+          {
+            SetLastCode(DummyTimeoutCode);
+          }
+        }
+        else if (Status == FDisconnectStatus)
+        {
+          if (NoFinalLastCode())
+          {
+            SetLastCode(DummyDisconnectCode);
+          }
         }
       }
       // there can be multiple error messages associated with single failure
@@ -2828,6 +2852,13 @@ bool __fastcall TFTPFileSystem::HandleAsynchRequestOverwrite(
 
     // remember the answer for the retries
     UserData.OverwriteResult = RequestResult;
+
+    if (RequestResult == TFileZillaIntf::FILEEXISTS_SKIP)
+    {
+      // when user chosses not to overwrite, break loop waiting for response code
+      // by setting dummy one, az FZAPI won't do anything then
+      SetLastCode(DummyTimeoutCode);
+    }
 
     return true;
   }

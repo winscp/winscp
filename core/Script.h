@@ -173,8 +173,6 @@ protected:
   bool __fastcall QueryCancel();
   void __fastcall TerminalSynchronizeDirectory(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, bool & Continue, bool Collect);
-  void __fastcall DoConnect(const AnsiString & Session, TOptions * Options,
-    bool CheckParams);
   void __fastcall DoChangeLocalDirectory(AnsiString Directory);
   void __fastcall DoClose(TTerminal * Terminal);
   virtual bool __fastcall HandleExtendedException(Exception * E,

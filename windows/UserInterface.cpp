@@ -8,6 +8,7 @@
 #include <CoreMain.h>
 #include <Common.h>
 #include <Exceptions.h>
+#include <Cryptography.h>
 #include "ProgParams.h"
 #include "VCLCommon.h"
 #include "WinConfiguration.h"
@@ -18,6 +19,8 @@
 #include "TBXOffice2003Theme.hpp"
 #include "ProgParams.h"
 #include "Tools.h"
+#include "Custom.h"
+#include "HelpWin.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -556,4 +559,152 @@ bool __fastcall IsCustomShortCut(TShortCut ShortCut)
   return
     ((FirstCtrlNumberShortCut <= ShortCut) && (ShortCut <= LastCtrlNumberShortCut)) ||
     ((FirstShiftCtrlAltLetterShortCut <= ShortCut) && (ShortCut <= LastShiftCtrlAltLetterShortCut));
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+class TMasterPasswordDialog : public TCustomDialog
+{
+public:
+  __fastcall TMasterPasswordDialog(bool Current);
+
+  bool __fastcall Execute();
+
+protected:
+  virtual void __fastcall DoValidate();
+  virtual void __fastcall DoChange(bool & CanSubmit);
+
+private:
+  TPasswordEdit * CurrentEdit;
+  TPasswordEdit * NewEdit;
+  TPasswordEdit * ConfirmEdit;
+};
+//---------------------------------------------------------------------------
+__fastcall TMasterPasswordDialog::TMasterPasswordDialog(bool Current) :
+  TCustomDialog(Current ? HELP_MASTER_PASSWORD_CURRENT : HELP_MASTER_PASSWORD_CHANGE)
+{
+  Caption = LoadStr(MASTER_PASSWORD_CAPTION);
+
+  CurrentEdit = new TPasswordEdit(this);
+  AddEdit(CurrentEdit, CreateLabel(LoadStr(MASTER_PASSWORD_CURRENT)));
+  EnableControl(CurrentEdit, Current || WinConfiguration->UseMasterPassword);
+  CurrentEdit->MaxLength = PasswordMaxLength();
+
+  if (!Current)
+  {
+    NewEdit = new TPasswordEdit(this);
+    AddEdit(NewEdit, CreateLabel(LoadStr(MASTER_PASSWORD_NEW)));
+    NewEdit->MaxLength = CurrentEdit->MaxLength;
+
+    if (!WinConfiguration->UseMasterPassword)
+    {
+      ActiveControl = NewEdit;
+    }
+
+    ConfirmEdit = new TPasswordEdit(this);
+    AddEdit(ConfirmEdit, CreateLabel(LoadStr(MASTER_PASSWORD_CONFIRM)));
+    ConfirmEdit->MaxLength = CurrentEdit->MaxLength;
+  }
+  else
+  {
+    NewEdit = NULL;
+    ConfirmEdit = NULL;
+  }
+}
+//---------------------------------------------------------------------------
+bool __fastcall TMasterPasswordDialog::Execute()
+{
+  bool Result = TCustomDialog::Execute();
+  if (Result)
+  {
+    if (CurrentEdit->Enabled)
+    {
+      WinConfiguration->SetMasterPassword(CurrentEdit->Text);
+    }
+    if (NewEdit != NULL)
+    {
+      WinConfiguration->SetMasterPassword(NewEdit->Text);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMasterPasswordDialog::DoChange(bool & CanSubmit)
+{
+  CanSubmit =
+    (!WinConfiguration->UseMasterPassword || (IsValidPassword(CurrentEdit->Text) >= 0)) &&
+    ((NewEdit == NULL) || (IsValidPassword(NewEdit->Text) >= 0)) &&
+    ((ConfirmEdit == NULL) || (IsValidPassword(ConfirmEdit->Text) >= 0));
+  TCustomDialog::DoChange(CanSubmit);
+}
+//---------------------------------------------------------------------------
+void __fastcall TMasterPasswordDialog::DoValidate()
+{
+  TCustomDialog::DoValidate();
+
+  if (WinConfiguration->UseMasterPassword &&
+      !WinConfiguration->ValidateMasterPassword(CurrentEdit->Text))
+  {
+    CurrentEdit->SetFocus();
+    CurrentEdit->SelectAll();
+    throw Exception(LoadStr(MASTER_PASSWORD_INCORRECT));
+  }
+
+  if (NewEdit != NULL)
+  {
+    if (NewEdit->Text != ConfirmEdit->Text)
+    {
+      ConfirmEdit->SetFocus();
+      ConfirmEdit->SelectAll();
+      throw Exception(LoadStr(MASTER_PASSWORD_DIFFERENT));
+    }
+
+    int Valid = IsValidPassword(NewEdit->Text);
+    if (Valid <= 0)
+    {
+      assert(Valid == 0);
+      if (MessageDialog(LoadStr(MASTER_PASSWORD_SIMPLE), qtWarning,
+            qaOK | qaCancel, HELP_MASTER_PASSWORD_SIMPLE) == qaCancel)
+      {
+        NewEdit->SetFocus();
+        NewEdit->SelectAll();
+        Abort();
+      }
+    }
+  }
+}
+//---------------------------------------------------------------------------
+static bool __fastcall DoMasterPasswordDialog(bool Current)
+{
+  bool Result;
+  TMasterPasswordDialog * Dialog = new TMasterPasswordDialog(Current);
+  try
+  {
+    Result = Dialog->Execute();
+  }
+  __finally
+  {
+    delete Dialog;
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+bool __fastcall DoMasterPasswordDialog()
+{
+  return DoMasterPasswordDialog(true);
+}
+//---------------------------------------------------------------------------
+bool __fastcall DoChangeMasterPasswordDialog()
+{
+  return DoMasterPasswordDialog(false);
+}
+//---------------------------------------------------------------------------
+void __fastcall MessageWithNoHelp(const AnsiString & Message)
+{
+  TMessageParams Params;
+  Params.AllowHelp = false; // to avoid recursion
+  if (MessageDialog(LoadStr(HELP_SEND_MESSAGE), qtConfirmation,
+        qaOK | qaCancel, HELP_NONE, &Params) == qaOK)
+  {
+    SearchHelp(Message);
+  }
 }

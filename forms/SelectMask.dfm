@@ -63,7 +63,7 @@ object SelectMaskDialog: TSelectMaskDialog
       Alignment = taRightJustify
       Anchors = [akTop, akRight]
       AutoSize = False
-      Caption = 'mask &hints'
+      Caption = 'mask hi&nts'
       TabOrder = 1
       TabStop = True
     end

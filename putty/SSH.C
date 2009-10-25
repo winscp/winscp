@@ -4436,12 +4436,19 @@ static void ssh_setup_portfwd(Ssh ssh, const Config *cfg)
 
 	    epfrec = add234(ssh->portfwds, pfrec);
 	    if (epfrec != pfrec) {
+		if (epfrec->status == DESTROY) {
+		    /*
+		     * We already have a port forwarding up and running
+		     * with precisely these parameters. Hence, no need
+		     * to do anything; simply re-tag the existing one
+		     * as KEEP.
+		     */
+		    epfrec->status = KEEP;
+		}
 		/*
-		 * We already have a port forwarding with precisely
-		 * these parameters. Hence, no need to do anything;
-		 * simply tag the existing one as KEEP.
+		 * Anything else indicates that there was a duplicate
+		 * in our input, which we'll silently ignore.
 		 */
-		epfrec->status = KEEP;
 		free_portfwd(pfrec);
 	    } else {
 		pfrec->status = CREATE;

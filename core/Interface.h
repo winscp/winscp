@@ -82,4 +82,10 @@ enum TPromptKind
 
 bool __fastcall IsAuthenticationPrompt(TPromptKind Kind);
 //---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TFileFoundEvent)
+  (TTerminal * Terminal, const AnsiString FileName, const TRemoteFile * File,
+   bool & Cancel);
+typedef void __fastcall (__closure *TFindingFileEvent)
+  (TTerminal * Terminal, const AnsiString Directory, bool & Cancel);
+//---------------------------------------------------------------------------
 #endif

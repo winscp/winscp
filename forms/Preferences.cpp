@@ -24,9 +24,6 @@
 #pragma link "LogSettings"
 #pragma link "CopyParams"
 #pragma link "UpDownEdit"
-#pragma link "IEComboBox"
-#pragma link "HistoryComboBox"
-#pragma link "PasswordEdit"
 #ifndef NO_RESOURCES
 #pragma resource "*.dfm"
 #endif
@@ -363,6 +360,9 @@ void __fastcall TPreferencesDialog::LoadConfiguration()
     {
       ThemeCombo->ItemIndex = 0;
     }
+
+    // security
+    UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
 
     #undef BOOLPROP
   }
@@ -729,6 +729,8 @@ void __fastcall TPreferencesDialog::UpdateControls()
     EnableControl(PuttyPasswordCheck2, !PuttyPathEdit->Text.IsEmpty());
     EnableControl(AutoOpenInPuttyCheck, PuttyPasswordCheck2->Enabled);
     EnableControl(TelnetForFtpInPuttyCheck, PuttyPasswordCheck2->Enabled);
+
+    EnableControl(SetMasterPasswordButton, WinConfiguration->UseMasterPassword);
   }
 }
 //---------------------------------------------------------------------------
@@ -1524,5 +1526,43 @@ void __fastcall TPreferencesDialog::SessionReopenTimeoutEditGetValue(
     Value = 0;
     Handled = true;
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::UseMasterPasswordCheckClick(
+  TObject * /*Sender*/)
+{
+  if (UseMasterPasswordCheck->Checked != WinConfiguration->UseMasterPassword)
+  {
+    try
+    {
+      if (UseMasterPasswordCheck->Checked)
+      {
+        if (DoChangeMasterPasswordDialog())
+        {
+          MessageDialog(LoadStr(MASTER_PASSWORD_SET), qtInformation, qaOK, HELP_MASTER_PASSWORD);
+        }
+      }
+      else
+      {
+        if (DoMasterPasswordDialog())
+        {
+          WinConfiguration->ClearMasterPassword();
+          MessageDialog(LoadStr(MASTER_PASSWORD_CLEARED), qtInformation, qaOK, HELP_MASTER_PASSWORD);
+        }
+      }
+    }
+    __finally
+    {
+      UseMasterPasswordCheck->Checked = WinConfiguration->UseMasterPassword;
+      UpdateControls();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TPreferencesDialog::SetMasterPasswordButtonClick(
+  TObject * /*Sender*/)
+{
+  DoChangeMasterPasswordDialog();
+  MessageDialog(LoadStr(MASTER_PASSWORD_CHANGED), qtInformation, qaOK, HELP_MASTER_PASSWORD);
 }
 //---------------------------------------------------------------------------

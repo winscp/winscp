@@ -42,57 +42,6 @@ private:
   inline void Reset();
 };
 
-struct TDialogControls
-{
-  void * Token;
-  TForm * Form;
-  TComboBox * Combo;
-  TCheckBox * Check;
-};
-
-struct TDialogData
-{
-  TDialogData();
-
-  AnsiString Combo;
-  bool Check;
-};
-
-typedef void __fastcall (__closure * TInitDialogEvent)
-  (const TDialogControls & Controls);
-typedef void __fastcall (__closure * TShowDialogEvent)
-  (const TDialogControls & Controls);
-typedef void __fastcall (__closure * TChangeDialogEvent)
-  (const TDialogControls & Controls, bool & Valid);
-typedef void __fastcall (__closure * TValidateDialogEvent)
-  (const TDialogData & Data);
-typedef void __fastcall (__closure * TLoadDialogEvent)
-  (const TDialogData & Data, TDialogControls & Controls);
-typedef void __fastcall (__closure * TSaveDialogEvent)
-  (const TDialogControls & Controls, TDialogData & Data);
-
-struct TDialogParams
-{
-  TDialogParams();
-
-  void * Token;
-
-  AnsiString Caption;
-  AnsiString HelpKeyword;
-
-  AnsiString ComboLabel;
-  TStrings * ComboItems;
-  bool ComboEmptyValid;
-  AnsiString CheckLabel;
-
-  TInitDialogEvent OnInit;
-  TShowDialogEvent OnShow;
-  TChangeDialogEvent OnChange;
-  TValidateDialogEvent OnValidate;
-  TLoadDialogEvent OnLoad;
-  TSaveDialogEvent OnSave;
-};
-
 class TCustomScpExplorerForm;
 TCustomScpExplorerForm * __fastcall CreateScpExplorer();
 
@@ -108,6 +57,7 @@ void __fastcall FlashOnBackground();
 void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal, Exception * E);
 void __fastcall FormHelp(TForm * Form);
 void __fastcall SearchHelp(const AnsiString & Message);
+void __fastcall MessageWithNoHelp(const AnsiString & Message);
 
 AnsiString __fastcall GetToolbarsLayoutStr(const TComponent * OwnerComponent);
 void __fastcall LoadToolbarsLayoutStr(const TComponent * OwnerComponent, AnsiString LayoutStr);
@@ -138,7 +88,6 @@ int __fastcall FatalExceptionMessageDialog(Exception * E, TQueryType Type,
   AnsiString HelpKeyword = HELP_NONE, const TMessageParams * Params = NULL);
 
 // forms\Custom.cpp
-bool __fastcall DoCustomDialog(const TDialogParams & Params, TDialogData & Data);
 bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
   bool * SavePassword, TSessionData * OriginalSession);
 void __fastcall SessionNameValidate(const AnsiString & Text,
@@ -146,6 +95,10 @@ void __fastcall SessionNameValidate(const AnsiString & Text,
 class TShortCuts;
 bool __fastcall DoShortCutDialog(TShortCut & ShortCut,
   const TShortCuts & ShortCuts, AnsiString HelpKeyword);
+
+// windows\UserInterface.cpp
+bool __fastcall DoMasterPasswordDialog();
+bool __fastcall DoChangeMasterPasswordDialog();
 
 // windows\WinMain.cpp
 int __fastcall Execute();
@@ -196,6 +149,7 @@ const coDisableSaveSettings = 0x040; // not used anymore
 const coDoNotUsePresets     = 0x080;
 const coAllowRemoteTransfer = 0x100;
 const coNoQueue             = 0x200;
+const coNoQueueIndividually = 0x400;
 const cooDoNotShowAgain     = 0x01;
 const cooRemoteTransfer     = 0x02;
 const cooSaveSettings       = 0x04;
@@ -382,11 +336,18 @@ TForm * __fastcall CreateMoreMessageDialog(const AnsiString & Msg,
 // windows\Console.cpp
 int __fastcall Console(bool Help);
 
-// windows\EditorPreferences.cpp
+// forms\EditorPreferences.cpp
 enum TEditorPreferencesMode { epmAdd, epmEdit, epmAdHoc };
 class TEditorData;
 bool __fastcall DoEditorPreferencesDialog(TEditorData * Editor,
   bool & Remember, TEditorPreferencesMode Mode, bool MayRemote);
+
+// forms\Find.cpp
+typedef void __fastcall (__closure *TFindEvent)
+  (AnsiString Directory, const TFileMasks & FileMask,
+   TFileFoundEvent OnFileFound, TFindingFileEvent OnFindingFile);
+bool __fastcall DoFileFindDialog(AnsiString Directory,
+  TFindEvent OnFind, AnsiString & Path);
 
 const int cplNone =             0x00;
 const int cplCustomize =        0x01;

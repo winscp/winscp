@@ -741,7 +741,11 @@ void __fastcall TSCPFileSystem::DetectReturnVar()
       {
         FTerminal->LogEvent(FORMAT("Trying \"$%s\".", (ReturnVars[Index])));
         ExecCommand(fsVarValue, ARRAYOFCONST((ReturnVars[Index])));
-        if ((Output->Count != 1) || (StrToIntDef(Output->Strings[0], 256) > 255)) Abort();
+        if ((Output->Count != 1) || (StrToIntDef(Output->Strings[0], 256) > 255))
+        {
+          FTerminal->LogEvent("The response is not numerical exit code");
+          Abort();
+        }
       }
       catch (EFatal &E)
       {

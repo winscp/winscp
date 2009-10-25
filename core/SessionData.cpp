@@ -8,7 +8,6 @@
 #include "Exceptions.h"
 #include "FileBuffer.h"
 #include "CoreMain.h"
-#include "Security.h"
 #include "TextsCore.h"
 #include "PuttyIntf.h"
 #include "RemoteFiles.h"
@@ -509,7 +508,15 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     TunnelHostName = Storage->ReadString("TunnelHostName", TunnelHostName);
     if (!Configuration->DisablePasswordStoring)
     {
-      FTunnelPassword = Storage->ReadString("TunnelPassword", FTunnelPassword);
+      if (Storage->ValueExists("TunnelPasswordPlain"))
+      {
+        TunnelPassword = Storage->ReadString("TunnelPasswordPlain", TunnelPassword);
+        RewritePassword = true;
+      }
+      else
+      {
+        FTunnelPassword = Storage->ReadString("TunnelPassword", FTunnelPassword);
+      }
     }
     TunnelPublicKeyFile = Storage->ReadString("TunnelPublicKeyFile", TunnelPublicKeyFile);
     TunnelLocalPortNumber = Storage->ReadInteger("TunnelLocalPortNumber", TunnelLocalPortNumber);
@@ -544,6 +551,11 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
         {
           Storage->WriteString("Password", FPassword);
         }
+        Storage->DeleteValue("TunnelPasswordPlain");
+        if (!TunnelPassword.IsEmpty())
+        {
+          Storage->WriteString("TunnelPassword", FTunnelPassword);
+        }
         Storage->CloseSubKey();
       }
     }
@@ -577,15 +589,6 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
 
     WRITE_DATA(String, HostName);
     WRITE_DATA(Integer, PortNumber);
-    if (!Configuration->DisablePasswordStoring && !PuttyExport && !Password.IsEmpty())
-    {
-      WRITE_DATA_EX(String, "Password", FPassword, );
-    }
-    else
-    {
-      Storage->DeleteValue("Password");
-    }
-    Storage->DeleteValue("PasswordPlain");
     WRITE_DATA(Bool, Passwordless);
     WRITE_DATA_EX(Integer, "PingInterval", PingInterval / 60, );
     WRITE_DATA_EX(Integer, "PingIntervalSecs", PingInterval % 60, );
@@ -720,24 +723,6 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
     WRITE_DATA(String, ProxyHost);
     WRITE_DATA(Integer, ProxyPort);
     WRITE_DATA(String, ProxyUsername);
-    if (PuttyExport)
-    {
-      // save password unencrypted
-      WRITE_DATA(String, ProxyPassword);
-    }
-    else
-    {
-      // save password encrypted
-      if (!ProxyPassword.IsEmpty())
-      {
-        WRITE_DATA_EX(String, "ProxyPasswordEnc", FProxyPassword, );
-      }
-      else
-      {
-        Storage->DeleteValue("ProxyPasswordEnc");
-      }
-      Storage->DeleteValue("ProxyPassword");
-    }
     if (ProxyMethod == pmCmd)
     {
       WRITE_DATA_EX(StringRaw, "ProxyTelnetCommand", ProxyLocalCommand, );
@@ -791,14 +776,6 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(String, TunnelHostName);
       WRITE_DATA(Integer, TunnelPortNumber);
       WRITE_DATA(String, TunnelUserName);
-      if (!Configuration->DisablePasswordStoring && !TunnelPassword.IsEmpty())
-      {
-        WRITE_DATA_EX(String, "TunnelPassword", FTunnelPassword, );
-      }
-      else
-      {
-        Storage->DeleteValue("TunnelPassword");
-      }
       WRITE_DATA(String, TunnelPublicKeyFile);
       WRITE_DATA(Integer, TunnelLocalPortNumber);
 
@@ -814,6 +791,73 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(String, CustomParam1);
       WRITE_DATA(String, CustomParam2);
     }
+
+    SavePasswords(Storage, PuttyExport);
+
+    Storage->CloseSubKey();
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SavePasswords(THierarchicalStorage * Storage, bool PuttyExport)
+{
+  if (!Configuration->DisablePasswordStoring && !PuttyExport && !FPassword.IsEmpty())
+  {
+    Storage->WriteString("Password", StronglyRecryptPassword(FPassword, UserName+HostName));
+  }
+  else
+  {
+    Storage->DeleteValue("Password");
+  }
+  Storage->DeleteValue("PasswordPlain");
+
+  if (PuttyExport)
+  {
+    // save password unencrypted
+    Storage->WriteString("ProxyPassword", ProxyPassword);
+  }
+  else
+  {
+    // save password encrypted
+    if (!FProxyPassword.IsEmpty())
+    {
+      Storage->WriteString("ProxyPasswordEnc", StronglyRecryptPassword(FProxyPassword, ProxyUsername+ProxyHost));
+    }
+    else
+    {
+      Storage->DeleteValue("ProxyPasswordEnc");
+    }
+    Storage->DeleteValue("ProxyPassword");
+
+    if (!Configuration->DisablePasswordStoring && !FTunnelPassword.IsEmpty())
+    {
+      Storage->WriteString("TunnelPassword", StronglyRecryptPassword(FTunnelPassword, TunnelUserName+TunnelHostName));
+    }
+    else
+    {
+      Storage->DeleteValue("TunnelPassword");
+    }
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::RecryptPasswords()
+{
+  Password = Password;
+  ProxyPassword = ProxyPassword;
+  TunnelPassword = TunnelPassword;
+}
+//---------------------------------------------------------------------
+bool __fastcall TSessionData::HasAnyPassword()
+{
+  return !FPassword.IsEmpty() || !FProxyPassword.IsEmpty() || !FTunnelPassword.IsEmpty();
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SaveRecryptedPasswords(THierarchicalStorage * Storage)
+{
+  if (Storage->OpenSubKey(InternalStorageKey, true))
+  {
+    RecryptPasswords();
+
+    SavePasswords(Storage, false);
 
     Storage->CloseSubKey();
   }
@@ -1094,6 +1138,47 @@ void __fastcall TSessionData::ValidateName(const AnsiString Name)
   {
     throw Exception(FMTLOAD(ITEM_NAME_INVALID, (Name, "/")));
   }
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TSessionData::EncryptPassword(const AnsiString & Password, AnsiString Key)
+{
+  if (Password.IsEmpty())
+  {
+    return AnsiString();
+  }
+  else
+  {
+    return Configuration->EncryptPassword(Password, Key);
+  }
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TSessionData::StronglyRecryptPassword(const AnsiString & Password, AnsiString Key)
+{
+  if (Password.IsEmpty())
+  {
+    return AnsiString();
+  }
+  else
+  {
+    return Configuration->StronglyRecryptPassword(Password, Key);
+  }
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TSessionData::DecryptPassword(const AnsiString & Password, AnsiString Key)
+{
+  AnsiString Result;
+  if (!Password.IsEmpty())
+  {
+    try
+    {
+      Result = Configuration->DecryptPassword(Password, Key);
+    }
+    catch(EAbort &)
+    {
+      // silently ignore aborted prompts for master password and return empty password
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------
 bool __fastcall TSessionData::GetCanLogin()
@@ -2049,7 +2134,8 @@ void __fastcall TStoredSessionList::Load()
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Save(THierarchicalStorage * Storage, bool All)
+void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
+  bool All, bool RecryptPasswordOnly)
 {
   TSessionData * FactoryDefaults = new TSessionData("");
   try
@@ -2060,10 +2146,17 @@ void __fastcall TStoredSessionList::Save(THierarchicalStorage * Storage, bool Al
     }
     for (int Index = 0; Index < Count+HiddenCount; Index++)
     {
-      TSessionData *SessionData = (TSessionData *)Items[Index];
+      TSessionData * SessionData = (TSessionData *)Items[Index];
       if (All || SessionData->Modified)
       {
-        SessionData->Save(Storage, false, FactoryDefaults);
+        if (RecryptPasswordOnly)
+        {
+          SessionData->SaveRecryptedPasswords(Storage);
+        }
+        else
+        {
+          SessionData->Save(Storage, false, FactoryDefaults);
+        }
       }
     }
   }
@@ -2073,19 +2166,39 @@ void __fastcall TStoredSessionList::Save(THierarchicalStorage * Storage, bool Al
   }
 }
 //---------------------------------------------------------------------
-void __fastcall TStoredSessionList::Save(bool All, bool Explicit)
+void __fastcall TStoredSessionList::Save(THierarchicalStorage * Storage, bool All)
+{
+  DoSave(Storage, All, false);
+}
+//---------------------------------------------------------------------
+void __fastcall TStoredSessionList::DoSave(bool All, bool Explicit, bool RecryptPasswordOnly)
 {
   THierarchicalStorage * Storage = Configuration->CreateScpStorage(true);
-  try {
+  try
+  {
     Storage->AccessMode = smReadWrite;
     Storage->Explicit = Explicit;
-    if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, True))
-      Save(Storage, All);
-  } __finally {
+    if (Storage->OpenSubKey(Configuration->StoredSessionsSubKey, true))
+    {
+      DoSave(Storage, All, RecryptPasswordOnly);
+    }
+  }
+  __finally
+  {
     delete Storage;
   }
 
   Saved();
+}
+//---------------------------------------------------------------------
+void __fastcall TStoredSessionList::Save(bool All, bool Explicit)
+{
+  DoSave(All, Explicit, false);
+}
+//---------------------------------------------------------------------
+void __fastcall TStoredSessionList::RecryptPasswords()
+{
+  DoSave(true, true, true);
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::Saved()

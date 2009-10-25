@@ -239,6 +239,8 @@ enum TPathInCaption { picShort, picFull, picNone };
 // constants must be compatible with legacy CopyOnDoubleClick
 enum TDoubleClickAction { dcaOpen = 0, dcaCopy = 1, dcaEdit = 2 };
 //---------------------------------------------------------------------------
+typedef void __fastcall (__closure *TMasterPasswordPromptEvent)();
+//---------------------------------------------------------------------------
 class TWinConfiguration : public TCustomWinConfiguration
 {
 private:
@@ -270,7 +272,6 @@ private:
   int FDDExtInstalled;
   int FDDExtTimeout;
   bool FConfirmClosingSession;
-  bool FConfirmExitOnCompletion;
   double FDDWarnLackOfTempSpaceRatio;
   AnsiString FTemporarySessionFile;
   AnsiString FTemporaryKeyFile;
@@ -308,6 +309,11 @@ private:
   bool FAutoOpenInPutty;
   bool FTelnetForFtpInPutty;
   TDateTime FDefaultUpdatesPeriod;
+  bool FUseMasterPassword;
+  AnsiString FPlainMasterPasswordEncrypt;
+  AnsiString FPlainMasterPasswordDecrypt;
+  AnsiString FMasterPasswordVerifier;
+  TMasterPasswordPromptEvent FOnMasterPasswordPrompt;
 
   void __fastcall SetDoubleClickAction(TDoubleClickAction value);
   void __fastcall SetCopyOnDoubleClickConfirmation(bool value);
@@ -334,7 +340,6 @@ private:
   void __fastcall SetDDExtEnabled(bool value);
   void __fastcall SetDDExtTimeout(int value);
   void __fastcall SetConfirmClosingSession(bool value);
-  void __fastcall SetConfirmExitOnCompletion(bool value);
   void __fastcall SetDDWarnLackOfTempSpaceRatio(double value);
   void __fastcall SetBookmarks(AnsiString Key, TBookmarkList * value);
   TBookmarkList * __fastcall GetBookmarks(AnsiString Key);
@@ -373,6 +378,7 @@ private:
   bool __fastcall GetDDExtInstalled();
   void __fastcall AddVersionToHistory(AnsiString & VersionHistory);
   bool __fastcall GetAnyBetaInVersionHistory();
+  void __fastcall PurgePassword(AnsiString & Password);
 
 protected:
   virtual TStorage __fastcall GetStorage();
@@ -382,6 +388,8 @@ protected:
   virtual void __fastcall LoadAdmin(THierarchicalStorage * Storage);
   virtual AnsiString __fastcall GetDefaultKeyFile();
   virtual void __fastcall Saved();
+  void __fastcall RecryptPasswords();
+  virtual bool __fastcall GetUseMasterPassword();
   bool __fastcall SameStringLists(TStrings * Strings1, TStrings * Strings2);
   bool __fastcall InternalReloadComponentRes(const AnsiString ResName,
     HINSTANCE HInst, TComponent * Instance);
@@ -409,6 +417,12 @@ public:
   void __fastcall CheckDefaultTranslation();
   const TEditorPreferences * __fastcall DefaultEditorForFile(
     const AnsiString FileName, bool Local, const TFileMasks::TParams & MaskParams);
+  virtual AnsiString __fastcall DecryptPassword(AnsiString Password, AnsiString Key);
+  virtual AnsiString __fastcall StronglyRecryptPassword(AnsiString Password, AnsiString Key);
+  void __fastcall SetMasterPassword(AnsiString value);
+  bool __fastcall ValidateMasterPassword(AnsiString value);
+  void __fastcall ClearMasterPassword();
+  virtual void __fastcall AskForMasterPasswordIfNotSet();
 
   __property TScpCommanderConfiguration ScpCommander = { read = FScpCommander, write = SetScpCommander };
   __property TScpExplorerConfiguration ScpExplorer = { read = FScpExplorer, write = SetScpExplorer };
@@ -443,7 +457,6 @@ public:
   __property bool DDExtInstalled = { read=GetDDExtInstalled };
   __property int DDExtTimeout = { read=FDDExtTimeout, write=SetDDExtTimeout };
   __property bool ConfirmClosingSession  = { read=FConfirmClosingSession, write=SetConfirmClosingSession };
-  __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
   __property double DDWarnLackOfTempSpaceRatio  = { read=FDDWarnLackOfTempSpaceRatio, write=SetDDWarnLackOfTempSpaceRatio };
   __property TBookmarkList * Bookmarks[AnsiString Key] = { read = GetBookmarks, write = SetBookmarks };
   __property TBookmarkList * SharedBookmarks = { read = GetSharedBookmarks, write = SetSharedBookmarks };
@@ -472,6 +485,7 @@ public:
   __property int LastMonitor = { read = GetLastMonitor, write = SetLastMonitor };
   __property const TEditorList * EditorList = { read = GetEditorList, write = SetEditorList };
   __property AnsiString DefaultKeyFile = { read = GetDefaultKeyFile, write = FDefaultKeyFile };
+  __property TMasterPasswordPromptEvent OnMasterPasswordPrompt = { read = FOnMasterPasswordPrompt, write = FOnMasterPasswordPrompt };
 };
 //---------------------------------------------------------------------------
 class TCustomCommandType

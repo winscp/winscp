@@ -46,6 +46,9 @@ static void logwrite(struct LogContext *ctx, void *data, int len)
 	if (fwrite(data, 1, len, ctx->lgfp) < len) {
 	    logfclose(ctx);
 	    ctx->state = L_ERROR;
+	    /* Log state is L_ERROR so this won't cause a loop */
+	    logevent(ctx->frontend,
+		     "Disabled writing session log due to error while writing");
 	}
     }				       /* else L_ERROR, so ignore the write */
 }
@@ -104,8 +107,9 @@ static void logfopen_callback(void *handle, int mode)
     }
 
     event = dupprintf("%s session log (%s mode) to file: %s",
-		      (mode == 0 ? "Disabled writing" :
-                       mode == 1 ? "Appending" : "Writing new"),
+		      ctx->state == L_ERROR ?
+		      (mode == 0 ? "Disabled writing" : "Error writing") :
+		      (mode == 1 ? "Appending" : "Writing new"),
 		      (ctx->cfg.logtype == LGTYP_ASCII ? "ASCII" :
 		       ctx->cfg.logtype == LGTYP_DEBUG ? "raw" :
 		       ctx->cfg.logtype == LGTYP_PACKETS ? "SSH packets" :

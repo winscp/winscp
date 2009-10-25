@@ -17,6 +17,8 @@ AnsiString __fastcall GetListViewStr(TListView * ListView);
 void __fastcall LoadListViewStr(TListView * ListView, AnsiString LayoutStr);
 void __fastcall RestoreForm(AnsiString Data, TForm * Form);
 AnsiString __fastcall StoreForm(TCustomForm * Form);
+void __fastcall RestoreFormSize(AnsiString Data, TForm * Form);
+AnsiString __fastcall StoreFormSize(TForm * Form);
 TFontStyles __fastcall IntToFontStyles(int value);
 int __fastcall FontStylesToInt(const TFontStyles value);
 void __fastcall ValidateMaskEdit(TComboBox * Edit);

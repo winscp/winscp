@@ -52,11 +52,7 @@ __fastcall TPropertiesDialog::TPropertiesDialog(TComponent* AOwner,
   FOnCalculateChecksum = OnCalculateChecksum;
   RightsFrame->OnChange = ControlChange;
 
-  TSHFileInfo FileInfo;
-  FShellImageList = new TImageList(this);
-  FShellImageList->Handle = SHGetFileInfo("", 0, &FileInfo, sizeof(FileInfo),
-      SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
-  FShellImageList->ShareImages = True;
+  FShellImageList = SharedSystemImageList(true);
 
   FFileList = new TStringList();
   FFileList->Assign(FileList);

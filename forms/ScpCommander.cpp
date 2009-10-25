@@ -433,7 +433,7 @@ void __fastcall TScpCommanderForm::TerminalChanged()
     if (WinConfiguration->DefaultDirIsHome &&
         !Terminal->SessionData->UpdateDirectories)
     {
-      LocalDirView->HomeDirectory = Terminal->SessionData->LocalDirectory;
+      LocalDirView->HomeDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
     }
 
     if (WinConfiguration->PreservePanelState &&
@@ -462,7 +462,7 @@ void __fastcall TScpCommanderForm::ConfigurationChanged()
   if (WinConfiguration->DefaultDirIsHome && Terminal &&
       !Terminal->SessionData->UpdateDirectories)
   {
-    LocalDirView->HomeDirectory = Terminal->SessionData->LocalDirectory;
+    LocalDirView->HomeDirectory = ExpandFileName(Terminal->SessionData->LocalDirectory);
   }
   else
   {
@@ -1832,5 +1832,19 @@ void __fastcall TScpCommanderForm::QueueSubmenuItemPopup(
   TTBCustomItem * /*Sender*/, bool /*FromLink*/)
 {
   NonVisualDataModule->QueueSpeedComboBoxItemUpdate(QueueSpeedComboBoxItem);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DoFocusRemotePath(AnsiString Path)
+{
+  bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+  NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+  try
+  {
+    TCustomScpExplorerForm::DoFocusRemotePath(Path);
+  }
+  __finally
+  {
+    NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
+  }
 }
 //---------------------------------------------------------------------------
