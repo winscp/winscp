@@ -772,6 +772,7 @@ void __fastcall TNonVisualDataModule::ExplorerShortcuts()
   RestoreSelectionAction->ShortCut = ShortCut('R', CTRLALT);
   // commands
   NewFileAction->ShortCut = ShortCut('E', CTRLSHIFT);
+  FindFilesAction->ShortCut = ShortCut(VK_F3, NONE);
 
   CloseApplicationAction->ShortCut = ShortCut(VK_F4, ALT);
 }
@@ -825,6 +826,7 @@ void __fastcall TNonVisualDataModule::CommanderShortcuts()
   RestoreSelectionAction->ShortCut = ShortCut('R', CTRLALT);
   // commands
   NewFileAction->ShortCut = ShortCut(VK_F4, SHIFT);
+  FindFilesAction->ShortCut = ShortCut(VK_F7, ALT);
   // legacy shortcut (can be removed when necessary)
   NewFileAction->SecondaryShortCuts->Add(ShortCutToText(ShortCut(VK_F4, CTRLSHIFT)));
 
@@ -886,7 +888,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
       Item->Caption = Command->Name;
       if (Toolbar)
       {
-        Item->Caption = StripHotkey(Item->Caption);
+        Item->Caption = EscapeHotkey(StripHotkey(Item->Caption));
       }
       Item->Tag = Index;
       Item->Enabled = (State > 0);
@@ -921,7 +923,7 @@ void __fastcall TNonVisualDataModule::CreateCustomCommandsMenu(
     Item->Action = OnFocused ? CustomCommandsLastFocusedAction : CustomCommandsLastAction;
     if (Toolbar)
     {
-      Item->Caption = StripHotkey(LoadStr(CUSTOM_COMMAND_LAST_SHORT));
+      Item->Caption = EscapeHotkey(StripHotkey(LoadStr(CUSTOM_COMMAND_LAST_SHORT)));
     }
     Menu->Add(Item);
   }
@@ -976,7 +978,7 @@ void __fastcall TNonVisualDataModule::UpdateCustomCommandsToolbar(TTBXToolbar * 
     {
       Changed =
         (Toolbar->Items->Items[Index]->Caption !=
-          StripHotkey(CustomCommandList->Commands[Index]->Name));
+          EscapeHotkey(StripHotkey(CustomCommandList->Commands[Index]->Name)));
       Index++;
     }
   }

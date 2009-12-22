@@ -86,6 +86,8 @@ enum TDSTMode
   dstmUnix = 1, // adjust UTC time to Windows "bug"
   dstmKeep = 2
 };
+TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day);
+TDateTime __fastcall EncodeTimeVerbose(Word Hour, Word Min, Word Sec, Word MSec);
 TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode);
 FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime, TDSTMode DSTMode);
 TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode);

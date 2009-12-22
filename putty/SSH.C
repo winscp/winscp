@@ -2977,6 +2977,11 @@ static const char *connect_to_host(Ssh ssh, char *host, int port,
 	ssh->savedport = port;
     }
 
+    #ifdef MPEXT
+    // make sure the field is initialized, in case lookup below fails
+    ssh->fullhostname = NULL;
+    #endif
+    
     /*
      * Try to find host.
      */

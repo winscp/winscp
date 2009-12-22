@@ -530,12 +530,26 @@ void __fastcall TConfiguration::CleanupIniFile()
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::EncryptPassword(AnsiString Password, AnsiString Key)
 {
-  return ::EncryptPassword(Password, Key);
+  if (Password.IsEmpty())
+  {
+    return AnsiString();
+  }
+  else
+  {
+    return ::EncryptPassword(Password, Key);
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::DecryptPassword(AnsiString Password, AnsiString Key)
 {
-  return ::DecryptPassword(Password, Key);
+  if (Password.IsEmpty())
+  {
+    return AnsiString();
+  }
+  else
+  {
+    return ::DecryptPassword(Password, Key);
+  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TConfiguration::StronglyRecryptPassword(AnsiString Password, AnsiString /*Key*/)

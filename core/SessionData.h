@@ -275,6 +275,7 @@ private:
   void __fastcall SetHostKey(AnsiString value);
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport);
+  AnsiString __fastcall GetLocalName();
   static AnsiString __fastcall EncryptPassword(const AnsiString & Password, AnsiString Key);
   static AnsiString __fastcall DecryptPassword(const AnsiString & Password, AnsiString Key);
   static AnsiString __fastcall StronglyRecryptPassword(const AnsiString & Password, AnsiString Key);
@@ -417,6 +418,7 @@ public:
   __property AnsiString StorageKey = { read = GetStorageKey };
   __property AnsiString OrigHostName = { read = FOrigHostName };
   __property int OrigPortNumber = { read = FOrigPortNumber };
+  __property AnsiString LocalName = { read = GetLocalName };
 };
 //---------------------------------------------------------------------------
 class TStoredSessionList : public TNamedObjectList
@@ -456,6 +458,9 @@ private:
   void __fastcall SetDefaultSettings(TSessionData * value);
   void __fastcall DoSave(THierarchicalStorage * Storage, bool All, bool RecryptPasswordOnly);
   void __fastcall DoSave(bool All, bool Explicit, bool RecryptPasswordOnly);
+  void __fastcall DoSave(THierarchicalStorage * Storage,
+    TSessionData * Data, bool All, bool RecryptPasswordOnly,
+    TSessionData * FactoryDefaults);
 };
 //---------------------------------------------------------------------------
 #endif

@@ -2018,6 +2018,8 @@ object PreferencesDialog: TPreferencesDialog
       object SecuritySheet: TTabSheet
         Tag = 19
         Hint = 'Security'
+        HelpType = htKeyword
+        HelpKeyword = 'ui_pref_security'
         Caption = 'Security'
         ImageIndex = 18
         TabVisible = False

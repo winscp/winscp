@@ -1133,11 +1133,17 @@ void __fastcall TLoginDialog::UpdateControls()
       // preferences sheet
       GeneralSheet->Enabled = FLAGSET(Options, loPreferences);
 
-      TSessionData * Data = SessionData;
-      bool CanLogin = (Data != NULL) && Data->CanLogin;
-      bool SessionSelected =
-        (SessionTree->Selected != NULL) && (SessionTree->Selected->Data != NULL);
-      LoginButton->Default = CanLogin || !SessionSelected;
+      // this methods saves us from calling GetSessionData,
+      // which breaks changing locale (session data are not preserved,
+      // as we would overwrite them with non-initialized control data)
+      if (PageControl->ActivePage == SessionListSheet)
+      {
+        LoginButton->Default = (SelectedSession != NULL) && SelectedSession->CanLogin;
+      }
+      else
+      {
+        LoginButton->Default = true;
+      }
       LoadButton->Default = !LoginButton->Default;
 
       AboutButton->Visible = (Options & loAbout);
@@ -1805,7 +1811,7 @@ void __fastcall TLoginDialog::DesktopIconActionExecute(TObject * /*Sender*/)
         qtConfirmation, qaYes | qaNo, HELP_CREATE_SHORTCUT) == qaYes)
   {
     assert(SelectedSession);
-    CreateDesktopShortCut(SelectedSession->Name, Application->ExeName,
+    CreateDesktopShortCut(SelectedSession->LocalName, Application->ExeName,
       FORMAT("\"%s\" /UploadIfAny", (SelectedSession->Name)),
       FMTLOAD(SHORTCUT_INFO_TIP, (SelectedSession->Name, SelectedSession->InfoTip)));
   }
@@ -1817,7 +1823,7 @@ void __fastcall TLoginDialog::SendToHookActionExecute(TObject * /*Sender*/)
         qtConfirmation, qaYes | qaNo, HELP_CREATE_SENDTO) == qaYes)
   {
     assert(SelectedSession);
-    CreateDesktopShortCut(FMTLOAD(SESSION_SENDTO_HOOK_NAME, (SelectedSession->Name)),
+    CreateDesktopShortCut(FMTLOAD(SESSION_SENDTO_HOOK_NAME, (SelectedSession->LocalName)),
       Application->ExeName,
       FORMAT("\"%s\" /Upload", (SelectedSession->Name)), "",
       CSIDL_SENDTO);

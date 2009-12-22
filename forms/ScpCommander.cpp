@@ -857,75 +857,57 @@ void __fastcall TScpCommanderForm::FileOperationProgress(
   TCustomScpExplorerForm::FileOperationProgress(ProgressData, Cancel);
 }
 //---------------------------------------------------------------------------
-void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView,
-  AnsiString PrevPath, AnsiString & NewPath, bool Create)
+AnsiString __fastcall TScpCommanderForm::ChangeFilePath(AnsiString Path, TOperationSide Side)
 {
-  if (ADirView == LocalDirView)
+  TGUICopyParamType CopyParams = GUIConfiguration->CurrentCopyParam;
+  AnsiString Result;
+  while (!Path.IsEmpty())
   {
-    Terminal->ExceptionOnFail = true;
-    try
+    int P = Path.Pos(Side == osLocal ? '\\' : '/');
+    if (P > 0)
     {
-      AnsiString FullPrevPath = IncludeTrailingBackslash(PrevPath);
-      if (LocalDirView->Path.SubString(1, FullPrevPath.Length()) == FullPrevPath)
-      {
-        NewPath = UnixIncludeTrailingBackslash(RemoteDirView->Path) +
-          ToUnixPath(LocalDirView->Path.SubString(FullPrevPath.Length() + 1,
-            LocalDirView->Path.Length() - FullPrevPath.Length()));
-      }
-      else if (FullPrevPath.SubString(1, LocalDirView->Path.Length()) == LocalDirView->Path)
-      {
-        NewPath = RemoteDirView->Path;
-        while (!ComparePaths(FullPrevPath, LocalDirView->Path))
-        {
-          if (NewPath == UnixExcludeTrailingBackslash(NewPath))
-          {
-            Abort();
-          }
-          NewPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(NewPath));
-          FullPrevPath = ExtractFilePath(ExcludeTrailingBackslash(FullPrevPath));
-        }
-      }
-      else
-      {
-        Abort();
-      }
-
-      if (Create)
-      {
-        TRemoteProperties Properties = GUIConfiguration->NewDirectoryProperties;
-        RemoteDirView->CreateDirectoryEx(NewPath, &Properties);
-      }
-
-      RemoteDirView->Path = NewPath;
+      Result += CopyParams.ChangeFileName(Path.SubString(1, P - 1), Side, false) +
+        (Side == osLocal ? '/' : '\\');
+      Path.Delete(1, P);
     }
-    __finally
+    else
     {
-      Terminal->ExceptionOnFail = false;
+      Result += CopyParams.ChangeFileName(Path, osLocal, false);
+      Path = "";
     }
   }
-  else
+
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SynchronizeBrowsingLocal(
+  AnsiString PrevPath, AnsiString & NewPath, bool Create)
+{
+  Terminal->ExceptionOnFail = true;
+  TStrings * Paths = new TStringList();
+  try
   {
-    AnsiString FullPrevPath = UnixIncludeTrailingBackslash(PrevPath);
-    if (RemoteDirView->Path.SubString(1, FullPrevPath.Length()) == FullPrevPath)
+    Paths->Add(PrevPath);
+    Paths->Add(LocalDirView->Path);
+    AnsiString CommonPath;
+    if (ExtractCommonPath(Paths, CommonPath))
     {
-      NewPath = IncludeTrailingBackslash(LocalDirView->Path) +
-        FromUnixPath(RemoteDirView->Path.SubString(FullPrevPath.Length() + 1,
-          RemoteDirView->Path.Length() - FullPrevPath.Length()));
-    }
-    else if (FullPrevPath.SubString(1, RemoteDirView->Path.Length()) == RemoteDirView->Path)
-    {
-      AnsiString NewLocalPath;
-      NewPath = ExcludeTrailingBackslash(LocalDirView->Path);
-      while (!UnixComparePaths(FullPrevPath, RemoteDirView->Path))
+      PrevPath = IncludeTrailingBackslash(PrevPath);
+      CommonPath = IncludeTrailingBackslash(CommonPath);
+      NewPath = RemoteDirView->Path;
+      while (!ComparePaths(PrevPath, CommonPath))
       {
-        NewLocalPath = ExcludeTrailingBackslash(ExtractFileDir(NewPath));
-        if (NewLocalPath == NewPath)
+        if (NewPath == UnixExcludeTrailingBackslash(NewPath))
         {
           Abort();
         }
-        NewPath = NewLocalPath;
-        FullPrevPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(FullPrevPath));
+        NewPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(NewPath));
+        PrevPath = ExtractFilePath(ExcludeTrailingBackslash(PrevPath));
       }
+
+      NewPath = UnixIncludeTrailingBackslash(NewPath) +
+        ToUnixPath(LocalDirView->Path.SubString(PrevPath.Length() + 1,
+          LocalDirView->Path.Length() - PrevPath.Length()));
     }
     else
     {
@@ -934,10 +916,81 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
 
     if (Create)
     {
-      LocalDirView->CreateDirectory(NewPath);
+      TRemoteProperties Properties = GUIConfiguration->NewDirectoryProperties;
+      RemoteDirView->CreateDirectoryEx(NewPath, &Properties);
     }
 
-    LocalDirView->Path = NewPath;
+    RemoteDirView->Path = NewPath;
+  }
+  __finally
+  {
+    Terminal->ExceptionOnFail = false;
+    delete Paths;
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SynchronizeBrowsingRemote(
+  AnsiString PrevPath, AnsiString & NewPath, bool Create)
+{
+  TStrings * Paths = new TStringList();
+  try
+  {
+    Paths->Add(UnixIncludeTrailingBackslash(PrevPath));
+    Paths->Add(UnixIncludeTrailingBackslash(RemoteDirView->Path));
+    AnsiString CommonPath;
+
+    if (UnixExtractCommonPath(Paths, CommonPath))
+    {
+      PrevPath = UnixIncludeTrailingBackslash(PrevPath);
+      CommonPath = UnixIncludeTrailingBackslash(CommonPath);
+
+      AnsiString NewLocalPath;
+      NewPath = ExcludeTrailingBackslash(LocalDirView->Path);
+      while (!UnixComparePaths(PrevPath, CommonPath))
+      {
+        NewLocalPath = ExcludeTrailingBackslash(ExtractFileDir(NewPath));
+        if (NewLocalPath == NewPath)
+        {
+          Abort();
+        }
+        NewPath = NewLocalPath;
+        PrevPath = UnixExtractFilePath(UnixExcludeTrailingBackslash(PrevPath));
+      }
+
+      NewPath = IncludeTrailingBackslash(NewPath) +
+        ChangeFilePath(
+          RemoteDirView->Path.SubString(PrevPath.Length() + 1,
+            RemoteDirView->Path.Length() - PrevPath.Length()),
+          osRemote);
+    }
+    else
+    {
+      Abort();
+    }
+  }
+  __finally
+  {
+    delete Paths;
+  }
+
+  if (Create)
+  {
+    LocalDirView->CreateDirectory(NewPath);
+  }
+
+  LocalDirView->Path = NewPath;
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView,
+  AnsiString PrevPath, AnsiString & NewPath, bool Create)
+{
+  if (ADirView == LocalDirView)
+  {
+    SynchronizeBrowsingLocal(PrevPath, NewPath, Create);
+  }
+  else
+  {
+    SynchronizeBrowsingRemote(PrevPath, NewPath, Create);
   }
 }
 //---------------------------------------------------------------------------
@@ -976,26 +1029,34 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsing(TCustomDirView * ADirView
           }
           else
           {
-            Terminal->ShowExtendedException(&E);
-            if (MessageDialog(FMTLOAD(SYNC_DIR_BROWSE_CREATE, (NewPath)), qtInformation, qaYes | qaNo,
-                  HELP_SYNC_DIR_BROWSE_ERROR) == qaYes)
+            TStrings * MoreMessages = ExceptionToMoreMessages(&E);
+            try
             {
-              try
+              if (MoreMessageDialog(FMTLOAD(SYNC_DIR_BROWSE_CREATE, (NewPath)),
+                    MoreMessages, qtConfirmation, qaYes | qaNo,
+                    HELP_SYNC_DIR_BROWSE_ERROR) == qaYes)
               {
-                SynchronizeBrowsing(ADirView, PrevPath, NewPath, true);
-              }
-              catch(Exception & E)
-              {
-                if (!Application->Terminated)
+                try
                 {
-                  Terminal->ShowExtendedException(&E);
+                  SynchronizeBrowsing(ADirView, PrevPath, NewPath, true);
                 }
-                throw;
+                catch(Exception & E)
+                {
+                  if (!Application->Terminated)
+                  {
+                    Terminal->ShowExtendedException(&E);
+                  }
+                  throw;
+                }
+              }
+              else
+              {
+                NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
               }
             }
-            else
+            __finally
             {
-              NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+              delete MoreMessages;
             }
           }
         }

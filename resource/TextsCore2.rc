@@ -227,7 +227,7 @@ BEGIN
     "switches:\n"
     "  -delete             Delete source local file(s) after transfer\n"
     "  -resume             Resume transfer if possible (SFTP and FTP protocols only)\n"
-    "  -append             Append file to end of target file (FTP protocol only)\n"
+    "  -append             Append file to end of target file (SFTP protocol only)\n"
     "  -preservetime       Preserve timestamp\n"
     "  -nopreservetime     Do not preserve timestamp\n"
     "  -permissions=<mode> Set permissions\n"

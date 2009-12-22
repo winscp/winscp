@@ -41,6 +41,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FOldChangeDirectory = NULL;
   FPrevTerminalClose = NULL;;
   FLastTerminal = NULL;
+  FAnyCommandExecuted = false;
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
   UseSystemSettings(this);
@@ -74,6 +75,15 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
       assert(FTerminal->OnChangeDirectory == DoChangeDirectory);
       FTerminal->OnChangeDirectory = FOldChangeDirectory;
       FOldChangeDirectory = NULL;
+      if (FAnyCommandExecuted)
+      {
+        FAnyCommandExecuted = false;
+        // directory would be read from EndTransaction anyway,
+        // but with reload only flat set, what prevents
+        // recording path in history, what we want if the path was
+        // changed by "cd" command in console
+        FTerminal->ReadDirectory(false);
+      }
       FTerminal->EndTransaction();
     }
     FTerminal = value;
@@ -181,6 +191,7 @@ void __fastcall TConsoleDialog::DoExecuteCommand()
   {
     AnsiString Command = CommandEdit->Text;
     OutputMemo->Lines->Add(FORMAT("%s$ %s", (FTerminal->CurrentDirectory, Command)));
+    FAnyCommandExecuted = true;
     FTerminal->AnyCommand(Command, AddLine);
   }
   __finally

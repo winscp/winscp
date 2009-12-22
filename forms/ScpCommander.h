@@ -501,12 +501,15 @@ protected:
   void __fastcall SynchronizeBrowsing(TCustomDirView * ADirView);
   void __fastcall SynchronizeBrowsing(TCustomDirView * ADirView, AnsiString PrevPath,
     AnsiString & NewPath, bool Create);
+  void __fastcall SynchronizeBrowsingLocal(AnsiString PrevPath, AnsiString & NewPath, bool Create);
+  void __fastcall SynchronizeBrowsingRemote(AnsiString PrevPath, AnsiString & NewPath, bool Create);
   void __fastcall LocalPathComboUpdateDrives();
   void __fastcall LocalPathComboUpdate();
   virtual void __fastcall ToolbarItemResize(TTBXCustomDropDownItem * Item, int Width);
   void __fastcall DoOpenBookmark(AnsiString Local, AnsiString Remote);
   virtual bool __fastcall OpenBookmark(AnsiString Local, AnsiString Remote);
   virtual void __fastcall DoFocusRemotePath(AnsiString Path);
+  AnsiString __fastcall ChangeFilePath(AnsiString Path, TOperationSide Side);
 
 public:
   __fastcall TScpCommanderForm(TComponent* Owner);

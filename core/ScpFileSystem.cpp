@@ -1554,6 +1554,13 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
   OperationProgress->SetFile(FileName, false);
 
+  if (FLAGCLEAR(Params, cpDelete) &&
+      !FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
+  {
+    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    THROW_SKIP_FILE_NULL;
+  }
+
   HANDLE File;
   int Attrs;
   __int64 MTime, ATime;
@@ -1562,21 +1569,10 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   FTerminal->OpenLocalFile(FileName, GENERIC_READ,
     &Attrs, &File, NULL, &MTime, &ATime, &Size);
 
+  bool Dir = FLAGSET(Attrs, faDirectory);
   TStream * Stream = new TSafeHandleStream((THandle)File);
   try
   {
-    bool Dir = FLAGSET(Attrs, faDirectory);
-
-    TFileMasks::TParams MaskParams;
-    MaskParams.Size = Size;
-
-    if (FLAGCLEAR(Params, cpDelete) &&
-        !CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams))
-    {
-      FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
-      THROW_SKIP_FILE_NULL;
-    }
-
     OperationProgress->SetFileInProgress();
 
     if (Dir)
@@ -1600,6 +1596,8 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
       OperationProgress->TransferingFile = false;
 
       // Will we use ASCII of BINARY file tranfer?
+      TFileMasks::TParams MaskParams;
+      MaskParams.Size = Size;
       OperationProgress->SetAsciiTransfer(
         CopyParam->UseAsciiTransfer(FileName, osLocal, MaskParams));
       FTerminal->LogEvent(
@@ -1819,9 +1817,12 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
   /* TODO : Delete also read-only files. */
   if (FLAGSET(Params, cpDelete))
   {
-    FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
-      THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
-    )
+    if (!Dir)
+    {
+      FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
+        THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
+      )
+    }
   }
   else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
   {

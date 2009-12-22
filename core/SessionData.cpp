@@ -1142,41 +1142,24 @@ void __fastcall TSessionData::ValidateName(const AnsiString Name)
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::EncryptPassword(const AnsiString & Password, AnsiString Key)
 {
-  if (Password.IsEmpty())
-  {
-    return AnsiString();
-  }
-  else
-  {
-    return Configuration->EncryptPassword(Password, Key);
-  }
+  return Configuration->EncryptPassword(Password, Key);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::StronglyRecryptPassword(const AnsiString & Password, AnsiString Key)
 {
-  if (Password.IsEmpty())
-  {
-    return AnsiString();
-  }
-  else
-  {
-    return Configuration->StronglyRecryptPassword(Password, Key);
-  }
+  return Configuration->StronglyRecryptPassword(Password, Key);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::DecryptPassword(const AnsiString & Password, AnsiString Key)
 {
   AnsiString Result;
-  if (!Password.IsEmpty())
+  try
   {
-    try
-    {
-      Result = Configuration->DecryptPassword(Password, Key);
-    }
-    catch(EAbort &)
-    {
-      // silently ignore aborted prompts for master password and return empty password
-    }
+    Result = Configuration->DecryptPassword(Password, Key);
+  }
+  catch(EAbort &)
+  {
+    // silently ignore aborted prompts for master password and return empty password
   }
   return Result;
 }
@@ -2032,6 +2015,17 @@ AnsiString __fastcall TSessionData::GetInfoTip()
       (HostName, UserName, FSProtocolStr));
   }
 }
+//---------------------------------------------------------------------
+AnsiString __fastcall TSessionData::GetLocalName()
+{
+  AnsiString Result = Name;
+  int P = Result.LastDelimiter("/");
+  if (P > 0)
+  {
+    Result.Delete(1, P);
+  }
+  return Result;
+}
 //=== TStoredSessionList ----------------------------------------------
 __fastcall TStoredSessionList::TStoredSessionList(bool aReadOnly):
   TNamedObjectList(), FReadOnly(aReadOnly)
@@ -2135,29 +2129,33 @@ void __fastcall TStoredSessionList::Load()
 }
 //---------------------------------------------------------------------
 void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
+  TSessionData * Data, bool All, bool RecryptPasswordOnly,
+  TSessionData * FactoryDefaults)
+{
+  if (All || Data->Modified)
+  {
+    if (RecryptPasswordOnly)
+    {
+      Data->SaveRecryptedPasswords(Storage);
+    }
+    else
+    {
+      Data->Save(Storage, false, FactoryDefaults);
+    }
+  }
+}
+//---------------------------------------------------------------------
+void __fastcall TStoredSessionList::DoSave(THierarchicalStorage * Storage,
   bool All, bool RecryptPasswordOnly)
 {
   TSessionData * FactoryDefaults = new TSessionData("");
   try
   {
-    if (All || FDefaultSettings->Modified)
-    {
-      FDefaultSettings->Save(Storage, false, FactoryDefaults);
-    }
+    DoSave(Storage, FDefaultSettings, All, RecryptPasswordOnly, FactoryDefaults);
     for (int Index = 0; Index < Count+HiddenCount; Index++)
     {
       TSessionData * SessionData = (TSessionData *)Items[Index];
-      if (All || SessionData->Modified)
-      {
-        if (RecryptPasswordOnly)
-        {
-          SessionData->SaveRecryptedPasswords(Storage);
-        }
-        else
-        {
-          SessionData->Save(Storage, false, FactoryDefaults);
-        }
-      }
+      DoSave(Storage, SessionData, All, RecryptPasswordOnly, FactoryDefaults);
     }
   }
   __finally

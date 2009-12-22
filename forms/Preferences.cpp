@@ -849,7 +849,7 @@ void __fastcall TPreferencesDialog::CustomCommandsViewData(TObject * /*Sender*/,
   int Index = Item->Index;
   assert(Index >= 0 && Index <= FCustomCommandList->Count);
   const TCustomCommandType * Command = FCustomCommandList->Commands[Index];
-  AnsiString Caption = StringReplace(Command->Name, "&", "", TReplaceFlags() << rfReplaceAll);
+  AnsiString Caption = StripHotkey(Command->Name);
   if (Command->ShortCut != 0)
   {
     Caption = FORMAT("%s (%s)", (Caption, ShortCutToText(Command->ShortCut)));
@@ -1423,8 +1423,7 @@ void __fastcall TPreferencesDialog::CopyParamListViewData(TObject * /*Sender*/,
 {
   int Index = Item->Index;
   assert(Index >= 0 && Index <= FCopyParamList->Count);
-  Item->Caption = StringReplace(FCopyParamList->Names[Index], "&", "",
-    TReplaceFlags() << rfReplaceAll);
+  Item->Caption = StripHotkey(FCopyParamList->Names[Index]);
   Item->SubItems->Add(BooleanToStr(FCopyParamList->Rules[Index] != NULL));
 }
 //---------------------------------------------------------------------------
@@ -1562,7 +1561,9 @@ void __fastcall TPreferencesDialog::UseMasterPasswordCheckClick(
 void __fastcall TPreferencesDialog::SetMasterPasswordButtonClick(
   TObject * /*Sender*/)
 {
-  DoChangeMasterPasswordDialog();
-  MessageDialog(LoadStr(MASTER_PASSWORD_CHANGED), qtInformation, qaOK, HELP_MASTER_PASSWORD);
+  if (DoChangeMasterPasswordDialog())
+  {
+    MessageDialog(LoadStr(MASTER_PASSWORD_CHANGED), qtInformation, qaOK, HELP_MASTER_PASSWORD);
+  }
 }
 //---------------------------------------------------------------------------

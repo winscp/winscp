@@ -24,11 +24,12 @@ unsigned int VERSION_GetFileVersionInfo_PE(const char * FileName, unsigned int D
 {
   unsigned int Len;
 
-
+  bool NeedFree = false;
   HMODULE Module = GetModuleHandle(FileName);
   if (Module == NULL)
   {
     Module = LoadLibraryEx(FileName, 0, LOAD_LIBRARY_AS_DATAFILE);
+    NeedFree = true;
   }
   if (Module == NULL)
   {
@@ -85,7 +86,10 @@ unsigned int VERSION_GetFileVersionInfo_PE(const char * FileName, unsigned int D
     }
     __finally
     {
-      FreeLibrary(Module);
+      if (NeedFree)
+      {
+        FreeLibrary(Module);
+      }
     }
   }
 

@@ -1088,10 +1088,13 @@ AnsiString __fastcall TWinConfiguration::StronglyRecryptPassword(AnsiString Pass
   else
   {
     Password = TCustomWinConfiguration::DecryptPassword(Password, Key);
-    assert(!FPlainMasterPasswordEncrypt.IsEmpty());
-    ScramblePassword(Password);
-    AES256EncyptWithMAC(Password, FPlainMasterPasswordEncrypt, Result);
-    Result = SetExternalEncryptedPassword(Result);
+    if (!Password.IsEmpty())
+    {
+      assert(!FPlainMasterPasswordEncrypt.IsEmpty());
+      ScramblePassword(Password);
+      AES256EncyptWithMAC(Password, FPlainMasterPasswordEncrypt, Result);
+      Result = SetExternalEncryptedPassword(Result);
+    }
   }
   return Result;
 }
@@ -1176,7 +1179,7 @@ void __fastcall TWinConfiguration::ClearMasterPassword()
 //---------------------------------------------------------------------------
 void __fastcall TWinConfiguration::AskForMasterPasswordIfNotSet()
 {
-  if (FUseMasterPassword && FPlainMasterPasswordEncrypt.IsEmpty())
+  if (FPlainMasterPasswordEncrypt.IsEmpty())
   {
     assert(FOnMasterPasswordPrompt != NULL);
     FOnMasterPasswordPrompt();

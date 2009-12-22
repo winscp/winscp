@@ -13,14 +13,14 @@
  * overlap destination with one source, but the others can't.
  */
 #define add(r,x,y) ( r.lo = y.lo + x.lo, \
-		     r.hi = y.hi + x.hi + (r.lo < y.lo) )
-#define rorB(r,x,y) ( r.lo = (x.hi >> ((y)-32)) | (x.lo << (64-(y))), \
-		      r.hi = (x.lo >> ((y)-32)) | (x.hi << (64-(y))) )
-#define rorL(r,x,y) ( r.lo = (x.lo >> (y)) | (x.hi << (32-(y))), \
-		      r.hi = (x.hi >> (y)) | (x.lo << (32-(y))) )
-#define shrB(r,x,y) ( r.lo = x.hi >> ((y)-32), r.hi = 0 )
-#define shrL(r,x,y) ( r.lo = (x.lo >> (y)) | (x.hi << (32-(y))), \
-		      r.hi = x.hi >> (y) )
+		     r.hi = y.hi + x.hi + ((uint32)r.lo < (uint32)y.lo) )
+#define rorB(r,x,y) ( r.lo = ((uint32)x.hi >> ((y)-32)) | ((uint32)x.lo << (64-(y))), \
+		      r.hi = ((uint32)x.lo >> ((y)-32)) | ((uint32)x.hi << (64-(y))) )
+#define rorL(r,x,y) ( r.lo = ((uint32)x.lo >> (y)) | ((uint32)x.hi << (32-(y))), \
+		      r.hi = ((uint32)x.hi >> (y)) | ((uint32)x.lo << (32-(y))) )
+#define shrB(r,x,y) ( r.lo = (uint32)x.hi >> ((y)-32), r.hi = 0 )
+#define shrL(r,x,y) ( r.lo = ((uint32)x.lo >> (y)) | ((uint32)x.hi << (32-(y))), \
+		      r.hi = (uint32)x.hi >> (y) )
 #define and(r,x,y) ( r.lo = x.lo & y.lo, r.hi = x.hi & y.hi )
 #define xor(r,x,y) ( r.lo = x.lo ^ y.lo, r.hi = x.hi ^ y.hi )
 #define not(r,x) ( r.lo = ~x.lo, r.hi = ~x.hi )

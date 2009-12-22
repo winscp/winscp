@@ -548,7 +548,7 @@ int __fastcall ExceptionMessageDialog(Exception * E, TQueryType Type,
     }
   }
   AnsiString Message;
-  // this is always called form within ExceptionMessage check,
+  // this is always called from within ExceptionMessage check,
   // so it should never fail here
   CHECK(ExceptionMessage(E, Message));
 

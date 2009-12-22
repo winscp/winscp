@@ -1840,7 +1840,6 @@ object NonVisualDataModule: TNonVisualDataModule
       HelpKeyword = 'task_find'
       Hint = 'Find files|Find files and directories'
       ImageIndex = 95
-      ShortCut = 32886
     end
   end
   object ExplorerBarPopup: TTBXPopupMenu

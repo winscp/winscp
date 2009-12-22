@@ -23,9 +23,8 @@ static const char hex[16] = "0123456789ABCDEF";
 
 static int tried_shgetfolderpath = FALSE;
 static HMODULE shell32_module = NULL;
-typedef HRESULT (WINAPI *p_SHGetFolderPath_t)
-    (HWND, int, HANDLE, DWORD, LPTSTR);
-static p_SHGetFolderPath_t p_SHGetFolderPath = NULL;
+DECL_WINDOWS_FUNCTION(static, HRESULT, SHGetFolderPathA, 
+		      (HWND, int, HANDLE, DWORD, LPSTR));
 
 static void mungestr(const char *in, char *out)
 {
@@ -521,21 +520,19 @@ static HANDLE access_random_seed(int action)
 	 * However, the invocation below requires IE5+ anyway,
 	 * so stuff that. */
 	shell32_module = LoadLibrary("SHELL32.DLL");
-	if (shell32_module) {
-	    p_SHGetFolderPath = (p_SHGetFolderPath_t)
-		GetProcAddress(shell32_module, "SHGetFolderPathA");
-	}
+	GET_WINDOWS_FUNCTION(shell32_module, SHGetFolderPathA);
+	tried_shgetfolderpath = TRUE;
     }
-    if (p_SHGetFolderPath) {
-	if (SUCCEEDED(p_SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA,
-					NULL, SHGFP_TYPE_CURRENT, seedpath))) {
+    if (p_SHGetFolderPathA) {
+	if (SUCCEEDED(p_SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA,
+					 NULL, SHGFP_TYPE_CURRENT, seedpath))) {
 	    strcat(seedpath, "\\PUTTY.RND");
 	    if (try_random_seed(seedpath, action, &rethandle))
 		return rethandle;
 	}
 
-	if (SUCCEEDED(p_SHGetFolderPath(NULL, CSIDL_APPDATA,
-					NULL, SHGFP_TYPE_CURRENT, seedpath))) {
+	if (SUCCEEDED(p_SHGetFolderPathA(NULL, CSIDL_APPDATA,
+					 NULL, SHGFP_TYPE_CURRENT, seedpath))) {
 	    strcat(seedpath, "\\PUTTY.RND");
 	    if (try_random_seed(seedpath, action, &rethandle))
 		return rethandle;

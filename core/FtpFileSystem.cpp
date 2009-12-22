@@ -1295,26 +1295,22 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
 
   OperationProgress->SetFile(FileName, false);
 
+  if (FLAGCLEAR(Params, cpDelete) &&
+      !FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
+  {
+    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    THROW_SKIP_FILE_NULL;
+  }
+
   __int64 Size;
   int Attrs;
 
   FTerminal->OpenLocalFile(FileName, GENERIC_READ, &Attrs,
     NULL, NULL, NULL, NULL, &Size);
 
-  bool Dir = FLAGSET(Attrs, faDirectory);
-
-  TFileMasks::TParams MaskParams;
-  MaskParams.Size = Size;
-
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams))
-  {
-    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
-    THROW_SKIP_FILE_NULL;
-  }
-
   OperationProgress->SetFileInProgress();
 
+  bool Dir = FLAGSET(Attrs, faDirectory);
   if (Dir)
   {
     DirectorySource(IncludeTrailingBackslash(FileName), TargetDir,
@@ -1336,6 +1332,8 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
     OperationProgress->TransferingFile = false;
 
     // Will we use ASCII of BINARY file tranfer?
+    TFileMasks::TParams MaskParams;
+    MaskParams.Size = Size;
     OperationProgress->SetAsciiTransfer(
       CopyParam->UseAsciiTransfer(FileName, osLocal, MaskParams));
     FTerminal->LogEvent(
@@ -1389,9 +1387,12 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
   /* TODO : Delete also read-only files. */
   if (FLAGSET(Params, cpDelete))
   {
-    FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
-      THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
-    )
+    if (!Dir)
+    {
+      FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
+        THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
+      )
+    }
   }
   else if (CopyParam->ClearArchive && FLAGSET(Attrs, faArchive))
   {
@@ -2747,13 +2748,13 @@ TDateTime __fastcall TFTPFileSystem::ConvertRemoteTimestamp(time_t Time, bool Ha
   if (Tm != NULL)
   {
     // should be the same as HandleListData
-    Result = EncodeDate(
+    Result = EncodeDateVerbose(
       static_cast<unsigned short>(Tm->tm_year + 1900),
       static_cast<unsigned short>(Tm->tm_mon + 1),
       static_cast<unsigned short>(Tm->tm_mday));
     if (HasTime)
     {
-      Result += EncodeTime(
+      Result += EncodeTimeVerbose(
         static_cast<unsigned short>(Tm->tm_hour),
         static_cast<unsigned short>(Tm->tm_min),
         static_cast<unsigned short>(Tm->tm_sec), 0);
@@ -2914,10 +2915,10 @@ AnsiString __fastcall FormatContact(const TFtpsCertificateData::TContact & Conta
 AnsiString __fastcall FormatValidityTime(const TFtpsCertificateData::TValidityTime & ValidityTime)
 {
   return FormatDateTime("ddddd tt",
-    EncodeDate(
+    EncodeDateVerbose(
       (unsigned short)ValidityTime.Year, (unsigned short)ValidityTime.Month,
       (unsigned short)ValidityTime.Day) +
-    EncodeTime(
+    EncodeTimeVerbose(
       (unsigned short)ValidityTime.Hour, (unsigned short)ValidityTime.Min,
       (unsigned short)ValidityTime.Sec, 0));
 }
@@ -3187,12 +3188,12 @@ bool __fastcall TFTPFileSystem::HandleListData(const char * Path,
         {
           // should be the same as ConvertRemoteTimestamp
           TDateTime Modification =
-            EncodeDate((unsigned short)Entry->Year, (unsigned short)Entry->Month,
+            EncodeDateVerbose((unsigned short)Entry->Year, (unsigned short)Entry->Month,
               (unsigned short)Entry->Day);
           if (Entry->HasTime)
           {
             File->Modification = Modification +
-              EncodeTime((unsigned short)Entry->Hour, (unsigned short)Entry->Minute, 0, 0);
+              EncodeTimeVerbose((unsigned short)Entry->Hour, (unsigned short)Entry->Minute, 0, 0);
             // not exact as we got year as well, but it is most probably
             // guessed by FZAPI anyway
             File->ModificationFmt = mfMDHM;

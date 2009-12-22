@@ -294,13 +294,13 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg, b
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::Open()
 {
+  FBackend = &ssh_backend;
   ResetConnection();
 
   FAuthenticating = false;
   FAuthenticated = false;
 
   Active = false;
-  FBackend = &ssh_backend;
 
   FAuthenticationLog = "";
   FUI->Information(LoadStr(STATUS_LOOKUPHOST), true);

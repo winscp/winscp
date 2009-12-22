@@ -23,7 +23,7 @@ __fastcall TSynchronizeProgressForm::TSynchronizeProgressForm(TComponent * Owner
 {
   FStarted = false;
   FCanceled = false;
-  FElapsed = EncodeTime(0, 0, 0, 0);
+  FElapsed = EncodeTimeVerbose(0, 0, 0, 0);
   FShowAsModalStorage = NULL;
   FMinimizedByMe = false;
   FCompareOnly = CompareOnly;

@@ -3904,6 +3904,13 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
   OperationProgress->SetFile(FileName, false);
 
+  if (FLAGCLEAR(Params, cpDelete) &&
+      !FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
+  {
+    FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
+    THROW_SKIP_FILE_NULL;
+  }
+
   TOpenRemoteFileParams OpenParams;
   OpenParams.OverwriteMode = omOverwrite;
 
@@ -3914,20 +3921,10 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   FTerminal->OpenLocalFile(FileName, GENERIC_READ, &OpenParams.LocalFileAttrs,
     &File, NULL, &MTime, &ATime, &Size);
 
+  bool Dir = FLAGSET(OpenParams.LocalFileAttrs, faDirectory);
+
   try
   {
-    bool Dir = FLAGSET(OpenParams.LocalFileAttrs, faDirectory);
-
-    TFileMasks::TParams MaskParams;
-    MaskParams.Size = Size;
-
-    if (FLAGCLEAR(Params, cpDelete) &&
-        !CopyParam->AllowTransfer(FileName, osLocal, Dir, MaskParams))
-    {
-      FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
-      THROW_SKIP_FILE_NULL;
-    }
-
     OperationProgress->SetFileInProgress();
 
     if (Dir)
@@ -3962,6 +3959,8 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
       OperationProgress->TransferingFile = false;
 
       // Will we use ASCII of BINARY file tranfer?
+      TFileMasks::TParams MaskParams;
+      MaskParams.Size = Size;
       OperationProgress->SetAsciiTransfer(
         CopyParam->UseAsciiTransfer(FileName, osLocal, MaskParams));
       FTerminal->LogEvent(
@@ -4299,9 +4298,12 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
   /* TODO : Delete also read-only files. */
   if (FLAGSET(Params, cpDelete))
   {
-    FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
-      THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
-    )
+    if (!Dir)
+    {
+      FILE_OPERATION_LOOP (FMTLOAD(DELETE_LOCAL_FILE_ERROR, (FileName)),
+        THROWOSIFFALSE(Sysutils::DeleteFile(FileName));
+      )
+    }
   }
   else if (CopyParam->ClearArchive && FLAGSET(OpenParams.LocalFileAttrs, faArchive))
   {

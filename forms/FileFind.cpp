@@ -222,7 +222,12 @@ void __fastcall TFileFindDialog::FileFound(TTerminal * /*Terminal*/,
   Item->Data = File;
 
   Item->ImageIndex = File->IconIndex;
-  Item->Caption = File->FileName;
+  AnsiString Caption = File->FileName;
+  if (File->IsDirectory)
+  {
+    Caption = UnixIncludeTrailingBackslash(Caption);
+  }
+  Item->Caption = Caption;
 
   AnsiString Directory = UnixExtractFilePath(File->FullFileName);
   if (AnsiSameText(FDirectory, Directory.SubString(1, FDirectory.Length())))

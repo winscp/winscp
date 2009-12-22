@@ -575,9 +575,9 @@ void __fastcall TCustomScpExplorerForm::UpdateTransferList()
     }
     // this way we get name for "default" settings (COPY_PARAM_DEFAULT)
     AnsiString Name = TransferList->Strings->Strings[TransferList->ItemIndex];
-    TransferDropDown->Text = Name;
+    TransferDropDown->Text = StripHotkey(Name);
     TransferDropDown->Hint = FORMAT("%s\n \n%s:\n%s|%s",
-      (FTransferDropDownHint, Name,
+      (FTransferDropDownHint, StripHotkey(Name),
        GUIConfiguration->CurrentCopyParam.GetInfoStr("; ",
          FLAGMASK(Terminal != NULL, Terminal->UsableCopyParamAttrs(0).General)),
        FTransferDropDownHint));
@@ -1984,7 +1984,7 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
 
   if (WinConfiguration->TemporaryDirectoryAppendSession)
   {
-    Result += IncludeTrailingBackslash(CopyParam.ValidLocalPath(Terminal->SessionData->SessionName));
+    Result = IncludeTrailingBackslash(Result + CopyParam.ValidLocalPath(Terminal->SessionData->SessionName));
   }
 
   if (WinConfiguration->TemporaryDirectoryAppendPath)
@@ -1993,7 +1993,7 @@ void __fastcall TCustomScpExplorerForm::TemporaryDirectoryForRemoteFiles(
     {
       RemoteDirectory.Delete(1, 1);
     }
-    Result += IncludeTrailingBackslash(CopyParam.ValidLocalPath(FromUnixPath(RemoteDirectory)));
+    Result = IncludeTrailingBackslash(Result + CopyParam.ValidLocalPath(FromUnixPath(RemoteDirectory)));
   }
 
   if (!ForceDirectories(Result))
@@ -2956,7 +2956,8 @@ void __fastcall TCustomScpExplorerForm::UpdateStatusBar()
   if (FShowStatusBarHint)
   {
     SessionStatusBar->SimplePanel = true;
-    SessionStatusBar->SimpleText = FStatusBarHint;
+    // escape hotkeys particularly because of the custom commands names
+    SessionStatusBar->SimpleText = EscapeHotkey(FStatusBarHint);
   }
   else if (!Terminal || !Terminal->Active || Terminal->Status < ssOpened)
   {
@@ -6145,7 +6146,7 @@ bool __fastcall TCustomScpExplorerForm::CancelNote()
   {
     // cannot cancel note too early
     if (Now() - FNoteShown >
-          EncodeTime(0, 0, (unsigned short)(WinConfiguration->NotificationsStickTime), 0))
+          EncodeTimeVerbose(0, 0, (unsigned short)(WinConfiguration->NotificationsStickTime), 0))
     {
       FNoteTimer->Enabled = false;
       FNote = "";

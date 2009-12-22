@@ -265,6 +265,11 @@ void __fastcall TSaveSessionDialog::DoShow()
 void __fastcall TSaveSessionDialog::DoValidate()
 {
   SessionNameValidate(SessionNameCombo->Text, FOriginalSession);
+  if (SavePasswordCheck->Enabled && SavePasswordCheck->Checked &&
+      CustomWinConfiguration->UseMasterPassword)
+  {
+    CustomWinConfiguration->AskForMasterPasswordIfNotSet();
+  }
   TCustomDialog::DoValidate();
 }
 //---------------------------------------------------------------------------
@@ -288,10 +293,6 @@ bool __fastcall DoSaveSessionDialog(AnsiString & SessionName,
       SavePassword = &Dummy;
     }
     Result = Dialog->Execute(SessionName, *SavePassword);
-    if (Result && (SavePassword != NULL) && *SavePassword)
-    {
-      CustomWinConfiguration->AskForMasterPasswordIfNotSet();
-    }
   }
   __finally
   {

@@ -8,37 +8,30 @@
 #include "sshgss.h"
 #include "misc.h"
 
-#define NOTHING
-#define DECL_SSPI_FUNCTION(linkage, rettype, name, params)	\
-  typedef rettype (WINAPI *t_##name) params;			\
-  linkage t_##name p_##name
-#define GET_SSPI_FUNCTION(module, name)					\
-  p_##name = module ? (t_##name) GetProcAddress(module, #name) : NULL
-
-DECL_SSPI_FUNCTION(static, SECURITY_STATUS,
-		   AcquireCredentialsHandleA,
-		   (SEC_CHAR *, SEC_CHAR *, ULONG, PLUID,
-		    PVOID, SEC_GET_KEY_FN, PVOID, PCredHandle, PTimeStamp));
-DECL_SSPI_FUNCTION(static, SECURITY_STATUS,
-		   InitializeSecurityContextA,
-		   (PCredHandle, PCtxtHandle, SEC_CHAR *, ULONG, ULONG,
-		   ULONG, PSecBufferDesc, ULONG, PCtxtHandle,
-		    PSecBufferDesc, PULONG, PTimeStamp));
-DECL_SSPI_FUNCTION(static, SECURITY_STATUS,
-		   FreeContextBuffer,
-		   (PVOID));
-DECL_SSPI_FUNCTION(static, SECURITY_STATUS,
-		   FreeCredentialsHandle,
-		   (PCredHandle));
-DECL_SSPI_FUNCTION(static, SECURITY_STATUS,
-		   DeleteSecurityContext,
-		   (PCtxtHandle));
-DECL_SSPI_FUNCTION(static, SECURITY_STATUS,
-		   QueryContextAttributesA,
-		   (PCtxtHandle, ULONG, PVOID));
-DECL_SSPI_FUNCTION(static, SECURITY_STATUS,
-		   MakeSignature,
-		   (PCtxtHandle, ULONG, PSecBufferDesc, ULONG));
+DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
+		      AcquireCredentialsHandleA,
+		      (SEC_CHAR *, SEC_CHAR *, ULONG, PLUID,
+		       PVOID, SEC_GET_KEY_FN, PVOID, PCredHandle, PTimeStamp));
+DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
+		      InitializeSecurityContextA,
+		      (PCredHandle, PCtxtHandle, SEC_CHAR *, ULONG, ULONG,
+		       ULONG, PSecBufferDesc, ULONG, PCtxtHandle,
+		       PSecBufferDesc, PULONG, PTimeStamp));
+DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
+		      FreeContextBuffer,
+		      (PVOID));
+DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
+		      FreeCredentialsHandle,
+		      (PCredHandle));
+DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
+		      DeleteSecurityContext,
+		      (PCtxtHandle));
+DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
+		      QueryContextAttributesA,
+		      (PCtxtHandle, ULONG, PVOID));
+DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,
+		      MakeSignature,
+		      (PCtxtHandle, ULONG, PSecBufferDesc, ULONG));
 
 static HMODULE security_module = NULL;
 
@@ -61,13 +54,13 @@ int ssh_gss_init(void)
 
     security_module = LoadLibrary("secur32.dll");
     if (security_module) {
-	GET_SSPI_FUNCTION(security_module, AcquireCredentialsHandleA);
-	GET_SSPI_FUNCTION(security_module, InitializeSecurityContextA);
-	GET_SSPI_FUNCTION(security_module, FreeContextBuffer);
-	GET_SSPI_FUNCTION(security_module, FreeCredentialsHandle);
-	GET_SSPI_FUNCTION(security_module, DeleteSecurityContext);
-	GET_SSPI_FUNCTION(security_module, QueryContextAttributesA);
-	GET_SSPI_FUNCTION(security_module, MakeSignature);
+	GET_WINDOWS_FUNCTION(security_module, AcquireCredentialsHandleA);
+	GET_WINDOWS_FUNCTION(security_module, InitializeSecurityContextA);
+	GET_WINDOWS_FUNCTION(security_module, FreeContextBuffer);
+	GET_WINDOWS_FUNCTION(security_module, FreeCredentialsHandle);
+	GET_WINDOWS_FUNCTION(security_module, DeleteSecurityContext);
+	GET_WINDOWS_FUNCTION(security_module, QueryContextAttributesA);
+	GET_WINDOWS_FUNCTION(security_module, MakeSignature);
 	return 1;
     }
     return 0;

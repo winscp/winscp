@@ -229,19 +229,19 @@ object FullSynchronizeDialog: TFullSynchronizeDialog
   end
   object SaveSettingsCheck: TCheckBox
     Left = 19
-    Top = 372
+    Top = 317
     Width = 246
     Height = 17
     Caption = 'Use &same options next time'
-    TabOrder = 6
+    TabOrder = 5
   end
   object CopyParamGroup: TGroupBox
     Left = 8
-    Top = 316
+    Top = 338
     Width = 417
     Height = 50
     Caption = 'Transfer settings'
-    TabOrder = 5
+    TabOrder = 6
     OnContextPopup = CopyParamGroupContextPopup
     OnDblClick = CopyParamGroupDblClick
     DesignSize = (

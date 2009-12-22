@@ -148,65 +148,49 @@ static int cmpforsearch(void *av, void *bv)
     return 0;
 }
 
-#define NOTHING
-#define DECL_WINSOCK_FUNCTION(linkage, rettype, name, params) \
-    typedef rettype (WINAPI *t_##name) params; \
-    linkage t_##name p_##name
-#define GET_WINSOCK_FUNCTION(module, name) \
-    p_##name = module ? (t_##name) GetProcAddress(module, #name) : NULL
-
-DECL_WINSOCK_FUNCTION(NOTHING, int, WSAAsyncSelect,
-		      (SOCKET, HWND, u_int, long));
-DECL_WINSOCK_FUNCTION(NOTHING, int, WSAEventSelect, (SOCKET, WSAEVENT, long));
-DECL_WINSOCK_FUNCTION(NOTHING, int, select,
-		      (int, fd_set FAR *, fd_set FAR *,
-		       fd_set FAR *, const struct timeval FAR *));
-DECL_WINSOCK_FUNCTION(NOTHING, int, WSAGetLastError, (void));
-DECL_WINSOCK_FUNCTION(NOTHING, int, WSAEnumNetworkEvents,
-		      (SOCKET, WSAEVENT, LPWSANETWORKEVENTS));
-DECL_WINSOCK_FUNCTION(static, int, WSAStartup, (WORD, LPWSADATA));
-DECL_WINSOCK_FUNCTION(static, int, WSACleanup, (void));
-DECL_WINSOCK_FUNCTION(static, int, closesocket, (SOCKET));
-DECL_WINSOCK_FUNCTION(static, u_long, ntohl, (u_long));
-DECL_WINSOCK_FUNCTION(static, u_long, htonl, (u_long));
-DECL_WINSOCK_FUNCTION(static, u_short, htons, (u_short));
-DECL_WINSOCK_FUNCTION(static, u_short, ntohs, (u_short));
-DECL_WINSOCK_FUNCTION(static, int, gethostname, (char *, int));
-DECL_WINSOCK_FUNCTION(static, struct hostent FAR *, gethostbyname,
+DECL_WINDOWS_FUNCTION(static, int, WSAStartup, (WORD, LPWSADATA));
+DECL_WINDOWS_FUNCTION(static, int, WSACleanup, (void));
+DECL_WINDOWS_FUNCTION(static, int, closesocket, (SOCKET));
+DECL_WINDOWS_FUNCTION(static, u_long, ntohl, (u_long));
+DECL_WINDOWS_FUNCTION(static, u_long, htonl, (u_long));
+DECL_WINDOWS_FUNCTION(static, u_short, htons, (u_short));
+DECL_WINDOWS_FUNCTION(static, u_short, ntohs, (u_short));
+DECL_WINDOWS_FUNCTION(static, int, gethostname, (char *, int));
+DECL_WINDOWS_FUNCTION(static, struct hostent FAR *, gethostbyname,
 		      (const char FAR *));
-DECL_WINSOCK_FUNCTION(static, struct servent FAR *, getservbyname,
+DECL_WINDOWS_FUNCTION(static, struct servent FAR *, getservbyname,
 		      (const char FAR *, const char FAR *));
-DECL_WINSOCK_FUNCTION(static, unsigned long, inet_addr, (const char FAR *));
-DECL_WINSOCK_FUNCTION(static, char FAR *, inet_ntoa, (struct in_addr));
-DECL_WINSOCK_FUNCTION(static, int, connect,
+DECL_WINDOWS_FUNCTION(static, unsigned long, inet_addr, (const char FAR *));
+DECL_WINDOWS_FUNCTION(static, char FAR *, inet_ntoa, (struct in_addr));
+DECL_WINDOWS_FUNCTION(static, int, connect,
 		      (SOCKET, const struct sockaddr FAR *, int));
-DECL_WINSOCK_FUNCTION(static, int, bind,
+DECL_WINDOWS_FUNCTION(static, int, bind,
 		      (SOCKET, const struct sockaddr FAR *, int));
-DECL_WINSOCK_FUNCTION(static, int, setsockopt,
+DECL_WINDOWS_FUNCTION(static, int, setsockopt,
 		      (SOCKET, int, int, const char FAR *, int));
-DECL_WINSOCK_FUNCTION(static, SOCKET, socket, (int, int, int));
-DECL_WINSOCK_FUNCTION(static, int, listen, (SOCKET, int));
-DECL_WINSOCK_FUNCTION(static, int, send, (SOCKET, const char FAR *, int, int));
-DECL_WINSOCK_FUNCTION(static, int, ioctlsocket,
+DECL_WINDOWS_FUNCTION(static, SOCKET, socket, (int, int, int));
+DECL_WINDOWS_FUNCTION(static, int, listen, (SOCKET, int));
+DECL_WINDOWS_FUNCTION(static, int, send, (SOCKET, const char FAR *, int, int));
+DECL_WINDOWS_FUNCTION(static, int, ioctlsocket,
 		      (SOCKET, long, u_long FAR *));
-DECL_WINSOCK_FUNCTION(static, SOCKET, accept,
+DECL_WINDOWS_FUNCTION(static, SOCKET, accept,
 		      (SOCKET, struct sockaddr FAR *, int FAR *));
-DECL_WINSOCK_FUNCTION(static, int, recv, (SOCKET, char FAR *, int, int));
-DECL_WINSOCK_FUNCTION(static, int, WSAIoctl,
+DECL_WINDOWS_FUNCTION(static, int, recv, (SOCKET, char FAR *, int, int));
+DECL_WINDOWS_FUNCTION(static, int, WSAIoctl,
 		      (SOCKET, DWORD, LPVOID, DWORD, LPVOID, DWORD,
 		       LPDWORD, LPWSAOVERLAPPED,
 		       LPWSAOVERLAPPED_COMPLETION_ROUTINE));
 #ifndef NO_IPV6
-DECL_WINSOCK_FUNCTION(static, int, getaddrinfo,
+DECL_WINDOWS_FUNCTION(static, int, getaddrinfo,
 		      (const char *nodename, const char *servname,
 		       const struct addrinfo *hints, struct addrinfo **res));
-DECL_WINSOCK_FUNCTION(static, void, freeaddrinfo, (struct addrinfo *res));
-DECL_WINSOCK_FUNCTION(static, int, getnameinfo,
+DECL_WINDOWS_FUNCTION(static, void, freeaddrinfo, (struct addrinfo *res));
+DECL_WINDOWS_FUNCTION(static, int, getnameinfo,
 		      (const struct sockaddr FAR * sa, socklen_t salen,
 		       char FAR * host, size_t hostlen, char FAR * serv,
 		       size_t servlen, int flags));
-DECL_WINSOCK_FUNCTION(static, char *, gai_strerror, (int ecode));
-DECL_WINSOCK_FUNCTION(static, int, WSAAddressToStringA,
+DECL_WINDOWS_FUNCTION(static, char *, gai_strerror, (int ecode));
+DECL_WINDOWS_FUNCTION(static, int, WSAAddressToStringA,
 		      (LPSOCKADDR, DWORD, LPWSAPROTOCOL_INFO,
 		       LPSTR, LPDWORD));
 #endif
@@ -260,10 +244,10 @@ void sk_init(void)
 #ifdef NET_SETUP_DIAGNOSTICS
 	logevent(NULL, "Native WinSock IPv6 support detected");
 #endif
-	GET_WINSOCK_FUNCTION(winsock_module, getaddrinfo);
-	GET_WINSOCK_FUNCTION(winsock_module, freeaddrinfo);
-	GET_WINSOCK_FUNCTION(winsock_module, getnameinfo);
-	GET_WINSOCK_FUNCTION(winsock_module, gai_strerror);
+	GET_WINDOWS_FUNCTION(winsock_module, getaddrinfo);
+	GET_WINDOWS_FUNCTION(winsock_module, freeaddrinfo);
+	GET_WINDOWS_FUNCTION(winsock_module, getnameinfo);
+	GET_WINDOWS_FUNCTION(winsock_module, gai_strerror);
     } else {
 	/* Fall back to wship6.dll for Windows 2000 */
 	wship6_module = LoadLibrary("wship6.dll");
@@ -271,50 +255,50 @@ void sk_init(void)
 #ifdef NET_SETUP_DIAGNOSTICS
 	    logevent(NULL, "WSH IPv6 support detected");
 #endif
-	    GET_WINSOCK_FUNCTION(wship6_module, getaddrinfo);
-	    GET_WINSOCK_FUNCTION(wship6_module, freeaddrinfo);
-	    GET_WINSOCK_FUNCTION(wship6_module, getnameinfo);
-	    GET_WINSOCK_FUNCTION(wship6_module, gai_strerror);
+	    GET_WINDOWS_FUNCTION(wship6_module, getaddrinfo);
+	    GET_WINDOWS_FUNCTION(wship6_module, freeaddrinfo);
+	    GET_WINDOWS_FUNCTION(wship6_module, getnameinfo);
+	    GET_WINDOWS_FUNCTION(wship6_module, gai_strerror);
 	} else {
 #ifdef NET_SETUP_DIAGNOSTICS
 	    logevent(NULL, "No IPv6 support detected");
 #endif
 	}
     }
-    GET_WINSOCK_FUNCTION(winsock2_module, WSAAddressToStringA);
+    GET_WINDOWS_FUNCTION(winsock2_module, WSAAddressToStringA);
 #else
 #ifdef NET_SETUP_DIAGNOSTICS
     logevent(NULL, "PuTTY was built without IPv6 support");
 #endif
 #endif
 
-    GET_WINSOCK_FUNCTION(winsock_module, WSAAsyncSelect);
-    GET_WINSOCK_FUNCTION(winsock_module, WSAEventSelect);
-    GET_WINSOCK_FUNCTION(winsock_module, select);
-    GET_WINSOCK_FUNCTION(winsock_module, WSAGetLastError);
-    GET_WINSOCK_FUNCTION(winsock_module, WSAEnumNetworkEvents);
-    GET_WINSOCK_FUNCTION(winsock_module, WSAStartup);
-    GET_WINSOCK_FUNCTION(winsock_module, WSACleanup);
-    GET_WINSOCK_FUNCTION(winsock_module, closesocket);
-    GET_WINSOCK_FUNCTION(winsock_module, ntohl);
-    GET_WINSOCK_FUNCTION(winsock_module, htonl);
-    GET_WINSOCK_FUNCTION(winsock_module, htons);
-    GET_WINSOCK_FUNCTION(winsock_module, ntohs);
-    GET_WINSOCK_FUNCTION(winsock_module, gethostname);
-    GET_WINSOCK_FUNCTION(winsock_module, gethostbyname);
-    GET_WINSOCK_FUNCTION(winsock_module, getservbyname);
-    GET_WINSOCK_FUNCTION(winsock_module, inet_addr);
-    GET_WINSOCK_FUNCTION(winsock_module, inet_ntoa);
-    GET_WINSOCK_FUNCTION(winsock_module, connect);
-    GET_WINSOCK_FUNCTION(winsock_module, bind);
-    GET_WINSOCK_FUNCTION(winsock_module, setsockopt);
-    GET_WINSOCK_FUNCTION(winsock_module, socket);
-    GET_WINSOCK_FUNCTION(winsock_module, listen);
-    GET_WINSOCK_FUNCTION(winsock_module, send);
-    GET_WINSOCK_FUNCTION(winsock_module, ioctlsocket);
-    GET_WINSOCK_FUNCTION(winsock_module, accept);
-    GET_WINSOCK_FUNCTION(winsock_module, recv);
-    GET_WINSOCK_FUNCTION(winsock_module, WSAIoctl);
+    GET_WINDOWS_FUNCTION(winsock_module, WSAAsyncSelect);
+    GET_WINDOWS_FUNCTION(winsock_module, WSAEventSelect);
+    GET_WINDOWS_FUNCTION(winsock_module, select);
+    GET_WINDOWS_FUNCTION(winsock_module, WSAGetLastError);
+    GET_WINDOWS_FUNCTION(winsock_module, WSAEnumNetworkEvents);
+    GET_WINDOWS_FUNCTION(winsock_module, WSAStartup);
+    GET_WINDOWS_FUNCTION(winsock_module, WSACleanup);
+    GET_WINDOWS_FUNCTION(winsock_module, closesocket);
+    GET_WINDOWS_FUNCTION(winsock_module, ntohl);
+    GET_WINDOWS_FUNCTION(winsock_module, htonl);
+    GET_WINDOWS_FUNCTION(winsock_module, htons);
+    GET_WINDOWS_FUNCTION(winsock_module, ntohs);
+    GET_WINDOWS_FUNCTION(winsock_module, gethostname);
+    GET_WINDOWS_FUNCTION(winsock_module, gethostbyname);
+    GET_WINDOWS_FUNCTION(winsock_module, getservbyname);
+    GET_WINDOWS_FUNCTION(winsock_module, inet_addr);
+    GET_WINDOWS_FUNCTION(winsock_module, inet_ntoa);
+    GET_WINDOWS_FUNCTION(winsock_module, connect);
+    GET_WINDOWS_FUNCTION(winsock_module, bind);
+    GET_WINDOWS_FUNCTION(winsock_module, setsockopt);
+    GET_WINDOWS_FUNCTION(winsock_module, socket);
+    GET_WINDOWS_FUNCTION(winsock_module, listen);
+    GET_WINDOWS_FUNCTION(winsock_module, send);
+    GET_WINDOWS_FUNCTION(winsock_module, ioctlsocket);
+    GET_WINDOWS_FUNCTION(winsock_module, accept);
+    GET_WINDOWS_FUNCTION(winsock_module, recv);
+    GET_WINDOWS_FUNCTION(winsock_module, WSAIoctl);
 
     /* Try to get the best WinSock version we can get */
     if (!sk_startup(2,2) &&
@@ -588,13 +572,19 @@ void sk_getaddr(SockAddr addr, char *buf, int buflen)
 
 #ifndef NO_IPV6
     if (step.ai) {
+	int err = 0;
 	if (p_WSAAddressToStringA) {
-	    DWORD dwbuflen;
-	    p_WSAAddressToStringA(step.ai->ai_addr, step.ai->ai_addrlen,
-				  NULL, buf, &dwbuflen);
-	    buflen = dwbuflen;
+	    DWORD dwbuflen = buflen;
+	    err = p_WSAAddressToStringA(step.ai->ai_addr, step.ai->ai_addrlen,
+					NULL, buf, &dwbuflen);
 	} else
-	    strncpy(buf, "IPv6", buflen);
+	    err = -1;
+	if (err) {
+	    strncpy(buf, addr->hostname, buflen);
+	    if (!buf[0])
+		strncpy(buf, "<unknown>", buflen);
+	    buf[buflen-1] = '\0';
+	}
     } else
 #endif
     if (SOCKADDR_FAMILY(addr, step) == AF_INET) {

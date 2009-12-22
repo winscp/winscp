@@ -443,7 +443,7 @@ bool __fastcall CompareFileName(const AnsiString & Path1, const AnsiString & Pat
   }
   else
   {
-    Result = AnsiSameText(ExtractShortPathName(Path1), ExtractShortPathName(Path2));
+    Result = AnsiSameText(ShortPath1, ShortPath2);
   }
   return Result;
 }
@@ -664,6 +664,30 @@ void __fastcall ProcessLocalDirectory(AnsiString DirName,
   }
 }
 //---------------------------------------------------------------------------
+TDateTime __fastcall EncodeDateVerbose(Word Year, Word Month, Word Day)
+{
+  try
+  {
+    return EncodeDate(Year, Month, Day);
+  }
+  catch (EConvertError & E)
+  {
+    throw EConvertError(FORMAT("%s [%d-%d-%d]", (E.Message, int(Year), int(Month), int(Day))));
+  }
+}
+//---------------------------------------------------------------------------
+TDateTime __fastcall EncodeTimeVerbose(Word Hour, Word Min, Word Sec, Word MSec)
+{
+  try
+  {
+    return EncodeTime(Hour, Min, Sec, MSec);
+  }
+  catch (EConvertError & E)
+  {
+    throw EConvertError(FORMAT("%s [%d:%d:%d.%d]", (E.Message, int(Hour), int(Min), int(Sec), int(MSec))));
+  }
+}
+//---------------------------------------------------------------------------
 struct TDateTimeParams
 {
   TDateTime UnixEpoch;
@@ -698,7 +722,6 @@ static TDateTimeParams * __fastcall GetDateTimeParams()
       switch (GTZI)
       {
         case TIME_ZONE_ID_UNKNOWN:
-          DateTimeParams.CurrentDifferenceSec = 0;
           DateTimeParams.CurrentDaylightDifferenceSec = 0;
           break;
 
@@ -715,7 +738,7 @@ static TDateTimeParams * __fastcall GetDateTimeParams()
           throw Exception(TIMEZONE_ERROR);
       }
       // Is it same as SysUtils::UnixDateDelta = 25569 ??
-      DateTimeParams.UnixEpoch = EncodeDate(1970, 1, 1);
+      DateTimeParams.UnixEpoch = EncodeDateVerbose(1970, 1, 1);
 
       DateTimeParams.BaseDifferenceSec = TZI.Bias;
       DateTimeParams.BaseDifference = double(TZI.Bias) / 1440;
@@ -750,7 +773,7 @@ static void __fastcall EncodeDSTMargin(const SYSTEMTIME & Date, unsigned short Y
 {
   if (Date.wYear == 0)
   {
-    TDateTime Temp = EncodeDate(Year, Date.wMonth, 1);
+    TDateTime Temp = EncodeDateVerbose(Year, Date.wMonth, 1);
     Result = Temp + ((Date.wDayOfWeek - DayOfWeek(Temp) + 8) % 7) +
       (7 * (Date.wDay - 1));
     if (Date.wDay == 5)
@@ -762,18 +785,18 @@ static void __fastcall EncodeDSTMargin(const SYSTEMTIME & Date, unsigned short Y
         Year++;
       }
 
-      if (Result > EncodeDate(Year, Month, 1))
+      if (Result >= EncodeDateVerbose(Year, Month, 1))
       {
         Result -= 7;
       }
     }
-    Result += EncodeTime(Date.wHour, Date.wMinute, Date.wSecond,
+    Result += EncodeTimeVerbose(Date.wHour, Date.wMinute, Date.wSecond,
       Date.wMilliseconds);
   }
   else
   {
-    Result = EncodeDate(Year, Date.wMonth, Date.wDay) +
-      EncodeTime(Date.wHour, Date.wMinute, Date.wSecond, Date.wMilliseconds);
+    Result = EncodeDateVerbose(Year, Date.wMonth, Date.wDay) +
+      EncodeTimeVerbose(Date.wHour, Date.wMinute, Date.wSecond, Date.wMilliseconds);
   }
 }
 //---------------------------------------------------------------------------
@@ -793,7 +816,12 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
   TDateTimeParams * Params = GetDateTimeParams();
   bool Result;
 
-  if (Params->StandardDate.wMonth == 0)
+  // On some systems it occurs that StandardDate is unset, while
+  // DaylightDate is set. MSDN states that this is invalid and
+  // should be treated as if there is no daylinght saving.
+  // So check both.
+  if ((Params->StandardDate.wMonth == 0) ||
+      (Params->DaylightDate.wMonth == 0))
   {
     Result = false;
   }
@@ -1011,8 +1039,8 @@ void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTi
     }
     if (Changed)
     {
-      DateTime1 = EncodeDate(Y1, M1, D1) + EncodeTime(H1, N1, S1, MS1);
-      DateTime2 = EncodeDate(Y2, M2, D2) + EncodeTime(H2, N2, S2, MS2);
+      DateTime1 = EncodeDateVerbose(Y1, M1, D1) + EncodeTimeVerbose(H1, N1, S1, MS1);
+      DateTime2 = EncodeDateVerbose(Y2, M2, D2) + EncodeTimeVerbose(H2, N2, S2, MS2);
     }
   }
 }

@@ -8,6 +8,9 @@
 #include <System.hpp>
 //---------------------------------------------------------------------------
 bool __fastcall ExceptionMessage(Exception * E, AnsiString & Message);
+AnsiString __fastcall LastSysErrorMessage();
+TStrings * ExceptionToMoreMessages(Exception * E);
+//---------------------------------------------------------------------------
 enum TOnceDoneOperation { odoIdle, odoDisconnect, odoShutDown };
 //---------------------------------------------------------------------------
 class ExtException : public Sysutils::Exception
@@ -95,7 +98,5 @@ public:
 
   TOnceDoneOperation Operation;
 };
-//---------------------------------------------------------------------------
-AnsiString __fastcall LastSysErrorMessage();
 //---------------------------------------------------------------------------
 #endif  // Exceptions

@@ -262,7 +262,7 @@ __fastcall TTerminalQueue::TTerminalQueue(TTerminal * Terminal,
   FOnListUpdate = NULL;
   FOnEvent = NULL;
   FLastIdle = Now();
-  FIdleInterval = EncodeTime(0, 0, 2, 0);
+  FIdleInterval = EncodeTimeVerbose(0, 0, 2, 0);
 
   assert(Terminal != NULL);
   FSessionData = new TSessionData("");

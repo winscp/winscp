@@ -62,6 +62,7 @@ private:
   TNotifyEvent FPrevTerminalClose;
   TRect FAutoBounds;
   bool FClearExceptionOnFail;
+  bool FAnyCommandExecuted;
 
   void __fastcall DoExecuteCommand();
   void __fastcall ExecuteCommand();

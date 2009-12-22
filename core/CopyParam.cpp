@@ -502,6 +502,11 @@ bool __fastcall TCopyParamType::AllowResume(__int64 Size) const
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TCopyParamType::AllowAnyTransfer() const
+{
+  return ExcludeFileMask.Masks.IsEmpty();
+}
+//---------------------------------------------------------------------------
 bool __fastcall TCopyParamType::AllowTransfer(AnsiString FileName,
   TOperationSide Side, bool Directory, const TFileMasks::TParams & Params) const
 {

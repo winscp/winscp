@@ -267,6 +267,7 @@ protected:
   void __fastcall OpenLocalFile(const AnsiString FileName, int Access,
     int * Attrs, HANDLE * Handle, __int64 * ACTime, __int64 * MTime,
     __int64 * ATime, __int64 * Size, bool TryWriteReadOnly = true);
+  bool __fastcall AllowLocalFileTransfer(AnsiString FileName, const TCopyParamType * CopyParam);
   bool __fastcall HandleException(Exception * E);
   void __fastcall CalculateFileSize(AnsiString FileName,
     const TRemoteFile * File, /*TCalculateSizeParams*/ void * Size);
@@ -315,6 +316,9 @@ protected:
     int MaxLen, AnsiString & Result);
   void __fastcall FileFind(AnsiString FileName, const TRemoteFile * File, void * Param);
   void __fastcall DoFilesFind(AnsiString Directory, TFilesFindParams & Params);
+  bool __fastcall DoCreateLocalFile(const AnsiString FileName,
+    TFileOperationProgressType * OperationProgress, HANDLE * AHandle,
+    bool NoConfirmation);
 
   virtual void __fastcall Information(const AnsiString & Str, bool Status);
   virtual int __fastcall QueryUser(const AnsiString Query,

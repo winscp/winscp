@@ -1,6 +1,6 @@
 1 VERSIONINFO
-FILEVERSION 4,2,4,610
-PRODUCTVERSION 4,2,4,610
+FILEVERSION 4,2,5,624
+PRODUCTVERSION 4,2,5,624
 FILEOS 0x4
 FILETYPE 0x1
 {
@@ -10,14 +10,14 @@ FILETYPE 0x1
         {
             VALUE "CompanyName", "Martin Prikryl\0"
             VALUE "FileDescription", "WinSCP: SFTP, FTP and SCP client\0"
-            VALUE "FileVersion", "4.2.4.610\0"
+            VALUE "FileVersion", "4.2.5.624\0"
             VALUE "InternalName", "winscp\0"
             VALUE "LegalCopyright", "(c) 2000-2009 Martin Prikryl\0"
             VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "winscp424.exe\0"
+            VALUE "OriginalFilename", "winscp425.exe\0"
             VALUE "ProductName", "WinSCP\0"
-            VALUE "ProductVersion", "4.2.4.0\0"
-            VALUE "ReleaseType", "beta\0"
+            VALUE "ProductVersion", "4.2.5.0\0"
+            VALUE "ReleaseType", "stable\0"
             VALUE "WWW", "http://winscp.net/\0"
         }
     }

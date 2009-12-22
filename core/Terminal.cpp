@@ -570,29 +570,19 @@ void __fastcall TTerminal::Idle()
 //---------------------------------------------------------------------
 AnsiString __fastcall TTerminal::EncryptPassword(const AnsiString & Password)
 {
-  if (Password.IsEmpty())
-  {
-    return AnsiString();
-  }
-  else
-  {
-    return Configuration->EncryptPassword(Password, SessionData->SessionName);
-  }
+  return Configuration->EncryptPassword(Password, SessionData->SessionName);
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TTerminal::DecryptPassword(const AnsiString & Password)
 {
   AnsiString Result;
-  if (!Password.IsEmpty())
+  try
   {
-    try
-    {
-      Result = Configuration->DecryptPassword(Password, SessionData->SessionName);
-    }
-    catch(EAbort &)
-    {
-      // silently ignore aborted prompts for master password and return empty password
-    }
+    Result = Configuration->DecryptPassword(Password, SessionData->SessionName);
+  }
+  catch(EAbort &)
+  {
+    // silently ignore aborted prompts for master password and return empty password
   }
   return Result;
 }
@@ -3521,6 +3511,82 @@ void __fastcall TTerminal::DoAnyCommand(const AnsiString Command,
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::DoCreateLocalFile(const AnsiString FileName,
+  TFileOperationProgressType * OperationProgress, HANDLE * AHandle,
+  bool NoConfirmation)
+{
+  bool Result = true;
+  bool Done;
+  unsigned int CreateAttr = FILE_ATTRIBUTE_NORMAL;
+  do
+  {
+    *AHandle = CreateFile(FileName.c_str(), GENERIC_WRITE, FILE_SHARE_READ,
+      NULL, CREATE_ALWAYS, CreateAttr, 0);
+    Done = (*AHandle != INVALID_HANDLE_VALUE);
+    if (!Done)
+    {
+      int FileAttr;
+      if (::FileExists(FileName) &&
+        (((FileAttr = FileGetAttr(FileName)) & (faReadOnly | faHidden)) != 0))
+      {
+        if (FLAGSET(FileAttr, faReadOnly))
+        {
+          if (OperationProgress->BatchOverwrite == boNone)
+          {
+            Result = false;
+          }
+          else if ((OperationProgress->BatchOverwrite != boAll) && !NoConfirmation)
+          {
+            int Answer;
+            SUSPEND_OPERATION
+            (
+              Answer = QueryUser(
+                FMTLOAD(READ_ONLY_OVERWRITE, (FileName)), NULL,
+                qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll, 0);
+            );
+            switch (Answer) {
+              case qaYesToAll: OperationProgress->BatchOverwrite = boAll; break;
+              case qaCancel: OperationProgress->Cancel = csCancel; // continue on next case
+              case qaNoToAll: OperationProgress->BatchOverwrite = boNone;
+              case qaNo: Result = false; break;
+            }
+          }
+        }
+        else
+        {
+          assert(FLAGSET(FileAttr, faHidden));
+          Result = true;
+        }
+
+        if (Result)
+        {
+          CreateAttr |=
+            FLAGMASK(FLAGSET(FileAttr, faHidden), FILE_ATTRIBUTE_HIDDEN) |
+            FLAGMASK(FLAGSET(FileAttr, faReadOnly), FILE_ATTRIBUTE_READONLY);
+
+          FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
+            if (FileSetAttr(FileName, FileAttr & ~(faReadOnly | faHidden)) != 0)
+            {
+              RaiseLastOSError();
+            }
+          );
+        }
+        else
+        {
+          Done = true;
+        }
+      }
+      else
+      {
+        RaiseLastOSError();
+      }
+    }
+  }
+  while (!Done);
+
+  return Result;
+}
+//---------------------------------------------------------------------------
 bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
   TFileOperationProgressType * OperationProgress, HANDLE * AHandle,
   bool NoConfirmation)
@@ -3529,73 +3595,7 @@ bool __fastcall TTerminal::CreateLocalFile(const AnsiString FileName,
   bool Result = true;
 
   FILE_OPERATION_LOOP (FMTLOAD(CREATE_FILE_ERROR, (FileName)),
-    bool Done;
-    unsigned int CreateAttr = FILE_ATTRIBUTE_NORMAL;
-    do
-    {
-      *AHandle = CreateFile(FileName.c_str(), GENERIC_WRITE, FILE_SHARE_READ,
-        NULL, CREATE_ALWAYS, CreateAttr, 0);
-      Done = (*AHandle != INVALID_HANDLE_VALUE);
-      if (!Done)
-      {
-        int FileAttr;
-        if (FileExists(FileName) &&
-          (((FileAttr = FileGetAttr(FileName)) & (faReadOnly | faHidden)) != 0))
-        {
-          if (FLAGSET(FileAttr, faReadOnly))
-          {
-            if (OperationProgress->BatchOverwrite == boNone)
-            {
-              Result = false;
-            }
-            else if ((OperationProgress->BatchOverwrite != boAll) && !NoConfirmation)
-            {
-              int Answer;
-              SUSPEND_OPERATION
-              (
-                Answer = QueryUser(
-                  FMTLOAD(READ_ONLY_OVERWRITE, (FileName)), NULL,
-                  qaYes | qaNo | qaCancel | qaYesToAll | qaNoToAll, 0);
-              );
-              switch (Answer) {
-                case qaYesToAll: OperationProgress->BatchOverwrite = boAll; break;
-                case qaCancel: OperationProgress->Cancel = csCancel; // continue on next case
-                case qaNoToAll: OperationProgress->BatchOverwrite = boNone;
-                case qaNo: Result = false; break;
-              }
-            }
-          }
-          else
-          {
-            assert(FLAGSET(FileAttr, faHidden));
-            Result = true;
-          }
-
-          if (Result)
-          {
-            CreateAttr |=
-              FLAGMASK(FLAGSET(FileAttr, faHidden), FILE_ATTRIBUTE_HIDDEN) |
-              FLAGMASK(FLAGSET(FileAttr, faReadOnly), FILE_ATTRIBUTE_READONLY);
-
-            FILE_OPERATION_LOOP (FMTLOAD(CANT_SET_ATTRS, (FileName)),
-              if (FileSetAttr(FileName, FileAttr & ~(faReadOnly | faHidden)) != 0)
-              {
-                RaiseLastOSError();
-              }
-            );
-          }
-          else
-          {
-            Done = true;
-          }
-        }
-        else
-        {
-          RaiseLastOSError();
-        }
-      }
-    }
-    while (!Done);
+    Result = DoCreateLocalFile(FileName, OperationProgress, AHandle, NoConfirmation);
   );
 
   return Result;
@@ -3687,6 +3687,32 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
 
   if (AAttrs) *AAttrs = Attrs;
   if (AHandle) *AHandle = Handle;
+}
+//---------------------------------------------------------------------------
+bool __fastcall TTerminal::AllowLocalFileTransfer(AnsiString FileName,
+  const TCopyParamType * CopyParam)
+{
+  bool Result = true;
+  if (!CopyParam->AllowAnyTransfer())
+  {
+    WIN32_FIND_DATA FindData;
+    HANDLE Handle;
+    FILE_OPERATION_LOOP (FMTLOAD(FILE_NOT_EXISTS, (FileName)),
+      Handle = FindFirstFile(FileName.c_str(), &FindData);
+      if (Handle == INVALID_HANDLE_VALUE)
+      {
+        Abort();
+      }
+    )
+    ::FindClose(Handle);
+    bool Directory = FLAGSET(FindData.dwFileAttributes, FILE_ATTRIBUTE_DIRECTORY);
+    TFileMasks::TParams Params;
+    Params.Size =
+      (static_cast<__int64>(FindData.nFileSizeHigh) << 32) +
+      FindData.nFileSizeLow;
+    Result = CopyParam->AllowTransfer(FileName, osLocal, Directory, Params);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TTerminal::FileUrl(const AnsiString Protocol,

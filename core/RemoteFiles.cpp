@@ -112,7 +112,7 @@ bool __fastcall ExtractCommonPath(TStrings * Files, AnsiString & Path)
   {
     for (int Index = 1; Index < Files->Count; Index++)
     {
-      while (Path.IsEmpty() &&
+      while (!Path.IsEmpty() &&
         (Files->Strings[Index].SubString(1, Path.Length()) != Path))
       {
         int PrevLen = Path.Length();
@@ -120,6 +120,7 @@ bool __fastcall ExtractCommonPath(TStrings * Files, AnsiString & Path)
         if (Path.Length() == PrevLen)
         {
           Path = "";
+          Result = false;
         }
       }
     }
@@ -138,7 +139,7 @@ bool __fastcall UnixExtractCommonPath(TStrings * Files, AnsiString & Path)
   {
     for (int Index = 1; Index < Files->Count; Index++)
     {
-      while (Path.IsEmpty() &&
+      while (!Path.IsEmpty() &&
         (Files->Strings[Index].SubString(1, Path.Length()) != Path))
       {
         int PrevLen = Path.Length();
@@ -146,6 +147,7 @@ bool __fastcall UnixExtractCommonPath(TStrings * Files, AnsiString & Path)
         if (Path.Length() == PrevLen)
         {
           Path = "";
+          Result = false;
         }
       }
     }
@@ -359,7 +361,7 @@ TDateTime __fastcall ReduceDateTimePrecision(TDateTime DateTime,
         assert(false);
     }
 
-    DateTime = EncodeDate(Y, M, D) + EncodeTime(H, N, S, MS);
+    DateTime = EncodeDateVerbose(Y, M, D) + EncodeTimeVerbose(H, N, S, MS);
   }
   return DateTime;
 }
@@ -1157,7 +1159,7 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
         }
       }
 
-      FModification = EncodeDate(Year, Month, Day) + EncodeTime(Hour, Min, Sec, 0);
+      FModification = EncodeDateVerbose(Year, Month, Day) + EncodeTimeVerbose(Hour, Min, Sec, 0);
       // adjust only when time is known,
       // adjusting default "midnight" time makes no sense
       if ((FModificationFmt == mfMDHM) || (FModificationFmt == mfFull))

@@ -30,6 +30,23 @@ bool __fastcall ExceptionMessage(Exception * E, AnsiString & Message)
   return Result;
 }
 //---------------------------------------------------------------------------
+TStrings * ExceptionToMoreMessages(Exception * E)
+{
+  TStrings * Result = NULL;
+  AnsiString Message;
+  if (ExceptionMessage(E, Message))
+  {
+    Result = new TStringList();
+    Result->Add(Message);
+    ExtException * ExtE = dynamic_cast<ExtException *>(E);
+    if (ExtE != NULL)
+    {
+      Result->AddStrings(ExtE->MoreMessages);
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
 __fastcall ExtException::ExtException(Exception * E) :
   Exception("")
 {

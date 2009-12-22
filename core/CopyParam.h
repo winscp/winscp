@@ -78,6 +78,7 @@ public:
   bool __fastcall AllowResume(__int64 Size) const;
   AnsiString __fastcall ValidLocalFileName(AnsiString FileName) const;
   AnsiString __fastcall ValidLocalPath(AnsiString Path) const;
+  bool __fastcall AllowAnyTransfer() const;
   bool __fastcall AllowTransfer(AnsiString FileName, TOperationSide Side,
     bool Directory, const TFileMasks::TParams & Params) const;
 

@@ -9,6 +9,7 @@
 
 #include <Common.h>
 #include <TextsWin.h>
+#include <Exceptions.h>
 
 #include "GUITools.h"
 #include "VCLCommon.h"
@@ -204,7 +205,7 @@ bool __fastcall ExecuteShellAndWait(const AnsiString Command)
     &Application->ProcessMessages);
 }
 //---------------------------------------------------------------------------
-void __fastcall CreateDesktopShortCut(const AnsiString &Name,
+void __fastcall CreateDesktopShortCut(const AnsiString & Name,
   const AnsiString &File, const AnsiString & Params, const AnsiString & Description,
   int SpecialFolder)
 {
@@ -268,7 +269,7 @@ void __fastcall CreateDesktopShortCut(const AnsiString &Name,
               strShortCutLocation += AnsiString("\\") + Name + ".lnk";
               if (!SUCCEEDED(pPersistFile->Save(strShortCutLocation.c_bstr(), TRUE)))
               {
-                throw Exception("");
+                RaiseLastOSError();
               }
             }
             __finally
@@ -285,9 +286,9 @@ void __fastcall CreateDesktopShortCut(const AnsiString &Name,
       CoUninitialize();
     }
   }
-  catch(...)
+  catch(Exception & E)
   {
-    throw Exception(CREATE_SHORTCUT_ERROR);
+    throw ExtException(&E, LoadStr(CREATE_SHORTCUT_ERROR));
   }
 }
 //---------------------------------------------------------------------------

@@ -498,7 +498,7 @@ TStrings * __fastcall TCopyParamList::GetNameList() const
 
     for (int i = 0; i < Count; i++)
     {
-      FNameList->Add(StripHotkey(FNames->Strings[i]));
+      FNameList->Add(FNames->Strings[i]);
     }
   }
   return FNameList;

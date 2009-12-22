@@ -76,6 +76,19 @@ struct FontSpec {
 #define DF_END 0x0001
 
 /*
+ * Dynamically linked functions.
+ * This is somewhat circuitous to allow function-renaming macros to be
+ * expanded, principally the ANSI/Unicode DoSomethingA/DoSomethingW.
+ */
+#define DECL_WINDOWS_FUNCTION(linkage, rettype, name, params) \
+    typedef rettype (WINAPI *t_##name) params; \
+    linkage t_##name p_##name
+#define STR1(x) #x
+#define STR(x) STR1(x)
+#define GET_WINDOWS_FUNCTION(module, name) \
+    p_##name = module ? (t_##name) GetProcAddress(module, STR(name)) : NULL
+
+/*
  * Global variables. Most modules declare these `extern', but
  * window.c will do `#define PUTTY_DO_GLOBALS' before including this
  * module, and so will get them properly defined.
@@ -207,16 +220,16 @@ GLOBAL void *logctx;
  * that module must be exported from it as function pointers. So
  * here they are.
  */
-extern int (WINAPI *p_WSAAsyncSelect)
-    (SOCKET s, HWND hWnd, u_int wMsg, long lEvent);
-extern int (WINAPI *p_WSAEventSelect)
-    (SOCKET s, WSAEVENT hEventObject, long lNetworkEvents);
-extern int (WINAPI *p_select)
-    (int nfds, fd_set FAR * readfds, fd_set FAR * writefds,
-     fd_set FAR *exceptfds, const struct timeval FAR * timeout);
-extern int (WINAPI *p_WSAGetLastError)(void);
-extern int (WINAPI *p_WSAEnumNetworkEvents)
-    (SOCKET s, WSAEVENT hEventObject, LPWSANETWORKEVENTS lpNetworkEvents);
+DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAAsyncSelect,
+		      (SOCKET, HWND, u_int, long));
+DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEventSelect,
+		      (SOCKET, WSAEVENT, long));
+DECL_WINDOWS_FUNCTION(GLOBAL, int, select,
+		      (int, fd_set FAR *, fd_set FAR *,
+		       fd_set FAR *, const struct timeval FAR *));
+DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAGetLastError, (void));
+DECL_WINDOWS_FUNCTION(GLOBAL, int, WSAEnumNetworkEvents,
+		      (SOCKET, WSAEVENT, LPWSANETWORKEVENTS));
 
 extern int socket_writable(SOCKET skt);
 
