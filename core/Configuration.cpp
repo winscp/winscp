@@ -87,6 +87,7 @@ void __fastcall TConfiguration::Default()
   FLogProtocol = 0;
   FLogActions = false;
   FPermanentLogActions = false;
+  UpdateActualLogProtocol();
 
   Changed();
 }
@@ -868,6 +869,7 @@ void __fastcall TConfiguration::TemporaryLogging(const AnsiString ALogFileName)
   FLogging = true;
   FLogFileName = ALogFileName;
   FLogActions = SameText(ExtractFileExt(FLogFileName), ".xml");
+  UpdateActualLogProtocol();
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogging(bool value)
@@ -876,6 +878,7 @@ void __fastcall TConfiguration::SetLogging(bool value)
   {
     FPermanentLogging = value;
     FLogging = value;
+    UpdateActualLogProtocol();
     Changed();
   }
 }
@@ -904,9 +907,15 @@ bool __fastcall TConfiguration::GetLogToFile()
   return !LogFileName.IsEmpty();
 }
 //---------------------------------------------------------------------
+void __fastcall TConfiguration::UpdateActualLogProtocol()
+{
+  FActualLogProtocol = FLogging ? FLogProtocol : 0;
+}
+//---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogProtocol(int value)
 {
   SET_CONFIG_PROPERTY(LogProtocol);
+  UpdateActualLogProtocol();
 }
 //---------------------------------------------------------------------
 void __fastcall TConfiguration::SetLogActions(bool value)

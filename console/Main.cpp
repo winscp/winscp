@@ -204,7 +204,7 @@ void InitializeChild(const char* CommandLine, int InstanceNumber, HANDLE& Child)
   char ChildPath[MAX_PATH] = "";
 
   size_t CommandLineLen = strlen(CommandLine);
-  char* Buffer = new char[CommandLineLen + 1];
+  char* Buffer = new char[(CommandLineLen > MAX_PATH ? CommandLineLen : MAX_PATH) + 1];
 
   int Count = 0;
   const char * P = CommandLine;
@@ -222,9 +222,11 @@ void InitializeChild(const char* CommandLine, int InstanceNumber, HANDLE& Child)
 
   if (strlen(ChildPath) == 0)
   {
-    P = CommandLine;
-    // skip executable path
-    CutToken(P, Buffer);
+    DWORD ModuleNameLen = GetModuleFileName(NULL, Buffer, MAX_PATH);
+    if ((ModuleNameLen == 0) || (ModuleNameLen == MAX_PATH))
+    {
+      throw runtime_error("Error retrieving executable name.");
+    }
     const char* LastDelimiter = strrchr(Buffer, '\\');
     const char* AppFileName;
     if (LastDelimiter != NULL)

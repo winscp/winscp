@@ -718,6 +718,14 @@ int ssl3_get_client_hello(SSL *s)
 #endif
 	STACK_OF(SSL_CIPHER) *ciphers=NULL;
 
+	if (s->new_session
+	    && !(s->s3->flags&SSL3_FLAGS_ALLOW_UNSAFE_LEGACY_RENEGOTIATION))
+		{
+		al=SSL_AD_HANDSHAKE_FAILURE;
+		SSLerr(SSL_F_SSL3_GET_CLIENT_HELLO, ERR_R_INTERNAL_ERROR);
+		goto f_err;
+		}
+
 	/* We do this so that we will respond with our native type.
 	 * If we are TLSv1 and we get SSLv3, we will respond with TLSv1,
 	 * This down switching should be handled by a different method.

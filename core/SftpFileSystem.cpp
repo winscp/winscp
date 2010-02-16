@@ -1393,7 +1393,7 @@ protected:
             PrevBufSize + BlockBuf.Size);
         }
 
-        if (FFileSystem->FTerminal->Configuration->LogProtocol >= 1)
+        if (FFileSystem->FTerminal->Configuration->ActualLogProtocol >= 1)
         {
           FFileSystem->FTerminal->LogEvent(FORMAT("Write request offset: %d, len: %d",
             (int(FTransfered), int(BlockBuf.Size))));
@@ -1990,7 +1990,7 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
       if ((FPreviousLoggedPacket != SSH_FXP_READ &&
            FPreviousLoggedPacket != SSH_FXP_WRITE) ||
           (Packet->Type != FPreviousLoggedPacket) ||
-          (FTerminal->Configuration->LogProtocol >= 1))
+          (FTerminal->Configuration->ActualLogProtocol >= 1))
       {
         if (FNotLoggedPackets)
         {
@@ -2000,7 +2000,7 @@ void __fastcall TSFTPFileSystem::SendPacket(const TSFTPPacket * Packet)
         }
         FTerminal->Log->Add(llInput, FORMAT("Type: %s, Size: %d, Number: %d",
           (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
-        if (FTerminal->Configuration->LogProtocol >= 2)
+        if (FTerminal->Configuration->ActualLogProtocol >= 2)
         {
           FTerminal->Log->Add(llInput, Packet->Dump());
         }
@@ -2192,7 +2192,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
         if ((FPreviousLoggedPacket != SSH_FXP_READ &&
              FPreviousLoggedPacket != SSH_FXP_WRITE) ||
             (Packet->Type != SSH_FXP_STATUS && Packet->Type != SSH_FXP_DATA) ||
-            (FTerminal->Configuration->LogProtocol >= 1))
+            (FTerminal->Configuration->ActualLogProtocol >= 1))
         {
           if (FNotLoggedPackets)
           {
@@ -2202,7 +2202,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
           }
           FTerminal->Log->Add(llOutput, FORMAT("Type: %s, Size: %d, Number: %d",
             (Packet->TypeName, (int)Packet->Length, (int)Packet->MessageNumber)));
-          if (FTerminal->Configuration->LogProtocol >= 2)
+          if (FTerminal->Configuration->ActualLogProtocol >= 2)
           {
             FTerminal->Log->Add(llOutput, Packet->Dump());
           }
@@ -2998,7 +2998,7 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
         for (unsigned long Index = 0; !isEOF && (Index < Count); Index++)
         {
           File = LoadFile(&ListingPacket, NULL, "", FileList);
-          if (FTerminal->Configuration->LogProtocol >= 1)
+          if (FTerminal->Configuration->ActualLogProtocol >= 1)
           {
             FTerminal->LogEvent(FORMAT("Read file '%s' from listing", (File->FileName)));
           }

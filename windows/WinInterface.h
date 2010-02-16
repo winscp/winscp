@@ -368,6 +368,8 @@ void __fastcall UpgradeSpeedButton(TSpeedButton * Button);
 void __fastcall SetGlobalMinimizeHandler(TNotifyEvent OnMinimize);
 TNotifyEvent __fastcall GetGlobalMinimizeHandler();
 bool __fastcall IsGlobalMinimizeHandler();
+LCID __fastcall GetDefaultLCID();
+void __fastcall WinInitialize();
 
 void __fastcall ShowNotification(TTerminal * Terminal, const AnsiString & Str,
   TQueryType Type);
@@ -402,7 +404,7 @@ public:
 
   static bool __fastcall SupportsBalloons();
 
-  void __fastcall PopupBalloon(const AnsiString & Title, const AnsiString & Str,
+  void __fastcall PopupBalloon(AnsiString Title, const AnsiString & Str,
     TQueryType QueryType, unsigned int Timeout);
   void __fastcall CancelBalloon();
 

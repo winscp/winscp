@@ -599,7 +599,14 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     UpdateControls();
   }
 
-  FCurrentSessionName = aSessionData->Name;
+  if (UnixExtractFileName(aSessionData->Name) != aSessionData->DefaultSessionName)
+  {
+    FCurrentSessionName = aSessionData->Name;
+  }
+  else
+  {
+    FCurrentSessionName = "";
+  }
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
@@ -607,7 +614,6 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   // it was always true
   assert(aSessionData == FSessionData);
 
-  aSessionData->Name = FCurrentSessionName;
   // Basic tab
   aSessionData->UserName = UserNameEdit->Text.Trim();
   aSessionData->PortNumber = PortNumberEdit->AsInteger;
@@ -796,6 +802,14 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   {
     aSessionData->TunnelLocalPortNumber = StrToIntDef(TunnelLocalPortNumberEdit->Text, 0);
   }
+
+  AnsiString Name = FCurrentSessionName;
+  if (Name.IsEmpty())
+  {
+    Name = UnixIncludeTrailingBackslash(SessionNodePath(CurrentSessionFolderNode())) +
+      aSessionData->DefaultSessionName;
+  }
+  aSessionData->Name = Name;
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::UpdateNavigationTree()
@@ -1317,7 +1331,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
 
   AnsiString SessionName = FSessionData->SessionName;
   // when saving new session, save by default to current session folder
-  if (FCurrentSessionName.IsEmpty())
+  if (FEditingSessionData == NULL)
   {
     SessionName.Insert(
       UnixIncludeTrailingBackslash(SessionNodePath(CurrentSessionFolderNode())), 1);

@@ -40,6 +40,34 @@ AnsiString __fastcall PuttyMungeStr(const AnsiString Str)
 {
   return MungeStr(Str);
 }
+//---------------------------------------------------------------------------
+AnsiString __fastcall MungeIniName(const AnsiString Str)
+{
+  int P = Str.Pos("=");
+  // make this fast for now
+  if (P > 0)
+  {
+    return StringReplace(Str, "=", "%3D", TReplaceFlags() << rfReplaceAll);
+  }
+  else
+  {
+    return Str;
+  }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall UnMungeIniName(const AnsiString Str)
+{
+  int P = Str.Pos("%3D");
+  // make this fast for now
+  if (P > 0)
+  {
+    return StringReplace(Str, "%3D", "=", TReplaceFlags() << rfReplaceAll);
+  }
+  else
+  {
+    return Str;
+  }
+}
 //===========================================================================
 __fastcall THierarchicalStorage::THierarchicalStorage(const AnsiString AStorage)
 {
@@ -713,7 +741,11 @@ void __fastcall TIniFileStorage::GetSubKeyNames(Classes::TStrings* Strings)
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::GetValueNames(Classes::TStrings* Strings)
 {
-  return FIniFile->ReadSection(CurrentSection, Strings);
+  FIniFile->ReadSection(CurrentSection, Strings);
+  for (int Index = 0; Index < Strings->Count; Index++)
+  {
+    Strings->Strings[Index] = UnMungeIniName(Strings->Strings[Index]);
+  }
 }
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::KeyExists(const AnsiString SubKey)
@@ -723,12 +755,12 @@ bool __fastcall TIniFileStorage::KeyExists(const AnsiString SubKey)
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::ValueExists(const AnsiString Value)
 {
-  return FIniFile->ValueExists(CurrentSection, Value);
+  return FIniFile->ValueExists(CurrentSection, MungeIniName(Value));
 }
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::DeleteValue(const AnsiString Name)
 {
-  FIniFile->DeleteKey(CurrentSection, Name);
+  FIniFile->DeleteKey(CurrentSection, MungeIniName(Name));
   return true;
 }
 //---------------------------------------------------------------------------
@@ -756,6 +788,7 @@ void __fastcall TIniFileStorage::ApplyOverrides()
         AnsiString SubKey = Section.SubString(OverridesKey.Length() + 1,
           Section.Length() - OverridesKey.Length());
 
+        // this all uses raw names (munged)
         TStrings * Names = new TStringList;
         try
         {
@@ -785,12 +818,12 @@ void __fastcall TIniFileStorage::ApplyOverrides()
 //---------------------------------------------------------------------------
 bool __fastcall TIniFileStorage::ReadBool(const AnsiString Name, bool Default)
 {
-  return FIniFile->ReadBool(CurrentSection, Name, Default);
+  return FIniFile->ReadBool(CurrentSection, MungeIniName(Name), Default);
 }
 //---------------------------------------------------------------------------
 int __fastcall TIniFileStorage::ReadInteger(const AnsiString Name, int Default)
 {
-  return FIniFile->ReadInteger(CurrentSection, Name, Default);
+  return FIniFile->ReadInteger(CurrentSection, MungeIniName(Name), Default);
 }
 //---------------------------------------------------------------------------
 __int64 __fastcall TIniFileStorage::ReadInt64(const AnsiString Name, __int64 Default)
@@ -808,7 +841,7 @@ __int64 __fastcall TIniFileStorage::ReadInt64(const AnsiString Name, __int64 Def
 TDateTime __fastcall TIniFileStorage::ReadDateTime(const AnsiString Name, TDateTime Default)
 {
   TDateTime Result;
-  AnsiString Value = FIniFile->ReadString(CurrentSection, Name, "");
+  AnsiString Value = FIniFile->ReadString(CurrentSection, MungeIniName(Name), "");
   if (Value.IsEmpty())
   {
     Result = Default;
@@ -839,7 +872,7 @@ TDateTime __fastcall TIniFileStorage::ReadDateTime(const AnsiString Name, TDateT
 double __fastcall TIniFileStorage::ReadFloat(const AnsiString Name, double Default)
 {
   double Result;
-  AnsiString Value = FIniFile->ReadString(CurrentSection, Name, "");
+  AnsiString Value = FIniFile->ReadString(CurrentSection, MungeIniName(Name), "");
   if (Value.IsEmpty())
   {
     Result = Default;
@@ -869,7 +902,7 @@ double __fastcall TIniFileStorage::ReadFloat(const AnsiString Name, double Defau
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::ReadStringRaw(const AnsiString Name, AnsiString Default)
 {
-  return FIniFile->ReadString(CurrentSection, Name, Default);
+  return FIniFile->ReadString(CurrentSection, MungeIniName(Name), Default);
 }
 //---------------------------------------------------------------------------
 int __fastcall TIniFileStorage::ReadBinaryData(const AnsiString Name,
@@ -888,12 +921,12 @@ int __fastcall TIniFileStorage::ReadBinaryData(const AnsiString Name,
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteBool(const AnsiString Name, bool Value)
 {
-  FIniFile->WriteBool(CurrentSection, Name, Value);
+  FIniFile->WriteBool(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteInteger(const AnsiString Name, int Value)
 {
-  FIniFile->WriteInteger(CurrentSection, Name, Value);
+  FIniFile->WriteInteger(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteInt64(const AnsiString Name, __int64 Value)
@@ -913,7 +946,7 @@ void __fastcall TIniFileStorage::WriteFloat(const AnsiString Name, double Value)
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteStringRaw(const AnsiString Name, const AnsiString Value)
 {
-  FIniFile->WriteString(CurrentSection, Name, Value);
+  FIniFile->WriteString(CurrentSection, MungeIniName(Name), Value);
 }
 //---------------------------------------------------------------------------
 void __fastcall TIniFileStorage::WriteBinaryData(const AnsiString Name,

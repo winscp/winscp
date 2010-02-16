@@ -539,7 +539,7 @@ void __fastcall TTerminal::Idle()
   // "receives the information"
   if (Active)
   {
-    if (Configuration->LogProtocol >= 1)
+    if (Configuration->ActualLogProtocol >= 1)
     {
       LogEvent("Session upkeep");
     }

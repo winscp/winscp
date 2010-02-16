@@ -2857,11 +2857,8 @@ static int ssh_do_close(Ssh ssh, int notify_exit)
 	    del234(ssh->portfwds, pf); /* moving next one to index 0 */
 	    free_portfwd(pf);
 	}
-#ifdef MPEXT
-	// fix memory leak
 	freetree234(ssh->portfwds);
 	ssh->portfwds = NULL;
-#endif
     }
 
     return ret;

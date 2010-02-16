@@ -104,6 +104,14 @@ __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
         "...", "", TReplaceFlags() << rfReplaceAll << rfIgnoreCase));
   }
 
+  if (IsWin7())
+  {
+    LocalPathLabel->IndentVertical = LocalPathLabel->IndentVertical + 3;
+    LocalPathLabel->Height = LocalPathLabel->Height + (3 * 2);
+    RemotePathLabel->IndentVertical = RemotePathLabel->IndentVertical + 3;
+    RemotePathLabel->Height = RemotePathLabel->Height + (3 * 2);
+  }
+
   LocalDirView->Font = Screen->IconFont;
 
   NonVisualDataModule->InitMenus(this);
@@ -887,8 +895,8 @@ void __fastcall TScpCommanderForm::SynchronizeBrowsingLocal(
   TStrings * Paths = new TStringList();
   try
   {
-    Paths->Add(PrevPath);
-    Paths->Add(LocalDirView->Path);
+    Paths->Add(IncludeTrailingBackslash(PrevPath));
+    Paths->Add(IncludeTrailingBackslash(LocalDirView->Path));
     AnsiString CommonPath;
     if (ExtractCommonPath(Paths, CommonPath))
     {

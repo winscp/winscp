@@ -1907,8 +1907,23 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
     {
       AnsiString Caption = UnixIncludeTrailingBackslash(RemoteDirectory) + OriginalFileName +
         " - " + Terminal->SessionData->SessionName;
-      TForm * Editor = ShowEditorForm(FileName, this, FEditorManager->FileChanged,
-        FEditorManager->FileReload, FEditorManager->FileClosed, Caption);
+      TForm * Editor;
+      try
+      {
+        Editor = ShowEditorForm(FileName, this, FEditorManager->FileChanged,
+          FEditorManager->FileReload, FEditorManager->FileClosed, Caption);
+      }
+      catch(...)
+      {
+        try
+        {
+          RecursiveDeleteFile(ExcludeTrailingBackslash(LocalRootDirectory), false);
+        }
+        catch(...)
+        {
+        }
+        throw;
+      }
 
       FEditorManager->AddFileInternal(FileName, Data, Editor);
     }

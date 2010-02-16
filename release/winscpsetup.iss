@@ -7,7 +7,7 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
-#define Year 2009
+#define Year 2010
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
@@ -736,8 +736,9 @@ begin
   AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
 
 #ifdef OpenCandy
-  OpenCandyInit('WinSCP', '{#OpenCandyKey}', '3d0f240d63cf2239f9e45c3562d8bdbc',
-    ExpandConstant('{cm:LanguageISOCode}'), '{#RegistryKey}\OpenCandy');
+  OpenCandyInitRemnant('WinSCP', '{#OpenCandyKey}', '3d0f240d63cf2239f9e45c3562d8bdbc',
+    ExpandConstant('{cm:LanguageISOCode}'), '{#RegistryKey}\OpenCandy',
+    WizardSilent());
 #endif
 end;
 

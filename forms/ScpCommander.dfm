@@ -11,9 +11,9 @@ inherited ScpCommanderForm: TScpCommanderForm
   TextHeight = 13
   object Splitter: TSplitter [0]
     Left = 313
-    Top = 205
+    Top = 209
     Width = 5
-    Height = 277
+    Height = 267
     Cursor = crHSplit
     Hint = 
       '|Drag to change ratio of file panels. Double click to make width' +
@@ -23,12 +23,12 @@ inherited ScpCommanderForm: TScpCommanderForm
     OnMoved = SplitterMoved
   end
   inherited QueueSplitter: TSplitter
-    Top = 533
-    Width = 837
+    Top = 529
+    Width = 829
   end
   inherited TopDock: TTBXDock
-    Width = 837
-    Height = 205
+    Width = 829
+    Height = 209
     object MenuToolbar: TTBXToolbar
       Left = 0
       Top = 0
@@ -759,7 +759,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object SelectionToolbar: TTBXToolbar
       Left = 0
-      Top = 75
+      Top = 78
       Caption = 'Selection'
       DockPos = 0
       DockRow = 3
@@ -790,7 +790,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object PreferencesToolbar: TTBXToolbar
       Left = 0
-      Top = 49
+      Top = 52
       Caption = 'Preferences'
       DockPos = 0
       DockRow = 2
@@ -825,7 +825,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object SessionToolbar: TTBXToolbar
       Left = 0
-      Top = 23
+      Top = 25
       Caption = 'Session'
       DockMode = dmCannotFloat
       DockPos = 0
@@ -865,7 +865,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object CommandToolbar: TTBXToolbar
       Left = 0
-      Top = 101
+      Top = 104
       Caption = 'Standard'
       DockPos = -5
       DockRow = 4
@@ -907,7 +907,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object SortToolbar: TTBXToolbar
       Left = 0
-      Top = 127
+      Top = 130
       Caption = 'Sort'
       DockPos = -8
       DockRow = 5
@@ -947,7 +947,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object CommandsToolbar: TTBXToolbar
       Left = 0
-      Top = 153
+      Top = 156
       Caption = 'Commands'
       DockPos = 0
       DockRow = 6
@@ -983,7 +983,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object UpdatesToolbar: TTBXToolbar
       Left = 0
-      Top = 179
+      Top = 182
       Caption = 'Updates'
       DockPos = -7
       DockRow = 7
@@ -1024,8 +1024,8 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
     end
     object TransferToolbar: TTBXToolbar
-      Left = 46
-      Top = 179
+      Left = 40
+      Top = 182
       Caption = 'Transfer settings'
       DockMode = dmCannotFloat
       DockPos = 44
@@ -1059,7 +1059,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object UploadDownloadToolbar: TTBXToolbar
       Left = 170
-      Top = 179
+      Top = 182
       Caption = 'Upload/Download'
       DockPos = 170
       DockRow = 7
@@ -1077,7 +1077,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object CustomCommandsToolbar: TTBXToolbar
       Left = 226
-      Top = 179
+      Top = 182
       Caption = 'Custom Commands'
       DockPos = 225
       DockRow = 7
@@ -1090,16 +1090,16 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   inherited RemotePanel: TPanel
     Left = 318
-    Top = 205
-    Width = 519
-    Height = 277
+    Top = 209
+    Width = 511
+    Height = 267
     Constraints.MinHeight = 220
     Constraints.MinWidth = 185
     TabOrder = 1
     object RemotePathLabel: TPathLabel [0]
       Left = 0
-      Top = 78
-      Width = 519
+      Top = 79
+      Width = 511
       Height = 15
       UnixPath = True
       HotTrack = True
@@ -1110,8 +1110,8 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     inherited RemotePanelSplitter: TSplitter
       Left = 0
-      Top = 138
-      Width = 519
+      Top = 139
+      Width = 511
       Height = 3
       Cursor = crVSplit
       Hint = 
@@ -1120,15 +1120,15 @@ inherited ScpCommanderForm: TScpCommanderForm
       Align = alTop
     end
     inherited RemoteStatusBar: TTBXStatusBar
-      Top = 258
-      Width = 519
+      Top = 248
+      Width = 511
       SimplePanel = True
     end
     inherited RemoteDirView: TUnixDirView
       Left = 0
-      Top = 141
-      Width = 519
-      Height = 108
+      Top = 142
+      Width = 511
+      Height = 97
       Constraints.MinHeight = 70
       NortonLike = nlOn
       OnUpdateStatusBar = RemoteDirViewUpdateStatusBar
@@ -1138,8 +1138,8 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnPathChange = RemoteDirViewPathChange
     end
     inherited RemoteDriveView: TUnixDriveView
-      Top = 93
-      Width = 519
+      Top = 94
+      Width = 511
       Height = 45
       Align = alTop
       Constraints.MinHeight = 30
@@ -1149,12 +1149,12 @@ inherited ScpCommanderForm: TScpCommanderForm
     object RemoteTopDock: TTBXDock
       Left = 0
       Top = 0
-      Width = 519
-      Height = 78
+      Width = 511
+      Height = 79
       FixAlign = True
       object RemoteHistoryToolbar: TTBXToolbar
         Left = 0
-        Top = 26
+        Top = 27
         Caption = 'Remote history'
         DockPos = -6
         DockRow = 1
@@ -1173,7 +1173,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       object RemoteNavigationToolbar: TTBXToolbar
         Left = 0
-        Top = 52
+        Top = 53
         Caption = 'Remote navigation'
         DockPos = 0
         DockRow = 2
@@ -1232,32 +1232,32 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object RemoteBottomDock: TTBXDock
       Left = 0
-      Top = 249
-      Width = 519
+      Top = 239
+      Width = 511
       Height = 9
       FixAlign = True
       Position = dpBottom
     end
   end
   inherited QueuePanel: TPanel
-    Top = 536
-    Width = 837
+    Top = 532
+    Width = 829
     Height = 116
     TabOrder = 3
     inherited QueueView2: TListView
-      Width = 837
+      Width = 829
       Height = 90
       TabStop = False
     end
     inherited QueueDock: TTBXDock
-      Width = 837
+      Width = 829
     end
   end
   object LocalPanel: TPanel
     Left = 0
-    Top = 205
+    Top = 209
     Width = 313
-    Height = 277
+    Height = 267
     Align = alLeft
     BevelOuter = bvNone
     Constraints.MinHeight = 220
@@ -1265,7 +1265,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     TabOrder = 0
     object LocalPathLabel: TPathLabel
       Left = 0
-      Top = 78
+      Top = 79
       Width = 313
       Height = 15
       HotTrack = True
@@ -1277,7 +1277,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalPanelSplitter: TSplitter
       Left = 0
-      Top = 138
+      Top = 139
       Width = 313
       Height = 3
       Cursor = crVSplit
@@ -1291,7 +1291,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalStatusBar: TTBXStatusBar
       Left = 0
-      Top = 258
+      Top = 248
       Width = 313
       Height = 19
       Panels = <>
@@ -1303,9 +1303,9 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDirView: TDirView
       Left = 0
-      Top = 141
+      Top = 142
       Width = 313
-      Height = 108
+      Height = 97
       Align = alClient
       Constraints.MinHeight = 70
       FullDrag = True
@@ -1342,11 +1342,11 @@ inherited ScpCommanderForm: TScpCommanderForm
       Left = 0
       Top = 0
       Width = 313
-      Height = 78
+      Height = 79
       FixAlign = True
       object LocalHistoryToolbar: TTBXToolbar
         Left = 0
-        Top = 26
+        Top = 27
         Caption = 'Local history'
         DockPos = -6
         DockRow = 1
@@ -1365,7 +1365,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       end
       object LocalNavigationToolbar: TTBXToolbar
         Left = 0
-        Top = 52
+        Top = 53
         Caption = 'Local navigation'
         DockPos = 0
         DockRow = 2
@@ -1422,7 +1422,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalDriveView: TDriveView
       Left = 0
-      Top = 93
+      Top = 94
       Width = 313
       Height = 45
       WatchDirectory = True
@@ -1444,7 +1444,7 @@ inherited ScpCommanderForm: TScpCommanderForm
     end
     object LocalBottomDock: TTBXDock
       Left = 0
-      Top = 249
+      Top = 239
       Width = 313
       Height = 9
       FixAlign = True
@@ -1453,14 +1453,14 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   object BottomDock: TTBXDock
     Left = 0
-    Top = 482
-    Width = 837
-    Height = 51
+    Top = 476
+    Width = 829
+    Height = 53
     FixAlign = True
     Position = dpBottom
     object ToolbarToolbar: TTBXToolbar
       Left = 0
-      Top = 25
+      Top = 27
       Caption = 'Commands'
       DockPos = 0
       DockRow = 1
@@ -1533,8 +1533,8 @@ inherited ScpCommanderForm: TScpCommanderForm
   end
   object StatusBar: TTBXStatusBar
     Left = 0
-    Top = 652
-    Width = 837
+    Top = 648
+    Width = 829
     Images = GlyphsModule.SessionImages
     Panels = <
       item

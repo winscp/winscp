@@ -17,8 +17,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   TextHeight = 13
   object QueueSplitter: TSplitter
     Left = 0
-    Top = 293
-    Width = 628
+    Top = 289
+    Width = 620
     Height = 3
     Cursor = crVSplit
     Hint = 'Drag to resize queue list. Double click to hide queue list.'
@@ -31,15 +31,15 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   object TopDock: TTBXDock
     Left = 0
     Top = 0
-    Width = 628
+    Width = 620
     Height = 9
     FixAlign = True
   end
   object RemotePanel: TPanel
     Left = 0
     Top = 9
-    Width = 628
-    Height = 284
+    Width = 620
+    Height = 280
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 0
@@ -47,7 +47,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 169
       Top = 0
       Width = 3
-      Height = 265
+      Height = 261
       Cursor = crHSplit
       AutoSnap = False
       MinSize = 70
@@ -55,8 +55,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     end
     object RemoteStatusBar: TTBXStatusBar
       Left = 0
-      Top = 265
-      Width = 628
+      Top = 261
+      Width = 620
       Height = 19
       Panels = <>
       ParentShowHint = False
@@ -67,8 +67,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object RemoteDirView: TUnixDirView
       Left = 172
       Top = 0
-      Width = 456
-      Height = 265
+      Width = 448
+      Height = 261
       Align = alClient
       FullDrag = True
       HideSelection = False
@@ -105,7 +105,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Left = 0
       Top = 0
       Width = 169
-      Height = 265
+      Height = 261
       DirView = RemoteDirView
       OnDDDragFileName = RemoteFileControlDDDragFileName
       OnDDEnd = RemoteFileControlDDEnd
@@ -129,8 +129,8 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
   end
   object QueuePanel: TPanel
     Left = 0
-    Top = 296
-    Width = 628
+    Top = 292
+    Width = 620
     Height = 140
     Align = alBottom
     BevelOuter = bvNone
@@ -138,7 +138,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
     object QueueView2: TListView
       Left = 0
       Top = 26
-      Width = 628
+      Width = 620
       Height = 114
       Align = alClient
       Columns = <
@@ -190,7 +190,7 @@ object CustomScpExplorerForm: TCustomScpExplorerForm
       Tag = 1
       Left = 0
       Top = 0
-      Width = 628
+      Width = 620
       Height = 26
       AllowDrag = False
       object QueueToolbar: TTBXToolbar

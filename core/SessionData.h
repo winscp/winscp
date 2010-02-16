@@ -183,6 +183,7 @@ private:
   void __fastcall SetTimeDifference(TDateTime value);
   void __fastcall SetPingType(TPingType value);
   AnsiString __fastcall GetSessionName();
+  AnsiString __fastcall GetDefaultSessionName();
   AnsiString __fastcall GetSessionUrl();
   void __fastcall SetProtocol(TProtocol value);
   void __fastcall SetFSProtocol(TFSProtocol value);
@@ -300,6 +301,7 @@ public:
   bool __fastcall ParseOptions(TOptions * Options);
   void __fastcall ConfigureTunnel(int PortNumber);
   void __fastcall RollbackTunnel();
+  void __fastcall ExpandEnvironmentVariables();
   static void __fastcall ValidatePath(const AnsiString Path);
   static void __fastcall ValidateName(const AnsiString Name);
 
@@ -338,6 +340,7 @@ public:
   __property TDateTime TimeDifference = { read = FTimeDifference, write = SetTimeDifference };
   __property TPingType PingType = { read = FPingType, write = SetPingType };
   __property AnsiString SessionName  = { read=GetSessionName };
+  __property AnsiString DefaultSessionName  = { read=GetDefaultSessionName };
   __property AnsiString SessionUrl  = { read=GetSessionUrl };
   __property AnsiString LocalDirectory  = { read=FLocalDirectory, write=SetLocalDirectory };
   __property AnsiString RemoteDirectory  = { read=FRemoteDirectory, write=SetRemoteDirectory };

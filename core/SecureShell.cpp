@@ -346,7 +346,7 @@ void __fastcall TSecureShell::Init()
 
       while (!get_ssh_state_session(FBackendHandle))
       {
-        if (Configuration->LogProtocol >= 1)
+        if (Configuration->ActualLogProtocol >= 1)
         {
           LogEvent("Waiting for the server to continue with the initialisation");
         }
@@ -656,7 +656,7 @@ void __fastcall TSecureShell::FromBackend(bool IsStdErr, const char * Data, int 
 {
   CheckConnection();
 
-  if (Configuration->LogProtocol >= 1)
+  if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT("Received %u bytes (%d)", (Length, int(IsStdErr))));
   }
@@ -775,7 +775,7 @@ Integer __fastcall TSecureShell::Receive(char * Buf, Integer Len)
 
       while (OutLen > 0)
       {
-        if (Configuration->LogProtocol >= 1)
+        if (Configuration->ActualLogProtocol >= 1)
         {
           LogEvent(FORMAT("Waiting for another %u bytes", (static_cast<int>(OutLen))));
         }
@@ -790,7 +790,7 @@ Integer __fastcall TSecureShell::Receive(char * Buf, Integer Len)
       OutPtr = NULL;
     }
   };
-  if (Configuration->LogProtocol >= 1)
+  if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT("Read %u bytes (%d pending)",
       (static_cast<int>(Len), static_cast<int>(PendLen))));
@@ -904,7 +904,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
   do
   {
     CheckConnection();
-    if (Configuration->LogProtocol >= 1)
+    if (Configuration->ActualLogProtocol >= 1)
     {
       LogEvent(FORMAT("There are %u bytes remaining in the send buffer, "
         "need to send at least another %u bytes",
@@ -912,7 +912,7 @@ void __fastcall TSecureShell::DispatchSendBuffer(int BufSize)
     }
     EventSelectLoop(100, false, NULL);
     BufSize = FBackend->sendbuffer(FBackendHandle);
-    if (Configuration->LogProtocol >= 1)
+    if (Configuration->ActualLogProtocol >= 1)
     {
       LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (BufSize)));
     }
@@ -948,7 +948,7 @@ void __fastcall TSecureShell::Send(const char * Buf, Integer Len)
 {
   CheckConnection();
   int BufSize = FBackend->send(FBackendHandle, (char *)Buf, Len);
-  if (Configuration->LogProtocol >= 1)
+  if (Configuration->ActualLogProtocol >= 1)
   {
     LogEvent(FORMAT("Sent %u bytes", (static_cast<int>(Len))));
     LogEvent(FORMAT("There are %u bytes remaining in the send buffer", (BufSize)));
@@ -1142,14 +1142,14 @@ void __fastcall TSecureShell::SocketEventSelect(SOCKET Socket, HANDLE Event, boo
     Events = 0;
   }
 
-  if (Configuration->LogProtocol >= 2)
+  if (Configuration->ActualLogProtocol >= 2)
   {
     LogEvent(FORMAT("Selecting events %d for socket %d", (int(Events), int(Socket))));
   }
 
   if (WSAEventSelect(Socket, (WSAEVENT)Event, Events) == SOCKET_ERROR)
   {
-    if (Configuration->LogProtocol >= 2)
+    if (Configuration->ActualLogProtocol >= 2)
     {
       LogEvent(FORMAT("Error selecting events %d for socket %d", (int(Events), int(Socket))));
     }
@@ -1202,7 +1202,7 @@ void __fastcall TSecureShell::UpdateSocket(SOCKET value, bool Startup)
 //---------------------------------------------------------------------------
 void __fastcall TSecureShell::UpdatePortFwdSocket(SOCKET value, bool Startup)
 {
-  if (Configuration->LogProtocol >= 2)
+  if (Configuration->ActualLogProtocol >= 2)
   {
     LogEvent(FORMAT("Updating forwarding socket %d (%d)", (int(value), int(Startup))));
   }
@@ -1294,7 +1294,7 @@ void __fastcall TSecureShell::PoolForData(WSANETWORKEVENTS & Events, unsigned in
   {
     try
     {
-      if (Configuration->LogProtocol >= 2)
+      if (Configuration->ActualLogProtocol >= 2)
       {
         LogEvent("Pooling for data in case they finally arrives");
       }
@@ -1347,7 +1347,7 @@ void __fastcall TSecureShell::WaitForData()
 
   do
   {
-    if (Configuration->LogProtocol >= 2)
+    if (Configuration->ActualLogProtocol >= 2)
     {
       LogEvent("Looking for incoming data");
     }
@@ -1395,7 +1395,7 @@ bool __fastcall TSecureShell::SshFallbackCmd() const
 //---------------------------------------------------------------------------
 bool __fastcall TSecureShell::EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS & Events)
 {
-  if (Configuration->LogProtocol >= 2)
+  if (Configuration->ActualLogProtocol >= 2)
   {
     LogEvent(FORMAT("Enumerating network events for socket %d", (int(Socket))));
   }
@@ -1416,7 +1416,7 @@ bool __fastcall TSecureShell::EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS 
       }
     }
 
-    if (Configuration->LogProtocol >= 2)
+    if (Configuration->ActualLogProtocol >= 2)
     {
       LogEvent(FORMAT("Enumerated %d network events making %d cumulative events for socket %d",
         (int(AEvents.lNetworkEvents), int(Events.lNetworkEvents), int(Socket))));
@@ -1424,7 +1424,7 @@ bool __fastcall TSecureShell::EnumNetworkEvents(SOCKET Socket, WSANETWORKEVENTS 
   }
   else
   {
-    if (Configuration->LogProtocol >= 2)
+    if (Configuration->ActualLogProtocol >= 2)
     {
       LogEvent(FORMAT("Error enumerating network events for socket %d", (int(Socket))));
     }
@@ -1452,7 +1452,7 @@ void __fastcall TSecureShell::HandleNetworkEvents(SOCKET Socket, WSANETWORKEVENT
     if (FLAGSET(Events.lNetworkEvents, EventTypes[Event].Mask))
     {
       int Err = Events.iErrorCode[EventTypes[Event].Bit];
-      if (Configuration->LogProtocol >= 2)
+      if (Configuration->ActualLogProtocol >= 2)
       {
         LogEvent(FORMAT("Handling network %s event on socket %d with error %d",
           (EventTypes[Event].Desc, int(Socket), Err)));
@@ -1488,7 +1488,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
 
   do
   {
-    if (Configuration->LogProtocol >= 2)
+    if (Configuration->ActualLogProtocol >= 2)
     {
       LogEvent("Looking for network events");
     }
@@ -1510,7 +1510,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       }
       else if (WaitResult == WAIT_OBJECT_0 + HandleCount)
       {
-        if (Configuration->LogProtocol >= 1)
+        if (Configuration->ActualLogProtocol >= 1)
         {
           LogEvent("Detected network event");
         }
@@ -1541,7 +1541,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       }
       else if (WaitResult == WAIT_TIMEOUT)
       {
-        if (Configuration->LogProtocol >= 2)
+        if (Configuration->ActualLogProtocol >= 2)
         {
           LogEvent("Timeout waiting for network events");
         }
@@ -1550,7 +1550,7 @@ bool __fastcall TSecureShell::EventSelectLoop(unsigned int MSec, bool ReadEventR
       }
       else
       {
-        if (Configuration->LogProtocol >= 2)
+        if (Configuration->ActualLogProtocol >= 2)
         {
           LogEvent(FORMAT("Unknown waiting result %d", (int(WaitResult))));
         }

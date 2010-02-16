@@ -178,7 +178,10 @@ bool __fastcall TCustomCommandDialog::Execute(TCustomCommandType & Command)
   FOrigDescription = Command.Name;
   CommandEdit->Text = Command.Command;
   SetParams(Command.Params);
-  SetShortCutCombo(ShortCutCombo, Command.ShortCut);
+  if (FMode != ccmAdHoc)
+  {
+    SetShortCutCombo(ShortCutCombo, Command.ShortCut);
+  }
 
   bool Result = (ShowModal() == mrOk);
   if (Result)
@@ -271,6 +274,9 @@ void __fastcall TCustomCommandDialog::GetCommand(TCustomCommandType & Command)
   Command.Name = DescriptionEdit->Text;
   Command.Command = CommandEdit->Text;
   Command.Params = GetParams();
-  Command.ShortCut = GetShortCutCombo(ShortCutCombo);
+  if (FMode != ccmAdHoc)
+  {
+    Command.ShortCut = GetShortCutCombo(ShortCutCombo);
+  }
 }
 //---------------------------------------------------------------------------

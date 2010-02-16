@@ -35,8 +35,13 @@ TForm * __fastcall ShowEditorForm(const AnsiString FileName, TCustomForm * Paren
     Dialog->Caption = Caption.IsEmpty() ? FileName : Caption;
     Dialog->OnFileChanged = OnFileChanged;
     Dialog->OnFileReload = OnFileReload;
-    Dialog->OnWindowClose = OnClose;
+    // load before showing, so when loading failes,
+    // we do not show an empty editor
+    Dialog->LoadFile();
     Dialog->Show();
+    // make sure editor closing is announced only if it was ever successfully shown
+    // (at least current implementation of the events cannot handle that)
+    Dialog->OnWindowClose = OnClose;
   }
   catch(...)
   {
@@ -717,7 +722,6 @@ void __fastcall TEditorForm::Find()
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
 {
-  LoadFile();
 
   CutFormToDesktop(this);
 
@@ -730,6 +734,7 @@ void __fastcall TEditorForm::FormShow(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TEditorForm::LoadFile()
 {
+  HandleNeeded();
   EditorMemo->Lines->LoadFromFile(FFileName);
   EditorMemo->ResetFormat();
   EditorMemo->Modified = false;

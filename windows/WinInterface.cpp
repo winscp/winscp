@@ -840,6 +840,135 @@ bool __fastcall IsGlobalMinimizeHandler()
   return (GlobalOnMinimize != NULL);
 }
 //---------------------------------------------------------------------------
+LCID __fastcall GetDefaultLCID()
+{
+  return Is2000() ? GetUserDefaultLCID() : GetThreadLocale();
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TranslateDateFormat(AnsiString FormatStr)
+{
+  AnsiString Result;
+  CALTYPE CalendarType = StrToIntDef(GetLocaleStr(GetDefaultLCID(), LOCALE_ICALENDARTYPE, "1"), 1);
+  if ((CalendarType != CAL_JAPAN) && (CalendarType != CAL_TAIWAN) && (CalendarType != CAL_KOREA))
+  {
+    bool RemoveEra =
+      (SysLocale.PriLangID == LANG_JAPANESE) ||
+      (SysLocale.PriLangID == LANG_CHINESE) ||
+      (SysLocale.PriLangID == LANG_KOREAN);
+    if (RemoveEra)
+    {
+      int I = 1;
+      while (I <= FormatStr.Length())
+      {
+        if ((FormatStr[I] != 'g') && (FormatStr[I] != 'G'))
+        {
+          Result += FormatStr[I];
+        }
+        I++;
+      }
+    }
+    else
+    {
+      Result = FormatStr;
+    }
+  }
+  else
+  {
+    int I = 1;
+    while (I <= FormatStr.Length())
+    {
+      if (FormatStr.IsLeadByte(I))
+      {
+        int L = CharLength(FormatStr, I);
+        Result += FormatStr.SubString(I, L);
+        I += L;
+      }
+      else
+      {
+        if (StrLIComp(FormatStr.c_str() + I - 1, "gg", 2) == 0)
+        {
+          Result += "ggg";
+          I++;
+        }
+        else if (StrLIComp(FormatStr.c_str() + I - 1, "yyyy", 4) == 0)
+        {
+          Result += "eeee";
+          I += 4 - 1;
+        }
+        else if (StrLIComp(FormatStr.c_str() + I - 1, "yy", 2) == 0)
+        {
+          Result += "ee";
+          I += 2 - 1;
+        }
+        else if ((FormatStr[I] == 'y') || (FormatStr[I] == 'Y'))
+        {
+          Result += "e";
+        }
+        else
+        {
+          Result += FormatStr[I];
+        }
+        I++;
+      }
+    }
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+void __fastcall GetFormatSettingsFix()
+{
+  // todo InitSysLocale
+  // todo GetMonthDayNames
+  // todo GetEraNamesAndYearOffsets
+  LCID DefaultLCID = GetDefaultLCID();
+  CurrencyString = GetLocaleStr(DefaultLCID, LOCALE_SCURRENCY, "");
+  CurrencyFormat = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ICURRENCY, "0"), 0);
+  NegCurrFormat = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_INEGCURR, "0"), 0);
+  ThousandSeparator = GetLocaleChar(DefaultLCID, LOCALE_STHOUSAND, ',');
+  DecimalSeparator = GetLocaleChar(DefaultLCID, LOCALE_SDECIMAL, '.');
+  CurrencyDecimals = (Byte) StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ICURRDIGITS, "0"), 0);
+  DateSeparator = GetLocaleChar(DefaultLCID, LOCALE_SDATE, '/');
+  ShortDateFormat = TranslateDateFormat(GetLocaleStr(DefaultLCID, LOCALE_SSHORTDATE, "m/d/yy"));
+  LongDateFormat = TranslateDateFormat(GetLocaleStr(DefaultLCID, LOCALE_SLONGDATE, "mmmm d, yyyy"));
+  TimeSeparator = GetLocaleChar(DefaultLCID, LOCALE_STIME, ':');
+  TimeAMString = GetLocaleStr(DefaultLCID, LOCALE_S1159, "am");
+  TimePMString = GetLocaleStr(DefaultLCID, LOCALE_S2359, "pm");
+  AnsiString HourFormat;
+  if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITLZERO, "0"), 0) == 0)
+  {
+    HourFormat = "h";
+  }
+  else
+  {
+    HourFormat = "hh";
+  }
+  AnsiString TimePrefix, TimePostfix;
+  if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITIME, "0"), 0) == 0)
+  {
+    if (StrToIntDef(GetLocaleStr(DefaultLCID, LOCALE_ITIMEMARKPOSN, "0"), 0) == 0)
+    {
+      TimePostfix = " AMPM";
+    }
+    else
+    {
+      TimePrefix = "AMPM ";
+    }
+  }
+  ShortTimeFormat = TimePrefix + HourFormat + ":mm" + TimePostfix;
+  LongTimeFormat = TimePrefix + HourFormat + ":mm:ss" + TimePostfix;
+  ListSeparator = GetLocaleChar(DefaultLCID, LOCALE_SLIST, ',');
+}
+//---------------------------------------------------------------------------
+void __fastcall WinInitialize()
+{
+  if (IsWin7())
+  {
+    GetFormatSettingsFix();
+  }
+
+
+}
+//---------------------------------------------------------------------------
 struct TNotifyIconData5
 {
   DWORD cbSize;
@@ -880,6 +1009,9 @@ __fastcall TTrayIcon::TTrayIcon(unsigned int Id)
 //---------------------------------------------------------------------------
 __fastcall TTrayIcon::~TTrayIcon()
 {
+  // make sure we hide icon even in case it was shown just to pop up the balloon
+  // (in which case Visible == false)
+  CancelBalloon();
   Visible = false;
   DeallocateHWnd(FTrayIcon->hWnd);
   delete FTrayIcon;
@@ -890,18 +1022,19 @@ bool __fastcall TTrayIcon::SupportsBalloons()
   return (ShellDllVersion() >= 5);
 }
 //---------------------------------------------------------------------------
-void __fastcall TTrayIcon::PopupBalloon(const AnsiString & Title,
+void __fastcall TTrayIcon::PopupBalloon(AnsiString Title,
   const AnsiString & Str, TQueryType QueryType, unsigned int Timeout)
 {
   if (SupportsBalloons())
   {
     if (Timeout > 30000)
     {
-      // this is probably system limit, do not try more, espcially for
+      // this is probably system limit, do not try more, especially for
       // the timeout-driven hiding of the tray icon (for Win2k)
       Timeout = 30000;
     }
     FTrayIcon->uFlags |= NIF_INFO;
+    Title = FORMAT("%s - %s", (Title, AppNameString()));
     StrPLCopy(FTrayIcon->szInfoTitle, Title, sizeof(FTrayIcon->szInfoTitle) - 1);
     StrPLCopy(FTrayIcon->szInfo, Str, sizeof(FTrayIcon->szInfo) - 1);
     FTrayIcon->uTimeout = Timeout;

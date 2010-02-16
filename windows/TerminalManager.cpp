@@ -1052,6 +1052,8 @@ void __fastcall TTerminalManager::OpenInPutty()
   try
   {
     Data->Assign(ActiveTerminal->SessionData);
+    // putty does not support resolving environment variables in session settings
+    Data->ExpandEnvironmentVariables();
     if (ActiveTerminal->TunnelLocalPortNumber != 0)
     {
       Data->ConfigureTunnel(ActiveTerminal->TunnelLocalPortNumber);

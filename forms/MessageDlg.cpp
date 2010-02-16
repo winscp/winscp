@@ -287,6 +287,12 @@ TForm * __fastcall TMessageForm::Create(const AnsiString & Msg,
   DrawText(Result->Canvas->Handle, Msg.c_str(), Msg.Length() + 1, &TextRect,
     DT_EXPANDTABS | DT_CALCRECT | DT_WORDBREAK |
     Result->DrawTextBiDiModeFlagsReadingOnly());
+  int MaxWidth = Screen->Width - HorzMargin * 2 - 32 - HorzSpacing - 30;
+  if (TextRect.right > MaxWidth)
+  {
+    // this will truncate the text, we should implement something smarter eventually
+    TextRect.right = MaxWidth;
+  }
   const char * IconID = IconIDs[DlgType];
   int IconTextWidth = TextRect.Right;
   int IconTextHeight = TextRect.Bottom;

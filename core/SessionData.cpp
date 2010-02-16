@@ -15,7 +15,7 @@
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
 enum TProxyType { pxNone, pxHTTP, pxSocks, pxTelnet }; // 0.53b and older
-const char * DefaultSessionName = "Default Settings";
+const char * DefaultName = "Default Settings";
 const char CipherNames[CIPHER_COUNT][10] = {"WARN", "3des", "blowfish", "aes", "des", "arcfour"};
 const char KexNames[KEX_COUNT][20] = {"WARN", "dh-group1-sha1", "dh-group14-sha1", "dh-gex-sha1", "rsa" };
 const char ProtocolNames[PROTOCOL_COUNT][10] = { "raw", "telnet", "rlogin", "ssh" };
@@ -1127,6 +1127,11 @@ void __fastcall TSessionData::RollbackTunnel()
   ProxyMethod = FOrigProxyMethod;
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::ExpandEnvironmentVariables()
+{
+  PublicKeyFile = ::ExpandEnvironmentVariables(PublicKeyFile);
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::ValidatePath(const AnsiString Path)
 {
   // noop
@@ -1591,14 +1596,9 @@ void __fastcall TSessionData::SetRekeyTime(unsigned int value)
   SET_SESSION_PROPERTY(RekeyTime);
 }
 //---------------------------------------------------------------------
-AnsiString __fastcall TSessionData::GetSessionName()
+AnsiString __fastcall TSessionData::GetDefaultSessionName()
 {
-  if (!Name.IsEmpty() && !TNamedObjectList::IsHidden(this) &&
-      (Name != DefaultSessionName))
-  {
-    return Name;
-  }
-  else if (!HostName.IsEmpty() && !UserName.IsEmpty())
+  if (!HostName.IsEmpty() && !UserName.IsEmpty())
   {
     return FORMAT("%s@%s", (UserName, HostName));
   }
@@ -1612,11 +1612,24 @@ AnsiString __fastcall TSessionData::GetSessionName()
   }
 }
 //---------------------------------------------------------------------
+AnsiString __fastcall TSessionData::GetSessionName()
+{
+  if (!Name.IsEmpty() && !TNamedObjectList::IsHidden(this) &&
+      (Name != DefaultName))
+  {
+    return Name;
+  }
+  else
+  {
+    return DefaultSessionName;
+  }
+}
+//---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetSessionUrl()
 {
   AnsiString Url;
   if (!Name.IsEmpty() && !TNamedObjectList::IsHidden(this) &&
-      (Name != DefaultSessionName))
+      (Name != DefaultName))
   {
     Url = Name;
   }
@@ -2031,7 +2044,7 @@ __fastcall TStoredSessionList::TStoredSessionList(bool aReadOnly):
   TNamedObjectList(), FReadOnly(aReadOnly)
 {
   assert(Configuration);
-  FDefaultSettings = new TSessionData(DefaultSessionName);
+  FDefaultSettings = new TSessionData(DefaultName);
 }
 //---------------------------------------------------------------------
 __fastcall TStoredSessionList::~TStoredSessionList()
@@ -2314,7 +2327,7 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
   if (FDefaultSettings != value)
   {
     FDefaultSettings->Assign(value);
-    FDefaultSettings->Name = DefaultSessionName;
+    FDefaultSettings->Name = DefaultName;
     if (!FReadOnly)
     {
       // only modified, explicit

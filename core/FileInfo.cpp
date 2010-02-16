@@ -96,13 +96,6 @@ unsigned int VERSION_GetFileVersionInfo_PE(const char * FileName, unsigned int D
   return Len;
 }
 //---------------------------------------------------------------------------
-bool __fastcall IsWin7()
-{
-  return
-    (Win32MajorVersion > 6) ||
-    ((Win32MajorVersion == 6) && (Win32MinorVersion >= 1));
-}
-//---------------------------------------------------------------------------
 unsigned int GetFileVersionInfoSizeFix(const char * FileName, unsigned long * Handle)
 {
   unsigned int Len;

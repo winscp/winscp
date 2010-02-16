@@ -109,8 +109,6 @@ type
 
     property HeaderImages: TImageList read FHeaderImages write SetHeaderImages;
     property DragImageList: TDragImageList read FDragImageList;
-    property ColumnIconPainted: Boolean
-      read FColumnIconPainted write FColumnIconPainted stored False;
     property HeaderHandle: HWND read FHeaderHandle;
     property ParentForm: TCustomForm read FParentForm;
     property DateTimeFormatStr: string
@@ -312,24 +310,12 @@ procedure Register;
 
 implementation
 
-const HDM_SETBITMAPMARGIN = (HDM_FIRST + 20);
-const HDM_GETBITMAPMARGIN = (HDM_FIRST + 21);
 const HDF_SORTUP = $400;
 const HDF_SORTDOWN = $200;
 
 procedure Register;
 begin
   RegisterComponents('Martin', [TIEListView]);
-end;
-
-procedure Header_SetBitmapMargin(Header: HWnd; Margin: Integer);
-begin
-  SendMessage(Header, HDM_SETBITMAPMARGIN, Margin, 0);
-end;
-
-function Header_GetBitmapMargin(Header: HWnd): Integer;
-begin
-  Result := SendMessage(Header, HDM_GETBITMAPMARGIN, 0, 0);
 end;
 
   { TIEListViewColProperties }
@@ -610,7 +596,7 @@ end; {ColClick}
 procedure TCustomIEListView.WMPaint(var Msg: TWMPaint);
 begin
   inherited;
-  if (ViewStyle = vsReport) and not ColumnIconPainted and
+  if (ViewStyle = vsReport) and not FColumnIconPainted and
      ShowColumnHeaders then SetColumnImages;
 end; {WMPaint}
 

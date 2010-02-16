@@ -47,7 +47,7 @@ BEGIN
 "G: /timeout=     Server response timeout.\n"
 "G: /hostkey=     Fingerprint of server hostkey.\n"
 "G: /passive      Passive mode (FTP protocol only).\n"
-"G: /certificate= Fingerprint of SSL/TLS sertificate.\n"
+"G: /certificate= Fingerprint of SSL/TLS certificate.\n"
 "G: /implicit     Implicit TLS/SSL (FTPS protocol only).\n"
 "G: /explicitssl  Explicit SSL (FTPS protocol only).\n"
 "G: /explicittls  Explicit TLS (FTPS protocol only).\n"

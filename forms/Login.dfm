@@ -569,8 +569,8 @@ object LoginDialog: TLoginDialog
             Width = 54
             Height = 21
             Alignment = taRightJustify
-            MaxValue = 13
-            MinValue = -13
+            MaxValue = 25
+            MinValue = -25
             Value = -13
             Anchors = [akTop, akRight]
             TabOrder = 2
@@ -2157,7 +2157,7 @@ object LoginDialog: TLoginDialog
             Width = 325
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Attempt authentication using &Pagent'
+            Caption = 'Attempt authentication using &Pageant'
             TabOrder = 0
             OnClick = DataChange
           end

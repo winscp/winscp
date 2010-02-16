@@ -78,11 +78,14 @@ void __fastcall TConsoleDialog::SetTerminal(TTerminal * value)
       if (FAnyCommandExecuted)
       {
         FAnyCommandExecuted = false;
-        // directory would be read from EndTransaction anyway,
-        // but with reload only flat set, what prevents
-        // recording path in history, what we want if the path was
-        // changed by "cd" command in console
-        FTerminal->ReadDirectory(false);
+        if (FTerminal->Active)
+        {
+          // directory would be read from EndTransaction anyway,
+          // but with reload only flag set, what prevents
+          // recording path in history, what we want if the path was
+          // changed by "cd" command in console
+          FTerminal->ReadDirectory(false);
+        }
       }
       FTerminal->EndTransaction();
     }

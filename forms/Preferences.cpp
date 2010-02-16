@@ -122,8 +122,13 @@ void __fastcall TPreferencesDialog::PrepareNavigationTree(TTreeView * Tree)
         {
           if (PageControl->Pages[pi]->Enabled)
           {
-            Tree->Items->Item[i]->Text = PageControl->Pages[pi]->Hint;
-            PageControl->Pages[pi]->Hint = "";
+            // gets called multiple times occasionally
+            // (e.g. when called from upload dialog invoked by /upload)
+            if (!PageControl->Pages[pi]->Hint.IsEmpty())
+            {
+              Tree->Items->Item[i]->Text = PageControl->Pages[pi]->Hint;
+              PageControl->Pages[pi]->Hint = "";
+            }
           }
           else
           {

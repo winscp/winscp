@@ -71,6 +71,8 @@ AnsiString __fastcall LoadStrPart(int Ident, int Part);
 AnsiString __fastcall EscapeHotkey(const AnsiString & Caption);
 bool __fastcall CutToken(AnsiString & Str, AnsiString & Token);
 void __fastcall AddToList(AnsiString & List, const AnsiString & Value, char Delimiter);
+bool __fastcall Is2000();
+bool __fastcall IsWin7();
 struct TPasLibModule;
 TPasLibModule * __fastcall FindModule(void * Instance);
 //---------------------------------------------------------------------------

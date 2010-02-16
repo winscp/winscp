@@ -1723,7 +1723,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
               FTerminal->LogEvent(FORMAT("Sending BINARY data (first block, %u bytes)",
                 (BlockBuf.Size)));
             }
-            else if (FTerminal->Configuration->LogProtocol >= 1)
+            else if (FTerminal->Configuration->ActualLogProtocol >= 1)
             {
               FTerminal->LogEvent(FORMAT("Sending BINARY data (%u bytes)",
                 (BlockBuf.Size)));

@@ -123,6 +123,7 @@ public:
   __fastcall TEditorForm(TComponent* Owner);
   virtual __fastcall ~TEditorForm();
   void __fastcall ApplyConfiguration();
+  void __fastcall LoadFile();
   __property AnsiString FileName = { read = FFileName, write = SetFileName };
   __property TNotifyEvent OnFileChanged = { read = FOnFileChanged, write = FOnFileChanged };
   __property TNotifyEvent OnFileReload = { read = FOnFileReload, write = FOnFileReload };
@@ -132,7 +133,6 @@ protected:
   bool __fastcall CursorInUpperPart();
   void __fastcall Find();
   void __fastcall GoToLine();
-  void __fastcall LoadFile();
   void __fastcall PositionFindDialog(bool VerticalOnly);
   void __fastcall StartFind(bool Find);
   void __fastcall UpdateControls();

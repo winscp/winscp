@@ -117,7 +117,6 @@ public:
 	virtual void __fastcall SetColumnImages(void);
 	__property Controls::TImageList* HeaderImages = {read=FHeaderImages, write=SetHeaderImages};
 	__property Controls::TDragImageList* DragImageList = {read=FDragImageList};
-	__property bool ColumnIconPainted = {read=FColumnIconPainted, write=FColumnIconPainted, stored=false, nodefault};
 	__property HWND HeaderHandle = {read=FHeaderHandle, nodefault};
 	__property Forms::TCustomForm* ParentForm = {read=FParentForm};
 	__property AnsiString DateTimeFormatStr = {read=FDateTimeFormatStr, write=FDateTimeFormatStr, stored=false};

@@ -1453,3 +1453,15 @@ void __fastcall AddToList(AnsiString & List, const AnsiString & Value, char Deli
   }
   List += Value;
 }
+//---------------------------------------------------------------------------
+bool __fastcall Is2000()
+{
+  return (Win32MajorVersion >= 5);
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsWin7()
+{
+  return
+    (Win32MajorVersion > 6) ||
+    ((Win32MajorVersion == 6) && (Win32MinorVersion >= 1));
+}

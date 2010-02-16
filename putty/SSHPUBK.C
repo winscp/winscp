@@ -1000,6 +1000,9 @@ int ssh2_userkey_encrypted(const Filename *filename, char **commentptr)
 
     if (commentptr)
 	*commentptr = comment;
+#ifdef MPEXT
+    if (!commentptr) sfree(comment);
+#endif
 
     fclose(fp);
     if (!strcmp(b, "aes256-cbc"))

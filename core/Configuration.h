@@ -31,6 +31,7 @@ private:
   int FLogWindowLines;
   bool FLogFileAppend;
   int FLogProtocol;
+  int FActualLogProtocol;
   bool FLogActions;
   bool FPermanentLogActions;
   bool FConfirmOverwriting;
@@ -98,6 +99,7 @@ private:
   void __fastcall SetCacheDirectoryChangesMaxSize(int value);
   void __fastcall SetShowFtpWelcomeMessage(bool value);
   int __fastcall GetCompoundVersion();
+  void __fastcall UpdateActualLogProtocol();
 
 protected:
   TStorage FStorage;
@@ -184,6 +186,7 @@ public:
   __property bool LogToFile  = { read=GetLogToFile, write=SetLogToFile };
   __property bool LogFileAppend  = { read=FLogFileAppend, write=SetLogFileAppend };
   __property int LogProtocol  = { read=FLogProtocol, write=SetLogProtocol };
+  __property int ActualLogProtocol  = { read=FActualLogProtocol };
   __property bool LogActions  = { read=FLogActions, write=SetLogActions };
   __property int LogWindowLines  = { read=FLogWindowLines, write=SetLogWindowLines };
   __property bool LogWindowComplete  = { read=GetLogWindowComplete, write=SetLogWindowComplete };

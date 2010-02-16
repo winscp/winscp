@@ -16,6 +16,7 @@ WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
   int Result = 0;
   try
   {
+    WinInitialize();
     Application->Initialize();
     SetEnvironmentVariable("WINSCP_PATH",
       ExcludeTrailingBackslash(ExtractFilePath(Application->ExeName)).c_str());

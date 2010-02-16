@@ -294,7 +294,7 @@ void __fastcall TFTPFileSystem::Open()
     try
     {
       TFileZillaIntf::TLogLevel LogLevel;
-      switch (FTerminal->Configuration->LogProtocol)
+      switch (FTerminal->Configuration->ActualLogProtocol)
       {
         default:
         case 0:
@@ -1702,6 +1702,11 @@ void __fastcall TFTPFileSystem::ReadCurrentDirectory()
         AnsiString Path = Response->Text;
 
         int P = Path.Pos("\"");
+        if (P == 0)
+        {
+          // some systems use single quotes, be tolerant
+          P = Path.Pos("'");
+        }
         if (P != 0)
         {
           Path.Delete(1, P - 1);
@@ -2042,7 +2047,7 @@ int __fastcall TFTPFileSystem::GetOptionVal(int OptionID) const
 
     case OPTION_DEBUGSHOWLISTING:
       // Listing is logged on FZAPI level 5 (what is strangely LOG_APIERROR)
-      Result = (FTerminal->Configuration->LogProtocol >= 1);
+      Result = (FTerminal->Configuration->ActualLogProtocol >= 1);
       break;
 
     case OPTION_PASV:
@@ -3264,7 +3269,7 @@ bool __fastcall TFTPFileSystem::HandleReply(int Command, unsigned int Reply)
   }
   else
   {
-    if (FTerminal->Configuration->LogProtocol >= 1)
+    if (FTerminal->Configuration->ActualLogProtocol >= 1)
     {
       FTerminal->LogEvent(FORMAT("Got reply %x to the command %d", (int(Reply), Command)));
     }
@@ -3335,55 +3340,51 @@ bool __fastcall TFTPFileSystem::Unquote(AnsiString & Str)
   } State;
 
   State = INIT;
-  assert((Str.Length() > 0) && (Str[1] == '"'));
+  assert((Str.Length() > 0) && ((Str[1] == '"') || (Str[1] == '\'')));
 
   int Index = 1;
+  char Quote;
   while (Index <= Str.Length())
   {
     switch (State)
     {
       case INIT:
-        switch (Str[Index])
+        if ((Str[Index] == '"') || (Str[Index] == '\''))
         {
-          case '"':
-            State = QUOTED;
-            Str.Delete(Index, 1);
-            break;
-
-          default:
-            assert(false);
-            // no quoted string
-            Str.SetLength(0);
-            break;
+          Quote = Str[Index];
+          State = QUOTED;
+          Str.Delete(Index, 1);
+        }
+        else
+        {
+          assert(false);
+          // no quoted string
+          Str.SetLength(0);
         }
         break;
 
       case QUOTED:
-        switch (Str[Index])
+        if (Str[Index] == Quote)
         {
-          case '"':
-            State = QUOTE;
-            Str.Delete(Index, 1);
-            break;
-
-          default:
-            Index++;
-            break;
+          State = QUOTE;
+          Str.Delete(Index, 1);
+        }
+        else
+        {
+          Index++;
         }
         break;
 
       case QUOTE:
-        switch (Str[Index])
+        if (Str[Index] == Quote)
         {
-          case '"':
-            Index++;
-            break;
-
-          default:
-            // end of quoted string, trim the rest
-            Str.SetLength(Index - 1);
-            State = DONE;
-            break;
+          Index++;
+        }
+        else
+        {
+          // end of quoted string, trim the rest
+          Str.SetLength(Index - 1);
+          State = DONE;
         }
         break;
     }
