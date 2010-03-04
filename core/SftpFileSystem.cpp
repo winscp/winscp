@@ -121,7 +121,7 @@
 
 #define SSH_FILEXFER_ATTR_FLAGS_HIDDEN           0x00000004
 
-#define SFTP_MAX_PACKET_LEN   102400
+#define SFTP_MAX_PACKET_LEN   1024000
 //---------------------------------------------------------------------------
 #define SFTP_EXT_OWNER_GROUP "owner-group-query@generic-extensions"
 #define SFTP_EXT_OWNER_GROUP_REPLY "owner-group-query-reply@generic-extensions"

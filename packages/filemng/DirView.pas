@@ -1029,7 +1029,10 @@ var
 begin
   inherited;
 
-  Expanded := ExpandFileName(FPath);
+  // make sure to use PathName as Path maybe just X: what
+  // ExpandFileName resolves to current working directory
+  // on the drive, not to root path
+  Expanded := ExpandFileName(PathName);
   Assert(Pos(':', Expanded) = 2);
   FLastPath[UpCase(Expanded[1])] := Expanded;
 end;

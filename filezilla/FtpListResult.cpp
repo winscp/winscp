@@ -435,7 +435,9 @@ t_directory::t_direntry *CFtpListResult::getList(int &num, CTime EntryTime)
 			if (tmp)
 				m_server.nServerType |= tmp;
 			if (direntry.name!="." && direntry.name!="..")
+			{
 				AddLine(direntry);
+			}
 			if (m_prevline)
 			{
 				delete [] m_prevline;
@@ -597,7 +599,9 @@ void CFtpListResult::AddData(char *data, int size)
 			if (tmp)
 				m_server.nServerType |= tmp;
 			if (direntry.name!="." && direntry.name!="..")
+			{
 				AddLine(direntry);
+			}
 			if (m_prevline)
 			{
 				delete [] m_prevline;

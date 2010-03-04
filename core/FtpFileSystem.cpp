@@ -2684,7 +2684,7 @@ bool __fastcall TFTPFileSystem::HandleStatus(const char * AStatus, int Type)
         }
       }
       // there can be multiple error messages associated with single failure
-      // (such as "cannot open local file..." followed by "download failed"
+      // (such as "cannot open local file..." followed by "download failed")
       Status = ExtractStatusMessage(Status);
       FLastError->Add(Status);
       LogType = llMessage;

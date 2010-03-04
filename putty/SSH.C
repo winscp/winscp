@@ -9154,6 +9154,12 @@ static const char *ssh_init(void *frontend_handle, void **backend_handle,
 
     *backend_handle = ssh;
 
+#ifdef MPEXT
+    // random_unref is always called from ssh_free,
+    // so we must call random_ref also always, even if we fail, to match it
+    random_ref();
+#endif
+
 #ifdef MSCRYPTOAPI
     if (crypto_startup() == 0)
 	return "Microsoft high encryption pack not installed!";
@@ -9189,7 +9195,9 @@ static const char *ssh_init(void *frontend_handle, void **backend_handle,
     if (p != NULL)
 	return p;
 
+#ifndef MPEXT
     random_ref();
+#endif
 
     return NULL;
 }

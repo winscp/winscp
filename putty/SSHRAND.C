@@ -214,10 +214,10 @@ static void random_timer(void *ctx, long now)
 
 void random_ref(void)
 {
-#ifdef MPEXT
-    EnterCriticalSection(&noise_section);
-#endif
     if (!random_active) {
+#ifdef MPEXT
+        InitializeCriticalSection(&noise_section);
+#endif
 	memset(&pool, 0, sizeof(pool));    /* just to start with */
 
 	noise_get_heavy(random_add_heavynoise_bitbybit);
@@ -227,6 +227,9 @@ void random_ref(void)
 	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);
     }
 
+#ifdef MPEXT
+    EnterCriticalSection(&noise_section);
+#endif
     random_active++;
 #ifdef MPEXT
     LeaveCriticalSection(&noise_section);
@@ -240,7 +243,15 @@ void random_unref(void)
 #endif
     random_active--;
     assert(random_active >= 0);
+#ifdef MPEXT
+    if (random_active)
+    {
+        LeaveCriticalSection(&noise_section);
+        return;
+    }
+#else
     if (random_active) return;
+#endif
 
     expire_timer_context(&pool);
 #ifdef MPEXT
