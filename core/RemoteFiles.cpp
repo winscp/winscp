@@ -479,7 +479,7 @@ TRemoteToken & __fastcall TRemoteToken::operator =(const TRemoteToken & rht)
 //---------------------------------------------------------------------------
 int __fastcall TRemoteToken::Compare(const TRemoteToken & rht) const
 {
-  bool Result;
+  int Result;
   if (!FName.IsEmpty())
   {
     if (!rht.FName.IsEmpty())
@@ -598,16 +598,11 @@ void __fastcall TRemoteTokenList::Add(const TRemoteToken & Token)
   {
     std::pair<TIDMap::iterator, bool> Position =
       FIDMap.insert(TIDMap::value_type(Token.ID, FTokens.size() - 1));
-    // can indeed happen in real life,
-    // but in our test evironment, we want to know about it
-    assert(Position.second);
   }
   if (Token.NameValid)
   {
     std::pair<TNameMap::iterator, bool> Position =
       FNameMap.insert(TNameMap::value_type(Token.Name, FTokens.size() - 1));
-    // dtto
-    assert(Position.second);
   }
 }
 //---------------------------------------------------------------------------

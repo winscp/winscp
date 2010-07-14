@@ -980,7 +980,8 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF("Return code variable: %s; Lookup user groups: %s",
         ((Data->DetectReturnVar ? AnsiString("Autodetect") : Data->ReturnVar),
          BooleanToEngStr(Data->LookupUserGroups)));
-      ADF("Shell: %s, EOL: %d", ((Data->Shell.IsEmpty()? AnsiString("default") : Data->Shell), Data->EOLType));
+      ADF("Shell: %s", ((Data->Shell.IsEmpty()? AnsiString("default") : Data->Shell)));
+      ADF("EOL: %d, UTF: %d", (Data->EOLType, Data->NotUtf));
       ADF("Clear aliases: %s, Unset nat.vars: %s, Resolve symlinks: %s",
         (BooleanToEngStr(Data->ClearAliases), BooleanToEngStr(Data->UnsetNationalVars),
          BooleanToEngStr(Data->ResolveSymlinks)));

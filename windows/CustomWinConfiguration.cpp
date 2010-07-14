@@ -84,6 +84,7 @@ void __fastcall TCustomWinConfiguration::Default()
   FFindFile.ListParams = "3;1|125,1;181,1;80,1;122,1|0;1;2;3";
   FConsoleWin.WindowSize = "570,430";
   FConfirmExitOnCompletion = true;
+  FOperationProgressOnTop = true;
 
   DefaultHistory();
 }

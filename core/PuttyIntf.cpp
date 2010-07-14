@@ -594,12 +594,21 @@ bool __fastcall HasGSSAPI()
   static int has = -1;
   if (has < 0)
   {
-    Ssh_gss_ctx ctx;
-    memset(&ctx, 0, sizeof(ctx));
-    has =
-      ((ssh_gss_init() == 1) &&
-       (ssh_gss_acquire_cred(&ctx) == SSH_GSS_OK) &&
-       (ssh_gss_release_cred(&ctx) == SSH_GSS_OK)) ? 1 : 0;
+    ssh_gss_init();
+    for (int Index = 0; (has <= 0) && (Index < n_ssh_gss_libraries); Index++)
+    {
+      ssh_gss_library * library = &ssh_gss_libraries[Index];
+      Ssh_gss_ctx ctx;
+      memset(&ctx, 0, sizeof(ctx));
+      has =
+        ((library->acquire_cred(library, &ctx) == SSH_GSS_OK) &&
+         (library->release_cred(library, &ctx) == SSH_GSS_OK)) ? 1 : 0;
+    }
+
+    if (has < 0)
+    {
+      has = 0;
+    }
   }
   return (has > 0);
 }

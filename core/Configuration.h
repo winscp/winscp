@@ -89,7 +89,6 @@ private:
   void __fastcall SetIniFileStorageName(AnsiString value);
   AnsiString __fastcall GetPartialExt() const;
   AnsiString __fastcall GetFileInfoString(const AnsiString Key);
-  AnsiString __fastcall GetLocalInvalidChars();
   bool __fastcall GetGSSAPIInstalled();
   void __fastcall SetSessionReopenAuto(int value);
   void __fastcall SetSessionReopenBackground(int value);
@@ -210,7 +209,6 @@ public:
   __property AnsiString RegistryStorageKey  = { read=GetRegistryStorageKey };
   __property AnsiString IniFileStorageName  = { read=GetIniFileStorageName, write=SetIniFileStorageName };
   __property AnsiString DefaultKeyFile = { read = GetDefaultKeyFile };
-  __property AnsiString LocalInvalidChars = { read = GetLocalInvalidChars };
 
   __property bool DisablePasswordStoring = { read = FDisablePasswordStoring };
   __property bool ForceBanners = { read = FForceBanners };

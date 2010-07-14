@@ -474,18 +474,18 @@ object LoginDialog: TLoginDialog
           286)
         object EnvironmentOtherLabel: TLabel
           Left = 0
-          Top = 244
+          Top = 211
           Width = 68
           Height = 13
           Caption = 'Other settings:'
         end
         object RecycleBinLinkLabel: TStaticText
           Left = 88
-          Top = 244
+          Top = 211
           Width = 60
           Height = 17
           Caption = 'Recycle bin'
-          TabOrder = 4
+          TabOrder = 2
           TabStop = True
           OnClick = RecycleBinLinkLabelClick
         end
@@ -608,7 +608,7 @@ object LoginDialog: TLoginDialog
             Width = 317
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Adjust remote timestamp to local co&nventions (Unix)'
+            Caption = 'Adjust remote timestamp to local co&nventions'
             TabOrder = 0
             OnClick = DataChange
           end
@@ -618,7 +618,7 @@ object LoginDialog: TLoginDialog
             Width = 317
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Adjust remote timestamp with &DST (Windows)'
+            Caption = 'Adjust remote timestamp with &DST'
             TabOrder = 1
             OnClick = DataChange
           end
@@ -628,28 +628,10 @@ object LoginDialog: TLoginDialog
             Width = 317
             Height = 17
             Anchors = [akLeft, akTop, akRight]
-            Caption = 'Preser&ve remote timestamp (Unix)'
+            Caption = 'Preser&ve remote timestamp'
             TabOrder = 2
             OnClick = DataChange
           end
-        end
-        object UnixEnvironmentButton: TButton
-          Left = 0
-          Top = 211
-          Width = 75
-          Height = 25
-          Caption = 'Uni&x'
-          TabOrder = 2
-          OnClick = UnixEnvironmentButtonClick
-        end
-        object WindowsEnvironmentButton: TButton
-          Left = 88
-          Top = 211
-          Width = 75
-          Height = 25
-          Caption = '&Windows'
-          TabOrder = 3
-          OnClick = WindowsEnvironmentButtonClick
         end
       end
       object DirectoriesSheet: TTabSheet

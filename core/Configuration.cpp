@@ -1008,11 +1008,6 @@ AnsiString __fastcall TConfiguration::GetDefaultKeyFile()
   return "";
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall TConfiguration::GetLocalInvalidChars()
-{
-  return "/\\:*?\"<>|";
-}
-//---------------------------------------------------------------------------
 bool __fastcall TConfiguration::GetRememberPassword()
 {
   return false;

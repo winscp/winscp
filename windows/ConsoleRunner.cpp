@@ -929,7 +929,7 @@ void __fastcall TConsoleRunner::TimerTimer(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 unsigned int TConsoleRunner::InputTimeout()
 {
-  return (FScript->Batch != TScript::BatchOff ? BATCH_INPUT_TIMEOUT : 0);
+  return ((FScript != NULL) && (FScript->Batch != TScript::BatchOff) ? BATCH_INPUT_TIMEOUT : 0);
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::Input(const AnsiString Prompt, AnsiString & Str, bool Echo)
@@ -1608,6 +1608,7 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
 
           if (FCommandError)
           {
+            FScript->Log(llMessage, "Failed");
             AnyError = true;
             if (FScript->Batch == TScript::BatchAbort)
             {

@@ -38,6 +38,7 @@ public:
   virtual __fastcall ~TScript();
 
   void __fastcall Command(AnsiString Cmd);
+  void __fastcall Log(TLogLineType Type, AnsiString Str);
 
   void __fastcall Synchronize(const AnsiString LocalDirectory,
     const AnsiString RemoteDirectory, const TCopyParamType & CopyParam,

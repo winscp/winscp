@@ -1565,7 +1565,7 @@ void __fastcall TFTPFileSystem::DeleteFile(const AnsiString AFileName,
 
     if (Dir)
     {
-      // Is current remote directory is in the directory being removed,
+      // If current remote directory is in the directory being removed,
       // some servers may refuse to delete it
       // This is common as ProcessDirectory above would CWD to
       // the directory to LIST it.

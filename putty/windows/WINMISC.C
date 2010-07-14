@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "putty.h"
+#include <security.h>
 
 OSVERSIONINFO osVersion;
 
@@ -40,21 +41,61 @@ char *get_username(void)
 {
     DWORD namelen;
     char *user;
+    int got_username = FALSE;
+    DECL_WINDOWS_FUNCTION(static, BOOLEAN, GetUserNameExA,
+			  (EXTENDED_NAME_FORMAT, LPSTR, PULONG));
 
-    namelen = 0;
-    if (GetUserName(NULL, &namelen) == FALSE) {
-	/*
-	 * Apparently this doesn't work at least on Windows XP SP2.
-	 * Thus assume a maximum of 256. It will fail again if it
-	 * doesn't fit.
-	 */
-	namelen = 256;
+    {
+	static int tried_usernameex = FALSE;
+	if (!tried_usernameex) {
+	    /* Not available on Win9x, so load dynamically */
+	    HMODULE secur32 = LoadLibrary("SECUR32.DLL");
+	    GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
+	    tried_usernameex = TRUE;
+	}
     }
 
-    user = snewn(namelen, char);
-    GetUserName(user, &namelen);
+    if (p_GetUserNameExA) {
+	/*
+	 * If available, use the principal -- this avoids the problem
+	 * that the local username is case-insensitive but Kerberos
+	 * usernames are case-sensitive.
+	 */
 
-    return user;
+	/* Get the length */
+	namelen = 0;
+	(void) p_GetUserNameExA(NameUserPrincipal, NULL, &namelen);
+
+	user = snewn(namelen, char);
+	got_username = p_GetUserNameExA(NameUserPrincipal, user, &namelen);
+	if (got_username) {
+	    char *p = strchr(user, '@');
+	    if (p) *p = 0;
+	} else {
+	    sfree(user);
+	}
+    }
+
+    if (!got_username) {
+	/* Fall back to local user name */
+	namelen = 0;
+	if (GetUserName(NULL, &namelen) == FALSE) {
+	    /*
+	     * Apparently this doesn't work at least on Windows XP SP2.
+	     * Thus assume a maximum of 256. It will fail again if it
+	     * doesn't fit.
+	     */
+	    namelen = 256;
+	}
+
+	user = snewn(namelen, char);
+	got_username = GetUserName(user, &namelen);
+	if (!got_username) {
+	    sfree(user);
+	}
+    }
+
+    return got_username ? user : NULL;
 }
 
 BOOL init_winver(void)

@@ -1661,7 +1661,7 @@ __fastcall TSFTPFileSystem::TSFTPFileSystem(TTerminal * ATerminal,
 {
   FSecureShell = SecureShell;
   FPacketReservations = new TList();
-  FPacketNumbers = VarArrayCreate(OPENARRAY(int, (0, 1)), varInteger);
+  FPacketNumbers = VarArrayCreate(OPENARRAY(int, (0, 1)), varLongWord);
   FPreviousLoggedPacket = 0;
   FNotLoggedPackets = 0;
   FBusy = 0;
@@ -2214,13 +2214,13 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
       }
 
       if (Reservation < 0 ||
-          Packet->MessageNumber != (unsigned long)FPacketNumbers.GetElement(Reservation))
+          Packet->MessageNumber != (unsigned int)FPacketNumbers.GetElement(Reservation))
       {
         TSFTPPacket * ReservedPacket;
-        unsigned long MessageNumber;
+        unsigned int MessageNumber;
         for (int Index = 0; Index < FPacketReservations->Count; Index++)
         {
-          MessageNumber = FPacketNumbers.GetElement(Index);
+          MessageNumber = (unsigned int)FPacketNumbers.GetElement(Index);
           if (MessageNumber == Packet->MessageNumber)
           {
             ReservedPacket = (TSFTPPacket *)FPacketReservations->Items[Index];
@@ -2254,7 +2254,7 @@ int __fastcall TSFTPFileSystem::ReceivePacket(TSFTPPacket * Packet,
   // (and it have not worked anyway until recent fix to UnreserveResponse)
   if (Reservation >= 0)
   {
-    assert(Packet->MessageNumber == (unsigned long)FPacketNumbers.GetElement(Reservation));
+    assert(Packet->MessageNumber == (unsigned int)FPacketNumbers.GetElement(Reservation));
     RemoveReservation(Reservation);
   }
 
@@ -2336,7 +2336,10 @@ int __fastcall TSFTPFileSystem::ReceiveResponse(
   }
   __finally
   {
-    if (!Response) delete AResponse;
+    if (!Response)
+    {
+      delete AResponse;
+    }
   }
   return Result;
 }

@@ -915,15 +915,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
   {
     AFSProtocol = fsFTP;
     AFtps = ftpsImplicit;
-    // adjust default port number to default Ftps mode
-    if (AFtps == ftpsImplicit)
-    {
-      APortNumber = FtpsImplicitPortNumber;
-    }
-    else
-    {
-      APortNumber = FtpPortNumber;
-    }
+    APortNumber = FtpsImplicitPortNumber;
     Url.Delete(1, 5);
     ProtocolDefined = true;
   }
@@ -1017,6 +1009,10 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
       else if (ProtocolDefined)
       {
         PortNumber = APortNumber;
+      }
+
+      if (ProtocolDefined)
+      {
         Ftps = AFtps;
       }
 

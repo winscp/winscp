@@ -47,7 +47,7 @@ protected:
   inline TRemoteFile * __fastcall NodeFile(const TTreeNode * Node);
   inline TRemoteFile * __fastcall NodeFileForce(TTreeNode * Node);
   inline bool __fastcall NodeIsHidden(const TTreeNode * Node);
-  inline bool __fastcall NodeCanDelete(TTreeNode * Node, bool RememberIfNot);
+  inline bool __fastcall NodeTryDelete(TTreeNode * Node, bool RememberIfFails);
 
   virtual TCustomDirView * __fastcall GetCustomDirView();
   virtual void __fastcall SetCustomDirView(TCustomDirView * Value);

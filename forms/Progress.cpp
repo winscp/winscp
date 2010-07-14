@@ -47,6 +47,17 @@ __fastcall TProgressForm::TProgressForm(TComponent* AOwner)
   UseSystemSettings(this);
   ResetOnceDoneOperation();
 
+  if (CustomWinConfiguration->OperationProgressOnTop)
+  {
+    FOperationProgress = TopProgress;
+    FFileProgress = BottomProgress;
+  }
+  else
+  {
+    FOperationProgress = BottomProgress;
+    FFileProgress = TopProgress;
+  }
+
   if (!IsGlobalMinimizeHandler())
   {
     SetGlobalMinimizeHandler(GlobalMinimize);
@@ -186,8 +197,8 @@ void __fastcall TProgressForm::UpdateControls()
     FileLabel->Caption = ExtractFileName(FData.FileName);
   }
   int OverallProgress = FData.OverallProgress();
-  OperationProgress->Position = OverallProgress;
-  OperationProgress->Hint = FORMAT("%d%%", (OverallProgress));
+  FOperationProgress->Position = OverallProgress;
+  FOperationProgress->Hint = FORMAT("%d%%", (OverallProgress));
   Caption = FORMAT("%d%% %s", (OverallProgress, OperationName(FData.Operation)));
 
   if (TransferOperation)
@@ -210,8 +221,8 @@ void __fastcall TProgressForm::UpdateControls()
     TimeElapsedLabel->Caption = FormatDateTimeSpan(Configuration->TimeFormat, FData.TimeElapsed());
     BytesTransferedLabel->Caption = FormatBytes(FData.TotalTransfered);
     CPSLabel->Caption = FORMAT("%s/s", (FormatBytes(FData.CPS())));
-    FileProgress->Position = FData.TransferProgress();
-    FileProgress->Hint = FORMAT("%d%%", (FileProgress->Position));
+    FFileProgress->Position = FData.TransferProgress();
+    FFileProgress->Hint = FORMAT("%d%%", (FFileProgress->Position));
   }
 }
 //---------------------------------------------------------------------

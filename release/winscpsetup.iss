@@ -737,7 +737,7 @@ begin
 
 #ifdef OpenCandy
   OpenCandyInitRemnant('WinSCP', '{#OpenCandyKey}', '3d0f240d63cf2239f9e45c3562d8bdbc',
-    ExpandConstant('{cm:LanguageISOCode}'), '{#RegistryKey}\OpenCandy',
+    ExpandConstant('{cm:LanguageISOCode}'), '{#ParentRegistryKey}\OpenCandy',
     WizardSilent());
 #endif
 end;

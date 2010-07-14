@@ -1,6 +1,6 @@
 object FileSystemInfoDialog: TFileSystemInfoDialog
-  Left = 320
-  Top = 130
+  Left = 165
+  Top = 69
   HelpType = htKeyword
   HelpKeyword = 'ui_fsinfo'
   BorderIcons = [biSystemMenu, biMinimize, biMaximize, biHelp]

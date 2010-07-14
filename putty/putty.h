@@ -348,6 +348,19 @@ enum {
     SER_FLOW_NONE, SER_FLOW_XONXOFF, SER_FLOW_RTSCTS, SER_FLOW_DSRDTR
 };
 
+/*
+ * Tables of string <-> enum value mappings used in settings.c.
+ * Defined here so that backends can export their GSS library tables
+ * to the cross-platform settings code.
+ */
+struct keyval { char *s; int v; };
+
+#ifndef NO_GSSAPI
+extern const int ngsslibs;
+extern const char *const gsslibnames[];/* for displaying in configuration */
+extern const struct keyval gsslibkeywords[];   /* for storing by settings.c */
+#endif
+
 extern const char *const ttymodes[];
 
 enum {
@@ -461,6 +474,7 @@ struct config_tag {
     int try_ki_auth;
     int try_gssapi_auth;               /* attempt gssapi auth */
     int gssapifwd;                     /* forward tgt via gss */
+    int ssh_gsslist[4];		       /* preference order for local GSS libs */
     int ssh_subsys;		       /* run a subsystem rather than a command */
     int ssh_subsys2;		       /* fallback to go with remote_cmd_ptr2 */
     int ssh_no_shell;		       /* avoid running a shell */
@@ -592,7 +606,8 @@ struct config_tag {
     /* SSH bug compatibility modes */
     int sshbug_ignore1, sshbug_plainpw1, sshbug_rsa1,
 	sshbug_hmac2, sshbug_derivekey2, sshbug_rsapad2,
-	sshbug_pksessid2, sshbug_rekey2, sshbug_maxpkt2;
+	sshbug_pksessid2, sshbug_rekey2, sshbug_maxpkt2,
+	sshbug_ignore2;
     /*
      * ssh_simple means that we promise never to open any channel other
      * than the main one, which means it can safely use a very large
@@ -825,6 +840,7 @@ void term_free(Terminal *);
 void term_size(Terminal *, int, int, int);
 void term_paint(Terminal *, Context, int, int, int, int, int);
 void term_scroll(Terminal *, int, int);
+void term_scroll_to_selection(Terminal *, int);
 void term_pwron(Terminal *, int);
 void term_clrsb(Terminal *);
 void term_mouse(Terminal *, Mouse_Button, Mouse_Button, Mouse_Action,
@@ -853,6 +869,8 @@ void term_set_focus(Terminal *term, int has_focus);
 char *term_get_ttymode(Terminal *term, const char *mode);
 int term_get_userpass_input(Terminal *term, prompts_t *p,
 			    unsigned char *in, int inlen);
+
+int format_arrow_key(char *buf, Terminal *term, int xkey, int ctrl);
 
 /*
  * Exports from logging.c.

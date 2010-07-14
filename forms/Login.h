@@ -235,8 +235,6 @@ __published:
   TLabel *Label21;
   TComboBox *TunnelLocalPortNumberEdit;
   TRadioButton *DSTModeKeepCheck;
-  TButton *UnixEnvironmentButton;
-  TButton *WindowsEnvironmentButton;
   TComboBox *TransferProtocolCombo;
   TLabel *Label22;
   TCheckBox *AllowScpFallbackCheck;
@@ -334,8 +332,6 @@ __published:
   void __fastcall ColorDefaultItemClick(TObject *Sender);
   void __fastcall PickColorItemClick(TObject *Sender);
   void __fastcall RenameSessionActionExecute(TObject * Sender);
-  void __fastcall UnixEnvironmentButtonClick(TObject *Sender);
-  void __fastcall WindowsEnvironmentButtonClick(TObject *Sender);
   void __fastcall PathEditBeforeDialog(TObject *Sender, AnsiString &Name,
     bool &Action);
   void __fastcall TransferProtocolComboChange(TObject *Sender);

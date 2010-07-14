@@ -29,7 +29,7 @@ __published:
   TPathLabel *FileLabel;
   TLabel *TargetLabel;
   TPathLabel *TargetPathLabel;
-  TProgressBar *OperationProgress;
+  TProgressBar *TopProgress;
   TPanel *TransferPanel;
   TLabel *Label3;
   TLabel *TimeElapsedLabel;
@@ -39,7 +39,7 @@ __published:
   TLabel *BytesTransferedLabel;
   TLabel *Label12;
   TLabel *CPSLabel;
-  TProgressBar *FileProgress;
+  TProgressBar *BottomProgress;
   TTimer *UpdateTimer;
   TPanel *SpeedPanel;
   TLabel *SpeedLabel2;
@@ -74,6 +74,8 @@ private:
   bool FReadOnly;
   unsigned long FCPSLimit;
   TOnceDoneOperation FOnceDoneOperation;
+  TProgressBar * FOperationProgress;
+  TProgressBar * FFileProgress;
 
   void __fastcall SetOnceDoneOperation(TOnceDoneOperation value);
   void __fastcall SetAllowMinimize(bool value);

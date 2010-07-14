@@ -361,12 +361,22 @@ void __fastcall TScript::SetSynchronizeParams(int value)
      TTerminal::spNotByTime | TTerminal::spBySize));
 }
 //---------------------------------------------------------------------------
+void __fastcall TScript::Log(TLogLineType Type, AnsiString Str)
+{
+  if ((Terminal != NULL) && Terminal->Log->Logging)
+  {
+    Terminal->Log->Add(Type, FORMAT("Script: %s", (Str)));
+  }
+}
+//---------------------------------------------------------------------------
 void __fastcall TScript::Command(AnsiString Cmd)
 {
   try
   {
     if (!Cmd.Trim().IsEmpty() && (Cmd[1] != ';') && (Cmd[1] != '#'))
     {
+      Log(llInput, Cmd);
+
       if (FEcho)
       {
         PrintLine(Cmd);
@@ -448,8 +458,10 @@ TStrings * __fastcall TScript::CreateFileList(TScriptProcParams * Parameters, in
           for (int i = 0; i < FileList->Count; i++)
           {
             TRemoteFile * File = FileList->Files[i];
+            TFileMasks::TParams Params;
+            Params.Size = File->Size;
             if (!File->IsThisDirectory && !File->IsParentDirectory &&
-                Mask.Matches(File->FileName))
+                Mask.Matches(File->FileName, false, AnsiString(), &Params))
             {
               Result->AddObject(FileDirectory + File->FileName,
                 FLAGSET(ListType, fltQueryServer) ? File->Duplicate() : NULL);
@@ -579,6 +591,7 @@ void __fastcall TScript::Print(const AnsiString Str)
 //---------------------------------------------------------------------------
 void __fastcall TScript::PrintLine(const AnsiString Str)
 {
+  Log(llOutput, Str);
   Print(Str + "\n");
 }
 //---------------------------------------------------------------------------

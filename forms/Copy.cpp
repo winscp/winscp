@@ -154,6 +154,7 @@ void __fastcall TCopyDialog::AdjustTransferControls()
 
   EnableControl(NewerOnlyCheck, FLAGCLEAR(Options, coDisableNewerOnly) && !RemoteTransfer);
   EnableControl(TransferSettingsButton, !RemoteTransfer);
+  EnableControl(CopyParamGroup, !RemoteTransfer);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::AdjustControls()
@@ -317,7 +318,7 @@ void __fastcall TCopyDialog::UpdateControls()
   if (!ToRemote && FLAGSET(Options, coAllowRemoteTransfer))
   {
     AnsiString Directory = DirectoryEdit->Text;
-    bool RemoteTransfer = (Directory.Pos("\\") == 0) && (Directory.Pos("/") > 0);
+    bool RemoteTransfer = !Directory.IsEmpty() && ExtractFileDrive(Directory).IsEmpty();
     if (RemoteTransfer != FLAGSET(FOutputOptions, cooRemoteTransfer))
     {
       FOutputOptions =
@@ -490,9 +491,12 @@ void __fastcall TCopyDialog::HelpButtonClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TCopyDialog::CopyParamGroupDblClick(TObject * /*Sender*/)
 {
-  if (DoCopyParamCustomDialog(FCopyParams, CopyParamAttrs))
+  if (CopyParamGroup->Enabled)
   {
-    UpdateControls();
+    if (DoCopyParamCustomDialog(FCopyParams, CopyParamAttrs))
+    {
+      UpdateControls();
+    }
   }
 }
 //---------------------------------------------------------------------------

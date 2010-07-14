@@ -43,6 +43,7 @@ private:
   TInterface FDefaultInterface;
   bool FDefaultShowAdvancedLoginOptions;
   bool FConfirmExitOnCompletion;
+  bool FOperationProgressOnTop;
   TNotifyEvent FOnMasterPasswordRecrypt;
 
   void __fastcall SetInterface(TInterface value);
@@ -79,6 +80,7 @@ public:
   __property TFindFileConfiguration FindFile = { read = FFindFile, write = SetFindFile };
   __property TConsoleWinConfiguration ConsoleWin = { read = FConsoleWin, write = SetConsoleWin };
   __property bool ConfirmExitOnCompletion  = { read=FConfirmExitOnCompletion, write=SetConfirmExitOnCompletion };
+  __property bool OperationProgressOnTop  = { read=FOperationProgressOnTop, write=FOperationProgressOnTop };
   __property bool UseMasterPassword = { read = GetUseMasterPassword };
   __property TNotifyEvent OnMasterPasswordRecrypt = { read = FOnMasterPasswordRecrypt, write = FOnMasterPasswordRecrypt };
 };

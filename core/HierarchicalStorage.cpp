@@ -823,7 +823,8 @@ bool __fastcall TIniFileStorage::ReadBool(const AnsiString Name, bool Default)
 //---------------------------------------------------------------------------
 int __fastcall TIniFileStorage::ReadInteger(const AnsiString Name, int Default)
 {
-  return FIniFile->ReadInteger(CurrentSection, MungeIniName(Name), Default);
+  int Result = FIniFile->ReadInteger(CurrentSection, MungeIniName(Name), Default);
+  return Result;
 }
 //---------------------------------------------------------------------------
 __int64 __fastcall TIniFileStorage::ReadInt64(const AnsiString Name, __int64 Default)
@@ -902,7 +903,8 @@ double __fastcall TIniFileStorage::ReadFloat(const AnsiString Name, double Defau
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::ReadStringRaw(const AnsiString Name, AnsiString Default)
 {
-  return FIniFile->ReadString(CurrentSection, MungeIniName(Name), Default);
+  AnsiString Result = FIniFile->ReadString(CurrentSection, MungeIniName(Name), Default);
+  return Result;
 }
 //---------------------------------------------------------------------------
 int __fastcall TIniFileStorage::ReadBinaryData(const AnsiString Name,

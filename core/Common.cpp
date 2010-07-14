@@ -393,13 +393,16 @@ const char ShellCommandFileNamePattern[] = "!.!";
 //---------------------------------------------------------------------------
 void __fastcall ReformatFileNameCommand(AnsiString & Command)
 {
-  AnsiString Program, Params, Dir;
-  SplitCommand(Command, Program, Params, Dir);
-  if (Params.Pos(ShellCommandFileNamePattern) == 0)
+  if (!Command.IsEmpty())
   {
-    Params = Params + (Params.IsEmpty() ? "" : " ") + ShellCommandFileNamePattern;
+    AnsiString Program, Params, Dir;
+    SplitCommand(Command, Program, Params, Dir);
+    if (Params.Pos(ShellCommandFileNamePattern) == 0)
+    {
+      Params = Params + (Params.IsEmpty() ? "" : " ") + ShellCommandFileNamePattern;
+    }
+    Command = FormatCommand(Program, Params);
   }
-  Command = FormatCommand(Program, Params);
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall ExpandFileNameCommand(const AnsiString Command,
@@ -703,6 +706,7 @@ struct TDateTimeParams
   long DaylightDifferenceSec;
   SYSTEMTIME StandardDate;
   SYSTEMTIME DaylightDate;
+  bool DaylightHack;
 };
 static bool DateTimeParamsInitialized = false;
 static TDateTimeParams DateTimeParams;
@@ -761,6 +765,8 @@ static TDateTimeParams * __fastcall GetDateTimeParams()
 
       DateTimeParams.StandardDate = TZI.StandardDate;
       DateTimeParams.DaylightDate = TZI.DaylightDate;
+
+      DateTimeParams.DaylightHack = !IsWin7();
 
       DateTimeParamsInitialized = true;
     }
@@ -871,6 +877,11 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
   return Result;
 }
 //---------------------------------------------------------------------------
+bool __fastcall UsesDaylightHack()
+{
+  return GetDateTimeParams()->DaylightHack;
+}
+//---------------------------------------------------------------------------
 TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
 {
   TDateTimeParams * Params = GetDateTimeParams();
@@ -878,11 +889,18 @@ TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
   TDateTime Result;
   Result = Params->UnixEpoch + (double(TimeStamp) / 86400);
 
-  if ((DSTMode == dstmWin) || (DSTMode == dstmUnix))
+  if (Params->DaylightHack)
   {
-    Result -= Params->CurrentDifference;
+    if ((DSTMode == dstmWin) || (DSTMode == dstmUnix))
+    {
+      Result -= Params->CurrentDifference;
+    }
+    else if (DSTMode == dstmKeep)
+    {
+      Result -= Params->BaseDifference;
+    }
   }
-  else if (DSTMode == dstmKeep)
+  else
   {
     Result -= Params->BaseDifference;
   }
@@ -922,7 +940,16 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
   FILETIME Result;
   __int64 UnixTimeStamp = DateTimeToUnix(DateTime);
 
+  TDateTimeParams * Params = GetDateTimeParams();
+  if (!Params->DaylightHack)
+  {
+    UnixTimeStamp += (IsDateInDST(DateTime) ?
+      Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
+    UnixTimeStamp -= Params->CurrentDaylightDifferenceSec;
+  }
+
   TIME_POSIX_TO_WIN(UnixTimeStamp, Result);
+
   return Result;
 }
 //---------------------------------------------------------------------------
@@ -932,22 +959,36 @@ __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   __int64 Result;
   TIME_WIN_TO_POSIX(FileTime, Result);
 
-  if ((DSTMode == dstmUnix) || (DSTMode == dstmKeep))
+  TDateTimeParams * Params = GetDateTimeParams();
+  if (Params->DaylightHack)
   {
-    FILETIME LocalFileTime;
-    SYSTEMTIME SystemTime;
-    TDateTime DateTime;
-    FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
-    FileTimeToSystemTime(&LocalFileTime, &SystemTime);
-    DateTime = SystemTimeToDateTime(SystemTime);
-
-    TDateTimeParams * Params = GetDateTimeParams();
-    Result += (IsDateInDST(DateTime) ?
-      Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
-
-    if (DSTMode == dstmKeep)
+    if ((DSTMode == dstmUnix) || (DSTMode == dstmKeep))
     {
-      Result -= Params->CurrentDaylightDifferenceSec;
+      FILETIME LocalFileTime;
+      SYSTEMTIME SystemTime;
+      FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
+      FileTimeToSystemTime(&LocalFileTime, &SystemTime);
+      TDateTime DateTime = SystemTimeToDateTime(SystemTime);
+      Result += (IsDateInDST(DateTime) ?
+        Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
+
+      if (DSTMode == dstmKeep)
+      {
+        Result -= Params->CurrentDaylightDifferenceSec;
+      }
+    }
+  }
+  else
+  {
+    if (DSTMode == dstmWin)
+    {
+      FILETIME LocalFileTime;
+      SYSTEMTIME SystemTime;
+      FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
+      FileTimeToSystemTime(&LocalFileTime, &SystemTime);
+      TDateTime DateTime = SystemTimeToDateTime(SystemTime);
+      Result -= (IsDateInDST(DateTime) ?
+        Params->DaylightDifferenceSec : Params->StandardDifferenceSec);
     }
   }
 
@@ -986,63 +1027,41 @@ TDateTime __fastcall AdjustDateTimeFromUnix(TDateTime DateTime, TDSTMode DSTMode
 {
   TDateTimeParams * Params = GetDateTimeParams();
 
-  if ((DSTMode == dstmWin) || (DSTMode == dstmUnix))
+  if (Params->DaylightHack)
   {
-    DateTime = DateTime - Params->CurrentDaylightDifference;
-  }
-
-  if (!IsDateInDST(DateTime))
-  {
-    if (DSTMode == dstmWin)
+    if ((DSTMode == dstmWin) || (DSTMode == dstmUnix))
     {
-      DateTime = DateTime - Params->DaylightDifference;
+      DateTime = DateTime - Params->CurrentDaylightDifference;
+    }
+
+    if (!IsDateInDST(DateTime))
+    {
+      if (DSTMode == dstmWin)
+      {
+        DateTime = DateTime - Params->DaylightDifference;
+      }
+    }
+    else
+    {
+      DateTime = DateTime - Params->StandardDifference;
     }
   }
   else
   {
-    DateTime = DateTime - Params->StandardDifference;
+    if (DSTMode == dstmWin)
+    {
+      if (IsDateInDST(DateTime))
+      {
+        DateTime = DateTime + Params->DaylightDifference;
+      }
+      else
+      {
+        DateTime = DateTime + Params->StandardDifference;
+      }
+    }
   }
 
   return DateTime;
-}
-//---------------------------------------------------------------------------
-__inline static bool __fastcall UnifySignificance(unsigned short & V1,
-  unsigned short & V2)
-{
-  bool Result = (V1 == 0) || (V2 == 0);
-  if (Result)
-  {
-    V1 = 0;
-    V2 = 0;
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-void __fastcall UnifyDateTimePrecision(TDateTime & DateTime1, TDateTime & DateTime2)
-{
-  unsigned short Y1, M1, D1, H1, N1, S1, MS1;
-  unsigned short Y2, M2, D2, H2, N2, S2, MS2;
-  bool Changed;
-
-  if (DateTime1 != DateTime2)
-  {
-    DateTime1.DecodeDate(&Y1, &M1, &D1);
-    DateTime1.DecodeTime(&H1, &N1, &S1, &MS1);
-    DateTime2.DecodeDate(&Y2, &M2, &D2);
-    DateTime2.DecodeTime(&H2, &N2, &S2, &MS2);
-    Changed = UnifySignificance(MS1, MS2);
-    if (Changed && UnifySignificance(S1, S2) && UnifySignificance(N1, N2) &&
-        UnifySignificance(H1, H2) && UnifySignificance(D1, D2) &&
-        UnifySignificance(M1, M2))
-    {
-      UnifySignificance(Y1, Y2);
-    }
-    if (Changed)
-    {
-      DateTime1 = EncodeDateVerbose(Y1, M1, D1) + EncodeTimeVerbose(H1, N1, S1, MS1);
-      DateTime2 = EncodeDateVerbose(Y2, M2, D2) + EncodeTimeVerbose(H2, N2, S2, MS2);
-    }
-  }
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall FixedLenDateTimeFormat(const AnsiString & Format)

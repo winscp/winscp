@@ -13,6 +13,7 @@
 #include "tree234.h"
 #include "ssh.h"
 #ifndef NO_GSSAPI
+#include "sshgssc.h"
 #include "sshgss.h"
 #endif
 
@@ -194,6 +195,7 @@ static const char *const ssh2_disconnect_reasons[] = {
 #define BUG_SSH2_REKEY                           64
 #define BUG_SSH2_PK_SESSIONID                   128
 #define BUG_SSH2_MAXPKT				256
+#define BUG_CHOKES_ON_SSH2_IGNORE               512
 
 /*
  * Codes for terminal modes.
@@ -2015,7 +2017,8 @@ static void ssh2_pkt_defer_noqueue(Ssh ssh, struct Packet *pkt, int noignore)
 {
     int len;
     if (ssh->cscipher != NULL && (ssh->cscipher->flags & SSH_CIPHER_IS_CBC) &&
-	ssh->deferred_len == 0 && !noignore) {
+	ssh->deferred_len == 0 && !noignore &&
+	!(ssh->remote_bugs & BUG_CHOKES_ON_SSH2_IGNORE)) {
 	/*
 	 * Interpose an SSH_MSG_IGNORE to ensure that user data don't
 	 * get encrypted with a known IV.
@@ -2145,7 +2148,8 @@ static void ssh2_pkt_send_with_padding(Ssh ssh, struct Packet *pkt,
 	 * unavailable, we don't do this trick at all, because we
 	 * gain nothing by it.)
 	 */
-	if (ssh->cscipher) {
+	if (ssh->cscipher &&
+	    !(ssh->remote_bugs & BUG_CHOKES_ON_SSH2_IGNORE)) {
 	    int stringlen, i;
 
 	    stringlen = (256 - ssh->deferred_len);
@@ -2511,6 +2515,15 @@ static void ssh_detect_bugs(Ssh ssh, char *vstring)
 	 */
 	ssh->remote_bugs |= BUG_SSH2_MAXPKT;
 	logevent("We believe remote version ignores SSH-2 maximum packet size");
+    }
+
+    if (ssh->cfg.sshbug_ignore2 == FORCE_ON) {
+	/*
+	 * Servers that don't support SSH2_MSG_IGNORE. Currently,
+	 * none detected automatically.
+	 */
+	ssh->remote_bugs |= BUG_CHOKES_ON_SSH2_IGNORE;
+	logevent("We believe remote version has SSH-2 ignore bug");
     }
 }
 
@@ -6679,11 +6692,13 @@ static void ssh2_msg_channel_eof(Ssh ssh, struct Packet *pktin)
 	 * wrap up and close the channel ourselves.
 	 */
 	x11_close(c->u.x11.s);
+	c->u.x11.s = NULL;
 	sshfwd_close(c);
     } else if (c->type == CHAN_AGENT) {
 	sshfwd_close(c);
     } else if (c->type == CHAN_SOCKDATA) {
 	pfd_close(c->u.pfd.s);
+	c->u.pfd.s = NULL;
 	sshfwd_close(c);
     }
 }
@@ -7204,6 +7219,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 	int num_env, env_left, env_ok;
 	struct Packet *pktout;
 #ifndef NO_GSSAPI
+	struct ssh_gss_library *gsslib;
 	Ssh_gss_ctx gss_ctx;
 	Ssh_gss_buf gss_buf;
 	Ssh_gss_buf gss_rcvtok, gss_sndtok;
@@ -7582,9 +7598,10 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		s->can_keyb_inter = ssh->cfg.try_ki_auth &&
 		    in_commasep_string("keyboard-interactive", methods, methlen);
 #ifndef NO_GSSAPI		
+		ssh_gss_init();
 		s->can_gssapi = ssh->cfg.try_gssapi_auth &&
-		  in_commasep_string("gssapi-with-mic", methods, methlen) &&
-		  ssh_gss_init();
+		    in_commasep_string("gssapi-with-mic", methods, methlen) &&
+		    n_ssh_gss_libraries > 0;
 #endif
 	    }
 
@@ -7927,6 +7944,35 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		s->gotit = TRUE;
 		ssh->pkt_actx = SSH2_PKTCTX_GSSAPI;
 
+		/*
+		 * Pick the highest GSS library on the preference
+		 * list.
+		 */
+		{
+		    int i, j;
+		    s->gsslib = NULL;
+		    for (i = 0; i < ngsslibs; i++) {
+			int want_id = ssh->cfg.ssh_gsslist[i];
+			for (j = 0; j < n_ssh_gss_libraries; j++)
+			    if (ssh_gss_libraries[j].id == want_id) {
+				s->gsslib = &ssh_gss_libraries[j];
+				goto got_gsslib;   /* double break */
+			    }
+		    }
+		    got_gsslib:
+		    /*
+		     * We always expect to have found something in
+		     * the above loop: we only came here if there
+		     * was at least one viable GSS library, and the
+		     * preference list should always mention
+		     * everything and only change the order.
+		     */
+		    assert(s->gsslib);
+		}
+
+		if (s->gsslib->gsslogmsg)
+		    logevent(s->gsslib->gsslogmsg);
+
 		/* Sending USERAUTH_REQUEST with "gssapi-with-mic" method */
 		s->pktout = ssh2_pkt_init(SSH2_MSG_USERAUTH_REQUEST);
 		ssh2_pkt_addstring(s->pktout, s->username);
@@ -7934,7 +7980,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		ssh2_pkt_addstring(s->pktout, "gssapi-with-mic");
 
 		/* add mechanism info */
-		ssh_gss_indicate_mech(&s->gss_buf);
+		s->gsslib->indicate_mech(s->gsslib, &s->gss_buf);
 
 		/* number of GSSAPI mechanisms */
 		ssh2_pkt_adduint32(s->pktout,1);
@@ -7970,8 +8016,9 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		}
 
 		/* now start running */
-		s->gss_stat = ssh_gss_import_name(ssh->fullhostname,
-						  &s->gss_srv_name);
+		s->gss_stat = s->gsslib->import_name(s->gsslib,
+						     ssh->fullhostname,
+						     &s->gss_srv_name);
 		if (s->gss_stat != SSH_GSS_OK) {
 		    if (s->gss_stat == SSH_GSS_BAD_HOST_NAME)
 			logevent("GSSAPI import name failed - Bad service name");
@@ -7981,11 +8028,11 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		}
 
 		/* fetch TGT into GSS engine */
-		s->gss_stat = ssh_gss_acquire_cred(&s->gss_ctx);
+		s->gss_stat = s->gsslib->acquire_cred(s->gsslib, &s->gss_ctx);
 
 		if (s->gss_stat != SSH_GSS_OK) {
 		    logevent("GSSAPI authentication failed to get credentials");
-		    ssh_gss_release_name(&s->gss_srv_name);
+		    s->gsslib->release_name(s->gsslib, &s->gss_srv_name);
 		    continue;
 		}
 
@@ -7995,17 +8042,20 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 
 		/* now enter the loop */
 		do {
-		    s->gss_stat = ssh_gss_init_sec_context(&s->gss_ctx,
-							   s->gss_srv_name,
-							   ssh->cfg.gssapifwd,
-							   &s->gss_rcvtok,
-							   &s->gss_sndtok);
+		    s->gss_stat = s->gsslib->init_sec_context
+			(s->gsslib,
+			 &s->gss_ctx,
+			 s->gss_srv_name,
+			 ssh->cfg.gssapifwd,
+			 &s->gss_rcvtok,
+			 &s->gss_sndtok);
 
 		    if (s->gss_stat!=SSH_GSS_S_COMPLETE &&
 			s->gss_stat!=SSH_GSS_S_CONTINUE_NEEDED) {
 			logevent("GSSAPI authentication initialisation failed");
 
-			if (ssh_gss_display_status(s->gss_ctx,&s->gss_buf) == SSH_GSS_OK) {
+			if (s->gsslib->display_status(s->gsslib, s->gss_ctx,
+						      &s->gss_buf) == SSH_GSS_OK) {
 			    logevent(s->gss_buf.value);
 			    sfree(s->gss_buf.value);
 			}
@@ -8022,7 +8072,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 			ssh_pkt_addstring_start(s->pktout);
 			ssh_pkt_addstring_data(s->pktout,s->gss_sndtok.value,s->gss_sndtok.length);
 			ssh2_pkt_send(ssh, s->pktout);
-			ssh_gss_free_tok(&s->gss_sndtok);
+			s->gsslib->free_tok(s->gsslib, &s->gss_sndtok);
 		    }
 
 		    if (s->gss_stat == SSH_GSS_S_CONTINUE_NEEDED) {
@@ -8039,8 +8089,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		} while (s-> gss_stat == SSH_GSS_S_CONTINUE_NEEDED);
 
 		if (s->gss_stat != SSH_GSS_OK) {
-		    ssh_gss_release_name(&s->gss_srv_name);
-		    ssh_gss_release_cred(&s->gss_ctx);
+		    s->gsslib->release_name(s->gsslib, &s->gss_srv_name);
+		    s->gsslib->release_cred(s->gsslib, &s->gss_ctx);
 		    continue;
 		}
 		logevent("GSSAPI authentication loop finished OK");
@@ -8059,17 +8109,17 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		s->gss_buf.value = (char *)s->pktout->data + micoffset;
 		s->gss_buf.length = s->pktout->length - micoffset;
 
-		ssh_gss_get_mic(s->gss_ctx, &s->gss_buf, &mic);
+		s->gsslib->get_mic(s->gsslib, s->gss_ctx, &s->gss_buf, &mic);
 		s->pktout = ssh2_pkt_init(SSH2_MSG_USERAUTH_GSSAPI_MIC);
 		ssh_pkt_addstring_start(s->pktout);
 		ssh_pkt_addstring_data(s->pktout, mic.value, mic.length);
 		ssh2_pkt_send(ssh, s->pktout);
-		ssh_gss_free_mic(&mic);
+		s->gsslib->free_mic(s->gsslib, &mic);
 
 		s->gotit = FALSE;
 
-		ssh_gss_release_name(&s->gss_srv_name);
-		ssh_gss_release_cred(&s->gss_ctx);
+		s->gsslib->release_name(s->gsslib, &s->gss_srv_name);
+		s->gsslib->release_cred(s->gsslib, &s->gss_ctx);
 		continue;
 #endif
 	    } else if (s->can_keyb_inter && !s->kbd_inter_refused) {
@@ -8238,12 +8288,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		s->cur_prompt = new_prompts(ssh->frontend);
 		s->cur_prompt->to_server = TRUE;
 		s->cur_prompt->name = dupstr("SSH password");
-#ifdef MPEXT
-		// To suppress CodeGuard warning
-		add_prompt(s->cur_prompt, dupprintf("%s@%s's password: ",
-#else
 		add_prompt(s->cur_prompt, dupprintf("%.90s@%.90s's password: ",
-#endif
 						    s->username,
 						    ssh->savedhost),
 			   FALSE, SSH_MAX_PASSWORD_LEN);
@@ -9449,8 +9494,10 @@ static const struct telnet_special *ssh_get_specials(void *handle)
     static const struct telnet_special ssh1_ignore_special[] = {
 	{"IGNORE message", TS_NOP}
     };
-    static const struct telnet_special ssh2_transport_specials[] = {
+    static const struct telnet_special ssh2_ignore_special[] = {
 	{"IGNORE message", TS_NOP},
+    };
+    static const struct telnet_special ssh2_rekey_special[] = {
 	{"Repeat key exchange", TS_REKEY},
     };
     static const struct telnet_special ssh2_session_specials[] = {
@@ -9475,7 +9522,8 @@ static const struct telnet_special *ssh_get_specials(void *handle)
 	{NULL, TS_EXITMENU}
     };
     /* XXX review this length for any changes: */
-    static struct telnet_special ssh_specials[lenof(ssh2_transport_specials) +
+    static struct telnet_special ssh_specials[lenof(ssh2_ignore_special) +
+					      lenof(ssh2_rekey_special) +
 					      lenof(ssh2_session_specials) +
 					      lenof(specials_end)];
     Ssh ssh = (Ssh) handle;
@@ -9494,7 +9542,10 @@ static const struct telnet_special *ssh_get_specials(void *handle)
 	if (!(ssh->remote_bugs & BUG_CHOKES_ON_SSH1_IGNORE))
 	    ADD_SPECIALS(ssh1_ignore_special);
     } else if (ssh->version == 2) {
-	ADD_SPECIALS(ssh2_transport_specials);
+	if (!(ssh->remote_bugs & BUG_CHOKES_ON_SSH2_IGNORE))
+	    ADD_SPECIALS(ssh2_ignore_special);
+	if (!(ssh->remote_bugs & BUG_SSH2_REKEY))
+	    ADD_SPECIALS(ssh2_rekey_special);
 	if (ssh->mainchan)
 	    ADD_SPECIALS(ssh2_session_specials);
     } /* else we're not ready yet */
@@ -9544,9 +9595,11 @@ static void ssh_special(void *handle, Telnet_Special code)
 	    if (!(ssh->remote_bugs & BUG_CHOKES_ON_SSH1_IGNORE))
 		send_packet(ssh, SSH1_MSG_IGNORE, PKT_STR, "", PKT_END);
 	} else {
-	    pktout = ssh2_pkt_init(SSH2_MSG_IGNORE);
-	    ssh2_pkt_addstring_start(pktout);
-	    ssh2_pkt_send_noqueue(ssh, pktout);
+	    if (!(ssh->remote_bugs & BUG_CHOKES_ON_SSH2_IGNORE)) {
+		pktout = ssh2_pkt_init(SSH2_MSG_IGNORE);
+		ssh2_pkt_addstring_start(pktout);
+		ssh2_pkt_send_noqueue(ssh, pktout);
+	    }
 	}
     } else if (code == TS_REKEY) {
 	if (!ssh->kex_in_progress && ssh->version == 2) {

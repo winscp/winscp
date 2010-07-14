@@ -105,7 +105,7 @@ object ProgressForm: TProgressForm
       Anchors = [akLeft, akTop, akRight]
       AutoSize = False
     end
-    object OperationProgress: TProgressBar
+    object TopProgress: TProgressBar
       Left = 0
       Top = 42
       Width = 301
@@ -213,7 +213,7 @@ object ProgressForm: TProgressForm
       Anchors = [akTop, akRight]
       Caption = 'Speed:'
     end
-    object FileProgress: TProgressBar
+    object BottomProgress: TProgressBar
       Left = 0
       Top = 37
       Width = 301

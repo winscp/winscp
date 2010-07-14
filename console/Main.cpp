@@ -35,9 +35,11 @@ inline void FreeCommStruct(TConsoleCommStruct* CommStruct)
   UnmapViewOfFile(CommStruct);
 }
 //---------------------------------------------------------------------------
-void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& ResponseEvent,
+void InitializeConsole(char* InstanceName, HANDLE& RequestEvent, HANDLE& ResponseEvent,
   HANDLE& CancelEvent, HANDLE& FileMapping, HANDLE& Job)
 {
+  unsigned int Process = GetCurrentProcessId();
+
   int Attempts = 0;
   char Name[MAX_PATH];
   bool UniqEvent;
@@ -49,12 +51,14 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
       throw runtime_error("Cannot find unique name for event object.");
     }
 
+    int InstanceNumber;
     #ifdef CONSOLE_TEST
     InstanceNumber = 1;
     #else
     InstanceNumber = random(1000);
     #endif
-    sprintf(Name, "%s%d", CONSOLE_EVENT_REQUEST, InstanceNumber);
+    sprintf(InstanceName, "_%u_%d", Process, InstanceNumber);
+    sprintf(Name, "%s%s", CONSOLE_EVENT_REQUEST, InstanceName);
     HANDLE EventHandle = OpenEvent(EVENT_ALL_ACCESS, false, Name);
     UniqEvent = (EventHandle == NULL);
     if (!UniqEvent)
@@ -71,21 +75,21 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
     throw runtime_error("Cannot create request event object.");
   }
 
-  sprintf(Name, "%s%d", CONSOLE_EVENT_RESPONSE, InstanceNumber);
+  sprintf(Name, "%s%s", CONSOLE_EVENT_RESPONSE, InstanceName);
   ResponseEvent = CreateEvent(NULL, false, false, Name);
   if (ResponseEvent == NULL)
   {
     throw runtime_error("Cannot create response event object.");
   }
 
-  sprintf(Name, "%s%d", CONSOLE_EVENT_CANCEL, InstanceNumber);
+  sprintf(Name, "%s%s", CONSOLE_EVENT_CANCEL, InstanceName);
   CancelEvent = CreateEvent(NULL, false, false, Name);
   if (CancelEvent == NULL)
   {
     throw runtime_error("Cannot create cancel event object.");
   }
 
-  sprintf(Name, "%s%d", CONSOLE_MAPPING, InstanceNumber);
+  sprintf(Name, "%s%s", CONSOLE_MAPPING, InstanceName);
   FileMapping = CreateFileMapping((HANDLE)0xFFFFFFFF, NULL, PAGE_READWRITE,
     0, sizeof(TConsoleCommStruct), Name);
   if (FileMapping == NULL)
@@ -104,7 +108,7 @@ void InitializeConsole(int& InstanceNumber, HANDLE& RequestEvent, HANDLE& Respon
     (TSetInformationJobObject)GetProcAddress(Kernel32, "SetInformationJobObject");
   if ((CreateJobObject != NULL) && (SetInformationJobObject != NULL))
   {
-    sprintf(Name, "%s%d", CONSOLE_JOB, InstanceNumber);
+    sprintf(Name, "%s%s", CONSOLE_JOB, InstanceName);
     Job = CreateJobObject(NULL, Name);
     if (Job == NULL)
     {
@@ -198,7 +202,7 @@ bool __fastcall CutToken(const char *& Str, char * Token)
   return Result;
 }
 //---------------------------------------------------------------------------
-void InitializeChild(const char* CommandLine, int InstanceNumber, HANDLE& Child)
+void InitializeChild(const char* CommandLine, const char* InstanceName, HANDLE& Child)
 {
   int SkipParam = 0;
   char ChildPath[MAX_PATH] = "";
@@ -256,7 +260,7 @@ void InitializeChild(const char* CommandLine, int InstanceNumber, HANDLE& Child)
   }
 
   char* Parameters = new char[(CommandLineLen * 2) + 100 + (Count * 3) + 1];
-  sprintf(Parameters, "\"%s\" /console /consoleinstance=%d ", ChildPath, InstanceNumber);
+  sprintf(Parameters, "\"%s\" /console /consoleinstance=%s ", ChildPath, InstanceName);
   P = CommandLine;
   // skip executable path
   CutToken(P, Buffer);
@@ -316,7 +320,7 @@ void FinalizeChild(HANDLE Child)
   }
 }
 //---------------------------------------------------------------------------
-void FinalizeConsole(int /*InstanceNumber*/, HANDLE RequestEvent,
+void FinalizeConsole(const char* /*InstanceName*/, HANDLE RequestEvent,
   HANDLE ResponseEvent, HANDLE CancelEvent, HANDLE FileMapping, HANDLE Job)
 {
   CloseHandle(RequestEvent);
@@ -656,9 +660,9 @@ int main(int /*argc*/, char* /*argv*/[])
     HANDLE ConsoleOutput = GetStdHandle(STD_OUTPUT_HANDLE);
     OutputType = GetFileType(ConsoleOutput);
 
-    int InstanceNumber;
+    char InstanceName[MAX_PATH];
     HANDLE RequestEvent, ResponseEvent, FileMapping, Job;
-    InitializeConsole(InstanceNumber, RequestEvent, ResponseEvent,
+    InitializeConsole(InstanceName, RequestEvent, ResponseEvent,
       CancelEvent, FileMapping, Job);
 
     char SavedTitle[512];
@@ -667,7 +671,7 @@ int main(int /*argc*/, char* /*argv*/[])
     try
     {
       #ifndef CONSOLE_TEST
-      InitializeChild(GetCommandLine(), InstanceNumber, Child);
+      InitializeChild(GetCommandLine(), InstanceName, Child);
       #endif
 
       try
@@ -727,7 +731,7 @@ int main(int /*argc*/, char* /*argv*/[])
       Result = RESULT_INIT_ERROR;
     }
 
-    FinalizeConsole(InstanceNumber, RequestEvent, ResponseEvent,
+    FinalizeConsole(InstanceName, RequestEvent, ResponseEvent,
       CancelEvent, FileMapping, Job);
   }
   catch(const exception& e)

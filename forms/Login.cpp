@@ -1098,6 +1098,7 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(EOLTypeCombo, (FSProtocol != fsFTP) && EnvironmentSheet->Enabled);
       EnableControl(EOLTypeLabel, EOLTypeCombo->Enabled);
       EnableControl(DSTModeGroup, (FSProtocol != fsFTP) && EnvironmentSheet->Enabled);
+      EnableControl(DSTModeKeepCheck, UsesDaylightHack() && DSTModeGroup->Enabled);
       EnableControl(UtfCombo, (FSProtocol != fsSCPonly) && EnvironmentSheet->Enabled);
       EnableControl(UtfLabel, UtfCombo->Enabled);
       // should be enabled for fsSFTP (SCP fallback) too, but it would cause confusion
@@ -1330,12 +1331,6 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
   }
 
   AnsiString SessionName = FSessionData->SessionName;
-  // when saving new session, save by default to current session folder
-  if (FEditingSessionData == NULL)
-  {
-    SessionName.Insert(
-      UnixIncludeTrailingBackslash(SessionNodePath(CurrentSessionFolderNode())), 1);
-  }
   if (DoSaveSessionDialog(SessionName, PSavePassword, FEditingSessionData))
   {
     if ((PSavePassword != NULL) && !*PSavePassword)
@@ -1804,6 +1799,12 @@ void __fastcall TLoginDialog::SetDefaultSessionActionExecute(
         qaOK | qaCancel, HELP_SESSION_SAVE_DEFAULT) == qaOK)
   {
     SaveSession(FSessionData);
+    if (!Configuration->DisablePasswordStoring &&
+        FSessionData->HasAnyPassword() &&
+        CustomWinConfiguration->UseMasterPassword)
+    {
+      CustomWinConfiguration->AskForMasterPasswordIfNotSet();
+    }
     StoredSessions->DefaultSettings = FSessionData;
   }
 }
@@ -2204,19 +2205,6 @@ void __fastcall TLoginDialog::SessionTreeEdited(TObject * /*Sender*/,
       }
     }
   }
-}
-//---------------------------------------------------------------------------
-void __fastcall TLoginDialog::UnixEnvironmentButtonClick(TObject * /*Sender*/)
-{
-  EOLTypeCombo->ItemIndex = 0;
-  DSTModeUnixCheck->Checked = true;
-}
-//---------------------------------------------------------------------------
-void __fastcall TLoginDialog::WindowsEnvironmentButtonClick(
-  TObject * /*Sender*/)
-{
-  EOLTypeCombo->ItemIndex = 1;
-  DSTModeWinCheck->Checked = true;
 }
 //---------------------------------------------------------------------------
 void __fastcall TLoginDialog::PathEditBeforeDialog(TObject * /*Sender*/,

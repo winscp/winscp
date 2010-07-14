@@ -139,14 +139,25 @@ bool __fastcall TCustomUnixDriveView::NodeIsHidden(const TTreeNode * Node)
   #endif
 }
 //---------------------------------------------------------------------------
-bool __fastcall TCustomUnixDriveView::NodeCanDelete(TTreeNode * Node, bool RememberIfNot)
+bool __fastcall TCustomUnixDriveView::NodeTryDelete(TTreeNode * Node, bool RememberIfFails)
 {
   bool Result =
     (Selected == NULL) ||
     ((Selected != Node) && !Selected->HasAsParent(Node));
-  if (!Result && RememberIfNot)
+  if (Result)
   {
-    FPendingDelete->Add(Node);
+    Node->Delete();
+  }
+  else
+  {
+    if (RememberIfFails)
+    {
+      int I = FPendingDelete->IndexOf(Node);
+      if (I < 0)
+      {
+        FPendingDelete->Add(Node);
+      }
+    }
   }
   return Result;
 }
@@ -211,9 +222,9 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
       {
         TTreeNode * ChildNode = dynamic_cast<TTreeNode *>(ChildrenDirs->Objects[i]);
         TNodeData * ChildData = NodeData(ChildNode);
-        if ((ChildData->File == NULL) && NodeCanDelete(ChildNode, true))
+        if (ChildData->File == NULL)
         {
-          ChildNode->Delete();
+          NodeTryDelete(ChildNode, true);
         }
       }
 
@@ -231,15 +242,11 @@ void __fastcall TCustomUnixDriveView::UpdatePath(TTreeNode * Node, bool Force,
     {
       TTreeNode * PrevChildNode = Node->GetPrevChild(ChildNode);
       TRemoteFile * File = NodeFile(ChildNode);
-      if (!NodeCanDelete(ChildNode, true) ||
-          ((ShowHiddenDirs || !NodeIsHidden(ChildNode)) &&
-           (ShowInaccesibleDirectories || (File == NULL) || !File->IsInaccesibleDirectory)))
+      if (((ShowHiddenDirs || !NodeIsHidden(ChildNode)) &&
+            (ShowInaccesibleDirectories || (File == NULL) || !File->IsInaccesibleDirectory)) ||
+          !NodeTryDelete(ChildNode, true))
       {
         UpdatePath(ChildNode, true);
-      }
-      else
-      {
-        ChildNode->Delete();
       }
       ChildNode = PrevChildNode;
     }
@@ -494,12 +501,8 @@ void __fastcall TCustomUnixDriveView::CheckPendingDeletes()
   while (Index < FPendingDelete->Count)
   {
     TTreeNode * Node = static_cast<TTreeNode *>(FPendingDelete->Items[Index]);
-    if (NodeCanDelete(Node, false))
-    {
-      // this as well deletes node from FPendingDelete
-      Node->Delete();
-    }
-    else
+    // this as well deletes node from FPendingDelete
+    if (!NodeTryDelete(Node, false))
     {
       Index++;
     }

@@ -270,6 +270,8 @@ BEGIN
         NEW_FILE, "New file"
         EDIT_FILE_CAPTION, "Edit file"
         EDIT_FILE_PROMPT, "&Enter file name:"
+        REMOTE_COPY_FILE, "Duplicate file '%s' to remote directory:"
+        REMOTE_COPY_FILES, "Duplicate %d files to remote directory:"
         REMOTE_COPY_TITLE, "Duplicate"
         PROGRESS_REMOTE_COPY, "Copying"
         CUSTOM_COMMAND_ADD, "Add Custom Command"

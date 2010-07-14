@@ -555,6 +555,9 @@ uses
   ShellDialogs, IEDriveInfo,
   FileChanges, Math;
 
+var
+  DaylightHack: Boolean;
+
 procedure Register;
 begin
   RegisterComponents('DriveDir', [TDirView]);
@@ -576,10 +579,19 @@ end; {MatchesFileExt}
 function FileTimeToDateTime(FileTime: TFileTime): TDateTime;
 var
   SysTime: TSystemTime;
+  UniverzalSysTime: TSystemTime;
   LocalFileTime: TFileTime;
 begin
-  FileTimeToLocalFileTime(FileTime, LocalFileTime);
-  FileTimeToSystemTime(LocalFileTime, SysTime);
+  if not DaylightHack then
+  begin
+    FileTimeToSystemTime(FileTime, UniverzalSysTime);
+    SystemTimeToTzSpecificLocalTime(nil, UniverzalSysTime, SysTime);
+  end
+    else
+  begin
+    FileTimeToLocalFileTime(FileTime, LocalFileTime);
+    FileTimeToSystemTime(LocalFileTime, SysTime);
+  end;
   Result := SystemTimeToDateTime(SysTime);
 end;
 
@@ -4358,4 +4370,7 @@ end;
 initialization
   LastClipBoardOperation := cboNone;
   LastIOResult := 0;
+  DaylightHack := not
+    ((Win32MajorVersion > 6) or
+     ((Win32MajorVersion = 6) and (Win32MinorVersion >= 1)));
 end.
