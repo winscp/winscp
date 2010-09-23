@@ -670,18 +670,23 @@ begin
   s := '';
   repeat
     ReadVar(Socket, x, 1, Ok);
+    if Ok <> 1 then
+    begin
+      Break;
+    end
+      else
     if x = #13 then // at least NCSA 1.3 does send a #10 only
       else
     if x = #10 then
     begin
-      Result := s;
-      Exit;
+      Break;
     end
       else
     begin
       s := s + x;
     end;
   until Eof(Socket);
+  Result := s;
 end;
 
 procedure TTcpIp.WriteBuf(Socket: TSocket; const Buf; var Size: Integer);

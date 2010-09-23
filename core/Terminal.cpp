@@ -3447,6 +3447,7 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
 void __fastcall TTerminal::AnyCommand(const AnsiString Command,
   TCaptureOutputEvent OutputEvent)
 {
+
   class TOutputProxy
   {
   public:
@@ -3459,7 +3460,10 @@ void __fastcall TTerminal::AnyCommand(const AnsiString Command,
     void __fastcall Output(const AnsiString & Str, bool StdError)
     {
       FAction.AddOutput(Str, StdError);
-      FOutputEvent(Str, StdError);
+      if (FOutputEvent != NULL)
+      {
+        FOutputEvent(Str, StdError);
+      }
     }
 
   private:
@@ -3942,15 +3946,10 @@ void __fastcall TTerminal::DoSynchronizeCollectDirectory(const AnsiString LocalD
           {
             TSynchronizeFileData * FileData = new TSynchronizeFileData;
 
-            FILETIME LocalLastWriteTime;
-            SYSTEMTIME SystemLastWriteTime;
-            FileTimeToLocalFileTime(&SearchRec.FindData.ftLastWriteTime, &LocalLastWriteTime);
-            FileTimeToSystemTime(&LocalLastWriteTime, &SystemLastWriteTime);
-
             FileData->IsDirectory = FLAGSET(SearchRec.Attr, faDirectory);
             FileData->Info.FileName = FileName;
             FileData->Info.Directory = Data.LocalDirectory;
-            FileData->Info.Modification = SystemTimeToDateTime(SystemLastWriteTime);
+            FileData->Info.Modification = FileTimeToDateTime(SearchRec.FindData.ftLastWriteTime);
             FileData->Info.ModificationFmt = mfFull;
             FileData->Info.Size = Size;
             FileData->LocalLastWriteTime = SearchRec.FindData.ftLastWriteTime;
@@ -4475,9 +4474,6 @@ void __fastcall TTerminal::SynchronizeRemoteTimestamp(const AnsiString /*FileNam
   Properties.Valid << vpModification;
   Properties.Modification = ConvertTimestampToUnix(ChecklistItem->FLocalLastWriteTime,
     SessionData->DSTMode);
-
-  // unfortunatelly we never have a remote file here
-  assert(ChecklistItem->RemoteFile == NULL);
 
   ChangeFileProperties(
     UnixIncludeTrailingBackslash(ChecklistItem->Remote.Directory) + ChecklistItem->Remote.FileName,

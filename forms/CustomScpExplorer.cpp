@@ -366,10 +366,16 @@ void __fastcall TCustomScpExplorerForm::TerminalChanged()
     TManagedTerminal * ManagedTerminal = dynamic_cast<TManagedTerminal *>(Terminal);
     assert(ManagedTerminal != NULL);
 
-    if (WinConfiguration->PreservePanelState &&
-        (ManagedTerminal->RemoteExplorerState != NULL))
+    if (WinConfiguration->PreservePanelState)
     {
-      RemoteDirView->RestoreState(ManagedTerminal->RemoteExplorerState);
+      if (ManagedTerminal->RemoteExplorerState != NULL)
+      {
+        RemoteDirView->RestoreState(ManagedTerminal->RemoteExplorerState);
+      }
+      else
+      {
+        RemoteDirView->ClearState();
+      }
     }
 
     SessionColor = ManagedTerminal->Color;
@@ -2296,8 +2302,19 @@ void __fastcall TCustomScpExplorerForm::ExecutedFileReload(
 
     AnsiString RootTempDir = Data.LocalRootDirectory;
     AnsiString TempDir = ExtractFilePath(FileName);
-    TemporarilyDownloadFiles(FileList, Data.ForceText, RootTempDir,
-      TempDir, true, true, true);
+
+    TTerminal * PrevTerminal = TTerminalManager::Instance()->ActiveTerminal;
+    TTerminalManager::Instance()->ActiveTerminal = Data.Terminal;
+    try
+    {
+      TemporarilyDownloadFiles(FileList, Data.ForceText, RootTempDir,
+        TempDir, true, true, true);
+    }
+    __finally
+    {
+      // it actually may not exist anymore...
+      TTerminalManager::Instance()->ActiveTerminal = PrevTerminal;
+    }
 
     // sanity check, the target file name should be still the same
     assert(ExtractFileName(FileName) == FileList->Strings[0]);

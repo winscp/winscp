@@ -953,6 +953,26 @@ FILETIME __fastcall DateTimeToFileTime(const TDateTime DateTime,
   return Result;
 }
 //---------------------------------------------------------------------------
+TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
+{
+  // duplicated in DirView.pas
+  SYSTEMTIME SysTime;
+  TDateTimeParams * Params = GetDateTimeParams();
+  if (!Params->DaylightHack)
+  {
+    SYSTEMTIME UniverzalSysTime;
+    FileTimeToSystemTime(&FileTime, &UniverzalSysTime);
+    SystemTimeToTzSpecificLocalTime(NULL, &UniverzalSysTime, &SysTime);
+  }
+  else
+  {
+    FILETIME LocalFileTime;
+    FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
+    FileTimeToSystemTime(&LocalFileTime, &SysTime);
+  }
+  return SystemTimeToDateTime(SysTime);
+}
+//---------------------------------------------------------------------------
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,
   TDSTMode DSTMode)
 {

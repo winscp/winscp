@@ -736,9 +736,9 @@ begin
   AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
 
 #ifdef OpenCandy
-  OpenCandyInitRemnant('WinSCP', '{#OpenCandyKey}', '3d0f240d63cf2239f9e45c3562d8bdbc',
+  OpenCandyInitRemnant2('WinSCP', '{#OpenCandyKey}', '3d0f240d63cf2239f9e45c3562d8bdbc',
     ExpandConstant('{cm:LanguageISOCode}'), '{#ParentRegistryKey}\OpenCandy',
-    WizardSilent());
+    WizardSilent(), False);
 #endif
 end;
 
@@ -803,13 +803,16 @@ end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
 begin
-  { Hide most pages during typical installation }
   Result :=
-    TypicalTypeButton.Checked and
-    ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
-     (PageID = wpSelectProgramGroup) or (PageID = wpSelectTasks) or
-     { Hide Interface page for upgrades only, show for fresch installs }
-     ((PageID = wpInterface) and Upgrade));
+#ifdef OpenCandy
+    OpenCandyShouldSkipPage(PageID) or
+#endif
+    { Hide most pages during typical installation }
+    (TypicalTypeButton.Checked and
+     ((PageID = wpSelectDir) or (PageID = wpSelectComponents) or
+      (PageID = wpSelectProgramGroup) or (PageID = wpSelectTasks) or
+      { Hide Interface page for upgrades only, show for fresh installs }
+      ((PageID = wpInterface) and Upgrade)));
 end;
 
 function UpdateReadyMemo(Space, NewLine, MemoUserInfoInfo, MemoDirInfo,

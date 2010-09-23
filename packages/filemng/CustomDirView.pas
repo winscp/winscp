@@ -384,6 +384,7 @@ type
     function PasteFromClipBoard(TargetPath: string = ''): Boolean; virtual; abstract;
     function SaveState: TObject;
     procedure RestoreState(AState: TObject);
+    procedure ClearState;
 
     property AddParentDir: Boolean read FAddParentDir write SetAddParentDir default False;
     property DimmHiddenFiles: Boolean read FDimmHiddenFiles write SetDimmHiddenFiles default True;
@@ -3067,6 +3068,7 @@ begin
 
   FHistoryPaths.Assign(State.HistoryPaths);
   FBackCount := State.BackCount;
+  DoHistoryChange;
   // TCustomDirViewColProperties should not be here
   DirColProperties := ColProperties as TCustomDirViewColProperties;
   Assert(Assigned(DirColProperties));
@@ -3081,6 +3083,13 @@ begin
       ListItem.MakeVisible(False);
     end;
   end;
+end;
+
+procedure TCustomDirView.ClearState;
+begin
+  FHistoryPaths.Clear;
+  FBackCount := 0;
+  DoHistoryChange;
 end;
 
 procedure TCustomDirView.SetMask(Value: string);

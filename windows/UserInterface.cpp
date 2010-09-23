@@ -133,8 +133,8 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
         if (WinConfiguration->ConfirmExitOnCompletion)
         {
           TMessageParams Params(mpNeverAskAgainCheck);
-          Result = FatalExceptionMessageDialog(E, Type, SessionReopenTimeout,
-            Manager->Count > 1 ?
+          Result = FatalExceptionMessageDialog(E, Type, 0,
+            (Manager->Count > 1) ?
               FMTLOAD(DISCONNECT_ON_COMPLETION, (Manager->Count - 1)) :
               LoadStr(EXIT_ON_COMPLETION),
             qaYes | qaNo, HELP_NONE, &Params);

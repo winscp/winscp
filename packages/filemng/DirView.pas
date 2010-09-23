@@ -582,6 +582,7 @@ var
   UniverzalSysTime: TSystemTime;
   LocalFileTime: TFileTime;
 begin
+  // duplicated in Common.cpp
   if not DaylightHack then
   begin
     FileTimeToSystemTime(FileTime, UniverzalSysTime);

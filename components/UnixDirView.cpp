@@ -775,9 +775,12 @@ void __fastcall TUnixDirView::InternalEdit(const tagLVITEMA & HItem)
 #ifndef DESIGN_ONLY
   TListItem *Item = GetItemFromHItem(HItem);
   ASSERT_VALID_ITEM;
-  FSelectFile = HItem.pszText;
   LoadEnabled = true;
-  Terminal->RenameFile(ITEMFILE, HItem.pszText, true);
+  if (ITEMFILE->FileName != HItem.pszText)
+  {
+    FSelectFile = HItem.pszText;
+    Terminal->RenameFile(ITEMFILE, HItem.pszText, true);
+  }
 #endif
 }
 //---------------------------------------------------------------------------

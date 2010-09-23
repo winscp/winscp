@@ -445,11 +445,17 @@ void __fastcall TScpCommanderForm::TerminalChanged()
     }
 
     if (WinConfiguration->PreservePanelState &&
-        (ManagedTerminal->LocalExplorerState != NULL) &&
         !WinConfiguration->ScpCommander.PreserveLocalDirectory)
     {
-      LocalDirView->RestoreState(ManagedTerminal->LocalExplorerState);
-      NonVisualDataModule->SynchronizeBrowsingAction->Checked = ManagedTerminal->SynchronizeBrowsing;
+      if (ManagedTerminal->LocalExplorerState != NULL)
+      {
+        LocalDirView->RestoreState(ManagedTerminal->LocalExplorerState);
+        NonVisualDataModule->SynchronizeBrowsingAction->Checked = ManagedTerminal->SynchronizeBrowsing;
+      }
+      else
+      {
+        LocalDirView->ClearState();
+      }
     }
     else if (WasSynchronisingBrowsing &&
         SameText(ExtractFileName(LocalDirView->PathName),

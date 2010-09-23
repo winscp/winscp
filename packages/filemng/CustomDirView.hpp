@@ -409,6 +409,7 @@ public:
 	virtual bool __fastcall PasteFromClipBoard(AnsiString TargetPath = "") = 0 ;
 	System::TObject* __fastcall SaveState(void);
 	void __fastcall RestoreState(System::TObject* AState);
+	void __fastcall ClearState(void);
 	__property bool AddParentDir = {read=FAddParentDir, write=SetAddParentDir, default=0};
 	__property bool DimmHiddenFiles = {read=FDimmHiddenFiles, write=SetDimmHiddenFiles, default=1};
 	__property bool ShowDirectories = {read=FShowDirectories, write=SetShowDirectories, default=1};

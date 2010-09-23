@@ -1850,6 +1850,8 @@ void __fastcall TManagementScript::DoClose(TTerminal * Terminal)
   int Index = FTerminalList->IndexOf(Terminal);
   assert(Index >= 0);
 
+  bool WasActiveTerminal = (FTerminal == Terminal);
+
   try
   {
     if (Terminal->Active)
@@ -1859,27 +1861,33 @@ void __fastcall TManagementScript::DoClose(TTerminal * Terminal)
 
     AnsiString SessionName = Terminal->SessionData->SessionName;
     FreeTerminal(Terminal);
+    if (WasActiveTerminal)
+    {
+      FTerminal = NULL;
+    }
 
     PrintLine(FMTLOAD(SCRIPT_SESSION_CLOSED, (SessionName)));
   }
   __finally
   {
-    if (FTerminalList->Count > 0)
+    if (WasActiveTerminal)
     {
-      if (Index < FTerminalList->Count)
+      if (FTerminalList->Count > 0)
       {
-        FTerminal = FTerminalList->Terminals[Index];
+        if (Index < FTerminalList->Count)
+        {
+          FTerminal = FTerminalList->Terminals[Index];
+        }
+        else
+        {
+          FTerminal = FTerminalList->Terminals[0];
+        }
+        PrintActiveSession();
       }
       else
       {
-        FTerminal = FTerminalList->Terminals[0];
+        PrintLine(LoadStr(SCRIPT_NO_SESSION));
       }
-      PrintActiveSession();
-    }
-    else
-    {
-      FTerminal = NULL;
-      PrintLine(LoadStr(SCRIPT_NO_SESSION));
     }
   }
 }
