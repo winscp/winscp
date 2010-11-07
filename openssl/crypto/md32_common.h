@@ -241,11 +241,11 @@
 #ifndef PEDANTIC
 # if defined(__GNUC__) && __GNUC__>=2 && !defined(OPENSSL_NO_ASM) && !defined(OPENSSL_NO_INLINE_ASM)
 #  if defined(__s390x__)
-#   define HOST_c2l(c,l)	({ asm ("lrv	%0,0(%1)"		\
-					:"=r"(l) : "r"(c));		\
+#   define HOST_c2l(c,l)	({ asm ("lrv	%0,%1"			\
+				   :"=d"(l) :"m"(*(const unsigned int *)(c)));\
 				   (c)+=4; (l);				})
-#   define HOST_l2c(l,c)	({ asm ("strv	%0,0(%1)"		\
-					: : "r"(l),"r"(c) : "memory");	\
+#   define HOST_l2c(l,c)	({ asm ("strv	%1,%0"			\
+				   :"=m"(*(unsigned int *)(c)) :"d"(l));\
 				   (c)+=4; (l);				})
 #  endif
 # endif
@@ -293,7 +293,7 @@ int HASH_UPDATE (HASH_CTX *c, const void *data_, size_t len)
 	 * Wei Dai <weidai@eskimo.com> for pointing it out. */
 	if (l < c->Nl) /* overflow */
 		c->Nh++;
-	c->Nh+=(len>>29);	/* might cause compiler warning on 16-bit */
+	c->Nh+=(HASH_LONG)(len>>29);	/* might cause compiler warning on 16-bit */
 	c->Nl=l;
 
 	n = c->num;
@@ -331,7 +331,7 @@ int HASH_UPDATE (HASH_CTX *c, const void *data_, size_t len)
 	if (len != 0)
 		{
 		p = (unsigned char *)c->data;
-		c->num = len;
+		c->num = (unsigned int)len;
 		memcpy (p,data,len);
 		}
 	return 1;

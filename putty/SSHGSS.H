@@ -31,15 +31,24 @@ typedef gss_name_t Ssh_gss_name;
 struct ssh_gss_library;
 
 /*
- * Do startup-time initialisation for using GSSAPI. This should
- * correctly initialise the array of struct ssh_gss_library declared
- * below.
+ * Prepare a collection of GSSAPI libraries for use in a single SSH
+ * connection. Returns a structure containing a list of libraries,
+ * with their ids (see struct ssh_gss_library below) filled in so
+ * that the client can go through them in the SSH user's preferred
+ * order.
  *
- * Must be callable multiple times (since the most convenient place
- * to call it _from_ is the ssh.c setup code), and should harmlessly
- * return success if already initialised.
+ * Must always return non-NULL. (Even if no libraries are available,
+ * it must return an empty structure.)
+ *
+ * The free function cleans up the structure, and its associated
+ * libraries (if any).
  */
-void ssh_gss_init(void);
+struct ssh_gss_liblist {
+    struct ssh_gss_library *libraries;
+    int nlibraries;
+};
+struct ssh_gss_liblist *ssh_gss_setup(const Config *cfg);
+void ssh_gss_cleanup(struct ssh_gss_liblist *list);
 
 /*
  * Fills in buf with a string describing the GSSAPI mechanism in
@@ -166,10 +175,13 @@ struct ssh_gss_library {
 	 * be more than one set of them available.
 	 */
     } u;
-};
 
-extern struct ssh_gss_library ssh_gss_libraries[];
-extern int n_ssh_gss_libraries;
+    /*
+     * Wrapper layers will often also need to store a library handle
+     * of some sort for cleanup time.
+     */
+    void *handle;
+};
 
 #endif /* NO_GSSAPI */
 

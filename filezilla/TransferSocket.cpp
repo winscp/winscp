@@ -624,15 +624,23 @@ void CTransferSocket::OnSend(int nErrorCode)
 	}
 
 	if (m_bSentClose)
+	{
 		return;
+	}
 	if (m_bListening)
+	{
 		return;
+	}
 	
 	if (!(m_nMode&CSMODE_UPLOAD))
+	{
 		return;
+	}
 
 	if (m_nTransferState == STATE_STARTING)
+	{
 		OnConnect(0);
+	}
 
 #ifndef MPEXT_NO_ZLIB
 	if (m_useZlib)
@@ -663,7 +671,9 @@ void CTransferSocket::OnSend(int nErrorCode)
 					DWORD numread;
 					numread = ReadDataFromFile(m_pBuffer2, BUFSIZE);
 					if (numread < 0)
+					{
 						return;
+					}
 
 					m_transferdata.transferleft -= numread;					
 					m_zlibStream.next_in = (Bytef *)m_pBuffer2;
@@ -704,7 +714,9 @@ void CTransferSocket::OnSend(int nErrorCode)
 			numsend = BUFSIZE;
 			int len = BUFSIZE - m_bufferpos - m_zlibStream.avail_out;
 			if (!len && !m_pFile)
+			{
 				break;
+			}
 
 			if (len < BUFSIZE)
 				numsend = len;
@@ -789,7 +801,9 @@ void CTransferSocket::OnSend(int nErrorCode)
 #endif
 	{
 		if (!m_pFile)
+		{
 			return;
+		}
 		if (!m_pBuffer)
 			m_pBuffer = new char[BUFSIZE];
 		
@@ -812,7 +826,9 @@ void CTransferSocket::OnSend(int nErrorCode)
 		{
 			numread = ReadDataFromFile(m_pBuffer + m_bufferpos, static_cast<int>(currentBufferSize - m_bufferpos));
 			if (numread < 0 )
+			{
 				return;
+			}
 			else if (!numread && !m_bufferpos)
 			{
 				if (ShutDown() || GetLastError() != WSAEWOULDBLOCK)
@@ -957,7 +973,9 @@ void CTransferSocket::OnSend(int nErrorCode)
 			{
 				numread = ReadDataFromFile(m_pBuffer + m_bufferpos, static_cast<int>(currentBufferSize - m_bufferpos));
 				if (numread < 0 )
+				{
 					return;
+				}
 				else if (!numread && !m_bufferpos)
 				{
 					if (ShutDown() || GetLastError() != WSAEWOULDBLOCK)

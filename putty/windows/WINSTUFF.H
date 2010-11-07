@@ -224,6 +224,8 @@ GLOBAL void *logctx;
 			      "All Files (*.*)\0*\0\0\0")
 #define FILTER_WAVE_FILES ("Wave Files (*.wav)\0*.WAV\0" \
 			       "All Files (*.*)\0*\0\0\0")
+#define FILTER_DYNLIB_FILES ("Dynamic Library Files (*.dll)\0*.dll\0" \
+				 "All Files (*.*)\0*\0\0\0")
 
 /*
  * On some versions of Windows, it has been known for WM_TIMER to
@@ -448,6 +450,7 @@ void show_help(HWND hwnd);
  */
 extern OSVERSIONINFO osVersion;
 BOOL init_winver(void);
+HMODULE load_system32_dll(const char *libname);
 
 /*
  * Exports from sizetip.c.

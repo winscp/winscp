@@ -1692,16 +1692,25 @@ begin
         begin
           if ViewStyle = vsReport then
           begin
-            R := ItemFocused.DisplayRect(drBounds);
-            if (R.Top < TopItem.DisplayRect(drBounds).Top) or (R.Top > ClientHeight) then
+            if Assigned(TopItem) then
             begin
-              OldFocusedShown := False;
-              OldShownItemOffset := TopItem.Index;
+              R := ItemFocused.DisplayRect(drBounds);
+              if (R.Top < TopItem.DisplayRect(drBounds).Top) or (R.Top > ClientHeight) then
+              begin
+                OldFocusedShown := False;
+                OldShownItemOffset := TopItem.Index;
+              end
+                else
+              begin
+                OldFocusedShown := True;
+                OldShownItemOffset := ItemFocused.Index - TopItem.Index;
+              end;
             end
               else
             begin
-              OldFocusedShown := True;
-              OldShownItemOffset := ItemFocused.Index - TopItem.Index;
+              // seen with one user only
+              OldFocusedShown := False;
+              OldShownItemOffset := 0;
             end;
           end
             else

@@ -98,6 +98,11 @@ Version 2.0:
 #endif
 
 #include "AsyncSocketExLayer.h"
+#ifdef MPEXT
+#define OPENSSL_NO_EC
+#define OPENSSL_NO_ECDSA
+#define OPENSSL_NO_ECDH
+#endif
 #include <openssl/ssl.h>
 
 // Details of SSL certificate, can be used by app to verify if certificate is valid

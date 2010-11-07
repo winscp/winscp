@@ -933,6 +933,7 @@ object LoginDialog: TLoginDialog
             Top = 15
             Width = 149
             Height = 21
+            AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             MaxLength = 255
@@ -1033,6 +1034,7 @@ object LoginDialog: TLoginDialog
             Top = 15
             Width = 181
             Height = 21
+            AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             MaxLength = 50
@@ -1049,6 +1051,7 @@ object LoginDialog: TLoginDialog
             Top = 39
             Width = 181
             Height = 21
+            AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             MaxLength = 50
@@ -1102,6 +1105,7 @@ object LoginDialog: TLoginDialog
             Top = 15
             Width = 181
             Height = 21
+            AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             MaxLength = 50
@@ -1842,6 +1846,7 @@ object LoginDialog: TLoginDialog
             Top = 15
             Width = 82
             Height = 21
+            AutoComplete = False
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             MaxLength = 50

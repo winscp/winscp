@@ -133,8 +133,13 @@ def(void, SSL_set_connect_state, (SSL *s));
 def(int, SSL_set_session, (SSL *to, SSL_SESSION *session));
 def(BIO_METHOD*, BIO_f_ssl, (void));
 def(SSL*, SSL_new, (SSL_CTX *ctx));
+#ifdef MPEXT
+def(SSL_CTX*, SSL_CTX_new, (const SSL_METHOD *meth));
+def(const SSL_METHOD*, SSLv23_method, (void));
+#else
 def(SSL_CTX*, SSL_CTX_new, (SSL_METHOD *meth));
 def(SSL_METHOD*, SSLv23_method, (void));
+#endif
 def(void, SSL_load_error_strings, (void));
 def(int, SSL_library_init, (void));
 def(void, SSL_CTX_free, (SSL_CTX *));
@@ -149,7 +154,11 @@ def(X509_STORE*, SSL_CTX_get_cert_store, (const SSL_CTX *));
 def(long, SSL_get_verify_result, (const SSL *ssl));
 def(X509*, SSL_get_peer_certificate, (const SSL *s));
 def(const char*, SSL_get_version, (const SSL *ssl));
+#ifdef MPEXT
+def(const SSL_CIPHER*, SSL_get_current_cipher, (const SSL *ssl));
+#else
 def(SSL_CIPHER*, SSL_get_current_cipher, (const SSL *ssl));
+#endif
 def(const char*, SSL_CIPHER_get_name, (const SSL_CIPHER *cipher));
 def(char*, SSL_CIPHER_get_version, (const SSL_CIPHER *cipher));
 def(int, SSL_get_ex_data_X509_STORE_CTX_idx, (void));
@@ -210,12 +219,16 @@ def(int, X509_NAME_add_entry_by_NID, (X509_NAME *name, int nid, int type, unsign
 def(int, X509_set_issuer_name, (X509 *x, X509_NAME *name));
 def(int, X509_sign, (X509 *x, EVP_PKEY *pkey, const EVP_MD *md));
 def(EVP_PKEY*, EVP_PKEY_new, (void));
+#ifdef MPEXT
+def(int, EVP_PKEY_assign, (EVP_PKEY *pkey, int type, void *key));
+#else
 def(int, EVP_PKEY_assign, (EVP_PKEY *pkey, int type, char *key));
+#endif
 def(X509*, X509_new, (void));
 def(int, ASN1_INTEGER_set, (ASN1_INTEGER *a, long v));
 def(ASN1_INTEGER*, X509_get_serialNumber, (X509 *x));
 #ifdef MPEXT
-def(int, PEM_ASN1_write_bio, (i2d_of_void *i2d,const char *name,BIO *bp,char *x, const EVP_CIPHER *enc,unsigned char *kstr,int klen, pem_password_cb *callback, void *u));
+def(int, PEM_ASN1_write_bio, (i2d_of_void *i2d,const char *name,BIO *bp,void *x, const EVP_CIPHER *enc,unsigned char *kstr,int klen, pem_password_cb *callback, void *u));
 #else
 def(int, PEM_ASN1_write_bio, (int (*i2d)(),const char *name,BIO *bp,char *x, const EVP_CIPHER *enc,unsigned char *kstr,int klen, pem_password_cb *callback, void *u));
 #endif
@@ -733,7 +746,9 @@ int CAsyncSslSocketLayer::Send(const void* lpBuf, int nBufLen, int nFlags)
 	if (m_bUseSSL)
 	{
 		if (!lpBuf)
+		{
 			return 0;
+		}
 		if (m_bBlocking || m_pRetrySendBuffer)
 		{
 			m_mayTriggerWriteUp = true;
@@ -757,7 +772,9 @@ int CAsyncSslSocketLayer::Send(const void* lpBuf, int nBufLen, int nFlags)
 			return SOCKET_ERROR;
 		}
 		if (!nBufLen)
+		{
 			return 0;
+		}
 
 		if (m_onCloseCalled)
 		{
@@ -791,7 +808,9 @@ int CAsyncSslSocketLayer::Send(const void* lpBuf, int nBufLen, int nFlags)
 			if (BIO_should_retry(m_sslbio))
 			{
 				if (GetLayerState() == closed)
+				{
 					return 0;
+				}
 				else if (GetLayerState() != connected)
 				{
 					SetLastError(m_nNetworkError);
@@ -850,11 +869,15 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 			return SOCKET_ERROR;
 		}
 		if (!nBufLen)
+		{
 			return 0;
+		}
 		if (!pBIO_ctrl(m_sslbio, BIO_CTRL_PENDING, 0, NULL))
 		{
 			if (GetLayerState() == closed)
+			{
 				return 0;
+			}
 			if (m_onCloseCalled)
 			{
 				TriggerEvent(FD_CLOSE, 0, TRUE);
@@ -965,7 +988,9 @@ int CAsyncSslSocketLayer::Receive(void* lpBuf, int nBufLen, int nFlags)
 		return numread;
 	}
 	else
+	{
 		return ReceiveNext(lpBuf, nBufLen, nFlags);
+	}
 }
 
 void CAsyncSslSocketLayer::Close()
@@ -1220,6 +1245,14 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
 			WSASetLastError(WSAEWOULDBLOCK);
 			return false;
 		}
+#ifdef MPEXT
+		if (!m_bSslEstablished)
+		{
+			m_mayTriggerWriteUp = true;
+			SetLastError(WSAEWOULDBLOCK);
+			return false;
+		}
+#endif
 		if (!m_nShutDown)
 			m_nShutDown = 1;
 		else
@@ -1824,6 +1857,9 @@ void CAsyncSslSocketLayer::SetNotifyReply(int nID, int nCode, int result)
 
 void CAsyncSslSocketLayer::PrintSessionInfo()
 {
+	#ifdef MPEXT
+	const
+	#endif
 	SSL_CIPHER *ciph;
 	X509 *cert;
 

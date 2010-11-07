@@ -49,7 +49,7 @@ char *get_username(void)
 	static int tried_usernameex = FALSE;
 	if (!tried_usernameex) {
 	    /* Not available on Win9x, so load dynamically */
-	    HMODULE secur32 = LoadLibrary("SECUR32.DLL");
+	    HMODULE secur32 = load_system32_dll("secur32.dll");
 	    GET_WINDOWS_FUNCTION(secur32, GetUserNameExA);
 	    tried_usernameex = TRUE;
 	}
@@ -103,6 +103,33 @@ BOOL init_winver(void)
     ZeroMemory(&osVersion, sizeof(osVersion));
     osVersion.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
     return GetVersionEx ( (OSVERSIONINFO *) &osVersion);
+}
+
+HMODULE load_system32_dll(const char *libname)
+{
+    /*
+     * Wrapper function to load a DLL out of c:\windows\system32
+     * without going through the full DLL search path. (Hence no
+     * attack is possible by placing a substitute DLL earlier on that
+     * path.)
+     */
+    static char *sysdir = NULL;
+    char *fullpath;
+    HMODULE ret;
+
+    if (!sysdir) {
+	int size = 0, len;
+	do {
+	    size = 3*size/2 + 512;
+	    sysdir = sresize(sysdir, size, char);
+	    len = GetSystemDirectory(sysdir, size);
+	} while (len >= size);
+    }
+
+    fullpath = dupcat(sysdir, "\\", libname, NULL);
+    ret = LoadLibrary(fullpath);
+    sfree(fullpath);
+    return ret;
 }
 
 #ifdef DEBUG

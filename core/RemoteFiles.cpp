@@ -636,7 +636,7 @@ void __fastcall TRemoteTokenList::AddUnique(const TRemoteToken & Token)
   }
   else
   {
-    assert(false);
+    // noop
   }
 }
 //---------------------------------------------------------------------------
@@ -1623,10 +1623,6 @@ bool __fastcall TRemoteDirectoryCache::GetFileList(const AnsiString Directory,
 //---------------------------------------------------------------------------
 void __fastcall TRemoteDirectoryCache::AddFileList(TRemoteFileList * FileList)
 {
-  // file list cannot be cached already with only one thread, but it can be
-  // when directory is loaded by secondary terminal
-  ClearFileList(FileList->Directory, false);
-
   assert(FileList);
   TRemoteFileList * Copy = new TRemoteFileList();
   FileList->DuplicateTo(Copy);
@@ -1634,6 +1630,9 @@ void __fastcall TRemoteDirectoryCache::AddFileList(TRemoteFileList * FileList)
   {
     TGuard Guard(FSection);
 
+    // file list cannot be cached already with only one thread, but it can be
+    // when directory is loaded by secondary terminal
+    DoClearFileList(FileList->Directory, false);
     AddObject(Copy->Directory, Copy);
   }
 }
@@ -1641,7 +1640,11 @@ void __fastcall TRemoteDirectoryCache::AddFileList(TRemoteFileList * FileList)
 void __fastcall TRemoteDirectoryCache::ClearFileList(AnsiString Directory, bool SubDirs)
 {
   TGuard Guard(FSection);
-
+  DoClearFileList(Directory, SubDirs);
+}
+//---------------------------------------------------------------------------
+void __fastcall TRemoteDirectoryCache::DoClearFileList(AnsiString Directory, bool SubDirs)
+{
   Directory = UnixExcludeTrailingBackslash(Directory);
   int Index = IndexOf(Directory);
   if (Index >= 0)

@@ -1949,6 +1949,7 @@ void __fastcall TCustomScpExplorerForm::CustomExecuteFile(TOperationSide Side,
       ReformatFileNameCommand(Data.Command);
       SplitCommand(Data.Command, Program, Params, Dir);
       Params = ExpandFileNameCommand(Params, FileName);
+      Program = ExpandEnvironmentVariables(Program);
       if (!ExecuteShell(Program, Params, Process))
       {
         throw Exception(FMTLOAD(EDITOR_ERROR, (Program)));

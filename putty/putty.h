@@ -475,6 +475,7 @@ struct config_tag {
     int try_gssapi_auth;               /* attempt gssapi auth */
     int gssapifwd;                     /* forward tgt via gss */
     int ssh_gsslist[4];		       /* preference order for local GSS libs */
+    Filename ssh_gss_custom;
     int ssh_subsys;		       /* run a subsystem rather than a command */
     int ssh_subsys2;		       /* fallback to go with remote_cmd_ptr2 */
     int ssh_no_shell;		       /* avoid running a shell */

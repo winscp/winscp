@@ -1554,8 +1554,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
 
   OperationProgress->SetFile(FileName, false);
 
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
+  if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
   {
     FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;
@@ -2017,7 +2016,7 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
           }
           catch (...)
           {
-            // If user selects skip (or abort), nothing special actualy occures
+            // If user selects skip (or abort), nothing special actualy occurs
             // we just run DoFinished with Success = False, so file won't
             // be deselected in panel (depends on assigned event handler)
 
@@ -2044,8 +2043,8 @@ void __fastcall TSCPFileSystem::CopyToLocal(TStrings * FilesToCopy,
   }
   __finally
   {
-    // In case that copying don't causes fatal error (ie. connection is
-    // still active) but weren't succesful (exception or user termination)
+    // In case that copying doesn't cause fatal error (ie. connection is
+    // still active) but wasn't succesful (exception or user termination)
     // we need to ensure, that SCP on remote side is closed
     if (FTerminal->Active && (CloseSCP ||
         (OperationProgress->Cancel == csCancel) ||
@@ -2250,8 +2249,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
 
         bool Dir = (Ctrl == 'D');
         AnsiString SourceFullName = SourceDir + OperationProgress->FileName;
-        if (FLAGCLEAR(Params, cpDelete) &&
-            !CopyParam->AllowTransfer(SourceFullName, osRemote, Dir, MaskParams))
+        if (!CopyParam->AllowTransfer(SourceFullName, osRemote, Dir, MaskParams))
         {
           FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer",
             (AbsoluteFileName)));

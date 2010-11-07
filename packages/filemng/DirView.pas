@@ -1591,7 +1591,6 @@ begin
       begin
         FParentFolder := GetShellFolder(PathName);
 
-
         DosError := SysUtils.FindFirst(IncludeTrailingPathDelimiter(FPath) + '*.*',
           FileAttr, SRec);
         while (DosError = 0) and (not AbortLoading) do

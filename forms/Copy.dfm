@@ -35,6 +35,7 @@ object CopyDialog: TCopyDialog
     Top = 25
     Width = 410
     Height = 21
+    AutoComplete = False
     Anchors = [akLeft, akTop, akRight]
     ItemHeight = 13
     TabOrder = 0

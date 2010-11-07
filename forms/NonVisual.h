@@ -497,6 +497,11 @@ __published:    // IDE-managed Components
   TTBXItem *TBXItem29;
   TAction *QueueCycleOnceEmptyAction;
   TAction *FindFilesAction;
+  TTBXItem *TBXItem30;
+  TTBXItem *TBXItem31;
+  TTBXItem *TBXItem32;
+  TTBXItem *TBXItem33;
+  TTBXItem *TBXItem34;
   void __fastcall LogActionsUpdate(TBasicAction *Action, bool &Handled);
   void __fastcall LogActionsExecute(TBasicAction *Action, bool &Handled);
   void __fastcall ExplorerActionsUpdate(TBasicAction *Action, bool &Handled);

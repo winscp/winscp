@@ -383,9 +383,25 @@ inline void ProcessPrintEvent(TConsoleCommStruct::TPrintEvent& Event)
   Print(Event.FromBeginning, Event.Message);
 }
 //---------------------------------------------------------------------------
-void BreakInput()
+void CancelInput()
 {
   SetEvent(CancelEvent);
+}
+//---------------------------------------------------------------------------
+void BreakInput()
+{
+  FlushConsoleInputBuffer(ConsoleInput);
+  INPUT_RECORD InputRecord;
+  memset(&InputRecord, 0, sizeof(InputRecord));
+  InputRecord.EventType = KEY_EVENT;
+  InputRecord.Event.KeyEvent.bKeyDown = true;
+  InputRecord.Event.KeyEvent.wRepeatCount = 1;
+  InputRecord.Event.KeyEvent.uChar.AsciiChar = '\r';
+
+  unsigned long Written;
+  WriteConsoleInput(ConsoleInput, &InputRecord, 1, &Written);
+
+  CancelInput();
 }
 //---------------------------------------------------------------------------
 DWORD WINAPI InputTimerThreadProc(void * Parameter)
@@ -488,7 +504,15 @@ void ProcessChoiceEvent(TConsoleCommStruct::TChoiceEvent& Event)
   // note that if output is redirected to file, input is still FILE_TYPE_CHAR
   if ((InputType == FILE_TYPE_DISK) || (InputType == FILE_TYPE_PIPE))
   {
-    Event.Result = Event.Cancel;
+    if (Event.Timeouting)
+    {
+      Sleep(Event.Timer);
+      Event.Result = Event.Timeouted;
+    }
+    else
+    {
+      Event.Result = Event.Break;
+    }
   }
   else
   {
@@ -633,7 +657,7 @@ BOOL WINAPI HandlerRoutine(DWORD CtrlType)
 {
   if ((CtrlType == CTRL_C_EVENT) || (CtrlType == CTRL_BREAK_EVENT))
   {
-    BreakInput();
+    CancelInput();
 
     return true;
   }

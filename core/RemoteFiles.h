@@ -269,6 +269,7 @@ protected:
 private:
   TCriticalSection * FSection;
   bool __fastcall GetIsEmpty() const;
+  void __fastcall DoClearFileList(AnsiString Directory, bool SubDirs);
 };
 //---------------------------------------------------------------------------
 class TRemoteDirectoryChangesCache : private TStringList

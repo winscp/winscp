@@ -72,21 +72,29 @@ void ERR_print_errors_cb(int (*cb)(const char *str, size_t len, void *u),
 	const char *file,*data;
 	int line,flags;
 	unsigned long es;
+	CRYPTO_THREADID cur;
 
-	es=CRYPTO_thread_id();
+	CRYPTO_THREADID_current(&cur);
+	es=CRYPTO_THREADID_hash(&cur);
 	while ((l=ERR_get_error_line_data(&file,&line,&data,&flags)) != 0)
 		{
 		ERR_error_string_n(l, buf, sizeof buf);
 		BIO_snprintf(buf2, sizeof(buf2), "%lu:%s:%s:%d:%s\n", es, buf,
 			file, line, (flags & ERR_TXT_STRING) ? data : "");
-		cb(buf2, strlen(buf2), u);
+		if (cb(buf2, strlen(buf2), u) <= 0)
+			break; /* abort outputting the error report */
 		}
 	}
 
 #ifndef OPENSSL_NO_FP_API
 static int print_fp(const char *str, size_t len, void *fp)
 	{
-	return fwrite(str, 1, len, fp);
+	BIO bio;
+
+	BIO_set(&bio,BIO_s_file());
+	BIO_set_fp(&bio,fp,BIO_NOCLOSE);
+
+	return BIO_printf(&bio, "%s", str);
 	}
 void ERR_print_errors_fp(FILE *fp)
 	{
@@ -94,64 +102,13 @@ void ERR_print_errors_fp(FILE *fp)
 	}
 #endif
 
-void ERR_error_string_n(unsigned long e, char *buf, size_t len)
+static int print_bio(const char *str, size_t len, void *bp)
 	{
-	char lsbuf[64], fsbuf[64], rsbuf[64];
-	const char *ls,*fs,*rs;
-	unsigned long l,f,r;
-
-	l=ERR_GET_LIB(e);
-	f=ERR_GET_FUNC(e);
-	r=ERR_GET_REASON(e);
-
-	ls=ERR_lib_error_string(e);
-	fs=ERR_func_error_string(e);
-	rs=ERR_reason_error_string(e);
-
-	if (ls == NULL) 
-		BIO_snprintf(lsbuf, sizeof(lsbuf), "lib(%lu)", l);
-	if (fs == NULL)
-		BIO_snprintf(fsbuf, sizeof(fsbuf), "func(%lu)", f);
-	if (rs == NULL)
-		BIO_snprintf(rsbuf, sizeof(rsbuf), "reason(%lu)", r);
-
-	BIO_snprintf(buf, len,"error:%08lX:%s:%s:%s", e, ls?ls:lsbuf, 
-		fs?fs:fsbuf, rs?rs:rsbuf);
-	if (strlen(buf) == len-1)
-		{
-		/* output may be truncated; make sure we always have 5 
-		 * colon-separated fields, i.e. 4 colons ... */
-#define NUM_COLONS 4
-		if (len > NUM_COLONS) /* ... if possible */
-			{
-			int i;
-			char *s = buf;
-			
-			for (i = 0; i < NUM_COLONS; i++)
-				{
-				char *colon = strchr(s, ':');
-				if (colon == NULL || colon > &buf[len-1] - NUM_COLONS + i)
-					{
-					/* set colon no. i at last possible position
-					 * (buf[len-1] is the terminating 0)*/
-					colon = &buf[len-1] - NUM_COLONS + i;
-					*colon = ':';
-					}
-				s = colon + 1;
-				}
-			}
-		}
+	return BIO_write((BIO *)bp, str, len);
+	}
+void ERR_print_errors(BIO *bp)
+	{
+	ERR_print_errors_cb(print_bio, bp);
 	}
 
-/* BAD for multi-threading: uses a local buffer if ret == NULL */
-/* ERR_error_string_n should be used instead for ret != NULL
- * as ERR_error_string cannot know how large the buffer is */
-char *ERR_error_string(unsigned long e, char *ret)
-	{
-	static char buf[256];
-
-	if (ret == NULL) ret=buf;
-	ERR_error_string_n(e, ret, 256);
-
-	return ret;
-	}
+	

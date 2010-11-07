@@ -62,6 +62,7 @@ object RemoteTransferDialog: TRemoteTransferDialog
       Top = 80
       Width = 292
       Height = 21
+      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
       MaxLength = 250

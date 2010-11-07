@@ -1276,7 +1276,7 @@ public:
   {
   }
 
-  bool __fastcall Init(int QueueLen, const AnsiString AHandle,__int64 ATransfered,
+  bool __fastcall Init(int QueueLen, const AnsiString AHandle, __int64 ATransfered,
     TFileOperationProgressType * AOperationProgress)
   {
     FHandle = AHandle;
@@ -3907,8 +3907,7 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
   OperationProgress->SetFile(FileName, false);
 
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
+  if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
   {
     FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;
@@ -4781,8 +4780,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
   TFileMasks::TParams MaskParams;
   MaskParams.Size = File->Size;
 
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !CopyParam->AllowTransfer(FileName, osRemote, File->IsDirectory, MaskParams))
+  if (!CopyParam->AllowTransfer(FileName, osRemote, File->IsDirectory, MaskParams))
   {
     FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;

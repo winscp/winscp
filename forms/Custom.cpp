@@ -209,6 +209,7 @@ __fastcall TSaveSessionDialog::TSaveSessionDialog(
   Caption = LoadStr(SAVE_SESSION_CAPTION);
 
   SessionNameCombo = new TComboBox(this);
+  SessionNameCombo->AutoComplete = false;
   AddComboBox(SessionNameCombo, CreateLabel(LoadStr(SAVE_SESSION_PROMPT)));
   // parent has to be set before following
   InstallPathWordBreakProc(SessionNameCombo);

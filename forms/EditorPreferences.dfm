@@ -81,6 +81,7 @@ object EditorPreferencesDialog: TEditorPreferencesDialog
       Top = 69
       Width = 267
       Height = 21
+      AutoComplete = False
       Anchors = [akLeft, akTop, akRight]
       ItemHeight = 13
       TabOrder = 2

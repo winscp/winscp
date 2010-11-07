@@ -94,6 +94,7 @@ bool __fastcall InputDialog(const AnsiString ACaption,
       HistoryCombo->SelectAll();
       HistoryCombo->Items = History;
       HistoryCombo->MaxLength = 255;
+      HistoryCombo->AutoComplete = false;
       EditControl = HistoryCombo;
     }
     EditControl->Left = Prompt->Left;

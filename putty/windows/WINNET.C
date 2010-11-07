@@ -231,9 +231,9 @@ void sk_init(void)
 #ifndef NO_IPV6
     winsock2_module =
 #endif
-        winsock_module = LoadLibrary("WS2_32.DLL");
+        winsock_module = load_system32_dll("ws2_32.dll");
     if (!winsock_module) {
-	winsock_module = LoadLibrary("WSOCK32.DLL");
+	winsock_module = load_system32_dll("wsock32.dll");
     }
     if (!winsock_module)
 	fatalbox("Unable to load any WinSock library");
@@ -250,7 +250,7 @@ void sk_init(void)
 	GET_WINDOWS_FUNCTION(winsock_module, gai_strerror);
     } else {
 	/* Fall back to wship6.dll for Windows 2000 */
-	wship6_module = LoadLibrary("wship6.dll");
+	wship6_module = load_system32_dll("wship6.dll");
 	if (wship6_module) {
 #ifdef NET_SETUP_DIAGNOSTICS
 	    logevent(NULL, "WSH IPv6 support detected");
@@ -880,6 +880,11 @@ static DWORD try_connect(Actual_Socket sock)
     if (sock->keepalive) {
 	BOOL b = TRUE;
 	p_setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (void *) &b, sizeof(b));
+    }
+
+    {
+	int bufsize = 262144;
+	p_setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *) &bufsize, sizeof(bufsize));
     }
 
     /*

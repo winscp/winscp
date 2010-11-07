@@ -2627,7 +2627,6 @@ TUsableCopyParamAttrs __fastcall TTerminal::UsableCopyParamAttrs(int Params)
     FLAGMASK(!IsCapable[fcTextMode], cpaNoTransferMode) |
     FLAGMASK(!IsCapable[fcModeChanging], cpaNoRights) |
     FLAGMASK(!IsCapable[fcModeChanging], cpaNoPreserveReadOnly) |
-    FLAGMASK(FLAGSET(Params, cpDelete), cpaNoExcludeMask) |
     FLAGMASK(FLAGSET(Params, cpDelete), cpaNoClearArchive) |
     FLAGMASK(!IsCapable[fcIgnorePermErrors], cpaNoIgnorePermErrors);
   Result.Download = Result.General | cpaNoClearArchive | cpaNoRights |

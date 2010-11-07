@@ -519,7 +519,7 @@ static HANDLE access_random_seed(int action)
 	 * on older versions of Windows if we cared enough.
 	 * However, the invocation below requires IE5+ anyway,
 	 * so stuff that. */
-	shell32_module = LoadLibrary("SHELL32.DLL");
+	shell32_module = load_system32_dll("shell32.dll");
 	GET_WINDOWS_FUNCTION(shell32_module, SHGetFolderPathA);
 	tried_shgetfolderpath = TRUE;
     }

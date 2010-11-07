@@ -308,6 +308,7 @@ object PropertiesDialog: TPropertiesDialog
         Top = 9
         Width = 121
         Height = 21
+        AutoComplete = False
         Anchors = [akLeft, akTop, akRight]
         ItemHeight = 13
         MaxLength = 250

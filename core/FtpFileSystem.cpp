@@ -14,6 +14,9 @@
 #include "TextsCore.h"
 #include "TextsFileZilla.h"
 #include "HelpCore.h"
+#define OPENSSL_NO_EC
+#define OPENSSL_NO_ECDSA
+#define OPENSSL_NO_ECDH
 #include <openssl/x509_vfy.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -1024,8 +1027,7 @@ void __fastcall TFTPFileSystem::Sink(const AnsiString FileName,
   TFileMasks::TParams MaskParams;
   MaskParams.Size = File->Size;
 
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !CopyParam->AllowTransfer(FileName, osRemote, File->IsDirectory, MaskParams))
+  if (!CopyParam->AllowTransfer(FileName, osRemote, File->IsDirectory, MaskParams))
   {
     FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;
@@ -1295,8 +1297,7 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
 
   OperationProgress->SetFile(FileName, false);
 
-  if (FLAGCLEAR(Params, cpDelete) &&
-      !FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
+  if (!FTerminal->AllowLocalFileTransfer(FileName, CopyParam))
   {
     FTerminal->LogEvent(FORMAT("File \"%s\" excluded from transfer", (FileName)));
     THROW_SKIP_FILE_NULL;

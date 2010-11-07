@@ -20,19 +20,20 @@ RegisteringAsUrlHandler=Registering to handle sftp:// and scp:// addresses
 AddingSearchPath=Adding installation directory to search path (%PATH%)
 RemovingObsoleteTranslations=Removing obsolete translations
 
-SupportForum=Support forum
-WebSite=WinSCP Web Site
 RSAKeyTools=Key tools
-PuTTYgenManual=PuTTYgen Manual
-PageantManual=Pageant Manual
-; used only to delete file from older version
-; (not to be translated for new languages)
-KeysManual=Using public keys for SSH authentication
-PuttyWebSite=PuTTY Web Site
-SendToHook=WinSCP3 (upload using SFTP or SCP)
 SendToHookNew=WinSCP (for upload)
 Launch=Launch &WinSCP
+
+; used only to delete file from older version
+; (not to be translated for new languages)
+SupportForum=Support forum
+WebSite=WinSCP Web Site
+PuTTYgenManual=PuTTYgen Manual
+PageantManual=Pageant Manual
+KeysManual=Using public keys for SSH authentication
+PuttyWebSite=PuTTY Web Site
 DocumentationPage=Documentation
+SendToHook=WinSCP3 (upload using SFTP or SCP)
 
 HelpButton=&Help
 ProgramComment=SFTP, FTP and SCP client

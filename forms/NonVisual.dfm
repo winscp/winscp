@@ -2045,6 +2045,12 @@ object NonVisualDataModule: TNonVisualDataModule
     Images = GlyphsModule.ExplorerImages
     Left = 312
     Top = 264
+    object TBXItem32: TTBXItem
+      Action = RemoteRefreshAction
+    end
+    object TBXItem30: TTBXItem
+      Action = RemoteAddBookmarkAction
+    end
     object CopyPathtoClipboard1: TTBXItem
       Action = RemotePathToClipboardAction
     end
@@ -2077,6 +2083,12 @@ object NonVisualDataModule: TNonVisualDataModule
     Images = GlyphsModule.ExplorerImages
     Left = 312
     Top = 336
+    object TBXItem34: TTBXItem
+      Action = LocalRefreshAction
+    end
+    object TBXItem31: TTBXItem
+      Action = LocalAddBookmarkAction
+    end
     object CopyPathtoClipboard2: TTBXItem
       Action = LocalPathToClipboardAction
     end
@@ -2400,11 +2412,14 @@ object NonVisualDataModule: TNonVisualDataModule
     Images = GlyphsModule.ExplorerImages
     Left = 248
     Top = 400
-    object TBXItem25: TTBXItem
-      Action = RemotePathToClipboardAction
+    object TBXItem33: TTBXItem
+      Action = RemoteRefreshAction
     end
     object TBXItem24: TTBXItem
       Action = RemoteAddBookmarkAction
+    end
+    object TBXItem25: TTBXItem
+      Action = RemotePathToClipboardAction
     end
     object TBXSeparatorItem1: TTBXSeparatorItem
     end

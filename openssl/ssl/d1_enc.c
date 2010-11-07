@@ -136,8 +136,12 @@ int dtls1_enc(SSL *s, int send)
 
 	if (send)
 		{
-		if (s->write_hash != NULL)
-			n=EVP_MD_size(s->write_hash);
+		if (EVP_MD_CTX_md(s->write_hash))
+			{
+			n=EVP_MD_CTX_size(s->write_hash);
+			if (n < 0)
+				return -1;
+			}
 		ds=s->enc_write_ctx;
 		rec= &(s->s3->wrec);
 		if (s->enc_write_ctx == NULL)
@@ -151,15 +155,19 @@ int dtls1_enc(SSL *s, int send)
 					__FILE__, __LINE__);
 			else if ( EVP_CIPHER_block_size(ds->cipher) > 1)
 				{
-				if (!RAND_bytes(rec->input, EVP_CIPHER_block_size(ds->cipher)))
+				if (RAND_bytes(rec->input, EVP_CIPHER_block_size(ds->cipher)) <= 0)
 					return -1;
 				}
 			}
 		}
 	else
 		{
-		if (s->read_hash != NULL)
-			n=EVP_MD_size(s->read_hash);
+		if (EVP_MD_CTX_md(s->read_hash))
+			{
+			n=EVP_MD_CTX_size(s->read_hash);
+			if (n < 0)
+				return -1;
+			}
 		ds=s->enc_read_ctx;
 		rec= &(s->s3->rrec);
 		if (s->enc_read_ctx == NULL)
@@ -206,11 +214,10 @@ int dtls1_enc(SSL *s, int send)
 		{
                 unsigned long ui;
 		printf("EVP_Cipher(ds=%p,rec->data=%p,rec->input=%p,l=%ld) ==>\n",
-                        (void *)ds,rec->data,rec->input,l);
-		printf("\tEVP_CIPHER_CTX: %d buf_len, %d key_len [%ld %ld], %d iv_len\n",
+                        ds,rec->data,rec->input,l);
+		printf("\tEVP_CIPHER_CTX: %d buf_len, %d key_len [%d %d], %d iv_len\n",
                         ds->buf_len, ds->cipher->key_len,
-                        (unsigned long)DES_KEY_SZ,
-			(unsigned long)DES_SCHEDULE_SZ,
+                        DES_KEY_SZ, DES_SCHEDULE_SZ,
                         ds->cipher->iv_len);
 		printf("\t\tIV: ");
 		for (i=0; i<ds->cipher->iv_len; i++) printf("%02X", ds->iv[i]);
@@ -235,10 +242,10 @@ int dtls1_enc(SSL *s, int send)
 
 #ifdef KSSL_DEBUG
 		{
-                unsigned long ki;
+                unsigned long i;
                 printf("\trec->data=");
-		for (ki=0; ki<l; ki++)
-                        printf(" %02x", rec->data[ki]);  printf("\n");
+		for (i=0; i<l; i++)
+                        printf(" %02x", rec->data[i]);  printf("\n");
                 }
 #endif	/* KSSL_DEBUG */
 

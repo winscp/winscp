@@ -156,7 +156,7 @@ void __fastcall TSessionData::Default()
   TunnelPortFwd = "";
 
   // FTP
-  FtpPasvMode = false;
+  FtpPasvMode = true;
   FtpForcePasvIp = false;
   FtpAccount = "";
   FtpPingInterval = 30;

@@ -34,7 +34,7 @@ public:
   virtual void __fastcall Print(AnsiString Str, bool FromBeginning = false) = 0;
   virtual bool __fastcall Input(AnsiString & Str, bool Echo, unsigned int Timer) = 0;
   virtual int __fastcall Choice(AnsiString Options, int Cancel, int Break,
-    int Timeouted, unsigned int Timer) = 0;
+    int Timeouted, bool Timeouting, unsigned int Timer) = 0;
   virtual bool __fastcall PendingAbort() = 0;
   virtual void __fastcall SetTitle(AnsiString Title) = 0;
   virtual bool __fastcall LimitedOutput() = 0;
@@ -51,7 +51,7 @@ public:
   virtual void __fastcall Print(AnsiString Str, bool FromBeginning = false);
   virtual bool __fastcall Input(AnsiString & Str, bool Echo, unsigned int Timer);
   virtual int __fastcall Choice(AnsiString Options, int Cancel, int Break,
-    int Timeouted, unsigned int Timer);
+    int Timeouted, bool Timeouting, unsigned int Timer);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
   virtual bool __fastcall LimitedOutput();
@@ -67,6 +67,7 @@ protected:
   virtual __fastcall ~TOwnConsole();
 
   void __fastcall BreakInput();
+  void __fastcall CancelInput();
   static BOOL WINAPI HandlerRoutine(DWORD CtrlType);
   void __fastcall WindowStateTimer(TObject * Sender);
   void __fastcall ProcessMessages();
@@ -202,6 +203,24 @@ void __fastcall TOwnConsole::TrayIconClick(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TOwnConsole::BreakInput()
 {
+  FlushConsoleInputBuffer(FInput);
+  INPUT_RECORD InputRecord;
+  memset(&InputRecord, 0, sizeof(InputRecord));
+  InputRecord.EventType = KEY_EVENT;
+  InputRecord.Event.KeyEvent.bKeyDown = true;
+  InputRecord.Event.KeyEvent.wRepeatCount = 1;
+  InputRecord.Event.KeyEvent.uChar.AsciiChar = '\r';
+
+  unsigned long Written;
+  // this assertion occasionally fails (when console is being exited)
+  CHECK(WriteConsoleInput(FInput, &InputRecord, 1, &Written));
+  assert(Written == 1);
+
+  CancelInput();
+}
+//---------------------------------------------------------------------------
+void __fastcall TOwnConsole::CancelInput()
+{
   FPendingAbort = true;
 
   PostMessage(Application->Handle, WM_INTERUPT_IDLE, 0, 0);
@@ -217,7 +236,7 @@ BOOL WINAPI TOwnConsole::HandlerRoutine(DWORD CtrlType)
       // just to be real thread-safe
       if (FInstance != NULL)
       {
-        FInstance->BreakInput();
+        FInstance->CancelInput();
       }
     }
 
@@ -352,7 +371,7 @@ bool __fastcall TOwnConsole::Input(AnsiString & Str, bool Echo, unsigned int Tim
 }
 //---------------------------------------------------------------------------
 int __fastcall TOwnConsole::Choice(AnsiString Options, int Cancel, int Break,
-  int Timeouted, unsigned int Timer)
+  int Timeouted, bool /*Timeouting*/, unsigned int Timer)
 {
   AnsiToOem(Options);
 
@@ -478,7 +497,7 @@ public:
   virtual void __fastcall Print(AnsiString Str, bool FromBeginning = false);
   virtual bool __fastcall Input(AnsiString & Str, bool Echo, unsigned int Timer);
   virtual int __fastcall Choice(AnsiString Options, int Cancel, int Break,
-    int Timeouted, unsigned int Timer);
+    int Timeouted, bool Timeouting, unsigned int Timer);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
   virtual bool __fastcall LimitedOutput();
@@ -654,7 +673,7 @@ bool __fastcall TExternalConsole::Input(AnsiString & Str, bool Echo, unsigned in
 }
 //---------------------------------------------------------------------------
 int __fastcall TExternalConsole::Choice(AnsiString Options, int Cancel, int Break,
-  int Timeouted, unsigned int Timer)
+  int Timeouted, bool Timeouting, unsigned int Timer)
 {
   TConsoleCommStruct * CommStruct = GetCommStruct();
   try
@@ -668,6 +687,7 @@ int __fastcall TExternalConsole::Choice(AnsiString Options, int Cancel, int Brea
     CommStruct->ChoiceEvent.Result = Break;
     CommStruct->ChoiceEvent.Timeouted = Timeouted;
     CommStruct->ChoiceEvent.Timer = Timer;
+    CommStruct->ChoiceEvent.Timeouting = Timeouting;
   }
   __finally
   {
@@ -771,7 +791,7 @@ public:
   virtual void __fastcall Print(AnsiString Str, bool FromBeginning = false);
   virtual bool __fastcall Input(AnsiString & Str, bool Echo, unsigned int Timer);
   virtual int __fastcall Choice(AnsiString Options, int Cancel, int Break,
-    int Timeouted, unsigned int Timer);
+    int Timeouted, bool Timeouting, unsigned int Timer);
   virtual bool __fastcall PendingAbort();
   virtual void __fastcall SetTitle(AnsiString Title);
   virtual bool __fastcall LimitedOutput();
@@ -796,9 +816,19 @@ bool __fastcall TNullConsole::Input(AnsiString & /*Str*/, bool /*Echo*/,
 }
 //---------------------------------------------------------------------------
 int __fastcall TNullConsole::Choice(AnsiString /*Options*/, int /*Cancel*/,
-  int Break, int /*Timeouted*/, unsigned int /*Timer*/)
+  int Break, int Timeouted, bool Timeouting, unsigned int Timer)
 {
-  return Break;
+  int Result;
+  if (Timeouting)
+  {
+    Sleep(Timer);
+    Result = Timeouted;
+  }
+  else
+  {
+    Result = Break;
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TNullConsole::PendingAbort()
@@ -1325,7 +1355,7 @@ void __fastcall TConsoleRunner::ScriptTerminalQueryUser(TObject * /*Sender*/,
       else
       {
         AnswerIndex = FConsole->Choice(Accels, CancelIndex, -1, -2,
-          (Timeouting ? 1000 : Timer));
+          Timeouting, (Timeouting ? 1000 : Timer));
         if (AnswerIndex == -1)
         {
           NotifyAbort();

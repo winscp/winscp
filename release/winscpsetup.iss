@@ -172,25 +172,12 @@ Name: searchpath; Description: {cm:AddSearchPath}; \
 ; Setup\AllowNoIcons=yes)
 Name: "{group}\WinSCP"; Filename: "{app}\WinSCP.exe"; Components: main; \
   IconFilename: "{app}\WinSCP.ico"; Comment: "{cm:ProgramComment}"
-Name: "{group}\{cm:WebSite}"; Filename: "{#WebRoot}"; Components: main
-Name: "{group}\{cm:SupportForum}"; \
-  Filename: "{#WebForum}"; Components: main
-Name: "{group}\{cm:DocumentationPage}"; \
-  Filename: "{#WebDocumentation}"; Components: main
 ; This is created when pageant/puttygen component is selected (unless user
 ; checks Don't create a Start menu folder, Setup\AllowNoIcons=yes).
 Name: "{group}\{cm:RSAKeyTools}\PuTTYgen"; \
   Filename: "{app}\PuTTY\puttygen.exe"; Components: puttygen
-Name: "{group}\{cm:RSAKeyTools}\{cm:PuTTYgenManual}"; \
-  Filename: "winhlp32.exe"; Parameters: "-iputtygen.general {app}\PuTTY\putty.hlp"; \
-  Components: puttygen
 Name: "{group}\{cm:RSAKeyTools}\Pageant"; \
   Filename: "{app}\PuTTY\pageant.exe"; Components: pageant
-Name: "{group}\{cm:RSAKeyTools}\{cm:PageantManual}"; \
-  Filename: "winhlp32.exe"; Parameters: "-ipageant.general {app}\PuTTY\putty.hlp"; \
-  Components: pageant
-Name: "{group}\{cm:RSAKeyTools}\{cm:PuttyWebSite}"; \
-  Filename: "{#WebPuTTY}"; Components: pageant puttygen
 ; This is created when desktopicon task is selected
 Name: "{userdesktop}\WinSCP"; Filename: "{app}\WinSCP.exe"; \
   IconFilename: "{app}\WinSCP.ico"; Tasks: desktopicon\user
@@ -205,6 +192,12 @@ Name: "{sendto}\{cm:SendToHookNew}"; Filename: "{app}\WinSCP.exe"; \
   IconFilename: "{app}\WinSCP.ico"; Parameters: "/upload"; Tasks: sendtohook
 
 [InstallDelete]
+Type: files; Name: "{group}\{cm:WebSite}.url"
+Type: files; Name: "{group}\{cm:SupportForum}.url"
+Type: files; Name: "{group}\{cm:DocumentationPage}.url"
+Type: files; Name: "{group}\{cm:RSAKeyTools}\{cm:PuTTYgenManual}.lnk"
+Type: files; Name: "{group}\{cm:RSAKeyTools}\{cm:PageantManual}.lnk"
+Type: files; Name: "{group}\{cm:RSAKeyTools}\{cm:PuttyWebSite}.url"
 ; Legacy sendto hook (SCP-only), only english link is removed
 Type: files; Name: "{sendto}\WinSCP3 (upload using SCP).lnk"
 Type: files; Name: "{group}\{cm:RSAKeyTools}\{cm:KeysManual}.lnk"

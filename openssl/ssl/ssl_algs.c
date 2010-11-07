@@ -76,13 +76,16 @@ int SSL_library_init(void)
 #endif  
 #ifndef OPENSSL_NO_RC2
 	EVP_add_cipher(EVP_rc2_cbc());
+	/* Not actually used for SSL/TLS but this makes PKCS#12 work
+	 * if an application only calls SSL_library_init().
+	 */
+	EVP_add_cipher(EVP_rc2_40_cbc());
 #endif
 #ifndef OPENSSL_NO_AES
 	EVP_add_cipher(EVP_aes_128_cbc());
 	EVP_add_cipher(EVP_aes_192_cbc());
 	EVP_add_cipher(EVP_aes_256_cbc());
 #endif
-
 #ifndef OPENSSL_NO_CAMELLIA
 	EVP_add_cipher(EVP_camellia_128_cbc());
 	EVP_add_cipher(EVP_camellia_256_cbc());
@@ -91,10 +94,7 @@ int SSL_library_init(void)
 #ifndef OPENSSL_NO_SEED
 	EVP_add_cipher(EVP_seed_cbc());
 #endif
-
-#ifndef OPENSSL_NO_MD2
-	EVP_add_digest(EVP_md2());
-#endif
+  
 #ifndef OPENSSL_NO_MD5
 	EVP_add_digest(EVP_md5());
 	EVP_add_digest_alias(SN_md5,"ssl2-md5");
@@ -104,6 +104,14 @@ int SSL_library_init(void)
 	EVP_add_digest(EVP_sha1()); /* RSA with sha1 */
 	EVP_add_digest_alias(SN_sha1,"ssl3-sha1");
 	EVP_add_digest_alias(SN_sha1WithRSAEncryption,SN_sha1WithRSA);
+#endif
+#ifndef OPENSSL_NO_SHA256
+	EVP_add_digest(EVP_sha224());
+	EVP_add_digest(EVP_sha256());
+#endif
+#ifndef OPENSSL_NO_SHA512
+	EVP_add_digest(EVP_sha384());
+	EVP_add_digest(EVP_sha512());
 #endif
 #if !defined(OPENSSL_NO_SHA) && !defined(OPENSSL_NO_DSA)
 	EVP_add_digest(EVP_dss1()); /* DSA with sha1 */

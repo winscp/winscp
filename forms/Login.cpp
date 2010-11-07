@@ -35,6 +35,7 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
 {
   assert(Data);
   TLoginDialog * LoginDialog = SafeFormCreate<TLoginDialog>();
+  TSessionData * Data2;
   bool Result;
   try
   {
@@ -44,12 +45,20 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
     Result = LoginDialog->Execute();
     if (Result)
     {
-      Data->Assign(LoginDialog->SessionData);
-    };
+      Data2 = LoginDialog->SessionData;
+    }
   }
   __finally
   {
     delete LoginDialog;
+  }
+  if (Result)
+  {
+    // this may popup master pasword dialog,
+    // if it happens before login dialog is destroyed
+    // (from within try ...finally block above)
+    // the next window will appear in background for some reason
+    Data->Assign(Data2);
   }
   return Result;
 }

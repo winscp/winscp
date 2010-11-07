@@ -90,6 +90,7 @@ __fastcall TBookmarkNameDialog::TBookmarkNameDialog(TStrings * PeerBookmarks,
   Caption = LoadStr(ADD_BOOKMARK_CAPTION);
 
   NameCombo = new TComboBox(this);
+  NameCombo->AutoComplete = false;
   AddComboBox(NameCombo, CreateLabel(LoadStr(ADD_BOOKMARK_PROMPT)));
   NameCombo->Items = PeerBookmarks;
 
@@ -154,6 +155,7 @@ __fastcall TBookmarkFolderDialog::TBookmarkFolderDialog(TStrings * Folders) :
   Caption = LoadStr(MOVE_BOOKMARK_CAPTION);
 
   NameCombo = new TComboBox(this);
+  NameCombo->AutoComplete = false;
   AddComboBox(NameCombo, CreateLabel(LoadStr(MOVE_BOOKMARK_PROMPT)));
   NameCombo->Items = Folders;
 }

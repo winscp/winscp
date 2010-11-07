@@ -56,7 +56,7 @@
  * [including the GNU Public Licence.]
  */
 /* ====================================================================
- * Copyright (c) 1998-2001 The OpenSSL Project.  All rights reserved.
+ * Copyright (c) 1998-2006 The OpenSSL Project.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -116,9 +116,9 @@
 #include <openssl/objects.h>
 #include <openssl/evp.h>
 
-static SSL_METHOD *ssl23_get_server_method(int ver);
+static const SSL_METHOD *ssl23_get_server_method(int ver);
 int ssl23_get_client_hello(SSL *s);
-static SSL_METHOD *ssl23_get_server_method(int ver)
+static const SSL_METHOD *ssl23_get_server_method(int ver)
 	{
 #ifndef OPENSSL_NO_SSL2
 	if (ver == SSL2_VERSION)
@@ -315,7 +315,7 @@ int ssl23_get_client_hello(SSL *s)
 			 (p[1] == SSL3_VERSION_MAJOR) &&
 			 (p[5] == SSL3_MT_CLIENT_HELLO) &&
 			 ((p[3] == 0 && p[4] < 5 /* silly record length? */)
-				|| (p[9] == p[1])))
+				|| (p[9] >= p[1])))
 			{
 			/*
 			 * SSLv3 or tls1 header
@@ -339,6 +339,13 @@ int ssl23_get_client_hello(SSL *s)
 				v[1] = TLS1_VERSION_MINOR;
 #endif
 				}
+			/* if major version number > 3 set minor to a value
+			 * which will use the highest version 3 we support.
+			 * If TLS 2.0 ever appears we will need to revise
+			 * this....
+			 */
+			else if (p[9] > SSL3_VERSION_MAJOR)
+				v[1]=0xff;
 			else
 				v[1]=p[10]; /* minor version according to client_version */
 			if (v[1] >= TLS1_VERSION_MINOR)
@@ -386,15 +393,6 @@ int ssl23_get_client_hello(SSL *s)
 			}
 		}
 
-#ifdef OPENSSL_FIPS
-	if (FIPS_mode() && (s->version < TLS1_VERSION))
-		{
-		SSLerr(SSL_F_SSL23_GET_CLIENT_HELLO,
-					SSL_R_ONLY_TLS_ALLOWED_IN_FIPS_MODE);
-		goto err;
-		}
-#endif
-
 	if (s->state == SSL23_ST_SR_CLNT_HELLO_B)
 		{
 		/* we have SSLv3/TLSv1 in an SSLv2 header
@@ -425,7 +423,9 @@ int ssl23_get_client_hello(SSL *s)
 		n2s(p,sil);
 		n2s(p,cl);
 		d=(unsigned char *)s->init_buf->data;
-		if ((csl+sil+cl+11) != s->packet_length)
+		if ((csl+sil+cl+11) != s->packet_length) /* We can't have TLS extensions in SSL 2.0 format
+		                                          * Client Hello, can we? Error condition should be
+		                                          * '>' otherweise */
 			{
 			SSLerr(SSL_F_SSL23_GET_CLIENT_HELLO,SSL_R_RECORD_LENGTH_MISMATCH);
 			goto err;
@@ -468,6 +468,15 @@ int ssl23_get_client_hello(SSL *s)
 		*(d++)=1;
 		*(d++)=0;
 		
+#if 0
+                /* copy any remaining data with may be extensions */
+	        p = p+csl+sil+cl;
+		while (p <  s->packet+s->packet_length)
+			{
+			*(d++)=*(p++);
+			}
+#endif
+
 		i = (d-(unsigned char *)s->init_buf->data) - 4;
 		l2n3((long)i, d_len);
 
@@ -543,6 +552,10 @@ int ssl23_get_client_hello(SSL *s)
 			 * for SSLv3 */
 			s->rstate=SSL_ST_READ_HEADER;
 			s->packet_length=n;
+			if (s->s3->rbuf.buf == NULL)
+				if (!ssl3_setup_read_buffer(s))
+					goto err;
+
 			s->packet= &(s->s3->rbuf.buf[0]);
 			memcpy(s->packet,buf,n);
 			s->s3->rbuf.left=n;
