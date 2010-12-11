@@ -985,6 +985,10 @@ int ssl3_get_client_hello(SSL *s)
 				break;
 				}
 			}
+/* Disabled because it can be used in a ciphersuite downgrade
+ * attack: CVE-2010-4180.
+ */
+#if 0
 		if (j == 0 && (s->options & SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG) && (sk_SSL_CIPHER_num(ciphers) == 1))
 			{
 			/* Special case as client bug workaround: the previously used cipher may
@@ -999,6 +1003,7 @@ int ssl3_get_client_hello(SSL *s)
 				j = 1;
 				}
 			}
+#endif
 		if (j == 0)
 			{
 			/* we need to have the cipher in the cipher
@@ -2579,12 +2584,19 @@ int ssl3_get_client_key_exchange(SSL *s)
 			{
 			int ret = 0;
 			EVP_PKEY_CTX *pkey_ctx;
-			EVP_PKEY *client_pub_pkey = NULL;
+			EVP_PKEY *client_pub_pkey = NULL, *pk = NULL;
 			unsigned char premaster_secret[32], *start;
-			size_t outlen=32, inlen;			
+			size_t outlen=32, inlen;
+			unsigned long alg_a;
 
 			/* Get our certificate private key*/
-			pkey_ctx = EVP_PKEY_CTX_new(s->cert->key->privatekey,NULL);	
+			alg_a = s->s3->tmp.new_cipher->algorithm_auth;
+			if (alg_a & SSL_aGOST94)
+				pk = s->cert->pkeys[SSL_PKEY_GOST94].privatekey;
+			else if (alg_a & SSL_aGOST01)
+				pk = s->cert->pkeys[SSL_PKEY_GOST01].privatekey;
+
+			pkey_ctx = EVP_PKEY_CTX_new(pk,NULL);
 			EVP_PKEY_decrypt_init(pkey_ctx);
 			/* If client certificate is present and is of the same type, maybe
 			 * use it for key exchange.  Don't mind errors from

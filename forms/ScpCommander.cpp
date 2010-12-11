@@ -451,13 +451,18 @@ void __fastcall TScpCommanderForm::TerminalChanged()
       {
         LocalDirView->RestoreState(ManagedTerminal->LocalExplorerState);
         NonVisualDataModule->SynchronizeBrowsingAction->Checked = ManagedTerminal->SynchronizeBrowsing;
+        // do not try to detect synchronized browsing again below
+        WasSynchronisingBrowsing = false;
       }
       else
       {
         LocalDirView->ClearState();
+        // this may be program startup among other,
+        // so in this case we want to try to detect synchronized browsing below
       }
     }
-    else if (WasSynchronisingBrowsing &&
+
+    if (WasSynchronisingBrowsing &&
         SameText(ExtractFileName(LocalDirView->PathName),
           UnixExtractFileName(RemoteDirView->PathName)))
     {

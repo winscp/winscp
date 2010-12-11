@@ -58,6 +58,7 @@ private:
 	bool FManageSelection;
 	int FFirstSelected;
 	int FLastSelected;
+	bool FFocusedWhenClicked;
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMRButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMKeyDown(Messages::TWMKey &Message);
@@ -91,6 +92,7 @@ protected:
 	virtual bool __fastcall GetValid(void);
 	virtual int __fastcall GetSelCount(void);
 	void __fastcall DDBeforeDrag(void);
+	DYNAMIC bool __fastcall CanEdit(Comctrls::TListItem* Item);
 	
 public:
 	__fastcall virtual TCustomNortonLikeListView(Classes::TComponent* AOwner);

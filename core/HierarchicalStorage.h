@@ -57,12 +57,14 @@ public:
   __property AnsiString CurrentSubKey  = { read=GetCurrentSubKey };
   __property TStorageAccessMode AccessMode  = { read=FAccessMode, write=SetAccessMode };
   __property bool Explicit = { read = FExplicit, write = FExplicit };
+  __property bool MungeStringValues = { read = FMungeStringValues, write = FMungeStringValues };
 
 protected:
   AnsiString FStorage;
   TStrings * FKeyHistory;
   TStorageAccessMode FAccessMode;
   bool FExplicit;
+  bool FMungeStringValues;
 
   AnsiString __fastcall GetCurrentSubKey();
   AnsiString __fastcall GetCurrentSubKeyMunged();

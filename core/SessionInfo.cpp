@@ -891,8 +891,6 @@ void __fastcall TSessionLog::AddStartupInfo()
 //---------------------------------------------------------------------------
 void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
 {
-  assert(Logging);
-
   TGuard Guard(FCriticalSection);
 
   BeginUpdate();

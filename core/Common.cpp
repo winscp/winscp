@@ -814,6 +814,7 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
     unsigned short Year;
     TDateTime StandardDate;
     TDateTime DaylightDate;
+    bool SummerDST;
   };
   static TDSTCache DSTCache[10];
   static int DSTCacheCount = 0;
@@ -846,19 +847,18 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
       CurrentCache++;
     }
 
+    TDSTCache NewCache;
     if ((CacheIndex < DSTCacheCount) && (CacheIndex < LENOF(DSTCache)) &&
         CurrentCache->Filled)
     {
       assert(CurrentCache->Year == Year);
-      Result = (DateTime >= CurrentCache->DaylightDate) &&
-        (DateTime < CurrentCache->StandardDate);
     }
     else
     {
-      TDSTCache NewCache;
 
       EncodeDSTMargin(Params->StandardDate, Year, NewCache.StandardDate);
       EncodeDSTMargin(Params->DaylightDate, Year, NewCache.DaylightDate);
+      NewCache.SummerDST = (NewCache.DaylightDate < NewCache.StandardDate);
       if (DSTCacheCount < LENOF(DSTCache))
       {
         TGuard Guard(&Section);
@@ -870,8 +870,20 @@ static bool __fastcall IsDateInDST(const TDateTime & DateTime)
           DSTCacheCount++;
         }
       }
-      Result = (DateTime >= NewCache.DaylightDate) &&
-        (DateTime < NewCache.StandardDate);
+      CurrentCache = &NewCache;
+    }
+
+    if (CurrentCache->SummerDST)
+    {
+      Result =
+        (DateTime >= CurrentCache->DaylightDate) &&
+        (DateTime < CurrentCache->StandardDate);
+    }
+    else
+    {
+      Result =
+        (DateTime < CurrentCache->StandardDate) ||
+        (DateTime >= CurrentCache->DaylightDate);
     }
   }
   return Result;
@@ -970,7 +982,8 @@ TDateTime __fastcall FileTimeToDateTime(const FILETIME & FileTime)
     FileTimeToLocalFileTime(&FileTime, &LocalFileTime);
     FileTimeToSystemTime(&LocalFileTime, &SysTime);
   }
-  return SystemTimeToDateTime(SysTime);
+  TDateTime Result = SystemTimeToDateTime(SysTime);
+  return Result;
 }
 //---------------------------------------------------------------------------
 __int64 __fastcall ConvertTimestampToUnix(const FILETIME & FileTime,

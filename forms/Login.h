@@ -389,7 +389,6 @@ private:
   void __fastcall SetSessionData(TSessionData * value);
   TSessionData * __fastcall GetSessionData();
   void __fastcall SaveSession(TSessionData * aStoredSession);
-  void __fastcall SetStoredSessions(TStoredSessionList * value);
   void __fastcall LoadSessions();
   TSessionData * __fastcall GetSelectedSession();
   void __fastcall CMDialogKey(TWMKeyDown & Message);
@@ -427,22 +426,19 @@ protected:
   virtual void __fastcall Dispatch(void * Message);
   bool __fastcall AllowAlgDrag(TListBox * AlgListBox, int X, int Y);
   void __fastcall AlgMove(TListBox * AlgListBox, int Source, int Dest);
-  void __fastcall SetOptions(int value);
   void __fastcall LocaleClick(TObject * Sender);
   void __fastcall LocaleGetClick(TObject * Sender);
   void __fastcall Init();
   void __fastcall InitControls();
   void __fastcall VerifyKey(AnsiString FileName, bool TypeOnly);
   void __fastcall EditSession();
+  __property TSessionData * SelectedSession  = { read=GetSelectedSession };
+
 public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
-  bool __fastcall Execute();
-
-  __property TSessionData * SessionData  = { read=GetSessionData, write=SetSessionData };
-  __property TStoredSessionList * StoredSessions  = { read=FStoredSessions, write=SetStoredSessions };
-  __property TSessionData * SelectedSession  = { read=GetSelectedSession };
-  __property int Options = { read=FOptions, write=SetOptions };
+  void __fastcall Init(TStoredSessionList *SessionList, int Options);
+  bool __fastcall Execute(TSessionData *& Data);
 };
 //----------------------------------------------------------------------------
 #endif

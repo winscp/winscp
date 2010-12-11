@@ -1662,6 +1662,7 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
   }
   catch(Exception & E)
   {
+    FScript->Log(llMessage, "Failed");
     ShowException(&E);
     AnyError = true;
   }

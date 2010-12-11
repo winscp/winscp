@@ -3642,25 +3642,25 @@ void __fastcall TTerminal::OpenLocalFile(const AnsiString FileName,
     {
       if (AATime || AMTime || ACTime)
       {
+        FILETIME ATime;
+        FILETIME MTime;
+        FILETIME CTime;
         // Get last file access and modification time
         FILE_OPERATION_LOOP (FMTLOAD(CANT_GET_ATTRS, (FileName)),
-          FILETIME ATime;
-          FILETIME MTime;
-          FILETIME CTime;
           if (!GetFileTime(Handle, &CTime, &ATime, &MTime)) RaiseLastOSError();
-          if (ACTime)
-          {
-            *ACTime = ConvertTimestampToUnixSafe(CTime, SessionData->DSTMode);
-          }
-          if (AATime)
-          {
-            *AATime = ConvertTimestampToUnixSafe(ATime, SessionData->DSTMode);
-          }
-          if (AMTime)
-          {
-            *AMTime = ConvertTimestampToUnix(MTime, SessionData->DSTMode);
-          }
         );
+        if (ACTime)
+        {
+          *ACTime = ConvertTimestampToUnixSafe(CTime, SessionData->DSTMode);
+        }
+        if (AATime)
+        {
+          *AATime = ConvertTimestampToUnixSafe(ATime, SessionData->DSTMode);
+        }
+        if (AMTime)
+        {
+          *AMTime = ConvertTimestampToUnix(MTime, SessionData->DSTMode);
+        }
       }
 
       if (ASize)

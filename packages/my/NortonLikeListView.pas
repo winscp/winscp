@@ -26,6 +26,7 @@ type
     FManageSelection: Boolean;
     FFirstSelected: Integer;
     FLastSelected: Integer;
+    FFocusedWhenClicked: Boolean;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
@@ -60,6 +61,7 @@ type
     function GetValid: Boolean; virtual;
     function GetSelCount: Integer; override;
     procedure DDBeforeDrag;
+    function CanEdit(Item: TListItem): Boolean; override;
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -621,6 +623,7 @@ begin
   PDontUnSelectItem := FDontUnSelectItem;
   FDontSelectItem := FDontSelectItem or ((NortonLike = nlOn) and ((Shift * [ssCtrl, ssShift]) = []));
   FDontUnSelectItem := FDontUnSelectItem or ((NortonLike = nlOn) and ((Shift * [ssCtrl]) = []));
+  FFocusedWhenClicked := Focused;
   try
     inherited;
   finally
@@ -801,6 +804,11 @@ begin
 
   Assert(ColProperties <> nil);
   ColProperties.ListViewWndCreated;
+end;
+
+function TCustomNortonLikeListView.CanEdit(Item: TListItem): Boolean;
+begin
+  Result := inherited CanEdit(Item) and FFocusedWhenClicked;
 end;
 
 end.

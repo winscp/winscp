@@ -39,14 +39,9 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
   bool Result;
   try
   {
-    LoginDialog->StoredSessions = SessionList;
-    LoginDialog->SessionData = Data;
-    LoginDialog->Options = Options;
-    Result = LoginDialog->Execute();
-    if (Result)
-    {
-      Data2 = LoginDialog->SessionData;
-    }
+    LoginDialog->Init(SessionList, Options);
+    Data2 = Data;
+    Result = LoginDialog->Execute(Data2);
   }
   __finally
   {
@@ -98,6 +93,15 @@ __fastcall TLoginDialog::~TLoginDialog()
   delete FTreeLabels;
   delete FSessionData;
   delete FLanguagesPopupMenu;
+}
+//---------------------------------------------------------------------
+void __fastcall TLoginDialog::Init(TStoredSessionList *SessionList,
+  int Options)
+{
+  FStoredSessions = SessionList;
+  LoadSessions();
+  FOptions = Options;
+  UpdateControls();
 }
 //---------------------------------------------------------------------
 void __fastcall TLoginDialog::InitControls()
@@ -185,7 +189,7 @@ void __fastcall TLoginDialog::Init()
 
   UpdateNavigationTree();
 
-  if ((Options & loLocalDirectory) == 0)
+  if ((FOptions & loLocalDirectory) == 0)
   {
     LocalDirectoryLabel->Visible = false;
     LocalDirectoryEdit->Visible = false;
@@ -1155,7 +1159,7 @@ void __fastcall TLoginDialog::UpdateControls()
       EnableControl(TunnelOptionsGroup, TunnelSessionGroup->Enabled);
 
       // preferences sheet
-      GeneralSheet->Enabled = FLAGSET(Options, loPreferences);
+      GeneralSheet->Enabled = FLAGSET(FOptions, loPreferences);
 
       // this methods saves us from calling GetSessionData,
       // which breaks changing locale (session data are not preserved,
@@ -1170,12 +1174,12 @@ void __fastcall TLoginDialog::UpdateControls()
       }
       LoadButton->Default = !LoginButton->Default;
 
-      AboutButton->Visible = (Options & loAbout);
-      LanguagesButton->Visible = (Options & loLanguage);
-      ShellIconsButton->Visible = (Options & loTools);
-      ToolsMenuButton->Visible = (Options & loTools);
-      LoggingFrame->EnableLogWindow = (Options & loLogWindow);
-      ColorButton->Visible = (Options & loColor);
+      AboutButton->Visible = (FOptions & loAbout);
+      LanguagesButton->Visible = (FOptions & loLanguage);
+      ShellIconsButton->Visible = (FOptions & loTools);
+      ToolsMenuButton->Visible = (FOptions & loTools);
+      LoggingFrame->EnableLogWindow = (FOptions & loLogWindow);
+      ColorButton->Visible = (FOptions & loColor);
 
       UpdateNavigationTree();
     }
@@ -1247,15 +1251,6 @@ TSessionData * __fastcall TLoginDialog::GetSessionData()
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SetStoredSessions(TStoredSessionList * value)
-{
-  if (FStoredSessions != value)
-  {
-    FStoredSessions = value;
-    LoadSessions();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
 {
   TPoint P = SessionTree->ScreenToClient(Mouse->CursorPos);
@@ -1267,7 +1262,7 @@ void __fastcall TLoginDialog::SessionTreeDblClick(TObject * /*Sender*/)
     }
     else
     {
-      SessionData = SelectedSession;
+      SetSessionData(SelectedSession);
       EditSession();
     }
   }
@@ -1313,7 +1308,7 @@ void __fastcall TLoginDialog::EditSessionActionExecute(TObject * /*Sender*/)
 {
   if (SelectedSession)
   {
-    SessionData = SelectedSession;
+    SetSessionData(SelectedSession);
     EditSession();
   }
 }
@@ -1365,7 +1360,7 @@ void __fastcall TLoginDialog::SaveSessionActionExecute(TObject * /*Sender*/)
     }
 
     SessionTree->Selected = Node;
-    SessionData = NewSession;
+    SetSessionData(NewSession);
 
     ChangePage(SessionListSheet);
     SessionTree->SetFocus();
@@ -1483,14 +1478,14 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   }
   else if (Action == DeleteSessionAction)
   {
-    TSessionData * Data = SessionData;
+    TSessionData * Data = GetSessionData();
     DeleteSessionAction->Enabled =
       (SessionSelected && !Data->Special) ||
       ((SessionTree->Selected != NULL) && (SessionTree->Selected->Data == NULL));
   }
   else if (Action == RenameSessionAction)
   {
-    TSessionData * Data = SessionData;
+    TSessionData * Data = GetSessionData();
     RenameSessionAction->Enabled =
       (SessionSelected && !Data->Special) ||
       ((SessionTree->Selected != NULL) && (SessionTree->Selected->Data == NULL));
@@ -1505,7 +1500,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   }
   else if (Action == LoginAction)
   {
-    TSessionData * Data = SessionData;
+    TSessionData * Data = GetSessionData();
     LoginAction->Enabled = Data && Data->CanLogin;
   }
   else if (Action == SaveSessionAction)
@@ -1533,13 +1528,21 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::Execute()
+bool __fastcall TLoginDialog::Execute(TSessionData *& Data)
 {
+  SetSessionData(Data);
   LoadConfiguration();
   bool Result = (ShowModal() == mrOk);
   if (Result)
   {
     SaveConfiguration();
+    Data = GetSessionData();
+    // FSessionData ceases to exist with the dialog
+    if (Data == FSessionData)
+    {
+      Data = new TSessionData("");
+      Data->Assign(FSessionData);
+    }
   }
   return Result;
 }
@@ -1892,15 +1895,6 @@ void __fastcall TLoginDialog::CheckForUpdatesActionExecute(TObject * /*Sender*/)
   CheckForUpdates(false);
 }
 //---------------------------------------------------------------------------
-void __fastcall TLoginDialog::SetOptions(int value)
-{
-  if (Options != value)
-  {
-    FOptions = value;
-    UpdateControls();
-  }
-}
-//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::LanguagesButtonClick(TObject * /*Sender*/)
 {
   delete FLanguagesPopupMenu;
@@ -1983,7 +1977,7 @@ void __fastcall TLoginDialog::VerifyKey(AnsiString FileName, bool TypeOnly)
         // intend to change it only after he/she selects key file
         if (!TypeOnly)
         {
-          TSessionData * Data = SessionData;
+          TSessionData * Data = GetSessionData();
           if ((Type == ktSSH1) !=
                 ((Data->SshProt == ssh1only) || (Data->SshProt == ssh1)))
           {
@@ -2033,9 +2027,9 @@ void __fastcall TLoginDialog::FormCloseQuery(TObject * /*Sender*/,
 {
   if (ModalResult != mrCancel)
   {
-    VerifyKey(SessionData->PublicKeyFile, false);
+    VerifyKey(GetSessionData()->PublicKeyFile, false);
     // for tunnel key do not check SSH version as it is not configurable
-    VerifyKey(SessionData->TunnelPublicKeyFile, true);
+    VerifyKey(GetSessionData()->TunnelPublicKeyFile, true);
   }
 }
 //---------------------------------------------------------------------------
@@ -2155,7 +2149,7 @@ void __fastcall TLoginDialog::SessionTreeEdited(TObject * /*Sender*/,
         DestroySession(Session);
       }
 
-      SessionData = NewSession;
+      SetSessionData(NewSession);
     }
     else
     {
@@ -2602,7 +2596,7 @@ void __fastcall TLoginDialog::SessionTreeDragDrop(TObject * Sender,
       assert(false);
     }
 
-    SessionData = NewSession;
+    SetSessionData(NewSession);
   }
   else
   {

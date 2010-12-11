@@ -75,6 +75,7 @@ __fastcall THierarchicalStorage::THierarchicalStorage(const AnsiString AStorage)
   FKeyHistory = new TStringList();
   AccessMode = smRead;
   Explicit = false;
+  MungeStringValues = true;
 }
 //---------------------------------------------------------------------------
 __fastcall THierarchicalStorage::~THierarchicalStorage()
@@ -257,7 +258,16 @@ void __fastcall THierarchicalStorage::WriteValues(Classes::TStrings * Strings,
 //---------------------------------------------------------------------------
 AnsiString __fastcall THierarchicalStorage::ReadString(const AnsiString Name, const AnsiString Default)
 {
-  return UnMungeStr(ReadStringRaw(Name, MungeStr(Default)));
+  AnsiString Result;
+  if (MungeStringValues)
+  {
+    Result = UnMungeStr(ReadStringRaw(Name, MungeStr(Default)));
+  }
+  else
+  {
+    Result = ReadStringRaw(Name, Default);
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall THierarchicalStorage::ReadBinaryData(const AnsiString Name)
@@ -271,7 +281,14 @@ AnsiString __fastcall THierarchicalStorage::ReadBinaryData(const AnsiString Name
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::WriteString(const AnsiString Name, const AnsiString Value)
 {
-  WriteStringRaw(Name, MungeStr(Value));
+  if (MungeStringValues)
+  {
+    WriteStringRaw(Name, MungeStr(Value));
+  }
+  else
+  {
+    WriteStringRaw(Name, Value);
+  }
 }
 //---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::WriteBinaryData(const AnsiString Name,

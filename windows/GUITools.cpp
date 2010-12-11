@@ -58,6 +58,8 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
     {
       Storage = new TRegistryStorage(Configuration->PuttySessionsKey);
       Storage->AccessMode = smReadWrite;
+      // make it compatible with putty
+      Storage->MungeStringValues = false;
       if (Storage->OpenRootKey(true))
       {
         if (Storage->KeyExists(SessionData->StorageKey))
@@ -67,6 +69,7 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
         else
         {
           SourceStorage = new TRegistryStorage(Configuration->PuttySessionsKey);
+          SourceStorage->MungeStringValues = false;
           if (SourceStorage->OpenSubKey(StoredSessions->DefaultSettings->Name, false) &&
               Storage->OpenSubKey(GUIConfiguration->PuttySession, true))
           {

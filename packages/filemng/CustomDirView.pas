@@ -1657,6 +1657,12 @@ var
 begin
   if Path <> '' then
   begin
+    // if editing, it has to be focused item
+    if IsEditing and Assigned(ItemFocused) then
+    begin
+      ItemFocused.CancelEdit;
+      FLoadEnabled := True;
+    end;
     OldSelection := nil;
     IconCache := nil;
     Items.BeginUpdate;
