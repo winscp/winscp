@@ -58,13 +58,14 @@ private:
 	bool FManageSelection;
 	int FFirstSelected;
 	int FLastSelected;
-	bool FFocusedWhenClicked;
+	System::TDateTime FNotFocusedWhenClicked;
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMRButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMKeyDown(Messages::TWMKey &Message);
 	HIDESBASE MESSAGE void __fastcall WMChar(Messages::TWMKey &Message);
 	HIDESBASE MESSAGE void __fastcall WMNotify(Messages::TWMNotify &Message);
 	HIDESBASE MESSAGE void __fastcall CNNotify(Messages::TWMNotify &Message);
+	MESSAGE void __fastcall LVMEditLabel(Messages::TMessage &Message);
 	int __fastcall GetMarkedCount(void);
 	Comctrls::TListItem* __fastcall GetMarkedFile(void);
 	void __fastcall ItemSelected(Comctrls::TListItem* Item, int Index);

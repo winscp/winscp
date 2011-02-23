@@ -882,10 +882,12 @@ static DWORD try_connect(Actual_Socket sock)
 	p_setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (void *) &b, sizeof(b));
     }
 
+#ifdef MPEXT
     {
 	int bufsize = 262144;
 	p_setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *) &bufsize, sizeof(bufsize));
     }
+#endif
 
     /*
      * Bind to local address.

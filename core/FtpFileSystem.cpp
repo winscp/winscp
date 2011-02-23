@@ -264,6 +264,10 @@ void __fastcall TFTPFileSystem::Open()
   // on reconnect, typically there may be pending status messages from previous session
   DiscardMessages();
 
+  ResetCaches();
+  FCurrentDirectory = "";
+  FHomeDirectory = "";
+
   TSessionData * Data = FTerminal->SessionData;
 
   FSessionInfo.LoginTime = Now();

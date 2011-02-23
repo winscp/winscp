@@ -255,7 +255,7 @@ AnsiString __fastcall GetFileInfoString(void * FileInfo,
 int __fastcall CalculateCompoundVersion(int MajorVer,
   int MinorVer, int Release, int Build)
 {
-  int CompoundVer = Build + 1000 * (Release + 100 * (MinorVer +
+  int CompoundVer = Build + 10000 * (Release + 100 * (MinorVer +
     100 * MajorVer));
   return CompoundVer;
 }

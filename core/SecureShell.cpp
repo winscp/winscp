@@ -290,6 +290,7 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg, b
   // permanent settings
   cfg->nopty = TRUE;
   cfg->tcp_keepalives = 0;
+  cfg->ssh_show_banner = TRUE;
   for (int Index = 0; Index < ngsslibs; Index++)
   {
     cfg->ssh_gsslist[Index] = gsslibkeywords[Index].v;

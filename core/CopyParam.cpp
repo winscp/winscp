@@ -31,7 +31,7 @@ void __fastcall TCopyParamType::Default()
   PreserveRights = false; // Was True until #106
   IgnorePermErrors = false;
   AsciiFileMask.Masks = "*.*html; *.htm; *.txt; *.php; *.php3; *.cgi; *.c; *.cpp; *.h; *.pas; "
-    "*.bas; *.tex; *.pl; .htaccess; *.xtml; *.css; *.cfg; *.ini; *.sh; *.xml";
+    "*.bas; *.tex; *.pl; *.js; .htaccess; *.xtml; *.css; *.cfg; *.ini; *.sh; *.xml";
   TransferMode = tmAutomatic;
   AddXToDirectories = true;
   ResumeSupport = rsSmart;

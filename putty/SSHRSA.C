@@ -114,9 +114,83 @@ static void sha512_mpint(SHA512_State * s, Bignum b)
 }
 
 /*
- * This function is a wrapper on modpow(). It has the same effect
- * as modpow(), but employs RSA blinding to protect against timing
- * attacks.
+ * Compute (base ^ exp) % mod, provided mod == p * q, with p,q
+ * distinct primes, and iqmp is the multiplicative inverse of q mod p.
+ * Uses Chinese Remainder Theorem to speed computation up over the
+ * obvious implementation of a single big modpow.
+ */
+Bignum crt_modpow(Bignum base, Bignum exp, Bignum mod,
+                  Bignum p, Bignum q, Bignum iqmp)
+{
+    Bignum pm1, qm1, pexp, qexp, presult, qresult, diff, multiplier, ret0, ret;
+
+    /*
+     * Reduce the exponent mod phi(p) and phi(q), to save time when
+     * exponentiating mod p and mod q respectively. Of course, since p
+     * and q are prime, phi(p) == p-1 and similarly for q.
+     */
+    pm1 = copybn(p);
+    decbn(pm1);
+    qm1 = copybn(q);
+    decbn(qm1);
+    pexp = bigmod(exp, pm1);
+    qexp = bigmod(exp, qm1);
+
+    /*
+     * Do the two modpows.
+     */
+    presult = modpow(base, pexp, p);
+    qresult = modpow(base, qexp, q);
+
+    /*
+     * Recombine the results. We want a value which is congruent to
+     * qresult mod q, and to presult mod p.
+     *
+     * We know that iqmp * q is congruent to 1 * mod p (by definition
+     * of iqmp) and to 0 mod q (obviously). So we start with qresult
+     * (which is congruent to qresult mod both primes), and add on
+     * (presult-qresult) * (iqmp * q) which adjusts it to be congruent
+     * to presult mod p without affecting its value mod q.
+     */
+    if (bignum_cmp(presult, qresult) < 0) {
+        /*
+         * Can't subtract presult from qresult without first adding on
+         * p.
+         */
+        Bignum tmp = presult;
+        presult = bigadd(presult, p);
+        freebn(tmp);
+    }
+    diff = bigsub(presult, qresult);
+    multiplier = bigmul(iqmp, q);
+    ret0 = bigmuladd(multiplier, diff, qresult);
+
+    /*
+     * Finally, reduce the result mod n.
+     */
+    ret = bigmod(ret0, mod);
+
+    /*
+     * Free all the intermediate results before returning.
+     */
+    freebn(pm1);
+    freebn(qm1);
+    freebn(pexp);
+    freebn(qexp);
+    freebn(presult);
+    freebn(qresult);
+    freebn(diff);
+    freebn(multiplier);
+    freebn(ret0);
+
+    return ret;
+}
+
+/*
+ * This function is a wrapper on modpow(). It has the same effect as
+ * modpow(), but employs RSA blinding to protect against timing
+ * attacks and also uses the Chinese Remainder Theorem (implemented
+ * above, in crt_modpow()) to speed up the main operation.
  */
 static Bignum rsa_privkey_op(Bignum input, struct RSAKey *key)
 {
@@ -218,10 +292,12 @@ static Bignum rsa_privkey_op(Bignum input, struct RSAKey *key)
      * _y^d_, and use the _public_ exponent to compute (y^d)^e = y
      * from it, which is much faster to do.
      */
-    random_encrypted = modpow(random, key->exponent, key->modulus);
+    random_encrypted = crt_modpow(random, key->exponent,
+                                  key->modulus, key->p, key->q, key->iqmp);
     random_inverse = modinv(random, key->modulus);
     input_blinded = modmul(input, random_encrypted, key->modulus);
-    ret_blinded = modpow(input_blinded, key->private_exponent, key->modulus);
+    ret_blinded = crt_modpow(input_blinded, key->private_exponent,
+                             key->modulus, key->p, key->q, key->iqmp);
     ret = modmul(ret_blinded, random_inverse, key->modulus);
 
     freebn(ret_blinded);

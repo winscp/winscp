@@ -457,6 +457,8 @@ int ssh1_write_bignum(void *data, Bignum bn);
 Bignum biggcd(Bignum a, Bignum b);
 unsigned short bignum_mod_short(Bignum number, unsigned short modulus);
 Bignum bignum_add_long(Bignum number, unsigned long addend);
+Bignum bigadd(Bignum a, Bignum b);
+Bignum bigsub(Bignum a, Bignum b);
 Bignum bigmul(Bignum a, Bignum b);
 Bignum bigmuladd(Bignum a, Bignum b, Bignum addend);
 Bignum bigdiv(Bignum a, Bignum b);

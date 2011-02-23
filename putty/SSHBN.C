@@ -63,7 +63,34 @@ typedef unsigned __int64 BignumDblInt;
     __asm mov q, eax \
 } while(0)
 #endif
+#elif defined _LP64
+/* 64-bit architectures can do 32x32->64 chunks at a time */
+typedef unsigned int BignumInt;
+typedef unsigned long BignumDblInt;
+#define BIGNUM_INT_MASK  0xFFFFFFFFU
+#define BIGNUM_TOP_BIT   0x80000000U
+#define BIGNUM_INT_BITS  32
+#define MUL_WORD(w1, w2) ((BignumDblInt)w1 * w2)
+#define DIVMOD_WORD(q, r, hi, lo, w) do { \
+    BignumDblInt n = (((BignumDblInt)hi) << BIGNUM_INT_BITS) | lo; \
+    q = n / w; \
+    r = n % w; \
+} while (0)
+#elif defined _LLP64
+/* 64-bit architectures in which unsigned long is 32 bits, not 64 */
+typedef unsigned long BignumInt;
+typedef unsigned long long BignumDblInt;
+#define BIGNUM_INT_MASK  0xFFFFFFFFUL
+#define BIGNUM_TOP_BIT   0x80000000UL
+#define BIGNUM_INT_BITS  32
+#define MUL_WORD(w1, w2) ((BignumDblInt)w1 * w2)
+#define DIVMOD_WORD(q, r, hi, lo, w) do { \
+    BignumDblInt n = (((BignumDblInt)hi) << BIGNUM_INT_BITS) | lo; \
+    q = n / w; \
+    r = n % w; \
+} while (0)
 #else
+/* Fallback for all other cases */
 typedef unsigned short BignumInt;
 typedef unsigned long BignumDblInt;
 #define BIGNUM_INT_MASK  0xFFFFU
@@ -145,29 +172,428 @@ Bignum bn_power_2(int n)
 }
 
 /*
+ * Internal addition. Sets c = a - b, where 'a', 'b' and 'c' are all
+ * big-endian arrays of 'len' BignumInts. Returns a BignumInt carried
+ * off the top.
+ */
+static BignumInt internal_add(const BignumInt *a, const BignumInt *b,
+                              BignumInt *c, int len)
+{
+    int i;
+    BignumDblInt carry = 0;
+
+    for (i = len-1; i >= 0; i--) {
+        carry += (BignumDblInt)a[i] + b[i];
+        c[i] = (BignumInt)carry;
+        carry >>= BIGNUM_INT_BITS;
+    }
+
+    return (BignumInt)carry;
+}
+
+/*
+ * Internal subtraction. Sets c = a - b, where 'a', 'b' and 'c' are
+ * all big-endian arrays of 'len' BignumInts. Any borrow from the top
+ * is ignored.
+ */
+static void internal_sub(const BignumInt *a, const BignumInt *b,
+                         BignumInt *c, int len)
+{
+    int i;
+    BignumDblInt carry = 1;
+
+    for (i = len-1; i >= 0; i--) {
+        carry += (BignumDblInt)a[i] + (b[i] ^ BIGNUM_INT_MASK);
+        c[i] = (BignumInt)carry;
+        carry >>= BIGNUM_INT_BITS;
+    }
+}
+
+/*
  * Compute c = a * b.
  * Input is in the first len words of a and b.
  * Result is returned in the first 2*len words of c.
  */
-static void internal_mul(BignumInt *a, BignumInt *b,
+#define KARATSUBA_THRESHOLD 50
+static void internal_mul(const BignumInt *a, const BignumInt *b,
 			 BignumInt *c, int len)
 {
     int i, j;
     BignumDblInt t;
 
-    for (j = 0; j < 2 * len; j++)
-	c[j] = 0;
+    if (len > KARATSUBA_THRESHOLD) {
 
-    for (i = len - 1; i >= 0; i--) {
-	t = 0;
-	for (j = len - 1; j >= 0; j--) {
-	    t += MUL_WORD(a[i], (BignumDblInt) b[j]);
-	    t += (BignumDblInt) c[i + j + 1];
-	    c[i + j + 1] = (BignumInt) t;
-	    t = t >> BIGNUM_INT_BITS;
-	}
-	c[i] = (BignumInt) t;
+        /*
+         * Karatsuba divide-and-conquer algorithm. Cut each input in
+         * half, so that it's expressed as two big 'digits' in a giant
+         * base D:
+         *
+         *   a = a_1 D + a_0
+         *   b = b_1 D + b_0
+         *
+         * Then the product is of course
+         *
+         *  ab = a_1 b_1 D^2 + (a_1 b_0 + a_0 b_1) D + a_0 b_0
+         *
+         * and we compute the three coefficients by recursively
+         * calling ourself to do half-length multiplications.
+         *
+         * The clever bit that makes this worth doing is that we only
+         * need _one_ half-length multiplication for the central
+         * coefficient rather than the two that it obviouly looks
+         * like, because we can use a single multiplication to compute
+         *
+         *   (a_1 + a_0) (b_1 + b_0) = a_1 b_1 + a_1 b_0 + a_0 b_1 + a_0 b_0
+         *
+         * and then we subtract the other two coefficients (a_1 b_1
+         * and a_0 b_0) which we were computing anyway.
+         *
+         * Hence we get to multiply two numbers of length N in about
+         * three times as much work as it takes to multiply numbers of
+         * length N/2, which is obviously better than the four times
+         * as much work it would take if we just did a long
+         * conventional multiply.
+         */
+
+        int toplen = len/2, botlen = len - toplen; /* botlen is the bigger */
+        int midlen = botlen + 1;
+        BignumInt *scratch;
+        BignumDblInt carry;
+#ifdef KARA_DEBUG
+        int i;
+#endif
+
+        /*
+         * The coefficients a_1 b_1 and a_0 b_0 just avoid overlapping
+         * in the output array, so we can compute them immediately in
+         * place.
+         */
+
+#ifdef KARA_DEBUG
+        printf("a1,a0 = 0x");
+        for (i = 0; i < len; i++) {
+            if (i == toplen) printf(", 0x");
+            printf("%0*x", BIGNUM_INT_BITS/4, a[i]);
+        }
+        printf("\n");
+        printf("b1,b0 = 0x");
+        for (i = 0; i < len; i++) {
+            if (i == toplen) printf(", 0x");
+            printf("%0*x", BIGNUM_INT_BITS/4, b[i]);
+        }
+        printf("\n");
+#endif
+
+        /* a_1 b_1 */
+        internal_mul(a, b, c, toplen);
+#ifdef KARA_DEBUG
+        printf("a1b1 = 0x");
+        for (i = 0; i < 2*toplen; i++) {
+            printf("%0*x", BIGNUM_INT_BITS/4, c[i]);
+        }
+        printf("\n");
+#endif
+
+        /* a_0 b_0 */
+        internal_mul(a + toplen, b + toplen, c + 2*toplen, botlen);
+#ifdef KARA_DEBUG
+        printf("a0b0 = 0x");
+        for (i = 0; i < 2*botlen; i++) {
+            printf("%0*x", BIGNUM_INT_BITS/4, c[2*toplen+i]);
+        }
+        printf("\n");
+#endif
+
+        /*
+         * We must allocate scratch space for the central coefficient,
+         * and also for the two input values that we multiply when
+         * computing it. Since either or both may carry into the
+         * (botlen+1)th word, we must use a slightly longer length
+         * 'midlen'.
+         */
+        scratch = snewn(4 * midlen, BignumInt);
+
+        /* Zero padding. midlen exceeds toplen by at most 2, so just
+         * zero the first two words of each input and the rest will be
+         * copied over. */
+        scratch[0] = scratch[1] = scratch[midlen] = scratch[midlen+1] = 0;
+
+        for (j = 0; j < toplen; j++) {
+            scratch[midlen - toplen + j] = a[j]; /* a_1 */
+            scratch[2*midlen - toplen + j] = b[j]; /* b_1 */
+        }
+
+        /* compute a_1 + a_0 */
+        scratch[0] = internal_add(scratch+1, a+toplen, scratch+1, botlen);
+#ifdef KARA_DEBUG
+        printf("a1plusa0 = 0x");
+        for (i = 0; i < midlen; i++) {
+            printf("%0*x", BIGNUM_INT_BITS/4, scratch[i]);
+        }
+        printf("\n");
+#endif
+        /* compute b_1 + b_0 */
+        scratch[midlen] = internal_add(scratch+midlen+1, b+toplen,
+                                       scratch+midlen+1, botlen);
+#ifdef KARA_DEBUG
+        printf("b1plusb0 = 0x");
+        for (i = 0; i < midlen; i++) {
+            printf("%0*x", BIGNUM_INT_BITS/4, scratch[midlen+i]);
+        }
+        printf("\n");
+#endif
+
+        /*
+         * Now we can do the third multiplication.
+         */
+        internal_mul(scratch, scratch + midlen, scratch + 2*midlen, midlen);
+#ifdef KARA_DEBUG
+        printf("a1plusa0timesb1plusb0 = 0x");
+        for (i = 0; i < 2*midlen; i++) {
+            printf("%0*x", BIGNUM_INT_BITS/4, scratch[2*midlen+i]);
+        }
+        printf("\n");
+#endif
+
+        /*
+         * Now we can reuse the first half of 'scratch' to compute the
+         * sum of the outer two coefficients, to subtract from that
+         * product to obtain the middle one.
+         */
+        scratch[0] = scratch[1] = scratch[2] = scratch[3] = 0;
+        for (j = 0; j < 2*toplen; j++)
+            scratch[2*midlen - 2*toplen + j] = c[j];
+        scratch[1] = internal_add(scratch+2, c + 2*toplen,
+                                  scratch+2, 2*botlen);
+#ifdef KARA_DEBUG
+        printf("a1b1plusa0b0 = 0x");
+        for (i = 0; i < 2*midlen; i++) {
+            printf("%0*x", BIGNUM_INT_BITS/4, scratch[i]);
+        }
+        printf("\n");
+#endif
+
+        internal_sub(scratch + 2*midlen, scratch,
+                     scratch + 2*midlen, 2*midlen);
+#ifdef KARA_DEBUG
+        printf("a1b0plusa0b1 = 0x");
+        for (i = 0; i < 2*midlen; i++) {
+            printf("%0*x", BIGNUM_INT_BITS/4, scratch[2*midlen+i]);
+        }
+        printf("\n");
+#endif
+
+        /*
+         * And now all we need to do is to add that middle coefficient
+         * back into the output. We may have to propagate a carry
+         * further up the output, but we can be sure it won't
+         * propagate right the way off the top.
+         */
+        carry = internal_add(c + 2*len - botlen - 2*midlen,
+                             scratch + 2*midlen,
+                             c + 2*len - botlen - 2*midlen, 2*midlen);
+        j = 2*len - botlen - 2*midlen - 1;
+        while (carry) {
+            assert(j >= 0);
+            carry += c[j];
+            c[j] = (BignumInt)carry;
+            carry >>= BIGNUM_INT_BITS;
+            j--;
+        }
+#ifdef KARA_DEBUG
+        printf("ab = 0x");
+        for (i = 0; i < 2*len; i++) {
+            printf("%0*x", BIGNUM_INT_BITS/4, c[i]);
+        }
+        printf("\n");
+#endif
+
+        /* Free scratch. */
+        for (j = 0; j < 4 * midlen; j++)
+            scratch[j] = 0;
+        sfree(scratch);
+
+    } else {
+
+        /*
+         * Multiply in the ordinary O(N^2) way.
+         */
+
+        for (j = 0; j < 2 * len; j++)
+            c[j] = 0;
+
+        for (i = len - 1; i >= 0; i--) {
+            t = 0;
+            for (j = len - 1; j >= 0; j--) {
+                t += MUL_WORD(a[i], (BignumDblInt) b[j]);
+                t += (BignumDblInt) c[i + j + 1];
+                c[i + j + 1] = (BignumInt) t;
+                t = t >> BIGNUM_INT_BITS;
+            }
+            c[i] = (BignumInt) t;
+        }
     }
+}
+
+/*
+ * Variant form of internal_mul used for the initial step of
+ * Montgomery reduction. Only bothers outputting 'len' words
+ * (everything above that is thrown away).
+ */
+static void internal_mul_low(const BignumInt *a, const BignumInt *b,
+                             BignumInt *c, int len)
+{
+    int i, j;
+    BignumDblInt t;
+
+    if (len > KARATSUBA_THRESHOLD) {
+
+        /*
+         * Karatsuba-aware version of internal_mul_low. As before, we
+         * express each input value as a shifted combination of two
+         * halves:
+         *
+         *   a = a_1 D + a_0
+         *   b = b_1 D + b_0
+         *
+         * Then the full product is, as before,
+         *
+         *  ab = a_1 b_1 D^2 + (a_1 b_0 + a_0 b_1) D + a_0 b_0
+         *
+         * Provided we choose D on the large side (so that a_0 and b_0
+         * are _at least_ as long as a_1 and b_1), we don't need the
+         * topmost term at all, and we only need half of the middle
+         * term. So there's no point in doing the proper Karatsuba
+         * optimisation which computes the middle term using the top
+         * one, because we'd take as long computing the top one as
+         * just computing the middle one directly.
+         *
+         * So instead, we do a much more obvious thing: we call the
+         * fully optimised internal_mul to compute a_0 b_0, and we
+         * recursively call ourself to compute the _bottom halves_ of
+         * a_1 b_0 and a_0 b_1, each of which we add into the result
+         * in the obvious way.
+         *
+         * In other words, there's no actual Karatsuba _optimisation_
+         * in this function; the only benefit in doing it this way is
+         * that we call internal_mul proper for a large part of the
+         * work, and _that_ can optimise its operation.
+         */
+
+        int toplen = len/2, botlen = len - toplen; /* botlen is the bigger */
+        BignumInt *scratch;
+
+        /*
+         * Allocate scratch space for the various bits and pieces
+         * we're going to be adding together. We need botlen*2 words
+         * for a_0 b_0 (though we may end up throwing away its topmost
+         * word), and toplen words for each of a_1 b_0 and a_0 b_1.
+         * That adds up to exactly 2*len.
+         */
+        scratch = snewn(len*2, BignumInt);
+
+        /* a_0 b_0 */
+        internal_mul(a + toplen, b + toplen, scratch + 2*toplen, botlen);
+
+        /* a_1 b_0 */
+        internal_mul_low(a, b + len - toplen, scratch + toplen, toplen);
+
+        /* a_0 b_1 */
+        internal_mul_low(a + len - toplen, b, scratch, toplen);
+
+        /* Copy the bottom half of the big coefficient into place */
+        for (j = 0; j < botlen; j++)
+            c[toplen + j] = scratch[2*toplen + botlen + j];
+
+        /* Add the two small coefficients, throwing away the returned carry */
+        internal_add(scratch, scratch + toplen, scratch, toplen);
+
+        /* And add that to the large coefficient, leaving the result in c. */
+        internal_add(scratch, scratch + 2*toplen + botlen - toplen,
+                     c, toplen);
+
+        /* Free scratch. */
+        for (j = 0; j < len*2; j++)
+            scratch[j] = 0;
+        sfree(scratch);
+
+    } else {
+
+        for (j = 0; j < len; j++)
+            c[j] = 0;
+
+        for (i = len - 1; i >= 0; i--) {
+            t = 0;
+            for (j = len - 1; j >= len - i - 1; j--) {
+                t += MUL_WORD(a[i], (BignumDblInt) b[j]);
+                t += (BignumDblInt) c[i + j + 1 - len];
+                c[i + j + 1 - len] = (BignumInt) t;
+                t = t >> BIGNUM_INT_BITS;
+            }
+        }
+
+    }
+}
+
+/*
+ * Montgomery reduction. Expects x to be a big-endian array of 2*len
+ * BignumInts whose value satisfies 0 <= x < rn (where r = 2^(len *
+ * BIGNUM_INT_BITS) is the Montgomery base). Returns in the same array
+ * a value x' which is congruent to xr^{-1} mod n, and satisfies 0 <=
+ * x' < n.
+ *
+ * 'n' and 'mninv' should be big-endian arrays of 'len' BignumInts
+ * each, containing respectively n and the multiplicative inverse of
+ * -n mod r.
+ *
+ * 'tmp' is an array of at least '3*len' BignumInts used as scratch
+ * space.
+ */
+static void monty_reduce(BignumInt *x, const BignumInt *n,
+                         const BignumInt *mninv, BignumInt *tmp, int len)
+{
+    int i;
+    BignumInt carry;
+
+    /*
+     * Multiply x by (-n)^{-1} mod r. This gives us a value m such
+     * that mn is congruent to -x mod r. Hence, mn+x is an exact
+     * multiple of r, and is also (obviously) congruent to x mod n.
+     */
+    internal_mul_low(x + len, mninv, tmp, len);
+
+    /*
+     * Compute t = (mn+x)/r in ordinary, non-modular, integer
+     * arithmetic. By construction this is exact, and is congruent mod
+     * n to x * r^{-1}, i.e. the answer we want.
+     *
+     * The following multiply leaves that answer in the _most_
+     * significant half of the 'x' array, so then we must shift it
+     * down.
+     */
+    internal_mul(tmp, n, tmp+len, len);
+    carry = internal_add(x, tmp+len, x, 2*len);
+    for (i = 0; i < len; i++)
+        x[len + i] = x[i], x[i] = 0;
+
+    /*
+     * Reduce t mod n. This doesn't require a full-on division by n,
+     * but merely a test and single optional subtraction, since we can
+     * show that 0 <= t < 2n.
+     *
+     * Proof:
+     *  + we computed m mod r, so 0 <= m < r.
+     *  + so 0 <= mn < rn, obviously
+     *  + hence we only need 0 <= x < rn to guarantee that 0 <= mn+x < 2rn
+     *  + yielding 0 <= (mn+x)/r < 2n as required.
+     */
+    if (!carry) {
+        for (i = 0; i < len; i++)
+            if (x[len + i] != n[i])
+                break;
+    }
+    if (carry || i >= len || x[len + i] > n[i])
+        internal_sub(x+len, n, x+len, len);
 }
 
 static void internal_add_shifted(BignumInt *number,
@@ -291,9 +717,9 @@ static void internal_mod(BignumInt *a, int alen,
 }
 
 /*
- * Compute (base ^ exp) % mod.
+ * Compute (base ^ exp) % mod, the pedestrian way.
  */
-Bignum modpow(Bignum base_in, Bignum exp, Bignum mod)
+Bignum modpow_simple(Bignum base_in, Bignum exp, Bignum mod)
 {
     BignumInt *a, *b, *n, *m;
     int mshift;
@@ -407,6 +833,155 @@ Bignum modpow(Bignum base_in, Bignum exp, Bignum mod)
     sfree(n);
 
     freebn(base);
+
+    return result;
+}
+
+/*
+ * Compute (base ^ exp) % mod. Uses the Montgomery multiplication
+ * technique where possible, falling back to modpow_simple otherwise.
+ */
+Bignum modpow(Bignum base_in, Bignum exp, Bignum mod)
+{
+    BignumInt *a, *b, *x, *n, *mninv, *tmp;
+    int len, i, j;
+    Bignum base, base2, r, rn, inv, result;
+
+    /*
+     * The most significant word of mod needs to be non-zero. It
+     * should already be, but let's make sure.
+     */
+    assert(mod[mod[0]] != 0);
+
+    /*
+     * mod had better be odd, or we can't do Montgomery multiplication
+     * using a power of two at all.
+     */
+    if (!(mod[1] & 1))
+        return modpow_simple(base_in, exp, mod);
+
+    /*
+     * Make sure the base is smaller than the modulus, by reducing
+     * it modulo the modulus if not.
+     */
+    base = bigmod(base_in, mod);
+
+    /*
+     * Compute the inverse of n mod r, for monty_reduce. (In fact we
+     * want the inverse of _minus_ n mod r, but we'll sort that out
+     * below.)
+     */
+    len = mod[0];
+    r = bn_power_2(BIGNUM_INT_BITS * len);
+    inv = modinv(mod, r);
+
+    /*
+     * Multiply the base by r mod n, to get it into Montgomery
+     * representation.
+     */
+    base2 = modmul(base, r, mod);
+    freebn(base);
+    base = base2;
+
+    rn = bigmod(r, mod);               /* r mod n, i.e. Montgomerified 1 */
+
+    freebn(r);                         /* won't need this any more */
+
+    /*
+     * Set up internal arrays of the right lengths, in big-endian
+     * format, containing the base, the modulus, and the modulus's
+     * inverse.
+     */
+    n = snewn(len, BignumInt);
+    for (j = 0; j < len; j++)
+	n[len - 1 - j] = mod[j + 1];
+
+    mninv = snewn(len, BignumInt);
+    for (j = 0; j < len; j++)
+	mninv[len - 1 - j] = (j < inv[0] ? inv[j + 1] : 0);
+    freebn(inv);         /* we don't need this copy of it any more */
+    /* Now negate mninv mod r, so it's the inverse of -n rather than +n. */
+    x = snewn(len, BignumInt);
+    for (j = 0; j < len; j++)
+        x[j] = 0;
+    internal_sub(x, mninv, mninv, len);
+
+    /* x = snewn(len, BignumInt); */ /* already done above */
+    for (j = 0; j < len; j++)
+	x[len - 1 - j] = (j < base[0] ? base[j + 1] : 0);
+    freebn(base);        /* we don't need this copy of it any more */
+
+    a = snewn(2*len, BignumInt);
+    b = snewn(2*len, BignumInt);
+    for (j = 0; j < len; j++)
+	a[2*len - 1 - j] = (j < rn[0] ? rn[j + 1] : 0);
+    freebn(rn);
+
+    tmp = snewn(3*len, BignumInt);
+
+    /* Skip leading zero bits of exp. */
+    i = 0;
+    j = BIGNUM_INT_BITS-1;
+    while (i < (int)exp[0] && (exp[exp[0] - i] & (1 << j)) == 0) {
+	j--;
+	if (j < 0) {
+	    i++;
+	    j = BIGNUM_INT_BITS-1;
+	}
+    }
+
+    /* Main computation */
+    while (i < (int)exp[0]) {
+	while (j >= 0) {
+	    internal_mul(a + len, a + len, b, len);
+            monty_reduce(b, n, mninv, tmp, len);
+	    if ((exp[exp[0] - i] & (1 << j)) != 0) {
+                internal_mul(b + len, x, a, len);
+                monty_reduce(a, n, mninv, tmp, len);
+	    } else {
+		BignumInt *t;
+		t = a;
+		a = b;
+		b = t;
+	    }
+	    j--;
+	}
+	i++;
+	j = BIGNUM_INT_BITS-1;
+    }
+
+    /*
+     * Final monty_reduce to get back from the adjusted Montgomery
+     * representation.
+     */
+    monty_reduce(a, n, mninv, tmp, len);
+
+    /* Copy result to buffer */
+    result = newbn(mod[0]);
+    for (i = 0; i < len; i++)
+	result[result[0] - i] = a[i + len];
+    while (result[0] > 1 && result[result[0]] == 0)
+	result[0]--;
+
+    /* Free temporary arrays */
+    for (i = 0; i < 3 * len; i++)
+	tmp[i] = 0;
+    sfree(tmp);
+    for (i = 0; i < 2 * len; i++)
+	a[i] = 0;
+    sfree(a);
+    for (i = 0; i < 2 * len; i++)
+	b[i] = 0;
+    sfree(b);
+    for (i = 0; i < len; i++)
+	mninv[i] = 0;
+    sfree(mninv);
+    for (i = 0; i < len; i++)
+	n[i] = 0;
+    sfree(n);
+    for (i = 0; i < len; i++)
+	x[i] = 0;
+    sfree(x);
 
     return result;
 }
@@ -825,6 +1400,69 @@ Bignum bigmul(Bignum a, Bignum b)
 }
 
 /*
+ * Simple addition.
+ */
+Bignum bigadd(Bignum a, Bignum b)
+{
+    int alen = a[0], blen = b[0];
+    int rlen = (alen > blen ? alen : blen) + 1;
+    int i, maxspot;
+    Bignum ret;
+    BignumDblInt carry;
+
+    ret = newbn(rlen);
+
+    carry = 0;
+    maxspot = 0;
+    for (i = 1; i <= rlen; i++) {
+        carry += (i <= (int)a[0] ? a[i] : 0);
+        carry += (i <= (int)b[0] ? b[i] : 0);
+        ret[i] = (BignumInt) carry & BIGNUM_INT_MASK;
+        carry >>= BIGNUM_INT_BITS;
+        if (ret[i] != 0 && i > maxspot)
+            maxspot = i;
+    }
+    ret[0] = maxspot;
+
+    return ret;
+}
+
+/*
+ * Subtraction. Returns a-b, or NULL if the result would come out
+ * negative (recall that this entire bignum module only handles
+ * positive numbers).
+ */
+Bignum bigsub(Bignum a, Bignum b)
+{
+    int alen = a[0], blen = b[0];
+    int rlen = (alen > blen ? alen : blen);
+    int i, maxspot;
+    Bignum ret;
+    BignumDblInt carry;
+
+    ret = newbn(rlen);
+
+    carry = 1;
+    maxspot = 0;
+    for (i = 1; i <= rlen; i++) {
+        carry += (i <= (int)a[0] ? a[i] : 0);
+        carry += (i <= (int)b[0] ? b[i] ^ BIGNUM_INT_MASK : BIGNUM_INT_MASK);
+        ret[i] = (BignumInt) carry & BIGNUM_INT_MASK;
+        carry >>= BIGNUM_INT_BITS;
+        if (ret[i] != 0 && i > maxspot)
+            maxspot = i;
+    }
+    ret[0] = maxspot;
+
+    if (!carry) {
+        freebn(ret);
+        return NULL;
+    }
+
+    return ret;
+}
+
+/*
  * Create a bignum which is the bitmask covering another one. That
  * is, the smallest integer which is >= N and is also one less than
  * a power of two.
@@ -1102,3 +1740,166 @@ char *bignum_decimal(Bignum x)
     sfree(workspace);
     return ret;
 }
+
+#ifdef TESTBN
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+
+/*
+ * gcc -g -O0 -DTESTBN -o testbn sshbn.c misc.c -I unix -I charset
+ *
+ * Then feed to this program's standard input the output of
+ * testdata/bignum.py .
+ */
+
+void modalfatalbox(char *p, ...)
+{
+    va_list ap;
+    fprintf(stderr, "FATAL ERROR: ");
+    va_start(ap, p);
+    vfprintf(stderr, p, ap);
+    va_end(ap);
+    fputc('\n', stderr);
+    exit(1);
+}
+
+#define fromxdigit(c) ( (c)>'9' ? ((c)&0xDF) - 'A' + 10 : (c) - '0' )
+
+int main(int argc, char **argv)
+{
+    char *buf;
+    int line = 0;
+    int passes = 0, fails = 0;
+
+    while ((buf = fgetline(stdin)) != NULL) {
+        int maxlen = strlen(buf);
+        unsigned char *data = snewn(maxlen, unsigned char);
+        unsigned char *ptrs[5], *q;
+        int ptrnum;
+        char *bufp = buf;
+
+        line++;
+
+        q = data;
+        ptrnum = 0;
+
+        while (*bufp && !isspace((unsigned char)*bufp))
+            bufp++;
+        if (bufp)
+            *bufp++ = '\0';
+
+        while (*bufp) {
+            char *start, *end;
+            int i;
+
+            while (*bufp && !isxdigit((unsigned char)*bufp))
+                bufp++;
+            start = bufp;
+
+            if (!*bufp)
+                break;
+
+            while (*bufp && isxdigit((unsigned char)*bufp))
+                bufp++;
+            end = bufp;
+
+            if (ptrnum >= lenof(ptrs))
+                break;
+            ptrs[ptrnum++] = q;
+            
+            for (i = -((end - start) & 1); i < end-start; i += 2) {
+                unsigned char val = (i < 0 ? 0 : fromxdigit(start[i]));
+                val = val * 16 + fromxdigit(start[i+1]);
+                *q++ = val;
+            }
+
+            ptrs[ptrnum] = q;
+        }
+
+        if (!strcmp(buf, "mul")) {
+            Bignum a, b, c, p;
+
+            if (ptrnum != 3) {
+                printf("%d: mul with %d parameters, expected 3\n", line);
+                exit(1);
+            }
+            a = bignum_from_bytes(ptrs[0], ptrs[1]-ptrs[0]);
+            b = bignum_from_bytes(ptrs[1], ptrs[2]-ptrs[1]);
+            c = bignum_from_bytes(ptrs[2], ptrs[3]-ptrs[2]);
+            p = bigmul(a, b);
+
+            if (bignum_cmp(c, p) == 0) {
+                passes++;
+            } else {
+                char *as = bignum_decimal(a);
+                char *bs = bignum_decimal(b);
+                char *cs = bignum_decimal(c);
+                char *ps = bignum_decimal(p);
+                
+                printf("%d: fail: %s * %s gave %s expected %s\n",
+                       line, as, bs, ps, cs);
+                fails++;
+
+                sfree(as);
+                sfree(bs);
+                sfree(cs);
+                sfree(ps);
+            }
+            freebn(a);
+            freebn(b);
+            freebn(c);
+            freebn(p);
+        } else if (!strcmp(buf, "pow")) {
+            Bignum base, expt, modulus, expected, answer;
+
+            if (ptrnum != 4) {
+                printf("%d: mul with %d parameters, expected 3\n", line);
+                exit(1);
+            }
+
+            base = bignum_from_bytes(ptrs[0], ptrs[1]-ptrs[0]);
+            expt = bignum_from_bytes(ptrs[1], ptrs[2]-ptrs[1]);
+            modulus = bignum_from_bytes(ptrs[2], ptrs[3]-ptrs[2]);
+            expected = bignum_from_bytes(ptrs[3], ptrs[4]-ptrs[3]);
+            answer = modpow(base, expt, modulus);
+
+            if (bignum_cmp(expected, answer) == 0) {
+                passes++;
+            } else {
+                char *as = bignum_decimal(base);
+                char *bs = bignum_decimal(expt);
+                char *cs = bignum_decimal(modulus);
+                char *ds = bignum_decimal(answer);
+                char *ps = bignum_decimal(expected);
+                
+                printf("%d: fail: %s ^ %s mod %s gave %s expected %s\n",
+                       line, as, bs, cs, ds, ps);
+                fails++;
+
+                sfree(as);
+                sfree(bs);
+                sfree(cs);
+                sfree(ds);
+                sfree(ps);
+            }
+            freebn(base);
+            freebn(expt);
+            freebn(modulus);
+            freebn(expected);
+            freebn(answer);
+        } else {
+            printf("%d: unrecognised test keyword: '%s'\n", line, buf);
+            exit(1);
+        }
+
+        sfree(buf);
+        sfree(data);
+    }
+
+    printf("passed %d failed %d total %d\n", passes, fails, passes+fails);
+    return fails != 0;
+}
+
+#endif

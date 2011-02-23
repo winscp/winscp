@@ -588,9 +588,9 @@ void __fastcall TemporaryDirectoryCleanup()
 //---------------------------------------------------------------------------
 AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
 {
-  int MajorVer = Version / (1000*100*100);
-  int MinorVer = (Version % (1000*100*100)) / (1000*100);
-  int Release = (Version % (1000*100)) / (1000);
+  int MajorVer = Version / (10000*100*100);
+  int MinorVer = (Version % (10000*100*100)) / (10000*100);
+  int Release = (Version % (10000*100)) / (10000);
   AnsiString Result;
   if (Release > 0)
   {

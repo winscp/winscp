@@ -1059,10 +1059,11 @@ bool __fastcall TWinConfiguration::GetDDExtInstalled()
     else
     {
       void * DragExtRef;
-      bool Result;
-      Result = (CoCreateInstance(CLSID_ShellExtension, NULL,
-        CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IUnknown,
-        &DragExtRef) == S_OK);
+      int CreateResult =
+        CoCreateInstance(CLSID_ShellExtension, NULL,
+          CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IID_IUnknown,
+          &DragExtRef);
+      bool Result = (CreateResult == S_OK);
       FDDExtInstalled = (Result ? 1 : 0);
       if (Result)
       {

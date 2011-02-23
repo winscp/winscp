@@ -15,7 +15,7 @@
 
 # Set your compiler options
 CC=bcc32
-CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DRMD160_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_TLSEXT -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_SOCK -DOPENSSL_NO_DGRAM -DOPENSSL_NO_EC -DOPENSSL_NO_ECDH -DOPENSSL_NO_ECDSA
+CFLAG=-DWIN32_LEAN_AND_MEAN -q -w-ccc -w-rch -w-pia -w-aus -w-par -w-inl -w-eff -w-sus -w-dup -w-spa -w-csu -w-rvl  -c -tWC -tWM -DOPENSSL_SYSNAME_WIN32 -DL_ENDIAN -DDSO_WIN32 -D_stricmp=stricmp -D_strnicmp=strnicmp -O2 -ff -fp -DBN_ASM -DMD5_ASM -DSHA1_ASM -DRMD160_ASM -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_SEED -DOPENSSL_NO_RC5 -DOPENSSL_NO_MDC2 -DOPENSSL_NO_CMS -DOPENSSL_NO_CAPIENG -DOPENSSL_NO_KRB5 -DOPENSSL_NO_ENGINE -DOPENSSL_NO_DYNAMIC_ENGINE -DOPENSSL_DISABLE_OLD_DES_SUPPORT -DNO_CHMOD -DOPENSSL_NO_SOCK -DOPENSSL_NO_DGRAM -DOPENSSL_NO_EC -DOPENSSL_NO_ECDH -DOPENSSL_NO_ECDSA
 LIB_CFLAG=
 
 # The OpenSSL directory
@@ -131,7 +131,8 @@ SSLOBJ=$(OBJ_D)\s2_meth.obj \
     $(OBJ_D)\s23_meth.obj $(OBJ_D)\s23_srvr.obj $(OBJ_D)\s23_clnt.obj \
     $(OBJ_D)\s23_lib.obj $(OBJ_D)\s23_pkt.obj $(OBJ_D)\t1_meth.obj \
     $(OBJ_D)\t1_srvr.obj $(OBJ_D)\t1_clnt.obj $(OBJ_D)\t1_lib.obj \
-    $(OBJ_D)\t1_enc.obj $(OBJ_D)\d1_meth.obj $(OBJ_D)\d1_srvr.obj \
+    $(OBJ_D)\t1_enc.obj $(OBJ_D)\t1_reneg.obj \
+    $(OBJ_D)\d1_meth.obj $(OBJ_D)\d1_srvr.obj \
     $(OBJ_D)\d1_clnt.obj $(OBJ_D)\d1_lib.obj $(OBJ_D)\d1_pkt.obj \
     $(OBJ_D)\d1_both.obj $(OBJ_D)\d1_enc.obj $(OBJ_D)\ssl_lib.obj \
     $(OBJ_D)\ssl_err2.obj $(OBJ_D)\ssl_cert.obj $(OBJ_D)\ssl_sess.obj \
@@ -672,6 +673,9 @@ $(OBJ_D)\t1_lib.obj: $(SRC_D)\ssl\t1_lib.c
 
 $(OBJ_D)\t1_enc.obj: $(SRC_D)\ssl\t1_enc.c
     $(CC) -o$(OBJ_D)\t1_enc.obj  $(LIB_CFLAGS) -c $(SRC_D)\ssl\t1_enc.c
+
+$(OBJ_D)\t1_reneg.obj: $(SRC_D)\ssl\t1_reneg.c
+    $(CC) -o$(OBJ_D)\t1_reneg.obj  $(LIB_CFLAGS) -c $(SRC_D)\ssl\t1_reneg.c
 
 $(OBJ_D)\d1_meth.obj: $(SRC_D)\ssl\d1_meth.c
     $(CC) -o$(OBJ_D)\d1_meth.obj  $(LIB_CFLAGS) -c $(SRC_D)\ssl\d1_meth.c

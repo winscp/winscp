@@ -288,7 +288,7 @@ protected:
 	virtual void __fastcall ClearItems(void);
 	virtual bool __fastcall GetDirOK(void) = 0 ;
 	virtual void __fastcall DDDragDetect(int grfKeyState, const Types::TPoint &DetectStart, const Types::TPoint &Point, Dragdrop::TDragDetectStatus DragStatus);
-	void __fastcall DDDragEnter(_di_IDataObject DataObj, int grfKeyState, const Types::TPoint &Point, int &dwEffect, bool &Accept);
+	void __fastcall DDDragEnter(_di_IDataObject DataObj, int KeyState, const Types::TPoint &Point, int &Effect, bool &Accept);
 	void __fastcall DDDragLeave(void);
 	void __fastcall DDDragOver(int grfKeyState, const Types::TPoint &Point, int &dwEffect);
 	virtual void __fastcall DDChooseEffect(int grfKeyState, int &dwEffect);

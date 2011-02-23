@@ -937,7 +937,7 @@ void __fastcall TTerminal::Reopen(int Params)
   AnsiString PrevRemoteDirectory = SessionData->RemoteDirectory;
   bool PrevReadCurrentDirectoryPending = FReadCurrentDirectoryPending;
   bool PrevReadDirectoryPending = FReadDirectoryPending;
-  int PrevInTransaction = FInTransaction;
+  assert(!FSuspendTransaction);
   bool PrevAutoReadDirectory = FAutoReadDirectory;
   // here used to be a check for FExceptionOnFail being 0
   // but it can happen, e.g. when we are downloading file to execute it.
@@ -947,7 +947,7 @@ void __fastcall TTerminal::Reopen(int Params)
   {
     FReadCurrentDirectoryPending = false;
     FReadDirectoryPending = false;
-    FInTransaction = 0;
+    FSuspendTransaction = true;
     FExceptionOnFail = 0;
     // typically, we avoid reading directory, when there is operation ongoing,
     // for file list which may reference files from current directory
@@ -976,7 +976,7 @@ void __fastcall TTerminal::Reopen(int Params)
     FAutoReadDirectory = PrevAutoReadDirectory;
     FReadCurrentDirectoryPending = PrevReadCurrentDirectoryPending;
     FReadDirectoryPending = PrevReadDirectoryPending;
-    FInTransaction = PrevInTransaction;
+    FSuspendTransaction = false;
     FExceptionOnFail = PrevExceptionOnFail;
   }
 }
@@ -1219,7 +1219,7 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
 
   if (ChangesDirectory)
   {
-    if (!FInTransaction)
+    if (!InTransaction())
     {
       ReadCurrentDirectory();
       if (AutoReadDirectory)
@@ -1239,7 +1239,7 @@ void __fastcall TTerminal::ReactOnCommand(int /*TFSCommand*/ Cmd)
     else
   if (ModifiesFiles && AutoReadDirectory && Configuration->AutoReadDirectoryAfterOp)
   {
-    if (!FInTransaction) ReadDirectory(true);
+    if (!InTransaction()) ReadDirectory(true);
       else FReadDirectoryPending = true;
   }
 }
@@ -1623,9 +1623,14 @@ void __fastcall TTerminal::DoReadDirectoryProgress(int Progress, bool & Cancel)
   }
 }
 //---------------------------------------------------------------------------
+bool __fastcall TTerminal::InTransaction()
+{
+  return (FInTransaction > 0) && !FSuspendTransaction;
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminal::BeginTransaction()
 {
-  if (!FInTransaction)
+  if (FInTransaction == 0)
   {
     FReadCurrentDirectoryPending = false;
     FReadDirectoryPending = false;
@@ -1640,7 +1645,7 @@ void __fastcall TTerminal::BeginTransaction()
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::EndTransaction()
 {
-  if (!FInTransaction)
+  if (FInTransaction == 0)
     TerminalError("Can't end transaction, not in transaction");
   assert(FInTransaction > 0);
   FInTransaction--;
@@ -2546,22 +2551,31 @@ bool __fastcall TTerminal::ProcessFiles(TStrings * FileList,
           FileName = FileList->Strings[Index];
           try
           {
-            Success = false;
-            if (!Ex)
+            try
             {
-              ProcessFile(FileName, (TRemoteFile *)FileList->Objects[Index], Param);
+              Success = false;
+              if (!Ex)
+              {
+                ProcessFile(FileName, (TRemoteFile *)FileList->Objects[Index], Param);
+              }
+              else
+              {
+                // not used anymore
+                TProcessFileEventEx ProcessFileEx = (TProcessFileEventEx)ProcessFile;
+                ProcessFileEx(FileName, (TRemoteFile *)FileList->Objects[Index], Param, Index);
+              }
+              Success = true;
             }
-            else
+            __finally
             {
-              // not used anymore
-              TProcessFileEventEx ProcessFileEx = (TProcessFileEventEx)ProcessFile;
-              ProcessFileEx(FileName, (TRemoteFile *)FileList->Objects[Index], Param, Index);
+              Progress.Finish(FileName, Success, OnceDoneOperation);
             }
-            Success = true;
           }
-          __finally
+          catch(EScpSkipFile & E)
           {
-            Progress.Finish(FileName, Success, OnceDoneOperation);
+            SUSPEND_OPERATION (
+              if (!HandleException(&E)) throw;
+            );
           }
           Index++;
         }
@@ -3407,7 +3421,7 @@ TTerminal * __fastcall TTerminal::GetCommandSession()
   {
     // transaction cannot be started yet to allow proper matching transation
     // levels between main and command session
-    assert(!FInTransaction);
+    assert(FInTransaction == 0);
 
     try
     {

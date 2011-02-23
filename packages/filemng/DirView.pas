@@ -3348,7 +3348,7 @@ begin
       FDiscMonitor.SetDirectory(PathName);
       FDiscMonitor.Open;
     end;
-  end
+  end;
 end; {StartWatchThread}
 
 {$ENDIF}

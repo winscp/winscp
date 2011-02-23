@@ -17,6 +17,8 @@
 #define CSIDL_LOCAL_APPDATA 0x001c
 #endif
 
+static const char *const reg_jumplist_key = PUTTY_REG_POS "\\Jumplist";
+static const char *const reg_jumplist_value = "Recent sessions";
 static const char *const puttystr = PUTTY_REG_POS "\\Sessions";
 
 static const char hex[16] = "0123456789ABCDEF";
@@ -243,6 +245,8 @@ void del_settings(const char *sessionname)
     sfree(p);
 
     RegCloseKey(subkey1);
+
+    remove_session_from_jumplist(sessionname);
 }
 
 struct enumsettings {
@@ -604,6 +608,169 @@ void write_random_seed(void *data, int len)
 }
 
 /*
+ * Internal function supporting the jump list registry code. All the
+ * functions to add, remove and read the list have substantially
+ * similar content, so this is a generalisation of all of them which
+ * transforms the list in the registry by prepending 'add' (if
+ * non-null), removing 'rem' from what's left (if non-null), and
+ * returning the resulting concatenated list of strings in 'out' (if
+ * non-null).
+ */
+static int transform_jumplist_registry
+    (const char *add, const char *rem, char **out)
+{
+    int ret;
+    HKEY pjumplist_key, psettings_tmp;
+    DWORD type;
+    int value_length;
+    char *old_value, *new_value;
+    char *piterator_old, *piterator_new, *piterator_tmp;
+
+    ret = RegCreateKeyEx(HKEY_CURRENT_USER, reg_jumplist_key, 0, NULL,
+                         REG_OPTION_NON_VOLATILE, (KEY_READ | KEY_WRITE), NULL,
+                         &pjumplist_key, NULL);
+    if (ret != ERROR_SUCCESS) {
+	return JUMPLISTREG_ERROR_KEYOPENCREATE_FAILURE;
+    }
+
+    /* Get current list of saved sessions in the registry. */
+    value_length = 200;
+    old_value = snewn(value_length, char);
+    ret = RegQueryValueEx(pjumplist_key, reg_jumplist_value, NULL, &type,
+                          old_value, &value_length);
+    /* When the passed buffer is too small, ERROR_MORE_DATA is
+     * returned and the required size is returned in the length
+     * argument. */
+    if (ret == ERROR_MORE_DATA) {
+        sfree(old_value);
+        old_value = snewn(value_length, char);
+        ret = RegQueryValueEx(pjumplist_key, reg_jumplist_value, NULL, &type,
+                              old_value, &value_length);
+    }
+
+    if (ret == ERROR_FILE_NOT_FOUND) {
+        /* Value doesn't exist yet. Start from an empty value. */
+        *old_value = '\0';
+        *(old_value + 1) = '\0';
+    } else if (ret != ERROR_SUCCESS) {
+        /* Some non-recoverable error occurred. */
+        sfree(old_value);
+        RegCloseKey(pjumplist_key);
+        return JUMPLISTREG_ERROR_VALUEREAD_FAILURE;
+    } else if (type != REG_MULTI_SZ) {
+        /* The value present in the registry has the wrong type: we
+         * try to delete it and start from an empty value. */
+        ret = RegDeleteValue(pjumplist_key, reg_jumplist_value);
+        if (ret != ERROR_SUCCESS) {
+            sfree(old_value);
+            RegCloseKey(pjumplist_key);
+            return JUMPLISTREG_ERROR_VALUEREAD_FAILURE;
+        }
+
+        *old_value = '\0';
+        *(old_value + 1) = '\0';
+    }
+
+    /* Check validity of registry data: REG_MULTI_SZ value must end
+     * with \0\0. */
+    piterator_tmp = old_value;
+    while (((piterator_tmp - old_value) < (value_length - 1)) &&
+           !(*piterator_tmp == '\0' && *(piterator_tmp+1) == '\0')) {
+        ++piterator_tmp;
+    }
+
+    if ((piterator_tmp - old_value) >= (value_length-1)) {
+        /* Invalid value. Start from an empty value. */
+        *old_value = '\0';
+        *(old_value + 1) = '\0';
+    }
+
+    /*
+     * Modify the list, if we're modifying.
+     */
+    if (add || rem) {
+        /* Walk through the existing list and construct the new list of
+         * saved sessions. */
+        new_value = snewn(value_length + (add ? strlen(add) + 1 : 0), char);
+        piterator_new = new_value;
+        piterator_old = old_value;
+
+        /* First add the new item to the beginning of the list. */
+        if (add) {
+            strcpy(piterator_new, add);
+            piterator_new += strlen(piterator_new) + 1;
+        }
+        /* Now add the existing list, taking care to leave out the removed
+         * item, if it was already in the existing list. */
+        while (*piterator_old != '\0') {
+            if (!rem || strcmp(piterator_old, rem) != 0) {
+                /* Check if this is a valid session, otherwise don't add. */
+                psettings_tmp = open_settings_r(piterator_old);
+                if (psettings_tmp != NULL) {
+                    close_settings_r(psettings_tmp);
+                    strcpy(piterator_new, piterator_old);
+                    piterator_new += strlen(piterator_new) + 1;
+                }
+            }
+            piterator_old += strlen(piterator_old) + 1;
+        }
+        *piterator_new = '\0';
+        ++piterator_new;
+
+        /* Save the new list to the registry. */
+        ret = RegSetValueEx(pjumplist_key, reg_jumplist_value, 0, REG_MULTI_SZ,
+                            new_value, piterator_new - new_value);
+
+        sfree(old_value);
+        old_value = new_value;
+    } else
+        ret = ERROR_SUCCESS;
+
+    /*
+     * Either return or free the result.
+     */
+    if (out)
+        *out = old_value;
+    else
+        sfree(old_value);
+
+    /* Clean up and return. */
+    RegCloseKey(pjumplist_key);
+
+    if (ret != ERROR_SUCCESS) {
+        return JUMPLISTREG_ERROR_VALUEWRITE_FAILURE;
+    } else {
+        return JUMPLISTREG_OK;
+    }
+}
+
+/* Adds a new entry to the jumplist entries in the registry. */
+int add_to_jumplist_registry(const char *item)
+{
+    return transform_jumplist_registry(item, item, NULL);
+}
+
+/* Removes an item from the jumplist entries in the registry. */
+int remove_from_jumplist_registry(const char *item)
+{
+    return transform_jumplist_registry(NULL, item, NULL);
+}
+
+/* Returns the jumplist entries from the registry. Caller must free
+ * the returned pointer. */
+char *get_jumplist_registry_entries (void)
+{
+    char *list_value;
+
+    if (transform_jumplist_registry(NULL,NULL,&list_value) != ERROR_SUCCESS) {
+	list_value = snewn(2, char);
+        *list_value = '\0';
+        *(list_value + 1) = '\0';
+    }
+    return list_value;
+}
+
+/*
  * Recursively delete a registry key and everything under it.
  */
 static void registry_recursive_remove(HKEY key)
@@ -633,6 +800,12 @@ void cleanup_all(void)
      * locations.
      */
     access_random_seed(DEL);
+
+    /* ------------------------------------------------------------
+     * Ask Windows to delete any jump list information associated
+     * with this installation of PuTTY.
+     */
+    clear_jumplist();
 
     /* ------------------------------------------------------------
      * Destroy all registry information associated with PuTTY.

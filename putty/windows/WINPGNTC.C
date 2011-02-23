@@ -7,6 +7,10 @@
 
 #include "putty.h"
 
+#ifndef NO_SECURITY
+#include <aclapi.h>
+#endif
+
 #define AGENT_COPYDATA_ID 0x804e50ba   /* random goop */
 #define AGENT_MAX_MSGLEN  8192
 
@@ -66,6 +70,33 @@ DWORD WINAPI agent_query_thread(LPVOID param)
 
 #endif
 
+/*
+ * Dynamically load advapi32.dll for SID manipulation. In its absence,
+ * we degrade gracefully.
+ */
+#ifndef NO_SECURITY
+int advapi_initialised = FALSE;
+static HMODULE advapi;
+DECL_WINDOWS_FUNCTION(static, BOOL, OpenProcessToken,
+		      (HANDLE, DWORD, PHANDLE));
+DECL_WINDOWS_FUNCTION(static, BOOL, GetTokenInformation,
+		      (HANDLE, TOKEN_INFORMATION_CLASS,
+                       LPVOID, DWORD, PDWORD));
+DECL_WINDOWS_FUNCTION(static, BOOL, InitializeSecurityDescriptor,
+		      (PSECURITY_DESCRIPTOR, DWORD));
+DECL_WINDOWS_FUNCTION(static, BOOL, SetSecurityDescriptorOwner,
+		      (PSECURITY_DESCRIPTOR, PSID, BOOL));
+static int init_advapi(void)
+{
+    advapi = load_system32_dll("advapi32.dll");
+    return advapi &&
+        GET_WINDOWS_FUNCTION(advapi, OpenProcessToken) &&
+	GET_WINDOWS_FUNCTION(advapi, GetTokenInformation) &&
+	GET_WINDOWS_FUNCTION(advapi, InitializeSecurityDescriptor) &&
+	GET_WINDOWS_FUNCTION(advapi, SetSecurityDescriptorOwner);
+}
+#endif
+
 int agent_query(void *in, int inlen, void **out, int *outlen,
 		void (*callback)(void *, void *, int), void *callback_ctx)
 {
@@ -75,6 +106,10 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     unsigned char *p, *ret;
     int id, retlen;
     COPYDATASTRUCT cds;
+    SECURITY_ATTRIBUTES sa, *psa;
+    PSECURITY_DESCRIPTOR psd = NULL;
+    HANDLE proc, tok;
+    TOKEN_USER *user = NULL;
 
     *out = NULL;
     *outlen = 0;
@@ -83,7 +118,57 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     if (!hwnd)
 	return 1;		       /* *out == NULL, so failure */
     mapname = dupprintf("PageantRequest%08x", (unsigned)GetCurrentThreadId());
-    filemap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
+
+#ifndef NO_SECURITY
+    if (advapi_initialised || init_advapi()) {
+        /*
+         * Make the file mapping we create for communication with
+         * Pageant owned by the user SID rather than the default. This
+         * should make communication between processes with slightly
+         * different contexts more reliable: in particular, command
+         * prompts launched as administrator should still be able to
+         * run PSFTPs which refer back to the owning user's
+         * unprivileged Pageant.
+         */
+
+        if ((proc = OpenProcess(MAXIMUM_ALLOWED, FALSE,
+                                GetCurrentProcessId())) != NULL) {
+            if (p_OpenProcessToken(proc, TOKEN_QUERY, &tok)) {
+                DWORD retlen;
+                p_GetTokenInformation(tok, TokenUser, NULL, 0, &retlen);
+                user = (TOKEN_USER *)LocalAlloc(LPTR, retlen);
+                if (!p_GetTokenInformation(tok, TokenUser,
+                                           user, retlen, &retlen)) {
+                    LocalFree(user);
+                    user = NULL;
+                }
+                CloseHandle(tok);
+            }
+            CloseHandle(proc);
+        }
+
+        psa = NULL;
+        if (user) {
+            psd = (PSECURITY_DESCRIPTOR)
+                LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
+            if (psd) {
+                if (p_InitializeSecurityDescriptor
+                    (psd, SECURITY_DESCRIPTOR_REVISION) &&
+                    p_SetSecurityDescriptorOwner(psd, user->User.Sid, FALSE)) {
+                    sa.nLength = sizeof(sa);
+                    sa.bInheritHandle = TRUE;
+                    sa.lpSecurityDescriptor = psd;
+                    psa = &sa;
+                } else {
+                    LocalFree(psd);
+                    psd = NULL;
+                }
+            }
+        }
+    }
+#endif /* NO_SECURITY */
+
+    filemap = CreateFileMapping(INVALID_HANDLE_VALUE, psa, PAGE_READWRITE,
 				0, AGENT_MAX_MSGLEN, mapname);
     if (filemap == NULL || filemap == INVALID_HANDLE_VALUE)
 	return 1;		       /* *out == NULL, so failure */
@@ -134,6 +219,10 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     }
     UnmapViewOfFile(p);
     CloseHandle(filemap);
+    if (psd)
+        LocalFree(psd);
+    if (user)
+        LocalFree(user);
 #ifdef MPEXT
     // fix memory leak
     sfree(mapname);

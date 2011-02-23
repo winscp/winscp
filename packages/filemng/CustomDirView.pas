@@ -252,7 +252,7 @@ type
     procedure ClearItems; override;
     function GetDirOK: Boolean; virtual; abstract;
     procedure DDDragDetect(grfKeyState: Longint; DetectStart, Point: TPoint; DragStatus: TDragDetectStatus); virtual;
-    procedure DDDragEnter(DataObj: IDataObject; grfKeyState: Longint; Point: TPoint; var dwEffect: longint; var Accept: Boolean);
+    procedure DDDragEnter(DataObj: IDataObject; KeyState: Longint; Point: TPoint; var Effect: longint; var Accept: Boolean);
     procedure DDDragLeave;
     procedure DDDragOver(grfKeyState: Longint; Point: TPoint; var dwEffect: Longint);
     procedure DDChooseEffect(grfKeyState: Integer; var dwEffect: Integer); virtual;
@@ -1969,16 +1969,15 @@ begin
   GlobalDragImageList.ShowDragImage;
 end;
 
-procedure TCustomDirView.DDDragEnter(DataObj: IDataObject; grfKeyState: Longint;
-  Point: TPoint; var dwEffect: longint; var Accept: Boolean);
+procedure TCustomDirView.DDDragEnter(DataObj: IDataObject; KeyState: Longint;
+  Point: TPoint; var Effect: longint; var Accept: Boolean);
 var
   Index: Integer;
 begin
   Accept := Accept and DirOK and (not Loading);
-  if Accept and (DragDropFilesEx.FileList.Count > 0) and
-     (Length(TFDDListItem(DragDropFilesEx.FileList[0]^).Name) > 2) and
-     ((TFDDListItem(DragDropFilesEx.FileList[0]^).Name[2] = ':') or
-     (TFDDListItem(DragDropFilesEx.FileList[0]^).Name[2] = '\')) and
+  if Accept and
+     (DragDropFilesEx.FileList.Count > 0) and
+     (Length(TFDDListItem(DragDropFilesEx.FileList[0]^).Name) > 0) and
      (not IsRecycleBin or not DragDropFilesEx.FileNamesAreMapped) then
   begin
     FDragDrive := Upcase(TFDDListItem(DragDropFilesEx.FileList[0]^).Name[1]);
@@ -1987,23 +1986,24 @@ begin
       ((DragDropFilesEx.AvailableDropEffects and DropEffect_Link) <> 0);
 
     if FExeDrag then
+    begin
       for Index := 0 to DragDropFilesEx.FileList.Count - 1 do
         if not IsExecutable(TFDDListItem(DragDropFilesEx.FileList[Index]^).Name) then
         begin
           FExeDrag := False;
           Break;
         end;
+    end;
   end
     else
   begin
     FDragDrive := #0;
-    Accept := False;
   end;
 
   FScrollOnDragOver.StartDrag;
 
   if Assigned(FOnDDDragEnter) then
-    FOnDDDragEnter(Self, DataObj, grfKeyState, Point, dwEffect, Accept);
+    FOnDDDragEnter(Self, DataObj, KeyState, Point, Effect, Accept);
 end;
 
 procedure TCustomDirView.DDDragLeave;

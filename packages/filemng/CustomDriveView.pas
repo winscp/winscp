@@ -385,17 +385,20 @@ end;
 procedure TCustomDriveView.DDDragEnter(DataObj: IDataObject; KeyState: Longint;
   Point: TPoint; var Effect: Longint; var Accept: Boolean);
 var
-  i: Integer;
+  Index: Integer;
 begin
   if (FDragDropFilesEx.FileList.Count > 0) and
      (Length(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name) > 0) Then
   begin
-    FDragDrive := TFDDListItem(FDragDropFilesEx.FileList[0]^).Name[1];
-    FExeDrag := FDDLinkOnExeDrag and ((FDragDropFilesEx.AvailableDropEffects and DropEffect_Link) <> 0);
+    FDragDrive := Upcase(TFDDListItem(FDragDropFilesEx.FileList[0]^).Name[1]);
+    FExeDrag := FDDLinkOnExeDrag and
+      (deLink in DragDropFilesEx.TargetEffects) and
+      ((DragDropFilesEx.AvailableDropEffects and DropEffect_Link) <> 0);
+
     if FExeDrag then
     begin
-      for i := 0 to FDragDropFilesEx.FileList.Count - 1 do
-        if not IsExecutable(TFDDListItem(FDragDropFilesEx.FileList[i]^).Name) then
+      for Index := 0 to FDragDropFilesEx.FileList.Count - 1 do
+        if not IsExecutable(TFDDListItem(FDragDropFilesEx.FileList[Index]^).Name) then
         begin
           FExeDrag := False;
           Break;

@@ -1398,7 +1398,9 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 			pData->pDirectoryListing->path = m_pOwner->GetCurrentPath();
 
 		if (m_Operation.nOpState!=LIST_WAITFINISH)
+		{
 			return;
+		}
 		else
 		{
 			delete m_pTransferSocket;

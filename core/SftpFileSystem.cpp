@@ -2069,12 +2069,18 @@ unsigned long __fastcall TSFTPFileSystem::GotStatusPacket(TSFTPPacket * Packet,
     AnsiString MessageStr = LoadStr(Message);
     AnsiString ServerMessage;
     AnsiString LanguageTag;
-    if (FVersion >= 3)
+    if ((FVersion >= 3) ||
+        // if version is not decided yet (i.e. this is status response
+        // to the init request), go on only if there are any more data
+        ((FVersion < 0) && (Packet->RemainingLength > 0)))
     {
       // message is in UTF only since SFTP specification 01 (specification 00
       // is also version 3)
       // (in other words, always use UTF unless server is know to be buggy)
       ServerMessage = Packet->GetString(!FUtfNever);
+      // SSH-2.0-Maverick_SSHD omits the language tag
+      // and I believe I've seen one more server doind the same.
+      // On the next instance, we should probably already implement workround.
       LanguageTag = Packet->GetString();
       if ((FVersion >= 5) && (Message == SFTP_STATUS_UNKNOWN_PRINCIPAL))
       {
@@ -2548,6 +2554,8 @@ AnsiString __fastcall TSFTPFileSystem::GetCurrentDirectory()
 //---------------------------------------------------------------------------
 void __fastcall TSFTPFileSystem::DoStartup()
 {
+  // do not know yet
+  FVersion = -1;
   FFileSystemInfoValid = false;
   TSFTPPacket Packet(SSH_FXP_INIT);
   int MaxVersion = FTerminal->SessionData->SFTPMaxVersion;

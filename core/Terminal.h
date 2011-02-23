@@ -155,6 +155,7 @@ private:
   Integer FExceptionOnFail;
   TRemoteDirectory * FFiles;
   int FInTransaction;
+  bool FSuspendTransaction;
   TNotifyEvent FOnChangeDirectory;
   TReadDirectoryEvent FOnReadDirectory;
   TNotifyEvent FOnStartReadDirectory;
@@ -220,6 +221,7 @@ private:
   AnsiString __fastcall GetPassword();
   AnsiString __fastcall GetTunnelPassword();
   bool __fastcall GetStoredCredentialsTried();
+  inline bool __fastcall InTransaction();
 
 protected:
   bool FReadCurrentDirectoryPending;

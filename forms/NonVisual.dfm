@@ -1199,7 +1199,7 @@ object NonVisualDataModule: TNonVisualDataModule
         'Compare directories|Mark different files in local and remote dir' +
         'ectory'
       ImageIndex = 52
-      ShortCut = 16451
+      ShortCut = 8305
     end
     object SynchronizeAction: TAction
       Tag = 15

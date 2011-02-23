@@ -470,6 +470,7 @@ struct config_tag {
     int sshprot;		       /* use v1 or v2 when both available */
     int ssh2_des_cbc;		       /* "des-cbc" unrecommended SSH-2 cipher */
     int ssh_no_userauth;	       /* bypass "ssh-userauth" (SSH-2 only) */
+    int ssh_show_banner;	       /* show USERAUTH_BANNERs (SSH-2 only) */
     int try_tis_auth;
     int try_ki_auth;
     int try_gssapi_auth;               /* attempt gssapi auth */
@@ -625,6 +626,7 @@ struct config_tag {
     FontSpec wideboldfont;
     int shadowboldoffset;
     int crhaslf;
+    char winclass[256];
 };
 
 /*
@@ -666,6 +668,10 @@ GLOBAL int default_port;
  * This is set TRUE by cmdline.c iff a session is loaded with "-load".
  */
 GLOBAL int loaded_session;
+/*
+ * This is set to the name of the loaded session.
+ */
+GLOBAL char *cmdline_session_name;
 
 struct RSAKey;			       /* be a little careful of scope */
 
@@ -1248,5 +1254,16 @@ long schedule_timer(int ticks, timer_fn_t fn, void *ctx);
 void expire_timer_context(void *ctx);
 int run_timers(long now, long *next);
 void timer_change_notify(long next);
+
+/*
+ * Define no-op macros for the jump list functions, on platforms that
+ * don't support them. (This is a bit of a hack, and it'd be nicer to
+ * localise even the calls to those functions into the Windows front
+ * end, but it'll do for the moment.)
+ */
+#ifndef JUMPLIST_SUPPORTED
+#define add_session_to_jumplist(x) ((void)0)
+#define remove_session_from_jumplist(x) ((void)0)
+#endif
 
 #endif
