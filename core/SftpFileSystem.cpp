@@ -542,7 +542,8 @@ public:
 
   inline AnsiString GetUtfString()
   {
-    return DecodeUTF(GetString());
+    AnsiString Result = DecodeUTF(GetString());
+    return Result;
   }
 
   inline AnsiString GetString(bool Utf)
@@ -1340,6 +1341,7 @@ public:
     OperationProgress = NULL;
     FLastBlockSize = 0;
     FEnd = false;
+    FConvertToken = false;
   }
 
   virtual __fastcall ~TSFTPUploadQueue()
@@ -1387,7 +1389,7 @@ protected:
         {
           __int64 PrevBufSize = BlockBuf.Size;
           BlockBuf.Convert(FTerminal->Configuration->LocalEOLType,
-            FFileSystem->GetEOL(), cpRemoveCtrlZ | cpRemoveBOM);
+            FFileSystem->GetEOL(), cpRemoveCtrlZ | cpRemoveBOM, FConvertToken);
           // update transfer size with difference arised from EOL conversion
           OperationProgress->ChangeTransferSize(OperationProgress->TransferSize -
             PrevBufSize + BlockBuf.Size);
@@ -1447,6 +1449,7 @@ private:
   bool FEnd;
   __int64 FTransfered;
   AnsiString FHandle;
+  bool FConvertToken;
 };
 //---------------------------------------------------------------------------
 class TSFTPLoadFilesPropertiesQueue : public TSFTPFixedLenQueue
@@ -3759,7 +3762,7 @@ void __fastcall TSFTPFileSystem::SFTPConfirmOverwrite(AnsiString & FileName,
   }
   else if (Answer == qaIgnore)
   {
-    if (FTerminal->PromptUser(FTerminal->SessionData, pkPrompt, LoadStr(RENAME_TITLE), "",
+    if (FTerminal->PromptUser(FTerminal->SessionData, pkFileName, LoadStr(RENAME_TITLE), "",
           LoadStr(RENAME_PROMPT2), true, 0, FileName))
     {
       OverwriteMode = omOverwrite;
@@ -5053,6 +5056,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
           unsigned long Missing = 0;
           unsigned long DataLen = 0;
           unsigned long BlockSize;
+          bool ConvertToken = false;
 
           while (!Eof)
           {
@@ -5136,7 +5140,7 @@ void __fastcall TSFTPFileSystem::SFTPSink(const AnsiString FileName,
                 assert(!ResumeTransfer && !ResumeAllowed);
 
                 unsigned int PrevBlockSize = BlockBuf.Size;
-                BlockBuf.Convert(GetEOL(), FTerminal->Configuration->LocalEOLType, 0);
+                BlockBuf.Convert(GetEOL(), FTerminal->Configuration->LocalEOLType, 0, ConvertToken);
                 OperationProgress->SetLocalSize(
                   OperationProgress->LocalSize - PrevBlockSize + BlockBuf.Size);
               }

@@ -10,7 +10,7 @@
 #include "Configuration.h"
 //---------------------------------------------------------------------------
 #define SET_SESSION_PROPERTY(Property) \
-  if (F##Property != value) { F##Property = value; FModified = true; }
+  if (F##Property != value) { F##Property = value; Modify(); }
 //---------------------------------------------------------------------------
 enum TCipher { cipWarn, cip3DES, cipBlowfish, cipAES, cipDES, cipArcfour };
 #define CIPHER_COUNT (cipArcfour+1)
@@ -31,6 +31,7 @@ enum TSftpBug { sbSymlink, sbSignedTS };
 enum TPingType { ptOff, ptNullPacket, ptDummyCommand };
 enum TAddressFamily { afAuto, afIPv4, afIPv6 };
 enum TFtps { ftpsNone, ftpsImplicit, ftpsExplicitSsl, ftpsExplicitTls };
+enum TSessionSource { ssNone, ssStored, ssStoredModified };
 //---------------------------------------------------------------------------
 extern const char CipherNames[CIPHER_COUNT][10];
 extern const char KexNames[KEX_COUNT][20];
@@ -147,6 +148,7 @@ private:
   AnsiString FOrigHostName;
   int FOrigPortNumber;
   TProxyMethod FOrigProxyMethod;
+  TSessionSource FSource;
 
   void __fastcall SetHostName(AnsiString value);
   void __fastcall SetPortNumber(int value);
@@ -277,6 +279,8 @@ private:
   TDateTime __fastcall GetTimeoutDT();
   void __fastcall SavePasswords(THierarchicalStorage * Storage, bool PuttyExport);
   AnsiString __fastcall GetLocalName();
+  void __fastcall Modify();
+  AnsiString __fastcall GetSource();
   static AnsiString __fastcall EncryptPassword(const AnsiString & Password, AnsiString Key);
   static AnsiString __fastcall DecryptPassword(const AnsiString & Password, AnsiString Key);
   static AnsiString __fastcall StronglyRecryptPassword(const AnsiString & Password, AnsiString Key);
@@ -422,6 +426,7 @@ public:
   __property AnsiString OrigHostName = { read = FOrigHostName };
   __property int OrigPortNumber = { read = FOrigPortNumber };
   __property AnsiString LocalName = { read = GetLocalName };
+  __property AnsiString Source = { read = GetSource };
 };
 //---------------------------------------------------------------------------
 class TStoredSessionList : public TNamedObjectList

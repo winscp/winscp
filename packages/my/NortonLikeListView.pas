@@ -26,7 +26,7 @@ type
     FManageSelection: Boolean;
     FFirstSelected: Integer;
     FLastSelected: Integer;
-    FNotFocusedWhenClicked: TDateTime;
+    FFocused: TDateTime;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
@@ -34,6 +34,7 @@ type
     procedure WMNotify(var Message: TWMNotify); message WM_NOTIFY;
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure LVMEditLabel(var Message: TMessage); message LVM_EDITLABEL;
+    procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
     function GetMarkedCount: Integer;
     function GetMarkedFile: TListItem;
     procedure ItemSelected(Item: TListItem; Index: Integer);
@@ -199,7 +200,7 @@ begin
   // cannot use Win32MajorVersion as it is affected by compatibility mode and
   // the bug is present even in compatibility mode
   FManageSelection := IsVista;
-  FNotFocusedWhenClicked := 0;
+  FFocused := 0;
 end;
 
 destructor TCustomNortonLikeListView.Destroy;
@@ -620,8 +621,6 @@ var
   PDontSelectItem: Boolean;
   Shift: TShiftState;
 begin
-  if not Focused then FNotFocusedWhenClicked := Now
-    else FNotFocusedWhenClicked := 0;
   Shift := KeysToShiftState(Message.Keys);
   PDontSelectItem := FDontSelectItem;
   PDontUnSelectItem := FDontUnSelectItem;
@@ -812,8 +811,8 @@ end;
 procedure TCustomNortonLikeListView.LVMEditLabel(var Message: TMessage);
 begin
   // explicitly requesting editing (e.g. F2),
-  // so we do not care anymore what state the view was in when last clicked
-  FNotFocusedWhenClicked := 0;
+  // so we do not care anymore when the view was focused
+  FFocused := 0;
   inherited;
 end;
 
@@ -824,13 +823,19 @@ var
 begin
   N := Now;
   Result := inherited CanEdit(Item);
-  if Result and (FNotFocusedWhenClicked > 0) then
+  if Result and (FFocused > 0) then
   begin
-    Delta := N - FNotFocusedWhenClicked;
+    Delta := N - FFocused;
     // it takes little more than 500ms to trigger editing after click
     Result := Delta > (750.0/(24*60*60*1000));
   end;
-  FNotFocusedWhenClicked := 0;
+  FFocused := 0;
+end;
+
+procedure TCustomNortonLikeListView.WMSetFocus(var Message: TWMSetFocus);
+begin
+  FFocused := Now;
+  inherited;
 end;
 
 end.

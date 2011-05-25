@@ -899,9 +899,18 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     #define ADF(S, F) DoAdd(llMessage, FORMAT(S, F), DoAddToSelf);
     AddSeparator();
     ADF("WinSCP %s (OS %s)", (FConfiguration->VersionStr, FConfiguration->OSVersionStr));
+    THierarchicalStorage * Storage = FConfiguration->CreateScpStorage(false);
+    try
+    {
+      ADF("Configuration: %s", (Storage->Source));
+    }
+    __finally
+    {
+      delete Storage;
+    }
     ADF("Login time: %s", (FormatDateTime("dddddd tt", Now())));
     AddSeparator();
-    ADF("Session name: %s", (Data->SessionName));
+    ADF("Session name: %s (%s)", (Data->SessionName, Data->Source));
     ADF("Host name: %s (Port: %d)", (Data->HostName, Data->PortNumber));
     ADF("User name: %s (Password: %s, Key file: %s)",
       (Data->UserName, BooleanToEngStr(!Data->Password.IsEmpty()),

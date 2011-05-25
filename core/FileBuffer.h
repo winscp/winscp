@@ -13,10 +13,10 @@ class TFileBuffer
 public:
   __fastcall TFileBuffer();
   virtual __fastcall ~TFileBuffer();
-  void __fastcall Convert(char * Source, char * Dest, int Params);
-  void __fastcall Convert(TEOLType Source, TEOLType Dest, int Params);
-  void __fastcall Convert(char * Source, TEOLType Dest, int Params);
-  void __fastcall Convert(TEOLType Source, char * Dest, int Params);
+  void __fastcall Convert(char * Source, char * Dest, int Params, bool & Token);
+  void __fastcall Convert(TEOLType Source, TEOLType Dest, int Params, bool & Token);
+  void __fastcall Convert(char * Source, TEOLType Dest, int Params, bool & Token);
+  void __fastcall Convert(TEOLType Source, char * Dest, int Params, bool & Token);
   void __fastcall Insert(int Index, const char * Buf, int Len);
   void __fastcall Delete(int Index, int Len);
   DWORD __fastcall LoadStream(TStream * Stream, const DWORD Len, bool ForceLen);

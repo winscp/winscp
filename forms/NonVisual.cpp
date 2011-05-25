@@ -518,8 +518,8 @@ void __fastcall TNonVisualDataModule::ExplorerActionsExecute(
     #undef STYLEACTION
 
     #define PANEL_ACTIONS(SIDE) \
-      EXE(SIDE ## BackAction, DirView(os ## SIDE)->HistoryGo(-1)) \
-      EXE(SIDE ## ForwardAction, DirView(os ## SIDE)->HistoryGo(1)) \
+      EXE(SIDE ## BackAction, ScpExplorer->HistoryGo(os ## SIDE, -1)) \
+      EXE(SIDE ## ForwardAction, ScpExplorer->HistoryGo(os ## SIDE, 1)) \
       EXE(SIDE ## ParentDirAction, DirView(os ## SIDE)->ExecuteParentDirectory()) \
       EXE(SIDE ## RootDirAction, DirView(os ## SIDE)->ExecuteRootDirectory()) \
       EXE(SIDE ## HomeDirAction, ScpExplorer->HomeDirectory(os ## SIDE)) \

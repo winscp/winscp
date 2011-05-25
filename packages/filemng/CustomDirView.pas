@@ -107,10 +107,10 @@ type
     ModificationFrom: TDateTime;
     ModificationTo: TDateTime;
   end;
-  THistoryDirection = (hdBack, hdForward);
   TDirViewNotifyEvent = procedure(Sender: TCustomDirView) of object;
   TDVGetFilterEvent = procedure(Sender: TCustomDirView; Select: Boolean;
     var Filter: TFileFilter) of object;
+  TDVHistoryGoEvent = procedure(Sender: TCustomDirView; Index: Integer; var Cancel: Boolean) of object;
   TCompareCriteria = (ccTime, ccSize);
   TCompareCriterias = set of TCompareCriteria;
 
@@ -192,6 +192,7 @@ type
     FOnBeginRename: TRenameEvent;
     FOnEndRename: TRenameEvent;
     FOnHistoryChange: TDirViewNotifyEvent;
+    FOnHistoryGo: TDVHistoryGoEvent;
     FOnPathChange: TDirViewNotifyEvent;
     FShowHiddenFiles: Boolean;
     FSavedSelection: Boolean;
@@ -343,6 +344,7 @@ type
     procedure SetMask(Value: string); virtual;
     procedure ScrollOnDragOverBeforeUpdate(ObjectToValidate: TObject);
     procedure ScrollOnDragOverAfterUpdate;
+    procedure DoHistoryGo(Index: Integer);
     function HiddenCount: Integer; virtual; abstract;
     function FilteredCount: Integer; virtual; abstract;
     property ImageList16: TImageList read FImageList16;
@@ -492,6 +494,7 @@ type
     property OnExecFile: TDirViewExecFileEvent
       read FOnExecFile write FOnExecFile;
     property OnHistoryChange: TDirViewNotifyEvent read FOnHistoryChange write FOnHistoryChange;
+    property OnHistoryGo: TDVHistoryGoEvent read FOnHistoryGo write FOnHistoryGo;
     property OnPathChange: TDirViewNotifyEvent read FOnPathChange write FOnPathChange;
     property OnMatchMask: TMatchMaskEvent read FOnMatchMask write FOnMatchMask;
     property OnGetOverlay: TDirViewGetOverlayEvent read FOnGetOverlay write FOnGetOverlay;
@@ -1426,12 +1429,12 @@ begin
       else
     if (Key = VK_LEFT) and (ssAlt in Shift) then
     begin
-      if BackCount >= 1 then HistoryGo(-1);
+      if BackCount >= 1 then DoHistoryGo(-1);
     end
       else
     if (Key = VK_RIGHT) and (ssAlt in Shift) then
     begin
-      if ForwardCount >= 1 then HistoryGo(1);
+      if ForwardCount >= 1 then DoHistoryGo(1);
     end
       else
     begin
@@ -1629,13 +1632,13 @@ procedure TCustomDirView.WMXButtonUp(var Message: TWMXMouse);
 begin
   if Message.Button = _XBUTTON1 then
   begin
-    if BackCount >= 1 then HistoryGo(-1);
+    if BackCount >= 1 then DoHistoryGo(-1);
     Message.Result := 1;
   end
     else
   if Message.Button = _XBUTTON2 then
   begin
-    if ForwardCount >= 1 then HistoryGo(1);
+    if ForwardCount >= 1 then DoHistoryGo(1);
     Message.Result := 1;
   end;
 end;
@@ -2637,13 +2640,13 @@ begin
     if Command = _APPCOMMAND_BROWSER_BACKWARD then
     begin
       Message.Result := 1;
-      if BackCount >= 1 then HistoryGo(-1);
+      if BackCount >= 1 then DoHistoryGo(-1);
     end
       else
     if Command = _APPCOMMAND_BROWSER_FORWARD then
     begin
       Message.Result := 1;
-      if ForwardCount >= 1 then HistoryGo(1);
+      if ForwardCount >= 1 then DoHistoryGo(1);
     end
       else
     if Command = _APPCOMMAND_BROWSER_REFRESH then
@@ -2771,6 +2774,17 @@ begin
   if Assigned(OnHistoryChange) then
     OnHistoryChange(Self);
 end; { DoHistoryChange }
+
+procedure TCustomDirView.DoHistoryGo(Index: Integer);
+var
+  Cancel: Boolean;
+begin
+  Cancel := False;
+  if Assigned(OnHistoryGo) then
+    OnHistoryGo(Self, Index, Cancel);
+
+  if not Cancel then HistoryGo(Index);
+end;
 
 procedure TCustomDirView.HistoryGo(Index: Integer);
 var

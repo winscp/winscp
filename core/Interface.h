@@ -71,6 +71,7 @@ enum TQueryType { qtConfirmation, qtWarning, qtError, qtInformation };
 enum TPromptKind
 {
   pkPrompt,
+  pkFileName,
   pkUserName,
   pkPassphrase,
   pkTIS,

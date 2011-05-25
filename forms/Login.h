@@ -421,6 +421,8 @@ protected:
   void __fastcall Default();
   void __fastcall LoadConfiguration();
   void __fastcall SaveConfiguration();
+  void __fastcall LoadState();
+  void __fastcall SaveState();
   void __fastcall ShowPreferencesDialog();
   void __fastcall ChangePage(TTabSheet * Tab);
   virtual void __fastcall Dispatch(void * Message);

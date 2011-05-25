@@ -46,6 +46,24 @@
 #pragma resource "*.dfm"
 #endif
 //---------------------------------------------------------------------------
+class TSynchronizedBrowsingGuard
+{
+public:
+  TSynchronizedBrowsingGuard()
+  {
+    FWasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
+    NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+  }
+
+  ~TSynchronizedBrowsingGuard()
+  {
+    NonVisualDataModule->SynchronizeBrowsingAction->Checked = FWasSynchronisingBrowsing;
+  }
+
+private:
+  bool FWasSynchronisingBrowsing;
+};
+//---------------------------------------------------------------------------
 __fastcall TScpCommanderForm::TScpCommanderForm(TComponent* Owner)
         : TCustomScpExplorerForm(Owner)
 {
@@ -1211,16 +1229,8 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
     }
     else
     {
-      bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
-      NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
-      try
-      {
-        TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
-      }
-      __finally
-      {
-        NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
-      }
+      TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
+      TCustomScpExplorerForm::DoOpenDirectoryDialog(Mode, Side);
     }
 
     // for second and further rounds, always do browse only
@@ -1231,30 +1241,22 @@ void __fastcall TScpCommanderForm::DoOpenDirectoryDialog(TOpenDirectoryMode Mode
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DoOpenBookmark(AnsiString Local, AnsiString Remote)
 {
-  bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
-  NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
+  TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
+  // make sure that whatever path is valid it is opened first and only
+  // after that an eventual error is reported
   try
   {
-    // make sure that whatever path is valid it is opened first and only
-    // after that an eventual error is reported
-    try
+    if (!Local.IsEmpty())
     {
-      if (!Local.IsEmpty())
-      {
-        LocalDirView->Path = Local;
-      }
-    }
-    __finally
-    {
-      if (!Remote.IsEmpty())
-      {
-        RemoteDirView->Path = Remote;
-      }
+      LocalDirView->Path = Local;
     }
   }
   __finally
   {
-    NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
+    if (!Remote.IsEmpty())
+    {
+      RemoteDirView->Path = Remote;
+    }
   }
 }
 //---------------------------------------------------------------------------
@@ -1896,16 +1898,8 @@ void __fastcall TScpCommanderForm::LocalDriveViewRefreshDrives(TObject * /*Sende
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::HomeDirectory(TOperationSide Side)
 {
-  bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
-  NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
-  try
-  {
-    TCustomScpExplorerForm::HomeDirectory(Side);
-  }
-  __finally
-  {
-    NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
-  }
+  TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
+  TCustomScpExplorerForm::HomeDirectory(Side);
 }
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::QueueSubmenuItemPopup(
@@ -1916,15 +1910,31 @@ void __fastcall TScpCommanderForm::QueueSubmenuItemPopup(
 //---------------------------------------------------------------------------
 void __fastcall TScpCommanderForm::DoFocusRemotePath(AnsiString Path)
 {
-  bool WasSynchronisingBrowsing = NonVisualDataModule->SynchronizeBrowsingAction->Checked;
-  NonVisualDataModule->SynchronizeBrowsingAction->Checked = false;
-  try
+  TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
+  TCustomScpExplorerForm::DoFocusRemotePath(Path);
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::HistoryGo(TOperationSide Side, int Index)
+{
+  TOperationSide OtherSide = ((Side == osLocal) ? osRemote : osLocal);
+  if (NonVisualDataModule->SynchronizeBrowsingAction->Checked &&
+      ((Index < 0) ? (-Index < DirView(OtherSide)->BackCount) : (Index < DirView(OtherSide)->ForwardCount)))
   {
-    TCustomScpExplorerForm::DoFocusRemotePath(Path);
+    TSynchronizedBrowsingGuard SynchronizedBrowsingGuard;
+    TCustomScpExplorerForm::HistoryGo(Side, Index);
+    TCustomScpExplorerForm::HistoryGo(OtherSide, Index);
   }
-  __finally
+  else
   {
-    NonVisualDataModule->SynchronizeBrowsingAction->Checked = WasSynchronisingBrowsing;
+    TCustomScpExplorerForm::HistoryGo(Side, Index);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TScpCommanderForm::DirViewHistoryGo(
+  TCustomDirView * Sender, int Index, bool & Cancel)
+{
+  TOperationSide Side = (Sender == DirView(osRemote) ? osRemote : osLocal);
+  HistoryGo(Side, Index);
+  Cancel = true;
 }
 //---------------------------------------------------------------------------

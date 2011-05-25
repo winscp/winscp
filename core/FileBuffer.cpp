@@ -92,7 +92,8 @@ DWORD __fastcall TFileBuffer::LoadStream(TStream * Stream, const DWORD Len, bool
   return ReadStream(Stream, Len, ForceLen);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
+void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params,
+  bool & /*Token*/)
 {
   assert(strlen(Source) <= 2);
   assert(strlen(Dest) <= 2);
@@ -118,6 +119,12 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
   // one character source EOL
   if (!Source[1])
   {
+    // Disabled, not worth risking it is not safe enough, for the bugfix release
+    #if 0
+    bool PrevToken = Token;
+    Token = false;
+    #endif
+
     for (int Index = 0; Index < Size; Index++)
     {
       // EOL already in wanted format, make sure to pass unmodified
@@ -126,8 +133,24 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
         Index++;
         Ptr++;
       }
+      #if 0
+      // last buffer ended with the first char of wanted EOL format,
+      // which got expanded to wanted format.
+      // now we got the second char, so get rid of it.
+      else if ((Index == 0) && PrevToken && (*Ptr == Dest[1]))
+      {
+        Delete(Index, 1);
+      }
+      #endif
       else if (*Ptr == Source[0])
       {
+        #if 0
+        if ((*Ptr == Dest[0]) && (Index == Size - 1))
+        {
+          Token = true;
+        }
+        #endif
+
         *Ptr = Dest[0];
         if (Dest[1])
         {
@@ -168,19 +191,22 @@ void __fastcall TFileBuffer::Convert(char * Source, char * Dest, int Params)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::Convert(TEOLType Source, TEOLType Dest, int Params)
+void __fastcall TFileBuffer::Convert(TEOLType Source, TEOLType Dest, int Params,
+  bool & Token)
 {
-  Convert(EOLToStr(Source), EOLToStr(Dest), Params);
+  Convert(EOLToStr(Source), EOLToStr(Dest), Params, Token);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::Convert(char * Source, TEOLType Dest, int Params)
+void __fastcall TFileBuffer::Convert(char * Source, TEOLType Dest, int Params,
+  bool & Token)
 {
-  Convert(Source, EOLToStr(Dest), Params);
+  Convert(Source, EOLToStr(Dest), Params, Token);
 }
 //---------------------------------------------------------------------------
-void __fastcall TFileBuffer::Convert(TEOLType Source, char * Dest, int Params)
+void __fastcall TFileBuffer::Convert(TEOLType Source, char * Dest, int Params,
+  bool & Token)
 {
-  Convert(EOLToStr(Source), Dest, Params);
+  Convert(EOLToStr(Source), Dest, Params, Token);
 }
 //---------------------------------------------------------------------------
 void __fastcall TFileBuffer::Insert(int Index, const char * Buf, int Len)

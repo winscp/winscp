@@ -98,7 +98,7 @@ void PackStr(AnsiString &Str)
 //---------------------------------------------------------------------------
 AnsiString MakeValidFileName(AnsiString FileName)
 {
-  AnsiString IllegalChars = ";,=+<>|\"[] \\/?*";
+  AnsiString IllegalChars = ":;,=+<>|\"[] \\/?*";
   for (int Index = 0; Index < IllegalChars.Length(); Index++)
   {
     FileName = ReplaceChar(FileName, IllegalChars[Index+1], '-');
@@ -766,7 +766,7 @@ static TDateTimeParams * __fastcall GetDateTimeParams()
       DateTimeParams.StandardDate = TZI.StandardDate;
       DateTimeParams.DaylightDate = TZI.DaylightDate;
 
-      DateTimeParams.DaylightHack = !IsWin7();
+      DateTimeParams.DaylightHack = !IsWin7() || IsExactly2008R2();
 
       DateTimeParamsInitialized = true;
     }
@@ -926,7 +926,7 @@ TDateTime __fastcall UnixToDateTime(__int64 TimeStamp, TDSTMode DSTMode)
   return Result;
 }
 //---------------------------------------------------------------------------
-inline __int64 __fastcall Round(double Number)
+__int64 __fastcall Round(double Number)
 {
   double Floor = floor(Number);
   double Ceil = ceil(Number);
@@ -1516,4 +1516,60 @@ bool __fastcall IsWin7()
   return
     (Win32MajorVersion > 6) ||
     ((Win32MajorVersion == 6) && (Win32MinorVersion >= 1));
+}
+//---------------------------------------------------------------------------
+bool __fastcall IsExactly2008R2()
+{
+  HANDLE Kernel32 = GetModuleHandle(kernel32);
+  typedef BOOL WINAPI (* TGetProductInfo)(DWORD, DWORD, DWORD, DWORD, PDWORD);
+  TGetProductInfo GetProductInfo =
+      (TGetProductInfo)GetProcAddress(Kernel32, "GetProductInfo");
+  bool Result;
+  if (GetProductInfo == NULL)
+  {
+    Result = false;
+  }
+  else
+  {
+    DWORD Type;
+    GetProductInfo(Win32MajorVersion, Win32MinorVersion, 0, 0, &Type);
+    switch (Type)
+    {
+      case 0x0008 /*PRODUCT_DATACENTER_SERVER*/:
+      case 0x000C /*PRODUCT_DATACENTER_SERVER_CORE}*/:
+      case 0x0027 /*PRODUCT_DATACENTER_SERVER_CORE_V*/:
+      case 0x0025 /*PRODUCT_DATACENTER_SERVER_V*/:
+      case 0x000A /*PRODUCT_ENTERPRISE_SERVE*/:
+      case 0x000E /*PRODUCT_ENTERPRISE_SERVER_COR*/:
+      case 0x0029 /*PRODUCT_ENTERPRISE_SERVER_CORE_*/:
+      case 0x000F /*PRODUCT_ENTERPRISE_SERVER_IA6*/:
+      case 0x0026 /*PRODUCT_ENTERPRISE_SERVER_*/:
+      case 0x002A /*PRODUCT_HYPER*/:
+      case 0x001E /*PRODUCT_MEDIUMBUSINESS_SERVER_MANAGEMEN*/:
+      case 0x0020 /*PRODUCT_MEDIUMBUSINESS_SERVER_MESSAGIN*/:
+      case 0x001F /*PRODUCT_MEDIUMBUSINESS_SERVER_SECURIT*/:
+      case 0x0018 /*PRODUCT_SERVER_FOR_SMALLBUSINES*/:
+      case 0x0023 /*PRODUCT_SERVER_FOR_SMALLBUSINESS_*/:
+      case 0x0021 /*PRODUCT_SERVER_FOUNDATIO*/:
+      case 0x0009 /*PRODUCT_SMALLBUSINESS_SERVE*/:
+      case 0x0038 /*PRODUCT_SOLUTION_EMBEDDEDSERVE*/:
+      case 0x0007 /*PRODUCT_STANDARD_SERVE*/:
+      case 0x000D /*PRODUCT_STANDARD_SERVER_COR*/:
+      case 0x0028 /*PRODUCT_STANDARD_SERVER_CORE_*/:
+      case 0x0024 /*PRODUCT_STANDARD_SERVER_*/:
+      case 0x0017 /*PRODUCT_STORAGE_ENTERPRISE_SERVE*/:
+      case 0x0014 /*PRODUCT_STORAGE_EXPRESS_SERVE*/:
+      case 0x0015 /*PRODUCT_STORAGE_STANDARD_SERVE*/:
+      case 0x0016 /*PRODUCT_STORAGE_WORKGROUP_SERVE*/:
+      case 0x0011 /*PRODUCT_WEB_SERVE*/:
+      case 0x001D /*PRODUCT_WEB_SERVER_COR*/:
+        Result = true;
+        break;
+
+      default:
+        Result = false;
+        break;
+    }
+  }
+  return Result;
 }

@@ -261,6 +261,9 @@ struct ssh_signkey {
 
 struct ssh_compress {
     char *name;
+    /* For zlib@openssh.com: if non-NULL, this name will be considered once
+     * userauth has completed successfully. */
+    char *delayed_name;
     void *(*compress_init) (void);
     void (*compress_cleanup) (void *);
     int (*compress) (void *, unsigned char *block, int len,

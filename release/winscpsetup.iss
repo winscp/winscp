@@ -7,14 +7,14 @@
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
-#define Year 2010
+#define Year 2011
 #define EnglishLang "English"
 #define SetupTypeData "SetupType"
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
 #define InnoSetupAppPathReg "Inno Setup: App Path"
 
 #ifexist "interm\winscpsetup.inc.iss"
-  #include "interm\winscpsetup.inc.iss"
+  #include "..\interm\winscpsetup.inc.iss"
 #else
   #define Status "unofficial"
   #define SourceDir ".."
@@ -38,7 +38,7 @@
 #define Version Str(Major)+"."+Str(Minor)+(Rev > 0 ? "."+Str(Rev) : "")+(Status != "" ? " "+Status : "")
 
 #ifdef OpenCandy
-#include "opencandy\OCSetupHlp.iss"
+#include "..\opencandy\OCSetupHlp.iss"
 #endif
 
 [Setup]
@@ -63,10 +63,11 @@ OutputDir={#OutputDir}
 DisableStartupPrompt=yes
 AppVersion={#Version}
 AppVerName=WinSCP {#Version}
-OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup
+OutputBaseFilename=winscp{#Major}{#Minor}{#Rev}setup{#OutputSuffix}
 SolidCompression=yes
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
+UsePreviousLanguage=yes
 
 ; Some features of ISCC requires path relative to script,
 ; some path relative to CWD
@@ -246,11 +247,11 @@ Source: "licence"; DestDir: "{app}"; \
   Components: main; Flags: ignoreversion
 Source: "{#ShellExtFileSource}"; DestDir: "{app}"; \
   Components: shellext; \
-  Flags: ignoreversion regserver restartreplace uninsrestartdelete; \
+  Flags: regserver restartreplace uninsrestartdelete; \
   Check: not IsWin64
 Source: "{#ShellExt64FileSource}"; DestDir: "{app}"; \
   Components: shellext; \
-  Flags: ignoreversion regserver restartreplace uninsrestartdelete; \
+  Flags: regserver restartreplace uninsrestartdelete; \
   Check: IsWin64
 Source: "{#PuttySourceDir}\LICENCE"; DestDir: "{app}\PuTTY"; \
   Components: pageant puttygen; Flags: ignoreversion
@@ -261,11 +262,8 @@ Source: "{#PuttySourceDir}\pageant.exe"; DestDir: "{app}\PuTTY"; \
 Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
   Components: puttygen; Flags: ignoreversion
 #ifdef OpenCandy
-Source: "..\opencandy\{#OCREADME}"; DestDir: {app}\OpenCandy; \
-  Flags: overwritereadonly ignoreversion; Check: OpenCandyCheckInstallReadme
-Source: "..\opencandy\{#OCDLL}"; DestDir: {app}\OpenCandy; \
-  Flags: overwritereadonly ignoreversion; \
-  Check: OpenCandyCheckInstallDLL; AfterInstall: OpenCandyProcessEmbedded
+Source: "{#OC_OCSETUPHLP_FILE_PATH}"; \
+  Flags: dontcopy ignoreversion
 #endif
 
 [Registry]
@@ -729,9 +727,8 @@ begin
   AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
 
 #ifdef OpenCandy
-  OpenCandyInitRemnant2('WinSCP', '{#OpenCandyKey}', '3d0f240d63cf2239f9e45c3562d8bdbc',
-    ExpandConstant('{cm:LanguageISOCode}'), '{#ParentRegistryKey}\OpenCandy',
-    WizardSilent(), False);
+  OpenCandyAsyncInit('{#OC_STR_MY_PRODUCT_NAME}', '{#OC_STR_KEY}', '{#OC_STR_SECRET}',
+    ExpandConstant('{cm:LanguageISOCode}'), {#OC_INIT_MODE_NORMAL});
 #endif
 end;
 
@@ -761,7 +758,9 @@ end;
 #ifdef OpenCandy
 function BackButtonClick(CurPageID: Integer): Boolean;
 begin
-  Result := OpenCandyBackButtonClick(CurPageID);
+  Result := True;
+
+  OpenCandyBackButtonClick(CurPageID);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;

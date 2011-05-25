@@ -5,11 +5,13 @@
 #include <Terminal.h>
 #include <Queue.h>
 #include <FileOperationProgress.h>
+#include <WinInterface.h>
 //---------------------------------------------------------------------------
 class TCustomScpExplorerForm;
 class TLogMemo;
 class TTerminalQueue;
 class TAuthenticateForm;
+class ITaskbarList3;
 //---------------------------------------------------------------------------
 enum TTerminalPendingAction { tpNull, tpNone, tpReconnect, tpFree };
 //---------------------------------------------------------------------------
@@ -83,6 +85,8 @@ private:
   TCriticalSection * FQueueSection;
   TTerminalQueue * FQueueWithEvent;
   TQueueEvent FQueueEvent;
+  unsigned int FTaskbarButtonCreatedMessage;
+  ITaskbarList3 * FTaskbarList;
 
   bool __fastcall ConnectActiveTerminalImpl(bool Reopen);
   TTerminalQueue * __fastcall NewQueue(TTerminal * Terminal);
@@ -96,6 +100,7 @@ private:
   void __fastcall ApplicationShowHint(AnsiString & HintStr, bool & CanShow,
     THintInfo & HintInfo);
   void __fastcall ApplicationActivate(TObject * Sender);
+  void __fastcall ApplicationMessage(TMsg & Msg, bool & Handled);
   void __fastcall ConfigurationChange(TObject * Sender);
   void __fastcall TerminalUpdateStatus(TTerminal * Terminal, bool Active);
   void __fastcall TerminalQueryUser(TObject * Sender,
@@ -130,6 +135,12 @@ private:
   void __fastcall QueueEvent(TTerminalQueue * Queue, TQueueEvent Event);
   TAuthenticateForm * __fastcall MakeAuthenticateForm(TSessionData * Data);
   void __fastcall MasterPasswordPrompt();
+  void __fastcall FileNameInputDialogInitializeRenameBaseName(
+    TObject * Sender, TInputDialogData * Data);
+  void __fastcall InitTaskbarButtonCreatedMessage();
+  void __fastcall ReleaseTaskbarList();
+  void __fastcall CreateTaskbarList();
+  void __fastcall UpdateTaskbarList();
 };
 //---------------------------------------------------------------------------
 #endif

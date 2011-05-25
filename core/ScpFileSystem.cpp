@@ -600,7 +600,9 @@ void __fastcall TSCPFileSystem::ReadCommandOutput(int Params, const AnsiString *
         Message += FOutput->Text;
       }
       while (!Message.IsEmpty() && (Message.LastDelimiter("\n\r") == Message.Length()))
+      {
         Message.SetLength(Message.Length() - 1);
+      }
 
       bool WrongReturnCode =
         (ReturnCode > 1) || (ReturnCode == 1 && !(Params & coIgnoreWarnings));
@@ -1151,8 +1153,11 @@ void __fastcall TSCPFileSystem::ChangeFileProperties(const AnsiString FileName,
       Action.Recursive();
     }
 
-    ExecCommand(fsChangeMode,
-      ARRAYOFCONST((RecursiveStr, Rights.SimplestStr, DelimitedName)));
+    if ((Rights.NumberSet | Rights.NumberUnset) != TRights::rfNo)
+    {
+      ExecCommand(fsChangeMode,
+        ARRAYOFCONST((RecursiveStr, Rights.SimplestStr, DelimitedName)));
+    }
 
     // if file is directory and we do recursive mode settings with
     // add-x-to-directories option on, add those X
@@ -1285,7 +1290,7 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
       AnsiString Line = AnsiString(Resp) + Msg;
       if (IsLastLine(Line))
       {
-        if (GotLastLine)
+        if (GotLastLine != NULL)
         {
           *GotLastLine = true;
         }
@@ -1300,7 +1305,10 @@ void __fastcall TSCPFileSystem::SCPResponse(bool * GotLastLine)
         catch(...)
         {
           // when ReadCommandOutput() fails than remote SCP is terminated already
-          *GotLastLine = true;
+          if (GotLastLine != NULL)
+          {
+            *GotLastLine = true;
+          }
           throw;
         }
       }
@@ -1615,6 +1623,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
         // than convert EOL and send it at once, because before converting EOL
         // we can't know its size
         TFileBuffer AsciiBuf;
+        bool ConvertToken = false;
         do
         {
           // Buffer for one block of data
@@ -1635,7 +1644,7 @@ void __fastcall TSCPFileSystem::SCPSource(const AnsiString FileName,
           if (OperationProgress->AsciiTransfer)
           {
             BlockBuf.Convert(FTerminal->Configuration->LocalEOLType,
-              FTerminal->SessionData->EOLType, cpRemoveCtrlZ | cpRemoveBOM);
+              FTerminal->SessionData->EOLType, cpRemoveCtrlZ | cpRemoveBOM, ConvertToken);
             BlockBuf.Memory->Seek(0, soFromBeginning);
             AsciiBuf.ReadStream(BlockBuf.Memory, BlockBuf.Size, true);
             // We don't need it any more
@@ -2375,6 +2384,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
               {
                 // Buffer for one block of data
                 TFileBuffer BlockBuf;
+                bool ConvertToken = false;
 
                 do
                 {
@@ -2388,7 +2398,7 @@ void __fastcall TSCPFileSystem::SCPSink(const AnsiString TargetDir,
                   {
                     unsigned int PrevBlockSize = BlockBuf.Size;
                     BlockBuf.Convert(FTerminal->SessionData->EOLType,
-                      FTerminal->Configuration->LocalEOLType, 0);
+                      FTerminal->Configuration->LocalEOLType, 0, ConvertToken);
                     OperationProgress->SetLocalSize(
                       OperationProgress->LocalSize - PrevBlockSize + BlockBuf.Size);
                   }

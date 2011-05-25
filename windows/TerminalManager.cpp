@@ -1,4 +1,5 @@
 //---------------------------------------------------------------------------
+#define NO_WIN32_LEAN_AND_MEAN
 #include <vcl.h>
 #pragma hdrstop
 
@@ -8,6 +9,7 @@
 #include "LogMemo.h"
 #include "NonVisual.h"
 #include "WinConfiguration.h"
+#include "Tools.h"
 #include <Log.h>
 #include <Common.h>
 #include <CoreMain.h>
@@ -17,6 +19,7 @@
 #include <Progress.h>
 #include <Exceptions.h>
 #include <VCLCommon.h>
+#include <WinApi.h>
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -67,6 +70,7 @@ __fastcall TTerminalManager::TTerminalManager() :
   FDirectoryReadingStart = 0;
   FAuthenticateForm = NULL;
   FQueueWithEvent = NULL;
+  FTaskbarList = NULL;
 
   assert(Application && !Application->OnException);
   Application->OnException = ApplicationException;
@@ -74,8 +78,12 @@ __fastcall TTerminalManager::TTerminalManager() :
   Application->OnShowHint = ApplicationShowHint;
   assert(Application->OnActivate == NULL);
   Application->OnActivate = ApplicationActivate;
+  assert(Application->OnMessage == NULL);
+  Application->OnMessage = ApplicationMessage;
   assert(WinConfiguration->OnMasterPasswordPrompt == NULL);
   WinConfiguration->OnMasterPasswordPrompt = MasterPasswordPrompt;
+
+  InitTaskbarButtonCreatedMessage();
 
   assert(Configuration && !Configuration->OnChange);
   Configuration->OnChange = ConfigurationChange;
@@ -102,6 +110,8 @@ __fastcall TTerminalManager::~TTerminalManager()
   Application->OnShowHint = ApplicationShowHint;
   assert(Application->OnActivate == ApplicationActivate);
   Application->OnActivate = NULL;
+  assert(Application->OnMessage == ApplicationMessage);
+  Application->OnMessage = NULL;
   assert(WinConfiguration->OnMasterPasswordPrompt == MasterPasswordPrompt);
   WinConfiguration->OnMasterPasswordPrompt = NULL;
 
@@ -110,6 +120,7 @@ __fastcall TTerminalManager::~TTerminalManager()
   delete FTerminalList;
   delete FAuthenticateForm;
   delete FQueueSection;
+  ReleaseTaskbarList();
 }
 //---------------------------------------------------------------------------
 TTerminalQueue * __fastcall TTerminalManager::NewQueue(TTerminal * Terminal)
@@ -449,6 +460,7 @@ void __fastcall TTerminalManager::SetScpExplorer(TCustomScpExplorerForm * value)
       FScpExplorer->Queue = ActiveQueue;
       FOnLastTerminalClosed = FScpExplorer->LastTerminalClosed;
       FOnTerminalListChanged = FScpExplorer->TerminalListChanged;
+      UpdateTaskbarList();
     }
     else
     {
@@ -668,6 +680,59 @@ void __fastcall TTerminalManager::ApplicationActivate(TObject * /*Sender*/)
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::ApplicationMessage(TMsg & Msg, bool & /*Handled*/)
+{
+  if (Msg.message == FTaskbarButtonCreatedMessage)
+  {
+    CreateTaskbarList();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::InitTaskbarButtonCreatedMessage()
+{
+
+  FTaskbarButtonCreatedMessage = RegisterWindowMessage("TaskbarButtonCreated");
+
+  HANDLE User32Library = LoadLibrary("user32.dll");
+  ChangeWindowMessageFilterExProc ChangeWindowMessageFilterEx =
+    (ChangeWindowMessageFilterExProc)GetProcAddress(User32Library, "ChangeWindowMessageFilterEx");
+
+  if (ChangeWindowMessageFilterEx != NULL)
+  {
+    // without this we won't get TaskbarButtonCreated, when app is running elevated
+    ChangeWindowMessageFilterEx(
+      Application->Handle, FTaskbarButtonCreatedMessage, MSGFLT_ALLOW, NULL);
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::CreateTaskbarList()
+{
+
+  ReleaseTaskbarList();
+
+  if(SUCCEEDED(CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_ALL,
+        IID_ITaskbarList3, (void **) &FTaskbarList)))
+  {
+    if (ScpExplorer != NULL)
+    {
+      UpdateTaskbarList();
+    }
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::ReleaseTaskbarList()
+{
+  if (FTaskbarList != NULL)
+  {
+    FTaskbarList->Release();
+  }
+}
+//---------------------------------------------------------------------------
+void __fastcall TTerminalManager::UpdateTaskbarList()
+{
+  ScpExplorer->UpdateTaskbarList(FTaskbarList);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::DeleteLocalFile(const AnsiString FileName, bool Alternative)
 {
   if (!RecursiveDeleteFile(FileName, (WinConfiguration->DeleteToRecycleBin != Alternative)))
@@ -719,18 +784,31 @@ TAuthenticateForm * __fastcall TTerminalManager::MakeAuthenticateForm(
   return Dialog;
 }
 //---------------------------------------------------------------------------
+void __fastcall TTerminalManager::FileNameInputDialogInitializeRenameBaseName(
+  TObject * /*Sender*/, TInputDialogData * Data)
+{
+  EditSelectBaseName(Data->Edit->Handle);
+}
+//---------------------------------------------------------------------------
 void __fastcall TTerminalManager::TerminalPromptUser(
   TTerminal * Terminal, TPromptKind Kind, AnsiString Name, AnsiString Instructions,
   TStrings * Prompts, TStrings * Results, bool & Result, void * /*Arg*/)
 {
-  if ((Kind == pkPrompt) && (FAuthenticateForm == NULL) &&
+  if (((Kind == pkPrompt) || (Kind == pkFileName)) && (FAuthenticateForm == NULL) &&
       (Terminal->Status != ssOpening))
   {
     assert(Instructions.IsEmpty());
     assert(Prompts->Count == 1);
     assert(bool(Prompts->Objects[0]));
     AnsiString AResult = Results->Strings[0];
-    Result = InputDialog(Name, Prompts->Strings[0], AResult);
+
+    TInputDialogInitialize InputDialogInitialize = NULL;
+    if ((Kind == pkFileName) && !WinConfiguration->RenameWholeName)
+    {
+      InputDialogInitialize = FileNameInputDialogInitializeRenameBaseName;
+    }
+
+    Result = InputDialog(Name, Prompts->Strings[0], AResult, "", NULL, false, InputDialogInitialize);
     if (Result)
     {
       Results->Strings[0] = AResult;

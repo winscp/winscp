@@ -45,6 +45,7 @@ bool __fastcall IsWin64();
 void __fastcall CopyToClipboard(AnsiString Text);
 void __fastcall CopyToClipboard(TStrings * Strings);
 void __fastcall ShutDownWindows();
+void __fastcall EditSelectBaseName(HWND Edit);
 //---------------------------------------------------------------------------
 #define IUNKNOWN \
   virtual HRESULT __stdcall QueryInterface(const GUID& IID, void **Obj) \

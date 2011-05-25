@@ -1328,7 +1328,7 @@ static void __fastcall LinkLabelClick(TStaticText * StaticText)
   else
   {
     AnsiString Url = StaticText->Caption;
-    if (!SameText(Url.SubString(1, 4), "http") && (Url.Pos("@") > 0))
+    if (!AnsiSameText(Url.SubString(1, 4), "http") && (Url.Pos("@") > 0))
     {
       Url = "mailto:" + Url;
     }

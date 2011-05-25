@@ -1161,7 +1161,6 @@ object LoginDialog: TLoginDialog
             Width = 321
             Height = 53
             Anchors = [akLeft, akTop, akRight]
-            MaxLength = 50
             ScrollBars = ssVertical
             TabOrder = 0
           end

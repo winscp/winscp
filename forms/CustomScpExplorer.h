@@ -42,6 +42,7 @@ class TEditorManager;
 class TEditorData;
 class TTransferPresetNoteData;
 struct TEditedFileData;
+class ITaskbarList3;
 //---------------------------------------------------------------------------
 enum TActionAllowed { aaShortCut, aaUpdate, aaExecute };
 enum TActionFlag { afLocal = 1, afRemote = 2, afExplorer = 4 , afCommander = 8 };
@@ -206,6 +207,7 @@ private:
   TTBXPopupMenu * FCustomCommandMenu;
   TStrings * FCustomCommandLocalFileList;
   TStrings * FCustomCommandRemoteFileList;
+  ITaskbarList3 * FTaskbarList;
 
   bool __fastcall GetEnableFocusedOperation(TOperationSide Side, int FilesOnly);
   bool __fastcall GetEnableSelectedOperation(TOperationSide Side, int FilesOnly);
@@ -524,6 +526,8 @@ public:
   void __fastcall PopupTrayBalloon(TTerminal * Terminal, const AnsiString & Str,
     TQueryType Type, Exception * E = NULL, unsigned int Seconds = 0);
   void __fastcall FindFiles();
+  virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
+  void __fastcall UpdateTaskbarList(ITaskbarList3 * TaskbarList);
 
   __property bool ComponentVisible[Word Component] = { read = GetComponentVisible, write = SetComponentVisible };
   __property bool EnableFocusedOperation[TOperationSide Side] = { read = GetEnableFocusedOperation, index = 0 };

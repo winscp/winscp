@@ -390,7 +390,6 @@ BEGIN
         WINSCP_COPYRIGHT, "Copyright © 2000-2011 Martin Prikryl"
         HOMEPAGE_URL, "http://winscp.net/"
         HISTORY_URL, "http://winscp.net/eng/docs/history"
-        REQUIREMENTS_URL, "http://winscp.net/eng/docs/requirements"
         FORUM_URL, "http://winscp.net/forum/"
         UPDATES_URL, "http://winscp.net/updates.php"
         DOWNLOAD_URL, "http://winscp.net/eng/download.php"

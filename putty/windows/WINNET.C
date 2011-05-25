@@ -236,7 +236,9 @@ void sk_init(void)
 	winsock_module = load_system32_dll("wsock32.dll");
     }
     if (!winsock_module)
+    {
 	fatalbox("Unable to load any WinSock library");
+    }
 
 #ifndef NO_IPV6
     /* Check if we have getaddrinfo in Winsock */
@@ -453,7 +455,9 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 	    hints.ai_family = hint_family;
 	    hints.ai_flags = AI_CANONNAME;
 	    if ((err = p_getaddrinfo(host, NULL, &hints, &ret->ais)) == 0)
+	    {
 		ret->resolved = TRUE;
+	    }
 	} else
 #endif
 	{
@@ -487,9 +491,11 @@ SockAddr sk_namelookup(const char *host, char **canonicalname,
 		/* Are we in IPv4 fallback mode? */
 		/* We put the IPv4 address into the a variable so we can further-on use the IPv4 code... */
 		if (ret->ais->ai_family == AF_INET)
+		{
 		    memcpy(&a,
 			   (char *) &((SOCKADDR_IN *) ret->ais->
 				      ai_addr)->sin_addr, sizeof(a));
+		}
 
 		if (ret->ais->ai_canonname)
 		    strncpy(realhost, ret->ais->ai_canonname, lenof(realhost));
@@ -882,7 +888,7 @@ static DWORD try_connect(Actual_Socket sock)
 	p_setsockopt(s, SOL_SOCKET, SO_KEEPALIVE, (void *) &b, sizeof(b));
     }
 
-#ifdef MPEXT
+#ifdef MPEXT2
     {
 	int bufsize = 262144;
 	p_setsockopt(s, SOL_SOCKET, SO_SNDBUF, (void *) &bufsize, sizeof(bufsize));
@@ -1032,7 +1038,9 @@ static DWORD try_connect(Actual_Socket sock)
     add234(sktree, sock);
 
     if (err)
+	{
 	plug_log(sock->plug, 1, sock->addr, sock->port, sock->error, err);
+	}
     return err;
 }
 

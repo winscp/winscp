@@ -645,6 +645,10 @@ void __fastcall TTerminal::ResetConnection()
     delete FDirectoryChangesCache;
     FDirectoryChangesCache = NULL;
   }
+
+  FFiles->Directory = "";
+  // note that we cannot clear contained files
+  // as they can still be referenced in the GUI atm
 }
 //---------------------------------------------------------------------------
 void __fastcall TTerminal::Open()
@@ -956,7 +960,14 @@ void __fastcall TTerminal::Reopen(int Params)
       AutoReadDirectory = false;
     }
 
-    SessionData->RemoteDirectory = CurrentDirectory;
+    // only peek, we may not be connected at all atm,
+    // so make sure we do not try retrieving current directory from the server
+    // (particularly with FTP)
+    AnsiString ACurrentDirectory = PeekCurrentDirectory();
+    if (!ACurrentDirectory.IsEmpty())
+    {
+      SessionData->RemoteDirectory = ACurrentDirectory;
+    }
     if (SessionData->FSProtocol == fsSFTP)
     {
       SessionData->FSProtocol = (FFSProtocol == cfsSCP ? fsSCPonly : fsSFTPonly);

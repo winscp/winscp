@@ -9,6 +9,8 @@ function Construct(ComponentClass: TComponentClass; Owner: TComponent): TCompone
 
 function IsVista: Boolean;
 
+function IsExactly2008R2: Boolean;
+
 type
   TControlScrollBeforeUpdate = procedure(ObjectToValidate: TObject) of object;
   TControlScrollAfterUpdate = procedure of object;
@@ -79,6 +81,58 @@ end;
 function IsVista: Boolean;
 begin
   Result := (GetProcAddress(GetModuleHandle(Kernel32), 'GetLocaleInfoEx') <> nil);
+end;
+
+function IsExactly2008R2: Boolean;
+var
+  GetProductInfo: function(dwOSMajorVersion, dwOSMinorVersion, dwSpMajorVersion, dwSpMinorVersion: DWORD; var dwReturnedProductType: DWORD): BOOL stdcall;
+  Kernel: THandle;
+  ProductType: DWORD;
+begin
+  Result := (Win32MajorVersion = 6) and (Win32MinorVersion = 1);
+  if Result then
+  begin
+    Kernel := GetModuleHandle(Windows.Kernel32);
+    @GetProductInfo := GetProcAddress(Kernel, 'GetProductInfo');
+    if not Assigned(GetProductInfo) then Result := False
+      else
+    begin
+      GetProductInfo(Win32MajorVersion, Win32MinorVersion, 0, 0, ProductType);
+      case ProductType of
+        $0008 {PRODUCT_DATACENTER_SERVER},
+        $000C {PRODUCT_DATACENTER_SERVER_CORE},
+        $0027 {PRODUCT_DATACENTER_SERVER_CORE_V},
+        $0025 {PRODUCT_DATACENTER_SERVER_V},
+        $000A {PRODUCT_ENTERPRISE_SERVER},
+        $000E {PRODUCT_ENTERPRISE_SERVER_CORE},
+        $0029 {PRODUCT_ENTERPRISE_SERVER_CORE_V},
+        $000F {PRODUCT_ENTERPRISE_SERVER_IA64},
+        $0026 {PRODUCT_ENTERPRISE_SERVER_V},
+        $002A {PRODUCT_HYPERV},
+        $001E {PRODUCT_MEDIUMBUSINESS_SERVER_MANAGEMENT},
+        $0020 {PRODUCT_MEDIUMBUSINESS_SERVER_MESSAGING},
+        $001F {PRODUCT_MEDIUMBUSINESS_SERVER_SECURITY},
+        $0018 {PRODUCT_SERVER_FOR_SMALLBUSINESS},
+        $0023 {PRODUCT_SERVER_FOR_SMALLBUSINESS_V},
+        $0021 {PRODUCT_SERVER_FOUNDATION},
+        $0009 {PRODUCT_SMALLBUSINESS_SERVER},
+        $0038 {PRODUCT_SOLUTION_EMBEDDEDSERVER},
+        $0007 {PRODUCT_STANDARD_SERVER},
+        $000D {PRODUCT_STANDARD_SERVER_CORE},
+        $0028 {PRODUCT_STANDARD_SERVER_CORE_V},
+        $0024 {PRODUCT_STANDARD_SERVER_V},
+        $0017 {PRODUCT_STORAGE_ENTERPRISE_SERVER},
+        $0014 {PRODUCT_STORAGE_EXPRESS_SERVER},
+        $0015 {PRODUCT_STORAGE_STANDARD_SERVER},
+        $0016 {PRODUCT_STORAGE_WORKGROUP_SERVER},
+        $0011 {PRODUCT_WEB_SERVER},
+        $001D {PRODUCT_WEB_SERVER_CORE}:
+          Result := True;
+        else
+          Result := False;
+      end;
+    end;
+  end;
 end;
 
   { TCustomControlScrollOnDragOver }

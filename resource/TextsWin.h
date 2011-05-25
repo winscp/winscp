@@ -388,7 +388,6 @@
 #define WINSCP_COPYRIGHT        1901
 #define HOMEPAGE_URL            1902
 #define HISTORY_URL             1903
-#define REQUIREMENTS_URL        1904
 #define FORUM_URL               1905
 #define UPDATES_URL             1906
 #define DOWNLOAD_URL            1907

@@ -392,6 +392,11 @@ bool __fastcall TRegistryStorage::Copy(TRegistryStorage * Storage)
   return Result;
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall TRegistryStorage::GetSource()
+{
+  return RootKeyToStr(FRegistry->RootKey) + "\\" + Storage;
+}
+//---------------------------------------------------------------------------
 void __fastcall TRegistryStorage::SetAccessMode(TStorageAccessMode value)
 {
   THierarchicalStorage::SetAccessMode(value);
@@ -665,6 +670,11 @@ __fastcall TIniFileStorage::~TIniFileStorage()
     delete Strings;
     delete FIniFile;
   }
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall TIniFileStorage::GetSource()
+{
+  return Storage;
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::GetCurrentSection()

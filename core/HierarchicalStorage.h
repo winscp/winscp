@@ -58,6 +58,7 @@ public:
   __property TStorageAccessMode AccessMode  = { read=FAccessMode, write=SetAccessMode };
   __property bool Explicit = { read = FExplicit, write = FExplicit };
   __property bool MungeStringValues = { read = FMungeStringValues, write = FMungeStringValues };
+  __property AnsiString Source = { read = GetSource };
 
 protected:
   AnsiString FStorage;
@@ -72,6 +73,7 @@ protected:
   static AnsiString __fastcall IncludeTrailingBackslash(const AnsiString & S);
   static AnsiString __fastcall ExcludeTrailingBackslash(const AnsiString & S);
   AnsiString __fastcall MungeSubKey(AnsiString Key, bool Path);
+  virtual AnsiString __fastcall GetSource() = 0;
 };
 //---------------------------------------------------------------------------
 class TRegistryStorage : public THierarchicalStorage
@@ -114,6 +116,7 @@ public:
 protected:
   int __fastcall GetFailed();
   virtual void __fastcall SetAccessMode(TStorageAccessMode value);
+  virtual AnsiString __fastcall GetSource();
 
   __property int Failed  = { read=GetFailed, write=FFailed };
 
@@ -164,6 +167,7 @@ private:
   void __fastcall ApplyOverrides();
 protected:
   __property AnsiString CurrentSection  = { read=GetCurrentSection };
+  virtual AnsiString __fastcall GetSource();
 };
 //---------------------------------------------------------------------------
 AnsiString __fastcall PuttyMungeStr(const AnsiString Str);

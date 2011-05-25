@@ -3658,7 +3658,6 @@ object AboutDialog: TAboutDialog
       Caption = 'Copyright '#169' xxxx The OpenSSL Project'
     end
     object PuttyLicenseLabel: TStaticText
-      Tag = 1
       Left = 8
       Top = 80
       Width = 74
@@ -3666,7 +3665,7 @@ object AboutDialog: TAboutDialog
       Caption = 'Display license'
       TabOrder = 0
       TabStop = True
-      OnClick = DisplayLicense
+      OnClick = PuttyLicenseLabelClick
     end
     object PuttyHomepageLabel: TStaticText
       Left = 8

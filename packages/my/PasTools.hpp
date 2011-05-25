@@ -118,6 +118,7 @@ public:
 //-- var, const, procedure ---------------------------------------------------
 extern PACKAGE Classes::TComponent* __fastcall Construct(TMetaClass* ComponentClass, Classes::TComponent* Owner);
 extern PACKAGE bool __fastcall IsVista(void);
+extern PACKAGE bool __fastcall IsExactly2008R2(void);
 
 }	/* namespace Pastools */
 using namespace Pastools;

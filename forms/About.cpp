@@ -177,9 +177,9 @@ void __fastcall TAboutDialog::LoadData()
   VersionLabel->Caption = Version;
 }
 //---------------------------------------------------------------------------
-void __fastcall TAboutDialog::DisplayLicense(TObject * Sender)
+void __fastcall TAboutDialog::PuttyLicenseLabelClick(TObject * /*Sender*/)
 {
-  DoLicenseDialog((TLicense)((TComponent*)Sender)->Tag);
+  DoLicenseDialog(lcPutty);
 }
 //---------------------------------------------------------------------------
 void __fastcall TAboutDialog::LicenseButtonClick(TObject * /*Sender*/)

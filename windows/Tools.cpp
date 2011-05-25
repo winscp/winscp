@@ -13,6 +13,7 @@
 
 #include "GUITools.h"
 #include "VCLCommon.h"
+#include "Setup.h"
 #include "Tools.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -335,6 +336,11 @@ void __fastcall ExitActiveControl(TForm * Form)
 //---------------------------------------------------------------------------
 void __fastcall OpenBrowser(AnsiString URL)
 {
+  AnsiString HomePageUrl = LoadStr(HOMEPAGE_URL);
+  if (AnsiSameText(URL.SubString(1, HomePageUrl.Length()), HomePageUrl))
+  {
+    URL = CampaignUrl(URL);
+  }
   ShellExecute(Application->Handle, "open", URL.c_str(), NULL, NULL, SW_SHOWNORMAL);
 }
 //---------------------------------------------------------------------------
@@ -732,6 +738,21 @@ void __fastcall ShutDownWindows()
   // Shut down the system and force all applications to close.
   Win32Check(ExitWindowsEx(EWX_SHUTDOWN | EWX_POWEROFF,
     SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER | SHTDN_REASON_FLAG_PLANNED));
+}
+//---------------------------------------------------------------------------
+void __fastcall EditSelectBaseName(HWND Edit)
+{
+  AnsiString Text;
+  Text.SetLength(GetWindowTextLength(Edit) + 1);
+  GetWindowText(Edit, Text.c_str(), Text.Length());
+
+  int P = Text.LastDelimiter(".");
+  if (P > 0)
+  {
+    // SendMessage does not work, if edit control is not fully
+    // initialized yet
+    PostMessage(Edit, EM_SETSEL, 0, P - 1);
+  }
 }
 //---------------------------------------------------------------------------
 // Code from http://gentoo.osuosl.org/distfiles/cl331.zip/io/

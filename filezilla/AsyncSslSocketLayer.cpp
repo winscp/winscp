@@ -1288,6 +1288,10 @@ BOOL CAsyncSslSocketLayer::ShutDown(int nHow /*=sends*/)
 			int error = pSSL_get_error(m_ssl, -1);
 			if (error == SSL_ERROR_WANT_READ || error == SSL_ERROR_WANT_WRITE)
 			{
+#ifdef MPEXT
+				// retry shutdown later
+				m_nShutDown = 0;
+#endif
 				TriggerEvents();
 				WSASetLastError(WSAEWOULDBLOCK);
 				return FALSE;
@@ -1331,9 +1335,13 @@ BOOL CAsyncSslSocketLayer::ShutDownComplete()
 	} while (numread > 0);
 
 	if (pBIO_ctrl_pending(m_nbio))
+	{
 		return FALSE;
+	}
 	else
+	{
 		return TRUE;
+	}
 }
 
 void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int ret)

@@ -351,7 +351,7 @@ void __fastcall TFTPFileSystem::Open()
       break;
   }
   int Pasv = (Data->FtpPasvMode ? 1 : 2);
-  int TimeZoneOffset = int(double(Data->TimeDifference) * 24 * 60);
+  int TimeZoneOffset = int(Round(double(Data->TimeDifference) * 24 * 60));
   int UTF8 = 0;
   switch (Data->NotUtf)
   {
@@ -792,7 +792,7 @@ bool __fastcall TFTPFileSystem::ConfirmOverwrite(AnsiString & FileName,
 
     // rename
     case qaIgnore:
-      if (FTerminal->PromptUser(FTerminal->SessionData, pkPrompt,
+      if (FTerminal->PromptUser(FTerminal->SessionData, pkFileName,
             LoadStr(RENAME_TITLE), "", LoadStr(RENAME_PROMPT2), true, 0, FileName))
       {
         OverwriteMode = omOverwrite;

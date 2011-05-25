@@ -433,6 +433,8 @@ __published:
   void __fastcall LocalDriveViewRefreshDrives(TObject *Sender);
   void __fastcall QueueSubmenuItemPopup(TTBCustomItem *Sender,
           bool FromLink);
+  void __fastcall DirViewHistoryGo(TCustomDirView *Sender, int Index,
+          bool &Cancel);
 
 private:
   float FLastLeftPanelWidth;
@@ -530,6 +532,7 @@ public:
   virtual AnsiString __fastcall PathForCaption();
   virtual void __fastcall BeforeAction();
   virtual void __fastcall HomeDirectory(TOperationSide Side);
+  virtual void __fastcall HistoryGo(TOperationSide Side, int Index);
 
   __property float LeftPanelWidth = { read = GetLeftPanelWidth, write = SetLeftPanelWidth };
 };

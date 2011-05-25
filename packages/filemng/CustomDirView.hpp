@@ -116,14 +116,12 @@ struct TFileFilter
 	System::TDateTime ModificationTo;
 } ;
 
-#pragma option push -b-
-enum THistoryDirection { hdBack, hdForward };
-#pragma option pop
-
 class DELPHICLASS TCustomDirView;
 typedef void __fastcall (__closure *TDirViewNotifyEvent)(TCustomDirView* Sender);
 
 typedef void __fastcall (__closure *TDVGetFilterEvent)(TCustomDirView* Sender, bool Select, TFileFilter &Filter);
+
+typedef void __fastcall (__closure *TDVHistoryGoEvent)(TCustomDirView* Sender, int Index, bool &Cancel);
 
 #pragma option push -b-
 enum TCompareCriteria { ccTime, ccSize };
@@ -234,6 +232,7 @@ private:
 	TRenameEvent FOnBeginRename;
 	TRenameEvent FOnEndRename;
 	TDirViewNotifyEvent FOnHistoryChange;
+	TDVHistoryGoEvent FOnHistoryGo;
 	TDirViewNotifyEvent FOnPathChange;
 	bool FShowHiddenFiles;
 	bool FSavedSelection;
@@ -369,6 +368,7 @@ protected:
 	virtual void __fastcall SetMask(AnsiString Value);
 	void __fastcall ScrollOnDragOverBeforeUpdate(System::TObject* ObjectToValidate);
 	void __fastcall ScrollOnDragOverAfterUpdate(void);
+	void __fastcall DoHistoryGo(int Index);
 	virtual int __fastcall HiddenCount(void) = 0 ;
 	virtual int __fastcall FilteredCount(void) = 0 ;
 	__property Controls::TImageList* ImageList16 = {read=FImageList16};
@@ -482,6 +482,7 @@ public:
 	__property Dragdrop::TOnMenuPopup OnDDMenuPopup = {read=FOnDDMenuPopup, write=FOnDDMenuPopup};
 	__property TDirViewExecFileEvent OnExecFile = {read=FOnExecFile, write=FOnExecFile};
 	__property TDirViewNotifyEvent OnHistoryChange = {read=FOnHistoryChange, write=FOnHistoryChange};
+	__property TDVHistoryGoEvent OnHistoryGo = {read=FOnHistoryGo, write=FOnHistoryGo};
 	__property TDirViewNotifyEvent OnPathChange = {read=FOnPathChange, write=FOnPathChange};
 	__property TMatchMaskEvent OnMatchMask = {read=FOnMatchMask, write=FOnMatchMask};
 	__property TDirViewGetOverlayEvent OnGetOverlay = {read=FOnGetOverlay, write=FOnGetOverlay};

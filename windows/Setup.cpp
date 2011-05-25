@@ -603,6 +603,23 @@ AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
   return Result;
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall CampaignUrl(AnsiString URL)
+{
+  if (URL.Pos("?") == 0)
+  {
+    URL += "?";
+  }
+  else
+  {
+    URL += "&";
+  }
+
+  int CurrentCompoundVer = Configuration->CompoundVersion;
+  AnsiString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
+  URL += FORMAT("utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
+  return URL;
+}
+//---------------------------------------------------------------------------
 void __fastcall QueryUpdates()
 {
   bool Complete = false;

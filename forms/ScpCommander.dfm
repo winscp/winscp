@@ -1135,6 +1135,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       PathLabel = RemotePathLabel
       AddParentDir = True
       OnDDFileOperationExecuted = RemoteFileControlDDFileOperationExecuted
+      OnHistoryGo = DirViewHistoryGo
       OnPathChange = RemoteDirViewPathChange
     end
     inherited RemoteDriveView: TUnixDriveView
@@ -1336,6 +1337,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       WatchForChanges = True
       OnFileIconForName = LocalDirViewFileIconForName
       OnHistoryChange = DirViewHistoryChange
+      OnHistoryGo = DirViewHistoryGo
       OnPathChange = LocalDirViewPathChange
     end
     object LocalTopDock: TTBXDock

@@ -57,7 +57,7 @@ __published:
   TLabel *OpenSSLVersionLabel;
   TStaticText *OpenSSLHomepageLabel;
   TLabel *OpenSSLCopyrightLabel;
-  void __fastcall DisplayLicense(TObject *Sender);
+  void __fastcall PuttyLicenseLabelClick(TObject *Sender);
   void __fastcall LicenseButtonClick(TObject *Sender);
   void __fastcall HelpButtonClick(TObject *Sender);
   void __fastcall RegistrationProductIdLabelClick(TObject *Sender);

@@ -28,7 +28,7 @@
     <PATHRC value=".;"/>
     <PATHASM value=".;"/>
     <LINKER value="TLib"/>
-    <USERDEFINES value="SECURITY_WIN32;MPEXT;_WINDOWS"/>
+    <USERDEFINES value="SECURITY_WIN32;NO_SECURITY;NET_SETUP_DIAGNOSTICS;MPEXT;_WINDOWS"/>
     <SYSDEFINES value="_RTLDLL;NO_STRICT"/>
     <MAINSOURCE value="Putty.bpf"/>
     <INCLUDEPATH value="putty;putty\CHARSET;putty\WINDOWS;$(BCB)\include;$(BCB)\include\vcl"/>

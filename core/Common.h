@@ -73,8 +73,10 @@ bool __fastcall CutToken(AnsiString & Str, AnsiString & Token);
 void __fastcall AddToList(AnsiString & List, const AnsiString & Value, char Delimiter);
 bool __fastcall Is2000();
 bool __fastcall IsWin7();
+bool __fastcall IsExactly2008R2();
 struct TPasLibModule;
 TPasLibModule * __fastcall FindModule(void * Instance);
+__int64 __fastcall Round(double Number);
 //---------------------------------------------------------------------------
 typedef void __fastcall (__closure* TProcessLocalFileEvent)
   (const AnsiString FileName, const TSearchRec Rec, void * Param);

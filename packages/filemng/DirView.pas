@@ -527,6 +527,7 @@ type
     property OnBeginRename;
     property OnEndRename;
     property OnHistoryChange;
+    property OnHistoryGo;
     property OnPathChange;
 
     property ColumnClick;
@@ -553,7 +554,7 @@ uses
   ShellAPI, ComObj,
   ActiveX, ImgList,
   ShellDialogs, IEDriveInfo,
-  FileChanges, Math;
+  FileChanges, Math, PasTools;
 
 var
   DaylightHack: Boolean;
@@ -4367,10 +4368,13 @@ end;
 
 {=================================================================}
 
+var
+  IsWin7: Boolean;
 initialization
   LastClipBoardOperation := cboNone;
   LastIOResult := 0;
-  DaylightHack := not
-    ((Win32MajorVersion > 6) or
-     ((Win32MajorVersion = 6) and (Win32MinorVersion >= 1)));
+  IsWin7 :=
+    (Win32MajorVersion > 6) or
+    ((Win32MajorVersion = 6) and (Win32MinorVersion >= 1));
+  DaylightHack := (not IsWin7) or IsExactly2008R2;
 end.

@@ -1221,6 +1221,7 @@ void __fastcall TLoginDialog::FormShow(TObject * /*Sender*/)
       SessionTree->Selected->MakeVisible();
     }
     LoadConfiguration();
+    LoadState();
   }
 }
 //---------------------------------------------------------------------------
@@ -1532,7 +1533,9 @@ bool __fastcall TLoginDialog::Execute(TSessionData *& Data)
 {
   SetSessionData(Data);
   LoadConfiguration();
+  LoadState();
   bool Result = (ShowModal() == mrOk);
+  SaveState();
   if (Result)
   {
     SaveConfiguration();
@@ -1547,6 +1550,17 @@ bool __fastcall TLoginDialog::Execute(TSessionData *& Data)
   return Result;
 }
 //---------------------------------------------------------------------------
+void __fastcall TLoginDialog::SaveState()
+{
+  assert(CustomWinConfiguration);
+  CustomWinConfiguration->ShowAdvancedLoginOptions = ShowAdvancedLoginOptionsCheck->Checked;
+}
+//---------------------------------------------------------------------------
+void __fastcall TLoginDialog::LoadState()
+{
+  ShowAdvancedLoginOptionsCheck->Checked = CustomWinConfiguration->ShowAdvancedLoginOptions;
+}
+//---------------------------------------------------------------------------
 void __fastcall TLoginDialog::SaveConfiguration()
 {
   assert(CustomWinConfiguration);
@@ -1555,7 +1569,6 @@ void __fastcall TLoginDialog::SaveConfiguration()
   {
     LoggingFrame->SaveConfiguration();
     GeneralSettingsFrame->SaveConfiguration();
-    CustomWinConfiguration->ShowAdvancedLoginOptions = ShowAdvancedLoginOptionsCheck->Checked;
   }
   __finally
   {
@@ -1568,7 +1581,6 @@ void __fastcall TLoginDialog::LoadConfiguration()
   assert(CustomWinConfiguration);
   LoggingFrame->LoadConfiguration();
   GeneralSettingsFrame->LoadConfiguration();
-  ShowAdvancedLoginOptionsCheck->Checked = CustomWinConfiguration->ShowAdvancedLoginOptions;
   UpdateControls();
 }
 //---------------------------------------------------------------------------
@@ -1707,6 +1719,7 @@ void __fastcall TLoginDialog::Dispatch(void * Message)
     if (M->WParam == 0)
     {
       SaveConfiguration();
+      SaveState();
       SaveSession(FSessionData);
       FSavedTab = PageControl->ActivePage;
       FSavedSession = ((SessionTree->Selected != NULL) ?
@@ -1863,13 +1876,19 @@ void __fastcall TLoginDialog::SessionTreeCustomDrawItem(
 {
   TSessionData * Data = (TSessionData *)Node->Data;
   TFontStyles Styles = Sender->Canvas->Font->Style;
+
   if ((Data != NULL) && Data->Special)
   {
     Styles = Styles << fsBold << fsUnderline;
   }
   else
   {
-    if ((Data == NULL) && State.Empty() && !Node->DropTarget)
+    Styles = Styles >> fsBold >> fsUnderline;
+  }
+
+  if (State.Empty() && !Node->DropTarget)
+  {
+    if (Data == NULL)
     {
       bool AnySession = false;
       TTreeNode * ANode = Node->GetNext();
@@ -1884,8 +1903,15 @@ void __fastcall TLoginDialog::SessionTreeCustomDrawItem(
         Sender->Canvas->Font->Color = clGrayText;
       }
     }
-    Styles = Styles >> fsBold >> fsUnderline;
+    else
+    {
+      if (Data->Color != 0)
+      {
+        Sender->Canvas->Brush->Color = (TColor)Data->Color;
+      }
+    }
   }
+
   Sender->Canvas->Font->Style = Styles;
   DefaultDraw = true;
 }

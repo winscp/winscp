@@ -119,6 +119,10 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
 	return 1;		       /* *out == NULL, so failure */
     mapname = dupprintf("PageantRequest%08x", (unsigned)GetCurrentThreadId());
 
+#ifdef MPEXT
+    psa = NULL;
+#endif
+
 #ifndef NO_SECURITY
     if (advapi_initialised || init_advapi()) {
         /*

@@ -421,11 +421,19 @@ bool __fastcall TSynchronizeDialog::GetSaveSettings()
 //---------------------------------------------------------------------------
 void __fastcall TSynchronizeDialog::FormShow(TObject * /*Sender*/)
 {
-  ClearLog();
-  UpdateControls();
-  if (FStartImmediatelly)
+  // OnShow gets called more than once sometimes
+  if (!FSynchronizing)
   {
-    StartButtonClick(NULL);
+    ClearLog();
+    UpdateControls();
+    if (FStartImmediatelly)
+    {
+      StartButtonClick(NULL);
+    }
+  }
+  else
+  {
+    assert(FStartImmediatelly);
   }
 }
 //---------------------------------------------------------------------------

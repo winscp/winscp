@@ -1,4 +1,5 @@
 //---------------------------------------------------------------------------
+#define NO_WIN32_LEAN_AND_MEAN
 #include <vcl.h>
 #pragma hdrstop
 
@@ -21,6 +22,7 @@
 #include <SynchronizeProgress.h>
 
 #include <DragExt.h>
+#include <WinApi.h>
 
 #include "GUITools.h"
 #include "NonVisual.h"
@@ -890,10 +892,20 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
     {
       FProgressForm->OnceDoneOperation = odoDisconnect;
     }
+
+    if (FTaskbarList != NULL)
+    {
+      FTaskbarList->SetProgressState(Application->Handle, TBPF_NORMAL);
+    }
   }
   // operation is finished (or terminated), so we hide progress form
   else if (!ProgressData.InProgress && FProgressForm)
   {
+    if (FTaskbarList != NULL)
+    {
+      FTaskbarList->SetProgressState(Application->Handle, TBPF_NOPROGRESS);
+    }
+
     SAFE_DESTROY(FProgressForm);
 
     if ((ProgressData.Operation != foCalculateSize) &&
@@ -907,6 +919,13 @@ void __fastcall TCustomScpExplorerForm::FileOperationProgress(
   if (FProgressForm)
   {
     FProgressForm->SetProgressData(ProgressData);
+
+    if (FTaskbarList != NULL)
+    {
+      assert(ProgressData.InProgress);
+      FTaskbarList->SetProgressValue(Application->Handle, ProgressData.OverallProgress(), 100);
+    }
+
     if (FProgressForm->Cancel > ProgressData.Cancel)
     {
       ProgressData.Cancel = FProgressForm->Cancel;
@@ -1026,11 +1045,16 @@ struct THistoryItemData
   short int Index;
 };
 //---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::HistoryGo(TOperationSide Side, int Index)
+{
+  DirView(Side)->HistoryGo(Index);
+}
+//---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::HistoryItemClick(System::TObject* Sender)
 {
   TTBCustomItem * Item = dynamic_cast<TTBCustomItem *>(Sender);
   THistoryItemData Data = *reinterpret_cast<THistoryItemData*>(&(Item->Tag));
-  DirView(Data.Side)->HistoryGo(Data.Index);
+  HistoryGo(Data.Side, Data.Index);
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::UpdateHistoryMenu(TOperationSide Side,
@@ -6477,17 +6501,7 @@ void __fastcall TCustomScpExplorerForm::DirViewEditing(
     // OnEditing is called also from TCustomListView::CanEdit
     if (Edit != NULL)
     {
-      AnsiString Text;
-      Text.SetLength(GetWindowTextLength(Edit) + 1);
-      GetWindowText(Edit, Text.c_str(), Text.Length());
-
-      int P = Text.LastDelimiter(".");
-      if (P > 0)
-      {
-        // SendMessage does not work, edit control is probably not fully
-        // initialized yet atm
-        PostMessage(Edit, EM_SETSEL, 0, P - 1);
-      }
+      EditSelectBaseName(Edit);
     }
   }
 }
@@ -6527,4 +6541,9 @@ void __fastcall TCustomScpExplorerForm::FindFiles()
   {
     DoFocusRemotePath(Path);
   }
+}
+//---------------------------------------------------------------------------
+void __fastcall TCustomScpExplorerForm::UpdateTaskbarList(ITaskbarList3 * TaskbarList)
+{
+  FTaskbarList = TaskbarList;
 }

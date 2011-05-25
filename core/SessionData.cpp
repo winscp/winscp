@@ -170,6 +170,7 @@ void __fastcall TSessionData::Default()
 
   Selected = false;
   FModified = false;
+  FSource = ::ssNone;
 
   // add also to TSessionLog::AddStartupInfo()
 }
@@ -302,6 +303,7 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
 
     #undef DUPL
     FModified = ((TSessionData *)Source)->Modified;
+    FSource = ((TSessionData *)Source)->FSource;
   }
   else
   {
@@ -568,6 +570,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
   }
 
   FModified = false;
+  FSource = ssStored;
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
@@ -851,6 +854,34 @@ bool __fastcall TSessionData::HasAnyPassword()
   return !FPassword.IsEmpty() || !FProxyPassword.IsEmpty() || !FTunnelPassword.IsEmpty();
 }
 //---------------------------------------------------------------------
+void __fastcall TSessionData::Modify()
+{
+  FModified = true;
+  if (FSource == ssStored)
+  {
+    FSource = ssStoredModified;
+  }
+}
+//---------------------------------------------------------------------
+AnsiString __fastcall TSessionData::GetSource()
+{
+  switch (FSource)
+  {
+    case ::ssNone:
+      return "Ad-Hoc session";
+
+    case ssStored:
+      return "Stored session";
+
+    case ssStoredModified:
+      return "Modified stored session";
+
+    default:
+      assert(false);
+      return "";
+  }
+}
+//---------------------------------------------------------------------
 void __fastcall TSessionData::SaveRecryptedPasswords(THierarchicalStorage * Storage)
 {
   if (Storage->OpenSubKey(InternalStorageKey, true))
@@ -998,7 +1029,19 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
         HostInfo = ConnectInfo;
       }
 
-      HostName = DecodeUrlChars(CutToChar(HostInfo, ':', true));
+      if ((HostInfo.Length() >= 2) && (HostInfo[1] == '[') && ((P = HostInfo.Pos("]")) > 0))
+      {
+        HostName = HostInfo.SubString(2, P - 2);
+        HostInfo.Delete(1, P);
+        if (!HostInfo.IsEmpty() && (HostInfo[1] == ':'))
+        {
+          HostInfo.Delete(1, 1);
+        }
+      }
+      else
+      {
+        HostName = DecodeUrlChars(CutToChar(HostInfo, ':', true));
+      }
 
       // expanded from ?: operator, as it caused strange "access violation" errors
       if (!HostInfo.IsEmpty())
@@ -1206,7 +1249,7 @@ void __fastcall TSessionData::SetHostName(AnsiString value)
       value = value.SubString(P + 1, value.Length() - P);
     }
     FHostName = value;
-    FModified = true;
+    Modify();
 
     Password = XPassword;
     if (!XPassword.IsEmpty())
@@ -1470,7 +1513,7 @@ void __fastcall TSessionData::SetPublicKeyFile(AnsiString value)
   if (FPublicKeyFile != value)
   {
     FPublicKeyFile = StripPathQuotes(value);
-    FModified = true;
+    Modify();
   }
 }
 //---------------------------------------------------------------------
@@ -1900,7 +1943,7 @@ void __fastcall TSessionData::SetTunnelHostName(AnsiString value)
       value = value.SubString(P + 1, value.Length() - P);
     }
     FTunnelHostName = value;
-    FModified = true;
+    Modify();
 
     TunnelPassword = XTunnelPassword;
     if (!XTunnelPassword.IsEmpty())
@@ -1945,7 +1988,7 @@ void __fastcall TSessionData::SetTunnelPublicKeyFile(AnsiString value)
   if (FTunnelPublicKeyFile != value)
   {
     FTunnelPublicKeyFile = StripPathQuotes(value);
-    FModified = true;
+    Modify();
   }
 }
 //---------------------------------------------------------------------

@@ -151,6 +151,7 @@ __published:
   __property OnBeginRename;
   __property OnEndRename;
   __property OnHistoryChange;
+  __property OnHistoryGo;
   __property OnPathChange;
 
   __property ColumnClick;
