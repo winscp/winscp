@@ -480,6 +480,9 @@ procedure Register;
 
 implementation
 
+uses
+  CompThread;
+
 resourcestring
    SErrorInvalidDirName = 'New name contains invalid characters %s';
 
@@ -1152,11 +1155,51 @@ begin
       Result := Result + Drive;
 end; {GetValidDriveStr}
 
-procedure TDriveView.GetNodeShellAttr(ParentFolder: iShellFolder;
-  NodeData: TNodeData; Path: string; ContentMask: Boolean = True);
+type
+  TFolderAttributesGetterThread = class(TCompThread)
+  private
+    FParentFolder: iShellFolder;
+    FPIDL: PItemIDList;
+    FshAttr: PUINT;
+
+  protected
+    procedure Execute; override;
+
+  public
+    constructor Create(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: PUINT);
+  end;
+
+constructor TFolderAttributesGetterThread.Create(ParentFolder: iShellFolder; PIDL: PItemIDList; shAttr: PUINT);
+begin
+  inherited Create(True);
+  FParentFolder := ParentFolder;
+  FPIDL := PIDL;
+  FshAttr := shAttr;
+end;
+
+procedure TFolderAttributesGetterThread.Execute;
 var
   NotResult: Boolean;
   ErrorMode: Word;
+begin
+  ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
+  try
+    try
+      NotResult := not Succeeded(FParentFolder.GetAttributesOf(1, FPIDL, FshAttr^));
+    finally
+      SetErrorMode(ErrorMode);
+    end;
+    if NotResult then FshAttr^ := 0;
+  except
+    FshAttr^ := 0;
+  end;
+end;
+
+procedure TDriveView.GetNodeShellAttr(ParentFolder: iShellFolder;
+  NodeData: TNodeData; Path: string; ContentMask: Boolean = True);
+var
+  Thread: TFolderAttributesGetterThread;
+  shAttr: ULONG;
 begin
   if (not Assigned(ParentFolder)) or (not Assigned(NodeData)) then
     Exit;
@@ -1166,19 +1209,20 @@ begin
   if Assigned(NodeData.PIDL) then
   begin
     if ContentMask then
-      NodeData.shAttr := SFGAO_DISPLAYATTRMASK or SFGAO_CONTENTSMASK
+      shAttr := SFGAO_DISPLAYATTRMASK or SFGAO_CONTENTSMASK
     else
-      NodeData.shAttr := SFGAO_DISPLAYATTRMASK;
+      shAttr := SFGAO_DISPLAYATTRMASK;
 
-    ErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS or SEM_NOOPENFILEERRORBOX);
-    try
-      try
-        NotResult := not Succeeded(ParentFolder.GetAttributesOf(1, NodeData.PIDL, NodeData.shAttr));
-      finally
-        SetErrorMode(ErrorMode);
-      end;
-      if NotResult then NodeData.shAttr := 0;
-    except
+    Thread := TFolderAttributesGetterThread.Create(ParentFolder, NodeData.PIDL, @shAttr);
+    Thread.FreeOnTerminate := True;
+    Thread.Resume;
+    if Thread.WaitFor(1000) then
+    begin
+      NodeData.shAttr := shAttr;
+    end
+      else
+    begin
+      NodeData.shAttr := 0;
     end;
 
     if not ContentMask then

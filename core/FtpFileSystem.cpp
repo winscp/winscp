@@ -1763,6 +1763,7 @@ void __fastcall TFTPFileSystem::DoReadDirectory(TRemoteFileList * FileList)
 //---------------------------------------------------------------------------
 void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 {
+  bool GotNoFilesForAll = false;
   bool Repeat;
 
   do
@@ -1773,11 +1774,32 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
       FDoListAll = (FListAll == asAuto) || (FListAll == asOn);
       DoReadDirectory(FileList);
 
-      if (FListAll == asAuto)
+      // We got no files with "-a", but again no files w/o "-a",
+      // so it was not "-a"'s problem, revert to auto and let it decide the next time
+      if (GotNoFilesForAll && (FileList->Count == 0))
       {
-        // reading first directory has succeeded, always use "-a"
-        FListAll = asOn;
+        assert(FListAll == asOff);
+        FListAll = asAuto;
       }
+      else if (FListAll == asAuto)
+      {
+        // some servers take "-a" as a mask and return empty directory listing
+        // (note that it's actually never empty here, there's always at least parent directory,
+        // added explicitly by DoReadDirectory)
+        if ((FileList->Count == 0) ||
+            ((FileList->Count == 1) && FileList->Files[0]->IsParentDirectory))
+        {
+          Repeat = true;
+          FListAll = asOff;
+          GotNoFilesForAll = true;
+        }
+        else
+        {
+          // reading first directory has succeeded, always use "-a"
+          FListAll = asOn;
+        }
+      }
+
       // use "-a" even for implicit directory reading by FZAPI?
       // (e.g. before file transfer)
       FDoListAll = (FListAll == asOn);

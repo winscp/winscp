@@ -766,7 +766,7 @@ void CFtpListResult::AddLine(t_directory::t_direntry &direntry)
 		_int64 nFt2 = nFt;
 		nFt += ((_int64)m_server.nTimeZoneOffset) * 10000000 * 60;
 		ft.dwHighDateTime = static_cast<unsigned long>(nFt >> 32);
-		ft.dwLowDateTime = static_cast<unsigned long>(nFt % 0xFFFFFFFF);
+		ft.dwLowDateTime = static_cast<unsigned long>(nFt & 0xFFFFFFFF);
 		FileTimeToSystemTime(&ft, &st);
 		direntry.date.year = st.wYear;
 		direntry.date.month = st.wMonth;

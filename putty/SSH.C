@@ -3753,7 +3753,9 @@ static int do_ssh1_login(Ssh ssh, unsigned char *in, int inlen,
 		sfree(s->response);
 		if (s->publickey_blob && !s->tried_publickey)
 		    logevent("Configured key file not in Pageant");
-	    }
+	    } else {
+                logevent("Failed to get reply from Pageant");
+            }
 	    if (s->authed)
 		break;
 	}
@@ -6634,25 +6636,44 @@ static struct ssh_channel *ssh2_channel_msg(Ssh ssh, struct Packet *pktin)
     return c;
 }
 
+static int ssh2_handle_winadj_response(struct ssh_channel *c)
+{
+    struct winadj *wa = c->v.v2.winadj_head;
+    if (!wa)
+	return FALSE;
+    c->v.v2.winadj_head = wa->next;
+    c->v.v2.remlocwin += wa->size;
+    sfree(wa);
+    /*
+     * winadj messages are only sent when the window is fully open, so
+     * if we get an ack of one, we know any pending unthrottle is
+     * complete.
+     */
+    if (c->v.v2.throttle_state == UNTHROTTLING)
+	c->v.v2.throttle_state = UNTHROTTLED;
+    return TRUE;
+}
+
 static void ssh2_msg_channel_success(Ssh ssh, struct Packet *pktin)
 {
     /*
      * This should never get called.  All channel requests are either
-     * sent with want_reply false or are sent before this handler gets
-     * installed.
+     * sent with want_reply false, are sent before this handler gets
+     * installed, or are "winadj@putty" requests, which servers should
+     * never respond to with success.
+     *
+     * However, at least one server ("boks_sshd") is known to return
+     * SUCCESS for channel requests it's never heard of, such as
+     * "winadj@putty". Raised with foxt.com as bug 090916-090424, but
+     * for the sake of a quiet life, we handle it just the same as the
+     * expected FAILURE.
      */
     struct ssh_channel *c;
-    struct winadj *wa;
 
     c = ssh2_channel_msg(ssh, pktin);
     if (!c)
 	return;
-    wa = c->v.v2.winadj_head;
-    if (wa)
-	ssh_disconnect(ssh, NULL, "Received SSH_MSG_CHANNEL_SUCCESS for "
-		       "\"winadj@putty.projects.tartarus.org\"",
-		       SSH2_DISCONNECT_PROTOCOL_ERROR, FALSE);
-    else
+    if (!ssh2_handle_winadj_response(c))
 	ssh_disconnect(ssh, NULL,
 		       "Received unsolicited SSH_MSG_CHANNEL_SUCCESS",
 		       SSH2_DISCONNECT_PROTOCOL_ERROR, FALSE);
@@ -6667,28 +6688,14 @@ static void ssh2_msg_channel_failure(Ssh ssh, struct Packet *pktin)
      * installed.
      */
     struct ssh_channel *c;
-    struct winadj *wa;
 
     c = ssh2_channel_msg(ssh, pktin);
     if (!c)
 	return;
-    wa = c->v.v2.winadj_head;
-    if (!wa) {
+    if (!ssh2_handle_winadj_response(c))
 	ssh_disconnect(ssh, NULL,
 		       "Received unsolicited SSH_MSG_CHANNEL_FAILURE",
 		       SSH2_DISCONNECT_PROTOCOL_ERROR, FALSE);
-	return;
-    }
-    c->v.v2.winadj_head = wa->next;
-    c->v.v2.remlocwin += wa->size;
-    sfree(wa);
-    /*
-     * winadj messages are only sent when the window is fully open, so
-     * if we get an ack of one, we know any pending unthrottle is
-     * complete.
-     */
-    if (c->v.v2.throttle_state == UNTHROTTLING)
-	c->v.v2.throttle_state = UNTHROTTLED;
 }
 
 static void ssh2_msg_channel_window_adjust(Ssh ssh, struct Packet *pktin)
@@ -7509,6 +7516,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 			s->nkeys = 0;
 		    }
 		}
+	    } else {
+                logevent("Failed to get reply from Pageant");
 	    }
 	}
 
@@ -9143,10 +9152,9 @@ static void ssh2_msg_debug(Ssh ssh, struct Packet *pktin)
     /* log the debug message */
     char *msg;
     int msglen;
-    int always_display;
 
-    /* XXX maybe we should actually take notice of this */
-    always_display = ssh2_pkt_getbool(pktin);
+    /* XXX maybe we should actually take notice of the return value */
+    ssh2_pkt_getbool(pktin);
     ssh_pkt_getstring(pktin, &msg, &msglen);
 
     logeventf(ssh, "Remote debug message: %.*s", msglen, msg);

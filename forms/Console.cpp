@@ -44,6 +44,7 @@ __fastcall TConsoleDialog::TConsoleDialog(TComponent* AOwner)
   FAnyCommandExecuted = false;
   OutputMemo->Color = clBlack;
   OutputMemo->Font->Color = (TColor)0x00BBBBBB; //clGray;
+  FixComboBoxResizeBug(CommandEdit);
   UseSystemSettings(this);
   try
   {

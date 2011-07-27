@@ -58,7 +58,9 @@ __fastcall TOpenDirectoryDialog::TOpenDirectoryDialog(TComponent * AOwner):
   FSessionScrollOnDragOver = new TListBoxScrollOnDragOver(SessionBookmarksList, true);
   FSharedScrollOnDragOver = new TListBoxScrollOnDragOver(SharedBookmarksList, true);
 
+  FixComboBoxResizeBug(LocalDirectoryEdit);
   InstallPathWordBreakProc(LocalDirectoryEdit);
+  FixComboBoxResizeBug(RemoteDirectoryEdit);
   InstallPathWordBreakProc(RemoteDirectoryEdit);
 }
 //---------------------------------------------------------------------

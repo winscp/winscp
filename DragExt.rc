@@ -16,7 +16,7 @@ FILETYPE 0x2
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "dragext.dll\0"
             VALUE "ProductName", "WinSCP\0"
-            VALUE "ProductVersion", "4.3.3.0\0"
+            VALUE "ProductVersion", "4.3.4.0\0"
             VALUE "ReleaseType", "stable\0"
             VALUE "WWW", "http://winscp.net/\0"
         }

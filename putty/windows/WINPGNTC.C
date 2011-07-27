@@ -86,15 +86,70 @@ DECL_WINDOWS_FUNCTION(static, BOOL, InitializeSecurityDescriptor,
 		      (PSECURITY_DESCRIPTOR, DWORD));
 DECL_WINDOWS_FUNCTION(static, BOOL, SetSecurityDescriptorOwner,
 		      (PSECURITY_DESCRIPTOR, PSID, BOOL));
-static int init_advapi(void)
+DECL_WINDOWS_FUNCTION(, DWORD, GetSecurityInfo,
+		      (HANDLE, SE_OBJECT_TYPE, SECURITY_INFORMATION,
+		       PSID *, PSID *, PACL *, PACL *,
+		       PSECURITY_DESCRIPTOR *));
+int init_advapi(void)
 {
     advapi = load_system32_dll("advapi32.dll");
     return advapi &&
+	GET_WINDOWS_FUNCTION(advapi, GetSecurityInfo) &&
         GET_WINDOWS_FUNCTION(advapi, OpenProcessToken) &&
 	GET_WINDOWS_FUNCTION(advapi, GetTokenInformation) &&
 	GET_WINDOWS_FUNCTION(advapi, InitializeSecurityDescriptor) &&
 	GET_WINDOWS_FUNCTION(advapi, SetSecurityDescriptorOwner);
 }
+
+PSID get_user_sid(void)
+{
+    HANDLE proc = NULL, tok = NULL;
+    TOKEN_USER *user = NULL;
+    DWORD toklen, sidlen;
+    PSID sid = NULL, ret = NULL;
+
+    if ((proc = OpenProcess(MAXIMUM_ALLOWED, FALSE,
+                            GetCurrentProcessId())) == NULL)
+        goto cleanup;
+
+    if (!p_OpenProcessToken(proc, TOKEN_QUERY, &tok))
+        goto cleanup;
+
+    if (!p_GetTokenInformation(tok, TokenUser, NULL, 0, &toklen) &&
+        GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+        goto cleanup;
+
+    if ((user = (TOKEN_USER *)LocalAlloc(LPTR, toklen)) == NULL)
+        goto cleanup;
+
+    if (!p_GetTokenInformation(tok, TokenUser, user, toklen, &toklen))
+        goto cleanup;
+
+    sidlen = GetLengthSid(user->User.Sid);
+
+    sid = (PSID)smalloc(sidlen);
+
+    if (!CopySid(sidlen, sid, user->User.Sid))
+        goto cleanup;
+
+    /* Success. Move sid into the return value slot, and null it out
+     * to stop the cleanup code freeing it. */
+    ret = sid;
+    sid = NULL;
+
+  cleanup:
+    if (proc != NULL)
+        CloseHandle(proc);
+    if (tok != NULL)
+        CloseHandle(tok);
+    if (user != NULL)
+        LocalFree(user);
+    if (sid != NULL)
+        sfree(sid);
+
+    return ret;
+}
+
 #endif
 
 int agent_query(void *in, int inlen, void **out, int *outlen,
@@ -108,8 +163,7 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     COPYDATASTRUCT cds;
     SECURITY_ATTRIBUTES sa, *psa;
     PSECURITY_DESCRIPTOR psd = NULL;
-    HANDLE proc, tok;
-    TOKEN_USER *user = NULL;
+    PSID usersid = NULL;
 
     *out = NULL;
     *outlen = 0;
@@ -134,31 +188,16 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
          * run PSFTPs which refer back to the owning user's
          * unprivileged Pageant.
          */
-
-        if ((proc = OpenProcess(MAXIMUM_ALLOWED, FALSE,
-                                GetCurrentProcessId())) != NULL) {
-            if (p_OpenProcessToken(proc, TOKEN_QUERY, &tok)) {
-                DWORD retlen;
-                p_GetTokenInformation(tok, TokenUser, NULL, 0, &retlen);
-                user = (TOKEN_USER *)LocalAlloc(LPTR, retlen);
-                if (!p_GetTokenInformation(tok, TokenUser,
-                                           user, retlen, &retlen)) {
-                    LocalFree(user);
-                    user = NULL;
-                }
-                CloseHandle(tok);
-            }
-            CloseHandle(proc);
-        }
+        usersid = get_user_sid();
 
         psa = NULL;
-        if (user) {
+        if (usersid) {
             psd = (PSECURITY_DESCRIPTOR)
                 LocalAlloc(LPTR, SECURITY_DESCRIPTOR_MIN_LENGTH);
             if (psd) {
                 if (p_InitializeSecurityDescriptor
                     (psd, SECURITY_DESCRIPTOR_REVISION) &&
-                    p_SetSecurityDescriptorOwner(psd, user->User.Sid, FALSE)) {
+                    p_SetSecurityDescriptorOwner(psd, usersid, FALSE)) {
                     sa.nLength = sizeof(sa);
                     sa.bInheritHandle = TRUE;
                     sa.lpSecurityDescriptor = psd;
@@ -225,8 +264,7 @@ int agent_query(void *in, int inlen, void **out, int *outlen,
     CloseHandle(filemap);
     if (psd)
         LocalFree(psd);
-    if (user)
-        LocalFree(user);
+    sfree(usersid);
 #ifdef MPEXT
     // fix memory leak
     sfree(mapname);

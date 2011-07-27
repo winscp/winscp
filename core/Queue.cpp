@@ -423,7 +423,7 @@ void __fastcall TTerminalQueue::DeleteItem(TQueueItem * Item)
       Index = 0;
       while (Empty && (Index < FItems->Count))
       {
-        Empty = (GetItem(Index) != INVALID_HANDLE_VALUE);
+        Empty = (GetItem(Index)->CompleteEvent != INVALID_HANDLE_VALUE);
         Index++;
       }
     }

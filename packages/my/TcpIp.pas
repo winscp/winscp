@@ -761,6 +761,7 @@ procedure THttp.SendRequest(const Method, Version: string);
 begin
   SendCommand(Method + ' ' + FPath + ' HTTP/' + Version);
   SendCommand('Host: ' + FHostname);
+  SendCommand('Connection: close');
   if FSender <> '' then
     SendCommand('From: ' + FSender);
   if FReference <> '' then
@@ -881,7 +882,7 @@ end;
 procedure THttp.GetHead;
 begin
   Login;
-  SendRequest('HEAD', '1.0');
+  SendRequest('HEAD', '1.1');
   GetAnswer;
   Logout;
 end;
@@ -892,7 +893,7 @@ var
   ok, ok2: Integer;
 begin
   Login;
-  SendRequest('GET', '1.0');
+  SendRequest('GET', '1.1');
   GetAnswer;
   // read the data
   TMemoryStream(FStream).Clear;
@@ -937,7 +938,7 @@ begin
   FSocketNumber := StrToInt(Port);
 
   Login;
-  SendRequest('POST', '1.0');
+  SendRequest('POST', '1.1');
   // Send the data
   TMemoryStream(FStream).Seek(0, 0);
   ok := 1;

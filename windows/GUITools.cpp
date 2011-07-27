@@ -117,9 +117,9 @@ void __fastcall OpenSessionInPutty(const AnsiString PuttyPath,
     }
     if (!Password.IsEmpty())
     {
-      Params += FORMAT("-pw \"%s\" ", (Password));
+      Params += FORMAT("-pw %s ", (EscapePuttyCommandParam(Password)));
     }
-    Params += FORMAT("-load \"%s\"", (SessionName));
+    Params += FORMAT("-load %s", (EscapePuttyCommandParam(SessionName)));
 
     if (!ExecuteShell(Program, Params))
     {

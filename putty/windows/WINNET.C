@@ -1005,6 +1005,10 @@ static DWORD try_connect(Actual_Socket sock)
 	 * asynchronously.
 	 */
 	if ( err != WSAEWOULDBLOCK ) {
+#ifdef MPEXT
+    // unselect on error
+    do_select(sock->plug, s, 0);
+#endif
 	    sock->error = winsock_error_string(err);
 	    goto ret;
 	}
@@ -1089,6 +1093,9 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
 
     err = 0;
     do {
+#ifdef MPEXT
+        ret->error = NULL;
+#endif
         err = try_connect(ret);
     } while (err && sk_nextaddr(ret->addr, &ret->step));
 
@@ -1756,7 +1763,7 @@ char *get_hostname(void)
 	    hostname = NULL;
 	    break;
 	}
-    } while (strlen(hostname) >= len-1);
+    } while (strlen(hostname) >= (size_t)(len-1));
     return hostname;
 }
 

@@ -18,10 +18,10 @@ const char *const gsslibnames[3] = {
     "Microsoft SSPI SECUR32.DLL",
     "User-specified GSSAPI DLL",
 };
-const struct keyval gsslibkeywords[] = {
-    { "gssapi32", 0 },
-    { "sspi", 1 },
-    { "custom", 2 },
+const struct keyvalwhere gsslibkeywords[] = {
+    { "gssapi32", 0, -1, -1 },
+    { "sspi", 1, -1, -1 },
+    { "custom", 2, -1, -1 },
 };
 
 DECL_WINDOWS_FUNCTION(static, SECURITY_STATUS,

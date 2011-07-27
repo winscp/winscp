@@ -39,7 +39,7 @@ type
     procedure Resume;
     procedure Suspend;
     procedure Terminate; virtual;
-    function WaitFor: LongWord;
+    function WaitFor(Milliseconds: Cardinal = INFINITE): Boolean;
     property FreeOnTerminate: Boolean read FFreeOnTerminate write FFreeOnTerminate;
     property Handle: THandle read FHandle;
     property Priority: TThreadPriority read GetPriority write SetPriority;
@@ -49,6 +49,9 @@ type
   end;
 
 implementation
+
+uses
+  SysUtils, DateUtils;
 
 const
   CM_EXECPROC = $8FFF;
@@ -329,17 +332,27 @@ begin
   FTerminated := True;
 end;
 
-function TCompThread.WaitFor: LongWord;
+function TCompThread.WaitFor(Milliseconds: Cardinal): Boolean;
 var
   Msg: TMsg;
   H: THandle;
+  Start: TDateTime;
+  R: DWORD;
 begin
   H := FHandle;
   if GetCurrentThreadID = MainThreadID then
-    while MsgWaitForMultipleObjects(1, H, False, INFINITE,
-      QS_SENDMESSAGE) = WAIT_OBJECT_0 + 1 do PeekMessage(Msg, 0, 0, 0, PM_NOREMOVE)
-  else WaitForSingleObject(H, INFINITE);
-  GetExitCodeThread(H, Result);
+  begin
+    Start := Now;
+    repeat
+      R := MsgWaitForMultipleObjects(1, H, False, Milliseconds, QS_SENDMESSAGE);
+      if R = WAIT_OBJECT_0 + 1 then PeekMessage(Msg, 0, 0, 0, PM_NOREMOVE)
+    until (R <> WAIT_OBJECT_0 + 1) or ((Milliseconds <> INFINITE) and (MilliSecondsBetween(Now, Start) >= Milliseconds));
+  end
+    else
+  begin
+    R := WaitForSingleObject(H, Milliseconds);
+  end;
+  Result := (R = WAIT_OBJECT_0);
 end;
 
 initialization

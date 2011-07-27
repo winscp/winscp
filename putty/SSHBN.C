@@ -431,7 +431,7 @@ static void internal_mul(const BignumInt *a, const BignumInt *b,
             for (cp = cps, bp = b + len; cp--, bp-- > b ;) {
                 t = (MUL_WORD(*ap, *bp) + carry) + *cp;
                 *cp = (BignumInt) t;
-                carry = t >> BIGNUM_INT_BITS;
+                carry = (BignumInt)(t >> BIGNUM_INT_BITS);
             }
             *cp = carry;
         }
@@ -533,7 +533,7 @@ static void internal_mul_low(const BignumInt *a, const BignumInt *b,
             for (cp = cps, bp = b + len; bp--, cp-- > c ;) {
                 t = (MUL_WORD(*ap, *bp) + carry) + *cp;
                 *cp = (BignumInt) t;
-                carry = t >> BIGNUM_INT_BITS;
+                carry = (BignumInt)(t >> BIGNUM_INT_BITS);
             }
         }
     }
@@ -909,7 +909,7 @@ Bignum modpow(Bignum base_in, Bignum exp, Bignum mod)
 
     mninv = snewn(len, BignumInt);
     for (j = 0; j < len; j++)
-	mninv[len - 1 - j] = (j < inv[0] ? inv[j + 1] : 0);
+	mninv[len - 1 - j] = (j < (int)inv[0] ? inv[j + 1] : 0);
     freebn(inv);         /* we don't need this copy of it any more */
     /* Now negate mninv mod r, so it's the inverse of -n rather than +n. */
     x = snewn(len, BignumInt);
@@ -919,13 +919,13 @@ Bignum modpow(Bignum base_in, Bignum exp, Bignum mod)
 
     /* x = snewn(len, BignumInt); */ /* already done above */
     for (j = 0; j < len; j++)
-	x[len - 1 - j] = (j < base[0] ? base[j + 1] : 0);
+	x[len - 1 - j] = (j < (int)base[0] ? base[j + 1] : 0);
     freebn(base);        /* we don't need this copy of it any more */
 
     a = snewn(2*len, BignumInt);
     b = snewn(2*len, BignumInt);
     for (j = 0; j < len; j++)
-	a[2*len - 1 - j] = (j < rn[0] ? rn[j + 1] : 0);
+	a[2*len - 1 - j] = (j < (int)rn[0] ? rn[j + 1] : 0);
     freebn(rn);
 
     /* Scratch space for multiplies */

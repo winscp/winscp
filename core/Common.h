@@ -49,6 +49,7 @@ AnsiString __fastcall FormatCommand(AnsiString Program, AnsiString Params);
 AnsiString __fastcall ExpandFileNameCommand(const AnsiString Command,
   const AnsiString FileName);
 void __fastcall ReformatFileNameCommand(AnsiString & Command);
+AnsiString __fastcall EscapePuttyCommandParam(AnsiString Param);
 AnsiString __fastcall ExpandEnvironmentVariables(const AnsiString & Str);
 bool __fastcall ComparePaths(const AnsiString & Path1, const AnsiString & Path2);
 bool __fastcall CompareFileName(const AnsiString & Path1, const AnsiString & Path2);

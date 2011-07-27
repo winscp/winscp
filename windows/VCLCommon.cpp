@@ -934,7 +934,6 @@ HWND __fastcall GetCorrectFormParent()
   if ((Application->MainForm != NULL) &&
       (Application->MainForm != Screen->ActiveForm))
   {
-    AnsiString C = Screen->ActiveForm->Caption;
     if (Screen->ActiveForm != NULL)
     {
       // the case when we are invoking dialog from (e.g. prefences) dialog
@@ -1284,6 +1283,7 @@ void __fastcall HintLabelRestore(TStaticText * StaticText)
 //---------------------------------------------------------------------------
 static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
 {
+  // it is TCustomComboxBox, but the properties are published only by TComboBox
   TComboBox * ComboBox = static_cast<TComboBox *>(Data);
   if (Message.Msg == WM_SIZE)
   {
@@ -1311,7 +1311,7 @@ static void __fastcall ComboBoxFixWindowProc(void * Data, TMessage & Message)
   }
 }
 //---------------------------------------------------------------------------
-void __fastcall FixComboBoxResizeBug(TComboBox * ComboBox)
+void __fastcall FixComboBoxResizeBug(TCustomComboBox * ComboBox)
 {
   TWndMethod WindowProc;
   ((TMethod*)&WindowProc)->Data = ComboBox;

@@ -43,7 +43,7 @@ static void logwrite(struct LogContext *ctx, void *data, int len)
 	bufchain_add(&ctx->queue, data, len);
     } else if (ctx->state == L_OPEN) {
 	assert(ctx->lgfp);
-	if (fwrite(data, 1, len, ctx->lgfp) < len) {
+	if (fwrite(data, 1, len, ctx->lgfp) < (size_t)len) {
 	    logfclose(ctx);
 	    ctx->state = L_ERROR;
 	    /* Log state is L_ERROR so this won't cause a loop */

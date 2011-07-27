@@ -412,6 +412,50 @@ AnsiString __fastcall ExpandFileNameCommand(const AnsiString Command,
     AddPathQuotes(FileName));
 }
 //---------------------------------------------------------------------------
+AnsiString __fastcall EscapePuttyCommandParam(AnsiString Param)
+{
+  bool Space = false;
+
+  for (int i = 1; i <= Param.Length(); i++)
+  {
+    switch (Param[i])
+    {
+      case '"':
+        Param.Insert("\\", i);
+        i++;
+        break;
+
+      case ' ':
+        Space = true;
+        break;
+
+      case '\\':
+        int i2 = i;
+        while ((i2 <= Param.Length()) && (Param[i2] == '\\'))
+        {
+          i2++;
+        }
+        if ((i2 <= Param.Length()) && (Param[i2] == '"'))
+        {
+          while (Param[i] == '\\')
+          {
+            Param.Insert("\\", i);
+            i += 2;
+          }
+          i--;
+        }
+        break;
+    }
+  }
+
+  if (Space)
+  {
+    Param = "\"" + Param + '"';
+  }
+
+  return Param;
+}
+//---------------------------------------------------------------------------
 AnsiString __fastcall ExpandEnvironmentVariables(const AnsiString & Str)
 {
   AnsiString Buf;

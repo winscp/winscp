@@ -581,7 +581,11 @@ int CTransferSocket::CheckForTimeout(int delay)
 {
 	UpdateStatusBar(false);
 	if (!m_bCheckTimeout)
-		return 1;
+	{
+		// we are closed, so make sure the FTP control socket is itself checking for
+		// timeout as we are not
+		return 0;
+	}
 	CTimeSpan span = CTime::GetCurrentTime()-m_LastActiveTime;
 	if (span.GetTotalSeconds()>=delay)
 	{

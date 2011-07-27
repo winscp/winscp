@@ -2224,11 +2224,15 @@ begin
               ForceByName := (FileIconForName <> FullName);
             end;
             if (not ForceByName) and Assigned(PIDL) then
+            begin
               SHGetFileInfo(PChar(PIDL), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
                 SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX or SHGFI_PIDL)
-            else
+            end
+              else
+            begin
               SHGetFileInfo(PChar(FileIconForName), FILE_ATTRIBUTE_NORMAL, FileInfo, SizeOf(FileInfo),
                 SHGFI_TYPENAME or SHGFI_USEFILEATTRIBUTES or SHGFI_SYSICONINDEX);
+            end;
 
             TypeName := FileInfo.szTypeName;
             ImageIndex := FileInfo.iIcon;

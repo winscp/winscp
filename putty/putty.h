@@ -353,12 +353,52 @@ enum {
  * Defined here so that backends can export their GSS library tables
  * to the cross-platform settings code.
  */
-struct keyval { char *s; int v; };
+struct keyvalwhere {
+    /*
+     * Two fields which define a string and enum value to be
+     * equivalent to each other.
+     */
+    char *s;
+    int v;
+
+    /*
+     * The next pair of fields are used by gprefs() in settings.c to
+     * arrange that when it reads a list of strings representing a
+     * preference list and translates it into the corresponding list
+     * of integers, strings not appearing in the list are entered in a
+     * configurable position rather than uniformly at the end.
+     */
+
+    /*
+     * 'vrel' indicates which other value in the list to place this
+     * element relative to. It should be a value that has occurred in
+     * a 'v' field of some other element of the array, or -1 to
+     * indicate that we simply place relative to one or other end of
+     * the list.
+     *
+     * gprefs will try to process the elements in an order which makes
+     * this field work (i.e. so that the element referenced has been
+     * added before processing this one).
+     */
+    int vrel;
+
+    /*
+     * 'where' indicates whether to place the new value before or
+     * after the one referred to by vrel. -1 means before; +1 means
+     * after.
+     *
+     * When vrel is -1, this also implicitly indicates which end of
+     * the array to use. So vrel=-1, where=-1 means to place _before_
+     * some end of the list (hence, at the last element); vrel=-1,
+     * where=+1 means to place _after_ an end (hence, at the first).
+     */
+    int where;
+};
 
 #ifndef NO_GSSAPI
 extern const int ngsslibs;
-extern const char *const gsslibnames[];/* for displaying in configuration */
-extern const struct keyval gsslibkeywords[];   /* for storing by settings.c */
+extern const char *const gsslibnames[]; /* for displaying in configuration */
+extern const struct keyvalwhere gsslibkeywords[]; /* for settings.c */
 #endif
 
 extern const char *const ttymodes[];

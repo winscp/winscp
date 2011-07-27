@@ -54,7 +54,7 @@ public:
 	void __fastcall Resume(void);
 	void __fastcall Suspend(void);
 	virtual void __fastcall Terminate(void);
-	unsigned __fastcall WaitFor(void);
+	bool __fastcall WaitFor(unsigned Milliseconds = (unsigned)(0xffffffff));
 	__property bool FreeOnTerminate = {read=FFreeOnTerminate, write=FFreeOnTerminate, nodefault};
 	__property unsigned Handle = {read=FHandle, nodefault};
 	__property Classes::TThreadPriority Priority = {read=GetPriority, write=SetPriority, nodefault};

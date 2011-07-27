@@ -503,7 +503,7 @@ int handle_backlog(struct handle *h);
 void *handle_get_privdata(struct handle *h);
 
 /*
- * pageantc.c needs to schedule callbacks for asynchronous agent
+ * winpgntc.c needs to schedule callbacks for asynchronous agent
  * requests. This has to be done differently in GUI and console, so
  * there's an exported function used for the purpose.
  * 
@@ -513,6 +513,14 @@ void *handle_get_privdata(struct handle *h);
 void agent_schedule_callback(void (*callback)(void *, void *, int),
 			     void *callback_ctx, void *data, int len);
 #define FLAG_SYNCAGENT 0x1000
+
+/*
+ * winpgntc.c also exports these two functions which are used by the
+ * server side of Pageant as well, to get the user SID for comparing
+ * with clients'.
+ */
+int init_advapi(void);  /* initialises everything needed by get_user_sid */
+PSID get_user_sid(void);
 
 /*
  * Exports from winser.c.

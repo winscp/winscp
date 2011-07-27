@@ -3904,7 +3904,14 @@ void __fastcall TCustomScpExplorerForm::UpdateTerminal(TTerminal * Terminal)
 
   // cannot use RemoteDirView->Path, because it is empty if connection
   // was already closed
-  ManagedTerminal->RemoteDirectory = Terminal->CurrentDirectory;
+  // also only peek, we may not be connected at all atm,
+  // so make sure we do not try retrieving current directory from the server
+  // (particularly with FTP)
+  AnsiString ACurrentDirectory = Terminal->PeekCurrentDirectory();
+  if (!ACurrentDirectory.IsEmpty())
+  {
+    ManagedTerminal->RemoteDirectory = ACurrentDirectory;
+  }
   ManagedTerminal->Color = SessionColor;
 }
 //---------------------------------------------------------------------------
@@ -3914,7 +3921,15 @@ void __fastcall TCustomScpExplorerForm::UpdateSessionData(TSessionData * Data)
 
   // cannot use RemoteDirView->Path, because it is empty if connection
   // was already closed
-  Data->RemoteDirectory = Terminal->CurrentDirectory;
+  // also only peek, we may not be connected at all atm
+  // (well this can hardly be true here, as opposite to UpdateTerminal above),
+  // so make sure we do not try retrieving current directory from the server
+  // (particularly with FTP)
+  AnsiString ACurrentDirectory = Terminal->PeekCurrentDirectory();
+  if (!ACurrentDirectory.IsEmpty())
+  {
+    Data->RemoteDirectory = ACurrentDirectory;
+  }
   Data->Color = SessionColor;
 }
 //---------------------------------------------------------------------------

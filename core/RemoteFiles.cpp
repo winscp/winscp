@@ -2059,7 +2059,10 @@ void __fastcall TRights::SetText(const AnsiString & value)
           KeepText = true;
         }
         FSet |= static_cast<unsigned short>(Flag);
-        FUnset |= static_cast<unsigned short>(ExtendedFlag);
+        if (i % 3 == 0)
+        {
+          FUnset |= static_cast<unsigned short>(ExtendedFlag);
+        }
       }
 
       Flag <<= 1;
