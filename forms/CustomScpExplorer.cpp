@@ -2163,7 +2163,14 @@ void __fastcall TCustomScpExplorerForm::ExecuteFile(TOperationSide Side,
       if (Token != NULL)
       {
         TForm * Form = dynamic_cast<TForm *>(Token);
-        Form->SetFocus();
+        if (Form->WindowState == wsMinimized)
+        {
+          ShowWindow(Form->Handle, SW_RESTORE);
+        }
+        else
+        {
+          Form->SetFocus();
+        }
         Abort();
       }
       else

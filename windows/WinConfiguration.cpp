@@ -503,7 +503,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.LocalPanelWidth = 0.5;
   FScpCommander.SwappedPanels = false;
   FScpCommander.StatusBar = true;
-  FScpCommander.NortonLikeMode = nlOn;
+  FScpCommander.NortonLikeMode = nlKeyboard;
   FScpCommander.PreserveLocalDirectory = false;
   // Toolbar_FloatRightX=1 makes keybar apper initialy "in column" when undocked
   FScpCommander.ToolbarsLayout =

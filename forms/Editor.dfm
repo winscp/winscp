@@ -204,6 +204,8 @@ object EditorForm: TEditorForm
       Hint = 'Close editor|Save file if necessary and close editor'
       ImageIndex = 8
       ShortCut = 27
+      SecondaryShortCuts.Strings = (
+        'F10')
     end
     object FindAction: TAction
       Caption = '&Find...'

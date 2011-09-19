@@ -150,6 +150,7 @@ int dtls1_accept(SSL *s)
 	unsigned long alg_k;
 	int ret= -1;
 	int new_state,state,skip=0;
+	int listen;
 
 	RAND_add(&Time,sizeof(Time),0);
 	ERR_clear_error();
@@ -159,10 +160,14 @@ int dtls1_accept(SSL *s)
 		cb=s->info_callback;
 	else if (s->ctx->info_callback != NULL)
 		cb=s->ctx->info_callback;
+	
+	listen = s->d1->listen;
 
 	/* init things to blank */
 	s->in_handshake++;
 	if (!SSL_in_init(s) || SSL_in_before(s)) SSL_clear(s);
+
+	s->d1->listen = listen;
 
 	if (s->cert == NULL)
 		{
@@ -273,11 +278,23 @@ int dtls1_accept(SSL *s)
 
 			s->init_num=0;
 
+			/* Reflect ClientHello sequence to remain stateless while listening */
+			if (listen)
+				{
+				memcpy(s->s3->write_sequence, s->s3->read_sequence, sizeof(s->s3->write_sequence));
+				}
+
 			/* If we're just listening, stop here */
-			if (s->d1->listen && s->state == SSL3_ST_SW_SRVR_HELLO_A)
+			if (listen && s->state == SSL3_ST_SW_SRVR_HELLO_A)
 				{
 				ret = 2;
 				s->d1->listen = 0;
+				/* Set expected sequence numbers
+				 * to continue the handshake.
+				 */
+				s->d1->handshake_read_seq = 2;
+				s->d1->handshake_write_seq = 1;
+				s->d1->next_handshake_write_seq = 1;
 				goto end;
 				}
 			
@@ -286,7 +303,6 @@ int dtls1_accept(SSL *s)
 		case DTLS1_ST_SW_HELLO_VERIFY_REQUEST_A:
 		case DTLS1_ST_SW_HELLO_VERIFY_REQUEST_B:
 
-			dtls1_start_timer(s);
 			ret = dtls1_send_hello_verify_request(s);
 			if ( ret <= 0) goto end;
 			s->state=SSL3_ST_SW_FLUSH;
@@ -736,9 +752,6 @@ int dtls1_send_hello_verify_request(SSL *s)
 		/* number of bytes to write */
 		s->init_num=p-buf;
 		s->init_off=0;
-
-		/* buffer the message to handle re-xmits */
-		dtls1_buffer_message(s, 0);
 		}
 
 	/* s->state = DTLS1_ST_SW_HELLO_VERIFY_REQUEST_B */
@@ -1017,12 +1030,11 @@ int dtls1_send_server_key_exchange(SSL *s)
 				SSLerr(SSL_F_DTLS1_SEND_SERVER_KEY_EXCHANGE,ERR_R_ECDH_LIB);
 				goto err;
 				}
-			if (!EC_KEY_up_ref(ecdhp))
+			if ((ecdh = EC_KEY_dup(ecdhp)) == NULL)
 				{
 				SSLerr(SSL_F_DTLS1_SEND_SERVER_KEY_EXCHANGE,ERR_R_ECDH_LIB);
 				goto err;
 				}
-			ecdh = ecdhp;
 
 			s->s3->tmp.ecdh=ecdh;
 			if ((EC_KEY_get0_public_key(ecdh) == NULL) ||

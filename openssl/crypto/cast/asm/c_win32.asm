@@ -814,7 +814,6 @@ L$006PIC_point:
 	xor	edx,edx
 	jmp	ebp
 L$008ej7:
-	xor	edx,edx
 	mov	dh,BYTE [6+esi]
 	shl	edx,8
 L$009ej6:
@@ -826,7 +825,6 @@ L$011ej4:
 	jmp	NEAR L$012ejend
 L$013ej3:
 	mov	ch,BYTE [2+esi]
-	xor	ecx,ecx
 	shl	ecx,8
 L$014ej2:
 	mov	ch,BYTE [1+esi]

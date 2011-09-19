@@ -37,23 +37,34 @@ bool __fastcall DoLoginDialog(TStoredSessionList *SessionList,
   TLoginDialog * LoginDialog = SafeFormCreate<TLoginDialog>();
   TSessionData * Data2;
   bool Result;
+  bool Owned;
   try
   {
-    LoginDialog->Init(SessionList, Options);
-    Data2 = Data;
-    Result = LoginDialog->Execute(Data2);
+    try
+    {
+      LoginDialog->Init(SessionList, Options);
+      Data2 = Data;
+      Result = LoginDialog->Execute(Data2, Owned);
+    }
+    __finally
+    {
+      delete LoginDialog;
+    }
+    if (Result)
+    {
+      // this may popup master pasword dialog,
+      // if it happens before login dialog is destroyed
+      // (from within try ...finally block above)
+      // the next window will appear in background for some reason
+      Data->Assign(Data2);
+    }
   }
   __finally
   {
-    delete LoginDialog;
-  }
-  if (Result)
-  {
-    // this may popup master pasword dialog,
-    // if it happens before login dialog is destroyed
-    // (from within try ...finally block above)
-    // the next window will appear in background for some reason
-    Data->Assign(Data2);
+    if (Result && Owned)
+    {
+      delete Data2;
+    }
   }
   return Result;
 }
@@ -1529,7 +1540,7 @@ void __fastcall TLoginDialog::ActionListUpdate(TBasicAction *Action,
   }
 }
 //---------------------------------------------------------------------------
-bool __fastcall TLoginDialog::Execute(TSessionData *& Data)
+bool __fastcall TLoginDialog::Execute(TSessionData *& Data, bool & Owned)
 {
   SetSessionData(Data);
   LoadConfiguration();
@@ -1543,8 +1554,13 @@ bool __fastcall TLoginDialog::Execute(TSessionData *& Data)
     // FSessionData ceases to exist with the dialog
     if (Data == FSessionData)
     {
+      Owned = true;
       Data = new TSessionData("");
       Data->Assign(FSessionData);
+    }
+    else
+    {
+      Owned = false;
     }
   }
   return Result;

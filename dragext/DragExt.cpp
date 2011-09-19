@@ -419,8 +419,8 @@ bool UnregisterServer(bool AllUsers)
     }
   }
 
-  if ((RegOpenKeyEx(RootKey, DRAG_EXT_REG_KEY, 0, KEY_WRITE, &HKey) ==
-        ERROR_SUCCESS))
+  if (RegOpenKeyEx(RootKey, DRAG_EXT_REG_KEY, 0, KEY_WRITE, &HKey) ==
+        ERROR_SUCCESS)
   {
     unsigned long Value = 0;
     RegSetValueEx(HKey, "Enable", 0, REG_DWORD,

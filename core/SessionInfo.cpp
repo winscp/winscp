@@ -3,6 +3,10 @@
 #pragma hdrstop
 
 #include <stdio.h>
+#include <lmcons.h>
+#define SECURITY_WIN32
+#include <sspi.h>
+#include <secext.h>
 
 #include "Common.h"
 #include "SessionInfo.h"
@@ -908,6 +912,13 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       delete Storage;
     }
+    char UserName[UNLEN + 1];
+    unsigned long UserNameSize = sizeof(UserName);
+    if (!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize))
+    {
+      strcpy(UserName, "<Failed to retrieve username>");
+    }
+    ADF("Local account: %s", (UserName));
     ADF("Login time: %s", (FormatDateTime("dddddd tt", Now())));
     AddSeparator();
     ADF("Session name: %s (%s)", (Data->SessionName, Data->Source));

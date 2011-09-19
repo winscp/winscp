@@ -57,7 +57,7 @@ VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
 DefaultDirName={pf}\WinSCP
 DefaultGroupName=WinSCP
 AllowNoIcons=yes
-LicenseFile=licence.setup
+LicenseFile=licence.setup{#OutputSuffix}
 UninstallDisplayIcon={app}\WinSCP.exe
 OutputDir={#OutputDir}
 DisableStartupPrompt=yes
@@ -83,6 +83,7 @@ Name: {#DefaultLang}; MessagesFile: {#MessagesPathRel(DefaultLang)}
 #define LangI
 #define Complete
 #define DirName
+#define DirNameRel
 
 #sub ProcessTranslationFile
 
@@ -114,7 +115,7 @@ Name: {#Lang}; MessagesFile: {#MessagesPathRel(Lang)}
 
 #sub ProcessTranslationDir
 
-  #if FindHandle = FindFirst(DirName + "\" + TranslationFileMask, 0)
+  #if FindHandle = FindFirst(DirNameRel + "\" + TranslationFileMask, 0)
     #define FResult 1
     #for {0; FResult; FResult = FindNext(FindHandle)} ProcessTranslationFile
     #expr FindClose(FindHandle)
@@ -124,11 +125,13 @@ Name: {#Lang}; MessagesFile: {#MessagesPathRel(Lang)}
 
 #expr Complete = 1
 #expr DirName = TranslationDir
+#expr DirNameRel = TranslationDirRel
 #emit ProcessTranslationDir
 
 #ifdef TranslationIncompleteDir
   #expr Complete = 0
   #expr DirName = TranslationIncompleteDir
+  #expr DirNameRel = TranslationIncompleteDirRel
   #emit ProcessTranslationDir
 #endif
 
@@ -416,12 +419,16 @@ begin
   Result := False;
 end;
 
-procedure OpenHelp;
+procedure OpenBrowser(Url: string);
 var
   ErrorCode: Integer;
 begin
-  ShellExec('open', '{#WebDocumentation}installation', '', '',
-    SW_SHOWNORMAL, ewNoWait, ErrorCode);
+  ShellExec('open', Url, '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
+end;
+
+procedure OpenHelp;
+begin
+  OpenBrowser('{#WebDocumentation}installation');
 end;
 
 procedure HelpButtonClick(Sender: TObject);
@@ -728,7 +735,8 @@ begin
 
 #ifdef OpenCandy
   OpenCandyAsyncInit('{#OC_STR_MY_PRODUCT_NAME}', '{#OC_STR_KEY}', '{#OC_STR_SECRET}',
-    ExpandConstant('{cm:LanguageISOCode}'), {#OC_INIT_MODE_NORMAL});
+    ExpandConstant('{cm:LanguageISOCode}'), {#OC_INIT_MODE_NORMAL},
+    wpLicense, wpSelectTasks);
 #endif
 end;
 

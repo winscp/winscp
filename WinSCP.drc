@@ -292,54 +292,54 @@
 #define Rtlconsts_SDuplicateString 65485
 #define Rtlconsts_SFCreateError 65486
 #define Rtlconsts_SFixedColTooBig 65487
-#define Customdirview_SErrorInvalidName 65488
-#define Customdirview_STextFileExt 65489
-#define Customdirview_STextFiles 65490
-#define Customdirview_STextDirectories 65491
-#define Customdirview_SParentDir 65492
-#define Customdirview_SIconUpdateThreadTerminationError 65493
-#define Customdirview_SDragDropError 65494
-#define Customdirview_SDriveNotReady 65495
-#define Customdirview_SDirNotExists 65496
-#define Customunixdirview_SUnixDefaultRootName 65497
-#define Unixdirviewcolproperties_SUnixDirViewRightsCol 65498
-#define Unixdirviewcolproperties_SUnixDirViewOwnerCol 65499
-#define Unixdirviewcolproperties_SUnixDirViewGroupCol 65500
-#define Unixdirviewcolproperties_SUnixDirViewLinkTargetCol 65501
-#define Unixdirviewcolproperties_SUnixDirViewTypeCol 65502
-#define Customdriveview_SDragDropError 65503
-#define Driveview_coInvalidDosChars 65504
-#define Driveview_Space 65505
-#define DriveView_16407 65506
-#define Fileoperator_SFileOperation 65507
-#define Baseutils_SNoValidPath 65508
-#define Baseutils_SUcpPathsNotSupported 65509
-#define Iedriveinfo_ErrorInvalidDrive 65510
-#define Dirviewcolproperties_SDirViewNameCol 65511
-#define Dirviewcolproperties_SDirViewSizeCol 65512
-#define Dirviewcolproperties_SDirViewTypeCol 65513
-#define Dirviewcolproperties_SDirViewChangedCol 65514
-#define Dirviewcolproperties_SDirViewAttrCol 65515
-#define Dirviewcolproperties_SDirViewExtCol 65516
-#define Customdirview_SErrorOpenFile 65517
-#define Customdirview_SErrorRenameFile 65518
-#define Customdirview_SErrorRenameFileExists 65519
+#define Customdirview_SDirNotExists 65488
+#define Customunixdirview_SUnixDefaultRootName 65489
+#define Unixdirviewcolproperties_SUnixDirViewRightsCol 65490
+#define Unixdirviewcolproperties_SUnixDirViewOwnerCol 65491
+#define Unixdirviewcolproperties_SUnixDirViewGroupCol 65492
+#define Unixdirviewcolproperties_SUnixDirViewLinkTargetCol 65493
+#define Unixdirviewcolproperties_SUnixDirViewTypeCol 65494
+#define Customdriveview_SDragDropError 65495
+#define Comboedit_SBrowse 65496
+#define Comboedit_SDefaultFilter 65497
+#define Comboedit_SInvalidFileName 65498
+#define Tcpip_SSocketError2 65499
+#define Tcpip_STimeout 65500
+#define Tcpip_SUnknownSockError 65501
+#define Tcpip_SHttpError 65502
+#define Tcpip_SRedirectLimitError 65503
+#define Dirviewcolproperties_SDirViewSizeCol 65504
+#define Dirviewcolproperties_SDirViewTypeCol 65505
+#define Dirviewcolproperties_SDirViewChangedCol 65506
+#define Dirviewcolproperties_SDirViewAttrCol 65507
+#define Dirviewcolproperties_SDirViewExtCol 65508
+#define Customdirview_SErrorOpenFile 65509
+#define Customdirview_SErrorRenameFile 65510
+#define Customdirview_SErrorRenameFileExists 65511
+#define Customdirview_SErrorInvalidName 65512
+#define Customdirview_STextFileExt 65513
+#define Customdirview_STextFiles 65514
+#define Customdirview_STextDirectories 65515
+#define Customdirview_SParentDir 65516
+#define Customdirview_SIconUpdateThreadTerminationError 65517
+#define Customdirview_SDragDropError 65518
+#define Customdirview_SDriveNotReady 65519
 #define Dragdrop_MICopyStr 65520
 #define Dragdrop_MIMoveStr 65521
 #define Dragdrop_MILinkStr 65522
 #define Dragdrop_MIAbortStr 65523
-#define Comboedit_SBrowse 65524
-#define Comboedit_SDefaultFilter 65525
-#define Comboedit_SInvalidFileName 65526
-#define Tcpip_SSocketError2 65527
-#define Tcpip_STimeout 65528
-#define Tcpip_SUnknownSockError 65529
-#define Tcpip_SHttpError 65530
-#define Tcpip_SRedirectLimitError 65531
-#define Dirview_coFileOperatorTitle 65532
-#define Dirview_coInvalidDosChars 65533
-#define Dirview_Space 65534
-#define Driveview_coFileOperatorTitle 65535
+#define Dirview_coFileOperatorTitle 65524
+#define Dirview_coInvalidDosChars 65525
+#define Dirview_Space 65526
+#define Driveview_coFileOperatorTitle 65527
+#define Driveview_coInvalidDosChars 65528
+#define Driveview_Space 65529
+#define DriveView_16407 65530
+#define Fileoperator_SFileOperation 65531
+#define Baseutils_SNoValidPath 65532
+#define Baseutils_SUcpPathsNotSupported 65533
+#define Iedriveinfo_ErrorInvalidDrive 65534
+#define Dirviewcolproperties_SDirViewNameCol 65535
 STRINGTABLE
 BEGIN
 	Consts_SDuplicateMenus,	"Menu '%s' is already being used by another form"
@@ -627,14 +627,6 @@ BEGIN
 	Rtlconsts_SDuplicateString,	"String list does not allow duplicates"
 	Rtlconsts_SFCreateError,	"Cannot create file %s"
 	Rtlconsts_SFixedColTooBig,	"Fixed column count must be less than column count"
-	Customdirview_SErrorInvalidName,	"Filename contains invalid characters:"
-	Customdirview_STextFileExt,	"File %s"
-	Customdirview_STextFiles,	"%u Files"
-	Customdirview_STextDirectories,	"%u Directories"
-	Customdirview_SParentDir,	"Parent directory"
-	Customdirview_SIconUpdateThreadTerminationError,	"Can't terminate icon update thread."
-	Customdirview_SDragDropError,	"DragDrop Error: %d"
-	Customdirview_SDriveNotReady,	"Drive '%s:' is not ready."
 	Customdirview_SDirNotExists,	"Directory '%s' doesn't exist."
 	Customunixdirview_SUnixDefaultRootName,	"/ <root>"
 	Unixdirviewcolproperties_SUnixDirViewRightsCol,	"Rights"
@@ -643,26 +635,6 @@ BEGIN
 	Unixdirviewcolproperties_SUnixDirViewLinkTargetCol,	"Link target"
 	Unixdirviewcolproperties_SUnixDirViewTypeCol,	"Type"
 	Customdriveview_SDragDropError,	"Drag&drop error: %d"
-	Driveview_coInvalidDosChars,	"\\/:*?\"<>|"
-	Driveview_Space,	" "
-	DriveView_16407,	"New name contains invalid characters %s"
-	Fileoperator_SFileOperation,	"File Operation"
-	Baseutils_SNoValidPath,	"Can't find any valid path."
-	Baseutils_SUcpPathsNotSupported,	"UNC paths are not supported."
-	Iedriveinfo_ErrorInvalidDrive,	"%s is a invalid drive letter."
-	Dirviewcolproperties_SDirViewNameCol,	"Name"
-	Dirviewcolproperties_SDirViewSizeCol,	"Size"
-	Dirviewcolproperties_SDirViewTypeCol,	"Type"
-	Dirviewcolproperties_SDirViewChangedCol,	"Changed"
-	Dirviewcolproperties_SDirViewAttrCol,	"Attr"
-	Dirviewcolproperties_SDirViewExtCol,	"Ext"
-	Customdirview_SErrorOpenFile,	"Can't open file: "
-	Customdirview_SErrorRenameFile,	"Can't rename file or directory: "
-	Customdirview_SErrorRenameFileExists,	"File already exists: "
-	Dragdrop_MICopyStr,	"&Copy Here"
-	Dragdrop_MIMoveStr,	"&Move Here"
-	Dragdrop_MILinkStr,	"&Shortcut(s) Create Here"
-	Dragdrop_MIAbortStr,	"&Abort"
 	Comboedit_SBrowse,	"Browse"
 	Comboedit_SDefaultFilter,	"All files (*.*)|*.*"
 	Comboedit_SInvalidFileName,	"Invalid file name - %s"
@@ -671,9 +643,37 @@ BEGIN
 	Tcpip_SUnknownSockError,	"Unknown error"
 	Tcpip_SHttpError,	"Received response %d %s from %s"
 	Tcpip_SRedirectLimitError,	"Exceeded maximal redirect limie %d"
+	Dirviewcolproperties_SDirViewSizeCol,	"Size"
+	Dirviewcolproperties_SDirViewTypeCol,	"Type"
+	Dirviewcolproperties_SDirViewChangedCol,	"Changed"
+	Dirviewcolproperties_SDirViewAttrCol,	"Attr"
+	Dirviewcolproperties_SDirViewExtCol,	"Ext"
+	Customdirview_SErrorOpenFile,	"Can't open file: "
+	Customdirview_SErrorRenameFile,	"Can't rename file or directory: "
+	Customdirview_SErrorRenameFileExists,	"File already exists: "
+	Customdirview_SErrorInvalidName,	"Filename contains invalid characters:"
+	Customdirview_STextFileExt,	"File %s"
+	Customdirview_STextFiles,	"%u Files"
+	Customdirview_STextDirectories,	"%u Directories"
+	Customdirview_SParentDir,	"Parent directory"
+	Customdirview_SIconUpdateThreadTerminationError,	"Can't terminate icon update thread."
+	Customdirview_SDragDropError,	"DragDrop Error: %d"
+	Customdirview_SDriveNotReady,	"Drive '%s:' is not ready."
+	Dragdrop_MICopyStr,	"&Copy Here"
+	Dragdrop_MIMoveStr,	"&Move Here"
+	Dragdrop_MILinkStr,	"&Shortcut(s) Create Here"
+	Dragdrop_MIAbortStr,	"&Abort"
 	Dirview_coFileOperatorTitle,	"Filesystem Operation"
 	Dirview_coInvalidDosChars,	"\\/:*?\"<>|"
 	Dirview_Space,	" "
 	Driveview_coFileOperatorTitle,	"Filesystem Operation"
+	Driveview_coInvalidDosChars,	"\\/:*?\"<>|"
+	Driveview_Space,	" "
+	DriveView_16407,	"New name contains invalid characters %s"
+	Fileoperator_SFileOperation,	"File Operation"
+	Baseutils_SNoValidPath,	"Can't find any valid path."
+	Baseutils_SUcpPathsNotSupported,	"UNC paths are not supported."
+	Iedriveinfo_ErrorInvalidDrive,	"%s is a invalid drive letter."
+	Dirviewcolproperties_SDirViewNameCol,	"Name"
 END
 

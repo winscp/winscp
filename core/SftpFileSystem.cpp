@@ -3048,31 +3048,47 @@ void __fastcall TSFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
 
     if (Total == 0)
     {
-      // Empty file list -> probably "permision denied", we
-      // at least get link to parent directory ("..")
-      try
+      bool Failure = false;
+      // no point reading parent of root directory,
+      // moreover CompleteFTP terminates session upon attempt to do so
+      if (IsUnixRootPath(FileList->Directory))
       {
-        FTerminal->ExceptionOnFail = true;
+        File = NULL;
+      }
+      else
+      {
+        // Empty file list -> probably "permision denied", we
+        // at least get link to parent directory ("..")
         try
         {
-          File = NULL;
-          FTerminal->ReadFile(
-            UnixIncludeTrailingBackslash(FileList->Directory) + PARENTDIRECTORY, File);
+          FTerminal->ExceptionOnFail = true;
+          try
+          {
+            File = NULL;
+            FTerminal->ReadFile(
+              UnixIncludeTrailingBackslash(FileList->Directory) + PARENTDIRECTORY, File);
+          }
+          __finally
+          {
+            FTerminal->ExceptionOnFail = false;
+          }
         }
-        __finally
+        catch(Exception &E)
         {
-          FTerminal->ExceptionOnFail = false;
+          if (E.InheritsFrom(__classid(EFatal)))
+          {
+            throw;
+          }
+          else
+          {
+            File = NULL;
+            Failure = true;
+          }
         }
-      }
-      catch(Exception &E)
-      {
-        if (E.InheritsFrom(__classid(EFatal))) throw;
-          else File = NULL;
       }
 
       // on some systems even getting ".." fails, we create dummy ".." instead
-      bool Failure = (File == NULL);
-      if (Failure)
+      if (File == NULL)
       {
         File = new TRemoteParentDirectory(FTerminal);
       }

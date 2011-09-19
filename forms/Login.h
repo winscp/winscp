@@ -440,7 +440,7 @@ public:
   virtual __fastcall TLoginDialog(TComponent* AOwner);
   __fastcall ~TLoginDialog();
   void __fastcall Init(TStoredSessionList *SessionList, int Options);
-  bool __fastcall Execute(TSessionData *& Data);
+  bool __fastcall Execute(TSessionData *& Data, bool & Owned);
 };
 //----------------------------------------------------------------------------
 #endif

@@ -27,6 +27,7 @@ type
     FFirstSelected: Integer;
     FLastSelected: Integer;
     FFocused: TDateTime;
+    FIgnoreSetFocusFrom: THandle;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
@@ -35,6 +36,7 @@ type
     procedure CNNotify(var Message: TWMNotify); message CN_NOTIFY;
     procedure LVMEditLabel(var Message: TMessage); message LVM_EDITLABEL;
     procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
+    procedure CMWantSpecialKey(var Message: TCMWantSpecialKey); message CM_WANTSPECIALKEY;
     function GetMarkedCount: Integer;
     function GetMarkedFile: TListItem;
     procedure ItemSelected(Item: TListItem; Index: Integer);
@@ -201,6 +203,7 @@ begin
   // the bug is present even in compatibility mode
   FManageSelection := IsVista;
   FFocused := 0;
+  FIgnoreSetFocusFrom := INVALID_HANDLE_VALUE;
 end;
 
 destructor TCustomNortonLikeListView.Destroy;
@@ -426,6 +429,11 @@ begin
               end;
             end;
           end;
+          inherited;
+        end;
+      LVN_ENDLABELEDIT:
+        begin
+          FIgnoreSetFocusFrom := ListView_GetEditControl(Handle);
           inherited;
         end;
       else
@@ -834,8 +842,18 @@ end;
 
 procedure TCustomNortonLikeListView.WMSetFocus(var Message: TWMSetFocus);
 begin
-  FFocused := Now;
   inherited;
+
+  if Message.FocusedWnd <> FIgnoreSetFocusFrom then
+    FFocused := Now;
+end;
+
+procedure TCustomNortonLikeListView.CMWantSpecialKey(var Message: TCMWantSpecialKey);
+begin
+  inherited;
+
+  if IsEditing and (Message.CharCode = VK_TAB) then
+    Message.Result := 1;
 end;
 
 end.

@@ -153,7 +153,7 @@
 #endif
 
 static unsigned char bitmask_start_values[] = {0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x80};
-static unsigned char bitmask_end_values[]   = {0x00, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f};
+static unsigned char bitmask_end_values[]   = {0xff, 0x01, 0x03, 0x07, 0x0f, 0x1f, 0x3f, 0x7f};
 
 /* XDTLS:  figure out the right values */
 static unsigned int g_probable_mtu[] = {1500 - 28, 512 - 28, 256 - 28};
@@ -464,20 +464,9 @@ again:
 
 	memset(msg_hdr, 0x00, sizeof(struct hm_header_st));
 
-	s->d1->handshake_read_seq++;
-	/* we just read a handshake message from the other side:
-	 * this means that we don't need to retransmit of the
-	 * buffered messages.  
-	 * XDTLS: may be able clear out this
-	 * buffer a little sooner (i.e if an out-of-order
-	 * handshake message/record is received at the record
-	 * layer.  
-	 * XDTLS: exception is that the server needs to
-	 * know that change cipher spec and finished messages
-	 * have been received by the client before clearing this
-	 * buffer.  this can simply be done by waiting for the
-	 * first data  segment, but is there a better way?  */
-	dtls1_clear_record_buffer(s);
+	/* Don't change sequence numbers while listening */
+	if (!s->d1->listen)
+		s->d1->handshake_read_seq++;
 
 	s->init_msg = s->init_buf->data + DTLS1_HM_HEADER_LENGTH;
 	return s->init_num;
@@ -813,9 +802,11 @@ dtls1_get_message_fragment(SSL *s, int st1, int stn, long max, int *ok)
 
 	/* 
 	 * if this is a future (or stale) message it gets buffered
-	 * (or dropped)--no further processing at this time 
+	 * (or dropped)--no further processing at this time
+	 * While listening, we accept seq 1 (ClientHello with cookie)
+	 * although we're still expecting seq 0 (ClientHello)
 	 */
-	if ( msg_hdr.seq != s->d1->handshake_read_seq)
+	if (msg_hdr.seq != s->d1->handshake_read_seq && !(s->d1->listen && msg_hdr.seq == 1))
 		return dtls1_process_out_of_seq_message(s, &msg_hdr, ok);
 
 	len = msg_hdr.msg_len;
@@ -1322,7 +1313,8 @@ unsigned char *
 dtls1_set_message_header(SSL *s, unsigned char *p, unsigned char mt,
 			unsigned long len, unsigned long frag_off, unsigned long frag_len)
 	{
-	if ( frag_off == 0)
+	/* Don't change sequence numbers while listening */
+	if (frag_off == 0 && !s->d1->listen)
 		{
 		s->d1->handshake_write_seq = s->d1->next_handshake_write_seq;
 		s->d1->next_handshake_write_seq++;

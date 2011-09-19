@@ -1585,9 +1585,10 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
 
   try
   {
-    FScript = new TManagementScript(StoredSessions, FConsole->LimitedOutput());
     try
     {
+      FScript = new TManagementScript(StoredSessions, FConsole->LimitedOutput());
+
       FScript->CopyParam = GUIConfiguration->DefaultCopyParam;
       FScript->SynchronizeParams = GUIConfiguration->SynchronizeParams;
       FScript->OnPrint = ScriptPrint;
@@ -1654,17 +1655,20 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
       }
       while (Result && FScript->Continue && !Aborted());
     }
-    __finally
+    catch(Exception & E)
     {
-      delete FScript;
-      FScript = NULL;
+      if (FScript != NULL)
+      {
+        FScript->Log(llMessage, "Failed");
+      }
+      ShowException(&E);
+      AnyError = true;
     }
   }
-  catch(Exception & E)
+  __finally
   {
-    FScript->Log(llMessage, "Failed");
-    ShowException(&E);
-    AnyError = true;
+    delete FScript;
+    FScript = NULL;
   }
 
   return AnyError ? RESULT_ANY_ERROR : RESULT_SUCCESS;
