@@ -8,8 +8,8 @@
 //---------------------------------------------------------------------------
 int __fastcall NamedObjectSortProc(void * Item1, void * Item2)
 {
-  bool HasPrefix1 = TNamedObjectList::IsHidden((TNamedObject *)Item1);
-  bool HasPrefix2 = TNamedObjectList::IsHidden((TNamedObject *)Item2);
+  bool HasPrefix1 = ((TNamedObject *)Item1)->Hidden;
+  bool HasPrefix2 = ((TNamedObject *)Item2)->Hidden;
   if (HasPrefix1 && !HasPrefix2) return -1;
     else
   if (!HasPrefix1 && HasPrefix2) return 1;
@@ -17,6 +17,17 @@ int __fastcall NamedObjectSortProc(void * Item1, void * Item2)
   return AnsiCompareStr(((TNamedObject *)Item1)->Name, ((TNamedObject *)Item2)->Name);
 }
 //--- TNamedObject ----------------------------------------------------------
+__fastcall TNamedObject::TNamedObject(AnsiString AName)
+{
+  Name = AName;
+}
+//---------------------------------------------------------------------------
+void __fastcall TNamedObject::SetName(AnsiString value)
+{
+  FHidden = (value.SubString(1, TNamedObjectList::HiddenPrefix.Length()) == TNamedObjectList::HiddenPrefix);
+  FName = value;
+}
+//---------------------------------------------------------------------------
 Integer __fastcall TNamedObject::CompareName(AnsiString aName,
   Boolean CaseSensitive)
 {
@@ -46,11 +57,6 @@ void __fastcall TNamedObject::MakeUniqueIn(TNamedObjectList * List)
 //--- TNamedObjectList ------------------------------------------------------
 const AnsiString TNamedObjectList::HiddenPrefix = "_!_";
 //---------------------------------------------------------------------------
-bool __fastcall TNamedObjectList::IsHidden(TNamedObject * Object)
-{
-  return (Object->Name.SubString(1, HiddenPrefix.Length()) == HiddenPrefix);
-}
-//---------------------------------------------------------------------------
 __fastcall TNamedObjectList::TNamedObjectList():
   TObjectList()
 {
@@ -65,7 +71,7 @@ TNamedObject * __fastcall TNamedObjectList::AtObject(Integer Index)
 void __fastcall TNamedObjectList::Recount()
 {
   int i = 0;
-  while ((i < TObjectList::Count) && IsHidden((TNamedObject *)Items[i])) i++;
+  while ((i < TObjectList::Count) && ((TNamedObject *)Items[i])->Hidden) i++;
   FHiddenCount = i;
 }
 //---------------------------------------------------------------------------

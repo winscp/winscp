@@ -7321,7 +7321,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		AUTH_TYPE_PUBLICKEY_OFFER_LOUD,
 		AUTH_TYPE_PUBLICKEY_OFFER_QUIET,
 		AUTH_TYPE_PASSWORD,
-	        AUTH_TYPE_GSSAPI,
+	        AUTH_TYPE_GSSAPI,      /* always QUIET */
 		AUTH_TYPE_KEYBOARD_INTERACTIVE,
 		AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET
 	} type;
@@ -7687,19 +7687,20 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		    /*
 		     * We have received an unequivocal Access
 		     * Denied. This can translate to a variety of
-		     * messages:
-		     * 
-		     *  - if we'd just tried "none" authentication,
-		     *    it's not worth printing anything at all
-		     * 
-		     *  - if we'd just tried a public key _offer_,
-		     *    the message should be "Server refused our
-		     *    key" (or no message at all if the key
-		     *    came from Pageant)
-		     * 
-		     *  - if we'd just tried anything else, the
-		     *    message really should be "Access denied".
-		     * 
+		     * messages, or no message at all.
+                     *
+                     * For forms of authentication which are attempted
+                     * implicitly, by which I mean without printing
+                     * anything in the window indicating that we're
+                     * trying them, we should never print 'Access
+                     * denied'.
+                     *
+                     * If we do print a message saying that we're
+                     * attempting some kind of authentication, it's OK
+                     * to print a followup message saying it failed -
+                     * but the message may sometimes be more specific
+                     * than simply 'Access denied'.
+                     *
 		     * Additionally, if we'd just tried password
 		     * authentication, we should break out of this
 		     * whole loop so as to go back to the username
@@ -7712,14 +7713,31 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 			       s->type == AUTH_TYPE_PUBLICKEY_OFFER_QUIET) {
 			if (s->type == AUTH_TYPE_PUBLICKEY_OFFER_LOUD)
 			    c_write_str(ssh, "Server refused our key\r\n");
-			logevent("Server refused public key");
+			logevent("Server refused our key");
+                    } else if (s->type == AUTH_TYPE_PUBLICKEY) {
+                        /* This _shouldn't_ happen except by a
+                         * protocol bug causing client and server to
+                         * disagree on what is a correct signature. */
+                        c_write_str(ssh, "Server refused public-key signature"
+                                    " despite accepting key!\r\n");
+                        logevent("Server refused public-key signature"
+                                 " despite accepting key!");
 		    } else if (s->type==AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET) {
-			/* server declined keyboard-interactive; ignore */
-		    } else {
+                        /* quiet, so no c_write */
+                        logevent("Server refused keyboard-interactive authentication");
+		    } else if (s->type==AUTH_TYPE_GSSAPI) {
+			/* always quiet, so no c_write */
+                        /* also, the code down in the GSSAPI block has
+                         * already logged this in the Event Log */
+		    } else if (s->type == AUTH_TYPE_KEYBOARD_INTERACTIVE) {
+                        logevent("Keyboard-interactive authentication failed");
 			c_write_str(ssh, "Access denied\r\n");
-			logevent("Access denied");
-			if (s->type == AUTH_TYPE_PASSWORD &&
-			    ssh->cfg.change_username) {
+                    } else {
+                        assert(s->type == AUTH_TYPE_PASSWORD);
+                        logevent("Password authentication failed");
+			c_write_str(ssh, "Access denied\r\n");
+
+			if (ssh->cfg.change_username) {
 			    /* XXX perhaps we should allow
 			     * keyboard-interactive to do this too? */
 			    s->we_are_in = FALSE;
@@ -8068,6 +8086,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		    sfree(sigdata);
 
 		    ssh2_pkt_send(ssh, s->pktout);
+                    logevent("Sent public key signature");
 		    s->type = AUTH_TYPE_PUBLICKEY;
 		    key->alg->freekey(key->data);
 		}
@@ -8119,6 +8138,7 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		ssh2_pkt_addstring(s->pktout, s->username);
 		ssh2_pkt_addstring(s->pktout, "ssh-connection");
 		ssh2_pkt_addstring(s->pktout, "gssapi-with-mic");
+                logevent("Attempting GSSAPI authentication");
 
 		/* add mechanism info */
 		s->gsslib->indicate_mech(s->gsslib, &s->gss_buf);
@@ -8282,6 +8302,8 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		ssh2_pkt_addstring(s->pktout, "");	/* lang */
 		ssh2_pkt_addstring(s->pktout, "");	/* submethods */
 		ssh2_pkt_send(ssh, s->pktout);
+                
+                logevent("Attempting keyboard-interactive authentication");
 
 		crWaitUntilV(pktin);
 		if (pktin->type != SSH2_MSG_USERAUTH_INFO_REQUEST) {
@@ -8290,8 +8312,6 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 		     * user without actually issuing any prompts).
 		     * Give up on it entirely. */
 		    s->gotit = TRUE;
-		    if (pktin->type == SSH2_MSG_USERAUTH_FAILURE)
-			logevent("Keyboard-interactive authentication refused");
 		    s->type = AUTH_TYPE_KEYBOARD_INTERACTIVE_QUIET;
 		    s->kbd_inter_refused = TRUE; /* don't try it again */
 		    continue;
@@ -8402,6 +8422,13 @@ static void do_ssh2_authconn(Ssh ssh, unsigned char *in, int inlen,
 			end_log_omission(ssh, s->pktout);
 		    }
 		    ssh2_pkt_send_with_padding(ssh, s->pktout, 256);
+
+                    /*
+                     * Free the prompts structure from this iteration.
+                     * If there's another, a new one will be allocated
+                     * when we return to the top of this while loop.
+                     */
+                    free_prompts(s->cur_prompt);
 
 		    /*
 		     * Get the next packet in case it's another

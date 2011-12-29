@@ -177,3 +177,14 @@ __fastcall EOSExtException::EOSExtException(AnsiString Msg) :
   ExtException(Msg, LastSysErrorMessage())
 {
 }
+//---------------------------------------------------------------------------
+__fastcall EFatal::EFatal(Exception* E, AnsiString Msg) :
+  ExtException(Msg, E),
+  FReopenQueried(false)
+{
+  EFatal * F = dynamic_cast<EFatal *>(E);
+  if (F != NULL)
+  {
+    FReopenQueried = F->ReopenQueried;
+  }
+}

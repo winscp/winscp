@@ -108,6 +108,7 @@ object PropertiesDialog: TPropertiesDialog
         UnixPath = True
         IndentHorizontal = 0
         IndentVertical = 0
+        AutoSizeVertical = False
         Align = alNone
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -151,6 +152,7 @@ object PropertiesDialog: TPropertiesDialog
         UnixPath = True
         IndentHorizontal = 0
         IndentVertical = 0
+        AutoSizeVertical = False
         Align = alNone
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False

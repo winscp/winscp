@@ -10,6 +10,8 @@
 #include <Common.h>
 #include <TextsWin.h>
 #include <Exceptions.h>
+#include <Configuration.h>
+#include <CoreMain.h>
 
 #include "GUITools.h"
 #include "VCLCommon.h"
@@ -393,6 +395,40 @@ bool __fastcall TextFromClipboard(AnsiString & Text)
     CloseTextFromClipboard(Handle);
   }
   return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
+{
+  int MajorVer = Version / (10000*100*100);
+  int MinorVer = (Version % (10000*100*100)) / (10000*100);
+  int Release = (Version % (10000*100)) / (10000);
+  AnsiString Result;
+  if (Release > 0)
+  {
+    Result = FORMAT("%d.%d.%d", (MajorVer, MinorVer, Release));
+  }
+  else
+  {
+    Result = FORMAT("%d.%d", (MajorVer, MinorVer));
+  }
+  return Result;
+}
+//---------------------------------------------------------------------------
+AnsiString __fastcall CampaignUrl(AnsiString URL)
+{
+  if (URL.Pos("?") == 0)
+  {
+    URL += "?";
+  }
+  else
+  {
+    URL += "&";
+  }
+
+  int CurrentCompoundVer = Configuration->CompoundVersion;
+  AnsiString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
+  URL += FORMAT("utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
+  return URL;
 }
 //---------------------------------------------------------------------------
 static bool __fastcall GetResource(

@@ -1267,18 +1267,33 @@ void __fastcall TTerminal::TerminalError(Exception * E, AnsiString Msg)
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::DoQueryReopen(Exception * E)
 {
+  EFatal * Fatal = dynamic_cast<EFatal *>(E);
+  assert(Fatal != NULL);
+  bool Result;
+  if ((Fatal != NULL) && Fatal->ReopenQueried)
+  {
+    Result = false;
+  }
+  else
+  {
+    LogEvent("Connection was lost, asking what to do.");
 
-  LogEvent("Connection was lost, asking what to do.");
+    TQueryParams Params(qpAllowContinueOnError);
+    Params.Timeout = Configuration->SessionReopenAuto;
+    Params.TimeoutAnswer = qaRetry;
+    TQueryButtonAlias Aliases[1];
+    Aliases[0].Button = qaRetry;
+    Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
+    Params.Aliases = Aliases;
+    Params.AliasesCount = LENOF(Aliases);
+    Result = (QueryUserException("", E, qaRetry | qaAbort, &Params, qtError) == qaRetry);
 
-  TQueryParams Params(qpAllowContinueOnError);
-  Params.Timeout = Configuration->SessionReopenAuto;
-  Params.TimeoutAnswer = qaRetry;
-  TQueryButtonAlias Aliases[1];
-  Aliases[0].Button = qaRetry;
-  Aliases[0].Alias = LoadStr(RECONNECT_BUTTON);
-  Params.Aliases = Aliases;
-  Params.AliasesCount = LENOF(Aliases);
-  return (QueryUserException("", E, qaRetry | qaAbort, &Params, qtError) == qaRetry);
+    if (Fatal != NULL)
+    {
+      Fatal->ReopenQueried = true;
+    }
+  }
+  return Result;
 }
 //---------------------------------------------------------------------------
 bool __fastcall TTerminal::QueryReopen(Exception * E, int Params,

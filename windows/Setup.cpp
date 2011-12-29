@@ -586,40 +586,6 @@ void __fastcall TemporaryDirectoryCleanup()
   }
 }
 //---------------------------------------------------------------------------
-AnsiString __fastcall VersionStrFromCompoundVersion(int Version)
-{
-  int MajorVer = Version / (10000*100*100);
-  int MinorVer = (Version % (10000*100*100)) / (10000*100);
-  int Release = (Version % (10000*100)) / (10000);
-  AnsiString Result;
-  if (Release > 0)
-  {
-    Result = FORMAT("%d.%d.%d", (MajorVer, MinorVer, Release));
-  }
-  else
-  {
-    Result = FORMAT("%d.%d", (MajorVer, MinorVer));
-  }
-  return Result;
-}
-//---------------------------------------------------------------------------
-AnsiString __fastcall CampaignUrl(AnsiString URL)
-{
-  if (URL.Pos("?") == 0)
-  {
-    URL += "?";
-  }
-  else
-  {
-    URL += "&";
-  }
-
-  int CurrentCompoundVer = Configuration->CompoundVersion;
-  AnsiString Version = VersionStrFromCompoundVersion(CurrentCompoundVer);
-  URL += FORMAT("utm_source=winscp&utm_medium=app&utm_campaign=%s", (Version));
-  return URL;
-}
-//---------------------------------------------------------------------------
 void __fastcall QueryUpdates()
 {
   bool Complete = false;

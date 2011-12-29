@@ -9,11 +9,17 @@ class TNamedObjectList;
 class TNamedObject : public TPersistent
 {
 public:
-  AnsiString Name;
-  __fastcall TNamedObject(): TPersistent() {};
+  __property AnsiString Name = { read = FName, write = SetName };
+  __property bool Hidden = { read = FHidden };
+  __fastcall TNamedObject() {};
   Integer __fastcall CompareName(AnsiString aName, Boolean CaseSensitive = False);
-  __fastcall TNamedObject(AnsiString aName): TPersistent(), Name(aName) {}
+  __fastcall TNamedObject(AnsiString aName);
   void __fastcall MakeUniqueIn(TNamedObjectList * List);
+private:
+  AnsiString FName;
+  bool FHidden;
+
+  void __fastcall SetName(AnsiString value);
 };
 //---------------------------------------------------------------------------
 class TNamedObjectList : public TObjectList
@@ -27,7 +33,6 @@ protected:
   void __fastcall Recount();
 public:
   static const AnsiString HiddenPrefix;
-  static bool __fastcall IsHidden(TNamedObject * Object);
 
   bool AutoSort;
 

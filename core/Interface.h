@@ -37,6 +37,7 @@ const unsigned int qaNeverAskAgain = 0x00010000;
 const int qpFatalAbort =           0x01;
 const int qpNeverAskAgainCheck =   0x02;
 const int qpAllowContinueOnError = 0x04;
+const int qpIgnoreAbort =          0x08;
 
 struct TQueryButtonAlias
 {

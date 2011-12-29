@@ -3958,9 +3958,9 @@ void __fastcall TSFTPFileSystem::SFTPSource(const AnsiString FileName,
 
     if (Dir)
     {
+      Action.Cancel();
       SFTPDirectorySource(IncludeTrailingBackslash(FileName), TargetDir,
         OpenParams.LocalFileAttrs, CopyParam, Params, OperationProgress, Flags);
-      Action.Cancel();
     }
     else
     {

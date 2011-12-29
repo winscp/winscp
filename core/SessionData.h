@@ -185,6 +185,7 @@ private:
   void __fastcall SetTimeDifference(TDateTime value);
   void __fastcall SetPingType(TPingType value);
   AnsiString __fastcall GetSessionName();
+  bool __fastcall HasSessionName();
   AnsiString __fastcall GetDefaultSessionName();
   AnsiString __fastcall GetSessionUrl();
   void __fastcall SetProtocol(TProtocol value);

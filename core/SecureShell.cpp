@@ -219,6 +219,7 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg, b
   // new after 0.53b
   cfg->sshbug_pksessid2 = Data->Bug[sbPKSessID2];
   cfg->sshbug_maxpkt2 = Data->Bug[sbMaxPkt2];
+  cfg->sshbug_ignore2 = asAuto;
   #pragma option pop
 
   if (!Data->TunnelPortFwd.IsEmpty())
@@ -286,6 +287,8 @@ void __fastcall TSecureShell::StoreToConfig(TSessionData * Data, Config * cfg, b
       }
     }
   }
+
+  cfg->connect_timeout = Data->Timeout * 1000;
 
   // permanent settings
   cfg->nopty = TRUE;
@@ -865,7 +868,7 @@ int __fastcall TSecureShell::TimeoutPrompt(TQueryParamsTimerEvent PoolEvent)
   int Answer;
   try
   {
-    TQueryParams Params(qpFatalAbort | qpAllowContinueOnError);
+    TQueryParams Params(qpFatalAbort | qpAllowContinueOnError | qpIgnoreAbort);
     Params.Timer = 500;
     Params.TimerEvent = PoolEvent;
     Params.TimerMessage = FMTLOAD(TIMEOUT_STILL_WAITING2, (FSessionData->Timeout));

@@ -129,12 +129,18 @@ public:
   __fastcall TSuspendFileOperationProgress(TFileOperationProgressType * OperationProgress)
   {
     FOperationProgress = OperationProgress;
-    FOperationProgress->Suspend();
+    if (FOperationProgress != NULL)
+    {
+      FOperationProgress->Suspend();
+    }
   }
 
   __fastcall ~TSuspendFileOperationProgress()
   {
-    FOperationProgress->Resume();
+    if (FOperationProgress != NULL)
+    {
+      FOperationProgress->Resume();
+    }
   }
 
 private:

@@ -3194,7 +3194,7 @@ void __fastcall TCustomScpExplorerForm::DuplicateSession()
 
     if (OpenInNewWindow())
     {
-      AnsiString SessionName = StoredSessions->HiddenPrefix + "duplicate";
+      AnsiString SessionName = StoredSessions->HiddenPrefix + Terminal->SessionData->Name;
       StoredSessions->NewSession(SessionName, SessionData);
       // modified only, explicit
       StoredSessions->Save(false, true);
@@ -6513,12 +6513,12 @@ bool __fastcall TCustomScpExplorerForm::MainWindowHook(TMessage & AMessage)
 }
 //---------------------------------------------------------------------------
 void __fastcall TCustomScpExplorerForm::DirViewEditing(
-  TObject * Sender, TListItem * /*Item*/, bool & /*AllowEdit*/)
+  TObject * Sender, TListItem * Item, bool & /*AllowEdit*/)
 {
-  if (!WinConfiguration->RenameWholeName)
+  TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
+  assert(DirView != NULL);
+  if (!WinConfiguration->RenameWholeName && !DirView->ItemIsDirectory(Item))
   {
-    TCustomDirView * DirView = dynamic_cast<TCustomDirView *>(Sender);
-    assert(DirView != NULL);
     HWND Edit = ListView_GetEditControl(DirView->Handle);
     // OnEditing is called also from TCustomListView::CanEdit
     if (Edit != NULL)

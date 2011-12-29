@@ -912,9 +912,14 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
     {
       delete Storage;
     }
+
+    typedef BOOL WINAPI (* TGetUserNameEx)(EXTENDED_NAME_FORMAT NameFormat, LPSTR lpNameBuffer, PULONG nSize);
+    HINSTANCE Secur32 = LoadLibrary("secur32.dll");
+    TGetUserNameEx GetUserNameEx =
+      (Secur32 != NULL) ? (TGetUserNameEx)GetProcAddress(Secur32, "GetUserNameExA") : NULL;
     char UserName[UNLEN + 1];
-    unsigned long UserNameSize = sizeof(UserName);
-    if (!GetUserNameEx(NameSamCompatible, UserName, &UserNameSize))
+    unsigned long UserNameSize = LENOF(UserName);
+    if ((GetUserNameEx == NULL) || !GetUserNameEx(NameSamCompatible, UserName, &UserNameSize))
     {
       strcpy(UserName, "<Failed to retrieve username>");
     }

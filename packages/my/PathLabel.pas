@@ -28,6 +28,7 @@ type
     FMouseInView: Boolean;
     FIsActive: Boolean;
     FMask: string;
+    FAutoSizeVertical: Boolean;
     procedure CMHintShow(var Message: TMessage); message CM_HINTSHOW;
     procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
     procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
@@ -37,6 +38,7 @@ type
     procedure SetIndentVertical(AIndent: Integer);
     procedure SetUnixPath(AUnixPath: Boolean);
     procedure SetMask(Value: string);
+    procedure SetAutoSizeVertical(Value: Boolean);
   protected
     procedure AdjustBounds; override;
     procedure Click; override;
@@ -74,6 +76,7 @@ type
     property OnPathClick: TPathLabelPathClickEvent read FOnPathClick write FOnPathClick;
     property HotTrack: Boolean read FHotTrack write FHotTrack default False;
     property Mask: string read FMask write SetMask;
+    property AutoSizeVertical: Boolean read FAutoSizeVertical write SetAutoSizeVertical;
 
     property FocusControl;
     property Caption;
@@ -93,6 +96,7 @@ type
     property InactiveColor;
     property InactiveTextColor;
     property InactiveHotTrackColor;
+    property AutoSizeVertical;
     property HotTrack;
     property OnGetStatus;
     property OnPathClick;
@@ -248,6 +252,16 @@ begin
   if FIndentVertical <> AIndent then
   begin
     FIndentVertical := AIndent;
+    AdjustBounds;
+    Invalidate;
+  end;
+end;
+
+procedure TCustomPathLabel.SetAutoSizeVertical(Value: Boolean);
+begin
+  if FAutoSizeVertical <> Value then
+  begin
+    FAutoSizeVertical := Value;
     AdjustBounds;
     Invalidate;
   end;
@@ -457,8 +471,12 @@ var
   X: Integer;
   Rect: TRect;
   AAlignment: TAlignment;
+  AWidth: Integer;
+  AHeight: Integer;
 begin
-  if not (csReading in ComponentState) and AutoSize and (Caption <> '') then
+  if not (csReading in ComponentState) and
+     (AutoSize or AutoSizeVertical) and
+     (Caption <> '') then
   begin
     Rect := ClientRect;
     DC := GetDC(0);
@@ -470,8 +488,13 @@ begin
     AAlignment := Alignment;
     if UseRightToLeftAlignment then ChangeBiDiModeAlignment(AAlignment);
     if AAlignment = taRightJustify then Inc(X, Width - 2*FIndentHorizontal + Rect.Right);
-    SetBounds(X, Top, 2*FIndentHorizontal + Rect.Right,
-      2*FIndentVertical + Rect.Bottom);
+
+    if AutoSize then AWidth := 2*FIndentHorizontal + Rect.Right
+      else AWidth := Width;
+    if AutoSize or AutoSizeVertical then AHeight := 2*FIndentVertical + Rect.Bottom
+      else AHeight := Height;
+
+    SetBounds(X, Top, AWidth, AHeight);
   end;
 end;
 

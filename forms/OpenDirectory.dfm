@@ -79,6 +79,7 @@ object OpenDirectoryDialog: TOpenDirectoryDialog
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabIndex = 0
     TabOrder = 3
+    OnChange = PageControlChange
     object SessionBookmarksSheet: TTabSheet
       Tag = 1
       Caption = 'Session bookmarks'

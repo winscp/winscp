@@ -1106,6 +1106,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnGetStatus = RemotePathLabelGetStatus
       OnPathClick = RemotePathLabelPathClick
       AutoSize = False
+      AutoSizeVertical = True
       OnDblClick = PathLabelDblClick
     end
     inherited RemotePanelSplitter: TSplitter
@@ -1273,6 +1274,7 @@ inherited ScpCommanderForm: TScpCommanderForm
       OnGetStatus = LocalPathLabelGetStatus
       OnPathClick = LocalPathLabelPathClick
       AutoSize = False
+      AutoSizeVertical = True
       PopupMenu = NonVisualDataModule.LocalPanelPopup
       OnDblClick = PathLabelDblClick
     end

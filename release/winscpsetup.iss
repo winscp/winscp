@@ -68,6 +68,9 @@ SolidCompression=yes
 ShowTasksTreeLines=yes
 PrivilegesRequired=none
 UsePreviousLanguage=yes
+#ifdef Sign
+SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
+#endif
 
 ; Some features of ISCC requires path relative to script,
 ; some path relative to CWD
@@ -266,7 +269,7 @@ Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
   Components: puttygen; Flags: ignoreversion
 #ifdef OpenCandy
 Source: "{#OC_OCSETUPHLP_FILE_PATH}"; \
-  Flags: dontcopy ignoreversion
+  Flags: dontcopy ignoreversion deleteafterinstall 
 #endif
 
 [Registry]
@@ -470,7 +473,7 @@ var
   Path: string;
   FindRec: TFindRec;
   Ext: string;
-  VersionMS, VersionLS: Cardinal;
+  LExt: string;
 begin
   Path := AddBackslash(WizardDirValue);
 
@@ -481,16 +484,13 @@ begin
         if FindRec.Attributes and FILE_ATTRIBUTE_DIRECTORY = 0 then
         begin
           Ext := Uppercase(ExtractFileExt(FindRec.Name));
-          // any binary (has version info), which is not EXE or DLL,
-          // is suspected to be a language file
-          if (Pos('.', Ext) = 1) and
-             (Ext <> '.INI') and (Ext <> '.EXE') and (Ext <> '.COM') and
-             (Ext <> '.DLL') and (Ext <> '.ICO') and
-             GetVersionNumbers(Path + FindRec.Name, VersionMS, VersionLS) then
+          if Pos('.', Ext) = 1  then
           begin
-            Ext := Lowercase(Copy(Ext, 2, Length(Ext) - 1));
-            if not ContainsLanguage(Ext) then
-              OnProcessTranslation(Ext, Path + FindRec.Name);
+            Ext := Copy(Ext, 2, Length(Ext) - 1);
+            LExt := Lowercase(Ext);
+            if (Pos('-' + Ext + '-', '-{#AllTranslations}-') > 0) and
+               not ContainsLanguage(LExt) then
+              OnProcessTranslation(LExt, Path + FindRec.Name);
           end;
         end;
       until not FindNext(FindRec);
@@ -511,6 +511,9 @@ var
   Caption: TLabel;
   HelpButton: TButton;
   S: string;
+#ifdef OpenCandy
+  OpenCandyNewPageID: Integer;
+#endif
 begin
   DefaultLang := (ActiveLanguage = '{#DefaultLang}');
 
@@ -734,9 +737,12 @@ begin
   AdvancedTabsCheckbox.Parent := InterfacePage.Surface;
 
 #ifdef OpenCandy
-  OpenCandyAsyncInit('{#OC_STR_MY_PRODUCT_NAME}', '{#OC_STR_KEY}', '{#OC_STR_SECRET}',
-    ExpandConstant('{cm:LanguageISOCode}'), {#OC_INIT_MODE_NORMAL},
-    wpLicense, wpSelectTasks);
+  OpenCandyInit('{#OC_STR_MY_PRODUCT_NAME}', '{#OC_STR_KEY}', '{#OC_STR_SECRET}',
+    ExpandConstant('{cm:LanguageISOCode}'), {#OC_INIT_MODE_NORMAL});
+  OpenCandyNewPageID := OpenCandyInsertLoadDLLPage(wpLicense);
+  OpenCandyInsertConnectPage(OpenCandyNewPageID);
+  OpenCandyNewPageID := OpenCandyInsertLoadingPage(wpSelectTasks, ' ', ' ', 'Loading...', 'Arial', 100);
+  OpenCandyInsertOfferPage(OpenCandyNewPageID);
 #endif
 end;
 

@@ -1318,9 +1318,9 @@ void __fastcall TFTPFileSystem::Source(const AnsiString FileName,
   bool Dir = FLAGSET(Attrs, faDirectory);
   if (Dir)
   {
+    Action.Cancel();
     DirectorySource(IncludeTrailingBackslash(FileName), TargetDir,
       Attrs, CopyParam, Params, OperationProgress, Flags);
-    Action.Cancel();
   }
   else
   {
@@ -1804,12 +1804,14 @@ void __fastcall TFTPFileSystem::ReadDirectory(TRemoteFileList * FileList)
       // (e.g. before file transfer)
       FDoListAll = (FListAll == asOn);
     }
-    catch(...)
+    catch(Exception & E)
     {
       FDoListAll = false;
       // reading the first directory has failed,
       // further try without "-a" only as the server may not support it
-      if ((FListAll == asAuto) && FTerminal->Active)
+      if ((FListAll == asAuto) &&
+          (FTerminal->Active ||
+           FTerminal->QueryReopen(&E, ropNoReadDirectory, NULL)))
       {
         FListAll = asOff;
         Repeat = true;

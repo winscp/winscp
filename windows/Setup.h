@@ -12,6 +12,5 @@ void __fastcall RegisterAsUrlHandler();
 void __fastcall TemporaryDirectoryCleanup();
 void __fastcall StartUpdateThread(TThreadMethod OnUpdatesChecked);
 void __fastcall StopUpdateThread();
-AnsiString __fastcall CampaignUrl(AnsiString URL);
 //---------------------------------------------------------------------------
 #endif

@@ -74,7 +74,12 @@ class EFatal : public ExtException
 {
 public:
   // fatal errors are always copied, new message is only appended
-  inline __fastcall EFatal(Exception* E, AnsiString Msg) : ExtException(Msg, E) { }
+  __fastcall EFatal(Exception* E, AnsiString Msg);
+
+  __property bool ReopenQueried = { read = FReopenQueried, write = FReopenQueried };
+
+private:
+  bool FReopenQueried;
 };
 //---------------------------------------------------------------------------
 #define DERIVE_FATAL_EXCEPTION(NAME, BASE) \

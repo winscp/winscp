@@ -573,7 +573,7 @@ void __fastcall TGUIConfiguration::Default()
   FSessionReopenAutoIdle = 5000;
 
   FNewDirectoryProperties.Default();
-  FNewDirectoryProperties.Rights = TRights::rfDefault;
+  FNewDirectoryProperties.Rights = TRights::rfDefault | TRights::rfExec;
 }
 //---------------------------------------------------------------------------
 void __fastcall TGUIConfiguration::DefaultLocalized()
@@ -672,7 +672,7 @@ void __fastcall TGUIConfiguration::SaveData(THierarchicalStorage * Storage, bool
     Storage->CloseSubKey();
   }
 
-  if (Storage->OpenSubKey("Interface\\NewDirectory", true, true))
+  if (Storage->OpenSubKey("Interface\\NewDirectory2", true, true))
   try
   {
     FNewDirectoryProperties.Save(Storage);
@@ -733,7 +733,7 @@ void __fastcall TGUIConfiguration::LoadData(THierarchicalStorage * Storage)
     FPuttyPath = FormatCommand(FPuttyPath, "");
   }
 
-  if (Storage->OpenSubKey("Interface\\NewDirectory", false, true))
+  if (Storage->OpenSubKey("Interface\\NewDirectory2", false, true))
   try
   {
     FNewDirectoryProperties.Load(Storage);

@@ -574,3 +574,8 @@ void __fastcall TOpenDirectoryDialog::ShortCutBookmarkButtonClick(
   }
 }
 //---------------------------------------------------------------------------
+void __fastcall TOpenDirectoryDialog::PageControlChange(TObject * /*Sender*/)
+{
+  BookmarkSelected(GetBookmarksList(PageControl->ActivePage));
+}
+//---------------------------------------------------------------------------

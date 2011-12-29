@@ -993,7 +993,7 @@ bool __fastcall TSessionData::ParseUrl(AnsiString Url, TOptions * Options,
       }
       ARemoteDirectory = Url.SubString(P + 1, Url.Length() - P);
 
-      if (StoredSessions->IsHidden(Data))
+      if (Data->Hidden)
       {
         Data->Remove();
         StoredSessions->Remove(Data);
@@ -1651,24 +1651,33 @@ AnsiString __fastcall TSessionData::GetDefaultSessionName()
   }
 }
 //---------------------------------------------------------------------
+bool __fastcall TSessionData::HasSessionName()
+{
+  return (!Name.IsEmpty() && (Name != DefaultName));
+}
+//---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetSessionName()
 {
-  if (!Name.IsEmpty() && !TNamedObjectList::IsHidden(this) &&
-      (Name != DefaultName))
+  AnsiString Result;
+  if (HasSessionName())
   {
-    return Name;
+    Result = Name;
+    if (Hidden)
+    {
+      Result = Result.SubString(TNamedObjectList::HiddenPrefix.Length() + 1, Result.Length() - TNamedObjectList::HiddenPrefix.Length());
+    }
   }
   else
   {
-    return DefaultSessionName;
+    Result = DefaultSessionName;
   }
+  return Result;
 }
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetSessionUrl()
 {
   AnsiString Url;
-  if (!Name.IsEmpty() && !TNamedObjectList::IsHidden(this) &&
-      (Name != DefaultName))
+  if (HasSessionName())
   {
     Url = Name;
   }
@@ -2070,11 +2079,19 @@ AnsiString __fastcall TSessionData::GetInfoTip()
 //---------------------------------------------------------------------
 AnsiString __fastcall TSessionData::GetLocalName()
 {
-  AnsiString Result = Name;
-  int P = Result.LastDelimiter("/");
-  if (P > 0)
+  AnsiString Result;
+  if (HasSessionName())
   {
-    Result.Delete(1, P);
+    Result = Name;
+    int P = Result.LastDelimiter(L"/");
+    if (P > 0)
+    {
+      Result.Delete(1, P);
+    }
+  }
+  else
+  {
+    Result = DefaultSessionName;
   }
   return Result;
 }

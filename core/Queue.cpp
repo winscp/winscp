@@ -976,12 +976,16 @@ void __fastcall TTerminalItem::ProcessEvent()
   }
   catch(Exception & E)
   {
-    // do not show error messages, if task was canceled anyway
-    // (for example if transfer is cancelled during reconnection attempts)
-    if (!FCancel &&
-        (FTerminal->QueryUserException("", &E, qaOK | qaCancel, NULL, qtError) == qaCancel))
+    AnsiString Message;
+    if (ExceptionMessage(&E, Message))
     {
-      FCancel = true;
+      // do not show error messages, if task was canceled anyway
+      // (for example if transfer is cancelled during reconnection attempts)
+      if (!FCancel &&
+          (FTerminal->QueryUserException("", &E, qaOK | qaCancel, NULL, qtError) == qaCancel))
+      {
+        FCancel = true;
+      }
     }
   }
 

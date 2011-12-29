@@ -124,7 +124,7 @@ void __fastcall TLoggingFrame::LogToFileCheckChange(TObject * /*Sender*/)
   if (LogToFileCheck->Checked && LogFileNameEdit2->Text.IsEmpty())
   {
     LogFileNameEdit2->Text =
-      IncludeTrailingBackslash(SystemTemporaryDirectory()) + "!s." + GetLogFileExt();
+      IncludeTrailingBackslash(SystemTemporaryDirectory()) + "!S." + GetLogFileExt();
   }
   UpdateControls();
 }

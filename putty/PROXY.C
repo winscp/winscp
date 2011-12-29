@@ -453,7 +453,11 @@ Socket new_connection(SockAddr addr, char *hostname,
 	 */
 	ret->sub_socket = sk_new(proxy_addr, cfg->proxy_port,
 				 privport, oobinline,
-				 nodelay, keepalive, (Plug) pplug);
+				 nodelay, keepalive, (Plug) pplug,
+				 #ifdef MPEXT
+				 cfg->connect_timeout
+				 #endif
+				 );
 	if (sk_socket_error(ret->sub_socket) != NULL)
 	    return (Socket) ret;
 
@@ -465,7 +469,11 @@ Socket new_connection(SockAddr addr, char *hostname,
     }
 
     /* no proxy, so just return the direct socket */
-    return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug);
+    return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug,
+      #ifdef MPEXT
+      cfg->connect_timeout
+      #endif
+      );
 }
 
 Socket new_listener(char *srcaddr, int port, Plug plug, int local_host_only,

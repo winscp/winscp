@@ -70,6 +70,7 @@ __published:
   void __fastcall BookmarksListEndDrag(TObject *Sender, TObject *Target,
           int X, int Y);
   void __fastcall ShortCutBookmarkButtonClick(TObject *Sender);
+  void __fastcall PageControlChange(TObject *Sender);
 
 public:
   __fastcall TOpenDirectoryDialog(TComponent* AOwner);

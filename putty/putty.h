@@ -667,6 +667,10 @@ struct config_tag {
     int shadowboldoffset;
     int crhaslf;
     char winclass[256];
+
+    #ifdef MPEXT
+    int connect_timeout;
+    #endif
 };
 
 /*

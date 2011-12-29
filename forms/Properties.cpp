@@ -394,7 +394,7 @@ TRemoteToken __fastcall TPropertiesDialog::StoreRemoteToken(const TRemoteToken &
         }
         else
         {
-          StoreRemoteToken(ID, Text.SubString(0, IDStart).Trim(), List, Result);
+          StoreRemoteToken(ID, Text.SubString(1, IDStart - 1).Trim(), List, Result);
         }
       }
       else

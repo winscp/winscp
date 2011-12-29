@@ -28,8 +28,12 @@ type
     FLastSelected: Integer;
     FFocused: TDateTime;
     FIgnoreSetFocusFrom: THandle;
+    FSelectingImplicitly: Boolean;
+    FAnyAndAllSelectedImplicitly: Boolean;
+    FLButtonDownShiftState: TShiftState;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
+    procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
     procedure WMKeyDown(var Message: TWMKeyDown); message WM_KEYDOWN;
     procedure WMChar(var Message: TWMChar); message WM_CHAR;
     procedure WMNotify(var Message: TWMNotify); message WM_NOTIFY;
@@ -41,6 +45,7 @@ type
     function GetMarkedFile: TListItem;
     procedure ItemSelected(Item: TListItem; Index: Integer);
     procedure ItemUnselected(Item: TListItem; Index: Integer);
+    procedure SelectAll(Mode: TSelectMode; Exclude: TListItem); reintroduce; overload;
   protected
     { Protected declarations }
     FClearingItems: Boolean;
@@ -71,7 +76,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     function ClosestUnselected(Item: TListItem): TListItem;
-    procedure SelectAll(Mode: TSelectMode); reintroduce;
+    procedure SelectAll(Mode: TSelectMode); reintroduce; overload;
     procedure SelectCurrentItem(FocusNext: Boolean);
     function GetNextItem(StartItem: TListItem; Direction: TSearchDirection;
       States: TItemStates): TListItem;
@@ -215,6 +220,17 @@ end;
 procedure TCustomNortonLikeListView.ItemSelected(Item: TListItem; Index: Integer);
 begin
   Inc(FSelCount);
+
+  if FSelectingImplicitly and (FSelCount = 1) then
+  begin
+    FAnyAndAllSelectedImplicitly := True;
+  end
+    else
+  if not FSelectingImplicitly then
+  begin
+    FAnyAndAllSelectedImplicitly := False;
+  end;
+
   if FManageSelection then
   begin
     if Index < 0 then
@@ -242,6 +258,10 @@ end;
 procedure TCustomNortonLikeListView.ItemUnselected(Item: TListItem; Index: Integer);
 begin
   Dec(FSelCount);
+  if (FSelCount = 0) or (not FSelectingImplicitly) then
+  begin
+    FAnyAndAllSelectedImplicitly := False;
+  end;
   if FManageSelection then
   begin
     if Index < 0 then
@@ -416,16 +436,24 @@ begin
           begin
             Item := Items[iItem];
             if Valid and (not FClearingItems) and
-               (uChanged = LVIF_STATE) and (Item <> FLastDeletedItem) and
-               ((uOldState and LVIS_SELECTED) <> (uNewState and LVIS_SELECTED)) then
+               (uChanged = LVIF_STATE) and (Item <> FLastDeletedItem) then
             begin
-              if (uOldState and LVIS_SELECTED) <> 0 then
+              if (NortonLike <> nlOff) and
+                 ((uOldState and LVIS_FOCUSED) > (uNewState and LVIS_FOCUSED)) then
               begin
-                ItemUnselected(Item, iItem);
-              end
-                else
+                // force update, otherwise some remnants of focus rectangle remain
+                Item.Update;
+              end;
+              if (uOldState and LVIS_SELECTED) <> (uNewState and LVIS_SELECTED) then
               begin
-                ItemSelected(Item, iItem);
+                if (uOldState and LVIS_SELECTED) <> 0 then
+                begin
+                  ItemUnselected(Item, iItem);
+                end
+                  else
+                begin
+                  ItemSelected(Item, iItem);
+                end;
               end;
             end;
           end;
@@ -503,7 +531,10 @@ begin
     FDontSelectItem := FDontSelectItem or
       ((NortonLike <> nlOff) and
        ((KeyDataToShiftState(Message.KeyData) * [ssShift]) = []));
-    FDontUnSelectItem := FDontUnSelectItem or (NortonLike <> nlOff);
+    FDontUnSelectItem :=
+      FDontUnSelectItem or
+      (NortonLike = nlOn) or
+      ((NortonLike = nlKeyboard) and (not FAnyAndAllSelectedImplicitly));
     try
       inherited;
     finally
@@ -540,7 +571,10 @@ begin
     PDontSelectItem := FDontSelectItem;
     PDontUnSelectItem := FDontUnSelectItem;
     FDontSelectItem := FDontSelectItem or (NortonLike <> nlOff);
-    FDontUnSelectItem := FDontUnSelectItem or (NortonLike <> nlOff);
+    FDontUnSelectItem :=
+      FDontUnSelectItem or
+      (NortonLike = nlOn) or
+      ((NortonLike = nlKeyboard) and (not FAnyAndAllSelectedImplicitly));
     try
       inherited;
     finally
@@ -596,13 +630,12 @@ begin
       FDontSelectItem := PDontSelectItem;
       FDontUnSelectItem := PDontUnSelectItem;
     end;
-    Assert(ItemFocused = Item);
   end;
   if ItemFocused <> Item then
     ItemFocused := Item;
 end;
 
-procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode);
+procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode; Exclude: TListItem);
 var
   Index: Integer;
   Item: TListItem;
@@ -612,10 +645,13 @@ begin
     for Index := 0 to Items.Count - 1 do
     begin
       Item := Items[Index];
-      case Mode of
-        smAll: Item.Selected := True;
-        smNone: Item.Selected := False;
-        smInvert: Item.Selected := not Item.Selected;
+      if Item <> Exclude then
+      begin
+        case Mode of
+          smAll: Item.Selected := True;
+          smNone: Item.Selected := False;
+          smInvert: Item.Selected := not Item.Selected;
+        end;
       end;
     end;
   finally
@@ -623,22 +659,46 @@ begin
   end;
 end;
 
+procedure TCustomNortonLikeListView.SelectAll(Mode: TSelectMode);
+begin
+  SelectAll(Mode, nil);
+end;
+
 procedure TCustomNortonLikeListView.WMLButtonDown(var Message: TWMLButtonDown);
 var
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
+  PSelectingImplicitly: Boolean;
+  SelectingImplicitly: Boolean;
   Shift: TShiftState;
+  Item: TListItem;
 begin
   Shift := KeysToShiftState(Message.Keys);
   PDontSelectItem := FDontSelectItem;
   PDontUnSelectItem := FDontUnSelectItem;
+  PSelectingImplicitly := FSelectingImplicitly;
   FDontSelectItem := FDontSelectItem or ((NortonLike = nlOn) and ((Shift * [ssCtrl, ssShift]) = []));
   FDontUnSelectItem := FDontUnSelectItem or ((NortonLike = nlOn) and ((Shift * [ssCtrl]) = []));
+  SelectingImplicitly := ((Shift * [ssCtrl, ssShift]) = []);
+  if SelectingImplicitly and (NortonLike = nlKeyboard) then
+  begin
+    // in general, when clicking, we clear selection only after mouse button is released,
+    // from within WMLButtonUp, so we know we are not starting dragging,
+    // so we do not want to clear the selection.
+    // on the other hand, when clicking outside of the selection,
+    // we want to explicitly clear the selection, no matter what
+    Item := GetItemAt(Message.XPos, Message.YPos);
+    if (Item = nil) or (not Item.Selected) then
+      SelectAll(smNone);
+  end;
+  FSelectingImplicitly := FSelectingImplicitly or SelectingImplicitly;
+  FLButtonDownShiftState := Shift;
   try
     inherited;
   finally
     FDontSelectItem := PDontSelectItem;
     FDontUnSelectItem := PDontUnSelectItem;
+    FSelectingImplicitly := PSelectingImplicitly;
   end;
 end;
 
@@ -646,17 +706,50 @@ procedure TCustomNortonLikeListView.WMRButtonDown(var Message: TWMRButtonDown);
 var
   PDontUnSelectItem: Boolean;
   PDontSelectItem: Boolean;
+  PSelectingImplicitly: Boolean;
+  SelectingImplicitly: Boolean;
+  Shift: TShiftState;
 begin
+  Shift := KeysToShiftState(Message.Keys);
   PDontSelectItem := FDontSelectItem;
   PDontUnSelectItem := FDontUnSelectItem;
+  PSelectingImplicitly := FSelectingImplicitly;
   FDontSelectItem := FDontSelectItem or (NortonLike = nlOn);
   FDontUnSelectItem := FDontUnSelectItem or (NortonLike = nlOn);
+  SelectingImplicitly := ((Shift * [ssCtrl, ssShift]) = []);
+  // TODO unselect all when clicking outside of selection
+  // (is not done automatically when focused item is not selected)
+  FSelectingImplicitly := FSelectingImplicitly or SelectingImplicitly;
   try
     inherited;
   finally
     FDontSelectItem := PDontSelectItem;
     FDontUnSelectItem := PDontUnSelectItem;
+    FSelectingImplicitly := PSelectingImplicitly;
   end;
+end;
+
+procedure TCustomNortonLikeListView.WMLButtonUp(var Message: TWMLButtonUp);
+var
+  SelectingImplicitly: Boolean;
+  Shift: TShiftState;
+begin
+  // Workaround
+  // For some reason Message.Keys is always 0 here,
+  // so we use shift state from the LButtonDown as a workaround
+  Shift := KeysToShiftState(Message.Keys);
+  SelectingImplicitly :=
+    ((Shift * [ssCtrl, ssShift]) = []) and
+    ((FLButtonDownShiftState * [ssCtrl, ssShift]) = []);
+  if SelectingImplicitly and (csClicked in ControlState) then
+  begin
+    SelectAll(smNone, ItemFocused);
+    // Because condition in ItemSelected is not triggered as we first select
+    // the new item and then unselect the previous.
+    // This probably means that we can get rid of the code in ItemSelected.
+    FAnyAndAllSelectedImplicitly := True;
+  end;
+  inherited;
 end;
 
 function TCustomNortonLikeListView.GetMarkedFile: TListItem;
