@@ -344,7 +344,7 @@ BEGIN
   FILEZILLA_COPYRIGHT, "Copyright © 2001-2007 Tim Kosse"
   FILEZILLA_URL, "http://filezilla-project.org/"
   OPENSSL_BASED_ON, "This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit %s."
-  OPENSSL_COPYRIGHT, "Copyright © 1998-2011 The OpenSSL Project"
-  OPENSSL_VERSION, "1.0.0e"
+  OPENSSL_COPYRIGHT, "Copyright © 1998-2012 The OpenSSL Project"
+  OPENSSL_VERSION, "1.0.0g"
   OPENSSL_URL, "http://www.openssl.org/"
 END

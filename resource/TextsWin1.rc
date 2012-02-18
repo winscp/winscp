@@ -387,7 +387,7 @@ BEGIN
         FIND_FILE_STOP, "&Stop"
 
         WIN_VARIABLE_STRINGS, "WIN_VARIABLE"
-        WINSCP_COPYRIGHT, "Copyright © 2000-2011 Martin Prikryl"
+        WINSCP_COPYRIGHT, "Copyright © 2000-2012 Martin Prikryl"
         HOMEPAGE_URL, "http://winscp.net/"
         HISTORY_URL, "http://winscp.net/eng/docs/history"
         FORUM_URL, "http://winscp.net/forum/"

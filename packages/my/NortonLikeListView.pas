@@ -24,6 +24,7 @@ type
     FLastDeletedItem: TListItem; // aby sme nepocitali smazany item 2x
     FFocusingItem: Boolean;
     FManageSelection: Boolean;
+    FForceUpdateOnItemUnfocus: Boolean;
     FFirstSelected: Integer;
     FLastSelected: Integer;
     FFocused: TDateTime;
@@ -209,6 +210,14 @@ begin
   FManageSelection := IsVista;
   FFocused := 0;
   FIgnoreSetFocusFrom := INVALID_HANDLE_VALUE;
+  // On Windows 7 we have to force item update when it looses focus,
+  // otherwise some remnants of focus rectangle remain
+  // Doing the same on WinXP makes list view down from the item flicker,
+  // so we avoid this there.
+  // Not sure about Vista
+  FForceUpdateOnItemUnfocus :=
+    (Win32MajorVersion > 6) or
+    ((Win32MajorVersion = 6) and (Win32MinorVersion >= 1));
 end;
 
 destructor TCustomNortonLikeListView.Destroy;
@@ -438,7 +447,8 @@ begin
             if Valid and (not FClearingItems) and
                (uChanged = LVIF_STATE) and (Item <> FLastDeletedItem) then
             begin
-              if (NortonLike <> nlOff) and
+              if FForceUpdateOnItemUnfocus and
+                 (NortonLike <> nlOff) and
                  ((uOldState and LVIS_FOCUSED) > (uNewState and LVIS_FOCUSED)) then
               begin
                 // force update, otherwise some remnants of focus rectangle remain

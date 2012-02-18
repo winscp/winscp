@@ -657,6 +657,7 @@ void __fastcall TTerminalManager::ApplicationShowHint(AnsiString & HintStr,
   }
   else if (dynamic_cast<TProgressBar *>(HintInfo.HintControl) != NULL)
   {
+    // Hint is forcibly hidden in TProgressForm::FormHide
     HintInfo.HideTimeout = 100000; // "almost" never
     HintInfo.ReshowTimeout = 500; // updated each 0.5s
   }

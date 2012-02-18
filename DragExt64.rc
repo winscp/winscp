@@ -12,11 +12,11 @@ FILETYPE 0x2
             VALUE "FileDescription", "Drag&Drop shell extension for WinSCP (64-bit)\0"
             VALUE "FileVersion", "1.1.9.119\0"
             VALUE "InternalName", "dragext64\0"
-            VALUE "LegalCopyright", "(c) 2000-2011 Martin Prikryl\0"
+            VALUE "LegalCopyright", "(c) 2000-2012 Martin Prikryl\0"
             VALUE "LegalTrademarks", "\0"
             VALUE "OriginalFilename", "dragext64.dll\0"
             VALUE "ProductName", "WinSCP\0"
-            VALUE "ProductVersion", "4.3.6.0\0"
+            VALUE "ProductVersion", "4.3.7.0\0"
             VALUE "ReleaseType", "stable\0"
             VALUE "WWW", "http://winscp.net/\0"
         }

@@ -13,7 +13,7 @@
 #define InnoSetupReg "Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId + "_is1"
 #define InnoSetupAppPathReg "Inno Setup: App Path"
 
-#ifexist "interm\winscpsetup.inc.iss"
+#ifexist "..\interm\winscpsetup.inc.iss"
   #include "..\interm\winscpsetup.inc.iss"
 #else
   #define Status "unofficial"

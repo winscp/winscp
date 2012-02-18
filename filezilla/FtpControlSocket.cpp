@@ -1657,25 +1657,40 @@ void CFtpControlSocket::List(BOOL bFinish, int nError /*=FALSE*/, CServerPath pa
 			{
 				CString temp;
 				int i,j;
-				if((i=retmsg.Find(_T("(")))==-1||(j=retmsg.Find(_T(")")))==-1)
+				// MP EXT
+				if((i=retmsg.Find(_T("(")))>=0&&(j=retmsg.Find(_T(")")))>=0)
 				{
-					if (!pData->bTriedPortPasvOnce)
+					i++;
+					j--;
+				}
+				else
+				{
+					// MP EXT
+					if ((i=retmsg.Mid(4).FindOneOf(_T("0123456789")))>=0)
 					{
-						pData->bTriedPortPasvOnce = TRUE;
-						pData->bPasv = !pData->bPasv;
+						i += 4;
+						j = retmsg.GetLength() - 1;
 					}
 					else
-						error=TRUE;
-					break;
+					{
+						if (!pData->bTriedPortPasvOnce)
+						{
+							pData->bTriedPortPasvOnce = TRUE;
+							pData->bPasv = !pData->bPasv;
+						}
+						else
+							error=TRUE;
+						break;
+					}
 				}
 
 #ifdef MPEXT
-				temp = retmsg.Mid(i+1,(j-i)-1);
+				temp = retmsg.Mid(i,(j-i)+1);
 #endif
 				if (GetFamily() == AF_INET)
 				{
 #ifndef MPEXT
-					temp = retmsg.Mid(i+1,(j-i)-1);
+					temp = retmsg.Mid(i,(j-i)+1);
 #endif
 					i=temp.ReverseFind(',');
 					pData->port=atol(  T2CA( temp.Right(temp.GetLength()-(i+1)) )  ); //get ls byte of server socket
@@ -2920,23 +2935,37 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 			if (pData->bPasv)
 			{
 				CString reply = GetReply();
-				int i = reply.Find( _T("(") );
-				int j = j = reply.Find( _T(")") );
-				// extract connect port number and IP from string returned by server
-				if (i==-1 || j==-1 || (i+11)>=j)
+				int i,j;
+				// MP EXT
+				if((i=reply.Find(_T("(")))>=0&&(j=reply.Find(_T(")")))>=0)
 				{
-					if (!pData->bTriedPortPasvOnce)
+					i++;
+					j--;
+				}
+				else
+				{
+					// MP EXT
+					if ((i=reply.Mid(4).FindOneOf(_T("0123456789")))>=0)
 					{
-						pData->bTriedPortPasvOnce = TRUE;
-						pData->bPasv = !pData->bPasv;
+						i += 4;
+						j = reply.GetLength() - 1;
 					}
 					else
-						nReplyError = FZ_REPLY_ERROR;
-					break;
+					{
+						if (!pData->bTriedPortPasvOnce)
+						{
+							pData->bTriedPortPasvOnce = TRUE;
+							pData->bPasv = !pData->bPasv;
+						}
+						else
+							nReplyError = FZ_REPLY_ERROR;
+						break;
+					}
 				}
 
 				CString temp;
-				temp = reply.Mid(i+1,(j-i)-1);
+				// MPEXT
+				temp = reply.Mid(i,(j-i)+1);
 
 				if (GetFamily() == AF_INET)
 				{
@@ -3257,23 +3286,37 @@ void CFtpControlSocket::FileTransfer(t_transferfile *transferfile/*=0*/,BOOL bFi
 				if (pData->bPasv)
 				{
 					CString reply = GetReply();
-					int i = reply.Find( _T("(") );
-					int j = j = reply.Find( _T(")") );
-					// extract connect port number and IP from string returned by server
-					if(i==-1 || j==-1 || (GetFamily() == AF_INET && (i+11) >= j))
+					int i,j;
+					// MP EXT
+					if((i=reply.Find(_T("(")))>=0&&(j=reply.Find(_T(")")))>=0)
 					{
-						if (!pData->bTriedPortPasvOnce)
+						i++;
+						j--;
+					}
+					else
+					{
+						// MP EXT
+						if ((i=reply.Mid(4).FindOneOf(_T("0123456789")))>=0)
 						{
-							pData->bTriedPortPasvOnce = TRUE;
-							pData->bPasv = !pData->bPasv;
+							i += 4;
+							j = reply.GetLength() - 1;
 						}
 						else
-							nReplyError = FZ_REPLY_ERROR;
-						break;
+						{
+							if (!pData->bTriedPortPasvOnce)
+							{
+								pData->bTriedPortPasvOnce = TRUE;
+								pData->bPasv = !pData->bPasv;
+							}
+							else
+								nReplyError = FZ_REPLY_ERROR;
+							break;
+						}
 					}
 
 					CString temp;
-					temp = reply.Mid(i+1,(j-i)-1);
+					// MPEXT
+					temp = reply.Mid(i,(j-i)+1);
 
 					if (GetFamily() == AF_INET)
 					{

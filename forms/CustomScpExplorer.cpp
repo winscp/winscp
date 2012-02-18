@@ -3566,6 +3566,17 @@ bool __fastcall TCustomScpExplorerForm::DoSynchronizeDirectories(
         GUIConfiguration->SynchronizeParams = Params.Params | UnusedParams;
         GUIConfiguration->SynchronizeOptions = Params.Options;
       }
+      else
+      {
+        if (FLAGSET(GUIConfiguration->SynchronizeOptions, soSynchronizeAsk) &&
+            FLAGCLEAR(Params.Options, soSynchronizeAsk) &&
+            FLAGSET(Params.Options, soSynchronize))
+        {
+          GUIConfiguration->SynchronizeOptions =
+            (GUIConfiguration->SynchronizeOptions & ~soSynchronizeAsk) |
+            soSynchronize;
+        }
+      }
       LocalDirectory = Params.LocalDirectory;
       RemoteDirectory = Params.RemoteDirectory;
     }

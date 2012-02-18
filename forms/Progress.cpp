@@ -294,6 +294,10 @@ void __fastcall TProgressForm::FormShow(TObject * /*Sender*/)
 //---------------------------------------------------------------------------
 void __fastcall TProgressForm::FormHide(TObject * /*Sender*/)
 {
+  // This is to counter the "infinite" timestamp in
+  // TTerminalManager::ApplicationShowHint.
+  // Because if form disappears on its own, hint is not hidden.
+  Application->CancelHint();
   CustomWinConfiguration->History["SpeedLimit"] = SpeedCombo->Items;
   UpdateTimer->Enabled = false;
 }

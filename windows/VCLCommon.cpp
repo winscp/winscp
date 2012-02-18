@@ -237,34 +237,41 @@ inline void __fastcall DoFormWindowProc(TCustomForm * Form, TWndMethod WndProc,
     }
     bool WasMainFormCenter = (AForm->Position == poMainFormCenter);
     WndProc(Message);
+    // Make sure dialogs are shown on-screen even if center of the main window
+    // is off-screen. Occurs e.g. if you move the main window so that
+    // only window title is visible above taksbar.
     if (Form->Showing && WasMainFormCenter && (AForm->Position == poDesigned))
     {
-      int Left = Form->Left;
-      int Top = Form->Top;
+      TRect Rect;
+      // Reading Form.Left/Form.Top instead here does not work, likely due to some
+      // bug, when querying TProgressForm opened from TEditorForm (reloading remote file)
+      GetWindowRect(Form->Handle, &Rect);
+
+      int Left = Rect.Left;
+      int Top = Rect.Top;
       TRect WorkArea = AForm->Monitor->WorkareaRect;
 
-      if (Left + AForm->Width > WorkArea.Right)
+      if (Left + Rect.Width() > WorkArea.Right)
       {
-        Left = WorkArea.Right - AForm->Width;
+        Left = WorkArea.Right - Rect.Width();
       }
       if (Left < WorkArea.Left)
       {
         Left = WorkArea.Left;
       }
-      if (Top + AForm->Height > WorkArea.Bottom)
+      if (Top + Rect.Height() > WorkArea.Bottom)
       {
-        Top = WorkArea.Bottom - AForm->Height;
+        Top = WorkArea.Bottom - Rect.Height();
       }
       if (Top < WorkArea.Top)
       {
         Top = WorkArea.Top;
       }
-      // check in case the SetBounds have any unexpected side effect
-      // when passing the same values
-      if ((Left != Form->Left) ||
-          (Top != Form->Top))
+      if ((Left != Rect.Left) ||
+          (Top != Rect.Top))
       {
-        Form->SetBounds(Left, Top, AForm->Width, AForm->Height);
+        SetWindowPos(Form->Handle, 0, Left, Top, Rect.Width(), Rect.Height(),
+          SWP_NOZORDER + SWP_NOACTIVATE);
       }
     }
   }

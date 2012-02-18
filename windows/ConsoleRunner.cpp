@@ -1427,7 +1427,6 @@ void __fastcall TConsoleRunner::ScriptQueryCancel(TScript * /*Script*/, bool & C
 {
   if (Aborted())
   {
-    FCommandError = true;
     Cancel = true;
   }
 }
@@ -1655,12 +1654,6 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
         }
       }
       while (Result && FScript->Continue && !Aborted());
-
-      // was aborted
-      if (!Result || FScript->Continue)
-      {
-        AnyError = true;
-      }
     }
     catch(Exception & E)
     {

@@ -328,6 +328,7 @@ void __fastcall TEditorManager::FileReload(TObject * Token)
   assert(!FileData->External);
 
   OnFileReload(FileData->FileName, FileData->Data);
+  FileData->Timestamp = FileAge(FileData->FileName);
 }
 //---------------------------------------------------------------------------
 void __fastcall TEditorManager::FileClosed(TObject * Token)
