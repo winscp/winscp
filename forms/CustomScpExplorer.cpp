@@ -494,22 +494,24 @@ void __fastcall TCustomScpExplorerForm::QueueItemUpdate(TTerminalQueue * Queue,
   {
     TGuard Guard(FQueueStatusSection);
 
-    assert(FQueueStatus != NULL);
-
-    TQueueItemProxy * QueueItem = FQueueStatus->FindByQueueItem(Item);
-
-    if ((Item->Status == TQueueItem::qsDone) && (Terminal != NULL))
+    // this may be running in parallel with QueueChanged
+    if (FQueueStatus != NULL)
     {
-      FRefreshLocalDirectory = (QueueItem == NULL) ||
-        (!QueueItem->Info->ModifiedLocal.IsEmpty());
-      FRefreshRemoteDirectory = (QueueItem == NULL) ||
-        (!QueueItem->Info->ModifiedRemote.IsEmpty());
-    }
+      TQueueItemProxy * QueueItem = FQueueStatus->FindByQueueItem(Item);
 
-    if (QueueItem != NULL)
-    {
-      QueueItem->UserData = (void*)true;
-      FQueueItemInvalidated = true;
+      if ((Item->Status == TQueueItem::qsDone) && (Terminal != NULL))
+      {
+        FRefreshLocalDirectory = (QueueItem == NULL) ||
+          (!QueueItem->Info->ModifiedLocal.IsEmpty());
+        FRefreshRemoteDirectory = (QueueItem == NULL) ||
+          (!QueueItem->Info->ModifiedRemote.IsEmpty());
+      }
+
+      if (QueueItem != NULL)
+      {
+        QueueItem->UserData = (void*)true;
+        FQueueItemInvalidated = true;
+      }
     }
   }
 }

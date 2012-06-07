@@ -538,7 +538,6 @@ err:
 
 BIO *BIO_new_ssl_connect(SSL_CTX *ctx)
 	{
-// MPEXT
 #ifndef OPENSSL_NO_SOCK
 	BIO *ret=NULL,*con=NULL,*ssl=NULL;
 

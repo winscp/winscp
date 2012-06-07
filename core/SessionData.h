@@ -124,6 +124,7 @@ private:
   AnsiString FPostLoginCommands;
   TAutoSwitch FSCPLsFullTime;
   TAutoSwitch FFtpListAll;
+  bool FSslSessionReuse;
   TAddressFamily FAddressFamily;
   AnsiString FRekeyData;
   unsigned int FRekeyTime;
@@ -248,6 +249,7 @@ private:
   TAutoSwitch __fastcall GetSFTPBug(TSftpBug Bug) const;
   void __fastcall SetSCPLsFullTime(TAutoSwitch value);
   void __fastcall SetFtpListAll(TAutoSwitch value);
+  void __fastcall SetSslSessionReuse(bool value);
   AnsiString __fastcall GetStorageKey();
   AnsiString __fastcall GetInternalStorageKey();
   void __fastcall SetDSTMode(TDSTMode value);
@@ -396,6 +398,7 @@ public:
   __property TAutoSwitch SFTPBug[TSftpBug Bug]  = { read=GetSFTPBug, write=SetSFTPBug };
   __property TAutoSwitch SCPLsFullTime = { read = FSCPLsFullTime, write = SetSCPLsFullTime };
   __property TAutoSwitch FtpListAll = { read = FFtpListAll, write = SetFtpListAll };
+  __property bool SslSessionReuse = { read = FSslSessionReuse, write = SetSslSessionReuse };
   __property TDSTMode DSTMode = { read = FDSTMode, write = SetDSTMode };
   __property bool DeleteToRecycleBin = { read = FDeleteToRecycleBin, write = SetDeleteToRecycleBin };
   __property bool OverwrittenToRecycleBin = { read = FOverwrittenToRecycleBin, write = SetOverwrittenToRecycleBin };

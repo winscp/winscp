@@ -146,7 +146,12 @@ public:
 	BOOL GetPeerCertificateData(t_SslCertData &SslCertData);
 
 	bool IsUsingSSL();
-	int InitSSLConnection(bool clientMode, void* pContext = 0);
+	int InitSSLConnection(bool clientMode, 
+		CString &ServerName,
+		int Port,
+		ssl_session_info_t *m_SslSessions,
+		size_t m_MaxSslSessions,
+		void* pContext = 0);
 
 	static bool CreateSslCertificate(LPCTSTR filename, int bits, unsigned char* country, unsigned char* state,
 			unsigned char* locality, unsigned char* organization, unsigned char* unit, unsigned char* cname,
@@ -242,6 +247,10 @@ private:
 	bool m_onCloseCalled;
 
 	char* m_pKeyPassword;
+	const char *m_HostAddress;
+	UINT m_nHostPort;
+	ssl_session_info_t *m_SslSessions;
+	size_t m_MaxSslSessions;
 };
 
 #define SSL_INFO 0

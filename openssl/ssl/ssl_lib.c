@@ -176,7 +176,10 @@ SSL3_ENC_METHOD ssl3_undef_enc_method={
 	0,	/* client_finished_label_len */
 	NULL,	/* server_finished_label */
 	0,	/* server_finished_label_len */
-	(int (*)(int))ssl_undefined_function
+	(int (*)(int))ssl_undefined_function,
+	(int (*)(SSL *, unsigned char *, size_t, const char *,
+		 size_t, const unsigned char *, size_t,
+		 int use_context)) ssl_undefined_function,
 	};
 
 int SSL_clear(SSL *s)
@@ -202,9 +205,9 @@ int SSL_clear(SSL *s)
        * needed because SSL_clear is not called when doing renegotiation) */
 	/* This is set if we are doing dynamic renegotiation so keep
 	 * the old cipher.  It is sort of a SSL_clear_lite :-) */
-	if (s->new_session) return(1);
+	if (s->renegotiate) return(1);
 #else
-	if (s->new_session)
+	if (s->renegotiate)
 		{
 		SSLerr(SSL_F_SSL_CLEAR,ERR_R_INTERNAL_ERROR);
 		return 0;
@@ -353,6 +356,9 @@ SSL *SSL_new(SSL_CTX *ctx)
 	s->tlsext_ocsp_resplen = -1;
 	CRYPTO_add(&ctx->references,1,CRYPTO_LOCK_SSL_CTX);
 	s->initial_ctx=ctx;
+# ifndef OPENSSL_NO_NEXTPROTONEG
+	s->next_proto_negotiated = NULL;
+# endif
 #endif
 
 	s->verify_result=X509_V_OK;
@@ -585,6 +591,14 @@ void SSL_free(SSL *s)
 	if (s->kssl_ctx != NULL)
 		kssl_ctx_free(s->kssl_ctx);
 #endif	/* OPENSSL_NO_KRB5 */
+
+#if !defined(OPENSSL_NO_TLSEXT) && !defined(OPENSSL_NO_NEXTPROTONEG)
+	if (s->next_proto_negotiated)
+		OPENSSL_free(s->next_proto_negotiated);
+#endif
+
+        if (s->srtp_profiles)
+            sk_SRTP_PROTECTION_PROFILE_free(s->srtp_profiles);
 
 	OPENSSL_free(s);
 	}
@@ -1008,10 +1022,21 @@ int SSL_shutdown(SSL *s)
 
 int SSL_renegotiate(SSL *s)
 	{
-	if (s->new_session == 0)
-		{
-		s->new_session=1;
-		}
+	if (s->renegotiate == 0)
+		s->renegotiate=1;
+
+	s->new_session=1;
+
+	return(s->method->ssl_renegotiate(s));
+	}
+
+int SSL_renegotiate_abbreviated(SSL *s)
+	{
+	if (s->renegotiate == 0)
+		s->renegotiate=1;
+
+	s->new_session=0;
+
 	return(s->method->ssl_renegotiate(s));
 	}
 
@@ -1019,7 +1044,7 @@ int SSL_renegotiate_pending(SSL *s)
 	{
 	/* becomes true when negotiation is requested;
 	 * false again once a handshake has finished */
-	return (s->new_session != 0);
+	return (s->renegotiate != 0);
 	}
 
 long SSL_ctrl(SSL *s,int cmd,long larg,void *parg)
@@ -1360,6 +1385,10 @@ int ssl_cipher_list_to_bytes(SSL *s,STACK_OF(SSL_CIPHER) *sk,unsigned char *p,
 	for (i=0; i<sk_SSL_CIPHER_num(sk); i++)
 		{
 		c=sk_SSL_CIPHER_value(sk,i);
+		/* Skip TLS v1.2 only ciphersuites if lower than v1.2 */
+		if ((c->algorithm_ssl & SSL_TLSV1_2) && 
+			(TLS1_get_client_version(s) < TLS1_2_VERSION))
+			continue;
 #ifndef OPENSSL_NO_KRB5
 		if (((c->algorithm_mkey & SSL_kKRB5) || (c->algorithm_auth & SSL_aKRB5)) &&
 		    nokrb5)
@@ -1377,7 +1406,7 @@ int ssl_cipher_list_to_bytes(SSL *s,STACK_OF(SSL_CIPHER) *sk,unsigned char *p,
 	/* If p == q, no ciphers and caller indicates an error. Otherwise
 	 * add SCSV if not renegotiating.
 	 */
-	if (p != q && !s->new_session)
+	if (p != q && !s->renegotiate)
 		{
 		static SSL_CIPHER scsv =
 			{
@@ -1424,7 +1453,7 @@ STACK_OF(SSL_CIPHER) *ssl_bytes_to_cipher_list(SSL *s,unsigned char *p,int num,
 			(p[n-1] == (SSL3_CK_SCSV & 0xff)))
 			{
 			/* SCSV fatal if renegotiating */
-			if (s->new_session)
+			if (s->renegotiate)
 				{
 				SSLerr(SSL_F_SSL_BYTES_TO_CIPHER_LIST,SSL_R_SCSV_RECEIVED_WHEN_RENEGOTIATING);
 				ssl3_send_alert(s,SSL3_AL_FATAL,SSL_AD_HANDSHAKE_FAILURE); 
@@ -1481,7 +1510,136 @@ int SSL_get_servername_type(const SSL *s)
 		return TLSEXT_NAMETYPE_host_name;
 	return -1;
 	}
+
+# ifndef OPENSSL_NO_NEXTPROTONEG
+/* SSL_select_next_proto implements the standard protocol selection. It is
+ * expected that this function is called from the callback set by
+ * SSL_CTX_set_next_proto_select_cb.
+ *
+ * The protocol data is assumed to be a vector of 8-bit, length prefixed byte
+ * strings. The length byte itself is not included in the length. A byte
+ * string of length 0 is invalid. No byte string may be truncated.
+ *
+ * The current, but experimental algorithm for selecting the protocol is:
+ *
+ * 1) If the server doesn't support NPN then this is indicated to the
+ * callback. In this case, the client application has to abort the connection
+ * or have a default application level protocol.
+ *
+ * 2) If the server supports NPN, but advertises an empty list then the
+ * client selects the first protcol in its list, but indicates via the
+ * API that this fallback case was enacted.
+ *
+ * 3) Otherwise, the client finds the first protocol in the server's list
+ * that it supports and selects this protocol. This is because it's
+ * assumed that the server has better information about which protocol
+ * a client should use.
+ *
+ * 4) If the client doesn't support any of the server's advertised
+ * protocols, then this is treated the same as case 2.
+ *
+ * It returns either
+ * OPENSSL_NPN_NEGOTIATED if a common protocol was found, or
+ * OPENSSL_NPN_NO_OVERLAP if the fallback case was reached.
+ */
+int SSL_select_next_proto(unsigned char **out, unsigned char *outlen, const unsigned char *server, unsigned int server_len, const unsigned char *client, unsigned int client_len)
+	{
+	unsigned int i, j;
+	const unsigned char *result;
+	int status = OPENSSL_NPN_UNSUPPORTED;
+
+	/* For each protocol in server preference order, see if we support it. */
+	for (i = 0; i < server_len; )
+		{
+		for (j = 0; j < client_len; )
+			{
+			if (server[i] == client[j] &&
+			    memcmp(&server[i+1], &client[j+1], server[i]) == 0)
+				{
+				/* We found a match */
+				result = &server[i];
+				status = OPENSSL_NPN_NEGOTIATED;
+				goto found;
+				}
+			j += client[j];
+			j++;
+			}
+		i += server[i];
+		i++;
+		}
+
+	/* There's no overlap between our protocols and the server's list. */
+	result = client;
+	status = OPENSSL_NPN_NO_OVERLAP;
+
+	found:
+	*out = (unsigned char *) result + 1;
+	*outlen = result[0];
+	return status;
+	}
+
+/* SSL_get0_next_proto_negotiated sets *data and *len to point to the client's
+ * requested protocol for this connection and returns 0. If the client didn't
+ * request any protocol, then *data is set to NULL.
+ *
+ * Note that the client can request any protocol it chooses. The value returned
+ * from this function need not be a member of the list of supported protocols
+ * provided by the callback.
+ */
+void SSL_get0_next_proto_negotiated(const SSL *s, const unsigned char **data, unsigned *len)
+	{
+	*data = s->next_proto_negotiated;
+	if (!*data) {
+		*len = 0;
+	} else {
+		*len = s->next_proto_negotiated_len;
+	}
+}
+
+/* SSL_CTX_set_next_protos_advertised_cb sets a callback that is called when a
+ * TLS server needs a list of supported protocols for Next Protocol
+ * Negotiation. The returned list must be in wire format.  The list is returned
+ * by setting |out| to point to it and |outlen| to its length. This memory will
+ * not be modified, but one should assume that the SSL* keeps a reference to
+ * it.
+ *
+ * The callback should return SSL_TLSEXT_ERR_OK if it wishes to advertise. Otherwise, no
+ * such extension will be included in the ServerHello. */
+void SSL_CTX_set_next_protos_advertised_cb(SSL_CTX *ctx, int (*cb) (SSL *ssl, const unsigned char **out, unsigned int *outlen, void *arg), void *arg)
+	{
+	ctx->next_protos_advertised_cb = cb;
+	ctx->next_protos_advertised_cb_arg = arg;
+	}
+
+/* SSL_CTX_set_next_proto_select_cb sets a callback that is called when a
+ * client needs to select a protocol from the server's provided list. |out|
+ * must be set to point to the selected protocol (which may be within |in|).
+ * The length of the protocol name must be written into |outlen|. The server's
+ * advertised protocols are provided in |in| and |inlen|. The callback can
+ * assume that |in| is syntactically valid.
+ *
+ * The client must select a protocol. It is fatal to the connection if this
+ * callback returns a value other than SSL_TLSEXT_ERR_OK.
+ */
+void SSL_CTX_set_next_proto_select_cb(SSL_CTX *ctx, int (*cb) (SSL *s, unsigned char **out, unsigned char *outlen, const unsigned char *in, unsigned int inlen, void *arg), void *arg)
+	{
+	ctx->next_proto_select_cb = cb;
+	ctx->next_proto_select_cb_arg = arg;
+	}
+# endif
 #endif
+
+int SSL_export_keying_material(SSL *s, unsigned char *out, size_t olen,
+	const char *label, size_t llen, const unsigned char *p, size_t plen,
+	int use_context)
+	{
+	if (s->version < TLS1_VERSION)
+		return -1;
+
+	return s->method->ssl3_enc->export_keying_material(s, out, olen, label,
+							   llen, p, plen,
+							   use_context);
+	}
 
 static unsigned long ssl_session_hash(const SSL_SESSION *a)
 	{
@@ -1525,6 +1683,14 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
 		SSLerr(SSL_F_SSL_CTX_NEW,SSL_R_NULL_SSL_METHOD_PASSED);
 		return(NULL);
 		}
+
+#ifdef OPENSSL_FIPS
+	if (FIPS_mode() && (meth->version < TLS1_VERSION))	
+		{
+		SSLerr(SSL_F_SSL_CTX_NEW, SSL_R_ONLY_TLS_ALLOWED_IN_FIPS_MODE);
+		return NULL;
+		}
+#endif
 
 	if (SSL_get_ex_data_X509_STORE_CTX_idx() < 0)
 		{
@@ -1645,11 +1811,18 @@ SSL_CTX *SSL_CTX_new(const SSL_METHOD *meth)
 	ret->tlsext_status_cb = 0;
 	ret->tlsext_status_arg = NULL;
 
+# ifndef OPENSSL_NO_NEXTPROTONEG
+	ret->next_protos_advertised_cb = 0;
+	ret->next_proto_select_cb = 0;
+# endif
 #endif
 #ifndef OPENSSL_NO_PSK
 	ret->psk_identity_hint=NULL;
 	ret->psk_client_callback=NULL;
 	ret->psk_server_callback=NULL;
+#endif
+#ifndef OPENSSL_NO_SRP
+	SSL_CTX_SRP_CTX_init(ret);
 #endif
 #ifndef OPENSSL_NO_BUF_FREELISTS
 	ret->freelist_max_len = SSL_MAX_BUF_FREELIST_LEN_DEFAULT;
@@ -1779,9 +1952,15 @@ void SSL_CTX_free(SSL_CTX *a)
 	a->comp_methods = NULL;
 #endif
 
+        if (a->srtp_profiles)
+                sk_SRTP_PROTECTION_PROFILE_free(a->srtp_profiles);
+
 #ifndef OPENSSL_NO_PSK
 	if (a->psk_identity_hint)
 		OPENSSL_free(a->psk_identity_hint);
+#endif
+#ifndef OPENSSL_NO_SRP
+	SSL_CTX_SRP_CTX_free(a);
 #endif
 #ifndef OPENSSL_NO_ENGINE
 	if (a->client_cert_engine)
@@ -2036,12 +2215,13 @@ void ssl_set_cert_masks(CERT *c, const SSL_CIPHER *cipher)
 
 #ifndef OPENSSL_NO_EC
 
-int ssl_check_srvr_ecc_cert_and_alg(X509 *x, const SSL_CIPHER *cs)
+int ssl_check_srvr_ecc_cert_and_alg(X509 *x, SSL *s)
 	{
 	unsigned long alg_k, alg_a;
 	EVP_PKEY *pkey = NULL;
 	int keysize = 0;
 	int signature_nid = 0, md_nid = 0, pk_nid = 0;
+	const SSL_CIPHER *cs = s->s3->tmp.new_cipher;
 
 	alg_k = cs->algorithm_mkey;
 	alg_a = cs->algorithm_auth;
@@ -2071,7 +2251,7 @@ int ssl_check_srvr_ecc_cert_and_alg(X509 *x, const SSL_CIPHER *cs)
 			SSLerr(SSL_F_SSL_CHECK_SRVR_ECC_CERT_AND_ALG, SSL_R_ECC_CERT_NOT_FOR_KEY_AGREEMENT);
 			return 0;
 			}
-		if (alg_k & SSL_kECDHe)
+		if ((alg_k & SSL_kECDHe) && TLS1_get_version(s) < TLS1_2_VERSION)
 			{
 			/* signature alg must be ECDSA */
 			if (pk_nid != NID_X9_62_id_ecPublicKey)
@@ -2080,7 +2260,7 @@ int ssl_check_srvr_ecc_cert_and_alg(X509 *x, const SSL_CIPHER *cs)
 				return 0;
 				}
 			}
-		if (alg_k & SSL_kECDHr)
+		if ((alg_k & SSL_kECDHr) && TLS1_get_version(s) < TLS1_2_VERSION)
 			{
 			/* signature alg must be RSA */
 
@@ -2170,34 +2350,36 @@ X509 *ssl_get_server_send_cert(SSL *s)
 	return(c->pkeys[i].x509);
 	}
 
-EVP_PKEY *ssl_get_sign_pkey(SSL *s,const SSL_CIPHER *cipher)
+EVP_PKEY *ssl_get_sign_pkey(SSL *s,const SSL_CIPHER *cipher, const EVP_MD **pmd)
 	{
 	unsigned long alg_a;
 	CERT *c;
+	int idx = -1;
 
 	alg_a = cipher->algorithm_auth;
 	c=s->cert;
 
 	if ((alg_a & SSL_aDSS) &&
 		(c->pkeys[SSL_PKEY_DSA_SIGN].privatekey != NULL))
-		return(c->pkeys[SSL_PKEY_DSA_SIGN].privatekey);
+		idx = SSL_PKEY_DSA_SIGN;
 	else if (alg_a & SSL_aRSA)
 		{
 		if (c->pkeys[SSL_PKEY_RSA_SIGN].privatekey != NULL)
-			return(c->pkeys[SSL_PKEY_RSA_SIGN].privatekey);
+			idx = SSL_PKEY_RSA_SIGN;
 		else if (c->pkeys[SSL_PKEY_RSA_ENC].privatekey != NULL)
-			return(c->pkeys[SSL_PKEY_RSA_ENC].privatekey);
-		else
-			return(NULL);
+			idx = SSL_PKEY_RSA_ENC;
 		}
 	else if ((alg_a & SSL_aECDSA) &&
 	         (c->pkeys[SSL_PKEY_ECC].privatekey != NULL))
-		return(c->pkeys[SSL_PKEY_ECC].privatekey);
-	else /* if (alg_a & SSL_aNULL) */
+		idx = SSL_PKEY_ECC;
+	if (idx == -1)
 		{
 		SSLerr(SSL_F_SSL_GET_SIGN_PKEY,ERR_R_INTERNAL_ERROR);
 		return(NULL);
 		}
+	if (pmd)
+		*pmd = c->pkeys[idx].digest;
+	return c->pkeys[idx].privatekey;
 	}
 
 void ssl_update_cache(SSL *s,int mode)
@@ -2422,6 +2604,10 @@ SSL_METHOD *ssl_bad_method(int ver)
 
 const char *SSL_get_version(const SSL *s)
 	{
+	if (s->version == TLS1_2_VERSION)
+		return("TLSv1.2");
+	else if (s->version == TLS1_1_VERSION)
+		return("TLSv1.1");
 	if (s->version == TLS1_VERSION)
 		return("TLSv1");
 	else if (s->version == SSL3_VERSION)
@@ -2516,6 +2702,7 @@ SSL *SSL_dup(SSL *s)
 	ret->in_handshake = s->in_handshake;
 	ret->handshake_func = s->handshake_func;
 	ret->server = s->server;
+	ret->renegotiate = s->renegotiate;
 	ret->new_session = s->new_session;
 	ret->quiet_shutdown = s->quiet_shutdown;
 	ret->shutdown=s->shutdown;
@@ -2781,6 +2968,11 @@ int SSL_state(const SSL *ssl)
 	return(ssl->state);
 	}
 
+void SSL_set_state(SSL *ssl, int state)
+	{
+	ssl->state = state;
+	}
+
 void SSL_set_verify_result(SSL *ssl,long arg)
 	{
 	ssl->verify_result=arg;
@@ -3038,6 +3230,16 @@ void ssl_clear_hash_ctx(EVP_MD_CTX **hash)
 	if (*hash) EVP_MD_CTX_destroy(*hash);
 	*hash=NULL;
 }
+
+void SSL_set_debug(SSL *s, int debug)
+	{
+	s->debug = debug;
+	}
+
+int SSL_cache_hit(SSL *s)
+	{
+	return s->hit;
+	}
 
 #if defined(_WINDLL) && defined(OPENSSL_SYS_WIN16)
 #include "../crypto/bio/bss_file.c"

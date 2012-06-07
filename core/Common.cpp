@@ -1076,10 +1076,16 @@ TDateTime __fastcall ConvertTimestampToUTC(TDateTime DateTime)
 {
 
   TDateTimeParams * Params = GetDateTimeParams();
-  DateTime += Params->CurrentDifference;
   DateTime +=
     (IsDateInDST(DateTime) ?
       Params->DaylightDifference : Params->StandardDifference);
+  DateTime += Params->BaseDifference;
+
+  if (Params->DaylightHack)
+  {
+    const TDateTimeParams * CurrentParams = GetDateTimeParams();
+    DateTime += CurrentParams->CurrentDaylightDifference;
+  }
 
   return DateTime;
 }

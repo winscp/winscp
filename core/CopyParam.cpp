@@ -252,7 +252,7 @@ char * __fastcall TCopyParamType::ReplaceChar(AnsiString & FileName, char * Inva
     else
     {
       FileName[Index] = InvalidCharsReplacement;
-      InvalidChar++;
+      InvalidChar = FileName.c_str() + Index;
     }
   }
   else

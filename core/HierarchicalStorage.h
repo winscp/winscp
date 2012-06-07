@@ -53,6 +53,8 @@ public:
   virtual void __fastcall WriteString(const AnsiString Name, const AnsiString Value);
   void __fastcall WriteBinaryData(const AnsiString Name, const AnsiString Value);
 
+  virtual void __fastcall Flush();
+
   __property AnsiString Storage  = { read=FStorage };
   __property AnsiString CurrentSubKey  = { read=GetCurrentSubKey };
   __property TStorageAccessMode AccessMode  = { read=FAccessMode, write=SetAccessMode };
@@ -159,6 +161,8 @@ public:
   virtual void __fastcall WriteBinaryData(const AnsiString Name, const void * Buffer, int Size);
 
   virtual void __fastcall GetValueNames(Classes::TStrings* Strings);
+
+  virtual void __fastcall Flush();
 
 private:
   TMemIniFile * FIniFile;

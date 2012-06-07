@@ -131,7 +131,6 @@ void __fastcall TSessionData::Default()
   TimeDifference = 0;
   SCPLsFullTime = asAuto;
   NotUtf = asAuto;
-  FtpListAll = asAuto;
 
   // SFTP
   SftpServer = "";
@@ -162,6 +161,8 @@ void __fastcall TSessionData::Default()
   FtpPingInterval = 30;
   FtpPingType = ptDummyCommand;
   Ftps = ftpsNone;
+  FtpListAll = asAuto;
+  SslSessionReuse = true;
 
   FtpProxyLogonType = 0; // none
 
@@ -234,7 +235,6 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(ListingCommand);
     DUPL(IgnoreLsWarnings);
     DUPL(SCPLsFullTime);
-    DUPL(FtpListAll);
 
     DUPL(TimeDifference);
     // new in 53b
@@ -295,6 +295,8 @@ void __fastcall TSessionData::Assign(TPersistent * Source)
     DUPL(FtpPingInterval);
     DUPL(FtpPingType);
     DUPL(Ftps);
+    DUPL(FtpListAll);
+    DUPL(SslSessionReuse);
 
     DUPL(FtpProxyLogonType);
 
@@ -407,7 +409,6 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
       Storage->ReadBool("AliasGroupList", false) ? AnsiString("ls -gla") : ListingCommand);
     IgnoreLsWarnings = Storage->ReadBool("IgnoreLsWarnings", IgnoreLsWarnings);
     SCPLsFullTime = TAutoSwitch(Storage->ReadInteger("SCPLsFullTime", SCPLsFullTime));
-    FtpListAll = TAutoSwitch(Storage->ReadInteger("FtpListAll", FtpListAll));
     Scp1Compatibility = Storage->ReadBool("Scp1Compatibility", Scp1Compatibility);
     TimeDifference = Storage->ReadFloat("TimeDifference", TimeDifference);
     DeleteToRecycleBin = Storage->ReadBool("DeleteToRecycleBin", DeleteToRecycleBin);
@@ -530,6 +531,8 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
     FtpPingInterval = Storage->ReadInteger("FtpPingInterval", FtpPingInterval);
     FtpPingType = static_cast<TPingType>(Storage->ReadInteger("FtpPingType", FtpPingType));
     Ftps = static_cast<TFtps>(Storage->ReadInteger("Ftps", Ftps));
+    FtpListAll = TAutoSwitch(Storage->ReadInteger("FtpListAll", FtpListAll));
+    SslSessionReuse = Storage->ReadBool("SslSessionReuse", SslSessionReuse);
 
     FtpProxyLogonType = Storage->ReadInteger("FtpProxyLogonType", FtpProxyLogonType);
 
@@ -674,7 +677,6 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(String, ListingCommand);
       WRITE_DATA(Bool, IgnoreLsWarnings);
       WRITE_DATA(Integer, SCPLsFullTime);
-      WRITE_DATA(Integer, FtpListAll);
       WRITE_DATA(Bool, Scp1Compatibility);
       WRITE_DATA(Float, TimeDifference);
       WRITE_DATA(Bool, DeleteToRecycleBin);
@@ -788,6 +790,8 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Integer, FtpPingInterval);
       WRITE_DATA(Integer, FtpPingType);
       WRITE_DATA(Integer, Ftps);
+      WRITE_DATA(Integer, FtpListAll);
+      WRITE_DATA(Bool, SslSessionReuse);
 
       WRITE_DATA(Integer, FtpProxyLogonType);
 
@@ -1922,11 +1926,6 @@ void __fastcall TSessionData::SetSCPLsFullTime(TAutoSwitch value)
 {
   SET_SESSION_PROPERTY(SCPLsFullTime);
 }
-//---------------------------------------------------------------------
-void __fastcall TSessionData::SetFtpListAll(TAutoSwitch value)
-{
-  SET_SESSION_PROPERTY(FtpListAll);
-}
 //---------------------------------------------------------------------------
 void __fastcall TSessionData::SetColor(int value)
 {
@@ -2049,6 +2048,16 @@ void __fastcall TSessionData::SetFtpPingType(TPingType value)
 void __fastcall TSessionData::SetFtps(TFtps value)
 {
   SET_SESSION_PROPERTY(Ftps);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetFtpListAll(TAutoSwitch value)
+{
+  SET_SESSION_PROPERTY(FtpListAll);
+}
+//---------------------------------------------------------------------
+void __fastcall TSessionData::SetSslSessionReuse(bool value)
+{
+  SET_SESSION_PROPERTY(SslSessionReuse);
 }
 //---------------------------------------------------------------------
 void __fastcall TSessionData::SetNotUtf(TAutoSwitch value)
@@ -2383,6 +2392,8 @@ void __fastcall TStoredSessionList::SetDefaultSettings(TSessionData * value)
   if (FDefaultSettings != value)
   {
     FDefaultSettings->Assign(value);
+    // make sure default settings are saved
+    FDefaultSettings->Modified = true;
     FDefaultSettings->Name = DefaultName;
     if (!FReadOnly)
     {

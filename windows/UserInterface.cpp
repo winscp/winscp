@@ -108,6 +108,10 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     ESshTerminate * Terminate = dynamic_cast<ESshTerminate*>(E);
     bool CloseOnCompletion = (Terminate != NULL);
     Type = CloseOnCompletion ? qtInformation : qtError;
+    bool ConfirmExitOnCompletion =
+      CloseOnCompletion &&
+      (Terminate->Operation == odoDisconnect) &&
+      WinConfiguration->ConfirmExitOnCompletion;
 
     if (E->InheritsFrom(__classid(EFatal)) && (Terminal != NULL) &&
         (Manager != NULL) && (Manager->ActiveTerminal == Terminal))
@@ -130,7 +134,7 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
       int Result;
       if (CloseOnCompletion)
       {
-        if (WinConfiguration->ConfirmExitOnCompletion)
+        if (ConfirmExitOnCompletion)
         {
           TMessageParams Params(mpNeverAskAgainCheck);
           Result = FatalExceptionMessageDialog(E, Type, 0,
@@ -185,9 +189,11 @@ void __fastcall ShowExtendedExceptionEx(TTerminal * Terminal,
     }
     else
     {
+      // this should not happen as we never use Terminal->CloseOnCompletion
+      // on inactive terminal
       if (CloseOnCompletion)
       {
-        if (WinConfiguration->ConfirmExitOnCompletion)
+        if (ConfirmExitOnCompletion)
         {
           TMessageParams Params(mpNeverAskAgainCheck);
           if (ExceptionMessageDialog(E, Type, "", qaOK, HELP_NONE, &Params) ==

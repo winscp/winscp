@@ -1060,7 +1060,14 @@ void __fastcall TRemoteFile::SetListingStr(AnsiString value)
         GETCOL;
         Hour = (Word)Col.SubString(1, 2).ToInt();
         Min = (Word)Col.SubString(4, 2).ToInt();
-        Sec = (Word)Col.SubString(7, 2).ToInt();
+        if (Col.Length() >= 8)
+        {
+          Sec = (Word)StrToInt(Col.SubString(7, 2));
+        }
+        else
+        {
+          Sec = 0;
+        }
         FModificationFmt = mfFull;
         // skip TZ (TODO)
         // do not trim leading space of filename

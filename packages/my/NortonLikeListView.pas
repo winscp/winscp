@@ -32,6 +32,7 @@ type
     FSelectingImplicitly: Boolean;
     FAnyAndAllSelectedImplicitly: Boolean;
     FLButtonDownShiftState: TShiftState;
+    FLButtonDownPos: TPoint;
     procedure WMLButtonDown(var Message: TWMLButtonDown); message WM_LBUTTONDOWN;
     procedure WMRButtonDown(var Message: TWMRButtonDown); message WM_RBUTTONDOWN;
     procedure WMLButtonUp(var Message: TWMLButtonUp); message WM_LBUTTONUP;
@@ -703,6 +704,7 @@ begin
   end;
   FSelectingImplicitly := FSelectingImplicitly or SelectingImplicitly;
   FLButtonDownShiftState := Shift;
+  FLButtonDownPos := Point(Message.XPos, Message.YPos);
   try
     inherited;
   finally
@@ -751,7 +753,9 @@ begin
   SelectingImplicitly :=
     ((Shift * [ssCtrl, ssShift]) = []) and
     ((FLButtonDownShiftState * [ssCtrl, ssShift]) = []);
-  if SelectingImplicitly and (csClicked in ControlState) then
+  if SelectingImplicitly and (csClicked in ControlState) and
+     (Abs(FLButtonDownPos.X - Message.XPos) <= 4) and
+     (Abs(FLButtonDownPos.Y - Message.YPos) <= 4) then
   begin
     SelectAll(smNone, ItemFocused);
     // Because condition in ItemSelected is not triggered as we first select

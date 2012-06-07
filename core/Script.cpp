@@ -2033,7 +2033,11 @@ void __fastcall TManagementScript::LLsProc(TScriptProcParams * Parameters)
         }
         else
         {
-          SizeStr = FORMAT("%14.0n", (double(SearchRec.Size)));
+          __int64 Size =
+           (static_cast<__int64>(SearchRec.FindData.nFileSizeHigh) << 32) +
+           SearchRec.FindData.nFileSizeLow;
+
+          SizeStr = FORMAT("%14.0n", (double(Size)));
         }
         PrintLine(FORMAT("%-*s  %-*s    %-14s %s", (
           DateLen, DateStr, TimeLen, TimeStr, SizeStr, SearchRec.Name)));

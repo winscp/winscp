@@ -56,12 +56,21 @@ private:
 	Comctrls::TListItem* FLastDeletedItem;
 	bool FFocusingItem;
 	bool FManageSelection;
+	bool FForceUpdateOnItemUnfocus;
 	int FFirstSelected;
 	int FLastSelected;
 	System::TDateTime FFocused;
 	unsigned FIgnoreSetFocusFrom;
+	bool FSelectingImplicitly;
+	bool FAnyAndAllSelectedImplicitly;
+	Classes::TShiftState FLButtonDownShiftState;
+	#pragma pack(push, 1)
+	Types::TPoint FLButtonDownPos;
+	#pragma pack(pop)
+	
 	HIDESBASE MESSAGE void __fastcall WMLButtonDown(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMRButtonDown(Messages::TWMMouse &Message);
+	HIDESBASE MESSAGE void __fastcall WMLButtonUp(Messages::TWMMouse &Message);
 	HIDESBASE MESSAGE void __fastcall WMKeyDown(Messages::TWMKey &Message);
 	HIDESBASE MESSAGE void __fastcall WMChar(Messages::TWMKey &Message);
 	HIDESBASE MESSAGE void __fastcall WMNotify(Messages::TWMNotify &Message);
@@ -73,6 +82,7 @@ private:
 	Comctrls::TListItem* __fastcall GetMarkedFile(void);
 	void __fastcall ItemSelected(Comctrls::TListItem* Item, int Index);
 	void __fastcall ItemUnselected(Comctrls::TListItem* Item, int Index);
+	HIDESBASE void __fastcall SelectAll(TSelectMode Mode, Comctrls::TListItem* Exclude)/* overload */;
 	
 protected:
 	bool FClearingItems;
@@ -102,7 +112,7 @@ public:
 	__fastcall virtual TCustomNortonLikeListView(Classes::TComponent* AOwner);
 	__fastcall virtual ~TCustomNortonLikeListView(void);
 	Comctrls::TListItem* __fastcall ClosestUnselected(Comctrls::TListItem* Item);
-	HIDESBASE void __fastcall SelectAll(TSelectMode Mode);
+	HIDESBASE void __fastcall SelectAll(TSelectMode Mode)/* overload */;
 	void __fastcall SelectCurrentItem(bool FocusNext);
 	HIDESBASE Comctrls::TListItem* __fastcall GetNextItem(Comctrls::TListItem* StartItem, Comctrls::TSearchDirection Direction, Comctrls::TItemStates States);
 	__property Listviewcolproperties::TCustomListViewColProperties* ColProperties = {read=FColProperties, write=FColProperties, stored=false};

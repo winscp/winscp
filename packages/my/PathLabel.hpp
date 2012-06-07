@@ -49,6 +49,7 @@ private:
 	bool FMouseInView;
 	bool FIsActive;
 	AnsiString FMask;
+	bool FAutoSizeVertical;
 	HIDESBASE MESSAGE void __fastcall CMHintShow(Messages::TMessage &Message);
 	HIDESBASE MESSAGE void __fastcall CMMouseEnter(Messages::TMessage &Message);
 	HIDESBASE MESSAGE void __fastcall CMMouseLeave(Messages::TMessage &Message);
@@ -58,6 +59,7 @@ private:
 	void __fastcall SetIndentVertical(int AIndent);
 	void __fastcall SetUnixPath(bool AUnixPath);
 	void __fastcall SetMask(AnsiString Value);
+	void __fastcall SetAutoSizeVertical(bool Value);
 	
 protected:
 	DYNAMIC void __fastcall AdjustBounds(void);
@@ -86,6 +88,7 @@ public:
 	__property TPathLabelPathClickEvent OnPathClick = {read=FOnPathClick, write=FOnPathClick};
 	__property bool HotTrack = {read=FHotTrack, write=FHotTrack, default=0};
 	__property AnsiString Mask = {read=FMask, write=SetMask};
+	__property bool AutoSizeVertical = {read=FAutoSizeVertical, write=SetAutoSizeVertical, nodefault};
 	__property FocusControl ;
 	__property Caption ;
 	__property Hint  = {stored=false};
@@ -113,6 +116,7 @@ __published:
 	__property InactiveColor  = {index=0, default=-2147483645};
 	__property InactiveTextColor  = {index=2, default=-2147483629};
 	__property InactiveHotTrackColor  = {index=4, default=-2147483620};
+	__property AutoSizeVertical ;
 	__property HotTrack  = {default=0};
 	__property OnGetStatus ;
 	__property OnPathClick ;

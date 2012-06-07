@@ -530,7 +530,7 @@ void __fastcall TWinConfiguration::Default()
   FScpCommander.CurrentPanel = osLocal;
   FScpCommander.CompareByTime = true;
   FScpCommander.CompareBySize = false;
-  FScpCommander.FullRowSelect = true;
+  FScpCommander.FullRowSelect = false;
   FScpCommander.TreeOnLeft = false;
   FScpCommander.RemotePanel.DirViewParams = "0;1;0|150,1;70,1;101,1;79,1;62,1;55,0;20,0;150,0;125,0|0;1;8;2;3;4;5;6;7";
   FScpCommander.RemotePanel.StatusBar = true;

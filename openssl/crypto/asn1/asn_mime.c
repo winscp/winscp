@@ -377,8 +377,12 @@ static int asn1_output_data(BIO *out, BIO *data, ASN1_VALUE *val, int flags,
 	BIO *tmpbio;
 	const ASN1_AUX *aux = it->funcs;
 	ASN1_STREAM_ARG sarg;
+	int rv = 1;
 
-	if (!(flags & SMIME_DETACHED))
+	/* If data is not deteched or resigning then the output BIO is
+	 * already set up to finalise when it is written through.
+	 */
+	if (!(flags & SMIME_DETACHED) || (flags & PKCS7_REUSE_DIGEST))
 		{
 		SMIME_crlf_copy(data, out, flags);
 		return 1;
@@ -405,7 +409,7 @@ static int asn1_output_data(BIO *out, BIO *data, ASN1_VALUE *val, int flags,
 
 	/* Finalize structure */
 	if (aux->asn1_cb(ASN1_OP_DETACHED_POST, &val, it, &sarg) <= 0)
-		return 0;
+		rv = 0;
 
 	/* Now remove any digests prepended to the BIO */
 
@@ -416,7 +420,7 @@ static int asn1_output_data(BIO *out, BIO *data, ASN1_VALUE *val, int flags,
 		sarg.ndef_bio = tmpbio;
 		}
 
-	return 1;
+	return rv;
 
 	}
 
@@ -486,9 +490,9 @@ ASN1_VALUE *SMIME_read_ASN1(BIO *bio, BIO **bcont, const ASN1_ITEM *it)
 
 		if(strcmp(hdr->value, "application/x-pkcs7-signature") &&
 			strcmp(hdr->value, "application/pkcs7-signature")) {
-			sk_MIME_HEADER_pop_free(headers, mime_hdr_free);
 			ASN1err(ASN1_F_SMIME_READ_ASN1,ASN1_R_SIG_INVALID_MIME_TYPE);
 			ERR_add_error_data(2, "type: ", hdr->value);
+			sk_MIME_HEADER_pop_free(headers, mime_hdr_free);
 			sk_BIO_pop_free(parts, BIO_vfree);
 			return NULL;
 		}
@@ -858,12 +862,17 @@ static int mime_hdr_addparam(MIME_HEADER *mhdr, char *name, char *value)
 static int mime_hdr_cmp(const MIME_HEADER * const *a,
 			const MIME_HEADER * const *b)
 {
+	if (!(*a)->name || !(*b)->name)
+		return !!(*a)->name - !!(*b)->name;
+
 	return(strcmp((*a)->name, (*b)->name));
 }
 
 static int mime_param_cmp(const MIME_PARAM * const *a,
 			const MIME_PARAM * const *b)
 {
+	if (!(*a)->param_name || !(*b)->param_name)
+		return !!(*a)->param_name - !!(*b)->param_name;
 	return(strcmp((*a)->param_name, (*b)->param_name));
 }
 

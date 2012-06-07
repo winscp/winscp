@@ -190,13 +190,11 @@ BOOL CBase64Coding::Encode( const char * source, int len, char * destination_str
       }
    }
 
-   destination[ number_of_bytes_encoded ] = END_OF_BASE64_ENCODED_DATA;
-
    // 1999-09-01
    // Thanks go to Yurong Lin (ylin@dial.pipex.com) for finding a bug here.
    // We must NULL terminate the string before letting CString have the buffer back.
 
-   destination[ number_of_bytes_encoded + 1 ] = 0;
+   destination[ number_of_bytes_encoded ] = 0;
 
    return( TRUE );
 }

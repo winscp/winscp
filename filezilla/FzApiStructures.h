@@ -62,4 +62,13 @@ typedef struct
     int nUserData;
 } t_transferfile;
 
+/* information stored about one single SSL session */
+typedef struct
+{
+    char *name;       /* host name for which this ID was used */
+    void *sessionid;  /* as returned from the SSL layer */
+    long age;         /* just a number, the higher the more recent */
+    unsigned short remote_port; /* remote port to connect to */
+} ssl_session_info_t;
+
 #endif

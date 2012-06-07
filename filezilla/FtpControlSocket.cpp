@@ -43,6 +43,8 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+const size_t CFtpControlSocket::m_MaxSslSessions = 10;
+ 
 class CFtpControlSocket::CFileTransferData : public CFtpControlSocket::t_operation::COpData
 {
 public:
@@ -177,6 +179,9 @@ CFtpControlSocket::CFtpControlSocket(CMainThread *pMainThread) : CControlSocket(
 
 	m_mayBeMvsFilesystem = false;
 	m_mayBeBS2000Filesystem = false;
+
+	m_Port = 0;
+	m_SslSessions = NULL;
 }
 
 CFtpControlSocket::~CFtpControlSocket()
@@ -194,6 +199,12 @@ CFtpControlSocket::~CFtpControlSocket()
 		delete m_pDataFile;
 		m_pDataFile=0;
 	}
+	if (m_SslSessions)
+	{
+		free(m_SslSessions);
+		m_SslSessions = NULL;
+	}
+ 
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -261,11 +272,24 @@ bool CFtpControlSocket::InitConnect()
 		return false;
 	}
 
+	if (m_SslSessions)
+	{
+		ShowStatus(_T("Internal error: m_SslSessions not zero in Connect"), 1);
+		DoClose(FZ_REPLY_CRITICALERROR);
+		return false;
+	}
+
 #ifndef MPEXT_NO_SSL
 	if (m_CurrentServer.nServerType & FZ_SERVERTYPE_LAYER_SSL_IMPLICIT ||
 		m_CurrentServer.nServerType & FZ_SERVERTYPE_LAYER_SSL_EXPLICIT ||
 		m_CurrentServer.nServerType & FZ_SERVERTYPE_LAYER_TLS_EXPLICIT)
 	{
+		int nSslSessionReuse = COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE);
+		if (nSslSessionReuse)
+		{
+			m_SslSessions = (ssl_session_info_t *)calloc(CFtpControlSocket::m_MaxSslSessions, sizeof(ssl_session_info_t));
+		}
+
 		m_pSslLayer = new CAsyncSslSocketLayer;
 		AddLayer(m_pSslLayer);
 		TCHAR buffer[1000];
@@ -400,7 +424,8 @@ void CFtpControlSocket::Connect(t_server &server)
 			DoClose(FZ_REPLY_CRITICALERROR);
 			return;
 		}
-		int res = m_pSslLayer->InitSSLConnection(true);
+		int res = m_pSslLayer->InitSSLConnection(true, m_ServerName, m_Port,
+			m_SslSessions, m_MaxSslSessions);
 #ifndef MPEXT_NO_SSLDLL
 		if (res == SSL_FAILURE_LOADDLLS)
 			ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
@@ -463,6 +488,7 @@ void CFtpControlSocket::Connect(t_server &server)
 		}
 	}
 	m_ServerName = logontype?fwhost:hostname;
+	m_Port = port;
 	m_LastRecvTime = m_LastSendTime = CTime::GetCurrentTime();
 }
 
@@ -526,7 +552,8 @@ void CFtpControlSocket::LogOnToServer(BOOL bSkipReply /*=FALSE*/)
 				DoClose(FZ_REPLY_CRITICALERROR);
 				return;
 			}
-			int res = m_pSslLayer->InitSSLConnection(true);
+			int res = m_pSslLayer->InitSSLConnection(true, m_ServerName, m_Port,
+				m_SslSessions, m_MaxSslSessions);
 #ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
 				ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
@@ -1114,7 +1141,7 @@ void CFtpControlSocket::OnConnect(int nErrorCode)
 	}
 }
 
-BOOL CFtpControlSocket::Send(CString str, BOOL bUpdateRecvTime)
+BOOL CFtpControlSocket::Send(CString str)
 {
 	USES_CONVERSION;
 
@@ -1208,13 +1235,10 @@ BOOL CFtpControlSocket::Send(CString str, BOOL bUpdateRecvTime)
 	{
 		m_awaitsReply = true;
 		m_LastSendTime = CTime::GetCurrentTime();
-		if (bUpdateRecvTime)
-		{
-			// Count timeout since the last request, not only since the last received data
-			// otherwise we may happen to timeout immediatelly after sending request if
-			// CheckForTimeout occurs in between and we haven't received any data for a while
-			m_LastRecvTime = m_LastSendTime;
-		}
+		// Count timeout since the last request, not only since the last received data
+		// otherwise we may happen to timeout immediatelly after sending request if
+		// CheckForTimeout occurs in between and we haven't received any data for a while
+		m_LastRecvTime = m_LastSendTime;
 		PostMessage(m_pOwner->m_hOwnerWnd, m_pOwner->m_nReplyMessageID, FZ_MSG_MAKEMSG(FZ_MSG_SOCKETSTATUS, FZ_SOCKETSTATUS_SEND), 0);
 	}
 	return TRUE;
@@ -1271,6 +1295,9 @@ void CFtpControlSocket::DoClose(int nError /*=0*/)
 
 	m_mayBeMvsFilesystem = false;
 	m_mayBeBS2000Filesystem = false;
+ 
+	free(m_SslSessions);
+	m_SslSessions = NULL;
 
 	CControlSocket::Close();
 }
@@ -5020,7 +5047,7 @@ void CFtpControlSocket::SendKeepAliveCommand()
 	//Choose a random command from the list
 	char commands[4][7]={"PWD","REST 0","TYPE A","TYPE I"};
 	int choice=(rand()*4)/(RAND_MAX+1);
-	Send(commands[choice], FALSE);
+	Send(commands[choice]);
 }
 
 void CFtpControlSocket::MakeDir(const CServerPath &path)

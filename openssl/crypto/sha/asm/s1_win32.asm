@@ -17,11 +17,12 @@ L$_sha1_block_data_order_begin:
 	mov	ebp,DWORD [20+esp]
 	mov	esi,DWORD [24+esp]
 	mov	eax,DWORD [28+esp]
-	sub	esp,64
+	sub	esp,76
 	shl	eax,6
 	add	eax,esi
-	mov	DWORD [92+esp],eax
+	mov	DWORD [104+esp],eax
 	mov	edi,DWORD [16+ebp]
+	jmp	NEAR L$000loop
 align	16
 L$000loop:
 	mov	eax,DWORD [esi]
@@ -72,7 +73,7 @@ L$000loop:
 	mov	DWORD [52+esp],ebx
 	mov	DWORD [56+esp],ecx
 	mov	DWORD [60+esp],edx
-	mov	DWORD [88+esp],esi
+	mov	DWORD [100+esp],esi
 	mov	eax,DWORD [ebp]
 	mov	ebx,DWORD [4+ebp]
 	mov	ecx,DWORD [8+ebp]
@@ -83,10 +84,10 @@ L$000loop:
 	rol	ebp,5
 	xor	esi,edx
 	add	ebp,edi
-	and	esi,ebx
 	mov	edi,DWORD [esp]
-	xor	esi,edx
+	and	esi,ebx
 	ror	ebx,2
+	xor	esi,edx
 	lea	ebp,[1518500249+edi*1+ebp]
 	add	ebp,esi
 	; 00_15 1
@@ -95,10 +96,10 @@ L$000loop:
 	rol	ebp,5
 	xor	edi,ecx
 	add	ebp,edx
-	and	edi,eax
 	mov	edx,DWORD [4+esp]
-	xor	edi,ecx
+	and	edi,eax
 	ror	eax,2
+	xor	edi,ecx
 	lea	ebp,[1518500249+edx*1+ebp]
 	add	ebp,edi
 	; 00_15 2
@@ -107,10 +108,10 @@ L$000loop:
 	rol	ebp,5
 	xor	edx,ebx
 	add	ebp,ecx
-	and	edx,esi
 	mov	ecx,DWORD [8+esp]
-	xor	edx,ebx
+	and	edx,esi
 	ror	esi,2
+	xor	edx,ebx
 	lea	ebp,[1518500249+ecx*1+ebp]
 	add	ebp,edx
 	; 00_15 3
@@ -119,10 +120,10 @@ L$000loop:
 	rol	ebp,5
 	xor	ecx,eax
 	add	ebp,ebx
-	and	ecx,edi
 	mov	ebx,DWORD [12+esp]
-	xor	ecx,eax
+	and	ecx,edi
 	ror	edi,2
+	xor	ecx,eax
 	lea	ebp,[1518500249+ebx*1+ebp]
 	add	ebp,ecx
 	; 00_15 4
@@ -131,10 +132,10 @@ L$000loop:
 	rol	ebp,5
 	xor	ebx,esi
 	add	ebp,eax
-	and	ebx,edx
 	mov	eax,DWORD [16+esp]
-	xor	ebx,esi
+	and	ebx,edx
 	ror	edx,2
+	xor	ebx,esi
 	lea	ebp,[1518500249+eax*1+ebp]
 	add	ebp,ebx
 	; 00_15 5
@@ -143,10 +144,10 @@ L$000loop:
 	rol	ebp,5
 	xor	eax,edi
 	add	ebp,esi
-	and	eax,ecx
 	mov	esi,DWORD [20+esp]
-	xor	eax,edi
+	and	eax,ecx
 	ror	ecx,2
+	xor	eax,edi
 	lea	ebp,[1518500249+esi*1+ebp]
 	add	ebp,eax
 	; 00_15 6
@@ -155,10 +156,10 @@ L$000loop:
 	rol	ebp,5
 	xor	esi,edx
 	add	ebp,edi
-	and	esi,ebx
 	mov	edi,DWORD [24+esp]
-	xor	esi,edx
+	and	esi,ebx
 	ror	ebx,2
+	xor	esi,edx
 	lea	ebp,[1518500249+edi*1+ebp]
 	add	ebp,esi
 	; 00_15 7
@@ -167,10 +168,10 @@ L$000loop:
 	rol	ebp,5
 	xor	edi,ecx
 	add	ebp,edx
-	and	edi,eax
 	mov	edx,DWORD [28+esp]
-	xor	edi,ecx
+	and	edi,eax
 	ror	eax,2
+	xor	edi,ecx
 	lea	ebp,[1518500249+edx*1+ebp]
 	add	ebp,edi
 	; 00_15 8
@@ -179,10 +180,10 @@ L$000loop:
 	rol	ebp,5
 	xor	edx,ebx
 	add	ebp,ecx
-	and	edx,esi
 	mov	ecx,DWORD [32+esp]
-	xor	edx,ebx
+	and	edx,esi
 	ror	esi,2
+	xor	edx,ebx
 	lea	ebp,[1518500249+ecx*1+ebp]
 	add	ebp,edx
 	; 00_15 9
@@ -191,10 +192,10 @@ L$000loop:
 	rol	ebp,5
 	xor	ecx,eax
 	add	ebp,ebx
-	and	ecx,edi
 	mov	ebx,DWORD [36+esp]
-	xor	ecx,eax
+	and	ecx,edi
 	ror	edi,2
+	xor	ecx,eax
 	lea	ebp,[1518500249+ebx*1+ebp]
 	add	ebp,ecx
 	; 00_15 10
@@ -203,10 +204,10 @@ L$000loop:
 	rol	ebp,5
 	xor	ebx,esi
 	add	ebp,eax
-	and	ebx,edx
 	mov	eax,DWORD [40+esp]
-	xor	ebx,esi
+	and	ebx,edx
 	ror	edx,2
+	xor	ebx,esi
 	lea	ebp,[1518500249+eax*1+ebp]
 	add	ebp,ebx
 	; 00_15 11
@@ -215,10 +216,10 @@ L$000loop:
 	rol	ebp,5
 	xor	eax,edi
 	add	ebp,esi
-	and	eax,ecx
 	mov	esi,DWORD [44+esp]
-	xor	eax,edi
+	and	eax,ecx
 	ror	ecx,2
+	xor	eax,edi
 	lea	ebp,[1518500249+esi*1+ebp]
 	add	ebp,eax
 	; 00_15 12
@@ -227,10 +228,10 @@ L$000loop:
 	rol	ebp,5
 	xor	esi,edx
 	add	ebp,edi
-	and	esi,ebx
 	mov	edi,DWORD [48+esp]
-	xor	esi,edx
+	and	esi,ebx
 	ror	ebx,2
+	xor	esi,edx
 	lea	ebp,[1518500249+edi*1+ebp]
 	add	ebp,esi
 	; 00_15 13
@@ -239,10 +240,10 @@ L$000loop:
 	rol	ebp,5
 	xor	edi,ecx
 	add	ebp,edx
-	and	edi,eax
 	mov	edx,DWORD [52+esp]
-	xor	edi,ecx
+	and	edi,eax
 	ror	eax,2
+	xor	edi,ecx
 	lea	ebp,[1518500249+edx*1+ebp]
 	add	ebp,edi
 	; 00_15 14
@@ -251,10 +252,10 @@ L$000loop:
 	rol	ebp,5
 	xor	edx,ebx
 	add	ebp,ecx
-	and	edx,esi
 	mov	ecx,DWORD [56+esp]
-	xor	edx,ebx
+	and	edx,esi
 	ror	esi,2
+	xor	edx,ebx
 	lea	ebp,[1518500249+ecx*1+ebp]
 	add	ebp,edx
 	; 00_15 15
@@ -263,1162 +264,1099 @@ L$000loop:
 	rol	ebp,5
 	xor	ecx,eax
 	add	ebp,ebx
-	and	ecx,edi
 	mov	ebx,DWORD [60+esp]
-	xor	ecx,eax
+	and	ecx,edi
 	ror	edi,2
+	xor	ecx,eax
 	lea	ebp,[1518500249+ebx*1+ebp]
+	mov	ebx,DWORD [esp]
 	add	ecx,ebp
 	; 16_19 16
-	mov	ebx,DWORD [esp]
 	mov	ebp,edi
 	xor	ebx,DWORD [8+esp]
 	xor	ebp,esi
 	xor	ebx,DWORD [32+esp]
 	and	ebp,edx
-	ror	edx,2
 	xor	ebx,DWORD [52+esp]
 	rol	ebx,1
 	xor	ebp,esi
+	add	eax,ebp
+	mov	ebp,ecx
+	ror	edx,2
 	mov	DWORD [esp],ebx
+	rol	ebp,5
 	lea	ebx,[1518500249+eax*1+ebx]
-	mov	eax,ecx
-	rol	eax,5
-	add	ebx,ebp
-	add	ebx,eax
-	; 16_19 17
 	mov	eax,DWORD [4+esp]
+	add	ebx,ebp
+	; 16_19 17
 	mov	ebp,edx
 	xor	eax,DWORD [12+esp]
 	xor	ebp,edi
 	xor	eax,DWORD [36+esp]
 	and	ebp,ecx
-	ror	ecx,2
 	xor	eax,DWORD [56+esp]
 	rol	eax,1
 	xor	ebp,edi
+	add	esi,ebp
+	mov	ebp,ebx
+	ror	ecx,2
 	mov	DWORD [4+esp],eax
+	rol	ebp,5
 	lea	eax,[1518500249+esi*1+eax]
-	mov	esi,ebx
-	rol	esi,5
-	add	eax,ebp
-	add	eax,esi
-	; 16_19 18
 	mov	esi,DWORD [8+esp]
+	add	eax,ebp
+	; 16_19 18
 	mov	ebp,ecx
 	xor	esi,DWORD [16+esp]
 	xor	ebp,edx
 	xor	esi,DWORD [40+esp]
 	and	ebp,ebx
-	ror	ebx,2
 	xor	esi,DWORD [60+esp]
 	rol	esi,1
 	xor	ebp,edx
+	add	edi,ebp
+	mov	ebp,eax
+	ror	ebx,2
 	mov	DWORD [8+esp],esi
+	rol	ebp,5
 	lea	esi,[1518500249+edi*1+esi]
-	mov	edi,eax
-	rol	edi,5
-	add	esi,ebp
-	add	esi,edi
-	; 16_19 19
 	mov	edi,DWORD [12+esp]
+	add	esi,ebp
+	; 16_19 19
 	mov	ebp,ebx
 	xor	edi,DWORD [20+esp]
 	xor	ebp,ecx
 	xor	edi,DWORD [44+esp]
 	and	ebp,eax
-	ror	eax,2
 	xor	edi,DWORD [esp]
 	rol	edi,1
 	xor	ebp,ecx
+	add	edx,ebp
+	mov	ebp,esi
+	ror	eax,2
 	mov	DWORD [12+esp],edi
+	rol	ebp,5
 	lea	edi,[1518500249+edx*1+edi]
-	mov	edx,esi
-	rol	edx,5
+	mov	edx,DWORD [16+esp]
 	add	edi,ebp
-	add	edi,edx
 	; 20_39 20
 	mov	ebp,esi
-	mov	edx,DWORD [16+esp]
-	ror	esi,2
 	xor	edx,DWORD [24+esp]
 	xor	ebp,eax
 	xor	edx,DWORD [48+esp]
 	xor	ebp,ebx
 	xor	edx,DWORD [4+esp]
 	rol	edx,1
-	add	ebp,ecx
+	add	ecx,ebp
+	ror	esi,2
+	mov	ebp,edi
+	rol	ebp,5
 	mov	DWORD [16+esp],edx
-	mov	ecx,edi
-	rol	ecx,5
-	lea	edx,[1859775393+ebp*1+edx]
-	add	edx,ecx
+	lea	edx,[1859775393+ecx*1+edx]
+	mov	ecx,DWORD [20+esp]
+	add	edx,ebp
 	; 20_39 21
 	mov	ebp,edi
-	mov	ecx,DWORD [20+esp]
-	ror	edi,2
 	xor	ecx,DWORD [28+esp]
 	xor	ebp,esi
 	xor	ecx,DWORD [52+esp]
 	xor	ebp,eax
 	xor	ecx,DWORD [8+esp]
 	rol	ecx,1
-	add	ebp,ebx
+	add	ebx,ebp
+	ror	edi,2
+	mov	ebp,edx
+	rol	ebp,5
 	mov	DWORD [20+esp],ecx
-	mov	ebx,edx
-	rol	ebx,5
-	lea	ecx,[1859775393+ebp*1+ecx]
-	add	ecx,ebx
+	lea	ecx,[1859775393+ebx*1+ecx]
+	mov	ebx,DWORD [24+esp]
+	add	ecx,ebp
 	; 20_39 22
 	mov	ebp,edx
-	mov	ebx,DWORD [24+esp]
-	ror	edx,2
 	xor	ebx,DWORD [32+esp]
 	xor	ebp,edi
 	xor	ebx,DWORD [56+esp]
 	xor	ebp,esi
 	xor	ebx,DWORD [12+esp]
 	rol	ebx,1
-	add	ebp,eax
+	add	eax,ebp
+	ror	edx,2
+	mov	ebp,ecx
+	rol	ebp,5
 	mov	DWORD [24+esp],ebx
-	mov	eax,ecx
-	rol	eax,5
-	lea	ebx,[1859775393+ebp*1+ebx]
-	add	ebx,eax
+	lea	ebx,[1859775393+eax*1+ebx]
+	mov	eax,DWORD [28+esp]
+	add	ebx,ebp
 	; 20_39 23
 	mov	ebp,ecx
-	mov	eax,DWORD [28+esp]
-	ror	ecx,2
 	xor	eax,DWORD [36+esp]
 	xor	ebp,edx
 	xor	eax,DWORD [60+esp]
 	xor	ebp,edi
 	xor	eax,DWORD [16+esp]
 	rol	eax,1
-	add	ebp,esi
+	add	esi,ebp
+	ror	ecx,2
+	mov	ebp,ebx
+	rol	ebp,5
 	mov	DWORD [28+esp],eax
-	mov	esi,ebx
-	rol	esi,5
-	lea	eax,[1859775393+ebp*1+eax]
-	add	eax,esi
+	lea	eax,[1859775393+esi*1+eax]
+	mov	esi,DWORD [32+esp]
+	add	eax,ebp
 	; 20_39 24
 	mov	ebp,ebx
-	mov	esi,DWORD [32+esp]
-	ror	ebx,2
 	xor	esi,DWORD [40+esp]
 	xor	ebp,ecx
 	xor	esi,DWORD [esp]
 	xor	ebp,edx
 	xor	esi,DWORD [20+esp]
 	rol	esi,1
-	add	ebp,edi
+	add	edi,ebp
+	ror	ebx,2
+	mov	ebp,eax
+	rol	ebp,5
 	mov	DWORD [32+esp],esi
-	mov	edi,eax
-	rol	edi,5
-	lea	esi,[1859775393+ebp*1+esi]
-	add	esi,edi
+	lea	esi,[1859775393+edi*1+esi]
+	mov	edi,DWORD [36+esp]
+	add	esi,ebp
 	; 20_39 25
 	mov	ebp,eax
-	mov	edi,DWORD [36+esp]
-	ror	eax,2
 	xor	edi,DWORD [44+esp]
 	xor	ebp,ebx
 	xor	edi,DWORD [4+esp]
 	xor	ebp,ecx
 	xor	edi,DWORD [24+esp]
 	rol	edi,1
-	add	ebp,edx
+	add	edx,ebp
+	ror	eax,2
+	mov	ebp,esi
+	rol	ebp,5
 	mov	DWORD [36+esp],edi
-	mov	edx,esi
-	rol	edx,5
-	lea	edi,[1859775393+ebp*1+edi]
-	add	edi,edx
+	lea	edi,[1859775393+edx*1+edi]
+	mov	edx,DWORD [40+esp]
+	add	edi,ebp
 	; 20_39 26
 	mov	ebp,esi
-	mov	edx,DWORD [40+esp]
-	ror	esi,2
 	xor	edx,DWORD [48+esp]
 	xor	ebp,eax
 	xor	edx,DWORD [8+esp]
 	xor	ebp,ebx
 	xor	edx,DWORD [28+esp]
 	rol	edx,1
-	add	ebp,ecx
+	add	ecx,ebp
+	ror	esi,2
+	mov	ebp,edi
+	rol	ebp,5
 	mov	DWORD [40+esp],edx
-	mov	ecx,edi
-	rol	ecx,5
-	lea	edx,[1859775393+ebp*1+edx]
-	add	edx,ecx
+	lea	edx,[1859775393+ecx*1+edx]
+	mov	ecx,DWORD [44+esp]
+	add	edx,ebp
 	; 20_39 27
 	mov	ebp,edi
-	mov	ecx,DWORD [44+esp]
-	ror	edi,2
 	xor	ecx,DWORD [52+esp]
 	xor	ebp,esi
 	xor	ecx,DWORD [12+esp]
 	xor	ebp,eax
 	xor	ecx,DWORD [32+esp]
 	rol	ecx,1
-	add	ebp,ebx
+	add	ebx,ebp
+	ror	edi,2
+	mov	ebp,edx
+	rol	ebp,5
 	mov	DWORD [44+esp],ecx
-	mov	ebx,edx
-	rol	ebx,5
-	lea	ecx,[1859775393+ebp*1+ecx]
-	add	ecx,ebx
+	lea	ecx,[1859775393+ebx*1+ecx]
+	mov	ebx,DWORD [48+esp]
+	add	ecx,ebp
 	; 20_39 28
 	mov	ebp,edx
-	mov	ebx,DWORD [48+esp]
-	ror	edx,2
 	xor	ebx,DWORD [56+esp]
 	xor	ebp,edi
 	xor	ebx,DWORD [16+esp]
 	xor	ebp,esi
 	xor	ebx,DWORD [36+esp]
 	rol	ebx,1
-	add	ebp,eax
+	add	eax,ebp
+	ror	edx,2
+	mov	ebp,ecx
+	rol	ebp,5
 	mov	DWORD [48+esp],ebx
-	mov	eax,ecx
-	rol	eax,5
-	lea	ebx,[1859775393+ebp*1+ebx]
-	add	ebx,eax
+	lea	ebx,[1859775393+eax*1+ebx]
+	mov	eax,DWORD [52+esp]
+	add	ebx,ebp
 	; 20_39 29
 	mov	ebp,ecx
-	mov	eax,DWORD [52+esp]
-	ror	ecx,2
 	xor	eax,DWORD [60+esp]
 	xor	ebp,edx
 	xor	eax,DWORD [20+esp]
 	xor	ebp,edi
 	xor	eax,DWORD [40+esp]
 	rol	eax,1
-	add	ebp,esi
+	add	esi,ebp
+	ror	ecx,2
+	mov	ebp,ebx
+	rol	ebp,5
 	mov	DWORD [52+esp],eax
-	mov	esi,ebx
-	rol	esi,5
-	lea	eax,[1859775393+ebp*1+eax]
-	add	eax,esi
+	lea	eax,[1859775393+esi*1+eax]
+	mov	esi,DWORD [56+esp]
+	add	eax,ebp
 	; 20_39 30
 	mov	ebp,ebx
-	mov	esi,DWORD [56+esp]
-	ror	ebx,2
 	xor	esi,DWORD [esp]
 	xor	ebp,ecx
 	xor	esi,DWORD [24+esp]
 	xor	ebp,edx
 	xor	esi,DWORD [44+esp]
 	rol	esi,1
-	add	ebp,edi
+	add	edi,ebp
+	ror	ebx,2
+	mov	ebp,eax
+	rol	ebp,5
 	mov	DWORD [56+esp],esi
-	mov	edi,eax
-	rol	edi,5
-	lea	esi,[1859775393+ebp*1+esi]
-	add	esi,edi
+	lea	esi,[1859775393+edi*1+esi]
+	mov	edi,DWORD [60+esp]
+	add	esi,ebp
 	; 20_39 31
 	mov	ebp,eax
-	mov	edi,DWORD [60+esp]
-	ror	eax,2
 	xor	edi,DWORD [4+esp]
 	xor	ebp,ebx
 	xor	edi,DWORD [28+esp]
 	xor	ebp,ecx
 	xor	edi,DWORD [48+esp]
 	rol	edi,1
-	add	ebp,edx
+	add	edx,ebp
+	ror	eax,2
+	mov	ebp,esi
+	rol	ebp,5
 	mov	DWORD [60+esp],edi
-	mov	edx,esi
-	rol	edx,5
-	lea	edi,[1859775393+ebp*1+edi]
-	add	edi,edx
+	lea	edi,[1859775393+edx*1+edi]
+	mov	edx,DWORD [esp]
+	add	edi,ebp
 	; 20_39 32
 	mov	ebp,esi
-	mov	edx,DWORD [esp]
-	ror	esi,2
 	xor	edx,DWORD [8+esp]
 	xor	ebp,eax
 	xor	edx,DWORD [32+esp]
 	xor	ebp,ebx
 	xor	edx,DWORD [52+esp]
 	rol	edx,1
-	add	ebp,ecx
+	add	ecx,ebp
+	ror	esi,2
+	mov	ebp,edi
+	rol	ebp,5
 	mov	DWORD [esp],edx
-	mov	ecx,edi
-	rol	ecx,5
-	lea	edx,[1859775393+ebp*1+edx]
-	add	edx,ecx
+	lea	edx,[1859775393+ecx*1+edx]
+	mov	ecx,DWORD [4+esp]
+	add	edx,ebp
 	; 20_39 33
 	mov	ebp,edi
-	mov	ecx,DWORD [4+esp]
-	ror	edi,2
 	xor	ecx,DWORD [12+esp]
 	xor	ebp,esi
 	xor	ecx,DWORD [36+esp]
 	xor	ebp,eax
 	xor	ecx,DWORD [56+esp]
 	rol	ecx,1
-	add	ebp,ebx
+	add	ebx,ebp
+	ror	edi,2
+	mov	ebp,edx
+	rol	ebp,5
 	mov	DWORD [4+esp],ecx
-	mov	ebx,edx
-	rol	ebx,5
-	lea	ecx,[1859775393+ebp*1+ecx]
-	add	ecx,ebx
+	lea	ecx,[1859775393+ebx*1+ecx]
+	mov	ebx,DWORD [8+esp]
+	add	ecx,ebp
 	; 20_39 34
 	mov	ebp,edx
-	mov	ebx,DWORD [8+esp]
-	ror	edx,2
 	xor	ebx,DWORD [16+esp]
 	xor	ebp,edi
 	xor	ebx,DWORD [40+esp]
 	xor	ebp,esi
 	xor	ebx,DWORD [60+esp]
 	rol	ebx,1
-	add	ebp,eax
+	add	eax,ebp
+	ror	edx,2
+	mov	ebp,ecx
+	rol	ebp,5
 	mov	DWORD [8+esp],ebx
-	mov	eax,ecx
-	rol	eax,5
-	lea	ebx,[1859775393+ebp*1+ebx]
-	add	ebx,eax
+	lea	ebx,[1859775393+eax*1+ebx]
+	mov	eax,DWORD [12+esp]
+	add	ebx,ebp
 	; 20_39 35
 	mov	ebp,ecx
-	mov	eax,DWORD [12+esp]
-	ror	ecx,2
 	xor	eax,DWORD [20+esp]
 	xor	ebp,edx
 	xor	eax,DWORD [44+esp]
 	xor	ebp,edi
 	xor	eax,DWORD [esp]
 	rol	eax,1
-	add	ebp,esi
+	add	esi,ebp
+	ror	ecx,2
+	mov	ebp,ebx
+	rol	ebp,5
 	mov	DWORD [12+esp],eax
-	mov	esi,ebx
-	rol	esi,5
-	lea	eax,[1859775393+ebp*1+eax]
-	add	eax,esi
+	lea	eax,[1859775393+esi*1+eax]
+	mov	esi,DWORD [16+esp]
+	add	eax,ebp
 	; 20_39 36
 	mov	ebp,ebx
-	mov	esi,DWORD [16+esp]
-	ror	ebx,2
 	xor	esi,DWORD [24+esp]
 	xor	ebp,ecx
 	xor	esi,DWORD [48+esp]
 	xor	ebp,edx
 	xor	esi,DWORD [4+esp]
 	rol	esi,1
-	add	ebp,edi
+	add	edi,ebp
+	ror	ebx,2
+	mov	ebp,eax
+	rol	ebp,5
 	mov	DWORD [16+esp],esi
-	mov	edi,eax
-	rol	edi,5
-	lea	esi,[1859775393+ebp*1+esi]
-	add	esi,edi
+	lea	esi,[1859775393+edi*1+esi]
+	mov	edi,DWORD [20+esp]
+	add	esi,ebp
 	; 20_39 37
 	mov	ebp,eax
-	mov	edi,DWORD [20+esp]
-	ror	eax,2
 	xor	edi,DWORD [28+esp]
 	xor	ebp,ebx
 	xor	edi,DWORD [52+esp]
 	xor	ebp,ecx
 	xor	edi,DWORD [8+esp]
 	rol	edi,1
-	add	ebp,edx
+	add	edx,ebp
+	ror	eax,2
+	mov	ebp,esi
+	rol	ebp,5
 	mov	DWORD [20+esp],edi
-	mov	edx,esi
-	rol	edx,5
-	lea	edi,[1859775393+ebp*1+edi]
-	add	edi,edx
+	lea	edi,[1859775393+edx*1+edi]
+	mov	edx,DWORD [24+esp]
+	add	edi,ebp
 	; 20_39 38
 	mov	ebp,esi
-	mov	edx,DWORD [24+esp]
-	ror	esi,2
 	xor	edx,DWORD [32+esp]
 	xor	ebp,eax
 	xor	edx,DWORD [56+esp]
 	xor	ebp,ebx
 	xor	edx,DWORD [12+esp]
 	rol	edx,1
-	add	ebp,ecx
+	add	ecx,ebp
+	ror	esi,2
+	mov	ebp,edi
+	rol	ebp,5
 	mov	DWORD [24+esp],edx
-	mov	ecx,edi
-	rol	ecx,5
-	lea	edx,[1859775393+ebp*1+edx]
-	add	edx,ecx
+	lea	edx,[1859775393+ecx*1+edx]
+	mov	ecx,DWORD [28+esp]
+	add	edx,ebp
 	; 20_39 39
 	mov	ebp,edi
-	mov	ecx,DWORD [28+esp]
-	ror	edi,2
 	xor	ecx,DWORD [36+esp]
 	xor	ebp,esi
 	xor	ecx,DWORD [60+esp]
 	xor	ebp,eax
 	xor	ecx,DWORD [16+esp]
 	rol	ecx,1
-	add	ebp,ebx
+	add	ebx,ebp
+	ror	edi,2
+	mov	ebp,edx
+	rol	ebp,5
 	mov	DWORD [28+esp],ecx
-	mov	ebx,edx
-	rol	ebx,5
-	lea	ecx,[1859775393+ebp*1+ecx]
-	add	ecx,ebx
-	; 40_59 40
+	lea	ecx,[1859775393+ebx*1+ecx]
 	mov	ebx,DWORD [32+esp]
-	mov	ebp,DWORD [40+esp]
-	xor	ebx,ebp
-	mov	ebp,DWORD [esp]
-	xor	ebx,ebp
-	mov	ebp,DWORD [20+esp]
-	xor	ebx,ebp
-	mov	ebp,edx
+	add	ecx,ebp
+	; 40_59 40
+	mov	ebp,edi
+	xor	ebx,DWORD [40+esp]
+	xor	ebp,esi
+	xor	ebx,DWORD [esp]
+	and	ebp,edx
+	xor	ebx,DWORD [20+esp]
 	rol	ebx,1
-	or	ebp,edi
+	add	ebp,eax
+	ror	edx,2
+	mov	eax,ecx
+	rol	eax,5
 	mov	DWORD [32+esp],ebx
-	and	ebp,esi
-	lea	ebx,[2400959708+eax*1+ebx]
-	mov	eax,edx
-	ror	edx,2
-	and	eax,edi
-	or	ebp,eax
-	mov	eax,ecx
-	rol	eax,5
-	add	ebx,ebp
+	lea	ebx,[2400959708+ebp*1+ebx]
+	mov	ebp,edi
 	add	ebx,eax
-	; 40_59 41
+	and	ebp,esi
 	mov	eax,DWORD [36+esp]
-	mov	ebp,DWORD [44+esp]
-	xor	eax,ebp
-	mov	ebp,DWORD [4+esp]
-	xor	eax,ebp
-	mov	ebp,DWORD [24+esp]
-	xor	eax,ebp
-	mov	ebp,ecx
+	add	ebx,ebp
+	; 40_59 41
+	mov	ebp,edx
+	xor	eax,DWORD [44+esp]
+	xor	ebp,edi
+	xor	eax,DWORD [4+esp]
+	and	ebp,ecx
+	xor	eax,DWORD [24+esp]
 	rol	eax,1
-	or	ebp,edx
+	add	ebp,esi
+	ror	ecx,2
+	mov	esi,ebx
+	rol	esi,5
 	mov	DWORD [36+esp],eax
-	and	ebp,edi
-	lea	eax,[2400959708+esi*1+eax]
-	mov	esi,ecx
-	ror	ecx,2
-	and	esi,edx
-	or	ebp,esi
-	mov	esi,ebx
-	rol	esi,5
-	add	eax,ebp
+	lea	eax,[2400959708+ebp*1+eax]
+	mov	ebp,edx
 	add	eax,esi
-	; 40_59 42
+	and	ebp,edi
 	mov	esi,DWORD [40+esp]
-	mov	ebp,DWORD [48+esp]
-	xor	esi,ebp
-	mov	ebp,DWORD [8+esp]
-	xor	esi,ebp
-	mov	ebp,DWORD [28+esp]
-	xor	esi,ebp
-	mov	ebp,ebx
+	add	eax,ebp
+	; 40_59 42
+	mov	ebp,ecx
+	xor	esi,DWORD [48+esp]
+	xor	ebp,edx
+	xor	esi,DWORD [8+esp]
+	and	ebp,ebx
+	xor	esi,DWORD [28+esp]
 	rol	esi,1
-	or	ebp,ecx
+	add	ebp,edi
+	ror	ebx,2
+	mov	edi,eax
+	rol	edi,5
 	mov	DWORD [40+esp],esi
-	and	ebp,edx
-	lea	esi,[2400959708+edi*1+esi]
-	mov	edi,ebx
-	ror	ebx,2
-	and	edi,ecx
-	or	ebp,edi
-	mov	edi,eax
-	rol	edi,5
-	add	esi,ebp
+	lea	esi,[2400959708+ebp*1+esi]
+	mov	ebp,ecx
 	add	esi,edi
-	; 40_59 43
+	and	ebp,edx
 	mov	edi,DWORD [44+esp]
-	mov	ebp,DWORD [52+esp]
-	xor	edi,ebp
-	mov	ebp,DWORD [12+esp]
-	xor	edi,ebp
-	mov	ebp,DWORD [32+esp]
-	xor	edi,ebp
-	mov	ebp,eax
+	add	esi,ebp
+	; 40_59 43
+	mov	ebp,ebx
+	xor	edi,DWORD [52+esp]
+	xor	ebp,ecx
+	xor	edi,DWORD [12+esp]
+	and	ebp,eax
+	xor	edi,DWORD [32+esp]
 	rol	edi,1
-	or	ebp,ebx
+	add	ebp,edx
+	ror	eax,2
+	mov	edx,esi
+	rol	edx,5
 	mov	DWORD [44+esp],edi
-	and	ebp,ecx
-	lea	edi,[2400959708+edx*1+edi]
-	mov	edx,eax
-	ror	eax,2
-	and	edx,ebx
-	or	ebp,edx
-	mov	edx,esi
-	rol	edx,5
-	add	edi,ebp
+	lea	edi,[2400959708+ebp*1+edi]
+	mov	ebp,ebx
 	add	edi,edx
-	; 40_59 44
+	and	ebp,ecx
 	mov	edx,DWORD [48+esp]
-	mov	ebp,DWORD [56+esp]
-	xor	edx,ebp
-	mov	ebp,DWORD [16+esp]
-	xor	edx,ebp
-	mov	ebp,DWORD [36+esp]
-	xor	edx,ebp
-	mov	ebp,esi
+	add	edi,ebp
+	; 40_59 44
+	mov	ebp,eax
+	xor	edx,DWORD [56+esp]
+	xor	ebp,ebx
+	xor	edx,DWORD [16+esp]
+	and	ebp,esi
+	xor	edx,DWORD [36+esp]
 	rol	edx,1
-	or	ebp,eax
+	add	ebp,ecx
+	ror	esi,2
+	mov	ecx,edi
+	rol	ecx,5
 	mov	DWORD [48+esp],edx
-	and	ebp,ebx
-	lea	edx,[2400959708+ecx*1+edx]
-	mov	ecx,esi
-	ror	esi,2
-	and	ecx,eax
-	or	ebp,ecx
-	mov	ecx,edi
-	rol	ecx,5
-	add	edx,ebp
+	lea	edx,[2400959708+ebp*1+edx]
+	mov	ebp,eax
 	add	edx,ecx
-	; 40_59 45
+	and	ebp,ebx
 	mov	ecx,DWORD [52+esp]
-	mov	ebp,DWORD [60+esp]
-	xor	ecx,ebp
-	mov	ebp,DWORD [20+esp]
-	xor	ecx,ebp
-	mov	ebp,DWORD [40+esp]
-	xor	ecx,ebp
-	mov	ebp,edi
+	add	edx,ebp
+	; 40_59 45
+	mov	ebp,esi
+	xor	ecx,DWORD [60+esp]
+	xor	ebp,eax
+	xor	ecx,DWORD [20+esp]
+	and	ebp,edi
+	xor	ecx,DWORD [40+esp]
 	rol	ecx,1
-	or	ebp,esi
+	add	ebp,ebx
+	ror	edi,2
+	mov	ebx,edx
+	rol	ebx,5
 	mov	DWORD [52+esp],ecx
-	and	ebp,eax
-	lea	ecx,[2400959708+ebx*1+ecx]
-	mov	ebx,edi
-	ror	edi,2
-	and	ebx,esi
-	or	ebp,ebx
-	mov	ebx,edx
-	rol	ebx,5
-	add	ecx,ebp
+	lea	ecx,[2400959708+ebp*1+ecx]
+	mov	ebp,esi
 	add	ecx,ebx
-	; 40_59 46
+	and	ebp,eax
 	mov	ebx,DWORD [56+esp]
-	mov	ebp,DWORD [esp]
-	xor	ebx,ebp
-	mov	ebp,DWORD [24+esp]
-	xor	ebx,ebp
-	mov	ebp,DWORD [44+esp]
-	xor	ebx,ebp
-	mov	ebp,edx
+	add	ecx,ebp
+	; 40_59 46
+	mov	ebp,edi
+	xor	ebx,DWORD [esp]
+	xor	ebp,esi
+	xor	ebx,DWORD [24+esp]
+	and	ebp,edx
+	xor	ebx,DWORD [44+esp]
 	rol	ebx,1
-	or	ebp,edi
+	add	ebp,eax
+	ror	edx,2
+	mov	eax,ecx
+	rol	eax,5
 	mov	DWORD [56+esp],ebx
-	and	ebp,esi
-	lea	ebx,[2400959708+eax*1+ebx]
-	mov	eax,edx
-	ror	edx,2
-	and	eax,edi
-	or	ebp,eax
-	mov	eax,ecx
-	rol	eax,5
-	add	ebx,ebp
+	lea	ebx,[2400959708+ebp*1+ebx]
+	mov	ebp,edi
 	add	ebx,eax
-	; 40_59 47
+	and	ebp,esi
 	mov	eax,DWORD [60+esp]
-	mov	ebp,DWORD [4+esp]
-	xor	eax,ebp
-	mov	ebp,DWORD [28+esp]
-	xor	eax,ebp
-	mov	ebp,DWORD [48+esp]
-	xor	eax,ebp
-	mov	ebp,ecx
+	add	ebx,ebp
+	; 40_59 47
+	mov	ebp,edx
+	xor	eax,DWORD [4+esp]
+	xor	ebp,edi
+	xor	eax,DWORD [28+esp]
+	and	ebp,ecx
+	xor	eax,DWORD [48+esp]
 	rol	eax,1
-	or	ebp,edx
+	add	ebp,esi
+	ror	ecx,2
+	mov	esi,ebx
+	rol	esi,5
 	mov	DWORD [60+esp],eax
-	and	ebp,edi
-	lea	eax,[2400959708+esi*1+eax]
-	mov	esi,ecx
-	ror	ecx,2
-	and	esi,edx
-	or	ebp,esi
-	mov	esi,ebx
-	rol	esi,5
-	add	eax,ebp
+	lea	eax,[2400959708+ebp*1+eax]
+	mov	ebp,edx
 	add	eax,esi
-	; 40_59 48
+	and	ebp,edi
 	mov	esi,DWORD [esp]
-	mov	ebp,DWORD [8+esp]
-	xor	esi,ebp
-	mov	ebp,DWORD [32+esp]
-	xor	esi,ebp
-	mov	ebp,DWORD [52+esp]
-	xor	esi,ebp
-	mov	ebp,ebx
+	add	eax,ebp
+	; 40_59 48
+	mov	ebp,ecx
+	xor	esi,DWORD [8+esp]
+	xor	ebp,edx
+	xor	esi,DWORD [32+esp]
+	and	ebp,ebx
+	xor	esi,DWORD [52+esp]
 	rol	esi,1
-	or	ebp,ecx
+	add	ebp,edi
+	ror	ebx,2
+	mov	edi,eax
+	rol	edi,5
 	mov	DWORD [esp],esi
-	and	ebp,edx
-	lea	esi,[2400959708+edi*1+esi]
-	mov	edi,ebx
-	ror	ebx,2
-	and	edi,ecx
-	or	ebp,edi
-	mov	edi,eax
-	rol	edi,5
-	add	esi,ebp
+	lea	esi,[2400959708+ebp*1+esi]
+	mov	ebp,ecx
 	add	esi,edi
-	; 40_59 49
+	and	ebp,edx
 	mov	edi,DWORD [4+esp]
-	mov	ebp,DWORD [12+esp]
-	xor	edi,ebp
-	mov	ebp,DWORD [36+esp]
-	xor	edi,ebp
-	mov	ebp,DWORD [56+esp]
-	xor	edi,ebp
-	mov	ebp,eax
+	add	esi,ebp
+	; 40_59 49
+	mov	ebp,ebx
+	xor	edi,DWORD [12+esp]
+	xor	ebp,ecx
+	xor	edi,DWORD [36+esp]
+	and	ebp,eax
+	xor	edi,DWORD [56+esp]
 	rol	edi,1
-	or	ebp,ebx
-	mov	DWORD [4+esp],edi
-	and	ebp,ecx
-	lea	edi,[2400959708+edx*1+edi]
-	mov	edx,eax
+	add	ebp,edx
 	ror	eax,2
-	and	edx,ebx
-	or	ebp,edx
 	mov	edx,esi
 	rol	edx,5
-	add	edi,ebp
+	mov	DWORD [4+esp],edi
+	lea	edi,[2400959708+ebp*1+edi]
+	mov	ebp,ebx
 	add	edi,edx
-	; 40_59 50
+	and	ebp,ecx
 	mov	edx,DWORD [8+esp]
-	mov	ebp,DWORD [16+esp]
-	xor	edx,ebp
-	mov	ebp,DWORD [40+esp]
-	xor	edx,ebp
-	mov	ebp,DWORD [60+esp]
-	xor	edx,ebp
-	mov	ebp,esi
+	add	edi,ebp
+	; 40_59 50
+	mov	ebp,eax
+	xor	edx,DWORD [16+esp]
+	xor	ebp,ebx
+	xor	edx,DWORD [40+esp]
+	and	ebp,esi
+	xor	edx,DWORD [60+esp]
 	rol	edx,1
-	or	ebp,eax
-	mov	DWORD [8+esp],edx
-	and	ebp,ebx
-	lea	edx,[2400959708+ecx*1+edx]
-	mov	ecx,esi
+	add	ebp,ecx
 	ror	esi,2
-	and	ecx,eax
-	or	ebp,ecx
 	mov	ecx,edi
 	rol	ecx,5
-	add	edx,ebp
+	mov	DWORD [8+esp],edx
+	lea	edx,[2400959708+ebp*1+edx]
+	mov	ebp,eax
 	add	edx,ecx
-	; 40_59 51
+	and	ebp,ebx
 	mov	ecx,DWORD [12+esp]
-	mov	ebp,DWORD [20+esp]
-	xor	ecx,ebp
-	mov	ebp,DWORD [44+esp]
-	xor	ecx,ebp
-	mov	ebp,DWORD [esp]
-	xor	ecx,ebp
-	mov	ebp,edi
+	add	edx,ebp
+	; 40_59 51
+	mov	ebp,esi
+	xor	ecx,DWORD [20+esp]
+	xor	ebp,eax
+	xor	ecx,DWORD [44+esp]
+	and	ebp,edi
+	xor	ecx,DWORD [esp]
 	rol	ecx,1
-	or	ebp,esi
-	mov	DWORD [12+esp],ecx
-	and	ebp,eax
-	lea	ecx,[2400959708+ebx*1+ecx]
-	mov	ebx,edi
+	add	ebp,ebx
 	ror	edi,2
-	and	ebx,esi
-	or	ebp,ebx
 	mov	ebx,edx
 	rol	ebx,5
-	add	ecx,ebp
+	mov	DWORD [12+esp],ecx
+	lea	ecx,[2400959708+ebp*1+ecx]
+	mov	ebp,esi
 	add	ecx,ebx
-	; 40_59 52
+	and	ebp,eax
 	mov	ebx,DWORD [16+esp]
-	mov	ebp,DWORD [24+esp]
-	xor	ebx,ebp
-	mov	ebp,DWORD [48+esp]
-	xor	ebx,ebp
-	mov	ebp,DWORD [4+esp]
-	xor	ebx,ebp
-	mov	ebp,edx
+	add	ecx,ebp
+	; 40_59 52
+	mov	ebp,edi
+	xor	ebx,DWORD [24+esp]
+	xor	ebp,esi
+	xor	ebx,DWORD [48+esp]
+	and	ebp,edx
+	xor	ebx,DWORD [4+esp]
 	rol	ebx,1
-	or	ebp,edi
-	mov	DWORD [16+esp],ebx
-	and	ebp,esi
-	lea	ebx,[2400959708+eax*1+ebx]
-	mov	eax,edx
+	add	ebp,eax
 	ror	edx,2
-	and	eax,edi
-	or	ebp,eax
 	mov	eax,ecx
 	rol	eax,5
-	add	ebx,ebp
+	mov	DWORD [16+esp],ebx
+	lea	ebx,[2400959708+ebp*1+ebx]
+	mov	ebp,edi
 	add	ebx,eax
-	; 40_59 53
+	and	ebp,esi
 	mov	eax,DWORD [20+esp]
-	mov	ebp,DWORD [28+esp]
-	xor	eax,ebp
-	mov	ebp,DWORD [52+esp]
-	xor	eax,ebp
-	mov	ebp,DWORD [8+esp]
-	xor	eax,ebp
-	mov	ebp,ecx
+	add	ebx,ebp
+	; 40_59 53
+	mov	ebp,edx
+	xor	eax,DWORD [28+esp]
+	xor	ebp,edi
+	xor	eax,DWORD [52+esp]
+	and	ebp,ecx
+	xor	eax,DWORD [8+esp]
 	rol	eax,1
-	or	ebp,edx
-	mov	DWORD [20+esp],eax
-	and	ebp,edi
-	lea	eax,[2400959708+esi*1+eax]
-	mov	esi,ecx
+	add	ebp,esi
 	ror	ecx,2
-	and	esi,edx
-	or	ebp,esi
 	mov	esi,ebx
 	rol	esi,5
-	add	eax,ebp
+	mov	DWORD [20+esp],eax
+	lea	eax,[2400959708+ebp*1+eax]
+	mov	ebp,edx
 	add	eax,esi
-	; 40_59 54
+	and	ebp,edi
 	mov	esi,DWORD [24+esp]
-	mov	ebp,DWORD [32+esp]
-	xor	esi,ebp
-	mov	ebp,DWORD [56+esp]
-	xor	esi,ebp
-	mov	ebp,DWORD [12+esp]
-	xor	esi,ebp
-	mov	ebp,ebx
+	add	eax,ebp
+	; 40_59 54
+	mov	ebp,ecx
+	xor	esi,DWORD [32+esp]
+	xor	ebp,edx
+	xor	esi,DWORD [56+esp]
+	and	ebp,ebx
+	xor	esi,DWORD [12+esp]
 	rol	esi,1
-	or	ebp,ecx
-	mov	DWORD [24+esp],esi
-	and	ebp,edx
-	lea	esi,[2400959708+edi*1+esi]
-	mov	edi,ebx
+	add	ebp,edi
 	ror	ebx,2
-	and	edi,ecx
-	or	ebp,edi
 	mov	edi,eax
 	rol	edi,5
-	add	esi,ebp
+	mov	DWORD [24+esp],esi
+	lea	esi,[2400959708+ebp*1+esi]
+	mov	ebp,ecx
 	add	esi,edi
-	; 40_59 55
+	and	ebp,edx
 	mov	edi,DWORD [28+esp]
-	mov	ebp,DWORD [36+esp]
-	xor	edi,ebp
-	mov	ebp,DWORD [60+esp]
-	xor	edi,ebp
-	mov	ebp,DWORD [16+esp]
-	xor	edi,ebp
-	mov	ebp,eax
+	add	esi,ebp
+	; 40_59 55
+	mov	ebp,ebx
+	xor	edi,DWORD [36+esp]
+	xor	ebp,ecx
+	xor	edi,DWORD [60+esp]
+	and	ebp,eax
+	xor	edi,DWORD [16+esp]
 	rol	edi,1
-	or	ebp,ebx
-	mov	DWORD [28+esp],edi
-	and	ebp,ecx
-	lea	edi,[2400959708+edx*1+edi]
-	mov	edx,eax
+	add	ebp,edx
 	ror	eax,2
-	and	edx,ebx
-	or	ebp,edx
 	mov	edx,esi
 	rol	edx,5
-	add	edi,ebp
+	mov	DWORD [28+esp],edi
+	lea	edi,[2400959708+ebp*1+edi]
+	mov	ebp,ebx
 	add	edi,edx
-	; 40_59 56
+	and	ebp,ecx
 	mov	edx,DWORD [32+esp]
-	mov	ebp,DWORD [40+esp]
-	xor	edx,ebp
-	mov	ebp,DWORD [esp]
-	xor	edx,ebp
-	mov	ebp,DWORD [20+esp]
-	xor	edx,ebp
-	mov	ebp,esi
+	add	edi,ebp
+	; 40_59 56
+	mov	ebp,eax
+	xor	edx,DWORD [40+esp]
+	xor	ebp,ebx
+	xor	edx,DWORD [esp]
+	and	ebp,esi
+	xor	edx,DWORD [20+esp]
 	rol	edx,1
-	or	ebp,eax
-	mov	DWORD [32+esp],edx
-	and	ebp,ebx
-	lea	edx,[2400959708+ecx*1+edx]
-	mov	ecx,esi
+	add	ebp,ecx
 	ror	esi,2
-	and	ecx,eax
-	or	ebp,ecx
 	mov	ecx,edi
 	rol	ecx,5
-	add	edx,ebp
+	mov	DWORD [32+esp],edx
+	lea	edx,[2400959708+ebp*1+edx]
+	mov	ebp,eax
 	add	edx,ecx
-	; 40_59 57
+	and	ebp,ebx
 	mov	ecx,DWORD [36+esp]
-	mov	ebp,DWORD [44+esp]
-	xor	ecx,ebp
-	mov	ebp,DWORD [4+esp]
-	xor	ecx,ebp
-	mov	ebp,DWORD [24+esp]
-	xor	ecx,ebp
-	mov	ebp,edi
+	add	edx,ebp
+	; 40_59 57
+	mov	ebp,esi
+	xor	ecx,DWORD [44+esp]
+	xor	ebp,eax
+	xor	ecx,DWORD [4+esp]
+	and	ebp,edi
+	xor	ecx,DWORD [24+esp]
 	rol	ecx,1
-	or	ebp,esi
-	mov	DWORD [36+esp],ecx
-	and	ebp,eax
-	lea	ecx,[2400959708+ebx*1+ecx]
-	mov	ebx,edi
+	add	ebp,ebx
 	ror	edi,2
-	and	ebx,esi
-	or	ebp,ebx
 	mov	ebx,edx
 	rol	ebx,5
-	add	ecx,ebp
+	mov	DWORD [36+esp],ecx
+	lea	ecx,[2400959708+ebp*1+ecx]
+	mov	ebp,esi
 	add	ecx,ebx
-	; 40_59 58
+	and	ebp,eax
 	mov	ebx,DWORD [40+esp]
-	mov	ebp,DWORD [48+esp]
-	xor	ebx,ebp
-	mov	ebp,DWORD [8+esp]
-	xor	ebx,ebp
-	mov	ebp,DWORD [28+esp]
-	xor	ebx,ebp
-	mov	ebp,edx
+	add	ecx,ebp
+	; 40_59 58
+	mov	ebp,edi
+	xor	ebx,DWORD [48+esp]
+	xor	ebp,esi
+	xor	ebx,DWORD [8+esp]
+	and	ebp,edx
+	xor	ebx,DWORD [28+esp]
 	rol	ebx,1
-	or	ebp,edi
-	mov	DWORD [40+esp],ebx
-	and	ebp,esi
-	lea	ebx,[2400959708+eax*1+ebx]
-	mov	eax,edx
+	add	ebp,eax
 	ror	edx,2
-	and	eax,edi
-	or	ebp,eax
 	mov	eax,ecx
 	rol	eax,5
-	add	ebx,ebp
+	mov	DWORD [40+esp],ebx
+	lea	ebx,[2400959708+ebp*1+ebx]
+	mov	ebp,edi
 	add	ebx,eax
-	; 40_59 59
+	and	ebp,esi
 	mov	eax,DWORD [44+esp]
-	mov	ebp,DWORD [52+esp]
-	xor	eax,ebp
-	mov	ebp,DWORD [12+esp]
-	xor	eax,ebp
-	mov	ebp,DWORD [32+esp]
-	xor	eax,ebp
-	mov	ebp,ecx
+	add	ebx,ebp
+	; 40_59 59
+	mov	ebp,edx
+	xor	eax,DWORD [52+esp]
+	xor	ebp,edi
+	xor	eax,DWORD [12+esp]
+	and	ebp,ecx
+	xor	eax,DWORD [32+esp]
 	rol	eax,1
-	or	ebp,edx
-	mov	DWORD [44+esp],eax
-	and	ebp,edi
-	lea	eax,[2400959708+esi*1+eax]
-	mov	esi,ecx
+	add	ebp,esi
 	ror	ecx,2
-	and	esi,edx
-	or	ebp,esi
 	mov	esi,ebx
 	rol	esi,5
-	add	eax,ebp
+	mov	DWORD [44+esp],eax
+	lea	eax,[2400959708+ebp*1+eax]
+	mov	ebp,edx
 	add	eax,esi
+	and	ebp,edi
+	mov	esi,DWORD [48+esp]
+	add	eax,ebp
 	; 20_39 60
 	mov	ebp,ebx
-	mov	esi,DWORD [48+esp]
-	ror	ebx,2
 	xor	esi,DWORD [56+esp]
 	xor	ebp,ecx
 	xor	esi,DWORD [16+esp]
 	xor	ebp,edx
 	xor	esi,DWORD [36+esp]
 	rol	esi,1
-	add	ebp,edi
+	add	edi,ebp
+	ror	ebx,2
+	mov	ebp,eax
+	rol	ebp,5
 	mov	DWORD [48+esp],esi
-	mov	edi,eax
-	rol	edi,5
-	lea	esi,[3395469782+ebp*1+esi]
-	add	esi,edi
+	lea	esi,[3395469782+edi*1+esi]
+	mov	edi,DWORD [52+esp]
+	add	esi,ebp
 	; 20_39 61
 	mov	ebp,eax
-	mov	edi,DWORD [52+esp]
-	ror	eax,2
 	xor	edi,DWORD [60+esp]
 	xor	ebp,ebx
 	xor	edi,DWORD [20+esp]
 	xor	ebp,ecx
 	xor	edi,DWORD [40+esp]
 	rol	edi,1
-	add	ebp,edx
+	add	edx,ebp
+	ror	eax,2
+	mov	ebp,esi
+	rol	ebp,5
 	mov	DWORD [52+esp],edi
-	mov	edx,esi
-	rol	edx,5
-	lea	edi,[3395469782+ebp*1+edi]
-	add	edi,edx
+	lea	edi,[3395469782+edx*1+edi]
+	mov	edx,DWORD [56+esp]
+	add	edi,ebp
 	; 20_39 62
 	mov	ebp,esi
-	mov	edx,DWORD [56+esp]
-	ror	esi,2
 	xor	edx,DWORD [esp]
 	xor	ebp,eax
 	xor	edx,DWORD [24+esp]
 	xor	ebp,ebx
 	xor	edx,DWORD [44+esp]
 	rol	edx,1
-	add	ebp,ecx
+	add	ecx,ebp
+	ror	esi,2
+	mov	ebp,edi
+	rol	ebp,5
 	mov	DWORD [56+esp],edx
-	mov	ecx,edi
-	rol	ecx,5
-	lea	edx,[3395469782+ebp*1+edx]
-	add	edx,ecx
+	lea	edx,[3395469782+ecx*1+edx]
+	mov	ecx,DWORD [60+esp]
+	add	edx,ebp
 	; 20_39 63
 	mov	ebp,edi
-	mov	ecx,DWORD [60+esp]
-	ror	edi,2
 	xor	ecx,DWORD [4+esp]
 	xor	ebp,esi
 	xor	ecx,DWORD [28+esp]
 	xor	ebp,eax
 	xor	ecx,DWORD [48+esp]
 	rol	ecx,1
-	add	ebp,ebx
+	add	ebx,ebp
+	ror	edi,2
+	mov	ebp,edx
+	rol	ebp,5
 	mov	DWORD [60+esp],ecx
-	mov	ebx,edx
-	rol	ebx,5
-	lea	ecx,[3395469782+ebp*1+ecx]
-	add	ecx,ebx
+	lea	ecx,[3395469782+ebx*1+ecx]
+	mov	ebx,DWORD [esp]
+	add	ecx,ebp
 	; 20_39 64
 	mov	ebp,edx
-	mov	ebx,DWORD [esp]
-	ror	edx,2
 	xor	ebx,DWORD [8+esp]
 	xor	ebp,edi
 	xor	ebx,DWORD [32+esp]
 	xor	ebp,esi
 	xor	ebx,DWORD [52+esp]
 	rol	ebx,1
-	add	ebp,eax
+	add	eax,ebp
+	ror	edx,2
+	mov	ebp,ecx
+	rol	ebp,5
 	mov	DWORD [esp],ebx
-	mov	eax,ecx
-	rol	eax,5
-	lea	ebx,[3395469782+ebp*1+ebx]
-	add	ebx,eax
+	lea	ebx,[3395469782+eax*1+ebx]
+	mov	eax,DWORD [4+esp]
+	add	ebx,ebp
 	; 20_39 65
 	mov	ebp,ecx
-	mov	eax,DWORD [4+esp]
-	ror	ecx,2
 	xor	eax,DWORD [12+esp]
 	xor	ebp,edx
 	xor	eax,DWORD [36+esp]
 	xor	ebp,edi
 	xor	eax,DWORD [56+esp]
 	rol	eax,1
-	add	ebp,esi
+	add	esi,ebp
+	ror	ecx,2
+	mov	ebp,ebx
+	rol	ebp,5
 	mov	DWORD [4+esp],eax
-	mov	esi,ebx
-	rol	esi,5
-	lea	eax,[3395469782+ebp*1+eax]
-	add	eax,esi
+	lea	eax,[3395469782+esi*1+eax]
+	mov	esi,DWORD [8+esp]
+	add	eax,ebp
 	; 20_39 66
 	mov	ebp,ebx
-	mov	esi,DWORD [8+esp]
-	ror	ebx,2
 	xor	esi,DWORD [16+esp]
 	xor	ebp,ecx
 	xor	esi,DWORD [40+esp]
 	xor	ebp,edx
 	xor	esi,DWORD [60+esp]
 	rol	esi,1
-	add	ebp,edi
+	add	edi,ebp
+	ror	ebx,2
+	mov	ebp,eax
+	rol	ebp,5
 	mov	DWORD [8+esp],esi
-	mov	edi,eax
-	rol	edi,5
-	lea	esi,[3395469782+ebp*1+esi]
-	add	esi,edi
+	lea	esi,[3395469782+edi*1+esi]
+	mov	edi,DWORD [12+esp]
+	add	esi,ebp
 	; 20_39 67
 	mov	ebp,eax
-	mov	edi,DWORD [12+esp]
-	ror	eax,2
 	xor	edi,DWORD [20+esp]
 	xor	ebp,ebx
 	xor	edi,DWORD [44+esp]
 	xor	ebp,ecx
 	xor	edi,DWORD [esp]
 	rol	edi,1
-	add	ebp,edx
+	add	edx,ebp
+	ror	eax,2
+	mov	ebp,esi
+	rol	ebp,5
 	mov	DWORD [12+esp],edi
-	mov	edx,esi
-	rol	edx,5
-	lea	edi,[3395469782+ebp*1+edi]
-	add	edi,edx
+	lea	edi,[3395469782+edx*1+edi]
+	mov	edx,DWORD [16+esp]
+	add	edi,ebp
 	; 20_39 68
 	mov	ebp,esi
-	mov	edx,DWORD [16+esp]
-	ror	esi,2
 	xor	edx,DWORD [24+esp]
 	xor	ebp,eax
 	xor	edx,DWORD [48+esp]
 	xor	ebp,ebx
 	xor	edx,DWORD [4+esp]
 	rol	edx,1
-	add	ebp,ecx
+	add	ecx,ebp
+	ror	esi,2
+	mov	ebp,edi
+	rol	ebp,5
 	mov	DWORD [16+esp],edx
-	mov	ecx,edi
-	rol	ecx,5
-	lea	edx,[3395469782+ebp*1+edx]
-	add	edx,ecx
+	lea	edx,[3395469782+ecx*1+edx]
+	mov	ecx,DWORD [20+esp]
+	add	edx,ebp
 	; 20_39 69
 	mov	ebp,edi
-	mov	ecx,DWORD [20+esp]
-	ror	edi,2
 	xor	ecx,DWORD [28+esp]
 	xor	ebp,esi
 	xor	ecx,DWORD [52+esp]
 	xor	ebp,eax
 	xor	ecx,DWORD [8+esp]
 	rol	ecx,1
-	add	ebp,ebx
+	add	ebx,ebp
+	ror	edi,2
+	mov	ebp,edx
+	rol	ebp,5
 	mov	DWORD [20+esp],ecx
-	mov	ebx,edx
-	rol	ebx,5
-	lea	ecx,[3395469782+ebp*1+ecx]
-	add	ecx,ebx
+	lea	ecx,[3395469782+ebx*1+ecx]
+	mov	ebx,DWORD [24+esp]
+	add	ecx,ebp
 	; 20_39 70
 	mov	ebp,edx
-	mov	ebx,DWORD [24+esp]
-	ror	edx,2
 	xor	ebx,DWORD [32+esp]
 	xor	ebp,edi
 	xor	ebx,DWORD [56+esp]
 	xor	ebp,esi
 	xor	ebx,DWORD [12+esp]
 	rol	ebx,1
-	add	ebp,eax
+	add	eax,ebp
+	ror	edx,2
+	mov	ebp,ecx
+	rol	ebp,5
 	mov	DWORD [24+esp],ebx
-	mov	eax,ecx
-	rol	eax,5
-	lea	ebx,[3395469782+ebp*1+ebx]
-	add	ebx,eax
+	lea	ebx,[3395469782+eax*1+ebx]
+	mov	eax,DWORD [28+esp]
+	add	ebx,ebp
 	; 20_39 71
 	mov	ebp,ecx
-	mov	eax,DWORD [28+esp]
-	ror	ecx,2
 	xor	eax,DWORD [36+esp]
 	xor	ebp,edx
 	xor	eax,DWORD [60+esp]
 	xor	ebp,edi
 	xor	eax,DWORD [16+esp]
 	rol	eax,1
-	add	ebp,esi
+	add	esi,ebp
+	ror	ecx,2
+	mov	ebp,ebx
+	rol	ebp,5
 	mov	DWORD [28+esp],eax
-	mov	esi,ebx
-	rol	esi,5
-	lea	eax,[3395469782+ebp*1+eax]
-	add	eax,esi
+	lea	eax,[3395469782+esi*1+eax]
+	mov	esi,DWORD [32+esp]
+	add	eax,ebp
 	; 20_39 72
 	mov	ebp,ebx
-	mov	esi,DWORD [32+esp]
-	ror	ebx,2
 	xor	esi,DWORD [40+esp]
 	xor	ebp,ecx
 	xor	esi,DWORD [esp]
 	xor	ebp,edx
 	xor	esi,DWORD [20+esp]
 	rol	esi,1
-	add	ebp,edi
+	add	edi,ebp
+	ror	ebx,2
+	mov	ebp,eax
+	rol	ebp,5
 	mov	DWORD [32+esp],esi
-	mov	edi,eax
-	rol	edi,5
-	lea	esi,[3395469782+ebp*1+esi]
-	add	esi,edi
+	lea	esi,[3395469782+edi*1+esi]
+	mov	edi,DWORD [36+esp]
+	add	esi,ebp
 	; 20_39 73
 	mov	ebp,eax
-	mov	edi,DWORD [36+esp]
-	ror	eax,2
 	xor	edi,DWORD [44+esp]
 	xor	ebp,ebx
 	xor	edi,DWORD [4+esp]
 	xor	ebp,ecx
 	xor	edi,DWORD [24+esp]
 	rol	edi,1
-	add	ebp,edx
+	add	edx,ebp
+	ror	eax,2
+	mov	ebp,esi
+	rol	ebp,5
 	mov	DWORD [36+esp],edi
-	mov	edx,esi
-	rol	edx,5
-	lea	edi,[3395469782+ebp*1+edi]
-	add	edi,edx
+	lea	edi,[3395469782+edx*1+edi]
+	mov	edx,DWORD [40+esp]
+	add	edi,ebp
 	; 20_39 74
 	mov	ebp,esi
-	mov	edx,DWORD [40+esp]
-	ror	esi,2
 	xor	edx,DWORD [48+esp]
 	xor	ebp,eax
 	xor	edx,DWORD [8+esp]
 	xor	ebp,ebx
 	xor	edx,DWORD [28+esp]
 	rol	edx,1
-	add	ebp,ecx
+	add	ecx,ebp
+	ror	esi,2
+	mov	ebp,edi
+	rol	ebp,5
 	mov	DWORD [40+esp],edx
-	mov	ecx,edi
-	rol	ecx,5
-	lea	edx,[3395469782+ebp*1+edx]
-	add	edx,ecx
+	lea	edx,[3395469782+ecx*1+edx]
+	mov	ecx,DWORD [44+esp]
+	add	edx,ebp
 	; 20_39 75
 	mov	ebp,edi
-	mov	ecx,DWORD [44+esp]
-	ror	edi,2
 	xor	ecx,DWORD [52+esp]
 	xor	ebp,esi
 	xor	ecx,DWORD [12+esp]
 	xor	ebp,eax
 	xor	ecx,DWORD [32+esp]
 	rol	ecx,1
-	add	ebp,ebx
+	add	ebx,ebp
+	ror	edi,2
+	mov	ebp,edx
+	rol	ebp,5
 	mov	DWORD [44+esp],ecx
-	mov	ebx,edx
-	rol	ebx,5
-	lea	ecx,[3395469782+ebp*1+ecx]
-	add	ecx,ebx
+	lea	ecx,[3395469782+ebx*1+ecx]
+	mov	ebx,DWORD [48+esp]
+	add	ecx,ebp
 	; 20_39 76
 	mov	ebp,edx
-	mov	ebx,DWORD [48+esp]
-	ror	edx,2
 	xor	ebx,DWORD [56+esp]
 	xor	ebp,edi
 	xor	ebx,DWORD [16+esp]
 	xor	ebp,esi
 	xor	ebx,DWORD [36+esp]
 	rol	ebx,1
-	add	ebp,eax
+	add	eax,ebp
+	ror	edx,2
+	mov	ebp,ecx
+	rol	ebp,5
 	mov	DWORD [48+esp],ebx
-	mov	eax,ecx
-	rol	eax,5
-	lea	ebx,[3395469782+ebp*1+ebx]
-	add	ebx,eax
+	lea	ebx,[3395469782+eax*1+ebx]
+	mov	eax,DWORD [52+esp]
+	add	ebx,ebp
 	; 20_39 77
 	mov	ebp,ecx
-	mov	eax,DWORD [52+esp]
-	ror	ecx,2
 	xor	eax,DWORD [60+esp]
 	xor	ebp,edx
 	xor	eax,DWORD [20+esp]
 	xor	ebp,edi
 	xor	eax,DWORD [40+esp]
 	rol	eax,1
-	add	ebp,esi
-	mov	DWORD [52+esp],eax
-	mov	esi,ebx
-	rol	esi,5
-	lea	eax,[3395469782+ebp*1+eax]
-	add	eax,esi
+	add	esi,ebp
+	ror	ecx,2
+	mov	ebp,ebx
+	rol	ebp,5
+	lea	eax,[3395469782+esi*1+eax]
+	mov	esi,DWORD [56+esp]
+	add	eax,ebp
 	; 20_39 78
 	mov	ebp,ebx
-	mov	esi,DWORD [56+esp]
-	ror	ebx,2
 	xor	esi,DWORD [esp]
 	xor	ebp,ecx
 	xor	esi,DWORD [24+esp]
 	xor	ebp,edx
 	xor	esi,DWORD [44+esp]
 	rol	esi,1
-	add	ebp,edi
-	mov	DWORD [56+esp],esi
-	mov	edi,eax
-	rol	edi,5
-	lea	esi,[3395469782+ebp*1+esi]
-	add	esi,edi
+	add	edi,ebp
+	ror	ebx,2
+	mov	ebp,eax
+	rol	ebp,5
+	lea	esi,[3395469782+edi*1+esi]
+	mov	edi,DWORD [60+esp]
+	add	esi,ebp
 	; 20_39 79
 	mov	ebp,eax
-	mov	edi,DWORD [60+esp]
-	ror	eax,2
 	xor	edi,DWORD [4+esp]
 	xor	ebp,ebx
 	xor	edi,DWORD [28+esp]
 	xor	ebp,ecx
 	xor	edi,DWORD [48+esp]
 	rol	edi,1
-	add	ebp,edx
-	mov	DWORD [60+esp],edi
-	mov	edx,esi
-	rol	edx,5
-	lea	edi,[3395469782+ebp*1+edi]
-	add	edi,edx
-	mov	ebp,DWORD [84+esp]
-	mov	edx,DWORD [88+esp]
+	add	edx,ebp
+	ror	eax,2
+	mov	ebp,esi
+	rol	ebp,5
+	lea	edi,[3395469782+edx*1+edi]
+	add	edi,ebp
+	mov	ebp,DWORD [96+esp]
+	mov	edx,DWORD [100+esp]
 	add	edi,DWORD [ebp]
 	add	esi,DWORD [4+ebp]
 	add	eax,DWORD [8+ebp]
@@ -1427,14 +1365,14 @@ L$000loop:
 	mov	DWORD [ebp],edi
 	add	edx,64
 	mov	DWORD [4+ebp],esi
-	cmp	edx,DWORD [92+esp]
+	cmp	edx,DWORD [104+esp]
 	mov	DWORD [8+ebp],eax
 	mov	edi,ecx
 	mov	DWORD [12+ebp],ebx
 	mov	esi,edx
 	mov	DWORD [16+ebp],ecx
 	jb	NEAR L$000loop
-	add	esp,64
+	add	esp,76
 	pop	edi
 	pop	esi
 	pop	ebx

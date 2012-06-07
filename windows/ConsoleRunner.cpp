@@ -1066,6 +1066,9 @@ void __fastcall TConsoleRunner::ScriptTerminalPromptUser(TTerminal * /*Terminal*
     PrintLine(Instructions);
   }
 
+  // if there are no prompts, success is default
+  Result = true;
+
   for (int Index = 0; Index < Prompts->Count; Index++)
   {
     AnsiString Prompt = Prompts->Strings[Index];
@@ -1581,10 +1584,11 @@ AnsiString TConsoleRunner::ExpandCommand(AnsiString Command, TStrings * ScriptPa
 int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
   TStrings * ScriptCommands, TStrings * ScriptParameters)
 {
-  bool AnyError = false;
-
+  int ExitCode;
   try
   {
+    bool AnyError = false;
+
     try
     {
       FScript = new TManagementScript(StoredSessions, FConsole->LimitedOutput());
@@ -1664,6 +1668,13 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
       ShowException(&E);
       AnyError = true;
     }
+
+    ExitCode = AnyError ? RESULT_ANY_ERROR : RESULT_SUCCESS;
+
+    if (FScript != NULL)
+    {
+      FScript->Log(llMessage, FORMAT("Exit code: %d", (ExitCode)));
+    }
   }
   __finally
   {
@@ -1671,7 +1682,7 @@ int __fastcall TConsoleRunner::Run(const AnsiString Session, TOptions * Options,
     FScript = NULL;
   }
 
-  return AnyError ? RESULT_ANY_ERROR : RESULT_SUCCESS;
+  return ExitCode;
 }
 //---------------------------------------------------------------------------
 void __fastcall TConsoleRunner::UpdateTitle()

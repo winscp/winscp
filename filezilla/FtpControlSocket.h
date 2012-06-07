@@ -77,6 +77,8 @@ public:
 #ifndef MPEXT_NO_SSL
 	BOOL m_bDidRejectCertificate;
 #endif
+	static const size_t m_MaxSslSessions; /* SSL session id cache size */
+	ssl_session_info_t *m_SslSessions; /* SSL session id cache */
 	
 	// Some servers are broken. Instead of an empty listing, some MVS servers
 	// for example they return something "550 no members found"
@@ -116,7 +118,7 @@ protected:
 	int GetReplyCode();
 	CString GetReply();
 	void LogOnToServer(BOOL bSkipReply = FALSE);
-	BOOL Send(CString str, BOOL bUpdateRecvTime = TRUE);
+	BOOL Send(CString str);
 	
 	BOOL ParsePwdReply(CString& rawpwd);
 
@@ -136,6 +138,7 @@ protected:
 	CTime m_LastSendTime;
 	
 	CString m_ServerName;
+	int m_Port;
 	std::list<CStringA> m_RecvBuffer;
 	CTime m_LastRecvTime;
 	class CListData;

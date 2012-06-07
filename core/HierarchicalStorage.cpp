@@ -83,6 +83,10 @@ __fastcall THierarchicalStorage::~THierarchicalStorage()
   delete FKeyHistory;
 }
 //---------------------------------------------------------------------------
+void __fastcall THierarchicalStorage::Flush()
+{
+}
+//---------------------------------------------------------------------------
 void __fastcall THierarchicalStorage::SetAccessMode(TStorageAccessMode value)
 {
   FAccessMode = value;
@@ -612,64 +616,74 @@ __fastcall TIniFileStorage::TIniFileStorage(const AnsiString AStorage):
   ApplyOverrides();
 }
 //---------------------------------------------------------------------------
-__fastcall TIniFileStorage::~TIniFileStorage()
+void __fastcall TIniFileStorage::Flush()
 {
-  TStrings * Strings = new TStringList;
-  try
+  if (FIniFile != NULL)
   {
-    FIniFile->GetStrings(Strings);
-    if (!Strings->Equals(FOriginal))
+    TStrings * Strings = new TStringList;
+    try
     {
-      int Attr;
-      // preserve attributes (especially hidden)
-      if (FileExists(Storage))
+      FIniFile->GetStrings(Strings);
+      if (!Strings->Equals(FOriginal))
       {
-        Attr = GetFileAttributes(Storage.c_str());
-      }
-      else
-      {
-        Attr = FILE_ATTRIBUTE_NORMAL;
-      }
-
-      HANDLE Handle = CreateFile(Storage.c_str(), GENERIC_READ | GENERIC_WRITE,
-        0, NULL, CREATE_ALWAYS, Attr, 0);
-
-      if (Handle == INVALID_HANDLE_VALUE)
-      {
-        // "access denied" errors upon implicit saves are ignored
-        if (Explicit || (GetLastError() != ERROR_ACCESS_DENIED))
+        int Attr;
+        // preserve attributes (especially hidden)
+        bool Exists = FileExists(Storage);
+        if (Exists)
         {
+          Attr = GetFileAttributes(Storage.c_str());
+        }
+        else
+        {
+          Attr = FILE_ATTRIBUTE_NORMAL;
+        }
+
+        HANDLE Handle = CreateFile(Storage.c_str(), GENERIC_READ | GENERIC_WRITE,
+          0, NULL, CREATE_ALWAYS, Attr, 0);
+
+        if (Handle == INVALID_HANDLE_VALUE)
+        {
+          // "access denied" errors upon implicit saves to existing file are ignored
+          if (Explicit || !Exists || (GetLastError() != ERROR_ACCESS_DENIED))
+          {
+            try
+            {
+              RaiseLastOSError();
+            }
+            catch(Exception & E)
+            {
+              throw ExtException(&E, FMTLOAD(CREATE_FILE_ERROR, (Storage)));
+            }
+          }
+        }
+        else
+        {
+          TStream * Stream = new THandleStream(int(Handle));
           try
           {
-            RaiseLastOSError();
+            Strings->SaveToStream(Stream);
           }
-          catch(Exception & E)
+          __finally
           {
-            throw ExtException(&E, FMTLOAD(CREATE_FILE_ERROR, (Storage)));
+            CloseHandle(Handle);
+            delete Stream;
           }
-        }
-      }
-      else
-      {
-        TStream * Stream = new THandleStream(int(Handle));
-        try
-        {
-          Strings->SaveToStream(Stream);
-        }
-        __finally
-        {
-          CloseHandle(Handle);
-          delete Stream;
         }
       }
     }
+    __finally
+    {
+      delete FOriginal;
+      delete Strings;
+      delete FIniFile;
+      FIniFile = NULL;
+    }
   }
-  __finally
-  {
-    delete FOriginal;
-    delete Strings;
-    delete FIniFile;
-  }
+}
+//---------------------------------------------------------------------------
+__fastcall TIniFileStorage::~TIniFileStorage()
+{
+  Flush();
 }
 //---------------------------------------------------------------------------
 AnsiString __fastcall TIniFileStorage::GetSource()

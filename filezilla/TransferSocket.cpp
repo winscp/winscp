@@ -444,7 +444,8 @@ void CTransferSocket::OnAccept(int nErrorCode)
 		if (m_pSslLayer)
 		{
 			AddLayer(m_pSslLayer);
-			int res = m_pSslLayer->InitSSLConnection(true);
+			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_ServerName, m_pOwner->m_Port,
+				m_pOwner->m_SslSessions, m_pOwner->m_MaxSslSessions);
 #ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
@@ -525,7 +526,8 @@ void CTransferSocket::OnConnect(int nErrorCode)
 		if (m_pSslLayer)
 		{
 			AddLayer(m_pSslLayer);
-			int res = m_pSslLayer->InitSSLConnection(true);
+			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_ServerName, m_pOwner->m_Port,
+				m_pOwner->m_SslSessions, m_pOwner->m_MaxSslSessions);
 #ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
