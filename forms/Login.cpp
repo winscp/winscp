@@ -438,7 +438,7 @@ void __fastcall TLoginDialog::LoadSession(TSessionData * aSessionData)
     // FTP tab
     PostLoginCommandsMemo->Lines->Text = aSessionData->PostLoginCommands;
     ComboAutoSwitchLoad(FtpListAllCombo, aSessionData->FtpListAll);
-    FtpForcePasvIpCheck->Checked = aSessionData->FtpForcePasvIp;
+    CheckBoxAutoSwitchLoad(FtpForcePasvIpCheck, aSessionData->FtpForcePasvIp);
 
     // Authentication tab
     SshNoUserAuthCheck->Checked = aSessionData->SshNoUserAuth;
@@ -784,7 +784,7 @@ void __fastcall TLoginDialog::SaveSession(TSessionData * aSessionData)
   // FTP tab
   aSessionData->PostLoginCommands = PostLoginCommandsMemo->Lines->Text;
   aSessionData->FtpListAll = ComboAutoSwitchSave(FtpListAllCombo);
-  aSessionData->FtpForcePasvIp = FtpForcePasvIpCheck->Checked;
+  aSessionData->FtpForcePasvIp = CheckBoxAutoSwitchSave(FtpForcePasvIpCheck);
 
   // Proxy tab
   aSessionData->ProxyMethod = GetProxyMethod();

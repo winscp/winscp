@@ -77,9 +77,6 @@ public:
 #ifndef MPEXT_NO_SSL
 	BOOL m_bDidRejectCertificate;
 #endif
-	static const size_t m_MaxSslSessions; /* SSL session id cache size */
-	ssl_session_info_t *m_SslSessions; /* SSL session id cache */
-	
 	// Some servers are broken. Instead of an empty listing, some MVS servers
 	// for example they return something "550 no members found"
 	// Other servers return "550 No files found."
@@ -129,6 +126,7 @@ protected:
 	bool InitConnect();
 
 #ifdef MPEXT
+	bool IsRoutableAddress(const CString & host);
 	bool CheckForcePasvIp(CString & host);
 #endif
 
@@ -138,7 +136,6 @@ protected:
 	CTime m_LastSendTime;
 	
 	CString m_ServerName;
-	int m_Port;
 	std::list<CStringA> m_RecvBuffer;
 	CTime m_LastRecvTime;
 	class CListData;

@@ -140,6 +140,8 @@ protected:
 	// Iterate through protocols
 	bool TryNextProtocol();
 
+	void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat);
+
 private:
 	//Layer state can't be set directly from derived classes
 	void SetLayerState(int nLayerState);

@@ -156,7 +156,7 @@ void __fastcall TSessionData::Default()
 
   // FTP
   FtpPasvMode = true;
-  FtpForcePasvIp = false;
+  FtpForcePasvIp = asAuto;
   FtpAccount = "";
   FtpPingInterval = 30;
   FtpPingType = ptDummyCommand;
@@ -526,7 +526,7 @@ void __fastcall TSessionData::Load(THierarchicalStorage * Storage)
 
     // Ftp prefix
     FtpPasvMode = Storage->ReadBool("FtpPasvMode", FtpPasvMode);
-    FtpForcePasvIp = Storage->ReadBool("FtpForcePasvIp", FtpForcePasvIp);
+    FtpForcePasvIp = TAutoSwitch(Storage->ReadInteger(L"FtpForcePasvIp2", FtpForcePasvIp));
     FtpAccount = Storage->ReadString("FtpAccount", FtpAccount);
     FtpPingInterval = Storage->ReadInteger("FtpPingInterval", FtpPingInterval);
     FtpPingType = static_cast<TPingType>(Storage->ReadInteger("FtpPingType", FtpPingType));
@@ -785,7 +785,7 @@ void __fastcall TSessionData::Save(THierarchicalStorage * Storage,
       WRITE_DATA(Integer, TunnelLocalPortNumber);
 
       WRITE_DATA(Bool, FtpPasvMode);
-      WRITE_DATA(Bool, FtpForcePasvIp);
+      WRITE_DATA_EX(Integer, "FtpForcePasvIp2", FtpForcePasvIp, );
       WRITE_DATA(String, FtpAccount);
       WRITE_DATA(Integer, FtpPingInterval);
       WRITE_DATA(Integer, FtpPingType);
@@ -2020,7 +2020,7 @@ void __fastcall TSessionData::SetFtpPasvMode(bool value)
   SET_SESSION_PROPERTY(FtpPasvMode);
 }
 //---------------------------------------------------------------------
-void __fastcall TSessionData::SetFtpForcePasvIp(bool value)
+void __fastcall TSessionData::SetFtpForcePasvIp(TAutoSwitch value)
 {
   SET_SESSION_PROPERTY(FtpForcePasvIp);
 }

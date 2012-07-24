@@ -235,6 +235,11 @@ void __fastcall TEditorManager::Check()
 
       if (Index >= 0)
       {
+        // let the editor finish writting to the file
+        // (first to avoid uploading particually saved file, second
+        // because the timestamp may change more than once during saving)
+        Sleep(GUIConfiguration->KeepUpToDateChangeDelay);
+
         TFileData * FileData = &FFiles[Index];
         FindNextChangeNotification(FileData->Monitor);
 

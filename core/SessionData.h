@@ -138,7 +138,7 @@ private:
   int FTunnelLocalPortNumber;
   AnsiString FTunnelPortFwd;
   bool FFtpPasvMode;
-  bool FFtpForcePasvIp;
+  TAutoSwitch FFtpForcePasvIp;
   AnsiString FFtpAccount;
   int FFtpPingInterval;
   TPingType FFtpPingType;
@@ -272,7 +272,7 @@ private:
   void __fastcall SetTunnelLocalPortNumber(int value);
   bool __fastcall GetTunnelAutoassignLocalPortNumber();
   void __fastcall SetFtpPasvMode(bool value);
-  void __fastcall SetFtpForcePasvIp(bool value);
+  void __fastcall SetFtpForcePasvIp(TAutoSwitch value);
   void __fastcall SetFtpAccount(AnsiString value);
   void __fastcall SetFtpPingInterval(int value);
   void __fastcall SetFtpPingType(TPingType value);
@@ -418,7 +418,7 @@ public:
   __property int TunnelLocalPortNumber = { read = FTunnelLocalPortNumber, write = SetTunnelLocalPortNumber };
   __property AnsiString TunnelPortFwd = { read = FTunnelPortFwd, write = SetTunnelPortFwd };
   __property bool FtpPasvMode = { read = FFtpPasvMode, write = SetFtpPasvMode };
-  __property bool FtpForcePasvIp = { read = FFtpForcePasvIp, write = SetFtpForcePasvIp };
+  __property TAutoSwitch FtpForcePasvIp = { read = FFtpForcePasvIp, write = SetFtpForcePasvIp };
   __property AnsiString FtpAccount = { read = FFtpAccount, write = SetFtpAccount };
   __property int FtpPingInterval  = { read=FFtpPingInterval, write=SetFtpPingInterval };
   __property TDateTime FtpPingIntervalDT  = { read=GetFtpPingIntervalDT };

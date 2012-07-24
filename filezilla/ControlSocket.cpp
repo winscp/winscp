@@ -510,3 +510,8 @@ CString CControlSocket::ConvertDomainName(CString domain)
 	free(output);
 	return result;
 }
+
+void CControlSocket::LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat)
+{
+	LogMessage(nMessageType, pMsgFormat);
+}

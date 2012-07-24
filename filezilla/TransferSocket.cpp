@@ -444,8 +444,7 @@ void CTransferSocket::OnAccept(int nErrorCode)
 		if (m_pSslLayer)
 		{
 			AddLayer(m_pSslLayer);
-			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_ServerName, m_pOwner->m_Port,
-				m_pOwner->m_SslSessions, m_pOwner->m_MaxSslSessions);
+			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer, COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE));
 #ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
@@ -526,8 +525,7 @@ void CTransferSocket::OnConnect(int nErrorCode)
 		if (m_pSslLayer)
 		{
 			AddLayer(m_pSslLayer);
-			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_ServerName, m_pOwner->m_Port,
-				m_pOwner->m_SslSessions, m_pOwner->m_MaxSslSessions);
+			int res = m_pSslLayer->InitSSLConnection(true, m_pOwner->m_pSslLayer, COptions::GetOptionVal(OPTION_MPEXT_SSLSESSIONREUSE));
 #ifndef MPEXT_NO_SSLDLL
 			if (res == SSL_FAILURE_LOADDLLS)
 				m_pOwner->ShowStatus(IDS_ERRORMSG_CANTLOADSSLDLLS, 1);
@@ -1482,4 +1480,9 @@ int CTransferSocket::ReadDataFromFile(char *buffer, int len)
 		return -1;
 	}
 	END_CATCH_ALL;
+}
+
+void CTransferSocket::LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat)
+{
+	LogMessage(nMessageType, pMsgFormat);
 }

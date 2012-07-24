@@ -327,6 +327,8 @@ protected:
 	// Pending callbacks
 	std::list<t_callbackMsg> m_pendingCallbacks;
 #endif // NOLAYERS
+
+	virtual void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat) {};
 };
 
 #ifndef NOLAYERS

@@ -51,7 +51,7 @@ const bool operator == (const t_server &a,const t_server &b)
 	if (a.nUTF8 != b.nUTF8)
 		return false;
 #ifdef MPEXT
-	if (a.bForcePasvIp != b.bForcePasvIp)
+	if (a.iForcePasvIp != b.iForcePasvIp)
 		return false;
 #endif
 	return true;
@@ -83,7 +83,7 @@ bool t_server::operator<(const t_server &op) const
 	if (nUTF8 < op.nUTF8)
 		return true;
 #ifdef MPEXT
-	if (bForcePasvIp < op.bForcePasvIp)
+	if (iForcePasvIp < op.iForcePasvIp)
 		return true;
 #endif
 

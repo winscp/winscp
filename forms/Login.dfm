@@ -1179,6 +1179,7 @@ object LoginDialog: TLoginDialog
             Top = 125
             Width = 317
             Height = 17
+            AllowGrayed = True
             Caption = '&Force IP address for passive mode connections'
             TabOrder = 2
             OnClick = DataChange

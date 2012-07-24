@@ -36,6 +36,8 @@ void __fastcall ListViewCheckAll(TListView * ListView,
 void __fastcall ComboAutoSwitchInitialize(TComboBox * ComboBox);
 void __fastcall ComboAutoSwitchLoad(TComboBox * ComboBox, TAutoSwitch Value);
 TAutoSwitch __fastcall ComboAutoSwitchSave(TComboBox * ComboBox);
+void __fastcall CheckBoxAutoSwitchLoad(TCheckBox * CheckBox, TAutoSwitch Value);
+TAutoSwitch __fastcall CheckBoxAutoSwitchSave(TCheckBox * CheckBox);
 void __fastcall InstallPathWordBreakProc(TWinControl * Control);
 void __fastcall RepaintStatusBar(TCustomStatusBar * StatusBar);
 void __fastcall SetVerticalControlsOrder(TControl ** ControlsOrder, int Count);

@@ -2298,6 +2298,19 @@ void __fastcall TTerminal::CustomReadDirectory(TRemoteFileList * FileList)
   assert(FileList);
   assert(FFileSystem);
   FFileSystem->ReadDirectory(FileList);
+
+  if (Configuration->ActualLogProtocol >= 1)
+  {
+    for (int Index = 0; Index < FileList->Count; Index++)
+    {
+      TRemoteFile * File = FileList->Files[Index];
+      LogEvent(FORMAT("%s;%s;%s;%s;%s;%s;%s;%d",
+        (File->FileName, File->Type, IntToStr(File->Size), File->UserModificationStr,
+         File->Owner.LogText, File->Group.LogText, File->Rights->Text,
+         File->Attr)));
+    }
+  }
+
   ReactOnCommand(fsListDirectory);
 }
 //---------------------------------------------------------------------------

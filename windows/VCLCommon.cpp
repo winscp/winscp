@@ -608,6 +608,35 @@ TAutoSwitch __fastcall ComboAutoSwitchSave(TComboBox * ComboBox)
   return (TAutoSwitch)(2 - ComboBox->ItemIndex);
 }
 //---------------------------------------------------------------------------
+void __fastcall CheckBoxAutoSwitchLoad(TCheckBox * CheckBox, TAutoSwitch Value)
+{
+  switch (Value)
+  {
+    case asOn:
+      CheckBox->State = cbChecked;
+      break;
+    case asOff:
+      CheckBox->State = cbUnchecked;
+      break;
+    default:
+      CheckBox->State = cbGrayed;
+      break;
+  }
+}
+//---------------------------------------------------------------------------
+TAutoSwitch __fastcall CheckBoxAutoSwitchSave(TCheckBox * CheckBox)
+{
+  switch (CheckBox->State)
+  {
+    case cbChecked:
+      return asOn;
+    case cbUnchecked:
+      return asOff;
+    default:
+      return asAuto;
+  }
+}
+//---------------------------------------------------------------------------
 // Windows algorithm is as follows (tested on W2k):
 // right:
 //   is_delimiter(current)

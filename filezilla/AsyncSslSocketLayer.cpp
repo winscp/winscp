@@ -272,161 +272,6 @@ protected:
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
-
-static long ssl_sessions_general_age = 0;
-
-/*
- * Check if there's a session ID for the given connection in the cache, and if
- * there's one suitable, it is provided. Returns true when entry matched.
- */
-static bool ssl_getsessionid(const char *host_name, long remote_port,
-	ssl_session_info_t *ssl_sessions,
-	size_t max_ssl_sessions,
-	void **ssl_sessionid)
-{
-	if (!ssl_sessions)
-	{
-		return false;
-	}
-	ssl_session_info_t *check = NULL;
-	size_t i = 0;
-	bool match = false;
-
-	*ssl_sessionid = NULL;
-
-	for (i = 0; i < max_ssl_sessions; i++)
-	{
-		check = &ssl_sessions[i];
-		if (!check->sessionid)
-		  /* not session ID means blank entry */
-		  continue;
-		if (host_name && check->name && (0 == strcmp(host_name, check->name)) &&
-		   (remote_port == check->remote_port))
-		{
-			/* yes, we have a session ID! */
-			ssl_sessions_general_age++;          /* increase general age */
-			check->age = ssl_sessions_general_age; /* set this as used in this age */
-			*ssl_sessionid = check->sessionid;
-			match = true;
-			break;
-		}
-	}
-
-	return match;
-}
-
-/*
- * Kill a single session ID entry in the cache.
- */
-static void ssl_kill_session(
-		ssl_session_info_t *ssl_sessions,
-		size_t max_ssl_sessions,
-		ssl_session_info_t *session)
-{
-	if (!ssl_sessions)
-	{
-		return;
-	}
-	if (session->sessionid)
-	{
-		/* defensive check */
-
-		/* free the ID the SSL-layer specific way */
-		SSL_SESSION_free((SSL_SESSION *)session->sessionid);
-
-		session->sessionid = NULL;
-		session->age = 0; /* fresh */
-
-		free(session->name);
-		session->name = NULL;
-	}
-}
-
-/*
- * Delete the given session ID from the cache.
- */
-static void ssl_delsessionid(const char *host_name, long remote_port, 
-	ssl_session_info_t *ssl_sessions,
-	size_t max_ssl_sessions,
-	void *ssl_sessionid)
-{
-	if (!ssl_sessions)
-	{
-		return;
-	}
-	size_t i;
-	for (i = 0; i < max_ssl_sessions; i++)
-	{
-		ssl_session_info_t *check = &ssl_sessions[i];
-		if (check->sessionid == ssl_sessionid)
-		{
-			ssl_kill_session(ssl_sessions, max_ssl_sessions, check);
-			break;
-		}
-	}
-}
-
-/*
- * Store session id in the session cache. The ID passed on to this function
- * must already have been extracted and allocated the proper way for the SSL
- * layer. SSL_session_free() will be called to free/kill the session ID
- * later on.
- */
-static bool ssl_addsessionid(const char *host_name, long remote_port,
-	ssl_session_info_t *ssl_sessions,
-	size_t max_ssl_sessions,
-	void *ssl_sessionid)
-{
-	if (!ssl_sessions)
-	{
-		return false;
-	}
-	size_t i = 0;
-	ssl_session_info_t *store = &ssl_sessions[0];
-	long oldest_age = ssl_sessions[0].age; /* zero if unused */
-	char *clone_host = NULL;
-
-	/* Even though session ID re-use might be disabled, that only disables USING
-	   IT. We still store it here in case the re-using is again enabled for an
-	   upcoming transfer */
-
-	clone_host = strdup(host_name);
-	if (!clone_host)
-		return false; /* bail out */
-
-	/* Now we should add the session ID and the host name to the cache, (remove
-	   the oldest if necessary) */
-
-	/* find an empty slot for us, or find the oldest */
-	for (i = 1; (i < max_ssl_sessions) && ssl_sessions[i].sessionid; i++)
-	{
-		if (ssl_sessions[i].age < oldest_age)
-		{
-			oldest_age = ssl_sessions[i].age;
-			store = &ssl_sessions[i];
-		}
-	}
-	if (i == max_ssl_sessions)
-	{
-		/* cache is full, we must "kill" the oldest entry! */
-		ssl_kill_session(ssl_sessions, max_ssl_sessions, store);
-	}
-	else
-		store = &ssl_sessions[i]; /* use this slot */
-
-	/* now init the session struct wisely */
-	store->sessionid = ssl_sessionid;
-	store->age = ssl_sessions_general_age;    /* set current age */
-	if (store->name)
-		/* free it if there's one already present */
-		free(store->name);
-	store->name = clone_host;               /* clone host name */
-	store->remote_port = remote_port; /* port number */
-
-	return true;
-}
-
-/////////////////////////////////////////////////////////////////////////////
 // CAsyncSslSocketLayer
 CCriticalSectionWrapper CAsyncSslSocketLayer::m_sCriticalSection;
 
@@ -468,10 +313,9 @@ CAsyncSslSocketLayer::CAsyncSslSocketLayer()
 
 	m_onCloseCalled = false;
 	m_pKeyPassword = 0;
-	m_HostAddress = NULL;
-	m_nHostPort = 0;
-	m_SslSessions = NULL;
-	m_MaxSslSessions = 0;
+	m_Main = NULL;
+	m_sessionid = NULL;
+	m_sessionreuse = true;
 }
 
 CAsyncSslSocketLayer::~CAsyncSslSocketLayer()
@@ -1179,10 +1023,7 @@ BOOL CAsyncSslSocketLayer::Connect(LPCTSTR lpszHostAddress, UINT nHostPort)
 }
 
 int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
-	CString &ServerName,
-	int Port,
-	ssl_session_info_t *ssl_sessions,
-	size_t max_ssl_sessions,
+	CAsyncSslSocketLayer* main, bool sessionreuse,
 	void* pSslContext /*=0*/)
 {
 	if (m_bUseSSL)
@@ -1269,17 +1110,25 @@ int CAsyncSslSocketLayer::InitSSLConnection(bool clientMode,
 	void *ssl_sessionid = NULL;
 	{
 		USES_CONVERSION;
-		m_HostAddress = strdup(T2CA(ServerName));
-		m_nHostPort = Port;
-		m_SslSessions = ssl_sessions;
-		m_MaxSslSessions = max_ssl_sessions;
+		m_Main = main;
+		m_sessionreuse = sessionreuse;
 	}
-	if (ssl_getsessionid(m_HostAddress, m_nHostPort,
-						 m_SslSessions,
-						 m_MaxSslSessions,
-						 &ssl_sessionid))
+	if ((m_Main != NULL) && m_sessionreuse)
 	{
-		pSSL_set_session(m_ssl, (SSL_SESSION *)ssl_sessionid);
+		if (m_Main->m_sessionid != NULL)
+		{
+			if (!pSSL_set_session(m_ssl, m_Main->m_sessionid))
+			{
+				LogSocketMessage(FZ_LOG_INFO, _T("SSL_set_session failed"));
+				return SSL_FAILURE_INITSSL;
+			}
+			LogSocketMessage(FZ_LOG_INFO, _T("Trying reuse main SSL session ID"));
+		}
+		else
+		{
+			LogSocketMessage(FZ_LOG_INFO, _T("Main SSL session ID was not reused previously, not trying again"));
+			pSSL_set_session(m_ssl, NULL);
+		}
 	}
 	else
 	{
@@ -1381,12 +1230,6 @@ void CAsyncSslSocketLayer::ResetSslSession()
 	delete [] m_pKeyPassword;
 	m_pKeyPassword = 0;
 
-	delete [] m_HostAddress;
-	m_HostAddress = 0;
-	m_nHostPort = 0;
-	m_SslSessions = NULL;
-	m_MaxSslSessions = 0;
-
 	m_ssl = 0;
 	t_SslLayerList *cur = m_pSslLayerList;
 	if (!cur)
@@ -1414,6 +1257,14 @@ void CAsyncSslSocketLayer::ResetSslSession()
 			}
 			cur = cur->pNext;
 		}
+
+	if (m_sessionid != NULL)
+	{
+		SSL_SESSION_free(m_sessionid);
+		m_sessionid = NULL;
+	}
+	m_sessionreuse = true;
+
 	m_sCriticalSection.Unlock();
 }
 
@@ -1565,37 +1416,39 @@ void CAsyncSslSocketLayer::apps_ssl_info_callback(const SSL *s, int where, int r
 	if (w & SSL_ST_CONNECT)
 	{
 		str = "SSL_connect";
-		SSL_SESSION *our_ssl_sessionid = SSL_get1_session(pLayer->m_ssl);
-		void *old_ssl_sessionid = NULL;
-		bool incache = ssl_getsessionid(
-							pLayer->m_HostAddress, pLayer->m_nHostPort,
-							pLayer->m_SslSessions,
-							pLayer->m_MaxSslSessions,
-							&old_ssl_sessionid);
-		if (incache)
+		if (pLayer->m_sessionreuse)
 		{
-			if (old_ssl_sessionid != our_ssl_sessionid)
+			SSL_SESSION * sessionid = SSL_get1_session(pLayer->m_ssl);
+			if (pLayer->m_sessionid != sessionid)
 			{
-				ssl_delsessionid(
-					pLayer->m_HostAddress, pLayer->m_nHostPort,
-					pLayer->m_SslSessions,
-					pLayer->m_MaxSslSessions,
-					old_ssl_sessionid);
-				incache = false;
+				if (pLayer->m_sessionid == NULL)
+				{
+					if (SSL_session_reused(pLayer->m_ssl))
+					{
+						pLayer->LogSocketMessage(FZ_LOG_INFO, _T("Session ID reused"));
+					}
+					else
+					{
+						if ((pLayer->m_Main != NULL) && (pLayer->m_Main->m_sessionid != NULL))
+						{
+							pLayer->LogSocketMessage(FZ_LOG_INFO, _T("Main SSL session ID not reused, will not try again"));
+							SSL_SESSION_free(pLayer->m_Main->m_sessionid);
+							pLayer->m_Main->m_sessionid = NULL;
+						}
+					}
+					pLayer->LogSocketMessage(FZ_LOG_DEBUG, _T("Saving session ID"));
+				}
+				else
+				{
+					SSL_SESSION_free(pLayer->m_sessionid);
+					pLayer->LogSocketMessage(FZ_LOG_INFO, _T("Session ID changed"));
+				}
+				pLayer->m_sessionid = sessionid;
 			}
-		}
-		if (!incache && pLayer->m_SslSessions)
-		{
-			ssl_addsessionid(
-				pLayer->m_HostAddress,
-				pLayer->m_nHostPort,
-				pLayer->m_SslSessions,
-				pLayer->m_MaxSslSessions,
-				our_ssl_sessionid);
-		}
-		else
-		{
-			SSL_SESSION_free(our_ssl_sessionid);
+			else
+			{
+				SSL_SESSION_free(sessionid);
+			}
 		}
 	}
 	else if (w & SSL_ST_ACCEPT)

@@ -149,6 +149,8 @@ protected:
 #endif
 	//End Speed limit
 	
+	virtual void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat);
+	
 public:
 	struct t_operation
 	{

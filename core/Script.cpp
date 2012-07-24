@@ -1542,7 +1542,11 @@ void __fastcall TManagementScript::TerminalPromptUser(TTerminal * Terminal,
   TPromptKind Kind, AnsiString Name, AnsiString Instructions, TStrings * Prompts,
   TStrings * Results, bool & Result, void * Arg)
 {
-  if ((!Terminal->StoredCredentialsTried || !IsAuthenticationPrompt(Kind)) &&
+  // When authentication using stored password fails,
+  // do not ask user for another password.
+  if ((!Terminal->StoredCredentialsTried ||
+       !IsAuthenticationPrompt(Kind) ||
+       (Prompts->Count == 0)) && // allow instructions-only prompts
       (OnTerminalPromptUser != NULL))
   {
     OnTerminalPromptUser(Terminal, Kind, Name, Instructions, Prompts, Results, Result, Arg);

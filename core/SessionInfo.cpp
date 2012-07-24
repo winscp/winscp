@@ -971,6 +971,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
         ADF("Local command: %s", (Data->ProxyLocalCommand));
       }
     }
+    char const * BugFlags = "+-A";
     if (Data->UsesSsh)
     {
       ADF("SSH protocol version: %s; Compression: %s",
@@ -988,7 +989,6 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       ADF("Ciphers: %s; Ssh2DES: %s",
         (Data->CipherList, BooleanToEngStr(Data->Ssh2DES)));
       AnsiString Bugs;
-      char const * BugFlags = "A+-";
       for (int Index = 0; Index < BUG_COUNT; Index++)
       {
         Bugs += AnsiString(BugFlags[Data->Bug[(TSshBug)Index]])+(Index<BUG_COUNT-1?",":"");
@@ -1037,7 +1037,7 @@ void __fastcall TSessionLog::DoAddStartupInfo(TSessionData * Data)
       }
       ADF("FTP: FTPS: %s; Passive: %s [Force IP: %s]",
         (Ftps, BooleanToEngStr(Data->FtpPasvMode),
-         BooleanToEngStr(Data->FtpForcePasvIp)));
+         BugFlags[Data->FtpForcePasvIp]));
     }
     ADF("Local directory: %s, Remote directory: %s, Update: %s, Cache: %s",
       ((Data->LocalDirectory.IsEmpty() ? AnsiString("default") : Data->LocalDirectory),

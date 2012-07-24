@@ -40,7 +40,7 @@ public:
 	int nTimeZoneOffset;
 	int nUTF8;
 #ifdef MPEXT
-	BOOL bForcePasvIp;
+	BOOL iForcePasvIp;
 #endif
 	bool operator<(const t_server &op) const; //Needed by STL map
 };
@@ -61,14 +61,5 @@ typedef struct
     int nType;
     int nUserData;
 } t_transferfile;
-
-/* information stored about one single SSL session */
-typedef struct
-{
-    char *name;       /* host name for which this ID was used */
-    void *sessionid;  /* as returned from the SSL layer */
-    long age;         /* just a number, the higher the more recent */
-    unsigned short remote_port; /* remote port to connect to */
-} ssl_session_info_t;
 
 #endif

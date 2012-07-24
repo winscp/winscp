@@ -6,6 +6,7 @@
 #define WebRoot "http://winscp.net/"
 #define WebForum WebRoot+"forum/"
 #define WebDocumentation WebRoot+"eng/docs/"
+#define WebReport WebRoot+"install.php"
 #define WebPuTTY "http://www.chiark.greenend.org.uk/~sgtatham/putty/"
 #define Year 2012
 #define EnglishLang "English"
@@ -41,6 +42,16 @@
 #include "..\opencandy\OCSetupHlp.iss"
 #endif
 
+#ifdef Chrome
+#define ChromeLogoFile "chromelogo.bmp"
+#define ChromeAdFile "chromead.bmp"
+#define ChromeGcApiDllFile "gcapi_dll.dll"
+#define ChromeCheckerFile "chromech.exe"
+#define ChromeInstallerFile "GoogleChromeInstaller.exe"
+#define ChromeBrandCode "LHNE"
+#include "..\chrome\texts.iss"
+#endif
+
 [Setup]
 AppId={#AppId}
 AppName=WinSCP
@@ -57,7 +68,11 @@ VersionInfoCopyright=(c) 2000-{#Year} Martin Prikryl
 DefaultDirName={pf}\WinSCP
 DefaultGroupName=WinSCP
 AllowNoIcons=yes
+#ifdef Chrome
+LicenseFile=licence.setup-chrome
+#else
 LicenseFile=licence.setup{#OutputSuffix}
+#endif
 UninstallDisplayIcon={app}\WinSCP.exe
 OutputDir={#OutputDir}
 DisableStartupPrompt=yes
@@ -70,6 +85,9 @@ PrivilegesRequired=none
 UsePreviousLanguage=yes
 #ifdef Sign
 SignTool=sign $f "WinSCP Installer" http://winscp.net/eng/docs/installation
+#endif
+#ifdef Chrome
+RestartIfNeededByRun=no
 #endif
 
 ; Some features of ISCC requires path relative to script,
@@ -229,6 +247,19 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/RegisterAsUrlHandler"; \
   StatusMsg: {cm:RegisteringAsUrlHandler}; Tasks: urlhandler
 Filename: "{app}\WinSCP.exe"; Parameters: "/AddSearchPath"; \
   StatusMsg: {cm:AddingSearchPath}; Tasks: searchpath
+#ifdef Chrome
+Filename: "{tmp}\{#ChromeInstallerFile}"; \
+  Parameters: "/brandcode:{#ChromeBrandCode} /default:true"; \
+  StatusMsg: {cm:ChromeInstalling}; \
+  Check: IsChromeSelected and IsChromeDefaultSelected
+Filename: "{tmp}\{#ChromeInstallerFile}"; \
+  Parameters: "/brandcode:{#ChromeBrandCode}"; \
+  StatusMsg: {cm:ChromeInstalling}; \
+  Check: IsChromeSelected and (not IsChromeDefaultSelected)
+Filename: "{tmp}\{#ChromeCheckerFile}"; Parameters: "fake"; \
+  Description: "{cm:ChromeLaunch}"; \
+  Flags: nowait postinstall skipifsilent runhidden; Check: IsChromeSelected
+#endif
 
 [UninstallDelete]
 ; These additional files are created by application
@@ -270,6 +301,14 @@ Source: "{#PuttySourceDir}\puttygen.exe"; DestDir: "{app}\PuTTY"; \
 #ifdef OpenCandy
 Source: "{#OC_OCSETUPHLP_FILE_PATH}"; \
   Flags: dontcopy ignoreversion deleteafterinstall 
+#endif
+#ifdef Chrome
+Source: "..\chrome\{#ChromeLogoFile}"; Flags: dontcopy
+Source: "..\chrome\{#ChromeAdFile}"; Flags: dontcopy
+Source: "..\chrome\{#ChromeGcApiDllFile}"; Flags: dontcopy
+Source: "..\chrome\{#ChromeCheckerFile}"; Flags: dontcopy
+Source: "..\chrome\{#ChromeInstallerFile}"; DestDir: "{tmp}"; \
+  Flags: deleteafterinstall; Check: IsChromeSelected
 #endif
 
 [Registry]
@@ -365,6 +404,9 @@ Filename: "{app}\WinSCP.exe"; Parameters: "/RemoveSearchPath"; \
 const
   wpSetupType = 100;
   wpInterface = 101;
+#ifdef Chrome
+  wpChrome =    102;
+#endif
 
 var
   TypicalTypeButton: TRadioButton;
@@ -376,6 +418,22 @@ var
   AreUpdatesEnabled: Boolean;
   Upgrade: Boolean;
   MissingTranslations: string;
+  InstallationDone: Boolean;
+  LicenseAccepted: Boolean;
+#ifdef Chrome
+  ChromeLogoImage: TBitmapImage;
+  ChromeLogoImageOffset: Integer;
+  ChromeAdImage: TBitmapImage;
+  ChromeCheckbox: TCheckbox;
+  ChromeDefaultCheckbox: TCheckbox;
+  ChromeLastPolicyText: TLabel;
+  ChromeAllowed: Boolean;
+#endif
+
+procedure ShowMessage(Text: string);
+begin
+  MsgBox(Text, mbInformation, MB_OK);
+end;
 
 function IsLang(Lang: string): Boolean;
 begin
@@ -500,6 +558,104 @@ begin
   end;
 end;
 
+#ifdef Chrome
+
+procedure LoadEmbededBitmap(Image: TBitmapImage; Name: string);
+begin
+  ExtractTemporaryFile(Name);
+  Image.Bitmap.LoadFromFile(ExpandConstant('{tmp}\' + Name));
+  Image.AutoSize := True;
+end;
+
+procedure ChromeCheckboxClick(Sender: TObject);
+begin
+  ChromeDefaultCheckbox.Enabled := ChromeCheckbox.Checked;
+end;
+
+procedure AddChromePolicyText(S: string; OnLinkClick: TNotifyEvent);
+var
+  Caption: TLabel;
+  I: Integer;
+begin
+  S := ExpandConstant(S);
+
+  if s <> '' then
+  begin
+    Caption := TLabel.Create(ChromeDefaultCheckbox.Parent);
+    if ChromeLastPolicyText <> nil then
+    begin
+      Caption.Top := ChromeLastPolicyText.Top;
+      Caption.Left := ChromeLastPolicyText.Left + ChromeLastPolicyText.Width;
+    end
+      else
+    begin
+      Caption.Top :=
+        ChromeDefaultCheckbox.Top + ChromeDefaultCheckbox.Height + ScaleY(4);
+    end;
+    Caption.Caption := S;
+    Caption.Parent := ChromeDefaultCheckbox.Parent;
+    Caption.Font.Name := 'Arial';
+    Caption.Font.Size := Caption.Font.Size - 1;
+    Caption.Tag := 1;
+
+    if OnLinkClick <> nil then
+    begin
+      Caption.Font.Style := Caption.Font.Style + [fsUnderline];
+      Caption.Font.Color := clBlue;
+      Caption.Cursor := crHand;
+      Caption.OnClick := OnLinkClick;
+    end;
+
+    if Caption.Left + Caption.Width > Caption.Parent.Width then
+    begin
+      Caption.Left := 0;
+      Caption.Top := Caption.Top + Caption.Height;
+      ChromeAdImage.Top := ChromeAdImage.Top - 1;
+      ChromeCheckbox.Top := ChromeCheckbox.Top - 3;
+      ChromeDefaultCheckbox.Top := ChromeDefaultCheckbox.Top - 4;
+
+      for I := 0 to Caption.Parent.ControlCount - 1 do
+      begin
+        if Caption.Parent.Controls[I].Tag = 1 then
+          Caption.Parent.Controls[I].Top := Caption.Parent.Controls[I].Top - 5;
+      end;
+
+      if Copy(Caption.Caption, 1, 1) = ' ' then
+        Caption.Caption := Copy(Caption.Caption, 2, Length(Caption.Caption) - 1);
+    end;
+
+    ChromeLastPolicyText := Caption;
+  end;
+end;
+
+procedure OpenPolicy(S: string);
+begin
+  S := FmtMessage(S, [ExpandConstant('{cm:LanguageISOCode}')]);
+  OpenBrowser(S);
+end;
+
+procedure ChromeTermsOfUseClick(Sender: TObject);
+begin
+  OpenPolicy('http://www.google.com/chrome/intl/%1/eula_text.html');
+end;
+
+procedure ChromePrivacyPolicyClick(Sender: TObject);
+begin
+  OpenPolicy('http://www.google.com/chrome/intl/%1/privacy.html');
+end;
+
+function IsChromeSelected: Boolean;
+begin
+  Result := ChromeAllowed and ChromeCheckbox.Checked;
+end;
+
+function IsChromeDefaultSelected: Boolean;
+begin
+  Result := ChromeAllowed and ChromeDefaultCheckbox.Checked;
+end;
+
+#endif
+
 procedure InitializeWizard;
 var
   DefaultLang: Boolean;
@@ -514,7 +670,14 @@ var
 #ifdef OpenCandy
   OpenCandyNewPageID: Integer;
 #endif
+#ifdef Chrome
+  ChromePage: TWizardPage;
+  ResultCode: Integer;
+#endif
 begin
+  InstallationDone := False;
+  LicenseAccepted := False;
+
   DefaultLang := (ActiveLanguage = '{#DefaultLang}');
 
   Upgrade :=
@@ -526,6 +689,7 @@ begin
   WizardForm.KeyPreview := True;
   WizardForm.OnKeyDown := @FormKeyDown;
 
+#ifndef Chrome
   // allow installation without requiring user to accept licence
   WizardForm.LicenseAcceptedRadio.Checked := True;
   WizardForm.LicenseAcceptedRadio.Visible := False;
@@ -536,6 +700,7 @@ begin
     WizardForm.LicenseNotAcceptedRadio.Top +
     WizardForm.LicenseNotAcceptedRadio.Height -
     WizardForm.LicenseMemo.Top - 5;
+#endif
 
   // hide installation types combo
   WizardForm.TypesCombo.Visible := False;
@@ -744,6 +909,79 @@ begin
   OpenCandyNewPageID := OpenCandyInsertLoadingPage(wpSelectTasks, ' ', ' ', 'Loading...', 'Arial', 100);
   OpenCandyInsertOfferPage(OpenCandyNewPageID);
 #endif
+
+#ifdef Chrome
+  ExtractTemporaryFile('{#ChromeGcApiDllFile}');
+  ExtractTemporaryFile('{#ChromeCheckerFile}');
+
+  ChromeAllowed :=
+    (not WizardSilent) and
+    ExecAsOriginalUser(ExpandConstant('{tmp}\{#ChromeCheckerFile}'), 'checkstandard', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and
+    (ResultCode = 0) and
+    Exec(ExpandConstant('{tmp}\{#ChromeCheckerFile}'), 'checkelevated', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and
+    (ResultCode = 0);
+
+  if ChromeAllowed then
+  begin
+    ChromePage := CreateCustomPage(wpInterface,
+      ExpandConstant('{cm:ChromeTitle}'),
+      ExpandConstant('{cm:ChromePrompt}'));
+
+    Caption := TLabel.Create(ChromePage);
+    Caption.WordWrap := True;
+    Caption.Caption :=
+      '- ' + ExpandConstant('{cm:ChromePoint1}') + #13#10 +
+      '- ' + ExpandConstant('{cm:ChromePoint2}') + #13#10 +
+      '- ' + ExpandConstant('{cm:ChromePoint3}');
+    Caption.Width := ChromePage.SurfaceWidth;
+    Caption.Parent := ChromePage.Surface;
+
+    ChromeAdImage := TBitmapImage.Create(ChromePage);
+    ChromeAdImage.Top := Caption.Top + Caption.Height + ScaleY(6);
+    ChromeAdImage.Parent := ChromePage.Surface;
+    LoadEmbededBitmap(ChromeAdImage, '{#ChromeAdFile}');
+
+    ChromeCheckbox := TCheckbox.Create(ChromePage);
+    ChromeCheckbox.Top := ChromeAdImage.Top + ChromeAdImage.Height + ScaleY(6);
+    ChromeCheckbox.Left := ScaleX(4);
+    ChromeCheckbox.Width :=
+      ChromePage.SurfaceWidth - ChromeCheckbox.Left;
+    ChromeCheckbox.Caption := ExpandConstant('{cm:ChromeCheck}');
+    ChromeCheckbox.Checked := True;
+    ChromeCheckbox.Parent := ChromePage.Surface;
+    ChromeCheckbox.OnClick := @ChromeCheckboxClick;
+
+    ChromeDefaultCheckbox := TCheckbox.Create(ChromePage);
+    ChromeDefaultCheckbox.Top :=
+      ChromeCheckbox.Top + ChromeCheckbox.Height + ScaleY(4);
+    ChromeDefaultCheckbox.Left := ScaleX(4);
+    ChromeDefaultCheckbox.Width :=
+      ChromePage.SurfaceWidth - ChromeDefaultCheckbox.Left;
+    ChromeDefaultCheckbox.Caption := ExpandConstant('{cm:ChromeDefaultCheck}');
+    ChromeDefaultCheckbox.Checked := True;
+    ChromeDefaultCheckbox.Parent := ChromePage.Surface;
+
+    ChromeLastPolicyText := nil;
+    AddChromePolicyText('{cm:ChromeDisclaimerPrefix}', nil);
+    AddChromePolicyText('{cm:ChromeDisclaimerTermsOfUse}', @ChromeTermsOfUseClick);
+    AddChromePolicyText('{cm:ChromeDisclaimerInfix}', nil);
+    AddChromePolicyText('{cm:ChromeDisclaimerPrivacyPolicy}', @ChromePrivacyPolicyClick);
+    AddChromePolicyText('{cm:ChromeDisclaimerPostfix}', nil);
+
+    // override the windows scheme to make sure it matches chrome logo background
+    WizardForm.MainPanel.Color := clWhite;
+
+    ChromeLogoImage := TBitmapImage.Create(WizardForm.MainPanel);
+    ChromeLogoImage.Top := WizardForm.PageNameLabel.Top;
+    ChromeLogoImage.Left := ScaleX(8);
+    ChromeLogoImage.Parent := WizardForm.MainPanel;
+    LoadEmbededBitmap(ChromeLogoImage, '{#ChromeLogoFile}');
+    ChromeLogoImage.Visible := False;
+    ChromeLogoImageOffset :=
+      (ChromeLogoImage.Left + ChromeLogoImage.Width + ScaleX(8)) -
+      WizardForm.PageNameLabel.Left;
+  end;
+#endif
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
@@ -767,6 +1005,34 @@ begin
     AdditionalOptionsCaption.Visible := not TypicalTypeButton.Checked;
     AdvancedTabsCheckbox.Visible := not TypicalTypeButton.Checked;
   end;
+
+  if CurPageID = wpSetupType then
+  begin
+    LicenseAccepted := True;
+  end;
+
+#ifdef Chrome
+  if ChromeAllowed then
+  begin
+    if CurPageID = wpChrome then
+    begin
+      WizardForm.PageNameLabel.Width := WizardForm.PageNameLabel.Width - ChromeLogoImageOffset;
+      WizardForm.PageNameLabel.Left := WizardForm.PageNameLabel.Left + ChromeLogoImageOffset;
+      WizardForm.PageDescriptionLabel.Width := WizardForm.PageDescriptionLabel.Width - ChromeLogoImageOffset;
+      WizardForm.PageDescriptionLabel.Left := WizardForm.PageDescriptionLabel.Left + ChromeLogoImageOffset;
+      ChromeLogoImage.Visible := True;
+    end
+      else
+    if ChromeLogoImage.Visible then
+    begin
+      ChromeLogoImage.Visible := False;
+      WizardForm.PageNameLabel.Left := WizardForm.PageNameLabel.Left - ChromeLogoImageOffset;
+      WizardForm.PageNameLabel.Width := WizardForm.PageNameLabel.Width + ChromeLogoImageOffset;
+      WizardForm.PageDescriptionLabel.Left := WizardForm.PageDescriptionLabel.Left - ChromeLogoImageOffset;
+      WizardForm.PageDescriptionLabel.Width := WizardForm.PageDescriptionLabel.Width + ChromeLogoImageOffset;
+    end;
+  end;
+#endif
 end;
 
 #ifdef OpenCandy
@@ -783,12 +1049,68 @@ begin
 end;
 #endif
 
-#ifdef OpenCandy
-procedure DeinitializeSetup;
+function AskedRestart: Boolean;
 begin
-  OpenCandyDeinitializeSetup();
+  Result := WizardForm.YesRadio.Visible;
 end;
+
+procedure DeinitializeSetup;
+var
+  WinHttpReq: Variant;
+  ReportUrl: string;
+  ReportData: string;
+#ifdef Chrome
+  ResultCode: Integer;
+  ChromeLaunched: Boolean;
 #endif
+begin
+#ifdef OpenCandy
+  OpenCandyDeinitializeSetup();
+#endif
+
+  // cannot send report, unless user already accepted license
+  // (with privacy policy)
+  if LicenseAccepted then
+  begin
+    ReportData := Format('installed=%d&silent=%d&lang=%s&', [Integer(InstallationDone), Integer(WizardSilent), ActiveLanguage]);
+
+#ifdef Chrome
+    ChromeLaunched := False;
+
+    if ChromeAllowed and (not AskedRestart) and IsChromeSelected and
+       (WizardForm.RunList.Items.Count >= 2) and // sanity check
+       WizardForm.RunList.Checked[1] then
+    begin
+      Log('Launching Chrome');
+      ChromeLaunched :=
+        ExecAsOriginalUser(ExpandConstant('{tmp}\{#ChromeCheckerFile}'), 'launch', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and
+        (ResultCode = 0);
+
+      if not ChromeLaunched then
+      begin
+        MsgBox(ExpandConstant('{cm:ChromeInstallationFailed}'), mbError, MB_OK);
+      end;
+    end;
+
+    ReportData := ReportData +
+      Format('chromeoffered=%d&chromeaccepted=%d&chromelaunched=%d&', [Integer(ChromeAllowed), Integer(IsChromeSelected), Integer(ChromeLaunched)]);
+#endif
+
+    try
+      ReportUrl := ExpandConstant('{#WebReport}?') + ReportData;
+
+      Log('Sending installation report: ' + ReportUrl);
+
+      WinHttpReq := CreateOleObject('WinHttp.WinHttpRequest.5.1');
+      WinHttpReq.Open('GET', ReportUrl, False);
+      WinHttpReq.Send('');
+
+      Log('Installation report send result: ' + WinHttpReq.Status + ' ' + WinHttpReq.StatusText);
+    except
+      Log('Error sending installation report: ' + GetExceptionMessage);
+    end;
+  end;
+end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
@@ -805,6 +1127,12 @@ begin
 #ifdef OpenCandy
   OpenCandyCurStepChanged(CurStep);
 #endif
+
+  if CurStep = ssDone then
+  begin
+    Log('Installation done');
+    InstallationDone := True;
+  end;
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;

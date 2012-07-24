@@ -98,6 +98,7 @@ protected:
 	
 	virtual int OnLayerCallback(std::list<t_callbackMsg>& callbacks);
 	int ReadDataFromFile(char *buffer, int len);
+	virtual void LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat);
 
 	CFtpControlSocket *m_pOwner;
 	CAsyncProxySocketLayer* m_pProxyLayer;

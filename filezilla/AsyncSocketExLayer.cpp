@@ -1003,3 +1003,11 @@ bool CAsyncSocketExLayer::TryNextProtocol()
 	else
 		return TRUE;
 }
+
+void CAsyncSocketExLayer::LogSocketMessage(int nMessageType, LPCTSTR pMsgFormat)
+{ 
+	if (m_pPrevLayer)
+		m_pPrevLayer->LogSocketMessage(nMessageType, pMsgFormat);
+	else
+		m_pOwnerSocket->LogSocketMessage(nMessageType, pMsgFormat);
+}
